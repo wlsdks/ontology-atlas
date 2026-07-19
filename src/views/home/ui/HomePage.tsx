@@ -58,6 +58,19 @@ const MountedGlobalSearch = dynamic(
     import("@/widgets/global-search").then((m) => m.MountedGlobalSearch),
   { ssr: false },
 );
+// perf sweep 2026-07 — `FullDetailA1` is the opt-in "전체 상세 →" overlay
+// (design.md: full-bleed detail is opt-in, never the click default), so like
+// the other overlay widgets above it has no business in the first-load
+// bundle. It statically imported `react-markdown` (+ `remark`), which alone
+// measured ~129KB gzip and was shipping to EVERY visit of `/`/`/topology`
+// even for users who never open a full-detail card. `buildFullDetailGroups`/
+// `buildFullDetailReachModel` stay as regular imports below — they're plain
+// data-shaping functions (no ReactMarkdown dependency) needed synchronously
+// to compute `fullDetailA1Model`, not the component render itself.
+const FullDetailA1 = dynamic(
+  () => import("@/widgets/full-detail-a1").then((m) => m.FullDetailA1),
+  { ssr: false },
+);
 import { GestureHint } from "@/widgets/gesture-hint";
 import { PINNED_DOCS_STORAGE_PREFIX } from "@/widgets/docs-vault";
 import { ChromeChip, LiveAnnouncer, Tooltip, useToast } from "@/shared/ui";
@@ -109,7 +122,7 @@ import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
-import { FullDetailA1, buildFullDetailGroups, buildFullDetailReachModel } from "@/widgets/full-detail-a1";
+import { buildFullDetailGroups, buildFullDetailReachModel } from "@/widgets/full-detail-a1";
 import {
   TopologyMapV2,
   TopologyV2ContextMenu,
