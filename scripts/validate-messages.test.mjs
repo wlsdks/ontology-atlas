@@ -692,6 +692,45 @@ describe('i18n message catalog', () => {
       /\bdomain\b|\bcapability\b|\bhandoff\b|\bbatch\b|\bgrowth queue\b|\bgraph compile\b/,
     );
   });
+
+  it('keeps the builder inspector overview tab free of graph-object jargon (chore/inspector-plain — "온톨로지 객체 근거"/"GRAPH OBJECT" badge/"query, edit, validate"/bare OUT-IN-SOURCE gauges assumed the reader already knew ontology vocabulary)', async () => {
+    const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const koInspector = ko.ontologyPages.edit.inspector;
+    const enInspector = en.ontologyPages.edit.inspector;
+
+    assert.equal(koInspector.objectProofLabel, '이 항목은 마크다운 파일 하나예요');
+    assert.equal(koInspector.objectProofBody, 'AI가 이 파일을 읽고 고치고 검사할 수 있어요.');
+    assert.equal(koInspector.objectProofChip, '.md');
+    assert.equal(koInspector.objectProofOutgoing, '나가는 연결');
+    assert.equal(koInspector.objectProofIncoming, '들어오는 연결');
+    assert.equal(koInspector.objectProofSource, '원본');
+
+    assert.equal(enInspector.objectProofLabel, 'This is one markdown file');
+    assert.equal(enInspector.objectProofBody, 'AI can read, edit, and check this file.');
+    assert.equal(enInspector.objectProofChip, '.md');
+    assert.equal(enInspector.objectProofOutgoing, 'Outgoing links');
+    assert.equal(enInspector.objectProofIncoming, 'Incoming links');
+    assert.equal(enInspector.objectProofSource, 'Source');
+
+    const overviewCopy = [
+      koInspector.objectProofLabel,
+      koInspector.objectProofBody,
+      koInspector.objectProofChip,
+      koInspector.objectProofOutgoing,
+      koInspector.objectProofIncoming,
+      koInspector.objectProofSource,
+    ].join('\n');
+
+    // first-tier ontology jargon banned from the overview tab's identity
+    // card and stat gauges — plain identity sentence + plain directional
+    // labels only. Value cells (real .md filenames, counts) may still use
+    // mono paths; only the *labels* are asserted here.
+    assert.doesNotMatch(
+      overviewCopy,
+      /온톨로지 객체 근거|graph object|query|edit|validate|\bout\b|\bin\b|\bsource\b|TBox|ABox|frontmatter|slug/i,
+    );
+  });
 });
 
 async function readRoutingLocales() {
