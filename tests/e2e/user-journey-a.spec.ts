@@ -56,9 +56,14 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
   }
 
   // ── A2. 루트 = 지도 (root-first-open B3, 별도 마케팅 랜딩 없음) ──────────
+  // `getByText("Ontology Atlas", { exact: true })` used to match visible
+  // hero copy on the old marketing LandingPage. Root-first-open moved that
+  // copy to `/download` — the only surviving "Ontology Atlas" mark on `/`
+  // is the persistent AppNavRail brand link (`title`/`aria-label`, icon-only,
+  // no text child), so assert via its accessible name instead.
   const landingStart = Date.now();
   await page.goto("/en/", { waitUntil: "domcontentloaded" });
-  const productName = page.getByText("Ontology Atlas", { exact: true }).first();
+  const productName = page.getByRole("link", { name: "Ontology Atlas", exact: true }).first();
   await expect(productName).toBeVisible({ timeout: 10_000 });
   const landingTtfb = Date.now() - landingStart;
   if (landingTtfb > 5_000) {

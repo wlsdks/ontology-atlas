@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-19T14:15:26.745Z",
+  "generatedAt": "2026-07-19T16:12:39.003Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-20 — e2e 스위트 부패 정리 + CI 연결 (no product change)",
+          "slug": "2026-07-20-e2e-스위트-부패-정리-ci-연결-no-product-change"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-19 — 문서함 상단 그래프 census 제거 (docs-chrome-round 마감)",
           "slug": "2026-07-19-문서함-상단-그래프-census-제거-docs-chrome-round-마감"
         },
@@ -3946,9 +3951,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 문서함(/docs) 브레드크럼 행의 개념 N개 · 관계 N개 각인 수치를 삭제했다. 문서를 읽는 표면에서 그래프 총계는 어떤 읽기 판단도 바꾸지 못하는 비",
-      "wordCount": 23324,
-      "updatedAt": "2026-07-19T14:15:13.746Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. Playwright e2e 139개 중 108개가 실패하고 있었다 — 전부 이미 삭제된 화면을 기다리다 타임아웃난 것으로, 제품 결함은 0건. topolo",
+      "wordCount": 23665,
+      "updatedAt": "2026-07-19T16:10:25.528Z",
       "linksOut": [
         "slug"
       ]
