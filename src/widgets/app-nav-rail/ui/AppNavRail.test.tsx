@@ -11,12 +11,18 @@ const mocks = vi.hoisted(() => ({
     exists: false,
     valid: false,
     stale: false,
+    ageMs: null,
     heartbeat: null,
   } as {
     exists: boolean;
     valid: boolean;
     stale: boolean;
-    heartbeat: { agent: string; state: string } | null;
+    ageMs: number | null;
+    heartbeat: {
+      agent: string;
+      state: string;
+      focus?: { ontologySlug: string | null };
+    } | null;
   },
 }));
 
@@ -62,7 +68,13 @@ describe("AppNavRail", () => {
 
   it("hides the agent activity dot when there is no fresh heartbeat", () => {
     mocks.pathname = "/topology";
-    mocks.agentActivityStatus = { exists: false, valid: false, stale: false, heartbeat: null };
+    mocks.agentActivityStatus = {
+      exists: false,
+      valid: false,
+      stale: false,
+      ageMs: null,
+      heartbeat: null,
+    };
     renderRail();
     expect(screen.queryByTestId("app-nav-rail-agent-dot")).not.toBeInTheDocument();
   });
@@ -72,6 +84,7 @@ describe("AppNavRail", () => {
       exists: true,
       valid: true,
       stale: false,
+      ageMs: 30_000,
       heartbeat: { agent: "claude", state: "editing" },
     };
     renderRail();
@@ -79,6 +92,42 @@ describe("AppNavRail", () => {
     expect(screen.getByTestId("app-nav-rail-agent-status")).toHaveAttribute(
       "title",
       expect.stringContaining("claude"),
+    );
+  });
+
+  it("appends 'last activity: {slug} · {age}' to the title when the heartbeat reports a focus slug + age", () => {
+    mocks.agentActivityStatus = {
+      exists: true,
+      valid: true,
+      stale: false,
+      ageMs: 45_000,
+      heartbeat: {
+        agent: "claude",
+        state: "editing",
+        focus: { ontologySlug: "capabilities/agent-live-activity-contract" },
+      },
+    };
+    renderRail();
+    expect(screen.getByTestId("app-nav-rail-agent-status")).toHaveAttribute(
+      "title",
+      expect.stringContaining(
+        "마지막 활동: capabilities/agent-live-activity-contract · 45s 전",
+      ),
+    );
+  });
+
+  it("omits the last-activity suffix when the heartbeat has no focus slug", () => {
+    mocks.agentActivityStatus = {
+      exists: true,
+      valid: true,
+      stale: false,
+      ageMs: 45_000,
+      heartbeat: { agent: "claude", state: "editing", focus: { ontologySlug: null } },
+    };
+    renderRail();
+    expect(screen.getByTestId("app-nav-rail-agent-status")).not.toHaveAttribute(
+      "title",
+      expect.stringContaining("마지막 활동"),
     );
   });
 

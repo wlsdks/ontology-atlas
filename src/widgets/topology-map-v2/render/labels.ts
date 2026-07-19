@@ -52,6 +52,14 @@ export interface LabelDrawState {
   isHovered: boolean;
   /** The node's own effective/tier alpha this frame (`model/tier-visibility.ts#effectiveNodeAlpha`) — ties capability/element label eligibility to "if you can click it, you can read it". Ignored by project/domain. */
   revealAlpha: number;
+  /**
+   * W6 agent visibility — true when this label belongs to the agent
+   * heartbeat's current focus node (mirrors `NodeShapeDrawState.agentFocus`
+   * in `render/node-shapes.ts`). Draws a small amber `drawActivityMark` dot
+   * just past the label's own text, "노드 라벨 옆 소형 Activity 마크" per the
+   * owner spec — real heartbeat data only, `false` otherwise.
+   */
+  agentFocus: boolean;
 }
 
 export interface LabelTokens {
@@ -59,6 +67,8 @@ export interface LabelTokens {
   labelDomain: string;
   labelCapability: string;
   labelElement: string;
+  /** W6 agent visibility — same amber signal tone as the node ring (`NodeShapeTokens.amberHub`), reused here for the label-side activity mark. */
+  amberHub: string;
 }
 
 /**
@@ -163,6 +173,38 @@ export function computeDomainWatermarkAlpha(farT: number, egoState: LabelDrawSta
   return egoState === "normal" ? farT : 0;
 }
 
+/**
+ * W6 agent visibility — activity-mark dot radius + gap past the label
+ * text's own measured width. Exported so `ui/topology-frame-draw.ts`'s
+ * label-candidate bbox can reserve the extra width for greedy-suppression
+ * (an agent-focus label's mark must not get overlapped by a neighboring
+ * label placed right after it).
+ */
+export const ACTIVITY_MARK_RADIUS = 2.4;
+export const ACTIVITY_MARK_GAP = 5;
+
+/**
+ * The small solid amber dot marking a node's label as the agent heartbeat's
+ * current focus ("노드 라벨 옆 소형 Activity 마크"). A plain filled circle —
+ * no glow/shadow (design.md) — positioned by the caller just past the
+ * label's own measured text width so it never overlaps the glyphs.
+ */
+export function drawActivityMark(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  color: string,
+  alpha: number,
+): void {
+  if (alpha <= 0.02) return;
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  ctx.arc(x, y, ACTIVITY_MARK_RADIUS, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
 /** Screen-Y offset below the node's own radius, per kind (prototype `drawLabel()`). */
 export const LABEL_OFFSET: Record<LabelDrawState["kind"], number> = {
   project: 20,
@@ -208,7 +250,7 @@ function drawTrackedText(
  * Every other kind draws nothing when its single alpha resolves to <=0.02.
  */
 export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, tokens: LabelTokens): void {
-  const { kind, text, screenX: x, screenY: y, screenRadius: r, farT, egoState, isHovered, revealAlpha } = state;
+  const { kind, text, screenX: x, screenY: y, screenRadius: r, farT, egoState, isHovered, revealAlpha, agentFocus } = state;
   const ty = y + r + LABEL_OFFSET[kind];
 
   if (kind === "domain") {
@@ -226,6 +268,10 @@ export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, token
       ctx.globalAlpha = compactAlpha;
       ctx.fillText(text, x, ty);
       ctx.globalAlpha = 1;
+      if (agentFocus) {
+        const width = measureLabelWidth(ctx, "domain", text);
+        drawActivityMark(ctx, x + width / 2 + ACTIVITY_MARK_GAP, ty - LABEL_FONT_SIZE.domain * 0.35, tokens.amberHub, compactAlpha);
+      }
     }
     return;
   }
@@ -248,4 +294,9 @@ export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, token
   ctx.globalAlpha = alpha;
   ctx.fillText(text, x, ty);
   ctx.globalAlpha = 1;
+
+  if (agentFocus) {
+    const width = measureLabelWidth(ctx, kind, text);
+    drawActivityMark(ctx, x + width / 2 + ACTIVITY_MARK_GAP, ty - LABEL_FONT_SIZE[kind] * 0.35, tokens.amberHub, alpha);
+  }
 }

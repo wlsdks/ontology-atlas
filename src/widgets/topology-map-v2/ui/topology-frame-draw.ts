@@ -12,6 +12,8 @@ import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selec
 import { DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha } from "../model/tier-visibility";
 import { draw as gridDraw, lerpColorHex } from "../render/grid";
 import {
+  ACTIVITY_MARK_GAP,
+  ACTIVITY_MARK_RADIUS,
   computeDomainWatermarkAlpha,
   computeLabelAlpha,
   draw as labelsDraw,
@@ -157,6 +159,15 @@ export interface FrameDrawParams {
    * draw nothing extra, leaving only the permanent static selection ring.
    */
   selectionPulse: { nodeId: string; startAtMs: number } | null;
+  /**
+   * W6 agent visibility — the node id matching the agent heartbeat's current
+   * `focus.ontologySlug`, already resolved to the graph's `kind:slug` id
+   * form by `views/home/lib/resolve-agent-focus-node.ts`, or `null` when
+   * there's no fresh heartbeat / no resolvable focus. Drives the amber
+   * agent-focus ring (`render/node-shapes.ts`) and the label-side activity
+   * mark (`render/labels.ts`) — both no-op when this is `null`.
+   */
+  agentFocusNodeId: string | null;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -180,6 +191,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     egoRevealById,
     reducedMotion,
     selectionPulse,
+    agentFocusNodeId,
   } = params;
 
   gridDraw(
@@ -320,6 +332,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         countLabel: showCount ? String(node.count) : null,
         isHovered,
         selectionPulse: selectionPulseVisual,
+        agentFocus: agentFocusNodeId !== null && node.id === agentFocusNodeId,
       },
       {
         amberHub: tokens.amberHub,
@@ -373,6 +386,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     egoState: NodeEgoState;
     isHovered: boolean;
     revealAlpha: number;
+    /** W6 agent visibility — this label's node matches the agent heartbeat's current focus. */
+    agentFocus: boolean;
   }
   const labelCandidates: LabelCandidate<LabelPayload>[] = [];
   world.nodes.forEach((node, index) => {
@@ -401,6 +416,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     );
     const width = measureLabelWidth(ctx, node.kind, text);
     const fontSize = LABEL_FONT_SIZE[node.kind];
+    const agentFocus = agentFocusNodeId !== null && node.id === agentFocusNodeId;
+    // W6 agent visibility — reserve room for the activity mark past the
+    // text's own width so greedy suppression doesn't let a neighboring
+    // label overlap it.
+    const markReserve = agentFocus ? ACTIVITY_MARK_GAP * 2 + ACTIVITY_MARK_RADIUS * 2 : 0;
     // Safe-rect gate — but selected/hovered/ego labels are PROTECTED: instead
     // of dropping (which defeated the "selected → alpha 1" guarantee under the
     // left chrome inset, Guardian follow-up A) their anchor clamps to the
@@ -427,7 +447,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         isHub: node.isHub,
       }),
       order: index,
-      bbox: { minX: anchorX - width / 2, maxX: anchorX + width / 2, minY: clampedAnchorY - fontSize, maxY: clampedAnchorY + 2 },
+      bbox: { minX: anchorX - width / 2, maxX: anchorX + width / 2 + markReserve, minY: clampedAnchorY - fontSize, maxY: clampedAnchorY + 2 },
       payload: {
         kind: node.kind,
         text,
@@ -437,6 +457,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         egoState,
         isHovered,
         revealAlpha,
+        agentFocus,
       },
     });
   });
@@ -454,12 +475,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         egoState: payload.egoState,
         isHovered: payload.isHovered,
         revealAlpha: payload.revealAlpha,
+        agentFocus: payload.agentFocus,
       },
       {
         labelProject: tokens.labelProject,
         labelDomain: tokens.labelDomain,
         labelCapability: tokens.labelCapability,
         labelElement: tokens.labelElement,
+        amberHub: tokens.amberHub,
       },
     );
   }

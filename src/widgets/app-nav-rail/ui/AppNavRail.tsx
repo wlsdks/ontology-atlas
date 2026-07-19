@@ -12,6 +12,7 @@ import {
   Map as MapIcon,
 } from "lucide-react";
 import { useLocalVault } from "@/features/docs-vault-local";
+import { formatActivityAge } from "@/features/vault-ontology";
 import { cn } from "@/shared/lib/cn";
 import { BrandMark } from "@/shared/ui";
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
@@ -66,7 +67,7 @@ export function AppNavRail({ settingsSlot, className }: AppNavRailProps) {
         complete: tLive("stateComplete"),
       }[heartbeat.state] ?? null)
     : null;
-  const agentTitle = !agentStatus?.exists
+  const baseAgentTitle = !agentStatus?.exists
     ? tLive("agentMissing")
     : !agentStatus.valid
       ? tLive("agentInvalid")
@@ -75,6 +76,20 @@ export function AppNavRail({ settingsSlot, className }: AppNavRailProps) {
         : heartbeat
           ? `${tLive("agentTitle")} — ${heartbeat.agent} · ${stateLabel}`
           : tLive("agentMissing");
+  // W6 agent visibility — rail tile title enhancement: append "last activity"
+  // (which ontology node the agent last touched, and how long ago) whenever
+  // the heartbeat actually carries a focus slug + a reported age. Shown
+  // regardless of `stale`/`valid` state (it describes the heartbeat's OWN
+  // last-known data, not "is this connection healthy right now") — real
+  // heartbeat data only, never fabricated (no slug/age → no suffix).
+  const lastActivitySuffix =
+    heartbeat?.focus?.ontologySlug && agentStatus?.ageMs != null
+      ? tLive("railLastActivity", {
+          slug: heartbeat.focus.ontologySlug,
+          age: formatActivityAge(agentStatus.ageMs),
+        })
+      : null;
+  const agentTitle = [baseAgentTitle, lastActivitySuffix].filter(Boolean).join(" · ");
 
   const destinations: RailDestination[] = [
     { id: "map", href: "/topology/", label: t("map"), Icon: MapIcon },

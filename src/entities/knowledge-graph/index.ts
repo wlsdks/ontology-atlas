@@ -33,3 +33,4 @@ export {
   type RelationQuality,
   type RelationQualityBreakdown,
 } from "./lib/relation-quality";
+export { translateOntologyDeeplinkToTopologyParam } from "./lib/translate-ontology-deeplink";

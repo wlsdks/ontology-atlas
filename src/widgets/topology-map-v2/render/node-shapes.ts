@@ -97,6 +97,17 @@ export interface NodeShapeDrawState {
    * until the NEXT click resets the timestamp.
    */
   selectionPulse: { scaleFactor: number; alpha: number } | null;
+  /**
+   * W6 agent visibility — true for the single node matching the current
+   * agent heartbeat's `focus.ontologySlug` (resolved upstream by
+   * `views/home/lib/resolve-agent-focus-node.ts`), only while that
+   * heartbeat is fresh (`hasFreshHeartbeat`, `topology-frame-draw.ts`'s
+   * caller nulls the id otherwise). Draws a static amber hairline ring — the
+   * SAME `amberHub` signal tone as the hub ring / project hexagon, never a
+   * glow (design.md "발광 대신 재질"). Real heartbeat data only; `false`
+   * whenever there's no fresh focus (fabrication 0).
+   */
+  agentFocus: boolean;
 }
 
 export interface NodeShapeTokens {
@@ -160,6 +171,8 @@ const SELECTION_RING_OUTER_OFFSET = 6;
 const SELECTION_PULSE_RING_OFFSET = 3;
 /** Hover preview ring sits just outside the body, inside the (mutually-exclusive, hover never fires under focus) selection ring's radius. */
 const HOVER_RING_OFFSET = 3;
+/** W6 agent visibility — agent-focus ring offset (owner spec: "정적 1px, r+8"), deliberately wider than the hub ring's r+4 so the two never visually merge on a hub node the agent is also focused on. */
+const AGENT_FOCUS_RING_OFFSET = 8;
 
 export interface PinTick {
   x1: number;
@@ -347,6 +360,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     countLabel,
     isHovered,
     selectionPulse,
+    agentFocus,
   } = state;
 
   ctx.setLineDash([...dash]);
@@ -399,6 +413,17 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
 
   if (hub && egoState !== "dim") {
     strokeKindOutline(ctx, kind, x, y, r + 4, farT, tokens.amberHub, 1.4, 1);
+  }
+
+  // W6 agent visibility — the agent's last-touched node gets a static amber
+  // hairline ring (owner spec: "정적 1px, r+8", same signal tone as the hub
+  // ring/project hexagon amber — never a new color system). Independent of
+  // `hub`/`egoState === "center"` — an agent-focused node can simultaneously
+  // be a hub or the user's own selection; the rings stack at their own
+  // offsets (hub r+4, selection r/r+6, this one r+8) rather than replacing
+  // each other.
+  if (agentFocus && egoState !== "dim") {
+    strokeKindOutline(ctx, kind, x, y, r + AGENT_FOCUS_RING_OFFSET, farT, tokens.amberHub, 1, 1);
   }
 
   // Canvas-emphasis slice §A — project hexagon's own decorative identity

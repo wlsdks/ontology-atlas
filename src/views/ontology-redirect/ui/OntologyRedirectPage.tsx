@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
-import { translateOntologyDeeplinkToTopologyParam } from "../lib/translate-ontology-deeplink";
+import { translateOntologyDeeplinkToTopologyParam } from "@/entities/knowledge-graph";
 
 /**
  * `/ontology` — thin convergence entry (B3 허브가 곧 지도). The old tree/ego
