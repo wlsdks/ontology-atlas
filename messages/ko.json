@@ -1355,7 +1355,7 @@
         "ephemeralEdgeSaveLabel": "저장",
         "ephemeralEdgeSaveAria": "이 관계를 vault 에 저장",
         "ephemeralEdgeSaveTooltip": "이 관계를 저장합니다. 미저장 노드가 있으면 함께 저장됩니다.",
-        "emptyHint": "왼쪽 종류 선택에서 개념 종류를 고르면 첫 개념이 생겨요.",
+        "emptyHint": "개념 카드를 만들고 서로 연결하는 캔버스예요 — 왼쪽에서 종류를 골라 첫 카드를 만들어보세요.",
         "minimapAriaLabel": "캔버스 미니맵 — 클릭/드래그로 빠른 이동",
         "edgeLabels": {
           "capabilities": "역량",
@@ -1400,6 +1400,9 @@
         "tabOverview": "개요",
         "tabRelations": "관계",
         "tabDocument": "문서",
+        "tabOverviewHint": "핵심 정보를 한눈에 봅니다",
+        "tabRelationsHint": "이 카드와 연결된 다른 카드들",
+        "tabDocumentHint": "저장되는 실제 문서 내용",
         "nameLabel": "이름",
         "namePlaceholder": "(이름 입력)",
         "saveIdLabel": "파일 이름 (저장 시)",
