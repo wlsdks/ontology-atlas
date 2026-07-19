@@ -562,9 +562,9 @@ A successful run looks like this:
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 101 total query results (limited true)
-✓ analyze_repo_structure — fsd (4 domain candidates, 19 capability candidates, 28 element candidates)
-✓ infer_imports — 758 files scanned, 479 module edges (elements/src/views/home->capabilities/knowledge-graph x19 (static:19), elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), +477 more)
-✓ index_project — 52 concept candidates, 479 import relations, validation 0 problem files
+✓ analyze_repo_structure — fsd (4 domain candidates, 18 capability candidates, 28 element candidates)
+✓ infer_imports — 766 files scanned, 476 module edges (elements/src/views/home->capabilities/knowledge-graph x19 (static:19), elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), +474 more)
+✓ index_project — 51 concept candidates, 476 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
