@@ -25,7 +25,6 @@ const labels = {
   trigger: "Settings",
   heading: "Map settings",
   locale: "Language",
-  theme: "Theme",
   indexDefault: "INDEX default state",
   indexDefaultExpanded: "Expanded",
   indexDefaultCollapsed: "Collapsed",
@@ -55,13 +54,12 @@ describe("TopologyV2SettingsGear — utility-rail settings popover", () => {
     expect(screen.queryByTestId("topology-v2-settings-gear-popover")).not.toBeInTheDocument();
   });
 
-  it("opens the popover with locale/theme/index-default rows on trigger click", () => {
+  it("opens the popover with locale/index-default rows on trigger click", () => {
     renderGear();
     fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
     const popover = screen.getByTestId("topology-v2-settings-gear-popover");
     expect(popover).toBeInTheDocument();
     expect(within(popover).getByText(labels.locale)).toBeInTheDocument();
-    expect(within(popover).getByText(labels.theme)).toBeInTheDocument();
     expect(within(popover).getByText(labels.indexDefault)).toBeInTheDocument();
   });
 

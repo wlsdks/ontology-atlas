@@ -5,8 +5,7 @@ import { ROUTE_MEMORY_KEY } from './route-memory';
 
 /**
  * 디자인 시스템 가드 — 루트 locale redirect 의 색은 모두 CSS 토큰을 거쳐야
- * 한다 (hardcoded hex 금지, .claude/rules/design.md). 다크 hex 를 박으면
- * data-theme="light" 사용자가 루트 진입 시 다크 배경이 깜빡이는 회귀가 난다.
+ * 한다 (hardcoded hex 금지, .claude/rules/design.md).
  */
 describe('LocaleRedirect — 디자인 토큰 가드', () => {
   const originalLocation = window.location;

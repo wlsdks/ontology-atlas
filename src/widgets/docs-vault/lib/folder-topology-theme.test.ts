@@ -71,7 +71,6 @@ describe('resolveFolderTopologyColors', () => {
   beforeEach(() => {
     __resetFolderTopologyColorCache();
     document.documentElement.removeAttribute('style');
-    document.documentElement.removeAttribute('data-theme');
   });
 
   function setTokens(tokens: Record<string, string>) {
@@ -93,24 +92,24 @@ describe('resolveFolderTopologyColors', () => {
     expect(colors.label).toBe('#d0d6e0');
   });
 
-  it('re-resolves to different opaque tones for light-theme tokens', () => {
+  it('re-resolves to different opaque tones when the underlying tokens change', () => {
     setTokens({
       '--color-canvas': '#08090a',
       '--color-text-secondary': '#d0d6e0',
       '--color-text-quaternary': '#787c84',
     });
-    const dark = resolveFolderTopologyColors();
+    const before = resolveFolderTopologyColors();
 
     setTokens({
-      '--color-canvas': '#f3f5f9',
-      '--color-text-secondary': '#1f2329',
-      '--color-text-quaternary': '#6f7480',
+      '--color-canvas': '#0f1011',
+      '--color-text-secondary': '#c7ccd6',
+      '--color-text-quaternary': '#70747c',
     });
-    const light = resolveFolderTopologyColors();
+    const after = resolveFolderTopologyColors();
 
-    expect(light.label).toBe('#1f2329');
-    expect(light.edgeDefault).not.toBe(dark.edgeDefault);
-    expect(light.nodeDim).not.toBe(dark.nodeDim);
+    expect(after.label).toBe('#c7ccd6');
+    expect(after.edgeDefault).not.toBe(before.edgeDefault);
+    expect(after.nodeDim).not.toBe(before.nodeDim);
   });
 
   it('caches the result until the underlying tokens change', () => {
