@@ -224,7 +224,7 @@
     "openBusy": "Opening folder…",
     "createLabel": "✚ Create a new vault",
     "createBusy": "Writing starter structure…",
-    "dismissLabel": "Just looking around →",
+    "dismissLabel": "Just looking around here",
     "errorFallback": "Could not open the folder. Try again.",
     "readout": {
       "projectUnit": "project",
