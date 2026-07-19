@@ -1677,8 +1677,7 @@
         "kindElementHint": "A small piece inside a capability — screen / button / API"
       },
       "atlasNode": {
-        "ephemeralBadge": "draft",
-        "ephemeralUnsavedHint": "↳ Node detail ▸ Save"
+        "ephemeralBadge": "draft"
       }
     },
     "insights": {

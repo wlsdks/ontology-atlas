@@ -6,6 +6,14 @@ import {
   type EdgeProps,
 } from "@xyflow/react";
 
+/**
+ * vault↔vault edge — smoothstep 라우팅은 feat/builder-core 에서도 그대로
+ * 유지(변경 없음, 아래 route helper 들이 owner-approved 값). 시안 계약이
+ * 요구하는 실선/파선/점선 trace 문법(contains=실선, depends/relates=파선,
+ * evidence=점선) 은 이 컴포넌트가 아니라 `use-vault-graph-flow.ts` 의
+ * `edgeStrokeStyleByKey` 가 `style` prop 으로 계산해 넘긴다 — VaultEdge 는
+ * 그 style 을 그대로 BaseEdge 에 전달하는 라우팅 전용 레이어.
+ */
 interface VaultEdgeData {
   semanticType?: "containment" | "relation";
 }
