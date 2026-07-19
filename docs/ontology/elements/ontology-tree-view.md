@@ -7,7 +7,17 @@ domain: views
 
 # Ontology Tree View
 
-`src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx` renders the browse tree used by `/ontology` to inspect the local frontmatter graph as a readable project -> domain -> capability -> element hierarchy.
+> **Superseded (B3 허브가 곧 지도, 2026-07).** `src/widgets/ontology-tree-view/`
+> (and its sibling `src/widgets/ontology-ego-graph/`) is physically deleted —
+> commit `3fa2c2508` retired `/ontology`'s tree/ego hub entirely (`/ontology`
+> now redirects to `/topology?index=expanded`). The browse/inspect job this
+> element described is now split across the topology map itself (overview
+> semantic-zoom) and `TopologyIndexPanel` (source-concept counts, search,
+> selection). The body below is kept as historical design rationale (density
+> contract, row-label trimming, expand/collapse disclosure) — the concrete
+> component name (`OntologyTreeView.tsx`) below is stale.
+
+`src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx` rendered the browse tree used by the former `/ontology` tree hub to inspect the local frontmatter graph as a readable project -> domain -> capability -> element hierarchy.
 
 The tree keeps the ontology model actionable for both humans and AI coding agents: rows use concise titles and a short selected-state label in the main surface, while the stable slug used by browse, save/edit, and validation handoffs stays available in tooltips and handoff panels. Inline search, sort controls, keyboard navigation, selected-node handles, changed badges, orphan rows, and projection warnings keep graph state inspectable without leaving the workbench.
 
