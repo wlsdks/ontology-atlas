@@ -1,6 +1,6 @@
 import type { Project } from '@/entities/project';
 import type { VaultDoc, VaultManifest } from '../model/types';
-import { computeProjectSlug } from './project-slug';
+import { computeProjectSlug, isProjectVaultDoc } from './project-slug';
 
 /**
  * vault manifest 에서 *project 노드* 를 Project 도메인 모델로 매핑.
@@ -19,9 +19,7 @@ import { computeProjectSlug } from './project-slug';
 export function deriveProjectsFromVault(manifest: VaultManifest): Project[] {
   const projects: Project[] = [];
   for (const doc of manifest.docs) {
-    const isProjectKind = doc.frontmatter?.kind === 'project';
-    const isLegacyPath = doc.slug.startsWith('projects/');
-    if (!isProjectKind && !isLegacyPath) continue;
+    if (!isProjectVaultDoc(doc)) continue;
     const project = mapVaultDocToProject(doc);
     if (project) projects.push(project);
   }

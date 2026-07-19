@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectDetailPage } from "./ProjectDetailPage";
 
@@ -84,6 +84,7 @@ const mocks = vi.hoisted(() => ({
   insightNodes: [] as unknown[],
   insightEdges: [] as unknown[],
   canEdit: false,
+  vaultBody: null as string | null,
 }));
 
 vi.mock("@/features/vault-ontology", () => ({
@@ -102,6 +103,7 @@ vi.mock("@/features/project-data-source", () => ({
     mode: "static",
     updateProject: vi.fn(),
   }),
+  useProjectBody: () => ({ body: mocks.vaultBody }),
 }));
 
 function baseProject() {
@@ -132,6 +134,10 @@ function renderPage(overrides: { related?: ReturnType<typeof baseProject>[] } = 
 }
 
 describe("ProjectDetailPage", () => {
+  beforeEach(() => {
+    mocks.vaultBody = null;
+  });
+
   it("renders the hero metric strip with real projectIds-derived counts", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
@@ -229,5 +235,49 @@ describe("ProjectDetailPage", () => {
     renderPage();
 
     expect(screen.queryByTestId("project-detail-domain-card")).not.toBeInTheDocument();
+  });
+
+  it("shows the empty-body hint when neither project.detail nor the vault body is available (pre-fix behavior preserved)", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = false;
+    mocks.vaultBody = null;
+    renderPage();
+
+    expect(screen.getByTestId("project-detail-body-empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("project-detail-body-content")).not.toBeInTheDocument();
+  });
+
+  it("renders the real project.md body as a fallback when project.detail (the frontmatter field) is unset — the bug this fix closes", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = false;
+    mocks.vaultBody = "## Real project.md content\n\nThis is the actual markdown body.";
+    renderPage();
+
+    const content = screen.getByTestId("project-detail-body-content");
+    expect(content).toHaveTextContent("Real project.md content");
+    expect(content).toHaveTextContent("This is the actual markdown body.");
+    expect(screen.queryByTestId("project-detail-body-empty")).not.toBeInTheDocument();
+  });
+
+  it("prefers the explicit frontmatter detail field over the vault body fallback when both exist", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = false;
+    mocks.vaultBody = "Vault body text that should be shadowed.";
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <ProjectDetailPage
+          slug={SLUG}
+          initialProject={{ ...baseProject(), detail: "Explicit detail field wins." }}
+          initialRelated={[]}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    const content = screen.getByTestId("project-detail-body-content");
+    expect(content).toHaveTextContent("Explicit detail field wins.");
+    expect(content).not.toHaveTextContent("Vault body text that should be shadowed.");
   });
 });

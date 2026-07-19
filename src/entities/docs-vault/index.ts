@@ -28,6 +28,12 @@ export {
 } from './lib/build-vault-markdown';
 export { deriveOntologyFromVault } from './lib/derive-ontology-from-vault';
 export { deriveProjectsFromVault } from './lib/derive-projects-from-vault';
+export {
+  computeProjectSlug,
+  isProjectVaultDoc,
+  findProjectVaultDoc,
+} from './lib/project-slug';
+export { extractProjectBody } from './lib/resolve-project-body';
 export type {
   OntologyStubEdge,
   OntologyStubNode,
