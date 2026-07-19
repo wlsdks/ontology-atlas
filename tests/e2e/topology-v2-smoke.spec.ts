@@ -60,14 +60,20 @@ test.describe("topology-map-v2 smoke", () => {
     // Retry the keypress rather than a single press-then-assert: right after
     // a fresh navigation, `next dev`'s React StrictMode double-invokes the
     // window keydown effect (mount → unmount → mount), so the very first
-    // Escape can land on a listener mid-resubscription and no-op. The second
-    // press always lands — real users type once and it works because they're
-    // not racing the initial mount. `toPass` re-runs press+assert until the
-    // deselect actually lands, bounded so a genuine regression still fails.
+    // Escape can land on a listener mid-resubscription and no-op (confirmed
+    // live — 1st Escape leaves the panel, 2nd closes it + drops `?p=`).
+    // Production static export has no StrictMode double-invoke, so a real
+    // user's single Escape works.
+    //
+    // The inner assertion MUST use a short timeout: `toHaveCount` defaults to
+    // the global 15s expect timeout, which would swallow the entire `toPass`
+    // budget on the first no-op press so the retry never fires a 2nd press.
+    // A 1s inner window lets `toPass` loop back and press again.
     await expect(async () => {
       await page.keyboard.press("Escape");
-      await expect(detailPanel).toHaveCount(0);
+      await expect(detailPanel).toHaveCount(0, { timeout: 1_000 });
     }).toPass({ timeout: 15_000 });
+    expect(new URL(page.url()).searchParams.get("p")).toBeNull();
   });
 
   test("opening the doc and going back keeps the map selection", async ({ page }) => {

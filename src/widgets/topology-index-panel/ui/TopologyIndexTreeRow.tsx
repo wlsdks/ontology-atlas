@@ -110,7 +110,13 @@ export function TopologyIndexTreeRow({
             event.stopPropagation();
             if (hasChildren) onToggleOpen(node.id);
           }}
-          aria-hidden={!hasChildren}
+          // 셰브론은 마우스 어포던스일 뿐 AT 에겐 중복이다 — 펼침 상태와
+          // 조작은 바깥 role="treeitem" 행이 aria-expanded + ArrowRight/Left
+          // 로 이미 노출한다(WAI-ARIA tree 패턴). 이름 없는 버튼으로 a11y
+          // 트리에 남으면 스크린리더가 정체불명 버튼을 21개 읽는다
+          // (aria-audit e2e 가 잡은 실결함). tabIndex=-1 이라 포커스 순서에도
+          // 없으므로 presentational 로 감추는 것이 맞다.
+          aria-hidden="true"
           tabIndex={-1}
           className={`flex items-center justify-center text-[color:var(--topology-v2-panel-text-quaternary)] transition-transform ${
             hasChildren ? "" : "invisible"

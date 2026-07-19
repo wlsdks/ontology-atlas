@@ -34,6 +34,18 @@ Playwright e2e 139개 중 108개가 실패하고 있었다 — 전부 이미 삭
   chromium 하나로 돌려 같은 부패가 재발하지 않게 CI 게이트를 건다.
 - `.claude/rules/testing.md` 에 규율 한 줄 추가: UI 표면/렌더러를 삭제하면
   같은 PR 에서 e2e spec 도 함께 스윕한다.
+- **실제 a11y 결함 1건 수정** — 지도 INDEX 트리 행의 셰브론 버튼 21개가
+  접근성 이름 없이 a11y 트리에 남아 스크린리더가 정체불명 버튼을 읽었다
+  (aria-audit e2e 가 잡음). 바깥 `role="treeitem"` 행이 `aria-expanded` +
+  화살표 키로 펼침을 이미 노출하므로 셰브론은 AT 에 중복 — WAI-ARIA tree
+  패턴대로 `aria-hidden` presentational 처리.
+- **flakiness 근절** — e2e 가 `next dev`(Turbopack) 를 상대하는 데서 오는
+  세 아티팩트(라우트 온디맨드 컴파일 지연 · StrictMode 이중 마운트로 첫
+  Escape no-op · 하이드레이션 중복 렌더)를 정면 처리: `global-setup.ts`
+  라우트 워밍업 + expect 타임아웃 15초 + Escape 재시도의 내부 단언 짧은
+  타임아웃(재시도가 실제로 돌게) + CI 한정 2회 재시도. 전부 정적 export
+  엔 없는 dev-only 아티팩트라 제품 결함이 아니며, 재시도는 환경 편차만
+  흡수하고 진짜 회귀는 재시도 후에도 실패한다.
 
 
 ## 2026-07-19 — 문서함 상단 그래프 census 제거 (docs-chrome-round 마감)
