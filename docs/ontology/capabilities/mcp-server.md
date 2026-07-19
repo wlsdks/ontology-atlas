@@ -1,16 +1,16 @@
 ---
 slug: capabilities/mcp-server
 kind: capability
-title: MCP Server (24 tools)
+title: MCP Server (25 tools)
 domain: ai-agent-partner
 dependencies: [capabilities/frontmatter-to-ontology]
 elements: [mcp/scripts/json-rpc-lines.mjs, mcp/scripts/verify.mjs, mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/integration.test.mjs, mcp/src/json-rpc-lines.test.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/suggestions.mjs, mcp/src/suggestions.test.mjs, mcp/src/vault.mjs, mcp/src/verify-script.test.mjs, scripts/dogfood-mcp-walk.mjs, scripts/dogfood-mcp-walk.test.mjs, scripts/lib/test-name-pattern.mjs, scripts/lib/test-name-pattern.test.mjs, scripts/run-focused-node-test.mjs, scripts/run-focused-node-test.test.mjs]
 relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 ---
 
-# MCP Server (24 tools)
+# MCP Server (25 tools)
 
-`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버. 24 도구 노출 (read 16 + write 8):
+`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버. 25 도구 노출 (read 16 + write 9):
 
 | 도구 | 동작 |
 |---|---|
@@ -118,10 +118,11 @@ containment-specific check 만 skip 한다.
 | `delete_concept` | **⚠ DESTRUCTIVE** — 노드 영구 삭제. 안전 가드 2단: ① `confirm:true` 미지정 시 dry-run, ② backlinks 있으면 throw — `force:true` 만 강행. missing slug 는 `list_concepts()` / `find_evidence(query)` 복구 안내와 유사 slug 후보를 함께 반환한다. confirmed delete 응답은 복구용 `captured.frontmatter` / full `body` 와 prose-aware 빠른 확인용 `bodyExcerpt`, `backlinksAtDelete[]`, compact `postWriteMaintenance` (`byPhase`·`bySeverity`·`byKind` bucket / `score` / executable `proposedAction`) 를 함께 반환한다. |
 | `rename_concept` | **⚠ MULTI-FILE (R11)** — slug 변경 + 모든 backlink 의 array/body 자동 redirect. dry-run default. `newSlug` 가 이미 있으면 throw 하고, 의식적으로 `overwrite:true` 를 준 경우만 대체. missing source slug 는 `list_concepts()` / `find_evidence(query)` 복구 안내와 유사 slug 후보를 함께 반환한다. tail-only 참조도 새 tail 로 일관 갱신. `find_backlinks` + N 회 `patch_concept` 의 atomic 대체. confirmed rename 은 compact `postWriteMaintenance` 반환 (`byPhase`·`bySeverity`·`byKind` bucket / `score` / executable `proposedAction` 포함). |
 | `merge_concepts` | **⚠ DESTRUCTIVE MULTI-FILE (R11)** — `fromSlug` 의 backlink 를 `intoSlug` 로 redirect 후 fromSlug.md 삭제. `intoSlug` 의 frontmatter/body 는 자동 합치지 않음 (필요 시 후속 `patch_concept`). dry-run default. missing `fromSlug` / `intoSlug` 는 `list_concepts()` / `find_evidence(query)` 복구 안내와 유사 slug 후보를 함께 반환한다. confirmed merge 는 `capturedFrom.frontmatter` / full `body` / prose-aware `bodyExcerpt`, backlink redirect plan, compact `postWriteMaintenance` (`byPhase`·`bySeverity`·`byKind` bucket / `score` / executable `proposedAction`) 를 함께 반환한다. |
+| `absorb_document` | **⚠ DESTRUCTIVE (external file), Slice 0** — CLAUDE.md/AGENTS.md 형태의 markdown 파일을 typed vault 노드로 흡수해 tech lead 의 기존 agent-instruction 파일이 이중 관리되지 않게 한다. `##` 섹션 단위로 분리 — rule/policy/decision 섹션은 `role: policy` frontmatter 를 가진 `kind: document` 노드로, architecture/component 섹션은 *제안만* (자동 작성 없음), injection-suspect 패턴(Tier 1 — instruction-hijack 문구, shell/SQL fragment) 섹션은 카테고리와 무관하게 흡수 대상에서 제외한다. `confirm:true` 없이는 dry-run(분류 계획만, 쓰기 없음), `confirm:true` 지정 시 흡수된 섹션을 기록하고 원본은 `<file>.pre-absorb.bak` 로 백업한 뒤 흡수되지 않은 모든 섹션을 그대로 보존하는 slim pointer 로 재작성한다 (내용 파괴 없음). 기존 backup 을 덮어쓰지 않고 throw. CLI 대응: `ontology-atlas absorb <file...> [--write]`. |
 
 환경변수 `OATLAS_VAULT` 로 vault 위치 지정. 등록 가이드: `mcp/README.md`. 1줄 verify:
-`npm run verify` (mcp/) — parser smoke, server boot, 24-tool inventory
-(`16 read + 8 write` split 포함), strict argument schema 와 graph-query enum schema,
+`npm run verify` (mcp/) — parser smoke, server boot, 25-tool inventory
+(`16 read + 9 write` split 포함), strict argument schema 와 graph-query enum schema,
 strict schema/runtime unknown-tool, unknown-argument, and invalid-enum rejection,
 unknown-tool / unknown-argument structured repair fields (`receivedTool`, `receivedArgument`, `unknownArguments`, `suggestion`, `allowedTools`, `allowedArguments` — 단일 unknown argument 도 `unknownArguments` 배열 포함),
 `add_concepts` / `add_relations` row-isolation runtime smoke (`concepts[n]` / `relations[n]` row label, `add_concepts` duplicate slug structured `rowName` / `firstSeenAt` 포함),
@@ -188,7 +189,7 @@ human-readable text hint 와 MCP client 용 repair payload 가 따로 drift 나�
 정확히 비교해 MCP client 가 받을 repair 후보 목록이 축약되거나 순서 drift 나는 것을 막는다.
 JSON-RPC integration test 도 unknown tool 의 전체 `allowedTools` 와 invalid enum / filter repair 의
 전체 `allowedValues` 를 직접 비교해 runtime 응답 contract 를 설치 verify 와 같은 수준으로 고정한다.
-dogfood fixture 도 strict enum / unknown-tool repair summary 에 전체 operation enum 과 24-tool inventory 를 사용해
+dogfood fixture 도 strict enum / unknown-tool repair summary 에 전체 operation enum 과 25-tool inventory 를 사용해
 요약 출력의 `allowed N` 이 실제 MCP surface 크기와 함께 움직이게 한다.
 dogfood walk 의 strict tool-name / argument / multi-argument / enum / filter 섹션은 `structuredContent` 의
 repair field 를 읽어 `arg lmit->limit`, `args lmit->limit, summry->summary`,
@@ -461,7 +462,7 @@ error message 를 바로 출력한다.
 `mcp/src/integration.test.mjs` 와 `mcp/src/verify-script.test.mjs` 는 실제
 `tools/list` registry, `verify.mjs` 의 `EXPECTED_TOOLS`, `mcp/package.json`
 tool count metadata, 그리고 `initialize.instructions` 의 agent-facing inventory 가
-서로 drift 나지 않도록 같은 24-tool 목록을 교차 검증한다.
+서로 drift 나지 않도록 같은 25-tool 목록을 교차 검증한다.
 installed verify 도 `tools/list` schema 의 `additionalProperties:false` 와
 required `query_ontology.operation`, `operation` / `targetOperation` enum 이
 runtime allow-list 와 일치하는지 검사해, MCP client schema 와 실제 graph engine
@@ -868,7 +869,7 @@ installed verify 양쪽에서 잡는다. 같은 gate 는
 direct verify help 와 CLI wrapper help 도 이 `list_concepts.kind` / `query_concepts.kind` / `query_concepts.has-key` / `find_neighbors.types` / `find_orphans.kind` / `find_orphans.excludeKinds` / `match_nodes.kind` / `match_nodes.sort` /
 `recommend_relations.kind` / `match_edges.type` / `match_edges.fromKind` / `match_edges.toKind` typo and unsupported-kind rejection 을 명시해, 서버를
 띄우기 전에도 graph filter typo 가 빈 결과로 숨지 않는다는 계약을 볼 수 있게 한다.
-`tools/list` 의 `annotations.title` 표시명과 `annotations.readOnlyHint` 도 16 read / 8 write split 과
+`tools/list` 의 `annotations.title` 표시명과 `annotations.readOnlyHint` 도 16 read / 9 write split 과
 일치하게 노출하고, destructive multi-file/delete 도구는 `annotations.destructiveHint`,
 retry-safe relation writer 는 `annotations.idempotentHint`, 모든 도구는 local
 vault-only 경계인 `annotations.openWorldHint:false` 를 노출한다.
@@ -876,7 +877,7 @@ verify / dogfood 가 같은 helper 로 annotation drift 를 막아 agent 가
 사람이 읽는 표시명 / 읽기 전용 탐색 / 위험한 쓰기 / 안전한 재시도 / 외부-world 접근 여부를
 tool metadata 만으로 구분할 수 있게 한다.
 installed verify 의 `tools/list` 성공 라인도 같은 annotation summary helper 를 사용해
-`24/24 titled; 16/16 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 24/24 local-only`
+`25/25 titled; 16/16 read; 9/9 write; 4/4 destructive; 2/2 idempotent; 25/25 local-only`
 coverage 를 직접 출력한다. source dogfood 와 설치 verify 가 같은 사람이 읽는 증거를
 공유하므로 annotation gate 가 통과했지만 로그에서는 숨는 상태를 줄인다.
 inventory name gate 도 성공 로그에서 `tools/list inventory names — missing/extra/duplicate/invalid checks passed`
