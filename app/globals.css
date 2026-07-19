@@ -843,7 +843,7 @@
     /*
      * 문서함 크롬 재구성 (docs-chrome-round, design-prescription.md §③-7).
      * 헤더 3존·목록 접기·점검 모달이 공유하는 신규 토큰 4종. 신규 채색 0 —
-     * 표면/보더/그림자는 위 --chrome-*/--color-overlay-2/--color-indigo-brand
+     * 표면/보더/그림자는 위 --chrome-* · --color-overlay-2 · --color-indigo-brand
      * 재사용. 각 값의 product reason 은 옆 주석 참조.
      */
     /* 탭 스트립(zone-c, 슬라이스 B) 가독 최소폭 · 과점 최대폭. 마커
