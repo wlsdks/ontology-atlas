@@ -90,6 +90,35 @@ describe("computeFreshnessSummary", () => {
 
   it("returns empty results for an empty graph", () => {
     const summary = computeFreshnessSummary([], [], new Map(), NOW);
-    expect(summary).toEqual({ domainRows: [], recent: [], staleCount: 0 });
+    expect(summary).toEqual({
+      domainRows: [],
+      recent: [],
+      staleCount: 0,
+      weeklyTotals: new Array(12).fill(0),
+    });
+  });
+
+  it("sums real per-domain update counts into a single weekly trend series (신선도 탭 스파크라인 진실원)", () => {
+    const nodes = [
+      node("domain:views", "domain", { evidenceIds: ["domain-views"] }),
+      node("domain:core", "domain", { evidenceIds: ["domain-core"] }),
+      node("capability:a", "capability", { evidenceIds: ["capability-a"] }),
+      node("capability:b", "capability", { evidenceIds: ["capability-b"] }),
+    ];
+    const edges = [
+      edge("domain:views", "capability:a", "contains"),
+      edge("domain:core", "capability:b", "contains"),
+    ];
+    const docs = new Map([
+      ["capability-a", "2026-07-17T00:00:00.000Z"], // 1 day ago -> current week
+      ["capability-b", "2026-07-16T00:00:00.000Z"], // 2 days ago -> current week
+    ]);
+
+    const summary = computeFreshnessSummary(nodes, edges, docs, NOW);
+
+    expect(summary.weeklyTotals).toHaveLength(12);
+    // both updates land in the current (last) week bucket, summed across domains
+    expect(summary.weeklyTotals[11]).toBe(2);
+    expect(summary.weeklyTotals.slice(0, 11).every((n) => n === 0)).toBe(true);
   });
 });

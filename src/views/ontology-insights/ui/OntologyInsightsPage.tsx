@@ -227,6 +227,8 @@ export function OntologyInsightsPage() {
     recentUpdatesTitle: t("recentUpdatesTitle"),
     noRecentUpdates: t("noRecentUpdates"),
     staleCountLabel: t("staleCountLabel"),
+    trendTitle: t("trendTitle"),
+    trendCaption: t("trendCaption", { weeks: FRESHNESS_WINDOW_WEEKS }),
   };
 
   return (
@@ -341,6 +343,7 @@ export function OntologyInsightsPage() {
                 domainRows={freshness.domainRows}
                 recent={freshness.recent}
                 staleCount={freshness.staleCount}
+                weeklyTotals={freshness.weeklyTotals}
                 kindLabel={kindLabel}
               />
             ) : null}

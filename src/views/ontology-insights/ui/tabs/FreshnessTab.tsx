@@ -20,12 +20,17 @@ export interface FreshnessTabLabels {
   recentUpdatesTitle: string;
   noRecentUpdates: string;
   staleCountLabel: string;
+  trendTitle: string;
+  trendCaption: string;
 }
 
 export interface FreshnessTabProps {
   domainRows: DomainFreshnessRow[];
   recent: RecentUpdateRow[];
   staleCount: number;
+  /** 전 도메인 합산 주간 갱신 건수, 히트스트립과 같은 12주 창 —
+   * `computeFreshnessSummary` 가 이미 계산한 실데이터 (`freshness.ts`). */
+  weeklyTotals: number[];
   kindLabel: (kind: string) => string;
   labels: FreshnessTabLabels;
 }
@@ -35,7 +40,7 @@ export interface FreshnessTabProps {
  * 하드코딩 배열이 아니라 `computeFreshnessSummary` 가 실제 vault 문서
  * `updatedAt` 에서 집계한 값. 이번 주 셀만 인디고, 나머지는 중립 램프.
  */
-export function FreshnessTab({ domainRows, recent, staleCount, kindLabel, labels }: FreshnessTabProps) {
+export function FreshnessTab({ domainRows, recent, staleCount, weeklyTotals, kindLabel, labels }: FreshnessTabProps) {
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-2">
       <section
@@ -98,6 +103,13 @@ export function FreshnessTab({ domainRows, recent, staleCount, kindLabel, labels
           <i className="h-2.5 w-2.5 flex-none rounded-sm" style={{ backgroundColor: "var(--color-indigo-brand)" }} />
           <span>{labels.currentWeek}</span>
         </div>
+        <div className="mt-3 border-t border-[color:var(--color-divider)] pt-3">
+          <div className="flex items-baseline gap-2">
+            <span className="text-[12px] font-medium text-[color:var(--color-text-secondary)]">{labels.trendTitle}</span>
+          </div>
+          <FreshnessTrendSparkline weeklyTotals={weeklyTotals} />
+          <p className="mt-1.5 text-[10px] text-[color:var(--color-text-quaternary)]">{labels.trendCaption}</p>
+        </div>
       </section>
 
       <section
@@ -142,5 +154,43 @@ export function FreshnessTab({ domainRows, recent, staleCount, kindLabel, labels
         </div>
       </section>
     </div>
+  );
+}
+
+const SPARKLINE_WIDTH = 240;
+const SPARKLINE_HEIGHT = 28;
+const SPARKLINE_PAD = 2;
+
+/**
+ * 주간 갱신 건수 스파크라인 — `computeFreshnessSummary` 가 실제 문서
+ * 갱신일에서 집계한 `weeklyTotals` 를 그대로 그린다(장식용 난수 없음).
+ * 단일 인디고 라인 + 옅은 채움, 히트스트립과 같은 12주 창.
+ */
+function FreshnessTrendSparkline({ weeklyTotals }: { weeklyTotals: number[] }) {
+  if (weeklyTotals.length === 0) return null;
+  const max = Math.max(1, ...weeklyTotals);
+  const stepX = weeklyTotals.length > 1 ? (SPARKLINE_WIDTH - SPARKLINE_PAD * 2) / (weeklyTotals.length - 1) : 0;
+  const points = weeklyTotals.map((value, i) => {
+    const x = SPARKLINE_PAD + i * stepX;
+    const y = SPARKLINE_PAD + (1 - value / max) * (SPARKLINE_HEIGHT - SPARKLINE_PAD * 2);
+    return { x: Number(x.toFixed(2)), y: Number(y.toFixed(2)) };
+  });
+  const linePath = points.map((p) => `${p.x},${p.y}`).join(" ");
+  const areaPath = `${SPARKLINE_PAD},${SPARKLINE_HEIGHT - SPARKLINE_PAD} ${linePath} ${
+    points[points.length - 1].x
+  },${SPARKLINE_HEIGHT - SPARKLINE_PAD}`;
+
+  return (
+    <svg
+      width={SPARKLINE_WIDTH}
+      height={SPARKLINE_HEIGHT}
+      viewBox={`0 0 ${SPARKLINE_WIDTH} ${SPARKLINE_HEIGHT}`}
+      aria-hidden="true"
+      className="mt-1.5 w-full max-w-60"
+      preserveAspectRatio="none"
+    >
+      <polygon points={areaPath} fill="rgba(94, 106, 210, 0.14)" stroke="none" />
+      <polyline points={linePath} fill="none" stroke="var(--color-indigo-brand)" strokeWidth={1.4} strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
   );
 }

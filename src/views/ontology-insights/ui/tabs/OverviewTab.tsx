@@ -1,4 +1,5 @@
 import { TopologyV2KindGlyph } from "@/shared/ui";
+import { getOntologyKindTone } from "@/entities/ontology-class";
 import { InsightsHeroCensus, type InsightsHeroCensusLabels } from "../parts/InsightsHeroCensus";
 import type { CensusHealthSummary } from "../../lib/census-health";
 import type { DomainCapacityRow } from "../../lib/domain-capacity";
@@ -26,8 +27,15 @@ export interface OverviewTabProps {
 
 /**
  * 탭1 개요 — insights-final.html frame 1. 히어로 계기(개념/관계/건강) +
- * kind 분포(글리프+대형 미터) + 도메인 용량(대형 미터). RATIO-SYSTEM §2:
- * 섹션 갭 28px, 카드 갭 20px, 카드는 `flex:1` 로 세로를 채운다(빈 밴드 금지).
+ * kind 분포(색 스택 바 + 글리프+대형 미터) + 도메인 용량(capability/element
+ * 2 세그먼트 스택 미터). RATIO-SYSTEM §2: 섹션 갭 28px, 카드 갭 20px, 카드는
+ * `flex:1` 로 세로를 채운다(빈 밴드 금지).
+ *
+ * 색은 `getOntologyKindTone` (Sigma/tree chip/builder palette 가 이미 쓰는
+ * kind 톤 — indigo/teal/amber/sage/brick) 그대로 재사용한다. design.md 헌장:
+ * "ontology kind 색상은 data mark 로 허용, panel 에서는 compact
+ * marker/swatch + label/icon 으로 낮춘다" — 여기서는 얇은 스택 바 세그먼트가
+ * 그 compact marker 역할.
  */
 export function OverviewTab({
   totalNodes,
@@ -59,10 +67,24 @@ export function OverviewTab({
           className="flex min-h-0 min-w-0 flex-col rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
         >
           <CardHead label={labels.kindCensusTitle} gcap="kind census" count={totalNodes} />
-          <div className="mt-3.5 flex flex-1 flex-col justify-evenly gap-1">
+          <div
+            aria-hidden
+            className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full border border-[color:var(--color-divider)]"
+          >
+            {kindRows.map((row) => {
+              const share = totalNodes > 0 ? row.count / totalNodes : 0;
+              if (share <= 0) return null;
+              return (
+                <span
+                  key={row.kind}
+                  style={{ flexGrow: share, backgroundColor: getOntologyKindTone(row.kind).fill }}
+                />
+              );
+            })}
+          </div>
+          <div className="mt-3 flex flex-1 flex-col justify-evenly gap-1">
             {kindRows.map((row) => {
               const width = kindMax > 0 ? Math.max(2, Math.round((row.count / kindMax) * 100)) : 0;
-              const hot = row.count === kindMax && kindMax > 0;
               return (
                 <div key={row.kind} className="flex items-center gap-3 py-0.5">
                   <span className="flex w-[136px] flex-none items-center gap-2 text-[14px] text-[color:var(--color-text-secondary)]">
@@ -72,10 +94,7 @@ export function OverviewTab({
                   <span className="h-2 flex-1 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
                     <span
                       className="block h-full rounded-full"
-                      style={{
-                        width: `${width}%`,
-                        backgroundColor: hot ? "var(--color-indigo-brand)" : "var(--color-overlay-3)",
-                      }}
+                      style={{ width: `${width}%`, backgroundColor: getOntologyKindTone(row.kind).fill }}
                     />
                   </span>
                   <span className="w-10 flex-none text-right font-mono text-[15px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
@@ -100,21 +119,22 @@ export function OverviewTab({
           ) : (
             <div className="mt-3.5 flex flex-1 flex-col justify-evenly gap-1">
               {domainRows.map((row) => {
-                const width = domainMax > 0 ? Math.max(2, Math.round((row.total / domainMax) * 100)) : 0;
-                const hot = row.total === domainMax && domainMax > 0;
+                const capWidth = domainMax > 0 ? (row.capabilityCount / domainMax) * 100 : 0;
+                const elWidth = domainMax > 0 ? (row.elementCount / domainMax) * 100 : 0;
                 return (
                   <div key={row.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-0.5">
                     <span className="flex w-full shrink-0 items-center gap-2 truncate text-[14px] text-[color:var(--color-text-secondary)] sm:w-[220px]">
                       <TopologyV2KindGlyph kind="domain" size={15} />
                       <span className="truncate">{row.title}</span>
                     </span>
-                    <span className="h-2 min-w-[48px] flex-1 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
+                    <span className="flex h-2 min-w-[48px] flex-1 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
                       <span
-                        className="block h-full rounded-full"
-                        style={{
-                          width: `${width}%`,
-                          backgroundColor: hot ? "var(--color-indigo-brand)" : "var(--color-overlay-3)",
-                        }}
+                        className="block h-full"
+                        style={{ width: `${capWidth}%`, backgroundColor: getOntologyKindTone("capability").fill }}
+                      />
+                      <span
+                        className="block h-full"
+                        style={{ width: `${elWidth}%`, backgroundColor: getOntologyKindTone("element").fill }}
                       />
                     </span>
                     <span className="flex-none text-right">

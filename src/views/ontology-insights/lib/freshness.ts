@@ -43,6 +43,10 @@ export interface FreshnessSummary {
    * 갱신일을 모르는 노드는 "모른다"이지 "오래됐다"가 아니므로 집계에서 제외 — 데이터
    * 없는 걸 부정확한 값으로 단정 짓지 않는다. */
   staleCount: number;
+  /** 전 도메인 합산 주간 갱신 건수 — 히트스트립과 같은 12주 창, 같은 카운트
+   * 소스(각 도메인의 주간 버킷을 합산). 신선도 탭 스파크라인의 진실원 —
+   * 하드코딩 배열이 아니라 이 함수가 이미 계산한 값을 그대로 노출한다. */
+  weeklyTotals: number[];
 }
 
 function levelFromCount(count: number): FreshnessLevel {
@@ -100,6 +104,7 @@ export function computeFreshnessSummary(
   const nowMs = referenceDate.getTime();
   const countsByDomain = new Map<string, number[]>();
   const latestByDomain = new Map<string, number>();
+  const weeklyTotals = new Array(HEATSTRIP_WEEKS).fill(0);
   for (const domain of domainNodes) {
     countsByDomain.set(domain.id, new Array(HEATSTRIP_WEEKS).fill(0));
   }
@@ -114,6 +119,7 @@ export function computeFreshnessSummary(
     const bucketFromOldest = HEATSTRIP_WEEKS - 1 - weeksAgo;
     if (bucketFromOldest >= 0 && bucketFromOldest < HEATSTRIP_WEEKS) {
       counts[bucketFromOldest] += 1;
+      weeklyTotals[bucketFromOldest] += 1;
     }
     const currentLatest = latestByDomain.get(domainId);
     if (currentLatest === undefined || updatedMs > currentLatest) {
@@ -167,5 +173,5 @@ export function computeFreshnessSummary(
     return daysAgo > STALE_DAYS;
   }).length;
 
-  return { domainRows, recent, staleCount };
+  return { domainRows, recent, staleCount, weeklyTotals };
 }
