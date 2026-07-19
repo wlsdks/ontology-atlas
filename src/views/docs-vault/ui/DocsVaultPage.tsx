@@ -15,19 +15,14 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { AnimatePresence } from 'framer-motion';
 import {
-  Bot,
-  Check,
-  ChevronDown,
-  Clipboard,
-  Download,
+  ClipboardCheck,
   FilePlus,
   FolderCog,
   HardDrive,
   Menu,
-  Network,
   Package,
+  PanelLeft,
   PanelRight,
-  PanelTop,
   Search,
   Settings2,
   X,
@@ -40,7 +35,6 @@ import {
 } from '@/features/docs-vault-local';
 import { VaultToolsMenu } from '@/widgets/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
-import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
@@ -49,12 +43,8 @@ import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
 } from '@/shared/lib/tauri-vault-fs';
-import {
-  AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
-  AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
-} from '@/shared/lib/ontology-tree';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
-import { StaggeredFadeIn, Tooltip, useToast } from '@/shared/ui';
+import { Tooltip, useToast } from '@/shared/ui';
 // 추출된 page-local helpers.
 import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
 import { useAdvancedMenu } from '../lib/use-advanced-menu';
@@ -131,6 +121,9 @@ import { DocReadingOutlineRail } from "./parts/DocReadingOutlineRail";
 import { BackToTopButton } from "./parts/BackToTopButton";
 import { SampleNotice } from "./parts/SampleNotice";
 import { EmptyState } from "./parts/EmptyState";
+import { DocsHeaderTile } from "./parts/DocsHeaderTile";
+import { DocsVaultVaultChip } from "./parts/DocsVaultVaultChip";
+import { DocsVaultAuditModal } from "./parts/DocsVaultAuditModal";
 import {
   DOGFOOD_VAULT_PATH,
   DOGFOOD_VAULT_PATH_CANDIDATES,
@@ -140,173 +133,19 @@ import {
   parseDocsVaultView as parseView,
   isDocsVaultLocalSourceDisabled,
   persistEditorSave,
-  readStoredContractOpen,
+  readStoredListCollapsed,
   readStoredSource,
   scheduleStateSync,
   shouldShowDogfoodVaultHint,
   shouldShowDesktopVaultWelcome,
   shouldSwitchToDogfoodVault,
   shouldHonorLocalIntent,
-  storeContractOpen,
+  storeListCollapsed,
   storeSource,
   type DocsVaultSource as Source,
   type DocsVaultView,
 } from "../lib/persistence";
 import type { LocalFsHandleRecord } from "@/entities/local-fs-handle";
-
-const SOURCE_VAULT_RUNTIME_REPLAY_MARKERS = [
-  "relation_name_parity",
-  "pattern_walk/project_map",
-] as const;
-
-function DocsVaultSourceContractBar({
-  open,
-  manifest,
-  nodeCount,
-  edgeCount,
-  graphHref,
-  isLocalSourceLoaded,
-  t,
-}: {
-  open: boolean;
-  manifest: VaultManifest;
-  nodeCount: number;
-  edgeCount: number;
-  graphHref: string;
-  isLocalSourceLoaded: boolean;
-  t: ReturnType<typeof useTranslations>;
-}) {
-  const toast = useToast();
-  const { state: gateCopyState, copy: copyGate } = useCopyFeedback(1500);
-  const copiedGate = gateCopyState === "copied";
-  const sourceLabel =
-    isLocalSourceLoaded
-      ? t('sourceContract.filesLocalValue', { count: manifest.docs.length })
-      : t('sourceContract.filesSampleValue', { count: manifest.docs.length });
-  const cells = [
-    {
-      key: 'files',
-      icon: HardDrive,
-      label: t('sourceContract.filesLabel'),
-      value: sourceLabel,
-      body: t('sourceContract.filesBody'),
-      chip: t('sourceContract.filesChip'),
-      href: '/docs/',
-      cta: t('sourceContract.filesCta'),
-    },
-    {
-      key: 'graph',
-      icon: Network,
-      label: t('sourceContract.graphLabel'),
-      value: t('sourceContract.graphValue', {
-        nodes: nodeCount,
-        edges: edgeCount,
-      }),
-      body: t('sourceContract.graphBody'),
-      chip: t('sourceContract.graphChip'),
-      href: graphHref,
-      cta: t('sourceContract.graphCta'),
-    },
-    {
-      key: 'agent',
-      icon: Bot,
-      label: t('sourceContract.agentLabel'),
-      value: t('sourceContract.agentValue', {
-        count: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
-      }),
-      body: t('sourceContract.agentBody'),
-      chip: t('sourceContract.agentChip'),
-      href: '/ontology/insights/',
-      cta: t('sourceContract.agentCta'),
-      copyText: AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
-      copyCta: t('sourceContract.agentCopyGate'),
-      copyAriaLabel: t('sourceContract.agentCopyGateAriaLabel'),
-      copySuccess: t('sourceContract.agentCopyGateSuccess'),
-      proofMarkers: SOURCE_VAULT_RUNTIME_REPLAY_MARKERS,
-    },
-  ] as const;
-
-  async function handleCopyGate(text: string, successMessage: string) {
-    const ok = await copyGate(text);
-    toast.show(ok ? successMessage : t('sourceContract.copyFailed'), ok ? 'success' : 'error');
-  }
-
-  return (
-    <section
-      id="docs-source-contract"
-      aria-hidden={!open}
-      aria-label={t('sourceContract.ariaLabel')}
-      className={
-        open
-          ? "absolute left-3 right-3 top-[calc(3.5rem+0.5rem)] z-40 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(16,17,21,0.96)] px-3 py-2 shadow-[0_24px_72px_rgba(0,0,0,0.42)] md:left-4 md:right-4 md:px-4"
-          : "hidden"
-      }
-    >
-      <StaggeredFadeIn className="grid gap-2 lg:grid-cols-3">
-        {cells.map((cell) => {
-          const Icon = cell.icon;
-          return (
-            <article
-              key={cell.key}
-              className="grid min-w-0 grid-cols-[34px_1fr] items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 py-2.5 sm:grid-cols-[34px_1fr_auto]"
-            >
-              <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.2)] bg-[color:rgba(94,106,210,0.06)] text-[color:rgba(205,212,255,0.9)]">
-                <Icon size={14} aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(200,210,255,0.82)]">
-                    {cell.label}
-                  </span>
-                  <span className="rounded-sm border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(94,106,210,0.06)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                    {cell.chip}
-                  </span>
-                </div>
-                <p className="mt-0.5 truncate text-[12px] font-semibold text-[color:var(--color-text-primary)]">
-                  {cell.value}
-                </p>
-                <p className="mt-0.5 line-clamp-2 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
-                  {cell.body}
-                </p>
-                {'proofMarkers' in cell ? (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {cell.proofMarkers.map((marker) => (
-                      <span
-                        key={marker}
-                        className="rounded-sm border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(94,106,210,0.05)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]"
-                      >
-                        {marker}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-              <div className="col-span-2 ml-[42px] flex min-w-0 flex-wrap items-center gap-1 sm:col-span-1 sm:ml-0 sm:flex-col sm:items-end">
-                <Link
-                  href={cell.href}
-                  className="inline-flex h-7 min-w-0 items-center rounded-sm border border-[color:var(--color-divider)] px-2 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.38)] hover:text-[color:var(--color-text-primary)]"
-                >
-                  {cell.cta}
-                </Link>
-                {'copyText' in cell ? (
-                  <button
-                    type="button"
-                    aria-label={cell.copyAriaLabel}
-                    onClick={() => void handleCopyGate(cell.copyText, cell.copySuccess)}
-                    className="inline-flex h-6 min-w-0 items-center gap-1 rounded-sm border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(94,106,210,0.06)] px-1.5 font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.38)] hover:text-[color:var(--color-text-primary)]"
-                  >
-                    {copiedGate ? <Check size={10} aria-hidden /> : <Clipboard size={10} aria-hidden />}
-                    <span className="truncate">{cell.copyCta}</span>
-                  </button>
-                ) : null}
-              </div>
-            </article>
-          );
-        })}
-      </StaggeredFadeIn>
-    </section>
-  );
-}
 
 function DocsVaultContent() {
   const t = useTranslations('docsVault');
@@ -337,6 +176,13 @@ function DocsVaultContent() {
     open: advancedOpen,
     setOpen: setAdvancedOpen,
     ref: advancedMenuRef,
+  } = useAdvancedMenu();
+  // VaultChip 팝오버(경로·폴더수·local badge·vault 바꾸기) — gear 메뉴와 같은
+  // outside-click/Escape 계약을 재사용(useAdvancedMenu 두 번째 소비처).
+  const {
+    open: vaultChipOpen,
+    setOpen: setVaultChipOpen,
+    ref: vaultChipMenuRef,
   } = useAdvancedMenu();
   const localIntentAutoOpenRef = useRef(false);
   // R11 #16 step 3 — folder-topology build 흐름은 useFolderTopo hook 으로 캡슐화.
@@ -375,6 +221,19 @@ function DocsVaultContent() {
   }, [isDesktopRuntime, setAdvancedOpen]);
   const [sourceTreeOpen, setSourceTreeOpen] = useState(false);
   const [docInspectorOpen, setDocInspectorOpen] = useState(false);
+  // 문서 목록 aside 접힘 — design-prescription.md ③-4: 접힘은 width 0(레일
+  // 삭제), localStorage persist(작업공간 취향, 세션·새로고침 넘어 유지).
+  const [docListCollapsed, setDocListCollapsedState] = useState(false);
+  useEffect(() => {
+    scheduleStateSync(() => setDocListCollapsedState(readStoredListCollapsed()));
+  }, []);
+  const toggleDocListCollapsed = useCallback(() => {
+    setDocListCollapsedState((collapsed) => {
+      const next = !collapsed;
+      storeListCollapsed(next);
+      return next;
+    });
+  }, []);
   const localVault = useLocalVault();
   const localVaultStatus = localVault.status;
   const openLocalVault = localVault.open;
@@ -494,20 +353,20 @@ function DocsVaultContent() {
     scheduleStateSync(() => setSource(readStoredSource()));
   }, [isDesktopRuntime]);
 
-  // 상단 소스-계약 스트립(01 FILES · 02 GRAPH · 03 AGENT) 펼침/접기.
-  // 기본 닫힘 — Source Vault 는 문서/검색/로컬 vault 행동이 첫 화면이어야
-  // 한다. 필요할 때만 헤더의 개요 버튼으로 overlay 를 연다.
+  // 문서함 점검 중앙 모달 — design-prescription.md ③-5: 로드마다 모달이 뜨면
+  // modality 위반이므로 open 상태는 persist 하지 않고 항상 닫힌 채 시작한다.
+  // 토글 자체는 순수 컴포넌트 state 로 세션 내에서만 유지.
   const [contractOpen, setContractOpen] = useState(false);
-  useEffect(() => {
-    scheduleStateSync(() => setContractOpen(readStoredContractOpen()));
-  }, []);
-  const toggleContract = useCallback(() => {
-    setContractOpen((open) => {
-      const next = !open;
-      storeContractOpen(next);
-      return next;
-    });
-  }, []);
+  const openContract = useCallback(() => {
+    // transient 단일 규칙 — 모달을 열면 다른 L2 팝오버(gear·VaultChip·⌘K)
+    // 를 닫는다. 문서정보 인스펙터는 사용자가 열어 둔 영속 패널이라 예외
+    // (클릭=안전 — implementation-contract.md §4 "모달 계약").
+    setAdvancedOpen(false);
+    setVaultChipOpen(false);
+    setPaletteQuery(null);
+    setContractOpen(true);
+  }, [setAdvancedOpen, setVaultChipOpen, setPaletteQuery]);
+  const closeContract = useCallback(() => setContractOpen(false), []);
 
   // URL 복사 feedback — 최근에 복사된 slug 를 잠깐 기억하고 2초 뒤 reset.
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
@@ -1677,10 +1536,18 @@ function DocsVaultContent() {
     <div className="flex h-screen w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
       <div className="topology-ui-scale relative flex h-full min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
+      {/* 76px 크롬 그리드 (docs-chrome-round design-prescription.md ③-1) —
+          브레드크럼 32px + 헤더 3존 44px = 76px, 토폴로지의
+          --topology-index-top 클리어런스와 같은 발상(고정 그리드라야 뷰 전환
+          시 콘텐츠 시작선이 흔들리지 않는다). lg+ 에서 헤더가 h-11 고정 단일
+          행으로 그리드를 채운다 — <lg 는 기존 2행 wrap + 모바일 drawer 를
+          그대로 유지(90px 폭 뷰포트에서 단일 행이 가로 스크롤을 만들기
+          때문 — local-vault-picker.spec.ts 의 zero-overflow 계약). */}
+      <div data-chrome-grid="76" className="flex-none">
       {/* Crumbs row — engraved vault census (docs-vault-final spec §상단 헤더). */}
       <nav
         aria-label={t('header.breadcrumbAriaLabel')}
-        className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-text-tertiary)] md:px-4"
+        className="flex h-8 flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 text-[11.5px] text-[color:var(--color-text-tertiary)] md:px-4"
       >
         <Link
           href={workspaceHref}
@@ -1703,9 +1570,15 @@ function DocsVaultContent() {
           })}
         </span>
       </nav>
-      {/* 상단 바 — workspace 복귀 + 타이틀 + 소스 토글 + 모드 토글 */}
-      <header className="flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 md:px-4">
-        <div className="flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:gap-3 lg:flex-1">
+      {/* 헤더 3존 [zone-l identity] [zone-c 탭 예약, 슬라이스 B] [zone-r
+          tools] — implementation-contract.md §1. macOS 다운로드 버튼은
+          여기서 완전히 삭제(읽기 전용 샘플 배너 1곳 + /download 만 소유,
+          design-prescription.md ②). "문서함" h1 은 sr-only 로만 유지
+          (내비 레일 + 브레드크럼과의 3중 라벨 해소). */}
+      <header className="flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 md:px-4 lg:h-11 lg:min-h-0 lg:flex-nowrap lg:gap-2 lg:py-0">
+        <h1 className="sr-only">{t('header.title')}</h1>
+        {/* zone-l — 목록 토글 + VaultChip. */}
+        <div className="flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:gap-3 lg:w-auto lg:max-w-[300px] lg:flex-nowrap lg:flex-1">
           <button
             type="button"
             onClick={() => setSourceTreeOpen(true)}
@@ -1716,52 +1589,51 @@ function DocsVaultContent() {
             <Menu size={14} aria-hidden />
             <span className="hidden sm:inline">{t('header.openTreeTitle')}</span>
           </button>
-          <div className="flex min-w-0 flex-none items-baseline gap-2">
-            <h1 className="whitespace-nowrap text-[14px] font-semibold">{t('header.title')}</h1>
-          </div>
-          <span className="inline-flex min-w-0 flex-none items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.028)] px-2.5 py-1 font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
-            <span className="hidden max-w-[220px] truncate text-[color:var(--color-text-tertiary)] md:inline">
-              {vaultPillPath}
-            </span>
-            <span className="text-[color:var(--color-text-secondary)]">
-              {t('header.docCount', { count: manifest.docs.length })}
-            </span>
-            <span className="hidden text-[color:var(--color-text-secondary)] sm:inline">
-              {t('header.vaultPillFolders', { count: vaultTopLevelFolderCount })}
-            </span>
-            <button
-              type="button"
-              onClick={handleVaultPillSwap}
-              aria-label={t('header.vaultPillSwapAriaLabel')}
-              className="text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-            >
-              {t('header.vaultPillSwap')}
-            </button>
-          </span>
-          {isLocalSourceLoaded ? (
-            <span className="hidden items-center gap-1 rounded-sm border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(200,210,255,0.86)] min-[460px]:inline-flex">
-              <HardDrive size={10} aria-hidden />
-              {t('header.localBadge')}
-            </span>
-          ) : null}
-          <button
-            type="button"
-            onClick={toggleContract}
-            aria-expanded={contractOpen}
-            aria-controls="docs-source-contract"
-            title={contractOpen ? t('header.contractToggleHide') : t('header.contractToggleShow')}
-            className="hidden h-8 flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-divider)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:inline-flex"
-          >
-            <PanelTop size={13} aria-hidden />
-            <span>{t('header.contractToggleLabel')}</span>
-            <ChevronDown
-              size={12}
-              aria-hidden
-              className={`transition-transform ${contractOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
+          <DocsHeaderTile
+            icon={<PanelLeft size={16} aria-hidden />}
+            title={docListCollapsed ? t('header.docListExpand') : t('header.docListCollapse')}
+            active={docListCollapsed}
+            aria-expanded={!docListCollapsed}
+            onClick={toggleDocListCollapsed}
+            className="hidden lg:inline-flex"
+          />
+          <DocsVaultVaultChip
+            label={
+              isLocalSourceLoaded && localVault.handle
+                ? localVault.handle.name
+                : t('advanced.sourceServer')
+            }
+            docCount={manifest.docs.length}
+            folderCount={vaultTopLevelFolderCount}
+            path={vaultPillPath}
+            isLocalSourceLoaded={isLocalSourceLoaded}
+            open={vaultChipOpen}
+            onToggle={() =>
+              setVaultChipOpen((open) => {
+                const next = !open;
+                if (next) setAdvancedOpen(false);
+                return next;
+              })
+            }
+            onSwap={() => {
+              setVaultChipOpen(false);
+              handleVaultPillSwap();
+            }}
+            menuRef={vaultChipMenuRef}
+            t={t}
+          />
         </div>
-        <div className="flex w-full flex-none flex-wrap items-center justify-end gap-2 lg:ml-auto lg:w-auto">
+        {/* zone-c — 문서 탭 스트립 예약 자리(슬라이스 B). 이번 슬라이스는
+            탭을 렌더하지 않지만 구조는 미리 비워둔다 — zone-l/zone-r 을
+            양 끝으로 미는 flex-1 spacer. */}
+        <div
+          data-docs-header-zone="tabs"
+          aria-hidden
+          className="hidden min-w-0 flex-1 lg:block"
+        />
+        {/* zone-r — 소스 pill → ⌘K → 점검 → 문서정보 → gear(local). 순서
+            고정, 숨김/겹침 금지(implementation-contract.md §10.2 ①). */}
+        <div className="flex w-full flex-none flex-wrap items-center justify-end gap-2 lg:w-auto lg:max-w-[340px] lg:flex-nowrap">
           {/* Source 토글 — 이전엔 advanced dropdown 안 깊숙이 묻혀 있던 가장
               중요한 결정 (샘플 vs 내 vault) 를 헤더에 직접 노출. */}
           <div
@@ -1828,89 +1700,59 @@ function DocsVaultContent() {
               </span>
             ) : null}
           </div>
-          {localSourceDisabled && !isDesktopRuntime ? (
-            <Link
-              href="/download/"
-              aria-label={t('vaultStatus.downloadAppCta')}
-              className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[11px] font-medium text-[color:rgba(200,210,255,0.92)] transition-colors hover:border-[color:rgba(139,151,255,0.48)] hover:bg-[color:rgba(94,106,210,0.14)] hover:text-[color:var(--color-text-primary)]"
-            >
-              <Download size={12} aria-hidden />
-              <span className="hidden min-[360px]:inline">
-                {t('vaultStatus.downloadAppCta')}
-              </span>
-            </Link>
-          ) : null}
-          <button
-            type="button"
-            onClick={toggleContract}
+          <DocsHeaderTile
+            icon={<Search size={16} aria-hidden />}
+            title={t('header.paletteTooltip')}
+            aria-label={t('header.paletteAriaLabel')}
+            onClick={() => {
+              setAdvancedOpen(false);
+              setVaultChipOpen(false);
+              setPaletteQuery('');
+            }}
+          />
+          <DocsHeaderTile
+            icon={<ClipboardCheck size={16} aria-hidden />}
+            title={contractOpen ? t('header.contractToggleHide') : t('header.contractToggleShow')}
+            active={contractOpen}
             aria-expanded={contractOpen}
             aria-controls="docs-source-contract"
-            title={contractOpen ? t('header.contractToggleHide') : t('header.contractToggleShow')}
-            className="inline-flex h-8 flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:hidden"
-          >
-            <PanelTop size={12} aria-hidden />
-            <span>{t('header.contractToggleLabel')}</span>
-            <ChevronDown
-              size={11}
-              aria-hidden
-              className={`transition-transform ${contractOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
-          <Tooltip content={t('header.paletteTooltip')} withProvider={false}>
-            <button
-              type="button"
-              onClick={() => {
-                setAdvancedOpen(false);
-                setPaletteQuery('');
-              }}
-              className="inline-flex h-8 min-w-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.28)] hover:text-[color:var(--color-text-primary)]"
-              aria-label={t('header.paletteAriaLabel')}
-            >
-              <Search size={13} aria-hidden />
-              <kbd className="hidden rounded border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-1 font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] md:inline-flex">
-                ⌘K
-              </kbd>
-            </button>
-          </Tooltip>
+            onClick={() => (contractOpen ? closeContract() : openContract())}
+          />
           {selectedDoc && !editing && !showDesktopWelcome ? (
-            <Tooltip content={t('header.inspectorTooltip')} withProvider={false}>
-              <button
-                type="button"
-                onClick={() => setDocInspectorOpen((open) => !open)}
-                aria-expanded={docInspectorOpen}
-                aria-label={
-                  docInspectorOpen
-                    ? t('header.closeInspectorAriaLabel')
-                    : t('header.openInspectorAriaLabel')
-                }
-                className={`hidden h-8 items-center gap-1.5 rounded-md border px-2 text-[12px] transition-colors lg:inline-flex ${
-                  docInspectorOpen
-                    ? 'border-[color:rgba(139,151,255,0.38)] bg-[color:rgba(94,106,210,0.1)] text-[color:rgba(200,210,255,0.95)]'
-                    : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:rgba(139,151,255,0.28)] hover:text-[color:var(--color-text-primary)]'
-                }`}
-              >
-                <PanelRight size={13} aria-hidden />
-                <span>{t('header.inspector')}</span>
-              </button>
-            </Tooltip>
+            <DocsHeaderTile
+              icon={<PanelRight size={16} aria-hidden />}
+              title={t('header.inspectorTooltip')}
+              active={docInspectorOpen}
+              aria-expanded={docInspectorOpen}
+              aria-label={
+                docInspectorOpen
+                  ? t('header.closeInspectorAriaLabel')
+                  : t('header.openInspectorAriaLabel')
+              }
+              onClick={() => setDocInspectorOpen((open) => !open)}
+              className="hidden lg:inline-flex"
+            />
           ) : null}
           {/* 로컬 vault 도구 패널 — server source 일 땐 dropdown 자체 숨김
               (보일 컨텐츠 0). local source 일 때만 vault picker / scaffold
               / new doc / folder-topology 토글 노출. */}
           {source === 'local' ? (
             <div className="relative" ref={advancedMenuRef}>
-              <Tooltip content={t('header.vaultToolsTooltip')} withProvider={false}>
-                <button
-                  type="button"
-                  onClick={() => setAdvancedOpen((open) => !open)}
-                  aria-expanded={advancedOpen}
-                  aria-haspopup="menu"
-                  aria-label={t('header.vaultToolsAriaLabel')}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.28)] hover:text-[color:var(--color-text-primary)]"
-                >
-                  <Settings2 size={13} aria-hidden />
-                </button>
-              </Tooltip>
+              <DocsHeaderTile
+                icon={<Settings2 size={16} aria-hidden />}
+                title={t('header.vaultToolsTooltip')}
+                aria-label={t('header.vaultToolsAriaLabel')}
+                aria-expanded={advancedOpen}
+                aria-haspopup="menu"
+                active={advancedOpen}
+                onClick={() =>
+                  setAdvancedOpen((open) => {
+                    const next = !open;
+                    if (next) setVaultChipOpen(false);
+                    return next;
+                  })
+                }
+              />
               {advancedOpen ? (
                 <VaultToolsMenu
                   view={view}
@@ -1927,6 +1769,21 @@ function DocsVaultContent() {
           ) : null}
         </div>
       </header>
+      </div>
+      <DocsVaultAuditModal
+        open={contractOpen}
+        manifest={manifest}
+        nodeCount={ontologyDerivation.nodes.length}
+        edgeCount={ontologyDerivation.edges.length}
+        graphHref={
+          selectedDoc
+            ? (buildOntologyDeeplinkForDoc(selectedDoc) ?? '/ontology/')
+            : '/ontology/'
+        }
+        isLocalSourceLoaded={isLocalSourceLoaded}
+        onClose={closeContract}
+        t={t}
+      />
 
       {/* Round 9 cut — local source 인데 vault 가 error / permission-needed
           상태일 때 명시 banner. 이전엔 silent 으로 server 매니페스트 (샘플
@@ -1969,19 +1826,6 @@ function DocsVaultContent() {
         />
       ) : (
         <>
-          <DocsVaultSourceContractBar
-            open={contractOpen}
-            manifest={manifest}
-            nodeCount={ontologyDerivation.nodes.length}
-            edgeCount={ontologyDerivation.edges.length}
-            graphHref={
-              selectedDoc
-                ? (buildOntologyDeeplinkForDoc(selectedDoc) ?? '/ontology/')
-                : '/ontology/'
-            }
-            isLocalSourceLoaded={isLocalSourceLoaded}
-            t={t}
-          />
           <div className="flex min-h-0 flex-1">
         {/* Source tree drawer — tree navigation is intentionally opt-in so the
             document/work surface stays primary on desktop and mobile. */}
@@ -2013,12 +1857,19 @@ function DocsVaultContent() {
           </div>
         ) : null}
 
-        {/* Persistent left pane — 280px machined 파일 트리 (docs-vault-final
-            2-pane spec). lg+ 에서 항상 보임; 그 아래 폭에서는 위 drawer 로
-            대체 (menu 버튼이 lg:hidden). */}
+        {/* Persistent left pane — --docs-list-width(280px) machined 파일
+            트리 (docs-vault-final 2-pane spec). lg+ 에서 항상 보임; 그 아래
+            폭에서는 위 drawer 로 대체 (menu 버튼이 lg:hidden). 접힘 =
+            width 0(34px slim rail 삭제, design-prescription.md ③-4) — 재열기
+            발견성은 zone-l 의 PanelLeft 타일(active 상태) + 탭 + ⌘K 3중
+            담보이므로 접힘 힌트 레일이 따로 필요 없다. */}
         <aside
           aria-label={t('mobileDrawer.title')}
-          className="hidden w-[280px] flex-none flex-col overflow-hidden border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] lg:flex"
+          aria-hidden={docListCollapsed}
+          style={{ width: docListCollapsed ? 0 : 'var(--docs-list-width)' }}
+          className={`hidden flex-none flex-col overflow-hidden bg-[color:var(--color-panel)] transition-[width] duration-[180ms] ease-out lg:flex ${
+            docListCollapsed ? '' : 'border-r border-[color:var(--color-border-soft)]'
+          }`}
         >
           {sidebarBody}
         </aside>

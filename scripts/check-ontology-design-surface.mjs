@@ -67,10 +67,17 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   // Browse/Write/Query 루프 자체는 없어지지 않았다 — INDEX 패널의 트리 +
   // `?p=` 선택 + 데이터시트 "전체 상세 →" 가 같은 역할을 지도 위에서 한다.
   {
+    // docs-chrome-round (2026-07): 점검 밴드가 중앙 모달로 승격되며
+    // `DocsVaultSourceContractBar` → `DocsVaultAuditModal` (별도 파일) 로
+    // 이동했다 — 마커는 파일 묶음 전체에서 존재를 본다(builder-write-verify-loop
+    // 와 동일 패턴).
     id: "source-vault-execution-contract",
-    files: ["src/views/docs-vault/ui/DocsVaultPage.tsx"],
+    files: [
+      "src/views/docs-vault/ui/DocsVaultPage.tsx",
+      "src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx",
+    ],
     markers: [
-      "function DocsVaultSourceContractBar",
+      "function DocsVaultAuditModal",
       "sourceContract.filesLabel",
       "sourceContract.filesChip",
       "sourceContract.graphLabel",

@@ -839,6 +839,27 @@
     /* --topology-card-scale 은 SigmaSkeletonCards 가 viewport 폭 기준으로
        컨테이너에 JS 주입한다 — CSS 파이프라인이 utility 미참조 무단위 커스텀
        프로퍼티를 떨구는 동작이 있어 여기 선언하지 않는다. */
+
+    /*
+     * 문서함 크롬 재구성 (docs-chrome-round, design-prescription.md §③-7).
+     * 헤더 3존·목록 접기·점검 모달이 공유하는 신규 토큰 4종. 신규 채색 0 —
+     * 표면/보더/그림자는 위 --chrome-*/--color-overlay-2/--color-indigo-brand
+     * 재사용. 각 값의 product reason 은 옆 주석 참조.
+     */
+    /* 탭 스트립(zone-c, 슬라이스 B) 가독 최소폭 · 과점 최대폭. 마커
+       data-token="docs-tab". 슬라이스 A 는 아직 탭을 렌더하지 않지만 헤더
+       zone-c 예약 폭 계산이 이 값을 참조. */
+    --docs-tab-min: 132px;
+    --docs-tab-max: 208px;
+    /* 문서함 점검 모달 — 세로 3행 스택 단일 폭. 브레이크포인트 0 계약(3-across
+       그리드 폐기) 이라 뷰포트별 분기 없이 이 값 하나만 쓴다. 마커
+       data-token="docs-audit-modal". */
+    --docs-audit-modal-width: 680px;
+    /* 문서 목록 aside 펼침 폭 — 기존 하드코드 w-[280px] 회수. */
+    --docs-list-width: 280px;
+    /* drawer/점검 모달 공용 scrim 단일 출처 — 기존 sourceTreeOpen drawer 와
+       동일 값. 다크 단일(라이트 분기 없음). */
+    --docs-scrim: rgba(0, 0, 0, 0.5);
   }
 
   /*

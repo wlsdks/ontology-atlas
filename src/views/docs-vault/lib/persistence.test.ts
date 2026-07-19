@@ -1,20 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { VaultConflictError } from "@/features/docs-vault-local";
 import {
-  DOCS_VAULT_CONTRACT_OPEN_KEY,
+  DOCS_VAULT_LIST_COLLAPSED_KEY,
   DOCS_VAULT_SOURCE_KEY,
   escapeHtml,
   isDocsVaultLocalSourceDisabled,
   parseDocsVaultView,
   persistEditorSave,
-  readStoredContractOpen,
+  readStoredListCollapsed,
   readStoredSource,
   scheduleStateSync,
   shouldShowDogfoodVaultHint,
   shouldShowDesktopVaultWelcome,
   shouldSwitchToDogfoodVault,
   shouldHonorLocalIntent,
-  storeContractOpen,
+  storeListCollapsed,
   storeSource,
 } from "./persistence";
 
@@ -114,7 +114,7 @@ describe("source storage", () => {
   });
 });
 
-describe("contract strip storage", () => {
+describe("doc list collapse storage", () => {
   beforeEach(() => {
     window.localStorage.clear();
   });
@@ -122,25 +122,25 @@ describe("contract strip storage", () => {
     window.localStorage.clear();
   });
 
-  it("contract: 빈 storage 는 닫힘(false) default — 신규 방문자는 Source Vault 본문을 먼저 본다", () => {
-    expect(readStoredContractOpen()).toBe(false);
+  it("list-collapsed: 빈 storage 는 펼침(false) default", () => {
+    expect(readStoredListCollapsed()).toBe(false);
   });
 
-  it("contract: 접기 저장 후 다시 read 하면 false 유지", () => {
-    storeContractOpen(false);
-    expect(readStoredContractOpen()).toBe(false);
-    expect(window.localStorage.getItem(DOCS_VAULT_CONTRACT_OPEN_KEY)).toBe("0");
+  it("list-collapsed: 접기 저장 후 다시 read 하면 true 유지", () => {
+    storeListCollapsed(true);
+    expect(window.localStorage.getItem(DOCS_VAULT_LIST_COLLAPSED_KEY)).toBe("1");
+    expect(readStoredListCollapsed()).toBe(true);
   });
 
-  it("contract: 펼침 저장은 '1' 로 기록", () => {
-    storeContractOpen(true);
-    expect(window.localStorage.getItem(DOCS_VAULT_CONTRACT_OPEN_KEY)).toBe("1");
-    expect(readStoredContractOpen()).toBe(true);
+  it("list-collapsed: 펼침 저장은 '0' 으로 기록", () => {
+    storeListCollapsed(false);
+    expect(window.localStorage.getItem(DOCS_VAULT_LIST_COLLAPSED_KEY)).toBe("0");
+    expect(readStoredListCollapsed()).toBe(false);
   });
 
-  it("contract: 잘못된 값이면 닫힘(false) fallback", () => {
-    window.localStorage.setItem(DOCS_VAULT_CONTRACT_OPEN_KEY, "garbage");
-    expect(readStoredContractOpen()).toBe(false);
+  it("list-collapsed: 잘못된 값이면 펼침(false) fallback", () => {
+    window.localStorage.setItem(DOCS_VAULT_LIST_COLLAPSED_KEY, "garbage");
+    expect(readStoredListCollapsed()).toBe(false);
   });
 });
 

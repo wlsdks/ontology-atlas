@@ -92,8 +92,13 @@ function writeCleanWorkbenchFixtures(root) {
   writeFixture(
     root,
     "src/views/docs-vault/ui/DocsVaultPage.tsx",
+    ["<DocsVaultAuditModal"].join("\n"),
+  );
+  writeFixture(
+    root,
+    "src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx",
     [
-      "function DocsVaultSourceContractBar() {}",
+      "function DocsVaultAuditModal() {}",
       "sourceContract.filesLabel",
       "sourceContract.filesChip",
       "sourceContract.graphLabel",
@@ -331,9 +336,9 @@ test("ontology design surface reports missing workspace execution cells", () => 
   writeCleanWorkbenchFixtures(root);
   writeFixture(
     root,
-    "src/views/docs-vault/ui/DocsVaultPage.tsx",
+    "src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx",
     [
-      "function DocsVaultSourceContractBar() {}",
+      "function DocsVaultAuditModal() {}",
       "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
       "sourceContract.agentCopyGate",
     ].join("\n"),

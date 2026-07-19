@@ -6,6 +6,46 @@
 
 ---
 
+## 2026-07-19 — 문서함 크롬 재구성 슬라이스 A — 헤더 3존·목록 완전 접힘·점검 중앙 모달 (docs-chrome-round)
+
+`.qa-scratch/docs-chrome-round/design-prescription.md` 확정 처방 반영. 2차
+시안이 방향은 옳았지만 잔여 중복 3건(macOS 다운로드 2회·"문서함" 라벨 3회·
+점검 버튼 2회)과 밀도 결함(34px 유령 레일·헤더 세로 리듬 미정·점검 카드
+3-across 불균등)이 남아 있었다는 재심문 결과를 수치로 제거.
+
+- **헤더 3존 + 76px 크롬 그리드** — 브레드크럼 32px + 헤더 44px 고정(lg+,
+  `data-chrome-grid="76"` 마커) = 토폴로지 `--topology-index-top` 와 같은
+  발상의 고정 클리어런스. zone-l(PanelLeft 접기 타일 + VaultChip) · zone-c
+  (문서 탭 스트립 예약 — 이번 슬라이스는 비움) · zone-r(소스 pill → ⌘K →
+  점검 → 문서정보 → gear, 순서 고정) 3분할. `<lg` 는 기존 2행 wrap + 모바일
+  drawer 유지(가로 스크롤 0 계약, `local-vault-picker.spec.ts`).
+- **macOS 다운로드 헤더 삭제** — 읽기 전용 샘플 배너(`SampleNotice`) 1곳 +
+  `/download` 페이지만 CTA 소유. **"문서함" h1 sr-only 화** — 앱 내비
+  레일 + 브레드크럼과의 3중 라벨을 2중으로. **점검 토글 2→1 통합** — 데스크톱/
+  모바일 중복 렌더 해소, 34px `DocsHeaderTile` 아이콘 타일 하나로.
+- **VaultChip** — vault pill(경로·문서수·폴더수·local badge·swap 텍스트버튼)
+  을 칩 + 팝오버 메뉴로 접음. census(개념·관계)는 브레드크럼 스트립 단독
+  소유로 정리해 중복 해소.
+- **문서 목록 완전 접힘(0px)** — `--docs-list-width`(280px) 토큰화, 접힘 시
+  aside width 0(34px 힌트 레일 안 씀 — 재열기는 zone-l PanelLeft 타일의
+  active 상태 하나로 담보). localStorage persist(`demo:docs-vault:list-collapsed`,
+  `readStoredListCollapsed`/`storeListCollapsed`).
+- **문서함 점검 = 중앙 모달** — 기존 absolute 밴드(`DocsVaultSourceContractBar`)
+  를 `DocsVaultAuditModal` 로 교체: `--docs-audit-modal-width`(680px) 세로
+  3행 스택(불균등 3-카드 그리드 폐기) + hairline 구분 + `--docs-scrim`
+  scrim + focus trap(Tab 순환) + Esc·바깥클릭·× 3경로 닫기 +
+  `role="dialog" aria-modal aria-labelledby`. proof marker
+  (`relation_name_parity` · `pattern_walk/project_map`)와 `그래프 점검
+  복사` 게이트는 문자 그대로 보존(에이전트 핸드오프 계약). **의도적 계약
+  변경** — open 상태 persist 를 제거하고 항상 닫힌 채 시작(페이지 로드마다
+  모달이 뜨면 modality 위반) — `readStoredContractOpen`/`storeContractOpen`
+  삭제.
+- **신규 토큰 4종**(`app/globals.css`, 신규 채색 0) — `--docs-tab-min`/
+  `--docs-tab-max`(132/208px, 탭 스트립은 다음 슬라이스), `--docs-audit-modal-width`
+  (680px), `--docs-list-width`(280px), `--docs-scrim`(다크 단일).
+- 문서 탭 스트립(열린 문서 워킹셋)은 별도 슬라이스로 미룸 — 이번 슬라이스는
+  중앙 zone-c 를 구조로만 비워둔다.
+
 ## 2026-07-19 — 라이트 모드 전면 폐기 (dark-only)
 
 소유자 전략 결정: 앱은 **다크 단일**이 된다. 관리 부담 대비 사용 신호가

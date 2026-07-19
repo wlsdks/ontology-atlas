@@ -1749,7 +1749,12 @@
       "vaultPillFolders": "{count}개 폴더",
       "vaultPillSwap": "vault 바꾸기",
       "vaultPillSwapAriaLabel": "vault 소스 전환",
-      "censusSummary": "개념 {concepts}개 · 관계 {relations}개"
+      "censusSummary": "개념 {concepts}개 · 관계 {relations}개",
+      "docListCollapse": "문서 목록 접기",
+      "docListExpand": "문서 목록 펼치기"
+    },
+    "vaultChip": {
+      "menuAriaLabel": "문서함 정보 메뉴"
     },
     "editorHeader": {
       "previewTab": "미리보기",
@@ -1845,7 +1850,9 @@
       "agentCopyGate": "그래프 점검 복사",
       "agentCopyGateAriaLabel": "문서함 그래프 검증 게이트 복사",
       "agentCopyGateSuccess": "문서함 그래프 점검을 복사했습니다.",
-      "copyFailed": "복사 실패"
+      "copyFailed": "복사 실패",
+      "modalSubtitle": "이 vault 의 파일 · 그래프 · AI 검증 게이트를 한눈에 확인",
+      "closeTitle": "닫기 (Esc)"
     },
     "advanced": {
       "viewTopology": "토폴로지",
