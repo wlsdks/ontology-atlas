@@ -32,6 +32,9 @@ import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
 
 const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
+// Bare `?p=` miss grace window — see the deeplinkMissNotifiedRef effect
+// below (`../lib/deeplink-miss-notice.ts`) for why this exists.
+const DEEPLINK_MISS_GRACE_MS = 4000;
 
 const TopologyControls = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.TopologyControls),
@@ -117,6 +120,7 @@ import {
   resolveTopologyRenderState,
 } from "../lib/topology-render-state";
 import { resolveTopologySelectedOntologyNode } from "../lib/resolve-topology-selected-node";
+import { resolveDeeplinkMissDecision } from "../lib/deeplink-miss-notice";
 import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
@@ -394,28 +398,47 @@ export function HomePage() {
   // translates + redirects synchronously, before ontology data loads) — this
   // is the ONE place `?p=` actually gets resolved, so it's the one place
   // that surfaces the miss. Notifies once per distinct dangling slug.
+  //
+  // `resolveDeeplinkMissDecision` (../lib/deeplink-miss-notice.ts) decides
+  // *when*: a kind-prefixed slug (`element:foo`) can never collide with a
+  // project slug, so it's flagged the moment neither list has it. A bare
+  // slug (`project`) could still turn out to BE a project slug, so it waits
+  // for `projectsQuery.loaded` — but only up to DEEPLINK_MISS_GRACE_MS, not
+  // forever. Cross-verified UX round finding (2026-07-19, ledger item 3):
+  // when the project list never finished loading, a bare miss used to stay
+  // silent permanently — the dangling `?p=` param just sat there unexplained.
   const deeplinkMissNotifiedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!selectedSlug || !ontologyInsight) return;
-    if (selectedOntologyNode) return;
-    // 프로젝트 판정은 로드된 경우에만 신뢰. 미로드(fallback/dogfood) 상태에서는
-    // kind-접두 슬러그(온톨로지 형태)만 미스로 알린다 — bare 슬러그는 프로젝트일
-    // 수 있어 오탐 방지 (Guardian B3 followup 2: fallback 사용자도 알림 수신).
-    if (projectsQuery.loaded) {
-      if (selectedProject) return;
-    } else if (!selectedSlug.includes(":")) {
-      return;
-    }
-    if (deeplinkMissNotifiedRef.current === selectedSlug) return;
-    let cancelled = false;
-    window.queueMicrotask(() => {
-      if (cancelled) return;
+    const decision = resolveDeeplinkMissDecision({
+      selectedSlug,
+      hasOntologyMatch: Boolean(selectedOntologyNode),
+      hasProjectMatch: Boolean(selectedProject),
+      projectsLoaded: projectsQuery.loaded,
+    });
+    if (decision.action === "none") return;
+    if (!selectedSlug || deeplinkMissNotifiedRef.current === selectedSlug) return;
+
+    const notify = () => {
       deeplinkMissNotifiedRef.current = selectedSlug;
       toast.show(t("deeplinkNotFound", { query: selectedSlug }), "error");
-    });
-    return () => {
-      cancelled = true;
     };
+
+    if (decision.action === "notify-now") {
+      let cancelled = false;
+      window.queueMicrotask(() => {
+        if (!cancelled) notify();
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    // "notify-after-grace" — bare slug, project list still loading. Wait
+    // bounded rather than forever; cancelled + re-decided if the deps
+    // change first (e.g. the project list finishes loading and resolves
+    // the slug after all).
+    const timer = window.setTimeout(notify, DEEPLINK_MISS_GRACE_MS);
+    return () => window.clearTimeout(timer);
   }, [selectedSlug, projectsQuery.loaded, ontologyInsight, selectedProject, selectedOntologyNode, toast, t]);
   // S1.1 — 토폴로지를 온톨로지의 1차 편집 surface 로. writable 로컬 vault 면
   // 선택 노드를 자기 .md 문서로 해석해 전체 상세(A1)의 본문 인라인 편집을 허용.
