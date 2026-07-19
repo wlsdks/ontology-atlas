@@ -2161,7 +2161,11 @@ function DocsVaultContent() {
                     max-w-760 은 아래 overflow-auto 컨테이너 안에서 그대로
                     mx-auto — 레일 때문에 줄지 않는다. */}
                 <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-                  {!editing && showOutlineRail ? (
+                  {/* 인스펙터가 열리면 레일은 demote — 같은 목차를 두 표면에
+                      이중 노출하지 않고(인스펙터 안 목차가 fallback), 인스펙터
+                      220px 만큼 좁아진 빈 띠에서 레일이 본문 텍스트와 겹치는
+                      1440–1700px 충돌 창도 함께 제거한다. */}
+                  {!editing && showOutlineRail && !docInspectorOpen ? (
                     <DocReadingOutlineRail
                       headings={outlineHeadings}
                       activeHeadingSlug={activeHeadingSlug}
