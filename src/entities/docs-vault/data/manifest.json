@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-19T16:46:05.188Z",
+  "generatedAt": "2026-07-19T22:42:51.753Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-20 — 인디고/오버레이 색 토큰화 B안 (indigo · indigo-line · white-overlay · danger 잔여)",
+          "slug": "2026-07-20-인디고오버레이-색-토큰화-b안-indigo-indigo-line-white-overlay-danger-잔여"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-20 — 헌장 danger 색 토큰화 + 빌더 인스펙터 중복 DOM 렌더 제거",
           "slug": "2026-07-20-헌장-danger-색-토큰화-빌더-인스펙터-중복-dom-렌더-제거"
         },
@@ -3956,9 +3961,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 전 페이지 육안 감사에서 나온 실수정 2건. 에러/danger 색 토큰화 — 7개 파일이 app/globals.css 의 헌장 danger 토큰(--col",
-      "wordCount": 23821,
-      "updatedAt": "2026-07-19T16:46:00.136Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 색 인벤토리 감사(568건)에서 나온 후속 조치 — indigo(94,106,210) 203건 · indigo-line(139,151,255) 98건 · ",
+      "wordCount": 23908,
+      "updatedAt": "2026-07-19T22:42:05.512Z",
       "linksOut": [
         "slug"
       ]

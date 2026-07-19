@@ -19,7 +19,7 @@ export function EmptyState({
   const t = useTranslations("vaultWidgets.parts.empty");
   return (
     <div className="flex h-full flex-col items-center justify-center p-8 text-center">
-      <div className="w-full max-w-[560px] rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.02)] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.2)]">
+      <div className="w-full max-w-[560px] rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.2)]">
         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {t("eyebrow", { count: docCount })}
         </p>
@@ -33,7 +33,7 @@ export function EmptyState({
           <button
             type="button"
             onClick={onOpenTree}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-[color:rgba(139,151,255,0.32)] bg-[color:rgba(94,106,210,0.1)] px-3 text-[12px] font-medium text-[color:rgba(220,225,255,0.94)] transition-colors hover:border-[color:rgba(139,151,255,0.55)] hover:bg-[color:rgba(94,106,210,0.16)]"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a10)] px-3 text-[12px] font-medium text-[color:rgba(220,225,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]"
           >
             <PanelLeftOpen size={14} aria-hidden />
             {t("openTree")}
@@ -41,14 +41,14 @@ export function EmptyState({
           <button
             type="button"
             onClick={onOpenAgentWorkflow}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-soft)] px-3 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-soft)] px-3 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
           >
             <Bot size={14} aria-hidden />
             {t("openAgent")}
           </button>
           <Link
             href="/topology/"
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-soft)] px-3 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-soft)] px-3 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
           >
             <Network size={14} aria-hidden />
             {t("openTopology")}

@@ -80,6 +80,6 @@ describe('ChipListEditor — variant', () => {
       <ChipListEditor value={['x']} editable={false} onChange={() => {}} variant="indigo" />,
     );
     const chip = container.querySelector('.flex span') as HTMLElement;
-    expect(chip.className).toContain('rgba(94,106,210,0.08)');
+    expect(chip.className).toContain('color-indigo-a08');
   });
 });

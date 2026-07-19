@@ -87,7 +87,7 @@ export function CreateNodeForm({
             onClick={onCancel}
             aria-label={labels.cancel}
             data-testid="create-node-cancel"
-            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
           >
             <X size={12} aria-hidden />
           </button>
@@ -106,7 +106,7 @@ export function CreateNodeForm({
           }}
           aria-label={labels.titlePlaceholder}
           data-testid="create-node-title"
-          className="h-8 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:rgba(94,106,210,0.46)] focus-visible:outline-none"
+          className="h-8 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
         />
         <div className="flex gap-2">
           <label className="flex min-w-0 flex-1 items-center gap-1.5">
@@ -119,7 +119,7 @@ export function CreateNodeForm({
               onChange={(e) => setKind(e.target.value as CreateNodeKind)}
               aria-label={labels.kind}
               data-testid="create-node-kind"
-              className="h-8 min-w-0 flex-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:rgba(94,106,210,0.46)] focus-visible:outline-none"
+              className="h-8 min-w-0 flex-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
             >
               {KINDS.map((k) => (
                 <option key={k} value={k}>
@@ -139,7 +139,7 @@ export function CreateNodeForm({
             }}
             aria-label={labels.domain}
             data-testid="create-node-domain"
-            className="h-8 min-w-0 flex-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:rgba(94,106,210,0.46)] focus-visible:outline-none"
+            className="h-8 min-w-0 flex-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
           />
         </div>
         <button
@@ -147,7 +147,7 @@ export function CreateNodeForm({
           onClick={() => void submit()}
           disabled={!canCreate}
           data-testid="create-node-submit"
-          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.16)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:rgba(94,106,210,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset disabled:opacity-50"
+          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-50"
         >
           <Plus size={12} aria-hidden />
           {labels.create}

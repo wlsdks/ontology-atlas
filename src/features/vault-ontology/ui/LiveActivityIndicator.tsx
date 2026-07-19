@@ -311,12 +311,12 @@ export function LiveActivityBadge({
         aria-controls={open ? popoverId : undefined}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="inline-flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.48)] hover:bg-[color:rgba(94,106,210,0.14)]"
+        className="inline-flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] px-2.5 text-[11px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-a50)] hover:bg-[color:var(--color-indigo-a14)]"
       >
         <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-success)]" />
         <span className="font-mono uppercase tracking-[0.10em]">{labels.live}</span>
         <span
-          className="rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+          className="rounded border border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
           data-testid="live-agent-state-chip"
         >
           {agentStateChip}
@@ -440,7 +440,7 @@ export function LiveActivityBadge({
                     <div className="flex flex-wrap gap-1.5">
                       <a
                         href={focusHref}
-                        className="inline-flex w-fit items-center rounded border border-[color:rgba(139,151,255,0.26)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.46)] hover:bg-[color:rgba(94,106,210,0.10)]"
+                        className="inline-flex w-fit items-center rounded border border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a10)]"
                       >
                         {labels.agentFocusAction}
                       </a>
@@ -448,7 +448,7 @@ export function LiveActivityBadge({
                         <button
                           type="button"
                           onClick={() => void copyFocusCheck(focusCheckPacket)}
-                          className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.38)] hover:text-[color:var(--color-text-primary)]"
+                          className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
                         >
                           <Clipboard size={10} aria-hidden />
                           {focusCopyLabel}
@@ -468,7 +468,7 @@ export function LiveActivityBadge({
                     <button
                       type="button"
                       onClick={() => void copyFocusCheck(businessExtractionPacket)}
-                      className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.38)] hover:text-[color:var(--color-text-primary)]"
+                      className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
                     >
                       <Clipboard size={10} aria-hidden />
                       {businessExtractionCopyLabel}

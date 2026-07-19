@@ -276,7 +276,7 @@ export function OntologyInsightsPage() {
         {error ? (
           <div
             role="alert"
-            className="mt-6 rounded-lg border border-[color:rgba(229,72,77,0.32)] bg-[color:rgba(229,72,77,0.08)] px-5 py-4 text-sm text-[color:var(--color-status-danger)]"
+            className="mt-6 rounded-lg border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-5 py-4 text-sm text-[color:var(--color-status-danger)]"
           >
             {t("errorAlert", { message: error.message })}
           </div>

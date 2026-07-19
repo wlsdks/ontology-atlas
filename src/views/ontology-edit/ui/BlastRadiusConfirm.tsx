@@ -79,7 +79,7 @@ export function BlastRadiusConfirm({ open, slug, title, backlinks, onCancel, onC
             <span
               className={
                 hasBacklinks
-                  ? 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[color:rgba(229,72,77,0.4)] bg-[color:rgba(229,72,77,0.14)] text-[color:rgba(255,141,138,0.95)]'
+                  ? 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] text-[color:rgba(255,141,138,0.95)]'
                   : 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[color:rgba(244,183,49,0.4)] bg-[color:rgba(244,183,49,0.14)] text-[color:rgba(238,198,128,0.95)]'
               }
               aria-hidden
@@ -150,7 +150,7 @@ export function BlastRadiusConfirm({ open, slug, title, backlinks, onCancel, onC
             ref={cancelRef}
             type="button"
             onClick={onCancel}
-            className="inline-flex h-9 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex h-9 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
           >
             {t('cancel')}
           </button>
@@ -159,8 +159,8 @@ export function BlastRadiusConfirm({ open, slug, title, backlinks, onCancel, onC
             onClick={onConfirm}
             className={
               hasBacklinks
-                ? 'inline-flex h-9 items-center rounded-md border border-[color:rgba(229,72,77,0.4)] bg-[color:rgba(229,72,77,0.14)] px-4 text-[12px] font-[var(--font-weight-signature)] text-[color:rgba(255,141,138,0.95)] transition-colors hover:border-[color:rgba(229,72,77,0.6)] hover:bg-[color:rgba(229,72,77,0.2)]'
-                : 'inline-flex h-9 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)]'
+                ? 'inline-flex h-9 items-center rounded-md border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] px-4 text-[12px] font-[var(--font-weight-signature)] text-[color:rgba(255,141,138,0.95)] transition-colors hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a12)]'
+                : 'inline-flex h-9 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)]'
             }
           >
             {hasBacklinks ? t('confirmWithBacklinks') : t('confirmClean')}

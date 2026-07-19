@@ -15,7 +15,7 @@ export interface DocsHeaderTileProps
 /**
  * 문서함 헤더 전용 34×34px 아이콘 타일 — design-prescription.md ③-2 "타일
  * 규격" 처방(34px · radius-inner 7px · border-soft · hover
- * rgba(139,151,255,0.28) · active = --chrome-active-surface/-border).
+ * var(--color-indigo-line-a32) · active = --chrome-active-surface/-border).
  *
  * `shared/ui/ChromeTile` 와 의도적으로 별개다 — 그 컴포넌트는
  * `--chrome-tile-size`(44px, topology 플로팅 컨트롤 전용)를 하드 고정해 헤더의
@@ -41,7 +41,7 @@ export const DocsHeaderTile = forwardRef<HTMLButtonElement, DocsHeaderTileProps>
           "inline-flex h-[var(--docs-header-tile-size)] w-[var(--docs-header-tile-size)] flex-none items-center justify-center rounded-[var(--chrome-radius-inner)] border text-[color:var(--color-text-tertiary)] transition-colors disabled:cursor-not-allowed disabled:opacity-45",
           active
             ? "border-[color:var(--chrome-active-border)] bg-[color:var(--chrome-active-surface)] text-[color:var(--color-text-primary)]"
-            : "border-[color:var(--color-border-soft)] hover:border-[color:rgba(139,151,255,0.28)] hover:text-[color:var(--color-text-primary)]",
+            : "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]",
           className,
         )}
         {...rest}

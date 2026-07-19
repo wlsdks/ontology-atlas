@@ -28,7 +28,7 @@ export function TopologyNoMatchesState({
       <button
         type="button"
         onClick={onClearFilters}
-        className="rounded-md border border-[color:rgba(139,151,255,0.3)] bg-[color:rgba(94,106,210,0.1)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+        className="rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a10)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-line-a90)] transition-colors hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
       >
         {t("clearFilters")}
       </button>

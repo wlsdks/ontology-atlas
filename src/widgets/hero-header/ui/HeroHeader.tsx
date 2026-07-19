@@ -128,7 +128,7 @@ export function HeroHeader({
             <button
               type="button"
               onClick={onOpenSearch}
-              className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.14)] px-4 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:rgba(94,106,210,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+              className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a14)] px-4 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
             >
               <Search size={14} />
               {resolvedTitle === t("defaultTitleTopology") ? t("findProject") : t("findOtherProject")}
@@ -136,7 +136,7 @@ export function HeroHeader({
             {projectsListHref ? (
               <Link
                 href={projectsListHref}
-                className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
               >
                 <List size={14} />
                 {t("projectsList")}
@@ -145,7 +145,7 @@ export function HeroHeader({
             {docsVaultHref ? (
               <Link
                 href={docsVaultHref}
-                className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                 aria-label={t("docsVaultAriaLabel")}
               >
                 <BookOpen size={14} />
@@ -155,7 +155,7 @@ export function HeroHeader({
             {ontologyHref ? (
               <Link
                 href={ontologyHref}
-                className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                 aria-label={t("ontologyAriaLabel")}
               >
                 <Network size={14} />

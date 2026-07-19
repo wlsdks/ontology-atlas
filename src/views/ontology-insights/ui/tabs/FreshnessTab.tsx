@@ -200,7 +200,7 @@ function FreshnessTrendSparkline({ weeklyTotals }: { weeklyTotals: number[] }) {
       className="mt-1.5 w-full max-w-60"
       preserveAspectRatio="none"
     >
-      <polygon points={areaPath} fill="rgba(94, 106, 210, 0.14)" stroke="none" />
+      <polygon points={areaPath} fill="var(--color-indigo-a14)" stroke="none" />
       <polyline points={linePath} fill="none" stroke="var(--color-indigo-brand)" strokeWidth={1.4} strokeLinejoin="round" strokeLinecap="round" />
     </svg>
   );

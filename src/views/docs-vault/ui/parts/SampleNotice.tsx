@@ -37,7 +37,7 @@ export function SampleNotice({ isDesktopRuntime, onOpenFolder }: SampleNoticePro
         <button
           type="button"
           onClick={onOpenFolder}
-          className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.42)] bg-[color:var(--color-indigo-a12)] px-2.5 py-1.5 font-mono text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(139,151,255,0.6)] hover:bg-[color:var(--color-indigo-a18)]"
+          className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a42)] bg-[color:var(--color-indigo-a12)] px-2.5 py-1.5 font-mono text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a18)]"
         >
           <FolderOpen size={12} aria-hidden />
           {t("sampleNotice.openFolderCta")}
@@ -45,7 +45,7 @@ export function SampleNotice({ isDesktopRuntime, onOpenFolder }: SampleNoticePro
       ) : (
         <Link
           href="/download/"
-          className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.42)] bg-[color:var(--color-indigo-a12)] px-2.5 py-1.5 font-mono text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(139,151,255,0.6)] hover:bg-[color:var(--color-indigo-a18)]"
+          className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a42)] bg-[color:var(--color-indigo-a12)] px-2.5 py-1.5 font-mono text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a18)]"
         >
           <Download size={12} aria-hidden />
           {t("vaultStatus.downloadAppCta")}

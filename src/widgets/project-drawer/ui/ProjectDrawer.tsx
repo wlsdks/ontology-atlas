@@ -384,7 +384,7 @@ export function ProjectDrawer({
                   {isContainerNode ? t("categoryProject") : categoryLabel(project.category)}
                 </span>
                 {containerLabel && !isContainerNode ? (
-                  <span className="rounded-full border border-[color:rgba(139,151,255,0.32)] bg-[color:rgba(94,106,210,0.12)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(139,151,255,0.95)]">
+                  <span className="rounded-full border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-line-a90)]">
                     Project · {containerLabel}
                   </span>
                 ) : null}
@@ -393,7 +393,7 @@ export function ProjectDrawer({
                     {t("containerBadge")}
                   </span>
                 ) : project.isHub ? (
-                  <span className="rounded-full border border-[color:rgba(113,112,255,0.5)] bg-[color:rgba(94,106,210,0.16)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                  <span className="rounded-full border border-[color:rgba(113,112,255,0.5)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
                     {t("hubBadge")}
                   </span>
                 ) : (
@@ -405,7 +405,7 @@ export function ProjectDrawer({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                 aria-label={t("closeAriaLabel")}
               >
                 <X size={16} />
@@ -521,7 +521,7 @@ export function ProjectDrawer({
                         onEnterContainer(project.slug);
                         onClose();
                       }}
-                      className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.12)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:rgba(94,106,210,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                      className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                     >
                       {t("openHubTopology")} <ArrowUpRight size={14} />
                     </button>
@@ -538,7 +538,7 @@ export function ProjectDrawer({
                         href={detailHref}
                         prefetch
                         onClick={handleDetailClick}
-                        className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.12)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:rgba(94,106,210,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                        className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                       >
                         {t("openProjectDetail")} <ArrowUpRight size={14} />
                       </Link>
@@ -549,7 +549,7 @@ export function ProjectDrawer({
                             ? t("openDocsVaultTitleWithDoc", { name: project.name })
                             : t("openDocsVaultTitleEmpty")
                         }
-                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.04)] px-3 text-sm text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.55)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a06)] px-3 text-sm text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-a55)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                       >
                         <BookOpen size={13} />
                         {t("openDocsVault")}
@@ -563,7 +563,7 @@ export function ProjectDrawer({
                           매칭 실패해도 페이지는 graceful 로드). */}
                       <Link
                         href={buildOntologyNodeHref(`project:${project.slug}`)}
-                        className="inline-flex h-10 items-center justify-center rounded-md border border-[color:var(--color-divider)] px-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                        className="inline-flex h-10 items-center justify-center rounded-md border border-[color:var(--color-divider)] px-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                       >
                         {t("openOntology")}
                       </Link>
@@ -717,7 +717,7 @@ export function ProjectDrawer({
                               className={cn(
                                 "rounded-full border px-3 py-2 font-mono text-[9px] uppercase tracking-[0.08em] transition-colors",
                                 active
-                                  ? "border-[color:var(--color-indigo-brand)] bg-[color:rgba(94,106,210,0.12)] text-[color:var(--color-text-primary)]"
+                                  ? "border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]"
                                   : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
                               )}
                             >
@@ -863,7 +863,7 @@ export function ProjectDrawer({
                                   <li key={m.doc.slug}>
                                     <Link
                                       href={buildDocsVaultHref({ slug: m.doc.slug })}
-                                      className="group flex flex-col gap-1 rounded-md border border-transparent px-2 py-1 text-left text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.3)] hover:text-[color:var(--color-text-primary)]"
+                                      className="group flex flex-col gap-1 rounded-md border border-transparent px-2 py-1 text-left text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
                                     >
                                       <span className="flex items-center gap-2">
                                         <span className="flex-1 truncate">

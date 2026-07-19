@@ -78,7 +78,7 @@ export function InlineFieldEdit({
           onClick={beginEdit}
           aria-label={labels.edit}
           data-testid="inline-field-edit-button"
-          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
         >
           <PencilLine size={12} aria-hidden />
         </button>
@@ -104,7 +104,7 @@ export function InlineFieldEdit({
         }}
         aria-label={labels.field}
         data-testid="inline-field-input"
-        className="h-7 min-w-0 flex-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:rgba(94,106,210,0.46)] focus-visible:outline-none"
+        className="h-7 min-w-0 flex-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
       />
       <button
         type="button"
@@ -112,7 +112,7 @@ export function InlineFieldEdit({
         disabled={saving}
         aria-label={labels.save}
         data-testid="inline-field-save"
-        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:rgba(94,106,210,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset disabled:opacity-60"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60"
       >
         <Check size={12} aria-hidden />
       </button>
@@ -122,7 +122,7 @@ export function InlineFieldEdit({
         disabled={saving}
         aria-label={labels.cancel}
         data-testid="inline-field-cancel"
-        className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset disabled:opacity-60"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60"
       >
         <X size={12} aria-hidden />
       </button>

@@ -57,7 +57,7 @@ export function DocsVaultDocOutlinePanel({
   const t = useTranslations("vaultWidgets.parts.outline");
   const isPinned = pinnedSet.has(selectedDoc.slug);
   return (
-    <aside className="hidden w-[220px] flex-none flex-col overflow-auto border-l border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.012)] px-3 py-3 lg:flex">
+    <aside className="hidden w-[220px] flex-none flex-col overflow-auto border-l border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-3 py-3 lg:flex">
       <section className="flex items-center justify-between gap-1.5 border-b border-[color:var(--color-overlay-2)] pb-3">
         <div className="min-w-0">
           <span className="block truncate text-[12px] font-medium text-[color:var(--color-text-secondary)]">
@@ -93,7 +93,7 @@ export function DocsVaultDocOutlinePanel({
               <button
                 type="button"
                 onClick={onStartEditing}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-[color:rgba(139,151,255,0.35)] bg-[color:rgba(94,106,210,0.08)] text-[color:rgba(200,210,255,0.9)] transition-colors hover:border-[color:rgba(139,151,255,0.55)] hover:bg-[color:rgba(94,106,210,0.14)]"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] text-[color:rgba(200,210,255,0.9)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
                 aria-label={t("edit")}
               >
                 <Pencil size={13} aria-hidden />
@@ -104,7 +104,7 @@ export function DocsVaultDocOutlinePanel({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
               aria-label={t("closeTooltip")}
             >
               <X size={13} aria-hidden />
@@ -114,7 +114,7 @@ export function DocsVaultDocOutlinePanel({
       </section>
       {outlineHeadings.length > 0 ? (
         <details className="group border-b border-[color:var(--color-overlay-2)] py-3">
-          <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(139,151,255,0.45)]">
+          <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-line-a45)]">
             <span className="font-mono text-[10px] uppercase tracking-[0.14em]">
               {t("tableOfContents")} · {outlineHeadings.length}
             </span>
@@ -145,7 +145,7 @@ export function DocsVaultDocOutlinePanel({
                     }
                     className={`relative block truncate rounded-sm px-1.5 py-0.5 transition-colors ${
                       isActive
-                        ? "bg-[color:rgba(94,106,210,0.12)] text-[color:var(--color-text-primary)]"
+                        ? "bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]"
                         : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
                     }`}
                   >
@@ -175,7 +175,7 @@ export function DocsVaultDocOutlinePanel({
         </details>
       ) : null}
       <details className="group border-b border-[color:var(--color-overlay-2)] py-3">
-        <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(139,151,255,0.45)]">
+        <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-line-a45)]">
           <span className="font-mono text-[10px] uppercase tracking-[0.14em]">
             {t("shareSection")}
           </span>
@@ -192,8 +192,8 @@ export function DocsVaultDocOutlinePanel({
               onClick={() => onCopyUrl(selectedDoc.slug)}
               className={`inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[11px] transition-colors ${
                 copiedSlug === selectedDoc.slug
-                  ? "border-[color:rgba(139,151,255,0.45)] bg-[color:rgba(139,151,255,0.08)] text-[color:rgba(200,210,255,0.95)]"
-                  : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:rgba(200,210,255,0.9)]"
+                  ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-line-a06)] text-[color:rgba(200,210,255,0.95)]"
+                  : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:rgba(200,210,255,0.9)]"
               }`}
             >
               {copiedSlug === selectedDoc.slug ? (
@@ -215,7 +215,7 @@ export function DocsVaultDocOutlinePanel({
               onClick={() => {
                 if (typeof window !== "undefined") window.print();
               }}
-              className="inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-divider)] px-2 py-1 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-divider)] px-2 py-1 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
             >
               <Printer size={12} aria-hidden />
               {t("print")}
@@ -225,7 +225,7 @@ export function DocsVaultDocOutlinePanel({
       </details>
       {canEditCurrent ? (
         <details className="group border-b border-[color:var(--color-overlay-2)] py-3">
-          <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(139,151,255,0.45)]">
+          <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-line-a45)]">
             <span className="font-mono text-[10px] uppercase tracking-[0.14em]">
               {t("fileSection")}
             </span>

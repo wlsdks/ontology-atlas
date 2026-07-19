@@ -293,7 +293,7 @@ function EditorContent({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={t("openPublicAria")}
-                  className="inline-flex h-9 items-center gap-2 rounded-md border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.08)] px-3 text-sm text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:rgba(94,106,210,0.12)]"
+                  className="inline-flex h-9 items-center gap-2 rounded-md border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a08)] px-3 text-sm text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a12)]"
                 >
                   <ArrowUpRight size={14} />
                   {t("openPublicLabel")}
@@ -326,7 +326,7 @@ function EditorContent({
         {savedNotice && mode === "edit" ? (
           <div
             role="status"
-            className="mt-6 rounded-xl border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.1)] px-5 py-4 text-sm text-[color:var(--color-indigo-accent)]"
+            className="mt-6 rounded-xl border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a10)] px-5 py-4 text-sm text-[color:var(--color-indigo-accent)]"
           >
             {t("savedNotice")}
           </div>
@@ -334,7 +334,7 @@ function EditorContent({
 
         {mode === "create" && (
           <section className="mt-6 grid gap-3 md:grid-cols-2">
-            <div className="rounded-xl border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.06)] px-5 py-4">
+            <div className="rounded-xl border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-indigo-a06)] px-5 py-4">
               <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
                 {t("tipEyebrowEasiest")}
               </p>
@@ -360,7 +360,7 @@ function EditorContent({
 
         <section className="mt-10">
           {mode === "edit" && slug && (
-            <div className="mb-6 rounded-xl border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.06)] px-5 py-4">
+            <div className="mb-6 rounded-xl border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-indigo-a06)] px-5 py-4">
               <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
                 {t("publicCompanionEyebrow")}
               </p>

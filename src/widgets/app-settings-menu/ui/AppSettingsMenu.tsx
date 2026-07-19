@@ -129,7 +129,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           event.preventDefault();
           setOpen((current) => !current);
         }}
-        className="inline-flex h-8 cursor-pointer list-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
+        className="inline-flex h-8 cursor-pointer list-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
       >
         <Settings size={14} aria-hidden />
         <span className="hidden font-mono text-[10px] uppercase tracking-[0.08em] sm:inline">
@@ -177,7 +177,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               type="button"
               aria-label={t('closeLabel')}
               onClick={() => closePanel()}
-              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
             >
               <X size={13} aria-hidden />
             </button>
@@ -206,7 +206,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     onClick={() => setActiveSettingsTab(tab.id)}
                     className={
                       active
-                        ? "min-w-[7.25rem] rounded-md border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.14)] px-2.5 py-2 text-left text-[color:var(--color-text-primary)] md:min-h-[4rem]"
+                        ? "min-w-[7.25rem] rounded-md border border-[color:var(--color-indigo-a34)] bg-[color:var(--color-indigo-a14)] px-2.5 py-2 text-left text-[color:var(--color-text-primary)] md:min-h-[4rem]"
                         : "min-w-[7.25rem] rounded-md border border-transparent px-2.5 py-2 text-left text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] md:min-h-[4rem]"
                     }
                   >
@@ -227,7 +227,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 role="tabpanel"
                 aria-labelledby="app-settings-tab-verification"
                 aria-label={t('tabVerification')}
-                className="min-h-0 overflow-y-auto rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.06)] p-3"
+                className="min-h-0 overflow-y-auto rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] p-3"
               >
                 <h3
                   id={mcpTitleId}
@@ -236,7 +236,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                   {t('connectionStatusTitle')}
                 </h3>
                 <div
-                  className="mt-2 grid gap-1.5 rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(0,0,0,0.14)] p-2.5 sm:grid-cols-3"
+                  className="mt-2 grid gap-1.5 rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:rgba(0,0,0,0.14)] p-2.5 sm:grid-cols-3"
                   data-testid="mcp-live-verdict-strip"
                 >
                   <div className="min-w-0 rounded-md border border-[color:rgba(73,190,146,0.2)] bg-[color:rgba(73,190,146,0.06)] p-2">
@@ -257,7 +257,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                       {t('liveVerdictSessionMeta')}
                     </p>
                   </div>
-                  <div className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.07)] p-2">
+                  <div className="min-w-0 rounded-md border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-line-a06)] p-2">
                     <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
                       <Terminal size={11} aria-hidden />
                       {t('liveVerdictFallback')}
@@ -268,7 +268,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                   </div>
                 </div>
                 <div
-                  className="mt-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2.5"
+                  className="mt-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5"
                   data-testid="mcp-connection-state-ladder"
                 >
                   <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
@@ -328,7 +328,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     </div>
                   </div>
                 </div>
-                <div className="rounded-lg border border-[color:rgba(139,151,255,0.2)] bg-[color:rgba(139,151,255,0.06)] p-2.5">
+                <div className="rounded-lg border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-line-a06)] p-2.5">
                   <div className="flex items-start gap-2">
                     <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
                     <div className="min-w-0">
@@ -356,7 +356,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 </div>
               </div>
               <div
-                className="mt-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2.5"
+                className="mt-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5"
                 data-testid="mcp-proof-decision-order"
               >
                 <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
@@ -400,7 +400,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             </h3>
             <Link
               href="/ontology/insights/"
-              className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 text-left transition-colors hover:border-[color:rgba(139,151,255,0.32)]"
+              className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 text-left transition-colors hover:border-[color:var(--color-indigo-line-a32)]"
             >
               <Bot size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
               <span className="min-w-0">
@@ -428,7 +428,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           >
             <Link
               href={vaultHref}
-              className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 text-left transition-colors hover:border-[color:rgba(139,151,255,0.32)]"
+              className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 text-left transition-colors hover:border-[color:var(--color-indigo-line-a32)]"
             >
               <FolderOpen size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
               <span className="min-w-0">
@@ -477,7 +477,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             role="tabpanel"
             aria-labelledby="app-settings-tab-mcpAgents"
             aria-label={t('tabMcpAgents')}
-            className="min-h-0 overflow-y-auto rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.08)] p-3"
+            className="min-h-0 overflow-y-auto rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] p-3"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-start gap-2">
@@ -494,14 +494,14 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               <button
                 type="button"
                 onClick={() => void copy(mcpFirstCalls)}
-                className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-[color:rgba(139,151,255,0.32)] px-2 font-mono text-[9px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.48)] hover:bg-[color:rgba(139,151,255,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+                className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-indigo-line-a32)] px-2 font-mono text-[9px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
               >
                 {copyState === 'copied' ? <Check size={12} aria-hidden /> : <Copy size={12} aria-hidden />}
                 {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
               </button>
             </div>
             <div
-              className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(0,0,0,0.14)] p-2.5"
+              className="mt-3 rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:rgba(0,0,0,0.14)] p-2.5"
               data-testid="mcp-state-decision-table"
             >
               <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
@@ -511,7 +511,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 {mcpStateRows.map(([id, labelKey, bodyKey, Icon, iconColor]) => (
                   <div
                     key={id}
-                    className="flex min-w-0 items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2"
+                    className="flex min-w-0 items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2"
                   >
                     <Icon
                       size={12}
@@ -577,7 +577,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               </div>
               <div
                 data-testid="project-indexing-checkpoint"
-                className="grid gap-1.5 rounded-lg border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.07)] p-2.5 font-mono sm:col-span-2"
+                className="grid gap-1.5 rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-line-a06)] p-2.5 font-mono sm:col-span-2"
               >
                 <span className="text-[color:var(--color-indigo-accent)]">{t('projectIndexTitle')}</span>
                 <span>{t('projectIndexMcp')}</span>
@@ -599,7 +599,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 {t('clientProofBody')}
               </p>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2.5">
+                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
                   <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
                     {t('clientCodexTitle')}
                   </p>
@@ -607,7 +607,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     {t('clientCodexBody')}
                   </p>
                 </div>
-                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2.5">
+                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
                   <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
                     {t('clientClaudeTitle')}
                   </p>
@@ -615,7 +615,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     {t('clientClaudeBody')}
                   </p>
                 </div>
-                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2.5">
+                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
                   <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
                     {t('clientCursorVsCodeTitle')}
                   </p>
@@ -623,7 +623,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     {t('clientCursorVsCodeBody')}
                   </p>
                 </div>
-                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2.5">
+                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
                   <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
                     {t('clientInspectorTitle')}
                   </p>

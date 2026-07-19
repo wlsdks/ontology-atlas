@@ -14,7 +14,7 @@ import { estimateReadingMinutes } from "./reading-minutes";
 export { estimateReadingMinutes };
 
 const actionLinkClass =
-  "inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.025)] px-2.5 font-mono text-[11px] text-[color:var(--color-text-tertiary)] underline-offset-2 transition-[background-color,border-color,color,transform] hover:-translate-y-0.5 hover:border-[color:rgba(139,151,255,0.42)] hover:bg-[color:rgba(139,151,255,0.08)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] active:translate-y-px active:border-[color:rgba(139,151,255,0.58)] active:bg-[color:rgba(139,151,255,0.12)] motion-reduce:transform-none";
+  "inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-[11px] text-[color:var(--color-text-tertiary)] underline-offset-2 transition-[background-color,border-color,color,transform] hover:-translate-y-0.5 hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a42)] active:translate-y-px active:border-[color:var(--color-indigo-line-a54)] active:bg-[color:var(--color-indigo-line-a13)] motion-reduce:transform-none";
 
 /**
  * 문서 본문 위 메타 바 — 단어 수 / 읽기 시간 / kind 점프 / 태그 / 갱신일.
@@ -46,11 +46,11 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
       className="mx-auto flex max-w-[760px] flex-col gap-2 border-b border-[color:var(--color-overlay-2)] px-6 py-3 text-[11px] text-[color:var(--color-text-quaternary)] md:px-10"
     >
       <div className="flex min-w-0 flex-wrap items-start gap-x-2 gap-y-1.5">
-        <span className="inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.025)] px-2.5 font-mono text-[11px] text-[color:var(--color-text-secondary)]">
+        <span className="inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-[11px] text-[color:var(--color-text-secondary)]">
           <FileText className="h-3.5 w-3.5" aria-hidden="true" />
           {t("recordProofLabel")}
         </span>
-        <span className="min-h-7 min-w-0 rounded-md border border-[color:var(--color-overlay-1)] bg-[color:rgba(255,255,255,0.018)] px-2 py-1 font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+        <span className="min-h-7 min-w-0 rounded-md border border-[color:var(--color-overlay-1)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
           <span className="sr-only">{t("pathLabel")}: </span>
           <span className="break-all">{sourcePath}</span>
         </span>

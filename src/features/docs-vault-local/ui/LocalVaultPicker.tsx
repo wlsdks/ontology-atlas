@@ -147,7 +147,7 @@ export function LocalVaultPicker({
   if (status === 'error') {
     return (
       <div className="grid flex-1 gap-2">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-[color:rgba(229,72,77,0.32)] bg-[color:rgba(229,72,77,0.08)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-status-danger)]">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-status-danger)]">
           <span className="truncate">
             {errorMessage ?? t('errorFallback')}
           </span>
@@ -157,7 +157,7 @@ export function LocalVaultPicker({
           <button
             type="button"
             onClick={onOpen}
-            className="ml-auto rounded-sm border border-[color:rgba(229,72,77,0.32)] px-2 py-0.5 text-[11px] transition-colors hover:bg-[color:rgba(229,72,77,0.14)]"
+            className="ml-auto rounded-sm border border-[color:var(--color-danger-a32)] px-2 py-0.5 text-[11px] transition-colors hover:bg-[color:var(--color-danger-a12)]"
           >
             {t('errorReselect')}
           </button>
@@ -207,7 +207,7 @@ export function LocalVaultPicker({
               onClick={handleCopyPath}
               title={rootPath}
               aria-label={t('copyPathAriaLabel', { path: rootPath })}
-              className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-sm border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.06)] px-1.5 py-0.5 font-mono text-[9.5px] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(94,106,210,0.4)] hover:text-[color:var(--color-text-secondary)]"
+              className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-sm border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-[9.5px] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:var(--color-indigo-a40)] hover:text-[color:var(--color-text-secondary)]"
             >
               <ClipboardCopy size={10} aria-hidden />
               <span className="truncate">{rootPath}</span>
@@ -220,7 +220,7 @@ export function LocalVaultPicker({
               type="button"
               onClick={() => onReveal(rootPath)}
               aria-label={t('revealPathAriaLabel', { path: rootPath })}
-              className="inline-flex items-center gap-1 rounded-sm border border-[color:rgba(94,106,210,0.24)] px-1.5 py-0.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.4)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex items-center gap-1 rounded-sm border border-[color:var(--color-indigo-a24)] px-1.5 py-0.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a40)] hover:text-[color:var(--color-text-primary)]"
             >
               <ExternalLink size={10} aria-hidden />
               {t('revealPathLabel')}
@@ -255,7 +255,7 @@ export function LocalVaultPicker({
               aria-live="polite"
               className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] ${
                 validationSummary.errorCount > 0
-                  ? 'border-[color:rgba(229,72,77,0.32)] bg-[color:rgba(229,72,77,0.08)] text-[color:var(--color-status-danger)]'
+                  ? 'border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-status-danger)]'
                   : 'border-[color:rgba(244,183,49,0.32)] bg-[color:rgba(244,183,49,0.10)] text-[color:var(--color-status-warning)]'
               }`}
             >
@@ -276,7 +276,7 @@ export function LocalVaultPicker({
             type="button"
             onClick={onRefresh}
             aria-label={t('rescanAriaLabel')}
-            className="ml-auto inline-flex items-center gap-1 rounded-sm border border-transparent px-1.5 py-0.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.3)] hover:text-[color:var(--color-text-primary)]"
+            className="ml-auto inline-flex items-center gap-1 rounded-sm border border-transparent px-1.5 py-0.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a30)] hover:text-[color:var(--color-text-primary)]"
           >
             <RefreshCw size={11} aria-hidden />
           </button>
@@ -286,7 +286,7 @@ export function LocalVaultPicker({
             type="button"
             onClick={onClose}
             aria-label={t('closeAriaLabel')}
-            className="inline-flex items-center gap-1 rounded-sm border border-transparent px-1.5 py-0.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(229,72,77,0.32)] hover:text-[color:var(--color-status-danger)]"
+            className="inline-flex items-center gap-1 rounded-sm border border-transparent px-1.5 py-0.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-danger-a32)] hover:text-[color:var(--color-status-danger)]"
           >
             <FolderX size={11} aria-hidden />
           </button>
@@ -300,7 +300,7 @@ export function LocalVaultPicker({
         type="button"
         onClick={onOpen}
         disabled={status === 'opening' || status === 'loading'}
-        className="inline-flex flex-1 items-center justify-center gap-2 rounded-md border border-dashed border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.06)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.1)] disabled:opacity-60"
+        className="inline-flex flex-1 items-center justify-center gap-2 rounded-md border border-dashed border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a06)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-indigo-a10)] disabled:opacity-60"
       >
         <FolderOpen size={12} aria-hidden />
         {status === 'opening'
@@ -357,7 +357,7 @@ function RecentVaultList({
           return (
             <div
               key={record.desktopRootPath ?? `${record.id}:${record.name}`}
-              className="grid min-w-0 grid-cols-[1fr_24px] items-center gap-1 rounded-sm border border-transparent transition-colors hover:border-[color:rgba(94,106,210,0.28)] hover:bg-[color:rgba(94,106,210,0.06)]"
+              className="grid min-w-0 grid-cols-[1fr_24px] items-center gap-1 rounded-sm border border-transparent transition-colors hover:border-[color:var(--color-indigo-a28)] hover:bg-[color:var(--color-indigo-a06)]"
             >
               <button
                 type="button"
@@ -398,7 +398,7 @@ function RecentVaultList({
                     onClick={() => onForgetRecent(record)}
                     disabled={disabled}
                     aria-label={t('recentForgetAriaLabel', { name: record.name })}
-                    className="inline-flex h-6 w-6 items-center justify-center rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:rgba(229,72,77,0.10)] hover:text-[color:var(--color-status-danger)] disabled:opacity-60"
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-danger-a10)] hover:text-[color:var(--color-status-danger)] disabled:opacity-60"
                   >
                     <X size={12} aria-hidden />
                   </button>

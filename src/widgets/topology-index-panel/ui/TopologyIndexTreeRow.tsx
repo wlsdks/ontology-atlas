@@ -100,7 +100,7 @@ export function TopologyIndexTreeRow({
         style={{ marginLeft: depth * 16 }}
         className={`grid min-h-[34px] grid-cols-[14px_15px_1fr_auto] items-center gap-x-2 rounded-md border px-2 py-1 text-[12.5px] transition-colors ${
           selected
-            ? "border-[color:rgba(94,106,210,0.55)] bg-[color:var(--topology-v2-panel-metric-surface)] text-[color:var(--topology-v2-panel-text-primary)]"
+            ? "border-[color:var(--color-indigo-a55)] bg-[color:var(--topology-v2-panel-metric-surface)] text-[color:var(--topology-v2-panel-text-primary)]"
             : "border-transparent text-[color:var(--topology-v2-panel-text-secondary)] hover:border-[color:var(--topology-v2-panel-action-border)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
         }`}
       >
@@ -145,7 +145,7 @@ export function TopologyIndexTreeRow({
                   회색 미터 폐기). 인디고 잉크: 미선택 .45 / 선택 .8. */}
               <span className="h-[2px] max-w-[76px] flex-1 overflow-hidden rounded-[1px] bg-[rgba(0,0,0,0.45)] shadow-[inset_0_1px_1px_rgba(0,0,0,0.5)]">
                 <span
-                  className="block h-full rounded-[1px] bg-[rgba(139,151,255,0.45)] data-[selected=true]:bg-[rgba(139,151,255,0.8)]"
+                  className="block h-full rounded-[1px] bg-[var(--color-indigo-line-a45)] data-[selected=true]:bg-[var(--color-indigo-line-a90)]"
                   data-selected={selected}
                   style={{ width: `${Math.round(capacityRatio * 100)}%` }}
                 />

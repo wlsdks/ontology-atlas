@@ -381,7 +381,7 @@ export function buildVaultGraphFlow(
               height: 16,
               color: typeof stroke.stroke === "string"
                 ? stroke.stroke
-                : "rgba(139, 151, 255, 0.78)",
+                : "var(--color-indigo-line-a90)",
             },
           }
         : {}),

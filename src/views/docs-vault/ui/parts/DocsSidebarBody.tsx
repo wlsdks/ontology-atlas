@@ -133,7 +133,7 @@ export function DocsSidebarBody({
         </span>
       </div>
       <div
-        className="mx-3 mt-2 grid flex-none grid-cols-2 gap-1 rounded-lg border border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.018)] p-1"
+        className="mx-3 mt-2 grid flex-none grid-cols-2 gap-1 rounded-lg border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] p-1"
         role="tablist"
         aria-label={t("collectionAriaLabel")}
       >
@@ -148,8 +148,8 @@ export function DocsSidebarBody({
               onClick={() => onCollectionChange(option)}
               className={`min-w-0 rounded-md px-2 py-1.5 text-left transition-[background-color,color,transform,border-color] duration-150 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] ${
                 active
-                  ? "bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]"
-                  : "text-[color:var(--color-text-tertiary)] hover:bg-[color:rgba(255,255,255,0.035)] hover:text-[color:var(--color-text-primary)]"
+                  ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]"
+                  : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
               }`}
             >
               <span className="block truncate text-[11.5px] font-medium">
@@ -164,7 +164,7 @@ export function DocsSidebarBody({
           );
         })}
       </div>
-      <label className="mx-3 mt-2 flex h-8 flex-none items-center gap-2 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.018)] px-2 text-[color:var(--color-text-quaternary)] focus-within:border-[color:rgba(139,151,255,0.45)] focus-within:text-[color:var(--color-text-secondary)]">
+      <label className="mx-3 mt-2 flex h-8 flex-none items-center gap-2 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 text-[color:var(--color-text-quaternary)] focus-within:border-[color:var(--color-indigo-line-a45)] focus-within:text-[color:var(--color-text-secondary)]">
         <Search size={12} aria-hidden />
         <span className="sr-only">{t("searchLabel")}</span>
         <input
@@ -187,7 +187,7 @@ export function DocsSidebarBody({
         ) : null}
       </label>
       {(activeTag || normalizedTreeQuery) ? (
-        <div className="mx-3 mt-2 flex flex-none items-center justify-between gap-2 rounded-sm border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(94,106,210,0.06)] px-2 py-1 text-[10.5px] text-[color:rgba(200,210,255,0.9)]">
+        <div className="mx-3 mt-2 flex flex-none items-center justify-between gap-2 rounded-sm border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] px-2 py-1 text-[10.5px] text-[color:rgba(200,210,255,0.9)]">
           <span className="truncate">
             {activeTag ? t("activeTagSummary", { tag: activeTag }) : t("treeSearchCount", { count: queryMatchCount })}
           </span>
@@ -209,7 +209,7 @@ export function DocsSidebarBody({
           flex-none + 자체 max-height 스크롤. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {pinnedSlugs.length > 0 ? (
-          <section className="flex-none border-b border-[color:rgba(255,255,255,0.05)] pb-1">
+          <section className="flex-none border-b border-[color:var(--color-overlay-2)] pb-1">
             <SectionLabel>{t("pinnedHeader", { count: pinnedSlugs.length })}</SectionLabel>
             <ul className="flex max-h-[22vh] flex-col gap-0.5 overflow-auto px-2">
               {pinnedSlugs.map((slug) => {
@@ -224,7 +224,7 @@ export function DocsSidebarBody({
                         onClick={() => onSelect(slug)}
                         className={`flex min-w-0 flex-1 items-center gap-2 rounded-sm px-2 py-1 pr-7 text-left text-[12px] transition-colors ${
                           active
-                            ? "bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]"
+                            ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
                             : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                         }`}
                       >
@@ -271,7 +271,7 @@ export function DocsSidebarBody({
         </section>
 
         {recentSlugs.length > 0 ? (
-          <section className="flex-none border-t border-[color:rgba(255,255,255,0.05)] pb-2">
+          <section className="flex-none border-t border-[color:var(--color-overlay-2)] pb-2">
             <SectionLabel>{t("recentHeader", { count: recentSlugs.length })}</SectionLabel>
             <ul className="flex max-h-[22vh] flex-col gap-0.5 overflow-auto px-2">
               {recentSlugs.map((slug) => {
@@ -285,7 +285,7 @@ export function DocsSidebarBody({
                       onClick={() => onSelect(slug)}
                       className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-[12px] transition-colors ${
                         active
-                          ? "bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]"
+                          ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
                           : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                       }`}
                     >
@@ -305,12 +305,12 @@ export function DocsSidebarBody({
       </div>
 
       {tagEntries.length > 0 ? (
-        <div className="flex-none border-t border-[color:rgba(255,255,255,0.06)]">
+        <div className="flex-none border-t border-[color:var(--color-overlay-2)]">
           <details
             className="group"
             open={activeTag !== null ? true : undefined}
           >
-            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-[11px] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:rgba(255,255,255,0.025)] hover:text-[color:var(--color-text-secondary)]">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-[11px] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]">
               <Hash size={11} aria-hidden />
               <span className="font-medium">{t("tagsHeader", { count: tagEntries.length })}</span>
               <ChevronDown
@@ -330,8 +330,8 @@ export function DocsSidebarBody({
                     aria-pressed={active}
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] transition-colors ${
                       active
-                        ? "bg-[color:rgba(94,106,210,0.16)] text-[color:rgba(200,210,255,0.95)]"
-                        : "bg-[color:rgba(255,255,255,0.035)] text-[color:var(--color-text-tertiary)] hover:bg-[color:rgba(139,151,255,0.08)] hover:text-[color:var(--color-text-primary)]"
+                        ? "bg-[color:var(--color-indigo-a16)] text-[color:rgba(200,210,255,0.95)]"
+                        : "bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-text-primary)]"
                     }`}
                     title={t("tagTitle", { tag, count: slugs.length })}
                   >

@@ -21,7 +21,7 @@ export function HighlightedText({
         seg.match ? (
           <mark
             key={i}
-            className="rounded-sm bg-[color:rgba(139,151,255,0.22)] text-[color:rgba(210,218,255,0.98)]"
+            className="rounded-sm bg-[color:var(--color-indigo-line-a22)] text-[color:rgba(210,218,255,0.98)]"
           >
             {seg.text}
           </mark>

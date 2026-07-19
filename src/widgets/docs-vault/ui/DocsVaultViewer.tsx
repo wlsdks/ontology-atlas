@@ -154,7 +154,7 @@ export function DocsVaultViewer({
           seg.match ? (
             <mark
               key={`${key}-${i}`}
-              className="docs-match rounded-sm bg-[color:rgba(139,151,255,0.22)] px-0.5 text-[color:rgba(210,218,255,0.98)]"
+              className="docs-match rounded-sm bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:rgba(210,218,255,0.98)]"
             >
               {seg.text}
             </mark>
@@ -216,7 +216,7 @@ export function DocsVaultViewer({
                     });
                   }
                 }}
-                className="text-[color:rgba(139,151,255,0.9)] underline underline-offset-2 decoration-[color:rgba(139,151,255,0.3)] hover:decoration-[color:var(--color-indigo-accent)]"
+                className="text-[color:var(--color-indigo-line-a90)] underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]"
               >
                 {children}
               </Link>
@@ -246,7 +246,7 @@ export function DocsVaultViewer({
               href={href}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex items-center gap-1 underline underline-offset-2 decoration-[color:rgba(139,151,255,0.4)] hover:decoration-[color:var(--color-indigo-accent)]"
+              className="inline-flex items-center gap-1 underline underline-offset-2 decoration-[color:var(--color-indigo-line-a40)] hover:decoration-[color:var(--color-indigo-accent)]"
               {...rest}
             >
               {children}
@@ -270,7 +270,7 @@ export function DocsVaultViewer({
                   });
                 }
               }}
-              className="text-[color:rgba(139,151,255,0.9)] underline underline-offset-2 decoration-[color:rgba(139,151,255,0.3)] hover:decoration-[color:var(--color-indigo-accent)]"
+              className="text-[color:var(--color-indigo-line-a90)] underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]"
             >
               {children}
             </Link>
@@ -359,7 +359,7 @@ export function DocsVaultViewer({
         if (!isBlock) {
           return (
             <code
-              className="rounded-sm bg-[color:rgba(139,151,255,0.08)] px-1 py-0.5 font-mono text-[11px] text-[color:rgba(200,210,255,0.95)] md:text-[12px]"
+              className="rounded-sm bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-[11px] text-[color:rgba(200,210,255,0.95)] md:text-[12px]"
               {...rest}
             >
               {children}
@@ -395,7 +395,7 @@ export function DocsVaultViewer({
         }
         return (
           <blockquote
-            className="my-4 border-l-2 border-[color:rgba(139,151,255,0.35)] pl-4 italic text-[color:var(--color-text-tertiary)]"
+            className="my-4 border-l-2 border-[color:var(--color-indigo-line-a35)] pl-4 italic text-[color:var(--color-text-tertiary)]"
             {...rest}
           >
             {children}
@@ -516,8 +516,8 @@ const CALLOUT_STYLES: Record<
   { border: string; bg: string; title: string; icon: string }
 > = {
   note: {
-    border: 'rgba(139,151,255,0.4)',
-    bg: 'rgba(94,106,210,0.06)',
+    border: 'var(--color-indigo-line-a40)',
+    bg: 'var(--color-indigo-a06)',
     title: 'rgba(200,210,255,0.95)',
     icon: '📝',
   },
@@ -528,8 +528,8 @@ const CALLOUT_STYLES: Record<
     icon: '💡',
   },
   info: {
-    border: 'rgba(139,151,255,0.4)',
-    bg: 'rgba(94,106,210,0.06)',
+    border: 'var(--color-indigo-line-a40)',
+    bg: 'var(--color-indigo-a06)',
     title: 'rgba(200,210,255,0.95)',
     icon: 'ℹ️',
   },
@@ -758,8 +758,8 @@ function HeadingAnchor({
       title={copied ? t('anchorCopiedTitle') : t('anchorCopyTitle')}
       className={`absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md transition-[background-color,color,opacity] sm:-left-9 sm:right-auto ${
         copied
-          ? 'text-[color:rgba(139,151,255,0.95)] opacity-100'
-          : 'text-[color:var(--color-text-quaternary)] opacity-100 hover:bg-[color:rgba(139,151,255,0.08)] hover:text-[color:rgba(139,151,255,0.9)] sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100'
+          ? 'text-[color:var(--color-indigo-line-a90)] opacity-100'
+          : 'text-[color:var(--color-text-quaternary)] opacity-100 hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-indigo-line-a90)] sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100'
       }`}
       contentEditable={false}
     >

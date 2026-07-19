@@ -72,11 +72,11 @@ export function RelationPostSaveHandoff({
   return (
     <aside
       data-testid="builder-relation-post-save-handoff"
-      className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-4 z-40 w-[min(520px,calc(100%-2rem))] rounded-lg border border-[color:rgba(94,106,210,0.3)] bg-[color:var(--color-panel)] p-3 shadow-[0_18px_44px_rgba(0,0,0,0.28)]"
+      className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-4 z-40 w-[min(520px,calc(100%-2rem))] rounded-lg border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-panel)] p-3 shadow-[0_18px_44px_rgba(0,0,0,0.28)]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-2.5">
-          <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.1)] text-[color:var(--color-indigo-accent)]">
+          <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-indigo-a26)] bg-[color:var(--color-indigo-a10)] text-[color:var(--color-indigo-accent)]">
             <GitBranch size={14} />
           </span>
           <div className="min-w-0">
@@ -92,7 +92,7 @@ export function RelationPostSaveHandoff({
           type="button"
           onClick={onDismiss}
           aria-label={labels.closeAriaLabel}
-          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
         >
           <X size={14} />
         </button>
@@ -108,26 +108,26 @@ export function RelationPostSaveHandoff({
       <div className="mt-3 flex flex-wrap gap-1.5">
         <Link
           href={buildRelationTopologyPathHref(relation.sourceSlug, relation.targetSlug)}
-          className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.09)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+          className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
         >
           {labels.openPath}
         </Link>
         <Link
           href={buildRelationTopologyFocusHref(relation.sourceSlug)}
-          className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-overlay-3)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+          className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-overlay-3)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
         >
           {labels.sourceFocus}
         </Link>
         <Link
           href={buildRelationTopologyFocusHref(relation.targetSlug)}
-          className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-overlay-3)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+          className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-overlay-3)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
         >
           {labels.targetFocus}
         </Link>
         <Link
           href={buildRelationQueryCockpitHref(relation.targetSlug)}
           aria-label={labels.queryCockpitAriaLabel}
-          className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.09)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+          className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
         >
           {labels.queryCockpit}
         </Link>
@@ -135,7 +135,7 @@ export function RelationPostSaveHandoff({
           type="button"
           onClick={() => void handleCopyProofPacket()}
           aria-label={proofCopyStatusLabel || labels.copyProofPacket}
-          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a26)] bg-[color:var(--color-indigo-a08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
         >
           {proofCopyState === "copied" ? (
             <Check size={12} aria-hidden />
@@ -148,7 +148,7 @@ export function RelationPostSaveHandoff({
           type="button"
           onClick={() => void handleCopySyncGate()}
           aria-label={copyStatusLabel || labels.copySyncGate}
-          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a26)] bg-[color:var(--color-indigo-a08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
         >
           {copyState === "copied" ? (
             <Check size={12} aria-hidden />

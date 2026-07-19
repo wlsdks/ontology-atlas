@@ -154,7 +154,7 @@ export function AppNavRail({ settingsSlot, hidden, className }: AppNavRailProps)
                     className={cn(
                       "flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-[8px] transition-colors",
                       isActive
-                        ? "bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-indigo-accent)] shadow-[inset_0_0_0_1px_rgba(139,151,255,0.22)]"
+                        ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-accent)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
                         : "text-[color:var(--color-text-tertiary)] group-hover:bg-[color:var(--color-overlay-2)] group-hover:text-[color:var(--color-text-primary)]",
                     )}
                   >
