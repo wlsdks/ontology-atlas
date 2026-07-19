@@ -56,6 +56,12 @@ export interface RelationsTabHealthQueue {
   ontologyHref: (slug: string) => string;
 }
 
+export interface RelationsTabHubLink {
+  /** 허브 행 클릭 → 지도 노드 포커스 딥링크 (`buildOntologyNodeHref`). */
+  href: (nodeId: string) => string;
+  ariaLabel: (title: string) => string;
+}
+
 export interface RelationsTabProps {
   edgeTypeRows: Array<{ type: string; count: number }>;
   totalEdges: number;
@@ -75,6 +81,7 @@ export interface RelationsTabProps {
    *  에서 이관. `buildOntologyHealthActionTarget`(entities 레벨, 지도의 health
    *  칩과 같은 소스)로 고른 다음 수리 대상 + 빌더 ?node= 딥링크. */
   healthQueue: RelationsTabHealthQueue;
+  hubLink: RelationsTabHubLink;
   labels: RelationsTabLabels;
 }
 
@@ -96,6 +103,7 @@ export function RelationsTab({
   kindLabel,
   agentReadiness,
   healthQueue,
+  hubLink,
   labels,
 }: RelationsTabProps) {
   const edgeMax = edgeTypeRows.reduce((m, r) => Math.max(m, r.count), 0);
@@ -310,9 +318,12 @@ export function RelationsTab({
             hubs.map((hub) => {
               const meterPct = hubDegreeMax > 0 ? Math.max(6, Math.round((hub.degree / hubDegreeMax) * 100)) : 0;
               return (
-              <div
+              <Link
                 key={hub.id}
-                className="flex items-center gap-3.5 border-t border-[color:var(--color-divider)] py-2.5 first:border-t-0"
+                href={hubLink.href(hub.id)}
+                aria-label={hubLink.ariaLabel(hub.title)}
+                data-testid="insights-hub-row-link"
+                className="-mx-1.5 flex items-center gap-3.5 rounded-md border-t border-[color:var(--color-divider)] px-1.5 py-2.5 transition-colors first:border-t-0 hover:bg-[color:var(--color-overlay-1)]"
               >
                 <HubEgoThumbnailSvg kind={hub.kind} thumbnail={hub.thumbnail} />
                 <span className="min-w-0 flex-1">
@@ -338,7 +349,7 @@ export function RelationsTab({
                     />
                   </span>
                 </span>
-              </div>
+              </Link>
               );
             })
           )}

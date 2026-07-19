@@ -17,6 +17,9 @@ export interface FreshnessTabLabels {
   unknownDate: string;
   daysAgo: (days: number) => string;
   older: string;
+  /** 히트스트립 시간축 방향 라벨 — 좌측(과거) / 우측(현재). */
+  axisStart: string;
+  axisEnd: string;
   recentUpdatesTitle: string;
   noRecentUpdates: string;
   staleCountLabel: string;
@@ -92,6 +95,14 @@ export function FreshnessTab({ domainRows, recent, staleCount, weeklyTotals, kin
                 </span>
               </div>
             ))}
+            <div className="flex items-center gap-2 text-[9.5px] text-[color:var(--color-text-quaternary)]">
+              <span className="w-[136px] flex-none" aria-hidden />
+              <span className="flex flex-1 items-center justify-between">
+                <span>{labels.axisStart}</span>
+                <span>{labels.axisEnd}</span>
+              </span>
+              <span className="w-12 flex-none" aria-hidden />
+            </div>
           </div>
         )}
         <div className="mt-2.5 flex items-center justify-end gap-1.5 border-t border-[color:var(--color-divider)] pt-2.5 text-[9.5px] text-[color:var(--color-text-quaternary)]">

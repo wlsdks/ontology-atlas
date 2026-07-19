@@ -155,17 +155,26 @@ export function ProjectSelectorPage() {
                   }`}
                 >
                   <TopologyV2KindGlyph kind={row.kind} size={14} />
-                  <span className="min-w-0 shrink truncate font-mono text-[11.5px] text-[color:var(--color-text-secondary)]">
+                  <span
+                    title={row.slug}
+                    className="min-w-0 shrink truncate font-mono text-[11.5px] text-[color:var(--color-text-secondary)]"
+                  >
                     {row.slug}
                   </span>
                   {row.what ? (
-                    <span className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--color-text-tertiary)]">
+                    <span
+                      title={row.what}
+                      className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--color-text-tertiary)]"
+                    >
                       {row.what}
                     </span>
                   ) : (
                     <span className="min-w-0 flex-1" />
                   )}
-                  <span className="max-w-[150px] shrink truncate font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] sm:max-w-[220px]">
+                  <span
+                    title={row.domainTitle ?? undefined}
+                    className="max-w-[150px] shrink truncate font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] sm:max-w-[220px]"
+                  >
                     {row.domainTitle ?? t("activityNoDomain")}
                   </span>
                   <span className={`shrink-0 whitespace-nowrap text-[11px] ${numeralClass}`}>
@@ -301,7 +310,14 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
                   }}
                 />
               </span>
-              <span className={`max-w-[120px] shrink text-right text-[10.5px] sm:max-w-none sm:shrink-0 sm:whitespace-nowrap ${numeralClass}`}>
+              <span
+                title={t("domainRowSummary", {
+                  total: row.total,
+                  cap: row.capabilityCount,
+                  el: row.elementCount,
+                })}
+                className={`max-w-[120px] shrink truncate text-right text-[10.5px] sm:max-w-none sm:shrink-0 sm:whitespace-nowrap ${numeralClass}`}
+              >
                 {t("domainRowSummary", {
                   total: row.total,
                   cap: row.capabilityCount,
