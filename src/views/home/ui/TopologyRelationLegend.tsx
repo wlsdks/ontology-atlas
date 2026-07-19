@@ -4,12 +4,17 @@ import { useTranslations } from "next-intl";
 
 /**
  * 지도 우하단 상시 계기 — 선 인코딩(spine/terminal · quality stroke) 을
- * 설명하는 유일한 표면이라 first-run 여부와 무관하게 항상 켜져 있는다
+ * 설명하는 유일한 표면이라 first-run 여부와 무관하게 켜져 있는다
  * (W3 분석 보기 은퇴 — 이전에는 `TopologyAnalysisBar` overview 모드 안에만
  * 있어 그 모드를 벗어나면 선 의미를 잃어버렸다). `FirstRunReadout` 과 같은
  * 계기 판독 문법(mono 소문자, uppercase tracking, dot 구분)을 쓰지만 그
  * 컴포넌트의 가시성(정적 모드 + 미dismiss)에는 묶이지 않는다 — 렌더 위치는
  * `HomePage` 가 같은 bottom-right 스택 안에 둘을 나란히 배치한다.
+ *
+ * "상시" 는 first-run 상태 기준이다 — 뷰포트 기준으로는 `md:flex`
+ * (< 768px 는 `hidden`) 로 좁은 화면에서 의도적으로 숨긴다. 좁은 화면은
+ * 이 계기를 놓을 여유 공간이 없고, 선 인코딩보다 노드 자체 탐색이
+ * 우선이라는 판단(UX 교차검증 라운드, 2026-07-19).
  */
 export function TopologyRelationLegend() {
   const t = useTranslations("topology.analysis");

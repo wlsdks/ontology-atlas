@@ -49,6 +49,31 @@
 `vaultWidgets.parts.outline.railLabel/railAria`. 전부 기존 토큰 재사용,
 신규 채색 0.
 
+## 2026-07-19 — UX 전문가 라운드 교차검증 — 소형 결함 5건 (ux-expert-fixes)
+
+UX 전문가 라운드 조사를 리드가 코드/재현으로 교차 검증해 살아남은 5건 수정.
+새 색·새 모션 없음, 기존 fallback 토스트 재사용.
+
+- **ko FirstRunChooser 캡션 영어 하드코딩 정정** — `messages/ko.json`
+  `firstRunStarter.caption` 이 ko 로케일인데 "First run" 이 그대로 남아
+  있었다. "첫 실행" 으로 교체(각인 mono eyebrow 시각 스타일은 그대로 유지).
+- **"그냥 둘러볼게요 →" 화살표 제거** — 이 버튼은 페이지 이동이 아니라
+  dismiss(세션 한정)인데 "→" 가 이동을 암시했다. en/ko 양쪽에서 화살표 제거
+  ("Just looking around here" / "여기서 둘러볼게요").
+- **bare 미존재 슬러그 `?p=` 딥링크 무통보 정리 확장** — kind-접두 슬러그
+  (`element:foo`)의 미존재 딥링크만 가시 토스트가 떴고, bare 슬러그
+  (`?p=project`)는 project 목록 로드를 무기한 기다리다 조용히 사라질 수
+  있었다. 로드가 끝나지 않아도 짧은 유예 후 같은 fallback 토스트를 띄우도록
+  `resolveDeeplinkMissDecision` 로 결정 로직을 분리하고 bounded grace
+  타이머를 추가.
+- **dogfood MCP Server 노드 타이틀 드리프트 정정** — 실제 MCP 도구는 25개
+  (read 16 + write 9, `absorb_document` 포함)인데 `docs/ontology/capabilities/
+  mcp-server.md` 는 "24 tools"로 고정돼 있었다. 카운트 전면 정정 +
+  `absorb_document` 항목 추가(vault 매니페스트 재생성은 별도).
+- **TopologyRelationLegend 주석↔코드 불일치 정정** — 주석이 "상시 켜져
+  있는다"였는데 실제로는 `md:flex` (768px 미만에서 의도적으로 숨김). 주석을
+  실동작에 맞게 정정(코드 변경 없음).
+
 ## 2026-07-19 — 빌더 소형 UX 개선 — 빈 캔버스 안내·팔레트 추가 배지·줌 표시·버튼 위계·탭 툴팁 (builder-ux-polish)
 
 haiku UX 부대 조사에서 검증된 `/ontology/edit` 빌더 소형 개선 큐. 전부

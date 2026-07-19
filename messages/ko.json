@@ -213,7 +213,7 @@
     "trustLine": "Local-first · 마크다운이 진실원 · 백엔드 0"
   },
   "firstRunStarter": {
-    "caption": "First run",
+    "caption": "첫 실행",
     "sampleLabel": "지금은 샘플",
     "contextBold": "마크다운 frontmatter 가 곧 그래프입니다.",
     "contextRest": "지금 지도는 이 프로젝트 자신의 온톨로지(읽기 전용) — 폴더를 고르면 같은 지도가 내 데이터로 켜집니다.",
@@ -224,7 +224,7 @@
     "openBusy": "폴더 여는 중…",
     "createLabel": "✚ 새 vault 만들기",
     "createBusy": "시작 구조 작성 중…",
-    "dismissLabel": "그냥 둘러볼게요 →",
+    "dismissLabel": "여기서 둘러볼게요",
     "errorFallback": "폴더를 열지 못했습니다. 다시 시도해 주세요.",
     "readout": {
       "projectUnit": "project",
