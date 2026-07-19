@@ -43,6 +43,7 @@ import { copyText } from '@/shared/lib/copy-text';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
+import { useDocumentTitle } from '@/shared/lib/use-document-title';
 import {
   createTauriVaultHandle,
   getTauriVaultRootPath,
@@ -59,6 +60,8 @@ import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
 import { useAdvancedMenu } from '../lib/use-advanced-menu';
 import { useDocsVaultPersistence } from '../lib/use-docs-vault-persistence';
 import { useDocsVaultScrollSpy } from '../lib/use-scroll-spy';
+import { useBackToTop } from '../lib/use-back-to-top';
+import { shouldShowOutlineRail } from '../lib/outline-rail';
 import { useFolderTopo } from '../lib/use-folder-topo';
 import { usePaletteState } from '../lib/use-palette-state';
 import { replaceDocsVaultUrlState } from '../lib/url-state';
@@ -124,6 +127,9 @@ import { DesktopVaultWelcome } from "./parts/DesktopVaultWelcome";
 import { DocFrontmatterBlock } from "./parts/DocFrontmatterBlock";
 import { DocsSidebarBody } from "./parts/DocsSidebarBody";
 import { DocsVaultDocOutlinePanel } from "./parts/DocsVaultDocOutlinePanel";
+import { DocReadingOutlineRail } from "./parts/DocReadingOutlineRail";
+import { BackToTopButton } from "./parts/BackToTopButton";
+import { SampleNotice } from "./parts/SampleNotice";
 import { EmptyState } from "./parts/EmptyState";
 import {
   DOGFOOD_VAULT_PATH,
@@ -304,6 +310,7 @@ function DocsVaultSourceContractBar({
 
 function DocsVaultContent() {
   const t = useTranslations('docsVault');
+  const siteT = useTranslations('metadata');
   const searchParams = useSearchParams();
   const querySlug = searchParams?.get('slug') ?? null;
   const queryView = parseView(searchParams?.get('view'));
@@ -535,6 +542,9 @@ function DocsVaultContent() {
   // 스크롤 스파이 — 본문 스크롤 따라 outline 의 active heading 추적.
   const { articleScrollRef, activeHeadingSlug, setActiveHeadingSlug } =
     useDocsVaultScrollSpy(selectedSlug, source);
+  // 맨 위로 버튼 표시 임계 + 클릭 동작 — 같은 스크롤 컨테이너를 구독하지만
+  // 관심사가 달라 스크롤스파이와 분리된 훅.
+  const backToTop = useBackToTop(articleScrollRef, selectedSlug);
 
   // Hosted browser 에서는 local vault 작업을 열지 않는다. 기존 브라우저
   // 세션이 local source 를 저장해 둔 경우에도 promo/read-only surface 로 복귀.
@@ -1189,6 +1199,12 @@ function DocsVaultContent() {
     [manifest],
   );
   const selectedDoc = selectedSlug ? (docsBySlug.get(selectedSlug) ?? null) : null;
+  // 클라이언트 사이드 동적 타이틀 — 정적 export metadata 는 slug 단위로 미리
+  // 빌드할 수 없으므로(vault 는 사용자 로컬 폴더) 선택된 문서 타이틀을 여기서
+  // 반영. layout.tsx 의 서버 템플릿(`%s · siteName`)과 동일한 구성.
+  useDocumentTitle(
+    selectedDoc ? `${selectedDoc.title} · ${siteT('siteName')}` : null,
+  );
   const collectionDocs = useMemo(
     () => filterDocsByCollection(manifest.docs, docCollection),
     [docCollection, manifest.docs],
@@ -1373,6 +1389,27 @@ function DocsVaultContent() {
     outlineHeadings.find((h) => h.slug === activeHeadingSlug) ??
     outlineHeadings[0] ??
     null;
+  // 긴 문서(heading ≥ 임계)에서만 좌측 빈 띠에 상시 목차 레일 — 짧은 문서에서는
+  // 노이즈가 되므로 표시하지 않는다 (po-pass.md §4 상태 계약).
+  const showOutlineRail = shouldShowOutlineRail(outlineHeadings.length);
+  // 목차 클릭 시 스크롤 점프 — 레일(DocReadingOutlineRail)과 인스펙터
+  // (DocsVaultDocOutlinePanel) 양쪽이 같은 동작을 공유하므로 한 곳에서 정의.
+  const handleHeadingNavigate = useCallback(
+    (slug: string) => {
+      document
+        .getElementById(slug)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActiveHeadingSlug(slug);
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(
+          {},
+          '',
+          `${window.location.pathname}${window.location.search}#${slug}`,
+        );
+      }
+    },
+    [setActiveHeadingSlug],
+  );
 
   // 전체 명령 목록 — ⌘⇧P 팔레트용. selection/source/editing 등에 따라
   // visible 동적 계산.
@@ -2107,80 +2144,113 @@ function DocsVaultContent() {
                 </span>
               </div>
 
+              {/* #4 샘플 안내 — 읽기 전용인 이유 + 켜는 법을 평문으로. 기존
+                  우상단 점 칩(위)은 상태 인디케이터로 유지하고, 이 스트립이
+                  설명 + 액션을 맡는다 (po-pass.md §1-3). */}
+              {!editing && !isLocalSourceLoaded ? (
+                <SampleNotice
+                  isDesktopRuntime={isDesktopRuntime}
+                  onOpenFolder={() => handleSourceChange('local')}
+                />
+              ) : null}
+
               <div className="flex min-h-0 flex-1">
-                <div
-                  ref={articleScrollRef}
-                  className="min-w-0 flex-1 overflow-auto"
-                >
-                  {editing && canEditCurrent && editResolver ? (
-                    <DocsVaultEditor
-                      key={`edit:${source}:${selectedDoc.slug}`}
-                      doc={selectedDoc}
-                      getDocContent={editResolver}
-                      onSave={(slug, content) =>
-                        // conflict 를 swallow 하지 않고 re-throw — 그래야 에디터가
-                        // 버퍼를 dirty 로 유지해 다음 poll 의 clobber 를 막는다.
-                        // (구버전은 여기서 return 으로 삼켜 phantom-clean → 데이터 손실)
-                        persistEditorSave(
-                          localVault.saveDoc,
-                          { slug, content, expectedMtime: selectedDoc.mtime },
-                          () => toast.show(t('dialog.vaultConflict'), 'error'),
-                        )
-                      }
-                      onClose={() => setEditing(false)}
-                      allDocs={manifest.docs}
+                {/* relative 래퍼 — #1 목차 레일(빈 띠 절대 위치)과 #2 맨
+                    위로(스크롤 컨테이너 밖에 얹혀 스크롤과 무관하게 같은
+                    화면 위치 유지) 둘 다 이 래퍼를 기준으로 위치한다. 본문
+                    max-w-760 은 아래 overflow-auto 컨테이너 안에서 그대로
+                    mx-auto — 레일 때문에 줄지 않는다. */}
+                <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+                  {!editing && showOutlineRail ? (
+                    <DocReadingOutlineRail
+                      headings={outlineHeadings}
+                      activeHeadingSlug={activeHeadingSlug}
+                      onHeadingClick={handleHeadingNavigate}
                     />
-                  ) : (
-                    <>
-                      {typeof selectedDoc.frontmatter?.kind === 'string' &&
-                      selectedDoc.frontmatter.kind ? (
-                        <DocFrontmatterBlock doc={selectedDoc} />
-                      ) : null}
-                      <DocMetaBar doc={selectedDoc} />
-                      {selectedDoc.slug.startsWith('projects/') &&
-                      source === 'local' ? (
-                        <DocsVaultProjectDepsBar
-                          currentSlug={selectedDoc.slug.replace(
-                            /^projects\//,
-                            '',
-                          )}
-                          build={folderTopo}
-                          canEdit={canEditCurrent}
-                          onChange={async (next) => {
-                            try {
-                              await localVault.updateFrontmatter(
-                                selectedDoc.slug,
-                                { dependencies: next },
-                                { expectedMtime: selectedDoc.mtime },
-                              );
-                            } catch (err) {
-                              if (err instanceof VaultConflictError) {
-                                toast.show(t('dialog.vaultConflict'), 'error');
-                                return;
-                              }
-                              throw err;
-                            }
-                            // manifest refresh 후 folderTopo 도 갱신
-                            await buildFolderTopology();
-                          }}
-                          onNavigateProject={(slug) =>
-                            handleSelect(`projects/${slug}`)
-                          }
-                        />
-                      ) : null}
-                      <DocsVaultViewer
-                        key={`${source}:${selectedDoc.slug}`}
+                  ) : null}
+                  <div
+                    ref={articleScrollRef}
+                    className="min-h-0 flex-1 overflow-auto"
+                  >
+                    {editing && canEditCurrent && editResolver ? (
+                      <DocsVaultEditor
+                        key={`edit:${source}:${selectedDoc.slug}`}
                         doc={selectedDoc}
-                        vaultSlugs={vaultSlugs}
-                        onNavigate={handleSelect}
-                        getDocContent={getDocContent}
-                        getDocHref={getDocHref}
-                        getProjectHref={getProjectHref}
-                        highlightQuery={highlightQuery}
-                        resolveImage={resolveImage}
+                        getDocContent={editResolver}
+                        onSave={(slug, content) =>
+                          // conflict 를 swallow 하지 않고 re-throw — 그래야 에디터가
+                          // 버퍼를 dirty 로 유지해 다음 poll 의 clobber 를 막는다.
+                          // (구버전은 여기서 return 으로 삼켜 phantom-clean → 데이터 손실)
+                          persistEditorSave(
+                            localVault.saveDoc,
+                            { slug, content, expectedMtime: selectedDoc.mtime },
+                            () => toast.show(t('dialog.vaultConflict'), 'error'),
+                          )
+                        }
+                        onClose={() => setEditing(false)}
+                        allDocs={manifest.docs}
                       />
-                    </>
-                  )}
+                    ) : (
+                      <>
+                        {typeof selectedDoc.frontmatter?.kind === 'string' &&
+                        selectedDoc.frontmatter.kind ? (
+                          <DocFrontmatterBlock
+                            key={selectedDoc.slug}
+                            doc={selectedDoc}
+                          />
+                        ) : null}
+                        <DocMetaBar doc={selectedDoc} />
+                        {selectedDoc.slug.startsWith('projects/') &&
+                        source === 'local' ? (
+                          <DocsVaultProjectDepsBar
+                            currentSlug={selectedDoc.slug.replace(
+                              /^projects\//,
+                              '',
+                            )}
+                            build={folderTopo}
+                            canEdit={canEditCurrent}
+                            onChange={async (next) => {
+                              try {
+                                await localVault.updateFrontmatter(
+                                  selectedDoc.slug,
+                                  { dependencies: next },
+                                  { expectedMtime: selectedDoc.mtime },
+                                );
+                              } catch (err) {
+                                if (err instanceof VaultConflictError) {
+                                  toast.show(t('dialog.vaultConflict'), 'error');
+                                  return;
+                                }
+                                throw err;
+                              }
+                              // manifest refresh 후 folderTopo 도 갱신
+                              await buildFolderTopology();
+                            }}
+                            onNavigateProject={(slug) =>
+                              handleSelect(`projects/${slug}`)
+                            }
+                          />
+                        ) : null}
+                        <DocsVaultViewer
+                          key={`${source}:${selectedDoc.slug}`}
+                          doc={selectedDoc}
+                          vaultSlugs={vaultSlugs}
+                          onNavigate={handleSelect}
+                          getDocContent={getDocContent}
+                          getDocHref={getDocHref}
+                          getProjectHref={getProjectHref}
+                          highlightQuery={highlightQuery}
+                          resolveImage={resolveImage}
+                        />
+                      </>
+                    )}
+                  </div>
+                  {!editing ? (
+                    <BackToTopButton
+                      visible={backToTop.visible}
+                      onClick={backToTop.scrollToTop}
+                    />
+                  ) : null}
                 </div>
                 {/* 우측 사이드: heading outline + 공유 + 파일 관리. 기본은 닫아
                     본문을 우선하고, 필요할 때만 헤더의 인스펙터 버튼으로 연다.
@@ -2199,19 +2269,7 @@ function DocsVaultContent() {
                     onClose={() => setDocInspectorOpen(false)}
                     onCopyUrl={handleCopyUrl}
                     onDeleteCurrent={handleDeleteCurrent}
-                    onHeadingClick={(slug) => {
-                      document
-                        .getElementById(slug)
-                        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      setActiveHeadingSlug(slug);
-                      if (typeof window !== "undefined") {
-                        window.history.replaceState(
-                          {},
-                          "",
-                          `${window.location.pathname}${window.location.search}#${slug}`,
-                        );
-                      }
-                    }}
+                    onHeadingClick={handleHeadingNavigate}
                   />
                 ) : null}
               </div>

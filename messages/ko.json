@@ -863,7 +863,9 @@
         "deleteTooltip": "이 문서를 로컬 볼트에서 삭제",
         "deleteAction": "삭제",
         "tableOfContents": "목차",
-        "duplicateAria": "{text}, {n}번째 섹션"
+        "duplicateAria": "{text}, {n}번째 섹션",
+        "railLabel": "목차",
+        "railAria": "이 문서의 섹션 목록"
       }
     },
     "tree": {
@@ -1759,7 +1761,19 @@
     },
     "frontmatterBlock": {
       "note": "frontmatter 가 곧 그래프 — 이 블록이 topology 의 노드와 엣지가 됩니다.",
-      "ariaLabel": "프론트매터 그래프 필드"
+      "ariaLabel": "프론트매터 그래프 필드",
+      "collapsedSummary": "속성 {count}개",
+      "expandAria": "문서 속성 펼치기",
+      "collapseAria": "문서 속성 접기"
+    },
+    "readingAids": {
+      "backToTop": "맨 위로",
+      "backToTopAria": "문서 맨 위로 이동"
+    },
+    "sampleNotice": {
+      "title": "읽기 전용 샘플이에요",
+      "body": "이 문서는 Atlas 자체 예시라 편집이 잠겨 있어요.",
+      "openFolderCta": "내 폴더 열기"
     },
     "backlinksStrip": {
       "openInOntology": "온톨로지에서 열기 →",

@@ -6,6 +6,49 @@
 
 ---
 
+## 2026-07-19 — 문서함 읽기 경험 — 목차 레일·맨 위로·frontmatter 접힘·샘플 안내 평문화 (docs-reading-round)
+
+`.qa-scratch/docs-reading-round/po-pass.md` PO 패스 — 66분짜리 긴 온톨로지
+문서(`capabilities/cli-developer-entry.md`)를 캡처해보니 지속 표시되는 구조
+내비게이션이 화면에 0개, frontmatter 블록이 본문 H1 을 첫 화면 밖으로 밀어내고,
+샘플(vault 미선택) 상태의 편집 불가 이유가 작은 점 칩으로만 전달돼 발견되지
+않는다는 관찰. 5개 큐 중 2개(목차 데이터/스크롤스파이, 지도 왕복 링크)는 이미
+출시돼 있어 실제 gap 에만 착수 — 새 렌더러·모드·저장소 0.
+
+- **목차 레일 발견성 격상** — 기존 `DocsVaultDocOutlinePanel`(문서 정보 토글
+  뒤)과 별개로, 사이드바–본문 사이 낭비되던 빈 띠에 상시 읽기 전용 목차 레일
+  (`DocReadingOutlineRail`)을 추가. depth 2–3 heading ≥ 4개 & `lg` 이상 뷰포트
+  에서만 표시(`shouldShowOutlineRail`), 짧은 문서는 노이즈 없이 그대로. 현재
+  섹션은 인디고 좌측 2px 보더(색 채움 아님). 스크롤 컨테이너 밖 `position:
+  relative` 래퍼에 절대 위치로 얹혀 본문 max-w-760 을 어떤 폭에서도 침범하지
+  않는다.
+- **맨 위로 버튼** — 긴 문서를 내려가면 상단 복귀 수단이 없었다. 아티클
+  스크롤 컨테이너 우하단에 기존 chrome floating 타일 언어를 재사용한 pill
+  추가. `scrollTop > 640px` 에서 fade-in(`use-back-to-top.ts`), 클릭 시
+  `scrollTo({top:0, behavior:'smooth'})`, `prefers-reduced-motion` 시 instant.
+- **frontmatter 기본 접힘** — `DocFrontmatterBlock` 이 항상 펼쳐 렌더돼 본문
+  H1 을 밀어냈다. 기본 접힘 `<details>` 로 전환 — 접힘 요약 줄에
+  `kind`/`slug`/`속성 N개` 는 그대로 보여 무엇이 들었는지 알 수 있고, 그래프
+  소스이므로 삭제/은닉이 아니라 접힘만. 문서 전환 시 컴포넌트가
+  `key={selectedDoc.slug}` 로 remount 돼 접힘 상태가 자동 초기화(URL/세션
+  오염 없음).
+- **샘플 안내 평문화** — 우상단 작은 mono 점 칩만으로는 "왜 편집이 안
+  되는지·어떻게 켜는지"가 전달되지 않았다. 아티클 헤더 바로 아래 중립 패널
+  (`--color-elevated` + 좌측 2px 인디고 보더) 평문 스트립(`SampleNotice`)
+  추가 — 데스크톱 런타임이면 기존 로컬 vault 선택 흐름("내 폴더 열기"), 웹이면
+  기존 macOS 앱 다운로드 CTA 재사용. 신규 라우트/모달 없음.
+- **문서함 탭 타이틀 동기화** — `useDocumentTitle` 을 문서함 뷰에 배선해
+  선택한 문서 제목이 브라우저 탭에 반영(예: "CLI Developer Entry ·
+  Ontology Atlas"). 정적 export 는 slug 단위 metadata 를 미리 빌드할 수 없는
+  로컬 vault 특성상 클라이언트 사이드 보완.
+- 노드→지도 왕복 링크(`buildTopologyDeeplinkForDoc`)는 이미 출시돼 있어
+  착수하지 않음 — 회귀 없음만 확인.
+
+새 i18n 키 11개(en/ko 양쪽) — `docsVault.frontmatterBlock.*`,
+`docsVault.readingAids.*`, `docsVault.sampleNotice.*`,
+`vaultWidgets.parts.outline.railLabel/railAria`. 전부 기존 토큰 재사용,
+신규 채색 0.
+
 ## 2026-07-19 — 빌더 소형 UX 개선 — 빈 캔버스 안내·팔레트 추가 배지·줌 표시·버튼 위계·탭 툴팁 (builder-ux-polish)
 
 haiku UX 부대 조사에서 검증된 `/ontology/edit` 빌더 소형 개선 큐. 전부
