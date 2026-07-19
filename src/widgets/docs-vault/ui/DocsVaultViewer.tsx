@@ -172,13 +172,13 @@ export function DocsVaultViewer({
     return (children: React.ReactNode, key = 'hl') => hl(children, q, key);
   }, [highlightQuery]);
 
-  const headingSlugCounts = new Map<string, number>();
-  const nextHeadingSlug = (children: React.ReactNode) => {
-    const baseSlug = slugFromChildren(children);
-    const occurrence = (headingSlugCounts.get(baseSlug) ?? 0) + 1;
-    headingSlugCounts.set(baseSlug, occurrence);
-    return occurrence === 1 ? baseSlug : `${baseSlug}-${occurrence}`;
-  };
+  // heading id 는 렌더 횟수와 무관하게 같아야 한다 (idempotent). 이전의
+  // occurrence 카운터 Map 은 렌더 중 클로저 변이라 StrictMode 이중 호출에서
+  // 모든 id 가 `-2` 로 밀려 매니페스트 heading slug (스크롤스파이 · 목차
+  // 레일 active · 앵커 클릭) 와 전부 어긋났다. 같은 텍스트의 heading 이 한
+  // 문서에 중복되면 id 가 충돌하지만 (브라우저는 첫 번째로 앵커), 그
+  // 트레이드오프가 전 heading 의 내비게이션이 죽는 것보다 낫다.
+  const headingSlugOf = (children: React.ReactNode) => slugFromChildren(children);
 
   const components: Components = {
       a({ href, children, ...rest }) {
@@ -283,7 +283,7 @@ export function DocsVaultViewer({
         );
       },
       h1({ children, ...rest }) {
-        const slug = nextHeadingSlug(children);
+        const slug = headingSlugOf(children);
         return (
           <h2
             id={slug}
@@ -296,7 +296,7 @@ export function DocsVaultViewer({
         );
       },
       h2({ children, ...rest }) {
-        const slug = nextHeadingSlug(children);
+        const slug = headingSlugOf(children);
         return (
           <h2
             id={slug}
@@ -309,7 +309,7 @@ export function DocsVaultViewer({
         );
       },
       h3({ children, ...rest }) {
-        const slug = nextHeadingSlug(children);
+        const slug = headingSlugOf(children);
         return (
           <h3
             id={slug}

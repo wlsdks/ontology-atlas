@@ -6,9 +6,17 @@ import { scheduleStateSync } from "./persistence";
 /**
  * DocsVaultPage 의 article 스크롤 컨테이너에서 현재 heading 추적.
  *
- * IntersectionObserver 로 viewport 안 visible heading 을 추적하고, 그중 스크롤
- * 상단에 가장 가까운 heading 을 active 로 선택. 스크롤 위쪽에 visible heading
- * 이 없는 fallback 시 가장 최근에 지나간 heading 으로.
+ * rAF 스로틀 scroll 핸들러가 heading 들의 root 상대 위치를 재계산해, 스크롤
+ * 상단(32px 기준선)을 가장 최근에 지나간 heading 을 active 로 고른다. 아직
+ * 어떤 heading 도 지나지 않았으면(문서 최상단) null, 최하단 도달 시 마지막
+ * heading 클램프.
+ *
+ * 이전 구현은 IntersectionObserver 기반이었는데 세 가지 잠복 결함이 있었다:
+ * ① 비동기 마크다운 fetch 전에 한 번만 heading 을 조회해 observer 가 영영 안
+ * 붙음 ② React 재렌더가 article DOM 을 교체하면 detached 노드를 계속 관찰
+ * ③ 점프 스크롤이 관찰 밴드를 건너뛰면 콜백이 안 옴. heading 은 문서당
+ * 수 개 수준이라 스크롤마다의 직접 재계산이 더 단순하고 결정론적이다.
+ * ①·②는 MutationObserver 상시 유지 + 재수집으로 방어한다.
  *
  * 의존성:
  * - `selectedSlug` 가 바뀌면 active null 로 초기화 (새 문서)
@@ -18,9 +26,9 @@ import { scheduleStateSync } from "./persistence";
  * - `articleScrollRef` — article 컨테이너 div ref (caller 가 부착)
  * - `activeHeadingSlug` — 현재 active heading 의 id (또는 null)
  * - `setActiveHeadingSlug` — 외부 click 으로 즉시 active 갱신 (스크롤 애니메
- *   이션 시작 시 IntersectionObserver 도착 전에 indicator 를 미리 옮길 때)
+ *   이션 도착 전에 indicator 를 미리 옮길 때)
  *
- * 호출자: `DocsVaultContent` 의 우측 outline panel.
+ * 호출자: `DocsVaultContent` 의 outline panel + 읽기 목차 레일.
  */
 export function useDocsVaultScrollSpy(
   selectedSlug: string | null,
@@ -39,55 +47,60 @@ export function useDocsVaultScrollSpy(
     if (!selectedSlug) return;
     const root = articleScrollRef.current;
     if (!root) return;
-    let observer: IntersectionObserver | null = null;
-    // 새 문서 렌더 후 DOM 이 채워지는 시점 잡기 위해 다음 frame 대기.
-    const rafHandle = requestAnimationFrame(() => {
-      const headings = root.querySelectorAll<HTMLElement>("h2[id], h3[id]");
-      if (headings.length === 0) return;
-      const visible = new Map<string, number>();
-      observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            const id = entry.target.id;
-            if (entry.isIntersecting) {
-              visible.set(id, entry.intersectionRatio);
-            } else {
-              visible.delete(id);
-            }
-          }
-          // visible 맵에서 스크롤 상단에 가장 가까운 heading pick.
-          let pick: string | null = null;
-          let pickTop = Infinity;
-          visible.forEach((_, id) => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            const top = el.getBoundingClientRect().top;
-            if (top >= 0 && top < pickTop) {
-              pickTop = top;
-              pick = id;
-            }
-          });
-          // fallback — 스크롤 위쪽에서 가장 최근에 지나간 heading
-          if (!pick) {
-            let lastPassed: string | null = null;
-            headings.forEach((h) => {
-              if (h.getBoundingClientRect().top < 32) lastPassed = h.id;
-            });
-            pick = lastPassed;
-          }
-          setActiveHeadingSlug(pick);
-        },
-        {
-          root,
-          rootMargin: "-24px 0px -65% 0px",
-          threshold: [0, 0.25, 0.5, 0.75, 1],
-        },
+
+    let headings: HTMLElement[] = [];
+    let rafPending = 0;
+
+    const collectHeadings = (): boolean => {
+      headings = Array.from(
+        root.querySelectorAll<HTMLElement>("h2[id], h3[id]"),
       );
-      headings.forEach((h) => observer!.observe(h));
+      return headings.length > 0;
+    };
+
+    const recompute = () => {
+      rafPending = 0;
+      if (headings.length === 0) return;
+      // 좌표는 전부 스크롤 컨테이너(root) 상단 기준 — viewport 기준으로
+      // 재면 root 가 화면 중간에서 시작하는 이 레이아웃에서 어긋난다.
+      const rootTop = root.getBoundingClientRect().top;
+      let pick: string | null = null;
+      for (const h of headings) {
+        if (h.getBoundingClientRect().top - rootTop < 32) pick = h.id;
+      }
+      // bottom 클램프 — 마지막 섹션이 짧으면 기준선을 영영 못 지나므로
+      // 최하단 도달 시 마지막 heading.
+      if (root.scrollTop + root.clientHeight >= root.scrollHeight - 8) {
+        pick = headings[headings.length - 1]?.id ?? pick;
+      }
+      setActiveHeadingSlug(pick);
+    };
+
+    const scheduleRecompute = () => {
+      if (rafPending) return;
+      rafPending = requestAnimationFrame(recompute);
+    };
+
+    const onScroll = () => scheduleRecompute();
+    root.addEventListener("scroll", onScroll, { passive: true });
+
+    // 비동기 마크다운 도착 + React 의 DOM 노드 교체 양쪽을 커버 — heading
+    // 세트가 비었거나 detach 됐으면 재수집 후 재계산.
+    const domObserver = new MutationObserver(() => {
+      if (headings.length === 0 || headings.some((h) => !h.isConnected)) {
+        if (collectHeadings()) scheduleRecompute();
+      }
     });
+    const rafHandle = requestAnimationFrame(() => {
+      if (collectHeadings()) scheduleRecompute();
+      domObserver.observe(root, { childList: true, subtree: true });
+    });
+
     return () => {
       cancelAnimationFrame(rafHandle);
-      observer?.disconnect();
+      if (rafPending) cancelAnimationFrame(rafPending);
+      root.removeEventListener("scroll", onScroll);
+      domObserver.disconnect();
     };
   }, [selectedSlug, source]);
 
