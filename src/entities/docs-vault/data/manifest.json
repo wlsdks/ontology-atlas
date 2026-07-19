@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-18T18:47:51.973Z",
+  "generatedAt": "2026-07-19T01:24:33.303Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5498,7 +5498,6 @@
           "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
           "src/shared/lib/ontology-tree/agent-query-recipes.ts",
           "src/shared/lib/ontology-tree/agent-readiness.ts",
-          "src/views/home/ui/TopologyAnalysisBar.tsx",
           "src/views/ontology-edit/ui/RelationWriteConfirm.tsx",
           "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
           "src/views/ontology-insights/ui/tabs/RelationsTab.tsx"
@@ -5513,7 +5512,7 @@
       "headings": [],
       "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Overview / Relations / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Ins",
       "wordCount": 400,
-      "updatedAt": "2026-07-18T17:25:47.865Z",
+      "updatedAt": "2026-07-19T01:24:16.101Z",
       "linksOut": []
     },
     {
@@ -6398,6 +6397,62 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/topology-canvas-render",
+      "path": "docs/ontology/capabilities/topology-canvas-render.md",
+      "title": "Topology — Canvas-2D Map Render",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/topology-canvas-render",
+        "kind": "capability",
+        "title": "Topology — Canvas-2D Map Render",
+        "domain": "views",
+        "elements": [
+          "elements/ontology-description-helper",
+          "src/views/home",
+          "src/widgets/topology-controls"
+        ],
+        "relates": [
+          "domains/views",
+          "elements/sigma-graphology"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology — Canvas-2D Map Render",
+          "slug": "topology-canvas-2d-map-render"
+        },
+        {
+          "depth": 2,
+          "text": "진입 & 확장",
+          "slug": "진입-확장"
+        },
+        {
+          "depth": 2,
+          "text": "조작 표면",
+          "slug": "조작-표면"
+        },
+        {
+          "depth": 2,
+          "text": "노드 표현",
+          "slug": "노드-표현"
+        },
+        {
+          "depth": 2,
+          "text": "남은 Sigma 의존",
+          "slug": "남은-sigma-의존"
+        }
+      ],
+      "excerpt": "/ (root hub) 와 /topology (동일 진입) 는 자체 canvas-2D 렌더 엔진 topology-map-v2(src/widgets/topology-map-v2/)가 그린다. Sigma.js WebGL 렌더러는 은퇴했다 — Graphology + ForceAtlas2 물리 레이아웃은 그대로 재사용하되 (빌더 ERD 캔버스와 공유), 실제 픽셀은 단일 <canvas 컨테이너 위에 이 엔진이 직접 그린다. HomePage(src/views/home)가 마운트 지점이고, TopologyControls(src/widgets/topology-controls)가 ",
+      "wordCount": 197,
+      "updatedAt": "2026-07-19T01:11:27.792Z",
+      "linksOut": [
+        "capabilities/topology-skeleton-entry",
+        "capabilities/topology-kind-legibility",
+        "elements/sigma-graphology"
+      ]
+    },
+    {
       "slug": "ontology/capabilities/topology-change-visualization",
       "path": "docs/ontology/capabilities/topology-change-visualization.md",
       "title": "Topology Change Visualization (변경점 베이스라인 공유)",
@@ -6557,38 +6612,6 @@
       "linksOut": []
     },
     {
-      "slug": "ontology/capabilities/topology-sigma-render",
-      "path": "docs/ontology/capabilities/topology-sigma-render.md",
-      "title": "Topology — Sigma WebGL Render",
-      "tags": [],
-      "frontmatter": {
-        "slug": "capabilities/topology-sigma-render",
-        "kind": "capability",
-        "title": "Topology — Sigma WebGL Render",
-        "domain": "views",
-        "elements": [
-          "elements/ontology-description-helper",
-          "src/views/home",
-          "src/widgets/topology-controls"
-        ],
-        "relates": [
-          "domains/views",
-          "elements/sigma-graphology"
-        ]
-      },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Topology — Sigma WebGL Render",
-          "slug": "topology-sigma-webgl-render"
-        }
-      ],
-      "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1-hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount. hover 시 SigmaNodeTooltip 이 name · degree · 짧은 description 을 띄운다. ontology 노드는 kind(capability / domain / el",
-      "wordCount": 726,
-      "updatedAt": "2026-07-18T17:49:20.075Z",
-      "linksOut": []
-    },
-    {
       "slug": "ontology/capabilities/topology-skeleton-entry",
       "path": "docs/ontology/capabilities/topology-skeleton-entry.md",
       "title": "Topology — Structural Skeleton Entry & Click-Level Reveal",
@@ -6633,7 +6656,7 @@
         "relates": [
           "capabilities/builder-vault-write",
           "capabilities/mcp-conflict-guard",
-          "capabilities/topology-sigma-render",
+          "capabilities/topology-canvas-render",
           "domains/vault-local-first"
         ]
       },
@@ -6666,7 +6689,7 @@
       ],
       "excerpt": "R14 (155-158, 2026-05-04 ~ 2026-05-05) 에 도입된 web 즉시 반영 능력. 사용자 명시 \"웹에서나 잘 반영되면 좋겠는데? 그걸 강화하는건 어때\" 의 4 단계 답. IDE / AI agent / CLI 어느 surface 가 vault .md 만지면 웹 탭이 focus 안 해도 ~5s 안에 반영. · Step · What · Where 인지 · 155 polling · 5s 간격 fingerprint check + visible-only 자동 reload · 백그라운드 · 156 graph diff pulse · 새 노드 amber sin",
       "wordCount": 554,
-      "updatedAt": "2026-07-18T07:33:54.473Z",
+      "updatedAt": "2026-07-19T01:11:09.768Z",
       "linksOut": []
     },
     {
@@ -7184,8 +7207,8 @@
           "collaborator-reader-brief",
           "ontology-hub-mode-aware",
           "topology-analysis-modes",
-          "topology-ontology-inspection",
-          "topology-sigma-render"
+          "topology-canvas-render",
+          "topology-ontology-inspection"
         ],
         "elements": [
           "builder-node-query-focus",
@@ -7248,7 +7271,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-07-18T18:46:09.451Z",
+      "updatedAt": "2026-07-19T01:11:09.772Z",
       "linksOut": []
     },
     {
@@ -7709,14 +7732,14 @@
           "src/shared/lib/ontology-description.ts"
         ],
         "relates": [
-          "capabilities/topology-sigma-render",
+          "capabilities/topology-canvas-render",
           "elements/topology-ontology-drawer"
         ]
       },
       "headings": [],
       "excerpt": "src/shared/lib/ontology-description.ts keeps graph-facing descriptions short and predictable. It normalizes whitespace, prefers a concise first sentence, and clamps long body excerpts before they enter topology tooltips or selected-node drawer summaries. The topology drawer uses the same helper with a tighter profile l",
       "wordCount": 88,
-      "updatedAt": "2026-06-05T14:51:24.761Z",
+      "updatedAt": "2026-07-19T01:11:09.776Z",
       "linksOut": []
     },
     {
@@ -7971,7 +7994,7 @@
         "domain": "views",
         "path": "package.json",
         "relates": [
-          "capabilities/topology-sigma-render"
+          "capabilities/topology-canvas-render"
         ]
       },
       "headings": [
@@ -7981,10 +8004,12 @@
           "slug": "sigma-graphology-forceatlas2"
         }
       ],
-      "excerpt": "WebGL spatial network 라이브러리 스택. Sigma 가 render, Graphology 가 그래프 자료구조, ForceAtlas2 가 layout 알고리즘. / (홈 hub) 와 /topology (alias) 의 토폴로지 view 가 의존. Path analysis mode now changes Sigma node clicks into source / target path picks while the mode is active, with Shift+click kept as the fallback gesture outside Path mode. De",
-      "wordCount": 118,
-      "updatedAt": "2026-06-05T17:02:26.374Z",
-      "linksOut": []
+      "excerpt": "WebGL 스택 중 Graphology(그래프 자료구조) + ForceAtlas2(layout 알고리즘)는 /, /topology 의 canvas-2D 엔진(topology-map-v2)과 /ontology/edit ERD 빌더가 공유하는 물리 레이아웃이다. Sigma.js 자체(WebGL 렌더러)는 /, /topology 에서는 은퇴했고, 현재는 /docs 폴더-토폴로지 미니맵 (src/widgets/docs-vault/ui/DocsVaultFolderTopology.tsx, @sigma/node-border 포함)만 직접 의존한다. Path analysis mod",
+      "wordCount": 68,
+      "updatedAt": "2026-07-19T01:11:09.779Z",
+      "linksOut": [
+        "capabilities/topology-canvas-render"
+      ]
     },
     {
       "slug": "ontology/elements/topology-analysis-state",
@@ -8487,29 +8512,6 @@
       "excerpt": "Markdown editor used by Source Vault for local .md files. It keeps file writes explicit through the Save button / Cmd+S, blocks silent overwrite on disk conflicts, and stores unsaved edits as a browser-local temporary draft before final disk save. The editor exposes that contract in the UI as separate Auto backup and F",
       "wordCount": 179,
       "updatedAt": "2026-06-05T18:48:32.373Z",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/src/widgets/workspace-ontology-strip",
-      "path": "docs/ontology/src/widgets/workspace-ontology-strip.md",
-      "title": "Workspace Ontology Strip",
-      "tags": [],
-      "frontmatter": {
-        "slug": "src/widgets/workspace-ontology-strip",
-        "kind": "element",
-        "title": "Workspace Ontology Strip",
-        "domain": "views"
-      },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Workspace Ontology Strip",
-          "slug": "workspace-ontology-strip"
-        }
-      ],
-      "excerpt": "src/widgets/workspace-ontology-strip renders the compact ontology entrypoint used on project and workspace surfaces. It summarizes the current vault-derived ontology as domain, capability, and element counts, then links into /ontology/ so a project list can become a graph browse flow instead of a flat project index. Th",
-      "wordCount": 145,
-      "updatedAt": "2026-06-04T21:32:22.622Z",
       "linksOut": []
     },
     {
@@ -10317,11 +10319,39 @@
         "linkText": "capabilities/ontology-sync-skill"
       }
     ],
+    "capabilities/topology-skeleton-entry": [
+      {
+        "fromSlug": "ontology/capabilities/topology-canvas-render",
+        "context": "UI를 담당한다. ## 진입 & 확장 기본 진입은 ForceAtlas2 scatter 가 아니라 결정론적 중앙-방사형 골격(project → domain ring → 대표 capability) — 자세한 내용은 **[capabilities/topology-skeleton-entry]**. 노드 클릭은 ego 포커스 + 컴팩트 팝오버(`TopologyV2DetailPanel`)를 연다 — 풀스크린 모달이 아니라 Shneiderman 의 overview-first, details-on-demand 원",
+        "linkText": "capabilities/topology-skeleton-entry"
+      }
+    ],
+    "capabilities/topology-kind-legibility": [
+      {
+        "fromSlug": "ontology/capabilities/topology-canvas-render",
+        "context": "idgets/topology-map-v2/README` 또는 코드 자체를 1차 출처로 본다). ## 노드 표현 kind(`domain`/`capability`/`element`) 별 fill·size 위계는 **[capabilities/topology-kind-legibility]** 가 소유. 노드 hover 요약 문구는 `elements/ontology-description-helper`(`src/shared/lib/ontology-description.ts`)가 body excerpt 를",
+        "linkText": "capabilities/topology-kind-legibility"
+      }
+    ],
+    "elements/sigma-graphology": [
+      {
+        "fromSlug": "ontology/capabilities/topology-canvas-render",
+        "context": "/docs-vault/ui/DocsVaultFolderTopology.tsx`)만 여전히 Sigma.js + `@sigma/node-border` 를 직접 쓴다 — `/`, `/topology` 는 대상이 아니다. **[elements/sigma-graphology]** 도 같은 구분을 반영해 갱신했다.",
+        "linkText": "elements/sigma-graphology"
+      }
+    ],
     "capabilities/topology-ontology-inspection": [
       {
         "fromSlug": "ontology/capabilities/topology-node-significance",
         "context": "override (approach C, 얇은 레이어)** — frontmatter `significance:` 가 있으면 \"왜 중요한가\" 줄을 그걸로 우선. 미지정 키는 파서가 보존하므로 schema 변경 0. **[capabilities/topology-ontology-inspection]** 의 drawer/inspection 과 짝 — 그쪽이 \"전체 상세(에이전트 핸드오프 포함)\"라면 이쪽은 \"첫 클릭의 평문 의미\".",
         "linkText": "capabilities/topology-ontology-inspection"
+      }
+    ],
+    "capabilities/topology-canvas-render": [
+      {
+        "fromSlug": "ontology/elements/sigma-graphology",
+        "context": "전용 상호작용(노드 클릭 → source/target path pick, Shift+click fallback)은 `/docs` 미니맵 범위에서만 유효하다. `/`, `/topology` 의 동일한 사용자 경험은 **[capabilities/topology-canvas-render]** 가 다룬다.",
+        "linkText": "capabilities/topology-canvas-render"
       }
     ]
   },
@@ -10794,6 +10824,13 @@
                 "title": "Topology Analysis Modes"
               },
               {
+                "name": "topology-canvas-render",
+                "path": "ontology/capabilities/topology-canvas-render",
+                "type": "doc",
+                "slug": "ontology/capabilities/topology-canvas-render",
+                "title": "Topology — Canvas-2D Map Render"
+              },
+              {
                 "name": "topology-change-visualization",
                 "path": "ontology/capabilities/topology-change-visualization",
                 "type": "doc",
@@ -10827,13 +10864,6 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/topology-ontology-inspection",
                 "title": "Topology Ontology Inspection"
-              },
-              {
-                "name": "topology-sigma-render",
-                "path": "ontology/capabilities/topology-sigma-render",
-                "type": "doc",
-                "slug": "ontology/capabilities/topology-sigma-render",
-                "title": "Topology — Sigma WebGL Render"
               },
               {
                 "name": "topology-skeleton-entry",
@@ -11448,13 +11478,6 @@
                     "type": "doc",
                     "slug": "ontology/src/widgets/bottom-tab-bar",
                     "title": "Mobile Bottom Tab Bar"
-                  },
-                  {
-                    "name": "workspace-ontology-strip",
-                    "path": "ontology/src/widgets/workspace-ontology-strip",
-                    "type": "doc",
-                    "slug": "ontology/src/widgets/workspace-ontology-strip",
-                    "title": "Workspace Ontology Strip"
                   }
                 ]
               }
