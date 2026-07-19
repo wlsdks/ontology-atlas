@@ -31,7 +31,7 @@
 
 - title 은 conventional prefix 로 시작. 본문은 `Summary` + `Test plan` 두 섹션.
 - 검증: `pnpm exec tsc --noEmit` · `pnpm lint` · `pnpm test:run` 통과를 PR 본문에 명시.
-- 디자인 변경 PR 은 before/after 스크린샷 첨부 (다크/라이트 양쪽).
+- 디자인 변경 PR 은 before/after 스크린샷 첨부 (다크 — 앱은 다크 단일).
 
 ## 함부로 하지 말 것
 

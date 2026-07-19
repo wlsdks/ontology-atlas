@@ -56,11 +56,14 @@
 - duration 200ms 미만이 default. 더 길어야 하면 의도가 분명해야.
 - `prefers-reduced-motion` 사용자 존중 — `app/globals.css` 의 base layer 에 이미 처리.
 
-## 라이트 / 다크 모드
+## 다크 단일 (2026-07-19, 라이트 모드 전면 폐기)
 
-- `html[data-theme="light"]` 토글로 전환. 기본 다크.
-- 토큰은 양쪽 호환. light 전용 분기 코드 새로 만들지 말 것.
-- 라이트 모드 작업은 한 사이클에 한 번에 — 부분 마이그레이션이 alpha 토큰 회귀를 만들어왔다.
+- 앱은 **다크 단일**이다. 라이트 모드 토글, `data-theme` 속성, `theme-toggle`
+  기능, 라이트 전용 토큰/CSS 분기는 모두 제거됐다 — 소유자 전략 결정.
+- 새 UI 는 다크 값만 정의한다. `[data-theme="light"]` 셀렉터, light 전용
+  분기 코드, 라이트 대비 검증을 새로 만들지 말 것.
+- `prefers-color-scheme` 대응도 다크 고정 — 시스템 라이트 선호 사용자에게도
+  다크를 보여준다 (`app/layout.tsx` `viewport.colorScheme: 'dark'`).
 
 ## 토큰 정의 위치
 

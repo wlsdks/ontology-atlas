@@ -6,6 +6,30 @@
 
 ---
 
+## 2026-07-19 — 라이트 모드 전면 폐기 (dark-only)
+
+소유자 전략 결정: 앱은 **다크 단일**이 된다. 관리 부담 대비 사용 신호가
+낮았던 라이트 테마를 코드/토큰/설정 UI에서 전부 걷어낸다 — 다크 렌더
+결과는 1px도 변경 없음.
+
+- **토큰** — `app/globals.css` 의 `html[data-theme="light"]` 블록과 라이트
+  전용 override(카드 elevation, 인디고 알파 톤다운, pale text 시프트,
+  트리 dim 보정, `full-detail-a1` 라이트 스코프 등) 전부 삭제. 다크 값이
+  유일한 값.
+- **전환 메커니즘 제거** — `src/features/theme-toggle/`, `src/shared/lib/theme.ts`
+  (테마 localStorage 키 `demo:theme`, `useTheme` 훅) 삭제. `app/layout.tsx`
+  의 라이트 모드 flash-방지 inline script 제거.
+  `DocsVaultFolderTopology` 의 `data-theme` MutationObserver 도 다크
+  단일이라 더 이상 필요 없어 제거.
+- **설정 UI** — 지도 설정 기어 팝오버와 앱 설정 메뉴의 라이트/다크 토글
+  섹션 제거(언어 등 나머지 설정은 유지). en/ko 메시지 카탈로그에서
+  `themeToggle` / `settingsGearTheme` / `appearanceTitle` / `appearanceBody`
+  키 삭제.
+- **문서** — `.claude/rules/design.md` "라이트 / 다크 모드" 섹션을 다크
+  단일 선언으로 개정, `.claude/rules/git.md` PR 스크린샷 규칙을 다크
+  단일로 갱신, `docs/DESIGN-SYSTEM.md` / `docs/TOPOLOGY-V2-DESIGN.md` 의
+  라이트 모드 예정/가드 문구 정리.
+
 ## 2026-07-19 — 빌더 소형 UX 개선 — 빈 캔버스 안내·팔레트 추가 배지·줌 표시·버튼 위계·탭 툴팁 (builder-ux-polish)
 
 haiku UX 부대 조사에서 검증된 `/ontology/edit` 빌더 소형 개선 큐. 전부
