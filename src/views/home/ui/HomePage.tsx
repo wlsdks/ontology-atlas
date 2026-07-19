@@ -2434,9 +2434,9 @@ export function HomePage() {
         {projectsError ? (
           <div
             role="alert"
-            className="pointer-events-auto absolute left-1/2 top-[52px] z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(236,116,116,0.32)] bg-[color:rgba(18,20,26,0.98)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)]"
+            className="pointer-events-auto absolute left-1/2 top-[52px] z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-[color:var(--color-danger-a32)] bg-[color:rgba(18,20,26,0.98)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)]"
           >
-            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(236,116,116,0.9)]">
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-danger-text)]">
               Error
             </span>
             <span>{projectsError}</span>

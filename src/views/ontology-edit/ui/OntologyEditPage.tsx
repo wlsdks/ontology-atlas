@@ -36,6 +36,7 @@ import { ChromeTile, Tooltip, useToast } from "@/shared/ui";
 import { parseOntologyReaderIntent } from "@/shared/lib/ontology-reader-intent";
 import { useEphemeralNodes } from "../lib/use-ephemeral-nodes";
 import { useEphemeralEdges } from "../lib/use-ephemeral-edges";
+import { useIsWideViewport } from "../lib/use-is-wide-viewport";
 import { childKindForParent } from "../lib/builder-drop-to-add";
 import { isUntitledTitle } from "../lib/is-untitled-title";
 import { downloadAtlasFrontmatter } from "../lib/export-frontmatter";
@@ -1128,6 +1129,34 @@ export function OntologyEditPage() {
     </div>
   );
 
+  // xl+(1280px+) 데스크톱은 상주 사이드바, 그 아래는 시트 다이얼로그 —
+  // 인스펙터는 항상 이 중 한 쪽에만 DOM 렌더 (중복 렌더 방지, SSR 기본값은
+  // wide 라 하이드레이션 mismatch 없음). `../lib/use-is-wide-viewport` 참고.
+  const isWide = useIsWideViewport();
+  // 두 분기(상주 사이드바 / 시트 다이얼로그)가 공유하는 인스펙터 props.
+  // surface · onClearSelection · sessionDiffLines 만 분기별로 다르다 —
+  // sidebar 는 상시 표시라 세션 diff 프리뷰를 보여주고 선택 해제만 하면
+  // 되지만, sheet 는 다이얼로그이므로 선택 해제와 동시에 닫아야 한다.
+  const sharedInspectorProps = {
+    ephemeralSelected,
+    vaultSelected,
+    vaultBacklinks,
+    onSelectBacklink: openNodeDetails,
+    vaultReadOnly: !hasLiveVault,
+    isDesktopRuntime,
+    untitledPlaceholder: t("untitledPlaceholder"),
+    onRenameEphemeral: (id: string, title: string) =>
+      updateNode(id, { title }),
+    onSaveEphemeral: saveEphemeral,
+    isEphemeralSaveConflict: hasDraftPathConflict,
+    getEphemeralSaveSuggestion: getDraftPathSuggestion,
+    onSaveVaultRename: renameVaultDoc,
+    onEditVaultArrayKey: editVaultArrayKey,
+    onEditVaultLiteral: editVaultLiteral,
+    onDeleteVault: deleteVaultDoc,
+    saving: savingId !== null || renamingId !== null,
+  };
+
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
       {/* 좌측 내비 레일 — perf/persistent-shell 이후 layout(AppShell) 상주.
@@ -1815,31 +1844,22 @@ export function OntologyEditPage() {
             ) : null}
           </div>
           {/* 우측 340px 고정 인스펙터 — builder-final 스펙의 3-pane 본체.
-              넓은 데스크톱(xl+)에서만 상시 노출, 좁은 화면은 기존 상세
-              시트(모달)를 그대로 쓴다 (기능 동일, 표피만 분기). */}
-          <div className="hidden xl:flex">
-            <OntologyInspector
-              ephemeralSelected={ephemeralSelected}
-              vaultSelected={vaultSelected}
-              vaultBacklinks={vaultBacklinks}
-              onSelectBacklink={openNodeDetails}
-              vaultReadOnly={!hasLiveVault}
-              isDesktopRuntime={isDesktopRuntime}
-              untitledPlaceholder={t('untitledPlaceholder')}
-              onRenameEphemeral={(id, title) => updateNode(id, { title })}
-              onSaveEphemeral={saveEphemeral}
-              isEphemeralSaveConflict={hasDraftPathConflict}
-              getEphemeralSaveSuggestion={getDraftPathSuggestion}
-              onSaveVaultRename={renameVaultDoc}
-              onEditVaultArrayKey={editVaultArrayKey}
-              onEditVaultLiteral={editVaultLiteral}
-              onDeleteVault={deleteVaultDoc}
-              saving={savingId !== null || renamingId !== null}
-              onClearSelection={() => setSelectedId(null)}
-              surface="sidebar"
-              sessionDiffLines={sessionDiffLines}
-            />
-          </div>
+              넓은 데스크톱(xl+, isWide)에서만 상시 노출, 좁은 화면은 아래
+              상세 시트(모달)를 쓴다 (기능 동일, 표피만 분기). 인스펙터는
+              DOM 에 한 벌만 렌더 — 예전엔 이 상주 사이드바와 아래 시트를
+              CSS `hidden xl:flex`/`xl:hidden` 로만 나눠 항상 둘 다 렌더했고,
+              그 결과 input[name="node-title"] 같은 필드가 DOM 에 2벌 존재해
+              e2e strict-mode 매치가 깨졌다. */}
+          {isWide ? (
+            <div className="flex">
+              <OntologyInspector
+                {...sharedInspectorProps}
+                onClearSelection={() => setSelectedId(null)}
+                surface="sidebar"
+                sessionDiffLines={sessionDiffLines}
+              />
+            </div>
+          ) : null}
         </section>
         <BuilderWriteConfirmBar
           status={writeConfirmStatus}
@@ -1859,17 +1879,18 @@ export function OntologyEditPage() {
           onDryRun={() => setWriteSummaryOpen(true)}
           onWrite={runWriteConfirmAction}
         />
-        {detailsOpen && (ephemeralSelected || vaultSelected) ? (
+        {!isWide && detailsOpen && (ephemeralSelected || vaultSelected) ? (
           <div
             role="dialog"
             aria-modal="true"
             aria-label={t("detailsSheetAriaLabel")}
             className={
-              // xl+ 는 우측 고정 인스펙터가 상시 선택 상세를 보여주므로 이
-              // 모달은 그 아래 화면 폭에서만 뜬다 (동일 데이터, 중복 표면 방지).
+              // xl+(isWide) 는 우측 고정 인스펙터가 상시 선택 상세를
+              // 보여주므로 이 모달은 그 아래 화면 폭에서만 뜬다 (동일
+              // 데이터, 인스펙터는 DOM 에 한 벌만 — 위 isWide 가드 참고).
               ephemeralSelected
-                ? "fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-scrim-a56)] px-4 py-6 xl:hidden"
-                : "fixed inset-0 z-50 hidden items-center justify-center bg-[color:var(--color-scrim-a56)] px-4 py-6 md:flex xl:hidden"
+                ? "fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-scrim-a56)] px-4 py-6"
+                : "fixed inset-0 z-50 hidden items-center justify-center bg-[color:var(--color-scrim-a56)] px-4 py-6 md:flex"
             }
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) setDetailsOpen(false);
@@ -1905,22 +1926,7 @@ export function OntologyEditPage() {
                 />
               ) : null}
               <OntologyInspector
-                ephemeralSelected={ephemeralSelected}
-                vaultSelected={vaultSelected}
-                vaultBacklinks={vaultBacklinks}
-                onSelectBacklink={openNodeDetails}
-                vaultReadOnly={!hasLiveVault}
-                isDesktopRuntime={isDesktopRuntime}
-                untitledPlaceholder={t('untitledPlaceholder')}
-                onRenameEphemeral={(id, title) => updateNode(id, { title })}
-                onSaveEphemeral={saveEphemeral}
-                isEphemeralSaveConflict={hasDraftPathConflict}
-                getEphemeralSaveSuggestion={getDraftPathSuggestion}
-                onSaveVaultRename={renameVaultDoc}
-                onEditVaultArrayKey={editVaultArrayKey}
-                onEditVaultLiteral={editVaultLiteral}
-                onDeleteVault={deleteVaultDoc}
-                saving={savingId !== null || renamingId !== null}
+                {...sharedInspectorProps}
                 onClearSelection={() => {
                   setSelectedId(null);
                   setDetailsOpen(false);

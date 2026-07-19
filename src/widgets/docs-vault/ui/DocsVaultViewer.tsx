@@ -540,9 +540,9 @@ const CALLOUT_STYLES: Record<
     icon: '⚠️',
   },
   danger: {
-    border: 'rgba(220,120,120,0.5)',
-    bg: 'rgba(220,120,120,0.07)',
-    title: 'rgba(240,180,180,0.95)',
+    border: 'var(--color-danger-a50)',
+    bg: 'var(--color-danger-a08)',
+    title: 'var(--color-danger-text-strong)',
     icon: '🚫',
   },
   success: {
