@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-19T16:12:39.003Z",
+  "generatedAt": "2026-07-19T16:46:05.188Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-20 — 헌장 danger 색 토큰화 + 빌더 인스펙터 중복 DOM 렌더 제거",
+          "slug": "2026-07-20-헌장-danger-색-토큰화-빌더-인스펙터-중복-dom-렌더-제거"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-20 — e2e 스위트 부패 정리 + CI 연결 (no product change)",
           "slug": "2026-07-20-e2e-스위트-부패-정리-ci-연결-no-product-change"
         },
@@ -3951,9 +3956,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. Playwright e2e 139개 중 108개가 실패하고 있었다 — 전부 이미 삭제된 화면을 기다리다 타임아웃난 것으로, 제품 결함은 0건. topolo",
-      "wordCount": 23665,
-      "updatedAt": "2026-07-19T16:10:25.528Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 전 페이지 육안 감사에서 나온 실수정 2건. 에러/danger 색 토큰화 — 7개 파일이 app/globals.css 의 헌장 danger 토큰(--col",
+      "wordCount": 23821,
+      "updatedAt": "2026-07-19T16:46:00.136Z",
       "linksOut": [
         "slug"
       ]

@@ -6,6 +6,27 @@
 
 ---
 
+## 2026-07-20 — 헌장 danger 색 토큰화 + 빌더 인스펙터 중복 DOM 렌더 제거
+
+전 페이지 육안 감사에서 나온 실수정 2건.
+
+- **에러/danger 색 토큰화** — 7개 파일이 `app/globals.css` 의 헌장
+  danger 토큰(`--color-danger-a08/a32/a46/a50`, `--color-danger-text`,
+  `--color-danger-text-strong`) 대신 비헌장 red 리터럴(`rgba(220,120,120,*)`
+  · `rgba(240,180,180,*)` · `rgba(236,116,116,*)`)을 직접 쓰고 있었다 —
+  `toast.tsx` 에러 토스트 보더, 지도 "노드 못찾음" 칩, vault picker 에러
+  힌트, 문서함 아웃라인 삭제 버튼 hover, 에디터 에러 배너, 프로젝트 deps bar
+  제거 버튼 hover, 콜아웃(`> [!danger]`) 인라인 스타일. 헌장 에러 red
+  (`#e5484d` 계열)로 통일.
+- **빌더 인스펙터 중복 DOM 렌더 제거** — `OntologyEditPage` 가
+  `OntologyInspector` 를 같은 props 로 두 번 렌더하고 있었다 (xl+ 상주
+  사이드바 + 그 아래 시트 모달을 CSS `hidden xl:flex`/`xl:hidden` 로만
+  나눠 항상 둘 다 마운트). `input[name="node-title"]` 같은 필드가 DOM 에
+  2벌 존재해 Playwright strict-mode 매치가 깨졌었다. SSR-safe
+  `useIsWideViewport()` 훅(서버/첫 페인트 기본값 `true` = 데스크톱 상주,
+  마운트 후 실뷰포트로 갱신)으로 두 분기를 배타적 렌더로 전환 — 인스펙터
+  공통 props 는 `sharedInspectorProps` 객체로 추출.
+
 ## 2026-07-20 — e2e 스위트 부패 정리 + CI 연결 (no product change)
 
 Playwright e2e 139개 중 108개가 실패하고 있었다 — 전부 이미 삭제된 화면을
