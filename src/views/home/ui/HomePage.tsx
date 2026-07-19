@@ -316,7 +316,6 @@ export function HomePage() {
           trigger: t('controls.settingsGearAriaLabel'),
           heading: t('controls.settingsGearHeading'),
           locale: t('controls.settingsGearLocale'),
-          theme: t('controls.settingsGearTheme'),
           indexDefault: t('controls.settingsGearIndexDefault'),
           indexDefaultExpanded: t('controls.settingsGearIndexDefaultExpanded'),
           indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),

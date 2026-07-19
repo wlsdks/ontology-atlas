@@ -37,8 +37,8 @@
       "tabMcpAgentsDesc": "First calls and client proof.",
       "tabVault": "Workspace",
       "tabVaultDesc": "Ontology workspace access.",
-      "tabAppearance": "Appearance/Language",
-      "tabAppearanceDesc": "Display and locale.",
+      "tabAppearance": "Language",
+      "tabAppearanceDesc": "Interface language.",
       "tabVerification": "Verification",
       "tabVerificationDesc": "Current MCP proof state.",
       "connectionStatusTitle": "MCP connection status",
@@ -64,8 +64,6 @@
       "proofDecisionInventory": "tools/list with 24 tools proves the server inventory is current.",
       "proofDecisionSession": "The current agent namespace must show query_ontology before you call it direct MCP proof.",
       "proofDecisionFallback": "If the namespace is stale, use CLI fallback and reload the agent before claiming live proof.",
-      "appearanceTitle": "Display",
-      "appearanceBody": "Switch between light and dark display modes.",
       "languageTitle": "Language",
       "languageBody": "Switch between Korean and English.",
       "vaultTitle": "Ontology workspace",
@@ -2213,7 +2211,6 @@
       "settingsGearAriaLabel": "Open map settings",
       "settingsGearHeading": "Map settings",
       "settingsGearLocale": "Language",
-      "settingsGearTheme": "Theme",
       "settingsGearIndexDefault": "INDEX default state",
       "settingsGearIndexDefaultExpanded": "Expanded",
       "settingsGearIndexDefaultCollapsed": "Collapsed",
@@ -2401,11 +2398,6 @@
       "secondaryJsonGateTitle": "Copy the JSON self-check command that Claude Code / Codex setup automation can parse directly",
       "secondaryBusy": "Adding…",
       "secondaryLabel": "Add ontology starter"
-    },
-    "themeToggle": {
-      "switchToDark": "Switch to dark mode",
-      "switchToLight": "Switch to light mode",
-      "fallbackLabel": "Toggle theme"
     }
   },
   "settings": {

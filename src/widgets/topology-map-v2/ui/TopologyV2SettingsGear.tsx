@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKe
 import { FolderCog, Settings } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { LocaleSwitch } from "@/features/locale-switch";
-import { ThemeToggle } from "@/features/theme-toggle";
 import { cn } from "@/shared/lib/cn";
 
 /**
@@ -12,8 +11,7 @@ import { cn } from "@/shared/lib/cn";
  * — the RIGHT rail's "설정" icon next to fit-view). Opens a compact machined
  * popover with the three settings an owner needs without leaving the map:
  * 언어 (real locale switch, `LocaleSwitch` — `@/i18n/navigation` locale
- * routing under the hood), 테마 (`ThemeToggle`, same logic used everywhere
- * else), and INDEX 기본 상태 (expanded/collapsed — writes the SAME
+ * routing under the hood) and INDEX 기본 상태 (expanded/collapsed — writes the SAME
  * localStorage key `HomePage.tsx`'s INDEX panel reads via
  * `useLocalStorageBoolean(INDEX_PANEL_COLLAPSED_KEY, …)`, wired through
  * `onChangeIndexDefaultCollapsed`).
@@ -35,7 +33,6 @@ export interface TopologyV2SettingsGearLabels {
   /** Popover heading. */
   heading: string;
   locale: string;
-  theme: string;
   indexDefault: string;
   indexDefaultExpanded: string;
   indexDefaultCollapsed: string;
@@ -151,9 +148,6 @@ export function TopologyV2SettingsGear({
           <div className="flex flex-col gap-3 p-3">
             <SettingsRow label={labels.locale}>
               <LocaleSwitch />
-            </SettingsRow>
-            <SettingsRow label={labels.theme}>
-              <ThemeToggle />
             </SettingsRow>
             <SettingsRow label={labels.indexDefault}>
               <div
