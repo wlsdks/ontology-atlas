@@ -39,9 +39,8 @@ export function LocaleRedirect() {
       className="flex min-h-[60vh] items-center justify-center"
       style={{
         minHeight: '60vh',
-        // 디자인 토큰 참조 — globals.css 가 static <link> 로 항상 로드되고
-        // data-theme 스크립트가 render 전 동기 실행되므로, 라이트 모드 사용자가
-        // 루트 redirect 진입 시 다크 hex 가 깜빡이던 회귀를 제거한다.
+        // 디자인 토큰 참조 — hardcoded hex 대신 var() 를 써서 토큰 변경이
+        // 이 redirect 화면에도 자동 반영되게 한다 (design.md 토큰 규율).
         background: 'var(--color-canvas)',
         color: 'var(--color-text-secondary)',
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',

@@ -1,18 +1,18 @@
 import { INDIGO_HIGHLIGHT, indigoRgba } from '@/shared/config/indigo-tokens';
 
 /**
- * DocsVaultFolderTopology 전용 테마 대응 색 계산.
+ * DocsVaultFolderTopology 전용 색 계산.
  *
  * Sigma 는 WebGL 캔버스라 alpha 합성이 브라우저/webview 조합에 따라 신뢰할
  * 수 없다 — 저-알파 rgba 를 그대로 넘기면 사실상 안 보이거나 렌더러마다
  * 다르게 보인다 (memory: "WebGL 알파 결함" — dim 은 hidden 또는 불투명 톤만).
  * 그래서 Sigma settings / node·edge attrs 로 넘기는 모든 색은 **불투명**
- * 이어야 한다. 이 모듈은 `--color-*` 토큰(테마별로 이미 값이 다름)을 실제
- * 캔버스 배경 위에 alpha-composite 해서 불투명 `rgb()` 문자열로 만든다.
+ * 이어야 한다. 이 모듈은 `--color-*` 토큰을 실제 캔버스 배경 위에
+ * alpha-composite 해서 불투명 `rgb()` 문자열로 만든다.
  */
 
 export interface FolderTopologyColors {
-  /** Sigma label 색 — 다크/라이트 모두 텍스트로서 읽혀야 하므로 이미 불투명인
+  /** Sigma label 색 — 텍스트로서 읽혀야 하므로 이미 불투명인
    *  `--color-text-secondary` 를 그대로 쓴다 (블렌딩 불필요). */
   label: string;
   /** 기본 엣지 톤 — 인디고 틴트, 캔버스 위에서 뚜렷이 보이는 불투명 회색. */
@@ -97,10 +97,10 @@ export function __resetFolderTopologyColorCache(): void {
 }
 
 /**
- * 현재 `data-theme` 기준 Sigma 색 팔레트를 계산. `getComputedStyle` 로 읽은
- * 토큰 조합이 이전 호출과 같으면 캐시된 참조를 그대로 반환 — 매 reducer
- * 호출마다 다시 계산하지 않도록 (호출부는 MutationObserver 로 `data-theme`
- * 변경 시에만 다시 부르면 된다).
+ * 현재 `--color-*` 토큰 기준 Sigma 색 팔레트를 계산. `getComputedStyle` 로
+ * 읽은 토큰 조합이 이전 호출과 같으면 캐시된 참조를 그대로 반환 — 매
+ * reducer 호출마다 다시 계산하지 않도록 (다크 단일이라 mount 시 1회 호출로
+ * 충분, 캐시는 안전망).
  */
 export function resolveFolderTopologyColors(
   root: HTMLElement = document.documentElement,

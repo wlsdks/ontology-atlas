@@ -89,8 +89,8 @@ export function DocsVaultFolderTopology({
   const graphRef = useRef<Graph | null>(null);
   const onSelectRef = useRef(onSelect);
   const onPositionChangeRef = useRef(onPositionChange);
-  // 다크/라이트 색 팔레트 resolve-cache — mount 시 1회, data-theme 변경 시
-  // MutationObserver 가 갱신. reducer 는 매번 이 ref 를 읽어 계산 안 함.
+  // 다크 색 팔레트 resolve-cache — mount 시 1회. reducer 는 매번 이 ref 를
+  // 읽어 계산 안 함(다크 단일이라 이후 재계산 불필요).
   const colorsRef = useRef<FolderTopologyColors>(safeResolveColors());
   useEffect(() => {
     onSelectRef.current = onSelect;
@@ -271,23 +271,6 @@ export function DocsVaultFolderTopology({
       graphRef.current = null;
     };
   }, [build.projects, build.categories]);
-
-  // finding #1 — labelColor / edge / dim 톤이 다크 전용으로 하드코딩돼
-  // 라이트 모드에서 안 읽혔다. data-theme 변경을 관찰해 팔레트를 다시
-  // 계산하고 Sigma settings 를 갱신 (SigmaTopology 의 기존 패턴과 동일).
-  useEffect(() => {
-    const target = document.documentElement;
-    const refresh = () => {
-      colorsRef.current = resolveFolderTopologyColors();
-      const renderer = sigmaRef.current;
-      if (!renderer) return;
-      renderer.setSetting('labelColor', { color: colorsRef.current.label });
-      renderer.refresh();
-    };
-    const observer = new MutationObserver(refresh);
-    observer.observe(target, { attributes: true, attributeFilter: ['data-theme'] });
-    return () => observer.disconnect();
-  }, []);
 
   // hover / selection 반영
   useEffect(() => {

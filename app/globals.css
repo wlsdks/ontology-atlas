@@ -47,12 +47,6 @@
    * 빌더 v2 (A2) — 인스펙터/팔레트 알파 스케일. `OntologyInspector.tsx` /
    * `OntologyKindPalette.tsx` 에 인라인 hardcode 로 흩어져 있던 rgba(...) 값을
    * 그대로 1:1 추출한 토큰 — 시각 결과는 무변, 참조만 CSS 변수로 바뀐다.
-   * 인디고 bg 0.14/0.16/0.18 · border/hover:border 0.46 · pale text
-   * (159,170,235) 는 위 "라이트 모드 인디고 알파" 시프트가 이미 커버하는
-   * 값이라 `[data-theme="light"]` 블록에서 동일 시프트를 토큰 자체에 준다
-   * (그 attribute-selector 룰은 다른 파일의 리터럴 클래스를 위해 그대로 둔다).
-   * 나머지 알파는 그 시프트 패스의 "알려진 미커버 gap" 과 값이 겹치므로
-   * 다크 값 그대로 — 오늘의 라이트 모드 렌더링과 동일하다.
    */
   --color-indigo-a06: rgba(94, 106, 210, 0.06);
   --color-indigo-a08: rgba(94, 106, 210, 0.08);
@@ -67,17 +61,17 @@
   --color-indigo-a36: rgba(94, 106, 210, 0.36);
   --color-indigo-a38: rgba(94, 106, 210, 0.38);
   --color-indigo-a42: rgba(94, 106, 210, 0.42);
-  /* border/hover:border 전용 — 라이트 시프트 대상 (위 "border 0.4/0.46" 커버). */
+  /* border/hover:border 전용. */
   --color-indigo-border-a46: rgba(94, 106, 210, 0.46);
-  /* focus-visible:ring 전용 — 그 시프트가 커버하지 않는 utility 라 다크 값 유지. */
+  /* focus-visible:ring 전용 utility. */
   --color-indigo-ring-a46: rgba(94, 106, 210, 0.46);
   --color-indigo-a55: rgba(94, 106, 210, 0.55);
   --color-indigo-a58: rgba(94, 106, 210, 0.58);
   --color-indigo-a62: rgba(94, 106, 210, 0.62);
   --color-indigo-a66: rgba(94, 106, 210, 0.66);
-  /* pale indigo text — 라이트 시프트 대상("pale indigo active text" 커버). */
+  /* pale indigo text. */
   --color-indigo-text-strong: rgba(159, 170, 235, 0.95);
-  /* pale indigo text — 위 목록의 정확한 rgb 3종과 다른 tuple 이라 미커버. */
+  /* pale indigo text — 위 목록의 정확한 rgb 3종과 다른 tuple. */
   --color-indigo-text-soft: rgba(188, 195, 255, 0.92);
 
   --color-danger-a08: rgba(229, 72, 77, 0.08);
@@ -109,8 +103,7 @@
   /*
    * 빌더 A4 — OntologyEditPage.tsx 분해 후 잔여 인라인 rgba(...) 토큰화.
    * 위 A2 스케일에 없는 opacity/hue 만 추가한다 — 시각 결과 무변, 참조만
-   * CSS 변수로 치환. 새 값 대부분은 아래 라이트 모드 인디고 시프트가 아직
-   * 커버하지 않는 "알려진 gap"(위 A2 주석 참고)과 겹쳐 다크 값 그대로 쓴다.
+   * CSS 변수로 치환.
    */
   --color-indigo-a07: rgba(94, 106, 210, 0.07);
   --color-indigo-a13: rgba(94, 106, 210, 0.13);
@@ -125,9 +118,7 @@
 
   /*
    * 시안(mockup) `--indigo-line` 계열(139,151,255) — 위 A2 인디고 스케일
-   * (94,106,210) 과 다른 hue. 이 파일 하단 라이트 모드 pale-text 일괄 시프트
-   * 룰이 "의도적 제외" 로 문서화한 계열과 같은 톤이라 다크/라이트 동일 값
-   * 유지(오늘 렌더링과 무변).
+   * (94,106,210) 과 다른 hue.
    */
   --color-indigo-line-a06: rgba(139, 151, 255, 0.06);
   --color-indigo-line-a13: rgba(139, 151, 255, 0.13);
@@ -173,15 +164,12 @@
   --color-scrim-a56: rgba(0, 0, 0, 0.56);
 
   /* 캔버스 좌상단 저장 개념 앵커 레일 — --color-panel(#0f1011 = 15,16,17)
-     위에 얹는 반투명 플로팅 표면. 다크/라이트 동일(캔버스 오버레이 칩은
-     테마 무관하게 짙게 유지 — Sigma 툴팁과 같은 원칙). */
+     위에 얹는 반투명 플로팅 표면 (Sigma 툴팁과 같은 원칙으로 짙게 유지). */
   --color-panel-overlay-a88: rgba(15, 16, 17, 0.88);
   --color-panel-overlay-a94: rgba(15, 16, 17, 0.94);
 
   /*
-   * 라이트/다크 양쪽 호환 semantic tokens.
-   * 다크 (default): rgba(255,255,255,*) — surface 위 밝은 톤 가장자리/오버레이.
-   * 라이트 ([data-theme="light"]): rgba(0,0,0,*) — surface 위 어두운 톤 가장자리/오버레이.
+   * semantic tokens — surface 위 밝은 톤 가장자리/오버레이.
    *
    * 사용 가이드:
    * - border-soft: hairline border (rounded card 가장자리)
@@ -200,14 +188,12 @@
   /* tap highlight — webkit 기본 회색 ghost 대신 시스템 톤. */
   --color-tap-highlight: rgba(255, 255, 255, 0.04);
 
-  /* 카드 elevation — 다크에선 none (토큰 대비만으로 충분), 라이트에선
-     [data-theme="light"] 블록이 override. */
+  /* 카드 elevation — 다크에선 토큰 대비만으로 충분해 none. */
   --shadow-card: none;
 
   /*
    * 다크 톤 surface — modal backdrop / sticky nav 배경 / 강한 패널 처럼
-   * "주변보다 짙게" 만드는 곳. 다크에선 캔버스 톤, 라이트에선 약하게
-   * 어둡힌 흰색 톤으로 뒤집힌다.
+   * "주변보다 짙게" 만드는 곳. 캔버스 톤을 그대로 짙힌다.
    */
   --color-backdrop-strong: rgba(8, 9, 10, 0.85);
   --color-backdrop-medium: rgba(8, 9, 10, 0.6);
@@ -763,8 +749,6 @@
      * DOM 에서 canvas 와 같은 기계가공 언어로 읽혀야 한다.
      * 다크 값 출처: topology-map-v2 노드/음각 팔레트와 동일 값 복사
      * (var() 참조가 아닌 값 복사 — flag 제거 시 grep 계약 유지).
-     * 라이트 값은 v2 canvas light-mode 패스와 무관한 DOM 전용 신규 정의 —
-     * 페이지는 라이트 테마 완전 지원이 계약이라 여기서 함께 정의한다.
      * 마커: DownloadPage 소개 섹션(구 LandingPage, root-first-open Slice 2 로
      * 이관) data-token="engraved-numeral" / data-token="kind-glyph".
      */
@@ -866,10 +850,7 @@
    * 교체 범위가 명확해진다. Canvas 2D 는 CSS 변수를 직접 못 읽으므로
    * `src/widgets/topology-map-v2/tokens/read-topology-v2-tokens.ts` 가
    * `getComputedStyle` 로 1회 해석해 캐싱한다 — 값의 진실원은 이 블록 하나.
-   *
-   * 라이트 모드 값은 의도적으로 아직 없다 — design doc §2.2 가 "P3 구현 시
-   * Design Guardian 리뷰로 확정" 이라 명시(프로토타입은 다크 전용). 그 전까지
-   * 라이트 테마에서도 이 다크 값 그대로 상속된다.
+   * 다크 단일 (2026-07-19 라이트 모드 전면 폐기 결정, .claude/rules/design.md).
    */
   :root {
     /* 2.1 노드 표면 (kind별 fill/stroke tier) */
@@ -902,9 +883,7 @@
        draw calls. It borrows this section's kind fill/stroke tokens for its
        glyph and needs one extra: a hairline top-inset highlight ("machined
        edge") the canvas-2D sheen has no DOM equivalent for. Dark-only, same
-       precedent as `--topology-v2-node-sheen-*` above — a Design Guardian
-       light-mode pass can add an override later if the near-invisible result
-       on a light card needs a deliberate value. */
+       precedent as `--topology-v2-node-sheen-*` above. */
     --topology-v2-builder-node-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     /* canvas-emphasis 슬라이스 (소유자: "중앙(프로젝트 노드)이 뭔가 다르게
        빛나야") — 발광 대신 재질(design.md "발광 대신 재질"). 프로젝트 헥사곤
@@ -1123,7 +1102,7 @@
     --topology-v2-panel-text-quaternary: #55555d;
     /* 연결 그룹 trace 미니라인 — 캔버스 엣지와 같은 계열(contains 실선/depends 점선) */
     /* A1 전체 상세 인디고 보더 — 기존 rgba(94,106,210,0.5) 리터럴 2곳의 토큰化
-       (Guardian A1 follow-up P2). 라이트 변형은 아래 .full-detail-a1 스코프. */
+       (Guardian A1 follow-up P2). */
     --topology-v2-indigo-border: rgba(94, 106, 210, 0.5);
 
     --topology-v2-edge-contains-mark: #4a4a54;
@@ -1275,324 +1254,6 @@
     }
   }
 
-  /*
-   * 라이트 모드 — 사용자가 토글로 [data-theme="light"] 를 html 에 박으면
-   * 이 블록의 token override 가 적용된다. 표면색 / 텍스트 / overlay 만
-   * 뒤집고 인디고 악센트 / 상태 색은 둘 다 동일.
-   *
-   * canvas 는 순수 #ffffff 가 아니라 살짝 부드러운 기본 종이톤 (#f3f5f9)
-   * 으로. 다크 모드의 canvas vs panel 대비가 큰 만큼 라이트도 충분한
-   * grey-on-white 차이가 있어야 panel surface 가 떠 보임. 이전 값 #f7f8fa
-   * 는 panel #fff 와 차이 1% 미만이라 카드 경계가 사라지던 문제 fix.
-   *
-   * border / divider 알파도 50% boost — 다크에선 흰 알파가 짙은 캔버스
-   * 위에 자연스레 떠오르지만, 라이트에선 검정 알파 0.08 / 0.10 이 시각적
-   * 으로 거의 0 (시야 적응 효과). 0.12 / 0.14 까지 올려 hairline 경계가
-   * 실제로 보이게.
-   *
-   * 텍스트는 Linear 라이트 모드 기준 톤 차용.
-   */
-  html[data-theme="light"] {
-    color-scheme: light;
-    --color-canvas: #f3f5f9;
-    --color-panel: #ffffff;
-    --color-elevated: #ffffff;
-    --color-secondary-surface: #e8ebf2;
-
-    --color-text-primary: #0a0b0c;
-    --color-text-secondary: #1f2329;
-    --color-text-tertiary: #5b6068;
-    --color-text-quaternary: #6f7480;
-
-    /* 인디고 mode-aware tone-down — design.md 가 "single indigo (#5e6ad2)"
-       원칙이지만 같은 hex 가 다크/라이트에서 시각적으로 다른 톤으로 인지됨:
-       - 다크 #08090a 위 #5e6ad2 = 차분한 인디고 (배경 대비 brightness 차이로
-         hue 보다 lightness 차이가 먼저 인식 → "딥블루")
-       - 라이트 #fff 위 #5e6ad2 = 동일 색이 채도 강조돼 "보라" 로 인식
-       라이트 한정으로 살짝 darker / less saturated 한 indigo 로 시프트 →
-       흰 캔버스에서 grown-up 인디고 톤. Linear / Notion / Sentry 의 light
-       primary 가 모두 dark 보다 살짝 깊은 음영 사용. Hue 는 동일 indigo
-       family 라 "단일 인디고" 원칙 유지. */
-    --color-indigo-brand: #4d56c8;
-    --color-indigo-accent: #5e6ad2;
-    --color-indigo-hover: #424bb6;
-
-    /* 빌더 v2 (A2) 알파 스케일 라이트 오버라이드 — 위 "라이트 모드 인디고
-       알파" 시프트 패스가 이미 커버하는 세 값(bg 0.14/0.16/0.18 · border
-       0.46 · pale text 159,170,235)만 시프트한다. 그 패스가 아직 커버하지
-       않는 나머지 알파(및 danger/amber)는 다크 값 그대로 두어 오늘의
-       라이트 모드 렌더링과 동일하게 유지 — 부분 시프트로 새 회귀를 만들지
-       않는다. */
-    --color-indigo-a14: rgba(77, 86, 200, 0.12);
-    --color-indigo-a16: rgba(77, 86, 200, 0.12);
-    --color-indigo-a18: rgba(77, 86, 200, 0.12);
-    --color-indigo-border-a46: rgba(77, 86, 200, 0.32);
-    --color-indigo-text-strong: rgba(40, 50, 175, 0.96);
-
-    --color-border-soft: rgba(0, 0, 0, 0.14);
-    --color-border-strong: rgba(0, 0, 0, 0.26);
-    --color-overlay-1: rgba(0, 0, 0, 0.025);
-    --color-overlay-2: rgba(0, 0, 0, 0.05);
-    --color-overlay-3: rgba(0, 0, 0, 0.10);
-    --color-divider: rgba(0, 0, 0, 0.16);
-    --color-tap-highlight: rgba(0, 0, 0, 0.05);
-
-    /* B2+ 승격 토큰 라이트 값 — 음각은 밝은 표면에선 어두운 면 + 밝은 아래
-       그림자(레터프레스). 글리프 잉크는 "종이 위 청사진" — slate 잉크
-       사다리로 1px 스트로크 전부 ≥3:1 (Guardian 라이트 재조율, owner
-       washed-out 피드백 반영). fill 은 instrument face 보다 한 단 깊게
-       도형에 몸통을 준다. trace 는 스트로크 아래 서열의 sub-stroke. */
-    --engraved-numeral-face: #454b58;
-    --engraved-numeral-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
-    --kind-glyph-stroke-project: #3e4759;
-    --kind-glyph-stroke-domain: #545e73;
-    --kind-glyph-stroke-capability: #6b7488;
-    --kind-glyph-stroke-element: #7f8799;
-    --kind-glyph-fill-project: #dde2eb;
-    --kind-glyph-fill-domain: #e5e9f0;
-    --kind-glyph-fill-capability: #ebeef3;
-    --kind-glyph-fill-element: #eff1f6;
-    --kind-glyph-edge-contains: #8b93a7;
-    --kind-glyph-edge-relates: #7d86a2;
-
-    --topology-card-selected-quiet-border: rgba(94, 106, 210, 0.36);
-    --topology-card-selected-quiet-wash: rgba(94, 106, 210, 0.05);
-    --topology-card-count-surface: rgba(15, 23, 42, 0.045);
-    --topology-card-count-border: rgba(15, 23, 42, 0.10);
-    --topology-card-count-text: var(--color-text-secondary);
-    --topology-path-endpoint-surface: rgba(77, 86, 200, 0.11);
-    --topology-path-endpoint-border: rgba(77, 86, 200, 0.30);
-    --topology-path-endpoint-text: rgba(40, 50, 175, 0.96);
-    --topology-health-repair-primary-surface: var(--color-overlay-3);
-    --topology-health-repair-primary-border: var(--color-border-strong);
-    --topology-health-repair-primary-hover-surface: var(--color-overlay-2);
-    --topology-health-repair-secondary-surface: transparent;
-    --topology-health-repair-secondary-border: transparent;
-    --topology-health-repair-secondary-hover-surface: var(--color-overlay-1);
-    --topology-panel-support-surface: rgba(255, 255, 255, 0.99);
-    --topology-relation-summary-surface: rgba(77, 86, 200, 0.12);
-    --topology-relation-summary-border: rgba(77, 86, 200, 0.32);
-    --topology-relation-summary-text: rgba(40, 50, 175, 0.96);
-    --topology-relation-label-hit-min-height: 33px;
-    --topology-relation-label-badge-height: 19px;
-    --topology-relation-label-padding-x: 7px;
-    --topology-relation-label-radius: 6px;
-    --topology-relation-label-text-size: 10.5px;
-    --topology-relation-label-svg-text-size: 9.5px;
-    --topology-relation-label-text: rgba(71, 78, 112, 0.72);
-    --topology-relation-label-selected-text: rgba(31, 36, 80, 0.92);
-    --topology-relation-label-svg-text: rgba(71, 78, 112, 0.58);
-    --topology-relation-label-surface: rgba(255, 255, 255, 0.70);
-    --topology-relation-label-border: rgba(77, 86, 200, 0.16);
-    --topology-relation-label-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
-    --topology-relation-label-selected-surface: rgba(246, 247, 255, 0.82);
-    --topology-relation-label-selected-border: rgba(77, 86, 200, 0.34);
-    --topology-relation-label-selected-shadow: 0 6px 14px rgba(15, 23, 42, 0.10);
-    --topology-relation-label-focus-ring: rgba(77, 86, 200, 0.46);
-    /* verdict a5: cyan(72,184,203) 이 라이트 배경(#f3f5f9)에서 소멸했던
-       실측 대비 결함 — 인디고로 통일(다크와 동일 원칙, 라이트 팔레트 톤). */
-    --topology-relation-spine-halo: rgba(77, 86, 200, 0.24);
-    --topology-relation-spine-terminal: rgba(77, 86, 200, 0.70);
-    --topology-relation-evidence-chip-surface: rgba(15, 23, 42, 0.055);
-    --topology-relation-evidence-chip-border: rgba(15, 23, 42, 0.12);
-    --topology-relation-evidence-chip-text: var(--color-text-secondary);
-    --topology-edge-tooltip-surface: rgba(255, 255, 255, 0.96);
-    --topology-edge-tooltip-border: rgba(77, 86, 200, 0.24);
-    --topology-edge-tooltip-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
-    --topology-command-spine-surface: linear-gradient(
-      180deg,
-      rgba(77, 86, 200, 0.075),
-      rgba(255, 255, 255, 0.82) 42%,
-      rgba(255, 255, 255, 0.72)
-    );
-    --topology-command-spine-border: rgba(77, 86, 200, 0.18);
-    --topology-command-primary-surface: rgba(77, 86, 200, 0.10);
-    --topology-command-primary-border: rgba(77, 86, 200, 0.26);
-    --topology-command-secondary-surface: rgba(15, 23, 42, 0.035);
-    --topology-command-secondary-border: rgba(15, 23, 42, 0.11);
-    --topology-command-secondary-hover-border: rgba(77, 86, 200, 0.30);
-    --topology-command-step-surface: rgba(255, 255, 255, 0.66);
-    --topology-command-step-border: rgba(15, 23, 42, 0.10);
-    --topology-overview-signal-grid-surface: rgba(255, 255, 255, 0.72);
-    --topology-overview-signal-grid-border: rgba(15, 23, 42, 0.10);
-    --topology-overview-signal-neutral-surface: rgba(15, 23, 42, 0.035);
-    --topology-overview-signal-neutral-border: rgba(15, 23, 42, 0.10);
-    --topology-overview-signal-indigo-surface: rgba(77, 86, 200, 0.08);
-    --topology-overview-signal-indigo-border: rgba(77, 86, 200, 0.22);
-    --topology-overview-signal-cyan-surface: rgba(20, 148, 128, 0.055);
-    --topology-overview-signal-cyan-border: rgba(20, 148, 128, 0.22);
-    --topology-overview-notice-surface: rgba(15, 23, 42, 0.025);
-    --topology-overview-notice-border: rgba(15, 23, 42, 0.10);
-    --topology-overview-handoff-divider: rgba(15, 23, 42, 0.12);
-    --topology-overview-handoff-primary-surface: rgba(77, 86, 200, 0.08);
-    --topology-overview-handoff-primary-border: rgba(77, 86, 200, 0.22);
-    --topology-overview-handoff-secondary-surface: rgba(15, 23, 42, 0.035);
-    --topology-overview-handoff-secondary-border: rgba(15, 23, 42, 0.10);
-    /* verdict a5: 다크 전용 rgba(222,225,255,*) 라이트 오버라이드가 아예
-       없어 접힘 섹션("다음 단계") 헤더가 유령 텍스트 수준으로 소멸했다. */
-    --topology-overview-quality-surface: rgba(20, 148, 128, 0.055);
-    --topology-overview-quality-border: rgba(20, 148, 128, 0.22);
-    --topology-overview-quality-meter-surface: rgba(15, 23, 42, 0.045);
-    --topology-overview-quality-meter-border: rgba(15, 23, 42, 0.10);
-    --topology-overview-quality-strong-meter: rgba(18, 122, 106, 0.82);
-    --topology-overview-quality-weak-meter: rgba(181, 118, 0, 0.72);
-    --topology-overview-proof-cell-divider: rgba(15, 23, 42, 0.10);
-    --topology-overview-proof-strong-text: rgba(18, 122, 106, 0.96);
-    --topology-overview-proof-supported-text: rgba(40, 50, 175, 0.96);
-    --topology-overview-proof-warning-text: rgba(138, 90, 0, 0.96);
-    --topology-overview-proof-review-text: rgba(192, 53, 58, 0.96);
-    --topology-overview-readiness-surface: rgba(77, 86, 200, 0.08);
-    --topology-overview-readiness-border: rgba(77, 86, 200, 0.24);
-    --topology-overview-readiness-meter-surface: rgba(15, 23, 42, 0.045);
-    --topology-overview-readiness-meter-border: rgba(15, 23, 42, 0.10);
-    --topology-overview-readiness-ready-meter: linear-gradient(
-      90deg,
-      rgba(77, 86, 200, 0.82),
-      rgba(20, 148, 128, 0.72)
-    );
-    --topology-overview-readiness-preflight-meter: rgba(138, 90, 0, 0.68);
-    --topology-overview-readiness-review-meter: repeating-linear-gradient(
-      90deg,
-      rgba(192, 53, 58, 0.72) 0 4px,
-      rgba(192, 53, 58, 0.28) 4px 7px
-    );
-    --topology-selected-relation-card-surface: rgba(255, 255, 255, 0.94);
-    --topology-selected-relation-card-border: rgba(77, 86, 200, 0.24);
-    --topology-selected-relation-card-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
-    --topology-selected-relation-next-action-surface: rgba(77, 86, 200, 0.075);
-    --topology-selected-relation-next-action-border: rgba(77, 86, 200, 0.20);
-    --topology-selected-relation-accent-text: rgba(40, 50, 175, 0.92);
-    --topology-selected-relation-accent-muted: rgba(77, 86, 200, 0.84);
-    --topology-selected-relation-focus-ring: rgba(77, 86, 200, 0.46);
-    --topology-selected-relation-copy-primary-shadow: 0 0 0 1px rgba(77, 86, 200, 0.14), 0 6px 18px rgba(15, 23, 42, 0.12);
-    --topology-selected-relation-copy-secondary-surface: rgba(15, 23, 42, 0.035);
-    --topology-selected-relation-kicker-font-size: 9px;
-    --topology-selected-relation-chip-font-size: 9px;
-    --topology-selected-relation-route-label-font-size: 8px;
-    --topology-selected-relation-route-value-font-size: 10px;
-    --topology-selected-relation-payload-font-size: 10px;
-    --topology-floating-control-surface: rgba(255, 255, 255, 0.92);
-    --topology-floating-control-border: rgba(15, 23, 42, 0.12);
-    --topology-floating-control-shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
-    --topology-floating-control-hover-surface: rgba(77, 86, 200, 0.08);
-    --topology-floating-control-icon: rgba(55, 65, 81, 0.66);
-    --topology-floating-control-icon-hover: rgba(17, 24, 39, 0.92);
-    --topology-minimap-surface: rgba(255, 255, 255, 0.92);
-    --topology-relation-legend-surface: var(--topology-minimap-surface);
-    --topology-floating-panel-surface: rgba(255, 255, 255, 0.92);
-    --topology-floating-panel-border: rgba(15, 23, 42, 0.12);
-    --topology-floating-panel-shadow: 0 16px 34px rgba(15, 23, 42, 0.12);
-    --topology-floating-panel-divider: rgba(15, 23, 42, 0.09);
-    --topology-utility-lane-surface: rgba(255, 255, 255, 0.92);
-    --topology-utility-lane-border: rgba(15, 23, 42, 0.12);
-    --topology-utility-lane-shadow: 0 10px 22px rgba(15, 23, 42, 0.10);
-    --topology-utility-lane-accent-surface: rgba(77, 86, 200, 0.10);
-    --topology-utility-lane-accent-border: rgba(77, 86, 200, 0.30);
-    --topology-utility-lane-accent-hover-surface: rgba(77, 86, 200, 0.14);
-    --topology-utility-lane-focus-ring: rgba(77, 86, 200, 0.46);
-    --topology-utility-lane-count-surface: rgba(77, 86, 200, 0.12);
-    --topology-utility-lane-count-text: rgba(40, 50, 175, 0.96);
-    --chrome-surface: rgba(255, 255, 255, 0.94);
-    --chrome-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
-    --chrome-engrave: 0 1px 0 rgba(255, 255, 255, 0.75);
-    --topology-path-handoff-surface: rgba(77, 86, 200, 0.045);
-    --topology-path-handoff-border: rgba(77, 86, 200, 0.16);
-    --topology-path-handoff-text: rgba(51, 65, 85, 0.66);
-    --topology-path-handoff-label-text: rgba(71, 85, 105, 0.62);
-    --topology-path-candidate-visibility-surface: rgba(77, 86, 200, 0.06);
-    --topology-path-candidate-visibility-border: rgba(77, 86, 200, 0.18);
-    --topology-path-primary-evidence-surface: rgba(77, 86, 200, 0.08);
-    --topology-path-primary-evidence-border: rgba(77, 86, 200, 0.24);
-    --topology-path-primary-evidence-text: rgba(30, 41, 59, 0.78);
-    --topology-path-primary-evidence-hover-surface: rgba(77, 86, 200, 0.12);
-    --topology-path-primary-evidence-hover-border: rgba(77, 86, 200, 0.32);
-    --topology-path-primary-evidence-hover-text: var(--color-text-primary);
-    --topology-path-handoff-mcp-surface: rgba(77, 86, 200, 0.08);
-    --topology-path-handoff-mcp-border: rgba(77, 86, 200, 0.22);
-    --topology-path-handoff-mcp-text: rgba(40, 50, 175, 0.96);
-    --topology-path-handoff-cli-surface: rgba(15, 23, 42, 0.035);
-    --topology-path-handoff-cli-border: rgba(15, 23, 42, 0.10);
-    --topology-path-handoff-cli-text: rgba(51, 65, 85, 0.68);
-    --topology-path-route-surface: rgba(77, 86, 200, 0.045);
-    --topology-path-route-border: rgba(77, 86, 200, 0.16);
-    --topology-path-route-chip-surface: rgba(77, 86, 200, 0.08);
-    --topology-path-route-chip-border: rgba(77, 86, 200, 0.18);
-    --topology-path-route-chip-text: rgba(30, 41, 59, 0.74);
-    --topology-path-route-arrow-text: rgba(71, 85, 105, 0.54);
-    --topology-path-route-source-surface: rgba(8, 145, 178, 0.07);
-    --topology-path-route-source-border: rgba(8, 145, 178, 0.22);
-    --topology-path-route-source-text: rgba(21, 94, 117, 0.92);
-    --topology-path-route-target-surface: rgba(77, 86, 200, 0.10);
-    --topology-path-route-target-border: rgba(77, 86, 200, 0.28);
-    --topology-path-route-target-text: rgba(30, 41, 130, 0.94);
-    --topology-path-route-endpoint-marker-surface: rgba(77, 86, 200, 0.13);
-    --topology-path-route-endpoint-marker-border: rgba(77, 86, 200, 0.28);
-    --topology-path-route-endpoint-marker-text: rgba(30, 41, 130, 0.96);
-    --topology-path-proof-kicker-text: rgba(71, 85, 105, 0.62);
-    --topology-path-proof-desc-text: rgba(51, 65, 85, 0.68);
-    --topology-path-proof-action-text: rgba(51, 65, 85, 0.68);
-    --topology-path-proof-action-hover-text: var(--color-text-primary);
-    --topology-path-proof-summary-surface: rgba(15, 23, 42, 0.025);
-    --topology-path-proof-summary-border: rgba(15, 23, 42, 0.10);
-    --topology-path-proof-summary-text: rgba(71, 85, 105, 0.66);
-    --topology-path-proof-summary-hover-surface: rgba(77, 86, 200, 0.07);
-    --topology-path-proof-summary-hover-border: rgba(77, 86, 200, 0.18);
-    --topology-path-proof-summary-hover-text: rgba(30, 41, 59, 0.78);
-    --topology-path-check-summary-text: rgba(71, 85, 105, 0.64);
-    --topology-path-check-summary-hover-text: rgba(30, 41, 59, 0.78);
-    --topology-path-proof-step-surface: rgba(15, 23, 42, 0.025);
-    --topology-path-proof-step-border: rgba(15, 23, 42, 0.10);
-    --topology-path-proof-ready-surface: rgba(23, 114, 51, 0.08);
-    --topology-path-proof-ready-border: rgba(23, 114, 51, 0.24);
-    --topology-path-proof-ready-text: var(--color-text-secondary);
-    --topology-path-proof-required-surface: rgba(15, 23, 42, 0.035);
-    --topology-path-proof-required-border: rgba(15, 23, 42, 0.10);
-    --topology-path-proof-required-text: var(--color-text-tertiary);
-    --topology-path-proof-after-write-surface: rgba(138, 90, 0, 0.08);
-    --topology-path-proof-after-write-border: rgba(138, 90, 0, 0.24);
-    --topology-path-proof-after-write-text: var(--color-text-secondary);
-    --topology-blocking-backdrop-surface: rgba(243, 245, 249, 0.84);
-    --topology-blocking-map-filter: saturate(0.48);
-    --topology-blocking-composer-surface: rgba(255, 255, 255, 0.99);
-    --topology-blocking-composer-border: rgba(77, 86, 200, 0.30);
-    --topology-blocking-composer-shadow:
-      0 28px 72px rgba(15, 23, 42, 0.18),
-      0 0 0 1px rgba(15, 23, 42, 0.08),
-      0 0 0 6px rgba(77, 86, 200, 0.07);
-    --topology-bottom-tab-surface: #ffffff;
-    --topology-bottom-tab-border: rgba(15, 23, 42, 0.12);
-    --topology-analysis-mode-rail-surface: var(--color-overlay-1);
-    --topology-analysis-mode-active-surface: var(--color-overlay-2);
-    --topology-analysis-mode-active-border: rgba(77, 86, 200, 0.18);
-    --topology-analysis-mode-active-text: var(--color-text-primary);
-    --topology-analysis-mode-idle-text: var(--color-text-tertiary);
-    --topology-analysis-mode-hover-surface: var(--color-overlay-2);
-    --topology-analysis-mode-focus-ring: rgba(77, 86, 200, 0.34);
-    --topology-analysis-panel-prompt-text: rgba(51, 65, 85, 0.72);
-    --topology-analysis-panel-metric-label-text: rgba(71, 85, 105, 0.64);
-    --topology-analysis-panel-metric-value-text: rgba(30, 41, 59, 0.78);
-    --topology-analysis-panel-notice-text: rgba(51, 65, 85, 0.68);
-
-    /* 라이트 전용 — 카드 elevation. 다크에선 토큰 대비만으로 충분하지만
-       라이트는 panel(#fff) 위 panel(#fff) 가 잦아 subtle drop shadow 로
-       depth 부여. Linear / Notion / GitHub 의 light card 패턴. */
-    --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 0 rgba(15, 23, 42, 0.04);
-
-    /* 다크 backdrop 들은 라이트에선 흐릿한 흰색 + 살짝 검정 톤으로. */
-    --color-backdrop-strong: rgba(243, 245, 249, 0.92);
-    --color-backdrop-medium: rgba(243, 245, 249, 0.78);
-
-    /* 신호색 mode-aware tone-down — 다크 캔버스(#08090a) 용으로 밝게 튜닝된
-       status hex 는 라이트 캔버스(#f3f5f9) 위에서 text 로 쓰면 대비가 무너진다
-       (특히 warning #f4b731 노랑 = 1.65:1, WCAG AA 4.5 한참 미달 → 거의 안 보임).
-       라이트 전용으로 어둡게 시프트해 흰 배경에서 AA(>=4.5:1) 충족. hue 는
-       같은 신호 계열(녹/앰버/회/적) 유지 — 신호색 예외 원칙 그대로. */
-    --color-status-success: #177233;
-    --color-status-warning: #8a5a00;
-    --color-status-paused: #57606a;
-    --color-status-danger: #c0353a;
-  }
-
   body {
     background-color: var(--color-canvas);
     color: var(--color-text-primary);
@@ -1614,20 +1275,12 @@
 
   /*
    * 접근성: 고대비 모드(Windows 고대비·사파리 increase contrast) 대응.
-   *
-   * "더 강한 대비" 의 의미는 mode 별로 반대 방향이다 — 다크 캔버스 위에선
-   * 텍스트를 더 밝게 (canvas 와 거리 ↑), 라이트 캔버스 위에선 더 어둡게.
-   * 라이트 분기를 빼면 light + prefers-contrast:more 사용자가 오히려 더
-   * 흐릿한 회색 위 회색을 보게 되던 회귀.
+   * 다크 캔버스 위에서는 텍스트를 더 밝게 해 canvas 와의 거리를 벌린다.
    */
   @media (prefers-contrast: more) {
     :root {
       --color-text-tertiary: #b0b5be;
       --color-text-quaternary: #8f95a0;
-    }
-    html[data-theme="light"] {
-      --color-text-tertiary: #3b4048;
-      --color-text-quaternary: #565a64;
     }
   }
 
@@ -1676,187 +1329,4 @@
  */
 body[data-no-tabbar] [data-tabbar="primary"] {
   display: none;
-}
-
-/*
- * 라이트 모드 카드 elevation — panel/elevated surface 에 subtle drop
- * shadow. 컴포넌트별로 일일이 box-shadow 추가 안 하고 토큰 클래스를 가진
- * 모든 카드에 일괄 적용. Tailwind arbitrary-value 클래스
- * `bg-[color:var(--color-panel)]` / `bg-[color:var(--color-elevated)]` 가
- * 그대로 className 에 박혀 있어 attribute 셀렉터로 매치 가능 (Tailwind v4
- * 가 arbitrary value 를 hash 로 안 바꾸기 때문).
- *
- * [data-no-card-shadow] opt-out 으로 컴포넌트가 명시적 거부 가능 (e.g.
- * 헤더처럼 sticky 라 shadow 가 본문과 겹쳐 무거워질 때).
- *
- * 다크 모드는 :root 의 --shadow-card 가 none 이라 자동 무효 — 같은 클래스
- * 를 쓰면서도 mode 별로 다른 동작.
- */
-html[data-theme="light"] [class*="bg-[color:var(--color-panel)]"]:not([data-no-card-shadow]):not(button):not(a):not([role="dialog"]):not([role="menu"]):not(input):not(textarea):not(label),
-html[data-theme="light"] [class*="bg-[color:var(--color-elevated)]"]:not([data-no-card-shadow]):not(button):not(a):not([role="dialog"]):not([role="menu"]):not(input):not(textarea):not(label) {
-  box-shadow: var(--shadow-card);
-}
-
-/*
- * 라이트 모드 인디고 알파 backgrounds 톤다운 — Tailwind 의 inline
- * `bg-[color:rgba(94,106,210,N)]` 클래스가 cmd/ctrl active state /
- * search palette pill / "active" 표시 등에 다수 사용. 다크에선 짙은
- * 캔버스 위 살짝 인디고 글로우 로 자연스럽지만 라이트에선 흰 위에 진한
- * 보라 글로우 → 사용자 보고 "버튼 보라색이 좀 그러네". 같은 클래스를
- * 라이트에서만 더 차분한 인디고 알파(rgba(77,86,200,*) = light --color-
- * indigo-brand 계열) 로 시프트.
- *
- * 실제 시프트 범위 (아래 selector 와 1:1):
- *   - bg  0.14 / 0.16 / 0.18  → rgba(77,86,200,0.12)
- *   - border 0.4 / 0.46       → rgba(77,86,200,0.32)
- * hover/뉘앙스 알파 (bg 0.06 / 0.08 / 0.10) 는 의도적으로 그대로 둔다.
- *
- * 알려진 미커버 gap: 코드에서 많이 쓰이지만 아직 라이트 시프트가 없는
- * prominent 알파 — bg 0.22 / 0.28, border 0.24 / 0.26 / 0.28 / 0.32(최다).
- * 이들은 흰 배경에서 여전히 다크-인디고 hue 로 보인다. selector 별 매핑
- * 색을 시각 확인하며 한 번에 끝내야 회귀가 안 나므로(부분 시프트가 과거
- * alpha 회귀를 만들었다), 별도 light-mode 인디고 일괄 패스에서 처리한다.
- */
-html[data-theme="light"] [class*="bg-[color:rgba(94,106,210,0.14)]"],
-html[data-theme="light"] [class*="bg-[color:rgba(94,106,210,0.16)]"],
-html[data-theme="light"] [class*="bg-[color:rgba(94,106,210,0.18)]"] {
-  background-color: rgba(77, 86, 200, 0.12);
-}
-html[data-theme="light"] [class*="border-[color:rgba(94,106,210,0.4)]"],
-html[data-theme="light"] [class*="border-[color:rgba(94,106,210,0.46)]"] {
-  border-color: rgba(77, 86, 200, 0.32);
-}
-
-/*
- * 라이트 모드 — pale indigo "active text" 계열 일괄 시프트.
- * 다크에선 짙은 캔버스에서 pale indigo text 가 active 시그널이지만 라이트
- * 흰 캔버스(또는 adapting overlay) 위에선 거의 invisible (사용자 보고:
- * "LOCAL 글자가 안 보여"). 모두 deep indigo 로 시프트해 readable.
- *
- * 커버 계열(모두 adapting bg 위 텍스트로 확인 — opaque-dark 면 위 사용 0):
- *   200,210,255 · 159,170,235 · 184,191,255 · 205,212,255 ·
- *   210,216,255 · 210,218,255 · 211,215,255
- *
- * 의도적 제외: rgba(139,151,255,*) — Sigma 노드/엣지 tooltip 이 opaque-dark
- * (bg rgba(12,14,20,1)) 위에서 이 톤을 쓰므로 라이트에서 dark 로 시프트하면
- * tooltip 텍스트가 dark-on-dark 로 사라진다. 이 계열은 callsite 별 배경
- * 확인이 필요한 별도 패스에서 처리.
- */
-html[data-theme="light"] [class*="text-[color:rgba(200,210,255"],
-html[data-theme="light"] [class*="text-[color:rgba(159,170,235"],
-html[data-theme="light"] [class*="text-[color:rgba(184,191,255"],
-html[data-theme="light"] [class*="text-[color:rgba(205,212,255"],
-html[data-theme="light"] [class*="text-[color:rgba(210,216,255"],
-html[data-theme="light"] [class*="text-[color:rgba(210,218,255"],
-html[data-theme="light"] [class*="text-[color:rgba(211,215,255"] {
-  color: rgba(40, 50, 175, 0.96);
-}
-
-/*
- * 라이트 모드 — signal-tone(amber 경고 / green 성공) pale text 시프트.
- * 인디고 계열(위)과 같은 문제: 다크용 pale amber/green 텍스트가 라이트
- * 흰/adapting 배경에서 거의 invisible. 각 signal 의 라이트 토큰 값으로 시프트
- * (warning #8a5a00 / success #177233 — --color-status-* 의 light override 와
- * 동일). 모두 adapting bg(또는 signal alpha bg) 위 텍스트로, opaque-dark
- * (rgba(12,14,20,1)) 위 사용 0 확인.
- *
- * red(danger) 계열은 일부 callsite 가 element 별 배경 확인이 필요해
- * (255,179,71 / 248,160,160 / 255,160,160) 별도 패스로 미룬다.
- */
-html[data-theme="light"] [class*="text-[color:rgba(238,198,128"],
-html[data-theme="light"] [class*="text-[color:rgba(244,196,130"],
-html[data-theme="light"] [class*="text-[color:rgba(224,196,140"],
-html[data-theme="light"] [class*="text-[color:rgba(232,200,148"],
-html[data-theme="light"] [class*="text-[color:rgba(239,200,150"] {
-  color: #8a5a00;
-}
-html[data-theme="light"] [class*="text-[color:rgba(151,230,198"],
-html[data-theme="light"] [class*="text-[color:rgba(180,235,205"],
-html[data-theme="light"] [class*="text-[color:rgba(130,230,180"] {
-  color: #177233;
-}
-
-/*
- * 라이트 모드 — 마크다운 코드 블록 dark island fix. DocsVaultViewer 의
- * <pre> 가 \`bg-[color:rgba(12,14,20,0.8)]\` (거의 black) 로 hardcoded.
- * 다크에선 캔버스보다 약간 짙은 코드 영역이라 자연스럽지만 라이트에선
- * 흰 페이지 안에 black box 가 떠 있어 시각 충격.
- *
- * GitHub / Linear / Notion 라이트 모드 패턴 차용 — 코드 블록 bg 는 매우
- * 연한 grey (#f1f3f8). text 는 이미 위 셀렉터가 deep indigo 로 시프트하니
- * 자동 readable.
- */
-html[data-theme="light"] [class*="bg-[color:rgba(12,14,20,0.8)]"] {
-  background-color: #eef0f6;
-}
-
-/*
- * 라이트 모드 hover affordance — chrome buttons / 텍스트 링크 처럼 명시
- * hover bg 가 없는 인터랙티브 요소에 subtle bg overlay. 다크에선 텍스트
- * tertiary → primary 색 차이가 크지만 라이트에선 같은 차이가 시야적으로
- * 작아 hover 없이도 가능 시그널 약함.
- *
- * Tailwind 의 transition-colors 클래스를 가진 button/a 에만 적용 — 명시
- * hover bg 가 있는 요소는 cascade 로 override 되므로 안전.
- */
-html[data-theme="light"] a[class*="transition-colors"]:hover:not([class*="hover:bg-"]):not([class*="bg-[color"]),
-html[data-theme="light"] button[class*="transition-colors"]:hover:not([class*="hover:bg-"]):not([class*="bg-[color"]):not(:disabled) {
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
-/*
- * 라이트 모드 — 트리의 element kind 행 dim 보정 (cycle 47).
- *
- * OntologyTreeView 의 element 행은 다크 모드 70% element 점유를 시각적
- * 평탄화하려고 \`opacity-60\` 적용. 다크 캔버스에선 회색-on-검정 으로 자연
- * 스럽지만 라이트 캔버스에서는 회색-on-흰 → \"읽기 전 거의 사라짐\" 단계
- * 까지 fade. 라이트 한정 80% 로 끌어올려 readable 유지하되 여전히 다른
- * kind (project/domain/capability) 보다 한 단계 dim 인 시그널 보존.
- */
-html[data-theme="light"] [data-tree-row][data-dim="true"],
-html[data-theme="light"] [data-testid="ontology-tree-row"][data-dim="true"] {
-  opacity: 0.82;
-}
-
-/*
- * 라이트 모드 — uppercase 모노 라벨 (kind chips, section headers,
- * outline labels) 가독성 보정 (cycle 47).
- *
- * 라이트 모드의 \`--color-text-quaternary\` 는 #6f7480. 흰 캔버스 위에서
- * 0.10em letter-spacing + 9-11px font-size 의 uppercase 모노 텍스트가
- * 시각적으로 \"공기처럼\" 사라짐 (anti-aliasing 위약 효과). font-weight
- * 를 한 단계 올려 (var --font-weight-signature ≈ 540) 가독성 회복.
- *
- * 다크 모드는 어두운 캔버스 위에서 같은 색이 충분히 떠오르므로 영향
- * 없음. 라이트 전용 셀렉터.
- */
-html[data-theme="light"] .font-mono[class*="uppercase"][class*="tracking"] {
-  font-weight: 520;
-}
-
-/* A1 전체 상세(DOM 페이지) 라이트 모드 — Guardian A1 follow-up P1.
-   전역 [data-theme=light] 에 --topology-v2-panel-* 를 바인딩하면 다크 캔버스
-   위에 뜨는 컴팩트 데이터시트가 흰 슬랩이 되는 결함(이전 Guardian 판정 b)이
-   재발하므로, 라이트 값을 이 DOM 표면에만 스코프한다. 값은 caps 대비 검증
-   패스에서 실측 보관한 라이트 팔레트(primary 19.7:1 · metric 9.8:1 등). */
-html[data-theme="light"] .full-detail-a1 {
-  --topology-v2-panel-surface: #ffffff;
-  --topology-v2-panel-border: rgba(15, 23, 42, 0.12);
-  --topology-v2-panel-divider: rgba(15, 23, 42, 0.1);
-  --topology-v2-panel-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
-  --topology-v2-panel-row-hover: rgba(15, 23, 42, 0.045);
-  --topology-v2-panel-metric-surface: rgba(15, 23, 42, 0.035);
-  --topology-v2-panel-metric-text: #3f444c;
-  --topology-v2-panel-action-surface: rgba(15, 23, 42, 0.035);
-  --topology-v2-panel-action-border: rgba(15, 23, 42, 0.14);
-  --topology-v2-panel-power-off: #b9bcc4;
-  --topology-v2-panel-text-primary: #0a0b0c;
-  --topology-v2-panel-text-secondary: #1f2329;
-  --topology-v2-panel-text-tertiary: #5b6068;
-  --topology-v2-panel-text-quaternary: #6f7480;
-  --topology-v2-edge-contains-mark: #9aa0aa;
-  --topology-v2-edge-depends-mark: #9498b4;
-  --topology-v2-indigo-border: rgba(77, 86, 200, 0.5);
-  --topology-v2-indigo: #4d56c8;
-  --topology-v2-indigo-bright: #4d56c8;
 }
