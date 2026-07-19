@@ -14,7 +14,9 @@ test.describe("ontology builder workflow", () => {
     ).toBeAttached();
     // 헤더 상태 문구는 #386 카피 평문화로 교체됐다("0 draft changes · 0
     // links" → 미저장 변경 유무를 그대로 말하는 한 줄).
-    await expect(page.getByText("No unsaved changes")).toBeVisible();
+    await expect(
+      page.getByText("No unsaved changes").filter({ visible: true }).first(),
+    ).toBeVisible();
     const writeStatus = page.getByLabel("Save/edit status");
     await expect(writeStatus).toHaveCount(0);
 
@@ -22,14 +24,17 @@ test.describe("ontology builder workflow", () => {
       page.getByRole("dialog", { name: "Save/edit onboarding" }),
     ).toHaveCount(0);
 
-    // `.first()`: 상주 인스펙터와 아래 화면폭용 상세 모달이 같은 라벨을 달고
-    // DOM 에 동시 존재한다(모달은 xl:hidden 이라 보이지 않음). strict 위반을
-    // 피해 보이는 쪽만 잡는다 — 중복 렌더 정리는 별도 큐(아래 주석 참조).
-    const inspector = page.getByLabel("Selected ontology concept detail").first();
+    // 빌더는 선택 개념 상세를 두 벌 렌더한다 — xl+ 상주 인스펙터 + 그 아래
+    // 화면폭용 모달(CSS 로만 숨김). `.first()` 는 DOM 순서상 숨겨진 쪽을
+    // 집을 수 있어(CI 에서 결정론적으로 zero-size 요소를 잡아 fill/assert
+    // 타임아웃) `filter({ visible: true })` 로 **보이는 복사본**만 겨냥한다.
+    // (중복 DOM 렌더 자체는 제품 안티패턴 — 별도 정리 큐.)
+    const inspector = page
+      .getByLabel("Selected ontology concept detail")
+      .filter({ visible: true });
     await expect(inspector).toBeVisible();
-    // `.first()` 인 이유: xl+ 에서도 상세 **모달**이 DOM 에 남아(CSS 로만
-    // 숨김) 상주 인스펙터와 같은 배지를 2번 렌더한다. 보이는 쪽(상주
-    // 인스펙터)만 단언한다. 모달 조건부 렌더 정리는 별도 큐.
+    // 안쪽 텍스트는 보이는 인스펙터 안에서도 정당하게 여러 곳(배지·경로·링크)
+    // 에 나타나므로 `.first()` = "어딘가 표시됨" 단언(컨테이너 중복 문제와 무관).
     await expect(
       inspector.getByText("sample (read-only) · Capability").first(),
     ).toBeVisible();
@@ -74,9 +79,10 @@ test.describe("ontology builder workflow", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/ontology/edit/?node=capabilities%2Ftopology-analysis-modes");
 
-    // `.first()`: 모바일 fallback 안내가 상주 인스펙터 아래 화면폭 분기와
-    // 함께 2벌 렌더된다(보이는 건 하나). 중복 렌더 정리는 별도 큐.
-    await expect(page.getByText("Desktop recommended").first()).toBeVisible();
+    // 중복 렌더(상주 인스펙터 + 화면폭용 분기) 중 보이는 쪽만 겨냥.
+    await expect(
+      page.getByText("Desktop recommended").filter({ visible: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole("button", {
         name: "Layout · Open canvas view and arrangement options",
@@ -110,9 +116,12 @@ test.describe("ontology builder workflow", () => {
     await page.goto("/en/ontology/edit/");
 
     await page.getByRole("button", { name: /^Add domain$/ }).click();
-    // `.first()`: 모바일에선 같은 생성 폼이 시트/인스펙터 양쪽 DOM 에 렌더돼
-    // (보이는 건 하나) strict 위반이 난다 — 중복 렌더 정리는 별도 큐.
-    await page.locator('input[name="node-title"]').first().fill("Access Control Mobile");
+    // 생성 폼이 시트/인스펙터 양쪽 DOM 에 렌더된다 — DOM 순서상 첫 번째가
+    // zero-size 숨김 복사본이라(CI fill 타임아웃의 정체) 보이는 입력만 겨냥.
+    await page
+      .locator('input[name="node-title"]')
+      .filter({ visible: true })
+      .fill("Access Control Mobile");
     await page.getByRole("button", { name: "Save · agent handoff" }).click();
 
     const writeStatus = page.getByLabel("Save/edit status");
@@ -178,11 +187,11 @@ test.describe("ontology builder workflow", () => {
     await page.goto("/ko/ontology/edit/?node=capabilities%2Ftopology-analysis-modes");
 
     await expect(page.getByRole("heading", { name: "개념 저장·편집" })).toBeAttached();
-    await expect(page.getByText("개념 상세").first()).toBeVisible();
+    await expect(page.getByText("개념 상세").filter({ visible: true }).first()).toBeVisible();
     // 인스펙터가 상주(#360)로 바뀌어 "상세 창 열기" 버튼은 ⋯ 메뉴 안으로
     // 들어갔다 — 데스크톱에서 검증할 한국어 계약은 상주 패널 자체다.
-    // `.first()`: 상주 인스펙터와 아래 화면폭용 상세 모달이 같은 라벨로
-    // DOM 에 동시 존재한다(보이는 건 하나) — 중복 렌더 정리는 별도 큐.
-    await expect(page.getByLabel("선택한 온톨로지 개념 상세").first()).toBeVisible();
+    await expect(
+      page.getByLabel("선택한 온톨로지 개념 상세").filter({ visible: true }),
+    ).toBeVisible();
   });
 });
