@@ -605,7 +605,7 @@ export function DocsVaultEditor({
       </div>
       {error ? (
         <div
-          className="break-keep border-b border-[color:rgba(220,120,120,0.3)] bg-[color:rgba(220,120,120,0.08)] px-4 py-1.5 text-[11px] leading-4 text-[color:rgba(240,180,180,0.95)]"
+          className="break-keep border-b border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-4 py-1.5 text-[11px] leading-4 text-[color:var(--color-danger-text-strong)]"
           aria-live="polite"
         >
           {error}

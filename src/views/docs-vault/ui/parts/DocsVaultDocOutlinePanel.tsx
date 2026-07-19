@@ -240,7 +240,7 @@ export function DocsVaultDocOutlinePanel({
               <button
                 type="button"
                 onClick={() => void onDeleteCurrent()}
-                className="inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-divider)] px-2 py-1 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(220,120,120,0.45)] hover:text-[color:rgba(240,180,180,0.95)]"
+                className="inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-divider)] px-2 py-1 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-danger-a46)] hover:text-[color:var(--color-danger-text-strong)]"
               >
                 <Trash2 size={12} aria-hidden />
                 {t("deleteAction")}

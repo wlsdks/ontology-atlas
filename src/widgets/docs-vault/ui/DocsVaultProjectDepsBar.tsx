@@ -121,7 +121,7 @@ export function DocsVaultProjectDepsBar({
                       type="button"
                       onClick={() => void handleRemove(dep)}
                       aria-label={t('removeAriaLabel', { dep })}
-                      className="rounded-sm p-0.5 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:rgba(240,180,180,0.95)]"
+                      className="rounded-sm p-0.5 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-danger-text-strong)]"
                     >
                       <X size={10} aria-hidden />
                     </button>

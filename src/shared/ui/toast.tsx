@@ -49,7 +49,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               'border-[color:rgba(120,190,150,0.35)] text-[color:var(--color-text-primary)]',
             info: 'border-[color:rgba(139,151,255,0.35)] text-[color:var(--color-text-primary)]',
             error:
-              'border-[color:rgba(236,116,116,0.35)] text-[color:var(--color-text-primary)]',
+              'border-[color:var(--color-danger-a32)] text-[color:var(--color-text-primary)]',
           },
         }}
       />

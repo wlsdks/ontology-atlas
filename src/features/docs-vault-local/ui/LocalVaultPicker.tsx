@@ -151,7 +151,7 @@ export function LocalVaultPicker({
           <span className="truncate">
             {errorMessage ?? t('errorFallback')}
           </span>
-          <span className="text-[color:rgba(240,180,180,0.7)]">
+          <span className="text-[color:var(--color-danger-text)]">
             {t('errorHint')}
           </span>
           <button
