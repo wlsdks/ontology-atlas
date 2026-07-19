@@ -165,6 +165,47 @@ export function selectTopologyPathRouteState(
   };
 }
 
+/**
+ * 캔버스 노드 클릭의 단일 진입점 — path 모드인지 여부로
+ * `selectTopologyNodeRouteState` (일반 선택) 과 `selectTopologyPathRouteState`
+ * (경로 소스/대상 확정) 사이를 분기한다.
+ *
+ * persona QA 발견 (fix/persona-findings ②): 이전엔 `HomePage.tsx` 의
+ * `handleSelect` 가 analysisMode 를 전혀 보지 않고 항상
+ * `selectTopologyNodeRouteState` 로만 흘렀다 — path 모드에서 소스 노드를
+ * 고른 뒤 두 번째 노드를 클릭해도 `pathTargetSlug` 가 절대 채워지지 않아,
+ * 캔버스는 새로 선택된 노드의 ego 이웃을 그려 "경로가 확정된 것처럼"
+ * 보였지만 `TopologyPathChip` 은 `pathTargetSlug` 를 엄격히 요구해 "대상
+ * 선택" 문구에 고정되고 경로 패킷 복사 버튼도 끝내 나타나지 않았다.
+ *
+ * 판정: path 모드 + 소스 미확정 → 클릭한 노드를 소스로. path 모드 + 소스
+ * 확정 + 클릭한 노드가 소스와 다름 → 그 노드를 대상으로 확정(다시 클릭해
+ * 대상을 갈아끼우는 재선택 흐름 유지). 그 외(overview/focus/health 등,
+ * 또는 소스 노드 자체를 다시 클릭) → 기존 일반 선택 그대로.
+ */
+export function resolveTopologyNodeClickRouteState(
+  current: HomeRouteState,
+  slug: string,
+  options?: { isHub?: boolean; preserveImpact?: boolean },
+): HomeRouteState {
+  if (current.analysisMode === "path") {
+    if (!current.pathSourceSlug) {
+      return selectTopologyPathRouteState(current, {
+        sourceSlug: slug,
+        targetSlug: null,
+      });
+    }
+    if (slug !== current.pathSourceSlug) {
+      return selectTopologyPathRouteState(current, {
+        sourceSlug: current.pathSourceSlug,
+        targetSlug: slug,
+      });
+    }
+    return current;
+  }
+  return selectTopologyNodeRouteState(current, slug, options);
+}
+
 export function applyHomeRouteState(
   searchParams: URLSearchParams,
   state: HomeRouteState,

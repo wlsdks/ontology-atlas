@@ -3,6 +3,7 @@ import {
   applyHomeRouteState,
   DEFAULT_HOME_ROUTE_STATE,
   parseHomeRouteState,
+  resolveTopologyNodeClickRouteState,
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
 } from "./url-state";
@@ -352,5 +353,74 @@ describe("selectTopologyPathRouteState", () => {
     ).toBe(
       "mode=path&pathFrom=project%3Aontology-atlas&pathTo=domain%3Aai-agent-partner",
     );
+  });
+});
+
+describe("resolveTopologyNodeClickRouteState", () => {
+  // persona QA (fix/persona-findings ②): 두 번째 노드 클릭으로 캔버스는
+  // A→B 를 그리지만 칩 문구가 "대상 선택" 에 고정되고 경로 패킷 복사
+  // 버튼도 나타나지 않던 회귀 — `HomePage.tsx` 의 클릭 핸들러가
+  // analysisMode 를 보지 않고 항상 일반 선택 경로로만 흘렀던 게 원인.
+  it("일반 모드에서는 selectTopologyNodeRouteState 와 동일하게 동작한다", () => {
+    for (const mode of ["overview", "focus", "health"] as const) {
+      const state = { ...DEFAULT_HOME_ROUTE_STATE, analysisMode: mode };
+      expect(resolveTopologyNodeClickRouteState(state, "domain:views")).toEqual(
+        selectTopologyNodeRouteState(state, "domain:views"),
+      );
+    }
+  });
+
+  it("path 모드 + 소스 미확정 상태에서 첫 클릭은 소스를 확정한다", () => {
+    const state = { ...DEFAULT_HOME_ROUTE_STATE, analysisMode: "path" as const };
+    expect(
+      resolveTopologyNodeClickRouteState(state, "project:ontology-atlas"),
+    ).toMatchObject({
+      analysisMode: "path",
+      pathSourceSlug: "project:ontology-atlas",
+      pathTargetSlug: null,
+    });
+  });
+
+  it("path 모드 + 소스 확정 상태에서 두 번째 클릭은 대상을 확정한다 (회귀 fix)", () => {
+    const state = {
+      ...DEFAULT_HOME_ROUTE_STATE,
+      analysisMode: "path" as const,
+      pathSourceSlug: "project:ontology-atlas",
+      pathTargetSlug: null,
+    };
+    expect(
+      resolveTopologyNodeClickRouteState(state, "domain:ai-agent-partner"),
+    ).toMatchObject({
+      analysisMode: "path",
+      pathSourceSlug: "project:ontology-atlas",
+      pathTargetSlug: "domain:ai-agent-partner",
+    });
+  });
+
+  it("path 모드에서 이미 확정된 대상과 다른 세 번째 노드를 클릭하면 대상을 갈아끼운다", () => {
+    const state = {
+      ...DEFAULT_HOME_ROUTE_STATE,
+      analysisMode: "path" as const,
+      pathSourceSlug: "project:ontology-atlas",
+      pathTargetSlug: "domain:ai-agent-partner",
+    };
+    expect(
+      resolveTopologyNodeClickRouteState(state, "domain:ontology-core"),
+    ).toMatchObject({
+      pathSourceSlug: "project:ontology-atlas",
+      pathTargetSlug: "domain:ontology-core",
+    });
+  });
+
+  it("path 모드에서 소스 노드 자체를 다시 클릭해도 상태를 그대로 둔다", () => {
+    const state = {
+      ...DEFAULT_HOME_ROUTE_STATE,
+      analysisMode: "path" as const,
+      pathSourceSlug: "project:ontology-atlas",
+      pathTargetSlug: null,
+    };
+    expect(
+      resolveTopologyNodeClickRouteState(state, "project:ontology-atlas"),
+    ).toBe(state);
   });
 });
