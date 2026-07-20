@@ -1233,6 +1233,10 @@
        기하학적으로 불가(곡선이 실제로 화면을 지나감) — 대신 잉크를 강등해
        끝점 있는 구조가 먼저 읽히게 한다. */
     --topology-v2-edge-passthrough-alpha: 0.3;
+    /* B7 — 노드 최소 분리 배율. (rA+rB)×이 값 미만으로 겹치면 sim 활성
+       프레임에서 밀어낸다 — 드래그/정착이 자식을 부모 위로 밀어넣는
+       "우연히 닿는 픽셀"의 방지. */
+    --topology-v2-node-min-separation-ratio: 1.35;
     --topology-v2-edge-depends: #4c4c63;
     --topology-v2-edge-dim: #1e1e22;
     --topology-v2-hull-stroke: #3a3a42;
