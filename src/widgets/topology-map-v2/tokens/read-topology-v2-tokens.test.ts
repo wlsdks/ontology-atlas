@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   resolveTopologyV2Tokens,
+  TOPOLOGY_V2_TOKEN_COUNT,
   TopologyV2TokenError,
 } from "./read-topology-v2-tokens";
 
@@ -117,7 +118,11 @@ function fixtureReader(overrides: Record<string, string> = {}) {
 }
 
 describe("resolveTopologyV2Tokens", () => {
-  it("resolves all 95 §2 tokens to the exact prototype-sourced values", () => {
+  it("TOKEN_SPECS count contract — the fixture covers every spec exactly (Guardian 2026-07-20: the old '88 tokens' header comment had silently drifted from reality with no assert)", () => {
+    expect(Object.keys(FIXTURE_VALUES).length).toBe(TOPOLOGY_V2_TOKEN_COUNT);
+  });
+
+  it("resolves all §2 tokens to the exact prototype-sourced values", () => {
     const tokens = resolveTopologyV2Tokens(fixtureReader());
 
     expect(tokens.nodeFillProject).toBe("#1c1c22");
