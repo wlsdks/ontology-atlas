@@ -121,6 +121,8 @@ export function buildTopologyV2Graph(
       relationQuality: quality === "strong" ? "strong" : quality === "weak" ? "weak" : null,
       evidenceCount: edge.evidenceIds.length,
       kind: isContainmentRelation(edge.type) ? "contains" : "depends",
+      // P3b — 선언 출처: derive 가 evidenceIds[0] 에 선언 doc slug 를 싣는다.
+      declaredBySlug: edge.evidenceIds[0] ?? null,
     };
   });
 

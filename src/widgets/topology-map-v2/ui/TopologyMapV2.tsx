@@ -39,6 +39,8 @@ export interface TopologyV2Edge {
   relationQuality: "strong" | "weak" | null;
   evidenceCount: number;
   kind: "contains" | "depends";
+  /** P3b — 이 관계를 선언한 vault 문서 slug (frontmatter 가 곧 그래프이므로 출처 표시 비용 0). */
+  declaredBySlug: string | null;
 }
 
 export interface TopologyV2Focus {
