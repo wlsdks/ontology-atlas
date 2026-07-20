@@ -22,3 +22,12 @@ export {
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   OntologyStarterCta,
 } from './ui/OntologyStarterCta';
+export {
+  buildProjectMarkdown,
+  deriveBootstrapPlan,
+  selectedElements,
+  type BootstrapDocInput,
+  type BootstrapDomainCandidate,
+  type BootstrapElementCandidate,
+  type BootstrapPlan,
+} from './lib/bootstrap-candidates';

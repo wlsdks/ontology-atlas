@@ -55,6 +55,19 @@ input (humans + AI agents)     parse           store              output
 
 **Effect**: when a user opens a vault folder in the installed app, `/`, `/topology`, `/projects`, `/project/[slug]`, `/ontology`, `/ontology/insights`, and `/ontology/edit` all switch to vault data instantly. Mutations (create / edit / delete / connect) are mode-aware: local → write to vault `.md`; static → rejected with toast (read-only) and routed toward the macOS app download on hosted web.
 
+**Bootstrap from existing docs (2026-07-20, Slice 1)**: opening a folder that
+already has markdown but no `kind:` frontmatter used to strand the user on a
+"0 concepts" map with misdirected copy. Now the topology empty state
+acknowledges the found documents ("문서 N개를 찾았어요") and offers **내 문서로
+지도 만들기** — a blocking dialog that proposes candidates from the already
+scanned manifest (root README → project title · 1-depth folders → domains ·
+each doc → element with `domain:`), and on confirm writes ONLY frontmatter to
+the accepted docs (bodies untouched) plus one new `project.md`. Pure candidate
+derivation: `src/features/docs-vault-local/lib/bootstrap-candidates.ts` — the
+browser equivalent of CLI `bootstrap` / MCP `analyze_repo_structure`, so all
+three ingress paths converge on the same shape. Plain-language copy: the
+dialog never says "온톨로지" (map-building framing for non-experts).
+
 **Single source of truth (R8)**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`. Its many `useLocalVault()` consumers (`RootEntryPage` / `AppNavRail` / `OntologyEditPage` / `DocsVaultPage` / `useDataSourceMode` / `useProjects` / `useProjectMutations` / `useVaultOntology` and more since feat/rail-rollout mounted the rail everywhere) share one state instance, one IDB rehydrate, one filesystem walk.
 
 **Desktop first-run (2026-07-18)**: in the installed app (Tauri — detected via

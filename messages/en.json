@@ -2260,7 +2260,11 @@
       "ctaBuilder": "Open Save/edit",
       "ctaBuilderNoDeps": "Create relation",
       "ctaOpenVaultDownload": "Download macOS app",
-      "ctaOpenVaultPicker": "Open local vault"
+      "ctaOpenVaultPicker": "Open local vault",
+      "kickerDocsFound": "Your folder · {count} documents",
+      "titleDocsFound": "Found your documents — they are not on the map yet",
+      "bodyDocsFound": "Found {count} markdown files in this folder. They just do not have a type marker (frontmatter) at the top yet, so they are not on the map.",
+      "ctaStartFromDocs": "Build the map from my documents"
     },
     "errorBanner": {
       "retry": "Retry"
@@ -2289,7 +2293,20 @@
       "agentHandoff": "Handoff",
       "agentHandoffAria": "Copy notes for your AI agent (summary, re-check request, update check)"
     },
-    "deeplinkNotFound": "Node not found: {query}"
+    "deeplinkNotFound": "Node not found: {query}",
+    "bootstrap": {
+      "heading": "Build the map from my documents",
+      "projectName": "Project name",
+      "folders": "Folders to put on the map",
+      "folderDocCount": "{count} docs",
+      "summary": "Adds a type marker to the top of {count} documents and creates one new project file ({projectFile}).",
+      "bodyUntouched": "Document bodies are never changed. Everything happens inside your folder, and git can undo it anytime.",
+      "alreadyTyped": "{count} documents already on the map are left as-is.",
+      "confirm": "Build the map",
+      "cancel": "Close",
+      "errorPrefix": "Could not save:",
+      "toastDone": "Built your first map from {count} documents"
+    }
   },
   "fullDetailA1": {
     "backToMap": "← Map",

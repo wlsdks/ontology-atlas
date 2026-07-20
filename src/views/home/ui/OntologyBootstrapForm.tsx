@@ -1,0 +1,201 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Map as MapIcon, X } from "lucide-react";
+
+import {
+  selectedElements,
+  type BootstrapPlan,
+} from "@/features/docs-vault-local";
+
+/**
+ * "내 문서로 지도 만들기" — 기존 .md 폴더(frontmatter 없음)를 연 사용자의
+ * 첫 그래프 부트스트랩 form (presentational). 후보 파생은
+ * `features/docs-vault-local/lib/bootstrap-candidates.ts` (순수), 실제
+ * vault write 는 HomePage 글루가 담당 — `CreateNodeForm` 과 같은 분업.
+ *
+ * PO 근거: .qa-scratch/ontology-onboarding-2026-07/discovery.md (F1~F6).
+ * 카피 원칙: "온톨로지" 전문용어 금지 — 비개발자에게 이 행위는 "지도 만들기"다.
+ * 신뢰 원칙(local-first): 뭘 쓰는지 확정 전에 정확히 보여준다 — 본문 무변경,
+ * frontmatter 추가 + 새 파일 1개가 전부.
+ */
+
+export interface OntologyBootstrapFormLabels {
+  headingId?: string;
+  heading: string;
+  projectName: string;
+  folders: string;
+  folderDocCount: (count: number) => string;
+  summary: (docCount: number, projectFile: string) => string;
+  bodyUntouched: string;
+  alreadyTyped: (count: number) => string;
+  confirm: string;
+  cancel: string;
+  errorPrefix: string;
+}
+
+export function OntologyBootstrapForm({
+  plan,
+  onConfirm,
+  onCancel,
+  labels,
+}: {
+  plan: BootstrapPlan;
+  onConfirm: (input: {
+    projectTitle: string;
+    acceptedDomains: ReadonlySet<string>;
+  }) => void | Promise<void>;
+  onCancel: () => void;
+  labels: OntologyBootstrapFormLabels;
+}) {
+  const [projectTitle, setProjectTitle] = useState(plan.projectTitle);
+  const [accepted, setAccepted] = useState<ReadonlySet<string>>(
+    () => new Set(plan.domains.map((d) => d.name)),
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const pickedCount = useMemo(
+    () => selectedElements(plan, accepted).length,
+    [plan, accepted],
+  );
+  const projectFileName = `${plan.projectSlug}.md`;
+  const canConfirm = projectTitle.trim().length > 0 && pickedCount > 0 && !busy;
+
+  const toggleDomain = (name: string) => {
+    setAccepted((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  const submit = async () => {
+    if (!canConfirm) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await onConfirm({ projectTitle: projectTitle.trim(), acceptedDomains: accepted });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section
+      aria-label={labels.heading}
+      data-testid="ontology-bootstrap-form"
+      data-surface-role="blocking-edit-surface"
+      data-elevation-contract="solid-panel-over-dimmed-map"
+      data-surface-token="--topology-blocking-composer-surface"
+      data-border-token="--topology-blocking-composer-border"
+      data-shadow-token="--topology-blocking-composer-shadow"
+      className="rounded-lg border border-[color:var(--topology-blocking-composer-border)] bg-[color:var(--topology-blocking-composer-surface)] px-4 py-3 shadow-[var(--topology-blocking-composer-shadow)]"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <p
+          id={labels.headingId}
+          className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
+        >
+          {labels.heading}
+        </p>
+        <button
+          type="button"
+          onClick={onCancel}
+          aria-label={labels.cancel}
+          data-testid="ontology-bootstrap-cancel"
+          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+        >
+          <X size={12} aria-hidden />
+        </button>
+      </div>
+
+      <div className="mt-2.5 flex flex-col gap-2.5">
+        <label className="flex flex-col gap-1">
+          <span className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {labels.projectName}
+          </span>
+          <input
+            type="text"
+            value={projectTitle}
+            autoFocus
+            disabled={busy}
+            onChange={(e) => setProjectTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void submit();
+            }}
+            aria-label={labels.projectName}
+            data-testid="ontology-bootstrap-title"
+            className="h-8 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+          />
+        </label>
+
+        {plan.domains.length > 0 ? (
+          <fieldset className="flex flex-col gap-1">
+            <legend className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+              {labels.folders}
+            </legend>
+            <div className="mt-1 flex max-h-40 flex-col gap-0.5 overflow-y-auto">
+              {plan.domains.map((d) => (
+                <label
+                  key={d.name}
+                  className="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-[12px] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                >
+                  <input
+                    type="checkbox"
+                    checked={accepted.has(d.name)}
+                    disabled={busy}
+                    onChange={() => toggleDomain(d.name)}
+                    data-testid={`ontology-bootstrap-domain-${d.name}`}
+                    className="h-3.5 w-3.5 accent-[color:var(--color-indigo-brand)]"
+                  />
+                  <span className="min-w-0 flex-1 truncate">{d.name}</span>
+                  <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                    {labels.folderDocCount(d.docCount)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        ) : null}
+
+        <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
+          <p className="text-[11px] leading-relaxed text-[color:var(--color-text-secondary)]" data-testid="ontology-bootstrap-summary">
+            {labels.summary(pickedCount, projectFileName)}
+          </p>
+          <p className="mt-1 text-[11px] leading-relaxed text-[color:var(--color-text-tertiary)]">
+            {labels.bodyUntouched}
+          </p>
+          {plan.alreadyTypedCount > 0 ? (
+            <p className="mt-1 text-[11px] leading-relaxed text-[color:var(--color-text-tertiary)]">
+              {labels.alreadyTyped(plan.alreadyTypedCount)}
+            </p>
+          ) : null}
+        </div>
+
+        {error ? (
+          <p
+            role="alert"
+            data-testid="ontology-bootstrap-error"
+            className="rounded-md border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-2.5 py-1.5 text-[11px] text-[color:var(--color-danger-text)]"
+          >
+            {labels.errorPrefix} {error}
+          </p>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={() => void submit()}
+          disabled={!canConfirm}
+          data-testid="ontology-bootstrap-confirm"
+          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-50"
+        >
+          <MapIcon size={12} aria-hidden />
+          {busy ? "…" : labels.confirm}
+        </button>
+      </div>
+    </section>
+  );
+}

@@ -121,4 +121,30 @@ describe("TopologyEmptyState", () => {
     btn.click();
     expect(onCreateNode).toHaveBeenCalledTimes(1);
   });
+
+  it("docsFoundCount>0 + onStartFromDocs — '내 문서로 지도 만들기'가 1차 CTA 가 되고 macOS 안내는 내려간다 (Slice 1 F1/F2)", () => {
+    const onStartFromDocs = vi.fn();
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <TopologyEmptyState projectCount={0} docsFoundCount={4} onStartFromDocs={onStartFromDocs} />
+      </NextIntlClientProvider>,
+    );
+    const btn = screen.getByTestId("empty-start-from-docs");
+    expect(btn).toHaveTextContent("내 문서로 지도 만들기");
+    // 방금 vault 를 연 사용자에게 앱 설치를 권하던 오안내가 이 브랜치에서 사라진다
+    expect(screen.queryByText(/macOS/)).not.toBeInTheDocument();
+    // 사용자의 문서 존재를 먼저 인정한다 (kicker + 본문 양쪽)
+    expect(screen.getAllByText(/4개/).length).toBeGreaterThanOrEqual(1);
+    btn.click();
+    expect(onStartFromDocs).toHaveBeenCalledTimes(1);
+  });
+
+  it("docsFoundCount=0 이면 부트스트랩 CTA 없음 — 기존 빈 vault 흐름 유지", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <TopologyEmptyState projectCount={0} docsFoundCount={0} onStartFromDocs={vi.fn()} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByTestId("empty-start-from-docs")).not.toBeInTheDocument();
+  });
 });
