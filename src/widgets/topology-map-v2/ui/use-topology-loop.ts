@@ -14,6 +14,7 @@ import { useEffect, useRef, type RefObject } from "react";
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import { stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
 import { isCanvasActive, shouldSkipFrame } from "../model/idle-gate";
+import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../interaction/pointer-state-machine";
 import { initHomeSpring, isHomeSpringConverged, stepHomeSpring, type HomeSpringState } from "../model/relayout-home";
@@ -26,7 +27,7 @@ import { createTopologyPointerHandlers, type TopologyPointerHandlers } from "./t
 import { stepTopologyPhysics } from "./topology-physics-step";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyMapV2Props } from "./TopologyMapV2";
-import { applyForcePositions, buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld } from "./topology-world";
+import { applyForcePositions, buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld, radiusForKind } from "./topology-world";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 
 /**
@@ -578,6 +579,25 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           }
         }
 
+        // B7 — 드래그/정착이 만든 겹침을 같은 프레임에서 완화 (호밍 중에는
+        // 호출되지 않는 블록이라 첫 지도 연출의 의도적 모임은 보호된다).
+        {
+          const sepNodes: SeparationNode[] = world.nodes.map((n) => ({
+            id: n.id,
+            x: n.x,
+            y: n.y,
+            r: radiusForKind(n.kind, tokens),
+          }));
+          relaxNodeSeparation(sepNodes, {
+            ratio: tokens.nodeMinSeparationRatio,
+            iterations: 2,
+            pinnedId: nodeDragRef.current?.nodeId ?? null,
+          });
+          for (let i = 0; i < sepNodes.length; i += 1) {
+            world.nodes[i].x = sepNodes[i].x;
+            world.nodes[i].y = sepNodes[i].y;
+          }
+        }
         recomputeWorldGeometry(world, tokens);
         // A4 — heat is a TIME budget (ms), not a frame count, so the release
         // settle lasts `--topology-v2-node-release-settle-ms` on every display.

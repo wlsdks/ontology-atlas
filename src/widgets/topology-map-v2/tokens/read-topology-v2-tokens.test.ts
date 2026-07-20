@@ -108,6 +108,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-edge-contains-l0": "#45454e",
   "--topology-v2-edge-contains-l2": "#333339",
   "--topology-v2-edge-passthrough-alpha": "0.3",
+  "--topology-v2-node-min-separation-ratio": "1.35",
 
   "--topology-v2-safe-inset-left": "344",
   "--topology-v2-safe-inset-right": "120",
