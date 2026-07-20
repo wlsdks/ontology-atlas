@@ -103,7 +103,14 @@ export function AgentConnectSheet({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
+  // [M-12] 4개까지만 보여주되, 나머지는 "외 N개" 로 명시 — 조용한 누락은
+  // "에이전트가 전부 읽는다" 는 이 화면의 신뢰 장치를 깎는다.
   const previewDomains = domainTitles.slice(0, 4);
+  const remainingDomainsCount = domainTitles.length - previewDomains.length;
+  const domainsLabel =
+    remainingDomainsCount > 0
+      ? `${previewDomains.join(" · ")} ${t("previewMoreDomains", { count: remainingDomainsCount })}`
+      : previewDomains.join(" · ");
 
   return (
     <AnimatePresence>
@@ -223,7 +230,7 @@ export function AgentConnectSheet({
                     data-testid="agent-connect-preview"
                     className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5 text-[12.5px] leading-relaxed text-[color:var(--color-text-secondary)]"
                   >
-                    {t("previewSentence", { domains: previewDomains.join(" · ") })}
+                    {t("previewSentence", { domains: domainsLabel })}
                   </p>
                 ) : null}
                 <button
