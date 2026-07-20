@@ -569,6 +569,69 @@ async function buildDocsVault({ check = false } = {}) {
     }
   }
 
+  // D-1 — register FRONTMATTER relation-ref backlinks (mirrors
+  // `src/entities/docs-vault/lib/build-local-manifest.ts`). The body pass above
+  // only saw markdown links, so a doc referenced purely through frontmatter
+  // (`dependencies: [capabilities/mcp-server]`, …) showed a false "no
+  // backlinks" in the sample (build-time) reader. Same relation-key set as the
+  // MCP `find_backlinks` tool. Deduped by fromSlug in the assembly below, so a
+  // body link to the same target keeps its richer context.
+  {
+    const RELATION_REF_ARRAY_KEYS = [
+      'domains',
+      'capabilities',
+      'elements',
+      'dependencies',
+      'relates',
+      'contains',
+      'describes',
+    ];
+    const RELATION_REF_STRING_KEYS = ['domain'];
+    const slugSet = new Set(docs.map((doc) => doc.slug));
+    const tailToSlug = new Map(); // tail -> slug | null (null = ambiguous)
+    for (const doc of docs) {
+      const tail = doc.slug.split('/').pop() ?? doc.slug;
+      tailToSlug.set(tail, tailToSlug.has(tail) ? null : doc.slug);
+    }
+    const refStrings = (frontmatter) => {
+      const out = [];
+      for (const key of RELATION_REF_ARRAY_KEYS) {
+        const value = frontmatter[key];
+        if (Array.isArray(value)) {
+          for (const item of value)
+            if (typeof item === 'string' && item.trim()) out.push(item.trim());
+        } else if (typeof value === 'string' && value.trim()) {
+          out.push(value.trim());
+        }
+      }
+      for (const key of RELATION_REF_STRING_KEYS) {
+        const value = frontmatter[key];
+        if (typeof value === 'string' && value.trim()) out.push(value.trim());
+      }
+      return out;
+    };
+    const resolveRef = (ref) => {
+      const normalized = ref.replace(/\.md$/i, '');
+      if (slugSet.has(normalized)) return normalized;
+      const tail = normalized.split('/').pop() ?? normalized;
+      return tailToSlug.get(tail) ?? null;
+    };
+    for (const doc of docs) {
+      const seenTargets = new Set();
+      for (const ref of refStrings(doc.frontmatter)) {
+        const target = resolveRef(ref);
+        if (!target || target === doc.slug || seenTargets.has(target)) continue;
+        seenTargets.add(target);
+        if (!backlinksDetailMap.has(target)) backlinksDetailMap.set(target, []);
+        backlinksDetailMap.get(target).push({
+          fromSlug: doc.slug,
+          context: `frontmatter · **[${ref}]**`,
+          linkText: ref,
+        });
+      }
+    }
+  }
+
   docs.sort((a, b) => a.slug.localeCompare(b.slug, 'ko'));
 
   const tree = { name: 'docs', path: '', type: 'dir' };

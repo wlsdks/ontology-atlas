@@ -20,6 +20,7 @@ const labels = {
   domainLabel: "domain",
   poweredOn: "fresh",
   poweredOff: "idle",
+  metricContains: "contains",
   metricUsedBy: "used by",
   metricDependsOn: "leans on",
   metricEvidence: "evidence",
@@ -55,8 +56,13 @@ function renderPanel(
       kind="domain"
       domain={overrides.domain !== undefined ? overrides.domain : null}
       powered={false}
-      metric={{ usedBy: 1, dependsOn: 2, evidence: evidence.total }}
-      groups={{ usedBy: { rows: [], total: 1 }, dependsOn: { rows: [], total: 2 } }}
+      metric={{ contains: 0, usedBy: 1, dependsOn: 2, evidence: evidence.total }}
+      groups={{
+        contains: { rows: [], total: 0 },
+        usedBy: { rows: [], total: 1 },
+        dependsOn: { rows: [], total: 2 },
+        belongsTo: { rows: [], total: 0 },
+      }}
       evidence={evidence}
       handoffText="node: domains/views"
       documentHref={
@@ -119,6 +125,62 @@ describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYST
       "href",
       expect.stringContaining("product-owner-operating-system"),
     );
+  });
+});
+
+describe("TopologyV2DetailPanel — M-2 typed containment split", () => {
+  it("renders a 담는 것(contains) group with the parent's children (not folded into 기대는 곳)", () => {
+    render(
+      <TopologyV2DetailPanel
+        slug="domains/ai-agent-partner"
+        title="AI Agent Partner"
+        kind="domain"
+        domain={null}
+        powered={false}
+        metric={{ contains: 2, usedBy: 1, dependsOn: 0, evidence: 0 }}
+        groups={{
+          contains: {
+            rows: [
+              { id: "capability:mcp-server", title: "MCP Server", kind: "capability", relationType: "contains", direction: "outgoing" },
+              { id: "capability:agent-config", title: "Agent Config", kind: "capability", relationType: "contains", direction: "outgoing" },
+            ],
+            total: 2,
+          },
+          usedBy: {
+            rows: [
+              { id: "capability:x", title: "Consumer X", kind: "capability", relationType: "depends_on", direction: "incoming" },
+            ],
+            total: 1,
+          },
+          dependsOn: { rows: [], total: 0 },
+          belongsTo: { rows: [], total: 0 },
+        }}
+        evidence={{ rows: [], total: 0 }}
+        handoffText="node: domains/ai-agent-partner"
+        documentHref={null}
+        builderEditHref="/ontology/edit/?node=domains%2Fai-agent-partner"
+        labels={labels}
+        onSelectConnection={() => {}}
+        onCopyHandoff={() => {}}
+        onClose={() => {}}
+        onSetPathSource={() => {}}
+      />,
+    );
+    // the contains group exists and holds the contained capabilities
+    const group = document.querySelector("[data-datasheet-group='contains']");
+    expect(group).not.toBeNull();
+    expect(screen.getByText("MCP Server")).toBeInTheDocument();
+    expect(screen.getByText("Agent Config")).toBeInTheDocument();
+    // the metric line leads with the "contains" typed segment
+    const metric = screen.getByTestId("topology-v2-detail-panel").querySelector("[data-datasheet-metric='engraved']");
+    expect(metric?.textContent).toContain("contains 2");
+  });
+
+  it("omits the 담는 것 segment + group for a leaf node (contains 0)", () => {
+    renderPanel();
+    expect(document.querySelector("[data-datasheet-group='contains']")).toBeNull();
+    const metric = screen.getByTestId("topology-v2-detail-panel").querySelector("[data-datasheet-metric='engraved']");
+    expect(metric?.textContent).not.toContain("contains");
   });
 });
 

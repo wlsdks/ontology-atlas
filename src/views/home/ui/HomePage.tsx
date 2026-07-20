@@ -208,6 +208,12 @@ export function HomePage() {
     localGraphStack.length > 0 ? localGraphStack[localGraphStack.length - 1] : null;
   const [fitViewToken, setFitViewToken] = useState(0);
   const [topologyVisibleCount, setTopologyVisibleCount] = useState<number | null>(null);
+  // M-5 — semantic-zoom altitude tier reported by the map engine, for the
+  // corner readout's orientation label. "spine" at the overview entry; drops
+  // the "zoom in to see elements" hint once it reaches "element".
+  const [mapZoomTier, setMapZoomTier] = useState<"spine" | "circuit" | "element">(
+    "spine",
+  );
   const [topologyGraphStats, setTopologyGraphStats] = useState<{
     key: string;
     nodes: number;
@@ -345,6 +351,13 @@ export function HomePage() {
         changeVaultHref="/docs/?intent=local"
         popoverAlign="left"
         popoverSide="top"
+        // M-4 (2) — keyboard-opened transients (⌘K palette, `D` docs drawer)
+        // don't fire the `mousedown`-outside the gear's own outside-click
+        // handler relies on, so they'd leave the gear stacked underneath.
+        // Signal them here so the gear demotes itself. Pointer-driven surfaces
+        // (node/edge click, context menu, graph toggle) already close it via
+        // outside-click.
+        suppressed={ontologySearchOpen || docsDrawerOpen}
         labels={{
           trigger: t('controls.settingsGearAriaLabel'),
           heading: t('controls.settingsGearHeading'),
@@ -357,7 +370,13 @@ export function HomePage() {
         }}
       />
     ),
-    [indexPanelCollapsedStored, handleChangeIndexDefaultCollapsed, t],
+    [
+      indexPanelCollapsedStored,
+      handleChangeIndexDefaultCollapsed,
+      ontologySearchOpen,
+      docsDrawerOpen,
+      t,
+    ],
   );
   useNavRailSettingsSlot(navRailSettingsSlot);
   // Clicking the collapsed edge tab always means "give the slot back to
@@ -890,6 +909,11 @@ export function HomePage() {
   ] = useState<string | null>(null);
   const interactionSelectedSlugRef = useRef<string | null>(null);
   const [selectedRelationActive, setSelectedRelationActive] = useState(false);
+  // M-7 — Escape rung 1 dismisses the node popover WITHOUT releasing the ego
+  // focus (dim); rung 2 (with this true) then deselects. Reset to false on
+  // every fresh node selection so re-clicking a node always re-opens its
+  // popover. `null` selection also clears it via handleClose.
+  const [nodePopoverDismissed, setNodePopoverDismissed] = useState(false);
   const fullDetailOpen =
     fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
   const topologyShortcutHelpPhoneVisible =
@@ -981,7 +1005,12 @@ export function HomePage() {
     );
     const groups = buildV2ConnectionGroups(connections);
     const evidenceRows = buildV2EvidenceRows(selectedOntologyNode.evidenceIds);
+    // M-2 — typed-fact metric: containment ("담는 것") is its own count, split
+    // out of the old direction-only "기대는 곳" so a domain's contained
+    // capabilities stop reading as things the domain depends ON. Numbers come
+    // from the SAME `groups` the panel renders, so header and metric agree.
     const metric = {
+      contains: groups.contains.total,
       usedBy: groups.usedBy.total,
       dependsOn: groups.dependsOn.total,
       evidence: evidenceRows.length,
@@ -990,9 +1019,11 @@ export function HomePage() {
       slug,
       kind: nodeFocus.kind,
       domainTitle: nodeFocusData?.significance.ownerDomainTitle ?? null,
+      contains: metric.contains,
       usedBy: metric.usedBy,
       dependsOn: metric.dependsOn,
       evidence: metric.evidence,
+      containsNames: groups.contains.rows.map((connection) => connection.title),
       usedByNames: groups.usedBy.rows.map((connection) => connection.title),
       dependsNames: groups.dependsOn.rows.map((connection) => connection.title),
     });
@@ -1098,9 +1129,11 @@ export function HomePage() {
       slug,
       kind: node.kind,
       domainTitle: null,
+      contains: groups.contains.total,
       usedBy: groups.usedBy.total,
       dependsOn: groups.dependsOn.total,
       evidence: evidenceRows.length,
+      containsNames: groups.contains.rows.map((connection) => connection.title),
       usedByNames: groups.usedBy.rows.map((connection) => connection.title),
       dependsNames: groups.dependsOn.rows.map((connection) => connection.title),
     });
@@ -1184,6 +1217,15 @@ export function HomePage() {
         !fullDetailOpen &&
         analysisMode !== "path",
     );
+  // M-7 — the compact node popover is actually on screen (same condition the
+  // popover JSX renders under). Drives both the Escape ladder's
+  // `nodePopoverOpen` rung and the popover's own render guard, so the two can
+  // never disagree about whether Escape#1 should close it.
+  const nodePopoverVisible =
+    selectedNodeFocusActive &&
+    !selectedRelationActive &&
+    !createNodeOpen &&
+    !nodePopoverDismissed;
   const selectedInspectorSupportRailVisible =
     selectedNodeFocusActive && selectedInspectorSupportRailSlug === selectedSlug;
   const selectedNodeOwnsRightRail = selectedNodeFocusActive;
@@ -1226,6 +1268,7 @@ export function HomePage() {
       interactionSelectedSlugRef.current = slug;
       setFullDetailSlug(null);
       setSelectedRelationActive(false);
+      setNodePopoverDismissed(false);
       const project = projectBySlug.get(slug);
       // path 모드/일반 선택 분기는 `resolveTopologyNodeClickRouteState` 가
       // 담당 — persona QA fix/persona-findings ②, 자세한 배경은 그 함수의
@@ -1301,6 +1344,7 @@ export function HomePage() {
         fullDetailOpen,
         selectedRelationActive,
         hasSelection: canvasSelectedSlug != null,
+        nodePopoverOpen: nodePopoverVisible,
         hasLocalGraphRoot: localGraphRoot !== null,
       });
       switch (action) {
@@ -1315,6 +1359,12 @@ export function HomePage() {
           break;
         case "close-relation-lens":
           setSelectedRelationActive(false);
+          break;
+        case "close-node-popover":
+          // M-7 rung 1 — hide the popover but keep the ego focus (dim). The
+          // NEXT Escape sees `nodePopoverOpen: false` and falls through to
+          // "deselect".
+          setNodePopoverDismissed(true);
           break;
         case "deselect":
           handleClose();
@@ -1335,10 +1385,13 @@ export function HomePage() {
     fullDetailOpen,
     selectedRelationActive,
     canvasSelectedSlug,
+    nodePopoverVisible,
     localGraphRoot,
     closeContextMenu,
     closeCreateNode,
-    handleClose,, selectedEdge]);
+    handleClose,
+    selectedEdge,
+  ]);
 
   const handleSelectImpactMode = useCallback(
     (nextMode: ProjectImpactMode) => {
@@ -2590,6 +2643,7 @@ export function HomePage() {
                     }}
                     onVisibleCountChange={setTopologyVisibleCount}
                     onGraphStatsChange={handleTopologyGraphStatsChange}
+                    onZoomTierChange={setMapZoomTier}
                     onContextMenuNode={handleContextMenuNode}
                     minimal={localGraphRoot !== null}
                     agentFocusNodeId={agentFocusNodeId}
@@ -2749,6 +2803,7 @@ export function HomePage() {
                 <FirstRunReadout
                   projectCount={firstRunProjectCount}
                   domainCount={indexDomainCount}
+                  tier={mapZoomTier}
                 />
               </div>
 
@@ -2794,7 +2849,8 @@ export function HomePage() {
         analysisMode !== "path" &&
         !fullDetailOpen &&
         !selectedRelationActive &&
-        !createNodeOpen ? (
+        !createNodeOpen &&
+        !nodePopoverDismissed ? (
           <div
             data-testid="topology-node-popover-positioner"
             data-position-contract="selected-inspector-aligns-to-right-inset"
@@ -2836,6 +2892,10 @@ export function HomePage() {
                   // 옮겨 지도/빌더와 같은 단어(의미)를 한 곳에서 관리한다 —
                   // 문구 값 자체는 기존과 동일("기대는 곳"/"근거"), 드리프트
                   // 방지가 목적.
+                  // M-2 — "담는 것" from the shared relation vocabulary (plain
+                  // register), same source as depends_on/describes below so the
+                  // typed groups read in one consistent word family.
+                  metricContains: relationVocabulary("contains", "plain"),
                   metricUsedBy: t("nodeDatasheet.metricUsedBy"),
                   metricDependsOn: relationVocabulary("depends_on", "plain"),
                   metricEvidence: relationVocabulary("describes", "plain"),

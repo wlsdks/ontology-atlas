@@ -129,90 +129,120 @@ describe("buildV2Connections", () => {
   });
 });
 
-describe("buildV2ConnectionGroups — direction axis, single source for metric + header parity", () => {
-  it("caps each group independently and keeps the TRUE total (contains-heavy node bug analog)", () => {
-    // 8 outgoing + 2 incoming — a naive outgoing-first slice would starve
-    // the incoming (usedBy) group to empty; per-group capping keeps both
-    // totals honest regardless of relation type mix.
+describe("buildV2ConnectionGroups — M-2 ROLE axis, single source for metric + header parity", () => {
+  it("splits containment into its OWN 담는 것/속한 곳 groups instead of folding by direction (the domain-popover bug)", () => {
+    // The exact UX-round case: a domain node with 18 `contains` children + a
+    // few depends/used edges. Direction-only grouping put the 18 children in
+    // "기대는 곳" (dependsOn); role grouping keeps them in `contains`.
+    const connections: V2DatasheetConnection[] = [
+      ...Array.from({ length: 18 }, (_, i) =>
+        conn({ id: `child-${i}`, relationType: "contains", direction: "outgoing" }),
+      ),
+      conn({ id: "user-a", relationType: "depends_on", direction: "incoming" }),
+      conn({ id: "user-b", relationType: "uses", direction: "incoming" }),
+      conn({ id: "user-c", relationType: "implements", direction: "incoming" }),
+      conn({ id: "user-d", relationType: "related_to", direction: "incoming" }),
+      conn({ id: "dep-a", relationType: "depends_on", direction: "outgoing" }),
+      conn({ id: "dep-b", relationType: "related_to", direction: "outgoing" }),
+      conn({ id: "parent", relationType: "belongs_to", direction: "outgoing" }),
+    ];
+    const groups = buildV2ConnectionGroups(connections, 6);
+    // 담는 것 18 · 쓰는 곳 4 · 기대는 곳 2 · 속한 곳 1 — matches full-detail.
+    expect(groups.contains.total).toBe(18);
+    expect(groups.contains.rows).toHaveLength(6); // capped, true total preserved
+    expect(groups.usedBy.total).toBe(4);
+    expect(groups.dependsOn.total).toBe(2);
+    expect(groups.belongsTo.total).toBe(1);
+  });
+
+  it("caps each group independently and never starves the smaller ones", () => {
     const connections: V2DatasheetConnection[] = [
       ...Array.from({ length: 8 }, (_, i) =>
-        conn({ id: `d${i}`, relationType: "contains", direction: "outgoing" }),
+        conn({ id: `c${i}`, relationType: "contains", direction: "outgoing" }),
       ),
       conn({ id: "u0", relationType: "depends_on", direction: "incoming" }),
       conn({ id: "u1", relationType: "uses", direction: "incoming" }),
     ];
     const groups = buildV2ConnectionGroups(connections, 6);
-    expect(groups.dependsOn.total).toBe(8);
-    expect(groups.dependsOn.rows).toHaveLength(6); // capped
+    expect(groups.contains.total).toBe(8);
+    expect(groups.contains.rows).toHaveLength(6); // capped
     expect(groups.usedBy.total).toBe(2);
     expect(groups.usedBy.rows.map((r) => r.id)).toEqual(["u0", "u1"]); // never starved
   });
 
-  it("handles an empty set with zero totals", () => {
+  it("handles an empty set with zero totals across all four role groups", () => {
     const groups = buildV2ConnectionGroups([]);
     expect(groups).toEqual({
+      contains: { rows: [], total: 0 },
       usedBy: { rows: [], total: 0 },
       dependsOn: { rows: [], total: 0 },
+      belongsTo: { rows: [], total: 0 },
     });
   });
 
-  it("the group totals are the SAME numbers the metric line reports for the same connection set (the reconciliation guarantee)", () => {
-    // This is the actual persona bug: header said "used by 10 / depends on
-    // 73" while the groups below said "포함 71 / 의존 12" — two different
-    // axes computed independently. With direction as the ONLY axis, the
-    // group totals ARE the metric numbers by construction.
+  it("a leaf node (no containment) still splits cleanly into usedBy/dependsOn with empty contains", () => {
     const connections: V2DatasheetConnection[] = [
-      conn({ id: "in-1", relationType: "contains", direction: "incoming" }),
-      conn({ id: "in-2", relationType: "depends_on", direction: "incoming" }),
+      conn({ id: "in-1", relationType: "depends_on", direction: "incoming" }),
+      conn({ id: "in-2", relationType: "uses", direction: "incoming" }),
       conn({ id: "out-1", relationType: "depends_on", direction: "outgoing" }),
     ];
     const groups = buildV2ConnectionGroups(connections);
-    const metricUsedBy = groups.usedBy.total;
-    const metricDependsOn = groups.dependsOn.total;
-    expect(metricUsedBy).toBe(2);
-    expect(metricDependsOn).toBe(1);
+    expect(groups.contains.total).toBe(0);
+    expect(groups.usedBy.total).toBe(2);
+    expect(groups.dependsOn.total).toBe(1);
+    expect(groups.belongsTo.total).toBe(0);
   });
 });
 
-describe("formatV2MetricLine", () => {
-  const labels = { usedBy: "쓰는 곳", dependsOn: "기대는 곳", evidence: "근거" };
+describe("formatV2MetricLine — M-2 typed segments", () => {
+  const labels = { contains: "담는 것", usedBy: "쓰는 곳", dependsOn: "기대는 곳", evidence: "근거" };
 
-  it("joins the three plain-language facts as ONE engraved line (no triplication)", () => {
+  it("prepends 담는 것 for a container node (contains > 0) — the typed split", () => {
     expect(
-      formatV2MetricLine({ usedBy: 3, dependsOn: 5, evidence: 2 }, labels),
+      formatV2MetricLine({ contains: 18, usedBy: 4, dependsOn: 2, evidence: 1 }, labels),
+    ).toBe("담는 것 18 · 쓰는 곳 4 · 기대는 곳 2 · 근거 1");
+  });
+
+  it("hides the 담는 것 segment for a leaf (contains === 0) so it isn't a noisy '담는 것 0'", () => {
+    expect(
+      formatV2MetricLine({ contains: 0, usedBy: 3, dependsOn: 5, evidence: 2 }, labels),
     ).toBe("쓰는 곳 3 · 기대는 곳 5 · 근거 2");
   });
 
-  it("keeps zeros explicit so the line always has three segments", () => {
+  it("keeps the remaining three facts' zeros explicit", () => {
     expect(
-      formatV2MetricLine({ usedBy: 0, dependsOn: 0, evidence: 0 }, labels),
+      formatV2MetricLine({ contains: 0, usedBy: 0, dependsOn: 0, evidence: 0 }, labels),
     ).toBe("쓰는 곳 0 · 기대는 곳 0 · 근거 0");
   });
 });
 
-describe("formatV2HandoffText", () => {
-  it("emits a deterministic MCP/CLI-style payload with slug, typed facts, and direction-grouped name lists", () => {
+describe("formatV2HandoffText — M-2 contains split", () => {
+  it("emits a deterministic payload with contains split out of depends_on, matching the panel's typed groups", () => {
     const text = formatV2HandoffText({
-      slug: "mcp-server",
-      kind: "capability",
+      slug: "ai-agent-partner",
+      kind: "domain",
       domainTitle: "AI Agent Partner",
-      usedBy: 5,
+      contains: 18,
+      usedBy: 4,
       dependsOn: 2,
-      evidence: 3,
+      evidence: 1,
+      containsNames: ["mcp-server", "agent-config-onboarding"],
       usedByNames: ["frontmatter-to-ontology"],
       dependsNames: ["relation-graph"],
     });
     expect(text).toBe(
       [
-        "node: mcp-server",
-        "kind: capability",
+        "node: ai-agent-partner",
+        "kind: domain",
         "domain: AI Agent Partner",
-        "used_by: 5",
+        "contains: 18",
+        "used_by: 4",
         "depends_on: 2",
-        "evidence: 3",
+        "evidence: 1",
+        "contains_names: mcp-server, agent-config-onboarding",
         "used_by_names: frontmatter-to-ontology",
         "depends_names: relation-graph",
-        'next: get_concept("mcp-server") → review context, then patch_concept / add_relation as needed',
+        'next: get_concept("ai-agent-partner") → review context, then patch_concept / add_relation as needed',
       ].join("\n"),
     );
   });
@@ -222,13 +252,16 @@ describe("formatV2HandoffText", () => {
       slug: "orphan",
       kind: "element",
       domainTitle: null,
+      contains: 0,
       usedBy: 0,
       dependsOn: 0,
       evidence: 0,
+      containsNames: [],
       usedByNames: [],
       dependsNames: [],
     });
     expect(text).toContain("domain: -");
+    expect(text).toContain("contains_names: -");
     expect(text).toContain("used_by_names: -");
     expect(text).toContain("depends_names: -");
   });

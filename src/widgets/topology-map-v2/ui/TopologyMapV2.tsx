@@ -98,6 +98,12 @@ export interface TopologyMapV2Props {
   onVisibleCountChange?: (visible: number) => void;
   onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
   /**
+   * M-5 — semantic-zoom tier (spine → circuit → element) changed. Fires only
+   * on transitions; HomePage feeds it to the corner readout so the "zoom in to
+   * see elements" hint drops once elements are actually on screen.
+   */
+  onZoomTierChange?: (tier: "spine" | "circuit" | "element") => void;
+  /**
    * W2-B node right-click context menu — called with the hit node's id and
    * viewport-space cursor position. Omitted keeps right-click behavior
    * unchanged (browser default menu everywhere, same as before this slice).
@@ -115,7 +121,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onContextMenuNode, agentFocusNodeId } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId } = props;
 
   // `handleWheel` is wired natively (non-passive) inside `useTopologyLoop` —
   // see its own FIX comment — not bound here as a JSX prop.
@@ -133,6 +139,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       onPaneClick,
       onVisibleCountChange,
       onGraphStatsChange,
+      onZoomTierChange,
       onContextMenuNode,
       agentFocusNodeId,
     });

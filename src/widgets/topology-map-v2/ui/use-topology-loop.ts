@@ -14,6 +14,7 @@ import { useEffect, useRef, type RefObject } from "react";
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import { stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
 import { isCameraUnsettled, isCanvasActive, shouldSkipFrame } from "../model/idle-gate";
+import { classifyZoomTier, type ZoomTier } from "../model/tier-visibility";
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../interaction/pointer-state-machine";
@@ -97,6 +98,14 @@ export interface UseTopologyLoopArgs {
   onPaneClick?: () => void;
   onVisibleCountChange?: (visible: number) => void;
   onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
+  /**
+   * M-5 — the semantic-zoom altitude tier changed (spine → circuit → element).
+   * Fires only on transitions (not per-frame), driven by the same reveal bands
+   * the draw pass gates node visibility with, so the corner readout's
+   * orientation label can never claim "zoom in to see elements" while elements
+   * are on screen.
+   */
+  onZoomTierChange?: (tier: ZoomTier) => void;
   /** W2-B node right-click context menu — see `topology-pointer-handlers.ts#createTopologyPointerHandlers`'s `onContextMenuNode` doc. */
   onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
   /**
@@ -114,7 +123,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onContextMenuNode, agentFocusNodeId = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -210,6 +219,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const prevCameraSampleRef = useRef<{ x: number; y: number; s: number } | null>(null);
   /** W6 agent visibility — mirrors `agentFocusNodeId` prop into a ref for the rAF closure, same pattern as `focusedSlugRef`. */
   const agentFocusNodeIdRef = useRef<string | null>(agentFocusNodeId);
+  /** M-5 — mirror the tier-change callback into a ref for the rAF closure, and
+   * track the last emitted tier so the callback fires only on transitions. */
+  const onZoomTierChangeRef = useRef<typeof onZoomTierChange>(onZoomTierChange);
+  const lastZoomTierRef = useRef<ZoomTier | null>(null);
+
+  useEffect(() => {
+    onZoomTierChangeRef.current = onZoomTierChange;
+  }, [onZoomTierChange]);
 
   useEffect(() => {
     focusedSlugRef.current = focusedSlug;
@@ -688,6 +705,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         egoRevealById: egoRevealRef.current,
       });
       cameraRef.current = camera;
+
+      // M-5 — emit the semantic-zoom tier only when it changes (spine →
+      // circuit → element), so the corner readout's orientation hint tracks
+      // what's actually drawn. Same reveal bands as the draw pass (default
+      // config), so the label and the visible nodes can't contradict.
+      const nextZoomTier = classifyZoomTier(zoomRatio);
+      if (nextZoomTier !== lastZoomTierRef.current) {
+        lastZoomTierRef.current = nextZoomTier;
+        onZoomTierChangeRef.current?.(nextZoomTier);
+      }
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);

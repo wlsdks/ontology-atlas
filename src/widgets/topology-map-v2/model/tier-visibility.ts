@@ -157,3 +157,29 @@ export function isNodeHittable(
 export function isSpineOnlyZoom(zoomRatio: number, config: TierRevealConfig): boolean {
   return zoomRatio < config.capability.enterRatio;
 }
+
+/**
+ * The altitude tier the reader is currently at, for the corner readout's
+ * orientation label (M-5). Derived from the SAME reveal bands the draw pass
+ * gates node visibility with, so the readout can never claim "zoom in to see
+ * elements" while elements are actually on screen (the exact orientation lie
+ * the UX round caught). A tier is "reached" once its band is at least
+ * half-revealed (`revealAlpha ≥ 0.5`), matching the `HITTABLE_MIN_TIER_ALPHA`
+ * threshold — the point where the tier's nodes become legible/clickable, not
+ * the instant their alpha leaves zero.
+ *
+ *   spine     — only project/domain/hub drawn (capabilities not yet revealed)
+ *   circuit   — capabilities revealed, elements not yet
+ *   element   — elements revealed (the "zoom in to see elements" hint is now
+ *               false and must be dropped)
+ */
+export type ZoomTier = "spine" | "circuit" | "element";
+
+export function classifyZoomTier(
+  zoomRatio: number,
+  config: TierRevealConfig = DEFAULT_TIER_REVEAL,
+): ZoomTier {
+  if (revealAlpha(zoomRatio, config.element) >= HITTABLE_MIN_TIER_ALPHA) return "element";
+  if (revealAlpha(zoomRatio, config.capability) >= HITTABLE_MIN_TIER_ALPHA) return "circuit";
+  return "spine";
+}

@@ -1376,12 +1376,11 @@ describe('package contract helpers', () => {
     );
     assert.match(
       verifySection,
-      // infer_imports "files scanned" is intentionally NOT pinned to the exact
-      // live count: it changes on every source-file add/remove (incidental), so
-      // pinning it forced a README bump on unrelated PRs. The module-edge count
-      // and top-edge summary stay pinned — they reflect the actual dependency
-      // graph, which is the meaningful contract.
-      new RegExp(`✓ infer_imports — \\d+ files? scanned, ${countLabel(inferredImports.moduleEdges.length, 'module edge')} \\(${topModuleEdgeSummary}`),
+      // infer_imports "files scanned" 와 "module edges" 둘 다 exact-pin 하지
+      // 않는다: 2026-07 스윕에서 모듈 엣지 수가 기능 PR 마다 바뀌어 하루 세
+      // 번 README 재생성을 강요했다 (496→498→499) — 부수 지표다. 의미 있는
+      // 계약은 top-edge 요약(실제 최상위 의존 경로)이라 그것만 유지한다.
+      new RegExp(`✓ infer_imports — \\d+ files? scanned, \\d+ module edges? \\(${topModuleEdgeSummary}`),
     );
     assert.match(verifySection, new RegExp(`✓ find_neighbors — ${neighborSmokeLine}`));
     assert.match(verifySection, new RegExp(`✓ find_path — ${regexEscape(neighborSmokeSlug)} → project \\(2 hops, 2 edges\\)`));

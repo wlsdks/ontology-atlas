@@ -192,6 +192,67 @@ describe("TopologyIndexPanel", () => {
     expect(screen.queryByText("CLI Developer Entry")).not.toBeInTheDocument();
   });
 
+  it("M-10: Escape in the search field with a query clears it and stops the keypress (search-scoped, not a canvas deselect)", () => {
+    const treeResult = buildFixtureTree();
+    render(
+      <TopologyIndexPanel
+        treeResult={treeResult}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+
+    const input = screen.getByTestId("topology-index-search") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "agent brief" } });
+    expect(input.value).toBe("agent brief");
+    // the filter is active — sibling with no match is pruned
+    expect(screen.queryByText("CLI Developer Entry")).not.toBeInTheDocument();
+
+    const windowHandler = vi.fn();
+    window.addEventListener("keydown", windowHandler);
+    const notPrevented = fireEvent.keyDown(input, { key: "Escape", bubbles: true });
+    window.removeEventListener("keydown", windowHandler);
+
+    // query cleared, filter released
+    expect(input.value).toBe("");
+    // the keypress was consumed — the window-level topology Esc ladder never sees it
+    expect(windowHandler).not.toHaveBeenCalled();
+    // fireEvent returns false when preventDefault was called
+    expect(notPrevented).toBe(false);
+  });
+
+  it("M-10: Escape in an EMPTY search field is not consumed — it bubbles to the window ladder", () => {
+    const treeResult = buildFixtureTree();
+    render(
+      <TopologyIndexPanel
+        treeResult={treeResult}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+
+    const input = screen.getByTestId("topology-index-search") as HTMLInputElement;
+    const windowHandler = vi.fn();
+    window.addEventListener("keydown", windowHandler);
+    fireEvent.keyDown(input, { key: "Escape", bubbles: true });
+    window.removeEventListener("keydown", windowHandler);
+
+    // nothing to clear → the keypress reaches the window (the ladder can act)
+    expect(windowHandler).toHaveBeenCalledTimes(1);
+  });
+
   it("renders the census row with the same totals passed in", () => {
     const treeResult = buildFixtureTree();
     render(

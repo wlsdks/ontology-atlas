@@ -27,6 +27,27 @@ describe('FirstRunReadout', () => {
     expect(screen.getByText('6')).toBeInTheDocument();
   });
 
+  it('M-5: defaults to the spine tier label and shows the "zoom in to see elements" hint', () => {
+    render(<FirstRunReadout projectCount={1} domainCount={6} />);
+    // translations are mocked to echo the key
+    expect(screen.getByTestId('first-run-readout-tier')).toHaveTextContent('tier_spine');
+    expect(screen.getByTestId('first-run-readout-zoom-hint')).toHaveTextContent('zoomHint');
+    expect(screen.getByTestId('first-run-readout')).toHaveAttribute('data-zoom-tier', 'spine');
+  });
+
+  it('M-5: at the circuit tier the label updates but the zoom hint still shows (elements not yet revealed)', () => {
+    render(<FirstRunReadout projectCount={1} domainCount={6} tier="circuit" />);
+    expect(screen.getByTestId('first-run-readout-tier')).toHaveTextContent('tier_circuit');
+    expect(screen.getByTestId('first-run-readout-zoom-hint')).toBeInTheDocument();
+  });
+
+  it('M-5: at the element tier the label switches to ELEMENT and the "zoom in to see elements" hint is dropped (no orientation lie)', () => {
+    render(<FirstRunReadout projectCount={1} domainCount={6} tier="element" />);
+    expect(screen.getByTestId('first-run-readout-tier')).toHaveTextContent('tier_element');
+    expect(screen.queryByTestId('first-run-readout-zoom-hint')).not.toBeInTheDocument();
+    expect(screen.getByTestId('first-run-readout')).toHaveAttribute('data-zoom-tier', 'element');
+  });
+
   it('renders nothing once a vault is active (sample mode not settled to static)', () => {
     mocks.visible = false;
     render(<FirstRunReadout projectCount={1} domainCount={6} />);

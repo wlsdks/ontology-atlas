@@ -30,13 +30,16 @@ import { TopologyV2KindGlyph, TopologyV2TraceMark } from "@/shared/ui/topology-v
  * `TopologyNodeFocusModel` into these props, so the import direction stays
  * view → widget. Colors/sizes come from `--topology-v2-panel-*` tokens.
  *
- * R+ 카운트 시맨틱 통일: connection groups are DIRECTION-based (usedBy /
- * dependsOn) — the SAME axis the metric line counts — so the group header's
- * number and the metric line's number are the same number by construction.
- * Group headers reuse `labels.metricUsedBy`/`labels.metricDependsOn` (no
- * separate group-label strings) so the words match too. Relation TYPE
- * (containment vs depends) demotes to a per-row `TraceMark`, one per
- * connection row instead of one per group header.
+ * M-2 카운트 시맨틱: connection groups are ROLE-based (contains / usedBy /
+ * dependsOn) — the SAME buckets the metric line counts and the full-detail
+ * surface renders — so the group header's number and the metric line's number
+ * are the same number by construction, and the popover never disagrees with
+ * full-detail. Containment is its OWN "담는 것" group/segment (rendered only
+ * when non-empty, i.e. container nodes) instead of folding into "기대는 곳" by
+ * raw direction — the exact typed-fact collapse the UX round flagged. Group
+ * headers reuse `labels.metricContains`/`metricUsedBy`/`metricDependsOn` (no
+ * separate group-label strings) so the words match too; the per-row `TraceMark`
+ * still marks containment vs depends within a row.
  *
  * RATIO-SYSTEM §4 scale-up (`docs/prototypes/chrome-datasheet-final.html`,
  * owner: "정보는 좋은데 너무 작고 그래") promotes a THIRD group — 근거
@@ -66,6 +69,8 @@ export interface TopologyV2DetailPanelLabels {
   domainLabel: string;
   poweredOn: string;
   poweredOff: string;
+  /** M-2 — "담는 것" (contains). Only rendered for container nodes. */
+  metricContains: string;
   metricUsedBy: string;
   metricDependsOn: string;
   metricEvidence: string;
@@ -175,12 +180,16 @@ export function TopologyV2DetailPanel({
   className,
 }: TopologyV2DetailPanelProps) {
   const metricLine = formatV2MetricLine(metric, {
+    contains: labels.metricContains,
     usedBy: labels.metricUsedBy,
     dependsOn: labels.metricDependsOn,
     evidence: labels.metricEvidence,
   });
   const hasConnections =
-    groups.usedBy.total > 0 || groups.dependsOn.total > 0 || evidence.total > 0;
+    groups.contains.total > 0 ||
+    groups.usedBy.total > 0 ||
+    groups.dependsOn.total > 0 ||
+    evidence.total > 0;
 
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -198,7 +207,7 @@ export function TopologyV2DetailPanel({
   // match too, or the reconciliation reads as a coincidence instead of a
   // guarantee.
   const renderGroup = (
-    group: "usedBy" | "dependsOn",
+    group: "contains" | "usedBy" | "dependsOn",
     label: string,
     view: V2ConnectionGroupView,
   ) => {
@@ -451,6 +460,7 @@ export function TopologyV2DetailPanel({
       <div className="flex flex-col gap-2.5">
         {hasConnections ? (
           <>
+            {renderGroup("contains", labels.metricContains, groups.contains)}
             {renderGroup("usedBy", labels.metricUsedBy, groups.usedBy)}
             {renderGroup("dependsOn", labels.metricDependsOn, groups.dependsOn)}
             {renderEvidenceGroup()}

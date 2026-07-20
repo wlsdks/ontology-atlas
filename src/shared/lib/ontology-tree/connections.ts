@@ -12,6 +12,8 @@
  * its tests) needed zero changes.
  */
 
+import { isContainmentRelation } from "./relations";
+
 export interface DatasheetConnection {
   id: string;
   title: string;
@@ -62,6 +64,91 @@ export function groupConnectionsByDirection(
     }
   }
   return { usedBy, dependsOn };
+}
+
+/**
+ * M-2 — connections split by relation ROLE, not just direction. `usedBy` /
+ * `dependsOn` are the non-containment incoming/outgoing groups (same as
+ * `groupConnectionsByDirection`); containment edges are pulled OUT into their
+ * own `contains` (this node is the parent) / `belongsTo` (this node is the
+ * child) groups instead of folding into usedBy/dependsOn by raw direction.
+ *
+ * The compact canvas popover used to group by DIRECTION only, so a domain's
+ * 18 `contains` children landed in "기대는 곳" (dependsOn) — the exact typed-
+ * fact collapse the UX round flagged (popover "쓰는 곳 5 · 기대는 곳 20" vs
+ * full-detail "담는 것 18 · 쓰는 곳 4 · 기대는 곳 2 · 속한 곳 1"). This is the
+ * SAME bucketing the full-detail surface uses (`buildFullDetailGroups` now
+ * delegates here), so the two surfaces can never disagree on the counts.
+ */
+export interface RoleGroupedConnections {
+  /** Outgoing containment — what this node contains. */
+  contains: DatasheetConnection[];
+  /** Incoming non-containment — places that use this node. */
+  usedBy: DatasheetConnection[];
+  /** Outgoing non-containment — places this node leans on. */
+  dependsOn: DatasheetConnection[];
+  /** Incoming containment — the (usually single) parent this node belongs to. */
+  belongsTo: DatasheetConnection[];
+}
+
+/**
+ * True when a containment connection means `nodeId` is the PARENT (→ contains)
+ * vs the CHILD (→ belongsTo). `contains` edges point parent→child (so an
+ * OUTGOING one makes nodeId the parent); `belongs_to` edges point child→parent
+ * (so an INCOMING one makes nodeId the parent). Same rule as
+ * `buildContainmentParents` (insights.ts) — getting it wrong would file a
+ * `belongs_to`-authored parent under "담는 것" instead of "속한 곳".
+ */
+function containmentNodeIsParent(connection: DatasheetConnection): boolean {
+  return connection.relationType === "belongs_to"
+    ? connection.direction === "incoming"
+    : connection.direction === "outgoing";
+}
+
+/**
+ * Split direct connections into the four role groups (contains / usedBy /
+ * dependsOn / belongsTo), each deduped by neighbor `id` within its own bucket
+ * (a neighbor genuinely reachable by two relationTypes in the same role — the
+ * live `depends_on` + `related_to` dogfood case — collapses to one row, same
+ * guard `groupConnectionsByDirection` already applies). Input order preserved
+ * inside each bucket for deterministic rendering.
+ */
+export function groupConnectionsByRole(
+  connections: readonly DatasheetConnection[],
+): RoleGroupedConnections {
+  const contains: DatasheetConnection[] = [];
+  const usedBy: DatasheetConnection[] = [];
+  const dependsOn: DatasheetConnection[] = [];
+  const belongsTo: DatasheetConnection[] = [];
+  const seen = {
+    contains: new Set<string>(),
+    usedBy: new Set<string>(),
+    dependsOn: new Set<string>(),
+    belongsTo: new Set<string>(),
+  };
+  for (const connection of connections) {
+    let bucket: DatasheetConnection[];
+    let seenSet: Set<string>;
+    if (isContainmentRelation(connection.relationType)) {
+      if (containmentNodeIsParent(connection)) {
+        bucket = contains;
+        seenSet = seen.contains;
+      } else {
+        bucket = belongsTo;
+        seenSet = seen.belongsTo;
+      }
+    } else if (connection.direction === "incoming") {
+      bucket = usedBy;
+      seenSet = seen.usedBy;
+    } else {
+      bucket = dependsOn;
+      seenSet = seen.dependsOn;
+    }
+    if (seenSet.has(connection.id)) continue;
+    seenSet.add(connection.id);
+    bucket.push(connection);
+  }
+  return { contains, usedBy, dependsOn, belongsTo };
 }
 
 /** Minimal structural shapes — keeps this module pure + testable without

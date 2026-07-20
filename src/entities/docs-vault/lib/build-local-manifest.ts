@@ -13,6 +13,67 @@ import type {
   VaultTreeNode,
 } from '../model/types';
 
+/**
+ * D-1 — frontmatter keys that hold graph relation refs to OTHER docs. A doc
+ * that names another doc here (e.g. `dependencies: [capabilities/mcp-server]`)
+ * is a backlink to that doc, exactly as the MCP `find_backlinks` tool counts it
+ * (same key set: `mcp/src/vault.mjs` NEIGHBOR_KEYS + INLINE_NEIGHBOR_KEYS).
+ * The old backlink index only scanned BODY markdown links, so a doc referenced
+ * purely through frontmatter (the common vault case) showed a false "no
+ * backlinks" — the exact defect the UX round caught on `capabilities/mcp-server`
+ * (13 real referrers, footer said "none"). Kept in sync with the build-time
+ * script (`scripts/build-docs-vault.mjs`).
+ */
+const RELATION_REF_ARRAY_KEYS = [
+  'domains',
+  'capabilities',
+  'elements',
+  'dependencies',
+  'relates',
+  'contains',
+  'describes',
+] as const;
+const RELATION_REF_STRING_KEYS = ['domain'] as const;
+
+/** Frontmatter value → the doc slugs it references (folder-prefixed or bare). */
+function frontmatterRefStrings(frontmatter: Record<string, unknown>): string[] {
+  const out: string[] = [];
+  for (const key of RELATION_REF_ARRAY_KEYS) {
+    const value = frontmatter[key];
+    if (Array.isArray(value)) {
+      for (const item of value) if (typeof item === 'string' && item.trim()) out.push(item.trim());
+    } else if (typeof value === 'string' && value.trim()) {
+      // tolerate a scalar where an array is expected
+      out.push(value.trim());
+    }
+  }
+  for (const key of RELATION_REF_STRING_KEYS) {
+    const value = frontmatter[key];
+    if (typeof value === 'string' && value.trim()) out.push(value.trim());
+  }
+  return out;
+}
+
+/**
+ * Resolve a frontmatter ref to a known doc slug, or null. Folder-prefixed refs
+ * (`capabilities/mcp-server`) match a slug directly; bare refs (`mcp-server`,
+ * `ai-agent-partner`) resolve by unique tail segment. Refs that match no doc
+ * (e.g. `elements: [mcp/src/index.js]` — a source-file ref with no `.md`) are
+ * skipped, so no phantom backlinks are minted.
+ */
+function resolveRefToDocSlug(
+  ref: string,
+  slugSet: ReadonlySet<string>,
+  tailToSlug: ReadonlyMap<string, string | null>,
+): string | null {
+  const normalized = ref.replace(/\.md$/i, '');
+  if (slugSet.has(normalized)) return normalized;
+  const tail = normalized.split('/').pop() ?? normalized;
+  const byTail = tailToSlug.get(tail);
+  // `byTail === null` marks an ambiguous tail (2+ docs share it) — don't guess.
+  return byTail ?? null;
+}
+
 // FileSystemDirectoryHandle 을 재귀 순회해 .md 파일만 수집. 파일 핸들 맵을
 // 같이 반환해 뷰어가 slug → 파일 content 를 읽을 수 있게 한다. Next.js
 // 정적 타입에 FSAccess API 타입이 이미 lib.dom.d.ts 로 들어와 있어서 외부
@@ -250,6 +311,35 @@ function aggregateBuild(
       tagsMap.get(tag)!.add(doc.slug);
     }
     docs.push(doc);
+  }
+
+  // D-1 — second pass: register FRONTMATTER relation-ref backlinks (the body
+  // pass above only saw markdown links). A ref that resolves to a known doc
+  // slug adds a backlink from the declaring doc to that target — deduped by
+  // fromSlug in the final assembly below, so a doc that references a target
+  // through BOTH a body link and frontmatter keeps the richer body context.
+  const slugSet = new Set(docs.map((doc) => doc.slug));
+  const tailToSlug = new Map<string, string | null>();
+  for (const doc of docs) {
+    const tail = doc.slug.split('/').pop() ?? doc.slug;
+    // First occurrence wins; a second doc with the same tail marks it ambiguous
+    // (null) so `resolveRefToDocSlug` won't guess.
+    tailToSlug.set(tail, tailToSlug.has(tail) ? null : doc.slug);
+  }
+  for (const doc of docs) {
+    const seenTargets = new Set<string>();
+    for (const ref of frontmatterRefStrings(doc.frontmatter as Record<string, unknown>)) {
+      const target = resolveRefToDocSlug(ref, slugSet, tailToSlug);
+      // No self-backlinks; dedup repeated refs to the same target within a doc.
+      if (!target || target === doc.slug || seenTargets.has(target)) continue;
+      seenTargets.add(target);
+      if (!backlinksDetailMap.has(target)) backlinksDetailMap.set(target, []);
+      backlinksDetailMap.get(target)!.push({
+        fromSlug: doc.slug,
+        context: `frontmatter · **[${ref}]**`,
+        linkText: ref,
+      });
+    }
   }
 
   docs.sort((a, b) => a.slug.localeCompare(b.slug, 'ko'));
