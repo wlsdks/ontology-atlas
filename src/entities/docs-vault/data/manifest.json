@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-20T17:36:43.240Z",
+  "generatedAt": "2026-07-20T22:05:28.273Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2785,6 +2785,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-21 — Guardian 최종 총괄 교정 (R-1 · C-1~C-3)",
+          "slug": "2026-07-21-guardian-최종-총괄-교정-r-1-c-1c-3"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-21 — 판정·입력 표면: 문서함 절삭 3건 · frontmatter 판정 액션 · kind-first 새 문서 · 빌더 입력기 3종 (P5)",
           "slug": "2026-07-21-판정입력-표면-문서함-절삭-3건-frontmatter-판정-액션-kind-first-새-문서-빌더-입력기-3종-p5"
         },
@@ -4119,9 +4124,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 근거: .qa-scratch/docs-identity-2026-07/verdict.md (문서함 = 의미 편집실 판정) + 페르소나 N7/N9/N11. 5",
-      "wordCount": 26888,
-      "updatedAt": "2026-07-20T17:35:05.513Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 라운드 총괄 판정(조건부 승인)의 반려·조건부 4건 즉시 교정: R-1 엣지 팝오버: raw <a 2개가 locale prefix 없이 404/500 — ",
+      "wordCount": 27023,
+      "updatedAt": "2026-07-20T18:04:59.898Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"

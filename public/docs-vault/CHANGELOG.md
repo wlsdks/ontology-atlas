@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-07-21 — Guardian 최종 총괄 교정 (R-1 · C-1~C-3)
+
+라운드 총괄 판정(조건부 승인)의 반려·조건부 4건 즉시 교정:
+- **R-1 엣지 팝오버**: raw `<a>` 2개가 locale prefix 없이 404/500 —
+  `@/i18n/navigation` `Link` 로 교체(실측 200/200) + Esc 1단이 팝오버를
+  닫도록 사다리 최상단 소비 추가.
+- **C-1 dust 결정론**: depth 만 `Math.random()` 이던 자기 계약 위반 —
+  seed rng 로 복원 + 시차 깊이 토큰 승격(`--topology-v2-dust-parallax-min/max`)
+  + 결정론 테스트.
+- **C-2**: 연결 시트 agentLabel ko 하드코딩 → i18n.
+- **C-3 최근 변경 렌즈**: 세션 스냅샷 + 미래-제외가 결합해 "방금 만든
+  노드 직후 최근 변경 0" 자기모순 — 24h 미래 허용 창("오늘"로 포함),
+  진짜 skew 만 제외. 계약 테스트 갱신.
+
+잔여(다음 라운드): I-1 도메인 수준 census 3원 장부 · B5/연결시트
+데스크톱 분기의 설치 앱 proof(Tauri 전용) · 부트스트랩 토스트 4연발
+단일 요약화 · 샘플 mtime git-date 화.
+
 ## 2026-07-21 — 판정·입력 표면: 문서함 절삭 3건 · frontmatter 판정 액션 · kind-first 새 문서 · 빌더 입력기 3종 (P5)
 
 근거: `.qa-scratch/docs-identity-2026-07/verdict.md` (문서함 = 의미 편집실
