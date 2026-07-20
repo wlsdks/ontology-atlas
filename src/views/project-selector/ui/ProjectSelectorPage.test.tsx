@@ -131,8 +131,8 @@ describe("ProjectSelectorPage", () => {
 
   it("renders the workspace census (concepts/relations) from the unified formula", () => {
     renderPage();
-    // domain+capability+element = 3 concepts, 2 edges.
-    expect(screen.getByText(/3 CONCEPTS/)).toBeInTheDocument();
+    // P0c 정본 census — project 포함 파생 전체 4 (표면 간 불일치 N2 교정).
+    expect(screen.getByText(/4 CONCEPTS/)).toBeInTheDocument();
     expect(screen.getByText(/2 RELATIONS/)).toBeInTheDocument();
   });
 
