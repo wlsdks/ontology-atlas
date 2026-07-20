@@ -1216,8 +1216,12 @@
     --topology-v2-hover-ring: rgba(94, 106, 210, 0.55);
 
     /* 2.2 엣지 · 라벨 · 배경 */
-    --topology-v2-edge-contains: #28282e;
-    --topology-v2-edge-depends: #39394a;
+    /* B1 잉크 위계 (Guardian 2026-07-20): 장식 입자가 데이터 엣지보다 3.2배
+       밝던 역전을 바로잡는다. contains 는 그래프의 골격이라 호버 없이
+       overview 에서 읽혀야 하고(1.32 → 1.83:1), depends 는 영향범위 추론의
+       최고가치 관계라 contains 보다 분명히 위여야 한다(1.78 → 2.42:1). */
+    --topology-v2-edge-contains: #3a3a42;
+    --topology-v2-edge-depends: #4c4c63;
     --topology-v2-edge-dim: #1e1e22;
     --topology-v2-hull-stroke: #3a3a42;
     /* canvas-emphasis 슬라이스: 프로젝트 라벨은 Layer-0 컨테이너 앰버 정체성을
@@ -1339,7 +1343,10 @@
     /* depends 엣지 comet-tail 진행 속도(t += dt × speed). 기본은 ambient
        흐름, ego(선택 노드에 물린 엣지)는 "전류가 더 흐른다"는 회로 은유로
        가속 — B2+ 연결 하이라이트(lead spec §2). */
-    --topology-v2-edge-pulse-speed: 0.075;
+    /* 0 = 주변(비-ego) 엣지의 펄스 진행 정지. 코멧테일이 포커스 신호로
+       바뀌어(A1) 주변 엣지엔 그려지지 않으므로 t 를 전진시킬 이유가 없고,
+       이게 0 이어야 유휴 프레임 게이트(A2)가 정지를 판정할 수 있다. */
+    --topology-v2-edge-pulse-speed: 0;
     --topology-v2-edge-pulse-speed-ego: 0.2;
     /* C1 B1 (드래그 tug 감사): 노드 드래그 시 FA2 글로벌 relax(1 iter/frame,
        slowDown 20)만으로는 이웃이 눈에 띄게 안 움직인다 — 드래그된 노드의

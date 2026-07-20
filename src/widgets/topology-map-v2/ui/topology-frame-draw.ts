@@ -32,9 +32,19 @@ import {
 } from "../render/label-layout";
 import { draw as nodeShapesDraw } from "../render/node-shapes";
 import { drawDiffractionSpike, drawStarDust, type DustPoint } from "../render/starfield";
+import { isEdgeCulled, isNodeCulled } from "../render/viewport-cull";
 import { draw as tracesDraw } from "../render/traces";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { worldToScreen } from "./topology-camera-math";
+
+/**
+ * Cull slack. Edges: the control hull already bounds the curve, so this only
+ * has to cover stroke width and the comet arcs riding on it. Nodes: the disc
+ * is the SMALLEST thing a node paints — diffraction spike arms reach `r*2.6`
+ * — so the radius is inflated before the test rather than trusting `r`.
+ */
+const EDGE_CULL_MARGIN_PX = 24;
+const NODE_CULL_SLACK = 3;
 import { radiusForKind, type TopologyWorld, type WorldNode } from "./topology-world";
 
 const EMPTY_NEIGHBOR_SET: ReadonlySet<string> = new Set();
@@ -211,9 +221,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     agentFocusNodeId,
   } = params;
 
+  // Where world (0,0) currently lands on screen — the blueprint grid rides
+  // this so the background belongs to the world, not the display (B3).
+  const gridOrigin = worldToScreen(camera, viewportWidth, viewportHeight, 0, 0);
+
   gridDraw(
     ctx,
-    { viewportWidth, viewportHeight, farT, gridPattern },
+    { viewportWidth, viewportHeight, farT, gridPattern, originX: gridOrigin.x, originY: gridOrigin.y },
     {
       canvasBgNear: tokens.canvasBgNear,
       canvasBgFar: tokens.canvasBgFar,
@@ -264,6 +278,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       if (edge.kind !== kind) continue;
       const edgeAlpha = edgeTierAlpha(effectiveAlphaById.get(edge.sourceId) ?? 1, effectiveAlphaById.get(edge.targetId) ?? 1);
       if (edgeAlpha <= 0.02) continue;
+      const a = project(edge.ax, edge.ay);
+      const b = project(edge.bx, edge.by);
+      const control = project(edge.controlX, edge.controlY);
+      // Off-screen geometry still cost a full curve + up to 3 comet arcs each
+      // before this guard. Hull-based, so it only ever drops strokes that
+      // could not have landed on canvas (see `render/viewport-cull.ts`).
+      if (isEdgeCulled(a, b, control, EDGE_CULL_MARGIN_PX, viewportWidth, viewportHeight)) continue;
       const touches = focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
       const emphasized =
         emphasizedNeighborId !== null &&
@@ -273,14 +294,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       tracesDraw(
         ctx,
         {
-          a: project(edge.ax, edge.ay),
-          b: project(edge.bx, edge.by),
-          control: project(edge.controlX, edge.controlY),
+          a,
+          b,
+          control,
           relationType: kind,
           egoState: resolveEdgeEgoState(touches, focusedNodeId),
           farT,
           t: edge.t,
           emphasized,
+          reducedMotion,
         },
         {
           edgeContains: tokens.edgeContains,
@@ -317,6 +339,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
 
     const screen = project(node.x, node.y);
     const screenRadius = effRadius * camera.scale.value;
+    // Rings/pulses/labels all key off this same disc, so one guard here drops
+    // the whole off-screen node cost (see `render/viewport-cull.ts`).
+    if (isNodeCulled(screen, screenRadius * NODE_CULL_SLACK, viewportWidth, viewportHeight)) continue;
 
     ctx.globalAlpha = tierAlpha;
     // Sheen top stop = lerp(fill, tint, blend) — resolved here (token layer)

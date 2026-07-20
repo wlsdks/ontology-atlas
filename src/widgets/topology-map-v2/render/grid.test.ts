@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { computeVignetteAlpha, lerpColorHex } from "./grid";
+import { computeVignetteAlpha, lerpColorHex, GRID_TILE_PX, wrapToTile } from "./grid";
 
 /**
  * `render/grid.ts`'s `draw()`/`buildGridPattern()` bodies are Canvas 2D
@@ -42,5 +42,41 @@ describe("computeVignetteAlpha", () => {
 
   it("is baseAlpha+farAlpha at farT=1 (constellation — most vignette)", () => {
     expect(computeVignetteAlpha(0.32, 0.18, 1)).toBeCloseTo(0.5, 6);
+  });
+});
+
+/**
+ * B3 — the grid is anchored to the world, so the pattern origin slides with
+ * the camera. `%` alone keeps the sign of a negative origin, which would jump
+ * the whole grid by a tile the moment the camera crosses world zero.
+ */
+describe("wrapToTile", () => {
+  it("wraps into [0, tile) for positive offsets", () => {
+    expect(wrapToTile(0, 120)).toBe(0);
+    expect(wrapToTile(30, 120)).toBe(30);
+    expect(wrapToTile(120, 120)).toBe(0);
+    expect(wrapToTile(150, 120)).toBe(30);
+  });
+
+  it("wraps negative offsets forward instead of returning a negative seam", () => {
+    expect(wrapToTile(-30, 120)).toBe(90);
+    expect(wrapToTile(-120, 120)).toBe(0);
+    expect(wrapToTile(-150, 120)).toBe(90);
+  });
+
+  it("stays continuous across zero — no full-tile jump as the camera crosses the origin", () => {
+    const justBefore = wrapToTile(-0.5, 120);
+    const justAfter = wrapToTile(0.5, 120);
+    expect(justBefore).toBeCloseTo(119.5, 5);
+    expect(justAfter).toBeCloseTo(0.5, 5);
+  });
+
+  it("guards a non-positive tile instead of dividing into NaN", () => {
+    expect(wrapToTile(37, 0)).toBe(0);
+    expect(wrapToTile(37, -120)).toBe(0);
+  });
+
+  it("exports the major-line spacing the pattern is actually built with", () => {
+    expect(GRID_TILE_PX).toBe(120);
   });
 });
