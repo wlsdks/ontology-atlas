@@ -3253,7 +3253,7 @@ pub fn run() {
                                   readerDecisionLens: hasReaderDecisionLens,
                                   topologyRelief:
                                     location.pathname.includes("/topology") &&
-                                    /Relief|Ontology relief map|concept cards|온톨로지 지형도|대표 카드|카드 골격|후보 \d+\/\d+개 표시/.test(bodyText),
+                                    /Relief|Ontology relief map|concept cards|온톨로지 지형도|대표 카드|카드 골격|후보 \d+\/\d+개 표시|개념 \d+개 · 관계 \d+개|CONCEPTS/.test(bodyText),
                                   topologyAttentionWinner,
                                   topologyRootAttentionWinner,
                                   topologyAgentCurrentSurface,
@@ -5801,6 +5801,8 @@ mod tests {
 
         assert!(source.contains("온톨로지 지형도"));
         assert!(source.contains("후보 \\d+\\/\\d+개 표시"));
+        // v2 캔버스 카피 — 정본 census 문구가 relief 마커에 포함돼야 한다.
+        assert!(source.contains("개념 \\d+개 · 관계 \\d+개"));
         assert!(source.contains("data-focus-cluster-size"));
         assert!(source.contains("data-drag-cluster-hull-dom-policy"));
         assert!(source.contains("dragHandleSlug"));
