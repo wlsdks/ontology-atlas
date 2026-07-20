@@ -77,6 +77,13 @@ export interface UseTopologyLoopArgs {
   emphasizedNeighborSlug?: string | null;
   fitViewToken: number;
   relayoutToken: number;
+  /**
+   * P3d(E1) — "첫 지도 연출". 증가 시 전 노드가 스파인 중심(프로젝트
+   * 위치)에서 출발해 홈으로 스프링 정착한다 — "만들어졌다"가 아니라
+   * "내 문서들이 모였다"로 읽히는 거울의 순간. 부트스트랩 완료에만
+   * 발화(초기 로드 아님). reduced-motion 은 호밍 스냅 경로가 즉착 처리.
+   */
+  revealToken?: number;
   onSelect?: (slug: string) => void;
   onPaneClick?: () => void;
   onVisibleCountChange?: (visible: number) => void;
@@ -98,7 +105,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onContextMenuNode, agentFocusNodeId = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onContextMenuNode, agentFocusNodeId = null } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -375,6 +382,37 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     homeSpringsRef.current = springs;
     homingActiveRef.current = true;
   }, [relayoutToken]);
+
+  // --- P3d(E1) 첫 지도 연출 — 부트스트랩 직후 전 노드가 스파인 중심에서
+  // 모여 나와 제자리로 정착한다. 기존 호밍 스프링(A5 ω, A8 reduced-motion
+  // 스냅)을 그대로 타므로 신규 모션 계약이 없다.
+  // 0 초기화가 핵심: 빈 vault 는 캔버스를 마운트하지 않으므로 부트스트랩
+  // 완료(토큰 증가)가 마운트보다 먼저다 — 현재 prop 으로 초기화하면 첫
+  // 마운트가 그 증가를 삼켜 연출이 발화하지 않는다.
+  const lastRevealTokenRef = useRef(0);
+  useEffect(() => {
+    if (revealToken === lastRevealTokenRef.current) return;
+    lastRevealTokenRef.current = revealToken;
+    const world = worldRef.current;
+    if (!world || world.nodes.length === 0) return;
+    // 출발점 = 프로젝트 노드의 홈 (없으면 스파인 bbox 중심)
+    const projectNode = world.nodes.find((n) => n.kind === "project");
+    const cx = projectNode?.homeX ?? (world.spineBounds.minX + world.spineBounds.maxX) / 2;
+    const cy = projectNode?.homeY ?? (world.spineBounds.minY + world.spineBounds.maxY) / 2;
+    const tokens = readTopologyV2TokensOrNull();
+    if (!tokens) return;
+    const springs = new Map<string, HomeSpringState>();
+    for (const node of world.nodes) {
+      if (node.kind !== "project") {
+        node.x = cx;
+        node.y = cy;
+      }
+      springs.set(node.id, initHomeSpring(node.x, node.y));
+    }
+    recomputeWorldGeometry(world, tokens);
+    homeSpringsRef.current = springs;
+    homingActiveRef.current = true;
+  }, [revealToken]);
 
   // --- focused slug change — spring-dive to the ego bbox, or back to overview when cleared ---
   useEffect(() => {
