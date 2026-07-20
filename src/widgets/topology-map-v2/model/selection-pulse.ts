@@ -22,19 +22,33 @@ export interface SelectionPulseVisual {
   alpha: number;
 }
 
-const PULSE_MAX_SCALE_DELTA = 0.15;
+/** Fallback when the caller doesn't thread the token through (tests, legacy call sites). */
+const DEFAULT_SCALE_DELTA = 0.28;
 
 /**
  * `null` before commit (negative elapsed) or once the pulse has fully played
  * out (`elapsedMs >= durationMs`) — the caller then draws nothing extra,
  * leaving only the permanent static ring. Never loops: there is no modulo,
  * so a stale ref that stops updating just stays expired.
+ *
+ * Curve shape (Guardian 2026-07-20 A3): both channels used to be linear,
+ * which cut the ring off with non-zero slope — it read as vanishing, not
+ * completing. A commit gesture should decelerate to be read as "received"
+ * (Apple HIG), so the ring now expands on easeOutCubic and the alpha dies
+ * on a quadratic — zero slope at the end of both. `scaleDelta` comes from
+ * `--topology-v2-select-pulse-scale-delta`; the old hardcoded 0.15 moved
+ * only 1.5px on an element node (r=7) — below perception.
  */
-export function computeSelectionPulse(elapsedMs: number, durationMs: number): SelectionPulseVisual | null {
+export function computeSelectionPulse(
+  elapsedMs: number,
+  durationMs: number,
+  scaleDelta: number = DEFAULT_SCALE_DELTA,
+): SelectionPulseVisual | null {
   if (elapsedMs < 0 || elapsedMs >= durationMs) return null;
   const t = elapsedMs / durationMs;
+  const easeOut = 1 - Math.pow(1 - t, 3);
   return {
-    scaleFactor: 1 + PULSE_MAX_SCALE_DELTA * t,
-    alpha: 1 - t,
+    scaleFactor: 1 + scaleDelta * easeOut,
+    alpha: Math.pow(1 - t, 2),
   };
 }

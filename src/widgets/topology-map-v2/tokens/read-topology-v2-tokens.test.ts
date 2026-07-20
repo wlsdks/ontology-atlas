@@ -98,6 +98,12 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-drag-tug-1hop": "0.45",
   "--topology-v2-drag-tug-2hop": "0.15",
   "--topology-v2-drag-tug-radius": "600",
+  "--topology-v2-select-pulse-scale-delta": "0.28",
+  "--topology-v2-node-release-settle-ms": "900",
+  "--topology-v2-node-home-spring-angfreq": "7.5",
+  "--topology-v2-ego-reveal-rise-tau": "0.22",
+  "--topology-v2-ego-reveal-decay-tau": "0.12",
+  "--topology-v2-ripple-stagger-max-ms": "180",
 
   "--topology-v2-safe-inset-left": "344",
   "--topology-v2-safe-inset-right": "120",
@@ -111,7 +117,7 @@ function fixtureReader(overrides: Record<string, string> = {}) {
 }
 
 describe("resolveTopologyV2Tokens", () => {
-  it("resolves all 89 §2 tokens to the exact prototype-sourced values", () => {
+  it("resolves all 95 §2 tokens to the exact prototype-sourced values", () => {
     const tokens = resolveTopologyV2Tokens(fixtureReader());
 
     expect(tokens.nodeFillProject).toBe("#1c1c22");
@@ -120,6 +126,12 @@ describe("resolveTopologyV2Tokens", () => {
     expect(tokens.dragTug1Hop).toBeCloseTo(0.45, 3);
     expect(tokens.dragTug2Hop).toBeCloseTo(0.15, 3);
     expect(tokens.dragTugRadius).toBeCloseTo(600, 3);
+    expect(tokens.selectPulseScaleDelta).toBeCloseTo(0.28, 3);
+    expect(tokens.nodeReleaseSettleMs).toBeCloseTo(900, 3);
+    expect(tokens.nodeHomeSpringAngFreq).toBeCloseTo(7.5, 3);
+    expect(tokens.egoRevealRiseTau).toBeCloseTo(0.22, 3);
+    expect(tokens.egoRevealDecayTau).toBeCloseTo(0.12, 3);
+    expect(tokens.rippleStaggerMaxMs).toBeCloseTo(180, 3);
     expect(tokens.indigo).toBe("#5e6ad2");
     expect(tokens.labelProject).toBe("#d4b478");
     expect(tokens.labelMaxWidth).toBe(168);

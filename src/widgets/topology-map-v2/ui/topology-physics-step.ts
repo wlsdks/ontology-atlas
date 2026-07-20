@@ -48,6 +48,12 @@ export interface PhysicsStepInput {
   panelEmphasisNodeId: string | null;
   /** True while the pointer is actively dragging — suppresses the elastic pan-bounds clamp (see `engine/camera.ts`). */
   isDragging: boolean;
+  /**
+   * A8 — `prefers-reduced-motion: reduce`. Springs and ramps snap straight to
+   * their targets: the user gets every end state (focus dive lands, ripple
+   * emphasis applies, ego children appear) without the interpolated journey.
+   */
+  reducedMotion: boolean;
   /** Mutated in place — the hook owns this map's lifetime across frames. */
   emphasisById: Map<string, number>;
   rippleStartById: ReadonlyMap<string, number>;
@@ -91,6 +97,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     hoveredNodeId,
     panelEmphasisNodeId,
     isDragging,
+    reducedMotion,
     emphasisById,
     rippleStartById,
     egoRevealById,
@@ -150,6 +157,18 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     panBounds,
     isDragging,
   });
+  // A8 — reduced motion: the camera arrives instead of travelling. Snapping
+  // AFTER `stepCamera` (not instead of it) keeps its clamp/bounds work — only
+  // the spring interpolation is discarded. Velocities zero out so a later
+  // preference flip can't inherit stale momentum.
+  if (reducedMotion) {
+    nextCamera.x.value = target.tx;
+    nextCamera.y.value = target.ty;
+    nextCamera.scale.value = Math.min(effectiveScaleMax, Math.max(effectiveScaleMin, target.tscale));
+    nextCamera.x.velocity = 0;
+    nextCamera.y.velocity = 0;
+    nextCamera.scale.velocity = 0;
+  }
 
   const band = computeAltitudeBand(overviewScale, tokens.altitudeFarHighRatio, tokens.altitudeFarLowRatio);
   const farT = computeFarT(nextCamera.scale.value, band.farLow, band.farHigh);
@@ -166,7 +185,9 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     const previous = emphasisById.get(node.id) ?? 0;
     emphasisById.set(
       node.id,
-      stepEmphasis(previous, isInActiveEgoSet, rippleHasStarted, dt, tokens.emphasisRiseTau, tokens.emphasisDecayTau),
+      reducedMotion
+        ? (isInActiveEgoSet && rippleHasStarted ? 1 : 0)
+        : stepEmphasis(previous, isInActiveEgoSet, rippleHasStarted, dt, tokens.emphasisRiseTau, tokens.emphasisDecayTau),
     );
 
     // C1 A2 — ego tier-reveal ramp: while a node is focused, it + its 1-hop
@@ -176,9 +197,17 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     const isEgoMember =
       focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocused?.has(node.id) === true);
     const previousReveal = egoRevealById.get(node.id) ?? 0;
+    // A6 — the ego reveal has its OWN taus (rise 0.22 / decay 0.12), no longer
+    // borrowing the hover ripple's (0.09/0.15). With the hover taus the
+    // children finished appearing at ~0.41s while the camera dive was still
+    // travelling until ~1.01s — content popped onto a moving camera. The
+    // slower rise lands the children WITH the camera; the fast decay is
+    // deliberate asymmetry (exits don't earn time).
     egoRevealById.set(
       node.id,
-      stepEmphasis(previousReveal, isEgoMember, true, dt, tokens.emphasisRiseTau, tokens.emphasisDecayTau),
+      reducedMotion
+        ? (isEgoMember ? 1 : 0)
+        : stepEmphasis(previousReveal, isEgoMember, true, dt, tokens.egoRevealRiseTau, tokens.egoRevealDecayTau),
     );
   }
 

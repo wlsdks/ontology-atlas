@@ -117,11 +117,19 @@ export function scheduleRipple(
   neighborIds: readonly string[],
   baseDelayMs: number,
   perNeighborDelayMs: number,
+  maxTotalStaggerMs: number = Number.POSITIVE_INFINITY,
 ): readonly RippleSchedule[] {
   const own: RippleSchedule = { nodeId: hoveredNodeId, startAtMs: nowMs };
+  // A7 — the stagger has a TOTAL budget (`--topology-v2-ripple-stagger-max-ms`).
+  // Uncapped, a 40-neighbor hub started its last neighbor 523ms in — a slow
+  // enumeration, while a 3-neighbor node finished in 91ms. The ripple says
+  // "these are the neighbors"; it doesn't count them. High-degree nodes
+  // compress the per-neighbor delay so every ripple ends inside the budget.
+  const perDelay =
+    neighborIds.length > 0 ? Math.min(perNeighborDelayMs, maxTotalStaggerMs / neighborIds.length) : perNeighborDelayMs;
   const neighbors = neighborIds.map((nodeId, i) => ({
     nodeId,
-    startAtMs: nowMs + baseDelayMs + i * perNeighborDelayMs,
+    startAtMs: nowMs + baseDelayMs + i * perDelay,
   }));
   return [own, ...neighbors];
 }

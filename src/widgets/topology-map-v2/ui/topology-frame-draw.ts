@@ -362,7 +362,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // leaves the selection fact visible).
     let selectionPulseVisual: SelectionPulseVisual | null = null;
     if (!reducedMotion && selectionPulse !== null && selectionPulse.nodeId === node.id) {
-      selectionPulseVisual = computeSelectionPulse(now - selectionPulse.startAtMs, tokens.selectPulseDurationMs);
+      selectionPulseVisual = computeSelectionPulse(now - selectionPulse.startAtMs, tokens.selectPulseDurationMs, tokens.selectPulseScaleDelta);
     }
     nodeShapesDraw(
       ctx,

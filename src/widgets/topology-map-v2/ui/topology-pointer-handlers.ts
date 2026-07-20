@@ -40,10 +40,15 @@ import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, hitTest
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyWorld } from "./topology-world";
 
-/** Frames of sim warmth to top up while a node is actively pin-dragged (kept warm so neighbors keep reflowing). */
-export const NODE_DRAG_HEAT_FRAMES = 20;
-/** A settle burst after a node is released so the graph (and the dropped node) relaxes around the drop, Obsidian-style. */
-export const NODE_RELEASE_HEAT_FRAMES = 90;
+/**
+ * Sim warmth topped up while a node is actively pin-dragged, in MILLISECONDS
+ * (kept warm so neighbors keep reflowing). A4: heat used to be a frame count,
+ * which made the same gesture settle twice as fast on a 120Hz display as on a
+ * 60Hz one — time budgets are refresh-rate invariant. 350ms ≈ the old
+ * 20-frame top-up at 60Hz. The release settle budget is the
+ * `--topology-v2-node-release-settle-ms` token (900).
+ */
+export const NODE_DRAG_HEAT_MS = 350;
 
 /** Active node-drag: which node is pinned + the world-space grab offset (respects where inside the node it was grabbed). */
 export interface NodeDragState {
@@ -284,7 +289,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           const offset = computeGrabOffsetWorld(grabNode.x, grabNode.y, pw.x, pw.y);
           sim.pin(pressedNodeId, grabNode.x, grabNode.y);
           nodeDragRef.current = { nodeId: pressedNodeId, offset };
-          heatRef.current = NODE_DRAG_HEAT_FRAMES;
+          heatRef.current = NODE_DRAG_HEAT_MS;
           // C1 B1/B2 — capture the tug/settle-restriction set + start position
           // once, at grab time (not recomputed per frame).
           const tugSets = computeDragTugSets(world.neighborMap, pressedNodeId);
@@ -301,7 +306,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
         const pin = computePinWorld(pw.x, pw.y, drag.offset);
         sim.movePin(pin.x, pin.y);
-        heatRef.current = NODE_DRAG_HEAT_FRAMES;
+        heatRef.current = NODE_DRAG_HEAT_MS;
         return;
       }
 
@@ -329,7 +334,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     hoveredNodeIdRef.current = hitNodeId;
     if (hitNodeId) {
       const neighborIds = [...(world.neighborMap.get(hitNodeId) ?? [])];
-      const schedule = scheduleRipple(hitNodeId, performance.now(), neighborIds, tokens.rippleStaggerMs, RIPPLE_PER_NEIGHBOR_DELAY_MS);
+      const schedule = scheduleRipple(hitNodeId, performance.now(), neighborIds, tokens.rippleStaggerMs, RIPPLE_PER_NEIGHBOR_DELAY_MS, tokens.rippleStaggerMaxMs);
       for (const entry of schedule) rippleStartRef.current.set(entry.nodeId, entry.startAtMs);
     }
   };
@@ -348,7 +353,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     if (nodeDragRef.current !== null) {
       simRef.current?.clearPin();
       nodeDragRef.current = null;
-      heatRef.current = Math.max(heatRef.current, NODE_RELEASE_HEAT_FRAMES);
+      heatRef.current = Math.max(heatRef.current, tokens.nodeReleaseSettleMs);
       // C1 B1: stop tracking Δ (drag ended) — `dragAffectedSetRef` stays set
       // through the settle burst above (B2), cleared once heat reaches 0
       // (`use-topology-loop.ts`'s rAF loop).
@@ -427,14 +432,14 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   };
 
   const handlePointerCancel = () => {
+    const tokens = readTopologyV2TokensOrNull();
     // Abort any in-flight node pin-drag cleanly (release the pin, let it settle).
     if (nodeDragRef.current !== null) {
       simRef.current?.clearPin();
       nodeDragRef.current = null;
-      heatRef.current = Math.max(heatRef.current, NODE_RELEASE_HEAT_FRAMES);
+      heatRef.current = Math.max(heatRef.current, tokens?.nodeReleaseSettleMs ?? 900);
       dragStartPosRef.current = null;
     }
-    const tokens = readTopologyV2TokensOrNull();
     if (!tokens) {
       pointerMachineRef.current = INITIAL_POINTER_MACHINE_STATE;
       return;

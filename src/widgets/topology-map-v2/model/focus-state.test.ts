@@ -78,6 +78,23 @@ describe("isNodeEmphasisActive", () => {
 });
 
 describe("scheduleRipple", () => {
+  /**
+   * A7 — total stagger budget. Uncapped, a 40-neighbor hub started its last
+   * neighbor 523ms in (an enumeration, not a ripple) while a low-degree node
+   * finished in ~91ms. Same interaction, same motion signature.
+   */
+  it("compresses the per-neighbor delay so a hub's ripple ends inside the budget", () => {
+    const neighbors = Array.from({ length: 40 }, (_, i) => `n${i}`);
+    const schedule = scheduleRipple("hub", 1000, neighbors, 55, 12, 180);
+    const last = schedule[schedule.length - 1];
+    expect(last.startAtMs - 1000).toBeLessThanOrEqual(55 + 180);
+  });
+
+  it("leaves low-degree ripples untouched (12ms/neighbor is already under budget)", () => {
+    const schedule = scheduleRipple("node", 1000, ["a", "b", "c"], 55, 12, 180);
+    expect(schedule[3].startAtMs).toBe(1000 + 55 + 2 * 12);
+  });
+
   it("schedules the hovered node itself to start immediately", () => {
     const schedule = scheduleRipple("hub", 1000, ["n1", "n2"], 55, 12);
     const own = schedule.find((s) => s.nodeId === "hub");
