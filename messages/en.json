@@ -2668,5 +2668,25 @@
     "infoEditBody": "Edit project details — status, tags, links, and more.",
     "buttonNew": "New project",
     "buttonEdit": "Full edit"
+  },
+  "agentConnect": {
+    "title": "Connect an AI agent",
+    "subtitle": "A connected agent draws and tends this map for you.",
+    "close": "Close",
+    "statusLabel": "Connection",
+    "statusConnected": "{agent} worked on this map {ago}.",
+    "statusConnectedFocus": "{agent} refined \"{focus}\" {ago}.",
+    "statusStale": "Last signal {ago}. Restart an agent session to continue.",
+    "statusNone": "Not connected yet. The snippets below take about a minute.",
+    "registerLabel": "Register",
+    "manualPathHint": "This is a browser session, so fill in the absolute folder path yourself (the <absolute path> slot).",
+    "claudeCode": "Claude Code — .mcp.json",
+    "codex": "Codex — one command",
+    "genericHint": "Any other MCP client registers with the same command/args. Verify with ontology-atlas mcp-verify.",
+    "writeConfigs": "Write config files automatically (.mcp.json etc.)",
+    "previewLabel": "Once connected, the agent reads it like this",
+    "previewSentence": "\"This project is made of {domains}, and each document is its evidence.\"",
+    "copyHandoff": "Copy handoff text",
+    "handoffCopied": "Copied"
   }
 }
