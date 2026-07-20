@@ -22,14 +22,22 @@ export interface DomainCensusRow {
   capabilityCount: number;
   elementCount: number;
   total: number;
+  /** `collectCapabilityIds` 옵션일 때만 — 도달한 capability 노드 id 들. */
+  capabilityIds?: string[];
 }
 
 const DEFAULT_TARGET_KINDS: readonly string[] = ["domain", "project"];
+
+export interface DomainCensusOptions {
+  /** P-1 — 프로젝트 상세처럼 카운트 외에 멤버 목록(상위 역량 랭킹용)이 필요한 표면. */
+  collectCapabilityIds?: boolean;
+}
 
 export function computeDomainCensusRows(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
   targetKinds: readonly string[] = DEFAULT_TARGET_KINDS,
+  options: DomainCensusOptions = {},
 ): DomainCensusRow[] {
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
   const childrenOf = new Map<string, string[]>();
@@ -51,6 +59,7 @@ export function computeDomainCensusRows(
 
     let capabilityCount = 0;
     let elementCount = 0;
+    const capabilityIds: string[] | null = options.collectCapabilityIds ? [] : null;
     const visited = new Set<string>([node.id]);
     const queue: string[] = [node.id];
     let head = 0;
@@ -63,8 +72,10 @@ export function computeDomainCensusRows(
         visited.add(child);
         queue.push(child);
         const childNode = nodeById.get(child);
-        if (childNode?.kind === "capability") capabilityCount += 1;
-        else if (childNode?.kind === "element") elementCount += 1;
+        if (childNode?.kind === "capability") {
+          capabilityCount += 1;
+          capabilityIds?.push(child);
+        } else if (childNode?.kind === "element") elementCount += 1;
       }
     }
 
@@ -74,6 +85,7 @@ export function computeDomainCensusRows(
       capabilityCount,
       elementCount,
       total: capabilityCount + elementCount,
+      ...(capabilityIds ? { capabilityIds } : {}),
     });
   }
 
@@ -83,4 +95,33 @@ export function computeDomainCensusRows(
 /** 표면에서 O(1) 조회용 — id → row. */
 export function domainCensusById(rows: readonly DomainCensusRow[]): ReadonlyMap<string, DomainCensusRow> {
   return new Map(rows.map((row) => [row.id, row]));
+}
+
+/**
+ * P-2 — "이 노드 집합에 속한 문서 수". document 노드는 containment BFS
+ * (contains/belongs_to)로는 projectIds 가 절대 안 채워진다 — vault 관례상
+ * `relates:` 로만 개념과 이어지기 때문. 그래서 소속 판정된 멤버와 어떤
+ * edge 로든 이어진 document 를 센다 (containment 보다 1 hop 넓힘). 프로젝트
+ * 카드(/projects)와 상세가 같은 규칙을 써야 "문서 0 vs 3" 모순이 안 난다.
+ */
+export function countConnectedDocuments(
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+  memberIds: ReadonlySet<string>,
+): number {
+  let count = 0;
+  for (const node of nodes) {
+    if (node.kind !== "document") continue;
+    if (memberIds.has(node.id)) {
+      count += 1;
+      continue;
+    }
+    const connected = edges.some(
+      (edge) =>
+        (edge.from === node.id && memberIds.has(edge.to)) ||
+        (edge.to === node.id && memberIds.has(edge.from)),
+    );
+    if (connected) count += 1;
+  }
+  return count;
 }

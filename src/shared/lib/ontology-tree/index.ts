@@ -136,13 +136,15 @@ export {
   buildProjectOntologyCounts,
   pickDominantOntologyKind,
 } from "./project-ontology-counts";
-export type { RecentChangeRow, RecentChangesResult } from "./recent-changes";
+export type { AdaptiveRecentChangesResult, RecentChangeRow, RecentChangesResult } from "./recent-changes";
 export {
+  RECENT_CHANGES_ADAPTIVE_LADDER_DAYS,
   RECENT_CHANGES_DEFAULT_WINDOW_DAYS,
+  computeAdaptiveRecentChanges,
   computeRecentChanges,
   daysAgoFromIso,
   isWithinRecentWindow,
   selectRecentVaultDocs,
 } from "./recent-changes";
 export type { DomainCensusRow } from "./domain-census";
-export { computeDomainCensusRows, domainCensusById } from "./domain-census";
+export { computeDomainCensusRows, countConnectedDocuments, domainCensusById } from "./domain-census";

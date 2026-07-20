@@ -97,7 +97,14 @@ export function GlobalSearch({
   const isEmptyQuery = query.trim() === "";
   const ontologySize = nodes.length;
   const projectSize = projects?.length ?? 0;
-  const totalCorpus = ontologySize + projectSize;
+  // M-6 — project 카드는 ontology 의 kind:project 노드와 같은 실체다.
+  // 그대로 더하면 정본 census(295)보다 1 큰 "296 색인"이 나온다 (P0c 지도
+  // 이중 가산과 동종). 노드로 이미 세어진 project 는 빼고 합산한다.
+  const projectNodeCount = useMemo(
+    () => nodes.filter((node) => node.kind === "project").length,
+    [nodes],
+  );
+  const totalCorpus = ontologySize + Math.max(0, projectSize - projectNodeCount);
   const totalMatches = ontologyResults.length + projectResults.length;
   const hasFilter = selectedKinds.size > 0 || selectedProjectIds.size > 0;
 

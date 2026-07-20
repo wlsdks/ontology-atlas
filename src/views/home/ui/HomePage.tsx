@@ -14,7 +14,7 @@ import { useTranslations } from "next-intl";
 import { BookOpen, HelpCircle, Plus, Waypoints, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
-import { useOntologyInsight, useRecentChanges, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
+import { useAdaptiveRecentChanges, useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
   buildDomainMarkdown,
   buildProjectMarkdown,
@@ -115,6 +115,7 @@ import {
   computeOntologyChangeset,
   domainCensusById,
   formatAgentPostChangeSyncPacket,
+  isWithinRecentWindow,
   useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
@@ -405,7 +406,7 @@ export function HomePage() {
   const docFreshnessIndex = useVaultDocFreshnessIndex();
   // P4a — "최근 변경" 렌즈(mtime 7일 창). `computeRecentChanges` 순수 함수 +
   // 이 훅과 같은 session-snapshot 시각 규율(`use-recent-changes.ts`).
-  const recentChanges = useRecentChanges();
+  const recentChanges = useAdaptiveRecentChanges();
   // "N일 전" 계산의 기준 시각 — 일 단위 해상도라 세션 시작 스냅샷이면 충분
   // (render 중 Date.now() 는 react-hooks/purity 위반; 세션 동안 라벨이
   // 흔들리지 않는 것도 changeBaseline 과 같은 이유로 오히려 바람직하다).
@@ -1018,7 +1019,13 @@ export function HomePage() {
             title: nodeFocusData.significance.ownerDomainTitle ?? "",
           }
         : null,
-      powered: changedSlugs.has(selectedOntologyNode.id),
+      // M-3 — 신선도 진실원 단일화: powered 도 updatedAt(mtime) 사다리에서.
+      // 이전엔 changedSlugs(세션 baseline)와 mtime 이 갈라져 "정체 · 오늘
+      // 바뀜"이 한 줄에 공존하는 모순이 났다.
+      powered: (() => {
+        const iso = nodeFocus.sourceSlug ? docFreshnessIndex.get(nodeFocus.sourceSlug) : undefined;
+        return iso ? isWithinRecentWindow(iso, updatedAgoNowMs) : false;
+      })(),
       // S-C1 — AI 가 계속 갱신하는 그래프에서 변경 시점이 안 보이면 사람이
       // 변경을 구분할 수 없다. manifest updatedAt → "N일 전" 사다리.
       updatedAtLabel: (() => {
@@ -2453,11 +2460,16 @@ export function HomePage() {
                       capabilitiesShort: t("index.capabilitiesShort"),
                       elementsShort: t("index.elementsShort"),
                       freshTitle: t("index.freshTitle"),
+                      domainCountTitle: t("index.domainCountTitle"),
                       emptyHint: t("index.emptyHint"),
                       segmentAll: t("index.segmentAll"),
-                      segmentRecent: t("index.segmentRecent", { count: recentChanges.recentNodeIds.size }),
+                      // M-8 — 적응 창(7d→3d→1d)의 실제 창 일수를 라벨에 노출.
+                      segmentRecent: t("index.segmentRecent", {
+                        count: recentChanges.recentNodeIds.size,
+                        days: recentChanges.windowDays,
+                      }),
                       segmentRecentAria: t("index.segmentRecentAria"),
-                      recentEmptyHint: t("index.recentEmptyHint"),
+                      recentEmptyHint: t("index.recentEmptyHint", { days: recentChanges.windowDays }),
                       agentBadge: t("index.agentBadge"),
                       uncatalogedDocsLabel: t("index.uncatalogedDocsLabel", {
                         count: bootstrapPlan?.elements.length ?? 0,

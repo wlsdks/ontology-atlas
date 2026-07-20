@@ -1,4 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import { countConnectedDocuments } from "@/shared/lib/ontology-tree";
 
 /**
  * 프로젝트 상세 히어로 밴드의 음각 메트릭 스트립(도메인·역량·요소·문서·관계)
@@ -33,7 +34,6 @@ export function buildProjectOntologyMetrics(
     relations: 0,
   };
   const projectNodeIds = new Set<string>();
-  const countedDocumentIds = new Set<string>();
 
   for (const node of nodes) {
     if (!node.projectIds.includes(projectSlug)) continue;
@@ -49,33 +49,17 @@ export function buildProjectOntologyMetrics(
         metrics.elements += 1;
         break;
       case "document":
-        metrics.documents += 1;
-        countedDocumentIds.add(node.id);
+        // P-2 — 아래 countConnectedDocuments 가 멤버 포함까지 한 번에 센다.
         break;
       default:
         break;
     }
   }
 
-  // document 노드는 containment BFS(derivationToInsight)가 걷는 contains/
-  // belongs_to 로는 절대 projectIds 가 안 채워진다 — vault 관례상 document
-  // 는 `relates:` (related_to edge) 로만 개념과 이어진다. 그대로 두면 실제
-  // 문서가 있어도 "문서" 메트릭이 영원히 0 으로 찍히는 정직하지 못한 결과가
-  // 된다. 이미 이 프로젝트 소속으로 확인된 노드와 어떤 edge 로든 이어진
-  // document 는 실카운트에 포함 — containment 보다 한 hop 넓힐 뿐 여전히
-  // 실 vault 데이터.
-  for (const node of nodes) {
-    if (node.kind !== "document" || countedDocumentIds.has(node.id)) continue;
-    const isConnectedToProject = edges.some(
-      (edge) =>
-        (edge.from === node.id && projectNodeIds.has(edge.to)) ||
-        (edge.to === node.id && projectNodeIds.has(edge.from)),
-    );
-    if (isConnectedToProject) {
-      metrics.documents += 1;
-      countedDocumentIds.add(node.id);
-    }
-  }
+  // P-2 — 문서 수는 /projects 카드와 같은 shared 1-hop 연결 규칙
+  // (`countConnectedDocuments`)로 센다. 규칙이 두 벌이면 "문서 0 vs 3"
+  // 같은 인접 표면 모순이 재발한다.
+  metrics.documents = countConnectedDocuments(nodes, edges, projectNodeIds);
 
   for (const edge of edges) {
     if (projectNodeIds.has(edge.from) && projectNodeIds.has(edge.to)) {

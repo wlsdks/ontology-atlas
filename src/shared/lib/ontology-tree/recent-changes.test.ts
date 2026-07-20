@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
+  computeAdaptiveRecentChanges,
   computeRecentChanges,
   daysAgoFromIso,
   isWithinRecentWindow,
@@ -167,3 +168,55 @@ describe("future-tolerance (session-created docs)", () => {
   });
 });
 
+
+describe("computeAdaptiveRecentChanges (M-8 — 렌즈 창 적응화)", () => {
+  const DAY = 24 * 3600 * 1000;
+  const now = Date.parse("2026-07-21T12:00:00Z");
+  const node = (id: string, slug: string) =>
+    ({ id, title: id, kind: "element", evidenceIds: [slug], projectIds: [] }) as never;
+  const iso = (daysAgo: number) => new Date(now - daysAgo * DAY).toISOString();
+
+  it("7일 창 통과율이 50% 이하면 그대로 7일", () => {
+    const nodes = [node("a", "a"), node("b", "b"), node("c", "c"), node("d", "d")];
+    const fresh = new Map([
+      ["a", iso(2)],
+      ["b", iso(30)],
+      ["c", iso(30)],
+      ["d", iso(30)],
+    ]);
+    const r = computeAdaptiveRecentChanges(nodes, fresh, now);
+    expect(r.windowDays).toBe(7);
+    expect(r.recentNodeIds.size).toBe(1);
+  });
+
+  it("7일이 과반이면 3일 → 1일로 좁힌다", () => {
+    // 6일 전 것이 대부분 — 7d 는 100%, 3d 는 25%
+    const nodes = [node("a", "a"), node("b", "b"), node("c", "c"), node("d", "d")];
+    const fresh = new Map([
+      ["a", iso(0.5)],
+      ["b", iso(6)],
+      ["c", iso(6)],
+      ["d", iso(6)],
+    ]);
+    const r = computeAdaptiveRecentChanges(nodes, fresh, now);
+    expect(r.windowDays).toBe(3);
+    expect(r.recentNodeIds.size).toBe(1);
+  });
+
+  it("1일까지 좁혀도 과반이면 1일 결과를 정직하게 반환 (0 으로 조작하지 않는다)", () => {
+    const nodes = [node("a", "a"), node("b", "b")];
+    const fresh = new Map([
+      ["a", iso(0.1)],
+      ["b", iso(0.2)],
+    ]);
+    const r = computeAdaptiveRecentChanges(nodes, fresh, now);
+    expect(r.windowDays).toBe(1);
+    expect(r.recentNodeIds.size).toBe(2);
+  });
+
+  it("빈 그래프는 7일 창 빈 결과", () => {
+    const r = computeAdaptiveRecentChanges([], new Map(), now);
+    expect(r.windowDays).toBe(7);
+    expect(r.rows).toEqual([]);
+  });
+});

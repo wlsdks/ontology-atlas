@@ -103,6 +103,36 @@ export function computeRecentChanges(
 }
 
 /**
+ * M-8 — 렌즈 창 적응화. 대량 커밋 날(git-date 샘플)에는 7일 창이 전체의
+ * 80%를 통과시켜 렌즈가 필터 구실을 못 한다. 7d → 3d → 1d 사다리로
+ * 좁혀가며, 통과 비율이 `maxShare`(기본 50%) 이하가 되는 첫 창을 쓴다.
+ * 1d 까지 좁혀도 넘치면 1d 결과를 그대로 반환 — 그날 실제로 다 바뀐
+ * vault 에는 거짓말하지 않는다 (창을 더 좁혀 0 을 만들지 않는다).
+ */
+export const RECENT_CHANGES_ADAPTIVE_LADDER_DAYS: readonly number[] = [7, 3, 1];
+
+export interface AdaptiveRecentChangesResult extends RecentChangesResult {
+  /** 실제 사용된 창 (일). */
+  windowDays: number;
+}
+
+export function computeAdaptiveRecentChanges(
+  nodes: readonly KnowledgeGraphNode[],
+  freshnessIndex: ReadonlyMap<string, string>,
+  nowMs: number,
+  maxShare = 0.5,
+): AdaptiveRecentChangesResult {
+  const total = nodes.length;
+  let last: AdaptiveRecentChangesResult | null = null;
+  for (const windowDays of RECENT_CHANGES_ADAPTIVE_LADDER_DAYS) {
+    const result = computeRecentChanges(nodes, freshnessIndex, nowMs, windowDays);
+    last = { ...result, windowDays };
+    if (total === 0 || result.recentNodeIds.size / total <= maxShare) return last;
+  }
+  return last as AdaptiveRecentChangesResult;
+}
+
+/**
  * vault 문서(`VaultDoc` 호환 최소 shape) → "최근 변경" 목록. 문서 자체가 이미
  * 실제 `updatedAt` 을 들고 있으므로(local 모드 = `file.lastModified`,
  * static/dogfood = 빌드타임 값) `computeRecentChanges` 의 freshnessIndex 간접

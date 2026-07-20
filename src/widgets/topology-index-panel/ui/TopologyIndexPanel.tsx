@@ -28,6 +28,8 @@ export interface TopologyIndexPanelLabels {
   capabilitiesShort: string;
   elementsShort: string;
   freshTitle: string;
+  /** M-6 — 도메인 배지 hover 설명 (다중 소속 중복 계상). */
+  domainCountTitle: string;
   emptyHint: string;
   /** P4a — 렌즈 세그먼트 "전체". */
   segmentAll: string;
