@@ -2326,7 +2326,8 @@
       "confirm": "Build the map",
       "cancel": "Close",
       "errorPrefix": "Could not save:",
-      "toastDone": "Built your first map from {count} documents"
+      "toastDone": "Built your first map from {count} documents",
+      "toastAdded": "Added {count} documents to your map"
     },
     "edgePanel": {
       "kicker": "Relation",

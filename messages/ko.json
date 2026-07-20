@@ -2326,7 +2326,8 @@
       "confirm": "지도 만들기",
       "cancel": "닫기",
       "errorPrefix": "저장하지 못했어요:",
-      "toastDone": "문서 {count}개로 첫 지도를 만들었어요"
+      "toastDone": "문서 {count}개로 첫 지도를 만들었어요",
+      "toastAdded": "문서 {count}개를 지도에 더했어요"
     },
     "edgePanel": {
       "kicker": "관계",

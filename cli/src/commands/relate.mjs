@@ -21,14 +21,14 @@ import { COLORS } from '../lib/colors.mjs';
 import { runRelationCheckQuery, renderRelationCheckResult } from '../lib/relation-preflight.mjs';
 import { validateRelationTypeList } from '../lib/relation-types.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { normalizeRelationRefs, readDocFrontmatter, writeFrontmatterKey } from '../lib/write-vault.mjs';
+import { normalizeRelationRefs, readDocFrontmatter, writeFrontmatterKey, writeFrontmatterKeys } from '../lib/write-vault.mjs';
 import {
   formatUnknownFlagError,
   parseVaultFlag,
   resolveTrailingVaultArg,
 } from '../lib/cli-args.mjs';
 
-const ALLOWED_FLAGS = ['--vault', '--json', '--dry-run'];
+const ALLOWED_FLAGS = ['--vault', '--json', '--dry-run', '--why'];
 
 // type (public, what relation-check/add_relation accept) → frontmatter array
 // key. Mirrors mcp/src/index.js's RELATION_KEY — CLI keeps its own copy
@@ -46,7 +46,7 @@ const RELATION_KEY = Object.freeze({
 });
 
 export async function runRelate(args) {
-  const { from, to, type, vault, json, dryRun, error, help } = parseArgs(args);
+  const { from, to, type, vault, json, dryRun, why, error, help } = parseArgs(args);
   if (help) {
     printUsage(process.stdout);
     return 0;
@@ -94,7 +94,7 @@ export async function runRelate(args) {
   }
 
   try {
-    const filePath = writeRelation(vaultRoot, { from: check.from, to: check.to, relation: check.relation });
+    const filePath = writeRelation(vaultRoot, { from: check.from, to: check.to, relation: check.relation, why });
     if (json) {
       process.stdout.write(JSON.stringify({ ...check, written: true, dryRun: false, alreadyExists: false, filePath }, null, 2) + '\n');
     } else {
@@ -117,8 +117,10 @@ export async function runRelate(args) {
  *    (add_relation 과 동일하게) 거부 — patch_concept/직접 편집으로 유도.
  *  - 그 외 → 배열에 append + normalizeRelationRefs (정렬 + 중복 제거).
  */
-function writeRelation(rootPath, { from, to, relation }) {
-  const key = RELATION_KEY[relation];
+function writeRelation(rootPath, { from, to, relation, why = null }) {
+  // preflight 는 이미 frontmatter 키('dependencies' 등)를 relation 으로
+  // 돌려주기도 한다 — 타입/키 양쪽 표기를 수용한다.
+  const key = RELATION_KEY[relation] ?? relation;
   const { frontmatter } = readDocFrontmatter(rootPath, from);
   if (key === 'domain') {
     const existingDomain = frontmatter.domain;
@@ -131,12 +133,20 @@ function writeRelation(rootPath, { from, to, relation }) {
   }
   const existing = Array.isArray(frontmatter[key]) ? frontmatter[key] : [];
   const next = normalizeRelationRefs([...existing, to]);
+  // P6 — --why: 관계와 근거를 같은 쓰기로 (MCP add_relation why 미러).
+  if (typeof why === 'string' && why.trim()) {
+    const notes = frontmatter.relation_notes && typeof frontmatter.relation_notes === 'object'
+      ? { ...frontmatter.relation_notes }
+      : {};
+    notes[to] = why.trim();
+    return writeFrontmatterKeys(rootPath, from, { [key]: next, relation_notes: notes });
+  }
   return writeFrontmatterKey(rootPath, from, key, next);
 }
 
 function parseArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
-  const flags = { vault: null, json: false, dryRun: false };
+  const flags = { vault: null, json: false, dryRun: false, why: null };
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i];
@@ -144,6 +154,8 @@ function parseArgs(args) {
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
     else if (a === '--dry-run') flags.dryRun = true;
+    else if (a === '--why') flags.why = args[++i] ?? null;
+    else if (a.startsWith('--why=')) flags.why = a.slice('--why='.length);
     else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
     else positional.push(a);
   }
@@ -164,6 +176,7 @@ function parseArgs(args) {
     vault: vaultResult.vault,
     json: flags.json,
     dryRun: flags.dryRun,
+    why: flags.why,
   };
 }
 

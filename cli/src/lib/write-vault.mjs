@@ -62,8 +62,13 @@ export function readDocFrontmatter(rootPath, slug) {
  * `add`/`import` 커맨드와 같은 관례). R+ `relate` 커맨드가 사용.
  */
 export function writeFrontmatterKey(rootPath, slug, key, value) {
+  return writeFrontmatterKeys(rootPath, slug, { [key]: value });
+}
+
+/** 복수 키를 한 번의 파일 쓰기로 — 관계+relation_notes 원자성 (P6 게이트 ③ CLI 측). */
+export function writeFrontmatterKeys(rootPath, slug, patch) {
   const { filePath, frontmatter, body } = readDocFrontmatter(rootPath, slug);
-  const next = { ...frontmatter, [key]: value };
+  const next = { ...frontmatter, ...patch };
   const md = buildMarkdown({ frontmatter: next, body });
   writeFileSync(filePath, md, 'utf-8');
   return filePath;
