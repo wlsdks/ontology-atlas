@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-20T23:48:13.712Z",
+  "generatedAt": "2026-07-20T23:59:28.411Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2790,6 +2790,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-21 — UX 개선 라운드 2차 (#461~#467): 점검 부대 발견 44건 일괄 처리",
+          "slug": "2026-07-21-ux-개선-라운드-2차-461467-점검-부대-발견-44건-일괄-처리"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-21 — 백로그 전량 소진 (#456~#458)",
           "slug": "2026-07-21-백로그-전량-소진-456458"
         },
@@ -4134,9 +4139,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 페르소나 재검·Guardian 후속·사전 부패까지 잔여 작업 0 으로: relate --why: 관계+relationnotes 근거 원자 쓰기 (parse",
-      "wordCount": 27140,
-      "updatedAt": "2026-07-21T07:46:51+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. fable 점검 3대 + 전략 패널 1대의 발견을 8슬라이스로 전량 구현 (티어링: 복잡=fable · 중간=opus · 일반=sonnet): 캔버스 Bl",
+      "wordCount": 27334,
+      "updatedAt": "2026-07-20T23:59:18.331Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
