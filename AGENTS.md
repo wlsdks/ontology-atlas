@@ -4,7 +4,7 @@
 
 ## Project overview
 
-`ontology-atlas` is **a local-first ontology workbench for understanding a product/system from business core to implementation evidence**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Planners, marketers, C-level decision-makers, developers, and AI agents should be able to read the same graph: business/product domains, capabilities, ownership, dependencies, evidence, and impact. Developers edit via CLI (`ontology-atlas` 47 commands — vault scaffold, agent setup repair, agent activity heartbeat, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (25 tools).
+`ontology-atlas` is **a local-first ontology workbench for understanding a product/system from business core to implementation evidence**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Planners, marketers, C-level decision-makers, developers, and AI agents should be able to read the same graph: business/product domains, capabilities, ownership, dependencies, evidence, and impact. Developers edit via CLI (`ontology-atlas` 48 commands — vault scaffold, agent setup repair, agent activity heartbeat, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight + write, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (25 tools).
 
 Atlas does not try to replace CodeGraph, grep, AST indexes, language servers,
 or source search. Those tools answer structural code questions. Atlas gives
@@ -107,15 +107,15 @@ src/                       FSD layers
   ├── entities/            business entities
   └── shared/              UI · lib · config primitives
 mcp/                       MCP server (the AI agent's surface) — npm pkg, 25 tools
-cli/                       CLI binary (developer's daily entry point) — npm pkg, 47 commands
+cli/                       CLI binary (developer's daily entry point) — npm pkg, 48 commands
                            init / agent-setup / add / import / list / find / validate / mcp-verify / query / compile
                            analyze / infer-imports / bootstrap
-                           backlinks / orphans / path / explain / all-paths / reachability / relation-check / rename / merge / delete
+                           backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete
                            match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map
                            overview / hubs / blast-radius / cycles / components / topological-order / health
                            agent-brief / workspace-brief / growth / maintenance / node / similar
 docs/                      long-form docs
-docs/ontology/             this project's own ontology vault (dogfood — 102 nodes)
+docs/ontology/             this project's own ontology vault (dogfood — 105 nodes)
                            `.ontology-atlasignore` (gitignore-style) suppresses external
                            element ref noise in growth_plan / maintenance_plan
 tests/                     Vitest unit + Playwright E2E
@@ -248,7 +248,7 @@ Long-form docs:
 This project describes its own mental model in `docs/ontology/` as frontmatter markdown (dogfooding — we describe ourselves in our own data format).
 
 - Entry points: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 102 nodes (capability 36 · document 3 · domain 6 · element 55 · project 1 · vault-readme 1)
+- 105 nodes (capability 39 · document 3 · domain 6 · element 55 · project 1 · vault-readme 1)
 - AI agents query it via the `mcp/` MCP server — registration guide in `mcp/README.md`, example in `.mcp.json.example`
 - When you discover a new domain / capability / element, add it to the same directory (with the MCP `add_concept` tool, or by hand)
 

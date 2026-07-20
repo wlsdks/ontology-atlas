@@ -3280,6 +3280,67 @@ describe('queryCompiledOntology', () => {
     assert.deepEqual(result.emptyDomains.rows.map((row) => row.slug), ['domains/empty']);
   });
 
+  // R+ (agent-persona-2026-07 QA #4) — a dangling reference that is a likely
+  // typo/missing-prefix of an EXISTING node should surface a `didYouMean`
+  // correction and suppress the (wrong, duplicate-creating) add_concept
+  // proposal, instead of blindly proposing to create a new node.
+  it('growth_plan dangling reference surfaces didYouMean and suppresses add_concept when an unambiguous near-match node exists', () => {
+    const graph = compileOntology(
+      [
+        doc('domains/checkout', { kind: 'domain', title: 'Checkout' }),
+        doc('capabilities/refund', {
+          kind: 'capability',
+          title: 'Refund',
+          domain: 'domains/checkout',
+          // "check" is a prefix of the existing "domains/checkout" tail —
+          // not an exact tail match (which the compiler's alias resolution
+          // would already have resolved before this ever reaches
+          // danglingReferenceCandidates), so it stays genuinely dangling.
+          relates: ['check'],
+        }),
+      ],
+      { includeIndexes: true },
+    );
+
+    const result = queryCompiledOntology(graph, { operation: 'growth_plan', limit: 10 });
+
+    assert.equal(result.summary.danglingReferences, 1);
+    const row = result.danglingReferences.rows[0];
+    assert.equal(row.kind, 'resolve_dangling_reference');
+    assert.equal(row.from, 'capabilities/refund');
+    assert.equal(row.ref, 'check');
+    assert.equal(row.didYouMean, 'domains/checkout');
+    assert.equal(row.proposedAction, null);
+    assert.match(row.reason, /domains\/checkout/);
+    assert.match(row.reason, /ontology-atlas relate capabilities\/refund domains\/checkout relates/);
+  });
+
+  // Two existing nodes with the same ambiguous tail must not produce a
+  // confident (and possibly wrong) didYouMean guess — falls back to the
+  // original add_concept suggestion, same as before this feature existed.
+  it('growth_plan dangling reference does not guess didYouMean when the near-match tail is ambiguous', () => {
+    const graph = compileOntology(
+      [
+        doc('capabilities/checkout-a', { kind: 'capability', title: 'Checkout A' }),
+        doc('capabilities/checkout-b', { kind: 'capability', title: 'Checkout B' }),
+        doc('capabilities/refund', {
+          kind: 'capability',
+          title: 'Refund',
+          // both existing capabilities' tails start with "check" — ambiguous
+          // prefix match, must not guess either one.
+          dependencies: ['check'],
+        }),
+      ],
+      { includeIndexes: true },
+    );
+
+    const result = queryCompiledOntology(graph, { operation: 'growth_plan', limit: 10 });
+
+    const row = result.danglingReferences.rows.find((candidate) => candidate.ref === 'check');
+    assert.equal(row.didYouMean, null);
+    assert.equal(row.proposedAction?.tool, 'add_concept');
+  });
+
   it('ontologyAtlasIgnorePatterns 가 매치되는 external element ref 를 materialize 추천에서 제외 + ignored 카운트 노출', () => {
     const graph = compileOntology(
       [
@@ -3403,6 +3464,7 @@ describe('queryCompiledOntology', () => {
           relation: 'dependencies',
           inferredKind: 'capability',
           suggestedSlug: 'capabilities/missing',
+          didYouMean: null,
           reason: 'Graph reference "capabilities/missing" from "capabilities/login" via "dependencies" does not resolve to a vault node.',
           proposedAction: {
             tool: 'add_concept',

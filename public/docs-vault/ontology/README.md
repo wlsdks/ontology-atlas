@@ -31,12 +31,12 @@ language, ownership, capability boundary, decision path, change impact 를 설�
 docs/ontology/
 ├── project.md            — root project 노드 (ontology-atlas)
 ├── domains/              — 도메인 6개 (vault, ontology-core, views, ai-agent-partner, mode-aware-adapters, onboarding-ux)
-├── capabilities/         — capability 36개 (frontmatter → ontology, project ontology indexing, topology direct edit, changes-only review …)
+├── capabilities/         — capability 39개 (frontmatter → ontology, project ontology indexing, topology direct edit, changes-only review …)
 ├── documents/            — document 3개 (agent practice notes)
 └── elements/             — element 55개 (코드 디렉토리 / UI 모델 / 라이브러리)
 ```
 
-총 102 노드 (capability 36 · document 3 · domain 6 · element 55 · project 1 · vault-readme 1).
+총 105 노드 (capability 39 · document 3 · domain 6 · element 55 · project 1 · vault-readme 1).
 정확한 census 는 `ontology-atlas list` 또는 mcp `list_kinds` 호출.
 
 ## 사용

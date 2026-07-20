@@ -13,7 +13,7 @@ import { diagnosisStatusColor } from '../lib/diagnosis-colors.mjs';
 import { stampMomentIfFirst } from '../lib/telemetry.mjs';
 
 const CLI_ENTRYPOINT = fileURLToPath(new URL('../index.mjs', import.meta.url));
-const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', '--fallback-timeout-ms', '--fallback-slow-ms', '--fallback-concurrency', ...DIAGNOSIS_OPTION_FLAGS];
+const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', '--exit-zero', '--fallback-timeout-ms', '--fallback-slow-ms', '--fallback-concurrency', ...DIAGNOSIS_OPTION_FLAGS];
 const DEFAULT_FALLBACK_TIMEOUT_MS = 15_000;
 const DEFAULT_FALLBACK_SLOW_MS = 5_000;
 const DEFAULT_FALLBACK_CONCURRENCY = 4;
@@ -29,7 +29,7 @@ const READINESS_COLORS = {
 };
 
 export async function runAgentBrief(args) {
-  const { vault, json, prompt, graphDbPack, verifyFallbacks, fallbackTimeoutMs, fallbackSlowMs, fallbackConcurrency, options, error, help } = parseArgs(args);
+  const { vault, json, prompt, graphDbPack, verifyFallbacks, exitZero, fallbackTimeoutMs, fallbackSlowMs, fallbackConcurrency, options, error, help } = parseArgs(args);
   if (help) {
     printUsage(process.stdout);
     return 0;
@@ -85,22 +85,40 @@ export async function runAgentBrief(args) {
       slowThresholdMs: effectiveFallbackSlowMs,
       concurrency: effectiveFallbackConcurrency,
     });
-    return Math.max(agentBriefExitCode(result), report.failed > 0 ? 1 : 0);
+    // --exit-zero only silences the readiness-driven part of the exit code
+    // (see readinessExitCode below) — an actual failing fallback command is
+    // a real command failure, not an advisory readiness signal, so it still
+    // exits non-zero even with --exit-zero.
+    return Math.max(readinessExitCode(result, exitZero), report.failed > 0 ? 1 : 0);
   }
   if (json) {
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
-    return agentBriefExitCode(result);
+    return readinessExitCode(result, exitZero);
   }
   if (prompt) {
     process.stdout.write(result.handoffPrompt.trimEnd() + '\n');
-    return agentBriefExitCode(result);
+    return readinessExitCode(result, exitZero);
   }
   if (graphDbPack) {
     process.stdout.write(formatGraphDbCliPack(result, vaultRoot).trimEnd() + '\n');
-    return agentBriefExitCode(result);
+    return readinessExitCode(result, exitZero);
   }
   render(result);
-  return agentBriefExitCode(result);
+  return readinessExitCode(result, exitZero);
+}
+
+/**
+ * agent-brief's non-zero exit encodes graph *readiness* (`needs_attention` /
+ * `needs_shape`), not "the command failed" — the call still ran and printed
+ * valid data. Naive `agent-brief && next-step` scripting misreads that as a
+ * failure the first time a vault has any warning (agent-persona-2026-07 QA
+ * friction #5). `--exit-zero` opts into always exiting 0 for scripting that
+ * wants to read `status`/`readiness` from JSON output itself instead of the
+ * process exit code — it does not silence real parse/MCP-call failures
+ * (those still return 1/2 above, before this is ever reached).
+ */
+export function readinessExitCode(result, exitZero) {
+  return exitZero ? 0 : agentBriefExitCode(result);
 }
 
 async function verifyCliFallbacks(result, vaultRoot, { json = false, timeoutMs = DEFAULT_FALLBACK_TIMEOUT_MS, slowThresholdMs = DEFAULT_FALLBACK_SLOW_MS, concurrency = DEFAULT_FALLBACK_CONCURRENCY } = {}) {
@@ -713,6 +731,7 @@ function parseArgs(args) {
     prompt: false,
     graphDbPack: false,
     verifyFallbacks: false,
+    exitZero: false,
     fallbackTimeoutMs: null,
     fallbackTimeoutRaw: null,
     fallbackSlowMs: null,
@@ -731,6 +750,7 @@ function parseArgs(args) {
     else if (a === '--prompt') flags.prompt = true;
     else if (a === '--graph-db-pack') flags.graphDbPack = true;
     else if (a === '--verify-fallbacks') flags.verifyFallbacks = true;
+    else if (a === '--exit-zero') flags.exitZero = true;
     else if (a === '--fallback-timeout-ms') {
       flags.fallbackTimeoutRaw = args[i + 1];
       flags.fallbackTimeoutMs = parsePositiveIntegerFlag('--fallback-timeout-ms', args[++i]);
@@ -792,13 +812,14 @@ function parseArgs(args) {
   }
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;
-  return { vault: vaultResult.vault, json: flags.json, prompt: flags.prompt, graphDbPack: flags.graphDbPack, verifyFallbacks: flags.verifyFallbacks, fallbackTimeoutMs: flags.fallbackTimeoutMs, fallbackSlowMs: flags.fallbackSlowMs, fallbackConcurrency: flags.fallbackConcurrency, options };
+  return { vault: vaultResult.vault, json: flags.json, prompt: flags.prompt, graphDbPack: flags.graphDbPack, verifyFallbacks: flags.verifyFallbacks, exitZero: flags.exitZero, fallbackTimeoutMs: flags.fallbackTimeoutMs, fallbackSlowMs: flags.fallbackSlowMs, fallbackConcurrency: flags.fallbackConcurrency, options };
 }
 
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas agent-brief [vault] [--json|--prompt|--graph-db-pack|--verify-fallbacks]\n` +
+      `       [--exit-zero]\n` +
       `       [--dependency-types A,B] [--component-types A,B]\n` +
       `       [--fallback-timeout-ms N] [--fallback-slow-ms N] [--fallback-concurrency N]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
@@ -810,9 +831,18 @@ function printUsage(stream = process.stderr) {
       `Use --verify-fallbacks to execute the generated CLI fallback commands against this vault; combine with --json for a machine-readable timing report.\n` +
       `Use --fallback-timeout-ms N or ${FALLBACK_TIMEOUT_ENV}=N to bound each fallback command.\n` +
       `Use --fallback-slow-ms N or ${FALLBACK_SLOW_ENV}=N to mark slow-but-passing fallback rows in JSON and human output.\n` +
-      `Use --fallback-concurrency N or ${FALLBACK_CONCURRENCY_ENV}=N to run fallback checks in a bounded parallel queue.\n` +
-      `Exits non-zero when readiness is not ready, status is not healthy, a health check fails,\n` +
-      `or a fail-severity nextAction is present.\n` +
+      `Use --fallback-concurrency N or ${FALLBACK_CONCURRENCY_ENV}=N to run fallback checks in a bounded parallel queue.\n\n` +
+      `${COLORS.bold}Exit code${COLORS.reset} (readiness signal, not success/failure):\n` +
+      `  0 = ready and healthy. 1 = the command ran and printed valid data, but graph\n` +
+      `  readiness is "needs_attention"/"needs_shape", a health check failed, or a\n` +
+      `  fail-severity nextAction is present — this is advisory graph state, NOT a\n` +
+      `  command failure. 2 = the MCP call itself failed (parse/connection error).\n` +
+      `  Naive \`agent-brief && next-step\` scripting misreads exit 1 as failure the\n` +
+      `  first time a vault has any warning — pass --exit-zero to always exit 0 and\n` +
+      `  read readiness/status from the JSON output instead (parse/MCP-call errors\n` +
+      `  still exit 1/2 even with --exit-zero — only the readiness-driven part is silenced).\n` +
+      `  --verify-fallbacks --exit-zero still exits 1 when a generated fallback command\n` +
+      `  itself fails to run — that is a real failure, not a readiness signal.\n\n` +
       `Tuning flags forward to query_ontology agent_brief for focused diagnostics.\n`,
   );
 }
