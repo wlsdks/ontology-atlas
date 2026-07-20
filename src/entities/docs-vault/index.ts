@@ -26,7 +26,7 @@ export {
   buildNewNodeDoc,
   vaultFolderForKind,
 } from './lib/build-vault-markdown';
-export { deriveOntologyFromVault } from './lib/derive-ontology-from-vault';
+export { deriveOntologyFromVault, slugifyName } from './lib/derive-ontology-from-vault';
 export { deriveProjectsFromVault } from './lib/derive-projects-from-vault';
 export {
   computeProjectSlug,

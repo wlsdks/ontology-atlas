@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildDomainMarkdown,
   buildProjectMarkdown,
   deriveBootstrapPlan,
+  domainDocSlug,
   selectedElements,
   type BootstrapDocInput,
 } from './bootstrap-candidates';
@@ -101,5 +103,21 @@ describe('buildProjectMarkdown', () => {
     const md = buildProjectMarkdown(plan, new Set(['docs']));
     expect(md).toContain('  - docs');
     expect(md).not.toContain('  - notes');
+  });
+});
+
+describe('domainDocSlug · buildDomainMarkdown (재검 마찰 D — 도메인 파일화)', () => {
+  it('파일 tail 이 derive 의 slugifyName ref 와 일치한다', () => {
+    expect(domainDocSlug('docs')).toBe('docs/docs');
+    // 대문자·공백 폴더 — tail 은 slugify, 폴더 경로는 원문 유지
+    expect(domainDocSlug('User Guides')).toBe('User Guides/user-guides');
+  });
+
+  it('kind: domain frontmatter + 평문 본문을 만든다', () => {
+    const md = buildDomainMarkdown({ name: 'docs', docCount: 3 });
+    expect(md).toContain('kind: domain');
+    expect(md).toContain('title: docs');
+    expect(md).toContain('문서 3개');
+    expect(md.startsWith('---\n')).toBe(true);
   });
 });

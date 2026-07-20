@@ -16,8 +16,10 @@ import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight, useRecentChanges, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
+  buildDomainMarkdown,
   buildProjectMarkdown,
   deriveBootstrapPlan,
+  domainDocSlug,
   selectedElements,
   useLocalVault,
   buildMcpConfigJson,
@@ -616,6 +618,19 @@ export function HomePage() {
           el.domain ? { kind: "element", title: el.title, domain: el.domain } : { kind: "element", title: el.title },
           { skipRefresh: true },
         );
+      }
+      // 재검 마찰 D — 승인 도메인을 스텁이 아닌 실제 .md 로. 같은 경로에
+      // 문서가 이미 있거나(요소로 승격됨) 동명 domain 문서가 있으면 생략.
+      const acceptedDomainCandidates = plan.domains.filter((d) => input.acceptedDomains.has(d.name));
+      for (const domain of acceptedDomainCandidates) {
+        const slug = domainDocSlug(domain.name);
+        const tail = slug.split("/").pop();
+        const taken =
+          vault.manifest.docs.some((d) => d.slug === slug) ||
+          vault.manifest.docs.some(
+            (d) => d.frontmatter.kind === "domain" && d.slug.split("/").pop() === tail,
+          );
+        if (!taken) await vault.createDoc(slug, buildDomainMarkdown(domain));
       }
       if (plan.existingProjectSlug) {
         // 재검 마찰 A — 이미 프로젝트가 있는 vault: 두 번째 프로젝트를
