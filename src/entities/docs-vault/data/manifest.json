@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-19T23:40:51.836Z",
+  "generatedAt": "2026-07-20T12:33:14.009Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-20 — 지도 드래그 물성: 견인 거리 감쇠",
+          "slug": "2026-07-20-지도-드래그-물성-견인-거리-감쇠"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-20 — 잔여 색 완전 토큰화 Phase 2 (success emerald · amber · indigo-pale · surface-deep · shadow)",
           "slug": "2026-07-20-잔여-색-완전-토큰화-phase-2-success-emerald-amber-indigo-pale-surface-deep-shadow"
         },
@@ -3966,9 +3971,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. B안(인디고/오버레이/danger) 이후 남은 ~330건의 raw rgba() 리터럴을 Design Guardian 헌장 판정(.qa-scratch/aud",
-      "wordCount": 24099,
-      "updatedAt": "2026-07-19T23:40:49.047Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 노드를 하나 끌면 지도 전체가 딸려 움직이던 문제. 원인은 견인 세기를 홉 수로만 판정한 것 — 허브-스포크 vault 는 모든 노드가 2홉 안이라 \"1홉",
+      "wordCount": 24238,
+      "updatedAt": "2026-07-20T12:19:53.387Z",
       "linksOut": [
         "slug"
       ]

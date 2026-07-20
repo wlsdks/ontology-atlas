@@ -88,6 +88,13 @@ export interface TraceDrawState {
    * `egoState === "ego"`.
    */
   emphasized?: boolean;
+  /**
+   * `prefers-reduced-motion: reduce`. The comet tail is the one moving mark
+   * this module paints, so honouring the preference here is what keeps the
+   * canvas fully static for those users (audit A8: the tail was the largest
+   * of five uncovered motion sources).
+   */
+  reducedMotion?: boolean;
 }
 
 export interface TraceTokens {
@@ -138,12 +145,24 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
   ctx.setLineDash([]);
 
   if (!isDepends || egoState === "dim") return;
+  // AUDIT FINDING (Guardian 2026-07-20 A1/B1): the tail used to ride EVERY
+  // `depends` edge, so the brightest ink on an idle canvas was decoration —
+  // measured 4.23:1 against the background versus 1.32:1 for the `contains`
+  // edges that carry the graph's skeleton. Ambient playback is retired; the
+  // tail is now a FOCUS signal, earning its brightness by marking the ego
+  // subgraph. Also the only always-moving mark, so gating it is what lets the
+  // frame loop reach a genuine idle state (A2) and what makes
+  // `prefers-reduced-motion` actually mean "nothing moves".
+  if (egoState !== "ego") return;
+  if (state.reducedMotion === true) return;
 
-  // ambient comet tail — three shrinking dots trailing the live pulse
-  // position, thinning toward hairline dust as altitude rises rather than
-  // fading via alpha (forbidden.md bans glow/alpha-based "signal" motifs).
-  const baseSizes = emphasized ? [3.6, 2.7, 1.7] : egoState === "ego" ? [2.9, 2.1, 1.3] : [2.1, 1.5, 0.9];
-  const tailColor = egoState === "ego" ? tokens.indigoBright : tokens.indigo;
+  // comet tail — three shrinking dots trailing the live pulse position,
+  // thinning toward hairline dust as altitude rises rather than fading via
+  // alpha (forbidden.md bans glow/alpha-based "signal" motifs).
+  // `egoState` is necessarily "ego" past the guard above, so the old
+  // ambient-size and ambient-colour branches are gone with it.
+  const baseSizes = emphasized ? [3.6, 2.7, 1.7] : [2.9, 2.1, 1.3];
+  const tailColor = tokens.indigoBright;
   COMET_TAIL_STEPS.forEach((step, i) => {
     let tt = t - step;
     if (tt < 0) tt += 1;

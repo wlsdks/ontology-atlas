@@ -110,6 +110,26 @@ export interface BackgroundDrawState {
   viewportHeight: number;
   farT: number;
   gridPattern: CanvasPattern | null;
+  /**
+   * Screen position of the world origin, so the blueprint grid is anchored to
+   * the WORLD instead of the display.
+   *
+   * AUDIT FINDING this fixes (Guardian 2026-07-20 B3): `draw()` took no camera
+   * at all and laid the pattern down with `fillRect(0,0,w,h)`. Panning slid
+   * the nodes across a grid welded to the monitor — zero parallax, so the map
+   * read as marks sliding on glass rather than a camera moving over terrain.
+   */
+  originX: number;
+  originY: number;
+}
+
+/** Major-line spacing of the tile built by `buildGridPattern` (24px minor × 5). */
+export const GRID_TILE_PX = 120;
+
+/** Positive modulo — `%` alone keeps the sign, which would jump the grid a whole tile when the origin goes negative. */
+export function wrapToTile(offset: number, tile: number): number {
+  if (tile <= 0) return 0;
+  return ((offset % tile) + tile) % tile;
 }
 
 export interface BackgroundTokens {
@@ -130,7 +150,15 @@ export function draw(ctx: CanvasRenderingContext2D, state: BackgroundDrawState, 
   if (farT < 0.98) {
     ctx.globalAlpha = 1 - farT;
     ctx.fillStyle = gridPattern ?? bgBase;
-    ctx.fillRect(0, 0, w, h);
+    // Slide the tiling with the camera (mod one tile, so the cost is constant
+    // no matter how far the user has panned) and overdraw by a tile on every
+    // side to cover the shifted seam.
+    const ox = wrapToTile(state.originX, GRID_TILE_PX);
+    const oy = wrapToTile(state.originY, GRID_TILE_PX);
+    ctx.save();
+    ctx.translate(ox - GRID_TILE_PX, oy - GRID_TILE_PX);
+    ctx.fillRect(0, 0, w + GRID_TILE_PX * 2, h + GRID_TILE_PX * 2);
+    ctx.restore();
     ctx.globalAlpha = 1;
   }
 

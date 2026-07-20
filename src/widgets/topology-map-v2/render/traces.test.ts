@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bezierPoint, computeBowControlPoint, type Point } from "./traces";
+import { bezierPoint, computeBowControlPoint, draw, type Point, type TraceDrawState } from "./traces";
 
 describe("computeBowControlPoint", () => {
   it("never bows further than maxBow*blend from the segment midpoint", () => {
@@ -72,5 +72,70 @@ describe("bezierPoint", () => {
     const point = bezierPoint(p0, p1, p2, 0.5);
     expect(point.x).toBeCloseTo(50, 6);
     expect(point.y).toBeCloseTo(50, 6);
+  });
+});
+
+/**
+ * Comet-tail contract (Guardian 2026-07-20 A1/B1). The tail used to ride every
+ * `depends` edge, making decoration the brightest ink on an idle canvas. It is
+ * now a FOCUS signal. These tests pin that so the ambient playback can't
+ * silently come back — the previous suite only covered the curve math, which
+ * is why the regression window existed at all.
+ */
+describe("draw — comet tail is a focus signal, not ambient decoration", () => {
+  const TOKENS = {
+    edgeContains: "#3a3a42",
+    edgeDepends: "#4c4c63",
+    edgeDim: "#1a1a1f",
+    indigo: "#5e6ad2",
+    indigoBright: "#8b97ff",
+  };
+
+  /** Counts `arc()` calls — the tail is the only thing in `draw()` that uses them. */
+  function drawAndCountTailDots(state: TraceDrawState): number {
+    let arcs = 0;
+    const ctx = {
+      beginPath() {},
+      moveTo() {},
+      quadraticCurveTo() {},
+      stroke() {},
+      fill() {},
+      setLineDash() {},
+      arc() {
+        arcs += 1;
+      },
+      strokeStyle: "",
+      fillStyle: "",
+      lineWidth: 0,
+    } as unknown as CanvasRenderingContext2D;
+    draw(ctx, state, TOKENS);
+    return arcs;
+  }
+
+  const base: TraceDrawState = {
+    a: { x: 0, y: 0 },
+    b: { x: 100, y: 0 },
+    control: { x: 50, y: 20 },
+    relationType: "depends",
+    egoState: "normal",
+    farT: 0,
+    t: 0.5,
+  };
+
+  it("draws no tail on an unfocused depends edge", () => {
+    expect(drawAndCountTailDots(base)).toBe(0);
+  });
+
+  it("draws the three-dot tail once the edge is part of the ego subgraph", () => {
+    expect(drawAndCountTailDots({ ...base, egoState: "ego" })).toBe(3);
+  });
+
+  it("never draws a tail on a contains edge or a dimmed one", () => {
+    expect(drawAndCountTailDots({ ...base, relationType: "contains", egoState: "ego" })).toBe(0);
+    expect(drawAndCountTailDots({ ...base, egoState: "dim" })).toBe(0);
+  });
+
+  it("suppresses the tail under prefers-reduced-motion", () => {
+    expect(drawAndCountTailDots({ ...base, egoState: "ego", reducedMotion: true })).toBe(0);
   });
 });
