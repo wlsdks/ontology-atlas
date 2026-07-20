@@ -617,11 +617,26 @@ export function HomePage() {
           { skipRefresh: true },
         );
       }
-      await vault.createDoc(plan.projectSlug, buildProjectMarkdown(plan, input.acceptedDomains));
+      if (plan.existingProjectSlug) {
+        // 재검 마찰 A — 이미 프로젝트가 있는 vault: 두 번째 프로젝트를
+        // 만들지 않고 기존 프로젝트의 domains 에 승인분을 덧붙인다.
+        const existing = vault.manifest.docs.find((d) => d.slug === plan.existingProjectSlug);
+        const prevDomains = Array.isArray(existing?.frontmatter.domains)
+          ? (existing.frontmatter.domains as string[])
+          : [];
+        const accepted = plan.domains.filter((d) => input.acceptedDomains.has(d.name)).map((d) => d.name);
+        const mergedDomains = [...new Set([...prevDomains, ...accepted])];
+        await vault.updateFrontmatter(plan.existingProjectSlug, { domains: mergedDomains });
+      } else {
+        await vault.createDoc(plan.projectSlug, buildProjectMarkdown(plan, input.acceptedDomains));
+      }
       setBootstrapOpen(false);
       // E1 — 리로드된 그래프가 "내 문서들이 모이는" 연출로 등장한다.
       setMapRevealToken((n) => n + 1);
-      toast.show(t("bootstrap.toastDone", { count: elements.length }), "success");
+      toast.show(
+        t(plan.existingProjectSlug ? "bootstrap.toastAdded" : "bootstrap.toastDone", { count: elements.length }),
+        "success",
+      );
     },
     [bootstrapPlan, vault, toast, t],
   );

@@ -46,6 +46,12 @@ export interface BootstrapPlan {
   projectTitle: string;
   /** 생성할 project 문서의 slug — 기존 파일과 충돌하면 대체 slug. */
   projectSlug: string;
+  /**
+   * 재검 마찰 A — vault 에 이미 `kind: project` 문서가 있으면 그 slug.
+   * 이때 새 project 파일을 만들지 않고(이중 프로젝트 방지) 기존 문서의
+   * `domains:` 에 승인 도메인을 덧붙인다.
+   */
+  existingProjectSlug: string | null;
   domains: BootstrapDomainCandidate[];
   elements: BootstrapElementCandidate[];
   /** 이미 kind: 를 가진 문서 수 — "부분 구축" vault 안내용. */
@@ -70,6 +76,9 @@ export function deriveBootstrapPlan(
   vaultName: string,
 ): BootstrapPlan {
   const existingSlugs = new Set(docs.map((d) => d.slug));
+  const existingProject = docs.find(
+    (d) => typeof d.frontmatter.kind === 'string' && d.frontmatter.kind.trim() === 'project',
+  );
   let projectTitle = vaultName.trim() || 'my-project';
   let alreadyTypedCount = 0;
   const domainCounts = new Map<string, number>();
@@ -99,8 +108,11 @@ export function deriveBootstrapPlan(
     .sort((a, b) => b.docCount - a.docCount || a.name.localeCompare(b.name));
 
   return {
-    projectTitle,
+    projectTitle: existingProject
+      ? String(existingProject.frontmatter.title ?? projectTitle) || projectTitle
+      : projectTitle,
     projectSlug: existingSlugs.has('project') ? 'ontology-project' : 'project',
+    existingProjectSlug: existingProject?.slug ?? null,
     domains,
     elements,
     alreadyTypedCount,

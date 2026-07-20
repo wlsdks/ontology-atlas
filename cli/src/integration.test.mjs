@@ -3127,6 +3127,40 @@ await test('explain --json — unrelated verdict exits non-zero with evidence pa
   }
 });
 
+await test('relate — depends_on 관계를 from 문서 frontmatter 에 쓴다', async () => {
+  const root = withVault([
+    { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
+    { slug: 'b', content: '---\nkind: capability\ntitle: B\n---\n' },
+  ]);
+  try {
+    const r = await run(['relate', 'a', 'b', 'depends_on', root]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const doc = readFileSync(join(root, 'a.md'), 'utf-8');
+    assert.match(doc, /dependencies: \[b\]/);
+    assert.doesNotMatch(doc, /relation_notes/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('relate --why — 관계와 relation_notes 근거를 같은 쓰기로 남긴다 (P6)', async () => {
+  const root = withVault([
+    { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
+    { slug: 'b', content: '---\nkind: capability\ntitle: B\n---\n' },
+  ]);
+  try {
+    // parseArgs 가 why 를 반환 계약에서 빠뜨리면 관계만 쓰이고 근거가
+    // 조용히 증발한다 — 그 회귀를 파일 내용으로 잡는다.
+    const r = await run(['relate', 'a', 'b', 'depends_on', root, '--why', 'A 의 쓰기 경로가 B 를 지난다']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const doc = readFileSync(join(root, 'a.md'), 'utf-8');
+    assert.match(doc, /dependencies: \[b\]/);
+    assert.match(doc, /relation_notes: \{ b: A 의 쓰기 경로가 B 를 지난다 \}/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('explain --json — fails closed on malformed explain_relation payloads before output', async () => {
   const root = withVault();
   const fakeMcp = join(root, 'fake-mcp-explain-malformed.mjs');
@@ -5523,7 +5557,9 @@ await test('agent-brief --help — documents handoff and exit gates', async () =
   assert.match(clean, /--fallback-slow-ms N/);
   assert.match(clean, /OATLAS_AGENT_FALLBACK_TIMEOUT_MS=N/);
   assert.match(clean, /OATLAS_AGENT_FALLBACK_SLOW_MS=N/);
-  assert.match(clean, /Exits non-zero when readiness is not ready/);
+  // #453 이 exit 의미를 0/1/2 서술로 확장 — 옛 한 줄 문구 대신 새 계약을 단언.
+  assert.match(clean, /0 = ready and healthy/);
+  assert.match(clean, /pass --exit-zero to always exit 0/);
   assert.match(clean, /Tuning flags forward to query_ontology agent_brief/);
 });
 
