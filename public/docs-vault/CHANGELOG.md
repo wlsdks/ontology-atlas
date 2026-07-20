@@ -6,6 +6,65 @@
 
 ---
 
+## 2026-07-21 — quick wins 5종 (페르소나 실측 마찰 소형 교정)
+
+- 인사이트 신선도 "최근 갱신" 행이 지도 딥링크가 됐다 (수리 큐와 같은
+  문법 — 막다른 길 제거, N4).
+- "이번 주 +1" 칩 정직화 — 실체(7일 내 갱신된 project 문서 수)대로
+  "이번 주 프로젝트 +N" (개념 census 옆에서 개념 증가로 오독되던 것, N3).
+- vault 변경 토스트 한국어화 ("추가됨/편집됨", N10).
+- 노드 데이터시트에 소속 도메인 1급 사실 — "도메인 · <이름>" 클릭 시
+  해당 도메인 포커스 (선 스타일로만 섞여 있던 것, N6).
+- ⌘K 검색에서 경로형 요소 제목을 보조 톤으로 강등 (소음 제거, N12).
+## 2026-07-21 — 외향 문서 슬라이스 (시장 언어 연결, 계획 구조 결함 해소)
+
+제품 검수가 "계획 전체에 외향(시장에 말하는) 슬라이스 0개"를 구조 결함으로
+판정 — 니즈 조사(`.qa-scratch/community-research-2026-07/needs.md`)가 확인한
+수요와 실제 카피 사이에 다리가 없었다. README에 "codebase map / agent
+memory / context layer" 시장 어휘를 잇는 브릿지 문단과 유산 선언 문장("이
+지도는 당신 디스크의 마크다운") 추가. 신규
+[`docs/CASE-STUDY-AGENTS-MD-DRIFT.md`](CASE-STUDY-AGENTS-MD-DRIFT.md) —
+AGENTS.md/CLAUDE.md drift 커뮤니티 고통 → 이 저장소가 실제로 쓰는 해법(단일
+진실원 + thin wrapper) → context rot 완화책으로서의 vault, 세 단계 케이스
+스터디. README에 Karpathy "Obsidian is the IDE; the LLM is the programmer;
+the wiki is the codebase" LLM-wiki 패턴과의 위치 관계 1문단 추가. 코드 변경
+없음 — 문서만.
+
+## 2026-07-21 — 문서함 웹 세션 로컬 vault 개방 (표면 간 모순 해소)
+
+같은 웹 브라우저 세션에서 빌더는 로컬 vault 에 쓰기까지 되는데
+문서함만 "macOS 앱에서 시작" 잠금이었다 (페르소나 실측 N1, High —
+표면 간 모순 계약). 게이트 3종(`shouldHonorLocalIntent` ·
+`isDocsVaultLocalSourceDisabled` · `shouldShowDesktopVaultWelcome`)을
+런타임(웹/데스크톱) 기준에서 **능력(FSA 지원) 기준**으로 전환 — FSA
+미지원 브라우저만 막는다. 샘플 안내 스트립의 macOS 다운로드 CTA 도
+능력 기준 "내 폴더 열기"로. 경로 pill 은 웹 핸들의 폴더 이름 폴백.
+실증: 웹 스텁 세션에서 intent=local → welcome → 폴더 열기 → 사용자
+vault 로드·편집 활성까지 완주.
+
+## 2026-07-21 — census 단일 진실원 (표면 간 숫자 불일치 해소)
+
+같은 vault 를 두고 지도 294 · 인사이트 293 · 프로젝트 288 · 빌더 102 로
+표면마다 "개념" 수가 달랐다 (페르소나 실측 N2 — 그래프 제품에서 숫자
+불일치는 신뢰 직격). 원인 분해 결과: 지도는 insight 에 이미 포함된
+project 를 renderProjects 로 **이중 가산**(버그), 프로젝트 페이지는
+meaningful kind 필터로 -5(라벨 없는 스코프 차이), 빌더는 파일 기반
+(의도적, 라벨 불명).
+
+정본 함수 `computeCanonicalCensus`(파생 전체) 신설 — "개념"이라는 단어를
+쓰는 census 는 전부 이 함수를 쓴다. 지도 이중 가산 제거, 프로젝트
+페이지 정본 전환, 빌더는 "저장된 개념 N"으로 정직 라벨. 실측: 지도 =
+인사이트 = 프로젝트 = 292 일치.
+
+## 2026-07-20 — 노드 데이터시트에 변경 시점 노출 (시간 레이어 1)
+
+AI 에이전트가 vault 를 계속 갱신하는 제품에서 "언제 바뀌었나"가 화면에
+없으면 사람이 변경을 구분할 수 없다 (소유자 요청). 노드 데이터시트
+헤더에 manifest `updatedAt`(local: 파일 mtime · 샘플: 빌드타임) 기반
+"오늘/어제/N일 전/N주 전/N달 전 바뀜" 라벨 추가. 기준 시각은 세션
+스냅샷(일 단위 해상도라 충분 + 렌더 순수성). 후속: INDEX "최근 변경"
+렌즈 + 에이전트 귀속 배지 (`design-brief.md` S-C2/3).
+
 ## 2026-07-20 — "내 문서로 지도 만들기" (온보딩 Slice 1)
 
 기존 .md 폴더(frontmatter 없음)를 연 사용자가 "0 개념 · 0 관계" 막다른

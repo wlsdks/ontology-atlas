@@ -139,3 +139,44 @@ describe("draw — comet tail is a focus signal, not ambient decoration", () => 
     expect(drawAndCountTailDots({ ...base, egoState: "ego", reducedMotion: true })).toBe(0);
   });
 });
+
+/** P3a — 잉크 사다리: contains 비-ego 렌더가 레벨별 stroke/width 를 탄다. */
+describe("draw — containment ink ladder", () => {
+  const TOKENS = {
+    edgeContains: "#3a3a42",
+    edgeContainsL0: "#45454e",
+    edgeContainsL2: "#333339",
+    edgeDepends: "#4c4c63",
+    edgeDim: "#1a1a1f",
+    indigo: "#5e6ad2",
+    indigoBright: "#8b97ff",
+  };
+  function drawAndCapture(level: 0 | 1 | 2 | undefined) {
+    let stroke = ""; let width = 0;
+    const ctx = {
+      beginPath() {}, moveTo() {}, quadraticCurveTo() {}, fill() {}, setLineDash() {}, arc() {},
+      stroke() { stroke = String((this as { strokeStyle?: unknown }).strokeStyle); width = Number((this as { lineWidth?: unknown }).lineWidth); },
+      strokeStyle: "", fillStyle: "", lineWidth: 0,
+    } as unknown as CanvasRenderingContext2D;
+    draw(ctx, {
+      a: { x: 0, y: 0 }, b: { x: 100, y: 0 }, control: { x: 50, y: 20 },
+      relationType: "contains", egoState: "normal", farT: 0, t: 0, level,
+    }, TOKENS);
+    return { stroke, width };
+  }
+
+  it("L0 는 진하고 굵게(뼈대), L1 기본, L2 는 물러난다(잔가지)", () => {
+    const l0 = drawAndCapture(0);
+    const l1 = drawAndCapture(1);
+    const l2 = drawAndCapture(2);
+    expect(l0.stroke).toBe("#45454e");
+    expect(l1.stroke).toBe("#3a3a42");
+    expect(l2.stroke).toBe("#333339");
+    expect(l0.width).toBeGreaterThan(l1.width);
+    expect(l1.width).toBeGreaterThan(l2.width);
+  });
+
+  it("레벨 미지정(레거시 호출)은 L1 과 동일 — 무회귀", () => {
+    expect(drawAndCapture(undefined)).toEqual(drawAndCapture(1));
+  });
+});

@@ -48,6 +48,21 @@ export interface WorldEdge {
   controlY: number;
   /** Ambient comet-tail progress 0..1, `depends` edges only — mutated per frame by the caller (`use-topology-loop.ts`). */
   t: number;
+  /**
+   * P3a — containment 깊이 (엔드포인트 kind 로 유도): 0 = project 가 낀 뼈대,
+   * 1 = domain 이 낀 중간 구조, 2 = capability/element 잔가지. 렌더는 이
+   * 값으로 잉크 강도(굵기×명도) 사다리를 탄다 — 계층은 순서(ordinal)라
+   * hue 가 아니라 명도/크기 채널이 옳다 (`edge-hierarchy-ink.md`).
+   * `depends` 엣지는 타입 채널(파선) 소속이라 이 값을 쓰지 않는다.
+   */
+  level: 0 | 1 | 2;
+}
+
+/** P3a — 두 엔드포인트 kind 에서 containment 잉크 레벨을 유도한다. */
+export function containmentLevelFor(aKind: WorldNodeKind, bKind: WorldNodeKind): 0 | 1 | 2 {
+  if (aKind === "project" || bKind === "project") return 0;
+  if (aKind === "domain" || bKind === "domain") return 1;
+  return 2;
 }
 
 export interface Bounds {
@@ -250,6 +265,7 @@ export function buildTopologyWorld(
       controlX: control.x,
       controlY: control.y,
       t: 0,
+      level: containmentLevelFor(a.kind, b.kind),
     });
   }
 

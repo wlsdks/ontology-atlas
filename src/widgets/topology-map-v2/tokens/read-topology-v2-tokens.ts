@@ -150,6 +150,12 @@ export interface TopologyV2Tokens {
   egoRevealDecayTau: number;
   /** `--topology-v2-ripple-stagger-max-ms` — total hover-ripple stagger budget, so hub degree can't stretch the ripple into an enumeration (A7). */
   rippleStaggerMaxMs: number;
+  /** `--topology-v2-edge-contains-l0` — project-tier containment ink (P3a hierarchy ladder: value+width, never hue). */
+  edgeContainsL0: string;
+  /** `--topology-v2-edge-contains-l2` — capability/element-tier containment ink (P3a; must stay darker than the pre-B1 1.32:1 floor). */
+  edgeContainsL2: string;
+  /** `--topology-v2-edge-passthrough-alpha` — ink demotion for edges crossing the viewport with BOTH endpoints off-screen (B2 residual). */
+  edgePassthroughAlpha: number;
 
   // 2.5 안전 영역 (fixed chrome inset, px — 라벨 컬링 + 카메라 fit)
   safeInsetLeft: number;
@@ -261,6 +267,9 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "egoRevealRiseTau", cssVar: "--topology-v2-ego-reveal-rise-tau", kind: "number" },
   { key: "egoRevealDecayTau", cssVar: "--topology-v2-ego-reveal-decay-tau", kind: "number" },
   { key: "rippleStaggerMaxMs", cssVar: "--topology-v2-ripple-stagger-max-ms", kind: "number" },
+  { key: "edgeContainsL0", cssVar: "--topology-v2-edge-contains-l0", kind: "color" },
+  { key: "edgeContainsL2", cssVar: "--topology-v2-edge-contains-l2", kind: "color" },
+  { key: "edgePassthroughAlpha", cssVar: "--topology-v2-edge-passthrough-alpha", kind: "number" },
 
   { key: "safeInsetLeft", cssVar: "--topology-v2-safe-inset-left", kind: "number" },
   { key: "safeInsetRight", cssVar: "--topology-v2-safe-inset-right", kind: "number" },

@@ -105,6 +105,9 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-ego-reveal-rise-tau": "0.22",
   "--topology-v2-ego-reveal-decay-tau": "0.12",
   "--topology-v2-ripple-stagger-max-ms": "180",
+  "--topology-v2-edge-contains-l0": "#45454e",
+  "--topology-v2-edge-contains-l2": "#333339",
+  "--topology-v2-edge-passthrough-alpha": "0.3",
 
   "--topology-v2-safe-inset-left": "344",
   "--topology-v2-safe-inset-right": "120",
