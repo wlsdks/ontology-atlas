@@ -22,6 +22,12 @@
  * `tauri.conf.json` directly.
  */
 
+// [W-2] CLI 명령 수는 cli/src/lib/cli-commands.mjs 의 CLI_COMMANDS 배열
+// 길이가 단일 진실원 — 여기서 하드코딩한 숫자가 실제 명령 수와 갈라지면
+// 다운로드 페이지가 거짓말을 하게 된다. cli-commands.mjs 는 의존성이 없는
+// 순수 상수 모듈이라 정적 export 빌드에서도 그대로 트리셰이크된다.
+export { CLI_COMMAND_COUNT } from "../../../../cli/src/lib/cli-commands.mjs";
+
 export const RELEASE_VERSION = "0.1.0";
 export const RELEASE_MIN_MACOS = "macOS 12";
 export const RELEASE_ARCHES = ["aarch64", "x64"] as const;

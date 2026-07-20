@@ -9,7 +9,7 @@ import { buttonVariants, StaggeredFadeIn } from '@/shared/ui';
 import { TopologyV2KindGlyph } from '@/shared/ui/topology-v2-kind-glyph';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { GITHUB_RELEASES_URL, MacosDownloadLink } from '@/features/macos-download-link';
-import { RELEASE_MIN_MACOS, RELEASE_VERSION } from '../lib/release-facts';
+import { CLI_COMMAND_COUNT, RELEASE_MIN_MACOS, RELEASE_VERSION } from '../lib/release-facts';
 import { CHANGELOG_PREVIEW_AS_OF, CHANGELOG_PREVIEW_ENTRIES } from '../lib/changelog-preview';
 import { DOGFOOD_CENSUS } from '../model/dogfood-census.generated';
 import { buildMiniatureLayout } from '../model/miniature-layout';
@@ -222,7 +222,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
             <IncludeCard
               glyph="element"
               title={t('includeCliTitle')}
-              count={t('includeCliCount')}
+              count={t('includeCliCount', { count: CLI_COMMAND_COUNT })}
               body={t('includeCliBody')}
             />
           </div>
