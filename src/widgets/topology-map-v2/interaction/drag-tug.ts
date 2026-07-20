@@ -62,6 +62,25 @@ export function tugFactorForHop(hopDistance: 0 | 1 | 2 | number, factors: DragTu
 }
 
 /**
+ * How much of the hop factor survives at world-space `distance` from the grab
+ * point, given a `radius` of influence (`--topology-v2-drag-tug-radius`).
+ *
+ * AUDIT FINDING this fixes: hop count alone is a poor stand-in for "nearby".
+ * A hub-and-spoke vault puts every node within 2 hops of every other, so the
+ * hop-only rule tugged the whole map — a node ~900 world units away still
+ * moved ~58px on a 430px drag, which reads as the layout being mushy rather
+ * than elastic. Smoothstep falloff with COMPACT SUPPORT: nodes at or past the
+ * radius are exactly 0 (genuinely still, not just slightly moved), and the
+ * approach to 0 is eased so nothing pops as a neighbor crosses the boundary.
+ */
+export function tugFalloffForDistance(distance: number, radius: number): number {
+  if (radius <= 0) return 0;
+  const t = Math.min(1, Math.max(0, distance / radius));
+  // 1 - smoothstep(0,1,t) — flat near the grab point, zero slope at the edge.
+  return 1 - t * t * (3 - 2 * t);
+}
+
+/**
  * One exponential-smoothing step of a single scalar axis (world x OR y) toward
  * `target` — the same `1 - exp(-dt/tau)` shape as `model/focus-state.ts#stepEmphasis`,
  * generalized to an arbitrary numeric range (not just 0..1) so it can ease a

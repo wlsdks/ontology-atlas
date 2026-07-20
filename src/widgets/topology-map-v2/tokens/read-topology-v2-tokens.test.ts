@@ -97,6 +97,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-edge-pulse-speed-ego": "0.2",
   "--topology-v2-drag-tug-1hop": "0.45",
   "--topology-v2-drag-tug-2hop": "0.15",
+  "--topology-v2-drag-tug-radius": "600",
 
   "--topology-v2-safe-inset-left": "344",
   "--topology-v2-safe-inset-right": "120",
@@ -110,7 +111,7 @@ function fixtureReader(overrides: Record<string, string> = {}) {
 }
 
 describe("resolveTopologyV2Tokens", () => {
-  it("resolves all 88 §2 tokens to the exact prototype-sourced values", () => {
+  it("resolves all 89 §2 tokens to the exact prototype-sourced values", () => {
     const tokens = resolveTopologyV2Tokens(fixtureReader());
 
     expect(tokens.nodeFillProject).toBe("#1c1c22");
@@ -118,6 +119,7 @@ describe("resolveTopologyV2Tokens", () => {
     expect(tokens.cameraMinZoomRatio).toBeCloseTo(0.5, 3);
     expect(tokens.dragTug1Hop).toBeCloseTo(0.45, 3);
     expect(tokens.dragTug2Hop).toBeCloseTo(0.15, 3);
+    expect(tokens.dragTugRadius).toBeCloseTo(600, 3);
     expect(tokens.indigo).toBe("#5e6ad2");
     expect(tokens.labelProject).toBe("#d4b478");
     expect(tokens.labelMaxWidth).toBe(168);

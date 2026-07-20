@@ -136,6 +136,8 @@ export interface TopologyV2Tokens {
   dragTug1Hop: number;
   /** `--topology-v2-drag-tug-2hop` — 2-hop neighbor displacement factor during node drag (`interaction/drag-tug.ts`). */
   dragTug2Hop: number;
+  /** `--topology-v2-drag-tug-radius` — world-space radius past which drag tug is exactly 0 (`interaction/drag-tug.ts#tugFalloffForDistance`). */
+  dragTugRadius: number;
 
   // 2.5 안전 영역 (fixed chrome inset, px — 라벨 컬링 + 카메라 fit)
   safeInsetLeft: number;
@@ -240,6 +242,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "edgePulseSpeedEgo", cssVar: "--topology-v2-edge-pulse-speed-ego", kind: "number" },
   { key: "dragTug1Hop", cssVar: "--topology-v2-drag-tug-1hop", kind: "number" },
   { key: "dragTug2Hop", cssVar: "--topology-v2-drag-tug-2hop", kind: "number" },
+  { key: "dragTugRadius", cssVar: "--topology-v2-drag-tug-radius", kind: "number" },
 
   { key: "safeInsetLeft", cssVar: "--topology-v2-safe-inset-left", kind: "number" },
   { key: "safeInsetRight", cssVar: "--topology-v2-safe-inset-right", kind: "number" },

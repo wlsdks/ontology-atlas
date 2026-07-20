@@ -12,7 +12,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 
 import type { CameraAxes, CameraTarget } from "../engine/camera";
-import { stepTugAxis, tugFactorForHop } from "../interaction/drag-tug";
+import { stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../interaction/pointer-state-machine";
 import { initHomeSpring, isHomeSpringConverged, stepHomeSpring, type HomeSpringState } from "../model/relayout-home";
@@ -456,7 +456,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           const tugIds = new Set<string>([...affected.oneHop, ...affected.twoHop]);
           for (const id of tugIds) {
             const hop = affected.oneHop.has(id) ? 1 : 2;
-            const factor = tugFactorForHop(hop, factors);
+            const tugged = world.nodeById.get(id);
+            // Hop count says WHO may be tugged; world distance from the grab
+            // point says HOW MUCH. Without the distance term a hub-and-spoke
+            // vault (everything within 2 hops) drags the whole map along.
+            // Measured from `dragStart`, not the dragged node's live position,
+            // so the elastic neighborhood is fixed at grab time and neighbors
+            // never fade in/out mid-drag.
+            const falloff =
+              tugged && dragStart
+                ? tugFalloffForDistance(Math.hypot(tugged.x - dragStart.x, tugged.y - dragStart.y), tokens.dragTugRadius)
+                : 0;
+            const factor = tugFactorForHop(hop, factors) * falloff;
             let targetX = 0;
             let targetY = 0;
             if (pinned && draggedNode && dragStart) {
@@ -469,10 +480,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               y: stepTugAxis(prevOffset.y, targetY, dt, DRAG_TUG_EASE_TAU),
             };
             dragTugOffsetsRef.current.set(id, nextOffset);
-            const node = world.nodeById.get(id);
-            if (node) {
-              node.x += nextOffset.x;
-              node.y += nextOffset.y;
+            if (tugged) {
+              tugged.x += nextOffset.x;
+              tugged.y += nextOffset.y;
             }
           }
         }
