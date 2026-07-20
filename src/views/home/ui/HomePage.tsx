@@ -14,7 +14,7 @@ import { useTranslations } from "next-intl";
 import { BookOpen, HelpCircle, Plus, Waypoints, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
-import { useOntologyInsight } from "@/features/vault-ontology";
+import { useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
   buildProjectMarkdown,
   deriveBootstrapPlan,
@@ -128,6 +128,7 @@ import { resolveTopologySelectedOntologyNode } from "../lib/resolve-topology-sel
 import { resolveDeeplinkMissDecision } from "../lib/deeplink-miss-notice";
 import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
+import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
@@ -379,6 +380,12 @@ export function HomePage() {
   // 매칭이 없을 때만 사용 — 즉 토폴로지에서 domain/capability/element
   // 노드 클릭한 케이스.
   const { insight: ontologyInsight } = useOntologyInsight();
+  // S-C1 — 노드 데이터시트 "언제 바뀌었나" (mode-aware manifest updatedAt).
+  const docFreshnessIndex = useVaultDocFreshnessIndex();
+  // "N일 전" 계산의 기준 시각 — 일 단위 해상도라 세션 시작 스냅샷이면 충분
+  // (render 중 Date.now() 는 react-hooks/purity 위반; 세션 동안 라벨이
+  // 흔들리지 않는 것도 changeBaseline 과 같은 이유로 오히려 바람직하다).
+  const [updatedAgoNowMs] = useState(() => Date.now());
   // 변경점 baseline(공유 스토어)이 찍혀 있으면, 기준 이후 added/changed 된
   // ontology 노드를 토폴로지에서 pulse 로 강조 — /ontology 변경 패널과 같은
   // 기준을 spatial view 에서도 본다(회의·리뷰).
@@ -871,6 +878,15 @@ export function HomePage() {
       title: nodeFocus.title,
       kind: nodeFocus.kind,
       powered: changedSlugs.has(selectedOntologyNode.id),
+      // S-C1 — AI 가 계속 갱신하는 그래프에서 변경 시점이 안 보이면 사람이
+      // 변경을 구분할 수 없다. manifest updatedAt → "N일 전" 사다리.
+      updatedAtLabel: (() => {
+        const iso = nodeFocus.sourceSlug ? docFreshnessIndex.get(nodeFocus.sourceSlug) : undefined;
+        if (!iso) return null;
+        const ago = computeUpdatedAgo(iso, updatedAgoNowMs);
+        if (!ago) return null;
+        return t(`nodeDatasheet.updated_${ago.key}`, { count: ago.count });
+      })(),
       metric,
       groups,
       evidence: { rows: evidenceRows, total: evidenceRows.length },
@@ -887,7 +903,7 @@ export function HomePage() {
       // `resolveBuilderQueryNodeSlug`.
       builderEditHref: `/ontology/edit/?node=${encodeURIComponent(slug)}`,
     };
-  }, [nodeFocus, selectedOntologyNode, ontologyInsight, nodeFocusData, changedSlugs]);
+  }, [nodeFocus, selectedOntologyNode, ontologyInsight, nodeFocusData, changedSlugs, docFreshnessIndex, updatedAgoNowMs, t]);
   const copyV2NodeHandoff = useCallback(
     async (text: string) => {
       const ok = await copyText(text);
@@ -2589,6 +2605,7 @@ export function HomePage() {
                 metric={v2DatasheetModel.metric}
                 groups={v2DatasheetModel.groups}
                 evidence={v2DatasheetModel.evidence}
+                updatedAtLabel={v2DatasheetModel.updatedAtLabel}
                 handoffText={v2DatasheetModel.handoffText}
                 documentHref={v2DatasheetModel.documentHref}
                 builderEditHref={v2DatasheetModel.builderEditHref}

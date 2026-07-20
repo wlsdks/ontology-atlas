@@ -2128,7 +2128,12 @@
       "actionDocument": "Document",
       "actionEditRelations": "Edit relations",
       "actionCopyHandoff": "Copy handoff",
-      "actionPath": "Path"
+      "actionPath": "Path",
+      "updated_today": "changed today",
+      "updated_yesterday": "changed yesterday",
+      "updated_daysAgo": "changed {count}d ago",
+      "updated_weeksAgo": "changed {count}w ago",
+      "updated_monthsAgo": "changed {count}mo ago"
     },
     "createNode": {
       "toggleLabel": "Concept",

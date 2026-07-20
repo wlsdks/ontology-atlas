@@ -2128,7 +2128,12 @@
       "actionDocument": "문서",
       "actionEditRelations": "관계 편집",
       "actionCopyHandoff": "인계 복사",
-      "actionPath": "경로"
+      "actionPath": "경로",
+      "updated_today": "오늘 바뀜",
+      "updated_yesterday": "어제 바뀜",
+      "updated_daysAgo": "{count}일 전 바뀜",
+      "updated_weeksAgo": "{count}주 전 바뀜",
+      "updated_monthsAgo": "{count}달 전 바뀜"
     },
     "createNode": {
       "toggleLabel": "개념",
