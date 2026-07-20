@@ -16,6 +16,11 @@ import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { formatActivityAge } from "../lib/format-activity-age";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 
+// P4b — heartbeat 신호를 지우는 CLI 명령. `<vault>` 는 `agent-activity-status.ts`
+// 의 `formatRefreshCommand` 와 같은 관례로 실제 경로가 아니라 자리표시자 —
+// 값이 정적이라 shellArg 이스케이프가 필요 없다(동적 인자 없음).
+const CLEAR_SIGNAL_COMMAND = "ontology-atlas agent-activity <vault> --clear";
+
 type LiveAgentActivityState =
   | "planning"
   | "editing"
@@ -145,6 +150,11 @@ export function LiveActivityBadge({
     agentCodegraph: string;
     agentVerification: string;
     agentProofTrail: string;
+    /** P4b — heartbeat 상시 노출 "이 신호 지우기" 투명성 카피(전략 메모 조건). */
+    clearSignalHint: string;
+    clearSignalCopy: string;
+    clearSignalCopied: string;
+    clearSignalCopyFailed: string;
     close: string;
     statePlanning: string;
     stateEditing: string;
@@ -219,6 +229,12 @@ export function LiveActivityBadge({
       : focusCopyState === "failed"
         ? labels.agentExtractCopyFailed
         : labels.agentExtractCopy;
+  const clearSignalCopyLabel =
+    focusCopyState === "copied"
+      ? labels.clearSignalCopied
+      : focusCopyState === "failed"
+        ? labels.clearSignalCopyFailed
+        : labels.clearSignalCopy;
   const evidenceCounts = heartbeat
     ? [
         [labels.agentMcp, heartbeat.evidence.mcp.length],
@@ -520,6 +536,24 @@ export function LiveActivityBadge({
                   </div>
                 </>
               ) : null}
+              {/* P4b — 전략 메모 투명성 조건: heartbeat 가 있는 한 상태(fresh/stale
+                  무관) 항상 "이 신호 지우기" 안내 + 복사 가능한 CLI 명령을 노출한다
+                  — 얕게(안내 카피만)도 허용되는 조건이라 실제 파일 삭제는 하지
+                  않는다(로컬 쓰기는 CLI/에이전트의 역할). */}
+              <div className="grid gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5">
+                <p className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {labels.clearSignalHint}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void copyFocusCheck(CLEAR_SIGNAL_COMMAND)}
+                  data-testid="live-agent-clear-signal-copy"
+                  className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  <Clipboard size={10} aria-hidden />
+                  {clearSignalCopyLabel}
+                </button>
+              </div>
             </div>
           ) : null}
         </div>
@@ -812,6 +846,10 @@ export function LiveActivityIndicator({
         agentCodegraph: t("agentCodegraph"),
         agentVerification: t("agentVerification"),
         agentProofTrail: t("agentProofTrail"),
+        clearSignalHint: t("clearSignalHint"),
+        clearSignalCopy: t("clearSignalCopy"),
+        clearSignalCopied: t("clearSignalCopied"),
+        clearSignalCopyFailed: t("clearSignalCopyFailed"),
         close: t("close"),
         statePlanning: t("statePlanning"),
         stateEditing: t("stateEditing"),

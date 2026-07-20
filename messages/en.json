@@ -183,7 +183,11 @@
     "stateEditing": "editing",
     "stateVerifying": "verifying",
     "stateBlocked": "blocked",
-    "stateComplete": "complete"
+    "stateComplete": "complete",
+    "clearSignalHint": "To clear this activity signal, run the command below in your terminal.",
+    "clearSignalCopy": "Copy clear command",
+    "clearSignalCopied": "Copied",
+    "clearSignalCopyFailed": "Copy failed"
   },
   "locale": {
     "switcher": "Language",
@@ -852,7 +856,9 @@
         "tagsHeader": "Tags · {count}",
         "activeTagSummary": "#{tag}",
         "tagTitle": "#{tag} · {count} items",
-        "unpinTooltip": "Unpin"
+        "unpinTooltip": "Unpin",
+        "recentlyChangedHeader": "Recently changed · {count}",
+        "recentlyChangedWindowHint": "Docs edited in the last 7 days."
       },
       "empty": {
         "eyebrow": "{count} documents",
@@ -2313,7 +2319,14 @@
       "freshTitle": "Recently updated",
       "emptyHint": "No concepts match",
       "agentHandoff": "Handoff",
-      "agentHandoffAria": "Copy notes for your AI agent (summary, re-check request, update check)"
+      "agentHandoffAria": "Copy notes for your AI agent (summary, re-check request, update check)",
+      "segmentAll": "All",
+      "segmentRecent": "Recent {count}",
+      "segmentRecentAria": "Narrow the map to recently changed nodes",
+      "recentEmptyHint": "Nothing changed in the last 7 days",
+      "agentBadge": "Agent just now",
+      "uncatalogedDocsLabel": "{count} docs not on the map",
+      "uncatalogedDocsAction": "Promote"
     },
     "deeplinkNotFound": "Node not found: {query}",
     "bootstrap": {

@@ -183,7 +183,11 @@
     "stateEditing": "수정",
     "stateVerifying": "검증",
     "stateBlocked": "막힘",
-    "stateComplete": "완료"
+    "stateComplete": "완료",
+    "clearSignalHint": "이 작업 상태를 지우려면 터미널에서 아래 명령을 실행하세요.",
+    "clearSignalCopy": "지우기 명령 복사",
+    "clearSignalCopied": "복사됨",
+    "clearSignalCopyFailed": "복사 실패"
   },
   "locale": {
     "switcher": "언어",
@@ -852,7 +856,9 @@
         "tagsHeader": "태그 · {count}",
         "activeTagSummary": "#{tag}",
         "tagTitle": "#{tag} · {count}건",
-        "unpinTooltip": "고정 해제"
+        "unpinTooltip": "고정 해제",
+        "recentlyChangedHeader": "최근 바뀐 문서 · {count}",
+        "recentlyChangedWindowHint": "최근 7일 안에 수정된 문서입니다."
       },
       "empty": {
         "eyebrow": "문서 {count}개",
@@ -2313,7 +2319,14 @@
       "freshTitle": "최근 갱신",
       "emptyHint": "일치하는 개념이 없습니다",
       "agentHandoff": "인계",
-      "agentHandoffAria": "AI에게 넘길 메모 복사 (요약 · 다시 분석 요청 · 최신 상태 확인)"
+      "agentHandoffAria": "AI에게 넘길 메모 복사 (요약 · 다시 분석 요청 · 최신 상태 확인)",
+      "segmentAll": "전체",
+      "segmentRecent": "최근 변경 {count}",
+      "segmentRecentAria": "최근 변경 노드로 지도 좁히기",
+      "recentEmptyHint": "최근 7일 안에 바뀐 노드가 없습니다",
+      "agentBadge": "에이전트가 방금",
+      "uncatalogedDocsLabel": "지도에 없는 문서 {count}개",
+      "uncatalogedDocsAction": "올리기"
     },
     "deeplinkNotFound": "노드를 찾을 수 없습니다: {query}",
     "bootstrap": {

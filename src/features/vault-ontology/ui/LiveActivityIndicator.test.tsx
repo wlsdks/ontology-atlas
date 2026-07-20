@@ -50,6 +50,10 @@ const labels = {
   agentCodegraph: "Source",
   agentVerification: "Verify",
   agentProofTrail: "Proof trail",
+  clearSignalHint: "Run this command in your terminal to clear this activity signal.",
+  clearSignalCopy: "Copy clear command",
+  clearSignalCopied: "Copied",
+  clearSignalCopyFailed: "Copy failed",
   close: "Close live activity popover",
   statePlanning: "planning",
   stateEditing: "editing",
@@ -264,6 +268,50 @@ describe("LiveActivityBadge", () => {
     expect(proofTrail).toHaveTextContent("validate_vault +1");
     expect(proofTrail).toHaveTextContent("serena symbols LiveActivityIndicator");
     expect(proofTrail).toHaveTextContent("pnpm exec vitest run ... +1");
+  });
+
+  it("P4b: 신선한 heartbeat 에도 '신호 지우기' 안내 + 복사 가능한 --clear 명령이 항상 노출된다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: false,
+          reviewMode: "ontology-focus",
+          ageMs: 90_000,
+          errorMessage: null,
+          heartbeat: {
+            agent: "codex",
+            state: "editing",
+            focus: {
+              summary: "Wire heartbeat into Live popover",
+              ontologySlug: "capabilities/agent-live-activity-contract",
+              files: [],
+            },
+            plan: [],
+            evidence: { mcp: [], codegraph: [], verification: [] },
+            updatedAt: "2026-06-06T10:00:00.000Z",
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Agent heartbeat current/ }));
+    expect(screen.getByTestId("live-agent-activity")).toHaveTextContent(labels.clearSignalHint);
+
+    fireEvent.click(screen.getByTestId("live-agent-clear-signal-copy"));
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(writeText.mock.calls[0][0]).toBe("ontology-atlas agent-activity <vault> --clear");
   });
 
   it("focus summary가 없어도 닫힌 Live trigger는 ontology slug를 focus fallback으로 보여준다", () => {
