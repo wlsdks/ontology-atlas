@@ -49,7 +49,7 @@ describe("TopologyEmptyState", () => {
   it("보조 힌트는 별도 안내 박스로 강조하지 않는다", () => {
     renderEmpty(1, "no-relations");
     const hint = screen.getByText(
-      "전체 온톨로지 노드 문서와 변경점은 개념 둘러보기·저장·편집에서 이어서 확인할 수 있습니다.",
+      "전체 지도 문서와 변경점은 개념 둘러보기·저장·편집에서 이어서 확인할 수 있습니다.",
     );
     expect(hint.className).not.toContain("rounded-md");
     expect(hint.className).not.toContain("border");

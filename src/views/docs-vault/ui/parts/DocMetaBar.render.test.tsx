@@ -53,9 +53,9 @@ describe("DocMetaBar", () => {
     renderMetaBar();
 
     expect(
-      screen.getByRole("region", { name: "온톨로지 근거" }),
+      screen.getByRole("region", { name: "지도 근거" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("온톨로지 근거")).toBeInTheDocument();
+    expect(screen.getByText("지도 근거")).toBeInTheDocument();
     expect(
       screen.getByText("docs/ontology/capabilities/agent-graph-readiness.md"),
     ).toBeInTheDocument();
@@ -78,7 +78,7 @@ describe("DocMetaBar", () => {
     expect(screen.getByText("docs/README.md")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "그래프를 뒷받침하는 로컬 마크다운 근거입니다. 에이전트는 온톨로지를 갱신하기 전에 이 레코드를 인용할 수 있습니다.",
+        "그래프를 뒷받침하는 로컬 마크다운 근거입니다. 에이전트는 지도를 갱신하기 전에 이 레코드를 인용할 수 있습니다.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -98,7 +98,7 @@ describe("DocMetaBar", () => {
       "href",
       "/ontology/?node=capability%3Aagent-graph-readiness",
     );
-    expect(conceptLink).toHaveAttribute("title", "capability 노드를 온톨로지 트리에서 보기");
+    expect(conceptLink).toHaveAttribute("title", "capability 노드를 지도에서 보기");
     expect(conceptLink.className).toContain("min-h-8");
     expect(conceptLink.className).toContain("rounded-md");
     expect(conceptLink.className).toContain("hover:-translate-y-0.5");

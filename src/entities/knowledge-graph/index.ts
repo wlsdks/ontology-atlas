@@ -8,9 +8,10 @@ export type {
 export {
   KNOWLEDGE_EDGE_TYPES,
   useEdgeTypeLabel,
+  useRelationVocabulary,
   buildEdgeTypeRows,
 } from "./model";
-export type { EdgeTypeRow } from "./model";
+export type { EdgeTypeRow, RelationRegister } from "./model";
 export {
   buildOntologyBuilderNodeHref,
   buildOntologyBuilderNodeHrefFromGraphId,

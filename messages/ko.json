@@ -346,6 +346,15 @@
     "describes": "설명",
     "related_to": "연관"
   },
+  "edgeTypesPlain": {
+    "contains": "담는 것",
+    "belongs_to": "속한 곳",
+    "depends_on": "기대는 곳",
+    "implements": "구현한 것",
+    "uses": "쓰는 것",
+    "describes": "근거",
+    "related_to": "관련 있음"
+  },
   "topologyWidgets": {
     "controls": {
       "fitViewTooltip": "지도 전체 맞추기",
@@ -472,6 +481,15 @@
       "help": "탐색에 사용할 수 있는 키보드 단축키 목록입니다.",
       "closeAriaLabel": "단축키 안내 닫기",
       "footer": "를 다시 눌러도 닫힙니다",
+      "glossary": {
+        "title": "지도에서 쓰는 말",
+        "domainTerm": "도메인",
+        "domainDefinition": "기능을 묶는 큰 영역",
+        "capabilityTerm": "역량",
+        "capabilityDefinition": "사용자가 할 수 있는 일 하나",
+        "elementTerm": "요소",
+        "elementDefinition": "그 일을 구현하는 코드/문서 조각"
+      },
       "sections": {
         "navigation": "탐색",
         "topology": "지형도",
@@ -549,19 +567,19 @@
       "projectsList": "프로젝트 목록",
       "docsVault": "문서함",
       "docsVaultAriaLabel": "문서함 열기 — 로컬 마크다운, 그래프 전달, 에이전트 설정을 한 곳에서 점검",
-      "ontology": "온톨로지",
-      "ontologyAriaLabel": "온톨로지 트리 열기 — 로컬 문서함의 개념과 관계를 계층으로 봅니다",
+      "ontology": "지도",
+      "ontologyAriaLabel": "지도 열기 — 로컬 문서함의 개념과 관계를 계층으로 봅니다",
       "collapsedSubtitle": "워크스페이스 지도 펼치기",
       "collapsedAriaLabel": "좌측 패널 펼치기",
       "collapsedTitleText": "좌측 패널 펼치기",
       "backToWorkspace": "워크스페이스 지도로 돌아가기",
       "openDocsVault": "문서함 열기",
-      "openOntologyTree": "온톨로지 트리 열기",
+      "openOntologyTree": "지도 열기",
       "sampleBadge": "샘플"
     },
     "workspaceStrip": {
-      "openOntologyAriaLabel": "온톨로지 트리 열기",
-      "ontologyAction": "온톨로지 지도 열기",
+      "openOntologyAriaLabel": "지도 열기",
+      "ontologyAction": "지도 열기",
       "ontologyLabel": "개념",
       "ontologyTitle": "프로젝트가 가진 개념 수입니다. 안내 문서와 프로젝트 소개 문서는 제외되어 의미 지도의 전체 수와 다를 수 있습니다.",
       "domain": "도메인",
@@ -639,7 +657,7 @@
       "openHubTopology": "이 허브 지형도 열기",
       "openProjectDetail": "프로젝트 보기",
       "openDocsVault": "문서함",
-      "openOntology": "온톨로지 트리에서 보기",
+      "openOntology": "지도에서 보기",
       "openDocsVaultTitleWithDoc": "{name} 관련 최상위 문서 바로 열기",
       "openDocsVaultTitleEmpty": "문서함 홈으로",
       "connectionsTitle": "어디와 연결돼 있나",
@@ -797,14 +815,14 @@
     },
     "parts": {
       "meta": {
-        "recordProofAria": "온톨로지 근거",
-        "recordProofLabel": "온톨로지 근거",
+        "recordProofAria": "지도 근거",
+        "recordProofLabel": "지도 근거",
         "pathLabel": "경로",
-        "recordProofBody": "그래프를 뒷받침하는 로컬 마크다운 근거입니다. 에이전트는 온톨로지를 갱신하기 전에 이 레코드를 인용할 수 있습니다.",
+        "recordProofBody": "그래프를 뒷받침하는 로컬 마크다운 근거입니다. 에이전트는 지도를 갱신하기 전에 이 레코드를 인용할 수 있습니다.",
         "recordProofOntologyBody": "이 문서 속성이 {kind} 개념으로 연결됩니다. 에이전트는 이 근거를 쿼리, 인용, 갱신할 수 있습니다.",
         "wordsUnit": "{count} 단어",
         "readingMinutes": "≈ {minutes}분 읽기",
-        "ontologyKindTitle": "{kind} 노드를 온톨로지 트리에서 보기",
+        "ontologyKindTitle": "{kind} 노드를 지도에서 보기",
         "ontologyKindLabel": "의미 지도 · kind:{kind}",
         "topologyLinkLabel": "지형도",
         "topologyLinkTitle": "이 개념을 지형도에서 열기"
@@ -825,7 +843,7 @@
             "count": "{count}개"
           },
           "ontology": {
-            "label": "온톨로지 노드",
+            "label": "지도 문서",
             "count": "{count}개"
           }
         },
@@ -885,8 +903,8 @@
         "helpShortcuts": "P · 프로젝트 / D · 도메인 / C · 기능 / E · 요소  ·  Del · 선택 삭제  ·  Esc · 선택 해제  ·  F · 전체 화면",
         "headerAriaLabel": "빌더 헤더",
         "headerBreadcrumbAriaLabel": "탐색 경로",
-        "headerBreadcrumbBack": "온톨로지",
-        "headerBreadcrumbBackAriaLabel": "온톨로지로 돌아가기",
+        "headerBreadcrumbBack": "지도",
+        "headerBreadcrumbBackAriaLabel": "지도로 돌아가기",
         "headerCurrentLabel": "빌더",
         "headerCensus": "저장된 개념 {nodes}개 · 관계 {relations}개",
         "headerDirtyClean": "미저장 변경 없음",
@@ -1043,7 +1061,7 @@
           "stagedStatus": "캔버스 준비됨 · 개념 {nodes} · 관계 {edges}",
           "empty": {
             "title": "기능 개념부터 시작",
-            "body": "개념 하나를 추가하고 이름을 붙인 뒤 저장된 온톨로지에 연결합니다.",
+            "body": "개념 하나를 추가하고 이름을 붙인 뒤 저장된 지도에 연결합니다.",
             "primary": "기능 추가",
             "secondary": "저장 상태"
           },
@@ -1055,7 +1073,7 @@
           },
           "selectedProject": {
             "title": "{title} 확장 중",
-            "body": "프로젝트 아래 새 도메인을 추가하고 저장된 온톨로지에 연결합니다.",
+            "body": "프로젝트 아래 새 도메인을 추가하고 저장된 지도에 연결합니다.",
             "primary": "도메인 추가",
             "secondary": "검증 열기"
           },
@@ -1783,7 +1801,7 @@
       "openFolderCta": "내 폴더 열기"
     },
     "backlinksStrip": {
-      "openInOntology": "온톨로지에서 열기 →",
+      "openInOntology": "지도에서 열기 →",
       "empty": "아직 이 문서를 참조한 문서가 없습니다"
     },
     "vaultStatus": {
@@ -2099,9 +2117,9 @@
   },
   "topology": {
     "documentTitle": "지형도",
-    "srHeading": "온톨로지 지형도",
+    "srHeading": "지형도",
     "selectionAnnouncement": "{name} 선택됨. 의존 {deps}개, 연결 {referenced}개.",
-    "mobileTagline": "온톨로지 개념 지도.",
+    "mobileTagline": "개념 지도.",
     "workspace": {
       "growthThisWeek": " · 이번 주 프로젝트 +{count}",
       "subtitle": "개념 <b>{concepts}</b>개 · 관계 <b>{relations}</b>개{growth}",
@@ -2120,8 +2138,6 @@
       "poweredOn": "최근 갱신",
       "poweredOff": "정체",
       "metricUsedBy": "쓰는 곳",
-      "metricDependsOn": "기대는 곳",
-      "metricEvidence": "근거",
       "noConnections": "직접 연결 없음",
       "handoff": "다음 액션 복사",
       "handoffCopied": "에이전트 인계를 복사했어요",
@@ -2139,7 +2155,7 @@
     },
     "createNode": {
       "toggleLabel": "개념",
-      "toggleAria": "온톨로지 개념 추가",
+      "toggleAria": "개념 추가",
       "toggleTooltip": "그래프에서 바로 새 개념 만들기",
       "heading": "개념 추가",
       "titlePlaceholder": "개념 이름",
@@ -2155,7 +2171,7 @@
       "toastExists": "같은 slug 의 노드가 이미 있어요.",
       "toastError": "노드를 만들지 못했어요.",
       "unavailableHeading": "워크스페이스 필요",
-      "unavailableBody": "토폴로지 지도에서 온톨로지 개념을 만들려면 먼저 로컬 워크스페이스를 연결하세요.",
+      "unavailableBody": "토폴로지 지도에서 개념을 만들려면 먼저 로컬 워크스페이스를 연결하세요.",
       "unavailableAction": "워크스페이스 열기"
     },
     "explanationEdit": {
@@ -2174,10 +2190,10 @@
       "overviewSyncCopied": "업데이트 점검 복사됨",
       "overviewBriefCopyAriaLabel": "지형도 지도 요약 복사",
       "overviewBriefCopiedAriaLabel": "지형도 지도 요약 복사됨",
-      "overviewReanalyzeCopyAriaLabel": "Claude Code 또는 Codex용 온톨로지 재분석 명령 복사",
-      "overviewReanalyzeCopiedAriaLabel": "Claude Code 또는 Codex용 온톨로지 재분석 명령 복사됨",
-      "overviewSyncCopyAriaLabel": "Claude Code 또는 Codex용 온톨로지 업데이트 점검 복사",
-      "overviewSyncCopiedAriaLabel": "Claude Code 또는 Codex용 온톨로지 업데이트 점검 복사됨",
+      "overviewReanalyzeCopyAriaLabel": "Claude Code 또는 Codex용 지도 재분석 명령 복사",
+      "overviewReanalyzeCopiedAriaLabel": "Claude Code 또는 Codex용 지도 재분석 명령 복사됨",
+      "overviewSyncCopyAriaLabel": "Claude Code 또는 Codex용 지도 업데이트 점검 복사",
+      "overviewSyncCopiedAriaLabel": "Claude Code 또는 Codex용 지도 업데이트 점검 복사됨",
       "overviewBriefTitle": "지형도 지도 요약",
       "overviewBriefTotalNodes": "전체 노드",
       "overviewBriefTotalRelations": "전체 관계",
@@ -2204,8 +2220,7 @@
       "overviewBriefWorkspaceCheck": "작업공간 점검",
       "overviewBriefMcpWorkspaceCheck": "MCP 작업공간 점검",
       "healthEvidenceUrl": "URL",
-      "overviewRelationLegendSpine": "포함",
-      "overviewRelationLegendQuality": "신뢰",
+      "overviewRelationLegendQuality": "확실도",
       "pathChipUnresolved": "경로: {source} → 대상 선택",
       "pathChipResolved": "{source} → {target} · {hops}홉",
       "pathChipNoPath": "{source} → {target} · 경로 없음",
@@ -2261,7 +2276,7 @@
       "bodyNoProjectsDownload": "macOS 앱을 설치하고 로컬 vault를 열면 첫 프로젝트 개념부터 지형도를 시작할 수 있습니다.",
       "bodyNoProjectsPicker": "로컬 vault를 열거나 저장·편집에서 첫 프로젝트 개념을 저장하면 지형도가 시작됩니다.",
       "bodyNoDeps": "저장·편집에서 개념 사이 관계를 하나 저장하면 이 화면에 선이 나타납니다.",
-      "crossViewHint": "전체 온톨로지 노드 문서와 변경점은 개념 둘러보기·저장·편집에서 이어서 확인할 수 있습니다.",
+      "crossViewHint": "전체 지도 문서와 변경점은 개념 둘러보기·저장·편집에서 이어서 확인할 수 있습니다.",
       "ctaCreateNode": "개념 만들기",
       "ctaTree": "개념 둘러보기",
       "ctaBuilder": "저장·편집 열기",

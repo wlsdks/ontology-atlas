@@ -44,3 +44,23 @@ describe("ShortcutSheet — topology section (W2-C)", () => {
     ).toBeInTheDocument();
   });
 });
+
+/**
+ * P1a-2 (persona 실측 N8 — 도메인/역량/요소 정의가 작업 UI 0곳). Locks the
+ * one-line kind glossary added to this sheet's footer instead of a new
+ * surface.
+ */
+describe("ShortcutSheet — kind glossary (P1a-2)", () => {
+  it("defines domain/capability/element in one line each", () => {
+    renderSheet();
+    expect(screen.getByText("Words used on the map")).toBeInTheDocument();
+    expect(screen.getByText("Domain")).toBeInTheDocument();
+    expect(screen.getByText("A large area that groups features")).toBeInTheDocument();
+    expect(screen.getByText("Capability")).toBeInTheDocument();
+    expect(screen.getByText("One thing a user can do")).toBeInTheDocument();
+    expect(screen.getByText("Element")).toBeInTheDocument();
+    expect(
+      screen.getByText("A piece of code or a doc that implements it"),
+    ).toBeInTheDocument();
+  });
+});
