@@ -44,7 +44,9 @@ ontology-atlas workspace-brief ./ontology
 ontology-atlas health ./ontology
 ```
 
-No backend. No login. No cloud account. Your repo is the source of truth.
+No backend. No login. No cloud account. Your repo is the source of truth —
+this map is markdown files on your disk, so it still opens in a text editor,
+in Obsidian, in `cat`, even if `ontology-atlas` itself is long gone.
 
 ---
 
@@ -57,6 +59,26 @@ and design decisions.
 
 `ontology-atlas` gives agents a durable local memory they can query before
 touching code and update after real changes.
+
+If you've been searching for a **codebase map** for AI agents, an **agent
+memory** layer, or a **context layer** that survives
+[context rot](https://www.producttalk.org/context-rot/) — this is the same
+shape of tool, purpose-built for the layer above source code: domains,
+capabilities, and the elements that prove them, not another symbol index.
+See [`docs/CASE-STUDY-AGENTS-MD-DRIFT.md`](docs/CASE-STUDY-AGENTS-MD-DRIFT.md)
+for how this repo uses that same "permanent reference file" idea to keep its
+own `AGENTS.md`/`CLAUDE.md` instructions from drifting apart, and extends it
+into the vault for facts that change faster than instructions do.
+
+The same shape of tool has already found organic demand as a **plain
+markdown vault an agent reads and writes**: Andrej Karpathy's 2026 note
+framed it as *"Obsidian is the IDE; the LLM is the programmer; the wiki is
+the codebase"*
+([gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)),
+and the pattern spread quickly through general-purpose note-taking tools.
+`ontology-atlas` is the same mechanism specialized one layer down — not a
+wiki over your notes, but a graph over your business domains, capabilities,
+and the code that proves them.
 
 The minimum useful setup is just Atlas plus a normal agent. If Claude Code,
 Codex, Cursor, or another MCP-capable agent can connect to the Atlas MCP server
@@ -396,6 +418,7 @@ app -> views -> widgets -> features -> entities -> shared
 |---|---|
 | [`docs/PRODUCT-DIRECTION.md`](docs/PRODUCT-DIRECTION.md) | Product strategy and launch framing |
 | [`docs/AGENT-MEMORY-POSITIONING.md`](docs/AGENT-MEMORY-POSITIONING.md) | Why this is agent memory, not an ontology editor |
+| [`docs/CASE-STUDY-AGENTS-MD-DRIFT.md`](docs/CASE-STUDY-AGENTS-MD-DRIFT.md) | How this repo avoids AGENTS.md/CLAUDE.md drift, and why the vault extends the same pattern |
 | [`docs/AGENT-GRAPH-WORKFLOW.md`](docs/AGENT-GRAPH-WORKFLOW.md) | CLI-only vs MCP-connected graph workflows, graph DB differences, and verification evidence |
 | [`docs/FEATURES.md`](docs/FEATURES.md) | Current CLI, MCP, and web feature inventory |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Local-first architecture and data flow |

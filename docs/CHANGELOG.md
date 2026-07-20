@@ -16,6 +16,19 @@
 - 노드 데이터시트에 소속 도메인 1급 사실 — "도메인 · <이름>" 클릭 시
   해당 도메인 포커스 (선 스타일로만 섞여 있던 것, N6).
 - ⌘K 검색에서 경로형 요소 제목을 보조 톤으로 강등 (소음 제거, N12).
+## 2026-07-21 — 외향 문서 슬라이스 (시장 언어 연결, 계획 구조 결함 해소)
+
+제품 검수가 "계획 전체에 외향(시장에 말하는) 슬라이스 0개"를 구조 결함으로
+판정 — 니즈 조사(`.qa-scratch/community-research-2026-07/needs.md`)가 확인한
+수요와 실제 카피 사이에 다리가 없었다. README에 "codebase map / agent
+memory / context layer" 시장 어휘를 잇는 브릿지 문단과 유산 선언 문장("이
+지도는 당신 디스크의 마크다운") 추가. 신규
+[`docs/CASE-STUDY-AGENTS-MD-DRIFT.md`](CASE-STUDY-AGENTS-MD-DRIFT.md) —
+AGENTS.md/CLAUDE.md drift 커뮤니티 고통 → 이 저장소가 실제로 쓰는 해법(단일
+진실원 + thin wrapper) → context rot 완화책으로서의 vault, 세 단계 케이스
+스터디. README에 Karpathy "Obsidian is the IDE; the LLM is the programmer;
+the wiki is the codebase" LLM-wiki 패턴과의 위치 관계 1문단 추가. 코드 변경
+없음 — 문서만.
 
 ## 2026-07-21 — 문서함 웹 세션 로컬 vault 개방 (표면 간 모순 해소)
 
