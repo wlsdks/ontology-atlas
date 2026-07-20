@@ -600,8 +600,8 @@ A successful run looks like this:
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 104 total query results (limited true)
 ✓ analyze_repo_structure — fsd (4 domain candidates, 18 capability candidates, 29 element candidates)
-✓ infer_imports — 800 files scanned, 491 module edges (elements/src/views/home->capabilities/knowledge-graph x20 (static:20), elements/src/views/ontology-edit->capabilities/docs-vault x13 (static:11/dynamic:1/reexport:1), +489 more)
-✓ index_project — 52 concept candidates, 491 import relations, validation 0 problem files
+✓ infer_imports — 802 files scanned, 496 module edges (elements/src/views/home->capabilities/knowledge-graph x20 (static:20), elements/src/views/ontology-edit->capabilities/docs-vault x13 (static:11/dynamic:1/reexport:1), +494 more)
+✓ index_project — 52 concept candidates, 496 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
