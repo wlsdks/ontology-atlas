@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-20T12:33:14.009Z",
+  "generatedAt": "2026-07-20T13:51:44.696Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2742,6 +2742,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-20 — 캔버스 모션 폴리시 (Guardian A3–A8)",
+          "slug": "2026-07-20-캔버스-모션-폴리시-guardian-a3a8"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-20 — 캔버스 품질 P1: 잉크 위계 · 월드 고정 배경 · 뷰포트 컬링",
+          "slug": "2026-07-20-캔버스-품질-p1-잉크-위계-월드-고정-배경-뷰포트-컬링"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-20 — 지도 드래그 물성: 견인 거리 감쇠",
           "slug": "2026-07-20-지도-드래그-물성-견인-거리-감쇠"
         },
@@ -3971,9 +3981,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 노드를 하나 끌면 지도 전체가 딸려 움직이던 문제. 원인은 견인 세기를 홉 수로만 판정한 것 — 허브-스포크 vault 는 모든 노드가 2홉 안이라 \"1홉",
-      "wordCount": 24238,
-      "updatedAt": "2026-07-20T12:19:53.387Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 같은 검수의 모션 계열 6건. 신설 토큰 6종, 전부 다크 단일. 선택 펄스 — 선형 두 채널을 easeOutCubic(확장) + 2차(소멸)로. 기울기 ",
+      "wordCount": 24651,
+      "updatedAt": "2026-07-20T13:45:07.435Z",
       "linksOut": [
         "slug"
       ]

@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { FolderOpen, GitBranch, Network, Plus } from 'lucide-react';
+import { FolderOpen, GitBranch, Map as MapIcon, Network, Plus } from 'lucide-react';
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 
 /**
@@ -21,19 +21,33 @@ export function TopologyEmptyState({
   reason,
   canCreateNode = false,
   onCreateNode,
+  docsFoundCount = 0,
+  onStartFromDocs,
 }: {
   projectCount: number;
   reason?: 'no-projects' | 'no-relations';
   /** S6 — writable 로컬 vault 면 "첫 노드를 토폴로지에서" 가 1차 진입. */
   canCreateNode?: boolean;
   onCreateNode?: () => void;
+  /**
+   * 부트스트랩 게이트 (discovery.md F1/F2): 열린 vault 에 .md 는 있는데
+   * 지도 노드가 0 일 때 — 사용자의 문서 존재를 먼저 인정하고("N개를
+   * 찾았어요") "내 문서로 지도 만들기"를 1차 CTA 로 세운다. 이 브랜치가
+   * 켜지면 기존 macOS 다운로드 안내(방금 vault 를 연 사람에게 앱 설치를
+   * 권하던 오안내)는 내려간다.
+   */
+  docsFoundCount?: number;
+  onStartFromDocs?: () => void;
 }) {
   const t = useTranslations('topology.empty');
   const isNoProjects = reason ? reason === 'no-projects' : projectCount === 0;
   const isDesktopRuntime = isTauriVaultRuntime();
-  const kicker = isNoProjects
-    ? t('kicker', { count: projectCount })
-    : t('kickerNoDeps', { count: projectCount });
+  const hasDocsToBootstrap = docsFoundCount > 0 && onStartFromDocs !== undefined;
+  const kicker = hasDocsToBootstrap
+    ? t('kickerDocsFound', { count: docsFoundCount })
+    : isNoProjects
+      ? t('kicker', { count: projectCount })
+      : t('kickerNoDeps', { count: projectCount });
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4">
@@ -47,21 +61,38 @@ export function TopologyEmptyState({
           {kicker}
         </p>
         <h2 className="mt-2 text-[16px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-          {isNoProjects ? t('titleNoProjects') : t('titleNoDeps')}
+          {hasDocsToBootstrap
+            ? t('titleDocsFound')
+            : isNoProjects
+              ? t('titleNoProjects')
+              : t('titleNoDeps')}
         </h2>
         <p className="mt-2 text-[13px] leading-relaxed text-[color:var(--color-text-tertiary)]">
-          {isNoProjects
-            ? t(
-                isDesktopRuntime
-                  ? 'bodyNoProjectsPicker'
-                  : 'bodyNoProjectsDownload',
-              )
-            : t('bodyNoDeps')}
+          {hasDocsToBootstrap
+            ? t('bodyDocsFound', { count: docsFoundCount })
+            : isNoProjects
+              ? t(
+                  isDesktopRuntime
+                    ? 'bodyNoProjectsPicker'
+                    : 'bodyNoProjectsDownload',
+                )
+              : t('bodyNoDeps')}
         </p>
         <p className="mt-3 text-[11px] leading-relaxed text-[color:var(--color-text-tertiary)]">
           {t('crossViewHint')}
         </p>
         <div className="mt-4 flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
+          {hasDocsToBootstrap ? (
+            <button
+              type="button"
+              onClick={onStartFromDocs}
+              data-testid="empty-start-from-docs"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-4 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+            >
+              <MapIcon size={14} aria-hidden="true" />
+              {t('ctaStartFromDocs')}
+            </button>
+          ) : null}
           {canCreateNode && onCreateNode ? (
             <button
               type="button"
@@ -87,6 +118,7 @@ export function TopologyEmptyState({
             <GitBranch size={14} aria-hidden="true" />
             {t(isNoProjects ? 'ctaBuilder' : 'ctaBuilderNoDeps')}
           </Link>
+          {hasDocsToBootstrap ? null : (
           <Link
             href={isDesktopRuntime ? "/docs/?intent=local" : "/download/"}
             className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] px-4 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
@@ -98,6 +130,7 @@ export function TopologyEmptyState({
                 : 'ctaOpenVaultDownload',
             )}
           </Link>
+          )}
         </div>
       </div>
     </div>

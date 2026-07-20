@@ -2260,7 +2260,11 @@
       "ctaBuilder": "저장·편집 열기",
       "ctaBuilderNoDeps": "관계 만들기",
       "ctaOpenVaultDownload": "macOS 앱 다운로드",
-      "ctaOpenVaultPicker": "로컬 vault 열기"
+      "ctaOpenVaultPicker": "로컬 vault 열기",
+      "kickerDocsFound": "내 폴더 · 문서 {count}개",
+      "titleDocsFound": "문서를 찾았어요 — 아직 지도에는 없어요",
+      "bodyDocsFound": "이 폴더에서 마크다운 {count}개를 찾았어요. 문서 상단에 종류 표시(frontmatter)가 아직 없어서 지도에 올라오지 않았을 뿐이에요.",
+      "ctaStartFromDocs": "내 문서로 지도 만들기"
     },
     "errorBanner": {
       "retry": "다시 시도"
@@ -2289,7 +2293,20 @@
       "agentHandoff": "인계",
       "agentHandoffAria": "AI에게 넘길 메모 복사 (요약 · 다시 분석 요청 · 최신 상태 확인)"
     },
-    "deeplinkNotFound": "노드를 찾을 수 없습니다: {query}"
+    "deeplinkNotFound": "노드를 찾을 수 없습니다: {query}",
+    "bootstrap": {
+      "heading": "내 문서로 지도 만들기",
+      "projectName": "프로젝트 이름",
+      "folders": "지도에 올릴 폴더",
+      "folderDocCount": "문서 {count}개",
+      "summary": "문서 {count}개의 맨 위에 종류 표시를 추가하고, 프로젝트 파일({projectFile}) 1개를 새로 만들어요.",
+      "bodyUntouched": "문서 본문은 바꾸지 않아요. 모든 변경은 내 폴더 안에서만 일어나고, git 으로 언제든 되돌릴 수 있어요.",
+      "alreadyTyped": "이미 지도에 올라온 문서 {count}개는 그대로 둬요.",
+      "confirm": "지도 만들기",
+      "cancel": "닫기",
+      "errorPrefix": "저장하지 못했어요:",
+      "toastDone": "문서 {count}개로 첫 지도를 만들었어요"
+    }
   },
   "fullDetailA1": {
     "backToMap": "← 지도",

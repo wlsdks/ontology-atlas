@@ -15,7 +15,12 @@ import { BookOpen, HelpCircle, Plus, Waypoints, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
-import { useLocalVault } from "@/features/docs-vault-local";
+import {
+  buildProjectMarkdown,
+  deriveBootstrapPlan,
+  selectedElements,
+  useLocalVault,
+} from "@/features/docs-vault-local";
 import { FirstRunReadout, useFirstRunSampleModeSettled } from "@/features/first-run-starter";
 // 타입/기본값은 지도 렌더러(캔버스) 의존성 없는 별도 모듈에서 직접 import해서
 // SSR 평가 경로에 렌더러 참조가 끼지 않도록 한다.
@@ -124,6 +129,7 @@ import { resolveDeeplinkMissDecision } from "../lib/deeplink-miss-notice";
 import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
+import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { buildFullDetailGroups, buildFullDetailReachModel } from "@/widgets/full-detail-a1";
@@ -481,6 +487,36 @@ export function HomePage() {
     });
   }, [setRouteState]);
   const canCreateNode = vault.manifest !== null;
+  // Slice 1 (discovery.md F1~F6) — "내 문서로 지도 만들기". 열린 vault 에
+  // .md 는 있는데 지도 노드가 0 인 순간의 부트스트랩 다이얼로그.
+  const [bootstrapOpen, setBootstrapOpen] = useState(false);
+  const bootstrapPlan = useMemo(() => {
+    if (!vault.manifest) return null;
+    return deriveBootstrapPlan(
+      vault.manifest.docs.map((d) => ({ slug: d.slug, title: d.title, frontmatter: d.frontmatter })),
+      vault.handle?.name ?? "my-project",
+    );
+  }, [vault.manifest, vault.handle]);
+  const runBootstrap = useCallback(
+    async (input: { projectTitle: string; acceptedDomains: ReadonlySet<string> }) => {
+      if (!bootstrapPlan || !vault.manifest) return;
+      const plan = { ...bootstrapPlan, projectTitle: input.projectTitle };
+      const elements = selectedElements(plan, input.acceptedDomains);
+      // frontmatter 만 추가 (본문 무변경) — 마지막 createDoc 의 내부 리로드가
+      // 전체를 한 번에 반영하도록 개별 write 는 refresh 를 생략한다.
+      for (const el of elements) {
+        await vault.updateFrontmatter(
+          el.slug,
+          el.domain ? { kind: "element", title: el.title, domain: el.domain } : { kind: "element", title: el.title },
+          { skipRefresh: true },
+        );
+      }
+      await vault.createDoc(plan.projectSlug, buildProjectMarkdown(plan, input.acceptedDomains));
+      setBootstrapOpen(false);
+      toast.show(t("bootstrap.toastDone", { count: elements.length }), "success");
+    },
+    [bootstrapPlan, vault, toast, t],
+  );
   const createNode = useCallback(
     async (input: { title: string; kind: CreateNodeKind; domain?: string }) => {
       try {
@@ -718,8 +754,10 @@ export function HomePage() {
   const topologyShortcutHelpPhoneVisible =
     analysisMode !== "path" && analysisMode !== "health";
   const createNodePending = createNodeIntent && !canCreateNode;
-  const topologyCreateNodeBlockingActive = createNodeOpen || createNodePending;
-  const topologyBlockingOverlayState = createNodeOpen
+  const topologyCreateNodeBlockingActive = createNodeOpen || createNodePending || bootstrapOpen;
+  const topologyBlockingOverlayState = bootstrapOpen
+    ? "bootstrap-from-docs"
+    : createNodeOpen
     ? "create-node"
     : createNodePending
       ? "create-node-pending-vault"
@@ -1982,6 +2020,55 @@ export function HomePage() {
                 </>
               ) : null}
             </div>
+            {bootstrapOpen && bootstrapPlan ? (
+              <>
+                <button
+                  type="button"
+                  aria-label={t('bootstrap.cancel')}
+                  className="absolute inset-0 z-[25] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-180 ease-out motion-reduce:transition-none"
+                  data-interactive-overlay="true"
+                  data-testid="ontology-bootstrap-backdrop"
+                  data-backdrop-contract="blocks-map-and-closes-composer"
+                  data-backdrop-surface-token="--topology-blocking-backdrop-surface"
+                  onClick={() => setBootstrapOpen(false)}
+                />
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={t('bootstrap.heading')}
+                  tabIndex={-1}
+                  className="absolute left-1/2 top-[var(--topology-blocking-composer-top)] z-30 max-h-[var(--topology-blocking-composer-max-height)] w-[var(--topology-blocking-composer-width)] -translate-x-1/2 overflow-y-auto"
+                  data-testid="ontology-bootstrap-panel"
+                  data-attention-role="blocking-composer"
+                  data-placement-contract="centered-blocking-edit"
+                  data-surface-role="blocking-edit-surface"
+                  data-elevation-contract="solid-panel-over-dimmed-map"
+                  data-size-contract="bounded-centered-composer"
+                  data-top-token="--topology-blocking-composer-top"
+                  data-width-token="--topology-blocking-composer-width"
+                  data-max-height-token="--topology-blocking-composer-max-height"
+                >
+                  <OntologyBootstrapForm
+                    plan={bootstrapPlan}
+                    onCancel={() => setBootstrapOpen(false)}
+                    onConfirm={runBootstrap}
+                    labels={{
+                      heading: t("bootstrap.heading"),
+                      projectName: t("bootstrap.projectName"),
+                      folders: t("bootstrap.folders"),
+                      folderDocCount: (count) => t("bootstrap.folderDocCount", { count }),
+                      summary: (docCount, projectFile) =>
+                        t("bootstrap.summary", { count: docCount, projectFile }),
+                      bodyUntouched: t("bootstrap.bodyUntouched"),
+                      alreadyTyped: (count) => t("bootstrap.alreadyTyped", { count }),
+                      confirm: t("bootstrap.confirm"),
+                      cancel: t("bootstrap.cancel"),
+                      errorPrefix: t("bootstrap.errorPrefix"),
+                    }}
+                  />
+                </div>
+              </>
+            ) : null}
             {canCreateNode && createNodeOpen ? (
               <>
                 <button
@@ -2228,6 +2315,12 @@ export function HomePage() {
                     reason={topologyOverlayState.emptyReason}
                     canCreateNode={canCreateNode}
                     onCreateNode={openCreateNode}
+                    docsFoundCount={bootstrapPlan?.elements.length ?? 0}
+                    onStartFromDocs={
+                      bootstrapPlan && bootstrapPlan.elements.length > 0
+                        ? () => setBootstrapOpen(true)
+                        : undefined
+                    }
                   />
                 ) : topologyOverlayState.kind === "filter-sparse" ? (
                   <TopologyNoMatchesState
