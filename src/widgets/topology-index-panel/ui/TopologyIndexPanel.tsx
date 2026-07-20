@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, Search } from "lucide-react";
 import {
+  filterTreeByNodeIds,
   filterTreeByQuery,
   type OntologyTreeBuildResult,
 } from "@/shared/lib/ontology-tree";
@@ -27,6 +28,18 @@ export interface TopologyIndexPanelLabels {
   elementsShort: string;
   freshTitle: string;
   emptyHint: string;
+  /** P4a — 렌즈 세그먼트 "전체". */
+  segmentAll: string;
+  /** P4a — 렌즈 세그먼트 "최근 변경 N"(호출자가 count 를 이미 포맷). */
+  segmentRecent: string;
+  segmentRecentAria: string;
+  /** P4a — "최근 변경" 렌즈가 활성인데 결과가 0일 때. */
+  recentEmptyHint: string;
+  /** P4b — heartbeat 귀속 배지. */
+  agentBadge: string;
+  /** P4c — "지도에 없는 문서 N개"(호출자가 count 를 이미 포맷). */
+  uncatalogedDocsLabel: string;
+  uncatalogedDocsAction: string;
 }
 
 export interface TopologyIndexPanelProps {
@@ -57,6 +70,21 @@ export interface TopologyIndexPanelProps {
     syncText: string;
     labels: TopologyIndexAgentHandoffLabels;
   };
+  /**
+   * P4a — "최근 변경" 렌즈(mtime 7일 창, `useRecentChanges`). 생략하면 세그먼트
+   * 컨트롤 자체를 렌더하지 않는다(기존 검색-only 동작 그대로). 활성화하면
+   * `filterTreeByNodeIds` 로 트리를 이 id 집합 + 조상 경로만으로 좁힌다 —
+   * `filterTreeByQuery` 와 같은 "부모 chain 보존" 필터 메커니즘 재사용.
+   */
+  recentChanges?: {
+    ids: ReadonlySet<string>;
+    /** P4b — fresh heartbeat 의 focus 와 일치하는 노드(있다면) 하나. */
+    agentAttributedNodeId: string | null;
+  } | null;
+  /** P4c — vault 에 있지만 아직 kind 없는(=지도에 없는) 문서 수. */
+  uncatalogedDocCount?: number;
+  /** P4c — 위 행 클릭 → "내 문서로 지도 만들기" 다이얼로그(`bootstrapOpen`). */
+  onPromoteUncatalogedDocs?: (() => void) | null;
 }
 
 /**
@@ -89,18 +117,27 @@ export function TopologyIndexPanel({
   className,
   footerGrowthText,
   agentHandoff,
+  recentChanges = null,
+  uncatalogedDocCount,
+  onPromoteUncatalogedDocs = null,
   onOpenAgentConnect = null,}: TopologyIndexPanelProps) {
   const [query, setQuery] = useState("");
   const [openIds, setOpenIds] = useState<Set<string>>(
     () => new Set(treeResult.roots.map((root) => root.node.id)),
   );
+  // P4a — "최근 변경" 렌즈. 검색이 활성이면 검색이 우선한다(둘을 동시에 좁히면
+  // "왜 안 보이지"가 두 원인으로 갈라져 헷갈린다) — 렌즈는 검색이 비어 있을
+  // 때만 트리를 좁힌다.
+  const [lens, setLens] = useState<"all" | "recent">("all");
   const trimmedQuery = query.trim();
   const isFiltering = trimmedQuery.length > 0;
+  const lensActive = !isFiltering && lens === "recent" && recentChanges !== null;
 
-  const visibleRoots = useMemo(
-    () => (isFiltering ? filterTreeByQuery(treeResult.roots, trimmedQuery) : treeResult.roots),
-    [treeResult.roots, isFiltering, trimmedQuery],
-  );
+  const visibleRoots = useMemo(() => {
+    if (isFiltering) return filterTreeByQuery(treeResult.roots, trimmedQuery);
+    if (lensActive && recentChanges) return filterTreeByNodeIds(treeResult.roots, recentChanges.ids);
+    return treeResult.roots;
+  }, [treeResult.roots, isFiltering, trimmedQuery, lensActive, recentChanges]);
   const maxDomainDescendantCount = useMemo(() => {
     const domains = treeResult.roots.flatMap((root) =>
       root.children.filter((child) => child.node.kind === "domain"),
@@ -116,7 +153,10 @@ export function TopologyIndexPanel({
       return next;
     });
   };
-  const isOpen = (nodeId: string) => isFiltering || openIds.has(nodeId);
+  // 검색과 마찬가지로 렌즈 활성 시에도 자동 펼침 — 좁혀진 조상 경로를 사용자가
+  // 일일이 캐럿으로 열지 않게 한다(filterTreeByQuery 의 "auto-reveal matches"
+  // 와 같은 UX 계약, filterTreeByNodeIds 결과에도 그대로 적용).
+  const isOpen = (nodeId: string) => isFiltering || lensActive || openIds.has(nodeId);
 
   return (
     <aside
@@ -190,6 +230,46 @@ export function TopologyIndexPanel({
         />
       </div>
 
+      {/* P4a — "전체 | 최근 변경 N" 렌즈 세그먼트. `recentChanges` 를 안 받으면
+          (mode 가 아직 못 계산했거나 호출자가 생략) 렌더 자체를 skip —
+          기존 검색-only 동작 그대로 유지된다. */}
+      {recentChanges ? (
+        <div
+          role="tablist"
+          aria-label={labels.segmentRecentAria}
+          className="mb-3 grid shrink-0 grid-cols-2 gap-1 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-overlay-1)] p-1"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={!lensActive}
+            data-testid="topology-index-segment-all"
+            onClick={() => setLens("all")}
+            className={`min-w-0 rounded-[var(--chrome-radius-inner)] px-2 py-1 text-[11px] transition-colors ${
+              !lensActive
+                ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
+                : "text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+            }`}
+          >
+            {labels.segmentAll}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={lensActive}
+            data-testid="topology-index-segment-recent"
+            onClick={() => setLens("recent")}
+            className={`min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-[11px] transition-colors ${
+              lensActive
+                ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
+                : "text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+            }`}
+          >
+            {labels.segmentRecent}
+          </button>
+        </div>
+      ) : null}
+
       <nav
         role="tree"
         aria-label={labels.label}
@@ -198,7 +278,7 @@ export function TopologyIndexPanel({
       >
         {visibleRoots.length === 0 ? (
           <p className="px-1 py-2 text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">
-            {labels.emptyHint}
+            {lensActive ? labels.recentEmptyHint : labels.emptyHint}
           </p>
         ) : (
           visibleRoots.map((root) => (
@@ -211,12 +291,33 @@ export function TopologyIndexPanel({
               onSelect={onSelect}
               selectedId={selectedId}
               changedSlugs={changedSlugs}
+              agentAttributedNodeId={recentChanges?.agentAttributedNodeId ?? null}
               maxDomainDescendantCount={maxDomainDescendantCount}
               labels={labels}
             />
           ))
         )}
       </nav>
+
+      {/* P4c — "지도에 없는 문서 N개" 조용한 행. `bootstrapPlan.elements.length`
+          (HomePage, `deriveBootstrapPlan` — 이미 kind 있는 문서는 제외된
+          카운트) 를 그대로 받는다 — 새 파생 없음. 0 이거나 승격 핸들러가
+          없으면 행 자체를 숨긴다. */}
+      {uncatalogedDocCount && uncatalogedDocCount > 0 && onPromoteUncatalogedDocs ? (
+        <button
+          type="button"
+          onClick={onPromoteUncatalogedDocs}
+          data-testid="topology-index-uncataloged-docs"
+          className="mt-2 flex shrink-0 items-center gap-2 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] px-2 py-1.5 text-left text-[11px] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+        >
+          <span className="min-w-0 flex-1 truncate text-[color:var(--topology-v2-panel-text-tertiary)]">
+            {labels.uncatalogedDocsLabel}
+          </span>
+          <span className="shrink-0 text-[color:var(--color-indigo-accent)]">
+            {labels.uncatalogedDocsAction}
+          </span>
+        </button>
+      ) : null}
 
       {/* v2.1 푸터 — 구 헤더의 "● 에이전트 동기화" 문구 + 성장 신호가
           여기로 이관. 단축키 캡은 장식(⇧⌘K 는 전역 팔레트가 이미 쓰는

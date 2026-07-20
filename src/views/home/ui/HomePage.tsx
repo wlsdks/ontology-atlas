@@ -14,7 +14,7 @@ import { useTranslations } from "next-intl";
 import { BookOpen, HelpCircle, Plus, Waypoints, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
-import { useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
+import { useOntologyInsight, useRecentChanges, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
   buildProjectMarkdown,
   deriveBootstrapPlan,
@@ -399,6 +399,9 @@ export function HomePage() {
   const { insight: ontologyInsight } = useOntologyInsight();
   // S-C1 — 노드 데이터시트 "언제 바뀌었나" (mode-aware manifest updatedAt).
   const docFreshnessIndex = useVaultDocFreshnessIndex();
+  // P4a — "최근 변경" 렌즈(mtime 7일 창). `computeRecentChanges` 순수 함수 +
+  // 이 훅과 같은 session-snapshot 시각 규율(`use-recent-changes.ts`).
+  const recentChanges = useRecentChanges();
   // "N일 전" 계산의 기준 시각 — 일 단위 해상도라 세션 시작 스냅샷이면 충분
   // (render 중 Date.now() 는 react-hooks/purity 위반; 세션 동안 라벨이
   // 흔들리지 않는 것도 changeBaseline 과 같은 이유로 오히려 바람직하다).
@@ -496,6 +499,13 @@ export function HomePage() {
       ontologyInsight?.nodes,
     );
   }, [hasFreshAgentHeartbeat, agentActivityStatus, ontologyInsight]);
+  // P4b — "에이전트가 방금" INDEX 배지. 이미 fresh-게이트를 통과한
+  // `agentFocusNodeId`(W6 지도 링과 같은 소스)가 최근-변경 렌즈 안에도 있을
+  // 때만 — 두 번째 매치 휴리스틱을 새로 만들지 않고 기존 신호를 그대로 재사용.
+  const agentAttributedRecentNodeId = useMemo(
+    () => (agentFocusNodeId && recentChanges.recentNodeIds.has(agentFocusNodeId) ? agentFocusNodeId : null),
+    [agentFocusNodeId, recentChanges],
+  );
   // S2 — 토폴로지에서 새 노드를 직접 생성. writable 로컬 vault 일 때만.
   const [createNodeOpen, setCreateNodeOpen] = useState(false);
   const createNodeToggleRef = useRef<HTMLButtonElement | null>(null);
@@ -2339,6 +2349,23 @@ export function HomePage() {
                       setAgentConnectNowMs(Date.now());
                       setAgentConnectOpen(true);
                     }}
+                    // P4a — 렌즈 필터용 id 집합 + P4b 배지 대상.
+                    recentChanges={{
+                      ids: recentChanges.recentNodeIds,
+                      agentAttributedNodeId: agentAttributedRecentNodeId,
+                    }}
+                    // P4c — "지도에 없는 문서 N개 · 올리기". `bootstrapPlan` 은
+                    // vault 가 로드되기만 하면(빈 지도든 아니든) 항상 계산돼
+                    // 있으므로 새 파생 없이 그 카운트를 그대로 노출한다 —
+                    // 클릭은 기존 "내 문서로 지도 만들기" 다이얼로그를 연다
+                    // (이전에는 지도가 완전히 빈 상태의 empty-state 에서만
+                    // 열렸다; 이 행은 지도가 이미 채워진 상태에서도 연다).
+                    uncatalogedDocCount={bootstrapPlan?.elements.length ?? 0}
+                    onPromoteUncatalogedDocs={
+                      bootstrapPlan && bootstrapPlan.elements.length > 0
+                        ? () => setBootstrapOpen(true)
+                        : undefined
+                    }
                     // 브랜드 필의 censusGrowthText 와 같은 출처(recentlyUpdatedCount)
                     // — feat/chrome-system §9, 헤더→푸터 이관.
                     footerGrowthText={
@@ -2380,6 +2407,15 @@ export function HomePage() {
                       elementsShort: t("index.elementsShort"),
                       freshTitle: t("index.freshTitle"),
                       emptyHint: t("index.emptyHint"),
+                      segmentAll: t("index.segmentAll"),
+                      segmentRecent: t("index.segmentRecent", { count: recentChanges.recentNodeIds.size }),
+                      segmentRecentAria: t("index.segmentRecentAria"),
+                      recentEmptyHint: t("index.recentEmptyHint"),
+                      agentBadge: t("index.agentBadge"),
+                      uncatalogedDocsLabel: t("index.uncatalogedDocsLabel", {
+                        count: bootstrapPlan?.elements.length ?? 0,
+                      }),
+                      uncatalogedDocsAction: t("index.uncatalogedDocsAction"),
                     }}
                   />
                 ) : (

@@ -57,6 +57,13 @@ const labels = {
   elementsShort: "elems",
   freshTitle: "recently updated",
   emptyHint: "No matches",
+  segmentAll: "All",
+  segmentRecent: "Recent changes 0",
+  segmentRecentAria: "Filter by recent changes",
+  recentEmptyHint: "Nothing changed in the last 7 days",
+  agentBadge: "Agent just now",
+  uncatalogedDocsLabel: "0 docs not on the map",
+  uncatalogedDocsAction: "Promote",
 };
 
 function buildFixtureTree() {
@@ -228,6 +235,154 @@ describe("TopologyIndexPanel", () => {
       relations: 478,
       domains: 6,
     });
+  });
+
+  it("P4a: omitting recentChanges skips the segment control entirely", () => {
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+    expect(screen.queryByTestId("topology-index-segment-recent")).not.toBeInTheDocument();
+  });
+
+  it("P4a: the recent-changes segment filters the tree to the given ids and keeps ancestor chains", () => {
+    const treeResult = buildFixtureTree();
+    render(
+      <TopologyIndexPanel
+        treeResult={treeResult}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+        recentChanges={{ ids: new Set(["element:agent-brief"]), agentAttributedNodeId: null }}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("topology-index-segment-recent"));
+
+    expect(screen.getByText("Agent Brief")).toBeInTheDocument();
+    expect(screen.getByText("MCP Server")).toBeInTheDocument(); // ancestor chain preserved
+    expect(screen.queryByText("CLI Developer Entry")).not.toBeInTheDocument(); // unrelated sibling pruned
+  });
+
+  it("P4a: switching back to 'all' restores the full tree", () => {
+    const treeResult = buildFixtureTree();
+    render(
+      <TopologyIndexPanel
+        treeResult={treeResult}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+        recentChanges={{ ids: new Set(["element:agent-brief"]), agentAttributedNodeId: null }}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("topology-index-segment-recent"));
+    fireEvent.click(screen.getByTestId("topology-index-segment-all"));
+
+    expect(screen.queryByText("CLI Developer Entry")).not.toBeInTheDocument(); // still collapsed by default
+    const domainRow = screen.getByText("Onboarding & UX").closest('[data-index-row]')!;
+    fireEvent.click(domainRow.querySelector("button")!);
+    expect(screen.getByText("CLI Developer Entry")).toBeInTheDocument();
+  });
+
+  it("P4a: an empty recent-changes lens shows the dedicated empty hint, not the search one", () => {
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+        recentChanges={{ ids: new Set(), agentAttributedNodeId: null }}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("topology-index-segment-recent"));
+    expect(screen.getByText(labels.recentEmptyHint)).toBeInTheDocument();
+  });
+
+  it("P4b: renders the agent-attribution badge only on the matching row", () => {
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+        recentChanges={{
+          ids: new Set(["capability:mcp-server"]),
+          agentAttributedNodeId: "capability:mcp-server",
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("topology-index-segment-recent"));
+    expect(screen.getAllByTestId("topology-index-agent-badge")).toHaveLength(1);
+  });
+
+  it("P4c: renders the uncataloged-docs row only when count > 0 and a handler is given", () => {
+    const onPromote = vi.fn();
+    const { rerender } = render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+        uncatalogedDocCount={0}
+        onPromoteUncatalogedDocs={onPromote}
+      />,
+    );
+    expect(screen.queryByTestId("topology-index-uncataloged-docs")).not.toBeInTheDocument();
+
+    rerender(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+        uncatalogedDocCount={3}
+        onPromoteUncatalogedDocs={onPromote}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("topology-index-uncataloged-docs"));
+    expect(onPromote).toHaveBeenCalledTimes(1);
   });
 
   it("수렴 스펙 ①: 헤더는 시각 카운트를 렌더하지 않는다 (지형도 HUD 와 3중 중복 해소, sr-only census 만 존치)", () => {

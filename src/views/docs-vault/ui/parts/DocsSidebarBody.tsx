@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import {
   ChevronDown,
+  Clock,
   FileText,
   Hash,
   PinOff,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
+import { selectRecentVaultDocs } from "@/shared/lib/ontology-tree";
 import type { DocsVaultCollection } from "../../lib/docs-vault-collection";
 import { DocsVaultTree } from "@/widgets/docs-vault/ui/DocsVaultTree";
 import { Tooltip } from "@/shared/ui";
@@ -70,6 +72,17 @@ export function DocsSidebarBody({
 }: DocsSidebarBodyProps) {
   const t = useTranslations("vaultWidgets.parts.sidebar");
   const [treeQuery, setTreeQuery] = useState("");
+  // P4a — "최근 바뀐 문서" 진입점. `selectRecentVaultDocs` 는 INDEX 지도 렌즈
+  // (`useRecentChanges`)와 같은 mtime 7일 창 산수(`recent-changes.ts`)를
+  // 공유한다 — 문서함은 `VaultDoc.updatedAt` 을 직접 갖고 있어 온톨로지
+  // 노드처럼 evidenceIds 간접 조회가 필요 없다. 세션 스냅샷 시각 —
+  // `updatedAgoNowMs`(HomePage)와 같은 렌더-purity 이유로 mount 시 1회.
+  const [recentNowMs] = useState(() => Date.now());
+  const recentlyChangedDocs = useMemo(
+    () => selectRecentVaultDocs(manifest.docs, recentNowMs),
+    [manifest.docs, recentNowMs],
+  );
+  const [recentlyChangedOpen, setRecentlyChangedOpen] = useState(true);
   const normalizedTreeQuery = treeQuery.trim().toLowerCase();
   // 활성 태그가 매치하는 slug 집합 — DocsVaultTree 가 매 노드 재귀 시 .has()
   // 로 조회. 매 render 새 Set 만들면 트리 내부 useMemo 들이 활성/해제 무관
@@ -202,6 +215,58 @@ export function DocsSidebarBody({
             {t("clearFilter")}
           </button>
         </div>
+      ) : null}
+
+      {/* P4a — "최근 바뀐 문서" 접이식 스트립. `recentSlugs`(아래, 세션 중
+          방문한 문서)와는 다른 개념 — 이건 실제 mtime 이 최근 7일 안인
+          문서다. 새로 열 때마다 "지난 7일 뭐가 바뀌었나"에 클릭 0회로
+          답하도록 기본 펼침. */}
+      {recentlyChangedDocs.length > 0 ? (
+        <section className="flex-none border-b border-[color:var(--color-overlay-2)] pb-1">
+          <button
+            type="button"
+            onClick={() => setRecentlyChangedOpen((open) => !open)}
+            aria-expanded={recentlyChangedOpen}
+            data-testid="docs-sidebar-recently-changed-toggle"
+            className="flex w-full items-center gap-1.5 px-3 pb-1.5 pt-3 text-left transition-colors hover:text-[color:var(--color-text-secondary)]"
+          >
+            <Clock size={10} className="flex-none text-[color:var(--color-text-quaternary)]" aria-hidden />
+            <span className="flex-1 font-mono text-[9.5px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+              {t("recentlyChangedHeader", { count: recentlyChangedDocs.length })}
+            </span>
+            <ChevronDown
+              size={11}
+              aria-hidden
+              className={`flex-none text-[color:var(--color-text-quaternary)] transition-transform ${recentlyChangedOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          {recentlyChangedOpen ? (
+            <ul
+              data-testid="docs-sidebar-recently-changed-list"
+              className="flex max-h-[22vh] flex-col gap-0.5 overflow-auto px-2"
+            >
+              {recentlyChangedDocs.map((doc) => {
+                const active = selectedSlug === doc.slug;
+                return (
+                  <li key={doc.slug}>
+                    <button
+                      type="button"
+                      onClick={() => onSelect(doc.slug)}
+                      className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-[12px] transition-colors ${
+                        active
+                          ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
+                          : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                      }`}
+                    >
+                      <FileText size={11} className="flex-none opacity-60" aria-hidden />
+                      <span className="min-w-0 flex-1 truncate">{doc.title}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </section>
       ) : null}
 
       {/* 항상 보이는 3 섹션 — Pinned / Vault / Recent. 트리(Vault)만 남는 공간을

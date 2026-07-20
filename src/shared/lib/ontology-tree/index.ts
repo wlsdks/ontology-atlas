@@ -136,3 +136,11 @@ export {
   buildProjectOntologyCounts,
   pickDominantOntologyKind,
 } from "./project-ontology-counts";
+export type { RecentChangeRow, RecentChangesResult } from "./recent-changes";
+export {
+  RECENT_CHANGES_DEFAULT_WINDOW_DAYS,
+  computeRecentChanges,
+  daysAgoFromIso,
+  isWithinRecentWindow,
+  selectRecentVaultDocs,
+} from "./recent-changes";
