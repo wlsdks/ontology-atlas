@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../../messages/en.json";
 import koMessages from "../../../../../messages/ko.json";
 import type { VaultDoc } from "@/entities/docs-vault";
@@ -73,5 +73,53 @@ describe("DocFrontmatterBlock", () => {
     renderBlock("en");
     const summary = within(screen.getByTestId("doc-frontmatter-summary"));
     expect(summary.getByText("6 fields")).toBeInTheDocument();
+  });
+
+  it("hides the quick-patch action when canEdit/onPatch are not supplied (read-only default)", () => {
+    renderBlock();
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
+    expect(screen.queryByText("kind / domain / title 수정")).not.toBeInTheDocument();
+  });
+
+  it("shows a quick-patch action for a writable local vault and saves kind/domain/title edits", async () => {
+    const onPatch = vi.fn().mockResolvedValue(undefined);
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock
+          doc={doc}
+          canEdit
+          domainOptions={[
+            { slug: "developer-experience", title: "Developer Experience" },
+            { slug: "graph-quality", title: "Graph Quality" },
+          ]}
+          onPatch={onPatch}
+        />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
+    fireEvent.click(screen.getByText("kind / domain / title 수정"));
+
+    fireEvent.change(screen.getByLabelText("Domain", { exact: false }), {
+      target: { value: "graph-quality" },
+    });
+    fireEvent.click(screen.getByText("저장"));
+
+    await vi.waitFor(() => {
+      expect(onPatch).toHaveBeenCalledWith({ domain: "graph-quality" });
+    });
+  });
+
+  it("does not offer the quick-patch action for a non-editable sentinel kind", () => {
+    const readmeDoc: VaultDoc = {
+      ...doc,
+      frontmatter: { ...doc.frontmatter, kind: "vault-readme" },
+    };
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={readmeDoc} canEdit onPatch={vi.fn()} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
+    expect(screen.queryByText("kind / domain / title 수정")).not.toBeInTheDocument();
   });
 });

@@ -3,15 +3,16 @@
 import { useEffect } from 'react';
 
 /**
- * Idle-time module warmup for the two heaviest per-route chunks reachable
- * from the nav rail (`src/widgets/app-nav-rail`) — `/ontology/edit`'s xyflow
- * canvas and `/docs`'s Sigma folder-topology mini map.
+ * Idle-time module warmup for the heaviest per-route chunk reachable from
+ * the nav rail (`src/widgets/app-nav-rail`) — `/ontology/edit`'s xyflow
+ * canvas. (The `/docs` Sigma folder-topology mini map this used to also
+ * warm was removed — P5a, folder-topology retired as a competing graph
+ * vocabulary against the vault kind schema.)
  *
- * Next.js's default viewport `<Link>` prefetch already fetches both routes'
+ * Next.js's default viewport `<Link>` prefetch already fetches the route's
  * JS bytes over the network as soon as the rail link scrolls into view
- * (measured via Resource Timing during perf/nav-100ms profiling — ~4.9MB
- * across all 5 rail destinations lands within ~300ms of any page load).
- * What network prefetch does NOT do is execute/register the
+ * (measured via Resource Timing during perf/nav-100ms profiling). What
+ * network prefetch does NOT do is execute/register the
  * `next/dynamic()`-wrapped component's module ahead of time — that only
  * happens when the user actually navigates and the lazy component suspends
  * on its own `import()`. Calling the *same* `import()` specifier here during
@@ -21,10 +22,10 @@ import { useEffect } from 'react';
  * shaving the "first paint of the real canvas after the loading skeleton"
  * step off the click-to-settled critical path.
  *
- * Both target modules only construct their heavy objects (ReactFlow /
- * Sigma WebGL context) inside a `useEffect` on actual mount — importing them
- * here only loads class/function definitions into memory, it does not
- * create a canvas, WebGL context, or touch the DOM.
+ * The target module only constructs its heavy object (the ReactFlow
+ * canvas) inside a `useEffect` on actual mount — importing it here only
+ * loads class/function definitions into memory, it does not create a
+ * canvas or touch the DOM.
  *
  * Mounted once in `app/[locale]/layout.tsx`. That root layout persists
  * across client-side route changes (App Router only remounts the changed
@@ -44,7 +45,6 @@ export function RouteChunkWarmup() {
       // Perf-only: failures (offline, blocked chunk, etc.) must never
       // surface as an unhandled rejection or break the current page.
       import('@/views/ontology-edit/ui/OntologyEditCanvas').catch(() => {});
-      import('@/widgets/docs-vault/ui/DocsVaultFolderTopology').catch(() => {});
     };
 
     if (typeof win.requestIdleCallback === 'function') {

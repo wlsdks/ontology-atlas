@@ -8,7 +8,6 @@ import {
   CircleAlert,
   ClipboardCopy,
   FilePlus,
-  Layers,
   Terminal,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -233,10 +232,6 @@ function shellQuoteForPacket(value: string): string {
  * 흡수해 self-contained 화 가능.
  */
 
-export type DocsVaultView = 'doc' | 'folder-topology';
-
-export type FolderTopoStatus = 'idle' | 'rebuilding' | 'fresh';
-
 interface LocalVaultLike {
   status:
     | 'idle'
@@ -270,9 +265,6 @@ interface LocalVaultLike {
 }
 
 interface Props {
-  view: DocsVaultView;
-  onViewChange: (view: DocsVaultView) => void;
-  folderTopoStatus: FolderTopoStatus;
   canEditCurrent: boolean;
   localVault: LocalVaultLike;
   validationSummary: { errorCount: number; warningCount: number } | null;
@@ -281,9 +273,6 @@ interface Props {
 }
 
 export function VaultToolsMenu({
-  view,
-  onViewChange,
-  folderTopoStatus,
   canEditCurrent,
   localVault,
   validationSummary,
@@ -726,29 +715,6 @@ export function VaultToolsMenu({
       role="menu"
       className="fixed inset-x-3 top-24 z-30 max-h-[calc(100dvh-8rem)] overflow-y-auto rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(14,15,18,0.98)] p-2 shadow-[0_18px_48px_var(--color-shadow-a35)] md:absolute md:inset-x-auto md:right-0 md:top-10 md:max-h-[calc(100dvh-5rem)] md:w-[300px]"
     >
-      <button
-        type="button"
-        role="menuitemradio"
-        aria-checked={view === 'folder-topology'}
-        onClick={() =>
-          onViewChange(view === 'folder-topology' ? 'doc' : 'folder-topology')
-        }
-        className={`inline-flex w-full items-center justify-center gap-1 rounded-sm px-2 py-1.5 text-[11px] transition-colors ${
-          view === 'folder-topology'
-            ? 'bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]'
-            : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
-        }`}
-      >
-        <Layers size={12} aria-hidden />
-        {t('advanced.viewTopology')}
-        {folderTopoStatus === 'rebuilding' ? (
-          <span
-            aria-hidden
-            className="h-1.5 w-1.5 animate-pulse rounded-full bg-[color:var(--color-indigo-accent)]"
-          />
-        ) : null}
-      </button>
-      <div className="my-2 h-px bg-[color:var(--color-border-soft)]" />
       <div className="space-y-2">
         <LocalVaultPicker
           status={localVault.status}

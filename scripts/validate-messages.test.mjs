@@ -397,12 +397,11 @@ describe('i18n message catalog', () => {
     );
     assert.equal(commands.sourceServer, '샘플 문서함 보기');
     assert.equal(commands.sourceLocal, '내 PC 문서함 열기');
-    assert.equal(commands.viewFolderTopology, '뷰 · 프로젝트 지형도 (projects/*.md)');
-    assert.equal(commands.scaffoldTopology, '이 폴더를 지형도용 볼트로 초기화');
+    // P5a — folder-topology 제거: 해당 명령 키가 부활하지 않았는지 역단언.
+    assert.equal(commands.viewFolderTopology, undefined);
+    assert.equal(commands.scaffoldTopology, undefined);
     assert.doesNotMatch(commands.sourceServer, /소스|Source/);
     assert.doesNotMatch(commands.sourceLocal, /소스|Source/);
-    assert.doesNotMatch(commands.viewFolderTopology, /Topology|토폴로지/);
-    assert.doesNotMatch(commands.scaffoldTopology, /Topology|토폴로지/);
   });
 
   it('keeps Korean builder relation write confirmation readable before graph writes', async () => {

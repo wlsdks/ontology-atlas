@@ -19,7 +19,11 @@
 import { VaultConflictError } from "@/features/docs-vault-local";
 
 export type DocsVaultSource = "server" | "local";
-export type DocsVaultView = "doc" | "folder-topology";
+// P5a — folder-topology (Sigma mini map) 은 kind 스키마와 경쟁하는 제3그래프
+// 어휘라 제거됐다(.qa-scratch/docs-identity-2026-07/verdict.md 빼기②). 'doc'
+// 만 남아 union 이 아니지만, 호출부 (`parseDocsVaultView`/`replaceDocsVaultUrlState`)
+// 의 계약을 그대로 유지해 회귀 diff 를 최소화한다.
+export type DocsVaultView = "doc";
 
 export const DOCS_VAULT_SOURCE_KEY = "demo:docs-vault:source";
 export const DOCS_VAULT_LIST_COLLAPSED_KEY = "demo:docs-vault:list-collapsed";
@@ -53,11 +57,11 @@ export function storeListCollapsed(collapsed: boolean) {
   }
 }
 
-/** URL `?view=` → 검증된 enum. 알 수 없는 값은 'doc' fallback. */
+/** URL `?view=` → 검증된 enum. 알 수 없는 값은 'doc' fallback. 'doc' 하나뿐인
+ *  union 이라 사실상 상수 반환이지만, 호출부 시그니처(과거엔 view 여러 종) 는
+ *  유지 — 미래 view 재도입 시 이 함수 하나만 갱신. */
 export function parseDocsVaultView(value?: string | null): DocsVaultView {
-  if (value === "doc" || value === "folder-topology") {
-    return value;
-  }
+  void value;
   return "doc";
 }
 

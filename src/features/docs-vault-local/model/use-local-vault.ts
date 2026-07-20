@@ -982,86 +982,6 @@ export function useLocalVaultInternal() {
   }, [load, refreshRecentVaults]);
 
   /**
-   * 볼트를 Folder-Topology 규격으로 초기화 — projects/ 디렉터리 + sample 2개
-   * 프로젝트 + categories.md + statuses.md + README.md. 이미 존재하는 파일은
-   * 덮어쓰지 않는다 (skip). 호출자가 confirm 이후 실행 권장.
-   */
-  const scaffoldTopology = useCallback(async () => {
-    const files: Record<string, string> = {
-      README: [
-        '# My vault',
-        '',
-        'This folder is a Source Vault + Folder-Topology vault.',
-        '',
-        '## Structure',
-        '',
-        '- `projects/*.md` — each file is one project (topology node).',
-        '- `categories.md` — category definitions (tone: indigo / amber / neutral).',
-        '- `statuses.md` — status lifecycle.',
-        '- `docs/**` — general wiki docs (optional).',
-        '',
-        '## Project frontmatter fields',
-        '',
-        '| Field | Type | Required | Notes |',
-        '| --- | --- | --- | --- |',
-        '| `name` | string | ✅ | Display name shown to the user. |',
-        '| `slug` | string | ❌ | Derived from the file name when omitted. |',
-        '| `category` | string | ✅ | A slug from `categories.md`. |',
-        '| `status` | string | ❌ | A slug from `statuses.md`. Defaults to `active`. |',
-        '| `isHub` | boolean | ❌ | Whether this is a hub project. |',
-        '| `dependencies` | string[] | ❌ | Slugs of upstream projects this depends on. |',
-        '| `tags` | string[] | ❌ | Tags. |',
-        '| `positionX`, `positionY` | number | ❌ | Saved automatically when you drag in the topology. |',
-        '| `description` | string | ❌ | One-line summary. |',
-        '',
-        '## Workflow',
-        '',
-        '1. Drag a node in the topology — position is saved automatically.',
-        '2. "+ Project" button creates a new .md from the default template.',
-        '3. Open a project document and the dependency editor bar appears at the top.',
-        '4. `⌘K` opens the body search. The full command palette is `⌘⇧P`.',
-        '5. The topology manifest re-scans automatically when you save (`⌘S`).',
-        '',
-        '## Export',
-        '',
-        '- Download a single document as HTML.',
-        '- Back up / restore the whole vault as JSON.',
-        '',
-        'Use the sample projects `sample-hub` and `sample-leaf` as starter templates.',
-        '',
-      ].join('\n'),
-      categories: `# Categories\n\n## platform\nname: Platform\ntone: indigo\n\n## product\nname: Product\ntone: amber\n`,
-      statuses: `# Statuses\n\n## draft\nlabel: Draft\n\n## active\nlabel: Active\n\n## launched\nlabel: Launched\n\n## archived\nlabel: Archived\n`,
-      'projects/sample-hub': `---\nname: Sample Hub\nslug: sample-hub\ncategory: platform\nstatus: active\nisHub: true\ntags: [sample]\n---\n\n# Sample Hub\n\nA sample hub project — edit it or replace it with your own.\n\nIn the topology this renders as a larger node and other projects can list it as a dependency.\n`,
-      'projects/sample-leaf': `---\nname: Sample Leaf\nslug: sample-leaf\ncategory: product\nstatus: draft\ndependencies: [sample-hub]\ntags: [sample]\n---\n\n# Sample Leaf\n\nA sample leaf project that depends on \`sample-hub\`. The topology view connects them with an edge.\n`,
-    };
-    let created = 0;
-    let skipped = 0;
-    for (const [slug, content] of Object.entries(files)) {
-      // 이미 있으면 스킵
-      if (state.fileHandles.has(slug)) {
-        skipped += 1;
-        continue;
-      }
-      try {
-        const resolved = await getParentAndName(slug, true);
-        if (!resolved) continue;
-        const fh = await resolved.parent.getFileHandle(resolved.fileName, {
-          create: true,
-        });
-        const writable = await fh.createWritable();
-        await writable.write(content);
-        await writable.close();
-        created += 1;
-      } catch {
-        skipped += 1;
-      }
-    }
-    if (state.handle) await load(state.handle);
-    return { created, skipped };
-  }, [state.fileHandles, state.handle, getParentAndName, load]);
-
-  /**
    * mission v2 ontology starter — `npx ontology-atlas init` 과 동일한
    * 5 md + .mcp.json / .mcp.json.example / .codex/config.toml 시드를 vault 에
    * 작성. 비개발자가 터미널 없이 desktop app 의 picker → "starter 만들기"
@@ -1149,7 +1069,6 @@ export function useLocalVaultInternal() {
     createDoc,
     deleteDoc,
     renameDoc,
-    scaffoldTopology,
     scaffoldOntology,
     ensureAgentConfigs,
     updateFrontmatter,

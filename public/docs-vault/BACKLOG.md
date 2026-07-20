@@ -197,3 +197,13 @@ P1 V1.x 진화가 모두 ✅/N/A 로 닫혔고, 현재 surface 는 macOS app · 
 - `docs/CHANGELOG.md` — 시간순 사용자 가시 변화
 - `mcp/README.md` — MCP 서버 24 도구 + 등록
 - `docs/benchmark/` — AI agent quality 측정 매트릭스
+
+
+## 계약 테스트 사전 부패 4건 (2026-07-21 실행 라운드에서 발견 — 세션 이전 기원, git blame 확인)
+
+`scripts/check-package-contracts.test.mjs` 의 다음 4건은 이 라운드 이전부터 실패:
+1. CLI entrypoint natural-exit regex — `runInit(parsed.target, { quickStart })` 시그니처 변화를 regex 가 안 따라감
+2. workspace naming legacy framing — 구 "Docs and Source Vault" 카피 잔존 검사
+3. MCP README focused verification 문구
+4. MCP verify README census gates — 샘플 transcript 의 노드 수가 vault 성장을 안 따라감 (재생성 필요: dogfood walk)
+처방: transcript 류는 `scripts/dogfood-mcp-walk` 재생성으로, regex 류는 진실원 파생으로 전환.

@@ -97,7 +97,12 @@ dialog never says "온톨로지" (map-building framing for non-experts).
   idle (rAF stays alive; any state change resumes next frame).
 - **Canonical census** — every surface that says "개념 N" uses one
   derivation (`computeCanonicalCensus`); the builder honestly says
-  "저장된 개념 N" for its file-backed scope.
+  "저장된 개념 N" for its file-backed scope. P5d (N11) — the header total
+  and the canvas can still diverge when `buildFocusedBuilderManifest`
+  narrows the drawn graph to a focus node + its direct neighbors (a
+  deliberate large-vault readability limit); when that narrowing is active
+  the header appends "· 캔버스 N개 표시" instead of silently showing a
+  total the canvas doesn't match.
 - **Docs library on the web** — the local-vault gate is capability-based
   (File System Access), not runtime-based: the same browser session that
   writes via the builder can read/edit in the docs library.
@@ -247,8 +252,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - Hamburger button → overlay drawer with the same `DocsSidebarBody` contents
 
 #### Content area
-- **view=doc** (default): editor (when editing) or viewer + `DocMetaBar` (word count, reading minutes, tags, updated date) + `DocFrontmatterBlock` (2026-07-18 — renders `kind`/`slug`/`domain`/`depends_on`/`evidence` directly on the page, only when the doc has a `kind:`; the visible proof that "frontmatter is the graph") + optional inspector (`DocsVaultDocOutlinePanel`) + `DocsVaultProjectDepsBar` (in `projects/*` + local) + bottom **backlinks strip** (2026-07-18, full pane width, dedup'd single source — replaces the earlier duplicate backlinks surfaces)
-- **view=folder-topology** (local only): mini Sigma over `projects/*.md`, drag positions saved to frontmatter, `+ Project` button (canEdit)
+- **view=doc** (only view — folder-topology retired, P5a): editor (when editing) or viewer + `DocMetaBar` (word count, reading minutes, tags, updated date) + `DocFrontmatterBlock` (2026-07-18 — renders `kind`/`slug`/`domain`/`depends_on`/`evidence` directly on the page, only when the doc has a `kind:`; the visible proof that "frontmatter is the graph". P5a — in a writable local vault, an inline "Edit kind / domain / title" action turns this into a quick-patch: kind/domain are typed `<select>`s, title an inline input, saved through the same `updateFrontmatter` conflict-guarded path the builder uses — no raw YAML hand-editing for the three most-corrected fields) + optional inspector (`DocsVaultDocOutlinePanel`) + bottom **backlinks strip** (2026-07-18, full pane width, dedup'd single source — replaces the earlier duplicate backlinks surfaces)
 
 #### Unified palette (`⌘K`, `DocsVaultUnifiedPalette`)
 - **Empty query**: pinned → recent → top 5 commands
@@ -268,15 +272,18 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - Keyboard: `⌘S` save · `⌘B` bold · `⌘I` italic · `⌘K` insert link · `Esc` close (with discard confirm)
 - `beforeunload` blocks navigation when dirty
 
-#### Commands (~20 in palette)
-view-doc · view-folder-topology · pin · unpin · copy URL · print · edit · new doc · daily note · rename · delete · insert TOC · export doc HTML · export vault · import vault · scaffold topology · source-server · source-local · create project · find tags
+#### Commands (~14 in palette, P5a cut 6 — daily note / folder-topology view / scaffold topology / create project / export vault / import vault)
+view-doc · pin · unpin · copy URL · print · edit · new doc · rename · delete · insert TOC · export doc HTML · source-server · source-local · find tags
+
+#### New document (P5c — kind-first, `NewDocKindDialog`)
+"New doc" no longer opens a bare filename prompt with a generic `title:`-only template. It first asks which kind the document is (domain / capability / element / document — the same four the topology and builder recognize), then prompts for a title. `buildNewNodeDoc` (shared with the builder and topology's "create node" flow) places the file under the kind's vault folder (`domains/`, `capabilities/`, `elements/`, `documents/`) and writes normalized `slug`/`kind`/`domain`/`title` frontmatter — so every document created through the palette is a graph node from the moment it exists, not an orphan the growth queue has to catch later.
 
 #### Visual / behavioral details
 - Indigo accent (`rgba(139,151,255,…)`) for active, gold star for pinned
 - Markdown: GFM tables/lists/blockquotes/code · callout blocks (`> [!tip]` etc.) · wikilinks (`[[slug]]`, `[[slug|label]]`, `[[slug#anchor]]`, `[[project:slug]]`) · heading anchor copy buttons
 - Local images: relative paths resolved to blob URLs via `resolveImage` callback
 - Recent + pinned per-vault localStorage (key prefix includes vault folder name)
-- Sample/Local source toggle persisted to localStorage; folder-topology view forced back to `doc` when switching to server
+- Sample/Local source toggle persisted to localStorage
 
 ---
 
@@ -385,6 +392,18 @@ Empty state (0 nodes): link to `/docs` (open vault).
 #### `BuilderOnboarding` (when canvas empty)
 - 3-step coach mark: Palette → Connect → Save chip
 - "Don't show again" toggle (localStorage)
+- Footer shortcuts hint (`P/D/C/E new node · Del delete · Esc cancel`)
+
+#### Empty-canvas placeholder text
+- P5d (N7) — the persistent centered hint (shown whenever the canvas has
+  zero nodes, independent of the dismissible `BuilderOnboarding` coach
+  mark) now names the `P`/`D`/`C`/`E` shortcuts alongside "pick a kind on
+  the left" — a persona found the shortcuts by accident (fat-fingering)
+  with no on-screen hint once onboarding was dismissed. Repeated presses of
+  the same shortcut already offset each new node 24px so they don't stack
+  exactly on top of each other (`useEphemeralNodes`, shared with
+  drop-to-add placement) — that part was already correct; only the missing
+  hint was the gap.
 
 #### Keyboard shortcuts
 | Key | Action |
@@ -395,6 +414,7 @@ Empty state (0 nodes): link to `/docs` (open vault).
 | `E` | Add Element |
 | `F` | Toggle fullscreen |
 | `Del` / `Backspace` | Delete selected ephemeral (vault nodes protected) |
+| `⌘K` (no `Shift`) | Global search (P5d/N9 — was `⇧⌘K`; the builder has no competing project-only `SearchPalette`, so it now matches the app-wide `⌘K` convention) |
 | `Esc` | Clear selection or exit fullscreen |
 | `Enter` (inspector input) | Save ephemeral node / commit vault rename |
 
@@ -493,7 +513,6 @@ Section labels are engraved (mono uppercase caption + hairline), matching the ce
 
 #### Note
 - `screenshots` field exists in schema but no uploader UI (markdown/vault assets only — codex Round 6 finding)
-- Folder-topology scaffold path (`/docs view: folder-topology`) creates `projects/{slug}.md` without `description` (different contract from this canonical form, by-design — Round 6 skip)
 
 ---
 
@@ -701,6 +720,7 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
 | `E` | Builder | Add Element node |
 | `F` | Builder | Toggle fullscreen |
 | `Del` / `Backspace` | Builder | Delete selected ephemeral |
+| `⌘K` (no `Shift`) | Builder | Global search (nodes + projects, `MountedGlobalSearch`) — P5d (N9): was `⇧⌘K`, matched to plain `⌘K` since the builder has no competing project-only `SearchPalette` to disambiguate from |
 | `Enter` | Builder inspector | Save ephemeral / commit vault rename |
 | `↑↓` | Hub rail | Cycle hubs |
 | `Home` / `End` | Hub rail | First / last hub |
@@ -738,7 +758,6 @@ For full reasoning see `docs/CHANGELOG.md`. High-level:
 - WebGL context-loss `ErrorBoundary` (Scenario 10) — R9 defer: theoretical, no reports.
 - Locale switch query-param preservation (Scenario 9) — R9 defer: low frequency.
 - MCP `add_concept` project minimal-input parity with `ProjectForm` — R6 skip: AI agent incremental stub by-design.
-- folder-topology project scaffold without description — R6 skip: scaffold ≠ canonical authoring (different contract).
 
 ---
 
