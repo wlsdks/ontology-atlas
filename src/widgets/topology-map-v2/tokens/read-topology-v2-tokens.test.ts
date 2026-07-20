@@ -110,6 +110,8 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-edge-passthrough-alpha": "0.3",
   "--topology-v2-node-min-separation-ratio": "1.35",
   "--topology-v2-radius-magnitude-k": "0.45",
+  "--topology-v2-dust-parallax-min": "0.15",
+  "--topology-v2-dust-parallax-max": "0.45",
 
   "--topology-v2-safe-inset-left": "344",
   "--topology-v2-safe-inset-right": "120",

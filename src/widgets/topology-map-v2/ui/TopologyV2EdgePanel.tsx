@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 
 /**
  * P3b — 엣지 팝오버. 노드 데이터시트와 같은 재질(panel 토큰)로, 관계
@@ -117,23 +118,23 @@ export function TopologyV2EdgePanel({
             {labels.declaredByLabel}
             {updatedAtLabel ? ` · ${updatedAtLabel}` : ""}
           </span>
-          <a
+          <Link
             href={declaredBy.href}
             data-testid="topology-v2-edge-declared-by"
             className="truncate font-mono text-[11px] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
           >
             {declaredBy.slug}.md → {labels.openDoc}
-          </a>
+          </Link>
         </div>
       ) : null}
 
-      <a
+      <Link
         href={builderEditHref}
         data-testid="topology-v2-edge-edit"
         className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] text-[11.5px] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
       >
         {labels.editRelation}
-      </a>
+      </Link>
     </aside>
   );
 }

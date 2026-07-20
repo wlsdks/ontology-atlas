@@ -2700,6 +2700,7 @@
     "previewLabel": "Once connected, the agent reads it like this",
     "previewSentence": "\"This project is made of {domains}, and each document is its evidence.\"",
     "copyHandoff": "Copy handoff text",
-    "handoffCopied": "Copied"
+    "handoffCopied": "Copied",
+    "defaultAgentLabel": "the agent"
   }
 }

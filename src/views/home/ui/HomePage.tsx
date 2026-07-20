@@ -581,8 +581,8 @@ export function HomePage() {
     const focusTitle = focusSlug
       ? (ontologyInsight?.nodes.find((n) => n.evidenceIds[0] === focusSlug || n.id === focusSlug)?.title ?? focusSlug)
       : null;
-    return { kind: "connected", agentLabel: hb.agent ?? "에이전트", agoLabel: ago, focusTitle };
-  }, [agentActivityStatus, ontologyInsight, agentConnectNowMs]);
+    return { kind: "connected", agentLabel: hb.agent ?? t("agentConnect.defaultAgentLabel"), agoLabel: ago, focusTitle };
+  }, [agentActivityStatus, ontologyInsight, agentConnectNowMs, t]);
   const agentConnectSnippets = useMemo(() => {
     const vaultName = vault.handle?.name ?? "my-vault";
     const desktopPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
@@ -1249,6 +1249,12 @@ export function HomePage() {
     const handler = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") return;
       if (event.defaultPrevented) return;
+      // R-1 (Guardian 총괄) — 엣지 팝오버가 열려 있으면 Esc 1단은 그것부터
+      // 닫는다 (사다리 최상단 소비 — 노드 팝오버와 같은 계약).
+      if (selectedEdge !== null) {
+        setSelectedEdge(null);
+        return;
+      }
       const action = resolveTopologyEscLadderAction({
         contextMenuOpen: contextMenuNode !== null,
         createNodeOpen,
@@ -1293,8 +1299,7 @@ export function HomePage() {
     localGraphRoot,
     closeContextMenu,
     closeCreateNode,
-    handleClose,
-  ]);
+    handleClose,, selectedEdge]);
 
   const handleSelectImpactMode = useCallback(
     (nextMode: ProjectImpactMode) => {
