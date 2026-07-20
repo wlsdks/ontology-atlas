@@ -27,6 +27,7 @@ import {
 import { RELATION_TYPE_VALUES as CLI_RELATION_TYPE_VALUES } from '../cli/src/lib/relation-types.mjs';
 import { compileOntology } from '../mcp/src/ontology-compiler.mjs';
 import { collectNeighborRefs, findBacklinks, loadVaultDocs } from '../mcp/src/vault.mjs';
+import { CLI_COMMAND_COUNT } from "../cli/src/lib/cli-commands.mjs";
 import {
   checkPackage,
   checkMcpLeanTarballFiles,
@@ -2823,8 +2824,9 @@ describe('package contract helpers', () => {
     const componentsRow = doc.split('| `ontology-atlas components` |')[1]?.split('\n')[0] ?? '';
     const topologicalOrderRow = doc.split('| `ontology-atlas topological-order` |')[1]?.split('\n')[0] ?? '';
 
-    assert.match(doc, /CLI Developer Entry \(45 commands/);
-    assert.match(doc, /총 45 명령/);
+    // 카운트는 CLI 가 export 하는 진실원에서 파생 — 하드코딩 숫자 rot 방지.
+    assert.match(doc, new RegExp(`CLI Developer Entry \\(${CLI_COMMAND_COUNT} commands`));
+    assert.match(doc, new RegExp(`총 ${CLI_COMMAND_COUNT} 명령`));
     assert.match(doc, /cli\/src\/commands\/growth\.mjs/);
     assert.match(doc, /cli\/src\/commands\/agent-activity\.mjs/);
     assert.match(doc, /cli\/src\/commands\/agent-setup\.mjs/);
