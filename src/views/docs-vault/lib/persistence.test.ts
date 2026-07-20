@@ -144,10 +144,13 @@ describe("doc list collapse storage", () => {
   });
 });
 
-describe("desktop-only local vault source", () => {
-  it("honors ?intent=local only inside the installed desktop runtime", () => {
+// P1b (N1) 계약 변경: 게이트는 런타임이 아니라 능력(FSA 지원)만 본다 —
+// 같은 웹 세션에서 빌더는 vault 쓰기가 되는데 문서함만 macOS 잠금이던
+// 표면 간 모순 해소.
+describe("capability-gated local vault source", () => {
+  it("honors ?intent=local in every runtime (web included — builder parity)", () => {
     expect(shouldHonorLocalIntent("local", true)).toBe(true);
-    expect(shouldHonorLocalIntent("local", false)).toBe(false);
+    expect(shouldHonorLocalIntent("local", false)).toBe(true);
     expect(shouldHonorLocalIntent("server", true)).toBe(false);
     expect(shouldHonorLocalIntent(null, true)).toBe(false);
     expect(shouldHonorLocalIntent(undefined, true)).toBe(false);
@@ -248,11 +251,17 @@ describe("desktop-only local vault source", () => {
     ).toBe(false);
   });
 
-  it("disables local vault source in hosted browsers even when browser APIs exist", () => {
+  it("gates local vault source on capability, not runtime", () => {
     expect(
       isDocsVaultLocalSourceDisabled({
         isDesktopRuntime: false,
         localVaultStatus: "idle",
+      }),
+    ).toBe(false);
+    expect(
+      isDocsVaultLocalSourceDisabled({
+        isDesktopRuntime: false,
+        localVaultStatus: "unsupported",
       }),
     ).toBe(true);
     expect(
@@ -286,6 +295,7 @@ describe("desktop-only local vault source", () => {
         hasLocalManifest: true,
       }),
     ).toBe(false);
+    // P1b — 웹 세션도 welcome(열기 CTA)을 받는다 (능력 기준 계약).
     expect(
       shouldShowDesktopVaultWelcome({
         isDesktopRuntime: false,
@@ -293,7 +303,7 @@ describe("desktop-only local vault source", () => {
         localVaultStatus: "idle",
         hasLocalManifest: false,
       }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       shouldShowDesktopVaultWelcome({
         isDesktopRuntime: true,

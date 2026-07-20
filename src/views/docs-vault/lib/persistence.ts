@@ -85,7 +85,12 @@ export function shouldHonorLocalIntent(
   intent: string | null | undefined,
   isDesktopRuntime: boolean,
 ): boolean {
-  return intent === "local" && isDesktopRuntime;
+  // P1b (N1) — 웹 세션도 local intent 를 존중한다. 같은 브라우저에서
+  // 빌더는 이미 vault 에 쓰기까지 허용하는데 문서함만 데스크톱 게이트로
+  // 막는 것은 표면 간 모순 계약이었다. FSA 미지원 브라우저는
+  // `localVaultStatus === 'unsupported'` 쪽 게이트가 막는다.
+  void isDesktopRuntime;
+  return intent === "local";
 }
 
 export function shouldShowDogfoodVaultHint({
@@ -137,7 +142,10 @@ export function isDocsVaultLocalSourceDisabled({
   isDesktopRuntime: boolean;
   localVaultStatus: string;
 }): boolean {
-  return !isDesktopRuntime || localVaultStatus === "unsupported";
+  // P1b (N1) — 게이트는 능력(FSA 지원 여부)만 본다. 런타임(웹/데스크톱)
+  // 은 더 이상 게이트가 아니다 — 빌더와 같은 계약.
+  void isDesktopRuntime;
+  return localVaultStatus === "unsupported";
 }
 
 export function shouldShowDesktopVaultWelcome({
@@ -151,8 +159,11 @@ export function shouldShowDesktopVaultWelcome({
   localVaultStatus: string;
   hasLocalManifest: boolean;
 }): boolean {
+  // P1b (N1) — welcome(폴더 열기 CTA 포함)도 능력 기준: 웹 FSA 세션에서도
+  // 로컬 소스에 진입하면 열기 표면이 있어야 한다. 데스크톱 전용 요소
+  // (dogfood 경로 힌트)는 shouldShowDogfoodVaultHint 가 따로 게이트한다.
+  void isDesktopRuntime;
   return (
-    isDesktopRuntime &&
     source === "local" &&
     !hasLocalManifest &&
     (localVaultStatus === "idle" ||

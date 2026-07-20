@@ -242,7 +242,7 @@ function DocsVaultContent() {
   const openLocalVault = localVault.open;
   const openRecentLocalVault = localVault.openRecent;
   const localVaultRootPath = localVault.handle
-    ? getTauriVaultRootPath(localVault.handle) ?? null
+    ? getTauriVaultRootPath(localVault.handle) ?? localVault.handle.name ?? null
     : null;
   const toast = useToast();
   const handleOpenDogfoodVault = useCallback(() => {
@@ -411,13 +411,14 @@ function DocsVaultContent() {
   // Hosted browser 에서는 local vault 작업을 열지 않는다. 기존 브라우저
   // 세션이 local source 를 저장해 둔 경우에도 promo/read-only surface 로 복귀.
   useEffect(() => {
-    if (source === 'local' && (!isDesktopRuntime || localVaultStatus === 'unsupported')) {
+    // P1b — FSA 미지원일 때만 server 로 복귀 (웹 세션 local 은 이제 유효).
+    if (source === 'local' && localVaultStatus === 'unsupported') {
       scheduleStateSync(() => {
         setSource('server');
         storeSource('server');
       });
     }
-  }, [isDesktopRuntime, source, localVaultStatus]);
+  }, [source, localVaultStatus]);
 
   useEffect(() => {
     if (
@@ -1744,9 +1745,7 @@ function DocsVaultContent() {
             </button>
             <Tooltip
               content={
-                !isDesktopRuntime
-                  ? t('vaultStatus.desktopOnlyTooltip')
-                  : localVault.status === 'unsupported'
+                localVault.status === 'unsupported'
                   ? t('vaultStatus.unsupportedTooltip')
                   : t('vaultStatus.localTooltip')
               }
@@ -1781,9 +1780,7 @@ function DocsVaultContent() {
                 id="docs-vault-local-unsupported-hint"
                 className="sr-only"
               >
-                {isDesktopRuntime
-                  ? t('vaultStatus.unsupportedTooltip')
-                  : t('vaultStatus.desktopOnlyTooltip')}
+                {t('vaultStatus.unsupportedTooltip')}
               </span>
             ) : null}
           </div>
@@ -2092,7 +2089,7 @@ function DocsVaultContent() {
                   설명 + 액션을 맡는다 (po-pass.md §1-3). */}
               {!editing && !isLocalSourceLoaded ? (
                 <SampleNotice
-                  isDesktopRuntime={isDesktopRuntime}
+                  canOpenLocalVault={!localSourceDisabled}
                   onOpenFolder={() => handleSourceChange('local')}
                 />
               ) : null}
