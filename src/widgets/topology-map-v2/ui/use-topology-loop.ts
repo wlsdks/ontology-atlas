@@ -13,7 +13,7 @@ import { useEffect, useRef, type RefObject } from "react";
 
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import { stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
-import { isCanvasActive, shouldSkipFrame } from "../model/idle-gate";
+import { isCameraUnsettled, isCanvasActive, shouldSkipFrame } from "../model/idle-gate";
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../interaction/pointer-state-machine";
@@ -489,9 +489,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // 변화든 다음 프레임에 자연 복귀, wake 배선/동결 실패 모드 없음).
       {
         const cam = cameraRef.current;
+        const target = cameraTargetRef.current;
         const prev = prevCameraSampleRef.current;
+        // M-1 회귀: 값 이동만 보면 유휴 스킵 중 휠(타깃만 변경)이 영원히
+        // 무시된다 — 스프링 미정착(타깃≠값)도 활동이다 (idle-gate 계약).
+        const cameraUnsettled = isCameraUnsettled(
+          { x: cam.x.value, y: cam.y.value, scale: cam.scale.value },
+          target,
+        );
         const cameraMoving =
           prev === null ||
+          cameraUnsettled ||
           Math.abs(cam.x.value - prev.x) > 0.01 ||
           Math.abs(cam.y.value - prev.y) > 0.01 ||
           Math.abs(cam.scale.value - prev.s) > 0.0001;
