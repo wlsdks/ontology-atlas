@@ -6,7 +6,7 @@
  * `skeletonInkRef` 해석-캐시 패턴 재사용). 값의 진실원은 여전히
  * `app/globals.css` 하나 — 이 파일은 읽기 전용 어댑터다.
  *
- * 토큰 drift 가드: §2 표에 있는 88개 토큰(C1 — camera-max/min-zoom-ratio +
+ * 토큰 drift 가드: §2 표의 토큰 전부(정확한 개수는 TOKEN_SPECS.length 가 진실원 — 테스트가 계약으로 고정)(C1 — camera-max/min-zoom-ratio +
  * drag-tug-1hop/2hop 4종 추가, dive-zoom fix — camera-spring-angfreq 를
  * -interactive/-transition 둘로 분리해 순증 1; canvas-emphasis 슬라이스 — 프로젝트
  * 헥사곤 이중 헤어라인/핀틱 2종 + 선택 링/선택 헤어라인/호버 링 3종 + 선택
@@ -268,6 +268,9 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "safeInsetBottom", cssVar: "--topology-v2-safe-inset-bottom", kind: "number" },
 ];
 
+/** 토큰 개수 계약 — 주석 속 숫자가 아니라 이 값이 진실원 (테스트가 픽스처 커버리지를 이 값에 고정). */
+export const TOPOLOGY_V2_TOKEN_COUNT = TOKEN_SPECS.length;
+
 export class TopologyV2TokenError extends Error {
   constructor(public readonly missing: readonly string[]) {
     super(
@@ -280,7 +283,7 @@ export class TopologyV2TokenError extends Error {
 }
 
 /**
- * `getComputedStyle` 결과(또는 테스트용 대체 함수)에서 88개 토큰 전부를
+ * `getComputedStyle` 결과(또는 테스트용 대체 함수)에서 TOKEN_SPECS 의 토큰 전부를
  * 해석한다. 하나라도 빈 문자열이면 `TopologyV2TokenError` 를 던진다 — 이게
  * §2.3 "누락 시 명시적 실패" 계약.
  */
