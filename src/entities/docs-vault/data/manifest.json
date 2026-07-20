@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-20T15:59:23.491Z",
+  "generatedAt": "2026-07-20T16:04:28.356Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2729,6 +2729,44 @@
       "linksOut": []
     },
     {
+      "slug": "CASE-STUDY-AGENTS-MD-DRIFT",
+      "path": "docs/CASE-STUDY-AGENTS-MD-DRIFT.md",
+      "title": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift",
+          "slug": "case-study-avoiding-agentsmd-claudemd-drift"
+        },
+        {
+          "depth": 2,
+          "text": "The problem, as the community describes it",
+          "slug": "the-problem-as-the-community-describes-it"
+        },
+        {
+          "depth": 2,
+          "text": "What this repo actually does about it",
+          "slug": "what-this-repo-actually-does-about-it"
+        },
+        {
+          "depth": 2,
+          "text": "The vault extends the same pattern to facts that change",
+          "slug": "the-vault-extends-the-same-pattern-to-facts-that-change"
+        }
+      ],
+      "excerpt": "How this repo keeps its own instruction files in sync, and why the same pattern extends into the vault for facts that change faster than instructions do. Written from this repo's own history, not a hypothetical. Multiple coding-agent instruction files (AGENTS.md, CLAUDE.md, GEMINI.md, .github/copilot-instructions.md, …",
+      "wordCount": 825,
+      "updatedAt": "2026-07-20T15:48:24.104Z",
+      "linksOut": [
+        "../CLAUDE",
+        "../.claude/rules/forbidden",
+        "../mcp/README",
+        "../AGENTS"
+      ]
+    },
+    {
       "slug": "CHANGELOG",
       "path": "docs/CHANGELOG.md",
       "title": "CHANGELOG",
@@ -2739,6 +2777,26 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — 첫 지도 연출 (E1, 거울의 순간)",
+          "slug": "2026-07-21-첫-지도-연출-e1-거울의-순간"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — 엣지 계층 잉크 사다리 + 관통 엣지 강등",
+          "slug": "2026-07-21-엣지-계층-잉크-사다리-관통-엣지-강등"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — quick wins 5종 (페르소나 실측 마찰 소형 교정)",
+          "slug": "2026-07-21-quick-wins-5종-페르소나-실측-마찰-소형-교정"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — 외향 문서 슬라이스 (시장 언어 연결, 계획 구조 결함 해소)",
+          "slug": "2026-07-21-외향-문서-슬라이스-시장-언어-연결-계획-구조-결함-해소"
         },
         {
           "depth": 2,
@@ -4001,10 +4059,11 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 같은 웹 브라우저 세션에서 빌더는 로컬 vault 에 쓰기까지 되는데 문서함만 \"macOS 앱에서 시작\" 잠금이었다 (페르소나 실측 N1, High — 표",
-      "wordCount": 25088,
-      "updatedAt": "2026-07-20T15:42:18.386Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. \"내 문서로 지도 만들기\" 완료 직후, 새 노드들이 프로젝트 위치에서 출발해 제자리로 스프링 정착한다 — 지도가 \"만들어졌다\"가 아니라 \"내 문서들이 모였",
+      "wordCount": 25487,
+      "updatedAt": "2026-07-20T16:03:41.960Z",
       "linksOut": [
+        "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
       ]
     },
@@ -10118,6 +10177,11 @@
         "fromSlug": "ARCHITECTURE",
         "context": "ge config - `app/layout.tsx` — metadata, providers, head - `eslint.config.mjs` — FSD boundary rules Long-form docs: - **[`AGENTS.md`]** — contributor guide (canonical for AI tools) - [`PRODUCT-DIRECTION.md`](./PRODUCT-DIRECTION.md) — mission - [`FEATURES.",
         "linkText": "`AGENTS.md`"
+      },
+      {
+        "fromSlug": "CASE-STUDY-AGENTS-MD-DRIFT",
+        "context": ". See [`mcp/README.md`](../mcp/README.md) for the tool surface an agent uses to read and write that reference file, and **[`AGENTS.md`]** for how this repo's own agents are told to use it.",
+        "linkText": "`AGENTS.md`"
       }
     ],
     "PRODUCT-DIRECTION": [
@@ -10178,6 +10242,39 @@
         "fromSlug": "README",
         "context": "atterns | Canonical UI style guide | | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Static export deployment | Current, small | | **[`CHANGELOG.md`]** | Chronological user-visible changes | Historical ledger | | [`BACKLOG.md`](BACKLOG.md) | Working queue and deferred qu",
         "linkText": "`CHANGELOG.md`"
+      }
+    ],
+    "../CLAUDE": [
+      {
+        "fromSlug": "CASE-STUDY-AGENTS-MD-DRIFT",
+        "context": "ings that genuinely don't apply to other tools (skills, hooks, the design-guardian subagent). See the current file: **[`CLAUDE.md`]**. - The sync rule is written down as policy, not left to memory — `AGENTS.md`'s own \"CLAUDE.md / AGENTS.md sync\" secti",
+        "linkText": "`CLAUDE.md`"
+      }
+    ],
+    "../.claude/rules/forbidden": [
+      {
+        "fromSlug": "CASE-STUDY-AGENTS-MD-DRIFT",
+        "context": "eeps this file consistent without a second edit). - Drift between the two is listed as a named forbidden pattern in **[`.claude/rules/forbidden.md`]**, under \"문서\" (documentation): *\"AGENTS.md 와 CLAUDE.md 가 비동기\"* — AGENTS.md and CLAUDE.md being out of sync is treated",
+        "linkText": "`.claude/rules/forbidden.md`"
+      }
+    ],
+    "../mcp/README": [
+      {
+        "fromSlug": "CASE-STUDY-AGENTS-MD-DRIFT",
+        "context": "every session — the same \"consult a reference file instead of restating it\" move, aimed at facts instead of rules. See **[`mcp/README.md`]** for the tool surface an agent uses to read and write that reference file, and [`AGENTS.md`](../AGENTS.md#working-with-t",
+        "linkText": "`mcp/README.md`"
+      },
+      {
+        "fromSlug": "README",
+        "context": "SKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | **[`../mcp/README.md`]** | MCP registration, 24 tools, tool contracts, verification | Canonical agent interface | | [`../cli/README.md`](../cli/",
+        "linkText": "`../mcp/README.md`"
+      }
+    ],
+    "CASE-STUDY-AGENTS-MD-DRIFT": [
+      {
+        "fromSlug": "CHANGELOG",
+        "context": "다리가 없었다. README에 \"codebase map / agent memory / context layer\" 시장 어휘를 잇는 브릿지 문단과 유산 선언 문장(\"이 지도는 당신 디스크의 마크다운\") 추가. 신규 **[`docs/CASE-STUDY-AGENTS-MD-DRIFT.md`]** — AGENTS.md/CLAUDE.md drift 커뮤니티 고통 → 이 저장소가 실제로 쓰는 해법(단일 진실원 + thin wrapper) → context rot 완화책으로서의 vault, 세 단계 케이스 스터디",
+        "linkText": "`docs/CASE-STUDY-AGENTS-MD-DRIFT.md`"
       }
     ],
     "slug": [
@@ -10305,13 +10402,6 @@
         "fromSlug": "README",
         "context": "VELOPMENT-CHECKS.md) | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks | | **[`DESKTOP-MACOS.md`]** | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | [`../mcp/README",
         "linkText": "`DESKTOP-MACOS.md`"
-      }
-    ],
-    "../mcp/README": [
-      {
-        "fromSlug": "README",
-        "context": "SKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | **[`../mcp/README.md`]** | MCP registration, 24 tools, tool contracts, verification | Canonical agent interface | | [`../cli/README.md`](../cli/",
-        "linkText": "`../mcp/README.md`"
       }
     ],
     "../cli/README": [
@@ -11640,6 +11730,13 @@
         "type": "doc",
         "slug": "BACKLOG",
         "title": "Backlog — ontology-atlas"
+      },
+      {
+        "name": "CASE-STUDY-AGENTS-MD-DRIFT",
+        "path": "CASE-STUDY-AGENTS-MD-DRIFT",
+        "type": "doc",
+        "slug": "CASE-STUDY-AGENTS-MD-DRIFT",
+        "title": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift"
       },
       {
         "name": "CHANGELOG",
