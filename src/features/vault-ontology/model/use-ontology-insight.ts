@@ -51,6 +51,7 @@ export function derivationToInsight(
     from: stub.from,
     to: stub.to,
     type: stub.type,
+    label: stub.label,
     projectIds: [],
     evidenceIds: stub.sourceSlug ? [stub.sourceSlug] : [],
     lastApprovedAt: VAULT_SENTINEL_DATE,

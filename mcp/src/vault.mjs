@@ -891,6 +891,41 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
           afterKeys.push({ key, after: r.value });
           fmChanged = true;
         }
+      } else if (value && typeof value === 'object') {
+        // P6 게이트 ① — 객체 맵 값(예: relation_notes: {ref: "왜"})의 KEY 도
+        // rename 대상이다. 이걸 안 하면 관계 근거(why) 노트가 rename 순간
+        // 고아가 된다 (레드팀이 실증한 스키마 착수 차단 사유).
+        //
+        // 키 충돌 병합 정책: old/new 키가 둘 다 존재하면 기존(new) 값을
+        // 이긴다 — 사용자가 새 이름으로 이미 쓴 노트가 더 최신 의도이고,
+        // rename 이 그것을 덮어쓰면 조용한 데이터 손실이다. 밀려난 old
+        // 값은 버리지 않고 beforeKeys 에 남아 dry-run/감사에서 보인다.
+        const entries = Object.entries(value);
+        let mapChanged = false;
+        const nextMap = {};
+        for (const [mapKey, mapValue] of entries) {
+          const r = rewriteArrayItem(mapKey);
+          if (!r.changed) {
+            if (!(mapKey in nextMap)) nextMap[mapKey] = mapValue;
+            continue;
+          }
+          mapChanged = true;
+          if (r.value in nextMap || entries.some(([k]) => k === r.value)) {
+            // 충돌 — 기존(new 키) 값 승리, old 값은 기록만.
+            continue;
+          }
+          nextMap[r.value] = mapValue;
+        }
+        if (mapChanged) {
+          // 충돌 승리자(원래 new 키) 값 보존
+          for (const [mapKey, mapValue] of entries) {
+            if (!(mapKey in nextMap) && !rewriteArrayItem(mapKey).changed) nextMap[mapKey] = mapValue;
+          }
+          beforeKeys.push({ key, before: value });
+          afterKeys.push({ key, after: nextMap });
+          nextFm[key] = nextMap;
+          fmChanged = true;
+        }
       }
     }
 

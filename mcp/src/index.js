@@ -301,6 +301,12 @@ const COMPACT_MAINTENANCE_PROPOSED_ACTION_ARGS_OUTPUT_SCHEMA = Object.freeze({
         from: NON_BLANK_STRING_SCHEMA,
         to: NON_BLANK_STRING_SCHEMA,
         type: { ...NON_BLANK_STRING_SCHEMA, enum: WRITE_RELATION_TYPE_VALUES },
+        why: {
+          type: 'string',
+          maxLength: 300,
+          description:
+            'One-line rationale for this relation ("A leans on B because ..."). Stored in the SAME frontmatter write as the ref (relation_notes map) — write it whenever you know the reason; a graph edge without a why is a mind-map line, not an ontology claim.',
+        },
       },
       required: ['from', 'to', 'type'],
       additionalProperties: false,
@@ -3876,7 +3882,7 @@ const RELATION_KEY = {
 };
 const RELATION_TYPES = WRITE_RELATION_TYPE_VALUES;
 
-function addRelation({ from, to, type, expected_mtime }, options = {}) {
+function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
   requireNonBlankString(from, 'from');
   requireNonBlankString(to, 'to');
   requireNonBlankString(type, 'type');
@@ -3931,7 +3937,15 @@ function addRelation({ from, to, type, expected_mtime }, options = {}) {
     return { ok: true, alreadyExists: true, changed: false, from: canonicalFrom, to: canonicalTo, type };
   }
   const next = normalizeRelationRefs([...existing, canonicalTo]);
-  patchFrontmatter(VAULT_ROOT, canonicalFrom, { [key]: next }, {
+  // P6 — 관계 + 근거(why)를 한 번의 frontmatter 쓰기로 (원자 쓰기 게이트 ③:
+  // 둘이 따로 쓰이면 중간 실패 시 근거 없는 관계/관계 없는 근거가 남는다).
+  const patch = { [key]: next };
+  if (typeof why === 'string' && why.trim()) {
+    const notes = { ...(doc.frontmatter.relation_notes && typeof doc.frontmatter.relation_notes === 'object' ? doc.frontmatter.relation_notes : {}) };
+    notes[canonicalTo] = why.trim();
+    patch.relation_notes = notes;
+  }
+  patchFrontmatter(VAULT_ROOT, canonicalFrom, patch, {
     expectedMtime:
       typeof expected_mtime === 'number' ? expected_mtime : undefined,
   });

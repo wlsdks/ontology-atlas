@@ -530,6 +530,11 @@ export function HomePage() {
     const from = ontologyInsight.nodes.find((n) => n.id === selectedEdge.sourceId);
     const to = ontologyInsight.nodes.find((n) => n.id === selectedEdge.targetId);
     if (!from || !to) return null;
+    // P6 — 이 관계의 why (relation_notes → derive 가 edge.label 로 승격).
+    const edgeRecord = ontologyInsight.edges.find(
+      (e) => e.from === selectedEdge.sourceId && e.to === selectedEdge.targetId,
+    );
+    const why = edgeRecord?.label?.trim() || null;
     const typeLabel = relationVocabulary(selectedEdge.relationType, "formal");
     const sentence = t(`edgeSentence.${normalizeEdgeSentenceKey(selectedEdge.relationType)}`, {
       from: from.title,
@@ -551,6 +556,7 @@ export function HomePage() {
         : null,
       updatedAtLabel: ago ? t(`nodeDatasheet.updated_${ago.key}`, { count: ago.count }) : null,
       builderEditHref: `/ontology/edit/?node=${encodeURIComponent(from.evidenceIds[0] ?? from.id)}`,
+      why,
     };
   }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary]);
   // purity: "N분 전" 기준 시각은 시트가 열린 순간의 스냅샷 (렌더 중 Date.now 금지).
@@ -2776,6 +2782,7 @@ export function HomePage() {
               toId={edgePanelModel.toId}
               fromTitle={edgePanelModel.fromTitle}
               toTitle={edgePanelModel.toTitle}
+              why={edgePanelModel.why}
               declaredBy={edgePanelModel.declaredBy}
               updatedAtLabel={edgePanelModel.updatedAtLabel}
               builderEditHref={edgePanelModel.builderEditHref}

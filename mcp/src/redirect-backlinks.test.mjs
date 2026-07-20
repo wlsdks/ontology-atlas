@@ -164,5 +164,34 @@ test("inline string key 도 redirect (e.g. domain)", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
+// P6 게이트 ① — 객체 맵 값의 키 rename (relation_notes 대비).
+test("객체 맵 키 rename — why 노트가 고아가 되지 않는다", () => {
+  const root = makeVault();
+  writeMd(
+    root,
+    "user",
+    "---\nkind: capability\ntitle: User\ndependencies: [capabilities/mcp-server]\nrelation_notes:\n  capabilities/mcp-server: 쓰기 경로가 이 서버를 지난다\n---\n",
+  );
+  redirectBacklinks(root, "capabilities/mcp-server", "capabilities/graph-server");
+  const after = readMd(root, "user");
+  assert.match(after, /capabilities\/graph-server: 쓰기 경로가/);
+  assert.doesNotMatch(after, /capabilities\/mcp-server:/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("객체 맵 키 충돌 — 기존(new 키) 값이 이긴다 (조용한 덮어쓰기 금지)", () => {
+  const root = makeVault();
+  writeMd(
+    root,
+    "user2",
+    "---\nkind: capability\ntitle: User2\nrelation_notes:\n  capabilities/old-name: 옛 노트\n  capabilities/new-name: 새 노트\n---\n",
+  );
+  redirectBacklinks(root, "capabilities/old-name", "capabilities/new-name");
+  const after = readMd(root, "user2");
+  assert.match(after, /capabilities\/new-name: 새 노트/);
+  assert.doesNotMatch(after, /옛 노트/);
+  rmSync(root, { recursive: true, force: true });
+});
+
 console.log(`\nredirectBacklinks: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
