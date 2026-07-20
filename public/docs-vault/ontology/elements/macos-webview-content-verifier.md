@@ -3,7 +3,7 @@ slug: elements/macos-webview-content-verifier
 kind: element
 title: macOS WebView Content Verifier
 domain: vault-local-first
-relates: [capabilities/desktop-app-distribution, domains/ai-agent-partner, domains/views]
+relates: [domains/ai-agent-partner, domains/views]
 ---
 
 `scripts/verify-macos-app-launch.mjs` and `src-tauri/src/lib.rs` provide the

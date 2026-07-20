@@ -9,9 +9,8 @@ elements:
   - src/features/docs-vault-local/model/use-local-vault.ts
   - src/features/project-data-source/model/use-project-mutations.ts
   - src/views/ontology-edit/ui/OntologyEditPage.tsx
-relates:
+dependencies:
   - capabilities/mcp-server
-  - domains/ai-agent-partner
 ---
 
 # MCP Conflict Guard

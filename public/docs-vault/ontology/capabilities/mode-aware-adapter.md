@@ -9,7 +9,6 @@ elements:
   - src/features/vault-ontology
 relates:
   - capabilities/ontology-hub-mode-aware
-  - domains/mode-aware-adapters
   - domains/vault-local-first
 ---
 

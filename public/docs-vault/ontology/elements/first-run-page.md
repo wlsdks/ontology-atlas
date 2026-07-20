@@ -3,7 +3,7 @@ slug: elements/first-run-page
 kind: element
 title: Desktop First-Run Page
 domain: onboarding-ux
-relates: [capabilities/desktop-app-distribution, domains/vault-local-first]
+dependencies: [capabilities/desktop-app-distribution, domains/vault-local-first]
 ---
 
 `src/views/first-run/` — 설치형 앱(Tauri)의 볼트 미선택 첫 화면. 마케팅 랜딩
