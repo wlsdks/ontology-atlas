@@ -2328,6 +2328,20 @@
       "cancel": "닫기",
       "errorPrefix": "저장하지 못했어요:",
       "toastDone": "문서 {count}개로 첫 지도를 만들었어요"
+    },
+    "edgePanel": {
+      "kicker": "관계",
+      "declaredBy": "선언한 문서",
+      "editRelation": "관계 편집",
+      "close": "닫기",
+      "openDoc": "열기"
+    },
+    "edgeSentence": {
+      "contains": "{from} 가 {to} 를 담고 있어요.",
+      "depends": "{from} 가 {to} 에 기대요.",
+      "describes": "{from} 가 {to} 의 근거예요.",
+      "belongsTo": "{from} 는 {to} 에 속해요.",
+      "related": "{from} 와 {to} 가 서로 관련돼 있어요."
     }
   },
   "fullDetailA1": {

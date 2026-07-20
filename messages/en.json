@@ -2328,6 +2328,20 @@
       "cancel": "Close",
       "errorPrefix": "Could not save:",
       "toastDone": "Built your first map from {count} documents"
+    },
+    "edgePanel": {
+      "kicker": "Relation",
+      "declaredBy": "Declared in",
+      "editRelation": "Edit relation",
+      "close": "Close",
+      "openDoc": "open"
+    },
+    "edgeSentence": {
+      "contains": "{from} contains {to}.",
+      "depends": "{from} leans on {to}.",
+      "describes": "{from} is evidence for {to}.",
+      "belongsTo": "{from} belongs to {to}.",
+      "related": "{from} and {to} are related."
     }
   },
   "fullDetailA1": {

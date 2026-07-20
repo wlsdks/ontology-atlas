@@ -50,6 +50,15 @@ const HubRail = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.HubRail),
   { ssr: false },
 );
+/** P3b — 관계 타입 → 문장 i18n 키 (dependencies/depends_on 통일 등). */
+function normalizeEdgeSentenceKey(type: string): string {
+  if (type === "dependencies" || type === "depends_on") return "depends";
+  if (type === "contains" || type === "elements" || type === "capabilities" || type === "domains" || type === "domain") return "contains";
+  if (type === "describes") return "describes";
+  if (type === "belongs_to") return "belongsTo";
+  return "related";
+}
+
 const TopologyEmptyState = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.TopologyEmptyState),
   { ssr: false },
@@ -137,6 +146,7 @@ import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
 import { AgentConnectSheet, type AgentConnectState } from "@/widgets/agent-connect";
+import { TopologyV2EdgePanel } from "@/widgets/topology-map-v2/ui/TopologyV2EdgePanel";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { buildFullDetailGroups, buildFullDetailReachModel } from "@/widgets/full-detail-a1";
@@ -508,6 +518,41 @@ export function HomePage() {
   const [mapRevealToken, setMapRevealToken] = useState(0);
   // P2a — "AI 에이전트 연결" 시트.
   const [agentConnectOpen, setAgentConnectOpen] = useState(false);
+  // P3b — 선택된 엣지 (노드 선택과 배타: 노드를 고르면 해제).
+  const [selectedEdge, setSelectedEdge] = useState<{
+    sourceId: string;
+    targetId: string;
+    relationType: string;
+    declaredBySlug: string | null;
+  } | null>(null);
+  const edgePanelModel = useMemo(() => {
+    if (!selectedEdge || !ontologyInsight) return null;
+    const from = ontologyInsight.nodes.find((n) => n.id === selectedEdge.sourceId);
+    const to = ontologyInsight.nodes.find((n) => n.id === selectedEdge.targetId);
+    if (!from || !to) return null;
+    const typeLabel = relationVocabulary(selectedEdge.relationType, "formal");
+    const sentence = t(`edgeSentence.${normalizeEdgeSentenceKey(selectedEdge.relationType)}`, {
+      from: from.title,
+      to: to.title,
+    });
+    const declaredIso = selectedEdge.declaredBySlug
+      ? docFreshnessIndex.get(selectedEdge.declaredBySlug)
+      : undefined;
+    const ago = declaredIso ? computeUpdatedAgo(declaredIso, updatedAgoNowMs) : null;
+    return {
+      sentence,
+      typeLabel,
+      fromId: from.id,
+      toId: to.id,
+      fromTitle: from.title,
+      toTitle: to.title,
+      declaredBy: selectedEdge.declaredBySlug
+        ? { slug: selectedEdge.declaredBySlug, href: buildDocsVaultHref({ slug: selectedEdge.declaredBySlug }) }
+        : null,
+      updatedAtLabel: ago ? t(`nodeDatasheet.updated_${ago.key}`, { count: ago.count }) : null,
+      builderEditHref: `/ontology/edit/?node=${encodeURIComponent(from.evidenceIds[0] ?? from.id)}`,
+    };
+  }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary]);
   // purity: "N분 전" 기준 시각은 시트가 열린 순간의 스냅샷 (렌더 중 Date.now 금지).
   const [agentConnectNowMs, setAgentConnectNowMs] = useState(0);
   const agentConnectStatus = useMemo<AgentConnectState>(() => {
@@ -2430,9 +2475,19 @@ export function HomePage() {
                     fitViewToken={combinedFitToken}
                     relayoutToken={topologyRelayoutToken}
                     revealToken={mapRevealToken}
-                    onSelect={(slug) => handleSelect(slug)}
+                    onSelectEdge={(edge) => {
+                      setFullDetailSlug(null);
+                      setSelectedEdge(edge);
+                    }}
+                    onSelect={(slug) => {
+                      setSelectedEdge(null);
+                      handleSelect(slug);
+                    }}
                     onOpen={handleExpandRequest}
-                    onPaneClick={handleClose}
+                    onPaneClick={() => {
+                      setSelectedEdge(null);
+                      handleClose();
+                    }}
                     onVisibleCountChange={setTopologyVisibleCount}
                     onGraphStatsChange={handleTopologyGraphStatsChange}
                     onContextMenuNode={handleContextMenuNode}
@@ -2706,6 +2761,38 @@ export function HomePage() {
                 className="max-lg:w-[min(520px,calc(100vw-1.5rem))]"
               />
             ) : null}
+          </div>
+        ) : null}
+        {/* P3b — 엣지 팝오버: 노드 팝오버와 같은 포지셔너 계약, 배타 렌더. */}
+        {edgePanelModel && !selectedOntologyNode && !createNodeOpen ? (
+          <div
+            data-testid="topology-edge-popover-positioner"
+            className="topology-ui-scale fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
+          >
+            <TopologyV2EdgePanel
+              sentence={edgePanelModel.sentence}
+              typeLabel={edgePanelModel.typeLabel}
+              fromId={edgePanelModel.fromId}
+              toId={edgePanelModel.toId}
+              fromTitle={edgePanelModel.fromTitle}
+              toTitle={edgePanelModel.toTitle}
+              declaredBy={edgePanelModel.declaredBy}
+              updatedAtLabel={edgePanelModel.updatedAtLabel}
+              builderEditHref={edgePanelModel.builderEditHref}
+              labels={{
+                kicker: t("edgePanel.kicker"),
+                declaredByLabel: t("edgePanel.declaredBy"),
+                editRelation: t("edgePanel.editRelation"),
+                close: t("edgePanel.close"),
+                openDoc: t("edgePanel.openDoc"),
+              }}
+              onSelectNode={(id) => {
+                setSelectedEdge(null);
+                handleSelect(id);
+              }}
+              onClose={() => setSelectedEdge(null)}
+              className="pointer-events-auto max-lg:w-[min(400px,calc(100vw-1.5rem))]"
+            />
           </div>
         ) : null}
         {contextMenuNode && contextMenuModel ? (

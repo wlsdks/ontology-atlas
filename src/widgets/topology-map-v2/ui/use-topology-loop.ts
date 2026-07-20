@@ -92,6 +92,7 @@ export interface UseTopologyLoopArgs {
    * 발화(초기 로드 아님). reduced-motion 은 호밍 스냅 경로가 즉착 처리.
    */
   revealToken?: number;
+  onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
   onSelect?: (slug: string) => void;
   onPaneClick?: () => void;
   onVisibleCountChange?: (visible: number) => void;
@@ -113,7 +114,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onContextMenuNode, agentFocusNodeId = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onContextMenuNode, agentFocusNodeId = null } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -735,6 +736,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dragStartPosRef,
     overviewScaleRef,
     onSelect,
+    onSelectEdge,
     onPaneClick,
     onContextMenuNode,
   });
