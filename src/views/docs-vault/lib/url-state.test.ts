@@ -25,22 +25,20 @@ describe('replaceDocsVaultUrlState', () => {
     expect(currentSearch()).toBe('');
   });
 
-  it('view=folder-topology → ?view=folder-topology', () => {
-    replaceDocsVaultUrlState({ view: 'folder-topology' });
-    expect(currentSearch()).toBe('?view=folder-topology');
-  });
-
+  // P5a — folder-topology 제거 이후 'doc' 이 유일 view 값이라 항상 default 로
+  // query 에서 제거된다. non-default view 값이 없어 "?view=X 셋" 케이스는
+  // 더 이상 존재하지 않는다.
   it('view=doc → query 제거 (default)', () => {
-    window.history.replaceState({}, '', `${ORIGINAL_HREF}?view=folder-topology`);
+    window.history.replaceState({}, '', `${ORIGINAL_HREF}?view=doc`);
     replaceDocsVaultUrlState({ view: 'doc' });
     expect(currentSearch()).toBe('');
   });
 
-  it('slug + view 동시 갱신', () => {
-    replaceDocsVaultUrlState({ slug: 'foo', view: 'folder-topology' });
+  it('slug + view 동시 갱신 — view 는 default 라 query 에 안 남음', () => {
+    replaceDocsVaultUrlState({ slug: 'foo', view: 'doc' });
     const params = new URL(window.location.href).searchParams;
     expect(params.get('slug')).toBe('foo');
-    expect(params.get('view')).toBe('folder-topology');
+    expect(params.get('view')).toBeNull();
   });
 
   it('app:urlchange event dispatch', () => {
@@ -53,10 +51,10 @@ describe('replaceDocsVaultUrlState', () => {
 
   it("'slug' 키 없으면 기존 slug 유지", () => {
     window.history.replaceState({}, '', `${ORIGINAL_HREF}?slug=foo`);
-    replaceDocsVaultUrlState({ view: 'folder-topology' });
+    replaceDocsVaultUrlState({ view: 'doc' });
     const params = new URL(window.location.href).searchParams;
     expect(params.get('slug')).toBe('foo');
-    expect(params.get('view')).toBe('folder-topology');
+    expect(params.get('view')).toBeNull();
   });
 
   it("intent=null → local 진입 query 제거", () => {

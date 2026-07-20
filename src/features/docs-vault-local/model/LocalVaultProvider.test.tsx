@@ -57,7 +57,6 @@ function mockVaultValue(overrides: Record<string, unknown> = {}) {
     createDoc: vi.fn(),
     deleteDoc: vi.fn(),
     renameDoc: vi.fn(),
-    scaffoldTopology: vi.fn(),
     scaffoldOntology: vi.fn(),
     ensureAgentConfigs: vi.fn(),
     updateFrontmatter: vi.fn(),

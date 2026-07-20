@@ -19,12 +19,10 @@ import {
 } from "./persistence";
 
 describe("parseDocsVaultView", () => {
-  it("known value 그대로 반환", () => {
+  // P5a — folder-topology 제거 이후 'doc' 이 유일 view. 알 수 없는 값도
+  // 항상 'doc' 로 정규화된다.
+  it("항상 'doc' 반환", () => {
     expect(parseDocsVaultView("doc")).toBe("doc");
-    expect(parseDocsVaultView("folder-topology")).toBe("folder-topology");
-  });
-
-  it("unknown / null / undefined 는 'doc' fallback", () => {
     expect(parseDocsVaultView(null)).toBe("doc");
     expect(parseDocsVaultView(undefined)).toBe("doc");
     expect(parseDocsVaultView("")).toBe("doc");

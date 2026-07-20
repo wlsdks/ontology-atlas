@@ -12,7 +12,8 @@
  * useCallback deps 에서 *제거 가능* — module reference 는 영원히 같음.
  */
 
-export type DocsVaultView = 'doc' | 'folder-topology';
+// P5a — folder-topology 제거. 'doc' 만 남지만 caller 계약(`view?:`) 은 유지.
+export type DocsVaultView = 'doc';
 
 export function replaceDocsVaultUrlState(next: {
   slug?: string | null;

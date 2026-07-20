@@ -1,6 +1,5 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import {
   Suspense,
   useCallback,
@@ -16,8 +15,6 @@ import { useTranslations } from 'next-intl';
 import { AnimatePresence } from 'framer-motion';
 import {
   ClipboardCheck,
-  FilePlus,
-  FolderCog,
   HardDrive,
   Menu,
   Package,
@@ -53,7 +50,6 @@ import { useDocsVaultPersistence } from '../lib/use-docs-vault-persistence';
 import { useDocsVaultScrollSpy } from '../lib/use-scroll-spy';
 import { useBackToTop } from '../lib/use-back-to-top';
 import { shouldShowOutlineRail } from '../lib/outline-rail';
-import { useFolderTopo } from '../lib/use-folder-topo';
 import { usePaletteState } from '../lib/use-palette-state';
 import { replaceDocsVaultUrlState } from '../lib/url-state';
 import {
@@ -66,6 +62,7 @@ import {
 } from '../lib/docs-vault-collection';
 import {
   buildDocsVaultHref,
+  buildNewNodeDoc,
   buildOntologyDeeplinkForDoc,
   deriveOntologyFromVault,
   vaultManifest,
@@ -73,7 +70,6 @@ import {
 } from '@/entities/docs-vault';
 import { DocsVaultBacklinks } from '@/widgets/docs-vault/ui/DocsVaultBacklinks';
 import { DocsVaultEditor } from '@/widgets/docs-vault/ui/DocsVaultEditor';
-import { DocsVaultProjectDepsBar } from '@/widgets/docs-vault/ui/DocsVaultProjectDepsBar';
 import { DocsVaultUnifiedPalette } from '@/widgets/docs-vault/ui/DocsVaultUnifiedPalette';
 import { DocsVaultViewer } from '@/widgets/docs-vault/ui/DocsVaultViewer';
 import type { VaultCommand } from '@/widgets/docs-vault/model/command';
@@ -85,17 +81,6 @@ import {
   pushRecentDoc,
   RECENT_DOCS_STORAGE_PREFIX,
 } from '@/widgets/docs-vault/lib/recent-docs';
-
-// DocsVaultFolderTopology 는 Sigma WebGL 을 top-level 모듈에서 초기화하므로
-// SSR 에서 평가되면 WebGL2RenderingContext not defined 로 빌드 실패. 반드시
-// dynamic + ssr:false.
-const DocsVaultFolderTopology = dynamic(
-  () =>
-    import('@/widgets/docs-vault/ui/DocsVaultFolderTopology').then(
-      (m) => m.DocsVaultFolderTopology,
-    ),
-  { ssr: false },
-);
 
 const serverManifest = vaultManifest as VaultManifest;
 
@@ -115,7 +100,10 @@ function splitVaultSlugPath(slug: string): { dir: string; name: string } {
 // `DocsVault*` 네임스페이스. 본 파일 안에선 짧은 별칭으로 alias.
 import { DocMetaBar } from "./parts/DocMetaBar";
 import { DesktopVaultWelcome } from "./parts/DesktopVaultWelcome";
-import { DocFrontmatterBlock } from "./parts/DocFrontmatterBlock";
+import {
+  DocFrontmatterBlock,
+  type DocFrontmatterPatch,
+} from "./parts/DocFrontmatterBlock";
 import { DocsSidebarBody } from "./parts/DocsSidebarBody";
 import { DocsVaultDocOutlinePanel } from "./parts/DocsVaultDocOutlinePanel";
 import { DocReadingOutlineRail } from "./parts/DocReadingOutlineRail";
@@ -126,6 +114,7 @@ import { DocsHeaderTile } from "./parts/DocsHeaderTile";
 import { DocsVaultVaultChip } from "./parts/DocsVaultVaultChip";
 import { DocsVaultAuditModal } from "./parts/DocsVaultAuditModal";
 import { DocsVaultTabStrip } from "./parts/DocsVaultTabStrip";
+import { NewDocKindDialog, type NewDocKind } from "./parts/NewDocKindDialog";
 import { useOpenDocTabs } from "../lib/use-open-doc-tabs";
 import {
   DOGFOOD_VAULT_PATH,
@@ -188,7 +177,6 @@ function DocsVaultContent() {
     ref: vaultChipMenuRef,
   } = useAdvancedMenu();
   const localIntentAutoOpenRef = useRef(false);
-  // R11 #16 step 3 — folder-topology build 흐름은 useFolderTopo hook 으로 캡슐화.
   const [highlightQuery, setHighlightQuery] = useState<string | undefined>(
     undefined,
   );
@@ -437,13 +425,11 @@ function DocsVaultContent() {
     // 소스 전환 시 선택 해제 — 동일 slug 가 다른 볼트에 있을 가능성 적음.
     setSelectedSlug(null);
     setActiveTag(null);
-    const nextView = next === 'server' && view === 'folder-topology' ? 'doc' : view;
     replaceUrlState(
       next === 'server'
-        ? { slug: null, view: nextView, intent: null }
-        : { slug: null, view: nextView },
+        ? { slug: null, view, intent: null }
+        : { slug: null, view },
     );
-    if (next === 'server' && view === 'folder-topology') setView('doc');
     // Local 로 전환 시 Obsidian 스타일 welcome 화면에서 직접 선택하게 한다.
     // native picker 는 사용자가 "폴더 열기" 를 눌렀을 때만 열린다.
     if (next === 'local' && isDesktopRuntime && localVault.status !== 'loaded') {
@@ -574,95 +560,6 @@ function DocsVaultContent() {
     }
   }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, setPinnedSlugs, setRecentSlugs, t]);
 
-  const {
-    folderTopo,
-    folderTopoError,
-    folderTopoStatus,
-    buildFolderTopology,
-  } = useFolderTopo({ source, view, manifest, localVault });
-
-  /**
-   * Folder-Topology 에서 "+ 프로젝트" 버튼 — 새 projects/{slug}.md 를
-   * 기본 template 으로 생성하고 편집 모드로 진입.
-   * category / status 는 vault 의 첫 정의를 default 로.
-   */
-  const handleCreateProject = useCallback(async () => {
-    if (!canEditCurrent) return;
-    if (typeof window === 'undefined') return;
-    const input = window.prompt(t('dialog.createProjectPrompt'));
-    if (!input) return;
-    const slug = input
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-    if (!slug) {
-      window.alert(t('dialog.invalidSlug'));
-      return;
-    }
-    const fullSlug = `projects/${slug}`;
-    if (manifest.docs.some((d) => d.slug === fullSlug)) {
-      window.alert(t('dialog.alreadyExists', { slug: fullSlug }));
-      return;
-    }
-    const defaultCategory = folderTopo?.categories[0]?.slug ?? 'uncategorized';
-    const defaultStatus = folderTopo?.statuses[0]?.slug ?? 'active';
-    const name = slug
-      .replace(/-/g, ' ')
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-    const template = [
-      '---',
-      `name: ${name}`,
-      `slug: ${slug}`,
-      `category: ${defaultCategory}`,
-      `status: ${defaultStatus}`,
-      'isHub: false',
-      'dependencies: []',
-      'tags: []',
-      '---',
-      '',
-      `# ${name}`,
-      '',
-      t('dialog.createProjectBodyPlaceholder'),
-      '',
-    ].join('\n');
-    try {
-      await localVault.createDoc(fullSlug, template);
-      setSelectedSlug(fullSlug);
-      setRecentSlugs(pushRecentDoc(recentKey, fullSlug));
-      setEditing(true);
-      replaceUrlState({ slug: fullSlug, view: 'doc' });
-      setView('doc');
-    } catch (err) {
-      window.alert(
-        t('dialog.createFailed', { message: err instanceof Error ? err.message : String(err) }),
-      );
-    }
-  }, [canEditCurrent, manifest, folderTopo, localVault, recentKey, replaceUrlState, setRecentSlugs, t]);
-
-  // Scaffold 실행 헬퍼 — confirm 거쳐 useLocalVault.scaffoldTopology.
-  const handleScaffoldTopology = useCallback(async () => {
-    if (!canEditCurrent) return;
-    if (typeof window === 'undefined') return;
-    const ok = window.confirm(t('dialog.scaffoldConfirm'));
-    if (!ok) return;
-    try {
-      const result = await localVault.scaffoldTopology();
-      window.alert(
-        t('dialog.scaffoldDone', { created: result.created, skipped: result.skipped }),
-      );
-      // scaffold 후 README 를 자동 선택해 규격 인지 도움
-      setSelectedSlug('README');
-      setRecentSlugs(pushRecentDoc(recentKey, 'README'));
-      replaceUrlState({ slug: 'README', view: 'folder-topology' });
-      setView('folder-topology');
-    } catch (err) {
-      window.alert(
-        t('dialog.scaffoldFailed', { message: err instanceof Error ? err.message : String(err) }),
-      );
-    }
-  }, [canEditCurrent, localVault, recentKey, replaceUrlState, setRecentSlugs, t]);
-
   const handleScaffoldOntologyStarter = useCallback(async () => {
     const result = await localVault.scaffoldOntology();
     setSelectedSlug('README');
@@ -687,55 +584,6 @@ function DocsVaultContent() {
     t,
     toast,
   ]);
-
-  const handleDailyNote = useCallback(async () => {
-    if (!canEditCurrent) return;
-    if (typeof window === 'undefined') return;
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    const iso = `${y}-${m}-${d}`;
-    const slug = `daily/${iso}`;
-    const selectAndRecord = (s: string) => {
-      setSelectedSlug(s);
-      setRecentSlugs(pushRecentDoc(recentKey, s));
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        url.searchParams.set('slug', s);
-        window.history.replaceState({}, '', url.toString());
-      }
-    };
-    if (manifest.docs.some((doc) => doc.slug === slug)) {
-      selectAndRecord(slug);
-      return;
-    }
-    const template = [
-      '---',
-      `title: ${iso}`,
-      'tags: [daily]',
-      '---',
-      '',
-      `# ${iso}`,
-      '',
-      `## ${t('dialog.dailyNoteTasksHeading')}`,
-      '',
-      '- ',
-      '',
-      `## ${t('dialog.dailyNoteMemoHeading')}`,
-      '',
-      '',
-    ].join('\n');
-    try {
-      await localVault.createDoc(slug, template);
-      selectAndRecord(slug);
-      setEditing(true);
-    } catch (err) {
-      window.alert(
-        t('dialog.dailyNoteFailed', { message: err instanceof Error ? err.message : String(err) }),
-      );
-    }
-  }, [canEditCurrent, manifest, localVault, recentKey, setRecentSlugs, t]);
 
   const handleInsertToc = useCallback(async () => {
     if (!canEditCurrent || !selectedSlug) return;
@@ -818,119 +666,6 @@ function DocsVaultContent() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }, [selectedSlug, manifest, t]);
 
-  const handleImportVault = useCallback(async () => {
-    if (!canEditCurrent) return;
-    if (typeof window === 'undefined') return;
-    const picker = document.createElement('input');
-    picker.type = 'file';
-    picker.accept = 'application/json,.json';
-    const chosen: File | null = await new Promise((resolve) => {
-      picker.onchange = () => {
-        resolve(picker.files?.[0] ?? null);
-      };
-      picker.click();
-    });
-    if (!chosen) return;
-    let bundle: {
-      raws?: Record<string, string>;
-      manifest?: { docs?: Array<{ slug: string }> };
-    };
-    try {
-      const text = await chosen.text();
-      bundle = JSON.parse(text);
-    } catch (err) {
-      window.alert(
-        t('dialog.jsonParseFailed', { message: err instanceof Error ? err.message : String(err) }),
-      );
-      return;
-    }
-    const raws = bundle.raws ?? {};
-    const slugs = Object.keys(raws);
-    if (slugs.length === 0) {
-      window.alert(t('dialog.noValidRaws'));
-      return;
-    }
-    // existing slug Set 한 번 — 이전엔 \`manifest.docs.some(...)\` 를 dedup
-    // check 와 import loop 양쪽에서 호출해 O(N×M) 였다. Set lookup 으로 O(N+M).
-    const existingSlugSet = new Set(manifest.docs.map((d) => d.slug));
-    const existing = slugs.filter((s) => existingSlugSet.has(s));
-    let overwrite = false;
-    if (existing.length > 0) {
-      overwrite = window.confirm(
-        t('dialog.importOverwriteConfirm', { count: existing.length }),
-      );
-    }
-    let created = 0;
-    let skipped = 0;
-    let updated = 0;
-    for (const slug of slugs) {
-      const content = raws[slug];
-      if (typeof content !== 'string') continue;
-      const exists = existingSlugSet.has(slug);
-      try {
-        if (exists) {
-          if (overwrite) {
-            await localVault.saveDoc(slug, content);
-            updated += 1;
-          } else {
-            skipped += 1;
-          }
-        } else {
-          await localVault.createDoc(slug, content);
-          created += 1;
-        }
-      } catch {
-        skipped += 1;
-      }
-    }
-    window.alert(
-      t('dialog.importDone', { created, updated, skipped }),
-    );
-  }, [canEditCurrent, manifest, localVault, t]);
-
-  const handleExportVault = useCallback(async () => {
-    if (typeof window === 'undefined') return;
-    // 서버 볼트는 manifest 만 읽히지만 raw md 도 클라이언트 fetch 로 묶어
-    // 단일 JSON 파일로 다운로드. 로컬 볼트는 fileHandle 로 읽기.
-    const fetchRaw = async (slug: string): Promise<string> => {
-      if (source === 'local' && localVault.fileHandles.has(slug)) {
-        const fh = localVault.fileHandles.get(slug)!;
-        const file = await fh.getFile();
-        return file.text();
-      }
-      const res = await fetch(`/docs-vault/${slug}.md`, { cache: 'no-cache' });
-      return res.ok ? res.text() : '';
-    };
-    const raws: Record<string, string> = {};
-    for (const d of manifest.docs) {
-      try {
-        raws[d.slug] = await fetchRaw(d.slug);
-      } catch {
-        raws[d.slug] = '';
-      }
-    }
-    const bundle = {
-      exportedAt: new Date().toISOString(),
-      source,
-      vaultName:
-        source === 'local' ? (localVault.handle?.name ?? 'local') : 'server',
-      manifest,
-      raws,
-    };
-    const blob = new Blob([JSON.stringify(bundle, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
-    a.href = url;
-    a.download = `docs-vault-${bundle.vaultName}-${ts}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }, [manifest, source, localVault]);
-
   const handleRenameCurrent = useCallback(async () => {
     if (!canEditCurrent || !selectedSlug) return;
     if (typeof window === 'undefined') return;
@@ -983,42 +718,54 @@ function DocsVaultContent() {
     }
   }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, setPinnedSlugs, setRecentSlugs, t]);
 
-  const handleCreateNewDoc = useCallback(async () => {
+  // P5c — "새 문서" 는 kind 선택이 먼저 온다(도메인/역량/요소/문서). generic
+  // `title:` 템플릿을 없애 "이 vault 의 문서는 노드다" 를 생성 순간에 강제
+  // (.qa-scratch/docs-identity-2026-07/verdict.md 더하기③). kind 클릭 →
+  // 제목 prompt → buildNewNodeDoc 이 kind 별 폴더 + normalized frontmatter 로
+  // 직렬화 — 빌더/토폴로지 새 노드 생성과 동일 함수(entities/docs-vault).
+  const [newDocKindDialogOpen, setNewDocKindDialogOpen] = useState(false);
+  const handleOpenNewDocDialog = useCallback(() => {
     if (!canEditCurrent) return;
-    if (typeof window === 'undefined') return;
-    // 현재 선택 문서의 디렉터리를 기본으로 제안. 없으면 루트.
-    const currentDir = selectedSlug && selectedSlug.includes('/')
-      ? selectedSlug.slice(0, selectedSlug.lastIndexOf('/'))
-      : '';
-    const suggested = currentDir
-      ? `${currentDir}/new-document`
-      : 'new-document';
-    const input = window.prompt(t('dialog.newDocPrompt'), suggested);
-    if (!input) return;
-    const slug = input
-      .trim()
-      .replace(/^\/+|\/+$/g, '')
-      .replace(/\.md$/, '');
-    if (!slug) return;
-    if (manifest.docs.some((d) => d.slug === slug)) {
-      window.alert(t('dialog.renameAlreadyExists', { slug }));
-      return;
-    }
-    const title = slug.split('/').pop() ?? slug;
-    const template = `---\ntitle: ${title}\n---\n\n# ${title}\n\n`;
-    try {
-      await localVault.createDoc(slug, template);
-      // 방금 만든 문서를 자동 선택 + 편집 모드 진입
-      setSelectedSlug(slug);
-      setRecentSlugs(pushRecentDoc(recentKey, slug));
-      setEditing(true);
-      replaceUrlState({ slug, view: 'doc' });
-    } catch (err) {
-      window.alert(
-        t('dialog.createFailed', { message: err instanceof Error ? err.message : String(err) }),
-      );
-    }
-  }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, replaceUrlState, setRecentSlugs, t]);
+    // transient 단일 규칙 — 이 모달을 열면 다른 L2 팝오버(gear 드롭다운·
+    // VaultChip·⌘K)를 닫는다(openContract 와 같은 계약).
+    setAdvancedOpen(false);
+    setVaultChipOpen(false);
+    setPaletteQuery(null);
+    setNewDocKindDialogOpen(true);
+  }, [canEditCurrent, setAdvancedOpen, setVaultChipOpen, setPaletteQuery]);
+  const handleCreateNewDocWithKind = useCallback(
+    async (kind: NewDocKind) => {
+      setNewDocKindDialogOpen(false);
+      if (typeof window === 'undefined') return;
+      const title = window.prompt(t('dialog.newDocTitlePrompt'));
+      if (!title || !title.trim()) return;
+      let slug: string;
+      let markdown: string;
+      try {
+        ({ slug, markdown } = buildNewNodeDoc({ title, kind }));
+      } catch {
+        window.alert(t('dialog.invalidSlug'));
+        return;
+      }
+      if (manifest.docs.some((d) => d.slug === slug)) {
+        window.alert(t('dialog.renameAlreadyExists', { slug }));
+        return;
+      }
+      try {
+        await localVault.createDoc(slug, markdown);
+        // 방금 만든 문서를 자동 선택 + 편집 모드 진입
+        setSelectedSlug(slug);
+        setRecentSlugs(pushRecentDoc(recentKey, slug));
+        setEditing(true);
+        replaceUrlState({ slug, view: 'doc' });
+      } catch (err) {
+        window.alert(
+          t('dialog.createFailed', { message: err instanceof Error ? err.message : String(err) }),
+        );
+      }
+    },
+    [manifest, localVault, recentKey, replaceUrlState, setRecentSlugs, t],
+  );
 
   // 마운트 1 회 — 초기 URL 값이 없을 때 localStorage 선호값으로 보강.
   // useRef 로 '실행 여부' 를 가두고 dep 는 컴포넌트 stable 값들만 명시.
@@ -1070,7 +817,7 @@ function DocsVaultContent() {
     openTab: openDocTab,
     closeTab: closeDocTabInWorkingSet,
   } = useOpenDocTabs({ sourceKey: recentKey, validSlugs: vaultSlugs });
-  // 문서 선택 부수효과로 탭을 연다 — sidebar/검색/딥링크/folder-topology 등
+  // 문서 선택 부수효과로 탭을 연다 — sidebar/검색/딥링크 등
   // selectedSlug 를 바꾸는 모든 경로가 여기 한 곳으로 수렴해 각 호출부를
   // 개별 계측할 필요가 없다(handleSelect 자체도 결국 selectedSlug 를 바꾼다).
   useEffect(() => {
@@ -1080,6 +827,44 @@ function DocsVaultContent() {
     openDocTab(selectedSlug, doc.title);
   }, [selectedSlug, docsBySlug, openDocTab]);
   const selectedDoc = selectedSlug ? (docsBySlug.get(selectedSlug) ?? null) : null;
+  // P5b — frontmatter 판정 액션의 domain select 후보. vault 의 `kind: domain`
+  // 문서만 — capability/element 를 잘못된 domain 에 지정했을 때 raw YAML
+  // 손편집 없이 그 자리에서 고치는 게 목적(verdict 더하기①).
+  const domainOptions = useMemo(
+    () =>
+      manifest.docs
+        .filter((d) => d.frontmatter?.kind === 'domain')
+        .map((d) => ({
+          slug: d.slug,
+          title:
+            (typeof d.frontmatter?.title === 'string' && d.frontmatter.title.trim()) ||
+            d.title,
+        }))
+        .sort((a, b) => a.title.localeCompare(b.title)),
+    [manifest],
+  );
+  const handlePatchDocFrontmatter = useCallback(
+    async (patch: DocFrontmatterPatch) => {
+      if (!selectedDoc) return;
+      try {
+        // DocFrontmatterPatch 는 kind/domain/title 만 갖는 좁은 shape —
+        // updateFrontmatter 의 index-signature 파라미터와 구조적으로 호환
+        // (모든 값이 string | null) 되지만 TS 는 index signature 부재를
+        // 별도로 요구해 cast 필요.
+        await localVault.updateFrontmatter(
+          selectedDoc.slug,
+          patch as Record<string, string | null>,
+          { expectedMtime: selectedDoc.mtime },
+        );
+      } catch (err) {
+        if (err instanceof VaultConflictError) {
+          toast.show(t('dialog.vaultConflict'), 'error');
+        }
+        throw err;
+      }
+    },
+    [selectedDoc, localVault, toast, t],
+  );
   // 클라이언트 사이드 동적 타이틀 — 정적 export metadata 는 slug 단위로 미리
   // 빌드할 수 없으므로(vault 는 사용자 로컬 폴더) 선택된 문서 타이틀을 여기서
   // 반영. layout.tsx 의 서버 템플릿(`%s · siteName`)과 동일한 구성.
@@ -1350,27 +1135,6 @@ function DocsVaultContent() {
         onRun: () => handleViewChange('doc'),
       },
       {
-        id: 'view-folder-topology',
-        label: t('commands.viewFolderTopology'),
-        icon: '🗺️',
-        visible: source === 'local' && view !== 'folder-topology',
-        onRun: () => handleViewChange('folder-topology'),
-      },
-      {
-        id: 'scaffold-topology',
-        label: t('commands.scaffoldTopology'),
-        icon: '🆕',
-        visible: canEditCurrent,
-        onRun: () => void handleScaffoldTopology(),
-      },
-      {
-        id: 'create-project',
-        label: t('commands.createProject'),
-        icon: '🧩',
-        visible: canEditCurrent && source === 'local',
-        onRun: () => void handleCreateProject(),
-      },
-      {
         id: 'source-server',
         label: t('commands.sourceServer'),
         icon: '📦',
@@ -1426,14 +1190,7 @@ function DocsVaultContent() {
         label: t('commands.newDoc'),
         icon: '➕',
         visible: canEditCurrent,
-        onRun: () => void handleCreateNewDoc(),
-      },
-      {
-        id: 'daily-note',
-        label: t('commands.dailyNote'),
-        icon: '📅',
-        visible: canEditCurrent,
-        onRun: () => void handleDailyNote(),
+        onRun: () => handleOpenNewDocDialog(),
       },
       {
         id: 'rename',
@@ -1462,19 +1219,6 @@ function DocsVaultContent() {
         icon: '📄',
         visible: selectedDocExists && view === 'doc',
         onRun: () => handleExportDocHtml(),
-      },
-      {
-        id: 'export',
-        label: t('commands.exportVault'),
-        icon: '⬇',
-        onRun: () => void handleExportVault(),
-      },
-      {
-        id: 'import',
-        label: t('commands.importVault'),
-        icon: '⬆',
-        visible: canEditCurrent,
-        onRun: () => void handleImportVault(),
       },
       {
         id: 'local-refresh',
@@ -1519,17 +1263,12 @@ function DocsVaultContent() {
     localVault,
     handleCopyUrl,
     handleCopyAgentVerifyPrompt,
-    handleCreateNewDoc,
-    handleCreateProject,
-    handleDailyNote,
+    handleOpenNewDocDialog,
     handleDeleteCurrent,
     handleExportDocHtml,
-    handleExportVault,
-    handleImportVault,
     handleInsertToc,
     handleViewChange,
     handleRenameCurrent,
-    handleScaffoldTopology,
     handleSourceChange,
     handleTogglePin,
     setPaletteQuery,
@@ -1700,11 +1439,9 @@ function DocsVaultContent() {
           />
         </div>
         {/* zone-c — 열린 문서 탭 스트립(슬라이스 B). `view==='doc'` 일 때만
-            렌더 — folder-topology 뷰에선 비워 "탭 = 문서 워킹셋이지 상위
-            모드가 아니다" 를 구조로 증명한다(design-prescription.md §1
-            프레임1). 탭이 0개면 EmptyState 없이 그냥 빈 채로 둔다(지시 ④
-            "플레이스홀더 금지"). `self-stretch` 로 헤더 전체 높이를 채워야
-            활성 탭 배경이 baseline 을 완전히 덮는다. */}
+            렌더(현재 유일한 view). 탭이 0개면 EmptyState 없이 그냥 빈 채로
+            둔다(지시 ④ "플레이스홀더 금지"). `self-stretch` 로 헤더 전체
+            높이를 채워야 활성 탭 배경이 baseline 을 완전히 덮는다. */}
         <div
           data-docs-header-zone="tabs"
           className="hidden min-w-0 flex-1 self-stretch lg:flex"
@@ -1819,7 +1556,7 @@ function DocsVaultContent() {
           ) : null}
           {/* 로컬 vault 도구 패널 — server source 일 땐 dropdown 자체 숨김
               (보일 컨텐츠 0). local source 일 때만 vault picker / scaffold
-              / new doc / folder-topology 토글 노출. */}
+              / new doc 노출. */}
           {source === 'local' ? (
             <div className="relative" ref={advancedMenuRef}>
               <DocsHeaderTile
@@ -1839,13 +1576,10 @@ function DocsVaultContent() {
               />
               {advancedOpen ? (
                 <VaultToolsMenu
-                  view={view}
-                  onViewChange={handleViewChange}
-                  folderTopoStatus={folderTopoStatus}
                   canEditCurrent={canEditCurrent}
                   localVault={localVault}
                   validationSummary={localVaultValidationSummary}
-                  onCreateNewDoc={handleCreateNewDoc}
+                  onCreateNewDoc={handleOpenNewDocDialog}
                   onOpenWorkflowGuide={handleOpenAgentGraphWorkflowGuide}
                 />
               ) : null}
@@ -1965,75 +1699,7 @@ function DocsVaultContent() {
 
         {/* 본문 + 우측 사이드 */}
         <main id="main" className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          {view === 'folder-topology' ? (
-            <div className="relative flex min-h-0 flex-1">
-              {canEditCurrent && folderTopo && folderTopo.projects.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => void handleCreateProject()}
-                  className="pointer-events-auto absolute left-3 top-[46px] z-10 inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] px-2.5 py-1.5 text-[11.5px] text-[color:var(--color-indigo-pale-a92)] shadow-[0_4px_14px_var(--color-shadow-a25)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a18)]"
-                  title={t('topology.addProjectTitle', { slug: '{slug}' })}
-                >
-                  <FilePlus size={12} aria-hidden />
-                  {t('topology.addProjectLabel')}
-                </button>
-              ) : null}
-              {folderTopo && folderTopo.projects.length > 0 ? (
-                <DocsVaultFolderTopology
-                  build={folderTopo}
-                  selectedSlug={selectedSlug}
-                  onSelect={(slug) => {
-                    handleSelect(`projects/${slug}`);
-                    handleViewChange('doc');
-                  }}
-                  onPositionChange={
-                    canEditCurrent
-                      ? (slug, pos) => {
-                          void localVault.updateFrontmatter(
-                            `projects/${slug}`,
-                            { positionX: pos.x, positionY: pos.y },
-                            { skipRefresh: true },
-                          );
-                        }
-                      : undefined
-                  }
-                />
-              ) : (
-                <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-                  <FolderCog
-                    size={28}
-                    className="text-[color:var(--color-text-quaternary)]"
-                    aria-hidden
-                  />
-                  <div className="text-[14px] text-[color:var(--color-text-primary)]">
-                    {t('topology.emptyTitle')}
-                  </div>
-                  <p className="max-w-[440px] text-[12.5px] leading-[1.6] text-[color:var(--color-text-tertiary)]">
-                    {t('topology.emptyBody')}
-                  </p>
-                  {folderTopoError ? (
-                    <p className="font-mono text-[11px] text-[color:var(--color-amber-source-a90)]">
-                      {folderTopoError}
-                    </p>
-                  ) : null}
-                  {canEditCurrent ? (
-                    <button
-                      type="button"
-                      onClick={() => void handleScaffoldTopology()}
-                      className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a40)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 text-[12px] text-[color:var(--color-indigo-pale-a95)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
-                    >
-                      <FolderCog size={12} aria-hidden />
-                      {t('topology.scaffoldCta')}
-                    </button>
-                  ) : (
-                    <p className="font-mono text-[11px] text-[color:var(--color-text-quaternary)]">
-                      {t('topology.needEditPermission')}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : selectedDoc ? (
+          {selectedDoc ? (
             <div className="flex min-h-0 flex-1 flex-col">
               {/* ehead — dir/file mono + preview/edit seg + sync status
                   (docs-vault-final spec §우 에디터/프리뷰 헤더). */}
@@ -2141,40 +1807,12 @@ function DocsVaultContent() {
                           <DocFrontmatterBlock
                             key={selectedDoc.slug}
                             doc={selectedDoc}
+                            canEdit={canEditCurrent}
+                            domainOptions={domainOptions}
+                            onPatch={handlePatchDocFrontmatter}
                           />
                         ) : null}
                         <DocMetaBar doc={selectedDoc} />
-                        {selectedDoc.slug.startsWith('projects/') &&
-                        source === 'local' ? (
-                          <DocsVaultProjectDepsBar
-                            currentSlug={selectedDoc.slug.replace(
-                              /^projects\//,
-                              '',
-                            )}
-                            build={folderTopo}
-                            canEdit={canEditCurrent}
-                            onChange={async (next) => {
-                              try {
-                                await localVault.updateFrontmatter(
-                                  selectedDoc.slug,
-                                  { dependencies: next },
-                                  { expectedMtime: selectedDoc.mtime },
-                                );
-                              } catch (err) {
-                                if (err instanceof VaultConflictError) {
-                                  toast.show(t('dialog.vaultConflict'), 'error');
-                                  return;
-                                }
-                                throw err;
-                              }
-                              // manifest refresh 후 folderTopo 도 갱신
-                              await buildFolderTopology();
-                            }}
-                            onNavigateProject={(slug) =>
-                              handleSelect(`projects/${slug}`)
-                            }
-                          />
-                        ) : null}
                         <DocsVaultViewer
                           key={`${source}:${selectedDoc.slug}`}
                           doc={selectedDoc}
@@ -2294,6 +1932,13 @@ function DocsVaultContent() {
           />
         ) : null}
       </AnimatePresence>
+
+      {newDocKindDialogOpen ? (
+        <NewDocKindDialog
+          onSelect={(kind) => void handleCreateNewDocWithKind(kind)}
+          onClose={() => setNewDocKindDialogOpen(false)}
+        />
+      ) : null}
       </div>
     </div>
   );

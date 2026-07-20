@@ -9,9 +9,10 @@ import { computeProjectSlug, isProjectVaultDoc } from './project-slug';
  *   1. `frontmatter.kind === 'project'` 인 doc (1순위, path 무관)
  *   2. 또는 path 가 `projects/` 로 시작 (legacy 호환 — frontmatter 누락 시)
  *
- * `buildTopologyFromVault` 의 sync 동등물 — 후자는 raw .md 본문을 비동기로
- * 다시 읽지만, 매니페스트 의 VaultDoc 은 이미 frontmatter / excerpt 가 파싱
- * 되어있어 React 훅에서 sync 로 바로 호출 가능.
+ * 매니페스트 의 VaultDoc 은 이미 frontmatter / excerpt 가 파싱되어있어 React
+ * 훅에서 sync 로 바로 호출 가능(구 `buildTopologyFromVault` 는 비동기로 raw
+ * .md 를 다시 읽는 folder-topology 전용 빌더였으나 P5a 에서 folder-topology
+ * 자체가 제거되며 함께 삭제됐다).
  *
  * 사용처: `useProjects` mode-aware 훅 — local / static (dogfood) 모드 read 측.
  * 로그인 / Firebase 없이 vault 만으로 /projects · /topology 살아남음.
