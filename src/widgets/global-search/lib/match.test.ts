@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
-import { matchOntologyNodes, matchProjects } from "./match";
+import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "./match";
 
 const APPROVED_AT = new Date("2026-04-27T00:00:00Z");
 
@@ -219,5 +219,23 @@ describe("matchProjects", () => {
     expect(r).toHaveLength(2);
     expect(r[0]?.project.slug).toBe("reactor-runtime"); // 4-27
     expect(r[1]?.project.slug).toBe("demo-knowledge"); // 4-26
+  });
+});
+
+describe("isPathLikeTitle", () => {
+  it("N12 — 파일 경로 형태 title 을 감지한다", () => {
+    expect(isPathLikeTitle("mcp/src/ontology-engine.mjs")).toBe(true);
+    expect(isPathLikeTitle("mcp/scripts/verify.mjs")).toBe(true);
+    expect(isPathLikeTitle("src/widgets/global-search/ui/GlobalSearch.tsx")).toBe(true);
+  });
+
+  it("일반 개념 title 은 경로로 오판하지 않는다", () => {
+    expect(isPathLikeTitle("MCP Server")).toBe(false);
+    expect(isPathLikeTitle("로그인")).toBe(false);
+    expect(isPathLikeTitle("Agent Graph Readiness")).toBe(false);
+  });
+
+  it("확장자 없는 슬래시 문자열은 경로로 보지 않는다 (오탐 방지)", () => {
+    expect(isPathLikeTitle("and/or")).toBe(false);
   });
 });

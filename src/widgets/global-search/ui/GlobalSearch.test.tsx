@@ -159,4 +159,27 @@ describe("GlobalSearch", () => {
     expect(findOntologyOption("capability:mcp-conflict-guard")).toBeNull();
     expect(findOntologyOption("element:mcp-index")).not.toBeNull();
   });
+
+  it("N12 — 파일 경로 형태 element title 은 mono/quaternary 로 강등되고, 일반 title 은 그대로 primary", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={nodes}
+        onSelectNode={() => {}}
+        projects={projects}
+        onSelectProject={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Global search" }), {
+      target: { value: "mcp" },
+    });
+
+    const pathLikeRow = findOntologyOption("element:mcp-index");
+    expect(pathLikeRow?.querySelector('[data-search-result-path-like="true"]')).not.toBeNull();
+
+    const plainRow = findOntologyOption("capability:mcp-server");
+    expect(plainRow?.querySelector('[data-search-result-path-like="true"]')).toBeNull();
+  });
 });

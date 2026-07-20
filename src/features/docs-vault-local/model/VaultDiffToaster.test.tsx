@@ -27,6 +27,18 @@ vi.mock('@/shared/ui/toast', () => ({
   useToast: () => ({ show: toastMocks.show }),
 }));
 
+// N10 — VaultDiffToaster 는 이제 `featuresMisc.vaultDiffToaster.*` 로 문구를
+// 조립한다(diff-manifest.ts 는 kind/slug/count 만 반환). 실제 en 메시지 문구
+// 그대로 mock 해 en 로케일 사용자가 실제로 보는 문자열을 검증한다.
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string, vars?: Record<string, unknown>) => {
+    if (key === 'added') return `Added: ${vars?.slug}`;
+    if (key === 'edited') return `Edited: ${vars?.slug}`;
+    if (key === 'overflow') return `+${vars?.count} more node(s)`;
+    return key;
+  },
+}));
+
 import { VaultDiffToaster } from './VaultDiffToaster';
 
 function manifestWith(docs: Array<{ slug: string; mtime?: number }>) {

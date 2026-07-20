@@ -47,10 +47,23 @@ import { TopologyV2KindGlyph, TopologyV2TraceMark } from "@/shared/ui/topology-v
  * never drift. Rows are read-only (no `onSelectConnection` — evidenceIds are
  * vault slugs, a different id namespace than the canvas graph, see that
  * module's doc for why).
+ *
+ * N6 (persona-ux-2026-07 report — PM "이 역량, 어디 소속?"에 즉답 불가):
+ * the owning domain used to appear only as a `contains` row inside the
+ * "쓰는 곳" (usedBy) connections group, distinguished from `depends_on` rows
+ * only by line style (solid vs dashed `TraceMark`) — not a fact a first-time
+ * reader would notice. It now renders as its own "도메인 · <이름>" line in
+ * the header, clickable via the SAME `onSelectConnection` callback the
+ * connection rows use (no new navigation primitive). It still ALSO appears
+ * in the usedBy group when the underlying `contains` edge exists — this is
+ * additive promotion, not a removal, since the group still needs to show
+ * every direct edge for agent handoff completeness.
  */
 
 export interface TopologyV2DetailPanelLabels {
   kindLabel: string;
+  /** N6 — "소속 도메인" 1급 사실의 prefix label ("도메인 · <이름>"). */
+  domainLabel: string;
   poweredOn: string;
   poweredOff: string;
   metricUsedBy: string;
@@ -75,6 +88,16 @@ export interface TopologyV2DetailPanelProps {
   slug: string;
   title: string;
   kind: string;
+  /**
+   * N6 (persona-ux-2026-07 report — PM 페르소나 "어디 소속?" 1차 질문에
+   * 즉답 불가) — owning domain, or null when the node has none (e.g. the
+   * node IS a domain, or an orphan). Rendered as a first-class "도메인 ·
+   * <이름>" fact in the header, separate from the "쓰는 곳" connections list
+   * it used to be buried in (containment vs depends_on, distinguished only
+   * by line style there). Clicking focuses the domain via the same
+   * `onSelectConnection` callback the connection rows already use.
+   */
+  domain: { id: string; title: string } | null;
   /** "전원" — powered (recently updated / fresh) vs unpowered (quiet). */
   powered: boolean;
   metric: V2MetricValues;
@@ -134,6 +157,7 @@ export function TopologyV2DetailPanel({
   slug,
   title,
   kind,
+  domain,
   powered,
   metric,
   groups,
@@ -328,6 +352,22 @@ export function TopologyV2DetailPanel({
               </>
             ) : null}
           </div>
+          {domain ? (
+            <button
+              type="button"
+              onClick={() => onSelectConnection(domain.id)}
+              data-testid="topology-v2-detail-panel-domain"
+              className="flex items-center gap-1 self-start pl-[13.5px] text-left transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+            >
+              <span className="text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+                {labels.domainLabel}
+              </span>
+              <span className="text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
+              <span className="truncate text-[11px] font-medium text-[color:var(--topology-v2-panel-text-secondary)]">
+                {domain.title}
+              </span>
+            </button>
+          ) : null}
         </div>
         <button
           type="button"
