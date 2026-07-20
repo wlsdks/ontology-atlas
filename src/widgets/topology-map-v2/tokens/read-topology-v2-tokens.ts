@@ -138,6 +138,18 @@ export interface TopologyV2Tokens {
   dragTug2Hop: number;
   /** `--topology-v2-drag-tug-radius` — world-space radius past which drag tug is exactly 0 (`interaction/drag-tug.ts#tugFalloffForDistance`). */
   dragTugRadius: number;
+  /** `--topology-v2-select-pulse-scale-delta` — commit-pulse max ring growth as a fraction of the ring radius (A3: 0.15 was sub-perceptual on element nodes). */
+  selectPulseScaleDelta: number;
+  /** `--topology-v2-node-release-settle-ms` — drag-release settle budget in ms, replacing the refresh-rate-dependent 90-frame countdown (A4). */
+  nodeReleaseSettleMs: number;
+  /** `--topology-v2-node-home-spring-angfreq` — auto-arrange homing spring ω, decoupled from the camera transition spring (A5). */
+  nodeHomeSpringAngFreq: number;
+  /** `--topology-v2-ego-reveal-rise-tau` — focus ego-reveal rise τ, slower than hover so children resolve as the camera dive lands (A6). */
+  egoRevealRiseTau: number;
+  /** `--topology-v2-ego-reveal-decay-tau` — focus ego-reveal decay τ; exits don't earn time (A6). */
+  egoRevealDecayTau: number;
+  /** `--topology-v2-ripple-stagger-max-ms` — total hover-ripple stagger budget, so hub degree can't stretch the ripple into an enumeration (A7). */
+  rippleStaggerMaxMs: number;
 
   // 2.5 안전 영역 (fixed chrome inset, px — 라벨 컬링 + 카메라 fit)
   safeInsetLeft: number;
@@ -243,6 +255,12 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "dragTug1Hop", cssVar: "--topology-v2-drag-tug-1hop", kind: "number" },
   { key: "dragTug2Hop", cssVar: "--topology-v2-drag-tug-2hop", kind: "number" },
   { key: "dragTugRadius", cssVar: "--topology-v2-drag-tug-radius", kind: "number" },
+  { key: "selectPulseScaleDelta", cssVar: "--topology-v2-select-pulse-scale-delta", kind: "number" },
+  { key: "nodeReleaseSettleMs", cssVar: "--topology-v2-node-release-settle-ms", kind: "number" },
+  { key: "nodeHomeSpringAngFreq", cssVar: "--topology-v2-node-home-spring-angfreq", kind: "number" },
+  { key: "egoRevealRiseTau", cssVar: "--topology-v2-ego-reveal-rise-tau", kind: "number" },
+  { key: "egoRevealDecayTau", cssVar: "--topology-v2-ego-reveal-decay-tau", kind: "number" },
+  { key: "rippleStaggerMaxMs", cssVar: "--topology-v2-ripple-stagger-max-ms", kind: "number" },
 
   { key: "safeInsetLeft", cssVar: "--topology-v2-safe-inset-left", kind: "number" },
   { key: "safeInsetRight", cssVar: "--topology-v2-safe-inset-right", kind: "number" },

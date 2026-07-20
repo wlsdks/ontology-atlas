@@ -54,7 +54,15 @@ const HOME_CONVERGE_EPSILON = 0.5;
  * `model/layout.ts`; running FA2 on mount turned that clean circuit into a
  * generic force hairball, which was the guardian's 충실도 반려 reason.
  */
-const FORCE_ITERATIONS_PER_FRAME = 1;
+/**
+ * A4 — the sim advances a refresh-rate-invariant number of iterations: 1 per
+ * 60Hz-frame-equivalent of real time, so a 120Hz display doesn't relax the
+ * graph twice as fast (each of its frames just does "half a step" of work via
+ * the rounded budget). Capped at 3 so a hitchy frame can't explode the sim.
+ */
+function forceIterationsForDt(dt: number): number {
+  return Math.min(3, Math.max(1, Math.round(dt * 60)));
+}
 
 export interface UseTopologyLoopArgs {
   nodes: TopologyMapV2Props["nodes"];
@@ -440,7 +448,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const restrictToIds = affected
           ? new Set<string>([affected.draggedId, ...affected.oneHop, ...affected.twoHop])
           : null;
-        sim.tick(FORCE_ITERATIONS_PER_FRAME, restrictToIds);
+        sim.tick(forceIterationsForDt(dt), restrictToIds);
         applyForcePositions(world, sim.positions());
 
         // C1 B1 — explicit neighbor tug: the dragged node's own per-frame
@@ -475,10 +483,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               targetY = (draggedNode.y - dragStart.y) * factor;
             }
             const prevOffset = dragTugOffsetsRef.current.get(id) ?? { x: 0, y: 0 };
-            const nextOffset = {
-              x: stepTugAxis(prevOffset.x, targetX, dt, DRAG_TUG_EASE_TAU),
-              y: stepTugAxis(prevOffset.y, targetY, dt, DRAG_TUG_EASE_TAU),
-            };
+            // A8 — under reduced motion the neighbor offset tracks the pointer
+            // 1:1 (user-driven position, no animated lag/catch-up easing).
+            const nextOffset = reducedMotionRef.current
+              ? { x: targetX, y: targetY }
+              : {
+                  x: stepTugAxis(prevOffset.x, targetX, dt, DRAG_TUG_EASE_TAU),
+                  y: stepTugAxis(prevOffset.y, targetY, dt, DRAG_TUG_EASE_TAU),
+                };
             dragTugOffsetsRef.current.set(id, nextOffset);
             if (tugged) {
               tugged.x += nextOffset.x;
@@ -488,8 +500,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
 
         recomputeWorldGeometry(world, tokens);
-        if (!pinned && heatRef.current > 0) heatRef.current -= 1;
-        if (!pinned && heatRef.current === 0) {
+        // A4 — heat is a TIME budget (ms), not a frame count, so the release
+        // settle lasts `--topology-v2-node-release-settle-ms` on every display.
+        if (!pinned && heatRef.current > 0) heatRef.current = Math.max(0, heatRef.current - dt * 1000);
+        if (!pinned && heatRef.current <= 0) {
           // Settle burst finished — release the affected-set restriction and
           // drop any residual (by-now-decayed-near-0) tug offsets.
           dragAffectedSetRef.current = null;
@@ -502,20 +516,35 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // of the FA2/tug block above (relayout resets heat/pin, so the two never
       // run in the same frame in practice).
       if (homingActiveRef.current) {
-        let allConverged = true;
-        for (const node of world.nodes) {
-          const spring = homeSpringsRef.current.get(node.id);
-          if (!spring) continue;
-          const nextSpring = stepHomeSpring(spring, node.homeX, node.homeY, dt, tokens.cameraSpringAngFreqTransition, tokens.cameraDampingDefault);
-          homeSpringsRef.current.set(node.id, nextSpring);
-          node.x = nextSpring.x.value;
-          node.y = nextSpring.y.value;
-          if (!isHomeSpringConverged(nextSpring, node.homeX, node.homeY, HOME_CONVERGE_EPSILON)) allConverged = false;
-        }
-        recomputeWorldGeometry(world, tokens);
-        if (allConverged) {
+        // A8 — reduced-motion users get the relayout RESULT, not the journey.
+        if (reducedMotionRef.current) {
+          for (const node of world.nodes) {
+            if (!homeSpringsRef.current.has(node.id)) continue;
+            node.x = node.homeX;
+            node.y = node.homeY;
+          }
+          recomputeWorldGeometry(world, tokens);
           homingActiveRef.current = false;
           homeSpringsRef.current.clear();
+        } else {
+          let allConverged = true;
+          for (const node of world.nodes) {
+            const spring = homeSpringsRef.current.get(node.id);
+            if (!spring) continue;
+            // A5 — homing has its own ω (7.5): a relayout is a layout
+            // CORRECTION and should end decisively, unlike the camera's
+            // cinematic transition spring (4.7) this used to borrow.
+            const nextSpring = stepHomeSpring(spring, node.homeX, node.homeY, dt, tokens.nodeHomeSpringAngFreq, tokens.cameraDampingDefault);
+            homeSpringsRef.current.set(node.id, nextSpring);
+            node.x = nextSpring.x.value;
+            node.y = nextSpring.y.value;
+            if (!isHomeSpringConverged(nextSpring, node.homeX, node.homeY, HOME_CONVERGE_EPSILON)) allConverged = false;
+          }
+          recomputeWorldGeometry(world, tokens);
+          if (allConverged) {
+            homingActiveRef.current = false;
+            homeSpringsRef.current.clear();
+          }
         }
       }
 
@@ -539,6 +568,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         hoveredNodeId,
         panelEmphasisNodeId,
         isDragging: pointerMachineRef.current.phase === "dragging",
+        reducedMotion: reducedMotionRef.current,
         emphasisById: emphasisRef.current,
         rippleStartById: rippleStartRef.current,
         egoRevealById: egoRevealRef.current,

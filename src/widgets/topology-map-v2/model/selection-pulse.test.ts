@@ -19,7 +19,7 @@ describe("computeSelectionPulse", () => {
     expect(computeSelectionPulse(-5, 200)).toBeNull();
   });
 
-  it("scale rises monotonically toward 1.15x and alpha falls monotonically toward 0", () => {
+  it("scale rises monotonically toward 1+delta and alpha falls monotonically toward 0", () => {
     let prevScale = -Infinity;
     let prevAlpha = Infinity;
     for (let ms = 0; ms < 200; ms += 10) {
@@ -33,14 +33,33 @@ describe("computeSelectionPulse", () => {
     }
   });
 
-  it("reaches ~1.15x scale just before the duration ends", () => {
-    const pulse = computeSelectionPulse(199, 200);
-    expect(pulse?.scaleFactor).toBeCloseTo(1.15, 2);
+  it("reaches ~1+delta scale just before the duration ends (easeOutCubic lands flat)", () => {
+    const pulse = computeSelectionPulse(199, 200, 0.28);
+    expect(pulse?.scaleFactor).toBeCloseTo(1.28, 2);
   });
 
-  it("respects a custom duration (e.g. the 180ms token default)", () => {
-    const mid = computeSelectionPulse(90, 180);
-    expect(mid?.scaleFactor).toBeCloseTo(1.075, 6);
-    expect(mid?.alpha).toBeCloseTo(0.5, 6);
+  /**
+   * A3 — a commit gesture must DECELERATE to read as "received" (Apple HIG).
+   * Linear channels cut off with non-zero slope: the ring vanished instead of
+   * completing. Both channels now end with ~zero slope.
+   */
+  it("decelerates: more than half the ring growth happens in the first half", () => {
+    const mid = computeSelectionPulse(90, 180, 0.28);
+    const growthAtMid = (mid!.scaleFactor - 1) / 0.28;
+    expect(growthAtMid).toBeGreaterThan(0.8); // easeOutCubic(0.5) = 0.875
+  });
+
+  it("alpha dies smoothly — quadratic, near-zero slope at the end", () => {
+    const nearEnd = computeSelectionPulse(178, 180, 0.28);
+    expect(nearEnd!.alpha).toBeLessThan(0.001);
+    const mid = computeSelectionPulse(90, 180, 0.28);
+    expect(mid!.alpha).toBeCloseTo(0.25, 6); // (1-0.5)^2
+  });
+
+  it("threads the token scale delta through (default 0.28 when omitted)", () => {
+    const withToken = computeSelectionPulse(179, 180, 0.4);
+    expect(withToken!.scaleFactor).toBeCloseTo(1.4, 2);
+    const withDefault = computeSelectionPulse(179, 180);
+    expect(withDefault!.scaleFactor).toBeCloseTo(1.28, 2);
   });
 });
