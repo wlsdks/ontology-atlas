@@ -4,8 +4,6 @@ kind: element
 title: xyflow (React Flow)
 domain: views
 path: package.json
-relates:
-  - domains/views
 ---
 
 # xyflow (React Flow)

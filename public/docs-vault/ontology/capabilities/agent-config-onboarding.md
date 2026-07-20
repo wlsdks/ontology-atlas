@@ -5,7 +5,7 @@ title: Agent Config Onboarding
 domain: ai-agent-partner
 dependencies: [capabilities/mcp-server, capabilities/vault-live-updates]
 elements: [elements/app-settings-menu, src/features/docs-vault-local/lib/ontology-starter.ts, src/features/docs-vault-local/model/use-local-vault.ts, src/features/docs-vault-local/ui/OntologyStarterCta.tsx, src/views/docs-vault/ui/DocsVaultPage.tsx, src/widgets/docs-vault/ui/VaultToolsMenu.tsx]
-relates: [domains/ai-agent-partner, domains/onboarding-ux]
+relates: [domains/onboarding-ux]
 ---
 
 로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface.

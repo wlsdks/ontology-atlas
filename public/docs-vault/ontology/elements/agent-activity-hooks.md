@@ -3,7 +3,6 @@ slug: elements/agent-activity-hooks
 kind: element
 title: Agent Activity CLI Contract
 domain: ai-agent-partner
-relates: [capabilities/agent-live-activity-contract]
 ---
 
 `ontology-atlas agent-activity` is the explicit CLI contract for publishing Atlas live agent activity into `.ontology-atlas/agent-activity.json`.

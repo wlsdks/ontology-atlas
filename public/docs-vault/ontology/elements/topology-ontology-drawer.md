@@ -3,7 +3,7 @@ slug: elements/topology-ontology-drawer
 kind: element
 title: Topology Ontology Drawer
 domain: views
-relates: [elements/ontology-description-helper]
+dependencies: [elements/ontology-description-helper]
 ---
 
 `src/views/home/ui/TopologyOntologyDrawer.tsx` is the ontology-aware selected concept workbench inside `/topology`.

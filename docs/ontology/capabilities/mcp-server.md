@@ -5,7 +5,6 @@ title: MCP Server (25 tools)
 domain: ai-agent-partner
 dependencies: [capabilities/frontmatter-to-ontology]
 elements: [mcp/scripts/json-rpc-lines.mjs, mcp/scripts/verify.mjs, mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/integration.test.mjs, mcp/src/json-rpc-lines.test.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/suggestions.mjs, mcp/src/suggestions.test.mjs, mcp/src/vault.mjs, mcp/src/verify-script.test.mjs, scripts/dogfood-mcp-walk.mjs, scripts/dogfood-mcp-walk.test.mjs, scripts/lib/test-name-pattern.mjs, scripts/lib/test-name-pattern.test.mjs, scripts/run-focused-node-test.mjs, scripts/run-focused-node-test.test.mjs]
-relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 ---
 
 # MCP Server (25 tools)

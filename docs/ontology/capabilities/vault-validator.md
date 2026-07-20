@@ -16,9 +16,6 @@ elements:
   - tests/contract/parse-frontmatter.contract.test.ts
   - tests/contract/validate-vault-document.contract.test.ts
   - tests/contract/vault-schema.contract.test.ts
-relates:
-  - capabilities/frontmatter-to-ontology
-  - domains/vault-local-first
 ---
 
 # Vault Validator

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-20T15:59:57.441Z",
+  "generatedAt": "2026-07-20T15:59:23.491Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2729,44 +2729,6 @@
       "linksOut": []
     },
     {
-      "slug": "CASE-STUDY-AGENTS-MD-DRIFT",
-      "path": "docs/CASE-STUDY-AGENTS-MD-DRIFT.md",
-      "title": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift",
-          "slug": "case-study-avoiding-agentsmd-claudemd-drift"
-        },
-        {
-          "depth": 2,
-          "text": "The problem, as the community describes it",
-          "slug": "the-problem-as-the-community-describes-it"
-        },
-        {
-          "depth": 2,
-          "text": "What this repo actually does about it",
-          "slug": "what-this-repo-actually-does-about-it"
-        },
-        {
-          "depth": 2,
-          "text": "The vault extends the same pattern to facts that change",
-          "slug": "the-vault-extends-the-same-pattern-to-facts-that-change"
-        }
-      ],
-      "excerpt": "How this repo keeps its own instruction files in sync, and why the same pattern extends into the vault for facts that change faster than instructions do. Written from this repo's own history, not a hypothetical. Multiple coding-agent instruction files (AGENTS.md, CLAUDE.md, GEMINI.md, .github/copilot-instructions.md, …",
-      "wordCount": 825,
-      "updatedAt": "2026-07-20T15:48:24.104Z",
-      "linksOut": [
-        "../CLAUDE",
-        "../.claude/rules/forbidden",
-        "../mcp/README",
-        "../AGENTS"
-      ]
-    },
-    {
       "slug": "CHANGELOG",
       "path": "docs/CHANGELOG.md",
       "title": "CHANGELOG",
@@ -2777,21 +2739,6 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
-        },
-        {
-          "depth": 2,
-          "text": "2026-07-21 — 엣지 계층 잉크 사다리 + 관통 엣지 강등",
-          "slug": "2026-07-21-엣지-계층-잉크-사다리-관통-엣지-강등"
-        },
-        {
-          "depth": 2,
-          "text": "2026-07-21 — quick wins 5종 (페르소나 실측 마찰 소형 교정)",
-          "slug": "2026-07-21-quick-wins-5종-페르소나-실측-마찰-소형-교정"
-        },
-        {
-          "depth": 2,
-          "text": "2026-07-21 — 외향 문서 슬라이스 (시장 언어 연결, 계획 구조 결함 해소)",
-          "slug": "2026-07-21-외향-문서-슬라이스-시장-언어-연결-계획-구조-결함-해소"
         },
         {
           "depth": 2,
@@ -4054,11 +4001,10 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 제안(\"연결선도 계층별로 색상을 다르게\")의 채널 교정 구현. 계층 깊이는 순서(ordinal) 데이터라 hue 가 아니라 명도×굵기가 옳다 (범례",
-      "wordCount": 25417,
-      "updatedAt": "2026-07-20T15:53:32.725Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 같은 웹 브라우저 세션에서 빌더는 로컬 vault 에 쓰기까지 되는데 문서함만 \"macOS 앱에서 시작\" 잠금이었다 (페르소나 실측 N1, High — 표",
+      "wordCount": 25088,
+      "updatedAt": "2026-07-20T15:42:18.386Z",
       "linksOut": [
-        "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
       ]
     },
@@ -5638,14 +5584,13 @@
           "src/widgets/docs-vault/ui/VaultToolsMenu.tsx"
         ],
         "relates": [
-          "domains/ai-agent-partner",
           "domains/onboarding-ux"
         ]
       },
       "headings": [],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultToolsMenu exposes the setup gate in the same language as agentbrief / workspacebrief: CLI-only, MCP-connected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agent-root guidance, an",
       "wordCount": 1213,
-      "updatedAt": "2026-07-18T16:38:55.445Z",
+      "updatedAt": "2026-07-20T15:56:21.278Z",
       "linksOut": []
     },
     {
@@ -5673,15 +5618,13 @@
         ],
         "relates": [
           "capabilities/mcp-server",
-          "capabilities/ontology-hub-mode-aware",
-          "domains/ai-agent-partner",
-          "domains/views"
+          "domains/ai-agent-partner"
         ]
       },
       "headings": [],
       "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Overview / Relations / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Ins",
       "wordCount": 400,
-      "updatedAt": "2026-07-19T01:24:16.101Z",
+      "updatedAt": "2026-07-20T15:56:25.342Z",
       "linksOut": []
     },
     {
@@ -5734,17 +5677,17 @@
         ],
         "relates": [
           "capabilities/agent-graph-readiness",
-          "capabilities/mcp-server",
           "domains/ai-agent-partner"
         ],
         "dependencies": [
+          "capabilities/mcp-server",
           "capabilities/ontology-hub-mode-aware"
         ]
       },
       "headings": [],
       "excerpt": "Agent onboarding brief composer — a purely-functional packet builder that was originally designed to unify the \"Copy …\" buttons scattered across the old 4-tab /ontology/insights (run order · graph-DB pack · readiness · write guardrails · CLI fallback) into a single 1-paste briefing. That insights UI is gone (2026-07 re",
       "wordCount": 255,
-      "updatedAt": "2026-07-18T12:04:44.513Z",
+      "updatedAt": "2026-07-20T15:56:28.848Z",
       "linksOut": []
     },
     {
@@ -5797,14 +5740,14 @@
           "src/views/ontology-edit/ui/AtlasNode.tsx",
           "src/views/ontology-edit/ui/OntologyEditCanvas.tsx"
         ],
-        "relates": [
+        "dependencies": [
           "capabilities/builder-vault-write"
         ]
       },
       "headings": [],
       "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (2026-05-14) 로 7 commit 단위 도입. n8n-style edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 Box-safe edge endpoints — containment edge 는 노드 오른쪽 handle 에서 나와 왼쪽 handle 로 들어가게 고정하고, s",
       "wordCount": 599,
-      "updatedAt": "2026-06-04T15:17:17.719Z",
+      "updatedAt": "2026-07-20T15:56:35.429Z",
       "linksOut": []
     },
     {
@@ -6013,11 +5956,6 @@
           "scripts/smoke-packed-cli.mjs",
           "scripts/suggest-focused-checks.mjs",
           "scripts/suggest-focused-checks.test.mjs"
-        ],
-        "relates": [
-          "capabilities/mcp-server",
-          "capabilities/vault-validator",
-          "domains/onboarding-ux"
         ]
       },
       "headings": [
@@ -6054,7 +5992,7 @@
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
       "wordCount": 10485,
-      "updatedAt": "2026-07-20T14:22:03.099Z",
+      "updatedAt": "2026-07-20T15:56:46.702Z",
       "linksOut": []
     },
     {
@@ -6153,7 +6091,6 @@
           "src/shared/lib/parse-frontmatter.ts"
         ],
         "relates": [
-          "domains/ontology-core",
           "domains/vault-local-first"
         ]
       },
@@ -6166,7 +6103,7 @@
       ],
       "excerpt": "vault 의 .md 파일 frontmatter 를 직접 읽어 OntologyStub (nodes + edges + warnings) 으로 변환. AI 추출 / 검수 큐 거치지 않는 fast-path. 이게 mission \"frontmatter 가 자기-승인\" 의 코드 표현. 지원 frontmatter 키: kind: — canonical 5: project / domain / capability / element / document title:, domain: capabilities: [], elements: [] — 배열 노드 relates: [], depende",
       "wordCount": 165,
-      "updatedAt": "2026-05-28T06:12:39.480Z",
+      "updatedAt": "2026-07-20T15:56:50.200Z",
       "linksOut": []
     },
     {
@@ -6186,9 +6123,8 @@
           "src/features/project-data-source/model/use-project-mutations.ts",
           "src/views/ontology-edit/ui/OntologyEditPage.tsx"
         ],
-        "relates": [
-          "capabilities/mcp-server",
-          "domains/ai-agent-partner"
+        "dependencies": [
+          "capabilities/mcp-server"
         ]
       },
       "headings": [
@@ -6215,7 +6151,7 @@
       ],
       "excerpt": "같은 .md 가 사람 GUI · 외부 에디터 · 다른 AI MCP 에 의해 동시 편집될 때 silent overwrite 차단. R11 8 에서 MCP 측 도입, R+ 에서 local UI 의 본문 저장과 frontmatter patch 경로까지 확장. 1. AI agent 가 getconcept 호출 → 응답에 mtime (ms) 포함 2. agent 가 분석 / 수정 후 patchconcept({ slug, frontmatter, expectedmtime: <prev mtime }) 호출 3. write 직전 server 가 현재 mtime 과 비교 4. 다르면 ",
       "wordCount": 183,
-      "updatedAt": "2026-05-13T00:02:55.338Z",
+      "updatedAt": "2026-07-20T15:56:54.664Z",
       "linksOut": []
     },
     {
@@ -6252,10 +6188,6 @@
           "scripts/lib/test-name-pattern.test.mjs",
           "scripts/run-focused-node-test.mjs",
           "scripts/run-focused-node-test.test.mjs"
-        ],
-        "relates": [
-          "capabilities/frontmatter-to-ontology",
-          "domains/ai-agent-partner"
         ]
       },
       "headings": [
@@ -6267,7 +6199,7 @@
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSON-RPC 서버. 25 도구 노출 (read 16 + write 9): · 도구 · 동작 · listconcepts · vault 의 모든 노드 (enum-validated kind 필터, limit default 100 / max 500) · getconcept · 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] · getconcepts · R+ 배치 reader — 여러 slug 한 호출에 (max 50, 입력 순서",
       "wordCount": 13210,
-      "updatedAt": "2026-07-19T09:13:12.548Z",
+      "updatedAt": "2026-07-20T15:56:58.210Z",
       "linksOut": []
     },
     {
@@ -6287,7 +6219,6 @@
         ],
         "relates": [
           "capabilities/ontology-hub-mode-aware",
-          "domains/mode-aware-adapters",
           "domains/vault-local-first"
         ]
       },
@@ -6300,7 +6231,7 @@
       ],
       "excerpt": "R10 (auth + cloud surface 영구 제거) 이후 2 mode: local — useLocalVault().status === 'loaded' (사용자 디스크 vault) static — vault 미선택. 빌드타임 dogfood 매니페스트 (docs/ontology/) 가 fallback. useDataSourceMode() 가 두 mode 를 분기. 같은 hook 호출이 mode 별로 다른 source 를 본다 — 호출자 코드는 단일. 적용 surface: useProjects — local: vault manifest 의 kind: project ",
       "wordCount": 107,
-      "updatedAt": "2026-05-13T00:02:55.338Z",
+      "updatedAt": "2026-07-20T15:57:03.985Z",
       "linksOut": []
     },
     {
@@ -6407,8 +6338,6 @@
           "src/views/home/ui/HomePage.tsx"
         ],
         "relates": [
-          "capabilities/frontmatter-to-ontology",
-          "capabilities/mode-aware-adapter",
           "domains/views"
         ]
       },
@@ -6421,7 +6350,7 @@
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (module-load 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), l",
       "wordCount": 632,
-      "updatedAt": "2026-07-18T16:39:05.404Z",
+      "updatedAt": "2026-07-20T15:57:08.214Z",
       "linksOut": []
     },
     {
@@ -6506,7 +6435,7 @@
           "mcp/src/index.js",
           "mcp/src/integration.test.mjs"
         ],
-        "relates": [
+        "dependencies": [
           "capabilities/cli-developer-entry",
           "capabilities/mcp-server"
         ]
@@ -6520,7 +6449,7 @@
       ],
       "excerpt": "Long-running project ontology indexing entrypoint. indexproject gives AI agents one read-only checkpoint that combines repo structure analysis, import-edge indexing, and vault validation before any write. The CLI pair is ontology-atlas index: default mode prints a side-effect-free plan, and --apply delegates to the exi",
       "wordCount": 649,
-      "updatedAt": "2026-07-18T16:39:00.331Z",
+      "updatedAt": "2026-07-20T15:57:13.095Z",
       "linksOut": []
     },
     {
@@ -6587,7 +6516,6 @@
           "src/widgets/topology-controls"
         ],
         "relates": [
-          "domains/views",
           "elements/sigma-graphology"
         ]
       },
@@ -6620,7 +6548,7 @@
       ],
       "excerpt": "/ (root hub) 와 /topology (동일 진입) 는 자체 canvas-2D 렌더 엔진 topology-map-v2(src/widgets/topology-map-v2/)가 그린다. Sigma.js WebGL 렌더러는 은퇴했다 — Graphology + ForceAtlas2 물리 레이아웃은 그대로 재사용하되 (빌더 ERD 캔버스와 공유), 실제 픽셀은 단일 <canvas 컨테이너 위에 이 엔진이 직접 그린다. HomePage(src/views/home)가 마운트 지점이고, TopologyControls(src/widgets/topology-controls)가 ",
       "wordCount": 197,
-      "updatedAt": "2026-07-19T05:48:31.563Z",
+      "updatedAt": "2026-07-20T15:57:16.780Z",
       "linksOut": [
         "ontology/capabilities/topology-skeleton-entry",
         "ontology/capabilities/topology-kind-legibility",
@@ -6670,7 +6598,7 @@
         "title": "Topology Direct Edit (토폴로지에서 직접 편집)",
         "domain": "views",
         "elements": [],
-        "relates": [
+        "dependencies": [
           "capabilities/topology-ontology-inspection"
         ]
       },
@@ -6693,7 +6621,7 @@
       ],
       "excerpt": "토폴로지(/topology)를 온톨로지의 읽기 surface 가 아니라 1차 편집 surface 로 전환하는 흐름. 별도 빌더에서 \"조립\"하는 대신, 공간 그래프에서 노드를 선택해 그 자리에서 만들고·고치고·잇고·설명한다. vault .md 에 바로 쓴다. (ontology-first 재구성 spec: docs/superpowers/specs/2026-05-30-ontology-first-topology-restructure-design.md) S1 노드 속성 편집 — drawer 에서 domain 인라인 편집 → updateFrontmatter(본문 보존 patch",
       "wordCount": 153,
-      "updatedAt": "2026-05-29T18:58:18.792Z",
+      "updatedAt": "2026-07-20T15:57:20.512Z",
       "linksOut": []
     },
     {
@@ -6830,9 +6758,10 @@
         ],
         "relates": [
           "capabilities/builder-vault-write",
-          "capabilities/mcp-conflict-guard",
-          "capabilities/topology-canvas-render",
-          "domains/vault-local-first"
+          "capabilities/mcp-conflict-guard"
+        ],
+        "dependencies": [
+          "capabilities/topology-canvas-render"
         ]
       },
       "headings": [
@@ -6864,7 +6793,7 @@
       ],
       "excerpt": "R14 (155-158, 2026-05-04 ~ 2026-05-05) 에 도입된 web 즉시 반영 능력. 사용자 명시 \"웹에서나 잘 반영되면 좋겠는데? 그걸 강화하는건 어때\" 의 4 단계 답. IDE / AI agent / CLI 어느 surface 가 vault .md 만지면 웹 탭이 focus 안 해도 ~5s 안에 반영. · Step · What · Where 인지 · 155 polling · 5s 간격 fingerprint check + visible-only 자동 reload · 백그라운드 · 156 graph diff pulse · 새 노드 amber sin",
       "wordCount": 554,
-      "updatedAt": "2026-07-19T01:11:09.768Z",
+      "updatedAt": "2026-07-20T15:57:24.630Z",
       "linksOut": []
     },
     {
@@ -6882,8 +6811,7 @@
           "scripts/migrations"
         ],
         "relates": [
-          "capabilities/frontmatter-to-ontology",
-          "domains/vault-local-first"
+          "capabilities/frontmatter-to-ontology"
         ]
       },
       "headings": [
@@ -6920,7 +6848,7 @@
       ],
       "excerpt": "frontmatter 가 schema 다 → 키 추가 / 이름 변경 / 값 정리 시 vault 의 N 파일을 일괄 수정해야 한다. R11 에서 마이그레이션 패턴 정립. 각 마이그레이션은 scripts/migrations/<YYYY-MM-DD-<slug.mjs 한 파일. shape: migrate(file: { path, raw, relativePath }) → { raw } · null. null = no-op. 1. Line 기반 변형 우선 — parse → reserialize 라운드트립은 주석/공백 손실 위험 2. idempotent — 두 번 적용해도 결과 동",
       "wordCount": 175,
-      "updatedAt": "2026-05-28T06:12:39.486Z",
+      "updatedAt": "2026-07-20T15:57:27.775Z",
       "linksOut": []
     },
     {
@@ -6947,10 +6875,6 @@
           "tests/contract/parse-frontmatter.contract.test.ts",
           "tests/contract/validate-vault-document.contract.test.ts",
           "tests/contract/vault-schema.contract.test.ts"
-        ],
-        "relates": [
-          "capabilities/frontmatter-to-ontology",
-          "domains/vault-local-first"
         ]
       },
       "headings": [
@@ -6977,7 +6901,7 @@
       ],
       "excerpt": "frontmatter parser 가 lenient by-design — --- 닫힘 빠짐 / 빈 키 / 잘못된 들여쓰기에서 조용히 빈 frontmatter 반환. 사용자가 .md 잘못 작성하면 노드가 graph 에서 조용히 사라짐. R11 에서 이 silent corruption 을 가시화. 1. CLI — pnpm vault:validate [vaultPath] validateVaultDocument(raw) — frontmatter corruption + graph array canonicality issue codes error 1+ 시 exit 1 (loca",
       "wordCount": 378,
-      "updatedAt": "2026-06-14T07:42:42.265Z",
+      "updatedAt": "2026-07-20T15:57:37.864Z",
       "linksOut": []
     },
     {
@@ -6989,16 +6913,12 @@
         "slug": "cli/src/commands/agent-activity.mjs",
         "kind": "element",
         "title": "Agent Activity CLI Command",
-        "domain": "onboarding-ux",
-        "relates": [
-          "capabilities/agent-live-activity-contract",
-          "capabilities/cli-developer-entry"
-        ]
+        "domain": "onboarding-ux"
       },
       "headings": [],
       "excerpt": "cli/src/commands/agent-activity.mjs is the terminal writer for Atlas live agent activity. It writes, shows, and clears .ontology-atlas/agent-activity.json in the selected vault. The command validates the planning / editing / verifying / blocked / complete state enum, accepts repeated file, plan, MCP, source lookup, and",
       "wordCount": 431,
-      "updatedAt": "2026-06-21T12:03:29.870Z",
+      "updatedAt": "2026-07-20T15:57:41.995Z",
       "linksOut": []
     },
     {
@@ -7065,9 +6985,11 @@
         "title": "Business-to-Code Dogfood Audit",
         "relates": [
           "capabilities/collaborator-reader-brief",
-          "capabilities/project-ontology-indexing",
           "documents/views-domain-boundary-audit",
           "elements/ontology-reader-intent-contract"
+        ],
+        "describes": [
+          "capabilities/project-ontology-indexing"
         ]
       },
       "headings": [
@@ -7094,7 +7016,7 @@
       ],
       "excerpt": "역사적 기록. 이 감사는 2026-07 지도 재구성(topology-map-v2, /ontology/insights 3탭, /ontology → /topology 리다이렉트) 이전 구조 기준이다. 아래의 노드/엣지 수치와 일부 element 참조는 그 시점의 스냅샷이며, 현재 vault 구조와 다를 수 있다. This note records the answer to the product-direction question: what should Atlas express through ontology? Atlas should not optimize for a raw so",
       "wordCount": 606,
-      "updatedAt": "2026-07-18T12:06:06.220Z",
+      "updatedAt": "2026-07-20T15:57:46.848Z",
       "linksOut": []
     },
     {
@@ -7107,11 +7029,13 @@
         "kind": "document",
         "title": "Views Domain Boundary Audit",
         "relates": [
+          "documents/business-to-code-dogfood-audit"
+        ],
+        "describes": [
           "capabilities/agent-graph-readiness",
           "capabilities/builder-canvas-polish",
           "capabilities/collaborator-reader-brief",
           "capabilities/topology-ontology-inspection",
-          "documents/business-to-code-dogfood-audit",
           "domains/views"
         ]
       },
@@ -7144,7 +7068,7 @@
       ],
       "excerpt": "역사적 기록. 이 감사는 2026-07 지도 재구성 이전 구조 기준이다. 예시로 든 insights-query-cockpit 등 일부 element 는 재구성 과정에서 삭제/대체되었다 — 아래 클러스터 목록은 그 시점의 스냅샷이며 도메인 분리 여부에 대한 판단(Current Decision 섹션)은 유효하다. This note records the current evidence for whether domains/views should stay one domain or be split into smaller ontology domains. The answer is n",
       "wordCount": 633,
-      "updatedAt": "2026-07-18T12:06:20.807Z",
+      "updatedAt": "2026-07-20T15:57:50.996Z",
       "linksOut": []
     },
     {
@@ -7457,15 +7381,12 @@
         "slug": "elements/agent-activity-hooks",
         "kind": "element",
         "title": "Agent Activity CLI Contract",
-        "domain": "ai-agent-partner",
-        "relates": [
-          "capabilities/agent-live-activity-contract"
-        ]
+        "domain": "ai-agent-partner"
       },
       "headings": [],
       "excerpt": "ontology-atlas agent-activity is the explicit CLI contract for publishing Atlas live agent activity into .ontology-atlas/agent-activity.json. The repo-local automatic heartbeat hooks were removed from .claude/settings.json and .codex/hooks.json during the 2026-06 token-budget pass. They updated the sidecar on every she",
       "wordCount": 102,
-      "updatedAt": "2026-06-11T15:32:31.497Z",
+      "updatedAt": "2026-07-20T15:57:54.147Z",
       "linksOut": []
     },
     {
@@ -7496,8 +7417,6 @@
         "title": "App Settings Menu",
         "domain": "onboarding-ux",
         "relates": [
-          "capabilities/agent-config-onboarding",
-          "capabilities/project-ontology-indexing",
           "elements/app-nav-rail",
           "elements/locale-switch"
         ]
@@ -7505,7 +7424,7 @@
       "headings": [],
       "excerpt": "src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx renders the app-wide settings panel: display mode, language, ontology workspace access, and AI agent connection verification, grouped as five tabs (General / MCP+Agents / Vault / Appearance / Verification) behind one gear trigger. Before feat/rail-rollout (2026-07) t",
       "wordCount": 551,
-      "updatedAt": "2026-07-18T16:40:22.975Z",
+      "updatedAt": "2026-07-20T15:57:57.730Z",
       "linksOut": []
     },
     {
@@ -7586,14 +7505,14 @@
         "kind": "element",
         "title": "Builder Relation Proposal Model",
         "domain": "views",
-        "relates": [
+        "dependencies": [
           "elements/ontology-relation-key-inference"
         ]
       },
       "headings": [],
       "excerpt": "src/views/ontology-edit/lib/relation-proposal.ts contains the builder relation proposal model. It infers the default relation key for a drag between persisted vault nodes, formats the source-side frontmatter write preview, formats the small frontmatter patch snippet that will be appended to the source document, builds ",
       "wordCount": 322,
-      "updatedAt": "2026-05-28T06:12:39.466Z",
+      "updatedAt": "2026-07-20T15:58:01.029Z",
       "linksOut": []
     },
     {
@@ -7698,10 +7617,7 @@
         "kind": "element",
         "title": "File System Access API",
         "domain": "vault-local-first",
-        "path": "src/features/docs-vault-local",
-        "relates": [
-          "domains/vault-local-first"
-        ]
+        "path": "src/features/docs-vault-local"
       },
       "headings": [
         {
@@ -7712,7 +7628,7 @@
       ],
       "excerpt": "브라우저 native API — showDirectoryPicker() 로 사용자 폴더 선택, FileSystemDirectoryHandle 로 read/write. 우리는 IndexedDB 에 핸들 영속, focus / visibility 시 fingerprint 비교 재스캔. SSR-safe (window 가드). 미지원 브라우저는 LocalVaultPicker 가 명시적 안내. The Source Vault first viewport treats that runtime as an ontology execution contract instead of a plain",
       "wordCount": 222,
-      "updatedAt": "2026-06-03T08:53:03.475Z",
+      "updatedAt": "2026-07-20T15:58:11.443Z",
       "linksOut": []
     },
     {
@@ -7725,7 +7641,7 @@
         "kind": "element",
         "title": "Desktop First-Run Page",
         "domain": "onboarding-ux",
-        "relates": [
+        "dependencies": [
           "capabilities/desktop-app-distribution",
           "domains/vault-local-first"
         ]
@@ -7733,7 +7649,7 @@
       "headings": [],
       "excerpt": "src/views/first-run/ — 설치형 앱(Tauri)의 볼트 미선택 첫 화면. 마케팅 랜딩 대신 옵시디언식 진입: 볼트 폴더 열기(기존 useLocalVault().open()) · 새 볼트 만들기(빈 폴더면 기존 scaffoldOntology() — 마크다운 시드 5개 + 에이전트 설정) · 데모 볼트 둘러보기(/docs 정적 dogfood fallback) + local-first 신뢰 라인. 분기는 src/shared/lib/desktop-shell.ts 의 isDesktopShell() — Tauri 런타임 (isTauriVaultRuntime)과 ",
       "wordCount": 78,
-      "updatedAt": "2026-07-18T02:43:05.549Z",
+      "updatedAt": "2026-07-20T15:58:15.588Z",
       "linksOut": []
     },
     {
@@ -7797,7 +7713,6 @@
         "title": "macOS WebView Content Verifier",
         "domain": "vault-local-first",
         "relates": [
-          "capabilities/desktop-app-distribution",
           "domains/ai-agent-partner",
           "domains/views"
         ]
@@ -7805,7 +7720,7 @@
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
       "wordCount": 2050,
-      "updatedAt": "2026-06-17T05:49:26.036Z",
+      "updatedAt": "2026-07-20T15:58:19.208Z",
       "linksOut": []
     },
     {
@@ -7820,8 +7735,7 @@
         "domain": "ai-agent-partner",
         "path": "mcp/package.json",
         "relates": [
-          "capabilities/mcp-server",
-          "domains/ai-agent-partner"
+          "capabilities/mcp-server"
         ]
       },
       "headings": [
@@ -7833,7 +7747,7 @@
       ],
       "excerpt": "Official MCP TypeScript/JS SDK. As of 2026-06-12 this project pins @modelcontextprotocol/sdk to 1.29.0, the latest stable v1 release. The upstream v2 SDK/spec work is still pre-alpha, so production builds stay on v1.x until that branch stabilizes. mcp/src/index.js uses Server, StdioServerTransport, CallToolRequestSchem",
       "wordCount": 96,
-      "updatedAt": "2026-06-11T15:50:35.085Z",
+      "updatedAt": "2026-07-20T15:58:23.720Z",
       "linksOut": []
     },
     {
@@ -7912,14 +7826,13 @@
           "src/shared/lib/ontology-description.ts"
         ],
         "relates": [
-          "capabilities/topology-canvas-render",
           "elements/topology-ontology-drawer"
         ]
       },
       "headings": [],
       "excerpt": "src/shared/lib/ontology-description.ts keeps graph-facing descriptions short and predictable. It normalizes whitespace, prefers a concise first sentence, and clamps long body excerpts before they enter topology tooltips or selected-node drawer summaries. The topology drawer uses the same helper with a tighter profile l",
       "wordCount": 88,
-      "updatedAt": "2026-07-19T01:11:09.776Z",
+      "updatedAt": "2026-07-20T15:58:27.134Z",
       "linksOut": []
     },
     {
@@ -8353,14 +8266,14 @@
         "kind": "element",
         "title": "Topology Ontology Drawer",
         "domain": "views",
-        "relates": [
+        "dependencies": [
           "elements/ontology-description-helper"
         ]
       },
       "headings": [],
       "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontology-aware selected concept workbench inside /topology. It opens a centered modal from the graph canvas and separates the selected node into LNB sections for overview, direct relations, agent/collaborator handoff, and editing actions. The drawer keeps the first sc",
       "wordCount": 108,
-      "updatedAt": "2026-06-06T03:54:34.589Z",
+      "updatedAt": "2026-07-20T15:58:30.484Z",
       "linksOut": []
     },
     {
@@ -8447,10 +8360,7 @@
         "kind": "element",
         "title": "xyflow (React Flow)",
         "domain": "views",
-        "path": "package.json",
-        "relates": [
-          "domains/views"
-        ]
+        "path": "package.json"
       },
       "headings": [
         {
@@ -8461,7 +8371,7 @@
       ],
       "excerpt": "ERD 스타일 노드 + edge 캔버스 라이브러리. /ontology/edit (Builder) 가 의존. 노드 가장자리 점에서 drag → 다른 노드 drop → 임시 관계 edge. F 키 fullscreen, N 키 새 project 노드, Del 선택 삭제.",
       "wordCount": 38,
-      "updatedAt": "2026-05-04T01:27:35.687Z",
+      "updatedAt": "2026-07-20T15:58:36.332Z",
       "linksOut": []
     },
     {
@@ -10208,11 +10118,6 @@
         "fromSlug": "ARCHITECTURE",
         "context": "ge config - `app/layout.tsx` — metadata, providers, head - `eslint.config.mjs` — FSD boundary rules Long-form docs: - **[`AGENTS.md`]** — contributor guide (canonical for AI tools) - [`PRODUCT-DIRECTION.md`](./PRODUCT-DIRECTION.md) — mission - [`FEATURES.",
         "linkText": "`AGENTS.md`"
-      },
-      {
-        "fromSlug": "CASE-STUDY-AGENTS-MD-DRIFT",
-        "context": ". See [`mcp/README.md`](../mcp/README.md) for the tool surface an agent uses to read and write that reference file, and **[`AGENTS.md`]** for how this repo's own agents are told to use it.",
-        "linkText": "`AGENTS.md`"
       }
     ],
     "PRODUCT-DIRECTION": [
@@ -10273,39 +10178,6 @@
         "fromSlug": "README",
         "context": "atterns | Canonical UI style guide | | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Static export deployment | Current, small | | **[`CHANGELOG.md`]** | Chronological user-visible changes | Historical ledger | | [`BACKLOG.md`](BACKLOG.md) | Working queue and deferred qu",
         "linkText": "`CHANGELOG.md`"
-      }
-    ],
-    "../CLAUDE": [
-      {
-        "fromSlug": "CASE-STUDY-AGENTS-MD-DRIFT",
-        "context": "ings that genuinely don't apply to other tools (skills, hooks, the design-guardian subagent). See the current file: **[`CLAUDE.md`]**. - The sync rule is written down as policy, not left to memory — `AGENTS.md`'s own \"CLAUDE.md / AGENTS.md sync\" secti",
-        "linkText": "`CLAUDE.md`"
-      }
-    ],
-    "../.claude/rules/forbidden": [
-      {
-        "fromSlug": "CASE-STUDY-AGENTS-MD-DRIFT",
-        "context": "eeps this file consistent without a second edit). - Drift between the two is listed as a named forbidden pattern in **[`.claude/rules/forbidden.md`]**, under \"문서\" (documentation): *\"AGENTS.md 와 CLAUDE.md 가 비동기\"* — AGENTS.md and CLAUDE.md being out of sync is treated",
-        "linkText": "`.claude/rules/forbidden.md`"
-      }
-    ],
-    "../mcp/README": [
-      {
-        "fromSlug": "CASE-STUDY-AGENTS-MD-DRIFT",
-        "context": "every session — the same \"consult a reference file instead of restating it\" move, aimed at facts instead of rules. See **[`mcp/README.md`]** for the tool surface an agent uses to read and write that reference file, and [`AGENTS.md`](../AGENTS.md#working-with-t",
-        "linkText": "`mcp/README.md`"
-      },
-      {
-        "fromSlug": "README",
-        "context": "SKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | **[`../mcp/README.md`]** | MCP registration, 24 tools, tool contracts, verification | Canonical agent interface | | [`../cli/README.md`](../cli/",
-        "linkText": "`../mcp/README.md`"
-      }
-    ],
-    "CASE-STUDY-AGENTS-MD-DRIFT": [
-      {
-        "fromSlug": "CHANGELOG",
-        "context": "다리가 없었다. README에 \"codebase map / agent memory / context layer\" 시장 어휘를 잇는 브릿지 문단과 유산 선언 문장(\"이 지도는 당신 디스크의 마크다운\") 추가. 신규 **[`docs/CASE-STUDY-AGENTS-MD-DRIFT.md`]** — AGENTS.md/CLAUDE.md drift 커뮤니티 고통 → 이 저장소가 실제로 쓰는 해법(단일 진실원 + thin wrapper) → context rot 완화책으로서의 vault, 세 단계 케이스 스터디",
-        "linkText": "`docs/CASE-STUDY-AGENTS-MD-DRIFT.md`"
       }
     ],
     "slug": [
@@ -10433,6 +10305,13 @@
         "fromSlug": "README",
         "context": "VELOPMENT-CHECKS.md) | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks | | **[`DESKTOP-MACOS.md`]** | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | [`../mcp/README",
         "linkText": "`DESKTOP-MACOS.md`"
+      }
+    ],
+    "../mcp/README": [
+      {
+        "fromSlug": "README",
+        "context": "SKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | **[`../mcp/README.md`]** | MCP registration, 24 tools, tool contracts, verification | Canonical agent interface | | [`../cli/README.md`](../cli/",
+        "linkText": "`../mcp/README.md`"
       }
     ],
     "../cli/README": [
@@ -11761,13 +11640,6 @@
         "type": "doc",
         "slug": "BACKLOG",
         "title": "Backlog — ontology-atlas"
-      },
-      {
-        "name": "CASE-STUDY-AGENTS-MD-DRIFT",
-        "path": "CASE-STUDY-AGENTS-MD-DRIFT",
-        "type": "doc",
-        "slug": "CASE-STUDY-AGENTS-MD-DRIFT",
-        "title": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift"
       },
       {
         "name": "CHANGELOG",
