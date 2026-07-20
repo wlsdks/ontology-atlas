@@ -4,8 +4,6 @@ kind: element
 title: File System Access API
 domain: vault-local-first
 path: src/features/docs-vault-local
-relates:
-  - domains/vault-local-first
 ---
 
 # File System Access API

@@ -5,7 +5,7 @@ title: Ontology Hub — Mode-Aware (Q1=(a))
 domain: mode-aware-adapters
 dependencies: [capabilities/frontmatter-to-ontology, capabilities/mode-aware-adapter]
 elements: [elements/app-nav-rail, elements/ontology-concept-detail-workbench, src/features/vault-ontology/model/use-ontology-insight.ts, src/shared/lib/ontology-tree/reachability.test.ts, src/shared/lib/ontology-tree/reachability.ts, src/views/home/ui/HomePage.tsx]
-relates: [capabilities/frontmatter-to-ontology, capabilities/mode-aware-adapter, domains/views]
+relates: [domains/views]
 ---
 
 # Ontology Hub — Mode-Aware

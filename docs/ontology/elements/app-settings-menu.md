@@ -3,7 +3,7 @@ slug: elements/app-settings-menu
 kind: element
 title: App Settings Menu
 domain: onboarding-ux
-relates: [capabilities/agent-config-onboarding, capabilities/project-ontology-indexing, elements/app-nav-rail, elements/locale-switch]
+relates: [elements/app-nav-rail, elements/locale-switch]
 ---
 
 `src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx` renders the app-wide settings panel: display mode, language, ontology workspace access, and AI agent connection verification, grouped as five tabs (General / MCP+Agents / Vault / Appearance / Verification) behind one gear trigger.

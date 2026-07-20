@@ -6,7 +6,6 @@ domain: ai-agent-partner
 path: mcp/package.json
 relates:
   - capabilities/mcp-server
-  - domains/ai-agent-partner
 ---
 
 # @modelcontextprotocol/sdk

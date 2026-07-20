@@ -4,8 +4,8 @@ kind: capability
 title: Agent Onboarding Brief (1-paste prime)
 domain: views
 elements: [cli/src/lib/query-result-contract.mjs, elements/business-ontology-lens, elements/ontology-node-detail-modal, mcp/src/ontology-engine.mjs, src/features/vault-ontology/ui/LiveActivityIndicator.tsx, src/shared/lib/ontology-tree/agent-briefing-packet.ts, src/views/home/ui/HomePage.tsx]
-relates: [capabilities/agent-graph-readiness, capabilities/mcp-server, domains/ai-agent-partner]
-dependencies: [capabilities/ontology-hub-mode-aware]
+relates: [capabilities/agent-graph-readiness, domains/ai-agent-partner]
+dependencies: [capabilities/mcp-server, capabilities/ontology-hub-mode-aware]
 ---
 
 Agent onboarding brief composer — a purely-functional packet builder that was

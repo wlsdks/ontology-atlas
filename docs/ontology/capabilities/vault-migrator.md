@@ -8,7 +8,6 @@ elements:
   - scripts/migrations
 relates:
   - capabilities/frontmatter-to-ontology
-  - domains/vault-local-first
 ---
 
 # Vault Migrator

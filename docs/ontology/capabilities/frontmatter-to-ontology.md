@@ -7,7 +7,6 @@ elements:
   - src/entities/docs-vault/lib/derive-ontology-from-vault.ts
   - src/shared/lib/parse-frontmatter.ts
 relates:
-  - domains/ontology-core
   - domains/vault-local-first
 ---
 

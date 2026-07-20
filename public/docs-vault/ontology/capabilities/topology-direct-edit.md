@@ -4,7 +4,7 @@ kind: capability
 title: Topology Direct Edit (토폴로지에서 직접 편집)
 domain: views
 elements: []
-relates: [capabilities/topology-ontology-inspection]
+dependencies: [capabilities/topology-ontology-inspection]
 ---
 
 토폴로지(`/topology`)를 온톨로지의 *읽기* surface 가 아니라 **1차 편집 surface** 로 전환하는 흐름. 별도 빌더에서 "조립"하는 대신, 공간 그래프에서 노드를 선택해 그 자리에서 만들고·고치고·잇고·설명한다. vault `.md` 에 바로 쓴다. (ontology-first 재구성 spec: `docs/superpowers/specs/2026-05-30-ontology-first-topology-restructure-design.md`)

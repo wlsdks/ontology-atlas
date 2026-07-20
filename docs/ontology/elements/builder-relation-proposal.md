@@ -3,7 +3,7 @@ slug: elements/builder-relation-proposal
 kind: element
 title: Builder Relation Proposal Model
 domain: views
-relates: [elements/ontology-relation-key-inference]
+dependencies: [elements/ontology-relation-key-inference]
 ---
 
 `src/views/ontology-edit/lib/relation-proposal.ts` contains the builder relation proposal model.

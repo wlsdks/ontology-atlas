@@ -4,7 +4,7 @@ kind: capability
 title: Topology — Canvas-2D Map Render
 domain: views
 elements: [elements/ontology-description-helper, src/views/home, src/widgets/topology-controls]
-relates: [domains/views, elements/sigma-graphology]
+relates: [elements/sigma-graphology]
 ---
 
 # Topology — Canvas-2D Map Render

@@ -3,7 +3,6 @@ slug: cli/src/commands/agent-activity.mjs
 kind: element
 title: Agent Activity CLI Command
 domain: onboarding-ux
-relates: [capabilities/agent-live-activity-contract, capabilities/cli-developer-entry]
 ---
 
 `cli/src/commands/agent-activity.mjs` is the terminal writer for Atlas live agent activity.
