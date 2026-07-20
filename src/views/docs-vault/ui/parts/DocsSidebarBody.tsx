@@ -5,6 +5,7 @@ import {
   FileText,
   Hash,
   PinOff,
+  Plus,
   Search,
   Star,
   X,
@@ -45,6 +46,14 @@ export interface DocsSidebarBodyProps {
   onCollectionChange: (collection: DocsVaultCollection) => void;
   onTogglePin: (slug: string) => void;
   onTagSelect: (tag: string | null) => void;
+  /**
+   * [D-4] 트리 상단 "새 문서" 진입점 — 지도(topology)와 같은 kind-first
+   * 다이얼로그를 연다(DocsVaultPage.handleOpenNewDocDialog). 샘플(읽기
+   * 전용) 모드에서는 canCreateNewDoc=false 로 비활성 + 툴팁 힌트만 노출해
+   * 기능 존재 자체를 알린다 — 이전엔 진입점이 통째로 사라져 있었다.
+   */
+  onCreateNewDoc: () => void;
+  canCreateNewDoc: boolean;
 }
 
 function SectionLabel({ children }: { children: ReactNode }) {
@@ -69,6 +78,8 @@ export function DocsSidebarBody({
   onCollectionChange,
   onTogglePin,
   onTagSelect,
+  onCreateNewDoc,
+  canCreateNewDoc,
 }: DocsSidebarBodyProps) {
   const t = useTranslations("vaultWidgets.parts.sidebar");
   const [treeQuery, setTreeQuery] = useState("");
@@ -144,6 +155,26 @@ export function DocsSidebarBody({
         >
           {manifest.docs.length}
         </span>
+        {/* [D-4] 트리 상단 "새 문서" 진입점 — 이전엔 샘플(읽기 전용) 모드에서
+            진입로 자체가 통째로 사라져 기능 존재를 알 수 없었다. 비활성
+            상태에서도 버튼 + 툴팁 힌트로 "로컬 폴더를 열면 쓸 수 있다" 는
+            것을 알린다. 지도(topology)와 같은 kind-first 다이얼로그를 연다
+            (DocsVaultPage.handleOpenNewDocDialog → entities/docs-vault
+            buildNewNodeDoc, 빌더 새 노드 생성과 동일 함수). */}
+        <Tooltip
+          content={canCreateNewDoc ? t("newDocButtonLabel") : t("newDocDisabledHint")}
+        >
+          <button
+            type="button"
+            onClick={onCreateNewDoc}
+            disabled={!canCreateNewDoc}
+            data-testid="docs-sidebar-new-doc"
+            aria-label={t("newDocButtonLabel")}
+            className="inline-flex h-6 w-6 flex-none items-center justify-center rounded-md border border-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-overlay-2)] disabled:hover:text-[color:var(--color-text-tertiary)]"
+          >
+            <Plus size={13} aria-hidden />
+          </button>
+        </Tooltip>
       </div>
       <div
         className="mx-3 mt-2 grid flex-none grid-cols-2 gap-1 rounded-lg border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] p-1"

@@ -31,9 +31,10 @@ function makeManifest(docs: VaultDoc[]): VaultManifest {
   };
 }
 
-function renderSidebar(docs: VaultDoc[]) {
+function renderSidebar(docs: VaultDoc[], overrides: { canCreateNewDoc?: boolean } = {}) {
   const manifest = makeManifest(docs);
   const onSelect = vi.fn();
+  const onCreateNewDoc = vi.fn();
   render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
       <DocsSidebarBody
@@ -50,10 +51,12 @@ function renderSidebar(docs: VaultDoc[]) {
         onCollectionChange={() => {}}
         onTogglePin={() => {}}
         onTagSelect={() => {}}
+        onCreateNewDoc={onCreateNewDoc}
+        canCreateNewDoc={overrides.canCreateNewDoc ?? true}
       />
     </NextIntlClientProvider>,
   );
-  return { onSelect };
+  return { onSelect, onCreateNewDoc };
 }
 
 describe("DocsSidebarBody — P4a 최근 바뀐 문서 스트립", () => {
@@ -90,5 +93,22 @@ describe("DocsSidebarBody — P4a 최근 바뀐 문서 스트립", () => {
     const { onSelect } = renderSidebar([makeDoc("a", "Recent Doc", recentIso)]);
     fireEvent.click(screen.getByText("Recent Doc"));
     expect(onSelect).toHaveBeenCalledWith("a");
+  });
+});
+
+describe("DocsSidebarBody — [D-4] 새 문서 진입점", () => {
+  it("calls onCreateNewDoc when the tree-header new-doc button is enabled and clicked", () => {
+    const { onCreateNewDoc } = renderSidebar([], { canCreateNewDoc: true });
+    const button = screen.getByTestId("docs-sidebar-new-doc");
+    expect(button).not.toBeDisabled();
+    fireEvent.click(button);
+    expect(onCreateNewDoc).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders the new-doc button disabled (not hidden) in read-only sample mode", () => {
+    renderSidebar([], { canCreateNewDoc: false });
+    const button = screen.getByTestId("docs-sidebar-new-doc");
+    expect(button).toBeInTheDocument();
+    expect(button).toBeDisabled();
   });
 });

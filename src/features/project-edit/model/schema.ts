@@ -20,6 +20,12 @@ function toDateInputValue(date?: Date) {
   return `${year}-${month}-${day}`;
 }
 
+// [P-4] 링크 파싱 실패 코드 — 영문 원문 대신 안정적 코드만 반환한다. 실제
+// 사용자 노출 문구는 ProjectForm 의 resolveValidationMessage() 가
+// `validation.linkLine.<code>` i18n 키로 번역한다 (zod 모델 계층은
+// useTranslations 훅에 접근할 수 없음).
+type LinkLineErrorCode = "format" | "protocol" | "invalidUrl";
+
 function parseLinkLine(line: string) {
   const [labelPart, urlPart, ...rest] = line.split("|");
   const label = labelPart?.trim() ?? "";
@@ -28,7 +34,7 @@ function parseLinkLine(line: string) {
   if (rest.length > 0 || !label || !url) {
     return {
       ok: false as const,
-      message: "Each link must be in the form `label|https://...`",
+      code: "format" as LinkLineErrorCode,
     };
   }
 
@@ -37,13 +43,13 @@ function parseLinkLine(line: string) {
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
       return {
         ok: false as const,
-        message: "Link URL must start with http:// or https://",
+        code: "protocol" as LinkLineErrorCode,
       };
     }
   } catch {
     return {
       ok: false as const,
-      message: "Enter a valid URL",
+      code: "invalidUrl" as LinkLineErrorCode,
     };
   }
 
@@ -72,20 +78,23 @@ export function parseLinksText(
     .map((parsed) => parsed.value);
 }
 
+// [P-4] zod 의 min/regex 메시지는 settings.projectForm 네임스페이스 기준
+// "validation.<key>" i18n 키 그 자체다 — model 계층은 useTranslations 훅에
+// 접근할 수 없으므로 코드만 들고, ProjectForm 이 t(issue.message) 로 번역한다.
 export const projectFormSchema = z
   .object({
     slug: z
       .string()
-      .min(1, "Slug is required")
-      .regex(/^[\p{L}\p{N}-]+$/u, "Letters, numbers, and hyphens only"),
-    name: z.string().min(1, "Name is required"),
+      .min(1, "validation.slugRequired")
+      .regex(/^[\p{L}\p{N}-]+$/u, "validation.slugFormat"),
+    name: z.string().min(1, "validation.nameRequired"),
     nameEn: z.string().optional(),
     // 동적 카테고리/상태 — taxonomy default 또는 미래 vault frontmatter 기반
     // taxonomy 로 확장될 수 있어 free string. 존재 여부 검증은 호출자
     // (ProjectForm) 가 taxonomy 와 대조해 수행.
-    category: z.string().min(1, "Category is required"),
-    status: z.string().min(1, "Status is required"),
-    description: z.string().min(1, "Description is required"),
+    category: z.string().min(1, "validation.categoryRequired"),
+    status: z.string().min(1, "validation.statusRequired"),
+    description: z.string().min(1, "validation.descriptionRequired"),
     detail: z.string().optional(),
     tagsCsv: z.string().optional(),
     stackCsv: z.string().optional(),
@@ -107,10 +116,12 @@ export const projectFormSchema = z
 
         const parsed = parseLinkLine(line);
         if (!parsed.ok) {
+          // "validation.linkLine:<1-based index>:<code>" — ProjectForm 이
+          // 파싱해 t("validation.linkLine.<code>", { index }) 로 번역.
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["linksText"],
-            message: `Link ${index + 1}: ${parsed.message}`,
+            message: `validation.linkLine:${index + 1}:${parsed.code}`,
           });
           return;
         }
@@ -121,7 +132,7 @@ export const projectFormSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["startedAt"],
-        message: "Invalid start date format",
+        message: "validation.invalidStartDate",
       });
     }
 
@@ -129,7 +140,7 @@ export const projectFormSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["launchedAt"],
-        message: "Invalid launch date format",
+        message: "validation.invalidLaunchDate",
       });
     }
 
@@ -144,7 +155,7 @@ export const projectFormSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["launchedAt"],
-        message: "Launch date cannot be earlier than start date",
+        message: "validation.launchBeforeStart",
       });
     }
   });

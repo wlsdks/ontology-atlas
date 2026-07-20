@@ -53,7 +53,7 @@ describe("ontology kind visual tone contract", () => {
     expect(ONTOLOGY_KIND_TONE.project.hueName).toBe("indigo");
     expect(ONTOLOGY_KIND_TONE.domain.hueName).toBe("teal");
     expect(ONTOLOGY_KIND_TONE.capability.hueName).toBe("amber");
-    expect(ONTOLOGY_KIND_TONE.element.hueName).toBe("sage");
+    expect(ONTOLOGY_KIND_TONE.element.hueName).toBe("eucalyptus");
     expect(ONTOLOGY_KIND_TONE.unknown.hueName).toBe("brick");
   });
 

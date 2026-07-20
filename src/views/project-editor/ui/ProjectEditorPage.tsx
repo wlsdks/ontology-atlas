@@ -6,7 +6,11 @@ import { useRouter } from "@/i18n/navigation";
 import { ArrowLeft, ArrowUpRight, CopyPlus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ProjectForm } from "@/features/project-edit";
-import { useProjects, useProjectMutations } from "@/features/project-data-source";
+import {
+  ProjectStaticModeError,
+  useProjects,
+  useProjectMutations,
+} from "@/features/project-data-source";
 import { VaultConflictError } from "@/features/docs-vault-local";
 import {
   getProjectDetailHref,
@@ -126,6 +130,11 @@ function EditorContent({
     } catch (err) {
       if (err instanceof VaultConflictError) {
         throw new Error(t("vaultConflict"));
+      }
+      // [P-3] 방어 경로 — writeDisabled 가 제출 버튼을 이미 막아두지만,
+      // 혹시 도달하면 영어 raw 메시지 대신 ko/en 안내로 치환.
+      if (err instanceof ProjectStaticModeError) {
+        throw new Error(t("demoModeSaveFailed"));
       }
       throw err;
     }
@@ -383,6 +392,7 @@ function EditorContent({
             onCancel={handleCancel}
             onDelete={mode === "edit" ? handleDelete : undefined}
             onDirtyChange={setIsDirty}
+            writeDisabled={mode === "create" && !projectMutations.canCreate}
           />
         </section>
       </div>

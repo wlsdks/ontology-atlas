@@ -59,9 +59,34 @@ interface Props {
   onCancel: () => void;
   onDelete?: () => Promise<void>;
   onDirtyChange?: (dirty: boolean) => void;
+  /**
+   * [P-3] true 면 vault 가 로드되지 않은 데모/샘플 모드 — 폼 상단에 ko
+   * 안내 배너를 보여주고 모든 제출 버튼을 사전 비활성화한다. 끝까지
+   * 채운 뒤에야 영어 raw 에러를 보여주던 이전 흐름(정적 데모 모드에서
+   * "Cannot mutate projects…") 대신, 진입 시점에 바로 알려준다.
+   */
+  writeDisabled?: boolean;
 }
 
 // emptyValues는 ProjectForm 내부에서 첫 카테고리/상태 ID로 동적 생성.
+
+// [P-4] zod 스키마(schema.ts)는 useTranslations 훅에 접근할 수 없어 실제
+// 영문 문구 대신 "validation.<key>" i18n 키(또는 링크 줄 전용
+// "validation.linkLine:<index>:<code>" 포맷)만 issue.message 로 돌려준다.
+// 여기서 settings.projectForm 네임스페이스 t() 로 최종 번역한다.
+function resolveValidationMessage(
+  t: ReturnType<typeof useTranslations>,
+  message: string,
+): string {
+  if (message.startsWith("validation.linkLine:")) {
+    const [, index, code] = message.split(":");
+    return t(`validation.linkLine.${code}`, { index });
+  }
+  if (message.startsWith("validation.")) {
+    return t(message);
+  }
+  return message;
+}
 
 const FORM_SECTION_IDS = [
   "project-form-basics",
@@ -146,6 +171,7 @@ export function ProjectForm({
   onCancel,
   onDelete,
   onDirtyChange,
+  writeDisabled = false,
 }: Props) {
   const t = useTranslations("settings.projectForm");
   const { categories, statuses, getCategory, getStatus } = useTaxonomy();
@@ -448,7 +474,7 @@ export function ProjectForm({
             ? "linksText"
             : undefined);
         if (!k) continue;
-        map[k] = issue.message;
+        map[k] = resolveValidationMessage(t, issue.message);
       }
       setErrors(map);
       const firstField = Object.keys(map)[0] as keyof ProjectFormValues | undefined;
@@ -660,6 +686,15 @@ export function ProjectForm({
     // 제거하지 않고, 폭 640 은 그대로 지키면서 companion 컬럼으로 유지.
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[640px_260px]">
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        {writeDisabled ? (
+          <div
+            role="status"
+            data-testid="project-write-disabled-banner"
+            className="rounded-xl border border-[color:var(--color-amber-source-a34)] bg-[color:var(--color-amber-source-a08)] px-4 py-3 text-sm text-[color:var(--color-text-secondary)]"
+          >
+            {t("validation.demoModeBanner")}
+          </div>
+        ) : null}
         <div
           className={cn(
             "rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-4 shadow-[inset_0_1px_0_var(--color-overlay-2),0_18px_36px_var(--color-shadow-a22)]",
@@ -712,7 +747,7 @@ export function ProjectForm({
                 onClick={() => {
                   submitBehaviorRef.current = "stay";
                 }}
-                disabled={submitting || deleting}
+                disabled={submitting || deleting || writeDisabled}
                 className="order-last col-span-2 justify-center md:order-none md:col-span-1 md:min-w-[88px]"
               >
                 {submitting
@@ -729,7 +764,7 @@ export function ProjectForm({
                 onClick={() => {
                   submitBehaviorRef.current = "return";
                 }}
-                disabled={submitting || deleting}
+                disabled={submitting || deleting || writeDisabled}
                 className="justify-center"
               >
                 {mode === "create" ? t("actions.createAndReturn") : t("actions.saveAndReturn")}
@@ -981,7 +1016,7 @@ export function ProjectForm({
               "project-form-story": !current["project-form-story"],
             }))
           }
-          helperBadge={t("sections.helperBadgeFillFirst")}
+          helperBadge={t("sections.helperBadgeDescriptionRequired")}
           collapseLabel={t("sections.collapseLabel")}
           expandLabel={t("sections.expandLabel")}
         >
@@ -1202,7 +1237,7 @@ export function ProjectForm({
             onClick={() => {
               submitBehaviorRef.current = "return";
             }}
-            disabled={submitting || deleting}
+            disabled={submitting || deleting || writeDisabled}
           >
             {mode === "create" ? t("actions.createAndReturn") : t("actions.saveAndReturn")}
           </Button>
@@ -1222,7 +1257,7 @@ export function ProjectForm({
             onClick={() => {
               submitBehaviorRef.current = "stay";
             }}
-            disabled={submitting || deleting}
+            disabled={submitting || deleting || writeDisabled}
           >
             {submitting
               ? t("actions.saving")

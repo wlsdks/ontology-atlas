@@ -14,14 +14,23 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { AnimatePresence } from 'framer-motion';
 import {
+  Bot,
   ClipboardCheck,
+  FileText,
   HardDrive,
+  Link2,
   Menu,
   Package,
   PanelLeft,
   PanelRight,
+  Pencil,
+  Plus,
+  Printer,
+  Save,
   Search,
   Settings2,
+  Star,
+  Trash2,
   X,
 } from 'lucide-react';
 import {
@@ -1116,7 +1125,7 @@ function DocsVaultContent() {
       {
         id: 'palette',
         label: t('commands.openPalette'),
-        icon: '🔍',
+        icon: <Search size={12} aria-hidden />,
         shortcut: '⌘K',
         onRun: () => setPaletteQuery(''),
       },
@@ -1130,49 +1139,49 @@ function DocsVaultContent() {
       {
         id: 'view-doc',
         label: t('commands.viewDoc'),
-        icon: '📄',
+        icon: <FileText size={12} aria-hidden />,
         visible: view !== 'doc',
         onRun: () => handleViewChange('doc'),
       },
       {
         id: 'source-server',
         label: t('commands.sourceServer'),
-        icon: '📦',
+        icon: <Package size={12} aria-hidden />,
         visible: source !== 'server',
         onRun: () => handleSourceChange('server'),
       },
       {
         id: 'source-local',
         label: t('commands.sourceLocal'),
-        icon: '💾',
+        icon: <Save size={12} aria-hidden />,
         visible: source !== 'local' && localVault.isSupported,
         onRun: () => handleSourceChange('local'),
       },
       {
         id: 'pin-toggle',
         label: pinnedSet.has(selectedSlug ?? '') ? t('commands.unpinDoc') : t('commands.pinDoc'),
-        icon: '⭐',
+        icon: <Star size={12} aria-hidden />,
         visible: selectedDocExists,
         onRun: () => selectedSlug && handleTogglePin(selectedSlug),
       },
       {
         id: 'copy-url',
         label: t('commands.copyUrl'),
-        icon: '🔗',
+        icon: <Link2 size={12} aria-hidden />,
         visible: selectedDocExists,
         onRun: () => selectedSlug && void handleCopyUrl(selectedSlug),
       },
       {
         id: 'copy-agent-verify-prompt',
         label: t('commands.copyAgentVerifyPrompt'),
-        icon: '🤖',
+        icon: <Bot size={12} aria-hidden />,
         visible: source === 'local' && localVault.status === 'loaded',
         onRun: () => void handleCopyAgentVerifyPrompt(),
       },
       {
         id: 'print',
         label: t('commands.print'),
-        icon: '🖨️',
+        icon: <Printer size={12} aria-hidden />,
         visible: selectedDocExists && view === 'doc',
         onRun: () => {
           if (typeof window !== 'undefined') window.print();
@@ -1181,14 +1190,14 @@ function DocsVaultContent() {
       {
         id: 'edit',
         label: t('commands.edit'),
-        icon: '✏️',
+        icon: <Pencil size={12} aria-hidden />,
         visible: canEditCurrent && selectedDocExists && !editing,
         onRun: () => setEditing(true),
       },
       {
         id: 'new-doc',
         label: t('commands.newDoc'),
-        icon: '➕',
+        icon: <Plus size={12} aria-hidden />,
         visible: canEditCurrent,
         onRun: () => handleOpenNewDocDialog(),
       },
@@ -1209,14 +1218,14 @@ function DocsVaultContent() {
       {
         id: 'delete',
         label: t('commands.deleteDoc'),
-        icon: '🗑️',
+        icon: <Trash2 size={12} aria-hidden />,
         visible: canEditCurrent && selectedDocExists,
         onRun: () => void handleDeleteCurrent(),
       },
       {
         id: 'export-doc-html',
         label: t('commands.exportDocHtml'),
-        icon: '📄',
+        icon: <FileText size={12} aria-hidden />,
         visible: selectedDocExists && view === 'doc',
         onRun: () => handleExportDocHtml(),
       },
@@ -1299,18 +1308,23 @@ function DocsVaultContent() {
       onCollectionChange={handleCollectionChange}
       onTogglePin={handleTogglePin}
       onTagSelect={setActiveTag}
+      onCreateNewDoc={handleOpenNewDocDialog}
+      canCreateNewDoc={canEditCurrent}
     />
   );
 
   // docs-vault-final skin — engraved vault census pill (crumbs row + phead).
-  // path: local 이면 실제 root path, 아니면 dogfood 경로 (샘플 문서가 사실
-  // 이 repo 의 docs/ontology 이므로 정직한 표시).
+  // [D-2] path: 실제로 로컬 폴더(데스크톱 dogfood 자동 로드 포함)가 열려
+  // 있을 때만 진짜 경로를 보여준다. isLocalSourceLoaded 가 false 인 순수
+  // static/server 샘플(빌드타임 매니페스트)에서는 DOGFOOD_VAULT_PATH 가
+  // 빌드 머신의 개발자 절대 경로라 사용자에게 노출하면 오해 + 경로 누출.
+  // 이 경우 "내장 샘플" 라벨로 대체 — local 모드에서만 실 경로 표시.
   const vaultPillPath =
     isLocalSourceLoaded && localVaultRootPath
       ? localVaultRootPath
       : isLocalSourceLoaded && localVault.handle
         ? localVault.handle.name
-        : DOGFOOD_VAULT_PATH;
+        : t('header.vaultPillSampleLabel');
   const vaultTopLevelFolderCount = manifest.tree.children?.filter(
     (child) => child.type === 'dir',
   ).length ?? 0;
