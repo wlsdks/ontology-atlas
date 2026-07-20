@@ -114,6 +114,9 @@ export interface OntologyInspectorProps {
   /** 이 세션에서 아직 vault 에 쓰지 않은 변경 미리보기 — 고정 사이드바에서만
    *  노출 (파일 diff 프리뷰). 빌더-final 스펙 §우측 인스펙터. */
   sessionDiffLines?: BuilderSessionDiffLine[];
+  /** B-3 — 저장된 엣지 클릭 시 부모가 증가시키는 토큰. 값이 바뀌면 vault
+   *  상세가 관계 탭으로 포커스한다(기존 관계 편집 진입로). */
+  relationsFocusToken?: number;
 }
 
 type InspectorTranslator = ReturnType<typeof useTranslations>;
@@ -142,6 +145,7 @@ export function OntologyInspector({
   onToggleCollapsed,
   surface = "sidebar",
   sessionDiffLines = [],
+  relationsFocusToken = 0,
 }: OntologyInspectorProps) {
   const t = useTranslations("ontologyPages.edit.inspector");
   // canonical kind 라벨 — kinds.* i18n namespace 기반. 이전엔 inspector 자체
@@ -288,6 +292,7 @@ export function OntologyInspector({
               onDelete={onDeleteVault}
               saving={Boolean(saving)}
               onDeselect={onClearSelection}
+              relationsFocusToken={relationsFocusToken}
             />
           </motion.div>
         ) : null}
@@ -605,6 +610,7 @@ function VaultDetail({
   onDelete,
   saving,
   onDeselect,
+  relationsFocusToken,
 }: {
   t: InspectorTranslator;
   kindLabel: KindLabelResolver;
@@ -627,6 +633,7 @@ function VaultDetail({
   onDelete?: (slug: string) => Promise<void> | void;
   saving: boolean;
   onDeselect: () => void;
+  relationsFocusToken?: number;
 }) {
   // local draft — 사용자가 입력 중에 patch 가 일어나지 않게 buffer.
   const [draftState, setDraftState] = useState(() => ({
@@ -645,6 +652,16 @@ function VaultDetail({
   const dirty = trimmed !== "" && trimmed !== node.title;
   const canSave = !readOnly && dirty && Boolean(onSaveRename) && !saving;
   const [activeTab, setActiveTab] = useState<VaultDetailTab>("overview");
+  // B-3 — 캔버스에서 저장된 엣지를 클릭하면 부모가 relationsFocusToken 을
+  // 증가시킨다. 그 신호를 받아 관계 탭으로 전환해, 방금 클릭한 관계를 바로
+  // 보고 유형 변경·삭제로 이어갈 수 있게 한다. token 0(초기)에는 반응 안 함.
+  const relationsFocusRef = useRef(relationsFocusToken);
+  useEffect(() => {
+    if (relationsFocusToken === undefined) return;
+    if (relationsFocusToken === relationsFocusRef.current) return;
+    relationsFocusRef.current = relationsFocusToken;
+    setActiveTab("relations");
+  }, [relationsFocusToken]);
   // 탭 아이콘 + 툴팁 — 레이블("개요"/"관계"/"문서")은 그대로 평문 유지하고,
   // 아이콘은 스캔 속도만 돕는 보조 신호. 툴팁은 짧은 레이블만으론 처음
   // 보는 사용자에게 모호할 수 있는 탭 의미를 hover 로 한 번 더 풀어준다.

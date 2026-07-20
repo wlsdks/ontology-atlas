@@ -285,6 +285,8 @@ export function OntologyEditCanvas({
   ephemeralEdges,
   onSelectionChange,
   onNodeOpen,
+  onEdgeOpen,
+  onNodeBoxesChange,
   onConnect,
   onVaultConnect,
   onConnectToEmpty,
@@ -302,6 +304,14 @@ export function OntologyEditCanvas({
   ephemeralEdges: EphemeralEdge[];
   onSelectionChange?: (selectedId: string | null) => void;
   onNodeOpen?: (selectedId: string) => void;
+  /** 저장된(vault) 엣지 클릭 시 호출 — 부모가 source 노드 상세를 열고
+   *  인스펙터 관계 탭으로 포커스해 기존 관계를 편집할 진입로를 준다 (B-3). */
+  onEdgeOpen?: (edge: { source: string; target: string }) => void;
+  /** 캔버스에 현재 그려진 노드들의 bbox 를 부모에 보고 — 부모가 새 노드
+   *  스폰 위치를 기존 노드와 안 겹치게 계산하는 데 쓴다 (B-2). */
+  onNodeBoxesChange?: (
+    boxes: Array<{ x: number; y: number; width: number; height: number }>,
+  ) => void;
   onConnect?: (connection: Connection) => void;
   /** vault↔vault edge 생성 시 호출 — source frontmatter array patch. */
   onVaultConnect?: (
@@ -403,6 +413,11 @@ export function OntologyEditCanvas({
 
   const handleSelectionChange = useCallback(
     (params: OnSelectionChangeParams) => {
+      // B-3 — 엣지만 선택된 경우(노드 0개)엔 노드 선택을 초기화하지 않는다.
+      // 예전엔 저장된 엣지를 클릭하면 nodes[0] 가 undefined → null 로 리셋돼
+      // 인스펙터가 빈 상태로 돌아가, 기존 관계 편집 진입로가 사라졌다.
+      // 엣지 클릭은 onEdgeClick → onEdgeOpen 이 별도로 처리한다.
+      if (params.nodes.length === 0 && params.edges.length > 0) return;
       const next = params.nodes[0]?.id ?? null;
       onSelectionChange?.(next);
     },
@@ -512,6 +527,23 @@ export function OntologyEditCanvas({
     setLocalNodes((current) => applyNodeChanges(changes, current));
   }, []);
   const allNodes = localNodes;
+  // B-2 — 부모(page)가 새 노드 스폰 위치를 기존 노드와 안 겹치게 계산할 수
+  // 있도록 현재 캔버스 노드들의 bbox 를 보고한다. 부모는 이 값을 ref 에만
+  // 저장(재렌더 없음)하므로 드래그 프레임마다 호출돼도 비용이 낮다.
+  useEffect(() => {
+    if (!onNodeBoxesChange) return;
+    onNodeBoxesChange(
+      allNodes.map((n) => {
+        const measured = (n as { measured?: { width?: number; height?: number } }).measured;
+        return {
+          x: n.position.x,
+          y: n.position.y,
+          width: n.width ?? measured?.width ?? 220,
+          height: n.height ?? measured?.height ?? 64,
+        };
+      }),
+    );
+  }, [allNodes, onNodeBoxesChange]);
   const graphAnchorNodeId = useMemo(() => {
     const project = allNodes.find((node) => {
       const data = node.data as { kind?: string } | undefined;
@@ -736,6 +768,13 @@ export function OntologyEditCanvas({
         onSelectionChange={handleSelectionChange}
         onPaneClick={() => onSelectionChange?.(null)}
         onNodeClick={(_, node) => onNodeOpen?.(node.id)}
+        // B-3 — 저장된 vault 엣지 클릭 → 부모가 source 노드 상세를 열고
+        // 인스펙터 관계 탭으로 포커스한다(기존 관계 편집 진입로). 임시
+        // 엣지(ephemeral-edge-*)는 자체 "저장" 칩이 있으므로 제외한다.
+        onEdgeClick={(_, edge) => {
+          if (edge.id.startsWith("ephemeral-edge-")) return;
+          onEdgeOpen?.({ source: edge.source, target: edge.target });
+        }}
         // 단일 클릭과 동일한 의도 — ReactFlow 는 더블클릭을 별도로 처리하지
         // 않으므로 명시적으로 같은 핸들러를 연결해 "더블클릭도 상세를 연다"는
         // 계약을 코드로 보장한다 (persona QA: 더블클릭 무반응 신고 방어).

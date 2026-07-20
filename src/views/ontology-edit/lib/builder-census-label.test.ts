@@ -4,25 +4,26 @@ import { shouldShowFocusedCensus } from "./builder-census-label";
 describe("shouldShowFocusedCensus", () => {
   it("shows the focused variant when the canvas draws fewer nodes than the vault total", () => {
     expect(
-      shouldShowFocusedCensus({ isFocused: true, shownCount: 12, totalCount: 128 }),
+      shouldShowFocusedCensus({ shownCount: 12, totalCount: 128 }),
     ).toBe(true);
   });
 
-  it("stays on the plain total label when there is no focus (whole graph drawn)", () => {
+  it("stays on the plain total label when the whole graph is drawn (shown === total)", () => {
     expect(
-      shouldShowFocusedCensus({ isFocused: false, shownCount: 128, totalCount: 128 }),
+      shouldShowFocusedCensus({ shownCount: 128, totalCount: 128 }),
     ).toBe(false);
   });
 
-  it("stays on the plain total label when the focused subset happens to equal the total (no noisy '128 of 128')", () => {
+  it("shows the canvas count when a draft (unsaved) node pushes the render count above the saved total", () => {
+    // B-1: 8 saved + 1 draft on canvas → 9 drawn, must not read as a flat "8".
     expect(
-      shouldShowFocusedCensus({ isFocused: true, shownCount: 128, totalCount: 128 }),
-    ).toBe(false);
+      shouldShowFocusedCensus({ shownCount: 9, totalCount: 8 }),
+    ).toBe(true);
   });
 
   it("stays on the plain total label for an empty vault", () => {
     expect(
-      shouldShowFocusedCensus({ isFocused: false, shownCount: 0, totalCount: 0 }),
+      shouldShowFocusedCensus({ shownCount: 0, totalCount: 0 }),
     ).toBe(false);
   });
 });
