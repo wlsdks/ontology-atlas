@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-20T16:12:44.855Z",
+  "generatedAt": "2026-07-20T16:38:37.961Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2780,6 +2780,31 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-21 — 캔버스 피날레: 규모 인코딩 · 타입스케일 · dust 시차 (B4·B5·B3잔여)",
+          "slug": "2026-07-21-캔버스-피날레-규모-인코딩-타입스케일-dust-시차-b4b5b3잔여"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — 엣지 팝오버 (P3b — 관계가 의미를 말한다)",
+          "slug": "2026-07-21-엣지-팝오버-p3b-관계가-의미를-말한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — \"AI 에이전트 연결\" 시트 (P2a — 웨지 표면)",
+          "slug": "2026-07-21-ai-에이전트-연결-시트-p2a-웨지-표면"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — 관계 어휘 사전 1벌 · kind 용어 정의 · \"지도\" 카피 (P1a·P1c)",
+          "slug": "2026-07-21-관계-어휘-사전-1벌-kind-용어-정의-지도-카피-p1ap1c"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — 코너 자기유사성 + depends 활 방향 일관화 (B6·B8)",
+          "slug": "2026-07-21-코너-자기유사성-depends-활-방향-일관화-b6b8"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-21 — 노드 최소 분리 (B7 — 겹침 방치 해소)",
           "slug": "2026-07-21-노드-최소-분리-b7-겹침-방치-해소"
         },
@@ -4074,9 +4099,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 드래그/정착이 자식을 부모 위로 밀어넣어도 아무도 해소하지 않던 것 (Guardian 실증: 리빌된 element 가 프로젝트 각인과 정면 충돌). sim",
-      "wordCount": 25699,
-      "updatedAt": "2026-07-20T16:12:40.382Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. B4 규모 인코딩: 103개를 담은 도메인과 9개짜리가 동일 크기이던 것 — domain/capability 반지름에 로그 압축 배율(--topology-",
+      "wordCount": 26222,
+      "updatedAt": "2026-07-20T16:38:34.048Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"

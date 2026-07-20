@@ -325,3 +325,24 @@ describe('deriveOntologyFromVault', () => {
     expect(containsEdges).toHaveLength(2);
   });
 });
+/** P6 — relation_notes 가 해당 엣지의 label(왜)로 승격된다. */
+describe("relation_notes → edge label", () => {
+  it("dependencies ref 의 노트가 그 엣지에 실린다", () => {
+    const manifest = makeManifest([
+      makeDoc({
+        slug: "capabilities/writer",
+        frontmatter: {
+          kind: "capability",
+          title: "Writer",
+          dependencies: ["capabilities/mcp-server"],
+          relation_notes: { "capabilities/mcp-server": "쓰기 경로가 이 서버를 지난다" },
+        },
+      }),
+      makeDoc({ slug: "capabilities/mcp-server", frontmatter: { kind: "capability", title: "MCP Server" } }),
+    ]);
+    const d = deriveOntologyFromVault(manifest);
+    const edge = d.edges.find((e) => e.type === "depends_on" && e.sourceSlug === "capabilities/writer");
+    expect(edge?.label).toBe("쓰기 경로가 이 서버를 지난다");
+  });
+});
+

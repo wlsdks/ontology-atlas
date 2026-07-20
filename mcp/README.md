@@ -180,7 +180,7 @@ first-contact health summary / advisory / next-action gates, `workspace_brief.ne
 shape drift, maintenance_plan malformed payload and work-queue formatter drift,
 initialize tool-inventory + safety/recovery guidance gate, destructive dry-run request/gate
 contract, help output, unsupported-argument rejection, strict relation filter
-rejection, strict add_relation type-preflight rejection + no-write metadata
+rejection, strict add_relation type-preflight rejection + no-write metadata `why`(선택, ≤300자) 를 주면 관계와 근거가 **한 번의 쓰기로** `relation_notes` 에 함께 기록된다 — 근거 없는 엣지는 마인드맵 선이지 온톨로지 주장이 아니다.
 evidence, strict closest-value summary, stderr warning filtering, and gate
 contract without running the live MCP walk.
 `test:mcp:dogfood:timeout` narrows that to dogfood argument rejection,

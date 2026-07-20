@@ -46,6 +46,8 @@ export interface OntologyStubEdge {
   type: 'contains' | 'depends_on' | 'describes' | 'related_to';
   source: OntologyStubSource;
   sourceSlug: string;
+  /** P6 — 이 관계의 근거 한 줄 (`relation_notes: {ref: why}`). 엣지 팝오버가 문장 아래 보여준다. */
+  label?: string;
 }
 
 export interface VaultOntologyDerivation {
@@ -404,6 +406,36 @@ function deriveOntologyFromVaultUncached(
     if (!VALID_RELATION_TYPES.has(e.type)) continue;
     if (!dedupedById.has(e.id)) dedupedById.set(e.id, e);
   }
+
+  // P6 — relation_notes: {ref: "왜"} 를 해당 엣지의 label 로 승격. 키는
+  // 선언 문서의 frontmatter ref 표기(canonical slug)와 tail 양쪽을 본다.
+  {
+    const noteByDoc = new Map<string, Record<string, string>>();
+    for (const doc of manifest.docs) {
+      const fm = doc.frontmatter as Record<string, unknown>;
+      const notes = fm.relation_notes;
+      if (notes && typeof notes === 'object' && !Array.isArray(notes)) {
+        noteByDoc.set(doc.slug, notes as Record<string, string>);
+      }
+    }
+    if (noteByDoc.size > 0) {
+      for (const edge of edges) {
+        const notes = noteByDoc.get(edge.sourceSlug);
+        if (!notes) continue;
+        const toTail = edge.to.split(':').pop() ?? '';
+        for (const [ref, why] of Object.entries(notes)) {
+          if (typeof why !== 'string' || !why.trim()) continue;
+          const refTail = ref.split('/').pop();
+          if (ref === toTail || refTail === toTail || slugifyName(ref) === toTail || (refTail && slugifyName(refTail) === toTail)) {
+            (edge as { label?: string }).label = why.trim();
+            break;
+          }
+        }
+      }
+    }
+  }
+
+
 
   return {
     nodes: Array.from(nodes.values()),

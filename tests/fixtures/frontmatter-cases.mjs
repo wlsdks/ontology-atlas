@@ -98,4 +98,22 @@ export const CASES = [
       body: "본문",
     },
   },
+  {
+    // P6 게이트 ② — relation_notes 같은 객체 맵(중첩 들여쓰기 key: value)이
+    // 3-way 파서(런타임/MCP/스크립트)에서 동일하게 해석돼야 why 스키마가
+    // 안전하다. rename 시 키 재작성(redirectBacklinks)의 전제이기도 하다.
+    name: "객체 맵 (relation_notes 형) — 중첩 key: value",
+    input: "---\nkind: capability\ntitle: T\nrelation_notes:\n  capabilities/mcp-server: 쓰기 경로가 이 서버를 지난다\n  domains/views: 지도가 이 관계를 그린다\n---\n본문",
+    expected: {
+      frontmatter: {
+        kind: "capability",
+        title: "T",
+        relation_notes: {
+          "capabilities/mcp-server": "쓰기 경로가 이 서버를 지난다",
+          "domains/views": "지도가 이 관계를 그린다",
+        },
+      },
+      body: "본문",
+    },
+  },
 ];

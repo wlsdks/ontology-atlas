@@ -19,6 +19,8 @@ export interface TopologyV2EdgePanelProps {
   typeLabel: string;
   fromTitle: string;
   toTitle: string;
+  /** P6 — 관계의 근거 한 줄 (relation_notes). null 이면 생략. */
+  why?: string | null;
   /** 선언한 vault 문서 — null 이면 출처 행 생략. */
   declaredBy: { slug: string; href: string } | null;
   /** 선언 문서의 변경 시점 라벨 (S-C1 사다리 재사용) — null 이면 생략. */
@@ -43,6 +45,7 @@ export function TopologyV2EdgePanel({
   typeLabel,
   fromTitle,
   toTitle,
+  why = null,
   declaredBy,
   updatedAtLabel,
   builderEditHref,
@@ -82,6 +85,14 @@ export function TopologyV2EdgePanel({
       >
         {sentence}
       </p>
+      {why ? (
+        <p
+          data-testid="topology-v2-edge-why"
+          className="text-[12px] leading-relaxed text-[color:var(--topology-v2-panel-text-secondary)]"
+        >
+          {why}
+        </p>
+      ) : null}
 
       {/* 양 끝 노드 — 클릭 시 해당 노드 포커스 */}
       <div className="flex flex-col gap-0.5">
