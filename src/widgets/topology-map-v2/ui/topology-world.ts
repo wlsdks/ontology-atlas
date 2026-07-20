@@ -56,6 +56,10 @@ export interface WorldEdge {
    * `depends` 엣지는 타입 채널(파선) 소속이라 이 값을 쓰지 않는다.
    */
   level: 0 | 1 | 2;
+  /** P3b — 원 관계 타입 (contains/depends 2치로 뭉개기 전의 의미). */
+  relationType: string;
+  /** P3b — 이 관계를 선언한 vault 문서 slug (엣지 팝오버의 출처 표시). */
+  declaredBySlug: string | null;
 }
 
 /** P3a — 두 엔드포인트 kind 에서 containment 잉크 레벨을 유도한다. */
@@ -266,6 +270,8 @@ export function buildTopologyWorld(
       controlY: control.y,
       t: 0,
       level: containmentLevelFor(a.kind, b.kind),
+      relationType: edge.relationType,
+      declaredBySlug: edge.declaredBySlug ?? null,
     });
   }
 

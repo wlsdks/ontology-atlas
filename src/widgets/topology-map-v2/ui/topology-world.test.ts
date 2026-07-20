@@ -81,7 +81,7 @@ describe("buildTopologyWorld — homeX/homeY", () => {
       inputNode({ id: "p", kind: "project" }),
       inputNode({ id: "d", kind: "domain" }),
     ];
-    const edges: TopologyV2Edge[] = [{ source: "p", target: "d", relationType: "contains", relationQuality: null, evidenceCount: 0, kind: "contains" }];
+    const edges: TopologyV2Edge[] = [{ source: "p", target: "d", relationType: "contains", relationQuality: null, evidenceCount: 0, kind: "contains", declaredBySlug: null }];
     const world = buildTopologyWorld(nodes, edges, fullTokens);
     for (const node of world.nodes) {
       expect(node.homeX).toBe(node.x);
