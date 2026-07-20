@@ -1,4 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import { countConnectedDocuments } from "@/shared/lib/ontology-tree";
 
 export interface ProjectCardFacts {
   domain: number;
@@ -45,8 +46,11 @@ export function buildProjectCardFacts(
     if (node.kind === "domain") facts.domain += 1;
     else if (node.kind === "capability") facts.capability += 1;
     else if (node.kind === "element") facts.element += 1;
-    else if (node.kind === "document") facts.document += 1;
   }
+
+  // P-2 — document 는 containment 스탬핑 밖(관례상 relates 로만 연결)이라
+  // projectIds 로는 영원히 0 이다. 상세와 같은 1-hop 연결 규칙(shared)로 센다.
+  facts.document = countConnectedDocuments(nodes, edges, ownedIds);
 
   for (const edge of edges) {
     if (ownedIds.has(edge.from) && ownedIds.has(edge.to)) facts.relations += 1;

@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import {
+  computeAdaptiveRecentChanges,
   computeRecentChanges,
   RECENT_CHANGES_DEFAULT_WINDOW_DAYS,
+  type AdaptiveRecentChangesResult,
   type RecentChangesResult,
 } from '@/shared/lib/ontology-tree';
 import { useOntologyInsight } from './use-ontology-insight';
@@ -34,4 +36,26 @@ export function useRecentChanges(
     if (!insight) return EMPTY_RESULT;
     return computeRecentChanges(insight.nodes, freshnessIndex, nowMs, windowDays);
   }, [insight, freshnessIndex, nowMs, windowDays]);
+}
+
+const EMPTY_ADAPTIVE: AdaptiveRecentChangesResult = {
+  recentNodeIds: new Set(),
+  rows: [],
+  windowDays: RECENT_CHANGES_DEFAULT_WINDOW_DAYS,
+};
+
+/**
+ * M-8 — 창 적응형 변형. 대량 커밋 날 7일 창이 전체의 80%를 통과시키면
+ * 렌즈가 필터 구실을 못 하므로 7d→3d→1d 사다리로 좁힌다
+ * (`computeAdaptiveRecentChanges` 계약). INDEX 렌즈가 이걸 쓴다.
+ */
+export function useAdaptiveRecentChanges(): AdaptiveRecentChangesResult {
+  const freshnessIndex = useVaultDocFreshnessIndex();
+  const { insight } = useOntologyInsight();
+  const [nowMs] = useState(() => Date.now());
+
+  return useMemo(() => {
+    if (!insight) return EMPTY_ADAPTIVE;
+    return computeAdaptiveRecentChanges(insight.nodes, freshnessIndex, nowMs);
+  }, [insight, freshnessIndex, nowMs]);
 }

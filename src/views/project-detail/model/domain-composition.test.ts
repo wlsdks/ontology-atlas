@@ -97,13 +97,17 @@ describe("buildProjectDomainComposition", () => {
     expect(result.maxTotal).toBe(2);
   });
 
-  it("excludes capability/element nodes that do not belong to the project", () => {
+  it("P-1 — containment 도달 멤버는 projectIds 와 무관하게 센다 (4면 census 정합)", () => {
+    // 구 계약(projectIds 필터)은 지도 INDEX·인사이트·/projects 의 단일
+    // 진실원 BFS 와 숫자가 갈라지는 원인이었다. 도메인이 담고 있으면
+    // 어느 프로젝트 스탬프든 그 도메인의 크기에 포함된다 — 표면 간 같은
+    // 숫자가 개별 필터보다 우선한다는 것이 이번 라운드의 계약.
     const nodes = [
       n("domain:views", "domain", [SLUG], "Views"),
       n("capability:foreign", "capability", ["other-project"]),
     ];
     const edges = [contains("domain:views", "capability:foreign")];
     const result = buildProjectDomainComposition(nodes, edges, SLUG);
-    expect(result.domains[0].capabilityCount).toBe(0);
+    expect(result.domains[0].capabilityCount).toBe(1);
   });
 });

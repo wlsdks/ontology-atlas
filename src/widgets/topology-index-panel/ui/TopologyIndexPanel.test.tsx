@@ -55,7 +55,7 @@ const labels = {
   agentSync: "Agent sync",
   capabilitiesShort: "caps",
   elementsShort: "elems",
-  freshTitle: "recently updated",
+  domainCountTitle: "겹침 포함", freshTitle: "recently updated",
   emptyHint: "No matches",
   segmentAll: "All",
   segmentRecent: "Recent changes 0",
