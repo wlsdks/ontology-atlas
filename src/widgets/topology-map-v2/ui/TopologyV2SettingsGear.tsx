@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FolderCog, Settings } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { LocaleSwitch } from "@/features/locale-switch";
@@ -25,6 +25,19 @@ import { cn } from "@/shared/lib/cn";
  * global search dialog already rely on (see that ladder's `searchOpen`
  * tier's doc comment). Outside-click follows the SAME pattern as
  * `OperationsNav`'s `AppSettingsMenu` (document `mousedown` + a ref check).
+ *
+ * M-4 — two fixes to the transient contract the UX round caught:
+ *   1. Escape must close the popover even when focus has left it (the persona
+ *      opened the gear, then clicked the graph toggle, then pressed Escape —
+ *      focus was no longer inside the gear so the old focus-scoped React
+ *      `onKeyDown` never fired). The Escape listener is now a WINDOW capture
+ *      listener installed while open, so it fires regardless of focus and
+ *      still `stopPropagation`s so the global ladder doesn't double-act.
+ *   2. Opening another transient surface (search palette, node/edge popover,
+ *      docs drawer, create composer, context menu) must demote this popover.
+ *      The caller passes `suppressed` = "some other transient is open"; when
+ *      it flips true the gear closes itself. Outside-click already covered
+ *      pointer-driven surfaces; `suppressed` covers keyboard-opened ones.
  */
 
 export interface TopologyV2SettingsGearLabels {
@@ -61,6 +74,14 @@ export interface TopologyV2SettingsGearProps {
    */
   popoverAlign?: "left" | "right";
   /**
+   * M-4 — "some other transient surface is now open, demote me". When this
+   * flips to `true` while the gear popover is open, the gear closes itself so
+   * two transient surfaces never stack. Keyboard-opened surfaces (⌘K palette,
+   * the `D` docs drawer) don't fire the `mousedown` the outside-click handler
+   * relies on, so the caller signals them here instead.
+   */
+  suppressed?: boolean;
+  /**
    * Which side of the trigger the popover opens toward (default `"bottom"`,
    * the original placement — plenty of canvas below the right utility
    * rail's top-anchored gear). feat/chrome-system's nav-rail placement sits
@@ -77,6 +98,7 @@ export function TopologyV2SettingsGear({
   changeVaultHref,
   labels,
   className,
+  suppressed = false,
   popoverAlign = "right",
   popoverSide = "bottom",
 }: TopologyV2SettingsGearProps) {
@@ -95,17 +117,35 @@ export function TopologyV2SettingsGear({
       if (rootRef.current?.contains(event.target as Node)) return;
       close(false);
     };
+    // M-4 (1) — WINDOW capture keydown so Escape closes the gear even when
+    // focus has moved out of it (the persona case). Capture phase runs before
+    // the global ladder's bubble-phase window listener, and stopPropagation
+    // halts the event there so the ladder never also acts on this press.
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      close(true);
+    };
     document.addEventListener("mousedown", handlePointerDown);
-    return () => document.removeEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown, true);
+    };
   }, [open, close]);
 
-  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Escape") return;
-    // Own this keypress — the global topology Esc ladder must not ALSO act
-    // (e.g. deselect a node) on the same press. See module doc.
-    event.stopPropagation();
-    close(true);
-  };
+  // M-4 (2) — another transient surface opened; demote this popover. Handled
+  // as a set-state-DURING-render off a previous-value latch (React's official
+  // "adjusting state when a prop changes" pattern), NOT an effect — so it
+  // demotes in the same render `suppressed` flips true without a cascading
+  // effect pass. Latching on the transition (not `suppressed` alone) lets the
+  // user re-open the gear while a suppressor is still up if they choose to.
+  const [prevSuppressed, setPrevSuppressed] = useState(suppressed);
+  if (suppressed !== prevSuppressed) {
+    setPrevSuppressed(suppressed);
+    if (suppressed && open) setOpen(false);
+  }
 
   // Two wrappers on purpose — outer takes the CALLER's page-level position
   // classes (e.g. `absolute right-6 top-[...]` for the utility rail), inner
@@ -117,7 +157,7 @@ export function TopologyV2SettingsGear({
   // live QA — the gear rendered off-screen at x:-32).
   return (
     <div className={className ?? "inline-block"}>
-      <div ref={rootRef} className="relative" onKeyDown={handleKeyDown}>
+      <div ref={rootRef} className="relative">
       <button
         ref={triggerRef}
         type="button"

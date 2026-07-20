@@ -38,12 +38,14 @@ export {
 export {
   buildConnections,
   groupConnectionsByDirection,
+  groupConnectionsByRole,
 } from "./connections";
 export type {
   ConnectionSourceEdge,
   ConnectionSourceNode,
   DatasheetConnection,
   GroupedConnections,
+  RoleGroupedConnections,
 } from "./connections";
 export type {
   AgentReadinessActionKey,

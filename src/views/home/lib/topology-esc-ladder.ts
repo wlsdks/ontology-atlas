@@ -42,8 +42,20 @@ export interface TopologyEscLadderInput {
   fullDetailOpen: boolean;
   /** Relation lens active — replaces the popover with a relation-focused view. */
   selectedRelationActive: boolean;
-  /** A node/project is selected, so the popover/datasheet is showing. */
+  /** A node/project is selected, so the ego focus (dim) is active. */
   hasSelection: boolean;
+  /**
+   * M-7 — the compact node popover/datasheet is currently VISIBLE (a node is
+   * selected AND the popover has not yet been dismissed). Clicking a node sets
+   * BOTH the ego focus (dim) and the popover; a single Escape used to clear
+   * both at once (`hasSelection → deselect`), collapsing the two-rung "close
+   * popover, THEN release focus" contract the shortcut sheet promises. When
+   * this is true, Escape#1 closes only the popover (ego focus survives);
+   * Escape#2 then falls through to `deselect`. A selected *project* (no node
+   * popover) or a popover already dismissed leaves this false, so those
+   * deselect in one press as before.
+   */
+  nodePopoverOpen: boolean;
   /** Local-graph ego-drill stack has at least one entry to pop. */
   hasLocalGraphRoot: boolean;
 }
@@ -53,6 +65,7 @@ export type TopologyEscLadderAction =
   | "close-create-node"
   | "close-full-detail"
   | "close-relation-lens"
+  | "close-node-popover"
   | "deselect"
   | "pop-local-graph"
   | "none";
@@ -60,10 +73,11 @@ export type TopologyEscLadderAction =
 /**
  * Resolves what a single Escape keypress should do, in priority order:
  * context menu → create-node composer → search palette (deferred to its own
- * handler) → full-detail drawer → relation lens → deselect the current node
- * → pop one level of the local-graph breadcrumb → nothing. Each tier closes
- * exactly one thing; the caller re-evaluates on the next keypress, which is
- * what makes this "one step at a time" rather than "close everything".
+ * handler) → full-detail drawer → relation lens → close the node popover (ego
+ * focus survives) → deselect the current node → pop one level of the
+ * local-graph breadcrumb → nothing. Each tier closes exactly one thing; the
+ * caller re-evaluates on the next keypress, which is what makes this "one step
+ * at a time" rather than "close everything".
  */
 export function resolveTopologyEscLadderAction(
   input: TopologyEscLadderInput,
@@ -77,6 +91,10 @@ export function resolveTopologyEscLadderAction(
   if (input.searchOpen) return "none";
   if (input.fullDetailOpen) return "close-full-detail";
   if (input.selectedRelationActive) return "close-relation-lens";
+  // M-7 — Escape#1 closes only the node popover, leaving the ego focus (dim)
+  // in place; the NEXT Escape (with the popover now dismissed, so
+  // `nodePopoverOpen` false) falls through to `deselect` and releases focus.
+  if (input.hasSelection && input.nodePopoverOpen) return "close-node-popover";
   if (input.hasSelection) return "deselect";
   if (input.hasLocalGraphRoot) return "pop-local-graph";
   return "none";

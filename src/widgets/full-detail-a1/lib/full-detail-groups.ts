@@ -14,8 +14,10 @@
  */
 import {
   buildConnections,
+  groupConnectionsByRole,
   type ConnectionSourceEdge,
   type ConnectionSourceNode,
+  type DatasheetConnection,
 } from "@/shared/lib/ontology-tree/connections";
 import { isContainmentRelation } from "@/shared/lib/ontology-tree/relations";
 
@@ -75,73 +77,34 @@ export function buildFullDetailGroups(
   edges: readonly ConnectionSourceEdge[],
   changedIds?: ReadonlySet<string>,
 ): FullDetailGroups {
+  // The four-bucket role split (contains / usedBy / dependsOn / belongsTo) +
+  // per-bucket neighbor dedup lives in the shared `groupConnectionsByRole`
+  // (M-2) so the compact canvas popover renders the SAME numbers from the SAME
+  // construction — the two surfaces can't drift. This widget only enriches
+  // each row with `childCount` / `fresh` / `containment` for its denser view.
   const connections = buildConnections(nodeId, nodes, edges);
-  const contains: FullDetailConnectionRow[] = [];
-  const usedBy: FullDetailConnectionRow[] = [];
-  const dependsOn: FullDetailConnectionRow[] = [];
-  const belongsTo: FullDetailConnectionRow[] = [];
-  // `buildConnections` dedups by (neighbor, relationType, direction) — a
-  // neighbor with BOTH a `depends_on` AND a `related_to` edge in the SAME
-  // direction (live dogfood case: `capability:ontology-hub-mode-aware`) is
-  // genuinely two distinct relationType facts there, but this surface shows
-  // only one row per neighbor per bucket (no relationType-keyed row), so two
-  // rows for the same neighbor in the same bucket read as a visible
-  // duplicate AND collide on the React list key — same failure mode
-  // `groupConnectionsByDirection` already guards against for usedBy/dependsOn;
-  // contains/belongsTo need the identical per-bucket neighbor dedup.
-  const seenByBucket = {
-    contains: new Set<string>(),
-    usedBy: new Set<string>(),
-    dependsOn: new Set<string>(),
-    belongsTo: new Set<string>(),
-  };
+  const grouped = groupConnectionsByRole(connections);
 
-  for (const connection of connections) {
-    const containment = isContainmentRelation(connection.relationType);
-    const row: FullDetailConnectionRow = {
-      id: connection.id,
-      title: connection.title,
-      kind: connection.kind,
-      containment,
-      childCount: countContainmentChildren(connection.id, edges),
-      fresh: changedIds?.has(connection.id) ?? false,
-    };
-    let bucket: FullDetailConnectionRow[];
-    let seen: Set<string>;
-    if (containment) {
-      // `contains` edges point parent→child (outgoing from `nodeId` = nodeId
-      // is the parent); `belongs_to` edges point child→parent, so the SAME
-      // direction check is inverted for that type — `buildContainmentParents`
-      // (shared/lib/ontology-tree/insights.ts) resolves parentage the same
-      // way. Getting this wrong would put a `belongs_to`-authored parent
-      // into "담는 것" instead of "속한 곳".
-      const nodeIsParent =
-        connection.relationType === "belongs_to"
-          ? connection.direction === "incoming"
-          : connection.direction === "outgoing";
-      bucket = nodeIsParent ? contains : belongsTo;
-      seen = nodeIsParent ? seenByBucket.contains : seenByBucket.belongsTo;
-    } else if (connection.direction === "incoming") {
-      bucket = usedBy;
-      seen = seenByBucket.usedBy;
-    } else {
-      bucket = dependsOn;
-      seen = seenByBucket.dependsOn;
-    }
-    if (seen.has(row.id)) continue;
-    seen.add(row.id);
-    bucket.push(row);
-  }
-
-  const toView = (rows: FullDetailConnectionRow[]): FullDetailGroupView => ({
-    rows,
-    total: rows.length,
+  const toRow = (connection: DatasheetConnection): FullDetailConnectionRow => ({
+    id: connection.id,
+    title: connection.title,
+    kind: connection.kind,
+    containment: isContainmentRelation(connection.relationType),
+    childCount: countContainmentChildren(connection.id, edges),
+    fresh: changedIds?.has(connection.id) ?? false,
   });
 
+  const toView = (
+    connections: readonly DatasheetConnection[],
+  ): FullDetailGroupView => {
+    const rows = connections.map(toRow);
+    return { rows, total: rows.length };
+  };
+
   return {
-    contains: toView(contains),
-    usedBy: toView(usedBy),
-    dependsOn: toView(dependsOn),
-    belongsTo: toView(belongsTo),
+    contains: toView(grouped.contains),
+    usedBy: toView(grouped.usedBy),
+    dependsOn: toView(grouped.dependsOn),
+    belongsTo: toView(grouped.belongsTo),
   };
 }

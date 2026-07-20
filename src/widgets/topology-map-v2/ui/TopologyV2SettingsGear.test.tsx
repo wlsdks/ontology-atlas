@@ -96,6 +96,52 @@ describe("TopologyV2SettingsGear — utility-rail settings popover", () => {
     expect(windowHandler).not.toHaveBeenCalled();
   });
 
+  it("M-4: closes on Escape even when focus has moved OUT of the popover (window-level, not focus-scoped)", () => {
+    renderGear();
+    fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
+    expect(screen.getByTestId("topology-v2-settings-gear-popover")).toBeInTheDocument();
+
+    // Persona case: focus left the gear (e.g. clicked the graph toggle). The
+    // Escape now originates on document.body, not inside the popover.
+    const windowHandler = vi.fn();
+    window.addEventListener("keydown", windowHandler);
+    fireEvent.keyDown(document.body, { key: "Escape", bubbles: true });
+    window.removeEventListener("keydown", windowHandler);
+
+    expect(screen.queryByTestId("topology-v2-settings-gear-popover")).not.toBeInTheDocument();
+    // still consumed — the global Esc ladder must not also act on this press
+    expect(windowHandler).not.toHaveBeenCalled();
+  });
+
+  it("M-4: closes when `suppressed` flips true (another transient surface opened)", () => {
+    const { rerender } = render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <TopologyV2SettingsGear
+          indexDefaultCollapsed={false}
+          onChangeIndexDefaultCollapsed={() => {}}
+          changeVaultHref="/docs/?intent=local"
+          labels={labels}
+          suppressed={false}
+        />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
+    expect(screen.getByTestId("topology-v2-settings-gear-popover")).toBeInTheDocument();
+
+    rerender(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <TopologyV2SettingsGear
+          indexDefaultCollapsed={false}
+          onChangeIndexDefaultCollapsed={() => {}}
+          changeVaultHref="/docs/?intent=local"
+          labels={labels}
+          suppressed={true}
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByTestId("topology-v2-settings-gear-popover")).not.toBeInTheDocument();
+  });
+
   it("shows a 'switch vault' row that links back to /docs so a revisiting user can change folders from the map", () => {
     renderGear();
     fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));

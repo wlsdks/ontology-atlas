@@ -231,7 +231,10 @@
     "readout": {
       "projectUnit": "project",
       "domainUnit": "domains",
-      "hint": "Spine view · zoom in to reveal elements"
+      "tier_spine": "Spine view",
+      "tier_circuit": "Circuit view",
+      "tier_element": "Element view",
+      "zoomHint": "zoom in to reveal elements"
     }
   },
   "rootEntry": {

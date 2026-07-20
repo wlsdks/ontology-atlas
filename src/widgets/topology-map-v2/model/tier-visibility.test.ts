@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  classifyZoomTier,
   computeZoomRatio,
   DEFAULT_TIER_REVEAL,
   edgeTierAlpha,
@@ -177,5 +178,31 @@ describe("isNodeHittable", () => {
     expect(isNodeHittable({ id: "capability:full", kind: "capability", isHub: false }, DEFAULT_TIER_REVEAL.capability.fullRatio, null, undefined)).toBe(
       true,
     );
+  });
+});
+
+describe("classifyZoomTier (M-5 — corner readout orientation)", () => {
+  const C = DEFAULT_TIER_REVEAL;
+
+  it("is 'spine' at the overview entry (nothing below the spine revealed yet)", () => {
+    expect(classifyZoomTier(ENTRY, C)).toBe("spine");
+  });
+
+  it("is 'spine' while capabilities are still less than half-revealed", () => {
+    expect(classifyZoomTier(C.capability.enterRatio, C)).toBe("spine");
+  });
+
+  it("is 'circuit' once capabilities are fully revealed but elements are not", () => {
+    expect(classifyZoomTier(C.capability.fullRatio, C)).toBe("circuit");
+  });
+
+  it("is 'element' once elements are fully revealed — the point the 'zoom in to see elements' hint becomes false", () => {
+    expect(classifyZoomTier(C.element.fullRatio, C)).toBe("element");
+    expect(classifyZoomTier(ZOOMED_IN, C)).toBe("element");
+  });
+
+  it("never reports 'element' while still at the spine (the exact orientation lie the UX round caught)", () => {
+    expect(classifyZoomTier(ENTRY, C)).not.toBe("element");
+    expect(classifyZoomTier(ZOOMED_OUT, C)).not.toBe("element");
   });
 });

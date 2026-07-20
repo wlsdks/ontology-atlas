@@ -231,7 +231,10 @@
     "readout": {
       "projectUnit": "project",
       "domainUnit": "domains",
-      "hint": "Spine view · 줌인하면 요소가 나타납니다"
+      "tier_spine": "Spine view",
+      "tier_circuit": "Circuit view",
+      "tier_element": "Element view",
+      "zoomHint": "줌인하면 요소가 나타납니다"
     }
   },
   "rootEntry": {

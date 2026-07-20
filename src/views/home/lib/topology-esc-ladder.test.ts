@@ -11,6 +11,7 @@ const BASE: TopologyEscLadderInput = {
   fullDetailOpen: false,
   selectedRelationActive: false,
   hasSelection: false,
+  nodePopoverOpen: false,
   hasLocalGraphRoot: false,
 };
 
@@ -116,11 +117,43 @@ describe("resolveTopologyEscLadderAction", () => {
     ).toBe("close-relation-lens");
   });
 
-  it("deselects the node before popping the local-graph breadcrumb", () => {
+  it("M-7: closes the node popover (keeping ego focus) before deselecting when the popover is open", () => {
     expect(
       resolveTopologyEscLadderAction({
         ...BASE,
         hasSelection: true,
+        nodePopoverOpen: true,
+        hasLocalGraphRoot: true,
+      }),
+    ).toBe("close-node-popover");
+  });
+
+  it("M-7: Escape#1 closes the popover, Escape#2 (popover now dismissed) deselects — two rungs, not one", () => {
+    // Step 1: node clicked — popover + ego focus both up. First Escape closes
+    // only the popover.
+    const step1 = resolveTopologyEscLadderAction({
+      ...BASE,
+      hasSelection: true,
+      nodePopoverOpen: true,
+    });
+    expect(step1).toBe("close-node-popover");
+
+    // Step 2: popover dismissed (nodePopoverOpen now false) but the selection
+    // (ego focus/dim) survived — the next Escape releases focus.
+    const step2 = resolveTopologyEscLadderAction({
+      ...BASE,
+      hasSelection: true,
+      nodePopoverOpen: false,
+    });
+    expect(step2).toBe("deselect");
+  });
+
+  it("M-7: a selection with no node popover (e.g. a project, or an already-dismissed popover) deselects in one press", () => {
+    expect(
+      resolveTopologyEscLadderAction({
+        ...BASE,
+        hasSelection: true,
+        nodePopoverOpen: false,
         hasLocalGraphRoot: true,
       }),
     ).toBe("deselect");
