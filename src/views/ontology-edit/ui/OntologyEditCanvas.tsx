@@ -25,6 +25,7 @@ import {
   vaultManifest as staticVaultManifestRaw,
   type VaultManifest,
 } from "@/entities/docs-vault";
+import { useRelationVocabulary } from "@/entities/knowledge-graph";
 import { buildFocusedBuilderManifest } from "../lib/build-focused-builder-manifest";
 import { resolveBuilderEdgeEndpointHandles } from "../lib/builder-edge-handles";
 import { useVaultGraphFlow } from "../lib/use-vault-graph-flow";
@@ -349,6 +350,7 @@ export function OntologyEditCanvas({
   const t = useTranslations("ontologyPages.edit.canvas");
   const tKinds = useTranslations("kinds");
   const tEdges = useTranslations("ontologyPages.edit.canvas.edgeLabels");
+  const relationVocabulary = useRelationVocabulary();
   // 진실원: live vault.manifest 우선, 없으면 빌드타임 dogfood 매니페스트.
   // 빌더 진입자는 vault 폴더 미선택이어도 ontology-atlas 자체 ontology
   // (18 노드 dogfood) 을 즉시 본다 — "0 마찰 진입" 약속의 캔버스 측 구현.
@@ -835,17 +837,19 @@ export function OntologyEditCanvas({
         </div>
       ) : null}
       {/* trace 범례 (builder-core §3, docs/prototypes/builder-v2-02-draft.html) —
-          "contains ─ · depends ╌ · evidence ┄". VaultEdge 문법을 그대로
-          설명하는 기술 어휘라 kind mono 라벨과 같은 취급으로 raw 영단어
-          유지(비-지역화) — frontmatter 키 이름을 그대로 읽는 인스펙터의
-          다른 mono 라벨들과 같은 관례. */}
+          선 스타일 = 실선 contains · 파선 depends · 점선 evidence.
+          P1a-1 (persona 실측 N5 — 표면마다 4벌 관계 어휘): 이전에는 raw
+          미번역 영단어("contains ─ · depends ╌ · evidence ┄")를 그대로
+          노출해 지도/인사이트가 쓰는 한국어 formal 어휘("포함"/"의존"/
+          "설명")와 다른 단어족으로 읽혔다. 같은 `useRelationVocabulary`
+          formal 레지스터로 교체 — 지도 범례·인사이트와 동일한 단어. */}
       <div
         aria-hidden
         className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-3 font-mono text-[10.5px] tracking-[0.03em] text-[color:var(--color-text-quaternary)]"
       >
-        <TraceLegendMark dash="" /> contains
-        <TraceLegendMark dash="6 4" /> depends
-        <TraceLegendMark dash="1.4 3.2" /> evidence
+        <TraceLegendMark dash="" /> {relationVocabulary("contains", "formal")}
+        <TraceLegendMark dash="6 4" /> {relationVocabulary("depends_on", "formal")}
+        <TraceLegendMark dash="1.4 3.2" /> {relationVocabulary("describes", "formal")}
       </div>
       {/* hover affordance — 노드 위에 마우스 올렸을 때 subtle 인디고 outline.
           xyflow 기본은 selected 만 표시하고 hover 는 시각 신호 0 → '클릭

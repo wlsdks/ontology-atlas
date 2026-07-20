@@ -11,7 +11,12 @@ describe("TopologyRelationLegend", () => {
     render(<TopologyRelationLegend />);
 
     const legend = screen.getByTestId("topology-relation-legend");
-    expect(legend).toHaveTextContent("overviewRelationLegendSpine");
+    // P1a-1: the spine label now comes from the shared relation-vocabulary
+    // dictionary (`useRelationVocabulary("contains", "formal")`) instead of
+    // its own `overviewRelationLegendSpine` i18n key — the mocked
+    // `useTranslations` above is an identity function, so the formal
+    // register resolves to the raw edge-type key "contains".
+    expect(legend).toHaveTextContent("contains");
     expect(legend).toHaveTextContent("overviewRelationLegendQuality");
   });
 });

@@ -26,6 +26,14 @@ interface ShortcutSection {
 
 const k = (i18nKey: string): ShortcutKey => ({ i18nKey });
 
+/**
+ * P1a-2 (persona 실측 N8 — 도메인/역량/요소 정의가 작업 UI 0곳): 지도의 "?"
+ * 도움말이 이미 있는 유일한 상시 도움말 표면이라 새 표면을 만들지 않고
+ * 여기 footer 에 한 줄 정의 3개를 덧붙인다. kind 순서는 지도의 계층 순서
+ * (도메인 → 역량 → 요소)와 같다.
+ */
+const GLOSSARY_TERMS = ["domain", "capability", "element"] as const;
+
 const SECTIONS: ShortcutSection[] = [
   {
     titleKey: "navigation",
@@ -282,6 +290,21 @@ export function ShortcutSheet({ open, onClose }: Props) {
 
             <footer className="shrink-0 border-t border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-5 py-3">
               <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                {t("glossary.title")}
+              </p>
+              <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+                {GLOSSARY_TERMS.map((term) => (
+                  <div key={term} className="flex items-baseline gap-1.5 text-[12px]">
+                    <dt className="shrink-0 font-medium text-[color:var(--color-text-secondary)]">
+                      {t(`glossary.${term}Term`)}
+                    </dt>
+                    <dd className="text-[color:var(--color-text-tertiary)]">
+                      {t(`glossary.${term}Definition`)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="mt-2.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                 <kbd className="rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 tabular-nums">
                   ?
                 </kbd>{" "}
