@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bezierPoint, computeBowControlPoint, draw, type Point, type TraceDrawState } from "./traces";
+import { bezierPoint, computeBowControlPoint, computeDependsBowControlPoint, draw, type Point, type TraceDrawState } from "./traces";
 
 describe("computeBowControlPoint", () => {
   it("never bows further than maxBow*blend from the segment midpoint", () => {
@@ -180,3 +180,31 @@ describe("draw — containment ink ladder", () => {
     expect(drawAndCapture(undefined)).toEqual(drawAndCapture(1));
   });
 });
+
+/** B8 — depends 활: 좌측 수직 오프셋, 상호쌍 분리. */
+describe("computeDependsBowControlPoint", () => {
+  it("제어점이 중점에서 진행 방향 왼쪽 법선으로 오프셋된다", () => {
+    const c = computeDependsBowControlPoint({ x: 0, y: 0 }, { x: 100, y: 0 }, 92);
+    expect(c.x).toBeCloseTo(50, 5);
+    expect(c.y).toBeCloseTo(12, 5); // len*0.12 = 12 < maxBow, 왼쪽(+y: 화면 좌표)
+  });
+
+  it("A→B 와 B→A 가 서로 반대쪽으로 휘어 두 호로 분리된다", () => {
+    const ab = computeDependsBowControlPoint({ x: 0, y: 0 }, { x: 100, y: 0 }, 92);
+    const ba = computeDependsBowControlPoint({ x: 100, y: 0 }, { x: 0, y: 0 }, 92);
+    expect(Math.sign(ab.y)).not.toBe(Math.sign(ba.y));
+  });
+
+  it("긴 엣지는 maxBow 로 캡된다", () => {
+    const c = computeDependsBowControlPoint({ x: 0, y: 0 }, { x: 2000, y: 0 }, 92);
+    expect(Math.abs(c.y)).toBeCloseTo(92, 5);
+  });
+
+  it("영길이 방어 — NaN 없이 중점 반환", () => {
+    const c = computeDependsBowControlPoint({ x: 5, y: 5 }, { x: 5, y: 5 }, 92);
+    expect(Number.isFinite(c.x)).toBe(true);
+    expect(Number.isFinite(c.y)).toBe(true);
+  });
+});
+
+/** B6 — 코너 자기유사성: 실루엣이 줌(스크린 r)과 무관하게 같은 성격. */

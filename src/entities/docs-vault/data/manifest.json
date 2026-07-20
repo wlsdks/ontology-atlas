@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-20T16:04:28.356Z",
+  "generatedAt": "2026-07-20T16:12:44.855Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2780,6 +2780,21 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-21 — 노드 최소 분리 (B7 — 겹침 방치 해소)",
+          "slug": "2026-07-21-노드-최소-분리-b7-겹침-방치-해소"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — 유휴 프레임 게이트 (A2 — 마지막 P1)",
+          "slug": "2026-07-21-유휴-프레임-게이트-a2-마지막-p1"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — 샘플 vault 계몽 (relates 전수 감사)",
+          "slug": "2026-07-21-샘플-vault-계몽-relates-전수-감사"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-21 — 첫 지도 연출 (E1, 거울의 순간)",
           "slug": "2026-07-21-첫-지도-연출-e1-거울의-순간"
         },
@@ -4059,9 +4074,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. \"내 문서로 지도 만들기\" 완료 직후, 새 노드들이 프로젝트 위치에서 출발해 제자리로 스프링 정착한다 — 지도가 \"만들어졌다\"가 아니라 \"내 문서들이 모였",
-      "wordCount": 25487,
-      "updatedAt": "2026-07-20T16:03:41.960Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 드래그/정착이 자식을 부모 위로 밀어넣어도 아무도 해소하지 않던 것 (Guardian 실증: 리빌된 element 가 프로젝트 각인과 정면 충돌). sim",
+      "wordCount": 25699,
+      "updatedAt": "2026-07-20T16:12:40.382Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
