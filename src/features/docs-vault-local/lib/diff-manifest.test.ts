@@ -119,15 +119,18 @@ describe('planVaultDiffToasts', () => {
     expect(planVaultDiffToasts({ added: [], modified: [] })).toEqual([]);
   });
 
-  it('added 와 modified 를 사용자 문구 + variant 로 변환한다', () => {
+  // N10 — 문구는 더 이상 여기서 완성 문자열로 만들지 않는다(영문 하드코딩
+  // "Added: <slug>" ko 리터럴 새는 것 방지). kind/slug/count 만 반환하고,
+  // 실제 로케일 문구 조립은 `VaultDiffToaster` 가 `useTranslations` 로 한다.
+  it('added 와 modified 를 kind/slug + variant 구조로 변환한다', () => {
     expect(
       planVaultDiffToasts({
         added: ['capabilities/new'],
         modified: ['domains/existing'],
       }),
     ).toEqual([
-      { message: 'Added: capabilities/new', variant: 'info' },
-      { message: 'Edited: domains/existing', variant: 'success' },
+      { kind: 'added', slug: 'capabilities/new', variant: 'info' },
+      { kind: 'edited', slug: 'domains/existing', variant: 'success' },
     ]);
   });
 
@@ -141,10 +144,10 @@ describe('planVaultDiffToasts', () => {
         3,
       ),
     ).toEqual([
-      { message: 'Added: a', variant: 'info' },
-      { message: 'Added: b', variant: 'info' },
-      { message: 'Edited: c', variant: 'success' },
-      { message: '+1 more node(s)', variant: 'info' },
+      { kind: 'added', slug: 'a', variant: 'info' },
+      { kind: 'added', slug: 'b', variant: 'info' },
+      { kind: 'edited', slug: 'c', variant: 'success' },
+      { kind: 'overflow', count: 1, variant: 'info' },
     ]);
   });
 
@@ -158,10 +161,10 @@ describe('planVaultDiffToasts', () => {
         3,
       ),
     ).toEqual([
-      { message: 'Added: a', variant: 'info' },
-      { message: 'Added: b', variant: 'info' },
-      { message: 'Added: c', variant: 'info' },
-      { message: '+2 more node(s)', variant: 'info' },
+      { kind: 'added', slug: 'a', variant: 'info' },
+      { kind: 'added', slug: 'b', variant: 'info' },
+      { kind: 'added', slug: 'c', variant: 'info' },
+      { kind: 'overflow', count: 2, variant: 'info' },
     ]);
   });
 
@@ -174,6 +177,6 @@ describe('planVaultDiffToasts', () => {
         },
         0,
       ),
-    ).toEqual([{ message: '+2 more node(s)', variant: 'info' }]);
+    ).toEqual([{ kind: 'overflow', count: 2, variant: 'info' }]);
   });
 });

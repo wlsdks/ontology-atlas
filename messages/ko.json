@@ -1547,6 +1547,7 @@
       "connectionsUnit": "연결",
       "hubTruncated": "상위 {shown} / 전체 {total}",
       "hubRowAriaLabel": "{title} — 지도에서 보기",
+      "freshnessRowAriaLabel": "{title} — 지도에서 보기",
       "hubThumbnailCaption": "썸네일 = 실이웃에서 유도한 미니 ego 지도. 연결수 = in + out. 파선 스포크 = depends 비중.",
       "agentReadinessTitle": "에이전트 준비도",
       "agentReadinessReady": "준비됨",
@@ -2102,7 +2103,7 @@
     "selectionAnnouncement": "{name} 선택됨. 의존 {deps}개, 연결 {referenced}개.",
     "mobileTagline": "온톨로지 개념 지도.",
     "workspace": {
-      "growthThisWeek": " · 이번 주 +{count}",
+      "growthThisWeek": " · 이번 주 프로젝트 +{count}",
       "subtitle": "개념 <b>{concepts}</b>개 · 관계 <b>{relations}</b>개{growth}",
       "eyebrow": "개념 {concepts}개",
       "fallbackTitle": "지형도",
@@ -2115,6 +2116,7 @@
       "collapseLeftPanel": "좌측 패널 접기"
     },
     "nodeDatasheet": {
+      "domainLabel": "도메인",
       "poweredOn": "최근 갱신",
       "poweredOff": "정체",
       "metricUsedBy": "쓰는 곳",
@@ -2407,6 +2409,11 @@
       "recentForgetAriaLabel": "최근 vault 지우기: {name}",
       "validationChip": "{errors, plural, =0 {⚠ {warnings}} other {✗ {errors}}}",
       "validationTooltip": "{errors, plural, =0 {frontmatter 경고 {warnings} 건 — pnpm vault:validate 로 상세} other {frontmatter 오류 {errors} 건{warnings, plural, =0 {} other {, 경고 {warnings} 건}} — 일부 노드가 graph 에서 빠졌습니다. pnpm vault:validate 로 상세}}"
+    },
+    "vaultDiffToaster": {
+      "added": "추가됨: {slug}",
+      "edited": "편집됨: {slug}",
+      "overflow": "+{count}개 더"
     },
     "starterCta": {
       "errorFallback": "시작 시드 만들기 실패",

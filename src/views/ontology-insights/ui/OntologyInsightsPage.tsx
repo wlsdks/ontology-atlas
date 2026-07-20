@@ -351,6 +351,10 @@ export function OntologyInsightsPage() {
                 staleCount={freshness.staleCount}
                 weeklyTotals={freshness.weeklyTotals}
                 kindLabel={kindLabel}
+                recentLink={{
+                  href: buildOntologyNodeHref,
+                  ariaLabel: (title) => t("freshnessRowAriaLabel", { title }),
+                }}
               />
             ) : null}
           </div>

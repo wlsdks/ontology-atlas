@@ -77,15 +77,17 @@ function model(
 }
 
 describe("buildNodeSignificance", () => {
-  it("carries the raw kind and owning domain title for the 'what is it' line", () => {
+  it("carries the raw kind and owning domain title + id for the 'what is it' line", () => {
     const result = buildNodeSignificance(node(), model());
     expect(result.kind).toBe("capability");
     expect(result.ownerDomainTitle).toBe("AI Agent Partner");
+    expect(result.ownerDomainId).toBe("domains/ai-agent-partner");
   });
 
-  it("reports a null domain title when the node has no owning domain", () => {
+  it("reports a null domain title + id when the node has no owning domain", () => {
     const result = buildNodeSignificance(node(), model({ ownerDomain: null }));
     expect(result.ownerDomainTitle).toBeNull();
+    expect(result.ownerDomainId).toBeNull();
   });
 
   it("marks a node 'core' when enough places depend on it (fan-in >= threshold)", () => {

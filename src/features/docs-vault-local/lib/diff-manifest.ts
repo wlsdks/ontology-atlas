@@ -32,8 +32,19 @@ export function diffVaultManifest(
   return { added, modified };
 }
 
+/**
+ * 토스트 문구를 여기서 완성 문자열로 만들지 않는 이유(N10 — 영어 토스트 ko 수리) —
+ * 이 파일은 React 밖의 pure helper라 next-intl `useTranslations` 에 닿지 않는다.
+ * 그래서 kind + slug/count 만 구조화해서 넘기고, 실제 로케일 문구 조립은 호출자
+ * (`VaultDiffToaster`, React 컴포넌트)가 `t('featuresMisc.vaultDiffToaster.*')`
+ * 로 한다 — "Added: domains/refunds" 같은 하드코딩 영문 리터럴이 다시 새지 않게.
+ */
+export type VaultDiffToastKind = 'added' | 'edited' | 'overflow';
+
 export type VaultDiffToast = {
-  message: string;
+  kind: VaultDiffToastKind;
+  slug?: string;
+  count?: number;
   variant: 'info' | 'success';
 };
 
@@ -47,19 +58,19 @@ export function planVaultDiffToasts(
 
   for (const slug of diff.added) {
     if (shown >= limit) break;
-    planned.push({ message: `Added: ${slug}`, variant: 'info' });
+    planned.push({ kind: 'added', slug, variant: 'info' });
     shown += 1;
   }
 
   for (const slug of diff.modified) {
     if (shown >= limit) break;
-    planned.push({ message: `Edited: ${slug}`, variant: 'success' });
+    planned.push({ kind: 'edited', slug, variant: 'success' });
     shown += 1;
   }
 
   const overflow = Math.max(0, diff.added.length + diff.modified.length - limit);
   if (overflow > 0) {
-    planned.push({ message: `+${overflow} more node(s)`, variant: 'info' });
+    planned.push({ kind: 'overflow', count: overflow, variant: 'info' });
   }
 
   return planned;

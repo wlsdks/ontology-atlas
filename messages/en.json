@@ -1547,6 +1547,7 @@
       "connectionsUnit": "links",
       "hubTruncated": "Top {shown} / {total} total",
       "hubRowAriaLabel": "{title} — view on the map",
+      "freshnessRowAriaLabel": "{title} — view on the map",
       "hubThumbnailCaption": "Thumbnails are mini ego maps derived from real neighbors. Degree = in + out. Dashed spokes = depends_on share.",
       "agentReadinessTitle": "Agent readiness",
       "agentReadinessReady": "ready",
@@ -2102,7 +2103,7 @@
     "selectionAnnouncement": "{name} selected. {deps, plural, one {# dependency} other {# dependencies}}, {referenced, plural, one {# reference} other {# references}}.",
     "mobileTagline": "Ontology concept map.",
     "workspace": {
-      "growthThisWeek": " · +{count} this week",
+      "growthThisWeek": " · +{count, plural, one {# project} other {# projects}} this week",
       "subtitle": "<b>{concepts}</b> concepts · <b>{relations}</b> relations{growth}",
       "eyebrow": "{concepts} concepts",
       "fallbackTitle": "Relief",
@@ -2115,6 +2116,7 @@
       "collapseLeftPanel": "Collapse the left panel"
     },
     "nodeDatasheet": {
+      "domainLabel": "domain",
       "poweredOn": "fresh",
       "poweredOff": "idle",
       "metricUsedBy": "used by",
@@ -2407,6 +2409,11 @@
       "recentForgetAriaLabel": "Remove recent vault: {name}",
       "validationChip": "{errors, plural, =0 {⚠ {warnings}} other {✗ {errors}}}",
       "validationTooltip": "{errors, plural, =0 {{warnings} frontmatter warning(s) — run pnpm vault:validate for detail} other {{errors} frontmatter error(s){warnings, plural, =0 {} other {, {warnings} warning(s)}} — some nodes are missing from the graph. Run pnpm vault:validate for detail}}"
+    },
+    "vaultDiffToaster": {
+      "added": "Added: {slug}",
+      "edited": "Edited: {slug}",
+      "overflow": "+{count} more node(s)"
     },
     "starterCta": {
       "errorFallback": "Failed to create starter",
