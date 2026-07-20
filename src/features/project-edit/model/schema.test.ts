@@ -51,7 +51,7 @@ describe("projectFormSchema", () => {
     );
 
     expect(result.success).toBe(false);
-    expect(result.error?.issues[0]?.message).toContain("Link 1:");
+    expect(result.error?.issues[0]?.message).toContain("validation.linkLine:1:");
   });
 
   it("rejects non-http links", () => {
@@ -60,7 +60,7 @@ describe("projectFormSchema", () => {
     );
 
     expect(result.success).toBe(false);
-    expect(result.error?.issues[0]?.message).toContain("http:// or https://");
+    expect(result.error?.issues[0]?.message).toBe("validation.linkLine:1:protocol");
   });
 
   it("rejects launch dates earlier than start dates", () => {
@@ -72,8 +72,8 @@ describe("projectFormSchema", () => {
     );
 
     expect(result.success).toBe(false);
-    expect(result.error?.issues[0]?.message).toContain(
-      "Launch date cannot be earlier than start date",
+    expect(result.error?.issues[0]?.message).toBe(
+      "validation.launchBeforeStart",
     );
   });
 });

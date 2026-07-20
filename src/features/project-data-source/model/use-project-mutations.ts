@@ -38,13 +38,27 @@ export interface ProjectMutations {
 const STATIC_REJECTION =
   'Cannot mutate projects in static demo mode. Open a markdown folder first.';
 
+/**
+ * [P-3] static(샘플) 모드에서 mutation 이 거절됐음을 나타내는 typed error.
+ * 호출자(ProjectEditorPage)가 이 타입으로 잡아 ko/en i18n 메시지로 치환한다
+ * — plain Error(STATIC_REJECTION) 를 그대로 노출하면 영어 raw 문구가 사용자
+ * 에게 보인다. 버튼이 사전에 disabled 되므로 정상 흐름에서는 도달하지
+ * 않아야 하는 방어 경로.
+ */
+export class ProjectStaticModeError extends Error {
+  constructor() {
+    super(STATIC_REJECTION);
+    this.name = 'ProjectStaticModeError';
+  }
+}
+
 export function useProjectMutations(): ProjectMutations {
   const mode = useDataSourceMode();
   const vault = useLocalVault();
 
   const createProject = useCallback(
     async (input: ProjectInput) => {
-      if (mode === 'static') throw new Error(STATIC_REJECTION);
+      if (mode === 'static') throw new ProjectStaticModeError();
       const slug = `projects/${input.slug}`;
       if (vault.fileHandles.has(slug)) {
         throw new Error(`Project slug already exists: "${input.slug}"`);
@@ -57,7 +71,7 @@ export function useProjectMutations(): ProjectMutations {
 
   const updateProject = useCallback(
     async (input: ProjectInput) => {
-      if (mode === 'static') throw new Error(STATIC_REJECTION);
+      if (mode === 'static') throw new ProjectStaticModeError();
       const slug = `projects/${input.slug}`;
       // 존재 여부 — 없으면 새로 만든다 (upsert 시그니처).
       if (!vault.fileHandles.has(slug)) {
@@ -75,7 +89,7 @@ export function useProjectMutations(): ProjectMutations {
 
   const deleteProject = useCallback(
     async (slug: string) => {
-      if (mode === 'static') throw new Error(STATIC_REJECTION);
+      if (mode === 'static') throw new ProjectStaticModeError();
       const path = `projects/${slug}`;
       if (!vault.fileHandles.has(path)) return; // no-op
       await vault.deleteDoc(path);

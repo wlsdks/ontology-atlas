@@ -112,7 +112,7 @@ describe("rhf zodResolver × projectFormSchema", () => {
     expect(result.current.formState.isDirty).toBe(false);
   });
 
-  it("description 누락 — 검증 에러 메시지 노출 ('Description is required')", async () => {
+  it("description 누락 — 검증 에러 메시지 노출 ('validation.descriptionRequired')", async () => {
     const v: ProjectFormValues = {
       ...emptyValues(),
       slug: "x",
@@ -129,7 +129,7 @@ describe("rhf zodResolver × projectFormSchema", () => {
     });
     expect(result.errors.description).toBeDefined();
     expect((result.errors.description as { message?: string }).message).toBe(
-      "Description is required",
+      "validation.descriptionRequired",
     );
   });
 });
