@@ -144,3 +144,5 @@ export {
   isWithinRecentWindow,
   selectRecentVaultDocs,
 } from "./recent-changes";
+export type { DomainCensusRow } from "./domain-census";
+export { computeDomainCensusRows, domainCensusById } from "./domain-census";

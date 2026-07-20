@@ -5,6 +5,7 @@ import { ChevronLeft, Search } from "lucide-react";
 import {
   filterTreeByNodeIds,
   filterTreeByQuery,
+  type DomainCensusRow,
   type OntologyTreeBuildResult,
 } from "@/shared/lib/ontology-tree";
 import { FirstRunStarterModule } from "@/features/first-run-starter";
@@ -85,6 +86,12 @@ export interface TopologyIndexPanelProps {
   uncatalogedDocCount?: number;
   /** P4c — 위 행 클릭 → "내 문서로 지도 만들기" 다이얼로그(`bootstrapOpen`). */
   onPromoteUncatalogedDocs?: (() => void) | null;
+  /**
+   * Guardian I-1 — 도메인 크기 단일 진실원(그래프 BFS, `computeDomainCensusRows`)
+   * 조회 맵. 있으면 도메인 행 카운트/미터가 이 값을 쓴다 — /projects·인사이트와
+   * 같은 숫자. 생략하면 종전 트리 워크 유지.
+   */
+  domainCensus?: ReadonlyMap<string, DomainCensusRow> | null;
 }
 
 /**
@@ -120,7 +127,8 @@ export function TopologyIndexPanel({
   recentChanges = null,
   uncatalogedDocCount,
   onPromoteUncatalogedDocs = null,
-  onOpenAgentConnect = null,}: TopologyIndexPanelProps) {
+  onOpenAgentConnect = null,
+  domainCensus = null,}: TopologyIndexPanelProps) {
   const [query, setQuery] = useState("");
   const [openIds, setOpenIds] = useState<Set<string>>(
     () => new Set(treeResult.roots.map((root) => root.node.id)),
@@ -139,11 +147,19 @@ export function TopologyIndexPanel({
     return treeResult.roots;
   }, [treeResult.roots, isFiltering, trimmedQuery, lensActive, recentChanges]);
   const maxDomainDescendantCount = useMemo(() => {
+    // 미터 분모도 같은 진실원에서 — census 가 있으면 BFS total 의 최댓값.
+    if (domainCensus && domainCensus.size > 0) {
+      let max = 0;
+      for (const row of domainCensus.values()) {
+        if (row.total > max) max = row.total;
+      }
+      return max;
+    }
     const domains = treeResult.roots.flatMap((root) =>
       root.children.filter((child) => child.node.kind === "domain"),
     );
     return computeMaxDomainDescendantCount(domains);
-  }, [treeResult.roots]);
+  }, [treeResult.roots, domainCensus]);
 
   const toggleOpen = (nodeId: string) => {
     setOpenIds((current) => {
@@ -293,6 +309,7 @@ export function TopologyIndexPanel({
               changedSlugs={changedSlugs}
               agentAttributedNodeId={recentChanges?.agentAttributedNodeId ?? null}
               maxDomainDescendantCount={maxDomainDescendantCount}
+              domainCensus={domainCensus}
               labels={labels}
             />
           ))

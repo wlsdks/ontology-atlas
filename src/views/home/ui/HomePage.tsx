@@ -111,7 +111,9 @@ import {
 import { copyText } from "@/shared/lib/copy-text";
 import {
   buildOntologyTree,
+  computeDomainCensusRows,
   computeOntologyChangeset,
+  domainCensusById,
   formatAgentPostChangeSyncPacket,
   useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
@@ -1555,6 +1557,15 @@ export function HomePage() {
     () => ontologyInsight?.nodes.filter((node) => node.kind === "domain").length ?? 0,
     [ontologyInsight],
   );
+  // Guardian I-1 — 도메인 크기 단일 진실원(그래프 BFS). INDEX 트리 행과
+  // /projects·인사이트가 같은 숫자를 말하게 한다.
+  const indexDomainCensus = useMemo(
+    () =>
+      ontologyInsight
+        ? domainCensusById(computeDomainCensusRows(ontologyInsight.nodes, ontologyInsight.edges, ["domain"]))
+        : null,
+    [ontologyInsight],
+  );
   // root-first-open v3 우하단 판독(`FirstRunReadout`) 의 "N project" 숫자 —
   // 실데이터, indexDomainCount 와 같은 ontologyInsight 파생이라 drift 불가.
   const firstRunProjectCount = useMemo(
@@ -2384,6 +2395,7 @@ export function HomePage() {
                       setAgentConnectNowMs(Date.now());
                       setAgentConnectOpen(true);
                     }}
+                    domainCensus={indexDomainCensus}
                     // P4a — 렌즈 필터용 id 집합 + P4b 배지 대상.
                     recentChanges={{
                       ids: recentChanges.recentNodeIds,

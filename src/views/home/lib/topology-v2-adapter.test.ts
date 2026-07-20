@@ -106,13 +106,14 @@ describe("buildTopologyV2Graph — regression: TopologyMapV2 must not be mounted
     const graph = buildTopologyV2Graph(nodes, edges);
     const countById = new Map(graph.nodes.map((n) => [n.id, n.descendantCount]));
 
-    // The project sits above the deepest subtree, so its count is the largest;
-    // the leaf element has no descendants. descendantCount mirrors `size` (both
-    // derive from subtreeWeightBySlug) so the engraved numeral and magnitude agree.
-    expect(countById.get("proj")).toBeGreaterThan(0);
-    expect(countById.get("proj")).toBeGreaterThanOrEqual(countById.get("dom") ?? 0);
+    // Guardian I-1 — 각인 숫자(project/domain)는 역량+요소 합계(BFS census):
+    // INDEX 트리·/projects 카드와 같은 숫자를 말한다. `size`(시각 규모)는
+    // element weight 를 유지하므로 둘은 더 이상 항상 같지 않다.
+    expect(countById.get("proj")).toBe(2); // cap + el
+    expect(countById.get("dom")).toBe(2);
     expect(countById.get("el")).toBe(0);
-    for (const n of graph.nodes) expect(n.descendantCount).toBe(n.size);
+    const sizeById = new Map(graph.nodes.map((n) => [n.id, n.size]));
+    expect(sizeById.get("proj")).toBe(1); // element weight 그대로
   });
 
   // Regression (owner live-test, blocker 3): "amber on multiple nodes" —

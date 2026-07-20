@@ -2,7 +2,7 @@
 
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { ChevronRight } from "lucide-react";
-import type { OntologyTreeNode } from "@/shared/lib/ontology-tree";
+import type { DomainCensusRow, OntologyTreeNode } from "@/shared/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import {
   computeCapacityRatio,
@@ -28,6 +28,12 @@ export interface TopologyIndexTreeRowProps {
   /** P4b — fresh heartbeat 의 focus 와 일치하는 노드 하나(있다면). */
   agentAttributedNodeId?: string | null;
   maxDomainDescendantCount: number;
+  /**
+   * Guardian I-1 — 도메인 크기 단일 진실원(그래프 BFS) 조회 맵. 있으면
+   * 트리 워크 대신 이 값을 쓴다 — 트리는 다중 부모 노드를 유실해
+   * /projects·인사이트와 숫자가 갈라졌다. null 이면 종전 트리 워크 유지.
+   */
+  domainCensus?: ReadonlyMap<string, DomainCensusRow> | null;
   labels: TopologyIndexTreeRowLabels;
 }
 
@@ -60,6 +66,7 @@ export function TopologyIndexTreeRow({
   changedSlugs,
   agentAttributedNodeId = null,
   maxDomainDescendantCount,
+  domainCensus = null,
   labels,
 }: TopologyIndexTreeRowProps) {
   const { node, children } = entry;
@@ -69,7 +76,16 @@ export function TopologyIndexTreeRow({
   const fresh = changedSlugs.has(node.id);
   const agentAttributed = agentAttributedNodeId !== null && agentAttributedNodeId === node.id;
   const isDomain = node.kind === "domain";
-  const subcounts = isDomain ? computeDomainSubcounts(entry) : null;
+  const censusRow = isDomain ? (domainCensus?.get(node.id) ?? null) : null;
+  const subcounts = isDomain
+    ? censusRow
+      ? {
+          descendantCount: censusRow.total,
+          capabilityCount: censusRow.capabilityCount,
+          elementCount: censusRow.elementCount,
+        }
+      : computeDomainSubcounts(entry)
+    : null;
   const capacityRatio = subcounts
     ? computeCapacityRatio(subcounts.descendantCount, maxDomainDescendantCount)
     : 0;
@@ -187,6 +203,7 @@ export function TopologyIndexTreeRow({
               changedSlugs={changedSlugs}
               agentAttributedNodeId={agentAttributedNodeId}
               maxDomainDescendantCount={maxDomainDescendantCount}
+              domainCensus={domainCensus}
               labels={labels}
             />
           ))}
