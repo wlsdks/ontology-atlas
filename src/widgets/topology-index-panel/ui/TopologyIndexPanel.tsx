@@ -241,6 +241,20 @@ export function TopologyIndexPanel({
           type="text"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            // M-10 — Escape in the INDEX search is a search-scoped clear (the
+            // macOS workbench convention), NOT a canvas deselect. When there
+            // IS a query, rung 1 clears it + blurs and stops the keypress so
+            // the window-level topology Esc ladder doesn't ALSO deselect the
+            // node underneath on the same press. An empty field lets Escape
+            // bubble through to that ladder unchanged.
+            if (event.key === "Escape" && query.length > 0) {
+              event.preventDefault();
+              event.stopPropagation();
+              setQuery("");
+              event.currentTarget.blur();
+            }
+          }}
           placeholder={labels.searchPlaceholder}
           autoComplete="off"
           data-testid="topology-index-search"
