@@ -101,6 +101,9 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --depth N --direction outgoing --types A,B --plan --json
   npx ontology-atlas relation-check <from> <to> <type>
                                              ${COLORS.dim}schema-aware add_relation preflight${COLORS.reset}
+  npx ontology-atlas relate <from> <to> <type>
+                                             ${COLORS.green}Write a relation${COLORS.reset} — same preflight as relation-check, then lands it
+       --dry-run --json                     ${COLORS.dim}preview only · machine output${COLORS.reset}
   npx ontology-atlas query "<filter>"         Typed filter DSL (kind=X AND has(elements))
        --limit N --json                       ${COLORS.dim}default limit 100${COLORS.reset}
   npx ontology-atlas match-nodes [vault]      Graph DB-style node scan with kind/domain/degree filters

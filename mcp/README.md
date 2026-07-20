@@ -109,6 +109,43 @@ codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/vault -- npx -
 
 If `OATLAS_VAULT` is not set, the current working directory is used as the vault root.
 
+### Other MCP clients (generic stdio registration)
+
+Claude Code, Cursor, and Codex are the only clients `init`/`agent-setup` write
+config for, but **any MCP client that speaks stdio JSON-RPC can register this
+server** — opencode, a custom agent harness, or anything else. Only the
+config file's *name and location* differ; the `command` / `args` / `env`
+triple is the same shape shown in the manual snippets above, standalone:
+
+```json
+{
+  "command": "npx",
+  "args": ["-y", "ontology-atlas-mcp"],
+  "env": {
+    "OATLAS_VAULT": "/absolute/path/to/vault"
+  }
+}
+```
+
+(monorepo/source checkout: swap `"args"` for `["/absolute/path/to/mcp/src/index.js"]`
+and `"command"` for `"node"`, matching the manual Claude Code/Cursor snippet above.)
+
+Steps for a fourth client:
+
+1. Find where your client registers MCP servers (its docs likely mention
+   "MCP server", "stdio transport", or "tool provider").
+2. Register a server named `ontology-atlas` using the command/args/env above.
+   Prefer an absolute `OATLAS_VAULT` path — some clients don't spawn the
+   server from your project root, and a relative path would then resolve
+   against the wrong directory.
+3. Restart the client so it re-reads its config.
+4. Verify the registration independently of your client:
+   `npx ontology-atlas mcp-verify /absolute/path/to/vault` drives the server
+   directly through the full initialize → tools/list → tools/call lifecycle
+   and prints a pass/fail line per tool plus one verdict line — this
+   confirms the server/vault side works no matter which client you're
+   registering it with.
+
 ### Source-checkout verification
 
 When editing this MCP package from the monorepo, prefer the focused root checks

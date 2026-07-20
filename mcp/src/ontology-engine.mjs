@@ -96,6 +96,20 @@ export const WRITE_RELATION_TYPE_VALUES = Object.freeze([
   'domain',
 ]);
 const RELATION_TYPES = new Set(RELATION_TYPE_VALUES);
+// dangling-reference correction hints (reason text only, no schema impact) —
+// frontmatter key (edge.via) → the public `type` value `relate`/add_relation
+// expect. Only 'dependencies' differs from its key ('depends_on'); rest are
+// identity. Mirrors RELATION_KEY's inverse in mcp/src/index.js.
+const RELATION_TYPE_FOR_KEY = Object.freeze({
+  dependencies: 'depends_on',
+  relates: 'relates',
+  contains: 'contains',
+  describes: 'describes',
+  domains: 'domains',
+  capabilities: 'capabilities',
+  elements: 'elements',
+  domain: 'domain',
+});
 export const MAINTENANCE_PHASE_VALUES = Object.freeze(['validate', 'repair', 'link', 'materialize', 'review']);
 export const MAINTENANCE_SEVERITY_VALUES = Object.freeze(['fail', 'warn', 'info']);
 export const MAINTENANCE_KIND_VALUES = Object.freeze([
@@ -2340,25 +2354,43 @@ export function createOntologyEngine(artifact, options = {}) {
       .sort(compareEdges)
       .map((edge) => {
         const kind = inferKindFromRelation(edge.via);
+        // R+ (agent-persona-2026-07 QA #4) — typo / missing folder-prefix
+        // dangling refs (e.g. "checkout" when "domains/checkout" already
+        // exists) used to always propose add_concept regardless, which
+        // would create a duplicate node instead of fixing the reference.
+        // When an unambiguous existing-node match is found, surface it as
+        // `didYouMean` and suppress the add_concept proposal (kept `null`,
+        // same as the existing "kind could not be inferred" case) so an
+        // agent following proposedAction literally never manufactures a
+        // duplicate — `reason` carries the correction instead. `kind` /
+        // score / other fields stay on the same `resolve_dangling_reference`
+        // shape other callers (growth/maintenance renderers, contract
+        // checks) already expect.
+        const didYouMean = findNearMatchSlug(edge.ref, nodes);
         return {
           kind: 'resolve_dangling_reference',
-          score: kind ? 0.7 : 0.4,
+          score: didYouMean ? 0.85 : (kind ? 0.7 : 0.4),
           from: edge.from,
           ref: edge.ref,
           relation: edge.via,
           inferredKind: kind,
           suggestedSlug: kind ? suggestedSlugForReference(edge.ref, kind) : null,
-          reason: `Graph reference "${edge.ref}" from "${edge.from}" via "${edge.via}" does not resolve to a vault node.`,
-          proposedAction: kind
-            ? {
-                tool: 'add_concept',
-                args: {
-                  slug: suggestedSlugForReference(edge.ref, kind),
-                  kind,
-                  title: titleFromReference(edge.ref),
-                },
-              }
-            : null,
+          didYouMean: didYouMean || null,
+          reason: didYouMean
+            ? `Graph reference "${edge.ref}" from "${edge.from}" via "${edge.via}" does not resolve, but "${didYouMean}" is an existing node with a matching name — likely a missing folder prefix or typo. Fix the "${edge.via}" reference on "${edge.from}" (e.g. \`ontology-atlas relate ${edge.from} ${didYouMean} ${RELATION_TYPE_FOR_KEY[edge.via] || edge.via}\`, or edit the "domain:" field directly for a scalar reference) instead of creating a duplicate node.`
+            : `Graph reference "${edge.ref}" from "${edge.from}" via "${edge.via}" does not resolve to a vault node.`,
+          proposedAction: didYouMean
+            ? null
+            : kind
+              ? {
+                  tool: 'add_concept',
+                  args: {
+                    slug: suggestedSlugForReference(edge.ref, kind),
+                    kind,
+                    title: titleFromReference(edge.ref),
+                  },
+                }
+              : null,
           node: summarizeNode(nodeBySlug.get(edge.from)),
         };
       });
@@ -4638,6 +4670,37 @@ function topHubs(nodes, limit) {
     }))
     .sort((a, b) => b.degree - a.degree || b.inDegree - a.inDegree || a.slug.localeCompare(b.slug))
     .slice(0, limit);
+}
+
+/**
+ * dangling ref (`ref`) 가 실은 기존 vault 노드를 가리키려던 typo/누락-prefix
+ * 인지 검사 — persona-2026-07 QA 로그의 실제 버그 (`domain: checkout` 인데
+ * `domains/checkout` 가 이미 존재) 를 잡기 위한 최소 구현. tail(마지막 segment)
+ * 정확 일치를 최우선으로, 없으면 tail prefix 일치를 본다. 후보가 둘 이상이면
+ * (모호) null — 잘못된 단정 fix 를 제안하지 않는다. mcp/src/vault.mjs 의
+ * suggestSimilarSlugs 와 같은 tiering 아이디어를 in-memory nodes 에 맞춰 재사용.
+ */
+function findNearMatchSlug(ref, nodes) {
+  const raw = String(ref || '').trim();
+  if (!raw) return null;
+  const lowerRaw = raw.toLowerCase();
+  const exactTail = [];
+  const prefixTail = [];
+  for (const node of nodes) {
+    const slug = node.slug;
+    if (slug === raw) continue; // already resolves — wouldn't be dangling
+    const tail = (slug.split('/').pop() || slug).toLowerCase();
+    if (tail === lowerRaw) {
+      exactTail.push(slug);
+      continue;
+    }
+    if (tail.startsWith(lowerRaw) || lowerRaw.startsWith(tail)) {
+      prefixTail.push(slug);
+    }
+  }
+  if (exactTail.length === 1) return exactTail[0];
+  if (exactTail.length === 0 && prefixTail.length === 1) return prefixTail[0];
+  return null;
 }
 
 function suggestedSlugForReference(ref, kind) {

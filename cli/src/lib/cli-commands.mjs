@@ -24,6 +24,7 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
   'all-paths': runner('all-paths.mjs', 'runAllPaths'),
   reachability: runner('reachability.mjs', 'runReachability'),
   'relation-check': runner('relation-check.mjs', 'runRelationCheck'),
+  relate: runner('relate.mjs', 'runRelate'),
   overview: runner('overview.mjs', 'runOverview'),
   hubs: runner('hubs.mjs', 'runHubs'),
   'blast-radius': runner('blast-radius.mjs', 'runBlastRadius'),
