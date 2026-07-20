@@ -1347,6 +1347,11 @@
        전파해 스프링처럼 뒤따라오게 한다(`interaction/drag-tug.ts`). */
     --topology-v2-drag-tug-1hop: 0.45;
     --topology-v2-drag-tug-2hop: 0.15;
+    /* 견인 영향 반경(월드 단위). 홉 수만으로는 "가깝다"를 판정할 수 없다 —
+       허브-스포크 vault 는 모든 노드가 2홉 안이라 홉 규칙만으로는 지도 전체가
+       딸려 움직였다. 레이아웃 링(도메인 250 + 역량 145 ≈ 395)을 감싸 잡은
+       노드의 클러스터는 탄력을 유지하고, 그 밖은 정확히 0 으로 정지시킨다. */
+    --topology-v2-drag-tug-radius: 600;
 
     /* 2.5 안전 영역 (fixed chrome inset — px, canvas 2D 가 숫자로 소비)
        좌측 ReaderLens 분석 패널 + 우측 팝오버 레일 + 상단 유틸리티 레인 +

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { computeDragTugSets, stepTugAxis, tugFactorForHop } from "./drag-tug";
+import { computeDragTugSets, stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "./drag-tug";
 
 /**
  * C1 B1 — local spring tug during node drag. Audit finding: FA2's global relax
@@ -25,6 +25,47 @@ describe("tugFactorForHop", () => {
     expect(dragged).toBeGreaterThan(oneHop);
     expect(oneHop).toBeGreaterThan(twoHop);
     expect(twoHop).toBeGreaterThan(rest);
+  });
+});
+
+/**
+ * Distance falloff — the hop factors above say WHO may be tugged, this says HOW
+ * MUCH given how far away they actually sit. Hop count alone is a poor proxy
+ * for "near": in a hub-and-spoke vault every node is within 2 hops, so the
+ * measured symptom was that dragging one node visibly dragged the entire map
+ * (a 900-unit-away node moved ~58px on a 430px drag). Compact support means
+ * far nodes are exactly still, not just slightly moved.
+ */
+describe("tugFalloffForDistance", () => {
+  const RADIUS = 600;
+
+  it("is full strength at the grab point and exactly zero at/beyond the radius", () => {
+    expect(tugFalloffForDistance(0, RADIUS)).toBe(1);
+    expect(tugFalloffForDistance(RADIUS, RADIUS)).toBe(0);
+    expect(tugFalloffForDistance(RADIUS * 2, RADIUS)).toBe(0);
+  });
+
+  it("decays monotonically across the radius", () => {
+    const samples = [0, 100, 200, 300, 400, 500, 600].map((d) => tugFalloffForDistance(d, RADIUS));
+    for (let i = 1; i < samples.length; i += 1) {
+      expect(samples[i]).toBeLessThan(samples[i - 1]);
+    }
+  });
+
+  it("keeps the grabbed node's own cluster clearly elastic", () => {
+    // Layout rings: element 90 / capability 145 / domain 250 from their parent.
+    expect(tugFalloffForDistance(90, RADIUS)).toBeGreaterThan(0.85);
+    expect(tugFalloffForDistance(145, RADIUS)).toBeGreaterThan(0.75);
+    expect(tugFalloffForDistance(250, RADIUS)).toBeGreaterThan(0.5);
+  });
+
+  it("eases out rather than cutting off — no visible pop at the boundary", () => {
+    expect(tugFalloffForDistance(RADIUS * 0.95, RADIUS)).toBeLessThan(0.02);
+  });
+
+  it("treats a non-positive radius as 'no tug' instead of dividing by zero", () => {
+    expect(tugFalloffForDistance(10, 0)).toBe(0);
+    expect(tugFalloffForDistance(10, -5)).toBe(0);
   });
 });
 
