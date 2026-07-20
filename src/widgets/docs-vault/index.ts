@@ -5,8 +5,6 @@ export { DocsVaultEditor } from './ui/DocsVaultEditor';
 export { DocsVaultUnifiedPalette } from './ui/DocsVaultUnifiedPalette';
 export type { VaultCommand } from './model/command';
 export { DocsVaultBacklinks } from './ui/DocsVaultBacklinks';
-export { DocsVaultFolderTopology } from './ui/DocsVaultFolderTopology';
-export { DocsVaultProjectDepsBar } from './ui/DocsVaultProjectDepsBar';
 export { searchDocs } from './lib/search';
 export type { DocsSearchMatch } from './lib/search';
 export {

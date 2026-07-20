@@ -52,6 +52,8 @@ import {
   type VaultRelationKey,
   type VaultRelationProposal,
 } from "../lib/relation-proposal";
+import { buildFocusedBuilderManifest } from "../lib/build-focused-builder-manifest";
+import { shouldShowFocusedCensus } from "../lib/builder-census-label";
 import { resolveBuilderQueryNodeSlug } from "../lib/resolve-builder-query-node";
 import { resolveBuilderShortcut } from "../lib/resolve-builder-shortcut";
 import {
@@ -436,6 +438,25 @@ export function OntologyEditPage() {
     }
     return { persistedNodes, persistedRelations };
   }, [effectiveManifest]);
+  // P5d (N11) — 헤더 census 와 캔버스 표시 수 불일치 원인: `OntologyEditCanvas`
+  // 가 `buildFocusedBuilderManifest` 로 캔버스를 focus 노드 + 직접 이웃만
+  // 그리는 반면(대형 vault 성능/가독성을 위한 의도된 축소), 헤더는 항상
+  // vault 전체 총계를 보여준다 — "저장된 개념 128개" 를 보고 캔버스에 12개만
+  // 보이면 버그처럼 읽힌다(페르소나 N11). 같은 순수 함수를 여기서도 호출해
+  // "캔버스에 N개 표시" 를 census 옆에 정직하게 병기한다 — Canvas 내부
+  // focus 로직 자체는 건드리지 않는다(성능 축소는 유지, 라벨만 정직화).
+  const focusedCensusManifest = useMemo(
+    () => buildFocusedBuilderManifest(effectiveManifest, focusNodeId ?? selectedId),
+    [effectiveManifest, focusNodeId, selectedId],
+  );
+  const shownNodeCount = useMemo(() => {
+    if (!focusedCensusManifest.isFocused) return builderGraphStats.persistedNodes;
+    let count = 0;
+    for (const doc of focusedCensusManifest.manifest.docs) {
+      if (typeof doc.frontmatter.kind === "string" && doc.frontmatter.kind) count += 1;
+    }
+    return count;
+  }, [focusedCensusManifest, builderGraphStats.persistedNodes]);
   // builderEntryAnchors 는 위(초기 selectedId/focusNodeId state 근처)로 이동.
   const focusBuilderAnchor = useCallback((id: string) => {
     setSelectedId(id);
@@ -1165,10 +1186,15 @@ export function OntologyEditPage() {
           에서 숨던 것과 동일 원칙, 레일 DOM identity 는 유지). 레일은
           desktop(lg+) 전용이라 모바일 영향 없음(BottomTabBar 담당). */}
       <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
-        {/* ⇧⌘K — 큰 ontology 에서 노드 빠른 점프. 선택 시 인스펙터에서 즉시
-            편집 가능. fullscreen 모드에선 hotkey 도 작동 (캔버스에 mount). */}
+        {/* P5d (N9) — ⌘K 로 큰 ontology 에서 노드 빠른 점프. 선택 시
+            인스펙터에서 즉시 편집 가능. fullscreen 모드에선 hotkey 도 작동
+            (캔버스에 mount). 예전엔 ⇧⌘K 였다 — 그 shift 분기는 홈
+            토폴로지가 프로젝트 전용 `SearchPalette` 와 plain ⌘K 를 나눠
+            갖기 위한 것(use-global-search-hotkey.ts 주석)인데, 빌더엔 그
+            경쟁 바인딩이 없어 앱 전역 관례(문서함/토폴로지 ⌘K)와 어긋나는
+            미작동으로 읽혔다(페르소나 N9). resolveBuilderShortcut 의
+            P/D/C/E 단축키도 metaKey 조합은 무시하므로 충돌 없음. */}
         <MountedGlobalSearch
-          hotkeyShift
           onSelectNode={(node) => {
             openNodeDetails(node.id);
           }}
@@ -1215,10 +1241,20 @@ export function OntologyEditPage() {
               data-token="engraved-numeral"
               className="hidden font-mono text-[10.5px] tracking-[0.06em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] sm:inline"
             >
-              {t("headerCensus", {
-                nodes: builderGraphStats.persistedNodes,
-                relations: builderGraphStats.persistedRelations,
-              })}
+              {shouldShowFocusedCensus({
+                isFocused: focusedCensusManifest.isFocused,
+                shownCount: shownNodeCount,
+                totalCount: builderGraphStats.persistedNodes,
+              })
+                ? t("headerCensusFocused", {
+                    nodes: builderGraphStats.persistedNodes,
+                    relations: builderGraphStats.persistedRelations,
+                    shown: shownNodeCount,
+                  })
+                : t("headerCensus", {
+                    nodes: builderGraphStats.persistedNodes,
+                    relations: builderGraphStats.persistedRelations,
+                  })}
             </span>
             <Tooltip content={helpTooltip} withProvider={false}>
               <span

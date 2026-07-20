@@ -913,6 +913,7 @@
         "headerBreadcrumbBackAriaLabel": "Back to the map",
         "headerCurrentLabel": "Builder",
         "headerCensus": "{nodes} saved concepts · {relations} relations",
+        "headerCensusFocused": "{nodes} saved concepts · {relations} relations · {shown} shown on canvas",
         "headerDirtyClean": "No unsaved changes",
         "headerDirtyStatus": "Unsaved changes · {nodes} draft concepts · {edges} relations",
         "headerOverflowLabel": "More",
@@ -1379,7 +1380,7 @@
         "ephemeralEdgeSaveLabel": "Save",
         "ephemeralEdgeSaveAria": "Save this relation to the vault",
         "ephemeralEdgeSaveTooltip": "Save this relation. Unsaved nodes are saved first.",
-        "emptyHint": "A canvas for creating concept cards and connecting them — pick a kind on the left to make your first one.",
+        "emptyHint": "A canvas for creating concept cards and connecting them — pick a kind on the left to make your first one, or press P/D/C/E to add one instantly.",
         "minimapAriaLabel": "Canvas minimap — click/drag to navigate",
         "edgeLabels": {
           "capabilities": "capability",
@@ -1795,7 +1796,15 @@
       "ariaLabel": "Frontmatter graph fields",
       "collapsedSummary": "{count} fields",
       "expandAria": "Expand document properties",
-      "collapseAria": "Collapse document properties"
+      "collapseAria": "Collapse document properties",
+      "editAction": "Edit kind / domain / title",
+      "editKindLabel": "Kind",
+      "editDomainLabel": "Domain",
+      "editDomainNone": "None",
+      "editTitleLabel": "Title",
+      "editSave": "Save",
+      "editSaving": "Saving…",
+      "editCancel": "Cancel"
     },
     "readingAids": {
       "backToTop": "Back to top",
@@ -1883,7 +1892,6 @@
       "closeTitle": "Close (Esc)"
     },
     "advanced": {
-      "viewTopology": "Topology",
       "sourceServer": "Sample",
       "sourceLocal": "Local",
       "ontologyHintPrefix": "First time? Try selecting this repo's ",
@@ -2052,21 +2060,10 @@
       "title": "Document list",
       "closeAriaLabel": "Close document list"
     },
-    "topology": {
-      "addProjectTitle": "Add new project .md (projects/{slug}.md)",
-      "addProjectLabel": "Project",
-      "emptyTitle": "This vault has no `projects/` yet",
-      "emptyBody": "Auto-generate the Folder-Topology file structure (projects/_.md, categories.md, statuses.md) and the topology will show up. Existing files are not overwritten.",
-      "scaffoldCta": "Initialize this folder as a topology vault",
-      "needEditPermission": "Edit permission required (local vault)"
-    },
     "commands": {
       "openPalette": "Open palette (search · commands · tags)",
       "findTags": "Find tags",
       "viewDoc": "View · Document",
-      "viewFolderTopology": "View · Folder topology (projects/*.md)",
-      "scaffoldTopology": "Initialize this folder as a topology vault",
-      "createProject": "Add new project (projects/…md)",
       "sourceServer": "Source · Sample vault",
       "sourceLocal": "Source · Local PC folder",
       "pinDoc": "Pin this doc",
@@ -2076,49 +2073,38 @@
       "print": "Print · Save as PDF",
       "edit": "Edit this file",
       "newDoc": "Create new doc",
-      "dailyNote": "Today's note (daily/YYYY-MM-DD)",
       "rename": "Rename this doc (slug/path)",
       "insertToc": "Insert table of contents",
       "deleteDoc": "Delete this doc",
       "exportDocHtml": "Save current doc as HTML",
-      "exportVault": "Export vault backup (JSON)",
-      "importVault": "Import vault backup (JSON)",
       "localRefresh": "Rescan local vault",
       "localClose": "Close local vault",
       "clearTagFilter": "Clear tag filter",
       "projectsList": "Go to projects list"
     },
+    "newDocDialog": {
+      "title": "New document",
+      "subtitle": "Pick what kind of node this document is — the vault folder and starter frontmatter follow the kind.",
+      "cancel": "Cancel"
+    },
     "dialog": {
       "deleteConfirm": "Really delete?\n\n{title}\n{slug}.md\n\nThis cannot be undone.",
       "deleteFailed": "Delete failed: {message}",
-      "createProjectPrompt": "New project slug (letters · digits · hyphens):",
-      "invalidSlug": "Not a valid slug.",
-      "alreadyExists": "Already exists: {slug}",
+      "invalidSlug": "Not a valid title.",
       "createFailed": "Create failed: {message}",
-      "scaffoldConfirm": "Initialize this folder as a Folder-Topology vault?\n\n- projects/ directory + 2 sample projects\n- categories.md · statuses.md default sets\n- README.md\n\nExisting files are not overwritten.",
-      "scaffoldDone": "Initialization complete — {created} new files · {skipped} skipped\n\nOpen the freshly generated README.md first. The starter also writes .mcp.json and .codex/config.toml so Claude Code, Cursor, or Codex can attach to this vault folder.",
-      "scaffoldFailed": "Initialization failed: {message}",
       "ontologyStarterDone": "Ontology starter created — {created} new files · {skipped} skipped. Opening README.md.",
       "agentVerifyPromptCopied": "Agent verification prompt copied",
       "agentVerifyPromptCopyFailed": "Could not copy agent verification prompt",
-      "dailyNoteFailed": "Daily note creation failed: {message}",
-      "dailyNoteTasksHeading": "Tasks",
-      "dailyNoteMemoHeading": "Notes",
       "tocHeading": "Contents",
       "noHeadings": "This document has no h2/h3 headings.",
       "notLocalFile": "This document is not a local vault file.",
       "tocFailed": "TOC insertion failed: {message}",
       "vaultConflict": "This vault file was modified externally (other editor / AI). Refresh and save again.",
       "notRendered": "Document is not rendered yet. Try again.",
-      "jsonParseFailed": "JSON parse failed: {message}",
-      "noValidRaws": "No valid `raws` field.",
-      "importOverwriteConfirm": "{count} documents already exist in the vault.\n\nYes = Overwrite (saveDoc)\nNo = Skip duplicates\n\nProceed?",
-      "importDone": "Import complete — new {created} · overwritten {updated} · skipped {skipped}",
       "renamePrompt": "New slug (without extension):",
       "renameAlreadyExists": "Document already exists: {slug}",
       "renameFailed": "Rename failed: {message}",
-      "newDocPrompt": "New document path (slug, no extension):",
-      "createProjectBodyPlaceholder": "Write a project description here."
+      "newDocTitlePrompt": "Title for the new document:"
     }
   },
   "topology": {

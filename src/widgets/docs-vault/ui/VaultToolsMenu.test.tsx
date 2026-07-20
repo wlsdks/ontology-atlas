@@ -84,9 +84,6 @@ function renderMenu(
   const localVault = makeLocalVault(overrides);
   render(
     <VaultToolsMenu
-      view="doc"
-      onViewChange={vi.fn()}
-      folderTopoStatus="idle"
       canEditCurrent
       localVault={localVault}
       validationSummary={props.validationSummary ?? null}
@@ -471,9 +468,6 @@ describe('VaultToolsMenu', () => {
     });
     render(
       <VaultToolsMenu
-        view="doc"
-        onViewChange={vi.fn()}
-        folderTopoStatus="idle"
         canEditCurrent
         localVault={localVault}
         validationSummary={null}

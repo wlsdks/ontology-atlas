@@ -913,6 +913,7 @@
         "headerBreadcrumbBackAriaLabel": "지도로 돌아가기",
         "headerCurrentLabel": "빌더",
         "headerCensus": "저장된 개념 {nodes}개 · 관계 {relations}개",
+        "headerCensusFocused": "저장된 개념 {nodes}개 · 관계 {relations}개 · 캔버스 {shown}개 표시",
         "headerDirtyClean": "미저장 변경 없음",
         "headerDirtyStatus": "미저장 변경 · 임시 개념 {nodes} · 관계 {edges}",
         "headerOverflowLabel": "더보기",
@@ -1379,7 +1380,7 @@
         "ephemeralEdgeSaveLabel": "저장",
         "ephemeralEdgeSaveAria": "이 관계를 vault 에 저장",
         "ephemeralEdgeSaveTooltip": "이 관계를 저장합니다. 미저장 노드가 있으면 함께 저장됩니다.",
-        "emptyHint": "개념 카드를 만들고 서로 연결하는 캔버스예요 — 왼쪽에서 종류를 골라 첫 카드를 만들어보세요.",
+        "emptyHint": "개념 카드를 만들고 서로 연결하는 캔버스예요 — 왼쪽에서 종류를 골라 첫 카드를 만들거나, 단축키 P/D/C/E 로 바로 추가할 수 있어요.",
         "minimapAriaLabel": "캔버스 미니맵 — 클릭/드래그로 빠른 이동",
         "edgeLabels": {
           "capabilities": "역량",
@@ -1795,7 +1796,15 @@
       "ariaLabel": "프론트매터 그래프 필드",
       "collapsedSummary": "속성 {count}개",
       "expandAria": "문서 속성 펼치기",
-      "collapseAria": "문서 속성 접기"
+      "collapseAria": "문서 속성 접기",
+      "editAction": "kind / domain / title 수정",
+      "editKindLabel": "Kind",
+      "editDomainLabel": "Domain",
+      "editDomainNone": "없음",
+      "editTitleLabel": "Title",
+      "editSave": "저장",
+      "editSaving": "저장 중…",
+      "editCancel": "취소"
     },
     "readingAids": {
       "backToTop": "맨 위로",
@@ -1883,7 +1892,6 @@
       "closeTitle": "닫기 (Esc)"
     },
     "advanced": {
-      "viewTopology": "토폴로지",
       "sourceServer": "샘플",
       "sourceLocal": "로컬",
       "ontologyHintPrefix": "처음이세요? 이 repo 의 ",
@@ -2052,21 +2060,10 @@
       "title": "문서 목록",
       "closeAriaLabel": "문서 목록 닫기"
     },
-    "topology": {
-      "addProjectTitle": "새 프로젝트 .md 추가 (projects/{slug}.md)",
-      "addProjectLabel": "프로젝트",
-      "emptyTitle": "이 볼트엔 아직 `projects/` 가 없어요",
-      "emptyBody": "Folder-Topology 규격 파일 구조 (projects/_.md, categories.md, statuses.md) 를 자동 생성하면 바로 토폴로지가 보여요. 이미 있는 파일은 덮어쓰지 않습니다.",
-      "scaffoldCta": "이 폴더를 토폴로지 볼트로 초기화",
-      "needEditPermission": "편집 권한이 필요합니다 (로컬 볼트)"
-    },
     "commands": {
       "openPalette": "팔레트 열기 (검색 · 명령 · 태그)",
       "findTags": "태그 찾기",
       "viewDoc": "뷰 · 문서 보기",
-      "viewFolderTopology": "뷰 · 프로젝트 지형도 (projects/*.md)",
-      "scaffoldTopology": "이 폴더를 지형도용 볼트로 초기화",
-      "createProject": "새 프로젝트 추가 (projects/…md)",
       "sourceServer": "샘플 문서함 보기",
       "sourceLocal": "내 PC 문서함 열기",
       "pinDoc": "이 문서 고정",
@@ -2076,49 +2073,38 @@
       "print": "인쇄 · PDF 로 저장",
       "edit": "이 파일 편집",
       "newDoc": "새 문서 만들기",
-      "dailyNote": "오늘의 노트 (daily/YYYY-MM-DD)",
       "rename": "이 문서 이름 변경 (slug/경로)",
       "insertToc": "현재 문서에 목차 삽입",
       "deleteDoc": "이 문서 삭제",
       "exportDocHtml": "현재 문서 HTML 로 저장",
-      "exportVault": "볼트 백업 내보내기 (JSON)",
-      "importVault": "볼트 복원 불러오기 (JSON)",
       "localRefresh": "로컬 볼트 다시 스캔",
       "localClose": "로컬 볼트 닫기",
       "clearTagFilter": "태그 필터 해제",
       "projectsList": "프로젝트 목록으로 이동"
     },
+    "newDocDialog": {
+      "title": "새 문서",
+      "subtitle": "이 문서가 어떤 kind 의 노드인지 먼저 고르세요 — vault 폴더와 시작 frontmatter 가 kind 를 따라갑니다.",
+      "cancel": "취소"
+    },
     "dialog": {
       "deleteConfirm": "정말 삭제할까요?\n\n{title}\n{slug}.md\n\n이 작업은 되돌릴 수 없습니다.",
       "deleteFailed": "삭제 실패: {message}",
-      "createProjectPrompt": "새 프로젝트 slug (영문·숫자·하이픈):",
-      "invalidSlug": "유효한 slug 가 아닙니다.",
-      "alreadyExists": "이미 존재: {slug}",
+      "invalidSlug": "유효한 제목이 아닙니다.",
       "createFailed": "생성 실패: {message}",
-      "scaffoldConfirm": "이 폴더를 Folder-Topology 규격으로 초기화할까요?\n\n- projects/ 디렉터리 + sample 2개 프로젝트\n- categories.md · statuses.md 기본 세트\n- README.md\n\n이미 존재하는 파일은 덮어쓰지 않습니다.",
-      "scaffoldDone": "초기화 완료 — 새 파일 {created}개 · 스킵 {skipped}개\n\n방금 생성된 README.md 를 먼저 열어보세요. starter 는 .mcp.json 과 .codex/config.toml 도 함께 만들어 Claude Code, Cursor, Codex 가 이 vault 폴더에 바로 붙을 수 있게 합니다.",
-      "scaffoldFailed": "초기화 실패: {message}",
       "ontologyStarterDone": "ontology starter 생성 완료 — 새 파일 {created}개 · 스킵 {skipped}개. README.md 를 엽니다.",
       "agentVerifyPromptCopied": "agent 검증 프롬프트 복사됨",
       "agentVerifyPromptCopyFailed": "agent 검증 프롬프트를 복사하지 못했습니다",
-      "dailyNoteFailed": "daily note 생성 실패: {message}",
-      "dailyNoteTasksHeading": "할 일",
-      "dailyNoteMemoHeading": "메모",
       "tocHeading": "목차",
       "noHeadings": "h2/h3 heading 이 없는 문서입니다.",
       "notLocalFile": "이 문서는 로컬 볼트 파일이 아닙니다.",
       "tocFailed": "TOC 삽입 실패: {message}",
       "vaultConflict": "vault 의 이 파일이 외부 (다른 에디터/AI) 에 의해 변경됐습니다. 새로 고침 후 다시 저장해주세요.",
       "notRendered": "문서가 아직 렌더링되지 않았습니다. 다시 시도하세요.",
-      "jsonParseFailed": "JSON 파싱 실패: {message}",
-      "noValidRaws": "유효한 raws 필드가 없습니다.",
-      "importOverwriteConfirm": "{count}개 문서가 이미 볼트에 존재합니다.\n\n예 = 덮어쓰기 (saveDoc)\n아니오 = 새 이름으로 건너뛰기 (중복은 스킵)\n\n진행할까요?",
-      "importDone": "Import 완료 — 신규 {created} · 덮어씀 {updated} · 건너뜀 {skipped}",
       "renamePrompt": "새 slug (확장자 없이):",
       "renameAlreadyExists": "이미 존재하는 문서입니다: {slug}",
       "renameFailed": "이름 변경 실패: {message}",
-      "newDocPrompt": "새 문서 경로 (slug, 확장자 없이):",
-      "createProjectBodyPlaceholder": "프로젝트 설명을 여기에 써주세요."
+      "newDocTitlePrompt": "새 문서의 제목:"
     }
   },
   "topology": {

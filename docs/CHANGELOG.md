@@ -6,6 +6,60 @@
 
 ---
 
+## 2026-07-21 — 판정·입력 표면: 문서함 절삭 3건 · frontmatter 판정 액션 · kind-first 새 문서 · 빌더 입력기 3종 (P5)
+
+근거: `.qa-scratch/docs-identity-2026-07/verdict.md` (문서함 = 의미 편집실
+판정) + 페르소나 N7/N9/N11.
+
+**5a — 절삭 3건** (제3그래프 어휘/온톨로지 가치 0 인 옵시디언 클론 기능
+제거):
+- **데일리 노트** — `daily/YYYY-MM-DD` 명령·템플릿·핸들러 제거. kind 없는
+  고아 문서를 양산해 성장/유지보수 큐에 잡음이었다.
+- **folder-topology 일습** — `/docs` 의 Sigma 미니맵 뷰(`DocsVaultFolderTopology`,
+  `folder-topology-theme.ts`), scaffold topology, "+ 프로젝트" 버튼,
+  드래그 위치의 `positionX/Y` frontmatter 저장, `DocsVaultProjectDepsBar`
+  (dependencies 인라인 편집) 모두 제거. `projects/*.md` 의
+  `category/status/dependencies` 어휘가 온톨로지 kind 스키마와 경쟁하는
+  제3 진실원이었다 — 지도(`/topology`)와 빌더가 이미 canonical 그래프를
+  소유한다.
+- **vault JSON import/export** — 볼트 전체를 JSON 번들로 내보내기/가져오기
+  하는 명령 제거. git 이 이미 진실원이자 포터빌리티(신뢰 헌장 ④ "평문
+  마크다운 포터빌리티")를 담당하므로 별도 직렬화 포맷은 두 번째 진실원.
+  (문서 단건 HTML export/print 는 공유용이라 유지.)
+
+**5b — frontmatter 판정 액션** (`DocFrontmatterBlock`): 쓰기 가능한 로컬
+vault 에서 "kind / domain / title 수정" 이 프론트매터 블록에서 바로
+가능해졌다. kind·domain 은 typed `<select>`(domain 은 vault 의
+`kind: domain` 문서 목록에서 고름), title 은 인라인 입력 — raw YAML
+손편집 없이 에이전트가 잘못 지정한 필드를 그 자리에서 고친다. 저장은
+빌더의 relation preflight 가 이미 쓰는 `updateFrontmatter` conflict-guard
+경로를 그대로 재사용(선행 조사 결과 이 로직은 이미 `entities/docs-vault`
+로 강등돼 있었다 — 별도 리팩터 불필요).
+
+**5c — kind-first 새 문서**: "새 문서" 명령이 generic `title:` 템플릿
+대신 kind 선택(도메인/역량/요소/문서)을 먼저 받는다(`NewDocKindDialog`).
+`buildNewNodeDoc`(토폴로지 "노드 생성"·빌더와 공유)이 kind 별 vault
+폴더에 normalized frontmatter 로 저장 — 문서함에서 만든 문서도 태어나는
+순간부터 그래프 노드다.
+
+**5d — 빌더 입력기 3종**:
+- **N7** — 빈 캔버스 힌트가 "왼쪽에서 종류를 고르세요" 만 말하고
+  `P/D/C/E` 단축키는 무언급이었다(단축키를 우연히 발견한 페르소나가
+  중앙에 쌓이는 임시 노드에 당황). 힌트 카피에 단축키 병기. 연타 시
+  겹치지 않는 24px 오프셋(`useEphemeralNodes`)은 이미 구현돼 있었다 —
+  누락은 안내뿐이었다.
+- **N9** — 빌더의 전역 검색이 `⇧⌘K` 였다(앱 전역 관례는 `⌘K`). 그 shift
+  분기는 홈 토폴로지가 프로젝트 전용 `SearchPalette` 와 겹치지 않기
+  위한 것인데, 빌더엔 그 경쟁 바인딩이 없어 그냥 관례 이탈이었다. 평범한
+  `⌘K` 로 교정.
+- **N11** — 헤더 census("저장된 개념 N개")가 vault 전체 총계인 반면 캔버스는
+  `buildFocusedBuilderManifest` 가 포커스 노드 + 직접 이웃만 그리는
+  의도된 축소라 "128개 저장 · 캔버스엔 12개만" 이 버그처럼 읽혔다. 축소가
+  실제로 총계보다 작을 때만 "· 캔버스 N개 표시" 를 병기(`shouldShowFocusedCensus`)
+  — 포커스 로직 자체는 안 건드리고 라벨만 정직화.
+
+---
+
 ## 2026-07-21 — 관계 근거(why) 스키마 (P6)
 
 관계는 이제 "왜"를 가질 수 있다: `relation_notes: {ref: 근거 한 줄}`.
