@@ -37,7 +37,7 @@ describe("BuilderWriteConfirmBar", () => {
     renderBar();
 
     const previewButton = screen.getByRole("button", {
-      name: "쓰기 전 변경 사항 dry-run 미리보기 열기",
+      name: "저장 상태 패널 열기 — 변경 예정 파일과 dry-run 명령 확인",
     });
     expect(previewButton.className).not.toContain(
       "bg-[color:var(--color-indigo-brand)]",
@@ -50,7 +50,7 @@ describe("BuilderWriteConfirmBar", () => {
     const onWrite = vi.fn();
     renderBar({ onDryRun, onWrite });
 
-    screen.getByRole("button", { name: "쓰기 전 변경 사항 dry-run 미리보기 열기" }).click();
+    screen.getByRole("button", { name: "저장 상태 패널 열기 — 변경 예정 파일과 dry-run 명령 확인" }).click();
     expect(onDryRun).toHaveBeenCalledTimes(1);
 
     screen.getByRole("button", { name: "지금 vault 에 쓸 변경 없음" }).click();
@@ -64,7 +64,7 @@ describe("BuilderWriteConfirmBar", () => {
       screen.getByRole("button", { name: "지금 vault 에 쓸 변경 없음" }),
     ).toBeDisabled();
     expect(
-      screen.getByRole("button", { name: "쓰기 전 변경 사항 dry-run 미리보기 열기" }),
+      screen.getByRole("button", { name: "저장 상태 패널 열기 — 변경 예정 파일과 dry-run 명령 확인" }),
     ).not.toBeDisabled();
   });
 });

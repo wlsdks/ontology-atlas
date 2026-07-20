@@ -923,8 +923,8 @@
         "writeConfirmBar": {
           "ariaLabel": "Write-confirm bar",
           "label": "Write confirm",
-          "dryRunButton": "Preview dry-run",
-          "dryRunAriaLabel": "Open a dry-run preview of pending changes",
+          "dryRunButton": "Open save review",
+          "dryRunAriaLabel": "Open the save-status panel — pending files and the dry-run command",
           "writeButton": "Write to vault",
           "writeAriaLabelRelation": "Write {source} → {target} relation to vault",
           "writeAriaLabelDraft": "Save {title} to vault",

@@ -923,8 +923,8 @@
         "writeConfirmBar": {
           "ariaLabel": "쓰기 확인 바",
           "label": "쓰기 확인",
-          "dryRunButton": "dry-run 미리보기",
-          "dryRunAriaLabel": "쓰기 전 변경 사항 dry-run 미리보기 열기",
+          "dryRunButton": "저장 점검 열기",
+          "dryRunAriaLabel": "저장 상태 패널 열기 — 변경 예정 파일과 dry-run 명령 확인",
           "writeButton": "vault 에 쓰기",
           "writeAriaLabelRelation": "{source} → {target} 관계를 vault 에 쓰기",
           "writeAriaLabelDraft": "{title} 을 vault 에 저장",

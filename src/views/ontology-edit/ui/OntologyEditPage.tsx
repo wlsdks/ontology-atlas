@@ -54,6 +54,7 @@ import {
 } from "../lib/relation-proposal";
 import { buildFocusedBuilderManifest } from "../lib/build-focused-builder-manifest";
 import { shouldShowFocusedCensus } from "../lib/builder-census-label";
+import { findFreeSpawnPosition } from "../lib/find-free-spawn-position";
 import { resolveBuilderQueryNodeSlug } from "../lib/resolve-builder-query-node";
 import { resolveBuilderShortcut } from "../lib/resolve-builder-shortcut";
 import {
@@ -108,6 +109,10 @@ const OntologyEditCanvas = dynamic<{
   ephemeralEdges: ReturnType<typeof useEphemeralEdges>["edges"];
   onSelectionChange?: (selectedId: string | null) => void;
   onNodeOpen?: (selectedId: string) => void;
+  onEdgeOpen?: (edge: { source: string; target: string }) => void;
+  onNodeBoxesChange?: (
+    boxes: Array<{ x: number; y: number; width: number; height: number }>,
+  ) => void;
   onConnect?: (connection: import("@xyflow/react").Connection) => void;
   onVaultConnect?: (
     sourceSlug: string,
@@ -192,14 +197,41 @@ export function OntologyEditPage() {
 
   const { nodes: ephemeralNodes, addNode: addNodeRaw, clearAll, updateNode, findById, removeNode } =
     useEphemeralNodes();
+  // B-2 — 캔버스가 보고한 현재 노드 bbox 최신값. ref 라 재렌더 없음.
+  const nodeBoxesRef = useRef<
+    Array<{ x: number; y: number; width: number; height: number }>
+  >([]);
+  const handleNodeBoxesChange = useCallback(
+    (boxes: Array<{ x: number; y: number; width: number; height: number }>) => {
+      nodeBoxesRef.current = boxes;
+    },
+    [],
+  );
   // ephemeral 노드의 kindLabel / placeholder 도 locale 별로 caller 가
   // 미리 만들어 hook 에 주입 — hook 자체는 i18n 무지.
   const addNode = useCallback(
-    (kind: 'project' | 'domain' | 'capability' | 'element') =>
-      addNodeRaw(kind, {
+    (kind: 'project' | 'domain' | 'capability' | 'element') => {
+      // B-2 — 고정 좌표 스폰은 기존 노드를 덮었다. 현재 노드들의 중심 근처
+      // 빈 자리를 찾아 겹치지 않게 앉힌다. 빈 캔버스면 중심 기본값(240,160).
+      const boxes = nodeBoxesRef.current;
+      const center =
+        boxes.length > 0
+          ? {
+              x:
+                boxes.reduce((sum, b) => sum + b.x + b.width / 2, 0) / boxes.length -
+                98,
+              y:
+                boxes.reduce((sum, b) => sum + b.y + b.height / 2, 0) / boxes.length -
+                28,
+            }
+          : { x: 240, y: 160 };
+      const position = findFreeSpawnPosition({ boxes, center });
+      return addNodeRaw(kind, {
         kindLabel: tKinds(kind),
         defaultTitle: t('untitledPlaceholder'),
-      }),
+        position,
+      });
+    },
     [addNodeRaw, tKinds, t],
   );
   const {
@@ -251,6 +283,9 @@ export function OntologyEditPage() {
     () => false,
   );
   const [detailsOpen, setDetailsOpen] = useState(false);
+  // B-3 — 저장된 엣지 클릭 시 증가. 인스펙터가 이 토큰을 보고 관계 탭으로
+  // 포커스한다(기존 관계를 편집할 진입로). 노드 선택과 별개의 신호.
+  const [relationsFocusToken, setRelationsFocusToken] = useState(0);
   const [anchorsOpen, setAnchorsOpen] = useState(false);
   const [anchorRailOpen, setAnchorRailOpen] = useState(false);
   const [writeSummaryOpen, setWriteSummaryOpen] = useState(false);
@@ -450,13 +485,20 @@ export function OntologyEditPage() {
     [effectiveManifest, focusNodeId, selectedId],
   );
   const shownNodeCount = useMemo(() => {
-    if (!focusedCensusManifest.isFocused) return builderGraphStats.persistedNodes;
-    let count = 0;
-    for (const doc of focusedCensusManifest.manifest.docs) {
-      if (typeof doc.frontmatter.kind === "string" && doc.frontmatter.kind) count += 1;
+    // B-1: 캔버스에 실제로 그려지는 노드 수 = (focus 로 축소된) 저장 노드 +
+    // 아직 vault 에 안 쓴 임시 노드. "도메인 추가" 로 임시 노드가 생기면 이
+    // 값이 곧바로 올라가 "캔버스 N개 표시" 가 실물과 일치한다.
+    let base: number;
+    if (!focusedCensusManifest.isFocused) {
+      base = builderGraphStats.persistedNodes;
+    } else {
+      base = 0;
+      for (const doc of focusedCensusManifest.manifest.docs) {
+        if (typeof doc.frontmatter.kind === "string" && doc.frontmatter.kind) base += 1;
+      }
     }
-    return count;
-  }, [focusedCensusManifest, builderGraphStats.persistedNodes]);
+    return base + ephemeralNodes.length;
+  }, [focusedCensusManifest, builderGraphStats.persistedNodes, ephemeralNodes.length]);
   // builderEntryAnchors 는 위(초기 selectedId/focusNodeId state 근처)로 이동.
   const focusBuilderAnchor = useCallback((id: string) => {
     setSelectedId(id);
@@ -470,6 +512,15 @@ export function OntologyEditPage() {
     setFocusToken((n) => n + 1);
     setDetailsOpen(true);
   }, []);
+  // B-3 — 저장된 엣지 클릭 → source 노드 상세를 열고 인스펙터를 관계 탭으로
+  // 포커스. 캔버스에서 기존 관계를 만나 유형 변경·삭제로 가는 진입로를 준다.
+  const openNodeRelations = useCallback(
+    (slug: string) => {
+      openNodeDetails(slug);
+      setRelationsFocusToken((n) => n + 1);
+    },
+    [openNodeDetails],
+  );
   const handleCanvasSelectionChange = useCallback((id: string | null) => {
     setSelectedId(id);
   }, []);
@@ -1176,6 +1227,7 @@ export function OntologyEditPage() {
     onEditVaultLiteral: editVaultLiteral,
     onDeleteVault: deleteVaultDoc,
     saving: savingId !== null || renamingId !== null,
+    relationsFocusToken,
   };
 
   return (
@@ -1242,7 +1294,6 @@ export function OntologyEditPage() {
               className="hidden font-mono text-[10.5px] tracking-[0.06em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] sm:inline"
             >
               {shouldShowFocusedCensus({
-                isFocused: focusedCensusManifest.isFocused,
                 shownCount: shownNodeCount,
                 totalCount: builderGraphStats.persistedNodes,
               })
@@ -1644,6 +1695,8 @@ export function OntologyEditPage() {
               focusToken={focusToken}
               selectedId={selectedId}
               onNodeOpen={openNodeDetails}
+              onEdgeOpen={(edge) => openNodeRelations(edge.source)}
+              onNodeBoxesChange={handleNodeBoxesChange}
             />
             <BuilderOnboarding
               empty={
