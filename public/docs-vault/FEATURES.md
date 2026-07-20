@@ -68,6 +68,43 @@ browser equivalent of CLI `bootstrap` / MCP `analyze_repo_structure`, so all
 three ingress paths converge on the same shape. Plain-language copy: the
 dialog never says "온톨로지" (map-building framing for non-experts).
 
+**Meaning & time surfaces (2026-07-21 execution run, PRs #425–#449)**:
+- **Edge popover** — edges are first-class clickable objects on the map: a
+  click within 7px opens a popover with a plain-language sentence ("A leans
+  on B"), the formal type, both endpoints (click = focus), the declaring
+  `.md` (with its change-date label), an optional **why** line
+  (`relation_notes`), and an edit-relation deep link.
+- **Relation rationale (why)** — `relation_notes: {ref: one-line-why}` in
+  frontmatter; MCP `add_relation` takes `why` and writes relation + note in
+  ONE frontmatter write; `rename_concept` rewrites note keys (collision:
+  existing new-key note wins).
+- **Agent connect sheet** — INDEX footer agent status opens a sheet:
+  heartbeat-file connection state, Claude Code/.mcp.json + Codex + generic
+  registration snippets (desktop autofills the path), config-file writer on
+  desktop, and an agent-brief preview that speaks the user's own domain
+  names.
+- **Hierarchy ink ladder** — containment edges carry depth (L0 project
+  spine → L2 leaf) as width×value (never hue); pass-through edges (both
+  endpoints off-screen) get demoted ink; `depends` bows are
+  direction-consistent perpendicular offsets (mutual pairs separate).
+- **Magnitude & type scale** — domain/capability radii encode descendant
+  count (log-compressed); labels/engraved numerals scale sub-linearly with
+  zoom (widthCache keys include quantized font size).
+- **First-map reveal** — after "내 문서로 지도 만들기", nodes assemble out
+  of the project position and spring-settle into place (reduced-motion
+  arrives instantly).
+- **Idle frame gate** — the canvas stops physics+paint after 1.2s of true
+  idle (rAF stays alive; any state change resumes next frame).
+- **Canonical census** — every surface that says "개념 N" uses one
+  derivation (`computeCanonicalCensus`); the builder honestly says
+  "저장된 개념 N" for its file-backed scope.
+- **Docs library on the web** — the local-vault gate is capability-based
+  (File System Access), not runtime-based: the same browser session that
+  writes via the builder can read/edit in the docs library.
+- **Relation vocabulary** — one dictionary (formal/plain × 7 types × ko/en)
+  feeds the map legend, insights, builder, and datasheet (contract-tested);
+  the "?" sheet footer defines 도메인/역량/요소 in plain language.
+
 **Single source of truth (R8)**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`. Its many `useLocalVault()` consumers (`RootEntryPage` / `AppNavRail` / `OntologyEditPage` / `DocsVaultPage` / `useDataSourceMode` / `useProjects` / `useProjectMutations` / `useVaultOntology` and more since feat/rail-rollout mounted the rail everywhere) share one state instance, one IDB rehydrate, one filesystem walk.
 
 **Desktop first-run (2026-07-18)**: in the installed app (Tauri — detected via

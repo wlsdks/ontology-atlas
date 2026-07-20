@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-20T16:38:37.961Z",
+  "generatedAt": "2026-07-20T16:51:19.495Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2780,6 +2780,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-21 — 관계 근거(why) 스키마 (P6)",
+          "slug": "2026-07-21-관계-근거why-스키마-p6"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-21 — 캔버스 피날레: 규모 인코딩 · 타입스케일 · dust 시차 (B4·B5·B3잔여)",
           "slug": "2026-07-21-캔버스-피날레-규모-인코딩-타입스케일-dust-시차-b4b5b3잔여"
         },
@@ -2787,6 +2792,11 @@
           "depth": 2,
           "text": "2026-07-21 — 엣지 팝오버 (P3b — 관계가 의미를 말한다)",
           "slug": "2026-07-21-엣지-팝오버-p3b-관계가-의미를-말한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — 최근 변경 렌즈 · 에이전트 귀속 배지 · 성장 진입점 (P4a·P4b·P4c)",
+          "slug": "2026-07-21-최근-변경-렌즈-에이전트-귀속-배지-성장-진입점-p4ap4bp4c"
         },
         {
           "depth": 2,
@@ -4099,9 +4109,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. B4 규모 인코딩: 103개를 담은 도메인과 9개짜리가 동일 크기이던 것 — domain/capability 반지름에 로그 압축 배율(--topology-",
-      "wordCount": 26222,
-      "updatedAt": "2026-07-20T16:38:34.048Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 관계는 이제 \"왜\"를 가질 수 있다: relationnotes: {ref: 근거 한 줄}. 착수 게이트 3건을 먼저 닫았다 — ① redirectBackl",
+      "wordCount": 26509,
+      "updatedAt": "2026-07-20T16:48:44.701Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5173,8 +5183,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 10118,
-      "updatedAt": "2026-07-20T14:21:50.381Z",
+      "wordCount": 10446,
+      "updatedAt": "2026-07-20T16:45:53.915Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5693,6 +5703,24 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/agent-connect-sheet",
+      "path": "docs/ontology/capabilities/agent-connect-sheet.md",
+      "title": "Agent Connect Sheet (AI 에이전트 연결)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/agent-connect-sheet",
+        "kind": "capability",
+        "title": "Agent Connect Sheet (AI 에이전트 연결)",
+        "domain": "domains/ai-agent-partner",
+        "elements": []
+      },
+      "headings": [],
+      "excerpt": "INDEX 푸터의 에이전트 상태 클릭 → 연결 시트 (2026-07-21, P2a — 웨지 표면). 구성: ① heartbeat 파일 기반 연결 상태(조용한 수집 0 — 에이전트가 스스로 남긴 로컬 파일 읽기) ② Claude Code .mcp.json / Codex / generic 등록 스니펫(데스크톱 경로 자동, 웹 안내) + 데스크톱 설정 파일 자동 생성 ③ agent-brief 가 사용자의 실제 도메인 이름들을 되말하는 미리보기(이해받음의 순간 — 감정 카피 규칙: 사용자 고유 명사 원문 포함). 전략 근거: 백엔드(MCP 25도구·스킬·heartbeat)는",
+      "wordCount": 86,
+      "updatedAt": "2026-07-20T16:50:09.819Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/agent-graph-readiness",
       "path": "docs/ontology/capabilities/agent-graph-readiness.md",
       "title": "Agent Graph Readiness",
@@ -6150,6 +6178,30 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/edge-meaning-popover",
+      "path": "docs/ontology/capabilities/edge-meaning-popover.md",
+      "title": "Edge Meaning Popover (관계 팝오버)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/edge-meaning-popover",
+        "kind": "capability",
+        "title": "Edge Meaning Popover (관계 팝오버)",
+        "domain": "domains/views",
+        "elements": [],
+        "dependencies": [
+          "capabilities/relation-rationale"
+        ],
+        "relation_notes": {
+          "capabilities/relation-rationale": "팝오버가 문장 아래 보여주는 근거 줄이 relation_notes 에서 온다"
+        }
+      },
+      "headings": [],
+      "excerpt": "지도의 엣지를 클릭 가능한 1급 객체로 만든 역량 (2026-07-21, P3b). 빈 공간 클릭이 엣지 7px 근접이면 팝오버가 열린다: 평문 문장(\"A 가 B 에 기대요\") → 타입 → 양 끝 노드(클릭=포커스) → 관계 근거(why, relationnotes) → 선언한 vault 문서(.md 링크 + 변경 시점) → 관계 편집 딥링크. 구현: topology-edge-hit.ts(AABB 프리패스 + 베지어 16-샘플), TopologyV2EdgePanel.tsx, WorldEdge.relationType/declaredBySlug 배관. 후보는 양 끝점이 현",
+      "wordCount": 93,
+      "updatedAt": "2026-07-20T16:50:58.703Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/firebase-deploy-skill",
       "path": "docs/ontology/capabilities/firebase-deploy-skill.md",
       "title": "Firebase Deploy Skill (.claude/skills/firebase-deploy)",
@@ -6549,6 +6601,24 @@
       "excerpt": "Long-running project ontology indexing entrypoint. indexproject gives AI agents one read-only checkpoint that combines repo structure analysis, import-edge indexing, and vault validation before any write. The CLI pair is ontology-atlas index: default mode prints a side-effect-free plan, and --apply delegates to the exi",
       "wordCount": 649,
       "updatedAt": "2026-07-20T15:57:13.095Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/relation-rationale",
+      "path": "docs/ontology/capabilities/relation-rationale.md",
+      "title": "Relation Rationale (관계 근거 why)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/relation-rationale",
+        "kind": "capability",
+        "title": "Relation Rationale (관계 근거 why)",
+        "domain": "domains/ontology-core",
+        "elements": []
+      },
+      "headings": [],
+      "excerpt": "관계에 \"왜\"를 붙이는 스키마 역량 (2026-07-21, P6). relationnotes: {ref: 근거 한 줄} frontmatter carrier — 파서 3계(런타임/MCP/스크립트)가 동일 해석함을 contract fixture 로 증명했고, renameconcept 는 노트 키를 함께 재작성한다(키 충돌 시 기존 new-키 값 승리 — 조용한 덮어쓰기 금지). MCP addrelation 의 why 파라미터는 관계와 근거를 한 번의 frontmatter 쓰기로 기록한다(원자성). derive 는 노트를 해당 엣지의 label 로 승격하고, 지도의 엣지 ",
+      "wordCount": 83,
+      "updatedAt": "2026-07-20T16:50:22.762Z",
       "linksOut": []
     },
     {
@@ -7181,6 +7251,7 @@
         "title": "AI Agent Partner",
         "capabilities": [
           "agent-config-onboarding",
+          "capabilities/agent-connect-sheet",
           "capabilities/agent-practitioner-concerns-map",
           "capabilities/project-ontology-indexing",
           "firebase-deploy-skill",
@@ -7214,7 +7285,7 @@
       ],
       "excerpt": "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 24 도구 (read 16 + write 8) 를 stdin/stdout JSON-RPC 로 노출. 등록 가이드: mcp/README.md. 사용자 LLM 비용을 cloud 로 옮기지 않음 — agent 가 자기 LLM 으로 호출. .claude/hooks/block-npm-publish.sh 는 agent 가 사용자 명시 승인 없이 npm publish 계열 명령을 실행하지 못하게 막는 안전장치다. pnpm test:clau",
       "wordCount": 78,
-      "updatedAt": "2026-06-06T06:20:12.858Z",
+      "updatedAt": "2026-07-20T16:50:16.229Z",
       "linksOut": []
     },
     {
@@ -7305,6 +7376,7 @@
         "kind": "domain",
         "title": "Ontology Core (TBox · ABox · Evidence)",
         "capabilities": [
+          "capabilities/relation-rationale",
           "frontmatter-to-ontology"
         ],
         "elements": [
@@ -7328,7 +7400,7 @@
       ],
       "excerpt": "4-layer class hierarchy (Project · Domain · Capability · Element + Document) + 7 edge types (KNOWLEDGEEDGETYPES) + evidence-grounded statements. Vault frontmatter is the single source of truth — derive-ontology-from-vault turns \\.md\\ frontmatter into the in-memory graph. Architecture overview: \\docs/ARCHITECTURE.md\\.",
       "wordCount": 43,
-      "updatedAt": "2026-06-03T11:33:46.323Z",
+      "updatedAt": "2026-07-20T16:50:30.730Z",
       "linksOut": []
     },
     {
@@ -7396,6 +7468,7 @@
           "capabilities/agent-live-activity-contract",
           "capabilities/agent-onboarding-brief",
           "capabilities/changes-only-review",
+          "capabilities/edge-meaning-popover",
           "capabilities/topology-change-visualization",
           "capabilities/topology-direct-edit",
           "capabilities/topology-kind-legibility",
@@ -7468,7 +7541,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-07-19T01:11:09.772Z",
+      "updatedAt": "2026-07-20T16:50:02.717Z",
       "linksOut": []
     },
     {
@@ -10872,6 +10945,13 @@
                 "title": "Agent Config Onboarding"
               },
               {
+                "name": "agent-connect-sheet",
+                "path": "ontology/capabilities/agent-connect-sheet",
+                "type": "doc",
+                "slug": "ontology/capabilities/agent-connect-sheet",
+                "title": "Agent Connect Sheet (AI 에이전트 연결)"
+              },
+              {
                 "name": "agent-graph-readiness",
                 "path": "ontology/capabilities/agent-graph-readiness",
                 "type": "doc",
@@ -10956,6 +11036,13 @@
                 "title": "macOS Desktop App Distribution"
               },
               {
+                "name": "edge-meaning-popover",
+                "path": "ontology/capabilities/edge-meaning-popover",
+                "type": "doc",
+                "slug": "ontology/capabilities/edge-meaning-popover",
+                "title": "Edge Meaning Popover (관계 팝오버)"
+              },
+              {
                 "name": "firebase-deploy-skill",
                 "path": "ontology/capabilities/firebase-deploy-skill",
                 "type": "doc",
@@ -11031,6 +11118,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/project-ontology-indexing",
                 "title": "Project Ontology Indexing"
+              },
+              {
+                "name": "relation-rationale",
+                "path": "ontology/capabilities/relation-rationale",
+                "type": "doc",
+                "slug": "ontology/capabilities/relation-rationale",
+                "title": "Relation Rationale (관계 근거 why)"
               },
               {
                 "name": "session-start-ontology-context",
