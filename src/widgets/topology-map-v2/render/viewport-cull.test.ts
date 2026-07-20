@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isEdgeCulled, isNodeCulled } from "./viewport-cull";
+import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "./viewport-cull";
 
 const W = 1200;
 const H = 800;
@@ -66,5 +66,15 @@ describe("isEdgeCulled", () => {
     const c = { x: -115, y: 410 };
     expect(isEdgeCulled(a, b, c, 0, W, H)).toBe(true);
     expect(isEdgeCulled(a, b, c, 200, W, H)).toBe(false);
+  });
+});
+
+/** B2 잔여 — 관통 엣지(끝점 0개 가시)만 참, 끝점 하나라도 보이면 거짓. */
+describe("isPassthroughEdge", () => {
+  it("両끝점 화면 밖 + 곡선 관통 = 강등 대상", () => {
+    expect(isPassthroughEdge({ x: -400, y: 400 }, { x: W + 400, y: 400 }, 24, W, H)).toBe(true);
+  });
+  it("끝점 하나라도 보이면 강등하지 않는다", () => {
+    expect(isPassthroughEdge({ x: 600, y: 400 }, { x: W + 400, y: 400 }, 24, W, H)).toBe(false);
   });
 });

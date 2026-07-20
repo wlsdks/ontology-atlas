@@ -32,7 +32,7 @@ import {
 } from "../render/label-layout";
 import { draw as nodeShapesDraw } from "../render/node-shapes";
 import { drawDiffractionSpike, drawStarDust, type DustPoint } from "../render/starfield";
-import { isEdgeCulled, isNodeCulled } from "../render/viewport-cull";
+import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
 import { draw as tracesDraw } from "../render/traces";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { worldToScreen } from "./topology-camera-math";
@@ -285,12 +285,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // before this guard. Hull-based, so it only ever drops strokes that
       // could not have landed on canvas (see `render/viewport-cull.ts`).
       if (isEdgeCulled(a, b, control, EDGE_CULL_MARGIN_PX, viewportWidth, viewportHeight)) continue;
+      // B2 잔여 — 끝점이 하나도 안 보이는 관통 엣지는 잉크 강등 (실타래 해소).
+      const passthrough = isPassthroughEdge(a, b, 24, viewportWidth, viewportHeight);
       const touches = focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
       const emphasized =
         emphasizedNeighborId !== null &&
         touches &&
         (edge.sourceId === emphasizedNeighborId || edge.targetId === emphasizedNeighborId);
-      ctx.globalAlpha = edgeAlpha;
+      ctx.globalAlpha = passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha;
       tracesDraw(
         ctx,
         {
@@ -303,9 +305,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           t: edge.t,
           emphasized,
           reducedMotion,
+          level: edge.level,
         },
         {
           edgeContains: tokens.edgeContains,
+          edgeContainsL0: tokens.edgeContainsL0,
+          edgeContainsL2: tokens.edgeContainsL2,
           edgeDepends: tokens.edgeDepends,
           edgeDim: tokens.edgeDim,
           indigo: tokens.indigo,

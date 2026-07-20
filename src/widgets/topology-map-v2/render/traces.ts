@@ -89,6 +89,12 @@ export interface TraceDrawState {
    */
   emphasized?: boolean;
   /**
+   * P3a — containment 잉크 레벨 (0 뼈대 · 1 중간 · 2 잔가지). contains 의
+   * 비-ego 렌더에서만 소비: stroke 는 레벨별 토큰, width 는 레벨 계수.
+   * depends/ego/dim 경로는 기존 그대로 (타입·주의 채널은 사다리와 직교).
+   */
+  level?: 0 | 1 | 2;
+  /**
    * `prefers-reduced-motion: reduce`. The comet tail is the one moving mark
    * this module paints, so honouring the preference here is what keeps the
    * canvas fully static for those users (audit A8: the tail was the largest
@@ -99,6 +105,9 @@ export interface TraceDrawState {
 
 export interface TraceTokens {
   edgeContains: string;
+  /** P3a hierarchy ladder — optional so legacy callers (hover pulses) keep working. */
+  edgeContainsL0?: string;
+  edgeContainsL2?: string;
   edgeDepends: string;
   edgeDim: string;
   indigo: string;
@@ -112,6 +121,11 @@ export interface TraceTokens {
  * not owned by this per-edge `draw()`.
  */
 const DEPENDS_DASH = [3, 4];
+/**
+ * P3a — 레벨별 굵기 계수. 지도학의 도로 위계처럼 한 잉크 계열 안에서
+ * 굵기×명도만 탄다 (구조 상수 — node-shapes 의 per-kind ratio 와 같은 결).
+ */
+const CONTAINS_LEVEL_WIDTH_FACTOR: Record<0 | 1 | 2, number> = { 0: 1.4, 1: 1, 2: 0.8 };
 const COMET_TAIL_STEPS = [0, 0.028, 0.056];
 const COMET_TAIL_FAR_SIZES = [1.3, 0.9, 0.6];
 
@@ -131,8 +145,20 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     stroke = emphasized || isDepends ? tokens.indigoBright : tokens.indigo;
     width = (isDepends ? 1.8 : 1.5) - farT * 0.5 + (emphasized ? 0.9 : 0);
   } else {
-    stroke = isDepends ? tokens.edgeDepends : tokens.edgeContains;
-    width = (isDepends ? 1.3 : 1) + ((isDepends ? 0.6 : 0.45) - (isDepends ? 1.3 : 1)) * farT;
+    if (isDepends) {
+      stroke = tokens.edgeDepends;
+      width = 1.3 + (0.6 - 1.3) * farT;
+    } else {
+      // P3a — 잉크 사다리: L0 진하고 굵게(뼈대), L2 살짝 물러남(잔가지).
+      const level = state.level ?? 1;
+      stroke =
+        level === 0
+          ? tokens.edgeContainsL0 ?? tokens.edgeContains
+          : level === 2
+            ? tokens.edgeContainsL2 ?? tokens.edgeContains
+            : tokens.edgeContains;
+      width = (1 + (0.45 - 1) * farT) * CONTAINS_LEVEL_WIDTH_FACTOR[level];
+    }
   }
 
   ctx.beginPath();

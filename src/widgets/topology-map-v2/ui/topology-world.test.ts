@@ -7,6 +7,7 @@ import {
   computeSpineBounds,
   isSpineNode,
   type WorldNode,
+  containmentLevelFor,
 } from "./topology-world";
 import type { TopologyV2Edge, TopologyV2Node } from "./TopologyMapV2";
 
@@ -205,5 +206,16 @@ describe("computeEgoBounds", () => {
   it("returns null when the focused slug doesn't resolve to a node", () => {
     const world = egoWorld([node({ id: "a", kind: "domain", x: 0, y: 0 })], { a: [] });
     expect(computeEgoBounds(world, tokens, "missing")).toBeNull();
+  });
+});
+
+/** P3a — 잉크 사다리의 레벨 유도 계약. */
+describe("containmentLevelFor", () => {
+  it("project 가 낀 엣지는 L0, domain 은 L1, 그 외는 L2", () => {
+    expect(containmentLevelFor("project", "domain")).toBe(0);
+    expect(containmentLevelFor("domain", "capability")).toBe(1);
+    expect(containmentLevelFor("capability", "element")).toBe(2);
+    expect(containmentLevelFor("element", "element")).toBe(2);
+    expect(containmentLevelFor("domain", "project")).toBe(0);
   });
 });
