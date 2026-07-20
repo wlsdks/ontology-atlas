@@ -13,6 +13,7 @@ import { useEffect, useRef, type RefObject } from "react";
 
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import { stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
+import { isCanvasActive, shouldSkipFrame } from "../model/idle-gate";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../interaction/pointer-state-machine";
 import { initHomeSpring, isHomeSpringConverged, stepHomeSpring, type HomeSpringState } from "../model/relayout-home";
@@ -43,6 +44,12 @@ import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
  * a physically-following neighbor).
  */
 const DRAG_TUG_EASE_TAU = 0.15;
+/**
+ * A2 — 유휴 스킵 전 grace(ms). 램프 감쇠 꼬리(emphasis τ 0.15 → 시각 정착
+ * ~0.7s)와 릴리즈 잔여를 여유 있게 덮는다. 시간 기반이라 주사율 무관(A4
+ * 와 같은 원칙).
+ */
+const IDLE_GRACE_MS = 1200;
 /** World-unit epsilon below which a homing node is considered "arrived" (`relayout-home.ts#isHomeSpringConverged`). */
 const HOME_CONVERGE_EPSILON = 0.5;
 
@@ -195,6 +202,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * just draws nothing).
    */
   const selectionPulseRef = useRef<{ nodeId: string; startAtMs: number } | null>(null);
+  /** A2 — 마지막 활동 시각. 활동 플래그가 참인 프레임마다 갱신. */
+  const lastActiveMsRef = useRef(0);
+  /** A2 — 직전 프레임 카메라 값 (움직임 감지용). */
+  const prevCameraSampleRef = useRef<{ x: number; y: number; s: number } | null>(null);
   /** W6 agent visibility — mirrors `agentFocusNodeId` prop into a ref for the rAF closure, same pattern as `focusedSlugRef`. */
   const agentFocusNodeIdRef = useRef<string | null>(agentFocusNodeId);
 
@@ -464,6 +475,36 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
       const dt = lastFrameTimeRef.current === 0 ? 0 : Math.min((now - lastFrameTimeRef.current) / 1000, 0.05);
       lastFrameTimeRef.current = now;
+
+      // --- A2 유휴 게이트: 활동 플래그를 refs 에서 재평가. 전부 꺼진 채
+      // grace 가 지나면 물리+페인트를 건너뛴다 (rAF 는 유지 — 어떤 상태
+      // 변화든 다음 프레임에 자연 복귀, wake 배선/동결 실패 모드 없음).
+      {
+        const cam = cameraRef.current;
+        const prev = prevCameraSampleRef.current;
+        const cameraMoving =
+          prev === null ||
+          Math.abs(cam.x.value - prev.x) > 0.01 ||
+          Math.abs(cam.y.value - prev.y) > 0.01 ||
+          Math.abs(cam.scale.value - prev.s) > 0.0001;
+        prevCameraSampleRef.current = { x: cam.x.value, y: cam.y.value, s: cam.scale.value };
+        const active = isCanvasActive({
+          pointerActive: pointerMachineRef.current.phase !== "idle",
+          simWarm: heatRef.current > 0 || nodeDragRef.current !== null,
+          homing: homingActiveRef.current,
+          selectionPulseActive: selectionPulseRef.current !== null &&
+            now - selectionPulseRef.current.startAtMs < tokens.selectPulseDurationMs,
+          egoTailAnimating: focusedSlugRef.current !== null && tokens.edgePulseSpeedEgo > 0,
+          emphasisTarget: hoveredNodeIdRef.current !== null || panelEmphasisNodeIdRef.current !== null,
+          breathing: !reducedMotionRef.current && world.nodes.some((n) => n.fresh),
+          cameraMoving,
+        });
+        if (active) lastActiveMsRef.current = now;
+        else if (shouldSkipFrame(now, lastActiveMsRef.current, IDLE_GRACE_MS)) {
+          handle = requestAnimationFrame(frame);
+          return;
+        }
+      }
 
       // --- force simulation: tick ONLY while a node is pin-dragged (or its
       // brief release settle). Never on load — the static default is the
