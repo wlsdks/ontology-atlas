@@ -266,6 +266,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) return;
+    // 설치 앱 proof — 데스크톱 WebView 검증이 클릭-취소 임계(hysteresis)를
+    // 읽는 계약 지점. 토큰 값 그대로 노출한다 (v2 = 7px).
+    containerRef.current?.setAttribute(
+      "data-stage-pan-click-cancel-px",
+      String(tokens.hysteresisPx),
+    );
     const world = buildTopologyWorld(nodes, edges, tokens);
     worldRef.current = world;
     // Seed the force sim off the concentric layout (spatial memory) and warm it
