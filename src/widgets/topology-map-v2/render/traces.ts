@@ -62,6 +62,27 @@ export function computeBowControlPoint(a: Point, b: Point, maxBow: number, blend
   };
 }
 
+/**
+ * B8 — `depends` 전용 활: 진행 방향의 왼쪽 수직 오프셋.
+ *
+ * 기존 극좌표 활(`computeBowControlPoint`)은 "부모 링을 향해 휜다"는
+ * 동심원 레이아웃 의미를 가정한다 — containment 에는 여전히 참이지만,
+ * 드래그/force 이후의 peer 관계(depends)에서는 인접 엣지가 서로 반대로
+ * 휘는 데 아무 의미가 없었다(Guardian 실측: 어떤 긴 엣지는 휘고 어떤 건
+ * 직선). 일관된 좌측 수직 활은 방향의 함수라서 A→B 와 B→A 상호 의존이
+ * 자연히 두 개의 호로 분리된다 (이전엔 정확히 겹쳐 한 가닥).
+ */
+export function computeDependsBowControlPoint(a: Point, b: Point, maxBow: number): Point {
+  const mx = (a.x + b.x) / 2;
+  const my = (a.y + b.y) / 2;
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const bow = Math.min(len * 0.12, maxBow);
+  // 진행 방향의 왼쪽 법선 (-dy, dx)/len
+  return { x: mx + (-dy / len) * bow, y: my + (dx / len) * bow };
+}
+
 /** Point at parameter `t` (0..1) along the quadratic bezier `p0 -> p1(control) -> p2`. */
 export function bezierPoint(p0: Point, p1: Point, p2: Point, t: number): Point {
   const u = 1 - t;

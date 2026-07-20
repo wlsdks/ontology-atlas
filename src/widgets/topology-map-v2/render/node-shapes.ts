@@ -294,11 +294,21 @@ function bodyPoints(kind: NodeShapeDrawState["kind"], x: number, y: number, r: n
   return null;
 }
 
-/** This kind's minimum corner radius at farT=0 (prototype's per-kind `Math.min(...)` literals). */
+/**
+ * This kind's minimum corner radius at farT=0.
+ *
+ * B6 (Guardian): the old absolute px caps (`min(4, …)`) were keyed to the
+ * SCREEN radius, so the same node changed silhouette character with zoom —
+ * r=28 got 14% corners (soft hex), r=200 got 2% (razor hex). The engine's
+ * declared contract is "farT is the ONLY morph axis"; screen scale was an
+ * undeclared second one. Ratios keep the silhouette self-similar; the 0.5px
+ * FLOOR keeps tiny radii from collapsing into sub-pixel corners (the caps'
+ * original purpose, now expressed at the correct end of the scale).
+ */
 function minCornerRadius(kind: NodeShapeDrawState["kind"], r: number): number {
-  if (kind === "project") return Math.min(4, r * 0.14);
-  if (kind === "domain") return Math.min(5, r * 0.86 * 0.22);
-  return Math.min(1.6, r * 0.92 * 0.3);
+  if (kind === "project") return Math.max(0.5, r * 0.14);
+  if (kind === "domain") return Math.max(0.5, r * 0.86 * 0.22);
+  return Math.max(0.5, r * 0.92 * 0.3);
 }
 
 /**

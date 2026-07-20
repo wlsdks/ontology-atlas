@@ -8,7 +8,7 @@
  */
 
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../model/layout";
-import { computeBowControlPoint } from "../render/traces";
+import { computeBowControlPoint, computeDependsBowControlPoint } from "../render/traces";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import type { TopologyV2Edge, TopologyV2Node } from "./TopologyMapV2";
 
@@ -255,9 +255,15 @@ export function buildTopologyWorld(
     const b = nodeById.get(edge.target);
     if (!a || !b) continue;
     addNeighbor(a.id, b.id);
-    const maxBow = edge.kind === "depends" ? tokens.edgeBowDepends : tokens.edgeBowContains;
-    const blend = edge.kind === "depends" ? tokens.edgeBlendDepends : tokens.edgeBlendContains;
-    const control = computeBowControlPoint({ x: a.x, y: a.y }, { x: b.x, y: b.y }, maxBow, blend);
+    const control =
+      edge.kind === "depends"
+        ? computeDependsBowControlPoint({ x: a.x, y: a.y }, { x: b.x, y: b.y }, tokens.edgeBowDepends)
+        : computeBowControlPoint(
+            { x: a.x, y: a.y },
+            { x: b.x, y: b.y },
+            tokens.edgeBowContains,
+            tokens.edgeBlendContains,
+          );
     worldEdges.push({
       sourceId: a.id,
       targetId: b.id,
@@ -322,9 +328,15 @@ export function recomputeWorldGeometry(world: TopologyWorld, tokens: TopologyV2T
     edge.ay = a.y;
     edge.bx = b.x;
     edge.by = b.y;
-    const maxBow = edge.kind === "depends" ? tokens.edgeBowDepends : tokens.edgeBowContains;
-    const blend = edge.kind === "depends" ? tokens.edgeBlendDepends : tokens.edgeBlendContains;
-    const control = computeBowControlPoint({ x: a.x, y: a.y }, { x: b.x, y: b.y }, maxBow, blend);
+    const control =
+      edge.kind === "depends"
+        ? computeDependsBowControlPoint({ x: a.x, y: a.y }, { x: b.x, y: b.y }, tokens.edgeBowDepends)
+        : computeBowControlPoint(
+            { x: a.x, y: a.y },
+            { x: b.x, y: b.y },
+            tokens.edgeBowContains,
+            tokens.edgeBlendContains,
+          );
     edge.controlX = control.x;
     edge.controlY = control.y;
   }
