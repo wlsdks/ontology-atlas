@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-20T22:05:28.273Z",
+  "generatedAt": "2026-07-20T22:46:50.321Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2122,13 +2122,18 @@
         },
         {
           "depth": 2,
-          "text": "계약 테스트 사전 부패 4건 (2026-07-21 실행 라운드에서 발견 — 세션 이전 기원, git blame 확인)",
-          "slug": "계약-테스트-사전-부패-4건-2026-07-21-실행-라운드에서-발견-세션-이전-기원-git-blame-확인"
+          "text": "~~계약 테스트 사전 부패 4건~~ — ✅ 해소 (2026-07-21, PR #457)",
+          "slug": "계약-테스트-사전-부패-4건-해소-2026-07-21-pr-457"
+        },
+        {
+          "depth": 2,
+          "text": "잔여 게이트 (다음 라운드)",
+          "slug": "잔여-게이트-다음-라운드"
         }
       ],
       "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 105 노드, CLI 48 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
-      "wordCount": 1590,
-      "updatedAt": "2026-07-21T02:02:13+09:00",
+      "wordCount": 1600,
+      "updatedAt": "2026-07-20T22:46:27.426Z",
       "linksOut": []
     },
     {
@@ -2782,6 +2787,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — 백로그 전량 소진 (#456~#458)",
+          "slug": "2026-07-21-백로그-전량-소진-456458"
         },
         {
           "depth": 2,
@@ -4124,9 +4134,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 라운드 총괄 판정(조건부 승인)의 반려·조건부 4건 즉시 교정: R-1 엣지 팝오버: raw <a 2개가 locale prefix 없이 404/500 — ",
-      "wordCount": 27023,
-      "updatedAt": "2026-07-21T03:05:01+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 페르소나 재검·Guardian 후속·사전 부패까지 잔여 작업 0 으로: relate --why: 관계+relationnotes 근거 원자 쓰기 (parse",
+      "wordCount": 27140,
+      "updatedAt": "2026-07-20T22:46:44.522Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"

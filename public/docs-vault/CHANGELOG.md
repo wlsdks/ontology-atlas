@@ -6,6 +6,17 @@
 
 ---
 
+## 2026-07-21 — 백로그 전량 소진 (#456~#458)
+
+페르소나 재검·Guardian 후속·사전 부패까지 잔여 작업 0 으로:
+- **relate --why**: 관계+`relation_notes` 근거 원자 쓰기 (parseArgs 누락 회귀를 통합 테스트로 고정)
+- **did-you-mean**: slug 오타/전치/폴더 누락 시 근접 후보 제안 — relate·relation-check·MCP 쿼리 공용 (`Did you mean: …`)
+- **부트스트랩**: 기존 프로젝트 존중(도메인 병합), 자기-쓰기 토스트 침묵, 승격 도메인 실제 `.md` 파일화
+- **신선도 진실**: 샘플 `updatedAt` = git 커밋 시각 (clone 왜곡 제거, 결정론 재빌드)
+- **도메인 크기 단일 진실원** (Guardian I-1): `computeDomainCensusRows` BFS — 캔버스 칩·INDEX·인사이트·/projects 가 같은 숫자 (86/96/106 분기 종결)
+- **설치 앱 proof 복구**: desktop verify 의 Sigma/Relief 사전 부패를 v2 캔버스 계약으로 — Tauri 재빌드·설치·검증 green
+- 계약 사전 부패 5건 해소 (check-package-contracts 55/55)
+
 ## 2026-07-21 — Guardian 최종 총괄 교정 (R-1 · C-1~C-3)
 
 라운드 총괄 판정(조건부 승인)의 반려·조건부 4건 즉시 교정:
