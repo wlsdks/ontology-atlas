@@ -158,6 +158,8 @@ export interface TopologyV2Tokens {
   edgePassthroughAlpha: number;
   /** `--topology-v2-node-min-separation-ratio` — overlap relaxation threshold, sim-active frames only (B7). */
   nodeMinSeparationRatio: number;
+  /** `--topology-v2-radius-magnitude-k` — log-compressed magnitude encoding strength for domain/capability radii (B4). */
+  radiusMagnitudeK: number;
 
   // 2.5 안전 영역 (fixed chrome inset, px — 라벨 컬링 + 카메라 fit)
   safeInsetLeft: number;
@@ -273,6 +275,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "edgeContainsL2", cssVar: "--topology-v2-edge-contains-l2", kind: "color" },
   { key: "edgePassthroughAlpha", cssVar: "--topology-v2-edge-passthrough-alpha", kind: "number" },
   { key: "nodeMinSeparationRatio", cssVar: "--topology-v2-node-min-separation-ratio", kind: "number" },
+  { key: "radiusMagnitudeK", cssVar: "--topology-v2-radius-magnitude-k", kind: "number" },
 
   { key: "safeInsetLeft", cssVar: "--topology-v2-safe-inset-left", kind: "number" },
   { key: "safeInsetRight", cssVar: "--topology-v2-safe-inset-right", kind: "number" },

@@ -34,6 +34,14 @@ export interface WorldNode {
   stale: boolean;
   /** Transitive descendant count — engraved as a numeral on project/domain chips in circuit range (0 = skip). */
   count: number;
+  /**
+   * B4 — 규모 배율 (로그 압축, 빌드 시 1회). domain/capability 만 ≠1.
+   * draw·히트테스트·분리 완화가 전부 이 값을 곱해 셋이 절대 어긋나지
+   * 않는다. Shneiderman overview-first: overview 의 첫 질문 "어디가
+   * 큰가"에 마크가 답하게 하되, 로그 압축이라 막대그래프가 아니라
+   * 순위 단서로만 읽힌다.
+   */
+  magnitudeScale: number;
 }
 
 export interface WorldEdge {
@@ -60,6 +68,18 @@ export interface WorldEdge {
   relationType: string;
   /** P3b — 이 관계를 선언한 vault 문서 slug (엣지 팝오버의 출처 표시). */
   declaredBySlug: string | null;
+}
+
+/** B4 — count 로그 압축 배율: 1 + k×(log1p(count)/log1p(maxCount) − 0.5). */
+export function computeMagnitudeScale(
+  kind: WorldNodeKind,
+  count: number,
+  maxCount: number,
+  k: number,
+): number {
+  if (kind !== "domain" && kind !== "capability") return 1;
+  if (maxCount <= 0 || count <= 0 || k <= 0) return 1;
+  return 1 + k * (Math.log1p(count) / Math.log1p(maxCount) - 0.5);
 }
 
 /** P3a — 두 엔드포인트 kind 에서 containment 잉크 레벨을 유도한다. */
@@ -238,6 +258,8 @@ export function buildTopologyWorld(
       fresh: n.recentlyUpdated,
       stale: false,
       count: n.descendantCount,
+      magnitudeScale: 1, // 아래 2차 패스에서 maxCount 확정 후 채움
+
     };
   });
   const nodeById = new Map(worldNodes.map((n) => [n.id, n]));
@@ -248,6 +270,14 @@ export function buildTopologyWorld(
     neighborMap.get(a)?.add(b);
     neighborMap.get(b)?.add(a);
   };
+
+  // B4 — 규모 배율 2차 패스 (maxCount 는 전체를 본 뒤에만 알 수 있다).
+  {
+    const maxCount = worldNodes.reduce((m, n) => Math.max(m, n.count), 0);
+    for (const node of worldNodes) {
+      node.magnitudeScale = computeMagnitudeScale(node.kind, node.count, maxCount, tokens.radiusMagnitudeK);
+    }
+  }
 
   const worldEdges: WorldEdge[] = [];
   for (const edge of edges) {

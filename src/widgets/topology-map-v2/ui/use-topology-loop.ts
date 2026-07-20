@@ -587,7 +587,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             id: n.id,
             x: n.x,
             y: n.y,
-            r: radiusForKind(n.kind, tokens),
+            r: radiusForKind(n.kind, tokens) * n.magnitudeScale,
           }));
           relaxNodeSeparation(sepNodes, {
             ratio: tokens.nodeMinSeparationRatio,

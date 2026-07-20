@@ -17,6 +17,12 @@
  */
 
 export interface DustPoint {
+  /**
+   * B3 잔여 — 시차 깊이 [dustParallaxMin, dustParallaxMax]. 그리드(1:1)보다
+   * 느리게 흐르는 순수 기하학적 깊이 단서 — glow/blur 없이 "월드 위를
+   * 움직인다"는 감각의 두 번째 레이어.
+   */
+  depth: number;
   x: number;
   y: number;
   r: number;
@@ -51,17 +57,28 @@ function mulberry32(seed: number): () => number {
 }
 
 /** `--topology-v2-dust-area-per-point`-seeded (`seed=7` in the prototype, fixed and never re-seeded) point placement — ported from `buildStarDust()`. */
-export function buildDustPoints(viewportWidth: number, viewportHeight: number, count: number): DustPoint[] {
+export function buildDustPoints(
+  viewportWidth: number,
+  viewportHeight: number,
+  count: number,
+  depthMin = 0.15,
+  depthMax = 0.45,
+): DustPoint[] {
   const rng = mulberry32(7);
   const points: DustPoint[] = [];
   for (let i = 0; i < count; i += 1) {
-    points.push({ x: rng() * viewportWidth, y: rng() * viewportHeight, r: 0.4 + rng() * 0.7, alpha: 0.02 + rng() * 0.04 });
+    points.push({ x: rng() * viewportWidth, y: rng() * viewportHeight, r: 0.4 + rng() * 0.7, alpha: 0.02 + rng() * 0.04,
+      depth: depthMin + Math.random() * (depthMax - depthMin),
+    });
   }
   return points;
 }
 
 export interface StarDustDrawState {
   points: readonly DustPoint[];
+  /** 카메라 원점의 스크린 좌표 — 시차 오프셋의 기준 (grid 와 동일 소스). */
+  originX?: number;
+  originY?: number;
   farT: number;
   devicePixelRatio: number;
 }
@@ -70,10 +87,18 @@ export interface StarDustDrawState {
 export function drawStarDust(ctx: CanvasRenderingContext2D, state: StarDustDrawState): void {
   if (state.farT <= 0.02) return;
   const { points, farT, devicePixelRatio } = state;
+  const ox = state.originX ?? 0;
+  const oy = state.originY ?? 0;
+  // 시차: 각 점이 depth 비율만큼 카메라를 따라 흐른다 (그리드=1.0 보다
+  // 느림). 뷰포트 래핑으로 커버리지 유지 — 멀리 패닝해도 먼지는 남는다.
+  const w = ctx.canvas.width / devicePixelRatio;
+  const h = ctx.canvas.height / devicePixelRatio;
   points.forEach((point) => {
+    const px = w > 0 ? (((point.x + ox * point.depth) % w) + w) % w : point.x;
+    const py = h > 0 ? (((point.y + oy * point.depth) % h) + h) % h : point.y;
     ctx.beginPath();
     ctx.fillStyle = `rgba(236,236,240,${point.alpha * farT})`;
-    ctx.arc(point.x * devicePixelRatio, point.y * devicePixelRatio, point.r * devicePixelRatio, 0, Math.PI * 2);
+    ctx.arc(px * devicePixelRatio, py * devicePixelRatio, point.r * devicePixelRatio, 0, Math.PI * 2);
     ctx.fill();
   });
 }

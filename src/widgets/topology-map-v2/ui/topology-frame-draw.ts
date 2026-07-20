@@ -17,9 +17,10 @@ import {
   computeDomainWatermarkAlpha,
   computeLabelAlpha,
   draw as labelsDraw,
-  LABEL_FONT_SIZE,
   LABEL_OFFSET,
+  labelZoomScale,
   measureLabelWidth,
+  scaledLabelFontSize,
 } from "../render/labels";
 import {
   ellipsizeToWidth,
@@ -224,6 +225,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // Where world (0,0) currently lands on screen — the blueprint grid rides
   // this so the background belongs to the world, not the display (B3).
   const gridOrigin = worldToScreen(camera, viewportWidth, viewportHeight, 0, 0);
+  // B5 — 라벨 줌 스케일 (프레임당 1회, 전 라벨 공용).
+  const labelScale = labelZoomScale(camera.scale.value);
 
   gridDraw(
     ctx,
@@ -238,7 +241,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // devicePixelRatio: 1 — ctx is already DPR-transformed once by the caller
   // (`use-topology-loop.ts`), so dust points (already in CSS-pixel space)
   // must not be scaled a second time.
-  drawStarDust(ctx, { points: dustPoints, farT, devicePixelRatio: 1 });
+  drawStarDust(ctx, { points: dustPoints, farT, devicePixelRatio: 1, originX: gridOrigin.x, originY: gridOrigin.y });
 
   const project = (x: number, y: number) => worldToScreen(camera, viewportWidth, viewportHeight, x, y);
   const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
@@ -329,7 +332,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const isEmphasizedNeighbor = emphasizedNeighborId !== null && node.id === emphasizedNeighborId && egoState === "neighbor";
     const visual = resolveNodeVisual(node, egoState, emphasis, focusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion);
 
-    const baseRadius = radiusForKind(node.kind, tokens);
+    const baseRadius = radiusForKind(node.kind, tokens) * node.magnitudeScale;
     let breathe = 1;
     if (visual.breatheEnabled) {
       breathe = 1 + tokens.breatheAmplitude * Math.sin((now / 1000) * tokens.breatheFreqRad + phaseForId(node.id));
@@ -466,11 +469,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const screen = project(node.x, node.y);
     const screenRadius = radiusForKind(node.kind, tokens) * camera.scale.value;
     const anchorY = screen.y + screenRadius + LABEL_OFFSET[node.kind];
-    const text = ellipsizeToWidth(node.label, tokens.labelMaxWidth, (candidate) =>
-      measureLabelWidth(ctx, node.kind, candidate),
+    const text = ellipsizeToWidth(node.label, tokens.labelMaxWidth * labelScale, (candidate) =>
+      measureLabelWidth(ctx, node.kind, candidate, labelScale),
     );
-    const width = measureLabelWidth(ctx, node.kind, text);
-    const fontSize = LABEL_FONT_SIZE[node.kind];
+    const width = measureLabelWidth(ctx, node.kind, text, labelScale);
+    const fontSize = scaledLabelFontSize(node.kind, labelScale);
     const agentFocus = agentFocusNodeId !== null && node.id === agentFocusNodeId;
     // W6 agent visibility — reserve room for the activity mark past the
     // text's own width so greedy suppression doesn't let a neighboring
@@ -531,6 +534,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         isHovered: payload.isHovered,
         revealAlpha: payload.revealAlpha,
         agentFocus: payload.agentFocus,
+        fontScale: labelScale,
       },
       {
         labelProject: tokens.labelProject,
