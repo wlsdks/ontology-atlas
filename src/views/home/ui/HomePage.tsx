@@ -1702,9 +1702,8 @@ export function HomePage() {
       mcpWorkspaceCheck: t("analysis.overviewBriefMcpWorkspaceCheck"),
     },
     url: typeof window === "undefined" ? null : window.location.href,
-    // 분석 패널 완전 소멸 2단계 §c — health 는 지도에 진입점이 없다. 수리 큐는
-    // insights 관계 탭으로 이동했으니 이 딥링크도 거기를 직접 가리킨다.
-    healthUrl: "/ontology/insights/?tab=relations",
+    // S5 재편 — 수리 큐는 이제 인사이트 기본 탭 "할 일"에 있다.
+    healthUrl: "/ontology/insights/",
     insightsUrl: "/ontology/insights/",
   });
   const indexAgentHandoffReanalyzeText = formatOntologyReanalysisAgentCommand();

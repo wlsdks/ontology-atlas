@@ -1538,8 +1538,8 @@
       "censusDomains": "DOMAINS",
       "tabsAriaLabel": "인사이트 탭",
       "tab": {
-        "overview": "개요",
-        "relations": "관계",
+        "do-next": "할 일",
+        "structure": "구조",
         "freshness": "신선도"
       },
       "weeksUnit": "주",
@@ -1605,7 +1605,19 @@
       "noRecentUpdates": "알려진 갱신일이 없습니다.",
       "staleCountLabel": "90일 이상 미갱신",
       "trendTitle": "주간 추이",
-      "trendCaption": "전 도메인 합산 주간 갱신 건수 — 히트스트립과 같은 {weeks}주 창."
+      "trendCaption": "전 도메인 합산 주간 갱신 건수 — 히트스트립과 같은 {weeks}주 창.",
+      "doNext": {
+        "queueTitle": "지금 하면 좋은 일",
+        "sectionNeglectedHub": "방치된 허브 — 많이 참조되는데 오래 안 바뀜",
+        "sectionOrphan": "고아 — 아직 아무 데도 안 이어짐",
+        "sectionPromotion": "승격 후보 — 참조가 많이 몰림",
+        "neglectedHubMetric": "연결 {degree} · {days}일째 그대로",
+        "openMap": "지도",
+        "openBuilder": "빌더",
+        "handoffCopy": "에이전트에게",
+        "emptyQueue": "지금은 손볼 것이 없어요 — 그래프가 건강합니다.",
+        "moreCount": "외 {count}개 — 전체는 에이전트 핸드오프로"
+      }
     }
   },
   "projectPages": {

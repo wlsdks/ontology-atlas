@@ -2,7 +2,6 @@ import { Link } from "@/i18n/navigation";
 import { TopologyV2KindGlyph, TopologyV2TraceMark } from "@/shared/ui";
 import { isContainmentRelation } from "@/shared/lib/ontology-tree";
 import { getOntologyKindTone } from "@/entities/ontology-class";
-import type { OntologyHealthActionTarget } from "@/entities/knowledge-graph";
 import type { DependsOnPairRow } from "../../lib/depends-on-rows";
 import type { HubEgoThumbnail } from "../../lib/hub-ego-thumbnail";
 import { relationTypeIndigo } from "../../lib/relation-type-tone";
@@ -24,36 +23,6 @@ export interface RelationsTabLabels {
   connectionsUnit: string;
   hubTruncated: (shown: number, total: number) => string;
   hubThumbnailCaption: string;
-  agentReadinessTitle: string;
-  agentReadinessReady: string;
-  agentReadinessPreflight: string;
-  agentReadinessReview: string;
-  repairQueueTitle: string;
-  repairQueueStale: string;
-  repairQueueOrphan: string;
-  repairQueuePromotion: string;
-  repairQueueEmpty: string;
-  repairQueueTargetLabel: string;
-  repairQueueActionKindStale: string;
-  repairQueueActionKindOrphan: string;
-  repairQueueActionKindPromotion: string;
-  repairQueueOpenBuilder: string;
-  repairQueueOpenOntology: string;
-}
-
-export interface RelationsTabAgentReadiness {
-  ready: number;
-  preflight: number;
-  review: number;
-}
-
-export interface RelationsTabHealthQueue {
-  staleCount: number;
-  orphanCount: number;
-  promotionCount: number;
-  actionTarget: OntologyHealthActionTarget | null;
-  builderHref: (slug: string) => string;
-  ontologyHref: (slug: string) => string;
 }
 
 export interface RelationsTabHubLink {
@@ -70,17 +39,6 @@ export interface RelationsTabProps {
   hubs: RelationHubRow[];
   hubTotalCount: number;
   kindLabel: (kind: string) => string;
-  /** relation evidence quality rolled up into a handoff-readiness read — ready
-   *  (strong ∪ supported evidence) / preflight (weak, `related_to`) / review
-   *  (no evidence yet). Derivation: `classifyRelationQuality` +
-   *  `summarizeAgentReadiness` (`@/entities/knowledge-graph`) — moved here
-   *  from the topology map's overview mode (W3 분석 보기 은퇴), which is now
-   *  the single place this reads before an agent starts writing relations. */
-  agentReadiness: RelationsTabAgentReadiness;
-  /** 수리 큐 — 분석 패널 완전 소멸 2단계 §c 로 지도 좌측 레일의 health 모드
-   *  에서 이관. `buildOntologyHealthActionTarget`(entities 레벨, 지도의 health
-   *  칩과 같은 소스)로 고른 다음 수리 대상 + 빌더 ?node= 딥링크. */
-  healthQueue: RelationsTabHealthQueue;
   hubLink: RelationsTabHubLink;
   labels: RelationsTabLabels;
 }
@@ -101,22 +59,12 @@ export function RelationsTab({
   hubs,
   hubTotalCount,
   kindLabel,
-  agentReadiness,
-  healthQueue,
   hubLink,
   labels,
 }: RelationsTabProps) {
   const edgeMax = edgeTypeRows.reduce((m, r) => Math.max(m, r.count), 0);
   // hubs 는 이미 degree 내림차순 — hubs[0] 이 이 목록 안의 최대치.
   const hubDegreeMax = hubs.reduce((m, h) => Math.max(m, h.degree), 0);
-  const readinessTotal = agentReadiness.ready + agentReadiness.preflight + agentReadiness.review;
-  const repairActionKindLabel = healthQueue.actionTarget
-    ? healthQueue.actionTarget.kind === "stale"
-      ? labels.repairQueueActionKindStale
-      : healthQueue.actionTarget.kind === "orphan"
-        ? labels.repairQueueActionKindOrphan
-        : labels.repairQueueActionKindPromotion
-    : null;
 
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-[1.2fr_1fr]">
@@ -124,112 +72,6 @@ export function RelationsTab({
         aria-label={labels.relationTypesTitle}
         className="flex min-h-0 min-w-0 flex-col rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        <div
-          aria-label={`${labels.agentReadinessTitle}: ${agentReadiness.ready} ${labels.agentReadinessReady} · ${agentReadiness.preflight} ${labels.agentReadinessPreflight} · ${agentReadiness.review} ${labels.agentReadinessReview}`}
-          data-testid="insights-agent-readiness"
-          className="mb-3.5 border-b border-[color:var(--color-divider)] pb-3.5"
-        >
-          <div className="flex items-baseline gap-2">
-            <span className="text-[14px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
-              {labels.agentReadinessTitle}
-            </span>
-            <span className="ml-auto flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-[11.5px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
-              <span>
-                {agentReadiness.ready} <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">{labels.agentReadinessReady}</span>
-              </span>
-              <span>
-                {agentReadiness.preflight} <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">{labels.agentReadinessPreflight}</span>
-              </span>
-              <span>
-                {agentReadiness.review} <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">{labels.agentReadinessReview}</span>
-              </span>
-            </span>
-          </div>
-          <div
-            data-testid="insights-agent-readiness-meter"
-            className="mt-2 flex h-1.5 w-full overflow-hidden rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-2)]"
-          >
-            <span
-              aria-hidden
-              className="bg-[color:var(--topology-overview-readiness-ready-meter,var(--color-overlay-3))]"
-              style={{ flexGrow: readinessTotal > 0 ? agentReadiness.ready : 1 }}
-            />
-            <span
-              aria-hidden
-              className="bg-[color:var(--topology-overview-readiness-preflight-meter,var(--color-status-warning))]"
-              style={{ flexGrow: readinessTotal > 0 ? agentReadiness.preflight : 0 }}
-            />
-            <span
-              aria-hidden
-              className="bg-[color:var(--topology-overview-readiness-review-meter,var(--color-status-danger))]"
-              style={{ flexGrow: readinessTotal > 0 ? agentReadiness.review : 0 }}
-            />
-          </div>
-        </div>
-        <div
-          data-testid="insights-repair-queue"
-          className="mb-3.5 border-b border-[color:var(--color-divider)] pb-3.5"
-        >
-          <div className="flex items-baseline gap-2">
-            <span className="text-[14px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
-              {labels.repairQueueTitle}
-            </span>
-            <span className="ml-auto flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-[11.5px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
-              <span>
-                {healthQueue.staleCount}{" "}
-                <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
-                  {labels.repairQueueStale}
-                </span>
-              </span>
-              <span>
-                {healthQueue.orphanCount}{" "}
-                <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
-                  {labels.repairQueueOrphan}
-                </span>
-              </span>
-              <span>
-                {healthQueue.promotionCount}{" "}
-                <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
-                  {labels.repairQueuePromotion}
-                </span>
-              </span>
-            </span>
-          </div>
-          {healthQueue.actionTarget ? (
-            <div
-              data-testid="insights-repair-queue-target"
-              className="mt-2.5 flex min-w-0 items-center justify-between gap-2"
-            >
-              <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-[color:var(--color-text-secondary)]">
-                {repairActionKindLabel ? (
-                  <span className="shrink-0 rounded border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 text-[10px] leading-none text-[color:var(--color-text-tertiary)]">
-                    {repairActionKindLabel}
-                  </span>
-                ) : null}
-                <span className="min-w-0 truncate">{healthQueue.actionTarget.title}</span>
-              </span>
-              <span className="flex shrink-0 items-center gap-1.5">
-                <Link
-                  href={healthQueue.builderHref(healthQueue.actionTarget.slug)}
-                  data-testid="insights-repair-queue-builder-link"
-                  className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
-                >
-                  {labels.repairQueueOpenBuilder}
-                </Link>
-                <Link
-                  href={healthQueue.ontologyHref(healthQueue.actionTarget.slug)}
-                  className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-                >
-                  {labels.repairQueueOpenOntology}
-                </Link>
-              </span>
-            </div>
-          ) : (
-            <p className="mt-2 text-[12px] text-[color:var(--color-text-quaternary)]">
-              {labels.repairQueueEmpty}
-            </p>
-          )}
-        </div>
         <CardHead label={labels.relationTypesTitle} gcap="relation breakdown" count={totalEdges} />
         <div
           aria-hidden
