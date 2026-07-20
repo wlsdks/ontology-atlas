@@ -22,12 +22,12 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-function renderNotice(isDesktopRuntime: boolean, onOpenFolder = vi.fn()) {
+function renderNotice(canOpenLocalVault: boolean, onOpenFolder = vi.fn()) {
   return {
     onOpenFolder,
     ...render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <SampleNotice isDesktopRuntime={isDesktopRuntime} onOpenFolder={onOpenFolder} />
+        <SampleNotice canOpenLocalVault={canOpenLocalVault} onOpenFolder={onOpenFolder} />
       </NextIntlClientProvider>,
     ),
   };

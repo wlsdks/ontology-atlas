@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-07-21 — 문서함 웹 세션 로컬 vault 개방 (표면 간 모순 해소)
+
+같은 웹 브라우저 세션에서 빌더는 로컬 vault 에 쓰기까지 되는데
+문서함만 "macOS 앱에서 시작" 잠금이었다 (페르소나 실측 N1, High —
+표면 간 모순 계약). 게이트 3종(`shouldHonorLocalIntent` ·
+`isDocsVaultLocalSourceDisabled` · `shouldShowDesktopVaultWelcome`)을
+런타임(웹/데스크톱) 기준에서 **능력(FSA 지원) 기준**으로 전환 — FSA
+미지원 브라우저만 막는다. 샘플 안내 스트립의 macOS 다운로드 CTA 도
+능력 기준 "내 폴더 열기"로. 경로 pill 은 웹 핸들의 폴더 이름 폴백.
+실증: 웹 스텁 세션에서 intent=local → welcome → 폴더 열기 → 사용자
+vault 로드·편집 활성까지 완주.
+
 ## 2026-07-21 — census 단일 진실원 (표면 간 숫자 불일치 해소)
 
 같은 vault 를 두고 지도 294 · 인사이트 293 · 프로젝트 288 · 빌더 102 로

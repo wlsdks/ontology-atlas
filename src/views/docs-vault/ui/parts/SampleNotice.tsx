@@ -3,7 +3,8 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
 export interface SampleNoticeProps {
-  isDesktopRuntime: boolean;
+  /** P1b — 게이트는 런타임이 아니라 능력: FSA 지원이면 웹에서도 폴더 열기. */
+  canOpenLocalVault: boolean;
   onOpenFolder: () => void;
 }
 
@@ -16,11 +17,11 @@ export interface SampleNoticeProps {
  * 가 전달되지 않는다는 관찰(po-pass.md §1-3)을 해소한다.
  *
  * 표시 조건(`!isLocalSourceLoaded`)은 caller 가 판단 — 이 컴포넌트는 항상
- * 렌더된 것을 전제로 한 순수 표시. 데스크톱 런타임이면 기존 로컬 vault 선택
- * 흐름(`handleSourceChange('local')`)을 그대로 재사용, 웹이면 macOS 앱
- * 다운로드 페이지로 안내(신규 라우트/모달 없음).
+ * 렌더된 것을 전제로 한 순수 표시. P1b(N1): FSA 를 지원하면 런타임과
+ * 무관하게 폴더 열기 흐름을 재사용하고, 미지원 브라우저에서만 macOS 앱
+ * 다운로드로 안내한다 — 빌더와 같은 능력 기준 계약.
  */
-export function SampleNotice({ isDesktopRuntime, onOpenFolder }: SampleNoticeProps) {
+export function SampleNotice({ canOpenLocalVault, onOpenFolder }: SampleNoticeProps) {
   const t = useTranslations("docsVault");
   return (
     <div
@@ -33,7 +34,7 @@ export function SampleNotice({ isDesktopRuntime, onOpenFolder }: SampleNoticePro
         </span>{" "}
         — {t("sampleNotice.body")}
       </p>
-      {isDesktopRuntime ? (
+      {canOpenLocalVault ? (
         <button
           type="button"
           onClick={onOpenFolder}
