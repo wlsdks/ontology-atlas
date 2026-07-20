@@ -318,7 +318,7 @@
     "includeMcpCount": "25 tools",
     "includeMcpBody": "Claude Code · Codex read and write the same vault — zero setup.",
     "includeCliTitle": "CLI",
-    "includeCliCount": "45 commands",
+    "includeCliCount": "{count} commands",
     "includeCliBody": "Graph compile · agent handoff · growth queue — the terminal is the daily entry point.",
     "trustHeading": "Signing & notarization",
     "trustSignedNote": "codesign --verify passes",
@@ -812,11 +812,6 @@
       "expand": "Show context",
       "collapse": "Hide context"
     },
-    "folderTopology": {
-      "hudCount": "folder topology · {count} projects",
-      "danglingHeading": "Dangling dependencies · {count}",
-      "danglingMore": "… {count} more"
-    },
     "parts": {
       "meta": {
         "recordProofAria": "Map evidence",
@@ -858,7 +853,9 @@
         "tagTitle": "#{tag} · {count} items",
         "unpinTooltip": "Unpin",
         "recentlyChangedHeader": "Recently changed · {count}",
-        "recentlyChangedWindowHint": "Docs edited in the last 7 days."
+        "recentlyChangedWindowHint": "Docs edited in the last 7 days.",
+        "newDocButtonLabel": "New document",
+        "newDocDisabledHint": "Open your folder to create new documents"
       },
       "empty": {
         "eyebrow": "{count} documents",
@@ -1735,6 +1732,7 @@
       "deleteToast": "Project deleted",
       "savedToast": "\"{name}\" saved",
       "vaultConflict": "This project file was changed first by another editor or AI agent. Refresh and save again.",
+      "demoModeSaveFailed": "Can't save in demo mode. Open a markdown folder first.",
       "createdAndOpenToast": "\"{name}\" created · fill in details on the edit screen",
       "eyebrowDuplicate": "Create from duplicate",
       "eyebrowCreate": "Create new project",
@@ -1787,6 +1785,7 @@
       "vaultPillFolders": "{count} folders",
       "vaultPillSwap": "Switch vault",
       "vaultPillSwapAriaLabel": "Switch vault source",
+      "vaultPillSampleLabel": "Built-in sample (Atlas's own ontology)",
       "docListCollapse": "Collapse document list",
       "docListExpand": "Expand document list"
     },
@@ -2143,13 +2142,13 @@
       "poweredOff": "idle",
       "metricUsedBy": "used by",
       "noConnections": "no direct connections",
-      "handoff": "Copy next action",
+      "handoff": "Copy agent handoff",
       "handoffCopied": "Agent handoff copied",
       "openFullDetail": "Full detail →",
       "actionsGroupLabel": "Node actions",
       "actionDocument": "Document",
       "actionEditRelations": "Edit relations",
-      "actionCopyHandoff": "Copy handoff",
+      "actionCopyHandoff": "Copy agent handoff",
       "actionPath": "Path",
       "updated_today": "changed today",
       "updated_yesterday": "changed yesterday",
@@ -2317,7 +2316,7 @@
       "domainCountTitle": "Concepts in multiple domains are counted once per domain — badge sums can exceed the total census.",
       "freshTitle": "Recently updated",
       "emptyHint": "No concepts match",
-      "agentHandoff": "Handoff",
+      "agentHandoff": "Agent handoff",
       "agentHandoffAria": "Copy notes for your AI agent (summary, re-check request, update check)",
       "segmentAll": "All",
       "segmentRecent": "Last {days}d · {count}",
@@ -2510,7 +2509,7 @@
         "operationsLabel": "Operations",
         "operationsDescription": "Wrap up timeline, owner, icon, and hub flag.",
         "operationsDetailedDescription": "Finish operational signals like timeline, owner, and hub flag.",
-        "helperBadgeFillFirst": "Fill these first",
+        "helperBadgeDescriptionRequired": "Description required · rest optional",
         "helperBadgeAfterSave": "Add after save",
         "helperBadgeOptional": "Add later",
         "collapseLabel": "Collapse",
@@ -2548,7 +2547,7 @@
         "detailPlaceholder": "# Heading\n\n**Markdown supported** — shown on detail page",
         "linksPlaceholder": "GitHub|https://github.com/...\nDocs|https://docs.example.com",
         "tagsPlaceholder": "AI, MCP, Portfolio",
-        "stackPlaceholder": "Next.js, Firebase",
+        "stackPlaceholder": "Next.js, Tauri",
         "dependenciesHint": "Pick the hubs or upstream projects this one connects to.",
         "ownerPlaceholder": "Name",
         "iconPlaceholder": "🗺️",
@@ -2566,7 +2565,23 @@
         "globalErrorBanner": "There are items to fix before saving.",
         "globalErrorMore": "+ {count} more. Check each in the fields below.",
         "saveFailed": "Save failed",
-        "deleteFailed": "Delete failed"
+        "deleteFailed": "Delete failed",
+        "slugRequired": "Enter a slug.",
+        "slugFormat": "Letters, numbers, and hyphens only.",
+        "nameRequired": "Enter a name.",
+        "categoryRequired": "Choose a category.",
+        "statusRequired": "Choose a status.",
+        "descriptionRequired": "Enter a short description.",
+        "invalidStartDate": "Start date format is invalid.",
+        "invalidLaunchDate": "Launch date format is invalid.",
+        "launchBeforeStart": "Launch date cannot be earlier than the start date.",
+        "linkLine": {
+          "format": "Link line {index}: use the `label|https://...` format.",
+          "protocol": "Link line {index}: URL must start with http:// or https://.",
+          "invalidUrl": "Link line {index}: enter a valid URL."
+        },
+        "demoModeBanner": "You'll need to open a markdown folder before you can save.",
+        "demoModeSaveFailed": "Can't save in demo mode. Open a markdown folder first."
       },
       "actions": {
         "modeCreate": "New project",
@@ -2706,13 +2721,14 @@
     "statusStale": "Last signal {ago}. Restart an agent session to continue.",
     "statusNone": "Not connected yet. The snippets below take about a minute.",
     "registerLabel": "Register",
-    "manualPathHint": "This is a browser session, so fill in the absolute folder path yourself (the <absolute path> slot).",
+    "manualPathHint": "This is a browser session, so fill in the absolute folder path yourself — replace the <absolute path to your my-vault folder> slot in the snippet with your real path.",
     "claudeCode": "Claude Code — .mcp.json",
     "codex": "Codex — one command",
     "genericHint": "Any other MCP client registers with the same command/args. Verify with ontology-atlas mcp-verify.",
     "writeConfigs": "Write config files automatically (.mcp.json etc.)",
     "previewLabel": "Once connected, the agent reads it like this",
     "previewSentence": "\"This project is made of {domains}, and each document is its evidence.\"",
+    "previewMoreDomains": "and {count} more",
     "copyHandoff": "Copy handoff text",
     "handoffCopied": "Copied",
     "defaultAgentLabel": "the agent"
