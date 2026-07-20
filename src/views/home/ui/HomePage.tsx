@@ -93,6 +93,7 @@ import {
 import { buildDocsVaultHref, buildNewNodeDoc } from "@/entities/docs-vault";
 import {
   buildOntologyHealthSignals,
+  useRelationVocabulary,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
 import { copyText } from "@/shared/lib/copy-text";
@@ -179,6 +180,7 @@ const INDEX_PANEL_COLLAPSED_KEY = "demo:index-panel-collapsed:v1";
 export function HomePage() {
   const t = useTranslations('topology');
   const tKinds = useTranslations('kinds');
+  const relationVocabulary = useRelationVocabulary();
   const [topologyControls, setTopologyControls] = useState<TopologyControlsState>(
     DEFAULT_TOPOLOGY_CONTROLS,
   );
@@ -2630,9 +2632,16 @@ export function HomePage() {
                   domainLabel: t("nodeDatasheet.domainLabel"),
                   poweredOn: t("nodeDatasheet.poweredOn"),
                   poweredOff: t("nodeDatasheet.poweredOff"),
+                  // P1a-1 (persona 실측 N5): usedBy 는 DIRECTION 집계라 단일
+                  // 관계 타입이 없어 그대로 자체 i18n 키를 쓴다. dependsOn/
+                  // evidence 는 각각 `depends_on`/`describes` 타입과 1:1
+                  // 대응해 공유 사전(`useRelationVocabulary`) plain 레지스터로
+                  // 옮겨 지도/빌더와 같은 단어(의미)를 한 곳에서 관리한다 —
+                  // 문구 값 자체는 기존과 동일("기대는 곳"/"근거"), 드리프트
+                  // 방지가 목적.
                   metricUsedBy: t("nodeDatasheet.metricUsedBy"),
-                  metricDependsOn: t("nodeDatasheet.metricDependsOn"),
-                  metricEvidence: t("nodeDatasheet.metricEvidence"),
+                  metricDependsOn: relationVocabulary("depends_on", "plain"),
+                  metricEvidence: relationVocabulary("describes", "plain"),
                   noConnections: t("nodeDatasheet.noConnections"),
                   handoff: t("nodeDatasheet.handoff"),
                   close: t("controls.close"),

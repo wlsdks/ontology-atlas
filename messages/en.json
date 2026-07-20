@@ -346,6 +346,15 @@
     "describes": "Describes",
     "related_to": "Related to"
   },
+  "edgeTypesPlain": {
+    "contains": "contains",
+    "belongs_to": "belongs to",
+    "depends_on": "leans on",
+    "implements": "implements",
+    "uses": "uses",
+    "describes": "evidence",
+    "related_to": "related"
+  },
   "topologyWidgets": {
     "controls": {
       "fitViewTooltip": "Fit map to view",
@@ -472,6 +481,15 @@
       "help": "List of keyboard shortcuts available for navigation.",
       "closeAriaLabel": "Close shortcuts",
       "footer": "Press again to close",
+      "glossary": {
+        "title": "Words used on the map",
+        "domainTerm": "Domain",
+        "domainDefinition": "A large area that groups features",
+        "capabilityTerm": "Capability",
+        "capabilityDefinition": "One thing a user can do",
+        "elementTerm": "Element",
+        "elementDefinition": "A piece of code or a doc that implements it"
+      },
       "sections": {
         "navigation": "Navigation",
         "topology": "Relief",
@@ -549,19 +567,19 @@
       "projectsList": "Project list",
       "docsVault": "Ontology workspace",
       "docsVaultAriaLabel": "Open ontology workspace — inspect local markdown, graph handoffs, and AI setup in one place",
-      "ontology": "Ontology",
-      "ontologyAriaLabel": "Open ontology tree — view nodes and relations from vault frontmatter as a hierarchy",
+      "ontology": "Map",
+      "ontologyAriaLabel": "Open the map — view nodes and relations from vault frontmatter as a hierarchy",
       "collapsedSubtitle": "Expand workspace map",
       "collapsedAriaLabel": "Expand left panel",
       "collapsedTitleText": "Expand left panel",
       "backToWorkspace": "Back to the workspace map",
       "openDocsVault": "Open workspace",
-      "openOntologyTree": "Open ontology tree",
+      "openOntologyTree": "Open the map",
       "sampleBadge": "Sample"
     },
     "workspaceStrip": {
-      "openOntologyAriaLabel": "Open ontology tree",
-      "ontologyAction": "Open ontology map",
+      "openOntologyAriaLabel": "Open the map",
+      "ontologyAction": "Open the map",
       "ontologyLabel": "ontology nodes",
       "ontologyTitle": "Sum of ontology nodes owned by this project — excludes project / vault-readme nodes. May differ from the 'N nodes' count on /ontology.",
       "domain": "Domain",
@@ -639,7 +657,7 @@
       "openHubTopology": "Open this hub's topology",
       "openProjectDetail": "View project",
       "openDocsVault": "Workspace",
-      "openOntology": "Open in ontology tree",
+      "openOntology": "Open in the map",
       "openDocsVaultTitleWithDoc": "Open the top related document for {name}",
       "openDocsVaultTitleEmpty": "Go to workspace home",
       "connectionsTitle": "Where it connects",
@@ -797,14 +815,14 @@
     },
     "parts": {
       "meta": {
-        "recordProofAria": "Ontology evidence",
-        "recordProofLabel": "Ontology evidence",
+        "recordProofAria": "Map evidence",
+        "recordProofLabel": "Map evidence",
         "pathLabel": "Path",
-        "recordProofBody": "Local markdown evidence for the graph. Agents can cite this record before updating the ontology.",
+        "recordProofBody": "Local markdown evidence for the graph. Agents can cite this record before updating the map.",
         "recordProofOntologyBody": "This document's fields connect it to a {kind} concept. Agents can query, cite, and update this evidence.",
         "wordsUnit": "{count} words",
         "readingMinutes": "≈ {minutes} min read",
-        "ontologyKindTitle": "Open {kind} node in ontology tree",
+        "ontologyKindTitle": "Open {kind} node in the map",
         "ontologyKindLabel": "Concept · kind:{kind}",
         "topologyLinkLabel": "Relation map",
         "topologyLinkTitle": "Open this concept in the relation map"
@@ -825,7 +843,7 @@
             "count": "{count}"
           },
           "ontology": {
-            "label": "Ontology nodes",
+            "label": "Map docs",
             "count": "{count}"
           }
         },
@@ -885,8 +903,8 @@
         "helpShortcuts": "P · project / D · domain / C · capability / E · element  ·  Del · delete selected  ·  Esc · clear  ·  F · fullscreen",
         "headerAriaLabel": "Builder header",
         "headerBreadcrumbAriaLabel": "Breadcrumb",
-        "headerBreadcrumbBack": "Ontology",
-        "headerBreadcrumbBackAriaLabel": "Back to ontology",
+        "headerBreadcrumbBack": "Map",
+        "headerBreadcrumbBackAriaLabel": "Back to the map",
         "headerCurrentLabel": "Builder",
         "headerCensus": "{nodes} saved concepts · {relations} relations",
         "headerDirtyClean": "No unsaved changes",
@@ -1043,7 +1061,7 @@
           "stagedStatus": "Staged on canvas · {nodes} concepts · {edges} relations",
           "empty": {
             "title": "Start with a capability",
-            "body": "Add one concept, name it, then connect it to the saved ontology.",
+            "body": "Add one concept, name it, then connect it to the saved map.",
             "primary": "Add capability",
             "secondary": "Save status"
           },
@@ -1055,7 +1073,7 @@
           },
           "selectedProject": {
             "title": "Extending {title}",
-            "body": "Add a domain under this project, then connect it to the saved ontology.",
+            "body": "Add a domain under this project, then connect it to the saved map.",
             "primary": "Add domain",
             "secondary": "Open proof"
           },
@@ -1783,7 +1801,7 @@
       "openFolderCta": "Open my folder"
     },
     "backlinksStrip": {
-      "openInOntology": "Open in ontology →",
+      "openInOntology": "Open in the map →",
       "empty": "No documents link here yet"
     },
     "vaultStatus": {
@@ -2099,9 +2117,9 @@
   },
   "topology": {
     "documentTitle": "Relief",
-    "srHeading": "Ontology relief map",
+    "srHeading": "Relief map",
     "selectionAnnouncement": "{name} selected. {deps, plural, one {# dependency} other {# dependencies}}, {referenced, plural, one {# reference} other {# references}}.",
-    "mobileTagline": "Ontology concept map.",
+    "mobileTagline": "Concept map.",
     "workspace": {
       "growthThisWeek": " · +{count, plural, one {# project} other {# projects}} this week",
       "subtitle": "<b>{concepts}</b> concepts · <b>{relations}</b> relations{growth}",
@@ -2120,8 +2138,6 @@
       "poweredOn": "fresh",
       "poweredOff": "idle",
       "metricUsedBy": "used by",
-      "metricDependsOn": "leans on",
-      "metricEvidence": "evidence",
       "noConnections": "no direct connections",
       "handoff": "Copy next action",
       "handoffCopied": "Agent handoff copied",
@@ -2139,7 +2155,7 @@
     },
     "createNode": {
       "toggleLabel": "Concept",
-      "toggleAria": "Add an ontology concept",
+      "toggleAria": "Add a concept",
       "toggleTooltip": "Create a new concept directly on the graph",
       "heading": "Add concept",
       "titlePlaceholder": "Concept title",
@@ -2155,7 +2171,7 @@
       "toastExists": "A node with that slug already exists.",
       "toastError": "Could not create the node.",
       "unavailableHeading": "Workspace required",
-      "unavailableBody": "Connect a local workspace before creating ontology concepts from the topology map.",
+      "unavailableBody": "Connect a local workspace before creating concepts from the topology map.",
       "unavailableAction": "Open workspace"
     },
     "explanationEdit": {
@@ -2174,10 +2190,10 @@
       "overviewSyncCopied": "Update check copied",
       "overviewBriefCopyAriaLabel": "Copy topology map brief",
       "overviewBriefCopiedAriaLabel": "Topology map brief copied",
-      "overviewReanalyzeCopyAriaLabel": "Copy ontology reanalysis command for Claude Code or Codex",
-      "overviewReanalyzeCopiedAriaLabel": "Ontology reanalysis command for Claude Code or Codex copied",
-      "overviewSyncCopyAriaLabel": "Copy ontology update check for Claude Code or Codex",
-      "overviewSyncCopiedAriaLabel": "Ontology update check for Claude Code or Codex copied",
+      "overviewReanalyzeCopyAriaLabel": "Copy map reanalysis command for Claude Code or Codex",
+      "overviewReanalyzeCopiedAriaLabel": "Map reanalysis command for Claude Code or Codex copied",
+      "overviewSyncCopyAriaLabel": "Copy map update check for Claude Code or Codex",
+      "overviewSyncCopiedAriaLabel": "Map update check for Claude Code or Codex copied",
       "overviewBriefTitle": "Topology map brief",
       "overviewBriefTotalNodes": "Total nodes",
       "overviewBriefTotalRelations": "Total relations",
@@ -2204,8 +2220,7 @@
       "overviewBriefWorkspaceCheck": "Workspace check",
       "overviewBriefMcpWorkspaceCheck": "MCP workspace check",
       "healthEvidenceUrl": "URL",
-      "overviewRelationLegendSpine": "Contains",
-      "overviewRelationLegendQuality": "Trust",
+      "overviewRelationLegendQuality": "Confidence",
       "pathChipUnresolved": "Path: {source} → choose a target",
       "pathChipResolved": "{source} → {target} · {hops, plural, one {# hop} other {# hops}}",
       "pathChipNoPath": "{source} → {target} · no path found",
@@ -2261,7 +2276,7 @@
       "bodyNoProjectsDownload": "Install the macOS app and open a local vault to start the relation map from the first project concept.",
       "bodyNoProjectsPicker": "Open a local vault or save the first project concept in Save/edit to start the relation map.",
       "bodyNoDeps": "Create one relation in Save/edit and its line will appear here.",
-      "crossViewHint": "Full ontology node documents and changes stay available in Browse and Save/edit.",
+      "crossViewHint": "Full map documents and changes stay available in Browse and Save/edit.",
       "ctaCreateNode": "Create concept",
       "ctaTree": "Browse concepts",
       "ctaBuilder": "Open Save/edit",
