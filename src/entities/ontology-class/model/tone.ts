@@ -53,12 +53,17 @@ export const ONTOLOGY_KIND_TONE: Record<OntologyVisualKind, OntologyKindTone> = 
     nodeSize: 5.2,
   },
   element: {
-    hueName: "sage",
-    fill: "rgba(105, 177, 121, 0.94)",
-    border: "rgba(105, 177, 121, 0.88)",
-    chipBg: "rgba(105, 177, 121, 0.11)",
+    // [strategy verdict 2026-07-21 §C] "부트스트랩 그린" 체감 해소 —
+    // sage(105,177,121, 채도 31%) → eucalyptus(124,166,141, 채도 19%),
+    // 냉색 쪽으로 미세 이동. element 가 dogfood 최다 kind(55/105)라 캔버스
+    // 지배색이 되므로 저채도로 조용하게. 알파 사다리(0.94/0.88/0.11/0.44)
+    // 는 그대로 유지 — 값 4개만 교체.
+    hueName: "eucalyptus",
+    fill: "rgba(124, 166, 141, 0.94)",
+    border: "rgba(124, 166, 141, 0.88)",
+    chipBg: "rgba(124, 166, 141, 0.11)",
     chipText: "var(--color-text-primary)",
-    chipBorder: "rgba(105, 177, 121, 0.44)",
+    chipBorder: "rgba(124, 166, 141, 0.44)",
     nodeSize: 3.1,
   },
   unknown: {
