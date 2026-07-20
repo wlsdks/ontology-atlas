@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronUp, Search } from "lucide-react";
+import { ChevronLeft, Search } from "lucide-react";
 import {
   filterTreeByQuery,
   type OntologyTreeBuildResult,
@@ -150,19 +150,20 @@ export function TopologyIndexPanel({
         aria-label={labels.foldAria}
         title={labels.fold}
         data-testid="topology-index-fold"
-        className="group mb-2.5 flex w-full cursor-pointer items-center gap-1.5 rounded-[var(--chrome-radius-inner)] border-b border-[color:var(--topology-v2-panel-divider)] px-0.5 pb-2.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+        className="group mb-3 flex w-full cursor-pointer items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
       >
         <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--topology-v2-panel-text-tertiary)]">
           {labels.label}
         </span>
-        <span className="font-mono text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]">
-          · {totalConcepts}
-        </span>
+        {/* 수렴 판정 ①: 시각 카운트 "· N" 삭제 — 지형도 HUD 가 이미 라벨과
+            함께 총수를 상시 노출해 3중 중복이었다 (sr-only census 는 존치).
+            판정 ②/③: 셰브론은 보더 박스가 아니라 quiet glyph — 히트영역은
+            행 전체(소유자 피드백 보존), 방향은 접힘 결과와 일치하는 ‹. */}
         <span
           aria-hidden="true"
-          className="ml-auto inline-flex size-[26px] shrink-0 items-center justify-center rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors group-hover:border-[color:var(--topology-v2-panel-action-border)] group-hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          className="ml-auto inline-flex size-[26px] shrink-0 items-center justify-center text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors group-hover:text-[color:var(--topology-v2-panel-text-secondary)]"
         >
-          <ChevronUp size={13} aria-hidden="true" />
+          <ChevronLeft size={13} aria-hidden="true" />
         </span>
       </button>
       <p data-testid="topology-index-census" className="sr-only">
@@ -170,7 +171,7 @@ export function TopologyIndexPanel({
         {domainCount} {labels.censusDomains}
       </p>
 
-      <div className="relative mb-2 shrink-0">
+      <div className="relative mb-3 shrink-0">
         <Search
           size={11}
           aria-hidden
@@ -220,7 +221,7 @@ export function TopologyIndexPanel({
           hotkey — 여기선 재확인용 표기, 별도 바인딩 아님). */}
       <div
         data-testid="topology-index-footer"
-        className="mt-2 flex shrink-0 items-center gap-1.5 border-t border-[color:var(--topology-v2-panel-divider)] px-1 pt-2.5 text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+        className="mt-2.5 flex shrink-0 items-center gap-1.5 border-t border-[color:var(--topology-v2-panel-divider)] px-1 pt-2.5 text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]"
       >
         <span
           aria-hidden="true"
