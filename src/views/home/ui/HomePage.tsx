@@ -498,6 +498,8 @@ export function HomePage() {
   // Slice 1 (discovery.md F1~F6) — "내 문서로 지도 만들기". 열린 vault 에
   // .md 는 있는데 지도 노드가 0 인 순간의 부트스트랩 다이얼로그.
   const [bootstrapOpen, setBootstrapOpen] = useState(false);
+  // P3d(E1) — 부트스트랩 완료 시 지도 리빌 연출 트리거.
+  const [mapRevealToken, setMapRevealToken] = useState(0);
   const bootstrapPlan = useMemo(() => {
     if (!vault.manifest) return null;
     return deriveBootstrapPlan(
@@ -521,6 +523,8 @@ export function HomePage() {
       }
       await vault.createDoc(plan.projectSlug, buildProjectMarkdown(plan, input.acceptedDomains));
       setBootstrapOpen(false);
+      // E1 — 리로드된 그래프가 "내 문서들이 모이는" 연출로 등장한다.
+      setMapRevealToken((n) => n + 1);
       toast.show(t("bootstrap.toastDone", { count: elements.length }), "success");
     },
     [bootstrapPlan, vault, toast, t],
@@ -2386,6 +2390,7 @@ export function HomePage() {
                     livePhysics={analysisMode === "graph"}
                     fitViewToken={combinedFitToken}
                     relayoutToken={topologyRelayoutToken}
+                    revealToken={mapRevealToken}
                     onSelect={(slug) => handleSelect(slug)}
                     onOpen={handleExpandRequest}
                     onPaneClick={handleClose}
