@@ -19,9 +19,17 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export const RECENT_CHANGES_DEFAULT_WINDOW_DAYS = 7;
 
 /**
+ * C-3 (Guardian 총괄) — "약간 미래" 허용 창. `nowMs` 는 세션 첫-렌더
+ * 스냅샷이라, 세션 도중 만들어진 문서(첫 지도 부트스트랩 등)는 mtime 이
+ * 스냅샷보다 미래다. 이걸 전부 제외하면 "방금 만든 노드 6개 직후 최근
+ * 변경 0"이라는 자기모순이 실증됐다. 24h 안의 미래는 "지금(오늘)"으로
+ * 포함하고, 그 밖(진짜 clock skew/데이터 이상)만 제외한다.
+ */
+const FUTURE_TOLERANCE_MS = 24 * 60 * 60 * 1000;
+
+/**
  * `updatedAtIso` 가 `nowMs` 기준 `windowDays` 안(과거)에 들어오는지. 파싱 불가
- * 값은 false(모른다≠최근). 미래 날짜(clock skew)도 false로 취급 — "방금"이
- * 아니라 데이터 이상이므로 렌즈에 끼워 넣지 않는다.
+ * 값은 false(모른다≠최근). 미래는 24h 허용 창 안이면 "오늘"로 포함.
  */
 export function isWithinRecentWindow(
   updatedAtIso: string,
@@ -31,7 +39,7 @@ export function isWithinRecentWindow(
   const updatedMs = Date.parse(updatedAtIso);
   if (!Number.isFinite(updatedMs)) return false;
   const ageMs = nowMs - updatedMs;
-  if (ageMs < 0) return false;
+  if (ageMs < -FUTURE_TOLERANCE_MS) return false;
   return ageMs <= windowDays * DAY_MS;
 }
 
@@ -39,7 +47,8 @@ export function isWithinRecentWindow(
 export function daysAgoFromIso(updatedAtIso: string, nowMs: number): number {
   const updatedMs = Date.parse(updatedAtIso);
   if (!Number.isFinite(updatedMs)) return Number.POSITIVE_INFINITY;
-  return Math.floor((nowMs - updatedMs) / DAY_MS);
+  // 허용 창 안의 미래(세션 중 생성)는 0일 = "오늘" (음수 일수 방지).
+  return Math.max(0, Math.floor((nowMs - updatedMs) / DAY_MS));
 }
 
 export interface RecentChangeRow {

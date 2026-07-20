@@ -2700,6 +2700,7 @@
     "previewLabel": "연결되면 에이전트는 이렇게 읽어요",
     "previewSentence": "\"이 프로젝트는 {domains} 영역으로 이루어져 있고, 각 문서가 그 근거입니다.\"",
     "copyHandoff": "인계 텍스트 복사",
-    "handoffCopied": "복사됨"
+    "handoffCopied": "복사됨",
+    "defaultAgentLabel": "에이전트"
   }
 }

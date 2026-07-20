@@ -40,8 +40,11 @@ describe("isWithinRecentWindow", () => {
     expect(isWithinRecentWindow("not-a-date", NOW, 7)).toBe(false);
   });
 
-  it("is false for a future-dated (clock skew) value", () => {
-    expect(isWithinRecentWindow("2026-07-22T00:00:00.000Z", NOW, 7)).toBe(false);
+  it("허용 창(24h) 밖의 미래만 제외한다 — C-3 계약 갱신", () => {
+    // NOW = 2026-07-21T12:00Z. +12h 는 세션 중 생성으로 간주 → 포함.
+    expect(isWithinRecentWindow("2026-07-22T00:00:00.000Z", NOW, 7)).toBe(true);
+    // +25h 는 진짜 skew → 제외.
+    expect(isWithinRecentWindow("2026-07-22T13:00:00.000Z", NOW, 7)).toBe(false);
   });
 
   it("defaults to a 7-day window", () => {
@@ -150,3 +153,17 @@ describe("selectRecentVaultDocs", () => {
     expect(selectRecentVaultDocs([doc("old", "2025-01-01T00:00:00.000Z")], NOW)).toEqual([]);
   });
 });
+/** C-3 (Guardian 실증) — 세션 중 생성된 문서(스냅샷보다 미래 mtime)는 "오늘". */
+describe("future-tolerance (session-created docs)", () => {
+  const NOW = Date.parse("2026-07-21T12:00:00Z");
+  it("스냅샷 이후 1시간 뒤 생성 문서도 최근에 포함된다", () => {
+    const iso = new Date(NOW + 60 * 60 * 1000).toISOString();
+    expect(isWithinRecentWindow(iso, NOW, 7)).toBe(true);
+    expect(daysAgoFromIso(iso, NOW)).toBe(0);
+  });
+  it("24h 를 넘는 미래(진짜 skew)는 여전히 제외", () => {
+    const iso = new Date(NOW + 25 * 60 * 60 * 1000).toISOString();
+    expect(isWithinRecentWindow(iso, NOW, 7)).toBe(false);
+  });
+});
+

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { computeStarDustCount } from "./starfield";
+import { computeStarDustCount, buildDustPoints } from "./starfield";
 
 const AREA_PER_POINT = 5200; // --topology-v2-dust-area-per-point
 
@@ -23,5 +23,18 @@ describe("computeStarDustCount", () => {
 
   it("returns 0 for a degenerate zero-area viewport", () => {
     expect(computeStarDustCount(0, 900, AREA_PER_POINT)).toBe(0);
+  });
+});
+
+/** C-1 (Guardian 총괄) — depth 도 seed 결정론: 같은 입력 = 같은 dust. */
+describe("buildDustPoints depth determinism", () => {
+  it("두 번 생성해도 depth 까지 동일하고 범위 안이다", () => {
+    const a = buildDustPoints(800, 600, 24, 0.15, 0.45);
+    const b = buildDustPoints(800, 600, 24, 0.15, 0.45);
+    expect(a.map((pt) => pt.depth)).toEqual(b.map((pt) => pt.depth));
+    for (const p of a) {
+      expect(p.depth).toBeGreaterThanOrEqual(0.15);
+      expect(p.depth).toBeLessThanOrEqual(0.45);
+    }
   });
 });

@@ -67,8 +67,13 @@ export function buildDustPoints(
   const rng = mulberry32(7);
   const points: DustPoint[] = [];
   for (let i = 0; i < count; i += 1) {
-    points.push({ x: rng() * viewportWidth, y: rng() * viewportHeight, r: 0.4 + rng() * 0.7, alpha: 0.02 + rng() * 0.04,
-      depth: depthMin + Math.random() * (depthMax - depthMin),
+    points.push({
+      x: rng() * viewportWidth,
+      y: rng() * viewportHeight,
+      r: 0.4 + rng() * 0.7,
+      alpha: 0.02 + rng() * 0.04,
+      // C-1 (Guardian) — depth 도 같은 seed rng: 이 함수의 결정론 계약 유지.
+      depth: depthMin + rng() * (depthMax - depthMin),
     });
   }
   return points;

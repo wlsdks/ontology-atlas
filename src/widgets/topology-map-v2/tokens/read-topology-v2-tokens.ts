@@ -160,6 +160,9 @@ export interface TopologyV2Tokens {
   nodeMinSeparationRatio: number;
   /** `--topology-v2-radius-magnitude-k` — log-compressed magnitude encoding strength for domain/capability radii (B4). */
   radiusMagnitudeK: number;
+  /** `--topology-v2-dust-parallax-min/max` — dust 시차 깊이 범위 (B3 잔여). */
+  dustParallaxMin: number;
+  dustParallaxMax: number;
 
   // 2.5 안전 영역 (fixed chrome inset, px — 라벨 컬링 + 카메라 fit)
   safeInsetLeft: number;
@@ -276,6 +279,8 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "edgePassthroughAlpha", cssVar: "--topology-v2-edge-passthrough-alpha", kind: "number" },
   { key: "nodeMinSeparationRatio", cssVar: "--topology-v2-node-min-separation-ratio", kind: "number" },
   { key: "radiusMagnitudeK", cssVar: "--topology-v2-radius-magnitude-k", kind: "number" },
+  { key: "dustParallaxMin", cssVar: "--topology-v2-dust-parallax-min", kind: "number" },
+  { key: "dustParallaxMax", cssVar: "--topology-v2-dust-parallax-max", kind: "number" },
 
   { key: "safeInsetLeft", cssVar: "--topology-v2-safe-inset-left", kind: "number" },
   { key: "safeInsetRight", cssVar: "--topology-v2-safe-inset-right", kind: "number" },

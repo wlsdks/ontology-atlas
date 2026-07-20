@@ -1241,6 +1241,9 @@
        답하게 한다. 로그 압축이라 103짜리 도메인이 9짜리의 ~1.2배 — 순위
        단서이지 막대그래프가 아니다. */
     --topology-v2-radius-magnitude-k: 0.45;
+    /* B3 잔여 — dust 시차 깊이 범위 (그리드 1.0 대비 느린 흐름). */
+    --topology-v2-dust-parallax-min: 0.15;
+    --topology-v2-dust-parallax-max: 0.45;
     --topology-v2-edge-depends: #4c4c63;
     --topology-v2-edge-dim: #1e1e22;
     --topology-v2-hull-stroke: #3a3a42;
