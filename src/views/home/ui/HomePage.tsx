@@ -128,6 +128,7 @@ import { resolveTopologySelectedOntologyNode } from "../lib/resolve-topology-sel
 import { resolveDeeplinkMissDecision } from "../lib/deeplink-miss-notice";
 import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
+import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
@@ -1009,7 +1010,8 @@ export function HomePage() {
       reach,
       breadcrumb: {
         projectTitle,
-        totalConcepts: renderProjects.length + ontologyInsight.nodes.length,
+        // P0c — 정본 census (renderProjects 이중 가산 제거)
+        totalConcepts: ontologyInsight.nodes.length,
         totalRelations: ontologyInsight.edges.length,
       },
       bodyMarkdown,
@@ -1388,11 +1390,16 @@ export function HomePage() {
       }),
     };
   }, [renderProjects, ontologyInsight, mountNowMs]);
-  const topologyTotalNodes =
-    renderProjects.length + (ontologyInsight?.nodes.length ?? 0);
-  const topologyTotalRelations =
-    renderProjects.reduce((sum, project) => sum + project.dependencies.length, 0) +
-    (ontologyInsight?.edges.length ?? 0);
+  // P0c — 정본 census: insight.nodes 에 kind:project 가 이미 포함돼 있어
+  // renderProjects 를 더하면 이중 가산(지도 294 vs 인사이트 293 불일치의
+  // 원인). "개념/관계" census 는 insight 파생 전체가 단일 출처다
+  // (`shared/lib/ontology-tree/canonical-census.ts`).
+  const topologyCanonicalCensus = computeCanonicalCensus(
+    ontologyInsight?.nodes ?? [],
+    ontologyInsight?.edges ?? [],
+  );
+  const topologyTotalNodes = topologyCanonicalCensus.conceptCount;
+  const topologyTotalRelations = topologyCanonicalCensus.relationCount;
   // INDEX tree data — the SAME `buildOntologyTree` the old `/ontology` tree
   // page used (`@/shared/lib/ontology-tree`), so the census row above and the
   // tree rows below can never drift from the chrome's own `topologyTotalNodes`

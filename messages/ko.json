@@ -888,7 +888,7 @@
         "headerBreadcrumbBack": "온톨로지",
         "headerBreadcrumbBackAriaLabel": "온톨로지로 돌아가기",
         "headerCurrentLabel": "빌더",
-        "headerCensus": "개념 {nodes}개 · 관계 {relations}개",
+        "headerCensus": "저장된 개념 {nodes}개 · 관계 {relations}개",
         "headerDirtyClean": "미저장 변경 없음",
         "headerDirtyStatus": "미저장 변경 · 임시 개념 {nodes} · 관계 {edges}",
         "headerOverflowLabel": "더보기",

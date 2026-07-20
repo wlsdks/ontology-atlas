@@ -1,4 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
 import { buildMeaningfulOntologyStats } from "@/shared/lib/ontology-tree";
 
 export interface WorkspaceCensus {
@@ -25,10 +26,13 @@ export function computeWorkspaceCensus(
   projectCount: number,
 ): WorkspaceCensus {
   const stats = buildMeaningfulOntologyStats(nodes);
+  // P0c — "개념" census 는 정본(파생 전체)으로 통일. meaningful 필터
+  // (project/document 제외 = 다른 표면과 -5 불일치) 는 kind 막대 용도로만.
+  const canonical = computeCanonicalCensus(nodes, edges);
   return {
     projectCount,
     domainCount: stats.byKind.domain,
-    conceptCount: stats.total,
-    relationCount: edges.length,
+    conceptCount: canonical.conceptCount,
+    relationCount: canonical.relationCount,
   };
 }

@@ -888,7 +888,7 @@
         "headerBreadcrumbBack": "Ontology",
         "headerBreadcrumbBackAriaLabel": "Back to ontology",
         "headerCurrentLabel": "Builder",
-        "headerCensus": "{nodes} concepts · {relations} relations",
+        "headerCensus": "{nodes} saved concepts · {relations} relations",
         "headerDirtyClean": "No unsaved changes",
         "headerDirtyStatus": "Unsaved changes · {nodes} draft concepts · {edges} relations",
         "headerOverflowLabel": "More",
