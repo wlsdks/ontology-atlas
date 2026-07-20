@@ -13,6 +13,8 @@ export interface TopologyIndexTreeRowLabels {
   capabilitiesShort: string;
   elementsShort: string;
   freshTitle: string;
+  /** P4b — "에이전트가 방금" 귀속 배지. */
+  agentBadge?: string;
 }
 
 export interface TopologyIndexTreeRowProps {
@@ -23,6 +25,8 @@ export interface TopologyIndexTreeRowProps {
   onSelect: (nodeId: string) => void;
   selectedId: string | null;
   changedSlugs: ReadonlySet<string>;
+  /** P4b — fresh heartbeat 의 focus 와 일치하는 노드 하나(있다면). */
+  agentAttributedNodeId?: string | null;
   maxDomainDescendantCount: number;
   labels: TopologyIndexTreeRowLabels;
 }
@@ -54,6 +58,7 @@ export function TopologyIndexTreeRow({
   onSelect,
   selectedId,
   changedSlugs,
+  agentAttributedNodeId = null,
   maxDomainDescendantCount,
   labels,
 }: TopologyIndexTreeRowProps) {
@@ -62,6 +67,7 @@ export function TopologyIndexTreeRow({
   const open = isOpen(node.id);
   const selected = selectedId === node.id;
   const fresh = changedSlugs.has(node.id);
+  const agentAttributed = agentAttributedNodeId !== null && agentAttributedNodeId === node.id;
   const isDomain = node.kind === "domain";
   const subcounts = isDomain ? computeDomainSubcounts(entry) : null;
   const capacityRatio = subcounts
@@ -128,6 +134,14 @@ export function TopologyIndexTreeRow({
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-1.5">
             <span className="min-w-0 flex-1 truncate">{node.title}</span>
+            {agentAttributed && labels.agentBadge ? (
+              <span
+                data-testid="topology-index-agent-badge"
+                className="shrink-0 font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--topology-v2-panel-text-tertiary)]"
+              >
+                {labels.agentBadge}
+              </span>
+            ) : null}
             {fresh ? (
               <span
                 title={labels.freshTitle}
@@ -171,6 +185,7 @@ export function TopologyIndexTreeRow({
               onSelect={onSelect}
               selectedId={selectedId}
               changedSlugs={changedSlugs}
+              agentAttributedNodeId={agentAttributedNodeId}
               maxDomainDescendantCount={maxDomainDescendantCount}
               labels={labels}
             />

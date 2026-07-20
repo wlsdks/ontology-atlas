@@ -43,6 +43,27 @@ Kumu/Bloom/Foundry 공통형). 빈 공간 클릭이 엣지 7px 근접이면 팝�
 보이는 엣지 클릭 금지 계약). 노드 선택/빈 공간과 배타, 노드 팝오버와
 같은 포지셔너 계약. "온톨로지답다"의 분기점(문장화+선언 출처)이 표면이
 됐다 — frontmatter 가 곧 그래프라 출처 비용 0.
+## 2026-07-21 — 최근 변경 렌즈 · 에이전트 귀속 배지 · 성장 진입점 (P4a·P4b·P4c)
+
+- **최근 변경 렌즈** (mtime 7일 창, `computeRecentChanges`/`selectRecentVaultDocs`
+  — `shared/lib/ontology-tree/recent-changes.ts` 단일 진실원): INDEX 검색
+  아래 "전체 | 최근 변경 N" 2-세그먼트가 트리를 최근 노드 + 조상 경로로
+  좁힌다(`filterTreeByNodeIds` 재사용). 문서함(`/docs`) 사이드바에도 같은
+  창 계산으로 "최근 바뀐 문서 N" 접이식 스트립. 지도 자체의 dim 은
+  미구현 — 캔버스 엔진의 ego-dim 채널(`focus-state.ts`)이 클릭 기반
+  단일 focus 전제라, 렌즈 dim 을 얹으려면 `WorldNode`/`topology-world.ts`/
+  `resolveNodeVisual` 을 함께 건드려야 해 이번 슬라이스에서는 INDEX
+  필터 + 행 강조까지로 범위를 좁혔다.
+- **에이전트 귀속 배지**: heartbeat 가 fresh 하고 focus 가 렌즈 안의
+  노드와 일치하면 그 INDEX 행에 "에이전트가 방금" 표시(새 색 없이 평문
+  텍스트). 신뢰 투명성 조건 복원 — Live 팝오버에 heartbeat 상태 무관
+  항상 "이 신호 지우기" 안내 + `agent-activity --clear` 명령 복사.
+- **성장 진입점**: `bootstrapPlan`(기존 파생, "내 문서로 지도 만들기"와
+  동일 소스)의 카운트를 INDEX 푸터 위 "지도에 없는 문서 N개 · 올리기"
+  행으로 노출 — 지도가 이미 채워진 상태에서도 클릭 한 번으로 승격
+  다이얼로그가 열린다(이전엔 빈 지도 empty-state 에서만 열렸다).
+  성장/유지보수 큐는 `/ontology/insights` "수리 큐"(`buildOntologyHealthActionTarget`)
+  가 이미 인앱 노출 중이라 새 표면을 만들지 않았다.
 
 ## 2026-07-21 — "AI 에이전트 연결" 시트 (P2a — 웨지 표면)
 
