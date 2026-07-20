@@ -1,5 +1,9 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { isContainmentRelation } from "@/shared/lib/ontology-tree";
+import {
+  computeDomainCensusRows,
+  domainCensusById,
+  isContainmentRelation,
+} from "@/shared/lib/ontology-tree";
 import type { TopologyV2Edge, TopologyV2Node } from "@/widgets/topology-map-v2";
 import { buildOntologySkeleton } from "./topology-ontology-skeleton";
 import { classifyTopologyRelationQuality } from "./topology-analysis";
@@ -68,6 +72,9 @@ export function buildTopologyV2Graph(
   );
 
   const { subtreeWeightBySlug } = buildOntologySkeleton(nodes, edges);
+  // Guardian I-1 — 각인 숫자(project/domain)의 단일 진실원. subtreeWeight 는
+  // element 만 세서 INDEX/projects 의 역량+요소 합계와 숫자가 갈라졌다.
+  const censusById = domainCensusById(computeDomainCensusRows(nodes, edges));
 
   const fullDegreeById = new Map<string, number>();
   const incomingById = new Map<string, number>();
@@ -107,9 +114,9 @@ export function buildTopologyV2Graph(
     recentlyUpdated: options.changedSlugs?.has(node.id) ?? false,
     fullDegree: fullDegreeById.get(node.id) ?? 0,
     // Engraved-numeral source (project/domain only, drawn in circuit range) —
-    // the transitive descendant count, reusing the same `subtreeWeightBySlug`
-    // signal `size` derives from so the numeral and the magnitude agree.
-    descendantCount: subtreeWeightBySlug.get(node.id) ?? 0,
+    // Guardian I-1: 역량+요소 합계 (INDEX·/projects 와 같은 BFS census).
+    // `size`(시각 규모)는 종전 element weight 를 유지한다.
+    descendantCount: censusById.get(node.id)?.total ?? subtreeWeightBySlug.get(node.id) ?? 0,
   }));
 
   const v2Edges: TopologyV2Edge[] = includedEdges.map((edge) => {

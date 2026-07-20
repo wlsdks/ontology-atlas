@@ -5,6 +5,7 @@ import {
   closestAllowedValue,
   formatAllowedValueError,
   formatErrorValue,
+  suggestCompiledSlugs,
 } from './suggestions.mjs';
 
 describe('suggestions', () => {
@@ -31,5 +32,22 @@ describe('suggestions', () => {
     assert.equal(formatErrorValue(null), 'null');
     assert.equal(formatErrorValue(['x']), 'array');
     assert.equal(formatErrorValue({ value: 'x' }), 'object');
+  });
+
+  // 미해석 slug did-you-mean — relate/relation-check/MCP 쿼리 공용 에러 경로.
+  it('suggests compiled slugs for tail typos, transpositions, and folder misses', () => {
+    const slugs = ['capabilities/payment-flow', 'capabilities/auth-login', 'domains/billing'];
+    // 전형 오타 (flwo)
+    assert.deepEqual(suggestCompiledSlugs('capabilities/payment-flwo', slugs), ['capabilities/payment-flow']);
+    // 전치 오타 + 폴더 없이
+    assert.deepEqual(suggestCompiledSlugs('pyament-flow', slugs), ['capabilities/payment-flow']);
+    // 폴더 틀림 + tail 정확 → exact tail 이 최우선
+    assert.deepEqual(suggestCompiledSlugs('elements/payment-flow', slugs), ['capabilities/payment-flow']);
+    // 부분 입력 substring
+    assert.ok(suggestCompiledSlugs('billing', slugs).includes('domains/billing'));
+    // 전혀 무관하면 제안 없음
+    assert.deepEqual(suggestCompiledSlugs('zzzz-qqqq-xxxx', slugs), []);
+    assert.deepEqual(suggestCompiledSlugs('', slugs), []);
+    assert.deepEqual(suggestCompiledSlugs('x', []), []);
   });
 });

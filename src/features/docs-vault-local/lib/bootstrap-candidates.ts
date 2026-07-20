@@ -23,6 +23,8 @@
  * - 두 경로의 slug 가 일치해야 그래프가 이어진다 — 같은 원문 이름을 쓴다.
  */
 
+import { slugifyName } from '@/entities/docs-vault';
+
 export interface BootstrapDocInput {
   slug: string;
   title: string;
@@ -132,6 +134,31 @@ export function selectedElements(
  * 루트 레벨 문서의 마지막 세그먼트(derive 의 elements[] 가 element 노드
  * id 로 resolve 하는 형태)만 노출한다.
  */
+/**
+ * 재검 마찰 D — 승격 시 도메인을 스텁이 아닌 실제 .md 로 만든다.
+ * 파일 tail 은 derive 의 `domain:slugifyName(name)` ref 와 일치해야
+ * 그래프가 이어진다 (같은 slugify 규칙 import).
+ */
+export function domainDocSlug(name: string): string {
+  const tail = slugifyName(name);
+  return `${name}/${tail}`;
+}
+
+export function buildDomainMarkdown(domain: BootstrapDomainCandidate): string {
+  return [
+    '---',
+    'kind: domain',
+    `title: ${domain.name}`,
+    '---',
+    '',
+    `# ${domain.name}`,
+    '',
+    `\`${domain.name}/\` 폴더의 문서 ${domain.docCount}개를 묶는 도메인입니다.`,
+    '이 파일의 frontmatter 가 곧 그래프입니다 — 설명을 자유롭게 채우세요.',
+    '',
+  ].join('\n');
+}
+
 export function buildProjectMarkdown(
   plan: BootstrapPlan,
   acceptedDomains: ReadonlySet<string>,

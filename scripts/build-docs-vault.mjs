@@ -8,6 +8,7 @@
 
 import { readFile, writeFile, mkdir, readdir, stat, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseFrontmatter } from './lib/parse-frontmatter.mjs';
@@ -49,6 +50,48 @@ const CENSUS_OUT = path.join(
   'model',
   'dogfood-census.generated.ts',
 );
+
+/**
+ * 샘플 mtime git-date화 — updatedAt 을 fs mtime 대신 그 파일을 마지막으로
+ * 만진 커밋 시각으로. fs mtime 은 clone/checkout/branch 이동마다 "지금"으로
+ * 밀려 신선도 렌즈("최근 변경 7일")가 전부 오늘로 왜곡된다. 커밋 시각은
+ * 결정론적이고 사용자에게 진실이다. 워킹트리에서 수정 중(dirty)인 파일만
+ * fs mtime 을 유지한다 — 그건 진짜 방금 편집이다.
+ */
+function gitLastCommitDates(rootDir, scopeDir) {
+  const dates = new Map();
+  const dirty = new Set();
+  try {
+    const scope = path.relative(rootDir, scopeDir).replace(/\\/g, '/') || '.';
+    const log = execSync(`git log --format=%x01%cI --name-only -- "${scope}"`, {
+      cwd: rootDir,
+      encoding: 'utf-8',
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    let currentDate = null;
+    for (const line of log.split('\n')) {
+      if (line.startsWith('\x01')) {
+        currentDate = line.slice(1).trim();
+        continue;
+      }
+      const file = line.trim();
+      if (!file || !currentDate) continue;
+      if (!dates.has(file)) dates.set(file, currentDate);
+    }
+    const status = execSync(`git status --porcelain -- "${scope}"`, {
+      cwd: rootDir,
+      encoding: 'utf-8',
+      maxBuffer: 16 * 1024 * 1024,
+    });
+    for (const line of status.split('\n')) {
+      const file = line.slice(3).trim();
+      if (file) dirty.add(file);
+    }
+  } catch {
+    // git 미설치/비저장소(배포 tarball 등) — fs mtime fallback 유지.
+  }
+  return { dates, dirty };
+}
 
 export function usage() {
   return [
@@ -439,6 +482,7 @@ async function buildDocsVault({ check = false } = {}) {
   }
 
   const files = await walk(DOCS_DIR);
+  const gitDates = gitLastCommitDates(ROOT, DOCS_DIR);
   const previousManifest = await readJsonIfExists(MANIFEST_OUT);
   const previousDocsBySlug = new Map(
     (previousManifest?.docs ?? []).map((doc) => [doc.slug, doc]),
@@ -485,9 +529,11 @@ async function buildDocsVault({ check = false } = {}) {
       tagsMap.get(tag).add(slug);
     }
     const st = await stat(full);
+    const relPath = path.relative(ROOT, full).replace(/\\/g, '/');
+    const committedAt = gitDates.dirty.has(relPath) ? null : gitDates.dates.get(relPath);
     const nextDoc = {
       slug,
-      path: path.relative(ROOT, full).replace(/\\/g, '/'),
+      path: relPath,
       title,
       description,
       tags,
@@ -495,11 +541,15 @@ async function buildDocsVault({ check = false } = {}) {
       headings,
       excerpt: buildExcerpt(body),
       wordCount: body.split(/\s+/).filter(Boolean).length,
-      updatedAt: st.mtime.toISOString(),
+      // 커밋 시각 우선 (결정론·신선도 렌즈 진실) — dirty/미추적만 fs mtime.
+      updatedAt: committedAt ?? st.mtime.toISOString(),
       linksOut,
     };
     const previousDoc = previousDocsBySlug.get(slug);
+    // 커밋 시각이 있으면 그게 진실원 — 이전 manifest 값 보존은 git 정보가
+    // 없을 때(dirty/비저장소)의 mtime 널뜀 방지용으로만 남긴다.
     if (
+      committedAt == null &&
       previousDoc &&
       stableStringify(comparableDoc(previousDoc)) ===
         stableStringify(comparableDoc(nextDoc))

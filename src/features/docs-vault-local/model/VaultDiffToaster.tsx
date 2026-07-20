@@ -31,7 +31,7 @@ import { useLocalVault } from './LocalVaultProvider';
  * toast 띄우면 noise).
  */
 export function VaultDiffToaster() {
-  const { status, manifest } = useLocalVault();
+  const { status, manifest, consumeSelfWrittenSlugs } = useLocalVault();
   const toast = useToast();
   const t = useTranslations('featuresMisc.vaultDiffToaster');
   const prevMapRef = useRef<Map<string, number | null> | null>(null);
@@ -56,12 +56,18 @@ export function VaultDiffToaster() {
     );
     prevMapRef.current = currentMap;
 
-    if (added.length === 0 && modified.length === 0) return;
+    // 앱 자신의 쓰기(부트스트랩·인라인 편집 등)는 액션 자체가 이미
+    // 피드백을 줬다 — 폴링 diff 로 재보고하면 토스트 연발 noise.
+    const selfWritten = consumeSelfWrittenSlugs();
+    const externalAdded = added.filter((slug) => !selfWritten.has(slug));
+    const externalModified = modified.filter((slug) => !selfWritten.has(slug));
 
-    for (const planned of planVaultDiffToasts({ added, modified })) {
+    if (externalAdded.length === 0 && externalModified.length === 0) return;
+
+    for (const planned of planVaultDiffToasts({ added: externalAdded, modified: externalModified })) {
       toast.show(formatVaultDiffToastMessage(planned, t), planned.variant);
     }
-  }, [status, manifest, toast, t]);
+  }, [status, manifest, toast, t, consumeSelfWrittenSlugs]);
 
   return null;
 }

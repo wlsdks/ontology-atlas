@@ -16,8 +16,10 @@ import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight, useRecentChanges, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
+  buildDomainMarkdown,
   buildProjectMarkdown,
   deriveBootstrapPlan,
+  domainDocSlug,
   selectedElements,
   useLocalVault,
   buildMcpConfigJson,
@@ -109,7 +111,9 @@ import {
 import { copyText } from "@/shared/lib/copy-text";
 import {
   buildOntologyTree,
+  computeDomainCensusRows,
   computeOntologyChangeset,
+  domainCensusById,
   formatAgentPostChangeSyncPacket,
   useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
@@ -616,6 +620,19 @@ export function HomePage() {
           el.domain ? { kind: "element", title: el.title, domain: el.domain } : { kind: "element", title: el.title },
           { skipRefresh: true },
         );
+      }
+      // 재검 마찰 D — 승인 도메인을 스텁이 아닌 실제 .md 로. 같은 경로에
+      // 문서가 이미 있거나(요소로 승격됨) 동명 domain 문서가 있으면 생략.
+      const acceptedDomainCandidates = plan.domains.filter((d) => input.acceptedDomains.has(d.name));
+      for (const domain of acceptedDomainCandidates) {
+        const slug = domainDocSlug(domain.name);
+        const tail = slug.split("/").pop();
+        const taken =
+          vault.manifest.docs.some((d) => d.slug === slug) ||
+          vault.manifest.docs.some(
+            (d) => d.frontmatter.kind === "domain" && d.slug.split("/").pop() === tail,
+          );
+        if (!taken) await vault.createDoc(slug, buildDomainMarkdown(domain));
       }
       if (plan.existingProjectSlug) {
         // 재검 마찰 A — 이미 프로젝트가 있는 vault: 두 번째 프로젝트를
@@ -1540,6 +1557,15 @@ export function HomePage() {
     () => ontologyInsight?.nodes.filter((node) => node.kind === "domain").length ?? 0,
     [ontologyInsight],
   );
+  // Guardian I-1 — 도메인 크기 단일 진실원(그래프 BFS). INDEX 트리 행과
+  // /projects·인사이트가 같은 숫자를 말하게 한다.
+  const indexDomainCensus = useMemo(
+    () =>
+      ontologyInsight
+        ? domainCensusById(computeDomainCensusRows(ontologyInsight.nodes, ontologyInsight.edges, ["domain"]))
+        : null,
+    [ontologyInsight],
+  );
   // root-first-open v3 우하단 판독(`FirstRunReadout`) 의 "N project" 숫자 —
   // 실데이터, indexDomainCount 와 같은 ontologyInsight 파생이라 drift 불가.
   const firstRunProjectCount = useMemo(
@@ -2369,6 +2395,7 @@ export function HomePage() {
                       setAgentConnectNowMs(Date.now());
                       setAgentConnectOpen(true);
                     }}
+                    domainCensus={indexDomainCensus}
                     // P4a — 렌즈 필터용 id 집합 + P4b 배지 대상.
                     recentChanges={{
                       ids: recentChanges.recentNodeIds,

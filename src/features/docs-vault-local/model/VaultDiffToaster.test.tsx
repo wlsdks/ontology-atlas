@@ -61,6 +61,7 @@ describe('VaultDiffToaster', () => {
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       manifest: manifestWith([{ slug: 'a', mtime: 1000 }]),
+      consumeSelfWrittenSlugs: () => new Set(),
     });
 
     render(<VaultDiffToaster />);
@@ -72,6 +73,7 @@ describe('VaultDiffToaster', () => {
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       manifest: manifestWith([{ slug: 'a', mtime: 1000 }]),
+      consumeSelfWrittenSlugs: () => new Set(),
     });
     const { rerender } = render(<VaultDiffToaster />);
     expect(toastMocks.show).not.toHaveBeenCalled();
@@ -82,6 +84,7 @@ describe('VaultDiffToaster', () => {
         { slug: 'a', mtime: 1000 },
         { slug: 'b', mtime: 1000 },
       ]),
+      consumeSelfWrittenSlugs: () => new Set(),
     });
     rerender(<VaultDiffToaster />);
 
@@ -92,12 +95,14 @@ describe('VaultDiffToaster', () => {
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       manifest: manifestWith([{ slug: 'a', mtime: 1000 }]),
+      consumeSelfWrittenSlugs: () => new Set(),
     });
     const { rerender } = render(<VaultDiffToaster />);
 
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
       manifest: manifestWith([{ slug: 'a', mtime: 2000 }]),
+      consumeSelfWrittenSlugs: () => new Set(),
     });
     rerender(<VaultDiffToaster />);
 
@@ -121,9 +126,35 @@ describe('VaultDiffToaster', () => {
   });
 
   it('manifest 가 null 이면 안전하게 아무 것도 하지 않는다', () => {
-    localVaultMocks.useLocalVault.mockReturnValue({ status: 'loaded', manifest: null });
+    localVaultMocks.useLocalVault.mockReturnValue({ status: 'loaded', manifest: null, consumeSelfWrittenSlugs: () => new Set() });
 
     expect(() => render(<VaultDiffToaster />)).not.toThrow();
     expect(toastMocks.show).not.toHaveBeenCalled();
+  });
+
+  it('앱 자신이 쓴 slug 는 diff 토스트에서 제외된다 (부트스트랩 4연발 마찰)', () => {
+    localVaultMocks.useLocalVault.mockReturnValue({
+      status: 'loaded',
+      manifest: manifestWith([{ slug: 'a', mtime: 1000 }]),
+      consumeSelfWrittenSlugs: () => new Set(),
+    });
+    const { rerender } = render(<VaultDiffToaster />);
+
+    // 부트스트랩이 b/c 를 쓰고 외부 에이전트가 d 를 쓴 다음 리로드 —
+    // 자기 쓰기(b/c)는 침묵, 외부 변화(d)만 토스트.
+    localVaultMocks.useLocalVault.mockReturnValue({
+      status: 'loaded',
+      manifest: manifestWith([
+        { slug: 'a', mtime: 1000 },
+        { slug: 'b', mtime: 1000 },
+        { slug: 'c', mtime: 1000 },
+        { slug: 'd', mtime: 1000 },
+      ]),
+      consumeSelfWrittenSlugs: () => new Set(['b', 'c']),
+    });
+    rerender(<VaultDiffToaster />);
+
+    expect(toastMocks.show).toHaveBeenCalledTimes(1);
+    expect(toastMocks.show).toHaveBeenCalledWith('Added: d', 'info');
   });
 });

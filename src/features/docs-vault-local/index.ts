@@ -26,6 +26,8 @@ export {
   buildProjectMarkdown,
   deriveBootstrapPlan,
   selectedElements,
+  buildDomainMarkdown,
+  domainDocSlug,
   type BootstrapDocInput,
   type BootstrapDomainCandidate,
   type BootstrapElementCandidate,

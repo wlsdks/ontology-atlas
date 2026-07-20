@@ -815,7 +815,9 @@ describe('package contract helpers', () => {
     assert.doesNotMatch(source, /import\s*\{[^}]*\bexit\b[^}]*\}\s+from ['"]node:process['"]/);
     assert.doesNotMatch(source, /\bexit\s*\(/);
     assert.match(source, /process\.exitCode\s*=\s*await main\(\)/);
-    assert.match(source, /return runInit\(parsed\.target\)/);
+    // init 옵션이 늘어도 계약(자연 종료를 위한 return 디스패치)은 같다 —
+    // 시그니처 전체가 아니라 return 형태만 고정한다.
+    assert.match(source, /return runInit\(parsed\.target/);
   });
 
   it('keeps the MCP npm test verify entrypoint on natural exit so large stdout can flush', () => {
@@ -1049,39 +1051,33 @@ describe('package contract helpers', () => {
   });
 
   it('keeps user-facing workspace naming out of legacy Docs and Source Vault framing', () => {
+    // 2026-07 갱신: rail-rollout 이 구 3-tier nav 카피를 대체했고,
+    // topology-map-sigma 위젯과 modeBadge 네임스페이스는 삭제됨 —
+    // 앵커는 현재 표면으로, legacy 네이밍 sweep 은 그대로 유지.
     const features = readFileSync('docs/FEATURES.md', 'utf-8');
-    const labels = readFileSync('src/widgets/topology-map-sigma/lib/labels.ts', 'utf-8');
     const enMessages = JSON.parse(readFileSync('messages/en.json', 'utf-8'));
     const koMessages = JSON.parse(readFileSync('messages/ko.json', 'utf-8'));
 
-    assert.match(features, /Sticky header: 3 nav items \(Workspace \/ Ontology \/ Topology\)/);
-    assert.match(features, /Workspace \(`\/docs`\)/);
+    assert.match(features, /persistent left rail on desktop/);
+    assert.match(features, /`\/docs` — Ontology workspace/);
     assert.match(features, /Workspace palette exposes the same prompt/);
     assert.match(features, /workspace palette · workspace graph · workspace files · workspace actions/);
     assert.match(features, /Workspace palette \| Cycle mode/);
     assert.doesNotMatch(features, /Docs \/ Ontology \/ Topology/);
-    assert.doesNotMatch(features, /Docs \(`\/docs`\)/);
+    // rail-rollout 이후 레일 목적지 라벨은 의도적으로 Docs/문서함 —
+    // `Docs (\`/docs\`)` 자체는 현행 표면이라 sweep 대상에서 제외.
     assert.doesNotMatch(features, /Docs palette/);
     assert.doesNotMatch(features, /docs palette · docs graph · docs source · docs actions/);
     assert.doesNotMatch(features, /Source \/ Ontology \/ Topology/);
     assert.doesNotMatch(features, /Source \(`\/docs`\)/);
     assert.doesNotMatch(features, /Source Vault palette/);
     assert.doesNotMatch(features, /source vault palette · source graph · source files · source actions/);
-    assert.doesNotMatch(labels, /docs: 'Docs'/);
-    assert.doesNotMatch(labels, /docs: 'Source Vault'/);
-    assert.match(labels, /docs: 'Workspace'/);
-    assert.equal(enMessages.modeBadge.vaultDocs, '{count} documents');
-    assert.match(enMessages.modeBadge.vaultTooltip, /documents/);
     assert.equal(enMessages.docsVault.header.docCount, '{count} documents');
     assert.equal(enMessages.topology.controls.pinnedDocsCount, '{count} pinned documents');
-    assert.notEqual(enMessages.modeBadge.vaultDocs, '{count} docs');
     assert.notEqual(enMessages.docsVault.header.docCount, '{count} docs');
     assert.notEqual(enMessages.topology.controls.pinnedDocsCount, '{count} pinned docs');
-    assert.equal(koMessages.modeBadge.vaultDocs, '개념 문서 {count}개');
-    assert.match(koMessages.modeBadge.vaultTooltip, /문서/);
     assert.equal(koMessages.docsVault.header.docCount, '문서 {count}개');
     assert.equal(koMessages.topology.controls.pinnedDocsCount, '고정된 문서 {count}개');
-    assert.notEqual(koMessages.modeBadge.vaultDocs, '기록 {count}개');
   });
 
   it('keeps docs aligned with compile_ontology large-vault options', () => {

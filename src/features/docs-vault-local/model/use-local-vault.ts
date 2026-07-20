@@ -760,6 +760,19 @@ export function useLocalVaultInternal() {
    * 직전 fs file.lastModified 와 비교해 외부 변경 감지 → VaultConflictError
    * throw. 미지정 시 검증 skip (기존 호출자 호환).
    */
+  // 앱 자신이 방금 쓴 slug 들 — 폴링 diff 토스터가 자기 쓰기를
+  // "추가됨/편집됨" 으로 재보고하지 않도록 (부트스트랩 토스트 4연발 마찰).
+  // 소비 시점에 비워지는 1회성 장부: 외부(에이전트/IDE) 변경만 토스트로 남는다.
+  const selfWrittenSlugsRef = useRef<Set<string>>(new Set());
+  const markSelfWrite = useCallback((slug: string) => {
+    selfWrittenSlugsRef.current.add(slug);
+  }, []);
+  const consumeSelfWrittenSlugs = useCallback((): ReadonlySet<string> => {
+    const consumed = selfWrittenSlugsRef.current;
+    selfWrittenSlugsRef.current = new Set();
+    return consumed;
+  }, []);
+
   const saveDoc = useCallback(
     async (
       slug: string,
@@ -776,10 +789,11 @@ export function useLocalVaultInternal() {
       const writable = await fh.createWritable();
       await writable.write(content);
       await writable.close();
+      markSelfWrite(slug);
       // 저장 성공 뒤 전체 매니페스트 재스캔 — backlinks/headings 등 반영.
       if (state.handle) await load(state.handle);
     },
-    [state.fileHandles, state.handle, load, requireWritePermission],
+    [state.fileHandles, state.handle, load, requireWritePermission, markSelfWrite],
   );
 
   /**
@@ -799,9 +813,10 @@ export function useLocalVaultInternal() {
       const writable = await fh.createWritable();
       await writable.write(content);
       await writable.close();
+      markSelfWrite(slug);
       if (state.handle) await load(state.handle);
     },
-    [state.fileHandles, state.handle, getParentAndName, load],
+    [state.fileHandles, state.handle, getParentAndName, load, markSelfWrite],
   );
 
   /**
@@ -847,9 +862,10 @@ export function useLocalVaultInternal() {
       const writable = await fh.createWritable();
       await writable.write(next);
       await writable.close();
+      markSelfWrite(slug);
       if (!opts.skipRefresh && state.handle) await load(state.handle);
     },
-    [state.fileHandles, state.handle, load, requireWritePermission],
+    [state.fileHandles, state.handle, load, requireWritePermission, markSelfWrite],
   );
 
   /**
@@ -933,9 +949,10 @@ export function useLocalVaultInternal() {
         }
       }
 
+      markSelfWrite(newSlug);
       if (state.handle) await load(state.handle);
     },
-    [state.fileHandles, state.handle, state.manifest, getParentAndName, load],
+    [state.fileHandles, state.handle, state.manifest, getParentAndName, load, markSelfWrite],
   );
 
   // 최초 1회 — IDB 에서 핸들 복원 시도. 동시에 FSA 미지원 브라우저면
@@ -1072,5 +1089,6 @@ export function useLocalVaultInternal() {
     scaffoldOntology,
     ensureAgentConfigs,
     updateFrontmatter,
+    consumeSelfWrittenSlugs,
   };
 }

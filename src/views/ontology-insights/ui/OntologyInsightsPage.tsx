@@ -103,7 +103,7 @@ export function OntologyInsightsPage() {
 
   const treeResult = useMemo(() => buildOntologyTree(nodes, edges), [nodes, edges]);
   const health = useMemo(() => computeCensusHealth(nodes, edges, treeResult), [nodes, edges, treeResult]);
-  const domainRows = useMemo(() => computeDomainCapacityRows(treeResult.roots), [treeResult]);
+  const domainRows = useMemo(() => computeDomainCapacityRows(nodes, edges), [nodes, edges]);
 
   const edgeTypeDist = useMemo(() => computeEdgeTypeDistribution(edges), [edges]);
   const edgeTypeRows = useMemo(() => buildEdgeTypeRows(edgeTypeDist), [edgeTypeDist]);

@@ -68,7 +68,9 @@ const VALID_RELATION_TYPES = new Set([
   'related_to',
 ]);
 
-function slugifyName(input: string): string {
+// export — 부트스트랩(도메인 파일화)이 같은 규칙으로 파일 tail 을 만들어야
+// derive 의 ref resolve(`domain:slugifyName(name)`)와 그래프가 이어진다.
+export function slugifyName(input: string): string {
   return input
     .toLowerCase()
     .trim()
