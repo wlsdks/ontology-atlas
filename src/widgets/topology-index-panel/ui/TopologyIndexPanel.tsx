@@ -38,6 +38,8 @@ export interface TopologyIndexPanelProps {
   selectedId: string | null;
   onSelect: (nodeId: string) => void;
   onCollapse: () => void;
+  /** P2a — 푸터의 에이전트 상태를 눌러 "AI 에이전트 연결" 시트를 연다. */
+  onOpenAgentConnect?: (() => void) | null;
   labels: TopologyIndexPanelLabels;
   className?: string;
   /** 푸터 "에이전트 동기화" 뒤에 붙는 성장 신호 조각(예: " · 이번 주 +1") —
@@ -87,7 +89,7 @@ export function TopologyIndexPanel({
   className,
   footerGrowthText,
   agentHandoff,
-}: TopologyIndexPanelProps) {
+  onOpenAgentConnect = null,}: TopologyIndexPanelProps) {
   const [query, setQuery] = useState("");
   const [openIds, setOpenIds] = useState<Set<string>>(
     () => new Set(treeResult.roots.map((root) => root.node.id)),
@@ -223,13 +225,21 @@ export function TopologyIndexPanel({
         data-testid="topology-index-footer"
         className="mt-2.5 flex shrink-0 items-center gap-1.5 border-t border-[color:var(--topology-v2-panel-divider)] px-1 pt-2.5 text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]"
       >
-        <span
-          aria-hidden="true"
-          className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-power-on)]"
-        />
-        <span className="text-[color:var(--topology-v2-panel-text-tertiary)]">
-          {labels.agentSync}
-        </span>
+        <button
+          type="button"
+          onClick={onOpenAgentConnect ?? undefined}
+          disabled={!onOpenAgentConnect}
+          data-testid="topology-index-agent-connect"
+          className="inline-flex min-w-0 items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors enabled:cursor-pointer enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)] enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+        >
+          <span
+            aria-hidden="true"
+            className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-power-on)]"
+          />
+          <span className="text-[color:var(--topology-v2-panel-text-tertiary)]">
+            {labels.agentSync}
+          </span>
+        </button>
         {footerGrowthText ? <span>{footerGrowthText}</span> : null}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {agentHandoff ? (

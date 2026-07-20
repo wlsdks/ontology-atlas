@@ -20,7 +20,8 @@ import {
   deriveBootstrapPlan,
   selectedElements,
   useLocalVault,
-} from "@/features/docs-vault-local";
+  buildMcpConfigJson,
+  buildCodexMcpAddCommandTemplate,} from "@/features/docs-vault-local";
 import { FirstRunReadout, useFirstRunSampleModeSettled } from "@/features/first-run-starter";
 // 타입/기본값은 지도 렌더러(캔버스) 의존성 없는 별도 모듈에서 직접 import해서
 // SSR 평가 경로에 렌더러 참조가 끼지 않도록 한다.
@@ -130,9 +131,12 @@ import { resolveDeeplinkMissDecision } from "../lib/deeplink-miss-notice";
 import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
+import { formatActivityAge } from "@/features/vault-ontology";
+import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
+import { AgentConnectSheet, type AgentConnectState } from "@/widgets/agent-connect";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { buildFullDetailGroups, buildFullDetailReachModel } from "@/widgets/full-detail-a1";
@@ -502,6 +506,35 @@ export function HomePage() {
   const [bootstrapOpen, setBootstrapOpen] = useState(false);
   // P3d(E1) — 부트스트랩 완료 시 지도 리빌 연출 트리거.
   const [mapRevealToken, setMapRevealToken] = useState(0);
+  // P2a — "AI 에이전트 연결" 시트.
+  const [agentConnectOpen, setAgentConnectOpen] = useState(false);
+  // purity: "N분 전" 기준 시각은 시트가 열린 순간의 스냅샷 (렌더 중 Date.now 금지).
+  const [agentConnectNowMs, setAgentConnectNowMs] = useState(0);
+  const agentConnectStatus = useMemo<AgentConnectState>(() => {
+    const hb = agentActivityStatus?.heartbeat ?? null;
+    if (!hb || !agentActivityStatus?.valid) return { kind: "none" };
+    const agoMs = agentConnectNowMs - new Date(hb.updatedAt).getTime();
+    const ago = formatActivityAge(agoMs);
+    if (agentActivityStatus.stale) return { kind: "stale", agoLabel: ago };
+    const focusSlug = hb.focus.ontologySlug;
+    const focusTitle = focusSlug
+      ? (ontologyInsight?.nodes.find((n) => n.evidenceIds[0] === focusSlug || n.id === focusSlug)?.title ?? focusSlug)
+      : null;
+    return { kind: "connected", agentLabel: hb.agent ?? "에이전트", agoLabel: ago, focusTitle };
+  }, [agentActivityStatus, ontologyInsight, agentConnectNowMs]);
+  const agentConnectSnippets = useMemo(() => {
+    const vaultName = vault.handle?.name ?? "my-vault";
+    const desktopPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
+    return {
+      mcpJson: buildMcpConfigJson(vaultName, desktopPath),
+      codexCommand: buildCodexMcpAddCommandTemplate(vaultName, desktopPath),
+      needsManualPath: desktopPath === null,
+    };
+  }, [vault.handle]);
+  const agentConnectDomains = useMemo(
+    () => (ontologyInsight?.nodes ?? []).filter((n) => n.kind === "domain").map((n) => n.title),
+    [ontologyInsight],
+  );
   const bootstrapPlan = useMemo(() => {
     if (!vault.manifest) return null;
     return deriveBootstrapPlan(
@@ -2251,6 +2284,10 @@ export function HomePage() {
                     selectedId={canvasSelectedSlug}
                     onSelect={(id) => handleSelect(id)}
                     onCollapse={handleIndexCollapse}
+                    onOpenAgentConnect={() => {
+                      setAgentConnectNowMs(Date.now());
+                      setAgentConnectOpen(true);
+                    }}
                     // 브랜드 필의 censusGrowthText 와 같은 출처(recentlyUpdatedCount)
                     // — feat/chrome-system §9, 헤더→푸터 이관.
                     footerGrowthText={
@@ -2732,6 +2769,17 @@ export function HomePage() {
           }}
           onSelectNode={(node) => handleSelect(node.id)}
           onSelectProject={(project) => handleSelect(project.slug)}
+        />
+        <AgentConnectSheet
+          open={agentConnectOpen}
+          onClose={() => setAgentConnectOpen(false)}
+          status={agentConnectStatus}
+          snippets={agentConnectSnippets}
+          domainTitles={agentConnectDomains}
+          handoffText={indexAgentHandoffBriefText}
+          onWriteConfigs={
+            isTauriVaultRuntime() && vault.manifest ? () => void vault.ensureAgentConfigs() : null
+          }
         />
         <ShortcutSheet
           open={!createNodeOpen && shortcutsOpen}
