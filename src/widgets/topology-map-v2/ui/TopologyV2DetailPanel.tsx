@@ -87,6 +87,13 @@ export interface TopologyV2DetailPanelProps {
    * has no `evidenceIds` (hides the group entirely, same convention as
    * usedBy/dependsOn). */
   evidence: { rows: readonly V2EvidenceRow[]; total: number };
+  /**
+   * S-C1 (owner 2026-07-20: "변경일 이런거? 그래야 구분이 될거 아냐") —
+   * pre-formatted "언제 바뀌었나" label ("오늘" / "3일 전" / null when the
+   * node has no backing doc date). Formatting lives in the caller so the
+   * label passes through the same i18n path as every other string here.
+   */
+  updatedAtLabel?: string | null;
   /** Pre-built agent handoff payload; the view owns clipboard + toast. */
   handoffText: string;
   /**
@@ -131,6 +138,7 @@ export function TopologyV2DetailPanel({
   metric,
   groups,
   evidence,
+  updatedAtLabel = null,
   handoffText,
   documentHref,
   builderEditHref,
@@ -308,6 +316,17 @@ export function TopologyV2DetailPanel({
             <span className="text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">
               {powered ? labels.poweredOn : labels.poweredOff}
             </span>
+            {updatedAtLabel ? (
+              <>
+                <span className="text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
+                <span
+                  data-testid="topology-v2-datasheet-updated-at"
+                  className="text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+                >
+                  {updatedAtLabel}
+                </span>
+              </>
+            ) : null}
           </div>
         </div>
         <button
