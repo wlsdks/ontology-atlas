@@ -21,6 +21,42 @@ export function formatAllowedValueError(name, value, allowed) {
   return `${name} must be one of: ${allowed.join(', ')}.${receivedText}${suggestionText}`;
 }
 
+/**
+ * 미해석 slug 에 대한 근접 후보 — 컴파일된 slug 집합(인메모리) 대상.
+ * tail 오타(전치 포함)는 levenshtein, 폴더 차이는 tail 일치, 부분 입력은
+ * substring 으로 잡는다. 에러 경로에서만 호출되므로 O(n·len²) 허용.
+ */
+export function suggestCompiledSlugs(input, slugs, limit = 3) {
+  if (typeof input !== 'string' || !input.trim() || !Array.isArray(slugs) || slugs.length === 0) {
+    return [];
+  }
+  const candidate = input.trim();
+  const tail = candidate.split('/').pop() || candidate;
+  const lowerTail = tail.toLowerCase();
+  const lowerInput = candidate.toLowerCase();
+  const exactTail = [];
+  const typoTail = [];
+  const substring = [];
+  for (const slug of slugs) {
+    if (slug === candidate) continue;
+    const candTail = (slug.split('/').pop() || slug).toLowerCase();
+    if (candTail === lowerTail) {
+      exactTail.push(slug);
+      continue;
+    }
+    const distance = levenshteinDistance(lowerTail, candTail);
+    if (distance <= Math.max(2, Math.floor(candTail.length / 3))) {
+      typoTail.push({ slug, distance });
+      continue;
+    }
+    if (candTail.includes(lowerTail) || lowerTail.includes(candTail) || slug.toLowerCase().includes(lowerInput)) {
+      substring.push(slug);
+    }
+  }
+  typoTail.sort((a, b) => a.distance - b.distance || a.slug.localeCompare(b.slug));
+  return [...exactTail, ...typoTail.map((t) => t.slug), ...substring].slice(0, limit);
+}
+
 export function formatErrorValue(value) {
   if (typeof value === 'string') return `"${value}"`;
   if (value === null) return 'null';

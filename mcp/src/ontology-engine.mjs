@@ -1,5 +1,5 @@
 import { refMatchesOntologyAtlasIgnore } from './ontology-atlas-ignore.mjs';
-import { formatAllowedValueError } from './suggestions.mjs';
+import { formatAllowedValueError, suggestCompiledSlugs } from './suggestions.mjs';
 
 const DEFAULT_LIMIT = 100;
 const DEFAULT_ALL_PATHS_SEARCH_BUDGET = 5000;
@@ -327,7 +327,11 @@ export function createOntologyEngine(artifact, options = {}) {
         `${fieldName} "${candidate}" is ambiguous. Use a canonical slug: ${ambiguous.join(', ')}`,
       );
     }
-    throw new Error(`${fieldName} "${candidate}" does not resolve to a compiled ontology node.`);
+    // 오타/폴더 누락 slug 는 여기서 죽는다 — 근접 후보를 같은 에러에 실어
+    // relate/relation-check/MCP 쿼리 전부에서 did-you-mean 이 뜨게 한다.
+    const similar = suggestCompiledSlugs(candidate, [...nodeBySlug.keys()]);
+    const hint = similar.length > 0 ? ` Did you mean: ${similar.join(', ')}?` : '';
+    throw new Error(`${fieldName} "${candidate}" does not resolve to a compiled ontology node.${hint}`);
   }
 
   function filteredEdges(center, options = {}) {
