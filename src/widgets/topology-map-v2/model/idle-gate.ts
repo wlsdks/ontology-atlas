@@ -48,3 +48,23 @@ export function isCanvasActive(flags: CanvasActivityFlags): boolean {
 export function shouldSkipFrame(nowMs: number, lastActiveMs: number, graceMs: number): boolean {
   return nowMs - lastActiveMs > graceMs;
 }
+
+/**
+ * M-1 회귀 계약 — 카메라 스프링 "미정착(타깃≠값)"은 활동이다.
+ *
+ * 값 이동만 활동으로 치면: 유휴 스킵 중엔 물리 스텝이 안 돌아 값이 못
+ * 움직이고, 휠 줌은 타깃만 바꾸므로 게이트가 영원히 안 깨어나는 교착
+ * (유휴 1.2초 후 휠 줌 사망). 타깃과 값의 차이를 직접 본다.
+ */
+export function isCameraUnsettled(
+  camera: { x: number; y: number; scale: number },
+  target: { tx: number; ty: number; tscale: number },
+  positionEps = 0.01,
+  scaleEps = 0.0001,
+): boolean {
+  return (
+    Math.abs(camera.x - target.tx) > positionEps ||
+    Math.abs(camera.y - target.ty) > positionEps ||
+    Math.abs(camera.scale - target.tscale) > scaleEps
+  );
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isCanvasActive, shouldSkipFrame, type CanvasActivityFlags } from "./idle-gate";
+import { isCameraUnsettled, isCanvasActive, shouldSkipFrame, type CanvasActivityFlags } from "./idle-gate";
 
 const IDLE: CanvasActivityFlags = {
   pointerActive: false,
@@ -33,5 +33,27 @@ describe("shouldSkipFrame", () => {
 
   it("grace 를 넘긴 유휴만 스킵한다", () => {
     expect(shouldSkipFrame(1701, 500, 1200)).toBe(true);
+  });
+});
+
+describe("isCameraUnsettled (M-1 — 유휴 중 휠 줌 사망 회귀)", () => {
+  const settled = { x: 100, y: 50, scale: 1.2 };
+
+  it("타깃과 값이 일치하면 정착", () => {
+    expect(isCameraUnsettled(settled, { tx: 100, ty: 50, tscale: 1.2 })).toBe(false);
+  });
+
+  it("휠이 스케일 타깃만 바꿔도 활동으로 판정한다 — 값 이동 없이도", () => {
+    // 유휴 스킵 중엔 물리 스텝이 안 돌아 value 는 그대로다. 이때 타깃만
+    // 바뀐 상태를 활동으로 못 치면 게이트가 영원히 안 깨어난다.
+    expect(isCameraUnsettled(settled, { tx: 100, ty: 50, tscale: 1.4 })).toBe(true);
+  });
+
+  it("팬 타깃 변화도 활동", () => {
+    expect(isCameraUnsettled(settled, { tx: 130, ty: 50, tscale: 1.2 })).toBe(true);
+  });
+
+  it("입실론 안 미세 차이는 정착으로 (재도색 헛깨움 방지)", () => {
+    expect(isCameraUnsettled(settled, { tx: 100.005, ty: 50, tscale: 1.20005 })).toBe(false);
   });
 });
