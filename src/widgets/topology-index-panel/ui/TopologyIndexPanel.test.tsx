@@ -229,4 +229,24 @@ describe("TopologyIndexPanel", () => {
       domains: 6,
     });
   });
+
+  it("수렴 스펙 ①: 헤더는 시각 카운트를 렌더하지 않는다 (지형도 HUD 와 3중 중복 해소, sr-only census 만 존치)", () => {
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+    const fold = screen.getByTestId("topology-index-fold");
+    expect(fold.textContent).not.toMatch(/\d/);
+    // sr-only census 는 남아 있다
+    expect(screen.getByTestId("topology-index-census")).toBeInTheDocument();
+  });
 });
