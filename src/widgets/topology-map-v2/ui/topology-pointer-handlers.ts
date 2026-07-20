@@ -28,6 +28,7 @@ import { scheduleRipple } from "../model/focus-state";
 import type { ForceSimulation } from "../model/force-layout";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable, isSpineOnlyZoom } from "../model/tier-visibility";
 import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
+import { hitTestEdges, type EdgeHitCandidate } from "./topology-edge-hit";
 import { computeGrabOffsetWorld, computePinWorld, type WorldOffset } from "../interaction/node-drag";
 import {
   INITIAL_POINTER_MACHINE_STATE,
@@ -36,7 +37,7 @@ import {
   type PointerMachineState,
 } from "../interaction/pointer-state-machine";
 import { computeWheelZoomFactor, normalizeWheelDeltaY } from "../interaction/wheel";
-import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, hitTestWorld, screenToWorld } from "./topology-camera-math";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, hitTestWorld, screenToWorld, worldToScreen } from "./topology-camera-math";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyWorld } from "./topology-world";
 
@@ -112,6 +113,8 @@ export interface PointerHandlerRefs {
   /** The altitude band's "100%" fit scale — used to derive farT for tier-aware (visible-only) hit-testing. */
   overviewScaleRef: Ref<number>;
   onSelect?: (slug: string) => void;
+  /** P3b — 노드가 잡히지 않은 지점의 클릭이 엣지 근접일 때. */
+  onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
   onPaneClick?: () => void;
   /**
    * W2-B node right-click context menu. Called with the hit node's id and the
@@ -174,6 +177,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     dragStartPosRef,
     overviewScaleRef,
     onSelect,
+    onSelectEdge,
     onPaneClick,
     onContextMenuNode,
   } = refs;
@@ -342,6 +346,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   const handlePointerUp = () => {
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) return;
+    // P3b — 클릭 지점(드래그가 아니면 downPoint 가 곧 클릭 좌표) 스냅샷.
+    const clickPoint = pointerMachineRef.current.downPoint;
     const wasDragging = pointerMachineRef.current.phase === "dragging";
     const { next, commitClick } = transitionPointerState(pointerMachineRef.current, { type: "pointerup" }, tokens.hysteresisPx);
     pointerMachineRef.current = next;
@@ -427,8 +433,49 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
 
     const action = resolveClickAction(commitClick, focusedSlugRef.current);
-    if (action.type === "select") onSelect?.(action.nodeId);
-    else if (action.type === "deselect") onPaneClick?.();
+    if (action.type === "select") {
+      onSelect?.(action.nodeId);
+      return;
+    }
+    // P3b — 빈 공간 클릭: 엣지 근접이면 엣지 선택 (엣지 = 1급 객체).
+    // 후보는 양 끝점이 현재 tier 에서 히트 가능한 엣지로 제한 — 안 보이는
+    // 엣지가 클릭되는 계약 위반 방지. 실패 시에만 기존 deselect.
+    if (commitClick && commitClick.nodeId === null && clickPoint && onSelectEdge) {
+      const world = worldRef.current;
+      if (world) {
+        const { width, height } = viewportRef.current;
+        const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+        const zoomRatio = computeZoomRatio(cameraRef.current.scale.value, overviewEntryScale);
+        const focusedNodeId = focusedSlugRef.current;
+        const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
+        const hittable = new Set(
+          world.nodes
+            .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL))
+            .map((n) => n.id),
+        );
+        const candidates: EdgeHitCandidate[] = [];
+        for (const edge of world.edges) {
+          if (!hittable.has(edge.sourceId) || !hittable.has(edge.targetId)) continue;
+          candidates.push({
+            edge,
+            a: worldToScreen(cameraRef.current, width, height, edge.ax, edge.ay),
+            b: worldToScreen(cameraRef.current, width, height, edge.bx, edge.by),
+            control: worldToScreen(cameraRef.current, width, height, edge.controlX, edge.controlY),
+          });
+        }
+        const hit = hitTestEdges(candidates, clickPoint.x, clickPoint.y, 7);
+        if (hit) {
+          onSelectEdge({
+            sourceId: hit.sourceId,
+            targetId: hit.targetId,
+            relationType: hit.relationType,
+            declaredBySlug: hit.declaredBySlug,
+          });
+          return;
+        }
+      }
+    }
+    if (action.type === "deselect") onPaneClick?.();
   };
 
   const handlePointerCancel = () => {
