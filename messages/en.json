@@ -1538,8 +1538,8 @@
       "censusDomains": "DOMAINS",
       "tabsAriaLabel": "Insights tabs",
       "tab": {
-        "overview": "Overview",
-        "relations": "Relations",
+        "do-next": "Do next",
+        "structure": "Structure",
         "freshness": "Freshness"
       },
       "weeksUnit": "w",
@@ -1605,7 +1605,19 @@
       "noRecentUpdates": "No known update dates yet.",
       "staleCountLabel": "Not updated in 90+ days",
       "trendTitle": "Weekly trend",
-      "trendCaption": "Total updates per week, summed across every domain — same {weeks}w window as the heatstrip."
+      "trendCaption": "Total updates per week, summed across every domain — same {weeks}w window as the heatstrip.",
+      "doNext": {
+        "queueTitle": "Worth doing now",
+        "sectionNeglectedHub": "Neglected hubs — heavily referenced, long unchanged",
+        "sectionOrphan": "Orphans — not connected to anything yet",
+        "sectionPromotion": "Promotion candidates — references piling up",
+        "neglectedHubMetric": "{degree} links · unchanged {days}d",
+        "openMap": "Map",
+        "openBuilder": "Builder",
+        "handoffCopy": "To agent",
+        "emptyQueue": "Nothing needs attention — the graph is healthy.",
+        "moreCount": "+{count} more — full list via agent handoff"
+      }
     }
   },
   "projectPages": {

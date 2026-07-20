@@ -41,11 +41,13 @@ import {
   type InsightsTab,
 } from "../lib/insights-tab-state";
 import { computeDomainCapacityRows } from "../lib/domain-capacity";
+import { buildDoNextQueue } from "../lib/do-next-queue";
 import { computeCensusHealth } from "../lib/census-health";
 import { buildDependsOnRows } from "../lib/depends-on-rows";
 import { buildHubEgoThumbnail } from "../lib/hub-ego-thumbnail";
 import { FRESHNESS_WINDOW_WEEKS, computeFreshnessSummary } from "../lib/freshness";
 import { OverviewTab } from "./tabs/OverviewTab";
+import { DoNextTab } from "./tabs/DoNextTab";
 import { RelationsTab, type RelationHubRow } from "./tabs/RelationsTab";
 import { FreshnessTab } from "./tabs/FreshnessTab";
 import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
@@ -57,8 +59,8 @@ const DEPENDS_ON_DISPLAY_LIMIT = 5;
 const RECENT_UPDATES_LIMIT = 8;
 
 const HANDOFF_PAYLOAD: Record<InsightsTab, string> = {
-  overview: 'query_ontology({operation:"health"}) → query_ontology({operation:"growth_plan"}) → query_ontology({operation:"maintenance_plan"})',
-  relations: 'query_ontology({operation:"match_edges", type:"depends_on"}) → query_ontology({operation:"blast_radius", slug:"<hub-slug>"})',
+  "do-next": 'query_ontology({operation:"maintenance_plan"}) → 항목별 실행 → query_ontology({operation:"health"}) 로 재확인',
+  structure: 'query_ontology({operation:"health"}) → query_ontology({operation:"match_edges", type:"depends_on"}) → query_ontology({operation:"blast_radius", slug:"<hub-slug>"})',
   freshness: 'query_ontology({operation:"maintenance_plan"}) → find_orphans({}) → query_ontology({operation:"growth_plan"})',
 };
 
@@ -161,6 +163,12 @@ export function OntologyInsightsPage() {
     [nodes, edges, docFreshnessIndex],
   );
 
+  // S5 — "할 일" 큐: 이미 로드된 파생(healthSignals·degree·freshness)의 조합.
+  const doNextQueue = useMemo(
+    () => buildDoNextQueue(nodes, edges, docFreshnessIndex),
+    [nodes, edges, docFreshnessIndex],
+  );
+
   const setTab = (next: string) => {
     router.replace(buildInsightsTabHref(next as InsightsTab), { scroll: false });
   };
@@ -193,6 +201,8 @@ export function OntologyInsightsPage() {
     connectionsUnit: t("connectionsUnit"),
     hubTruncated: (shown: number, total: number) => t("hubTruncated", { shown, total }),
     hubThumbnailCaption: t("hubThumbnailCaption"),
+  };
+  const doNextLabels = {
     agentReadinessTitle: t("agentReadinessTitle"),
     agentReadinessReady: t("agentReadinessReady"),
     agentReadinessPreflight: t("agentReadinessPreflight"),
@@ -202,12 +212,23 @@ export function OntologyInsightsPage() {
     repairQueueOrphan: t("repairQueueOrphan"),
     repairQueuePromotion: t("repairQueuePromotion"),
     repairQueueEmpty: t("repairQueueEmpty"),
-    repairQueueTargetLabel: t("repairQueueTargetLabel"),
     repairQueueActionKindStale: t("repairQueueActionKindStale"),
     repairQueueActionKindOrphan: t("repairQueueActionKindOrphan"),
     repairQueueActionKindPromotion: t("repairQueueActionKindPromotion"),
     repairQueueOpenBuilder: t("repairQueueOpenBuilder"),
     repairQueueOpenOntology: t("repairQueueOpenOntology"),
+    queueTitle: t("doNext.queueTitle"),
+    sectionNeglectedHub: t("doNext.sectionNeglectedHub"),
+    sectionOrphan: t("doNext.sectionOrphan"),
+    sectionPromotion: t("doNext.sectionPromotion"),
+    neglectedHubMetric: (degree: number, agoDays: number) =>
+      t("doNext.neglectedHubMetric", { degree, days: agoDays }),
+    openMap: t("doNext.openMap"),
+    openBuilder: t("doNext.openBuilder"),
+    handoffCopy: t("doNext.handoffCopy"),
+    handoffCopied: t("agentCopied"),
+    emptyQueue: t("doNext.emptyQueue"),
+    moreCount: (count: number) => t("doNext.moreCount", { count }),
   };
   const formatDaysAgo = (days: number) => {
     if (days <= 0) return t("daysAgoToday");
@@ -268,7 +289,12 @@ export function OntologyInsightsPage() {
             items={INSIGHTS_TABS.map((key) => ({
               key,
               label: t(`tab.${key}`),
-              count: key === "overview" ? totalNodes : key === "relations" ? totalEdges : `${FRESHNESS_WINDOW_WEEKS}${t("weeksUnit")}`,
+              count:
+                key === "do-next"
+                  ? doNextQueue.counts.neglectedHub + doNextQueue.counts.orphan + doNextQueue.counts.promotion
+                  : key === "structure"
+                    ? totalNodes
+                    : `${FRESHNESS_WINDOW_WEEKS}${t("weeksUnit")}`,
             }))}
           />
         </nav>
@@ -313,7 +339,17 @@ export function OntologyInsightsPage() {
             aria-labelledby={`insights-tab-${tab}`}
             className="mt-[var(--section-gap)] flex min-h-0 flex-1 flex-col"
           >
-            {tab === "overview" ? (
+            {tab === "do-next" ? (
+              <DoNextTab
+                queue={doNextQueue}
+                agentReadiness={agentReadiness}
+                healthQueue={healthQueue}
+                mapHref={buildOntologyNodeHref}
+                builderHref={buildOntologyBuilderNodeHrefFromGraphId}
+                labels={doNextLabels}
+              />
+            ) : null}
+            {tab === "structure" ? (
               <OverviewTab
                 totalNodes={totalNodes}
                 totalEdges={totalEdges}
@@ -325,7 +361,7 @@ export function OntologyInsightsPage() {
                 labels={overviewLabels}
               />
             ) : null}
-            {tab === "relations" ? (
+            {tab === "structure" ? (
               <RelationsTab
                 edgeTypeRows={edgeTypeRows}
                 totalEdges={totalEdges}
@@ -334,8 +370,6 @@ export function OntologyInsightsPage() {
                 hubs={hubs}
                 hubTotalCount={hubRanking.length}
                 kindLabel={kindLabel}
-                agentReadiness={agentReadiness}
-                healthQueue={healthQueue}
                 hubLink={{
                   href: buildOntologyNodeHref,
                   ariaLabel: (title) => t("hubRowAriaLabel", { title }),
