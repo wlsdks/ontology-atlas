@@ -86,8 +86,12 @@ export function validateWebviewVerifyPayload(payload, {
   const webviewPath = webviewUrl.pathname;
   // 지도 재구성 엔진 (docs/TOPOLOGY-MAP-REBUILD.md) — Sigma/skeleton 계약
   // 대신 map-canvas 계약을 검증한다. 함수 전역에서 게이트로 쓰인다.
+  const topologyMapEngine = payload?.markers?.topologyMapEngine ?? "";
+  // "canvas" = 구 map-canvas 엔진, "v2" = topology-map-v2 (현행 기본 지도).
+  // 둘 다 Sigma/skeleton 계약 대신 canvas 계약을 탄다.
   const topologyMapCanvasActive =
-    payload?.markers?.topologyMapEngine === "canvas";
+    topologyMapEngine === "canvas" || topologyMapEngine === "v2";
+  const topologyMapV2Active = topologyMapEngine === "v2";
   const topologyAnalysisMode =
     typeof payload.markers.topologyAnalysisPanelMode === "string"
       ? payload.markers.topologyAnalysisPanelMode.trim() || webviewUrl.searchParams.get("mode") || ""
@@ -1955,8 +1959,11 @@ export function validateWebviewVerifyPayload(payload, {
     if (!topologyMapCanvasActive && payload.markers.topologySigmaReady === false) {
       return "WebView reported Relief before the Sigma renderer was ready";
     }
-    if (!(Number(payload.markers.topologyStagePanClickCancelPx) >= 12)) {
-      return `WebView reported an over-sensitive Relief stage pan threshold (${payload.markers.topologyStagePanClickCancelPx ?? "missing"}px)`;
+    // v2 캔버스의 클릭-취소 임계는 `--topology-v2-hysteresis-px` = 7 (B2+
+    // 프로토타입 승인값) — 구 Relief 의 12px 하한은 v2 에는 사전 부패다.
+    const stagePanFloor = topologyMapV2Active ? 6 : 12;
+    if (!(Number(payload.markers.topologyStagePanClickCancelPx) >= stagePanFloor)) {
+      return `WebView reported an over-sensitive stage pan threshold (${payload.markers.topologyStagePanClickCancelPx ?? "missing"}px, floor ${stagePanFloor}px)`;
     }
     if (
       payload.markers.topologySigmaReady === true &&
@@ -1975,7 +1982,9 @@ export function validateWebviewVerifyPayload(payload, {
     // 계약 — 골격 카드 검사를 건너뛴다. Sigma 캔버스/뷰포트 검사는 그대로.
     const topologyGraphModeActive =
       webviewUrl.searchParams.get("mode") === "graph";
-    if (topologyMapCanvasActive) {
+    if (topologyMapEngine === "canvas") {
+      // 카드 수는 구 map-canvas(DOM 카드) 전용 — v2 는 순수 캔버스 드로잉이라
+      // DOM 카드가 0 인 것이 정상이다.
       if (!(Number(payload.markers.topologyMapCanvasCardCount) >= 8)) {
         return `WebView map canvas rendered too few cards (${payload.markers.topologyMapCanvasCardCount ?? "unknown"})`;
       }
@@ -2332,6 +2341,8 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologyAnalysisPanelSelectedContext !== true &&
       payload.markers.topologyAnalysisPanelSelectedFocusRail !== true;
     if (
+      // v2 크롬은 분석 패널(W3)을 INDEX 로 대체했다 — 은퇴 표면 게이트 제외.
+      !topologyMapV2Active &&
       Object.hasOwn(payload.markers, "topologyAnalysisPanelVisible") &&
       !selectedRelationContextVisible &&
       payload.markers.topologyCreateNodeOpen !== true &&

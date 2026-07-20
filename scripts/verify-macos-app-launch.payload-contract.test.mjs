@@ -6531,7 +6531,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyUiScale: 1.12,
       },
     }),
-    /over-sensitive Relief stage pan threshold/,
+    /over-sensitive stage pan threshold .*floor 12px/,
   );
   assert.match(
     validateWebviewVerifyPayload({
