@@ -74,7 +74,7 @@ export function hitTestWorld(
   for (const node of world.nodes) {
     if (isHittable && !isHittable(node)) continue;
     const screen = worldToScreen(camera, viewportWidth, viewportHeight, node.x, node.y);
-    const effRadius = radiusForKind(node.kind, tokens) * camera.scale.value + 5;
+    const effRadius = radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value + 5;
     const distance = Math.hypot(screenX - screen.x, screenY - screen.y);
     if (distance <= effRadius && distance < bestDistance) {
       bestId = node.id;

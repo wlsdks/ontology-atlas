@@ -206,7 +206,7 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
     const nodeById = new Map(
       Object.entries(nodeXY).map(([id, v]) => [
         id,
-        { id, kind: v.kind, label: id, x: v.x, y: v.y, homeX: v.x, homeY: v.y, isHub: false, fresh: false, stale: false, count: 0 },
+        { id, kind: v.kind, label: id, x: v.x, y: v.y, homeX: v.x, homeY: v.y, isHub: false, fresh: false, stale: false, count: 0, magnitudeScale: 1 },
       ]),
     );
     const neighborMap = new Map(Object.entries(neighbors).map(([id, ns]) => [id, new Set(ns)]));

@@ -1237,6 +1237,10 @@
        프레임에서 밀어낸다 — 드래그/정착이 자식을 부모 위로 밀어넣는
        "우연히 닿는 픽셀"의 방지. */
     --topology-v2-node-min-separation-ratio: 1.35;
+    /* B4 — 규모 인코딩 강도 k. overview 의 첫 질문("어디가 큰가")에 마크가
+       답하게 한다. 로그 압축이라 103짜리 도메인이 9짜리의 ~1.2배 — 순위
+       단서이지 막대그래프가 아니다. */
+    --topology-v2-radius-magnitude-k: 0.45;
     --topology-v2-edge-depends: #4c4c63;
     --topology-v2-edge-dim: #1e1e22;
     --topology-v2-hull-stroke: #3a3a42;

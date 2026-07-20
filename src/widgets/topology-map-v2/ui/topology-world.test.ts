@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import {
   buildTopologyWorld,
+  computeMagnitudeScale,
   computeEgoBounds,
   computeSpineBounds,
   isSpineNode,
@@ -32,7 +33,7 @@ function node(partial: Partial<WorldNode> & Pick<WorldNode, "id" | "kind" | "x" 
     isHub: false,
     fresh: false,
     stale: false,
-    count: 0,
+    count: 0, magnitudeScale: 1,
     homeX: partial.x,
     homeY: partial.y,
     ...partial,
@@ -217,5 +218,36 @@ describe("containmentLevelFor", () => {
     expect(containmentLevelFor("capability", "element")).toBe(2);
     expect(containmentLevelFor("element", "element")).toBe(2);
     expect(containmentLevelFor("domain", "project")).toBe(0);
+  });
+});
+
+/** B4 — 규모 인코딩: 로그 압축 순위 단서. */
+describe("computeMagnitudeScale", () => {
+  it("domain/capability 만 배율을 받고 project/element 는 1", () => {
+    expect(computeMagnitudeScale("project", 100, 100, 0.45)).toBe(1);
+    expect(computeMagnitudeScale("element", 100, 100, 0.45)).toBe(1);
+    expect(computeMagnitudeScale("domain", 100, 100, 0.45)).toBeGreaterThan(1);
+  });
+
+  it("로그 압축 — 103 이 9 의 ~1.2배 수준 (막대그래프 아님)", () => {
+    const big = computeMagnitudeScale("domain", 103, 103, 0.45);
+    const small = computeMagnitudeScale("domain", 9, 103, 0.45);
+    expect(big / small).toBeGreaterThan(1.1);
+    expect(big / small).toBeLessThan(1.35);
+  });
+
+  it("단조 — count 가 크면 배율도 크거나 같다", () => {
+    let prev = 0;
+    for (const c of [1, 5, 20, 60, 103]) {
+      const v = computeMagnitudeScale("capability", c, 103, 0.45);
+      expect(v).toBeGreaterThanOrEqual(prev);
+      prev = v;
+    }
+  });
+
+  it("방어 — maxCount 0 / count 0 / k 0 은 전부 1", () => {
+    expect(computeMagnitudeScale("domain", 0, 103, 0.45)).toBe(1);
+    expect(computeMagnitudeScale("domain", 10, 0, 0.45)).toBe(1);
+    expect(computeMagnitudeScale("domain", 10, 103, 0)).toBe(1);
   });
 });
