@@ -185,6 +185,17 @@ function buildAgentSetup(parsed) {
         serverCommand.command,
         ...serverCommand.args,
       ].map(shellQuote).join(' '),
+      // R+ (agent-persona-2026-07 QA wishlist #5) — this command only ever
+      // checks/writes .mcp.json (Claude Code/Cursor) and .codex/config.toml
+      // (Codex). A fourth MCP client (opencode, a custom harness, ...) gets
+      // no first-class guidance from this tool otherwise — surface the same
+      // portable command/args/env triple those two configs use, standalone,
+      // so any stdio MCP client can register it under its own config shape.
+      genericClient: JSON.stringify({
+        command: serverCommand.command,
+        args: serverCommand.args,
+        env: { OATLAS_VAULT: vaultRoot },
+      }),
     },
     docs: {
       workflowGuide: WORKFLOW_GUIDE_PATH,
@@ -350,6 +361,7 @@ function render(result) {
   process.stdout.write(`  ${COLORS.cyan}${result.commands.verify}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.cyan}${result.commands.setupGate}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}Global Codex fallback: ${result.commands.codexGlobal}${COLORS.reset}\n`);
+  process.stdout.write(`  ${COLORS.dim}Other MCP client (opencode, custom harness, ...): register ${result.commands.genericClient}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}Feature guide: ${result.docs.workflowGuide} — ${result.docs.workflowGuideDescription}${COLORS.reset}\n`);
   process.stdout.write(`\n${COLORS.bold}Read-first graph runbook:${COLORS.reset}\n`);
   for (const command of result.commands.graphRunbook) {

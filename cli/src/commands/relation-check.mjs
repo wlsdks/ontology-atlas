@@ -4,8 +4,7 @@
 // agents see the same proposedAction contract.
 
 import { COLORS } from '../lib/colors.mjs';
-import { callMcpTool } from '../lib/mcp-call.mjs';
-import { assertRelationCheckShape } from '../lib/query-result-contract.mjs';
+import { runRelationCheckQuery, renderRelationCheckResult } from '../lib/relation-preflight.mjs';
 import { validateRelationTypeList } from '../lib/relation-types.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
@@ -32,13 +31,7 @@ export async function runRelationCheck(args) {
   const vaultRoot = resolveVaultRoot(vault);
   let result;
   try {
-    result = await callMcpTool(vaultRoot, 'query_ontology', {
-      operation: 'relation_check',
-      from,
-      to,
-      type,
-    });
-    assertRelationCheckShape(result);
+    result = await runRelationCheckQuery(vaultRoot, from, to, type);
   } catch (err) {
     process.stderr.write(
       `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
@@ -56,56 +49,7 @@ export async function runRelationCheck(args) {
 }
 
 function render(result) {
-  const verdictColor = result.exists ? COLORS.green : COLORS.yellow;
-  process.stdout.write(
-    `${COLORS.bold}${result.from}${COLORS.reset} ${COLORS.dim}--${COLORS.reset}${COLORS.yellow}${result.relation}${COLORS.reset}${COLORS.dim}-->${COLORS.reset} ${COLORS.bold}${result.to}${COLORS.reset}\n` +
-      `  verdict ${verdictColor}${result.verdict}${COLORS.reset} · exists ${result.exists ? 'yes' : 'no'}\n` +
-      `  schema  ${COLORS.cyan}${result.fromKind}${COLORS.reset} --${COLORS.yellow}${result.relation}${COLORS.reset}--> ${COLORS.cyan}${result.toKind}${COLORS.reset}\n`,
-  );
-
-  if (result.schemaPattern) {
-    const pattern = result.schemaPattern;
-    process.stdout.write(
-      `  pattern count ${pattern.count}` +
-        ` · resolved ${pattern.resolved ?? 0}` +
-        ` · external ${pattern.external ?? 0}` +
-        ` · unresolved ${pattern.unresolved ?? 0}\n`,
-    );
-  }
-
-  if (result.recommendation) {
-    const color = result.recommendation.severity === 'warn' ? COLORS.yellow : COLORS.green;
-    process.stdout.write(
-      `  recommendation ${color}${result.recommendation.decision}${COLORS.reset}` +
-        ` · ${result.recommendation.reason}\n`,
-    );
-  }
-
-  if (Array.isArray(result.matchingEdges) && result.matchingEdges.length > 0) {
-    process.stdout.write(`\n${COLORS.dim}matching edges${COLORS.reset}\n`);
-    for (const edge of result.matchingEdges.slice(0, 5)) {
-      const ref = edge.ref ? ` ${COLORS.dim}(${edge.ref})${COLORS.reset}` : '';
-      process.stdout.write(`  ${edge.from} --${edge.via}--> ${edge.to}${ref}\n`);
-    }
-  }
-
-  if (Array.isArray(result.inverseEdges) && result.inverseEdges.length > 0) {
-    process.stdout.write(`\n${COLORS.dim}inverse edges${COLORS.reset}\n`);
-    for (const edge of result.inverseEdges.slice(0, 5)) {
-      const ref = edge.ref ? ` ${COLORS.dim}(${edge.ref})${COLORS.reset}` : '';
-      process.stdout.write(`  ${edge.from} --${edge.via}--> ${edge.to}${ref}\n`);
-    }
-  }
-
-  if (Array.isArray(result.nearbyPatterns) && result.nearbyPatterns.length > 0) {
-    process.stdout.write(`\n${COLORS.dim}nearby schema patterns${COLORS.reset}\n`);
-    for (const pattern of result.nearbyPatterns.slice(0, 5)) {
-      process.stdout.write(
-        `  ${pattern.similarity} · ${pattern.fromKind} --${pattern.relation}--> ${pattern.toKind}` +
-          ` ${COLORS.dim}(count ${pattern.count})${COLORS.reset}\n`,
-      );
-    }
-  }
+  renderRelationCheckResult(result);
 
   if (result.proposedAction) {
     process.stdout.write(

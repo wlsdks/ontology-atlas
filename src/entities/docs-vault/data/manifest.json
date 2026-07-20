@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-20T16:04:28.356Z",
+  "generatedAt": "2026-07-20T16:45:11.368Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2121,9 +2121,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 107 노드, CLI 47 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 107 노드, CLI 48 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
       "wordCount": 1499,
-      "updatedAt": "2026-07-20T14:22:03.097Z",
+      "updatedAt": "2026-07-20T16:44:17.272Z",
       "linksOut": []
     },
     {
@@ -2777,6 +2777,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — 샘플 vault 계몽 (relates 전수 감사)",
+          "slug": "2026-07-21-샘플-vault-계몽-relates-전수-감사"
         },
         {
           "depth": 2,
@@ -4059,9 +4064,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. \"내 문서로 지도 만들기\" 완료 직후, 새 노드들이 프로젝트 위치에서 출발해 제자리로 스프링 정착한다 — 지도가 \"만들어졌다\"가 아니라 \"내 문서들이 모였",
-      "wordCount": 25487,
-      "updatedAt": "2026-07-20T16:03:41.960Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. dogfood 샘플의 피어 관계 110건(추정 90건은 과소집계)을 본문 근거로 전수 감사. depends 11 · describes 6 승격(전부 본문 ",
+      "wordCount": 25561,
+      "updatedAt": "2026-07-20T16:06:38.990Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5133,8 +5138,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 10118,
-      "updatedAt": "2026-07-20T14:21:50.381Z",
+      "wordCount": 10122,
+      "updatedAt": "2026-07-20T16:44:39.784Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -9070,8 +9075,8 @@
         }
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
-      "wordCount": 4952,
-      "updatedAt": "2026-07-18T02:35:02.065Z",
+      "wordCount": 4954,
+      "updatedAt": "2026-07-20T16:44:26.696Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
