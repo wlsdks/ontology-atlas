@@ -81,13 +81,6 @@ export interface LabelTokens {
  * the project name is the Layer-0 anchor's own label and should read a full
  * step above domain/capability/element, not just barely above domain's 10px.
  */
-const LABEL_FONT: Record<LabelDrawState["kind"], string> = {
-  project: "600 15px -apple-system, 'SF Pro Text', sans-serif",
-  domain: "600 10px -apple-system, 'SF Pro Text', sans-serif",
-  capability: "500 10.5px -apple-system, 'SF Pro Text', sans-serif",
-  element: "400 9.5px -apple-system, 'SF Pro Text', sans-serif",
-};
-
 /** Approximate glyph height per kind (px) — used to build the label bbox for greedy suppression. */
 const LABEL_FONT_SIZE: Record<LabelDrawState["kind"], number> = {
   project: 15,
@@ -96,7 +89,7 @@ const LABEL_FONT_SIZE: Record<LabelDrawState["kind"], number> = {
   element: 9.5,
 };
 
-/** 폰트 weight — 스케일된 폰트 문자열 조립용 (LABEL_FONT 와 단일 진실원). */
+/** 폰트 weight — 스케일된 폰트 문자열 조립용 (LABEL_FONT_SIZE/FAMILY 와 단일 진실원). */
 const LABEL_FONT_WEIGHT: Record<LabelDrawState["kind"], number> = {
   project: 600,
   domain: 600,

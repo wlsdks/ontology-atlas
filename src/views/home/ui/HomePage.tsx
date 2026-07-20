@@ -1082,7 +1082,7 @@ export function HomePage() {
       // `resolveBuilderQueryNodeSlug`.
       builderEditHref: `/ontology/edit/?node=${encodeURIComponent(slug)}`,
     };
-  }, [nodeFocus, selectedOntologyNode, ontologyInsight, nodeFocusData, changedSlugs, docFreshnessIndex, updatedAgoNowMs, t]);
+  }, [nodeFocus, selectedOntologyNode, ontologyInsight, nodeFocusData, docFreshnessIndex, updatedAgoNowMs, t]);
   const copyV2NodeHandoff = useCallback(
     async (text: string) => {
       const ok = await copyText(text);
