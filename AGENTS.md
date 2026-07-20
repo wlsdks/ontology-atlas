@@ -86,7 +86,7 @@ No `.env`, no auth provider, no backend setup needed. Round 10 (2026-05) permane
 - **Language** TypeScript 5
 - **Style** Tailwind CSS 4 (`@theme` CSS-based tokens)
 - **i18n** next-intl 4.11 with `/[locale]/` URL prefix (en / ko)
-- **Visualization** Custom canvas-2D engine (`topology-map-v2`) for `/`, `/topology` · Graphology ForceAtlas2 (physics, shared by the canvas engine and the ERD builder) · Sigma.js (WebGL, `/docs` folder-topology mini map only) · xyflow (`/ontology/edit` ERD builder)
+- **Visualization** Custom canvas-2D engine (`topology-map-v2`) for `/`, `/topology` · Graphology ForceAtlas2 (physics, shared by the canvas engine and the ERD builder) · xyflow (`/ontology/edit` ERD builder) — Sigma.js 는 folder-topology 미니맵 삭제(2026-07 P5)와 함께 의존성까지 제거
 - **Local-first** File System Access API + IndexedDB (vault handle persistence)
 - **AI agent** `@modelcontextprotocol/sdk` (stdin/stdout JSON-RPC server, `mcp/` package)
 - **State** in-memory + IndexedDB (vault handle) · React local state · URL state
