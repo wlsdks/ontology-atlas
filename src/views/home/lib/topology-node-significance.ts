@@ -28,6 +28,11 @@ export interface NodeSignificanceModel {
   kind: string;
   /** Owning domain title for the "무엇인가" line, or null when none. */
   ownerDomainTitle: string | null;
+  /** Owning domain's graph node id — N6, lets the datasheet's "도메인 · X"
+   *  first-class fact focus the domain on click (`onSelectConnection`
+   *  reuse), not just display its name. Null in lockstep with
+   *  {@link ownerDomainTitle}. */
+  ownerDomainId: string | null;
   importance: {
     level: NodeSignificanceLevel;
     /** Direct incoming = how many places depend on it. */
@@ -105,6 +110,7 @@ export function buildNodeSignificance(
   return {
     kind: node.kind,
     ownerDomainTitle: model.ownerDomain?.title ?? null,
+    ownerDomainId: model.ownerDomain?.id ?? null,
     importance: {
       level: resolveLevel(model.incomingCount, model.outgoingCount),
       usedByCount: model.incomingCount,

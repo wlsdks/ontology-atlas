@@ -17,6 +17,7 @@ vi.mock("@/i18n/navigation", () => ({
 
 const labels = {
   kindLabel: "Domain",
+  domainLabel: "domain",
   poweredOn: "fresh",
   poweredOff: "idle",
   metricUsedBy: "used by",
@@ -43,6 +44,8 @@ function renderPanel(
     documentHref?: string | null;
     onCopyHandoff?: () => void;
     onSetPathSource?: () => void;
+    domain?: { id: string; title: string } | null;
+    onSelectConnection?: (id: string) => void;
   } = {},
 ) {
   render(
@@ -50,6 +53,7 @@ function renderPanel(
       slug="domains/views"
       title="Views"
       kind="domain"
+      domain={overrides.domain !== undefined ? overrides.domain : null}
       powered={false}
       metric={{ usedBy: 1, dependsOn: 2, evidence: evidence.total }}
       groups={{ usedBy: { rows: [], total: 1 }, dependsOn: { rows: [], total: 2 } }}
@@ -62,7 +66,7 @@ function renderPanel(
       }
       builderEditHref="/ontology/edit/?node=domains%2Fviews"
       labels={labels}
-      onSelectConnection={() => {}}
+      onSelectConnection={overrides.onSelectConnection ?? (() => {})}
       onCopyHandoff={overrides.onCopyHandoff ?? (() => {})}
       onClose={() => {}}
       onSetPathSource={overrides.onSetPathSource ?? (() => {})}
@@ -115,6 +119,32 @@ describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYST
       "href",
       expect.stringContaining("product-owner-operating-system"),
     );
+  });
+});
+
+describe("TopologyV2DetailPanel — N6 소속 도메인 1급 사실", () => {
+  it("renders a 도메인 · <이름> fact in the header when the node has an owning domain", () => {
+    renderPanel(undefined, undefined, {
+      domain: { id: "domains/ai-agent-partner", title: "AI Agent Partner" },
+    });
+    const fact = screen.getByTestId("topology-v2-detail-panel-domain");
+    expect(fact).toHaveTextContent("domain");
+    expect(fact).toHaveTextContent("AI Agent Partner");
+  });
+
+  it("hides the domain fact when the node has no owning domain", () => {
+    renderPanel(undefined, undefined, { domain: null });
+    expect(screen.queryByTestId("topology-v2-detail-panel-domain")).not.toBeInTheDocument();
+  });
+
+  it("focuses the domain via onSelectConnection when the domain fact is clicked", () => {
+    const onSelectConnection = vi.fn();
+    renderPanel(undefined, undefined, {
+      domain: { id: "domains/ai-agent-partner", title: "AI Agent Partner" },
+      onSelectConnection,
+    });
+    fireEvent.click(screen.getByTestId("topology-v2-detail-panel-domain"));
+    expect(onSelectConnection).toHaveBeenCalledWith("domains/ai-agent-partner");
   });
 });
 

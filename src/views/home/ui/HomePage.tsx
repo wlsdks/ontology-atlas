@@ -878,6 +878,14 @@ export function HomePage() {
       nodeId: selectedOntologyNode.id,
       title: nodeFocus.title,
       kind: nodeFocus.kind,
+      // N6 — 소속 도메인 1급 사실. 이미 `buildNodeSignificance` 가 계산한
+      // containment 부모(`ownerDomain`)를 그대로 재사용 — 별도 조회 없음.
+      domain: nodeFocusData?.significance.ownerDomainId
+        ? {
+            id: nodeFocusData.significance.ownerDomainId,
+            title: nodeFocusData.significance.ownerDomainTitle ?? "",
+          }
+        : null,
       powered: changedSlugs.has(selectedOntologyNode.id),
       // S-C1 — AI 가 계속 갱신하는 그래프에서 변경 시점이 안 보이면 사람이
       // 변경을 구분할 수 없다. manifest updatedAt → "N일 전" 사다리.
@@ -2608,6 +2616,7 @@ export function HomePage() {
                 slug={v2DatasheetModel.slug}
                 title={v2DatasheetModel.title}
                 kind={v2DatasheetModel.kind}
+                domain={v2DatasheetModel.domain}
                 powered={v2DatasheetModel.powered}
                 metric={v2DatasheetModel.metric}
                 groups={v2DatasheetModel.groups}
@@ -2618,6 +2627,7 @@ export function HomePage() {
                 builderEditHref={v2DatasheetModel.builderEditHref}
                 labels={{
                   kindLabel: tKinds(normalizeKindLabelKey(v2DatasheetModel.kind)),
+                  domainLabel: t("nodeDatasheet.domainLabel"),
                   poweredOn: t("nodeDatasheet.poweredOn"),
                   poweredOff: t("nodeDatasheet.poweredOff"),
                   metricUsedBy: t("nodeDatasheet.metricUsedBy"),

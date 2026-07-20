@@ -10,12 +10,13 @@ import { useTranslations } from "next-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import type { Project } from "@/entities/project";
+import { cn } from "@/shared/lib/cn";
 import {
   MEANINGFUL_ONTOLOGY_KINDS,
   type MeaningfulOntologyKind,
 } from "@/shared/lib/ontology-tree";
 import { HighlightedText } from "@/shared/ui";
-import { matchOntologyNodes, matchProjects } from "../lib/match";
+import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "../lib/match";
 
 export interface GlobalSearchProps {
   open: boolean;
@@ -341,29 +342,46 @@ export function GlobalSearch({
                   구 상세 패널 정리와 같은 정책으로 제거(현행 FullDetailA1). 같은 정보가
                   필요해지면 cycle 6 의 ontology→docs 점프 chip 이 더
                   풍부하게 보여 줌. */}
-              {ontologyResults.map(({ node }) => (
-                <Command.Item
-                  key={`ontology:${node.id}`}
-                  value={`ontology:${node.id}`}
-                  onSelect={() => {
-                    onSelectNode(node);
-                    closeAndClear();
-                  }}
-                  className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
-                >
-                  <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                    {kindLabel(node.kind)}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
-                    <HighlightedText text={node.title} query={isEmptyQuery ? undefined : query} />
-                  </span>
-                  {node.summary ? (
-                    <span className="hidden min-w-0 max-w-[14rem] truncate text-xs text-[color:var(--color-text-quaternary)] md:block">
-                      {node.summary}
+              {ontologyResults.map(({ node }) => {
+                // N12 (persona-ux-2026-07 report) — element titles that are
+                // literal file paths ("mcp/src/ontology-engine.mjs") read as
+                // body-text noise at full title weight next to plain-language
+                // capability/domain titles in the same list. Demote to mono +
+                // quaternary tone instead of hiding the row — the path is
+                // still the row's only identifying label.
+                const pathLike = node.kind === "element" && isPathLikeTitle(node.title);
+                return (
+                  <Command.Item
+                    key={`ontology:${node.id}`}
+                    value={`ontology:${node.id}`}
+                    onSelect={() => {
+                      onSelectNode(node);
+                      closeAndClear();
+                    }}
+                    className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
+                  >
+                    <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                      {kindLabel(node.kind)}
                     </span>
-                  ) : null}
-                </Command.Item>
-              ))}
+                    <span
+                      data-search-result-path-like={pathLike ? "true" : undefined}
+                      className={cn(
+                        "min-w-0 flex-1 truncate",
+                        pathLike
+                          ? "font-mono text-[12.5px] text-[color:var(--color-text-quaternary)]"
+                          : "text-[color:var(--color-text-primary)]",
+                      )}
+                    >
+                      <HighlightedText text={node.title} query={isEmptyQuery ? undefined : query} />
+                    </span>
+                    {node.summary ? (
+                      <span className="hidden min-w-0 max-w-[14rem] truncate text-xs text-[color:var(--color-text-quaternary)] md:block">
+                        {node.summary}
+                      </span>
+                    ) : null}
+                  </Command.Item>
+                );
+              })}
             </Command.Group>
           ) : null}
 

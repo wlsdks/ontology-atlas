@@ -1,3 +1,4 @@
+import { Link } from "@/i18n/navigation";
 import { TopologyV2KindGlyph } from "@/shared/ui";
 import type { DomainFreshnessRow, RecentUpdateRow } from "../../lib/freshness";
 
@@ -27,6 +28,13 @@ export interface FreshnessTabLabels {
   trendCaption: string;
 }
 
+export interface FreshnessTabRecentLink {
+  /** 최근 갱신 행 클릭 → 지도 노드 포커스 딥링크 (`buildOntologyNodeHref`,
+   *  관계 탭 허브 행과 같은 소스). */
+  href: (nodeId: string) => string;
+  ariaLabel: (title: string) => string;
+}
+
 export interface FreshnessTabProps {
   domainRows: DomainFreshnessRow[];
   recent: RecentUpdateRow[];
@@ -35,6 +43,7 @@ export interface FreshnessTabProps {
    * `computeFreshnessSummary` 가 이미 계산한 실데이터 (`freshness.ts`). */
   weeklyTotals: number[];
   kindLabel: (kind: string) => string;
+  recentLink: FreshnessTabRecentLink;
   labels: FreshnessTabLabels;
 }
 
@@ -43,7 +52,15 @@ export interface FreshnessTabProps {
  * 하드코딩 배열이 아니라 `computeFreshnessSummary` 가 실제 vault 문서
  * `updatedAt` 에서 집계한 값. 이번 주 셀만 인디고, 나머지는 중립 램프.
  */
-export function FreshnessTab({ domainRows, recent, staleCount, weeklyTotals, kindLabel, labels }: FreshnessTabProps) {
+export function FreshnessTab({
+  domainRows,
+  recent,
+  staleCount,
+  weeklyTotals,
+  kindLabel,
+  recentLink,
+  labels,
+}: FreshnessTabProps) {
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-2">
       <section
@@ -140,9 +157,12 @@ export function FreshnessTab({ domainRows, recent, staleCount, weeklyTotals, kin
             <p className="py-2 text-[12px] text-[color:var(--color-text-quaternary)]">{labels.noRecentUpdates}</p>
           ) : (
             recent.map((row) => (
-              <div
+              <Link
                 key={row.nodeId}
-                className="flex items-center gap-2.5 border-t border-[color:var(--color-divider)] py-2.5 first:border-t-0"
+                href={recentLink.href(row.nodeId)}
+                aria-label={recentLink.ariaLabel(row.title)}
+                data-testid="insights-freshness-row-link"
+                className="-mx-1.5 flex items-center gap-2.5 rounded-md border-t border-[color:var(--color-divider)] px-1.5 py-2.5 transition-colors first:border-t-0 hover:bg-[color:var(--color-overlay-1)]"
               >
                 <TopologyV2KindGlyph kind={row.kind} size={14} />
                 <span className="min-w-0 flex-1">
@@ -155,7 +175,7 @@ export function FreshnessTab({ domainRows, recent, staleCount, weeklyTotals, kin
                 <span className="flex-none font-mono text-[10.5px] tabular-nums text-[color:var(--color-text-tertiary)]">
                   {new Date(row.updatedAt).toISOString().slice(0, 10)}
                 </span>
-              </div>
+              </Link>
             ))
           )}
         </div>

@@ -2,6 +2,19 @@ import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
 
 /**
+ * N12 (persona-ux-2026-07 report) — element nodes are often titled after the
+ * source file they represent (`mcp/src/ontology-engine.mjs`). At full title
+ * weight that reads as body-text noise next to plain-language capability/
+ * domain titles in the same result list. Heuristic: a slash-separated
+ * segment ending in a short code-file extension. Used to DEMOTE the row's
+ * visual weight (mono + quaternary tone), never to hide the row — the path
+ * is still the only identifying label these nodes have.
+ */
+export function isPathLikeTitle(title: string): boolean {
+  return /\/.*\.[a-z0-9]{1,5}$/i.test(title.trim());
+}
+
+/**
  * 검색 결과 항목 — ontology approved node source.
  */
 export interface OntologySearchResult {
