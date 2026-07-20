@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-20T17:00:24.442Z",
+  "generatedAt": "2026-07-20T17:36:43.240Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2119,11 +2119,16 @@
           "depth": 2,
           "text": "참조 문서",
           "slug": "참조-문서"
+        },
+        {
+          "depth": 2,
+          "text": "계약 테스트 사전 부패 4건 (2026-07-21 실행 라운드에서 발견 — 세션 이전 기원, git blame 확인)",
+          "slug": "계약-테스트-사전-부패-4건-2026-07-21-실행-라운드에서-발견-세션-이전-기원-git-blame-확인"
         }
       ],
       "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 105 노드, CLI 48 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
-      "wordCount": 1499,
-      "updatedAt": "2026-07-20T16:59:05.326Z",
+      "wordCount": 1590,
+      "updatedAt": "2026-07-20T17:02:14.414Z",
       "linksOut": []
     },
     {
@@ -2777,6 +2782,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — 판정·입력 표면: 문서함 절삭 3건 · frontmatter 판정 액션 · kind-first 새 문서 · 빌더 입력기 3종 (P5)",
+          "slug": "2026-07-21-판정입력-표면-문서함-절삭-3건-frontmatter-판정-액션-kind-first-새-문서-빌더-입력기-3종-p5"
         },
         {
           "depth": 2,
@@ -4109,9 +4119,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 관계는 이제 \"왜\"를 가질 수 있다: relationnotes: {ref: 근거 한 줄}. 착수 게이트 3건을 먼저 닫았다 — ① redirectBackl",
-      "wordCount": 26509,
-      "updatedAt": "2026-07-20T16:48:44.701Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 근거: .qa-scratch/docs-identity-2026-07/verdict.md (문서함 = 의미 편집실 판정) + 페르소나 N7/N9/N11. 5",
+      "wordCount": 26888,
+      "updatedAt": "2026-07-20T17:35:05.513Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -4878,8 +4888,13 @@
         },
         {
           "depth": 4,
-          "text": "Commands (~20 in palette)",
-          "slug": "commands-20-in-palette"
+          "text": "Commands (~14 in palette, P5a cut 6 — daily note / folder-topology view / scaffold topology / create project / export vault / import vault)",
+          "slug": "commands-14-in-palette-p5a-cut-6-daily-note-folder-topology-view-scaffold-topology-create-project-export-vault-import-vault"
+        },
+        {
+          "depth": 4,
+          "text": "New document (P5c — kind-first, `NewDocKindDialog`)",
+          "slug": "new-document-p5c-kind-first-newdockinddialog"
         },
         {
           "depth": 4,
@@ -4955,6 +4970,11 @@
           "depth": 4,
           "text": "`BuilderOnboarding` (when canvas empty)",
           "slug": "builderonboarding-when-canvas-empty"
+        },
+        {
+          "depth": 4,
+          "text": "Empty-canvas placeholder text",
+          "slug": "empty-canvas-placeholder-text"
         },
         {
           "depth": 4,
@@ -5183,8 +5203,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 10450,
-      "updatedAt": "2026-07-20T16:52:18.517Z",
+      "wordCount": 10764,
+      "updatedAt": "2026-07-20T17:35:05.513Z",
       "linksOut": [
         "slug",
         "project:slug",
