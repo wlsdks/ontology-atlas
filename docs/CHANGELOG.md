@@ -6,6 +6,29 @@
 
 ---
 
+## 2026-07-21 — 데스크톱 최근 vault 재열기 침묵 실패 수리 (P5 High)
+
+설치 앱(Tauri)에서 설정 → 작업공간의 "로컬 볼트 오류" 상시 배너 + "최근 vault
+열기" 무반응을 고쳤다. 데스크톱 고유 가치(자동 복원 → Finder 연동)를 되살린다.
+
+- **근인** — Tauri `#[command]` 는 `Err(String)` 을 반환하고, 그때 웹뷰의
+  `invoke` Promise 는 `Error` 가 아니라 **문자열**로 reject 한다. 그런데
+  `use-local-vault` 의 catch 는 `err instanceof Error ? err.message : null`
+  이라 모든 데스크톱 FS 실패가 `null` → generic "폴더 접근 중 문제가
+  생겼습니다" 배너로 침묵했다. 저장된 vault 폴더가 이동/삭제돼
+  `fs::canonicalize` 가 터지면 이 침묵 경로를 그대로 탔다.
+- **침묵 → 발화** — 새 `toErrorMessage()` 유틸이 문자열 reject·Error·plain
+  object 를 모두 살려 `load`/`open`/`openRecent` 의 원인을 노출한다. 이제
+  실패는 언제나 이유를 말한다.
+- **경로 기반 복원 + 사람이 읽는 분류** — 데스크톱 재열기는 FSA picker 없이
+  저장된 절대 경로로 여는데, 그 폴더가 사라진 흔한 케이스를 `load` 전에
+  preflight(`tauriVaultPathExists`)해 `path-missing` 으로 분류한다. picker 는
+  "이전에 열었던 폴더를 더 이상 찾을 수 없어요 — 이동/삭제된 것 같습니다 +
+  다른 최근 폴더를 열거나 다시 선택하세요"(ko/en)를 보여준다. 마운트 자동
+  복원 경로도 동일하게 preflight 해 상시 배너의 stale 원인을 제거했다.
+- **테스트** — `error-message` 유틸 5건, `LocalVaultPicker` error 분기 2건,
+  `useLocalVaultInternal` 재열기 preflight/문자열-reject 2건.
+
 ## 2026-07-21 — B2: 문서함 vault 도구를 설정 메뉴로 합병 (중복 표면 제거)
 
 문서함 헤더의 `VaultToolsMenu` 드롭다운(에이전트 설정 파일 상태·수리·복사

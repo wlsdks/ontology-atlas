@@ -517,6 +517,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                   rootPath={vaultRootPath}
                   docCount={localVault.manifest?.docs.length ?? 0}
                   errorMessage={localVault.errorMessage}
+                  errorCode={localVault.errorCode}
                   lastLoadedAt={localVault.lastLoadedAt}
                   validationSummary={localVaultValidationSummary}
                   recentVaults={localVault.recentVaults}

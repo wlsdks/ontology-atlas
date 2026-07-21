@@ -2435,6 +2435,8 @@
       "permissionClearLabel": "지우기",
       "errorFallback": "로컬 볼트 오류 — 폴더 접근 중 문제가 생겼습니다.",
       "errorHint": "폴더 권한을 다시 확인하거나 다른 폴더로 시도해보세요.",
+      "errorPathMissing": "이전에 열었던 폴더를 더 이상 찾을 수 없어요 — 이동됐거나 삭제된 것 같습니다.",
+      "errorPathMissingHint": "아래 목록에서 다른 최근 폴더를 열거나, 폴더를 다시 선택하세요.",
       "errorReselect": "다시 선택",
       "loadedDocCount": "{count} 문서",
       "loadedScannedSuffix": "· {relative} 스캔",

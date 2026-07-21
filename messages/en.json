@@ -2435,6 +2435,8 @@
       "permissionClearLabel": "Clear",
       "errorFallback": "Local vault error — there was a problem accessing the folder.",
       "errorHint": "Re-check folder permission or try a different folder.",
+      "errorPathMissing": "That previously opened folder can no longer be found — it looks moved or deleted.",
+      "errorPathMissingHint": "Open another recent folder below, or pick the folder again.",
       "errorReselect": "Pick again",
       "loadedDocCount": "{count} docs",
       "loadedScannedSuffix": "· scanned {relative}",
