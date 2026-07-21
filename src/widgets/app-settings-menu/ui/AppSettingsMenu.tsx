@@ -167,6 +167,13 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
       open={open}
       className="group relative shrink-0"
       onKeyDown={(event) => {
+        // Guardian B2 — transient 상호배제: ⌘K(팔레트)가 열리면 설정은
+        // demote (동시 스택 금지, design.md popup-soup 계약). 포커스 반환
+        // 없이 닫아 팔레트가 포커스를 가져가게 한다.
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+          closePanel(false);
+          return;
+        }
         if (event.key !== 'Escape') return;
         event.preventDefault();
         closePanel();
@@ -477,7 +484,9 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             role="tabpanel"
             aria-labelledby="app-settings-tab-vault"
             aria-label={t('tabVault')}
-            className="grid min-h-0 gap-2 overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
+            // Guardian B2 — 고정 높이 다이얼로그의 grid stretch 가 1줄짜리
+            // 박스를 3줄만큼 늘리던 잉크 역전: content-start 로 내용 높이.
+            className="grid min-h-0 content-start gap-2 overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
           >
             <Link
               href={vaultHref}
@@ -560,7 +569,9 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             role="tabpanel"
             aria-labelledby="app-settings-tab-mcpAgents"
             aria-label={t('tabMcpAgents')}
-            className="grid min-h-0 gap-3 overflow-y-auto"
+            // Guardian B2 — truncate 가 동작하려면 grid track 이 min-content
+            // 로 팽창하지 못하게 min-w-0 (수평 오버플로 78px 회귀의 근원).
+            className="grid min-h-0 min-w-0 gap-3 overflow-y-auto"
           >
             {/* B2 병합 — 로컬 vault 가 로드돼 있으면 vault-aware 설정 패널이
                 권위 표면이다(설정 파일 상태·수리·경로 채운 복사 패킷). 이때 정적
@@ -576,7 +587,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 onOpenWorkflowGuide={handleOpenWorkflowGuide}
               />
             ) : (
-            <div className="rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] p-3">
+            <div className="min-w-0 rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-start gap-2">
                 <Terminal size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />

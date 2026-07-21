@@ -684,7 +684,7 @@ export function VaultAgentSetupPanel({
   return (
     <section
       aria-label={t('agentSetup.ariaLabel')}
-      className="rounded-md border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] p-2.5"
+      className="min-w-0 rounded-md border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] p-2.5"
     >
       <div className="flex items-start gap-2">
         <Bot
@@ -1091,7 +1091,7 @@ export function VaultAgentSetupPanel({
             aria-label={t('agentSetup.mcpVerifyPreviewAriaLabel')}
             className="mt-1.5 rounded-sm border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5"
           >
-            <div className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:rgba(165,170,245,0.82)]">
+            <div className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-indigo-pale-a82)]">
               {t('agentSetup.mcpVerifyLabel')}
             </div>
             <code className="mt-1 block truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">

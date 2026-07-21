@@ -1787,7 +1787,7 @@
       "sourceAriaLabel": "문서함 선택",
       "vaultToolsTooltip": "문서함 도구",
       "vaultToolsAriaLabel": "문서함 도구 메뉴 열기",
-      "vaultToolsMovedHint": "AI agent 설정·검증 도구는 설정으로 이동했어요 — 오른쪽 위 설정(⚙)에서 엽니다.",
+      "vaultToolsMovedHint": "AI 에이전트 설정·검증 도구는 설정으로 이동했어요 — 오른쪽 위 설정(⚙)에서 엽니다.",
       "contractToggleLabel": "문서함 점검",
       "contractToggleHide": "문서함 점검 닫기",
       "contractToggleShow": "문서함 점검 보기",
