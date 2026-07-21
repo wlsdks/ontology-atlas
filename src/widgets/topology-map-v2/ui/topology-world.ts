@@ -96,11 +96,26 @@ export interface Bounds {
   maxY: number;
 }
 
+/**
+ * 밀도 게이트 슬라이스 (fable 설계) — 부모별 클러스터 칩 배치 메타. angle 은
+ * 레이아웃 부채꼴 방향(home 좌표에서 유도, 정적), ring 은 칩을 앉힐 자식 링
+ * 반지름. 칩의 실제 월드 anchor 는 매 프레임 부모의 *라이브* 위치 + 이 정적
+ * 방향으로 다시 계산한다 (`topology-cluster-state.ts`).
+ */
+export interface ClusterParentMeta {
+  angle: number;
+  ring: number;
+}
+
 export interface TopologyWorld {
   nodes: readonly WorldNode[];
   nodeById: ReadonlyMap<string, WorldNode>;
   edges: WorldEdge[];
   neighborMap: ReadonlyMap<string, ReadonlySet<string>>;
+  /** contains 부모 id → 직속 자식 id 배열 (밀도 게이트 입력, 정적). */
+  childrenByParent: ReadonlyMap<string, readonly string[]>;
+  /** 밀도 게이트 칩 배치 메타 (자식 있는 부모만, 정적). */
+  clusterMetaByParent: ReadonlyMap<string, ClusterParentMeta>;
   /** Top `starCount` nodes by magnitude — get the far-field diffraction-spike overlay. */
   brightStarIds: ReadonlySet<string>;
   /** Bbox of ALL nodes — used for pan clamping and focus-mode context. */
@@ -271,6 +286,33 @@ export function buildTopologyWorld(
     neighborMap.get(b)?.add(a);
   };
 
+  // 밀도 게이트 슬라이스 (fable 설계) — contains 부모→자식 맵과 칩 배치 메타를
+  // 정적으로 구축한다. 자식 순서는 `nodes` 순서(결정론)를 따른다.
+  const childrenByParent = new Map<string, string[]>();
+  for (const node of worldNodes) {
+    const parentId = containsParentById.get(node.id);
+    if (parentId === undefined) continue;
+    const list = childrenByParent.get(parentId);
+    if (list) list.push(node.id);
+    else childrenByParent.set(parentId, [node.id]);
+  }
+  const clusterMetaByParent = new Map<string, ClusterParentMeta>();
+  for (const [parentId, childIds] of childrenByParent) {
+    const parent = nodeById.get(parentId);
+    if (!parent) continue;
+    // outward 방향 = 부모의 부모 → 부모 (home 좌표, 정적). 도메인은
+    // 조부모=프로젝트(원점 근처)라 원점에서 도메인으로의 방향과 같다.
+    const grandParentId = containsParentById.get(parentId);
+    const gp = grandParentId ? nodeById.get(grandParentId) : undefined;
+    const gx = gp?.homeX ?? 0;
+    const gy = gp?.homeY ?? 0;
+    const angle = Math.atan2(parent.homeY - gy, parent.homeX - gx);
+    const firstChild = nodeById.get(childIds[0]);
+    const ring =
+      firstChild?.kind === "capability" ? tokens.layoutRingCapability : tokens.layoutRingElement;
+    clusterMetaByParent.set(parentId, { angle, ring });
+  }
+
   // B4 — 규모 배율 2차 패스 (maxCount 는 전체를 본 뒤에만 알 수 있다).
   {
     const maxCount = worldNodes.reduce((m, n) => Math.max(m, n.count), 0);
@@ -322,6 +364,8 @@ export function buildTopologyWorld(
     nodeById,
     edges: worldEdges,
     neighborMap,
+    childrenByParent,
+    clusterMetaByParent,
     brightStarIds,
     bounds: computeFullBounds(worldNodes, tokens),
     spineBounds: computeSpineBounds(worldNodes, tokens),

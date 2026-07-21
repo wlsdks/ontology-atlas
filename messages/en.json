@@ -2340,6 +2340,11 @@
     },
     "edgeHover": {
       "clickHint": "Click for details · source doc"
+    },
+    "cluster": {
+      "hint": "Dense groups are folded into +N chips — click a chip to expand that group, click again to collapse.",
+      "expandAria": "Expand {count} hidden items",
+      "collapseAria": "Collapse this group"
     }
   },
   "fullDetailA1": {

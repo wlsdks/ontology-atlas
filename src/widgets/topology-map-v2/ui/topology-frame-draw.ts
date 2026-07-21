@@ -32,6 +32,8 @@ import {
   type SafeRect,
 } from "../render/label-layout";
 import { draw as nodeShapesDraw } from "../render/node-shapes";
+import { drawClusterChip } from "../render/cluster-chips";
+import type { ClusterChip } from "../model/density-gate";
 import { drawDiffractionSpike, drawStarDust, type DustPoint } from "../render/starfield";
 import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
 import { draw as tracesDraw } from "../render/traces";
@@ -200,6 +202,15 @@ export interface FrameDrawParams {
    * mark (`render/labels.ts`) — both no-op when this is `null`.
    */
   agentFocusNodeId: string | null;
+  /**
+   * 밀도 게이트 (fable 설계) — 접힌 부모의 서브트리에 속해 이 프레임에서
+   * **그리지 않을** 노드 id 집합. 노드·엣지·라벨 패스 모두 이 집합을 건너뛴다.
+   */
+  clusteredIds: ReadonlySet<string>;
+  /** 밀도 게이트 — 이 프레임에 그릴 클러스터 칩(월드 anchor, 부모 티어 알파 상속). */
+  clusterChips: readonly ClusterChip[];
+  /** 밀도 게이트 — 호버 중인 클러스터 부모 id (칩 보더 강조), 없으면 null. */
+  hoveredClusterId: string | null;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -226,6 +237,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     reducedMotion,
     selectionPulse,
     agentFocusNodeId,
+    clusteredIds,
+    clusterChips,
+    hoveredClusterId,
   } = params;
 
   // Where world (0,0) currently lands on screen — the blueprint grid rides
@@ -293,6 +307,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   for (const kind of ["contains", "depends"] as const) {
     for (const edge of world.edges) {
       if (edge.kind !== kind) continue;
+      // 밀도 게이트: 접힌 부모 서브트리에 닿는 엣지는 그리지 않는다.
+      if (clusteredIds.has(edge.sourceId) || clusteredIds.has(edge.targetId)) continue;
       const edgeAlpha = edgeTierAlpha(effectiveAlphaById.get(edge.sourceId) ?? 1, effectiveAlphaById.get(edge.targetId) ?? 1);
       if (edgeAlpha <= 0.02) continue;
       const a = project(edge.ax, edge.ay);
@@ -350,6 +366,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
 
   for (const node of world.nodes) {
+    // 밀도 게이트: 접힌 부모의 서브트리 노드는 칩으로 대체되어 그리지 않는다.
+    if (clusteredIds.has(node.id)) continue;
     const tierAlpha = effectiveAlphaById.get(node.id) ?? 1;
     if (tierAlpha <= 0.02) continue;
     const egoState = resolveNodeEgoStateWithPair(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
@@ -448,6 +466,34 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ctx.globalAlpha = 1;
   }
 
+  // --- 밀도 게이트 클러스터 칩 (fable 설계) — 노드 위, 라벨 아래에 그린다.
+  // 칩 알파는 부모 노드의 effective 티어 알파를 상속한다(스파인 부모=1). 부모가
+  // 티어로 사라지면 칩도 사라진다. 미확장 접힘 칩의 자식/엣지는 이미 위에서
+  // 스킵됐다. anchor 는 월드 좌표라 카메라 팬/줌을 함께 탄다. ---
+  for (const chip of clusterChips) {
+    const parentAlpha = effectiveAlphaById.get(chip.parentId) ?? 1;
+    if (parentAlpha <= 0.02) continue;
+    const screen = project(chip.anchor.x, chip.anchor.y);
+    ctx.globalAlpha = parentAlpha;
+    drawClusterChip(
+      ctx,
+      {
+        screenX: screen.x,
+        screenY: screen.y,
+        count: chip.count,
+        expanded: chip.expanded,
+        hovered: hoveredClusterId === chip.parentId,
+      },
+      {
+        surface: tokens.nodeFillDim,
+        border: tokens.indigo,
+        glyph: tokens.nodeStrokeDim,
+        text: tokens.indigoBright,
+      },
+    );
+    ctx.globalAlpha = 1;
+  }
+
   // --- labels: viewport/panel cull + priority greedy suppression + ellipsis ---
   // (Design Guardian 가독성 반려) Labels used to leak behind the left ReaderLens
   // panel, clip off the right edge, and collide horizontally. Build a candidate
@@ -474,6 +520,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
   const labelCandidates: LabelCandidate<LabelPayload>[] = [];
   world.nodes.forEach((node, index) => {
+    // 밀도 게이트: 접힌 서브트리 노드는 라벨도 그리지 않는다(노드/엣지와 동일).
+    if (clusteredIds.has(node.id)) return;
     // Uses the SAME effective alpha as the node draw pass (C1 A2) — an
     // ego-exempt capability that's now visible must also get a label, or it
     // reads as an unlabeled ghost circle. Also the SAME signal capability/

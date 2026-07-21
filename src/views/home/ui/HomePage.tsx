@@ -114,6 +114,7 @@ import {
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
   resolveTopologyNodeClickRouteState,
+  toggleExpandedParent,
   type TopologyAnalysisMode,
 } from "../model/url-state";
 import {
@@ -279,8 +280,28 @@ export function HomePage() {
     createNodeIntent,
     indexState,
     insightsReturnTab,
+    expandedParents: expandedParentSlugs,
   } = routeState;
   const renderProjects = projects;
+  // 밀도 게이트 (fable 설계) — URL `?open=` 의 부모 slug 목록을 Set 으로
+  // 변환해 지도로 내린다. 문자열 join 을 dep 으로 써 안정적으로 메모.
+  const expandedParentsKey = expandedParentSlugs.join(",");
+  const expandedParentSet = useMemo(
+    () => new Set(expandedParentSlugs),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [expandedParentsKey],
+  );
+  // 밀도 게이트 — 클러스터 칩 클릭 → 해당 부모 확장 토글(URL 왕복). 노드
+  // 선택/포커스 상태는 건드리지 않는다(칩은 접힘/펼침만 담당).
+  const handleToggleCluster = useCallback(
+    (parentId: string) => {
+      setRouteState((current) => ({
+        ...current,
+        expandedParents: toggleExpandedParent(current.expandedParents, parentId),
+      }));
+    },
+    [setRouteState],
+  );
   // INDEX panel (B3 허브가 곧 지도) — the new default left occupant. Preference
   // persists in localStorage; `?index=` (parsed into `routeState.indexState`)
   // wins for deep-linking (`resolveIndexPanelState` precedence). The analysis
@@ -2456,6 +2477,9 @@ export function HomePage() {
                     onContextMenuNode={handleContextMenuNode}
                     minimal={localGraphRoot !== null}
                     agentFocusNodeId={agentFocusNodeId}
+                    expandedParents={expandedParentSet}
+                    onToggleCluster={handleToggleCluster}
+                    clusterHint={t('cluster.hint')}
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas ? (

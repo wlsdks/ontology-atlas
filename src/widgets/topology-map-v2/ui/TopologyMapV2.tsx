@@ -103,6 +103,20 @@ export interface TopologyMapV2Props {
    * unchanged (browser default menu everywhere, same as before this slice).
    */
   onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
+  /**
+   * 밀도 게이트 (fable 설계) — 사용자가 펼친 부모 slug Set(URL `?open=`).
+   * 임계(12) 초과 자식을 가진 부모는 기본 접힘(클러스터 칩)이고 여기 담긴
+   * 부모만 자식을 노출한다. 생략/빈 Set = 전부 접힘.
+   */
+  expandedParents?: ReadonlySet<string>;
+  /** 밀도 게이트 — 클러스터 칩 클릭 시 해당 부모 확장 토글(HomePage 가 URL 왕복). */
+  onToggleCluster?: (parentId: string) => void;
+  /**
+   * 밀도 게이트 — 클러스터 칩 어포던스의 접근성 힌트(i18n, HomePage 가 주입).
+   * 칩은 canvas 글리프라 개별 aria 를 못 달아, 컨테이너 안 sr-only 설명으로
+   * "무엇이 접혔고 어떻게 펼치는가"를 스크린리더에 전달한다.
+   */
+  clusterHint?: string;
   /** Embed mode (project detail neighbor map) — reduced physics/chrome. */
   minimal?: boolean;
   /**
@@ -115,7 +129,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, livePhysics, onHoverEdge, selectedEdge = null } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, clusterHint } = props;
 
   // `handleWheel` is wired natively (non-passive) inside `useTopologyLoop` —
   // see its own FIX comment — not bound here as a JSX prop.
@@ -139,6 +153,8 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       onContextMenuNode,
       agentFocusNodeId,
       livePhysics,
+      expandedParents,
+      onToggleCluster,
     });
 
   return (
@@ -159,6 +175,24 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
         onPointerCancel={handlePointerCancel}
         onContextMenu={handleContextMenu}
       />
+      {clusterHint ? (
+        <span
+          data-testid="topology-cluster-hint"
+          style={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            padding: 0,
+            margin: -1,
+            overflow: "hidden",
+            clip: "rect(0 0 0 0)",
+            whiteSpace: "nowrap",
+            border: 0,
+          }}
+        >
+          {clusterHint}
+        </span>
+      ) : null}
     </div>
   );
 }

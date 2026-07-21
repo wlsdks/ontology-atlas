@@ -6,6 +6,7 @@ import {
   resolveTopologyNodeClickRouteState,
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
+  toggleExpandedParent,
 } from "./url-state";
 
 describe("parseHomeRouteState", () => {
@@ -26,6 +27,7 @@ describe("parseHomeRouteState", () => {
       createNodeIntent: true,
       indexState: null,
       insightsReturnTab: null,
+      expandedParents: [],
     });
   });
 
@@ -179,6 +181,7 @@ describe("applyHomeRouteState", () => {
       createNodeIntent: true,
       indexState: null,
       insightsReturnTab: null,
+      expandedParents: [],
     });
 
     expect(params.toString()).toBe(
@@ -199,6 +202,7 @@ describe("applyHomeRouteState", () => {
       createNodeIntent: false,
       indexState: null,
       insightsReturnTab: null,
+      expandedParents: [],
     });
 
     expect(params.toString()).toBe(
@@ -217,6 +221,7 @@ describe("applyHomeRouteState", () => {
       createNodeIntent: false,
       indexState: null,
       insightsReturnTab: null,
+      expandedParents: [],
     });
 
     expect(hidden.toString()).toBe("");
@@ -237,6 +242,7 @@ describe("applyHomeRouteState", () => {
         createNodeIntent: false,
         indexState: null,
         insightsReturnTab: null,
+        expandedParents: [],
       },
     );
 
@@ -469,5 +475,58 @@ describe("insights return marker (?via=insights:<tab>)", () => {
       insightsReturnTab: null,
     });
     expect(dismissed.get("via")).toBeNull();
+  });
+});
+
+describe("밀도 게이트 확장 상태 (?open=)", () => {
+  it("파싱: 콤마 구분 부모 목록을 순서대로 읽는다", () => {
+    const state = parseHomeRouteState(
+      new URLSearchParams("open=domain:onboarding,capability:huge"),
+    );
+    expect(state.expandedParents).toEqual([
+      "domain:onboarding",
+      "capability:huge",
+    ]);
+  });
+
+  it("무효 무시: 빈 항목·중복·공백은 걸러지고, 다른 파라미터 탐색은 유지된다", () => {
+    const state = parseHomeRouteState(
+      new URLSearchParams("p=pick&open=,a,,a, b ,&mode=graph"),
+    );
+    // 빈 항목/중복 제거, 트림. b 는 트림돼 살아남는다.
+    expect(state.expandedParents).toEqual(["a", "b"]);
+    // open 파싱이 나머지 라우트 상태를 오염시키지 않는다.
+    expect(state.selectedSlug).toBe("pick");
+    expect(state.analysisMode).toBe("graph");
+    // open 미지정이면 빈 배열(왕복 안전).
+    expect(parseHomeRouteState(new URLSearchParams("p=pick")).expandedParents).toEqual([]);
+  });
+
+  it("왕복: 지도 탐색(노드 선택/토글) 후에도 open 이 URL 에 보존된다", () => {
+    const params = new URLSearchParams("open=domain:onboarding");
+    const state = parseHomeRouteState(params);
+
+    // 노드 클릭(선택) 후에도 확장 상태 유지 — 탐색이 접힘을 리셋하지 않는다.
+    const afterClick = resolveTopologyNodeClickRouteState(state, "domain:views");
+    expect(afterClick.expandedParents).toEqual(["domain:onboarding"]);
+    expect(applyHomeRouteState(params, afterClick).get("open")).toBe(
+      "domain:onboarding",
+    );
+
+    // 토글 헬퍼로 부모 추가 → URL 왕복.
+    const toggled = {
+      ...afterClick,
+      expandedParents: toggleExpandedParent(afterClick.expandedParents, "capability:huge"),
+    };
+    expect(applyHomeRouteState(params, toggled).get("open")).toBe(
+      "domain:onboarding,capability:huge",
+    );
+
+    // 같은 부모 재토글 → 제거 → 마지막 하나 사라지면 open 파라미터 자체 삭제.
+    const collapsed = {
+      ...state,
+      expandedParents: toggleExpandedParent(state.expandedParents, "domain:onboarding"),
+    };
+    expect(applyHomeRouteState(params, collapsed).get("open")).toBeNull();
   });
 });

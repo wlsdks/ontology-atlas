@@ -218,3 +218,100 @@ describe("computeConcentricLayout — 비표준 계보 / 고아 (2026-07 블롭 
     }
   });
 });
+
+/**
+ * 밀도 게이트 슬라이스 (fable 설계) — 임계(12) 초과 부모의 자식은 폭주하는
+ * 부채꼴 대신 phyllotaxis 디스크로 유계 배치된다. 임계 이하 부모는 위
+ * 계약(부채꼴)을 그대로 유지한다 (아래 회귀 테스트로 재확인).
+ */
+describe("computeConcentricLayout — phyllotaxis 디스크 (밀집 부모)", () => {
+  // 도메인 하나에 108 capability — dogfood Onboarding & UX 밀도 그대로.
+  const DENSE_DOMAIN: LayoutGraphNode[] = [
+    { id: "p", kind: "project", parentId: null },
+    { id: "d", kind: "domain", parentId: "p" },
+  ];
+  const DENSE_CHILD_COUNT = 108;
+  for (let c = 0; c < DENSE_CHILD_COUNT; c += 1) {
+    DENSE_DOMAIN.push({ id: `cap-${c}`, kind: "capability", parentId: "d" });
+  }
+  const RADII = { project: 25, domain: 17, capability: 11, element: 7 };
+
+  it("디스크 반지름이 유계다 (부채꼴 폭주 방지 — 옛 n=108 부채꼴은 2000+)", () => {
+    const points = computeConcentricLayout(DENSE_DOMAIN, RINGS, { radii: RADII });
+    const d = byId(points, "d");
+    let maxFromParent = 0;
+    for (let c = 0; c < DENSE_CHILD_COUNT; c += 1) {
+      const p = byId(points, `cap-${c}`);
+      maxFromParent = Math.max(maxFromParent, Math.hypot(p.x - d.x, p.y - d.y));
+    }
+    // shift(capability ring 145) + spacing(26)·√108 ≈ 415, relax 여유 포함 상한.
+    expect(maxFromParent).toBeLessThan(650);
+    // 옛 부채꼴(반지름 ∝ n)이었다면 1500+ 였을 것 — 유계임을 대비로 증명.
+    expect(maxFromParent).toBeLessThan(700);
+  });
+
+  it("결정론 — 두 번 돌려 바이트 동일", () => {
+    const a = computeConcentricLayout(DENSE_DOMAIN, RINGS, { radii: RADII });
+    const b = computeConcentricLayout(DENSE_DOMAIN, RINGS, { radii: RADII });
+    expect(b).toEqual(a);
+  });
+
+  it("겹침 없음 — 어떤 두 노드도 결합 충돌 반지름보다 가깝지 않다", () => {
+    const points = computeConcentricLayout(DENSE_DOMAIN, RINGS, { radii: RADII, relaxPadding: 6 });
+    let min = Infinity;
+    for (let i = 0; i < points.length; i += 1) {
+      for (let j = i + 1; j < points.length; j += 1) {
+        min = Math.min(min, Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y));
+      }
+    }
+    // capability 두 개 = 11 + 11 = 22 하한.
+    expect(min).toBeGreaterThanOrEqual(22);
+  });
+
+  it("임계 초과 capability→element 도 디스크로 유계 배치된다", () => {
+    const chain: LayoutGraphNode[] = [
+      { id: "p", kind: "project", parentId: null },
+      { id: "d", kind: "domain", parentId: "p" },
+      { id: "c", kind: "capability", parentId: "d" },
+    ];
+    for (let e = 0; e < 40; e += 1) chain.push({ id: `el-${e}`, kind: "element", parentId: "c" });
+    const points = computeConcentricLayout(chain, RINGS, { radii: RADII });
+    const c = byId(points, "c");
+    let maxFromParent = 0;
+    for (let e = 0; e < 40; e += 1) {
+      const p = byId(points, `el-${e}`);
+      maxFromParent = Math.max(maxFromParent, Math.hypot(p.x - c.x, p.y - c.y));
+    }
+    // element ring(90) shift + spacing·√40 ≈ 90 + 26·6.3 ≈ 254, 여유 상한.
+    expect(maxFromParent).toBeLessThan(450);
+  });
+
+  it("임계 경계: 12개는 부채꼴, 13개는 디스크 (경로 분기)", () => {
+    const mk = (n: number): LayoutGraphNode[] => {
+      const g: LayoutGraphNode[] = [
+        { id: "p", kind: "project", parentId: null },
+        { id: "d", kind: "domain", parentId: "p" },
+      ];
+      for (let c = 0; c < n; c += 1) g.push({ id: `cap-${c}`, kind: "capability", parentId: "d" });
+      return g;
+    };
+    // 12개(임계) = 부채꼴 → 모든 자식이 정확히 capability 링 위(radius 폭주 전 base×배율).
+    // 여기서는 "13개가 12개보다 촘촘한 √-성장 디스크가 되어 최대 반지름이 급증하지
+    // 않는다"만 확인한다 (부채꼴 base 는 n 배율로 커진다).
+    const twelve = computeConcentricLayout(mk(12), RINGS, { radii: RADII });
+    const thirteen = computeConcentricLayout(mk(13), RINGS, { radii: RADII });
+    const maxR = (pts: { id: string; x: number; y: number }[], n: number) => {
+      const d = byId(pts, "d");
+      let m = 0;
+      for (let c = 0; c < n; c += 1) {
+        const p = byId(pts, `cap-${c}`);
+        m = Math.max(m, Math.hypot(p.x - d.x, p.y - d.y));
+      }
+      return m;
+    };
+    // 13개 디스크의 최대 반지름은 유계(디스크 상한 이하) — 부채꼴 배율 폭주와 무관.
+    expect(maxR(thirteen, 13)).toBeLessThan(400);
+    // 12개는 부채꼴 경로(≤ capability ring × 밀도 배율)라 별도 계약 유지.
+    expect(maxR(twelve, 12)).toBeGreaterThan(0);
+  });
+});

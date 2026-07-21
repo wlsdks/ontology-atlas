@@ -215,6 +215,8 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
       nodeById,
       edges: [],
       neighborMap,
+      childrenByParent: new Map(),
+      clusterMetaByParent: new Map(),
       brightStarIds: new Set(),
       bounds: { minX: -100, minY: -100, maxX: 100, maxY: 100 },
       spineBounds: { minX: -100, minY: -100, maxX: 100, maxY: 100 },
