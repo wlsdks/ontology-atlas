@@ -337,7 +337,9 @@ export function DoNextTab({
 
       <section
         aria-label={labels.agentReadinessTitle}
-        className="flex min-h-0 min-w-0 flex-col rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        // Guardian 관찰 — 수리 큐가 얕을 때 카드가 좌측 큐 높이까지 늘어나
+        // 빈 여백으로 읽혔다: 내용 높이만큼만 (lg 그리드에서 self-start).
+        className="flex min-h-0 min-w-0 flex-col self-start rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <div
           aria-label={`${labels.agentReadinessTitle}: ${agentReadiness.ready} ${labels.agentReadinessReady} · ${agentReadiness.preflight} ${labels.agentReadinessPreflight} · ${agentReadiness.review} ${labels.agentReadinessReview}`}
