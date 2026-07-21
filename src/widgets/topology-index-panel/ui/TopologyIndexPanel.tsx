@@ -384,7 +384,7 @@ export function TopologyIndexPanel({
               aria-hidden="true"
               className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-power-on)]"
             />
-            <span className="text-[color:var(--topology-v2-panel-text-tertiary)]">
+            <span className="min-w-0 truncate whitespace-nowrap text-[color:var(--topology-v2-panel-text-tertiary)]">
               {labels.agentSync}
             </span>
           </Link>
@@ -400,12 +400,12 @@ export function TopologyIndexPanel({
               aria-hidden="true"
               className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-power-on)]"
             />
-            <span className="text-[color:var(--topology-v2-panel-text-tertiary)]">
+            <span className="min-w-0 truncate whitespace-nowrap text-[color:var(--topology-v2-panel-text-tertiary)]">
               {labels.agentSync}
             </span>
           </button>
         )}
-        {footerGrowthText ? <span>{footerGrowthText}</span> : null}
+        {footerGrowthText ? <span className="min-w-0 flex-1 truncate whitespace-nowrap">{footerGrowthText}</span> : null}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {agentHandoff ? (
             <TopologyIndexAgentHandoff

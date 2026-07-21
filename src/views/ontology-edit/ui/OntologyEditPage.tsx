@@ -1636,7 +1636,9 @@ export function OntologyEditPage() {
         {/* CommandStrip — 예전엔 헤더 1행 안에 있었다. 헤더가 시안 문법(브레드
             크럼+census / dirty / 유틸+내보내기)대로 단일 행이 되면서 컨텍스트
             액션 줄로 내려왔다 — 기능(선택 상태별 primary/secondary 액션) 무변. */}
-        <div className="mb-2 px-2">
+        {/* px-0 + mt-1.5 — 헤더 박스와 좌우 가장자리를 정확히 맞추고(구 px-2
+            는 8px 안쪽으로 들어가 삐뚤어 보임 — 소유자 실보고) 위 간격 확보. */}
+        <div className="mb-2 mt-1.5 px-0">
           <BuilderCommandStrip
             state={commandStripState}
             draftNodes={ephemeralNodes.length}
