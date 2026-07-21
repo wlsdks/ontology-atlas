@@ -1,8 +1,21 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import type React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { buildOntologyTree } from "@/shared/lib/ontology-tree";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { TopologyIndexPanel } from "./TopologyIndexPanel";
+
+// `@/i18n/navigation`'s Link needs an IntlProvider context this file doesn't
+// stand up (established pattern, see `DocsVaultViewer.test.tsx`) — mocked to
+// a plain anchor so href/click assertions still work (P4-② agent-activity
+// deep link).
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
+    <a href={String(href)} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 // TopologyIndexPanel's own tests exercise the tree/search/census — the
 // root-first-open "시작하기" module it mounts at the top needs a
@@ -464,5 +477,55 @@ describe("TopologyIndexPanel", () => {
     expect(fold.textContent).not.toMatch(/\d/);
     // sr-only census 는 남아 있다
     expect(screen.getByTestId("topology-index-census")).toBeInTheDocument();
+  });
+
+  // P4-② (2026-07-21 리텐션 라운드) — 푸터의 "Updated with AI" 가 이미
+  // 연결된 2일차 사용자를 등록 모달로 되돌려 보내는 막다른 길이었다.
+  describe("footer agent-connect control (P4-②)", () => {
+    it("opens the agent-connect sheet (button) when there is no agentActivityHref", () => {
+      const onOpenAgentConnect = vi.fn();
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          onOpenAgentConnect={onOpenAgentConnect}
+        />,
+      );
+      const control = screen.getByTestId("topology-index-agent-connect");
+      expect(control.tagName).toBe("BUTTON");
+      fireEvent.click(control);
+      expect(onOpenAgentConnect).toHaveBeenCalledTimes(1);
+    });
+
+    it("deep-links to the activity digest instead of opening the modal when agentActivityHref is set (connected agent)", () => {
+      const onOpenAgentConnect = vi.fn();
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          onOpenAgentConnect={onOpenAgentConnect}
+          agentActivityHref="/ontology/insights/"
+        />,
+      );
+      const control = screen.getByTestId("topology-index-agent-connect");
+      expect(control.tagName).toBe("A");
+      expect(control).toHaveAttribute("href", "/ontology/insights/");
+      fireEvent.click(control);
+      expect(onOpenAgentConnect).not.toHaveBeenCalled();
+    });
   });
 });

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronLeft, Search } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import {
   filterTreeByNodeIds,
   filterTreeByQuery,
@@ -54,8 +55,19 @@ export interface TopologyIndexPanelProps {
   selectedId: string | null;
   onSelect: (nodeId: string) => void;
   onCollapse: () => void;
-  /** P2a — 푸터의 에이전트 상태를 눌러 "AI 에이전트 연결" 시트를 연다. */
+  /** P2a — 푸터의 에이전트 상태를 눌러 "AI 에이전트 연결" 시트를 연다.
+   *  `agentActivityHref` 가 주어지면 그쪽이 우선한다(아래). */
   onOpenAgentConnect?: (() => void) | null;
+  /**
+   * P4-② (2026-07-21 리텐션 라운드) — 이미 연결된 에이전트가 있을 때
+   * 푸터의 "Updated with AI" 를 누르면 등록 모달(`onOpenAgentConnect`)
+   * 대신 이 href(활동 다이제스트, `/ontology/insights/` 할 일 탭)로
+   * 이동한다. "이미 어제 셋업을 끝낸 2일차 사용자에게 등록 안내는 막다른
+   * 길"이라는 관찰 — 연결된 상태에서 이 배지가 실제로 답해야 할 질문은
+   * "가입할까?"가 아니라 "에이전트가 뭘 했지?"다. null/undefined 면 기존
+   * 모달 버튼 동작 그대로 유지(미연결/stale 상태).
+   */
+  agentActivityHref?: string | null;
   labels: TopologyIndexPanelLabels;
   className?: string;
   /** 푸터 "에이전트 동기화" 뒤에 붙는 성장 신호 조각(예: " · 이번 주 +1") —
@@ -130,6 +142,7 @@ export function TopologyIndexPanel({
   uncatalogedDocCount,
   onPromoteUncatalogedDocs = null,
   onOpenAgentConnect = null,
+  agentActivityHref = null,
   domainCensus = null,}: TopologyIndexPanelProps) {
   const [query, setQuery] = useState("");
   const [openIds, setOpenIds] = useState<Set<string>>(
@@ -359,21 +372,39 @@ export function TopologyIndexPanel({
         data-testid="topology-index-footer"
         className="mt-2.5 flex shrink-0 items-center gap-1.5 border-t border-[color:var(--topology-v2-panel-divider)] px-1 pt-2.5 text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]"
       >
-        <button
-          type="button"
-          onClick={onOpenAgentConnect ?? undefined}
-          disabled={!onOpenAgentConnect}
-          data-testid="topology-index-agent-connect"
-          className="inline-flex min-w-0 items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors enabled:cursor-pointer enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)] enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
-        >
-          <span
-            aria-hidden="true"
-            className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-power-on)]"
-          />
-          <span className="text-[color:var(--topology-v2-panel-text-tertiary)]">
-            {labels.agentSync}
-          </span>
-        </button>
+        {/* P4-② — 연결된 상태(agentActivityHref 제공)면 활동 다이제스트로
+            딥링크, 아니면 기존처럼 등록 시트를 여는 버튼. */}
+        {agentActivityHref ? (
+          <Link
+            href={agentActivityHref}
+            data-testid="topology-index-agent-connect"
+            className="inline-flex min-w-0 items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+          >
+            <span
+              aria-hidden="true"
+              className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-power-on)]"
+            />
+            <span className="text-[color:var(--topology-v2-panel-text-tertiary)]">
+              {labels.agentSync}
+            </span>
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpenAgentConnect ?? undefined}
+            disabled={!onOpenAgentConnect}
+            data-testid="topology-index-agent-connect"
+            className="inline-flex min-w-0 items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors enabled:cursor-pointer enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)] enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+          >
+            <span
+              aria-hidden="true"
+              className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-power-on)]"
+            />
+            <span className="text-[color:var(--topology-v2-panel-text-tertiary)]">
+              {labels.agentSync}
+            </span>
+          </button>
+        )}
         {footerGrowthText ? <span>{footerGrowthText}</span> : null}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {agentHandoff ? (

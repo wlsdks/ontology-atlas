@@ -56,6 +56,8 @@ export interface DoNextTabLabels {
   digestTitle: string;
   digestToday: (count: number) => string;
   digestApproveHint: string;
+  /** P4-② — why 행 앞에 붙는 prefix ("Why · "). */
+  digestWhyPrefix: string;
 }
 
 export interface DoNextTabAgentReadiness {
@@ -91,7 +93,10 @@ export interface DoNextTabProps {
    * 자동화 계약: 에이전트가 실행, 사람은 git diff 로 승인 — 이 카드는
    * "한 일"의 보고이지 조작 화면이 아니다.
    */
-  activityDigest: { todayCount: number; latest: ReadonlyArray<{ at: string; summary: string; agent: string | null }> } | null;
+  activityDigest: {
+    todayCount: number;
+    latest: ReadonlyArray<{ at: string; summary: string; agent: string | null; why?: string | null }>;
+  } | null;
   labels: DoNextTabLabels;
 }
 
@@ -477,12 +482,27 @@ export function DoNextTab({
             </div>
             <div className="mt-2 flex flex-col gap-1.5">
               {activityDigest.latest.map((entry, index) => (
-                <p key={`${entry.at}-${index}`} className="truncate font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
-                  {entry.summary}
-                  {entry.agent ? (
-                    <span className="text-[color:var(--color-text-quaternary)]"> · {entry.agent}</span>
+                <div key={`${entry.at}-${index}`} data-testid="do-next-digest-entry">
+                  <p className="truncate font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+                    {entry.summary}
+                    {entry.agent ? (
+                      <span className="text-[color:var(--color-text-quaternary)]"> · {entry.agent}</span>
+                    ) : null}
+                  </p>
+                  {/* P4-② — add_relation 의 --why 근거. 저장은 이미 되고 있었지만
+                      (relation_notes frontmatter) 어떤 화면에도 안 보였다. 이 카드가
+                      감사 로그 요약을 그대로 보여주는 표면이니 여기 truncate 로
+                      같이 노출한다. */}
+                  {entry.why ? (
+                    <p
+                      data-testid="do-next-digest-why"
+                      className="truncate font-mono text-[10.5px] italic text-[color:var(--color-text-quaternary)]"
+                    >
+                      {labels.digestWhyPrefix}
+                      {entry.why}
+                    </p>
                   ) : null}
-                </p>
+                </div>
               ))}
             </div>
             <p className="mt-2 text-[11px] text-[color:var(--color-text-quaternary)]">{labels.digestApproveHint}</p>

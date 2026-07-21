@@ -1625,7 +1625,8 @@
         "moreCount": "외 {count}개 — 전체는 에이전트 핸드오프로",
         "digestTitle": "에이전트가 한 일",
         "digestToday": "오늘 {count}건",
-        "digestApproveHint": "확인은 git diff 로 — 이 목록은 vault 안 로컬 감사 로그(.ontology-atlas/activity.jsonl)에서 옵니다."
+        "digestApproveHint": "확인은 git diff 로 — 이 목록은 vault 안 로컬 감사 로그(.ontology-atlas/activity.jsonl)에서 옵니다.",
+        "digestWhyPrefix": "이유 · "
       }
     }
   },

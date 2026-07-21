@@ -1625,7 +1625,8 @@
         "moreCount": "+{count} more — full list via agent handoff",
         "digestTitle": "What the agent did",
         "digestToday": "{count} today",
-        "digestApproveHint": "Review via git diff — this list comes from the local audit log (.ontology-atlas/activity.jsonl) inside your vault."
+        "digestApproveHint": "Review via git diff — this list comes from the local audit log (.ontology-atlas/activity.jsonl) inside your vault.",
+        "digestWhyPrefix": "Why · "
       }
     }
   },
