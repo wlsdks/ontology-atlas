@@ -31,6 +31,12 @@ interface Props {
   rootPath?: string | null;
   docCount: number;
   errorMessage: string | null;
+  /**
+   * error status 분류 코드. 'path-missing' 이면 (데스크톱) 저장된 vault 폴더가
+   * 사라진 케이스라 지역화된 전용 안내 + "다시 선택" 을 보여준다. 그 외에는
+   * `errorMessage`(원인 문자열, Tauri Err(String) 포함) → errorFallback 순.
+   */
+  errorCode?: 'path-missing' | 'access-failed' | null;
   /** 마지막 스캔 epoch ms. null 이면 표시 안 함. */
   lastLoadedAt: number | null;
   /**
@@ -76,6 +82,7 @@ export function LocalVaultPicker({
   rootPath = null,
   docCount,
   errorMessage,
+  errorCode = null,
   lastLoadedAt,
   validationSummary,
   recentVaults = [],
@@ -145,14 +152,21 @@ export function LocalVaultPicker({
     );
   }
   if (status === 'error') {
+    const isPathMissing = errorCode === 'path-missing';
+    // path-missing 은 원인이 확정적이라 지역화 전용 문구. 그 외에는 원인
+    // 문자열(errorMessage)을 먼저 보여주고, 비었을 때만 generic fallback.
+    const errorPrimary = isPathMissing
+      ? t('errorPathMissing')
+      : (errorMessage ?? t('errorFallback'));
+    const errorSecondary = isPathMissing
+      ? t('errorPathMissingHint')
+      : t('errorHint');
     return (
       <div className="grid flex-1 gap-2">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-status-danger)]">
-          <span className="truncate">
-            {errorMessage ?? t('errorFallback')}
-          </span>
+          <span className="truncate">{errorPrimary}</span>
           <span className="text-[color:var(--color-danger-text)]">
-            {t('errorHint')}
+            {errorSecondary}
           </span>
           <button
             type="button"

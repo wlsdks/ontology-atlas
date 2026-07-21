@@ -175,6 +175,11 @@ export function OntologyInsightsPage() {
       at: entry.at,
       summary: entry.summary,
       agent: entry.agent,
+      // P4-② (2026-07-21 리텐션 라운드) — add_relation 의 --why 는 이미
+      // activity.jsonl 에 저장되지만 어떤 UI 표면에도 안 나왔다("근거를
+      // 쓰게 해놓고 읽을 곳이 없음"). digest 카드가 요약 옆에 truncate 로
+      // 함께 보여준다.
+      why: entry.why,
     }));
     return { todayCount: countRecentEntries(log, digestNowMs), latest };
   }, [vault.agentActivityLog, digestNowMs]);
@@ -264,6 +269,7 @@ export function OntologyInsightsPage() {
     digestTitle: t("doNext.digestTitle"),
     digestToday: (count: number) => t("doNext.digestToday", { count }),
     digestApproveHint: t("doNext.digestApproveHint"),
+    digestWhyPrefix: t("doNext.digestWhyPrefix"),
   };
   const formatDaysAgo = (days: number) => {
     if (days <= 0) return t("daysAgoToday");

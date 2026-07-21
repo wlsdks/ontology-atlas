@@ -757,3 +757,37 @@ function flattenKeys(value, prefix = '') {
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
+
+it('모든 메시지가 ICU 로 컴파일된다 — 꺾쇠 태그 오파싱이 raw 키 폴백을 만들지 않게 (리텐션 P2/P4 회귀)', async () => {
+  // next-intl 은 `<tag>` 를 rich-text 태그로 파싱한다. plain t() 로 소비되는
+  // 메시지에 문자 그대로의 `<...>` 가 들어가면 런타임 에러 → 사용자에게
+  // raw 키가 보인다 (agentConnect.manualPathHint 사고). 여기서는 전 메시지를
+  // 태그 허용 모드로 컴파일해 문법 깨짐(닫히지 않은 태그·잘못된 ICU)을 잡고,
+  // 태그 사용 키는 소비처가 t.rich 인지까지는 보지 않는다(별도 관례).
+  const { createRequire } = await import('node:module');
+  const require_ = createRequire(new URL(import.meta.url));
+  const pnpmDir = (await import('node:fs')).readdirSync('node_modules/.pnpm').find((d) => d.startsWith('intl-messageformat@'));
+  const { IntlMessageFormat } = require_(
+    `${process.cwd()}/node_modules/.pnpm/${pnpmDir}/node_modules/intl-messageformat/index.js`,
+  );
+  const { readFile } = await import('node:fs/promises');
+  const failures = [];
+  for (const locale of ['ko', 'en']) {
+    const messages = JSON.parse(await readFile(`messages/${locale}.json`, 'utf-8'));
+    const walk = (obj, path) => {
+      for (const [key, value] of Object.entries(obj)) {
+        const p = path ? `${path}.${key}` : key;
+        if (typeof value === 'string') {
+          try {
+            // ignoreTag 없이 컴파일 — next-intl 과 같은 태그 파싱 조건.
+            new IntlMessageFormat(value, locale);
+          } catch (err) {
+            failures.push(`${locale}:${p} — ${err.message.split('\n')[0]}`);
+          }
+        } else if (value && typeof value === 'object') walk(value, p);
+      }
+    };
+    walk(messages, '');
+  }
+  assert.deepEqual(failures, [], `ICU 컴파일 실패:\n${failures.join('\n')}`);
+});

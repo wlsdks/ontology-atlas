@@ -27,6 +27,7 @@ import {
   parseVaultFlag,
   resolveTrailingVaultArg,
 } from '../lib/cli-args.mjs';
+import { recordCliWrite } from '../lib/activity-log.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--json', '--dry-run', '--why'];
 
@@ -95,6 +96,13 @@ export async function runRelate(args) {
 
   try {
     const filePath = writeRelation(vaultRoot, { from: check.from, to: check.to, relation: check.relation, why });
+    // P2-① — 실제로 관계가 쓰였을 때만 감사 로그에 (dry-run·already-exists 위에서 return).
+    await recordCliWrite(vaultRoot, {
+      tool: 'cli:relate',
+      target: check.from,
+      summary: `${check.from} --${type}--> ${check.to}`,
+      why: why ?? null,
+    });
     if (json) {
       process.stdout.write(JSON.stringify({ ...check, written: true, dryRun: false, alreadyExists: false, filePath }, null, 2) + '\n');
     } else {

@@ -2271,6 +2271,17 @@ export function HomePage() {
                     onSelect={(id) => handleSelect(id)}
                     onCollapse={handleIndexCollapse}
                     onOpenAgentConnect={agentConnect.openSheet}
+                    // P4-② (2026-07-21 리텐션 라운드) — 이미 연결된
+                    // 에이전트가 있는 2일차+ 사용자에게 "Updated with AI"
+                    // 클릭이 "AI 에이전트 연결" 등록 모달(어제 이미 끝낸
+                    // 셋업)로 돌려보내는 건 막다른 길이었다. 연결 상태일 땐
+                    // 그 클릭이 답해야 할 질문이 "가입할까?"가 아니라
+                    // "에이전트가 뭘 했지?"이므로 활동 다이제스트(인사이트
+                    // 기본 탭 "할 일")로 딥링크한다. 미연결/stale 은 기존
+                    // 모달 그대로.
+                    agentActivityHref={
+                      agentConnect.status.kind === "connected" ? "/ontology/insights/" : null
+                    }
                     domainCensus={indexDomainCensus}
                     // P4a — 렌즈 필터용 id 집합 + P4b 배지 대상.
                     recentChanges={{

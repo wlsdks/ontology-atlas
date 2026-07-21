@@ -13,6 +13,7 @@ import {
   readFileSync,
   rmSync,
   readdirSync,
+  existsSync,
 } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -3156,6 +3157,44 @@ await test('relate --why — 관계와 relation_notes 근거를 같은 쓰기로
     const doc = readFileSync(join(root, 'a.md'), 'utf-8');
     assert.match(doc, /dependencies: \[b\]/);
     assert.match(doc, /relation_notes: \{ b: A 의 쓰기 경로가 B 를 지난다 \}/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('CLI 쓰기(add/relate/import)는 감사 로그에 기록된다 (P2-①)', async () => {
+  const root = withVault([
+    { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
+    { slug: 'b', content: '---\nkind: capability\ntitle: B\n---\n' },
+  ]);
+  const incoming = join(root, 'incoming.md');
+  writeFileSync(incoming, '---\nkind: element\nslug: imported-el\ntitle: Imported\n---\n본문\n', 'utf-8');
+  try {
+    // dry-run 은 기록되면 안 된다.
+    const dry = await run(['relate', 'a', 'b', 'depends_on', root, '--dry-run']);
+    assert.equal(dry.code, 0, `dry stdout: ${dry.stdout}\nstderr: ${dry.stderr}`);
+    assert.equal(existsSync(join(root, '.ontology-atlas', 'activity.jsonl')), false, 'dry-run must not log');
+
+    const add = await run(['add', 'capability', 'auth/token-issue', '--title', 'Token issue', '--domain', 'auth', '--vault', root]);
+    assert.equal(add.code, 0, `add stdout: ${add.stdout}\nstderr: ${add.stderr}`);
+    const rel = await run(['relate', 'a', 'b', 'depends_on', root, '--why', 'A 는 B 를 지난다']);
+    assert.equal(rel.code, 0, `relate stdout: ${rel.stdout}\nstderr: ${rel.stderr}`);
+    const imp = await run(['import', incoming, '--vault', root]);
+    assert.equal(imp.code, 0, `import stdout: ${imp.stdout}\nstderr: ${imp.stderr}`);
+
+    const logRaw = readFileSync(join(root, '.ontology-atlas', 'activity.jsonl'), 'utf-8');
+    const entries = logRaw.split('\n').filter(Boolean).map((l) => JSON.parse(l));
+    const tools = entries.map((e) => e.tool);
+    assert.deepEqual(tools.sort(), ['cli:add', 'cli:import', 'cli:relate']);
+    const relEntry = entries.find((e) => e.tool === 'cli:relate');
+    assert.equal(relEntry.from ?? relEntry.target, 'a');
+    assert.equal(relEntry.why, 'A 는 B 를 지난다');
+    assert.equal(relEntry.v, 1);
+
+    // agent-activity --log 로 사람이 읽는 경로도 확인.
+    const shown = await run(['agent-activity', root, '--log']);
+    assert.equal(shown.code, 0);
+    assert.match(stripAnsi(shown.stdout), /a --depends_on--> b/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

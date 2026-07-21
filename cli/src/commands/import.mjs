@@ -11,6 +11,7 @@ import {
 } from '../lib/schema.mjs';
 import { formatAllowedValueError } from '../lib/suggestions.mjs';
 import { formatUnknownFlagError, parseRequiredFlagValue, parseVaultFlag } from '../lib/cli-args.mjs';
+import { recordCliWrite } from '../lib/activity-log.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--kind', '--auto-prefix', '--raw-slug', '--no-auto-prefix', '--rename', '--dry-run'];
 
@@ -35,7 +36,7 @@ const ALLOWED_FLAGS = ['--vault', '--kind', '--auto-prefix', '--raw-slug', '--no
  *   7. body: input body 보존, 비어 있으면 schema 의 starter
  *   8. writeDoc — dry-run 시 디스크 변경 0
  */
-export function runImport(args) {
+export async function runImport(args) {
   const opts = parseArgs(args);
   if (opts.help) {
     printImportUsage(process.stdout);
@@ -79,6 +80,14 @@ export function runImport(args) {
           `${COLORS.green}${result.status === 'would-import' ? 'plan' : 'ok  '}${COLORS.reset}  ${relative(process.cwd(), src)}\n` +
             `${COLORS.dim}      → ${result.kind} · ${result.slug}${COLORS.reset}\n`,
         );
+        // P2-① — 실제로 디스크에 정착한 것만 감사 로그에 (dry-run=would-import 제외).
+        if (result.status === 'imported') {
+          await recordCliWrite(vaultPath, {
+            tool: 'cli:import',
+            target: result.slug,
+            summary: `import ${result.kind}:${result.slug}`,
+          });
+        }
         break;
       case 'kindless':
         summary.kindless += 1;

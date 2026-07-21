@@ -28,9 +28,12 @@ import {
   buildVaultMcpConfigJson,
 } from '../lib/ontology-starter';
 import {
+  getTauriVaultRootPath,
   isTauriVaultRuntime,
   pickTauriVaultDirectory,
+  tauriVaultPathExists,
 } from '@/shared/lib/tauri-vault-fs';
+import { toErrorMessage } from '@/shared/lib/error-message';
 import {
   emptyAgentActivityStatus,
   parseAgentActivityStatus,
@@ -89,6 +92,17 @@ type Status =
   | 'unsupported'
   | 'error';
 
+/**
+ * error status 를 사람이 읽을 수 있게 분류하는 코드. picker 가 이 코드로
+ * 지역화된 안내 문구를 고른다 (hook 은 i18n-free 로 유지).
+ *
+ * - `path-missing` — (데스크톱) 이전에 열었던 vault 폴더 자체가 이동/삭제돼
+ *   더는 절대 경로로 접근할 수 없음. "폴더 다시 선택" 이 다음 행동.
+ * - `access-failed` — 그 외 읽기/빌드 실패. `errorMessage` 에 원인 문자열이
+ *   담긴다 (Tauri 커맨드의 Err(String) 포함 — 더는 침묵하지 않음).
+ */
+export type VaultErrorCode = 'path-missing' | 'access-failed';
+
 interface State {
   status: Status;
   handle: FileSystemDirectoryHandle | null;
@@ -100,6 +114,8 @@ interface State {
   fileHandles: Map<string, FileSystemFileHandle>;
   imageHandles: Map<string, FileSystemFileHandle>;
   errorMessage: string | null;
+  /** error status 일 때만 의미. picker 가 지역화 안내 문구를 고르는 분류 키. */
+  errorCode: VaultErrorCode | null;
   /** 마지막 성공 스캔 epoch ms. picker 에서 "N초 전 스캔" 표기에 씀. */
   lastLoadedAt: number | null;
 }
@@ -124,8 +140,31 @@ function emptyState(status: Status = 'idle'): State {
     fileHandles: new Map(),
     imageHandles: new Map(),
     errorMessage: null,
+    errorCode: null,
     lastLoadedAt: null,
   };
+}
+
+/**
+ * (데스크톱) Tauri 최근 vault 재열기 preflight — 저장된 절대 경로가 아직
+ * 디렉터리로 존재하는지 확인. 이전 세션에서 고른 폴더가 그 사이 이동/삭제됐다면
+ * false. FSA picker 없이 절대 경로만으로 다시 여는 데스크톱 고유 경로에서,
+ * 폴더가 사라진 흔한 실패를 사람이 읽을 수 있는 'path-missing' 으로 분류하기
+ * 위한 것. 비-Tauri 런타임이나 경로가 없는 record 는 preflight 대상이 아니므로
+ * true(진행)로 단락 — 그쪽 handle 은 자체 권한을 들고 있다.
+ */
+async function tauriVaultRecordResolves(
+  record: LocalFsHandleRecord,
+): Promise<boolean> {
+  if (!isTauriVaultRuntime()) return true;
+  const rootPath = record.desktopRootPath ?? getTauriVaultRootPath(record.handle);
+  if (!rootPath) return true;
+  try {
+    return await tauriVaultPathExists(rootPath, 'directory');
+  } catch {
+    // 경로 조회 자체가 실패(canonicalize 오류 등)해도 접근 불가로 취급.
+    return false;
+  }
 }
 
 /**
@@ -478,7 +517,13 @@ export function useLocalVaultInternal() {
   );
 
   const load = useCallback(async (handle: FileSystemDirectoryHandle) => {
-    setState((s) => ({ ...s, status: 'loading', handle, errorMessage: null }));
+    setState((s) => ({
+      ...s,
+      status: 'loading',
+      handle,
+      errorMessage: null,
+      errorCode: null,
+    }));
     try {
       // 같은 vault(handle 동일)에 직전 빌드가 있으면 증분 재빌드 — 변경 파일만
       // 재독해 큰 vault 의 라이브 갱신 렉을 줄인다. 첫 로드 / 다른 vault / 증분
@@ -513,14 +558,17 @@ export function useLocalVaultInternal() {
         fileHandles,
         imageHandles,
         errorMessage: null,
+        errorCode: null,
         lastLoadedAt: Date.now(),
       });
     } catch (err) {
       lastBuildRef.current = null;
-      // err.message 가 없을 땐 null 로 두고 LocalVaultPicker 의
-      // \`t('errorFallback')\` 가 locale-aware 메시지를 채우게 — 이전엔 한국어
-      // 하드코딩 fallback "매니페스트 빌드 실패" 가 en locale 사용자에게도
-      // 노출되는 회귀가 있었다.
+      // toErrorMessage 로 원인 문자열을 살린다 — Tauri 커맨드는 Err(String) 을
+      // 반환하므로 invoke 는 Error 가 아니라 *문자열* 로 reject 한다. 이전
+      // `err instanceof Error ? err.message : null` 는 그 문자열을 통째로
+      // 버려서 데스크톱 볼트 접근 실패를 전부 generic fallback 배너로
+      // 침묵시켰다 (P5 회귀). message 가 비면 null 로 두고 picker 의
+      // errorFallback 이 locale-aware 로 채운다.
       setState({
         status: 'error',
         handle,
@@ -530,7 +578,8 @@ export function useLocalVaultInternal() {
         agentActivityLog: [],
         fileHandles: new Map(),
         imageHandles: new Map(),
-        errorMessage: err instanceof Error ? err.message : null,
+        errorMessage: toErrorMessage(err),
+        errorCode: 'access-failed',
         lastLoadedAt: null,
       });
     }
@@ -545,7 +594,12 @@ export function useLocalVaultInternal() {
       setState(emptyState('unsupported'));
       return;
     }
-    setState((s) => ({ ...s, status: 'opening', errorMessage: null }));
+    setState((s) => ({
+      ...s,
+      status: 'opening',
+      errorMessage: null,
+      errorCode: null,
+    }));
     try {
       const handle = isTauriVaultRuntime()
         ? await pickTauriVaultDirectory()
@@ -581,7 +635,8 @@ export function useLocalVaultInternal() {
       setState((s) => ({
         ...s,
         status: 'error',
-        errorMessage: err instanceof Error ? err.message : null,
+        errorMessage: toErrorMessage(err),
+        errorCode: 'access-failed',
       }));
     }
   }, [load, refreshRecentVaults]);
@@ -592,8 +647,26 @@ export function useLocalVaultInternal() {
         setState(emptyState('unsupported'));
         return;
       }
-      setState((s) => ({ ...s, status: 'opening', errorMessage: null }));
+      setState((s) => ({
+        ...s,
+        status: 'opening',
+        errorMessage: null,
+        errorCode: null,
+      }));
       try {
+        // 데스크톱 고유 경로: 저장된 절대 경로 자체가 handle 이라 FSA picker 없이
+        // 다시 연다. 다만 그 폴더가 지난 세션 이후 이동/삭제됐다면 매니페스트
+        // 빌드가 raw io 오류로 터진다 — 그 전에 preflight 해서 사람이 읽을 수
+        // 있는 'path-missing' 로 분류하고 "폴더 다시 선택" 을 유도한다.
+        if (!(await tauriVaultRecordResolves(record))) {
+          setState((s) => ({
+            ...s,
+            status: 'error',
+            errorMessage: null,
+            errorCode: 'path-missing',
+          }));
+          return;
+        }
         const now = Date.now();
         const nextRecord: LocalFsHandleRecord = {
           ...record,
@@ -604,10 +677,12 @@ export function useLocalVaultInternal() {
         await refreshRecentVaults();
         await load(nextRecord.handle);
       } catch (err) {
+        // toErrorMessage — Tauri invoke 는 Err(String) 을 문자열로 reject.
         setState((s) => ({
           ...s,
           status: 'error',
-          errorMessage: err instanceof Error ? err.message : null,
+          errorMessage: toErrorMessage(err),
+          errorCode: 'access-failed',
         }));
       }
     },
@@ -998,6 +1073,29 @@ export function useLocalVaultInternal() {
       const permission = await verifyRead(handle, false);
       if (cancelled) return;
       if (permission === 'granted') {
+        // (데스크톱) 자동 복원의 흔한 침묵 실패: 저장된 vault 폴더가 앱을
+        // 껐던 사이 이동/삭제됨. load 안에서 raw io 오류로 터지는 대신,
+        // 먼저 preflight 해서 'path-missing' 로 분류 → picker 가 "폴더가
+        // 사라졌어요, 다시 선택하세요" 를 말한다.
+        if (!(await tauriVaultRecordResolves(record))) {
+          if (!cancelled) {
+            setState({
+              status: 'error',
+              handle,
+              manifest: null,
+              agentConfigStatus: null,
+              agentActivityStatus: emptyAgentActivityStatus(),
+              agentActivityLog: [],
+              fileHandles: new Map(),
+              imageHandles: new Map(),
+              errorMessage: null,
+              errorCode: 'path-missing',
+              lastLoadedAt: null,
+            });
+            setRestoreAttempted(true);
+          }
+          return;
+        }
         await load(handle);
       } else {
         setState({
@@ -1010,6 +1108,7 @@ export function useLocalVaultInternal() {
           fileHandles: new Map(),
           imageHandles: new Map(),
           errorMessage: null,
+          errorCode: null,
           lastLoadedAt: null,
         });
       }
@@ -1094,6 +1193,7 @@ export function useLocalVaultInternal() {
     fileHandles: state.fileHandles,
     imageHandles: state.imageHandles,
     errorMessage: state.errorMessage,
+    errorCode: state.errorCode,
     lastLoadedAt: state.lastLoadedAt,
     restoreAttempted,
     // state-derived — SSR 일치 (lazy initializer 의 isSupported() 호출

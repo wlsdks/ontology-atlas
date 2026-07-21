@@ -10,6 +10,7 @@ import {
 } from '../lib/schema.mjs';
 import { formatAllowedValueError } from '../lib/suggestions.mjs';
 import { formatUnknownFlagError, parseRawRequiredFlagValue, parseVaultFlag } from '../lib/cli-args.mjs';
+import { recordCliWrite } from '../lib/activity-log.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--title', '--domain', '--body', '--auto-prefix', '--raw-slug', '--no-auto-prefix'];
 
@@ -20,7 +21,7 @@ const ALLOWED_FLAGS = ['--vault', '--title', '--domain', '--body', '--auto-prefi
  * 새 ontology 노드 .md 작성. 기존 slug 면 throw (덮어쓰기 절대 안 함 —
  * 사용자 작업 보호). mcp 의 add_concept 과 같은 contract.
  */
-export function runAdd(args) {
+export async function runAdd(args) {
   const opts = parseArgs(args);
   if (opts.help) {
     printAddUsage(process.stdout);
@@ -59,6 +60,12 @@ export function runAdd(args) {
       `${COLORS.green}ok${COLORS.reset}    ${rel}\n` +
         `${COLORS.dim}      ${kind} · ${slug}${domain ? ` · domain=${domain}` : ''}${COLORS.reset}`,
     );
+    // P2-① — 성공한 쓰기만 로컬 감사 로그에 (dry-run 없음, 실패는 catch 로 빠짐).
+    await recordCliWrite(vaultPath, {
+      tool: 'cli:add',
+      target: slug,
+      summary: `add ${kind}:${slug}`,
+    });
     // schema 의 requiredExtras 누락 (capability/element 의 domain 등) 은
     // advisory warning 으로 출력 — 사용자가 후속에 채울 수 있게.
     const missing = missingExpectedFields(kind, fm);

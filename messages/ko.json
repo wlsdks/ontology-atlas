@@ -230,6 +230,10 @@
     "createBusy": "시작 구조 작성 중…",
     "dismissLabel": "여기서 둘러볼게요",
     "errorFallback": "폴더를 열지 못했습니다. 다시 시도해 주세요.",
+    "cliBridgeLabel": "코드베이스에서 자동으로 시작하려면",
+    "cliBridgeCopy": "명령 복사",
+    "cliBridgeCopied": "복사됨",
+    "cliBridgeCopyAriaLabel": "터미널에서 붙여넣을 부트스트랩 명령 복사",
     "readout": {
       "projectUnit": "project",
       "domainUnit": "domains",
@@ -1621,7 +1625,8 @@
         "moreCount": "외 {count}개 — 전체는 에이전트 핸드오프로",
         "digestTitle": "에이전트가 한 일",
         "digestToday": "오늘 {count}건",
-        "digestApproveHint": "확인은 git diff 로 — 이 목록은 vault 안 로컬 감사 로그(.ontology-atlas/activity.jsonl)에서 옵니다."
+        "digestApproveHint": "확인은 git diff 로 — 이 목록은 vault 안 로컬 감사 로그(.ontology-atlas/activity.jsonl)에서 옵니다.",
+        "digestWhyPrefix": "이유 · "
       }
     }
   },
@@ -2152,7 +2157,7 @@
       "poweredOn": "최근 갱신",
       "poweredOff": "한동안 그대로",
       "metricUsedBy": "쓰는 곳",
-      "noConnections": "직접 연결 없음",
+      "noConnections": "아직 기록된 관계 없음 · 관계는 frontmatter 로 선언돼요",
       "handoff": "에이전트 인계 복사",
       "handoffCopied": "에이전트 인계를 복사했어요",
       "openFullDetail": "전체 상세 →",
@@ -2435,6 +2440,8 @@
       "permissionClearLabel": "지우기",
       "errorFallback": "로컬 볼트 오류 — 폴더 접근 중 문제가 생겼습니다.",
       "errorHint": "폴더 권한을 다시 확인하거나 다른 폴더로 시도해보세요.",
+      "errorPathMissing": "이전에 열었던 폴더를 더 이상 찾을 수 없어요 — 이동됐거나 삭제된 것 같습니다.",
+      "errorPathMissingHint": "아래 목록에서 다른 최근 폴더를 열거나, 폴더를 다시 선택하세요.",
       "errorReselect": "다시 선택",
       "loadedDocCount": "{count} 문서",
       "loadedScannedSuffix": "· {relative} 스캔",
@@ -2732,7 +2739,7 @@
     "statusStale": "마지막 신호가 {ago}예요. 에이전트 세션을 다시 시작하면 이어집니다.",
     "statusNone": "아직 연결 전이에요. 아래 스니펫으로 1분이면 연결됩니다.",
     "registerLabel": "등록",
-    "manualPathHint": "브라우저 세션이라 폴더의 절대 경로는 직접 채워야 해요 — 스니펫의 <absolute path to your my-vault folder> 자리를 실제 경로로 바꿔주세요.",
+    "manualPathHint": "브라우저 세션이라 폴더의 절대 경로는 직접 채워야 해요 — 스니펫의 [my-vault 폴더의 절대 경로] 자리를 실제 경로로 바꿔주세요.",
     "claudeCode": "Claude Code — .mcp.json",
     "codex": "Codex — 명령 한 줄",
     "genericHint": "다른 MCP 클라이언트도 같은 command/args 로 등록됩니다. 연결 확인은 터미널에서 ontology-atlas mcp-verify.",

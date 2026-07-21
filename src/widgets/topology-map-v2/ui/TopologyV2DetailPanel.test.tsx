@@ -24,7 +24,7 @@ const labels = {
   metricUsedBy: "used by",
   metricDependsOn: "leans on",
   metricEvidence: "evidence",
-  noConnections: "no direct connections",
+  noConnections: "no relations recorded yet · relations are declared in frontmatter",
   handoff: "Copy next action",
   close: "Close",
   openFullDetail: "Full detail →",
@@ -94,6 +94,25 @@ describe("TopologyV2DetailPanel — full-detail A1 opt-in link", () => {
     expect(
       screen.queryByTestId("topology-v2-detail-panel-open-full-detail"),
     ).not.toBeInTheDocument();
+  });
+});
+
+// P3-③ (2026-07-21 리텐션 라운드) — 1440×900 에서 연결이 많은 노드는 패널
+// 콘텐츠가 뷰포트를 넘겨 "전체 상세 →" 푸터가 화면 밖(y=911)으로 밀려나
+// 클릭 불가였다. 패널은 항상 뷰포트 안에서 스스로 스크롤해야 한다 — jsdom 은
+// 실제 레이아웃을 하지 않으므로 clamp 계약(토큰 기반 max-height + 내부
+// overflow)이 className 에 실제로 걸려 있는지로 회귀를 잡는다.
+describe("TopologyV2DetailPanel — viewport clamp (P3-③)", () => {
+  it("always carries a viewport-bounded max-height and internal scroll so the footer link stays reachable", () => {
+    renderPanel(vi.fn());
+    const panel = screen.getByTestId("topology-v2-detail-panel");
+    expect(panel.className).toContain("max-h-[var(--topology-v2-panel-max-height)]");
+    expect(panel.className).toContain("overflow-y-auto");
+    // The full-detail footer link is inside the same clamped/scrollable
+    // root, not a sibling escaping the clamp.
+    expect(panel).toContainElement(
+      screen.getByTestId("topology-v2-detail-panel-open-full-detail"),
+    );
   });
 });
 
@@ -181,6 +200,42 @@ describe("TopologyV2DetailPanel — M-2 typed containment split", () => {
     expect(document.querySelector("[data-datasheet-group='contains']")).toBeNull();
     const metric = screen.getByTestId("topology-v2-detail-panel").querySelector("[data-datasheet-metric='engraved']");
     expect(metric?.textContent).not.toContain("contains");
+  });
+});
+
+describe("TopologyV2DetailPanel — P3-① 미기록 관계 empty-state (0 vs 미기록 disambiguation)", () => {
+  it("renders the honest 'no relations recorded yet' empty-state when a node has zero recorded relations", () => {
+    // global-search 처럼 코드에선 널리 쓰이지만 vault frontmatter 에는 아직
+    // 어떤 관계도 선언되지 않은 노드 — "쓰는 곳 0" 이 "의존 없음" 이 아니라
+    // "아직 기록 안 됨" 임을 UI 가 정직하게 말해야 한다.
+    render(
+      <TopologyV2DetailPanel
+        slug="src/widgets/global-search"
+        title="global-search"
+        kind="element"
+        domain={null}
+        powered={false}
+        metric={{ contains: 0, usedBy: 0, dependsOn: 0, evidence: 0 }}
+        groups={{
+          contains: { rows: [], total: 0 },
+          usedBy: { rows: [], total: 0 },
+          dependsOn: { rows: [], total: 0 },
+          belongsTo: { rows: [], total: 0 },
+        }}
+        evidence={{ rows: [], total: 0 }}
+        handoffText="node: src/widgets/global-search"
+        documentHref={null}
+        builderEditHref="/ontology/edit/?node=src%2Fwidgets%2Fglobal-search"
+        labels={labels}
+        onSelectConnection={() => {}}
+        onCopyHandoff={() => {}}
+        onClose={() => {}}
+        onSetPathSource={() => {}}
+      />,
+    );
+    expect(screen.getByText(labels.noConnections)).toBeInTheDocument();
+    // the copy must carry the "recorded / declared" framing, not a bare "no connections"
+    expect(labels.noConnections).toMatch(/recorded|declared/i);
   });
 });
 
