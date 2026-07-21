@@ -148,6 +148,28 @@ describe("buildTopologyOntologyDrawerModel", () => {
     expect(model.ownerDomain).toBeNull();
   });
 
+  it("P1-③ — domain node with an INCOMING domain edge still has no owner domain (no cross-domain misattribution)", () => {
+    // Vault — Local-First 도메인이 AI Agent Partner 도메인의 incoming
+    // relation 을 가진다(도메인 간 cross-relation). 이걸 소속으로 집으면
+    // "도메인 · AI Agent Partner" 오귀속(데이터시트 헤더 + 인계 domain: 필드).
+    const vault = node("domains/vault-local-first", "domain");
+    const agent = node("domains/ai-agent-partner", "domain");
+    const model = buildTopologyOntologyDrawerModel(vault, [vault, agent], [
+      edge("agent->vault", "domains/ai-agent-partner", "domains/vault-local-first", "relates"),
+    ]);
+    expect(model.ownerDomain).toBeNull();
+  });
+
+  it("P1-③ — project node is never attributed to a domain owner", () => {
+    const project = node("project", "project");
+    const dom = node("domains/auth", "domain");
+    // 데이터 상 domain → project 로 잘못된 contains 가 있어도 소속 표기 금지.
+    const model = buildTopologyOntologyDrawerModel(project, [project, dom], [
+      edge("dom->project", "domains/auth", "project", "contains"),
+    ]);
+    expect(model.ownerDomain).toBeNull();
+  });
+
   it("keeps transitive reach finite on cycles", () => {
     // a → b → a 사이클. a 의 dependents 는 b 한 번만(무한 루프 X).
     const a = node("capabilities/a");

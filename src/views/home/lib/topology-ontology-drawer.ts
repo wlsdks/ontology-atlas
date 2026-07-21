@@ -138,12 +138,22 @@ export function buildTopologyOntologyDrawerModel(
 
   // 소유 domain — incoming 엣지의 source 중 kind:domain 첫 노드. domain 은
   // 보통 자식을 contains 하므로 (domain → node) incoming 에서 찾는다.
+  //
+  // P1-③ (retention-round-2026-07-21) — domain / project 노드 자신은 다른
+  // 도메인에 "소속" 되지 않는다. 도메인의 부모는 프로젝트지 다른 도메인이
+  // 아니다. 그런데 도메인 간 cross-relation(relates 등)의 incoming 을 그대로
+  // 집으면 "도메인 · <다른 도메인>" 같은 오귀속이 나온다(데이터시트 헤더 +
+  // 인계 패킷 `domain:` 필드까지 오염). 정직하게 domain/project 는 도메인
+  // 소속을 표기하지 않는다(null → UI 가 해당 줄 생략).
   let ownerDomain: { id: string; title: string } | null = null;
-  for (const e of incoming) {
-    const src = nodeById.get(e.from);
-    if (src && src.kind === "domain") {
-      ownerDomain = { id: src.id, title: src.title };
-      break;
+  const canBelongToDomain = node.kind !== "domain" && node.kind !== "project";
+  if (canBelongToDomain) {
+    for (const e of incoming) {
+      const src = nodeById.get(e.from);
+      if (src && src.kind === "domain") {
+        ownerDomain = { id: src.id, title: src.title };
+        break;
+      }
     }
   }
 
