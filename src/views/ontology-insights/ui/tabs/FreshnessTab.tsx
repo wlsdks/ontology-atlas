@@ -1,4 +1,5 @@
 import { Link } from "@/i18n/navigation";
+import { formatDate } from "@/shared/lib/format-date";
 import { TopologyV2KindGlyph } from "@/shared/ui";
 import type { DomainFreshnessRow, RecentUpdateRow } from "../../lib/freshness";
 
@@ -173,7 +174,10 @@ export function FreshnessTab({
                   </span>
                 </span>
                 <span className="flex-none font-mono text-[10.5px] tabular-nums text-[color:var(--color-text-tertiary)]">
-                  {new Date(row.updatedAt).toISOString().slice(0, 10)}
+                  {/* P4-③ — 로컬 타임존 기준 날짜(`formatDate`). 이전엔
+                      toISOString() 이 UTC 로 렌더해 자정 부근 갱신이 하루
+                      전날짜로 표시됐다(예: 03:12 KST → UTC 로는 전날). */}
+                  {formatDate(row.updatedAt)}
                 </span>
               </Link>
             ))

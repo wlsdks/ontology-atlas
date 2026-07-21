@@ -13,6 +13,7 @@ import { useProjects } from "@/features/project-data-source";
 import { LiveActivityIndicator, useOntologyInsight } from "@/features/vault-ontology";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { useLocalVault } from "@/features/docs-vault-local";
+import { formatDate } from "@/shared/lib/format-date";
 import { buildContainmentParents } from "@/shared/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
@@ -44,10 +45,6 @@ function formatAgo(ago: RecentActivityAgo, t: SelectorTranslator) {
   if (ago.unit === "today") return t("activityAgoToday");
   if (ago.unit === "yesterday") return t("activityAgoYesterday");
   return t("activityAgoDaysAgo", { days: ago.days });
-}
-
-function formatDateStamp(date: Date): string {
-  return date.toISOString().slice(0, 10);
 }
 
 export function ProjectSelectorPage() {
@@ -363,7 +360,7 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
         </Link>
         <span className="ml-auto whitespace-nowrap font-mono text-[10.5px] tracking-[0.04em] text-[color:var(--color-text-quaternary)]">
           {t("footUpdated", {
-            date: formatDateStamp(project.updatedAt),
+            date: formatDate(project.updatedAt),
             path: docPath ?? project.slug,
           })}
         </span>
