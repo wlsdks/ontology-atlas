@@ -15,6 +15,14 @@ This produces an `out/` directory with HTML/JS/CSS only. No server runtime.
 
 Any static host works. Pick one:
 
+> **Official demo (2026-07): GitHub Pages.** The canonical live site is
+> `https://wlsdks.github.io/ontology-atlas/`, deployed automatically on every
+> `main` push by `.github/workflows/deploy-pages.yml` (subpath build via
+> `NEXT_PUBLIC_BASE_PATH=/ontology-atlas`). Firebase Hosting was disabled the
+> same round — Spark's 360 MB/day transfer hard-cap can take the demo down on
+> a busy day, while Pages' 100 GB/month soft limit cannot. The Firebase path
+> below remains valid for self-hosters.
+
 ### Firebase Hosting
 
 ```bash

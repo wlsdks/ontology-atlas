@@ -177,6 +177,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Double-click node** → "local graph" mode (2-hop neighbors only, breadcrumb: `Local · Root · slugA · slugB`, click to backtrack, Esc to exit)
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
 - **Shift-click 2 nodes** → highlight shortest path
+- **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded.
 - **Tab** → keyboard cycle to neighbor hub
 - **Empty state** (0–1 nodes) → `TopologyEmptyState` card with 3 CTAs (tree / builder / open vault)
 - **Filter active** → bottom-left "filter · N / TOTAL" badge

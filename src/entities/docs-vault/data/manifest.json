@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-21T15:02:49.242Z",
+  "generatedAt": "2026-07-21T23:32:22.071Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2795,8 +2795,23 @@
         },
         {
           "depth": 2,
-          "text": "2026-07-21 — 죽은 \"지도 조절\" 패널 철거 (Fit 타일만 남김)",
-          "slug": "2026-07-21-죽은-지도-조절-패널-철거-fit-타일만-남김"
+          "text": "2026-07-22 — 지도 S2: 도메인 스파인 · 엣지 방향 · 규모 크기 · 선택적 ego · 칩 재설계",
+          "slug": "2026-07-22-지도-s2-도메인-스파인-엣지-방향-규모-크기-선택적-ego-칩-재설계"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 지도 밀도 게이트 + 클러스터 칩 + 클릭 확장",
+          "slug": "2026-07-22-지도-밀도-게이트-클러스터-칩-클릭-확장"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 공식 데모 GitHub Pages 로 이전 (Firebase Hosting 해제)",
+          "slug": "2026-07-22-공식-데모-github-pages-로-이전-firebase-hosting-해제"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 인사이트 → 지도 딥링크 복귀 칩",
+          "slug": "2026-07-22-인사이트-지도-딥링크-복귀-칩"
         },
         {
           "depth": 2,
@@ -4164,9 +4179,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 스크린샷 결함(\"팝업 겹침 + 내용 별로\")의 포렌식 결과, 우상단 지도 조절 패널(검색 · \"허브만\" · overlay 토글 · depth/for",
-      "wordCount": 28093,
-      "updatedAt": "2026-07-21T23:47:32+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. /?synth=2000·/?synth=5000 대형 합성 vault 실사용에서 드러난 밀도·가독성 문제와 소유자 실보고를 묶어 처리한 topology-ma",
+      "wordCount": 28652,
+      "updatedAt": "2026-07-22T08:34:26+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -4231,8 +4246,8 @@
         }
       ],
       "excerpt": "2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (Firebase Hosting, Vercel, Netlify, GitHub Pages, S3 + CloudFront, …). The detailed Firebase-specific guide is archived in docs/archive/DEPLOY-FIREBASE.md for reference.",
-      "wordCount": 587,
-      "updatedAt": "2026-06-06T02:19:43+09:00",
+      "wordCount": 654,
+      "updatedAt": "2026-07-22T00:35:26+09:00",
       "linksOut": [
         "archive/DEPLOY-FIREBASE"
       ]
@@ -5248,8 +5263,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 10814,
-      "updatedAt": "2026-07-21T23:47:32+09:00",
+      "wordCount": 10903,
+      "updatedAt": "2026-07-22T01:07:15+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5782,7 +5797,7 @@
       "headings": [],
       "excerpt": "INDEX 푸터의 에이전트 상태 클릭 → 연결 시트 (2026-07-21, P2a — 웨지 표면). 구성: ① heartbeat 파일 기반 연결 상태(조용한 수집 0 — 에이전트가 스스로 남긴 로컬 파일 읽기) ② Claude Code .mcp.json / Codex / generic 등록 스니펫(데스크톱 경로 자동, 웹 안내) + 데스크톱 설정 파일 자동 생성 ③ agent-brief 가 사용자의 실제 도메인 이름들을 되말하는 미리보기(이해받음의 순간 — 감정 카피 규칙: 사용자 고유 명사 원문 포함). 전략 근거: 백엔드(MCP 25도구·스킬·heartbeat)는",
       "wordCount": 86,
-      "updatedAt": "2026-07-21T15:02:29.233Z",
+      "updatedAt": "2026-07-22T00:03:44+09:00",
       "linksOut": []
     },
     {
@@ -6187,7 +6202,7 @@
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
       "wordCount": 10485,
-      "updatedAt": "2026-07-21T15:01:54.173Z",
+      "updatedAt": "2026-07-22T00:03:44+09:00",
       "linksOut": []
     },
     {
@@ -6266,7 +6281,7 @@
       "headings": [],
       "excerpt": "지도의 엣지를 클릭 가능한 1급 객체로 만든 역량 (2026-07-21, P3b). 빈 공간 클릭이 엣지 7px 근접이면 팝오버가 열린다: 평문 문장(\"A 가 B 에 기대요\") → 타입 → 양 끝 노드(클릭=포커스) → 관계 근거(why, relationnotes) → 선언한 vault 문서(.md 링크 + 변경 시점) → 관계 편집 딥링크. 구현: topology-edge-hit.ts(AABB 프리패스 + 베지어 16-샘플), TopologyV2EdgePanel.tsx, WorldEdge.relationType/declaredBySlug 배관. 후보는 양 끝점이 현",
       "wordCount": 93,
-      "updatedAt": "2026-07-21T15:02:27.708Z",
+      "updatedAt": "2026-07-22T00:03:44+09:00",
       "linksOut": []
     },
     {
@@ -6686,7 +6701,7 @@
       "headings": [],
       "excerpt": "관계에 \"왜\"를 붙이는 스키마 역량 (2026-07-21, P6). relationnotes: {ref: 근거 한 줄} frontmatter carrier — 파서 3계(런타임/MCP/스크립트)가 동일 해석함을 contract fixture 로 증명했고, renameconcept 는 노트 키를 함께 재작성한다(키 충돌 시 기존 new-키 값 승리 — 조용한 덮어쓰기 금지). MCP addrelation 의 why 파라미터는 관계와 근거를 한 번의 frontmatter 쓰기로 기록한다(원자성). derive 는 노트를 해당 엣지의 label 로 승격하고, 지도의 엣지 ",
       "wordCount": 83,
-      "updatedAt": "2026-07-21T15:02:30.291Z",
+      "updatedAt": "2026-07-22T00:03:44+09:00",
       "linksOut": []
     },
     {
@@ -6780,7 +6795,7 @@
       ],
       "excerpt": "/ (root hub) 와 /topology (동일 진입) 는 자체 canvas-2D 렌더 엔진 topology-map-v2(src/widgets/topology-map-v2/)가 그린다. Sigma.js WebGL 렌더러는 은퇴했다 — Graphology + ForceAtlas2 물리 레이아웃은 그대로 재사용하되 (빌더 ERD 캔버스와 공유), 실제 픽셀은 단일 <canvas 컨테이너 위에 이 엔진이 직접 그린다. HomePage(src/views/home)가 마운트 지점이고, TopologyControls(src/widgets/topology-controls)가 ",
       "wordCount": 171,
-      "updatedAt": "2026-07-21T15:01:01.622Z",
+      "updatedAt": "2026-07-22T00:03:44+09:00",
       "linksOut": [
         "ontology/capabilities/topology-skeleton-entry",
         "ontology/capabilities/topology-kind-legibility"
@@ -7347,7 +7362,7 @@
       ],
       "excerpt": "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 25 도구 (read 16 + write 9) 를 stdin/stdout JSON-RPC 로 노출. 등록 가이드: mcp/README.md. 사용자 LLM 비용을 cloud 로 옮기지 않음 — agent 가 자기 LLM 으로 호출. .claude/hooks/block-npm-publish.sh 는 agent 가 사용자 명시 승인 없이 npm publish 계열 명령을 실행하지 못하게 막는 안전장치다. pnpm test:clau",
       "wordCount": 78,
-      "updatedAt": "2026-07-21T15:01:30.762Z",
+      "updatedAt": "2026-07-22T00:03:44+09:00",
       "linksOut": []
     },
     {
@@ -7817,7 +7832,7 @@
       ],
       "excerpt": "src/shared/lib/business-ontology-lens.ts defines the shared business-first read-order contract used by the ontology browse surface. /ontology itself is now a thin redirect (→ /topology?index=expanded), so the lens's live consumers are the /ontology/insights meaning gate and the /ontology/edit builder. The lens keeps th",
       "wordCount": 668,
-      "updatedAt": "2026-07-21T15:02:06.303Z",
+      "updatedAt": "2026-07-22T00:03:44+09:00",
       "linksOut": []
     },
     {
@@ -7910,7 +7925,7 @@
       ],
       "excerpt": "The dedicated marketing landing page (src/views/landing/ui/LandingPage.tsx) was retired in the 2026-07-18 root-first-open change. There is no separate marketing screen anymore: the public first screen is the root topology hub itself (src/views/home/ui/HomePage.tsx) — with no vault selected it renders this project's own",
       "wordCount": 158,
-      "updatedAt": "2026-07-21T15:01:26.350Z",
+      "updatedAt": "2026-07-22T00:03:44+09:00",
       "linksOut": []
     },
     {
@@ -8182,7 +8197,7 @@
       "headings": [],
       "excerpt": "Superseded (B3 허브가 곧 지도, 2026-07). /ontology's tree hub (OntologyViewPage, this element's original subject) is retired — the selected-node detail experience now lives on /topology as the compact TopologyV2DetailPanel datasheet with an opt-in \"전체 상세 →\" link into FullDetailA1 (src/widgets/full-detail-a1/), replacing the ",
       "wordCount": 543,
-      "updatedAt": "2026-07-21T15:02:23.971Z",
+      "updatedAt": "2026-07-22T00:03:44+09:00",
       "linksOut": []
     },
     {
@@ -8336,7 +8351,7 @@
       ],
       "excerpt": "Graphology(그래프 자료구조) + ForceAtlas2(layout 알고리즘)는 /, /topology 의 canvas-2D 엔진(topology-map-v2)과 /ontology/edit ERD 빌더가 공유하는 물리 레이아웃이다. Sigma.js(WebGL 렌더러)는 코드베이스에서 완전히 제거됐고 (@sigma/ 의존 0), 실제 픽셀은 canvas-2D 엔진이 단일 <canvas 위에 직접 그린다. 노드 포커스·팝오버 같은 사용자 경험은 [[capabilities/topology-canvas-render]] 가 다룬다.",
       "wordCount": 45,
-      "updatedAt": "2026-07-21T15:00:54.139Z",
+      "updatedAt": "2026-07-22T00:03:44+09:00",
       "linksOut": [
         "ontology/capabilities/topology-canvas-render"
       ]
@@ -8507,7 +8522,7 @@
       "headings": [],
       "excerpt": "src/views/home/lib/topology-ontology-drawer.ts is the shared \"node facts\" model behind the selected-concept surfaces on / and /topology: direct relations (with source-backed / authored / needs-review provenance), transitive reachability, and the owning domain for a selected node. The centered modal workbench this eleme",
       "wordCount": 131,
-      "updatedAt": "2026-07-21T15:01:15.828Z",
+      "updatedAt": "2026-07-22T00:03:44+09:00",
       "linksOut": []
     },
     {
@@ -8707,7 +8722,7 @@
       "headings": [],
       "excerpt": "src/features/docs-vault-local/model/agent-activity-status.ts defines the local-first heartbeat contract used by the live activity lane on / and /topology. It owns the reserved source path .ontology-atlas/agent-activity.json, validates the agent heartbeat JSON shape, normalizes current focus fields, reports heartbeat ag",
       "wordCount": 151,
-      "updatedAt": "2026-07-21T15:02:13.636Z",
+      "updatedAt": "2026-07-22T00:03:44+09:00",
       "linksOut": []
     },
     {
