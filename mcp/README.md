@@ -600,8 +600,8 @@ A successful run looks like this:
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 104 total query results (limited true)
 ✓ analyze_repo_structure — fsd (4 domain candidates, 18 capability candidates, 29 element candidates)
-✓ infer_imports — 820 files scanned, 501 module edges (elements/src/views/home->capabilities/knowledge-graph x23 (static:23), elements/src/views/ontology-insights->capabilities/knowledge-graph x15 (static:15), +499 more)
-✓ index_project — 52 concept candidates, 501 import relations, validation 0 problem files
+✓ infer_imports — 820 files scanned, 503 module edges (elements/src/views/home->capabilities/knowledge-graph x23 (static:23), elements/src/views/ontology-insights->capabilities/knowledge-graph x15 (static:15), +501 more)
+✓ index_project — 52 concept candidates, 503 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
@@ -616,10 +616,10 @@ A successful run looks like this:
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:4; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
 · health_tuned non-blocking advisory checks — components:info:4 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph b0f872da4932 (105 nodes, 557 edges, issues 0)
+✓ compile_ontology — graph 368cafafd9aa (105 nodes, 557 edges, issues 0)
 ✓ compile_ontology page — 1/105 nodes, 1/557 edges
 ✓ compile_ontology indexes — out 105, in 104, edgeById 557, aliases 209, edges 348/209/0
-✓ overview — graph b0f872da4932 (105 nodes, 557 edges, hubs 5)
+✓ overview — graph 368cafafd9aa (105 nodes, 557 edges, hubs 5)
 ✓ overview query_plan — aggregate_scan (medium, nodes 105, edges 557)
 ✓ project_map query_plan — aggregate_scan (medium, nodes 105, edges 557)
 ✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
