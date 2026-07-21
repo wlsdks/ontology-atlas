@@ -18,12 +18,6 @@ import { useAdaptiveRecentChanges, useOntologyInsight, useVaultDocFreshnessIndex
 import {
   useLocalVault,} from "@/features/docs-vault-local";
 import { FirstRunReadout, useFirstRunSampleModeSettled } from "@/features/first-run-starter";
-// 타입/기본값은 지도 렌더러(캔버스) 의존성 없는 별도 모듈에서 직접 import해서
-// SSR 평가 경로에 렌더러 참조가 끼지 않도록 한다.
-import {
-  DEFAULT_TOPOLOGY_CONTROLS,
-  type TopologyControlsState,
-} from "@/widgets/topology-controls/model/controls-state";
 import { HeroCollapsed } from "@/widgets/hero-header";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import dynamic from "next/dynamic";
@@ -37,8 +31,8 @@ const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 // below (`../lib/deeplink-miss-notice.ts`) for why this exists.
 const DEEPLINK_MISS_GRACE_MS = 4000;
 
-const TopologyControls = dynamic(
-  () => import("@/widgets/topology-controls").then((m) => m.TopologyControls),
+const TopologyFitControl = dynamic(
+  () => import("@/widgets/topology-controls").then((m) => m.TopologyFitControl),
   { ssr: false },
 );
 const HubRail = dynamic(
@@ -193,9 +187,6 @@ export function HomePage() {
   const tKinds = useTranslations('kinds');
   const tAgentConnect = useTranslations('agentConnect');
   const relationVocabulary = useRelationVocabulary();
-  const [topologyControls, setTopologyControls] = useState<TopologyControlsState>(
-    DEFAULT_TOPOLOGY_CONTROLS,
-  );
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
   const localGraphRoot =
     localGraphStack.length > 0 ? localGraphStack[localGraphStack.length - 1] : null;
@@ -741,7 +732,6 @@ export function HomePage() {
     [nodeEditTarget, nodeBody, vault, toast, t],
   );
   const combinedFitToken = fitViewToken;
-  const analysisModeRef = useRef<TopologyAnalysisMode>("overview");
   // 클라이언트 사이드 동적 타이틀 — 선택 프로젝트 컨텍스트를 브라우저 탭에
   // 노출 (정적 export 환경의 page metadata 한계 보완).
   useDocumentTitle(
@@ -1511,11 +1501,10 @@ export function HomePage() {
     totalNodes: currentTopologyGraphStats?.nodes ?? visibleTopologyNodeCount,
     totalRelations: currentTopologyGraphStats?.relations ?? visibleTopologyRelationCount,
   });
-  const topologyFiltersActive =
-    activeCategory !== null ||
-    topologyControls.searchQuery.trim().length > 0 ||
-    topologyControls.depthLimit !== null ||
-    topologyControls.hubsOnly;
+  // 조절 패널(검색/depth/허브만)이 철거된 뒤 유일하게 남은 필터 출처는
+  // URL route state 의 activeCategory(`?category=`)다. 지도 loop 가 소비하지
+  // 않던 topologyControls 계열 항은 모두 제거됐다.
+  const topologyFiltersActive = activeCategory !== null;
   const topologyOverlayState = resolveTopologyOverlayState({
     dataReady: projectsQuery.loaded,
     totalNodes: currentTopologyGraphStats?.nodes ?? visibleTopologyNodeCount,
@@ -1531,12 +1520,6 @@ export function HomePage() {
     [visibleTopologyStatsKey],
   );
   const clearTopologyFilters = useCallback(() => {
-    setTopologyControls((current) => ({
-      ...current,
-      searchQuery: "",
-      depthLimit: null,
-      hubsOnly: false,
-    }));
     setRouteState((current) => ({
       ...current,
       activeCategory: null,
@@ -1616,56 +1599,6 @@ export function HomePage() {
   });
   const indexAgentHandoffReanalyzeText = formatOntologyReanalysisAgentCommand();
   const indexAgentHandoffSyncText = formatAgentPostChangeSyncPacket();
-  useEffect(() => {
-    if (analysisModeRef.current === analysisMode) return;
-    analysisModeRef.current = analysisMode;
-
-    setTopologyControls((current) => {
-      if (analysisMode === "focus") {
-        return {
-          ...current,
-          depthLimit: current.depthLimit ?? 2,
-          hubsOnly: false,
-          overlays: {
-            ...current.overlays,
-            backrefHighlight: true,
-            auditHighlight: false,
-          },
-        };
-      }
-      if (analysisMode === "health") {
-        return {
-          ...current,
-          depthLimit: null,
-          hubsOnly: false,
-          overlays: {
-            ...current.overlays,
-            auditHighlight: true,
-            backrefHighlight: false,
-          },
-        };
-      }
-      if (analysisMode === "path") {
-        return {
-          ...current,
-          depthLimit: null,
-          hubsOnly: false,
-          overlays: {
-            ...current.overlays,
-            auditHighlight: false,
-          },
-        };
-      }
-      return {
-        ...current,
-        depthLimit: null,
-        overlays: {
-          ...current.overlays,
-          auditHighlight: false,
-        },
-      };
-    });
-  }, [analysisMode]);
 
   // 카드 배지/더블클릭의 명시적 "펼치기" — 선택과 초점 진입을 한 번에.
   const handleExpandRequest = useCallback(
@@ -2478,14 +2411,7 @@ export function HomePage() {
                   <TopologyMapV2
                     nodes={topologyV2Graph.nodes}
                     edges={topologyV2Graph.edges}
-                    focus={{
-                      selectedSlug: canvasSelectedSlug,
-                      depthLimit: topologyControls.depthLimit,
-                      searchQuery: topologyControls.searchQuery,
-                      activeCategory,
-                      hubsOnly: topologyControls.hubsOnly,
-                    }}
-                    overlays={topologyControls.overlays}
+                    focus={{ selectedSlug: canvasSelectedSlug }}
                     changedSlugs={changedSlugs}
                     livePhysics={analysisMode === "graph"}
                     fitViewToken={combinedFitToken}
@@ -2532,20 +2458,12 @@ export function HomePage() {
               selectedRelationActive ||
               topologyBlockingOverlayActive ||
               selectedNodeFocusActive ? null : (
-                <TopologyControls
-                  value={topologyControls}
-                  onChange={setTopologyControls}
+                <TopologyFitControl
                   density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
                   onFitView={() => setFitViewToken((t) => t + 1)}
-                  visibleCount={topologyVisibleCount}
-                  totalCount={
-                    localGraphRoot === null
-                      ? topologyTotalNodes
-                      : localGraphProjects.length
-                  }
                 />
               )}
-              {/* 단축키/제스처 도움말 진입점 — 우상단 TopologyControls 아래 36×36 아이콘.
+              {/* 단축키/제스처 도움말 진입점 — 우상단 Fit 타일 아래 36×36 아이콘.
                   phone 은 primary read rail(path/health) 과 충돌하지 않는 overview/focus 에서만 노출한다. */}
               {createNodeOpen ||
               selectedRelationActive ||
@@ -2595,8 +2513,8 @@ export function HomePage() {
                 </Tooltip>
               )}
               {/* 설정 기어는 좌측 내비 레일 하단으로 이관됐다
-                  (feat/chrome-system — chrome-rail-combined.html). 우측
-                  세로 레일은 이제 지도 전용 3타일(전체보기/조절/단축키)만. */}
+                  (feat/chrome-system — chrome-rail-combined.html). 죽은 "조절"
+                  패널 철거 후 우측 세로 레일은 지도 전용 2타일(전체보기/단축키)만. */}
               <HubRail
                 projects={renderProjects}
                 selectedSlug={canvasSelectedSlug}
@@ -2647,8 +2565,7 @@ export function HomePage() {
               ) : null}
 
               {/* 필터 컨텍스트 — 현재 visible 노드 수가 전체보다 적으면 표시.
-                  TopologyControls 검색창 배지와 중복이지만, controls가 접힌 상태에서도
-                  필터 중임을 알려주는 컨텍스트 칩. */}
+                  로컬 그래프/카테고리 필터가 노드를 줄였을 때 컨텍스트를 주는 칩. */}
               {topologyVisibleCount !== null && topologyVisibleCount < localGraphProjects.length ? (
                 <div className="pointer-events-none absolute bottom-6 left-[220px] z-10 rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-line-a90)] md:left-[228px] xl:left-[236px]">
                   filter · {topologyVisibleCount} / {localGraphProjects.length}

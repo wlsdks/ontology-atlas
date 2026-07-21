@@ -6,6 +6,30 @@
 
 ---
 
+## 2026-07-21 — 죽은 "지도 조절" 패널 철거 (Fit 타일만 남김)
+
+소유자 스크린샷 결함("팝업 겹침 + 내용 별로")의 포렌식 결과, 우상단 **지도 조절**
+패널(검색 · "허브만" · overlay 토글 · depth/force 슬라이더 · 배치 리셋 · 패널 내
+단축키 도움말)은 v2 캔버스 엔진이 **소비하지 않는 죽은 제어반**이었다. `TopologyMapV2`
+는 `overlays`/`forces` prop 을 구조분해조차 안 했고, `focus` 도 `selectedSlug` 하나만
+읽었다(`depthLimit`/`searchQuery`/`activeCategory`/`hubsOnly` 무시). 검색창의 "N/M"
+카운트도 검색과 무관한 tier visibleCount 였다.
+
+- **철거** — `TopologyControls` 패널 UI 전부 제거. 남긴 것은 접힘 스택 첫 타일이던
+  **Fit(전체 맞추기) 타일 하나**(데스크톱 전용, 토큰 계약 유지). 위젯은
+  `TopologyFitControl` 로 정리 — Fit 콜백만 받는다.
+- **타입 정리** — `TopologyControlsState`/`TopologyOverlays`/`TopologyForces` 모듈
+  삭제. `TopologyMapV2` 의 `overlays`/`forces` prop 과 `TopologyV2Overlays`/
+  `TopologyV2Forces` 타입 제거, `TopologyV2Focus` 는 `{ selectedSlug }` 로 축소.
+  HomePage 의 `topologyControls` state · 죽은 analysisMode overlay/depth 세팅 효과 제거.
+  `topologyFiltersActive` 는 URL route state(`?category=`)의 `activeCategory` 만 남긴다
+  — 유일하게 살아 있는 별도 필터 출처.
+- **레이아웃** — 우측 세로 레일이 2타일(전체보기/단축키)로 줄면서 "?" 단축키 타일의
+  desktop top 오프셋을 구 3타일(2×타일+16px) 기준에서 1타일(1×타일+8px) 기준으로 정정.
+- 물리(force) 조절은 실기능으로 원하면 재배선해 부활 후보(BACKLOG 등재).
+
+---
+
 ## 2026-07-21 — 리텐션 라운드 High 3건 수리 (감사 로그 구멍 · "쓰는 곳 0" 신뢰 · 도메인 오귀속)
 
 `.qa-scratch/retention-round-2026-07-21/` 페르소나 여정(P1 테크리드 · P2

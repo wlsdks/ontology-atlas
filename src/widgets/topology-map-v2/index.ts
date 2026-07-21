@@ -4,8 +4,6 @@ export type {
   TopologyV2Node,
   TopologyV2Edge,
   TopologyV2Focus,
-  TopologyV2Overlays,
-  TopologyV2Forces,
 } from './ui/TopologyMapV2';
 export { TopologyV2DetailPanel } from './ui/TopologyV2DetailPanel';
 export { TopologyV2EdgeHoverCard } from './ui/TopologyV2EdgeHoverCard';

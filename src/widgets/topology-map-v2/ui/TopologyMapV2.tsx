@@ -44,23 +44,12 @@ export interface TopologyV2Edge {
 }
 
 export interface TopologyV2Focus {
+  /**
+   * v2 캔버스 loop 가 실제로 소비하는 유일한 focus 필드. 구
+   * depthLimit/searchQuery/activeCategory/hubsOnly 는 렌더러가 읽지 않는
+   * 죽은 필드였고 조절 패널 철거와 함께 제거됐다 (loop 는 ego 포커스만 계산).
+   */
   selectedSlug: string | null;
-  depthLimit: number | null;
-  searchQuery: string;
-  activeCategory: string | null;
-  hubsOnly: boolean;
-}
-
-export interface TopologyV2Overlays {
-  recentPulse: boolean;
-  ownerTint: boolean;
-  backrefHighlight: boolean;
-}
-
-export interface TopologyV2Forces {
-  repel: number;
-  linkDistance: number;
-  collideMultiplier: number;
 }
 
 /**
@@ -72,10 +61,8 @@ export interface TopologyMapV2Props {
   nodes: readonly TopologyV2Node[];
   edges: readonly TopologyV2Edge[];
   focus: TopologyV2Focus;
-  overlays: TopologyV2Overlays;
   changedSlugs?: ReadonlySet<string>;
   livePhysics: boolean;
-  forces?: TopologyV2Forces;
   /** Increment to re-run fit-to-bounds (HomePage "지도 맞추기"). */
   fitViewToken: number;
   /** Increment to force a full relayout. */

@@ -144,19 +144,17 @@ describe('i18n message catalog', () => {
     );
     assert.equal(ko.nav.settingsMenu.vaultCtaLocal, '작업공간 열기');
     assert.equal(ko.topology.documentTitle, '지형도');
-    assert.equal(ko.topologyWidgets.controls.depthHop, '{count}단계');
-    assert.equal(ko.topologyWidgets.controls.shortcutDepthAll, '연결 범위 전체');
-    assert.equal(ko.topologyWidgets.controls.shortcutDoubleClick, '로컬 그래프 진입');
-    assert.equal(ko.topologyWidgets.controls.shortcutEsc, '로컬 그래프 나가기 / 검색 지우기');
+    // 구 topologyWidgets.controls 단축키/depth 카피(depthHop·shortcutDepthAll·
+    // shortcutDoubleClick·shortcutEsc)는 죽은 "지도 조절" 패널 철거(2026-07-21)로
+    // 사라졌다 — Fit 타일만 남아 fitViewTooltip/fitViewAriaLabel 만 검증한다.
+    assert.equal(ko.topologyWidgets.controls.fitViewAriaLabel, '지도 전체 맞추기');
     assert.equal(ko.topology.analysis.overviewAgentReadiness, '에이전트 인계');
     assert.equal(ko.topology.analysis.overviewAgentReadinessReady, '인계 가능');
     assert.equal(ko.topology.analysis.overviewAgentReadinessPreflight, '사전 점검');
     assert.doesNotMatch(
       [
-        ko.topologyWidgets.controls.depthHop,
-        ko.topologyWidgets.controls.shortcutDepthAll,
-        ko.topologyWidgets.controls.shortcutDoubleClick,
-        ko.topologyWidgets.controls.shortcutEsc,
+        ko.topologyWidgets.controls.fitViewTooltip,
+        ko.topologyWidgets.controls.fitViewAriaLabel,
         ko.topology.analysis.overviewAgentReadiness,
         ko.topology.analysis.overviewAgentReadinessReady,
         ko.topology.analysis.overviewAgentReadinessPreflight,

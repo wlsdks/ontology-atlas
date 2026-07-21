@@ -181,10 +181,9 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Empty state** (0–1 nodes) → `TopologyEmptyState` card with 3 CTAs (tree / builder / open vault)
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
 
-#### `SigmaControls` (top-right, collapsed default)
-- Fit Map button · Open Controls button
-- Expanded panel: search input · "Hubs only" toggle · Overlay section (recent-update pulse, backref highlight) · Advanced section (owner color, audit highlight, depth slider 1–7, force sliders, Reset layout)
-- Shortcuts inside controls: `/` focus search · `0`–`6` set depth · `?` shortcuts sheet
+#### `TopologyFitControl` (top-right, desktop-only)
+- Single **Fit Map** tile — fits the camera to the graph bounds. Desktop-only (mobile uses pinch-zoom).
+- The old "map controls" panel (search · "Hubs only" · overlays · depth/force sliders · in-panel shortcuts help) was a dead control board — the v2 canvas engine never read those focus/overlay/force fields — and was demolished (2026-07-21). Physics (force) tuning may return later as a real, wired feature (see BACKLOG).
 
 #### `SigmaHubRail` (left, collapsed default)
 - Hub list sorted by degree, click to select
@@ -711,8 +710,6 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
 | `⇧⌘K` | Home / Topology / Ontology | Global search (nodes + projects) |
 | `D` | Home / Topology | Toggle docs drawer |
 | `?` | Home / Topology / Builder | Toggle shortcut sheet |
-| `/` | Sigma controls (when controls expanded) | Focus search input |
-| `0`–`6` | Sigma controls | Set depth filter |
 | `Esc` | All | Layered close (drawer / palette / local graph) |
 | `P` / `N` | Builder | Add Project node |
 | `D` | Builder | Add Domain node |
