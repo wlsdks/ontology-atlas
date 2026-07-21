@@ -73,7 +73,13 @@ test.describe("topology-map-v2 smoke", () => {
       await page.keyboard.press("Escape");
       await expect(detailPanel).toHaveCount(0, { timeout: 1_000 });
     }).toPass({ timeout: 15_000 });
-    expect(new URL(page.url()).searchParams.get("p")).toBeNull();
+    // M-7 Esc 사다리 (UX 라운드 S3): 첫 유효 Esc 는 팝오버/패널만 닫고
+    // ego 포커스(`?p=`)는 유지 — one step at a time. 포커스 해제는 다음 Esc.
+    expect(new URL(page.url()).searchParams.get("p")).toBe(REAL_CAPABILITY_SLUG);
+    await expect(async () => {
+      await page.keyboard.press("Escape");
+      expect(new URL(page.url()).searchParams.get("p")).toBeNull();
+    }).toPass({ timeout: 15_000 });
   });
 
   test("opening the doc and going back keeps the map selection", async ({ page }) => {

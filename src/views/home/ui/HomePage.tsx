@@ -16,9 +16,7 @@ import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
-  useLocalVault,
-  buildMcpConfigJson,
-  buildCodexMcpAddCommandTemplate,} from "@/features/docs-vault-local";
+  useLocalVault,} from "@/features/docs-vault-local";
 import { FirstRunReadout, useFirstRunSampleModeSettled } from "@/features/first-run-starter";
 // 타입/기본값은 지도 렌더러(캔버스) 의존성 없는 별도 모듈에서 직접 import해서
 // SSR 평가 경로에 렌더러 참조가 끼지 않도록 한다.
@@ -110,12 +108,12 @@ import {
   computeOntologyChangeset,
   domainCensusById,
   formatAgentPostChangeSyncPacket,
-  isWithinRecentWindow,
   useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
 import { useBootstrapFlow } from "../model/use-bootstrap-flow";
 import { useAgentConnectModel } from "../model/use-agent-connect-model";
+import { useNodeDatasheetModel } from "../model/use-node-datasheet-model";
 import {
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
@@ -142,12 +140,11 @@ import { resolveDeeplinkMissDecision } from "../lib/deeplink-miss-notice";
 import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
-import { formatActivityAge } from "@/features/vault-ontology";
-import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
+import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
-import { AgentConnectSheet, type AgentConnectState } from "@/widgets/agent-connect";
+import { AgentConnectSheet } from "@/widgets/agent-connect";
 import { TopologyV2EdgePanel } from "@/widgets/topology-map-v2/ui/TopologyV2EdgePanel";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
@@ -173,12 +170,9 @@ import {
   type IndexPanelState,
 } from "@/widgets/topology-index-panel";
 import {
-  buildTopologyOntologyDrawerModel,
   classifyTopologyRelationProvenance,
 } from "../lib/topology-ontology-drawer";
-import { buildTopologyNodeFocus } from "../lib/topology-node-focus";
 import {
-  buildNodeSignificance,
   normalizeKindLabelKey,
 } from "../lib/topology-node-significance";
 import { TopologyPathChip } from "./TopologyPathChip";
@@ -196,6 +190,7 @@ const INDEX_PANEL_COLLAPSED_KEY = "demo:index-panel-collapsed:v1";
 export function HomePage() {
   const t = useTranslations('topology');
   const tKinds = useTranslations('kinds');
+  const tAgentConnect = useTranslations('agentConnect');
   const relationVocabulary = useRelationVocabulary();
   const [topologyControls, setTopologyControls] = useState<TopologyControlsState>(
     DEFAULT_TOPOLOGY_CONTROLS,
@@ -593,7 +588,9 @@ export function HomePage() {
     agentActivityStatus,
     vaultHandle: vault.handle,
     insightNodes: ontologyInsight?.nodes ?? null,
-    defaultAgentLabel: t("agentConnect.defaultAgentLabel"),
+    // 키는 top-level `agentConnect` 네임스페이스 (시트 위젯과 동일 출처) —
+    // topology.* 의 t 로 읽으면 MISSING_MESSAGE (e2e 가 잡은 잠복 버그).
+    defaultAgentLabel: tAgentConnect("defaultAgentLabel"),
   });
   // HomePage 모듈화 1차 — 부트스트랩 흐름은 use-bootstrap-flow 훅 소유.
   // 완료 연출(토스트·E1 리빌)만 여기 남는다.
@@ -893,127 +890,19 @@ export function HomePage() {
     const value = nodeEditTarget?.frontmatter?.significance;
     return typeof value === "string" ? value : null;
   }, [nodeEditTarget]);
-  // drawer model 1회 빌드로 focus(팝오버 연결) + significance(평문 so-what) 둘 다
-  // 파생 — 재계산 0, count drift 불가.
-  const nodeFocusData = useMemo(() => {
-    if (!selectedOntologyNode || !ontologyInsight) return null;
-    const model = buildTopologyOntologyDrawerModel(
-      selectedOntologyNode,
-      ontologyInsight.nodes,
-      ontologyInsight.edges,
-    );
-    return {
-      focus: buildTopologyNodeFocus(selectedOntologyNode, model),
-      significance: buildNodeSignificance(selectedOntologyNode, model, {
-        authoredSignificance,
-      }),
-    };
-  }, [selectedOntologyNode, ontologyInsight, authoredSignificance]);
-  const nodeFocus = nodeFocusData?.focus ?? null;
-  // topology-map-v2 "component datasheet" panel. Re-presents the
-  // nodeFocus/significance facts — grouped connections + one engraved metric
-  // line + an agent handoff payload. See widgets/topology-map-v2/TopologyV2DetailPanel.
-  //
-  // R+ 카운트 시맨틱 통일: the metric's usedBy/dependsOn now come from the
-  // SAME `groups` object the panel renders headers from (`groups.usedBy.total`
-  // / `groups.dependsOn.total`), not from `nodeFocus.usedByCount`/
-  // `dependsOnCount` (raw incoming/outgoing edge counts, not deduped by
-  // neighbor). Previously these were two independently-computed numbers that
-  // could diverge whenever a neighbor had a parallel edge — the persona bug
-  // ("used by 10 · depends on 73" vs groups "포함 71 / 의존 12"). One
-  // construction, one number, everywhere.
-  const v2DatasheetModel = useMemo(() => {
-    if (!nodeFocus || !selectedOntologyNode || !ontologyInsight) return null;
-    const slug = nodeFocus.sourceSlug ?? selectedOntologyNode.id;
-    // Group from the FULL connection set (not the shared 5-item outgoing-first
-    // preview) so a hub's dependsOn group renders its real total instead of
-    // collapsing into a generic overflow — and the handoff names never
-    // contradict the depends_on count.
-    const connections = buildV2Connections(
-      selectedOntologyNode.id,
-      ontologyInsight.nodes,
-      ontologyInsight.edges,
-    );
-    const groups = buildV2ConnectionGroups(connections);
-    const evidenceRows = buildV2EvidenceRows(selectedOntologyNode.evidenceIds);
-    // M-2 — typed-fact metric: containment ("담는 것") is its own count, split
-    // out of the old direction-only "기대는 곳" so a domain's contained
-    // capabilities stop reading as things the domain depends ON. Numbers come
-    // from the SAME `groups` the panel renders, so header and metric agree.
-    const metric = {
-      contains: groups.contains.total,
-      usedBy: groups.usedBy.total,
-      dependsOn: groups.dependsOn.total,
-      evidence: evidenceRows.length,
-    };
-    const handoffText = formatV2HandoffText({
-      slug,
-      kind: nodeFocus.kind,
-      domainTitle: nodeFocusData?.significance.ownerDomainTitle ?? null,
-      contains: metric.contains,
-      usedBy: metric.usedBy,
-      dependsOn: metric.dependsOn,
-      evidence: metric.evidence,
-      containsNames: groups.contains.rows.map((connection) => connection.title),
-      usedByNames: groups.usedBy.rows.map((connection) => connection.title),
-      dependsNames: groups.dependsOn.rows.map((connection) => connection.title),
-    });
-    return {
-      slug,
-      // W2-A "경로" action tile — `handleSetPathSource` feeds this straight
-      // into `pathSourceSlug` route state, which every OTHER consumer
-      // (`selectedOntologyNode`, `resolveTopologySelectedOntologyNode`,
-      // `handleSelect`) keys by the CANVAS GRAPH id, not the vault slug.
-      // Passing `.slug` (the vault-slug-preferring fallback used for
-      // documentHref/builderEditHref/handoffText below) here desynced
-      // `pathSourceSlug` from `selectedSlug` and silently dropped the path —
-      // caught live (QA screenshot showed the map reset to plain overview
-      // instead of "Starting from <node>. Choose a target."). `nodeId` is
-      // always the graph id.
-      nodeId: selectedOntologyNode.id,
-      title: nodeFocus.title,
-      kind: nodeFocus.kind,
-      // N6 — 소속 도메인 1급 사실. 이미 `buildNodeSignificance` 가 계산한
-      // containment 부모(`ownerDomain`)를 그대로 재사용 — 별도 조회 없음.
-      domain: nodeFocusData?.significance.ownerDomainId
-        ? {
-            id: nodeFocusData.significance.ownerDomainId,
-            title: nodeFocusData.significance.ownerDomainTitle ?? "",
-          }
-        : null,
-      // M-3 — 신선도 진실원 단일화: powered 도 updatedAt(mtime) 사다리에서.
-      // 이전엔 changedSlugs(세션 baseline)와 mtime 이 갈라져 "정체 · 오늘
-      // 바뀜"이 한 줄에 공존하는 모순이 났다.
-      powered: (() => {
-        const iso = nodeFocus.sourceSlug ? docFreshnessIndex.get(nodeFocus.sourceSlug) : undefined;
-        return iso ? isWithinRecentWindow(iso, updatedAgoNowMs) : false;
-      })(),
-      // S-C1 — AI 가 계속 갱신하는 그래프에서 변경 시점이 안 보이면 사람이
-      // 변경을 구분할 수 없다. manifest updatedAt → "N일 전" 사다리.
-      updatedAtLabel: (() => {
-        const iso = nodeFocus.sourceSlug ? docFreshnessIndex.get(nodeFocus.sourceSlug) : undefined;
-        if (!iso) return null;
-        const ago = computeUpdatedAgo(iso, updatedAgoNowMs);
-        if (!ago) return null;
-        return t(`nodeDatasheet.updated_${ago.key}`, { count: ago.count });
-      })(),
-      metric,
-      groups,
-      evidence: { rows: evidenceRows, total: evidenceRows.length },
-      handoffText,
-      // W2-A "문서" action tile — same construction as fullDetailA1Model's
-      // own `documentHref` (null when the node has no backing vault doc, so
-      // the tile renders disabled instead of linking to a guessed URL).
-      documentHref: nodeFocus.sourceSlug
-        ? buildDocsVaultHref({ slug: nodeFocus.sourceSlug })
-        : null,
-      // W2-A "관계 편집" action tile — existing `/ontology/edit/?node=` deep
-      // link, same pattern as `RelationWriteConfirm.tsx`'s (private)
-      // `buildRelationBuilderHref` and received by `OntologyEditPage` via
-      // `resolveBuilderQueryNodeSlug`.
-      builderEditHref: `/ontology/edit/?node=${encodeURIComponent(slug)}`,
-    };
-  }, [nodeFocus, selectedOntologyNode, ontologyInsight, nodeFocusData, docFreshnessIndex, updatedAgoNowMs, t]);
+  // HomePage 모듈화 3차 — 데이터시트 모델 조립은 use-node-datasheet-model 소유.
+  const formatUpdatedLabel = useCallback(
+    (key: string, count: number) => t(`nodeDatasheet.updated_${key}`, { count }),
+    [t],
+  );
+  const { nodeFocus, v2DatasheetModel } = useNodeDatasheetModel({
+    selectedOntologyNode,
+    insight: ontologyInsight,
+    authoredSignificance,
+    docFreshnessIndex,
+    updatedAgoNowMs,
+    formatUpdatedLabel,
+  });
   const copyV2NodeHandoff = useCallback(
     async (text: string) => {
       const ok = await copyText(text);
