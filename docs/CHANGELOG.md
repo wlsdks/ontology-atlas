@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-07-22 — 공식 데모 GitHub Pages 로 이전 (Firebase Hosting 해제)
+
+- 공식 라이브 데모가 `https://wlsdks.github.io/ontology-atlas/` 로 이전.
+  `main` push 마다 `.github/workflows/deploy-pages.yml` 이 서브패스
+  (`NEXT_PUBLIC_BASE_PATH=/ontology-atlas`) 빌드로 자동 배포한다.
+- 이유: Firebase Spark 는 전송 하루 360MB 하드컷이라 트래픽이 몰리는 날
+  데모가 내려간다. GitHub Pages 는 월 100GB 소프트 리밋 — 월 1만 방문
+  (실측 1.6MB/방문) 도 무료로 견딘다.
+- `SITE_URL`(canonical/OG/sitemap 진실원) 과 README 주소를 Pages 로 교체.
+  Firebase Hosting 은 해제 — `firebase.json` 등 설정 파일은 셀프호스터용
+  레퍼런스로 유지 (`docs/DEPLOYMENT.md` 참고).
+
 ## 2026-07-22 — 인사이트 → 지도 딥링크 복귀 칩
 
 소유자 리포트: 인사이트의 허브 행/"지도" 버튼으로 지도에 진입하면 보던 인사이트

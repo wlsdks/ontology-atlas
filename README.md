@@ -16,7 +16,7 @@
 | Open it | Link |
 |---|---|
 | **App brand** | **Ontology Atlas** (repo, CLI, MCP package, and release assets stay `ontology-atlas`) |
-| **Website / downloads** | **https://ontology-atlas.web.app** |
+| **Website / downloads** | **https://wlsdks.github.io/ontology-atlas/** |
 | **GitHub repository** | https://github.com/wlsdks/ontology-atlas |
 | **MCP docs** | [`mcp/README.md`](mcp/README.md) |
 
@@ -48,7 +48,7 @@ promotion candidates, agent readiness:
 
 ![Graph insights — do-next queue and agent readiness](docs/assets/readme/insights.png)
 
-Or skip the install entirely: the **[live demo](https://ontology-atlas.web.app)**
+Or skip the install entirely: the **[live demo](https://wlsdks.github.io/ontology-atlas/)**
 serves this exact map (read-only sample) — pick your own markdown folder and it
 becomes your data.
 
