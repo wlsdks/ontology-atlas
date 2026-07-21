@@ -1,0 +1,66 @@
+# GitHub Pages 데모 배포 — 정적 export 를 /ontology-atlas 서브패스로 서빙.
+# Firebase Hosting(deploy-hosting.yml)과 병행: Pages 는 일 단위 하드컷이 없어
+# 트래픽 스파이크에도 데모가 죽지 않는 기본 경로다.
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build static export with base path
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_BASE_PATH: /ontology-atlas
+          NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING: '0'
+      - name: Adapt static PWA manifest to base path
+        run: |
+          test -f out/manifest.webmanifest
+          node -e '
+            const fs = require("fs");
+            const p = "out/manifest.webmanifest";
+            const m = JSON.parse(fs.readFileSync(p, "utf8"));
+            const bp = "/ontology-atlas";
+            for (const k of ["id", "scope", "start_url"]) {
+              if (typeof m[k] === "string" && m[k].startsWith("/") && !m[k].startsWith(bp)) m[k] = bp + (m[k] === "/" ? "/" : m[k]);
+            }
+            for (const icon of m.icons ?? []) {
+              if (icon.src?.startsWith("/") && !icon.src.startsWith(bp)) icon.src = bp + icon.src;
+            }
+            fs.writeFileSync(p, JSON.stringify(m, null, 2));
+          '
+      - name: Disable Jekyll (serve _next/*)
+        run: touch out/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

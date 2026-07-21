@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { withBasePath } from '../lib/base-path';
 import { isRestorableRoute, ROUTE_MEMORY_KEY } from './route-memory';
 
 const STORAGE_KEY = 'ontology-atlas:locale';
@@ -31,7 +32,7 @@ function restoreTarget(locale: Supported): string {
 
 export function LocaleRedirect() {
   useEffect(() => {
-    window.location.replace(restoreTarget(detect()));
+    window.location.replace(withBasePath(restoreTarget(detect())));
   }, []);
 
   return (
@@ -60,12 +61,12 @@ export function LocaleRedirect() {
       >
         Opening Ontology Atlas…
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- root redirect fallback must survive failed hydration */}
-        <a style={{ color: 'var(--color-indigo-accent)' }} href="/en/">
+        <a style={{ color: 'var(--color-indigo-accent)' }} href={withBasePath('/en/')}>
           English
         </a>
         <span aria-hidden="true">·</span>
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- root redirect fallback must survive failed hydration */}
-        <a style={{ color: 'var(--color-indigo-accent)' }} href="/ko/">
+        <a style={{ color: 'var(--color-indigo-accent)' }} href={withBasePath('/ko/')}>
           한국어
         </a>
         <noscript>

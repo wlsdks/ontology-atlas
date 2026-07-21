@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { withBasePath } from "@/shared/lib/base-path";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
@@ -1712,7 +1713,7 @@ export function HomePage() {
             <div className="pointer-events-none absolute left-4 top-[22px] z-10 -translate-y-1/2 md:hidden">
               <div className="flex items-center gap-2">
                 <Image
-                  src="/logo.png"
+                  src={withBasePath('/logo.png')}
                   alt=""
                   aria-hidden="true"
                   width={26}
