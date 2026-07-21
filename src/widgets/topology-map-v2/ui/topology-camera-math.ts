@@ -15,7 +15,7 @@
 
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
-import { computeEgoBounds, radiusForKind, type TopologyWorld } from "./topology-world";
+import { computeClusterDiscBounds, computeEgoBounds, radiusForKind, type TopologyWorld } from "./topology-world";
 import type { WorldNode } from "./topology-world";
 
 interface Point {
@@ -283,4 +283,32 @@ export function computeFocusCameraTarget(
     ty: centerY,
     tscale: scale,
   };
+}
+
+/**
+ * S2 파트 5B — 펼친 클러스터 디스크(부모 + 직속 자식 부챗살)로의 카메라 다이브
+ * 타깃. `computeFocusCameraTarget` 의 ego-fit 분기와 같은 계약(마진 비율 패딩 +
+ * `[overviewEntryScale, effectiveMax]` clamp) — 대상만 ego 이웃이 아니라 contains
+ * 자식 디스크다. 칩을 펼치면 이 타깃으로 스프링 다이브해 자식이 tier 알파로
+ * 자연히 리빌된다. `parentId` 미해결/자식 없음이면 `null`(카메라 미이동).
+ */
+export function computeClusterFitTarget(
+  world: TopologyWorld,
+  tokens: TopologyV2Tokens,
+  viewportWidth: number,
+  viewportHeight: number,
+  parentId: string,
+  overviewEntryScale: number,
+): CameraTarget | null {
+  const disc = computeClusterDiscBounds(world, tokens, parentId);
+  if (!disc) return null;
+  const marginRatio = tokens.focusBboxMargin;
+  const centerX = (disc.minX + disc.maxX) / 2;
+  const centerY = (disc.minY + disc.maxY) / 2;
+  const w = Math.max(1, (disc.maxX - disc.minX) * marginRatio);
+  const h = Math.max(1, (disc.maxY - disc.minY) * marginRatio);
+  const fitScale = Math.min(viewportWidth / w, viewportHeight / h);
+  const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
+  const scale = Math.min(effectiveMax, Math.max(overviewEntryScale, fitScale));
+  return { tx: centerX, ty: centerY, tscale: scale };
 }

@@ -7,6 +7,7 @@ import {
   formatV2HandoffText,
   formatV2MetricLine,
   groupV2ConnectionsByDirection,
+  summarizeContainsByPathPrefix,
   type V2DatasheetConnection,
 } from "./topology-v2-datasheet";
 
@@ -173,7 +174,8 @@ describe("buildV2ConnectionGroups — M-2 ROLE axis, single source for metric + 
   it("handles an empty set with zero totals across all four role groups", () => {
     const groups = buildV2ConnectionGroups([]);
     expect(groups).toEqual({
-      contains: { rows: [], total: 0 },
+      // S2 파트 3 — contains 는 경로 프리픽스 요약을 함께 싣는다(빈 입력이면 빈 요약).
+      contains: { rows: [], total: 0, summary: { groups: [], otherCount: 0, total: 0 } },
       usedBy: { rows: [], total: 0 },
       dependsOn: { rows: [], total: 0 },
       belongsTo: { rows: [], total: 0 },
@@ -298,5 +300,41 @@ describe("buildV2EvidenceRows — 근거(evidence) group promotion (RATIO-SYSTEM
     expect(buildV2EvidenceRows(["", "  ", "capabilities/x"])).toEqual([
       { id: "capabilities/x", title: "x", path: "capabilities/" },
     ]);
+  });
+});
+
+describe("summarizeContainsByPathPrefix (S2 파트 3)", () => {
+  const el = (idPath: string): V2DatasheetConnection =>
+    conn({ id: `element:${idPath}`, relationType: "contains", direction: "outgoing" });
+
+  it("경로 프리픽스별 집계 + count 내림차순, 동률 key 사전순, 나머지는 기타", () => {
+    const rows: V2DatasheetConnection[] = [
+      ...Array.from({ length: 4 }, (_, i) => el(`cli/src/commands/c${i}`)),
+      ...Array.from({ length: 2 }, (_, i) => el(`.claude/skills/s${i}`)),
+      el("cli/src/lib/one"),
+      el("solo"), // 슬래시 없음 → 기타
+    ];
+    const summary = summarizeContainsByPathPrefix(rows, 2);
+    expect(summary.total).toBe(8);
+    // 상위 2개: cli/src/commands(4), .claude/skills(2)
+    expect(summary.groups).toEqual([
+      { key: "cli/src/commands", count: 4 },
+      { key: ".claude/skills", count: 2 },
+    ]);
+    // 나머지: cli/src/lib(1) + solo(프리픽스 없음 1) = 2
+    expect(summary.otherCount).toBe(2);
+  });
+
+  it("결정론 — 같은 입력 두 번 → 같은 결과", () => {
+    const rows = [el("a/b/x"), el("a/b/y"), el("c/d/z")];
+    expect(summarizeContainsByPathPrefix(rows)).toEqual(summarizeContainsByPathPrefix(rows));
+  });
+
+  it("buildV2ConnectionGroups 는 contains 에 summary 를 싣는다", () => {
+    const rows = Array.from({ length: 3 }, (_, i) => el(`p/q/e${i}`));
+    const groups = buildV2ConnectionGroups(rows);
+    expect(groups.contains.summary).toBeDefined();
+    expect(groups.contains.summary?.total).toBe(3);
+    expect(groups.usedBy.summary).toBeUndefined();
   });
 });

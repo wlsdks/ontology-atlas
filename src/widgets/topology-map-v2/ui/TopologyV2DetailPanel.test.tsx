@@ -21,6 +21,9 @@ const labels = {
   poweredOn: "fresh",
   poweredOff: "idle",
   metricContains: "contains",
+  containsShowAll: "view all",
+  containsShowSummary: "summary",
+  containsOtherGroup: "other",
   metricUsedBy: "used by",
   metricDependsOn: "leans on",
   metricEvidence: "evidence",
@@ -305,5 +308,101 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     expect(
       screen.queryByTestId("topology-v2-detail-panel-handoff"),
     ).not.toBeInTheDocument();
+  });
+
+  // S2 파트 3 — 긴 "담는 것"은 경로 프리픽스 요약을 기본으로, "전체 보기"로 리스트.
+  it("담는 것이 15개 초과면 경로 프리픽스 요약을 보여주고 '전체 보기'로 리스트를 편다", () => {
+    const rows = Array.from({ length: 6 }, (_, i) => ({
+      id: `element:cli/src/commands/c${i}`,
+      title: `cmd ${i}`,
+      kind: "element",
+      relationType: "contains",
+      direction: "outgoing" as const,
+    }));
+    render(
+      <TopologyV2DetailPanel
+        slug="domains/cli"
+        title="CLI"
+        kind="domain"
+        domain={null}
+        powered={false}
+        metric={{ contains: 60, usedBy: 0, dependsOn: 0, evidence: 0 }}
+        groups={{
+          contains: {
+            rows, // capped preview
+            total: 60,
+            summary: {
+              groups: [
+                { key: "cli/src/commands", count: 48 },
+                { key: ".claude/skills", count: 6 },
+              ],
+              otherCount: 6,
+              total: 60,
+            },
+          },
+          usedBy: { rows: [], total: 0 },
+          dependsOn: { rows: [], total: 0 },
+          belongsTo: { rows: [], total: 0 },
+        }}
+        evidence={{ rows: [], total: 0 }}
+        handoffText="node: domains/cli"
+        documentHref={null}
+        builderEditHref="/ontology/edit/?node=domains%2Fcli"
+        labels={labels}
+        onSelectConnection={() => {}}
+        onCopyHandoff={() => {}}
+        onClose={() => {}}
+        onSetPathSource={() => {}}
+      />,
+    );
+    // 기본: 요약이 보이고 개별 행 미리보기는 숨는다.
+    expect(screen.getByTestId("topology-v2-contains-summary")).toBeInTheDocument();
+    expect(screen.getByText("cli/src/commands")).toBeInTheDocument();
+    expect(screen.getByText("48")).toBeInTheDocument();
+    expect(screen.getByText(labels.containsOtherGroup)).toBeInTheDocument();
+    expect(screen.queryByText("cmd 0")).not.toBeInTheDocument();
+
+    // "전체 보기" 토글 → 리스트 표시.
+    fireEvent.click(screen.getByTestId("topology-v2-contains-summary-toggle"));
+    expect(screen.queryByTestId("topology-v2-contains-summary")).not.toBeInTheDocument();
+    expect(screen.getByText("cmd 0")).toBeInTheDocument();
+  });
+
+  it("담는 것이 15개 이하면 요약 없이 기존 리스트를 그대로 쓴다", () => {
+    const rows = Array.from({ length: 3 }, (_, i) => ({
+      id: `capability:c${i}`,
+      title: `cap ${i}`,
+      kind: "capability",
+      relationType: "contains",
+      direction: "outgoing" as const,
+    }));
+    render(
+      <TopologyV2DetailPanel
+        slug="domains/small"
+        title="Small"
+        kind="domain"
+        domain={null}
+        powered={false}
+        metric={{ contains: 3, usedBy: 0, dependsOn: 0, evidence: 0 }}
+        groups={{
+          contains: { rows, total: 3, summary: { groups: [], otherCount: 3, total: 3 } },
+          usedBy: { rows: [], total: 0 },
+          dependsOn: { rows: [], total: 0 },
+          belongsTo: { rows: [], total: 0 },
+        }}
+        evidence={{ rows: [], total: 0 }}
+        handoffText="node: domains/small"
+        documentHref={null}
+        builderEditHref="/ontology/edit/?node=domains%2Fsmall"
+        labels={labels}
+        onSelectConnection={() => {}}
+        onCopyHandoff={() => {}}
+        onClose={() => {}}
+        onSetPathSource={() => {}}
+      />,
+    );
+    expect(screen.queryByTestId("topology-v2-contains-summary")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("topology-v2-contains-summary-toggle")).not.toBeInTheDocument();
+    expect(screen.getByText("cap 0")).toBeInTheDocument();
   });
 });

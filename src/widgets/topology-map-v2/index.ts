@@ -7,6 +7,7 @@ export type {
 } from './ui/TopologyMapV2';
 export { TopologyV2DetailPanel } from './ui/TopologyV2DetailPanel';
 export { TopologyV2EdgeHoverCard } from './ui/TopologyV2EdgeHoverCard';
+export { TopologyV2ClusterHoverCard } from './ui/TopologyV2ClusterHoverCard';
 export type {
   TopologyV2DetailPanelProps,
   TopologyV2DetailPanelLabels,
@@ -28,11 +29,14 @@ export {
   formatV2HandoffText,
   formatV2MetricLine,
   groupV2ConnectionsByDirection,
+  summarizeContainsByPathPrefix,
   V2_CONNECTION_ROW_CAP,
+  V2_CONTAINS_SUMMARY_THRESHOLD,
 } from './ui/topology-v2-datasheet';
 export type {
   V2ConnectionGroupsView,
   V2ConnectionGroupView,
+  V2ContainsGroupSummary,
   V2ConnectionSourceEdge,
   V2ConnectionSourceNode,
   V2DatasheetConnection,

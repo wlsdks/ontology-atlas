@@ -2119,6 +2119,9 @@
       "poweredOn": "최근 갱신",
       "poweredOff": "한동안 그대로",
       "metricUsedBy": "쓰는 곳",
+      "containsShowAll": "전체 보기",
+      "containsShowSummary": "요약 보기",
+      "containsOtherGroup": "기타",
       "noConnections": "아직 기록된 관계 없음 · 관계는 frontmatter 로 선언돼요",
       "handoff": "에이전트 인계 복사",
       "handoffCopied": "에이전트 인계를 복사했어요",
@@ -2344,7 +2347,9 @@
     "cluster": {
       "hint": "자식이 많은 그룹은 +N 칩으로 접혀 있습니다 — 칩을 클릭하면 그 그룹이 펼쳐지고, 다시 클릭하면 접힙니다.",
       "expandAria": "숨겨진 하위 항목 {count}개 펼치기",
-      "collapseAria": "이 그룹 접기"
+      "collapseAria": "이 그룹 접기",
+      "tooltipCollapsed": "「{name}」의 요소 {count}개가 접혀 있어요 — 클릭하면 펼쳐요",
+      "tooltipExpanded": "펼쳐진 요소 {count}개 — 클릭하면 접어요"
     }
   },
   "fullDetailA1": {

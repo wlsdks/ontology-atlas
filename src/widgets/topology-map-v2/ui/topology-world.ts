@@ -35,11 +35,11 @@ export interface WorldNode {
   /** Transitive descendant count — engraved as a numeral on project/domain chips in circuit range (0 = skip). */
   count: number;
   /**
-   * B4 — 규모 배율 (로그 압축, 빌드 시 1회). domain/capability 만 ≠1.
-   * draw·히트테스트·분리 완화가 전부 이 값을 곱해 셋이 절대 어긋나지
-   * 않는다. Shneiderman overview-first: overview 의 첫 질문 "어디가
-   * 큰가"에 마크가 답하게 하되, 로그 압축이라 막대그래프가 아니라
-   * 순위 단서로만 읽힌다.
+   * 규모 배율 (빌드 시 1회). domain/capability 만 ≠1. draw·히트테스트·분리
+   * 완화가 전부 이 값을 곱해 셋이 절대 어긋나지 않는다. Shneiderman
+   * overview-first: overview 의 첫 질문 "어디가 큰가"에 마크가 답하게 한다.
+   * S2 파트 2 — **직속 자식 수**의 √스케일(항상 base 이상, +40% 상한). 뱃지
+   * 숫자(descendantCount)와는 다른 채널: 크기=사전주의, 뱃지=판독.
    */
   magnitudeScale: number;
 }
@@ -70,16 +70,25 @@ export interface WorldEdge {
   declaredBySlug: string | null;
 }
 
-/** B4 — count 로그 압축 배율: 1 + k×(log1p(count)/log1p(maxCount) − 0.5). */
+/**
+ * S2 파트 2 — 규모 비례 노드 크기. domain/capability 반지름을 **직속 자식 수**
+ * 의 √스케일로 보간한다: `1 + k×(√childCount − 1)/√maxChildCount`, 최대 +40%
+ * 상한(1.4)으로 clamp. childCount ≤ 1 이면 base(1.0) — 항상 base 이상(구 로그
+ * 압축은 중앙값 미만 노드를 base 아래로 줄였다). element/project 는 불변(1).
+ * √라 큰 격차를 압축하되 순위 단서는 유지(막대그래프 아님, Shneiderman
+ * overview-first). 뱃지 숫자(descendantCount)와는 다른 채널 — 크기는 사전주의
+ * "어디가 큰가", 뱃지는 판독.
+ */
 export function computeMagnitudeScale(
   kind: WorldNodeKind,
-  count: number,
-  maxCount: number,
+  childCount: number,
+  maxChildCount: number,
   k: number,
 ): number {
   if (kind !== "domain" && kind !== "capability") return 1;
-  if (maxCount <= 0 || count <= 0 || k <= 0) return 1;
-  return 1 + k * (Math.log1p(count) / Math.log1p(maxCount) - 0.5);
+  if (maxChildCount <= 0 || childCount <= 0 || k <= 0) return 1;
+  const raw = 1 + (k * (Math.sqrt(childCount) - 1)) / Math.sqrt(maxChildCount);
+  return Math.min(1.4, Math.max(1, raw));
 }
 
 /** P3a — 두 엔드포인트 kind 에서 containment 잉크 레벨을 유도한다. */
@@ -224,6 +233,39 @@ export function computeEgoBounds(
   return { minX, minY, maxX, maxY };
 }
 
+/**
+ * S2 파트 5B — 펼친 클러스터 "디스크"(부모 + 그 직속 자식 부챗살)의 반지름
+ * 패딩 bbox. 칩을 클릭해 부모를 펼치면 카메라가 이 bbox 로 다이브해 "펼쳐졌다"가
+ * 뷰포트에 보이게 한다(소유자 실보고 #2: "확장해도 아무 변화가 안 보임"). ego
+ * bbox(`computeEgoBounds`)와 같은 패턴 — 여기선 이웃이 아니라 contains 직속
+ * 자식을 담는다. `parentId` 미해결/자식 없음이면 `null`.
+ */
+export function computeClusterDiscBounds(
+  world: Pick<TopologyWorld, "nodeById" | "childrenByParent">,
+  tokens: TopologyV2Tokens,
+  parentId: string,
+): Bounds | null {
+  const parent = world.nodeById.get(parentId);
+  if (!parent) return null;
+  const ids = new Set<string>([parentId]);
+  for (const id of world.childrenByParent.get(parentId) ?? []) ids.add(id);
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const id of ids) {
+    const n = world.nodeById.get(id);
+    if (!n) continue;
+    const r = radiusForKind(n.kind, tokens) * n.magnitudeScale;
+    minX = Math.min(minX, n.x - r);
+    maxX = Math.max(maxX, n.x + r);
+    minY = Math.min(minY, n.y - r);
+    maxY = Math.max(maxY, n.y + r);
+  }
+  if (!Number.isFinite(minX)) return null;
+  return { minX, minY, maxX, maxY };
+}
+
 export function buildTopologyWorld(
   nodes: readonly TopologyV2Node[],
   edges: readonly TopologyV2Edge[],
@@ -313,11 +355,19 @@ export function buildTopologyWorld(
     clusterMetaByParent.set(parentId, { angle, ring });
   }
 
-  // B4 — 규모 배율 2차 패스 (maxCount 는 전체를 본 뒤에만 알 수 있다).
+  // S2 파트 2 — 규모 배율 2차 패스: 직속 자식 수(childrenByParent) 기반 √스케일.
+  // maxChildCount 는 배율 대상(domain/capability)만 본다 — project 의 자식 수는
+  // 정규화 분모를 왜곡하므로 제외한다.
   {
-    const maxCount = worldNodes.reduce((m, n) => Math.max(m, n.count), 0);
+    const childCountOf = (id: string) => childrenByParent.get(id)?.length ?? 0;
+    let maxChildCount = 0;
     for (const node of worldNodes) {
-      node.magnitudeScale = computeMagnitudeScale(node.kind, node.count, maxCount, tokens.radiusMagnitudeK);
+      if (node.kind === "domain" || node.kind === "capability") {
+        maxChildCount = Math.max(maxChildCount, childCountOf(node.id));
+      }
+    }
+    for (const node of worldNodes) {
+      node.magnitudeScale = computeMagnitudeScale(node.kind, childCountOf(node.id), maxChildCount, tokens.radiusMagnitudeK);
     }
   }
 

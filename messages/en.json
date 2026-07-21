@@ -2119,6 +2119,9 @@
       "poweredOn": "fresh",
       "poweredOff": "idle",
       "metricUsedBy": "used by",
+      "containsShowAll": "view all",
+      "containsShowSummary": "summary",
+      "containsOtherGroup": "other",
       "noConnections": "no relations recorded yet · relations are declared in frontmatter",
       "handoff": "Copy agent handoff",
       "handoffCopied": "Agent handoff copied",
@@ -2344,7 +2347,9 @@
     "cluster": {
       "hint": "Dense groups are folded into +N chips — click a chip to expand that group, click again to collapse.",
       "expandAria": "Expand {count} hidden items",
-      "collapseAria": "Collapse this group"
+      "collapseAria": "Collapse this group",
+      "tooltipCollapsed": "{count} items under “{name}” are folded — click to expand",
+      "tooltipExpanded": "{count} items expanded — click to collapse"
     }
   },
   "fullDetailA1": {

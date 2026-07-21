@@ -24,12 +24,12 @@ import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent }
 
 import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
-import { scheduleRipple } from "../model/focus-state";
+import { EGO_NEIGHBOR_CHIP_ID, scheduleRipple } from "../model/focus-state";
 import type { ForceSimulation } from "../model/force-layout";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable, isSpineOnlyZoom } from "../model/tier-visibility";
 import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
 import { hitTestEdges, type EdgeHitCandidate } from "./topology-edge-hit";
-import { clusterChipLabel, clusterChipRect } from "../render/cluster-chips";
+import { clusterChipLabel, clusterChipRect, clusterChipScale } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
 import { computeGrabOffsetWorld, computePinWorld, type WorldOffset } from "../interaction/node-drag";
 import {
@@ -138,6 +138,16 @@ export interface PointerHandlerRefs {
   /** 밀도 게이트 — 클러스터 칩 클릭 → 부모 확장 토글(URL 왕복). */
   onToggleCluster?: (parentId: string) => void;
   /**
+   * S2 파트 5C — 클러스터 칩 호버 툴팁. 호버 대상이 바뀔 때만 발화(식별 변경),
+   * 벗어나면 null. HomePage 가 부모 제목/카운트로 문장을 만들어 마이크로카드로
+   * 렌더한다(엣지 호버 카드와 같은 계약).
+   */
+  onHoverCluster?: (
+    info: { parentId: string; count: number; expanded: boolean; position: { x: number; y: number } } | null,
+  ) => void;
+  /** S2 파트 3a — `이웃 +N` 칩 클릭 → 다음 이웃 배치 점등(URL 토글과 별개). */
+  onExpandEgoNeighbors?: () => void;
+  /**
    * W2-B node right-click context menu. Called with the hit node's id and the
    * event's viewport-space coordinates (`clientX`/`clientY`, matching the
    * cursor-anchored menu position contract). Omitted keeps `handleContextMenu`
@@ -207,6 +217,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     onPaneClick,
     onContextMenuNode,
     onToggleCluster,
+    onHoverCluster,
+    onExpandEgoNeighbors,
   } = refs;
 
   /**
@@ -219,9 +231,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     if (!chips || chips.length === 0) return null;
     const { width, height } = viewportRef.current;
     const camera = cameraRef.current;
+    // 드로우(`topology-frame-draw.ts`)와 **같은** 줌 스케일을 써 사각형이 어긋나지 않게.
+    const scale = clusterChipScale(camera.scale.value);
     for (const chip of chips) {
       const screen = worldToScreen(camera, width, height, chip.anchor.x, chip.anchor.y);
-      const rect = clusterChipRect(screen.x, screen.y, clusterChipLabel(chip.count, chip.expanded));
+      const rect = clusterChipRect(screen.x, screen.y, clusterChipLabel(chip.count, chip.expanded), scale);
       if (px >= rect.x && px <= rect.x + rect.w && py >= rect.y && py <= rect.y + rect.h) {
         return chip.parentId;
       }
@@ -383,6 +397,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       // warm so neighbors reflow. The camera does NOT pan (headline fix — a
       // node drag moves the NODE, not the whole viewport).
       clearEdgeHover(); // 드래그 중 카드 잔존 방지
+      clearClusterHover();
       const drag = nodeDragRef.current;
       if (drag && sim) {
         const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
@@ -451,7 +466,28 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // 자식이 숨은 빈 공간에 서므로 여기서만 겹친다.
     if (hoveredClusterIdRef) {
       const chipHit = hitNodeId === null ? hitTestClusterChip(point.x, point.y) : null;
-      if (hoveredClusterIdRef.current !== chipHit) hoveredClusterIdRef.current = chipHit;
+      if (hoveredClusterIdRef.current !== chipHit) {
+        hoveredClusterIdRef.current = chipHit;
+        // S2 파트 5C — 호버 대상 변경 시에만 툴팁 발화(안정). 칩이 잡히면
+        // 엣지 호버는 즉시 해제(둘 다 빈 공간이라 겹칠 수 있음 — 칩 우선).
+        if (onHoverCluster) {
+          if (chipHit === null || chipHit === EGO_NEIGHBOR_CHIP_ID) {
+            // ego `이웃 +N` 칩은 부모 제목이 없어 툴팁을 띄우지 않는다(커서/보더만).
+            onHoverCluster(null);
+          } else {
+            clearEdgeHover();
+            const chip = clusterChipsRef?.current?.find((c) => c.parentId === chipHit);
+            if (chip) {
+              onHoverCluster({
+                parentId: chip.parentId,
+                count: chip.count,
+                expanded: chip.expanded,
+                position: { x: e.clientX, y: e.clientY },
+              });
+            }
+          }
+        }
+      }
       if (chipHit !== null) e.currentTarget.style.cursor = "pointer";
     }
 
@@ -562,10 +598,18 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // 밀도 게이트 — 빈 공간(노드 미히트) 클릭이 클러스터 칩 위면 확장 토글.
     // 엣지 선택/바닥 해제보다 우선한다(칩은 명시적 대화형 크롬). 노드 클릭=ego
     // 포커스 계약은 위 select 분기에서 이미 처리돼 여기 도달하지 않는다.
-    if (commitClick && commitClick.nodeId === null && clickPoint && onToggleCluster) {
+    if (commitClick && commitClick.nodeId === null && clickPoint && (onToggleCluster || onExpandEgoNeighbors)) {
       const chipParent = hitTestClusterChip(clickPoint.x, clickPoint.y);
-      if (chipParent !== null) {
+      if (chipParent === EGO_NEIGHBOR_CHIP_ID) {
+        // S2 파트 3a — `이웃 +N` 칩: URL 토글이 아니라 다음 이웃 배치를 점등.
+        onExpandEgoNeighbors?.();
+        clearClusterHover();
+        return;
+      }
+      if (chipParent !== null && onToggleCluster) {
         onToggleCluster(chipParent);
+        // 토글로 상태(접힘↔펼침)가 바뀌었으니 툴팁을 닫는다 — 재호버 시 새 문구.
+        clearClusterHover();
         return;
       }
     }
@@ -599,8 +643,17 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
   };
 
+  /** S2 파트 5C — 클러스터 칩 호버 툴팁 해제(드래그/취소/토글 시). */
+  const clearClusterHover = () => {
+    if (hoveredClusterIdRef && hoveredClusterIdRef.current !== null) {
+      hoveredClusterIdRef.current = null;
+      onHoverCluster?.(null);
+    }
+  };
+
   const handlePointerCancel = () => {
     clearEdgeHover();
+    clearClusterHover();
     const tokens = readTopologyV2TokensOrNull();
     // Abort any in-flight node pin-drag cleanly (release the pin, let it settle).
     if (nodeDragRef.current !== null) {

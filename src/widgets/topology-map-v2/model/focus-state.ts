@@ -34,6 +34,74 @@ export type NodeEgoState = "center" | "neighbor" | "dim" | "normal";
 export type EdgeEgoState = "ego" | "dim" | "normal";
 
 /**
+ * S2 파트 3a — 선택적 ego. 포커스 노드의 1-hop 이웃이 이 값을 넘으면(예: 87
+ * 이웃 허브) 전부 점등하면 다발이 화면을 관통해 판독 불가다. DOI 랭크 상위
+ * `EGO_NEIGHBOR_LIMIT` 개만 full 점등하고 나머지는 **dim 이 아니라 hidden**,
+ * 포커스 노드 옆 `이웃 +N` 집계 칩으로 접는다(칩 클릭 = 다음 배치 점등).
+ */
+export const EGO_NEIGHBOR_LIMIT = 24;
+
+/**
+ * 선택적 ego 의 `이웃 +N` 집계 칩이 쓰는 합성 parentId. 실제 노드 id 와
+ * 충돌하지 않게 예약어를 쓴다 — 포인터 핸들러가 이 id 를 보고 URL 토글
+ * 대신 다음 이웃 배치 점등으로 분기한다.
+ */
+export const EGO_NEIGHBOR_CHIP_ID = "__ego_neighbors__";
+
+export interface EgoNeighborRankEntry {
+  id: string;
+  kind: string;
+  /** 전체 차수(이웃 수) — 동일 kind 안에서 허브를 우선 노출. */
+  degree: number;
+}
+
+/**
+ * DOI(degree-of-interest) 랭크 — 결정론: ① kind 가중치(domain 3 > capability 2 >
+ * element/기타 1) 내림차순 → ② degree 내림차순 → ③ slug(id) 사전순. Furnas
+ * (1986) DOI 처럼 "구조적으로 중요한" 이웃을 먼저 보여준다(도메인·허브 우선).
+ */
+export function rankEgoNeighborsByDOI(neighbors: readonly EgoNeighborRankEntry[]): string[] {
+  const weight = (kind: string): number => (kind === "domain" ? 3 : kind === "capability" ? 2 : 1);
+  return [...neighbors]
+    .sort(
+      (a, b) =>
+        weight(b.kind) - weight(a.kind) ||
+        b.degree - a.degree ||
+        (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    )
+    .map((n) => n.id);
+}
+
+export interface SelectiveEgoResult {
+  /** 이번에 full 점등할 이웃(랭크 상위 `revealedBatches × limit`). */
+  visibleNeighbors: Set<string>;
+  /** 접어서 숨길 이웃(그 엣지·라벨도 함께 숨긴다). */
+  hiddenNeighbors: Set<string>;
+  /** 숨긴 이웃 수 — `이웃 +N` 칩의 N. 0 이면 칩 소멸. */
+  hiddenCount: number;
+}
+
+/**
+ * 랭크된 이웃을 배치 단위로 노출한다. `revealedBatches` 는 1 부터(기본 상위
+ * limit 개), 칩 클릭마다 +1(다음 limit 개 추가). 상위 `revealedBatches × limit`
+ * 는 visible, 나머지는 hidden. 세션 임시 상태(URL 저장 없음).
+ */
+export function selectiveEgoNeighbors(
+  rankedIds: readonly string[],
+  revealedBatches: number,
+  limit: number = EGO_NEIGHBOR_LIMIT,
+): SelectiveEgoResult {
+  const shown = Math.max(0, revealedBatches) * Math.max(1, limit);
+  const visibleNeighbors = new Set<string>();
+  const hiddenNeighbors = new Set<string>();
+  rankedIds.forEach((id, i) => {
+    if (i < shown) visibleNeighbors.add(id);
+    else hiddenNeighbors.add(id);
+  });
+  return { visibleNeighbors, hiddenNeighbors, hiddenCount: hiddenNeighbors.size };
+}
+
+/**
  * `"center"` if `nodeId === focusedNodeId`, `"neighbor"` if `nodeId` is a
  * 1-hop neighbor of the focused node, `"dim"` otherwise — but only when a
  * focus is active at all; with no focus, every node is `"normal"`.
