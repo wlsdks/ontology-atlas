@@ -67,6 +67,7 @@ references/
 .playwright-mcp/
 *.png
 !public/logo.png
+!docs/assets/readme/*.png
 !public/og-image.png
 !public/brand-icon-512.png
 !app/apple-icon.png

@@ -24,6 +24,34 @@
 `ontology-atlas` project. `ontology-atlas` remains the repository, CLI, MCP, and
 release-artifact identity.
 
+## See It First
+
+The topology hub — one map from business domains down to implementation
+evidence, rendered from plain markdown frontmatter:
+
+![Topology hub — spine view of the dogfood ontology](docs/assets/readme/topology-hub.png)
+
+Click a node for ego focus plus typed facts (contains / used by / leans on /
+evidence), hover an edge for its meaning in plain language:
+
+| Node focus + typed facts | Edge meaning on hover |
+|---|---|
+| ![Node ego focus with typed-fact popover](docs/assets/readme/node-focus.png) | ![Edge hover meaning card](docs/assets/readme/edge-hover.png) |
+
+30 seconds of the loop — overview, semantic zoom, node focus, edge meaning,
+back to overview:
+
+![Usage: overview → zoom → node focus → edge hover → deselect](docs/assets/readme/usage.gif)
+
+Graph insights turn the same frontmatter into a work queue — neglected hubs,
+promotion candidates, agent readiness:
+
+![Graph insights — do-next queue and agent readiness](docs/assets/readme/insights.png)
+
+Or skip the install entirely: the **[live demo](https://ontology-atlas.web.app)**
+serves this exact map (read-only sample) — pick your own markdown folder and it
+becomes your data.
+
 `ontology-atlas` is a local-first workbench for the shared memory between a
 developer and their AI coding agent. The graph is not stored in a hosted
 database. It is plain markdown frontmatter inside your repo, so every change is

@@ -2138,7 +2138,7 @@
       ],
       "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 105 노드, CLI 48 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
       "wordCount": 1661,
-      "updatedAt": "2026-07-21T14:36:01.907Z",
+      "updatedAt": "2026-07-21T23:47:32+09:00",
       "linksOut": []
     },
     {
@@ -4166,7 +4166,7 @@
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 스크린샷 결함(\"팝업 겹침 + 내용 별로\")의 포렌식 결과, 우상단 지도 조절 패널(검색 · \"허브만\" · overlay 토글 · depth/for",
       "wordCount": 28093,
-      "updatedAt": "2026-07-21T14:35:36.639Z",
+      "updatedAt": "2026-07-21T23:47:32+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5249,7 +5249,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
       "wordCount": 10814,
-      "updatedAt": "2026-07-21T14:35:13.520Z",
+      "updatedAt": "2026-07-21T23:47:32+09:00",
       "linksOut": [
         "slug",
         "project:slug",
