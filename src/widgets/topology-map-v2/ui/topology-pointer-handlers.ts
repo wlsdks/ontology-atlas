@@ -348,6 +348,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       // Active node pin-drag: move the pin 1:1 in world space, keep the sim
       // warm so neighbors reflow. The camera does NOT pan (headline fix — a
       // node drag moves the NODE, not the whole viewport).
+      clearEdgeHover(); // 드래그 중 카드 잔존 방지
       const drag = nodeDragRef.current;
       if (drag && sim) {
         const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
@@ -375,7 +376,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       return;
     }
 
-    if (next.phase !== "idle" || focusedSlugRef.current) return; // pressed-not-dragging, or focus owns emphasis
+    // 드래그(팬/노드 이동)는 위 블록에서 이미 return — 여기 도달은
+    // idle|pressed 뿐이다. 엣지 호버는 포커스(ego) 중에도 동작한다 —
+    // 엣지 클릭(P3b)이 포커스 중에도 되므로 호버도 같아야 한다("잡을 수
+    // 있으면 읽을 수 있다"; 사용자 실보고 "노드 클릭한 상태에선 선 호버
+    // 툴팁이 안 나온다"의 근원). 후보는 buildEdgeCandidates 가 포커스
+    // tier 히트 규칙을 이미 반영한다.
     const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
 
     // P3c — 노드 미히트 지점의 엣지 근접 = 호버 마이크로카드. 식별이 바뀔
@@ -406,6 +412,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       e.currentTarget.style.cursor = edgeHit !== null || hitNodeId !== null ? "pointer" : "";
     }
 
+    if (next.phase !== "idle" || focusedSlugRef.current) return; // 리플은 idle+비포커스 전용 (기존 계약)
     if (hitNodeId === hoveredNodeIdRef.current) return;
     hoveredNodeIdRef.current = hitNodeId;
     if (hitNodeId) {

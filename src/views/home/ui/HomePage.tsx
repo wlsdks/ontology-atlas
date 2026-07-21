@@ -2789,7 +2789,10 @@ export function HomePage() {
           </div>
         ) : null}
         {/* P3b — 엣지 팝오버: 노드 팝오버와 같은 포지셔너 계약, 배타 렌더. */}
-        {hoverEdgeCardModel && !selectedEdge && !selectedOntologyNode && !createNodeOpen ? (
+        {/* 노드 포커스(팝오버) 중에도 렌더 — 사용자 실보고 "노드 클릭한
+            상태에선 선 호버 툴팁이 안 나온다". 엣지 팝오버와만 상호배제
+            (같은 의미의 중복 표면 금지). */}
+        {hoverEdgeCardModel && !selectedEdge && !createNodeOpen ? (
           <TopologyV2EdgeHoverCard
             sentence={hoverEdgeCardModel.sentence}
             typeLabel={hoverEdgeCardModel.typeLabel}
