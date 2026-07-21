@@ -14,6 +14,9 @@ export interface DocsVaultVaultChipProps {
   onToggle: () => void;
   onSwap: () => void;
   menuRef: RefObject<HTMLDivElement | null>;
+  /** B2 병합 — vault 도구가 설정으로 이동했음을 알리는 한 줄 브리지(이번
+   *  릴리스 한정). 팝오버 하단에 조용히 노출. */
+  toolsMovedHint?: string;
   t: ReturnType<typeof useTranslations<"docsVault">>;
 }
 
@@ -33,6 +36,7 @@ export function DocsVaultVaultChip({
   onToggle,
   onSwap,
   menuRef,
+  toolsMovedHint,
   t,
 }: DocsVaultVaultChipProps) {
   return (
@@ -84,6 +88,11 @@ export function DocsVaultVaultChip({
           >
             {t("header.vaultPillSwap")}
           </button>
+          {toolsMovedHint ? (
+            <p className="mt-1 border-t border-[color:var(--color-border-soft)] px-1.5 pt-1.5 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+              {toolsMovedHint}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>

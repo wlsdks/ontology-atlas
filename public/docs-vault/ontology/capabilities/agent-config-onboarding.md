@@ -4,13 +4,13 @@ kind: capability
 title: Agent Config Onboarding
 domain: ai-agent-partner
 dependencies: [capabilities/mcp-server, capabilities/vault-live-updates]
-elements: [elements/app-settings-menu, src/features/docs-vault-local/lib/ontology-starter.ts, src/features/docs-vault-local/model/use-local-vault.ts, src/features/docs-vault-local/ui/OntologyStarterCta.tsx, src/views/docs-vault/ui/DocsVaultPage.tsx, src/widgets/docs-vault/ui/VaultToolsMenu.tsx]
+elements: [elements/app-settings-menu, src/features/docs-vault-local/lib/ontology-starter.ts, src/features/docs-vault-local/model/use-local-vault.ts, src/features/docs-vault-local/ui/OntologyStarterCta.tsx, src/views/docs-vault/ui/DocsVaultPage.tsx, src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx]
 relates: [domains/onboarding-ux]
 ---
 
 로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface.
 
-`VaultToolsMenu` exposes the setup gate in the same language as `agent_brief` / `workspace_brief`: CLI-only, MCP-connected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agent-root guidance, and JSON gate proof so a developer can tell whether they should restart from the vault folder or copy the codebase-root templates before editing from another repository.
+`VaultAgentSetupPanel` (merged into `AppSettingsMenu`'s vault / mcpAgents tabs, B2 2026-07 — the former `VaultToolsMenu` docs-header dropdown was retired to remove the duplicate surface) exposes the setup gate in the same language as `agent_brief` / `workspace_brief`: CLI-only, MCP-connected, Graph DB pack, and Setup gate. The panel separates vault health, config readiness, agent-root guidance, and JSON gate proof so a developer can tell whether they should restart from the vault folder or copy the codebase-root templates before editing from another repository.
 
 The copy packet includes MCP/Codex templates, restart guidance, verification prompts, CLI fallbacks, and the machine-readable JSON gate that reports `ok` and `performanceOk` independently. It now starts with an explicit root check: the agent root is the codebase root where Claude Code / Codex is opened, while the ontology vault is passed as a separate path when it is not the current working directory. The full packet exposes both JSON gate contexts: codebase-root automation passes the shell-quoted vault path, and vault-folder automation keeps the `.` cwd command. The packet also includes a machine-readable `ontology-atlas agent-setup <vault> --root <codebase> --json` dry-run so setup state can be checked before the repair command creates missing config files.
 

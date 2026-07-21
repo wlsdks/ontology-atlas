@@ -1,12 +1,19 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Bot, Check, Copy, FolderOpen, Languages, Settings, Terminal, X } from 'lucide-react';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
-import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
+import { LocalVaultPicker, useLocalVault } from '@/features/docs-vault-local';
+import {
+  getTauriVaultRootPath,
+  isTauriVaultRuntime,
+  openTauriVaultInFinder,
+} from '@/shared/lib/tauri-vault-fs';
+import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
+import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
 type SettingsMenuTab = 'general' | 'mcpAgents' | 'vault' | 'appearance' | 'verification';
 
@@ -23,8 +30,11 @@ type SettingsMenuTab = 'general' | 'mcpAgents' | 'vault' | 'appearance' | 'verif
 export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
   const t = useTranslations('nav.settingsMenu');
   const { state: copyState, copy } = useCopyFeedback();
+  const router = useRouter();
+  const localVault = useLocalVault();
   const [open, setOpen] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsMenuTab>('general');
+  const [vaultRevealError, setVaultRevealError] = useState<string | null>(null);
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -32,6 +42,49 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
   const mcpTitleId = useId();
   const generalTitleId = useId();
   const isDesktopRuntime = isTauriVaultRuntime();
+
+  // B2 병합 — 이전 문서함 헤더의 VaultToolsMenu 가 들고 있던 로컬 vault 컨텍스트
+  // (설정 파일 상태·수리·복사 패킷·검증 게이트)를 설정 메뉴가 흡수했다.
+  // LocalVaultProvider 는 app/[locale]/layout.tsx 에 상주하므로 AppSettingsMenu 가
+  // 어느 페이지 헤더에 얹혀도 같은 vault 를 읽는다(props 주입 불필요).
+  const vaultRootPath = localVault.handle
+    ? getTauriVaultRootPath(localVault.handle)
+    : null;
+  const isLocalVaultLoaded = localVault.status === 'loaded';
+  const canEditCurrentVault = isLocalVaultLoaded;
+  const showVaultManagement = localVault.status !== 'unsupported';
+  const localVaultValidationSummary = useMemo(() => {
+    if (localVault.status !== 'loaded' || !localVault.manifest) return null;
+    const summary = summarizeVaultValidation(
+      localVault.manifest.docs.map((doc) => ({
+        slug: doc.slug,
+        frontmatter: doc.frontmatter,
+      })),
+    );
+    if (summary.errorCount === 0 && summary.warningCount === 0) return null;
+    return {
+      errorCount: summary.errorCount,
+      warningCount: summary.warningCount,
+    };
+  }, [localVault.status, localVault.manifest]);
+
+  const handleRevealVaultPath = async (rootPath: string) => {
+    setVaultRevealError(null);
+    try {
+      await openTauriVaultInFinder(rootPath);
+    } catch (err) {
+      setVaultRevealError(
+        err instanceof Error ? err.message : t('vaultRevealErrorFallback'),
+      );
+    }
+  };
+
+  // AGENT-GRAPH-WORKFLOW 가이드는 문서함(/docs) 안 드로어라 설정 메뉴에서
+  // 직접 열 수 없다 — 설정을 닫고 문서함으로 이동해 사용자가 이어서 연다.
+  const handleOpenWorkflowGuide = () => {
+    setOpen(false);
+    router.push('/docs/');
+  };
   const vaultHref = mode === 'local' ? '/docs/' : isDesktopRuntime ? '/docs/?intent=local' : '/download/';
   const vaultBody = mode === 'local' ? t('vaultBodyLocal') : t('vaultBodyStatic');
   const vaultCta = mode === 'local' ? t('vaultCtaLocal') : t('vaultCtaStatic');
@@ -114,6 +167,13 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
       open={open}
       className="group relative shrink-0"
       onKeyDown={(event) => {
+        // Guardian B2 — transient 상호배제: ⌘K(팔레트)가 열리면 설정은
+        // demote (동시 스택 금지, design.md popup-soup 계약). 포커스 반환
+        // 없이 닫아 팔레트가 포커스를 가져가게 한다.
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+          closePanel(false);
+          return;
+        }
         if (event.key !== 'Escape') return;
         event.preventDefault();
         closePanel();
@@ -424,7 +484,9 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             role="tabpanel"
             aria-labelledby="app-settings-tab-vault"
             aria-label={t('tabVault')}
-            className="grid min-h-0 gap-2 overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
+            // Guardian B2 — 고정 높이 다이얼로그의 grid stretch 가 1줄짜리
+            // 박스를 3줄만큼 늘리던 잉크 역전: content-start 로 내용 높이.
+            className="grid min-h-0 content-start gap-2 overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
           >
             <Link
               href={vaultHref}
@@ -443,6 +505,36 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 </span>
               </span>
             </Link>
+            {/* B2 병합 — 문서함 헤더 드롭다운(VaultToolsMenu)이 들고 있던 로컬
+                vault 관리(폴더 열기·닫기·새로고침·Finder·최근·권한 복구)를 여기로
+                이관. 헤더 vault pill 의 "vault 바꾸기"는 고빈도 swap 만 남기고,
+                나머지 관리 동작은 이 설정 탭이 유일한 집이다. */}
+            {showVaultManagement ? (
+              <>
+                <LocalVaultPicker
+                  status={localVault.status}
+                  handleName={localVault.handle?.name ?? null}
+                  rootPath={vaultRootPath}
+                  docCount={localVault.manifest?.docs.length ?? 0}
+                  errorMessage={localVault.errorMessage}
+                  lastLoadedAt={localVault.lastLoadedAt}
+                  validationSummary={localVaultValidationSummary}
+                  recentVaults={localVault.recentVaults}
+                  onOpen={localVault.open}
+                  onOpenRecent={localVault.openRecent}
+                  onForgetRecent={localVault.forgetRecent}
+                  onClose={localVault.close}
+                  onRefresh={localVault.refresh}
+                  onRequestPermission={localVault.requestPermission}
+                  onReveal={handleRevealVaultPath}
+                />
+                {vaultRevealError ? (
+                  <p className="rounded-sm border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-2 py-1 text-[10.5px] leading-4 text-[color:var(--color-status-danger)]">
+                    {t('vaultRevealError', { message: vaultRevealError })}
+                  </p>
+                ) : null}
+              </>
+            ) : null}
           </section>
           ) : null}
 
@@ -477,8 +569,25 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             role="tabpanel"
             aria-labelledby="app-settings-tab-mcpAgents"
             aria-label={t('tabMcpAgents')}
-            className="min-h-0 overflow-y-auto rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] p-3"
+            // Guardian B2 — truncate 가 동작하려면 grid track 이 min-content
+            // 로 팽창하지 못하게 min-w-0 (수평 오버플로 78px 회귀의 근원).
+            className="grid min-h-0 min-w-0 gap-3 overflow-y-auto"
           >
+            {/* B2 병합 — 로컬 vault 가 로드돼 있으면 vault-aware 설정 패널이
+                권위 표면이다(설정 파일 상태·수리·경로 채운 복사 패킷). 이때 정적
+                first-calls 교육 블록은 중복(둘 다 first-contact 패킷을 다룸)이라
+                숨기고, vault 미로드 상태에서만 정적 교육을 노출한다. mcpAgents 의
+                state-decision-table(구 mcpStateRows 매트릭스)은 verification 탭의
+                동일 state ladder 와 중복이라 제거됐다. */}
+            {isLocalVaultLoaded ? (
+              <VaultAgentSetupPanel
+                canEditCurrent={canEditCurrentVault}
+                localVault={localVault}
+                validationSummary={localVaultValidationSummary}
+                onOpenWorkflowGuide={handleOpenWorkflowGuide}
+              />
+            ) : (
+            <div className="min-w-0 rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-start gap-2">
                 <Terminal size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
@@ -499,37 +608,6 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 {copyState === 'copied' ? <Check size={12} aria-hidden /> : <Copy size={12} aria-hidden />}
                 {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
               </button>
-            </div>
-            <div
-              className="mt-3 rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-overlay-recessed-a14)] p-2.5"
-              data-testid="mcp-state-decision-table"
-            >
-              <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
-                {t('mcpStateMatrixTitle')}
-              </p>
-              <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
-                {mcpStateRows.map(([id, labelKey, bodyKey, Icon, iconColor]) => (
-                  <div
-                    key={id}
-                    className="flex min-w-0 items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2"
-                  >
-                    <Icon
-                      size={12}
-                      aria-hidden
-                      className="mt-0.5 shrink-0"
-                      style={{ color: iconColor }}
-                    />
-                    <div className="min-w-0">
-                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
-                        {t(labelKey)}
-                      </p>
-                      <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                        {t(bodyKey)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
             <div className="mt-3 grid gap-2 text-[10px] leading-4 text-[color:var(--color-text-secondary)] sm:grid-cols-2">
               <div
@@ -633,6 +711,8 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 </div>
               </div>
             </div>
+            </div>
+            )}
           </div>
           ) : null}
         </div>

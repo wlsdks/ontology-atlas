@@ -39,7 +39,8 @@ The underlying readiness/graph-DB apparatus did not fully disappear — it split
   are still the shared "run health/cycles/growth/maintenance/validate after a
   vault write" packet, consumed by `RelationWriteConfirm.tsx`,
   `RelationPostSaveHandoff.tsx`, `OntologyEditPage.tsx`,
-  `TopologyAnalysisBar.tsx`, and `VaultToolsMenu.tsx`.
+  `TopologyAnalysisBar.tsx`, and `VaultAgentSetupPanel.tsx` (the agent-setup
+  panel merged into `AppSettingsMenu`, B2 2026-07).
 - **The live-activity badge reuses the graph DB query pack.**
   `LiveActivityIndicator.tsx` (`src/features/vault-ontology/ui/`, shown on the
   topology hub) calls `buildAgentGraphDbQueryPack` and
