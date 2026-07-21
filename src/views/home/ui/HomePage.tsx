@@ -16,11 +16,6 @@ import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
-  buildDomainMarkdown,
-  buildProjectMarkdown,
-  deriveBootstrapPlan,
-  domainDocSlug,
-  selectedElements,
   useLocalVault,
   buildMcpConfigJson,
   buildCodexMcpAddCommandTemplate,} from "@/features/docs-vault-local";
@@ -119,6 +114,7 @@ import {
   useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
+import { useBootstrapFlow } from "../model/use-bootstrap-flow";
 import {
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
@@ -547,7 +543,6 @@ export function HomePage() {
   const canCreateNode = vault.manifest !== null;
   // Slice 1 (discovery.md F1~F6) — "내 문서로 지도 만들기". 열린 vault 에
   // .md 는 있는데 지도 노드가 0 인 순간의 부트스트랩 다이얼로그.
-  const [bootstrapOpen, setBootstrapOpen] = useState(false);
   // P3d(E1) — 부트스트랩 완료 시 지도 리빌 연출 트리거.
   const [mapRevealToken, setMapRevealToken] = useState(0);
   // P2a — "AI 에이전트 연결" 시트.
@@ -620,70 +615,19 @@ export function HomePage() {
     () => (ontologyInsight?.nodes ?? []).filter((n) => n.kind === "domain").map((n) => n.title),
     [ontologyInsight],
   );
-  const bootstrapPlan = useMemo(() => {
-    if (!vault.manifest) return null;
-    return deriveBootstrapPlan(
-      vault.manifest.docs.map((d) => ({ slug: d.slug, title: d.title, frontmatter: d.frontmatter })),
-      vault.handle?.name ?? "my-project",
-    );
-  }, [vault.manifest, vault.handle]);
-  const runBootstrap = useCallback(
-    async (input: { projectTitle: string; acceptedDomains: ReadonlySet<string> }) => {
-      if (!bootstrapPlan || !vault.manifest) return;
-      const plan = { ...bootstrapPlan, projectTitle: input.projectTitle };
-      const elements = selectedElements(plan, input.acceptedDomains);
-      // frontmatter 만 추가 (본문 무변경) — 마지막 createDoc 의 내부 리로드가
-      // 전체를 한 번에 반영하도록 개별 write 는 refresh 를 생략한다.
-      for (const el of elements) {
-        await vault.updateFrontmatter(
-          el.slug,
-          el.domain ? { kind: "element", title: el.title, domain: el.domain } : { kind: "element", title: el.title },
-          { skipRefresh: true },
-        );
-      }
-      // 재검 마찰 D — 승인 도메인을 스텁이 아닌 실제 .md 로. 같은 경로에
-      // 문서가 이미 있거나(요소로 승격됨) 동명 domain 문서가 있으면 생략.
-      const acceptedDomainCandidates = plan.domains.filter((d) => input.acceptedDomains.has(d.name));
-      for (const domain of acceptedDomainCandidates) {
-        const slug = domainDocSlug(domain.name);
-        const tail = slug.split("/").pop();
-        const taken =
-          vault.manifest.docs.some((d) => d.slug === slug) ||
-          vault.manifest.docs.some(
-            (d) => d.frontmatter.kind === "domain" && d.slug.split("/").pop() === tail,
-          );
-        // batch — 마지막 프로젝트 쓰기의 리로드가 전체를 한 번에 반영한다
-        // (도메인 수만큼 전체 매니페스트 재스캔·깜빡임 하던 것 제거).
-        if (!taken) await vault.createDoc(slug, buildDomainMarkdown(domain), { skipRefresh: true });
-      }
-      if (plan.existingProjectSlug) {
-        // 재검 마찰 A — 이미 프로젝트가 있는 vault: 두 번째 프로젝트를
-        // 만들지 않고 기존 프로젝트의 domains 에 승인분을 덧붙인다.
-        const existing = vault.manifest.docs.find((d) => d.slug === plan.existingProjectSlug);
-        const prevDomains = Array.isArray(existing?.frontmatter.domains)
-          ? (existing.frontmatter.domains as string[])
-          : [];
-        const accepted = plan.domains.filter((d) => input.acceptedDomains.has(d.name)).map((d) => d.name);
-        const mergedDomains = [...new Set([...prevDomains, ...accepted])];
-        await vault.updateFrontmatter(plan.existingProjectSlug, { domains: mergedDomains }, { skipRefresh: true });
-      } else {
-        await vault.createDoc(plan.projectSlug, buildProjectMarkdown(plan, input.acceptedDomains), {
-          skipRefresh: true,
-        });
-      }
-      // batch 마감 — 위 쓰기 전부 skipRefresh 이므로 여기서 정확히 1회만
-      // 재스캔한다 (마지막 쓰기가 no-op 이어도 반영 보장).
-      await vault.refresh();
-      setBootstrapOpen(false);
+  // HomePage 모듈화 1차 — 부트스트랩 흐름은 use-bootstrap-flow 훅 소유.
+  // 완료 연출(토스트·E1 리빌)만 여기 남는다.
+  const { bootstrapOpen, setBootstrapOpen, bootstrapPlan, runBootstrap } = useBootstrapFlow({
+    vault,
+    onCompleted: ({ addedToExisting, elementCount }) => {
       // E1 — 리로드된 그래프가 "내 문서들이 모이는" 연출로 등장한다.
       setMapRevealToken((n) => n + 1);
       toast.show(
-        t(plan.existingProjectSlug ? "bootstrap.toastAdded" : "bootstrap.toastDone", { count: elements.length }),
+        t(addedToExisting ? "bootstrap.toastAdded" : "bootstrap.toastDone", { count: elementCount }),
         "success",
       );
     },
-    [bootstrapPlan, vault, toast, t],
-  );
+  });
   const createNode = useCallback(
     async (input: { title: string; kind: CreateNodeKind; domain?: string }) => {
       try {

@@ -33,3 +33,8 @@ export {
   type BootstrapElementCandidate,
   type BootstrapPlan,
 } from './lib/bootstrap-candidates';
+export {
+  executeBootstrapPlan,
+  type BootstrapVaultWriter,
+  type ExecuteBootstrapResult,
+} from './lib/execute-bootstrap-plan';
