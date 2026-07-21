@@ -31,7 +31,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <Toaster
         position="bottom-right"
-        offset={16}
+        // 하단 오프셋만 CSS 변수로 받아, 하단에 쓰기 바가 있는 빌더 페이지가
+        // 토스트를 바 위로 밀어 "vault 에 쓰기" 버튼을 가리지 않게 한다
+        // (`toast-position.ts` 계약 · 빌더 감사 #5). 다른 페이지는 기본 16px.
+        offset={{
+          top: 16,
+          right: 16,
+          bottom: 'var(--app-toast-bottom-offset, 16px)',
+          left: 16,
+        }}
         gap={8}
         containerAriaLabel={t('notificationsAriaLabel')}
         // sonner 기본 hotkey (Alt+T) 는 한국어 사용자에게 의미 전달 약함 +

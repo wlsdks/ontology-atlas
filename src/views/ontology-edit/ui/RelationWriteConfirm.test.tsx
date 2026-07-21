@@ -194,6 +194,26 @@ describe("RelationWriteConfirm", () => {
     copyTextMock.mockReset();
   });
 
+  it("renders a modal scrim and cancels on outside (scrim) click", () => {
+    const onCancel = vi.fn();
+    render(
+      <RelationWriteConfirm
+        proposal={proposal}
+        selectedKey="elements"
+        preflight={safePreflight}
+        labels={labels}
+        onSelectKey={vi.fn()}
+        onCancel={onCancel}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    const scrim = screen.getByTestId("builder-relation-write-scrim");
+    expect(scrim).toBeInTheDocument();
+    fireEvent.mouseDown(scrim);
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
   it("shows the exact frontmatter write preview", () => {
     render(
       <RelationWriteConfirm
