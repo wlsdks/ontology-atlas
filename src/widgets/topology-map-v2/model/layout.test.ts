@@ -146,3 +146,75 @@ describe("computeConcentricLayout — deterministic de-pileup", () => {
     expect(relaxedAgain).toEqual(relaxed);
   });
 });
+
+describe("computeConcentricLayout — 비표준 계보 / 고아 (2026-07 블롭 회귀)", () => {
+  // 도메인이 element 를 직접 담는 vault(capability 경유 없음). 종전에는 이런
+  // 노드가 아예 배치되지 않고 전원 (0,0) 적층 → 라이브 물리가 허브 쪽으로
+  // 끌어간 자리에서 라벨까지 겹치는 "블롭"이 됐다 (소유자 실보고).
+  const DOMAIN_DIRECT: readonly LayoutGraphNode[] = [
+    { id: "p", kind: "project", parentId: null },
+    { id: "d", kind: "domain", parentId: "p" },
+    { id: "el-1", kind: "element", parentId: "d" },
+    { id: "el-2", kind: "element", parentId: "d" },
+    { id: "el-3", kind: "element", parentId: "d" },
+  ];
+
+  it("도메인 직속 element 를 (0,0) 적층 없이 도메인 주변에 부채꼴 배치한다", () => {
+    const points = computeConcentricLayout(DOMAIN_DIRECT, RINGS);
+    const d = byId(points, "d");
+    for (const id of ["el-1", "el-2", "el-3"]) {
+      const p = byId(points, id);
+      expect(Math.hypot(p.x, p.y)).toBeGreaterThan(1); // 원점 적층 금지
+      // fan 3개 ≤ 밀도 임계 → 정확히 element 링 반지름에서 도메인을 두른다.
+      expect(Math.hypot(p.x - d.x, p.y - d.y)).toBeCloseTo(RINGS.element, 4);
+    }
+    // 서로 겹치지 않는다.
+    const [a, b, c] = ["el-1", "el-2", "el-3"].map((id) => byId(points, id));
+    expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThan(1);
+    expect(Math.hypot(b.x - c.x, b.y - c.y)).toBeGreaterThan(1);
+  });
+
+  it("element ⊃ element 체인의 자식도 배치된 부모 주변에 놓인다", () => {
+    const chain: readonly LayoutGraphNode[] = [
+      { id: "p", kind: "project", parentId: null },
+      { id: "d", kind: "domain", parentId: "p" },
+      { id: "c", kind: "capability", parentId: "d" },
+      { id: "el-parent", kind: "element", parentId: "c" },
+      { id: "el-child", kind: "element", parentId: "el-parent" },
+    ];
+    const points = computeConcentricLayout(chain, RINGS);
+    const parent = byId(points, "el-parent");
+    const child = byId(points, "el-child");
+    expect(Math.hypot(child.x, child.y)).toBeGreaterThan(1);
+    // 단일 자식 + relax 무충돌 → 정확히 element 링 반지름.
+    expect(Math.hypot(child.x - parent.x, child.y - parent.y)).toBeCloseTo(RINGS.element, 4);
+  });
+
+  it("containment 밖 고아 노드는 도메인 링 바깥 나선에 서로 떨어져 배치된다", () => {
+    const withOrphans: readonly LayoutGraphNode[] = [
+      { id: "p", kind: "project", parentId: null },
+      { id: "d", kind: "domain", parentId: "p" },
+      { id: "orphan-1", kind: "element", parentId: null },
+      { id: "orphan-2", kind: "element", parentId: "ghost-missing" },
+      { id: "orphan-3", kind: "element", parentId: null },
+    ];
+    const points = computeConcentricLayout(withOrphans, RINGS);
+    const orphans = ["orphan-1", "orphan-2", "orphan-3"].map((id) => byId(points, id));
+    for (const o of orphans) {
+      expect(Math.hypot(o.x, o.y)).toBeGreaterThanOrEqual(RINGS.domain + RINGS.capability - 1);
+    }
+    expect(Math.hypot(orphans[0].x - orphans[1].x, orphans[0].y - orphans[1].y)).toBeGreaterThan(1);
+    expect(Math.hypot(orphans[1].x - orphans[2].x, orphans[1].y - orphans[2].y)).toBeGreaterThan(1);
+  });
+
+  it("표준형 vault 출력은 종전과 동일하게 유지된다 (fan 합류 no-op 계약)", () => {
+    // FIXTURE 는 직속 element 없음 → 신규 패스 전부 no-op. 핵심 링 계약 재확인.
+    const points = computeConcentricLayout(FIXTURE, RINGS);
+    for (const capId of ["cap-a1", "cap-a2", "cap-b1"]) {
+      const cap = FIXTURE.find((n) => n.id === capId)!;
+      const capPoint = byId(points, capId);
+      const domainPoint = byId(points, cap.parentId!);
+      expect(Math.hypot(capPoint.x - domainPoint.x, capPoint.y - domainPoint.y)).toBeCloseTo(RINGS.capability, 4);
+    }
+  });
+});

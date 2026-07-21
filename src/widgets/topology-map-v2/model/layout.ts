@@ -132,17 +132,25 @@ export function computeConcentricLayout(
     const domainPoint = placed.get(domain.id);
     if (!domainPoint) return;
     const caps = nodes.filter((n) => n.kind === "capability" && n.parentId === domain.id);
+    // 도메인이 element 를 직접 담는 vault(capability 경유 없음)도 실존한다 —
+    // 이들을 빼먹으면 (0,0) 적층 후 라이브 물리가 허브 쪽으로 끌어가 "블롭"
+    // 결함이 된다 (2026-07 소유자 실보고). capability 팬과 한 부채꼴로 합쳐
+    // 배치하되, 직접 element 가 없으면 기존 출력과 바이트 동일하다.
+    const directElements = nodes.filter((n) => n.kind === "element" && n.parentId === domain.id);
+    const fan = [...caps, ...directElements];
     // High-child-count de-pileup: push the ring out and widen the arc
     // proportionally so a dense fan starts spread apart (small fans keep the
     // exact base ring — `layout.test.ts`).
-    const capR = rings.capability * Math.max(1, caps.length / CAP_DENSITY_THRESHOLD);
-    const spread = Math.min(CAP_SPREAD_MAX, 0.32 + caps.length * 0.22);
-    caps.forEach((cap, i) => {
-      const t = caps.length === 1 ? 0 : i / (caps.length - 1) - 0.5;
+    const capR = rings.capability * Math.max(1, fan.length / CAP_DENSITY_THRESHOLD);
+    const elR = rings.element * Math.max(1, fan.length / ELEMENT_DENSITY_THRESHOLD);
+    const spread = Math.min(CAP_SPREAD_MAX, 0.32 + fan.length * 0.22);
+    fan.forEach((child, i) => {
+      const t = fan.length === 1 ? 0 : i / (fan.length - 1) - 0.5;
       const angle = domainPoint.angle + t * spread;
-      placed.set(cap.id, {
-        x: domainPoint.x + Math.cos(angle) * capR,
-        y: domainPoint.y + Math.sin(angle) * capR,
+      const r = child.kind === "capability" ? capR : elR;
+      placed.set(child.id, {
+        x: domainPoint.x + Math.cos(angle) * r,
+        y: domainPoint.y + Math.sin(angle) * r,
         angle,
       });
     });
@@ -167,11 +175,80 @@ export function computeConcentricLayout(
     });
   });
 
+  placeRemainingByParentChain(nodes, rings, placed);
+  placeOrphans(nodes, rings, placed);
+
   relaxCollisions(nodes, placed, options);
 
   return nodes.map((n) => {
     const point = placed.get(n.id);
     return { id: n.id, x: point?.x ?? 0, y: point?.y ?? 0 };
+  });
+}
+
+/**
+ * 잔여 배치 1 — 부모는 배치됐지만 위 표준 팬(project→domain→capability→element)
+ * 이 다루지 않는 계보(element ⊃ element, project 직속 element, capability ⊃
+ * capability 등)를 부모 기준 부채꼴로 배치한다. 표준형 vault 에서는 아무것도
+ * 남지 않아 no-op — 기존 픽스처 좌표가 바이트 동일하게 유지된다.
+ */
+function placeRemainingByParentChain(
+  nodes: readonly LayoutGraphNode[],
+  rings: LayoutRings,
+  placed: Map<string, PlacedPoint>,
+): void {
+  // 깊은 체인도 수렴하도록 진행이 있는 동안 반복 (입력 순서 고정 → 결정론).
+  for (let pass = 0; pass < nodes.length; pass += 1) {
+    const pending = nodes.filter((n) => !placed.has(n.id) && n.parentId !== null && placed.has(n.parentId));
+    if (pending.length === 0) return;
+    const byParent = new Map<string, LayoutGraphNode[]>();
+    for (const n of pending) {
+      const list = byParent.get(n.parentId as string) ?? [];
+      list.push(n);
+      byParent.set(n.parentId as string, list);
+    }
+    for (const [parentId, kids] of byParent) {
+      const parentPoint = placed.get(parentId);
+      if (!parentPoint) continue;
+      const r = rings.element * Math.max(1, kids.length / ELEMENT_DENSITY_THRESHOLD);
+      const spread = Math.min(ELEMENT_SPREAD_MAX, 0.26 + kids.length * 0.26);
+      kids.forEach((kid, i) => {
+        const t = kids.length === 1 ? 0 : i / (kids.length - 1) - 0.5;
+        const angle = parentPoint.angle + t * spread;
+        placed.set(kid.id, {
+          x: parentPoint.x + Math.cos(angle) * r,
+          y: parentPoint.y + Math.sin(angle) * r,
+          angle,
+        });
+      });
+    }
+  }
+}
+
+/** 황금각 — 고아 나선 배치의 각 간격 (phyllotaxis, 결정론). */
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
+/**
+ * 잔여 배치 2 — 부모가 끝내 배치되지 않는 고아(containment 밖 노드)를
+ * 도메인 링 바깥의 황금각 나선에 얹는다. 종전에는 전원 (0,0) 적층 →
+ * 라이브 물리가 끌어간 자리에서 라벨까지 겹치는 블롭이 됐다.
+ */
+function placeOrphans(
+  nodes: readonly LayoutGraphNode[],
+  rings: LayoutRings,
+  placed: Map<string, PlacedPoint>,
+): void {
+  const orphans = nodes.filter((n) => !placed.has(n.id));
+  if (orphans.length === 0) return;
+  const baseR = rings.domain + rings.capability;
+  orphans.forEach((orphan, i) => {
+    const angle = i * GOLDEN_ANGLE;
+    const r = baseR + rings.element * 0.35 * Math.sqrt(i);
+    placed.set(orphan.id, {
+      x: Math.cos(angle) * r,
+      y: Math.sin(angle) * r,
+      angle,
+    });
   });
 }
 
