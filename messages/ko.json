@@ -2370,6 +2370,9 @@
       "describes": "{from} 가 {to} 의 근거예요.",
       "belongsTo": "{from} 는 {to} 에 속해요.",
       "related": "{from} 와 {to} 가 서로 관련돼 있어요."
+    },
+    "edgeHover": {
+      "clickHint": "클릭하면 상세 · 출처 문서"
     }
   },
   "fullDetailA1": {

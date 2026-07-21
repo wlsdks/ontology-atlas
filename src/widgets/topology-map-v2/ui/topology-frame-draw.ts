@@ -6,7 +6,7 @@
  */
 
 import type { CameraAxes } from "../engine/camera";
-import { resolveEdgeEgoState, resolveNodeEgoState, type NodeEgoState } from "../model/focus-state";
+import { resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selection-pulse";
 import { DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha } from "../model/tier-visibility";
@@ -172,6 +172,10 @@ export interface FrameDrawParams {
    * Null in the common case (no panel hover).
    */
   emphasizedNeighborId: string | null;
+  /** P3c — 호버 중 엣지 (마이크로카드와 같은 상태) — 해당 엣지 잉크 강조. */
+  hoveredEdge: { sourceId: string; targetId: string; relationType: string } | null;
+  /** 엣지 선택 = 페어 포커스 — 양끝만 밝히고 나머지 dim, 선택 엣지는 pale 인디고. */
+  selectedEdge: EdgePairFocus | null;
   emphasisById: ReadonlyMap<string, number>;
   /** C1 A2 — ego tier-reveal ramp (`topology-physics-step.ts` steps it), consumed by `effectiveNodeAlpha`. */
   egoRevealById: ReadonlyMap<string, number>;
@@ -215,6 +219,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     focusedNodeId,
     hoveredNodeId,
     emphasizedNeighborId,
+    hoveredEdge,
+    selectedEdge,
     emphasisById,
     egoRevealById,
     reducedMotion,
@@ -271,9 +277,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   for (const node of world.nodes) {
     const tierAlpha = nodeTierAlpha(node.kind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL);
     tierAlphaById.set(node.id, tierAlpha);
+    const isPairMember =
+      focusedNodeId === null &&
+      selectedEdge !== null &&
+      (node.id === selectedEdge.sourceId || node.id === selectedEdge.targetId);
     const isEgoMember =
-      focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocused.has(node.id));
-    effectiveAlphaById.set(node.id, effectiveNodeAlpha(tierAlpha, isEgoMember, egoRevealById.get(node.id) ?? 0));
+      isPairMember ||
+      (focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocused.has(node.id)));
+    effectiveAlphaById.set(
+      node.id,
+      effectiveNodeAlpha(tierAlpha, isEgoMember, isPairMember ? 1 : (egoRevealById.get(node.id) ?? 0)),
+    );
   }
 
   for (const kind of ["contains", "depends"] as const) {
@@ -291,10 +305,19 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // B2 잔여 — 끝점이 하나도 안 보이는 관통 엣지는 잉크 강등 (실타래 해소).
       const passthrough = isPassthroughEdge(a, b, 24, viewportWidth, viewportHeight);
       const touches = focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
+      const isSelectedEdge =
+        selectedEdge !== null &&
+        edge.sourceId === selectedEdge.sourceId &&
+        edge.targetId === selectedEdge.targetId;
+      const hovered =
+        hoveredEdge !== null &&
+        edge.sourceId === hoveredEdge.sourceId &&
+        edge.targetId === hoveredEdge.targetId;
       const emphasized =
-        emphasizedNeighborId !== null &&
-        touches &&
-        (edge.sourceId === emphasizedNeighborId || edge.targetId === emphasizedNeighborId);
+        hovered ||
+        (emphasizedNeighborId !== null &&
+          touches &&
+          (edge.sourceId === emphasizedNeighborId || edge.targetId === emphasizedNeighborId));
       ctx.globalAlpha = passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha;
       tracesDraw(
         ctx,
@@ -303,7 +326,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           b,
           control,
           relationType: kind,
-          egoState: resolveEdgeEgoState(touches, focusedNodeId),
+          egoState: resolveEdgeEgoStateWithPair(touches, focusedNodeId, selectedEdge, isSelectedEdge),
+          selected: isSelectedEdge,
           farT,
           t: edge.t,
           emphasized,
@@ -318,6 +342,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           edgeDim: tokens.edgeDim,
           indigo: tokens.indigo,
           indigoBright: tokens.indigoBright,
+          edgeSelected: tokens.edgeSelected,
         },
       );
       ctx.globalAlpha = 1;
@@ -327,7 +352,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   for (const node of world.nodes) {
     const tierAlpha = effectiveAlphaById.get(node.id) ?? 1;
     if (tierAlpha <= 0.02) continue;
-    const egoState = resolveNodeEgoState(node.id, focusedNodeId, neighborsOfFocused);
+    const egoState = resolveNodeEgoStateWithPair(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
     const emphasis = emphasisById.get(node.id) ?? 0;
     const isEmphasizedNeighbor = emphasizedNeighborId !== null && node.id === emphasizedNeighborId && egoState === "neighbor";
     const visual = resolveNodeVisual(node, egoState, emphasis, focusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion);
@@ -456,7 +481,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 읽을 수 있다").
     const revealAlpha = effectiveAlphaById.get(node.id) ?? 1;
     if (revealAlpha <= 0.02) return;
-    const egoState = resolveNodeEgoState(node.id, focusedNodeId, neighborsOfFocused);
+    const egoState = resolveNodeEgoStateWithPair(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
     const isHovered = hoveredNodeId !== null && node.id === hoveredNodeId;
     const compactAlpha = computeLabelAlpha({ kind: node.kind, farT, egoState, isHovered, revealAlpha });
     // Domain draws TWO effects at once (the always-readable compact label AND

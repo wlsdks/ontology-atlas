@@ -8,6 +8,7 @@ export type {
   TopologyV2Forces,
 } from './ui/TopologyMapV2';
 export { TopologyV2DetailPanel } from './ui/TopologyV2DetailPanel';
+export { TopologyV2EdgeHoverCard } from './ui/TopologyV2EdgeHoverCard';
 export type {
   TopologyV2DetailPanelProps,
   TopologyV2DetailPanelLabels,

@@ -94,6 +94,11 @@ export interface UseTopologyLoopArgs {
    */
   revealToken?: number;
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
+  /** P3c — 엣지 호버 마이크로카드 (식별 변경 시에만 발화, null=해제). */
+  onHoverEdge?: (
+    edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
+    position: { x: number; y: number } | null,
+  ) => void;
   onSelect?: (slug: string) => void;
   onPaneClick?: () => void;
   onVisibleCountChange?: (visible: number) => void;
@@ -122,6 +127,8 @@ export interface UseTopologyLoopArgs {
    * 가 자연 감쇠해 마지막 이완 위치에서 정지한다.
    */
   livePhysics?: boolean;
+  /** 엣지 선택 = 페어 포커스 (양끝만 표시, 선택 엣지 pale 인디고). */
+  selectedEdge?: { sourceId: string; targetId: string } | null;
 }
 
 export type UseTopologyLoopResult = TopologyPointerHandlers & {
@@ -130,7 +137,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, livePhysics = false } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, livePhysics = false, selectedEdge = null } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -205,6 +212,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const lastFocusedSlugRef = useRef<string | null>(focusedSlug);
   const panelEmphasisNodeIdRef = useRef<string | null>(emphasizedNeighborSlug);
   const hoveredNodeIdRef = useRef<string | null>(null);
+  /** P3c — 호버 중 엣지 (드로우 잉크 강조 + 마이크로카드 공유 상태). */
+  const hoveredEdgeRef = useRef<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null>(null);
+  /** 엣지 선택(페어 포커스) prop 미러 — rAF 클로저용. */
+  const selectedEdgeRef = useRef<{ sourceId: string; targetId: string } | null>(selectedEdge);
   const emphasisRef = useRef<Map<string, number>>(new Map());
   /** C1 A2 — ego tier-reveal ramp, stepped in `stepTopologyPhysics`, consumed by `drawTopologyFrame`. */
   const egoRevealRef = useRef<Map<string, number>>(new Map());
@@ -248,6 +259,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     livePhysicsRef.current = livePhysics;
   }, [livePhysics]);
+
+  useEffect(() => {
+    selectedEdgeRef.current = selectedEdge;
+    // 선택 변경은 정적 상태 전이 — 유휴 스킵 중에도 한 번 다시 그린다.
+    lastActiveMsRef.current = performance.now();
+  }, [selectedEdge]);
 
   useEffect(() => {
     panelEmphasisNodeIdRef.current = emphasizedNeighborSlug;
@@ -751,6 +768,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         focusedNodeId,
         hoveredNodeId,
         emphasizedNeighborId: panelEmphasisNodeId,
+        hoveredEdge: hoveredEdgeRef.current,
+        selectedEdge: selectedEdgeRef.current,
         emphasisById: emphasisRef.current,
         egoRevealById: egoRevealRef.current,
         reducedMotion: reducedMotionRef.current,
@@ -794,8 +813,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dragAffectedSetRef,
     dragStartPosRef,
     overviewScaleRef,
+    hoveredEdgeRef,
     onSelect,
     onSelectEdge,
+    onHoverEdge,
     onPaneClick,
     onContextMenuNode,
   });

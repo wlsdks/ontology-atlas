@@ -52,6 +52,8 @@ export interface TopologyV2Tokens {
   edgeContains: string;
   edgeDepends: string;
   edgeDim: string;
+  /** 엣지 선택(페어 포커스) 스트로크 — 인디고 pale 사다리 (노드 선택 표준 인디고와 값으로 구분). */
+  edgeSelected: string;
   hullStroke: string;
   labelProject: string;
   labelDomain: string;
@@ -210,6 +212,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "edgeContains", cssVar: "--topology-v2-edge-contains", kind: "color" },
   { key: "edgeDepends", cssVar: "--topology-v2-edge-depends", kind: "color" },
   { key: "edgeDim", cssVar: "--topology-v2-edge-dim", kind: "color" },
+  { key: "edgeSelected", cssVar: "--topology-v2-edge-selected", kind: "color" },
   { key: "hullStroke", cssVar: "--topology-v2-hull-stroke", kind: "color" },
   { key: "labelProject", cssVar: "--topology-v2-label-project", kind: "color" },
   { key: "labelDomain", cssVar: "--topology-v2-label-domain", kind: "color" },

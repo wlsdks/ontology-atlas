@@ -110,6 +110,12 @@ export interface TraceDrawState {
    */
   emphasized?: boolean;
   /**
+   * 엣지 선택(페어 포커스) — 인디고 pale 사다리의 전용 스트로크로 그린다.
+   * 노드 선택(표준 인디고)과 같은 계열이되 값이 달라 한눈에 구분된다
+   * (채색 시스템 증식 없음 — 헌장 준수).
+   */
+  selected?: boolean;
+  /**
    * P3a — containment 잉크 레벨 (0 뼈대 · 1 중간 · 2 잔가지). contains 의
    * 비-ego 렌더에서만 소비: stroke 는 레벨별 토큰, width 는 레벨 계수.
    * depends/ego/dim 경로는 기존 그대로 (타입·주의 채널은 사다리와 직교).
@@ -133,6 +139,8 @@ export interface TraceTokens {
   edgeDim: string;
   indigo: string;
   indigoBright: string;
+  /** 엣지 선택 전용 스트로크 (`--topology-v2-edge-selected`) — 없으면 indigoBright 폴백. */
+  edgeSelected?: string;
 }
 
 /**
@@ -157,7 +165,11 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
 
   let stroke: string;
   let width: number;
-  if (egoState === "dim") {
+  if (state.selected === true) {
+    // 페어 포커스의 주인공 — pale 인디고, 최상 잉크.
+    stroke = tokens.edgeSelected ?? tokens.indigoBright;
+    width = (isDepends ? 2.2 : 2.0) - farT * 0.5;
+  } else if (egoState === "dim") {
     stroke = tokens.edgeDim;
     width = 1;
   } else if (egoState === "ego") {

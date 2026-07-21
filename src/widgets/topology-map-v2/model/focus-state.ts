@@ -59,6 +59,43 @@ export function resolveEdgeEgoState(
 }
 
 /**
+ * 엣지 선택 = 페어 포커스 (사용자 요청: "선을 클릭하면 그 선과 연결된
+ * 노드간만 표시"). 노드 포커스가 없고 엣지가 선택된 동안:
+ * - 양끝 노드는 "neighbor" 급 (주인공은 '선'이므로 center 링 없음)
+ * - 나머지 노드/엣지는 "dim"
+ * - 선택된 엣지 자체는 "ego" (+ 별도 selected 스트로크는 드로어 소관)
+ * 노드 포커스가 있으면 기존 ego 규칙이 우선한다 (클릭=안전 계약 유지).
+ */
+export interface EdgePairFocus {
+  sourceId: string;
+  targetId: string;
+}
+
+export function resolveNodeEgoStateWithPair(
+  nodeId: string,
+  focusedNodeId: string | null,
+  neighborsOfFocused: ReadonlySet<string>,
+  pair: EdgePairFocus | null,
+): NodeEgoState {
+  if (focusedNodeId === null && pair !== null) {
+    return nodeId === pair.sourceId || nodeId === pair.targetId ? "neighbor" : "dim";
+  }
+  return resolveNodeEgoState(nodeId, focusedNodeId, neighborsOfFocused);
+}
+
+export function resolveEdgeEgoStateWithPair(
+  edgeTouchesFocusedNode: boolean,
+  focusedNodeId: string | null,
+  pair: EdgePairFocus | null,
+  isSelectedEdge: boolean,
+): EdgeEgoState {
+  if (focusedNodeId === null && pair !== null) {
+    return isSelectedEdge ? "ego" : "dim";
+  }
+  return resolveEdgeEgoState(edgeTouchesFocusedNode, focusedNodeId);
+}
+
+/**
  * Ambient comet-tail advance speed for one `depends` edge (`world.edges[].t +=
  * dt * speed`). When a node is clicked ("powered"), its own incident edges carry
  * *more current* — the pulse advances at `egoSpeed` instead of the ambient

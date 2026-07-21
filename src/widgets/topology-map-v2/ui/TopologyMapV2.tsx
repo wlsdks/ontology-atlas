@@ -84,6 +84,13 @@ export interface TopologyMapV2Props {
   revealToken?: number;
   /** P3b — 엣지 클릭 (노드 미히트 지점). */
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
+  /** 엣지 선택 = 페어 포커스 — 양끝만 밝히고 나머지 dim, 선택 엣지는 pale 인디고. */
+  selectedEdge?: { sourceId: string; targetId: string } | null;
+  /** P3c — 엣지 호버 마이크로카드 (식별 변경 시 발화, null=해제). */
+  onHoverEdge?: (
+    edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
+    position: { x: number; y: number } | null,
+  ) => void;
   /**
    * The connected-node slug the user is hovering in the detail panel's
    * "연결된 노드" list. Under focus, that node + its connecting edge light up on
@@ -121,7 +128,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, livePhysics } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, livePhysics, onHoverEdge, selectedEdge = null } = props;
 
   // `handleWheel` is wired natively (non-passive) inside `useTopologyLoop` —
   // see its own FIX comment — not bound here as a JSX prop.
@@ -135,6 +142,8 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       relayoutToken,
       revealToken,
       onSelectEdge,
+      onHoverEdge,
+      selectedEdge,
       onSelect,
       onPaneClick,
       onVisibleCountChange,
