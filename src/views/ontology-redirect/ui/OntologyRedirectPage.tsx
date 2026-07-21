@@ -3,7 +3,11 @@
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
-import { translateOntologyDeeplinkToTopologyParam } from "@/entities/knowledge-graph";
+import {
+  ONTOLOGY_DEEPLINK_VIA_KEY,
+  parseInsightsReturnMarker,
+  translateOntologyDeeplinkToTopologyParam,
+} from "@/entities/knowledge-graph";
 
 /**
  * `/ontology` — thin convergence entry (B3 허브가 곧 지도). The old tree/ego
@@ -30,6 +34,7 @@ export function OntologyRedirectPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nodeParam = searchParams.get("node");
+  const viaParam = searchParams.get(ONTOLOGY_DEEPLINK_VIA_KEY);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -37,8 +42,13 @@ export function OntologyRedirectPage() {
     if (nodeParam) {
       params.set("p", translateOntologyDeeplinkToTopologyParam(nodeParam));
     }
+    // 출처 마커(`via=insights:<tab>`) 는 마커 문법이 유효할 때만 전달 —
+    // HomePage 가 이 값으로 "인사이트로 돌아가기" 복귀 칩을 렌더한다.
+    if (viaParam && parseInsightsReturnMarker(viaParam)) {
+      params.set(ONTOLOGY_DEEPLINK_VIA_KEY, viaParam);
+    }
     router.replace(`/topology/?${params.toString()}`);
-  }, [router, nodeParam]);
+  }, [router, nodeParam, viaParam]);
 
   return null;
 }

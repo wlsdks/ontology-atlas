@@ -25,6 +25,7 @@ describe("parseHomeRouteState", () => {
       pathTargetSlug: "capability:topology-analysis-modes",
       createNodeIntent: true,
       indexState: null,
+      insightsReturnTab: null,
     });
   });
 
@@ -177,6 +178,7 @@ describe("applyHomeRouteState", () => {
       pathTargetSlug: null,
       createNodeIntent: true,
       indexState: null,
+      insightsReturnTab: null,
     });
 
     expect(params.toString()).toBe(
@@ -196,6 +198,7 @@ describe("applyHomeRouteState", () => {
       pathTargetSlug: "capability:topology-analysis-modes",
       createNodeIntent: false,
       indexState: null,
+      insightsReturnTab: null,
     });
 
     expect(params.toString()).toBe(
@@ -213,6 +216,7 @@ describe("applyHomeRouteState", () => {
       pathTargetSlug: "capability:topology-analysis-modes",
       createNodeIntent: false,
       indexState: null,
+      insightsReturnTab: null,
     });
 
     expect(hidden.toString()).toBe("");
@@ -232,6 +236,7 @@ describe("applyHomeRouteState", () => {
         pathTargetSlug: "capability:topology-analysis-modes",
         createNodeIntent: false,
         indexState: null,
+        insightsReturnTab: null,
       },
     );
 
@@ -422,5 +427,47 @@ describe("resolveTopologyNodeClickRouteState", () => {
     expect(
       resolveTopologyNodeClickRouteState(state, "project:ontology-atlas"),
     ).toBe(state);
+  });
+});
+
+describe("insights return marker (?via=insights:<tab>)", () => {
+  it("parses a valid insights origin marker into the return tab", () => {
+    const params = new URLSearchParams(
+      "p=domain%3Aviews&via=insights%3Astructure",
+    );
+
+    expect(parseHomeRouteState(params)).toMatchObject({
+      selectedSlug: "domain:views",
+      insightsReturnTab: "structure",
+    });
+  });
+
+  it("ignores via values that are not the insights marker grammar", () => {
+    expect(
+      parseHomeRouteState(new URLSearchParams("via=somewhere-else")),
+    ).toMatchObject({ insightsReturnTab: null });
+    // 탭 없는 접두어만으로는 복귀 목적지가 없다 — 칩 미렌더.
+    expect(
+      parseHomeRouteState(new URLSearchParams("via=insights")),
+    ).toMatchObject({ insightsReturnTab: null });
+  });
+
+  it("survives map interactions and is deleted only by explicit dismiss", () => {
+    const params = new URLSearchParams("via=insights:do-next");
+    const state = parseHomeRouteState(params);
+
+    // 노드 클릭(선택) 후에도 마커 유지 — 칩은 지도 탐색 중 사라지지 않는다.
+    const afterClick = resolveTopologyNodeClickRouteState(state, "domain:views");
+    expect(afterClick.insightsReturnTab).toBe("do-next");
+    expect(applyHomeRouteState(params, afterClick).get("via")).toBe(
+      "insights:do-next",
+    );
+
+    // 명시 dismiss(칩의 X) 만 마커를 지운다.
+    const dismissed = applyHomeRouteState(params, {
+      ...afterClick,
+      insightsReturnTab: null,
+    });
+    expect(dismissed.get("via")).toBeNull();
   });
 });

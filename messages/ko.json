@@ -2220,6 +2220,11 @@
       "pathChipPacketTargetBuilderUrl": "도착 빌더 URL",
       "pathChipPacketMcpCheck": "MCP 점검"
     },
+    "insightsReturn": {
+      "label": "인사이트로 돌아가기",
+      "ariaLabel": "보던 인사이트 탭으로 돌아가기",
+      "dismissAriaLabel": "인사이트 복귀 칩 닫기"
+    },
     "controls": {
       "relayoutToast": "지형도를 다시 정렬합니다",
       "graphToggleTooltip": "살아있는 그래프 — 노드를 자유롭게 끌 수 있고 물리 연산이 계속 돕니다",

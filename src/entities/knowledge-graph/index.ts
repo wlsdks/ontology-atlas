@@ -13,10 +13,14 @@ export {
 } from "./model";
 export type { EdgeTypeRow, RelationRegister } from "./model";
 export {
+  buildInsightsReturnMarker,
   buildOntologyBuilderNodeHref,
   buildOntologyBuilderNodeHrefFromGraphId,
   buildOntologyInsightsNodeHref,
+  buildOntologyInsightsReturnHref,
   buildOntologyNodeHref,
+  ONTOLOGY_DEEPLINK_VIA_KEY,
+  parseInsightsReturnMarker,
   resolveOntologyBuilderNodeSlug,
   resolveOntologyBuilderNodeSlugFromGraphId,
 } from "./lib/ontology-node-href";

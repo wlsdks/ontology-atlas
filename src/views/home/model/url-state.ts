@@ -1,6 +1,11 @@
 import type { ProjectCategory } from "@/entities/project";
 import type { ProjectImpactMode } from "@/entities/project";
 import {
+  buildInsightsReturnMarker,
+  ONTOLOGY_DEEPLINK_VIA_KEY,
+  parseInsightsReturnMarker,
+} from "@/entities/knowledge-graph";
+import {
   parseIndexPanelStateParam,
   type IndexPanelState,
 } from "@/widgets/topology-index-panel";
@@ -33,6 +38,19 @@ export interface HomeRouteState {
    * to change.
    */
   indexState: IndexPanelState | null;
+  /**
+   * 인사이트발 딥링크 복귀 마커 (`?via=insights:<tab>`) — 값은 원래 보던
+   * 인사이트 탭 slug. non-null 이면 HomePage 가 상단 중앙 크롬 열에
+   * "인사이트로 돌아가기" 칩을 렌더한다.
+   *
+   * 수명 계약: 마커는 URL 에 살고, 지도 안의 다른 상호작용(노드 클릭·모드
+   * 전환 등)에도 round-trip 으로 유지된다 — 탐색이 깊어질수록 브라우저
+   * 뒤로가기가 무력해지는 바로 그 순간을 위한 어포던스라서다. 제거는 명시
+   * dismiss(칩의 X) 또는 마커 없는 새 URL 진입뿐. 칩 클릭(복귀)은 마커를
+   * 지우지 않는다 — 뒤로가기로 지도에 돌아오면 같은 딥링크 문맥이므로 칩도
+   * 다시 보이는 게 맞다. Esc 사다리(M-7)에는 참여하지 않는다.
+   */
+  insightsReturnTab: string | null;
 }
 
 const HOME_QUERY_KEYS = {
@@ -48,6 +66,7 @@ const HOME_QUERY_KEYS = {
   pathTargetAlias: "to",
   create: "create",
   index: "index",
+  via: ONTOLOGY_DEEPLINK_VIA_KEY,
 } as const;
 
 const VALID_IMPACT: ProjectImpactMode[] = [
@@ -76,6 +95,7 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   pathTargetSlug: null,
   createNodeIntent: false,
   indexState: null,
+  insightsReturnTab: null,
 };
 
 export function parseHomeRouteState(
@@ -126,6 +146,9 @@ export function parseHomeRouteState(
     pathTargetSlug,
     createNodeIntent: searchParams.get(HOME_QUERY_KEYS.create) === "concept",
     indexState: parseIndexPanelStateParam(searchParams.get(HOME_QUERY_KEYS.index)),
+    insightsReturnTab: parseInsightsReturnMarker(
+      searchParams.get(HOME_QUERY_KEYS.via),
+    ),
   };
 }
 
@@ -248,6 +271,13 @@ export function applyHomeRouteState(
     state.createNodeIntent ? "concept" : null,
   );
   setOrDelete(next, HOME_QUERY_KEYS.index, state.indexState);
+  setOrDelete(
+    next,
+    HOME_QUERY_KEYS.via,
+    state.insightsReturnTab
+      ? buildInsightsReturnMarker(state.insightsReturnTab)
+      : null,
+  );
 
   return next;
 }

@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
   buildEdgeTypeRows,
+  buildInsightsReturnMarker,
   buildOntologyBuilderNodeHrefFromGraphId,
   buildOntologyHealthActionTarget,
   buildOntologyHealthSignals,
@@ -85,6 +86,16 @@ export function OntologyInsightsPage() {
   const router = useRouter();
   const tab = parseInsightsTab(searchParams.get("tab"));
 
+  // 지도 딥링크에 출처 마커(`via=insights:<tab>`)를 새긴다 — 지도(HomePage)가
+  // 이 마커로 "인사이트로 돌아가기" 복귀 칩을 렌더하고, 클릭 시 이 탭으로
+  // 돌아온다. 이 페이지의 모든 지도행 링크(허브/의존/신선도 행, 할 일 큐,
+  // 수리 큐)가 같은 빌더를 지나므로 한 곳에서 스탬프.
+  const mapNodeHref = useCallback(
+    (nodeId: string) =>
+      buildOntologyNodeHref(nodeId, { via: buildInsightsReturnMarker(tab) }),
+    [tab],
+  );
+
   const { insight, error } = useOntologyInsight();
   const docFreshnessIndex = useVaultDocFreshnessIndex();
   const vault = useLocalVault();
@@ -137,9 +148,9 @@ export function OntologyInsightsPage() {
       promotionCount: healthSignals.promotion.length,
       actionTarget: buildOntologyHealthActionTarget(healthSignals),
       builderHref: buildOntologyBuilderNodeHrefFromGraphId,
-      ontologyHref: buildOntologyNodeHref,
+      ontologyHref: mapNodeHref,
     }),
-    [healthSignals],
+    [healthSignals, mapNodeHref],
   );
 
   const dependsOnRows = useMemo(
@@ -389,7 +400,7 @@ export function OntologyInsightsPage() {
                 cycles={dependencyCycles}
                 agentReadiness={agentReadiness}
                 healthQueue={healthQueue}
-                mapHref={buildOntologyNodeHref}
+                mapHref={mapNodeHref}
                 builderHref={buildOntologyBuilderNodeHrefFromGraphId}
                 nodeTitle={cycleNodeTitle}
                 cycleHandoff={cycleHandoff}
@@ -419,11 +430,11 @@ export function OntologyInsightsPage() {
                 hubTotalCount={hubRanking.length}
                 kindLabel={kindLabel}
                 hubLink={{
-                  href: buildOntologyNodeHref,
+                  href: mapNodeHref,
                   ariaLabel: (title) => t("hubRowAriaLabel", { title }),
                 }}
                 dependsOnLink={{
-                  href: buildOntologyNodeHref,
+                  href: mapNodeHref,
                   ariaLabel: (title) => t("hubRowAriaLabel", { title }),
                 }}
                 labels={relationsLabels}
@@ -438,7 +449,7 @@ export function OntologyInsightsPage() {
                 weeklyTotals={freshness.weeklyTotals}
                 kindLabel={kindLabel}
                 recentLink={{
-                  href: buildOntologyNodeHref,
+                  href: mapNodeHref,
                   ariaLabel: (title) => t("freshnessRowAriaLabel", { title }),
                 }}
               />
