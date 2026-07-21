@@ -231,13 +231,18 @@ function deriveOntologyFromVaultUncached(
     // 의 from = parent (docNode = project), to = child (domain). \`domain:\`
     // singular 와 방향이 반대 — 주체가 누가 누구를 포함하는지가 다르다.
     for (const dom of asStringArray(fm.domains)) {
-      const domSlug = slugifyName(dom);
-      if (!domSlug) continue;
-      const domId = `domain:${domSlug}`;
+      // 리텐션 라운드 P4-①: folder-prefixed ref('domains/tasks' — init 스타터
+      // 의 기본 형식)가 이 분기에서만 미해석돼 slugify 가 슬래시까지 뭉갠
+      // `domain:domainstasks` 팬텀을 민팅했다 (실 노드 `domain:tasks` 와
+      // 병합 실패 → 신규 vault 전원 count 왜곡). 단수 `domain:` 분기와
+      // 같은 resolveFolderPrefixedRef 우선 규칙을 적용한다.
+      const folderRef = resolveFolderPrefixedRef(dom);
+      const domId = folderRef?.kind === 'domain' ? folderRef.id : `domain:${slugifyName(dom)}`;
+      if (domId === 'domain:') continue;
       if (!nodes.has(domId)) {
         nodes.set(domId, {
           id: domId,
-          title: dom,
+          title: folderRef?.kind === 'domain' ? folderRef.title : dom,
           kind: 'domain',
           sourceSlug: doc.slug,
           source: 'frontmatter',

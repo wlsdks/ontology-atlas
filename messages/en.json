@@ -2732,7 +2732,7 @@
     "statusStale": "Last signal {ago}. Restart an agent session to continue.",
     "statusNone": "Not connected yet. The snippets below take about a minute.",
     "registerLabel": "Register",
-    "manualPathHint": "This is a browser session, so fill in the absolute folder path yourself — replace the <absolute path to your my-vault folder> slot in the snippet with your real path.",
+    "manualPathHint": "This is a browser session, so fill in the absolute folder path yourself — replace the [absolute path to your my-vault folder] slot in the snippet with your real path.",
     "claudeCode": "Claude Code — .mcp.json",
     "codex": "Codex — one command",
     "genericHint": "Any other MCP client registers with the same command/args. Verify with ontology-atlas mcp-verify.",

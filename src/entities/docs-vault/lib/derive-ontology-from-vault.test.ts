@@ -346,3 +346,28 @@ describe("relation_notes → edge label", () => {
   });
 });
 
+
+describe("domains[] folder-prefixed ref (리텐션 P4-① 팬텀 도메인 회귀)", () => {
+  it("'domains/tasks' 참조가 실 도메인 노드와 병합된다 — 팬텀 민팅 금지", () => {
+    const manifest = makeManifest([
+      makeDoc({ slug: "project", frontmatter: { kind: "project", title: "P", domains: ["domains/tasks"] } }),
+      makeDoc({ slug: "domains/tasks", title: "Tasks", frontmatter: { kind: "domain", title: "Tasks" } }),
+    ]);
+    const result = deriveOntologyFromVault(manifest);
+    const domainNodes = result.nodes.filter((n) => n.kind === "domain");
+    expect(domainNodes).toHaveLength(1);
+    expect(domainNodes[0].id).toBe("domain:tasks");
+    expect(result.nodes.some((n) => n.id === "domain:domainstasks")).toBe(false);
+    expect(
+      result.edges.some((e) => e.from.startsWith("project:") && e.to === "domain:tasks" && e.type === "contains"),
+    ).toBe(true);
+  });
+
+  it("평문 이름('auth')은 종전대로 slugify 스텁", () => {
+    const manifest = makeManifest([
+      makeDoc({ slug: "project", frontmatter: { kind: "project", title: "P", domains: ["auth"] } }),
+    ]);
+    const result = deriveOntologyFromVault(manifest);
+    expect(result.nodes.some((n) => n.id === "domain:auth")).toBe(true);
+  });
+});
