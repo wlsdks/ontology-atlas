@@ -230,6 +230,10 @@
     "createBusy": "Writing starter structure…",
     "dismissLabel": "Just looking around here",
     "errorFallback": "Could not open the folder. Try again.",
+    "cliBridgeLabel": "To start automatically from your codebase",
+    "cliBridgeCopy": "Copy command",
+    "cliBridgeCopied": "Copied",
+    "cliBridgeCopyAriaLabel": "Copy the bootstrap command to paste in your terminal",
     "readout": {
       "projectUnit": "project",
       "domainUnit": "domains",

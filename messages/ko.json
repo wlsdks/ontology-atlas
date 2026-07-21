@@ -230,6 +230,10 @@
     "createBusy": "시작 구조 작성 중…",
     "dismissLabel": "여기서 둘러볼게요",
     "errorFallback": "폴더를 열지 못했습니다. 다시 시도해 주세요.",
+    "cliBridgeLabel": "코드베이스에서 자동으로 시작하려면",
+    "cliBridgeCopy": "명령 복사",
+    "cliBridgeCopied": "복사됨",
+    "cliBridgeCopyAriaLabel": "터미널에서 붙여넣을 부트스트랩 명령 복사",
     "readout": {
       "projectUnit": "project",
       "domainUnit": "domains",

@@ -2,6 +2,8 @@
 
 import { FolderOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { CompactCopyButton } from "@/shared/ui";
 import { useFirstRunStarter } from "../model/use-first-run-starter";
 
 export interface FirstRunStarterModuleProps {
@@ -10,6 +12,16 @@ export interface FirstRunStarterModuleProps {
   relations: number;
   domains: number;
 }
+
+/**
+ * P1-① (2026-07-21 리텐션 라운드) — 코드베이스 자동 부트스트랩
+ * (`ontology-atlas bootstrap` = analyze_repo_structure + infer_imports 를
+ * agent 없이 한 줄로) 은 실존하고 정확히 테크리드 페르소나가 원하던
+ * 기능인데, 웹 첫 화면 어디에도 그 경로 안내가 없었다 — CLI/에이전트
+ * 전용으로만 숨어 있어 "나중에"로 미뤄지고 재방문이 끊겼다. 새 표면을
+ * 만들지 않고 이 카드 안에 명령 복사 한 줄만 추가한다.
+ */
+const CLI_BOOTSTRAP_COMMAND = "npx ontology-atlas init && npx ontology-atlas bootstrap";
 
 /**
  * INDEX 패널(TopologyIndexPanel) 맨 위에 통합되는 "시작하기" 모듈 —
@@ -36,6 +48,7 @@ export function FirstRunStarterModule({
     scaffolding,
     errorText,
   } = useFirstRunStarter();
+  const { state: cliCopyState, copy: copyCliCommand } = useCopyFeedback();
 
   if (!visible) return null;
 
@@ -101,6 +114,31 @@ export function FirstRunStarterModule({
           {t("dismissLabel")}
         </button>
       </p>
+
+      {/* P1-① — 코드베이스 자동 부트스트랩(CLI/에이전트 전용)으로 가는 다리.
+          위 두 버튼(폴더 열기 / 새 vault 만들기)은 빈 vault 를 여는 경로일
+          뿐, "내 리포를 분석해서 채워줘"에는 답하지 못한다 — 그 답은
+          `ontology-atlas bootstrap` 인데 웹 첫 화면엔 안내가 전혀 없었다. */}
+      <div
+        data-testid="first-run-starter-cli-bridge"
+        className="mt-3 flex items-center justify-between gap-2 rounded-md border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.35)] px-2.5 py-2"
+      >
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] leading-tight text-[color:var(--topology-v2-panel-text-quaternary)]">
+            {t("cliBridgeLabel")}
+          </p>
+          <code className="mt-0.5 block truncate font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-secondary)]">
+            {CLI_BOOTSTRAP_COMMAND}
+          </code>
+        </div>
+        <CompactCopyButton
+          copied={cliCopyState === "copied"}
+          label={cliCopyState === "copied" ? t("cliBridgeCopied") : t("cliBridgeCopy")}
+          ariaLabel={t("cliBridgeCopyAriaLabel")}
+          onClick={() => void copyCliCommand(CLI_BOOTSTRAP_COMMAND)}
+          data-testid="first-run-starter-cli-bridge-copy"
+        />
+      </div>
 
       {errorText !== null ? (
         <p

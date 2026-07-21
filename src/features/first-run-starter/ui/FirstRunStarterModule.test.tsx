@@ -119,4 +119,29 @@ describe('FirstRunStarterModule', () => {
 
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
   });
+
+  // P1-① (2026-07-21 리텐션 라운드) — 웹 첫 화면에서 코드베이스 자동
+  // 부트스트랩(CLI/에이전트 전용)으로 가는 다리가 전혀 없어 "내 리포를
+  // 5분 만에 지도로" 여정이 완결되지 않았다. 카드 안 명령 복사 한 줄로
+  // 그 다리를 놓는다.
+  it('shows the CLI bootstrap bridge with the exact init+bootstrap command', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+
+    expect(screen.getByTestId('first-run-starter-cli-bridge')).toBeInTheDocument();
+    expect(screen.getByText('npx ontology-atlas init && npx ontology-atlas bootstrap')).toBeInTheDocument();
+  });
+
+  it('copies the CLI bootstrap command to the clipboard', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    fireEvent.click(screen.getByTestId('first-run-starter-cli-bridge-copy'));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(
+        'npx ontology-atlas init && npx ontology-atlas bootstrap',
+      );
+    });
+  });
 });
