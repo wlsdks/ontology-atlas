@@ -78,7 +78,7 @@ export function RelationsTab({
         <CardHead label={labels.relationTypesTitle} gcap="relation breakdown" count={totalEdges} />
         <div
           aria-hidden
-          className="mt-2 flex h-2 w-full overflow-hidden rounded-full border border-[color:var(--color-divider)]"
+          className="mt-4 flex h-2 w-full overflow-hidden rounded-full border border-[color:var(--color-divider)]"
         >
           {edgeTypeRows.map((row) => {
             const share = totalEdges > 0 ? row.count / totalEdges : 0;
@@ -86,7 +86,7 @@ export function RelationsTab({
             return <span key={row.type} style={{ flexGrow: share, backgroundColor: relationTypeIndigo(row.type) }} />;
           })}
         </div>
-        <div className="mt-1 flex flex-col">
+        <div className="mt-2.5 flex flex-col">
           {edgeTypeRows.map((row) => {
             const width = edgeMax > 0 ? Math.max(2, Math.round((row.count / edgeMax) * 100)) : 0;
             const pct = totalEdges > 0 ? Math.round((row.count / totalEdges) * 100) : 0;
