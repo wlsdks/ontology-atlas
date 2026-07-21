@@ -30,6 +30,8 @@ const hubLink = {
   ariaLabel: (title: string) => `${title} — view on the map`,
 };
 
+const dependsOnLink = hubLink;
+
 describe("RelationsTab", () => {
   it("does not render the moved readiness/repair instruments (S5 이관 회귀)", () => {
     render(
@@ -42,6 +44,7 @@ describe("RelationsTab", () => {
         hubTotalCount={0}
         kindLabel={(kind) => kind}
         hubLink={hubLink}
+        dependsOnLink={dependsOnLink}
         labels={labels}
       />,
     );
@@ -70,6 +73,7 @@ describe("RelationsTab", () => {
         hubTotalCount={1}
         kindLabel={(kind) => kind}
         hubLink={hubLink}
+        dependsOnLink={dependsOnLink}
         labels={labels}
       />,
     );
@@ -77,5 +81,37 @@ describe("RelationsTab", () => {
     const link = screen.getByTestId("insights-hub-row-link");
     expect(link).toHaveAttribute("href", "/ontology/?node=domain%3Aauth");
     expect(link).toHaveAttribute("aria-label", "Auth — view on the map");
+  });
+
+  it("renders both ends of each TOP DEPENDS_ON row as map-focus deeplinks (UX 부대 — [I-3] 비클릭 해소)", () => {
+    render(
+      <RelationsTab
+        edgeTypeRows={[]}
+        totalEdges={0}
+        edgeTypeLabel={(type) => type}
+        dependsOnRows={[
+          {
+            fromId: "capability:mcp-server",
+            fromTitle: "MCP Server",
+            toId: "domain:ai-agent-partner",
+            toTitle: "AI Agent Partner",
+            count: 3,
+          },
+        ]}
+        hubs={[]}
+        hubTotalCount={0}
+        kindLabel={(kind) => kind}
+        hubLink={hubLink}
+        dependsOnLink={dependsOnLink}
+        labels={labels}
+      />,
+    );
+
+    const links = screen.getAllByTestId("insights-depends-row-link");
+    expect(links).toHaveLength(2);
+    expect(links[0]).toHaveAttribute("href", "/ontology/?node=capability%3Amcp-server");
+    expect(links[0]).toHaveAttribute("aria-label", "MCP Server — view on the map");
+    expect(links[1]).toHaveAttribute("href", "/ontology/?node=domain%3Aai-agent-partner");
+    expect(links[1]).toHaveAttribute("aria-label", "AI Agent Partner — view on the map");
   });
 });

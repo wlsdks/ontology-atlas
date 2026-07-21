@@ -224,6 +224,20 @@ describe("ProjectDetailPage", () => {
     expect(screen.getByTestId("public-quick-edit-toggle")).toBeInTheDocument();
   });
 
+  it("explains the read-only state instead of just omitting the edit entry point (UX 부대 — [P-7])", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+
+    mocks.canEdit = false;
+    const { unmount } = renderPage();
+    expect(screen.getByTestId("project-detail-readonly-badge")).toBeInTheDocument();
+    unmount();
+
+    mocks.canEdit = true;
+    renderPage();
+    expect(screen.queryByTestId("project-detail-readonly-badge")).not.toBeInTheDocument();
+  });
+
   it("hides the domain composition zone entirely when the project has no ontology domains", () => {
     mocks.insightNodes = [];
     mocks.insightEdges = [];

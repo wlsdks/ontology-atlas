@@ -100,6 +100,7 @@ describe("buildRecentActivityRows", () => {
       {
         slug: "ontology/elements/topology-map-canvas",
         kind: "element",
+        nodeId: "element:topology-map-canvas",
         domainTitle: "Views",
         what: "지도 뷰 단일 컨테이너 변환 엔진",
         updatedAt: new Date("2026-07-18T09:00:00.000Z"),
@@ -107,11 +108,26 @@ describe("buildRecentActivityRows", () => {
       {
         slug: "ontology/capabilities/mcp-server",
         kind: "capability",
+        nodeId: "capability:mcp-server",
         domainTitle: "AI Agent Partner",
         what: "write 도구 9종으로 확장",
         updatedAt: new Date("2026-07-17T09:00:00.000Z"),
       },
     ]);
+  });
+
+  it("leaves nodeId null when the doc has no matching graph node (dangling doc)", () => {
+    const docs: VaultDoc[] = [
+      doc({
+        slug: "ontology/elements/orphaned",
+        updatedAt: "2026-07-18T09:00:00.000Z",
+        frontmatter: { kind: "element" },
+      }),
+    ];
+
+    const rows = buildRecentActivityRows(docs, new Map(), new Map(), 4);
+
+    expect(rows[0].nodeId).toBeNull();
   });
 
   it("falls back to the node summary, then the doc excerpt, when description is missing", () => {

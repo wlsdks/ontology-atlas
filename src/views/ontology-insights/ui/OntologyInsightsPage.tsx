@@ -374,6 +374,10 @@ export function OntologyInsightsPage() {
                   href: buildOntologyNodeHref,
                   ariaLabel: (title) => t("hubRowAriaLabel", { title }),
                 }}
+                dependsOnLink={{
+                  href: buildOntologyNodeHref,
+                  ariaLabel: (title) => t("hubRowAriaLabel", { title }),
+                }}
                 labels={relationsLabels}
               />
             ) : null}

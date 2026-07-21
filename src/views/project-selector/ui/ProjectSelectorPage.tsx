@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
 import {
   getProjectDetailHref,
   getTopologyProjectHref,
@@ -146,42 +147,57 @@ export function ProjectSelectorPage() {
               </span>
             </div>
             <div className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-2 shadow-[inset_0_1px_0_var(--color-overlay-2)]">
-              {recentActivityRows.map((row, index) => (
-                <div
-                  key={row.slug}
-                  data-testid="project-selector-activity-row"
-                  className={`flex items-center gap-2.5 py-1.5 text-[12.5px] text-[color:var(--color-text-secondary)] ${
-                    index > 0 ? "border-t border-[color:var(--color-divider)]" : ""
-                  }`}
-                >
-                  <TopologyV2KindGlyph kind={row.kind} size={14} />
-                  <span
-                    title={row.slug}
-                    className="min-w-0 shrink truncate font-mono text-[11.5px] text-[color:var(--color-text-secondary)]"
-                  >
-                    {row.slug}
-                  </span>
-                  {row.what ? (
+              {recentActivityRows.map((row, index) => {
+                const rowClassName = `flex items-center gap-2.5 py-1.5 text-[12.5px] text-[color:var(--color-text-secondary)] ${
+                  index > 0 ? "border-t border-[color:var(--color-divider)]" : ""
+                } ${row.nodeId ? "-mx-1.5 rounded-md px-1.5 transition-colors hover:bg-[color:var(--color-overlay-1)]" : ""}`;
+                const rowContent = (
+                  <>
+                    <TopologyV2KindGlyph kind={row.kind} size={14} />
                     <span
-                      title={row.what}
-                      className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--color-text-tertiary)]"
+                      title={row.slug}
+                      className="min-w-0 shrink truncate font-mono text-[11.5px] text-[color:var(--color-text-secondary)]"
                     >
-                      {row.what}
+                      {row.slug}
                     </span>
-                  ) : (
-                    <span className="min-w-0 flex-1" />
-                  )}
-                  <span
-                    title={row.domainTitle ?? undefined}
-                    className="max-w-[150px] shrink truncate font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] sm:max-w-[220px]"
+                    {row.what ? (
+                      <span
+                        title={row.what}
+                        className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--color-text-tertiary)]"
+                      >
+                        {row.what}
+                      </span>
+                    ) : (
+                      <span className="min-w-0 flex-1" />
+                    )}
+                    <span
+                      title={row.domainTitle ?? undefined}
+                      className="max-w-[150px] shrink truncate font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] sm:max-w-[220px]"
+                    >
+                      {row.domainTitle ?? t("activityNoDomain")}
+                    </span>
+                    <span className={`shrink-0 whitespace-nowrap text-[11px] ${numeralClass}`}>
+                      {formatAgo(resolveRecentActivityAgo(row.updatedAt, new Date()), t)}
+                    </span>
+                  </>
+                );
+
+                return row.nodeId ? (
+                  <Link
+                    key={row.slug}
+                    href={buildOntologyNodeHref(row.nodeId)}
+                    aria-label={t("activityRowAriaLabel", { slug: row.slug })}
+                    data-testid="project-selector-activity-row"
+                    className={rowClassName}
                   >
-                    {row.domainTitle ?? t("activityNoDomain")}
-                  </span>
-                  <span className={`shrink-0 whitespace-nowrap text-[11px] ${numeralClass}`}>
-                    {formatAgo(resolveRecentActivityAgo(row.updatedAt, new Date()), t)}
-                  </span>
-                </div>
-              ))}
+                    {rowContent}
+                  </Link>
+                ) : (
+                  <div key={row.slug} data-testid="project-selector-activity-row" className={rowClassName}>
+                    {rowContent}
+                  </div>
+                );
+              })}
             </div>
           </section>
         ) : null}

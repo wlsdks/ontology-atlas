@@ -5,6 +5,9 @@ import { nearestDomainId } from "@/shared/lib/ontology-tree";
 export interface RecentActivityRow {
   slug: string;
   kind: string;
+  /** 지도 포커스 딥링크 대상 graph node id (`${kind}:${tailSlug}`) — 조회
+   *  실패(dangling doc) 시 null, 그때는 UI 가 행을 링크 없이 렌더한다. */
+  nodeId: string | null;
   domainTitle: string | null;
   what: string;
   updatedAt: Date;
@@ -55,12 +58,13 @@ export function buildRecentActivityRows(
     // vault-relative 전체 경로("ontology/capabilities/x")라 tail 없이 그대로
     // 조회하면 항상 miss 해서 domainTitle 이 늘 fallback 이었다 (mockup 감사 회귀).
     const tailSlug = doc.slug.split("/").pop() || doc.slug;
-    const node = nodeById.get(`${kind}:${tailSlug}`);
+    const nodeId = `${kind}:${tailSlug}`;
+    const node = nodeById.get(nodeId);
     const domainId = node ? nearestDomainId(node, parentOf, nodeById) : null;
     const domainTitle = domainId ? (nodeById.get(domainId)?.title ?? null) : null;
     const what = doc.description || node?.summary || doc.excerpt || "";
 
-    rows.push({ slug: doc.slug, kind, domainTitle, what, updatedAt });
+    rows.push({ slug: doc.slug, kind, nodeId: node ? nodeId : null, domainTitle, what, updatedAt });
   }
 
   return rows.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).slice(0, limit);

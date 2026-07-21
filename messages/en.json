@@ -310,9 +310,6 @@
     "factChannelValue": "GitHub Release",
     "checksumLabel": "SHA-256",
     "checksumValuePending": "recorded when v0.1.0 publishes",
-    "checksumCopy": "Copy",
-    "checksumCopyCopied": "Checksum copied",
-    "checksumCopyFailed": "Checksum copy failed",
     "includesHeading": "What's included",
     "includesCaption": "One app · local vault",
     "includeTopologyTitle": "Topology workbench",
@@ -1639,6 +1636,7 @@
       "activityAgoYesterday": "Yesterday",
       "activityAgoDaysAgo": "{days}d ago",
       "activityNoDomain": "—",
+      "activityRowAriaLabel": "{slug} — view on the map",
       "cardUpdatedPrefix": "Last updated",
       "cardDescriptionFallback": "This project doesn't have a description yet.",
       "cardDetailAriaLabel": "Open {name} details",
@@ -1719,7 +1717,8 @@
       "saveSuccessDescription": "Description saved",
       "saveErrorGeneric": "Save failed",
       "saveErrorConflict": "This project file was changed first by another editor or AI agent. Refresh and save again.",
-      "saveErrorPrefix": "Save failed — {message}"
+      "saveErrorPrefix": "Save failed — {message}",
+      "readOnlyBadge": "View only — open a folder to edit"
     },
     "editor": {
       "documentTitleEdit": "Edit project · Ontology Atlas",
@@ -2536,7 +2535,7 @@
         "owner": "Owner",
         "icon": "Icon (emoji)",
         "progress": "Progress %",
-        "slugHint": "Used in URLs. Letters, digits, and hyphens only. Cannot change after creation.",
+        "slugHint": "Used in URLs. Letters (any script, including non-Latin), digits, and hyphens only, no spaces. Cannot change after creation.",
         "slugGenerate": "Generate from name",
         "slugDuplicate": "Slug already exists.",
         "duplicateNotice": "Starting from a copy of the existing project.",
