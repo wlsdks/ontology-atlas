@@ -2,7 +2,7 @@
 slug: capabilities/relation-rationale
 kind: capability
 title: Relation Rationale (관계 근거 why)
-domain: domains/ontology-core
+domain: ontology-core
 elements: []
 ---
 

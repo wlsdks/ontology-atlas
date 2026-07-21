@@ -40,9 +40,3 @@ kind(`domain`/`capability`/`element`) 별 fill·size 위계는
 [[capabilities/topology-kind-legibility]] 가 소유. 노드 hover 요약 문구는
 `elements/ontology-description-helper`(`src/shared/lib/ontology-description.ts`)가
 body excerpt 를 160자 안팎으로 줄여 만든다.
-
-## 남은 Sigma 의존
-
-`/docs` 폴더-토폴로지 미니맵(`src/widgets/docs-vault/ui/DocsVaultFolderTopology.tsx`)만
-여전히 Sigma.js + `@sigma/node-border` 를 직접 쓴다 — `/`, `/topology` 는 대상이
-아니다. [[elements/sigma-graphology]] 도 같은 구분을 반영해 갱신했다.

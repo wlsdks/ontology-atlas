@@ -2,7 +2,7 @@
 slug: capabilities/edge-meaning-popover
 kind: capability
 title: Edge Meaning Popover (관계 팝오버)
-domain: domains/views
+domain: views
 elements: []
 dependencies: [capabilities/relation-rationale]
 relation_notes: { capabilities/relation-rationale: 팝오버가 문장 아래 보여주는 근거 줄이 relation_notes 에서 온다 }
