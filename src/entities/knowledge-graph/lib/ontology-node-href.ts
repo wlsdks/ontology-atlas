@@ -8,9 +8,49 @@ import type { KnowledgeGraphNode } from "../model";
  * viewer 의 kind chip 등 7+ surface. 한 곳에서 정의해 형식이 흩어지지
  * 않게 한다 — `?node=` query key 와 encodeURIComponent 가짜의 일관성을
  * OntologyRedirectPage 의 딥링크 번역(translateOntologyDeeplinkToTopologyParam)과 깨지지 않게 보장.
+ *
+ * `options.via` — 출처 마커 (`?via=insights:<tab>`). 인사이트 페이지가 지도
+ * 딥링크에 자기 탭을 새겨 두면, 지도(`/topology`, HomePage)가 그 마커를 읽어
+ * "인사이트로 돌아가기" 복귀 칩을 렌더한다. OntologyRedirectPage 가 이 키를
+ * `/topology` 로 그대로 전달한다 — 마커 문법의 진실원은 아래
+ * build/parseInsightsReturnMarker 한 쌍.
  */
-export function buildOntologyNodeHref(nodeId: string): string {
-  return `/ontology/?node=${encodeURIComponent(nodeId)}`;
+export function buildOntologyNodeHref(
+  nodeId: string,
+  options?: { via?: string },
+): string {
+  const base = `/ontology/?node=${encodeURIComponent(nodeId)}`;
+  return options?.via
+    ? `${base}&${ONTOLOGY_DEEPLINK_VIA_KEY}=${encodeURIComponent(options.via)}`
+    : base;
+}
+
+/** 딥링크 출처 마커의 query key — insights → redirect → topology 3-hop 공유. */
+export const ONTOLOGY_DEEPLINK_VIA_KEY = "via";
+
+const INSIGHTS_RETURN_MARKER_PATTERN = /^insights:([a-z][a-z0-9-]*)$/;
+
+/** `via=insights:<tab>` 마커 직렬화 — 인사이트 페이지(생산자) 전용. */
+export function buildInsightsReturnMarker(tab: string): string {
+  return `insights:${tab}`;
+}
+
+/**
+ * `via` raw 값 → 인사이트 탭 slug. 마커 문법(`insights:<slug>`)이 아니면
+ * null — 지도는 칩을 렌더하지 않고 마커를 무시한다. 탭 slug 자체의 유효성은
+ * 도착지(`parseInsightsTab`)가 검증한다(모르는 탭 → 기본 탭 fallback).
+ */
+export function parseInsightsReturnMarker(
+  raw: string | null | undefined,
+): string | null {
+  if (!raw) return null;
+  const match = INSIGHTS_RETURN_MARKER_PATTERN.exec(raw);
+  return match ? match[1] : null;
+}
+
+/** 복귀 칩 클릭이 향하는 곳 — 원래 보던 인사이트 탭. */
+export function buildOntologyInsightsReturnHref(tab: string): string {
+  return `/ontology/insights/?tab=${encodeURIComponent(tab)}`;
 }
 
 const KIND_TO_VAULT_FOLDER: Record<string, string> = {

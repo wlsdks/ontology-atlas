@@ -24,6 +24,12 @@ interface Props {
    * 기존 검색/정렬 2버튼 레이아웃과 동일하다.
    */
   pathChip?: ReactNode;
+  /**
+   * 인사이트발 딥링크 복귀 칩(`TopologyInsightsReturnChip`) — pathChip 과 같은
+   * "상단 중앙 크롬 열" 문법. 두 칩이 공존해도 같은 flex 열 안에 grouped 로
+   * 남아 부유 패널이 늘지 않는다. 슬롯이 비면 렌더 비용 0.
+   */
+  returnChip?: ReactNode;
 }
 
 const subscribe = () => () => {};
@@ -47,6 +53,7 @@ export function SearchHint({
   density = 'default',
   phoneFocusSuppressed = false,
   pathChip,
+  returnChip,
 }: Props) {
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
@@ -81,6 +88,7 @@ export function SearchHint({
       data-search-lane-shadow-token="--chrome-shadow"
     >
       <div className="flex items-center gap-2">
+        {returnChip}
         {pathChip}
         {/* 자동 정렬 — 데스크톱에서만 노출. 모바일에서는 자주 안 쓰는 액션이라
             우상단 floating 버튼이 시각적 무게를 잡아먹는 게 더 큰 손실. 필요하면

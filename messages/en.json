@@ -2220,6 +2220,11 @@
       "pathChipPacketTargetBuilderUrl": "Target builder URL",
       "pathChipPacketMcpCheck": "MCP check"
     },
+    "insightsReturn": {
+      "label": "Back to insights",
+      "ariaLabel": "Return to the insights tab you were reading",
+      "dismissAriaLabel": "Dismiss the insights return chip"
+    },
     "controls": {
       "relayoutToast": "Relaying out the topology",
       "graphToggleTooltip": "Live graph — drag nodes freely, physics stays on",

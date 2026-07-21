@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "../model";
 import {
+  buildInsightsReturnMarker,
   buildOntologyBuilderNodeHref,
   buildOntologyBuilderNodeHrefFromGraphId,
   buildOntologyInsightsNodeHref,
+  buildOntologyInsightsReturnHref,
   buildOntologyNodeHref,
+  parseInsightsReturnMarker,
   resolveOntologyBuilderNodeSlug,
   resolveOntologyBuilderNodeSlugFromGraphId,
 } from "./ontology-node-href";
@@ -30,6 +33,43 @@ describe("buildOntologyNodeHref", () => {
 
   it("빈 ID 도 그대로 반환 (caller contract)", () => {
     expect(buildOntologyNodeHref("")).toBe("/ontology/?node=");
+  });
+
+  it("via 출처 마커를 encode 해 덧붙인다 (insights → map 복귀 칩 계약)", () => {
+    expect(
+      buildOntologyNodeHref("domain:views", { via: "insights:structure" }),
+    ).toBe(
+      `/ontology/?node=${encodeURIComponent("domain:views")}&via=${encodeURIComponent("insights:structure")}`,
+    );
+    // via 미지정이면 기존 링크 형식 그대로 — 다른 7+ 호출처 무변경.
+    expect(buildOntologyNodeHref("domain:views")).toBe(
+      `/ontology/?node=${encodeURIComponent("domain:views")}`,
+    );
+  });
+});
+
+describe("insights return marker", () => {
+  it("build ↔ parse 왕복", () => {
+    expect(parseInsightsReturnMarker(buildInsightsReturnMarker("do-next"))).toBe(
+      "do-next",
+    );
+    expect(
+      parseInsightsReturnMarker(buildInsightsReturnMarker("structure")),
+    ).toBe("structure");
+  });
+
+  it("마커 문법이 아니면 null — 지도는 칩을 렌더하지 않는다", () => {
+    expect(parseInsightsReturnMarker(null)).toBeNull();
+    expect(parseInsightsReturnMarker("")).toBeNull();
+    expect(parseInsightsReturnMarker("insights")).toBeNull();
+    expect(parseInsightsReturnMarker("elsewhere:structure")).toBeNull();
+    expect(parseInsightsReturnMarker("insights:UPPER")).toBeNull();
+  });
+
+  it("복귀 href 는 원래 보던 인사이트 탭을 가리킨다", () => {
+    expect(buildOntologyInsightsReturnHref("freshness")).toBe(
+      "/ontology/insights/?tab=freshness",
+    );
   });
 });
 

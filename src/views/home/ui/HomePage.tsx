@@ -93,6 +93,7 @@ import {
 import { buildDocsVaultHref, buildNewNodeDoc } from "@/entities/docs-vault";
 import {
   buildOntologyHealthSignals,
+  buildOntologyInsightsReturnHref,
   useRelationVocabulary,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
@@ -172,6 +173,7 @@ import {
   normalizeKindLabelKey,
 } from "../lib/topology-node-significance";
 import { TopologyPathChip } from "./TopologyPathChip";
+import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import { TopologyRelationLegend } from "./TopologyRelationLegend";
 import { TopologyReviewLink } from "./TopologyReviewLink";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
@@ -276,6 +278,7 @@ export function HomePage() {
     pathTargetSlug,
     createNodeIntent,
     indexState,
+    insightsReturnTab,
   } = routeState;
   const renderProjects = projects;
   // INDEX panel (B3 허브가 곧 지도) — the new default left occupant. Preference
@@ -1904,6 +1907,19 @@ export function HomePage() {
                       setTopologyRelayoutToken((current) => current + 1);
                       toast.show(t('controls.relayoutToast'), "info");
                     }}
+                    returnChip={
+                      insightsReturnTab ? (
+                        <TopologyInsightsReturnChip
+                          href={buildOntologyInsightsReturnHref(insightsReturnTab)}
+                          label={t("insightsReturn.label")}
+                          ariaLabel={t("insightsReturn.ariaLabel")}
+                          dismissAriaLabel={t("insightsReturn.dismissAriaLabel")}
+                          onDismiss={() => {
+                            setRouteState({ insightsReturnTab: null });
+                          }}
+                        />
+                      ) : undefined
+                    }
                     pathChip={
                       analysisMode === "path" && pathChipLabel ? (
                         <TopologyPathChip
