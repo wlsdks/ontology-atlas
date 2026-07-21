@@ -6,6 +6,53 @@
 
 ---
 
+## 2026-07-21 — 리텐션 라운드 High 3건 수리 (감사 로그 구멍 · "쓰는 곳 0" 신뢰 · 도메인 오귀속)
+
+`.qa-scratch/retention-round-2026-07-21/` 페르소나 여정(P1 테크리드 · P2
+에이전트 개발자 · P3 기획자)이 짚은 High 마찰 3건을 고쳤다.
+
+- **P2-① CLI 쓰기도 로컬 감사 로그에** — 지금까지 `.ontology-atlas/activity.jsonl`
+  은 MCP 쓰기만 기록하고 CLI `add`/`relate`/`import` 는 vault 를 직접 fs 로 써서
+  로그에 안 남았다("에이전트가 vault 에 쓰면 기록됩니다" 약속의 구멍). 세
+  명령이 mcp 패키지의 `activity-log` 모듈(`appendActivityEntry`/
+  `buildActivityEntry`, 단일 진실원)을 재사용해 기록한다 — tool 명은 `cli:add`/
+  `cli:relate`/`cli:import` 로 CLI 쓰기임을 구분, agent 는 heartbeat 복사(없으면
+  null), dry-run·실패는 기록 안 함. `rename`/`merge`/`delete` 는 이미
+  MCP 서버를 거치므로 그대로 기록됐다(중복 없음).
+- **P3-① "쓰는 곳 0" 신뢰 균열 (데이터 공백으로 판정)** — global-search 요소는
+  코드에선 널리 쓰이지만 vault frontmatter 에 어떤 `depends_on`/`uses` 관계도
+  선언돼 있지 않다(`find_backlinks` 0, 백킹 `.md` 없는 inferred 노드). 코드
+  결함이 아니라 데이터 공백 — 그래서 근거 없는 관계를 채우는 대신 노드 팝오버의
+  empty-state 카피를 "직접 연결 없음"→"아직 기록된 관계 없음 · 관계는
+  frontmatter 로 선언돼요"로 바꿔 0 과 미기록의 모호를 정직하게 해소했다.
+- **P1-③ 도메인 데이터시트 오귀속** — 도메인 노드 팝오버가 "도메인 · <다른
+  도메인>"을 표기했다(도메인 간 cross-relation 의 incoming 을 소속으로 오독).
+  도메인의 부모는 프로젝트지 다른 도메인이 아니므로, `buildTopologyOntologyDrawerModel`
+  의 ownerDomain 파생이 domain/project 노드에는 도메인 소속을 붙이지 않도록
+  가드했다(헤더 + 인계 패킷 `domain:` 필드 양쪽 정정).
+## 2026-07-21 — 데스크톱 최근 vault 재열기 침묵 실패 수리 (P5 High)
+
+설치 앱(Tauri)에서 설정 → 작업공간의 "로컬 볼트 오류" 상시 배너 + "최근 vault
+열기" 무반응을 고쳤다. 데스크톱 고유 가치(자동 복원 → Finder 연동)를 되살린다.
+
+- **근인** — Tauri `#[command]` 는 `Err(String)` 을 반환하고, 그때 웹뷰의
+  `invoke` Promise 는 `Error` 가 아니라 **문자열**로 reject 한다. 그런데
+  `use-local-vault` 의 catch 는 `err instanceof Error ? err.message : null`
+  이라 모든 데스크톱 FS 실패가 `null` → generic "폴더 접근 중 문제가
+  생겼습니다" 배너로 침묵했다. 저장된 vault 폴더가 이동/삭제돼
+  `fs::canonicalize` 가 터지면 이 침묵 경로를 그대로 탔다.
+- **침묵 → 발화** — 새 `toErrorMessage()` 유틸이 문자열 reject·Error·plain
+  object 를 모두 살려 `load`/`open`/`openRecent` 의 원인을 노출한다. 이제
+  실패는 언제나 이유를 말한다.
+- **경로 기반 복원 + 사람이 읽는 분류** — 데스크톱 재열기는 FSA picker 없이
+  저장된 절대 경로로 여는데, 그 폴더가 사라진 흔한 케이스를 `load` 전에
+  preflight(`tauriVaultPathExists`)해 `path-missing` 으로 분류한다. picker 는
+  "이전에 열었던 폴더를 더 이상 찾을 수 없어요 — 이동/삭제된 것 같습니다 +
+  다른 최근 폴더를 열거나 다시 선택하세요"(ko/en)를 보여준다. 마운트 자동
+  복원 경로도 동일하게 preflight 해 상시 배너의 stale 원인을 제거했다.
+- **테스트** — `error-message` 유틸 5건, `LocalVaultPicker` error 분기 2건,
+  `useLocalVaultInternal` 재열기 preflight/문자열-reject 2건.
+
 ## 2026-07-21 — B2: 문서함 vault 도구를 설정 메뉴로 합병 (중복 표면 제거)
 
 문서함 헤더의 `VaultToolsMenu` 드롭다운(에이전트 설정 파일 상태·수리·복사

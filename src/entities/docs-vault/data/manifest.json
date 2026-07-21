@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-21T11:54:45.754Z",
+  "generatedAt": "2026-07-21T13:46:12.650Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2790,6 +2790,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-21 — 리텐션 라운드 High 3건 수리 (감사 로그 구멍 · \"쓰는 곳 0\" 신뢰 · 도메인 오귀속)",
+          "slug": "2026-07-21-리텐션-라운드-high-3건-수리-감사-로그-구멍-쓰는-곳-0-신뢰-도메인-오귀속"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — 데스크톱 최근 vault 재열기 침묵 실패 수리 (P5 High)",
+          "slug": "2026-07-21-데스크톱-최근-vault-재열기-침묵-실패-수리-p5-high"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-21 — B2: 문서함 vault 도구를 설정 메뉴로 합병 (중복 표면 제거)",
           "slug": "2026-07-21-b2-문서함-vault-도구를-설정-메뉴로-합병-중복-표면-제거"
         },
@@ -4144,9 +4154,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 문서함 헤더의 VaultToolsMenu 드롭다운(에이전트 설정 파일 상태·수리·복사 패킷·검증 게이트·체크리스트)을 AppSettingsMenu 로 흡수",
-      "wordCount": 27505,
-      "updatedAt": "2026-07-21T20:57:08+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. .qa-scratch/retention-round-2026-07-21/ 페르소나 여정(P1 테크리드 · P2 에이전트 개발자 · P3 기획자)이 짚은 Hi",
+      "wordCount": 27915,
+      "updatedAt": "2026-07-21T22:35:07+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
