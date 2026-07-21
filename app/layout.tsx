@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import { SITE_URL } from '@/shared/config';
+import { withBasePath } from '@/shared/lib/base-path';
 import './globals.css';
 
 const inter = Inter({
@@ -18,7 +19,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  manifest: '/manifest.webmanifest',
+  // metadata 필드는 next.config basePath 자동 프리픽스 대상이 아니다.
+  manifest: withBasePath('/manifest.webmanifest'),
   // Title template is owned by app/[locale]/layout.tsx so the locale-aware
   // string ends up in <title>. We only set a fallback default here for the
   // root `/` redirect page (which the user sees for ~50ms before redirect).

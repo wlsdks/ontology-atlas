@@ -1,3 +1,5 @@
+import { BASE_PATH } from '@/shared/lib/base-path';
+
 function encodeSlugPath(slug: string): string {
   return slug
     .split('/')
@@ -11,7 +13,11 @@ export function buildDocsVaultAssetCandidates(
   locationHref?: string,
 ): string[] {
   const assetPath = `docs-vault/${encodeSlugPath(slug)}.md`;
-  const candidates = [`/${assetPath}`];
+  // 서브패스 배포(GitHub Pages)에서는 base path 후보를 1순위로 — 루트 배포에서는
+  // BASE_PATH 가 빈 문자열이라 기존 후보 순서가 그대로 유지된다.
+  const candidates = BASE_PATH
+    ? [`${BASE_PATH}/${assetPath}`, `/${assetPath}`]
+    : [`/${assetPath}`];
 
   if (locationHref) {
     try {
