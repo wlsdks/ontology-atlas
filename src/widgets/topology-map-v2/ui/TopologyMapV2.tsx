@@ -121,7 +121,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, livePhysics } = props;
 
   // `handleWheel` is wired natively (non-passive) inside `useTopologyLoop` —
   // see its own FIX comment — not bound here as a JSX prop.
@@ -142,6 +142,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       onZoomTierChange,
       onContextMenuNode,
       agentFocusNodeId,
+      livePhysics,
     });
 
   return (
