@@ -97,6 +97,25 @@ describe("TopologyV2DetailPanel — full-detail A1 opt-in link", () => {
   });
 });
 
+// P3-③ (2026-07-21 리텐션 라운드) — 1440×900 에서 연결이 많은 노드는 패널
+// 콘텐츠가 뷰포트를 넘겨 "전체 상세 →" 푸터가 화면 밖(y=911)으로 밀려나
+// 클릭 불가였다. 패널은 항상 뷰포트 안에서 스스로 스크롤해야 한다 — jsdom 은
+// 실제 레이아웃을 하지 않으므로 clamp 계약(토큰 기반 max-height + 내부
+// overflow)이 className 에 실제로 걸려 있는지로 회귀를 잡는다.
+describe("TopologyV2DetailPanel — viewport clamp (P3-③)", () => {
+  it("always carries a viewport-bounded max-height and internal scroll so the footer link stays reachable", () => {
+    renderPanel(vi.fn());
+    const panel = screen.getByTestId("topology-v2-detail-panel");
+    expect(panel.className).toContain("max-h-[var(--topology-v2-panel-max-height)]");
+    expect(panel.className).toContain("overflow-y-auto");
+    // The full-detail footer link is inside the same clamped/scrollable
+    // root, not a sibling escaping the clamp.
+    expect(panel).toContainElement(
+      screen.getByTestId("topology-v2-detail-panel-open-full-detail"),
+    );
+  });
+});
+
 describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYSTEM §4)", () => {
   it("renders an evidence group with its row's title/path when evidence rows exist", () => {
     renderPanel(undefined, {

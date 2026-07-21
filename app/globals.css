@@ -1446,6 +1446,15 @@
        12→13px, metric 11.5→12.5px 로 한 단계씩 올랐다 — 이 파일은 구조
        토큰만, 타입 크기는 컴포넌트가 소유. */
     --topology-v2-panel-width: 352px;
+    /* P3-③ (2026-07-21 리텐션 라운드) — 1440×900 에서 연결이 많은 노드는
+       패널 콘텐츠(액션 4-up + contains/usedBy/dependsOn/evidence 그룹)가
+       뷰포트를 넘겨 "전체 상세 →" 푸터가 화면 밖(y=911)으로 밀려나 마우스로
+       닿지 않았다. 패널은 `--topology-node-popover-top` 에 fixed 앵커되므로
+       그 offset 을 뺀 나머지 뷰포트 높이로 clamp 하고 내부 스크롤을 연다 —
+       기존 `--topology-floating-panel-desktop-max-height` 계열과 같은
+       "calc(100vh - top offset)" 패턴. 하단 8px 여유는 나머지 패널
+       max-height 토큰들과 동일한 관례. */
+    --topology-v2-panel-max-height: calc(100dvh - var(--topology-node-popover-top) - 8px);
     /* 9→12px (feat/chrome-system §9, INDEX 패널 v2.1) — 데이터시트와
        INDEX 가 공유하는 패널 계층의 radius 를 크롬 시스템의 4계층 스텝
        (키캡4·inner7·타일/칩/필10·패널12) 마지막 단으로 승격. */

@@ -312,8 +312,15 @@ export function TopologyV2DetailPanel({
       data-testid="topology-v2-detail-panel"
       data-datasheet-density="instrument"
       onKeyDown={handleKeyDown}
+      // P3-③ (2026-07-21 리텐션 라운드) — 이 패널은 `--topology-node-popover-top`
+      // 에 fixed 앵커되는데(HomePage 포지셔너), 자기 자신은 높이 제약이 없어
+      // 연결이 많은 노드에서 콘텐츠가 뷰포트를 넘기면 "전체 상세 →" 푸터가
+      // 화면 밖으로 밀려나 마우스로 닿지 않았다(1440×900, y=911 실측). 뷰포트
+      // 기준 max-height + 내부 스크롤로 패널이 항상 뷰포트 안에 온전히 앵커
+      // 되도록 clamp한다.
       className={[
         "flex w-[var(--topology-v2-panel-width)] flex-col gap-[var(--topology-v2-panel-gap)]",
+        "max-h-[var(--topology-v2-panel-max-height)] overflow-y-auto",
         "rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)]",
         "bg-[color:var(--topology-v2-panel-surface)] p-[var(--topology-v2-panel-pad)]",
         "shadow-[var(--topology-v2-panel-shadow)]",
