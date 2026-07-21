@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   isNodeEmphasisActive,
   resolveEdgeEgoState,
+  resolveEdgeEgoStateWithPair,
   resolveEdgePulseSpeed,
   resolveNodeEgoState,
+  resolveNodeEgoStateWithPair,
   scheduleRipple,
   stepEmphasis,
 } from "./focus-state";
@@ -143,5 +145,27 @@ describe("stepEmphasis", () => {
     }
     expect(emphasis).toBeGreaterThan(0.99);
     expect(emphasis).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("edge pair focus (선 선택 = 페어 포커스)", () => {
+  const pair = { sourceId: "a", targetId: "b" };
+
+  it("노드 포커스 없이 페어만 있으면 양끝=neighbor, 나머지=dim", () => {
+    expect(resolveNodeEgoStateWithPair("a", null, new Set(), pair)).toBe("neighbor");
+    expect(resolveNodeEgoStateWithPair("b", null, new Set(), pair)).toBe("neighbor");
+    expect(resolveNodeEgoStateWithPair("c", null, new Set(), pair)).toBe("dim");
+  });
+
+  it("노드 포커스가 있으면 기존 ego 규칙이 우선한다 (클릭=안전 계약)", () => {
+    expect(resolveNodeEgoStateWithPair("x", "x", new Set(["y"]), pair)).toBe("center");
+    expect(resolveNodeEgoStateWithPair("a", "x", new Set(["y"]), pair)).toBe("dim");
+  });
+
+  it("페어 중 선택 엣지만 ego, 다른 엣지는 dim; 페어 없으면 종전 규칙", () => {
+    expect(resolveEdgeEgoStateWithPair(false, null, pair, true)).toBe("ego");
+    expect(resolveEdgeEgoStateWithPair(false, null, pair, false)).toBe("dim");
+    expect(resolveEdgeEgoStateWithPair(true, "x", pair, false)).toBe("ego");
+    expect(resolveEdgeEgoStateWithPair(false, null, null, false)).toBe("normal");
   });
 });

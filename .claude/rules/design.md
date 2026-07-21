@@ -13,6 +13,9 @@
   여전히 금지 — 앰버가 셋 이상 보이면 결함이다. (docs 표면의 장식적 gold 악센트는 별개의 `--color-amber-docs-*` **quarantine 토큰** — 헌장 승인 아님, 확장 금지, 후속 강등 검토 대기.)
 - ontology kind 색상은 예외적으로 허용하지만 data mark 로만 쓴다. graph fill 은 작은 점의 3:1 대비를 위해 선명할 수 있고, panel/card 에서는 neutral surface + compact marker/swatch + label/icon 으로 낮춘다. detail card 내부의 full-height colored rail 은 AI SaaS callout 처럼 읽히므로 금지한다.
 - 카테고리 구분은 **색이 아닌 보더 스타일** (작업중: 인디고 underline, 예정: dashed).
+- **선택 색 사다리**: 노드 선택 = 표준 인디고(#5e6ad2), 엣지 선택(페어
+  포커스) = pale 인디고(`--topology-v2-edge-selected`, rgba(200,210,255)) —
+  같은 인디고 1계열 안에서 값으로만 구분한다. 새 hue 로의 확장 금지.
 
 ## 토폴로지 노드 포커스 & 스케일
 

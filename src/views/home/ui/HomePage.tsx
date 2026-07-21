@@ -2497,6 +2497,7 @@ export function HomePage() {
                       setSelectedEdge(edge);
                     }}
                     onHoverEdge={handleHoverEdge}
+                    selectedEdge={selectedEdge ? { sourceId: selectedEdge.sourceId, targetId: selectedEdge.targetId } : null}
                     onSelect={(slug) => {
                       setSelectedEdge(null);
                       handleSelect(slug);
