@@ -341,13 +341,23 @@ export function RelationWriteConfirm({
   }
 
   return (
-    <aside
-      role="dialog"
-      aria-modal="true"
-      aria-label={labels.title}
-      data-testid="builder-relation-write-confirm"
-      className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(680px,calc(100%-2rem))] -translate-x-1/2 flex-col gap-3 overflow-y-auto rounded-lg border border-[color:var(--color-indigo-a34)] bg-[color:var(--color-panel)] p-4 shadow-[0_22px_54px_var(--color-shadow-a35)]"
-    >
+    <>
+      {/* Scrim — aria-modal 선언에 걸맞은 실제 모달리티(같은 페이지 anchors
+          다이얼로그 패턴 재사용). dim + 외부클릭 취소로 "modal without
+          modality" 결함을 해소한다(빌더 감사 #4). Esc 취소는 위 useEffect. */}
+      <div
+        aria-hidden
+        data-testid="builder-relation-write-scrim"
+        onMouseDown={onCancel}
+        className="fixed inset-0 z-40 bg-[color:var(--color-scrim-a54)]"
+      />
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={labels.title}
+        data-testid="builder-relation-write-confirm"
+        className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(680px,calc(100%-2rem))] -translate-x-1/2 flex-col gap-3 overflow-y-auto rounded-lg border border-[color:var(--color-indigo-a34)] bg-[color:var(--color-panel)] p-4 shadow-[0_22px_54px_var(--color-shadow-a35)]"
+      >
       <header className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-indigo-accent)]">
@@ -807,6 +817,7 @@ export function RelationWriteConfirm({
         </div>
       </div>
     </aside>
+    </>
   );
 }
 

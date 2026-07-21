@@ -6,9 +6,22 @@ import {
 } from "./builder-write-confirm-bar";
 
 describe("resolveBuilderWriteConfirmStatus", () => {
+  it("읽기 전용 소스면 readOnlySource — draft·관계 유무와 무관 최우선(거짓 약속 방지)", () => {
+    expect(
+      resolveBuilderWriteConfirmStatus({
+        readOnlySource: true,
+        hasPendingRelation: true,
+        draftNodes: 3,
+        draftEdges: 2,
+        hasUnnamedDraft: true,
+      }),
+    ).toBe("readOnlySource");
+  });
+
   it("대기 중인 관계가 있으면 relationPending — draft 상태 무관 최우선", () => {
     expect(
       resolveBuilderWriteConfirmStatus({
+        readOnlySource: false,
         hasPendingRelation: true,
         draftNodes: 3,
         draftEdges: 2,
@@ -20,6 +33,7 @@ describe("resolveBuilderWriteConfirmStatus", () => {
   it("draft 없으면 clean", () => {
     expect(
       resolveBuilderWriteConfirmStatus({
+        readOnlySource: false,
         hasPendingRelation: false,
         draftNodes: 0,
         draftEdges: 0,
@@ -31,6 +45,7 @@ describe("resolveBuilderWriteConfirmStatus", () => {
   it("이름 없는 draft 가 있으면 draftNeedsName", () => {
     expect(
       resolveBuilderWriteConfirmStatus({
+        readOnlySource: false,
         hasPendingRelation: false,
         draftNodes: 1,
         draftEdges: 0,
@@ -42,6 +57,7 @@ describe("resolveBuilderWriteConfirmStatus", () => {
   it("모든 draft 에 이름이 있으면 draftReady", () => {
     expect(
       resolveBuilderWriteConfirmStatus({
+        readOnlySource: false,
         hasPendingRelation: false,
         draftNodes: 1,
         draftEdges: 1,
@@ -52,9 +68,21 @@ describe("resolveBuilderWriteConfirmStatus", () => {
 });
 
 describe("resolveBuilderWriteConfirmAction", () => {
+  it("읽기 전용 소스면 connectSource — draft·관계 있어도 vault 연결로 유도", () => {
+    expect(
+      resolveBuilderWriteConfirmAction({
+        readOnlySource: true,
+        hasPendingRelation: true,
+        readyDraftNodeId: "ephemeral-2",
+        firstDraftNodeId: "ephemeral-1",
+      }),
+    ).toEqual({ type: "connectSource" });
+  });
+
   it("대기 관계 우선 — 기존 RelationWriteConfirm 흐름(confirmPendingRelation) 재사용", () => {
     expect(
       resolveBuilderWriteConfirmAction({
+        readOnlySource: false,
         hasPendingRelation: true,
         readyDraftNodeId: "ephemeral-1",
         firstDraftNodeId: "ephemeral-1",
@@ -65,6 +93,7 @@ describe("resolveBuilderWriteConfirmAction", () => {
   it("이름 있는 draft 가 있으면 saveDraft", () => {
     expect(
       resolveBuilderWriteConfirmAction({
+        readOnlySource: false,
         hasPendingRelation: false,
         readyDraftNodeId: "ephemeral-2",
         firstDraftNodeId: "ephemeral-1",
@@ -75,6 +104,7 @@ describe("resolveBuilderWriteConfirmAction", () => {
   it("이름 있는 draft 가 없으면 첫 draft 를 열어 이름부터 채우게(openDraft)", () => {
     expect(
       resolveBuilderWriteConfirmAction({
+        readOnlySource: false,
         hasPendingRelation: false,
         readyDraftNodeId: null,
         firstDraftNodeId: "ephemeral-1",
@@ -85,6 +115,7 @@ describe("resolveBuilderWriteConfirmAction", () => {
   it("아무 draft 도 없으면 none", () => {
     expect(
       resolveBuilderWriteConfirmAction({
+        readOnlySource: false,
         hasPendingRelation: false,
         readyDraftNodeId: null,
         firstDraftNodeId: null,

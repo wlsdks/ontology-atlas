@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
   Download,
@@ -17,6 +17,7 @@ import {
   SlidersHorizontal,
   Trash2,
   Wand2,
+  X,
 } from "lucide-react";
 import {
   buildVaultMarkdown,
@@ -33,6 +34,10 @@ import { useNavRailHidden } from "@/widgets/app-nav-rail";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { ChromeTile, Tooltip, useToast } from "@/shared/ui";
+import {
+  BUILDER_WRITE_BAR_RESERVE_PX,
+  resolveToastBottomOffset,
+} from "@/shared/ui/toast-position";
 import { parseOntologyReaderIntent } from "@/shared/lib/ontology-reader-intent";
 import { useEphemeralNodes } from "../lib/use-ephemeral-nodes";
 import { useEphemeralEdges } from "../lib/use-ephemeral-edges";
@@ -157,8 +162,12 @@ export function OntologyEditPage() {
       }
     : null;
   const vault = useLocalVault();
+  const router = useRouter();
   const dataSourceMode = useDataSourceMode();
   const isDesktopRuntime = isTauriVaultRuntime();
+  // 읽기 전용(샘플) 소스에서 "내 폴더 열기" — BuilderWriteSummary 의 sourceHref
+  // 와 동일한 기존 vault 픽커 진입점을 재사용한다(감사 #2).
+  const connectSourceHref = isDesktopRuntime ? "/docs/?intent=local" : "/download/";
   const demoSaveToastKey = isDesktopRuntime
     ? "toastDemoModePicker"
     : "toastDemoModeDownload";
@@ -659,7 +668,15 @@ export function OntologyEditPage() {
   const readyDraftNode = ephemeralNodes.find(
     (node) => !isUntitledTitle(node.title, t("untitledPlaceholder")),
   );
+  // 샘플/읽기 전용 소스 — 쓰기 가능한 vault 가 없다(복원 중이 아닌 경우).
+  // 이 상태에선 draft·관계가 있어도 vault 에 쓸 수 없으므로 하단 바가
+  // 거짓 약속("쓰기 준비됨") 대신 진실("내 vault 연결")을 말해야 한다(감사 #2).
+  const readOnlySource = !hasLiveVault && !restoringVault;
+  const handleConnectSource = useCallback(() => {
+    router.push(connectSourceHref);
+  }, [router, connectSourceHref]);
   const writeConfirmStatus = resolveBuilderWriteConfirmStatus({
+    readOnlySource,
     hasPendingRelation: Boolean(pendingRelation),
     draftNodes: ephemeralNodes.length,
     draftEdges: ephemeralEdges.length,
@@ -668,6 +685,7 @@ export function OntologyEditPage() {
     ),
   });
   const writeConfirmAction = resolveBuilderWriteConfirmAction({
+    readOnlySource,
     hasPendingRelation: Boolean(pendingRelation),
     readyDraftNodeId: readyDraftNode?.id ?? null,
     firstDraftNodeId: ephemeralNodes[0]?.id ?? null,
@@ -883,6 +901,31 @@ export function OntologyEditPage() {
     [demoEdgeToastKey, docsBySlug, hasLiveVault, t, toast],
   );
 
+  // 인스펙터 "+ 관계 추가"(비-드래그 경로) 대상 후보 — 저장된 vault 노드 목록.
+  // 드래그 없이도 대상을 검색해 고를 수 있게 한다(감사 #3).
+  const relationCandidates = useMemo(
+    () =>
+      effectiveManifest.docs
+        .filter((doc) => typeof doc.frontmatter.kind === "string")
+        .map((doc) => ({
+          slug: doc.slug,
+          title: doc.title || doc.slug,
+          kind: String(doc.frontmatter.kind),
+        })),
+    [effectiveManifest],
+  );
+  // 선택된 vault 노드에서 고른 대상으로 관계 시작 — 기존 connectVaultEdge
+  // (pendingRelation preflight/미리보기) 경로를 그대로 재사용한다.
+  const handleStartRelation = useCallback(
+    (targetSlug: string) => {
+      if (!vaultSelected) return;
+      const targetDoc = docsBySlug.get(targetSlug);
+      const targetKind = targetDoc ? String(targetDoc.frontmatter.kind ?? "") : "";
+      connectVaultEdge(vaultSelected.slug, targetSlug, vaultSelected.kind, targetKind);
+    },
+    [vaultSelected, docsBySlug, connectVaultEdge],
+  );
+
   // "drop to add" — 노드 포트에서 선을 끌어 빈 캔버스에 놓으면 그 자리에 새
   // 개념 초안 노드를 만들고(자식 kind 추론) source 와 ephemeral edge 로 잇는다.
   // 새 노드를 select 하면 인스펙터가 이름 입력에 자동 포커스(기존 초안 생성
@@ -1095,6 +1138,9 @@ export function OntologyEditPage() {
   // 없이 resolveBuilderWriteConfirmAction 이 고른 기존 핸들러를 그대로 호출.
   const runWriteConfirmAction = useCallback(() => {
     switch (writeConfirmAction.type) {
+      case "connectSource":
+        handleConnectSource();
+        return;
       case "confirmRelation":
         void confirmPendingRelation();
         return;
@@ -1108,7 +1154,7 @@ export function OntologyEditPage() {
       case "none":
         return;
     }
-  }, [writeConfirmAction, confirmPendingRelation, saveEphemeral]);
+  }, [writeConfirmAction, confirmPendingRelation, saveEphemeral, handleConnectSource]);
 
   // Modal 의 confirm 버튼이 눌린 후 실제 delete 수행.
   const confirmPendingDelete = useCallback(async () => {
@@ -1129,6 +1175,52 @@ export function OntologyEditPage() {
   }, [pendingDelete, t, toast, vault]);
 
   const treeHref = "/ontology/";
+
+  // 빌더가 마운트된 동안 토스트 하단 오프셋을 하단 쓰기 바 위로 올린다(감사 #5).
+  // 하단 우측에 고정되는 토스트가 "vault 에 쓰기" 버튼을 덮지 않게, 바가 예약한
+  // 높이만큼 밀어 올린다. 언마운트 시 기본값(16px)으로 되돌려 다른 페이지엔
+  // 영향 0. (`toast-position.ts` 계약 · `ToastProvider` 가 이 변수를 읽는다.)
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty(
+      "--app-toast-bottom-offset",
+      `${resolveToastBottomOffset(BUILDER_WRITE_BAR_RESERVE_PX)}px`,
+    );
+    return () => {
+      root.style.removeProperty("--app-toast-bottom-offset");
+    };
+  }, []);
+
+  // 헤더 팝오버 3종(오버플로 · 저장 상태 · 배치 보기)의 공통 dismiss 훅 —
+  // 같은 위치에 앵커되어 상호 배타적으로 열리므로, 닫기(X · 외부 클릭 · Esc)도
+  // 한 곳에서 셋을 함께 닫는다(감사 #1).
+  const anyHeaderPopoverOpen =
+    headerOverflowOpen || writeSummaryOpen || layoutSettingsOpen;
+  const closeAllHeaderPopovers = useCallback(() => {
+    setHeaderOverflowOpen(false);
+    setWriteSummaryOpen(false);
+    setLayoutSettingsOpen(false);
+  }, []);
+
+  // 외부 pointerdown → 열린 헤더 팝오버 닫기. 팝오버 패널
+  // (`[data-builder-popover]`)과 그 트리거(`[data-builder-popover-trigger]`)
+  // 내부 클릭은 무시해, 트리거의 토글 동작이 pointerdown-close 와 충돌하지 않게
+  // 한다(트리거 click 이 스스로 토글 담당).
+  useEffect(() => {
+    if (!anyHeaderPopoverOpen) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.closest("[data-builder-popover]") ||
+        target?.closest("[data-builder-popover-trigger]")
+      ) {
+        return;
+      }
+      closeAllHeaderPopovers();
+    };
+    window.addEventListener("pointerdown", handlePointerDown);
+    return () => window.removeEventListener("pointerdown", handlePointerDown);
+  }, [anyHeaderPopoverOpen, closeAllHeaderPopovers]);
 
   // Atlas 캔버스 단축키.
   // 스코프: input/textarea 포커스 시 비활성. 항상 ephemeral 만 영향.
@@ -1155,11 +1247,15 @@ export function OntologyEditPage() {
           hasSelection: selectedId !== null,
           fullscreen,
           selectionRemovable: selectedId !== null && Boolean(findById(selectedId)),
+          popoverOpen: anyHeaderPopoverOpen,
         },
       );
       if (!action) return;
       event.preventDefault();
       switch (action.type) {
+        case "closePopover":
+          closeAllHeaderPopovers();
+          break;
         case "deselect":
           setSelectedId(null);
           setDetailsOpen(false);
@@ -1185,7 +1281,15 @@ export function OntologyEditPage() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [selectedId, addNode, removeNode, findById, fullscreen]);
+  }, [
+    selectedId,
+    addNode,
+    removeNode,
+    findById,
+    fullscreen,
+    anyHeaderPopoverOpen,
+    closeAllHeaderPopovers,
+  ]);
 
   const helpTooltip = (
     <div className="max-w-xs space-y-2 text-[12px] leading-5">
@@ -1228,6 +1332,9 @@ export function OntologyEditPage() {
     onDeleteVault: deleteVaultDoc,
     saving: savingId !== null || renamingId !== null,
     relationsFocusToken,
+    onConnectSource: handleConnectSource,
+    relationCandidates,
+    onStartRelation: handleStartRelation,
   };
 
   return (
@@ -1350,6 +1457,7 @@ export function OntologyEditPage() {
               aria-label={t("headerOverflowAriaLabel")}
               aria-expanded={headerOverflowOpen}
               aria-controls="builder-header-overflow"
+              data-builder-popover-trigger=""
               active={headerOverflowOpen}
               onClick={() => {
                 // 오버플로/배치 보기/저장 상태 팝오버는 헤더의 같은 위치
@@ -1382,6 +1490,7 @@ export function OntologyEditPage() {
                 id="builder-header-overflow"
                 role="menu"
                 aria-label={t("headerOverflowAriaLabel")}
+                data-builder-popover=""
                 className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_24px_72px_var(--color-shadow-a42)]"
               >
                 <button
@@ -1524,8 +1633,19 @@ export function OntologyEditPage() {
             {writeSummaryOpen ? (
               <div
                 id="builder-write-summary"
+                data-builder-popover=""
                 className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[min(980px,calc(100vw-2rem))] overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_24px_72px_var(--color-shadow-a42)]"
               >
+                {/* 헤더 X 닫기(감사 #1 ①) — 팝오버 자체를 닫는 명시적 어포던스. */}
+                <button
+                  type="button"
+                  onClick={() => setWriteSummaryOpen(false)}
+                  aria-label={t("writeSummaryCloseAriaLabel")}
+                  title={t("writeSummaryCloseAriaLabel")}
+                  className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+                >
+                  <X size={14} aria-hidden />
+                </button>
                 <BuilderWriteSummary
                   writable={hasLiveVault}
                   restoringVault={restoringVault}
@@ -1556,6 +1676,7 @@ export function OntologyEditPage() {
               <div
                 id="builder-layout-settings"
                 aria-label={t("layoutGroupAriaLabel")}
+                data-builder-popover=""
                 className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-72 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_24px_72px_var(--color-shadow-a42)]"
               >
                 <div role="radiogroup" aria-label={t("layoutModeAriaLabel")}>
@@ -1967,8 +2088,14 @@ export function OntologyEditPage() {
           }
           writeAriaLabel={writeConfirmAriaLabel}
           writeDisabled={writeConfirmAction.type === "none"}
-          onDryRun={() => setWriteSummaryOpen(true)}
+          onDryRun={() => {
+            // 토글(감사 #1 ④): 저장 상태 팝오버가 이미 열려 있으면 닫는다.
+            setHeaderOverflowOpen(false);
+            setLayoutSettingsOpen(false);
+            setWriteSummaryOpen((open) => !open);
+          }}
           onWrite={runWriteConfirmAction}
+          onConnectSource={handleConnectSource}
         />
         {!isWide && detailsOpen && (ephemeralSelected || vaultSelected) ? (
           <div

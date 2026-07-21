@@ -21,6 +21,7 @@ export function BuilderWriteConfirmBar({
   writeDisabled,
   onDryRun,
   onWrite,
+  onConnectSource,
 }: {
   status: BuilderWriteConfirmStatus;
   draftNodes: number;
@@ -30,10 +31,14 @@ export function BuilderWriteConfirmBar({
   writeDisabled: boolean;
   onDryRun: () => void;
   onWrite: () => void;
+  /** 읽기 전용(샘플) 소스에서 "내 폴더 열기"(vault 픽커) 트리거 — 감사 #2. */
+  onConnectSource?: () => void;
 }) {
   const t = useTranslations("ontologyPages.edit.page.writeConfirmBar");
-  const payload =
-    status === "relationPending" && pendingRelationSummary
+  const readOnlySource = status === "readOnlySource";
+  const payload = readOnlySource
+    ? t("readOnlySource")
+    : status === "relationPending" && pendingRelationSummary
       ? t("relationPending", pendingRelationSummary)
       : status === "draftReady"
         ? t("draftReady", { nodes: draftNodes, edges: draftEdges })
@@ -56,27 +61,48 @@ export function BuilderWriteConfirmBar({
           재사용해 앱 전역 버튼 문법과 맞춘다. 밀도(h-8/text-[11px]/rounded-md)
           는 size="sm" 사다리 + 이 바의 기존 컴팩트 크롬에 맞춘 최소 override. */}
       <div className="flex shrink-0 items-center gap-1.5">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onDryRun}
-          aria-label={t("dryRunAriaLabel")}
-          className="rounded-md px-2.5 text-[11px] font-normal focus-visible:ring-offset-[color:var(--color-panel)]"
-        >
-          {t("dryRunButton")}
-        </Button>
-        <Button
-          type="button"
-          variant="primary"
-          size="sm"
-          onClick={onWrite}
-          disabled={writeDisabled}
-          aria-label={writeAriaLabel}
-          className="rounded-md px-2.5 text-[11px] focus-visible:ring-offset-[color:var(--color-panel)]"
-        >
-          {t("writeButton")}
-        </Button>
+        {readOnlySource ? (
+          // 읽기 전용 소스 — dry-run/쓰기는 거짓 약속이라 단일 "내 폴더 열기"
+          // (vault 픽커)만 노출한다(감사 #2).
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={onConnectSource}
+            aria-label={t("connectSourceAriaLabel")}
+            className="rounded-md px-2.5 text-[11px] focus-visible:ring-offset-[color:var(--color-panel)]"
+          >
+            {t("connectSourceButton")}
+          </Button>
+        ) : (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onDryRun}
+              // 저장 상태 팝오버 토글 트리거 — 페이지의 외부-pointerdown dismiss
+              // 가 이 버튼 클릭을 "외부"로 오인해 닫은 뒤 곧바로 다시 열지
+              // 않도록 표시한다(감사 #1 ④).
+              data-builder-popover-trigger=""
+              aria-label={t("dryRunAriaLabel")}
+              className="rounded-md px-2.5 text-[11px] font-normal focus-visible:ring-offset-[color:var(--color-panel)]"
+            >
+              {t("dryRunButton")}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={onWrite}
+              disabled={writeDisabled}
+              aria-label={writeAriaLabel}
+              className="rounded-md px-2.5 text-[11px] focus-visible:ring-offset-[color:var(--color-panel)]"
+            >
+              {t("writeButton")}
+            </Button>
+          </>
+        )}
       </div>
     </section>
   );

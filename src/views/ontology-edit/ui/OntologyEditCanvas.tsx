@@ -40,7 +40,6 @@ import {
   type AlignAction,
   type AlignableNode,
 } from "../lib/align-nodes";
-import { resolveDomainTint } from "@/shared/lib/domain-color";
 
 const EDGE_TYPES = { ephemeral: EphemeralEdgeComponent, vault: VaultEdge };
 
@@ -853,18 +852,15 @@ export function OntologyEditCanvas({
               const data = node.data as
                 | { ephemeral?: boolean; domainSlug?: string | null }
                 | undefined;
-              // builder-core: ephemeral 신호가 amber → indigo 로 통일됐다
-              // (AtlasNode/EphemeralEdge 와 같은 톤).
+              // 잉크 다이어트(빌더 감사 #6): 미니맵은 navigation 보조라 모든
+              // 노드를 인디고/도메인 색으로 칠하면 색 잡음이 크다. 기본은
+              // 무채(overlay-3), 지금 주의를 끌 이유가 있는 노드 —
+              // ephemeral(초안)/selected —만 인디고로 도드라지게 한다.
               if (data?.ephemeral) return "var(--topology-v2-indigo-bright)";
-              // 도메인 tint 가 미니맵 노드에도 반영되어, 같은 hue 끼리 모여
-              // 있는 게 미니맵 한눈 navigation 의 단서가 됨.
-              if (typeof data?.domainSlug === "string" && data.domainSlug) {
-                return resolveDomainTint(data.domainSlug).accent;
-              }
-              return "var(--color-indigo-brand)";
+              if (node.selected) return "var(--color-indigo-brand)";
+              return "var(--color-overlay-3)";
             }}
-            nodeStrokeColor="var(--color-surface-deep-a85)"
-            nodeStrokeWidth={2}
+            nodeStrokeWidth={0}
           />
         ) : null}
       </ReactFlow>

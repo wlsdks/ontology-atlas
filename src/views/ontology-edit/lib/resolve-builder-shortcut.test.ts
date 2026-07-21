@@ -22,6 +22,7 @@ function state(overrides: Partial<BuilderShortcutState> = {}): BuilderShortcutSt
     hasSelection: false,
     fullscreen: false,
     selectionRemovable: false,
+    popoverOpen: false,
     ...overrides,
   };
 }
@@ -89,6 +90,34 @@ describe("resolveBuilderShortcut", () => {
       ),
     ).toEqual({ type: "exitFullscreen" });
     expect(resolveBuilderShortcut(ev({ key: "Escape" }), state())).toBeNull();
+  });
+
+  it("Esc 사다리 — 팝오버 열림이 deselect·exitFullscreen 보다 우선 (closePopover)", () => {
+    // 팝오버만 열림 → closePopover
+    expect(
+      resolveBuilderShortcut(ev({ key: "Escape" }), state({ popoverOpen: true })),
+    ).toEqual({ type: "closePopover" });
+    // 팝오버 + 선택 동시 → 팝오버부터
+    expect(
+      resolveBuilderShortcut(
+        ev({ key: "Escape" }),
+        state({ popoverOpen: true, hasSelection: true }),
+      ),
+    ).toEqual({ type: "closePopover" });
+    // 팝오버 + 풀스크린 동시 → 팝오버부터
+    expect(
+      resolveBuilderShortcut(
+        ev({ key: "Escape" }),
+        state({ popoverOpen: true, fullscreen: true }),
+      ),
+    ).toEqual({ type: "closePopover" });
+    // 팝오버 닫힌 뒤 다음 Esc 는 기존 사다리(deselect)로 내려간다
+    expect(
+      resolveBuilderShortcut(
+        ev({ key: "Escape" }),
+        state({ popoverOpen: false, hasSelection: true }),
+      ),
+    ).toEqual({ type: "deselect" });
   });
 
   it("Delete/Backspace — 제거 가능한 선택이 있을 때만 removeSelected", () => {

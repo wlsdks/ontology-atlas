@@ -9,7 +9,9 @@ import {
   ChevronRight,
   Clipboard,
   FileText,
+  FolderOpen,
   LayoutGrid,
+  Plus,
   Waypoints,
   X,
 } from "lucide-react";
@@ -26,6 +28,10 @@ import {
   type RelationTraceMarkStyle,
 } from "../lib/relation-trace-mark";
 import type { BuilderSessionDiffLine } from "../lib/builder-write-confirm-bar";
+import {
+  buildRelationCandidates,
+  type RelationCandidateNode,
+} from "../lib/builder-relation-candidates";
 
 // 디자인 헌장 + a11y — motion-reduce 사용자 보호. 짧은 fade 만 (transform 없음).
 const FADE_MOTION = {
@@ -117,6 +123,14 @@ export interface OntologyInspectorProps {
   /** B-3 — 저장된 엣지 클릭 시 부모가 증가시키는 토큰. 값이 바뀌면 vault
    *  상세가 관계 탭으로 포커스한다(기존 관계 편집 진입로). */
   relationsFocusToken?: number;
+  /** 읽기 전용(샘플) 소스에서 "내 폴더 열기"(vault 픽커) 트리거 — 감사 #2.
+   *  ephemeral 저장 버튼/Enter 힌트가 이 콜백으로 진실을 말한다. */
+  onConnectSource?: () => void;
+  /** 관계 추가(비-드래그 경로)용 대상 후보 — 저장된 vault 노드 목록. 감사 #3. */
+  relationCandidates?: RelationCandidateNode[];
+  /** "+ 관계 추가"에서 대상을 고르면 호출 — 기존 pendingRelation preflight
+   *  경로(connectVaultEdge)를 그대로 재사용한다. */
+  onStartRelation?: (targetSlug: string) => void;
 }
 
 type InspectorTranslator = ReturnType<typeof useTranslations>;
@@ -146,6 +160,9 @@ export function OntologyInspector({
   surface = "sidebar",
   sessionDiffLines = [],
   relationsFocusToken = 0,
+  onConnectSource,
+  relationCandidates = [],
+  onStartRelation,
 }: OntologyInspectorProps) {
   const t = useTranslations("ontologyPages.edit.inspector");
   // canonical kind 라벨 — kinds.* i18n namespace 기반. 이전엔 inspector 자체
@@ -274,6 +291,8 @@ export function OntologyInspector({
               getSaveSuggestion={getEphemeralSaveSuggestion}
               saving={Boolean(saving)}
               onDeselect={onClearSelection}
+              readOnly={vaultReadOnly}
+              onConnectSource={onConnectSource}
             />
           </motion.div>
         ) : vaultSelected ? (
@@ -293,6 +312,8 @@ export function OntologyInspector({
               saving={Boolean(saving)}
               onDeselect={onClearSelection}
               relationsFocusToken={relationsFocusToken}
+              relationCandidates={relationCandidates}
+              onStartRelation={onStartRelation}
             />
           </motion.div>
         ) : null}
@@ -364,6 +385,8 @@ function EphemeralDetail({
   getSaveSuggestion,
   saving,
   onDeselect,
+  readOnly,
+  onConnectSource,
 }: {
   t: InspectorTranslator;
   kindLabel: KindLabelResolver;
@@ -378,6 +401,9 @@ function EphemeralDetail({
   ) => { title: string; path: string } | null;
   saving: boolean;
   onDeselect: () => void;
+  /** 샘플 읽기 전용 소스 — 저장 불가. 저장 대신 vault 연결을 안내한다(감사 #2). */
+  readOnly: boolean;
+  onConnectSource?: () => void;
 }) {
   const titleEmpty =
     node.title.trim() === "" ||
@@ -407,8 +433,9 @@ function EphemeralDetail({
       : saveState === "conflict"
         ? t("ephemeralStatusConflict")
         : t("ephemeralStatusEmpty");
-  const saveStateBody =
-    saveState === "ready"
+  const saveStateBody = readOnly
+    ? t("ephemeralFooterReadOnly")
+    : saveState === "ready"
       ? t("ephemeralFooterReady")
       : saveState === "conflict"
         ? t("ephemeralFooterConflict")
@@ -484,8 +511,16 @@ function EphemeralDetail({
           value={node.title}
           onChange={(e) => onRename(node.id, e.target.value)}
           onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            // 읽기 전용 소스에선 저장이 불가하므로 Enter 도 vault 연결로 유도
+            // (거짓 저장 약속 방지 — 감사 #2). 쓰기 가능 vault 에서만 즉시 저장.
+            if (readOnly) {
+              e.preventDefault();
+              onConnectSource?.();
+              return;
+            }
             // Enter → 즉시 저장 (canSave 조건 통과 시). 빌더 productivity 핵심 단축.
-            if (e.key === "Enter" && canSave && onSave) {
+            if (canSave && onSave) {
               e.preventDefault();
               void onSave(node.id);
             }
@@ -494,37 +529,33 @@ function EphemeralDetail({
           className="rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2.5 py-1.5 text-[13px] text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)]"
         />
       </label>
-      {/* 캔버스 좌표 + 저장 시 실제 vault 파일 경로 미리보기 */}
-      <div className="grid grid-cols-2 gap-2 text-[10px]">
-        <div className="min-w-0">
-          <p className="font-mono uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-            {t("saveIdLabel")}
+      {/* 저장 시 실제 생성될 vault 파일 경로 미리보기. 좌표(감사 #8)는
+          사용자에게 의미 없는 내부 캔버스 수치라 제거했다. 파일명은 길어도
+          break-all 로 4줄씩 꺾이지 않게 truncate + 전체는 title 툴팁으로
+          (감사 #7) — 복사 버튼으로 정확한 전체 경로를 얻는다. */}
+      <div className="min-w-0 text-[10px]">
+        <p className="font-mono uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          {t("saveIdLabel")}
+        </p>
+        <div className="mt-1 flex min-w-0 items-center gap-1.5">
+          <p
+            className="min-w-0 flex-1 truncate font-mono text-[11px] text-[color:var(--color-text-tertiary)]"
+            title={savePath}
+          >
+            {savePath}
           </p>
-          <div className="mt-1 flex min-w-0 items-center gap-1.5">
-            <p className="min-w-0 flex-1 break-all font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
-              {savePath}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                void copySavePath(savePath);
-              }}
-              aria-label={t("copySavePathAriaLabel", { path: savePath })}
-              title={t("copySavePathAriaLabel", { path: savePath })}
-              className="inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-border-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
-            >
-              {copyPathIcon}
-              <span>{copyPathLabel}</span>
-            </button>
-          </div>
-        </div>
-        <div>
-          <p className="font-mono uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-            {t("coordinateLabel")}
-          </p>
-          <p className="mt-1 font-mono text-[11px] tabular-nums text-[color:var(--color-text-tertiary)]">
-            ({Math.round(node.x)}, {Math.round(node.y)})
-          </p>
+          <button
+            type="button"
+            onClick={() => {
+              void copySavePath(savePath);
+            }}
+            aria-label={t("copySavePathAriaLabel", { path: savePath })}
+            title={t("copySavePathAriaLabel", { path: savePath })}
+            className="inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-border-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
+          >
+            {copyPathIcon}
+            <span>{copyPathLabel}</span>
+          </button>
         </div>
       </div>
       {saveConflict ? (
@@ -547,7 +578,19 @@ function EphemeralDetail({
           ) : null}
         </div>
       ) : null}
-      {onSave ? (
+      {readOnly ? (
+        // 샘플 읽기 전용 — "저장" 대신 vault 연결(내 폴더 열기)로 유도한다.
+        // 저장 버튼을 enabled 로 두면 데모 토스트로 튕겨 거짓 약속이 된다(감사 #2).
+        <button
+          type="button"
+          onClick={() => onConnectSource?.()}
+          aria-label={t("connectSourceAriaLabel")}
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+        >
+          <FolderOpen size={13} aria-hidden />
+          {t("connectSourceButton")}
+        </button>
+      ) : onSave ? (
         <button
           type="button"
           onClick={() => onSave(node.id)}
@@ -596,6 +639,111 @@ function EphemeralDetail({
   );
 }
 
+/**
+ * "+ 관계 추가" — 헌장의 "drag-only discovery 금지"를 해소하는 비-드래그
+ * 관계 생성 경로(감사 #3). 대상 개념을 검색해 고르면 부모의 onStartRelation
+ * 이 기존 pendingRelation preflight/미리보기(RelationWriteConfirm) 흐름을
+ * 그대로 연다 — 여기서 새 쓰기 로직을 만들지 않는다. 관계 종류(key)는 그
+ * 미리보기 모달이 추론값 + 대안 선택으로 이어받는다.
+ */
+function AddRelationPicker({
+  t,
+  kindLabel,
+  sourceSlug,
+  existingTargets,
+  candidates,
+  onStartRelation,
+}: {
+  t: InspectorTranslator;
+  kindLabel: KindLabelResolver;
+  sourceSlug: string;
+  existingTargets: string[];
+  candidates: RelationCandidateNode[];
+  onStartRelation: (targetSlug: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const matches = buildRelationCandidates({
+    sourceSlug,
+    existingTargets,
+    nodes: candidates,
+    query,
+  });
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={t("addRelationAriaLabel")}
+        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a58)] hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+      >
+        <Plus size={13} aria-hidden />
+        {t("addRelationButton")}
+      </button>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-2 rounded-md border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a06)] p-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          {t("addRelationTitle")}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false);
+            setQuery("");
+          }}
+          aria-label={t("addRelationCancelAriaLabel")}
+          title={t("addRelationCancelAriaLabel")}
+          className="rounded-md p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+        >
+          <X size={13} aria-hidden />
+        </button>
+      </div>
+      <input
+        type="text"
+        value={query}
+        autoFocus
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={t("addRelationSearchPlaceholder")}
+        aria-label={t("addRelationSearchAriaLabel")}
+        className="rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2.5 py-1.5 text-[12px] text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)]"
+      />
+      {matches.length > 0 ? (
+        <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto">
+          {matches.map((candidate) => (
+            <li key={candidate.slug}>
+              <button
+                type="button"
+                onClick={() => {
+                  onStartRelation(candidate.slug);
+                  setOpen(false);
+                  setQuery("");
+                }}
+                aria-label={t("addRelationSelectAriaLabel", {
+                  title: candidate.title,
+                })}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
+              >
+                <TopologyV2KindGlyph kind={candidate.kind} size={13} />
+                <span className="min-w-0 flex-1 truncate">{candidate.title}</span>
+                <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                  {kindLabel(candidate.kind)}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="rounded-md border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+          {t("addRelationNoMatch")}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function VaultDetail({
   t,
   kindLabel,
@@ -611,6 +759,8 @@ function VaultDetail({
   saving,
   onDeselect,
   relationsFocusToken,
+  relationCandidates,
+  onStartRelation,
 }: {
   t: InspectorTranslator;
   kindLabel: KindLabelResolver;
@@ -619,6 +769,8 @@ function VaultDetail({
   onSelectBacklink?: (slug: string) => void;
   readOnly: boolean;
   isDesktopRuntime: boolean;
+  relationCandidates?: RelationCandidateNode[];
+  onStartRelation?: (targetSlug: string) => void;
   onSaveRename?: (slug: string, nextTitle: string) => Promise<void> | void;
   onEditArrayKey?: (
     slug: string,
@@ -859,6 +1011,24 @@ function VaultDetail({
           aria-labelledby="vault-detail-tab-relations"
           className="flex flex-col gap-3"
         >
+          {!readOnly && onStartRelation ? (
+            <AddRelationPicker
+              t={t}
+              kindLabel={kindLabel}
+              sourceSlug={node.slug}
+              existingTargets={[
+                ...node.domains,
+                ...node.capabilities,
+                ...node.elements,
+                ...node.dependencies,
+                ...node.contains,
+                ...node.describes,
+                ...node.relates,
+              ]}
+              candidates={relationCandidates ?? []}
+              onStartRelation={onStartRelation}
+            />
+          ) : null}
           {!readOnly && onEditArrayKey ? (
             <div className="flex flex-col gap-2">
               <ArrayEditorGroup

@@ -15,6 +15,7 @@ import type { ManualNodeKind } from "@/entities/knowledge-graph";
  */
 
 export type BuilderShortcutAction =
+  | { type: "closePopover" }
   | { type: "deselect" }
   | { type: "exitFullscreen" }
   | { type: "toggleFullscreen" }
@@ -37,6 +38,8 @@ export interface BuilderShortcutState {
   fullscreen: boolean;
   /** 선택된 노드가 ephemeral(삭제 가능) 인지. */
   selectionRemovable: boolean;
+  /** 헤더 팝오버(오버플로 · 저장 상태 · 배치 보기) 중 하나라도 열려 있는지. */
+  popoverOpen: boolean;
 }
 
 // N 은 P(project) 의 legacy alias — 기존 사용자 호환.
@@ -58,6 +61,10 @@ export function resolveBuilderShortcut(
   if (event.repeat) return null;
 
   if (event.key === "Escape") {
+    // 팝오버가 열려 있으면 그것부터 닫는다 — 선택 해제/풀스크린 종료보다
+    // 우선. 열린 표면을 두고 배경 상태를 먼저 지우면 사용자가 "Esc 로 닫았다"
+    // 는 기대를 어긴다(transient surface 를 먼저 demote).
+    if (state.popoverOpen) return { type: "closePopover" };
     if (state.hasSelection) return { type: "deselect" };
     if (state.fullscreen) return { type: "exitFullscreen" };
     return null;
