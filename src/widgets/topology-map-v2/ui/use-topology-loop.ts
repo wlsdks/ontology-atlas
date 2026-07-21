@@ -115,6 +115,13 @@ export interface UseTopologyLoopArgs {
    * activity mark; `null`/omitted draws neither (fabrication 0).
    */
   agentFocusNodeId?: string | null;
+  /**
+   * M-9 — "그래프"(살아있는 그래프) 토글. true 면 force 시뮬을 상시 웜
+   * 상태로 유지해 레이아웃이 유기적으로 계속 이완한다 (옵시디언식 촉각).
+   * 유휴 게이트는 simWarm 경유로 자동 활동 인정. false 로 돌아가면 heat
+   * 가 자연 감쇠해 마지막 이완 위치에서 정지한다.
+   */
+  livePhysics?: boolean;
 }
 
 export type UseTopologyLoopResult = TopologyPointerHandlers & {
@@ -123,7 +130,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, livePhysics = false } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -219,6 +226,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const prevCameraSampleRef = useRef<{ x: number; y: number; s: number } | null>(null);
   /** W6 agent visibility — mirrors `agentFocusNodeId` prop into a ref for the rAF closure, same pattern as `focusedSlugRef`. */
   const agentFocusNodeIdRef = useRef<string | null>(agentFocusNodeId);
+  /** M-9 — mirrors `livePhysics` into a ref for the rAF closure. */
+  const livePhysicsRef = useRef<boolean>(false);
   /** M-5 — mirror the tier-change callback into a ref for the rAF closure, and
    * track the last emitted tier so the callback fires only on transitions. */
   const onZoomTierChangeRef = useRef<typeof onZoomTierChange>(onZoomTierChange);
@@ -235,6 +244,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     agentFocusNodeIdRef.current = agentFocusNodeId;
   }, [agentFocusNodeId]);
+
+  useEffect(() => {
+    livePhysicsRef.current = livePhysics;
+  }, [livePhysics]);
 
   useEffect(() => {
     panelEmphasisNodeIdRef.current = emphasizedNeighborSlug;
@@ -523,7 +536,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         prevCameraSampleRef.current = { x: cam.x.value, y: cam.y.value, s: cam.scale.value };
         const active = isCanvasActive({
           pointerActive: pointerMachineRef.current.phase !== "idle",
-          simWarm: heatRef.current > 0 || nodeDragRef.current !== null,
+          // M-9 — 살아있는 그래프 토글은 그 자체가 활동이다 (heat 충전이
+          // 게이트 뒤에 있어 스킵 중엔 못 돌므로 플래그로 직접 각성).
+          simWarm: heatRef.current > 0 || nodeDragRef.current !== null || livePhysicsRef.current,
           homing: homingActiveRef.current,
           selectionPulseActive: selectionPulseRef.current !== null &&
             now - selectionPulseRef.current.startAtMs < tokens.selectPulseDurationMs,
@@ -545,6 +560,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // reframing only existed to chase the removed load settle). ---
       const sim = simRef.current;
       const pinned = nodeDragRef.current !== null;
+      // M-9 — 살아있는 그래프: 토글이 켜져 있는 동안 시뮬 heat 를 매 프레임
+      // 채워 물리 tick 이 계속 돈다 (유휴 게이트는 simWarm 으로 자동 각성).
+      if (livePhysicsRef.current) heatRef.current = Math.max(heatRef.current, 16.7);
       // C1 B3: a user grab interrupts any in-flight auto-arrange homing —
       // the drag wins, rather than the two fighting over the node's position.
       if (pinned && homingActiveRef.current) {
