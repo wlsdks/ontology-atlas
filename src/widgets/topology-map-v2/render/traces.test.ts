@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bezierPoint, computeBowControlPoint, computeDependsBowControlPoint, draw, type Point, type TraceDrawState } from "./traces";
+import { bezierPoint, computeBowControlPoint, computeDependsBowControlPoint, dependsTaperFactor, DEPENDS_TAPER_END, DEPENDS_TAPER_START, draw, type Point, type TraceDrawState } from "./traces";
 
 describe("computeBowControlPoint", () => {
   it("never bows further than maxBow*blend from the segment midpoint", () => {
@@ -97,6 +97,7 @@ describe("draw — comet tail is a focus signal, not ambient decoration", () => 
     const ctx = {
       beginPath() {},
       moveTo() {},
+      lineTo() {},
       quadraticCurveTo() {},
       stroke() {},
       fill() {},
@@ -107,6 +108,9 @@ describe("draw — comet tail is a focus signal, not ambient decoration", () => 
       strokeStyle: "",
       fillStyle: "",
       lineWidth: 0,
+      lineCap: "butt",
+      lineJoin: "miter",
+      lineDashOffset: 0,
     } as unknown as CanvasRenderingContext2D;
     draw(ctx, state, TOKENS);
     return arcs;
@@ -140,6 +144,56 @@ describe("draw — comet tail is a focus signal, not ambient decoration", () => 
   });
 });
 
+/** S2 파트 1 — depends 방향 테이퍼: source(굵음)→target(얇음), 단조 감소. */
+describe("dependsTaperFactor", () => {
+  it("u=0(source) 최대, u=1(target) 최소, 단조 감소", () => {
+    expect(dependsTaperFactor(0)).toBeCloseTo(DEPENDS_TAPER_START, 6);
+    expect(dependsTaperFactor(1)).toBeCloseTo(DEPENDS_TAPER_END, 6);
+    expect(dependsTaperFactor(0)).toBeGreaterThan(dependsTaperFactor(0.5));
+    expect(dependsTaperFactor(0.5)).toBeGreaterThan(dependsTaperFactor(1));
+  });
+  it("범위를 벗어난 u 는 [0,1] 로 clamp", () => {
+    expect(dependsTaperFactor(-3)).toBeCloseTo(DEPENDS_TAPER_START, 6);
+    expect(dependsTaperFactor(9)).toBeCloseTo(DEPENDS_TAPER_END, 6);
+  });
+  it("source 계수 > target 계수 (방향이 굵기로 읽힘)", () => {
+    expect(DEPENDS_TAPER_START).toBeGreaterThan(DEPENDS_TAPER_END);
+  });
+});
+
+describe("draw — depends 방향 테이퍼", () => {
+  const TOKENS = {
+    edgeContains: "#3a3a42", edgeDepends: "#4c4c63", edgeDim: "#1a1a1f",
+    indigo: "#5e6ad2", indigoBright: "#8b97ff",
+  };
+  /** 세그먼트 stroke 마다 lineWidth 를 수집해 첫 세그먼트(source) > 마지막(target) 인지 본다. */
+  function collectSegmentWidths(state: TraceDrawState): number[] {
+    const widths: number[] = [];
+    const ctx = {
+      beginPath() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {}, fill() {}, setLineDash() {}, arc() {},
+      stroke() { widths.push(Number((this as { lineWidth?: unknown }).lineWidth)); },
+      strokeStyle: "", fillStyle: "", lineWidth: 0, lineCap: "butt", lineJoin: "miter", lineDashOffset: 0,
+    } as unknown as CanvasRenderingContext2D;
+    draw(ctx, state, TOKENS);
+    return widths;
+  }
+  it("source 세그먼트가 target 세그먼트보다 굵다", () => {
+    const widths = collectSegmentWidths({
+      a: { x: 0, y: 0 }, b: { x: 200, y: 0 }, control: { x: 100, y: 30 },
+      relationType: "depends", egoState: "normal", farT: 0, t: 0,
+    });
+    expect(widths.length).toBeGreaterThan(2);
+    expect(widths[0]).toBeGreaterThan(widths[widths.length - 1]);
+  });
+  it("contains 는 단일 stroke — 테이퍼 없음(방향이 구조로 자명)", () => {
+    const widths = collectSegmentWidths({
+      a: { x: 0, y: 0 }, b: { x: 200, y: 0 }, control: { x: 100, y: 30 },
+      relationType: "contains", egoState: "normal", farT: 0, t: 0,
+    });
+    expect(widths.length).toBe(1);
+  });
+});
+
 /** P3a — 잉크 사다리: contains 비-ego 렌더가 레벨별 stroke/width 를 탄다. */
 describe("draw — containment ink ladder", () => {
   const TOKENS = {
@@ -154,9 +208,9 @@ describe("draw — containment ink ladder", () => {
   function drawAndCapture(level: 0 | 1 | 2 | undefined) {
     let stroke = ""; let width = 0;
     const ctx = {
-      beginPath() {}, moveTo() {}, quadraticCurveTo() {}, fill() {}, setLineDash() {}, arc() {},
+      beginPath() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {}, fill() {}, setLineDash() {}, arc() {},
       stroke() { stroke = String((this as { strokeStyle?: unknown }).strokeStyle); width = Number((this as { lineWidth?: unknown }).lineWidth); },
-      strokeStyle: "", fillStyle: "", lineWidth: 0,
+      strokeStyle: "", fillStyle: "", lineWidth: 0, lineCap: "butt", lineJoin: "miter", lineDashOffset: 0,
     } as unknown as CanvasRenderingContext2D;
     draw(ctx, {
       a: { x: 0, y: 0 }, b: { x: 100, y: 0 }, control: { x: 50, y: 20 },

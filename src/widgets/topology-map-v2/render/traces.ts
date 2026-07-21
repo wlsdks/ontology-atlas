@@ -151,6 +151,24 @@ export interface TraceTokens {
  */
 const DEPENDS_DASH = [3, 4];
 /**
+ * S2 파트 1 — depends(비-containment) 엣지의 방향 테이퍼. 출발(source, `a`)에서
+ * 도착(target, `b`)으로 굵기가 얇아진다 — 화살촉 없이 방향을 굵기로만 읽히게
+ * ("board-router" 어휘 유지). 계수는 현재 계산된 width 에 곱하는 **비율**이라
+ * ego/selected/farT 등 모든 상태의 width 계산 위에 직교로 얹힌다. 중간값
+ * ≈base 라 전체 잉크량은 대략 보존(source 1.4×, target 0.6×). containment(실선)
+ * 는 방향이 구조(부모→자식)로 자명해 테이퍼 없음. 상수+rationale(전용 토큰
+ * 불필요 — 렌더 계수, node-shapes 의 per-kind ratio 와 같은 결).
+ */
+export const DEPENDS_TAPER_START = 1.4;
+export const DEPENDS_TAPER_END = 0.6;
+/** 곡선 파라미터 u(0=source, 1=target)에서의 테이퍼 계수 — 단조 감소. */
+export function dependsTaperFactor(u: number): number {
+  const t = u < 0 ? 0 : u > 1 ? 1 : u;
+  return DEPENDS_TAPER_START + (DEPENDS_TAPER_END - DEPENDS_TAPER_START) * t;
+}
+/** depends 테이퍼 폴리라인 세그먼트 수 — bowed 곡선을 매끈히 근사할 만큼. */
+const DEPENDS_TAPER_SEGMENTS = 14;
+/**
  * P3a — 레벨별 굵기 계수. 지도학의 도로 위계처럼 한 잉크 계열 안에서
  * 굵기×명도만 탄다 (구조 상수 — node-shapes 의 per-kind ratio 와 같은 결).
  */
@@ -196,13 +214,41 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     }
   }
 
-  ctx.beginPath();
-  ctx.setLineDash(isDepends ? DEPENDS_DASH : []);
-  ctx.moveTo(a.x, a.y);
-  ctx.quadraticCurveTo(control.x, control.y, b.x, b.y);
   ctx.strokeStyle = stroke;
-  ctx.lineWidth = Math.max(0.35, width);
-  ctx.stroke();
+  if (isDepends) {
+    // 방향 테이퍼: source→target 로 얇아지는 가변폭 폴리라인. dash 연속성은
+    // 세그먼트마다 `lineDashOffset` 을 누적 길이로 이어붙여 유지하고, round
+    // cap/join 으로 세그먼트 이음매를 매끄럽게 한다(화살촉 없음 — 방향은 굵기).
+    ctx.setLineDash(DEPENDS_DASH);
+    const prevCap = ctx.lineCap;
+    const prevJoin = ctx.lineJoin;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    let prev = a;
+    let acc = 0;
+    for (let i = 1; i <= DEPENDS_TAPER_SEGMENTS; i += 1) {
+      const point = bezierPoint(a, control, b, i / DEPENDS_TAPER_SEGMENTS);
+      const u = (i - 0.5) / DEPENDS_TAPER_SEGMENTS;
+      ctx.beginPath();
+      ctx.lineWidth = Math.max(0.35, width * dependsTaperFactor(u));
+      ctx.lineDashOffset = -acc;
+      ctx.moveTo(prev.x, prev.y);
+      ctx.lineTo(point.x, point.y);
+      ctx.stroke();
+      acc += Math.hypot(point.x - prev.x, point.y - prev.y);
+      prev = point;
+    }
+    ctx.lineCap = prevCap;
+    ctx.lineJoin = prevJoin;
+    ctx.lineDashOffset = 0;
+  } else {
+    ctx.beginPath();
+    ctx.setLineDash([]);
+    ctx.moveTo(a.x, a.y);
+    ctx.quadraticCurveTo(control.x, control.y, b.x, b.y);
+    ctx.lineWidth = Math.max(0.35, width);
+    ctx.stroke();
+  }
   ctx.setLineDash([]);
 
   if (!isDepends || egoState === "dim") return;
