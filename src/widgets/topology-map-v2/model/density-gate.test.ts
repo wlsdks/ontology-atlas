@@ -157,6 +157,39 @@ describe("computeDensityGate", () => {
     expect(a.chips.map((c) => c.parentId)).toEqual(["d1", "d2"]);
   });
 
+  it("domain 자식은 게이트에서 면제된다 — 프로젝트의 14개 도메인은 접히지 않는다 (Part 0)", () => {
+    // 실증(`/?synth=2000`): 프로젝트가 직속 도메인 14개(임계 12 초과)를 가져도
+    // 스파인이라 접히면 안 된다. kindOf 로 domain 을 면제하면 칩/클러스터 0.
+    const domainKids = children("domain", 14);
+    const result = computeDensityGate({
+      childrenByParent: new Map([["project", domainKids]]),
+      expandedParents: new Set(),
+      parentGeometry: new Map([["project", { x: 0, y: 0, angle: 0 }]]),
+      kindOf: () => "domain",
+    });
+    expect(result.chips).toHaveLength(0);
+    expect(result.clusteredIds.size).toBe(0);
+  });
+
+  it("혼합 자식: domain 은 보이고 capability 만 게이트로 접힌다 (Part 0)", () => {
+    // 프로젝트가 도메인 2개 + capability 13개를 직속으로 가질 때(비정형이나
+    // 방어) — 게이트는 capability 13 > 12 만 세어 접고, 도메인 2개는 계속 보인다.
+    const kids = [...children("domain", 2), ...children("cap", 13)];
+    const kind = (id: string) => (id.startsWith("domain") ? "domain" : "capability");
+    const result = computeDensityGate({
+      childrenByParent: new Map([["p", kids]]),
+      expandedParents: new Set(),
+      parentGeometry: new Map([["p", { x: 0, y: 0, angle: 0 }]]),
+      kindOf: kind,
+    });
+    expect(result.chips).toHaveLength(1);
+    expect(result.chips[0]).toMatchObject({ parentId: "p", count: 13, expanded: false });
+    // 도메인 자식은 clustered 아님(계속 보임), capability 자식만 clustered.
+    expect(result.clusteredIds.has("domain-0")).toBe(false);
+    expect(result.clusteredIds.has("domain-1")).toBe(false);
+    expect(result.clusteredIds.has("cap-0")).toBe(true);
+  });
+
   it("커스텀 threshold 를 존중한다", () => {
     const result = computeDensityGate({
       childrenByParent: new Map([["d", children("cap", 5)]]),

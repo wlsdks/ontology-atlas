@@ -35,5 +35,7 @@ export function computeTopologyClusterState(
     childrenByParent: world.childrenByParent,
     expandedParents,
     parentGeometry,
+    // domain 자식(프로젝트의 뼈대)은 게이트 면제 — Part 0 도메인 티어 게이트 면제.
+    kindOf: (id) => world.nodeById.get(id)?.kind,
   });
 }

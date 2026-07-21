@@ -63,6 +63,14 @@ export interface DensityGateInput {
   parentGeometry: ReadonlyMap<string, DensityGateParentGeometry>;
   /** 접기 임계(초과 시 접힘). 기본 `DENSITY_GATE_THRESHOLD`. */
   threshold?: number;
+  /**
+   * 노드 kind 조회 — **domain 자식은 게이트에서 면제**한다(카운트·클러스터
+   * 양쪽). 프로젝트의 직속 자식(도메인)은 지도의 뼈대/스파인이라, 도메인
+   * 14개가 임계(12)를 넘어도 `+N` 칩 하나로 접히면 스파인 자체가 사라진다
+   * (실증: `/?synth=2000`). 게이트는 capability/element 자식에만 건다. 생략
+   * 시 하위호환 — 전부 게이트 대상.
+   */
+  kindOf?: (nodeId: string) => string | undefined;
 }
 
 export interface DensityGateResult {
@@ -82,26 +90,34 @@ export interface DensityGateResult {
  */
 export function computeDensityGate(input: DensityGateInput): DensityGateResult {
   const threshold = input.threshold ?? DENSITY_GATE_THRESHOLD;
-  const { childrenByParent, expandedParents, parentGeometry } = input;
+  const { childrenByParent, expandedParents, parentGeometry, kindOf } = input;
 
-  // 1. 밀집 부모 = 직속 자식 수 > 임계.
+  // domain 자식은 게이트 면제(스파인 뼈대). kindOf 미지정이면 전부 게이트 대상.
+  const isExempt = (id: string): boolean => kindOf?.(id) === "domain";
+  /** 게이트가 세는 자식 = domain 이 아닌 자식(capability/element). */
+  const gatedChildrenOf = (children: readonly string[]): readonly string[] =>
+    kindOf ? children.filter((c) => !isExempt(c)) : children;
+
+  // 1. 밀집 부모 = 게이트 대상 자식 수 > 임계.
   // 2. 접힌 부모 = 밀집 && 미확장.
   const collapsedParents = new Set<string>();
   for (const [parentId, children] of childrenByParent) {
-    if (children.length > threshold && !expandedParents.has(parentId)) {
+    if (gatedChildrenOf(children).length > threshold && !expandedParents.has(parentId)) {
       collapsedParents.add(parentId);
     }
   }
 
   // 3. clusteredIds = 접힌 부모들의 서브트리 전체(자식·손자…). 티어 줌이
   //    element 를 드러내도 부모가 접혀 있으면 손자까지 숨겨야 "부모 없는
-  //    떠도는 노드" 가 생기지 않는다.
+  //    떠도는 노드" 가 생기지 않는다. 단 domain 자식은 스파인이라 접힌
+  //    조상 밑에서도 숨기지 않고, 그 서브트리로도 내려가지 않는다(도메인은
+  //    자기 게이트로만 판정).
   const clusteredIds = new Set<string>();
   for (const parentId of collapsedParents) {
     const stack = [...(childrenByParent.get(parentId) ?? [])];
     while (stack.length > 0) {
       const id = stack.pop() as string;
-      if (clusteredIds.has(id)) continue;
+      if (clusteredIds.has(id) || isExempt(id)) continue;
       clusteredIds.add(id);
       const grandChildren = childrenByParent.get(id);
       if (grandChildren) stack.push(...grandChildren);
@@ -110,17 +126,20 @@ export function computeDensityGate(input: DensityGateInput): DensityGateResult {
 
   // 4. 칩 = 밀집 부모 중 자신이 클러스터되지 않은(= 화면에 보이는) 것.
   //    접힌 부모의 자식인 밀집 부모(중첩)는 부모가 접혀 있어 보이지 않으므로
-  //    칩도 내지 않는다 — 상위를 먼저 펼쳐야 그 칩이 등장한다.
+  //    칩도 내지 않는다 — 상위를 먼저 펼쳐야 그 칩이 등장한다. count 는
+  //    실제로 접히는(게이트 대상) 자식 수 — 면제된 domain 자식은 계속 보이므로
+  //    칩의 "+N" 에 포함하지 않는다.
   const chips: ClusterChip[] = [];
   for (const [parentId, children] of childrenByParent) {
-    if (children.length <= threshold) continue;
+    const gated = gatedChildrenOf(children);
+    if (gated.length <= threshold) continue;
     if (clusteredIds.has(parentId)) continue;
     const geometry = parentGeometry.get(parentId);
     if (!geometry) continue;
     const ring = geometry.ring ?? DEFAULT_CHIP_RING;
     chips.push({
       parentId,
-      count: children.length,
+      count: gated.length,
       expanded: expandedParents.has(parentId),
       anchor: {
         x: geometry.x + Math.cos(geometry.angle) * ring,
