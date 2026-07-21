@@ -122,6 +122,8 @@ export interface PointerHandlerRefs {
    * 미리보기 — 사용 신호(소유자 요청) 확인 후 게이트 해제.
    */
   hoveredEdgeRef?: Ref<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null>;
+  /** 엣지 선택(페어 포커스) 상태 미러 — 바닥 클릭 해제 판정에 필요. */
+  selectedEdgeRef?: Ref<{ sourceId: string; targetId: string } | null>;
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
     position: { x: number; y: number } | null,
@@ -188,6 +190,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     dragStartPosRef,
     overviewScaleRef,
     hoveredEdgeRef,
+    selectedEdgeRef,
     onSelect,
     onSelectEdge,
     onHoverEdge,
@@ -531,7 +534,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         return;
       }
     }
-    if (action.type === "deselect") onPaneClick?.();
+    // 엣지만 선택된 상태(노드 포커스 없음)의 바닥 클릭도 해제다 —
+    // resolveClickAction 은 노드 포커스만 보므로 여기서 보강 (사용자
+    // 실보고: "선 클릭했다가 바닥 클릭하면 원래대로 돌아와야").
+    const emptyGroundWithEdgeSelected =
+      commitClick !== null && commitClick.nodeId === null && (selectedEdgeRef?.current ?? null) !== null;
+    if (action.type === "deselect" || emptyGroundWithEdgeSelected) onPaneClick?.();
   };
 
   const clearEdgeHover = () => {

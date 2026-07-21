@@ -1244,7 +1244,7 @@
     /* B3 잔여 — dust 시차 깊이 범위 (그리드 1.0 대비 느린 흐름). */
     /* 엣지 선택(페어 포커스) — 인디고 pale 사다리: 노드 선택(#5e6ad2)과
        같은 계열, 밝은 값으로 구분 (채색 시스템 증식 없음). */
-    --topology-v2-edge-selected: rgba(200, 210, 255, 0.95);
+    --topology-v2-edge-selected: rgba(200, 210, 255, 0.66);
     --topology-v2-dust-parallax-min: 0.15;
     --topology-v2-dust-parallax-max: 0.45;
     --topology-v2-edge-depends: #4c4c63;
