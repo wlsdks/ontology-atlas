@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-20T23:59:28.411Z",
+  "generatedAt": "2026-07-21T00:35:02.892Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4141,7 +4141,7 @@
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. fable 점검 3대 + 전략 패널 1대의 발견을 8슬라이스로 전량 구현 (티어링: 복잡=fable · 중간=opus · 일반=sonnet): 캔버스 Bl",
       "wordCount": 27334,
-      "updatedAt": "2026-07-20T23:59:18.331Z",
+      "updatedAt": "2026-07-21T08:59:29+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -8617,8 +8617,8 @@
         }
       ],
       "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. 정체성 (2026-07): agent-native, human-sovereign. 에이전트를 위한 메모리가 아니라 에이전트가 1급 사용자인 공유 의미 계층 — 에이전트는 MCP/CLI 로 신선도를 유지하는 엔진이자 최대 소비자, 사람은 평문 마크다운·git diff·로컬 디스크 진실원을 통한 의미의 최종 결정권자. 훅은 에이전트 통증(\"코드베이스 장기 구조를 까먹는다\"), 본질은 공유 계층. 이 프로젝트의 ontology 는 비즈니",
-      "wordCount": 148,
-      "updatedAt": "2026-07-18T11:34:54+09:00",
+      "wordCount": 161,
+      "updatedAt": "2026-07-21T09:39:59+09:00",
       "linksOut": []
     },
     {

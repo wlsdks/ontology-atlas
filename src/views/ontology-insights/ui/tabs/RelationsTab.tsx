@@ -40,6 +40,8 @@ export interface RelationsTabProps {
   hubTotalCount: number;
   kindLabel: (kind: string) => string;
   hubLink: RelationsTabHubLink;
+  /** TOP DEPENDS_ON 행의 양 끝 노드명 클릭 → 지도 포커스 딥링크. 허브 행과 같은 계약. */
+  dependsOnLink: RelationsTabHubLink;
   labels: RelationsTabLabels;
 }
 
@@ -60,6 +62,7 @@ export function RelationsTab({
   hubTotalCount,
   kindLabel,
   hubLink,
+  dependsOnLink,
   labels,
 }: RelationsTabProps) {
   const edgeMax = edgeTypeRows.reduce((m, r) => Math.max(m, r.count), 0);
@@ -129,9 +132,23 @@ export function RelationsTab({
                 className="flex items-center gap-2.5 border-t border-[color:var(--color-divider)] py-2.5 text-[13px] text-[color:var(--color-text-secondary)] first:border-t-0"
               >
                 <TopologyV2TraceMark containment={false} />
-                <span className="min-w-0 truncate">{row.fromTitle}</span>
+                <Link
+                  href={dependsOnLink.href(row.fromId)}
+                  aria-label={dependsOnLink.ariaLabel(row.fromTitle)}
+                  data-testid="insights-depends-row-link"
+                  className="min-w-0 truncate rounded-sm text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)] hover:underline"
+                >
+                  {row.fromTitle}
+                </Link>
                 <span className="flex-none text-[color:var(--color-text-quaternary)]">→</span>
-                <span className="min-w-0 truncate">{row.toTitle}</span>
+                <Link
+                  href={dependsOnLink.href(row.toId)}
+                  aria-label={dependsOnLink.ariaLabel(row.toTitle)}
+                  data-testid="insights-depends-row-link"
+                  className="min-w-0 truncate rounded-sm text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)] hover:underline"
+                >
+                  {row.toTitle}
+                </Link>
                 <span className="ml-auto flex-none font-mono text-[12.5px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
                   {row.count}
                 </span>

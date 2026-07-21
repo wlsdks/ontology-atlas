@@ -310,9 +310,6 @@
     "factChannelValue": "GitHub Release",
     "checksumLabel": "SHA-256",
     "checksumValuePending": "v0.1.0 게시 시 기록",
-    "checksumCopy": "복사",
-    "checksumCopyCopied": "체크섬 복사됨",
-    "checksumCopyFailed": "체크섬 복사 실패",
     "includesHeading": "포함된 것",
     "includesCaption": "앱 하나 · 로컬 vault",
     "includeTopologyTitle": "topology 워크벤치",
@@ -1639,6 +1636,7 @@
       "activityAgoYesterday": "어제",
       "activityAgoDaysAgo": "{days}일 전",
       "activityNoDomain": "—",
+      "activityRowAriaLabel": "{slug} — 지도에서 보기",
       "cardUpdatedPrefix": "최근 갱신",
       "cardDescriptionFallback": "설명이 아직 없는 프로젝트입니다.",
       "cardDetailAriaLabel": "{name} 상세로 가기",
@@ -1719,7 +1717,8 @@
       "saveSuccessDescription": "설명 저장됨",
       "saveErrorGeneric": "저장 실패",
       "saveErrorConflict": "이 프로젝트 파일이 외부 편집기나 AI agent에 의해 먼저 변경됐습니다. 새로고침 후 다시 저장해주세요.",
-      "saveErrorPrefix": "저장 실패 — {message}"
+      "saveErrorPrefix": "저장 실패 — {message}",
+      "readOnlyBadge": "보기 전용 — 폴더를 열면 편집"
     },
     "editor": {
       "documentTitleEdit": "프로젝트 편집 · Ontology Atlas",
@@ -2536,7 +2535,7 @@
         "owner": "담당자",
         "icon": "아이콘 (이모지)",
         "progress": "진행도 %",
-        "slugHint": "URL에 쓰임. 문자·숫자·하이픈만. 생성 후엔 변경 불가.",
+        "slugHint": "URL에 쓰임. 문자(한글 등 유니코드 포함)·숫자·하이픈만, 공백 없이. 생성 후엔 변경 불가.",
         "slugGenerate": "이름에서 생성",
         "slugDuplicate": "이미 존재하는 slug입니다.",
         "duplicateNotice": "기존 프로젝트 내용을 복제해서 시작합니다.",

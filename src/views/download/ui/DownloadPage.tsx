@@ -42,14 +42,6 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
       : releaseStatusCopyState === 'failed'
         ? t('releaseStatusCopyFailed')
         : t('releaseStatusCopy');
-  const { state: checksumCopyState, copy: copyChecksum } = useCopyFeedback(1500);
-  const checksumCopyLabel =
-    checksumCopyState === 'copied'
-      ? t('checksumCopyCopied')
-      : checksumCopyState === 'failed'
-        ? t('checksumCopyFailed')
-        : t('checksumCopy');
-
   return (
     <div className="flex min-h-screen w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
@@ -132,25 +124,20 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
             <FactItem label={t('factMinOsLabel')} value={RELEASE_MIN_MACOS} />
             <FactItem label={t('factChannelLabel')} value={t('factChannelValue')} />
           </div>
-          <div className="mt-2 flex items-baseline gap-3 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-2.5 shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
+          <div
+            data-testid="download-checksum-row"
+            className="mt-2 flex items-baseline gap-3 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-2.5 shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
+          >
             <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t('checksumLabel')}
             </span>
+            {/* [W-4] 게시된 DMG 가 아직 없어 실 SHA-256 이 존재하지 않는다 —
+                자리표시자(0×64)를 복사 가능하게 두면 사용자가 가짜 체크섬을
+                무결성 검증에 붙여넣는 사고로 이어진다. 복사 버튼은 실 해시가
+                채워질 때까지 렌더하지 않는다(release-facts.ts 참고). */}
             <span className={`min-w-0 flex-1 truncate text-[11.5px] tracking-[0.02em] ${numeralClass}`}>
-              {'0'.repeat(64)}{' '}
-              <span className="text-[color:var(--color-text-quaternary)] [text-shadow:none]">
-                — {t('checksumValuePending')}
-              </span>
+              {t('checksumValuePending')}
             </span>
-            <button
-              type="button"
-              onClick={() => void copyChecksum('0'.repeat(64))}
-              aria-label={checksumCopyLabel}
-              className="inline-flex h-7 shrink-0 items-center gap-1 rounded-[5px] border border-[color:var(--color-border-soft)] px-2 font-mono text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
-            >
-              {checksumCopyState === 'copied' ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
-              {t('checksumCopy')}
-            </button>
           </div>
           <p className="mt-3 max-w-2xl text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
             {t('releaseAvailabilityNote')}

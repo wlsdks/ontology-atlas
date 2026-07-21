@@ -437,7 +437,17 @@ export function ProjectDetailPage({
               </Link>
               {canManageProject ? (
                 <ProjectQuickEditPanel project={project} settingsHref={projectFullEditHref} />
-              ) : null}
+              ) : (
+                // [P-7] vault 미선택(static/dogfood) 상태엔 편집 진입점이
+                // 전무해 "왜 안 되는지" 안내가 없었다 — 왜 + 다음 행동을
+                // 한 줄로 밝히는 배지. 액션은 아니고 상태 typed fact.
+                <span
+                  data-testid="project-detail-readonly-badge"
+                  className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-[11px] text-[color:var(--color-text-tertiary)]"
+                >
+                  {t("readOnlyBadge")}
+                </span>
+              )}
             </div>
           </div>
 

@@ -115,6 +115,17 @@ describe('DownloadPage', () => {
     expect(await screen.findByText(/Release audit copied/i)).toBeInTheDocument();
   });
 
+  it('does not offer to copy the placeholder SHA-256 before a real checksum exists (UX 부대 — [W-4])', () => {
+    renderDownloadPage();
+
+    const checksumRow = screen.getByTestId('download-checksum-row');
+    expect(checksumRow).toHaveTextContent('recorded when v0.1.0 publishes');
+    expect(checksumRow).not.toHaveTextContent('0000000000000000');
+    expect(
+      screen.queryByRole('button', { name: /copy.*checksum/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it('can hide the first-release checklist after public DMGs are published', () => {
     renderDownloadPage({ showFirstReleaseChecklist: false });
 
