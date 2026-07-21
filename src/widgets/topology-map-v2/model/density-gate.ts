@@ -57,6 +57,12 @@ export interface ClusterChip {
    * `kindOf(첫 게이트 자식)`, 없으면 undefined. Part 5A 칩 비주얼용.
    */
   childKind?: string;
+  /**
+   * S2 파트 3a — 선택적 ego 의 `이웃 +N` 칩이면 true. density-gate 는 이 칩을
+   * 만들지 않지만(런타임 use-topology-loop 가 합류), 같은 렌더/히트 경로를 타므로
+   * 타입을 공유한다. 클릭 시 URL 토글이 아니라 다음 이웃 배치를 점등한다.
+   */
+  ego?: boolean;
 }
 
 export interface DensityGateInput {

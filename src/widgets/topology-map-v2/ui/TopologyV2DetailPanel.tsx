@@ -1,12 +1,13 @@
 "use client";
 
-import { type KeyboardEvent as ReactKeyboardEvent, useCallback } from "react";
+import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useState } from "react";
 import { Copy, FileText, GitBranch, Route, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { isContainmentRelation } from "@/shared/lib/ontology-tree";
 import {
   formatV2MetricLine,
+  V2_CONTAINS_SUMMARY_THRESHOLD,
   type V2ConnectionGroupsView,
   type V2ConnectionGroupView,
   type V2DatasheetConnection,
@@ -71,6 +72,12 @@ export interface TopologyV2DetailPanelLabels {
   poweredOff: string;
   /** M-2 — "담는 것" (contains). Only rendered for container nodes. */
   metricContains: string;
+  /** S2 파트 3 — 요약 모드에서 개별 리스트로 펴는 토글 라벨("전체 보기"). */
+  containsShowAll: string;
+  /** S2 파트 3 — 리스트 모드에서 요약으로 접는 토글 라벨("요약 보기"). */
+  containsShowSummary: string;
+  /** S2 파트 3 — 경로 프리픽스 요약의 나머지 버킷 라벨("기타"). */
+  containsOtherGroup: string;
   metricUsedBy: string;
   metricDependsOn: string;
   metricEvidence: string;
@@ -191,6 +198,11 @@ export function TopologyV2DetailPanel({
     groups.dependsOn.total > 0 ||
     evidence.total > 0;
 
+  // S2 파트 3 — 긴 "담는 것" 리스트는 경로 프리픽스 요약으로 접고, "전체 보기"
+  // 토글로 기존 리스트를 편다(세션 임시 상태). 노드가 바뀌면 기본(요약)으로 리셋
+  // 되도록 slug 를 key 로 쓴다(호출부 HomePage 가 key 를 주므로 재마운트).
+  const [showAllContains, setShowAllContains] = useState(false);
+
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
       if (event.key === "Escape") {
@@ -213,6 +225,12 @@ export function TopologyV2DetailPanel({
   ) => {
     if (view.total === 0) return null;
     const overflow = view.total - view.rows.length;
+    // S2 파트 3 — 긴 "담는 것"은 경로 프리픽스 요약을 기본으로, "전체 보기"로 리스트.
+    const useSummary =
+      group === "contains" &&
+      view.summary !== undefined &&
+      view.total > V2_CONTAINS_SUMMARY_THRESHOLD &&
+      !showAllContains;
     return (
       <div className="flex flex-col gap-1" data-datasheet-group={group}>
         <div className="flex items-center gap-2">
@@ -225,7 +243,44 @@ export function TopologyV2DetailPanel({
           >
             {view.total}
           </span>
+          {group === "contains" && view.summary !== undefined && view.total > V2_CONTAINS_SUMMARY_THRESHOLD ? (
+            <button
+              type="button"
+              onClick={() => setShowAllContains((v) => !v)}
+              data-testid="topology-v2-contains-summary-toggle"
+              className="ml-auto shrink-0 text-[10.5px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+            >
+              {showAllContains ? labels.containsShowSummary : labels.containsShowAll}
+            </button>
+          ) : null}
         </div>
+        {useSummary && view.summary ? (
+          <ul className="flex flex-col gap-0.5" data-testid="topology-v2-contains-summary">
+            {view.summary.groups.map((g) => (
+              <li
+                key={`contains-summary:${g.key}`}
+                className="flex items-center gap-2 px-1.5 py-1"
+              >
+                <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-[color:var(--topology-v2-panel-text-secondary)]">
+                  {g.key}
+                </span>
+                <span className="shrink-0 font-mono text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+                  {g.count}
+                </span>
+              </li>
+            ))}
+            {view.summary.otherCount > 0 ? (
+              <li className="flex items-center gap-2 px-1.5 py-1">
+                <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+                  {labels.containsOtherGroup}
+                </span>
+                <span className="shrink-0 font-mono text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+                  {view.summary.otherCount}
+                </span>
+              </li>
+            ) : null}
+          </ul>
+        ) : (
         <ul className="flex flex-col">
           {view.rows.map((row: V2DatasheetConnection) => (
             // Neighbor `id` is unique within a direction group post-dedup
@@ -247,7 +302,8 @@ export function TopologyV2DetailPanel({
             </li>
           ))}
         </ul>
-        {overflow > 0 ? (
+        )}
+        {overflow > 0 && !useSummary ? (
           <span
             data-datasheet-group-overflow={group}
             className="pl-[28px] font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]"

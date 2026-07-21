@@ -26,6 +26,7 @@ import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCamer
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { computeTopologyClusterState } from "./topology-cluster-state";
 import type { ClusterChip } from "../model/density-gate";
+import { EGO_NEIGHBOR_CHIP_ID, EGO_NEIGHBOR_LIMIT, rankEgoNeighborsByDOI, selectiveEgoNeighbors, type EgoNeighborRankEntry } from "../model/focus-state";
 import { createTopologyPointerHandlers, type TopologyPointerHandlers } from "./topology-pointer-handlers";
 import { stepTopologyPhysics } from "./topology-physics-step";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
@@ -240,6 +241,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const clusterChipsRef = useRef<readonly ClusterChip[]>([]);
   /** 밀도 게이트 — 호버 중인 클러스터 부모 id(칩 보더 강조 + 커서). */
   const hoveredClusterIdRef = useRef<string | null>(null);
+  /**
+   * S2 파트 3a — 선택적 ego 의 점등 배치 수(세션 임시). 1 = 상위 24 이웃만,
+   * `이웃 +N` 칩 클릭마다 +1. 포커스 변경 시 1 로 리셋(아래 focus 효과).
+   */
+  const egoRevealBatchesRef = useRef(1);
   const emphasisRef = useRef<Map<string, number>>(new Map());
   /** C1 A2 — ego tier-reveal ramp, stepped in `stepTopologyPhysics`, consumed by `drawTopologyFrame`. */
   const egoRevealRef = useRef<Map<string, number>>(new Map());
@@ -540,6 +546,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     if (lastFocusedSlugRef.current === focusedSlug) return;
     lastFocusedSlugRef.current = focusedSlug;
+    // S2 파트 3a — 새 포커스는 상위 24 이웃부터 (칩 클릭으로 더 편 배치를 리셋).
+    egoRevealBatchesRef.current = 1;
 
     // Canvas-emphasis slice §B2 — a NEW selection (never a deselect) starts
     // the one-shot commit pulse. Captured unconditionally (before the
@@ -811,7 +819,45 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // 계산한다(부모가 드래그/살아있는 그래프로 움직이면 칩 anchor 도 따라감).
       // 판정 로직은 순수 모델(`density-gate.ts`), 여긴 좌표 주입만.
       const clusterState = computeTopologyClusterState(world, expandedParentsRef.current);
-      clusterChipsRef.current = clusterState.chips;
+
+      // S2 파트 3a — 선택적 ego: 포커스 노드의 이웃이 limit 을 넘으면 DOI 상위
+      // (revealedBatches × limit)만 남기고 나머지는 접는다(clusteredIds 에 합류 →
+      // 노드·엣지·라벨이 기존 스킵 경로로 함께 숨는다). `이웃 +N` 칩은 같은
+      // 렌더/히트 경로를 타는 ClusterChip(ego:true)로 얹는다. 세션 임시 상태.
+      let frameClusteredIds: ReadonlySet<string> = clusterState.clusteredIds;
+      let frameChips: readonly ClusterChip[] = clusterState.chips;
+      {
+        const focusId = focusedSlugRef.current;
+        const neighbors = focusId ? world.neighborMap.get(focusId) : undefined;
+        if (focusId && neighbors && neighbors.size > EGO_NEIGHBOR_LIMIT) {
+          const entries: EgoNeighborRankEntry[] = [];
+          for (const id of neighbors) {
+            const n = world.nodeById.get(id);
+            entries.push({ id, kind: n?.kind ?? "element", degree: world.neighborMap.get(id)?.size ?? 0 });
+          }
+          const ranked = rankEgoNeighborsByDOI(entries);
+          const sel = selectiveEgoNeighbors(ranked, egoRevealBatchesRef.current);
+          if (sel.hiddenCount > 0) {
+            frameClusteredIds = new Set<string>([...clusterState.clusteredIds, ...sel.hiddenNeighbors]);
+            const focusNode = world.nodeById.get(focusId);
+            if (focusNode) {
+              // 포커스 노드 바로 아래(월드)에 앵커 — 반지름 + 여유만큼 내린다.
+              const r = radiusForKind(focusNode.kind, tokens) * focusNode.magnitudeScale;
+              frameChips = [
+                ...clusterState.chips,
+                {
+                  parentId: EGO_NEIGHBOR_CHIP_ID,
+                  count: sel.hiddenCount,
+                  expanded: false,
+                  anchor: { x: focusNode.x, y: focusNode.y + r + 26 },
+                  ego: true,
+                },
+              ];
+            }
+          }
+        }
+      }
+      clusterChipsRef.current = frameChips;
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
@@ -837,8 +883,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         reducedMotion: reducedMotionRef.current,
         selectionPulse: selectionPulseRef.current,
         agentFocusNodeId: agentFocusNodeIdRef.current,
-        clusteredIds: clusterState.clusteredIds,
-        clusterChips: clusterState.chips,
+        clusteredIds: frameClusteredIds,
+        clusterChips: frameChips,
         hoveredClusterId: hoveredClusterIdRef.current,
       });
 
@@ -889,6 +935,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onContextMenuNode,
     onToggleCluster,
     onHoverCluster,
+    // S2 파트 3a — `이웃 +N` 칩 클릭 → 다음 이웃 배치 점등(세션 임시). 클릭
+    // 제스처가 방금 캔버스를 활성으로 유지했으므로(유휴 grace 창 안) 다음
+    // 프레임이 새 배치로 다시 그린다 — 별도 wake 불필요.
+    onExpandEgoNeighbors: () => {
+      egoRevealBatchesRef.current += 1;
+    },
   });
   /* eslint-enable react-hooks/refs */
 

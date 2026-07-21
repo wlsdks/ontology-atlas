@@ -1,14 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  EGO_NEIGHBOR_LIMIT,
   isNodeEmphasisActive,
+  rankEgoNeighborsByDOI,
   resolveEdgeEgoState,
   resolveEdgeEgoStateWithPair,
   resolveEdgePulseSpeed,
   resolveNodeEgoState,
   resolveNodeEgoStateWithPair,
   scheduleRipple,
+  selectiveEgoNeighbors,
   stepEmphasis,
+  type EgoNeighborRankEntry,
 } from "./focus-state";
 
 describe("resolveNodeEgoState", () => {
@@ -167,5 +171,39 @@ describe("edge pair focus (선 선택 = 페어 포커스)", () => {
     expect(resolveEdgeEgoStateWithPair(false, null, pair, false)).toBe("dim");
     expect(resolveEdgeEgoStateWithPair(true, "x", pair, false)).toBe("ego");
     expect(resolveEdgeEgoStateWithPair(false, null, null, false)).toBe("normal");
+  });
+});
+
+describe("rankEgoNeighborsByDOI (S2 파트 3a)", () => {
+  it("kind 가중치(domain>capability>element) → degree 내림차순 → slug 사전순, 결정론", () => {
+    const neighbors: EgoNeighborRankEntry[] = [
+      { id: "el-b", kind: "element", degree: 9 },
+      { id: "cap-hi", kind: "capability", degree: 5 },
+      { id: "cap-lo", kind: "capability", degree: 2 },
+      { id: "dom", kind: "domain", degree: 1 },
+      { id: "el-a", kind: "element", degree: 9 }, // degree 동률 → slug 사전순 el-a < el-b
+    ];
+    const ranked = rankEgoNeighborsByDOI(neighbors);
+    expect(ranked).toEqual(["dom", "cap-hi", "cap-lo", "el-a", "el-b"]);
+    // 결정론: 재실행해도 동일.
+    expect(rankEgoNeighborsByDOI([...neighbors].reverse())).toEqual(ranked);
+  });
+});
+
+describe("selectiveEgoNeighbors (S2 파트 3a)", () => {
+  const ids = Array.from({ length: 60 }, (_, i) => `n${String(i).padStart(2, "0")}`);
+
+  it("배치 1 = 상위 limit 만 visible, 나머지 hidden", () => {
+    const r = selectiveEgoNeighbors(ids, 1);
+    expect(r.visibleNeighbors.size).toBe(EGO_NEIGHBOR_LIMIT);
+    expect(r.hiddenCount).toBe(60 - EGO_NEIGHBOR_LIMIT);
+    expect(r.visibleNeighbors.has("n00")).toBe(true);
+    expect(r.hiddenNeighbors.has("n59")).toBe(true);
+  });
+
+  it("배치가 늘면 다음 limit 개가 추가 점등, 전부 점등되면 hiddenCount 0", () => {
+    expect(selectiveEgoNeighbors(ids, 2).visibleNeighbors.size).toBe(48);
+    expect(selectiveEgoNeighbors(ids, 3).hiddenCount).toBe(0);
+    expect(selectiveEgoNeighbors(ids, 9).hiddenCount).toBe(0);
   });
 });

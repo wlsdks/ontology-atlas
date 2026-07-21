@@ -24,7 +24,7 @@ import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent }
 
 import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
-import { scheduleRipple } from "../model/focus-state";
+import { EGO_NEIGHBOR_CHIP_ID, scheduleRipple } from "../model/focus-state";
 import type { ForceSimulation } from "../model/force-layout";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable, isSpineOnlyZoom } from "../model/tier-visibility";
 import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
@@ -145,6 +145,8 @@ export interface PointerHandlerRefs {
   onHoverCluster?: (
     info: { parentId: string; count: number; expanded: boolean; position: { x: number; y: number } } | null,
   ) => void;
+  /** S2 파트 3a — `이웃 +N` 칩 클릭 → 다음 이웃 배치 점등(URL 토글과 별개). */
+  onExpandEgoNeighbors?: () => void;
   /**
    * W2-B node right-click context menu. Called with the hit node's id and the
    * event's viewport-space coordinates (`clientX`/`clientY`, matching the
@@ -216,6 +218,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     onContextMenuNode,
     onToggleCluster,
     onHoverCluster,
+    onExpandEgoNeighbors,
   } = refs;
 
   /**
@@ -468,8 +471,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         // S2 파트 5C — 호버 대상 변경 시에만 툴팁 발화(안정). 칩이 잡히면
         // 엣지 호버는 즉시 해제(둘 다 빈 공간이라 겹칠 수 있음 — 칩 우선).
         if (onHoverCluster) {
-          if (chipHit === null) onHoverCluster(null);
-          else {
+          if (chipHit === null || chipHit === EGO_NEIGHBOR_CHIP_ID) {
+            // ego `이웃 +N` 칩은 부모 제목이 없어 툴팁을 띄우지 않는다(커서/보더만).
+            onHoverCluster(null);
+          } else {
             clearEdgeHover();
             const chip = clusterChipsRef?.current?.find((c) => c.parentId === chipHit);
             if (chip) {
@@ -593,9 +598,15 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // 밀도 게이트 — 빈 공간(노드 미히트) 클릭이 클러스터 칩 위면 확장 토글.
     // 엣지 선택/바닥 해제보다 우선한다(칩은 명시적 대화형 크롬). 노드 클릭=ego
     // 포커스 계약은 위 select 분기에서 이미 처리돼 여기 도달하지 않는다.
-    if (commitClick && commitClick.nodeId === null && clickPoint && onToggleCluster) {
+    if (commitClick && commitClick.nodeId === null && clickPoint && (onToggleCluster || onExpandEgoNeighbors)) {
       const chipParent = hitTestClusterChip(clickPoint.x, clickPoint.y);
-      if (chipParent !== null) {
+      if (chipParent === EGO_NEIGHBOR_CHIP_ID) {
+        // S2 파트 3a — `이웃 +N` 칩: URL 토글이 아니라 다음 이웃 배치를 점등.
+        onExpandEgoNeighbors?.();
+        clearClusterHover();
+        return;
+      }
+      if (chipParent !== null && onToggleCluster) {
         onToggleCluster(chipParent);
         // 토글로 상태(접힘↔펼침)가 바뀌었으니 툴팁을 닫는다 — 재호버 시 새 문구.
         clearClusterHover();

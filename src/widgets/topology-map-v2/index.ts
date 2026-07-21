@@ -29,11 +29,14 @@ export {
   formatV2HandoffText,
   formatV2MetricLine,
   groupV2ConnectionsByDirection,
+  summarizeContainsByPathPrefix,
   V2_CONNECTION_ROW_CAP,
+  V2_CONTAINS_SUMMARY_THRESHOLD,
 } from './ui/topology-v2-datasheet';
 export type {
   V2ConnectionGroupsView,
   V2ConnectionGroupView,
+  V2ContainsGroupSummary,
   V2ConnectionSourceEdge,
   V2ConnectionSourceNode,
   V2DatasheetConnection,

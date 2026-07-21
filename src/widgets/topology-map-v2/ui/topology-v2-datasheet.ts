@@ -39,11 +39,70 @@ export {
 import { groupConnectionsByRole } from "@/shared/lib/ontology-tree/connections";
 import type { DatasheetConnection as V2DatasheetConnection } from "@/shared/lib/ontology-tree/connections";
 
+/**
+ * S2 파트 3 — "담는 것" 리스트가 길면(>15) 개별 행 대신 kind·경로 프리픽스별
+ * 집계 요약을 보여준다(예: "cli/src/commands 48 · .claude/skills 6 · 기타 12").
+ * 순수 결정론: 프리픽스별 카운트 → count 내림차순, 동률은 key 사전순 → 상위
+ * `maxGroups` 만 명명, 나머지 + 프리픽스 없는 행은 `otherCount`("기타").
+ */
+export interface V2ContainsGroupSummary {
+  groups: { key: string; count: number }[];
+  otherCount: number;
+  total: number;
+}
+
+/** "담는 것" 그룹 요약을 켜는 임계 — 이 값을 **초과**하면 요약을 표시한다. */
+export const V2_CONTAINS_SUMMARY_THRESHOLD = 15;
+
+/** node id(`kind:slug`)에서 디렉터리 프리픽스를 유도한다 — 슬래시 없으면 null(기타). */
+function pathPrefixKey(id: string): string | null {
+  const colon = id.indexOf(":");
+  const slug = colon === -1 ? id : id.slice(colon + 1);
+  const slash = slug.lastIndexOf("/");
+  if (slash === -1) return null;
+  return slug.slice(0, slash);
+}
+
+/**
+ * 담는 것 행들을 경로 프리픽스별로 집계한다. 결정론: count 내림차순, 동률은
+ * key 사전순. 상위 `maxGroups` 개만 명명하고 나머지 프리픽스 + 프리픽스 없는
+ * 행은 `otherCount` 로 합친다.
+ */
+export function summarizeContainsByPathPrefix(
+  rows: readonly V2DatasheetConnection[],
+  maxGroups: number = 4,
+): V2ContainsGroupSummary {
+  const total = rows.length;
+  const counts = new Map<string, number>();
+  let noPrefix = 0;
+  for (const row of rows) {
+    const key = pathPrefixKey(row.id);
+    if (key === null) {
+      noPrefix += 1;
+      continue;
+    }
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const sorted = [...counts.entries()].sort(
+    (a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0),
+  );
+  const cap = Math.max(0, maxGroups);
+  const named = sorted.slice(0, cap);
+  let otherCount = noPrefix;
+  for (const [, c] of sorted.slice(cap)) otherCount += c;
+  return { groups: named.map(([key, count]) => ({ key, count })), otherCount, total };
+}
+
 /** One relation-role group as the panel renders it: a capped preview of rows +
  * the group's TRUE total (so the header can say "쓰는 곳 23" while showing 6). */
 export interface V2ConnectionGroupView {
   rows: V2DatasheetConnection[];
   total: number;
+  /**
+   * S2 파트 3 — "담는 것" 그룹에만 채워지는 경로 프리픽스 집계(총 행이 임계를
+   * 넘을 때 개별 리스트 대신 표시). 전체 행 기준으로 계산(캡 이전).
+   */
+  summary?: V2ContainsGroupSummary;
 }
 export interface V2ConnectionGroupsView {
   /** Outgoing containment — plain "담는 것" (what this node contains). */
@@ -83,7 +142,9 @@ export function buildV2ConnectionGroups(
     total: rows.length,
   });
   return {
-    contains: toView(grouped.contains),
+    // S2 파트 3 — contains 는 전체 행 기준 경로 프리픽스 요약을 함께 싣는다
+    // (임계 초과 시 패널이 개별 리스트 대신 이 요약을 렌더).
+    contains: { ...toView(grouped.contains), summary: summarizeContainsByPathPrefix(grouped.contains) },
     usedBy: toView(grouped.usedBy),
     dependsOn: toView(grouped.dependsOn),
     belongsTo: toView(grouped.belongsTo),

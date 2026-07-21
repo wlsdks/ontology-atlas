@@ -2742,6 +2742,7 @@ export function HomePage() {
           >
             {v2DatasheetModel ? (
               <TopologyV2DetailPanel
+                key={v2DatasheetModel.slug}
                 slug={v2DatasheetModel.slug}
                 title={v2DatasheetModel.title}
                 kind={v2DatasheetModel.kind}
@@ -2770,6 +2771,9 @@ export function HomePage() {
                   // register), same source as depends_on/describes below so the
                   // typed groups read in one consistent word family.
                   metricContains: relationVocabulary("contains", "plain"),
+                  containsShowAll: t("nodeDatasheet.containsShowAll"),
+                  containsShowSummary: t("nodeDatasheet.containsShowSummary"),
+                  containsOtherGroup: t("nodeDatasheet.containsOtherGroup"),
                   metricUsedBy: t("nodeDatasheet.metricUsedBy"),
                   metricDependsOn: relationVocabulary("depends_on", "plain"),
                   metricEvidence: relationVocabulary("describes", "plain"),
