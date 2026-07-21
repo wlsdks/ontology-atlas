@@ -160,7 +160,7 @@ export interface TopologyV2Tokens {
   edgePassthroughAlpha: number;
   /** `--topology-v2-node-min-separation-ratio` — overlap relaxation threshold, sim-active frames only (B7). */
   nodeMinSeparationRatio: number;
-  /** `--topology-v2-radius-magnitude-k` — log-compressed magnitude encoding strength for domain/capability radii (B4). */
+  /** `--topology-v2-radius-magnitude-k` — √childCount magnitude encoding strength for domain/capability radii (S2 파트 2; +40% 상한). */
   radiusMagnitudeK: number;
   /** `--topology-v2-dust-parallax-min/max` — dust 시차 깊이 범위 (B3 잔여). */
   dustParallaxMin: number;

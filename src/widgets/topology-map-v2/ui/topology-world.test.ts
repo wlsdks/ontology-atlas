@@ -254,21 +254,29 @@ describe("containmentLevelFor", () => {
 });
 
 /** B4 — 규모 인코딩: 로그 압축 순위 단서. */
-describe("computeMagnitudeScale", () => {
+describe("computeMagnitudeScale (S2 파트 2 — √childCount)", () => {
   it("domain/capability 만 배율을 받고 project/element 는 1", () => {
     expect(computeMagnitudeScale("project", 100, 100, 0.45)).toBe(1);
     expect(computeMagnitudeScale("element", 100, 100, 0.45)).toBe(1);
     expect(computeMagnitudeScale("domain", 100, 100, 0.45)).toBeGreaterThan(1);
   });
 
-  it("로그 압축 — 103 이 9 의 ~1.2배 수준 (막대그래프 아님)", () => {
-    const big = computeMagnitudeScale("domain", 103, 103, 0.45);
-    const small = computeMagnitudeScale("domain", 9, 103, 0.45);
-    expect(big / small).toBeGreaterThan(1.1);
-    expect(big / small).toBeLessThan(1.35);
+  it("항상 base(1) 이상 — childCount 1 은 정확히 base, 최대는 +40% 상한", () => {
+    expect(computeMagnitudeScale("domain", 1, 103, 0.45)).toBe(1);
+    // 최대(=maxChildCount)여도 +40% 상한(1.4)을 넘지 않는다.
+    expect(computeMagnitudeScale("domain", 103, 103, 0.45)).toBeLessThanOrEqual(1.4);
+    expect(computeMagnitudeScale("domain", 103, 103, 0.45)).toBeGreaterThan(1.2);
   });
 
-  it("단조 — count 가 크면 배율도 크거나 같다", () => {
+  it("√ 압축 — 큰 격차를 압축하되 순위 단서 유지(막대그래프 아님)", () => {
+    const big = computeMagnitudeScale("domain", 103, 103, 0.45);
+    const small = computeMagnitudeScale("domain", 9, 103, 0.45);
+    // 자식 11배(9→103) 차이가 크기 배율로는 ~1.3배 이내로 압축된다.
+    expect(big / small).toBeGreaterThan(1.1);
+    expect(big / small).toBeLessThan(1.4);
+  });
+
+  it("단조 — 직속 자식 수가 크면 배율도 크거나 같다", () => {
     let prev = 0;
     for (const c of [1, 5, 20, 60, 103]) {
       const v = computeMagnitudeScale("capability", c, 103, 0.45);
@@ -277,7 +285,7 @@ describe("computeMagnitudeScale", () => {
     }
   });
 
-  it("방어 — maxCount 0 / count 0 / k 0 은 전부 1", () => {
+  it("방어 — maxChildCount 0 / childCount 0 / k 0 은 전부 1", () => {
     expect(computeMagnitudeScale("domain", 0, 103, 0.45)).toBe(1);
     expect(computeMagnitudeScale("domain", 10, 0, 0.45)).toBe(1);
     expect(computeMagnitudeScale("domain", 10, 103, 0)).toBe(1);
