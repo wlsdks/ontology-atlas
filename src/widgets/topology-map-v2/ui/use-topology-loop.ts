@@ -24,6 +24,8 @@ import { buildGridPattern } from "../render/grid";
 import { buildDustPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import { computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
+import { computeTopologyClusterState } from "./topology-cluster-state";
+import type { ClusterChip } from "../model/density-gate";
 import { createTopologyPointerHandlers, type TopologyPointerHandlers } from "./topology-pointer-handlers";
 import { stepTopologyPhysics } from "./topology-physics-step";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
@@ -129,7 +131,17 @@ export interface UseTopologyLoopArgs {
   livePhysics?: boolean;
   /** 엣지 선택 = 페어 포커스 (양끝만 표시, 선택 엣지 pale 인디고). */
   selectedEdge?: { sourceId: string; targetId: string } | null;
+  /**
+   * 밀도 게이트 (fable 설계) — 사용자가 펼친 부모 slug Set(URL `?open=`).
+   * 임계 초과 부모의 자식은 기본 접힘(클러스터 칩)이고, 여기 담긴 부모만
+   * 펼쳐 자식을 노출한다. 생략 시 전부 접힘.
+   */
+  expandedParents?: ReadonlySet<string>;
+  /** 밀도 게이트 — 클러스터 칩 클릭 → 해당 부모 확장 토글(URL 왕복). */
+  onToggleCluster?: (parentId: string) => void;
 }
+
+const EMPTY_EXPANDED_SET: ReadonlySet<string> = new Set();
 
 export type UseTopologyLoopResult = TopologyPointerHandlers & {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -137,7 +149,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, livePhysics = false, selectedEdge = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, livePhysics = false, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -216,6 +228,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const hoveredEdgeRef = useRef<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null>(null);
   /** 엣지 선택(페어 포커스) prop 미러 — rAF 클로저용. */
   const selectedEdgeRef = useRef<{ sourceId: string; targetId: string } | null>(selectedEdge);
+  /** 밀도 게이트 — 펼친 부모 Set 미러(rAF + 포인터 클로저 공용). */
+  const expandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
+  /** 밀도 게이트 — 이번 프레임의 클러스터 칩(월드 anchor). 히트테스트가 읽는다. */
+  const clusterChipsRef = useRef<readonly ClusterChip[]>([]);
+  /** 밀도 게이트 — 호버 중인 클러스터 부모 id(칩 보더 강조 + 커서). */
+  const hoveredClusterIdRef = useRef<string | null>(null);
   const emphasisRef = useRef<Map<string, number>>(new Map());
   /** C1 A2 — ego tier-reveal ramp, stepped in `stepTopologyPhysics`, consumed by `drawTopologyFrame`. */
   const egoRevealRef = useRef<Map<string, number>>(new Map());
@@ -265,6 +283,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // 선택 변경은 정적 상태 전이 — 유휴 스킵 중에도 한 번 다시 그린다.
     lastActiveMsRef.current = performance.now();
   }, [selectedEdge]);
+
+  useEffect(() => {
+    expandedParentsRef.current = expandedParents;
+    // 밀도 게이트: 확장 토글 = 정적 상태 전이 → 유휴 스킵 중에도 wake 해서
+    // 접힌 자식이 나타나거나 사라진 결과를 즉시 다시 그린다 (selectedEdge 패턴).
+    lastActiveMsRef.current = performance.now();
+  }, [expandedParents]);
 
   useEffect(() => {
     panelEmphasisNodeIdRef.current = emphasizedNeighborSlug;
@@ -560,7 +585,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           selectionPulseActive: selectionPulseRef.current !== null &&
             now - selectionPulseRef.current.startAtMs < tokens.selectPulseDurationMs,
           egoTailAnimating: focusedSlugRef.current !== null && tokens.edgePulseSpeedEgo > 0,
-          emphasisTarget: hoveredNodeIdRef.current !== null || panelEmphasisNodeIdRef.current !== null,
+          emphasisTarget: hoveredNodeIdRef.current !== null || panelEmphasisNodeIdRef.current !== null || hoveredClusterIdRef.current !== null,
           breathing: !reducedMotionRef.current && world.nodes.some((n) => n.fresh),
           cameraMoving,
         });
@@ -751,6 +776,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         onZoomTierChangeRef.current?.(nextZoomTier);
       }
 
+      // 밀도 게이트 (fable 설계) — 이번 프레임의 접힘/칩 상태를 라이브 위치로
+      // 계산한다(부모가 드래그/살아있는 그래프로 움직이면 칩 anchor 도 따라감).
+      // 판정 로직은 순수 모델(`density-gate.ts`), 여긴 좌표 주입만.
+      const clusterState = computeTopologyClusterState(world, expandedParentsRef.current);
+      clusterChipsRef.current = clusterState.chips;
+
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
       drawTopologyFrame({
@@ -775,6 +806,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         reducedMotion: reducedMotionRef.current,
         selectionPulse: selectionPulseRef.current,
         agentFocusNodeId: agentFocusNodeIdRef.current,
+        clusteredIds: clusterState.clusteredIds,
+        clusterChips: clusterState.chips,
+        hoveredClusterId: hoveredClusterIdRef.current,
       });
 
       handle = requestAnimationFrame(frame);
@@ -815,11 +849,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     overviewScaleRef,
     hoveredEdgeRef,
     selectedEdgeRef,
+    clusterChipsRef,
+    hoveredClusterIdRef,
     onSelect,
     onSelectEdge,
     onHoverEdge,
     onPaneClick,
     onContextMenuNode,
+    onToggleCluster,
   });
   /* eslint-enable react-hooks/refs */
 

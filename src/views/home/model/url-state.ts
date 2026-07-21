@@ -51,6 +51,15 @@ export interface HomeRouteState {
    * 다시 보이는 게 맞다. Esc 사다리(M-7)에는 참여하지 않는다.
    */
   insightsReturnTab: string | null;
+  /**
+   * 밀도 게이트 (fable 설계) — 클러스터 칩으로 접힌 부모 중 사용자가 펼친
+   * 부모 slug 목록 (`?open=slug1,slug2`). 임계(12) 초과 자식을 가진 부모는
+   * 지도에서 기본 접힘이고, 여기 담긴 부모만 자식을 노출한다. URL 에 사는
+   * 이유: 공유 링크·에이전트가 "무엇이 펼쳐졌나"를 그대로 재현/가독할 수
+   * 있어야 하기 때문(`design.md` "나머지는 클릭 시 expand" 헌장과 정합).
+   * HomePage 가 Set 으로 변환해 지도로 내린다.
+   */
+  expandedParents: string[];
 }
 
 const HOME_QUERY_KEYS = {
@@ -66,6 +75,7 @@ const HOME_QUERY_KEYS = {
   pathTargetAlias: "to",
   create: "create",
   index: "index",
+  open: "open",
   via: ONTOLOGY_DEEPLINK_VIA_KEY,
 } as const;
 
@@ -96,7 +106,35 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   createNodeIntent: false,
   indexState: null,
   insightsReturnTab: null,
+  expandedParents: [],
 };
+
+/**
+ * 밀도 게이트 — `?open=` 값 파싱: 콤마 분리, 트림, 빈 항목 무시, 중복 제거.
+ * 순서는 등장 순서를 보존한다(왕복 안정). 순수 함수라 테스트 가능.
+ */
+export function parseExpandedParentsParam(raw: string | null): string[] {
+  if (!raw) return [];
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const part of raw.split(",")) {
+    const slug = part.trim();
+    if (slug === "" || seen.has(slug)) continue;
+    seen.add(slug);
+    result.push(slug);
+  }
+  return result;
+}
+
+/**
+ * 밀도 게이트 — 확장 부모 목록에서 한 부모를 토글한 새 목록을 낸다(순수).
+ * HomePage 의 칩 클릭 핸들러가 이걸로 `expandedParents` 를 갱신해 URL 왕복한다.
+ */
+export function toggleExpandedParent(current: readonly string[], parentId: string): string[] {
+  return current.includes(parentId)
+    ? current.filter((id) => id !== parentId)
+    : [...current, parentId];
+}
 
 export function parseHomeRouteState(
   searchParams: URLSearchParams,
@@ -148,6 +186,9 @@ export function parseHomeRouteState(
     indexState: parseIndexPanelStateParam(searchParams.get(HOME_QUERY_KEYS.index)),
     insightsReturnTab: parseInsightsReturnMarker(
       searchParams.get(HOME_QUERY_KEYS.via),
+    ),
+    expandedParents: parseExpandedParentsParam(
+      searchParams.get(HOME_QUERY_KEYS.open),
     ),
   };
 }
@@ -271,6 +312,11 @@ export function applyHomeRouteState(
     state.createNodeIntent ? "concept" : null,
   );
   setOrDelete(next, HOME_QUERY_KEYS.index, state.indexState);
+  setOrDelete(
+    next,
+    HOME_QUERY_KEYS.open,
+    state.expandedParents.length > 0 ? state.expandedParents.join(",") : null,
+  );
   setOrDelete(
     next,
     HOME_QUERY_KEYS.via,

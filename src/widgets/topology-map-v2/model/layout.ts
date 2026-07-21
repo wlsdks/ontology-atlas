@@ -30,6 +30,8 @@
  * `render/node-shapes.ts`, not layout).
  */
 
+import { DENSITY_GATE_THRESHOLD } from "./density-gate";
+
 export type LayoutNodeKind = "project" | "domain" | "capability" | "element";
 
 export interface LayoutGraphNode {
@@ -91,6 +93,23 @@ const CAP_SPREAD_MAX = 1.5;
 const ELEMENT_SPREAD_MAX = 1.6;
 
 /**
+ * 밀도 게이트 슬라이스 (fable 설계) — 자식 수가 이 값을 **초과**하는 부모는
+ * 폭주하는 부채꼴(반지름이 n 에 비례: n=100 → r 2250) 대신 **phyllotaxis
+ * 디스크**(황금각 나선)로 자식을 배치해 풋프린트를 유계로 만든다. 임계는
+ * `density-gate.ts` 와 공유한다 — 접히는 부모와 디스크로 배치되는 부모는 정확히
+ * 같아야 "접힌 칩을 펼치면 유계 디스크가 나온다"가 성립한다. 임계 이하 부모는
+ * 기존 부채꼴 경로를 **바이트 동일**하게 탄다 (`layout.test.ts` 계약).
+ */
+const PHYLLOTAXIS_THRESHOLD = DENSITY_GATE_THRESHOLD;
+/**
+ * 나선 점 간 간격(월드 유닛). Vogel 나선 `r = spacing·√i` 의 최근접 이웃
+ * 거리 ≈ spacing 이므로, element 지름(14) + 여유를 덮도록 26 으로 둔다.
+ * 디스크 최대 반지름 = shift + spacing·√(n−0.5) → n=108, shift=145 기준
+ * ≈ 145 + 26·10.35 ≈ 414 로 유계(부채꼴의 2250 대비 극적 축소).
+ */
+const PHYLLOTAXIS_SPACING = 26;
+
+/**
  * Computes world coordinates for every node in `nodes`. Exactly one node of
  * kind `"project"` is expected (placed at the origin); its `parentId` is
  * ignored. Domains must have `parentId` pointing at the project id (or any
@@ -138,6 +157,12 @@ export function computeConcentricLayout(
     // 배치하되, 직접 element 가 없으면 기존 출력과 바이트 동일하다.
     const directElements = nodes.filter((n) => n.kind === "element" && n.parentId === domain.id);
     const fan = [...caps, ...directElements];
+    // 밀도 게이트: 초대형 부채꼴은 반지름이 폭주하므로 phyllotaxis 디스크로
+    // 유계 배치한다 (임계 이하 부모는 아래 부채꼴 경로를 바이트 동일하게 탄다).
+    if (fan.length > PHYLLOTAXIS_THRESHOLD) {
+      placePhyllotaxisDisk(domainPoint, fan, rings.capability, placed);
+      return;
+    }
     // High-child-count de-pileup: push the ring out and widen the arc
     // proportionally so a dense fan starts spread apart (small fans keep the
     // exact base ring — `layout.test.ts`).
@@ -162,6 +187,11 @@ export function computeConcentricLayout(
     if (!capPoint) return;
     const elements = nodes.filter((n) => n.kind === "element" && n.parentId === cap.id);
     if (!elements.length) return;
+    // 밀도 게이트: element 도 임계 초과 시 phyllotaxis 디스크 (부채꼴 폭주 방지).
+    if (elements.length > PHYLLOTAXIS_THRESHOLD) {
+      placePhyllotaxisDisk(capPoint, elements, rings.element, placed);
+      return;
+    }
     const elR = rings.element * Math.max(1, elements.length / ELEMENT_DENSITY_THRESHOLD);
     const spread = Math.min(ELEMENT_SPREAD_MAX, 0.26 + elements.length * 0.26);
     elements.forEach((element, i) => {
@@ -210,6 +240,11 @@ function placeRemainingByParentChain(
     for (const [parentId, kids] of byParent) {
       const parentPoint = placed.get(parentId);
       if (!parentPoint) continue;
+      // 밀도 게이트: 비표준 계보의 대량 자식도 phyllotaxis 디스크로 유계 배치.
+      if (kids.length > PHYLLOTAXIS_THRESHOLD) {
+        placePhyllotaxisDisk(parentPoint, kids, rings.element, placed);
+        continue;
+      }
       const r = rings.element * Math.max(1, kids.length / ELEMENT_DENSITY_THRESHOLD);
       const spread = Math.min(ELEMENT_SPREAD_MAX, 0.26 + kids.length * 0.26);
       kids.forEach((kid, i) => {
@@ -227,6 +262,33 @@ function placeRemainingByParentChain(
 
 /** 황금각 — 고아 나선 배치의 각 간격 (phyllotaxis, 결정론). */
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
+/**
+ * 밀도 게이트 슬라이스 (fable 설계) — 임계 초과 부모의 자식을 황금각
+ * phyllotaxis 디스크에 얹는다. 디스크 중심은 부모 outward 방향으로
+ * `ringRadius` 만큼 밀어(부모의 부모 쪽을 피함), 각 자식은
+ * `r = spacing·√(i+0.5)` (부모 부채꼴 폭주 대신 √ 성장이라 풋프린트 유계).
+ * 결정론: 입력 순서 고정 → 바이트 동일. 겹침은 상위 `relaxCollisions` 가
+ * 마무리한다.
+ */
+function placePhyllotaxisDisk(
+  parent: PlacedPoint,
+  children: readonly LayoutGraphNode[],
+  ringRadius: number,
+  placed: Map<string, PlacedPoint>,
+): void {
+  const cx = parent.x + Math.cos(parent.angle) * ringRadius;
+  const cy = parent.y + Math.sin(parent.angle) * ringRadius;
+  children.forEach((child, i) => {
+    const a = i * GOLDEN_ANGLE;
+    const r = PHYLLOTAXIS_SPACING * Math.sqrt(i + 0.5);
+    placed.set(child.id, {
+      x: cx + Math.cos(a) * r,
+      y: cy + Math.sin(a) * r,
+      angle: parent.angle,
+    });
+  });
+}
 
 /**
  * 잔여 배치 2 — 부모가 끝내 배치되지 않는 고아(containment 밖 노드)를

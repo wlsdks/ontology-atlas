@@ -29,6 +29,8 @@ import type { ForceSimulation } from "../model/force-layout";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable, isSpineOnlyZoom } from "../model/tier-visibility";
 import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
 import { hitTestEdges, type EdgeHitCandidate } from "./topology-edge-hit";
+import { clusterChipLabel, clusterChipRect } from "../render/cluster-chips";
+import type { ClusterChip } from "../model/density-gate";
 import { computeGrabOffsetWorld, computePinWorld, type WorldOffset } from "../interaction/node-drag";
 import {
   INITIAL_POINTER_MACHINE_STATE,
@@ -124,11 +126,17 @@ export interface PointerHandlerRefs {
   hoveredEdgeRef?: Ref<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null>;
   /** 엣지 선택(페어 포커스) 상태 미러 — 바닥 클릭 해제 판정에 필요. */
   selectedEdgeRef?: Ref<{ sourceId: string; targetId: string } | null>;
+  /** 밀도 게이트 — 이번 프레임의 클러스터 칩(월드 anchor). 칩 히트테스트용. */
+  clusterChipsRef?: Ref<readonly ClusterChip[]>;
+  /** 밀도 게이트 — 호버 중 클러스터 부모 id 미러(커서 + 보더 강조). */
+  hoveredClusterIdRef?: Ref<string | null>;
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
     position: { x: number; y: number } | null,
   ) => void;
   onPaneClick?: () => void;
+  /** 밀도 게이트 — 클러스터 칩 클릭 → 부모 확장 토글(URL 왕복). */
+  onToggleCluster?: (parentId: string) => void;
   /**
    * W2-B node right-click context menu. Called with the hit node's id and the
    * event's viewport-space coordinates (`clientX`/`clientY`, matching the
@@ -191,12 +199,35 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     overviewScaleRef,
     hoveredEdgeRef,
     selectedEdgeRef,
+    clusterChipsRef,
+    hoveredClusterIdRef,
     onSelect,
     onSelectEdge,
     onHoverEdge,
     onPaneClick,
     onContextMenuNode,
+    onToggleCluster,
   } = refs;
+
+  /**
+   * 밀도 게이트 — 클릭/호버 지점이 어떤 클러스터 칩 위인지 판정한다. 칩
+   * anchor(월드)를 스크린으로 투영하고 드로우와 **같은** `clusterChipRect` 로
+   * 사각형을 만들어 point-in-rect 테스트한다(좌표 어긋남 0). 히트 시 부모 id.
+   */
+  const hitTestClusterChip = (px: number, py: number): string | null => {
+    const chips = clusterChipsRef?.current;
+    if (!chips || chips.length === 0) return null;
+    const { width, height } = viewportRef.current;
+    const camera = cameraRef.current;
+    for (const chip of chips) {
+      const screen = worldToScreen(camera, width, height, chip.anchor.x, chip.anchor.y);
+      const rect = clusterChipRect(screen.x, screen.y, clusterChipLabel(chip.count, chip.expanded));
+      if (px >= rect.x && px <= rect.x + rect.w && py >= rect.y && py <= rect.y + rect.h) {
+        return chip.parentId;
+      }
+    }
+    return null;
+  };
 
   /**
    * Tier-aware hit test — only nodes currently visible at this altitude
@@ -415,6 +446,15 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       e.currentTarget.style.cursor = edgeHit !== null || hitNodeId !== null ? "pointer" : "";
     }
 
+    // 밀도 게이트 — 클러스터 칩 호버: 커서 pointer + 보더 강조 미러(노드
+    // 미히트 지점만; 노드가 우선). 노드 클릭=ego 포커스 계약은 불변이고 칩은
+    // 자식이 숨은 빈 공간에 서므로 여기서만 겹친다.
+    if (hoveredClusterIdRef) {
+      const chipHit = hitNodeId === null ? hitTestClusterChip(point.x, point.y) : null;
+      if (hoveredClusterIdRef.current !== chipHit) hoveredClusterIdRef.current = chipHit;
+      if (chipHit !== null) e.currentTarget.style.cursor = "pointer";
+    }
+
     if (next.phase !== "idle" || focusedSlugRef.current) return; // 리플은 idle+비포커스 전용 (기존 계약)
     if (hitNodeId === hoveredNodeIdRef.current) return;
     hoveredNodeIdRef.current = hitNodeId;
@@ -518,6 +558,16 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     if (action.type === "select") {
       onSelect?.(action.nodeId);
       return;
+    }
+    // 밀도 게이트 — 빈 공간(노드 미히트) 클릭이 클러스터 칩 위면 확장 토글.
+    // 엣지 선택/바닥 해제보다 우선한다(칩은 명시적 대화형 크롬). 노드 클릭=ego
+    // 포커스 계약은 위 select 분기에서 이미 처리돼 여기 도달하지 않는다.
+    if (commitClick && commitClick.nodeId === null && clickPoint && onToggleCluster) {
+      const chipParent = hitTestClusterChip(clickPoint.x, clickPoint.y);
+      if (chipParent !== null) {
+        onToggleCluster(chipParent);
+        return;
+      }
     }
     // P3b — 빈 공간 클릭: 엣지 근접이면 엣지 선택 (엣지 = 1급 객체).
     // 후보는 양 끝점이 현재 tier 에서 히트 가능한 엣지로 제한 — 안 보이는
