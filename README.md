@@ -16,13 +16,9 @@
 | Open it | Link |
 |---|---|
 | **App brand** | **Ontology Atlas** (repo, CLI, MCP package, and release assets stay `ontology-atlas`) |
-| **Website / downloads** | **https://wlsdks.github.io/ontology-atlas/** |
+| **Website / demo** | **https://wlsdks.github.io/ontology-atlas/** |
 | **GitHub repository** | https://github.com/wlsdks/ontology-atlas |
 | **MCP docs** | [`mcp/README.md`](mcp/README.md) |
-
-**Ontology Atlas** is the installable macOS app and public product name for the
-`ontology-atlas` project. `ontology-atlas` remains the repository, CLI, MCP, and
-release-artifact identity.
 
 ## See It First
 
@@ -43,11 +39,6 @@ back to overview:
 
 ![Usage: overview → zoom → node focus → edge hover → deselect](docs/assets/readme/usage.gif)
 
-Graph insights turn the same frontmatter into a work queue — neglected hubs,
-promotion candidates, agent readiness:
-
-![Graph insights — do-next queue and agent readiness](docs/assets/readme/insights.png)
-
 Or skip the install entirely: the **[live demo](https://wlsdks.github.io/ontology-atlas/)**
 serves this exact map (read-only sample) — pick your own markdown folder and it
 becomes your data.
@@ -63,7 +54,7 @@ stale). It is one meaning layer both audiences read and write: agents are
 first-class users — they query it before touching code and keep it fresh
 through MCP after real changes — while humans stay the arbiters of meaning,
 because every node is plain markdown they can read, approve, and diff. Agents
-supply the freshness; humans supply the judgment. One graph, both audiences.
+supply the freshness; humans supply the judgment.
 
 ```bash
 npx ontology-atlas init ./ontology
@@ -83,55 +74,33 @@ in Obsidian, in `cat`, even if `ontology-atlas` itself is long gone.
 AI coding agents are useful, but they usually rebuild project context from
 scratch every session. They remember the current prompt better than the long
 term shape of the codebase: domains, capabilities, dependencies, ownership,
-and design decisions.
-
-`ontology-atlas` gives agents a durable local memory they can query before
-touching code and update after real changes.
+and design decisions. `ontology-atlas` gives agents a durable local memory they
+can query before touching code and update after real changes.
 
 If you've been searching for a **codebase map** for AI agents, an **agent
 memory** layer, or a **context layer** that survives
-[context rot](https://www.producttalk.org/context-rot/) — this is the same
-shape of tool, purpose-built for the layer above source code: domains,
-capabilities, and the elements that prove them, not another symbol index.
+[context rot](https://www.producttalk.org/context-rot/) — this is that shape of
+tool, purpose-built for the layer above source code: domains, capabilities, and
+the elements that prove them, not another symbol index. Andrej Karpathy's 2026
+note framed the general pattern as *"Obsidian is the IDE; the LLM is the
+programmer; the wiki is the codebase"*
+([gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f));
+`ontology-atlas` is that mechanism specialized one layer down — a graph over
+your business domains and the code that proves them, not a wiki over your notes.
+
+Atlas does not replace the agent's source tools. CodeGraph, Serena, language
+servers, grep, and AST indexes answer structural questions — where a symbol
+lives, what calls it. Atlas answers meaning questions: which domain or
+capability the code proves, why the change matters, what impact to check, and
+which validation path to run before the memory is trusted. None of those code
+tools are required for Atlas to deliver its first brief, handoff packet, or
+health check — the minimum useful setup is Atlas plus a normal MCP-capable
+agent.
+
 See [`docs/CASE-STUDY-AGENTS-MD-DRIFT.md`](docs/CASE-STUDY-AGENTS-MD-DRIFT.md)
-for how this repo uses that same "permanent reference file" idea to keep its
-own `AGENTS.md`/`CLAUDE.md` instructions from drifting apart, and extends it
-into the vault for facts that change faster than instructions do.
-
-The same shape of tool has already found organic demand as a **plain
-markdown vault an agent reads and writes**: Andrej Karpathy's 2026 note
-framed it as *"Obsidian is the IDE; the LLM is the programmer; the wiki is
-the codebase"*
-([gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)),
-and the pattern spread quickly through general-purpose note-taking tools.
-`ontology-atlas` is the same mechanism specialized one layer down — not a
-wiki over your notes, but a graph over your business domains, capabilities,
-and the code that proves them.
-
-The minimum useful setup is just Atlas plus a normal agent. If Claude Code,
-Codex, Cursor, or another MCP-capable agent can connect to the Atlas MCP server
-or run the Atlas CLI, the product must already work. CodeGraph, Serena, language
-servers, grep, and other source tools can make investigation faster, but none of
-them are required for Atlas to deliver the first graph brief, handoff packet,
-health check, or memory update diff.
-
-It helps coding agents by giving them the right starting point, product
-meaning, and verification path before they inspect code. It is not trying to
-replace CodeGraph, Serena, grep, AST indexes, language servers, or source search. Those tools answer
-structural questions such as where a symbol lives and what calls it. Atlas
-answers meaning questions: which domain or capability the code proves, why the
-change matters, what impact to check, and which validation path should run
-before the memory is trusted.
-
-The product is not "please maintain an ontology." The useful loop is:
-
-1. Open a repo.
-2. Draft the first graph automatically from source layout, README headings,
-   `package.json`, and TS/JS imports.
-3. Let the AI agent answer through MCP using the maintained graph.
-4. After code work, let the agent propose memory updates.
-5. Review the markdown diff.
-6. The next agent session starts with better context.
+for how this repo keeps its own `AGENTS.md`/`CLAUDE.md` from drifting apart, and
+extends the same "permanent reference file" idea into the vault for facts that
+change faster than instructions do.
 
 ## How It Helps A Coding Agent
 
@@ -161,11 +130,8 @@ Implementation evidence:
 - src/widgets/topology-map-v2/ui/TopologyMapV2.tsx
 - scripts/verify-macos-app-launch.mjs
 Recommended code lookup:
-- Use the available source tool: built-in search, grep, language server,
-  Serena, CodeGraph, or another local code index.
-- If no source tool is available beyond the agent's normal file access, start
-  from the Atlas MCP/CLI packet and inspect only the implementation evidence it
-  names.
+- Use whatever source tool the agent has (grep, language server, Serena,
+  CodeGraph) and inspect only the evidence files named above.
 Verification path:
 - focused unit test for the topology label contract
 - macOS app verification when desktop topology behavior changes
@@ -179,39 +145,21 @@ product story from source files and chat history. More importantly, it reduces
 wrong edits: the agent knows what the code is for, which proof matters, and
 when the durable repo memory should change.
 
-## What It Does
-
-| Surface | What you use it for |
-|---|---|
-| **macOS app** | Install once, pick a local vault folder, and use the visual tree, topology, docs, projects, and ERD builder without returning to the website. |
-| **CLI** | Init a vault, bootstrap from a repo, validate frontmatter, compile graphs, inspect paths, find backlinks, rename/merge/delete nodes safely. |
-| **MCP server** | Give Claude Code, Cursor, Codex, and other agents 24 local read/write tools over stdio JSON-RPC. |
-| **Website** | The root map opens straight into a real, read-only dogfood sample and lets you open your own local vault folder from the browser (no install); `/download` explains the product and routes to the signed macOS release download. |
-| **Compiler + query engine** | Turn markdown files into a deterministic graph artifact with `graphHash`, issues, indexes, health checks, impact, lineage, cycles, and maintenance actions. |
-
 ## How The Memory Works
 
 In this project, an ontology is the executable meaning model of a product and
 the codebase that realizes it: projects, domains, capabilities, elements, and
 the relations that explain why they belong together or depend on each other. It
-is useful only when planners, marketers, decision-makers, developers, and AI
-agents can read the same graph before work, update it after work, and verify it
-as a git diff.
-
-The ontology is not a generic slide-deck taxonomy and it is not a raw
-source-code index. Business concepts belong when they explain product intent,
-operating model, ownership, capability boundaries, decisions, or impact. Source
-files belong as `element` nodes when they prove or realize a higher-level
+is not a slide-deck taxonomy and not a raw source index. Business concepts
+belong when they explain product intent, ownership, capability boundaries, or
+impact; source files belong as `element` nodes when they prove a higher-level
 `domain` or `capability`. The daily target is the layer that connects those two
-worlds: a durable map of what the business/system means, why it matters, and
-which implementation carries it.
+worlds.
 
-That means Atlas stores meaningful implementation evidence, not every code
-fact. A class, route, command, test, or file path is useful when it helps an AI
-agent start a task with the right capability, trace the change impact, or run
-the right proof. Exhaustive symbol graphs remain the job of code-intelligence
-tools; Atlas keeps the repo-native meaning layer those tools cannot infer on
-their own.
+So Atlas stores meaningful implementation evidence, not every code fact. A
+class, route, command, or test earns a node when it helps an agent start with
+the right capability, trace impact, or run the right proof. Exhaustive symbol
+graphs stay the job of code-intelligence tools.
 
 Every markdown file is one graph node. Frontmatter is the machine-readable
 record; the body is the human-readable explanation.
@@ -236,10 +184,8 @@ canonical nodes, canonical edges, aliases, issues, `graphHash`, `maxMtime`, and
 optional query indexes. `query_ontology` then answers graph-style questions
 over that artifact: neighbors, paths, centrality, communities, impact, blast
 radius, project scope, lineage, cycles, health, agent brief, workspace brief,
-and maintenance plan.
-
-That means this is not a server-side graph database. It is a markdown-backed
-ontology vault with graph database behavior at runtime.
+and maintenance plan. This is not a server-side graph database — it is a
+markdown-backed ontology vault with graph database behavior at runtime.
 
 ## Quick Start
 
@@ -271,10 +217,10 @@ evidence for dependency edges.
 
 ### 3. Use the visual app
 
-The hosted site is the product introduction and download entry point. Daily
-visual editing starts in the installed macOS app: download the signed DMG from
-the GitHub Releases page after the release gate publishes it, launch the app,
-and pick your local vault folder.
+The hosted site is the product introduction and demo. Daily visual editing
+starts in the installed macOS app: download the signed DMG from the GitHub
+Releases page after the release gate publishes it, launch the app, and pick your
+local vault folder.
 
 Maintainers can run the desktop shell from source while developing:
 
@@ -285,17 +231,27 @@ pnpm install
 pnpm desktop:dev
 ```
 
-## Three views plus MCP, one vault
+## Five surfaces, one vault
 
-The same frontmatter graph is rendered three ways and exposed to agents through MCP:
+The app puts five views over the same frontmatter graph, reachable from the
+left nav rail. The **Map** is the one shown above; the other four each open the
+same `.md` files from a different angle.
 
-- **Topology** (`/topology`) - canvas-2D spatial network of projects and relations (Sigma WebGL is only used by the `/docs` folder-topology mini map).
-- **Tree** (`/`, `/ontology`) - project to domain to capability to element drill-down.
-- **ERD builder** (`/ontology/edit`) - xyflow canvas for adding nodes and relations visually.
-- **MCP** (`mcp/`) - JSON-RPC stdio server with 25 tools for AI agents: 16 read + 9 write.
+| Docs | Builder |
+|---|---|
+| ![Docs workspace — document list, editor, frontmatter evidence](docs/assets/readme/docs-vault.png) | ![Builder — ERD canvas with write-confirm bar](docs/assets/readme/builder.png) |
+| `/docs` — read and edit any vault document. The frontmatter block renders `kind` / `domain` / `evidence` right on the page (the visible proof that frontmatter *is* the graph), with inline quick-patch, a backlinks strip, and a `⌘K` palette. | `/ontology/edit` — an xyflow ERD canvas for adding nodes and drawing relations visually. Every write lands through a confirm bar into the same vault the map reads. |
 
-All four read and write the same `.md` files. Pick the interface that matches
-the task; the vault stays the source of truth.
+| Insights | Projects |
+|---|---|
+| ![Graph insights — do-next queue and agent readiness](docs/assets/readme/insights.png) | ![Projects — cards from kind: project docs](docs/assets/readme/projects.png) |
+| `/ontology/insights` — turns the same frontmatter into a work queue: neglected hubs, promotion candidates, kind census, relation breakdown, and agent readiness. | `/projects` — every `kind: project` doc as a card, with the domains, capabilities, and evidence counts derived from the containment graph. |
+
+A sixth surface has no screenshot because it is agent-facing: the **MCP server**
+(`mcp/`) exposes the same vault to Claude Code, Cursor, and Codex as **25 tools
+over stdio JSON-RPC — 16 read + 9 write**. Every surface reads and writes the
+same `.md` files; pick the interface that matches the task and the vault stays
+the source of truth.
 
 ## Agent Workflow
 
@@ -315,9 +271,8 @@ entrypoints, first MCP calls, investigation playbooks, write guardrails,
 `relation_check` decision guide, health coverage, and the read-first write
 policy. `agent-brief --graph-db-pack` prints a shell-pasteable graph scan pack
 for connector-less sessions, with the selected vault path already inserted.
-`workspace-brief` is the cheap first-contact dashboard:
-it shows hotspots,
-`PROJECT별 포함 노드 수 (project_scope)`, health-check coverage as
+`workspace-brief` is the cheap first-contact dashboard: it shows hotspots,
+per-project node counts (`project_scope`), health-check coverage as
 `id:status:count`, and growth counts before the agent chooses where to read
 deeper.
 
@@ -337,7 +292,7 @@ agent-maintained memory after that.
 |---|---|
 | `/` | The topology hub (map + INDEX + datasheet) everywhere — hosted web included. With no vault selected it renders this project's own dogfood sample plus a "first run" starter in the INDEX panel (open my folder / create a new vault); no separate marketing landing |
 | `/download` | macOS release download and install guide |
-| `/docs` | Desktop local vault picker, markdown editor, command palette |
+| `/docs` | Local vault picker, markdown editor, command palette |
 | `/ontology` | Thin redirect to `/topology?index=expanded` (the old tree/ego hub is retired) |
 | `/ontology/edit` | ERD canvas builder |
 | `/ontology/insights` | Kind census, hubs, relation breakdown |
@@ -349,79 +304,51 @@ agent-maintained memory after that.
 | `/project/fallback` | Static-export fallback for unknown project slugs |
 
 The public website's root map opens straight into a read-only dogfood sample
-and lets you open and edit your own local vault folder directly in the
-browser (File System Access API, no install) — root-first-open, 2026-07.
-`/download` stays the static promo/download page. Only `/docs`'s own separate
-local-source *browsing* tab and heavier daily workflows (recent vaults, agent
-config writing, packaging) stay in the installed macOS app.
+and lets you open and edit your own local vault folder directly in the browser
+(File System Access API, no install). `/download` stays the static promo/download
+page. Only `/docs`'s own separate local-source *browsing* tab and heavier daily
+workflows (recent vaults, agent config writing, packaging) stay in the installed
+macOS app.
 
 ## Verifiable promises
 
 | Promise | How this repo checks it |
 |---|---|
-| **No backend** | `pnpm bundle:check` keeps Firebase/server chunks out of the root/topology, download, and local-first app routes. |
-| **Static deploy** | `pnpm build` exports to `out/`; Firebase Hosting serves only static files. |
+| **No backend** | `pnpm bundle:check` keeps Firebase/server SDK chunks out of the root/topology, download, and local-first app routes. |
+| **Static deploy** | `pnpm build` exports to `out/`; the demo is served as static files from GitHub Pages (`wlsdks.github.io/ontology-atlas`). |
 | **Static dogfood manifest** | `pnpm docs-vault:check` keeps committed `src/entities/docs-vault/data/manifest.json` and `public/docs-vault/` in sync with `docs/`. |
 | **Vault integrity** | `pnpm vault:validate`, `test:vault:validate`, `vault:audit`, and `test:vault:audit` remain explicit local/release-preflight gates. |
 | **MCP/CLI contracts** | `pnpm test:cli:args`, `pnpm test:mcp:docs`, `pnpm package:check`, `pnpm test:contracts`, and focused `test:mcp:*` scripts cover the agent surface. |
 | **Graph hot paths** | `pnpm perf:graph:check` is part of `pnpm package:check`, so compile/query latency budgets run before release. |
 | **Dogfooding** | This repo's own vault has **105 nodes**: capabilities 39, document 3, domains 6, elements 55, project 1, vault-readme 1. |
 
-For the detailed maintainer command matrix, see
-[`docs/DEVELOPMENT-CHECKS.md`](docs/DEVELOPMENT-CHECKS.md).
-
 ## Local Development
 
 ```bash
 pnpm install
-pnpm dev
+pnpm dev                 # http://localhost:3000
 pnpm exec tsc --noEmit
 pnpm lint
 pnpm test:run
-pnpm build
-pnpm docs-vault:check
-pnpm bundle:check
+pnpm build               # static export → out/
+pnpm bundle:check        # local-first chunk-leak guard
 ```
 
-Helpful vault commands:
+Vault and dogfood tooling is intentionally local and scriptable:
 
 ```bash
-pnpm vault:validate
-pnpm vault:audit
-pnpm dogfood:compile
-pnpm dogfood:compile-fix
-pnpm dogfood:compile-fix -- --help
-pnpm test:dogfood:args
-pnpm test:dogfood:script-refs
-pnpm test:dogfood:compile-fix
-pnpm dogfood:health
-pnpm dogfood:agent
-pnpm dogfood:agent-graph-db-pack
-pnpm dogfood:agent-setup-gate
-pnpm dogfood:agent-fallbacks
-pnpm dogfood:brief
-pnpm dogfood:status
-pnpm dogfood:status -- --help
-pnpm test:dogfood:status
-pnpm dogfood:verify
-```
-
-### Vault tooling
-
-The vault tooling is intentionally local and scriptable:
-
-```bash
-pnpm vault:validate              # frontmatter integrity audit
-pnpm vault:validate /your/vault  # validate any folder
-pnpm vault:validate -- --help    # print validator usage without scanning
-pnpm test:vault:validate         # focused validator CLI argument contract
-pnpm docs-vault:check            # committed docs-vault output freshness
+pnpm vault:validate              # frontmatter integrity (pass any folder as arg)
 pnpm vault:audit                 # dogfood ontology paths match real repo files
-pnpm test:vault:audit            # focused vault audit CLI argument contract
+pnpm docs-vault:check            # committed docs-vault output freshness
+pnpm dogfood:compile             # compile this repo's own vault
+pnpm dogfood:health              # graph health gate
+pnpm dogfood:agent               # agent-brief over the dogfood vault
 ```
 
-CI runs `pnpm docs-vault:check`, `pnpm vault:validate`, `pnpm test:vault:validate`,
-`pnpm vault:audit`, `pnpm test:vault:audit`, and `pnpm package:check` on every PR.
+CI runs `docs-vault:check`, `vault:validate`, `test:vault:validate`,
+`vault:audit`, `test:vault:audit`, and `package:check` on every PR. The full
+maintainer command matrix lives in
+[`docs/DEVELOPMENT-CHECKS.md`](docs/DEVELOPMENT-CHECKS.md).
 
 ## Architecture
 
@@ -429,7 +356,7 @@ CI runs `pnpm docs-vault:check`, `pnpm vault:validate`, `pnpm test:vault:validat
 |---|---|
 | App | Next.js 16, React 19, TypeScript 5, App Router, static export, Tauri macOS shell |
 | UI | Tailwind CSS 4, Radix primitives, lucide icons |
-| Graph | Custom canvas-2D engine (topology-map-v2), Graphology + ForceAtlas2 physics, Sigma.js (docs-folder mini map only), xyflow (ERD builder) |
+| Graph | Custom canvas-2D engine (topology-map-v2), Graphology + ForceAtlas2 physics, xyflow (ERD builder) |
 | Local-first | Tauri native vault bridge, source-browser File System Access fallback, IndexedDB handle/path persistence |
 | Agent interface | `@modelcontextprotocol/sdk`, stdio JSON-RPC |
 | Tests | Vitest, Testing Library, jsdom, Playwright, Node test runner |
@@ -495,16 +422,16 @@ ontology-atlas agent-brief ./ontology
 ontology-atlas agent-brief ./ontology --graph-db-pack
 ```
 
-시각 편집은 설치된 macOS 앱에서 시작합니다. 웹 사이트는 제품 소개와
-다운로드 진입점이고, 실제 vault 폴더 열기와 저장은 앱 안에서 이뤄집니다.
-개발 중 데스크톱 shell 을 소스에서 실행하려면:
+시각 편집은 설치된 macOS 앱에서 시작합니다. 웹 사이트는 제품 소개와 데모
+진입점이고, 실제 vault 폴더 열기와 저장은 앱 안에서 이뤄집니다. 개발 중
+데스크톱 shell 을 소스에서 실행하려면:
 
 ```bash
 pnpm install
 pnpm desktop:dev
 ```
 
-제품의 목표는 “온톨로지를 손으로 관리하게 만드는 도구”가 아닙니다. 목표는
+제품의 목표는 "온톨로지를 손으로 관리하게 만드는 도구"가 아닙니다. 목표는
 repo를 열면 초안을 만들고, agent가 작업 후 mental model 업데이트를 제안하고,
 사용자가 diff처럼 승인하고, 다음 agent 작업에서 바로 더 나은 맥락을 느끼는
 루프입니다.
