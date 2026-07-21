@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   clusterChipLabel,
   clusterChipRect,
+  clusterChipScale,
   CLUSTER_CHIP_HEIGHT,
 } from "./cluster-chips";
 
@@ -13,10 +14,33 @@ import {
  * (실제 캔버스 픽셀 드로우는 :3107 실화면에서 메인 세션이 검증한다.)
  */
 describe("clusterChipLabel", () => {
-  it("접힘=`+N`, 펼침=`−`", () => {
+  it("접힘=`+N`, 펼침=`− N`(숫자 유지)", () => {
     expect(clusterChipLabel(108, false)).toBe("+108");
-    expect(clusterChipLabel(108, true)).toBe("−");
+    expect(clusterChipLabel(108, true)).toBe("− 108");
     expect(clusterChipLabel(5, false)).toBe("+5");
+  });
+});
+
+describe("clusterChipScale", () => {
+  it("카메라 스케일을 따르되 0.85~1.5 밴드로 clamp (판독 유지)", () => {
+    expect(clusterChipScale(1)).toBe(1);
+    expect(clusterChipScale(0.4)).toBe(0.85);
+    expect(clusterChipScale(3)).toBe(1.5);
+    expect(clusterChipScale(1.2)).toBeCloseTo(1.2, 6);
+  });
+  it("비유한 스케일은 1 로 폴백", () => {
+    expect(clusterChipScale(Number.NaN)).toBe(1);
+  });
+});
+
+describe("clusterChipRect scale", () => {
+  it("scale 을 주면 폭·높이가 비례한다(히트/드로우 공용)", () => {
+    const base = clusterChipRect(0, 0, "+12", 1);
+    const big = clusterChipRect(0, 0, "+12", 1.5);
+    expect(big.w).toBeCloseTo(base.w * 1.5, 6);
+    expect(big.h).toBeCloseTo(base.h * 1.5, 6);
+    // 중심은 anchor 유지.
+    expect(big.x + big.w / 2).toBeCloseTo(0, 6);
   });
 });
 

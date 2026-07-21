@@ -111,6 +111,10 @@ export interface TopologyMapV2Props {
   expandedParents?: ReadonlySet<string>;
   /** 밀도 게이트 — 클러스터 칩 클릭 시 해당 부모 확장 토글(HomePage 가 URL 왕복). */
   onToggleCluster?: (parentId: string) => void;
+  /** S2 파트 5C — 클러스터 칩 호버 툴팁 (식별 변경 시 발화, null=해제). */
+  onHoverCluster?: (
+    info: { parentId: string; count: number; expanded: boolean; position: { x: number; y: number } } | null,
+  ) => void;
   /**
    * 밀도 게이트 — 클러스터 칩 어포던스의 접근성 힌트(i18n, HomePage 가 주입).
    * 칩은 canvas 글리프라 개별 aria 를 못 달아, 컨테이너 안 sr-only 설명으로
@@ -129,7 +133,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, clusterHint } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint } = props;
 
   // `handleWheel` is wired natively (non-passive) inside `useTopologyLoop` —
   // see its own FIX comment — not bound here as a JSX prop.
@@ -155,6 +159,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       livePhysics,
       expandedParents,
       onToggleCluster,
+      onHoverCluster,
     });
 
   return (

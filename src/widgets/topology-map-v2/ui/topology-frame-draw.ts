@@ -32,7 +32,7 @@ import {
   type SafeRect,
 } from "../render/label-layout";
 import { draw as nodeShapesDraw } from "../render/node-shapes";
-import { drawClusterChip } from "../render/cluster-chips";
+import { drawClusterChip, clusterChipScale } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
 import { drawDiffractionSpike, drawStarDust, type DustPoint } from "../render/starfield";
 import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
@@ -470,10 +470,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // 칩 알파는 부모 노드의 effective 티어 알파를 상속한다(스파인 부모=1). 부모가
   // 티어로 사라지면 칩도 사라진다. 미확장 접힘 칩의 자식/엣지는 이미 위에서
   // 스킵됐다. anchor 는 월드 좌표라 카메라 팬/줌을 함께 탄다. ---
+  const chipScale = clusterChipScale(camera.scale.value);
   for (const chip of clusterChips) {
     const parentAlpha = effectiveAlphaById.get(chip.parentId) ?? 1;
     if (parentAlpha <= 0.02) continue;
     const screen = project(chip.anchor.x, chip.anchor.y);
+    // 부모→칩 점선 커넥터의 시작점 = 부모 노드의 라이브 스크린 좌표.
+    const parentNode = world.nodeById.get(chip.parentId);
+    const parentScreen = parentNode ? project(parentNode.x, parentNode.y) : null;
     ctx.globalAlpha = parentAlpha;
     drawClusterChip(
       ctx,
@@ -483,6 +487,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         count: chip.count,
         expanded: chip.expanded,
         hovered: hoveredClusterId === chip.parentId,
+        scale: chipScale,
+        childKind: chip.childKind,
+        parentScreenX: parentScreen?.x,
+        parentScreenY: parentScreen?.y,
       },
       {
         surface: tokens.nodeFillDim,

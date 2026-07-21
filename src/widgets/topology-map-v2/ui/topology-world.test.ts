@@ -5,6 +5,7 @@ import {
   buildTopologyWorld,
   computeMagnitudeScale,
   computeEgoBounds,
+  computeClusterDiscBounds,
   computeSpineBounds,
   isSpineNode,
   type WorldNode,
@@ -207,6 +208,37 @@ describe("computeEgoBounds", () => {
   it("returns null when the focused slug doesn't resolve to a node", () => {
     const world = egoWorld([node({ id: "a", kind: "domain", x: 0, y: 0 })], { a: [] });
     expect(computeEgoBounds(world, tokens, "missing")).toBeNull();
+  });
+});
+
+/** S2 파트 5B — 펼친 클러스터 디스크(부모 + contains 직속 자식) bbox. */
+describe("computeClusterDiscBounds", () => {
+  function discWorld(nodes: WorldNode[], childrenByParent: Record<string, string[]>) {
+    const nodeById = new Map(nodes.map((n) => [n.id, n] as const));
+    const cbp = new Map<string, readonly string[]>(Object.entries(childrenByParent));
+    return { nodeById, childrenByParent: cbp };
+  }
+
+  it("부모 + 직속 자식 부챗살의 반지름 패딩 bbox", () => {
+    const nodes: WorldNode[] = [
+      node({ id: "d", kind: "domain", x: 0, y: 0 }), // r14
+      node({ id: "c1", kind: "capability", x: 100, y: 0 }), // r8 → maxX 108
+      node({ id: "c2", kind: "capability", x: 0, y: -60 }), // r8 → minY -68
+      // 다른 부모의 자식 — 제외.
+      node({ id: "other", kind: "element", x: 900, y: 900 }),
+    ];
+    const world = discWorld(nodes, { d: ["c1", "c2"], p2: ["other"] });
+    const bounds = computeClusterDiscBounds(world, tokens, "d");
+    expect(bounds).not.toBeNull();
+    expect(bounds!.minX).toBe(-14);
+    expect(bounds!.maxX).toBe(108);
+    expect(bounds!.minY).toBe(-68);
+    expect(bounds!.maxY).toBe(14);
+  });
+
+  it("부모 미해결이면 null", () => {
+    const world = discWorld([node({ id: "d", kind: "domain", x: 0, y: 0 })], { d: [] });
+    expect(computeClusterDiscBounds(world, tokens, "missing")).toBeNull();
   });
 });
 

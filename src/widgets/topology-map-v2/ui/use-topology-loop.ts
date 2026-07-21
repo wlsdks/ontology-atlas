@@ -22,7 +22,7 @@ import { initHomeSpring, isHomeSpringConverged, stepHomeSpring, type HomeSpringS
 import type { NodeDragState } from "./topology-pointer-handlers";
 import { buildGridPattern } from "../render/grid";
 import { buildDustPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
-import { computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale } from "./topology-camera-math";
+import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { computeTopologyClusterState } from "./topology-cluster-state";
 import type { ClusterChip } from "../model/density-gate";
@@ -139,6 +139,10 @@ export interface UseTopologyLoopArgs {
   expandedParents?: ReadonlySet<string>;
   /** 밀도 게이트 — 클러스터 칩 클릭 → 해당 부모 확장 토글(URL 왕복). */
   onToggleCluster?: (parentId: string) => void;
+  /** S2 파트 5C — 클러스터 칩 호버 툴팁 (식별 변경 시 발화, null=해제). */
+  onHoverCluster?: (
+    info: { parentId: string; count: number; expanded: boolean; position: { x: number; y: number } } | null,
+  ) => void;
 }
 
 const EMPTY_EXPANDED_SET: ReadonlySet<string> = new Set();
@@ -149,7 +153,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, livePhysics = false, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, livePhysics = false, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -230,6 +234,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const selectedEdgeRef = useRef<{ sourceId: string; targetId: string } | null>(selectedEdge);
   /** 밀도 게이트 — 펼친 부모 Set 미러(rAF + 포인터 클로저 공용). */
   const expandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
+  /** S2 파트 5B — 직전 펼침 Set (새로 펼쳐진 부모 diff → 카메라 다이브용). */
+  const prevExpandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
   /** 밀도 게이트 — 이번 프레임의 클러스터 칩(월드 anchor). 히트테스트가 읽는다. */
   const clusterChipsRef = useRef<readonly ClusterChip[]>([]);
   /** 밀도 게이트 — 호버 중인 클러스터 부모 id(칩 보더 강조 + 커서). */
@@ -285,10 +291,35 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   }, [selectedEdge]);
 
   useEffect(() => {
+    const prev = prevExpandedParentsRef.current;
+    prevExpandedParentsRef.current = expandedParents;
     expandedParentsRef.current = expandedParents;
     // 밀도 게이트: 확장 토글 = 정적 상태 전이 → 유휴 스킵 중에도 wake 해서
     // 접힌 자식이 나타나거나 사라진 결과를 즉시 다시 그린다 (selectedEdge 패턴).
     lastActiveMsRef.current = performance.now();
+
+    // S2 파트 5B — 새로 펼쳐진 부모(있으면 하나)로 카메라 다이브. 접기(제거)만
+    // 있으면 카메라는 유지한다(소유자 지시). 자식은 카메라가 디스크로 들어가며
+    // tier 알파로 자연 리빌된다(기존 램프 재사용 — 신규 모션 계약 없음).
+    let newlyExpanded: string | null = null;
+    for (const id of expandedParents) {
+      if (!prev.has(id)) {
+        newlyExpanded = id;
+        break;
+      }
+    }
+    if (newlyExpanded === null) return;
+    const tokens = readTopologyV2TokensOrNull();
+    const world = worldRef.current;
+    const { width, height } = viewportRef.current;
+    if (!tokens || !world || width <= 0 || height <= 0 || !hasInitializedRef.current) return;
+    const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+    const target = computeClusterFitTarget(world, tokens, width, height, newlyExpanded, overviewEntryScale);
+    if (!target) return;
+    dampingRef.current = tokens.cameraDampingDefault;
+    cameraTargetRef.current = target;
+    // 프로그램적 카메라 이동 — 시네마틱 transition 스프링 (focus dive 와 동일).
+    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
   }, [expandedParents]);
 
   useEffect(() => {
@@ -857,6 +888,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onPaneClick,
     onContextMenuNode,
     onToggleCluster,
+    onHoverCluster,
   });
   /* eslint-enable react-hooks/refs */
 

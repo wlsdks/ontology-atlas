@@ -2344,7 +2344,9 @@
     "cluster": {
       "hint": "Dense groups are folded into +N chips — click a chip to expand that group, click again to collapse.",
       "expandAria": "Expand {count} hidden items",
-      "collapseAria": "Collapse this group"
+      "collapseAria": "Collapse this group",
+      "tooltipCollapsed": "{count} items under “{name}” are folded — click to expand",
+      "tooltipExpanded": "{count} items expanded — click to collapse"
     }
   },
   "fullDetailA1": {

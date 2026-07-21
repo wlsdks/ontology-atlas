@@ -7,6 +7,7 @@ export type {
 } from './ui/TopologyMapV2';
 export { TopologyV2DetailPanel } from './ui/TopologyV2DetailPanel';
 export { TopologyV2EdgeHoverCard } from './ui/TopologyV2EdgeHoverCard';
+export { TopologyV2ClusterHoverCard } from './ui/TopologyV2ClusterHoverCard';
 export type {
   TopologyV2DetailPanelProps,
   TopologyV2DetailPanelLabels,

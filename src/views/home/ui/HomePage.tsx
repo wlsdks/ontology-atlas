@@ -151,6 +151,7 @@ import {
   TopologyV2ContextMenu,
   TopologyV2DetailPanel,
   TopologyV2EdgeHoverCard,
+  TopologyV2ClusterHoverCard,
   TopologyV2SettingsGear,
   buildV2Connections,
   buildV2ConnectionGroups,
@@ -635,6 +636,32 @@ export function HomePage() {
       y: hoverEdge.y,
     };
   }, [hoverEdge, ontologyInsight, t, relationVocabulary]);
+  // S2 파트 5C — 클러스터 칩 호버 툴팁 상태 + 문장 모델. 부모 제목/카운트를
+  // i18n(`cluster.tooltipCollapsed/Expanded`) 에 넣어 완성한 평문 한 줄.
+  const [hoverCluster, setHoverCluster] = useState<{
+    parentId: string;
+    count: number;
+    expanded: boolean;
+    x: number;
+    y: number;
+  } | null>(null);
+  const handleHoverCluster = useCallback(
+    (info: { parentId: string; count: number; expanded: boolean; position: { x: number; y: number } } | null) => {
+      setHoverCluster(
+        info ? { parentId: info.parentId, count: info.count, expanded: info.expanded, x: info.position.x, y: info.position.y } : null,
+      );
+    },
+    [],
+  );
+  const clusterHoverCardModel = useMemo(() => {
+    if (!hoverCluster) return null;
+    const parent = ontologyInsight?.nodes.find((n) => n.id === hoverCluster.parentId);
+    const name = parent?.title ?? hoverCluster.parentId;
+    const sentence = hoverCluster.expanded
+      ? t("cluster.tooltipExpanded", { count: hoverCluster.count })
+      : t("cluster.tooltipCollapsed", { name, count: hoverCluster.count });
+    return { sentence, x: hoverCluster.x, y: hoverCluster.y };
+  }, [hoverCluster, ontologyInsight, t]);
   // HomePage 모듈화 2차 — 에이전트 연결 시트 조립은 use-agent-connect-model 소유.
   const agentConnect = useAgentConnectModel({
     agentActivityStatus,
@@ -2501,6 +2528,7 @@ export function HomePage() {
                     agentFocusNodeId={agentFocusNodeId}
                     expandedParents={expandedParentSet}
                     onToggleCluster={handleToggleCluster}
+                    onHoverCluster={handleHoverCluster}
                     clusterHint={t('cluster.hint')}
                   />
                 ) : null}
@@ -2781,6 +2809,15 @@ export function HomePage() {
             clickHint={t("edgeHover.clickHint")}
             x={hoverEdgeCardModel.x}
             y={hoverEdgeCardModel.y}
+          />
+        ) : null}
+        {/* S2 파트 5C — 클러스터 칩 호버 툴팁. 엣지 카드/노드 생성과 상호배제
+            (칩 호버 시 포인터 핸들러가 엣지 호버를 이미 해제하지만 방어). */}
+        {clusterHoverCardModel && !hoverEdgeCardModel && !createNodeOpen ? (
+          <TopologyV2ClusterHoverCard
+            sentence={clusterHoverCardModel.sentence}
+            x={clusterHoverCardModel.x}
+            y={clusterHoverCardModel.y}
           />
         ) : null}
         {edgePanelModel && !selectedOntologyNode && !createNodeOpen ? (

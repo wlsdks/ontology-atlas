@@ -48,10 +48,15 @@ export interface ClusterChip {
   parentId: string;
   /** 직속 자식 수 — 칩에 `+N` 으로 새긴다. */
   count: number;
-  /** 이 부모가 현재 펼쳐져 있으면 true(칩은 접기 `−` 어포던스). */
+  /** 이 부모가 현재 펼쳐져 있으면 true(칩은 접기 `− N` 어포던스). */
   expanded: boolean;
   /** 칩 월드 좌표(부모 outward 방향 × 자식 링). */
   anchor: { x: number; y: number };
+  /**
+   * 접힌 자식의 kind (미니 글리프 모양 결정 — 원=capability, 사각=element).
+   * `kindOf(첫 게이트 자식)`, 없으면 undefined. Part 5A 칩 비주얼용.
+   */
+  childKind?: string;
 }
 
 export interface DensityGateInput {
@@ -145,6 +150,7 @@ export function computeDensityGate(input: DensityGateInput): DensityGateResult {
         x: geometry.x + Math.cos(geometry.angle) * ring,
         y: geometry.y + Math.sin(geometry.angle) * ring,
       },
+      childKind: kindOf?.(gated[0]),
     });
   }
 

@@ -2344,7 +2344,9 @@
     "cluster": {
       "hint": "자식이 많은 그룹은 +N 칩으로 접혀 있습니다 — 칩을 클릭하면 그 그룹이 펼쳐지고, 다시 클릭하면 접힙니다.",
       "expandAria": "숨겨진 하위 항목 {count}개 펼치기",
-      "collapseAria": "이 그룹 접기"
+      "collapseAria": "이 그룹 접기",
+      "tooltipCollapsed": "「{name}」의 요소 {count}개가 접혀 있어요 — 클릭하면 펼쳐요",
+      "tooltipExpanded": "펼쳐진 요소 {count}개 — 클릭하면 접어요"
     }
   },
   "fullDetailA1": {

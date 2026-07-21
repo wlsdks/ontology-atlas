@@ -224,6 +224,39 @@ export function computeEgoBounds(
   return { minX, minY, maxX, maxY };
 }
 
+/**
+ * S2 파트 5B — 펼친 클러스터 "디스크"(부모 + 그 직속 자식 부챗살)의 반지름
+ * 패딩 bbox. 칩을 클릭해 부모를 펼치면 카메라가 이 bbox 로 다이브해 "펼쳐졌다"가
+ * 뷰포트에 보이게 한다(소유자 실보고 #2: "확장해도 아무 변화가 안 보임"). ego
+ * bbox(`computeEgoBounds`)와 같은 패턴 — 여기선 이웃이 아니라 contains 직속
+ * 자식을 담는다. `parentId` 미해결/자식 없음이면 `null`.
+ */
+export function computeClusterDiscBounds(
+  world: Pick<TopologyWorld, "nodeById" | "childrenByParent">,
+  tokens: TopologyV2Tokens,
+  parentId: string,
+): Bounds | null {
+  const parent = world.nodeById.get(parentId);
+  if (!parent) return null;
+  const ids = new Set<string>([parentId]);
+  for (const id of world.childrenByParent.get(parentId) ?? []) ids.add(id);
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const id of ids) {
+    const n = world.nodeById.get(id);
+    if (!n) continue;
+    const r = radiusForKind(n.kind, tokens) * n.magnitudeScale;
+    minX = Math.min(minX, n.x - r);
+    maxX = Math.max(maxX, n.x + r);
+    minY = Math.min(minY, n.y - r);
+    maxY = Math.max(maxY, n.y + r);
+  }
+  if (!Number.isFinite(minX)) return null;
+  return { minX, minY, maxX, maxY };
+}
+
 export function buildTopologyWorld(
   nodes: readonly TopologyV2Node[],
   edges: readonly TopologyV2Edge[],
