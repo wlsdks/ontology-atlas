@@ -115,6 +115,7 @@ import {
 } from "@/shared/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
 import { useBootstrapFlow } from "../model/use-bootstrap-flow";
+import { useAgentConnectModel } from "../model/use-agent-connect-model";
 import {
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
@@ -546,7 +547,6 @@ export function HomePage() {
   // P3d(E1) — 부트스트랩 완료 시 지도 리빌 연출 트리거.
   const [mapRevealToken, setMapRevealToken] = useState(0);
   // P2a — "AI 에이전트 연결" 시트.
-  const [agentConnectOpen, setAgentConnectOpen] = useState(false);
   // P3b — 선택된 엣지 (노드 선택과 배타: 노드를 고르면 해제).
   const [selectedEdge, setSelectedEdge] = useState<{
     sourceId: string;
@@ -588,33 +588,13 @@ export function HomePage() {
       why,
     };
   }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary]);
-  // purity: "N분 전" 기준 시각은 시트가 열린 순간의 스냅샷 (렌더 중 Date.now 금지).
-  const [agentConnectNowMs, setAgentConnectNowMs] = useState(0);
-  const agentConnectStatus = useMemo<AgentConnectState>(() => {
-    const hb = agentActivityStatus?.heartbeat ?? null;
-    if (!hb || !agentActivityStatus?.valid) return { kind: "none" };
-    const agoMs = agentConnectNowMs - new Date(hb.updatedAt).getTime();
-    const ago = formatActivityAge(agoMs);
-    if (agentActivityStatus.stale) return { kind: "stale", agoLabel: ago };
-    const focusSlug = hb.focus.ontologySlug;
-    const focusTitle = focusSlug
-      ? (ontologyInsight?.nodes.find((n) => n.evidenceIds[0] === focusSlug || n.id === focusSlug)?.title ?? focusSlug)
-      : null;
-    return { kind: "connected", agentLabel: hb.agent ?? t("agentConnect.defaultAgentLabel"), agoLabel: ago, focusTitle };
-  }, [agentActivityStatus, ontologyInsight, agentConnectNowMs, t]);
-  const agentConnectSnippets = useMemo(() => {
-    const vaultName = vault.handle?.name ?? "my-vault";
-    const desktopPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
-    return {
-      mcpJson: buildMcpConfigJson(vaultName, desktopPath),
-      codexCommand: buildCodexMcpAddCommandTemplate(vaultName, desktopPath),
-      needsManualPath: desktopPath === null,
-    };
-  }, [vault.handle]);
-  const agentConnectDomains = useMemo(
-    () => (ontologyInsight?.nodes ?? []).filter((n) => n.kind === "domain").map((n) => n.title),
-    [ontologyInsight],
-  );
+  // HomePage 모듈화 2차 — 에이전트 연결 시트 조립은 use-agent-connect-model 소유.
+  const agentConnect = useAgentConnectModel({
+    agentActivityStatus,
+    vaultHandle: vault.handle,
+    insightNodes: ontologyInsight?.nodes ?? null,
+    defaultAgentLabel: t("agentConnect.defaultAgentLabel"),
+  });
   // HomePage 모듈화 1차 — 부트스트랩 흐름은 use-bootstrap-flow 훅 소유.
   // 완료 연출(토스트·E1 리빌)만 여기 남는다.
   const { bootstrapOpen, setBootstrapOpen, bootstrapPlan, runBootstrap } = useBootstrapFlow({
@@ -2401,10 +2381,7 @@ export function HomePage() {
                     selectedId={canvasSelectedSlug}
                     onSelect={(id) => handleSelect(id)}
                     onCollapse={handleIndexCollapse}
-                    onOpenAgentConnect={() => {
-                      setAgentConnectNowMs(Date.now());
-                      setAgentConnectOpen(true);
-                    }}
+                    onOpenAgentConnect={agentConnect.openSheet}
                     domainCensus={indexDomainCensus}
                     // P4a — 렌즈 필터용 id 집합 + P4b 배지 대상.
                     recentChanges={{
@@ -2970,11 +2947,11 @@ export function HomePage() {
           onSelectProject={(project) => handleSelect(project.slug)}
         />
         <AgentConnectSheet
-          open={agentConnectOpen}
-          onClose={() => setAgentConnectOpen(false)}
-          status={agentConnectStatus}
-          snippets={agentConnectSnippets}
-          domainTitles={agentConnectDomains}
+          open={agentConnect.open}
+          onClose={agentConnect.closeSheet}
+          status={agentConnect.status}
+          snippets={agentConnect.snippets}
+          domainTitles={agentConnect.domainTitles}
           handoffText={indexAgentHandoffBriefText}
           onWriteConfigs={
             isTauriVaultRuntime() && vault.manifest ? () => void vault.ensureAgentConfigs() : null
