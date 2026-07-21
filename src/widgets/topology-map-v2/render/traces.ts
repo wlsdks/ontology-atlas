@@ -168,7 +168,9 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
   if (state.selected === true) {
     // 페어 포커스의 주인공 — pale 인디고, 최상 잉크.
     stroke = tokens.edgeSelected ?? tokens.indigoBright;
-    width = (isDepends ? 2.2 : 2.0) - farT * 0.5;
+    // 톤다운 (소유자: "색이 너무 진하다") — dim 장면 위에서 잉크가 아니라
+    // 빛으로 읽히게 얇고 옅게. 생동감은 depends 코멧 테일이 계속 탄다.
+    width = (isDepends ? 1.7 : 1.5) - farT * 0.4;
   } else if (egoState === "dim") {
     stroke = tokens.edgeDim;
     width = 1;

@@ -41,7 +41,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-edge-contains": "#28282e",
   "--topology-v2-edge-depends": "#39394a",
   "--topology-v2-edge-dim": "#1e1e22",
-  "--topology-v2-edge-selected": "rgba(200, 210, 255, 0.95)",
+  "--topology-v2-edge-selected": "rgba(200, 210, 255, 0.66)",
   "--topology-v2-hull-stroke": "#3a3a42",
   "--topology-v2-label-project": "#d4b478",
   "--topology-v2-label-domain": "#b8b8c1",

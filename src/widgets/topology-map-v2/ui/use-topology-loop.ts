@@ -814,6 +814,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dragStartPosRef,
     overviewScaleRef,
     hoveredEdgeRef,
+    selectedEdgeRef,
     onSelect,
     onSelectEdge,
     onHoverEdge,
