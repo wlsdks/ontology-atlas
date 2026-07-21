@@ -429,7 +429,9 @@ export function ProjectDetailPage({
                 />
               </div>
             </div>
-            <div className="ml-auto flex flex-none flex-wrap items-center gap-2">
+            {/* flex-none 은 읽기전용 배지(+액션)가 390px 뷰포트를 밀어내는
+                가로 overflow 를 만들었다 — min-w-0 수축 허용 + wrap. */}
+            <div className="ml-auto flex min-w-0 flex-wrap items-center gap-2">
               <Link href={getTopologyProjectHref(project.slug)} data-testid="project-detail-topology-link">
                 <Button type="button" variant="outline" size="sm">
                   {t("topBarTopologyView")}
@@ -443,7 +445,9 @@ export function ProjectDetailPage({
                 // 한 줄로 밝히는 배지. 액션은 아니고 상태 typed fact.
                 <span
                   data-testid="project-detail-readonly-badge"
-                  className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-[11px] text-[color:var(--color-text-tertiary)]"
+                  // flex-none 은 390px 에서 페이지 가로 overflow 를 만들었다
+                  // (overflow-sweep 회귀) — 좁으면 배지 텍스트가 줄바꿈된다.
+                  className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-[11px] leading-snug text-[color:var(--color-text-tertiary)]"
                 >
                   {t("readOnlyBadge")}
                 </span>

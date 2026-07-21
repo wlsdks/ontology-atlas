@@ -42,6 +42,7 @@ import {
 } from "../lib/insights-tab-state";
 import { computeDomainCapacityRows } from "../lib/domain-capacity";
 import { buildDoNextQueue } from "../lib/do-next-queue";
+import { findDependencyCycles, type DependencyCycle } from "../lib/dependency-cycles";
 import { computeCensusHealth } from "../lib/census-health";
 import { buildDependsOnRows } from "../lib/depends-on-rows";
 import { buildHubEgoThumbnail } from "../lib/hub-ego-thumbnail";
@@ -169,6 +170,19 @@ export function OntologyInsightsPage() {
     [nodes, edges, docFreshnessIndex],
   );
 
+  // 의존 사이클(전략 verdict B 후보 ④) — depends_on 방향 그래프의 순환. 이미
+  // 로드된 nodes/edges 에서 client 계산(MCP `cycles` 파생과 같은 의미).
+  const dependencyCycles = useMemo(() => findDependencyCycles(nodes, edges), [nodes, edges]);
+  const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
+  const cycleNodeTitle = (nodeId: string): string => nodeById.get(nodeId)?.title ?? nodeId;
+  // graph id → vault slug(evidenceIds[0]) — MCP 핸드오프는 vault slug 를 쓴다.
+  const cycleMcpRef = (nodeId: string): string =>
+    nodeById.get(nodeId)?.evidenceIds[0] ?? nodeId.split(":").pop() ?? nodeId;
+  const cycleHandoff = (cycle: DependencyCycle): string => {
+    const closed = [...cycle.nodeIds.map(cycleMcpRef), cycleMcpRef(cycle.nodeIds[0])].join(" → ");
+    return `의존 사이클: ${closed}. query_ontology({operation:"cycles"}) 로 확인 → 어느 방향을 끊을지 판단 → patch_concept 로 dependencies 수정`;
+  };
+
   const setTab = (next: string) => {
     router.replace(buildInsightsTabHref(next as InsightsTab), { scroll: false });
   };
@@ -221,8 +235,11 @@ export function OntologyInsightsPage() {
     sectionNeglectedHub: t("doNext.sectionNeglectedHub"),
     sectionOrphan: t("doNext.sectionOrphan"),
     sectionPromotion: t("doNext.sectionPromotion"),
+    sectionCycle: t("doNext.sectionCycle"),
+    cycleMoreNodes: (count: number) => t("doNext.cycleMoreNodes", { count }),
     neglectedHubMetric: (degree: number, agoDays: number) =>
       t("doNext.neglectedHubMetric", { degree, days: agoDays }),
+    cycleMetric: (length: number) => t("doNext.cycleMetric", { length }),
     openMap: t("doNext.openMap"),
     openBuilder: t("doNext.openBuilder"),
     handoffCopy: t("doNext.handoffCopy"),
@@ -291,7 +308,10 @@ export function OntologyInsightsPage() {
               label: t(`tab.${key}`),
               count:
                 key === "do-next"
-                  ? doNextQueue.counts.neglectedHub + doNextQueue.counts.orphan + doNextQueue.counts.promotion
+                  ? doNextQueue.counts.neglectedHub +
+                    doNextQueue.counts.orphan +
+                    doNextQueue.counts.promotion +
+                    dependencyCycles.totalCycles
                   : key === "structure"
                     ? totalNodes
                     : `${FRESHNESS_WINDOW_WEEKS}${t("weeksUnit")}`,
@@ -342,10 +362,13 @@ export function OntologyInsightsPage() {
             {tab === "do-next" ? (
               <DoNextTab
                 queue={doNextQueue}
+                cycles={dependencyCycles}
                 agentReadiness={agentReadiness}
                 healthQueue={healthQueue}
                 mapHref={buildOntologyNodeHref}
                 builderHref={buildOntologyBuilderNodeHrefFromGraphId}
+                nodeTitle={cycleNodeTitle}
+                cycleHandoff={cycleHandoff}
                 labels={doNextLabels}
               />
             ) : null}

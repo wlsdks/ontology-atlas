@@ -5,8 +5,10 @@ import { Check, Copy } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
+import { AlertTriangle } from "lucide-react";
 import type { OntologyHealthActionTarget } from "@/entities/knowledge-graph";
 import type { DoNextQueue, DoNextRow } from "../../lib/do-next-queue";
+import type { DependencyCycle, DependencyCyclesResult } from "../../lib/dependency-cycles";
 
 /**
  * 탭1 "할 일" (S5, 전략 verdict B 채택) — 인사이트의 기본 탭. "무엇이
@@ -40,7 +42,11 @@ export interface DoNextTabLabels {
   sectionNeglectedHub: string;
   sectionOrphan: string;
   sectionPromotion: string;
+  sectionCycle: string;
+  /** 경로가 maxPathNodes 로 잘렸을 때 노드 생략 표기. */
+  cycleMoreNodes: (count: number) => string;
   neglectedHubMetric: (degree: number, agoDays: number) => string;
+  cycleMetric: (length: number) => string;
   openMap: string;
   openBuilder: string;
   handoffCopy: string;
@@ -66,10 +72,16 @@ export interface DoNextTabHealthQueue {
 
 export interface DoNextTabProps {
   queue: DoNextQueue;
+  /** 의존 사이클(depends_on 방향 그래프의 순환). 사이클이 있을 때만 렌더. */
+  cycles: DependencyCyclesResult;
   agentReadiness: DoNextTabAgentReadiness;
   healthQueue: DoNextTabHealthQueue;
   mapHref: (nodeId: string) => string;
   builderHref: (nodeId: string) => string;
+  /** 사이클 경로 노드 id → 표시 제목. */
+  nodeTitle: (nodeId: string) => string;
+  /** 사이클별 에이전트 핸드오프 페이로드(복사용). */
+  cycleHandoff: (cycle: DependencyCycle) => string;
   labels: DoNextTabLabels;
 }
 
@@ -126,7 +138,9 @@ function QueueSection({
           <div
             key={row.id}
             data-testid="do-next-row"
-            className="flex min-w-0 items-center gap-2.5 border-b border-[color:var(--color-divider)] py-2.5 last:border-b-0"
+            // 모바일(≤sm): 액션 3종이 한 줄에 안 들어가므로 타이틀 아래로
+            // wrap (390px overflow-sweep 회귀 — 페이지 가로 스크롤 금지 계약).
+            className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b border-[color:var(--color-divider)] py-2.5 last:border-b-0"
           >
             <TopologyV2KindGlyph kind={row.nodeKind} size={13} />
             <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--color-text-secondary)]">
@@ -137,7 +151,7 @@ function QueueSection({
                 {metricText}
               </span>
             ) : null}
-            <span className="flex shrink-0 items-center gap-1.5">
+            <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
               <Link
                 href={mapHref(row.nodeId)}
                 className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
@@ -162,7 +176,96 @@ function QueueSection({
   );
 }
 
-export function DoNextTab({ queue, agentReadiness, healthQueue, mapHref, builderHref, labels }: DoNextTabProps) {
+/**
+ * 의존 사이클 섹션 (전략 verdict B 후보 ④) — "구조적으로 위험한 순환이
+ * 생겼나?". 각 행은 depends_on 방향 경로를 "A → B → C → A" 로 닫아 보여주고,
+ * [지도](첫 노드 딥링크) + [에이전트에게](사이클 핸드오프 복사)를 준다.
+ * 사이클이 하나도 없으면 렌더하지 않는다.
+ */
+function CycleSection({
+  cycles,
+  mapHref,
+  nodeTitle,
+  cycleHandoff,
+  labels,
+}: {
+  cycles: DependencyCyclesResult;
+  mapHref: (nodeId: string) => string;
+  nodeTitle: (nodeId: string) => string;
+  cycleHandoff: (cycle: DependencyCycle) => string;
+  labels: DoNextTabLabels;
+}) {
+  if (cycles.cycles.length === 0) return null;
+  return (
+    <section aria-label={labels.sectionCycle} data-testid="do-next-cycles" className="flex flex-col">
+      <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] pb-2">
+        <span className="flex items-center gap-1.5 text-[13px] font-medium text-[color:var(--color-text-primary)]">
+          <AlertTriangle size={12} aria-hidden className="text-[color:var(--color-status-warning)]" />
+          {labels.sectionCycle}
+        </span>
+        <span className="font-mono text-[11px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+          {cycles.totalCycles}
+        </span>
+      </div>
+      {cycles.cycles.map((cycle) => {
+        const firstNodeId = cycle.nodeIds[0];
+        return (
+          <div
+            key={cycle.id}
+            data-testid="do-next-cycle-row"
+            className="flex min-w-0 items-center gap-2.5 border-b border-[color:var(--color-divider)] py-2.5 last:border-b-0"
+          >
+            <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-[color:var(--color-text-secondary)]">
+              {cycle.nodeIds.map((nodeId, i) => (
+                <span key={`${cycle.id}:${nodeId}:${i}`}>
+                  {i > 0 ? <span className="text-[color:var(--color-text-quaternary)]"> → </span> : null}
+                  {nodeTitle(nodeId)}
+                </span>
+              ))}
+              {cycle.hiddenNodeCount > 0 ? (
+                <span className="text-[color:var(--color-text-quaternary)]">
+                  {" → "}
+                  {labels.cycleMoreNodes(cycle.hiddenNodeCount)}
+                </span>
+              ) : null}
+              <span className="text-[color:var(--color-text-quaternary)]"> → </span>
+              {nodeTitle(firstNodeId)}
+            </span>
+            <span className="shrink-0 font-mono text-[10.5px] text-[color:var(--color-text-quaternary)]">
+              {labels.cycleMetric(cycle.length)}
+            </span>
+            <span className="flex shrink-0 items-center gap-1.5">
+              <Link
+                href={mapHref(firstNodeId)}
+                className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              >
+                {labels.openMap}
+              </Link>
+              <HandoffCopyButton payload={cycleHandoff(cycle)} labels={labels} />
+            </span>
+          </div>
+        );
+      })}
+      {cycles.hiddenCycles > 0 ? (
+        <p className="pt-2 text-[11px] text-[color:var(--color-text-quaternary)]">
+          {labels.moreCount(cycles.hiddenCycles)}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+export function DoNextTab({
+  queue,
+  cycles,
+  agentReadiness,
+  healthQueue,
+  mapHref,
+  builderHref,
+  nodeTitle,
+  cycleHandoff,
+  labels,
+}: DoNextTabProps) {
   const readinessTotal = agentReadiness.ready + agentReadiness.preflight + agentReadiness.review;
   const repairActionKindLabel = healthQueue.actionTarget
     ? healthQueue.actionTarget.kind === "stale"
@@ -174,7 +277,8 @@ export function DoNextTab({ queue, agentReadiness, healthQueue, mapHref, builder
   const neglectedRows = queue.rows.filter((row) => row.rowKind === "neglected-hub");
   const orphanRows = queue.rows.filter((row) => row.rowKind === "orphan");
   const promotionRows = queue.rows.filter((row) => row.rowKind === "promotion");
-  const queueEmpty = queue.rows.length === 0;
+  const hasCycles = cycles.cycles.length > 0;
+  const queueEmpty = queue.rows.length === 0 && !hasCycles;
 
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-[1.2fr_1fr]">
@@ -220,13 +324,22 @@ export function DoNextTab({ queue, agentReadiness, healthQueue, mapHref, builder
               builderHref={builderHref}
               labels={labels}
             />
+            <CycleSection
+              cycles={cycles}
+              mapHref={mapHref}
+              nodeTitle={nodeTitle}
+              cycleHandoff={cycleHandoff}
+              labels={labels}
+            />
           </>
         )}
       </section>
 
       <section
         aria-label={labels.agentReadinessTitle}
-        className="flex min-h-0 min-w-0 flex-col rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        // Guardian 관찰 — 수리 큐가 얕을 때 카드가 좌측 큐 높이까지 늘어나
+        // 빈 여백으로 읽혔다: 내용 높이만큼만 (lg 그리드에서 self-start).
+        className="flex min-h-0 min-w-0 flex-col self-start rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <div
           aria-label={`${labels.agentReadinessTitle}: ${agentReadiness.ready} ${labels.agentReadinessReady} · ${agentReadiness.preflight} ${labels.agentReadinessPreflight} · ${agentReadiness.review} ${labels.agentReadinessReview}`}

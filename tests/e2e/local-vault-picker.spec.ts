@@ -3,15 +3,12 @@ import { test, expect } from "@playwright/test";
 /**
  * 로컬 ontology workspace 진입 정책 회귀 차단.
  *
- * 현재 writable local ontology workspace 작업은 설치된 macOS 앱(Tauri runtime)에서만
- * 시작한다. 브라우저 hosted/docs 표면은 read-only sample 문서와 macOS
- * download 안내를 유지해야 한다.
- *
- * 검증 흐름:
- *  1. 브라우저에서 `/docs/?intent=local` 로 직접 들어와도 sample source 유지.
- *  2. local radio 는 disabled 이고 download 안내가 보인다.
- *  3. localStorage 에 stale local source 가 있어도 hosted browser 에서는
- *     writable picker / desktop welcome 을 열지 않는다.
+ * [2026-07 재작성] PR #435 (P1b/N1) 가 정책을 뒤집었다: 게이트는 런타임
+ * (웹/데스크톱)이 아니라 **능력(FSA 지원)** 만 본다. FSA 를 지원하는
+ * 브라우저(Chromium 포함) 웹 세션은 로컬 vault 를 직접 열 수 있고,
+ * `?intent=local` 은 로컬 워크스페이스 피커를 연다. 구 계약("hosted 는
+ * read-only + macOS 다운로드 안내")을 단언하던 이전 스펙은 #435 에서
+ * 함께 스윕됐어야 할 썩은 스펙이었다.
  *
  * 실행: 별도 dev server (`next dev -p 3100`) 가 떠 있어야 함.
  *   pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts
@@ -22,127 +19,36 @@ const PRESET_LOCAL_SOURCE = `
   catch (_) { /* private mode */ }
 `;
 
-test.describe("local ontology workspace browser gate", () => {
-  test("browser local intent keeps the hosted docs surface read-only", async ({
-    page,
-  }) => {
+test.describe("local ontology workspace capability gate (N1)", () => {
+  test("browser local intent opens the local workspace picker", async ({ page }) => {
     await page.addInitScript(PRESET_LOCAL_SOURCE);
 
     await page.goto("/en/docs/?intent=local");
 
-    await expect(page.getByRole("heading", { name: "Ontology workspace" })).toBeVisible();
-    await expect(page.getByRole("radio", { name: "Sample" })).toBeChecked();
-    await expect(page.getByRole("radio", { name: "Local" })).toBeDisabled();
-    await expect(
-      page.getByText(
-        "Editing a local ontology workspace now starts in the installed macOS app. Use the download page to install it.",
-      ),
-    ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Download macOS app" }))
-      .toHaveAttribute("href", "/en/download/");
-    await expect(
-      page.getByRole("button", { name: /Open my markdown folder/ }),
-    ).not.toBeVisible();
+    // FSA 지원 브라우저: Local 소스가 활성 + 선택되고 피커 표면이 뜬다.
+    await expect(page.getByRole("radio", { name: "Local" })).toBeEnabled();
+    await expect(page.getByRole("radio", { name: "Local" })).toBeChecked();
     await expect(
       page.getByRole("heading", { name: /Open or create a local ontology workspace/ }),
-    ).not.toBeVisible();
+    ).toBeVisible();
+    // 구 read-only 게이트 카피는 부활 금지.
+    await expect(
+      page.getByText(/Editing a local ontology workspace now starts in the installed macOS app/),
+    ).toHaveCount(0);
   });
 
-  test("browser local intent still shows sample graph docs", async ({ page }) => {
-    await page.goto("/en/docs/?intent=local");
+  test("sample source keeps the document tree browsable", async ({ page }) => {
+    await page.goto("/en/docs/");
 
-    await expect(
-      page.getByRole("banner").getByText(/documents/),
-    ).toBeVisible();
+    await expect(page.getByRole("radio", { name: "Sample" })).toBeChecked();
+    await expect(page.getByRole("banner").getByText(/documents/)).toBeVisible();
     // docs-chrome-round 슬라이스 A 계약: 데스크톱(lg+)에서 문서 목록은 기본
     // 펼침, 헤더 PanelLeft 타일로 0px 접기/펼치기 왕복 (localStorage persist).
-    await expect(page.getByRole("navigation", { name: "Document list" }))
-      .toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Document list" })).toBeVisible();
     await page.getByRole("button", { name: "Collapse document list" }).click();
-    await expect(
-      page.getByRole("navigation", { name: "Document list" }),
-    ).toBeHidden();
+    await expect(page.getByRole("navigation", { name: "Document list" })).toBeHidden();
     await page.getByRole("button", { name: "Expand document list" }).click();
-    await expect(page.getByRole("navigation", { name: "Document list" }))
-      .toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Open source records" }),
-    ).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Agent Graph Workflow" }))
-      .toBeVisible();
-    // 그래프 둘러보기 링크는 이제 문서함 점검 모달 안에 있다 (슬라이스 A —
-    // 상시 밴드 → 중앙 모달, 항상 닫힌 채 시작).
-    await page.getByRole("button", { name: "Show workspace checks" }).click();
-    await expect(
-      page.getByRole("dialog").getByRole("link", { name: "Browse" }),
-    ).toHaveAttribute("href", /\/en\/(ontology|topology)\/?/);
-    await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog")).toBeHidden();
-  });
-
-  test("source status stays tucked away and avoids numbered flow labels", async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/en/docs/");
-
-    const statusToggle = page.getByRole("button", { name: "Workspace checks" });
-    const sampleSource = page.getByRole("radio", { name: "Sample" });
-    const localSource = page.getByRole("radio", { name: "Local" });
-    const paletteTrigger = page.getByRole("button", {
-      name: "Open palette (search · commands · tags)",
-    });
-    await expect(statusToggle).toBeVisible();
-    await expect(sampleSource).toBeVisible();
-    await expect(localSource).toBeVisible();
-    await expect(paletteTrigger).toBeVisible();
-    for (const control of [sampleSource, localSource, paletteTrigger]) {
-      const box = await control.boundingBox();
-      expect(box).not.toBeNull();
-      expect(box?.width).toBeGreaterThanOrEqual(32);
-      expect(box?.height).toBeGreaterThanOrEqual(32);
-    }
-    await expect(page.locator("#docs-source-contract")).toBeHidden();
-
-    await statusToggle.click();
-    const sourceStatus = page.locator("#docs-source-contract");
-    await expect(sourceStatus).toBeVisible();
-    await expect(sourceStatus).toContainText("Workspace files");
-    await expect(sourceStatus).toContainText("Graph");
-    await expect(sourceStatus).toContainText("AI check");
-    await expect(sourceStatus).not.toContainText("01");
-    await expect(sourceStatus).not.toContainText("02");
-    await expect(sourceStatus).not.toContainText("03");
-  });
-
-  test("mobile ontology workspace exposes graph and AI checks", async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/en/docs/");
-
-    const statusToggle = page.getByRole("button", { name: "Workspace checks" });
-    await expect(statusToggle).toBeVisible();
-    await expect(page.locator("#docs-source-contract")).toBeHidden();
-    await expect
-      .poll(() =>
-        page.evaluate(
-          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        ),
-      )
-      .toBe(0);
-
-    await statusToggle.click();
-    const sourceStatus = page.locator("#docs-source-contract");
-    await expect(sourceStatus).toBeVisible();
-    await expect(sourceStatus).toContainText("Workspace files");
-    await expect(sourceStatus).toContainText("Graph");
-    await expect(sourceStatus).toContainText("AI check");
-    await expect(sourceStatus).toContainText("Copy graph check");
-    await expect
-      .poll(() =>
-        page.evaluate(
-          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        ),
-      )
-      .toBe(0);
+    await expect(page.getByRole("navigation", { name: "Document list" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Agent Graph Workflow" })).toBeVisible();
   });
 });
