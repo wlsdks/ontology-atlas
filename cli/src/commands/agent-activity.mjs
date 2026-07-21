@@ -21,6 +21,8 @@ const ALLOWED_FLAGS = [
   '--json',
   '--show',
   '--clear',
+  '--log',
+  '--limit',
   '--agent',
   '--state',
   '--focus',
@@ -35,7 +37,7 @@ const ALLOWED_FLAGS = [
   '--updated-at',
 ];
 
-export function runAgentActivity(args) {
+export async function runAgentActivity(args) {
   const parsed = parseArgs(args);
   if (parsed.help) {
     printUsage(process.stdout);
@@ -56,6 +58,9 @@ export function runAgentActivity(args) {
     }
     if (parsed.mode === 'clear') {
       return clearActivity({ vaultRoot, activityPath, json: parsed.json });
+    }
+    if (parsed.mode === 'log') {
+      return await showActivityLog({ vaultRoot, json: parsed.json, limit: parsed.limit ?? 20 });
     }
     return writeActivity({
       vaultRoot,
@@ -471,6 +476,8 @@ function parseArgs(args) {
     json: false,
     show: false,
     clear: false,
+    log: false,
+    limit: undefined,
     files: [],
     plan: [],
     mcp: [],
@@ -485,6 +492,9 @@ function parseArgs(args) {
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
     else if (a === '--show') flags.show = true;
+    else if (a === '--log') flags.log = true;
+    else if (a === '--limit') flags.limit = Number.parseInt(args[++i] ?? '', 10);
+    else if (a.startsWith('--limit=')) flags.limit = Number.parseInt(a.slice('--limit='.length), 10);
     else if (a === '--clear') flags.clear = true;
     else if (a === '--agent') flags.agent = parseCleanFlag('--agent', args[++i]);
     else if (a.startsWith('--agent=')) flags.agent = parseCleanFlag('--agent', a.slice('--agent='.length));
@@ -530,8 +540,13 @@ function parseArgs(args) {
   ]) {
     if (value instanceof Error) return { error: value.message };
   }
-  if (flags.show && flags.clear) return { error: 'pass only one of --show or --clear' };
-  const mode = flags.show ? 'show' : flags.clear ? 'clear' : 'write';
+  if ([flags.show, flags.clear, flags.log].filter(Boolean).length > 1) {
+    return { error: 'pass only one of --show, --clear, or --log' };
+  }
+  if (flags.limit !== undefined && (!Number.isInteger(flags.limit) || flags.limit <= 0)) {
+    return { error: '--limit must be a positive integer' };
+  }
+  const mode = flags.show ? 'show' : flags.clear ? 'clear' : flags.log ? 'log' : 'write';
   if (mode === 'write') {
     if (!flags.agent) return { error: '--agent is required when writing activity' };
     if (!flags.state) return { error: '--state is required when writing activity' };
@@ -543,6 +558,7 @@ function parseArgs(args) {
     mode,
     vault: vaultResult.vault,
     json: flags.json,
+    limit: flags.limit,
     agent: flags.agent,
     state: flags.state,
     focus: flags.focus ?? null,
@@ -589,4 +605,41 @@ function printUsage(stream = process.stderr) {
       `Repeat --file, --plan, --mcp, --source, and --verify to add multiple entries. --codegraph remains a legacy alias for source lookup evidence.\n` +
       `JSON output includes reviewMode: ontology-focus with --ontology-slug, business-extraction with source files only, or none.\n`,
   );
+}
+
+/**
+ * B3 — 로컬 감사 로그 tail (`.ontology-atlas/activity.jsonl`). 리더는
+ * ontology-atlas-mcp 패키지의 activity-log 모듈을 재사용한다 (published /
+ * source-checkout 양쪽에서 require.resolve 로 해석 — mcp-call.mjs 패턴).
+ */
+async function showActivityLog({ vaultRoot, json, limit }) {
+  const { createRequire } = await import('node:module');
+  const { existsSync: fileExists } = await import('node:fs');
+  const { resolve: resolvePath, dirname: dirnamePath } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  // mcp-call.mjs 와 같은 2단 해석: 모노레포 소스 체크아웃 → 설치 패키지.
+  const here = dirnamePath(fileURLToPath(import.meta.url));
+  const monoDev = resolvePath(here, '../../../mcp/src/activity-log.mjs');
+  let modPath = monoDev;
+  if (!fileExists(monoDev)) {
+    const require_ = createRequire(import.meta.url);
+    modPath = require_.resolve('ontology-atlas-mcp/src/activity-log.mjs');
+  }
+  const { readActivityEntries } = await import(`file://${modPath}`);
+  const entries = readActivityEntries(vaultRoot, { limit });
+  if (json) {
+    process.stdout.write(`${JSON.stringify({ entries, total: entries.length }, null, 2)}\n`);
+    return 0;
+  }
+  if (entries.length === 0) {
+    process.stdout.write(`${COLORS.dim}활동 로그가 비어 있어요 — 에이전트가 vault 에 쓰면 여기 기록됩니다.${COLORS.reset}\n`);
+    return 0;
+  }
+  for (const entry of entries) {
+    const agent = entry.agent ? ` · ${entry.agent}` : '';
+    const why = entry.why ? `\n      ${COLORS.dim}why: ${entry.why}${COLORS.reset}` : '';
+    process.stdout.write(`${COLORS.dim}${entry.at}${COLORS.reset}  ${entry.summary}${COLORS.dim}${agent}${COLORS.reset}${why}\n`);
+  }
+  process.stdout.write(`${COLORS.dim}— ${entries.length}건 (최신순 아래) · 승인은 git diff 로${COLORS.reset}\n`);
+  return 0;
 }

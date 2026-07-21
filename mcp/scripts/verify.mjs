@@ -2147,6 +2147,12 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(singleAddRelationInputType?.enum, WRITE_RELATION_TYPE_VALUES)) {
     return 'add_relation inputSchema type enum drift';
   }
+  // P6 회귀 가드 — why 스키마 블록이 라운드 머지에서 증발해 strict-args 가
+  // why 를 unknown_argument 로 거부했던 사고의 재발 방지.
+  const addRelationWhy = propertyAt(addRelationTool, ['properties', 'why']);
+  if (addRelationWhy?.type !== 'string' || addRelationWhy?.maxLength !== 300) {
+    return 'add_relation inputSchema why (relation_notes rationale) drift';
+  }
   if (!/rejected before endpoint slug resolution/.test(addRelationTool?.description || '')) {
     return 'add_relation description missing type-preflight guidance';
   }

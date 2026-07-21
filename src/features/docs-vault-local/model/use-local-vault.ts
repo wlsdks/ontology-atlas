@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity-log';
 import {
   buildLocalManifestWithEntries,
   rebuildLocalManifestIncremental,
@@ -94,6 +95,8 @@ interface State {
   manifest: VaultManifest | null;
   agentConfigStatus: AgentConfigStatus | null;
   agentActivityStatus: AgentActivityStatus;
+  /** B3 — 로컬 감사 로그 tail (없으면 빈 배열). */
+  agentActivityLog: AgentActivityEntry[];
   fileHandles: Map<string, FileSystemFileHandle>;
   imageHandles: Map<string, FileSystemFileHandle>;
   errorMessage: string | null;
@@ -117,6 +120,7 @@ function emptyState(status: Status = 'idle'): State {
     manifest: null,
     agentConfigStatus: null,
     agentActivityStatus: emptyAgentActivityStatus(),
+    agentActivityLog: [],
     fileHandles: new Map(),
     imageHandles: new Map(),
     errorMessage: null,
@@ -341,12 +345,25 @@ async function readAgentActivityStatus(
 async function readVaultSidecarStatuses(handle: FileSystemDirectoryHandle): Promise<{
   agentConfigStatus: AgentConfigStatus;
   agentActivityStatus: AgentActivityStatus;
+  agentActivityLog: AgentActivityEntry[];
 }> {
-  const [agentConfigStatus, agentActivityStatus] = await Promise.all([
+  const [agentConfigStatus, agentActivityStatus, agentActivityLog] = await Promise.all([
     readAgentConfigStatus(handle),
     readAgentActivityStatus(handle),
+    readAgentActivityLog(handle),
   ]);
-  return { agentConfigStatus, agentActivityStatus };
+  return { agentConfigStatus, agentActivityStatus, agentActivityLog };
+}
+
+/** B3 — 로컬 감사 로그 tail (읽기 전용, 없으면 빈 배열). */
+async function readAgentActivityLog(handle: FileSystemDirectoryHandle): Promise<AgentActivityEntry[]> {
+  try {
+    const dir = await handle.getDirectoryHandle('.ontology-atlas');
+    const raw = await readTextFileIfPresent(dir, 'activity.jsonl');
+    return raw ? parseAgentActivityLog(raw, { limit: 50 }) : [];
+  } catch {
+    return [];
+  }
 }
 
 async function writeRootFileIfMissing(
@@ -482,7 +499,7 @@ export function useLocalVaultInternal() {
       }
       const { build, entries } = result;
       const { manifest, fileHandles, imageHandles, fingerprint } = build;
-      const { agentConfigStatus, agentActivityStatus } =
+      const { agentConfigStatus, agentActivityStatus, agentActivityLog } =
         await readVaultSidecarStatuses(handle);
       lastFingerprintRef.current = fingerprint;
       lastBuildRef.current = { handle, entries };
@@ -492,6 +509,7 @@ export function useLocalVaultInternal() {
         manifest,
         agentConfigStatus,
         agentActivityStatus,
+        agentActivityLog,
         fileHandles,
         imageHandles,
         errorMessage: null,
@@ -509,6 +527,7 @@ export function useLocalVaultInternal() {
         manifest: null,
         agentConfigStatus: null,
         agentActivityStatus: emptyAgentActivityStatus(),
+        agentActivityLog: [],
         fileHandles: new Map(),
         imageHandles: new Map(),
         errorMessage: err instanceof Error ? err.message : null,
@@ -987,6 +1006,7 @@ export function useLocalVaultInternal() {
           manifest: null,
           agentConfigStatus: null,
           agentActivityStatus: emptyAgentActivityStatus(),
+          agentActivityLog: [],
           fileHandles: new Map(),
           imageHandles: new Map(),
           errorMessage: null,
@@ -1069,6 +1089,7 @@ export function useLocalVaultInternal() {
     manifest: state.manifest,
     agentConfigStatus: state.agentConfigStatus,
     agentActivityStatus: state.agentActivityStatus,
+    agentActivityLog: state.agentActivityLog,
     recentVaults,
     fileHandles: state.fileHandles,
     imageHandles: state.imageHandles,
