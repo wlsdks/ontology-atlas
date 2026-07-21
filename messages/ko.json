@@ -2152,7 +2152,7 @@
       "poweredOn": "최근 갱신",
       "poweredOff": "한동안 그대로",
       "metricUsedBy": "쓰는 곳",
-      "noConnections": "직접 연결 없음",
+      "noConnections": "아직 기록된 관계 없음 · 관계는 frontmatter 로 선언돼요",
       "handoff": "에이전트 인계 복사",
       "handoffCopied": "에이전트 인계를 복사했어요",
       "openFullDetail": "전체 상세 →",

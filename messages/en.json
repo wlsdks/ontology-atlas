@@ -2152,7 +2152,7 @@
       "poweredOn": "fresh",
       "poweredOff": "idle",
       "metricUsedBy": "used by",
-      "noConnections": "no direct connections",
+      "noConnections": "no relations recorded yet · relations are declared in frontmatter",
       "handoff": "Copy agent handoff",
       "handoffCopied": "Agent handoff copied",
       "openFullDetail": "Full detail →",

@@ -6,6 +6,30 @@
 
 ---
 
+## 2026-07-21 — 리텐션 라운드 High 3건 수리 (감사 로그 구멍 · "쓰는 곳 0" 신뢰 · 도메인 오귀속)
+
+`.qa-scratch/retention-round-2026-07-21/` 페르소나 여정(P1 테크리드 · P2
+에이전트 개발자 · P3 기획자)이 짚은 High 마찰 3건을 고쳤다.
+
+- **P2-① CLI 쓰기도 로컬 감사 로그에** — 지금까지 `.ontology-atlas/activity.jsonl`
+  은 MCP 쓰기만 기록하고 CLI `add`/`relate`/`import` 는 vault 를 직접 fs 로 써서
+  로그에 안 남았다("에이전트가 vault 에 쓰면 기록됩니다" 약속의 구멍). 세
+  명령이 mcp 패키지의 `activity-log` 모듈(`appendActivityEntry`/
+  `buildActivityEntry`, 단일 진실원)을 재사용해 기록한다 — tool 명은 `cli:add`/
+  `cli:relate`/`cli:import` 로 CLI 쓰기임을 구분, agent 는 heartbeat 복사(없으면
+  null), dry-run·실패는 기록 안 함. `rename`/`merge`/`delete` 는 이미
+  MCP 서버를 거치므로 그대로 기록됐다(중복 없음).
+- **P3-① "쓰는 곳 0" 신뢰 균열 (데이터 공백으로 판정)** — global-search 요소는
+  코드에선 널리 쓰이지만 vault frontmatter 에 어떤 `depends_on`/`uses` 관계도
+  선언돼 있지 않다(`find_backlinks` 0, 백킹 `.md` 없는 inferred 노드). 코드
+  결함이 아니라 데이터 공백 — 그래서 근거 없는 관계를 채우는 대신 노드 팝오버의
+  empty-state 카피를 "직접 연결 없음"→"아직 기록된 관계 없음 · 관계는
+  frontmatter 로 선언돼요"로 바꿔 0 과 미기록의 모호를 정직하게 해소했다.
+- **P1-③ 도메인 데이터시트 오귀속** — 도메인 노드 팝오버가 "도메인 · <다른
+  도메인>"을 표기했다(도메인 간 cross-relation 의 incoming 을 소속으로 오독).
+  도메인의 부모는 프로젝트지 다른 도메인이 아니므로, `buildTopologyOntologyDrawerModel`
+  의 ownerDomain 파생이 domain/project 노드에는 도메인 소속을 붙이지 않도록
+  가드했다(헤더 + 인계 패킷 `domain:` 필드 양쪽 정정).
 ## 2026-07-21 — 데스크톱 최근 vault 재열기 침묵 실패 수리 (P5 High)
 
 설치 앱(Tauri)에서 설정 → 작업공간의 "로컬 볼트 오류" 상시 배너 + "최근 vault

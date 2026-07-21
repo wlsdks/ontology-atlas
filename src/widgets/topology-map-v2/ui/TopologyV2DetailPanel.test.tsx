@@ -24,7 +24,7 @@ const labels = {
   metricUsedBy: "used by",
   metricDependsOn: "leans on",
   metricEvidence: "evidence",
-  noConnections: "no direct connections",
+  noConnections: "no relations recorded yet · relations are declared in frontmatter",
   handoff: "Copy next action",
   close: "Close",
   openFullDetail: "Full detail →",
@@ -181,6 +181,42 @@ describe("TopologyV2DetailPanel — M-2 typed containment split", () => {
     expect(document.querySelector("[data-datasheet-group='contains']")).toBeNull();
     const metric = screen.getByTestId("topology-v2-detail-panel").querySelector("[data-datasheet-metric='engraved']");
     expect(metric?.textContent).not.toContain("contains");
+  });
+});
+
+describe("TopologyV2DetailPanel — P3-① 미기록 관계 empty-state (0 vs 미기록 disambiguation)", () => {
+  it("renders the honest 'no relations recorded yet' empty-state when a node has zero recorded relations", () => {
+    // global-search 처럼 코드에선 널리 쓰이지만 vault frontmatter 에는 아직
+    // 어떤 관계도 선언되지 않은 노드 — "쓰는 곳 0" 이 "의존 없음" 이 아니라
+    // "아직 기록 안 됨" 임을 UI 가 정직하게 말해야 한다.
+    render(
+      <TopologyV2DetailPanel
+        slug="src/widgets/global-search"
+        title="global-search"
+        kind="element"
+        domain={null}
+        powered={false}
+        metric={{ contains: 0, usedBy: 0, dependsOn: 0, evidence: 0 }}
+        groups={{
+          contains: { rows: [], total: 0 },
+          usedBy: { rows: [], total: 0 },
+          dependsOn: { rows: [], total: 0 },
+          belongsTo: { rows: [], total: 0 },
+        }}
+        evidence={{ rows: [], total: 0 }}
+        handoffText="node: src/widgets/global-search"
+        documentHref={null}
+        builderEditHref="/ontology/edit/?node=src%2Fwidgets%2Fglobal-search"
+        labels={labels}
+        onSelectConnection={() => {}}
+        onCopyHandoff={() => {}}
+        onClose={() => {}}
+        onSetPathSource={() => {}}
+      />,
+    );
+    expect(screen.getByText(labels.noConnections)).toBeInTheDocument();
+    // the copy must carry the "recorded / declared" framing, not a bare "no connections"
+    expect(labels.noConnections).toMatch(/recorded|declared/i);
   });
 });
 
