@@ -801,7 +801,7 @@ export function useLocalVaultInternal() {
    * 중간 디렉터리는 자동 생성. 템플릿 content 를 써서 초기 본문 채움.
    */
   const createDoc = useCallback(
-    async (slug: string, content: string) => {
+    async (slug: string, content: string, opts: { skipRefresh?: boolean } = {}) => {
       if (state.fileHandles.has(slug)) {
         throw new Error(`Document already exists: "${slug}"`);
       }
@@ -814,7 +814,9 @@ export function useLocalVaultInternal() {
       await writable.write(content);
       await writable.close();
       markSelfWrite(slug);
-      if (state.handle) await load(state.handle);
+      // opts.skipRefresh — 부트스트랩처럼 연속 생성하는 호출자가 마지막
+      // 쓰기에서만 리로드하도록 (updateFrontmatter 와 같은 계약).
+      if (!opts.skipRefresh && state.handle) await load(state.handle);
     },
     [state.fileHandles, state.handle, getParentAndName, load, markSelfWrite],
   );
