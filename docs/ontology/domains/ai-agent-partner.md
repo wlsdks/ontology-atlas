@@ -10,7 +10,7 @@ relates: [domains/ontology-core, domains/vault-local-first]
 # AI Agent Partner
 
 Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface.
-MCP 서버 (`mcp/`) 가 24 도구 (read 16 + write 8) 를 stdin/stdout JSON-RPC
+MCP 서버 (`mcp/`) 가 25 도구 (read 16 + write 9) 를 stdin/stdout JSON-RPC
 로 노출. 등록 가이드: `mcp/README.md`. 사용자 LLM 비용을 cloud 로 옮기지
 않음 — agent 가 자기 LLM 으로 호출.
 

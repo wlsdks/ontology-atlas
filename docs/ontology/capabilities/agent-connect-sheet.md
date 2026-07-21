@@ -2,7 +2,7 @@
 slug: capabilities/agent-connect-sheet
 kind: capability
 title: Agent Connect Sheet (AI 에이전트 연결)
-domain: domains/ai-agent-partner
+domain: ai-agent-partner
 elements: []
 ---
 

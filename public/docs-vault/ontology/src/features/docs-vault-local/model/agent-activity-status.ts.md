@@ -5,6 +5,6 @@ title: Agent Activity Status Parser
 domain: vault-local-first
 ---
 
-`src/features/docs-vault-local/model/agent-activity-status.ts` defines the local-first heartbeat contract used by the `/ontology` live activity lane.
+`src/features/docs-vault-local/model/agent-activity-status.ts` defines the local-first heartbeat contract used by the live activity lane on `/` and `/topology`.
 
 It owns the reserved source path `.ontology-atlas/agent-activity.json`, validates the agent heartbeat JSON shape, normalizes current focus fields, reports heartbeat age, and marks stale heartbeats after a short timeout. It also derives the same `reviewMode`, `reviewTarget`, `proof`, and stale `refreshRequest` summaries that the CLI returns: ontology focus points at the selected slug, source review points at the first source file plus overflow count, proof counts MCP / source-tool / verification evidence, and stale refresh requests carry the previous focus plus a runnable `ontology-atlas agent-activity <vault> ... --verify ... --json` command skeleton. The parser treats legacy `codegraph` evidence as source-tool evidence, so Atlas does not require CodeGraph to be present. This keeps Atlas from guessing private Claude Code / Codex state while still letting a connected agent report what it is editing, planning, verifying, or blocked on.
