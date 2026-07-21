@@ -172,6 +172,8 @@ export interface FrameDrawParams {
    * Null in the common case (no panel hover).
    */
   emphasizedNeighborId: string | null;
+  /** P3c — 호버 중 엣지 (마이크로카드와 같은 상태) — 해당 엣지 잉크 강조. */
+  hoveredEdge: { sourceId: string; targetId: string; relationType: string } | null;
   emphasisById: ReadonlyMap<string, number>;
   /** C1 A2 — ego tier-reveal ramp (`topology-physics-step.ts` steps it), consumed by `effectiveNodeAlpha`. */
   egoRevealById: ReadonlyMap<string, number>;
@@ -215,6 +217,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     focusedNodeId,
     hoveredNodeId,
     emphasizedNeighborId,
+    hoveredEdge,
     emphasisById,
     egoRevealById,
     reducedMotion,
@@ -291,10 +294,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // B2 잔여 — 끝점이 하나도 안 보이는 관통 엣지는 잉크 강등 (실타래 해소).
       const passthrough = isPassthroughEdge(a, b, 24, viewportWidth, viewportHeight);
       const touches = focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
+      const hovered =
+        hoveredEdge !== null &&
+        edge.sourceId === hoveredEdge.sourceId &&
+        edge.targetId === hoveredEdge.targetId;
       const emphasized =
-        emphasizedNeighborId !== null &&
-        touches &&
-        (edge.sourceId === emphasizedNeighborId || edge.targetId === emphasizedNeighborId);
+        hovered ||
+        (emphasizedNeighborId !== null &&
+          touches &&
+          (edge.sourceId === emphasizedNeighborId || edge.targetId === emphasizedNeighborId));
       ctx.globalAlpha = passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha;
       tracesDraw(
         ctx,

@@ -2370,6 +2370,9 @@
       "describes": "{from} is evidence for {to}.",
       "belongsTo": "{from} belongs to {to}.",
       "related": "{from} and {to} are related."
+    },
+    "edgeHover": {
+      "clickHint": "Click for details · source doc"
     }
   },
   "fullDetailA1": {

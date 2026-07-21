@@ -115,6 +115,17 @@ export interface PointerHandlerRefs {
   onSelect?: (slug: string) => void;
   /** P3b — 노드가 잡히지 않은 지점의 클릭이 엣지 근접일 때. */
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
+  /**
+   * P3c — 엣지 호버 마이크로카드. idle 이동 중 노드 미히트 지점이 엣지
+   * 근접이면 발화(식별 변경 시에만), 벗어나면 null. 드로우 패스의 hover
+   * 잉크 강조가 같은 ref 를 읽는다. 클릭(P3b 상세)과 별개의 가벼운 의미
+   * 미리보기 — 사용 신호(소유자 요청) 확인 후 게이트 해제.
+   */
+  hoveredEdgeRef?: Ref<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null>;
+  onHoverEdge?: (
+    edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
+    position: { x: number; y: number } | null,
+  ) => void;
   onPaneClick?: () => void;
   /**
    * W2-B node right-click context menu. Called with the hit node's id and the
@@ -176,8 +187,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     dragAffectedSetRef,
     dragStartPosRef,
     overviewScaleRef,
+    hoveredEdgeRef,
     onSelect,
     onSelectEdge,
+    onHoverEdge,
     onPaneClick,
     onContextMenuNode,
   } = refs;
@@ -227,6 +240,36 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const snapshot = { left: rect.left, top: rect.top };
     canvasRectRef.current = snapshot;
     return snapshot;
+  };
+
+
+  /** P3b/P3c 공용 — 현재 tier 에서 양 끝이 히트 가능한 엣지의 스크린 투영 후보. */
+  const buildEdgeCandidates = (): EdgeHitCandidate[] => {
+    const world = worldRef.current;
+    if (!world) return [];
+    const tokens = readTopologyV2TokensOrNull();
+    if (!tokens) return [];
+    const { width, height } = viewportRef.current;
+    const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+    const zoomRatio = computeZoomRatio(cameraRef.current.scale.value, overviewEntryScale);
+    const focusedNodeId = focusedSlugRef.current;
+    const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
+    const hittable = new Set(
+      world.nodes
+        .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL))
+        .map((n) => n.id),
+    );
+    const candidates: EdgeHitCandidate[] = [];
+    for (const edge of world.edges) {
+      if (!hittable.has(edge.sourceId) || !hittable.has(edge.targetId)) continue;
+      candidates.push({
+        edge,
+        a: worldToScreen(cameraRef.current, width, height, edge.ax, edge.ay),
+        b: worldToScreen(cameraRef.current, width, height, edge.bx, edge.by),
+        control: worldToScreen(cameraRef.current, width, height, edge.controlX, edge.controlY),
+      });
+    }
+    return candidates;
   };
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
@@ -334,6 +377,35 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
 
     if (next.phase !== "idle" || focusedSlugRef.current) return; // pressed-not-dragging, or focus owns emphasis
     const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
+
+    // P3c — 노드 미히트 지점의 엣지 근접 = 호버 마이크로카드. 식별이 바뀔
+    // 때만 발화 (같은 엣지 위 이동은 재발화 없음 — 카드 안정). 노드 위에
+    // 오르면 엣지 호버는 즉시 해제 (노드가 우선).
+    if (hoveredEdgeRef && onHoverEdge) {
+      const edgeHit = hitNodeId === null ? hitTestEdges(buildEdgeCandidates(), point.x, point.y, 6) : null;
+      const prev = hoveredEdgeRef.current;
+      const sameEdge =
+        edgeHit !== null &&
+        prev !== null &&
+        prev.sourceId === edgeHit.sourceId &&
+        prev.targetId === edgeHit.targetId &&
+        prev.relationType === edgeHit.relationType;
+      if (!sameEdge && (edgeHit !== null || prev !== null)) {
+        const payload = edgeHit
+          ? {
+              sourceId: edgeHit.sourceId,
+              targetId: edgeHit.targetId,
+              relationType: edgeHit.relationType,
+              declaredBySlug: edgeHit.declaredBySlug,
+            }
+          : null;
+        hoveredEdgeRef.current = payload;
+        onHoverEdge(payload, payload ? { x: e.clientX, y: e.clientY } : null);
+      }
+      // 커서 어포던스 — "잡을 수 있으면 읽을 수 있다".
+      e.currentTarget.style.cursor = edgeHit !== null || hitNodeId !== null ? "pointer" : "";
+    }
+
     if (hitNodeId === hoveredNodeIdRef.current) return;
     hoveredNodeIdRef.current = hitNodeId;
     if (hitNodeId) {
@@ -441,44 +513,29 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // 후보는 양 끝점이 현재 tier 에서 히트 가능한 엣지로 제한 — 안 보이는
     // 엣지가 클릭되는 계약 위반 방지. 실패 시에만 기존 deselect.
     if (commitClick && commitClick.nodeId === null && clickPoint && onSelectEdge) {
-      const world = worldRef.current;
-      if (world) {
-        const { width, height } = viewportRef.current;
-        const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
-        const zoomRatio = computeZoomRatio(cameraRef.current.scale.value, overviewEntryScale);
-        const focusedNodeId = focusedSlugRef.current;
-        const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
-        const hittable = new Set(
-          world.nodes
-            .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL))
-            .map((n) => n.id),
-        );
-        const candidates: EdgeHitCandidate[] = [];
-        for (const edge of world.edges) {
-          if (!hittable.has(edge.sourceId) || !hittable.has(edge.targetId)) continue;
-          candidates.push({
-            edge,
-            a: worldToScreen(cameraRef.current, width, height, edge.ax, edge.ay),
-            b: worldToScreen(cameraRef.current, width, height, edge.bx, edge.by),
-            control: worldToScreen(cameraRef.current, width, height, edge.controlX, edge.controlY),
-          });
-        }
-        const hit = hitTestEdges(candidates, clickPoint.x, clickPoint.y, 7);
-        if (hit) {
-          onSelectEdge({
-            sourceId: hit.sourceId,
-            targetId: hit.targetId,
-            relationType: hit.relationType,
-            declaredBySlug: hit.declaredBySlug,
-          });
-          return;
-        }
+      const hit = hitTestEdges(buildEdgeCandidates(), clickPoint.x, clickPoint.y, 7);
+      if (hit) {
+        onSelectEdge({
+          sourceId: hit.sourceId,
+          targetId: hit.targetId,
+          relationType: hit.relationType,
+          declaredBySlug: hit.declaredBySlug,
+        });
+        return;
       }
     }
     if (action.type === "deselect") onPaneClick?.();
   };
 
+  const clearEdgeHover = () => {
+    if (hoveredEdgeRef && hoveredEdgeRef.current !== null) {
+      hoveredEdgeRef.current = null;
+      onHoverEdge?.(null, null);
+    }
+  };
+
   const handlePointerCancel = () => {
+    clearEdgeHover();
     const tokens = readTopologyV2TokensOrNull();
     // Abort any in-flight node pin-drag cleanly (release the pin, let it settle).
     if (nodeDragRef.current !== null) {

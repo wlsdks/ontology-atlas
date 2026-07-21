@@ -153,6 +153,7 @@ import {
   TopologyMapV2,
   TopologyV2ContextMenu,
   TopologyV2DetailPanel,
+  TopologyV2EdgeHoverCard,
   TopologyV2SettingsGear,
   buildV2Connections,
   buildV2ConnectionGroups,
@@ -583,6 +584,40 @@ export function HomePage() {
       why,
     };
   }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary]);
+  // P3c — 엣지 호버 마이크로카드 (클릭 팝오버의 가벼운 전신).
+  const [hoverEdge, setHoverEdge] = useState<{
+    edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null };
+    x: number;
+    y: number;
+  } | null>(null);
+  const handleHoverEdge = useCallback(
+    (
+      edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
+      position: { x: number; y: number } | null,
+    ) => {
+      setHoverEdge(edge && position ? { edge, x: position.x, y: position.y } : null);
+    },
+    [],
+  );
+  const hoverEdgeCardModel = useMemo(() => {
+    if (!hoverEdge || !ontologyInsight) return null;
+    const from = ontologyInsight.nodes.find((n) => n.id === hoverEdge.edge.sourceId);
+    const to = ontologyInsight.nodes.find((n) => n.id === hoverEdge.edge.targetId);
+    if (!from || !to) return null;
+    const edgeRecord = ontologyInsight.edges.find(
+      (e) => e.from === hoverEdge.edge.sourceId && e.to === hoverEdge.edge.targetId,
+    );
+    return {
+      sentence: t(`edgeSentence.${normalizeEdgeSentenceKey(hoverEdge.edge.relationType)}`, {
+        from: from.title,
+        to: to.title,
+      }),
+      typeLabel: relationVocabulary(hoverEdge.edge.relationType, "formal"),
+      why: edgeRecord?.label?.trim() || null,
+      x: hoverEdge.x,
+      y: hoverEdge.y,
+    };
+  }, [hoverEdge, ontologyInsight, t, relationVocabulary]);
   // HomePage 모듈화 2차 — 에이전트 연결 시트 조립은 use-agent-connect-model 소유.
   const agentConnect = useAgentConnectModel({
     agentActivityStatus,
@@ -2458,8 +2493,10 @@ export function HomePage() {
                     revealToken={mapRevealToken}
                     onSelectEdge={(edge) => {
                       setFullDetailSlug(null);
+                      setHoverEdge(null); // 팝오버가 열리면 마이크로카드는 강등
                       setSelectedEdge(edge);
                     }}
+                    onHoverEdge={handleHoverEdge}
                     onSelect={(slug) => {
                       setSelectedEdge(null);
                       handleSelect(slug);
@@ -2752,6 +2789,16 @@ export function HomePage() {
           </div>
         ) : null}
         {/* P3b — 엣지 팝오버: 노드 팝오버와 같은 포지셔너 계약, 배타 렌더. */}
+        {hoverEdgeCardModel && !selectedEdge && !selectedOntologyNode && !createNodeOpen ? (
+          <TopologyV2EdgeHoverCard
+            sentence={hoverEdgeCardModel.sentence}
+            typeLabel={hoverEdgeCardModel.typeLabel}
+            why={hoverEdgeCardModel.why}
+            clickHint={t("edgeHover.clickHint")}
+            x={hoverEdgeCardModel.x}
+            y={hoverEdgeCardModel.y}
+          />
+        ) : null}
         {edgePanelModel && !selectedOntologyNode && !createNodeOpen ? (
           <div
             data-testid="topology-edge-popover-positioner"
