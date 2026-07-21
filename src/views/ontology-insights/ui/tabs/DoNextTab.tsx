@@ -53,6 +53,9 @@ export interface DoNextTabLabels {
   handoffCopied: string;
   emptyQueue: string;
   moreCount: (count: number) => string;
+  digestTitle: string;
+  digestToday: (count: number) => string;
+  digestApproveHint: string;
 }
 
 export interface DoNextTabAgentReadiness {
@@ -82,6 +85,13 @@ export interface DoNextTabProps {
   nodeTitle: (nodeId: string) => string;
   /** 사이클별 에이전트 핸드오프 페이로드(복사용). */
   cycleHandoff: (cycle: DependencyCycle) => string;
+  /**
+   * B3 — 로컬 감사 로그 다이제스트 (`.ontology-atlas/activity.jsonl` tail).
+   * null 이면 카드 자체를 렌더하지 않는다 (static/dogfood 모드 — 로그 없음).
+   * 자동화 계약: 에이전트가 실행, 사람은 git diff 로 승인 — 이 카드는
+   * "한 일"의 보고이지 조작 화면이 아니다.
+   */
+  activityDigest: { todayCount: number; latest: ReadonlyArray<{ at: string; summary: string; agent: string | null }> } | null;
   labels: DoNextTabLabels;
 }
 
@@ -264,6 +274,7 @@ export function DoNextTab({
   builderHref,
   nodeTitle,
   cycleHandoff,
+  activityDigest,
   labels,
 }: DoNextTabProps) {
   const readinessTotal = agentReadiness.ready + agentReadiness.preflight + agentReadiness.review;
@@ -451,6 +462,32 @@ export function DoNextTab({
             <p className="mt-2 text-[12px] text-[color:var(--color-text-quaternary)]">{labels.repairQueueEmpty}</p>
           )}
         </div>
+        {activityDigest && activityDigest.latest.length > 0 ? (
+          <div
+            data-testid="insights-activity-digest"
+            className="mt-3.5 border-t border-[color:var(--color-divider)] pt-3.5"
+          >
+            <div className="flex items-baseline gap-2">
+              <span className="text-[14px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+                {labels.digestTitle}
+              </span>
+              <span className="ml-auto font-mono text-[11.5px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+                {labels.digestToday(activityDigest.todayCount)}
+              </span>
+            </div>
+            <div className="mt-2 flex flex-col gap-1.5">
+              {activityDigest.latest.map((entry, index) => (
+                <p key={`${entry.at}-${index}`} className="truncate font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+                  {entry.summary}
+                  {entry.agent ? (
+                    <span className="text-[color:var(--color-text-quaternary)]"> · {entry.agent}</span>
+                  ) : null}
+                </p>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] text-[color:var(--color-text-quaternary)]">{labels.digestApproveHint}</p>
+          </div>
+        ) : null}
       </section>
     </div>
   );

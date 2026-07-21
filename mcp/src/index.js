@@ -73,6 +73,7 @@ import {
   vaultSlugExists,
   writeDoc,
 } from './vault.mjs';
+import { appendActivityEntry, buildActivityEntry, readHeartbeatAgent } from './activity-log.mjs';
 import { writeFileSync, unlinkSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { mkdirSync } from 'node:fs';
@@ -1033,6 +1034,15 @@ const TOOLS = [
         type: {
           ...ADD_RELATION_TYPE_SCHEMA,
           description: 'Relation type.',
+        },
+        // P6 — 라운드 머지에서 스키마 블록만 증발했던 회귀 복원 (핸들러는
+        // why 를 이미 받는다). strict-args 가 스키마에서 allowlist 를 파생
+        // 하므로 여기 없으면 why 가 unknown_argument 로 거부된다.
+        why: {
+          type: 'string',
+          maxLength: 300,
+          description:
+            'One-line rationale for this relation ("A leans on B because ..."). Stored in the SAME frontmatter write as the ref (relation_notes map) — write it whenever you know the reason; a graph edge without a why is a mind-map line, not an ontology claim.',
         },
         expected_mtime: {
           type: 'number',
@@ -3034,6 +3044,61 @@ const TOOL_BY_NAME = new Map(TOOLS_FOR_LIST.map((tool) => [tool.name, tool]));
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS_FOR_LIST }));
 
+
+// ── B3 활동 로그 — 쓰기 성공 시 로컬 감사 로그 1줄 (best-effort) ─────────
+// 스키마·처방: mcp/src/activity-log.mjs + .qa-scratch/.../b3-investigation.
+// dry-run(변경 없음)·invalid-only 배치는 기록하지 않는다 — 감사 로그는
+// "일어난 일"만. append 실패는 쓰기 결과에 영향 없음.
+function summarizeWrite(name, args, result) {
+  switch (name) {
+    case 'add_concept':
+      return { target: args.slug, summary: `add_concept ${args.kind}:${args.slug}` };
+    case 'add_relation':
+      return { target: args.from, summary: `${args.from} --${args.type}--> ${args.to}`, why: args.why ?? null };
+    case 'add_concepts': {
+      const okRows = (result?.concepts ?? []).filter((row) => row?.ok).length;
+      return okRows > 0 ? { target: '(batch)', summary: `add_concepts ${okRows}행 성공` } : null;
+    }
+    case 'add_relations': {
+      const okRows = (result?.relations ?? []).filter((row) => row?.ok).length;
+      return okRows > 0 ? { target: '(batch)', summary: `add_relations ${okRows}행 성공` } : null;
+    }
+    case 'patch_concept':
+      return { target: args.slug, summary: `patch_concept ${args.slug}` };
+    case 'rename_concept':
+      return result?.dryRun ? null : { target: args.newSlug, summary: `rename ${args.oldSlug} → ${args.newSlug}` };
+    case 'merge_concepts':
+      return result?.dryRun ? null : { target: args.intoSlug, summary: `merge ${args.fromSlug} → ${args.intoSlug}` };
+    case 'delete_concept':
+      return result?.dryRun ? null : { target: args.slug, summary: `delete ${args.slug}` };
+    case 'absorb_document':
+      return result?.dryRun ? null : { target: args.filePath ?? '(doc)', summary: `absorb ${args.filePath ?? ''}`.trim() };
+    default:
+      return null;
+  }
+}
+
+function logWrite(name, args, result) {
+  try {
+    const summarized = summarizeWrite(name, args, result);
+    if (summarized) {
+      appendActivityEntry(
+        VAULT_ROOT,
+        buildActivityEntry({
+          tool: name,
+          target: summarized.target,
+          summary: summarized.summary,
+          why: summarized.why ?? null,
+          agent: readHeartbeatAgent(VAULT_ROOT),
+        }),
+      );
+    }
+  } catch {
+    /* 감사 로그는 부수 — 쓰기 결과를 해치지 않는다 */
+  }
+  return result;
+}
+
 // ── 도구 핸들러 ───────────────────────────────────────────────────────────
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -3050,15 +3115,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'find_evidence':
         return ok(findEvidence(args));
       case 'add_concept':
-        return ok(addConcept(args));
+        return ok(logWrite(name, args, addConcept(args)));
       case 'add_concepts':
-        return ok(addConceptsBatch(args));
+        return ok(logWrite(name, args, addConceptsBatch(args)));
       case 'add_relation':
-        return ok(addRelation(args));
+        return ok(logWrite(name, args, addRelation(args)));
       case 'add_relations':
-        return ok(addRelationsBatch(args));
+        return ok(logWrite(name, args, addRelationsBatch(args)));
       case 'patch_concept':
-        return ok(patchConcept(args));
+        return ok(logWrite(name, args, patchConcept(args)));
       case 'find_backlinks':
         return ok(findBacklinksTool(args));
       case 'find_neighbors':
@@ -3084,13 +3149,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'index_project':
         return ok(indexProjectTool(args));
       case 'rename_concept':
-        return ok(renameConcept(args));
+        return ok(logWrite(name, args, renameConcept(args)));
       case 'merge_concepts':
-        return ok(mergeConcepts(args));
+        return ok(logWrite(name, args, mergeConcepts(args)));
       case 'delete_concept':
-        return ok(deleteConcept(args));
+        return ok(logWrite(name, args, deleteConcept(args)));
       case 'absorb_document':
-        return ok(absorbDocumentTool(args));
+        return ok(logWrite(name, args, absorbDocumentTool(args)));
       default:
         throw new Error(formatUnknownToolError(name));
     }

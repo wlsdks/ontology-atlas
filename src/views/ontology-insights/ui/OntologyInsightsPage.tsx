@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -42,6 +42,7 @@ import {
 } from "../lib/insights-tab-state";
 import { computeDomainCapacityRows } from "../lib/domain-capacity";
 import { buildDoNextQueue } from "../lib/do-next-queue";
+import { countRecentEntries } from "@/shared/lib/agent-activity-log";
 import { findDependencyCycles, type DependencyCycle } from "../lib/dependency-cycles";
 import { computeCensusHealth } from "../lib/census-health";
 import { buildDependsOnRows } from "../lib/depends-on-rows";
@@ -164,6 +165,20 @@ export function OntologyInsightsPage() {
     [nodes, edges, docFreshnessIndex],
   );
 
+  // B3 — 활동 다이제스트: 로컬 vault 의 감사 로그 tail (static 모드 null).
+  // 기준 시각은 마운트 스냅샷 — 렌더 중 Date.now 금지 (저장소 purity 관례).
+  const [digestNowMs] = useState(() => Date.now());
+  const activityDigest = useMemo(() => {
+    const log = vault.agentActivityLog ?? [];
+    if (log.length === 0) return null;
+    const latest = log.slice(-3).reverse().map((entry) => ({
+      at: entry.at,
+      summary: entry.summary,
+      agent: entry.agent,
+    }));
+    return { todayCount: countRecentEntries(log, digestNowMs), latest };
+  }, [vault.agentActivityLog, digestNowMs]);
+
   // S5 — "할 일" 큐: 이미 로드된 파생(healthSignals·degree·freshness)의 조합.
   const doNextQueue = useMemo(
     () => buildDoNextQueue(nodes, edges, docFreshnessIndex),
@@ -246,6 +261,9 @@ export function OntologyInsightsPage() {
     handoffCopied: t("agentCopied"),
     emptyQueue: t("doNext.emptyQueue"),
     moreCount: (count: number) => t("doNext.moreCount", { count }),
+    digestTitle: t("doNext.digestTitle"),
+    digestToday: (count: number) => t("doNext.digestToday", { count }),
+    digestApproveHint: t("doNext.digestApproveHint"),
   };
   const formatDaysAgo = (days: number) => {
     if (days <= 0) return t("daysAgoToday");
@@ -369,6 +387,7 @@ export function OntologyInsightsPage() {
                 builderHref={buildOntologyBuilderNodeHrefFromGraphId}
                 nodeTitle={cycleNodeTitle}
                 cycleHandoff={cycleHandoff}
+                activityDigest={activityDigest}
                 labels={doNextLabels}
               />
             ) : null}

@@ -1616,7 +1616,10 @@
         "openBuilder": "Builder",
         "handoffCopy": "To agent",
         "emptyQueue": "Nothing needs attention — the graph is healthy.",
-        "moreCount": "+{count} more — full list via agent handoff"
+        "moreCount": "+{count} more — full list via agent handoff",
+        "digestTitle": "What the agent did",
+        "digestToday": "{count} today",
+        "digestApproveHint": "Review via git diff — this list comes from the local audit log (.ontology-atlas/activity.jsonl) inside your vault."
       }
     }
   },
