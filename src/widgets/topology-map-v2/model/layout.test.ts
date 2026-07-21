@@ -315,3 +315,113 @@ describe("computeConcentricLayout — phyllotaxis 디스크 (밀집 부모)", ()
     expect(maxR(twelve, 12)).toBeGreaterThan(0);
   });
 });
+
+/**
+ * 공간 그리드 relaxCollisions (topology-map-v2 S1) — 브루트포스 O(n²) 를 그리드
+ * 해싱으로 교체하되 **바이트 동일** 계약. `relaxStrategy` 옵션으로 두 경로를
+ * 각각 태워 출력을 직접 비교한다. 결정론·de-pileup 등 기존 계약은 위 블록들이
+ * 이미 그리드(default) 경로로 검증하므로, 여기서는 동일성과 성능만 본다.
+ */
+describe("computeConcentricLayout — 그리드/브루트포스 동일성 (S1)", () => {
+  const RADII = { project: 25, domain: 17, capability: 11, element: 7 };
+
+  // 여러 도메인 · 다양한 팬 밀도(임계 이하/초과 혼재) · 직속 element · 고아를
+  // 한 픽스처에 담아 relax 경로를 폭넓게 태운다. 결정론 생성(입력 순서 고정).
+  function buildMixedFixture(): LayoutGraphNode[] {
+    const g: LayoutGraphNode[] = [{ id: "p", kind: "project", parentId: null }];
+    for (let d = 0; d < 6; d += 1) {
+      const domainId = `d-${d}`;
+      g.push({ id: domainId, kind: "domain", parentId: "p" });
+      // 도메인마다 팬 크기를 달리해 겹침 유발(4~9개) — 임계(12) 이하 부채꼴 경로.
+      const capCount = 4 + (d % 6);
+      for (let c = 0; c < capCount; c += 1) {
+        const capId = `d-${d}-c-${c}`;
+        g.push({ id: capId, kind: "capability", parentId: domainId });
+        for (let e = 0; e < 3 + (c % 3); e += 1) {
+          g.push({ id: `${capId}-e-${e}`, kind: "element", parentId: capId });
+        }
+      }
+      // 도메인 직속 element(비표준 계보) 2개.
+      g.push({ id: `d-${d}-de-0`, kind: "element", parentId: domainId });
+      g.push({ id: `d-${d}-de-1`, kind: "element", parentId: domainId });
+    }
+    // 고아 몇 개.
+    for (let o = 0; o < 5; o += 1) {
+      g.push({ id: `orphan-${o}`, kind: "element", parentId: null });
+    }
+    return g;
+  }
+
+  const MIXED = buildMixedFixture();
+
+  it("그리드 경로가 브루트포스 경로와 바이트 동일하다(중형 혼합 픽스처)", () => {
+    const grid = computeConcentricLayout(MIXED, RINGS, { radii: RADII, relaxStrategy: "grid" });
+    const brute = computeConcentricLayout(MIXED, RINGS, { radii: RADII, relaxStrategy: "bruteforce" });
+    expect(grid).toEqual(brute);
+  });
+
+  it("DENSE(단일 도메인 팬)에서도 두 경로가 바이트 동일하다", () => {
+    const dense: LayoutGraphNode[] = [
+      { id: "p", kind: "project", parentId: null },
+      { id: "d", kind: "domain", parentId: "p" },
+    ];
+    for (let c = 0; c < 10; c += 1) {
+      const capId = `cap-${c}`;
+      dense.push({ id: capId, kind: "capability", parentId: "d" });
+      for (let e = 0; e < 6; e += 1) dense.push({ id: `el-${c}-${e}`, kind: "element", parentId: capId });
+    }
+    const grid = computeConcentricLayout(dense, RINGS, { radii: RADII, relaxStrategy: "grid" });
+    const brute = computeConcentricLayout(dense, RINGS, { radii: RADII, relaxStrategy: "bruteforce" });
+    expect(grid).toEqual(brute);
+  });
+
+  it("기본 DENSE(0 relax seed 겹침)에서도 두 경로가 seed 를 실제로 벌리고 동일하다", () => {
+    // relax 가 no-op 이 아니라 실제로 겹침을 벌리는지(작업 수행) + 그 결과가 두
+    // 경로에서 동일한지 함께 확인 — production 반지름(25)에서 grid 가 brute 와
+    // 바이트 동일함을 "일 없음"이 아니라 "일 있음" 상태로 재확인한다.
+    const dense: LayoutGraphNode[] = [
+      { id: "p", kind: "project", parentId: null },
+      { id: "d", kind: "domain", parentId: "p" },
+    ];
+    for (let c = 0; c < 8; c += 1) {
+      const capId = `cap-${c}`;
+      dense.push({ id: capId, kind: "capability", parentId: "d" });
+      for (let e = 0; e < 8; e += 1) dense.push({ id: `el-${c}-${e}`, kind: "element", parentId: capId });
+    }
+    const min = (pts: { x: number; y: number }[]) => {
+      let m = Infinity;
+      for (let i = 0; i < pts.length; i += 1)
+        for (let j = i + 1; j < pts.length; j += 1)
+          m = Math.min(m, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y));
+      return m;
+    };
+    const seed = computeConcentricLayout(dense, RINGS, { radii: RADII, relaxStrategy: "grid", relaxIterations: 0 });
+    const grid = computeConcentricLayout(dense, RINGS, { radii: RADII, relaxStrategy: "grid" });
+    const brute = computeConcentricLayout(dense, RINGS, { radii: RADII, relaxStrategy: "bruteforce" });
+    expect(min(grid)).toBeGreaterThan(min(seed)); // relax 가 실제로 벌렸다
+    expect(grid).toEqual(brute); // 그리고 두 경로가 바이트 동일
+  });
+
+  it("초대형 반지름(비현실적 극단)에서도 그리드는 결정론적이고 분리를 수행한다", () => {
+    // 반지름 400 은 프로덕션에 없는 극단(실제 max 25). 여기서는 iteration 당
+    // 이동이 셀 여유를 넘어 브루트포스와 바이트 동일까지는 보장하지 않지만,
+    // 그리드 경로 자체는 여전히 결정론적이고 겹침을 실제로 벌린다.
+    const huge = { project: 400, domain: 400, capability: 400, element: 400 };
+    const a = computeConcentricLayout(MIXED, RINGS, { radii: huge, relaxStrategy: "grid", relaxIterations: 40 });
+    const b = computeConcentricLayout(MIXED, RINGS, { radii: huge, relaxStrategy: "grid", relaxIterations: 40 });
+    expect(a).toEqual(b);
+    const seed = computeConcentricLayout(MIXED, RINGS, { radii: huge, relaxStrategy: "grid", relaxIterations: 0 });
+    const min = (pts: { x: number; y: number }[]) => {
+      let m = Infinity;
+      for (let i = 0; i < pts.length; i += 1)
+        for (let j = i + 1; j < pts.length; j += 1)
+          m = Math.min(m, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y));
+      return m;
+    };
+    expect(min(a)).toBeGreaterThan(min(seed));
+  });
+
+  // 성능 가드는 wall-clock 비교라 CPU 경합에서 flaky (수확 검증 실증) — 제거.
+  // O(n²) 회귀는 그리드/브루트포스 바이트 동일성 테스트가 구조를 핀하고,
+  // 절대 성능은 scripts/perf-graph 벤치 경로에서 측정한다.
+});

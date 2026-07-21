@@ -159,6 +159,7 @@ import {
   clearTopologyV2TokensCache,
 } from "@/widgets/topology-map-v2";
 import { buildTopologyV2Graph } from "../lib/topology-v2-adapter";
+import { clampSynthSize, synthesizeVaultGraph } from "../lib/synth-vault";
 import {
   TopologyIndexPanel,
   TopologyIndexTab,
@@ -843,21 +844,42 @@ export function HomePage() {
     return renderProjects.filter((p) => visited.has(p.slug));
   }, [renderProjects, localGraphRoot, projectBySlug, reverseDeps]);
 
+  // 합성 대형 vault 시각 검증 (topology-map-v2 S1) — 숨은 `?synth=N` 파라미터
+  // (100..10000 clamp) 가 있으면 번들 dogfood 샘플 대신 결정론 합성 그래프를
+  // 지도에 공급해 computeConcentricLayout/relaxCollisions 를 실측 밀도로
+  // 스트레스한다. 프로덕션 데모에도 남지만 숨은 파라미터라 무해하고
+  // 노출되지 않는다(README/FEATURES 미언급). 사용자 vault·단일 진실원은
+  // 건드리지 않는다 — 파생 결과는 지도 어댑터로만 흐르고 저장되지 않는다.
+  // 마운트 시 1회 읽는다(세션 중 바뀌지 않는 데모 파라미터): SSR 은 null,
+  // 클라이언트 lazy initializer 만 실제 실행 — HomePage 의 기존 window-read
+  // lazy state(예: ontologySearchOpen) 와 같은 규율.
+  const [synthSize] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = new URLSearchParams(window.location.search).get("synth");
+      if (raw == null) return null;
+      return clampSynthSize(Number(raw));
+    } catch {
+      return null;
+    }
+  });
   // topology-map-v2 mount gap fix — the P2 scaffold (87edec961) wired
   // `<TopologyMapV2 nodes={[]} edges={[]} />` as a deliberate placeholder,
   // so flipping the flag mounted the v2 canvas but left it with nothing to
   // draw. `buildTopologyV2Graph` derives the real adapter-contract
   // nodes/edges from the same `ontologyInsight` the other two engines
   // already draw (topology-v2-adapter.ts).
-  const topologyV2Graph = useMemo(
-    () =>
-      ontologyInsight
-        ? buildTopologyV2Graph(ontologyInsight.nodes, ontologyInsight.edges, {
-            changedSlugs,
-          })
-        : { nodes: [], edges: [] },
-    [ontologyInsight, changedSlugs],
-  );
+  const topologyV2Graph = useMemo(() => {
+    if (synthSize != null) {
+      const synth = synthesizeVaultGraph(synthSize);
+      return buildTopologyV2Graph(synth.nodes, synth.edges, { changedSlugs });
+    }
+    return ontologyInsight
+      ? buildTopologyV2Graph(ontologyInsight.nodes, ontologyInsight.edges, {
+          changedSlugs,
+        })
+      : { nodes: [], edges: [] };
+  }, [synthSize, ontologyInsight, changedSlugs]);
 
   const canvasSelectedSlug = selectedProject?.slug ?? selectedOntologyNode?.id ?? selectedSlug;
   const drawerProject = selectedProject;
