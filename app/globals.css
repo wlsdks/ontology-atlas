@@ -951,24 +951,15 @@
     --topology-floating-control-phone-bottom: calc(
       var(--topology-mobile-bottom-tab-reserve) + 56px
     );
-    --topology-floating-panel-phone-bottom: calc(
-      var(--topology-floating-control-phone-bottom) + 48px
-    );
+    /* panel surface/border/shadow/divider 는 살아 있는 `TopologyV2SettingsGear`
+       팝오버가 공유한다. 구 조절 패널 전용 위치 토큰(phone-bottom,
+       phone-max-height, desktop-top, desktop-max-height)은 패널 철거와 함께
+       제거됐다 (소비처 0). */
     --topology-floating-panel-surface: rgba(15, 16, 17, 0.92);
     --topology-floating-panel-border: rgba(255, 255, 255, 0.075);
     --topology-floating-panel-shadow: 0 16px 34px rgba(0, 0, 0, 0.26);
     --topology-floating-panel-divider: rgba(255, 255, 255, 0.06);
-    --topology-floating-panel-phone-max-height: calc(
-      100dvh - var(--topology-floating-panel-phone-bottom) - 64px
-    );
     --topology-floating-control-desktop-top: 140px;
-    /* Fit 타일(--chrome-tile-size 44px) 바닥 + 8px gap — SigmaControls
-       크롬 재스킨(feat/chrome-finish) 이후 값. 이전엔 h-9(36px) 버튼 기준
-       184px 였다 — 타일이 44px 로 커져 8px gap 을 유지하려면 192px. */
-    --topology-floating-panel-desktop-top: calc(
-      var(--topology-floating-control-desktop-top) + var(--chrome-tile-size) + 8px
-    );
-    --topology-floating-panel-desktop-max-height: calc(100vh - 260px);
     /*
      * Relief/Topology chrome DENSITY tokens (feat/topology-chrome-density).
      * The brand pill (HeroCollapsed), the top-center search/refresh HUD lane,
@@ -1085,11 +1076,11 @@
     --topology-analysis-panel-path-collapsed-scroll-end-reserve: 12px;
     --topology-shortcuts-help-phone-top: 188px;
     --topology-shortcuts-help-focus-phone-top: 208px;
-    /* 우측 세로 레일 3타일(전체보기/조절/단축키, chrome-rail-combined.html)
-       리듬 — Fit + Controls 트리거 타일(각 44px) + 그 사이 8px gap + 단축키
-       타일 앞 8px gap = control-desktop-top + 2×타일 + 2×8px gap. */
+    /* 우측 세로 레일 2타일(전체보기/단축키) 리듬 — 죽은 "조절" 트리거 타일
+       철거 후 "?" 단축키 타일은 Fit 타일(44px) 바로 아래 한 칸: control-desktop-top
+       + 1×타일 + 8px gap. (구 3타일 시절엔 2×타일 + 16px 였다.) */
     --topology-shortcuts-help-desktop-top: calc(
-      var(--topology-floating-control-desktop-top) + (var(--chrome-tile-size) * 2) + 16px
+      var(--topology-floating-control-desktop-top) + var(--chrome-tile-size) + 8px
     );
     /* 설정 기어 (`TopologyV2SettingsGear`, chrome-datasheet-final.html 시안) —
        우측 유틸리티 레일의 "?" 버튼 바로 아래 한 칸. fit/필터 스택과 같은
@@ -1454,9 +1445,8 @@
        뷰포트를 넘겨 "전체 상세 →" 푸터가 화면 밖(y=911)으로 밀려나 마우스로
        닿지 않았다. 패널은 `--topology-node-popover-top` 에 fixed 앵커되므로
        그 offset 을 뺀 나머지 뷰포트 높이로 clamp 하고 내부 스크롤을 연다 —
-       기존 `--topology-floating-panel-desktop-max-height` 계열과 같은
-       "calc(100vh - top offset)" 패턴. 하단 8px 여유는 나머지 패널
-       max-height 토큰들과 동일한 관례. */
+       패널 max-height 토큰들이 공유하는 "calc(100vh - top offset)" 패턴.
+       하단 8px 여유도 그 관례와 동일. */
     --topology-v2-panel-max-height: calc(100dvh - var(--topology-node-popover-top) - 8px);
     /* 9→12px (feat/chrome-system §9, INDEX 패널 v2.1) — 데이터시트와
        INDEX 가 공유하는 패널 계층의 radius 를 크롬 시스템의 4계층 스텝

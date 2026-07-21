@@ -14,12 +14,7 @@ const baseProps: TopologyMapV2Props = {
   edges: [],
   focus: {
     selectedSlug: null,
-    depthLimit: null,
-    searchQuery: "",
-    activeCategory: null,
-    hubsOnly: false,
   },
-  overlays: { recentPulse: false, ownerTint: false, backrefHighlight: false },
   livePhysics: false,
   fitViewToken: 0,
   relayoutToken: 0,

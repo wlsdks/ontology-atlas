@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-21T13:46:12.650Z",
+  "generatedAt": "2026-07-21T14:37:37.366Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2106,6 +2106,11 @@
           "slug": "t27-큰-view-파일-정리"
         },
         {
+          "depth": 3,
+          "text": "T40. 물리(force) 조절 v2 재배선 — 실기능으로 원하면 부활",
+          "slug": "t40-물리force-조절-v2-재배선-실기능으로-원하면-부활"
+        },
+        {
           "depth": 2,
           "text": "~~P2 — Phase 4 (비개발자 surface 다듬기)~~ — DROPPED (R12 #33)",
           "slug": "p2-phase-4-비개발자-surface-다듬기-dropped-r12-33"
@@ -2132,8 +2137,8 @@
         }
       ],
       "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 105 노드, CLI 48 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
-      "wordCount": 1600,
-      "updatedAt": "2026-07-21T07:46:51+09:00",
+      "wordCount": 1661,
+      "updatedAt": "2026-07-21T14:36:01.907Z",
       "linksOut": []
     },
     {
@@ -2787,6 +2792,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-21 — 죽은 \"지도 조절\" 패널 철거 (Fit 타일만 남김)",
+          "slug": "2026-07-21-죽은-지도-조절-패널-철거-fit-타일만-남김"
         },
         {
           "depth": 2,
@@ -4154,9 +4164,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. .qa-scratch/retention-round-2026-07-21/ 페르소나 여정(P1 테크리드 · P2 에이전트 개발자 · P3 기획자)이 짚은 Hi",
-      "wordCount": 27915,
-      "updatedAt": "2026-07-21T22:35:07+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 스크린샷 결함(\"팝업 겹침 + 내용 별로\")의 포렌식 결과, 우상단 지도 조절 패널(검색 · \"허브만\" · overlay 토글 · depth/for",
+      "wordCount": 28093,
+      "updatedAt": "2026-07-21T14:35:36.639Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -4843,8 +4853,8 @@
         },
         {
           "depth": 4,
-          "text": "`SigmaControls` (top-right, collapsed default)",
-          "slug": "sigmacontrols-top-right-collapsed-default"
+          "text": "`TopologyFitControl` (top-right, desktop-only)",
+          "slug": "topologyfitcontrol-top-right-desktop-only"
         },
         {
           "depth": 4,
@@ -5238,8 +5248,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 10822,
-      "updatedAt": "2026-07-21T20:57:08+09:00",
+      "wordCount": 10814,
+      "updatedAt": "2026-07-21T14:35:13.520Z",
       "linksOut": [
         "slug",
         "project:slug",

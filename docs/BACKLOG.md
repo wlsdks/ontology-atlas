@@ -169,6 +169,13 @@ T20 (rich references) 후.
 ### T27. 큰 view 파일 정리
 - `KnowledgeDocumentDetailPage` (이미 -300 줄 정리됨, 1100+ 줄 잔여) — defer
 
+### T40. 물리(force) 조절 v2 재배선 — 실기능으로 원하면 부활
+2026-07-21 "지도 조절" 패널 철거에서 함께 제거된 force 슬라이더(repel/linkDistance/
+collide)는 v2 캔버스 loop 가 소비하지 않던 죽은 UI 였다. 만약 소유자가 레이아웃
+물리 튜닝을 **실기능**으로 원하면, `useTopologyLoop` 의 ForceAtlas2 파라미터에 실제로
+배선된 컨트롤로 새로 설계한다(구 UI 복원이 아니라 소비처부터 연결). depth/hubsOnly/
+search 필터도 같은 원칙 — loop 가 읽는 실경로가 먼저.
+
 ---
 
 ## ~~P2 — Phase 4 (비개발자 surface 다듬기)~~ — DROPPED (R12 #33)
