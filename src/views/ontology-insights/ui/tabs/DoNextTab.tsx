@@ -126,7 +126,9 @@ function QueueSection({
           <div
             key={row.id}
             data-testid="do-next-row"
-            className="flex min-w-0 items-center gap-2.5 border-b border-[color:var(--color-divider)] py-2.5 last:border-b-0"
+            // 모바일(≤sm): 액션 3종이 한 줄에 안 들어가므로 타이틀 아래로
+            // wrap (390px overflow-sweep 회귀 — 페이지 가로 스크롤 금지 계약).
+            className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b border-[color:var(--color-divider)] py-2.5 last:border-b-0"
           >
             <TopologyV2KindGlyph kind={row.nodeKind} size={13} />
             <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--color-text-secondary)]">
@@ -137,7 +139,7 @@ function QueueSection({
                 {metricText}
               </span>
             ) : null}
-            <span className="flex shrink-0 items-center gap-1.5">
+            <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
               <Link
                 href={mapHref(row.nodeId)}
                 className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
