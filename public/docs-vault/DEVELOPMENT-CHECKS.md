@@ -388,7 +388,8 @@ after creation, so the desktop first-run path does not dead-end behind a generic
 empty document state.
 `src/shared/lib/tauri-vault-fs.test.ts`
 locks the handle shim against the command names and relative-path behavior used
-by those flows. `VaultToolsMenu` and `LocalVaultPicker` keep the Tauri absolute
+by those flows. `VaultAgentSetupPanel` (App Settings → MCP/Agents) and
+`LocalVaultPicker` (App Settings → Workspace) keep the Tauri absolute
 vault path visible, copyable, and openable in Finder for local data location
 proof. `OntologyStarterCta` uses that same selected path when it copies CLI
 proof and JSON agent-gate commands, so first-run desktop users do not have to

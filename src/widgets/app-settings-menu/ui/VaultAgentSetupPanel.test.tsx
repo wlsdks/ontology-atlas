@@ -4,9 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import type { VaultManifest } from '@/entities/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
-import { openTauriVaultInFinder } from '@/shared/lib/tauri-vault-fs';
 import { TooltipProvider } from '@/shared/ui';
-import { VaultToolsMenu } from './VaultToolsMenu';
+import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
 vi.mock('@/shared/lib/copy-text', () => ({
   copyText: vi.fn(),
@@ -14,11 +13,9 @@ vi.mock('@/shared/lib/copy-text', () => ({
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({
   getTauriVaultRootPath: (handle: FileSystemDirectoryHandle) =>
     (handle as unknown as { rootPath?: string }).rootPath,
-  openTauriVaultInFinder: vi.fn(),
 }));
 
 const copyTextMock = vi.mocked(copyText);
-const openTauriVaultInFinderMock = vi.mocked(openTauriVaultInFinder);
 
 function render(ui: React.ReactElement) {
   return rtlRender(
@@ -51,8 +48,8 @@ const manifest: VaultManifest = {
 };
 
 function makeLocalVault(
-  overrides: Partial<React.ComponentProps<typeof VaultToolsMenu>['localVault']> = {},
-): React.ComponentProps<typeof VaultToolsMenu>['localVault'] {
+  overrides: Partial<React.ComponentProps<typeof VaultAgentSetupPanel>['localVault']> = {},
+): React.ComponentProps<typeof VaultAgentSetupPanel>['localVault'] {
   return {
     status: 'loaded',
     handle: null,
@@ -62,46 +59,51 @@ function makeLocalVault(
       codexConfig: true,
       mcpExample: false,
     },
-    errorMessage: null,
-    lastLoadedAt: 1779498839000,
-    scaffoldOntology: vi.fn().mockResolvedValue({ created: 0, skipped: 0 }),
-    ensureAgentConfigs: vi.fn().mockResolvedValue({ created: 2, skipped: 1 }),
     recentVaults: [],
-    open: vi.fn(),
-    openRecent: vi.fn(),
-    forgetRecent: vi.fn(),
-    close: vi.fn(),
-    refresh: vi.fn(),
-    requestPermission: vi.fn(),
+    ensureAgentConfigs: vi.fn().mockResolvedValue({ created: 2, skipped: 1 }),
     ...overrides,
   };
 }
 
-function renderMenu(
-  overrides: Partial<React.ComponentProps<typeof VaultToolsMenu>['localVault']> = {},
-  props: Partial<Pick<React.ComponentProps<typeof VaultToolsMenu>, 'validationSummary'>> = {},
+function renderPanel(
+  overrides: Partial<React.ComponentProps<typeof VaultAgentSetupPanel>['localVault']> = {},
+  props: Partial<Pick<React.ComponentProps<typeof VaultAgentSetupPanel>, 'validationSummary'>> = {},
 ) {
   const localVault = makeLocalVault(overrides);
   render(
-    <VaultToolsMenu
+    <VaultAgentSetupPanel
       canEditCurrent
       localVault={localVault}
       validationSummary={props.validationSummary ?? null}
-      onCreateNewDoc={vi.fn()}
       onOpenWorkflowGuide={vi.fn()}
     />,
   );
   return localVault;
 }
 
-describe('VaultToolsMenu', () => {
+describe('VaultAgentSetupPanel', () => {
   beforeEach(() => {
     copyTextMock.mockReset();
-    openTauriVaultInFinderMock.mockReset();
+  });
+
+  it('vault가 loaded가 아니면 렌더하지 않는다', () => {
+    const { container } = rtlRender(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <TooltipProvider>
+          <VaultAgentSetupPanel
+            canEditCurrent
+            localVault={makeLocalVault({ status: 'idle', agentConfigStatus: null })}
+            validationSummary={null}
+            onOpenWorkflowGuide={vi.fn()}
+          />
+        </TooltipProvider>
+      </NextIntlClientProvider>,
+    );
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('로컬 vault의 AI agent 설정 누락 상태와 복구 버튼을 보여준다', async () => {
-    const localVault = renderMenu();
+    const localVault = renderPanel();
 
     expect(
       screen.getByRole('region', { name: 'AI agent 설정 상태' }),
@@ -231,64 +233,25 @@ describe('VaultToolsMenu', () => {
     );
 
     await waitFor(() => expect(localVault.ensureAgentConfigs).toHaveBeenCalledTimes(1));
-    expect(localVault.scaffoldOntology).not.toHaveBeenCalled();
   });
 
-  it('Tauri 데스크톱 vault 경로를 표시하고 복사할 수 있다', async () => {
-    copyTextMock.mockResolvedValue(true);
-    renderMenu({
+  it('Tauri 데스크톱 vault 경로가 있으면 mcp-verify 미리보기에 절대경로를 넣는다', () => {
+    renderPanel({
       handle: {
         name: 'ontology',
         rootPath: '/Users/jinan/side-project/ontology-atlas/docs/ontology',
       } as unknown as FileSystemDirectoryHandle,
     });
 
-    const copyPathButton = screen.getByRole('button', {
-      name: '로컬 vault 경로 복사: /Users/jinan/side-project/ontology-atlas/docs/ontology',
-    });
-
-    expect(
-      screen.getByText('/Users/jinan/side-project/ontology-atlas/docs/ontology'),
-    ).toBeInTheDocument();
     expect(
       screen.getByLabelText('MCP verify 명령 미리보기'),
     ).toHaveTextContent(
       "ontology-atlas mcp-verify '/Users/jinan/side-project/ontology-atlas/docs/ontology' --timeout-ms 15000",
     );
-
-    fireEvent.click(copyPathButton);
-
-    await waitFor(() => {
-      expect(copyTextMock).toHaveBeenCalledWith(
-        '/Users/jinan/side-project/ontology-atlas/docs/ontology',
-      );
-    });
-  });
-
-  it('Tauri 데스크톱 vault를 Finder에서 열 수 있다', async () => {
-    openTauriVaultInFinderMock.mockResolvedValue();
-    renderMenu({
-      handle: {
-        name: 'ontology',
-        rootPath: '/Users/jinan/side-project/ontology-atlas/docs/ontology',
-      } as unknown as FileSystemDirectoryHandle,
-    });
-
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: 'Finder에서 로컬 vault 열기: /Users/jinan/side-project/ontology-atlas/docs/ontology',
-      }),
-    );
-
-    await waitFor(() => {
-      expect(openTauriVaultInFinderMock).toHaveBeenCalledWith(
-        '/Users/jinan/side-project/ontology-atlas/docs/ontology',
-      );
-    });
   });
 
   it('AI agent 설정이 모두 있으면 준비됨으로 표시하고 복구 버튼을 숨긴다', () => {
-    renderMenu({
+    renderPanel({
       agentConfigStatus: {
         mcpJson: true,
         codexConfig: true,
@@ -304,7 +267,7 @@ describe('VaultToolsMenu', () => {
   });
 
   it('AI agent별 MCP 연결 상태와 확인 명령을 분리해 보여준다', () => {
-    renderMenu({
+    renderPanel({
       agentConfigStatus: {
         mcpJson: true,
         codexConfig: true,
@@ -328,7 +291,7 @@ describe('VaultToolsMenu', () => {
   });
 
   it('AI agent setup gate proof에 validation 결과를 반영한다', () => {
-    renderMenu(
+    renderPanel(
       {
         agentConfigStatus: {
           mcpJson: true,
@@ -352,7 +315,7 @@ describe('VaultToolsMenu', () => {
   });
 
   it('AI agent setup gate proof에서 validation 오류를 agent 수정 차단으로 표시한다', () => {
-    renderMenu(
+    renderPanel(
       {
         agentConfigStatus: {
           mcpJson: true,
@@ -367,7 +330,7 @@ describe('VaultToolsMenu', () => {
   });
 
   it('AI agent handoff 전에 vault validation gate를 별도 상태로 보여준다', () => {
-    renderMenu(
+    renderPanel(
       {
         agentConfigStatus: {
           mcpJson: true,
@@ -394,7 +357,7 @@ describe('VaultToolsMenu', () => {
   });
 
   it('AI agent 설정 파일이 있어도 ontology-atlas MCP 설정이 아니면 점검 대상으로 표시한다', () => {
-    renderMenu({
+    renderPanel({
       agentConfigStatus: {
         mcpJson: true,
         codexConfig: true,
@@ -423,7 +386,7 @@ describe('VaultToolsMenu', () => {
 
   it('AI agent 설정 패널에서 첫 연결 검증 프롬프트를 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       agentConfigStatus: {
         mcpJson: true,
         codexConfig: true,
@@ -467,11 +430,10 @@ describe('VaultToolsMenu', () => {
       },
     });
     render(
-      <VaultToolsMenu
+      <VaultAgentSetupPanel
         canEditCurrent
         localVault={localVault}
         validationSummary={null}
-        onCreateNewDoc={vi.fn()}
         onOpenWorkflowGuide={onOpenWorkflowGuide}
       />,
     );
@@ -483,7 +445,7 @@ describe('VaultToolsMenu', () => {
 
   it('AI agent 설정 패널에서 전체 setup packet 을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,
@@ -666,7 +628,7 @@ describe('VaultToolsMenu', () => {
 
   it('Tauri vault 경로가 있으면 setup packet 이 selected path 를 사용한다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       handle: {
         name: 'team-vault',
         rootPath: '/Users/jinan/Team Vault/docs/ontology',
@@ -711,7 +673,7 @@ describe('VaultToolsMenu', () => {
 
   it('AI agent 설정 패널에서 codebase-root agent-setup 명령을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,
@@ -737,7 +699,7 @@ describe('VaultToolsMenu', () => {
 
   it('Tauri vault 경로가 있으면 codebase-root agent-setup 명령에 selected path 를 넣는다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       handle: {
         name: 'team-vault',
         rootPath: '/Users/jinan/Team Vault/docs/ontology',
@@ -761,7 +723,7 @@ describe('VaultToolsMenu', () => {
 
   it('AI agent 설정 패널에서 codebase-root setup state 확인 명령을 먼저 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,
@@ -787,7 +749,7 @@ describe('VaultToolsMenu', () => {
 
   it('Tauri vault 경로가 있으면 setup state 확인 명령에 selected path 를 넣는다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       handle: {
         name: 'team-vault',
         rootPath: '/Users/jinan/Team Vault/docs/ontology',
@@ -811,7 +773,7 @@ describe('VaultToolsMenu', () => {
 
   it('AI agent 설정 패널에서 CLI graph runbook 을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       agentConfigStatus: {
         mcpJson: true,
         codexConfig: true,
@@ -866,7 +828,7 @@ describe('VaultToolsMenu', () => {
 
   it('Tauri vault 경로가 있으면 CLI graph runbook 을 절대경로 기준으로 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       handle: {
         name: 'team-vault',
         rootPath: '/Users/jinan/Team Vault/docs/ontology',
@@ -902,7 +864,7 @@ describe('VaultToolsMenu', () => {
 
   it('AI agent 설정 패널에서 첫 연결 증거 패킷을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,
@@ -1008,7 +970,7 @@ describe('VaultToolsMenu', () => {
 
   it('Tauri vault 경로가 있으면 첫 연결 증거 패킷이 selected path 를 사용한다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       handle: {
         name: 'team-vault',
         rootPath: '/Users/jinan/Team Vault/docs/ontology',
@@ -1052,7 +1014,7 @@ describe('VaultToolsMenu', () => {
 
   it('AI agent 설정 패널에서 자동화 JSON gate 명령을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       handle: {
         name: 'team-vault',
         rootPath: '/Users/jinan/Team Vault/docs/ontology',
@@ -1086,7 +1048,7 @@ describe('VaultToolsMenu', () => {
 
   it('AI agent 설정 패널에서 post-change ontology sync gate를 독립적으로 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       agentConfigStatus: {
         mcpJson: true,
         codexConfig: true,
@@ -1128,7 +1090,7 @@ describe('VaultToolsMenu', () => {
 
   it('AI agent 설정 패널에서 codebase-root MCP JSON 템플릿을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,
@@ -1160,7 +1122,7 @@ describe('VaultToolsMenu', () => {
 
   it('AI agent 설정 패널에서 codebase-root Codex TOML 템플릿을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,
@@ -1194,7 +1156,7 @@ describe('VaultToolsMenu', () => {
 
   it('AI agent 설정 패널에서 Codex mcp add 한 줄 명령을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
-    renderMenu({
+    renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,

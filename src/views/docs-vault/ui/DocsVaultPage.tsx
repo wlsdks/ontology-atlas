@@ -28,7 +28,6 @@ import {
   Printer,
   Save,
   Search,
-  Settings2,
   Star,
   Trash2,
   X,
@@ -39,7 +38,7 @@ import {
   VaultConflictError,
   useLocalVault,
 } from '@/features/docs-vault-local';
-import { VaultToolsMenu } from '@/widgets/docs-vault';
+import { AppSettingsMenu } from '@/widgets/app-settings-menu';
 import { copyText } from '@/shared/lib/copy-text';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
@@ -50,7 +49,6 @@ import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
 } from '@/shared/lib/tauri-vault-fs';
-import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { Tooltip, useToast } from '@/shared/ui';
 // 추출된 page-local helpers.
 import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
@@ -173,11 +171,12 @@ function DocsVaultContent() {
   // R12 #26 step — palette state 는 usePaletteState hook 에서 캡슐화.
   const { paletteQuery, setPaletteQuery, paletteOpen } = usePaletteState();
   const [view, setView] = useState<DocsVaultView>(queryView);
-  const {
-    open: advancedOpen,
-    setOpen: setAdvancedOpen,
-    ref: advancedMenuRef,
-  } = useAdvancedMenu();
+  // B2 병합 — 문서함 헤더의 vault 도구 드롭다운(VaultToolsMenu)이 설정 메뉴로
+  // 이관되면서 이 latch 는 더 이상 보이는 메뉴를 열지 않는다. 다른 transient
+  // surface 들이 여전히 setAdvancedOpen(false) 로 "다른 팝오버 닫기" 계약을
+  // poke 하므로 setter 만 유지한다(hook effect 는 open=false 라 무동작). AI agent
+  // 도구는 이제 AppSettingsMenu 의 vault / mcpAgents 탭이 소유한다.
+  const { setOpen: setAdvancedOpen } = useAdvancedMenu();
   // VaultChip 팝오버(경로·폴더수·local badge·vault 바꾸기) — gear 메뉴와 같은
   // outside-click/Escape 계약을 재사용(useAdvancedMenu 두 번째 소비처).
   const {
@@ -301,21 +300,6 @@ function DocsVaultContent() {
   // R11 #14 — vault frontmatter validation 요약. local 모드일 때만 manifest
   // docs 의 parsed frontmatter 를 보고 missing-kind / empty-kind / unknown-kind
   // 검출. error 0 / warning 0 이면 picker 가 chip 안 그림.
-  const localVaultValidationSummary = useMemo(() => {
-    if (source !== 'local' || !localVault.manifest) return null;
-    const summary = summarizeVaultValidation(
-      localVault.manifest.docs.map((d) => ({
-        slug: d.slug,
-        frontmatter: d.frontmatter,
-      })),
-    );
-    if (summary.errorCount === 0 && summary.warningCount === 0) return null;
-    return {
-      errorCount: summary.errorCount,
-      warningCount: summary.warningCount,
-    };
-  }, [source, localVault.manifest]);
-
   // R11 #16 step 4 — replaceUrlState 는 src/views/docs-vault/lib/url-state.ts
   // 의 module-level 순수 함수로 추출. useCallback wrap 제거 + 호출 사이트
   // 의 deps 에서도 빠짐 (module reference 는 자동 stable).
@@ -1328,15 +1312,18 @@ function DocsVaultContent() {
   const vaultTopLevelFolderCount = manifest.tree.children?.filter(
     (child) => child.type === 'dir',
   ).length ?? 0;
+  // B2 병합 — vault pill 의 "vault 바꾸기"는 고빈도 swap 만 남긴다(읽기/쓰기
+  // 흐름의 일부). 예전엔 vault 도구 드롭다운을 열었지만, 이제 로컬은 네이티브
+  // 폴더 재선택(openLocalVault)을, 데스크톱의 샘플→로컬 전환은 source 전환을
+  // 직접 호출한다. 최근 vault·닫기·새로고침·권한 복구 등 나머지 관리 동작은
+  // 설정 메뉴(AppSettingsMenu)의 vault 탭으로 이동했다.
   const handleVaultPillSwap = useCallback(() => {
-    if (source === 'local') {
-      setAdvancedOpen((open) => !open);
-    } else if (isDesktopRuntime) {
+    if (source !== 'local' && isDesktopRuntime) {
       handleSourceChange('local');
-    } else {
-      setAdvancedOpen((open) => !open);
+      return;
     }
-  }, [source, isDesktopRuntime, handleSourceChange, setAdvancedOpen]);
+    void openLocalVault();
+  }, [source, isDesktopRuntime, handleSourceChange, openLocalVault]);
 
   return (
     <div className="flex h-screen w-full">
@@ -1449,6 +1436,7 @@ function DocsVaultContent() {
               handleVaultPillSwap();
             }}
             menuRef={vaultChipMenuRef}
+            toolsMovedHint={t('header.vaultToolsMovedHint')}
             t={t}
           />
         </div>
@@ -1568,37 +1556,13 @@ function DocsVaultContent() {
               className="hidden lg:inline-flex"
             />
           ) : null}
-          {/* 로컬 vault 도구 패널 — server source 일 땐 dropdown 자체 숨김
-              (보일 컨텐츠 0). local source 일 때만 vault picker / scaffold
-              / new doc 노출. */}
-          {source === 'local' ? (
-            <div className="relative" ref={advancedMenuRef}>
-              <DocsHeaderTile
-                icon={<Settings2 size={16} aria-hidden />}
-                title={t('header.vaultToolsTooltip')}
-                aria-label={t('header.vaultToolsAriaLabel')}
-                aria-expanded={advancedOpen}
-                aria-haspopup="menu"
-                active={advancedOpen}
-                onClick={() =>
-                  setAdvancedOpen((open) => {
-                    const next = !open;
-                    if (next) setVaultChipOpen(false);
-                    return next;
-                  })
-                }
-              />
-              {advancedOpen ? (
-                <VaultToolsMenu
-                  canEditCurrent={canEditCurrent}
-                  localVault={localVault}
-                  validationSummary={localVaultValidationSummary}
-                  onCreateNewDoc={handleOpenNewDocDialog}
-                  onOpenWorkflowGuide={handleOpenAgentGraphWorkflowGuide}
-                />
-              ) : null}
-            </div>
-          ) : null}
+          {/* B2 병합 — 문서함 헤더의 vault 도구 드롭다운(VaultToolsMenu)은 설정
+              메뉴로 흡수됐다. AI agent 설정·수리·복사 패킷·검증 게이트는 이제
+              AppSettingsMenu 의 vault / mcpAgents 탭이 소유한다. 헤더에는 그
+              집으로 가는 설정 게어만 남긴다(신규 표면·신규 탭 0). 로컬 vault
+              관리(picker)도 설정 vault 탭에서 열린다 — vault pill 은 고빈도
+              swap 만 담당. */}
+          <AppSettingsMenu mode={source === 'local' ? 'local' : 'static'} />
         </div>
       </header>
       </div>
@@ -1637,7 +1601,11 @@ function DocsVaultContent() {
           </span>
           <button
             type="button"
-            onClick={() => setAdvancedOpen(true)}
+            onClick={() =>
+              localVault.status === 'permission-needed'
+                ? localVault.requestPermission()
+                : void openLocalVault()
+            }
             className="rounded-sm border border-[color:var(--color-danger-a32)] px-2 py-0.5 text-[11px] transition-colors hover:bg-[color:var(--color-danger-a12)]"
           >
             {t('vaultStatus.openPicker')}

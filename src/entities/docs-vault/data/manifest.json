@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-21T00:35:02.892Z",
+  "generatedAt": "2026-07-21T11:54:45.754Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2790,6 +2790,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-21 — B2: 문서함 vault 도구를 설정 메뉴로 합병 (중복 표면 제거)",
+          "slug": "2026-07-21-b2-문서함-vault-도구를-설정-메뉴로-합병-중복-표면-제거"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-21 — UX 개선 라운드 2차 (#461~#467): 점검 부대 발견 44건 일괄 처리",
           "slug": "2026-07-21-ux-개선-라운드-2차-461467-점검-부대-발견-44건-일괄-처리"
         },
@@ -4139,9 +4144,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. fable 점검 3대 + 전략 패널 1대의 발견을 8슬라이스로 전량 구현 (티어링: 복잡=fable · 중간=opus · 일반=sonnet): 캔버스 Bl",
-      "wordCount": 27334,
-      "updatedAt": "2026-07-21T08:59:29+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 문서함 헤더의 VaultToolsMenu 드롭다운(에이전트 설정 파일 상태·수리·복사 패킷·검증 게이트·체크리스트)을 AppSettingsMenu 로 흡수",
+      "wordCount": 27505,
+      "updatedAt": "2026-07-21T11:54:05.733Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -4770,8 +4775,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7284,
-      "updatedAt": "2026-07-19T01:50:32+09:00",
+      "wordCount": 7292,
+      "updatedAt": "2026-07-21T11:53:28.933Z",
       "linksOut": []
     },
     {
@@ -5223,8 +5228,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 10764,
-      "updatedAt": "2026-07-21T02:37:55+09:00",
+      "wordCount": 10822,
+      "updatedAt": "2026-07-21T11:53:45.263Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5730,16 +5735,16 @@
           "src/features/docs-vault-local/model/use-local-vault.ts",
           "src/features/docs-vault-local/ui/OntologyStarterCta.tsx",
           "src/views/docs-vault/ui/DocsVaultPage.tsx",
-          "src/widgets/docs-vault/ui/VaultToolsMenu.tsx"
+          "src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx"
         ],
         "relates": [
           "domains/onboarding-ux"
         ]
       },
       "headings": [],
-      "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultToolsMenu exposes the setup gate in the same language as agentbrief / workspacebrief: CLI-only, MCP-connected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agent-root guidance, an",
-      "wordCount": 1213,
-      "updatedAt": "2026-07-21T01:05:59+09:00",
+      "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultAgentSetupPanel (merged into AppSettingsMenu's vault / mcpAgents tabs, B2 2026-07 — the former VaultToolsMenu docs-header dropdown was retired to remove the duplicate surface) exposes the setup gate in the same language a",
+      "wordCount": 1234,
+      "updatedAt": "2026-07-21T11:52:25.836Z",
       "linksOut": []
     },
     {
@@ -5790,8 +5795,8 @@
       },
       "headings": [],
       "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Overview / Relations / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Ins",
-      "wordCount": 400,
-      "updatedAt": "2026-07-21T01:05:59+09:00",
+      "wordCount": 408,
+      "updatedAt": "2026-07-21T11:52:31.134Z",
       "linksOut": []
     },
     {

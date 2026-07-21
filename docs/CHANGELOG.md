@@ -6,6 +6,29 @@
 
 ---
 
+## 2026-07-21 — B2: 문서함 vault 도구를 설정 메뉴로 합병 (중복 표면 제거)
+
+문서함 헤더의 `VaultToolsMenu` 드롭다운(에이전트 설정 파일 상태·수리·복사
+패킷·검증 게이트·체크리스트)을 `AppSettingsMenu` 로 흡수해 같은 관심사의 집을
+하나로 통일했다. LNB 는 늘리지 않았다.
+
+- **이관** — AI agent 설정 패널 전체(설정 파일 상태·수리 `agent-setup --write`·
+  복사 패킷 8종·mode chooser·검증 게이트·3단계 체크리스트)는 새 위젯
+  `VaultAgentSetupPanel` 로 추출돼 **설정 → MCP/Agents** 탭에 산다. 로컬 vault
+  관리(`LocalVaultPicker` — 폴더 열기·닫기·새로고침·Finder·최근·권한 복구)는
+  **설정 → Workspace** 탭으로 이동했다.
+- **중복 제거** — 설정 mcpAgents 탭은 vault 로드 시 vault-aware 패널만 노출하고
+  정적 first-calls 교육 블록은 숨긴다(둘 다 first-contact 패킷을 다뤄 중복).
+  mcpAgents 에 있던 정적 state-decision-table 은 verification 탭의 동일 state
+  ladder 와 중복이라 제거.
+- **문서함 헤더** — vault 도구 드롭다운 게어를 설정 게어(`AppSettingsMenu`)로
+  교체. vault pill 의 "vault 바꾸기"는 고빈도 swap(네이티브 폴더 재선택)만 남기고,
+  vault chip 팝오버에 "도구는 설정으로 이동" 브리지 한 줄을 이번 릴리스 한정으로
+  추가(ko/en). 에러/권한 배너는 `requestPermission()` / 폴더 재선택으로 직접 결선.
+- **정리** — `VaultToolsMenu.tsx` + 테스트 삭제(테스트 26건은
+  `VaultAgentSetupPanel.test.tsx` 로 이식), dogfood 온톨로지 evidence 갱신 +
+  매니페스트 재생성.
+
 ## 2026-07-21 — UX 개선 라운드 2차 (#461~#467): 점검 부대 발견 44건 일괄 처리
 
 fable 점검 3대 + 전략 패널 1대의 발견을 8슬라이스로 전량 구현 (티어링:
