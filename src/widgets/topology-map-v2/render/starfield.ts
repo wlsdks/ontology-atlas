@@ -86,6 +86,12 @@ export interface StarDustDrawState {
   originY?: number;
   farT: number;
   devicePixelRatio: number;
+  /**
+   * S4 영역 전개 순간의 방사 시차 낙하 0..1 — 각 점이 화면 중심에서 depth
+   * 비례로 바깥으로 밀리며 "우주를 통과하는" 깊이감을 만든다. 이동량은
+   * 화면의 3% 이내(헌장: 어지럽지 않게), 전환 후 0 으로 복귀(지속 금지).
+   */
+  radialParallax?: number;
 }
 
 /** Draws the static dust texture, fading in with `farT` (never fully at circuit altitude). */
@@ -98,9 +104,19 @@ export function drawStarDust(ctx: CanvasRenderingContext2D, state: StarDustDrawS
   // 느림). 뷰포트 래핑으로 커버리지 유지 — 멀리 패닝해도 먼지는 남는다.
   const w = ctx.canvas.width / devicePixelRatio;
   const h = ctx.canvas.height / devicePixelRatio;
+  const rp = state.radialParallax ?? 0;
+  const maxShift = Math.min(w, h) * 0.03;
   points.forEach((point) => {
-    const px = w > 0 ? (((point.x + ox * point.depth) % w) + w) % w : point.x;
-    const py = h > 0 ? (((point.y + oy * point.depth) % h) + h) % h : point.y;
+    let px = w > 0 ? (((point.x + ox * point.depth) % w) + w) % w : point.x;
+    let py = h > 0 ? (((point.y + oy * point.depth) % h) + h) % h : point.y;
+    if (rp > 0) {
+      const dx = px - w / 2;
+      const dy = py - h / 2;
+      const d = Math.hypot(dx, dy) || 1;
+      const shift = rp * maxShift * point.depth;
+      px += (dx / d) * shift;
+      py += (dy / d) * shift;
+    }
     ctx.beginPath();
     ctx.fillStyle = `rgba(236,236,240,${point.alpha * farT})`;
     ctx.arc(px * devicePixelRatio, py * devicePixelRatio, point.r * devicePixelRatio, 0, Math.PI * 2);

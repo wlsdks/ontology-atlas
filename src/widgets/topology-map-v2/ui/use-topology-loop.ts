@@ -33,6 +33,9 @@ import {
   REALM_INSIDE_FLIP_MS,
   REALM_OUTSIDE_FLING_MS,
   isRealmOutsideCulled,
+  REALM_INSIDE_FLIP_DELAY_MS,
+  REALM_WARDING_DRAW_DELAY_MS,
+  realmDustParallaxFactor,
   realmInsidePosition,
   realmOutsidePosition,
   realmTransitionReducer,
@@ -334,7 +337,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * Stable identity (refs only) so listing it in the programmatic-move effects'
    * deps never re-fires them.
    */
-  const beginCameraTween = useCallback((target: CameraTarget) => {
+  const beginCameraTween = useCallback((target: CameraTarget, durationOverrideMs?: number) => {
     if (reducedMotionRef.current) {
       cameraTweenRef.current = null;
       return;
@@ -342,7 +345,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const cam = cameraRef.current;
     const start: CameraKeyframe = { x: cam.x.value, y: cam.y.value, scale: cam.scale.value };
     const tgt: CameraKeyframe = { x: target.tx, y: target.ty, scale: target.tscale };
-    cameraTweenRef.current = { start, target: tgt, startMs: performance.now(), durationMs: cameraTransitionDurationMs(start, tgt) };
+    cameraTweenRef.current = { start, target: tgt, startMs: performance.now(), durationMs: durationOverrideMs ?? cameraTransitionDurationMs(start, tgt) };
   }, []);
 
   useEffect(() => {
@@ -701,7 +704,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         dampingRef.current = tokens.cameraDampingDefault;
         cameraTargetRef.current = target;
         cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-        beginCameraTween(target);
+        // 돌리 인은 안무 전체(이탈→FLIP→결계)를 타고 간다 — 거리 비례 단기
+        // 트윈이면 카메라만 먼저 끝나 "컷" 으로 읽힌다 (녹화 검수).
+        beginCameraTween(target, 860);
       }
     } else {
       // --- 이탈: 전 노드 홈 스프링 복귀 + 카메라 overview fit ---
@@ -955,7 +960,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                 node.y = target.y;
               } else {
                 const from = data.insideFrom.get(node.id) ?? target;
-                const p = realmInsidePosition(from, target, elapsed, flipDur);
+                const p = realmInsidePosition(from, target, elapsed - REALM_INSIDE_FLIP_DELAY_MS, flipDur);
                 node.x = p.x;
                 node.y = p.y;
               }
@@ -1105,9 +1110,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       let realmWarding: { centerX: number; centerY: number; radius: number; drawProgress: number } | null = null;
       let realmMemberIds: ReadonlySet<string> | null = null;
       let realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null = null;
+      let realmDustParallax = 0;
       if (realmData && (realmState.phase === "entering" || realmState.phase === "active")) {
         realmMemberIds = realmData.memberIds;
         realmTierKinds = realmData.tierKindById;
+        if (realmState.phase === "entering" && !reducedMotionRef.current) {
+          realmDustParallax = realmDustParallaxFactor(now - realmState.startMs);
+        }
         if (isRealmOutsideCulled(realmState, now)) {
           frameClusteredIds = new Set<string>([...frameClusteredIds, ...realmData.outsideIds]);
         }
@@ -1118,7 +1127,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           centerX: realmData.wardingCenter.x,
           centerY: realmData.wardingCenter.y,
           radius: realmData.wardingRadius,
-          drawProgress: realmWardingDrawProgress(now - realmState.startMs),
+          drawProgress: realmWardingDrawProgress(now - realmState.startMs - REALM_WARDING_DRAW_DELAY_MS),
         };
       }
 
@@ -1182,6 +1191,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         wardingRing: realmWarding,
         realmMemberIds,
         realmTierKinds,
+        realmDustParallax,
       });
 
       handle = requestAnimationFrame(frame);
