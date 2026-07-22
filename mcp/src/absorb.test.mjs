@@ -31,6 +31,56 @@ describe('splitDocumentSections', () => {
     assert.equal(result.intro, 'intro para');
     assert.equal(result.sections.length, 1);
   });
+
+  it('does not split on a `##` line inside a fenced code block', () => {
+    const raw =
+      '# Doc\n\n## Real Section\n\nBefore.\n\n```bash\n## not a heading\necho hi\n```\n\nAfter.\n';
+    const result = splitDocumentSections(raw);
+    assert.equal(result.sections.length, 1);
+    assert.equal(result.sections[0].heading, 'Real Section');
+    // the fenced shell comment stays inside the section body verbatim
+    assert.ok(result.sections[0].body.includes('## not a heading'));
+    assert.ok(result.sections[0].body.includes('After.'));
+  });
+
+  it('ignores a `#` title line inside a preamble code fence', () => {
+    const raw = '```sh\n# not the title\necho x\n```\n\n# Actual Title\n\n## Rules\n\nbody\n';
+    const result = splitDocumentSections(raw);
+    assert.equal(result.title, 'Actual Title');
+    assert.equal(result.sections.length, 1);
+    assert.equal(result.sections[0].heading, 'Rules');
+  });
+
+  it('handles ~~~ fences as well as ``` fences', () => {
+    const raw = '# Doc\n\n## S\n\n~~~\n## fenced comment\n~~~\n\ntail\n';
+    const result = splitDocumentSections(raw);
+    assert.equal(result.sections.length, 1);
+    assert.equal(result.sections[0].heading, 'S');
+  });
+});
+
+describe('classifySection — plural/variant policy vocabulary', () => {
+  const asPolicy = [
+    'TUI code conventions',
+    'Commits and PR Titles',
+    'Tests',
+    'Style Guide',
+    'Best Practices',
+    'App-server API Development Best Practices',
+  ];
+  for (const heading of asPolicy) {
+    it(`classifies ${JSON.stringify(heading)} as policy/document`, () => {
+      const c = classifySection({ heading, body: '' });
+      assert.equal(c.category, 'policy');
+      assert.equal(c.kind, 'document');
+      assert.equal(c.role, 'policy');
+    });
+  }
+
+  it('still classifies pure architecture headings as architecture (no regression)', () => {
+    assert.equal(classifySection({ heading: 'Folder map', body: '' }).category, 'architecture');
+    assert.equal(classifySection({ heading: 'Tech stack', body: '' }).category, 'architecture');
+  });
 });
 
 describe('classifySection', () => {
