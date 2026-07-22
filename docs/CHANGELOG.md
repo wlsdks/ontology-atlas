@@ -31,6 +31,40 @@
 
 ---
 
+## 2026-07-22 — 지도 R4 "모션 헌법" (물리 어휘 단일화 · 크롬 등장 문법 · 딥링크 focus dive)
+
+`topology-map-v2` 의 모션을 Apple *Designing Fluid Interfaces* 원칙 위에
+단일 어휘로 정리한 슬라이스(fable 설계).
+
+- **물리 어휘 단일화 (`model/motion-physics.ts` 신설)** — 카메라 스프링·DOM 크롬
+  트랜지션·플릭 관성이 제각각 매직 넘버로 흩어져 있던 것을, Apple 의 2-파라미터
+  문법(`damping` 오버슈트 · `response` 정착시간)으로 선언한 하우스 스프링 패밀리
+  한 곳으로 모았다. `UI_SPRING`(ζ 1.0, response 0.35 — 오버슈트 0, 기본),
+  `MOMENTUM_SPRING`(ζ 0.8 — 플릭/모멘텀 뒤에만) + 변환 유틸
+  (`springAngularFrequency` = 1/response 로 기존 `stepSpring(ω, ζ)` 상수계에 브릿지,
+  `toSpringConstants`) + iOS 감속 투영(`projectMomentum`/`momentumDecayGain`) +
+  러버밴드(`rubberband`). 카메라 큐빅 트윈 duration 클램프(200–420ms)를 이 모듈의
+  `CAMERA_TWEEN_MIN/MAX_MS` 에서 파생 — 값·체감 불변, 위젯 모션 상수의 단일 홈.
+  `engine/momentum.ts` 는 같은 `d/(1−d)` 게인을 공유하되 layer 방향(model→engine)
+  유지 위해 인라인 미러.
+- **크롬 등장 문법 통일** — 지도 위 DOM 크롬(노드 팝오버 · 엣지 패널 · 상태 칩
+  3종 · 영역 레저 크로스페이드)의 등장을 단일 `.topology-chrome-in` 문법으로
+  통일: opacity 0→1 + translateY 3px→0 + scale 0.98→1, `--topology-motion-
+  panel-duration`(180ms) + `--topology-motion-ease-out`. 헌장 준수(blur/glow 없음,
+  scale 은 호버가 아닌 미세 등장값). reduced-motion 은 전역 규칙으로 즉시 등장.
+  영역 레저 크로스페이드의 하드코딩 160ms 도 같은 토큰으로 통일.
+- **딥링크 focus dive 조상 파생 (패널2-D1)** — `?p=slug` 딥링크 대상이 밀도
+  게이트에 접힌 부모 서브트리 안이면, contains 조상 체인을 `?open=` 으로 자동
+  파생해 펼친 뒤 기존 focus dive 가 클릭과 동일한 이징으로 1회 발화한다
+  (`deriveDeeplinkAncestorExpansion` · `buildContainmentParentMap` 순수 함수 +
+  HomePage 로드 1회 가드). 공유 링크·에이전트가 접힌 노드로 바로 진입 가능.
+
+> 남은 몫(메인 세션): 카메라 팬 모멘텀 속도 히스토리 수집은 R1 이 작업 중인
+> `topology-pointer-handlers.ts` 안에 있어 이번 범위에서 제외(관성 투영/러버밴드
+> 로직 자체는 `engine/momentum.ts`·`engine/camera.ts` 에 이미 존재). 크롬 등장
+> 문법의 트리거-앵커 방향 `transform-origin` 미세화 + 실화면/녹화 기반 Design
+> Guardian 검증.
+
 ## 2026-07-22 — 지도 S10 소유자 실보고 4건 수정 (chrome 규격 · 펼침 배지 · 영역 히트 · 반딧불)
 
 `topology-map-v2` + 상단 크롬 열의 소유자 실보고 4건.

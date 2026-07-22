@@ -33,6 +33,15 @@
  * This module is pure — the caller is responsible for calling `stepSpring`
  * afterward with the returned `worldVelocity` seeded in and `landingTarget` as
  * the new spring target. Exact expected values are pinned in `momentum.test.ts`.
+ *
+ * R4 (모션 헌법): the `d/(1-d)` projection gain below is the SAME iOS
+ * deceleration math the house vocabulary declares as
+ * `model/motion-physics.ts#momentumDecayGain` / `projectMomentum`. It stays
+ * inlined here (not imported) on purpose: `engine/` is the lower layer and must
+ * not depend on `model/` (the established direction is `model → engine`, e.g.
+ * `model/relayout-home.ts` importing `engine/spring`). motion-physics is the
+ * canonical vocabulary for model-level and DOM/new motion; this engine spoke
+ * mirrors it, and `motion-physics.test.ts` pins the shared closed form.
  */
 
 /** One recorded pointer position while dragging (screen px + `performance.now()`). */
@@ -123,6 +132,8 @@ export function projectFlickLanding(input: FlickReleaseInput): FlickReleaseResul
   const worldVelocity = (-velocityPxPerMs / cameraScale) * 1000;
   // iOS projection: landing offset = residual velocity integrated over the
   // geometric decay = (worldVelocity/1000) · d/(1−d), proportional to velocity.
+  // `decay / (1 - decay)` is the house `momentumDecayGain` (R4 모션 헌법),
+  // inlined here to keep engine/ independent of model/ (see module header).
   const landingOffset = (-velocityPxPerMs / cameraScale) * (decay / (1 - decay));
   const landingTarget = cameraPosition + landingOffset;
   // -0 normalization: a zero-velocity release must yield +0, not IEEE -0

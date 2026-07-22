@@ -436,6 +436,32 @@
     }
   }
 
+  /* R4 "모션 헌법" (fable 설계, Apple Designing Fluid Interfaces) — 지도 위
+     DOM 크롬(노드 팝오버·엣지 패널·상태 칩)의 단일 등장 문법. 진입로=퇴장로
+     대칭을 위해 값 하나로 선언한다: opacity 0→1 + translateY 3px→0 + scale
+     0.98→1. 헌장 준수 — blur/glow 없음, scale 은 0.98→1 미세값(호버 scale 아님).
+     transform-origin 은 소비처가 트리거(앵커 노드/버튼) 방향으로 지정한다.
+     duration/easing 은 `--topology-motion-panel-duration`(180ms) +
+     `--topology-motion-ease-out` 토큰. prefers-reduced-motion 은 아래 base
+     레이어의 전역 규칙(animation-duration 0.01ms)이 자동 무력화 → 즉시 등장. */
+  @keyframes topologyChromeIn {
+    from {
+      opacity: 0;
+      transform: translateY(3px) scale(0.98);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .topology-chrome-in {
+    animation: topologyChromeIn var(--topology-motion-panel-duration)
+      var(--topology-motion-ease-out) both;
+    transform-origin: center top;
+  }
+
   /*
    * Tailwind v4 @theme 가 alpha rgba 토큰을 :root 에 emit 하지 않는 동작이 있어
    * border-[color:var(--color-divider)] 같은 arbitrary value 가 변수를 resolve

@@ -118,6 +118,8 @@ import {
   enterRealmRouteState,
   exitRealmRouteState,
   resolveRealmNodeId,
+  buildContainmentParentMap,
+  deriveDeeplinkAncestorExpansion,
   type TopologyAnalysisMode,
 } from "../model/url-state";
 import {
@@ -951,6 +953,31 @@ export function HomePage() {
     if (!resolvedRealmSlug) return null;
     return topologyV2Graph.nodes.find((n) => n.id === resolvedRealmSlug)?.label ?? resolvedRealmSlug;
   }, [resolvedRealmSlug, topologyV2Graph]);
+
+  // 딥링크 focus dive 조상 파생 (패널2-D1, R4 모션 헌법, fable 설계) — `?p=slug`
+  // 로 들어온 대상이 밀도 게이트(`model/density-gate.ts`)에 접힌 부모 서브트리
+  // 안이면, 그 contains 조상 체인을 `open=` 으로 자동 파생해 펼친다. 대상이
+  // 드러난 뒤 기존 focus dive(`focus={{ selectedSlug }}` → 캔버스)가 클릭과
+  // 동일한 이징 문법으로 1회 발화한다. 대상 slug 당 로드 1회만 — 사용자가 이후
+  // 수동으로 접으면 다시 강제 펼치지 않도록 ref 로 가드하고, 그래프 빌드 전
+  // (edges 0)엔 ref 를 세우지 않고 다음 렌더를 기다린다.
+  const deeplinkExpandedForRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!canvasSelectedSlug) return;
+    if (deeplinkExpandedForRef.current === canvasSelectedSlug) return;
+    if (topologyV2Graph.edges.length === 0) return;
+    const parentOf = buildContainmentParentMap(topologyV2Graph.edges);
+    deeplinkExpandedForRef.current = canvasSelectedSlug;
+    setRouteState((current) => {
+      const nextExpanded = deriveDeeplinkAncestorExpansion(
+        canvasSelectedSlug,
+        parentOf,
+        current.expandedParents,
+      );
+      if (nextExpanded.length === current.expandedParents.length) return current;
+      return { ...current, expandedParents: nextExpanded };
+    });
+  }, [canvasSelectedSlug, topologyV2Graph, setRouteState]);
 
   // 노드 클릭 default = 컴팩트 ego 팝오버. 풀스크린 드로어는 "전체 상세" opt-in.
   // overview first, details-on-demand — 설계: docs/TOPOLOGY-FOCUS-AND-SCALE.md
@@ -2446,7 +2473,10 @@ export function HomePage() {
                   // 점프는 in-place 갱신.
                   <div
                     key={realmActive ? "realm" : "index"}
-                    className="h-full animate-[panelCrossfadeIn_160ms_ease-out] motion-reduce:animate-none"
+                    // R4 모션 헌법 — 하드코딩 160ms/ease-out 을 크롬 모션 토큰으로
+                    // 통일(`--topology-motion-panel-duration` 180ms +
+                    // `--topology-motion-ease-out`). 크롬 등장 문법 단일 클럭.
+                    className="h-full animate-[panelCrossfadeIn_var(--topology-motion-panel-duration)_var(--topology-motion-ease-out)] motion-reduce:animate-none"
                   >
                   {realmActive && realmLedgerModel ? (
                     <TopologyRealmLedger

@@ -62,7 +62,7 @@ export function TopologyV2EdgePanel({
       role="dialog"
       aria-label={sentence}
       data-testid="topology-v2-edge-panel"
-      className={`flex w-[300px] flex-col gap-3 rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-4 shadow-[var(--topology-v2-panel-shadow)] ${className ?? ""}`}
+      className={`topology-chrome-in flex w-[300px] flex-col gap-3 rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-4 shadow-[var(--topology-v2-panel-shadow)] ${className ?? ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--topology-v2-panel-text-tertiary)]">

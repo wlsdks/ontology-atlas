@@ -26,6 +26,8 @@
  * feel (timing), not a themable surface value.
  */
 
+import { CAMERA_TWEEN_MAX_MS, CAMERA_TWEEN_MIN_MS } from "./motion-physics";
+
 /** A camera state snapshot — the three animated axes, value-only (no velocity). */
 export interface CameraKeyframe {
   x: number;
@@ -48,9 +50,14 @@ export interface CameraTween {
   durationMs: number;
 }
 
-/** Clamp of the distance-proportional transition duration (ms). van Wijk's spirit: never so short it snaps, never so long it drags. */
-export const CAMERA_TRANSITION_MIN_MS = 200;
-export const CAMERA_TRANSITION_MAX_MS = 420;
+/**
+ * Clamp of the distance-proportional transition duration (ms). van Wijk's
+ * spirit: never so short it snaps, never so long it drags. R4 (모션 헌법):
+ * derived from the house `CAMERA_TWEEN_MIN/MAX_MS` in `model/motion-physics.ts`
+ * so the widget's motion feel constants have a single home — value unchanged.
+ */
+export const CAMERA_TRANSITION_MIN_MS = CAMERA_TWEEN_MIN_MS;
+export const CAMERA_TRANSITION_MAX_MS = CAMERA_TWEEN_MAX_MS;
 
 /**
  * Reference screen-pan distance (px) that, on its own, earns the full duration.
