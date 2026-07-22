@@ -2358,6 +2358,51 @@ describe('queryCompiledOntology', () => {
     assert.equal(limited.edges.outgoing.edges.length, 1);
   });
 
+  // R+ (과제 ⑧ — Ask-to-Grow) — node_profile 이 미해결 slug 를 만나면 여전히
+  // throw 하지만(기존 계약 보존), thrown Error 에 growthHint 를 실어 캐릭터
+  // 검색 없이 바로 소비 가능한 did-you-mean/scaffold 를 준다.
+  it('node_profile — unresolved slug throws with a growthHint (typo near-match)', () => {
+    assert.throws(
+      () => queryCompiledOntology(artifact(), { operation: 'node_profile', slug: 'capabilities/logn' }),
+      (err) => {
+        assert.match(err.message, /does not resolve to a compiled ontology node/);
+        assert.ok(err.growthHint, 'expected err.growthHint to be set');
+        assert.match(err.growthHint.reason, /"capabilities\/logn" does not resolve/);
+        assert.ok(err.growthHint.suggestion.includes('capabilities/login'));
+        assert.deepEqual(err.growthHint.exampleCall, {
+          tool: 'get_concept',
+          args: { slug: 'capabilities/login' },
+        });
+        return true;
+      },
+    );
+  });
+
+  it('node_profile — unresolved slug with no near-match throws an add_concept growthHint', () => {
+    assert.throws(
+      () => queryCompiledOntology(artifact(), { operation: 'node_profile', slug: 'completely-unrelated-slug' }),
+      (err) => {
+        assert.ok(err.growthHint, 'expected err.growthHint to be set');
+        assert.deepEqual(err.growthHint.exampleCall, {
+          tool: 'add_concept',
+          args: { slug: 'completely-unrelated-slug', kind: 'element', title: 'Completely Unrelated Slug' },
+        });
+        return true;
+      },
+    );
+  });
+
+  it('node_profile — ambiguous / blank slug errors do not get a growthHint', () => {
+    assert.throws(
+      () => queryCompiledOntology(artifact(), { operation: 'node_profile', slug: '   ' }),
+      (err) => {
+        assert.match(err.message, /string\) is required/);
+        assert.equal(err.growthHint, undefined);
+        return true;
+      },
+    );
+  });
+
   it('returns deterministic connected components over resolved graph edges', () => {
     const disconnected = compileOntology(
       [

@@ -119,6 +119,13 @@ import {
   closestAllowedValue,
   formatAllowedValueError,
 } from './suggestions.mjs';
+import {
+  buildFindPathGrowthHint,
+  buildSlugNotFoundGrowthHint,
+  buildQueryConceptsZeroRowsGrowthHint,
+  buildFindEvidenceZeroHitsGrowthHint,
+  findNearTitleMatches,
+} from './growth-hint.mjs';
 
 const STDIO_MAX_LISTENERS = 50;
 process.stdout.setMaxListeners(Math.max(process.stdout.getMaxListeners(), STDIO_MAX_LISTENERS));
@@ -275,6 +282,27 @@ const OUTGOING_EDGE_OUTPUT_SCHEMA = Object.freeze({
     via: NON_BLANK_STRING_SCHEMA,
   },
   required: ['to', 'via'],
+  additionalProperties: false,
+});
+// R+ (과제 ⑧ — Ask-to-Grow) — read tool 이 빈/미해결 결과를 만났을 때만 붙는
+// 성장 신호. 성공 응답에는 절대 등장하지 않는다. `mcp/src/growth-hint.mjs`
+// 가 실제 vault 데이터(census, 근접 slug/title)로만 채운다.
+const GROWTH_HINT_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    reason: NON_BLANK_STRING_SCHEMA,
+    suggestion: NON_BLANK_STRING_SCHEMA,
+    exampleCall: {
+      type: 'object',
+      properties: {
+        tool: NON_BLANK_STRING_SCHEMA,
+        args: { type: 'object' },
+      },
+      required: ['tool', 'args'],
+      additionalProperties: false,
+    },
+  },
+  required: ['reason', 'suggestion', 'exampleCall'],
   additionalProperties: false,
 });
 const VAULT_ISSUE_CODE_DESCRIPTION = VAULT_ISSUE_CODE_VALUES.map((code) => `\`${code}\``).join(', ');
@@ -703,7 +731,7 @@ const TOOLS = [
   {
     name: 'get_concept',
     description:
-      'Fetch a single node by slug or unique alias — its frontmatter, a body excerpt, direct graph neighbors, outgoingEdges, and mtime. Accepts exact vault-relative slugs, unique tail slugs, or frontmatter `slug` aliases; response slug is canonical. **For K specific slugs in one call use `get_concepts({slugs: [...]})` (max 50) instead of K round-trips.**',
+      'Fetch a single node by slug or unique alias — its frontmatter, a body excerpt, direct graph neighbors, outgoingEdges, and mtime. Accepts exact vault-relative slugs, unique tail slugs, or frontmatter `slug` aliases; response slug is canonical. **For K specific slugs in one call use `get_concepts({slugs: [...]})` (max 50) instead of K round-trips.** When the slug doesn\'t resolve, the error\'s `structuredContent.growthHint` carries a did-you-mean near-slug or an add_concept scaffold — read it instead of retrying blind.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -816,7 +844,7 @@ const TOOLS = [
   {
     name: 'find_evidence',
     description:
-      "Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, heading/표/코드 skip) so agents see *what the matching doc says* without an extra get_concept call. Matches are RANKED by a deterministic relevance `score` (title match > frontmatter ref > body, plus a title token-overlap tiebreaker) and returned best-first — so the most relevant node is `matches[0]`, not buried in walk order. Pass `limit` for the top-N.",
+      "Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, heading/표/코드 skip) so agents see *what the matching doc says* without an extra get_concept call. Matches are RANKED by a deterministic relevance `score` (title match > frontmatter ref > body, plus a title token-overlap tiebreaker) and returned best-first — so the most relevant node is `matches[0]`, not buried in walk order. Pass `limit` for the top-N. When zero docs mention the title, the response includes a `growthHint` — near-titled vault nodes to check first, or an add_concept scaffold if the concept looks genuinely new.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -858,6 +886,10 @@ const TOOLS = [
             required: ['slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
             additionalProperties: false,
           },
+        },
+        growthHint: {
+          ...GROWTH_HINT_OUTPUT_SCHEMA,
+          description: 'Only present when matches is empty — near-titled vault node(s) to check, or an add_concept scaffold, derived from the real vault title set.',
         },
       },
       required: ['query', 'matches'],
@@ -1348,7 +1380,7 @@ const TOOLS = [
       '`via` is the frontmatter key (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / ' +
       '`relates` / `contains` / `describes`) that linked the two slugs — so the ' +
       'agent sees not just *that* A and B are connected but *why*. ' +
-      'Returns `{ found: false }` when no path is found within maxHops. maxHops defaults to 5 and is capped at 20.',
+      'Returns `{ found: false }` when no path is found within maxHops, plus a `growthHint` — a concrete add_relation (both endpoints exist) or add_concept (an endpoint is missing) example so the unanswered question becomes a vault-growth signal instead of a dead end. maxHops defaults to 5 and is capped at 20.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1401,6 +1433,11 @@ const TOOLS = [
             required: ['slug', 'kind', 'title'],
             additionalProperties: false,
           },
+        },
+        growthHint: {
+          ...GROWTH_HINT_OUTPUT_SCHEMA,
+          description:
+            'Only present when found=false — a candidate add_relation (both endpoints exist) or add_concept (an endpoint is missing) suggestion, derived from the real vault, not invented.',
         },
       },
       required: ['from', 'to', 'found'],
@@ -1498,7 +1535,8 @@ const TOOLS = [
       '  predicate := key=value | key!=value | has(key)\n\n' +
       'Keys: kind / domain / slug / title for equality, plus any graph frontmatter array key for has(...). kind and has(...) keys are enum-validated with nearest-value hints.\n' +
       'Example: `kind=capability AND domain=auth AND NOT has(elements)` — ' +
-      'capabilities under domain auth that have zero elements (= unfinished caps).',
+      'capabilities under domain auth that have zero elements (= unfinished caps). ' +
+      'When total=0, the response includes a `growthHint` — it names any referenced kind/domain that has 0 nodes in this vault, or nudges you to loosen the filter.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1545,6 +1583,10 @@ const TOOLS = [
           },
         },
         limited: { type: 'boolean' },
+        growthHint: {
+          ...GROWTH_HINT_OUTPUT_SCHEMA,
+          description: 'Only present when total=0 — flags a referenced kind/domain with 0 nodes in this vault census, or a generic loosen-the-filter nudge otherwise.',
+        },
       },
       required: ['filter', 'parsedAs', 'total', 'matches', 'limited'],
       additionalProperties: false,
@@ -3184,6 +3226,10 @@ function ok(result) {
 function error(err) {
   const message = err instanceof Error ? err.message : String(err);
   const details = structuredErrorDetails(message);
+  // R+ (과제 ⑧ — Ask-to-Grow) — get_concept / node_profile 같은 slug 미해결
+  // 경로가 Error 인스턴스에 실어 둔 growthHint 를 여기서 한 곳에 모아
+  // structuredContent 로 얹는다. 성공 응답에는 절대 나타나지 않는다.
+  const growthHint = err && typeof err === 'object' ? err.growthHint : undefined;
   return {
     content: [{ type: 'text', text: `Error: ${message}` }],
     isError: true,
@@ -3192,6 +3238,7 @@ function error(err) {
       errorCode: classifyErrorCode(err, message),
       error: message,
       ...details,
+      ...(growthHint ? { growthHint } : {}),
     },
   };
 }
@@ -3529,11 +3576,21 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
   };
 }
 
+// R+ (과제 ⑧ — Ask-to-Grow) — "Doc not found" 텍스트는 그대로 두고
+// (get_concepts 배치/verify 계약이 정확한 문자열에 기대고 있다), growthHint
+// 만 Error 인스턴스에 실어 error() 가 structuredContent 로 얹는다.
+function docNotFoundError(slug) {
+  const err = new Error(`Doc not found: ${slug}`);
+  const candidateSlugs = suggestSimilarSlugs(VAULT_ROOT, slug);
+  err.growthHint = buildSlugNotFoundGrowthHint({ slug, candidateSlugs });
+  return err;
+}
+
 function getConcept({ slug }, context = {}) {
   requireNonBlankString(slug, 'slug');
   const canonicalSlug = resolveExistingVaultSlug(slug, context.docs);
   if (!canonicalSlug) {
-    throw new Error(`Doc not found: ${slug}`);
+    throw docNotFoundError(slug);
   }
   let doc;
   try {
@@ -3542,7 +3599,7 @@ function getConcept({ slug }, context = {}) {
     // ENOENT 등 fs 오류는 사용자 친화 메시지로 surface — 절대 경로 leak 회피
     // (Panel E audit 2026-05-02 finding).
     if (err && (err.code === 'ENOENT' || /no such file/i.test(err.message))) {
-      throw new Error(`Doc not found: ${slug}`);
+      throw docNotFoundError(slug);
     }
     throw err;
   }
@@ -3652,7 +3709,18 @@ function findEvidence({ title, limit } = {}) {
   // Best match first: score desc, then slug asc for deterministic ties.
   matches.sort((a, b) => b.score - a.score || a.slug.localeCompare(b.slug));
   const limited = typeof limit === 'number' ? matches.slice(0, limit) : matches;
-  return { query: title, matches: limited };
+  const result = { query: title, matches: limited };
+  // R+ (과제 ⑧ — Ask-to-Grow) — 0 hits 는 답 못한 질문. substring 매치는
+  // 이미 실패했으니 (score<=0 전부) 토큰 overlap 만으로 근접 타이틀을 찾는다.
+  if (matches.length === 0) {
+    const candidates = docs.map((doc) => ({
+      slug: doc.slug,
+      title: String(doc.frontmatter.title || doc.frontmatter.name || doc.slug),
+    }));
+    const nearMatches = findNearTitleMatches(title, candidates);
+    result.growthHint = buildFindEvidenceZeroHitsGrowthHint({ title, nearMatches });
+  }
+  return result;
 }
 
 const ADD_CONCEPT_KINDS = new Set(['project', 'domain', 'capability', 'element', 'document']);
@@ -4274,7 +4342,20 @@ function findPathTool({ from, to, maxHops }) {
   requireOptionalNonNegativeInteger(maxHops, 'maxHops', { max: 20 });
   const result = findPath(VAULT_ROOT, from, to, maxHops ?? 5);
   if (!result) {
-    return { from, to, found: false, reason: '경로 없음 (또는 maxHops 초과)' };
+    // R+ (과제 ⑧ — Ask-to-Grow) — 답 못한 질문을 그냥 버리지 않는다. 두
+    // endpoint 가 vault 에 실제로 있는지 먼저 확인해 "endpoint 자체가 없음"
+    // (add_concept 제안) 과 "둘 다 있지만 경로가 없음" (add_relation 제안)
+    // 을 구분한다.
+    const docs = loadVaultDocs(VAULT_ROOT);
+    const fromExists = Boolean(resolveGraphRef(from, docs).slug);
+    const toExists = Boolean(resolveGraphRef(to, docs).slug);
+    return {
+      from,
+      to,
+      found: false,
+      reason: '경로 없음 (또는 maxHops 초과)',
+      growthHint: buildFindPathGrowthHint({ from, to, fromExists, toExists }),
+    };
   }
   const docs = loadVaultDocs(VAULT_ROOT);
   const docsBySlug = new Map(docs.map((doc) => [doc.slug, doc]));
@@ -4337,13 +4418,27 @@ function queryConceptsTool({ filter, limit }) {
       });
     }
   }
-  return {
+  const result = {
     filter,
     parsedAs: parsed.repr,
     total,
     matches,
     limited: total > matches.length,
   };
+  // R+ (과제 ⑧ — Ask-to-Grow) — 0 rows 는 답 못한 질문. 실제 vault census
+  // (byKind/byDomain) 로 필터가 존재하지 않는 kind/domain 을 겨눴는지 확인.
+  if (total === 0) {
+    const byKind = {};
+    const byDomain = {};
+    for (const doc of docs) {
+      const kind = doc.frontmatter?.kind;
+      if (kind) byKind[kind] = (byKind[kind] ?? 0) + 1;
+      const domain = doc.frontmatter?.domain;
+      if (typeof domain === 'string' && domain) byDomain[domain] = (byDomain[domain] ?? 0) + 1;
+    }
+    result.growthHint = buildQueryConceptsZeroRowsGrowthHint({ filter, byKind, byDomain });
+  }
+  return result;
 }
 
 function compileOntologyTool({

@@ -86,6 +86,31 @@ dogfood vault 일부 노드 title 이 40단어+ (예: `capabilities/cli-develope
   Entry (49 commands…)" → "CLI Developer Entry", 팝오버·INDEX·전체 상세 모두
   동일 축약, 전체 상세는 원본 title 을 secondary 로 보존).
 
+## 2026-07-23 — Ask-to-Grow: 답 못한 질의를 성장 신호로 (⑧)
+
+`find_path` / `get_concept` / `query_concepts` / `find_evidence` 같은 MCP read
+도구가 경로 없음 · slug 없음 · 0 rows · 0 hits 를 만나면 그냥 빈 결과로 끝났다.
+그 "답 못한 질문"이 vault 가 커져야 할 지점인데 신호가 버려지는 문제.
+
+- **`growthHint` 필드 (결과가 비었거나 미해결일 때만 포함)** — `{ reason,
+  suggestion, exampleCall }` 구조로 기계 소비 가능:
+  - `find_path` 경로 없음 → 두 endpoint 가 실제로 vault 에 있는지 먼저 구분해
+    `add_concept`(endpoint 자체가 없음) 또는 `add_relation`(둘 다 있지만 경로
+    없음) 예시 제안.
+  - `get_concept` / `query_ontology({operation:"node_profile"})` slug 없음 →
+    근접 슬러그 후보(오타/폴더 누락 안내) 또는 `add_concept` 스캐폴드. 기존
+    "Doc not found" 에러 텍스트는 그대로 두고 growthHint 만 구조화 필드로 추가.
+  - `query_concepts` 0 rows → 필터가 참조한 kind/domain 이 이 vault 에 실제로
+    0개인지 census 로 확인해 알려주거나, 필터 완화 제안.
+  - `find_evidence` 0 hits → 토큰 overlap 기반 근접 타이틀 후보 또는
+    `add_concept` 스캐폴드.
+- 힌트는 상상으로 노드를 지어내지 않는다 — 실제 vault census / 근접 슬러그 /
+  근접 타이틀에서만 도출, 후보 없으면 일반 scaffold 예시로 폴백.
+- 신규 순수 모듈 `mcp/src/growth-hint.mjs` + 단위 테스트 15케이스, 통합 테스트
+  4케이스, `ontology-engine.test.mjs` 3케이스 추가. 기존 mcp 테스트 회귀 0
+  (integration 77/77 · ontology-engine 67/67 · verify-script 사전 존재하던 1건
+  제외 121/122 — growthHint 무관).
+
 ## 2026-07-23 — 발자국 트레일 (걸어온 길)
 
 지도에서 여러 노드를 오가며 탐색하다 보면 "방금 어디를 봤더라"를 잃는다. 세션
