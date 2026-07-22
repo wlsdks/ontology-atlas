@@ -1574,7 +1574,7 @@
       "repairQueueStale": "오래된 근거",
       "repairQueueOrphan": "소속 미정",
       "repairQueuePromotion": "상위 개념 후보",
-      "repairQueueEmpty": "지금 수리할 항목이 없습니다.",
+      "repairQueueEmpty": "수리할 게 없어요 — 지금은 다 정돈됐어요.",
       "repairQueueTargetLabel": "다음 수리 대상",
       "repairQueueActionKindStale": "오래된 근거",
       "repairQueueActionKindOrphan": "소속 미정",
@@ -1600,10 +1600,10 @@
       "trendCaption": "전 도메인 합산 주간 갱신 건수 — 히트스트립과 같은 {weeks}주 창.",
       "doNext": {
         "queueTitle": "지금 하면 좋은 일",
-        "sectionNeglectedHub": "방치된 허브 — 많이 참조되는데 오래 안 바뀜",
-        "sectionOrphan": "고아 — 아직 아무 데도 안 이어짐",
-        "sectionPromotion": "상위 개념 후보 — 참조가 몰려 상위 개념으로 올릴 만함",
-        "sectionCycle": "의존 사이클 — 서로가 서로를 기다림",
+        "sectionNeglectedHub": "오래 안 바뀐 허브 — 지금 살펴볼까요?",
+        "sectionOrphan": "아직 아무 데도 안 이어졌어요 — 연결해 줄까요?",
+        "sectionPromotion": "참조가 몰렸어요 — 상위 개념으로 올릴까요?",
+        "sectionCycle": "서로 기다리는 고리 — 하나 끊을까요?",
         "cycleMoreNodes": "외 {count}",
         "neglectedHubMetric": "연결 {degree} · {days}일째 그대로",
         "cycleMetric": "노드 {length}",
@@ -1615,7 +1615,14 @@
         "digestTitle": "에이전트가 한 일",
         "digestToday": "오늘 {count}건",
         "digestApproveHint": "확인은 git diff 로 — 이 목록은 vault 안 로컬 감사 로그(.ontology-atlas/activity.jsonl)에서 옵니다.",
-        "digestWhyPrefix": "이유 · "
+        "digestWhyPrefix": "이유 · ",
+        "touchUpBandTitle": "오늘의 손질",
+        "touchUpRemaining": "{count}건 남음",
+        "touchUpAllDone": "오늘 손질 끝 — 그만큼 그래프가 정돈됐어요.",
+        "touchUpDone": "손봤어요",
+        "touchUpWhyCycle": "노드 {length}개가 서로 기다림",
+        "touchUpWhyPromotion": "참조가 몰려 상위 개념 후보",
+        "rowMenuTrigger": "더보기"
       }
     }
   },

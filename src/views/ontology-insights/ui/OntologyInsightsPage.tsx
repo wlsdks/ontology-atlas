@@ -43,6 +43,7 @@ import {
 } from "../lib/insights-tab-state";
 import { computeDomainCapacityRows } from "../lib/domain-capacity";
 import { buildDoNextQueue } from "../lib/do-next-queue";
+import { pickTodaysTouchUps, type TouchUpItem } from "../lib/todays-touch-ups";
 import { countRecentEntries } from "@/shared/lib/agent-activity-log";
 import { findDependencyCycles, type DependencyCycle } from "../lib/dependency-cycles";
 import { computeCensusHealth } from "../lib/census-health";
@@ -50,7 +51,7 @@ import { buildDependsOnRows } from "../lib/depends-on-rows";
 import { buildHubEgoThumbnail } from "../lib/hub-ego-thumbnail";
 import { FRESHNESS_WINDOW_WEEKS, computeFreshnessSummary } from "../lib/freshness";
 import { OverviewTab } from "./tabs/OverviewTab";
-import { DoNextTab } from "./tabs/DoNextTab";
+import { DoNextTab, type DoNextTouchUp } from "./tabs/DoNextTab";
 import { RelationsTab, type RelationHubRow } from "./tabs/RelationsTab";
 import { FreshnessTab } from "./tabs/FreshnessTab";
 import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
@@ -218,6 +219,32 @@ export function OntologyInsightsPage() {
     router.replace(buildInsightsTabHref(next as InsightsTab), { scroll: false });
   };
 
+  // ③ 오늘의 손질 — 순수 함수가 우선순위/절단/콜드스타트 가드를 처리하고,
+  // 표면 문구(why)만 여기서 입힌다. 절단 결과가 3건일 때만 채워진다.
+  const touchUpWhy = (item: TouchUpItem): string => {
+    switch (item.reason.kind) {
+      case "neglected-hub":
+        return t("doNext.neglectedHubMetric", { degree: item.reason.degree, days: item.reason.agoDays });
+      case "cycle":
+        return t("doNext.touchUpWhyCycle", { length: item.reason.length });
+      case "promotion":
+        return t("doNext.touchUpWhyPromotion");
+    }
+  };
+  const doNextTouchUps: DoNextTouchUp[] = pickTodaysTouchUps(doNextQueue, dependencyCycles, {
+    totalNodes,
+    cycleTitle: cycleNodeTitle,
+    cycleHandoff,
+  }).map((item) => ({
+    id: item.id,
+    source: item.source,
+    nodeId: item.nodeId,
+    title: item.title,
+    nodeKind: item.nodeKind,
+    why: touchUpWhy(item),
+    handoffPayload: item.handoffPayload,
+  }));
+
   const heroLabels = {
     concepts: t("heroConcepts"),
     relations: t("heroRelations"),
@@ -281,6 +308,11 @@ export function OntologyInsightsPage() {
     digestToday: (count: number) => t("doNext.digestToday", { count }),
     digestApproveHint: t("doNext.digestApproveHint"),
     digestWhyPrefix: t("doNext.digestWhyPrefix"),
+    touchUpBandTitle: t("doNext.touchUpBandTitle"),
+    touchUpRemaining: (count: number) => t("doNext.touchUpRemaining", { count }),
+    touchUpAllDone: t("doNext.touchUpAllDone"),
+    touchUpDone: t("doNext.touchUpDone"),
+    rowMenuTrigger: t("doNext.rowMenuTrigger"),
   };
   const formatDaysAgo = (days: number) => {
     if (days <= 0) return t("daysAgoToday");
@@ -398,6 +430,7 @@ export function OntologyInsightsPage() {
             {tab === "do-next" ? (
               <DoNextTab
                 queue={doNextQueue}
+                touchUps={doNextTouchUps}
                 cycles={dependencyCycles}
                 agentReadiness={agentReadiness}
                 healthQueue={healthQueue}
