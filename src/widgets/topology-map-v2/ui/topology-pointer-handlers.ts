@@ -23,6 +23,7 @@
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 
 import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
+import type { CameraTween } from "../model/camera-easing";
 import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
 import { EGO_NEIGHBOR_CHIP_ID, scheduleRipple } from "../model/focus-state";
 import type { ForceSimulation } from "../model/force-layout";
@@ -70,6 +71,13 @@ export interface PointerHandlerRefs {
   worldRef: Ref<TopologyWorld | null>;
   cameraRef: Ref<CameraAxes>;
   cameraTargetRef: Ref<CameraTarget>;
+  /**
+   * S3 마감 폴리시 — the live cubic camera transition (`model/camera-easing.ts`).
+   * Any interactive gesture (wheel zoom, pointer-down for pan/select) clears it
+   * so the spring immediately regains control from wherever the ease left the
+   * camera. Optional — omitted keeps the pre-tween behavior.
+   */
+  cameraTweenRef?: Ref<CameraTween | null>;
   dampingRef: Ref<number>;
   /**
    * Dive-zoom fix (owner: "줌 인/아웃이 느림") — `handleWheel` sets this to
@@ -128,6 +136,12 @@ export interface PointerHandlerRefs {
   selectedEdgeRef?: Ref<{ sourceId: string; targetId: string } | null>;
   /** 밀도 게이트 — 이번 프레임의 클러스터 칩(월드 anchor). 칩 히트테스트용. */
   clusterChipsRef?: Ref<readonly ClusterChip[]>;
+  /**
+   * S3 마감 폴리시 (S2 known gap) — 이번 프레임에 그리지 않은 노드 집합(밀도
+   * 게이트 접힘 + 선택적 ego 숨김 이웃). 노드/엣지 히트테스트가 이 집합을
+   * 제외해 숨은 노드가 클릭·호버되지 않게 한다. 생략 시 전부 히트 대상.
+   */
+  clusteredIdsRef?: Ref<ReadonlySet<string>>;
   /** 밀도 게이트 — 호버 중 클러스터 부모 id 미러(커서 + 보더 강조). */
   hoveredClusterIdRef?: Ref<string | null>;
   onHoverEdge?: (
@@ -190,6 +204,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     worldRef,
     cameraRef,
     cameraTargetRef,
+    cameraTweenRef,
     dampingRef,
     cameraAngularFreqRef,
     viewportRef,
@@ -210,6 +225,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     hoveredEdgeRef,
     selectedEdgeRef,
     clusterChipsRef,
+    clusteredIdsRef,
     hoveredClusterIdRef,
     onSelect,
     onSelectEdge,
@@ -268,6 +284,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // unclickable, defeating the entire "click a domain to expand it" flow.
     const focusedNodeId = focusedSlugRef.current;
     const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
+    // S3 — 이번 프레임에 그리지 않은(밀도게이트 접힘 + 선택적 ego 숨김) 노드는
+    // 히트 대상에서 제외 — 숨은 ego 이웃이 클릭되던 S2 갭 차단.
+    const clusteredIds = clusteredIdsRef?.current;
     return hitTestWorld(
       world,
       camera,
@@ -276,7 +295,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       tokens,
       px,
       py,
-      (node) => isNodeHittable(node, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL),
+      (node) => isNodeHittable(node, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL, clusteredIds),
     );
   };
 
@@ -302,9 +321,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const zoomRatio = computeZoomRatio(cameraRef.current.scale.value, overviewEntryScale);
     const focusedNodeId = focusedSlugRef.current;
     const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
+    const clusteredIds = clusteredIdsRef?.current;
     const hittable = new Set(
       world.nodes
-        .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL))
+        .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL, clusteredIds))
         .map((n) => n.id),
     );
     const candidates: EdgeHitCandidate[] = [];
@@ -324,6 +344,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const tokens = readTopologyV2TokensOrNull();
     const world = worldRef.current;
     if (!tokens || !world) return;
+    // S3 — any pointer interaction (pan / select) abandons a live camera tween
+    // so the spring takes over from wherever the ease currently sits. A click
+    // that ends up selecting a node begins a fresh tween in the focus effect.
+    if (cameraTweenRef) cameraTweenRef.current = null;
     // Capture the pointer for the whole gesture — without this, releasing over
     // the analysis rail / outside the window never delivers `pointerup` to the
     // canvas, the state machine sticks in `dragging`, and the camera then
@@ -674,6 +698,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     e.preventDefault();
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) return;
+    // S3 — a live wheel zoom is interactive input; abandon any programmatic
+    // camera tween so the crisp interactive spring owns this gesture.
+    if (cameraTweenRef) cameraTweenRef.current = null;
     const { width, height } = viewportRef.current;
     const rect = currentRect(e.currentTarget as HTMLCanvasElement);
     const sx = e.clientX - rect.left;

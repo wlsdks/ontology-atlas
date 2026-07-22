@@ -2671,8 +2671,16 @@ export function HomePage() {
               {/* 우하단 계기 스택 — 관계선 범례(상시, W3 분석 보기 은퇴로
                   TopologyAnalysisBar overview 모드에서 이관)가 위, root-first-open
                   v3 계기 판독(FirstRunReadout, 정적 모드일 때만 자체 렌더)이 아래.
-                  같은 계기 판독 문법을 공유하되 가시성 조건은 서로 다르다. */}
-              <div className="pointer-events-none absolute bottom-6 right-6 z-20 flex flex-col items-end gap-2">
+                  같은 계기 판독 문법을 공유하되 가시성 조건은 서로 다르다.
+
+                  S3 마감 폴리시 (fable 설계) — 두 줄이 같은 계기 문법(mono 9px
+                  quaternary)이라 gap 이 좁으면 한 덩어리로 뭉쳐 보인다. gap-3 로
+                  줄 간 분리를 확실히 해 어떤 줌 상태의 문구 길이에서도 범례와
+                  판독이 겹쳐 읽히지 않게 한다. 코너 inset 은 orphan 이던
+                  `--topology-relation-legend-inset` 토큰(base 24px, ≥1920 32px)에
+                  연결 — ≥1920 에서 나머지 크롬이 1.15 로 커질 때 이 스택도 코너에서
+                  더 물러나 지도 라벨과 충돌하지 않는다. */}
+              <div className="pointer-events-none absolute bottom-[var(--topology-relation-legend-inset)] right-[var(--topology-relation-legend-inset)] z-20 flex flex-col items-end gap-3 whitespace-nowrap">
                 <TopologyRelationLegend />
                 <FirstRunReadout
                   projectCount={firstRunProjectCount}

@@ -54,6 +54,19 @@ export interface PhysicsStepInput {
    * emphasis applies, ego children appear) without the interpolated journey.
    */
   reducedMotion: boolean;
+  /**
+   * S3 마감 폴리시 (fable 설계) — when true the camera is being driven
+   * externally by the cubic transition tween (`model/camera-easing.ts`, owned
+   * by `use-topology-loop.ts`): the spring step + pan-bounds clamp + reduced-
+   * motion snap are all skipped and `camera` is used verbatim as this frame's
+   * result. `farT`/`zoomRatio` and every emphasis/ego-reveal/edge-pulse ramp
+   * still derive from that eased camera, so a tween in flight animates the rest
+   * of the scene exactly as a spring move would. Default/false = spring as
+   * before. The loop only sets this while a programmatic tween is live and
+   * `prefers-reduced-motion` is off, so `freezeCamera && reducedMotion` never
+   * co-occur.
+   */
+  freezeCamera?: boolean;
   /** Mutated in place — the hook owns this map's lifetime across frames. */
   emphasisById: Map<string, number>;
   rippleStartById: ReadonlyMap<string, number>;
@@ -98,6 +111,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     panelEmphasisNodeId,
     isDragging,
     reducedMotion,
+    freezeCamera,
     emphasisById,
     rippleStartById,
     egoRevealById,
@@ -146,22 +160,29 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // audit finding this fixes (capability/element tiers were unreachable).
   const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
   const effectiveScaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
-  const nextCamera = stepCamera({
-    camera,
-    target,
-    dt,
-    damping,
-    angularFrequency: cameraAngularFrequency,
-    scaleMin: effectiveScaleMin,
-    scaleMax: effectiveScaleMax,
-    panBounds,
-    isDragging,
-  });
+  // freezeCamera: the cubic transition tween owns the camera this frame — use
+  // the (already-eased) `camera` verbatim, skipping the spring + pan clamp +
+  // reduced snap. Everything downstream still derives from `nextCamera`.
+  const nextCamera: CameraAxes = freezeCamera
+    ? { x: { ...camera.x }, y: { ...camera.y }, scale: { ...camera.scale } }
+    : stepCamera({
+        camera,
+        target,
+        dt,
+        damping,
+        angularFrequency: cameraAngularFrequency,
+        scaleMin: effectiveScaleMin,
+        scaleMax: effectiveScaleMax,
+        panBounds,
+        isDragging,
+      });
   // A8 — reduced motion: the camera arrives instead of travelling. Snapping
   // AFTER `stepCamera` (not instead of it) keeps its clamp/bounds work — only
   // the spring interpolation is discarded. Velocities zero out so a later
-  // preference flip can't inherit stale momentum.
-  if (reducedMotion) {
+  // preference flip can't inherit stale momentum. (Never runs while frozen —
+  // the tween is disabled under reduced motion, so the spring path handles the
+  // snap.)
+  if (!freezeCamera && reducedMotion) {
     nextCamera.x.value = target.tx;
     nextCamera.y.value = target.ty;
     nextCamera.scale.value = Math.min(effectiveScaleMax, Math.max(effectiveScaleMin, target.tscale));

@@ -9,7 +9,8 @@ import type { CameraAxes } from "../engine/camera";
 import { resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selection-pulse";
-import { DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha } from "../model/tier-visibility";
+import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha } from "../model/tier-visibility";
+import { LABEL_TOP_K, selectTopKLabels, type LabelRankEntry } from "../model/label-lod";
 import { draw as gridDraw, lerpColorHex } from "../render/grid";
 import {
   ACTIVITY_MARK_GAP,
@@ -515,6 +516,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     bottom: viewportHeight - tokens.safeInsetBottom,
   };
   interface LabelPayload {
+    nodeId: string;
     kind: WorldNode["kind"];
     text: string;
     screenX: number;
@@ -526,6 +528,22 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     /** W6 agent visibility — this label's node matches the agent heartbeat's current focus. */
     agentFocus: boolean;
   }
+  // Label top-K LOD (S3 마감 폴리시, fable 설계): at the overview/spine and mid
+  // (circuit) bands the label budget goes to the highest-degree nodes; at the
+  // deepest element zoom the budget lifts and every label returns. Exempt from
+  // the budget: ego focus members, the hovered node, and the children of an
+  // EXPANDED cluster disc (you clicked the chip to read them).
+  const applyLabelTopK = classifyZoomTier(zoomRatio) !== "element";
+  const expandedDiscChildIds = new Set<string>();
+  if (applyLabelTopK) {
+    for (const chip of clusterChips) {
+      if (!chip.expanded) continue;
+      for (const childId of world.childrenByParent.get(chip.parentId) ?? []) {
+        expandedDiscChildIds.add(childId);
+      }
+    }
+  }
+  const labelRankEntries: LabelRankEntry[] = [];
   const labelCandidates: LabelCandidate<LabelPayload>[] = [];
   world.nodes.forEach((node, index) => {
     // 밀도 게이트: 접힌 서브트리 노드는 라벨도 그리지 않는다(노드/엣지와 동일).
@@ -578,6 +596,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     }
     const shiftX = anchorX - screen.x;
     const shiftY = clampedAnchorY - anchorY;
+    if (applyLabelTopK) {
+      const exempt =
+        egoState === "center" ||
+        egoState === "neighbor" ||
+        isHovered ||
+        expandedDiscChildIds.has(node.id);
+      labelRankEntries.push({ id: node.id, degree: world.neighborMap.get(node.id)?.size ?? 0, exempt });
+    }
     labelCandidates.push({
       priority: resolveLabelPriority({
         kind: node.kind,
@@ -588,6 +614,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       order: index,
       bbox: { minX: anchorX - width / 2, maxX: anchorX + width / 2 + markReserve, minY: clampedAnchorY - fontSize, maxY: clampedAnchorY + 2 },
       payload: {
+        nodeId: node.id,
         kind: node.kind,
         text,
         screenX: screen.x + shiftX,
@@ -601,7 +628,18 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     });
   });
 
-  for (const { payload } of greedyPlaceLabels(labelCandidates)) {
+  // Apply the top-K budget over the frame's already-viewport/safe-rect-filtered
+  // candidates (so "top K" means "top K currently on screen"). Skipped entirely
+  // at the element tier — `applyLabelTopK` gates both the entry collection above
+  // and the filter here, so no work is done when the budget is lifted.
+  const placedLabelCandidates = applyLabelTopK
+    ? (() => {
+        const allowed = selectTopKLabels(labelRankEntries, LABEL_TOP_K);
+        return labelCandidates.filter((candidate) => allowed.has(candidate.payload.nodeId));
+      })()
+    : labelCandidates;
+
+  for (const { payload } of greedyPlaceLabels(placedLabelCandidates)) {
     labelsDraw(
       ctx,
       {

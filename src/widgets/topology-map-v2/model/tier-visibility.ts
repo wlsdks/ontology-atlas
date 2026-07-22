@@ -131,6 +131,14 @@ export interface HittableNodeInput {
  * ego-exemption hit/commit contract has a unit test independent of canvas/
  * pointer-event plumbing (label-clarity persona eval — "child click ejects
  * to overview instead of selecting").
+ *
+ * S3 마감 폴리시 (fable 설계, S2 known gap) — `clusteredIds` is the frame's
+ * NOT-DRAWN set: density-gate collapsed subtree nodes AND, critically, the
+ * selective-ego neighbors folded behind the `이웃 +N` chip when a focused node
+ * has more than the ego limit. Those hidden neighbors are still 1-hop
+ * neighbors, so the ego exemption below would (wrongly) keep them clickable —
+ * grabbing an invisible node. Excluding the clustered set FIRST keeps hit and
+ * draw in lockstep: if it isn't painted this frame, it isn't hittable.
  */
 export function isNodeHittable(
   node: HittableNodeInput,
@@ -138,7 +146,9 @@ export function isNodeHittable(
   focusedNodeId: string | null,
   neighborsOfFocused: ReadonlySet<string> | undefined,
   config: TierRevealConfig = DEFAULT_TIER_REVEAL,
+  clusteredIds?: ReadonlySet<string>,
 ): boolean {
+  if (clusteredIds?.has(node.id)) return false;
   if (nodeTierAlpha(node.kind, node.isHub, zoomRatio, config) >= HITTABLE_MIN_TIER_ALPHA) return true;
   return focusedNodeId !== null && (node.id === focusedNodeId || (neighborsOfFocused?.has(node.id) ?? false));
 }
