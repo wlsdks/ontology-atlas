@@ -1101,8 +1101,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       const realmData = realmDataRef.current;
       let realmWarding: { centerX: number; centerY: number; radius: number; drawProgress: number } | null = null;
       let realmMemberIds: ReadonlySet<string> | null = null;
+      let realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null = null;
       if (realmData && (realmState.phase === "entering" || realmState.phase === "active")) {
         realmMemberIds = realmData.memberIds;
+        realmTierKinds = realmData.tierKindById;
         if (isRealmOutsideCulled(realmState, now)) {
           frameClusteredIds = new Set<string>([...frameClusteredIds, ...realmData.outsideIds]);
         }
@@ -1176,6 +1178,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         hoveredClusterId: hoveredClusterIdRef.current,
         wardingRing: realmWarding,
         realmMemberIds,
+        realmTierKinds,
       });
 
       handle = requestAnimationFrame(frame);

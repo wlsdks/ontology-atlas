@@ -223,6 +223,8 @@ export interface FrameDrawParams {
    * 나가는 엣지는 안쪽 노드에서 결계 방향으로 페이드 스텁으로만 그린다.
    */
   realmMemberIds: ReadonlySet<string> | null;
+  /** S4 — 멤버별 깊이 기반 티어 kind 오버라이드 (영역 세계의 티어 = 재배치 깊이). */
+  realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -254,6 +256,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     hoveredClusterId,
     wardingRing,
     realmMemberIds,
+    realmTierKinds,
   } = params;
 
   // Where world (0,0) currently lands on screen — the blueprint grid rides
@@ -303,7 +306,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const tierAlphaById = tierAlphaByIdReused;
   const effectiveAlphaById = effectiveAlphaByIdReused;
   for (const node of world.nodes) {
-    const tierAlpha = nodeTierAlpha(node.kind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL);
+    const tierKind = realmTierKinds?.get(node.id) ?? node.kind;
+    const tierAlpha = nodeTierAlpha(tierKind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL);
     tierAlphaById.set(node.id, tierAlpha);
     const isPairMember =
       focusedNodeId === null &&

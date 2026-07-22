@@ -40,7 +40,16 @@ export interface RealmRuntimeData {
   wardingRadius: number;
   /** 영역 재배치 bbox — 카메라 fit 대상. */
   bounds: { minX: number; minY: number; maxX: number; maxY: number };
+  /**
+   * 멤버별 **깊이 기반 티어 kind** — 영역 세계에선 재배치 깊이가 곧 티어다
+   * (루트=project, 1단계=domain, 2단계=capability, 3단계+=element). 원래
+   * kind 로 티어 게이트를 돌리면 element 자식이 스파인 줌에서 숨어 영역이
+   * 텅 비어 보인다 (실화면 실증).
+   */
+  tierKindById: ReadonlyMap<string, "project" | "domain" | "capability" | "element">;
 }
+
+const DEPTH_TIER_KINDS = ["project", "domain", "capability", "element"] as const;
 
 /** 결정론적 per-id 폴백 각도 — 중심과 겹친 밖 노드의 이탈 방향(seed 없음). */
 function fallbackAngleForId(id: string): number {
@@ -127,6 +136,12 @@ export function buildRealmRuntimeData(
     wardingCenter: { x: 0, y: 0 },
     wardingRadius,
     bounds,
+    tierKindById: new Map(
+      [...subtree.depthById].map(([id, depth]) => [
+        id,
+        DEPTH_TIER_KINDS[Math.min(depth, DEPTH_TIER_KINDS.length - 1)],
+      ]),
+    ),
   };
 }
 
