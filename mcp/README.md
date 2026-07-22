@@ -631,7 +631,7 @@ A successful run looks like this:
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 104 total query results (limited true)
 ✓ analyze_repo_structure — fsd (5 domain candidates, 18 capability candidates, 29 element candidates)
-✓ infer_imports — 820 files scanned, 510 module edges (elements/src/views/home->capabilities/knowledge-graph x27 (static:27), elements/src/views/ontology-insights->capabilities/knowledge-graph x15 (static:15), +508 more)
+✓ infer_imports — 820 files scanned, 510 module edges (elements/src/views/home->capabilities/knowledge-graph x28 (static:28), elements/src/views/ontology-insights->capabilities/knowledge-graph x15 (static:15), +508 more)
 ✓ index_project — 52 concept candidates, 503 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
