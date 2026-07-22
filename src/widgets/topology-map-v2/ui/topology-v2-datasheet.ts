@@ -49,34 +49,53 @@ export interface V2ContainsGroupSummary {
   groups: { key: string; count: number }[];
   otherCount: number;
   total: number;
+  /**
+   * B4 (H1 비개발자 언어 레이어) — 요약이 실제로 정보를 담는가. `false`면 요약이
+   * "기타" 한 덩어리로 무너져 정보가 0이라는 뜻 → 패널은 요약 대신 개별 리스트를
+   * 렌더한다. 명명 그룹이 하나라도 있으면 `true`.
+   */
+  usable: boolean;
 }
 
 /** "담는 것" 그룹 요약을 켜는 임계 — 이 값을 **초과**하면 요약을 표시한다. */
 export const V2_CONTAINS_SUMMARY_THRESHOLD = 15;
 
-/** node id(`kind:slug`)에서 디렉터리 프리픽스를 유도한다 — 슬래시 없으면 null(기타). */
-function pathPrefixKey(id: string): string | null {
+/** node id(`kind:slug`)에서 slug 부분만 뽑는다(`kind:` 프리픽스 제거). */
+function idToSlug(id: string): string {
   const colon = id.indexOf(":");
-  const slug = colon === -1 ? id : id.slice(colon + 1);
+  return colon === -1 ? id : id.slice(colon + 1);
+}
+
+/** 마지막 슬래시 앞까지의 디렉터리 프리픽스 — 슬래시 없으면 null(기타). 예:
+ * `cli/src/commands/add` → `cli/src/commands`. */
+function deepPrefixKey(id: string): string | null {
+  const slug = idToSlug(id);
   const slash = slug.lastIndexOf("/");
   if (slash === -1) return null;
   return slug.slice(0, slash);
 }
 
-/**
- * 담는 것 행들을 경로 프리픽스별로 집계한다. 결정론: count 내림차순, 동률은
- * key 사전순. 상위 `maxGroups` 개만 명명하고 나머지 프리픽스 + 프리픽스 없는
- * 행은 `otherCount` 로 합친다.
- */
-export function summarizeContainsByPathPrefix(
+/** 첫 경로 세그먼트(1단계) — 슬래시 없으면 null. 예:
+ * `cli/src/commands/add` → `cli`, `.claude/skills/x` → `.claude`. 깊은
+ * 프리픽스가 전부 count 1로 흩어져 "기타"로 무너질 때 더 굵게 재분할한다. */
+function coarsePrefixKey(id: string): string | null {
+  const slug = idToSlug(id);
+  const slash = slug.indexOf("/");
+  if (slash === -1) return null;
+  return slug.slice(0, slash);
+}
+
+/** 하나의 키 함수로 프리픽스 버킷을 만든다(순수). count 내림차순, 동률 key
+ * 사전순. 상위 `cap` 만 명명하고 나머지 + 프리픽스 없는 행은 `otherCount`. */
+function bucketByKey(
   rows: readonly V2DatasheetConnection[],
-  maxGroups: number = 4,
-): V2ContainsGroupSummary {
-  const total = rows.length;
+  keyOf: (id: string) => string | null,
+  cap: number,
+): { groups: { key: string; count: number }[]; otherCount: number } {
   const counts = new Map<string, number>();
   let noPrefix = 0;
   for (const row of rows) {
-    const key = pathPrefixKey(row.id);
+    const key = keyOf(row.id);
     if (key === null) {
       noPrefix += 1;
       continue;
@@ -86,11 +105,47 @@ export function summarizeContainsByPathPrefix(
   const sorted = [...counts.entries()].sort(
     (a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0),
   );
-  const cap = Math.max(0, maxGroups);
   const named = sorted.slice(0, cap);
   let otherCount = noPrefix;
   for (const [, c] of sorted.slice(cap)) otherCount += c;
-  return { groups: named.map(([key, count]) => ({ key, count })), otherCount, total };
+  return { groups: named.map(([key, count]) => ({ key, count })), otherCount };
+}
+
+/**
+ * 담는 것 행들을 경로 프리픽스별로 집계한다. 결정론: count 내림차순, 동률은
+ * key 사전순. 상위 `maxGroups` 개만 명명하고 나머지 프리픽스 + 프리픽스 없는
+ * 행은 `otherCount` 로 합친다.
+ *
+ * B4 (H1) — 깊은 프리픽스가 전부 흩어져 "기타"가 과반을 먹으면(정보 0),
+ * 경로 1단계(첫 세그먼트)로 더 굵게 재분할해 실제로 나뉘는 쪽을 택한다.
+ * 그래도 명명 그룹이 하나도 없으면(=슬래시 있는 행이 없음) `usable: false` 로
+ * 표시해 패널이 요약 대신 개별 리스트를 렌더하게 한다.
+ */
+export function summarizeContainsByPathPrefix(
+  rows: readonly V2DatasheetConnection[],
+  maxGroups: number = 4,
+): V2ContainsGroupSummary {
+  const total = rows.length;
+  const cap = Math.max(0, maxGroups);
+  const deep = bucketByKey(rows, deepPrefixKey, cap);
+
+  // "기타"가 과반을 차지하거나 명명 그룹이 없으면 더 굵은 1단계 프리픽스로 재시도.
+  let chosen = deep;
+  if (deep.groups.length === 0 || deep.otherCount * 2 > total) {
+    const coarse = bucketByKey(rows, coarsePrefixKey, cap);
+    // 명명 커버리지(= total - otherCount)가 큰 쪽을 택하고, 동률이면 더 구체적인
+    // deep 을 유지한다.
+    const deepCovered = total - deep.otherCount;
+    const coarseCovered = total - coarse.otherCount;
+    if (coarseCovered > deepCovered) chosen = coarse;
+  }
+
+  return {
+    groups: chosen.groups,
+    otherCount: chosen.otherCount,
+    total,
+    usable: chosen.groups.length > 0,
+  };
 }
 
 /** One relation-role group as the panel renders it: a capped preview of rows +

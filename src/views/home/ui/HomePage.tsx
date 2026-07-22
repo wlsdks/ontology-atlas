@@ -2560,6 +2560,7 @@ export function HomePage() {
                       elementsShort: t("index.elementsShort"),
                       freshTitle: t("index.freshTitle"),
                       domainCountTitle: t("index.domainCountTitle"),
+                      subtotalTitle: t("index.subtotalTitle"),
                       emptyHint: t("index.emptyHint"),
                       segmentAll: t("index.segmentAll"),
                       // M-8 — 적응 창(7d→3d→1d)의 실제 창 일수를 라벨에 노출.
@@ -2955,6 +2956,12 @@ export function HomePage() {
                   metricUsedBy: t("nodeDatasheet.metricUsedBy"),
                   metricDependsOn: relationVocabulary("depends_on", "plain"),
                   metricEvidence: relationVocabulary("describes", "plain"),
+                  // H1 B2/A — typed-fact 라벨 hover 풀이 + "직접" 연결 스코프 명시.
+                  metricContainsHelp: t("nodeDatasheet.metricContainsHelp"),
+                  metricUsedByHelp: t("nodeDatasheet.metricUsedByHelp"),
+                  metricDependsOnHelp: t("nodeDatasheet.metricDependsOnHelp"),
+                  metricEvidenceHelp: t("nodeDatasheet.metricEvidenceHelp"),
+                  metricHelp: t("nodeDatasheet.metricHelp"),
                   noConnections: t("nodeDatasheet.noConnections"),
                   handoff: t("nodeDatasheet.handoff"),
                   close: t("controls.close"),

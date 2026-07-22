@@ -339,6 +339,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
               ],
               otherCount: 6,
               total: 60,
+              usable: true,
             },
           },
           usedBy: { rows: [], total: 0 },
@@ -386,7 +387,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
         powered={false}
         metric={{ contains: 3, usedBy: 0, dependsOn: 0, evidence: 0 }}
         groups={{
-          contains: { rows, total: 3, summary: { groups: [], otherCount: 3, total: 3 } },
+          contains: { rows, total: 3, summary: { groups: [], otherCount: 3, total: 3, usable: false } },
           usedBy: { rows: [], total: 0 },
           dependsOn: { rows: [], total: 0 },
           belongsTo: { rows: [], total: 0 },
@@ -405,5 +406,49 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     expect(screen.queryByTestId("topology-v2-contains-summary")).not.toBeInTheDocument();
     expect(screen.queryByTestId("topology-v2-contains-summary-toggle")).not.toBeInTheDocument();
     expect(screen.getByText("cap 0")).toBeInTheDocument();
+  });
+
+  // B4 (H1) — 요약이 "기타" 한 덩어리로 무너지면(usable=false) 임계를 넘어도
+  // 요약/토글을 숨기고 개별 리스트를 렌더한다(정보 0 방지).
+  it("담는 것이 15개 초과라도 요약이 usable=false 면 리스트로 폴백한다", () => {
+    const rows = Array.from({ length: 6 }, (_, i) => ({
+      id: `element:leaf${i}`,
+      title: `leaf ${i}`,
+      kind: "element",
+      relationType: "contains",
+      direction: "outgoing" as const,
+    }));
+    render(
+      <TopologyV2DetailPanel
+        slug="domains/flat"
+        title="Flat"
+        kind="domain"
+        domain={null}
+        powered={false}
+        metric={{ contains: 40, usedBy: 0, dependsOn: 0, evidence: 0 }}
+        groups={{
+          contains: {
+            rows,
+            total: 40,
+            summary: { groups: [], otherCount: 40, total: 40, usable: false },
+          },
+          usedBy: { rows: [], total: 0 },
+          dependsOn: { rows: [], total: 0 },
+          belongsTo: { rows: [], total: 0 },
+        }}
+        evidence={{ rows: [], total: 0 }}
+        handoffText="node: domains/flat"
+        documentHref={null}
+        builderEditHref="/ontology/edit/?node=domains%2Fflat"
+        labels={labels}
+        onSelectConnection={() => {}}
+        onCopyHandoff={() => {}}
+        onClose={() => {}}
+        onSetPathSource={() => {}}
+      />,
+    );
+    expect(screen.queryByTestId("topology-v2-contains-summary")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("topology-v2-contains-summary-toggle")).not.toBeInTheDocument();
+    expect(screen.getByText("leaf 0")).toBeInTheDocument();
   });
 });

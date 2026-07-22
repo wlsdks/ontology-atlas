@@ -459,6 +459,7 @@ export function OntologyInsightsPage() {
 
         <InsightsHandoffRow
           label={t("handoffLabel")}
+          caption={t("handoffCaption")}
           payload={HANDOFF_PAYLOAD[tab] ?? HANDOFF_PAYLOAD[DEFAULT_INSIGHTS_TAB]}
           copyLabel={t("handoffCopy")}
           copiedLabel={t("agentCopied")}
