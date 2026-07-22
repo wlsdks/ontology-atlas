@@ -170,6 +170,33 @@ export function exitRealmRouteState(current: HomeRouteState): HomeRouteState {
   return { ...current, realmSlug: null, selectedSlug: null, focusedHubSlug: null };
 }
 
+/**
+ * "영역 전개" realm slug 해석 (패널3-S7) — URL 의 `?realm=` 값을 실제 노드
+ * id 로 맞춘다. 노드 id 는 `kind:slug`(예: `capability:mcp-server`) 공간이라,
+ * 사용자가 손으로 친 bare slug(`?realm=ai-agent-partner`, kind prefix 없음)는
+ * 그냥은 어떤 노드와도 안 맞아 raw 칩 + 전체 지도가 조용히 렌더됐다. 이 함수는
+ * (1) 정확히 일치하는 id 가 있으면 그대로, (2) prefix 없는 bare slug 면
+ * `<kind>:<slug>` 형태의 노드를 찾아 canonical id 로 승격, (3) 못 찾으면 null.
+ * null 이면 caller 가 칩을 숨기고 영역을 활성화하지 않는다(조용한 fallback 대신
+ * 명시적 미해석). 순수 — `nodeIds` 는 canonical 노드 id 목록.
+ */
+export function resolveRealmNodeId(
+  realmSlug: string | null,
+  nodeIds: Iterable<string>,
+): string | null {
+  if (!realmSlug) return null;
+  const hasKindPrefix = realmSlug.includes(":");
+  let bareMatch: string | null = null;
+  for (const id of nodeIds) {
+    if (id === realmSlug) return id; // 정확 일치가 최우선
+    if (!hasKindPrefix && bareMatch === null) {
+      const colon = id.indexOf(":");
+      if (colon >= 0 && id.slice(colon + 1) === realmSlug) bareMatch = id;
+    }
+  }
+  return bareMatch;
+}
+
 export function parseHomeRouteState(
   searchParams: URLSearchParams,
 ): HomeRouteState {
