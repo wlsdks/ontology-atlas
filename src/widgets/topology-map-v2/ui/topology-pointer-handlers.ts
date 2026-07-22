@@ -26,6 +26,7 @@ import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTa
 import type { CameraTween } from "../model/camera-easing";
 import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
 import { EGO_NEIGHBOR_CHIP_ID, scheduleRipple } from "../model/focus-state";
+import { spawnHoverPulses, type Pulse } from "../render/edge-fireflies";
 import type { ForceSimulation } from "../model/force-layout";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable, isSpineOnlyZoom } from "../model/tier-visibility";
 import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
@@ -102,6 +103,12 @@ export interface PointerHandlerRefs {
   focusedSlugRef: Ref<string | null>;
   hoveredNodeIdRef: Ref<string | null>;
   rippleStartRef: Ref<Map<string, number>>;
+  /**
+   * R6 호버 펄스 — 호버가 발사한 일회성 신호 리스트(프레임 루프가 수명 관리).
+   * 호버 노드 변경 시 닿는 엣지들로 바깥 방향 펄스를 append 한다. 생략 시 발사
+   * 없음(하위호환).
+   */
+  pulsesRef?: Ref<Pulse[]>;
   reducedMotionRef: Ref<boolean>;
   /** The live force simulation (`model/force-layout.ts`) — pin/movePin/clearPin during node-drag. Null before the world is built. */
   simRef: Ref<ForceSimulation | null>;
@@ -175,7 +182,15 @@ export interface PointerHandlerRefs {
    * 렌더한다(엣지 호버 카드와 같은 계약).
    */
   onHoverCluster?: (
-    info: { parentId: string; count: number; expanded: boolean; position: { x: number; y: number } } | null,
+    info: {
+      parentId: string;
+      /** 이 티어에서 접힌(숨김) 직속 게이트 자식 수 — 칩의 `+N`. */
+      count: number;
+      /** 패널3-S6 숫자 계약 — 부모의 하위 전체 자손 수(노드 뱃지와 같은 출처). */
+      descendantTotal: number;
+      expanded: boolean;
+      position: { x: number; y: number };
+    } | null,
   ) => void;
   /** S2 파트 3a — `이웃 +N` 칩 클릭 → 다음 이웃 배치 점등(URL 토글과 별개). */
   onExpandEgoNeighbors?: () => void;
@@ -233,6 +248,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     focusedSlugRef,
     hoveredNodeIdRef,
     rippleStartRef,
+    pulsesRef,
     reducedMotionRef,
     simRef,
     heatRef,
@@ -403,6 +419,19 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // so the spring takes over from wherever the ease currently sits. A click
     // that ends up selecting a node begins a fresh tween in the focus effect.
     if (cameraTweenRef) cameraTweenRef.current = null;
+    // R4 관성 활강 중단(interruptibility) — 새 포인터다운은 진행 중이던 flick
+    // 감속을 즉시 잡는다(iOS 스크롤 catch). 카메라 속도를 0 으로, 스프링 타깃을
+    // 현재 위치로 고정해 지금 자리에 정지시킨다 — 이어질 팬/선택은 각자 새
+    // 타깃을 세운다(팬: pointermove, 선택: 포커스 이펙트 트윈). 속도가 이미
+    // 0 이면 정지 상태라 타깃을 건드리지 않는다(불필요한 상태 변경 회피).
+    {
+      const cam = cameraRef.current;
+      if (cam.x.velocity !== 0 || cam.y.velocity !== 0) {
+        cameraRef.current = { ...cam, x: { value: cam.x.value, velocity: 0 }, y: { value: cam.y.value, velocity: 0 } };
+        cameraTargetRef.current = { ...cameraTargetRef.current, tx: cam.x.value, ty: cam.y.value };
+        dampingRef.current = tokens.cameraDampingDefault;
+      }
+    }
     // Capture the pointer for the whole gesture — without this, releasing over
     // the analysis rail / outside the window never delivers `pointerup` to the
     // canvas, the state machine sticks in `dragging`, and the camera then
@@ -560,6 +589,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
               onHoverCluster({
                 parentId: chip.parentId,
                 count: chip.count,
+                // 패널3-S6 — 부모의 하위 전체 자손 수(노드 뱃지와 동일 출처
+                // `WorldNode.count` = descendantCount). 라이브 월드에서 조회.
+                descendantTotal: world.nodeById.get(chip.parentId)?.count ?? chip.count,
                 expanded: chip.expanded,
                 position: { x: e.clientX, y: e.clientY },
               });
@@ -577,6 +609,14 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       const neighborIds = [...(world.neighborMap.get(hitNodeId) ?? [])];
       const schedule = scheduleRipple(hitNodeId, performance.now(), neighborIds, tokens.rippleStaggerMs, RIPPLE_PER_NEIGHBOR_DELAY_MS, tokens.rippleStaggerMaxMs);
       for (const entry of schedule) rippleStartRef.current.set(entry.nodeId, entry.startAtMs);
+      // R6 호버 펄스 — 프로토타입 startRipple 의 펄스 부분: 호버 노드에 닿는
+      // 엣지들로 바깥 방향 일회성 신호를 발사한다. reduced-motion 이면
+      // spawnHoverPulses 가 빈 배열을 돌려줘 발사가 없다(정지 계약).
+      if (pulsesRef) {
+        const touching = world.edges.filter((e) => e.sourceId === hitNodeId || e.targetId === hitNodeId);
+        const spawned = spawnHoverPulses(hitNodeId, touching, performance.now(), reducedMotionRef.current);
+        if (spawned.length > 0) pulsesRef.current = [...pulsesRef.current, ...spawned];
+      }
     }
   };
 
@@ -805,6 +845,15 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
 
     cameraTargetRef.current = { tx: afterX, ty: afterY, tscale: newScale };
     dampingRef.current = tokens.cameraDampingDefault;
+    // R4 관성 활강 중단 — 휠 줌이 시작되면 진행 중이던 flick 감속의 잔여 x/y
+    // 속도를 흘리지 않도록 0 으로 잡는다(줌은 타깃 구동이므로 스케일 축은 무관).
+    if (cameraRef.current.x.velocity !== 0 || cameraRef.current.y.velocity !== 0) {
+      cameraRef.current = {
+        ...cameraRef.current,
+        x: { ...cameraRef.current.x, velocity: 0 },
+        y: { ...cameraRef.current.y, velocity: 0 },
+      };
+    }
     // Dive-zoom fix — a live wheel gesture uses the crisp interactive spring
     // for the scale axis (and pan, since point-to-zoom moves both together)
     // until the NEXT programmatic camera move resets it back to transition.

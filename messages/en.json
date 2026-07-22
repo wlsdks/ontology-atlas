@@ -2362,8 +2362,8 @@
       "hint": "Dense groups are folded into +N chips — click a chip to expand that group, click again to collapse.",
       "expandAria": "Expand {count} hidden items",
       "collapseAria": "Collapse this group",
-      "tooltipCollapsed": "{count} items under “{name}” are folded — click to expand",
-      "tooltipExpanded": "{count} items expanded — click to collapse"
+      "tooltipCollapsed": "“{name}” — {total} total under it · {hidden} hidden at this tier. Click to expand",
+      "tooltipExpanded": "“{name}” — {total} total under it · {hidden} expanded at this tier. Click to collapse"
     },
     "realm": {
       "enterAction": "Expand realm",

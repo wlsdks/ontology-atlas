@@ -175,6 +175,16 @@ const DEPENDS_TAPER_SEGMENTS = 14;
 const CONTAINS_LEVEL_WIDTH_FACTOR: Record<0 | 1 | 2, number> = { 0: 1.4, 1: 1, 2: 0.8 };
 const COMET_TAIL_STEPS = [0, 0.028, 0.056];
 const COMET_TAIL_FAR_SIZES = [1.3, 0.9, 0.6];
+/**
+ * R6 상시 혜성 — 프로토타입(topology-b2plus §13 `drawEdge`)의 코멧 꼬리 기본
+ * 반지름. **비-ego(normal) depends 엣지도 포커스와 무관하게 항상 흐른다**(구
+ * A1 "코멧테일=포커스 신호" 강등을 소유자 지시로 되돌림). ego/선택 엣지는 더
+ * 큰 꼬리 + bright, 패널 강조는 가장 큼. farT 상승 시 `COMET_TAIL_FAR_SIZES`로
+ * 보간해 헤어라인 먼지로 얇아진다(알파 페이드 아님 — glow 금지 계약).
+ */
+const COMET_TAIL_BASE_NORMAL = [2.1, 1.5, 0.9];
+const COMET_TAIL_BASE_EGO = [2.9, 2.1, 1.3];
+const COMET_TAIL_BASE_EMPHASIZED = [3.6, 2.7, 1.7];
 
 export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, tokens: TraceTokens): void {
   const { a, b, control, farT, egoState, t } = state;
@@ -252,24 +262,20 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
   ctx.setLineDash([]);
 
   if (!isDepends || egoState === "dim") return;
-  // AUDIT FINDING (Guardian 2026-07-20 A1/B1): the tail used to ride EVERY
-  // `depends` edge, so the brightest ink on an idle canvas was decoration —
-  // measured 4.23:1 against the background versus 1.32:1 for the `contains`
-  // edges that carry the graph's skeleton. Ambient playback is retired; the
-  // tail is now a FOCUS signal, earning its brightness by marking the ego
-  // subgraph. Also the only always-moving mark, so gating it is what lets the
-  // frame loop reach a genuine idle state (A2) and what makes
-  // `prefers-reduced-motion` actually mean "nothing moves".
-  if (egoState !== "ego") return;
+  // R6 상시 혜성 복원(소유자 지시 "예전 걸 살려줘" — 구 Guardian A1 "코멧테일=
+  // 포커스 신호" 강등을 되돌림): 코멧 꼬리는 dim 이 아닌 모든 depends 엣지에서
+  // 포커스와 무관하게 흐른다(프로토타입 §13 `drawEdge`의 `state !== "dim"`).
+  // 위상 전진은 `updateParticles`(reduced-motion 이면 정지)가 소유하므로
+  // reduced-motion 사용자에겐 여기서도 미표시 → "아무 것도 안 움직인다" 유지.
   if (state.reducedMotion === true) return;
 
   // comet tail — three shrinking dots trailing the live pulse position,
   // thinning toward hairline dust as altitude rises rather than fading via
-  // alpha (forbidden.md bans glow/alpha-based "signal" motifs).
-  // `egoState` is necessarily "ego" past the guard above, so the old
-  // ambient-size and ambient-colour branches are gone with it.
-  const baseSizes = emphasized ? [3.6, 2.7, 1.7] : [2.9, 2.1, 1.3];
-  const tailColor = tokens.indigoBright;
+  // alpha (forbidden.md bans glow/alpha-based "signal" motifs). ego/선택
+  // 엣지는 더 큰 꼬리 + bright 인디고, normal 은 옅은 인디고(프로토타입 대칭).
+  const ego = egoState === "ego" || state.selected === true;
+  const baseSizes = emphasized ? COMET_TAIL_BASE_EMPHASIZED : ego ? COMET_TAIL_BASE_EGO : COMET_TAIL_BASE_NORMAL;
+  const tailColor = ego ? tokens.indigoBright : tokens.indigo;
   COMET_TAIL_STEPS.forEach((step, i) => {
     let tt = t - step;
     if (tt < 0) tt += 1;

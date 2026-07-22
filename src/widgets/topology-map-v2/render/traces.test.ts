@@ -76,13 +76,14 @@ describe("bezierPoint", () => {
 });
 
 /**
- * Comet-tail contract (Guardian 2026-07-20 A1/B1). The tail used to ride every
- * `depends` edge, making decoration the brightest ink on an idle canvas. It is
- * now a FOCUS signal. These tests pin that so the ambient playback can't
- * silently come back — the previous suite only covered the curve math, which
- * is why the regression window existed at all.
+ * Comet-tail contract (R6 상시 혜성 복원 — 소유자 지시 "예전 걸 살려줘"). The
+ * prototype's ambient comet is back: EVERY non-dim `depends` edge carries the
+ * three-dot tail regardless of focus (the old A1 "focus signal only" retirement
+ * is reversed). ego/selected edges get a bigger, brighter tail; contains edges
+ * and dimmed edges never draw it; reduced-motion suppresses it entirely (so the
+ * canvas can still reach a genuine idle state for those users).
  */
-describe("draw — comet tail is a focus signal, not ambient decoration", () => {
+describe("draw — comet tail is an always-on depends signal", () => {
   const TOKENS = {
     edgeContains: "#3a3a42",
     edgeDepends: "#4c4c63",
@@ -126,12 +127,16 @@ describe("draw — comet tail is a focus signal, not ambient decoration", () => 
     t: 0.5,
   };
 
-  it("draws no tail on an unfocused depends edge", () => {
-    expect(drawAndCountTailDots(base)).toBe(0);
+  it("draws the three-dot tail on an unfocused (normal) depends edge — always-on", () => {
+    expect(drawAndCountTailDots(base)).toBe(3);
   });
 
-  it("draws the three-dot tail once the edge is part of the ego subgraph", () => {
+  it("draws the three-dot tail on an ego depends edge too", () => {
     expect(drawAndCountTailDots({ ...base, egoState: "ego" })).toBe(3);
+  });
+
+  it("draws the tail on a selected (pair-focus) depends edge", () => {
+    expect(drawAndCountTailDots({ ...base, egoState: "normal", selected: true })).toBe(3);
   });
 
   it("never draws a tail on a contains edge or a dimmed one", () => {
@@ -139,7 +144,8 @@ describe("draw — comet tail is a focus signal, not ambient decoration", () => 
     expect(drawAndCountTailDots({ ...base, egoState: "dim" })).toBe(0);
   });
 
-  it("suppresses the tail under prefers-reduced-motion", () => {
+  it("suppresses the tail under prefers-reduced-motion (idle-gate contract)", () => {
+    expect(drawAndCountTailDots({ ...base, egoState: "normal", reducedMotion: true })).toBe(0);
     expect(drawAndCountTailDots({ ...base, egoState: "ego", reducedMotion: true })).toBe(0);
   });
 });

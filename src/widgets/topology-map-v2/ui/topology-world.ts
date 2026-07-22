@@ -9,6 +9,7 @@
 
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../model/layout";
 import { computeBowControlPoint, computeDependsBowControlPoint } from "../render/traces";
+import { fireflySeed } from "../render/edge-fireflies";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import type { TopologyV2Edge, TopologyV2Node } from "./TopologyMapV2";
 
@@ -32,7 +33,12 @@ export interface WorldNode {
   fresh: boolean;
   /** Adapter contract (`TopologyV2Node`) has no staleness signal yet — always false until a follow-up adds one. */
   stale: boolean;
-  /** Transitive descendant count — engraved as a numeral on project/domain chips in circuit range (0 = skip). */
+  /**
+   * Transitive descendant count — engraved as a numeral on project/domain chips
+   * in circuit range (0 = skip). 패널3-S6 숫자 계약: 이 **노드 뱃지 = 하위 전체
+   * 자손 수**(`TopologyV2Node.descendantCount` = census total). 클러스터 칩 호버
+   * 툴팁의 "하위 전체 N"과 같은 출처라 두 표면의 숫자가 drift 없이 일치한다.
+   */
   count: number;
   /**
    * 규모 배율 (빌드 시 1회). domain/capability 만 ≠1. draw·히트테스트·분리
@@ -407,7 +413,9 @@ export function buildTopologyWorld(
       by: b.y,
       controlX: control.x,
       controlY: control.y,
-      t: 0,
+      // R6 상시 혜성 — 결정론 시드로 위상을 어긋내 lockstep(모든 코멧이 같은
+      // 위상으로 동시에 흐르는 파도)을 피한다. contains 는 코멧이 없어 무의미.
+      t: fireflySeed(a.id, b.id),
       level: containmentLevelFor(a.kind, b.kind),
       relationType: edge.relationType,
       declaredBySlug: edge.declaredBySlug ?? null,

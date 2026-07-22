@@ -40,7 +40,7 @@ import type { ClusterChip } from "../model/density-gate";
 import { drawDiffractionSpike, drawRealmCosmos, drawStarDust, type DustPoint } from "../render/starfield";
 import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
 import { draw as tracesDraw } from "../render/traces";
-import { drawEdgeFireflies, edgeFireflyProgress, fireflyCount, fireflySeed } from "../render/edge-fireflies";
+import { drawPulses, type Pulse } from "../render/edge-fireflies";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { worldToScreen } from "./topology-camera-math";
 
@@ -62,11 +62,6 @@ import { isSpineNode, radiusForKind, type TopologyWorld, type WorldNode } from "
 const EXPANDED_AURA_RING_OFFSET = 6;
 const EXPANDED_AURA_DASH: readonly number[] = [3, 3];
 const EXPANDED_AURA_ALPHA = 0.55;
-/**
- * S10 결함 4 — 반딧불(엣지 흐름 입자)의 기저 알파. 저알파 인디고 계약. 엣지의
- * 점등 알파(`edgeAlpha`)에 곱해 티어 페이드와 함께 사라지게 한다.
- */
-const FIREFLY_ALPHA = 0.6;
 /**
  * S8 결함 1 — 확장 디스크와 무관한 배경 노드를 확장 중 미세 dim 해 "어지러움"을
  * 줄인다(확장이 없으면 1.0, 회귀 0). 색이 아니라 알파만 낮춘다.
@@ -206,6 +201,12 @@ export interface FrameDrawParams {
   egoRevealById: ReadonlyMap<string, number>;
   reducedMotion: boolean;
   /**
+   * R6 호버 펄스 — 노드 호버가 발사한 활성 일회성 신호들(`use-topology-loop.ts`가
+   * 수명 관리). 엣지 커브 위에 헤드+트레일로 그린다. reduced-motion 이면 발사가
+   * 없어 항상 비어 미표시.
+   */
+  pulses: readonly Pulse[];
+  /**
    * Canvas-emphasis slice §B2 — the just-committed selection's one-shot
    * commit-pulse anchor: which node was just clicked and when
    * (`performance.now()`-compatible timestamp), captured once by
@@ -284,6 +285,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     emphasisById,
     egoRevealById,
     reducedMotion,
+    pulses,
     selectionPulse,
     agentFocusNodeId,
     clusteredIds,
@@ -442,18 +444,31 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           edgeSelected: tokens.edgeSelected,
         },
       );
-      // S10 결함 4 — 점등 엣지(ego 또는 선택)에 출발→도착 흐름 입자("반딧불").
-      // 포커스/선택 중에만 그려지고(해제 즉시 소멸), reduced-motion 은 미표시.
-      // 등속 월드 속도라 엣지 월드 길이로 주기를 잡는다. glow 없이 순수 점만.
-      if (!reducedMotion && (edgeEgoState === "ego" || isSelectedEdge)) {
-        const edgeWorldLength = Math.hypot(edge.bx - edge.ax, edge.by - edge.ay);
-        const count = fireflyCount(edgeWorldLength);
-        const progresses = edgeFireflyProgress(now, edgeWorldLength, count, fireflySeed(edge.sourceId, edge.targetId));
-        ctx.globalAlpha = FIREFLY_ALPHA * edgeAlpha;
-        drawEdgeFireflies(ctx, a, control, b, progresses, tokens.indigoBright);
-      }
+      // R6 상시 혜성 — 코멧 꼬리 자체는 `tracesDraw`가 `edge.t`를 읽어
+      // 엣지 커브와 함께 그린다(포커스 무관, dim 제외). 이 프레임 패스는 더
+      // 이상 별도 반딧불 점을 얹지 않는다(구 S10 포커스-게이트형 삭제).
       ctx.globalAlpha = 1;
     }
+  }
+
+  // R6 호버 펄스 — 노드 호버가 발사한 일회성 신호(420ms). 엣지 커브 위, 노드
+  // 아래. reduced-motion 이면 애초에 발사가 없어 pulses 가 비므로 자연히 미표시.
+  // 곡선은 라이브 엣지 좌표를 스크린으로 투영(드래그/살아있는 그래프 추종).
+  if (pulses.length > 0) {
+    const pairKey = (sourceId: string, targetId: string): string => `${sourceId} ${targetId}`;
+    const edgeByPair = new Map(world.edges.map((edge): [string, typeof edge] => [pairKey(edge.sourceId, edge.targetId), edge]));
+    drawPulses(
+      ctx,
+      pulses,
+      now,
+      (pulse) => {
+        const edge = edgeByPair.get(pairKey(pulse.sourceId, pulse.targetId));
+        if (!edge) return null;
+        return { a: project(edge.ax, edge.ay), control: project(edge.controlX, edge.controlY), b: project(edge.bx, edge.by) };
+      },
+      { head: tokens.indigoBright, trail: tokens.indigo },
+    );
+    ctx.globalAlpha = 1;
   }
 
   // S8 결함 1 — 펼친 부모(파선 오라 대상) + 그 디스크(부모 + contains 하위 전이

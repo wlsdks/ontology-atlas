@@ -14,19 +14,9 @@ interface Props {
   /** 없으면 pill 이 클릭 불가(확장 상태가 없는 surface) — chevron 도 숨김. */
   onExpand?: () => void;
   title?: string;
-  /** 'eyebrow' 상태는 보통 순문자열, 'census' 상태는 개념/관계 숫자
-   *  세그먼트가 <b> 각인(engraved-numeral 토큰)으로 볼드 처리된 ReactNode
-   *  (next-intl `t.rich` 결과) — feat/chrome-finish 세그먼트 각인. */
+  /** 상태 eyebrow 문구(breadcrumb 성격) — 보통 순문자열. R6 이전 census
+   *  변형(개념/관계 숫자 각인)은 제거됐다(census 는 INDEX 패널로 이관). */
   subtitle?: ReactNode;
-  /** subtitle 뒤에 붙는 "성장 신호" 조각(예: " · 이번 주 +1") — census 상태에서만
-   *  넘긴다. amber 는 허브 노드 전용(design.md)이라 여기선 인디고로 강조. */
-  censusGrowthText?: string;
-  /** 'eyebrow'(기본) = 대문자 변환 + 넓은 자간(breadcrumb 성격의 상태 문구).
-   *  'census' = 소문자 그대로 + mono(개념/관계 실측 통계 한 줄, 시안의
-   *  "타이틀+census 각인"). 상태에 따라 subtitle 의 의미가 달라서 분리했다 —
-   *  대문자 변환을 없애면 영문 로케일의 eyebrow 문구(SELECTED CONCEPT 등)가
-   *  같이 바뀌므로 census 상태에서만 켠다. */
-  subtitleVariant?: "eyebrow" | "census";
   icon?: string | null;
   ariaLabel?: string;
   titleText?: string;
@@ -36,13 +26,6 @@ interface Props {
   onWorkspaceMapClick?: () => void;
   /** Active inspector 상태에서는 위치 breadcrumb 역할만 하도록 밀도를 낮춘다. */
   compact?: boolean;
-  /**
-   * vault 미선택 정적(static) 모드 — 지도가 이 프로젝트 자신의 dogfood
-   * 샘플을 그리고 있음을 브랜드 pill 에서도 명시한다(root-first-open 판정
-   * §3 — 필 + INDEX 캡션 두 곳에서 SAMPLE 명시). 앰버는 신호톤 재사용,
-   * 새 채색 시스템 아님.
-   */
-  sampleBadge?: boolean;
 }
 
 export function HeroCollapsed({
@@ -50,15 +33,12 @@ export function HeroCollapsed({
   onExpand,
   title,
   subtitle,
-  censusGrowthText,
-  subtitleVariant = "eyebrow",
   icon,
   ariaLabel,
   titleText,
   workspaceMapHref,
   onWorkspaceMapClick,
   compact = false,
-  sampleBadge = false,
 }: Props) {
   const t = useTranslations("searchWidgets.hero");
   const resolvedTitle = title ?? t("defaultTitleTopology");
@@ -147,25 +127,13 @@ export function HeroCollapsed({
         </span>
         <span
           className={cn(
-            "font-mono text-[color:var(--color-text-quaternary)]",
-            subtitleVariant === "eyebrow" && "uppercase tracking-[0.08em]",
+            "font-mono uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]",
             compact ? "sr-only" : "text-[length:var(--topology-chrome-eyebrow-size)]",
           )}
         >
           {resolvedSubtitle}
-          {censusGrowthText ? (
-            <span className="text-[color:var(--color-indigo-accent)]">{censusGrowthText}</span>
-          ) : null}
         </span>
       </span>
-      {sampleBadge && !compact ? (
-        <span
-          data-testid="hero-sample-badge"
-          className="shrink-0 rounded-[4px] border border-[color:var(--color-amber-source-a40)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-status-warning)]"
-        >
-          {t("sampleBadge")}
-        </span>
-      ) : null}
       {onExpand && !compact ? (
         <ChevronsRight
           className="size-[var(--topology-chrome-icon-size-sm)] text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-secondary)]"

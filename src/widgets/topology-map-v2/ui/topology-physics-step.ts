@@ -11,6 +11,7 @@
 import { computePanBounds, stepCamera, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { computeAltitudeBand, computeFarT } from "../model/altitude";
 import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis } from "../model/focus-state";
+import { updateParticles } from "../render/edge-fireflies";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom } from "../model/tier-visibility";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "./topology-camera-math";
@@ -232,16 +233,16 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     );
   }
 
-  // Powered subgraph carries more current: an edge incident to the focused node
-  // advances its comet-tail at the accelerated ego speed, everything else at the
-  // ambient base speed (`resolveEdgePulseSpeed`, lead spec §2).
-  for (const edge of world.edges) {
-    if (edge.kind !== "depends") continue;
+  // R6 상시 혜성 — depends 엣지의 코멧 위상을 항상 전진시킨다(`updateParticles`,
+  // 순수 모델 `render/edge-fireflies.ts`). ambient(edgePulseSpeed)로 포커스와
+  // 무관하게 흐르되, 포커스 서브그래프에 물린 엣지는 "전류가 더 흐른다"고
+  // 가속(edgePulseSpeedEgo, `resolveEdgePulseSpeed`, lead spec §2). reduced-motion
+  // 이면 updateParticles 가 전진을 건너뛰어(정지) 유휴 게이트가 성립한다.
+  updateParticles(world.edges, dt, reducedMotion, (edge) => {
     const touchesFocused =
       focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
-    const speed = resolveEdgePulseSpeed(touchesFocused, focusedNodeId, tokens.edgePulseSpeed, tokens.edgePulseSpeedEgo);
-    edge.t = (edge.t + dt * speed) % 1;
-  }
+    return resolveEdgePulseSpeed(touchesFocused, focusedNodeId, tokens.edgePulseSpeed, tokens.edgePulseSpeedEgo);
+  });
 
   return { camera: nextCamera, farT, zoomRatio };
 }
