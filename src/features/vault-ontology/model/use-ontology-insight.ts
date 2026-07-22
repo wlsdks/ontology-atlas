@@ -35,6 +35,7 @@ export function derivationToInsight(
   const nodes: KnowledgeGraphNode[] = d.nodes.map((stub) => ({
     id: stub.id,
     title: stub.title,
+    display: stub.display,
     kind: stub.kind,
     projectIds: [],
     // canonical 노드는 sourceSlug = 자기 자신 doc.slug, 합성 노드 (참조만 받고

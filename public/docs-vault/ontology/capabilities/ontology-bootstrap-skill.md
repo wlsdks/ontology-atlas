@@ -2,6 +2,7 @@
 slug: capabilities/ontology-bootstrap-skill
 kind: capability
 title: Ontology-Bootstrap Skill (.claude/skills/ontology-bootstrap)
+display: Ontology-Bootstrap Skill
 domain: ai-agent-partner
 elements: [.claude/skills/ontology-bootstrap/SKILL.md]
 ---

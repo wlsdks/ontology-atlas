@@ -2,6 +2,7 @@
 slug: capabilities/session-start-ontology-context
 kind: capability
 title: SessionStart Ontology Context Injection (.claude/hooks/inject-ontology-summary.sh)
+display: SessionStart Ontology Context Injection
 domain: ai-agent-partner
 elements: [.claude/hooks/inject-ontology-summary.sh, .codex/hooks/inject-ontology-summary.sh]
 dependencies: [capabilities/cli-developer-entry]

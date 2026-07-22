@@ -72,7 +72,10 @@ export function buildProjectDomainComposition(
         capabilityCount: row.capabilityCount,
         elementCount: row.elementCount,
         total: row.total,
-        topCapabilities: capabilities.slice(0, topCapabilityLimit).map((cap) => cap.title),
+        // 과제 ⑩ — top capability 이름도 표시용 짧은 제목.
+        topCapabilities: capabilities
+          .slice(0, topCapabilityLimit)
+          .map((cap) => cap.display ?? cap.title),
         moreCapabilityCount: Math.max(0, row.capabilityCount - topCapabilityLimit),
       };
     });

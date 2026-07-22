@@ -168,7 +168,7 @@ export function TopologyIndexTreeRow({
         <TopologyV2KindGlyph kind={node.kind} size={13} className="justify-self-center" />
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-1.5">
-            <span className="min-w-0 flex-1 truncate">{node.title}</span>
+            <span className="min-w-0 flex-1 truncate">{node.display ?? node.title}</span>
             {agentAttributed && labels.agentBadge ? (
               <span
                 data-testid="topology-index-agent-badge"

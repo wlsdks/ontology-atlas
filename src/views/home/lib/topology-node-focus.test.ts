@@ -68,6 +68,7 @@ describe("buildTopologyNodeFocus", () => {
     expect(buildTopologyNodeFocus(selected, model)).toEqual({
       id: "capabilities/mcp-server",
       title: "MCP Server",
+      displayTitle: "MCP Server",
       kind: "capability",
       summary: "AI agent surface.",
       sourceSlug: "capabilities/mcp-server",
@@ -113,6 +114,21 @@ describe("buildTopologyNodeFocus", () => {
       },
       hiddenConnectionCount: 0,
     });
+  });
+
+  it("과제 ⑩ — node.display 가 있으면 displayTitle 은 그것, title 은 원본 그대로", () => {
+    const selected = node("capabilities/cli-developer-entry", "capability", [
+      "capabilities/cli-developer-entry",
+    ], {
+      title: "CLI Developer Entry (49 commands — vault + MCP verify + ...)",
+      display: "CLI Developer Entry",
+    });
+    const model = buildTopologyOntologyDrawerModel(selected, [selected], []);
+    const focus = buildTopologyNodeFocus(selected, model);
+    expect(focus.title).toBe(
+      "CLI Developer Entry (49 commands — vault + MCP verify + ...)",
+    );
+    expect(focus.displayTitle).toBe("CLI Developer Entry");
   });
 
   it("caps the connection list at the drawer preview limit and reports the hidden remainder", () => {

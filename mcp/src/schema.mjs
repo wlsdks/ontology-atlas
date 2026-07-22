@@ -33,7 +33,12 @@ export const VAULT_KIND_SCHEMA = {
   project: {
     folder: '',
     arrayDefaults: ['domains', 'capabilities', 'elements'],
-    optional: ['dependencies', 'relates', 'description', 'status'],
+    // `display` — 과제 ⑩ (표시 이름 레이어). title 이 길 때 (괄호 부연
+    // 설명 포함) 토폴로지 라벨/INDEX/팝오버/상세 헤더가 그리는 짧은 이름.
+    // 없으면 렌더러가 title 의 " (" 앞부분으로 자동 파생 (`deriveDisplayTitle`,
+    // `src/shared/lib/derive-display-title.ts`) — 대부분의 title 은 이 키를
+    // 안 써도 된다. 검색/매칭은 항상 title 전체로 계속된다.
+    optional: ['dependencies', 'relates', 'description', 'status', 'display'],
     requiredExtras: [],
     // 사용자 가독성을 위한 권장 키 순서. buildFrontmatter 가 이 순서로
     // 정렬 후 미정의 키 (외부 import 의 custom_field 등) 는 뒤에 append.
@@ -41,6 +46,7 @@ export const VAULT_KIND_SCHEMA = {
       'slug',
       'kind',
       'title',
+      'display',
       'description',
       'status',
       'dependencies',
@@ -59,12 +65,13 @@ export const VAULT_KIND_SCHEMA = {
   domain: {
     folder: 'domains/',
     arrayDefaults: ['capabilities'],
-    optional: ['depends_on', 'relates', 'description'],
+    optional: ['depends_on', 'relates', 'description', 'display'],
     requiredExtras: [],
     preferredOrder: [
       'slug',
       'kind',
       'title',
+      'display',
       'description',
       'depends_on',
       'capabilities',
@@ -77,7 +84,7 @@ export const VAULT_KIND_SCHEMA = {
   capability: {
     folder: 'capabilities/',
     arrayDefaults: ['elements'],
-    optional: ['depends_on', 'relates', 'description'],
+    optional: ['depends_on', 'relates', 'description', 'display'],
     // `domain` 은 트리 위계의 부모 — 비어 있으면 capability 가 orphan 으로
     // 떠다니며 사용자 인사이트에 분포 노이즈를 만든다. validator 가 경고.
     requiredExtras: ['domain'],
@@ -87,6 +94,7 @@ export const VAULT_KIND_SCHEMA = {
       'slug',
       'kind',
       'title',
+      'display',
       'description',
       'domain',
       'depends_on',
@@ -99,7 +107,7 @@ export const VAULT_KIND_SCHEMA = {
   element: {
     folder: 'elements/',
     arrayDefaults: [],
-    optional: ['path', 'depends_on', 'relates', 'description'],
+    optional: ['path', 'depends_on', 'relates', 'description', 'display'],
     // element 는 어느 domain 안의 어느 capability 가 쓰는 단위 — domain 누락 시
     // 트리에서 sink 로 떠다닌다.
     requiredExtras: ['domain'],
@@ -107,6 +115,7 @@ export const VAULT_KIND_SCHEMA = {
       'slug',
       'kind',
       'title',
+      'display',
       'description',
       'domain',
       'path',
@@ -119,9 +128,9 @@ export const VAULT_KIND_SCHEMA = {
   document: {
     folder: '',
     arrayDefaults: [],
-    optional: ['describes', 'relates'],
+    optional: ['describes', 'relates', 'display'],
     requiredExtras: [],
-    preferredOrder: ['slug', 'kind', 'title', 'describes', 'relates'],
+    preferredOrder: ['slug', 'kind', 'title', 'display', 'describes', 'relates'],
     bodyTemplate: (title) => `# ${title}\n`,
   },
 };

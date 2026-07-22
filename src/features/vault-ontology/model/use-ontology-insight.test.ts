@@ -9,6 +9,7 @@ describe('derivationToInsight', () => {
         {
           id: 'domain:views',
           title: 'Views',
+          display: 'Views',
           kind: 'domain',
           source: 'frontmatter',
           sourceSlug: 'domains/views',
@@ -16,6 +17,7 @@ describe('derivationToInsight', () => {
         {
           id: 'capability:topology-map',
           title: 'Topology Map',
+          display: 'Topology Map',
           kind: 'capability',
           source: 'frontmatter',
           sourceSlug: 'capabilities/topology-map',

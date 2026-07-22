@@ -474,6 +474,28 @@ later.
 `missing-expected-field` issue code so users see them in the workbench banner
 without breaking pre-existing vaults.
 
+### `display` — the optional short-name override (2026-07-23)
+
+Every kind also accepts an optional `display` field, right after `title` in
+`preferredOrder`. It exists for nodes whose real `title` carries a long
+parenthetical qualifier — e.g. `title: CLI Developer Entry (49 commands —
+vault + MCP verify + ...)`. The topology canvas label, INDEX panel row, node
+popover header, and full-detail header all render the *display name*, not
+the raw `title`:
+
+1. `display:` if set — takes precedence over everything.
+2. Otherwise the part of `title` before its first ` (` — most long titles
+   already follow "Short Name (long qualifier)", so this alone shortens them
+   with zero authoring effort.
+3. Otherwise `title` unchanged.
+
+This derivation (`deriveDisplayTitle`, `src/shared/lib/derive-display-title.ts`)
+is display-only — search and matching (`find_neighbors`, `matchOntologyNodes`,
+the in-app palette) always match against the full `title`, so shortening the
+label never narrows what a query can find. Most nodes never need to set
+`display` explicitly; add it only when the automatic paren-split still leaves
+a name too long or picks the wrong prefix.
+
 ### Element slug — two valid patterns
 
 `kind: element` allows two natural slug styles, each with different ergonomics:

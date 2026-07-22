@@ -42,6 +42,16 @@ export type ManualNodeKind = 'project' | 'domain' | 'capability' | 'element';
 export interface KnowledgeGraphNode {
   id: string;
   title: string;
+  /**
+   * 표시용 짧은 제목 — 과제 ⑩ (표시 이름 레이어). `deriveDisplayTitle` 로
+   * 파생 (frontmatter `display:` 필드 우선, 없으면 title 의 괄호 부연
+   * 설명 컷). 토폴로지 라벨 / INDEX 행 / 팝오버 / 상세 헤더 렌더 표면은
+   * `node.display ?? node.title` 로 읽는다. 검색/매칭(`matchOntologyNodes`
+   * 등)은 여전히 `title` 전체로 수행 — 이 필드는 렌더 전용이라 매칭 범위를
+   * 줄이지 않는다. optional 인 이유: `derivationToInsight` 를 거치지 않고
+   * 직접 만든 노드(테스트 픽스처, 빌더 등)와의 하위 호환.
+   */
+  display?: string;
   kind: string;
   projectIds: string[];
   summary?: string;

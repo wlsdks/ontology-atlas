@@ -1,3 +1,4 @@
+import { deriveDisplayTitle } from '@/shared/lib/derive-display-title';
 import type { VaultDoc, VaultManifest } from '../model/types';
 
 /**
@@ -29,6 +30,14 @@ export interface OntologyStubNode {
   /** `<kind>:<slug>` 또는 fallback `unknown:<slug>`. */
   id: string;
   title: string;
+  /**
+   * 표시용 짧은 제목 — 과제 ⑩. `deriveDisplayTitle` 로 계산 (frontmatter
+   * `display:` 필드 우선, 없으면 title 의 괄호 부연 설명 컷). 토폴로지
+   * 라벨 / INDEX 행 / 팝오버 / 상세 헤더는 이 필드를 렌더한다. 검색/매칭은
+   * 여전히 `title` 전체로 — 이 필드는 렌더 전용이라 매칭 범위를 줄이지
+   * 않는다.
+   */
+  display: string;
   kind: string;
   /** 어느 vault 문서 (slug) 에서 유래했는지 — evidence chain 의 시작점. */
   sourceSlug: string;
@@ -159,6 +168,7 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
   return {
     id,
     title,
+    display: deriveDisplayTitle(fm, title),
     kind: rawKind,
     sourceSlug: doc.slug,
     source: 'frontmatter',
@@ -210,6 +220,7 @@ function deriveOntologyFromVaultUncached(
           nodes.set(domainId, {
             id: domainId,
             title: folderRef?.kind === 'domain' ? folderRef.title : fm.domain.trim(),
+            display: deriveDisplayTitle(undefined, folderRef?.kind === 'domain' ? folderRef.title : fm.domain.trim()),
             kind: 'domain',
             sourceSlug: doc.slug,
             source: 'frontmatter',
@@ -243,6 +254,7 @@ function deriveOntologyFromVaultUncached(
         nodes.set(domId, {
           id: domId,
           title: folderRef?.kind === 'domain' ? folderRef.title : dom,
+          display: deriveDisplayTitle(undefined, folderRef?.kind === 'domain' ? folderRef.title : dom),
           kind: 'domain',
           sourceSlug: doc.slug,
           source: 'frontmatter',
@@ -270,6 +282,7 @@ function deriveOntologyFromVaultUncached(
         nodes.set(capId, {
           id: capId,
           title: folderRef?.kind === 'capability' ? folderRef.title : cap,
+          display: deriveDisplayTitle(undefined, folderRef?.kind === 'capability' ? folderRef.title : cap),
           kind: 'capability',
           sourceSlug: doc.slug,
           source: 'frontmatter',
@@ -297,6 +310,7 @@ function deriveOntologyFromVaultUncached(
         nodes.set(elId, {
           id: elId,
           title: folderRef?.kind === 'element' ? folderRef.title : el,
+          display: deriveDisplayTitle(undefined, folderRef?.kind === 'element' ? folderRef.title : el),
           kind: 'element',
           sourceSlug: doc.slug,
           source: 'frontmatter',
@@ -326,6 +340,7 @@ function deriveOntologyFromVaultUncached(
         nodes.set(containedId, {
           id: containedId,
           title: folderRef?.title ?? contained,
+          display: deriveDisplayTitle(undefined, folderRef?.title ?? contained),
           kind: folderRef?.kind ?? 'unknown',
           sourceSlug: doc.slug,
           source: 'frontmatter',
@@ -353,6 +368,7 @@ function deriveOntologyFromVaultUncached(
         nodes.set(relId, {
           id: relId,
           title: rel,
+          display: deriveDisplayTitle(undefined, rel),
           kind: 'unknown',
           sourceSlug: doc.slug,
           source: 'frontmatter',
@@ -381,6 +397,7 @@ function deriveOntologyFromVaultUncached(
         nodes.set(depId, {
           id: depId,
           title: folderRef?.title ?? dep,
+          display: deriveDisplayTitle(undefined, folderRef?.title ?? dep),
           kind: folderRef?.kind ?? docNode.kind,
           sourceSlug: doc.slug,
           source: 'frontmatter',

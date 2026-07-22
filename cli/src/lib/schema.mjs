@@ -18,12 +18,14 @@ export const VAULT_KIND_SCHEMA = {
   project: {
     folder: '',
     arrayDefaults: ['domains', 'capabilities', 'elements'],
-    optional: ['dependencies', 'relates', 'description', 'status'],
+    // `display` — 과제 ⑩ (표시 이름 레이어), mirror `mcp/src/schema.mjs`.
+    optional: ['dependencies', 'relates', 'description', 'status', 'display'],
     requiredExtras: [],
     preferredOrder: [
       'slug',
       'kind',
       'title',
+      'display',
       'description',
       'status',
       'dependencies',
@@ -42,12 +44,13 @@ export const VAULT_KIND_SCHEMA = {
   domain: {
     folder: 'domains/',
     arrayDefaults: ['capabilities'],
-    optional: ['depends_on', 'relates', 'description'],
+    optional: ['depends_on', 'relates', 'description', 'display'],
     requiredExtras: [],
     preferredOrder: [
       'slug',
       'kind',
       'title',
+      'display',
       'description',
       'depends_on',
       'capabilities',
@@ -60,12 +63,13 @@ export const VAULT_KIND_SCHEMA = {
   capability: {
     folder: 'capabilities/',
     arrayDefaults: ['elements'],
-    optional: ['depends_on', 'relates', 'description'],
+    optional: ['depends_on', 'relates', 'description', 'display'],
     requiredExtras: ['domain'],
     preferredOrder: [
       'slug',
       'kind',
       'title',
+      'display',
       'description',
       'domain',
       'depends_on',
@@ -78,12 +82,13 @@ export const VAULT_KIND_SCHEMA = {
   element: {
     folder: 'elements/',
     arrayDefaults: [],
-    optional: ['path', 'depends_on', 'relates', 'description'],
+    optional: ['path', 'depends_on', 'relates', 'description', 'display'],
     requiredExtras: ['domain'],
     preferredOrder: [
       'slug',
       'kind',
       'title',
+      'display',
       'description',
       'domain',
       'path',
@@ -96,9 +101,9 @@ export const VAULT_KIND_SCHEMA = {
   document: {
     folder: '',
     arrayDefaults: [],
-    optional: ['describes', 'relates'],
+    optional: ['describes', 'relates', 'display'],
     requiredExtras: [],
-    preferredOrder: ['slug', 'kind', 'title', 'describes', 'relates'],
+    preferredOrder: ['slug', 'kind', 'title', 'display', 'describes', 'relates'],
     bodyTemplate: (title) => `# ${title}\n`,
   },
 };

@@ -121,6 +121,27 @@ export const BUILD_FM_CASES = [
       title: 'Decision 1',
     },
   },
+  {
+    // 과제 ⑩ (표시 이름 레이어) — `display` 는 optional 이라 자동 emit 되지
+    // 않지만, 명시적으로 넘기면 preferredOrder 대로 title 바로 뒤에 놓여
+    // 그대로 보존된다 (normalize 시 사라지거나 이동하지 않음).
+    name: 'capability — display 필드 명시 시 title 바로 뒤 순서로 보존',
+    input: {
+      slug: 'capabilities/cli-developer-entry',
+      kind: 'capability',
+      title: 'CLI Developer Entry (49 commands — vault + MCP verify + ...)',
+      display: 'CLI Developer Entry',
+      domain: 'domains/cli',
+    },
+    expected: {
+      slug: 'capabilities/cli-developer-entry',
+      kind: 'capability',
+      title: 'CLI Developer Entry (49 commands — vault + MCP verify + ...)',
+      display: 'CLI Developer Entry',
+      domain: 'domains/cli',
+      elements: [],
+    },
+  },
 ];
 
 export const MISSING_FIELDS_CASES = [

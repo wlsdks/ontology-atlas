@@ -164,7 +164,8 @@ export function OntologyInsightsPage() {
     () =>
       hubRanking.slice(0, HUB_DISPLAY_LIMIT).map(({ node, degree }) => ({
         id: node.id,
-        title: node.title,
+        // 과제 ⑩ — 허브 랭킹 표시용 짧은 제목.
+        title: node.display ?? node.title,
         kind: node.kind,
         degree,
         thumbnail: buildHubEgoThumbnail(node.id, nodes, edges),
