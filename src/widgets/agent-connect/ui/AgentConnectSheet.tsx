@@ -52,7 +52,7 @@ function CopyBlock({ label, value, testId }: { label: string; value: string; tes
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+        <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
           {label}
         </span>
         <button
@@ -64,13 +64,13 @@ function CopyBlock({ label, value, testId }: { label: string; value: string; tes
               window.setTimeout(() => setCopied(false), 1600);
             }
           }}
-          className="inline-flex items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+          className="inline-flex items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
         >
           {copied ? <Check size={10} aria-hidden /> : <Copy size={10} aria-hidden />}
           {copied ? "복사됨" : "복사"}
         </button>
       </div>
-      <pre className="max-h-36 overflow-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 font-mono text-[10.5px] leading-relaxed text-[color:var(--color-text-secondary)]">
+      <pre className="max-h-36 overflow-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 font-mono text-label leading-relaxed text-[color:var(--color-text-secondary)]">
         {value}
       </pre>
     </div>
@@ -140,11 +140,11 @@ export function AgentConnectSheet({
           >
             <header className="flex shrink-0 items-center justify-between border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div>
-                <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+                <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
                   <Cable size={11} aria-hidden />
                   {t("title")}
                 </p>
-                <p className="mt-1 text-[13px] text-[color:var(--color-text-secondary)]">{t("subtitle")}</p>
+                <p className="mt-1 text-body text-[color:var(--color-text-secondary)]">{t("subtitle")}</p>
               </div>
               <button
                 type="button"
@@ -161,7 +161,7 @@ export function AgentConnectSheet({
               {/* 연결 상태 — heartbeat 파일 기반 (조용한 수집 0: 에이전트가
                   스스로 남긴 로컬 파일을 읽을 뿐이다) */}
               <section aria-label={t("statusLabel")} data-testid="agent-connect-status">
-                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t("statusLabel")}
                 </p>
                 <div className="mt-1.5 flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
@@ -177,7 +177,7 @@ export function AgentConnectSheet({
                             : "var(--color-text-quaternary)",
                     }}
                   />
-                  <p className="min-w-0 flex-1 text-[12.5px] leading-relaxed text-[color:var(--color-text-secondary)]">
+                  <p className="min-w-0 flex-1 text-body leading-relaxed text-[color:var(--color-text-secondary)]">
                     {status.kind === "connected"
                       ? status.focusTitle
                         ? t("statusConnectedFocus", {
@@ -195,17 +195,17 @@ export function AgentConnectSheet({
 
               {/* 등록 스니펫 */}
               <section aria-label={t("registerLabel")} className="flex flex-col gap-3">
-                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t("registerLabel")}
                 </p>
                 {snippets.needsManualPath ? (
-                  <p className="text-[11.5px] leading-relaxed text-[color:var(--color-text-tertiary)]">
+                  <p className="text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
                     {t("manualPathHint")}
                   </p>
                 ) : null}
                 <CopyBlock label={t("claudeCode")} value={snippets.mcpJson} testId="agent-connect-copy-mcp" />
                 <CopyBlock label={t("codex")} value={snippets.codexCommand} testId="agent-connect-copy-codex" />
-                <p className="text-[11px] leading-relaxed text-[color:var(--color-text-quaternary)]">
+                <p className="text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
                   {t("genericHint")}
                 </p>
                 {onWriteConfigs ? (
@@ -213,7 +213,7 @@ export function AgentConnectSheet({
                     type="button"
                     onClick={onWriteConfigs}
                     data-testid="agent-connect-write-configs"
-                    className="inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-[11.5px] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)]"
+                    className="inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)]"
                   >
                     {t("writeConfigs")}
                   </button>
@@ -222,13 +222,13 @@ export function AgentConnectSheet({
 
               {/* 이해받음의 순간 — 에이전트가 내 지도를 되말한다 */}
               <section aria-label={t("previewLabel")} className="flex flex-col gap-2">
-                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t("previewLabel")}
                 </p>
                 {previewDomains.length > 0 ? (
                   <p
                     data-testid="agent-connect-preview"
-                    className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5 text-[12.5px] leading-relaxed text-[color:var(--color-text-secondary)]"
+                    className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5 text-body leading-relaxed text-[color:var(--color-text-secondary)]"
                   >
                     {t("previewSentence", { domains: domainsLabel })}
                   </p>
@@ -242,7 +242,7 @@ export function AgentConnectSheet({
                       window.setTimeout(() => setHandoffCopied(false), 1600);
                     }
                   }}
-                  className="inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-3 text-[11.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {handoffCopied ? <Check size={11} aria-hidden /> : <Copy size={11} aria-hidden />}
                   {handoffCopied ? t("handoffCopied") : t("copyHandoff")}

@@ -58,7 +58,7 @@ export interface DocsSidebarBodyProps {
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <h3 className="flex-none px-3 pb-1.5 pt-3 font-mono text-[9.5px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+    <h3 className="flex-none px-3 pb-1.5 pt-3 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
       {children}
     </h3>
   );
@@ -138,10 +138,10 @@ export function DocsSidebarBody({
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex flex-none items-center justify-between gap-2 border-b border-[color:var(--color-overlay-2)] px-3 py-2.5">
         <div className="min-w-0">
-          <h2 className="truncate text-[12px] font-medium text-[color:var(--color-text-primary)]">
+          <h2 className="truncate text-body font-medium text-[color:var(--color-text-primary)]">
             {t("treeHeader")}
           </h2>
-          <p className="mt-0.5 truncate text-[10.5px] text-[color:var(--color-text-quaternary)]">
+          <p className="mt-0.5 truncate text-label text-[color:var(--color-text-quaternary)]">
             {normalizedTreeQuery
               ? t("treeSearchCount", { count: queryMatchCount })
               : activeTag
@@ -151,7 +151,7 @@ export function DocsSidebarBody({
         </div>
         <span
           data-token="engraved-numeral"
-          className="flex-none font-mono text-[13px] tabular-nums text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+          className="flex-none font-mono text-body tabular-nums text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
         >
           {manifest.docs.length}
         </span>
@@ -196,10 +196,10 @@ export function DocsSidebarBody({
                   : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
               }`}
             >
-              <span className="block truncate text-[11.5px] font-medium">
+              <span className="block truncate text-label font-medium">
                 {t(`collection.${option}.label`)}
               </span>
-              <span className="mt-0.5 block truncate text-[10px] text-[color:var(--color-text-quaternary)]">
+              <span className="mt-0.5 block truncate text-caption text-[color:var(--color-text-quaternary)]">
                 {t(`collection.${option}.count`, {
                   count: collectionCounts[option],
                 })}
@@ -215,7 +215,7 @@ export function DocsSidebarBody({
           value={treeQuery}
           onChange={(event) => setTreeQuery(event.target.value)}
           placeholder={t("searchPlaceholder")}
-          className="min-w-0 flex-1 bg-transparent text-[12px] text-[color:var(--color-text-secondary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent text-body text-[color:var(--color-text-secondary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
           type="text"
           autoComplete="off"
         />
@@ -231,7 +231,7 @@ export function DocsSidebarBody({
         ) : null}
       </label>
       {(activeTag || normalizedTreeQuery) ? (
-        <div className="mx-3 mt-2 flex flex-none items-center justify-between gap-2 rounded-sm border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] px-2 py-1 text-[10.5px] text-[color:var(--color-indigo-pale-a90)]">
+        <div className="mx-3 mt-2 flex flex-none items-center justify-between gap-2 rounded-sm border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] px-2 py-1 text-label text-[color:var(--color-indigo-pale-a90)]">
           <span className="truncate">
             {activeTag ? t("activeTagSummary", { tag: activeTag }) : t("treeSearchCount", { count: queryMatchCount })}
           </span>
@@ -262,7 +262,7 @@ export function DocsSidebarBody({
             className="flex w-full items-center gap-1.5 px-3 pb-1.5 pt-3 text-left transition-colors hover:text-[color:var(--color-text-secondary)]"
           >
             <Clock size={10} className="flex-none text-[color:var(--color-text-quaternary)]" aria-hidden />
-            <span className="flex-1 font-mono text-[9.5px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+            <span className="flex-1 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
               {t("recentlyChangedHeader", { count: recentlyChangedDocs.length })}
             </span>
             <ChevronDown
@@ -283,7 +283,7 @@ export function DocsSidebarBody({
                     <button
                       type="button"
                       onClick={() => onSelect(doc.slug)}
-                      className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-[12px] transition-colors ${
+                      className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-body transition-colors ${
                         active
                           ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
                           : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
@@ -318,7 +318,7 @@ export function DocsSidebarBody({
                       <button
                         type="button"
                         onClick={() => onSelect(slug)}
-                        className={`flex min-w-0 flex-1 items-center gap-2 rounded-sm px-2 py-1 pr-7 text-left text-[12px] transition-colors ${
+                        className={`flex min-w-0 flex-1 items-center gap-2 rounded-sm px-2 py-1 pr-7 text-left text-body transition-colors ${
                           active
                             ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
                             : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
@@ -379,7 +379,7 @@ export function DocsSidebarBody({
                     <button
                       type="button"
                       onClick={() => onSelect(slug)}
-                      className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-[12px] transition-colors ${
+                      className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-body transition-colors ${
                         active
                           ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
                           : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
@@ -406,7 +406,7 @@ export function DocsSidebarBody({
             className="group"
             open={activeTag !== null ? true : undefined}
           >
-            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-[11px] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]">
               <Hash size={11} aria-hidden />
               <span className="font-medium">{t("tagsHeader", { count: tagEntries.length })}</span>
               <ChevronDown
@@ -424,7 +424,7 @@ export function DocsSidebarBody({
                     type="button"
                     onClick={() => onTagSelect(active ? null : tag)}
                     aria-pressed={active}
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] transition-colors ${
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-label transition-colors ${
                       active
                         ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-pale-a95)]"
                         : "bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-text-primary)]"

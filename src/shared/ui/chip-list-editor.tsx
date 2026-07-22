@@ -100,7 +100,7 @@ export function ChipListEditor({
     return (
       <p
         className={cn(
-          "text-[12px] text-[color:var(--color-text-quaternary)]",
+          "text-body text-[color:var(--color-text-quaternary)]",
           className,
         )}
       >

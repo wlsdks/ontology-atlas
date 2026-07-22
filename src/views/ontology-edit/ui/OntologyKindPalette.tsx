@@ -82,7 +82,7 @@ export function OntologyKindPalette({
                 <span
                   aria-hidden="true"
                   data-palette-add-badge={entry.kind}
-                  className="pointer-events-none absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[color:var(--color-panel)] bg-[color:var(--color-indigo-brand)] text-[9px] font-bold leading-none text-[color:var(--color-text-primary)]"
+                  className="pointer-events-none absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[color:var(--color-panel)] bg-[color:var(--color-indigo-brand)] text-caption font-bold leading-none text-[color:var(--color-text-primary)]"
                 >
                   +
                 </span>
@@ -101,10 +101,10 @@ export function OntologyKindPalette({
     >
       <header className="flex items-center justify-between gap-2 px-1">
         <div className="flex-1">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
+          <p className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
             {t("eyebrow")}
           </p>
-          <p className="mt-0.5 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+          <p className="mt-0.5 text-label leading-4 text-[color:var(--color-text-quaternary)]">
             {t("subtitle")}
           </p>
         </div>
@@ -129,23 +129,23 @@ export function OntologyKindPalette({
               <button
                 type="button"
                 onClick={() => onAddNode(entry.kind)}
-                className="group flex w-full items-center gap-2.5 rounded-[10px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-3 py-2.5 text-left transition-colors hover:border-[color:var(--color-border-strong)]"
+                className="group flex w-full items-center gap-2.5 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-3 py-2.5 text-left transition-colors hover:border-[color:var(--color-border-strong)]"
                 aria-label={t("addAriaLabel", { label, hint })}
               >
                 <TopologyV2KindGlyph kind={entry.kind} size={18} />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="flex items-center justify-between gap-2">
-                    <span className="text-[13px] font-medium text-[color:var(--color-text-primary)]">
+                    <span className="text-body font-medium text-[color:var(--color-text-primary)]">
                       {label}
                     </span>
                     <kbd
                       aria-hidden
-                      className="shrink-0 rounded border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-1.5 py-px font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-tertiary)]"
+                      className="shrink-0 rounded border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-1.5 py-px font-mono text-caption uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-tertiary)]"
                     >
                       {entry.shortcut}
                     </kbd>
                   </span>
-                  <span className="font-mono text-[10px] leading-4 tracking-[0.01em] text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-tertiary)]">
+                  <span className="font-mono text-caption leading-4 tracking-[0.01em] text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-tertiary)]">
                     {hint}
                   </span>
                 </span>
@@ -155,7 +155,7 @@ export function OntologyKindPalette({
         })}
       </ul>
       <footer className="mt-auto border-t border-[color:var(--color-divider)] px-1 pt-3">
-        <p className="text-[11px] leading-[1.65] text-[color:var(--color-text-quaternary)]">
+        <p className="text-label leading-[1.65] text-[color:var(--color-text-quaternary)]">
           {t("footerHint")}
         </p>
       </footer>

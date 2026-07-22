@@ -40,7 +40,7 @@ export function DocsVaultBacklinks({
     return (
       <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
         {hideHeading ? null : (
-          <span className="flex-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <span className="flex-none font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('heading', { count: entries.length })}
           </span>
         )}
@@ -54,7 +54,7 @@ export function DocsVaultBacklinks({
               key={entry.fromSlug}
               type="button"
               onClick={() => onNavigate(doc.slug)}
-              className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
             >
               {kindStr && isTopologyV2RenderableKind(kindStr) ? (
                 <TopologyV2KindGlyph kind={kindStr} size={11} />
@@ -71,11 +71,11 @@ export function DocsVaultBacklinks({
   return (
     <section>
       {hideHeading ? null : (
-        <h3 className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        <h3 className="mb-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {t('heading', { count: entries.length })}
         </h3>
       )}
-      <ul className="flex flex-col gap-1.5 text-[12px]">
+      <ul className="flex flex-col gap-1.5 text-body">
         {entries.map((entry) => (
           <BacklinkItem
             key={entry.fromSlug}
@@ -130,7 +130,7 @@ function BacklinkItem({
       </div>
       {open ? (
         <p
-          className="mt-1 whitespace-normal rounded-sm bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11px] leading-[1.55] text-[color:var(--color-text-quaternary)]"
+          className="mt-1 whitespace-normal rounded-sm bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label leading-[1.55] text-[color:var(--color-text-quaternary)]"
           dangerouslySetInnerHTML={{
             __html: formatContext(entry.context),
           }}

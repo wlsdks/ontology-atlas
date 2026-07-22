@@ -219,10 +219,10 @@ export function ShortcutSheet({ open, onClose }: Props) {
           >
             <header className="flex shrink-0 items-center justify-between border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+                <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
                   {t("title")}
                 </p>
-                <p className="mt-1 text-[13px] text-[color:var(--color-text-secondary)]">
+                <p className="mt-1 text-body text-[color:var(--color-text-secondary)]">
                   {t("subtitle")}
                 </p>
                 <p id="shortcut-sheet-help" className="sr-only">
@@ -255,7 +255,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
                         : "px-5 py-4"
                     }
                   >
-                    <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                    <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                       {t(`sections.${section.titleKey}`)}
                     </p>
                     <dl className="mt-3 space-y-2.5">
@@ -267,14 +267,14 @@ export function ShortcutSheet({ open, onClose }: Props) {
                           key={`${section.titleKey}-${rowIdx}-${row.labelKey}`}
                           className="flex items-center justify-between gap-4"
                         >
-                          <dt className="text-[13px] text-[color:var(--color-text-secondary)]">
+                          <dt className="text-body text-[color:var(--color-text-secondary)]">
                             {t(`rows.${row.labelKey}`)}
                           </dt>
                           <dd className="flex shrink-0 items-center gap-1">
                             {row.keys.map((key, i) => (
                               <kbd
                                 key={`${row.labelKey}-${i}`}
-                                className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-1.5 font-mono text-[11px] tabular-nums text-[color:var(--color-text-secondary)]"
+                                className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-1.5 font-mono text-label tabular-nums text-[color:var(--color-text-secondary)]"
                               >
                                 {typeof key === "string" ? key : t(`keys.${key.i18nKey}`)}
                               </kbd>
@@ -289,12 +289,12 @@ export function ShortcutSheet({ open, onClose }: Props) {
             </div>
 
             <footer className="shrink-0 border-t border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-5 py-3">
-              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                 {t("glossary.title")}
               </p>
               <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
                 {GLOSSARY_TERMS.map((term) => (
-                  <div key={term} className="flex items-baseline gap-1.5 text-[12px]">
+                  <div key={term} className="flex items-baseline gap-1.5 text-body">
                     <dt className="shrink-0 font-medium text-[color:var(--color-text-secondary)]">
                       {t(`glossary.${term}Term`)}
                     </dt>
@@ -304,7 +304,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
                   </div>
                 ))}
               </dl>
-              <p className="mt-2.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              <p className="mt-2.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                 <kbd className="rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 tabular-nums">
                   ?
                 </kbd>{" "}

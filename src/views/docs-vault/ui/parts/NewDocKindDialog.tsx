@@ -55,11 +55,11 @@ export function NewDocKindDialog({
       >
         <p
           id="new-doc-kind-dialog-title"
-          className="text-[13.5px] font-[650] text-[color:var(--color-text-primary)]"
+          className="text-body-lg font-[650] text-[color:var(--color-text-primary)]"
         >
           {t("title")}
         </p>
-        <p className="mt-1 text-[11.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+        <p className="mt-1 text-label leading-4 text-[color:var(--color-text-tertiary)]">
           {t("subtitle")}
         </p>
         <ul className="mt-3 grid grid-cols-2 gap-2">
@@ -71,7 +71,7 @@ export function NewDocKindDialog({
                 className="flex w-full items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 text-left transition-colors hover:border-[color:var(--color-border-strong)]"
               >
                 <TopologyV2KindGlyph kind={kind} size={16} />
-                <span className="text-[12px] text-[color:var(--color-text-secondary)]">
+                <span className="text-body text-[color:var(--color-text-secondary)]">
                   {kindLabel(kind)}
                 </span>
               </button>
@@ -81,7 +81,7 @@ export function NewDocKindDialog({
         <button
           type="button"
           onClick={onClose}
-          className="mt-3 text-[11px] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+          className="mt-3 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
         >
           {t("cancel")}
         </button>

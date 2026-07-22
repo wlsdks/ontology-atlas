@@ -192,7 +192,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
         className="inline-flex h-8 cursor-pointer list-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
       >
         <Settings size={14} aria-hidden />
-        <span className="hidden font-mono text-[10px] uppercase tracking-[0.08em] sm:inline">
+        <span className="hidden font-mono text-caption uppercase tracking-[0.08em] sm:inline">
           {t('settingsLabel')}
         </span>
       </summary>
@@ -215,7 +215,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           role="dialog"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="flex h-[calc(100dvh-1.5rem)] max-h-[48rem] w-full max-w-[64rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-[13px] shadow-[0_28px_90px_var(--color-shadow-a58)] sm:h-[calc(100dvh-3rem)]"
+          className="flex h-[calc(100dvh-1.5rem)] max-h-[48rem] w-full max-w-[64rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[0_28px_90px_var(--color-shadow-a58)] sm:h-[calc(100dvh-3rem)]"
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] p-4 pb-3">
@@ -228,7 +228,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 >
                   {t('title')}
                 </h2>
-                <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
                   {t('subtitle')}
                 </p>
               </div>
@@ -270,10 +270,10 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                         : "min-w-[7.25rem] rounded-md border border-transparent px-2.5 py-2 text-left text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] md:min-h-[4rem]"
                     }
                   >
-                    <span className="block font-mono text-[10px] uppercase tracking-[0.08em]">
+                    <span className="block font-mono text-caption uppercase tracking-[0.08em]">
                       {tab.label}
                     </span>
-                    <span className="mt-1 hidden text-[10px] leading-4 text-[color:var(--color-text-tertiary)] md:block">
+                    <span className="mt-1 hidden text-caption leading-4 text-[color:var(--color-text-tertiary)] md:block">
                       {tab.description}
                     </span>
                   </button>
@@ -291,7 +291,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               >
                 <h3
                   id={mcpTitleId}
-                  className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
+                  className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
                 >
                   {t('connectionStatusTitle')}
                 </h3>
@@ -300,29 +300,29 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                   data-testid="mcp-live-verdict-strip"
                 >
                   <div className="min-w-0 rounded-md border border-[color:var(--color-success-a20)] bg-[color:var(--color-success-a06)] p-2">
-                    <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-success-text-a95)]">
+                    <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-success-text-a95)]">
                       <Check size={11} aria-hidden />
                       {t('liveVerdictSetup')}
                     </p>
-                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                       {t('liveVerdictSetupMeta')}
                     </p>
                   </div>
                   <div className="min-w-0 rounded-md border border-[color:var(--color-amber-signal-a24)] bg-[color:var(--color-amber-signal-a07)] p-2">
-                    <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
+                    <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
                       <Terminal size={11} aria-hidden />
                       {t('liveVerdictSession')}
                     </p>
-                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                       {t('liveVerdictSessionMeta')}
                     </p>
                   </div>
                   <div className="min-w-0 rounded-md border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-line-a06)] p-2">
-                    <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                    <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
                       <Terminal size={11} aria-hidden />
                       {t('liveVerdictFallback')}
                     </p>
-                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                       {t('liveVerdictFallbackMeta')}
                     </p>
                   </div>
@@ -331,10 +331,10 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                   className="mt-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5"
                   data-testid="mcp-connection-state-ladder"
                 >
-                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
                     {t('stateLadderTitle')}
                   </p>
-                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                     {t('stateLadderBody')}
                   </p>
                   <div className="mt-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-5">
@@ -350,10 +350,10 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                           style={{ color: iconColor }}
                         />
                         <div className="min-w-0">
-                          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                          <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
                             {t(labelKey)}
                           </p>
-                          <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                          <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                             {t(bodyKey)}
                           </p>
                         </div>
@@ -366,10 +366,10 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                   <div className="flex items-start gap-2">
                     <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-success-text-a95)]" />
                     <div className="min-w-0">
-                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-success-text-a95)]">
+                      <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-success-text-a95)]">
                         {t('setupReadyTitle')}
                       </p>
-                      <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                         {t('setupReadyBody')}
                       </p>
                     </div>
@@ -379,10 +379,10 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                   <div className="flex items-start gap-2">
                     <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-amber-docs-a95)]" />
                     <div className="min-w-0">
-                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
+                      <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
                         {t('directProofTitle')}
                       </p>
-                      <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                         {t('directProofBody')}
                       </p>
                     </div>
@@ -392,10 +392,10 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                   <div className="flex items-start gap-2">
                     <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
                     <div className="min-w-0">
-                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                      <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
                         {t('fallbackProofTitle')}
                       </p>
-                      <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                         {t('fallbackProofBody')}
                       </p>
                     </div>
@@ -405,10 +405,10 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                   <div className="flex items-start gap-2">
                     <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-amber-docs-a95)]" />
                     <div className="min-w-0">
-                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
+                      <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
                         {t('staleCacheTitle')}
                       </p>
-                      <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                         {t('staleCacheBody')}
                       </p>
                     </div>
@@ -419,10 +419,10 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 className="mt-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5"
                 data-testid="mcp-proof-decision-order"
               >
-                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t('proofDecisionTitle')}
                 </p>
-                <ol className="mt-2 grid gap-1.5 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                <ol className="mt-2 grid gap-1.5 text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                   <li className="flex gap-2">
                     <span className="font-mono text-[color:var(--color-success-text-a95)]">1</span>
                     <span>{t('proofDecisionSetup')}</span>
@@ -454,7 +454,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           >
             <h3
               id={generalTitleId}
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
+              className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
             >
               {t('generalSettingsTitle')}
             </h3>
@@ -464,13 +464,13 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             >
               <Bot size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
               <span className="min-w-0">
-                <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                <span className="block font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t('agentTitle')}
                 </span>
-                <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                <span className="mt-1 block break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
                   {t('agentBody')}
                 </span>
-                <span className="mt-1 block font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
+                <span className="mt-1 block font-mono text-caption text-[color:var(--color-indigo-accent)]">
                   {t('agentCta')}
                 </span>
               </span>
@@ -494,13 +494,13 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             >
               <FolderOpen size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
               <span className="min-w-0">
-                <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                <span className="block font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t('vaultTitle')}
                 </span>
-                <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                <span className="mt-1 block break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
                   {vaultBody}
                 </span>
-                <span className="mt-1 block font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
+                <span className="mt-1 block font-mono text-caption text-[color:var(--color-indigo-accent)]">
                   {vaultCta}
                 </span>
               </span>
@@ -530,7 +530,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                   onReveal={handleRevealVaultPath}
                 />
                 {vaultRevealError ? (
-                  <p className="rounded-sm border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-2 py-1 text-[10.5px] leading-4 text-[color:var(--color-status-danger)]">
+                  <p className="rounded-sm border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-2 py-1 text-label leading-4 text-[color:var(--color-status-danger)]">
                     {t('vaultRevealError', { message: vaultRevealError })}
                   </p>
                 ) : null}
@@ -551,10 +551,10 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               <div className="flex min-w-0 items-start gap-2">
                 <Languages size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
                 <div className="min-w-0">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                     {t('languageTitle')}
                   </p>
-                  <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
                     {t('languageBody')}
                   </p>
                 </div>
@@ -593,10 +593,10 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               <div className="flex min-w-0 items-start gap-2">
                 <Terminal size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
                 <div className="min-w-0">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
                     {t('mcpProofTitle')}
                   </p>
-                  <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
                     {t('mcpProofBody')}
                   </p>
                 </div>
@@ -604,13 +604,13 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               <button
                 type="button"
                 onClick={() => void copy(mcpFirstCalls)}
-                className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-indigo-line-a32)] px-2 font-mono text-[9px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-indigo-line-a32)] px-2 font-mono text-caption text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
               >
                 {copyState === 'copied' ? <Check size={12} aria-hidden /> : <Copy size={12} aria-hidden />}
                 {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
               </button>
             </div>
-            <div className="mt-3 grid gap-2 text-[10px] leading-4 text-[color:var(--color-text-secondary)] sm:grid-cols-2">
+            <div className="mt-3 grid gap-2 text-caption leading-4 text-[color:var(--color-text-secondary)] sm:grid-cols-2">
               <div
                 data-testid="direct-mcp-proof"
                 className="rounded-lg border border-[color:var(--color-success-a26)] bg-[color:var(--color-success-a06)] p-2.5"
@@ -618,10 +618,10 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 <div className="flex items-start gap-2">
                   <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-success-text-a95)]" />
                   <div className="min-w-0">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-success-text-a95)]">
+                    <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-success-text-a95)]">
                       {t('mcpProofDirectLabel')}
                     </p>
-                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                       {t('mcpProofDirectBody')}
                     </p>
                   </div>
@@ -641,10 +641,10 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 <div className="flex items-start gap-2">
                   <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-amber-docs-a95)]" />
                   <div className="min-w-0">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
+                    <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
                       {t('mcpProofFallbackLabel')}
                     </p>
-                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                       {t('mcpProofFallbackBody')}
                     </p>
                   </div>
@@ -671,42 +671,42 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               className="mt-3 border-t border-[color:var(--color-border-soft)] pt-3"
               data-testid="mcp-client-proof-locations"
             >
-              <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+              <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
                 {t('clientProofTitle')}
               </p>
-              <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+              <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
                 {t('clientProofBody')}
               </p>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
                     {t('clientCodexTitle')}
                   </p>
-                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                     {t('clientCodexBody')}
                   </p>
                 </div>
                 <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
                     {t('clientClaudeTitle')}
                   </p>
-                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                     {t('clientClaudeBody')}
                   </p>
                 </div>
                 <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
                     {t('clientCursorVsCodeTitle')}
                   </p>
-                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                     {t('clientCursorVsCodeBody')}
                   </p>
                 </div>
                 <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
                     {t('clientInspectorTitle')}
                   </p>
-                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                     {t('clientInspectorBody')}
                   </p>
                 </div>

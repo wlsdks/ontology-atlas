@@ -26,13 +26,13 @@ export function BuilderDetailsDraftCallout({
           className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-indigo-accent)]"
         />
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+          <p className="truncate text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {t("detailsDraftStatusTitle", {
               nodes: draftNodes,
               edges: draftEdges,
             })}
           </p>
-          <p className="mt-0.5 hidden truncate text-[10px] leading-4 text-[color:var(--color-text-tertiary)] sm:block">
+          <p className="mt-0.5 hidden truncate text-caption leading-4 text-[color:var(--color-text-tertiary)] sm:block">
             {t("detailsDraftStatusBody")}
           </p>
         </div>
@@ -40,7 +40,7 @@ export function BuilderDetailsDraftCallout({
       <button
         type="button"
         onClick={onOpenWriteSummary}
-        className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a13)] px-2.5 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a52)] hover:bg-[color:var(--color-indigo-a20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+        className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a13)] px-2.5 text-caption font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a52)] hover:bg-[color:var(--color-indigo-a20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
       >
         {t("detailsDraftStatusAction")}
       </button>

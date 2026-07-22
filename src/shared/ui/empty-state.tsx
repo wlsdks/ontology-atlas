@@ -64,7 +64,7 @@ export function EmptyState({
       <p
         className={cn(
           'font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]',
-          size === 'compact' ? 'text-sm' : 'text-[15px]',
+          size === 'compact' ? 'text-sm' : 'text-title',
           // align=center 한 문장 패턴 — 본문 톤 (h1 무게 없이 secondary 색).
           align === 'center' && 'font-normal text-sm text-[color:var(--color-text-tertiary)]',
         )}

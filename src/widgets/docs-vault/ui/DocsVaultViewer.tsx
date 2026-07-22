@@ -287,7 +287,7 @@ export function DocsVaultViewer({
         return (
           <h2
             id={slug}
-            className="group relative mt-0 mb-6 text-[26px] font-semibold leading-tight text-[color:var(--color-text-primary)]"
+            className="group relative mt-0 mb-6 text-display font-semibold leading-tight text-[color:var(--color-text-primary)]"
             {...rest}
           >
             {highlightChildren(children, 'h1')}
@@ -300,7 +300,7 @@ export function DocsVaultViewer({
         return (
           <h2
             id={slug}
-            className="group relative mt-10 mb-3 text-[18px] font-semibold leading-tight text-[color:var(--color-text-primary)]"
+            className="group relative mt-10 mb-3 text-title font-semibold leading-tight text-[color:var(--color-text-primary)]"
             {...rest}
           >
             {highlightChildren(children, 'h2')}
@@ -313,7 +313,7 @@ export function DocsVaultViewer({
         return (
           <h3
             id={slug}
-            className="group relative mt-6 mb-2 text-[15px] font-semibold leading-tight text-[color:var(--color-text-primary)]"
+            className="group relative mt-6 mb-2 text-title font-semibold leading-tight text-[color:var(--color-text-primary)]"
             {...rest}
           >
             {highlightChildren(children, 'h3')}
@@ -324,7 +324,7 @@ export function DocsVaultViewer({
       p({ children, ...rest }) {
         return (
           <p
-            className="my-3 text-[14px] leading-[1.7] text-[color:var(--color-text-secondary)]"
+            className="my-3 text-body-lg leading-[1.7] text-[color:var(--color-text-secondary)]"
             {...rest}
           >
             {highlightChildren(children, 'p')}
@@ -334,7 +334,7 @@ export function DocsVaultViewer({
       ul(props) {
         return (
           <ul
-            className="my-3 list-disc pl-6 text-[14px] leading-[1.75] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
+            className="my-3 list-disc pl-6 text-body-lg leading-[1.75] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
             {...props}
           />
         );
@@ -342,7 +342,7 @@ export function DocsVaultViewer({
       ol(props) {
         return (
           <ol
-            className="my-3 list-decimal pl-6 text-[14px] leading-[1.75] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
+            className="my-3 list-decimal pl-6 text-body-lg leading-[1.75] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
             {...props}
           />
         );
@@ -359,7 +359,7 @@ export function DocsVaultViewer({
         if (!isBlock) {
           return (
             <code
-              className="rounded-sm bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-[11px] text-[color:var(--color-indigo-pale-a95)] md:text-[12px]"
+              className="rounded-sm bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-label text-[color:var(--color-indigo-pale-a95)] md:text-body"
               {...rest}
             >
               {children}
@@ -367,7 +367,7 @@ export function DocsVaultViewer({
           );
         }
         return (
-          <code className={`${className} font-mono text-[11px] md:text-[12.5px]`} {...rest}>
+          <code className={`${className} font-mono text-label md:text-body`} {...rest}>
             {children}
           </code>
         );
@@ -375,7 +375,7 @@ export function DocsVaultViewer({
       pre(props) {
         return (
           <pre
-            className="my-4 overflow-x-auto rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-surface-deep-a80)] p-3 font-mono text-[10.5px] leading-[1.55] text-[color:var(--color-indigo-pale-a92)] md:text-[12.5px]"
+            className="my-4 overflow-x-auto rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-surface-deep-a80)] p-3 font-mono text-label leading-[1.55] text-[color:var(--color-indigo-pale-a92)] md:text-body"
             {...props}
           />
         );
@@ -406,7 +406,7 @@ export function DocsVaultViewer({
         return (
           <div className="my-4 overflow-x-auto">
             <table
-              className="w-full border-collapse text-[13px] text-[color:var(--color-text-secondary)]"
+              className="w-full border-collapse text-body text-[color:var(--color-text-secondary)]"
               {...props}
             />
           </div>
@@ -479,10 +479,10 @@ export function DocsVaultViewer({
   if (error) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
-        <div className="text-[13px] text-[color:var(--color-text-tertiary)]">
+        <div className="text-body text-[color:var(--color-text-tertiary)]">
           {t('loadFailed')}
         </div>
-        <div className="font-mono text-[11px] text-[color:var(--color-text-quaternary)]">
+        <div className="font-mono text-label text-[color:var(--color-text-quaternary)]">
           {error}
         </div>
       </div>
@@ -619,13 +619,13 @@ function CalloutBlock({
       style={{ borderLeftColor: s.border, backgroundColor: s.bg }}
     >
       <div
-        className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold"
+        className="mb-1 flex items-center gap-1.5 text-body font-semibold"
         style={{ color: s.title }}
       >
         <span aria-hidden>{s.icon}</span>
         <span>{title}</span>
       </div>
-      <div className="text-[13px] leading-[1.65] text-[color:var(--color-text-secondary)]">
+      <div className="text-body leading-[1.65] text-[color:var(--color-text-secondary)]">
         {children}
       </div>
     </aside>
@@ -695,7 +695,7 @@ function VaultImage({
   if (error) {
     return (
       <span
-        className="my-3 inline-block rounded-sm border border-dashed border-[color:var(--color-amber-source-a50)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-amber-source-text-a80)]"
+        className="my-3 inline-block rounded-sm border border-dashed border-[color:var(--color-amber-source-a50)] px-2 py-1 font-mono text-caption text-[color:var(--color-amber-source-text-a80)]"
         title={t('imageMissing', { src })}
       >
         🖼 {alt || src}

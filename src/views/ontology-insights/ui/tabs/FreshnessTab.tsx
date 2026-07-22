@@ -66,30 +66,30 @@ export function FreshnessTab({
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-2">
       <section
         aria-label={labels.domainFreshnessTitle}
-        className="flex min-h-0 min-w-0 flex-col rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <div className="flex items-baseline gap-2">
-          <span className="text-[14px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+          <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
             {labels.domainFreshnessTitle}
           </span>
-          <span className="ml-auto font-mono text-[10.5px] text-[color:var(--color-text-quaternary)]">{labels.windowCaption}</span>
+          <span className="ml-auto font-mono text-label text-[color:var(--color-text-quaternary)]">{labels.windowCaption}</span>
         </div>
         {domainRows.length === 0 ? (
-          <p className="mt-3.5 flex-1 text-[12px] text-[color:var(--color-text-quaternary)]">{labels.noDomains}</p>
+          <p className="mt-3.5 flex-1 text-body text-[color:var(--color-text-quaternary)]">{labels.noDomains}</p>
         ) : (
           <div className="mt-3.5 flex flex-1 flex-col justify-evenly gap-1.5">
             {domainRows.map((row) => (
               <div key={row.domainId} className="flex items-center gap-2">
                 <span
                   className={
-                    "flex w-[136px] flex-none items-center gap-1.5 truncate text-[11.5px] " +
+                    "flex w-[136px] flex-none items-center gap-1.5 truncate text-label " +
                     (row.stale ? "text-[color:var(--color-text-quaternary)]" : "text-[color:var(--color-text-secondary)]")
                   }
                 >
                   <TopologyV2KindGlyph kind="domain" size={12} />
                   <span className="truncate">{row.domainTitle}</span>
                   {row.stale ? (
-                    <span className="flex-none rounded border border-dashed border-[color:var(--color-border-strong)] px-1 text-[9px] text-[color:var(--color-text-quaternary)]">
+                    <span className="flex-none rounded border border-dashed border-[color:var(--color-border-strong)] px-1 text-caption text-[color:var(--color-text-quaternary)]">
                       {labels.stale}
                     </span>
                   ) : null}
@@ -99,6 +99,7 @@ export function FreshnessTab({
                     <i
                       key={i}
                       title={week.isCurrentWeek ? labels.currentWeek : undefined}
+                      // eslint-disable-next-line no-restricted-syntax -- 14px 높이 주간 신선도 바의 3px 헤어라인 반경은 chip(6px)로 올리면 pill 이 돼 램프 밖 예외.
                       className="h-3.5 flex-1 max-w-6 rounded-[3px]"
                       style={{
                         backgroundColor: week.isCurrentWeek
@@ -108,12 +109,12 @@ export function FreshnessTab({
                     />
                   ))}
                 </span>
-                <span className="w-12 flex-none text-right font-mono text-[9.5px] text-[color:var(--color-text-quaternary)]">
+                <span className="w-12 flex-none text-right font-mono text-caption text-[color:var(--color-text-quaternary)]">
                   {row.daysAgo !== null ? labels.daysAgo(row.daysAgo) : labels.unknownDate}
                 </span>
               </div>
             ))}
-            <div className="flex items-center gap-2 text-[9.5px] text-[color:var(--color-text-quaternary)]">
+            <div className="flex items-center gap-2 text-caption text-[color:var(--color-text-quaternary)]">
               <span className="w-[136px] flex-none" aria-hidden />
               <span className="flex flex-1 items-center justify-between">
                 <span>{labels.axisStart}</span>
@@ -123,7 +124,7 @@ export function FreshnessTab({
             </div>
           </div>
         )}
-        <div className="mt-2.5 flex items-center justify-end gap-1.5 border-t border-[color:var(--color-divider)] pt-2.5 text-[9.5px] text-[color:var(--color-text-quaternary)]">
+        <div className="mt-2.5 flex items-center justify-end gap-1.5 border-t border-[color:var(--color-divider)] pt-2.5 text-caption text-[color:var(--color-text-quaternary)]">
           <span>{labels.older}</span>
           {([0, 1, 2, 3] as const).map((level) => (
             <i key={level} className="h-2.5 w-2.5 flex-none rounded-sm" style={{ backgroundColor: LEVEL_BACKGROUND[level] }} />
@@ -134,28 +135,28 @@ export function FreshnessTab({
         </div>
         <div className="mt-3 border-t border-[color:var(--color-divider)] pt-3">
           <div className="flex items-baseline gap-2">
-            <span className="text-[12px] font-medium text-[color:var(--color-text-secondary)]">{labels.trendTitle}</span>
+            <span className="text-body font-medium text-[color:var(--color-text-secondary)]">{labels.trendTitle}</span>
           </div>
           <FreshnessTrendSparkline weeklyTotals={weeklyTotals} />
-          <p className="mt-1.5 text-[10px] text-[color:var(--color-text-quaternary)]">{labels.trendCaption}</p>
+          <p className="mt-1.5 text-caption text-[color:var(--color-text-quaternary)]">{labels.trendCaption}</p>
         </div>
       </section>
 
       <section
         aria-label={labels.recentUpdatesTitle}
-        className="flex min-h-0 min-w-0 flex-col rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <div className="flex items-baseline gap-2">
-          <span className="text-[14px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+          <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
             {labels.recentUpdatesTitle}
           </span>
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             recent updates
           </span>
         </div>
         <div className="mt-2 flex flex-1 flex-col">
           {recent.length === 0 ? (
-            <p className="py-2 text-[12px] text-[color:var(--color-text-quaternary)]">{labels.noRecentUpdates}</p>
+            <p className="py-2 text-body text-[color:var(--color-text-quaternary)]">{labels.noRecentUpdates}</p>
           ) : (
             recent.map((row) => (
               <Link
@@ -167,13 +168,13 @@ export function FreshnessTab({
               >
                 <TopologyV2KindGlyph kind={row.kind} size={14} />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] text-[color:var(--color-text-primary)]">{row.title}</span>
-                  <span className="block text-[10.5px] text-[color:var(--color-text-quaternary)]">
+                  <span className="block truncate text-body text-[color:var(--color-text-primary)]">{row.title}</span>
+                  <span className="block text-label text-[color:var(--color-text-quaternary)]">
                     {kindLabel(row.kind)}
                     {row.domainTitle ? ` · ${row.domainTitle}` : ""}
                   </span>
                 </span>
-                <span className="flex-none font-mono text-[10.5px] tabular-nums text-[color:var(--color-text-tertiary)]">
+                <span className="flex-none font-mono text-label tabular-nums text-[color:var(--color-text-tertiary)]">
                   {/* P4-③ — 로컬 타임존 기준 날짜(`formatDate`). 이전엔
                       toISOString() 이 UTC 로 렌더해 자정 부근 갱신이 하루
                       전날짜로 표시됐다(예: 03:12 KST → UTC 로는 전날). */}
@@ -183,9 +184,9 @@ export function FreshnessTab({
             ))
           )}
         </div>
-        <div className="mt-2.5 flex items-center justify-between border-t border-[color:var(--color-divider)] pt-2.5 text-[11px] text-[color:var(--color-text-quaternary)]">
+        <div className="mt-2.5 flex items-center justify-between border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
           <span>{labels.staleCountLabel}</span>
-          <span className="font-mono text-[13px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">{staleCount}</span>
+          <span className="font-mono text-body tabular-nums text-[color:var(--topology-v2-numeral-face)]">{staleCount}</span>
         </div>
       </section>
     </div>

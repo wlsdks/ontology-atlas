@@ -421,16 +421,16 @@ export function DocsVaultEditor({
   if (!loading && error && content === null) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
-        <div className="text-[13px] text-[color:var(--color-text-tertiary)]">
+        <div className="text-body text-[color:var(--color-text-tertiary)]">
           {t('loadFailed')}
         </div>
-        <div className="font-mono text-[11px] text-[color:var(--color-text-quaternary)]">
+        <div className="font-mono text-label text-[color:var(--color-text-quaternary)]">
           {error}
         </div>
         <button
           type="button"
           onClick={requestClose}
-          className="mt-2 rounded-sm border border-[color:var(--color-divider)] px-2 py-1 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
+          className="mt-2 rounded-sm border border-[color:var(--color-divider)] px-2 py-1 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
         >
           {t('close')}
         </button>
@@ -449,17 +449,17 @@ export function DocsVaultEditor({
   return (
     <div className="flex h-full flex-col">
       {/* 상단 액션 바 */}
-      <div className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-4 py-2 text-[11.5px]">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+      <div className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-4 py-2 text-label">
+        <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {t('editorEyebrow', { slug: doc.slug })}
         </span>
         <span
           className={
             saveState.tone === 'dirty'
-              ? "inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-amber-docs-a25)] bg-[color:var(--color-amber-docs-a08)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-amber-docs-a95)]"
+              ? "inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-amber-docs-a25)] bg-[color:var(--color-amber-docs-a08)] px-2 py-1 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-amber-docs-a95)]"
               : saveState.tone === 'saved'
-                ? "inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-indigo-line-a90)]"
-                : "inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
+                ? "inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] px-2 py-1 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-indigo-line-a90)]"
+                : "inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
           }
           aria-live="polite"
         >
@@ -470,7 +470,7 @@ export function DocsVaultEditor({
           </span>
         </span>
         <span
-          className="hidden min-w-0 items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] lg:inline-flex"
+          className="hidden min-w-0 items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-label text-[color:var(--color-text-tertiary)] lg:inline-flex"
           aria-label={t('saveContractAriaLabel')}
         >
           <Check size={11} className="text-[color:var(--color-text-quaternary)]" aria-hidden />
@@ -510,7 +510,7 @@ export function DocsVaultEditor({
           </span>
         </span>
         <span
-          className="hidden min-w-0 items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] 2xl:inline-flex"
+          className="hidden min-w-0 items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-label text-[color:var(--color-text-tertiary)] 2xl:inline-flex"
           aria-label={t('saveWorkflowAriaLabel')}
         >
           <CheckSquare
@@ -557,7 +557,7 @@ export function DocsVaultEditor({
           <button
             type="button"
             onClick={() => setPreview((v) => !v)}
-            className={`inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[11px] transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-label transition-colors ${
               preview
                 ? 'border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a08)] text-[color:var(--color-indigo-pale-a92)]'
                 : 'border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]'
@@ -576,7 +576,7 @@ export function DocsVaultEditor({
             type="button"
             onClick={() => void doSave()}
             disabled={saving || !dirty}
-            className="inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a14)] px-2 py-1 text-[11px] text-[color:var(--color-indigo-pale-a95)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a14)] px-2 py-1 text-label text-[color:var(--color-indigo-pale-a95)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] disabled:cursor-not-allowed disabled:opacity-50"
             title={t('saveTooltip')}
           >
             {saving ? (
@@ -595,7 +595,7 @@ export function DocsVaultEditor({
             type="button"
             onClick={requestClose}
             disabled={saving}
-            className="inline-flex items-center gap-1 rounded-sm border border-transparent px-2 py-1 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-overlay-3)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-sm border border-transparent px-2 py-1 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-overlay-3)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
             title={dirty ? t('closeUnsavedTooltip') : t('closeTooltip')}
           >
             <X size={11} aria-hidden />
@@ -605,7 +605,7 @@ export function DocsVaultEditor({
       </div>
       {error ? (
         <div
-          className="break-keep border-b border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-4 py-1.5 text-[11px] leading-4 text-[color:var(--color-danger-text-strong)]"
+          className="break-keep border-b border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-4 py-1.5 text-label leading-4 text-[color:var(--color-danger-text-strong)]"
           aria-live="polite"
         >
           {error}
@@ -738,11 +738,11 @@ export function DocsVaultEditor({
               });
             }}
             spellCheck={false}
-            className="absolute inset-0 resize-none bg-[color:var(--color-surface-deep-a40)] px-6 py-6 font-mono text-[13px] leading-[1.7] text-[color:rgba(220,226,240,0.92)] outline-none md:px-10"
+            className="absolute inset-0 resize-none bg-[color:var(--color-surface-deep-a40)] px-6 py-6 font-mono text-body leading-[1.7] text-[color:rgba(220,226,240,0.92)] outline-none md:px-10"
           />
           {autocomplete && acMatches.length > 0 ? (
             <div className="pointer-events-auto absolute bottom-3 left-3 z-10 w-[320px] overflow-hidden rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-surface-deep-a98)] shadow-[0_10px_30px_var(--color-shadow-a50)]">
-              <div className="border-b border-[color:var(--color-overlay-2)] px-2 py-1 font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              <div className="border-b border-[color:var(--color-overlay-2)] px-2 py-1 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                 {t('wikilinkLabel', { query: autocomplete.query })}
               </div>
               <ul className="max-h-[220px] overflow-auto py-0.5">
@@ -762,17 +762,17 @@ export function DocsVaultEditor({
                           : 'hover:bg-[color:var(--color-overlay-1)]'
                       }`}
                     >
-                      <span className="truncate text-[12px] text-[color:var(--color-text-primary)]">
+                      <span className="truncate text-body text-[color:var(--color-text-primary)]">
                         {d.title}
                       </span>
-                      <span className="ml-auto truncate font-mono text-[9.5px] text-[color:var(--color-text-quaternary)]">
+                      <span className="ml-auto truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
                         {d.slug}
                       </span>
                     </button>
                   </li>
                 ))}
               </ul>
-              <div className="border-t border-[color:var(--color-overlay-2)] px-2 py-1 font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              <div className="border-t border-[color:var(--color-overlay-2)] px-2 py-1 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {t('wikilinkFooter')}
               </div>
             </div>
@@ -786,37 +786,37 @@ export function DocsVaultEditor({
                 components={{
                   h1: (props) => (
                     <h1
-                      className="mt-0 mb-4 text-[22px] font-semibold text-[color:var(--color-text-primary)]"
+                      className="mt-0 mb-4 text-display font-semibold text-[color:var(--color-text-primary)]"
                       {...props}
                     />
                   ),
                   h2: (props) => (
                     <h2
-                      className="mt-8 mb-2 text-[16px] font-semibold text-[color:var(--color-text-primary)]"
+                      className="mt-8 mb-2 text-title font-semibold text-[color:var(--color-text-primary)]"
                       {...props}
                     />
                   ),
                   h3: (props) => (
                     <h3
-                      className="mt-6 mb-2 text-[14px] font-semibold text-[color:var(--color-text-primary)]"
+                      className="mt-6 mb-2 text-body-lg font-semibold text-[color:var(--color-text-primary)]"
                       {...props}
                     />
                   ),
                   p: (props) => (
                     <p
-                      className="my-3 text-[13px] leading-[1.65] text-[color:var(--color-text-secondary)]"
+                      className="my-3 text-body leading-[1.65] text-[color:var(--color-text-secondary)]"
                       {...props}
                     />
                   ),
                   ul: (props) => (
                     <ul
-                      className="my-3 list-disc pl-6 text-[13px] leading-[1.7] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
+                      className="my-3 list-disc pl-6 text-body leading-[1.7] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
                       {...props}
                     />
                   ),
                   ol: (props) => (
                     <ol
-                      className="my-3 list-decimal pl-6 text-[13px] leading-[1.7] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
+                      className="my-3 list-decimal pl-6 text-body leading-[1.7] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
                       {...props}
                     />
                   ),
@@ -825,7 +825,7 @@ export function DocsVaultEditor({
                     if (!isBlock) {
                       return (
                         <code
-                          className="rounded-sm bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-[11.5px] text-[color:var(--color-indigo-pale-a95)]"
+                          className="rounded-sm bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-label text-[color:var(--color-indigo-pale-a95)]"
                           {...rest}
                         >
                           {children}
@@ -840,7 +840,7 @@ export function DocsVaultEditor({
                   },
                   pre: (props) => (
                     <pre
-                      className="my-3 overflow-x-auto rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-surface-deep-a80)] p-3 font-mono text-[12px] text-[color:var(--color-indigo-pale-a92)]"
+                      className="my-3 overflow-x-auto rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-surface-deep-a80)] p-3 font-mono text-body text-[color:var(--color-indigo-pale-a92)]"
                       {...props}
                     />
                   ),

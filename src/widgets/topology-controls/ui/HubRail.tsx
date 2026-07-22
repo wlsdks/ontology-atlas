@@ -128,7 +128,7 @@ export function HubRail({
       className="pointer-events-auto absolute bottom-[212px] left-4 top-[140px] z-10 hidden max-h-[calc(100vh-352px)] w-[180px] flex-col gap-1 overflow-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-2 md:left-6 md:flex xl:left-8"
     >
       <div className="flex items-center justify-between px-1 pb-1">
-        <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+        <span className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
           {railLabel} · {hubs.length}
         </span>
         <Tooltip content={t('collapseTooltip')} side="right" withProvider={false}>
@@ -179,7 +179,7 @@ export function HubRail({
               }
             }}
             title={t('itemTitle', { name: hub.name, degree })}
-            className={`relative flex items-center gap-2 rounded-sm px-2 py-1.5 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:ring-inset ${
+            className={`relative flex items-center gap-2 rounded-sm px-2 py-1.5 text-left text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:ring-inset ${
               active
                 ? 'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]'
                 : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]'
@@ -198,7 +198,7 @@ export function HubRail({
             />
             <span className="flex-1 truncate">{shortenName(hub.name)}</span>
             <span
-              className={`shrink-0 font-mono text-[9px] tabular-nums tracking-[0.04em] ${
+              className={`shrink-0 font-mono text-caption tabular-nums tracking-[0.04em] ${
                 active
                   ? 'text-[color:var(--color-text-secondary)]'
                   : 'text-[color:var(--color-text-quaternary)]'

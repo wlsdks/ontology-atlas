@@ -60,11 +60,11 @@ export function DocsVaultDocOutlinePanel({
     <aside className="hidden w-[220px] flex-none flex-col overflow-auto border-l border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-3 py-3 lg:flex">
       <section className="flex items-center justify-between gap-1.5 border-b border-[color:var(--color-overlay-2)] pb-3">
         <div className="min-w-0">
-          <span className="block truncate text-[12px] font-medium text-[color:var(--color-text-secondary)]">
+          <span className="block truncate text-body font-medium text-[color:var(--color-text-secondary)]">
             {t("inspectorLabel")}
           </span>
           {activeOutlineHeading ? (
-            <span className="mt-0.5 block truncate text-[10.5px] text-[color:var(--color-text-quaternary)]">
+            <span className="mt-0.5 block truncate text-label text-[color:var(--color-text-quaternary)]">
               {activeOutlineHeading.text}
             </span>
           ) : null}
@@ -115,7 +115,7 @@ export function DocsVaultDocOutlinePanel({
       {outlineHeadings.length > 0 ? (
         <details className="group border-b border-[color:var(--color-overlay-2)] py-3">
           <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-line-a45)]">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em]">
+            <span className="font-mono text-caption uppercase tracking-[0.14em]">
               {t("tableOfContents")} · {outlineHeadings.length}
             </span>
             <ChevronDown
@@ -124,7 +124,7 @@ export function DocsVaultDocOutlinePanel({
               className="transition-transform group-open:rotate-180"
             />
           </summary>
-          <ul className="mt-3 flex max-h-[42vh] flex-col gap-1 overflow-auto pr-1 text-[12px]">
+          <ul className="mt-3 flex max-h-[42vh] flex-col gap-1 overflow-auto pr-1 text-body">
             {outlineHeadings.map((h, index) => {
               const isActive = activeHeadingSlug === h.slug;
               return (
@@ -159,7 +159,7 @@ export function DocsVaultDocOutlinePanel({
                       <span className="truncate">{h.text}</span>
                       {h.duplicate ? (
                         <span
-                          className="inline-flex h-4 min-w-4 flex-none items-center justify-center rounded-sm border border-[color:var(--color-divider)] px-1 font-mono text-[9px] text-[color:var(--color-text-quaternary)]"
+                          className="inline-flex h-4 min-w-4 flex-none items-center justify-center rounded-sm border border-[color:var(--color-divider)] px-1 font-mono text-caption text-[color:var(--color-text-quaternary)]"
                           aria-label={t("duplicateAria", { text: h.text, n: h.occurrence })}
                           title={t("duplicateAria", { text: h.text, n: h.occurrence })}
                         >
@@ -176,7 +176,7 @@ export function DocsVaultDocOutlinePanel({
       ) : null}
       <details className="group border-b border-[color:var(--color-overlay-2)] py-3">
         <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-line-a45)]">
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em]">
+          <span className="font-mono text-caption uppercase tracking-[0.14em]">
             {t("shareSection")}
           </span>
           <ChevronDown
@@ -190,7 +190,7 @@ export function DocsVaultDocOutlinePanel({
             <button
               type="button"
               onClick={() => onCopyUrl(selectedDoc.slug)}
-              className={`inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[11px] transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-label transition-colors ${
                 copiedSlug === selectedDoc.slug
                   ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-line-a06)] text-[color:var(--color-indigo-pale-a95)]"
                   : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-indigo-pale-a90)]"
@@ -215,7 +215,7 @@ export function DocsVaultDocOutlinePanel({
               onClick={() => {
                 if (typeof window !== "undefined") window.print();
               }}
-              className="inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-divider)] px-2 py-1 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-divider)] px-2 py-1 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
             >
               <Printer size={12} aria-hidden />
               {t("print")}
@@ -226,7 +226,7 @@ export function DocsVaultDocOutlinePanel({
       {canEditCurrent ? (
         <details className="group border-b border-[color:var(--color-overlay-2)] py-3">
           <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-line-a45)]">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em]">
+            <span className="font-mono text-caption uppercase tracking-[0.14em]">
               {t("fileSection")}
             </span>
             <ChevronDown
@@ -240,7 +240,7 @@ export function DocsVaultDocOutlinePanel({
               <button
                 type="button"
                 onClick={() => void onDeleteCurrent()}
-                className="inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-divider)] px-2 py-1 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-danger-a46)] hover:text-[color:var(--color-danger-text-strong)]"
+                className="inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-divider)] px-2 py-1 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-danger-a46)] hover:text-[color:var(--color-danger-text-strong)]"
               >
                 <Trash2 size={12} aria-hidden />
                 {t("deleteAction")}

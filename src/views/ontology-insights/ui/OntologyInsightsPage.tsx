@@ -318,12 +318,12 @@ export function OntologyInsightsPage() {
         <MountedGlobalSearch />
 
         <header className="flex flex-wrap items-end gap-4">
-          <h1 className="text-[23px] font-[var(--font-weight-signature)] tracking-[-0.015em] text-[color:var(--color-text-primary)]">
+          <h1 className="text-display font-[var(--font-weight-signature)] tracking-[-0.015em] text-[color:var(--color-text-primary)]">
             {t("title")}
           </h1>
-          <p className="max-w-xl pb-0.5 text-[12.5px] text-[color:var(--color-text-tertiary)]">{t("subtitle")}</p>
+          <p className="max-w-xl pb-0.5 text-body text-[color:var(--color-text-tertiary)]">{t("subtitle")}</p>
           {insight ? (
-            <span className="ml-auto pb-0.5 font-mono text-[11.5px] tracking-[0.1em] text-[color:var(--topology-v2-numeral-face)]">
+            <span className="ml-auto pb-0.5 font-mono text-label tracking-[0.1em] text-[color:var(--topology-v2-numeral-face)]">
               {totalNodes} {t("censusConcepts")}
               <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
               {totalEdges} {t("censusRelations")}

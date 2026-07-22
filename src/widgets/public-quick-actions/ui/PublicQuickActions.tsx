@@ -54,12 +54,13 @@ export function PublicQuickActions({
     <section
       aria-label={label ?? t("sectionAriaDefault")}
       className={cn(
+        // eslint-disable-next-line no-restricted-syntax -- 퀵액션 시트(18px)는 overlay sheet 반경으로 panel(12px) 램프 밖 의도적 예외.
         "rounded-[18px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-3 shadow-[0_22px_44px_var(--color-shadow-a22)]",
         className,
       )}
     >
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-[11px] text-[color:var(--color-text-quaternary)]">
+        <p className="text-label text-[color:var(--color-text-quaternary)]">
           {t("sectionTitle")}
         </p>
         <InfoHint label={t("infoHintLabel")}>

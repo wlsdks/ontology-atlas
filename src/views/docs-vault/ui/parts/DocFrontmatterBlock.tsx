@@ -161,7 +161,7 @@ export function DocFrontmatterBlock({
       <details
         open={open}
         onToggle={(event) => setOpen(event.currentTarget.open)}
-        className="group rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-3 font-mono text-[12px] leading-[1.85] text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
+        className="group rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-3 font-mono text-body leading-[1.85] text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
       >
         <summary
           data-testid="doc-frontmatter-summary"
@@ -214,13 +214,13 @@ export function DocFrontmatterBlock({
         {canQuickPatch ? (
           editing ? (
             <div className="mt-3 flex flex-col gap-2 border-t border-[color:var(--color-divider)] pt-3 font-sans">
-              <label className="flex flex-col gap-1 text-[11px] text-[color:var(--color-text-tertiary)]">
+              <label className="flex flex-col gap-1 text-label text-[color:var(--color-text-tertiary)]">
                 {t("editKindLabel")}
                 <select
                   value={draftKind}
                   onChange={(event) => setDraftKind(event.target.value)}
                   disabled={saving}
-                  className="rounded-sm border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[12px] text-[color:var(--color-text-primary)]"
+                  className="rounded-sm border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
                 >
                   {EDITABLE_KINDS.map((kind) => (
                     <option key={kind} value={kind}>
@@ -229,13 +229,13 @@ export function DocFrontmatterBlock({
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col gap-1 text-[11px] text-[color:var(--color-text-tertiary)]">
+              <label className="flex flex-col gap-1 text-label text-[color:var(--color-text-tertiary)]">
                 {t("editDomainLabel")}
                 <select
                   value={draftDomain}
                   onChange={(event) => setDraftDomain(event.target.value)}
                   disabled={saving}
-                  className="rounded-sm border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[12px] text-[color:var(--color-text-primary)]"
+                  className="rounded-sm border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
                 >
                   <option value="">{t("editDomainNone")}</option>
                   {domainOptions.map((option) => (
@@ -245,18 +245,18 @@ export function DocFrontmatterBlock({
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col gap-1 text-[11px] text-[color:var(--color-text-tertiary)]">
+              <label className="flex flex-col gap-1 text-label text-[color:var(--color-text-tertiary)]">
                 {t("editTitleLabel")}
                 <input
                   type="text"
                   value={draftTitle}
                   onChange={(event) => setDraftTitle(event.target.value)}
                   disabled={saving}
-                  className="rounded-sm border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[12px] text-[color:var(--color-text-primary)]"
+                  className="rounded-sm border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
                 />
               </label>
               {error ? (
-                <p role="alert" className="text-[11px] text-[color:var(--color-status-danger)]">
+                <p role="alert" className="text-label text-[color:var(--color-status-danger)]">
                   {error}
                 </p>
               ) : null}
@@ -265,7 +265,7 @@ export function DocFrontmatterBlock({
                   type="button"
                   onClick={() => void handleSave()}
                   disabled={saving}
-                  className="rounded-sm border border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a10)] px-2.5 py-1 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a16)] disabled:opacity-60"
+                  className="rounded-sm border border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a10)] px-2.5 py-1 text-label text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a16)] disabled:opacity-60"
                 >
                   {saving ? t("editSaving") : t("editSave")}
                 </button>
@@ -273,7 +273,7 @@ export function DocFrontmatterBlock({
                   type="button"
                   onClick={() => setEditing(false)}
                   disabled={saving}
-                  className="text-[11px] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                  className="text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
                 >
                   {t("editCancel")}
                 </button>
@@ -283,14 +283,14 @@ export function DocFrontmatterBlock({
             <button
               type="button"
               onClick={startEditing}
-              className="mt-2 inline-flex items-center gap-1.5 font-sans text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className="mt-2 inline-flex items-center gap-1.5 font-sans text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
             >
               <Pencil size={11} aria-hidden />
               {t("editAction")}
             </button>
           )
         ) : null}
-        <p className="mt-2 flex items-center gap-1.5 text-[11px] text-[color:var(--color-text-quaternary)]">
+        <p className="mt-2 flex items-center gap-1.5 text-label text-[color:var(--color-text-quaternary)]">
           <svg width="16" height="6" viewBox="0 0 16 6" aria-hidden="true" className="shrink-0">
             <line
               x1="1"

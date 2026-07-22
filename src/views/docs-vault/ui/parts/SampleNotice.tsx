@@ -28,7 +28,7 @@ export function SampleNotice({ canOpenLocalVault, onOpenFolder }: SampleNoticePr
       data-testid="docs-vault-sample-notice"
       className="flex flex-none flex-wrap items-center gap-3 border-b border-l-2 border-b-[color:var(--color-divider)] border-l-[color:var(--color-indigo-brand)] bg-[color:var(--color-elevated)] px-6 py-2.5 md:px-10"
     >
-      <p className="min-w-0 flex-1 text-[12.5px] leading-[1.5] text-[color:var(--color-text-secondary)]">
+      <p className="min-w-0 flex-1 text-body leading-[1.5] text-[color:var(--color-text-secondary)]">
         <span className="font-semibold text-[color:var(--color-text-primary)]">
           {t("sampleNotice.title")}
         </span>{" "}
@@ -38,7 +38,7 @@ export function SampleNotice({ canOpenLocalVault, onOpenFolder }: SampleNoticePr
         <button
           type="button"
           onClick={onOpenFolder}
-          className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a42)] bg-[color:var(--color-indigo-a12)] px-2.5 py-1.5 font-mono text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a18)]"
+          className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a42)] bg-[color:var(--color-indigo-a12)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a18)]"
         >
           <FolderOpen size={12} aria-hidden />
           {t("sampleNotice.openFolderCta")}
@@ -46,7 +46,7 @@ export function SampleNotice({ canOpenLocalVault, onOpenFolder }: SampleNoticePr
       ) : (
         <Link
           href="/download/"
-          className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a42)] bg-[color:var(--color-indigo-a12)] px-2.5 py-1.5 font-mono text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a18)]"
+          className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a42)] bg-[color:var(--color-indigo-a12)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a18)]"
         >
           <Download size={12} aria-hidden />
           {t("vaultStatus.downloadAppCta")}

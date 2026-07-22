@@ -122,7 +122,7 @@ export function TopologyIndexTreeRow({
         onClick={() => onSelect(node.id)}
         onKeyDown={handleRowKeyDown}
         style={{ marginLeft: depth * 16 }}
-        className={`grid min-h-[34px] grid-cols-[14px_15px_1fr_auto] items-center gap-x-2 rounded-md border px-2 py-1 text-[12.5px] transition-colors ${
+        className={`grid min-h-[34px] grid-cols-[14px_15px_1fr_auto] items-center gap-x-2 rounded-md border px-2 py-1 text-body transition-colors ${
           selected
             ? "border-[color:var(--color-indigo-a55)] bg-[color:var(--topology-v2-panel-metric-surface)] text-[color:var(--topology-v2-panel-text-primary)]"
             : "border-transparent text-[color:var(--topology-v2-panel-text-secondary)] hover:border-[color:var(--topology-v2-panel-action-border)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
@@ -155,7 +155,7 @@ export function TopologyIndexTreeRow({
             {agentAttributed && labels.agentBadge ? (
               <span
                 data-testid="topology-index-agent-badge"
-                className="shrink-0 font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--topology-v2-panel-text-tertiary)]"
+                className="shrink-0 font-mono text-caption uppercase tracking-[0.06em] text-[color:var(--topology-v2-panel-text-tertiary)]"
               >
                 {labels.agentBadge}
               </span>
@@ -169,14 +169,16 @@ export function TopologyIndexTreeRow({
           </div>
           {isDomain && subcounts ? (
             <div className="mt-[3.5px] flex items-center gap-1.5">
-              <span className="shrink-0 font-mono text-[9.5px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+              <span className="shrink-0 font-mono text-caption text-[color:var(--topology-v2-panel-text-quaternary)]">
                 {labels.capabilitiesShort} {subcounts.capabilityCount} · {labels.elementsShort}{" "}
                 {subcounts.elementCount}
               </span>
               {/* 인셋 capacity meter — 라벨 아래 리세스드 트랙(기존 basis-full
                   회색 미터 폐기). 인디고 잉크: 미선택 .45 / 선택 .8. */}
+              {/* eslint-disable-next-line no-restricted-syntax -- 2px 높이 capacity 미터 트랙의 1px 헤어라인 반경은 chip(6px) 밖 예외. */}
               <span className="h-[2px] max-w-[76px] flex-1 overflow-hidden rounded-[1px] bg-[var(--color-overlay-recessed-a45)] shadow-[inset_0_1px_1px_var(--color-shadow-a50)]">
                 <span
+                  // eslint-disable-next-line no-restricted-syntax -- 위 미터 트랙과 짝인 fill 의 1px 헤어라인 반경.
                   className="block h-full rounded-[1px] bg-[var(--color-indigo-line-a45)] data-[selected=true]:bg-[var(--color-indigo-line-a90)]"
                   data-selected={selected}
                   style={{ width: `${Math.round(capacityRatio * 100)}%` }}
@@ -190,7 +192,7 @@ export function TopologyIndexTreeRow({
             // M-6 — 도메인 배지 합이 census 총계를 넘는 이유(다중 소속
             // 중복 계상)를 셈해 보는 사용자에게 즉석에서 설명한다.
             title={isDomain ? labels.domainCountTitle : undefined}
-            className="justify-self-end font-mono text-[11px] text-[color:var(--topology-v2-numeral-face)] [text-shadow:0_1px_0_var(--topology-v2-numeral-shadow)]"
+            className="justify-self-end font-mono text-label text-[color:var(--topology-v2-numeral-face)] [text-shadow:0_1px_0_var(--topology-v2-numeral-shadow)]"
           >
             {count}
           </span>

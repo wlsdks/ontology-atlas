@@ -51,7 +51,7 @@ export function TabBar({
             id={`insights-tab-${item.key}`}
             onClick={() => onSelect(item.key)}
             className={
-              "-mb-px inline-flex items-baseline gap-2 border-b-[length:var(--tabbar-underline)] px-0.5 pb-[11px] font-mono text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors duration-150 " +
+              "-mb-px inline-flex items-baseline gap-2 border-b-[length:var(--tabbar-underline)] px-0.5 pb-[11px] font-mono text-label font-semibold uppercase tracking-[0.14em] transition-colors duration-150 " +
               (active
                 ? "border-[color:var(--color-indigo-accent)] text-[color:var(--color-text-primary)]"
                 : "border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]")
@@ -59,7 +59,7 @@ export function TabBar({
           >
             {item.label}
             {item.count !== undefined ? (
-              <span className="font-mono text-[11px] font-semibold tracking-[0.02em] tabular-nums text-[color:var(--color-text-tertiary)]">
+              <span className="font-mono text-label font-semibold tracking-[0.02em] tabular-nums text-[color:var(--color-text-tertiary)]">
                 {item.count}
               </span>
             ) : null}

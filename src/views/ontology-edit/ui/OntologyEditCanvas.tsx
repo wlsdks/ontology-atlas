@@ -209,7 +209,7 @@ function ZoomLevelIndicator() {
   return (
     <div
       data-token="engraved-numeral"
-      className="pointer-events-none absolute bottom-3 left-3 z-10 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-[10.5px] tabular-nums tracking-[0.04em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+      className="pointer-events-none absolute bottom-3 left-3 z-10 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-label tabular-nums tracking-[0.04em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
     >
       {percent}%
     </div>
@@ -880,7 +880,7 @@ export function OntologyEditCanvas({
           formal 레지스터로 교체 — 지도 범례·인사이트와 동일한 단어. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-3 font-mono text-[10.5px] tracking-[0.03em] text-[color:var(--color-text-quaternary)]"
+        className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-3 font-mono text-label tracking-[0.03em] text-[color:var(--color-text-quaternary)]"
       >
         <TraceLegendMark dash="" /> {relationVocabulary("contains", "formal")}
         <TraceLegendMark dash="6 4" /> {relationVocabulary("depends_on", "formal")}

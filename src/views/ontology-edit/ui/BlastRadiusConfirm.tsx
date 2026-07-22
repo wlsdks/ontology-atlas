@@ -89,11 +89,11 @@ export function BlastRadiusConfirm({ open, slug, title, backlinks, onCancel, onC
             <div>
               <p
                 id="blast-radius-title"
-                className="text-[15px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+                className="text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
               >
                 {hasBacklinks ? t('titleWithBacklinks', { count: backlinks.length }) : t('titleClean')}
               </p>
-              <p className="mt-1 font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+              <p className="mt-1 font-mono text-label text-[color:var(--color-text-tertiary)]">
                 {title ? `${title} · ${slug}` : slug}
               </p>
             </div>
@@ -109,7 +109,7 @@ export function BlastRadiusConfirm({ open, slug, title, backlinks, onCancel, onC
         </header>
 
         <div className="px-6 py-4">
-          <p className="text-[13px] leading-relaxed text-[color:var(--color-text-secondary)]">
+          <p className="text-body leading-relaxed text-[color:var(--color-text-secondary)]">
             {hasBacklinks ? t('bodyWithBacklinks') : t('bodyClean')}
           </p>
 
@@ -119,28 +119,28 @@ export function BlastRadiusConfirm({ open, slug, title, backlinks, onCancel, onC
                 {backlinks.slice(0, previewCount).map((b) => (
                   <li key={b.slug} className="px-3 py-2.5">
                     <div className="flex items-baseline justify-between gap-3">
-                      <span className="truncate text-[13px] text-[color:var(--color-text-primary)]">
+                      <span className="truncate text-body text-[color:var(--color-text-primary)]">
                         {b.title}
                       </span>
-                      <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                      <span className="shrink-0 font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
                         {b.matchedKeys.join(' · ')}
                       </span>
                     </div>
-                    <p className="mt-0.5 truncate font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+                    <p className="mt-0.5 truncate font-mono text-label text-[color:var(--color-text-tertiary)]">
                       {b.slug}
                     </p>
                   </li>
                 ))}
               </ul>
               {backlinks.length > previewCount ? (
-                <p className="border-t border-[color:var(--color-divider)] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                <p className="border-t border-[color:var(--color-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
                   {t('moreCount', { count: backlinks.length - previewCount })}
                 </p>
               ) : null}
             </div>
           ) : null}
 
-          <p className="mt-4 text-[12px] text-[color:var(--color-text-tertiary)]">
+          <p className="mt-4 text-body text-[color:var(--color-text-tertiary)]">
             {hasBacklinks ? t('hintWithBacklinks') : t('hintClean')}
           </p>
         </div>
@@ -150,7 +150,7 @@ export function BlastRadiusConfirm({ open, slug, title, backlinks, onCancel, onC
             ref={cancelRef}
             type="button"
             onClick={onCancel}
-            className="inline-flex h-9 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex h-9 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
           >
             {t('cancel')}
           </button>
@@ -159,8 +159,8 @@ export function BlastRadiusConfirm({ open, slug, title, backlinks, onCancel, onC
             onClick={onConfirm}
             className={
               hasBacklinks
-                ? 'inline-flex h-9 items-center rounded-md border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] px-4 text-[12px] font-[var(--font-weight-signature)] text-[color:rgba(255,141,138,0.95)] transition-colors hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a12)]'
-                : 'inline-flex h-9 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)]'
+                ? 'inline-flex h-9 items-center rounded-md border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] px-4 text-body font-[var(--font-weight-signature)] text-[color:rgba(255,141,138,0.95)] transition-colors hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a12)]'
+                : 'inline-flex h-9 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)]'
             }
           >
             {hasBacklinks ? t('confirmWithBacklinks') : t('confirmClean')}

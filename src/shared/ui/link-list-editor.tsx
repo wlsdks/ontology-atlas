@@ -99,7 +99,7 @@ export function LinkListEditor({
   if (!editable && value.length === 0) {
     if (!emptyHint) return null;
     return (
-      <p className={cn("text-[12px] text-[color:var(--color-text-quaternary)]", className)}>
+      <p className={cn("text-body text-[color:var(--color-text-quaternary)]", className)}>
         {emptyHint}
       </p>
     );
@@ -121,7 +121,7 @@ export function LinkListEditor({
             <span className="min-w-0 truncate">{link.label}</span>
             <span
               aria-hidden="true"
-              className="font-mono text-[11px] text-[color:var(--color-text-quaternary)]"
+              className="font-mono text-label text-[color:var(--color-text-quaternary)]"
             >
               ↗
             </span>
@@ -162,14 +162,14 @@ export function LinkListEditor({
               <button
                 type="button"
                 onClick={commit}
-                className="rounded-md border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a16)] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)] hover:bg-[color:var(--color-indigo-a24)]"
+                className="rounded-md border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a16)] px-2 py-1 text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)] hover:bg-[color:var(--color-indigo-a24)]"
               >
                 {commitLabel}
               </button>
               <button
                 type="button"
                 onClick={cancel}
-                className="rounded-md border border-[color:var(--color-divider)] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
+                className="rounded-md border border-[color:var(--color-divider)] px-2 py-1 text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
               >
                 {cancelLabel}
               </button>

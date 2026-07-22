@@ -24,7 +24,7 @@ export function BackToTopButton({
       aria-hidden={!visible}
       tabIndex={visible ? 0 : -1}
       data-testid="back-to-top-button"
-      className={`absolute bottom-6 right-7 z-10 inline-flex h-[var(--chrome-tile-size)] items-center gap-2 rounded-full border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-4 font-mono text-[12px] text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)] transition-opacity duration-150 ${
+      className={`absolute bottom-6 right-7 z-10 inline-flex h-[var(--chrome-tile-size)] items-center gap-2 rounded-full border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-4 font-mono text-body text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)] transition-opacity duration-150 ${
         visible ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
     >

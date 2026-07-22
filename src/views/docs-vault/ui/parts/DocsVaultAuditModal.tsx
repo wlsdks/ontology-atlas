@@ -189,13 +189,13 @@ export function DocsVaultAuditModal({
               <div className="min-w-0 flex-1">
                 <p
                   id="docs-audit-modal-title"
-                  className="text-[15px] font-[650] text-[color:var(--color-text-primary)]"
+                  className="text-title font-[650] text-[color:var(--color-text-primary)]"
                 >
                   {t("header.contractToggleLabel")}
                 </p>
                 <p
                   id="docs-audit-modal-subtitle"
-                  className="mt-0.5 text-[12px] text-[color:var(--color-text-tertiary)]"
+                  className="mt-0.5 text-body text-[color:var(--color-text-tertiary)]"
                 >
                   {t("sourceContract.modalSubtitle")}
                 </p>
@@ -223,17 +223,17 @@ export function DocsVaultAuditModal({
                   </span>
                   <div className="min-w-0">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-pale-a82)]">
+                      <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-pale-a82)]">
                         {cell.label}
                       </span>
-                      <span className="rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                      <span className="rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                         {cell.chip}
                       </span>
                     </div>
-                    <p className="mt-0.5 truncate text-[12.5px] font-semibold text-[color:var(--color-text-primary)]">
+                    <p className="mt-0.5 truncate text-body font-semibold text-[color:var(--color-text-primary)]">
                       {cell.value}
                     </p>
-                    <p className="mt-0.5 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    <p className="mt-0.5 text-label leading-4 text-[color:var(--color-text-tertiary)]">
                       {cell.body}
                     </p>
                     {"proofMarkers" in cell ? (
@@ -241,7 +241,7 @@ export function DocsVaultAuditModal({
                         {cell.proofMarkers.map((marker) => (
                           <span
                             key={marker}
-                            className="rounded-sm border border-[color:var(--color-indigo-line-a15)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]"
+                            className="rounded-sm border border-[color:var(--color-indigo-line-a15)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-text-quaternary)]"
                           >
                             {marker}
                           </span>
@@ -252,7 +252,7 @@ export function DocsVaultAuditModal({
                   <div className="col-span-2 ml-[48px] flex min-w-0 flex-wrap items-center gap-1.5 sm:col-span-1 sm:ml-0 sm:flex-col sm:items-end">
                     <Link
                       href={cell.href}
-                      className="inline-flex h-7 min-w-0 items-center rounded-sm border border-[color:var(--color-divider)] px-2 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
+                      className="inline-flex h-7 min-w-0 items-center rounded-sm border border-[color:var(--color-divider)] px-2 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
                     >
                       {cell.cta}
                     </Link>
@@ -261,7 +261,7 @@ export function DocsVaultAuditModal({
                         type="button"
                         aria-label={cell.copyAriaLabel}
                         onClick={() => void handleCopyGate(cell.copyText, cell.copySuccess)}
-                        className="inline-flex h-6 min-w-0 items-center gap-1 rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
+                        className="inline-flex h-6 min-w-0 items-center gap-1 rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 font-mono text-caption uppercase tracking-[0.06em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
                       >
                         {copiedGate ? <Check size={10} aria-hidden /> : <Clipboard size={10} aria-hidden />}
                         <span className="truncate">{cell.copyCta}</span>

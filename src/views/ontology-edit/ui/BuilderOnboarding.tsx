@@ -68,13 +68,13 @@ export function BuilderOnboarding({
         >
           <header className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-indigo-accent)]">
+              <p className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--color-indigo-accent)]">
                 {t("eyebrow")}
               </p>
-              <h2 className="mt-1 text-[15px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              <h2 className="mt-1 text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {t("title")}
               </h2>
-              <p className="mt-1 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+              <p className="mt-1 text-body leading-5 text-[color:var(--color-text-tertiary)]">
                 {t("intro")}
               </p>
             </div>
@@ -87,7 +87,7 @@ export function BuilderOnboarding({
               <X size={13} />
             </button>
           </header>
-          <ol className="space-y-2.5 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+          <ol className="space-y-2.5 text-body leading-5 text-[color:var(--color-text-secondary)]">
             <li className="flex gap-2.5">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] text-[color:var(--color-indigo-accent)]">
                 <MousePointerClick size={12} />
@@ -127,21 +127,21 @@ export function BuilderOnboarding({
             </li>
           </ol>
           <footer className="mt-4 flex flex-col items-stretch gap-3 border-t border-[color:var(--color-border-soft)] pt-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="break-keep font-mono text-[10px] tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            <p className="break-keep font-mono text-caption tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
               {t("shortcutsHint")}
             </p>
             <div className="flex shrink-0 items-center gap-2">
               <button
                 type="button"
                 onClick={() => dismiss(true)}
-                className="whitespace-nowrap break-keep rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                className="whitespace-nowrap break-keep rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
               >
                 {t("dontShowAgain")}
               </button>
               <button
                 type="button"
                 onClick={() => dismiss(false)}
-                className="whitespace-nowrap break-keep rounded-md border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] px-3 py-1.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a26)]"
+                className="whitespace-nowrap break-keep rounded-md border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] px-3 py-1.5 text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a26)]"
               >
                 {t("getStarted")}
               </button>

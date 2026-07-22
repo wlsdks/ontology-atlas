@@ -694,11 +694,11 @@ export function VaultAgentSetupPanel({
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-[11.5px] font-medium text-[color:var(--color-text-primary)]">
+            <h3 className="text-label font-medium text-[color:var(--color-text-primary)]">
               {t('agentSetup.title')}
             </h3>
             <span
-              className={`rounded-sm px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em] ${
+              className={`rounded-sm px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.12em] ${
                 agentSetupReady
                   ? 'bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a92)]'
                   : 'bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-docs-a92)]'
@@ -709,13 +709,13 @@ export function VaultAgentSetupPanel({
                 : t('agentSetup.missing')}
             </span>
           </div>
-          <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+          <p className="mt-1 text-label leading-4 text-[color:var(--color-text-tertiary)]">
             {t('agentSetup.statusSummary', {
               ready: agentSetupReadyCount,
               total: agentSetupFiles.length,
             })}
             {nextMissingAgentConfig ? (
-              <span className="block font-mono text-[10px] text-[color:var(--color-amber-docs-a92)]">
+              <span className="block font-mono text-caption text-[color:var(--color-amber-docs-a92)]">
                 {agentStatus[nextMissingAgentConfig.key]
                   ? t('agentSetup.nextInvalid', {
                       path: nextMissingAgentConfig.path,
@@ -726,7 +726,7 @@ export function VaultAgentSetupPanel({
               </span>
             ) : null}
           </p>
-          <p className="mt-1 text-[10.5px] leading-4 text-[color:var(--color-indigo-pale-a82)]">
+          <p className="mt-1 text-label leading-4 text-[color:var(--color-indigo-pale-a82)]">
             {agentSetupReady
               ? t('agentSetup.rootSummaryReady')
               : t('agentSetup.rootSummaryMissing')}
@@ -759,11 +759,11 @@ export function VaultAgentSetupPanel({
                   )}
                   <span className="min-w-0">
                     <span className="flex items-center justify-between gap-2">
-                      <span className="truncate text-[10.5px] font-medium text-[color:var(--color-text-secondary)]">
+                      <span className="truncate text-label font-medium text-[color:var(--color-text-secondary)]">
                         {label}
                       </span>
                       <span
-                        className={`shrink-0 rounded-sm px-1.5 py-0.5 text-[9.5px] ${
+                        className={`shrink-0 rounded-sm px-1.5 py-0.5 text-caption ${
                           ready
                             ? 'bg-[color:var(--color-success-a10)] text-[color:var(--color-success-text-a92)]'
                             : 'bg-[color:var(--color-amber-source-a10)] text-[color:var(--color-amber-docs-a92)]'
@@ -774,7 +774,7 @@ export function VaultAgentSetupPanel({
                           : t('agentSetup.connectionNeedsReview')}
                       </span>
                     </span>
-                    <span className="mt-0.5 block truncate font-mono text-[9.5px] text-[color:var(--color-text-tertiary)]">
+                    <span className="mt-0.5 block truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
                       {check}
                     </span>
                   </span>
@@ -782,10 +782,10 @@ export function VaultAgentSetupPanel({
               );
             })}
           </ul>
-          <p className="mt-1.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+          <p className="mt-1.5 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
             {t('agentSetup.connectionHint')}
           </p>
-          <p className="mt-2 break-keep rounded-sm border border-[color:var(--color-indigo-line-a14)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+          <p className="mt-2 break-keep rounded-sm border border-[color:var(--color-indigo-line-a14)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-text-tertiary)]">
             <span className="font-medium text-[color:var(--color-text-secondary)]">
               {t('agentSetup.boundaryTitle')}
             </span>{' '}
@@ -821,11 +821,11 @@ export function VaultAgentSetupPanel({
             )}
             <span className="min-w-0">
               <span className="flex items-center justify-between gap-2">
-                <span className="text-[10.5px] font-medium text-[color:var(--color-text-secondary)]">
+                <span className="text-label font-medium text-[color:var(--color-text-secondary)]">
                   {t('agentSetup.validationGateTitle')}
                 </span>
                 <span
-                  className={`shrink-0 rounded-sm px-1.5 py-0.5 font-mono text-[9.5px] uppercase ${
+                  className={`shrink-0 rounded-sm px-1.5 py-0.5 font-mono text-caption uppercase ${
                     validationGateTone === 'ready'
                       ? 'bg-[color:var(--color-success-a10)] text-[color:var(--color-success-text-a92)]'
                       : validationGateTone === 'blocked'
@@ -836,16 +836,16 @@ export function VaultAgentSetupPanel({
                   {validationGateStatus}
                 </span>
               </span>
-              <span className="mt-0.5 block text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
+              <span className="mt-0.5 block text-label leading-4 text-[color:var(--color-text-secondary)]">
                 {validationGateSummary}
               </span>
-              <span className="mt-0.5 block break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+              <span className="mt-0.5 block break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                 {validationGateDesc}
               </span>
             </span>
           </div>
           <details className="mt-2 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5">
-            <summary className="cursor-pointer select-none text-[10.5px] font-medium text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
+            <summary className="cursor-pointer select-none text-label font-medium text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
               {t('agentSetup.nextStepsSummary')}
             </summary>
             <ol
@@ -858,7 +858,7 @@ export function VaultAgentSetupPanel({
                   className="grid grid-cols-[18px_1fr] items-start gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-1.5 py-1"
                 >
                   <span
-                    className={`inline-flex h-4 w-4 items-center justify-center rounded-sm font-mono text-[9px] ${
+                    className={`inline-flex h-4 w-4 items-center justify-center rounded-sm font-mono text-caption ${
                       step.complete
                         ? 'bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a90)]'
                         : 'bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-pale-a90)]'
@@ -866,7 +866,7 @@ export function VaultAgentSetupPanel({
                   >
                     {step.complete ? '✓' : index + 1}
                   </span>
-                  <span className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
+                  <span className="break-keep text-label leading-4 text-[color:var(--color-text-secondary)]">
                     {step.label}
                   </span>
                 </li>
@@ -907,10 +907,10 @@ export function VaultAgentSetupPanel({
                     className="mt-0.5 text-[color:var(--color-amber-docs-a92)]"
                   />
                 )}
-                <dt className="truncate font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                <dt className="truncate font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                   {row.label}
                 </dt>
-                <dd className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
+                <dd className="break-keep text-label leading-4 text-[color:var(--color-text-secondary)]">
                   {row.value}
                 </dd>
               </div>
@@ -925,13 +925,13 @@ export function VaultAgentSetupPanel({
                 key={row.key}
                 className="grid grid-cols-[18px_88px_1fr] items-start gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-indigo-a06)] px-1.5 py-1"
               >
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:var(--color-indigo-a14)] font-mono text-[9px] text-[color:var(--color-indigo-pale-a90)]">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:var(--color-indigo-a14)] font-mono text-caption text-[color:var(--color-indigo-pale-a90)]">
                   {index + 1}
                 </span>
-                <dt className="truncate font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-pale-a82)]">
+                <dt className="truncate font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-indigo-pale-a82)]">
                   {row.label}
                 </dt>
-                <dd className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
+                <dd className="break-keep text-label leading-4 text-[color:var(--color-text-secondary)]">
                   {row.value}
                 </dd>
               </div>
@@ -944,7 +944,7 @@ export function VaultAgentSetupPanel({
               return (
                 <div
                   key={key}
-                  className="grid grid-cols-[14px_1fr] items-start gap-1.5 text-[11px] leading-4 text-[color:var(--color-text-secondary)]"
+                  className="grid grid-cols-[14px_1fr] items-start gap-1.5 text-label leading-4 text-[color:var(--color-text-secondary)]"
                 >
                   {present && valid ? (
                     <CheckCircle2
@@ -960,7 +960,7 @@ export function VaultAgentSetupPanel({
                     />
                   )}
                   <span>
-                    <code className="font-mono text-[10.5px] text-[color:var(--color-text-primary)]">
+                    <code className="font-mono text-label text-[color:var(--color-text-primary)]">
                       {path}
                     </code>{' '}
                     <span className="text-[color:var(--color-text-tertiary)]">
@@ -982,7 +982,7 @@ export function VaultAgentSetupPanel({
               onClick={() => void handleEnsureAgentConfigs()}
               disabled={agentSetupBusy}
               title={t('agentSetup.repairTitle')}
-              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-indigo-pale-a94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)] disabled:opacity-60"
+              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] px-2 py-1.5 text-label text-[color:var(--color-indigo-pale-a94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)] disabled:opacity-60"
             >
               <Bot size={12} aria-hidden />
               {agentSetupBusy
@@ -991,11 +991,11 @@ export function VaultAgentSetupPanel({
             </button>
           ) : null}
           {hasInvalidAgentConfig ? (
-            <p className="mt-2 break-keep rounded-sm border border-[color:var(--color-amber-docs-a18)] bg-[color:var(--color-amber-source-a08)] px-2 py-1.5 text-[10.5px] leading-4 text-[color:var(--color-amber-docs-a92)]">
+            <p className="mt-2 break-keep rounded-sm border border-[color:var(--color-amber-docs-a18)] bg-[color:var(--color-amber-source-a08)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-amber-docs-a92)]">
               {t('agentSetup.invalidRepairHint')}
             </p>
           ) : null}
-          <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
+          <div className="mt-2 text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
             {t('agentSetup.verifyGroup')}
           </div>
           <dl
@@ -1024,10 +1024,10 @@ export function VaultAgentSetupPanel({
                 key={mode.term}
                 className="rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1"
               >
-                <dt className="text-[10.5px] font-medium text-[color:var(--color-text-secondary)]">
+                <dt className="text-label font-medium text-[color:var(--color-text-secondary)]">
                   {mode.term}
                 </dt>
-                <dd className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                <dd className="mt-0.5 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                   {mode.desc}
                 </dd>
               </div>
@@ -1037,7 +1037,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={onOpenWorkflowGuide}
             title={t('agentSetup.openWorkflowGuideTitle')}
-            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] px-2 py-1.5 text-[11.5px] text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
+            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] px-2 py-1.5 text-label text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
           >
             <BookOpen size={12} aria-hidden />
             {t('agentSetup.openWorkflowGuide')}
@@ -1046,7 +1046,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentSetupPacket()}
             title={t('agentSetup.copyPacketTitle')}
-            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a10)] px-2 py-1.5 text-[11.5px] text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-a62)] hover:bg-[color:var(--color-indigo-a16)]"
+            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a10)] px-2 py-1.5 text-label text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-a62)] hover:bg-[color:var(--color-indigo-a16)]"
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyPacketLabel}
@@ -1055,7 +1055,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentVerifyPrompt()}
             title={t('agentSetup.copyPromptTitle')}
-            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyPromptLabel}
@@ -1064,7 +1064,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentVerifyCli()}
             title={t('agentSetup.copyCliTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             <Terminal size={12} aria-hidden />
             {copyCliLabel}
@@ -1073,7 +1073,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentFirstContactProof()}
             title={t('agentSetup.copyFirstContactProofTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             <Terminal size={12} aria-hidden />
             {copyFirstContactProofLabel}
@@ -1082,7 +1082,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentJsonGate()}
             title={t('agentSetup.copyJsonGateTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-2 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
           >
             <Terminal size={12} aria-hidden />
             {copyJsonGateLabel}
@@ -1091,18 +1091,18 @@ export function VaultAgentSetupPanel({
             aria-label={t('agentSetup.mcpVerifyPreviewAriaLabel')}
             className="mt-1.5 rounded-sm border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5"
           >
-            <div className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-indigo-pale-a82)]">
+            <div className="text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-indigo-pale-a82)]">
               {t('agentSetup.mcpVerifyLabel')}
             </div>
-            <code className="mt-1 block truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+            <code className="mt-1 block truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
               {agentMcpVerifyPreview}
             </code>
           </div>
           <div className="mt-1.5 rounded-sm border border-[color:var(--color-success-a18)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
-            <div className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-success-text-a78)]">
+            <div className="text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-success-text-a78)]">
               {t('agentSetup.jsonGateLabel')}
             </div>
-            <code className="mt-1 block truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+            <code className="mt-1 block truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
               {agentJsonGatePreview}
             </code>
           </div>
@@ -1128,27 +1128,27 @@ export function VaultAgentSetupPanel({
                 key={rule.term}
                 className="grid grid-cols-[92px_1fr] gap-2 rounded-sm border border-[color:var(--color-success-a12)] bg-[color:var(--color-success-a035)] px-2 py-1"
               >
-                <dt className="truncate font-mono text-[9.5px] text-[color:var(--color-success-text-a94)]">
+                <dt className="truncate font-mono text-caption text-[color:var(--color-success-text-a94)]">
                   {rule.term}
                 </dt>
-                <dd className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                <dd className="break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                   {rule.desc}
                 </dd>
               </div>
             ))}
           </dl>
           <div className="mt-1.5 rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-2 py-1.5">
-            <p className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-indigo-pale-a82)]">
+            <p className="text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-indigo-pale-a82)]">
               {t('agentSetup.syncAfterChangeTitle')}
             </p>
-            <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+            <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
               {t('agentSetup.syncAfterChangeDesc')}
             </p>
             <button
               type="button"
               onClick={() => void handleCopyAgentPostChangeSyncGate()}
               title={t('agentSetup.copyPostChangeSyncTitle')}
-              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a08)] px-2 py-1.5 text-[11px] text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a13)]"
+              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a08)] px-2 py-1.5 text-label text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a13)]"
             >
               <ClipboardCopy size={12} aria-hidden />
               {copyPostChangeSyncLabel}
@@ -1160,16 +1160,16 @@ export function VaultAgentSetupPanel({
                 key={command}
                 className="grid grid-cols-[18px_1fr] items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a14)] px-1.5 py-1"
               >
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:var(--color-indigo-a14)] font-mono text-[9px] text-[color:var(--color-indigo-pale-a90)]">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:var(--color-indigo-a14)] font-mono text-caption text-[color:var(--color-indigo-pale-a90)]">
                   {index + 1}
                 </span>
-                <code className="truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                <code className="truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
                   ontology-atlas {command}
                 </code>
               </li>
             ))}
           </ol>
-          <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
+          <div className="mt-2 text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
             {t('agentSetup.connectGroup')}
           </div>
           <dl
@@ -1190,10 +1190,10 @@ export function VaultAgentSetupPanel({
                 key={rootMode.term}
                 className="rounded-sm border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-indigo-a06)] px-2 py-1"
               >
-                <dt className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-pale-a82)]">
+                <dt className="font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-indigo-pale-a82)]">
                   {rootMode.term}
                 </dt>
-                <dd className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                <dd className="mt-0.5 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
                   {rootMode.desc}
                 </dd>
               </div>
@@ -1203,7 +1203,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentSetupCheckCliCommand()}
             title={t('agentSetup.copySetupCheckCliTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-2 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
           >
             <Terminal size={12} aria-hidden />
             {copySetupCheckCliLabel}
@@ -1212,7 +1212,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentSetupCliCommand()}
             title={t('agentSetup.copySetupCliTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-amber-docs-a28)] bg-[color:var(--color-amber-source-a07)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-amber-docs-a94)] transition-colors hover:border-[color:var(--color-amber-docs-a42)] hover:bg-[color:var(--color-amber-source-a11)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-amber-docs-a28)] bg-[color:var(--color-amber-source-a07)] px-2 py-1.5 text-label text-[color:var(--color-amber-docs-a94)] transition-colors hover:border-[color:var(--color-amber-docs-a42)] hover:bg-[color:var(--color-amber-source-a11)]"
           >
             <Terminal size={12} aria-hidden />
             {copySetupCliLabel}
@@ -1221,7 +1221,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentConfigTemplate()}
             title={t('agentSetup.copyTemplateTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyTemplateLabel}
@@ -1230,7 +1230,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyCodexConfigTemplate()}
             title={t('agentSetup.copyCodexTemplateTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyCodexTemplateLabel}
@@ -1239,7 +1239,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyCodexMcpAddCommand()}
             title={t('agentSetup.copyCodexCliTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             <Terminal size={12} aria-hidden />
             {copyCodexCliLabel}
@@ -1247,7 +1247,7 @@ export function VaultAgentSetupPanel({
           {agentSetupError ? (
             <p
               role="alert"
-              className="mt-2 text-[11px] leading-4 text-[color:var(--color-status-danger)]"
+              className="mt-2 text-label leading-4 text-[color:var(--color-status-danger)]"
             >
               {agentSetupError}
             </p>

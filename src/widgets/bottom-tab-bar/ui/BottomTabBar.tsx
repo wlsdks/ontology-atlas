@@ -81,7 +81,7 @@ export function BottomTabBar() {
             >
               <Icon size={17} aria-hidden />
             </span>
-            <span className="text-[10px] font-[var(--font-weight-signature)] leading-none">{tRail(tab.labelKey)}</span>
+            <span className="text-caption font-[var(--font-weight-signature)] leading-none">{tRail(tab.labelKey)}</span>
           </Link>
         );
       })}

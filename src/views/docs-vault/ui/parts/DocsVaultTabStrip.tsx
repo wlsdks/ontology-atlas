@@ -101,7 +101,7 @@ export function DocsVaultTabStrip({
                 onClose(tab.slug);
               }}
               className={cn(
-                "flex min-w-0 flex-1 items-center gap-1.5 pl-3 pr-1 text-[12px] transition-colors",
+                "flex min-w-0 flex-1 items-center gap-1.5 pl-3 pr-1 text-body transition-colors",
                 active
                   ? "text-[color:var(--color-text-primary)]"
                   : "text-[color:var(--color-text-tertiary)] group-hover:text-[color:var(--color-text-secondary)]",

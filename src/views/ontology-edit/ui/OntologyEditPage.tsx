@@ -1293,14 +1293,14 @@ export function OntologyEditPage() {
   ]);
 
   const helpTooltip = (
-    <div className="max-w-xs space-y-2 text-[12px] leading-5">
+    <div className="max-w-xs space-y-2 text-body leading-5">
       <p>{t("helpIntro")}</p>
       <ul className="space-y-1 pl-3 text-[color:var(--color-text-tertiary)]">
         <li>· {t("helpStepPalette")}</li>
         <li>· {t("helpStepConnect")}</li>
         <li>· {t("helpStepEphemeral")}</li>
       </ul>
-      <p className="font-mono text-[10px] tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+      <p className="font-mono text-caption tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
         {t("helpShortcuts")}
       </p>
     </div>
@@ -1381,7 +1381,7 @@ export function OntologyEditPage() {
           <h1 className="sr-only">{t("title")}</h1>
           <nav
             aria-label={t("headerBreadcrumbAriaLabel")}
-            className="flex min-w-0 shrink-0 items-center gap-2 text-[12px] text-[color:var(--color-text-tertiary)]"
+            className="flex min-w-0 shrink-0 items-center gap-2 text-body text-[color:var(--color-text-tertiary)]"
           >
             <Link
               href="/ontology/"
@@ -1399,7 +1399,7 @@ export function OntologyEditPage() {
             </span>
             <span
               data-token="engraved-numeral"
-              className="hidden font-mono text-[10.5px] tracking-[0.06em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] sm:inline"
+              className="hidden font-mono text-label tracking-[0.06em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] sm:inline"
             >
               {shouldShowFocusedCensus({
                 shownCount: shownNodeCount,
@@ -1428,7 +1428,7 @@ export function OntologyEditPage() {
           <p
             role="status"
             aria-live="polite"
-            className="mx-auto hidden min-w-0 truncate font-mono text-[11px] text-[color:var(--color-text-tertiary)] md:block"
+            className="mx-auto hidden min-w-0 truncate font-mono text-label text-[color:var(--color-text-tertiary)] md:block"
           >
             <span
               aria-hidden="true"
@@ -1479,7 +1479,7 @@ export function OntologyEditPage() {
                     ephemeralEdges,
                   })
                 }
-                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-border-a46)] hover:bg-[color:var(--color-indigo-a16)]"
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] px-2.5 text-label text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-border-a46)] hover:bg-[color:var(--color-indigo-a16)]"
                 aria-label={t("exportAriaLabel")}
               >
                 <Download size={12} />
@@ -1503,7 +1503,7 @@ export function OntologyEditPage() {
                     setLayoutSettingsOpen((open) => !open);
                   }}
                   aria-label={layoutSettingsActionLabel.ariaLabel}
-                  className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                  className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-label text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                 >
                   <SlidersHorizontal size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
                   <span className="min-w-0 flex-1 truncate">{t("layoutSettingsButton")}</span>
@@ -1517,7 +1517,7 @@ export function OntologyEditPage() {
                     setWriteSummaryOpen((open) => !open);
                   }}
                   aria-label={writeSummaryActionLabel.ariaLabel}
-                  className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                  className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-label text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                 >
                   <ShieldCheck size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
                   <span className="min-w-0 flex-1 truncate">{t("writeSummaryCollapsedLabel")}</span>
@@ -1536,7 +1536,7 @@ export function OntologyEditPage() {
                     aria-label={t("openDetailsAriaLabel", {
                       title: ephemeralSelected?.title ?? vaultSelected?.title ?? "",
                     })}
-                    className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                    className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-label text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                   >
                     <Info size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
                     <span className="min-w-0 flex-1 truncate">{t("openDetailsButton")}</span>
@@ -1550,7 +1550,7 @@ export function OntologyEditPage() {
                     setFullscreen((current) => !current);
                   }}
                   aria-label={fullscreen ? t("fullscreenExit") : t("fullscreenEnter")}
-                  className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                  className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-label text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {fullscreen ? (
                     <Minimize2 size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
@@ -1572,7 +1572,7 @@ export function OntologyEditPage() {
                         downloadJsonLd({ ephemeralNodes, ephemeralEdges });
                       }}
                       aria-label={t("exportJsonLdAriaLabel")}
-                      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-label text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                     >
                       <FileJson size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
                       <span className="min-w-0 flex-1 truncate">{t("exportJsonLdButton")}</span>
@@ -1585,7 +1585,7 @@ export function OntologyEditPage() {
                         downloadGraphML({ ephemeralNodes, ephemeralEdges });
                       }}
                       aria-label={t("exportGraphMlAriaLabel")}
-                      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-label text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                     >
                       <Network size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
                       <span className="min-w-0 flex-1 truncate">{t("exportGraphMlButton")}</span>
@@ -1610,8 +1610,8 @@ export function OntologyEditPage() {
                       })}
                       className={
                         clearConfirming
-                          ? "flex w-full items-center gap-2.5 rounded-md border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] px-2.5 py-2 text-left text-[11px] text-[color:var(--color-danger-text-strong)] transition-colors"
-                          : "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-danger-text-strong)]"
+                          ? "flex w-full items-center gap-2.5 rounded-md border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] px-2.5 py-2 text-left text-label text-[color:var(--color-danger-text-strong)] transition-colors"
+                          : "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-label text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-danger-text-strong)]"
                       }
                     >
                       <Trash2 size={13} className="shrink-0" />
@@ -1697,10 +1697,10 @@ export function OntologyEditPage() {
                   >
                     <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[color:var(--color-indigo-text-dot)] opacity-80" />
                     <span>
-                      <span className="block text-[11px] font-[var(--font-weight-signature)]">
+                      <span className="block text-label font-[var(--font-weight-signature)]">
                         {t("layoutDagre")}
                       </span>
-                      <span className="mt-0.5 block text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+                      <span className="mt-0.5 block text-caption leading-4 text-[color:var(--color-text-quaternary)]">
                         {t("layoutDagreTitle")}
                       </span>
                     </span>
@@ -1721,10 +1721,10 @@ export function OntologyEditPage() {
                   >
                     <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[color:var(--color-indigo-text-dot)] opacity-80" />
                     <span>
-                      <span className="block text-[11px] font-[var(--font-weight-signature)]">
+                      <span className="block text-label font-[var(--font-weight-signature)]">
                         {t("layoutForce")}
                       </span>
-                      <span className="mt-0.5 block text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+                      <span className="mt-0.5 block text-caption leading-4 text-[color:var(--color-text-quaternary)]">
                         {t("layoutForceTitle")}
                       </span>
                     </span>
@@ -1742,10 +1742,10 @@ export function OntologyEditPage() {
                   >
                     <Wand2 size={12} className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
                     <span>
-                      <span className="block text-[11px] font-[var(--font-weight-signature)]">
+                      <span className="block text-label font-[var(--font-weight-signature)]">
                         {t("autoLayoutButton")}
                       </span>
-                      <span className="mt-0.5 block text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+                      <span className="mt-0.5 block text-caption leading-4 text-[color:var(--color-text-quaternary)]">
                         {t("autoLayoutDescription")}
                       </span>
                     </span>
@@ -2134,7 +2134,7 @@ export function OntologyEditPage() {
             <div className="w-full max-w-[720px] overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)]">
               <header className="flex items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
                 <div className="min-w-0">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+                  <p className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
                     {t("detailsSheetEyebrow")}
                   </p>
                   <h2 className="mt-0.5 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -2184,13 +2184,13 @@ export function OntologyEditPage() {
             <div className="w-full max-w-[680px] overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)]">
               <header className="flex items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+                  <p className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
                     {t("anchorDialogEyebrow")}
                   </p>
                   <h2 className="mt-0.5 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                     {t("anchorDialogTitle")}
                   </h2>
-                  <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  <p className="mt-1 text-label leading-4 text-[color:var(--color-text-tertiary)]">
                     {t("anchorDialogBody")}
                   </p>
                 </div>
@@ -2222,13 +2222,13 @@ export function OntologyEditPage() {
                           : "rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-left transition-colors hover:border-[color:var(--color-indigo-a36)]"
                       }
                     >
-                      <span className="block truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                      <span className="block truncate text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                         {anchor.label}
                       </span>
-                      <span className="mt-1 block truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                      <span className="mt-1 block truncate font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                         {anchorKindLabel} · {anchor.id}
                       </span>
-                      <span className="mt-2 inline-flex rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-tertiary)]">
+                      <span className="mt-2 inline-flex rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-text-tertiary)]">
                         {formatBuilderAnchorDegreeBadge(
                           t("canvasEntryRail.degreeBadge"),
                           anchor.degree,
@@ -2245,32 +2245,32 @@ export function OntologyEditPage() {
             안내 + 트리 / 토폴로지 진입점 노출. */}
         <section className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-6 py-10 text-center md:hidden">
           <div className="flex flex-col gap-2">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-indigo-accent)]">
+            <p className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--color-indigo-accent)]">
               {t("mobileEyebrow")}
             </p>
             <h2 className="text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
               {t("mobileTitle")}
             </h2>
-            <p className="max-w-xs break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            <p className="max-w-xs break-keep text-body leading-5 text-[color:var(--color-text-tertiary)]">
               {t("mobileBody")}
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Link
               href={treeHref}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a14)] px-3 text-[12px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)]"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a14)] px-3 text-body text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)]"
             >
               {t("mobileTreeCta")}
             </Link>
             <Link
               href="/topology/"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
             >
               {t("mobileTopologyCta")}
             </Link>
             <Link
               href="/ontology/insights/"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-green-a28)] bg-[color:var(--color-green-a08)] px-3 text-[12px] text-[color:var(--color-green-text)] transition-colors hover:border-[color:var(--color-green-a44)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-green-a28)] bg-[color:var(--color-green-a08)] px-3 text-body text-[color:var(--color-green-text)] transition-colors hover:border-[color:var(--color-green-a44)] hover:text-[color:var(--color-text-primary)]"
             >
               <ShieldCheck size={13} aria-hidden />
               {t("mobileValidateCta")}

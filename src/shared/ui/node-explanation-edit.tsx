@@ -62,7 +62,7 @@ export function NodeExplanationEdit({
     return (
       <div data-testid="node-explanation-read">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {labels.heading}
           </span>
           <button
@@ -78,8 +78,8 @@ export function NodeExplanationEdit({
         <p
           className={
             value
-              ? "mt-2 [overflow-wrap:anywhere] whitespace-pre-wrap text-[12px] leading-5 text-[color:var(--color-text-secondary)]"
-              : "mt-2 text-[12px] italic leading-5 text-[color:var(--color-text-quaternary)]"
+              ? "mt-2 [overflow-wrap:anywhere] whitespace-pre-wrap text-body leading-5 text-[color:var(--color-text-secondary)]"
+              : "mt-2 text-body italic leading-5 text-[color:var(--color-text-quaternary)]"
           }
         >
           {value || labels.empty}
@@ -91,7 +91,7 @@ export function NodeExplanationEdit({
   return (
     <div data-testid="node-explanation-edit">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {labels.heading}
         </span>
         <div className="flex items-center gap-1.5">
@@ -130,7 +130,7 @@ export function NodeExplanationEdit({
         }}
         aria-label={labels.heading}
         data-testid="node-explanation-input"
-        className="mt-2 w-full resize-y rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[12px] leading-5 text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+        className="mt-2 w-full resize-y rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-body leading-5 text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
       />
     </div>
   );

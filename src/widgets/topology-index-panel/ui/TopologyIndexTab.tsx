@@ -34,7 +34,7 @@ export function TopologyIndexTab({ onExpand, labels, className }: TopologyIndexT
         className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--topology-v2-panel-power-on)]"
       />
       <span
-        className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-[color:var(--topology-v2-panel-text-tertiary)]"
+        className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--topology-v2-panel-text-tertiary)]"
         style={{ writingMode: "vertical-rl" }}
       >
         Index

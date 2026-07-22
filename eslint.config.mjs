@@ -7,6 +7,79 @@ import boundaries from 'eslint-plugin-boundaries';
 // `boundaries/dependencies` + object-form selectors로 작성.
 //   문서: https://www.jsboundaries.dev/docs/rules/dependencies/
 
+// ── 디자인 헌장 §11 (기존): scale hover · 보라핑크 그라디언트 금지 ──────
+// 아래 셀렉터 배열은 여러 config object 에서 재사용된다. flat config 는 같은
+// rule 을 여러 번 선언하면 마지막이 "덮어쓰기"(배열 병합 아님)라, size 램프
+// 룰을 추가하는 config 도 이 셀렉터를 함께 실어야 scale/gradient 가드가 그
+// 파일에서 유실되지 않는다.
+const scaleGradientSelectors = [
+  {
+    selector: "Literal[value=/(^|\\s)(hover|active|focus|group-hover):scale-/]",
+    message: '디자인 헌장 §11 — scale hover 금지. bg/border 변경 또는 색 alpha 로 대체.',
+  },
+  {
+    selector:
+      "TemplateElement[value.raw=/(^|\\s)(hover|active|focus|group-hover):scale-/]",
+    message: '디자인 헌장 §11 — scale hover 금지 (template literal). bg/border 변경으로 대체.',
+  },
+  {
+    selector: "Literal[value=/from-(purple|fuchsia|pink)-\\d+.*to-(pink|fuchsia|purple)-\\d+/]",
+    message: '디자인 헌장 §11 — 보라핑크 그라디언트 금지. 단일 인디고 또는 무채색만.',
+  },
+  {
+    selector:
+      "TemplateElement[value.raw=/from-(purple|fuchsia|pink)-\\d+.*to-(pink|fuchsia|purple)-\\d+/]",
+    message: '디자인 헌장 §11 — 보라핑크 그라디언트 금지 (template literal).',
+  },
+];
+
+// ── Geometry & Type Codex (R5) 봉쇄 ─────────────────────────────────
+// text-[Npx] / rounded-[Npx] arbitrary 클래스 금지 — docs/DESIGN-SYSTEM.md
+// "Geometry & Type Codex" 램프(text-caption…text-hero / rounded-chip…panel)
+// 로만 표현한다. 램프 밖의 의도적 예외는 `// eslint-disable-next-line
+// no-restricted-syntax -- <사유>` 로 명시. 마이그레이션 완료 디렉토리 = error,
+// 미완(topology-map-v2 · views/home · hero-header) = warn.
+const arbitrarySizeSelectors = [
+  {
+    selector: 'Literal[value=/text-\\[[0-9.]+px\\]/]',
+    message:
+      'Geometry Codex — text-[Npx] 하드코딩 금지. text-caption/label/body/body-lg/title/display/hero 램프로. 램프 밖이면 eslint-disable + 사유.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/text-\\[[0-9.]+px\\]/]',
+    message:
+      'Geometry Codex — text-[Npx] 하드코딩 금지 (template literal). text-* 램프로.',
+  },
+  {
+    selector: 'Literal[value=/rounded-\\[[0-9.]+px\\]/]',
+    message:
+      'Geometry Codex — rounded-[Npx] 하드코딩 금지. rounded-chip/card/panel 램프로. 램프 밖이면 eslint-disable + 사유.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/rounded-\\[[0-9.]+px\\]/]',
+    message:
+      'Geometry Codex — rounded-[Npx] 하드코딩 금지 (template literal). rounded-* 램프로.',
+  },
+];
+
+// 마이그레이션 완료(치환 끝 · error 봉쇄) 디렉토리.
+const codexMigratedGlobs = [
+  'src/views/ontology-insights/**/*.{ts,tsx}',
+  'src/views/project-selector/**/*.{ts,tsx}',
+  'src/views/ontology-edit/**/*.{ts,tsx}',
+  'src/views/docs-vault/**/*.{ts,tsx}',
+  'src/shared/ui/**/*.{ts,tsx}',
+  'src/widgets/**/*.{ts,tsx}',
+];
+// R6(다른 에이전트) 동시 작업 중 — 아직 미치환, warn 으로만 신규 유입 경고.
+const codexR6Globs = [
+  'src/widgets/topology-map-v2/**/*.{ts,tsx}',
+  'src/widgets/hero-header/**/*.{ts,tsx}',
+  'src/views/home/**/*.{ts,tsx}',
+];
+// 테스트는 렌더된 className 문자열을 assert 하므로 램프 룰에서 제외.
+const codexTestIgnores = ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'];
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -215,32 +288,32 @@ const eslintConfig = defineConfig([
   {
     files: ['src/**/*.{ts,tsx,jsx,js}', 'app/**/*.{ts,tsx,jsx,js}'],
     rules: {
+      'no-restricted-syntax': ['error', ...scaleGradientSelectors],
+    },
+  },
+  // Codex 램프 봉쇄 — 마이그레이션 완료 디렉토리 = error. scale/gradient
+  // 셀렉터도 함께 실어 flat config 덮어쓰기로 그 가드가 유실되지 않게 한다.
+  {
+    files: codexMigratedGlobs,
+    ignores: codexTestIgnores,
+    rules: {
       'no-restricted-syntax': [
         'error',
-        {
-          selector:
-            "Literal[value=/(^|\\s)(hover|active|focus|group-hover):scale-/]",
-          message:
-            '디자인 헌장 §11 — scale hover 금지. bg/border 변경 또는 색 alpha 로 대체.',
-        },
-        {
-          selector:
-            "TemplateElement[value.raw=/(^|\\s)(hover|active|focus|group-hover):scale-/]",
-          message:
-            '디자인 헌장 §11 — scale hover 금지 (template literal). bg/border 변경으로 대체.',
-        },
-        {
-          selector:
-            "Literal[value=/from-(purple|fuchsia|pink)-\\d+.*to-(pink|fuchsia|purple)-\\d+/]",
-          message:
-            '디자인 헌장 §11 — 보라핑크 그라디언트 금지. 단일 인디고 또는 무채색만.',
-        },
-        {
-          selector:
-            "TemplateElement[value.raw=/from-(purple|fuchsia|pink)-\\d+.*to-(pink|fuchsia|purple)-\\d+/]",
-          message:
-            '디자인 헌장 §11 — 보라핑크 그라디언트 금지 (template literal).',
-        },
+        ...scaleGradientSelectors,
+        ...arbitrarySizeSelectors,
+      ],
+    },
+  },
+  // R6 동시 작업 디렉토리 = warn (미치환 유입만 경고). 위 migrated 블록보다
+  // 뒤라 widgets/topology-map-v2·hero-header 는 여기서 warn 으로 내려간다.
+  {
+    files: codexR6Globs,
+    ignores: codexTestIgnores,
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        ...scaleGradientSelectors,
+        ...arbitrarySizeSelectors,
       ],
     },
   },

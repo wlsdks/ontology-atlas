@@ -478,7 +478,7 @@ export function DocsVaultUnifiedPalette({
             aria-activedescendant={
               rows.length > 0 ? paletteOptionId(activeIdx) : undefined
             }
-            className="min-w-0 flex-1 bg-transparent text-[13px] text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent text-body text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
           />
           <button
             type="button"
@@ -496,7 +496,7 @@ export function DocsVaultUnifiedPalette({
           role="listbox"
         >
           {rows.length === 0 ? (
-            <li className="px-3 py-8 text-center text-[12px] text-[color:var(--color-text-tertiary)]">
+            <li className="px-3 py-8 text-center text-body text-[color:var(--color-text-tertiary)]">
               {t('noMatches')}
             </li>
           ) : (
@@ -508,7 +508,7 @@ export function DocsVaultUnifiedPalette({
                   {sectionHeader ? (
                     <li
                       key={`h-${sectionHeader.title}`}
-                      className="mb-0.5 mt-1.5 flex items-center gap-1.5 px-3 pb-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]"
+                      className="mb-0.5 mt-1.5 flex items-center gap-1.5 px-3 pb-0.5 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]"
                     >
                       {sectionHeader.icon}
                       {sectionHeader.title}
@@ -535,7 +535,7 @@ export function DocsVaultUnifiedPalette({
           )}
         </ul>
         <LiveAnnouncer message={resultAnnouncement} />
-        <div className="flex items-center gap-3 border-t border-[color:var(--color-overlay-2)] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+        <div className="flex items-center gap-3 border-t border-[color:var(--color-overlay-2)] px-3 py-2 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
           <span>
             <kbd className="rounded border border-[color:var(--color-divider)] px-1">
               ↑↓
@@ -596,11 +596,11 @@ function ResultRow({
       <span className="flex h-5 w-5 flex-none items-center justify-center text-[color:var(--color-text-quaternary)]">
         {row.icon}
       </span>
-      <span className="flex-1 truncate text-[13px] text-[color:var(--color-text-primary)]">
+      <span className="flex-1 truncate text-body text-[color:var(--color-text-primary)]">
         {row.label}
       </span>
       {row.meta ? (
-        <span className="truncate font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+        <span className="truncate font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
           {row.meta}
         </span>
       ) : null}

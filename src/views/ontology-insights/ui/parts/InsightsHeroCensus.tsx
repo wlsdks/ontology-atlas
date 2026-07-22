@@ -34,7 +34,7 @@ export function InsightsHeroCensus({
   labels: InsightsHeroCensusLabels;
 }) {
   return (
-    <div className="flex flex-col items-stretch gap-3 rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-4 sm:flex-row sm:gap-0">
+    <div className="flex flex-col items-stretch gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-4 sm:flex-row sm:gap-0">
       <HeroSegment label={labels.concepts} gcap="concepts">
         <BigNum value={totalNodes} />
         <SubStrip items={kindsSummary} />
@@ -45,7 +45,7 @@ export function InsightsHeroCensus({
       </HeroSegment>
       <HeroSegment label={labels.health} gcap="health">
         <BigNum value={health.edgesPerConcept.toFixed(2)} unit="edge/concept" />
-        <div className="mt-auto flex flex-wrap items-center gap-3.5 text-[11.5px] text-[color:var(--color-text-tertiary)]">
+        <div className="mt-auto flex flex-wrap items-center gap-3.5 text-label text-[color:var(--color-text-tertiary)]">
           <HealthStat label={labels.orphan} value={health.orphanCount} />
           <HealthStat label={labels.cycle} value={health.cycleCount} />
           <HealthStat label={labels.domainMembership} value={`${health.domainMembershipPct}%`} />
@@ -59,9 +59,9 @@ export function InsightsHeroCensus({
 function HeroSegment({ label, gcap, children }: { label: string; gcap: string; children: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2.5 border-t border-[color:var(--color-divider)] px-6 py-0.5 pt-3 first:border-t-0 first:pt-0.5 sm:border-t-0 sm:border-l sm:pt-0.5 sm:first:border-l-0">
-      <div className="flex items-baseline gap-2 text-[13px] font-medium text-[color:var(--color-text-secondary)]">
+      <div className="flex items-baseline gap-2 text-body font-medium text-[color:var(--color-text-secondary)]">
         {label}
-        <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {gcap}
         </span>
       </div>
@@ -73,12 +73,13 @@ function HeroSegment({ label, gcap, children }: { label: string; gcap: string; c
 function BigNum({ value, unit }: { value: number | string; unit?: string }) {
   return (
     <div
+      // eslint-disable-next-line no-restricted-syntax -- 센서스 시그니처 대형 숫자(40px)는 type 램프 상단(hero 30px)을 넘는 의도적 display 예외.
       className="font-mono text-[40px] font-semibold leading-none tabular-nums tracking-[0.01em] text-[color:var(--topology-v2-numeral-face)]"
       style={{ textShadow: "0 2px 0 var(--topology-v2-numeral-shadow)" }}
     >
       {value}
       {unit ? (
-        <span className="ml-1.5 text-[13px] tracking-[0.06em] text-[color:var(--color-text-quaternary)]" style={{ textShadow: "none" }}>
+        <span className="ml-1.5 text-body tracking-[0.06em] text-[color:var(--color-text-quaternary)]" style={{ textShadow: "none" }}>
           {unit}
         </span>
       ) : null}
@@ -90,18 +91,18 @@ function HealthStat({ label, value }: { label: string; value: number | string })
   return (
     <span className="inline-flex items-center gap-1.5">
       {label}
-      <span className="font-mono text-[11.5px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">{value}</span>
+      <span className="font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">{value}</span>
     </span>
   );
 }
 
 function SubStrip({ items }: { items: Array<{ key: string; label: string; count: number }> }) {
   return (
-    <div className="mt-auto flex flex-wrap items-center gap-3.5 text-[11.5px] text-[color:var(--color-text-tertiary)]">
+    <div className="mt-auto flex flex-wrap items-center gap-3.5 text-label text-[color:var(--color-text-tertiary)]">
       {items.map((item) => (
         <span key={item.key} className="inline-flex items-center gap-1.5">
           {item.label}
-          <span className="font-mono text-[11.5px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">{item.count}</span>
+          <span className="font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">{item.count}</span>
         </span>
       ))}
     </div>
