@@ -221,6 +221,7 @@
     "trustLine": "Local-first · markdown is the source of truth · 0 backend"
   },
   "firstRunStarter": {
+    "brand": "Ontology Atlas",
     "caption": "First run",
     "sampleLabel": "Sample for now",
     "contextBold": "A map of what your product is made of and how the parts connect — at a glance.",
