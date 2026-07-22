@@ -33,4 +33,5 @@ export { TabBar, type TabBarItem } from './tab-bar';
 export { ChromeTile, type ChromeTileProps } from './chrome-tile';
 export { ChromeChip, CHROME_STATUS_CHIP_CLASS, type ChromeChipProps } from './chrome-chip';
 export { BrandMark, BRAND_MARK_AMBER, type BrandMarkProps } from './brand-mark';
+export { HexMark, type HexMarkProps } from './hex-mark';
 export { CompactCopyButton, type CompactCopyButtonProps } from './compact-copy-button';

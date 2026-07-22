@@ -16,6 +16,7 @@ import { useLocalVault } from "@/features/docs-vault-local";
 import { formatDate } from "@/shared/lib/format-date";
 import { buildContainmentParents } from "@/shared/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
+import { HexMark } from "@/shared/ui/hex-mark";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { computeWorkspaceCensus } from "../lib/workspace-census";
@@ -111,7 +112,8 @@ export function ProjectSelectorPage() {
         </nav>
 
         <header className="flex flex-wrap items-end gap-4">
-          <h1 className="text-display font-[var(--font-weight-signature)] tracking-[-0.015em] text-[color:var(--color-text-primary)]">
+          <h1 className="inline-flex items-center gap-2 text-display font-[var(--font-weight-signature)] tracking-[-0.015em] text-[color:var(--color-text-primary)]">
+            <HexMark size={13} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
             {t("headerTitle")}
           </h1>
           <span className="flex items-baseline gap-1.5 pb-[3px] text-label tracking-[0.06em] text-[color:var(--color-text-tertiary)]">

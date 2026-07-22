@@ -48,6 +48,16 @@ function renderRail(ui = <AppNavRail />) {
 }
 
 describe("AppNavRail", () => {
+  it("renders the always-on 'Atlas' wordmark under the brand mark", () => {
+    mocks.pathname = "/topology";
+    renderRail();
+    const wordmark = screen.getByText("Atlas");
+    expect(wordmark).toBeInTheDocument();
+    // aria-hidden so it doesn't double-announce the logo link's "Ontology Atlas".
+    expect(wordmark).toHaveAttribute("aria-hidden", "true");
+    expect(wordmark).toHaveAttribute("translate", "no");
+  });
+
   it("renders all 5 destinations with i18n labels", () => {
     renderRail();
     expect(screen.getByTestId("app-nav-rail-item-map")).toBeInTheDocument();
