@@ -47,6 +47,13 @@ export interface RealmRuntimeData {
    * 텅 비어 보인다 (실화면 실증).
    */
   tierKindById: ReadonlyMap<string, "project" | "domain" | "capability" | "element">;
+  /**
+   * 멤버별 루트로부터의 깊이(루트=0). S5 깊이 연출(FLIP 계단 지연 · 시차 밴드 ·
+   * 선명도 차등)이 읽는 런타임 데이터 — `tierKindById` 와 같은 방식으로 노출한다.
+   * (`tierKindById` 는 깊이를 4-티어로 뭉개므로 depth5 를 depth3 과 구분 못 한다;
+   * 순차 지연/시차 계수는 원본 깊이로 판정하는 게 더 정확하다.)
+   */
+  depthById: ReadonlyMap<string, number>;
 }
 
 const DEPTH_TIER_KINDS = ["project", "domain", "capability", "element"] as const;
@@ -148,6 +155,7 @@ export function buildRealmRuntimeData(
         DEPTH_TIER_KINDS[Math.min(depth, DEPTH_TIER_KINDS.length - 1)],
       ]),
     ),
+    depthById: new Map(subtree.depthById),
   };
 }
 

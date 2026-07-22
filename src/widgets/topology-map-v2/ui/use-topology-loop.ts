@@ -33,15 +33,22 @@ import {
   REALM_INSIDE_FLIP_MS,
   REALM_OUTSIDE_FLING_MS,
   isRealmOutsideCulled,
-  REALM_INSIDE_FLIP_DELAY_MS,
   REALM_WARDING_DRAW_DELAY_MS,
   realmDustParallaxFactor,
+  realmInsideFlipDelayFor,
   realmInsidePosition,
   realmOutsidePosition,
   realmTransitionReducer,
   realmWardingDrawProgress,
   type RealmTransitionState,
 } from "../model/realm-transition";
+import {
+  depthParallaxFactorForDepth,
+  isDepthParallaxActive,
+  stepDepthParallax,
+  ZERO_PARALLAX,
+  type DepthParallaxOffset,
+} from "../model/realm-depth-parallax";
 import { buildRealmRuntimeData, fallbackAngleFor, realmCameraTarget, type RealmRuntimeData } from "./topology-realm-runtime";
 import { createTopologyPointerHandlers, type TopologyPointerHandlers } from "./topology-pointer-handlers";
 import { stepTopologyPhysics } from "./topology-physics-step";
@@ -220,6 +227,23 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const onEnterRealmRef = useRef<typeof onEnterRealm>(onEnterRealm);
   /** 궤도 버튼 DOM 미러 (rAF 마운트 전용 effect 가 prop ref 를 dep 으로 걸지 않게). */
   const realmEnterButtonElRef = useRef<HTMLButtonElement | null>(null);
+  // --- S5 깊이 시차 (영역 active 중 카메라 입력 반응) ---
+  /** depth2(capability 링) 시차 오프셋(월드 단위). 카메라 정지 시 0 수렴. */
+  const realmParallaxDepth2Ref = useRef<DepthParallaxOffset>(ZERO_PARALLAX);
+  /** depth3+(element 링) 시차 오프셋(월드 단위). */
+  const realmParallaxDepth3Ref = useRef<DepthParallaxOffset>(ZERO_PARALLAX);
+  /** 직전 프레임 카메라 중심(월드) — 시차 델타 계산. null=이전 표본 없음. */
+  const prevCameraCenterRef = useRef<{ x: number; y: number } | null>(null);
+  /**
+   * 이번 프레임 시차 데이터(밴드별 오프셋 + depthById). rAF 가 매 프레임 갱신,
+   * 포인터 히트테스트가 읽어 드로우와 **같은** 오프셋으로 클릭을 맞춘다. 영역
+   * active + 오프셋 유의미할 때만 non-null.
+   */
+  const realmParallaxRef = useRef<{
+    depthById: ReadonlyMap<string, number>;
+    depth2: DepthParallaxOffset;
+    depth3: DepthParallaxOffset;
+  } | null>(null);
 
   const cameraRef = useRef<CameraAxes>({
     x: { value: 0, velocity: 0 },
@@ -960,7 +984,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                 node.y = target.y;
               } else {
                 const from = data.insideFrom.get(node.id) ?? target;
-                const p = realmInsidePosition(from, target, elapsed - REALM_INSIDE_FLIP_DELAY_MS, flipDur);
+                // S5 깊이 계층 순차 조립 — 멤버 깊이별로 FLIP 시작을 계단식으로
+                // 밀어 루트→바깥 링이 층층이 앉는 공감각을 만든다(각 링 660 유지).
+                const delay = realmInsideFlipDelayFor(data.depthById.get(node.id) ?? 1);
+                const p = realmInsidePosition(from, target, elapsed - delay, flipDur);
                 node.x = p.x;
                 node.y = p.y;
               }
@@ -1043,6 +1070,48 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       });
       cameraRef.current = camera;
 
+      // --- S5 깊이 시차 스텝 — 영역 active 중 카메라 입력(팬/줌으로 이동한 월드
+      // 중심)의 프레임 델타를 깊이 밴드별 오프셋에 충전한다. 카메라 정지 시
+      // exp 감쇠로 0 수렴 — reduced-motion 은 오프셋 0(effect 없음). 감쇠 꼬리는
+      // 유휴 grace(1200ms) 안에 사실상 0 이 되므로(tau 0.18s) 별도 wake 배선
+      // 없이 idle-gate 계약을 지킨다. entering 페이즈의 돌리-인은 프로그램적
+      // 이동이라 시차에서 제외(입력 반응만) — 중심만 동기화해 active 진입 시
+      // 큰 델타가 튀지 않게 한다. ---
+      {
+        const realmActive =
+          realmDataRef.current !== null &&
+          realmTransitionRef.current.phase === "active" &&
+          !reducedMotionRef.current;
+        const prevC = prevCameraCenterRef.current;
+        if (realmActive && prevC) {
+          const delta = { x: camera.x.value - prevC.x, y: camera.y.value - prevC.y };
+          const depthById = realmDataRef.current!.depthById;
+          realmParallaxDepth2Ref.current = stepDepthParallax(
+            realmParallaxDepth2Ref.current,
+            delta,
+            depthParallaxFactorForDepth(2),
+            dt,
+          );
+          realmParallaxDepth3Ref.current = stepDepthParallax(
+            realmParallaxDepth3Ref.current,
+            delta,
+            depthParallaxFactorForDepth(3),
+            dt,
+          );
+          const d2 = realmParallaxDepth2Ref.current;
+          const d3 = realmParallaxDepth3Ref.current;
+          realmParallaxRef.current =
+            isDepthParallaxActive(d2) || isDepthParallaxActive(d3)
+              ? { depthById, depth2: d2, depth3: d3 }
+              : null;
+        } else {
+          realmParallaxDepth2Ref.current = ZERO_PARALLAX;
+          realmParallaxDepth3Ref.current = ZERO_PARALLAX;
+          realmParallaxRef.current = null;
+        }
+        prevCameraCenterRef.current = { x: camera.x.value, y: camera.y.value };
+      }
+
       // M-5 — emit the semantic-zoom tier only when it changes (spine →
       // circuit → element), so the corner readout's orientation hint tracks
       // what's actually drawn. Same reveal bands as the draw pass (default
@@ -1111,9 +1180,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       let realmMemberIds: ReadonlySet<string> | null = null;
       let realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null = null;
       let realmDustParallax = 0;
+      // S5 — 깊이 연출용: 선명도(entering+active)는 depthById, 시차(active 만)는
+      // 밴드 오프셋. 시차는 위 스텝이 이미 active+유의미일 때만 ref 를 채웠다.
+      let realmDepthById: ReadonlyMap<string, number> | null = null;
+      let realmDepthParallax: { depth2: DepthParallaxOffset; depth3: DepthParallaxOffset } | null = null;
       if (realmData && (realmState.phase === "entering" || realmState.phase === "active")) {
         realmMemberIds = realmData.memberIds;
         realmTierKinds = realmData.tierKindById;
+        realmDepthById = realmData.depthById;
+        realmDepthParallax = realmParallaxRef.current
+          ? { depth2: realmParallaxRef.current.depth2, depth3: realmParallaxRef.current.depth3 }
+          : null;
         if (realmState.phase === "entering" && !reducedMotionRef.current) {
           realmDustParallax = realmDustParallaxFactor(now - realmState.startMs);
         }
@@ -1191,6 +1268,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         wardingRing: realmWarding,
         realmMemberIds,
         realmTierKinds,
+        realmDepthById,
+        realmDepthParallax,
         realmDustParallax,
       });
 
@@ -1236,6 +1315,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     clusterChipsRef,
     clusteredIdsRef,
     hoveredClusterIdRef,
+    realmParallaxRef,
     onSelect,
     onSelectEdge,
     onHoverEdge,

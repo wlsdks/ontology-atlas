@@ -22,13 +22,58 @@
  * 전환 총 상한(ms). 처음 600ms 설계는 이탈/FLIP/결계가 동시에 몰려 5fps
  * 녹화에서 중간 프레임이 0장 — "컷 전환" 으로 읽혔다 (소유자 실보고 +
  * 프레임 검수). 페이즈를 시간축으로 분리해 각 동작이 읽히게 늘렸다:
- * 이탈(0–420) → FLIP(240–900, 겹침 시작) → 결계 드로잉(700–1000).
+ * 이탈(0–420) → FLIP(깊이별 240/380/520 지연부터 각 660, 최심 1180 정착) →
+ * 결계 드로잉(700–1000). S5 에서 깊이 계층 순차 조립을 넣어 봉투를
+ * 1000→1180 으로 늘렸다 — 가장 깊은 element 링(depth3+, 지연 520)이 660ms
+ * FLIP 을 마치는 시점이다.
  */
-export const REALM_ENVELOPE_MS = 1000;
-/** 영역 안 노드 FLIP duration(ms) — ease-out. */
+export const REALM_ENVELOPE_MS = 1180;
+/** 영역 안 노드 FLIP duration(ms) — ease-out. 깊이와 무관하게 동일. */
 export const REALM_INSIDE_FLIP_MS = 660;
-/** FLIP 시작 지연(ms) — 밖 세계가 먼저 비워지는 걸 보여준 뒤 재배치. */
+/**
+ * depth1(도메인 링) FLIP 시작 지연(ms) — 밖 세계가 먼저 비워지는 걸 보여준 뒤
+ * 재배치. 루트(depth0)·도메인(depth1)이 먼저 앉는다. 더 깊은 링은
+ * `realmInsideFlipDelayFor` 로 계단식 지연.
+ */
 export const REALM_INSIDE_FLIP_DELAY_MS = 240;
+/**
+ * 깊이 계단 지연 폭(ms, S5) — depth2 는 +1 스텝, depth3+ 는 +2 스텝. 루트에서
+ * 바깥 링으로 "층이 순차로 조립되는" 공감각을 만든다(각 링의 FLIP duration 은
+ * 660 유지, 시작점만 밀린다).
+ */
+export const REALM_INSIDE_FLIP_DELAY_STEP_MS = 140;
+
+/**
+ * 멤버 깊이 → 그 링의 FLIP 시작 지연(ms). 루트/도메인(depth≤1)은 기본 지연,
+ * capability(depth2)는 +1 스텝, element(depth3+)는 +2 스텝에서 멈춘다(그
+ * 이상 깊이는 element 링을 공유하므로 같은 지연). 순수·결정론.
+ */
+export function realmInsideFlipDelayFor(depth: number): number {
+  if (depth <= 1) return REALM_INSIDE_FLIP_DELAY_MS;
+  if (depth === 2) return REALM_INSIDE_FLIP_DELAY_MS + REALM_INSIDE_FLIP_DELAY_STEP_MS;
+  return REALM_INSIDE_FLIP_DELAY_MS + REALM_INSIDE_FLIP_DELAY_STEP_MS * 2;
+}
+
+/**
+ * 영역 active 중 멤버 깊이 → 알파 배수(S5 깊이 선명도). depth1 1.0 · depth2 0.92 ·
+ * depth3+ 0.84 — 틴트/블러 없이 알파만으로 "가까운 층이 더 또렷"한 깊이 신호.
+ * 호버·ego 멤버는 호출부에서 1.0 으로 복귀시킨다. 순수·결정론.
+ */
+export function realmDepthClarityAlpha(depth: number): number {
+  if (depth <= 1) return 1;
+  if (depth === 2) return 0.92;
+  return 0.84;
+}
+
+/**
+ * 영역 active 중 멤버 깊이 → 스케일 배수(S5 깊이 선명도). depth1 1.0 · depth2 0.97 ·
+ * depth3+ 0.94 — 깊은 층을 아주 살짝 작게 그려 원근을 보탠다(알파와 대칭). 순수.
+ */
+export function realmDepthClarityScale(depth: number): number {
+  if (depth <= 1) return 1;
+  if (depth === 2) return 0.97;
+  return 0.94;
+}
 /** 영역 밖 노드 이탈 fling duration(ms) — ease-in 가속. */
 export const REALM_OUTSIDE_FLING_MS = 420;
 /** 결계 링 자기 드로잉 duration(ms). */
