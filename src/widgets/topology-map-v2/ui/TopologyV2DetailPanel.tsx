@@ -589,8 +589,13 @@ export function TopologyV2DetailPanel({
 
       {/* Footer — slug + opt-in full-detail link. The agent-handoff button
           moved up into the W2-A action row (`data-testid=".../action-handoff"`)
-          — this row no longer duplicates it. */}
-      <div className="flex items-center gap-2 border-t border-[color:var(--topology-v2-panel-divider)] pt-2">
+          — this row no longer duplicates it.
+          검수 Pass A 소견 (2026-07-23) — 1440×900에서 콘텐츠가 max-height 를
+          넘기면 이 푸터가 스크롤 밖에 숨는데 스크롤 어포던스가 없어 "전체
+          상세"가 존재하지 않는 것처럼 읽혔다(P3-③ 의 후속). 패널 스크롤
+          컨테이너 안에서 sticky + 불투명 패널 surface 로 항상 보이게 한다 —
+          내용이 다 보일 땐 기존과 동일한 자리(sticky 비활성 상태와 동일). */}
+      <div className="sticky -bottom-[var(--topology-v2-panel-pad)] -mx-[var(--topology-v2-panel-pad)] -mb-[var(--topology-v2-panel-pad)] flex items-center gap-2 rounded-b-[var(--topology-v2-panel-radius)] border-t border-[color:var(--topology-v2-panel-divider)] bg-[color:var(--topology-v2-panel-surface)] px-[var(--topology-v2-panel-pad)] py-2">
         <span className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]">
           {slug}
         </span>
