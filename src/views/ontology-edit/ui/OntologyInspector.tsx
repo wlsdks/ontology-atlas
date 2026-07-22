@@ -472,14 +472,37 @@ function EphemeralDetail({
       <Clipboard size={12} aria-hidden />
     );
   // 새 ephemeral 노드가 select 되면 name input 에 즉시 focus + 전체 선택 →
-  // 사용자가 P/D/C/E 단축키로 노드 추가 후 바로 타이핑 시작 가능 (인스펙터
-  // 클릭 1단계 제거). node.id 별로 한 번만 발화.
+  // 사용자가 P/D/C/E 단축키/버튼으로 노드 추가 후 바로 타이핑 시작 가능
+  // (인스펙터 클릭 1단계 제거). node.id 별로 한 번만 발화.
+  //
+  // 결정론적 autofocus (persona QA — "노드 증발"): 인스펙터가 시트
+  // 다이얼로그(모바일)나 애니메이션 컨테이너 안에서 마운트되면 첫 effect
+  // 프레임에 ref 가 아직 null 이거나 요소가 focusable 하지 않아 focus 가
+  // 붕 떠버린다. 그 공백 프레임에 타이핑한 키가 전역 단축키로 새어 나가
+  // 엉뚱한 노드가 추가되거나 캔버스가 깜빡였다. ref 가 준비되고 실제로
+  // 활성 요소가 될 때까지 rAF 로 몇 프레임 재시도해 창을 닫는다.
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
-    const input = nameInputRef.current;
-    if (!input) return;
-    input.focus({ preventScroll: true });
-    input.select();
+    let raf = 0;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 8; // ~8 프레임 (마운트/레이아웃 안정화 여유)
+    const tryFocus = () => {
+      const input = nameInputRef.current;
+      if (input && input.isConnected) {
+        input.focus({ preventScroll: true });
+        // 포커스가 실제로 이 input 에 안착했을 때만 성공 처리. 안착 실패
+        // (다른 오버레이가 훔침 등)면 다음 프레임 재시도.
+        if (document.activeElement === input) {
+          input.select();
+          return;
+        }
+      }
+      if (attempts++ < MAX_ATTEMPTS) {
+        raf = requestAnimationFrame(tryFocus);
+      }
+    };
+    raf = requestAnimationFrame(tryFocus);
+    return () => cancelAnimationFrame(raf);
   }, [node.id]);
   return (
     <div className="flex flex-col gap-3 rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a06)] p-3">
@@ -512,11 +535,15 @@ function EphemeralDetail({
           onChange={(e) => onRename(node.id, e.target.value)}
           onKeyDown={(e) => {
             if (e.key !== "Enter") return;
-            // 읽기 전용 소스에선 저장이 불가하므로 Enter 도 vault 연결로 유도
-            // (거짓 저장 약속 방지 — 감사 #2). 쓰기 가능 vault 에서만 즉시 저장.
+            // 읽기 전용 소스에선 저장이 불가하다. 예전엔 Enter 가 곧바로
+            // `/download` 로 라우팅해 vault 연결을 유도했는데(감사 #2), 이름을
+            // 입력하다 Enter 를 누른 사용자가 작성 중이던 드래프트를 잃고
+            // 강제로 페이지를 떠나는 치명적 체감 버그였다(persona QA). 이제
+            // 읽기 전용에선 Enter 가 파괴적 동작을 하지 않는다 — 드래프트는
+            // 그대로 유지되고, vault 연결은 별도의 명시적 어포던스(하단
+            // 쓰기-확인 바 / 연결 버튼)로만 일어난다.
             if (readOnly) {
               e.preventDefault();
-              onConnectSource?.();
               return;
             }
             // Enter → 즉시 저장 (canSave 조건 통과 시). 빌더 productivity 핵심 단축.

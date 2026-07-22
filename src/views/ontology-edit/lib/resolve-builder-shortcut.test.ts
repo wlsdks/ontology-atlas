@@ -143,4 +143,26 @@ describe("resolveBuilderShortcut", () => {
   it("매핑 없는 키 → null", () => {
     expect(resolveBuilderShortcut(ev({ key: "z" }), state())).toBeNull();
   });
+
+  it("suppressTypingShortcuts — 노드 추가 후 포커스 안착 전 공백 프레임엔 타이핑 오인 단축키 정지 (회귀: 노드 증발/강제 이동)", () => {
+    const s = state({ suppressTypingShortcuts: true, hasSelection: true, selectionRemovable: true });
+    // addNode 키(도메인 'd' 등) 정지 — 이름 첫 글자가 새 노드로 새지 않게
+    expect(resolveBuilderShortcut(ev({ key: "d" }), s)).toBeNull();
+    expect(resolveBuilderShortcut(ev({ key: "p" }), s)).toBeNull();
+    expect(resolveBuilderShortcut(ev({ key: "e" }), s)).toBeNull();
+    // fullscreen 토글('f') 정지 — 이름에 'f' 가 있어도 캔버스가 깜빡이지 않게
+    expect(resolveBuilderShortcut(ev({ key: "f" }), s)).toBeNull();
+    // 삭제 단축키 정지 — Backspace 로 방금 만든 초안이 지워지지 않게
+    expect(resolveBuilderShortcut(ev({ key: "Backspace" }), s)).toBeNull();
+    // Esc 사다리는 정지 창의 영향을 받지 않는다(선택 해제는 계속 가능)
+    expect(resolveBuilderShortcut(ev({ key: "Escape" }), s)).toEqual({
+      type: "deselect",
+    });
+  });
+
+  it("suppressTypingShortcuts=false(기본) 면 단축키 정상 동작", () => {
+    expect(
+      resolveBuilderShortcut(ev({ key: "d" }), state({ suppressTypingShortcuts: false })),
+    ).toEqual({ type: "addNode", kind: "domain" });
+  });
 });

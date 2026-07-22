@@ -7,6 +7,13 @@ export { DocsVaultBacklinks } from './ui/DocsVaultBacklinks';
 export { searchDocs } from './lib/search';
 export type { DocsSearchMatch } from './lib/search';
 export {
+  resolveDocLink,
+  githubBlobUrl,
+  ONTOLOGY_ATLAS_REPO_BLOB_BASE,
+  DOCS_VAULT_REPO_ROOT,
+} from './lib/resolve-doc-link';
+export type { ResolvedDocLink } from './lib/resolve-doc-link';
+export {
   readRecentDocs,
   pushRecentDoc,
   migrateLegacyRecentDocs,

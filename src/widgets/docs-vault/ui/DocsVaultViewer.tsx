@@ -15,6 +15,7 @@ import {
 import { splitHighlightSegments } from '@/shared/lib/highlight-match';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { fetchServerDocContent } from '../lib/server-doc-content';
+import { resolveDocLink } from '../lib/resolve-doc-link';
 
 interface Props {
   doc: VaultDoc;
@@ -34,34 +35,12 @@ interface Props {
   /** 상대 이미지 경로를 실제 src 로 변환 (로컬 볼트의 asset blob URL 등).
    *  서버 볼트에선 미지정. */
   resolveImage?: (path: string) => Promise<string | null>;
-}
-
-// 현재 md 파일의 디렉터리 기준으로 상대 링크를 vault slug 로 resolve.
-function resolveRelativeSlug(
-  href: string,
-  fromSlug: string,
-): { slug: string; anchor?: string } | null {
-  const [target, anchor] = href.split('#');
-  if (!target) return null;
-  if (!target.endsWith('.md')) return null;
-  const fromDir = fromSlug.includes('/')
-    ? fromSlug.slice(0, fromSlug.lastIndexOf('/'))
-    : '';
-  const rel = target.replace(/^\.\//, '');
-  const joined = fromDir ? `${fromDir}/${rel}` : rel;
-  // path.posix.normalize 없이 직접 처리 — 브라우저 환경 안전.
-  const parts = joined.split('/');
-  const stack: string[] = [];
-  for (const p of parts) {
-    if (p === '' || p === '.') continue;
-    if (p === '..') {
-      stack.pop();
-      continue;
-    }
-    stack.push(p);
-  }
-  const normalized = stack.join('/').replace(/\.md$/, '');
-  return { slug: normalized, anchor: anchor || undefined };
+  /** vault 외부(`../` escape) 상대 md 링크를 GitHub blob 으로 바꾸는 base.
+   *  번들 docs vault 에서만 지정. 로컬 vault 는 미지정 → 죽은 404 대신
+   *  비-라우팅 렌더. */
+  repoBlobBase?: string;
+  /** 이 vault 가 repo 안에서 위치한 경로 (번들 docs vault = `docs`). */
+  vaultRepoRoot?: string;
 }
 
 /**
@@ -79,6 +58,8 @@ export function DocsVaultViewer({
   getDocContent,
   highlightQuery,
   resolveImage,
+  repoBlobBase,
+  vaultRepoRoot,
 }: Props) {
   const t = useTranslations('vaultWidgets.viewer');
   const [raw, setRaw] = useState<string | null>(null);
@@ -254,18 +235,25 @@ export function DocsVaultViewer({
             </a>
           );
         }
-        const resolved = resolveRelativeSlug(href, doc.slug);
-        if (resolved && vaultSlugs.has(resolved.slug)) {
+        const resolved = resolveDocLink({
+          href,
+          fromSlug: doc.slug,
+          vaultSlugs,
+          repoBlobBase,
+          vaultRepoRoot,
+        });
+        if (resolved.kind === 'internal') {
+          const anchor = resolved.anchor;
           return (
             <Link
-              href={getDocHref(resolved.slug, resolved.anchor)}
+              href={getDocHref(resolved.slug, anchor)}
               onClick={(e) => {
                 e.preventDefault();
                 onNavigate(resolved.slug);
-                if (resolved.anchor && typeof window !== 'undefined') {
+                if (anchor && typeof window !== 'undefined') {
                   requestAnimationFrame(() => {
                     document
-                      .getElementById(resolved.anchor!)
+                      .getElementById(anchor)
                       ?.scrollIntoView({ behavior: 'smooth' });
                   });
                 }
@@ -274,6 +262,35 @@ export function DocsVaultViewer({
             >
               {children}
             </Link>
+          );
+        }
+        // vault 바깥(repo) 파일 → GitHub blob 새 탭. 앱 라우팅으로 넘겨
+        // 404("어디서 길을 잃으셨나요")로 죽던 회귀 정정.
+        if (resolved.kind === 'external') {
+          return (
+            <a
+              href={resolved.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-flex items-center gap-1 underline underline-offset-2 decoration-[color:var(--color-indigo-line-a40)] hover:decoration-[color:var(--color-indigo-accent)]"
+              {...rest}
+            >
+              {children}
+              <ExternalLink size={10} className="opacity-60" aria-hidden />
+            </a>
+          );
+        }
+        // repo 위치 불명(로컬 vault) & vault 외부 → 라우팅 불가. 죽은 404 대신
+        // 비-라우팅 텍스트로 렌더한다(href 제거).
+        if (resolved.kind === 'unresolved') {
+          return (
+            <span
+              className="text-[color:var(--color-text-tertiary)] underline decoration-dotted underline-offset-2"
+              title={t('externalLinkUnresolved', { href })}
+              {...rest}
+            >
+              {children}
+            </span>
           );
         }
         return (

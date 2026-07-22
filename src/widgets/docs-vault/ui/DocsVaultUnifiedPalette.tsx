@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import {
   Clock,
+  ExternalLink,
   FileText,
   Hash,
   Pin,
@@ -16,7 +17,17 @@ import {
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
 import { LiveAnnouncer } from '@/shared/ui';
 import { searchDocs, type DocsSearchMatch } from '../lib/search';
+import { githubBlobUrl } from '../lib/resolve-doc-link';
 import type { VaultCommand } from '../model/command';
+
+// 본문 검색이 없어 0건이 났을 때 안내하는 캐노니컬 문서 바로가기. vault
+// 바깥(repo)에 사는 관문 문서라 GitHub blob 외부 링크로 연다 — DocsVaultViewer
+// 의 vault-외부 링크 처리와 같은 방식(resolve-doc-link.githubBlobUrl) 재사용.
+const CANONICAL_DOC_LINKS: Array<{ labelKey: string; repoPath: string }> = [
+  { labelKey: 'canonicalMcp', repoPath: 'mcp/README.md' },
+  { labelKey: 'canonicalCli', repoPath: 'cli/README.md' },
+  { labelKey: 'canonicalReadme', repoPath: 'README.md' },
+];
 
 interface Props {
   onClose: () => void;
@@ -395,6 +406,15 @@ export function DocsVaultUnifiedPalette({
         ? t('noMatches')
         : t('resultsAnnounce', { count: rows.length });
 
+  // 문서 검색(mixed) 모드에서 0건일 때만 본문검색 미지원 안내를 띄운다.
+  // 명령(`>`)·태그(`#`) 모드의 0건은 기존 noMatches 로 충분.
+  const trimmedQuery = query.trim();
+  const isDocSearchZero =
+    trimmedQuery !== '' &&
+    !trimmedQuery.startsWith('>') &&
+    !trimmedQuery.startsWith('#') &&
+    rows.length === 0;
+
   const handleQueryChange = (next: string) => {
     setQuery(next);
     setActiveIdx(0);
@@ -496,9 +516,39 @@ export function DocsVaultUnifiedPalette({
           role="listbox"
         >
           {rows.length === 0 ? (
-            <li className="px-3 py-8 text-center text-body text-[color:var(--color-text-tertiary)]">
-              {t('noMatches')}
-            </li>
+            isDocSearchZero ? (
+              <li className="px-3 py-6">
+                <p className="text-body text-[color:var(--color-text-secondary)]">
+                  {t('noBodySearchTitle')}
+                </p>
+                <p className="mt-1 text-caption text-[color:var(--color-text-tertiary)]">
+                  {t('noBodySearchHint')}
+                </p>
+                <p className="mt-4 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+                  {t('canonicalDocsLabel')}
+                </p>
+                <ul className="mt-1.5 flex flex-col gap-0.5">
+                  {CANONICAL_DOC_LINKS.map((link) => (
+                    <li key={link.repoPath}>
+                      <a
+                        href={githubBlobUrl(link.repoPath)}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="inline-flex items-center gap-1.5 rounded-sm py-1 text-body text-[color:var(--color-indigo-line-a90)] underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]"
+                      >
+                        <FileText size={11} aria-hidden />
+                        {t(link.labelKey)}
+                        <ExternalLink size={10} className="opacity-60" aria-hidden />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ) : (
+              <li className="px-3 py-8 text-center text-body text-[color:var(--color-text-tertiary)]">
+                {t('noMatches')}
+              </li>
+            )
           ) : (
             rows.map((row, idx) => {
               const active = idx === activeIdx;
