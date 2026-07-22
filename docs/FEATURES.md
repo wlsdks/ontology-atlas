@@ -114,11 +114,17 @@ dialog never says "온톨로지" (map-building framing for non-experts).
 
 **Desktop first-run (2026-07-18)**: in the installed app (Tauri — detected via
 `isDesktopShell()`, `src/shared/lib/desktop-shell.ts`), `/` with no vault
-renders an Obsidian-style **FirstRunPage** (`src/views/first-run/`): three
-machined cards — open vault folder / create new vault (existing
-`scaffoldOntology()` when the picked folder is empty — 5 markdown seeds +
-agent configs) / browse the built-in demo vault — plus a local-first trust
-line. No download CTA inside the installed app.
+renders an Obsidian-style **FirstRunPage** (`src/views/first-run/`): four
+machined cards — **just start** (2026-07-23, Tauri runtime only — no folder
+picker at all: creates `~/Documents/Ontology Atlas/<name>` on real disk
+automatically, numbering `-2`/`-3` on a name clash, connects it, then reuses
+the same `scaffoldOntology()` seed as "create new vault", and the success
+toast names the exact path — real disk, not OPFS, so an AI agent/MCP can
+still read it; hidden when the real Tauri invoke bridge is absent, e.g. a dev
+`?shell=desktop` browser override) / open vault folder / create new vault
+(existing `scaffoldOntology()` when the picked folder is empty — 5 markdown
+seeds + agent configs) / browse the built-in demo vault — plus a local-first
+trust line. No download CTA inside the installed app.
 
 **Web root-first-open (2026-07-18)**: on hosted web, `/` no longer shows a
 marketing landing page at all — with no vault selected it renders `HomePage`
@@ -144,7 +150,7 @@ IndexedDB goes straight to their own workspace, no starter surfaces at all.
 ### `/` — Smart entry
 
 - **Hosted web, no vault** → `HomePage` rendering the dogfood sample read-only, plus the INDEX-panel first-run starter (see above) — no separate marketing landing page since root-first-open (2026-07)
-- **macOS app, no restored vault** → `FirstRunPage` (open / create / browse demo), not the hosted intro
+- **macOS app, no restored vault** → `FirstRunPage` (just start / open / create / browse demo), not the hosted intro
 - **Recent desktop vaults** → the picker stores recently opened Tauri vault paths, can reopen them without another Finder selection, and can remove stale paths from the list
 - **Vault loaded (web or desktop)** → `HomePage` — the topology hub (map + INDEX concept panel + node datasheet), same component `/topology` renders (B3 허브가 곧 지도 — the old tree/ego hub, `OntologyViewPage`, is retired; `/ontology` now redirects here with INDEX expanded). Restoring a previously-opened vault handle from IndexedDB goes straight here — no starter surfaces, no re-clicking through first-run every visit
 - **Switch vault mid-session**: the topology settings gear (⚙, top-right utility rail) has a "switch vault" row → `/docs/?intent=local`, alongside the `/docs` vault pill's own "swap" control

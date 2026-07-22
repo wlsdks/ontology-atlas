@@ -6,6 +6,16 @@ export {
   type VaultCreateFlowVault,
 } from './model/use-vault-create-flow';
 export {
+  useJustStartVault,
+  type JustStartVaultVault,
+} from './model/use-just-start-vault';
+export {
+  DEFAULT_VAULT_BASE_NAME,
+  DEFAULT_VAULT_PARENT_LABEL,
+  buildDefaultVaultDisplayPath,
+  resolveUniqueVaultDirName,
+} from './lib/default-vault-naming';
+export {
   buildAgentSetupCheckCliCommandTemplate,
   buildAgentSetupCliCommandTemplate,
   buildCodexMcpAddCommandTemplate,

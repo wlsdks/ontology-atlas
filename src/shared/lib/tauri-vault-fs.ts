@@ -278,3 +278,35 @@ export async function openTauriVaultInFinder(rootPath: string): Promise<void> {
   }
   await invoke('open_vault_in_finder', { rootPath });
 }
+
+/**
+ * "그냥 시작하기" (데스크톱 first-run) 전용 — `~/Documents/Ontology Atlas`
+ * 컨테이너 폴더를 없으면 만들고 절대 경로를 돌려준다. JS 는 fs 플러그인 없이
+ * Documents 경로를 알 수 없어 Rust 커맨드가 유일한 근거. non-Tauri 런타임에서는
+ * null — 호출자가 "데스크톱 전용" 가드를 이미 통과했어야 한다.
+ */
+export async function ensureDefaultVaultParentDir(): Promise<string | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<string>('ensure_default_vault_parent_dir');
+}
+
+/** rootPath 바로 아래 하위 디렉터리 이름만 나열 (파일은 제외). */
+export async function listTauriDirectoryNames(rootPath: string): Promise<string[]> {
+  const invoke = getInvoke();
+  if (!invoke) return [];
+  const entries = await invoke<TauriVaultEntry[]>('list_vault_directory', {
+    rootPath,
+    relativePath: '',
+  });
+  return entries.filter((entry) => entry.kind === 'directory').map((entry) => entry.name);
+}
+
+/** rootPath 아래 name 디렉터리를 없으면 생성 (있으면 no-op). */
+export async function ensureTauriChildDirectory(rootPath: string, name: string): Promise<void> {
+  const invoke = getInvoke();
+  if (!invoke) {
+    throw new Error('Tauri vault runtime is not available.');
+  }
+  await invoke('ensure_vault_directory', { rootPath, relativePath: name });
+}

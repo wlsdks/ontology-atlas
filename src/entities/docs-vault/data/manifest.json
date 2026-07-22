@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-22T15:01:31.304Z",
+  "generatedAt": "2026-07-22T16:02:25.600Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -183,6 +183,21 @@
         },
         {
           "depth": 2,
+          "text": "URL contract (query-param + node id grammar)",
+          "slug": "url-contract-query-param-node-id-grammar"
+        },
+        {
+          "depth": 3,
+          "text": "Query params",
+          "slug": "query-params"
+        },
+        {
+          "depth": 3,
+          "text": "id grammar single source of truth",
+          "slug": "id-grammar-single-source-of-truth"
+        },
+        {
+          "depth": 2,
           "text": "Build pipeline",
           "slug": "build-pipeline"
         },
@@ -203,8 +218,8 @@
         }
       ],
       "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
-      "wordCount": 1425,
-      "updatedAt": "2026-07-21T02:02:13+09:00",
+      "wordCount": 1917,
+      "updatedAt": "2026-07-23T00:19:20+09:00",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -2795,6 +2810,31 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-23 — 발자국 트레일 (걸어온 길)",
+          "slug": "2026-07-23-발자국-트레일-걸어온-길"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-23 — 인사이트 할 일 탭: 오늘의 손질 + 버튼 다이어트 (③+⑨)",
+          "slug": "2026-07-23-인사이트-할-일-탭-오늘의-손질-버튼-다이어트"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-23 — 데스크톱 첫 실행 \"그냥 시작하기\" (정직판 자동 vault)",
+          "slug": "2026-07-23-데스크톱-첫-실행-그냥-시작하기-정직판-자동-vault"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-23 — 브랜드 시그니처 확장 (H6)",
+          "slug": "2026-07-23-브랜드-시그니처-확장-h6"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-23 — 노드 식별 URL 계약 통일 (H5)",
+          "slug": "2026-07-23-노드-식별-url-계약-통일-h5"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-22 — 온보딩 진입점 영속화 + 빌더 선택 배선 (H4)",
           "slug": "2026-07-22-온보딩-진입점-영속화-빌더-선택-배선-h4"
         },
@@ -4269,9 +4309,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 온보딩/토스 디자이너 상위 지적을 첫 실행 표면과 빌더 인스펙터에서 고쳤다. 폴더 열기 CTA 영속화 — 첫 실행 카드를 닫으면 \"내 폴더 열기\"가 설정 ",
-      "wordCount": 32313,
-      "updatedAt": "2026-07-23T00:01:25+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 지도에서 여러 노드를 오가며 탐색하다 보면 \"방금 어디를 봤더라\"를 잃는다. 세션 동안 ego 포커스한 노드를 조용히 기록해 되짚어 갈 수 있게 하는 수동",
+      "wordCount": 33223,
+      "updatedAt": "2026-07-23T01:02:23+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5398,8 +5438,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 11074,
-      "updatedAt": "2026-07-22T10:45:32+09:00",
+      "wordCount": 11151,
+      "updatedAt": "2026-07-23T01:02:23+09:00",
       "linksOut": [
         "slug",
         "project:slug",
