@@ -3,6 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   INITIAL_REALM_TRANSITION_STATE,
   REALM_ENVELOPE_MS,
+  REALM_EXIT_ENVELOPE_MS,
+  REALM_EXIT_FLIP_DELAY_STEP_MS,
+  REALM_EXIT_OUTSIDE_RETURN_MS,
+  REALM_EXIT_WARDING_ERASE_MS,
+  REALM_FLING_REACH,
   REALM_INSIDE_FLIP_DELAY_MS,
   REALM_INSIDE_FLIP_DELAY_STEP_MS,
   REALM_INSIDE_FLIP_MS,
@@ -12,11 +17,15 @@ import {
   realmDepthClarityAlpha,
   realmDepthClarityScale,
   realmDustParallaxFactor,
+  realmExitFlipDelayFor,
   realmInsideFlipDelayFor,
   realmInsidePosition,
   realmOutsidePosition,
+  realmOutsideReturnPosition,
+  realmOutsideReturnReach,
   realmTransitionReducer,
   realmWardingDrawProgress,
+  realmWardingEraseProgress,
   type RealmTransitionState,
 } from "./realm-transition";
 
@@ -51,8 +60,10 @@ describe("realmTransitionReducer", () => {
     const active: RealmTransitionState = { phase: "active", rootId: "c", startMs: 0, durationMs: 0 };
     const exiting = realmTransitionReducer(active, { type: "exit", now: 500, reducedMotion: false });
     expect(exiting.phase).toBe("exiting");
-    expect(exiting.durationMs).toBe(REALM_INSIDE_FLIP_MS);
-    const idle = realmTransitionReducer(exiting, { type: "tick", now: 500 + REALM_INSIDE_FLIP_MS });
+    expect(exiting.durationMs).toBe(REALM_EXIT_ENVELOPE_MS);
+    const stillExiting = realmTransitionReducer(exiting, { type: "tick", now: 500 + REALM_EXIT_ENVELOPE_MS - 1 });
+    expect(stillExiting.phase).toBe("exiting");
+    const idle = realmTransitionReducer(exiting, { type: "tick", now: 500 + REALM_EXIT_ENVELOPE_MS });
     expect(idle).toEqual(INITIAL_REALM_TRANSITION_STATE);
   });
 
@@ -190,5 +201,90 @@ describe("realmDustParallaxFactor", () => {
     expect(realmDustParallaxFactor(9999)).toBe(0);
     const peak = realmDustParallaxFactor(300, 600);
     expect(peak).toBeCloseTo(1, 5);
+  });
+});
+
+describe("realmExitFlipDelayFor (S6 퇴장 깊이 역순 — 깊은 층 먼저)", () => {
+  it("depth3+ 가 먼저(0), 얕을수록 늦다 — 입장 계단의 역순", () => {
+    expect(realmExitFlipDelayFor(3)).toBe(0);
+    expect(realmExitFlipDelayFor(9)).toBe(0);
+    expect(realmExitFlipDelayFor(2)).toBe(REALM_EXIT_FLIP_DELAY_STEP_MS);
+    expect(realmExitFlipDelayFor(1)).toBe(REALM_EXIT_FLIP_DELAY_STEP_MS * 2);
+    expect(realmExitFlipDelayFor(0)).toBe(REALM_EXIT_FLIP_DELAY_STEP_MS * 2);
+  });
+
+  it("입장 지연과 방향이 반대다(깊이 증가 시 단조 감소)", () => {
+    expect(realmExitFlipDelayFor(3)).toBeLessThan(realmExitFlipDelayFor(2));
+    expect(realmExitFlipDelayFor(2)).toBeLessThan(realmExitFlipDelayFor(1));
+    // 입장은 반대로 깊을수록 늦다.
+    expect(realmInsideFlipDelayFor(1)).toBeLessThan(realmInsideFlipDelayFor(3));
+  });
+});
+
+describe("realmWardingEraseProgress (S6 결계 역방향 지우기)", () => {
+  it("역재생 1→0, clamp", () => {
+    expect(realmWardingEraseProgress(0)).toBe(1);
+    expect(realmWardingEraseProgress(REALM_EXIT_WARDING_ERASE_MS)).toBe(0);
+    expect(realmWardingEraseProgress(9999)).toBe(0);
+    expect(realmWardingEraseProgress(-5)).toBe(1);
+  });
+
+  it("duration<=0 이면 즉시 0(지워짐)", () => {
+    expect(realmWardingEraseProgress(5, 0)).toBe(0);
+  });
+});
+
+describe("realmOutsideReturnReach (S6 역중력 reach 1→0)", () => {
+  it("elapsed 0 → 1(완전 이탈), duration → 0(홈)", () => {
+    expect(realmOutsideReturnReach(0)).toBeCloseTo(1);
+    expect(realmOutsideReturnReach(REALM_EXIT_OUTSIDE_RETURN_MS)).toBeCloseTo(0);
+  });
+
+  it("감속 착지 — 후반(착지 근처)이 전반보다 느리게 변한다", () => {
+    const d = REALM_EXIT_OUTSIDE_RETURN_MS;
+    const early = realmOutsideReturnReach(0, d) - realmOutsideReturnReach(d * 0.1, d);
+    const late = realmOutsideReturnReach(d * 0.9, d) - realmOutsideReturnReach(d, d);
+    expect(early).toBeGreaterThan(late);
+  });
+
+  it("duration<=0 이면 0", () => {
+    expect(realmOutsideReturnReach(5, 0)).toBe(0);
+  });
+});
+
+describe("realmOutsideReturnPosition (S6 fling 역재생)", () => {
+  it("elapsed 0 은 fling 끝점과 일치, duration 은 정확히 홈으로 착지(튐 없음)", () => {
+    const from = { x: 120, y: -40 };
+    const center = { x: 0, y: 0 };
+    // 입장 fling 이 끝난 위치(fling duration 에서 e=1) 재현.
+    const flungEnd = realmOutsidePosition(from, center, REALM_OUTSIDE_FLING_MS);
+    const start = realmOutsideReturnPosition(from, center, 0);
+    expect(start.x).toBeCloseTo(flungEnd.x, 3);
+    expect(start.y).toBeCloseTo(flungEnd.y, 3);
+    const landed = realmOutsideReturnPosition(from, center, REALM_EXIT_OUTSIDE_RETURN_MS);
+    expect(landed.x).toBeCloseTo(from.x, 3);
+    expect(landed.y).toBeCloseTo(from.y, 3);
+  });
+
+  it("반경이 시간에 따라 단조 감소한다(귀환)", () => {
+    const from = { x: 100, y: 0 };
+    const center = { x: 0, y: 0 };
+    const d = REALM_EXIT_OUTSIDE_RETURN_MS;
+    const r0 = Math.hypot(realmOutsideReturnPosition(from, center, 0).x, realmOutsideReturnPosition(from, center, 0).y);
+    const rMid = Math.hypot(realmOutsideReturnPosition(from, center, d / 2).x, realmOutsideReturnPosition(from, center, d / 2).y);
+    const rEnd = Math.hypot(realmOutsideReturnPosition(from, center, d).x, realmOutsideReturnPosition(from, center, d).y);
+    expect(r0).toBeGreaterThan(rMid);
+    expect(rMid).toBeGreaterThan(rEnd);
+    expect(r0).toBeCloseTo(100 + REALM_FLING_REACH, 0);
+  });
+
+  it("reduced-motion(duration 0) 은 즉시 홈", () => {
+    expect(realmOutsideReturnPosition({ x: 7, y: 3 }, { x: 0, y: 0 }, 5, { duration: 0 })).toEqual({ x: 7, y: 3 });
+  });
+
+  it("중심과 겹친 노드는 fallback 각도로 귀환(NaN 없음)", () => {
+    const p = realmOutsideReturnPosition({ x: 0, y: 0 }, { x: 0, y: 0 }, 10, { fallbackAngle: Math.PI / 2 });
+    expect(Number.isNaN(p.x)).toBe(false);
+    expect(Number.isNaN(p.y)).toBe(false);
   });
 });

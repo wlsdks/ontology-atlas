@@ -44,7 +44,7 @@ if (!Number.isFinite(synth) || synth < 100) {
 }
 
 const ENTER_WINDOW_MS = 1600; // 전개(entering→active): 봉투 1180 + 여유.
-const EXIT_WINDOW_MS = 1400; // 해제(exiting→idle + 호밍): FLIP 660 + 여유.
+const EXIT_WINDOW_MS = 1400; // 해제(exiting→idle): S6 역재생 봉투 800 + 여유.
 const SETTLE_MS = 3200; // 초기 지도 정착 대기.
 
 function percentile(sorted, p) {
