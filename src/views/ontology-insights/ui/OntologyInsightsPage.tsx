@@ -33,7 +33,7 @@ import {
 } from "@/shared/lib/ontology-tree";
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
-import { EmptyState, TabBar } from "@/shared/ui";
+import { EmptyState, HexMark, TabBar } from "@/shared/ui";
 import {
   DEFAULT_INSIGHTS_TAB,
   INSIGHTS_TABS,
@@ -318,7 +318,8 @@ export function OntologyInsightsPage() {
         <MountedGlobalSearch />
 
         <header className="flex flex-wrap items-end gap-4">
-          <h1 className="text-display font-[var(--font-weight-signature)] tracking-[-0.015em] text-[color:var(--color-text-primary)]">
+          <h1 className="inline-flex items-center gap-2 text-display font-[var(--font-weight-signature)] tracking-[-0.015em] text-[color:var(--color-text-primary)]">
+            <HexMark size={13} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
             {t("title")}
           </h1>
           <p className="max-w-xl pb-0.5 text-body text-[color:var(--color-text-tertiary)]">{t("subtitle")}</p>

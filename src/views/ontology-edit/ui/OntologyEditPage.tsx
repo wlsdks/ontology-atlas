@@ -33,7 +33,7 @@ import { slugify } from "@/shared/lib/slugify";
 import { useNavRailHidden } from "@/widgets/app-nav-rail";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { MountedGlobalSearch } from "@/widgets/global-search";
-import { ChromeTile, Tooltip, useToast } from "@/shared/ui";
+import { ChromeTile, HexMark, Tooltip, useToast } from "@/shared/ui";
 import {
   BUILDER_WRITE_BAR_RESERVE_PX,
   resolveToastBottomOffset,
@@ -1419,8 +1419,14 @@ export function OntologyEditPage() {
             <span className="text-[color:var(--color-text-quaternary)]" aria-hidden="true">
               /
             </span>
-            <span className="text-[color:var(--color-text-secondary)]">
-              {t("headerCurrentLabel")}
+            {/* H6 — 육각 운율. sr-only h1 표면이라 브레드크럼 현재-구간
+                라벨이 시각 정체성 앵커다. 무채(tertiary) 6px 급 아웃라인
+                헥사로 브랜드 형태 언어를 심되 앰버 예산은 건드리지 않는다. */}
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <HexMark size={10} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
+              <span className="text-[color:var(--color-text-secondary)]">
+                {t("headerCurrentLabel")}
+              </span>
             </span>
             <span
               data-token="engraved-numeral"

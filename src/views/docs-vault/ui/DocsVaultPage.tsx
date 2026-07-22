@@ -49,7 +49,7 @@ import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
 } from '@/shared/lib/tauri-vault-fs';
-import { Tooltip, useToast } from '@/shared/ui';
+import { HexMark, Tooltip, useToast } from '@/shared/ui';
 // 추출된 page-local helpers.
 import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
 import { useAdvancedMenu } from '../lib/use-advanced-menu';
@@ -1356,7 +1356,13 @@ function DocsVaultContent() {
         <span className="text-[color:var(--color-text-quaternary)]" aria-hidden>
           /
         </span>
-        <span className="truncate text-[color:var(--color-text-secondary)]">{t('header.title')}</span>
+        {/* H6 — 육각 운율. sr-only h1 표면이라 브레드크럼 현재-구간 라벨이
+            시각 정체성 앵커다. 무채(tertiary) 6px 급 아웃라인 헥사로 브랜드
+            형태 언어를 심되 앰버 예산은 건드리지 않는다. */}
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+          <HexMark size={10} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
+          <span className="truncate text-[color:var(--color-text-secondary)]">{t('header.title')}</span>
+        </span>
         {/* 그래프 census(개념/관계 총계)는 이 행에서 삭제됐다 — 문서를 읽는
             표면에서 총계는 어떤 읽기 판단도 바꾸지 못하는 비행동 잉크였고,
             같은 수치가 문서함 점검 모달의 그래프 행에 맥락(둘러보기 CTA)과

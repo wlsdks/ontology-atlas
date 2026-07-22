@@ -121,13 +121,26 @@ export function AppNavRail({ settingsSlot, hidden, className }: AppNavRailProps)
         title="Ontology Atlas"
         aria-label="Ontology Atlas"
         translate="no"
-        className="mb-3.5 flex h-[var(--app-nav-rail-logo-size)] w-[var(--app-nav-rail-logo-size)] shrink-0 items-center justify-center text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-indigo-hover)]"
+        className="group mb-3.5 flex shrink-0 flex-col items-center gap-1"
       >
-        <BrandMark
-          size={20}
-          detail="compact"
-          className="h-[var(--app-nav-rail-logo-icon-size)] w-[var(--app-nav-rail-logo-icon-size)]"
-        />
+        <span className="flex h-[var(--app-nav-rail-logo-size)] w-[var(--app-nav-rail-logo-size)] items-center justify-center text-[color:var(--color-indigo-accent)] transition-colors group-hover:text-[color:var(--color-indigo-hover)]">
+          <BrandMark
+            size={20}
+            detail="compact"
+            className="h-[var(--app-nav-rail-logo-icon-size)] w-[var(--app-nav-rail-logo-icon-size)]"
+          />
+        </span>
+        {/* H6 — 상시 워드마크. 육각 마크 아래 초소형 "Atlas" 텍스트로 5표면
+            공통 레일에 브랜드 서명을 심는다. caption 램프 + quaternary 톤 +
+            tracking-caption 짝(법전 규율). aria-hidden — Link 의 aria-label
+            "Ontology Atlas" 와 중복 낭독 방지. */}
+        <span
+          aria-hidden="true"
+          translate="no"
+          className="text-[length:var(--text-caption)] font-[var(--font-weight-signature)] tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-tertiary)]"
+        >
+          Atlas
+        </span>
       </Link>
 
       <nav aria-label={t("ariaLabel")} className="flex w-full flex-1 flex-col gap-0.5">
