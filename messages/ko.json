@@ -2405,6 +2405,22 @@
         "boundaryJumpAria": "이 밖 노드가 속한 영역으로 이동",
         "boundaryEmpty": "바깥과 닿은 관계가 없어요"
       }
+    },
+    "footprint": {
+      "chipLabel": "걸은 길 {count}개",
+      "heading": "걸어온 길",
+      "triggerAriaLabel": "걸어온 길 열기",
+      "currentAriaLabel": "지금 여기",
+      "rowAriaLabel": "{title}(으)로 이동",
+      "copyLabel": "에이전트에게 복사",
+      "copyAriaLabel": "방문 체인을 에이전트 인계 패킷으로 복사",
+      "copyCopiedAriaLabel": "걸어온 길 패킷 복사됨",
+      "clearLabel": "지우기",
+      "clearAriaLabel": "걸어온 길 지우기",
+      "packetTitle": "걸어온 길 (탐색 경로)",
+      "packetOrder": "방문 순서 (오래된 → 최근):",
+      "packetReviewHint": "각 노드 맥락 검토:",
+      "packetPathHint": "여정 양 끝 사이 경로 확인:"
     }
   },
   "fullDetailA1": {
