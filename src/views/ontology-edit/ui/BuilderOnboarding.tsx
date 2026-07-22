@@ -64,7 +64,7 @@ export function BuilderOnboarding({
           transition={{ duration: 0.22, ease: [0.42, 0, 0.58, 1] }}
           role="dialog"
           aria-label={t("dialogAriaLabel")}
-          className="pointer-events-auto absolute left-4 top-4 z-20 w-[min(430px,calc(100%-2rem))] rounded-xl border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-panel)] p-4 shadow-[0_18px_40px_var(--color-shadow-a35)]"
+          className="pointer-events-auto absolute left-4 top-4 z-20 w-[min(430px,calc(100%-2rem))] rounded-xl border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-panel)] p-4 shadow-[var(--shadow-elevation-1)]"
         >
           <header className="mb-3 flex items-start justify-between gap-3">
             <div>

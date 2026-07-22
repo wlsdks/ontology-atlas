@@ -86,7 +86,7 @@ export function BuilderCanvasEntryRail({
           aria-label={collapsedRailLabel}
           title={t("hint")}
           onClick={onToggleExpanded}
-          className="pointer-events-auto flex h-8 max-w-full items-center gap-1.5 rounded-lg border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-panel-overlay-a88)] px-2.5 text-left text-[11px] text-[color:var(--color-text-secondary)] shadow-[0_10px_32px_var(--color-shadow-a22)] transition-colors hover:border-[color:var(--color-indigo-a42)] hover:text-[color:var(--color-text-primary)]"
+          className="pointer-events-auto flex h-8 max-w-full items-center gap-1.5 rounded-lg border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-panel-overlay-a88)] px-2.5 text-left text-[11px] text-[color:var(--color-text-secondary)] shadow-[var(--shadow-elevation-1)] transition-colors hover:border-[color:var(--color-indigo-a42)] hover:text-[color:var(--color-text-primary)]"
         >
           <Network size={12} className="shrink-0 text-[color:var(--color-indigo-accent)]" />
           <span className="shrink-0 font-[var(--font-weight-signature)]">

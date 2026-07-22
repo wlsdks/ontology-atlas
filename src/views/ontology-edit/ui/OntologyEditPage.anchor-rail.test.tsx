@@ -247,7 +247,7 @@ describe("BuilderCommandStrip", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("임시 개념과 관계가 생기면 캔버스 stage 상태를 live status 로 알린다", () => {
+  it("임시 개념이 있으면 수치 대신 다음 행동 카피를 보여준다 (수치 중복 제거, 감사 #6)", () => {
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
         <BuilderCommandStrip
@@ -261,10 +261,11 @@ describe("BuilderCommandStrip", () => {
       </NextIntlClientProvider>,
     );
 
-    const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("캔버스 준비됨 · 개념 1 · 관계 1");
-    expect(status).toHaveAttribute("aria-live", "polite");
-    expect(status).toHaveClass("motion-safe:animate-[atlasStatusIn_180ms_ease-out]");
+    // 배너 제목은 행동 카피 — "임시 개념 1 · 관계 0" 같은 수치를 반복하지 않는다.
+    // 수치의 진실원은 하단 write bar 하나뿐(한 화면 한 수치).
+    expect(screen.getByText("이름을 붙이면 저장할 수 있어요")).toBeInTheDocument();
+    expect(screen.queryByText(/캔버스 준비됨/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("선택된 개념의 다음 편집과 검증 액션을 compact strip 으로 보여준다", () => {

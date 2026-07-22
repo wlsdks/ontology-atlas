@@ -64,7 +64,7 @@ describe("BuilderWriteSummary", () => {
     expect(screen.queryByText("문서함")).not.toBeInTheDocument();
     expect(screen.getByText("새 개념과 관계는 각 저장 액션이 vault 마크다운을 쓰기 전까지 메모리에만 있습니다.")).toBeInTheDocument();
     expect(screen.getByText("관계 저장은 관계 종류 추론, 사전 점검, 동기화 전달을 거칩니다.")).toBeInTheDocument();
-    expect(screen.getByText("그래프 점검 14개")).toBeInTheDocument();
+    expect(screen.getByText("그래프 검증 14개")).toBeInTheDocument();
     expect(screen.getByText("diff 먼저 확인")).toBeInTheDocument();
 
     expect(screen.queryByText("01")).not.toBeInTheDocument();
@@ -105,16 +105,21 @@ describe("BuilderWriteSummary", () => {
     );
   });
 
-  it("uses Korean relation and path terms for selected node proof copy", () => {
+  it("선택 개념 검증 카드는 원어 op 이름 대신 사람 언어 요약만 표면에 둔다 (감사 #8)", () => {
     renderSummary({
       selectedProofNodeId: "ontology/project",
       selectedProofSlug: "ontology/project",
     });
 
-    expect(screen.getByText(/계획된 관계 스캔/)).toBeInTheDocument();
-    expect(screen.getByText(/경로 계획/)).toBeInTheDocument();
+    // 카드 표면(값·본문)은 사람 언어 한 줄로 통일 — 명령 상세는 복사 패킷 안으로만.
+    expect(screen.getByText("그래프 검증 14개")).toBeInTheDocument();
+    expect(
+      screen.getByText(/연결을 쓰기 전에 확인할 점검 묶음/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/blast_radius/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/relation_name_parity/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/계획된 관계 스캔/)).not.toBeInTheDocument();
     expect(screen.queryByText(/edge scan/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/path plan/)).not.toBeInTheDocument();
   });
 
   it("draft가 있으면 저장 상태 상단에 다음 행동을 먼저 보여준다", () => {

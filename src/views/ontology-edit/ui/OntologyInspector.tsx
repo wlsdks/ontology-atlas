@@ -1146,6 +1146,29 @@ function BacklinksSummary({
   backlinks: VaultBacklinkMatch[];
   onSelectBacklink?: (slug: string) => void;
 }) {
+  // 참조 칩의 관계 키(describes / contains / dependencies …)는 프론트매터
+  // array 키와 같은 집합이라 캔버스 엣지 라벨과 같은 사전에서 지역화한다 —
+  // 이전엔 raw 키를 CSS uppercase 로 올려 ko 화면에도 "DESCRIBES" 가 영문으로
+  // 노출됐다(감사 #8). useRelationVocabulary 는 KnowledgeEdgeType 만 알아
+  // domains/capabilities/elements/dependencies/relates 를 못 덮으므로,
+  // 그 전부를 담은 edgeLabels 네임스페이스를 쓴다.
+  const tEdgeKeys = useTranslations("ontologyPages.edit.canvas.edgeLabels");
+  const edgeKeyLabel = (key: string): string => {
+    try {
+      return tEdgeKeys(
+        key as
+          | "domains"
+          | "capabilities"
+          | "elements"
+          | "dependencies"
+          | "relates"
+          | "contains"
+          | "describes",
+      );
+    } catch {
+      return key;
+    }
+  };
   return (
     <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
       <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
@@ -1160,7 +1183,7 @@ function BacklinksSummary({
               disabled={!onSelectBacklink}
               title={t("backlinkTooltip", {
                 title: bl.title,
-                keys: bl.matchedKeys.join(", "),
+                keys: bl.matchedKeys.map(edgeKeyLabel).join(", "),
               })}
               className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a08)] px-2 py-0.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a55)] hover:bg-[color:var(--color-indigo-a16)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
             >
@@ -1169,7 +1192,7 @@ function BacklinksSummary({
                 aria-hidden
                 className="rounded-sm bg-[color:var(--color-indigo-a22)] px-1 font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-indigo-text-strong)]"
               >
-                {bl.matchedKeys[0]}
+                {edgeKeyLabel(bl.matchedKeys[0])}
               </span>
             </button>
           </li>

@@ -880,7 +880,7 @@
         "headerCensus": "저장된 문서 {nodes}개 · 관계 선언 {relations}개",
         "headerCensusFocused": "저장된 문서 {nodes}개 · 관계 선언 {relations}개 · 캔버스 {shown}개 표시",
         "headerDirtyClean": "미저장 변경 없음",
-        "headerDirtyStatus": "미저장 변경 · 임시 개념 {nodes} · 관계 {edges}",
+        "headerDirtyStatus": "미저장 변경 있음",
         "headerOverflowLabel": "더보기",
         "headerOverflowAriaLabel": "내보내기·배치·전체 화면 등 추가 작업 더보기",
         "writeSummaryCollapsedLabel": "저장 상태",
@@ -979,12 +979,12 @@
           "guardCopyAriaReview": "{source} 에서 {target} 까지의 저장·편집 관계 점검 묶음 복사",
           "guardCopyCopied": "저장·편집 점검 묶음 복사됨",
           "proofLabel": "그래프 검증",
-          "proofValue": "그래프 점검 {count}개",
-          "proofBody": "설정 점검, 그래프 DB 묶음, focused blast_radius, relation_name_parity, pattern_walk/project_map 포함 런타임 재생, relation_check, 동기화 점검을 복사합니다.",
-          "proofValueSelected": "개념 검증 · {count}개",
-          "proofBodySelected": "{slug} 설정 점검 · focused blast_radius · relation_name_parity · 계획된 관계 스캔 · 경로 계획 · relation_check · 동기화 점검",
-          "proofChip": "그래프 DB 점검",
-          "proofChipSelected": "개념 상태 묶음",
+          "proofValue": "그래프 검증 {count}개",
+          "proofBody": "쓰기 전에 그래프를 확인할 전체 점검 묶음을 복사합니다.",
+          "proofValueSelected": "그래프 검증 {count}개",
+          "proofBodySelected": "{slug}의 연결을 쓰기 전에 확인할 점검 묶음을 복사합니다.",
+          "proofChip": "그래프 검증",
+          "proofChipSelected": "개념 검증",
           "proofFlow": "연결·검증",
           "proofFlowSelected": "선택 개념 검증",
           "proofAction": "연결·검증 열기",
@@ -1034,7 +1034,6 @@
         "commandStrip": {
           "ariaLabel": "저장·편집 다음 액션",
           "selectedFallback": "선택 개념",
-          "stagedStatus": "캔버스 준비됨 · 개념 {nodes} · 관계 {edges}",
           "empty": {
             "title": "기능 개념부터 시작",
             "body": "개념 하나를 추가하고 이름을 붙인 뒤 저장된 지도에 연결합니다.",
@@ -1042,7 +1041,7 @@
             "secondary": "저장 상태"
           },
           "draft": {
-            "title": "임시 개념 {nodes} · 임시 관계 {edges}",
+            "title": "이름을 붙이면 저장할 수 있어요",
             "body": "상세에서 이름을 붙이거나, 저장 상태에서 내보내기와 그래프 검증을 확인합니다.",
             "primary": "임시 열기",
             "secondary": "저장 상태"

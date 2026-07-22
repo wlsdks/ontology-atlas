@@ -143,6 +143,12 @@ download(`/download`).
 - 소개 섹션 evidence 미니어처 census 숫자의 진실원:
   `src/views/download/model/dogfood-census.generated.ts` —
   `scripts/build-docs-vault.mjs` 가 dogfood vault frontmatter 에서 생성.
+- `--shadow-elevation-1/2/3` — 떠 있는 표면 드롭 섀도 3단 사다리
+  (coach-mark < popover < dialog). 값은 alpha 토큰(`--color-shadow-a35/a42/a46`)
+  합성. 이전엔 ontology-edit 전반이 `0_24px_72px`·`0_24px_80px`·`0_22px_54px`·
+  `0_18px_44px`·`0_18px_40px`·`0_10px_32px`·`0_6px_16px` 같은 손 튜닝 섀도를
+  8종 흩뿌렸다 — 계층별 대표값으로 수렴(빌더 2라운드 감사 #9). JSX 에 새
+  drop-shadow 를 손으로 적지 말고 이 3단을 상속한다. 전역 나머지 표면 마이그레이션은 후속 큐.
 
 **Surface class 별 do / don't**:
 
