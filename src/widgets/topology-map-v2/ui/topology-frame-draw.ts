@@ -225,6 +225,8 @@ export interface FrameDrawParams {
   realmMemberIds: ReadonlySet<string> | null;
   /** S4 — 멤버별 깊이 기반 티어 kind 오버라이드 (영역 세계의 티어 = 재배치 깊이). */
   realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null;
+  /** S4 — 전개 순간의 도트 방사 시차 팩터 0..1 (전환 중에만 >0). */
+  realmDustParallax: number;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -257,6 +259,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     wardingRing,
     realmMemberIds,
     realmTierKinds,
+    realmDustParallax,
   } = params;
 
   // Where world (0,0) currently lands on screen — the blueprint grid rides
@@ -278,7 +281,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // devicePixelRatio: 1 — ctx is already DPR-transformed once by the caller
   // (`use-topology-loop.ts`), so dust points (already in CSS-pixel space)
   // must not be scaled a second time.
-  drawStarDust(ctx, { points: dustPoints, farT, devicePixelRatio: 1, originX: gridOrigin.x, originY: gridOrigin.y });
+  drawStarDust(ctx, { points: dustPoints, farT, devicePixelRatio: 1, originX: gridOrigin.x, originY: gridOrigin.y, radialParallax: realmDustParallax });
 
   const project = (x: number, y: number) => worldToScreen(camera, viewportWidth, viewportHeight, x, y);
   const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;

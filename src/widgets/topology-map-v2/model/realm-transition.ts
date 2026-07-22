@@ -18,16 +18,25 @@
  * 테마 표면을 지배하지 않는다.
  */
 
-/** 전환 총 상한(ms) — 안무 전체가 이 안에서 끝난다. */
-export const REALM_ENVELOPE_MS = 600;
+/**
+ * 전환 총 상한(ms). 처음 600ms 설계는 이탈/FLIP/결계가 동시에 몰려 5fps
+ * 녹화에서 중간 프레임이 0장 — "컷 전환" 으로 읽혔다 (소유자 실보고 +
+ * 프레임 검수). 페이즈를 시간축으로 분리해 각 동작이 읽히게 늘렸다:
+ * 이탈(0–420) → FLIP(240–900, 겹침 시작) → 결계 드로잉(700–1000).
+ */
+export const REALM_ENVELOPE_MS = 1000;
 /** 영역 안 노드 FLIP duration(ms) — ease-out. */
-export const REALM_INSIDE_FLIP_MS = 300;
+export const REALM_INSIDE_FLIP_MS = 660;
+/** FLIP 시작 지연(ms) — 밖 세계가 먼저 비워지는 걸 보여준 뒤 재배치. */
+export const REALM_INSIDE_FLIP_DELAY_MS = 240;
 /** 영역 밖 노드 이탈 fling duration(ms) — ease-in 가속. */
-export const REALM_OUTSIDE_FLING_MS = 240;
+export const REALM_OUTSIDE_FLING_MS = 420;
 /** 결계 링 자기 드로잉 duration(ms). */
-export const REALM_WARDING_DRAW_MS = 200;
+export const REALM_WARDING_DRAW_MS = 300;
+/** 결계 드로잉 시작 지연(ms) — 세계가 대략 자리잡은 뒤 봉인. */
+export const REALM_WARDING_DRAW_DELAY_MS = 700;
 /** 도트 그리드 시차 낙하 rise→settle duration(ms). */
-export const REALM_DUST_SETTLE_MS = 600;
+export const REALM_DUST_SETTLE_MS = 1000;
 
 /** 이탈 노드가 중심에서 추가로 밀려나는 거리(월드 유닛) — 화면 밖으로 확실히 보내는 양. */
 export const REALM_FLING_REACH = 4200;
