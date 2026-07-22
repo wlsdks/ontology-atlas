@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-22T16:02:25.600Z",
+  "generatedAt": "2026-07-22T16:08:37.166Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -218,8 +218,8 @@
         }
       ],
       "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
-      "wordCount": 1917,
-      "updatedAt": "2026-07-23T00:19:20+09:00",
+      "wordCount": 1926,
+      "updatedAt": "2026-07-23T01:06:53+09:00",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -2825,6 +2825,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-23 — 커밋 프리플라이트 + PR 신선도 봇",
+          "slug": "2026-07-23-커밋-프리플라이트-pr-신선도-봇"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-23 — 브랜드 시그니처 확장 (H6)",
           "slug": "2026-07-23-브랜드-시그니처-확장-h6"
         },
@@ -4310,8 +4315,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 지도에서 여러 노드를 오가며 탐색하다 보면 \"방금 어디를 봤더라\"를 잃는다. 세션 동안 ego 포커스한 노드를 조용히 기록해 되짚어 갈 수 있게 하는 수동",
-      "wordCount": 33223,
-      "updatedAt": "2026-07-23T01:02:23+09:00",
+      "wordCount": 33484,
+      "updatedAt": "2026-07-23T01:06:53+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5438,8 +5443,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 11151,
-      "updatedAt": "2026-07-23T01:02:23+09:00",
+      "wordCount": 11252,
+      "updatedAt": "2026-07-23T01:06:53+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6242,12 +6247,12 @@
     {
       "slug": "ontology/capabilities/cli-developer-entry",
       "path": "docs/ontology/capabilities/cli-developer-entry.md",
-      "title": "CLI Developer Entry (48 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
+      "title": "CLI Developer Entry (49 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + agent handoff + growth/maintenance queue + graph deep dive)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/cli-developer-entry",
         "kind": "capability",
-        "title": "CLI Developer Entry (48 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
+        "title": "CLI Developer Entry (49 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + agent handoff + growth/maintenance queue + graph deep dive)",
         "domain": "onboarding-ux",
         "dependencies": [
           "capabilities/mcp-server",
@@ -6289,6 +6294,7 @@
           "cli/src/commands/overview.mjs",
           "cli/src/commands/path.mjs",
           "cli/src/commands/pattern-walk.mjs",
+          "cli/src/commands/preflight.mjs",
           "cli/src/commands/project-map.mjs",
           "cli/src/commands/query.mjs",
           "cli/src/commands/reachability.mjs",
@@ -6376,8 +6382,8 @@
         }
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
-      "wordCount": 10485,
-      "updatedAt": "2026-07-22T00:03:44+09:00",
+      "wordCount": 10509,
+      "updatedAt": "2026-07-22T16:08:14.857Z",
       "linksOut": []
     },
     {
@@ -9955,8 +9961,8 @@
         }
       ],
       "excerpt": "Current as of 2026-05-18. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontology-engine.mjs, and cli/src/index.mjs first. ontology-atlas is now best described as a repo-native memory layer for Claude Code, Cursor,",
-      "wordCount": 809,
-      "updatedAt": "2026-07-21T02:02:13+09:00",
+      "wordCount": 811,
+      "updatedAt": "2026-07-23T01:06:53+09:00",
       "linksOut": [
         "../README",
         "PRODUCT-OWNER-OPERATING-SYSTEM",
@@ -13195,7 +13201,7 @@
                 "path": "ontology/capabilities/cli-developer-entry",
                 "type": "doc",
                 "slug": "ontology/capabilities/cli-developer-entry",
-                "title": "CLI Developer Entry (48 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)"
+                "title": "CLI Developer Entry (49 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + agent handoff + growth/maintenance queue + graph deep dive)"
               },
               {
                 "name": "collaborator-reader-brief",
