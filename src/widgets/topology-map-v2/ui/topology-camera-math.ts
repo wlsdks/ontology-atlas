@@ -271,13 +271,19 @@ export function computeFocusCameraTarget(
   focusedSlug: string | null,
   /** `overviewScale × overviewEntryRatio` at the current viewport — the zoom-ratio's "1.0" anchor (`model/tier-visibility.ts#computeZoomRatio`). */
   overviewEntryScale: number,
+  /**
+   * S8 결함 4 — 영역 전개 중이면 그 영역 멤버 Set. ego bbox 를 이 안으로 제한해
+   * 결계 밖 fling 이웃이 bbox 를 부풀려 카메라가 화면 밖으로 날아가는 것을 막는다.
+   * 생략/null 이면 전역 ego(기존 계약 불변).
+   */
+  restrictIds?: ReadonlySet<string> | null,
 ): CameraTarget | null {
   if (focusedSlug === null) {
     // Overview fits the SPINE bbox (project+domain+hub — the only tier drawn at
     // entry), not the full 295-node bounds; see `topology-world.ts#spineBounds`.
     return computeOverviewCameraTarget(world.spineBounds, viewportWidth, viewportHeight, tokens);
   }
-  const egoBounds = computeEgoBounds(world, tokens, focusedSlug);
+  const egoBounds = computeEgoBounds(world, tokens, focusedSlug, restrictIds);
   if (!egoBounds) return null;
 
   // Multiplicative margin (not additive px) so a wide ego cluster gets

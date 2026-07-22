@@ -79,6 +79,86 @@ export function buildDustPoints(
   return points;
 }
 
+/**
+ * S8 결함 6 — "영역 전개" active 중 결계 **안**을 우주로 만드는 밀도 상승 도트
+ * 레이어 2장(깊이 0.3 / 0.6). dust 보다 촘촘하고, 알파는 ≤0.12(무채) — glow/blur
+ * 없이 순수 도트로만 깊이감을 만든다. depth 를 두 값으로 고정해 카메라 팬/줌 시
+ * 두 평면이 서로 다른 속도로 흘러 시차(입력 반응)를 만든다. 결정론(seed 고정).
+ */
+export function buildRealmCosmosPoints(
+  viewportWidth: number,
+  viewportHeight: number,
+  count: number,
+): DustPoint[] {
+  const rng = mulberry32(11);
+  const points: DustPoint[] = [];
+  for (let i = 0; i < count; i += 1) {
+    points.push({
+      x: rng() * viewportWidth,
+      y: rng() * viewportHeight,
+      r: 0.4 + rng() * 0.7,
+      // 알파 상한 0.12(헌장: 어지럽지 않게) — [0.04, 0.12).
+      alpha: 0.04 + rng() * 0.08,
+      // 두 깊이 레이어(0.3 / 0.6) — 시차 평면 2장.
+      depth: i % 2 === 0 ? 0.3 : 0.6,
+    });
+  }
+  return points;
+}
+
+export interface RealmCosmosDrawState {
+  points: readonly DustPoint[];
+  /** 카메라 원점의 스크린 좌표 — dust 와 동일한 시차 소스(깊이 비례 흐름). */
+  originX: number;
+  originY: number;
+  /** 결계 원(스크린 스페이스). 이 원 **안**에만 도트를 그린다 — 밖은 우주 아님. */
+  clip: { cx: number; cy: number; radius: number };
+  devicePixelRatio: number;
+  /** S4 전개 순간의 방사 시차 낙하 0..1(유지). 정지 시 0. */
+  radialParallax?: number;
+  /** reduced-motion: 시차 0(원점/방사 오프셋 미적용) — 정적 밀도만. */
+  reducedMotion?: boolean;
+}
+
+/**
+ * 결계 안 우주 도트 — 결계 원으로 클립하고, 카메라 원점 기반 깊이 시차로
+ * 두 레이어가 서로 다른 속도로 흐른다. 지속 애니메이션 없음(원점이 안 바뀌면
+ * 도트도 안 움직인다 → idle gate 유지). farT 게이트 없음(영역은 circuit 고도).
+ */
+export function drawRealmCosmos(ctx: CanvasRenderingContext2D, state: RealmCosmosDrawState): void {
+  const { points, clip, devicePixelRatio } = state;
+  if (clip.radius <= 0 || points.length === 0) return;
+  const reduced = state.reducedMotion === true;
+  const ox = reduced ? 0 : state.originX;
+  const oy = reduced ? 0 : state.originY;
+  const w = ctx.canvas.width / devicePixelRatio;
+  const h = ctx.canvas.height / devicePixelRatio;
+  const rp = reduced ? 0 : state.radialParallax ?? 0;
+  const maxShift = Math.min(w, h) * 0.03;
+  ctx.save();
+  // 결계 원 클립 — 결계 안만 우주("여긴 다른 공간" 독법).
+  ctx.beginPath();
+  ctx.arc(clip.cx * devicePixelRatio, clip.cy * devicePixelRatio, clip.radius * devicePixelRatio, 0, Math.PI * 2);
+  ctx.clip();
+  points.forEach((point) => {
+    let px = w > 0 ? (((point.x + ox * point.depth) % w) + w) % w : point.x;
+    let py = h > 0 ? (((point.y + oy * point.depth) % h) + h) % h : point.y;
+    if (rp > 0) {
+      const dx = px - w / 2;
+      const dy = py - h / 2;
+      const d = Math.hypot(dx, dy) || 1;
+      const shift = rp * maxShift * point.depth;
+      px += (dx / d) * shift;
+      py += (dy / d) * shift;
+    }
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(236,236,240,${point.alpha})`;
+    ctx.arc(px * devicePixelRatio, py * devicePixelRatio, point.r * devicePixelRatio, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
 export interface StarDustDrawState {
   points: readonly DustPoint[];
   /** 카메라 원점의 스크린 좌표 — 시차 오프셋의 기준 (grid 와 동일 소스). */

@@ -22,7 +22,7 @@ import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../inte
 import { initHomeSpring, isHomeSpringConverged, stepHomeSpring, type HomeSpringState } from "../model/relayout-home";
 import type { NodeDragState } from "./topology-pointer-handlers";
 import { buildGridPattern } from "../render/grid";
-import { buildDustPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
+import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { computeTopologyClusterState } from "./topology-cluster-state";
@@ -201,6 +201,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const viewportRef = useRef({ width: 0, height: 0, dpr: 1 });
   const worldRef = useRef<TopologyWorld | null>(null);
   const dustPointsRef = useRef<DustPoint[]>([]);
+  /** S8 결함 6 — 영역 활성 중 결계 안 우주 도트(뷰포트당 1회 빌드, resize 갱신). */
+  const cosmosPointsRef = useRef<DustPoint[]>([]);
   const gridPatternRef = useRef<CanvasPattern | null>(null);
 
   // Live force simulation (`model/force-layout.ts`) — seeded off the concentric
@@ -223,6 +225,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const realmTransitionRef = useRef<RealmTransitionState>(INITIAL_REALM_TRANSITION_STATE);
   /** 현재 영역의 전환 시작 데이터(서브트리·재배치 좌표·결계·이탈 출발점). */
   const realmDataRef = useRef<RealmRuntimeData | null>(null);
+  /**
+   * S8 결함 5 — active 정착 후 좌표 소유권을 일반 경로(드래그/sim/호밍)에 넘겼는가.
+   * active 페이즈가 매 프레임 `node.x = insideTargets` 로 덮어쓰면 드래그와 싸워
+   * 노드가 안 움직였다(소유자 실보고). 정착 첫 프레임에 한 번 스냅 + sim 재시드
+   * 후 이 플래그를 세우고, 이후 active 프레임은 좌표를 건드리지 않는다. 진입/이탈
+   * 시 false 로 리셋.
+   */
+  const realmActiveHandedOffRef = useRef(false);
   // 직전 `realmRootId`(전환 진입/이탈 diff). null 로 초기화하는 게 핵심:
   // `?realm=slug` 딥링크로 마운트하면 prev(null) ≠ realmRootId(slug) 라 첫
   // effect 가 영역 진입을 발화한다(공유 링크·에이전트가 영역을 그대로 재현).
@@ -550,6 +560,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         });
       }
       dustPointsRef.current = buildDustPoints(rect.width, rect.height, computeStarDustCount(rect.width, rect.height, tokens.dustAreaPerPoint), tokens.dustParallaxMin, tokens.dustParallaxMax);
+      // S8 결함 6 — 우주 도트는 dust 의 2배 밀도(레이어 2장). dust 와 같은
+      // areaPerPoint 토큰 기준으로 카운트를 잡고 2배로.
+      cosmosPointsRef.current = buildRealmCosmosPoints(
+        rect.width,
+        rect.height,
+        computeStarDustCount(rect.width, rect.height, tokens.dustAreaPerPoint) * 2,
+      );
       trySnapInitialCamera(tokens);
     };
 
@@ -678,7 +695,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (!tokens || !world || width <= 0 || height <= 0) return;
 
     const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
-    const target = computeFocusCameraTarget(world, tokens, width, height, focusedSlug, overviewEntryScale);
+    // S8 결함 4 — 영역 전개 중이면 ego bbox 를 영역 멤버로 제한(결계 밖 fling
+    // 이웃이 bbox 를 부풀려 카메라가 화면 밖으로 날아가는 것 차단). 포커스
+    // 다이브가 결계 안에서만 움직인다.
+    const realmMembers =
+      realmTransitionRef.current.phase !== "idle" ? realmDataRef.current?.memberIds ?? null : null;
+    const target = computeFocusCameraTarget(world, tokens, width, height, focusedSlug, overviewEntryScale, realmMembers);
     if (!target) return;
     dampingRef.current = tokens.cameraDampingDefault;
     cameraTargetRef.current = target;
@@ -713,6 +735,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dragAffectedSetRef.current = null;
     dragStartPosRef.current = null;
     dragTugOffsetsRef.current.clear();
+    // S8 결함 5 — 새 전환은 좌표 소유권 핸드오프를 리셋(진입/이탈 모두).
+    realmActiveHandedOffRef.current = false;
 
     if (realmRootId !== null) {
       // --- 진입 ---
@@ -730,6 +754,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       homeSpringsRef.current.clear();
       // 카메라: 결계 원 fit 으로 돌리 인 (기존 큐빅 트윈 재사용).
       if (width > 0 && height > 0 && hasInitializedRef.current) {
+        // S8 결함 2 — 해제 시 복귀할 "원래 보던 곳" 키프레임을 진입 직전 카메라
+        // 값으로 저장(카메라 초기화된 경우만 — 딥링크 마운트는 null 유지).
+        data.entryCamera = {
+          tx: cameraRef.current.x.value,
+          ty: cameraRef.current.y.value,
+          tscale: cameraRef.current.scale.value,
+        };
         const target = realmCameraTarget(data, tokens, width, height);
         dampingRef.current = tokens.cameraDampingDefault;
         cameraTargetRef.current = target;
@@ -765,9 +796,23 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         // 안 노드 역FLIP + 밖 노드 역중력 귀환은 realm 데이터가 소유 → 홈 스프링 끔.
         homingActiveRef.current = false;
         homeSpringsRef.current.clear();
+        // S8 결함 5 — 정착 후 드래그로 멤버가 옮겨졌을 수 있으므로, 역FLIP 시작점
+        // (insideTargets)을 현재 라이브 좌표로 갱신해 이탈 첫 프레임의 튐을 없앤다.
+        const data = realmDataRef.current;
+        if (data) {
+          const liveTargets = new Map<string, { x: number; y: number }>();
+          for (const [id, fallback] of data.insideTargets) {
+            const n = world.nodeById.get(id);
+            liveTargets.set(id, n ? { x: n.x, y: n.y } : fallback);
+          }
+          realmDataRef.current = { ...data, insideTargets: liveTargets };
+        }
       }
       if (width > 0 && height > 0 && hasInitializedRef.current) {
-        const target = computeOverviewCameraTarget(world.spineBounds, width, height, tokens);
+        // S8 결함 2 — 진입 시 저장한 키프레임이 있으면 그 "원래 보던 곳"으로
+        // 복귀(없으면 overview fit 폴백). 750ms 트윈 유지.
+        const savedEntry = realmDataRef.current?.entryCamera ?? null;
+        const target = savedEntry ?? computeOverviewCameraTarget(world.spineBounds, width, height, tokens);
         cameraTargetRef.current = target;
         overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
         dampingRef.current = tokens.cameraDampingDefault;
@@ -995,7 +1040,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const rt = realmTransitionReducer(realmTransitionRef.current, { type: "tick", now });
         realmTransitionRef.current = rt;
         const data = realmDataRef.current;
-        if (data && (rt.phase === "entering" || rt.phase === "active")) {
+        if (data && rt.phase === "entering") {
           const elapsed = now - rt.startMs;
           const flipDur = reducedMotionRef.current ? 0 : REALM_INSIDE_FLIP_MS;
           const flingDur = reducedMotionRef.current ? 0 : REALM_OUTSIDE_FLING_MS;
@@ -1003,18 +1048,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           for (const node of world.nodes) {
             const target = data.insideTargets.get(node.id);
             if (target) {
-              if (rt.phase === "active") {
-                node.x = target.x;
-                node.y = target.y;
-              } else {
-                const from = data.insideFrom.get(node.id) ?? target;
-                // S5 깊이 계층 순차 조립 — 멤버 깊이별로 FLIP 시작을 계단식으로
-                // 밀어 루트→바깥 링이 층층이 앉는 공감각을 만든다(각 링 660 유지).
-                const delay = realmInsideFlipDelayFor(data.depthById.get(node.id) ?? 1);
-                const p = realmInsidePosition(from, target, elapsed - delay, flipDur);
-                node.x = p.x;
-                node.y = p.y;
-              }
+              const from = data.insideFrom.get(node.id) ?? target;
+              // S5 깊이 계층 순차 조립 — 멤버 깊이별로 FLIP 시작을 계단식으로
+              // 밀어 루트→바깥 링이 층층이 앉는 공감각을 만든다(각 링 660 유지).
+              const delay = realmInsideFlipDelayFor(data.depthById.get(node.id) ?? 1);
+              const p = realmInsidePosition(from, target, elapsed - delay, flipDur);
+              node.x = p.x;
+              node.y = p.y;
             } else if (!outsideCulled) {
               const from = data.outsideFrom.get(node.id);
               if (from) {
@@ -1028,6 +1068,28 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             }
           }
           recomputeWorldGeometry(world, tokens);
+        } else if (data && rt.phase === "active") {
+          // S8 결함 5 — 정착: 한 번만 목표로 스냅하고 sim 을 영역 좌표로 재시드해
+          // 좌표 소유권을 일반 경로(드래그/sim/호밍)에 넘긴다. 이후 active 프레임은
+          // 좌표를 덮어쓰지 않아 드래그가 정상 동작한다(매 프레임 target 로 덮어쓰던
+          // 구조가 드래그와 싸워 노드가 안 움직였다 — 소유자 실보고).
+          if (!realmActiveHandedOffRef.current) {
+            for (const node of world.nodes) {
+              const target = data.insideTargets.get(node.id);
+              if (target) {
+                node.x = target.x;
+                node.y = target.y;
+              }
+            }
+            // sim 을 현재(영역) 좌표로 재시드 — 안 하면 드래그 첫 tick 의
+            // applyForcePositions 가 빌드 시 전역 좌표를 되써 멤버가 튄다.
+            simRef.current = createForceSimulation(
+              world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y })),
+              world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
+            );
+            realmActiveHandedOffRef.current = true;
+            recomputeWorldGeometry(world, tokens);
+          }
         } else if (data && rt.phase === "exiting" && !reducedMotionRef.current) {
           // S6 퇴장 역재생 — 안 노드 역FLIP(깊은 층 먼저, target→home) + 밖 노드
           // 역중력 귀환(fling 위치→home). 입장 스텝의 결정론 역전. reduced-motion
@@ -1235,7 +1297,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       const realmState = realmTransitionRef.current;
       const realmData = realmDataRef.current;
       let realmWarding: { centerX: number; centerY: number; radius: number; drawProgress: number } | null = null;
-      let realmMemberIds: ReadonlySet<string> | null = null;
       let realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null = null;
       let realmDustParallax = 0;
       // S5 — 깊이 연출용: 선명도(entering+active)는 depthById, 시차(active 만)는
@@ -1247,7 +1308,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         (realmState.phase === "entering" || realmState.phase === "active" || realmState.phase === "exiting")
       ) {
         const exiting = realmState.phase === "exiting";
-        realmMemberIds = realmData.memberIds;
         realmTierKinds = realmData.tierKindById;
         realmDepthById = realmData.depthById;
         // S5 시차 밴드는 active 전용 — 이탈 중엔 세계가 접히는 중이라 미적용.
@@ -1334,11 +1394,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         clusterChips: frameChips,
         hoveredClusterId: hoveredClusterIdRef.current,
         wardingRing: realmWarding,
-        realmMemberIds,
         realmTierKinds,
         realmDepthById,
         realmDepthParallax,
         realmDustParallax,
+        // S8 결함 6 — 영역 활성 시에만 우주 도트를 넘긴다(결계로 클립).
+        realmCosmosPoints: realmWarding ? cosmosPointsRef.current : null,
       });
 
       handle = requestAnimationFrame(frame);

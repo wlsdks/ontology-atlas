@@ -211,11 +211,22 @@ export function computeEgoBounds(
   world: Pick<TopologyWorld, "nodeById" | "neighborMap">,
   tokens: TopologyV2Tokens,
   focusedSlug: string,
+  /**
+   * S8 결함 4 — 영역 전개 중 ego bbox 를 영역 멤버로 제한한다. 영역 active 중엔
+   * 결계 밖 이웃이 fling 좌표(원점에서 수천 유닛 밖)에 앉아 있어, 제한 없이
+   * bbox 를 재면 그 밖 이웃까지 감싸느라 카메라가 극단적으로 축소돼 "화면이
+   * 사라진다"(소유자 실보고). 이 Set 이 주어지면 focus 노드 + **그 안에 있는**
+   * 이웃만 bbox 에 넣는다(포커스 다이브가 결계 안에서만 움직인다). 생략 시 전역.
+   */
+  restrictIds?: ReadonlySet<string> | null,
 ): Bounds | null {
   const focusNode = world.nodeById.get(focusedSlug);
   if (!focusNode) return null;
   const egoIds = new Set<string>([focusedSlug]);
-  for (const id of world.neighborMap.get(focusedSlug) ?? []) egoIds.add(id);
+  for (const id of world.neighborMap.get(focusedSlug) ?? []) {
+    if (restrictIds && !restrictIds.has(id)) continue;
+    egoIds.add(id);
+  }
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;

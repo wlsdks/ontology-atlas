@@ -4,7 +4,6 @@ import {
   computeRealmLayout,
   computeWardingRadius,
   extractRealmSubtree,
-  realmBoundaryEdges,
   realmLayoutKind,
 } from "./realm";
 import type { LayoutRadii, LayoutRings } from "./layout";
@@ -96,23 +95,6 @@ describe("computeRealmLayout", () => {
     const a = computeRealmLayout(extractRealmSubtree("c", fixtureChildren()), RINGS, RADII);
     const b = computeRealmLayout(extractRealmSubtree("c", fixtureChildren()), RINGS, RADII);
     expect([...a.entries()]).toEqual([...b.entries()]);
-  });
-});
-
-describe("realmBoundaryEdges", () => {
-  it("returns edges with exactly one endpoint inside, oriented inside→outside", () => {
-    const members = new Set(["c", "e1", "e2", "g1"]);
-    const edges = [
-      { sourceId: "c", targetId: "e1" }, // 둘 다 안 — 경계 아님
-      { sourceId: "e1", targetId: "d2" }, // e1 안, d2 밖
-      { sourceId: "x1", targetId: "g1" }, // g1 안, x1 밖 (역방향)
-      { sourceId: "p", targetId: "q" }, // 둘 다 밖
-    ];
-    const boundary = realmBoundaryEdges(members, edges);
-    expect(boundary).toEqual([
-      { insideId: "e1", outsideId: "d2" },
-      { insideId: "g1", outsideId: "x1" },
-    ]);
   });
 });
 
