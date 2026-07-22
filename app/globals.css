@@ -1534,7 +1534,7 @@
        CSS var 를 자동 추종하지 못하므로 인셋 변경 시 반드시 같이 갱신. */
     --topology-v2-safe-inset-left: 350;
     --topology-v2-safe-inset-right: 120;
-    --topology-v2-safe-inset-top: 96;
+    --topology-v2-safe-inset-top: 148; /* 96 크롬 + 상단 도킹 클러스터 칩(+N) 높이/갭 — QA-A D1: 첫 페인트에서 칩이 검색 바 뒤에 깔리던 결함 */
     --topology-v2-safe-inset-bottom: 96;
 
     /* 2.6 컴포넌트 데이터시트 패널 (`TopologyV2DetailPanel`, DOM 소비)

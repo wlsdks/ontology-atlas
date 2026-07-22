@@ -442,12 +442,12 @@ export function TopologyV2DetailPanel({
               type="button"
               onClick={() => onSelectConnection(domain.id)}
               data-testid="topology-v2-detail-panel-domain"
-              className="flex items-center gap-1 self-start pl-[13.5px] text-left transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+              className="flex min-w-0 max-w-full items-center gap-1 self-start pl-[13.5px] text-left transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
             >
-              <span className="text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+              <span className="shrink-0 whitespace-nowrap text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)]">
                 {labels.domainLabel}
               </span>
-              <span className="text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
+              <span className="shrink-0 text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
               <span className="truncate text-[11px] font-medium text-[color:var(--topology-v2-panel-text-secondary)]">
                 {domain.title}
               </span>
