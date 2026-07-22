@@ -50,6 +50,95 @@ export function clusterChipLabel(count: number, expanded: boolean): string {
 }
 
 /**
+ * S10 결함 2 — 펼침 배지 라벨. 접힘 pill 의 `+N` 과 대칭인 컴팩트 `−N`(공백
+ * 없음). 배지는 부모 노드에 부착돼 좁으므로 pill 라벨보다 조인다.
+ */
+export function clusterBadgeLabel(count: number): string {
+  return `−${count}`;
+}
+
+/** 펼침 배지 기준 높이(px, 스크린 스페이스) — 접힘 pill(28)보다 작은 미니 배지. */
+export const CLUSTER_BADGE_HEIGHT = 18;
+/** 배지 mono 폰트 기준 크기(px). */
+const BADGE_FONT_SIZE = 11;
+/** 배지 mono 글자당 근사 폭(px) — 히트/드로우 폭 일치용 결정론 상수. */
+const BADGE_CHAR_WIDTH = 6.6;
+/** 배지 텍스트 좌우 패딩(px). */
+const BADGE_PAD_X = 6;
+/**
+ * 배지를 부모 노드 반지름 **바깥**으로 띄우는 여유(스크린 px, 스케일 불변).
+ * 펼침 파선 오라 링(frame-draw `EXPANDED_AURA_RING_OFFSET=6`)보다 넉넉히 커
+ * 배지가 오라·노드 어디와도 겹치지 않는다.
+ */
+const BADGE_NODE_CLEARANCE = 10;
+
+/**
+ * S10 결함 2 (소유자 실보고: 펼침 `−N` 알약이 파선/라벨과 겹침) — 떠다니는
+ * 알약을 폐기하고 펼침 배지를 부모 노드 **우상단 모서리**(스크린: x+ 오른쪽,
+ * y- 위)에 노드 반지름 + 여유만큼 대각(45°)으로 밀어 세운다. 노드에 부착돼
+ * 카메라를 함께 타므로 겹침 원천이 차단된다. draw/hit 공용 진실원 — 둘 다 이
+ * 함수로 같은 사각형을 얻어 클릭 좌표가 어긋나지 않는다. `nodeScreenRadius` 는
+ * 부모 노드의 base 스크린 반지름(`radiusForKind × magnitudeScale × cameraScale`).
+ */
+export function clusterBadgeRect(
+  parentScreenX: number,
+  parentScreenY: number,
+  nodeScreenRadius: number,
+  label: string,
+  scale: number = 1,
+): ClusterChipRect {
+  const textW = label.length * BADGE_CHAR_WIDTH;
+  const w = (textW + BADGE_PAD_X * 2) * scale;
+  const h = CLUSTER_BADGE_HEIGHT * scale;
+  const diag = Math.SQRT1_2; // cos(45°) = sin(45°)
+  const reach = nodeScreenRadius + BADGE_NODE_CLEARANCE + h / 2;
+  const cx = parentScreenX + reach * diag;
+  const cy = parentScreenY - reach * diag;
+  return { x: cx - w / 2, y: cy - h / 2, w, h };
+}
+
+export interface ClusterBadgeDrawInput {
+  parentScreenX: number;
+  parentScreenY: number;
+  /** 부모 노드 base 스크린 반지름(`radiusForKind × magnitudeScale × cameraScale`). */
+  nodeScreenRadius: number;
+  count: number;
+  hovered: boolean;
+  /** 줌 스케일(`clusterChipScale`). 기본 1. */
+  scale?: number;
+}
+
+/**
+ * 펼침 배지 한 개를 그린다 — 부모 노드 우상단 모서리에 부착된 미니 `−N`.
+ * 겹친-글리프 스택·커넥터 없음(펼치면 자식이 실제로 보이고 배지는 접기
+ * 어포던스일 뿐). 호출부가 `ctx.globalAlpha` 를 부모 티어 알파로 세팅한다.
+ */
+export function drawClusterBadge(
+  ctx: CanvasRenderingContext2D,
+  input: ClusterBadgeDrawInput,
+  colors: ClusterChipColors,
+): void {
+  const scale = input.scale ?? 1;
+  const label = clusterBadgeLabel(input.count);
+  const rect = clusterBadgeRect(input.parentScreenX, input.parentScreenY, input.nodeScreenRadius, label, scale);
+
+  roundedRectPath(ctx, rect.x, rect.y, rect.w, rect.h, rect.h / 2);
+  ctx.fillStyle = colors.surface;
+  ctx.fill();
+  ctx.lineWidth = input.hovered ? 1.5 : 1;
+  ctx.strokeStyle = colors.border;
+  ctx.stroke();
+
+  ctx.fillStyle = colors.text;
+  ctx.font = `600 ${BADGE_FONT_SIZE * scale}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, rect.x + rect.w / 2, rect.y + rect.h / 2 + 0.5 * scale);
+  ctx.textAlign = "start";
+  ctx.textBaseline = "alphabetic";
+}
+
+/**
  * anchor(스크린 좌표, 칩 중심)에서 칩 사각형을 유도한다 — 드로우/히트 공용.
  * 폭 = (겹친 글리프 + 텍스트(문자수×근사폭) + 좌우 패딩) × scale. scale 기본 1.
  */
@@ -124,6 +213,12 @@ export interface ClusterChipDrawInput {
   /** 부모 노드 스크린 좌표 — 있으면 부모→칩 짧은 점선 커넥터를 그린다. */
   parentScreenX?: number;
   parentScreenY?: number;
+  /**
+   * S10 결함 2 — 부모 노드 base 스크린 반지름. 펼침(`expanded`)일 때 부모
+   * 우상단 배지 위치 계산에 필요. 부모 좌표 + 이 값이 모두 있으면 떠다니는
+   * 알약 대신 `drawClusterBadge` 로 위임한다.
+   */
+  nodeScreenRadius?: number;
 }
 
 /**
@@ -136,10 +231,36 @@ export function drawClusterChip(
   colors: ClusterChipColors,
 ): void {
   const scale = input.scale ?? 1;
+
+  // S10 결함 2 — 펼침 상태는 떠다니는 알약이 아니라 부모 노드 우상단 배지로
+  // 그린다(파선 오라/라벨 겹침 원천 차단). 부모 좌표 + 노드 반지름이 있어야
+  // 배지를 앉힐 수 있다 — 없으면(디그레이드) 그리지 않는다.
+  if (input.expanded) {
+    if (
+      input.parentScreenX !== undefined &&
+      input.parentScreenY !== undefined &&
+      input.nodeScreenRadius !== undefined
+    ) {
+      drawClusterBadge(
+        ctx,
+        {
+          parentScreenX: input.parentScreenX,
+          parentScreenY: input.parentScreenY,
+          nodeScreenRadius: input.nodeScreenRadius,
+          count: input.count,
+          hovered: input.hovered,
+          scale,
+        },
+        colors,
+      );
+    }
+    return;
+  }
+
   const label = clusterChipLabel(input.count, input.expanded);
   const rect = clusterChipRect(input.screenX, input.screenY, label, scale);
 
-  // 부모→칩 점선 커넥터 (소속이 읽히도록) — 펼침/접힘 공통. pill 을 나중에
+  // 부모→칩 점선 커넥터 (소속이 읽히도록) — 접힘 전용. pill 을 나중에
   // 채워 커넥터의 pill 안쪽 구간은 자연히 가려진다.
   if (input.parentScreenX !== undefined && input.parentScreenY !== undefined) {
     ctx.save();
@@ -163,8 +284,8 @@ export function drawClusterChip(
   ctx.stroke();
 
   // 겹친 노드 글리프 스택 — 숨은 자식 신호(자식 kind 반영, 2~3개 겹침). pill
-  // 위에 얹어 채움에 가려지지 않게. 접힘 상태에서만(펼침은 자식이 실제로 보임).
-  if (!input.expanded) {
+  // 위에 얹어 채움에 가려지지 않게. 접힘 전용(펼침은 위에서 배지로 반환됨).
+  {
     const gy = input.screenY;
     const gcx = rect.x + CHIP_GLYPH_WIDTH * 0.55 * scale;
     const half = 4.4 * scale;
@@ -181,12 +302,12 @@ export function drawClusterChip(
     }
   }
 
-  // 텍스트 — glyph 오른쪽에 mono `+N` / `− N`.
+  // 텍스트 — glyph 오른쪽에 mono `+N`(접힘 전용).
   ctx.fillStyle = colors.text;
   ctx.font = `600 ${CHIP_FONT_SIZE * scale}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  const textX = rect.x + (input.expanded ? CHIP_PAD_X * scale : (CHIP_GLYPH_WIDTH + CHIP_PAD_X * 0.5) * scale);
+  const textX = rect.x + (CHIP_GLYPH_WIDTH + CHIP_PAD_X * 0.5) * scale;
   ctx.fillText(label, textX, input.screenY + 0.5 * scale);
   ctx.textAlign = "start";
   ctx.textBaseline = "alphabetic";

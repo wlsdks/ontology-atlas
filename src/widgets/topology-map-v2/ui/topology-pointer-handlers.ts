@@ -30,7 +30,7 @@ import type { ForceSimulation } from "../model/force-layout";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable, isSpineOnlyZoom } from "../model/tier-visibility";
 import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
 import { hitTestEdges, type EdgeHitCandidate } from "./topology-edge-hit";
-import { clusterChipLabel, clusterChipRect, clusterChipScale } from "../render/cluster-chips";
+import { clusterBadgeLabel, clusterBadgeRect, clusterChipLabel, clusterChipRect, clusterChipScale } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
 import { depthParallaxOffsetFor, type DepthParallaxOffset } from "../model/realm-depth-parallax";
 import { computeGrabOffsetWorld, computePinWorld, type WorldOffset } from "../interaction/node-drag";
@@ -43,7 +43,7 @@ import {
 import { computeWheelZoomFactor, normalizeWheelDeltaY } from "../interaction/wheel";
 import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, hitTestWorld, screenToWorld, worldToScreen } from "./topology-camera-math";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
-import type { TopologyWorld } from "./topology-world";
+import { radiusForKind, type TopologyWorld } from "./topology-world";
 
 /**
  * Sim warmth topped up while a node is actively pin-dragged, in MILLISECONDS
@@ -155,6 +155,13 @@ export interface PointerHandlerRefs {
     depth2: DepthParallaxOffset;
     depth3: DepthParallaxOffset;
   } | null>;
+  /**
+   * S10 결함 3 — 영역 전개 중 이번 프레임의 **깊이 기반 티어 kind** 오버라이드
+   * (`topology-realm-runtime.ts#tierKindById`). 드로우가 이 맵으로 티어 알파를
+   * 계산하므로 히트도 같은 맵을 써야 depth1 element 자식이 잡힌다. 루프가 매
+   * 프레임 드로우와 **같은 게이트**로 채운다(영역 비활성이면 null).
+   */
+  realmTierKindsRef?: Ref<ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null>;
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
     position: { x: number; y: number } | null,
@@ -239,6 +246,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     clusteredIdsRef,
     hoveredClusterIdRef,
     realmParallaxRef,
+    realmTierKindsRef,
     onSelect,
     onSelectEdge,
     onHoverEdge,
@@ -259,11 +267,24 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     if (!chips || chips.length === 0) return null;
     const { width, height } = viewportRef.current;
     const camera = cameraRef.current;
+    const world = worldRef.current;
+    const tokens = readTopologyV2TokensOrNull();
     // 드로우(`topology-frame-draw.ts`)와 **같은** 줌 스케일을 써 사각형이 어긋나지 않게.
     const scale = clusterChipScale(camera.scale.value);
     for (const chip of chips) {
-      const screen = worldToScreen(camera, width, height, chip.anchor.x, chip.anchor.y);
-      const rect = clusterChipRect(screen.x, screen.y, clusterChipLabel(chip.count, chip.expanded), scale);
+      let rect: ReturnType<typeof clusterChipRect>;
+      if (chip.expanded) {
+        // S10 결함 2 — 펼침은 부모 노드 우상단 배지. 드로우와 **같은**
+        // `clusterBadgeRect`(부모 스크린 좌표 + base 스크린 반지름) 로 사각형 유도.
+        const parentNode = world?.nodeById.get(chip.parentId);
+        if (!parentNode || !tokens) continue;
+        const parentScreen = worldToScreen(camera, width, height, parentNode.x, parentNode.y);
+        const nodeScreenRadius = radiusForKind(parentNode.kind, tokens) * parentNode.magnitudeScale * camera.scale.value;
+        rect = clusterBadgeRect(parentScreen.x, parentScreen.y, nodeScreenRadius, clusterBadgeLabel(chip.count), scale);
+      } else {
+        const screen = worldToScreen(camera, width, height, chip.anchor.x, chip.anchor.y);
+        rect = clusterChipRect(screen.x, screen.y, clusterChipLabel(chip.count, chip.expanded), scale);
+      }
       if (px >= rect.x && px <= rect.x + rect.w && py >= rect.y && py <= rect.y + rect.h) {
         return chip.parentId;
       }
@@ -299,6 +320,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // S3 — 이번 프레임에 그리지 않은(밀도게이트 접힘 + 선택적 ego 숨김) 노드는
     // 히트 대상에서 제외 — 숨은 ego 이웃이 클릭되던 S2 갭 차단.
     const clusteredIds = clusteredIdsRef?.current;
+    // S10 결함 3 — 영역 전개 중 깊이 기반 티어 오버라이드(드로우와 같은 맵).
+    const realmTierKinds = realmTierKindsRef?.current ?? null;
     // S5 — 영역 시차가 활성이면 드로우와 같은 밴드 오프셋을 히트에도 적용.
     const parallax = realmParallaxRef?.current ?? null;
     const renderOffsetForNode = parallax
@@ -313,7 +336,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       tokens,
       px,
       py,
-      (node) => isNodeHittable(node, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL, clusteredIds),
+      (node) => isNodeHittable(node, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL, clusteredIds, realmTierKinds),
       renderOffsetForNode,
     );
   };
@@ -341,9 +364,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const focusedNodeId = focusedSlugRef.current;
     const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
     const clusteredIds = clusteredIdsRef?.current;
+    const realmTierKinds = realmTierKindsRef?.current ?? null;
     const hittable = new Set(
       world.nodes
-        .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL, clusteredIds))
+        .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL, clusteredIds, realmTierKinds))
         .map((n) => n.id),
     );
     const candidates: EdgeHitCandidate[] = [];

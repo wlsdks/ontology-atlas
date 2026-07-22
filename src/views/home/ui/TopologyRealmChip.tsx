@@ -2,6 +2,8 @@
 
 import { Orbit, X } from "lucide-react";
 
+import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/chrome-chip";
+
 export interface TopologyRealmChipProps {
   /** 현재 영역 루트 노드의 제목 (없으면 slug fallback 을 HomePage 가 넣는다). */
   title: string;
@@ -27,7 +29,7 @@ export function TopologyRealmChip({
     <div
       data-testid="topology-realm-chip"
       role="status"
-      className="topology-ui-scale pointer-events-auto flex h-[var(--chrome-tile-size)] max-w-full items-center gap-1.5 rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-3 text-[12.5px] text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)]"
+      className={CHROME_STATUS_CHIP_CLASS}
     >
       <Orbit size={14} aria-hidden className="shrink-0 text-[color:var(--color-text-tertiary)]" />
       <span className="shrink-0 text-[color:var(--color-text-tertiary)]">{prefixLabel}</span>

@@ -2,6 +2,7 @@
 
 import { ArrowLeft, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/chrome-chip";
 
 export interface TopologyInsightsReturnChipProps {
   /** 복귀 목적지 — 원래 보던 인사이트 탭 (`buildOntologyInsightsReturnHref`). */
@@ -35,7 +36,7 @@ export function TopologyInsightsReturnChip({
   return (
     <div
       data-testid="topology-insights-return-chip"
-      className="topology-ui-scale pointer-events-auto flex h-[var(--chrome-tile-size)] max-w-full items-center gap-1.5 rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-3 text-[12.5px] text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)]"
+      className={CHROME_STATUS_CHIP_CLASS}
     >
       <Link
         href={href}

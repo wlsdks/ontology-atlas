@@ -1342,6 +1342,37 @@ Topology chrome (브랜드 pill · 상단 HUD lane · INDEX 패널 · 이후 좌
 - **패널 (INDEX · 압축 데이터시트)** — 12px radius, 위 3계층보다 한 단 크고
   내부에 자체 헤더/바디/푸터 리듬을 가진 표면.
 
+### 박스 규격 (Geometry ladder) — "모든 곳 동일 적용" 계약
+
+상단 크롬 열(브랜드 필 · 상태 칩 · 유틸리티 lane)의 **모든 표면은 같은 기하
+토큰을 공유한다**. 규격을 인라인 px/hex 로 재구현하지 않고 아래 토큰만 참조한다
+(`design.md` "인라인 재구현 금지"). 값 소스: `app/globals.css` `--chrome-*` /
+`--topology-v2-panel-*`.
+
+| 규격 | 토큰 | 값 | 대상 |
+|---|---|---|---|
+| 크롬 타일 높이 | `--chrome-tile-size` | 44px | ChromeTile · ChromeChip · 상태 칩(영역·복귀·경로) — **단일 규격** |
+| 타일/칩/필 radius | `--chrome-radius` | 10px | 위 모든 크롬 표면 |
+| inner radius | `--chrome-radius-inner` | 7px | 타일 안에 중첩되는 소형 컨트롤 |
+| 키캡 radius | (kbd) | 4px | `<kbd>` 단축키 캡 |
+| 패널 radius | `--topology-v2-panel-radius` | 12px | INDEX 패널 · 압축 데이터시트 |
+| 보더 · 서피스 · 그림자 | `--chrome-border` · `--chrome-surface` · `--chrome-shadow` | — | 위 모든 크롬 표면 |
+
+- **버튼 칩 vs 상태 칩** — 클릭 액션은 `ChromeChip`(버튼), "지금 이 세계/이
+  경로" 를 알리는 비-버튼 상태 표시는 `CHROME_STATUS_CHIP_CLASS`
+  (`src/shared/ui/chrome-chip.tsx`)를 쓴다. 둘은 **같은 높이·radius·보더·서피스·
+  패딩(`px-3.5`)** 을 공유한다 — 형제로 나란히 서므로 규격이 어긋나면 즉시
+  눈에 띈다. 상태 칩 3종(`TopologyRealmChip` · `TopologyInsightsReturnChip` ·
+  `TopologyPathChip`)이 이 상수를 공유한다. 회귀 핀:
+  `src/views/home/ui/topology-chrome-chip-geometry.test.tsx`.
+- **⚠️ `topology-ui-scale` 중첩 금지 (S10 결함 1)** — `.topology-ui-scale` 은
+  `zoom` 으로 구현되고 `zoom` 은 **중첩 시 곱해진다**(≥1920px 에서 1.15 ×
+  1.15 ≈ 1.32). 스케일은 상단 lane 래퍼(`SearchHint` 등) **하나**가 소유한다.
+  그 안에 슬롯으로 들어가는 칩이 `topology-ui-scale` 을 자기 자신에 다시 걸면
+  형제보다 ~32% 커진다 — 소유자 1920 실보고의 "영역 칩이 검색/자동정렬보다
+  큼" 이 정확히 이 이중 적용이었다. 슬롯 컴포넌트는 스케일 클래스를 갖지
+  않는다(`CHROME_STATUS_CHIP_CLASS` 에 미포함).
+
 ### 좌측 내비 레일 (AppNavRail)
 
 `docs/prototypes/chrome-rail-combined.html` 소유자 최종 승인 — 지형도 좌측에

@@ -269,6 +269,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     depth2: DepthParallaxOffset;
     depth3: DepthParallaxOffset;
   } | null>(null);
+  /**
+   * S10 결함 3 — 이번 프레임의 깊이 기반 티어 kind 오버라이드. rAF 가 드로우와
+   * **같은 게이트**로 매 프레임 채우고(영역 비활성이면 null), 포인터 히트테스트가
+   * 읽어 depth1 element 자식이 그려질 때 함께 잡히게 한다.
+   */
+  const realmTierKindsRef = useRef<ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null>(null);
 
   const cameraRef = useRef<CameraAxes>({
     x: { value: 0, velocity: 0 },
@@ -909,7 +915,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           homing: homingActiveRef.current,
           selectionPulseActive: selectionPulseRef.current !== null &&
             now - selectionPulseRef.current.startAtMs < tokens.selectPulseDurationMs,
-          egoTailAnimating: focusedSlugRef.current !== null && tokens.edgePulseSpeedEgo > 0,
+          // S10 결함 4 — ego 테일 + 반딧불(엣지 흐름 입자)의 상시 모션. 엣지
+          // 선택(pair 포커스)도 반딧불을 흘리므로 포커스와 같은 게이트로 깨워 둔다.
+          egoTailAnimating:
+            (focusedSlugRef.current !== null || selectedEdgeRef.current !== null) && tokens.edgePulseSpeedEgo > 0,
           emphasisTarget: hoveredNodeIdRef.current !== null || panelEmphasisNodeIdRef.current !== null || hoveredClusterIdRef.current !== null,
           breathing: !reducedMotionRef.current && world.nodes.some((n) => n.fresh),
           cameraMoving,
@@ -1423,6 +1432,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // S3 — 이번 프레임의 NOT-DRAWN 집합을 히트테스트가 볼 수 있게 공개(밀도
       // 게이트 접힘 + 선택적 ego 숨김 이웃). 드로우와 히트가 같은 집합을 본다.
       clusteredIdsRef.current = frameClusteredIds;
+      // S10 결함 3 — 드로우가 이번 프레임 티어 알파 계산에 쓴 깊이 오버라이드를
+      // 히트테스트에도 그대로 공개(영역 비활성이면 null). draw/hit lockstep.
+      realmTierKindsRef.current = realmTierKinds;
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
@@ -1503,6 +1515,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     clusteredIdsRef,
     hoveredClusterIdRef,
     realmParallaxRef,
+    realmTierKindsRef,
     onSelect,
     onSelectEdge,
     onHoverEdge,
