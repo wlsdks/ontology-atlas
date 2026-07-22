@@ -107,6 +107,12 @@ describe("buildRealmRuntimeData", () => {
     expect(buildRealmRuntimeData(buildFixtureWorld(), "missing", tokens)).toBeNull();
   });
 
+  // S8 결함 2 — entryCamera 는 빌드 시 null(카메라 미상). 진입 effect 가 채운다.
+  it("entryCamera 는 빌드 직후 null 이다 (진입 effect 가 카메라 값으로 채움)", () => {
+    const data = buildRealmRuntimeData(buildFixtureWorld(), "d", tokens)!;
+    expect(data.entryCamera).toBeNull();
+  });
+
   it("realmCameraTarget centers on the content bbox (결계가 아니라 콘텐츠가 주인공) and clamps scale", () => {
     const data = buildRealmRuntimeData(buildFixtureWorld(), "d", tokens)!;
     const target = realmCameraTarget(data, tokens, 1000, 800);

@@ -37,7 +37,7 @@ import {
 import { draw as nodeShapesDraw } from "../render/node-shapes";
 import { drawClusterChip, clusterChipScale } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
-import { drawDiffractionSpike, drawStarDust, type DustPoint } from "../render/starfield";
+import { drawDiffractionSpike, drawRealmCosmos, drawStarDust, type DustPoint } from "../render/starfield";
 import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
 import { draw as tracesDraw } from "../render/traces";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
@@ -51,7 +51,21 @@ import { worldToScreen } from "./topology-camera-math";
  */
 const EDGE_CULL_MARGIN_PX = 24;
 const NODE_CULL_SLACK = 3;
-import { radiusForKind, type TopologyWorld, type WorldNode } from "./topology-world";
+import { isSpineNode, radiusForKind, type TopologyWorld, type WorldNode } from "./topology-world";
+
+/**
+ * S8 결함 1 — 펼친(확장) 부모 노드를 접힘과 시각 구분하는 파선 오라 링. 선택
+ * (ego) 링은 실선이라 채널이 겹치지 않는다. 반지름 = 노드 디스크 + 이 오프셋(px),
+ * 1px, 인디고. glow/네온 금지 — 파선 헤어라인만.
+ */
+const EXPANDED_AURA_RING_OFFSET = 6;
+const EXPANDED_AURA_DASH: readonly number[] = [3, 3];
+const EXPANDED_AURA_ALPHA = 0.55;
+/**
+ * S8 결함 1 — 확장 디스크와 무관한 배경 노드를 확장 중 미세 dim 해 "어지러움"을
+ * 줄인다(확장이 없으면 1.0, 회귀 0). 색이 아니라 알파만 낮춘다.
+ */
+const BACKGROUND_DIM_WHEN_EXPANDED = 0.5;
 
 const EMPTY_NEIGHBOR_SET: ReadonlySet<string> = new Set();
 // perf sweep 2026-07 — reused frame-scratch Maps, see their `.clear()` call
@@ -220,11 +234,6 @@ export interface FrameDrawParams {
    * 자기 드로잉한다(전환 초반 ~200ms). null 이면 미표시(회귀 0).
    */
   wardingRing: { centerX: number; centerY: number; radius: number; drawProgress: number } | null;
-  /**
-   * S4 — 영역 멤버 id (결계를 가로지르는 관계의 안쪽 끝을 판정). 결계 밖으로
-   * 나가는 엣지는 안쪽 노드에서 결계 방향으로 페이드 스텁으로만 그린다.
-   */
-  realmMemberIds: ReadonlySet<string> | null;
   /** S4 — 멤버별 깊이 기반 티어 kind 오버라이드 (영역 세계의 티어 = 재배치 깊이). */
   realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null;
   /**
@@ -240,6 +249,11 @@ export interface FrameDrawParams {
   realmDepthParallax: { depth2: { x: number; y: number }; depth3: { x: number; y: number } } | null;
   /** S4 — 전개 순간의 도트 방사 시차 팩터 0..1 (전환 중에만 >0). */
   realmDustParallax: number;
+  /**
+   * S8 결함 6 — 결계 안 우주 도트 레이어(뷰포트 스페이스, 카메라 원점 시차).
+   * 영역 활성(wardingRing 존재) 시에만 결계 원으로 클립해 그린다. null 이면 미표시.
+   */
+  realmCosmosPoints: readonly DustPoint[] | null;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -270,11 +284,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     clusterChips,
     hoveredClusterId,
     wardingRing,
-    realmMemberIds,
     realmTierKinds,
     realmDepthById,
     realmDepthParallax,
     realmDustParallax,
+    realmCosmosPoints,
   } = params;
 
   // S5 깊이 연출 — 노드 하나의 렌더 오프셋(월드 단위, 시차)과 깊이 선명도
@@ -306,6 +320,21 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // (`use-topology-loop.ts`), so dust points (already in CSS-pixel space)
   // must not be scaled a second time.
   drawStarDust(ctx, { points: dustPoints, farT, devicePixelRatio: 1, originX: gridOrigin.x, originY: gridOrigin.y, radialParallax: realmDustParallax });
+
+  // S8 결함 6 — 영역 활성 중 결계 **안**을 우주로. 결계 밖은 도트 없음(클립).
+  // farT 무관(영역은 circuit 고도라 dust 는 꺼져 있다). 카메라 정지 시 완전 정지.
+  if (wardingRing !== null && realmCosmosPoints !== null && realmCosmosPoints.length > 0) {
+    const wc = worldToScreen(camera, viewportWidth, viewportHeight, wardingRing.centerX, wardingRing.centerY);
+    drawRealmCosmos(ctx, {
+      points: realmCosmosPoints,
+      originX: gridOrigin.x,
+      originY: gridOrigin.y,
+      clip: { cx: wc.x, cy: wc.y, radius: wardingRing.radius * camera.scale.value },
+      devicePixelRatio: 1,
+      radialParallax: realmDustParallax,
+      reducedMotion,
+    });
+  }
 
   const project = (x: number, y: number) => worldToScreen(camera, viewportWidth, viewportHeight, x, y);
   const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
@@ -410,6 +439,25 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     }
   }
 
+  // S8 결함 1 — 펼친 부모(파선 오라 대상) + 그 디스크(부모 + contains 하위 전이
+  // 폐포) 집합. 배경 dim 은 "확장 중" 무관 노드에만 걸어야 하므로 디스크 멤버를
+  // 미리 모은다. 확장이 없으면 둘 다 비어 회귀 0. ego(`이웃 +N`) 칩은 제외.
+  const expandedParentIds = new Set<string>();
+  const expandedDiscIds = new Set<string>();
+  for (const chip of clusterChips) {
+    if (!chip.expanded || chip.ego) continue;
+    expandedParentIds.add(chip.parentId);
+    const stack = [chip.parentId];
+    while (stack.length > 0) {
+      const id = stack.pop() as string;
+      if (expandedDiscIds.has(id)) continue;
+      expandedDiscIds.add(id);
+      const children = world.childrenByParent.get(id);
+      if (children) stack.push(...children);
+    }
+  }
+  const anyExpanded = expandedParentIds.size > 0;
+
   for (const node of world.nodes) {
     // 밀도 게이트: 접힌 부모의 서브트리 노드는 칩으로 대체되어 그리지 않는다.
     if (clusteredIds.has(node.id)) continue;
@@ -453,7 +501,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // the whole off-screen node cost (see `render/viewport-cull.ts`).
     if (isNodeCulled(screen, screenRadius * NODE_CULL_SLACK, viewportWidth, viewportHeight)) continue;
 
-    ctx.globalAlpha = tierAlpha * realmClarityAlpha;
+    // S8 결함 1 — 확장 중 무관 배경 노드 미세 dim(디스크 멤버·스파인·ego 제외).
+    const backgroundDim =
+      anyExpanded && egoState === "normal" && !expandedDiscIds.has(node.id) && !isSpineNode(node)
+        ? BACKGROUND_DIM_WHEN_EXPANDED
+        : 1;
+
+    ctx.globalAlpha = tierAlpha * realmClarityAlpha * backgroundDim;
     // Sheen top stop = lerp(fill, tint, blend) — resolved here (token layer)
     // so `render/node-shapes.ts` stays token-free and pure.
     const sheenTop = lerpColorHex(visual.fill, tokens.nodeSheenTint, tokens.nodeSheenBlend);
@@ -519,45 +573,34 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         screenY: screen.y,
         screenRadius,
         color: egoState === "dim" ? tokens.nodeStrokeDim : visual.stroke,
-        alpha: farT * tierAlpha * realmClarityAlpha,
+        alpha: farT * tierAlpha * realmClarityAlpha * backgroundDim,
       });
+    }
+
+    // S8 결함 1 — 펼친 부모 구분: 노드 디스크 바깥에 파선 오라 링(선택 ego 링은
+    // 실선이라 채널 충돌 없음). 노드 위에 얹되 알파는 노드 티어 알파를 따른다.
+    if (expandedParentIds.has(node.id)) {
+      ctx.save();
+      ctx.setLineDash([...EXPANDED_AURA_DASH]);
+      ctx.globalAlpha = tierAlpha * EXPANDED_AURA_ALPHA;
+      ctx.strokeStyle = tokens.indigo;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(screen.x, screen.y, screenRadius + EXPANDED_AURA_RING_OFFSET, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
     }
     ctx.globalAlpha = 1;
   }
 
-  // --- S4 "영역 전개" 결계(warding) — 서브트리 바운딩 원 + 경계 넘는 관계의
-  // 페이드 스텁. 노드 위, 칩/라벨 아래. 드라마는 기하·자기드로잉으로만(glow/네온
-  // 금지) — 1px 인디고 헤어라인. ---
+  // --- S4 "영역 전개" 결계(warding) — 서브트리 바운딩 원. 노드 위, 칩/라벨
+  // 아래. 드라마는 기하·자기드로잉으로만(glow/네온 금지) — 1px 인디고 헤어라인.
+  // S8 — 결계 밖으로 나가는 외부 관계는 아예 그리지 않는다(페이드 스텁 제거):
+  // 영역 안은 그 세계만 담고, 바깥과 닿은 관계는 S7 대장이 담당한다. ---
   if (wardingRing !== null) {
     const center = project(wardingRing.centerX, wardingRing.centerY);
     const screenRadius = wardingRing.radius * camera.scale.value;
-    // 결계 밖으로 나가는 관계: 안쪽 노드에서 결계 방향으로만 페이드 스텁.
-    if (realmMemberIds !== null && wardingRing.drawProgress > 0.05) {
-      ctx.save();
-      ctx.strokeStyle = tokens.indigo;
-      ctx.lineWidth = 1;
-      for (const edge of world.edges) {
-        const sIn = realmMemberIds.has(edge.sourceId);
-        const tIn = realmMemberIds.has(edge.targetId);
-        if (sIn === tIn) continue; // 둘 다 안/밖 = 경계 아님
-        const insideWX = sIn ? edge.ax : edge.bx;
-        const insideWY = sIn ? edge.ay : edge.by;
-        const dx = insideWX - wardingRing.centerX;
-        const dy = insideWY - wardingRing.centerY;
-        const dist = Math.hypot(dx, dy) || 1;
-        // 결계까지의 스텁 끝점(방사 방향, 링 반경).
-        const tipWX = wardingRing.centerX + (dx / dist) * wardingRing.radius;
-        const tipWY = wardingRing.centerY + (dy / dist) * wardingRing.radius;
-        const a = project(insideWX, insideWY);
-        const b = project(tipWX, tipWY);
-        ctx.globalAlpha = 0.22 * wardingRing.drawProgress;
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
     // 결계 링 자기 드로잉: 위(-90°)에서 시계방향으로 drawProgress 만큼 호를 그린다.
     ctx.save();
     ctx.globalAlpha = 0.5;

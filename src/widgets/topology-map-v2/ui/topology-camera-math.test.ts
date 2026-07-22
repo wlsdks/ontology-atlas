@@ -296,4 +296,26 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
     const target = computeFocusCameraTarget(world, baseTokens, 1200, 800, "missing", 1.5);
     expect(target).toBeNull();
   });
+
+  // S8 결함 4 — 영역 전개 중 결계 밖 fling 이웃(±5000)이 ego bbox 를 부풀려
+  // 카메라가 overview 로 축소(화면에 안 들어옴)되던 결함. restrictIds 로 영역
+  // 멤버만 담으면 근접 이웃 fit 으로 정상 다이브한다.
+  it("restrictIds(영역 멤버)면 결계 밖 fling 이웃을 무시하고 근접 fit 으로 다이브한다", () => {
+    const world = egoWorld(
+      {
+        f: { x: 0, y: 0, kind: "domain" },
+        near: { x: 80, y: 0, kind: "capability" }, // 영역 멤버
+        fling: { x: 5000, y: 0, kind: "capability" }, // 결계 밖 fling
+      },
+      { f: ["near", "fling"], near: ["f"], fling: ["f"] },
+    );
+    const overviewEntryScale = 1.5;
+    const members = new Set(["f", "near"]);
+    const restricted = computeFocusCameraTarget(world, baseTokens, 1200, 800, "f", overviewEntryScale, members);
+    // 근접 ego(f+near)로 다이브 — overview 로 축소되지 않고 확실히 줌 인.
+    expect(restricted!.tscale).toBeGreaterThan(overviewEntryScale);
+    // 제한 없으면 fling 이웃이 bbox 를 부풀려 overview 로 clamp(대조).
+    const unbounded = computeFocusCameraTarget(world, baseTokens, 1200, 800, "f", overviewEntryScale);
+    expect(unbounded!.tscale).toBeCloseTo(overviewEntryScale, 6);
+  });
 });

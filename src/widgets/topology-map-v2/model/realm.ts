@@ -102,35 +102,6 @@ export function computeRealmLayout(
   return new Map(points.map((p) => [p.id, p]));
 }
 
-export interface RealmBoundaryEdge {
-  /** 영역 안쪽 끝점. */
-  insideId: string;
-  /** 영역 바깥쪽 끝점. */
-  outsideId: string;
-}
-
-/**
- * 결계를 가로지르는 관계 — 정확히 한 끝점만 영역 안에 있는 엣지. 전환 후 이
- * 엣지들은 안쪽 노드에서 결계 방향으로 페이드 스텁으로만 그려진다(바깥은 언마운트).
- */
-export function realmBoundaryEdges(
-  memberIds: ReadonlySet<string>,
-  edges: readonly { sourceId: string; targetId: string }[],
-): RealmBoundaryEdge[] {
-  const result: RealmBoundaryEdge[] = [];
-  for (const edge of edges) {
-    const sIn = memberIds.has(edge.sourceId);
-    const tIn = memberIds.has(edge.targetId);
-    if (sIn === tIn) continue; // 둘 다 안/밖 = 경계 아님
-    result.push(
-      sIn
-        ? { insideId: edge.sourceId, outsideId: edge.targetId }
-        : { insideId: edge.targetId, outsideId: edge.sourceId },
-    );
-  }
-  return result;
-}
-
 /**
  * 결계(warding) 반경 — 영역 노드 중 중심에서 가장 먼 것까지의 거리 + 마진.
  * 순수·결정론: 같은 점 집합·같은 마진 → 같은 반경. 점이 없으면(루트만) 마진만

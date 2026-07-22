@@ -30,6 +30,23 @@ export const DENSITY_GATE_THRESHOLD = 12;
 /** 자식 kind 별 기본 칩 반지름(월드 유닛) — 부모 지오메트리에 명시가 없을 때. */
 export const DEFAULT_CHIP_RING = 120;
 
+/**
+ * S8 결함 1 — 펼침 칩을 자식 링 **바깥**으로 밀어내는 추가 여유(월드 유닛).
+ * 접힘 상태의 칩은 자식이 안 그려지므로 자식 링 위(`ring`)에 앉아도 안 겹치지만,
+ * 펼치면 자식 노드/라벨이 바로 그 링에 나타나 `− N` 칩과 뭉갠다(소유자 실보고
+ * "확장 칩이 노드/라벨 위에 겹침"). 펼침일 때만 outward 방향으로 이 여유만큼 더
+ * 밀어 자식 부챗살 바깥(디스크 밖)에 세운다 — 자식 노드/라벨과 절대 겹치지 않게.
+ */
+export const EXPANDED_CHIP_CLEARANCE = 96;
+
+/**
+ * 칩 anchor 반경(부모→칩 거리, 월드 유닛). 접힘=자식 링(`ring`), 펼침=자식 링 +
+ * 여유(`EXPANDED_CHIP_CLEARANCE`) — 펼친 자식 디스크 바깥. 순수·결정론.
+ */
+export function chipAnchorRadius(ring: number, expanded: boolean): number {
+  return expanded ? ring + EXPANDED_CHIP_CLEARANCE : ring;
+}
+
 export type NodeDensityState = "visible" | "clustered";
 
 /** 칩 anchor 계산에 필요한 부모 좌표 + outward 방향(라디안, 레이아웃 부채꼴 방향). */
@@ -148,13 +165,16 @@ export function computeDensityGate(input: DensityGateInput): DensityGateResult {
     const geometry = parentGeometry.get(parentId);
     if (!geometry) continue;
     const ring = geometry.ring ?? DEFAULT_CHIP_RING;
+    const expanded = expandedParents.has(parentId);
+    // S8 결함 1 — 펼침 칩은 자식 디스크 바깥으로 밀어 자식 노드/라벨과 안 겹치게.
+    const anchorRadius = chipAnchorRadius(ring, expanded);
     chips.push({
       parentId,
       count: gated.length,
-      expanded: expandedParents.has(parentId),
+      expanded,
       anchor: {
-        x: geometry.x + Math.cos(geometry.angle) * ring,
-        y: geometry.y + Math.sin(geometry.angle) * ring,
+        x: geometry.x + Math.cos(geometry.angle) * anchorRadius,
+        y: geometry.y + Math.sin(geometry.angle) * anchorRadius,
       },
       childKind: kindOf?.(gated[0]),
     });

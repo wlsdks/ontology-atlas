@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  chipAnchorRadius,
   computeDensityGate,
   DENSITY_GATE_THRESHOLD,
   DEFAULT_CHIP_RING,
+  EXPANDED_CHIP_CLEARANCE,
   type DensityGateParentGeometry,
 } from "./density-gate";
 
@@ -199,5 +201,40 @@ describe("computeDensityGate", () => {
     });
     expect(result.chips).toHaveLength(1);
     expect(result.clusteredIds.has("cap-0")).toBe(true);
+  });
+
+  // S8 결함 1 — 펼침 칩은 자식 디스크 바깥으로 밀어 자식 노드/라벨과 안 겹치게.
+  it("펼침 칩 anchor 는 자식 링 바깥(접힘보다 EXPANDED_CHIP_CLEARANCE 만큼 멀다)", () => {
+    const kids = children("cap", 20);
+    const geo = new Map<string, DensityGateParentGeometry>([["d", { x: 0, y: 0, angle: 0, ring: 100 }]]);
+    const collapsed = computeDensityGate({
+      childrenByParent: new Map([["d", kids]]),
+      expandedParents: new Set(),
+      parentGeometry: geo,
+    });
+    const expanded = computeDensityGate({
+      childrenByParent: new Map([["d", kids]]),
+      expandedParents: new Set(["d"]),
+      parentGeometry: geo,
+    });
+    // 접힘: 자식 링 위(ring 100), 펼침: ring + clearance.
+    expect(collapsed.chips[0].anchor.x).toBeCloseTo(100, 6);
+    expect(expanded.chips[0].anchor.x).toBeCloseTo(100 + EXPANDED_CHIP_CLEARANCE, 6);
+    // 펼침 칩이 자식 링(디스크 반경)보다 확실히 바깥이라 자식과 안 겹친다.
+    const parentToExpanded = Math.hypot(expanded.chips[0].anchor.x, expanded.chips[0].anchor.y);
+    expect(parentToExpanded).toBeGreaterThan(100);
+    expect(parentToExpanded).toBeGreaterThan(Math.hypot(collapsed.chips[0].anchor.x, collapsed.chips[0].anchor.y));
+  });
+});
+
+describe("chipAnchorRadius", () => {
+  it("접힘=자식 링, 펼침=자식 링 + 여유", () => {
+    expect(chipAnchorRadius(100, false)).toBe(100);
+    expect(chipAnchorRadius(100, true)).toBe(100 + EXPANDED_CHIP_CLEARANCE);
+  });
+  it("펼침 반경은 항상 접힘보다 크다(디스크 밖 보장)", () => {
+    for (const ring of [40, 90, 145, 250]) {
+      expect(chipAnchorRadius(ring, true)).toBeGreaterThan(chipAnchorRadius(ring, false));
+    }
   });
 });

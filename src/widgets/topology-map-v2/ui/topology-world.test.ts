@@ -209,6 +209,25 @@ describe("computeEgoBounds", () => {
     const world = egoWorld([node({ id: "a", kind: "domain", x: 0, y: 0 })], { a: [] });
     expect(computeEgoBounds(world, tokens, "missing")).toBeNull();
   });
+
+  // S8 결함 4 — 영역 전개 중 결계 밖 fling 이웃(수천 유닛 밖)이 ego bbox 를
+  // 부풀려 카메라가 화면 밖으로 날아가던 결함. restrictIds 로 영역 멤버만 담는다.
+  it("restrictIds 는 영역 밖(fling) 이웃을 bbox 에서 제외한다", () => {
+    const nodes: WorldNode[] = [
+      node({ id: "f", kind: "domain", x: 0, y: 0 }), // r14
+      node({ id: "inside", kind: "capability", x: 100, y: 0 }), // 영역 멤버, r8 → maxX 108
+      node({ id: "outside", kind: "element", x: 5000, y: 5000 }), // 결계 밖 fling 이웃
+    ];
+    const world = egoWorld(nodes, { f: ["inside", "outside"], inside: ["f"], outside: ["f"] });
+    const members = new Set(["f", "inside"]);
+    const bounds = computeEgoBounds(world, tokens, "f", members)!;
+    // outside(5000,5000)가 제외돼 bbox 가 결계 안(f + inside)으로 제한된다.
+    expect(bounds.maxX).toBe(108);
+    expect(bounds.maxY).toBe(14);
+    // restrictIds 없으면 outside 까지 감싸 bbox 가 폭발한다(대조).
+    const unbounded = computeEgoBounds(world, tokens, "f")!;
+    expect(unbounded.maxX).toBeGreaterThan(4000);
+  });
 });
 
 /** S2 파트 5B — 펼친 클러스터 디스크(부모 + contains 직속 자식) bbox. */

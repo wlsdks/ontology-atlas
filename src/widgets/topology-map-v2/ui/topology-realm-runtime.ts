@@ -54,6 +54,13 @@ export interface RealmRuntimeData {
    * 순차 지연/시차 계수는 원본 깊이로 판정하는 게 더 정확하다.)
    */
   depthById: ReadonlyMap<string, number>;
+  /**
+   * S8 결함 2 — 영역 진입 직전의 카메라 키프레임(x,y,scale). 영역 해제 시
+   * overview fit 이 아니라 **이 좌표**로 트윈해 "원래 보던 곳"으로 복귀한다
+   * (소유자 실보고). 진입 effect 가 채운다(빌드 시엔 카메라 미상이라 null 시작);
+   * 카메라 미초기화(딥링크 마운트) 시엔 null 로 남아 해제가 overview 로 폴백한다.
+   */
+  entryCamera: CameraTarget | null;
 }
 
 const DEPTH_TIER_KINDS = ["project", "domain", "capability", "element"] as const;
@@ -149,6 +156,8 @@ export function buildRealmRuntimeData(
     wardingCenter: { x: 0, y: 0 },
     wardingRadius,
     bounds,
+    // 진입 effect 가 카메라 현재값으로 채운다(여기선 아직 카메라 미상).
+    entryCamera: null,
     tierKindById: new Map(
       [...subtree.depthById].map(([id, depth]) => [
         id,
