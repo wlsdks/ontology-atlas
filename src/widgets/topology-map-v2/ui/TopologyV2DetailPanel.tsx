@@ -81,6 +81,17 @@ export interface TopologyV2DetailPanelLabels {
   metricUsedBy: string;
   metricDependsOn: string;
   metricEvidence: string;
+  /**
+   * H1 B2/A — typed-fact 그룹 라벨의 hover 한 줄 풀이(비개발자 언어) + 스코프
+   * 명시("직접" 연결 기준). `title` 속성으로만 노출 — 아이콘/추가 표면 없음.
+   * 미지정(undefined)이면 title 없이 렌더(하위 호환).
+   */
+  metricContainsHelp?: string;
+  metricUsedByHelp?: string;
+  metricDependsOnHelp?: string;
+  metricEvidenceHelp?: string;
+  /** 각인 메트릭 한 줄 전체의 스코프 풀이(모두 직접 연결 기준). */
+  metricHelp?: string;
   noConnections: string;
   handoff: string;
   close: string;
@@ -230,20 +241,27 @@ export function TopologyV2DetailPanel({
   const renderGroup = (
     group: "contains" | "usedBy" | "dependsOn",
     label: string,
+    help: string | undefined,
     view: V2ConnectionGroupView,
   ) => {
     if (view.total === 0) return null;
     const overflow = view.total - view.rows.length;
     // S2 파트 3 — 긴 "담는 것"은 경로 프리픽스 요약을 기본으로, "전체 보기"로 리스트.
+    // B4 (H1) — 요약이 "기타" 한 덩어리로 무너지면(`usable=false`) 요약을 건너뛰고
+    // 개별 리스트를 렌더한다(정보 0 방지).
     const useSummary =
       group === "contains" &&
       view.summary !== undefined &&
+      view.summary.usable &&
       view.total > V2_CONTAINS_SUMMARY_THRESHOLD &&
       !showAllContains;
     return (
       <div className="flex flex-col gap-1" data-datasheet-group={group}>
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-tertiary)]">
+          <span
+            title={help}
+            className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-tertiary)]"
+          >
             {label}
           </span>
           <span
@@ -252,7 +270,10 @@ export function TopologyV2DetailPanel({
           >
             {view.total}
           </span>
-          {group === "contains" && view.summary !== undefined && view.total > V2_CONTAINS_SUMMARY_THRESHOLD ? (
+          {group === "contains" &&
+          view.summary !== undefined &&
+          view.summary.usable &&
+          view.total > V2_CONTAINS_SUMMARY_THRESHOLD ? (
             <button
               type="button"
               onClick={() => setShowAllContains((v) => !v)}
@@ -336,7 +357,10 @@ export function TopologyV2DetailPanel({
     return (
       <div className="flex flex-col gap-1" data-datasheet-group="evidence">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-tertiary)]">
+          <span
+            title={labels.metricEvidenceHelp}
+            className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-tertiary)]"
+          >
             {labels.metricEvidence}
           </span>
           <span
@@ -468,6 +492,7 @@ export function TopologyV2DetailPanel({
       {/* One engraved metric line — no subtitle + boxes triplication */}
       <div
         data-datasheet-metric="engraved"
+        title={labels.metricHelp}
         className="rounded-[var(--topology-v2-panel-row-radius)] bg-[color:var(--topology-v2-panel-metric-surface)] px-2 py-1.5"
       >
         <span className="font-mono text-[12.5px] tracking-[0.01em] text-[color:var(--topology-v2-panel-metric-text)]">
@@ -550,9 +575,9 @@ export function TopologyV2DetailPanel({
       <div className="flex flex-col gap-2.5">
         {hasConnections ? (
           <>
-            {renderGroup("contains", labels.metricContains, groups.contains)}
-            {renderGroup("usedBy", labels.metricUsedBy, groups.usedBy)}
-            {renderGroup("dependsOn", labels.metricDependsOn, groups.dependsOn)}
+            {renderGroup("contains", labels.metricContains, labels.metricContainsHelp, groups.contains)}
+            {renderGroup("usedBy", labels.metricUsedBy, labels.metricUsedByHelp, groups.usedBy)}
+            {renderGroup("dependsOn", labels.metricDependsOn, labels.metricDependsOnHelp, groups.dependsOn)}
             {renderEvidenceGroup()}
           </>
         ) : (

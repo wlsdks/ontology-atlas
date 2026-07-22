@@ -31,6 +31,8 @@ export interface TopologyIndexPanelLabels {
   freshTitle: string;
   /** M-6 — 도메인 배지 hover 설명 (다중 소속 중복 계상). */
   domainCountTitle: string;
+  /** H1 A — 도메인 행 큰 숫자의 스코프 단어("하위 전체"). */
+  subtotalTitle?: string;
   emptyHint: string;
   /** P4a — 렌즈 세그먼트 "전체". */
   segmentAll: string;

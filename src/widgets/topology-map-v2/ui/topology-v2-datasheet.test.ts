@@ -175,7 +175,7 @@ describe("buildV2ConnectionGroups — M-2 ROLE axis, single source for metric + 
     const groups = buildV2ConnectionGroups([]);
     expect(groups).toEqual({
       // S2 파트 3 — contains 는 경로 프리픽스 요약을 함께 싣는다(빈 입력이면 빈 요약).
-      contains: { rows: [], total: 0, summary: { groups: [], otherCount: 0, total: 0 } },
+      contains: { rows: [], total: 0, summary: { groups: [], otherCount: 0, total: 0, usable: false } },
       usedBy: { rows: [], total: 0 },
       dependsOn: { rows: [], total: 0 },
       belongsTo: { rows: [], total: 0 },
@@ -335,6 +335,33 @@ describe("summarizeContainsByPathPrefix (S2 파트 3)", () => {
     const groups = buildV2ConnectionGroups(rows);
     expect(groups.contains.summary).toBeDefined();
     expect(groups.contains.summary?.total).toBe(3);
+    expect(groups.contains.summary?.usable).toBe(true);
     expect(groups.usedBy.summary).toBeUndefined();
+  });
+
+  // B4 (H1) — "기타" 한 덩어리로 무너지는 요약을 재분할/리스트 폴백으로 구제.
+  it('깊은 프리픽스가 전부 흩어져 "기타"가 과반이면 1단계 프리픽스로 재분할', () => {
+    const rows: V2DatasheetConnection[] = [
+      ...["a", "b", "c", "d", "e", "f"].map((s) => el(`cli/${s}/x`)),
+      ...["g", "h", "i", "j"].map((s) => el(`src/${s}/y`)),
+    ];
+    // 깊은 프리픽스(cli/a … src/j)는 전부 count 1 → 상위 4만 명명, 나머지 6은 기타.
+    // 기타(6)가 과반이므로 1단계(cli/src)로 재분할해 전부 나뉘는 쪽을 택한다.
+    const summary = summarizeContainsByPathPrefix(rows, 4);
+    expect(summary.usable).toBe(true);
+    expect(summary.groups).toEqual([
+      { key: "cli", count: 6 },
+      { key: "src", count: 4 },
+    ]);
+    expect(summary.otherCount).toBe(0);
+  });
+
+  it("슬래시가 없어 나눌 수 없으면 usable=false (패널은 리스트로 폴백)", () => {
+    const rows = [el("add"), el("list"), el("find")];
+    const summary = summarizeContainsByPathPrefix(rows, 4);
+    expect(summary.usable).toBe(false);
+    expect(summary.groups).toEqual([]);
+    expect(summary.otherCount).toBe(3);
+    expect(summary.total).toBe(3);
   });
 });

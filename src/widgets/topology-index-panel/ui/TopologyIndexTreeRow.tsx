@@ -15,6 +15,13 @@ export interface TopologyIndexTreeRowLabels {
   freshTitle: string;
   /** M-6 — 도메인 배지 hover 설명 (다중 소속 중복 계상). */
   domainCountTitle: string;
+  /**
+   * H1 A (숫자 스코프 계약) — 도메인 행 우측 큰 숫자의 스코프 단어("하위 전체").
+   * 있으면 큰 숫자 title 이 "하위 전체 {count} · {domainCountTitle}" 로 조립돼
+   * 이 숫자가 직속이 아니라 하위 트리 전체 합계임을 명시한다. 미지정이면 종전대로
+   * `domainCountTitle` 만.
+   */
+  subtotalTitle?: string;
   /** P4b — "에이전트가 방금" 귀속 배지. */
   agentBadge?: string;
 }
@@ -191,7 +198,15 @@ export function TopologyIndexTreeRow({
           <span
             // M-6 — 도메인 배지 합이 census 총계를 넘는 이유(다중 소속
             // 중복 계상)를 셈해 보는 사용자에게 즉석에서 설명한다.
-            title={isDomain ? labels.domainCountTitle : undefined}
+            // H1 A — 스코프 단어("하위 전체 N")를 앞세워 이 숫자가 직속이 아니라
+            // 하위 트리 전체 합계임을 명시한다(있을 때만).
+            title={
+              isDomain
+                ? labels.subtotalTitle
+                  ? `${labels.subtotalTitle} ${count} · ${labels.domainCountTitle}`
+                  : labels.domainCountTitle
+                : undefined
+            }
             className="justify-self-end font-mono text-label text-[color:var(--topology-v2-numeral-face)] [text-shadow:0_1px_0_var(--topology-v2-numeral-shadow)]"
           >
             {count}
