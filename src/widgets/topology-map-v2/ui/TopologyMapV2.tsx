@@ -29,6 +29,9 @@ export interface TopologyV2Node {
   isHub: boolean;
   ownerKey: string | null;
   recentlyUpdated: boolean;
+  /** 살아있는 지도 드리프트 — vault mtime 파생 dusty 판정(`views/home/lib/topology-dusty.ts`).
+   *  true 면 기존 stale 채널(dash + 불투명 stale 토큰)로 렌더. 생략 = fresh. */
+  stale?: boolean;
   fullDegree: number;
   /** Transitive contained-descendant count — the engraved numeral shown on project/domain chips in circuit range (prototype `n.count`). */
   descendantCount: number;

@@ -2357,7 +2357,9 @@
       "recentEmptyHint": "Nothing changed in the last {days} days",
       "agentBadge": "Agent just now",
       "uncatalogedDocsLabel": "{count} docs not on the map",
-      "uncatalogedDocsAction": "Promote"
+      "uncatalogedDocsAction": "Promote",
+      "dustyNodesLabel": "{count} nodes gathering dust — untouched for a while",
+      "dustyNodesAction": "See freshness"
     },
     "deeplinkNotFound": "Node not found: {query}",
     "bootstrap": {
@@ -2431,7 +2433,8 @@
       "packetTitle": "Exploration trail",
       "packetOrder": "Visited order (oldest → most recent):",
       "packetReviewHint": "Review each node's context:",
-      "packetPathHint": "Check the path between the journey endpoints:"
+      "packetPathHint": "Check the path between the journey endpoints:",
+      "packetDustyHint": "{count} nodes untouched for a while — maintenance candidates:"
     }
   },
   "fullDetailA1": {

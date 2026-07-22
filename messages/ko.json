@@ -2357,7 +2357,9 @@
       "recentEmptyHint": "최근 {days}일 안에 바뀐 노드가 없습니다",
       "agentBadge": "에이전트가 방금",
       "uncatalogedDocsLabel": "지도에 없는 문서 {count}개",
-      "uncatalogedDocsAction": "올리기"
+      "uncatalogedDocsAction": "올리기",
+      "dustyNodesLabel": "먼지 앉은 노드 {count}개 — 오래 손대지 않았어요",
+      "dustyNodesAction": "신선도 보기"
     },
     "deeplinkNotFound": "노드를 찾을 수 없습니다: {query}",
     "bootstrap": {
@@ -2431,7 +2433,8 @@
       "packetTitle": "걸어온 길 (탐색 경로)",
       "packetOrder": "방문 순서 (오래된 → 최근):",
       "packetReviewHint": "각 노드 맥락 검토:",
-      "packetPathHint": "여정 양 끝 사이 경로 확인:"
+      "packetPathHint": "여정 양 끝 사이 경로 확인:",
+      "packetDustyHint": "오래 손대지 않은 노드 {count}개 — 유지보수 후보 살펴보기:"
     }
   },
   "fullDetailA1": {

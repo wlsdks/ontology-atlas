@@ -58,6 +58,10 @@ export interface TopologyIndexPanelLabels {
   /** P4c — "지도에 없는 문서 N개"(호출자가 count 를 이미 포맷). */
   uncatalogedDocsLabel: string;
   uncatalogedDocsAction: string;
+  /** ④ 살아있는 지도 드리프트 — "먼지 앉은 노드 N"(호출자가 count 포맷) +
+   *  신선도 탭 이동 액션. 중립 톤만 — warning 사다리 금지 (Guardian 1차). */
+  dustyNodesLabel: string;
+  dustyNodesAction: string;
 }
 
 export interface TopologyIndexPanelProps {
@@ -112,6 +116,8 @@ export interface TopologyIndexPanelProps {
   } | null;
   /** P4c — vault 에 있지만 아직 kind 없는(=지도에 없는) 문서 수. */
   uncatalogedDocCount?: number;
+  /** ④ 살아있는 지도 드리프트 — 먼지 앉은(dusty) 노드 수. 0 이면 행 숨김. */
+  dustyNodeCount?: number;
   /** P4c — 위 행 클릭 → "내 문서로 지도 만들기" 다이얼로그(`bootstrapOpen`). */
   onPromoteUncatalogedDocs?: (() => void) | null;
   /**
@@ -154,6 +160,7 @@ export function TopologyIndexPanel({
   agentHandoff,
   recentChanges = null,
   uncatalogedDocCount,
+  dustyNodeCount,
   onPromoteUncatalogedDocs = null,
   onOpenAgentConnect = null,
   agentActivityHref = null,
@@ -429,6 +436,26 @@ export function TopologyIndexPanel({
             {labels.uncatalogedDocsAction}
           </span>
         </button>
+      ) : null}
+
+      {/* ④ 살아있는 지도 드리프트 — "먼지 앉은 노드 N" 조용한 행. dusty
+          판정(HomePage `deriveDustySlugs`, vault mtime 중앙값+30일 이중
+          조건)의 카운트만 받고, 클릭은 /ontology/insights 신선도 탭 딥링크.
+          0 이면 행 자체가 없다(성공 배지 금지). 중립 톤만 — 방치는 경고가
+          아니라 지도의 상태다. */}
+      {dustyNodeCount && dustyNodeCount > 0 ? (
+        <Link
+          href="/ontology/insights?tab=freshness"
+          data-testid="topology-index-dusty-nodes"
+          className="mt-2 flex shrink-0 items-center gap-2 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] px-2 py-1.5 text-left text-label transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+        >
+          <span className="min-w-0 flex-1 truncate text-[color:var(--topology-v2-panel-text-tertiary)]">
+            {labels.dustyNodesLabel}
+          </span>
+          <span className="shrink-0 text-[color:var(--color-indigo-accent)]">
+            {labels.dustyNodesAction}
+          </span>
+        </Link>
       ) : null}
 
       {/* v2.1 푸터 — 구 헤더의 "● 에이전트 동기화" 문구 + 성장 신호가

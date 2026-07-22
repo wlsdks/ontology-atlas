@@ -170,6 +170,7 @@ import {
   clearTopologyV2TokensCache,
 } from "@/widgets/topology-map-v2";
 import { buildTopologyV2Graph } from "../lib/topology-v2-adapter";
+import { deriveDustySlugs } from "../lib/topology-dusty";
 import { clampSynthSize, synthesizeVaultGraph } from "../lib/synth-vault";
 import {
   TopologyIndexPanel,
@@ -484,6 +485,14 @@ export function HomePage() {
     [changeBaseline, ontologyInsight],
   );
   const changedSlugs = ontologyChangeset.touchedNodeIds;
+  // 살아있는 지도 드리프트(④) — vault mtime 으로 "오래 손대지 않은" 노드를
+  // 판정해 엔진의 기존 stale 채널(dash + 불투명 토큰)로 가라앉힌다.
+  // 세션 스냅샷 시각(updatedAgoNowMs)을 재사용 — 렌더 중 라벨/판정이
+  // 흔들리지 않는 규율은 데이터시트 "N일 전" 라벨과 동일.
+  const dustySlugs = useMemo(
+    () => deriveDustySlugs(ontologyInsight?.nodes ?? [], docFreshnessIndex, updatedAgoNowMs),
+    [ontologyInsight, docFreshnessIndex, updatedAgoNowMs],
+  );
   const selectedOntologyNode = useMemo(() => {
     if (!selectedSlug || selectedProject) return null;
     if (!ontologyInsight) return null;
@@ -960,9 +969,10 @@ export function HomePage() {
     return ontologyInsight
       ? buildTopologyV2Graph(ontologyInsight.nodes, ontologyInsight.edges, {
           changedSlugs,
+          dustySlugs,
         })
       : { nodes: [], edges: [] };
-  }, [synthSize, ontologyInsight, changedSlugs]);
+  }, [synthSize, ontologyInsight, changedSlugs, dustySlugs]);
 
   const canvasSelectedSlug = selectedProject?.slug ?? selectedOntologyNode?.id ?? selectedSlug;
   const drawerProject = selectedProject;
@@ -1048,12 +1058,17 @@ export function HomePage() {
   const copyFootprintPacket = useCallback(async () => {
     if (footprintTrailEntries.length === 0) return;
     const ok = await copyText(
-      formatFootprintTrailAgentPacket(footprintTrailEntries, {
-        title: t("footprint.packetTitle"),
-        order: t("footprint.packetOrder"),
-        reviewHint: t("footprint.packetReviewHint"),
-        pathHint: t("footprint.packetPathHint"),
-      }),
+      formatFootprintTrailAgentPacket(
+        footprintTrailEntries,
+        {
+          title: t("footprint.packetTitle"),
+          order: t("footprint.packetOrder"),
+          reviewHint: t("footprint.packetReviewHint"),
+          pathHint: t("footprint.packetPathHint"),
+          dustyHint: t("footprint.packetDustyHint", { count: dustySlugs.size }),
+        },
+        [...dustySlugs],
+      ),
     );
     if (!ok) return;
     setFootprintPacketCopied(true);
@@ -2652,6 +2667,8 @@ export function HomePage() {
                     // (이전에는 지도가 완전히 빈 상태의 empty-state 에서만
                     // 열렸다; 이 행은 지도가 이미 채워진 상태에서도 연다).
                     uncatalogedDocCount={bootstrapPlan?.elements.length ?? 0}
+                    // ④ 살아있는 지도 드리프트 — dusty 카운트. 0 이면 행 숨김.
+                    dustyNodeCount={dustySlugs.size}
                     onPromoteUncatalogedDocs={
                       bootstrapPlan && bootstrapPlan.elements.length > 0
                         ? () => setBootstrapOpen(true)
@@ -2713,6 +2730,8 @@ export function HomePage() {
                         count: bootstrapPlan?.elements.length ?? 0,
                       }),
                       uncatalogedDocsAction: t("index.uncatalogedDocsAction"),
+                      dustyNodesLabel: t("index.dustyNodesLabel", { count: dustySlugs.size }),
+                      dustyNodesAction: t("index.dustyNodesAction"),
                     }}
                   />
                   )}
