@@ -1469,8 +1469,13 @@ function DocsVaultContent() {
           ) : null}
         </div>
         {/* zone-r — 소스 pill → ⌘K → 점검 → 문서정보 → gear(local). 순서
-            고정, 숨김/겹침 금지(implementation-contract.md §10.2 ①). */}
-        <div className="flex w-full flex-none flex-wrap items-center justify-end gap-2 lg:w-auto lg:max-w-[340px] lg:flex-nowrap">
+            고정, 숨김/겹침 금지(implementation-contract.md §10.2 ①).
+            검수 Pass A′ 결함 (2026-07-23) — 구 `lg:max-w-[340px]` 캡은 EN
+            라벨(Sample/Local/SETTINGS)이 340px 를 넘으면 justify-end 정렬이
+            내용물을 캡 왼쪽 밖으로 흘려 탭 스트립을 덮었다(1440 실측 28px).
+            캡을 제거해 자연 폭을 갖게 하면 zone-c(flex-1 min-w-0 스크롤
+            스트립)가 그만큼 줄어들 뿐 겹침이 구조적으로 불가능해진다. */}
+        <div className="flex w-full flex-none flex-wrap items-center justify-end gap-2 lg:w-auto lg:flex-nowrap">
           {/* Source 토글 — 이전엔 advanced dropdown 안 깊숙이 묻혀 있던 가장
               중요한 결정 (샘플 vs 내 vault) 를 헤더에 직접 노출. */}
           <div
