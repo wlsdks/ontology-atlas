@@ -19,6 +19,9 @@ function isRenderableKind(kind: string): kind is RenderableKind {
 export interface BuildTopologyV2GraphOptions {
   /** Slugs touched since the review baseline — feeds the `recentPulse` overlay. */
   changedSlugs?: ReadonlySet<string>;
+  /** 살아있는 지도 드리프트 — `deriveDustySlugs` 판정 결과. 해당 노드는
+   *  엔진의 기존 stale 채널로 가라앉는다. */
+  dustySlugs?: ReadonlySet<string>;
 }
 
 export interface TopologyV2Graph {
@@ -112,6 +115,7 @@ export function buildTopologyV2Graph(
     isHub: node.id === hubId,
     ownerKey: null,
     recentlyUpdated: options.changedSlugs?.has(node.id) ?? false,
+    stale: options.dustySlugs?.has(node.id) ?? false,
     fullDegree: fullDegreeById.get(node.id) ?? 0,
     // Engraved-numeral source (project/domain only, drawn in circuit range) —
     // Guardian I-1: 역량+요소 합계 (INDEX·/projects 와 같은 BFS census).

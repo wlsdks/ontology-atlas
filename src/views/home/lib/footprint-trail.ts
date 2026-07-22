@@ -54,6 +54,9 @@ export interface FootprintTrailPacketLabels {
   reviewHint: string;
   /** find_path 힌트 안내 한 줄(방문 2개 이상일 때만). */
   pathHint: string;
+  /** ④ 드리프트 핸드오프 — dusty 노드 안내 한 줄(호출자가 count 포맷,
+   *  dusty 0 이면 섹션 자체 생략). */
+  dustyHint?: string;
 }
 
 /**
@@ -64,6 +67,7 @@ export interface FootprintTrailPacketLabels {
 export function formatFootprintTrailAgentPacket(
   entries: readonly FootprintTrailEntry[],
   labels: FootprintTrailPacketLabels,
+  dustySlugs: readonly string[] = [],
 ): string {
   const lines: string[] = [`# ${labels.title}`, labels.order];
   entries.forEach((entry, i) => {
@@ -80,6 +84,16 @@ export function formatFootprintTrailAgentPacket(
     lines.push("");
     lines.push(labels.pathHint);
     lines.push(`find_path("${first}", "${last}")`);
+  }
+  // ④ 살아있는 지도 드리프트 핸드오프 — 지도가 이미 아는 방치 신호를
+  // 에이전트 패킷에도 싣는다(대표 3개 + CLI 큐 힌트). dusty 0 이면 침묵.
+  if (labels.dustyHint && dustySlugs.length > 0) {
+    lines.push("");
+    lines.push(labels.dustyHint);
+    for (const slug of dustySlugs.slice(0, 3)) {
+      lines.push(`get_concept("${graphIdToConceptSlug(slug)}")`);
+    }
+    lines.push("ontology-atlas maintenance");
   }
   return lines.join("\n");
 }

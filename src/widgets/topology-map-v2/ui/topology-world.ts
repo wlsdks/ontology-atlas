@@ -330,7 +330,9 @@ export function buildTopologyWorld(
       homeY: y,
       isHub: n.isHub,
       fresh: n.recentlyUpdated,
-      stale: false,
+      // 살아있는 지도 드리프트 — 어댑터가 vault mtime 으로 판정한 dusty 를
+      // 기존 stale 시각 채널(freshness.ts: dash [3,3] + 불투명 토큰)에 배선.
+      stale: n.stale ?? false,
       count: n.descendantCount,
       magnitudeScale: 1, // 아래 2차 패스에서 maxCount 확정 후 채움
 

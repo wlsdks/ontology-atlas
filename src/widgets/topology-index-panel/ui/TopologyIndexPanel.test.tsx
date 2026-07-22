@@ -77,6 +77,8 @@ const labels = {
   agentBadge: "Agent just now",
   uncatalogedDocsLabel: "0 docs not on the map",
   uncatalogedDocsAction: "Promote",
+  dustyNodesLabel: "0 nodes gathering dust",
+  dustyNodesAction: "See freshness",
 };
 
 function buildFixtureTree() {
