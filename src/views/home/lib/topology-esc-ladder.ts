@@ -29,6 +29,15 @@ export interface TopologyEscLadderInput {
    * 기대다. 미지정/false 면 사다리는 종전과 동일(회귀 0).
    */
   realmActive?: boolean;
+  /**
+   * H3 P1 (R-1) — 엣지 클릭 팝오버(`TopologyV2EdgePanel`, role=dialog)가 열려
+   * 있다. 영역 전개 다음, 다른 어떤 오버레이보다 먼저 소비한다(노드 팝오버와
+   * 같은 "가장 최근에 연 임시 표면부터" 계약). 종전에는 이 판정이 `HomePage`
+   * 의 keydown 이펙트 안에 인라인으로 박혀 있어 사다리 단위 테스트가 이
+   * 단(段)을 볼 수 없었다 — 회귀 감사(엣지 팝오버가 Esc 로 안 닫힘)를 재현할
+   * 수 있게 사다리로 끌어올린다. 미지정/false 면 종전과 동일.
+   */
+  selectedEdgeActive?: boolean;
   /** W2-B node right-click context menu open — the newest, most transient
    *  overlay, so it closes first (above even the create-node composer): a
    *  context menu that outlives the keypress meant to dismiss whatever else
@@ -70,6 +79,7 @@ export interface TopologyEscLadderInput {
 
 export type TopologyEscLadderAction =
   | "close-realm"
+  | "close-edge-popover"
   | "close-context-menu"
   | "close-create-node"
   | "close-full-detail"
@@ -81,7 +91,7 @@ export type TopologyEscLadderAction =
 
 /**
  * Resolves what a single Escape keypress should do, in priority order:
- * context menu → create-node composer → search palette (deferred to its own
+ * realm → edge popover → context menu → create-node composer → search palette (deferred to its own
  * handler) → full-detail drawer → relation lens → close the node popover (ego
  * focus survives) → deselect the current node → pop one level of the
  * local-graph breadcrumb → nothing. Each tier closes exactly one thing; the
@@ -94,6 +104,9 @@ export function resolveTopologyEscLadderAction(
   // S4 — 영역 전개는 뷰 전체를 바꾸는 최상위 컨텍스트라 Esc 사다리 최우선
   // (소유자 지시). 영역 안에서 Esc 는 무엇보다 먼저 전체 지도로 복귀한다.
   if (input.realmActive) return "close-realm";
+  // R-1 — 엣지 팝오버는 영역 다음, 다른 오버레이보다 먼저 닫는다(HomePage 의
+  // 종전 인라인 순서를 그대로 사다리로 옮긴 것 — 회귀 0).
+  if (input.selectedEdgeActive) return "close-edge-popover";
   if (input.contextMenuOpen) return "close-context-menu";
   if (input.createNodeOpen) return "close-create-node";
   // The palette (Radix Dialog) already closes itself on Escape — returning

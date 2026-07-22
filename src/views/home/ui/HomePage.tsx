@@ -1342,6 +1342,7 @@ export function HomePage() {
       if (event.defaultPrevented) return;
       const action = resolveTopologyEscLadderAction({
         realmActive: resolvedRealmSlug !== null,
+        selectedEdgeActive: selectedEdge !== null,
         contextMenuOpen: contextMenuNode !== null,
         createNodeOpen,
         searchOpen: ontologySearchOpen,
@@ -1357,13 +1358,13 @@ export function HomePage() {
         handleExitRealm();
         return;
       }
-      // R-1 (Guardian 총괄) — 엣지 팝오버가 열려 있으면 Esc 1단은 그것부터
-      // 닫는다 (사다리 최상단 소비 — 노드 팝오버와 같은 계약).
-      if (selectedEdge !== null) {
-        setSelectedEdge(null);
-        return;
-      }
       switch (action) {
+        case "close-edge-popover":
+          // R-1 (Guardian 총괄) — 엣지 팝오버가 열려 있으면 Esc 1단은 그것부터
+          // 닫는다 (영역 다음 최상단 소비 — 노드 팝오버와 같은 계약). 팝오버는
+          // 자체 포커스 관리(TopologyV2EdgePanel)로 트리거에 포커스를 되돌린다.
+          setSelectedEdge(null);
+          break;
         case "close-context-menu":
           closeContextMenu();
           break;
@@ -2745,6 +2746,7 @@ export function HomePage() {
                     onEnterRealm={handleEnterRealm}
                     realmEnterLabel={t('realm.enterAction')}
                     realmEnterTooltip={t('realm.enterTooltip')}
+                    canvasLabel={t('canvas.ariaLabel')}
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas ? (

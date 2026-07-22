@@ -38,6 +38,36 @@ describe("resolveTopologyEscLadderAction", () => {
     expect(resolveTopologyEscLadderAction({ ...BASE, realmActive: false, hasSelection: true })).toBe("deselect");
   });
 
+  it("R-1: closes the edge popover right after the realm, above the context menu and every other tier", () => {
+    // Regression (H3 접근성 감사 P1): the edge popover (role=dialog) did not
+    // close on Escape and focus fell to <body>. This rung, promoted out of
+    // HomePage's inline check, is the single decision point the popover close
+    // now routes through.
+    expect(
+      resolveTopologyEscLadderAction({
+        ...BASE,
+        selectedEdgeActive: true,
+        contextMenuOpen: true,
+        createNodeOpen: true,
+        fullDetailOpen: true,
+        hasSelection: true,
+        nodePopoverOpen: true,
+      }),
+    ).toBe("close-edge-popover");
+  });
+
+  it("R-1: the realm still wins over an open edge popover (realm is the top rung)", () => {
+    expect(
+      resolveTopologyEscLadderAction({ ...BASE, realmActive: true, selectedEdgeActive: true }),
+    ).toBe("close-realm");
+  });
+
+  it("R-1: with no edge popover the ladder is unchanged (no regression)", () => {
+    expect(
+      resolveTopologyEscLadderAction({ ...BASE, selectedEdgeActive: false, contextMenuOpen: true }),
+    ).toBe("close-context-menu");
+  });
+
   it("closes the W2-B context menu first, above every other tier including the create-node composer", () => {
     expect(
       resolveTopologyEscLadderAction({

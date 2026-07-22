@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 
@@ -57,12 +58,31 @@ export function TopologyV2EdgePanel({
   onClose,
   className,
 }: TopologyV2EdgePanelProps) {
+  // H3 P1 — 엣지 팝오버 포커스 계약. 열릴 때 dialog 로 포커스를 들여
+  // (role=dialog + aria-label 이 스크린리더에 발화되게), 닫힐 때는 팝오버를
+  // 연 트리거(캔버스 등 직전 포커스 요소)로 되돌린다. 종전에는 아무 포커스
+  // 관리가 없어 Esc 로 닫으면 dialog 언마운트 후 포커스가 body 로 유실됐다
+  // (접근성 감사 P1).
+  const dialogRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const trigger = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+    return () => {
+      if (trigger && typeof trigger.focus === "function" && trigger.isConnected) {
+        trigger.focus();
+      }
+    };
+    // 마운트/언마운트 1회 — 열릴 때 포커스 진입, 닫힐 때 복귀.
+  }, []);
+
   return (
     <aside
+      ref={dialogRef}
       role="dialog"
       aria-label={sentence}
+      tabIndex={-1}
       data-testid="topology-v2-edge-panel"
-      className={`topology-chrome-in flex w-[300px] flex-col gap-3 rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-4 shadow-[var(--topology-v2-panel-shadow)] ${className ?? ""}`}
+      className={`topology-chrome-in flex w-[300px] flex-col gap-3 rounded-[var(--topology-v2-panel-radius)] outline-none focus-visible:outline-none border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-4 shadow-[var(--topology-v2-panel-shadow)] ${className ?? ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--topology-v2-panel-text-tertiary)]">

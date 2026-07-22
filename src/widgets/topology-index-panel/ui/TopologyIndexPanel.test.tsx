@@ -123,6 +123,68 @@ describe("TopologyIndexPanel", () => {
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
   });
 
+  it("INDEX tree is a single Tab stop — roving tabindex + Arrow/Home/End move the roving focus (P0)", () => {
+    // Regression (H3 접근성 감사 P0): every treeitem used to carry tabIndex=0,
+    // so expanding a domain added +N Tab stops and a keyboard user had to Tab
+    // through the whole tree. WAI-ARIA `tree` requires exactly ONE Tab entry
+    // point (the active row), with Arrow keys walking siblings.
+    const treeResult = buildFixtureTree();
+    render(
+      <TopologyIndexPanel
+        treeResult={treeResult}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+
+    const rowFor = (id: string) =>
+      document.querySelector(`[data-index-row="${id}"]`) as HTMLElement;
+    const rowsInDomOrder = () =>
+      Array.from(document.querySelectorAll<HTMLElement>("[data-index-row]"));
+    const tabbableRows = () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>('[data-index-row][tabindex="0"]'),
+      );
+
+    const project = rowFor("project:root");
+    const domain = rowFor("domain:onboarding");
+
+    // Exactly one Tab entry point, and it's the first row by default.
+    expect(tabbableRows()).toEqual([project]);
+    expect(domain).toHaveAttribute("tabindex", "-1");
+
+    // ArrowDown rolls the single tabindex=0 onto the next visible sibling and
+    // moves DOM focus with it.
+    fireEvent.keyDown(project, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(domain);
+    expect(tabbableRows()).toEqual([domain]);
+
+    // Expanding the domain adds child rows but MUST NOT add Tab stops.
+    fireEvent.click(domain.querySelector("button")!);
+    expect(rowFor("capability:mcp-server")).toBeInTheDocument();
+    expect(rowFor("capability:cli-entry")).toBeInTheDocument();
+    expect(tabbableRows()).toEqual([domain]);
+
+    // ArrowDown from the domain lands on its first child (whatever the tree's
+    // child sort is — the +N rows are reachable by Arrow, never by Tab).
+    const order = rowsInDomOrder();
+    const firstChild = order[1 + 1]; // [project, domain, firstChild, ...]
+    fireEvent.keyDown(domain, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(firstChild);
+
+    // Home returns to the first row; End jumps to the last visible row.
+    fireEvent.keyDown(firstChild, { key: "Home" });
+    expect(document.activeElement).toBe(project);
+    fireEvent.keyDown(project, { key: "End" });
+    expect(document.activeElement).toBe(order[order.length - 1]);
+  });
+
   it("collapses when any part of the header row is clicked, not just the chevron", () => {
     // Regression: the chevron used to be the only hit area for collapsing
     // INDEX. The whole header row is now the toggle (role=button via a real

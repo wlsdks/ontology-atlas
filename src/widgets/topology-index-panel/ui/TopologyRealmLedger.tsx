@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  type FocusEvent as ReactFocusEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { ChevronDown, CornerUpRight, Search } from "lucide-react";
 import {
   filterTreeByQuery,
@@ -8,6 +14,12 @@ import {
   type OntologyTreeNode,
 } from "@/shared/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
+import {
+  flattenVisibleRowIds,
+  nextRovingId,
+  resolveActiveRowId,
+  type RovingNavKey,
+} from "../lib/roving-tabindex";
 import { TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
 
 /** 결계 관계 한 줄 — 이미 i18n 라벨까지 조립된 표시용 행(HomePage 가 만든다). */
@@ -131,6 +143,39 @@ export function TopologyRealmLedger({
   };
   const isOpen = (nodeId: string) => isFiltering || openIds.has(nodeId);
 
+  // H3 P0 — INDEX 트리와 같은 로빙 tabindex 계약(같은 위젯·같은 tree 패턴).
+  const treeRef = useRef<HTMLElement>(null);
+  const [activeRowId, setActiveRowId] = useState<string | null>(null);
+  const orderedRowIds = useMemo(
+    () => flattenVisibleRowIds(visibleRoots, isOpen),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [visibleRoots, openIds, isFiltering],
+  );
+  const resolvedActiveRowId = resolveActiveRowId(orderedRowIds, activeRowId, selectedId);
+
+  const focusRow = (nodeId: string) => {
+    const rows = treeRef.current?.querySelectorAll<HTMLElement>("[data-index-row]");
+    rows?.forEach((el) => {
+      if (el.dataset.indexRow === nodeId) el.focus();
+    });
+  };
+
+  const handleTreeKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    const key = event.key;
+    if (key !== "ArrowDown" && key !== "ArrowUp" && key !== "Home" && key !== "End") return;
+    event.preventDefault();
+    const nextId = nextRovingId(orderedRowIds, resolvedActiveRowId, key as RovingNavKey);
+    if (nextId === null) return;
+    setActiveRowId(nextId);
+    focusRow(nextId);
+  };
+
+  const handleTreeFocus = (event: ReactFocusEvent<HTMLElement>) => {
+    const rowEl = (event.target as HTMLElement).closest?.("[data-index-row]") as HTMLElement | null;
+    const id = rowEl?.dataset.indexRow;
+    if (id && id !== activeRowId) setActiveRowId(id);
+  };
+
   return (
     <aside
       aria-label={labels.label}
@@ -202,9 +247,12 @@ export function TopologyRealmLedger({
 
       {/* ── 2. 영역 트리 ── 루트 서브트리만, 깊이 들여쓰기. */}
       <nav
+        ref={treeRef}
         role="tree"
         aria-label={labels.label}
         data-testid="topology-realm-tree"
+        onKeyDown={handleTreeKeyDown}
+        onFocusCapture={handleTreeFocus}
         className="min-h-0 flex-1 space-y-px overflow-y-auto"
       >
         {visibleRoots.length === 0 ? (
@@ -221,6 +269,7 @@ export function TopologyRealmLedger({
               onToggleOpen={toggleOpen}
               onSelect={onSelect}
               selectedId={selectedId}
+              activeRowId={resolvedActiveRowId}
               changedSlugs={changedSlugs}
               maxDomainDescendantCount={maxDomainDescendantCount}
               domainCensus={domainCensus}

@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  type FocusEvent as ReactFocusEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { ChevronLeft, Search } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import {
@@ -11,6 +17,12 @@ import {
 } from "@/shared/lib/ontology-tree";
 import { FirstRunStarterModule } from "@/features/first-run-starter";
 import { computeMaxDomainDescendantCount } from "../lib/domain-subcounts";
+import {
+  flattenVisibleRowIds,
+  nextRovingId,
+  resolveActiveRowId,
+  type RovingNavKey,
+} from "../lib/roving-tabindex";
 import { TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
 import {
   TopologyIndexAgentHandoff,
@@ -191,6 +203,46 @@ export function TopologyIndexPanel({
   // 와 같은 UX 계약, filterTreeByNodeIds 결과에도 그대로 적용).
   const isOpen = (nodeId: string) => isFiltering || lensActive || openIds.has(nodeId);
 
+  // H3 P0 — 로빙 tabindex. 화면에 실제로 보이는 행들을 위→아래 순서로 펴고
+  // (검색/렌즈의 자동 펼침을 그대로 반영하는 `isOpen` 사용), 그 중 단 하나만
+  // Tab 진입점(tabIndex=0)으로 둔다. 형제 이동은 아래 nav 의 Arrow 핸들러.
+  const treeRef = useRef<HTMLElement>(null);
+  const [activeRowId, setActiveRowId] = useState<string | null>(null);
+  const orderedRowIds = useMemo(
+    () => flattenVisibleRowIds(visibleRoots, isOpen),
+    // isOpen 은 openIds/isFiltering/lensActive 의 클로저 — 그 원천을 deps 로 건다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [visibleRoots, openIds, isFiltering, lensActive],
+  );
+  const resolvedActiveRowId = resolveActiveRowId(orderedRowIds, activeRowId, selectedId);
+
+  const focusRow = (nodeId: string) => {
+    // tabIndex=-1 행도 프로그램적 focus() 는 먹는다. 다음 렌더에서 이 행이
+    // tabIndex=0 으로 승격되며 로빙 진입점도 함께 이동한다.
+    const rows = treeRef.current?.querySelectorAll<HTMLElement>("[data-index-row]");
+    rows?.forEach((el) => {
+      if (el.dataset.indexRow === nodeId) el.focus();
+    });
+  };
+
+  const handleTreeKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    const key = event.key;
+    if (key !== "ArrowDown" && key !== "ArrowUp" && key !== "Home" && key !== "End") return;
+    event.preventDefault();
+    const nextId = nextRovingId(orderedRowIds, resolvedActiveRowId, key as RovingNavKey);
+    if (nextId === null) return;
+    setActiveRowId(nextId);
+    focusRow(nextId);
+  };
+
+  // 포커스가 어느 행에 실제로 들어오든(클릭·Tab·Arrow) 활성 행을 그에
+  // 맞춘다 — 로빙 진입점이 "마지막으로 포커스한 행" 과 항상 일치하게.
+  const handleTreeFocus = (event: ReactFocusEvent<HTMLElement>) => {
+    const rowEl = (event.target as HTMLElement).closest?.("[data-index-row]") as HTMLElement | null;
+    const id = rowEl?.dataset.indexRow;
+    if (id && id !== activeRowId) setActiveRowId(id);
+  };
+
   return (
     <aside
       aria-label={labels.label}
@@ -318,9 +370,12 @@ export function TopologyIndexPanel({
       ) : null}
 
       <nav
+        ref={treeRef}
         role="tree"
         aria-label={labels.label}
         data-testid="topology-index-tree"
+        onKeyDown={handleTreeKeyDown}
+        onFocusCapture={handleTreeFocus}
         className="min-h-0 flex-1 space-y-px overflow-y-auto"
         // 패널1-3② — 스크롤 리스트 하단에서 마지막 행이 컨테이너 경계에
         // 중간 높이로 하드 클립돼 "잘린 행"이 결함처럼 읽혔다. 하단 12px
@@ -345,6 +400,7 @@ export function TopologyIndexPanel({
               onToggleOpen={toggleOpen}
               onSelect={onSelect}
               selectedId={selectedId}
+              activeRowId={resolvedActiveRowId}
               changedSlugs={changedSlugs}
               agentAttributedNodeId={recentChanges?.agentAttributedNodeId ?? null}
               maxDomainDescendantCount={maxDomainDescendantCount}
