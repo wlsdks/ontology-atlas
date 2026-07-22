@@ -14,6 +14,9 @@ export interface FreshnessWeekCell {
   level: FreshnessLevel;
   /** 가장 최근 주(이번 주) 여부 — 인디고로 별도 강조. */
   isCurrentWeek: boolean;
+  /** 그 주의 실제 갱신 건수 — 셀 툴팁("N주 전 · 갱신 M건")의 진실원.
+   * level 은 3에서 포화되므로 원본 카운트를 함께 노출한다. */
+  count: number;
 }
 
 export interface DomainFreshnessRow {
@@ -134,6 +137,7 @@ export function computeFreshnessSummary(
       const weeks: FreshnessWeekCell[] = counts.map((count, i) => ({
         level: levelFromCount(count),
         isCurrentWeek: i === HEATSTRIP_WEEKS - 1,
+        count,
       }));
       const latestMs = latestByDomain.get(domain.id) ?? null;
       const daysAgo = latestMs !== null ? Math.floor((referenceDate.getTime() - latestMs) / DAY_MS) : null;

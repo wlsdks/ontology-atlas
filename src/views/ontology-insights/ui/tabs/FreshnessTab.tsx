@@ -22,6 +22,10 @@ export interface FreshnessTabLabels {
   /** 히트스트립 시간축 방향 라벨 — 좌측(과거) / 우측(현재). */
   axisStart: string;
   axisEnd: string;
+  /** 셀 툴팁 — "N주 전 · 갱신 M건" (weeksAgo ≥ 1). */
+  weekCell: (weeksAgo: number, count: number) => string;
+  /** 이번 주 셀 툴팁 — "이번 주 · 갱신 M건". */
+  weekCellCurrent: (count: number) => string;
   recentUpdatesTitle: string;
   noRecentUpdates: string;
   staleCountLabel: string;
@@ -79,7 +83,14 @@ export function FreshnessTab({
         ) : (
           <div className="mt-3.5 flex flex-1 flex-col justify-evenly gap-1.5">
             {domainRows.map((row) => (
-              <div key={row.domainId} className="flex items-center gap-2">
+              // 행 호버 하이라이트 — 700px 가로 스캔(라벨→12셀→날짜)을 돕는
+              // 기존 hub/최근갱신 행과 같은 -mx/px 상쇄 패턴이라 셀·축 정렬은
+              // 그대로다(콘텐츠 x 위치 불변).
+              <div
+                key={row.domainId}
+                data-testid="insights-freshness-domain-row"
+                className="-mx-1.5 flex items-center gap-2 rounded-md px-1.5 transition-colors hover:bg-[color:var(--color-overlay-1)]"
+              >
                 <span
                   className={
                     "flex w-[136px] flex-none items-center gap-1.5 truncate text-label " +
@@ -98,9 +109,16 @@ export function FreshnessTab({
                   {row.weeks.map((week, i) => (
                     <i
                       key={i}
-                      title={week.isCurrentWeek ? labels.currentWeek : undefined}
+                      // 셀 = 한 주의 갱신 건수. max-w 캡을 두면 스트립이 좌측에
+                      // 뭉쳐 아래 축 라벨("이번 주")이 마지막 셀과 어긋난다 —
+                      // flex-1 충만으로 축·범례·날짜 열과 같은 폭을 공유한다.
+                      title={
+                        week.isCurrentWeek
+                          ? labels.weekCellCurrent(week.count)
+                          : labels.weekCell(row.weeks.length - 1 - i, week.count)
+                      }
                       // eslint-disable-next-line no-restricted-syntax -- 14px 높이 주간 신선도 바의 3px 헤어라인 반경은 chip(6px)로 올리면 pill 이 돼 램프 밖 예외.
-                      className="h-3.5 flex-1 max-w-6 rounded-[3px]"
+                      className="h-3.5 flex-1 rounded-[3px]"
                       style={{
                         backgroundColor: week.isCurrentWeek
                           ? "var(--color-indigo-brand)"

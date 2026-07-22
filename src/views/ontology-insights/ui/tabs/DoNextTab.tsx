@@ -595,7 +595,10 @@ export function DoNextTab({
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-[1.2fr_1fr]">
       <section
         aria-label={labels.queueTitle}
-        className="flex min-h-0 min-w-0 flex-col gap-4 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        // 섹션 간 갭 16px 는 행 피치(~53px)보다 약해 다음 섹션 헤딩이 위
+        // 목록에 붙어 읽혔다(게슈탈트 근접성 역전) — 24px 로 섹션 경계를
+        // 행 간격 위로 올린다.
+        className="flex min-h-0 min-w-0 flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
           {labels.queueTitle}

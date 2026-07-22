@@ -1598,6 +1598,8 @@
       "older": "오래됨",
       "axisStart": "{weeks}주 전",
       "axisEnd": "이번 주",
+      "weekCell": "{weeks}주 전 · 갱신 {count}건",
+      "weekCellCurrent": "이번 주 · 갱신 {count}건",
       "recentUpdatesTitle": "최근 갱신",
       "noRecentUpdates": "알려진 갱신일이 없습니다.",
       "staleCountLabel": "90일 이상 미갱신",
