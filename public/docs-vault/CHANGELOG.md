@@ -6,6 +6,37 @@
 
 ---
 
+## 2026-07-23 — `ontology-atlas snapshot`: vault 를 git 커밋으로 (Atlas Git 슬라이스 1)
+
+vault 는 git 이 진실원인데 비개발자·데스크톱 사용자는 버전 기록/백업 수단이
+없고, 개발자에게도 온톨로지 변경이 코드 커밋에 섞여 히스토리에서 안 보였다.
+새 CLI 명령 `ontology-atlas snapshot [vault]` 이 vault 범위만 골라 **의미
+단위 커밋 메시지**로 커밋한다.
+
+- `git status --porcelain -- <vaultRel>` 로 vault 범위 변경만 모으고,
+  kind별 추가/수정/삭제 카운트 + 대표 슬러그 최대 3개로 요약(예: `ontology
+  snapshot: +2 concepts, ~3 updated (capabilities/foo, elements/bar,
+  +1)`). 변경 0 이면 조용히 exit 0.
+- pathspec-scoped partial commit(`git commit -m <요약> -- <vaultRel>`) —
+  vault 밖에 이미 staged 된 변경은 절대 건드리지 않는다(별도 index 조작
+  없이 git 자체 partial-commit 의미로 안전 확보). vault 밖 파일은 `git
+  add` 대상에도 들지 않는다.
+- 신뢰 헌장: 기본은 로컬 커밋만(전송 0). `--push` 를 명시할 때만 현재
+  브랜치의 기존 upstream 으로 push 하고 성공 시 원격 URL 을 stdout 에
+  보여준다. upstream 이 없으면 자동으로 `-u` 를 설정하지 않고 `git push -u
+  origin <branch>` 안내만 한다(커밋 자체는 그대로 landed).
+- `--dry-run`(커밋 없이 요약/파일 목록만), `--message "..."`(요약 대신
+  커밋 제목으로 쓰고 자동 요약은 본문으로), `--json`.
+- vault 가 git repo 밖이면 `git init` 을 제안만 하고 exit 1(자동 실행
+  금지 — 사용자 디스크 존중).
+- CLI 명령 49 → 50 개 — `cli/package.json`, `AGENTS.md`,
+  `docs/ARCHITECTURE.md`, `docs/README.md`, `docs/FEATURES.md`,
+  `cli/README.md`, dogfood vault
+  (`docs/ontology/capabilities/cli-developer-entry.md`) 모두 동기화.
+- Test: `cli/src/lib/git-snapshot.test.mjs`(임시 git repo fixture — 요약
+  생성, vault 범위 가드, 변경 0, repo 밖, 기존 staged 파일 보호, 로컬 bare
+  repo fixture 로 `--push` 1건) 전부 green.
+
 ## 2026-07-23 — LNB 컨텍스트 이월 (지도 → 문서함)
 
 지도에서 개념을 선택한 채 좌측 레일의 문서함으로 이동하면 선택과 무관한 기본

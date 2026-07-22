@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-22T16:53:40.300Z",
+  "generatedAt": "2026-07-22T22:45:45.301Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2810,6 +2810,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-23 — `ontology-atlas snapshot`: vault 를 git 커밋으로 (Atlas Git 슬라이스 1)",
+          "slug": "2026-07-23-ontology-atlas-snapshot-vault-를-git-커밋으로-atlas-git-슬라이스-1"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-23 — LNB 컨텍스트 이월 (지도 → 문서함)",
           "slug": "2026-07-23-lnb-컨텍스트-이월-지도-문서함"
         },
@@ -4339,9 +4344,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 지도에서 개념을 선택한 채 좌측 레일의 문서함으로 이동하면 선택과 무관한 기본 화면이 떠 \"보던 것\"을 다시 찾아야 했다. 이제 노드를 선택한 상태에서 레",
-      "wordCount": 34445,
-      "updatedAt": "2026-07-22T16:53:30.101Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. vault 는 git 이 진실원인데 비개발자·데스크톱 사용자는 버전 기록/백업 수단이 없고, 개발자에게도 온톨로지 변경이 코드 커밋에 섞여 히스토리에서 안",
+      "wordCount": 34690,
+      "updatedAt": "2026-07-22T22:43:13.374Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5473,8 +5478,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 11565,
-      "updatedAt": "2026-07-23T01:34:11+09:00",
+      "wordCount": 11571,
+      "updatedAt": "2026-07-22T22:43:13.375Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6277,12 +6282,12 @@
     {
       "slug": "ontology/capabilities/cli-developer-entry",
       "path": "docs/ontology/capabilities/cli-developer-entry.md",
-      "title": "CLI Developer Entry (49 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + agent handoff + growth/maintenance queue + graph deep dive)",
+      "title": "CLI Developer Entry (50 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/cli-developer-entry",
         "kind": "capability",
-        "title": "CLI Developer Entry (49 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + agent handoff + growth/maintenance queue + graph deep dive)",
+        "title": "CLI Developer Entry (50 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)",
         "display": "CLI Developer Entry",
         "domain": "onboarding-ux",
         "dependencies": [
@@ -6334,6 +6339,7 @@
           "cli/src/commands/rename.mjs",
           "cli/src/commands/schema.mjs",
           "cli/src/commands/similar.mjs",
+          "cli/src/commands/snapshot.mjs",
           "cli/src/commands/topological-order.mjs",
           "cli/src/commands/validate.mjs",
           "cli/src/commands/workspace-brief.mjs",
@@ -6345,6 +6351,7 @@
           "cli/src/lib/cli-commands.mjs",
           "cli/src/lib/diagnosis-options.mjs",
           "cli/src/lib/diagnosis-options.test.mjs",
+          "cli/src/lib/git-snapshot.mjs",
           "cli/src/lib/import-analysis-results.mjs",
           "cli/src/lib/import-analysis-results.test.mjs",
           "cli/src/lib/mcp-call.mjs",
@@ -6413,8 +6420,8 @@
         }
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
-      "wordCount": 10509,
-      "updatedAt": "2026-07-23T01:38:39+09:00",
+      "wordCount": 10588,
+      "updatedAt": "2026-07-22T22:43:13.376Z",
       "linksOut": []
     },
     {
@@ -9994,8 +10001,8 @@
         }
       ],
       "excerpt": "Current as of 2026-05-18. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontology-engine.mjs, and cli/src/index.mjs first. ontology-atlas is now best described as a repo-native memory layer for Claude Code, Cursor,",
-      "wordCount": 811,
-      "updatedAt": "2026-07-23T01:09:59+09:00",
+      "wordCount": 814,
+      "updatedAt": "2026-07-22T22:43:13.375Z",
       "linksOut": [
         "../README",
         "PRODUCT-OWNER-OPERATING-SYSTEM",
@@ -13234,7 +13241,7 @@
                 "path": "ontology/capabilities/cli-developer-entry",
                 "type": "doc",
                 "slug": "ontology/capabilities/cli-developer-entry",
-                "title": "CLI Developer Entry (49 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + agent handoff + growth/maintenance queue + graph deep dive)"
+                "title": "CLI Developer Entry (50 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)"
               },
               {
                 "name": "collaborator-reader-brief",
