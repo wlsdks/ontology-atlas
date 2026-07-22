@@ -96,6 +96,7 @@ import {
 } from "@/entities/project";
 import { buildDocsVaultHref, buildNewNodeDoc } from "@/entities/docs-vault";
 import {
+  buildOntologyBuilderNodeHrefFromGraphId,
   buildOntologyHealthSignals,
   buildOntologyInsightsReturnHref,
   useRelationVocabulary,
@@ -628,7 +629,9 @@ export function HomePage() {
         ? { slug: selectedEdge.declaredBySlug, href: buildDocsVaultHref({ slug: selectedEdge.declaredBySlug }) }
         : null,
       updatedAtLabel: ago ? t(`nodeDatasheet.updated_${ago.key}`, { count: ago.count }) : null,
-      builderEditHref: `/ontology/edit/?node=${encodeURIComponent(from.evidenceIds[0] ?? from.id)}`,
+      // 빌더 딥링크는 canonical `<kind>:<slug>`(그래프 node id)로 통일(H5) —
+      // 예전 `from.evidenceIds[0] ?? from.id` 인라인 vault-slug 링크를 대체.
+      builderEditHref: buildOntologyBuilderNodeHrefFromGraphId(from.id),
       why,
     };
   }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary]);
@@ -1150,7 +1153,8 @@ export function HomePage() {
       nodeId: node.id,
       slug,
       documentHref: sourceSlug ? buildDocsVaultHref({ slug: sourceSlug }) : null,
-      builderEditHref: `/ontology/edit/?node=${encodeURIComponent(slug)}`,
+      // 빌더 딥링크는 canonical `<kind>:<slug>`(그래프 node id)로 통일(H5).
+      builderEditHref: buildOntologyBuilderNodeHrefFromGraphId(node.id),
       handoffText,
     };
   }, [contextMenuNode, ontologyInsight]);

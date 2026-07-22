@@ -156,7 +156,8 @@ describe("buildOntologyBuilderNodeHref", () => {
 });
 
 describe("buildOntologyBuilderNodeHrefFromGraphId", () => {
-  it("topology graph id 를 canonical builder node query 로 변환", () => {
+  // H5 URL 계약: 빌더 발신 링크는 canonical `<kind>:<slug>` 로 통일한다.
+  it("canonical graph id 를 그대로 실어 보낸다", () => {
     expect(resolveOntologyBuilderNodeSlugFromGraphId("domain:views")).toBe(
       "domains/views",
     );
@@ -164,21 +165,21 @@ describe("buildOntologyBuilderNodeHrefFromGraphId", () => {
       buildOntologyBuilderNodeHrefFromGraphId("capability:topology-analysis-modes"),
     ).toBe(
       `/ontology/edit/?node=${encodeURIComponent(
-        "capabilities/topology-analysis-modes",
+        "capability:topology-analysis-modes",
       )}`,
     );
   });
 
-  it("project graph id 는 project frontmatter slug 로 넘긴다", () => {
+  it("project graph id 도 canonical `project:<slug>` 로 넘긴다", () => {
     expect(resolveOntologyBuilderNodeSlugFromGraphId("project:ontology-atlas")).toBe(
       "ontology-atlas",
     );
     expect(buildOntologyBuilderNodeHrefFromGraphId("project:ontology-atlas")).toBe(
-      `/ontology/edit/?node=${encodeURIComponent("ontology-atlas")}`,
+      `/ontology/edit/?node=${encodeURIComponent("project:ontology-atlas")}`,
     );
   });
 
-  it("이미 vault source slug 이거나 ontology prefix 가 있으면 query 호환 slug 로 정규화", () => {
+  it("복수-슬래시/ontology-prefix vault 폴더형은 canonical 로 승격해 보낸다", () => {
     expect(
       resolveOntologyBuilderNodeSlugFromGraphId(
         "ontology/capabilities/topology-analysis-modes",
@@ -188,7 +189,7 @@ describe("buildOntologyBuilderNodeHrefFromGraphId", () => {
       buildOntologyBuilderNodeHrefFromGraphId("capabilities/topology-analysis-modes"),
     ).toBe(
       `/ontology/edit/?node=${encodeURIComponent(
-        "capabilities/topology-analysis-modes",
+        "capability:topology-analysis-modes",
       )}`,
     );
   });

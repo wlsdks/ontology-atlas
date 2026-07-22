@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import {
+  buildOntologyBuilderNodeHrefFromGraphId,
+  type KnowledgeGraphEdge,
+  type KnowledgeGraphNode,
+} from "@/entities/knowledge-graph";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { isWithinRecentWindow } from "@/shared/lib/ontology-tree";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
@@ -127,8 +131,12 @@ export function useNodeDatasheetModel({
       groups,
       evidence: { rows: evidenceRows, total: evidenceRows.length },
       handoffText,
+      // 문서 딥링크는 vault 파일 경로(`?slug=`)로 — 노드 id → 문서 slug 변환은
+      // sourceSlug(focus 모델의 순수 파생) 한 곳에서만 나온다(H5 계약 item 2).
       documentHref: nodeFocus.sourceSlug ? buildDocsVaultHref({ slug: nodeFocus.sourceSlug }) : null,
-      builderEditHref: `/ontology/edit/?node=${encodeURIComponent(slug)}`,
+      // 빌더 딥링크는 canonical `<kind>:<slug>`(그래프 node id) 그대로 — 발신 문법
+      // 통일(H5 계약 item 1). 예전 `?node=<vault slug>` 인라인 링크를 대체.
+      builderEditHref: buildOntologyBuilderNodeHrefFromGraphId(selectedOntologyNode.id),
     };
   }, [nodeFocus, selectedOntologyNode, insight, nodeFocusData, docFreshnessIndex, updatedAgoNowMs, formatUpdatedLabel]);
 

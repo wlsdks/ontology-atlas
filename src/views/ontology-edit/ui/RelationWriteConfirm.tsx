@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Clipboard, GitBranch, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { buildOntologyBuilderNodeHrefFromGraphId } from "@/entities/knowledge-graph";
 import { copyText } from "@/shared/lib/copy-text";
 import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import { explainOntologyRelationKeyInference } from "@/shared/lib/ontology-relation-key";
@@ -1218,8 +1219,11 @@ function buildRelationOntologyHref(slug: string): string {
   return `/ontology/?node=${encodeURIComponent(slug)}`;
 }
 
+// 빌더 발신 링크는 canonical `<kind>:<slug>` 로 통일(H5). proposal.sourceSlug 는
+// 복수-슬래시 vault 폴더형(`domains/views`)이라 canonical(`domain:views`)로 승격해
+// 보낸다 — 수신부는 canonical 1급 + 복수-슬래시 레거시 별칭 둘 다 받는다.
 function buildRelationBuilderHref(slug: string): string {
-  return `/ontology/edit/?node=${encodeURIComponent(slug)}`;
+  return buildOntologyBuilderNodeHrefFromGraphId(slug);
 }
 
 export function buildRelationTopologyPathHref(sourceSlug: string, targetSlug: string): string {
