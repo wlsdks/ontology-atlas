@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import {
   buildAbsorptionPlan,
   buildSlimPointer,
@@ -8,6 +11,8 @@ import {
   slugifyText,
   splitDocumentSections,
 } from './absorb.mjs';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Cross-package parity (section split / classify / injection / plan) is
 // covered by tests/contract/absorb.contract.test.ts against the shared
@@ -205,5 +210,71 @@ describe('buildSlimPointer', () => {
     const plan = buildAbsorptionPlan(raw, { sourceLabel: 'no-title-doc' });
     const pointer = buildSlimPointer(plan);
     assert.match(pointer, /^# no-title-doc/);
+  });
+});
+
+// Wiki/Confluence-export absorption demo (`/ontology-absorb-confluence` skill,
+// see PRODUCT-PLAN-2026-07.md §9 Slice 0 and the skill's SKILL.md). The
+// fixture is an original, structurally-typical wiki export (title, labels
+// line, policy sections, an architecture section with a table, a code fence,
+// and an unclassified decision log) — not a copy of any real Confluence page
+// or Atlassian asset. This pins the exact dry-run candidate set an
+// agent-mediated absorption session should see before any vault write.
+describe('buildAbsorptionPlan — confluence-style export fixture', () => {
+  const fixturePath = join(__dirname, '..', '..', 'tests', 'fixtures', 'absorb-confluence-sample.md');
+  const raw = readFileSync(fixturePath, 'utf-8');
+  const plan = buildAbsorptionPlan(raw, { sourceLabel: 'payments-reconciliation-runbook' });
+
+  it('splits into exactly 5 sections and keeps the code-fenced heading unsplit', () => {
+    assert.equal(plan.title, 'Runbook: Payments Reconciliation Service');
+    assert.equal(plan.sections.length, 5);
+  });
+
+  it('classifies policy/convention sections as absorb candidates (document · role: policy)', () => {
+    const escalation = plan.sections.find((s) => s.heading === 'Escalation Policy');
+    const conventions = plan.sections.find((s) => s.heading === 'Commit and Review Conventions');
+    for (const section of [escalation, conventions]) {
+      assert.equal(section.category, 'policy');
+      assert.equal(section.kind, 'document');
+      assert.equal(section.role, 'policy');
+      assert.equal(section.action, 'absorb');
+      assert.equal(section.injection.suspect, false);
+    }
+  });
+
+  it('classifies architecture sections as suggestions only — capability for the overview, element for the components list', () => {
+    const overview = plan.sections.find((s) => s.heading === 'Architecture Overview');
+    const components = plan.sections.find((s) => s.heading === 'Service Components');
+    assert.equal(overview.category, 'architecture');
+    assert.equal(overview.kind, 'capability');
+    assert.equal(overview.action, 'suggest');
+    // the comparison table stays in the section body — never auto-written
+    assert.ok(overview.body.includes('| Stage | Responsible component | Data source |'));
+
+    assert.equal(components.category, 'architecture');
+    assert.equal(components.kind, 'element');
+    assert.equal(components.action, 'suggest');
+    // the fenced code's "## heading-shaped" line did not split a 6th section
+    assert.ok(components.body.includes("this looks like a heading but it is actually inside a fenced code block"));
+  });
+
+  it('leaves the unrecognized "Decision Log" section unclassified (skip, kept verbatim)', () => {
+    const decisionLog = plan.sections.find((s) => s.heading === 'Decision Log');
+    assert.equal(decisionLog.category, 'unclassified');
+    assert.equal(decisionLog.action, 'skip');
+  });
+
+  it('flags zero injection-suspect sections for this legitimate export', () => {
+    assert.equal(plan.summary.injectionSuspect, 0);
+  });
+
+  it('summary matches the full candidate set: 2 absorb, 2 suggest, 1 unclassified', () => {
+    assert.deepEqual(plan.summary, {
+      total: 5,
+      absorbed: 2,
+      suggested: 2,
+      injectionSuspect: 0,
+      unclassified: 1,
+    });
   });
 });

@@ -27,6 +27,34 @@ vault 가 자라면 일부 노드는 몇 달씩 방치되는데, 지도는 모�
   문법) + `ontology-atlas maintenance` CLI 힌트 섹션 추가 (0 이면 침묵).
 - Guardian 2차 검수 통과 (Build and verify) — 실화면 1920 스크린샷 검증.
 
+## 2026-07-23 — 위키 흡수 데모: `/ontology-absorb-confluence` (에이전트 매개 흡수)
+
+Slice 0 흡수 도구(`absorb_document`)는 이미 CLAUDE.md/AGENTS.md 류 로컬
+파일 흡수용으로 검증됐다 (정책 캡처 90%+, injection Tier 1). 이번 변경은
+같은 파이프라인에 입력 경로를 하나 더 연다 — 사용자가 별도 등록한 서드파티
+wiki MCP(예: Atlassian 공식 Confluence MCP)가 페이지를 읽어오면, 그 결과를
+`absorb_document` 가 typed 노드로 분류한다. "Confluence 연동"이 아니라
+"에이전트 매개 흡수" — 이 저장소는 Confluence 에 직접 접속하지 않는다.
+
+- **`/ontology-absorb-confluence` skill** 신설 (`.claude/skills/` +
+  `.agents/skills/` 미러) — (a) 서드파티 wiki MCP 로 페이지 markdown 확보(읽기
+  전용) → (b) `absorb_document` dry-run → (c) 사용자 승인 후 landing → (d)
+  원본 페이지 URL 을 노드 body 에 인용(audit trail — 자동 `source:`
+  frontmatter 는 로컬 임시 파일 경로일 뿐 원본 URL 이 아님을 명시) → (e)
+  injection 필터 경고 시 자동으로 넘기지 않고 사용자에게 먼저 보고 후 중단.
+- **fixture 데모** `tests/fixtures/absorb-confluence-sample.md` — 전형적
+  wiki export 구조(제목·라벨 줄·정책 섹션 2개·표가 있는 아키텍처 섹션·코드
+  펜스·미분류 Decision 섹션)를 흉내낸 자작 문서. Confluence/Atlassian
+  브랜딩이나 실제 콘텐츠 복제 없음.
+- `mcp/src/absorb.test.mjs` 에 위 fixture 를 `buildAbsorptionPlan` dry-run 에
+  넣어 기대 후보 집합(absorb 2 · suggest 2 · skip 1 · injection-suspect 0)을
+  고정하는 회귀 테스트 6건 추가 (신규 6 / 전체 mcp absorb 스위트 32건 green,
+  기존 26건 회귀 0).
+- `docs/FEATURES.md` "Prose / wiki absorption" 절 신설(세 ingress 경로 —
+  `/ontology-extract` · 로컬 `absorb_document` · `/ontology-absorb-confluence`
+  — 한 표로 비교), `mcp/README.md` `absorb_document` 항목에 wiki-export 사용례
+  2줄 추가.
+
 ## 2026-07-23 — 발자국 트레일 (걸어온 길)
 
 지도에서 여러 노드를 오가며 탐색하다 보면 "방금 어디를 봤더라"를 잃는다. 세션
