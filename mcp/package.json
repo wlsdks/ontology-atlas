@@ -26,6 +26,8 @@
     "src/schema.mjs",
     "src/validate.mjs",
     "src/vault.mjs",
+    "src/absorb.mjs",
+    "src/activity-log.mjs",
     "src/analyze.mjs",
     "src/infer-imports.mjs",
     "src/reconcile-imports.mjs",

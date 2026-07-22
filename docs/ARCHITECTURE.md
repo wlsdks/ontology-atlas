@@ -64,9 +64,10 @@ tags: [architecture, infra, overview]
        ↑ stdio JSON-RPC (separate process)
 
 ┌────────────────────────────────────────────────────────┐
-│ CLI (cli/, v0.11.0 — 48 commands)                      │
+│ CLI (cli/, v0.11.0 — 49 commands)                      │
 │ ├─ init/agent-activity/add/import/list/find/validate/query│
 │ ├─ mcp-verify/analyze/infer-imports/bootstrap/compile  │
+│ ├─ preflight (commit preflight + pre-commit hook)      │
 │ └─ graph CRUD + deep dive commands                     │
 │                                                         │
 │ Developer-primary daily entry point. Same `.md` files. │

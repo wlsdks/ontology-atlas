@@ -54,6 +54,7 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
   bootstrap: runner('bootstrap.mjs', 'runBootstrap'),
   analyze: runner('analyze.mjs', 'runAnalyze'),
   'infer-imports': runner('infer-imports.mjs', 'runInferImports'),
+  preflight: runner('preflight.mjs', 'runPreflight'),
 });
 
 export const CLI_COMMAND_MODULES = Object.freeze(

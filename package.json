@@ -63,6 +63,8 @@
     "vault:migrate": "node scripts/migrate-vault.mjs",
     "vault:audit": "node scripts/audit-vault-paths.mjs",
     "test:vault:audit": "node --test scripts/audit-vault-paths.test.mjs",
+    "vault:freshness": "node scripts/vault-freshness-drift.mjs",
+    "test:vault:freshness": "node --test scripts/vault-freshness-drift.test.mjs scripts/lib/vault-freshness-drift.test.mjs",
     "package:check": "node scripts/check-package-contracts.mjs && pnpm test:cli:lib && pnpm test:cli:commands && pnpm perf:graph:check && node --test scripts/check-package-contracts.test.mjs",
     "test:cli:args": "node --test cli/src/lib/cli-args.test.mjs",
     "test:cli:lib": "node --test cli/src/lib/*.test.mjs",

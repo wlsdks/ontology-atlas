@@ -85,6 +85,8 @@ ${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17 — autonomous inge
        --apply --max-depth N --json           ${COLORS.dim}or land via batch · folder walk depth · machine output${COLORS.reset}
   npx ontology-atlas infer-imports [rootPath] TS/JS import graph → depends_on edge candidates (side effect 0)
        --apply --threshold N --max-files N    ${COLORS.dim}or land · weak filter · default 5000 max${COLORS.reset}
+  npx ontology-atlas preflight [vault]        ${COLORS.green}Commit preflight${COLORS.reset} — staged files → vault nodes → blast-radius summary
+       --staged --depth N --json              ${COLORS.dim}non-blocking, silent when nothing matches${COLORS.reset}
 
 ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps the MCP server, same authority as an AI agent)${COLORS.reset}
   ${COLORS.dim}Set OATLAS_CLI_MCP_TIMEOUT_MS=N when a large / slow vault needs a longer one-shot MCP call window.${COLORS.reset}

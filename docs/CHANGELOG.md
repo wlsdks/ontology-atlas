@@ -76,6 +76,46 @@
 - Cargo 유닛 테스트 1종 + vitest(경로 충돌 번호 증가 순수 함수·hook·render
   gate) 신규. tsc·ESLint green.
 
+## 2026-07-23 — 커밋 프리플라이트 + PR 신선도 봇
+
+에이전트 루프의 두 순간에 vault 를 박아넣는 작업. 코드가 바뀌는 순간(커밋
+직전)과 리뷰가 이뤄지는 순간(PR) 모두에서 "이 변경이 vault 노드에 어떤
+영향을 주는가"를 사람이 매번 묻지 않아도 보여준다.
+
+- **CLI `ontology-atlas preflight [--staged]`** — git staged 파일을 vault
+  capability/element 의 `path:`/`elements:` frontmatter 로 역매칭한 뒤, 매칭된
+  각 노드의 blast-radius(`query_ontology` 재사용)를 커밋 전에 요약 출력.
+  `kind: decision` 노드가 blast radius 안에 걸리면 ⚠ 로 표시. 정보 제공
+  전용 — 항상 exit 0, vault 없음/staged 파일 없음/매칭 0건이면 조용히
+  skip(disable fatigue 방지). `cli/src/lib/git-staged.mjs`,
+  `cli/src/lib/preflight-match.mjs`, `cli/src/commands/preflight.mjs`.
+- **`ontology-atlas agent-setup --install-pre-commit-hook`** — git
+  pre-commit hook 설치 헬퍼. 기존 hook 있으면 managed block 을 append(기존
+  hook 바디 보존), 이미 설치돼 있으면 idempotent no-op, `git commit
+  --no-verify` 우회는 그대로 존중(hook 이 아무것도 강제하지 않으므로).
+  `cli/src/lib/pre-commit-hook.mjs`.
+- **`.github/workflows/vault-freshness.yml`** — 재사용 가능한 workflow(이
+  repo 자체 PR 에도 적용). PR 변경 파일 중 vault 노드가 참조하는 소스가
+  바뀌었는데 그 노드의 `.md` 는 이번 PR 에서 갱신 안 된 경우를
+  `scripts/vault-freshness-drift.mjs`(순수 node 스크립트, git/GitHub API
+  의존 없이 단독 실행·테스트 가능)로 감지. 감지 0건이면 코멘트 없음, 1건
+  이상이면 PR 코멘트 1개(스팸 방지 — 마커 기반 update-in-place, drift 가
+  사라지면 코멘트 삭제).
+- CLI 명령 48 → 49 개(`preflight` 추가) — `cli/package.json`,
+  `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/README.md`,
+  `docs/FEATURES.md`, `cli/README.md` 동기화. dogfood vault
+  (`docs/ontology/capabilities/cli-developer-entry.md`) 는 이번 변경
+  범위 밖(별도 후속 필요 — 커맨드 카운트 반영 안 됨, contract test 1건
+  fail 예상).
+- Test: `cli/src/lib/git-staged.test.mjs`,
+  `cli/src/lib/preflight-match.test.mjs`,
+  `cli/src/lib/pre-commit-hook.test.mjs`,
+  `scripts/lib/vault-freshness-drift.test.mjs`,
+  `scripts/vault-freshness-drift.test.mjs`(real git repo end-to-end) 전부
+  green. `pnpm integration:cli:entry` 관련 부분 green(`init
+  --quick-start` MCP 스폰 의존 테스트는 이 워크트리 자체의 `mcp/`
+  `node_modules` 미설치로 사전부터 실패 상태 — 이번 변경과 무관).
+
 ## 2026-07-23 — 브랜드 시그니처 확장 (H6)
 
 육각형+앰버 브랜드 마크가 앱 아이콘과 지도 프로젝트 노드에만 있고 나머지
