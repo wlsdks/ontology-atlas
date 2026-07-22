@@ -595,12 +595,12 @@ A successful run looks like this:
 ✓ list_concepts — vault total 105 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concept — project (6 outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 54 evidence results for "project"
+✓ find_evidence — 56 evidence results for "project"
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 104 total query results (limited true)
-✓ analyze_repo_structure — fsd (4 domain candidates, 18 capability candidates, 29 element candidates)
-✓ infer_imports — 820 files scanned, 503 module edges (elements/src/views/home->capabilities/knowledge-graph x23 (static:23), elements/src/views/ontology-insights->capabilities/knowledge-graph x15 (static:15), +501 more)
+✓ analyze_repo_structure — fsd (5 domain candidates, 18 capability candidates, 29 element candidates)
+✓ infer_imports — 820 files scanned, 510 module edges (elements/src/views/home->capabilities/knowledge-graph x27 (static:27), elements/src/views/ontology-insights->capabilities/knowledge-graph x15 (static:15), +508 more)
 ✓ index_project — 52 concept candidates, 503 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
@@ -608,20 +608,20 @@ A successful run looks like this:
 ✓ list_kinds — 105 nodes (capability:39, document:3, domain:6, element:55, project:1, vault-readme:1)
 ✓ validate_vault — 105 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (105 nodes, 1 next action, 5 health checks, growth actions:1 external:1 ignoredExternal:208)
+✓ workspace_brief — healthy (105 nodes, 1 next action, 5 health checks, growth actions:1 external:1 ignoredExternal:212)
 · workspace_brief non-blocking advisory nextActions — materialize_external_elements:info:1 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 6 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (105 nodes, 2 next actions, 5 health checks, growth actions:1 external:1 ignoredExternal:208; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (105 nodes, 2 next actions, 5 health checks, growth actions:1 external:1 ignoredExternal:212; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 · workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:4 - The scoped ontology graph has disconnected actionable islands., materialize_external_elements:info:1 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:4; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
 · health_tuned non-blocking advisory checks — components:info:4 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph 368cafafd9aa (105 nodes, 557 edges, issues 0)
-✓ compile_ontology page — 1/105 nodes, 1/557 edges
-✓ compile_ontology indexes — out 105, in 104, edgeById 557, aliases 209, edges 348/209/0
-✓ overview — graph 368cafafd9aa (105 nodes, 557 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 105, edges 557)
-✓ project_map query_plan — aggregate_scan (medium, nodes 105, edges 557)
+✓ compile_ontology — graph 36f5e5268380 (105 nodes, 561 edges, issues 0)
+✓ compile_ontology page — 1/105 nodes, 1/561 edges
+✓ compile_ontology indexes — out 105, in 104, edgeById 561, aliases 209, edges 348/213/0
+✓ overview — graph 36f5e5268380 (105 nodes, 561 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 105, edges 561)
+✓ project_map query_plan — aggregate_scan (medium, nodes 105, edges 561)
 ✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ all_paths — src/widgets/bottom-tab-bar → project (5/15 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
