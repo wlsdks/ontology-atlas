@@ -18,7 +18,7 @@ import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
   useLocalVault,} from "@/features/docs-vault-local";
-import { FirstRunReadout, useFirstRunSampleModeSettled } from "@/features/first-run-starter";
+import { FirstRunReadout } from "@/features/first-run-starter";
 import { HeroCollapsed } from "@/widgets/hero-header";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import dynamic from "next/dynamic";
@@ -228,13 +228,9 @@ export function HomePage() {
   const projectsQuery = useProjects();
   const projects = projectsQuery.projects;
   const projectsError = projectsQuery.error;
-  // root-first-open v3 — vault 미선택 + 정적 모드 + 복원 시도 완료를 하나로
-  // 묶은 판정. 브랜드 pill 의 SAMPLE 배지와 우하단 판독(FirstRunReadout)이
-  // 이 값을 공유해 drift 없이 같이 켜지고 꺼진다. INDEX 패널 안의 "시작하기"
-  // 모듈(FirstRunStarterModule)은 여기에 dismiss 상태까지 더한 자기 판정을
-  // 따로 쓴다(useFirstRunStarter) — 모듈을 닫아도 이 배지/판독은 정적 샘플을
-  // 계속 둘러보는 동안 남아있는 게 맞는 계약.
-  const sampleModeSettled = useFirstRunSampleModeSettled();
+  // R6 — 브랜드 pill 의 SAMPLE 배지(census 필의 일부)는 제거됐다. 정적 샘플
+  // 여부는 이제 INDEX 패널의 "시작하기" 모듈(FirstRunStarterModule)과 우하단
+  // 판독(FirstRunReadout)이 각자 판정해 표시한다 — pill 은 census 를 담지 않는다.
   const [routeState, setRouteState] = useHomeRouteState();
   // 헤더 "Concept search" 버튼 · ⌘K · ⇧⌘K 모두 이 팔레트(MountedGlobalSearch,
   // ontology 노드 + 프로젝트 통합 검색)를 연다 — persona-P1 fix: 예전에는
@@ -666,14 +662,28 @@ export function HomePage() {
   const [hoverCluster, setHoverCluster] = useState<{
     parentId: string;
     count: number;
+    descendantTotal: number;
     expanded: boolean;
     x: number;
     y: number;
   } | null>(null);
   const handleHoverCluster = useCallback(
-    (info: { parentId: string; count: number; expanded: boolean; position: { x: number; y: number } } | null) => {
+    (
+      info:
+        | { parentId: string; count: number; descendantTotal: number; expanded: boolean; position: { x: number; y: number } }
+        | null,
+    ) => {
       setHoverCluster(
-        info ? { parentId: info.parentId, count: info.count, expanded: info.expanded, x: info.position.x, y: info.position.y } : null,
+        info
+          ? {
+              parentId: info.parentId,
+              count: info.count,
+              descendantTotal: info.descendantTotal,
+              expanded: info.expanded,
+              x: info.position.x,
+              y: info.position.y,
+            }
+          : null,
       );
     },
     [],
@@ -682,9 +692,12 @@ export function HomePage() {
     if (!hoverCluster) return null;
     const parent = ontologyInsight?.nodes.find((n) => n.id === hoverCluster.parentId);
     const name = parent?.title ?? hoverCluster.parentId;
+    // 패널3-S6 숫자 계약 — "하위 전체 N · 이 티어 숨김 M" 병기. total=부모의
+    // 하위 전체 자손 수(노드 뱃지와 동일 출처), hidden=이 티어에서 접힌 직속 수.
+    const numbers = { name, total: hoverCluster.descendantTotal, hidden: hoverCluster.count };
     const sentence = hoverCluster.expanded
-      ? t("cluster.tooltipExpanded", { count: hoverCluster.count })
-      : t("cluster.tooltipCollapsed", { name, count: hoverCluster.count });
+      ? t("cluster.tooltipExpanded", numbers)
+      : t("cluster.tooltipCollapsed", numbers);
     return { sentence, x: hoverCluster.x, y: hoverCluster.y };
   }, [hoverCluster, ontologyInsight, t]);
   // HomePage 모듈화 2차 — 에이전트 연결 시트 조립은 use-agent-connect-model 소유.
@@ -1941,39 +1954,12 @@ export function HomePage() {
               </div>
             </div>
             {(() => {
-              // 성장 시그널 — 지난 7일 내 updatedAt 된 프로젝트 수.
-              // "지식이 자라고 있다" 를 2초 안에 느끼게 하는 카운터. 0 이면 숨김.
-              const growthLabel = recentlyUpdatedCount > 0
-                ? t('workspace.growthThisWeek', { count: recentlyUpdatedCount })
-                : "";
-              // growth 는 별도 prop(censusGrowthText)으로 넘겨 HeroCollapsed 가
-              // 인디고로 강조 표시(feat/chrome-system §5 census 각인)할 수
-              // 있게 한다 — 여기서 한 문자열로 합치면 세그먼트별 스타일이 안 됨.
-              // 개념/관계 숫자 두 세그먼트는 t.rich 의 <b> 태그(messages/*.json
-              // — feat/chrome-finish 세그먼트 각인)로 감싸 engraved-numeral
-              // 토큰(다른 census 표면 — ProjectDetailPage/DocsVaultPage — 와
-              // 동일 문법)으로 볼드 처리한다. subtitle prop 이 문자열이 아니라
-              // ReactNode 를 받아야 해서 HeroCollapsed 타입도 함께 넓혔다.
-              const workspaceSubtitle = t.rich('workspace.subtitle', {
-                concepts: topologyTotalNodes,
-                relations: topologyTotalRelations,
-                growth: '',
-                b: (chunks) => (
-                  <b
-                    data-token="engraved-numeral"
-                    className="font-semibold not-italic text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
-                  >
-                    {chunks}
-                  </b>
-                ),
-              });
-              const workspaceEyebrow = t('workspace.eyebrow', {
-                concepts: topologyTotalNodes,
-              });
-              // 확장 hero 패널 제거 (사용자 결정 2026-06-11) — 컴팩트 pill 이
-              // 유일한 상태고, ontology 칩 스트립을 pill 아래에 통합한다.
-              // 확장형의 큰 타이틀+버튼 그리드는 지도와 경쟁하는 chrome 이었다.
-              void workspaceEyebrow;
+              // R6 오버뷰 census 필 제거(소유자 "필요없어 보임") — 개념/관계·
+              // 이번 주·샘플 카운트는 첫 실행 카드/INDEX 패널이 이미 담당(중복
+              // 잉크). 브랜드 필은 선택/관계 렌즈/드로어 등 affordance 가 있는
+              // 비-오버뷰 상태에서만 남긴다(순수 오버뷰에선 렌더하지 않는다).
+              const heroPillAffordance =
+                Boolean(selectedProject) || selectedNodeFocusActive || drawerOpen || selectedRelationActive;
               return (
                 <div
                   // xl:left-8(32px) → xl:left-[var(--chrome-inset)](24px) —
@@ -2002,70 +1988,47 @@ export function HomePage() {
                       : undefined
                   }
                 >
-                  <HeroCollapsed
-                    // 확장 hero 가 사라진 surface — 토글은 의미가 없고
-                    // 분석 패널만 아래로 점프시켰다(사용자 보고). 드로어가
-                    // 열려 있을 때만 "닫기" 동작으로.
-                    onExpand={
-                      selectedNodeFocusActive
-                        ? handleToggleSelectedInspectorSupportRail
-                        : drawerOpen
-                          ? handleClose
-                          : undefined
-                    }
-                    title={selectedProject?.name ?? t('workspace.fallbackTitle')}
-                    subtitle={
-                      selectedProject
-                        ? t('workspace.selectedEyebrow')
-                        : topologyTotalNodes > 0
-                          ? workspaceSubtitle
+                  {heroPillAffordance ? (
+                    <HeroCollapsed
+                      // 확장 hero 가 사라진 surface — 드로어/인스펙터가 열려
+                      // 있을 때만 토글/닫기 동작으로.
+                      onExpand={
+                        selectedNodeFocusActive
+                          ? handleToggleSelectedInspectorSupportRail
+                          : drawerOpen
+                            ? handleClose
+                            : undefined
+                      }
+                      title={selectedProject?.name ?? t('workspace.fallbackTitle')}
+                      // R6 — census subtitle(개념/관계·이번 주·샘플) 제거. affordance
+                      // 상태의 평문 eyebrow 만 남긴다(숫자는 INDEX 패널로 이관).
+                      subtitle={
+                        selectedProject || selectedNodeFocusActive || selectedRelationActive
+                          ? t('workspace.selectedEyebrow')
                           : t('workspace.expandHint')
-                    }
-                    censusGrowthText={
-                      !selectedProject && topologyTotalNodes > 0
-                        ? growthLabel || undefined
-                        : undefined
-                    }
-                    subtitleVariant={
-                      !selectedProject && topologyTotalNodes > 0 ? 'census' : 'eyebrow'
-                    }
-                    icon={selectedProject?.icon ?? null}
-                    ariaLabel={
-                      selectedNodeFocusActive
-                        ? selectedInspectorSupportRailVisible
-                          ? t('hero.collapseLeftPanel')
-                          : t('hero.expandLeftPanel')
-                        : drawerOpen
-                          ? t('hero.closeSelected')
-                          : t('hero.expandLeftPanel')
-                    }
-                    titleText={
-                      selectedNodeFocusActive
-                        ? selectedInspectorSupportRailVisible
-                          ? t('hero.collapseLeftPanel')
-                          : t('hero.expandLeftPanel')
-                        : drawerOpen
-                          ? t('hero.closeSelected')
-                          : t('hero.expandLeftPanel')
-                    }
-                    compact={selectedRelationActive}
-                    sampleBadge={sampleModeSettled}
-                    // 패널1-3① — overview 상태에선 브랜드 필이 바로 아래
-                    // INDEX 패널 위에 얹힌다. 필은 콘텐츠 폭(≈293px)이라
-                    // 패널 폭(--topology-index-width, 300px)보다 우변이 어긋나
-                    // 보였다(측정 7.6px @ topology-ui-scale). 같은 폭 토큰을
-                    // 공유해 두 표면의 우변을 정렬한다 — 선택/관계/드로어
-                    // 상태에선 좌측 열이 인스펙터로 바뀌므로 콘텐츠 폭 유지.
-                    className={
-                      !selectedNodeFocusActive &&
-                      !drawerOpen &&
-                      !selectedProject &&
-                      !selectedRelationActive &&
-                      renderedIndexState === "expanded"
-                        ? "w-[var(--topology-index-width)]"
-                        : undefined
-                    }
-                  />
+                      }
+                      icon={selectedProject?.icon ?? null}
+                      ariaLabel={
+                        selectedNodeFocusActive
+                          ? selectedInspectorSupportRailVisible
+                            ? t('hero.collapseLeftPanel')
+                            : t('hero.expandLeftPanel')
+                          : drawerOpen
+                            ? t('hero.closeSelected')
+                            : t('hero.expandLeftPanel')
+                      }
+                      titleText={
+                        selectedNodeFocusActive
+                          ? selectedInspectorSupportRailVisible
+                            ? t('hero.collapseLeftPanel')
+                            : t('hero.expandLeftPanel')
+                          : drawerOpen
+                            ? t('hero.closeSelected')
+                            : t('hero.expandLeftPanel')
+                      }
+                      compact={selectedRelationActive}
+                    />
+                  ) : null}
                   {/* WorkspaceOntologyStrip 제거(2026-06-11) — 분석 패널과
                       겹쳤고(사용자 보고), 카운트는 pill·범례가, 온톨로지
                       진입은 우측 라운드 버튼이 이미 담당. */}

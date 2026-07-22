@@ -115,7 +115,15 @@ export interface TopologyMapV2Props {
   onToggleCluster?: (parentId: string) => void;
   /** S2 파트 5C — 클러스터 칩 호버 툴팁 (식별 변경 시 발화, null=해제). */
   onHoverCluster?: (
-    info: { parentId: string; count: number; expanded: boolean; position: { x: number; y: number } } | null,
+    info: {
+      parentId: string;
+      /** 이 티어에서 접힌 직속 게이트 자식 수(칩 `+N`). */
+      count: number;
+      /** 패널3-S6 — 부모의 하위 전체 자손 수(노드 뱃지 = descendantCount). */
+      descendantTotal: number;
+      expanded: boolean;
+      position: { x: number; y: number };
+    } | null,
   ) => void;
   /**
    * 밀도 게이트 — 클러스터 칩 어포던스의 접근성 힌트(i18n, HomePage 가 주입).

@@ -28,6 +28,36 @@
 - **1단계 마이그레이션** — 위 디렉토리 76개 파일의 하드코딩 크기/radius 를
   가장 가까운 램프 단으로 치환. R6 소유 3개 디렉토리는 미변경.
 
+## 2026-07-22 — R6 소유자 우선 3건 (반딧불 원본 이식 · 헤더 census 필 제거 · 팬 관성 중단)
+
+소유자 우선 처방 3건. `topology-map-v2` + `views/home` + `hero-header`.
+
+- **상시 혜성 + 호버 펄스 복원 (소유자: "예전 걸 살려줘")** — 프로토타입
+  (`topology-b2plus`)의 두 엣지 모션을 되살렸다. ① **상시 혜성**: depends
+  엣지의 코멧 꼬리가 포커스와 무관하게 항상 흐른다 — 구 A1 "코멧테일=포커스
+  신호" 강등(`--topology-v2-edge-pulse-speed: 0` + traces ego-게이트)을 되돌려
+  ambient 속도 0.075 복원 + `traces.ts` 를 dim 이 아닌 모든 depends 엣지로 확장
+  (normal 옅은 인디고, ego/선택 bright + 큰 꼬리, farT 헤어라인 보간, 솔리드
+  — 알파 페이드 아님). 위상은 결정론 시드로 어긋내 lockstep 방지. ② **호버
+  펄스**: 노드 호버 시 닿는 엣지들로 420ms 일회성 신호를 바깥 방향 발사(헤드
+  2.6px + 0.05 뒤 트레일 1.4px, 끝날수록 반지름 축소). 위상 전진(`updateParticles`)·
+  펄스 수명(`updatePulses`)·발사(`spawnHoverPulses`)는 순수 모델 + 단위 테스트.
+  구 S10 포커스-게이트형 반딧불 점(`edge-fireflies` dot API)은 이 사양으로 대체.
+  reduced-motion 은 위상 전진·펄스 발사·코멧 드로우 모두 정지 → 유휴 게이트 성립.
+- **헤더 오버뷰 census 필 제거 (소유자: "필요없어 보임")** — 지도 좌상단 브랜드
+  필의 "개념 N·관계 M·이번 주 +1·샘플" census 잉크를 제거(중복 — census 는 첫
+  실행 카드/INDEX 패널이 이미 담당). 필은 이제 선택/관계 렌즈/드로어 등
+  affordance 가 있는 비-오버뷰 상태에서만 남고, 순수 오버뷰에선 렌더하지 않는다.
+  `HeroCollapsed` 의 census/growth/SAMPLE 변형 코드도 함께 제거.
+- **숫자 계약 1단계 (패널3-S6)** — 클러스터 칩 호버 툴팁에 "하위 전체 N · 이
+  티어 숨김 M" 병기(N=부모 하위 전체 자손 수 = 노드 뱃지와 동일 출처
+  `descendantCount`, M=이 티어에서 접힌 직속 게이트 자식 수). 노드 뱃지=하위
+  전체 자손 계약을 `topology-world` 에 명시 문서화해 두 표면 숫자 drift 차단.
+- **팬 릴리스 관성 중단 (R4 보류분)** — flick 감속 활강(`sampleReleaseVelocity`/
+  `projectFlickLanding`)이 진행 중일 때 새 포인터다운/휠이 카메라 속도를 즉시
+  0 으로 잡아 "지금 자리에 정지"시킨다(iOS 스크롤 catch). 이어질 팬/선택/줌은
+  각자 새 타깃을 세운다.
+
 ## 2026-07-22 — 지도 디자인 패널 소규모 즉효 4건 (히트 역전 · 호버 잔류 · realm 별칭 · 첫 화면 픽셀)
 
 디자인 패널 지적 중 소규모·즉효 결함 4건. `topology-map-v2` + `views/home` +

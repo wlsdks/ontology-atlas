@@ -60,6 +60,7 @@ import { computeVisibleWardingRadius } from "../model/realm";
 import { initWardingFit, stepWardingFit, type WardingFitState } from "../model/realm-warding-fit";
 import { createTopologyPointerHandlers, type TopologyPointerHandlers } from "./topology-pointer-handlers";
 import { stepTopologyPhysics } from "./topology-physics-step";
+import { updatePulses, type Pulse } from "../render/edge-fireflies";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyMapV2Props } from "./TopologyMapV2";
 import { applyForcePositions, buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld, radiusForKind } from "./topology-world";
@@ -173,7 +174,15 @@ export interface UseTopologyLoopArgs {
   onToggleCluster?: (parentId: string) => void;
   /** S2 파트 5C — 클러스터 칩 호버 툴팁 (식별 변경 시 발화, null=해제). */
   onHoverCluster?: (
-    info: { parentId: string; count: number; expanded: boolean; position: { x: number; y: number } } | null,
+    info: {
+      parentId: string;
+      /** 이 티어에서 접힌 직속 게이트 자식 수(칩 `+N`). */
+      count: number;
+      /** 패널3-S6 — 부모의 하위 전체 자손 수(노드 뱃지 = descendantCount). */
+      descendantTotal: number;
+      expanded: boolean;
+      position: { x: number; y: number };
+    } | null,
   ) => void;
   /**
    * "영역 전개" (S4) — 지도를 이 노드의 세계로 전환한다 (`?realm=slug`). null 이면
@@ -371,6 +380,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * just draws nothing).
    */
   const selectionPulseRef = useRef<{ nodeId: string; startAtMs: number } | null>(null);
+  /**
+   * R6 호버 펄스 — 활성 일회성 신호 리스트. 포인터 핸들러가 호버 시 발사(append),
+   * 프레임 루프가 매 프레임 만료 제거(`updatePulses`) 후 드로우로 넘긴다.
+   */
+  const pulsesRef = useRef<Pulse[]>([]);
+  /**
+   * R6 상시 혜성 — 월드에 depends 엣지가 하나라도 있는가(유휴 게이트용, 월드
+   * 빌드 시 1회 계산). 없으면 코멧이 없어 유휴 판정이 성립한다.
+   */
+  const hasDependsEdgesRef = useRef(false);
   /** A2 — 마지막 활동 시각. 활동 플래그가 참인 프레임마다 갱신. */
   const lastActiveMsRef = useRef(0);
   /** A2 — 직전 프레임 카메라 값 (움직임 감지용). */
@@ -522,6 +541,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     );
     const world = buildTopologyWorld(nodes, edges, tokens);
     worldRef.current = world;
+    // R6 상시 혜성 — 유휴 게이트가 코멧 상시성을 알 수 있게 depends 유무를 캐시.
+    hasDependsEdgesRef.current = world.edges.some((e) => e.kind === "depends");
+    // 새 월드 = 이전 월드의 엣지를 겨냥한 펄스는 무효(엣지 id 가 옛 것).
+    pulsesRef.current = [];
     // Seed the force sim off the concentric layout (spatial memory) and warm it
     // so it settles into an organic layout that un-piles the fan-arcs.
     simRef.current = createForceSimulation(
@@ -915,10 +938,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           homing: homingActiveRef.current,
           selectionPulseActive: selectionPulseRef.current !== null &&
             now - selectionPulseRef.current.startAtMs < tokens.selectPulseDurationMs,
-          // S10 결함 4 — ego 테일 + 반딧불(엣지 흐름 입자)의 상시 모션. 엣지
-          // 선택(pair 포커스)도 반딧불을 흘리므로 포커스와 같은 게이트로 깨워 둔다.
+          // R6 상시 혜성 — depends 엣지가 있고 reduced-motion 이 아니면 코멧이
+          // 포커스와 무관하게 항상 흐르므로 캔버스는 유휴가 되지 않는다(소유자
+          // 지시 "상시성"). 호버 펄스가 활성이어도 깨워 둔다. 문서 hidden 시엔
+          // rAF 자체가 브라우저에 의해 정지돼 배터리를 지킨다.
           egoTailAnimating:
-            (focusedSlugRef.current !== null || selectedEdgeRef.current !== null) && tokens.edgePulseSpeedEgo > 0,
+            (!reducedMotionRef.current && hasDependsEdgesRef.current && tokens.edgePulseSpeed > 0) ||
+            pulsesRef.current.length > 0,
           emphasisTarget: hoveredNodeIdRef.current !== null || panelEmphasisNodeIdRef.current !== null || hoveredClusterIdRef.current !== null,
           breathing: !reducedMotionRef.current && world.nodes.some((n) => n.fresh),
           cameraMoving,
@@ -1227,6 +1253,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       });
       cameraRef.current = camera;
 
+      // R6 호버 펄스 — 수명(420ms) 지난 펄스 제거. 발사(append)는 포인터
+      // 핸들러의 호버 경로가 한다(프로토타입 startRipple 의 펄스 부분).
+      pulsesRef.current = updatePulses(pulsesRef.current, now);
+
       // --- S5 깊이 시차 스텝 — 영역 active 중 카메라 입력(팬/줌으로 이동한 월드
       // 중심)의 프레임 델타를 깊이 밴드별 오프셋에 충전한다. 카메라 정지 시
       // exp 감쇠로 0 수렴 — reduced-motion 은 오프셋 0(effect 없음). 감쇠 꼬리는
@@ -1458,6 +1488,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         emphasisById: emphasisRef.current,
         egoRevealById: egoRevealRef.current,
         reducedMotion: reducedMotionRef.current,
+        pulses: pulsesRef.current,
         selectionPulse: selectionPulseRef.current,
         agentFocusNodeId: agentFocusNodeIdRef.current,
         clusteredIds: frameClusteredIds,
@@ -1502,6 +1533,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     focusedSlugRef,
     hoveredNodeIdRef,
     rippleStartRef,
+    pulsesRef,
     reducedMotionRef,
     simRef,
     heatRef,
