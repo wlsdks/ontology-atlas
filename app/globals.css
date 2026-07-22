@@ -1561,7 +1561,13 @@
        그 offset 을 뺀 나머지 뷰포트 높이로 clamp 하고 내부 스크롤을 연다 —
        패널 max-height 토큰들이 공유하는 "calc(100vh - top offset)" 패턴.
        하단 8px 여유도 그 관례와 동일. */
-    --topology-v2-panel-max-height: calc(100dvh - var(--topology-node-popover-top) - 8px);
+    /* zoom(--topology-ui-scale) 컨텍스트 보정 (소유자 실보고 2026-07-23,
+       1920 에서 데이터시트가 화면 하단 관통) — zoom 된 서브트리 안에서
+       100dvh(CSS px)는 시각적으로 zoom 배가 되므로 factor 로 나눠 실제
+       보이는 뷰포트 높이에 clamp 한다. factor 1 에서는 종전과 동일. */
+    --topology-v2-panel-max-height: calc(
+      100dvh / var(--topology-ui-scale-factor) - var(--topology-node-popover-top) - 8px
+    );
     /* 9→12px (feat/chrome-system §9, INDEX 패널 v2.1) — 데이터시트와
        INDEX 가 공유하는 패널 계층의 radius 를 크롬 시스템의 4계층 스텝
        (키캡4·inner7·타일/칩/필10·패널12) 마지막 단으로 승격. */
@@ -1730,21 +1736,23 @@
   @media (min-width: 1920px) {
     :root {
       --topology-relation-legend-inset: 32px;
-      --topology-ui-scale-factor: 1.15;
+      /* 1.15 → 1.08 (소유자 실보고 2026-07-23: 1920 에서 버튼이 커 보임 —
+         "아주 약간만") — zoom 과 factor 는 항상 짝으로 움직인다. */
+      --topology-ui-scale-factor: 1.08;
     }
 
     .topology-ui-scale {
-      zoom: 1.15;
+      zoom: 1.08;
     }
   }
 
   @media (min-width: 2400px) {
     :root {
-      --topology-ui-scale-factor: 1.3;
+      --topology-ui-scale-factor: 1.2;
     }
 
     .topology-ui-scale {
-      zoom: 1.3;
+      zoom: 1.2;
     }
   }
 
