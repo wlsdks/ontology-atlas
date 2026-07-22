@@ -370,6 +370,16 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL, clusteredIds, realmTierKinds))
         .map((n) => n.id),
     );
+    // 히트테스트 역전 방지(패널3-S3) — 끝 노드 몸통 반경(스크린 px)을
+    // `hitTestWorld` 와 **같은 식**(radiusForKind × magnitudeScale × scale + 5)
+    // 으로 계산해 넘긴다. 노드 히트 영역과 정확히 맞물려 노드 몸통/근접 클릭이
+    // 방사형 엣지로 새지 않게 한다(노드 바디 > 엣지).
+    const scale = cameraRef.current.scale.value;
+    const bodyRadius = (id: string): number | undefined => {
+      const node = world.nodeById.get(id);
+      if (!node) return undefined;
+      return radiusForKind(node.kind, tokens) * node.magnitudeScale * scale + 5;
+    };
     const candidates: EdgeHitCandidate[] = [];
     for (const edge of world.edges) {
       if (!hittable.has(edge.sourceId) || !hittable.has(edge.targetId)) continue;
@@ -378,6 +388,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         a: worldToScreen(cameraRef.current, width, height, edge.ax, edge.ay),
         b: worldToScreen(cameraRef.current, width, height, edge.bx, edge.by),
         control: worldToScreen(cameraRef.current, width, height, edge.controlX, edge.controlY),
+        aRadius: bodyRadius(edge.sourceId),
+        bRadius: bodyRadius(edge.targetId),
       });
     }
     return candidates;
@@ -741,6 +753,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     e.preventDefault();
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) return;
+    // 엣지/클러스터 호버 카드 잔류(패널2/3) — 휠/카메라 모션이 시작되는 순간
+    // 카드는 즉시 사라져야 한다. 카드는 idle 호버에만 앵커되므로, 줌으로
+    // 좌표가 흐르는 동안 pointermove 없이 잔류해 3티어 줌을 관통해 남았다.
+    // 모션의 첫 틱에 dismiss 해 카드가 지도 위에 떠다니지 않게 한다.
+    clearEdgeHover();
+    clearClusterHover();
     // S3 — a live wheel zoom is interactive input; abandon any programmatic
     // camera tween so the crisp interactive spring owns this gesture.
     if (cameraTweenRef) cameraTweenRef.current = null;

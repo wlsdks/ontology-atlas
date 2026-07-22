@@ -320,6 +320,14 @@ export function TopologyIndexPanel({
         aria-label={labels.label}
         data-testid="topology-index-tree"
         className="min-h-0 flex-1 space-y-px overflow-y-auto"
+        // 패널1-3② — 스크롤 리스트 하단에서 마지막 행이 컨테이너 경계에
+        // 중간 높이로 하드 클립돼 "잘린 행"이 결함처럼 읽혔다. 하단 12px
+        // 마스크 페이드로 부드럽게 감춰 "더 있음"을 암시한다(상단은 crisp —
+        // 첫 행은 자르지 않는다). transform/색 아닌 mask 라 헌장 무저촉.
+        style={{
+          maskImage: "linear-gradient(to bottom, #000 calc(100% - 12px), transparent)",
+          WebkitMaskImage: "linear-gradient(to bottom, #000 calc(100% - 12px), transparent)",
+        }}
       >
         {visibleRoots.length === 0 ? (
           <p className="px-1 py-2 text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">

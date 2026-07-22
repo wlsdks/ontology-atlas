@@ -6,6 +6,31 @@
 
 ---
 
+## 2026-07-22 — 지도 디자인 패널 소규모 즉효 4건 (히트 역전 · 호버 잔류 · realm 별칭 · 첫 화면 픽셀)
+
+디자인 패널 지적 중 소규모·즉효 결함 4건. `topology-map-v2` + `views/home` +
+`hero-header`/`topology-index-panel`.
+
+- **히트테스트 역전 (치명, 패널3-S3)** — 노드 정중앙/근접 클릭이 엣지 패널을
+  여는 역전을 수정. 엣지 앵커(`a`/`b`)는 곧 끝 노드 중심이라 엣지선이 노드를
+  관통했다. 엣지 히트 후보에 끝 노드 **스크린 몸통 반경**(`hitTestWorld` 와 같은
+  `radiusForKind×magnitudeScale×scale+5`)을 실어, (1) 클릭이 노드 몸통 안이면 그
+  엣지를 히트에서 통째로 제외하고 (2) 노드 몸통 안 베지어 샘플 구간을 거리
+  계산에서 배제해 "노드 바디 > 엣지"를 기하로 강제했다.
+- **엣지 호버 카드 잔류 (패널2/3)** — 휠/카메라 모션 첫 틱에 엣지·클러스터 호버
+  카드를 즉시 dismiss. 카드는 idle 호버에만 앵커돼 줌 중 좌표가 흐르는 동안
+  `pointermove` 없이 3티어 줌을 관통해 잔류했다.
+- **realm slug silent fallback (패널3-S7)** — `?realm=ai-agent-partner`(kind
+  prefix 없음)가 raw 칩 + 전체 지도로 조용히 렌더되던 것을 수정. 노드 id 는
+  `kind:slug` 공간이라 bare slug 를 canonical id(`capability:ai-agent-partner`)로
+  승격 해석하고, 미해석이면 칩을 숨기고 영역을 활성화하지 않는다.
+- **첫 화면 픽셀 결함 (패널1-3)** — ① overview 상태에서 헤더 브랜드 필이 바로
+  아래 INDEX 패널과 폭이 어긋나던(≈7.6px @ topology-ui-scale) 것을 공통 폭 토큰
+  (`--topology-index-width`)으로 정렬. ② INDEX 트리 리스트 마지막 행이 하단
+  경계에서 하드 클립되던 것을 하단 12px mask-image 페이드로 완화.
+
+---
+
 ## 2026-07-22 — 지도 S10 소유자 실보고 4건 수정 (chrome 규격 · 펼침 배지 · 영역 히트 · 반딧불)
 
 `topology-map-v2` + 상단 크롬 열의 소유자 실보고 4건.

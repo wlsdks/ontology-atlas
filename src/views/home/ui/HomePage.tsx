@@ -117,6 +117,7 @@ import {
   toggleExpandedParent,
   enterRealmRouteState,
   exitRealmRouteState,
+  resolveRealmNodeId,
   type TopologyAnalysisMode,
 } from "../model/url-state";
 import {
@@ -933,12 +934,23 @@ export function HomePage() {
   const canvasSelectedSlug = selectedProject?.slug ?? selectedOntologyNode?.id ?? selectedSlug;
   const drawerProject = selectedProject;
 
-  // S4 "영역 전개" — 현재 영역 루트 노드의 제목(칩 표시용). 그래프에서 못 찾으면
-  // slug 자체를 fallback 으로 쓴다(전환 직후 그래프 재빌드 타이밍 방어).
+  // S7 realm slug 해석(패널3-S7) — URL 의 `?realm=` 은 사용자가 손으로 bare
+  // slug(`ai-agent-partner`)를 칠 수 있으나 노드 id 는 `kind:slug` 공간이라
+  // 그냥은 안 맞아 raw 칩 + 전체 지도가 조용히 렌더됐다. canonical 노드 id 로
+  // 승격하고(=`capability:ai-agent-partner`), 못 맞추면 null → 칩 미표시.
+  const resolvedRealmSlug = useMemo(
+    () => resolveRealmNodeId(realmSlug, (ontologyInsight?.nodes ?? []).map((n) => n.id)),
+    [realmSlug, ontologyInsight],
+  );
+
+  // S4 "영역 전개" — 현재 영역 루트 노드의 제목(칩 표시용). 해석된 id 로만
+  // 조회 — 미해석(null)이면 제목도 null 이라 칩이 뜨지 않는다. 전환 직후
+  // 그래프 재빌드 타이밍엔 canonical id 자체를 fallback 으로 써 칩이 깜빡이지
+  // 않게 한다(id 는 ontologyInsight 에 이미 존재 = 해석 성공한 케이스).
   const realmTitle = useMemo(() => {
-    if (!realmSlug) return null;
-    return topologyV2Graph.nodes.find((n) => n.id === realmSlug)?.label ?? realmSlug;
-  }, [realmSlug, topologyV2Graph]);
+    if (!resolvedRealmSlug) return null;
+    return topologyV2Graph.nodes.find((n) => n.id === resolvedRealmSlug)?.label ?? resolvedRealmSlug;
+  }, [resolvedRealmSlug, topologyV2Graph]);
 
   // 노드 클릭 default = 컴팩트 ego 팝오버. 풀스크린 드로어는 "전체 상세" opt-in.
   // overview first, details-on-demand — 설계: docs/TOPOLOGY-FOCUS-AND-SCALE.md
@@ -1280,7 +1292,7 @@ export function HomePage() {
       if (event.key !== "Escape") return;
       if (event.defaultPrevented) return;
       const action = resolveTopologyEscLadderAction({
-        realmActive: realmSlug !== null,
+        realmActive: resolvedRealmSlug !== null,
         contextMenuOpen: contextMenuNode !== null,
         createNodeOpen,
         searchOpen: ontologySearchOpen,
@@ -1346,7 +1358,7 @@ export function HomePage() {
     closeCreateNode,
     handleClose,
     selectedEdge,
-    realmSlug,
+    resolvedRealmSlug,
     handleExitRealm,
   ]);
 
@@ -1600,8 +1612,8 @@ export function HomePage() {
     [ontologyInsight],
   );
   const realmLedgerModel = useMemo(() => {
-    if (!realmSlug || !indexTreeResult || !ontologyInsight) return null;
-    const subtree = findRealmSubtree(indexTreeResult.roots, realmSlug);
+    if (!resolvedRealmSlug || !indexTreeResult || !ontologyInsight) return null;
+    const subtree = findRealmSubtree(indexTreeResult.roots, resolvedRealmSlug);
     if (!subtree) return null;
     const census = computeRealmCensus(subtree);
     const memberIds = collectRealmMemberIds(subtree);
@@ -1628,8 +1640,8 @@ export function HomePage() {
       boundaryRows,
       boundaryTotal: boundary.total,
     };
-  }, [realmSlug, indexTreeResult, ontologyInsight, realmNodeById, relationVocabulary]);
-  const realmActive = realmSlug !== null && realmLedgerModel !== null;
+  }, [resolvedRealmSlug, indexTreeResult, ontologyInsight, realmNodeById, relationVocabulary]);
+  const realmActive = resolvedRealmSlug !== null && realmLedgerModel !== null;
   // root-first-open v3 우하단 판독(`FirstRunReadout`) 의 "N project" 숫자 —
   // 실데이터, indexDomainCount 와 같은 ontologyInsight 파생이라 drift 불가.
   const firstRunProjectCount = useMemo(
@@ -2011,6 +2023,21 @@ export function HomePage() {
                     }
                     compact={selectedRelationActive}
                     sampleBadge={sampleModeSettled}
+                    // 패널1-3① — overview 상태에선 브랜드 필이 바로 아래
+                    // INDEX 패널 위에 얹힌다. 필은 콘텐츠 폭(≈293px)이라
+                    // 패널 폭(--topology-index-width, 300px)보다 우변이 어긋나
+                    // 보였다(측정 7.6px @ topology-ui-scale). 같은 폭 토큰을
+                    // 공유해 두 표면의 우변을 정렬한다 — 선택/관계/드로어
+                    // 상태에선 좌측 열이 인스펙터로 바뀌므로 콘텐츠 폭 유지.
+                    className={
+                      !selectedNodeFocusActive &&
+                      !drawerOpen &&
+                      !selectedProject &&
+                      !selectedRelationActive &&
+                      renderedIndexState === "expanded"
+                        ? "w-[var(--topology-index-width)]"
+                        : undefined
+                    }
                   />
                   {/* WorkspaceOntologyStrip 제거(2026-06-11) — 분석 패널과
                       겹쳤고(사용자 보고), 카운트는 pill·범례가, 온톨로지
@@ -2063,7 +2090,7 @@ export function HomePage() {
                       toast.show(t('controls.relayoutToast'), "info");
                     }}
                     realmChip={
-                      realmSlug && realmTitle ? (
+                      resolvedRealmSlug && realmTitle ? (
                         <TopologyRealmChip
                           title={realmTitle}
                           prefixLabel={t("realm.chipPrefix")}
@@ -2676,7 +2703,7 @@ export function HomePage() {
                     onToggleCluster={handleToggleCluster}
                     onHoverCluster={handleHoverCluster}
                     clusterHint={t('cluster.hint')}
-                    realmRootId={realmSlug}
+                    realmRootId={resolvedRealmSlug}
                     onEnterRealm={handleEnterRealm}
                     realmEnterLabel={t('realm.enterAction')}
                     realmEnterTooltip={t('realm.enterTooltip')}
@@ -2953,7 +2980,7 @@ export function HomePage() {
                 onEnterRealm={
                   // S4 — 컨테이너 노드(자식 있음)이며 영역 밖일 때만 2차 발견
                   // 경로를 노출한다. leaf/이미 영역 안이면 omit → 버튼 미표시.
-                  realmSlug === null && v2DatasheetModel.groups.contains.total > 0
+                  resolvedRealmSlug === null && v2DatasheetModel.groups.contains.total > 0
                     ? () => handleEnterRealm(v2DatasheetModel.nodeId)
                     : undefined
                 }

@@ -5,6 +5,7 @@ import {
   enterRealmRouteState,
   exitRealmRouteState,
   parseHomeRouteState,
+  resolveRealmNodeId,
   resolveTopologyNodeClickRouteState,
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
@@ -576,5 +577,42 @@ describe("영역 전개 (?realm=)", () => {
     expect(exited.realmSlug).toBeNull();
     expect(exited.selectedSlug).toBeNull();
     expect(applyHomeRouteState(new URLSearchParams("realm=capability:y"), exited).get("realm")).toBeNull();
+  });
+});
+
+describe("resolveRealmNodeId (패널3-S7 slug alias)", () => {
+  const nodeIds = ["project:atlas", "domain:views", "capability:ai-agent-partner", "element:parser"];
+
+  it("정확히 일치하는 canonical id 는 그대로 통과한다", () => {
+    expect(resolveRealmNodeId("capability:ai-agent-partner", nodeIds)).toBe(
+      "capability:ai-agent-partner",
+    );
+  });
+
+  it("kind prefix 없는 bare slug 를 <kind>:<slug> canonical id 로 승격한다", () => {
+    // 사용자가 손으로 친 `?realm=ai-agent-partner` — 예전엔 raw 칩 + 전체 지도.
+    expect(resolveRealmNodeId("ai-agent-partner", nodeIds)).toBe(
+      "capability:ai-agent-partner",
+    );
+    expect(resolveRealmNodeId("views", nodeIds)).toBe("domain:views");
+  });
+
+  it("어떤 노드와도 안 맞으면 null — 칩 미표시 계약", () => {
+    expect(resolveRealmNodeId("does-not-exist", nodeIds)).toBeNull();
+    // kind prefix 가 붙었지만 kind 가 틀린 경우도 미해석(정확 일치만 인정).
+    expect(resolveRealmNodeId("domain:ai-agent-partner", nodeIds)).toBeNull();
+  });
+
+  it("빈 값/공백 realm 은 null", () => {
+    expect(resolveRealmNodeId(null, nodeIds)).toBeNull();
+    expect(resolveRealmNodeId("", nodeIds)).toBeNull();
+  });
+
+  it("정확 일치가 bare 별칭보다 우선한다", () => {
+    // 같은 tail slug 를 가진 두 노드가 있어도, 정확 일치 id 가 있으면 그것.
+    const ids = ["capability:parser", "element:parser"];
+    expect(resolveRealmNodeId("element:parser", ids)).toBe("element:parser");
+    // bare `parser` 는 등장 순서상 첫 매치(capability:parser).
+    expect(resolveRealmNodeId("parser", ids)).toBe("capability:parser");
   });
 });
