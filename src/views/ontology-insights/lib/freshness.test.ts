@@ -40,6 +40,11 @@ describe("computeFreshnessSummary", () => {
     expect(row.weeks).toHaveLength(12);
     expect(row.weeks[11].isCurrentWeek).toBe(true);
     expect(row.weeks[11].level).toBeGreaterThanOrEqual(1);
+    // 셀 툴팁 진실원 — level 은 3에서 포화되므로 원본 건수도 함께 노출한다.
+    expect(row.weeks[11].count).toBe(1);
+    // domain-views 자신의 갱신(5/1, 11주 전)은 weeks[0] 버킷 — 중간 주는 0.
+    expect(row.weeks[0].count).toBe(1);
+    expect(row.weeks[5].count).toBe(0);
     expect(row.daysAgo).toBe(1);
     expect(row.stale).toBe(false);
   });

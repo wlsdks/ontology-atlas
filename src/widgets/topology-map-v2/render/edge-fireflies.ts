@@ -63,21 +63,55 @@ export interface ParticleEdge {
   targetId: string;
 }
 
+/** 엣지 양 끝 id 를 세트/맵 키로 정규화 — `fireflySeed`와 같은 순서(source target)를 쓴다. */
+export function edgePairKey(sourceId: string, targetId: string): string {
+  return `${sourceId} ${targetId}`;
+}
+
 /**
- * 프로토타입 `updateParticles` — depends 엣지의 위상을 in place 전진한다.
+ * Design Guardian 승인 처방 E — 선택(ego) 시 인시던트 contains 엣지 코멧 캡.
+ * 포커스 노드의 팬아웃이 크면(예: 자식 90개 domain) 전부 점등이 판독 불가한
+ * 파티클 다발이 된다. `fireflySeed` 오름차순(결정론, RNG 상태 없음)으로
+ * 랭크해 상위 `limit`개만 코멧 대상으로 고르고 나머지는 파티클 없이 기존 ego
+ * 밝기만 유지한다(호출부가 이 Set 을 `updateParticles`의 진행 게이트와
+ * `render/traces.ts`의 드로우 게이트 양쪽에 동일하게 적용).
+ */
+export const EGO_CONTAINS_COMET_LIMIT = 24;
+
+export function selectEgoContainsComets(
+  incidentContainsEdges: readonly { sourceId: string; targetId: string }[],
+  limit: number = EGO_CONTAINS_COMET_LIMIT,
+): ReadonlySet<string> {
+  const ranked = [...incidentContainsEdges].sort((a, b) => {
+    const seedDiff = fireflySeed(a.sourceId, a.targetId) - fireflySeed(b.sourceId, b.targetId);
+    if (seedDiff !== 0) return seedDiff;
+    const ka = edgePairKey(a.sourceId, a.targetId);
+    const kb = edgePairKey(b.sourceId, b.targetId);
+    return ka < kb ? -1 : ka > kb ? 1 : 0;
+  });
+  return new Set(ranked.slice(0, Math.max(0, limit)).map((e) => edgePairKey(e.sourceId, e.targetId)));
+}
+
+/**
+ * 프로토타입 `updateParticles` — depends 엣지의 위상을 항상 in place 전진한다.
  * reduced-motion 이면 아무 것도 하지 않는다(정지). `speedOf`로 엣지별 속도를
  * 받는다(ego 가속 등은 호출부가 결정 — 이 모듈은 모델/model 을 import 하지
  * 않아 순수하게 유지).
+ *
+ * 처방 E — contains 엣지는 기본적으로 정지지만, `isEgoContainsEligible`이
+ * true 를 낸 엣지(선택 노드에 물린 + 캡 안쪽)만 depends 와 똑같이 전진한다.
+ * 인자를 생략하면 전부 false(기존 "contains 는 항상 불변" 계약 그대로).
  */
 export function updateParticles(
   edges: readonly ParticleEdge[],
   dt: number,
   reducedMotion: boolean,
   speedOf: (edge: ParticleEdge) => number,
+  isEgoContainsEligible: (edge: ParticleEdge) => boolean = () => false,
 ): void {
   if (reducedMotion) return;
   for (const edge of edges) {
-    if (edge.kind !== "depends") continue;
+    if (edge.kind !== "depends" && !(edge.kind === "contains" && isEgoContainsEligible(edge))) continue;
     edge.t = advanceParticlePhase(edge.t, dt, speedOf(edge));
   }
 }

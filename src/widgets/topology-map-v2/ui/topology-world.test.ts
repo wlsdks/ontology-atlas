@@ -31,6 +31,7 @@ const tokens = {
 function node(partial: Partial<WorldNode> & Pick<WorldNode, "id" | "kind" | "x" | "y">): WorldNode {
   return {
     label: partial.id,
+    parentId: null,
     isHub: false,
     fresh: false,
     stale: false,

@@ -332,6 +332,8 @@ export function OntologyInsightsPage() {
     older: t("older"),
     axisStart: t("axisStart", { weeks: FRESHNESS_WINDOW_WEEKS }),
     axisEnd: t("axisEnd"),
+    weekCell: (weeksAgo: number, count: number) => t("weekCell", { weeks: weeksAgo, count }),
+    weekCellCurrent: (count: number) => t("weekCellCurrent", { count }),
     recentUpdatesTitle: t("recentUpdatesTitle"),
     noRecentUpdates: t("noRecentUpdates"),
     staleCountLabel: t("staleCountLabel"),
@@ -444,6 +446,10 @@ export function OntologyInsightsPage() {
               />
             ) : null}
             {tab === "structure" ? (
+              /* 구조 탭은 두 컴포넌트(개요 그리드 + 관계 그리드)를 세로로 잇는다 —
+                 수평 카드 갭과 같은 --card-gap 으로 수직 리듬을 맞춰 4카드가
+                 한 클러스터로 읽히게 한다(갭 0 이면 카드 보더가 맞붙는다). */
+              <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
               <OverviewTab
                 totalNodes={totalNodes}
                 totalEdges={totalEdges}
@@ -454,8 +460,6 @@ export function OntologyInsightsPage() {
                 kindLabel={kindLabel}
                 labels={overviewLabels}
               />
-            ) : null}
-            {tab === "structure" ? (
               <RelationsTab
                 edgeTypeRows={edgeTypeRows}
                 totalEdges={totalEdges}
@@ -474,6 +478,7 @@ export function OntologyInsightsPage() {
                 }}
                 labels={relationsLabels}
               />
+              </div>
             ) : null}
             {tab === "freshness" ? (
               <FreshnessTab

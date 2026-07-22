@@ -354,10 +354,17 @@ export function HomePage() {
     indexPanelCollapsedStored ? "collapsed" : "expanded",
   );
   const leftSlotOwner = resolveLeftSlotOwner({ analysisMode });
-  const renderedIndexState = resolveRenderedIndexPanelState(
+  const baseRenderedIndexState = resolveRenderedIndexPanelState(
     leftSlotOwner,
     indexPreference,
   );
+  // C (소유자 실보고 2026-07-23, "어지럽다 — 모든 패널이 다 열려있어서") —
+  // 노드 선택(데이터시트 활성) 동안 좌측 스택은 접힘 탭으로 물러나고,
+  // 캔버스 빈 곳 클릭(선택 해제)이 원래 선호를 복귀시킨다. 선택 중 사용자가
+  // 탭으로 수동 전개하면 그 선택이 끝날 때까지 전개가 우선한다. 영구 선호
+  // (localStorage)는 건드리지 않는 순수 세션 강등.
+  const [indexManualExpandDuringSelection, setIndexManualExpandDuringSelection] =
+    useState(false);
   const setIndexPreference = useCallback(
     (next: IndexPanelState) => {
       try {
@@ -430,6 +437,9 @@ export function HomePage() {
   // mode (focus/path/health), so returning to overview is always enough.
   const handleIndexTabExpand = useCallback(() => {
     setIndexPreference("expanded");
+    // C — 선택 중 수동 전개는 그 선택 동안 자동 강등을 이긴다 (선택 해제
+    // 시 리셋; 비선택 상태에선 무해한 no-op 플래그).
+    setIndexManualExpandDuringSelection(true);
     if (analysisMode !== "overview") {
       setRouteState((current) => ({ ...current, analysisMode: "overview" }));
     }
@@ -441,20 +451,8 @@ export function HomePage() {
   // reads CSS vars once per `read-topology-v2-tokens.ts`'s own contract),
   // then force a re-fit via the existing "지도 맞추기" token so the camera
   // actually re-centers against the new width instead of just changing CSS.
-  useEffect(() => {
-    const root = document.documentElement;
-    root.dataset.topologyIndex = renderedIndexState;
-    clearTopologyV2TokensCache();
-    let cancelled = false;
-    // 동기 setState 회피(cascading-render 경고) — microtask 로 defer.
-    window.queueMicrotask(() => {
-      if (!cancelled) setFitViewToken((count) => count + 1);
-    });
-    return () => {
-      cancelled = true;
-      delete root.dataset.topologyIndex;
-    };
-  }, [renderedIndexState]);
+  // (dataset/fit 이펙트는 selection-aware 최종 renderedIndexState 파생 뒤로
+  //  이동 — C 자동 강등 참조.)
   const selectedProject = useMemo(
     () =>
       selectedSlug
@@ -1187,6 +1185,35 @@ export function HomePage() {
     [v2DatasheetModel?.documentHref],
   );
   useNavRailContextHrefs(navRailContextHrefs);
+  // C — 최종 INDEX 렌더 상태: 선택 활성 + 수동 전개 없음 + (영역 밖) 이면
+  // 자동 강등. 영역 대장은 영역의 유일한 탈출/탐색 표면이라 예외.
+  // M-7 Esc 사다리 존중 — rung 1(팝오버만 닫힘, 선택 유지) 상태에선 좌측이
+  // 돌아와야 하므로 "모델 존재"가 아니라 "데이터시트 실표시"에 결속한다.
+  const topologySelectionActive = Boolean(v2DatasheetModel) && !nodePopoverDismissed;
+  useEffect(() => {
+    if (!topologySelectionActive) setIndexManualExpandDuringSelection(false);
+  }, [topologySelectionActive]);
+  const renderedIndexState: IndexPanelState =
+    topologySelectionActive &&
+    resolvedRealmSlug === null &&
+    !indexManualExpandDuringSelection &&
+    baseRenderedIndexState === "expanded"
+      ? "collapsed"
+      : baseRenderedIndexState;
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.topologyIndex = renderedIndexState;
+    clearTopologyV2TokensCache();
+    let cancelled = false;
+    // 동기 setState 회피(cascading-render 경고) — microtask 로 defer.
+    window.queueMicrotask(() => {
+      if (!cancelled) setFitViewToken((count) => count + 1);
+    });
+    return () => {
+      cancelled = true;
+      delete root.dataset.topologyIndex;
+    };
+  }, [renderedIndexState]);
   const copyV2NodeHandoff = useCallback(
     async (text: string) => {
       const ok = await copyText(text);
@@ -2596,7 +2623,16 @@ export function HomePage() {
                 className="topology-ui-scale absolute z-20"
                 style={{
                   left: renderedIndexState === "expanded" ? "var(--topology-index-inset)" : 0,
-                  top: "var(--topology-index-top)",
+                  // J (소유자 실보고 2026-07-23) — 상시 "지형도" 헤더가
+                  // 은퇴한 뒤 전개 스택 위 84px 이 빈 띠로 남았다. 전개
+                  // 상태는 크롬 인셋(24px)까지 올린다. 브랜드 pill 이 뜨는
+                  // 상태(선택/드로어)에선 C 자동 강등으로 스택이 접힘 탭이
+                  // 되므로 pill 과의 겹침이 구조적으로 없다. 접힘 탭은
+                  // pill 아래 정렬을 위해 기존 84px 유지.
+                  top:
+                    renderedIndexState === "expanded"
+                      ? "var(--topology-index-inset)"
+                      : "var(--topology-index-top)",
                   bottom: renderedIndexState === "expanded" ? "var(--topology-index-inset)" : undefined,
                 }}
               >

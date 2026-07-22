@@ -11,11 +11,14 @@
 import { computePanBounds, stepCamera, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { computeAltitudeBand, computeFarT } from "../model/altitude";
 import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis } from "../model/focus-state";
-import { updateParticles } from "../render/edge-fireflies";
+import { edgePairKey, selectEgoContainsComets, updateParticles } from "../render/edge-fireflies";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom } from "../model/tier-visibility";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "./topology-camera-math";
 import type { TopologyWorld } from "./topology-world";
+
+/** No focus → no ego contains comets. Reused so the no-focus path allocates nothing. */
+const EMPTY_EGO_CONTAINS_COMETS: ReadonlySet<string> = new Set();
 
 export interface PhysicsStepInput {
   world: TopologyWorld;
@@ -233,16 +236,38 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     );
   }
 
+  // Design Guardian 승인 처방 E — 선택(ego) 시 인시던트 contains 엣지도 코멧
+  // 흐름을 태운다. 포커스 노드에 물린 contains 엣지만 후보(= "인시던트"), 그
+  // 중 seed 순 상위 24개만 실제로 전진(`selectEgoContainsComets` 캡 — 팬아웃
+  // 큰 노드가 파티클 다발이 되지 않게). `render/traces.ts`의 드로우 게이트도
+  // 같은 캡 판정을 써야 하므로 이 Set 은 프레임 드로우(`topology-frame-draw.ts`)
+  // 에서 동일 로직으로 재계산한다(둘 다 결정론이라 같은 프레임 안에서 값이
+  // 일치 — 상태 공유 없이도 drift 없음).
+  const egoContainsComets =
+    focusedNodeId === null
+      ? EMPTY_EGO_CONTAINS_COMETS
+      : selectEgoContainsComets(
+          world.edges.filter(
+            (edge) => edge.kind === "contains" && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId),
+          ),
+        );
+
   // R6 상시 혜성 — depends 엣지의 코멧 위상을 항상 전진시킨다(`updateParticles`,
   // 순수 모델 `render/edge-fireflies.ts`). ambient(edgePulseSpeed)로 포커스와
   // 무관하게 흐르되, 포커스 서브그래프에 물린 엣지는 "전류가 더 흐른다"고
   // 가속(edgePulseSpeedEgo, `resolveEdgePulseSpeed`, lead spec §2). reduced-motion
   // 이면 updateParticles 가 전진을 건너뛰어(정지) 유휴 게이트가 성립한다.
-  updateParticles(world.edges, dt, reducedMotion, (edge) => {
-    const touchesFocused =
-      focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
-    return resolveEdgePulseSpeed(touchesFocused, focusedNodeId, tokens.edgePulseSpeed, tokens.edgePulseSpeedEgo);
-  });
+  updateParticles(
+    world.edges,
+    dt,
+    reducedMotion,
+    (edge) => {
+      const touchesFocused =
+        focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
+      return resolveEdgePulseSpeed(touchesFocused, focusedNodeId, tokens.edgePulseSpeed, tokens.edgePulseSpeedEgo);
+    },
+    (edge) => egoContainsComets.has(edgePairKey(edge.sourceId, edge.targetId)),
+  );
 
   return { camera: nextCamera, farT, zoomRatio };
 }

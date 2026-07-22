@@ -1598,6 +1598,8 @@
       "older": "Older",
       "axisStart": "{weeks} weeks ago",
       "axisEnd": "This week",
+      "weekCell": "{weeks}w ago · {count} updates",
+      "weekCellCurrent": "This week · {count} updates",
       "recentUpdatesTitle": "Recent updates",
       "noRecentUpdates": "No known update dates yet.",
       "staleCountLabel": "Not updated in 90+ days",

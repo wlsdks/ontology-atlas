@@ -22,6 +22,8 @@ const labels: FreshnessTabLabels = {
   older: "Older",
   axisStart: "12 weeks ago",
   axisEnd: "Now",
+  weekCell: (weeksAgo, count) => `${weeksAgo}w ago · ${count} updates`,
+  weekCellCurrent: (count) => `This week · ${count} updates`,
   recentUpdatesTitle: "Recent updates",
   noRecentUpdates: "No recent updates",
   staleCountLabel: "Stale (90d+)",
@@ -98,6 +100,42 @@ describe("FreshnessTab", () => {
     expect(link).toHaveAttribute("href", "/ontology/?node=domain%3Aauth");
     expect(link).toHaveAttribute("aria-label", "Auth — view on the map");
     expect(link).toHaveTextContent("Auth");
+  });
+
+  it("히트스트립 셀마다 주차·실건수 툴팁을 단다 — 이번 주 셀은 전용 문구", () => {
+    const weeks = Array.from({ length: 12 }, (_, i) => ({
+      level: (i === 11 ? 2 : i === 9 ? 1 : 0) as 0 | 1 | 2 | 3,
+      isCurrentWeek: i === 11,
+      count: i === 11 ? 2 : i === 9 ? 1 : 0,
+    }));
+    render(
+      <FreshnessTab
+        domainRows={[
+          {
+            domainId: "domain:views",
+            domainTitle: "Views",
+            weeks,
+            mostRecentUpdatedAt: "2026-07-20T00:00:00.000Z",
+            daysAgo: 1,
+            stale: false,
+          },
+        ]}
+        recent={[]}
+        staleCount={0}
+        weeklyTotals={[]}
+        kindLabel={(kind) => kind}
+        recentLink={recentLink}
+        labels={labels}
+      />,
+    );
+
+    const row = screen.getByTestId("insights-freshness-domain-row");
+    const cells = row.querySelectorAll("i[title]");
+    // 12개 셀 전부 툴팁 — 마지막(우측)이 이번 주, 그 앞은 "N주 전".
+    expect(cells).toHaveLength(12);
+    expect(cells[11]).toHaveAttribute("title", "This week · 2 updates");
+    expect(cells[9]).toHaveAttribute("title", "2w ago · 1 updates");
+    expect(cells[0]).toHaveAttribute("title", "11w ago · 0 updates");
   });
 
   it("shows the empty state instead of a list when there are no recent updates", () => {

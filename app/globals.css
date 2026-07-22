@@ -1317,6 +1317,13 @@
     --topology-v2-selection-ring-indigo: var(--topology-v2-indigo-bright);
     --topology-v2-selection-ring-hairline: rgba(94, 106, 210, 0.45);
     --topology-v2-hover-ring: rgba(94, 106, 210, 0.55);
+    /* Design Guardian 승인 처방 L — 호버 circuit-trace shimmer. 정지 호버
+       링(위) 위에 저속 순회하는 밝은 아크 1개(글로우 0 — `strokeKindOutline`
+       패스 재사용 + `setLineDash`/`lineDashOffset` 시간 애니메이션만). seg 는
+       둘레 비율, period 는 1회전(ms, linear, 시계방향). 순수 위상 계산은
+       `model/hover-shimmer.ts`. */
+    --topology-v2-hover-shimmer-seg: 0.16;
+    --topology-v2-hover-shimmer-period-ms: 2400;
 
     /* 2.2 엣지 · 라벨 · 배경 */
     /* B1 잉크 위계 (Guardian 2026-07-20): 장식 입자가 데이터 엣지보다 3.2배
@@ -1561,7 +1568,13 @@
        그 offset 을 뺀 나머지 뷰포트 높이로 clamp 하고 내부 스크롤을 연다 —
        패널 max-height 토큰들이 공유하는 "calc(100vh - top offset)" 패턴.
        하단 8px 여유도 그 관례와 동일. */
-    --topology-v2-panel-max-height: calc(100dvh - var(--topology-node-popover-top) - 8px);
+    /* zoom(--topology-ui-scale) 컨텍스트 보정 (소유자 실보고 2026-07-23,
+       1920 에서 데이터시트가 화면 하단 관통) — zoom 된 서브트리 안에서
+       100dvh(CSS px)는 시각적으로 zoom 배가 되므로 factor 로 나눠 실제
+       보이는 뷰포트 높이에 clamp 한다. factor 1 에서는 종전과 동일. */
+    --topology-v2-panel-max-height: calc(
+      100dvh / var(--topology-ui-scale-factor) - var(--topology-node-popover-top) - 8px
+    );
     /* 9→12px (feat/chrome-system §9, INDEX 패널 v2.1) — 데이터시트와
        INDEX 가 공유하는 패널 계층의 radius 를 크롬 시스템의 4계층 스텝
        (키캡4·inner7·타일/칩/필10·패널12) 마지막 단으로 승격. */
@@ -1730,21 +1743,23 @@
   @media (min-width: 1920px) {
     :root {
       --topology-relation-legend-inset: 32px;
-      --topology-ui-scale-factor: 1.15;
+      /* 1.15 → 1.08 (소유자 실보고 2026-07-23: 1920 에서 버튼이 커 보임 —
+         "아주 약간만") — zoom 과 factor 는 항상 짝으로 움직인다. */
+      --topology-ui-scale-factor: 1.08;
     }
 
     .topology-ui-scale {
-      zoom: 1.15;
+      zoom: 1.08;
     }
   }
 
   @media (min-width: 2400px) {
     :root {
-      --topology-ui-scale-factor: 1.3;
+      --topology-ui-scale-factor: 1.2;
     }
 
     .topology-ui-scale {
-      zoom: 1.3;
+      zoom: 1.2;
     }
   }
 

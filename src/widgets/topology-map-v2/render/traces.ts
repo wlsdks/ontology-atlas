@@ -128,6 +128,14 @@ export interface TraceDrawState {
    * of five uncovered motion sources).
    */
   reducedMotion?: boolean;
+  /**
+   * Design Guardian 승인 처방 E — 선택(ego) 시 인시던트 `contains` 엣지 코멧
+   * 흐름의 게이트. `egoState === "ego"`인 contains 엣지 중, 캐퍼(`render/
+   * edge-fireflies.ts#selectEgoContainsComets`, seed 순 상위 24개)를 통과한
+   * 엣지만 true — 캡 밖 엣지는 파티클 없이 기존 ego 밝기(본체 stroke)만
+   * 유지한다. `depends` 엣지는 이 필드를 쓰지 않는다(항상 기존 규칙).
+   */
+  containsCometEligible?: boolean;
 }
 
 export interface TraceTokens {
@@ -261,28 +269,54 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
   }
   ctx.setLineDash([]);
 
-  if (!isDepends || egoState === "dim") return;
-  // R6 상시 혜성 복원(소유자 지시 "예전 걸 살려줘" — 구 Guardian A1 "코멧테일=
-  // 포커스 신호" 강등을 되돌림): 코멧 꼬리는 dim 이 아닌 모든 depends 엣지에서
-  // 포커스와 무관하게 흐른다(프로토타입 §13 `drawEdge`의 `state !== "dim"`).
-  // 위상 전진은 `updateParticles`(reduced-motion 이면 정지)가 소유하므로
-  // reduced-motion 사용자에겐 여기서도 미표시 → "아무 것도 안 움직인다" 유지.
-  if (state.reducedMotion === true) return;
+  if (isDepends) {
+    if (egoState === "dim") return;
+    // R6 상시 혜성 복원(소유자 지시 "예전 걸 살려줘" — 구 Guardian A1 "코멧테일=
+    // 포커스 신호" 강등을 되돌림): 코멧 꼬리는 dim 이 아닌 모든 depends 엣지에서
+    // 포커스와 무관하게 흐른다(프로토타입 §13 `drawEdge`의 `state !== "dim"`).
+    // 위상 전진은 `updateParticles`(reduced-motion 이면 정지)가 소유하므로
+    // reduced-motion 사용자에겐 여기서도 미표시 → "아무 것도 안 움직인다" 유지.
+    if (state.reducedMotion === true) return;
 
-  // comet tail — three shrinking dots trailing the live pulse position,
-  // thinning toward hairline dust as altitude rises rather than fading via
-  // alpha (forbidden.md bans glow/alpha-based "signal" motifs). ego/선택
-  // 엣지는 더 큰 꼬리 + bright 인디고, normal 은 옅은 인디고(프로토타입 대칭).
-  const ego = egoState === "ego" || state.selected === true;
-  const baseSizes = emphasized ? COMET_TAIL_BASE_EMPHASIZED : ego ? COMET_TAIL_BASE_EGO : COMET_TAIL_BASE_NORMAL;
-  const tailColor = ego ? tokens.indigoBright : tokens.indigo;
+    // comet tail — three shrinking dots trailing the live pulse position,
+    // thinning toward hairline dust as altitude rises rather than fading via
+    // alpha (forbidden.md bans glow/alpha-based "signal" motifs). ego/선택
+    // 엣지는 더 큰 꼬리 + bright 인디고, normal 은 옅은 인디고(프로토타입 대칭).
+    const ego = egoState === "ego" || state.selected === true;
+    const baseSizes = emphasized ? COMET_TAIL_BASE_EMPHASIZED : ego ? COMET_TAIL_BASE_EGO : COMET_TAIL_BASE_NORMAL;
+    const tailColor = ego ? tokens.indigoBright : tokens.indigo;
+    COMET_TAIL_STEPS.forEach((step, i) => {
+      let tt = t - step;
+      if (tt < 0) tt += 1;
+      const point = bezierPoint(a, control, b, tt);
+      const size = baseSizes[i] + (COMET_TAIL_FAR_SIZES[i] - baseSizes[i]) * farT;
+      ctx.beginPath();
+      ctx.fillStyle = tailColor;
+      ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    return;
+  }
+
+  // Design Guardian 승인 처방 E — 선택(ego) 시 인시던트 contains 엣지도 코멧
+  // 흐름(일회성 버스트 아님, `updateParticles`가 소유한 지속 위상). 방향은
+  // source→target 그대로(부모→자식 typed fact, depends 처럼 역방향/방사
+  // 없음 — a/b 는 이미 source/target 스크린 좌표라 depends 와 동일한
+  // `bezierPoint(a, control, b, t)` 호출이면 자동으로 지켜진다). 꼬리는 항상
+  // NORMAL 티어([2.1,1.5,0.9], depends ego 의 [2.9,2.1,1.3]보다 한 단계
+  // 작게 — 잉크 위계 보존) + 표준 인디고(bright 금지) — ego/emphasized 승격
+  // 없음. `containsCometEligible`(캡 통과 여부)이 false 면 파티클 없이 본체
+  // stroke(위에서 이미 그려짐)만 유지. 선택 해제 시 egoState 가 "ego"를 벗어나
+  // 즉시(다음 프레임) 미표시 — 별도 소멸 애니메이션 불필요.
+  if (egoState !== "ego" || state.containsCometEligible !== true) return;
+  if (state.reducedMotion === true) return;
   COMET_TAIL_STEPS.forEach((step, i) => {
     let tt = t - step;
     if (tt < 0) tt += 1;
     const point = bezierPoint(a, control, b, tt);
-    const size = baseSizes[i] + (COMET_TAIL_FAR_SIZES[i] - baseSizes[i]) * farT;
+    const size = COMET_TAIL_BASE_NORMAL[i] + (COMET_TAIL_FAR_SIZES[i] - COMET_TAIL_BASE_NORMAL[i]) * farT;
     ctx.beginPath();
-    ctx.fillStyle = tailColor;
+    ctx.fillStyle = tokens.indigo;
     ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
     ctx.fill();
   });

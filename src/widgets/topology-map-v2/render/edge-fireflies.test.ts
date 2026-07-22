@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   advanceParticlePhase,
+  edgePairKey,
+  EGO_CONTAINS_COMET_LIMIT,
   fireflySeed,
   PULSE_DURATION_MS,
   PULSE_TRAIL_LAG,
   pulseHeadTrail,
   pulseScale,
+  selectEgoContainsComets,
   spawnHoverPulses,
   updateParticles,
   updatePulses,
@@ -93,6 +96,71 @@ describe("updateParticles", () => {
     updateParticles(edges, 0.016, false, (e) => (e.sourceId === "a" ? 0 : 0.2));
     expect(edges[0].t).toBe(0.1); // speed 0 → 정지
     expect(edges[2].t).not.toBe(0.9); // speed 0.2 → 전진
+  });
+
+  it("처방 E — isEgoContainsEligible 이 true 인 contains 엣지는 depends 처럼 전진한다", () => {
+    const edges = makeEdges();
+    updateParticles(
+      edges,
+      0.016,
+      false,
+      () => 0.075,
+      (e) => e.kind === "contains" && e.sourceId === "a" && e.targetId === "c",
+    );
+    expect(edges[1].t).toBeGreaterThan(0.1); // 이제 eligible contains 도 전진
+  });
+
+  it("처방 E — isEgoContainsEligible 이 false 인 contains 는 여전히 불변", () => {
+    const edges = makeEdges();
+    updateParticles(edges, 0.016, false, () => 0.075, () => false);
+    expect(edges[1].t).toBe(0.1);
+  });
+
+  it("처방 E — 인자 생략 시 기존 계약(contains 항상 불변) 유지", () => {
+    const edges = makeEdges();
+    updateParticles(edges, 0.016, false, () => 0.075);
+    expect(edges[1].t).toBe(0.1);
+  });
+});
+
+describe("edgePairKey", () => {
+  it("source target 순서로 조인한다", () => {
+    expect(edgePairKey("a", "b")).toBe("a b");
+  });
+});
+
+describe("selectEgoContainsComets", () => {
+  const edges = [
+    { sourceId: "hub", targetId: "x1" },
+    { sourceId: "hub", targetId: "x2" },
+    { sourceId: "hub", targetId: "x3" },
+  ];
+
+  it("결정론 — 같은 입력은 같은 결과(seed 랭크)", () => {
+    const a = selectEgoContainsComets(edges);
+    const b = selectEgoContainsComets(edges);
+    expect([...a].sort()).toEqual([...b].sort());
+  });
+
+  it("limit 미만이면 전부 포함", () => {
+    const selected = selectEgoContainsComets(edges, 24);
+    expect(selected.size).toBe(3);
+    for (const e of edges) expect(selected.has(edgePairKey(e.sourceId, e.targetId))).toBe(true);
+  });
+
+  it("limit 초과분은 seed 순 상위만 선택 — 총 개수는 limit 을 넘지 않는다", () => {
+    const many = Array.from({ length: 40 }, (_, i) => ({ sourceId: "hub", targetId: `n${i}` }));
+    const selected = selectEgoContainsComets(many, EGO_CONTAINS_COMET_LIMIT);
+    expect(selected.size).toBe(EGO_CONTAINS_COMET_LIMIT);
+  });
+
+  it("기본 limit = EGO_CONTAINS_COMET_LIMIT(24)", () => {
+    const many = Array.from({ length: 40 }, (_, i) => ({ sourceId: "hub", targetId: `n${i}` }));
+    expect(selectEgoContainsComets(many).size).toBe(24);
+  });
+
+  it("빈 입력은 빈 Set", () => {
+    expect(selectEgoContainsComets([]).size).toBe(0);
   });
 });
 

@@ -293,6 +293,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * 읽어 depth1 element 자식이 그려질 때 함께 잡히게 한다.
    */
   const realmTierKindsRef = useRef<ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null>(null);
+  /** 영역 루트의 contains 조상 체인 캐시 — 바깥 밀도 게이트가 영역 내부를 가리지 않게 펼침 취급할 집합. */
+  const realmExpandChainRef = useRef<{ rootId: string; chain: ReadonlySet<string> } | null>(null);
 
   const cameraRef = useRef<CameraAxes>({
     x: { value: 0, velocity: 0 },
@@ -401,6 +403,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * 빌드 시 1회 계산). 없으면 코멧이 없어 유휴 판정이 성립한다.
    */
   const hasDependsEdgesRef = useRef(false);
+  /**
+   * Design Guardian 승인 처방 E — 선택(ego) 시 인시던트 contains 엣지도 코멧이
+   * 흐르므로, 포커스가 걸려 있고 그래프에 contains 엣지가 하나라도 있으면
+   * 유휴 게이트가 얼지 않아야 한다(정확한 "이 포커스 노드에 물린 캡 안쪽
+   * 엣지가 있는가"까지는 굳이 안 따진다 — `hasDependsEdgesRef`와 같은 결의
+   * 월드-단위 coarse 플래그로 충분하고, 포커스가 없으면 어차피 깨어있을
+   * 이유가 없다).
+   */
+  const hasContainsEdgesRef = useRef(false);
   /** A2 — 마지막 활동 시각. 활동 플래그가 참인 프레임마다 갱신. */
   const lastActiveMsRef = useRef(0);
   /** A2 — 직전 프레임 카메라 값 (움직임 감지용). */
@@ -561,6 +572,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     worldRef.current = world;
     // R6 상시 혜성 — 유휴 게이트가 코멧 상시성을 알 수 있게 depends 유무를 캐시.
     hasDependsEdgesRef.current = world.edges.some((e) => e.kind === "depends");
+    hasContainsEdgesRef.current = world.edges.some((e) => e.kind === "contains");
     // 새 월드 = 이전 월드의 엣지를 겨냥한 펄스는 무효(엣지 id 가 옛 것).
     pulsesRef.current = [];
     // Seed the force sim off the concentric layout (spatial memory) and warm it
@@ -962,6 +974,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // rAF 자체가 브라우저에 의해 정지돼 배터리를 지킨다.
           egoTailAnimating:
             (!reducedMotionRef.current && hasDependsEdgesRef.current && tokens.edgePulseSpeed > 0) ||
+            // Design Guardian 처방 E — 포커스 중 인시던트 contains 코멧도 상시
+            // 흐름이라 유휴 게이트가 얼면 안 된다(depends 와 같은 idle-gate 결).
+            (!reducedMotionRef.current && focusedSlugRef.current !== null && hasContainsEdgesRef.current) ||
             pulsesRef.current.length > 0,
           emphasisTarget: hoveredNodeIdRef.current !== null || panelEmphasisNodeIdRef.current !== null || hoveredClusterIdRef.current !== null,
           breathing: !reducedMotionRef.current && world.nodes.some((n) => n.fresh),
@@ -1343,9 +1358,36 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // ref 를 읽는다 — 프레임 클로저가 stale realmRootId 를 캡처해 버튼
       // 클릭 진입에선 펼침이 안 먹던 결함(녹화 프레임 검수 실증).
       const liveRealmRootId = realmDataRef.current?.rootId ?? null;
-      const effectiveExpanded = liveRealmRootId
-        ? new Set([...expandedParentsRef.current, liveRealmRootId])
-        : expandedParentsRef.current;
+      // 소유자 실보고 (2026-07-23, capability 영역 텅 빈 링) — 루트만 펼침
+      // 취급하면 부족하다: 루트 자신이 바깥 세계에서 밀도 게이트에 접힌
+      // 자식(예: 역량 28개 도메인의 capability)이면 루트·멤버 전원이
+      // clusteredIds 에 걸려 영역이 통째로 비어 보인다. 루트의 contains
+      // 조상 체인까지 펼침 취급해 바깥 게이트가 영역 내부를 가리지 못하게
+      // 한다 (조상의 다른 자식들은 어차피 realm 밖 하드 컬 대상).
+      let effectiveExpanded: ReadonlySet<string> = expandedParentsRef.current;
+      if (liveRealmRootId) {
+        // 조상 체인은 rootId 기준으로 1회만 계산해 캐시 (프레임 루프 내부).
+        if (realmExpandChainRef.current?.rootId !== liveRealmRootId) {
+          const chain = new Set<string>([liveRealmRootId]);
+          let cursor: string | null = liveRealmRootId;
+          while (cursor) {
+            let parent: string | null = null;
+            for (const [pid, kids] of world.childrenByParent) {
+              if (kids.includes(cursor)) {
+                parent = pid;
+                break;
+              }
+            }
+            if (!parent || chain.has(parent)) break;
+            chain.add(parent);
+            cursor = parent;
+          }
+          realmExpandChainRef.current = { rootId: liveRealmRootId, chain };
+        }
+        const withRealm = new Set(expandedParentsRef.current);
+        for (const id of realmExpandChainRef.current.chain) withRealm.add(id);
+        effectiveExpanded = withRealm;
+      }
       const clusterState = computeTopologyClusterState(world, effectiveExpanded);
 
       // S2 파트 3a — 선택적 ego: 포커스 노드의 이웃이 limit 을 넘으면 DOI 상위
@@ -1354,6 +1396,34 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // 렌더/히트 경로를 타는 ClusterChip(ego:true)로 얹는다. 세션 임시 상태.
       let frameClusteredIds: ReadonlySet<string> = clusterState.clusteredIds;
       let frameChips: readonly ClusterChip[] = clusterState.chips;
+      // 영역 활성 시 — 멤버가 **바깥** 부모의 밀도 게이트로 접혀 있으면 해제
+      // (공유 요소의 1차 귀속처가 영역 밖 역량인 케이스). 영역 안 부모의
+      // 게이트(내부 +N 칩)는 유지한다. realmVisibleBounds 의 가시-멤버
+      // 규칙과 동일해야 결계/프레이밍과 드로우가 갈라지지 않는다.
+      if (liveRealmRootId && realmDataRef.current) {
+        const memberIds = realmDataRef.current.memberIds;
+        let needsFilter = false;
+        for (const id of frameClusteredIds) {
+          if (memberIds.has(id)) {
+            const pid = world.nodeById.get(id)?.parentId ?? null;
+            if (!pid || !memberIds.has(pid)) {
+              needsFilter = true;
+              break;
+            }
+          }
+        }
+        if (needsFilter) {
+          const filtered = new Set<string>();
+          for (const id of frameClusteredIds) {
+            if (memberIds.has(id)) {
+              const pid = world.nodeById.get(id)?.parentId ?? null;
+              if (!pid || !memberIds.has(pid)) continue;
+            }
+            filtered.add(id);
+          }
+          frameClusteredIds = filtered;
+        }
+      }
       {
         const focusId = focusedSlugRef.current;
         const neighbors = focusId ? world.neighborMap.get(focusId) : undefined;
@@ -1366,7 +1436,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           const ranked = rankEgoNeighborsByDOI(entries);
           const sel = selectiveEgoNeighbors(ranked, egoRevealBatchesRef.current);
           if (sel.hiddenCount > 0) {
-            frameClusteredIds = new Set<string>([...clusterState.clusteredIds, ...sel.hiddenNeighbors]);
+            // 영역 언클러스터 필터가 적용된 frameClusteredIds 를 기반으로 합친다
+            // (clusterState 원본을 다시 쓰면 위 realm 보정이 무효화된다).
+            frameClusteredIds = new Set<string>([...frameClusteredIds, ...sel.hiddenNeighbors]);
             const focusNode = world.nodeById.get(focusId);
             if (focusNode) {
               // 포커스 노드 바로 아래(월드)에 앵커 — 반지름 + 여유만큼 내린다.
