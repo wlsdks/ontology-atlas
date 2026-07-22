@@ -14,6 +14,7 @@
  */
 
 import type { CameraAxes, CameraTarget } from "../engine/camera";
+import { LABEL_OFFSET } from "../render/labels";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { computeClusterDiscBounds, computeEgoBounds, radiusForKind, type TopologyWorld } from "./topology-world";
 import type { WorldNode } from "./topology-world";
@@ -142,10 +143,14 @@ interface SafeInsets {
  * 만 본다)가 라벨 safe-rect 컬 라인 바로 밖으로 밀려 1440×900 기본 뷰에서만
  * 조용히 사라졌다 (1920 은 가로 제약 핏이라 세로 여유가 남아 미발현). 핏
  * 계산에서만 하단 인셋에 여유를 예약한다 — 라벨 컬 rect 와 카메라 이동
- * 가능 영역은 불변. 값 = max LABEL_OFFSET(project 20) + 슬랙 4 (Guardian
- * 산술 검증 — `render/labels.ts` LABEL_OFFSET 변경 시 함께 갱신할 것).
+ * 가능 영역은 불변.
+ *
+ * 값은 `render/labels.ts` 의 `LABEL_OFFSET` 에서 파생 — max LABEL_OFFSET
+ * (현재 project 20) + 슬랙 4. 리터럴 24 를 따로 유지하면 LABEL_OFFSET 이
+ * 바뀔 때 이 예약분이 조용히 드리프트할 수 있어 (Guardian follow-up),
+ * 상수 대신 매 프레임 파생시켜 항상 동기화 상태를 보장한다.
  */
-const OVERVIEW_LABEL_BOTTOM_ALLOWANCE = 24;
+const OVERVIEW_LABEL_BOTTOM_ALLOWANCE = Math.max(...Object.values(LABEL_OFFSET)) + 4;
 
 function readSafeInsets(tokens: SafeInsetTokens): SafeInsets {
   return {
