@@ -149,7 +149,11 @@ export function SearchHint({
           compact={compact}
           icon={<Search />}
           kbd={isMac ? '⌘K' : 'CtrlK'}
-          className={compact ? undefined : 'md:min-w-[176px] xl:min-w-[208px]'}
+          // 검수 1바퀴 결함 1 (2026-07-23) — EN 로케일 1440 폭에서 중앙 레인의
+          // 오른끝(검색 필)이 우측 클러스터("Switch to my data")와 겹쳤다.
+          // 영어 라벨이 길어질 때 예약 폭이 밀어내는 문제라, min-width 와 ⌘K
+          // 캡 예약을 2xl(1536+ — 1440 은 xl 이라 겹침 구간)부터로 미룬다.
+          className={compact ? undefined : '2xl:min-w-[208px] max-2xl:[&_[data-chip-kbd]]:hidden'}
           aria-label={t('searchAriaLabel')}
           title={t('searchTitle')}
         >
