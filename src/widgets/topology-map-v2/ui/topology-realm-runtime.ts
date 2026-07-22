@@ -95,7 +95,12 @@ function collectVisibleMemberTargets(
   const { clusteredIds } = computeTopologyClusterState(world, expandedParents);
   const out: Array<[string, { x: number; y: number }]> = [];
   for (const id of memberIds) {
-    if (clusteredIds.has(id)) continue;
+    if (clusteredIds.has(id)) {
+      // 접은 부모가 영역 **안** 멤버일 때만 접힘 유지 — 바깥 부모(공유 요소의
+      // 1차 귀속처 등)의 밀도 게이트는 영역 내부를 가리지 못한다.
+      const parentId = world.nodeById.get(id)?.parentId ?? null;
+      if (parentId && memberIds.has(parentId)) continue;
+    }
     const t = insideTargets.get(id);
     if (t) out.push([id, t]);
   }
@@ -140,7 +145,19 @@ export function buildRealmRuntimeData(
   expandedParents: ReadonlySet<string> = EMPTY_EXPANDED,
 ): RealmRuntimeData | null {
   if (!world.nodeById.has(rootId)) return null;
-  const subtree = extractRealmSubtree(rootId, world.childrenByParent);
+  // 멤버십은 원장/데이터시트와 같은 의미론 — **모든 contains edge** 를 걸어
+  // 공유(다중 부모) 요소도 데려온다. `childrenByParent` 는 밀도 게이트용
+  // 단일-부모 맵(마지막 edge 승자독식)이라 다른 역량에 주로 귀속된 공유
+  // 요소가 빠져 "요소 2 인데 영역이 텅 빈 링" 이 됐다 (소유자 실보고
+  // 2026-07-23, capability:builder-deep-link-focus 실증).
+  const containsChildren = new Map<string, string[]>();
+  for (const e of world.edges) {
+    if (e.kind !== "contains") continue;
+    const list = containsChildren.get(e.sourceId);
+    if (list) list.push(e.targetId);
+    else containsChildren.set(e.sourceId, [e.targetId]);
+  }
+  const subtree = extractRealmSubtree(rootId, containsChildren);
   const rings: LayoutRings = {
     domain: tokens.layoutRingDomain,
     capability: tokens.layoutRingCapability,

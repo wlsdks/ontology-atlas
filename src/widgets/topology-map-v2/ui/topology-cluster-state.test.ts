@@ -15,6 +15,7 @@ function node(id: string, x: number, y: number, kind: WorldNode["kind"] = "capab
     id,
     kind,
     label: id,
+    parentId: null,
     x,
     y,
     homeX: x,

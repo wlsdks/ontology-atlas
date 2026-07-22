@@ -29,6 +29,10 @@ export interface WorldNode {
    */
   homeX: number;
   homeY: number;
+  /** contains 단일(1차) 부모 id — 밀도 게이트의 접힘 귀속처. 다중 부모 공유
+   *  노드는 마지막 contains edge 의 부모 하나만 담는다 (영역 언클러스터
+   *  규칙이 "접은 부모가 영역 밖인가" 판정에 사용). */
+  parentId: string | null;
   isHub: boolean;
   fresh: boolean;
   /** Adapter contract (`TopologyV2Node`) has no staleness signal yet — always false until a follow-up adds one. */
@@ -328,6 +332,7 @@ export function buildTopologyWorld(
       y,
       homeX: x,
       homeY: y,
+      parentId: containsParentById.get(n.id) ?? null,
       isHub: n.isHub,
       fresh: n.recentlyUpdated,
       // 살아있는 지도 드리프트 — 어댑터가 vault mtime 으로 판정한 dusty 를
