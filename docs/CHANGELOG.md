@@ -23,6 +23,23 @@
   setState → 페이지 전체 재렌더) 방출을 미루고 정착 후 한 번만 방출. 전환 프레임에
   섞이던 tier-crossing 재렌더 차단(코너 tier 읽기는 정착 시 갱신).
 
+## 2026-07-22 — 지도 S7 "영역 대장(Realm Ledger)": 영역 전개 중 좌측 패널 변신
+
+영역 전개(`?realm=slug`) 중 좌측 패널(첫 실행 카드 + 전역 INDEX)이 전역 콘텐츠를
+그대로 보여줘 몰입이 깨지던 것을, **영역 전용 패널**로 변신시켰다 (fable 설계).
+
+- **전역 콘텐츠 숨김** — 영역 활성 시 첫 실행/샘플 카드, 전역 census, 전역 INDEX
+  트리, "AI가 함께 갱신 중" 푸터가 전부 숨고 영역 대장으로 크로스페이드(<200ms,
+  reduced-motion 즉시)된다.
+- **영역 헤더** — 루트 kind 글리프 + 제목 + 영역 census("요소 N · 역량 N · 깊이 N",
+  containment 서브트리 파생) + "영역 해제" 버튼(상단 칩과 같은 핸들러 2차 경로).
+- **영역 트리** — 루트 서브트리만 깊이 들여쓰기로. 행 클릭 = 지도 포커스, 개념 검색도
+  영역 스코프. 기존 `TopologyIndexTreeRow` · `filterTreeByQuery` 재사용.
+- **결계 관계** — 영역 밖으로 나가는 관계(경계 엣지)를 "바깥과 닿은 관계 N" 요약 +
+  상위 몇 개 나열. 각 행 "이 영역으로 이동"은 밖 노드의 도메인급 상위로 realm 을
+  교체(realm-to-realm 점프). census/경계 파생은 `views/home/lib/realm-ledger.ts`
+  순수 함수 + 테스트. 새 hue 없이 기존 패널 토큰만.
+
 ## 2026-07-22 — 빌더 2라운드: 수치 중복 제거 · 도구 내부어 정리 · elevation 토큰 · 미명명 드래프트 누적 방지
 
 `/ontology/edit` Guardian 감사 Medium 4건 (감사 증거 `.qa-scratch/builder-audit-2026-07/`).
