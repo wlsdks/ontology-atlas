@@ -1,0 +1,111 @@
+name: Vault freshness
+
+# R+ — PR freshness bot (⑦). Reusable workflow: this repo runs it directly on
+# every PR (`pull_request` trigger below); other repos with an ontology-atlas
+# vault can call it via `uses: <owner>/<repo>/.github/workflows/vault-freshness.yml@main`
+# from their own workflow (needs `permissions: pull-requests: write` at the
+# call site — GitHub Actions caps a reusable workflow's permissions at what
+# the caller grants).
+#
+# What it checks (side effect 0 on the vault itself):
+#   1. `scripts/validate-vault.mjs` — frontmatter integrity (same check as
+#      the local `pnpm vault:validate`).
+#   2. `scripts/vault-freshness-drift.mjs` — capability/element nodes whose
+#      referenced source changed in this PR but whose own `.md` did not.
+# Drift found → one PR comment (created once, then updated in place on every
+# push — never a new comment per push). Drift 0 → no comment, and any
+# previous comment from this bot is removed. Never fails the PR check itself;
+# this is an FYI, not a merge gate.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_call:
+    inputs:
+      vault-dir:
+        description: "Vault folder, repo-relative"
+        type: string
+        default: docs/ontology
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: vault-freshness-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  freshness:
+    name: Vault freshness check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event.pull_request != null
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      # No `pnpm install` — both scripts below only import node builtins +
+      # scripts/lib, so the whole job stays install-free and fast.
+      - name: Validate vault frontmatter
+        run: node scripts/validate-vault.mjs "${{ inputs.vault-dir || 'docs/ontology' }}"
+
+      - name: Compute vault freshness drift
+        run: |
+          node scripts/vault-freshness-drift.mjs \
+            --vault "${{ inputs.vault-dir || 'docs/ontology' }}" \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --json > vault-freshness-drift.json
+          node -e "const p=require('./vault-freshness-drift.json'); console.log(p.hasDrift ? p.staleNodes.length+' node(s) may go stale' : '0 node(s) at risk ✓')"
+
+      - name: Create or update PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const payload = JSON.parse(fs.readFileSync('vault-freshness-drift.json', 'utf8'));
+            const marker = '<!-- ontology-atlas-vault-freshness -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find((c) => typeof c.body === 'string' && c.body.includes(marker));
+
+            if (!payload.hasDrift) {
+              if (existing) {
+                await github.rest.issues.deleteComment({ owner, repo, comment_id: existing.id });
+              }
+              return;
+            }
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body: payload.commentMarkdown,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: payload.commentMarkdown,
+              });
+            }

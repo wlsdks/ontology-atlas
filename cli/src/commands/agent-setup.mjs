@@ -3,12 +3,14 @@
 
 import { COLORS } from '../lib/colors.mjs';
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   readFileSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { dirname, join, relative, resolve } from 'node:path';
 import { cwd } from 'node:process';
@@ -21,12 +23,13 @@ import {
   resolveTrailingVaultArg,
 } from '../lib/cli-args.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
+import { buildPreCommitHookContent } from '../lib/pre-commit-hook.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PKG_ROOT = resolve(__dirname, '..', '..');
 const require_ = createRequire(import.meta.url);
 
-const ALLOWED_FLAGS = ['--root', '--vault', '--write', '--json'];
+const ALLOWED_FLAGS = ['--root', '--vault', '--write', '--json', '--install-pre-commit-hook'];
 const WORKFLOW_GUIDE_PATH = 'docs/AGENT-GRAPH-WORKFLOW.md';
 const POST_CHANGE_SYNC_RULES = Object.freeze([
   'After non-trivial code changes, sync docs/ontology before finishing so Claude Code and Codex see the same graph.',
@@ -113,6 +116,10 @@ export async function runAgentSetup(args) {
     return 2;
   }
 
+  if (parsed.installPreCommitHook) {
+    result.preCommitHook = installPreCommitHook(result.codebaseRoot);
+  }
+
   if (parsed.json) {
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
     return result.summary.review > 0 || result.summary.missing > 0 ? 1 : 0;
@@ -120,6 +127,50 @@ export async function runAgentSetup(args) {
 
   render(result);
   return result.summary.review > 0 || result.summary.missing > 0 ? 1 : 0;
+}
+
+// R+ — `--install-pre-commit-hook`. Resolves the *actual* git hooks directory
+// (respects `core.hooksPath` and worktrees, unlike a hardcoded `.git/hooks`)
+// via `git rev-parse --git-path hooks`, then appends a managed
+// `ontology-atlas preflight --staged` block (see lib/pre-commit-hook.mjs for
+// the append-vs-create-vs-idempotent decision). Never overwrites an existing
+// hook body, never fails the whole `agent-setup` run if the root isn't a git
+// repo — it just reports `status: 'not-a-git-repo'`.
+function installPreCommitHook(codebaseRoot) {
+  let hooksDir;
+  try {
+    hooksDir = execFileSync('git', ['rev-parse', '--git-path', 'hooks'], {
+      cwd: codebaseRoot,
+      encoding: 'utf-8',
+    }).trim();
+  } catch (err) {
+    return {
+      status: 'not-a-git-repo',
+      message: `git rev-parse failed in ${codebaseRoot}: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+  const hookPath = resolve(codebaseRoot, hooksDir, 'pre-commit');
+  let existing = null;
+  if (existsSync(hookPath)) {
+    existing = readFileSync(hookPath, 'utf-8');
+  }
+  const { content, action } = buildPreCommitHookContent(existing);
+  if (action !== 'already-installed') {
+    mkdirSync(dirname(hookPath), { recursive: true });
+    writeFileSync(hookPath, content);
+    chmodSync(hookPath, 0o755);
+  }
+  return {
+    status: 'ok',
+    path: hookPath,
+    action,
+    message:
+      action === 'created'
+        ? 'created pre-commit hook running `ontology-atlas preflight --staged`'
+        : action === 'appended'
+          ? 'appended the preflight block to your existing pre-commit hook (existing hook body preserved)'
+          : 'pre-commit hook already runs ontology-atlas preflight — left untouched',
+  };
 }
 
 function buildAgentSetup(parsed) {
@@ -382,11 +433,18 @@ function render(result) {
   if (!result.sideEffect && (summary.missing > 0 || summary.review > 0)) {
     process.stdout.write(`\n${COLORS.dim}Run with --write to create missing files and example templates without overwriting existing configs.${COLORS.reset}\n`);
   }
+  if (result.preCommitHook) {
+    const hook = result.preCommitHook;
+    const hookColor = hook.status === 'ok' ? COLORS.green : COLORS.yellow;
+    process.stdout.write(`\n${COLORS.bold}Pre-commit hook:${COLORS.reset}\n`);
+    process.stdout.write(`  ${hookColor}${hook.status}${COLORS.reset} ${hook.message}\n`);
+    if (hook.path) process.stdout.write(`  ${COLORS.dim}${hook.path}${COLORS.reset}\n`);
+  }
 }
 
 function parseArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
-  const flags = { root: cwd(), vault: null, write: false, json: false };
+  const flags = { root: cwd(), vault: null, write: false, json: false, installPreCommitHook: false };
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i];
@@ -396,6 +454,7 @@ function parseArgs(args) {
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--write') flags.write = true;
     else if (a === '--json') flags.json = true;
+    else if (a === '--install-pre-commit-hook') flags.installPreCommitHook = true;
     else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
     else positional.push(a);
   }
@@ -487,9 +546,17 @@ function shellQuote(value) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  ontology-atlas agent-setup [vault] [--root path] [--write] [--json]\n\n` +
+      `  ontology-atlas agent-setup [vault] [--root path] [--write] [--json]\n` +
+      `                            [--install-pre-commit-hook]\n\n` +
       `Check or repair Claude Code / Cursor .mcp.json and Codex .codex/config.toml files for an existing vault.\n` +
       `The JSON and terminal output point to ${WORKFLOW_GUIDE_PATH} for CLI-only, MCP-connected, and graph DB comparison flows.\n` +
-      `Default root is cwd. Default vault follows OATLAS_VAULT, ./docs/ontology, then cwd.\n`,
+      `Default root is cwd. Default vault follows OATLAS_VAULT, ./docs/ontology, then cwd.\n\n` +
+      `${COLORS.bold}--install-pre-commit-hook${COLORS.reset}\n` +
+      `  Installs a git pre-commit hook at --root that runs\n` +
+      `  \`ontology-atlas preflight --staged\` before every commit. If a pre-commit\n` +
+      `  hook already exists, the block is appended (your existing hook body is\n` +
+      `  preserved); if our block is already present, nothing changes. The hook\n` +
+      `  is purely informational and never fails the commit — \`git commit\n` +
+      `  --no-verify\` still skips it like any other hook.\n`,
   );
 }
