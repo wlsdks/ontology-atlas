@@ -175,6 +175,18 @@
   --color-shadow-a42: rgba(0, 0, 0, 0.42);
   --color-shadow-a46: rgba(0, 0, 0, 0.46);
 
+  /* Elevation 사다리 — 떠 있는 표면이 "얼마나 위로 떴나"를 3계층으로 고정.
+     이전엔 ontology-edit 전반이 0_24px_72px·0_24px_80px·0_22px_54px·
+     0_18px_44px·0_18px_40px·0_10px_32px·0_6px_16px 같은 손 튜닝 섀도를
+     8종씩 흩뿌려 계층 관계가 값으로 읽히지 않았다. 세 층만 둔다:
+       1 = coach-mark / 캔버스에 붙는 임시 힌트·툴바·레일·인라인 인계
+       2 = popover  / 헤더 앵커 팝오버·관계 컴포저 (앵커된 패널)
+       3 = dialog   / 중앙 모달·확인 다이얼로그 (scrim 동반 최상단)
+     값은 기존 8종 중 계층별 대표값을 골라 alpha 토큰과 합성. */
+  --shadow-elevation-1: 0 18px 40px var(--color-shadow-a35);
+  --shadow-elevation-2: 0 24px 72px var(--color-shadow-a42);
+  --shadow-elevation-3: 0 24px 80px var(--color-shadow-a46);
+
   /* 모달/시트 배경 scrim. */
   --color-scrim-a54: rgba(0, 0, 0, 0.54);
   --color-scrim-a56: rgba(0, 0, 0, 0.56);
@@ -510,6 +522,11 @@
     --color-shadow-a22: rgba(0, 0, 0, 0.22);
     --color-shadow-a42: rgba(0, 0, 0, 0.42);
     --color-shadow-a46: rgba(0, 0, 0, 0.46);
+    /* Elevation 사다리 — 위 @theme 정의를 여기서도 명시 emit (Tailwind v4
+       회귀 방지). 값/근거는 위 @theme 블록 참고. coach-mark(1)<popover(2)<dialog(3). */
+    --shadow-elevation-1: 0 18px 40px var(--color-shadow-a35);
+    --shadow-elevation-2: 0 24px 72px var(--color-shadow-a42);
+    --shadow-elevation-3: 0 24px 80px var(--color-shadow-a46);
     --color-scrim-a54: rgba(0, 0, 0, 0.54);
     --color-scrim-a56: rgba(0, 0, 0, 0.56);
     --color-panel-overlay-a88: rgba(15, 16, 17, 0.88);

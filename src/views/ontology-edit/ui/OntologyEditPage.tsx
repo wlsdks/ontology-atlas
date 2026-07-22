@@ -44,6 +44,7 @@ import { useEphemeralEdges } from "../lib/use-ephemeral-edges";
 import { useIsWideViewport } from "../lib/use-is-wide-viewport";
 import { childKindForParent } from "../lib/builder-drop-to-add";
 import { isUntitledTitle } from "../lib/is-untitled-title";
+import { findReusableUnnamedDraft } from "../lib/find-reusable-unnamed-draft";
 import { downloadAtlasFrontmatter } from "../lib/export-frontmatter";
 import { downloadGraphML, downloadJsonLd } from "../lib/export-graph";
 import { BlastRadiusConfirm } from "./BlastRadiusConfirm";
@@ -1491,7 +1492,7 @@ export function OntologyEditPage() {
                 role="menu"
                 aria-label={t("headerOverflowAriaLabel")}
                 data-builder-popover=""
-                className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_24px_72px_var(--color-shadow-a42)]"
+                className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[var(--shadow-elevation-2)]"
               >
                 <button
                   type="button"
@@ -1634,7 +1635,7 @@ export function OntologyEditPage() {
               <div
                 id="builder-write-summary"
                 data-builder-popover=""
-                className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[min(980px,calc(100vw-2rem))] overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_24px_72px_var(--color-shadow-a42)]"
+                className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[min(980px,calc(100vw-2rem))] overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-2)]"
               >
                 {/* 헤더 X 닫기(감사 #1 ①) — 팝오버 자체를 닫는 명시적 어포던스. */}
                 <button
@@ -1677,7 +1678,7 @@ export function OntologyEditPage() {
                 id="builder-layout-settings"
                 aria-label={t("layoutGroupAriaLabel")}
                 data-builder-popover=""
-                className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-72 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_24px_72px_var(--color-shadow-a42)]"
+                className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-72 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[var(--shadow-elevation-2)]"
               >
                 <div role="radiogroup" aria-label={t("layoutModeAriaLabel")}>
                   <button
@@ -1784,6 +1785,22 @@ export function OntologyEditPage() {
             collapsed={paletteCollapsed}
             onToggleCollapsed={togglePalette}
             onAddNode={(kind) => {
+              // 감사 #10 — 이름을 안 붙인 임시 노드가 이미 있으면 새로 만들지
+              // 않고 그 노드를 재선택 + 이름 입력에 포커스한다. "(이름 필요)"
+              // 미명명 드래프트가 캔버스에 쌓이는 것을 막는다(한 번에 하나만).
+              const reuseId = findReusableUnnamedDraft(
+                ephemeralNodes,
+                t("untitledPlaceholder"),
+              );
+              if (reuseId) {
+                setSelectedId(reuseId);
+                setDetailsOpen(true);
+                // 이미 선택돼 있어 node.id 가 안 바뀌어도 카메라가 그 노드로
+                // 향하도록 focus 토큰을 올린다(EphemeralDetail 은 node.id 변화
+                // 시 이름 입력을 자동 포커스 — 다른 노드에서 넘어오면 그때 발화).
+                setFocusToken((n) => n + 1);
+                return;
+              }
               const newId = addNode(kind);
               // 추가 직후 상세 sheet 가 바로 열리도록 self-select.
               setSelectedId(newId);
@@ -2114,7 +2131,7 @@ export function OntologyEditPage() {
               if (event.target === event.currentTarget) setDetailsOpen(false);
             }}
           >
-            <div className="w-full max-w-[720px] overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_var(--color-shadow-a46)]">
+            <div className="w-full max-w-[720px] overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)]">
               <header className="flex items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
                 <div className="min-w-0">
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
@@ -2164,7 +2181,7 @@ export function OntologyEditPage() {
               if (event.target === event.currentTarget) setAnchorsOpen(false);
             }}
           >
-            <div className="w-full max-w-[680px] overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_var(--color-shadow-a46)]">
+            <div className="w-full max-w-[680px] overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)]">
               <header className="flex items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">

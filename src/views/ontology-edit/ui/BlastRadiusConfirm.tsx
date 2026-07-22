@@ -73,7 +73,7 @@ export function BlastRadiusConfirm({ open, slug, title, backlinks, onCancel, onC
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="w-full max-w-lg rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_24px_64px_var(--color-shadow-a50)]">
+      <div className="w-full max-w-lg rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)]">
         <header className="flex items-start justify-between gap-3 border-b border-[color:var(--color-divider)] px-6 py-4">
           <div className="flex items-start gap-3">
             <span

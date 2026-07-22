@@ -72,7 +72,7 @@ export function RelationPostSaveHandoff({
   return (
     <aside
       data-testid="builder-relation-post-save-handoff"
-      className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-4 z-40 w-[min(520px,calc(100%-2rem))] rounded-lg border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-panel)] p-3 shadow-[0_18px_44px_var(--color-shadow-a25)]"
+      className="pointer-events-auto absolute bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-4 z-40 w-[min(520px,calc(100%-2rem))] rounded-lg border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-panel)] p-3 shadow-[var(--shadow-elevation-1)]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-2.5">
