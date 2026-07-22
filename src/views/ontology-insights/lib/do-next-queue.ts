@@ -75,7 +75,8 @@ export function buildDoNextQueue(
       id: `neglected-hub:${node.id}`,
       rowKind: "neglected-hub",
       nodeId: node.id,
-      title: node.title,
+      // 과제 ⑩ — "할 일" 큐 행도 표시용 짧은 제목.
+      title: node.display ?? node.title,
       nodeKind: node.kind,
       degree,
       agoDays,

@@ -151,6 +151,32 @@ describe("FullDetailA1", () => {
     expect(screen.getByText("domains/a")).toBeInTheDocument();
   });
 
+  it("과제 ⑩ — fullTitle 이 title 과 다르면 secondary 텍스트로 렌더", () => {
+    renderFullDetail({
+      node: {
+        id: "domain:a",
+        title: "CLI Developer Entry",
+        fullTitle: "CLI Developer Entry (49 commands — vault + MCP verify + ...)",
+        kind: "domain",
+        slug: "domains/a",
+        fresh: true,
+      },
+    });
+    expect(screen.getByText("CLI Developer Entry")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("full-detail-a1-full-title"),
+    ).toHaveTextContent(
+      "CLI Developer Entry (49 commands — vault + MCP verify + ...)",
+    );
+  });
+
+  it("과제 ⑩ — fullTitle 이 title 과 같으면 secondary 텍스트를 생략", () => {
+    renderFullDetail();
+    expect(
+      screen.queryByTestId("full-detail-a1-full-title"),
+    ).not.toBeInTheDocument();
+  });
+
   it("engraved metric strip 이 담는 것/쓰는 곳/기대는 곳/reach 를 한 줄로", () => {
     renderFullDetail();
     const metric = screen.getByText(/담는 것 1/);

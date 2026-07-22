@@ -55,6 +55,37 @@ wiki MCP(예: Atlassian 공식 Confluence MCP)가 페이지를 읽어오면, 그
   — 한 표로 비교), `mcp/README.md` `absorb_document` 항목에 wiki-export 사용례
   2줄 추가.
 
+## 2026-07-23 — 표시 이름 레이어 (긴 title → 짧은 표시명)
+
+dogfood vault 일부 노드 title 이 40단어+ (예: `capabilities/cli-developer-entry`
+— "CLI Developer Entry (49 commands — vault + MCP verify + ...)"). 토폴로지
+라벨·INDEX 행·노드 팝오버·상세 헤더가 이걸 그대로 그리면 지저분하고 잘려
+비개발자 가독성을 해쳤다. 별도 store 없이 렌더 표면에서만 짧은 이름을
+파생하는 표시 레이어를 추가.
+
+- **`deriveDisplayTitle(frontmatter, title)`** (`src/shared/lib/derive-display-title.ts`)
+  — 순수 함수. 우선순위: (a) frontmatter `display:` 필드, (b) title 의 첫
+  " (" 앞부분, (c) title 그대로. 최대 길이 컷 없음 — 괄호 규칙이 이미 대부분의
+  긴 title 을 충분히 줄인다.
+- **적용 표면** — 토폴로지 캔버스 노드 라벨, INDEX 패널 행, 노드 팝오버 헤더 +
+  연결 행, `/ontology/insights` 허브·신선도·의존 랭킹·할 일 큐, 도메인 용량
+  카드, 프로젝트 카드 top capability, 엣지 문장/양 끝 노드, 브라우저 탭 타이틀
+  까지 일관 적용. **전체 상세**(`FullDetailA1`) 헤더는 표시명을 크게, 원본
+  title 은 다를 때만 그 아래 secondary 텍스트로 보존(정보 은닉 아님, 계층화).
+  검색/매칭(`matchOntologyNodes`)은 계속 title 전체로 — 표시만 줄이고 매칭
+  범위는 그대로.
+- **schema** — `mcp/src/schema.mjs` / `cli/src/lib/schema.mjs` 에 optional
+  `display` 필드 추가(두 schema 동일 유지, 계약 테스트 갱신). `add_concept` /
+  `ontology-atlas add` / `import` 모두 이 필드를 그대로 보존한다.
+- dogfood vault 의 title 80자+ 노드 3개(`cli-developer-entry`,
+  `session-start-ontology-context`, `ontology-bootstrap-skill`)에 `display:`
+  필드 추가.
+- 신규 vitest 단위 테스트(파생 함수 9케이스 + 통합 지점 3케이스) + 관련 기존
+  테스트 전체 green, `pnpm exec tsc --noEmit` clean, `pnpm vault:validate`
+  clean, Playwright 로 실 dogfood 데이터 확인(캔버스 라벨 "CLI Developer
+  Entry (49 commands…)" → "CLI Developer Entry", 팝오버·INDEX·전체 상세 모두
+  동일 축약, 전체 상세는 원본 title 을 secondary 로 보존).
+
 ## 2026-07-23 — 발자국 트레일 (걸어온 길)
 
 지도에서 여러 노드를 오가며 탐색하다 보면 "방금 어디를 봤더라"를 잃는다. 세션

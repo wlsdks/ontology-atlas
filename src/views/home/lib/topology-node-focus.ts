@@ -31,6 +31,11 @@ export interface TopologyNodeFocusConnection {
 export interface TopologyNodeFocusModel {
   id: string;
   title: string;
+  /**
+   * 과제 ⑩ — 표시용 짧은 제목. 컴팩트 팝오버 헤더는 이것을 그린다(전체
+   * `title` 은 "전체 상세 →" opt-in 표면에서만 secondary 로 보존).
+   */
+  displayTitle: string;
   kind: string;
   summary: string | null;
   sourceSlug: string | null;
@@ -56,7 +61,7 @@ export function buildTopologyNodeFocus(
       const relationQuality = classifyTopologyRelationQuality(relation.edge);
       return {
         id: relation.other?.id ?? relation.edge.id,
-        title: relation.other?.title ?? relation.edge.id,
+        title: relation.other?.display ?? relation.other?.title ?? relation.edge.id,
         kind: relation.other?.kind ?? "unknown",
         direction: relation.direction,
         relationType: relation.edge.type,
@@ -69,6 +74,7 @@ export function buildTopologyNodeFocus(
   return {
     id: node.id,
     title: node.title,
+    displayTitle: node.display ?? node.title,
     kind: node.kind,
     summary: node.summary ?? null,
     sourceSlug: model.sourceSlug,

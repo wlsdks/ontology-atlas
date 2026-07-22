@@ -107,7 +107,9 @@ export function buildTopologyV2Graph(
 
   const v2Nodes: TopologyV2Node[] = includedNodes.map((node) => ({
     id: node.id,
-    label: node.title,
+    // 과제 ⑩ — 캔버스 라벨은 표시용 짧은 제목. 긴 title(괄호 부연 설명
+    // 포함)을 그대로 그리면 지저분하고 잘린다.
+    label: node.display ?? node.title,
     kind: node.kind as RenderableKind,
     size: subtreeWeightBySlug.get(node.id) ?? 0,
     x: 0,

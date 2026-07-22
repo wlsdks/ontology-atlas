@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-22T16:33:40.390Z",
+  "generatedAt": "2026-07-22T16:37:32.518Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2820,6 +2820,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-23 — 표시 이름 레이어 (긴 title → 짧은 표시명)",
+          "slug": "2026-07-23-표시-이름-레이어-긴-title-짧은-표시명"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-23 — 발자국 트레일 (걸어온 길)",
           "slug": "2026-07-23-발자국-트레일-걸어온-길"
         },
@@ -4325,8 +4330,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. vault 가 자라면 일부 노드는 몇 달씩 방치되는데, 지도는 모든 노드를 똑같이 \"멀쩡하게\" 그려 신선도 정보가 /ontology/insights 에 격",
-      "wordCount": 33910,
-      "updatedAt": "2026-07-23T01:33:40+09:00",
+      "wordCount": 34165,
+      "updatedAt": "2026-07-23T01:37:32+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5459,7 +5464,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
       "wordCount": 11565,
-      "updatedAt": "2026-07-23T01:33:40+09:00",
+      "updatedAt": "2026-07-23T01:34:11+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6268,6 +6273,7 @@
         "slug": "capabilities/cli-developer-entry",
         "kind": "capability",
         "title": "CLI Developer Entry (49 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + agent handoff + growth/maintenance queue + graph deep dive)",
+        "display": "CLI Developer Entry",
         "domain": "onboarding-ux",
         "dependencies": [
           "capabilities/mcp-server",
@@ -6398,7 +6404,7 @@
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
       "wordCount": 10509,
-      "updatedAt": "2026-07-23T01:09:59+09:00",
+      "updatedAt": "2026-07-23T01:37:32+09:00",
       "linksOut": []
     },
     {
@@ -6673,6 +6679,7 @@
         "slug": "capabilities/ontology-bootstrap-skill",
         "kind": "capability",
         "title": "Ontology-Bootstrap Skill (.claude/skills/ontology-bootstrap)",
+        "display": "Ontology-Bootstrap Skill",
         "domain": "ai-agent-partner",
         "elements": [
           ".claude/skills/ontology-bootstrap/SKILL.md"
@@ -6702,7 +6709,7 @@
       ],
       "excerpt": "R16 follow-up — /ontology-bootstrap slash skill 의 cold-start counterpart. /ontology-sync 가 이미 자란 vault 의 incremental sync 라면, 이 skill 은 fresh init 직후 빈 vault 를 codebase 에서 한 번에 채우는 흐름. 1. listkinds — vault 가 진짜 cold-start 인지 (≤ 5 nodes) 확인 2. analyzerepostructure 1 회 호출 (mcp 도구, R16 v0.8.0) — package.json / README.md H",
       "wordCount": 258,
-      "updatedAt": "2026-05-09T16:48:16+09:00",
+      "updatedAt": "2026-07-23T01:37:32+09:00",
       "linksOut": []
     },
     {
@@ -6909,6 +6916,7 @@
         "slug": "capabilities/session-start-ontology-context",
         "kind": "capability",
         "title": "SessionStart Ontology Context Injection (.claude/hooks/inject-ontology-summary.sh)",
+        "display": "SessionStart Ontology Context Injection",
         "domain": "ai-agent-partner",
         "elements": [
           ".claude/hooks/inject-ontology-summary.sh",
@@ -6924,7 +6932,7 @@
       "headings": [],
       "excerpt": "Claude Code / Codex run a repo-local SessionStart hook that injects a compact ontology vault census into agent context. The hook is intentionally small for token budget reasons: it reports total node count, kind distribution, and only an actionable drift warning when unresolved refs or compile issues exist. It does not",
       "wordCount": 111,
-      "updatedAt": "2026-06-12T00:56:20+09:00",
+      "updatedAt": "2026-07-23T01:37:32+09:00",
       "linksOut": []
     },
     {

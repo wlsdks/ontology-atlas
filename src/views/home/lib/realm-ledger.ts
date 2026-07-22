@@ -147,9 +147,9 @@ export function computeRealmBoundary(input: {
     crossings.push({
       edgeId: edge.id,
       fromId: from.id,
-      fromTitle: from.title,
+      fromTitle: from.display ?? from.title,
       toId: to.id,
-      toTitle: to.title,
+      toTitle: to.display ?? to.title,
       relationType: edge.type,
       outsideId: outsideNode.id,
       jumpRealmId,

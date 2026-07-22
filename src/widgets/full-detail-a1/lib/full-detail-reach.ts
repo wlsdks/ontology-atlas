@@ -89,7 +89,9 @@ export function buildFullDetailReachModel(
     const domainRows: FullDetailReachDomainRow[] = Array.from(counts.entries())
       .map(([domainId, count]) => ({
         domainId,
-        domainTitle: domainId ? (nodeById.get(domainId)?.title ?? null) : null,
+        domainTitle: domainId
+          ? (nodeById.get(domainId)?.display ?? nodeById.get(domainId)?.title ?? null)
+          : null,
         count,
         isSelf: domainId !== null && domainId === selfDomainId,
       }))

@@ -156,6 +156,8 @@ export function groupConnectionsByRole(
 export interface ConnectionSourceNode {
   id: string;
   title: string;
+  /** 과제 ⑩ — 표시용 짧은 제목(있으면). 이웃 행 라벨은 이것을 우선 쓴다. */
+  display?: string;
   kind: string;
 }
 export interface ConnectionSourceEdge {
@@ -193,7 +195,7 @@ export function buildConnections(
       seen.add(key);
       outgoing.push({
         id: other.id,
-        title: other.title,
+        title: other.display ?? other.title,
         kind: other.kind,
         relationType: edge.type,
         direction: "outgoing",
@@ -206,7 +208,7 @@ export function buildConnections(
       seen.add(key);
       incoming.push({
         id: other.id,
-        title: other.title,
+        title: other.display ?? other.title,
         kind: other.kind,
         relationType: edge.type,
         direction: "incoming",

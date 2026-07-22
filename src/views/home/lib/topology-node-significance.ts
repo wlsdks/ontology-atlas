@@ -103,7 +103,7 @@ export function buildNodeSignificance(
 
   const names = model.previewRelations
     .filter((relation) => relation.direction === "outgoing")
-    .map((relation) => relation.other?.title)
+    .map((relation) => relation.other?.display ?? relation.other?.title)
     .filter((title): title is string => Boolean(title))
     .slice(0, nameLimit);
 

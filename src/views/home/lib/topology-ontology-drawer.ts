@@ -151,7 +151,7 @@ export function buildTopologyOntologyDrawerModel(
     for (const e of incoming) {
       const src = nodeById.get(e.from);
       if (src && src.kind === "domain") {
-        ownerDomain = { id: src.id, title: src.title };
+        ownerDomain = { id: src.id, title: src.display ?? src.title };
         break;
       }
     }

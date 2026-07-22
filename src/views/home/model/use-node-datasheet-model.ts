@@ -117,7 +117,8 @@ export function useNodeDatasheetModel({
     return {
       slug,
       nodeId: selectedOntologyNode.id,
-      title: nodeFocus.title,
+      // 과제 ⑩ — 컴팩트 팝오버 헤더는 표시용 짧은 제목.
+      title: nodeFocus.displayTitle,
       kind: nodeFocus.kind,
       domain: nodeFocusData?.significance.ownerDomainId
         ? {

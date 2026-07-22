@@ -88,7 +88,8 @@ export function computeFreshnessSummary(
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
   const parentOf = buildContainmentParents(edges, nodeById);
   const domainNodes = nodes.filter((n) => n.kind === "domain");
-  const domainTitleById = new Map(domainNodes.map((d) => [d.id, d.title]));
+  // 과제 ⑩ — 도메인 표시용 짧은 제목.
+  const domainTitleById = new Map(domainNodes.map((d) => [d.id, d.display ?? d.title]));
 
   // 노드별 (updatedAt, domainId) 해석 — 한 번만.
   type Resolved = { node: KnowledgeGraphNode; updatedAt: string | null; domainId: string | null };
@@ -138,7 +139,7 @@ export function computeFreshnessSummary(
       const daysAgo = latestMs !== null ? Math.floor((referenceDate.getTime() - latestMs) / DAY_MS) : null;
       return {
         domainId: domain.id,
-        domainTitle: domain.title,
+        domainTitle: domain.display ?? domain.title,
         weeks,
         mostRecentUpdatedAt: latestMs !== null ? new Date(latestMs).toISOString() : null,
         daysAgo,
@@ -159,7 +160,8 @@ export function computeFreshnessSummary(
     .slice(0, options?.recentLimit ?? 8)
     .map((r) => ({
       nodeId: r.node.id,
-      title: r.node.title,
+      // 과제 ⑩ — 최근 갱신 목록도 표시용 짧은 제목.
+      title: r.node.display ?? r.node.title,
       kind: r.node.kind,
       domainTitle: r.domainId ? (domainTitleById.get(r.domainId) ?? null) : null,
       updatedAt: r.updatedAt,

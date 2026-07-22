@@ -81,7 +81,9 @@ export function computeDomainCensusRows(
 
     rows.push({
       id: node.id,
-      title: node.title,
+      // 과제 ⑩ — 표시용 짧은 제목. INDEX 서브카운트 · 도메인 용량 카드 ·
+      // /projects 도메인 목록 · MiniDomainMap 이 전부 이 rows 를 공유한다.
+      title: node.display ?? node.title,
       capabilityCount,
       elementCount,
       total: capabilityCount + elementCount,

@@ -35,9 +35,10 @@ export function buildDependsOnRows(
     } else {
       byPair.set(key, {
         fromId: from.id,
-        fromTitle: from.title,
+        // 과제 ⑩ — "가장 많이 기대는 곳" 표에도 표시용 짧은 제목.
+        fromTitle: from.display ?? from.title,
         toId: to.id,
-        toTitle: to.title,
+        toTitle: to.display ?? to.title,
         count: 1,
       });
     }

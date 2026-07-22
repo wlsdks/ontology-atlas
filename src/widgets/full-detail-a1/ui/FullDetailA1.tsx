@@ -39,7 +39,12 @@ import { FullDetailA1ReachPanel } from "./full-detail-a1-reach-panel";
 
 export interface FullDetailA1Node {
   id: string;
+  /** 과제 ⑩ — 표시용 짧은 제목 (display 필드 우선, 없으면 title 의 괄호
+   * 부연 설명 컷). 헤더 h1 은 이것을 크게 그린다. */
   title: string;
+  /** 원본 vault title 전체 — `title` 과 다를 때만 h1 아래 secondary 텍스트로
+   * 보존한다(정보 은닉이 아니라 계층화). 같으면 렌더 생략. */
+  fullTitle?: string;
   kind: string;
   /** Vault slug / evidence path shown mono top-right and used in the
    * agent-handoff call chain. */
@@ -188,6 +193,17 @@ export function FullDetailA1({
           <h1 className="text-display font-semibold tracking-[-0.015em] text-[color:var(--topology-v2-panel-text-primary)]">
             {node.title}
           </h1>
+          {/* 과제 ⑩ — 표시명이 원본 title 을 축약한 경우, 전체 title 을
+              secondary 텍스트로 보존한다(정보 은닉이 아니라 계층화). 같으면
+              생략(중복 렌더 방지). */}
+          {node.fullTitle && node.fullTitle !== node.title ? (
+            <p
+              data-testid="full-detail-a1-full-title"
+              className="mt-0.5 truncate text-body text-[color:var(--topology-v2-panel-text-tertiary)]"
+            >
+              {node.fullTitle}
+            </p>
+          ) : null}
           <div className="mt-1 flex items-center gap-2 text-body text-[color:var(--topology-v2-panel-text-tertiary)]">
             <span
               aria-hidden="true"

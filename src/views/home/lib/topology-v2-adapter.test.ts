@@ -56,6 +56,23 @@ describe("buildTopologyV2Graph — regression: TopologyMapV2 must not be mounted
     });
   });
 
+  it("과제 ⑩ — 캔버스 label 은 node.display 가 있으면 그것, 없으면 title 그대로", () => {
+    const nodes = [
+      node({
+        id: "capability:cli-developer-entry",
+        kind: "capability",
+        title: "CLI Developer Entry (49 commands — vault + MCP verify + ...)",
+        display: "CLI Developer Entry",
+      }),
+      node({ id: "domain:auth", kind: "domain", title: "Auth" }),
+    ];
+    const graph = buildTopologyV2Graph(nodes, []);
+    const shortened = graph.nodes.find((n) => n.id === "capability:cli-developer-entry");
+    const plain = graph.nodes.find((n) => n.id === "domain:auth");
+    expect(shortened?.label).toBe("CLI Developer Entry");
+    expect(plain?.label).toBe("Auth");
+  });
+
   it("drops edges whose endpoint was excluded (e.g. a document) so the world builder never sees dangling refs", () => {
     const nodes = [
       node({ id: "project:ontology-atlas", kind: "project" }),

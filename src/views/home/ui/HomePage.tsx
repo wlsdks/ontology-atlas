@@ -625,9 +625,12 @@ export function HomePage() {
     );
     const why = edgeRecord?.label?.trim() || null;
     const typeLabel = relationVocabulary(selectedEdge.relationType, "formal");
+    // 과제 ⑩ — 엣지 문장/양 끝 노드 라벨은 표시용 짧은 제목.
+    const fromDisplay = from.display ?? from.title;
+    const toDisplay = to.display ?? to.title;
     const sentence = t(`edgeSentence.${normalizeEdgeSentenceKey(selectedEdge.relationType)}`, {
-      from: from.title,
-      to: to.title,
+      from: fromDisplay,
+      to: toDisplay,
     });
     const declaredIso = selectedEdge.declaredBySlug
       ? docFreshnessIndex.get(selectedEdge.declaredBySlug)
@@ -638,8 +641,8 @@ export function HomePage() {
       typeLabel,
       fromId: from.id,
       toId: to.id,
-      fromTitle: from.title,
-      toTitle: to.title,
+      fromTitle: fromDisplay,
+      toTitle: toDisplay,
       declaredBy: selectedEdge.declaredBySlug
         ? { slug: selectedEdge.declaredBySlug, href: buildDocsVaultHref({ slug: selectedEdge.declaredBySlug }) }
         : null,
@@ -857,7 +860,8 @@ export function HomePage() {
       new Set(
         [
           selectedProject?.name,
-          selectedOntologyNode?.title,
+          // 과제 ⑩ — 브라우저 탭 타이틀도 표시용 짧은 제목.
+          selectedOntologyNode?.display ?? selectedOntologyNode?.title,
           t('documentTitle'),
           "ontology-atlas",
         ].filter((value): value is string => Boolean(value)),
@@ -1269,7 +1273,10 @@ export function HomePage() {
     return {
       node: {
         id: selectedOntologyNode.id,
-        title: nodeFocus.title,
+        // 과제 ⑩ — 헤더는 표시용 짧은 제목 크게 + 원본 title 은 fullTitle 로
+        // secondary 보존(FullDetailA1 이 다를 때만 렌더).
+        title: nodeFocus.displayTitle,
+        fullTitle: nodeFocus.title,
         kind: nodeFocus.kind,
         slug,
         fresh: changedSlugs.has(selectedOntologyNode.id),
