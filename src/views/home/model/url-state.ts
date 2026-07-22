@@ -60,6 +60,15 @@ export interface HomeRouteState {
    * HomePage 가 Set 으로 변환해 지도로 내린다.
    */
   expandedParents: string[];
+  /**
+   * "영역 전개" (S4, fable 설계) — 지도가 이 노드의 세계로 전환된 상태
+   * (`?realm=slug`). non-null 이면 그 노드의 containment 서브트리만 남기고
+   * 그 노드를 임시 루트로 재배치한 "영역" 뷰를 렌더한다. URL 에 사는 이유:
+   * 공유 링크·에이전트가 "지금 어느 영역 안인가"를 그대로 재현/가독할 수 있어야
+   * 하기 때문. 진입 시 기존 `p`(선택)·`open`(밀도 게이트 확장)은 클리어된다
+   * (`enterRealmRouteState`) — 영역은 새 좌표계이므로 이전 확장 상태가 무의미하다.
+   */
+  realmSlug: string | null;
 }
 
 const HOME_QUERY_KEYS = {
@@ -76,6 +85,7 @@ const HOME_QUERY_KEYS = {
   create: "create",
   index: "index",
   open: "open",
+  realm: "realm",
   via: ONTOLOGY_DEEPLINK_VIA_KEY,
 } as const;
 
@@ -107,6 +117,7 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   indexState: null,
   insightsReturnTab: null,
   expandedParents: [],
+  realmSlug: null,
 };
 
 /**
@@ -134,6 +145,29 @@ export function toggleExpandedParent(current: readonly string[], parentId: strin
   return current.includes(parentId)
     ? current.filter((id) => id !== parentId)
     : [...current, parentId];
+}
+
+/**
+ * "영역 전개" 진입 — 지도를 `slug` 노드의 세계로 전환한다. 영역은 새 좌표계라
+ * 이전 선택(`p`)·밀도 게이트 확장(`open`)·경로 소스는 클리어한다(spec: "realm
+ * 전환 시 기존 open/p 는 클리어"). 순수 함수 — HomePage 가 URL 왕복한다.
+ */
+export function enterRealmRouteState(
+  current: HomeRouteState,
+  slug: string,
+): HomeRouteState {
+  return {
+    ...current,
+    realmSlug: slug,
+    selectedSlug: null,
+    focusedHubSlug: null,
+    expandedParents: [],
+  };
+}
+
+/** "영역 전개" 해제 — 전체 지도로 복귀 (`?realm=` 제거). 선택도 함께 비운다. */
+export function exitRealmRouteState(current: HomeRouteState): HomeRouteState {
+  return { ...current, realmSlug: null, selectedSlug: null, focusedHubSlug: null };
 }
 
 export function parseHomeRouteState(
@@ -190,6 +224,7 @@ export function parseHomeRouteState(
     expandedParents: parseExpandedParentsParam(
       searchParams.get(HOME_QUERY_KEYS.open),
     ),
+    realmSlug: searchParams.get(HOME_QUERY_KEYS.realm) || null,
   };
 }
 
@@ -317,6 +352,7 @@ export function applyHomeRouteState(
     HOME_QUERY_KEYS.open,
     state.expandedParents.length > 0 ? state.expandedParents.join(",") : null,
   );
+  setOrDelete(next, HOME_QUERY_KEYS.realm, state.realmSlug);
   setOrDelete(
     next,
     HOME_QUERY_KEYS.via,

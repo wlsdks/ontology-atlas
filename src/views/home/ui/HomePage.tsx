@@ -115,6 +115,8 @@ import {
   selectTopologyPathRouteState,
   resolveTopologyNodeClickRouteState,
   toggleExpandedParent,
+  enterRealmRouteState,
+  exitRealmRouteState,
   type TopologyAnalysisMode,
 } from "../model/url-state";
 import {
@@ -176,6 +178,7 @@ import {
   normalizeKindLabelKey,
 } from "../lib/topology-node-significance";
 import { TopologyPathChip } from "./TopologyPathChip";
+import { TopologyRealmChip } from "./TopologyRealmChip";
 import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import { TopologyRelationLegend } from "./TopologyRelationLegend";
 import { TopologyReviewLink } from "./TopologyReviewLink";
@@ -283,6 +286,7 @@ export function HomePage() {
     indexState,
     insightsReturnTab,
     expandedParents: expandedParentSlugs,
+    realmSlug,
   } = routeState;
   const renderProjects = projects;
   // 밀도 게이트 (fable 설계) — URL `?open=` 의 부모 slug 목록을 Set 으로
@@ -304,6 +308,17 @@ export function HomePage() {
     },
     [setRouteState],
   );
+  // S4 "영역 전개" — 궤도 버튼/데이터시트 액션 → 이 노드의 세계로 전환(URL 왕복).
+  const handleEnterRealm = useCallback(
+    (slug: string) => {
+      setRouteState((current) => enterRealmRouteState(current, slug));
+    },
+    [setRouteState],
+  );
+  // S4 — 영역 해제(칩 ✕ / Esc). 전체 지도로 복귀.
+  const handleExitRealm = useCallback(() => {
+    setRouteState((current) => exitRealmRouteState(current));
+  }, [setRouteState]);
   // INDEX panel (B3 허브가 곧 지도) — the new default left occupant. Preference
   // persists in localStorage; `?index=` (parsed into `routeState.indexState`)
   // wins for deep-linking (`resolveIndexPanelState` precedence). The analysis
@@ -911,6 +926,13 @@ export function HomePage() {
   const canvasSelectedSlug = selectedProject?.slug ?? selectedOntologyNode?.id ?? selectedSlug;
   const drawerProject = selectedProject;
 
+  // S4 "영역 전개" — 현재 영역 루트 노드의 제목(칩 표시용). 그래프에서 못 찾으면
+  // slug 자체를 fallback 으로 쓴다(전환 직후 그래프 재빌드 타이밍 방어).
+  const realmTitle = useMemo(() => {
+    if (!realmSlug) return null;
+    return topologyV2Graph.nodes.find((n) => n.id === realmSlug)?.label ?? realmSlug;
+  }, [realmSlug, topologyV2Graph]);
+
   // 노드 클릭 default = 컴팩트 ego 팝오버. 풀스크린 드로어는 "전체 상세" opt-in.
   // overview first, details-on-demand — 설계: docs/TOPOLOGY-FOCUS-AND-SCALE.md
   // 어느 노드의 전체 상세가 열렸는지를 slug 로 들고, 현재 선택 노드와 일치할
@@ -1250,13 +1272,8 @@ export function HomePage() {
     const handler = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") return;
       if (event.defaultPrevented) return;
-      // R-1 (Guardian 총괄) — 엣지 팝오버가 열려 있으면 Esc 1단은 그것부터
-      // 닫는다 (사다리 최상단 소비 — 노드 팝오버와 같은 계약).
-      if (selectedEdge !== null) {
-        setSelectedEdge(null);
-        return;
-      }
       const action = resolveTopologyEscLadderAction({
+        realmActive: realmSlug !== null,
         contextMenuOpen: contextMenuNode !== null,
         createNodeOpen,
         searchOpen: ontologySearchOpen,
@@ -1266,6 +1283,18 @@ export function HomePage() {
         nodePopoverOpen: nodePopoverVisible,
         hasLocalGraphRoot: localGraphRoot !== null,
       });
+      // S4 — 영역 전개는 사다리 최우선. 영역 안에서 Esc 는 무엇보다 먼저
+      // 전체 지도로 복귀한다(엣지 팝오버 단축 소비보다도 위).
+      if (action === "close-realm") {
+        handleExitRealm();
+        return;
+      }
+      // R-1 (Guardian 총괄) — 엣지 팝오버가 열려 있으면 Esc 1단은 그것부터
+      // 닫는다 (사다리 최상단 소비 — 노드 팝오버와 같은 계약).
+      if (selectedEdge !== null) {
+        setSelectedEdge(null);
+        return;
+      }
       switch (action) {
         case "close-context-menu":
           closeContextMenu();
@@ -1310,6 +1339,8 @@ export function HomePage() {
     closeCreateNode,
     handleClose,
     selectedEdge,
+    realmSlug,
+    handleExitRealm,
   ]);
 
   const handleSelectImpactMode = useCallback(
@@ -1977,6 +2008,16 @@ export function HomePage() {
                       setTopologyRelayoutToken((current) => current + 1);
                       toast.show(t('controls.relayoutToast'), "info");
                     }}
+                    realmChip={
+                      realmSlug && realmTitle ? (
+                        <TopologyRealmChip
+                          title={realmTitle}
+                          prefixLabel={t("realm.chipPrefix")}
+                          clearAriaLabel={t("realm.chipClear")}
+                          onClear={handleExitRealm}
+                        />
+                      ) : undefined
+                    }
                     returnChip={
                       insightsReturnTab ? (
                         <TopologyInsightsReturnChip
@@ -2530,6 +2571,10 @@ export function HomePage() {
                     onToggleCluster={handleToggleCluster}
                     onHoverCluster={handleHoverCluster}
                     clusterHint={t('cluster.hint')}
+                    realmRootId={realmSlug}
+                    onEnterRealm={handleEnterRealm}
+                    realmEnterLabel={t('realm.enterAction')}
+                    realmEnterTooltip={t('realm.enterTooltip')}
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas ? (
@@ -2794,11 +2839,19 @@ export function HomePage() {
                   actionEditRelations: t("nodeDatasheet.actionEditRelations"),
                   actionCopyHandoff: t("nodeDatasheet.actionCopyHandoff"),
                   actionPath: t("nodeDatasheet.actionPath"),
+                  actionRealm: t("realm.enterAction"),
                 }}
                 onSelectConnection={(id) => handleSelect(id)}
                 onCopyHandoff={copyV2NodeHandoff}
                 onClose={handleClose}
                 onSetPathSource={() => handleSetPathSource(v2DatasheetModel.nodeId)}
+                onEnterRealm={
+                  // S4 — 컨테이너 노드(자식 있음)이며 영역 밖일 때만 2차 발견
+                  // 경로를 노출한다. leaf/이미 영역 안이면 omit → 버튼 미표시.
+                  realmSlug === null && v2DatasheetModel.groups.contains.total > 0
+                    ? () => handleEnterRealm(v2DatasheetModel.nodeId)
+                    : undefined
+                }
                 onOpenFullDetail={
                   selectedOntologyNode
                     ? () => setFullDetailSlug(selectedOntologyNode.id)

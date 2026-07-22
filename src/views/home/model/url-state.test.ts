@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   applyHomeRouteState,
   DEFAULT_HOME_ROUTE_STATE,
+  enterRealmRouteState,
+  exitRealmRouteState,
   parseHomeRouteState,
   resolveTopologyNodeClickRouteState,
   selectTopologyNodeRouteState,
@@ -28,6 +30,7 @@ describe("parseHomeRouteState", () => {
       indexState: null,
       insightsReturnTab: null,
       expandedParents: [],
+      realmSlug: null,
     });
   });
 
@@ -182,6 +185,7 @@ describe("applyHomeRouteState", () => {
       indexState: null,
       insightsReturnTab: null,
       expandedParents: [],
+      realmSlug: null,
     });
 
     expect(params.toString()).toBe(
@@ -203,6 +207,7 @@ describe("applyHomeRouteState", () => {
       indexState: null,
       insightsReturnTab: null,
       expandedParents: [],
+      realmSlug: null,
     });
 
     expect(params.toString()).toBe(
@@ -222,6 +227,7 @@ describe("applyHomeRouteState", () => {
       indexState: null,
       insightsReturnTab: null,
       expandedParents: [],
+      realmSlug: null,
     });
 
     expect(hidden.toString()).toBe("");
@@ -243,6 +249,7 @@ describe("applyHomeRouteState", () => {
         indexState: null,
         insightsReturnTab: null,
         expandedParents: [],
+        realmSlug: null,
       },
     );
 
@@ -528,5 +535,46 @@ describe("밀도 게이트 확장 상태 (?open=)", () => {
       expandedParents: toggleExpandedParent(state.expandedParents, "domain:onboarding"),
     };
     expect(applyHomeRouteState(params, collapsed).get("open")).toBeNull();
+  });
+});
+
+describe("영역 전개 (?realm=)", () => {
+  it("round-trips the realm slug through parse ← → apply", () => {
+    const state = parseHomeRouteState(new URLSearchParams("realm=capability%3Atopology"));
+    expect(state.realmSlug).toBe("capability:topology");
+    const params = applyHomeRouteState(new URLSearchParams(), state);
+    expect(params.get("realm")).toBe("capability:topology");
+    expect(parseHomeRouteState(params).realmSlug).toBe("capability:topology");
+  });
+
+  it("defaults to null with no realm param", () => {
+    expect(parseHomeRouteState(new URLSearchParams("p=pick")).realmSlug).toBeNull();
+    expect(applyHomeRouteState(new URLSearchParams(), DEFAULT_HOME_ROUTE_STATE).get("realm")).toBeNull();
+  });
+
+  it("enterRealmRouteState sets realm and clears selection + expanded parents (spec: open/p cleared)", () => {
+    const current = {
+      ...DEFAULT_HOME_ROUTE_STATE,
+      selectedSlug: "domain:x",
+      focusedHubSlug: "domain:x",
+      expandedParents: ["domain:x", "capability:y"],
+    };
+    const entered = enterRealmRouteState(current, "capability:y");
+    expect(entered.realmSlug).toBe("capability:y");
+    expect(entered.selectedSlug).toBeNull();
+    expect(entered.focusedHubSlug).toBeNull();
+    expect(entered.expandedParents).toEqual([]);
+    const params = applyHomeRouteState(new URLSearchParams(), entered);
+    expect(params.get("realm")).toBe("capability:y");
+    expect(params.get("p")).toBeNull();
+    expect(params.get("open")).toBeNull();
+  });
+
+  it("exitRealmRouteState clears realm and selection", () => {
+    const inRealm = { ...DEFAULT_HOME_ROUTE_STATE, realmSlug: "capability:y", selectedSlug: "element:z" };
+    const exited = exitRealmRouteState(inRealm);
+    expect(exited.realmSlug).toBeNull();
+    expect(exited.selectedSlug).toBeNull();
+    expect(applyHomeRouteState(new URLSearchParams("realm=capability:y"), exited).get("realm")).toBeNull();
   });
 });

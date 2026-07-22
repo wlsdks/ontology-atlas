@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef } from "react";
+import { Orbit } from "lucide-react";
 import { useTopologyLoop } from "./use-topology-loop";
 
 /**
@@ -130,10 +132,23 @@ export interface TopologyMapV2Props {
    * amber ring + label activity mark on that one node; never fabricated.
    */
   agentFocusNodeId?: string | null;
+  /**
+   * S4 "영역 전개" — 지도가 이 노드의 세계로 전환된 상태 (`?realm=slug`), 없으면
+   * 전체 지도. HomePage 가 URL 에서 내린다.
+   */
+  realmRootId?: string | null;
+  /** S4 — 궤도 "전개" 버튼 클릭 → 이 slug 로 영역 진입 (HomePage 가 URL 왕복). */
+  onEnterRealm?: (slug: string) => void;
+  /** S4 — 궤도 버튼 접근성 라벨 (i18n, HomePage 주입). */
+  realmEnterLabel?: string;
+  /** S4 — 궤도 버튼 호버 마이크로 툴팁 문구 ("이 노드의 영역만 펼쳐요"). */
+  realmEnterTooltip?: string;
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip } = props;
+
+  const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // `handleWheel` is wired natively (non-passive) inside `useTopologyLoop` —
   // see its own FIX comment — not bound here as a JSX prop.
@@ -160,6 +175,9 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       expandedParents,
       onToggleCluster,
       onHoverCluster,
+      realmRootId,
+      onEnterRealm,
+      realmEnterButtonRef,
     });
 
   return (
@@ -180,6 +198,29 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
         onPointerCancel={handlePointerCancel}
         onContextMenu={handleContextMenu}
       />
+      {/* S4 궤도 "전개" 버튼 — 캔버스 좌표 앵커(loop 가 매 프레임 transform 갱신).
+          기본 숨김; 포커스 노드에 자식이 있고 영역 밖일 때만 노출. 방사형 메뉴
+          금지 — 버튼 하나. 호버 시 마이크로 툴팁(평문 한 줄). */}
+      {onEnterRealm ? (
+        <button
+          ref={realmEnterButtonRef}
+          type="button"
+          data-testid="topology-realm-enter-button"
+          aria-label={realmEnterLabel}
+          className="group absolute left-0 top-0 z-40 hidden h-7 w-7 items-center justify-center rounded-full border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] text-[color:var(--topology-v2-indigo-bright)] shadow-[var(--topology-v2-panel-shadow)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+          style={{ display: "none" }}
+        >
+          <Orbit size={15} aria-hidden />
+          {realmEnterTooltip ? (
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute left-1/2 top-full mt-2 hidden -translate-x-1/2 whitespace-nowrap rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-2 py-1 text-[11.5px] font-medium text-[color:var(--topology-v2-panel-text-primary)] shadow-[var(--topology-v2-panel-shadow)] group-hover:block"
+            >
+              {realmEnterTooltip}
+            </span>
+          ) : null}
+        </button>
+      ) : null}
       {clusterHint ? (
         <span
           data-testid="topology-cluster-hint"

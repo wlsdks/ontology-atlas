@@ -21,6 +21,14 @@
  * dispatch.
  */
 export interface TopologyEscLadderInput {
+  /**
+   * "영역 전개" (S4) 활성 — 지도가 한 노드의 세계로 전환된 상태(`?realm=`).
+   * 소유자 지시로 Esc 사다리 최우선: 영역 안에서 Esc 는 무엇보다 먼저 영역을
+   * 벗어난다(전체 지도 복귀). 영역은 뷰 전체를 바꾸는 최상위 컨텍스트라, 그
+   * 안의 어떤 전이 오버레이보다 "이 세계에서 나가기"가 사용자의 1차 탈출
+   * 기대다. 미지정/false 면 사다리는 종전과 동일(회귀 0).
+   */
+  realmActive?: boolean;
   /** W2-B node right-click context menu open — the newest, most transient
    *  overlay, so it closes first (above even the create-node composer): a
    *  context menu that outlives the keypress meant to dismiss whatever else
@@ -61,6 +69,7 @@ export interface TopologyEscLadderInput {
 }
 
 export type TopologyEscLadderAction =
+  | "close-realm"
   | "close-context-menu"
   | "close-create-node"
   | "close-full-detail"
@@ -82,6 +91,9 @@ export type TopologyEscLadderAction =
 export function resolveTopologyEscLadderAction(
   input: TopologyEscLadderInput,
 ): TopologyEscLadderAction {
+  // S4 — 영역 전개는 뷰 전체를 바꾸는 최상위 컨텍스트라 Esc 사다리 최우선
+  // (소유자 지시). 영역 안에서 Esc 는 무엇보다 먼저 전체 지도로 복귀한다.
+  if (input.realmActive) return "close-realm";
   if (input.contextMenuOpen) return "close-context-menu";
   if (input.createNodeOpen) return "close-create-node";
   // The palette (Radix Dialog) already closes itself on Escape — returning

@@ -2364,6 +2364,12 @@
       "collapseAria": "이 그룹 접기",
       "tooltipCollapsed": "「{name}」의 요소 {count}개가 접혀 있어요 — 클릭하면 펼쳐요",
       "tooltipExpanded": "펼쳐진 요소 {count}개 — 클릭하면 접어요"
+    },
+    "realm": {
+      "enterAction": "영역 전개",
+      "enterTooltip": "이 노드의 영역만 펼쳐요",
+      "chipPrefix": "영역",
+      "chipClear": "영역 나가기"
     }
   },
   "fullDetailA1": {
