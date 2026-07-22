@@ -56,6 +56,44 @@ export const SPLIT_CASES = [
       sections: [],
     },
   },
+  {
+    name: 'a `##` line inside a code fence does not split the document',
+    input:
+      '# Doc\n\n' +
+      '## Real Section\n\n' +
+      'Before the fence.\n\n' +
+      '```bash\n' +
+      '## not a heading — this is a shell comment\n' +
+      'echo hello\n' +
+      '```\n\n' +
+      'After the fence.\n',
+    expected: {
+      title: 'Doc',
+      intro: '',
+      sections: [
+        {
+          heading: 'Real Section',
+          body:
+            'Before the fence.\n\n```bash\n## not a heading — this is a shell comment\necho hello\n```\n\nAfter the fence.',
+        },
+      ],
+    },
+  },
+  {
+    name: 'a `# title` line inside a preamble code fence is not taken as the title',
+    input:
+      '```sh\n' +
+      '# install with a curl one-liner\n' +
+      'echo skip\n' +
+      '```\n\n' +
+      '# Actual Title\n\n' +
+      '## Rules\n\nbody\n',
+    expected: {
+      title: 'Actual Title',
+      intro: '```sh\n# install with a curl one-liner\necho skip\n```',
+      sections: [{ heading: 'Rules', body: 'body' }],
+    },
+  },
 ];
 
 export const CLASSIFY_CASES = [
@@ -113,6 +151,55 @@ export const CLASSIFY_CASES = [
     expectedCategory: 'architecture',
     expectedKind: 'element',
     expectedRole: null,
+    minConfidence: 0.5,
+  },
+  {
+    // Plural "Conventions" — the bare singular `convention` used to miss this.
+    name: 'Code Conventions (plural) → policy/document',
+    section: { heading: 'TUI code conventions', body: 'Prefer stylize helpers over raw ANSI.' },
+    expectedCategory: 'policy',
+    expectedKind: 'document',
+    expectedRole: 'policy',
+    minConfidence: 0.5,
+  },
+  {
+    // Plural "Commits" — the `commit(?:ting)?` form used to miss the plural.
+    name: 'Commits and PR Titles → policy/document',
+    section: { heading: 'Commits and PR Titles', body: 'Use conventional-commit prefixes.' },
+    expectedCategory: 'policy',
+    expectedKind: 'document',
+    expectedRole: 'policy',
+    minConfidence: 0.5,
+  },
+  {
+    // "Tests" / "Testing" — only `testing` used to match; bare "Tests" missed.
+    name: 'Tests → policy/document',
+    section: { heading: 'Tests', body: 'Run the snapshot suite before pushing.' },
+    expectedCategory: 'policy',
+    expectedKind: 'document',
+    expectedRole: 'policy',
+    minConfidence: 0.5,
+  },
+  {
+    // "Style Guide" — `guideline` used to miss the bare "guide".
+    name: 'Style Guide → policy/document',
+    section: { heading: 'Style Guide', body: 'Two-space indentation, no semicolons.' },
+    expectedCategory: 'policy',
+    expectedKind: 'document',
+    expectedRole: 'policy',
+    minConfidence: 0.5,
+  },
+  {
+    // "Best Practices" — used to be mis-kinded as an architecture capability
+    // whenever the heading also contained "API"; now correctly policy.
+    name: 'API Development Best Practices → policy/document (not architecture)',
+    section: {
+      heading: 'App-server API Development Best Practices',
+      body: 'Version endpoints; never break the wire format.',
+    },
+    expectedCategory: 'policy',
+    expectedKind: 'document',
+    expectedRole: 'policy',
     minConfidence: 0.5,
   },
   {

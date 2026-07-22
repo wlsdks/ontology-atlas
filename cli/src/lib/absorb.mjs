@@ -23,6 +23,12 @@ import { folderForKind } from './schema.mjs';
 
 const H1_RE = /^#\s+(.+?)\s*$/;
 const SECTION_HEADING_RE = /^##\s+(.+?)\s*$/;
+// Fenced-code-block delimiter (``` or ~~~, 3+ chars, optional leading indent).
+// Lines inside a fence — and the delimiter lines themselves — are NEVER treated
+// as headings, so `## comment` / `# title` written inside a shell/markdown code
+// block don't spuriously split the document (real CONTRIBUTING/AGENTS docs are
+// full of these). See the code-fence contract fixtures in absorb-cases.mjs.
+const FENCE_RE = /^\s*(?:```+|~~~+)/;
 
 // ── section splitting ───────────────────────────────────────────────────
 
@@ -32,35 +38,66 @@ const SECTION_HEADING_RE = /^##\s+(.+?)\s*$/;
  * The first `# ` line anywhere before the first `##` is taken as the title;
  * everything else before the first `##` (minus that title line) is `intro`.
  *
+ * Fenced code blocks are respected: any `#`/`##` line inside a ``` or ~~~
+ * fence is code content, not a heading, and never splits the document.
+ *
  * @returns {{ title: string|null, intro: string, sections: Array<{heading: string, body: string, raw: string}> }}
  */
 export function splitDocumentSections(rawText) {
   const text = String(rawText || '');
   const lines = text.split(/\r?\n/);
-  const firstH2Index = lines.findIndex((line) => SECTION_HEADING_RE.test(line));
-  const preambleLines = firstH2Index === -1 ? lines : lines.slice(0, firstH2Index);
 
-  const titleIndex = preambleLines.findIndex((line) => H1_RE.test(line));
-  const title = titleIndex === -1 ? null : preambleLines[titleIndex].match(H1_RE)[1].trim();
-  const introLines =
-    titleIndex === -1
-      ? preambleLines
-      : [...preambleLines.slice(0, titleIndex), ...preambleLines.slice(titleIndex + 1)];
+  // Precompute which lines are inside a fenced code block (delimiter lines
+  // included) so heading detection can ignore them.
+  const inFence = new Array(lines.length).fill(false);
+  let fenceOpen = false;
+  for (let i = 0; i < lines.length; i += 1) {
+    if (FENCE_RE.test(lines[i])) {
+      inFence[i] = true;
+      fenceOpen = !fenceOpen;
+      continue;
+    }
+    inFence[i] = fenceOpen;
+  }
+  const isSectionHeading = (i) => !inFence[i] && SECTION_HEADING_RE.test(lines[i]);
+  const isTitleHeading = (i) => !inFence[i] && H1_RE.test(lines[i]);
+
+  let firstH2Index = -1;
+  for (let i = 0; i < lines.length; i += 1) {
+    if (isSectionHeading(i)) {
+      firstH2Index = i;
+      break;
+    }
+  }
+  const preambleEnd = firstH2Index === -1 ? lines.length : firstH2Index;
+
+  let titleIndex = -1;
+  for (let i = 0; i < preambleEnd; i += 1) {
+    if (isTitleHeading(i)) {
+      titleIndex = i;
+      break;
+    }
+  }
+  const title = titleIndex === -1 ? null : lines[titleIndex].match(H1_RE)[1].trim();
+  const introLines = [];
+  for (let i = 0; i < preambleEnd; i += 1) {
+    if (i === titleIndex) continue;
+    introLines.push(lines[i]);
+  }
   const intro = introLines.join('\n').trim();
 
   const sections = [];
   if (firstH2Index !== -1) {
     let i = firstH2Index;
     while (i < lines.length) {
-      const match = lines[i].match(SECTION_HEADING_RE);
-      if (!match) {
+      if (!isSectionHeading(i)) {
         i += 1;
         continue;
       }
-      const heading = match[1].trim();
+      const heading = lines[i].match(SECTION_HEADING_RE)[1].trim();
       const bodyLines = [];
       let j = i + 1;
-      while (j < lines.length && !SECTION_HEADING_RE.test(lines[j])) {
+      while (j < lines.length && !isSectionHeading(j)) {
         bodyLines.push(lines[j]);
         j += 1;
       }
@@ -74,13 +111,18 @@ export function splitDocumentSections(rawText) {
 
 // ── kind-mapping heuristics ─────────────────────────────────────────────
 
+// Policy/convention vocabulary. Plurals and common variants are matched
+// explicitly — real AGENTS.md/CONTRIBUTING headings say "Conventions",
+// "Commits", "Tests", "Style Guide", "Best Practices", not the bare singular,
+// and missing them was the dominant driver of skipped policy sections.
 const POLICY_HEADING_RE =
-  /\b(rules?|polic(?:y|ies)|convention|guideline|governance|principles?|workflow|forbidden|do[-\s]?not|verification|testing|commit(?:ting)?|contributing|security)\b/i;
-const POLICY_HEADING_RE_KO = /(규칙|정책|가이드|원칙|규율|금지|워크플로우|절차|커밋|검증|보안)/;
+  /\b(rules?|polic(?:y|ies)|conventions?|guide(?:line)?s?|governance|principles?|practices?|workflows?|forbidden|do[-\s]?not|verification|test(?:s|ing)?|commit(?:s|ted|ting)?|contributing|security)\b/i;
+const POLICY_HEADING_RE_KO =
+  /(규칙|정책|가이드|원칙|규율|금지|워크플로우|절차|관례|컨벤션|커밋|테스트|검증|보안)/;
 const ARCH_HEADING_RE =
-  /\b(architecture|component|module|folder|structure|routes?|tech\s*stack|stack|layers?|schema|api)\b/i;
+  /\b(architecture|components?|modules?|folder|structure|routes?|tech\s*stack|stack|layers?|schemas?|api)\b/i;
 const ARCH_HEADING_RE_KO = /(아키텍처|구조|폴더|모듈|컴포넌트|스택|라우트|레이어|스키마)/;
-const ARCH_ELEMENT_HEADING_RE = /\b(component|module|schema|routes?)\b/i;
+const ARCH_ELEMENT_HEADING_RE = /\b(components?|modules?|schemas?|routes?)\b/i;
 const ARCH_ELEMENT_HEADING_RE_KO = /(컴포넌트|모듈|스키마|라우트)/;
 
 function countMatches(text, regexes) {

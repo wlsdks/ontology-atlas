@@ -29,6 +29,31 @@ describe('splitDocumentSections', () => {
     assert.equal(result.intro, 'intro para');
     assert.equal(result.sections.length, 1);
   });
+
+  it('does not split on a `##` line inside a fenced code block', () => {
+    const raw =
+      '# Doc\n\n## Real Section\n\nBefore.\n\n```bash\n## not a heading\necho hi\n```\n\nAfter.\n';
+    const result = splitDocumentSections(raw);
+    assert.equal(result.sections.length, 1);
+    assert.equal(result.sections[0].heading, 'Real Section');
+    assert.ok(result.sections[0].body.includes('## not a heading'));
+    assert.ok(result.sections[0].body.includes('After.'));
+  });
+
+  it('ignores a `#` title line inside a preamble code fence', () => {
+    const raw = '```sh\n# not the title\necho x\n```\n\n# Actual Title\n\n## Rules\n\nbody\n';
+    const result = splitDocumentSections(raw);
+    assert.equal(result.title, 'Actual Title');
+    assert.equal(result.sections.length, 1);
+    assert.equal(result.sections[0].heading, 'Rules');
+  });
+
+  it('handles ~~~ fences as well as ``` fences', () => {
+    const raw = '# Doc\n\n## S\n\n~~~\n## fenced comment\n~~~\n\ntail\n';
+    const result = splitDocumentSections(raw);
+    assert.equal(result.sections.length, 1);
+    assert.equal(result.sections[0].heading, 'S');
+  });
 });
 
 describe('classifySection', () => {
@@ -38,6 +63,21 @@ describe('classifySection', () => {
     const b = classifySection(section);
     assert.deepEqual(a, b);
   });
+
+  for (const heading of [
+    'TUI code conventions',
+    'Commits and PR Titles',
+    'Tests',
+    'Style Guide',
+    'App-server API Development Best Practices',
+  ]) {
+    it(`classifies plural/variant policy heading ${JSON.stringify(heading)} as policy/document`, () => {
+      const c = classifySection({ heading, body: '' });
+      assert.equal(c.category, 'policy');
+      assert.equal(c.kind, 'document');
+      assert.equal(c.role, 'policy');
+    });
+  }
 });
 
 describe('scanForInjection', () => {
