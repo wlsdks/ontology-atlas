@@ -148,6 +148,59 @@ export function toggleExpandedParent(current: readonly string[], parentId: strin
 }
 
 /**
+ * 딥링크 focus dive 조상 파생 (패널2-D1, R4 모션 헌법, fable 설계) — 한 방향
+ * contains 엣지 목록에서 자식 id → 부모 id 맵을 만든다. 밀도 게이트
+ * (`model/density-gate.ts`) 가 임계 초과 부모를 접었을 때, `?p=slug` 딥링크
+ * 대상이 그 접힘 서브트리 안에 있으면 조상 체인을 펼쳐 드러내야 한다 —
+ * 그 조상 체인을 걷기 위한 부모 조회 맵이다. 한 자식이 둘 이상 contains
+ * 부모를 가지면(드묾) 먼저 나온 부모를 채택한다(딥링크 노출엔 유효한 한
+ * 체인이면 충분). 순수·결정론.
+ */
+export function buildContainmentParentMap(
+  edges: readonly { source: string; target: string; kind: string }[],
+): Map<string, string> {
+  const parentOf = new Map<string, string>();
+  for (const edge of edges) {
+    if (edge.kind !== "contains") continue;
+    if (!parentOf.has(edge.target)) parentOf.set(edge.target, edge.source);
+  }
+  return parentOf;
+}
+
+/**
+ * 딥링크 focus dive 조상 파생 (패널2-D1, fable 설계) — `targetId` 의 contains
+ * 조상 전부를 `currentExpanded` 에 더한 새 펼침 목록을 낸다. 대상 자신은
+ * 부모가 아니므로 넣지 않고, 그 부모·조부모…를 가까운 순으로 append 한다
+ * (URL `?open=` 왕복 안정). 이미 펼쳐진 조상은 중복 추가하지 않고, 사이클은
+ * 방문 집합으로 차단한다. 추가할 조상이 없으면(대상 없음/최상위/전부 이미
+ * 펼침) 내용이 같은 새 배열을 낸다. 순수 함수 — HomePage 가 로드 1회
+ * 적용해 URL 왕복하면, 대상이 드러난 뒤 기존 focus dive 가 클릭과 동일한
+ * 이징 문법으로 1회 발화한다.
+ */
+export function deriveDeeplinkAncestorExpansion(
+  targetId: string | null,
+  parentOf: ReadonlyMap<string, string>,
+  currentExpanded: readonly string[],
+): string[] {
+  if (!targetId) return [...currentExpanded];
+  const seen = new Set<string>(currentExpanded);
+  const guard = new Set<string>([targetId]);
+  const additions: string[] = [];
+  let cursor = parentOf.get(targetId);
+  while (cursor !== undefined && !guard.has(cursor)) {
+    guard.add(cursor);
+    if (!seen.has(cursor)) {
+      seen.add(cursor);
+      additions.push(cursor);
+    }
+    cursor = parentOf.get(cursor);
+  }
+  return additions.length === 0
+    ? [...currentExpanded]
+    : [...currentExpanded, ...additions];
+}
+
+/**
  * "영역 전개" 진입 — 지도를 `slug` 노드의 세계로 전환한다. 영역은 새 좌표계라
  * 이전 선택(`p`)·밀도 게이트 확장(`open`)·경로 소스는 클리어한다(spec: "realm
  * 전환 시 기존 open/p 는 클리어"). 순수 함수 — HomePage 가 URL 왕복한다.

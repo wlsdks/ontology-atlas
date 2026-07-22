@@ -384,6 +384,10 @@ export function TopologyV2DetailPanel({
       // 기준 max-height + 내부 스크롤로 패널이 항상 뷰포트 안에 온전히 앵커
       // 되도록 clamp한다.
       className={[
+        // R4 모션 헌법 — 노드 팝오버 등장 문법(단일 `.topology-chrome-in`:
+        // opacity+3px translateY+scale 0.98→1, 180ms, ease-out). slug 로 keyed
+        // 되어 다른 노드 선택마다 재발화.
+        "topology-chrome-in",
         "flex w-[var(--topology-v2-panel-width)] flex-col gap-[var(--topology-v2-panel-gap)]",
         "max-h-[var(--topology-v2-panel-max-height)] overflow-y-auto",
         "rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)]",

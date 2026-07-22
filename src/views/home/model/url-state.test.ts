@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   applyHomeRouteState,
+  buildContainmentParentMap,
   DEFAULT_HOME_ROUTE_STATE,
+  deriveDeeplinkAncestorExpansion,
   enterRealmRouteState,
   exitRealmRouteState,
   parseHomeRouteState,
@@ -614,5 +616,74 @@ describe("resolveRealmNodeId (패널3-S7 slug alias)", () => {
     expect(resolveRealmNodeId("element:parser", ids)).toBe("element:parser");
     // bare `parser` 는 등장 순서상 첫 매치(capability:parser).
     expect(resolveRealmNodeId("parser", ids)).toBe("capability:parser");
+  });
+});
+
+describe("buildContainmentParentMap", () => {
+  it("maps each child to its contains parent, ignoring depends edges", () => {
+    const parentOf = buildContainmentParentMap([
+      { source: "project:a", target: "domain:d", kind: "contains" },
+      { source: "domain:d", target: "capability:c", kind: "contains" },
+      { source: "capability:c", target: "capability:other", kind: "depends" },
+    ]);
+    expect(parentOf.get("domain:d")).toBe("project:a");
+    expect(parentOf.get("capability:c")).toBe("domain:d");
+    // depends edge must not create a parent link.
+    expect(parentOf.has("capability:other")).toBe(false);
+  });
+
+  it("keeps the first contains parent when a child has several (deterministic)", () => {
+    const parentOf = buildContainmentParentMap([
+      { source: "capability:one", target: "element:shared", kind: "contains" },
+      { source: "capability:two", target: "element:shared", kind: "contains" },
+    ]);
+    expect(parentOf.get("element:shared")).toBe("capability:one");
+  });
+});
+
+describe("deriveDeeplinkAncestorExpansion", () => {
+  // project:a ▸ domain:d ▸ capability:c ▸ element:e (a 3-deep contains chain)
+  const parentOf = buildContainmentParentMap([
+    { source: "project:a", target: "domain:d", kind: "contains" },
+    { source: "domain:d", target: "capability:c", kind: "contains" },
+    { source: "capability:c", target: "element:e", kind: "contains" },
+  ]);
+
+  it("expands every ancestor of a deep-linked node, nearest-first", () => {
+    expect(deriveDeeplinkAncestorExpansion("element:e", parentOf, [])).toEqual([
+      "capability:c",
+      "domain:d",
+      "project:a",
+    ]);
+  });
+
+  it("returns a fresh copy of the current list for a null target", () => {
+    const current = ["domain:d"];
+    const result = deriveDeeplinkAncestorExpansion(null, parentOf, current);
+    expect(result).toEqual(["domain:d"]);
+    expect(result).not.toBe(current);
+  });
+
+  it("adds nothing for a top-level node with no parent", () => {
+    expect(deriveDeeplinkAncestorExpansion("project:a", parentOf, [])).toEqual([]);
+  });
+
+  it("does not duplicate an ancestor already expanded, and appends new ones", () => {
+    expect(deriveDeeplinkAncestorExpansion("element:e", parentOf, ["domain:d"])).toEqual([
+      "domain:d",
+      "capability:c",
+      "project:a",
+    ]);
+  });
+
+  it("terminates on a containment cycle instead of looping forever", () => {
+    const cyclic = new Map<string, string>([
+      ["a", "b"],
+      ["b", "c"],
+      ["c", "a"],
+    ]);
+    const result = deriveDeeplinkAncestorExpansion("a", cyclic, []);
+    // b and c are real ancestors; the walk stops before re-adding a (the target).
+    expect(result).toEqual(["b", "c"]);
   });
 });

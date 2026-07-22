@@ -40,7 +40,7 @@ const CHIP_CLASS =
  * 소유한다.
  */
 export const CHROME_STATUS_CHIP_CLASS =
-  'pointer-events-auto flex h-[var(--chrome-tile-size)] max-w-full items-center gap-1.5 rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-3.5 text-[12.5px] text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)]';
+  'topology-chrome-in pointer-events-auto flex h-[var(--chrome-tile-size)] max-w-full items-center gap-1.5 rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-3.5 text-[12.5px] text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)]';
 
 const ACTIVE_CLASS =
   'border-[color:var(--chrome-active-border)] bg-[color:var(--chrome-active-surface)] text-[color:var(--color-text-primary)]';
