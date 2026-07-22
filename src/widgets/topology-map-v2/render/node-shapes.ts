@@ -20,6 +20,7 @@
  */
 
 import { smoothstep } from "../model/altitude";
+import { computeHoverShimmer } from "../model/hover-shimmer";
 
 export interface Point {
   x: number;
@@ -108,6 +109,15 @@ export interface NodeShapeDrawState {
    * whenever there's no fresh focus (fabrication 0).
    */
   agentFocus: boolean;
+  /**
+   * Design Guardian 처방 L — 호버 circuit-trace shimmer 의 시간원. 프레임의
+   * `performance.now()` 호환 타임스탬프(픽셀 드로우 자체는 시간을 모르는
+   * 순수 계층이 아니므로 여기서만 받는다) + reduced-motion 게이트. 정지 호버
+   * 링(`isHovered` 블록)은 이 값과 무관하게 항상 그려지고, shimmer 아크만
+   * `!reducedMotion` 일 때 그 위에 얹힌다.
+   */
+  now: number;
+  reducedMotion: boolean;
 }
 
 export interface NodeShapeTokens {
@@ -131,6 +141,12 @@ export interface NodeShapeTokens {
   selectionHairline: string;
   /** Canvas-emphasis slice — the hover preview ring's color (spec §C), a static 1px indigo hairline distinct from the brighter selection ring. */
   hoverRing: string;
+  /** Design Guardian 처방 L — 호버 shimmer 아크 길이(둘레 비율, `--topology-v2-hover-shimmer-seg`). */
+  hoverShimmerSeg: number;
+  /** Design Guardian 처방 L — 호버 shimmer 1회전 주기(ms, `--topology-v2-hover-shimmer-period-ms`). */
+  hoverShimmerPeriodMs: number;
+  /** Design Guardian 처방 L — 호버 shimmer 아크 색(`--topology-v2-indigo-bright` 재사용, 새 hue 없음). */
+  hoverShimmerColor: string;
 }
 
 /** Full convergence to a plain circle above this farT — avoids float-precision polygon/circle seams (prototype: `farT > 0.985`). */
@@ -347,6 +363,69 @@ function strokeKindOutline(
 }
 
 /**
+ * Approximate perimeter of the node's own outline at this farT/kind — the
+ * straight-edge sum of `bodyPoints` (ignoring the small corner-rounding
+ * inset `roundedPolygonPath` trims off) for the polygon range, or a plain
+ * circle circumference past `FULL_CIRCLE_FAR_T` — mirrors the exact same
+ * polygon/circle branch `strokeKindOutline` draws with. Used only to size
+ * the hover-shimmer dash pattern (a decorative overlay, not a hit-test), so
+ * this approximation is enough — no separate test needed the way the pure
+ * `model/hover-shimmer.ts` time math is.
+ */
+function outlinePerimeter(kind: NodeShapeDrawState["kind"], radius: number, farT: number): number {
+  const points = bodyPoints(kind, 0, 0, radius);
+  if (points === null || farT > FULL_CIRCLE_FAR_T) return 2 * Math.PI * radius;
+  let perimeter = 0;
+  for (let i = 0; i < points.length; i += 1) {
+    const p1 = points[i];
+    const p2 = points[(i + 1) % points.length];
+    perimeter += Math.hypot(p2.x - p1.x, p2.y - p1.y);
+  }
+  return perimeter;
+}
+
+/**
+ * Design Guardian 처방 L — 정지 호버 링(`strokeKindOutline`) 위에 저속 순회
+ * 아크 1개를 얹는다. 같은 형상 패스(hex/사각/원, farT 수렴 규칙까지 동일)를
+ * 다시 그리되 `setLineDash`/`lineDashOffset` 로 일부만 보이게 해 "회로를
+ * 순회하는 신호" 를 표현한다 — 글로우/그림자 0(design.md), 색은 인디고
+ * bright 표준 톤 재사용. 세그먼트 길이가 0 이면(토큰 drift 등) 아무 것도
+ * 그리지 않는다.
+ */
+function drawHoverShimmer(
+  ctx: CanvasRenderingContext2D,
+  kind: NodeShapeDrawState["kind"],
+  x: number,
+  y: number,
+  radius: number,
+  farT: number,
+  now: number,
+  periodMs: number,
+  segRatio: number,
+  color: string,
+): void {
+  const perimeter = outlinePerimeter(kind, radius, farT);
+  const { dash, offset } = computeHoverShimmer(now, periodMs, perimeter, segRatio);
+  if (dash[0] <= 0) return;
+  const points = bodyPoints(kind, x, y, radius);
+  if (points === null || farT > FULL_CIRCLE_FAR_T) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+  } else {
+    roundedPolygonPath(ctx, points, interpolateCornerRadius(minCornerRadius(kind, radius), radius, farT));
+  }
+  ctx.setLineDash([...dash]);
+  ctx.lineDashOffset = offset;
+  ctx.globalAlpha = 0.9;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.lineDashOffset = 0;
+  ctx.globalAlpha = 1;
+}
+
+/**
  * Draws one node body (fill/stroke/dash + kind-specific shape morph + hub
  * ring + engraved numeral + via-hole for elements). Does NOT draw the
  * diffraction spike overlay (`render/starfield.ts#drawDiffractionSpike`
@@ -371,6 +450,8 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     isHovered,
     selectionPulse,
     agentFocus,
+    now,
+    reducedMotion,
   } = state;
 
   ctx.setLineDash([...dash]);
@@ -466,6 +547,23 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   // ring below — but the `egoState` guards stay as defense in depth.
   if (isHovered && egoState !== "dim" && egoState !== "center") {
     strokeKindOutline(ctx, kind, x, y, r + HOVER_RING_OFFSET, farT, tokens.hoverRing, 1, 1);
+    // Design Guardian 처방 L — shimmer 아크는 정지 링 위의 순수 모션 오버레이라
+    // reduced-motion 사용자에겐 정지 링만 남기고 완전히 미표시(새 분기 없이
+    // 여기 한 곳에서만 게이트).
+    if (!reducedMotion) {
+      drawHoverShimmer(
+        ctx,
+        kind,
+        x,
+        y,
+        r + HOVER_RING_OFFSET,
+        farT,
+        now,
+        tokens.hoverShimmerPeriodMs,
+        tokens.hoverShimmerSeg,
+        tokens.hoverShimmerColor,
+      );
+    }
   }
 
   // Canvas-emphasis slice §B — the selected node's STATIC double ring (2px on

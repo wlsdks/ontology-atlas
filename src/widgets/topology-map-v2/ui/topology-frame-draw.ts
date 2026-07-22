@@ -41,7 +41,7 @@ import type { ClusterChip } from "../model/density-gate";
 import { drawDiffractionSpike, drawRealmCosmos, drawStarDust, type DustPoint } from "../render/starfield";
 import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
 import { draw as tracesDraw } from "../render/traces";
-import { drawPulses, type Pulse } from "../render/edge-fireflies";
+import { drawPulses, edgePairKey, selectEgoContainsComets, type Pulse } from "../render/edge-fireflies";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { worldToScreen } from "./topology-camera-math";
 
@@ -70,6 +70,8 @@ const EXPANDED_AURA_ALPHA = 0.55;
 const BACKGROUND_DIM_WHEN_EXPANDED = 0.5;
 
 const EMPTY_NEIGHBOR_SET: ReadonlySet<string> = new Set();
+/** Design Guardian 처방 E — 포커스 없음(또는 인시던트 contains 0개)일 때 재사용하는 빈 캡 Set. */
+const EMPTY_EGO_CONTAINS_COMETS: ReadonlySet<string> = new Set();
 // perf sweep 2026-07 — reused frame-scratch Maps, see their `.clear()` call
 // site in `drawTopologyFrame` below for why this is safe.
 const tierAlphaByIdReused = new Map<string, number>();
@@ -396,6 +398,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     );
   }
 
+  // Design Guardian 승인 처방 E — 선택(ego) 시 인시던트 contains 엣지 코멧
+  // 캡. `topology-physics-step.ts`가 위상 전진을 게이트하는 것과 정확히 같은
+  // 결정론 로직(포커스 노드에 물린 contains 엣지 → seed 순 상위 24개)이라,
+  // 상태 공유 없이 같은 프레임에서 같은 Set 이 나온다 — 드로우 게이트만 별도
+  // 계산해도 drift 없음.
+  const egoContainsComets =
+    focusedNodeId === null
+      ? EMPTY_EGO_CONTAINS_COMETS
+      : selectEgoContainsComets(
+          world.edges.filter(
+            (edge) => edge.kind === "contains" && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId),
+          ),
+        );
+
   for (const kind of ["contains", "depends"] as const) {
     for (const edge of world.edges) {
       if (edge.kind !== kind) continue;
@@ -442,6 +458,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           emphasized,
           reducedMotion,
           level: edge.level,
+          containsCometEligible: kind === "contains" ? egoContainsComets.has(edgePairKey(edge.sourceId, edge.targetId)) : undefined,
         },
         {
           edgeContains: tokens.edgeContains,
@@ -589,6 +606,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         isHovered,
         selectionPulse: selectionPulseVisual,
         agentFocus: agentFocusNodeId !== null && node.id === agentFocusNodeId,
+        now,
+        reducedMotion,
       },
       {
         amberHub: tokens.amberHub,
@@ -600,6 +619,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         selectionIndigo: tokens.selectionRingIndigo,
         selectionHairline: tokens.selectionRingHairline,
         hoverRing: tokens.hoverRing,
+        hoverShimmerSeg: tokens.hoverShimmerSeg,
+        hoverShimmerPeriodMs: tokens.hoverShimmerPeriodMs,
+        hoverShimmerColor: tokens.indigoBright,
       },
     );
 

@@ -47,6 +47,10 @@ export interface TopologyV2Tokens {
   selectionRingHairline: string;
   /** Canvas-emphasis slice — the hovered node's static 1px preview ring color (spec §C). */
   hoverRing: string;
+  /** Design Guardian 처방 L — 호버 shimmer 아크 길이(둘레 비율, `--topology-v2-hover-shimmer-seg`). */
+  hoverShimmerSeg: number;
+  /** Design Guardian 처방 L — 호버 shimmer 1회전 주기(ms, `--topology-v2-hover-shimmer-period-ms`). */
+  hoverShimmerPeriodMs: number;
 
   // 2.2 엣지 · 라벨 · 배경
   edgeContains: string;
@@ -208,6 +212,8 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "selectionRingIndigo", cssVar: "--topology-v2-selection-ring-indigo", kind: "color" },
   { key: "selectionRingHairline", cssVar: "--topology-v2-selection-ring-hairline", kind: "color" },
   { key: "hoverRing", cssVar: "--topology-v2-hover-ring", kind: "color" },
+  { key: "hoverShimmerSeg", cssVar: "--topology-v2-hover-shimmer-seg", kind: "number" },
+  { key: "hoverShimmerPeriodMs", cssVar: "--topology-v2-hover-shimmer-period-ms", kind: "number" },
 
   { key: "edgeContains", cssVar: "--topology-v2-edge-contains", kind: "color" },
   { key: "edgeDepends", cssVar: "--topology-v2-edge-depends", kind: "color" },

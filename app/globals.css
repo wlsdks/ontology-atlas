@@ -1317,6 +1317,13 @@
     --topology-v2-selection-ring-indigo: var(--topology-v2-indigo-bright);
     --topology-v2-selection-ring-hairline: rgba(94, 106, 210, 0.45);
     --topology-v2-hover-ring: rgba(94, 106, 210, 0.55);
+    /* Design Guardian 승인 처방 L — 호버 circuit-trace shimmer. 정지 호버
+       링(위) 위에 저속 순회하는 밝은 아크 1개(글로우 0 — `strokeKindOutline`
+       패스 재사용 + `setLineDash`/`lineDashOffset` 시간 애니메이션만). seg 는
+       둘레 비율, period 는 1회전(ms, linear, 시계방향). 순수 위상 계산은
+       `model/hover-shimmer.ts`. */
+    --topology-v2-hover-shimmer-seg: 0.16;
+    --topology-v2-hover-shimmer-period-ms: 2400;
 
     /* 2.2 엣지 · 라벨 · 배경 */
     /* B1 잉크 위계 (Guardian 2026-07-20): 장식 입자가 데이터 엣지보다 3.2배

@@ -79,9 +79,13 @@ describe("bezierPoint", () => {
  * Comet-tail contract (R6 상시 혜성 복원 — 소유자 지시 "예전 걸 살려줘"). The
  * prototype's ambient comet is back: EVERY non-dim `depends` edge carries the
  * three-dot tail regardless of focus (the old A1 "focus signal only" retirement
- * is reversed). ego/selected edges get a bigger, brighter tail; contains edges
- * and dimmed edges never draw it; reduced-motion suppresses it entirely (so the
- * canvas can still reach a genuine idle state for those users).
+ * is reversed). ego/selected edges get a bigger, brighter tail; dimmed edges
+ * never draw it; reduced-motion suppresses it entirely (so the canvas can
+ * still reach a genuine idle state for those users). Design Guardian 처방 E —
+ * `contains` edges normally never draw a tail EXCEPT the incident ego edges
+ * the caller marks `containsCometEligible: true` (seed-ranked top-24 cap
+ * upstream in `render/edge-fireflies.ts#selectEgoContainsComets`) — see the
+ * dedicated `describe` block below.
  */
 describe("draw — comet tail is an always-on depends signal", () => {
   const TOKENS = {
@@ -147,6 +151,99 @@ describe("draw — comet tail is an always-on depends signal", () => {
   it("suppresses the tail under prefers-reduced-motion (idle-gate contract)", () => {
     expect(drawAndCountTailDots({ ...base, egoState: "normal", reducedMotion: true })).toBe(0);
     expect(drawAndCountTailDots({ ...base, egoState: "ego", reducedMotion: true })).toBe(0);
+  });
+});
+
+/**
+ * Design Guardian 승인 처방 E — 선택(ego) 시 인시던트 contains 엣지도 코멧
+ * 흐름을 탄다(depends 와 같은 지속 위상, 일회성 아님). 캡(`containsCometEligible`)
+ * 을 통과 못 한 엣지·ego 아닌 엣지·dim·reduced-motion 은 여전히 0.
+ */
+describe("draw — ego contains comet (Guardian E)", () => {
+  const TOKENS = {
+    edgeContains: "#3a3a42",
+    edgeDepends: "#4c4c63",
+    edgeDim: "#1a1a1f",
+    indigo: "#5e6ad2",
+    indigoBright: "#8b97ff",
+  };
+
+  function drawAndCountTailDots(state: TraceDrawState): number {
+    let arcs = 0;
+    const ctx = {
+      beginPath() {},
+      moveTo() {},
+      lineTo() {},
+      quadraticCurveTo() {},
+      stroke() {},
+      fill() {},
+      setLineDash() {},
+      arc() {
+        arcs += 1;
+      },
+      strokeStyle: "",
+      fillStyle: "",
+      lineWidth: 0,
+      lineCap: "butt",
+      lineJoin: "miter",
+      lineDashOffset: 0,
+    } as unknown as CanvasRenderingContext2D;
+    draw(ctx, state, TOKENS);
+    return arcs;
+  }
+
+  const base: TraceDrawState = {
+    a: { x: 0, y: 0 },
+    b: { x: 100, y: 0 },
+    control: { x: 50, y: 20 },
+    relationType: "contains",
+    egoState: "ego",
+    farT: 0,
+    t: 0.5,
+    containsCometEligible: true,
+  };
+
+  it("draws the three-dot tail on an eligible ego contains edge", () => {
+    expect(drawAndCountTailDots(base)).toBe(3);
+  });
+
+  it("no tail when containsCometEligible is false/absent (cap excluded) even if ego", () => {
+    expect(drawAndCountTailDots({ ...base, containsCometEligible: false })).toBe(0);
+    const { containsCometEligible: _omit, ...withoutFlag } = base;
+    expect(drawAndCountTailDots(withoutFlag)).toBe(0);
+  });
+
+  it("no tail when eligible but not ego (normal/dim contains never comet)", () => {
+    expect(drawAndCountTailDots({ ...base, egoState: "normal" })).toBe(0);
+    expect(drawAndCountTailDots({ ...base, egoState: "dim" })).toBe(0);
+  });
+
+  it("reduced-motion suppresses even an eligible ego contains comet", () => {
+    expect(drawAndCountTailDots({ ...base, reducedMotion: true })).toBe(0);
+  });
+
+  it("uses the standard indigo tone (not bright) — NORMAL tail tier one step below depends ego", () => {
+    let fillStyle = "";
+    const ctx = {
+      beginPath() {},
+      moveTo() {},
+      lineTo() {},
+      quadraticCurveTo() {},
+      stroke() {},
+      fill() {
+        fillStyle = String((this as { fillStyle?: unknown }).fillStyle);
+      },
+      setLineDash() {},
+      arc() {},
+      strokeStyle: "",
+      fillStyle: "",
+      lineWidth: 0,
+      lineCap: "butt",
+      lineJoin: "miter",
+      lineDashOffset: 0,
+    } as unknown as CanvasRenderingContext2D;
+    draw(ctx, base, TOKENS);
+    expect(fillStyle).toBe(TOKENS.indigo);
   });
 });
 

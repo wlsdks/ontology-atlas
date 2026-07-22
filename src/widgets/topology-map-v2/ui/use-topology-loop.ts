@@ -403,6 +403,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * 빌드 시 1회 계산). 없으면 코멧이 없어 유휴 판정이 성립한다.
    */
   const hasDependsEdgesRef = useRef(false);
+  /**
+   * Design Guardian 승인 처방 E — 선택(ego) 시 인시던트 contains 엣지도 코멧이
+   * 흐르므로, 포커스가 걸려 있고 그래프에 contains 엣지가 하나라도 있으면
+   * 유휴 게이트가 얼지 않아야 한다(정확한 "이 포커스 노드에 물린 캡 안쪽
+   * 엣지가 있는가"까지는 굳이 안 따진다 — `hasDependsEdgesRef`와 같은 결의
+   * 월드-단위 coarse 플래그로 충분하고, 포커스가 없으면 어차피 깨어있을
+   * 이유가 없다).
+   */
+  const hasContainsEdgesRef = useRef(false);
   /** A2 — 마지막 활동 시각. 활동 플래그가 참인 프레임마다 갱신. */
   const lastActiveMsRef = useRef(0);
   /** A2 — 직전 프레임 카메라 값 (움직임 감지용). */
@@ -563,6 +572,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     worldRef.current = world;
     // R6 상시 혜성 — 유휴 게이트가 코멧 상시성을 알 수 있게 depends 유무를 캐시.
     hasDependsEdgesRef.current = world.edges.some((e) => e.kind === "depends");
+    hasContainsEdgesRef.current = world.edges.some((e) => e.kind === "contains");
     // 새 월드 = 이전 월드의 엣지를 겨냥한 펄스는 무효(엣지 id 가 옛 것).
     pulsesRef.current = [];
     // Seed the force sim off the concentric layout (spatial memory) and warm it
@@ -964,6 +974,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // rAF 자체가 브라우저에 의해 정지돼 배터리를 지킨다.
           egoTailAnimating:
             (!reducedMotionRef.current && hasDependsEdgesRef.current && tokens.edgePulseSpeed > 0) ||
+            // Design Guardian 처방 E — 포커스 중 인시던트 contains 코멧도 상시
+            // 흐름이라 유휴 게이트가 얼면 안 된다(depends 와 같은 idle-gate 결).
+            (!reducedMotionRef.current && focusedSlugRef.current !== null && hasContainsEdgesRef.current) ||
             pulsesRef.current.length > 0,
           emphasisTarget: hoveredNodeIdRef.current !== null || panelEmphasisNodeIdRef.current !== null || hoveredClusterIdRef.current !== null,
           breathing: !reducedMotionRef.current && world.nodes.some((n) => n.fresh),

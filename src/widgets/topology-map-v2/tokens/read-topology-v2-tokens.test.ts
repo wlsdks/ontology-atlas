@@ -37,6 +37,8 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-selection-ring-indigo": "#8890e0",
   "--topology-v2-selection-ring-hairline": "rgba(94, 106, 210, .45)",
   "--topology-v2-hover-ring": "rgba(94, 106, 210, .55)",
+  "--topology-v2-hover-shimmer-seg": "0.16",
+  "--topology-v2-hover-shimmer-period-ms": "2400",
 
   "--topology-v2-edge-contains": "#28282e",
   "--topology-v2-edge-depends": "#39394a",
@@ -168,6 +170,8 @@ describe("resolveTopologyV2Tokens", () => {
     expect(tokens.selectionRingIndigo).toBe("#8890e0");
     expect(tokens.selectionRingHairline).toBe("rgba(94, 106, 210, .45)");
     expect(tokens.hoverRing).toBe("rgba(94, 106, 210, .55)");
+    expect(tokens.hoverShimmerSeg).toBeCloseTo(0.16, 3);
+    expect(tokens.hoverShimmerPeriodMs).toBe(2400);
     expect(tokens.selectPulseDurationMs).toBe(180);
   });
 
