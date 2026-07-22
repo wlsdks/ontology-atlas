@@ -96,11 +96,11 @@ describe("buildRealmRuntimeData", () => {
     expect(buildRealmRuntimeData(buildFixtureWorld(), "missing", tokens)).toBeNull();
   });
 
-  it("realmCameraTarget centers on the realm origin and clamps scale", () => {
+  it("realmCameraTarget centers on the content bbox (결계가 아니라 콘텐츠가 주인공) and clamps scale", () => {
     const data = buildRealmRuntimeData(buildFixtureWorld(), "d", tokens)!;
     const target = realmCameraTarget(data, tokens, 1000, 800);
-    expect(target.tx).toBeCloseTo(0);
-    expect(target.ty).toBeCloseTo(0);
+    expect(target.tx).toBeCloseTo((data.bounds.minX + data.bounds.maxX) / 2, 4);
+    expect(target.ty).toBeCloseTo((data.bounds.minY + data.bounds.maxY) / 2, 4);
     expect(target.tscale).toBeLessThanOrEqual(2.6);
     expect(target.tscale).toBeGreaterThanOrEqual(0.24);
   });

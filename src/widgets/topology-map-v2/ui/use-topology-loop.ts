@@ -1053,9 +1053,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // 판정 로직은 순수 모델(`density-gate.ts`), 여긴 좌표 주입만.
       // 영역 전개 중엔 영역 루트를 항상 펼침 취급 — 루트 직속 자식은 그
       // 세계의 스파인이라 게이트로 접으면 영역이 텅 빈 링으로 보인다
-      // (전역 도메인 면제와 같은 논리, /?synth=2000 실증).
-      const effectiveExpanded = realmRootId
-        ? new Set([...expandedParentsRef.current, realmRootId])
+      // (전역 도메인 면제와 같은 논리, /?synth=2000 실증). prop 이 아니라
+      // ref 를 읽는다 — 프레임 클로저가 stale realmRootId 를 캡처해 버튼
+      // 클릭 진입에선 펼침이 안 먹던 결함(녹화 프레임 검수 실증).
+      const liveRealmRootId = realmDataRef.current?.rootId ?? null;
+      const effectiveExpanded = liveRealmRootId
+        ? new Set([...expandedParentsRef.current, liveRealmRootId])
         : expandedParentsRef.current;
       const clusterState = computeTopologyClusterState(world, effectiveExpanded);
 
