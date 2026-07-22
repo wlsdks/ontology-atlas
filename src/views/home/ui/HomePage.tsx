@@ -2044,8 +2044,11 @@ export function HomePage() {
               // 이번 주·샘플 카운트는 첫 실행 카드/INDEX 패널이 이미 담당(중복
               // 잉크). 브랜드 필은 선택/관계 렌즈/드로어 등 affordance 가 있는
               // 비-오버뷰 상태에서만 남긴다(순수 오버뷰에선 렌더하지 않는다).
+              // 2026-07-23 소유자 실보고: 노드 선택 상태의 "선택한 개념" 필도
+              // 은퇴 — 선택은 팝오버/링이 이미 말하고, INDEX 재열기는 세로 탭이
+              // 담당해 중복. 프로젝트 선택/드로어/관계 렌즈 상태만 유지.
               const heroPillAffordance =
-                Boolean(selectedProject) || selectedNodeFocusActive || drawerOpen || selectedRelationActive;
+                Boolean(selectedProject) || drawerOpen || selectedRelationActive;
               return (
                 <div
                   // xl:left-8(32px) → xl:left-[var(--chrome-inset)](24px) —

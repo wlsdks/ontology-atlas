@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-21T23:32:22.071Z",
+  "generatedAt": "2026-07-22T15:01:31.304Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2795,8 +2795,98 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-22 — 온보딩 진입점 영속화 + 빌더 선택 배선 (H4)",
+          "slug": "2026-07-22-온보딩-진입점-영속화-빌더-선택-배선-h4"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 접근성 감사 P0/P1 수정 (H3)",
+          "slug": "2026-07-22-접근성-감사-p0p1-수정-h3"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 숫자 신뢰 회복 + 비개발자 언어 레이어 (H1)",
+          "slug": "2026-07-22-숫자-신뢰-회복-비개발자-언어-레이어-h1"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 개발자 페르소나 실버그 3건 (문서 뷰어 · 빌더 · 문서함 검색)",
+          "slug": "2026-07-22-개발자-페르소나-실버그-3건-문서-뷰어-빌더-문서함-검색"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 디자인 시스템 법전화 R5 (Geometry & Type Codex)",
+          "slug": "2026-07-22-디자인-시스템-법전화-r5-geometry-type-codex"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — R6 소유자 우선 3건 (반딧불 원본 이식 · 헤더 census 필 제거 · 팬 관성 중단)",
+          "slug": "2026-07-22-r6-소유자-우선-3건-반딧불-원본-이식-헤더-census-필-제거-팬-관성-중단"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 지도 디자인 패널 소규모 즉효 4건 (히트 역전 · 호버 잔류 · realm 별칭 · 첫 화면 픽셀)",
+          "slug": "2026-07-22-지도-디자인-패널-소규모-즉효-4건-히트-역전-호버-잔류-realm-별칭-첫-화면-픽셀"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 지도 R4 \"모션 헌법\" (물리 어휘 단일화 · 크롬 등장 문법 · 딥링크 focus dive)",
+          "slug": "2026-07-22-지도-r4-모션-헌법-물리-어휘-단일화-크롬-등장-문법-딥링크-focus-dive"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 지도 S10 소유자 실보고 4건 수정 (chrome 규격 · 펼침 배지 · 영역 히트 · 반딧불)",
+          "slug": "2026-07-22-지도-s10-소유자-실보고-4건-수정-chrome-규격-펼침-배지-영역-히트-반딧불"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 지도 S9 \"영역 전개\" 전개 결함 2건 수정",
+          "slug": "2026-07-22-지도-s9-영역-전개-전개-결함-2건-수정"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 지도 S8 \"영역 전개\" 소유자 실보고 6건 수정",
+          "slug": "2026-07-22-지도-s8-영역-전개-소유자-실보고-6건-수정"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 지도 S6 \"영역 전개\" 퇴장 안무: 입장의 결정론 역재생 · 진입 tier 히치 방어",
+          "slug": "2026-07-22-지도-s6-영역-전개-퇴장-안무-입장의-결정론-역재생-진입-tier-히치-방어"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 지도 S7 \"영역 대장(Realm Ledger)\": 영역 전개 중 좌측 패널 변신",
+          "slug": "2026-07-22-지도-s7-영역-대장realm-ledger-영역-전개-중-좌측-패널-변신"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 빌더 2라운드: 수치 중복 제거 · 도구 내부어 정리 · elevation 토큰 · 미명명 드래프트 누적 방지",
+          "slug": "2026-07-22-빌더-2라운드-수치-중복-제거-도구-내부어-정리-elevation-토큰-미명명-드래프트-누적-방지"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 지도 S5 \"영역 전개\" 2.5D 깊이 연출: 층층이 조립 · 깊이 시차 · 선명도 차등",
+          "slug": "2026-07-22-지도-s5-영역-전개-25d-깊이-연출-층층이-조립-깊이-시차-선명도-차등"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 지도 S4 \"영역 전개\" (Realm): 선택 노드의 세계로 지도 전환",
+          "slug": "2026-07-22-지도-s4-영역-전개-realm-선택-노드의-세계로-지도-전환"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 지도 S3 마감 폴리시: 라벨 top-K LOD · 큐빅 카메라 이징 · 숨은 이웃 히트 차단 · 우하단 계기 분리",
+          "slug": "2026-07-22-지도-s3-마감-폴리시-라벨-top-k-lod-큐빅-카메라-이징-숨은-이웃-히트-차단-우하단-계기-분리"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-22 — 지도 S2: 도메인 스파인 · 엣지 방향 · 규모 크기 · 선택적 ego · 칩 재설계",
           "slug": "2026-07-22-지도-s2-도메인-스파인-엣지-방향-규모-크기-선택적-ego-칩-재설계"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-22 — 빌더 감사 후속 (팝오버 dismiss · 읽기 전용 진실 · 관계 추가 · 모달 scrim · 토스트/미니맵 정리)",
+          "slug": "2026-07-22-빌더-감사-후속-팝오버-dismiss-읽기-전용-진실-관계-추가-모달-scrim-토스트미니맵-정리"
         },
         {
           "depth": 2,
@@ -4179,9 +4269,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. /?synth=2000·/?synth=5000 대형 합성 vault 실사용에서 드러난 밀도·가독성 문제와 소유자 실보고를 묶어 처리한 topology-ma",
-      "wordCount": 28652,
-      "updatedAt": "2026-07-22T08:34:26+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 온보딩/토스 디자이너 상위 지적을 첫 실행 표면과 빌더 인스펙터에서 고쳤다. 폴더 열기 CTA 영속화 — 첫 실행 카드를 닫으면 \"내 폴더 열기\"가 설정 ",
+      "wordCount": 32313,
+      "updatedAt": "2026-07-23T00:01:25+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -4654,6 +4744,46 @@
         },
         {
           "depth": 2,
+          "text": "Geometry & Type Codex (R5, 2026-07)",
+          "slug": "geometry-type-codex-r5-2026-07"
+        },
+        {
+          "depth": 3,
+          "text": "Type ramp — 7단",
+          "slug": "type-ramp-7단"
+        },
+        {
+          "depth": 3,
+          "text": "Radius ramp — 3단 (일반 표면)",
+          "slug": "radius-ramp-3단-일반-표면"
+        },
+        {
+          "depth": 3,
+          "text": "Padding — 2단",
+          "slug": "padding-2단"
+        },
+        {
+          "depth": 3,
+          "text": "박스별 규격 표",
+          "slug": "박스별-규격-표"
+        },
+        {
+          "depth": 3,
+          "text": "명시 예외 (램프 밖, 문서화된 것만)",
+          "slug": "명시-예외-램프-밖-문서화된-것만"
+        },
+        {
+          "depth": 3,
+          "text": "Lint 봉쇄",
+          "slug": "lint-봉쇄"
+        },
+        {
+          "depth": 3,
+          "text": "모션 문법 인덱스",
+          "slug": "모션-문법-인덱스"
+        },
+        {
+          "depth": 2,
           "text": "크롬 문법 (feat/chrome-system)",
           "slug": "크롬-문법-featchrome-system"
         },
@@ -4666,6 +4796,11 @@
           "depth": 3,
           "text": "타일 / 칩 / 필 / 패널 4계층",
           "slug": "타일-칩-필-패널-4계층"
+        },
+        {
+          "depth": 3,
+          "text": "박스 규격 (Geometry ladder) — \"모든 곳 동일 적용\" 계약",
+          "slug": "박스-규격-geometry-ladder-모든-곳-동일-적용-계약"
         },
         {
           "depth": 3,
@@ -4699,8 +4834,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 10817,
-      "updatedAt": "2026-07-20T08:39:47+09:00",
+      "wordCount": 12010,
+      "updatedAt": "2026-07-22T22:15:48+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -5263,8 +5398,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 10903,
-      "updatedAt": "2026-07-22T01:07:15+09:00",
+      "wordCount": 11074,
+      "updatedAt": "2026-07-22T10:45:32+09:00",
       "linksOut": [
         "slug",
         "project:slug",

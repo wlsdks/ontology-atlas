@@ -632,7 +632,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ctx.strokeStyle = tokens.edgeSelected;
       ctx.lineWidth = ringStyle.lineWidth;
       ctx.beginPath();
-      ctx.arc(screen.x, screen.y, screenRadius + FOOTPRINT_RING_OFFSET, 0, Math.PI * 2);
+      // 노드 모양 추종 — 사각 계열(domain/capability)은 둥근 사각 링, 나머지는 원.
+      // 원형 링이 사각 노드를 두르면 "동그라미+네모" 이형 겹침으로 읽힌다 (소유자 실보고).
+      if (node.kind === "domain" || node.kind === "capability") {
+        const half = screenRadius + FOOTPRINT_RING_OFFSET;
+        ctx.roundRect(screen.x - half, screen.y - half, half * 2, half * 2, Math.max(3, half * 0.28));
+      } else {
+        ctx.arc(screen.x, screen.y, screenRadius + FOOTPRINT_RING_OFFSET, 0, Math.PI * 2);
+      }
       ctx.stroke();
       ctx.restore();
       ctx.globalAlpha = 1;
