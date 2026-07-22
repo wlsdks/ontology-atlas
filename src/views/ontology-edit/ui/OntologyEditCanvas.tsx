@@ -27,6 +27,7 @@ import {
 } from "@/entities/docs-vault";
 import { useRelationVocabulary } from "@/entities/knowledge-graph";
 import { buildFocusedBuilderManifest } from "../lib/build-focused-builder-manifest";
+import { resolveBuilderCanvasSelection } from "../lib/resolve-canvas-selection";
 import { resolveBuilderEdgeEndpointHandles } from "../lib/builder-edge-handles";
 import { useVaultGraphFlow } from "../lib/use-vault-graph-flow";
 import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
@@ -412,13 +413,16 @@ export function OntologyEditCanvas({
 
   const handleSelectionChange = useCallback(
     (params: OnSelectionChangeParams) => {
-      // B-3 — 엣지만 선택된 경우(노드 0개)엔 노드 선택을 초기화하지 않는다.
-      // 예전엔 저장된 엣지를 클릭하면 nodes[0] 가 undefined → null 로 리셋돼
-      // 인스펙터가 빈 상태로 돌아가, 기존 관계 편집 진입로가 사라졌다.
-      // 엣지 클릭은 onEdgeClick → onEdgeOpen 이 별도로 처리한다.
-      if (params.nodes.length === 0 && params.edges.length > 0) return;
-      const next = params.nodes[0]?.id ?? null;
-      onSelectionChange?.(next);
+      // 토스 #1 — 실제 노드 선택만 부모로 전파한다. 빈 노드 보고는
+      // (엣지-only 박스 선택 B-3 이든, focusNodeId 변화로 그래프가 재빌드되며
+      // xyflow 가 순간적으로 발화하는 잡음이든) 절대 부모 selectedId 를
+      // 건드리지 않는다 — 예전엔 이 빈 보고를 null 로 전파해 방금 클릭한
+      // 드래프트 선택을 지웠고, 인스펙터가 그 노드로 전환됐다가 즉시 빈
+      // 상태로 되돌아갔다. 진짜 선택 해제는 onPaneClick(빈 캔버스) · Escape ·
+      // 인스펙터 ✕ 가 각자 명시적으로 소유한다. (../lib/resolve-canvas-selection)
+      const resolved = resolveBuilderCanvasSelection(params);
+      if (!resolved.propagate) return;
+      onSelectionChange?.(resolved.selectedId);
     },
     [onSelectionChange],
   );

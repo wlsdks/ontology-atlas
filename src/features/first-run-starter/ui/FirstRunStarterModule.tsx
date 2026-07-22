@@ -1,6 +1,7 @@
 "use client";
 
-import { FolderOpen } from "lucide-react";
+import { useState } from "react";
+import { ChevronRight, FolderOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { CompactCopyButton } from "@/shared/ui";
@@ -49,6 +50,10 @@ export function FirstRunStarterModule({
     errorText,
   } = useFirstRunStarter();
   const { state: cliCopyState, copy: copyCliCommand } = useCopyFeedback();
+  // 온보딩 디자이너 지적 — npx 명령 블록이 비개발자(기획/마케팅/리더십)
+  // 첫 화면에 상시 노출돼 시선을 뺏었다. 기본 접힘 disclosure 뒤로 보내
+  // 개발자만 펼쳐 보게 한다. 카드가 리마운트될 때까지 세션 내 상태.
+  const [cliOpen, setCliOpen] = useState(false);
 
   if (!visible) return null;
 
@@ -118,26 +123,50 @@ export function FirstRunStarterModule({
       {/* P1-① — 코드베이스 자동 부트스트랩(CLI/에이전트 전용)으로 가는 다리.
           위 두 버튼(폴더 열기 / 새 vault 만들기)은 빈 vault 를 여는 경로일
           뿐, "내 리포를 분석해서 채워줘"에는 답하지 못한다 — 그 답은
-          `ontology-atlas bootstrap` 인데 웹 첫 화면엔 안내가 전혀 없었다. */}
-      <div
-        data-testid="first-run-starter-cli-bridge"
-        className="mt-3 flex items-center justify-between gap-2 rounded-md border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.35)] px-2.5 py-2"
-      >
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] leading-tight text-[color:var(--topology-v2-panel-text-quaternary)]">
-            {t("cliBridgeLabel")}
-          </p>
-          <code className="mt-0.5 block truncate font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-secondary)]">
-            {CLI_BOOTSTRAP_COMMAND}
-          </code>
-        </div>
-        <CompactCopyButton
-          copied={cliCopyState === "copied"}
-          label={cliCopyState === "copied" ? t("cliBridgeCopied") : t("cliBridgeCopy")}
-          ariaLabel={t("cliBridgeCopyAriaLabel")}
-          onClick={() => void copyCliCommand(CLI_BOOTSTRAP_COMMAND)}
-          data-testid="first-run-starter-cli-bridge-copy"
-        />
+          `ontology-atlas bootstrap` 인데 웹 첫 화면엔 안내가 전혀 없었다.
+          온보딩 디자이너 지적: 기본 접힘 disclosure 로 감춰 비개발자 시선에서
+          제거하고, 개발자만 "개발자라면 —" 을 펼쳐 명령을 본다. */}
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={() => setCliOpen((open) => !open)}
+          aria-expanded={cliOpen}
+          aria-controls="first-run-starter-cli-bridge"
+          data-testid="first-run-starter-cli-toggle"
+          className="flex items-center gap-1 text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+        >
+          <ChevronRight
+            size={11}
+            aria-hidden
+            className={`transition-transform duration-150 motion-reduce:transition-none ${
+              cliOpen ? "rotate-90" : ""
+            }`}
+          />
+          {t("cliBridgeToggle")}
+        </button>
+        {cliOpen ? (
+          <div
+            id="first-run-starter-cli-bridge"
+            data-testid="first-run-starter-cli-bridge"
+            className="mt-2 flex items-center justify-between gap-2 rounded-md border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.35)] px-2.5 py-2"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] leading-tight text-[color:var(--topology-v2-panel-text-quaternary)]">
+                {t("cliBridgeLabel")}
+              </p>
+              <code className="mt-0.5 block truncate font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-secondary)]">
+                {CLI_BOOTSTRAP_COMMAND}
+              </code>
+            </div>
+            <CompactCopyButton
+              copied={cliCopyState === "copied"}
+              label={cliCopyState === "copied" ? t("cliBridgeCopied") : t("cliBridgeCopy")}
+              ariaLabel={t("cliBridgeCopyAriaLabel")}
+              onClick={() => void copyCliCommand(CLI_BOOTSTRAP_COMMAND)}
+              data-testid="first-run-starter-cli-bridge-copy"
+            />
+          </div>
+        ) : null}
       </div>
 
       {errorText !== null ? (
