@@ -32,6 +32,7 @@ import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
 import { hitTestEdges, type EdgeHitCandidate } from "./topology-edge-hit";
 import { clusterChipLabel, clusterChipRect, clusterChipScale } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
+import { depthParallaxOffsetFor, type DepthParallaxOffset } from "../model/realm-depth-parallax";
 import { computeGrabOffsetWorld, computePinWorld, type WorldOffset } from "../interaction/node-drag";
 import {
   INITIAL_POINTER_MACHINE_STATE,
@@ -144,6 +145,16 @@ export interface PointerHandlerRefs {
   clusteredIdsRef?: Ref<ReadonlySet<string>>;
   /** 밀도 게이트 — 호버 중 클러스터 부모 id 미러(커서 + 보더 강조). */
   hoveredClusterIdRef?: Ref<string | null>;
+  /**
+   * S5 깊이 시차 — 영역 active 중 rAF 가 채우는 밴드별 렌더 오프셋 + depthById.
+   * 히트테스트가 드로우와 **같은** 오프셋을 노드에 적용해 클릭 어긋남을 막는다.
+   * null(정지/미영역)이면 오프셋 없음.
+   */
+  realmParallaxRef?: Ref<{
+    depthById: ReadonlyMap<string, number>;
+    depth2: DepthParallaxOffset;
+    depth3: DepthParallaxOffset;
+  } | null>;
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
     position: { x: number; y: number } | null,
@@ -227,6 +238,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     clusterChipsRef,
     clusteredIdsRef,
     hoveredClusterIdRef,
+    realmParallaxRef,
     onSelect,
     onSelectEdge,
     onHoverEdge,
@@ -287,6 +299,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // S3 — 이번 프레임에 그리지 않은(밀도게이트 접힘 + 선택적 ego 숨김) 노드는
     // 히트 대상에서 제외 — 숨은 ego 이웃이 클릭되던 S2 갭 차단.
     const clusteredIds = clusteredIdsRef?.current;
+    // S5 — 영역 시차가 활성이면 드로우와 같은 밴드 오프셋을 히트에도 적용.
+    const parallax = realmParallaxRef?.current ?? null;
+    const renderOffsetForNode = parallax
+      ? (node: { id: string }) =>
+          depthParallaxOffsetFor(parallax.depthById.get(node.id), parallax.depth2, parallax.depth3)
+      : undefined;
     return hitTestWorld(
       world,
       camera,
@@ -296,6 +314,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       px,
       py,
       (node) => isNodeHittable(node, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL, clusteredIds),
+      renderOffsetForNode,
     );
   };
 

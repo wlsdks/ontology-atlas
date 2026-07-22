@@ -68,12 +68,26 @@ export function hitTestWorld(
   screenY: number,
   /** Optional filter — skips nodes that aren't currently hittable (e.g. semantic-zoom-hidden tiers). Defaults to "all hittable". */
   isHittable?: (node: WorldNode) => boolean,
+  /**
+   * S5 — optional per-node render offset (world units). The draw pass shifts
+   * deep realm nodes by the depth-parallax offset; passing the SAME offset here
+   * keeps the clickable disc under where the node is actually drawn. Defaults to
+   * no offset (the common case).
+   */
+  renderOffsetForNode?: (node: WorldNode) => Point,
 ): string | null {
   let bestId: string | null = null;
   let bestDistance = Infinity;
   for (const node of world.nodes) {
     if (isHittable && !isHittable(node)) continue;
-    const screen = worldToScreen(camera, viewportWidth, viewportHeight, node.x, node.y);
+    const off = renderOffsetForNode ? renderOffsetForNode(node) : null;
+    const screen = worldToScreen(
+      camera,
+      viewportWidth,
+      viewportHeight,
+      node.x + (off?.x ?? 0),
+      node.y + (off?.y ?? 0),
+    );
     const effRadius = radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value + 5;
     const distance = Math.hypot(screenX - screen.x, screenY - screen.y);
     if (distance <= effRadius && distance < bestDistance) {

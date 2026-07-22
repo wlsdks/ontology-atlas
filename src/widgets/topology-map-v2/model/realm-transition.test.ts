@@ -3,11 +3,16 @@ import { describe, expect, it } from "vitest";
 import {
   INITIAL_REALM_TRANSITION_STATE,
   REALM_ENVELOPE_MS,
+  REALM_INSIDE_FLIP_DELAY_MS,
+  REALM_INSIDE_FLIP_DELAY_STEP_MS,
   REALM_INSIDE_FLIP_MS,
   REALM_OUTSIDE_FLING_MS,
   isRealmEngaged,
   isRealmOutsideCulled,
+  realmDepthClarityAlpha,
+  realmDepthClarityScale,
   realmDustParallaxFactor,
+  realmInsideFlipDelayFor,
   realmInsidePosition,
   realmOutsidePosition,
   realmTransitionReducer,
@@ -137,6 +142,45 @@ describe("realmWardingDrawProgress", () => {
     expect(realmWardingDrawProgress(0)).toBe(0);
     expect(realmWardingDrawProgress(9999)).toBe(1);
     expect(realmWardingDrawProgress(-5)).toBe(0);
+  });
+});
+
+describe("realmInsideFlipDelayFor (S5 깊이 계단 조립)", () => {
+  it("루트·도메인(depth≤1)은 기본 지연", () => {
+    expect(realmInsideFlipDelayFor(0)).toBe(REALM_INSIDE_FLIP_DELAY_MS);
+    expect(realmInsideFlipDelayFor(1)).toBe(REALM_INSIDE_FLIP_DELAY_MS);
+  });
+
+  it("depth2 는 +1 스텝, depth3+ 는 +2 스텝에서 포화", () => {
+    expect(realmInsideFlipDelayFor(2)).toBe(REALM_INSIDE_FLIP_DELAY_MS + REALM_INSIDE_FLIP_DELAY_STEP_MS);
+    expect(realmInsideFlipDelayFor(3)).toBe(REALM_INSIDE_FLIP_DELAY_MS + REALM_INSIDE_FLIP_DELAY_STEP_MS * 2);
+    expect(realmInsideFlipDelayFor(9)).toBe(realmInsideFlipDelayFor(3));
+  });
+
+  it("가장 깊은 링의 지연 + FLIP 이 봉투 안에 정착한다", () => {
+    expect(realmInsideFlipDelayFor(3) + REALM_INSIDE_FLIP_MS).toBe(REALM_ENVELOPE_MS);
+  });
+
+  it("깊을수록 지연이 단조 증가한다", () => {
+    expect(realmInsideFlipDelayFor(1)).toBeLessThan(realmInsideFlipDelayFor(2));
+    expect(realmInsideFlipDelayFor(2)).toBeLessThan(realmInsideFlipDelayFor(3));
+  });
+});
+
+describe("realmDepthClarity (S5 깊이 선명도)", () => {
+  it("알파는 깊을수록 낮고 depth≤1 은 1.0", () => {
+    expect(realmDepthClarityAlpha(0)).toBe(1);
+    expect(realmDepthClarityAlpha(1)).toBe(1);
+    expect(realmDepthClarityAlpha(2)).toBeCloseTo(0.92);
+    expect(realmDepthClarityAlpha(3)).toBeCloseTo(0.84);
+    expect(realmDepthClarityAlpha(7)).toBe(realmDepthClarityAlpha(3));
+  });
+
+  it("스케일도 깊을수록 작고 depth≤1 은 1.0 (알파와 대칭)", () => {
+    expect(realmDepthClarityScale(1)).toBe(1);
+    expect(realmDepthClarityScale(2)).toBeCloseTo(0.97);
+    expect(realmDepthClarityScale(3)).toBeCloseTo(0.94);
+    expect(realmDepthClarityScale(4)).toBe(realmDepthClarityScale(3));
   });
 });
 

@@ -85,6 +85,17 @@ describe("buildRealmRuntimeData", () => {
     expect(data!.wardingRadius).toBeGreaterThan(0);
   });
 
+  it("exposes depthById for every member (root=0) — S5 깊이 연출 런타임 데이터", () => {
+    const data = buildRealmRuntimeData(buildFixtureWorld(), "d", tokens)!;
+    // 모든 멤버가 깊이를 갖고, 루트는 0.
+    expect(new Set(data.depthById.keys())).toEqual(new Set(data.memberIds));
+    expect(data.depthById.get("d")).toBe(0);
+    // 비루트 멤버는 루트보다 깊다.
+    for (const id of data.memberIds) {
+      if (id !== "d") expect(data.depthById.get(id)!).toBeGreaterThan(0);
+    }
+  });
+
   it("is deterministic (same world + root → identical warding radius)", () => {
     const a = buildRealmRuntimeData(buildFixtureWorld(), "d", tokens)!;
     const b = buildRealmRuntimeData(buildFixtureWorld(), "d", tokens)!;
