@@ -124,18 +124,34 @@ describe('FirstRunStarterModule', () => {
   // 부트스트랩(CLI/에이전트 전용)으로 가는 다리가 전혀 없어 "내 리포를
   // 5분 만에 지도로" 여정이 완결되지 않았다. 카드 안 명령 복사 한 줄로
   // 그 다리를 놓는다.
-  it('shows the CLI bootstrap bridge with the exact init+bootstrap command', () => {
+  //
+  // 온보딩 디자이너 지적(H4) — 그 npx 블록이 비개발자 첫 시선을 뺏어
+  // 기본 접힘 disclosure 뒤로 옮겼다. 기본 상태에선 명령이 보이지 않고,
+  // "개발자라면 —" 토글을 펼쳐야 나온다.
+  it('keeps the CLI bootstrap command collapsed behind a developer disclosure by default', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+
+    expect(screen.getByTestId('first-run-starter-cli-toggle')).toBeInTheDocument();
+    expect(screen.queryByTestId('first-run-starter-cli-bridge')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('npx ontology-atlas init && npx ontology-atlas bootstrap'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('reveals the exact init+bootstrap command when the developer disclosure is expanded', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    fireEvent.click(screen.getByTestId('first-run-starter-cli-toggle'));
 
     expect(screen.getByTestId('first-run-starter-cli-bridge')).toBeInTheDocument();
     expect(screen.getByText('npx ontology-atlas init && npx ontology-atlas bootstrap')).toBeInTheDocument();
   });
 
-  it('copies the CLI bootstrap command to the clipboard', async () => {
+  it('copies the CLI bootstrap command to the clipboard once the disclosure is open', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
 
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    fireEvent.click(screen.getByTestId('first-run-starter-cli-toggle'));
     fireEvent.click(screen.getByTestId('first-run-starter-cli-bridge-copy'));
 
     await waitFor(() => {

@@ -230,10 +230,15 @@
     "createBusy": "Writing starter structure…",
     "dismissLabel": "Just looking around here",
     "errorFallback": "Could not open the folder. Try again.",
+    "cliBridgeToggle": "If you're a developer —",
     "cliBridgeLabel": "To start automatically from your codebase",
     "cliBridgeCopy": "Copy command",
     "cliBridgeCopied": "Copied",
     "cliBridgeCopyAriaLabel": "Copy the bootstrap command to paste in your terminal",
+    "nodeHint": {
+      "action": "Tap a node on the map",
+      "reason": "everything here is a real document"
+    },
     "readout": {
       "projectUnit": "project",
       "domainUnit": "domains",
@@ -2263,6 +2268,9 @@
       "docsTooltip": "Ontology workspace quick look (D)",
       "docsAriaLabel": "Open ontology workspace quick look (D)",
       "docsLabel": "Workspace",
+      "switchToMyDataLabel": "Switch to my data",
+      "switchToMyDataAriaLabel": "Open my markdown folder and light up the map with my data (⌘O)",
+      "switchToMyDataTooltip": "Open my markdown folder — the map fills with my data (⌘O)",
       "pinnedDocsCount": "{count} pinned documents",
       "reviewLabel": "{count} changes",
       "reviewAria": "{count} changes since baseline — review in the ontology changes panel",

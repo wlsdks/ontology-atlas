@@ -12,13 +12,17 @@ import {
 } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BookOpen, HelpCircle, Plus, Waypoints, X } from "lucide-react";
+import { BookOpen, FolderOpen, HelpCircle, Plus, Waypoints, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
   useLocalVault,} from "@/features/docs-vault-local";
-import { FirstRunReadout } from "@/features/first-run-starter";
+import {
+  FirstRunReadout,
+  SampleNodeHint,
+  useFirstRunSampleModeSettled,
+} from "@/features/first-run-starter";
 import { HeroCollapsed } from "@/widgets/hero-header";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import dynamic from "next/dynamic";
@@ -531,6 +535,11 @@ export function HomePage() {
   // S1.1 — 토폴로지를 온톨로지의 1차 편집 surface 로. writable 로컬 vault 면
   // 선택 노드를 자기 .md 문서로 해석해 전체 상세(A1)의 본문 인라인 편집을 허용.
   const vault = useLocalVault();
+  // 온보딩 디자이너 지적 — 첫 실행 카드를 닫으면 "폴더 열기" 진입점이 설정
+  // 기어 뒤로 사라졌다. 정적 샘플 모드(카드 dismiss 와 무관)일 때 상단 유틸리티
+  // 열에 조용한 "내 데이터로 전환 ⌘O" 필을 상시 노출하고, 실제 vault 가
+  // 연결되면 게이트가 꺼져 자동 소멸한다(카드 dismiss 축과 독립).
+  const sampleModeSettled = useFirstRunSampleModeSettled();
   const nodeEditTarget = useMemo(
     () =>
       selectedOntologyNode
@@ -1469,6 +1478,18 @@ export function HomePage() {
         setDocsDrawerOpen((v) => !v);
       },
     },
+    {
+      // ⌘O — 정적 샘플 모드에서 내 markdown 폴더로 전환(vault.open). 첫 실행
+      // 카드의 ⌘O 힌트와 상단 "내 데이터로 전환" 필이 같은 이 핸들러를 가리켜
+      // 카드를 닫아도 살아있는 단축키가 된다. 실제 vault 연결(로컬 모드)에선
+      // 게이트가 꺼져 무동작.
+      combo: { key: "o", meta: true },
+      onFire: () => {
+        if (createNodeOpen) return;
+        if (!sampleModeSettled) return;
+        void vault.open();
+      },
+    },
   ]);
 
   const drawerOpen = drawerProject !== null || selectedOntologyNode !== null;
@@ -2136,6 +2157,29 @@ export function HomePage() {
                       data-utility-lane-border-token="--topology-utility-lane-border"
                       data-utility-lane-shadow-token="--topology-utility-lane-shadow"
                     >
+                    {/* 온보딩 디자이너 지적 — 첫 실행 카드 dismiss 후에도 살아남는
+                        상시 "내 데이터로 전환" 진입점. 정적 샘플 모드에서만
+                        보이고(카드 dismiss 와 독립), 실제 vault 연결 시 소멸.
+                        chrome 타일 규격(ChromeChip) 준수, 조용한 support 표면. */}
+                    {sampleModeSettled ? (
+                      <Tooltip content={t('controls.switchToMyDataTooltip')} side="bottom" withProvider={false}>
+                        <ChromeChip
+                          onClick={() => void vault.open()}
+                          aria-label={t('controls.switchToMyDataAriaLabel')}
+                          data-testid="topology-switch-to-my-data"
+                          data-utility-action-token-contract="support-surface-family"
+                          data-utility-action-surface-token="--chrome-surface"
+                          data-utility-action-border-token="--chrome-border"
+                          data-utility-action-shadow-token="--chrome-shadow"
+                          data-utility-action-focus-ring-token="--color-indigo-accent"
+                          compact={topologyUtilityChromeCompact}
+                          icon={<FolderOpen className="text-[color:var(--color-indigo-accent)]" />}
+                          kbd="⌘O"
+                        >
+                          {t('controls.switchToMyDataLabel')}
+                        </ChromeChip>
+                      </Tooltip>
+                    ) : null}
                     <TopologyReviewLink
                       changeset={ontologyChangeset}
                       label={(count) => t('controls.reviewLabel', { count })}
@@ -2859,6 +2903,11 @@ export function HomePage() {
                   tier={mapZoomTier}
                 />
               </div>
+
+              {/* 샘플 모드 첫 방문 1회성 지도 힌트 — 하단 중앙, pointer-events-none
+                  이라 노드 클릭을 막지 않는다(통과 클릭 = 소멸). 첫 노드 선택 시
+                  영구 소멸(localStorage). 소스: features/first-run-starter. */}
+              <SampleNodeHint hasSelection={Boolean(canvasSelectedSlug)} />
 
             </>
         </div>
