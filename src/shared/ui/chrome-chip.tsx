@@ -63,6 +63,7 @@ export const ChromeChip = forwardRef<HTMLButtonElement, ChromeChipProps>(
       {kbd ? (
         <span
           aria-hidden="true"
+          data-chip-kbd
           className={cn(
             'ml-auto shrink-0 rounded border border-[color:var(--color-border-soft)] px-1 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]',
             compact && 'hidden',

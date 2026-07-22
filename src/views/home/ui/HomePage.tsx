@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
+import { cn } from "@/shared/lib/cn";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
@@ -3029,7 +3030,17 @@ export function HomePage() {
                   `--topology-relation-legend-inset` 토큰(base 24px, ≥1920 32px)에
                   연결 — ≥1920 에서 나머지 크롬이 1.15 로 커질 때 이 스택도 코너에서
                   더 물러나 지도 라벨과 충돌하지 않는다. */}
-              <div className="pointer-events-none absolute bottom-[var(--topology-relation-legend-inset)] right-[var(--topology-relation-legend-inset)] z-20 flex flex-col items-end gap-3 whitespace-nowrap">
+              {/* 검수 1바퀴 결함 2 (2026-07-23) — 우측 데이터시트가 열리면 이
+                  코너 스택(범례+판독)이 패널 뒤·왼편으로 파편처럼 비쳐 보였다
+                  (4개 로케일×해상도 전 조합 재현). 앰비언트 정보라 조사 중엔
+                  필요 없으므로 패널이 열려 있는 동안 조용히 사라진다. */}
+              <div
+                className={cn(
+                  "pointer-events-none absolute bottom-[var(--topology-relation-legend-inset)] right-[var(--topology-relation-legend-inset)] z-20 flex flex-col items-end gap-3 whitespace-nowrap transition-opacity duration-180 ease-out motion-reduce:transition-none",
+                  v2DatasheetModel ? "opacity-0" : "opacity-100",
+                )}
+                aria-hidden={v2DatasheetModel ? true : undefined}
+              >
                 <TopologyRelationLegend />
                 <FirstRunReadout
                   projectCount={firstRunProjectCount}
