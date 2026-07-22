@@ -1,7 +1,7 @@
 "use client";
 
 import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useState } from "react";
-import { Copy, FileText, GitBranch, Route, X } from "lucide-react";
+import { Copy, FileText, GitBranch, Orbit, Route, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { isContainmentRelation } from "@/shared/lib/ontology-tree";
@@ -94,6 +94,8 @@ export interface TopologyV2DetailPanelLabels {
   actionEditRelations: string;
   actionCopyHandoff: string;
   actionPath: string;
+  /** S4 "영역 전개" 2차 발견 경로 액션 라벨 ("영역 전개"). */
+  actionRealm: string;
 }
 
 export interface TopologyV2DetailPanelProps {
@@ -153,6 +155,12 @@ export interface TopologyV2DetailPanelProps {
    * entry logic.
    */
   onSetPathSource: () => void;
+  /**
+   * S4 "영역 전개" 2차 발견 경로 — 궤도 버튼 외에 데이터시트에서도 영역을 펼
+   * 수 있게 한다. 컨테이너 노드(자식 있음)이며 영역 밖일 때만 HomePage 가 주입
+   * (그 외엔 omit → 버튼 미표시). 궤도 버튼과 같은 액션 하나.
+   */
+  onEnterRealm?: () => void;
   /** Opens the A1 full-detail datasheet for this node — details-on-demand
    * opt-in (`.claude/rules/design.md` "풀스크린 드로어는 opt-in"). Omitted
    * hides the link (e.g. read-only embeds). */
@@ -183,6 +191,7 @@ export function TopologyV2DetailPanel({
   onCopyHandoff,
   onClose,
   onSetPathSource,
+  onEnterRealm,
   onOpenFullDetail,
   className,
 }: TopologyV2DetailPanelProps) {
@@ -518,6 +527,20 @@ export function TopologyV2DetailPanel({
           <span>{labels.actionPath}</span>
         </button>
       </div>
+
+      {/* S4 "영역 전개" 2차 발견 경로 — 컨테이너 노드에서만(HomePage 가 주입).
+          궤도 버튼과 같은 액션 하나: 이 노드의 세계로 지도를 전환한다. */}
+      {onEnterRealm ? (
+        <button
+          type="button"
+          onClick={onEnterRealm}
+          data-testid="topology-v2-detail-panel-action-realm"
+          className="flex items-center justify-center gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-2 py-1.5 text-[12px] font-medium text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+        >
+          <Orbit size={15} aria-hidden="true" />
+          <span>{labels.actionRealm}</span>
+        </button>
+      ) : null}
 
       {/* Connections grouped by relation type */}
       <div className="flex flex-col gap-2.5">

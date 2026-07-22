@@ -30,6 +30,12 @@ interface Props {
    * 남아 부유 패널이 늘지 않는다. 슬롯이 비면 렌더 비용 0.
    */
   returnChip?: ReactNode;
+  /**
+   * S4 "영역 전개" 상태 칩 — pathChip/returnChip 과 같은 "상단 중앙 크롬 열"
+   * 문법. 영역 활성일 때만 렌더돼 "영역: {title} ✕" 로 현재 세계를 알리고
+   * ✕ 로 전체 지도 복귀한다. 슬롯이 비면 렌더 비용 0.
+   */
+  realmChip?: ReactNode;
 }
 
 const subscribe = () => () => {};
@@ -54,6 +60,7 @@ export function SearchHint({
   phoneFocusSuppressed = false,
   pathChip,
   returnChip,
+  realmChip,
 }: Props) {
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
@@ -89,6 +96,7 @@ export function SearchHint({
     >
       <div className="flex items-center gap-2">
         {returnChip}
+        {realmChip}
         {pathChip}
         {/* 자동 정렬 — 데스크톱에서만 노출. 모바일에서는 자주 안 쓰는 액션이라
             우상단 floating 버튼이 시각적 무게를 잡아먹는 게 더 큰 손실. 필요하면

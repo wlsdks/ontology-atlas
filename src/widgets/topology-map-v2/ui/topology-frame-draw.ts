@@ -212,6 +212,19 @@ export interface FrameDrawParams {
   clusterChips: readonly ClusterChip[];
   /** 밀도 게이트 — 호버 중인 클러스터 부모 id (칩 보더 강조), 없으면 null. */
   hoveredClusterId: string | null;
+  /**
+   * S4 "영역 전개" — 결계 링. 영역 활성(entering/active) 시 서브트리 바운딩
+   * 반경에 1px 인디고 헤어라인 원을 두른다. `drawProgress` 0..1 로 stroke 를
+   * 자기 드로잉한다(전환 초반 ~200ms). null 이면 미표시(회귀 0).
+   */
+  wardingRing: { centerX: number; centerY: number; radius: number; drawProgress: number } | null;
+  /**
+   * S4 — 영역 멤버 id (결계를 가로지르는 관계의 안쪽 끝을 판정). 결계 밖으로
+   * 나가는 엣지는 안쪽 노드에서 결계 방향으로 페이드 스텁으로만 그린다.
+   */
+  realmMemberIds: ReadonlySet<string> | null;
+  /** S4 — 멤버별 깊이 기반 티어 kind 오버라이드 (영역 세계의 티어 = 재배치 깊이). */
+  realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -241,6 +254,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     clusteredIds,
     clusterChips,
     hoveredClusterId,
+    wardingRing,
+    realmMemberIds,
+    realmTierKinds,
   } = params;
 
   // Where world (0,0) currently lands on screen — the blueprint grid rides
@@ -290,7 +306,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const tierAlphaById = tierAlphaByIdReused;
   const effectiveAlphaById = effectiveAlphaByIdReused;
   for (const node of world.nodes) {
-    const tierAlpha = nodeTierAlpha(node.kind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL);
+    const tierKind = realmTierKinds?.get(node.id) ?? node.kind;
+    const tierAlpha = nodeTierAlpha(tierKind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL);
     tierAlphaById.set(node.id, tierAlpha);
     const isPairMember =
       focusedNodeId === null &&
@@ -464,6 +481,52 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         alpha: farT * tierAlpha,
       });
     }
+    ctx.globalAlpha = 1;
+  }
+
+  // --- S4 "영역 전개" 결계(warding) — 서브트리 바운딩 원 + 경계 넘는 관계의
+  // 페이드 스텁. 노드 위, 칩/라벨 아래. 드라마는 기하·자기드로잉으로만(glow/네온
+  // 금지) — 1px 인디고 헤어라인. ---
+  if (wardingRing !== null) {
+    const center = project(wardingRing.centerX, wardingRing.centerY);
+    const screenRadius = wardingRing.radius * camera.scale.value;
+    // 결계 밖으로 나가는 관계: 안쪽 노드에서 결계 방향으로만 페이드 스텁.
+    if (realmMemberIds !== null && wardingRing.drawProgress > 0.05) {
+      ctx.save();
+      ctx.strokeStyle = tokens.indigo;
+      ctx.lineWidth = 1;
+      for (const edge of world.edges) {
+        const sIn = realmMemberIds.has(edge.sourceId);
+        const tIn = realmMemberIds.has(edge.targetId);
+        if (sIn === tIn) continue; // 둘 다 안/밖 = 경계 아님
+        const insideWX = sIn ? edge.ax : edge.bx;
+        const insideWY = sIn ? edge.ay : edge.by;
+        const dx = insideWX - wardingRing.centerX;
+        const dy = insideWY - wardingRing.centerY;
+        const dist = Math.hypot(dx, dy) || 1;
+        // 결계까지의 스텁 끝점(방사 방향, 링 반경).
+        const tipWX = wardingRing.centerX + (dx / dist) * wardingRing.radius;
+        const tipWY = wardingRing.centerY + (dy / dist) * wardingRing.radius;
+        const a = project(insideWX, insideWY);
+        const b = project(tipWX, tipWY);
+        ctx.globalAlpha = 0.22 * wardingRing.drawProgress;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // 결계 링 자기 드로잉: 위(-90°)에서 시계방향으로 drawProgress 만큼 호를 그린다.
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = tokens.indigo;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const start = -Math.PI / 2;
+    ctx.arc(center.x, center.y, Math.max(0, screenRadius), start, start + Math.PI * 2 * wardingRing.drawProgress);
+    ctx.stroke();
+    ctx.restore();
     ctx.globalAlpha = 1;
   }
 

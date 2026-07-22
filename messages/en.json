@@ -2364,6 +2364,12 @@
       "collapseAria": "Collapse this group",
       "tooltipCollapsed": "{count} items under “{name}” are folded — click to expand",
       "tooltipExpanded": "{count} items expanded — click to collapse"
+    },
+    "realm": {
+      "enterAction": "Expand realm",
+      "enterTooltip": "Expand just this node’s realm",
+      "chipPrefix": "Realm",
+      "chipClear": "Exit realm"
     }
   },
   "fullDetailA1": {

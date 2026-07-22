@@ -20,6 +20,24 @@ describe("resolveTopologyEscLadderAction", () => {
     expect(resolveTopologyEscLadderAction(BASE)).toBe("none");
   });
 
+  it("S4: closes the realm first, above every other tier including the context menu", () => {
+    expect(
+      resolveTopologyEscLadderAction({
+        ...BASE,
+        realmActive: true,
+        contextMenuOpen: true,
+        createNodeOpen: true,
+        fullDetailOpen: true,
+        hasSelection: true,
+        nodePopoverOpen: true,
+      }),
+    ).toBe("close-realm");
+  });
+
+  it("S4: when not in a realm the ladder is unchanged (no regression)", () => {
+    expect(resolveTopologyEscLadderAction({ ...BASE, realmActive: false, hasSelection: true })).toBe("deselect");
+  });
+
   it("closes the W2-B context menu first, above every other tier including the create-node composer", () => {
     expect(
       resolveTopologyEscLadderAction({

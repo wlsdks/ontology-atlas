@@ -36,6 +36,7 @@ const labels = {
   actionEditRelations: "Edit relations",
   actionCopyHandoff: "Copy handoff",
   actionPath: "Path",
+  actionRealm: "Expand realm",
 };
 
 function renderPanel(
