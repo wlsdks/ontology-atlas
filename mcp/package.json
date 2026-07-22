@@ -32,6 +32,7 @@
     "src/infer-imports.mjs",
     "src/reconcile-imports.mjs",
     "src/detect-drift.mjs",
+    "src/growth-hint.mjs",
     "src/evidence-rank.mjs",
     "src/ontology-atlas-ignore.mjs",
     "src/compiled-cache.mjs",
