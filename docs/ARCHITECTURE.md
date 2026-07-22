@@ -186,6 +186,58 @@ pages that need them (Projects list, Builder, Insights) — the narrow rail
 can't host their wide popovers, so this is a "same feature, different
 mount point" move, not a removal.
 
+## URL contract (query-param + node id grammar)
+
+Deep links are the app's shared address space — a copied URL, an agent
+handoff, and a browser-back all rebuild the same view. So one node must have
+one identity across every screen. The **canonical node id grammar is
+`<kind>:<slug>`** (singular kind + colon, e.g. `capability:mcp-server`,
+`domain:views`, `project:ontology-atlas`). This is the value that travels in
+`?node=` / `?p=` / `?realm=` and the id used inside agent packets.
+
+### Query params
+
+| Param | Screen(s) | Meaning | Value shape |
+|---|---|---|---|
+| `p` | `/`, `/topology` | focused/selected node | canonical `<kind>:<slug>` (bare slug tolerated) |
+| `open` | `/`, `/topology` | density-gate expanded parents | comma list of node ids |
+| `realm` | `/`, `/topology` | "realm" containment-subtree root | canonical `<kind>:<slug>` (bare slug promoted) |
+| `mode` | `/`, `/topology` | analysis mode | `overview`\|`graph`\|`focus`\|`path`\|`health` |
+| `pathFrom` / `pathTo` (aliases `from` / `to`) | `/`, `/topology` | path source / target | node id |
+| `hub` · `c` · `impact` · `pulse` · `index` · `create` | `/`, `/topology` | focused hub · category · impact mode · pulse window · INDEX panel state · create-node intent | see `src/views/home/model/url-state.ts` |
+| `via` | `/`, `/topology`, `/ontology` | origin marker for the return chip | `insights:<tab>` |
+| `node` | `/ontology` (redirect) | node to focus after redirect → `?p=` | node id (translated by `translateOntologyDeeplinkToTopologyParam`) |
+| `node` | `/ontology/edit` (builder) | node to select in the inspector | canonical `<kind>:<slug>` **first-class**; plural vault-folder form (`capabilities/foo`) kept as a **legacy alias** |
+| `node` | `/ontology/insights` | node to focus (builder-proof link) | vault slug (`capabilities/foo`) |
+| `slug` | `/docs` | vault file to open | vault file path (`ontology/capabilities/foo`), not a node id — file paths are the docs vault's own address space |
+| `reader` | `/ontology/edit` | reader-intent flag | see `parseOntologyReaderIntent` |
+| `tab` | `/ontology/insights` | active insights tab | tab slug |
+
+### id grammar single source of truth
+
+- **Emit** (map · insights · popover "관계 편집"/데이터시트/컨텍스트 메뉴 →
+  builder): `buildOntologyBuilderNodeHrefFromGraphId` in
+  `src/entities/knowledge-graph/lib/ontology-node-href.ts`. It normalizes any
+  input to canonical via `translateOntologyDeeplinkToTopologyParam`
+  (`capabilities/foo` → `capability:foo`; already-canonical / bare /
+  evidence-path pass through).
+- **Receive** (builder `?node=`): `resolveBuilderQueryNodeSlug` in
+  `src/views/ontology-edit/lib/resolve-builder-query-node.ts`. It accepts
+  canonical `<kind>:<slug>` as first-class and still resolves the legacy
+  plural-folder alias (`?node=capabilities/foo`, `?node=domains/views`) so
+  previously-shared links never break.
+- **Node id → docs file slug** conversion lives in one pure place: the
+  popover/datasheet carry the focus model's `sourceSlug` (a vault file path)
+  straight into `buildDocsVaultHref({ slug })`. `/docs` addresses files, not
+  nodes, so `?slug=` intentionally stays a file path.
+- Round-trip is pinned by `resolve-builder-query-node.test.ts` (emit →
+  receive → doc) and `ontology-node-href.test.ts`.
+
+Residual (out of the H5 slice, safe because resolvers tolerate it): a few
+topology `?p=` / `?pathFrom=` links copied from the builder's relation-write
+packet still carry the plural vault-slug form; the topology resolver's
+bare-slug fallback resolves them unchanged.
+
 ## Build pipeline
 
 ```bash

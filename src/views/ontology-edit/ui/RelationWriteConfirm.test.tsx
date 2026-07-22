@@ -294,11 +294,11 @@ describe("RelationWriteConfirm", () => {
     );
     expect(screen.getByRole("link", { name: "Edit source" })).toHaveAttribute(
       "href",
-      expect.stringContaining("/ontology/edit/?node=capabilities%2Fmcp-server"),
+      expect.stringContaining("/ontology/edit/?node=capability%3Amcp-server"),
     );
     expect(screen.getByRole("link", { name: "Edit target" })).toHaveAttribute(
       "href",
-      expect.stringContaining("/ontology/edit/?node=elements%2Fmcp-index"),
+      expect.stringContaining("/ontology/edit/?node=element%3Amcp-index"),
     );
     expect(screen.getByText("Post-save graph handoff")).toBeInTheDocument();
     expect(
@@ -462,7 +462,7 @@ describe("RelationWriteConfirm", () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Target builder URL: /ontology/edit/?node=elements%2Fmcp-index",
+        "- Target builder URL: /ontology/edit/?node=element%3Amcp-index",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(

@@ -26,6 +26,30 @@
 - 렌더 테스트로 갈음(스크린샷 검증은 메인 세션): `HexMark` 유닛 6종 +
   레일 워드마크 존재/aria-hidden 테스트. tsc·ESLint·터치 vitest green.
 
+## 2026-07-23 — 노드 식별 URL 계약 통일 (H5)
+
+같은 "노드 보기"가 화면마다 다른 문법으로 흩어져 있던 문제를 정리했다.
+발신은 canonical `<kind>:<slug>`(단수 kind + 콜론, 예: `capability:mcp-server`)
+하나로 통일하고, 수신은 canonical 을 1급으로 받으면서 기존 복수-슬래시 링크를
+레거시 별칭으로 계속 받아 공유 링크 하위호환을 지킨다.
+
+- **빌더 발신 링크 canonical 화** — 인사이트·팝오버(데이터시트/컨텍스트 메뉴/
+  엣지)·토폴로지 헬스 패킷·빌더 관계-쓰기 확인 패널이 `/ontology/edit/?node=`
+  으로 보낼 때 예전 복수-슬래시(`capabilities/foo`) 대신 canonical
+  (`capability:foo`)을 싣는다. 발신 정규화기는 지도 `?p=`·`/ontology` 리다이렉트와
+  같은 `translateOntologyDeeplinkToTopologyParam` 로 수렴한다.
+- **빌더 `?node=` 수신 확장** — `resolveBuilderQueryNodeSlug` 가 canonical
+  `<kind>:<slug>` 을 1급으로 해석하고, 복수-슬래시/`ontology/` prefix/frontmatter
+  slug 레거시 경로를 모두 유지한다. 예전에 공유된 `?node=capabilities/foo`·
+  `?node=domains/views` 링크는 안 깨진다.
+- **문서함 `?slug=` 은 유지** — `/docs` 는 노드가 아니라 vault 파일 경로를 여는
+  주소 공간이라 `?slug=` 는 파일 경로 그대로. 노드 id → 문서 slug 변환은
+  focus 모델의 `sourceSlug` 한 곳에서만 나온다.
+- **문서** — `docs/ARCHITECTURE.md` 에 "URL contract" 절 신설(파라미터 표 +
+  id 문법 진실원 + 왕복 계약). 왕복 테스트는
+  `resolve-builder-query-node.test.ts`(발신→수신→doc)와
+  `ontology-node-href.test.ts` 에 고정.
+
 ## 2026-07-22 — 온보딩 진입점 영속화 + 빌더 선택 배선 (H4)
 
 온보딩/토스 디자이너 상위 지적을 첫 실행 표면과 빌더 인스펙터에서 고쳤다.
