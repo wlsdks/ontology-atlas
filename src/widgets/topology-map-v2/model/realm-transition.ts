@@ -88,6 +88,35 @@ export const REALM_FLING_REACH = 4200;
 /** 이탈 궤적의 접선 컬(라디안) — 곧게 날아가지 않고 살짝 휘어 "재편" 느낌. */
 export const REALM_FLING_CURL = 0.5;
 
+/**
+ * === 퇴장(exiting) 안무 상수 (S6, fable 설계) ===
+ *
+ * 입장은 3페이즈 안무(이탈→깊이 순차 조립→결계)인데 초기 퇴장은 전 노드 홈
+ * 스프링 + 카메라 fit 뿐이라 "닫히는 사건"이 없었다(비대칭). S6 은 입장의
+ * **역재생**으로 퇴장을 다시 짠다 — 총 봉투 ~800ms:
+ * - 0–250ms: 결계 링이 역방향으로 지워지고(draw 1→0), 영역 세계가 깊이 역순
+ *   (깊은 층 먼저)으로 원위치 역FLIP 시작.
+ * - 150–650ms: 밖 세계 노드들이 fling 위치에서 역중력으로 귀환(reach 1→0,
+ *   ease-out 감속 착지) — 입장 fling 의 결정론 역재생.
+ * - 카메라: overview fit 을 750ms 트윈으로 안무와 동기(입장 860ms 패턴).
+ * 값은 문서화된 모듈 상수 — 입장 상수와 같은 선례(타이밍 지배, 테마 미지배).
+ */
+export const REALM_EXIT_ENVELOPE_MS = 800;
+/** 결계 링 역방향 지우기 duration(ms) — draw progress 1→0. */
+export const REALM_EXIT_WARDING_ERASE_MS = 250;
+/** 안 노드 역FLIP duration(ms) — ease-out, 깊이와 무관하게 동일(시작만 계단). */
+export const REALM_EXIT_FLIP_MS = 420;
+/**
+ * 역FLIP 깊이 계단 지연 폭(ms) — 입장의 정방향 계단(얕은 층 먼저)을 뒤집어
+ * **깊은 층이 먼저** 떠난다. depth3+ → 0 스텝(가장 먼저), depth2 → +1, depth≤1
+ * → +2(가장 늦게). 최대 지연 240 + FLIP 420 = 660 < 봉투 800.
+ */
+export const REALM_EXIT_FLIP_DELAY_STEP_MS = 120;
+/** 밖 노드 역중력 귀환 duration(ms) — reach 1→0 ease-out 감속 착지. */
+export const REALM_EXIT_OUTSIDE_RETURN_MS = 500;
+/** 밖 노드 귀환 시작 지연(ms) — 결계가 지워지고 안 세계가 먼저 접히기 시작한 뒤. */
+export const REALM_EXIT_OUTSIDE_RETURN_DELAY_MS = 150;
+
 export type RealmPhase = "idle" | "entering" | "active" | "exiting";
 
 export interface RealmTransitionState {
@@ -136,7 +165,9 @@ export function realmTransitionReducer(
         phase: "exiting",
         rootId: state.rootId,
         startMs: event.now,
-        durationMs: event.reducedMotion ? 0 : REALM_INSIDE_FLIP_MS,
+        // S6 — 퇴장 역재생 봉투(입장 역정신). 이전엔 FLIP 660 뿐이라 밖 노드
+        // 역중력 귀환/결계 지우기를 담을 시간이 없었다.
+        durationMs: event.reducedMotion ? 0 : REALM_EXIT_ENVELOPE_MS,
       };
     case "tick": {
       if (state.phase !== "entering" && state.phase !== "exiting") return state;
@@ -226,6 +257,75 @@ export function realmOutsidePosition(
     return { x: center.x + Math.cos(baseAngle) * r, y: center.y + Math.sin(baseAngle) * r };
   }
   const e = easeInCubic(elapsed / duration);
+  const r = dist + reach * e;
+  const angle = baseAngle + curl * e;
+  return { x: center.x + Math.cos(angle) * r, y: center.y + Math.sin(angle) * r };
+}
+
+/**
+ * 퇴장 역FLIP 시작 지연(ms) — 입장 `realmInsideFlipDelayFor`(얕은 층 먼저)의
+ * 역순. **깊은 층이 먼저** 원위치로 떠난다: depth3+ → 0(가장 먼저), depth2 →
+ * +1 스텝, depth≤1(루트/도메인) → +2 스텝(가장 늦게, 마지막까지 남는 척추).
+ * 순수·결정론. 최대 지연 240 + FLIP 420 = 660 < 봉투 800.
+ */
+export function realmExitFlipDelayFor(depth: number): number {
+  if (depth <= 1) return REALM_EXIT_FLIP_DELAY_STEP_MS * 2;
+  if (depth === 2) return REALM_EXIT_FLIP_DELAY_STEP_MS;
+  return 0;
+}
+
+/**
+ * 결계 링 역방향 지우기 진행 1→0 — 입장 `realmWardingDrawProgress`(0→1)의
+ * 역재생. elapsed 0 → 1(가득 찬 링), duration 후 → 0(지워짐). 같은 드로잉
+ * 렌더러에 먹이면 호가 끝에서부터 되감겨 사라진다. 순수·결정론.
+ */
+export function realmWardingEraseProgress(
+  elapsed: number,
+  duration: number = REALM_EXIT_WARDING_ERASE_MS,
+): number {
+  if (duration <= 0) return 0;
+  return clamp01(1 - elapsed / duration);
+}
+
+/**
+ * 밖 노드 역중력 귀환의 reach 팩터 1→0 — 입장 fling(`easeInCubic` 로 0→1
+ * 가속)의 **역재생**. `easeInCubic(1 - t)` 이므로 elapsed 0 에서 1(완전 이탈),
+ * duration 에서 0(홈). 정방향이 끝에서 빨랐으니 역재생은 처음이 빠르고 착지에서
+ * 감속한다("ease-out 감속 착지"). 순수·결정론.
+ */
+export function realmOutsideReturnReach(
+  elapsed: number,
+  duration: number = REALM_EXIT_OUTSIDE_RETURN_MS,
+): number {
+  if (duration <= 0) return 0;
+  return easeInCubic(1 - clamp01(elapsed / duration));
+}
+
+/**
+ * 밖 노드의 이번 프레임 귀환 좌표 — `realmOutsidePosition`(fling)의 역재생.
+ * `from` 은 노드의 **원래(홈) 좌표**(입장 시 fling 출발점). reach 팩터가 1→0 로
+ * 줄며 반경·컬이 되감겨 정확히 `from` 으로 착지한다(입장 궤적 완전 역전 — 튐
+ * 없음). `duration<=0`(reduced-motion) 이면 즉시 홈.
+ */
+export function realmOutsideReturnPosition(
+  from: Point,
+  center: Point,
+  elapsed: number,
+  options?: { duration?: number; reach?: number; curl?: number; fallbackAngle?: number },
+): Point {
+  const duration = options?.duration ?? REALM_EXIT_OUTSIDE_RETURN_MS;
+  const reach = options?.reach ?? REALM_FLING_REACH;
+  const curl = options?.curl ?? REALM_FLING_CURL;
+  const fallbackAngle = options?.fallbackAngle ?? 0;
+
+  if (duration <= 0) return { x: from.x, y: from.y };
+
+  const dx = from.x - center.x;
+  const dy = from.y - center.y;
+  const dist = Math.hypot(dx, dy);
+  const baseAngle = dist > 1e-6 ? Math.atan2(dy, dx) : fallbackAngle;
+
+  const e = realmOutsideReturnReach(elapsed, duration); // 1 → 0
   const r = dist + reach * e;
   const angle = baseAngle + curl * e;
   return { x: center.x + Math.cos(angle) * r, y: center.y + Math.sin(angle) * r };

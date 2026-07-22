@@ -30,16 +30,22 @@ import type { ClusterChip } from "../model/density-gate";
 import { EGO_NEIGHBOR_CHIP_ID, EGO_NEIGHBOR_LIMIT, rankEgoNeighborsByDOI, selectiveEgoNeighbors, type EgoNeighborRankEntry } from "../model/focus-state";
 import {
   INITIAL_REALM_TRANSITION_STATE,
+  REALM_EXIT_FLIP_MS,
+  REALM_EXIT_OUTSIDE_RETURN_DELAY_MS,
+  REALM_EXIT_OUTSIDE_RETURN_MS,
   REALM_INSIDE_FLIP_MS,
   REALM_OUTSIDE_FLING_MS,
   isRealmOutsideCulled,
   REALM_WARDING_DRAW_DELAY_MS,
   realmDustParallaxFactor,
+  realmExitFlipDelayFor,
   realmInsideFlipDelayFor,
   realmInsidePosition,
   realmOutsidePosition,
+  realmOutsideReturnPosition,
   realmTransitionReducer,
   realmWardingDrawProgress,
+  realmWardingEraseProgress,
   type RealmTransitionState,
 } from "../model/realm-transition";
 import {
@@ -733,27 +739,41 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         beginCameraTween(target, 860);
       }
     } else {
-      // --- 이탈: 전 노드 홈 스프링 복귀 + 카메라 overview fit ---
+      // --- 이탈(S6): 입장의 결정론 역재생 — 안 노드 역FLIP(깊은 층 먼저) + 밖
+      // 노드 역중력 귀환. 좌표는 realm 데이터가 소유하므로(홈 스프링 아님) 프레임
+      // 루프의 exiting 스텝이 굴린다. 카메라는 750ms overview 트윈으로 안무 동기. ---
       realmTransitionRef.current = realmTransitionReducer(realmTransitionRef.current, {
         type: "exit",
         now,
         reducedMotion: reduced,
       });
+      // 물리는 전환과 배타 — 홈 좌표로 시드해 이탈 후 드래그가 튀지 않게 한다
+      // (전환 중엔 heat 0 이라 tick 안 함).
       simRef.current = createForceSimulation(
-        world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y })),
+        world.nodes.map((n) => ({ id: n.id, x: n.homeX, y: n.homeY })),
         world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
       );
-      const springs = new Map<string, HomeSpringState>();
-      for (const node of world.nodes) springs.set(node.id, initHomeSpring(node.x, node.y));
-      homeSpringsRef.current = springs;
-      homingActiveRef.current = true;
+      if (reduced) {
+        // A8 — reduced-motion 은 여정 없이 결과만. 결정론 역재생(non-reduced 전용)
+        // 대신 검증된 홈 스프링 스냅 경로를 탄다(프레임 루프의 reduced 호밍 블록이
+        // 즉시 homeX/homeY 로 스냅). 이펙트에서 노드를 직접 mutate 하지 않는다.
+        const springs = new Map<string, HomeSpringState>();
+        for (const node of world.nodes) springs.set(node.id, initHomeSpring(node.x, node.y));
+        homeSpringsRef.current = springs;
+        homingActiveRef.current = true;
+      } else {
+        // 안 노드 역FLIP + 밖 노드 역중력 귀환은 realm 데이터가 소유 → 홈 스프링 끔.
+        homingActiveRef.current = false;
+        homeSpringsRef.current.clear();
+      }
       if (width > 0 && height > 0 && hasInitializedRef.current) {
         const target = computeOverviewCameraTarget(world.spineBounds, width, height, tokens);
         cameraTargetRef.current = target;
         overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
         dampingRef.current = tokens.cameraDampingDefault;
         cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-        beginCameraTween(target);
+        // 750ms 트윈 — 안무(안 역FLIP 660 / 밖 귀환 650)와 동기. 입장 860 패턴.
+        beginCameraTween(target, 750);
       }
     }
   }, [realmRootId, beginCameraTween]);
@@ -813,7 +833,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           emphasisTarget: hoveredNodeIdRef.current !== null || panelEmphasisNodeIdRef.current !== null || hoveredClusterIdRef.current !== null,
           breathing: !reducedMotionRef.current && world.nodes.some((n) => n.fresh),
           cameraMoving,
-        }) || realmTransitionRef.current.phase === "entering";
+          // S6 — 이탈 역재생은 홈 스프링(homing)을 안 쓰므로 여기서 직접 깨워
+          // 둬야 안무가 유휴 게이트에 얼지 않는다.
+        }) ||
+        realmTransitionRef.current.phase === "entering" ||
+        realmTransitionRef.current.phase === "exiting";
         if (active) lastActiveMsRef.current = now;
         else if (shouldSkipFrame(now, lastActiveMsRef.current, IDLE_GRACE_MS)) {
           handle = requestAnimationFrame(frame);
@@ -1004,8 +1028,35 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             }
           }
           recomputeWorldGeometry(world, tokens);
+        } else if (data && rt.phase === "exiting" && !reducedMotionRef.current) {
+          // S6 퇴장 역재생 — 안 노드 역FLIP(깊은 층 먼저, target→home) + 밖 노드
+          // 역중력 귀환(fling 위치→home). 입장 스텝의 결정론 역전. reduced-motion
+          // 은 위 exit effect 가 이미 홈으로 스냅 + duration0 로 즉시 idle 이라 여긴
+          // 안 온다.
+          const elapsed = now - rt.startMs;
+          for (const node of world.nodes) {
+            const target = data.insideTargets.get(node.id);
+            if (target) {
+              const home = data.insideFrom.get(node.id) ?? target;
+              const delay = realmExitFlipDelayFor(data.depthById.get(node.id) ?? 1);
+              const p = realmInsidePosition(target, home, elapsed - delay, REALM_EXIT_FLIP_MS);
+              node.x = p.x;
+              node.y = p.y;
+            } else {
+              const from = data.outsideFrom.get(node.id);
+              if (from) {
+                const p = realmOutsideReturnPosition(from, data.flingCenter, elapsed - REALM_EXIT_OUTSIDE_RETURN_DELAY_MS, {
+                  duration: REALM_EXIT_OUTSIDE_RETURN_MS,
+                  fallbackAngle: fallbackAngleFor(node.id),
+                });
+                node.x = p.x;
+                node.y = p.y;
+              }
+            }
+          }
+          recomputeWorldGeometry(world, tokens);
         } else if (rt.phase === "idle" && realmDataRef.current !== null) {
-          // 이탈 완료 — 호밍이 이미 홈으로 되돌렸으니 realm 데이터 정리.
+          // 이탈 완료 — 역재생이 홈으로 되돌렸으니 realm 데이터 정리.
           realmDataRef.current = null;
         }
       }
@@ -1116,8 +1167,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // circuit → element), so the corner readout's orientation hint tracks
       // what's actually drawn. Same reveal bands as the draw pass (default
       // config), so the label and the visible nodes can't contradict.
+      // S6 진입 히치 제거 — `onZoomTierChange` 는 HomePage 의 setState 라 호출마다
+      // 페이지 전체를 재렌더한다. 영역 전개/해제의 프로그램적 카메라 돌리 중엔
+      // 스케일이 tier 경계를 가로지르며 매번 방출돼 안무 프레임을 얼렸다(진입
+      // +331ms 125ms 히치, perf-realm 실측). 전환(entering/exiting) 중엔 방출을
+      // 미루고, 정착(active/idle) 후 아래 비교가 최종 tier 를 한 번만 방출한다.
+      const realmTransitioning =
+        realmTransitionRef.current.phase === "entering" || realmTransitionRef.current.phase === "exiting";
       const nextZoomTier = classifyZoomTier(zoomRatio);
-      if (nextZoomTier !== lastZoomTierRef.current) {
+      if (!realmTransitioning && nextZoomTier !== lastZoomTierRef.current) {
         lastZoomTierRef.current = nextZoomTier;
         onZoomTierChangeRef.current?.(nextZoomTier);
       }
@@ -1184,16 +1242,23 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // 밴드 오프셋. 시차는 위 스텝이 이미 active+유의미일 때만 ref 를 채웠다.
       let realmDepthById: ReadonlyMap<string, number> | null = null;
       let realmDepthParallax: { depth2: DepthParallaxOffset; depth3: DepthParallaxOffset } | null = null;
-      if (realmData && (realmState.phase === "entering" || realmState.phase === "active")) {
+      if (
+        realmData &&
+        (realmState.phase === "entering" || realmState.phase === "active" || realmState.phase === "exiting")
+      ) {
+        const exiting = realmState.phase === "exiting";
         realmMemberIds = realmData.memberIds;
         realmTierKinds = realmData.tierKindById;
         realmDepthById = realmData.depthById;
-        realmDepthParallax = realmParallaxRef.current
+        // S5 시차 밴드는 active 전용 — 이탈 중엔 세계가 접히는 중이라 미적용.
+        realmDepthParallax = !exiting && realmParallaxRef.current
           ? { depth2: realmParallaxRef.current.depth2, depth3: realmParallaxRef.current.depth3 }
           : null;
         if (realmState.phase === "entering" && !reducedMotionRef.current) {
           realmDustParallax = realmDustParallaxFactor(now - realmState.startMs);
         }
+        // 이탈 중엔 밖 노드가 귀환하므로 컬하지 않는다(isRealmOutsideCulled 가
+        // exiting 에 false). entering/active 에서만 fling 완료 후 하드 컬.
         if (isRealmOutsideCulled(realmState, now)) {
           frameClusteredIds = new Set<string>([...frameClusteredIds, ...realmData.outsideIds]);
         }
@@ -1204,7 +1269,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           centerX: realmData.wardingCenter.x,
           centerY: realmData.wardingCenter.y,
           radius: realmData.wardingRadius,
-          drawProgress: realmWardingDrawProgress(now - realmState.startMs - REALM_WARDING_DRAW_DELAY_MS),
+          // S6 — 이탈은 결계를 역방향으로 지운다(1→0); 입장은 지연 후 그린다(0→1).
+          drawProgress: exiting
+            ? realmWardingEraseProgress(now - realmState.startMs)
+            : realmWardingDrawProgress(now - realmState.startMs - REALM_WARDING_DRAW_DELAY_MS),
         };
       }
 
