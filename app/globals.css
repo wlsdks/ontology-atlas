@@ -747,9 +747,9 @@
      * 비율로 커져 좌측 레일만 상대적으로 작아 보이는 결함을 해소한다.
      */
     --app-nav-rail-width: calc(64px * var(--topology-ui-scale-factor));
-    --app-nav-rail-logo-size: calc(34px * var(--topology-ui-scale-factor));
-    --app-nav-rail-logo-icon-size: calc(20px * var(--topology-ui-scale-factor));
-    --app-nav-rail-icon-size: calc(18px * var(--topology-ui-scale-factor));
+    --app-nav-rail-logo-size: calc(38px * var(--topology-ui-scale-factor));
+    --app-nav-rail-logo-icon-size: calc(24px * var(--topology-ui-scale-factor));
+    --app-nav-rail-icon-size: calc(22px * var(--topology-ui-scale-factor));
     --app-nav-rail-label-size: calc(9.5px * var(--topology-ui-scale-factor));
     --app-nav-rail-tile-width: calc(38px * var(--topology-ui-scale-factor));
     --app-nav-rail-tile-height: calc(32px * var(--topology-ui-scale-factor));
