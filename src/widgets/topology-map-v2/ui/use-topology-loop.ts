@@ -9,9 +9,10 @@
  * `topology-pointer-handlers.ts` (this file only owns the refs they close over).
  */
 
-import { useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
 
 import type { CameraAxes, CameraTarget } from "../engine/camera";
+import { cameraTransitionDurationMs, easeCameraKeyframe, type CameraKeyframe, type CameraTween } from "../model/camera-easing";
 import { stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
 import { isCameraUnsettled, isCanvasActive, shouldSkipFrame } from "../model/idle-gate";
 import { classifyZoomTier, type ZoomTier } from "../model/tier-visibility";
@@ -186,6 +187,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     scale: { value: 1, velocity: 0 },
   });
   const cameraTargetRef = useRef<CameraTarget>({ tx: 0, ty: 0, tscale: 1 });
+  /**
+   * S3 마감 폴리시 (fable 설계) — the live cubic camera transition, or null.
+   * Set by `beginCameraTween` on every programmatic move (focus dive, cluster
+   * dive, fit/relayout); driven each frame in the rAF loop; cleared the instant
+   * an interactive gesture (wheel/drag) takes over. Never set under
+   * `prefers-reduced-motion` (the spring path snaps instead).
+   */
+  const cameraTweenRef = useRef<CameraTween | null>(null);
   const dampingRef = useRef(1.0);
   /**
    * Dive-zoom fix (owner: "줌 인/아웃이 느림") — which spring angular frequency
@@ -239,6 +248,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const prevExpandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
   /** 밀도 게이트 — 이번 프레임의 클러스터 칩(월드 anchor). 히트테스트가 읽는다. */
   const clusterChipsRef = useRef<readonly ClusterChip[]>([]);
+  /**
+   * S3 마감 폴리시 (fable 설계, S2 known gap) — 이번 프레임에 **그리지 않은**
+   * 노드 집합(밀도게이트 접힘 + 선택적 ego 로 숨긴 이웃). 포인터 히트테스트가
+   * 읽어 숨은 노드를 클릭/호버 대상에서 제외한다(그리지 않으면 잡히지 않는다).
+   */
+  const clusteredIdsRef = useRef<ReadonlySet<string>>(EMPTY_EXPANDED_SET);
   /** 밀도 게이트 — 호버 중인 클러스터 부모 id(칩 보더 강조 + 커서). */
   const hoveredClusterIdRef = useRef<string | null>(null);
   /**
@@ -273,6 +288,25 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * track the last emitted tier so the callback fires only on transitions. */
   const onZoomTierChangeRef = useRef<typeof onZoomTierChange>(onZoomTierChange);
   const lastZoomTierRef = useRef<ZoomTier | null>(null);
+
+  /**
+   * S3 마감 폴리시 (fable 설계) — begin a cubic ease-in-out camera transition
+   * from the live camera to `target` (van Wijk 정신, 거리 비례 duration). The
+   * rAF loop drives it via `easeCameraKeyframe`. Under `prefers-reduced-motion`
+   * it no-ops (clears any tween) so the physics-step reduced snap owns the jump.
+   * Stable identity (refs only) so listing it in the programmatic-move effects'
+   * deps never re-fires them.
+   */
+  const beginCameraTween = useCallback((target: CameraTarget) => {
+    if (reducedMotionRef.current) {
+      cameraTweenRef.current = null;
+      return;
+    }
+    const cam = cameraRef.current;
+    const start: CameraKeyframe = { x: cam.x.value, y: cam.y.value, scale: cam.scale.value };
+    const tgt: CameraKeyframe = { x: target.tx, y: target.ty, scale: target.tscale };
+    cameraTweenRef.current = { start, target: tgt, startMs: performance.now(), durationMs: cameraTransitionDurationMs(start, tgt) };
+  }, []);
 
   useEffect(() => {
     onZoomTierChangeRef.current = onZoomTierChange;
@@ -324,9 +358,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (!target) return;
     dampingRef.current = tokens.cameraDampingDefault;
     cameraTargetRef.current = target;
-    // 프로그램적 카메라 이동 — 시네마틱 transition 스프링 (focus dive 와 동일).
+    // 프로그램적 카메라 이동 — 큐빅 ease-in-out 트윈(reduced-motion 은 스프링에
+    // 위임). angfreq 는 트윈 종료 후/중단 시 스프링이 이어받을 때의 값.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-  }, [expandedParents]);
+    beginCameraTween(target);
+  }, [expandedParents, beginCameraTween]);
 
   useEffect(() => {
     panelEmphasisNodeIdRef.current = emphasizedNeighborSlug;
@@ -467,14 +503,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // SPINE bbox (not the full 295-node bounds) so "fit view" reframes the same
     // legible 8-node spine as the initial entry — and keeps `overviewScaleRef`
     // on the same spine bounds so the zoom-ratio/altitude anchor stays at ratio 1.
-    cameraTargetRef.current = computeOverviewCameraTarget(world.spineBounds, width, height, tokens);
+    const overviewTarget = computeOverviewCameraTarget(world.spineBounds, width, height, tokens);
+    cameraTargetRef.current = overviewTarget;
     overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
     dampingRef.current = tokens.cameraDampingDefault;
     // Dive-zoom fix — "fit view"/relayout is a PROGRAMMATIC camera move, so it
-    // uses the cinematic transition spring, not whatever a preceding wheel
-    // gesture left in interactive mode.
+    // eases via the cubic transition tween (reduced-motion → spring/snap), not
+    // whatever a preceding wheel gesture left in interactive mode.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-  }, [relayoutToken, fitViewToken]);
+    beginCameraTween(overviewTarget);
+  }, [relayoutToken, fitViewToken, beginCameraTween]);
 
   // --- relayoutToken ONLY (not fitViewToken) — also restores every node's
   // position to its canonical (`homeX`/`homeY`) layout coordinate over a
@@ -568,9 +606,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     cameraTargetRef.current = target;
     // Dive-zoom fix — focus dive AND deselect-return are both PROGRAMMATIC
     // camera moves (this effect fires for both directions of `focusedSlug`
-    // changing), so both use the cinematic transition spring.
+    // changing), so both ease via the cubic transition tween (reduced-motion →
+    // spring/snap).
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-  }, [focusedSlug]);
+    beginCameraTween(target);
+  }, [focusedSlug, beginCameraTween]);
 
   // --- single rAF loop: physics -> altitude -> emphasis -> particles -> draw ---
   useEffect(() => {
@@ -784,6 +824,38 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // time the "연결된 노드" list exists) — otherwise hover owns the ripple.
       const panelEmphasisNodeId = focusedNodeId ? panelEmphasisNodeIdRef.current : null;
 
+      // S3 마감 폴리시 — 큐빅 카메라 전환 트윈. 진행 중이면 이번 프레임 카메라를
+      // 이징으로 직접 구동하고 physics-step 의 스프링을 건너뛴다(freezeCamera).
+      // reduced-motion 은 트윈을 버리고 스프링/스냅 경로에 위임. 트윈 종료 시
+      // 최종값으로 스냅 후 해제 — 이후 프레임은 스프링이 목표에 정지해 있다.
+      let freezeCamera = false;
+      {
+        const tween = cameraTweenRef.current;
+        if (tween) {
+          if (reducedMotionRef.current) {
+            cameraTweenRef.current = null;
+          } else {
+            const elapsed = now - tween.startMs;
+            if (elapsed >= tween.durationMs) {
+              cameraRef.current = {
+                x: { value: tween.target.x, velocity: 0 },
+                y: { value: tween.target.y, velocity: 0 },
+                scale: { value: tween.target.scale, velocity: 0 },
+              };
+              cameraTweenRef.current = null;
+            } else {
+              const eased = easeCameraKeyframe(tween.start, tween.target, elapsed, tween.durationMs);
+              cameraRef.current = {
+                x: { value: eased.x, velocity: 0 },
+                y: { value: eased.y, velocity: 0 },
+                scale: { value: eased.scale, velocity: 0 },
+              };
+              freezeCamera = true;
+            }
+          }
+        }
+      }
+
       const { camera, farT, zoomRatio } = stepTopologyPhysics({
         world,
         camera: cameraRef.current,
@@ -799,6 +871,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         panelEmphasisNodeId,
         isDragging: pointerMachineRef.current.phase === "dragging",
         reducedMotion: reducedMotionRef.current,
+        freezeCamera,
         emphasisById: emphasisRef.current,
         rippleStartById: rippleStartRef.current,
         egoRevealById: egoRevealRef.current,
@@ -858,6 +931,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
       clusterChipsRef.current = frameChips;
+      // S3 — 이번 프레임의 NOT-DRAWN 집합을 히트테스트가 볼 수 있게 공개(밀도
+      // 게이트 접힘 + 선택적 ego 숨김 이웃). 드로우와 히트가 같은 집합을 본다.
+      clusteredIdsRef.current = frameClusteredIds;
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
@@ -907,6 +983,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     worldRef,
     cameraRef,
     cameraTargetRef,
+    cameraTweenRef,
     dampingRef,
     cameraAngularFreqRef,
     viewportRef,
@@ -927,6 +1004,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     hoveredEdgeRef,
     selectedEdgeRef,
     clusterChipsRef,
+    clusteredIdsRef,
     hoveredClusterIdRef,
     onSelect,
     onSelectEdge,

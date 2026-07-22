@@ -171,6 +171,16 @@ describe("isNodeHittable", () => {
     expect(isNodeHittable(otherCapability, ENTRY, "domain:x", neighbors)).toBe(false);
   });
 
+  it("is NOT hittable when clustered (selective-ego hidden neighbor), even as a 1-hop neighbor of the focus (S3 known gap)", () => {
+    const neighbors = new Set(["capability:hidden"]);
+    // Without the clustered set the ego exemption keeps it hittable...
+    expect(isNodeHittable(hiddenCapability, ENTRY, "domain:x", neighbors)).toBe(true);
+    // ...but once it's folded behind the `이웃 +N` chip (in the frame's clustered
+    // set) it must not be grabbable — it isn't drawn.
+    const clustered = new Set(["capability:hidden"]);
+    expect(isNodeHittable(hiddenCapability, ENTRY, "domain:x", neighbors, DEFAULT_TIER_REVEAL, clustered)).toBe(false);
+  });
+
   it("agrees with nodeTierAlpha at the HITTABLE_MIN_TIER_ALPHA boundary", () => {
     expect(nodeTierAlpha("capability", false, DEFAULT_TIER_REVEAL.capability.fullRatio, DEFAULT_TIER_REVEAL)).toBeGreaterThanOrEqual(
       HITTABLE_MIN_TIER_ALPHA,
