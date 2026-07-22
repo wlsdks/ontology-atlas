@@ -113,17 +113,20 @@ function runNodeScript(args) {
 }
 
 describe('package contract helpers', () => {
-  it('keeps the root README honest about the three visual views plus MCP', () => {
+  it('keeps the root README honest about the five surfaces plus MCP', () => {
     const readme = readFileSync('README.md', 'utf-8');
-    const section = readme.split('## Three views plus MCP, one vault')[1]?.split('## Quick start')[0] ?? '';
+    const section = readme.split('## Five surfaces, one vault')[1]?.split('## Agent Workflow')[0] ?? '';
 
-    assert.match(section, /rendered three ways and exposed to agents through MCP/);
-    assert.match(section, /\*\*Topology\*\*/);
-    assert.match(section, /\*\*Tree\*\*/);
-    assert.match(section, /\*\*ERD builder\*\*/);
-    assert.match(section, /\*\*MCP\*\*/);
-    assert.match(section, /All four read and write the same `\.md` files/);
+    assert.match(section, /\*\*Map\*\*/);
+    assert.match(section, /`\/docs`/);
+    assert.match(section, /`\/ontology\/edit`/);
+    assert.match(section, /`\/ontology\/insights`/);
+    assert.match(section, /`\/projects`/);
+    assert.match(section, /\*\*MCP server\*\*/);
+    assert.match(section, /16 read \+ 9 write/);
+    assert.match(section, /Every surface reads and writes the\nsame `\.md` files/);
     assert.doesNotMatch(readme, /## Three views, one vault/);
+    assert.doesNotMatch(readme, /## Three views plus MCP, one vault/);
     assert.doesNotMatch(readme, /## Four surfaces, one vault/);
   });
 
@@ -2037,7 +2040,7 @@ describe('package contract helpers', () => {
     assert.match(vaultTooling, /focused vault audit CLI argument contract/);
     assert.match(readme, /\*\*Static dogfood manifest\*\* \| `pnpm docs-vault:check` keeps committed `src\/entities\/docs-vault\/data\/manifest\.json` and `public\/docs-vault\/` in sync with `docs\/`/);
     assert.match(readme, /pnpm docs-vault:check\s+# committed docs-vault output freshness/);
-    assert.match(readme, /CI runs `pnpm docs-vault:check`, `pnpm vault:validate`, `pnpm test:vault:validate`,\s+`pnpm vault:audit`, `pnpm test:vault:audit`, and `pnpm package:check`/);
+    assert.match(readme, /CI runs `docs-vault:check`, `vault:validate`, `test:vault:validate`,\s+`vault:audit`, `test:vault:audit`, and `package:check`/);
     assert.match(agents, /pnpm test:vault:validate\s+# focused validator CLI argument contract/);
     assert.match(agents, /pnpm test:contracts\s+# focused cross-package contract suite/);
     assert.match(agents, /pnpm vault:audit\s+# capability\/element path drift guard \(R12\)/);
@@ -2098,7 +2101,9 @@ describe('package contract helpers', () => {
     const agentsGuide = readFileSync('AGENTS.md', 'utf-8');
     const dogfoodRow = readme.split('| **Dogfooding** |')[1]?.split('\n')[0] ?? '';
     const agentWorkflow = readme.split('## Agent Workflow')[1]?.split('## Web Routes')[0] ?? '';
-    const helpfulCommands = readme.split('Helpful vault commands:')[1]?.split('### Vault tooling')[0] ?? '';
+    // dogfood 유지보수 명령 상세는 README 마케팅 재작성(2026-07)에서
+    // docs/DEVELOPMENT-CHECKS.md 로 이관 — 발견 가능성 계약은 그 문서로 이어진다.
+    const helpfulCommands = readFileSync('docs/DEVELOPMENT-CHECKS.md', 'utf-8');
     const census = dogfoodVaultCensus(process.cwd());
 
     assert.match(dogfoodRow, new RegExp(`\\*\\*${census.total} nodes\\*\\*`));
@@ -2123,7 +2128,7 @@ describe('package contract helpers', () => {
     assert.match(helpfulCommands, /pnpm test:dogfood:status/);
     assert.match(helpfulCommands, /pnpm dogfood:verify/);
     assert.match(agentWorkflow, /`workspace-brief` is the cheap first-contact dashboard/);
-    assert.match(agentWorkflow, /`PROJECT별 포함 노드 수 \(project_scope\)`/);
+    assert.match(agentWorkflow, /per-project node counts \(`project_scope`\)/);
     assert.match(agentWorkflow, /health-check coverage as\s+`id:status:count`/);
     assert.match(agentWorkflow, /growth counts before the agent chooses where to read\s+deeper/);
   });
