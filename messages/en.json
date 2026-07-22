@@ -1574,7 +1574,7 @@
       "repairQueueStale": "stale evidence",
       "repairQueueOrphan": "open question",
       "repairQueuePromotion": "hub candidate",
-      "repairQueueEmpty": "Nothing to repair right now.",
+      "repairQueueEmpty": "Nothing to repair — you're all caught up.",
       "repairQueueTargetLabel": "Next repair target",
       "repairQueueActionKindStale": "Stale evidence",
       "repairQueueActionKindOrphan": "Open question",
@@ -1600,10 +1600,10 @@
       "trendCaption": "Total updates per week, summed across every domain — same {weeks}w window as the heatstrip.",
       "doNext": {
         "queueTitle": "Worth doing now",
-        "sectionNeglectedHub": "Neglected hubs — heavily referenced, long unchanged",
-        "sectionOrphan": "Orphans — not connected to anything yet",
-        "sectionPromotion": "Hub candidates — enough references to promote to a hub",
-        "sectionCycle": "Dependency cycles — each waiting on the other",
+        "sectionNeglectedHub": "Hubs untouched for a while — worth a look now?",
+        "sectionOrphan": "Not linked to anything yet — connect them?",
+        "sectionPromotion": "Referenced a lot — promote to a hub?",
+        "sectionCycle": "A dependency loop — break one link?",
         "cycleMoreNodes": "+{count} more",
         "neglectedHubMetric": "{degree} links · unchanged {days}d",
         "cycleMetric": "{length} nodes",
@@ -1615,7 +1615,14 @@
         "digestTitle": "What the agent did",
         "digestToday": "{count} today",
         "digestApproveHint": "Review via git diff — this list comes from the local audit log (.ontology-atlas/activity.jsonl) inside your vault.",
-        "digestWhyPrefix": "Why · "
+        "digestWhyPrefix": "Why · ",
+        "touchUpBandTitle": "Today's touch-ups",
+        "touchUpRemaining": "{count} left",
+        "touchUpAllDone": "All tended — the graph is that much tidier.",
+        "touchUpDone": "Tended",
+        "touchUpWhyCycle": "{length} nodes waiting on each other",
+        "touchUpWhyPromotion": "referenced enough to promote",
+        "rowMenuTrigger": "More actions"
       }
     }
   },

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AlertTriangle, Check, Copy, GitBranch, MoreHorizontal } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
+import { cn } from "@/shared/lib/cn";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
-import { AlertTriangle } from "lucide-react";
 import type { OntologyHealthActionTarget } from "@/entities/knowledge-graph";
 import type { DoNextQueue, DoNextRow } from "../../lib/do-next-queue";
 import type { DependencyCycle, DependencyCyclesResult } from "../../lib/dependency-cycles";
@@ -58,6 +58,31 @@ export interface DoNextTabLabels {
   digestApproveHint: string;
   /** P4-② — why 행 앞에 붙는 prefix ("Why · "). */
   digestWhyPrefix: string;
+  /** ③ 오늘의 손질 밴드 제목. */
+  touchUpBandTitle: string;
+  /** 밴드 남은 건수 배지 ("{count} left"). */
+  touchUpRemaining: (count: number) => string;
+  /** 밴드 전건 완료 시 조용한 마감 한 줄. */
+  touchUpAllDone: string;
+  /** 완료 행 표기 ("손봤어요"). */
+  touchUpDone: string;
+  /** 케밥(더보기) 트리거 aria-label. */
+  rowMenuTrigger: string;
+}
+
+/**
+ * ③ 오늘의 손질 밴드 한 행. `pickTodaysTouchUps` 결과에 표시용 why 문구를
+ * 입혀 상위에서 내려준다(순수 함수는 reason 만, 표면은 문구를 안다).
+ */
+export interface DoNextTouchUp {
+  id: string;
+  source: "cycle" | "neglected-hub" | "promotion";
+  nodeId: string;
+  title: string;
+  nodeKind: string;
+  /** "왜 뽑혔나" 한 줄 — 기존 파생값으로 조립된 표시 문구. */
+  why: string;
+  handoffPayload: string;
 }
 
 export interface DoNextTabAgentReadiness {
@@ -77,6 +102,12 @@ export interface DoNextTabHealthQueue {
 
 export interface DoNextTabProps {
   queue: DoNextQueue;
+  /**
+   * ③ 오늘의 손질 — 기존 큐/사이클에서 절단한 상위 3건. 빈 배열이면 밴드를
+   * 렌더하지 않는다(콜드스타트 가드는 `pickTodaysTouchUps` 가 이미 적용). 기본
+   * `[]` 라 밴드 없이도 동작한다.
+   */
+  touchUps?: DoNextTouchUp[];
   /** 의존 사이클(depends_on 방향 그래프의 순환). 사이클이 있을 때만 렌더. */
   cycles: DependencyCyclesResult;
   agentReadiness: DoNextTabAgentReadiness;
@@ -117,6 +148,267 @@ function HandoffCopyButton({ payload, labels }: { payload: string; labels: DoNex
       {copied ? <Check size={11} aria-hidden /> : <Copy size={11} aria-hidden />}
       {copied ? labels.handoffCopied : labels.handoffCopy}
     </button>
+  );
+}
+
+/**
+ * ③.2 완료 피드백 — 세션 한정. 밴드 행의 액션(지도/빌더/에이전트에게)을 쓰면
+ * 그 행 id 를 `sessionStorage` 에 담아, 지도/빌더로 이동했다 돌아와도(=페이지
+ * 재마운트) 완료 표기가 유지된다. localStorage 가 아니라 sessionStorage 라
+ * 탭을 닫으면 사라진다(세션 한정) — vault 진실원과 무관한 순수 UI 상태다.
+ * 배지/포인트는 만들지 않는다.
+ */
+const TOUCH_UP_DONE_SESSION_KEY = "ontology-insights:touchups-done";
+
+function readDoneSession(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.sessionStorage.getItem(TOUCH_UP_DONE_SESSION_KEY);
+    if (!raw) return new Set();
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? new Set(parsed.filter((value): value is string => typeof value === "string"))
+      : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function writeDoneSession(ids: Set<string>): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(TOUCH_UP_DONE_SESSION_KEY, JSON.stringify([...ids]));
+  } catch {
+    /* private mode / storage disabled — 완료 표기는 best-effort */
+  }
+}
+
+function useTouchUpCompletions() {
+  const [done, setDone] = useState<Set<string>>(() => readDoneSession());
+  const markDone = useCallback((id: string) => {
+    setDone((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      writeDoneSession(next);
+      return next;
+    });
+  }, []);
+  return { done, markDone };
+}
+
+/**
+ * ⑨.2 행 버튼 다이어트 — 주 액션(지도)만 밖에 두고 빌더·에이전트에게는 케밥
+ * 안으로. 결정 포인트를 행당 3 → 1.5 로 줄인다. 별도 라이브러리 없이 손으로
+ * 짠 접근 가능 메뉴(`TopologyV2ContextMenu` 와 같은 관례): 트리거는 버튼
+ * (aria-haspopup/expanded), 바깥 클릭·Esc 로 닫고 Esc 는 트리거로 포커스 복귀.
+ */
+function RowActionMenu({
+  builderHref,
+  handoffPayload,
+  onActionUsed,
+  labels,
+}: {
+  builderHref: string;
+  handoffPayload: string;
+  /** 밴드 행에서만 넘긴다 — 액션 사용 시 완료 표기. */
+  onActionUsed?: () => void;
+  labels: DoNextTabLabels;
+}) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("keydown", onKeyDown, true);
+    };
+  }, [open]);
+
+  const menuItemClass =
+    "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-label text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]";
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        ref={triggerRef}
+        type="button"
+        data-testid="do-next-row-menu"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={labels.rowMenuTrigger}
+        onClick={() => setOpen((value) => !value)}
+        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+      >
+        <MoreHorizontal size={14} aria-hidden />
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          data-testid="do-next-row-menu-popover"
+          className="absolute right-0 z-20 mt-1 flex min-w-[10rem] flex-col gap-0.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
+        >
+          <Link
+            href={builderHref}
+            role="menuitem"
+            data-testid="do-next-row-menu-builder"
+            onClick={() => {
+              setOpen(false);
+              onActionUsed?.();
+            }}
+            className={menuItemClass}
+          >
+            <GitBranch size={13} aria-hidden />
+            {labels.openBuilder}
+          </Link>
+          <button
+            type="button"
+            role="menuitem"
+            data-testid="do-next-row-menu-handoff"
+            onClick={async () => {
+              if (await copyText(handoffPayload)) {
+                setCopied(true);
+                onActionUsed?.();
+                window.setTimeout(() => {
+                  setCopied(false);
+                  setOpen(false);
+                }, 1000);
+              }
+            }}
+            className={menuItemClass}
+          >
+            {copied ? <Check size={13} aria-hidden /> : <Copy size={13} aria-hidden />}
+            {copied ? labels.handoffCopied : labels.handoffCopy}
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * ③ 오늘의 손질 밴드 — 할 일 탭 상단. 기존 큐/사이클에서 절단된 3건을 "왜
+ * 뽑혔나" 한 줄과 함께 보여주고, 주 액션(지도) + 케밥으로 행동을 좁힌다.
+ * 액션을 쓰면 세션 한정 완료 표기가 붙고 남은 카운트가 줄어든다(diegetic —
+ * 그래프가 그만큼 정돈됐다는 사실만, 배지/포인트 없음).
+ */
+function TouchUpBand({
+  items,
+  mapHref,
+  builderHref,
+  labels,
+}: {
+  items: DoNextTouchUp[];
+  mapHref: (nodeId: string) => string;
+  builderHref: (nodeId: string) => string;
+  labels: DoNextTabLabels;
+}) {
+  const { done, markDone } = useTouchUpCompletions();
+  const doneCount = items.reduce((count, item) => (done.has(item.id) ? count + 1 : count), 0);
+  const remaining = items.length - doneCount;
+  const allDone = remaining <= 0;
+
+  return (
+    <section
+      aria-label={labels.touchUpBandTitle}
+      data-testid="do-next-touchups"
+      className="flex flex-col gap-2 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+    >
+      <div className="flex items-baseline gap-2">
+        <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+          {labels.touchUpBandTitle}
+        </span>
+        {!allDone ? (
+          <span
+            data-testid="do-next-touchups-remaining"
+            className="ml-auto font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]"
+          >
+            {labels.touchUpRemaining(remaining)}
+          </span>
+        ) : null}
+      </div>
+      <div className="flex flex-col">
+        {items.map((item) => {
+          const isDone = done.has(item.id);
+          return (
+            <div
+              key={item.id}
+              data-testid="do-next-touchup-row"
+              className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b border-[color:var(--color-divider)] py-2.5 last:border-b-0"
+            >
+              {item.source === "cycle" ? (
+                <AlertTriangle size={13} aria-hidden className="text-[color:var(--color-status-warning)]" />
+              ) : (
+                <TopologyV2KindGlyph kind={item.nodeKind} size={13} />
+              )}
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span
+                  className={cn(
+                    "truncate text-body",
+                    isDone
+                      ? "text-[color:var(--color-text-quaternary)]"
+                      : "text-[color:var(--color-text-secondary)]",
+                  )}
+                >
+                  {item.title}
+                </span>
+                <span className="truncate text-label text-[color:var(--color-text-quaternary)]">
+                  {labels.digestWhyPrefix}
+                  {item.why}
+                </span>
+              </div>
+              {isDone ? (
+                <span
+                  data-testid="do-next-touchup-done"
+                  className="flex shrink-0 items-center gap-1 text-label text-[color:var(--color-status-success)]"
+                >
+                  <Check size={12} aria-hidden />
+                  {labels.touchUpDone}
+                </span>
+              ) : (
+                <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
+                  <Link
+                    href={mapHref(item.nodeId)}
+                    onClick={() => markDone(item.id)}
+                    className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                  >
+                    {labels.openMap}
+                  </Link>
+                  <RowActionMenu
+                    builderHref={builderHref(item.nodeId)}
+                    handoffPayload={item.handoffPayload}
+                    onActionUsed={() => markDone(item.id)}
+                    labels={labels}
+                  />
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {allDone ? (
+        <p data-testid="do-next-touchups-alldone" className="text-label text-[color:var(--color-text-tertiary)]">
+          {labels.touchUpAllDone}
+        </p>
+      ) : null}
+    </section>
   );
 }
 
@@ -173,13 +465,11 @@ function QueueSection({
               >
                 {labels.openMap}
               </Link>
-              <Link
-                href={builderHref(row.nodeId)}
-                className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-              >
-                {labels.openBuilder}
-              </Link>
-              <HandoffCopyButton payload={row.handoffPayload} labels={labels} />
+              <RowActionMenu
+                builderHref={builderHref(row.nodeId)}
+                handoffPayload={row.handoffPayload}
+                labels={labels}
+              />
             </span>
           </div>
         );
@@ -272,6 +562,7 @@ function CycleSection({
 
 export function DoNextTab({
   queue,
+  touchUps = [],
   cycles,
   agentReadiness,
   healthQueue,
@@ -297,7 +588,11 @@ export function DoNextTab({
   const queueEmpty = queue.rows.length === 0 && !hasCycles;
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-[1.2fr_1fr]">
+    <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
+      {touchUps.length > 0 ? (
+        <TouchUpBand items={touchUps} mapHref={mapHref} builderHref={builderHref} labels={labels} />
+      ) : null}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-[1.2fr_1fr]">
       <section
         aria-label={labels.queueTitle}
         className="flex min-h-0 min-w-0 flex-col gap-4 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
@@ -509,6 +804,7 @@ export function DoNextTab({
           </div>
         ) : null}
       </section>
+      </div>
     </div>
   );
 }
