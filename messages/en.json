@@ -2405,6 +2405,22 @@
         "boundaryJumpAria": "Jump to the realm this outside node belongs to",
         "boundaryEmpty": "No relations reach outside"
       }
+    },
+    "footprint": {
+      "chipLabel": "Trail · {count}",
+      "heading": "Your trail",
+      "triggerAriaLabel": "Open your visited-node trail",
+      "currentAriaLabel": "You are here",
+      "rowAriaLabel": "Go to {title}",
+      "copyLabel": "Copy for agent",
+      "copyAriaLabel": "Copy the visited chain as an agent handoff packet",
+      "copyCopiedAriaLabel": "Trail packet copied",
+      "clearLabel": "Clear",
+      "clearAriaLabel": "Clear your trail",
+      "packetTitle": "Exploration trail",
+      "packetOrder": "Visited order (oldest → most recent):",
+      "packetReviewHint": "Review each node's context:",
+      "packetPathHint": "Check the path between the journey endpoints:"
     }
   },
   "fullDetailA1": {

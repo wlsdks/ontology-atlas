@@ -9,6 +9,7 @@ import type { CameraAxes } from "../engine/camera";
 import { resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selection-pulse";
+import { footprintRingStyle, FOOTPRINT_RING_OFFSET } from "../model/footprint-ring";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-parallax";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha } from "../model/tier-visibility";
@@ -257,6 +258,14 @@ export interface FrameDrawParams {
   /** S4 — 전개 순간의 도트 방사 시차 팩터 0..1 (전환 중에만 >0). */
   realmDustParallax: number;
   /**
+   * 발자국 트레일 (fable 설계) — 세션 동안 방문(ego 포커스)한 노드의 최근성
+   * rank(0 = 가장 최근). `model/footprint-ring.ts#buildFootprintRanks` 가 만든다.
+   * 각 방문 노드에 옅은 pale 인디고 헤어라인 링을 최근성으로 감쇠해 얹는다
+   * (정적 표기). 현재 포커스 노드는 이미 제외돼 있어 선택 링과 이중이 안 된다.
+   * 빈 map = 발자국 없음(회귀 0).
+   */
+  footprintRanksById: ReadonlyMap<string, number>;
+  /**
    * S8 결함 6 — 결계 안 우주 도트 레이어(뷰포트 스페이스, 카메라 원점 시차).
    * 영역 활성(wardingRing 존재) 시에만 결계 원으로 클립해 그린다. null 이면 미표시.
    */
@@ -297,6 +306,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     realmDepthParallax,
     realmDustParallax,
     realmCosmosPoints,
+    footprintRanksById,
   } = params;
 
   // S5 깊이 연출 — 노드 하나의 렌더 오프셋(월드 단위, 시차)과 깊이 선명도
@@ -607,6 +617,25 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         color: egoState === "dim" ? tokens.nodeStrokeDim : visual.stroke,
         alpha: farT * tierAlpha * realmClarityAlpha * backgroundDim,
       });
+    }
+
+    // 발자국 트레일 링 (fable 설계) — 방문했던 노드에 옅은 pale 인디고 헤어라인
+    // 링(정적). 최근성 rank 로 감쇠(가장 최근이 진하고 두껍게)해 "걸어온 순서"가
+    // 색으로 읽히게 한다. 색은 edge-selected(pale 인디고) 재사용 — 새 hue/glow
+    // 금지. 노드 티어·dim·영역 선명도 알파를 함께 곱해 ego dim/전환에도 자연히
+    // 물러난다. 위계는 선택 링(실선)·확장 오라(파선)·결계보다 항상 낮다.
+    const footprintRank = footprintRanksById.get(node.id);
+    if (footprintRank !== undefined) {
+      const ringStyle = footprintRingStyle(footprintRank);
+      ctx.save();
+      ctx.globalAlpha = tierAlpha * realmClarityAlpha * backgroundDim * ringStyle.alpha;
+      ctx.strokeStyle = tokens.edgeSelected;
+      ctx.lineWidth = ringStyle.lineWidth;
+      ctx.beginPath();
+      ctx.arc(screen.x, screen.y, screenRadius + FOOTPRINT_RING_OFFSET, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      ctx.globalAlpha = 1;
     }
 
     // S8 결함 1 — 펼친 부모 구분: 노드 디스크 바깥에 파선 오라 링(선택 ego 링은

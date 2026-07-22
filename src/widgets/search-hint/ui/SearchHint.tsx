@@ -36,6 +36,12 @@ interface Props {
    * ✕ 로 전체 지도 복귀한다. 슬롯이 비면 렌더 비용 0.
    */
   realmChip?: ReactNode;
+  /**
+   * 발자국 트레일 칩(`TopologyTrailChip`, fable 설계) — pathChip/realmChip 과
+   * 같은 "상단 중앙 크롬 열" 문법. 세션 방문이 2개 이상일 때만 렌더돼 "걸은 길
+   * N개" 로 걸어온 경로를 알린다. 슬롯이 비면 렌더 비용 0.
+   */
+  trailChip?: ReactNode;
 }
 
 const subscribe = () => () => {};
@@ -61,6 +67,7 @@ export function SearchHint({
   pathChip,
   returnChip,
   realmChip,
+  trailChip,
 }: Props) {
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
@@ -98,6 +105,7 @@ export function SearchHint({
         {returnChip}
         {realmChip}
         {pathChip}
+        {trailChip}
         {/* 자동 정렬 — 데스크톱에서만 노출. 모바일에서는 자주 안 쓰는 액션이라
             우상단 floating 버튼이 시각적 무게를 잡아먹는 게 더 큰 손실. 필요하면
             그래프 컨트롤 패널 안에서 트리거. wrapper 의 hidden/md:block 이

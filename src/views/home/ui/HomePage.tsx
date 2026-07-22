@@ -194,6 +194,12 @@ import {
 } from "../lib/topology-node-significance";
 import { TopologyPathChip } from "./TopologyPathChip";
 import { TopologyRealmChip } from "./TopologyRealmChip";
+import { TopologyTrailChip } from "./TopologyTrailChip";
+import {
+  appendFootprintVisit,
+  formatFootprintTrailAgentPacket,
+  type FootprintTrailEntry,
+} from "../lib/footprint-trail";
 import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import { TopologyRelationLegend } from "./TopologyRelationLegend";
 import { TopologyReviewLink } from "./TopologyReviewLink";
@@ -1003,6 +1009,60 @@ export function HomePage() {
       return { ...current, expandedParents: nextExpanded };
     });
   }, [canvasSelectedSlug, topologyV2Graph, setRouteState]);
+
+  // 발자국 트레일 (fable 설계 — 소유자 요청, 사람 가치 우선) — 지도에서 노드를
+  // ego 포커스할 때마다 세션 방문 목록에 쌓이는 "걸어온 길". 모드가 아니라
+  // 지도 위에 얹히는 수동적 기록층: URL 비영속, localStorage 금지, 새로고침 시
+  // 초기화. 지도(최근성 감쇠 발자국 링)와 트레일 칩(미니 타임라인 + 인계 패킷)에
+  // 같은 순서 배열을 내려보낸다.
+  const [footprintTrail, setFootprintTrail] = useState<string[]>([]);
+  // 직전 방문 노드 — 같은 노드로의 연속 전이(배경 클릭 후 재선택 등)를 중복
+  // append 하지 않게 가드. 서로 다른 노드 사이의 재방문은 append 가 순서를 갱신한다.
+  const lastVisitedNodeRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!canvasSelectedSlug) return;
+    if (lastVisitedNodeRef.current === canvasSelectedSlug) return;
+    lastVisitedNodeRef.current = canvasSelectedSlug;
+    setFootprintTrail((trail) => appendFootprintVisit(trail, canvasSelectedSlug));
+  }, [canvasSelectedSlug]);
+  // 그래프 노드 조회(id → 라벨/kind). 삭제된 노드가 트레일에 남지 않게 살아있는
+  // 그래프 기준으로 정제한다(단일 진실원: 트레일은 파생 표시층일 뿐).
+  const footprintNodeLookup = useMemo(
+    () => new Map(topologyV2Graph.nodes.map((n) => [n.id, n])),
+    [topologyV2Graph],
+  );
+  const footprintTrailEntries = useMemo<FootprintTrailEntry[]>(() => {
+    const entries: FootprintTrailEntry[] = [];
+    for (const id of footprintTrail) {
+      const node = footprintNodeLookup.get(id);
+      if (node) entries.push({ id, title: node.label, kind: node.kind });
+    }
+    return entries;
+  }, [footprintTrail, footprintNodeLookup]);
+  // 지도로 내리는 방문 id 목록 — 정제된 entries 와 같은 집합(삭제 노드 제외).
+  const footprintVisitedIds = useMemo(
+    () => footprintTrailEntries.map((entry) => entry.id),
+    [footprintTrailEntries],
+  );
+  const [footprintPacketCopied, setFootprintPacketCopied] = useState(false);
+  const copyFootprintPacket = useCallback(async () => {
+    if (footprintTrailEntries.length === 0) return;
+    const ok = await copyText(
+      formatFootprintTrailAgentPacket(footprintTrailEntries, {
+        title: t("footprint.packetTitle"),
+        order: t("footprint.packetOrder"),
+        reviewHint: t("footprint.packetReviewHint"),
+        pathHint: t("footprint.packetPathHint"),
+      }),
+    );
+    if (!ok) return;
+    setFootprintPacketCopied(true);
+    window.setTimeout(() => setFootprintPacketCopied(false), 1600);
+  }, [footprintTrailEntries, t]);
+  const clearFootprintTrail = useCallback(() => {
+    lastVisitedNodeRef.current = null;
+    setFootprintTrail([]);
+  }, []);
 
   // 노드 클릭 default = 컴팩트 ego 팝오버. 풀스크린 드로어는 "전체 상세" opt-in.
   // overview first, details-on-demand — 설계: docs/TOPOLOGY-FOCUS-AND-SCALE.md
@@ -2145,6 +2205,32 @@ export function HomePage() {
                         />
                       ) : undefined
                     }
+                    trailChip={
+                      // 발자국 트레일 칩 — 방문 2개 이상부터. "걸은 길 N개" 클릭 시
+                      // 미니 타임라인 팝(방문 순서 + 노드 포커스 + 에이전트 복사 + 지우기).
+                      footprintTrailEntries.length >= 2 ? (
+                        <TopologyTrailChip
+                          label={t("footprint.chipLabel", { count: footprintTrailEntries.length })}
+                          entries={footprintTrailEntries}
+                          currentId={canvasSelectedSlug}
+                          copied={footprintPacketCopied}
+                          onFocusEntry={(id) => handleSelect(id)}
+                          onCopyPacket={copyFootprintPacket}
+                          onClear={clearFootprintTrail}
+                          labels={{
+                            heading: t("footprint.heading"),
+                            triggerAriaLabel: t("footprint.triggerAriaLabel"),
+                            currentAriaLabel: t("footprint.currentAriaLabel"),
+                            rowAriaLabel: (title) => t("footprint.rowAriaLabel", { title }),
+                            copyLabel: t("footprint.copyLabel"),
+                            copyAriaLabel: t("footprint.copyAriaLabel"),
+                            copyCopiedAriaLabel: t("footprint.copyCopiedAriaLabel"),
+                            clearLabel: t("footprint.clearLabel"),
+                            clearAriaLabel: t("footprint.clearAriaLabel"),
+                          }}
+                        />
+                      ) : undefined
+                    }
                   />
                   {selectedNodeOwnsRightRail ? null : (
                     <div
@@ -2751,6 +2837,7 @@ export function HomePage() {
                     realmEnterLabel={t('realm.enterAction')}
                     realmEnterTooltip={t('realm.enterTooltip')}
                     canvasLabel={t('canvas.ariaLabel')}
+                    visitedTrail={footprintVisitedIds}
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas ? (

@@ -28,6 +28,7 @@ import { drawTopologyFrame } from "./topology-frame-draw";
 import { computeTopologyClusterState } from "./topology-cluster-state";
 import type { ClusterChip } from "../model/density-gate";
 import { EGO_NEIGHBOR_CHIP_ID, EGO_NEIGHBOR_LIMIT, rankEgoNeighborsByDOI, selectiveEgoNeighbors, type EgoNeighborRankEntry } from "../model/focus-state";
+import { buildFootprintRanks } from "../model/footprint-ring";
 import {
   INITIAL_REALM_TRANSITION_STATE,
   REALM_EXIT_FLIP_MS,
@@ -193,9 +194,17 @@ export interface UseTopologyLoopArgs {
   onEnterRealm?: (slug: string) => void;
   /** S4 — 궤도 "전개" 버튼 DOM (캔버스 좌표 앵커, 매 프레임 카메라 추종). */
   realmEnterButtonRef?: RefObject<HTMLButtonElement | null>;
+  /**
+   * 발자국 트레일 (fable 설계) — 세션 동안 방문(ego 포커스)한 노드 id 목록
+   * (오래된 → 최근 순서). HomePage 세션 state 가 내려보낸다. 각 방문 노드에
+   * 최근성 감쇠 헤어라인 링을 얹는다 — URL 비영속·정적 표기. 생략/빈 배열 =
+   * 발자국 없음(회귀 0).
+   */
+  visitedTrail?: readonly string[];
 }
 
 const EMPTY_EXPANDED_SET: ReadonlySet<string> = new Set();
+const EMPTY_TRAIL: readonly string[] = [];
 
 export type UseTopologyLoopResult = TopologyPointerHandlers & {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -203,7 +212,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, livePhysics = false, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, livePhysics = false, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, visitedTrail = EMPTY_TRAIL } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -346,6 +355,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const hoveredEdgeRef = useRef<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null>(null);
   /** 엣지 선택(페어 포커스) prop 미러 — rAF 클로저용. */
   const selectedEdgeRef = useRef<{ sourceId: string; targetId: string } | null>(selectedEdge);
+  /** 발자국 트레일 prop 미러 — rAF 클로저가 매 프레임 최근성 rank 를 만든다. */
+  const visitedTrailRef = useRef<readonly string[]>(visitedTrail);
   /** 밀도 게이트 — 펼친 부모 Set 미러(rAF + 포인터 클로저 공용). */
   const expandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
   /** S2 파트 5B — 직전 펼침 Set (새로 펼쳐진 부모 diff → 카메라 다이브용). */
@@ -489,6 +500,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     panelEmphasisNodeIdRef.current = emphasizedNeighborSlug;
   }, [emphasizedNeighborSlug]);
+
+  useEffect(() => {
+    visitedTrailRef.current = visitedTrail;
+    // 발자국 추가/소거는 정적 상태 전이 — 유휴 스킵 중에도 한 번 다시 그린다
+    // (선택 링·엣지 선택과 같은 wake 계약).
+    lastActiveMsRef.current = performance.now();
+  }, [visitedTrail]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
@@ -1466,6 +1484,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // 히트테스트에도 그대로 공개(영역 비활성이면 null). draw/hit lockstep.
       realmTierKindsRef.current = realmTierKinds;
 
+      // 발자국 트레일 — 이번 프레임의 방문 노드별 최근성 rank(현재 포커스 노드는
+      // 선택 링이 이미 있으므로 제외). 배열이 짧아(≤30) 매 프레임 계산 비용 무시.
+      const footprintRanksById = buildFootprintRanks(visitedTrailRef.current, focusedNodeId);
+
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
       drawTopologyFrame({
@@ -1501,6 +1523,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         realmDustParallax,
         // S8 결함 6 — 영역 활성 시에만 우주 도트를 넘긴다(결계로 클립).
         realmCosmosPoints: realmWarding ? cosmosPointsRef.current : null,
+        footprintRanksById,
       });
 
       handle = requestAnimationFrame(frame);

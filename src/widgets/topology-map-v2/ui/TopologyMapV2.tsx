@@ -158,10 +158,17 @@ export interface TopologyMapV2Props {
    * 단다(회귀 0).
    */
   canvasLabel?: string;
+  /**
+   * 발자국 트레일 (fable 설계) — 세션 동안 방문(ego 포커스)한 노드 id 목록
+   * (오래된 → 최근). 각 방문 노드에 최근성 감쇠 pale 인디고 헤어라인 링을
+   * 얹는다(정적 표기). HomePage 세션 state 가 내려보낸다. 생략/빈 배열 =
+   * 발자국 없음.
+   */
+  visitedTrail?: readonly string[];
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, canvasLabel } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, canvasLabel, visitedTrail } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -193,6 +200,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       realmRootId,
       onEnterRealm,
       realmEnterButtonRef,
+      visitedTrail,
     });
 
   return (
