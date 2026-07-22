@@ -26,7 +26,7 @@ import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTa
 import type { CameraTween } from "../model/camera-easing";
 import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
 import { EGO_NEIGHBOR_CHIP_ID, scheduleRipple } from "../model/focus-state";
-import { spawnHoverPulses, type Pulse } from "../render/edge-fireflies";
+import { type Pulse } from "../render/edge-fireflies";
 import type { ForceSimulation } from "../model/force-layout";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable, isSpineOnlyZoom } from "../model/tier-visibility";
 import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
@@ -609,14 +609,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       const neighborIds = [...(world.neighborMap.get(hitNodeId) ?? [])];
       const schedule = scheduleRipple(hitNodeId, performance.now(), neighborIds, tokens.rippleStaggerMs, RIPPLE_PER_NEIGHBOR_DELAY_MS, tokens.rippleStaggerMaxMs);
       for (const entry of schedule) rippleStartRef.current.set(entry.nodeId, entry.startAtMs);
-      // R6 호버 펄스 — 프로토타입 startRipple 의 펄스 부분: 호버 노드에 닿는
-      // 엣지들로 바깥 방향 일회성 신호를 발사한다. reduced-motion 이면
-      // spawnHoverPulses 가 빈 배열을 돌려줘 발사가 없다(정지 계약).
-      if (pulsesRef) {
-        const touching = world.edges.filter((e) => e.sourceId === hitNodeId || e.targetId === hitNodeId);
-        const spawned = spawnHoverPulses(hitNodeId, touching, performance.now(), reducedMotionRef.current);
-        if (spawned.length > 0) pulsesRef.current = [...pulsesRef.current, ...spawned];
-      }
+      // 호버 펄스는 소유자 실보고("쌀알 날아가는 효과 — 없애라, 이상해")로
+      // 은퇴 (2026-07-23). 상시 혜성만 유지 — 호버 반응은 리플·커서로 충분.
     }
   };
 

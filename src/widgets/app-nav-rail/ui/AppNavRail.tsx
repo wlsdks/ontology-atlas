@@ -157,12 +157,6 @@ export function AppNavRail({ settingsSlot, hidden, className }: AppNavRailProps)
                   data-active={isActive ? "true" : "false"}
                   className="group relative flex w-full flex-col items-center gap-1 px-0 py-1.5"
                 >
-                  {isActive ? (
-                    <span
-                      aria-hidden="true"
-                      className="absolute left-0 top-[9%] h-[82%] w-[2px] rounded-r-full bg-[color:var(--color-indigo-brand)]"
-                    />
-                  ) : null}
                   <span
                     className={cn(
                       "flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card transition-colors",
