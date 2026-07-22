@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_TIER_REVEAL } from "../model/tier-visibility";
+import { LABEL_OFFSET } from "../render/labels";
 import {
   computeEffectiveCameraScaleMax,
   computeEffectiveCameraScaleMin,
@@ -12,6 +13,11 @@ import {
 } from "./topology-camera-math";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { computeEgoBounds, type TopologyWorld } from "./topology-world";
+
+// 라벨 하단 여유는 `topology-camera-math.ts` 안에서 LABEL_OFFSET 최댓값 + 4
+// 슬랙으로 파생된다(Guardian follow-up, 2026-07-23) — 테스트도 같은 파생식으로
+// 기대값을 계산해 LABEL_OFFSET 이 바뀌어도 리터럴이 드리프트하지 않게 한다.
+const OVERVIEW_LABEL_BOTTOM_ALLOWANCE = Math.max(...Object.values(LABEL_OFFSET)) + 4;
 
 /**
  * DECOUPLING (topology-map-v2 axis split): the overview entry scale is the
@@ -87,10 +93,14 @@ describe("computeOverviewCameraTarget — panel-aware safe insets", () => {
     };
     const centerScreen = worldToScreen(camera, W, H, 0, 0); // graph bounds center is (0,0)
     // Visible-area midpoint = (left + (W - right)) / 2, (top + (H - bottom)) / 2.
-    // 하단 인셋에는 라벨 여유 24px 가산 (검수 Pass B 결함 1 — 최하단 스파인
-    // 노드 라벨이 1440×900 핏에서 라벨 safe-rect 밖으로 밀리던 회귀의 예약분).
+    // 하단 인셋에는 라벨 여유(LABEL_OFFSET 파생분) 가산 (검수 Pass B 결함 1 —
+    // 최하단 스파인 노드 라벨이 1440×900 핏에서 라벨 safe-rect 밖으로 밀리던
+    // 회귀의 예약분).
     expect(centerScreen.x).toBeCloseTo((344 + (W - 120)) / 2, 4);
-    expect(centerScreen.y).toBeCloseTo((96 + (H - 96 - 24)) / 2, 4);
+    expect(centerScreen.y).toBeCloseTo(
+      (96 + (H - 96 - OVERVIEW_LABEL_BOTTOM_ALLOWANCE)) / 2,
+      4,
+    );
   });
 
   it("with a wider left panel than right, shifts the camera left so content clears the panel", () => {

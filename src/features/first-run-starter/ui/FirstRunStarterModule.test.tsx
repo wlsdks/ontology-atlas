@@ -59,6 +59,16 @@ describe('FirstRunStarterModule', () => {
     expect(screen.getByText('6')).toBeInTheDocument();
   });
 
+  // 페르소나 재조사 개선 후보 2 (2026-07-23) — 완전 초심자는 카드에서
+  // 화면 설명은 읽지만 제품 이름을 알 방법이 없었다. 브랜드 워드마크
+  // 한 줄이 캡션 위에 항상 렌더되는지 고정한다.
+  it('renders a brand wordmark line above the first-run caption', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+
+    expect(screen.getByTestId('first-run-starter-brand')).toBeInTheDocument();
+    expect(screen.getByTestId('first-run-starter-brand')).toHaveTextContent('brand');
+  });
+
   it('does not render once a vault is active (local mode)', () => {
     mocks.mode = 'local';
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);

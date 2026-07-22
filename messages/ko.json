@@ -221,6 +221,7 @@
     "trustLine": "Local-first · 마크다운이 진실원 · 백엔드 0"
   },
   "firstRunStarter": {
+    "brand": "Ontology Atlas",
     "caption": "첫 실행",
     "sampleLabel": "지금은 샘플",
     "contextBold": "우리 제품이 어떤 부분들로 이루어져 있고, 서로 어떻게 연결돼 있는지 한눈에 보는 지도예요.",

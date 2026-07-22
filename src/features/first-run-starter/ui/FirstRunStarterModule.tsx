@@ -62,6 +62,18 @@ export function FirstRunStarterModule({
       data-testid="first-run-starter"
       className="relative border-b border-[color:var(--topology-v2-panel-divider)] bg-gradient-to-b from-[color:var(--color-indigo-a08)] via-[color:var(--color-indigo-a06)] to-transparent px-4 pb-3.5 pt-4"
     >
+      {/* 페르소나 재조사 개선 후보 2 (2026-07-23) — 첫 실행 카드가 "이
+          화면이 뭘 하는지"만 말하고 "이 제품이 뭔지"(이름)는 말하지
+          않아 완전 초심자에게 정체성 공백이 있었다. 로고 마크 없이
+          텍스트 워드마크 한 줄만 더한다 — 기존 미션 문장(contextBold)이
+          이미 "지도"라는 개념을 설명하므로 별도 미션 반 문장은 중복이라
+          판단해 넣지 않는다. */}
+      <p
+        data-testid="first-run-starter-brand"
+        className="mb-1 text-caption font-medium tracking-[0.01em] text-[color:var(--topology-v2-panel-text-quaternary)]"
+      >
+        {t("brand")}
+      </p>
       <p className="mb-3 flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.22em] text-[color:var(--topology-v2-panel-text-secondary)]">
         <span className="relative h-2 w-2 shrink-0" aria-hidden>
           <span className="absolute inset-0 rounded-full bg-[color:var(--color-status-warning)]" />
