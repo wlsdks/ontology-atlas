@@ -141,7 +141,7 @@ export function TopologyRealmLedger({
       {/* ── 1. 헤더 ── caps eyebrow + 제목 + census 한 줄 + 조용한 해제. */}
       <header className="mb-3 shrink-0 px-0.5">
         <div className="mb-1 flex items-center justify-between gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--topology-v2-panel-text-tertiary)]">
+          <span className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--topology-v2-panel-text-tertiary)]">
             {labels.label}
           </span>
           <button
@@ -149,7 +149,7 @@ export function TopologyRealmLedger({
             onClick={onExit}
             aria-label={labels.exitAria}
             data-testid="topology-realm-exit"
-            className="shrink-0 rounded-[var(--chrome-radius-inner)] px-1 py-0.5 text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            className="shrink-0 rounded-[var(--chrome-radius-inner)] px-1 py-0.5 text-label text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
           >
             {labels.exit}
           </button>
@@ -160,14 +160,14 @@ export function TopologyRealmLedger({
           </span>
           <p
             data-testid="topology-realm-title"
-            className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--topology-v2-panel-text-primary)]"
+            className="min-w-0 flex-1 truncate text-body-lg font-medium text-[color:var(--topology-v2-panel-text-primary)]"
           >
             {rootTitle}
           </p>
         </div>
         <p
           data-testid="topology-realm-census"
-          className="mt-1 truncate font-mono text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+          className="mt-1 truncate font-mono text-caption text-[color:var(--topology-v2-panel-text-quaternary)]"
         >
           {labels.elementsShort} {census.elementCount} · {labels.capabilitiesShort}{" "}
           {census.capabilityCount} · {labels.depthShort} {census.depth}
@@ -196,7 +196,7 @@ export function TopologyRealmLedger({
           placeholder={labels.searchPlaceholder}
           autoComplete="off"
           data-testid="topology-realm-search"
-          className="w-full rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-canvas)] py-1.5 pl-7 pr-2.5 text-[12px] text-[color:var(--topology-v2-panel-text-primary)] outline-none transition-colors placeholder:text-[color:var(--topology-v2-panel-text-quaternary)] focus:border-[color:var(--topology-v2-indigo)]"
+          className="w-full rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-canvas)] py-1.5 pl-7 pr-2.5 text-body text-[color:var(--topology-v2-panel-text-primary)] outline-none transition-colors placeholder:text-[color:var(--topology-v2-panel-text-quaternary)] focus:border-[color:var(--topology-v2-indigo)]"
         />
       </div>
 
@@ -208,7 +208,7 @@ export function TopologyRealmLedger({
         className="min-h-0 flex-1 space-y-px overflow-y-auto"
       >
         {visibleRoots.length === 0 ? (
-          <p className="px-1 py-2 text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+          <p className="px-1 py-2 text-label text-[color:var(--topology-v2-panel-text-quaternary)]">
             {labels.emptyHint}
           </p>
         ) : (
@@ -241,7 +241,7 @@ export function TopologyRealmLedger({
         className="mt-2.5 shrink-0 border-t border-[color:var(--topology-v2-panel-divider)] pt-2"
       >
         {boundaryTotal === 0 ? (
-          <p className="px-1 text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+          <p className="px-1 text-label text-[color:var(--topology-v2-panel-text-quaternary)]">
             {labels.boundaryEmpty}
           </p>
         ) : (
@@ -254,7 +254,7 @@ export function TopologyRealmLedger({
               data-testid="topology-realm-boundary-toggle"
               className="flex w-full items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-1 py-0.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
             >
-              <span className="min-w-0 flex-1 truncate text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+              <span className="min-w-0 flex-1 truncate text-label text-[color:var(--topology-v2-panel-text-tertiary)]">
                 {labels.boundaryHeading}
               </span>
               <ChevronDown
@@ -271,7 +271,7 @@ export function TopologyRealmLedger({
                     data-testid="topology-realm-boundary-row"
                     className="group flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
                   >
-                    <span className="min-w-0 flex-1 truncate text-[11.5px] text-[color:var(--topology-v2-panel-text-secondary)]">
+                    <span className="min-w-0 flex-1 truncate text-label text-[color:var(--topology-v2-panel-text-secondary)]">
                       <span className="text-[color:var(--topology-v2-panel-text-primary)]">
                         {row.fromTitle}
                       </span>
@@ -290,7 +290,7 @@ export function TopologyRealmLedger({
                       aria-label={labels.boundaryJumpAria}
                       title={labels.boundaryJump}
                       data-testid="topology-realm-boundary-jump"
-                      className="inline-flex shrink-0 items-center gap-1 rounded-[var(--chrome-radius-inner)] px-1.5 py-0.5 text-[10.5px] text-[color:var(--color-indigo-accent)] opacity-0 transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset group-hover:opacity-100 motion-reduce:transition-none"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-[var(--chrome-radius-inner)] px-1.5 py-0.5 text-label text-[color:var(--color-indigo-accent)] opacity-0 transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset group-hover:opacity-100 motion-reduce:transition-none"
                     >
                       <CornerUpRight size={11} aria-hidden="true" />
                       {labels.boundaryJump}

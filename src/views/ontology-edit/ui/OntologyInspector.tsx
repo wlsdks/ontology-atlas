@@ -189,7 +189,7 @@ export function OntologyInspector({
         {selected ? (
           <span
             aria-hidden
-            className="rounded-full border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-primary)]"
+            className="rounded-full border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-primary)]"
             title={selected.title}
           >
             ●
@@ -209,10 +209,10 @@ export function OntologyInspector({
     >
       <header className="flex items-center justify-between gap-2 px-1">
         <div className="flex-1">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
+          <p className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
             {t("eyebrow")}
           </p>
-          <p className="mt-0.5 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+          <p className="mt-0.5 text-label leading-4 text-[color:var(--color-text-quaternary)]">
             {t("subtitle")}
           </p>
         </div>
@@ -233,11 +233,11 @@ export function OntologyInspector({
           aria-label={t("sessionDiffAriaLabel")}
           className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5"
         >
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t("sessionDiffTitle")}
           </p>
           {sessionDiffLines.length > 0 ? (
-            <ul className="mt-1.5 flex flex-col gap-1 font-mono text-[11px] leading-5">
+            <ul className="mt-1.5 flex flex-col gap-1 font-mono text-label leading-5">
               {sessionDiffLines.map((line) => (
                 <li
                   key={`${line.changeType}-${line.path}`}
@@ -261,7 +261,7 @@ export function OntologyInspector({
               ))}
             </ul>
           ) : (
-            <p className="mt-1.5 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+            <p className="mt-1.5 text-label leading-4 text-[color:var(--color-text-quaternary)]">
               {t("sessionDiffEmpty")}
             </p>
           )}
@@ -274,7 +274,7 @@ export function OntologyInspector({
             {...FADE_MOTION}
             className="rounded-md border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] p-2.5"
           >
-            <p className="text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+            <p className="text-label leading-4 text-[color:var(--color-text-quaternary)]">
               {t("emptyHint")}
             </p>
           </motion.div>
@@ -486,7 +486,7 @@ function EphemeralDetail({
       <div className="flex items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1.5">
           <TopologyV2KindGlyph kind={node.kind} size={15} />
-          <span className="inline-flex items-center rounded-full border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-primary)]">
+          <span className="inline-flex items-center rounded-full border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-2 py-0.5 text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-primary)]">
             {t("ephemeralBadge")} · {kindLabel(node.kind)}
           </span>
         </span>
@@ -501,7 +501,7 @@ function EphemeralDetail({
         </button>
       </div>
       <label className="flex flex-col gap-1.5">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {t("nameLabel")}
         </span>
         <input
@@ -526,20 +526,20 @@ function EphemeralDetail({
             }
           }}
           placeholder={t("namePlaceholder")}
-          className="rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2.5 py-1.5 text-[13px] text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)]"
+          className="rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2.5 py-1.5 text-body text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)]"
         />
       </label>
       {/* 저장 시 실제 생성될 vault 파일 경로 미리보기. 좌표(감사 #8)는
           사용자에게 의미 없는 내부 캔버스 수치라 제거했다. 파일명은 길어도
           break-all 로 4줄씩 꺾이지 않게 truncate + 전체는 title 툴팁으로
           (감사 #7) — 복사 버튼으로 정확한 전체 경로를 얻는다. */}
-      <div className="min-w-0 text-[10px]">
+      <div className="min-w-0 text-caption">
         <p className="font-mono uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {t("saveIdLabel")}
         </p>
         <div className="mt-1 flex min-w-0 items-center gap-1.5">
           <p
-            className="min-w-0 flex-1 truncate font-mono text-[11px] text-[color:var(--color-text-tertiary)]"
+            className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--color-text-tertiary)]"
             title={savePath}
           >
             {savePath}
@@ -551,7 +551,7 @@ function EphemeralDetail({
             }}
             aria-label={t("copySavePathAriaLabel", { path: savePath })}
             title={t("copySavePathAriaLabel", { path: savePath })}
-            className="inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-border-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
+            className="inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-border-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
           >
             {copyPathIcon}
             <span>{copyPathLabel}</span>
@@ -561,14 +561,14 @@ function EphemeralDetail({
       {saveConflict ? (
         <div
           role="status"
-          className="rounded-md border border-[color:var(--color-amber-muted-a34)] bg-[color:var(--color-amber-muted-a10)] px-2.5 py-2 text-[11px] leading-4 text-[color:var(--color-text-secondary)]"
+          className="rounded-md border border-[color:var(--color-amber-muted-a34)] bg-[color:var(--color-amber-muted-a10)] px-2.5 py-2 text-label leading-4 text-[color:var(--color-text-secondary)]"
         >
           <p>{t("ephemeralSaveConflict", { path: savePath })}</p>
           {saveSuggestion ? (
             <button
               type="button"
               onClick={() => onRename(node.id, saveSuggestion.title)}
-              className="mt-2 inline-flex h-7 items-center rounded-md border border-[color:var(--color-amber-muted-a42)] bg-[color:var(--color-amber-muted-a12)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-amber-muted-a62)] hover:bg-[color:var(--color-amber-muted-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-amber-muted-a42)] focus-visible:ring-inset"
+              className="mt-2 inline-flex h-7 items-center rounded-md border border-[color:var(--color-amber-muted-a42)] bg-[color:var(--color-amber-muted-a12)] px-2.5 text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-amber-muted-a62)] hover:bg-[color:var(--color-amber-muted-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-amber-muted-a42)] focus-visible:ring-inset"
             >
               {t("ephemeralUseSuggestedName", {
                 title: saveSuggestion.title,
@@ -585,7 +585,7 @@ function EphemeralDetail({
           type="button"
           onClick={() => onConnectSource?.()}
           aria-label={t("connectSourceAriaLabel")}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-3 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
         >
           <FolderOpen size={13} aria-hidden />
           {t("connectSourceButton")}
@@ -596,7 +596,7 @@ function EphemeralDetail({
           onClick={() => onSave(node.id)}
           disabled={!canSave}
           aria-label={t("saveButtonAriaLabel")}
-          className="inline-flex h-9 items-center justify-center rounded-md border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-3 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
         >
           {saving ? t("savingButton") : t("saveButton")}
         </button>
@@ -615,7 +615,7 @@ function EphemeralDetail({
           }}
           aria-label={t("copyDraftAgentPacketAriaLabel", { path: savePath })}
           title={t("copyDraftAgentPacketAriaLabel", { path: savePath })}
-          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-border-a46)] hover:bg-[color:var(--color-indigo-a08)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
+          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-border-a46)] hover:bg-[color:var(--color-indigo-a08)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
         >
           {agentPacketIcon}
           <span>{agentPacketLabel}</span>
@@ -627,10 +627,10 @@ function EphemeralDetail({
           className={`mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full ${saveStateDotClass}`}
         />
         <div className="min-w-0">
-          <p className="text-[11px] font-[var(--font-weight-signature)] leading-4 text-[color:var(--color-text-secondary)]">
+          <p className="text-label font-[var(--font-weight-signature)] leading-4 text-[color:var(--color-text-secondary)]">
             {saveStateLabel}
           </p>
-          <p className="mt-0.5 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+          <p className="mt-0.5 text-label leading-4 text-[color:var(--color-text-quaternary)]">
             {saveStateBody}
           </p>
         </div>
@@ -675,7 +675,7 @@ function AddRelationPicker({
         type="button"
         onClick={() => setOpen(true)}
         aria-label={t("addRelationAriaLabel")}
-        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a58)] hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-2.5 text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a58)] hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
       >
         <Plus size={13} aria-hidden />
         {t("addRelationButton")}
@@ -685,7 +685,7 @@ function AddRelationPicker({
   return (
     <div className="flex flex-col gap-2 rounded-md border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a06)] p-2.5">
       <div className="flex items-center justify-between gap-2">
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {t("addRelationTitle")}
         </p>
         <button
@@ -708,7 +708,7 @@ function AddRelationPicker({
         onChange={(e) => setQuery(e.target.value)}
         placeholder={t("addRelationSearchPlaceholder")}
         aria-label={t("addRelationSearchAriaLabel")}
-        className="rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2.5 py-1.5 text-[12px] text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)]"
+        className="rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2.5 py-1.5 text-body text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)]"
       />
       {matches.length > 0 ? (
         <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto">
@@ -724,11 +724,11 @@ function AddRelationPicker({
                 aria-label={t("addRelationSelectAriaLabel", {
                   title: candidate.title,
                 })}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-label text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
               >
                 <TopologyV2KindGlyph kind={candidate.kind} size={13} />
                 <span className="min-w-0 flex-1 truncate">{candidate.title}</span>
-                <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                <span className="shrink-0 font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
                   {kindLabel(candidate.kind)}
                 </span>
               </button>
@@ -736,7 +736,7 @@ function AddRelationPicker({
           ))}
         </ul>
       ) : (
-        <p className="rounded-md border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+        <p className="rounded-md border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-text-quaternary)]">
           {t("addRelationNoMatch")}
         </p>
       )}
@@ -846,7 +846,7 @@ function VaultDetail({
       <div className="flex items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1.5">
           <TopologyV2KindGlyph kind={node.kind} size={15} />
-          <span className="inline-flex items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+          <span className="inline-flex items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-2 py-0.5 text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
             {readOnly ? t("dogfoodBadge") : t("vaultBadge")} · {kindLabel(node.kind)}
           </span>
         </span>
@@ -860,7 +860,7 @@ function VaultDetail({
           ×
         </button>
       </div>
-      <p className="-mt-2 truncate pl-[22px] font-mono text-[10.5px] tracking-[0.02em] text-[color:var(--color-text-quaternary)]">
+      <p className="-mt-2 truncate pl-[22px] font-mono text-label tracking-[0.02em] text-[color:var(--color-text-quaternary)]">
         {kindPathLine}
       </p>
       <div
@@ -882,8 +882,8 @@ function VaultDetail({
                 onClick={() => setActiveTab(tab.id)}
                 className={
                   active
-                    ? "flex h-7 items-center justify-center gap-1 rounded-sm bg-[color:var(--color-indigo-a22)] px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
-                    : "flex h-7 items-center justify-center gap-1 rounded-sm px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+                    ? "flex h-7 items-center justify-center gap-1 rounded-sm bg-[color:var(--color-indigo-a22)] px-2 text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+                    : "flex h-7 items-center justify-center gap-1 rounded-sm px-2 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
                 }
               >
                 <Icon size={12} aria-hidden="true" className="shrink-0" />
@@ -903,40 +903,40 @@ function VaultDetail({
           <div className="rounded-md border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] p-2.5">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-[11px] font-[var(--font-weight-signature)] leading-4 text-[color:var(--color-text-secondary)]">
+                <p className="text-label font-[var(--font-weight-signature)] leading-4 text-[color:var(--color-text-secondary)]">
                   {t("objectProofLabel")}
                 </p>
-                <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+                <p className="mt-1 text-label leading-4 text-[color:var(--color-text-quaternary)]">
                   {t("objectProofBody")}
                 </p>
               </div>
-              <span className="shrink-0 rounded-full border border-[color:var(--color-indigo-a36)] bg-[color:var(--color-indigo-a14)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-primary)]">
+              <span className="shrink-0 rounded-full border border-[color:var(--color-indigo-a36)] bg-[color:var(--color-indigo-a14)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-primary)]">
                 {t("objectProofChip")}
               </span>
             </div>
             <div className="mt-2 grid grid-cols-3 gap-1.5">
               <div className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
-                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t("objectProofOutgoing")}
                 </p>
-                <p className="mt-0.5 font-mono text-[15px] text-[color:var(--color-text-primary)]">
+                <p className="mt-0.5 font-mono text-title text-[color:var(--color-text-primary)]">
                   {outgoingCount}
                 </p>
               </div>
               <div className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
-                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t("objectProofIncoming")}
                 </p>
-                <p className="mt-0.5 font-mono text-[15px] text-[color:var(--color-text-primary)]">
+                <p className="mt-0.5 font-mono text-title text-[color:var(--color-text-primary)]">
                   {backlinks.length}
                 </p>
               </div>
               <div className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
-                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t("objectProofSource")}
                 </p>
                 <p
-                  className="mt-0.5 truncate font-mono text-[11px] text-[color:var(--color-text-primary)]"
+                  className="mt-0.5 truncate font-mono text-label text-[color:var(--color-text-primary)]"
                   title={`${node.slug}.md`}
                 >
                   {node.slug}.md
@@ -947,21 +947,21 @@ function VaultDetail({
               <button
                 type="button"
                 onClick={() => setActiveTab("relations")}
-                className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a58)] hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+                className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-2 text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a58)] hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
               >
                 {t("objectProofRelationsAction")}
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("document")}
-                className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-border-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
+                className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2 text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-border-a46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
               >
                 {t("objectProofDocumentAction")}
               </button>
             </div>
           </div>
           <label className="flex flex-col gap-1.5">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("vaultTitleLabel")}
             </span>
             <input
@@ -976,14 +976,14 @@ function VaultDetail({
                 }
               }}
               disabled={readOnly}
-              className="rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2.5 py-1.5 text-[13px] text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)] disabled:opacity-60"
+              className="rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2.5 py-1.5 text-body text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)] disabled:opacity-60"
             />
           </label>
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("vaultSlugLabel")}
             </p>
-            <p className="mt-1 break-all font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+            <p className="mt-1 break-all font-mono text-label text-[color:var(--color-text-tertiary)]">
               {node.slug}
             </p>
           </div>
@@ -993,7 +993,7 @@ function VaultDetail({
               onClick={() => onSaveRename(node.slug, draft)}
               disabled={!canSave}
               aria-label={t("vaultSaveAriaLabel")}
-              className="inline-flex h-9 items-center justify-center rounded-md border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+              className="inline-flex h-9 items-center justify-center rounded-md border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-3 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
             >
               {saving
                 ? t("vaultSavingButton")
@@ -1059,7 +1059,7 @@ function VaultDetail({
               onSelectBacklink={onSelectBacklink}
             />
           ) : (
-            <p className="rounded-md border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-2.5 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+            <p className="rounded-md border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-2.5 text-label leading-4 text-[color:var(--color-text-quaternary)]">
               {t("backlinksEmpty")}
             </p>
           )}
@@ -1073,23 +1073,23 @@ function VaultDetail({
           className="flex flex-col gap-3"
         >
           <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("sourceDocumentLabel")}
             </p>
-            <p className="mt-1 break-all font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+            <p className="mt-1 break-all font-mono text-label text-[color:var(--color-text-tertiary)]">
               {node.slug}.md
             </p>
-            <p className="mt-2 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+            <p className="mt-2 text-label leading-4 text-[color:var(--color-text-quaternary)]">
               {t("sourceDocumentHint")}
             </p>
             <Link
               href={sourceDocHref}
-              className="mt-2 inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a12)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a62)] hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+              className="mt-2 inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a12)] px-3 text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a62)] hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
             >
               {t("sourceDocumentAction")}
             </Link>
           </div>
-          <p className="text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+          <p className="text-label leading-4 text-[color:var(--color-text-quaternary)]">
             {readOnly
               ? t(
                   isDesktopRuntime
@@ -1126,7 +1126,7 @@ function VaultDetail({
               onClick={() => onDelete(node.slug)}
               disabled={saving}
               aria-label={t("deleteAriaLabel")}
-              className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-danger-a32)] bg-transparent px-3 text-[11px] text-[color:var(--color-danger-text)] transition-colors hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a08)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-danger-a50)] focus-visible:ring-inset"
+              className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-danger-a32)] bg-transparent px-3 text-label text-[color:var(--color-danger-text)] transition-colors hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a08)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-danger-a50)] focus-visible:ring-inset"
             >
               {t("deleteButton")}
             </button>
@@ -1171,7 +1171,7 @@ function BacklinksSummary({
   };
   return (
     <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+      <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {t("backlinksLabel", { count: backlinks.length })}
       </p>
       <ul className="mt-2 flex flex-wrap gap-1">
@@ -1185,12 +1185,12 @@ function BacklinksSummary({
                 title: bl.title,
                 keys: bl.matchedKeys.map(edgeKeyLabel).join(", "),
               })}
-              className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a08)] px-2 py-0.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a55)] hover:bg-[color:var(--color-indigo-a16)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+              className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a08)] px-2 py-0.5 text-label text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a55)] hover:bg-[color:var(--color-indigo-a16)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
             >
               <span className="break-keep">{bl.title}</span>
               <span
                 aria-hidden
-                className="rounded-sm bg-[color:var(--color-indigo-a22)] px-1 font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-indigo-text-strong)]"
+                className="rounded-sm bg-[color:var(--color-indigo-a22)] px-1 font-mono text-caption uppercase tracking-[0.06em] text-[color:var(--color-indigo-text-strong)]"
               >
                 {edgeKeyLabel(bl.matchedKeys[0])}
               </span>
@@ -1298,12 +1298,12 @@ function LiteralEditor({
     onCommit(draft);
   };
   const sharedClass =
-    "w-full rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2 py-1 text-[12px] text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)] disabled:opacity-50";
+    "w-full rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2 py-1 text-body text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)] disabled:opacity-50";
   return (
     <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
       <label
         htmlFor={`literal-${fieldKey}`}
-        className="block font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
+        className="block font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
       >
         {literalLabel(t, fieldKey)}
       </label>
@@ -1339,7 +1339,7 @@ function LiteralEditor({
           className={`mt-1.5 ${sharedClass}`}
         />
       )}
-      <p className="mt-1 text-[10px] text-[color:var(--color-text-quaternary)]">
+      <p className="mt-1 text-caption text-[color:var(--color-text-quaternary)]">
         {dirty ? t("literalAutoSaveDirty") : t("literalAutoSaveClean")}
       </p>
     </div>
@@ -1381,11 +1381,11 @@ function ArrayEditorGroup({
             aria-hidden
             className="text-[color:var(--color-text-quaternary)] transition-transform group-open:rotate-90"
           />
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {title}
           </span>
         </span>
-        <span className="rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-1.5 font-mono text-[9px] tabular-nums text-[color:var(--color-text-tertiary)]">
+        <span className="rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-1.5 font-mono text-caption tabular-nums text-[color:var(--color-text-tertiary)]">
           {count}
         </span>
       </summary>
@@ -1464,7 +1464,7 @@ function ArrayKeyEditor({
     <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
       <label
         htmlFor={`array-${fieldKey}`}
-        className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
+        className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
       >
         <RelationTraceMarkIcon mark={resolveRelationTraceMark(fieldKey)} />
         {arrayLabel(t, fieldKey)}
@@ -1482,8 +1482,8 @@ function ArrayKeyEditor({
                   aria-label={t("arrayRemoveAriaLabel", { slug })}
                   className={
                     isNew
-                      ? "inline-flex items-center gap-1 rounded-full border border-[color:var(--color-amber-signal-a60)] bg-[color:var(--color-amber-signal-a16)] px-2 py-0.5 text-[11px] text-[color:var(--color-text-primary)] transition-[background,border] duration-1000 ease-out"
-                      : "inline-flex items-center gap-1 rounded-full border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] px-2 py-0.5 text-[11px] text-[color:var(--color-text-primary)] transition-[background,border] duration-1000 ease-out hover:border-[color:var(--color-danger-a46)] hover:bg-[color:var(--color-danger-a10)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-danger-a46)] focus-visible:ring-inset"
+                      ? "inline-flex items-center gap-1 rounded-full border border-[color:var(--color-amber-signal-a60)] bg-[color:var(--color-amber-signal-a16)] px-2 py-0.5 text-label text-[color:var(--color-text-primary)] transition-[background,border] duration-1000 ease-out"
+                      : "inline-flex items-center gap-1 rounded-full border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] px-2 py-0.5 text-label text-[color:var(--color-text-primary)] transition-[background,border] duration-1000 ease-out hover:border-[color:var(--color-danger-a46)] hover:bg-[color:var(--color-danger-a10)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-danger-a46)] focus-visible:ring-inset"
                   }
                 >
                   <span className="font-mono break-all">{slug}</span>
@@ -1511,14 +1511,14 @@ function ArrayKeyEditor({
           }}
           disabled={disabled}
           placeholder={t("arrayInputPlaceholder")}
-          className="flex-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2 py-1 font-mono text-[11px] text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)] disabled:opacity-50"
+          className="flex-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2 py-1 font-mono text-label text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)] disabled:opacity-50"
         />
         <button
           type="button"
           onClick={submit}
           disabled={disabled || !input.trim() || values.includes(input.trim())}
           aria-label={t("arrayAddAriaLabel")}
-          className="inline-flex h-7 items-center justify-center rounded-md border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-2 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+          className="inline-flex h-7 items-center justify-center rounded-md border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a18)] px-2 text-label text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
         >
           +
         </button>
@@ -1559,7 +1559,7 @@ function ReadOnlyArraySummary({
           key={key}
           className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5"
         >
-          <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             <RelationTraceMarkIcon mark={resolveRelationTraceMark(key)} />
             {arrayLabel(t, key)}
           </p>
@@ -1567,7 +1567,7 @@ function ReadOnlyArraySummary({
             {values.map((slug) => (
               <li
                 key={slug}
-                className="inline-flex items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2 py-0.5 font-mono text-[11px] text-[color:var(--color-text-tertiary)]"
+                className="inline-flex items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2 py-0.5 font-mono text-label text-[color:var(--color-text-tertiary)]"
               >
                 {slug}
               </li>

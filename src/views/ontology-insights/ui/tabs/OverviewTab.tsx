@@ -64,7 +64,7 @@ export function OverviewTab({
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-2">
         <section
           aria-label={labels.kindCensusTitle}
-          className="flex min-h-0 min-w-0 flex-col rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+          className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
         >
           <CardHead label={labels.kindCensusTitle} gcap="kind census" count={totalNodes} />
           <div
@@ -87,7 +87,7 @@ export function OverviewTab({
               const width = kindMax > 0 ? Math.max(2, Math.round((row.count / kindMax) * 100)) : 0;
               return (
                 <div key={row.kind} className="flex items-center gap-3 py-0.5">
-                  <span className="flex w-[136px] flex-none items-center gap-2 text-[14px] text-[color:var(--color-text-secondary)]">
+                  <span className="flex w-[136px] flex-none items-center gap-2 text-body-lg text-[color:var(--color-text-secondary)]">
                     <TopologyV2KindGlyph kind={row.kind} size={16} />
                     {kindLabel(row.kind)}
                   </span>
@@ -97,25 +97,25 @@ export function OverviewTab({
                       style={{ width: `${width}%`, backgroundColor: getOntologyKindTone(row.kind).fill }}
                     />
                   </span>
-                  <span className="w-10 flex-none text-right font-mono text-[15px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+                  <span className="w-10 flex-none text-right font-mono text-title tabular-nums text-[color:var(--topology-v2-numeral-face)]">
                     {row.count}
                   </span>
                 </div>
               );
             })}
           </div>
-          <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-[11px] text-[color:var(--color-text-quaternary)]">
+          <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
             {labels.kindGlyphCaption}
           </p>
         </section>
 
         <section
           aria-label={labels.domainCapacityTitle}
-          className="flex min-h-0 min-w-0 flex-col rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+          className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
         >
           <CardHead label={labels.domainCapacityTitle} gcap="domain capacity" count={domainRows.length} />
           {domainRows.length === 0 ? (
-            <p className="mt-3.5 flex-1 text-[12px] text-[color:var(--color-text-quaternary)]">{labels.noDomains}</p>
+            <p className="mt-3.5 flex-1 text-body text-[color:var(--color-text-quaternary)]">{labels.noDomains}</p>
           ) : (
             <div className="mt-3.5 flex flex-1 flex-col justify-evenly gap-1">
               {domainRows.map((row) => {
@@ -123,7 +123,7 @@ export function OverviewTab({
                 const elWidth = domainMax > 0 ? (row.elementCount / domainMax) * 100 : 0;
                 return (
                   <div key={row.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-0.5">
-                    <span className="flex w-full shrink-0 items-center gap-2 truncate text-[14px] text-[color:var(--color-text-secondary)] sm:w-[220px]">
+                    <span className="flex w-full shrink-0 items-center gap-2 truncate text-body-lg text-[color:var(--color-text-secondary)] sm:w-[220px]">
                       <TopologyV2KindGlyph kind="domain" size={15} />
                       <span className="truncate">{row.title}</span>
                     </span>
@@ -138,10 +138,10 @@ export function OverviewTab({
                       />
                     </span>
                     <span className="flex-none text-right">
-                      <span className="block font-mono text-[15px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+                      <span className="block font-mono text-title tabular-nums text-[color:var(--topology-v2-numeral-face)]">
                         {row.total}
                       </span>
-                      <span className="block font-mono text-[9.5px] text-[color:var(--color-text-quaternary)]">
+                      <span className="block font-mono text-caption text-[color:var(--color-text-quaternary)]">
                         {labels.capabilityUnit} {row.capabilityCount} · {labels.elementUnit} {row.elementCount}
                       </span>
                     </span>
@@ -150,7 +150,7 @@ export function OverviewTab({
               })}
             </div>
           )}
-          <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-[11px] text-[color:var(--color-text-quaternary)]">
+          <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
             {labels.domainCapacityCaption}
           </p>
         </section>
@@ -162,11 +162,11 @@ export function OverviewTab({
 function CardHead({ label, gcap, count }: { label: string; gcap: string; count: number }) {
   return (
     <div className="flex items-baseline gap-2.5">
-      <span className="text-[14px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">{label}</span>
-      <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+      <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">{label}</span>
+      <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {gcap}
       </span>
-      <span className="ml-auto font-mono text-[13px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+      <span className="ml-auto font-mono text-body tabular-nums text-[color:var(--topology-v2-numeral-face)]">
         {count}
       </span>
     </div>

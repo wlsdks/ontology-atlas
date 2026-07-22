@@ -152,7 +152,7 @@ export function AppNavRail({ settingsSlot, hidden, className }: AppNavRailProps)
                   ) : null}
                   <span
                     className={cn(
-                      "flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-[8px] transition-colors",
+                      "flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card transition-colors",
                       isActive
                         ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-accent)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
                         : "text-[color:var(--color-text-tertiary)] group-hover:bg-[color:var(--color-overlay-2)] group-hover:text-[color:var(--color-text-primary)]",
@@ -186,7 +186,7 @@ export function AppNavRail({ settingsSlot, hidden, className }: AppNavRailProps)
           title={agentTitle}
           aria-label={agentTitle}
           data-testid="app-nav-rail-agent-status"
-          className="relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-[8px] text-[color:var(--color-text-tertiary)]"
+          className="relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card text-[color:var(--color-text-tertiary)]"
         >
           <Activity
             size={18}

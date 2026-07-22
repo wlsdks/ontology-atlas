@@ -148,7 +148,7 @@ export function FullDetailA1({
       data-fulldetail-node={node.id}
       className={["full-detail-a1 mx-auto flex max-w-[1240px] flex-col px-6 py-7", className ?? ""].join(" ")}
     >
-      <nav className="mb-6 flex items-center gap-2.5 text-[12px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+      <nav className="mb-6 flex items-center gap-2.5 text-body text-[color:var(--topology-v2-panel-text-tertiary)]">
         {onBackToMap ? (
           <button
             type="button"
@@ -171,7 +171,7 @@ export function FullDetailA1({
         </span>
         <span>{getKindLabel(node.kind)}</span>
         {breadcrumb?.totalConcepts != null && breadcrumb?.totalRelations != null ? (
-          <span className="ml-auto font-mono text-[11px] tracking-[0.08em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
+          <span className="ml-auto font-mono text-label tracking-[0.08em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
             {t("census", {
               concepts: breadcrumb.totalConcepts,
               relations: breadcrumb.totalRelations,
@@ -185,10 +185,10 @@ export function FullDetailA1({
           <TopologyV2KindGlyph kind={node.kind} size={22} />
         </span>
         <div className="min-w-0 flex-1">
-          <h1 className="text-[24px] font-semibold tracking-[-0.015em] text-[color:var(--topology-v2-panel-text-primary)]">
+          <h1 className="text-display font-semibold tracking-[-0.015em] text-[color:var(--topology-v2-panel-text-primary)]">
             {node.title}
           </h1>
-          <div className="mt-1 flex items-center gap-2 text-[12.5px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+          <div className="mt-1 flex items-center gap-2 text-body text-[color:var(--topology-v2-panel-text-tertiary)]">
             <span
               aria-hidden="true"
               className="h-[6px] w-[6px] shrink-0 rounded-full"
@@ -204,7 +204,7 @@ export function FullDetailA1({
           </div>
         </div>
         <div className="mt-2.5 flex shrink-0 items-center gap-3">
-          <span className="font-mono text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+          <span className="font-mono text-label text-[color:var(--topology-v2-panel-text-quaternary)]">
             {node.slug}
           </span>
           <button
@@ -213,7 +213,7 @@ export function FullDetailA1({
             aria-label={t("copyLink")}
             title={t("copyLink")}
             data-testid="full-detail-a1-copy-link"
-            className="rounded-[5px] p-1 text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+            className="rounded-chip p-1 text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
           >
             <Link2 size={14} />
           </button>
@@ -222,7 +222,7 @@ export function FullDetailA1({
             onClick={onClose}
             aria-label={t("close")}
             data-testid="full-detail-a1-close"
-            className="rounded-[5px] p-1 text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+            className="rounded-chip p-1 text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
           >
             <X size={16} />
           </button>
@@ -231,7 +231,7 @@ export function FullDetailA1({
 
       <div
         data-fulldetail-metric="engraved"
-        className="mt-4.5 flex flex-wrap items-baseline gap-x-4.5 gap-y-1 rounded-[7px] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-metric-surface)] px-3.5 py-2.5 font-mono text-[12.5px] tracking-[0.01em] text-[color:var(--topology-v2-panel-metric-text)]"
+        className="mt-4.5 flex flex-wrap items-baseline gap-x-4.5 gap-y-1 rounded-chip border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-metric-surface)] px-3.5 py-2.5 font-mono text-body tracking-[0.01em] text-[color:var(--topology-v2-panel-metric-text)]"
       >
         {metricLine}
       </div>
@@ -275,26 +275,26 @@ export function FullDetailA1({
 
       <section
         data-fulldetail-handoff
-        className="mt-6.5 flex items-center gap-3.5 rounded-[9px] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-3.5 py-3"
+        className="mt-6.5 flex items-center gap-3.5 rounded-card border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-3.5 py-3"
       >
-        <span className="shrink-0 text-[12.5px] font-medium text-[color:var(--topology-v2-panel-text-primary)]">
+        <span className="shrink-0 text-body font-medium text-[color:var(--topology-v2-panel-text-primary)]">
           {t("handoff.label")}
         </span>
-        <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+        <span className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--topology-v2-panel-text-tertiary)]">
           {handoffChain}
         </span>
         <button
           type="button"
           onClick={handleCopyHandoff}
           data-testid="full-detail-a1-handoff-copy"
-          className="shrink-0 rounded-[6px] border border-[color:var(--topology-v2-indigo-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-3 py-1.5 text-[12px] font-medium text-[color:var(--topology-v2-indigo-bright)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:border-[color:var(--topology-v2-indigo)]"
+          className="shrink-0 rounded-chip border border-[color:var(--topology-v2-indigo-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-3 py-1.5 text-body font-medium text-[color:var(--topology-v2-indigo-bright)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:border-[color:var(--topology-v2-indigo)]"
         >
           {t("handoff.copy")}
         </button>
         {documentHref ? (
           <Link
             href={documentHref}
-            className="shrink-0 text-[12px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+            className="shrink-0 text-body text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
           >
             {t("handoff.openDocument")}
           </Link>
@@ -302,7 +302,7 @@ export function FullDetailA1({
         <Link
           href={`/ontology/edit?node=${encodeURIComponent(node.slug)}`}
           data-testid="full-detail-a1-open-builder"
-          className="shrink-0 text-[12px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          className="shrink-0 text-body text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
         >
           {t("handoff.openBuilder")}
         </Link>
@@ -317,15 +317,15 @@ export function FullDetailA1({
           />
         ) : (
           <>
-            <h2 className="mb-2 text-[13px] font-medium text-[color:var(--topology-v2-panel-text-primary)]">
+            <h2 className="mb-2 text-body font-medium text-[color:var(--topology-v2-panel-text-primary)]">
               {t("body.title")}
             </h2>
             {bodyMarkdown && bodyMarkdown.trim().length > 0 ? (
-              <div className="prose prose-invert max-w-none text-[13.5px] leading-[1.7] text-[color:var(--topology-v2-panel-text-secondary)]">
+              <div className="prose prose-invert max-w-none text-body-lg leading-[1.7] text-[color:var(--topology-v2-panel-text-secondary)]">
                 <ReactMarkdown>{bodyMarkdown}</ReactMarkdown>
               </div>
             ) : (
-              <p className="text-[12.5px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+              <p className="text-body text-[color:var(--topology-v2-panel-text-tertiary)]">
                 {t("body.empty")}
               </p>
             )}

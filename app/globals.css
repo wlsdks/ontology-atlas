@@ -407,6 +407,61 @@
   --kind-tone-capability: 211, 159, 73;
   --kind-tone-element: 105, 177, 121;
   --kind-tone-unknown: 196, 92, 92;
+
+  /*
+   * ── Geometry & Type Codex (R5, 2026-07) ─────────────────────────────
+   * 규격 표: docs/DESIGN-SYSTEM.md "Geometry & Type Codex" 절이 박스별
+   * (칩·배지·패널·팝오버·카드·입력·버튼) 높이/radius/패딩/타이포 단을 토큰명
+   * 으로 못박는다. 이 램프 밖의 text-[Npx] / rounded-[Npx] 리터럴은 존재
+   * 금지 — 신규 값은 토큰 신설 PR 로만. ESLint no-restricted-syntax 가
+   * 마이그레이션 완료 디렉토리에서 error 로 차단한다.
+   *
+   * 실측 근거(치환 전): text-[Npx] 하드코딩 29종 크기(1,184건) → 7단 램프로
+   * 수렴, arbitrary radius 18종 → 3단. 간격 계단은 4/8 원칙(gap/space 유틸).
+   */
+
+  /* Type ramp — 7단. Tailwind v4 `--text-*` 네임스페이스가 text-<step>
+     font-size 유틸리티를 생성한다. letter-spacing 은 아래 `--tracking-*`
+     짝으로 분리 관리한다 — text-<step> 에 자동 결합하면 ~1천 element 의
+     tracking 이 한꺼번에 바뀌어 "법전화지 리디자인 아님" 원칙을 깬다. 코덱스
+     표가 어느 tracking 과 짝인지 명시하고, 신규 코드가 그 짝을 함께 적용한다.
+     Apple 광학 원칙: 작은 단은 양의 tracking 으로 판독선 확보, 큰 단은 음의
+     tracking 으로 응집. */
+  --text-caption: 9.5px; /* 마이크로 라벨·범례·타임스탬프 (짝: tracking-caption) */
+  --text-label: 11px; /* 칩·배지·보조 라벨 (짝: tracking-label) */
+  --text-body: 12.5px; /* 기본 본문·리스트 행 (짝: tracking-body) */
+  --text-body-lg: 14px; /* 강조 본문·부제 (짝: tracking-body-lg) */
+  --text-title: 16px; /* 패널/카드 제목 (짝: tracking-title) */
+  --text-display: 23px; /* 페이지 헤드라인 (짝: tracking-display) */
+  --text-hero: 30px; /* 히어로 헤드라인 (짝: tracking-hero) */
+
+  /* Type ramp letter-spacing 짝 — text-<step> 과 1:1. tracking-<step>
+     유틸리티로 쓴다. --tracking-display/hero 는 위 "Letter-spacing 스케일"
+     절에 이미 정의(−0.022em)돼 있어 램프 상단과 짝이 맞는다. */
+  --tracking-caption: 0.04em;
+  --tracking-label: 0.02em;
+  --tracking-body: 0.005em;
+  --tracking-body-lg: 0em;
+  --tracking-title: -0.01em;
+
+  /* Radius ramp — 3단. Tailwind v4 `--radius-*` 네임스페이스가 rounded-<step>
+     를 생성한다. 이 밖(sub-chip 헤어라인 1~4px, overlay sheet/card 18~28px)은
+     코덱스 표의 명시 예외로만 — eslint-disable + 사유 주석 필수. */
+  --radius-chip: 6px; /* 칩·배지·작은 버튼 */
+  --radius-card: 9px; /* 카드·인풋·중형 서피스 */
+  --radius-panel: 12px; /* 패널·모달·큰 서피스 */
+
+  /* Padding ramp — 2단. `p-[var(--pad-card)]` 형태로 명시 참조한다(패딩은
+     ESLint ban 대상이 아니라 대량 치환하지 않음 — 코덱스 표의 규격 근거이자
+     신규 코드 참조원). */
+  --pad-card: 16px; /* 카드 내부 패딩 (RATIO-SYSTEM --card-pad 와 동일값) */
+  --pad-panel: 12px; /* 패널 내부 패딩 */
+
+  /* Codex 인덱스 — 기하/모션 토큰은 이 파일 하단에 이미 정의됨:
+     · --chrome-tile-size (44px) 크롬 타일 정사각
+     · --topology-motion-* / --topology-*-duration 모션 패밀리(180ms 크롬,
+       200~420ms 카메라, damping/response spring 패밀리)
+     전체 규격 표는 docs/DESIGN-SYSTEM.md "Geometry & Type Codex". */
 }
 
 @layer base {

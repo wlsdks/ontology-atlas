@@ -225,7 +225,7 @@ export function TopologyIndexPanel({
         data-testid="topology-index-fold"
         className="group mb-3 flex w-full cursor-pointer items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
       >
-        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--topology-v2-panel-text-tertiary)]">
+        <span className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--topology-v2-panel-text-tertiary)]">
           {labels.label}
         </span>
         {/* 수렴 판정 ①: 시각 카운트 "· N" 삭제 — 지형도 HUD 가 이미 라벨과
@@ -271,7 +271,7 @@ export function TopologyIndexPanel({
           placeholder={labels.searchPlaceholder}
           autoComplete="off"
           data-testid="topology-index-search"
-          className="w-full rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-canvas)] py-1.5 pl-7 pr-2.5 text-[12px] text-[color:var(--topology-v2-panel-text-primary)] outline-none transition-colors placeholder:text-[color:var(--topology-v2-panel-text-quaternary)] focus:border-[color:var(--topology-v2-indigo)]"
+          className="w-full rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-canvas)] py-1.5 pl-7 pr-2.5 text-body text-[color:var(--topology-v2-panel-text-primary)] outline-none transition-colors placeholder:text-[color:var(--topology-v2-panel-text-quaternary)] focus:border-[color:var(--topology-v2-indigo)]"
         />
       </div>
 
@@ -290,7 +290,7 @@ export function TopologyIndexPanel({
             aria-selected={!lensActive}
             data-testid="topology-index-segment-all"
             onClick={() => setLens("all")}
-            className={`min-w-0 rounded-[var(--chrome-radius-inner)] px-2 py-1 text-[11px] transition-colors ${
+            className={`min-w-0 rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
               !lensActive
                 ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
                 : "text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
@@ -304,7 +304,7 @@ export function TopologyIndexPanel({
             aria-selected={lensActive}
             data-testid="topology-index-segment-recent"
             onClick={() => setLens("recent")}
-            className={`min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-[11px] transition-colors ${
+            className={`min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
               lensActive
                 ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
                 : "text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
@@ -330,7 +330,7 @@ export function TopologyIndexPanel({
         }}
       >
         {visibleRoots.length === 0 ? (
-          <p className="px-1 py-2 text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+          <p className="px-1 py-2 text-label text-[color:var(--topology-v2-panel-text-quaternary)]">
             {lensActive ? labels.recentEmptyHint : labels.emptyHint}
           </p>
         ) : (
@@ -362,7 +362,7 @@ export function TopologyIndexPanel({
           type="button"
           onClick={onPromoteUncatalogedDocs}
           data-testid="topology-index-uncataloged-docs"
-          className="mt-2 flex shrink-0 items-center gap-2 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] px-2 py-1.5 text-left text-[11px] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+          className="mt-2 flex shrink-0 items-center gap-2 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] px-2 py-1.5 text-left text-label transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
         >
           <span className="min-w-0 flex-1 truncate text-[color:var(--topology-v2-panel-text-tertiary)]">
             {labels.uncatalogedDocsLabel}
@@ -378,7 +378,7 @@ export function TopologyIndexPanel({
           hotkey — 여기선 재확인용 표기, 별도 바인딩 아님). */}
       <div
         data-testid="topology-index-footer"
-        className="mt-2.5 flex shrink-0 items-center gap-1.5 border-t border-[color:var(--topology-v2-panel-divider)] px-1 pt-2.5 text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+        className="mt-2.5 flex shrink-0 items-center gap-1.5 border-t border-[color:var(--topology-v2-panel-divider)] px-1 pt-2.5 text-label text-[color:var(--topology-v2-panel-text-quaternary)]"
       >
         {/* P4-② — 연결된 상태(agentActivityHref 제공)면 활동 다이제스트로
             딥링크, 아니면 기존처럼 등록 시트를 여는 버튼. */}
@@ -425,7 +425,7 @@ export function TopologyIndexPanel({
           ) : null}
           <span
             aria-hidden="true"
-            className="shrink-0 rounded border border-[color:var(--topology-v2-panel-border)] px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--topology-v2-panel-text-quaternary)]"
+            className="shrink-0 rounded border border-[color:var(--topology-v2-panel-border)] px-1 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--topology-v2-panel-text-quaternary)]"
           >
             ⇧⌘K
           </span>

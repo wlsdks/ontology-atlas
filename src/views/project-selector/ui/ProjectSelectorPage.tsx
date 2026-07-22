@@ -94,7 +94,7 @@ export function ProjectSelectorPage() {
           <AppSettingsMenu mode={dataSourceMode} />
         </div>
         <div className="mx-auto px-5 py-6 md:px-10 md:py-10" style={{ maxWidth: PAGE_MAX_WIDTH }}>
-        <nav className="mb-5 flex flex-wrap items-center gap-2.5 text-[12px] text-[color:var(--color-text-tertiary)]">
+        <nav className="mb-5 flex flex-wrap items-center gap-2.5 text-body text-[color:var(--color-text-tertiary)]">
           <Link
             href="/"
             className="text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
@@ -103,7 +103,7 @@ export function ProjectSelectorPage() {
           </Link>
           <span aria-hidden className="text-[color:var(--color-text-quaternary)]">/</span>
           <span>{t("crumbCurrent")}</span>
-          <span className={`ml-auto text-[11px] tracking-[0.08em] ${numeralClass}`}>
+          <span className={`ml-auto text-label tracking-[0.08em] ${numeralClass}`}>
             {census.conceptCount} {t("censusTopConceptsLabel")}
             <span aria-hidden className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
             {census.relationCount} {t("censusTopRelationsLabel")}
@@ -111,10 +111,10 @@ export function ProjectSelectorPage() {
         </nav>
 
         <header className="flex flex-wrap items-end gap-4">
-          <h1 className="text-[23px] font-[var(--font-weight-signature)] tracking-[-0.015em] text-[color:var(--color-text-primary)]">
+          <h1 className="text-display font-[var(--font-weight-signature)] tracking-[-0.015em] text-[color:var(--color-text-primary)]">
             {t("headerTitle")}
           </h1>
-          <span className="flex items-baseline gap-1.5 pb-[3px] text-[11.5px] tracking-[0.06em] text-[color:var(--color-text-tertiary)]">
+          <span className="flex items-baseline gap-1.5 pb-[3px] text-label tracking-[0.06em] text-[color:var(--color-text-tertiary)]">
             <b className={numeralClass}>{census.projectCount}</b> {t("censusLineProjectLabel")}
             <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
             <b className={numeralClass}>{census.domainCount}</b> {t("censusLineDomainsLabel")}
@@ -124,28 +124,28 @@ export function ProjectSelectorPage() {
           <Link
             href={newProjectHref}
             data-testid="project-selector-new-cta"
-            className="ml-auto inline-flex h-9 items-center rounded-md border border-[color:var(--color-indigo-a50)] bg-[color:var(--topology-v2-panel-action-surface,var(--color-indigo-a06))] px-4 text-[12.5px] font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-2)]"
+            className="ml-auto inline-flex h-9 items-center rounded-md border border-[color:var(--color-indigo-a50)] bg-[color:var(--topology-v2-panel-action-surface,var(--color-indigo-a06))] px-4 text-body font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-2)]"
           >
             {t("ctaNewProject")}
           </Link>
         </header>
-        <p className="mt-2 max-w-[720px] text-[12.5px] leading-6 text-[color:var(--color-text-tertiary)]">
+        <p className="mt-2 max-w-[720px] text-body leading-6 text-[color:var(--color-text-tertiary)]">
           {t("lede")}
         </p>
 
         {recentActivityRows.length > 0 ? (
           <section className="mt-7">
             <div className="mb-3 flex items-center gap-2.5">
-              <span className="text-[13.5px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+              <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
                 {t("activityHeading")}
               </span>
-              <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {t("activityCaption")}
               </span>
             </div>
-            <div className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-2 shadow-[inset_0_1px_0_var(--color-overlay-2)]">
+            <div className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-2 shadow-[inset_0_1px_0_var(--color-overlay-2)]">
               {recentActivityRows.map((row, index) => {
-                const rowClassName = `flex items-center gap-2.5 py-1.5 text-[12.5px] text-[color:var(--color-text-secondary)] ${
+                const rowClassName = `flex items-center gap-2.5 py-1.5 text-body text-[color:var(--color-text-secondary)] ${
                   index > 0 ? "border-t border-[color:var(--color-divider)]" : ""
                 } ${row.nodeId ? "-mx-1.5 rounded-md px-1.5 transition-colors hover:bg-[color:var(--color-overlay-1)]" : ""}`;
                 const rowContent = (
@@ -153,14 +153,14 @@ export function ProjectSelectorPage() {
                     <TopologyV2KindGlyph kind={row.kind} size={14} />
                     <span
                       title={row.slug}
-                      className="min-w-0 shrink truncate font-mono text-[11.5px] text-[color:var(--color-text-secondary)]"
+                      className="min-w-0 shrink truncate font-mono text-label text-[color:var(--color-text-secondary)]"
                     >
                       {row.slug}
                     </span>
                     {row.what ? (
                       <span
                         title={row.what}
-                        className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--color-text-tertiary)]"
+                        className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-tertiary)]"
                       >
                         {row.what}
                       </span>
@@ -169,11 +169,11 @@ export function ProjectSelectorPage() {
                     )}
                     <span
                       title={row.domainTitle ?? undefined}
-                      className="max-w-[150px] shrink truncate font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] sm:max-w-[220px]"
+                      className="max-w-[150px] shrink truncate font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] sm:max-w-[220px]"
                     >
                       {row.domainTitle ?? t("activityNoDomain")}
                     </span>
-                    <span className={`shrink-0 whitespace-nowrap text-[11px] ${numeralClass}`}>
+                    <span className={`shrink-0 whitespace-nowrap text-label ${numeralClass}`}>
                       {formatAgo(resolveRecentActivityAgo(row.updatedAt, new Date()), t)}
                     </span>
                   </>
@@ -217,40 +217,40 @@ export function ProjectSelectorPage() {
             ))}
           </div>
         ) : (
-          <p className="mt-7 text-[12.5px] text-[color:var(--color-text-tertiary)]">
+          <p className="mt-7 text-body text-[color:var(--color-text-tertiary)]">
             {t("emptyStateDesc")}
           </p>
         )}
 
-        <section className="mt-7 rounded-[11px] border border-dashed border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] px-5 py-4">
+        <section className="mt-7 rounded-panel border border-dashed border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] px-5 py-4">
           <div className="flex items-center gap-3">
             <TopologyV2KindGlyph kind="project" size={18} />
-            <h3 className="text-[13.5px] font-semibold tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+            <h3 className="text-body-lg font-semibold tracking-[-0.01em] text-[color:var(--color-text-primary)]">
               {t("nextSlotTitle")}
             </h3>
-            <span className="text-[12px] text-[color:var(--color-text-tertiary)]">
+            <span className="text-body text-[color:var(--color-text-tertiary)]">
               {t("nextSlotSub")}
             </span>
           </div>
-          <div className="mt-3 flex items-center gap-3 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-[12px] text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
-            <span className="w-[108px] shrink-0 font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <div className="mt-3 flex items-center gap-3 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-body text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
+            <span className="w-[108px] shrink-0 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("nextSlotCliLabel")}
             </span>
-            <code className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-[color:var(--color-text-secondary)]">
+            <code className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--color-text-secondary)]">
               {t("nextSlotCliCommand")}
             </code>
-            <span className="ml-auto hidden shrink-0 whitespace-nowrap font-mono text-[10.5px] text-[color:var(--color-text-quaternary)] sm:inline">
+            <span className="ml-auto hidden shrink-0 whitespace-nowrap font-mono text-label text-[color:var(--color-text-quaternary)] sm:inline">
               {t("nextSlotCliCaption")}
             </span>
           </div>
-          <div className="mt-2 flex items-center gap-3 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-[12px] text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
-            <span className="w-[108px] shrink-0 font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <div className="mt-2 flex items-center gap-3 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-body text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
+            <span className="w-[108px] shrink-0 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("nextSlotAgentLabel")}
             </span>
-            <code className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-[color:var(--color-text-secondary)]">
+            <code className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--color-text-secondary)]">
               {t("nextSlotAgentCommand")}
             </code>
-            <span className="ml-auto hidden shrink-0 whitespace-nowrap font-mono text-[10.5px] text-[color:var(--color-text-quaternary)] sm:inline">
+            <span className="ml-auto hidden shrink-0 whitespace-nowrap font-mono text-label text-[color:var(--color-text-quaternary)] sm:inline">
               {t("nextSlotAgentCaption")}
             </span>
           </div>
@@ -276,15 +276,15 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
   return (
     <article
       data-testid="project-selector-card"
-      className="rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-6 py-5 shadow-[inset_0_1px_0_var(--color-overlay-2),0_14px_34px_var(--color-shadow-a16)] transition-colors hover:border-[color:var(--color-border-strong)]"
+      className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-6 py-5 shadow-[inset_0_1px_0_var(--color-overlay-2),0_14px_34px_var(--color-shadow-a16)] transition-colors hover:border-[color:var(--color-border-strong)]"
     >
       <div className="flex items-start gap-3.5">
         <TopologyV2KindGlyph kind="project" size={26} className="mt-1 shrink-0" />
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-[19px] font-semibold tracking-[-0.012em] text-[color:var(--color-text-primary)]">
+          <h2 className="truncate text-title font-semibold tracking-[-0.012em] text-[color:var(--color-text-primary)]">
             {project.name}
           </h2>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-[12.5px] text-[color:var(--color-text-tertiary)]">
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-body text-[color:var(--color-text-tertiary)]">
             <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-indigo-brand)]" />
             <span>{t("cardUpdatedPrefix")} {ago}</span>
             <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
@@ -293,12 +293,12 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
             </span>
           </div>
         </div>
-        <span className="mt-1.5 shrink-0 font-mono text-[11px] text-[color:var(--color-text-quaternary)]">
+        <span className="mt-1.5 shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)]">
           {project.slug}
         </span>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-baseline gap-5 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-panel-metric-surface,var(--color-overlay-1))] px-4 py-2.5 text-[12.5px]">
+      <div className="mt-4 flex flex-wrap items-baseline gap-5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-panel-metric-surface,var(--color-overlay-1))] px-4 py-2.5 text-body">
         <FactItem label={t("factDomain")} value={facts.domain} />
         <FactItem label={t("factCapability")} value={facts.capability} />
         <FactItem label={t("factElement")} value={facts.element} />
@@ -310,7 +310,7 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
         <div className="mt-4 flex flex-col gap-2">
           {domainRows.map((row, index) => (
             <div key={row.domainId} className="flex items-center gap-3 sm:gap-4">
-              <span className="flex w-[84px] min-w-0 shrink-0 items-center gap-2 truncate text-[12.5px] text-[color:var(--color-text-secondary)] sm:w-[200px] md:w-[280px]">
+              <span className="flex w-[84px] min-w-0 shrink-0 items-center gap-2 truncate text-body text-[color:var(--color-text-secondary)] sm:w-[200px] md:w-[280px]">
                 <TopologyV2KindGlyph kind="domain" size={14} />
                 {row.title}
               </span>
@@ -329,7 +329,7 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
                   cap: row.capabilityCount,
                   el: row.elementCount,
                 })}
-                className={`max-w-[120px] shrink truncate text-right text-[10.5px] sm:max-w-none sm:shrink-0 sm:whitespace-nowrap ${numeralClass}`}
+                className={`max-w-[120px] shrink truncate text-right text-label sm:max-w-none sm:shrink-0 sm:whitespace-nowrap ${numeralClass}`}
               >
                 {t("domainRowSummary", {
                   total: row.total,
@@ -342,7 +342,7 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[color:var(--color-divider)] pt-2 text-[12.5px] text-[color:var(--color-text-tertiary)]">
+      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[color:var(--color-divider)] pt-2 text-body text-[color:var(--color-text-tertiary)]">
         <Link
           href={getProjectDetailHref(project.slug)}
           prefetch={false}
@@ -358,7 +358,7 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
         >
           {t("footTopologyView")}
         </Link>
-        <span className="ml-auto whitespace-nowrap font-mono text-[10.5px] tracking-[0.04em] text-[color:var(--color-text-quaternary)]">
+        <span className="ml-auto whitespace-nowrap font-mono text-label tracking-[0.04em] text-[color:var(--color-text-quaternary)]">
           {t("footUpdated", {
             date: formatDate(project.updatedAt),
             path: docPath ?? project.slug,

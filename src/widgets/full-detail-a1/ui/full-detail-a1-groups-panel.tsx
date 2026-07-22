@@ -42,7 +42,7 @@ function Row({
       type="button"
       onClick={() => onSelectNode(row.id)}
       data-fulldetail-row={row.id}
-      className="flex min-w-0 items-center gap-2 rounded-[5px] border border-transparent px-1.5 py-1 text-left text-[12.5px] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:border-[color:var(--topology-v2-panel-text-quaternary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+      className="flex min-w-0 items-center gap-2 rounded-chip border border-transparent px-1.5 py-1 text-left text-body text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:border-[color:var(--topology-v2-panel-text-quaternary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
     >
       <TopologyV2TraceMark containment={row.containment} />
       <TopologyV2KindGlyph kind={row.kind} size={14} />
@@ -56,7 +56,7 @@ function Row({
         />
       ) : null}
       {row.childCount > 0 ? (
-        <span className="shrink-0 font-mono text-[11px] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
+        <span className="shrink-0 font-mono text-label text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
           {row.childCount}
         </span>
       ) : null}
@@ -88,24 +88,24 @@ function GroupCard({
   return (
     <section
       data-fulldetail-group={dataGroup}
-      className="rounded-[9px] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-3"
+      className="rounded-card border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-3"
     >
       <div className="mb-2 flex items-center gap-2">
-        <span className="text-[13px] font-medium tracking-[-0.01em] text-[color:var(--topology-v2-panel-text-primary)]">
+        <span className="text-body font-medium tracking-[-0.01em] text-[color:var(--topology-v2-panel-text-primary)]">
           {title}
         </span>
-        <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-quaternary)]">
+        <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-quaternary)]">
           {caption}
         </span>
         <span
           data-fulldetail-group-total={dataGroup}
-          className="ml-auto font-mono text-[12px] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+          className="ml-auto font-mono text-body text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
         >
           {total}
         </span>
       </div>
       {rows.length === 0 ? (
-        <p className="text-[11.5px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+        <p className="text-label text-[color:var(--topology-v2-panel-text-tertiary)]">
           {emptyLabel}
         </p>
       ) : (

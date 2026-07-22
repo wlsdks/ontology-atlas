@@ -67,11 +67,11 @@ export function FullDetailA1ReachPanel({
 
   return (
     <section data-fulldetail-reach className={className}>
-      <p className="max-w-[760px] text-[14.5px] leading-[1.65] tracking-[-0.005em] text-[color:var(--topology-v2-panel-text-secondary)]">
+      <p className="max-w-[760px] text-body-lg leading-[1.65] tracking-[-0.005em] text-[color:var(--topology-v2-panel-text-secondary)]">
         {labels.leadIn}{" "}
         <span
           data-fulldetail-reach-steps
-          className="mx-1 inline-flex items-baseline gap-1.5 align-baseline font-mono text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+          className="mx-1 inline-flex items-baseline gap-1.5 align-baseline font-mono text-label text-[color:var(--topology-v2-panel-text-quaternary)]"
         >
           {STEPS.map((candidate) => (
             <button
@@ -81,6 +81,7 @@ export function FullDetailA1ReachPanel({
               data-active={candidate === step ? "true" : "false"}
               onClick={() => onChangeStep(candidate)}
               className={[
+                // eslint-disable-next-line no-restricted-syntax -- 작은 인라인 스텝 칩의 4px 반경은 chip(6px)로 올리면 pill 처럼 읽혀 램프 밖 예외 유지.
                 "rounded-[4px] border px-1 py-0.5 transition-colors",
                 candidate === step
                   ? "border-[color:var(--topology-v2-indigo-border)] text-[color:var(--topology-v2-indigo-bright)]"
@@ -92,7 +93,7 @@ export function FullDetailA1ReachPanel({
           ))}
         </span>{" "}
         {labels.stepUnit} {labels.afterSteps}{" "}
-        <span className="font-mono text-[13.5px] font-semibold text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
+        <span className="font-mono text-body-lg font-semibold text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
           {labels.ofTotal(atDepth.reachableCount, reach.totalNodes)}
         </span>
         {" — "}
@@ -131,7 +132,7 @@ function DomainBarRow({
     <>
       <span
         className={[
-          "truncate text-[12px]",
+          "truncate text-body",
           row.isSelf
             ? "text-[color:var(--topology-v2-panel-text-secondary)]"
             : "text-[color:var(--topology-v2-panel-text-tertiary)]",
@@ -139,8 +140,10 @@ function DomainBarRow({
       >
         {displayName}
       </span>
+      {/* eslint-disable-next-line no-restricted-syntax -- 3px 높이 게이지 트랙의 2px 헤어라인 반경은 chip(6px) 밖 예외. */}
       <span className="relative h-[3px] overflow-hidden rounded-[2px] bg-[color:var(--topology-v2-panel-border)]">
         <span
+          // eslint-disable-next-line no-restricted-syntax -- 위 게이지 트랙과 짝인 fill 의 2px 헤어라인 반경.
           className="absolute inset-y-0 left-0 rounded-[2px]"
           style={{
             width: `${widthPercent}%`,
@@ -150,7 +153,7 @@ function DomainBarRow({
           }}
         />
       </span>
-      <span className="text-right text-[11.5px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+      <span className="text-right text-label text-[color:var(--topology-v2-panel-text-tertiary)]">
         {row.count}
       </span>
     </>

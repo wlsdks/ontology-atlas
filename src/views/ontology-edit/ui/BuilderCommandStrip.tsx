@@ -50,14 +50,14 @@ export function BuilderCommandStrip({
       className="flex min-w-[min(100%,280px)] max-w-full flex-1 flex-col items-stretch gap-2 rounded-md border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-indigo-a06)] px-2 py-1 sm:flex-row sm:items-center"
     >
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+        <p className="truncate text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {t(`${state}.title`, {
             nodes: draftNodes,
             edges: draftEdges,
             title: selectedTitle ?? t("selectedFallback"),
           })}
         </p>
-        <p className="hidden truncate text-[10px] leading-4 text-[color:var(--color-text-quaternary)] xl:block">
+        <p className="hidden truncate text-caption leading-4 text-[color:var(--color-text-quaternary)] xl:block">
           {t(`${state}.body`, {
             nodes: draftNodes,
             edges: draftEdges,
@@ -71,7 +71,7 @@ export function BuilderCommandStrip({
           onClick={onPrimaryAction}
           aria-label={primaryLabel}
           title={primaryLabel}
-          className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-[color:var(--color-indigo-a34)] bg-[color:var(--color-indigo-a14)] px-2.5 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a52)] hover:bg-[color:var(--color-indigo-a20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
+          className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-[color:var(--color-indigo-a34)] bg-[color:var(--color-indigo-a14)] px-2.5 text-caption font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a52)] hover:bg-[color:var(--color-indigo-a20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
         >
           <PrimaryIcon size={12} />
           <span>{primaryLabel}</span>
@@ -81,7 +81,7 @@ export function BuilderCommandStrip({
             href={secondaryHref}
             aria-label={contextualSecondaryLabel}
             title={contextualSecondaryLabel}
-            className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a10)] px-2.5 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] shadow-[0_1px_0_var(--color-tap-highlight)_inset] transition-[border-color,background-color,transform] hover:border-[color:var(--color-indigo-a52)] hover:bg-[color:var(--color-indigo-a16)] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a42)] focus-visible:ring-inset motion-reduce:transition-colors motion-reduce:active:translate-y-0"
+            className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a10)] px-2.5 text-caption font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] shadow-[0_1px_0_var(--color-tap-highlight)_inset] transition-[border-color,background-color,transform] hover:border-[color:var(--color-indigo-a52)] hover:bg-[color:var(--color-indigo-a16)] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a42)] focus-visible:ring-inset motion-reduce:transition-colors motion-reduce:active:translate-y-0"
           >
             <ShieldCheck size={12} />
             <span>{secondaryLabel}</span>
@@ -92,7 +92,7 @@ export function BuilderCommandStrip({
             onClick={onSecondaryAction}
             aria-label={contextualSecondaryLabel}
             title={contextualSecondaryLabel}
-            className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-a03)] px-2.5 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
+            className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-a03)] px-2.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
           >
             <ShieldCheck size={12} />
             <span>{secondaryLabel}</span>

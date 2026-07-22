@@ -1340,7 +1340,7 @@ function DocsVaultContent() {
       {/* Crumbs row — engraved vault census (docs-vault-final spec §상단 헤더). */}
       <nav
         aria-label={t('header.breadcrumbAriaLabel')}
-        className="flex h-8 flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 text-[11.5px] text-[color:var(--color-text-tertiary)] md:px-4"
+        className="flex h-8 flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 text-label text-[color:var(--color-text-tertiary)] md:px-4"
       >
         <Link
           href={workspaceHref}
@@ -1398,7 +1398,7 @@ function DocsVaultContent() {
           <button
             type="button"
             onClick={() => setSourceTreeOpen(true)}
-            className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] lg:hidden"
+            className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] px-2 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] lg:hidden"
             aria-label={t('header.openTreeAriaLabel')}
             title={t('header.openTreeTitle')}
           >
@@ -1464,7 +1464,7 @@ function DocsVaultContent() {
           {/* Source 토글 — 이전엔 advanced dropdown 안 깊숙이 묻혀 있던 가장
               중요한 결정 (샘플 vs 내 vault) 를 헤더에 직접 노출. */}
           <div
-            className="flex min-h-9 items-center gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-0.5 text-[11px]"
+            className="flex min-h-9 items-center gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-0.5 text-label"
             role="radiogroup"
             aria-label={t('header.sourceAriaLabel')}
           >
@@ -1589,7 +1589,7 @@ function DocsVaultContent() {
       (localVault.status === 'error' ||
         localVault.status === 'permission-needed') ? (
         <div
-          className="flex flex-none items-center gap-2 border-b border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-4 py-2 text-[12px] text-[color:var(--color-status-danger)]"
+          className="flex flex-none items-center gap-2 border-b border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-4 py-2 text-body text-[color:var(--color-status-danger)]"
           role="status"
         >
           <span className="flex-1">
@@ -1606,7 +1606,7 @@ function DocsVaultContent() {
                 ? localVault.requestPermission()
                 : void openLocalVault()
             }
-            className="rounded-sm border border-[color:var(--color-danger-a32)] px-2 py-0.5 text-[11px] transition-colors hover:bg-[color:var(--color-danger-a12)]"
+            className="rounded-sm border border-[color:var(--color-danger-a32)] px-2 py-0.5 text-label transition-colors hover:bg-[color:var(--color-danger-a12)]"
           >
             {t('vaultStatus.openPicker')}
           </button>
@@ -1638,7 +1638,7 @@ function DocsVaultContent() {
             />
             <aside className="relative flex w-[300px] max-w-[84vw] flex-col overflow-auto border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_0_24px_var(--color-shadow-a50)] md:w-[340px]">
               <div className="flex h-12 flex-none items-center justify-between border-b border-[color:var(--color-border-soft)] px-3">
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                   {t('mobileDrawer.title')}
                 </span>
                 <button
@@ -1686,7 +1686,7 @@ function DocsVaultContent() {
               {/* ehead — dir/file mono + preview/edit seg + sync status
                   (docs-vault-final spec §우 에디터/프리뷰 헤더). */}
               <div className="flex flex-none items-center gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-2.5">
-                <span className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-[color:var(--color-text-secondary)]">
+                <span className="min-w-0 flex-1 truncate font-mono text-body text-[color:var(--color-text-secondary)]">
                   <span className="text-[color:var(--color-text-quaternary)]">
                     {splitVaultSlugPath(selectedDoc.slug).dir}
                   </span>
@@ -1703,7 +1703,7 @@ function DocsVaultContent() {
                       role="tab"
                       aria-selected={!editing}
                       onClick={() => setEditing(false)}
-                      className={`rounded-sm px-2.5 py-1 font-mono text-[10.5px] transition-colors ${
+                      className={`rounded-sm px-2.5 py-1 font-mono text-label transition-colors ${
                         !editing
                           ? 'border border-[color:var(--color-indigo-a55)] bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]'
                           : 'border border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]'
@@ -1716,7 +1716,7 @@ function DocsVaultContent() {
                       role="tab"
                       aria-selected={editing}
                       onClick={() => setEditing(true)}
-                      className={`rounded-sm px-2.5 py-1 font-mono text-[10.5px] transition-colors ${
+                      className={`rounded-sm px-2.5 py-1 font-mono text-label transition-colors ${
                         editing
                           ? 'border border-[color:var(--color-indigo-a55)] bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]'
                           : 'border border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]'
@@ -1726,7 +1726,7 @@ function DocsVaultContent() {
                     </button>
                   </div>
                 ) : null}
-                <span className="flex-none font-mono text-[10.5px] text-[color:var(--color-text-quaternary)]">
+                <span className="flex-none font-mono text-label text-[color:var(--color-text-quaternary)]">
                   <span className="power mr-1.5 inline-block h-[5px] w-[5px] rounded-full bg-[color:var(--color-indigo-accent)] align-middle" aria-hidden />
                   {isLocalSourceLoaded ? t('editorHeader.localSynced') : t('editorHeader.readOnlySample')}
                 </span>
@@ -1855,13 +1855,13 @@ function DocsVaultContent() {
                       layout="strip"
                     />
                   ) : (
-                    <p className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--color-text-quaternary)]">
+                    <p className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-quaternary)]">
                       {t('backlinksStrip.empty')}
                     </p>
                   )}
                   <Link
                     href={buildOntologyDeeplinkForDoc(selectedDoc) ?? '/ontology/'}
-                    className="flex-none text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                    className="flex-none text-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
                   >
                     {t('backlinksStrip.openInOntology')}
                   </Link>

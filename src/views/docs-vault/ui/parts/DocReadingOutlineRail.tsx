@@ -39,10 +39,10 @@ export function DocReadingOutlineRail({
       data-testid="doc-reading-outline-rail"
       className="absolute bottom-6 left-6 top-6 hidden w-[168px] flex-col overflow-y-auto min-[1440px]:flex min-[1536px]:w-[200px]"
     >
-      <span className="mb-2 flex-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+      <span className="mb-2 flex-none font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {t("railLabel")} · {headings.length}
       </span>
-      <ul className="flex flex-col gap-0.5 text-[12.5px]">
+      <ul className="flex flex-col gap-0.5 text-body">
         {headings.map((heading, index) => {
           const isActive = activeHeadingSlug === heading.slug;
           return (

@@ -21,10 +21,10 @@ export function InsightsHandoffRow({
   return (
     <section
       aria-label={label}
-      className="mt-[var(--section-gap)] flex items-center gap-3.5 rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-3"
+      className="mt-[var(--section-gap)] flex items-center gap-3.5 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-3"
     >
-      <span className="flex-none text-[13px] font-medium text-[color:var(--color-text-primary)]">{label}</span>
-      <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-[color:var(--color-text-tertiary)]">
+      <span className="flex-none text-body font-medium text-[color:var(--color-text-primary)]">{label}</span>
+      <span className="min-w-0 flex-1 truncate font-mono text-body text-[color:var(--color-text-tertiary)]">
         {payload}
       </span>
       <CopyAgentTextButton label={copyLabel} copiedLabel={copiedLabel} text={payload} compact />

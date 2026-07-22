@@ -134,7 +134,7 @@ function TreeNode({
         type="button"
         onClick={() => onSelect(node.slug!)}
         aria-current={active ? 'page' : undefined}
-        className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-[12px] transition-[background-color,color,transform] duration-150 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset ${
+        className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-body transition-[background-color,color,transform] duration-150 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset ${
           active
             ? 'bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]'
             : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]'
@@ -161,7 +161,7 @@ function TreeNode({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-1.5 rounded-sm px-2 py-1 text-left text-[12px] font-medium text-[color:var(--color-text-quaternary)] transition-[background-color,color,transform] duration-150 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
+        className="flex w-full items-center gap-1.5 rounded-sm px-2 py-1 text-left text-body font-medium text-[color:var(--color-text-quaternary)] transition-[background-color,color,transform] duration-150 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
         style={{ paddingLeft: `${16 + depth * 12}px` }}
       >
         {open ? (
@@ -174,7 +174,7 @@ function TreeNode({
         {docCount > 0 ? (
           <span
             data-token="engraved-numeral"
-            className="flex-none font-mono text-[10.5px] tabular-nums text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+            className="flex-none font-mono text-label tabular-nums text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
           >
             {docCount}
           </span>

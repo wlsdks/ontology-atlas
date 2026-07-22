@@ -52,7 +52,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         toastOptions={{
           classNames: {
             toast:
-              'rounded-full border bg-[color:var(--color-panel)] px-3.5 py-2 text-[12px] shadow-[0_10px_28px_var(--color-shadow-a42)]',
+              'rounded-full border bg-[color:var(--color-panel)] px-3.5 py-2 text-body shadow-[0_10px_28px_var(--color-shadow-a42)]',
             success:
               'border-[color:var(--color-success-a35)] text-[color:var(--color-text-primary)]',
             info: 'border-[color:var(--color-indigo-line-a35)] text-[color:var(--color-text-primary)]',

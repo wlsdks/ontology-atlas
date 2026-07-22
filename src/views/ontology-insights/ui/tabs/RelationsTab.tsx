@@ -73,7 +73,7 @@ export function RelationsTab({
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-[1.2fr_1fr]">
       <section
         aria-label={labels.relationTypesTitle}
-        className="flex min-h-0 min-w-0 flex-col rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <CardHead label={labels.relationTypesTitle} gcap="relation breakdown" count={totalEdges} />
         <div
@@ -96,7 +96,7 @@ export function RelationsTab({
                 className="flex items-center gap-3.5 border-t border-[color:var(--color-divider)] py-3.5 first:border-t-0"
               >
                 <TopologyV2TraceMark containment={isContainmentRelation(row.type)} />
-                <span className="w-[112px] flex-none font-mono text-[13px] text-[color:var(--color-text-primary)]">
+                <span className="w-[112px] flex-none font-mono text-body text-[color:var(--color-text-primary)]">
                   {edgeTypeLabel(row.type)}
                 </span>
                 <span className="h-2 flex-1 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
@@ -106,10 +106,10 @@ export function RelationsTab({
                   />
                 </span>
                 <span className="min-w-[52px] flex-none text-right">
-                  <span className="block font-mono text-[15px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+                  <span className="block font-mono text-title tabular-nums text-[color:var(--topology-v2-numeral-face)]">
                     {row.count}
                   </span>
-                  <span className="block font-mono text-[9.5px] text-[color:var(--color-text-quaternary)]">{pct}%</span>
+                  <span className="block font-mono text-caption text-[color:var(--color-text-quaternary)]">{pct}%</span>
                 </span>
               </div>
             );
@@ -117,19 +117,19 @@ export function RelationsTab({
         </div>
 
         <div className="mt-4 flex items-baseline gap-2">
-          <span className="text-[13px] font-medium text-[color:var(--color-text-primary)]">{labels.topDependsOnTitle}</span>
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <span className="text-body font-medium text-[color:var(--color-text-primary)]">{labels.topDependsOnTitle}</span>
+          <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             top depends_on
           </span>
         </div>
         <div className="mt-1 flex flex-1 flex-col justify-evenly">
           {dependsOnRows.length === 0 ? (
-            <p className="py-2 text-[12px] text-[color:var(--color-text-quaternary)]">{labels.noDependsOn}</p>
+            <p className="py-2 text-body text-[color:var(--color-text-quaternary)]">{labels.noDependsOn}</p>
           ) : (
             dependsOnRows.map((row) => (
               <div
                 key={`${row.fromId}->${row.toId}`}
-                className="flex items-center gap-2.5 border-t border-[color:var(--color-divider)] py-2.5 text-[13px] text-[color:var(--color-text-secondary)] first:border-t-0"
+                className="flex items-center gap-2.5 border-t border-[color:var(--color-divider)] py-2.5 text-body text-[color:var(--color-text-secondary)] first:border-t-0"
               >
                 <TopologyV2TraceMark containment={false} />
                 <Link
@@ -149,7 +149,7 @@ export function RelationsTab({
                 >
                   {row.toTitle}
                 </Link>
-                <span className="ml-auto flex-none font-mono text-[12.5px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+                <span className="ml-auto flex-none font-mono text-body tabular-nums text-[color:var(--topology-v2-numeral-face)]">
                   {row.count}
                 </span>
               </div>
@@ -160,19 +160,19 @@ export function RelationsTab({
 
       <section
         aria-label={labels.hubsTitle}
-        className="flex min-h-0 min-w-0 flex-col rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <div className="flex items-baseline gap-2">
-          <span className="text-[14px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+          <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
             {labels.hubsTitle}
           </span>
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             hubs by degree
           </span>
         </div>
         <div className="mt-2 flex flex-1 flex-col">
           {hubs.length === 0 ? (
-            <p className="py-2 text-[12px] text-[color:var(--color-text-quaternary)]">{labels.noHubs}</p>
+            <p className="py-2 text-body text-[color:var(--color-text-quaternary)]">{labels.noHubs}</p>
           ) : (
             hubs.map((hub) => {
               const meterPct = hubDegreeMax > 0 ? Math.max(6, Math.round((hub.degree / hubDegreeMax) * 100)) : 0;
@@ -186,16 +186,16 @@ export function RelationsTab({
               >
                 <HubEgoThumbnailSvg kind={hub.kind} thumbnail={hub.thumbnail} />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[14px] font-medium text-[color:var(--color-text-primary)]">
+                  <span className="block truncate text-body-lg font-medium text-[color:var(--color-text-primary)]">
                     {hub.title}
                   </span>
-                  <span className="block text-[11px] text-[color:var(--color-text-quaternary)]">{kindLabel(hub.kind)}</span>
+                  <span className="block text-label text-[color:var(--color-text-quaternary)]">{kindLabel(hub.kind)}</span>
                 </span>
                 <span className="flex-none text-right">
-                  <span className="block font-mono text-[18px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+                  <span className="block font-mono text-title tabular-nums text-[color:var(--topology-v2-numeral-face)]">
                     {hub.degree}
                   </span>
-                  <span className="block font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                  <span className="block font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                     {labels.connectionsUnit}
                   </span>
                   <span
@@ -214,11 +214,11 @@ export function RelationsTab({
           )}
         </div>
         {hubTotalCount > hubs.length ? (
-          <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-[11px] text-[color:var(--color-text-quaternary)]">
+          <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
             {labels.hubTruncated(hubs.length, hubTotalCount)}
           </p>
         ) : null}
-        <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-[11px] text-[color:var(--color-text-quaternary)]">
+        <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
           {labels.hubThumbnailCaption}
         </p>
       </section>
@@ -229,11 +229,11 @@ export function RelationsTab({
 function CardHead({ label, gcap, count }: { label: string; gcap: string; count: number }) {
   return (
     <div className="flex items-baseline gap-2.5">
-      <span className="text-[14px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">{label}</span>
-      <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+      <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">{label}</span>
+      <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {gcap}
       </span>
-      <span className="ml-auto font-mono text-[13px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+      <span className="ml-auto font-mono text-body tabular-nums text-[color:var(--topology-v2-numeral-face)]">
         {count}
       </span>
     </div>

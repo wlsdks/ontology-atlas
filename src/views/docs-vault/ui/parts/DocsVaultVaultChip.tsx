@@ -47,7 +47,7 @@ export function DocsVaultVaultChip({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t("vaultChip.menuAriaLabel")}
-        className="inline-flex h-7 min-w-0 max-w-[200px] flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 font-mono text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
+        className="inline-flex h-7 min-w-0 max-w-[200px] flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 font-mono text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
       >
         <HardDrive size={12} aria-hidden className="flex-none" />
         <span className="hidden min-w-0 truncate text-[color:var(--color-text-secondary)] sm:inline">
@@ -68,14 +68,14 @@ export function DocsVaultVaultChip({
           aria-label={t("vaultChip.menuAriaLabel")}
           className="absolute left-0 top-[calc(100%+6px)] z-50 w-72 max-w-[84vw] rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
         >
-          <p className="truncate rounded-sm px-1.5 py-1 font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+          <p className="truncate rounded-sm px-1.5 py-1 font-mono text-label text-[color:var(--color-text-tertiary)]">
             {path}
           </p>
-          <p className="px-1.5 py-1 text-[11px] text-[color:var(--color-text-secondary)]">
+          <p className="px-1.5 py-1 text-label text-[color:var(--color-text-secondary)]">
             {t("header.vaultPillFolders", { count: folderCount })}
           </p>
           {isLocalSourceLoaded ? (
-            <p className="inline-flex items-center gap-1 px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-pale-a86)]">
+            <p className="inline-flex items-center gap-1 px-1.5 py-1 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-pale-a86)]">
               <HardDrive size={10} aria-hidden />
               {t("header.localBadge")}
             </p>
@@ -84,12 +84,12 @@ export function DocsVaultVaultChip({
             type="button"
             role="menuitem"
             onClick={onSwap}
-            className="mt-1 flex w-full items-center rounded-sm px-1.5 py-1.5 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            className="mt-1 flex w-full items-center rounded-sm px-1.5 py-1.5 text-left text-label text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
           >
             {t("header.vaultPillSwap")}
           </button>
           {toolsMovedHint ? (
-            <p className="mt-1 border-t border-[color:var(--color-border-soft)] px-1.5 pt-1.5 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+            <p className="mt-1 border-t border-[color:var(--color-border-soft)] px-1.5 pt-1.5 text-caption leading-4 text-[color:var(--color-text-tertiary)]">
               {toolsMovedHint}
             </p>
           ) : null}

@@ -6,6 +6,28 @@
 
 ---
 
+## 2026-07-22 — 디자인 시스템 법전화 R5 (Geometry & Type Codex)
+
+디자인 토큰 산개를 **법전**으로 못박았다. 시각은 ±1px 스냅 수준 유지 —
+리디자인이 아니라 규격 통일이다.
+
+- **Type ramp 7단** — `text-[Npx]` 하드코딩 29종 크기(1,184건)를
+  `--text-caption`(9.5) … `--text-hero`(30) 7단으로 수렴. 각 단에
+  `--tracking-*` letter-spacing 짝(Apple 광학 원칙)을 분리 정의(자동 결합 시
+  ~1천 element tracking 이 한꺼번에 바뀌는 것 방지).
+- **Radius 3단 · Padding 2단** — arbitrary radius 18종을
+  `--radius-chip`(6)/`card`(9)/`panel`(12)로, `--pad-card`(16)/`--pad-panel`(12)
+  신설. 크롬 컴포넌트 사다리(`--chrome-radius` 10px)와는 별개 체계로 공존.
+- **법전 문서** — `docs/DESIGN-SYSTEM.md` "Geometry & Type Codex" 절 신설:
+  램프 표 + 박스별 규격 표 + 명시 예외(헤어라인 1~4px · overlay sheet
+  18~28px · display 34~40px) + 모션 문법 인덱스.
+- **Lint 봉쇄** — ESLint `no-restricted-syntax` 가 신규 `text-[Npx]`/
+  `rounded-[Npx]` 를 차단. 마이그레이션 완료 디렉토리(views 4곳 · `shared/ui` ·
+  `widgets` R6 제외) = error, 동시작업 중 R6(`topology-map-v2`/`hero-header`/
+  `views/home`) = warn.
+- **1단계 마이그레이션** — 위 디렉토리 76개 파일의 하드코딩 크기/radius 를
+  가장 가까운 램프 단으로 치환. R6 소유 3개 디렉토리는 미변경.
+
 ## 2026-07-22 — 지도 디자인 패널 소규모 즉효 4건 (히트 역전 · 호버 잔류 · realm 별칭 · 첫 화면 픽셀)
 
 디자인 패널 지적 중 소규모·즉효 결함 4건. `topology-map-v2` + `views/home` +

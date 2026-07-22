@@ -35,6 +35,7 @@ export function DetailCard({
   return (
     <article
       className={cn(
+        // eslint-disable-next-line no-restricted-syntax -- 카드 시그니처 반경(28px)은 radius 램프(chip/card/panel) 밖의 의도적 예외. detail-card.test.tsx 가 이 값을 assert.
         'overflow-hidden rounded-[28px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)]',
         className,
       )}
@@ -43,7 +44,7 @@ export function DetailCard({
         <header className="flex items-start justify-between gap-4 border-b border-[color:var(--color-divider)] px-6 py-5 md:px-8">
           <div>
             {eyebrow ? (
-              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {eyebrow}
               </p>
             ) : null}
@@ -53,7 +54,7 @@ export function DetailCard({
               </h2>
             ) : null}
             {description ? (
-              <p className="mt-1 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+              <p className="mt-1 text-body leading-5 text-[color:var(--color-text-tertiary)]">
                 {description}
               </p>
             ) : null}

@@ -112,7 +112,7 @@ function HandoffCopyButton({ payload, labels }: { payload: string; labels: DoNex
           window.setTimeout(() => setCopied(false), 1600);
         }
       }}
-      className="inline-flex min-h-8 items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+      className="inline-flex min-h-8 items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
     >
       {copied ? <Check size={11} aria-hidden /> : <Copy size={11} aria-hidden />}
       {copied ? labels.handoffCopied : labels.handoffCopy}
@@ -142,8 +142,8 @@ function QueueSection({
   return (
     <section aria-label={title} className="flex flex-col">
       <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] pb-2">
-        <span className="text-[13px] font-medium text-[color:var(--color-text-primary)]">{title}</span>
-        <span className="font-mono text-[11px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+        <span className="text-body font-medium text-[color:var(--color-text-primary)]">{title}</span>
+        <span className="font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
           {totalCount}
         </span>
       </div>
@@ -158,24 +158,24 @@ function QueueSection({
             className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b border-[color:var(--color-divider)] py-2.5 last:border-b-0"
           >
             <TopologyV2KindGlyph kind={row.nodeKind} size={13} />
-            <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--color-text-secondary)]">
+            <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-secondary)]">
               {row.title}
             </span>
             {metricText ? (
-              <span className="shrink-0 font-mono text-[10.5px] text-[color:var(--color-text-quaternary)]">
+              <span className="shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)]">
                 {metricText}
               </span>
             ) : null}
             <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
               <Link
                 href={mapHref(row.nodeId)}
-                className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
               >
                 {labels.openMap}
               </Link>
               <Link
                 href={builderHref(row.nodeId)}
-                className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
               >
                 {labels.openBuilder}
               </Link>
@@ -185,7 +185,7 @@ function QueueSection({
         );
       })}
       {hiddenCount > 0 ? (
-        <p className="pt-2 text-[11px] text-[color:var(--color-text-quaternary)]">{labels.moreCount(hiddenCount)}</p>
+        <p className="pt-2 text-label text-[color:var(--color-text-quaternary)]">{labels.moreCount(hiddenCount)}</p>
       ) : null}
     </section>
   );
@@ -214,11 +214,11 @@ function CycleSection({
   return (
     <section aria-label={labels.sectionCycle} data-testid="do-next-cycles" className="flex flex-col">
       <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] pb-2">
-        <span className="flex items-center gap-1.5 text-[13px] font-medium text-[color:var(--color-text-primary)]">
+        <span className="flex items-center gap-1.5 text-body font-medium text-[color:var(--color-text-primary)]">
           <AlertTriangle size={12} aria-hidden className="text-[color:var(--color-status-warning)]" />
           {labels.sectionCycle}
         </span>
-        <span className="font-mono text-[11px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+        <span className="font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
           {cycles.totalCycles}
         </span>
       </div>
@@ -230,7 +230,7 @@ function CycleSection({
             data-testid="do-next-cycle-row"
             className="flex min-w-0 items-center gap-2.5 border-b border-[color:var(--color-divider)] py-2.5 last:border-b-0"
           >
-            <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-[color:var(--color-text-secondary)]">
+            <span className="min-w-0 flex-1 truncate font-mono text-body text-[color:var(--color-text-secondary)]">
               {cycle.nodeIds.map((nodeId, i) => (
                 <span key={`${cycle.id}:${nodeId}:${i}`}>
                   {i > 0 ? <span className="text-[color:var(--color-text-quaternary)]"> → </span> : null}
@@ -246,13 +246,13 @@ function CycleSection({
               <span className="text-[color:var(--color-text-quaternary)]"> → </span>
               {nodeTitle(firstNodeId)}
             </span>
-            <span className="shrink-0 font-mono text-[10.5px] text-[color:var(--color-text-quaternary)]">
+            <span className="shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)]">
               {labels.cycleMetric(cycle.length)}
             </span>
             <span className="flex shrink-0 items-center gap-1.5">
               <Link
                 href={mapHref(firstNodeId)}
-                className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
               >
                 {labels.openMap}
               </Link>
@@ -262,7 +262,7 @@ function CycleSection({
         );
       })}
       {cycles.hiddenCycles > 0 ? (
-        <p className="pt-2 text-[11px] text-[color:var(--color-text-quaternary)]">
+        <p className="pt-2 text-label text-[color:var(--color-text-quaternary)]">
           {labels.moreCount(cycles.hiddenCycles)}
         </p>
       ) : null}
@@ -300,13 +300,13 @@ export function DoNextTab({
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-[1.2fr_1fr]">
       <section
         aria-label={labels.queueTitle}
-        className="flex min-h-0 min-w-0 flex-col gap-4 rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        className="flex min-h-0 min-w-0 flex-col gap-4 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        <span className="text-[14px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+        <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
           {labels.queueTitle}
         </span>
         {queueEmpty ? (
-          <p className="text-[12.5px] text-[color:var(--color-text-quaternary)]">{labels.emptyQueue}</p>
+          <p className="text-body text-[color:var(--color-text-quaternary)]">{labels.emptyQueue}</p>
         ) : (
           <>
             <QueueSection
@@ -355,7 +355,7 @@ export function DoNextTab({
         aria-label={labels.agentReadinessTitle}
         // Guardian 관찰 — 수리 큐가 얕을 때 카드가 좌측 큐 높이까지 늘어나
         // 빈 여백으로 읽혔다: 내용 높이만큼만 (lg 그리드에서 self-start).
-        className="flex min-h-0 min-w-0 flex-col self-start rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        className="flex min-h-0 min-w-0 flex-col self-start rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <div
           aria-label={`${labels.agentReadinessTitle}: ${agentReadiness.ready} ${labels.agentReadinessReady} · ${agentReadiness.preflight} ${labels.agentReadinessPreflight} · ${agentReadiness.review} ${labels.agentReadinessReview}`}
@@ -363,25 +363,25 @@ export function DoNextTab({
           className="mb-3.5 border-b border-[color:var(--color-divider)] pb-3.5"
         >
           <div className="flex items-baseline gap-2">
-            <span className="text-[14px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+            <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
               {labels.agentReadinessTitle}
             </span>
-            <span className="ml-auto flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-[11.5px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+            <span className="ml-auto flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
               <span>
                 {agentReadiness.ready}{" "}
-                <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
                   {labels.agentReadinessReady}
                 </span>
               </span>
               <span>
                 {agentReadiness.preflight}{" "}
-                <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
                   {labels.agentReadinessPreflight}
                 </span>
               </span>
               <span>
                 {agentReadiness.review}{" "}
-                <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
                   {labels.agentReadinessReview}
                 </span>
               </span>
@@ -410,25 +410,25 @@ export function DoNextTab({
         </div>
         <div data-testid="insights-repair-queue">
           <div className="flex items-baseline gap-2">
-            <span className="text-[14px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+            <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
               {labels.repairQueueTitle}
             </span>
-            <span className="ml-auto flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-[11.5px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+            <span className="ml-auto flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
               <span>
                 {healthQueue.staleCount}{" "}
-                <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
                   {labels.repairQueueStale}
                 </span>
               </span>
               <span>
                 {healthQueue.orphanCount}{" "}
-                <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
                   {labels.repairQueueOrphan}
                 </span>
               </span>
               <span>
                 {healthQueue.promotionCount}{" "}
-                <span className="text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
                   {labels.repairQueuePromotion}
                 </span>
               </span>
@@ -439,9 +439,9 @@ export function DoNextTab({
               data-testid="insights-repair-queue-target"
               className="mt-2.5 flex min-w-0 items-center justify-between gap-2"
             >
-              <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-[color:var(--color-text-secondary)]">
+              <span className="flex min-w-0 items-center gap-1.5 text-body text-[color:var(--color-text-secondary)]">
                 {repairActionKindLabel ? (
-                  <span className="shrink-0 rounded border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 text-[10px] leading-none text-[color:var(--color-text-tertiary)]">
+                  <span className="shrink-0 rounded border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 text-caption leading-none text-[color:var(--color-text-tertiary)]">
                     {repairActionKindLabel}
                   </span>
                 ) : null}
@@ -451,20 +451,20 @@ export function DoNextTab({
                 <Link
                   href={healthQueue.builderHref(healthQueue.actionTarget.slug)}
                   data-testid="insights-repair-queue-builder-link"
-                  className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+                  className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-label font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
                 >
                   {labels.repairQueueOpenBuilder}
                 </Link>
                 <Link
                   href={healthQueue.ontologyHref(healthQueue.actionTarget.slug)}
-                  className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.repairQueueOpenOntology}
                 </Link>
               </span>
             </div>
           ) : (
-            <p className="mt-2 text-[12px] text-[color:var(--color-text-quaternary)]">{labels.repairQueueEmpty}</p>
+            <p className="mt-2 text-body text-[color:var(--color-text-quaternary)]">{labels.repairQueueEmpty}</p>
           )}
         </div>
         {activityDigest && activityDigest.latest.length > 0 ? (
@@ -473,17 +473,17 @@ export function DoNextTab({
             className="mt-3.5 border-t border-[color:var(--color-divider)] pt-3.5"
           >
             <div className="flex items-baseline gap-2">
-              <span className="text-[14px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+              <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
                 {labels.digestTitle}
               </span>
-              <span className="ml-auto font-mono text-[11.5px] tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+              <span className="ml-auto font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
                 {labels.digestToday(activityDigest.todayCount)}
               </span>
             </div>
             <div className="mt-2 flex flex-col gap-1.5">
               {activityDigest.latest.map((entry, index) => (
                 <div key={`${entry.at}-${index}`} data-testid="do-next-digest-entry">
-                  <p className="truncate font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+                  <p className="truncate font-mono text-label text-[color:var(--color-text-tertiary)]">
                     {entry.summary}
                     {entry.agent ? (
                       <span className="text-[color:var(--color-text-quaternary)]"> · {entry.agent}</span>
@@ -496,7 +496,7 @@ export function DoNextTab({
                   {entry.why ? (
                     <p
                       data-testid="do-next-digest-why"
-                      className="truncate font-mono text-[10.5px] italic text-[color:var(--color-text-quaternary)]"
+                      className="truncate font-mono text-label italic text-[color:var(--color-text-quaternary)]"
                     >
                       {labels.digestWhyPrefix}
                       {entry.why}
@@ -505,7 +505,7 @@ export function DoNextTab({
                 </div>
               ))}
             </div>
-            <p className="mt-2 text-[11px] text-[color:var(--color-text-quaternary)]">{labels.digestApproveHint}</p>
+            <p className="mt-2 text-label text-[color:var(--color-text-quaternary)]">{labels.digestApproveHint}</p>
           </div>
         ) : null}
       </section>

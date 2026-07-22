@@ -84,29 +84,30 @@ export function DesktopVaultWelcome({
       <div className="mx-auto grid w-full max-w-6xl content-start gap-8 px-5 py-8 md:px-8 md:py-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-12">
         <div className="grid min-w-0 gap-7">
           <section className="grid max-w-3xl gap-3">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
               {t("desktopWelcome.eyebrow")}
             </p>
-            <h2 className="max-w-2xl text-[28px] font-semibold leading-tight text-[color:var(--color-text-primary)] md:text-[34px]">
+            {/* eslint-disable-next-line no-restricted-syntax -- md 반응형 히어로 강조(34px)는 램프 상단(hero 30px)을 넘는 의도적 예외. base 는 text-hero. */}
+            <h2 className="max-w-2xl text-hero font-semibold leading-tight text-[color:var(--color-text-primary)] md:text-[34px]">
               {showDogfoodHint
                 ? t("desktopWelcome.dogfoodTitle")
                 : t("desktopWelcome.title")}
             </h2>
-            <p className="max-w-2xl text-[14px] leading-6 text-[color:var(--color-text-tertiary)]">
+            <p className="max-w-2xl text-body-lg leading-6 text-[color:var(--color-text-tertiary)]">
               {showDogfoodHint
                 ? t("desktopWelcome.dogfoodBody")
                 : t("desktopWelcome.body")}
             </p>
             {showDogfoodHint ? (
               <div className="flex max-w-2xl flex-wrap items-center gap-2">
-                <code className="min-w-0 flex-1 truncate rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-[11px] text-[color:var(--color-text-secondary)]">
+                <code className="min-w-0 flex-1 truncate rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-secondary)]">
                   {DOGFOOD_VAULT_PATH}
                 </code>
                 <button
                   type="button"
                   onClick={() => void copyDogfoodPath(DOGFOOD_VAULT_PATH)}
                   aria-label={dogfoodPathCopyAriaLabel}
-                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-line-a06)] px-2.5 py-1.5 font-mono text-[10px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]"
+                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-line-a06)] px-2.5 py-1.5 font-mono text-caption text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]"
                 >
                   {dogfoodPathCopied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
                   {t("desktopWelcome.copyDogfoodPath")}
@@ -115,7 +116,7 @@ export function DesktopVaultWelcome({
                   type="button"
                   onClick={() => void copyDogfoodLoop(DOGFOOD_VERIFICATION_LOOP)}
                   aria-label={dogfoodLoopCopyAriaLabel}
-                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a32)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-caption text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a32)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {dogfoodLoopCopied ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
                   {t("desktopWelcome.copyDogfoodLoop")}
@@ -145,13 +146,13 @@ export function DesktopVaultWelcome({
                       <Icon size={14} aria-hidden />
                     </span>
                     <div className="min-w-0">
-                      <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                      <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                         {item.label}
                       </p>
-                      <p className="mt-0.5 text-[12.5px] font-semibold text-[color:var(--color-text-primary)]">
+                      <p className="mt-0.5 text-body font-semibold text-[color:var(--color-text-primary)]">
                         {item.value}
                       </p>
-                      <p className="mt-1.5 break-keep text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+                      <p className="mt-1.5 break-keep text-label leading-5 text-[color:var(--color-text-tertiary)]">
                         {item.body}
                       </p>
                     </div>
@@ -177,7 +178,7 @@ export function DesktopVaultWelcome({
                 <FolderOpen size={17} aria-hidden />
               </span>
               <span className="min-w-0">
-                <span className="block text-[14px] font-semibold text-[color:var(--color-text-primary)]">
+                <span className="block text-body-lg font-semibold text-[color:var(--color-text-primary)]">
                   {busy
                     ? status === "opening"
                       ? t("desktopWelcome.openingTitle")
@@ -186,7 +187,7 @@ export function DesktopVaultWelcome({
                       ? t("desktopWelcome.dogfoodOpenTitle")
                       : t("desktopWelcome.openTitle")}
                 </span>
-                <span className="mt-1 block text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                <span className="mt-1 block text-body leading-5 text-[color:var(--color-text-tertiary)]">
                   {showDogfoodHint
                     ? t("desktopWelcome.dogfoodOpenBody")
                     : t("desktopWelcome.openBody")}
@@ -205,10 +206,10 @@ export function DesktopVaultWelcome({
                   <Bot size={15} aria-hidden />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-[13px] font-semibold text-[color:var(--color-text-primary)]">
+                  <span className="block text-body font-semibold text-[color:var(--color-text-primary)]">
                     {t("desktopWelcome.dogfoodDirectTitle")}
                   </span>
-                  <span className="mt-0.5 block text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+                  <span className="mt-0.5 block text-label leading-5 text-[color:var(--color-text-tertiary)]">
                     {t("desktopWelcome.dogfoodDirectBody")}
                   </span>
                 </span>
@@ -225,10 +226,10 @@ export function DesktopVaultWelcome({
                 <FilePlus size={15} aria-hidden />
               </span>
               <span className="min-w-0">
-                <span className="block text-[13px] font-semibold text-[color:var(--color-text-primary)]">
+                <span className="block text-body font-semibold text-[color:var(--color-text-primary)]">
                   {t("desktopWelcome.createTitle")}
                 </span>
-                <span className="mt-0.5 block text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+                <span className="mt-0.5 block text-label leading-5 text-[color:var(--color-text-tertiary)]">
                   {t("desktopWelcome.createBody")}
                 </span>
               </span>
@@ -243,10 +244,10 @@ export function DesktopVaultWelcome({
                 <Package size={15} aria-hidden />
               </span>
               <span className="min-w-0">
-                <span className="block text-[13px] font-semibold text-[color:var(--color-text-primary)]">
+                <span className="block text-body font-semibold text-[color:var(--color-text-primary)]">
                   {t("desktopWelcome.sampleTitle")}
                 </span>
-                <span className="mt-0.5 block text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+                <span className="mt-0.5 block text-label leading-5 text-[color:var(--color-text-tertiary)]">
                   {t("desktopWelcome.sampleBody")}
                 </span>
               </span>
@@ -254,7 +255,7 @@ export function DesktopVaultWelcome({
           </section>
 
           <section className="grid gap-2">
-            <h3 className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+            <h3 className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
               {t("desktopWelcome.recentTitle")}
             </h3>
             {recentVaults.length > 0 ? (
@@ -273,11 +274,11 @@ export function DesktopVaultWelcome({
                       <HardDrive size={13} aria-hidden />
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-[12.5px] font-medium text-[color:var(--color-text-primary)]">
+                      <span className="block truncate text-body font-medium text-[color:var(--color-text-primary)]">
                         {record.name}
                       </span>
                       {record.desktopRootPath ? (
-                        <span className="block truncate font-mono text-[9.5px] text-[color:var(--color-text-quaternary)]">
+                        <span className="block truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
                           {record.desktopRootPath}
                         </span>
                       ) : null}
@@ -286,7 +287,7 @@ export function DesktopVaultWelcome({
                 ))}
               </div>
             ) : (
-              <p className="border-t border-[color:var(--color-border-soft)] pt-2 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+              <p className="border-t border-[color:var(--color-border-soft)] pt-2 text-body leading-5 text-[color:var(--color-text-tertiary)]">
                 {t("desktopWelcome.recentEmpty")}
               </p>
             )}

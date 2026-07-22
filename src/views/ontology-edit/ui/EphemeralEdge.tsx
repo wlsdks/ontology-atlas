@@ -79,7 +79,7 @@ export function EphemeralEdge({
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             pointerEvents: "all",
           }}
-          className="inline-flex items-center gap-1 rounded-full border border-[color:var(--topology-v2-indigo-bright)] bg-[color:var(--color-panel)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--topology-v2-indigo-bright)] transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-v2-indigo-bright)]"
+          className="inline-flex items-center gap-1 rounded-full border border-[color:var(--topology-v2-indigo-bright)] bg-[color:var(--color-panel)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--topology-v2-indigo-bright)] transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-v2-indigo-bright)]"
           aria-label={t("ephemeralEdgeSaveAria")}
           title={t("ephemeralEdgeSaveTooltip")}
         >

@@ -204,7 +204,7 @@ export function GlobalSearch({
             }
             className="flex-1 bg-transparent text-sm text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
           />
-          <kbd className="hidden shrink-0 rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-1.5 py-0.5 font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline-block">
+          <kbd className="hidden shrink-0 rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-text-quaternary)] sm:inline-block">
             ESC
           </kbd>
           <button
@@ -229,7 +229,7 @@ export function GlobalSearch({
         >
           <div className="flex items-center gap-2 overflow-x-auto">
             <span
-              className="shrink-0 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]"
+              className="shrink-0 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]"
               aria-hidden
             >
               {t('kindLabel')}
@@ -244,8 +244,8 @@ export function GlobalSearch({
                   aria-pressed={active}
                   className={
                     active
-                      ? "shrink-0 rounded-full border border-[color:var(--color-indigo-a50)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]"
-                      : "shrink-0 rounded-full border border-[color:var(--color-divider)] bg-transparent px-2 py-0.5 text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
+                      ? "shrink-0 rounded-full border border-[color:var(--color-indigo-a50)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 text-caption uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]"
+                      : "shrink-0 rounded-full border border-[color:var(--color-divider)] bg-transparent px-2 py-0.5 text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
                   }
                 >
                   {kindLabel(kind)}
@@ -259,7 +259,7 @@ export function GlobalSearch({
                   setSelectedKinds(new Set());
                   setSelectedProjectIds(new Set());
                 }}
-                className="ml-auto shrink-0 rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                className="ml-auto shrink-0 rounded-full px-2 py-0.5 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
               >
                 {t('clearFilter')}
               </button>
@@ -268,7 +268,7 @@ export function GlobalSearch({
           {projectChipSource.length > 0 ? (
             <div className="flex items-center gap-2">
               <span
-                className="shrink-0 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]"
+                className="shrink-0 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]"
                 aria-hidden
               >
                 {t('projectLabel', { count: projectChipSource.length })}
@@ -310,8 +310,8 @@ export function GlobalSearch({
                         }}
                         className={
                           active
-                            ? "rounded-full border border-[color:var(--color-indigo-a50)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 text-[10px] text-[color:var(--color-indigo-accent)] mr-1.5 whitespace-nowrap"
-                            : "rounded-full border border-[color:var(--color-divider)] bg-transparent px-2 py-0.5 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] mr-1.5 whitespace-nowrap"
+                            ? "rounded-full border border-[color:var(--color-indigo-a50)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 text-caption text-[color:var(--color-indigo-accent)] mr-1.5 whitespace-nowrap"
+                            : "rounded-full border border-[color:var(--color-divider)] bg-transparent px-2 py-0.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] mr-1.5 whitespace-nowrap"
                         }
                       >
                         {label}
@@ -338,7 +338,7 @@ export function GlobalSearch({
           {ontologyResults.length > 0 ? (
             <Command.Group
               heading={
-                <span className="px-2 pb-1 pt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                <span className="px-2 pb-1 pt-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                   {isEmptyQuery ? t('groupConceptRecent') : t('groupConceptMatch')} · {ontologyResults.length}
                   {isEmptyQuery && ontologySize > ontologyResults.length ? ` / ${ontologySize}` : ""}
                 </span>
@@ -367,7 +367,7 @@ export function GlobalSearch({
                     }}
                     className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                   >
-                    <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                    <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
                       {kindLabel(node.kind)}
                     </span>
                     <span
@@ -375,7 +375,7 @@ export function GlobalSearch({
                       className={cn(
                         "min-w-0 flex-1 truncate",
                         pathLike
-                          ? "font-mono text-[12.5px] text-[color:var(--color-text-quaternary)]"
+                          ? "font-mono text-body text-[color:var(--color-text-quaternary)]"
                           : "text-[color:var(--color-text-primary)]",
                       )}
                     >
@@ -395,7 +395,7 @@ export function GlobalSearch({
           {projects && projectResults.length > 0 && onSelectProject ? (
             <Command.Group
               heading={
-                <span className="px-2 pb-1 pt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                <span className="px-2 pb-1 pt-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                   {isEmptyQuery ? t('groupProjectRecent') : t('groupProjectMatch')} · {projectResults.length}
                   {isEmptyQuery && projectSize > projectResults.length ? ` / ${projectSize}` : ""}
                 </span>
@@ -411,16 +411,16 @@ export function GlobalSearch({
                   }}
                   className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                 >
-                  <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(159,170,235,0.95)]">
+                  <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[0.10em] text-[color:rgba(159,170,235,0.95)]">
                     {project.isHub ? t('hub') : t('project')}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
                     {project.name}
                   </span>
-                  <span className="hidden shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)] md:inline">
+                  <span className="hidden shrink-0 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)] md:inline">
                     {project.slug}
                   </span>
-                  <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                  <span className="shrink-0 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
                     {project.status}
                   </span>
                 </Command.Item>
@@ -429,7 +429,7 @@ export function GlobalSearch({
           ) : null}
         </Command.List>
 
-        <div className="flex items-center justify-between gap-3 border-t border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-4 py-2 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+        <div className="flex items-center justify-between gap-3 border-t border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-4 py-2 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
           <span>
             {isEmptyQuery
               ? t('indexed', { count: totalCorpus })

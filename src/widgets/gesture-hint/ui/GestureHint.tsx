@@ -52,6 +52,7 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 12 }}
           transition={MOTION.medium}
+          // eslint-disable-next-line no-restricted-syntax -- 모바일 제스처 힌트 시트(18px)는 overlay sheet 반경으로 panel(12px) 램프 밖 의도적 예외.
           className="pointer-events-auto fixed left-1/2 top-[calc(max(0.85rem,env(safe-area-inset-top))+4rem)] z-30 flex w-[min(320px,calc(100vw-2rem))] -translate-x-1/2 items-start gap-3 rounded-[18px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3.5 py-3 shadow-[0_16px_40px_var(--color-shadow-a25)] md:hidden"
           role="status"
           aria-live="polite"
@@ -60,15 +61,15 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
             <Hand size={14} />
           </span>
           <div className="flex-1">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("eyebrow")}
             </p>
-            <p className="mt-1 text-[12px] leading-[1.45] text-[color:var(--color-text-secondary)]">
+            <p className="mt-1 text-body leading-[1.45] text-[color:var(--color-text-secondary)]">
               {t("body")}
             </p>
             <div className="mt-2 flex items-center gap-1.5">
               <Pointer size={10} className="text-[color:var(--color-text-quaternary)]" />
-              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {t("tapDetail")}
               </span>
             </div>

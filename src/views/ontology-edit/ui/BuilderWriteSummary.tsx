@@ -260,10 +260,10 @@ export function BuilderWriteSummary({
     >
       <header className="flex min-w-0 max-w-full items-center justify-between gap-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 lg:col-span-2">
         <div className="min-w-0">
-          <h2 className="text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+          <h2 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {t("summaryTitle")}
           </h2>
-          <p className="mt-0.5 truncate text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+          <p className="mt-0.5 truncate text-caption leading-4 text-[color:var(--color-text-tertiary)]">
             <span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               {t("nextStepLabel")}
             </span>{" "}
@@ -292,13 +292,13 @@ export function BuilderWriteSummary({
               {item.icon}
             </span>
             <div className="min-w-0 flex-1 basis-[12rem]">
-              <p className="min-w-0 truncate text-[11px] font-medium text-[color:var(--color-text-tertiary)]">
+              <p className="min-w-0 truncate text-label font-medium text-[color:var(--color-text-tertiary)]">
                 {item.label}
               </p>
-              <p className="mt-0.5 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              <p className="mt-0.5 truncate text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {item.value}
               </p>
-              <p className="mt-0.5 truncate text-[10px] text-[color:var(--color-text-quaternary)]">
+              <p className="mt-0.5 truncate text-caption text-[color:var(--color-text-quaternary)]">
                 {item.chip} · {item.flow}
               </p>
               {item.draftPreviews && item.draftPreviews.length > 0 ? (
@@ -313,16 +313,16 @@ export function BuilderWriteSummary({
                       role="listitem"
                       className="min-w-0 rounded border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-overlay-recessed-a12)] px-1.5 py-1"
                     >
-                      <p className="truncate text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+                      <p className="truncate text-caption font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                         {draft.kindLabel} · {draft.title}
                       </p>
-                      <p className="mt-0.5 truncate font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
+                      <p className="mt-0.5 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
                         {draft.path}
                       </p>
                     </div>
                   ))}
                   {item.draftPreviewMore ? (
-                    <p className="truncate text-[9px] text-[color:var(--color-text-quaternary)]">
+                    <p className="truncate text-caption text-[color:var(--color-text-quaternary)]">
                       {item.draftPreviewMore}
                     </p>
                   ) : null}
@@ -334,8 +334,8 @@ export function BuilderWriteSummary({
               <p
                 className={
                   item.statusTone === "indigo"
-                    ? "hidden rounded border border-[color:var(--color-indigo-a22)] bg-[color:var(--color-indigo-a08)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-text-strong)] xl:block"
-                    : "hidden rounded border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] xl:block"
+                    ? "hidden rounded border border-[color:var(--color-indigo-a22)] bg-[color:var(--color-indigo-a08)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-indigo-text-strong)] xl:block"
+                    : "hidden rounded border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] xl:block"
                 }
               >
                 {item.status}
@@ -350,7 +350,7 @@ export function BuilderWriteSummary({
                 {item.href && item.actionLabel ? (
                   <Link
                     href={item.href}
-                    className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-indigo-a24)] px-2 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-strong)] transition-colors hover:border-[color:var(--color-indigo-a42)] hover:text-[color:var(--color-text-primary)]"
+                    className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-indigo-a24)] px-2 text-caption font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-strong)] transition-colors hover:border-[color:var(--color-indigo-a42)] hover:text-[color:var(--color-text-primary)]"
                   >
                     {item.actionLabel}
                   </Link>
@@ -360,7 +360,7 @@ export function BuilderWriteSummary({
                     type="button"
                     onClick={item.onAction}
                     aria-label={item.actionAriaLabel ?? item.actionLabel}
-                    className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-indigo-a24)] px-2 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-strong)] transition-colors hover:border-[color:var(--color-indigo-a42)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
+                    className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-indigo-a24)] px-2 text-caption font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-strong)] transition-colors hover:border-[color:var(--color-indigo-a42)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
                   >
                     {item.actionLabel}
                   </button>
@@ -393,7 +393,7 @@ export function BuilderWriteSummary({
                     onClick={() => void copyProof(item.agentCopyText!, item.agentCopySuccess!)}
                     aria-label={item.agentCopyAriaLabel}
                     title={item.agentCopyLabel}
-                    className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-indigo-a24)] px-2 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-strong)] transition-colors hover:border-[color:var(--color-indigo-a42)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
+                    className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-indigo-a24)] px-2 text-caption font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-strong)] transition-colors hover:border-[color:var(--color-indigo-a42)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a38)] focus-visible:ring-inset"
                   >
                     <Clipboard size={11} aria-hidden />
                     <span>{item.agentCopyLabel}</span>
