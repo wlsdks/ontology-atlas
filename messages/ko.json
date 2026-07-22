@@ -2359,7 +2359,7 @@
       "uncatalogedDocsLabel": "지도에 없는 문서 {count}개",
       "uncatalogedDocsAction": "올리기",
       "dustyNodesLabel": "먼지 앉은 노드 {count}개 — 오래 손대지 않았어요",
-      "dustyNodesAction": "신선도 보기"
+      "dustyNodesAction": "할 일 보기"
     },
     "deeplinkNotFound": "노드를 찾을 수 없습니다: {query}",
     "bootstrap": {

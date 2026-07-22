@@ -87,8 +87,10 @@ describe("computeOverviewCameraTarget — panel-aware safe insets", () => {
     };
     const centerScreen = worldToScreen(camera, W, H, 0, 0); // graph bounds center is (0,0)
     // Visible-area midpoint = (left + (W - right)) / 2, (top + (H - bottom)) / 2.
+    // 하단 인셋에는 라벨 여유 24px 가산 (검수 Pass B 결함 1 — 최하단 스파인
+    // 노드 라벨이 1440×900 핏에서 라벨 safe-rect 밖으로 밀리던 회귀의 예약분).
     expect(centerScreen.x).toBeCloseTo((344 + (W - 120)) / 2, 4);
-    expect(centerScreen.y).toBeCloseTo((96 + (H - 96)) / 2, 4);
+    expect(centerScreen.y).toBeCloseTo((96 + (H - 96 - 24)) / 2, 4);
   });
 
   it("with a wider left panel than right, shifts the camera left so content clears the panel", () => {

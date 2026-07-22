@@ -2359,7 +2359,7 @@
       "uncatalogedDocsLabel": "{count} docs not on the map",
       "uncatalogedDocsAction": "Promote",
       "dustyNodesLabel": "{count} nodes gathering dust — untouched for a while",
-      "dustyNodesAction": "See freshness"
+      "dustyNodesAction": "See to-dos"
     },
     "deeplinkNotFound": "Node not found: {query}",
     "bootstrap": {
