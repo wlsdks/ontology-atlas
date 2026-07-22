@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clusterBadgeLabel,
+  clusterBadgeRect,
   clusterChipLabel,
   clusterChipRect,
   clusterChipScale,
+  CLUSTER_BADGE_HEIGHT,
   CLUSTER_CHIP_HEIGHT,
 } from "./cluster-chips";
 
@@ -68,5 +71,66 @@ describe("clusterChipRect", () => {
     const rect = clusterChipRect(cx, cy, clusterChipLabel(40, false));
     expect(cx >= rect.x && cx <= rect.x + rect.w).toBe(true);
     expect(cy >= rect.y && cy <= rect.y + rect.h).toBe(true);
+  });
+});
+
+/**
+ * S10 결함 2 — 펼침 배지(부모 노드 우상단 부착). 떠다니는 알약을 폐기하고 부모
+ * 노드 스크린 좌표 + base 반지름 기준으로 배지 사각형을 유도한다. 드로우와
+ * 히트가 같은 `clusterBadgeRect` 를 써야 클릭 좌표가 어긋나지 않는다.
+ */
+describe("clusterBadgeLabel", () => {
+  it("펼침 배지는 컴팩트 `−N`(공백 없음, +N 과 대칭)", () => {
+    expect(clusterBadgeLabel(63)).toBe("−63");
+    expect(clusterBadgeLabel(5)).toBe("−5");
+  });
+});
+
+describe("clusterBadgeRect", () => {
+  const PARENT_X = 400;
+  const PARENT_Y = 300;
+  const NODE_R = 20;
+
+  it("배지는 부모의 우상단(스크린 x+ 오른쪽, y- 위)에 앉는다", () => {
+    const rect = clusterBadgeRect(PARENT_X, PARENT_Y, NODE_R, clusterBadgeLabel(63));
+    const cx = rect.x + rect.w / 2;
+    const cy = rect.y + rect.h / 2;
+    expect(cx).toBeGreaterThan(PARENT_X); // 오른쪽
+    expect(cy).toBeLessThan(PARENT_Y); // 위
+  });
+
+  it("배지는 부모 노드 반지름 바깥에 완전히 벗어난다(오라·노드 겹침 차단)", () => {
+    const rect = clusterBadgeRect(PARENT_X, PARENT_Y, NODE_R, clusterBadgeLabel(63));
+    // 배지의 부모에 가장 가까운 모서리(좌하단)까지의 거리 > 노드 반지름.
+    const nearX = rect.x; // 왼쪽 변이 부모에 더 가깝다
+    const nearY = rect.y + rect.h; // 아래 변이 부모에 더 가깝다
+    const dist = Math.hypot(nearX - PARENT_X, nearY - PARENT_Y);
+    expect(dist).toBeGreaterThan(NODE_R);
+  });
+
+  it("노드 반지름이 클수록 배지는 더 바깥으로 밀린다(카메라 추종)", () => {
+    const near = clusterBadgeRect(PARENT_X, PARENT_Y, 10, clusterBadgeLabel(9));
+    const far = clusterBadgeRect(PARENT_X, PARENT_Y, 40, clusterBadgeLabel(9));
+    const nearReach = Math.hypot(near.x + near.w / 2 - PARENT_X, near.y + near.h / 2 - PARENT_Y);
+    const farReach = Math.hypot(far.x + far.w / 2 - PARENT_X, far.y + far.h / 2 - PARENT_Y);
+    expect(farReach).toBeGreaterThan(nearReach);
+  });
+
+  it("scale 을 주면 폭·높이가 비례한다(히트/드로우 공용)", () => {
+    const base = clusterBadgeRect(PARENT_X, PARENT_Y, NODE_R, "−12", 1);
+    const big = clusterBadgeRect(PARENT_X, PARENT_Y, NODE_R, "−12", 1.5);
+    expect(big.w).toBeCloseTo(base.w * 1.5, 6);
+    expect(big.h).toBeCloseTo(base.h * 1.5, 6);
+    expect(base.h).toBe(CLUSTER_BADGE_HEIGHT);
+  });
+
+  it("결정론 — 같은 입력 → 같은 사각형(히트/드로우 일치의 근거)", () => {
+    expect(clusterBadgeRect(PARENT_X, PARENT_Y, NODE_R, "−7")).toEqual(
+      clusterBadgeRect(PARENT_X, PARENT_Y, NODE_R, "−7"),
+    );
+  });
+
+  it("배지 높이는 접힘 pill 보다 작다(미니 배지)", () => {
+    expect(CLUSTER_BADGE_HEIGHT).toBeLessThan(CLUSTER_CHIP_HEIGHT);
   });
 });

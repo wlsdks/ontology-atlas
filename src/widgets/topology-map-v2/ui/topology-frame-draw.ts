@@ -40,6 +40,7 @@ import type { ClusterChip } from "../model/density-gate";
 import { drawDiffractionSpike, drawRealmCosmos, drawStarDust, type DustPoint } from "../render/starfield";
 import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
 import { draw as tracesDraw } from "../render/traces";
+import { drawEdgeFireflies, edgeFireflyProgress, fireflyCount, fireflySeed } from "../render/edge-fireflies";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { worldToScreen } from "./topology-camera-math";
 
@@ -61,6 +62,11 @@ import { isSpineNode, radiusForKind, type TopologyWorld, type WorldNode } from "
 const EXPANDED_AURA_RING_OFFSET = 6;
 const EXPANDED_AURA_DASH: readonly number[] = [3, 3];
 const EXPANDED_AURA_ALPHA = 0.55;
+/**
+ * S10 결함 4 — 반딧불(엣지 흐름 입자)의 기저 알파. 저알파 인디고 계약. 엣지의
+ * 점등 알파(`edgeAlpha`)에 곱해 티어 페이드와 함께 사라지게 한다.
+ */
+const FIREFLY_ALPHA = 0.6;
 /**
  * S8 결함 1 — 확장 디스크와 무관한 배경 노드를 확장 중 미세 dim 해 "어지러움"을
  * 줄인다(확장이 없으면 1.0, 회귀 0). 색이 아니라 알파만 낮춘다.
@@ -408,6 +414,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         (emphasizedNeighborId !== null &&
           touches &&
           (edge.sourceId === emphasizedNeighborId || edge.targetId === emphasizedNeighborId));
+      const edgeEgoState = resolveEdgeEgoStateWithPair(touches, focusedNodeId, selectedEdge, isSelectedEdge);
       ctx.globalAlpha = passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha;
       tracesDraw(
         ctx,
@@ -416,7 +423,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           b,
           control,
           relationType: kind,
-          egoState: resolveEdgeEgoStateWithPair(touches, focusedNodeId, selectedEdge, isSelectedEdge),
+          egoState: edgeEgoState,
           selected: isSelectedEdge,
           farT,
           t: edge.t,
@@ -435,6 +442,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           edgeSelected: tokens.edgeSelected,
         },
       );
+      // S10 결함 4 — 점등 엣지(ego 또는 선택)에 출발→도착 흐름 입자("반딧불").
+      // 포커스/선택 중에만 그려지고(해제 즉시 소멸), reduced-motion 은 미표시.
+      // 등속 월드 속도라 엣지 월드 길이로 주기를 잡는다. glow 없이 순수 점만.
+      if (!reducedMotion && (edgeEgoState === "ego" || isSelectedEdge)) {
+        const edgeWorldLength = Math.hypot(edge.bx - edge.ax, edge.by - edge.ay);
+        const count = fireflyCount(edgeWorldLength);
+        const progresses = edgeFireflyProgress(now, edgeWorldLength, count, fireflySeed(edge.sourceId, edge.targetId));
+        ctx.globalAlpha = FIREFLY_ALPHA * edgeAlpha;
+        drawEdgeFireflies(ctx, a, control, b, progresses, tokens.indigoBright);
+      }
       ctx.globalAlpha = 1;
     }
   }
@@ -626,6 +643,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 부모→칩 점선 커넥터의 시작점 = 부모 노드의 라이브 스크린 좌표.
     const parentNode = world.nodeById.get(chip.parentId);
     const parentScreen = parentNode ? project(parentNode.x, parentNode.y) : null;
+    // S10 결함 2 — 펼침 배지는 부모 노드 base 스크린 반지름 기준으로 우상단에
+    // 앉는다(히트테스트와 같은 계산). breathe/ego 배율은 배지 위치를 흔들지
+    // 않도록 base 반지름만 쓴다.
+    const nodeScreenRadius = parentNode
+      ? radiusForKind(parentNode.kind, tokens) * parentNode.magnitudeScale * camera.scale.value
+      : undefined;
     ctx.globalAlpha = parentAlpha;
     drawClusterChip(
       ctx,
@@ -639,6 +662,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         childKind: chip.childKind,
         parentScreenX: parentScreen?.x,
         parentScreenY: parentScreen?.y,
+        nodeScreenRadius,
       },
       {
         surface: tokens.nodeFillDim,

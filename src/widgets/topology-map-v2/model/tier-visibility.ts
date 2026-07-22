@@ -147,9 +147,21 @@ export function isNodeHittable(
   neighborsOfFocused: ReadonlySet<string> | undefined,
   config: TierRevealConfig = DEFAULT_TIER_REVEAL,
   clusteredIds?: ReadonlySet<string>,
+  /**
+   * S10 결함 3 (치명, fable 설계) — 영역("realm") 전개 중엔 노드의 티어가 원래
+   * `kind` 가 아니라 루트로부터의 **깊이**로 재정의된다 (루트=project, 1단계=
+   * domain, …). 드로우 패스는 `topology-frame-draw.ts` 에서
+   * `realmTierKinds?.get(node.id) ?? node.kind` 로 이 오버라이드를 이미
+   * 적용하지만, 히트 경로는 원래 kind 로 게이트를 돌려 depth1 `element` 자식이
+   * SPINE 줌에서 그려지는데도 클릭·호버 불가였다 (`?realm=domain:…` 진입 직후
+   * 비중심 자식 무반응 — 치명). 여기 같은 오버라이드를 주입해 드로우와 히트를
+   * lockstep 으로 맞춘다 — 그려지면 잡힌다.
+   */
+  tierKindById?: ReadonlyMap<string, LayoutNodeKind> | null,
 ): boolean {
   if (clusteredIds?.has(node.id)) return false;
-  if (nodeTierAlpha(node.kind, node.isHub, zoomRatio, config) >= HITTABLE_MIN_TIER_ALPHA) return true;
+  const tierKind = tierKindById?.get(node.id) ?? node.kind;
+  if (nodeTierAlpha(tierKind, node.isHub, zoomRatio, config) >= HITTABLE_MIN_TIER_ALPHA) return true;
   return focusedNodeId !== null && (node.id === focusedNodeId || (neighborsOfFocused?.has(node.id) ?? false));
 }
 

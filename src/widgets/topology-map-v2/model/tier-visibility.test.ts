@@ -181,6 +181,32 @@ describe("isNodeHittable", () => {
     expect(isNodeHittable(hiddenCapability, ENTRY, "domain:x", neighbors, DEFAULT_TIER_REVEAL, clustered)).toBe(false);
   });
 
+  it("uses the realm depth-tier override so a depth1 element child is hittable at spine zoom (S10 결함 3)", () => {
+    // In a realm ('영역') the child's ORIGINAL kind is `element` (tier-gated at
+    // spine zoom), but its depth-1 placement makes the draw pass treat it as a
+    // `domain`-tier node (always drawn). Without the override the hit test gates
+    // it out by its element kind → drawn-but-unclickable (the reported 무반응).
+    const depth1Element = { id: "element:child", kind: "element" as const, isHub: false };
+    // No override → element tier gated out at overview entry, no focus.
+    expect(isNodeHittable(depth1Element, ENTRY, null, undefined)).toBe(false);
+    // With the realm tier override (depth1 → domain) it becomes hittable.
+    const tierKinds = new Map([["element:child", "domain" as const]]);
+    expect(isNodeHittable(depth1Element, ENTRY, null, undefined, DEFAULT_TIER_REVEAL, undefined, tierKinds)).toBe(true);
+  });
+
+  it("keeps a clustered node unhittable even with a permissive realm tier override", () => {
+    const depth1Element = { id: "element:child", kind: "element" as const, isHub: false };
+    const tierKinds = new Map([["element:child", "domain" as const]]);
+    const clustered = new Set(["element:child"]);
+    expect(isNodeHittable(depth1Element, ENTRY, null, undefined, DEFAULT_TIER_REVEAL, clustered, tierKinds)).toBe(false);
+  });
+
+  it("falls back to the node's own kind when the override map has no entry for it", () => {
+    const capability = { id: "capability:x", kind: "capability" as const, isHub: false };
+    const tierKinds = new Map([["element:other", "domain" as const]]);
+    expect(isNodeHittable(capability, ENTRY, null, undefined, DEFAULT_TIER_REVEAL, undefined, tierKinds)).toBe(false);
+  });
+
   it("agrees with nodeTierAlpha at the HITTABLE_MIN_TIER_ALPHA boundary", () => {
     expect(nodeTierAlpha("capability", false, DEFAULT_TIER_REVEAL.capability.fullRatio, DEFAULT_TIER_REVEAL)).toBeGreaterThanOrEqual(
       HITTABLE_MIN_TIER_ALPHA,
