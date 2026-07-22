@@ -1,5 +1,6 @@
 import { refMatchesOntologyAtlasIgnore } from './ontology-atlas-ignore.mjs';
 import { formatAllowedValueError, suggestCompiledSlugs } from './suggestions.mjs';
+import { buildSlugNotFoundGrowthHint } from './growth-hint.mjs';
 
 const DEFAULT_LIMIT = 100;
 const DEFAULT_ALL_PATHS_SEARCH_BUDGET = 5000;
@@ -332,6 +333,24 @@ export function createOntologyEngine(artifact, options = {}) {
     const similar = suggestCompiledSlugs(candidate, [...nodeBySlug.keys()]);
     const hint = similar.length > 0 ? ` Did you mean: ${similar.join(', ')}?` : '';
     throw new Error(`${fieldName} "${candidate}" does not resolve to a compiled ontology node.${hint}`);
+  }
+
+  // R+ (과제 ⑧ — Ask-to-Grow) — node_profile 전용 wrapper. resolve() 는 이미
+  // 위에서 near-slug 후보를 계산해 에러 문자열에 박아 넣지만, growthHint 는
+  // agent 가 파싱 없이 바로 쓸 수 있는 구조화 필드다. "not required" /
+  // "ambiguous" 실패는 진짜 "슬러그 없음"이 아니라 다른 종류의 입력 오류라
+  // growthHint 를 붙이지 않는다 — 오직 "does not resolve" 케이스만.
+  function resolveWithGrowthHint(input, fieldName = 'slug') {
+    try {
+      return resolve(input, fieldName);
+    } catch (err) {
+      if (err instanceof Error && /does not resolve to a compiled ontology node/.test(err.message)) {
+        const candidate = typeof input === 'string' ? input.trim() : String(input ?? '');
+        const candidateSlugs = suggestCompiledSlugs(candidate, [...nodeBySlug.keys()]);
+        err.growthHint = buildSlugNotFoundGrowthHint({ slug: candidate, candidateSlugs });
+      }
+      throw err;
+    }
   }
 
   function filteredEdges(center, options = {}) {
@@ -1534,7 +1553,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function nodeProfile(slugOrAlias, options = {}) {
-    const center = resolve(slugOrAlias, 'slug');
+    const center = resolveWithGrowthHint(slugOrAlias, 'slug');
     const limit = normalizeLimit(options.limit, 20);
     const depth = normalizeDepth(options.depth, 3);
     const includeExternal = normalizeOptionalBoolean(options.includeExternal, 'includeExternal', true);

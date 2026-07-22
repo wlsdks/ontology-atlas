@@ -2859,6 +2859,44 @@ await test("find_evidence — 각 match 에 prose excerpt 동봉 (R+)", async ()
   }
 });
 
+await test("find_evidence — 0 hits 면 growthHint (near-title 후보 또는 add_concept 스캐폴드) (과제 ⑧)", async () => {
+  const root = makeVault([
+    {
+      slug: "capabilities/token-issue",
+      content: "---\nkind: capability\ntitle: Token Issue\n---\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "find_evidence", { title: "Token Issuance" }),
+      callTool(3, "find_evidence", { title: "Completely Unrelated Concept" }),
+    ]);
+
+    const near = getCallParsed(responses, 2);
+    assert.deepEqual(getCallStructured(responses, 2), near);
+    assert.equal(near.matches.length, 0);
+    assert.ok(near.growthHint, "expected growthHint on 0-hit response");
+    assert.match(near.growthHint.reason, /No vault doc mentions "Token Issuance"/);
+    assert.equal(near.growthHint.exampleCall.tool, "get_concept");
+    assert.equal(near.growthHint.exampleCall.args.slug, "capabilities/token-issue");
+
+    const noNear = getCallParsed(responses, 3);
+    assert.equal(noNear.matches.length, 0);
+    assert.ok(noNear.growthHint, "expected growthHint on 0-hit response");
+    assert.deepEqual(noNear.growthHint.exampleCall, {
+      tool: "add_concept",
+      args: {
+        slug: "completely-unrelated-concept",
+        kind: "element",
+        title: "Completely Unrelated Concept",
+      },
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("list_concepts — summary opt-in (R+) — 각 노드에 prose 요약", async () => {
   // agent 가 한 호출로 "vault 노드 list + 무슨 내용인지" 모두 받음. 후속
   // get_concept N 회 안 함. summary:false (default) 일 때는 응답에 안 들어감.
@@ -3179,6 +3217,17 @@ await test("find_path — structuredContent 로 shortest path 계약을 노출",
       to: "missing-node",
       found: false,
       reason: "경로 없음 (또는 maxHops 초과)",
+      // R+ (과제 ⑧ — Ask-to-Grow) — "to" 는 vault 에 없고 "login" 은 있으니
+      // add_concept 스캐폴드 제안 (add_relation 이 아니라).
+      growthHint: {
+        reason: '"missing-node" does not resolve to a vault node.',
+        suggestion:
+          "A path cannot exist to an endpoint that is not in the vault yet. Add it first if it describes a real capability/element/domain.",
+        exampleCall: {
+          tool: "add_concept",
+          args: { slug: "missing-node", kind: "element", title: "Missing Node" },
+        },
+      },
     });
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -3673,6 +3722,41 @@ await test("query_concepts — 매치 row 에 mtime 포함 (R+)", async () => {
   }
 });
 
+await test("query_concepts — 0 rows 면 growthHint (부재 kind/domain 사실 또는 필터 완화 제안) (과제 ⑧)", async () => {
+  const root = makeVault([
+    { slug: "a", content: "---\nkind: capability\ntitle: A\ndomain: auth\nelements: [x]\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      // "project" kind 는 유효한 enum 이지만 이 vault 엔 0개.
+      callTool(2, "query_concepts", { filter: "kind=project" }),
+      // "auth" domain 은 있지만 "billing" 은 0개.
+      callTool(3, "query_concepts", { filter: "domain=billing" }),
+      // kind/domain 모두 실제 존재 — 필터 조합만 0 rows ("a" 는 elements 있음).
+      callTool(4, "query_concepts", { filter: "kind=capability AND domain=auth AND NOT has(elements)" }),
+    ]);
+
+    const missingKind = getCallParsed(responses, 2);
+    assert.deepEqual(getCallStructured(responses, 2), missingKind);
+    assert.equal(missingKind.total, 0);
+    assert.ok(missingKind.growthHint, "expected growthHint on 0-row response");
+    assert.match(missingKind.growthHint.reason, /kind="project" has 0 nodes in this vault/);
+    assert.deepEqual(missingKind.growthHint.exampleCall, { tool: "list_kinds", args: {} });
+
+    const missingDomain = getCallParsed(responses, 3);
+    assert.equal(missingDomain.total, 0);
+    assert.match(missingDomain.growthHint.reason, /domain="billing" has 0 nodes in this vault/);
+
+    const generic = getCallParsed(responses, 4);
+    assert.equal(generic.total, 0);
+    assert.match(generic.growthHint.reason, /matched 0 rows for filter/);
+    assert.match(generic.growthHint.suggestion, /Loosen the filter/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("query_concepts — depends_on alias in has() matches canonical dependencies", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\ndependencies: [b]\n---\n" },
@@ -3876,6 +3960,42 @@ await test("get_concept 응답에 mtime (R11 #8) 포함", async () => {
     assert.equal(result.slug, "foo");
     assert.equal(typeof result.mtime, "number");
     assert.ok(result.mtime > 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("get_concept — 존재하지 않는 slug 는 growthHint 를 실은 error 로 (과제 ⑧)", async () => {
+  const root = makeVault([
+    { slug: "capabilities/login", content: "---\nkind: capability\ntitle: Login\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      // tail-substring 근접 후보 존재 (login) — did-you-mean 분기.
+      callTool(2, "get_concept", { slug: "capabilities/log" }),
+      // 근접 후보 전혀 없음 — add_concept 스캐폴드 분기.
+      callTool(3, "get_concept", { slug: "totally-unrelated-thing" }),
+    ]);
+
+    assert.equal(isErrorResponse(responses, 2), true);
+    const withCandidate = getCallStructured(responses, 2);
+    assert.equal(withCandidate.errorCode, "not_found");
+    assert.equal(withCandidate.error, "Doc not found: capabilities/log");
+    assert.ok(withCandidate.growthHint, "expected growthHint on not-found error");
+    assert.match(withCandidate.growthHint.reason, /"capabilities\/log" does not resolve/);
+    assert.deepEqual(withCandidate.growthHint.exampleCall, {
+      tool: "get_concept",
+      args: { slug: "capabilities/login" },
+    });
+
+    assert.equal(isErrorResponse(responses, 3), true);
+    const withoutCandidate = getCallStructured(responses, 3);
+    assert.equal(withoutCandidate.error, "Doc not found: totally-unrelated-thing");
+    assert.deepEqual(withoutCandidate.growthHint.exampleCall, {
+      tool: "add_concept",
+      args: { slug: "totally-unrelated-thing", kind: "element", title: "Totally Unrelated Thing" },
+    });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
