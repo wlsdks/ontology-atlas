@@ -119,3 +119,55 @@ export function computeWardingRadius(
   }
   return maxDist + margin;
 }
+
+/** 가시-멤버 결계 마진 = 콘텐츠 반경(가장 먼 엣지 도달거리)의 이 비율. */
+export const WARDING_VISIBLE_MARGIN_RATIO = 0.15;
+/** 가시-멤버 결계 마진 하한(월드 유닛) — 루트만 보일 때도 최소 이만큼 감싼다. */
+export const WARDING_VISIBLE_MIN_MARGIN = 60;
+
+/**
+ * S9 결함 2 — **현재 렌더되는 멤버**만으로 낸 결계 반경. 밀도 게이트로 접혀
+ * 그려지지 않는 자식(>12 자식 부모의 phyllotaxis 디스크 좌표)까지 세던
+ * `computeWardingRadius` 는 보이는 세계보다 훨씬 큰 원을 만든다(콘텐츠는 화면
+ * ~40%인데 결계는 화면 밖). 이 함수는 caller 가 이미 접힘을 걸러 넘긴 **가시
+ * 멤버의 중심→엣지 도달거리(reach)** 만 받아, 그중 최대에 콘텐츠 반경 비례
+ * 마진(≥ 하한)을 더한다. reach 는 `hypot(node - center) + nodeRadius` 로,
+ * 결계가 가장 바깥 노드의 몸통을 자르지 않게 한다. 점이 없으면(루트만) 하한
+ * 마진만 남는다. 순수·결정론.
+ */
+export function computeVisibleWardingRadius(reaches: readonly number[]): number {
+  let outer = 0;
+  for (const r of reaches) if (r > outer) outer = r;
+  return outer + Math.max(WARDING_VISIBLE_MIN_MARGIN, outer * WARDING_VISIBLE_MARGIN_RATIO);
+}
+
+export interface RealmBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+/**
+ * S9 결함 2 — 가시 멤버 점집합의 bbox(+마진). 카메라 fit 이 결계 반경과 **같은
+ * 가시-멤버 기준**을 쓰게 해 "작은 콘텐츠 + 거대 원" 불일치를 없앤다. 점이
+ * 없으면 `fallback` 을 그대로 돌려준다(루트만 남은 퇴화 케이스). 순수.
+ */
+export function computeVisibleBounds(
+  points: readonly { x: number; y: number }[],
+  margin: number,
+  fallback: RealmBounds,
+): RealmBounds {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const p of points) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+  if (!Number.isFinite(minX)) return fallback;
+  return { minX: minX - margin, minY: minY - margin, maxX: maxX + margin, maxY: maxY + margin };
+}

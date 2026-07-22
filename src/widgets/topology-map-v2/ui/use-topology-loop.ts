@@ -55,7 +55,9 @@ import {
   ZERO_PARALLAX,
   type DepthParallaxOffset,
 } from "../model/realm-depth-parallax";
-import { buildRealmRuntimeData, fallbackAngleFor, realmCameraTarget, type RealmRuntimeData } from "./topology-realm-runtime";
+import { buildRealmRuntimeData, fallbackAngleFor, realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "./topology-realm-runtime";
+import { computeVisibleWardingRadius } from "../model/realm";
+import { initWardingFit, stepWardingFit, type WardingFitState } from "../model/realm-warding-fit";
 import { createTopologyPointerHandlers, type TopologyPointerHandlers } from "./topology-pointer-handlers";
 import { stepTopologyPhysics } from "./topology-physics-step";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
@@ -233,6 +235,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * 시 false 로 리셋.
    */
   const realmActiveHandedOffRef = useRef(false);
+  /**
+   * S9 결함 2 — 결계 반경 재적합 이징 상태. 매 프레임 **가시 멤버**(밀도 게이트
+   * 접힘 제외)로 목표 반경을 측정해 240ms 이징으로 옮긴다(칩 확장/접힘 시에만
+   * 1회 이징 — 지속 애니메이션 없음). 진입마다 null 로 리셋해 첫 프레임이 초기
+   * 반경으로 스냅 시드한다.
+   */
+  const wardingFitRef = useRef<WardingFitState | null>(null);
   // 직전 `realmRootId`(전환 진입/이탈 diff). null 로 초기화하는 게 핵심:
   // `?realm=slug` 딥링크로 마운트하면 prev(null) ≠ realmRootId(slug) 라 첫
   // effect 가 영역 진입을 발화한다(공유 링크·에이전트가 영역을 그대로 재현).
@@ -698,9 +707,26 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // S8 결함 4 — 영역 전개 중이면 ego bbox 를 영역 멤버로 제한(결계 밖 fling
     // 이웃이 bbox 를 부풀려 카메라가 화면 밖으로 날아가는 것 차단). 포커스
     // 다이브가 결계 안에서만 움직인다.
-    const realmMembers =
-      realmTransitionRef.current.phase !== "idle" ? realmDataRef.current?.memberIds ?? null : null;
-    const target = computeFocusCameraTarget(world, tokens, width, height, focusedSlug, overviewEntryScale, realmMembers);
+    const realmActive = realmTransitionRef.current.phase !== "idle";
+    const realmData = realmDataRef.current;
+    // S9 결함 1 — 영역 안에서 바닥 클릭(deselect)하면 카메라가 폭주하던 결함:
+    // `computeFocusCameraTarget` 의 null 분기는 **전역** spineBounds 기준이라 영역
+    // 재배치 좌표계(원점 0,0)와 어긋나 화면 밖으로 날아갔다. 영역 active 중
+    // deselect 복귀 목표는 영역 콘텐츠 bbox(가시 멤버 기준) — entryCamera(영역
+    // '해제' 전용)가 아니라 현재 영역 fit 이다.
+    let target: CameraTarget | null;
+    if (focusedSlug === null && realmActive && realmData) {
+      const bounds = realmVisibleBounds(
+        world,
+        realmData,
+        new Set([...expandedParentsRef.current, realmData.rootId]),
+        tokens,
+      );
+      target = realmCameraTarget(bounds, tokens, width, height);
+    } else {
+      const realmMembers = realmActive ? realmData?.memberIds ?? null : null;
+      target = computeFocusCameraTarget(world, tokens, width, height, focusedSlug, overviewEntryScale, realmMembers);
+    }
     if (!target) return;
     dampingRef.current = tokens.cameraDampingDefault;
     cameraTargetRef.current = target;
@@ -740,9 +766,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
     if (realmRootId !== null) {
       // --- 진입 ---
-      const data = buildRealmRuntimeData(world, realmRootId, tokens);
+      // S9 결함 2 — 결계/프레이밍을 진입 시점 펼침 상태 기준 가시 멤버로 잡는다
+      // (영역 루트는 항상 펼침 — 그 직속 자식이 영역 스파인).
+      const data = buildRealmRuntimeData(
+        world,
+        realmRootId,
+        tokens,
+        new Set([...expandedParentsRef.current, realmRootId]),
+      );
       if (!data) return;
       realmDataRef.current = data;
+      // S9 결함 2 — 새 영역이므로 결계 이징을 리셋(첫 프레임이 초기 반경 스냅 시드).
+      wardingFitRef.current = null;
       realmTransitionRef.current = realmTransitionReducer(realmTransitionRef.current, {
         type: "enter",
         rootId: realmRootId,
@@ -761,7 +796,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           ty: cameraRef.current.y.value,
           tscale: cameraRef.current.scale.value,
         };
-        const target = realmCameraTarget(data, tokens, width, height);
+        const target = realmCameraTarget(data.bounds, tokens, width, height);
         dampingRef.current = tokens.cameraDampingDefault;
         cameraTargetRef.current = target;
         cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
@@ -1325,10 +1360,33 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         // 영역 밖 부모의 밀도 칩도 영역 세계에선 존재하지 않는다 — 노드는
         // 컬되는데 칩만 남으면 빈 우주에 칩이 떠도는 결함 (실화면 실증).
         frameChips = frameChips.filter((ch) => realmData.memberIds.has(ch.parentId));
+        // S9 결함 2 — 결계 반경은 이번 프레임의 **가시 멤버**(밀도 게이트/ego 로
+        // 접힌 것 제외)의 도달거리로 재적합한다. 접힌 phyllotaxis 자식까지 세던
+        // 정적 `realmData.wardingRadius` 는 보이는 세계보다 훨씬 큰 원을 그렸다.
+        // insideTargets(정착 좌표)로 측정해 진입 FLIP 중 매 프레임 목표가
+        // 흔들리지 않게 하고, 가시 집합이 바뀔 때만 240ms 이징으로 옮긴다.
+        const wc = realmData.wardingCenter;
+        const reaches: number[] = [];
+        for (const id of realmData.memberIds) {
+          if (frameClusteredIds.has(id)) continue;
+          const t = realmData.insideTargets.get(id);
+          if (!t) continue;
+          const mn = world.nodeById.get(id);
+          const nr = mn ? radiusForKind(mn.kind, tokens) * mn.magnitudeScale : 0;
+          reaches.push(Math.hypot(t.x - wc.x, t.y - wc.y) + nr);
+        }
+        const targetWardingRadius = computeVisibleWardingRadius(reaches);
+        const nextFit = stepWardingFit(
+          wardingFitRef.current ?? initWardingFit(targetWardingRadius),
+          targetWardingRadius,
+          now,
+          reducedMotionRef.current,
+        );
+        wardingFitRef.current = nextFit;
         realmWarding = {
           centerX: realmData.wardingCenter.x,
           centerY: realmData.wardingCenter.y,
-          radius: realmData.wardingRadius,
+          radius: nextFit.value,
           // S6 — 이탈은 결계를 역방향으로 지운다(1→0); 입장은 지연 후 그린다(0→1).
           drawProgress: exiting
             ? realmWardingEraseProgress(now - realmState.startMs)
