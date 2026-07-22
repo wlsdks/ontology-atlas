@@ -10,15 +10,20 @@ import type { CameraTarget } from "../engine/camera";
 import { fitWorldTarget } from "./topology-camera-math";
 import {
   computeRealmLayout,
-  computeWardingRadius,
+  computeVisibleBounds,
+  computeVisibleWardingRadius,
   extractRealmSubtree,
+  type RealmBounds,
 } from "../model/realm";
 import type { LayoutRadii, LayoutRings } from "../model/layout";
+import { computeTopologyClusterState } from "./topology-cluster-state";
 import { radiusForKind, type TopologyWorld } from "./topology-world";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 
-/** 결계 링과 노드 사이 여유(월드 유닛) — 결계가 가장 바깥 노드를 넉넉히 감싼다. */
-const WARDING_MARGIN = 64;
+/** 콘텐츠 bbox 여유(월드 유닛) — 카메라 fit 이 가장 바깥 노드를 넉넉히 담게. */
+const CONTENT_BOUNDS_MARGIN = 40;
+
+const EMPTY_EXPANDED = new Set<string>();
 
 export interface RealmRuntimeData {
   rootId: string;
@@ -77,6 +82,48 @@ export function fallbackAngleFor(id: string): number {
 }
 
 /**
+ * 가시 멤버(밀도 게이트로 접히지 않은) → 재배치 목표 좌표. 밀도 게이트는 결정론
+ * (`density-gate.ts`)이므로 같은 world+expandedParents 는 항상 같은 가시 집합을
+ * 낸다. 결계 반경·bbox 계산이 공유한다.
+ */
+function collectVisibleMemberTargets(
+  world: TopologyWorld,
+  memberIds: ReadonlySet<string>,
+  insideTargets: ReadonlyMap<string, { x: number; y: number }>,
+  expandedParents: ReadonlySet<string>,
+): Array<[string, { x: number; y: number }]> {
+  const { clusteredIds } = computeTopologyClusterState(world, expandedParents);
+  const out: Array<[string, { x: number; y: number }]> = [];
+  for (const id of memberIds) {
+    if (clusteredIds.has(id)) continue;
+    const t = insideTargets.get(id);
+    if (t) out.push([id, t]);
+  }
+  return out;
+}
+
+/**
+ * S9 결함 2 — 현재 펼침 상태 기준 가시 콘텐츠 bbox. deselect/entry 카메라 fit 이
+ * 접힌 자식까지 세어 화면을 과대 축소하지 않게, `buildRealmRuntimeData` 와 **같은
+ * 가시-멤버 기준**으로 프레이밍을 낸다. 가시 멤버가 없으면 `data.bounds` 폴백.
+ */
+export function realmVisibleBounds(
+  world: TopologyWorld,
+  data: RealmRuntimeData,
+  expandedParents: ReadonlySet<string>,
+  tokens: TopologyV2Tokens,
+): RealmBounds {
+  const points: { x: number; y: number }[] = [];
+  let maxNodeRadius = 0;
+  for (const [id, t] of collectVisibleMemberTargets(world, data.memberIds, data.insideTargets, expandedParents)) {
+    const n = world.nodeById.get(id);
+    if (n) maxNodeRadius = Math.max(maxNodeRadius, radiusForKind(n.kind, tokens) * n.magnitudeScale);
+    points.push(t);
+  }
+  return computeVisibleBounds(points, CONTENT_BOUNDS_MARGIN + maxNodeRadius, data.bounds);
+}
+
+/**
  * 전환 시작 데이터 구축 — 루트에서 서브트리를 추출하고 깊이 기준으로 재배치한
  * 좌표를 낸 뒤, 라이브 월드의 현재 좌표를 FLIP/fling 출발점으로 캡처한다.
  * `rootId` 가 월드에 없으면 null.
@@ -85,6 +132,12 @@ export function buildRealmRuntimeData(
   world: TopologyWorld,
   rootId: string,
   tokens: TopologyV2Tokens,
+  /**
+   * S9 결함 2 — 진입 시점의 펼침 부모 Set(영역 루트 포함 권장). 결계 반경·카메라
+   * bbox 를 **밀도 게이트로 접히지 않은 가시 멤버**만으로 잡아, 접힌 자식의
+   * phyllotaxis 좌표가 원/프레이밍을 부풀리는 것을 막는다. 생략 시 전부 가시 취급.
+   */
+  expandedParents: ReadonlySet<string> = EMPTY_EXPANDED,
 ): RealmRuntimeData | null {
   if (!world.nodeById.has(rootId)) return null;
   const subtree = extractRealmSubtree(rootId, world.childrenByParent);
@@ -117,33 +170,33 @@ export function buildRealmRuntimeData(
     }
   }
 
-  // 결계 반경 = 재배치 원점에서 가장 먼 멤버까지 + 그 노드 반지름 + 여유.
-  let maxNodeRadius = 0;
-  for (const id of subtree.memberIds) {
-    const n = world.nodeById.get(id);
-    if (n) maxNodeRadius = Math.max(maxNodeRadius, radiusForKind(n.kind, tokens) * n.magnitudeScale);
-  }
-  const wardingRadius = computeWardingRadius(
-    [...insideTargets.values()],
-    { x: 0, y: 0 },
-    WARDING_MARGIN + maxNodeRadius,
-  );
-
   const root = world.nodeById.get(rootId);
   const flingCenter = { x: root?.homeX ?? 0, y: root?.homeY ?? 0 };
 
-  // 카메라 fit 은 결계(여유 포함 큰 원)가 아니라 **콘텐츠 bbox** 기준 —
-  // 결계에 맞추면 세계가 화면 중앙에 조그맣게 보인다 (녹화 프레임 검수).
-  // 결계는 화면 밖 가장자리에 걸려도 좋다: 콘텐츠가 주인공.
-  let bMinX = Infinity, bMinY = Infinity, bMaxX = -Infinity, bMaxY = -Infinity;
-  for (const t of insideTargets.values()) {
-    bMinX = Math.min(bMinX, t.x); bMaxX = Math.max(bMaxX, t.x);
-    bMinY = Math.min(bMinY, t.y); bMaxY = Math.max(bMaxY, t.y);
+  // S9 결함 2 — 결계 반경·카메라 bbox 는 **가시 멤버**(밀도 게이트로 접히지 않은
+  // 것)만으로 잡는다. 접힌 자식(>12 자식 부모의 phyllotaxis 디스크)까지 세면 원은
+  // 화면 밖까지, 콘텐츠 프레임은 과대 축소돼 "작은 콘텐츠 + 거대 원" 이 된다.
+  const visibleMemberPoints: { x: number; y: number }[] = [];
+  const reaches: number[] = [];
+  let maxNodeRadius = 0;
+  for (const [id, t] of collectVisibleMemberTargets(world, subtree.memberIds, insideTargets, expandedParents)) {
+    const n = world.nodeById.get(id);
+    const nr = n ? radiusForKind(n.kind, tokens) * n.magnitudeScale : 0;
+    if (nr > maxNodeRadius) maxNodeRadius = nr;
+    visibleMemberPoints.push(t);
+    reaches.push(Math.hypot(t.x, t.y) + nr);
   }
-  const contentMargin = 40 + maxNodeRadius;
-  const bounds = Number.isFinite(bMinX)
-    ? { minX: bMinX - contentMargin, minY: bMinY - contentMargin, maxX: bMaxX + contentMargin, maxY: bMaxY + contentMargin }
-    : { minX: -wardingRadius, minY: -wardingRadius, maxX: wardingRadius, maxY: wardingRadius };
+  const wardingRadius = computeVisibleWardingRadius(reaches);
+
+  // 카메라 fit 은 결계(마진 포함 원)가 아니라 **가시 콘텐츠 bbox** 기준 — 결계에
+  // 맞추면 세계가 화면 중앙에 조그맣게 보인다. 결계는 화면 밖 가장자리에 걸려도
+  // 좋다: 콘텐츠가 주인공.
+  const bounds = computeVisibleBounds(visibleMemberPoints, CONTENT_BOUNDS_MARGIN + maxNodeRadius, {
+    minX: -wardingRadius,
+    minY: -wardingRadius,
+    maxX: wardingRadius,
+    maxY: wardingRadius,
+  });
 
   return {
     rootId,
@@ -169,12 +222,13 @@ export function buildRealmRuntimeData(
 }
 
 /**
- * 영역 재배치 bbox 로의 카메라 fit 타깃 — 안전 인셋을 고려한 가시 영역 기준.
- * `computeOverviewCameraTarget` 과 같은 계약(가시 영역 중심 정렬)을 결계 원에
- * 적용한다.
+ * 영역 콘텐츠 bbox 로의 카메라 fit 타깃 — 안전 인셋을 고려한 가시 영역 기준.
+ * `computeOverviewCameraTarget` 과 같은 계약(가시 영역 중심 정렬)을 영역 bbox 에
+ * 적용한다. `bounds` 는 `realmVisibleBounds` / `data.bounds`(둘 다 가시-멤버 기준)를
+ * 넘긴다 — S9 결함 2 에서 결계 원과 프레이밍이 같은 가시-멤버 기준을 공유하도록.
  */
 export function realmCameraTarget(
-  data: RealmRuntimeData,
+  bounds: RealmBounds,
   tokens: TopologyV2Tokens,
   viewportWidth: number,
   viewportHeight: number,
@@ -185,7 +239,7 @@ export function realmCameraTarget(
   const insetBottom = tokens.safeInsetBottom;
   const effW = Math.max(1, viewportWidth - insetLeft - insetRight);
   const effH = Math.max(1, viewportHeight - insetTop - insetBottom);
-  const fit = fitWorldTarget(data.bounds, effW, effH, tokens.cameraScaleMax, tokens.cameraScaleMin);
+  const fit = fitWorldTarget(bounds, effW, effH, tokens.cameraScaleMax, tokens.cameraScaleMin);
   return {
     tx: fit.tx - (insetLeft - insetRight) / (2 * fit.tscale),
     ty: fit.ty - (insetTop - insetBottom) / (2 * fit.tscale),

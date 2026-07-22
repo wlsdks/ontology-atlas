@@ -2,9 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   computeRealmLayout,
+  computeVisibleBounds,
+  computeVisibleWardingRadius,
   computeWardingRadius,
   extractRealmSubtree,
   realmLayoutKind,
+  WARDING_VISIBLE_MARGIN_RATIO,
+  WARDING_VISIBLE_MIN_MARGIN,
 } from "./realm";
 import type { LayoutRadii, LayoutRings } from "./layout";
 
@@ -116,5 +120,35 @@ describe("computeWardingRadius", () => {
   it("respects a non-origin center", () => {
     const r = computeWardingRadius([{ x: 100, y: 0 }], { x: 40, y: 0 }, 10);
     expect(r).toBe(70);
+  });
+});
+
+describe("computeVisibleWardingRadius (S9 결함 2)", () => {
+  it("가장 먼 reach + 콘텐츠 비례 마진", () => {
+    // outer=200 → margin = max(60, 200*0.15=30) = 60 → 260.
+    expect(computeVisibleWardingRadius([50, 120, 200])).toBe(200 + Math.max(WARDING_VISIBLE_MIN_MARGIN, 200 * WARDING_VISIBLE_MARGIN_RATIO));
+    // outer=800 → margin = max(60, 120) = 120 → 920.
+    expect(computeVisibleWardingRadius([800])).toBe(800 + 800 * WARDING_VISIBLE_MARGIN_RATIO);
+  });
+
+  it("가시 집합이 줄면(접힘) 반경이 줄어든다", () => {
+    const full = computeVisibleWardingRadius([100, 400, 900]);
+    const folded = computeVisibleWardingRadius([100, 400]); // 900 짜리(접힌 자식) 제외
+    expect(folded).toBeLessThan(full);
+  });
+
+  it("가시 멤버가 없으면(루트만) 하한 마진만 남는다", () => {
+    expect(computeVisibleWardingRadius([])).toBe(WARDING_VISIBLE_MIN_MARGIN);
+  });
+});
+
+describe("computeVisibleBounds (S9 결함 2)", () => {
+  const fallback = { minX: -1, minY: -1, maxX: 1, maxY: 1 };
+  it("점집합 bbox + 마진", () => {
+    const b = computeVisibleBounds([{ x: -10, y: 20 }, { x: 30, y: -5 }], 4, fallback);
+    expect(b).toEqual({ minX: -14, minY: -9, maxX: 34, maxY: 24 });
+  });
+  it("점이 없으면 fallback 을 그대로 돌려준다", () => {
+    expect(computeVisibleBounds([], 4, fallback)).toBe(fallback);
   });
 });
