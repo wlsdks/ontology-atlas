@@ -1051,7 +1051,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // 밀도 게이트 (fable 설계) — 이번 프레임의 접힘/칩 상태를 라이브 위치로
       // 계산한다(부모가 드래그/살아있는 그래프로 움직이면 칩 anchor 도 따라감).
       // 판정 로직은 순수 모델(`density-gate.ts`), 여긴 좌표 주입만.
-      const clusterState = computeTopologyClusterState(world, expandedParentsRef.current);
+      // 영역 전개 중엔 영역 루트를 항상 펼침 취급 — 루트 직속 자식은 그
+      // 세계의 스파인이라 게이트로 접으면 영역이 텅 빈 링으로 보인다
+      // (전역 도메인 면제와 같은 논리, /?synth=2000 실증).
+      const effectiveExpanded = realmRootId
+        ? new Set([...expandedParentsRef.current, realmRootId])
+        : expandedParentsRef.current;
+      const clusterState = computeTopologyClusterState(world, effectiveExpanded);
 
       // S2 파트 3a — 선택적 ego: 포커스 노드의 이웃이 limit 을 넘으면 DOI 상위
       // (revealedBatches × limit)만 남기고 나머지는 접는다(clusteredIds 에 합류 →
@@ -1100,6 +1106,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         if (isRealmOutsideCulled(realmState, now)) {
           frameClusteredIds = new Set<string>([...frameClusteredIds, ...realmData.outsideIds]);
         }
+        // 영역 밖 부모의 밀도 칩도 영역 세계에선 존재하지 않는다 — 노드는
+        // 컬되는데 칩만 남으면 빈 우주에 칩이 떠도는 결함 (실화면 실증).
+        frameChips = frameChips.filter((ch) => realmData.memberIds.has(ch.parentId));
         realmWarding = {
           centerX: realmData.wardingCenter.x,
           centerY: realmData.wardingCenter.y,
