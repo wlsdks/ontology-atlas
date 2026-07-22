@@ -146,6 +146,11 @@ const OntologyEditCanvas = dynamic<{
 
 const BUILDER_PALETTE_COLLAPSED_KEY = "demo:builder-palette:collapsed:v1";
 
+// 노드 추가 후 이름 입력 자동포커스가 안착하기까지 전역 단축키를 정지하는
+// 창(ms). rAF 로 포커스가 보통 1~2 프레임(~32ms) 내 안착하므로 넉넉히 잡되,
+// 정상 단축키 사용을 오래 막지 않도록 짧게 둔다.
+const NAME_FOCUS_GUARD_MS = 400;
+
 export function OntologyEditPage() {
   const t = useTranslations("ontologyPages.edit.page");
   const tKinds = useTranslations("kinds");
@@ -217,10 +222,22 @@ export function OntologyEditPage() {
     },
     [],
   );
+  // 노드 추가 직후 이름 입력이 포커스되기 전 공백 프레임 동안 전역 단축키를
+  // 정지하는 가드 만료 시각(ms). 자동포커스 레이스로 첫 글자가 addNode/
+  // fullscreen/삭제 단축키로 새던 회귀(persona QA "노드 증발") 차단.
+  const nameFocusGuardUntilRef = useRef(0);
+  const guardNameFocus = useCallback(() => {
+    nameFocusGuardUntilRef.current =
+      (typeof performance !== 'undefined' ? performance.now() : Date.now()) +
+      NAME_FOCUS_GUARD_MS;
+  }, []);
   // ephemeral 노드의 kindLabel / placeholder 도 locale 별로 caller 가
   // 미리 만들어 hook 에 주입 — hook 자체는 i18n 무지.
   const addNode = useCallback(
     (kind: 'project' | 'domain' | 'capability' | 'element') => {
+      // 추가하면 인스펙터가 이름 입력을 자동 포커스한다 — 그 사이 공백
+      // 프레임의 키 누수를 막는 가드를 켠다.
+      guardNameFocus();
       // B-2 — 고정 좌표 스폰은 기존 노드를 덮었다. 현재 노드들의 중심 근처
       // 빈 자리를 찾아 겹치지 않게 앉힌다. 빈 캔버스면 중심 기본값(240,160).
       const boxes = nodeBoxesRef.current;
@@ -242,7 +259,7 @@ export function OntologyEditPage() {
         position,
       });
     },
-    [addNodeRaw, tKinds, t],
+    [addNodeRaw, tKinds, t, guardNameFocus],
   );
   const {
     edges: ephemeralEdges,
@@ -943,10 +960,14 @@ export function OntologyEditPage() {
       addEphemeralEdgeByIds(fromNodeId, newId);
       // 선택은 다음 tick 으로 미룬다 — 연결 드래그 종료 직후 캔버스 pane 이
       // onPaneClick 으로 selection 을 null 로 지우기 때문. 미뤄야 새 초안이
-      // 선택된 채 남아 인스펙터 이름 입력이 자동 포커스된다.
-      window.setTimeout(() => setSelectedId(newId), 0);
+      // 선택된 채 남아 인스펙터 이름 입력이 자동 포커스된다. 포커스 안착 전
+      // 키 누수 가드는 setSelectedId 직전에 켠다.
+      window.setTimeout(() => {
+        guardNameFocus();
+        setSelectedId(newId);
+      }, 0);
     },
-    [addNodeRaw, addEphemeralEdgeByIds, tKinds, t],
+    [addNodeRaw, addEphemeralEdgeByIds, tKinds, t, guardNameFocus],
   );
   /**
    * Round 4 cut I — ephemeral edge "Save" 칩 클릭 orchestrator.
@@ -1249,6 +1270,10 @@ export function OntologyEditPage() {
           fullscreen,
           selectionRemovable: selectedId !== null && Boolean(findById(selectedId)),
           popoverOpen: anyHeaderPopoverOpen,
+          suppressTypingShortcuts:
+            (typeof performance !== "undefined"
+              ? performance.now()
+              : Date.now()) < nameFocusGuardUntilRef.current,
         },
       );
       if (!action) return;
@@ -1793,6 +1818,7 @@ export function OntologyEditPage() {
                 t("untitledPlaceholder"),
               );
               if (reuseId) {
+                guardNameFocus();
                 setSelectedId(reuseId);
                 setDetailsOpen(true);
                 // 이미 선택돼 있어 node.id 가 안 바뀌어도 카메라가 그 노드로

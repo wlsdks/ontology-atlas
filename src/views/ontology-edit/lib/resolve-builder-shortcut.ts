@@ -8,6 +8,10 @@ import type { ManualNodeKind } from "@/entities/knowledge-graph";
  *   - 텍스트 입력 요소(input/textarea/contentEditable)에 focus → 모든 단축키 비활성
  *   - 키 반복(누르고 있기, event.repeat) → 무시. 키를 누르고 있을 때 노드가
  *     캔버스 중앙에 무더기로 쌓이거나 fullscreen 이 깜빡이는 회귀 방지.
+ *   - 노드 추가 직후 이름 입력이 아직 포커스되기 전 공백 프레임(suppressTyping
+ *     Shortcuts) → 타이핑과 헷갈리는 단축키(addNode/toggleFullscreen/
+ *     removeSelected)를 정지. 자동포커스 레이스로 첫 글자가 전역 단축키로
+ *     새어 엉뚱한 노드가 추가되거나 드래프트가 지워지던 회귀 방지(persona QA).
  *   - Esc: 선택 있으면 해제, 없고 fullscreen 이면 종료
  *   - F: fullscreen 토글 (기존과 동일하게 modifier 무관)
  *   - P/N/D/C/E: kind 노드 추가 (modifier 없을 때만 — Cmd+P 인쇄 등 비간섭)
@@ -40,6 +44,12 @@ export interface BuilderShortcutState {
   selectionRemovable: boolean;
   /** 헤더 팝오버(오버플로 · 저장 상태 · 배치 보기) 중 하나라도 열려 있는지. */
   popoverOpen: boolean;
+  /**
+   * 노드 추가 직후 이름 입력이 포커스되기 전 공백 프레임인지. true 면
+   * 타이핑과 헷갈리는 단축키(addNode/toggleFullscreen/removeSelected)를 정지해
+   * 첫 글자가 전역 단축키로 새는 것을 막는다. Esc 사다리는 영향 없음.
+   */
+  suppressTypingShortcuts?: boolean;
 }
 
 // N 은 P(project) 의 legacy alias — 기존 사용자 호환.
@@ -69,6 +79,10 @@ export function resolveBuilderShortcut(
     if (state.fullscreen) return { type: "exitFullscreen" };
     return null;
   }
+
+  // 노드 추가 후 포커스 안착 전 공백 프레임 — 타이핑으로 오인될 단축키 정지.
+  // (Esc 사다리는 위에서 이미 처리되어 영향받지 않는다.)
+  if (state.suppressTypingShortcuts) return null;
 
   if (event.key === "f" || event.key === "F") {
     return { type: "toggleFullscreen" };

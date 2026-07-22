@@ -79,6 +79,10 @@ import { DocsVaultBacklinks } from '@/widgets/docs-vault/ui/DocsVaultBacklinks';
 import { DocsVaultEditor } from '@/widgets/docs-vault/ui/DocsVaultEditor';
 import { DocsVaultUnifiedPalette } from '@/widgets/docs-vault/ui/DocsVaultUnifiedPalette';
 import { DocsVaultViewer } from '@/widgets/docs-vault/ui/DocsVaultViewer';
+import {
+  ONTOLOGY_ATLAS_REPO_BLOB_BASE,
+  DOCS_VAULT_REPO_ROOT,
+} from '@/widgets/docs-vault';
 import type { VaultCommand } from '@/widgets/docs-vault/model/command';
 import {
   PINNED_DOCS_STORAGE_PREFIX,
@@ -1805,6 +1809,12 @@ function DocsVaultContent() {
                           getProjectHref={getProjectHref}
                           highlightQuery={highlightQuery}
                           resolveImage={resolveImage}
+                          {...(source === 'local'
+                            ? {}
+                            : {
+                                repoBlobBase: ONTOLOGY_ATLAS_REPO_BLOB_BASE,
+                                vaultRepoRoot: DOCS_VAULT_REPO_ROOT,
+                              })}
                         />
                       </>
                     )}
