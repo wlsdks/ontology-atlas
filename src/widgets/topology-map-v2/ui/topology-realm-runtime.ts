@@ -118,12 +118,18 @@ export function buildRealmRuntimeData(
   const root = world.nodeById.get(rootId);
   const flingCenter = { x: root?.homeX ?? 0, y: root?.homeY ?? 0 };
 
-  const bounds = {
-    minX: -wardingRadius,
-    minY: -wardingRadius,
-    maxX: wardingRadius,
-    maxY: wardingRadius,
-  };
+  // 카메라 fit 은 결계(여유 포함 큰 원)가 아니라 **콘텐츠 bbox** 기준 —
+  // 결계에 맞추면 세계가 화면 중앙에 조그맣게 보인다 (녹화 프레임 검수).
+  // 결계는 화면 밖 가장자리에 걸려도 좋다: 콘텐츠가 주인공.
+  let bMinX = Infinity, bMinY = Infinity, bMaxX = -Infinity, bMaxY = -Infinity;
+  for (const t of insideTargets.values()) {
+    bMinX = Math.min(bMinX, t.x); bMaxX = Math.max(bMaxX, t.x);
+    bMinY = Math.min(bMinY, t.y); bMaxY = Math.max(bMaxY, t.y);
+  }
+  const contentMargin = 40 + maxNodeRadius;
+  const bounds = Number.isFinite(bMinX)
+    ? { minX: bMinX - contentMargin, minY: bMinY - contentMargin, maxX: bMaxX + contentMargin, maxY: bMaxY + contentMargin }
+    : { minX: -wardingRadius, minY: -wardingRadius, maxX: wardingRadius, maxY: wardingRadius };
 
   return {
     rootId,
