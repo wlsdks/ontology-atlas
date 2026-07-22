@@ -2369,7 +2369,17 @@
       "enterAction": "Expand realm",
       "enterTooltip": "Expand just this node’s realm",
       "chipPrefix": "Realm",
-      "chipClear": "Exit realm"
+      "chipClear": "Exit realm",
+      "ledger": {
+        "depthShort": "depth",
+        "searchPlaceholder": "Search this realm",
+        "exit": "Exit realm",
+        "boundaryHeading": "Reaches outside · {count}",
+        "boundaryToggleAria": "Expand or collapse the boundary-relation list",
+        "boundaryJump": "Go to this realm",
+        "boundaryJumpAria": "Jump to the realm this outside node belongs to",
+        "boundaryEmpty": "No relations reach outside"
+      }
     }
   },
   "fullDetailA1": {

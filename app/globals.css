@@ -422,6 +422,20 @@
     }
   }
 
+  /* S7 "영역 대장" 좌측 패널 크로스페이드 — 전역 INDEX ↔ 영역 대장 전환 시
+     들어오는 표면의 짧은 페이드-인(<200ms). 두 표면이 같은 박스를 차지하므로
+     페이드-인이 크로스페이드로 읽힌다. prefers-reduced-motion 은 아래 base
+     레이어의 전역 규칙(animation-duration 0.01ms)이 자동 무력화 → 즉시 교체. */
+  @keyframes panelCrossfadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
   /*
    * Tailwind v4 @theme 가 alpha rgba 토큰을 :root 에 emit 하지 않는 동작이 있어
    * border-[color:var(--color-divider)] 같은 arbitrary value 가 변수를 resolve

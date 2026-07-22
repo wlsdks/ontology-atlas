@@ -2369,7 +2369,17 @@
       "enterAction": "영역 전개",
       "enterTooltip": "이 노드의 영역만 펼쳐요",
       "chipPrefix": "영역",
-      "chipClear": "영역 나가기"
+      "chipClear": "영역 나가기",
+      "ledger": {
+        "depthShort": "깊이",
+        "searchPlaceholder": "이 영역에서 검색",
+        "exit": "영역 해제",
+        "boundaryHeading": "바깥과 닿은 관계 {count}",
+        "boundaryToggleAria": "결계 관계 목록 펼치기 · 접기",
+        "boundaryJump": "이 영역으로 이동",
+        "boundaryJumpAria": "이 밖 노드가 속한 영역으로 이동",
+        "boundaryEmpty": "바깥과 닿은 관계가 없어요"
+      }
     }
   },
   "fullDetailA1": {

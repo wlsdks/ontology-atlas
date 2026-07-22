@@ -166,11 +166,18 @@ import { clampSynthSize, synthesizeVaultGraph } from "../lib/synth-vault";
 import {
   TopologyIndexPanel,
   TopologyIndexTab,
+  TopologyRealmLedger,
   resolveIndexPanelState,
   resolveLeftSlotOwner,
   resolveRenderedIndexPanelState,
   type IndexPanelState,
 } from "@/widgets/topology-index-panel";
+import {
+  collectRealmMemberIds,
+  computeRealmBoundary,
+  computeRealmCensus,
+  findRealmSubtree,
+} from "../lib/realm-ledger";
 import {
   classifyTopologyRelationProvenance,
 } from "../lib/topology-ontology-drawer";
@@ -1576,6 +1583,53 @@ export function HomePage() {
         : null,
     [ontologyInsight],
   );
+  // 미터 분모 단일 진실원 — 도메인 census BFS total 의 최댓값. INDEX 패널이
+  // 내부에서 계산하는 값과 같은 소스라 영역 대장 트리 행의 capacity 미터가
+  // 전역 트리와 어긋나지 않는다.
+  const indexMaxDomainDescendantCount = useMemo(() => {
+    if (!indexDomainCensus || indexDomainCensus.size === 0) return 0;
+    let max = 0;
+    for (const row of indexDomainCensus.values()) if (row.total > max) max = row.total;
+    return max;
+  }, [indexDomainCensus]);
+  // S7 "영역 대장" — realm 활성 시 좌측 패널이 전역 콘텐츠 대신 이 노드의
+  // 세계만 보여줄 때 필요한 파생. 모두 그래프/트리에서만 나온다(순수 lib,
+  // `../lib/realm-ledger.ts` + 테스트) — topology-map-v2 를 건드리지 않는다.
+  const realmNodeById = useMemo(
+    () => new Map((ontologyInsight?.nodes ?? []).map((n) => [n.id, n] as const)),
+    [ontologyInsight],
+  );
+  const realmLedgerModel = useMemo(() => {
+    if (!realmSlug || !indexTreeResult || !ontologyInsight) return null;
+    const subtree = findRealmSubtree(indexTreeResult.roots, realmSlug);
+    if (!subtree) return null;
+    const census = computeRealmCensus(subtree);
+    const memberIds = collectRealmMemberIds(subtree);
+    const boundary = computeRealmBoundary({
+      edges: ontologyInsight.edges,
+      memberIds,
+      nodeById: realmNodeById,
+    });
+    // 경계 행에 관계 타입 평문 라벨을 붙인다(위젯은 i18n 을 모른다) + 상위
+    // 몇 개만 노출(총수는 헤딩이 말한다).
+    const boundaryRows = boundary.crossings.slice(0, 6).map((crossing) => ({
+      edgeId: crossing.edgeId,
+      fromTitle: crossing.fromTitle,
+      toTitle: crossing.toTitle,
+      relationLabel: relationVocabulary(crossing.relationType, "formal"),
+      outsideId: crossing.outsideId,
+      jumpRealmId: crossing.jumpRealmId,
+    }));
+    return {
+      rootKind: subtree.node.kind,
+      rootTitle: subtree.node.title,
+      census,
+      subtree,
+      boundaryRows,
+      boundaryTotal: boundary.total,
+    };
+  }, [realmSlug, indexTreeResult, ontologyInsight, realmNodeById, relationVocabulary]);
+  const realmActive = realmSlug !== null && realmLedgerModel !== null;
   // root-first-open v3 우하단 판독(`FirstRunReadout`) 의 "N project" 숫자 —
   // 실데이터, indexDomainCount 와 같은 ontologyInsight 파생이라 drift 불가.
   const firstRunProjectCount = useMemo(
@@ -2357,6 +2411,55 @@ export function HomePage() {
                 }}
               >
                 {renderedIndexState === "expanded" && indexTreeResult ? (
+                  // S7 "영역 대장" — 영역 활성 시 좌측 패널이 전역 콘텐츠 대신
+                  // 이 노드의 세계만 보여주는 변신 표면으로 교체된다. 두 표면이
+                  // 같은 박스를 차지하므로 keyed 래퍼의 짧은 페이드-인(<200ms,
+                  // reduced-motion 즉시)이 크로스페이드로 읽힌다. 전역↔영역
+                  // 전환에서만 key 가 바뀌어 remount → 페이드; 영역→영역
+                  // 점프는 in-place 갱신.
+                  <div
+                    key={realmActive ? "realm" : "index"}
+                    className="h-full animate-[panelCrossfadeIn_160ms_ease-out] motion-reduce:animate-none"
+                  >
+                  {realmActive && realmLedgerModel ? (
+                    <TopologyRealmLedger
+                      rootKind={realmLedgerModel.rootKind}
+                      rootTitle={realmLedgerModel.rootTitle}
+                      census={realmLedgerModel.census}
+                      subtree={realmLedgerModel.subtree}
+                      boundaryRows={realmLedgerModel.boundaryRows}
+                      boundaryTotal={realmLedgerModel.boundaryTotal}
+                      selectedId={canvasSelectedSlug}
+                      changedSlugs={changedSlugs}
+                      onSelect={(id) => handleSelect(id)}
+                      onExit={handleExitRealm}
+                      // 결계 관계 행의 "이 영역으로 이동" = 밖 노드의 도메인급
+                      // 상위로 realm 을 교체(realm-to-realm 점프). 진입 핸들러
+                      // 재사용 — 새 URL 로직 없음.
+                      onJumpRealm={handleEnterRealm}
+                      maxDomainDescendantCount={indexMaxDomainDescendantCount}
+                      domainCensus={indexDomainCensus}
+                      labels={{
+                        label: t("realm.chipPrefix"),
+                        elementsShort: t("index.elementsShort"),
+                        capabilitiesShort: t("index.capabilitiesShort"),
+                        depthShort: t("realm.ledger.depthShort"),
+                        searchPlaceholder: t("realm.ledger.searchPlaceholder"),
+                        exit: t("realm.ledger.exit"),
+                        exitAria: t("realm.chipClear"),
+                        emptyHint: t("index.emptyHint"),
+                        boundaryHeading: t("realm.ledger.boundaryHeading", {
+                          count: realmLedgerModel.boundaryTotal,
+                        }),
+                        boundaryToggleAria: t("realm.ledger.boundaryToggleAria"),
+                        boundaryJump: t("realm.ledger.boundaryJump"),
+                        boundaryJumpAria: t("realm.ledger.boundaryJumpAria"),
+                        boundaryEmpty: t("realm.ledger.boundaryEmpty"),
+                        freshTitle: t("index.freshTitle"),
+                        domainCountTitle: t("index.domainCountTitle"),
+                      }}
+                    />
+                  ) : (
                   <TopologyIndexPanel
                     treeResult={indexTreeResult}
                     totalConcepts={topologyTotalNodes}
@@ -2453,6 +2556,8 @@ export function HomePage() {
                       uncatalogedDocsAction: t("index.uncatalogedDocsAction"),
                     }}
                   />
+                  )}
+                  </div>
                 ) : (
                   <TopologyIndexTab
                     onExpand={handleIndexTabExpand}
