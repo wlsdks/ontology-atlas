@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback } from "react";
-import { Compass, FolderOpen, Orbit, Sparkles } from "lucide-react";
+import { useCallback, useEffect } from "react";
+import { Compass, FolderOpen, Orbit, Sparkles, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useLocalVault, useVaultCreateFlow } from "@/features/docs-vault-local";
+import { useJustStartVault, useLocalVault, useVaultCreateFlow } from "@/features/docs-vault-local";
 import { Link } from "@/i18n/navigation";
+import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
+import { useToast } from "@/shared/ui/toast";
 
 /**
  * 설치 앱 (데스크톱 셸) 첫 실행 — vault 미선택 상태의 `/`.
@@ -15,10 +17,17 @@ import { Link } from "@/i18n/navigation";
  * 첫 화면이라 이 페이지와 다른 문제를 푼다 — 분기는 RootEntryPage 의
  * isDesktopShell() 하나.
  *
- * 세 액션 모두 기존 흐름 재사용 (새 파이프라인 0):
+ * 네 액션 모두 기존 흐름 재사용 (새 파이프라인 0):
  * - 볼트 폴더 열기 → useLocalVault().open() (Tauri picker / FSA picker)
  * - 새 볼트 만들기 → 같은 open() 뒤, 빈 폴더면 기존 scaffoldOntology()
  *   (`/docs` OntologyStarterCta 와 동일 액션) 로 starter 시드 작성
+ * - **그냥 시작하기** (Tauri 런타임 한정, R+ "정직판" 데스크톱 자동 vault) →
+ *   폴더 픽커 없이 `~/Documents/Ontology Atlas/<name>` 아래 실제 디스크 폴더를
+ *   만들고 곧장 연결 (`useJustStartVault`). 실디스크라 MCP/Claude Code 같은
+ *   에이전트가 그대로 접근 가능 — OPFS 를 쓰지 않는 게 이 설계의 핵심.
+ *   dev 빌드에서 `?shell=desktop` 오버라이드로 이 페이지를 브라우저에서 열어볼
+ *   수도 있으므로(`isDesktopShell()`), 이 카드는 실제 Tauri invoke 브리지
+ *   (`isTauriVaultRuntime()`) 가 있을 때만 렌더 — 없으면 항목 자체 미표시.
  * - 데모 볼트 둘러보기 → `/docs/` 의 내장 dogfood 매니페스트 (vault 미선택
  *   fallback — 정적 빌드에 이미 포함)
  *
@@ -28,24 +37,50 @@ import { Link } from "@/i18n/navigation";
  */
 export function FirstRunPage() {
   const t = useTranslations("firstRun");
+  const toast = useToast();
   const vault = useLocalVault();
   const { handleCreate, scaffolding, actionError, setActionError } =
     useVaultCreateFlow(vault);
+  const {
+    justStart,
+    busy: justStartBusy,
+    scaffolding: justStartScaffolding,
+    actionError: justStartError,
+    createdPath,
+    clearCreatedPath,
+  } = useJustStartVault(vault);
+  // dev 빌드의 `?shell=desktop` 오버라이드로 이 페이지를 일반 브라우저에서 열어
+  // 볼 수 있다(`isDesktopShell()`) — 그런 경우 실제 Tauri invoke 브리지는 없으니
+  // "그냥 시작하기" 는 렌더하지 않는다. 이 페이지 자체가 이미 클라이언트 전용
+  // 마운트(RootEntryPage 의 clientReady 게이트) 뒤에만 렌더되므로 SSR/hydration
+  // mismatch 걱정 없이 바로 호출해도 된다.
+  const showJustStart = isTauriVaultRuntime();
 
   const busy =
-    vault.status === "opening" || vault.status === "loading" || scaffolding;
+    vault.status === "opening" ||
+    vault.status === "loading" ||
+    scaffolding ||
+    justStartBusy;
 
   const handleOpen = useCallback(async () => {
     setActionError(null);
     await vault.open();
   }, [vault, setActionError]);
 
+  useEffect(() => {
+    if (!createdPath) return;
+    toast.show(t("justStartToast", { path: createdPath }), "success");
+    clearCreatedPath();
+  }, [createdPath, clearCreatedPath, toast, t]);
+
   const errorText =
-    actionError !== null
-      ? actionError || t("errorFallback")
-      : vault.status === "error"
-        ? vault.errorMessage ?? t("errorFallback")
-        : null;
+    justStartError !== null
+      ? justStartError || t("errorFallback")
+      : actionError !== null
+        ? actionError || t("errorFallback")
+        : vault.status === "error"
+          ? vault.errorMessage ?? t("errorFallback")
+          : null;
 
   const cardBase =
     "grid w-full grid-cols-[32px_1fr] items-start gap-3 rounded-md border bg-[color:var(--color-panel)] px-4 py-3.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60";
@@ -81,19 +116,57 @@ export function FirstRunPage() {
         </header>
 
         <div className="grid gap-2" aria-busy={busy}>
+          {showJustStart ? (
+            <button
+              type="button"
+              onClick={() => void justStart()}
+              disabled={busy}
+              data-testid="first-run-just-start"
+              className={`${cardBase} border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]`}
+            >
+              <span className={`${iconChip} text-[color:var(--color-indigo-accent)]`}>
+                <Zap size={14} aria-hidden />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                  {justStartScaffolding
+                    ? t("scaffolding")
+                    : justStartBusy
+                      ? t("justStartBusy")
+                      : t("justStartTitle")}
+                </span>
+                <span className="mt-0.5 block break-keep text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+                  {t("justStartBody")}
+                </span>
+              </span>
+            </button>
+          ) : null}
+
           <button
             type="button"
             onClick={() => void handleOpen()}
             disabled={busy}
             data-testid="first-run-open"
-            className={`${cardBase} border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]`}
+            className={`${cardBase} ${
+              showJustStart
+                ? "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]"
+                : "border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]"
+            }`}
           >
-            <span className={`${iconChip} text-[color:var(--color-indigo-accent)]`}>
+            <span
+              className={`${iconChip} ${
+                showJustStart
+                  ? "text-[color:var(--color-text-tertiary)]"
+                  : "text-[color:var(--color-indigo-accent)]"
+              }`}
+            >
               <FolderOpen size={14} aria-hidden />
             </span>
             <span className="min-w-0">
               <span className="block text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                {busy && !scaffolding ? t("busy") : t("openTitle")}
+                {(vault.status === "opening" || vault.status === "loading") && !scaffolding
+                  ? t("busy")
+                  : t("openTitle")}
               </span>
               <span className="mt-0.5 block break-keep text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
                 {t("openBody")}

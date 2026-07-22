@@ -12,8 +12,11 @@ vi.mock('@tauri-apps/api/core', () => ({
 
 import {
   createTauriVaultHandle,
+  ensureDefaultVaultParentDir,
+  ensureTauriChildDirectory,
   getTauriVaultRootPath,
   isTauriVaultRuntime,
+  listTauriDirectoryNames,
   openTauriVaultInFinder,
   pickTauriVaultDirectory,
   tauriVaultPathExists,
@@ -267,6 +270,78 @@ describe('tauri vault file-system shim', () => {
 
   it('fails fast when the WebView invoke runtime is absent', () => {
     expect(() => createTauriVaultHandle('/vault')).toThrow(
+      'Tauri vault runtime is not available.',
+    );
+  });
+
+  it('ensures the default vault parent dir under Documents and returns its absolute path', async () => {
+    const calls = installInvoke(({ command }) => {
+      if (command === 'ensure_default_vault_parent_dir') {
+        return '/Users/me/Documents/Ontology Atlas';
+      }
+      throw new Error(`unexpected command: ${command}`);
+    });
+
+    await expect(ensureDefaultVaultParentDir()).resolves.toBe(
+      '/Users/me/Documents/Ontology Atlas',
+    );
+    expect(calls).toEqual([
+      { command: 'ensure_default_vault_parent_dir', args: undefined },
+    ]);
+  });
+
+  it('returns null for the default vault parent dir when the runtime is unavailable', async () => {
+    await expect(ensureDefaultVaultParentDir()).resolves.toBeNull();
+  });
+
+  it('lists only directory names at the root of a path', async () => {
+    const calls = installInvoke(({ command }) => {
+      if (command === 'list_vault_directory') {
+        return [
+          { name: 'my-ontology', kind: 'directory' },
+          { name: 'notes.md', kind: 'file' },
+          { name: 'my-ontology-2', kind: 'directory' },
+        ];
+      }
+      throw new Error(`unexpected command: ${command}`);
+    });
+
+    await expect(
+      listTauriDirectoryNames('/Users/me/Documents/Ontology Atlas'),
+    ).resolves.toEqual(['my-ontology', 'my-ontology-2']);
+    expect(calls).toEqual([
+      {
+        command: 'list_vault_directory',
+        args: { rootPath: '/Users/me/Documents/Ontology Atlas', relativePath: '' },
+      },
+    ]);
+  });
+
+  it('returns an empty directory listing when the runtime is unavailable', async () => {
+    await expect(listTauriDirectoryNames('/vault')).resolves.toEqual([]);
+  });
+
+  it('ensures a named child directory exists under a root path', async () => {
+    const calls = installInvoke(({ command }) => {
+      if (command === 'ensure_vault_directory') return undefined;
+      throw new Error(`unexpected command: ${command}`);
+    });
+
+    await ensureTauriChildDirectory('/Users/me/Documents/Ontology Atlas', 'my-ontology');
+
+    expect(calls).toEqual([
+      {
+        command: 'ensure_vault_directory',
+        args: {
+          rootPath: '/Users/me/Documents/Ontology Atlas',
+          relativePath: 'my-ontology',
+        },
+      },
+    ]);
+  });
+
+  it('fails fast ensuring a child directory when the WebView invoke runtime is absent', async () => {
+    await expect(ensureTauriChildDirectory('/vault', 'my-ontology')).rejects.toThrow(
       'Tauri vault runtime is not available.',
     );
   });

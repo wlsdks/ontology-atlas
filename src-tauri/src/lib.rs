@@ -429,6 +429,24 @@ fn open_vault_in_finder(root_path: String) -> Result<(), String> {
     }
 }
 
+/// "그냥 시작하기" 데스크톱 first-run 액션 전용 — Documents 안에 vault 들을
+/// 모아두는 컨테이너 폴더 이름. Rust 쪽에서만 $HOME/Documents 를 알 수
+/// 있으므로(JS 는 fs 플러그인 없이 접근 불가), 경로 조립을 순수 함수로
+/// 분리해 테스트하고 커맨드는 그 결과에 create_dir_all 만 더한다.
+fn default_vault_parent_dir(home: &str) -> PathBuf {
+    PathBuf::from(home).join("Documents").join("Ontology Atlas")
+}
+
+#[tauri::command]
+fn ensure_default_vault_parent_dir() -> Result<String, String> {
+    let home = std::env::var("HOME")
+        .map_err(|_| "HOME environment variable is not set".to_string())?;
+    let parent = default_vault_parent_dir(&home);
+    fs::create_dir_all(&parent).map_err(|err| err.to_string())?;
+    let canonical = fs::canonicalize(&parent).map_err(|err| err.to_string())?;
+    Ok(canonical.to_string_lossy().to_string())
+}
+
 fn show_main_window(app: &AppHandle) {
     #[cfg(target_os = "macos")]
     let _ = app.show();
@@ -5714,6 +5732,7 @@ pub fn run() {
             ensure_vault_directory,
             vault_path_exists,
             open_vault_in_finder,
+            ensure_default_vault_parent_dir,
             start_vault_watch,
         ])
         .build(tauri::generate_context!())
@@ -5775,6 +5794,14 @@ mod tests {
     fn open_vault_in_finder_rejects_non_directory_root() {
         let error = open_vault_in_finder("/path/that/does/not/exist".into()).unwrap_err();
         assert!(!error.is_empty());
+    }
+
+    #[test]
+    fn default_vault_parent_dir_joins_documents_and_container_name() {
+        assert_eq!(
+            default_vault_parent_dir("/Users/me"),
+            PathBuf::from("/Users/me/Documents/Ontology Atlas")
+        );
     }
 
     #[test]

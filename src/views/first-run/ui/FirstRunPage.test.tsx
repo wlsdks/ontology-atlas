@@ -7,6 +7,7 @@ interface MockVault {
   manifest: { docs: unknown[] } | null;
   errorMessage: string | null;
   open: ReturnType<typeof vi.fn>;
+  openRecent: ReturnType<typeof vi.fn>;
   scaffoldOntology: ReturnType<typeof vi.fn>;
 }
 
@@ -18,13 +19,36 @@ vi.mock('@/features/docs-vault-local', async () => {
   const actual = await vi.importActual<typeof import('@/features/docs-vault-local')>(
     '@/features/docs-vault-local',
   );
-  // useVaultCreateFlow 는 vault 를 인자로만 받는 순수 hook 이라 실제 구현을
-  // 그대로 쓴다 — mocking 이 필요한 건 useLocalVault (전역 provider 접근) 뿐.
+  // useVaultCreateFlow/useJustStartVault 는 vault 를 인자로만 받는 순수 hook 이라
+  // 실제 구현을 그대로 쓴다 — mocking 이 필요한 건 useLocalVault (전역 provider
+  // 접근) 뿐. useJustStartVault 내부의 tauri-vault-fs 호출은 아래에서 mock.
   return { ...actual, useLocalVault: () => mocks.vault };
 });
 
+const tauriFsMocks = vi.hoisted(() => ({
+  isTauriVaultRuntime: vi.fn(() => false),
+  ensureDefaultVaultParentDir: vi.fn(async () => '/Users/me/Documents/Ontology Atlas'),
+  listTauriDirectoryNames: vi.fn(async () => [] as string[]),
+  ensureTauriChildDirectory: vi.fn(async () => undefined),
+  createTauriVaultHandle: vi.fn((rootPath: string) => ({
+    kind: 'directory' as const,
+    name: rootPath.split('/').pop() ?? rootPath,
+  })),
+}));
+
+vi.mock('@/shared/lib/tauri-vault-fs', () => tauriFsMocks);
+
+const toastMocks = vi.hoisted(() => ({
+  show: vi.fn(),
+}));
+
+vi.mock('@/shared/ui/toast', () => ({
+  useToast: () => ({ show: toastMocks.show }),
+}));
+
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, vars?: Record<string, unknown>) =>
+    vars ? `${key}:${JSON.stringify(vars)}` : key,
 }));
 
 vi.mock('@/i18n/navigation', () => ({
@@ -45,6 +69,7 @@ function makeVault(): MockVault {
     manifest: null,
     errorMessage: null,
     open: vi.fn(async () => undefined),
+    openRecent: vi.fn(async () => undefined),
     scaffoldOntology: vi.fn(async () => ({ created: 8, skipped: 0 })),
   };
   return vault;
@@ -53,6 +78,17 @@ function makeVault(): MockVault {
 describe('FirstRunPage', () => {
   beforeEach(() => {
     mocks.vault = makeVault();
+    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(false);
+    tauriFsMocks.ensureDefaultVaultParentDir.mockResolvedValue(
+      '/Users/me/Documents/Ontology Atlas',
+    );
+    tauriFsMocks.listTauriDirectoryNames.mockResolvedValue([]);
+    tauriFsMocks.ensureTauriChildDirectory.mockResolvedValue(undefined);
+    tauriFsMocks.createTauriVaultHandle.mockImplementation((rootPath: string) => ({
+      kind: 'directory' as const,
+      name: rootPath.split('/').pop() ?? rootPath,
+    }));
+    toastMocks.show.mockClear();
   });
 
   it('renders the three action cards and the trust line, no download CTA', () => {
@@ -136,5 +172,60 @@ describe('FirstRunPage', () => {
     render(<FirstRunPage />);
 
     expect(screen.getByTestId('first-run-demo')).toHaveAttribute('href', '/docs/');
+  });
+
+  it('hides "just start" when the Tauri invoke bridge is unavailable (e.g. dev ?shell=desktop override in a plain browser)', () => {
+    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(false);
+    render(<FirstRunPage />);
+
+    expect(screen.queryByTestId('first-run-just-start')).not.toBeInTheDocument();
+  });
+
+  it('creates the default folder on disk, connects it, and scaffolds it when "just start" is available', async () => {
+    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
+    mocks.vault.openRecent = vi.fn(async () => {
+      mocks.vault.status = 'loaded';
+      mocks.vault.manifest = { docs: [] };
+    });
+    render(<FirstRunPage />);
+
+    expect(screen.getByTestId('first-run-just-start')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('first-run-just-start'));
+
+    await waitFor(() => {
+      expect(mocks.vault.scaffoldOntology).toHaveBeenCalledTimes(1);
+    });
+    expect(tauriFsMocks.ensureTauriChildDirectory).toHaveBeenCalledWith(
+      '/Users/me/Documents/Ontology Atlas',
+      'my-ontology',
+    );
+    expect(mocks.vault.openRecent).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'my-ontology' }),
+    );
+    await waitFor(() => {
+      expect(toastMocks.show).toHaveBeenCalledWith(
+        expect.stringContaining('~/Documents/Ontology Atlas/my-ontology'),
+        'success',
+      );
+    });
+  });
+
+  it('picks a numbered folder name and reports it in the toast when the base name is already taken', async () => {
+    tauriFsMocks.isTauriVaultRuntime.mockReturnValue(true);
+    tauriFsMocks.listTauriDirectoryNames.mockResolvedValue(['my-ontology']);
+    mocks.vault.openRecent = vi.fn(async () => {
+      mocks.vault.status = 'loaded';
+      mocks.vault.manifest = { docs: [] };
+    });
+    render(<FirstRunPage />);
+
+    fireEvent.click(screen.getByTestId('first-run-just-start'));
+
+    await waitFor(() => {
+      expect(tauriFsMocks.ensureTauriChildDirectory).toHaveBeenCalledWith(
+        '/Users/me/Documents/Ontology Atlas',
+        'my-ontology-2',
+      );
+    });
   });
 });

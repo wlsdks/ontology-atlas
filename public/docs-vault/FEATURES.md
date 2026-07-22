@@ -114,11 +114,17 @@ dialog never says "온톨로지" (map-building framing for non-experts).
 
 **Desktop first-run (2026-07-18)**: in the installed app (Tauri — detected via
 `isDesktopShell()`, `src/shared/lib/desktop-shell.ts`), `/` with no vault
-renders an Obsidian-style **FirstRunPage** (`src/views/first-run/`): three
-machined cards — open vault folder / create new vault (existing
-`scaffoldOntology()` when the picked folder is empty — 5 markdown seeds +
-agent configs) / browse the built-in demo vault — plus a local-first trust
-line. No download CTA inside the installed app.
+renders an Obsidian-style **FirstRunPage** (`src/views/first-run/`): four
+machined cards — **just start** (2026-07-23, Tauri runtime only — no folder
+picker at all: creates `~/Documents/Ontology Atlas/<name>` on real disk
+automatically, numbering `-2`/`-3` on a name clash, connects it, then reuses
+the same `scaffoldOntology()` seed as "create new vault", and the success
+toast names the exact path — real disk, not OPFS, so an AI agent/MCP can
+still read it; hidden when the real Tauri invoke bridge is absent, e.g. a dev
+`?shell=desktop` browser override) / open vault folder / create new vault
+(existing `scaffoldOntology()` when the picked folder is empty — 5 markdown
+seeds + agent configs) / browse the built-in demo vault — plus a local-first
+trust line. No download CTA inside the installed app.
 
 **Web root-first-open (2026-07-18)**: on hosted web, `/` no longer shows a
 marketing landing page at all — with no vault selected it renders `HomePage`
@@ -144,7 +150,7 @@ IndexedDB goes straight to their own workspace, no starter surfaces at all.
 ### `/` — Smart entry
 
 - **Hosted web, no vault** → `HomePage` rendering the dogfood sample read-only, plus the INDEX-panel first-run starter (see above) — no separate marketing landing page since root-first-open (2026-07)
-- **macOS app, no restored vault** → `FirstRunPage` (open / create / browse demo), not the hosted intro
+- **macOS app, no restored vault** → `FirstRunPage` (just start / open / create / browse demo), not the hosted intro
 - **Recent desktop vaults** → the picker stores recently opened Tauri vault paths, can reopen them without another Finder selection, and can remove stale paths from the list
 - **Vault loaded (web or desktop)** → `HomePage` — the topology hub (map + INDEX concept panel + node datasheet), same component `/topology` renders (B3 허브가 곧 지도 — the old tree/ego hub, `OntologyViewPage`, is retired; `/ontology` now redirects here with INDEX expanded). Restoring a previously-opened vault handle from IndexedDB goes straight here — no starter surfaces, no re-clicking through first-run every visit
 - **Switch vault mid-session**: the topology settings gear (⚙, top-right utility rail) has a "switch vault" row → `/docs/?intent=local`, alongside the `/docs` vault pill's own "swap" control
@@ -178,6 +184,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
 - **Shift-click 2 nodes** → highlight shortest path
 - **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded.
+- **Expand realm (영역 전개)** → focus a node (click) and an orbital **Expand realm** button appears just outside its ring (also offered as an action in the node datasheet, for container nodes). Activating it transforms the map into *that node's world*: only its containment subtree remains, re-laid-out with the node as a temporary root at the origin (children map to rings by **depth**, not kind), and everything outside unmounts behind a 1px indigo warding circle. Relations crossing the boundary fade to a stub at the ring. The transition is a 600ms choreography — outside nodes fling out along curved "gravity" trajectories, inside nodes FLIP to their new spots, the camera dollies in to fit the realm (`prefers-reduced-motion` snaps instantly). The active realm lives in the URL (`?realm=slug`) so a shared link or an AI agent reproduces the same world; a top-center **영역: {title} ✕** chip and **Esc** (highest ladder priority) return to the full map. Click, `?open` density gating, selective ego, and top-K labels all still work inside a realm.
 - **Tab** → keyboard cycle to neighbor hub
 - **Empty state** (0–1 nodes) → `TopologyEmptyState` card with 3 CTAs (tree / builder / open vault)
 - **Filter active** → bottom-left "filter · N / TOTAL" badge

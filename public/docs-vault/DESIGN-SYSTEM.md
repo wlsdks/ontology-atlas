@@ -143,6 +143,12 @@ download(`/download`).
 - 소개 섹션 evidence 미니어처 census 숫자의 진실원:
   `src/views/download/model/dogfood-census.generated.ts` —
   `scripts/build-docs-vault.mjs` 가 dogfood vault frontmatter 에서 생성.
+- `--shadow-elevation-1/2/3` — 떠 있는 표면 드롭 섀도 3단 사다리
+  (coach-mark < popover < dialog). 값은 alpha 토큰(`--color-shadow-a35/a42/a46`)
+  합성. 이전엔 ontology-edit 전반이 `0_24px_72px`·`0_24px_80px`·`0_22px_54px`·
+  `0_18px_44px`·`0_18px_40px`·`0_10px_32px`·`0_6px_16px` 같은 손 튜닝 섀도를
+  8종 흩뿌렸다 — 계층별 대표값으로 수렴(빌더 2라운드 감사 #9). JSX 에 새
+  drop-shadow 를 손으로 적지 말고 이 3단을 상속한다. 전역 나머지 표면 마이그레이션은 후속 큐.
 
 **Surface class 별 do / don't**:
 
@@ -1308,6 +1314,121 @@ Example: `/ontology` page
 
 The public surfaces `/`, `/topology`, `/docs`, `/projects`, `/project/[slug]` use the standalone Korean h1 pattern (without an English eyebrow caption) — these are the browse surfaces, not the operations surfaces.
 
+## Geometry & Type Codex (R5, 2026-07)
+
+> **박스 하나하나 사이즈까지 싹 다 지정해서 모든 곳에서 동일하게.** 이 절은
+> 텍스트 크기·radius·패딩을 토큰명으로 못박는 **법전**이다. 값 소스:
+> `app/globals.css` `@theme` "Geometry & Type Codex" 블록. 아래 램프 밖의
+> `text-[Npx]` / `rounded-[Npx]` 리터럴은 **존재 금지** — 신규 값이 필요하면
+> 토큰을 신설하는 PR 로만 추가한다(인라인 arbitrary 로 몰래 넣지 않는다).
+
+**실측 근거(치환 전, 2026-07):** `text-[Npx]` 하드코딩 **29종 크기 · 1,184건**,
+arbitrary radius **18종**, 카드 패딩 4종. 이 산개를 아래 램프로 수렴했다.
+
+### Type ramp — 7단
+
+Tailwind v4 `--text-*` 네임스페이스가 `text-<step>` font-size 유틸리티를
+생성한다. letter-spacing 은 `--tracking-*` 짝으로 **분리** 관리한다 —
+`text-<step>` 에 자동 결합하면 ~1천 element 의 tracking 이 한꺼번에 바뀌어
+"법전화지 리디자인 아님" 원칙을 깨기 때문. 신규 코드는 아래 짝을 함께 건다
+(Apple 광학 원칙: 작은 단은 양의 tracking 으로 판독선 확보, 큰 단은 음의
+tracking 으로 응집).
+
+| 단 | 토큰 (유틸) | px | tracking 짝 (유틸) | 대상 |
+|---|---|---|---|---|
+| caption | `--text-caption` (`text-caption`) | 9.5 | `+0.04em` (`tracking-caption`) | 마이크로 라벨·범례·타임스탬프 |
+| label | `--text-label` (`text-label`) | 11 | `+0.02em` (`tracking-label`) | 칩·배지·보조 라벨 |
+| body | `--text-body` (`text-body`) | 12.5 | `+0.005em` (`tracking-body`) | 기본 본문·리스트 행 |
+| body-lg | `--text-body-lg` (`text-body-lg`) | 14 | `0` (`tracking-body-lg`) | 강조 본문·부제 |
+| title | `--text-title` (`text-title`) | 16 | `-0.01em` (`tracking-title`) | 패널/카드 제목 |
+| display | `--text-display` (`text-display`) | 23 | `-0.022em` (`tracking-display`) | 페이지 헤드라인 |
+| hero | `--text-hero` (`text-hero`) | 30 | `-0.022em` (`tracking-hero`) | 히어로 헤드라인 |
+
+**최근접 수렴 규칙**(치환 시): 각 리터럴 px 를 가장 가까운 단으로 스냅한다
+(±1px 은 램프로 흡수). 단 사이 정확히 중간(예: 15px)은 상위 단으로, 램프 밖
+값(≥1.5px 이탈)은 아래 "명시 예외"로만 남긴다.
+
+### Radius ramp — 3단 (일반 표면)
+
+Tailwind v4 `--radius-*` 네임스페이스가 `rounded-<step>` 를 생성한다.
+
+| 단 | 토큰 (유틸) | px | 대상 |
+|---|---|---|---|
+| chip | `--radius-chip` (`rounded-chip`) | 6 | 칩·배지·작은 버튼 |
+| card | `--radius-card` (`rounded-card`) | 9 | 카드·인풋·중형 서피스 |
+| panel | `--radius-panel` (`rounded-panel`) | 12 | 패널·모달·큰 서피스 |
+
+> **크롬 radius 사다리와의 관계.** 아래 "크롬 문법" 절의 `--chrome-radius`
+> (10px) · `--chrome-radius-inner`(7px) · 키캡(4px) 사다리는 **컴포넌트에
+> 캡슐화된 별개 체계**다(ChromeTile / ChromeChip / 상태 칩 전용). 이 codex 의
+> `rounded-chip/card/panel` 은 그 밖의 **일반 JSX 표면**을 지배한다. 크롬
+> 표면은 인라인 `rounded-[Npx]` 가 아니라 컴포넌트를 경유하므로 두 체계는
+> 충돌하지 않는다 — 크롬 박스는 크롬 사다리, 나머지는 이 램프.
+
+### Padding — 2단
+
+| 단 | 토큰 | px | 대상 |
+|---|---|---|---|
+| card | `--pad-card` | 16 | 카드 내부 패딩 (RATIO-SYSTEM `--card-pad` 와 동일값) |
+| panel | `--pad-panel` | 12 | 패널 내부 패딩 |
+
+간격 계단은 **4/8 원칙** — `gap-*` / `space-*` 는 1(4px)·2(8px)·3(12px)…
+스텝만. 패딩은 ESLint ban 대상이 아니라(대량 치환 없음) 위 토큰을
+`p-[var(--pad-card)]` 로 명시 참조한다.
+
+### 박스별 규격 표
+
+각 박스는 아래 토큰만 참조한다. 표 밖의 인라인 px/radius 재구현 금지.
+
+| 박스 | 높이 | radius | 패딩 | 타이포 단 |
+|---|---|---|---|---|
+| 크롬 타일 (ChromeTile) | `--chrome-tile-size` 44px | `--chrome-radius` 10px | `--chrome-inset` 정렬 | 아이콘 16px |
+| 상태 칩 (`CHROME_STATUS_CHIP_CLASS`) | 44px (타일과 동일) | `--chrome-radius` 10px | `px-3.5` | body / label |
+| 패널 (INDEX · 데이터시트) | 콘텐츠 | `--topology-v2-panel-radius` 12px (= `rounded-panel`) | `--pad-panel` | title 헤더 · body 행 |
+| 팝오버 (ego popover) | 콘텐츠 | `rounded-panel` | `--pad-card` | title + body/label |
+| 카드 (일반) | 콘텐츠 | `rounded-card` | `--pad-card` | title + body |
+| 배지·칩 (일반) | 콘텐츠 | `rounded-chip` | `px-2 py-0.5` | label (또는 caption) |
+| 입력 (input/search) | 콘텐츠 | `rounded-card` | `px-3 py-2` | body |
+| 버튼 (일반) | 콘텐츠 | `rounded-chip`~`card` | `px-3 py-1.5` | body |
+
+### 명시 예외 (램프 밖, 문서화된 것만)
+
+램프로 스냅하면 리디자인이 되는 소수 표면은 `// eslint-disable-next-line
+no-restricted-syntax -- <사유>` 로만 남긴다. 현재 등재분:
+
+- **헤어라인 반경 1~4px** — 2~14px 높이 progress/capacity 미터 트랙·fill
+  (`full-detail-a1-reach-panel`, `TopologyIndexTreeRow`, `FreshnessTab`,
+  reach 스텝 칩). chip(6px)로 올리면 pill 처럼 읽혀 유지.
+- **overlay sheet 반경 18~28px** — floating 카드/시트(`SearchPalette` 22px,
+  `GestureHint`/`PublicQuickActions` 18px, `ProjectDrawer` 20px, `detail-card`
+  28px 시그니처). panel(12px)로 내리면 표면 성격이 바뀌어 유지. `detail-card`
+  28px 은 `detail-card.test.tsx` 가 assert.
+- **display 숫자 34~40px** — 센서스 시그니처 대형 숫자(`InsightsHeroCensus`
+  40px), 반응형 히어로 강조(`DesktopVaultWelcome` md:34px). type 램프 상단
+  (hero 30px)을 넘는 의도적 display.
+
+### Lint 봉쇄
+
+`eslint.config.mjs` 의 `no-restricted-syntax` 가 신규 `text-[Npx]` ·
+`rounded-[Npx]` arbitrary 클래스를 차단한다.
+
+- **마이그레이션 완료 디렉토리 = error** — `src/views/{ontology-insights,
+  project-selector,ontology-edit,docs-vault}` · `src/shared/ui` · `src/widgets`
+  (R6 제외).
+- **미완(동시 작업) = warn** — `src/widgets/topology-map-v2` ·
+  `src/widgets/hero-header` · `src/views/home`. R6 치환 완료 시 error 로 승격.
+- 테스트 파일(`*.test.tsx`)은 렌더된 className 을 assert 하므로 룰에서 제외.
+
+### 모션 문법 인덱스
+
+기하와 짝인 모션 토큰(값 소스: `app/globals.css` 하단 `--topology-motion-*`):
+
+- **spring 패밀리** — `damping` / `response` 쌍으로 표기. 크롬 등장·카메라·
+  패널·드래그가 공유하는 단일 물리 어휘.
+- **크롬 등장** — 180ms.
+- **카메라/포커스 이동** — 200~420ms 구간.
+- `prefers-reduced-motion` 존중은 base layer 에서 이미 처리.
+
 ## 크롬 문법 (feat/chrome-system)
 
 Topology chrome (브랜드 pill · 상단 HUD lane · INDEX 패널 · 이후 좌측 내비 레일)이
@@ -1335,6 +1456,37 @@ Topology chrome (브랜드 pill · 상단 HUD lane · INDEX 패널 · 이후 좌
   마크) + 2줄 텍스트(타이틀 + census)를 담는 조합형 표면. `HeroCollapsed`.
 - **패널 (INDEX · 압축 데이터시트)** — 12px radius, 위 3계층보다 한 단 크고
   내부에 자체 헤더/바디/푸터 리듬을 가진 표면.
+
+### 박스 규격 (Geometry ladder) — "모든 곳 동일 적용" 계약
+
+상단 크롬 열(브랜드 필 · 상태 칩 · 유틸리티 lane)의 **모든 표면은 같은 기하
+토큰을 공유한다**. 규격을 인라인 px/hex 로 재구현하지 않고 아래 토큰만 참조한다
+(`design.md` "인라인 재구현 금지"). 값 소스: `app/globals.css` `--chrome-*` /
+`--topology-v2-panel-*`.
+
+| 규격 | 토큰 | 값 | 대상 |
+|---|---|---|---|
+| 크롬 타일 높이 | `--chrome-tile-size` | 44px | ChromeTile · ChromeChip · 상태 칩(영역·복귀·경로) — **단일 규격** |
+| 타일/칩/필 radius | `--chrome-radius` | 10px | 위 모든 크롬 표면 |
+| inner radius | `--chrome-radius-inner` | 7px | 타일 안에 중첩되는 소형 컨트롤 |
+| 키캡 radius | (kbd) | 4px | `<kbd>` 단축키 캡 |
+| 패널 radius | `--topology-v2-panel-radius` | 12px | INDEX 패널 · 압축 데이터시트 |
+| 보더 · 서피스 · 그림자 | `--chrome-border` · `--chrome-surface` · `--chrome-shadow` | — | 위 모든 크롬 표면 |
+
+- **버튼 칩 vs 상태 칩** — 클릭 액션은 `ChromeChip`(버튼), "지금 이 세계/이
+  경로" 를 알리는 비-버튼 상태 표시는 `CHROME_STATUS_CHIP_CLASS`
+  (`src/shared/ui/chrome-chip.tsx`)를 쓴다. 둘은 **같은 높이·radius·보더·서피스·
+  패딩(`px-3.5`)** 을 공유한다 — 형제로 나란히 서므로 규격이 어긋나면 즉시
+  눈에 띈다. 상태 칩 3종(`TopologyRealmChip` · `TopologyInsightsReturnChip` ·
+  `TopologyPathChip`)이 이 상수를 공유한다. 회귀 핀:
+  `src/views/home/ui/topology-chrome-chip-geometry.test.tsx`.
+- **⚠️ `topology-ui-scale` 중첩 금지 (S10 결함 1)** — `.topology-ui-scale` 은
+  `zoom` 으로 구현되고 `zoom` 은 **중첩 시 곱해진다**(≥1920px 에서 1.15 ×
+  1.15 ≈ 1.32). 스케일은 상단 lane 래퍼(`SearchHint` 등) **하나**가 소유한다.
+  그 안에 슬롯으로 들어가는 칩이 `topology-ui-scale` 을 자기 자신에 다시 걸면
+  형제보다 ~32% 커진다 — 소유자 1920 실보고의 "영역 칩이 검색/자동정렬보다
+  큼" 이 정확히 이 이중 적용이었다. 슬롯 컴포넌트는 스케일 클래스를 갖지
+  않는다(`CHROME_STATUS_CHIP_CLASS` 에 미포함).
 
 ### 좌측 내비 레일 (AppNavRail)
 
@@ -1400,6 +1552,7 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 
 ## Changelog
 
+- 2026-07-21: Geometry & Type Codex (R5) — `text-[Npx]`(29종·1,184건)를 7단 type 램프(`--text-caption`…`--text-hero` + `--tracking-*` 짝)로, arbitrary radius(18종)를 3단(`--radius-chip/card/panel`)으로 수렴. 박스별 규격 표 + 명시 예외 등재. ESLint `no-restricted-syntax` 가 신규 arbitrary 를 차단(마이그레이션 완료 디렉토리 error / R6 동시작업 dir warn). 시각은 ±1px 스냅 수준 유지(리디자인 아님); see "Geometry & Type Codex" 절
 - 2026-07-18: 크롬 시스템(feat/chrome-system) — `--chrome-*` 토큰 + ChromeTile/ChromeChip 컴포넌트 신설, 24px 정렬 레일로 브랜드 필/INDEX 패널/분석 패널 좌측 인셋 수렴, INDEX 패널 v2.1(헤더 "INDEX · N" + 접기, 트리 행 grid + Lucide chevron + 인셋 capacity meter, 푸터로 에이전트 동기화 이관); see `docs/prototypes/index-panel-v2-full.html`
 - 2026-07-18: Brand mark replaced — "헥사 별자리" (candidate A) across favicon, macOS app icon, and `BrandMark` shared component; see "Brand mark" section above
 - 2026-07-18: v2 — B2+ "Circuit × Constellation" 언어를 페이지 롤아웃 규범으로 승격 (언어 6축 · 토큰 tier 카탈로그 · surface class 별 do/don't · v2 금지 추가 · 롤아웃 가드 · 토큰 drift 부채 감사); see [`TOPOLOGY-V2-DESIGN.md`](./TOPOLOGY-V2-DESIGN.md)

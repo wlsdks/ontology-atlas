@@ -55,6 +55,27 @@
 - 검증: 순수 함수·완료 피드백·콜드스타트 가드·케밥 렌더/키보드 유닛 신설,
   ontology-insights vitest 75 green · tsc · ESLint 0 · i18n 키 parity + ICU.
 
+## 2026-07-23 — 데스크톱 첫 실행 "그냥 시작하기" (정직판 자동 vault)
+
+설치 앱 첫 실행(`FirstRunPage`)의 "폴더 열기 / 새 vault 만들기" 둘 다 여전히
+네이티브 폴더 픽커를 거쳐야 했다 — 결정 피로 하나를 더 없앤다.
+
+- **그냥 시작하기** (Tauri 런타임 한정) — 픽커 없이
+  `~/Documents/Ontology Atlas/<name>` 아래 실제 디스크 폴더를 자동 생성하고
+  곧장 연결. 이름이 이미 있으면 `-2`, `-3` ... 로 번호를 늘린다. **실디스크라
+  MCP/Claude Code 같은 에이전트가 그대로 접근 가능** — OPFS 를 쓰지 않는 게
+  설계의 핵심.
+- 연결 뒤에는 기존 "새 vault 만들기" 와 동일하게 `scaffoldOntology()` 로
+  스타터 5개 마크다운 + 에이전트 설정을 시드하고, 성공 토스트에 실제 생성
+  경로를 그대로 보여준다.
+- dev 빌드의 `?shell=desktop` 오버라이드로 이 페이지를 일반 브라우저에서 열어도
+  실제 Tauri invoke 브리지가 없으면 이 카드는 렌더되지 않는다(`isTauriVaultRuntime()`).
+- 새 Tauri 커맨드 `ensure_default_vault_parent_dir` 하나만 추가 — 폴더 생성
+  자체는 기존 `ensure_vault_directory`/`list_vault_directory` 재사용(새
+  파이프라인 최소화).
+- Cargo 유닛 테스트 1종 + vitest(경로 충돌 번호 증가 순수 함수·hook·render
+  gate) 신규. tsc·ESLint green.
+
 ## 2026-07-23 — 브랜드 시그니처 확장 (H6)
 
 육각형+앰버 브랜드 마크가 앱 아이콘과 지도 프로젝트 노드에만 있고 나머지
