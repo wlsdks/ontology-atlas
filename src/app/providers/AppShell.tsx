@@ -39,6 +39,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 function AppNavRailSlot() {
-  const { settingsSlot, hidden } = useNavRailShellValue();
-  return <AppNavRail settingsSlot={settingsSlot ?? undefined} hidden={hidden} />;
+  const { settingsSlot, hidden, contextHrefs } = useNavRailShellValue();
+  return (
+    <AppNavRail
+      settingsSlot={settingsSlot ?? undefined}
+      hidden={hidden}
+      contextHrefs={contextHrefs}
+    />
+  );
 }

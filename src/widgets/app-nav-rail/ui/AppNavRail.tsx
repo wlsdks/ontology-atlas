@@ -16,6 +16,7 @@ import { formatActivityAge } from "@/features/vault-ontology";
 import { cn } from "@/shared/lib/cn";
 import { BrandMark } from "@/shared/ui";
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
+import type { NavRailContextHrefs } from "../model/shell-slot-context";
 
 export interface AppNavRailProps {
   /** 설정 트리거(`TopologyV2SettingsGear` 등) — 레일 하단에 꽂는 슬롯. 완성된
@@ -28,6 +29,11 @@ export interface AppNavRailProps {
    *  레일이 layout 에 상주해 DOM identity 를 유지하는 게 perf/persistent-shell
    *  승격의 핵심이라 조건부 렌더링 대신 이 prop 을 쓴다. */
   hidden?: boolean;
+  /** 과제 ⑪ — 레일 항목 href 를 "지금 보던 것" 기준으로 바꿔 끼는 컨텍스트
+   *  오버라이드(현재는 문서함만). 지정된 키만 기본 href 를 대체하고, 나머지
+   *  항목/키 미지정 시 기존 정적 href 그대로 — `AppShell`이
+   *  `useNavRailShellValue()`로 읽은 값을 그대로 넘긴다. */
+  contextHrefs?: NavRailContextHrefs | null;
   className?: string;
 }
 
@@ -55,7 +61,7 @@ interface RailDestination {
  *
  * 표시 breakpoint 는 `lg` (≥1024px) — 그 아래는 `BottomTabBar` 가 담당한다.
  */
-export function AppNavRail({ settingsSlot, hidden, className }: AppNavRailProps) {
+export function AppNavRail({ settingsSlot, hidden, contextHrefs, className }: AppNavRailProps) {
   const t = useTranslations("navRail");
   const tLive = useTranslations("liveActivity");
   const pathname = usePathname() ?? "/";
@@ -99,7 +105,7 @@ export function AppNavRail({ settingsSlot, hidden, className }: AppNavRailProps)
 
   const destinations: RailDestination[] = [
     { id: "map", href: "/topology/", label: t("map"), Icon: MapIcon },
-    { id: "docs", href: "/docs/", label: t("docs"), Icon: BookOpen },
+    { id: "docs", href: contextHrefs?.docs ?? "/docs/", label: t("docs"), Icon: BookOpen },
     { id: "builder", href: "/ontology/edit/", label: t("builder"), Icon: GitBranch },
     { id: "insights", href: "/ontology/insights/", label: t("insights"), Icon: BarChart3 },
     { id: "projects", href: "/projects/", label: t("projects"), Icon: FolderKanban },
