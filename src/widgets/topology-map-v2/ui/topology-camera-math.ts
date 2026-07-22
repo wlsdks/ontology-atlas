@@ -135,12 +135,29 @@ interface SafeInsets {
   bottom: number;
 }
 
+/**
+ * 검수 Pass B 결함 1 (2026-07-23) — 오버뷰 핏은 노드 지오메트리 bounds 만
+ * safe 영역에 맞춰, 최하단 스파인 노드의 라벨 anchor(= 노드 아래
+ * `radius + LABEL_OFFSET`, frame-draw:794 — 컬은 폰트 높이가 아니라 anchor
+ * 만 본다)가 라벨 safe-rect 컬 라인 바로 밖으로 밀려 1440×900 기본 뷰에서만
+ * 조용히 사라졌다 (1920 은 가로 제약 핏이라 세로 여유가 남아 미발현). 핏
+ * 계산에서만 하단 인셋에 여유를 예약한다 — 라벨 컬 rect 와 카메라 이동
+ * 가능 영역은 불변. 값 = max LABEL_OFFSET(project 20) + 슬랙 4 (Guardian
+ * 산술 검증 — `render/labels.ts` LABEL_OFFSET 변경 시 함께 갱신할 것).
+ */
+const OVERVIEW_LABEL_BOTTOM_ALLOWANCE = 24;
+
 function readSafeInsets(tokens: SafeInsetTokens): SafeInsets {
   return {
     left: tokens.safeInsetLeft ?? 0,
     right: tokens.safeInsetRight ?? 0,
     top: tokens.safeInsetTop ?? 0,
-    bottom: tokens.safeInsetBottom ?? 0,
+    // 인셋 미지정(= 크롬 없는 순수 핏 테스트 계약)은 종전과 동일하게 0 —
+    // 라벨 여유는 실제 하단 크롬 인셋이 존재할 때만 얹는다.
+    bottom:
+      tokens.safeInsetBottom == null
+        ? 0
+        : tokens.safeInsetBottom + OVERVIEW_LABEL_BOTTOM_ALLOWANCE,
   };
 }
 

@@ -440,12 +440,15 @@ export function TopologyIndexPanel({
 
       {/* ④ 살아있는 지도 드리프트 — "먼지 앉은 노드 N" 조용한 행. dusty
           판정(HomePage `deriveDustySlugs`, vault mtime 중앙값+30일 이중
-          조건)의 카운트만 받고, 클릭은 /ontology/insights 신선도 탭 딥링크.
-          0 이면 행 자체가 없다(성공 배지 금지). 중립 톤만 — 방치는 경고가
-          아니라 지도의 상태다. */}
+          조건)의 카운트만 받는다. 0 이면 행 자체가 없다(성공 배지 금지).
+          중립 톤만 — 방치는 경고가 아니라 지도의 상태다.
+          목적지는 할 일 탭 (페르소나 재조사 2026-07-23 최대 마찰 항목) —
+          신선도 탭은 도메인 단위 최신성 히트스트립이라 "51개가 오래 방치"
+          라는 약속과 정반대 그림("오늘 다 갱신")으로 읽혔다. 실제 오래된
+          노드 목록("오래 안 바뀐 허브" + 오늘의 손질)은 할 일 탭이 답한다. */}
       {dustyNodeCount && dustyNodeCount > 0 ? (
         <Link
-          href="/ontology/insights?tab=freshness"
+          href="/ontology/insights?tab=do-next"
           data-testid="topology-index-dusty-nodes"
           className="mt-2 flex shrink-0 items-center gap-2 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] px-2 py-1.5 text-left text-label transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
         >

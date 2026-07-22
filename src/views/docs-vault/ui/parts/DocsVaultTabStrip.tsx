@@ -55,12 +55,33 @@ export function DocsVaultTabStrip({
     const reduced =
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    activeTabRef.current?.scrollIntoView({
-      behavior: reduced ? "auto" : "smooth",
-      inline: "nearest",
-      block: "nearest",
+    // 검수 Pass B 결함 2 (2026-07-23) — scrollIntoView(inline:"nearest") 는
+    // 탭 추가로 스트립 폭이 같은 프레임에 변하면 활성 탭을 절반만 노출한 채
+    // 멈출 수 있다(EN 1440 실측: 말줄임 없이 글리프가 스트립 경계에서 잘리고
+    // × 도 안 보임 — flaky). 레이아웃 확정 후(rAF) scrollLeft 를 직접 계산해
+    // 활성 탭 전체가 항상 뷰포트 안에 오도록 결정론화한다. 탭 개수도 의존성에
+    // 포함 — 새 탭이 열려 폭이 변한 프레임에도 재보정된다.
+    const frame = requestAnimationFrame(() => {
+      const el = activeTabRef.current;
+      const strip = el?.closest("nav");
+      if (!el || !strip) return;
+      const cell = el.parentElement ?? el; // 탭 칼럼(wrapper) 기준 — 닫기 버튼 포함 전폭.
+      // Guardian 교정 — offsetLeft 의 offsetParent 는 nav 가 아니라 상위
+      // header(relative) 라 zone-l 폭만큼 인플레이트된다. rect 차이로
+      // 스크롤러 콘텐츠 좌표를 직접 계산해 중간 탭 활성화에서도 정확히 맞춘다.
+      const cellRect = cell.getBoundingClientRect();
+      const stripRect = strip.getBoundingClientRect();
+      const left = cellRect.left - stripRect.left + strip.scrollLeft;
+      const right = left + cellRect.width;
+      let target = strip.scrollLeft;
+      if (right > strip.scrollLeft + strip.clientWidth) target = right - strip.clientWidth;
+      if (left < target) target = left;
+      if (target !== strip.scrollLeft) {
+        strip.scrollTo({ left: target, behavior: reduced ? "auto" : "smooth" });
+      }
     });
-  }, [activeSlug]);
+    return () => cancelAnimationFrame(frame);
+  }, [activeSlug, tabs.length]);
 
   if (tabs.length === 0) return null;
 
