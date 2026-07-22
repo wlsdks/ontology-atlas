@@ -151,10 +151,17 @@ export interface TopologyMapV2Props {
   realmEnterLabel?: string;
   /** S4 — 궤도 버튼 호버 마이크로 툴팁 문구 ("이 노드의 영역만 펼쳐요"). */
   realmEnterTooltip?: string;
+  /**
+   * H3 P2 — 캔버스 접근성 라벨(i18n, HomePage 주입). canvas 는 회화 픽셀이라
+   * 스크린리더에 빈 그래픽으로 읽힌다 → `role="img"` + 이 라벨로 "무엇인지 +
+   * 키보드 대안(INDEX 패널)"을 한 문장으로 알린다. 생략하면 role/label 을 안
+   * 단다(회귀 0).
+   */
+  canvasLabel?: string;
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, canvasLabel } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -199,6 +206,8 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       <canvas
         ref={canvasRef}
         data-testid="topology-map-v2-canvas"
+        role={canvasLabel ? "img" : undefined}
+        aria-label={canvasLabel}
         style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

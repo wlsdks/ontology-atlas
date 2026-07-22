@@ -2380,6 +2380,9 @@
     "edgeHover": {
       "clickHint": "Click for details · source doc"
     },
+    "canvas": {
+      "ariaLabel": "Ontology map — the INDEX panel lets you explore the same information by keyboard"
+    },
     "cluster": {
       "hint": "Dense groups are folded into +N chips — click a chip to expand that group, click again to collapse.",
       "expandAria": "Expand {count} hidden items",

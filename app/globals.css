@@ -1587,7 +1587,13 @@
        패널(#17171c) 위 4.02:1 로 10px AA(4.5) 미달 → #868690 으로 넛지(≈4.9:1),
        primary 대비 여전히 recede. Guardian follow-up #2. */
     --topology-v2-panel-text-tertiary: #868690;
-    --topology-v2-panel-text-quaternary: #55555d;
+    /* quaternary = 미터 서브라벨·"지도에 없는 문서" 힌트·엣지 선언 출처 라벨
+       등 저강조 정보 텍스트. #55555d 는 다크 패널(#17171c) 위 ~2.5:1 로 AA(4.5)
+       크게 미달(접근성 감사 H3 P1) → #82828a (~4.7:1) 로 상향. tertiary(#868690,
+       ~4.9:1) 바로 아래 명도를 유지해 4단 텍스트 사다리 순서는 보존한다(무채
+       명도만 조정, 새 hue 없음). 검색 아이콘/셰브론 같은 장식 소비처는 살짝
+       밝아질 뿐 리듬 훼손 최소. 토큰 변경이라 dev 서버(:3107) 재시작 필요. */
+    --topology-v2-panel-text-quaternary: #82828a;
     /* 연결 그룹 trace 미니라인 — 캔버스 엣지와 같은 계열(contains 실선/depends 점선) */
     /* A1 전체 상세 인디고 보더 — 기존 rgba(94,106,210,0.5) 리터럴 2곳의 토큰化
        (Guardian A1 follow-up P2). */

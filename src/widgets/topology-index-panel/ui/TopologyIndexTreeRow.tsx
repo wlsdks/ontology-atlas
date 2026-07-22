@@ -33,6 +33,12 @@ export interface TopologyIndexTreeRowProps {
   onToggleOpen: (nodeId: string) => void;
   onSelect: (nodeId: string) => void;
   selectedId: string | null;
+  /**
+   * H3 P0 — 로빙 tabindex 의 단일 진입점. 이 id 와 같은 행만 `tabIndex=0`,
+   * 나머지는 `-1` 이라 트리 전체가 Tab 스톱 하나로 접힌다(WAI-ARIA tree).
+   * 형제 이동은 패널 컨테이너의 ArrowUp/Down 핸들러가 담당한다.
+   */
+  activeRowId: string | null;
   changedSlugs: ReadonlySet<string>;
   /** P4b — fresh heartbeat 의 focus 와 일치하는 노드 하나(있다면). */
   agentAttributedNodeId?: string | null;
@@ -72,6 +78,7 @@ export function TopologyIndexTreeRow({
   onToggleOpen,
   onSelect,
   selectedId,
+  activeRowId,
   changedSlugs,
   agentAttributedNodeId = null,
   maxDomainDescendantCount,
@@ -123,7 +130,10 @@ export function TopologyIndexTreeRow({
         role="treeitem"
         aria-selected={selected}
         aria-expanded={hasChildren ? open : undefined}
-        tabIndex={0}
+        // H3 P0 — 로빙 tabindex: 활성 행만 Tab 진입점, 나머지는 -1(방향키로만
+        // 도달). `focus()` 는 tabIndex=-1 이어도 프로그램적으로는 먹으므로
+        // 패널의 Arrow 핸들러가 어느 행이든 포커스를 옮길 수 있다.
+        tabIndex={node.id === activeRowId ? 0 : -1}
         data-index-row={node.id}
         data-testid="topology-index-row"
         onClick={() => onSelect(node.id)}
@@ -224,6 +234,7 @@ export function TopologyIndexTreeRow({
               onToggleOpen={onToggleOpen}
               onSelect={onSelect}
               selectedId={selectedId}
+              activeRowId={activeRowId}
               changedSlugs={changedSlugs}
               agentAttributedNodeId={agentAttributedNodeId}
               maxDomainDescendantCount={maxDomainDescendantCount}
