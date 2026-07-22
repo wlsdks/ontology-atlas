@@ -24,7 +24,7 @@ import {
   useFirstRunSampleModeSettled,
 } from "@/features/first-run-starter";
 import { HeroCollapsed } from "@/widgets/hero-header";
-import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
+import { useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { SearchHint } from "@/widgets/search-hint";
@@ -149,6 +149,7 @@ import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
+import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
 import { AgentConnectSheet } from "@/widgets/agent-connect";
@@ -1174,6 +1175,17 @@ export function HomePage() {
     updatedAgoNowMs,
     formatUpdatedLabel,
   });
+  // 과제 ⑪ — LNB 컨텍스트 이월. 노드를 선택한 채 좌측 레일의 "문서함"으로
+  // 이동하면 선택과 무관한 `/docs/` 기본 화면이 뜨던 문제 — 데이터시트가
+  // 이미 파생해 둔 `documentHref`(vault 파일 경로 `?slug=` 딥링크, H5 계약)를
+  // `buildNavRailContextHrefs` 로 그대로 레일에 등록한다. 새 파라미터/변환
+  // 발명 없음. 선택이 없으면 `documentHref`가 null 이라 레일은 기본 href
+  // 그대로(변화 0).
+  const navRailContextHrefs = useMemo(
+    () => buildNavRailContextHrefs(v2DatasheetModel?.documentHref ?? null),
+    [v2DatasheetModel?.documentHref],
+  );
+  useNavRailContextHrefs(navRailContextHrefs);
   const copyV2NodeHandoff = useCallback(
     async (text: string) => {
       const ok = await copyText(text);

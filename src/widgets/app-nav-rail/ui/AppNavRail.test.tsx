@@ -145,4 +145,45 @@ describe("AppNavRail", () => {
     renderRail(<AppNavRail settingsSlot={<button type="button">설정 슬롯</button>} />);
     expect(screen.getByRole("button", { name: "설정 슬롯" })).toBeInTheDocument();
   });
+
+  // 과제 ⑪ — LNB 컨텍스트 이월. 지도에서 노드를 선택한 채 문서함 항목으로
+  // 이동하면 그 노드의 문서가 바로 열려야 한다(선택과 무관한 기본 화면 금지).
+  it("overrides the docs item's href with contextHrefs.docs when provided", () => {
+    renderRail(
+      <AppNavRail contextHrefs={{ docs: "/docs/?slug=capabilities/mcp-server" }} />,
+    );
+    expect(screen.getByTestId("app-nav-rail-item-docs")).toHaveAttribute(
+      "href",
+      "/docs/?slug=capabilities/mcp-server",
+    );
+  });
+
+  it("falls back to the default '/docs/' href when contextHrefs is absent", () => {
+    renderRail();
+    expect(screen.getByTestId("app-nav-rail-item-docs")).toHaveAttribute("href", "/docs/");
+  });
+
+  it("falls back to the default '/docs/' href when contextHrefs.docs is undefined", () => {
+    renderRail(<AppNavRail contextHrefs={{}} />);
+    expect(screen.getByTestId("app-nav-rail-item-docs")).toHaveAttribute("href", "/docs/");
+  });
+
+  it("leaves every other destination's href unchanged when contextHrefs.docs is set", () => {
+    renderRail(
+      <AppNavRail contextHrefs={{ docs: "/docs/?slug=capabilities/mcp-server" }} />,
+    );
+    expect(screen.getByTestId("app-nav-rail-item-map")).toHaveAttribute("href", "/topology/");
+    expect(screen.getByTestId("app-nav-rail-item-builder")).toHaveAttribute(
+      "href",
+      "/ontology/edit/",
+    );
+    expect(screen.getByTestId("app-nav-rail-item-insights")).toHaveAttribute(
+      "href",
+      "/ontology/insights/",
+    );
+    expect(screen.getByTestId("app-nav-rail-item-projects")).toHaveAttribute(
+      "href",
+      "/projects/",
+    );
+  });
 });

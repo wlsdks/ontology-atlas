@@ -18,15 +18,31 @@ import {
  * Context 로 해결한다 — 페이지는 훅으로 값을 등록만 하고, 레일은 그 값을
  * 그대로 렌더한다. 레일 컴포넌트 자체는 마운트/언마운트되지 않는다(hidden 은
  * CSS 로만 처리 — `AppNavRail`의 `hidden` prop 참고).
+ *
+ * `contextHrefs` (과제 ⑪, LNB 컨텍스트 이월) 도 같은 역방향 흐름 — 지형도가
+ * 노드를 선택한 채로 좌측 레일의 "문서함" 항목으로 이동하면, 선택과 무관한
+ * `/docs/` 기본 화면이 뜨는 문제. 지형도가 선택 노드의 문서 딥링크
+ * (`buildDocsVaultHref`, 기존 데이터시트가 이미 파생하는 값)를 여기 등록하면
+ * 레일이 "문서함" 항목의 href 를 그 딥링크로 바꿔 낀다. 선택이 없으면(또는
+ * 다른 페이지로 이동하면 effect cleanup 이 비워) 기존 `/docs/` 기본 href 로
+ * 그대로 복귀 — 시각/기본 동작 변화 0.
  */
 interface NavRailShellState {
   settingsSlot: ReactNode | null;
   hidden: boolean;
+  contextHrefs: NavRailContextHrefs | null;
+}
+
+/** 레일 항목 id → 컨텍스트 href. 현재는 문서함만 — 인사이트는 컨텍스트
+ *  필요성이 불명확해 이번 슬라이스에서 제외(과제 ⑪ 지시). */
+export interface NavRailContextHrefs {
+  docs?: string;
 }
 
 interface NavRailShellContextValue extends NavRailShellState {
   setSettingsSlot: (slot: ReactNode | null) => void;
   setHidden: (hidden: boolean) => void;
+  setContextHrefs: (hrefs: NavRailContextHrefs | null) => void;
 }
 
 const NavRailShellContext = createContext<NavRailShellContextValue | null>(null);
@@ -34,10 +50,11 @@ const NavRailShellContext = createContext<NavRailShellContextValue | null>(null)
 export function NavRailShellProvider({ children }: { children: ReactNode }) {
   const [settingsSlot, setSettingsSlot] = useState<ReactNode | null>(null);
   const [hidden, setHidden] = useState(false);
+  const [contextHrefs, setContextHrefs] = useState<NavRailContextHrefs | null>(null);
 
   const value = useMemo(
-    () => ({ settingsSlot, hidden, setSettingsSlot, setHidden }),
-    [settingsSlot, hidden],
+    () => ({ settingsSlot, hidden, contextHrefs, setSettingsSlot, setHidden, setContextHrefs }),
+    [settingsSlot, hidden, contextHrefs],
   );
 
   return (
@@ -57,10 +74,10 @@ function useNavRailShellContext(): NavRailShellContextValue {
   return ctx;
 }
 
-/** 레일 자신이 렌더할 현재 슬롯/hidden 값 — `AppShell` 내부에서만 사용. */
+/** 레일 자신이 렌더할 현재 슬롯/hidden/contextHrefs 값 — `AppShell` 내부에서만 사용. */
 export function useNavRailShellValue(): NavRailShellState {
-  const { settingsSlot, hidden } = useNavRailShellContext();
-  return { settingsSlot, hidden };
+  const { settingsSlot, hidden, contextHrefs } = useNavRailShellContext();
+  return { settingsSlot, hidden, contextHrefs };
 }
 
 /**
@@ -88,4 +105,20 @@ export function useNavRailHidden(hidden: boolean): void {
     setHidden(hidden);
     return () => setHidden(false);
   }, [hidden, setHidden]);
+}
+
+/**
+ * 과제 ⑪ — 페이지가 레일 항목의 href 를 "지금 보던 것" 기준으로 바꿔 낄 때
+ * 쓴다(예: 지형도가 노드를 선택한 동안 "문서함" 항목을 그 노드의 문서
+ * 딥링크로). `hrefs`가 `null`이거나 특정 키가 비어 있으면 그 항목은 레일의
+ * 기본 href 그대로 — 선택 해제/다른 페이지 이동 시 effect cleanup 이 자동으로
+ * 비운다(`useNavRailSettingsSlot`과 동일 패턴).
+ */
+export function useNavRailContextHrefs(hrefs: NavRailContextHrefs | null): void {
+  const { setContextHrefs } = useNavRailShellContext();
+  useEffect(() => {
+    setContextHrefs(hrefs);
+    return () => setContextHrefs(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hrefs]);
 }
