@@ -1,6 +1,6 @@
-import { Link } from "@/i18n/navigation";
 import { formatDate } from "@/shared/lib/format-date";
 import { TopologyV2KindGlyph } from "@/shared/ui";
+import { RecentNodeRow } from "@/widgets/recent-node-row";
 import type { DomainFreshnessRow, RecentUpdateRow } from "../../lib/freshness";
 
 const LEVEL_BACKGROUND: Record<0 | 1 | 2 | 3, string> = {
@@ -174,28 +174,19 @@ export function FreshnessTab({
             <p className="py-2 text-body text-[color:var(--color-text-quaternary)]">{labels.noRecentUpdates}</p>
           ) : (
             recent.map((row) => (
-              <Link
+              <RecentNodeRow
                 key={row.nodeId}
+                kind={row.kind}
+                title={row.title}
+                subtitle={`${kindLabel(row.kind)}${row.domainTitle ? ` · ${row.domainTitle}` : ""}`}
+                // P4-③ — 로컬 타임존 기준 날짜(`formatDate`). 이전엔
+                // toISOString() 이 UTC 로 렌더해 자정 부근 갱신이 하루
+                // 전날짜로 표시됐다(예: 03:12 KST → UTC 로는 전날).
+                trailing={formatDate(row.updatedAt)}
                 href={recentLink.href(row.nodeId)}
-                aria-label={recentLink.ariaLabel(row.title)}
-                data-testid="insights-freshness-row-link"
-                className="-mx-1.5 flex items-center gap-2.5 rounded-md border-t border-[color:var(--color-divider)] px-1.5 py-2.5 transition-colors first:border-t-0 hover:bg-[color:var(--color-overlay-1)]"
-              >
-                <TopologyV2KindGlyph kind={row.kind} size={14} />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-body text-[color:var(--color-text-primary)]">{row.title}</span>
-                  <span className="block text-label text-[color:var(--color-text-quaternary)]">
-                    {kindLabel(row.kind)}
-                    {row.domainTitle ? ` · ${row.domainTitle}` : ""}
-                  </span>
-                </span>
-                <span className="flex-none font-mono text-label tabular-nums text-[color:var(--color-text-tertiary)]">
-                  {/* P4-③ — 로컬 타임존 기준 날짜(`formatDate`). 이전엔
-                      toISOString() 이 UTC 로 렌더해 자정 부근 갱신이 하루
-                      전날짜로 표시됐다(예: 03:12 KST → UTC 로는 전날). */}
-                  {formatDate(row.updatedAt)}
-                </span>
-              </Link>
+                ariaLabel={recentLink.ariaLabel(row.title)}
+                testId="insights-freshness-row-link"
+              />
             ))
           )}
         </div>

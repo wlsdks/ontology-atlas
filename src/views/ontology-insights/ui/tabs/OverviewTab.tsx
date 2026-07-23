@@ -1,5 +1,6 @@
 import { TopologyV2KindGlyph } from "@/shared/ui";
 import { getOntologyKindTone } from "@/entities/ontology-class";
+import { DomainCapacityBar } from "@/widgets/domain-capacity-bar";
 import { InsightsHeroCensus, type InsightsHeroCensusLabels } from "../parts/InsightsHeroCensus";
 import type { CensusHealthSummary } from "../../lib/census-health";
 import type { DomainCapacityRow } from "../../lib/domain-capacity";
@@ -118,36 +119,14 @@ export function OverviewTab({
             <p className="mt-3.5 flex-1 text-body text-[color:var(--color-text-quaternary)]">{labels.noDomains}</p>
           ) : (
             <div className="mt-3.5 flex flex-1 flex-col justify-evenly gap-1">
-              {domainRows.map((row) => {
-                const capWidth = domainMax > 0 ? (row.capabilityCount / domainMax) * 100 : 0;
-                const elWidth = domainMax > 0 ? (row.elementCount / domainMax) * 100 : 0;
-                return (
-                  <div key={row.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-0.5">
-                    <span className="flex w-full shrink-0 items-center gap-2 truncate text-body-lg text-[color:var(--color-text-secondary)] sm:w-[220px]">
-                      <TopologyV2KindGlyph kind="domain" size={15} />
-                      <span className="truncate">{row.title}</span>
-                    </span>
-                    <span className="flex h-2 min-w-[48px] flex-1 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
-                      <span
-                        className="block h-full"
-                        style={{ width: `${capWidth}%`, backgroundColor: getOntologyKindTone("capability").fill }}
-                      />
-                      <span
-                        className="block h-full"
-                        style={{ width: `${elWidth}%`, backgroundColor: getOntologyKindTone("element").fill }}
-                      />
-                    </span>
-                    <span className="flex-none text-right">
-                      <span className="block font-mono text-title tabular-nums text-[color:var(--topology-v2-numeral-face)]">
-                        {row.total}
-                      </span>
-                      <span className="block font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                        {labels.capabilityUnit} {row.capabilityCount} · {labels.elementUnit} {row.elementCount}
-                      </span>
-                    </span>
-                  </div>
-                );
-              })}
+              {domainRows.map((row) => (
+                <DomainCapacityBar
+                  key={row.id}
+                  row={row}
+                  maxTotal={domainMax}
+                  labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
+                />
+              ))}
             </div>
           )}
           <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">

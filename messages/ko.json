@@ -1612,6 +1612,7 @@
     "insights": {
       "title": "그래프 인사이트",
       "subtitle": "내 폴더 전체를 한눈에 — 모든 숫자는 문서에서 자동 계산됩니다",
+      "audienceBanner": "이 화면은 온톨로지를 관리하는 사람과 AI 에이전트를 위한 정비 보드예요.",
       "censusConcepts": "개념",
       "censusRelations": "관계",
       "censusDomains": "도메인",
@@ -1751,7 +1752,6 @@
       "factElement": "요소",
       "factDocument": "문서",
       "factRelations": "관계",
-      "domainRowSummary": "{total} — 역량 {cap} · 요소 {el}",
       "footDetail": "상세 →",
       "footTopologyView": "지도에서 보기 →",
       "footUpdated": "갱신 {date} · {path}",
