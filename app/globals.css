@@ -1528,7 +1528,10 @@
        축 + 휠 줌 중 팬)와 프로그램적 전환(포커스 다이브 · 포커스 해제 ·
        재배치 · 지도 전체 맞추기)을 분리 — 전자는 crisp(0.40s), 후자는 여전히
        cinematic(1.0s)하지만 예전보다 빠르다. */
-    --topology-v2-camera-spring-angfreq-interactive: 12;
+    /* 12 → 15 (소유자 실보고 2026-07-24: "줌이 조금 느림, 약간만 빠르게")
+       — 인터랙티브 정착 0.40s → ≈0.32s (25% 빠름). 크리스프 유지, 오버슛
+       없음(damping 1.0 임계). 프로그램 전환(다이브/복귀)은 4.7 그대로. */
+    --topology-v2-camera-spring-angfreq-interactive: 15;
     --topology-v2-camera-spring-angfreq-transition: 4.7;
     --topology-v2-camera-damping-default: 1.0;
     --topology-v2-camera-damping-flick: 0.82;

@@ -48,7 +48,9 @@ export function normalizeWheelDeltaY(deltaY: number, deltaMode: number, viewport
  * `--topology-v2-*` token (same "device-input tuning has no design token"
  * precedent as `WHEEL_LINE_HEIGHT_PX` above).
  */
-export const WHEEL_ZOOM_SENSITIVITY = 0.002;
+// 0.0020 → 0.0023 (소유자 실보고 2026-07-24, "약간만 빠르게") — 노치당
+// ~1.27x → ~1.32x. 정착 속도(angfreq 15)와 함께 줌 체감을 소폭 올린다.
+export const WHEEL_ZOOM_SENSITIVITY = 0.0023;
 
 /**
  * Converts a normalized pixel-equivalent wheel delta into a multiplicative
