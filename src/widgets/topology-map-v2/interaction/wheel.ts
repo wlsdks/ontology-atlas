@@ -58,3 +58,22 @@ export const WHEEL_ZOOM_SENSITIVITY = 0.002;
 export function computeWheelZoomFactor(pixelDeltaY: number, sensitivity: number = WHEEL_ZOOM_SENSITIVITY): number {
   return Math.exp(-pixelDeltaY * sensitivity);
 }
+
+/**
+ * 트랙패드 글라이드 가드 (소유자 실보고 2026-07-23 — "노드 연결선에 마우스
+ * 올리면 화면이 움직인다/흔들린다"): macOS 트랙패드는 두 손가락이 얹힌 채
+ * 미끄러지거나 관성이 남으면 |deltaY| 1~3px 의 미세 wheel 이벤트를 흘린다.
+ * 이 노이즈가 전부 줌으로 합성되면 커서를 올려두기만 해도 화면이 떨린다.
+ * 의도적 제스처와의 구분:
+ * - 핀치 줌은 브라우저가 `ctrlKey: true` wheel 로 전달 — 항상 통과.
+ * - 마우스 노치/의도적 두-손가락 스크롤은 정규화 후 |delta| 가 크다 — 통과.
+ * - 그 외 미세 델타만 무시한다. 문턱은 장치 입력 사실이라 디자인 토큰 없음
+ *   (`WHEEL_LINE_HEIGHT_PX` 선례).
+ */
+export const WHEEL_GLIDE_IGNORE_THRESHOLD_PX = 4;
+
+/** 미세 글라이드 노이즈면 true — 호출부는 줌을 건너뛴다 (핀치는 예외). */
+export function shouldIgnoreWheelGlide(pixelDeltaY: number, ctrlKey: boolean): boolean {
+  if (ctrlKey) return false;
+  return Math.abs(pixelDeltaY) < WHEEL_GLIDE_IGNORE_THRESHOLD_PX;
+}
