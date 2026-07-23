@@ -48,7 +48,7 @@
 
 ### "MCP 가 뭐예요?"
 
-> Model Context Protocol — Anthropic 이 만든 LLM 도구 호출 표준. JSON-RPC over stdio. Claude Code / Cursor / Continue 등이 지원. 우리 서버는 25 tools (read 16 + write 9) 로 vault read/write.
+> Model Context Protocol — AI agent 도구 호출 표준. JSON-RPC over stdio. Claude Code / Cursor / Codex 등이 지원. 우리 서버는 31 tools (read 18 + write 13) 로 vault read/write와 안전한 로컬 Git checkpoint를 제공한다.
 
 ### "백엔드는 뭘 쓰나요?"
 

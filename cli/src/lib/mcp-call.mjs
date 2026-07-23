@@ -79,7 +79,11 @@ export function callMcpTool(vaultRoot, toolName, args = {}) {
     const timeoutMs = mcpCallTimeoutMs();
     const killGraceMs = mcpKillGraceMs();
     const proc = spawn(process.execPath, [entry], {
-      env: { ...process.env, OATLAS_VAULT: vaultRoot },
+      env: {
+        ...process.env,
+        OATLAS_VAULT: vaultRoot,
+        OATLAS_REPO_ROOT: process.env.OATLAS_REPO_ROOT || process.cwd(),
+      },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 

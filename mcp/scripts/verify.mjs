@@ -15,7 +15,7 @@
  * 검증 항목:
  *   1. parser smoke test (parser.test.mjs) 통과
  *   2. server boot — initialize JSON-RPC 응답
- *   3. tools/list — 24 도구 모두 노출 + graph-query/write-relation enum schema contract + strict tool-name/argument/enum runtime smoke
+ *   3. tools/list — complete tool inventory + graph-query/write-relation enum schema contract + strict tool-name/argument/enum runtime smoke
  *   4. tools/call list_concepts — vault 노드 수 출력
  *   5. tools/call list_concepts(kind=project) — project_scope gate probe
  *   6. tools/call get_concept — single-node detail + structuredContent contract
@@ -141,6 +141,8 @@ export function cleanupAbsorbFixture() {
 }
 
 export const EXPECTED_READ_TOOLS = [
+  'connection_info',
+  'git_status',
   'list_concepts',
   'get_concept',
   'get_concepts',
@@ -164,23 +166,32 @@ export const EXPECTED_WRITE_TOOLS = [
   'add_concepts',
   'add_relation',
   'add_relations',
+  'remove_relation',
+  'replace_relation',
   'patch_concept',
   'delete_concept',
   'rename_concept',
+  'reclassify_concept',
   'merge_concepts',
   'absorb_document',
+  'git_snapshot',
 ];
 
 export const EXPECTED_TOOLS = [...EXPECTED_READ_TOOLS, ...EXPECTED_WRITE_TOOLS];
 export const EXPECTED_DESTRUCTIVE_TOOLS = [
+  'git_snapshot',
   'delete_concept',
   'merge_concepts',
   'rename_concept',
+  'remove_relation',
+  'replace_relation',
+  'reclassify_concept',
   'absorb_document',
 ];
 export const EXPECTED_IDEMPOTENT_TOOLS = [
   'add_relation',
   'add_relations',
+  'remove_relation',
 ];
 
 export function expectedToolSplitLabel() {
@@ -5361,7 +5372,7 @@ export function batchRowIsolationFailure(response, key, label) {
         ['titel', 'title'],
         ['domian', 'domain'],
       ]) ||
-      !sameArray(unknownFieldRow.allowedFields, ['slug', 'kind', 'title', 'domain', 'capabilities', 'elements', 'body']) ||
+      !sameArray(unknownFieldRow.allowedFields, ['slug', 'kind', 'title', 'domain', 'capabilities', 'elements', 'path', 'body']) ||
       !sameArray(unknownFieldRow.receivedFields, ['domian', 'kind', 'slug', 'titel', 'title'])
     )
   ) {
@@ -5377,7 +5388,7 @@ export function batchRowIsolationFailure(response, key, label) {
       singleUnknownFieldRow.rowName !== 'concepts[4]' ||
       singleUnknownFieldRow.receivedField !== 'titel' ||
       !sameUnknownFields(singleUnknownFieldRow.unknownFields, [['titel', 'title']]) ||
-      !sameArray(singleUnknownFieldRow.allowedFields, ['slug', 'kind', 'title', 'domain', 'capabilities', 'elements', 'body']) ||
+      !sameArray(singleUnknownFieldRow.allowedFields, ['slug', 'kind', 'title', 'domain', 'capabilities', 'elements', 'path', 'body']) ||
       !sameArray(singleUnknownFieldRow.receivedFields, ['kind', 'slug', 'titel', 'title'])
     )
   ) {

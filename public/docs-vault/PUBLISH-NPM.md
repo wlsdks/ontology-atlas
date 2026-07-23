@@ -16,12 +16,12 @@ This project publishes two npm packages:
 
 ## Pre-flight check (already done, kept for reference)
 
-Both npm packages require Node 20+. Verify the maintainer shell and release
+Both npm packages require Node 24+. Verify the maintainer shell and release
 smoke shell use the same floor:
 
 ```bash
 node --version
-# must print v20.x or higher
+# must print v24.x
 ```
 
 `npm pack --dry-run` shows exactly which files would be published:
@@ -183,7 +183,7 @@ In `~/.config/claude-code/mcp.json` (or wherever your agent reads MCP config):
 }
 ```
 
-Restart Claude Code. The tool list should show the `ontology-atlas` namespace with 25 tools.
+Restart Claude Code. The tool list should show the `ontology-atlas` namespace with 31 tools.
 
 ### B) Start a user vault (CLI path)
 

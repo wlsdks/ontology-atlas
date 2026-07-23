@@ -1,18 +1,22 @@
 ---
 slug: capabilities/mcp-server
 kind: capability
-title: MCP Server (25 tools)
+title: MCP Server (31 tools)
 domain: ai-agent-partner
 dependencies: [capabilities/frontmatter-to-ontology]
-elements: [mcp/scripts/json-rpc-lines.mjs, mcp/scripts/verify.mjs, mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/integration.test.mjs, mcp/src/json-rpc-lines.test.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/suggestions.mjs, mcp/src/suggestions.test.mjs, mcp/src/vault.mjs, mcp/src/verify-script.test.mjs, scripts/dogfood-mcp-walk.mjs, scripts/dogfood-mcp-walk.test.mjs, scripts/lib/test-name-pattern.mjs, scripts/lib/test-name-pattern.test.mjs, scripts/run-focused-node-test.mjs, scripts/run-focused-node-test.test.mjs]
+elements: [mcp/scripts/json-rpc-lines.mjs, mcp/scripts/verify.mjs, mcp/src/analyze.mjs, mcp/src/git-tools.mjs, mcp/src/git-tools.test.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/integration.test.mjs, mcp/src/json-rpc-lines.test.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/suggestions.mjs, mcp/src/suggestions.test.mjs, mcp/src/vault.mjs, mcp/src/verify-script.test.mjs, scripts/dogfood-mcp-walk.mjs, scripts/dogfood-mcp-walk.test.mjs, scripts/lib/test-name-pattern.mjs, scripts/lib/test-name-pattern.test.mjs, scripts/run-focused-node-test.mjs, scripts/run-focused-node-test.test.mjs]
 ---
 
-# MCP Server (25 tools)
+# MCP Server (31 tools)
 
-`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버. 25 도구 노출 (read 16 + write 9):
+`@modelcontextprotocol/sdk` 안정판 1.x 기반 stdio JSON-RPC 서버. 31 도구 노출
+(read 18 + write 13). 런타임은 Node 24 계열만 지원한다:
 
 | 도구 | 동작 |
 |---|---|
+| `connection_info` | active vault/repo root와 해석 출처, 서버 버전을 반환해 잘못된 폴더 작업을 막는 첫 호출 proof |
+| `git_status` | vault 범위의 로컬 Git HEAD/branch/변경 파일과 vault 밖 변경·staging·진행 중 operation 위험을 구조화해 반환하는 read-only 도구 |
+| `git_snapshot` | validator error, merge/rebase/cherry-pick/revert, stale `expectedHead`를 차단하고 vault pathspec만 로컬 commit하는 dry-run-first checkpoint. repo init과 remote push는 지원하지 않는다. |
 | `list_concepts` | vault 의 모든 노드 (enum-validated kind 필터, limit default 100 / max 500) |
 | `get_concept` | 단일 slug 의 frontmatter + body excerpt + graph neighbors + `outgoingEdges[]` |
 | `get_concepts` | **R+** 배치 reader — 여러 slug 한 호출에 (max 50, 입력 순서 보존, missing/invalid slug row 는 partial result 로 격리) |
@@ -33,6 +37,8 @@ elements: [mcp/scripts/json-rpc-lines.mjs, mcp/scripts/verify.mjs, mcp/src/analy
 | `add_concepts` | **R+** 배치 writer — 여러 노드 한 호출에 (max 50, 입력 순서 보존, partial result, 입력 내 중복 slug 사전 감지). row-level non-object / blank / padded / unknown-field 입력은 해당 row 만 실패하고, 실패 row 는 `errorCode` 와 `rowName` / `conflictSlug` / `firstSeenAt` / `receivedField` / `unknownFields` / `allowedFields` / `receivedFields` 같은 구조화 repair field 를 함께 반환한다. 단일 unknown-field 도 `receivedField` 와 1-row `unknownFields` 를 같이 제공하고, multi unknown-field 는 모든 offending field 와 nearest field hint, `concepts[n]` row label, `Received fields: ...` 를 함께 남긴다. 입력 내 중복 slug 는 실패 row `concepts[n]` 과 최초 row `concepts[m]` 을 text 와 structured `rowName` / `firstSeenAt` 으로 같이 알려 agent 가 어느 행을 제거/수정할지 바로 알 수 있게 한다. invalid-only batch 는 row-level write metadata 와 top-level `postWriteMaintenance` 를 포함하지 않는다. `/ontology-bootstrap` 흐름이 5~15 노드를 한 번에 land. changed batch 는 최종 graph 기준 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / `byPhase`·`bySeverity`·`byKind` bucket / action `score` / executable `proposedAction` 포함). |
 | `add_relation` | depends_on / relates / contains / describes edge 추가. from/to/type 은 blank 또는 앞뒤 공백이면 쓰기 전 reject 하고, relation type 오타는 endpoint slug resolution 전에 closest allowed value hint(`Did you mean "depends_on"?`) 와 structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` 로 reject 하며 `changed` / `alreadyExists` / `postWriteMaintenance` write metadata 를 포함하지 않는다. missing endpoint 는 `list_concepts()` / `find_evidence(query)` 복구 안내, `add_concept(slug, kind, title)` 생성 hint, 유사 slug 후보를 함께 반환한다. changed write 는 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / `byPhase`·`bySeverity`·`byKind` bucket / action `score` / executable `proposedAction` 포함) |
 | `add_relations` | **R+** 배치 edge writer — 여러 edge 한 호출에 (max 50, 응답 row 순서 보존, 저장 배열은 dedup + sort, idempotent, partial result). row-level non-object / unknown-field / missing endpoint / relation type typo 입력도 해당 row 만 실패하고, 실패 row 는 `errorCode` 와 `rowName` / `missingSlug` / `similarSlugs` / `createTool` / `valueName` / `receivedValue` / `suggestion` / `allowedValues` / `receivedField` / `unknownFields` / `allowedFields` / `receivedFields` 같은 구조화 repair field 를 함께 반환한다. 단일 unknown-field 도 `receivedField` 와 1-row `unknownFields` 를 같이 제공하고, multi unknown-field 는 모든 offending field 와 nearest field hint, structured `rowName` / `allowedFields` / `receivedFields`, `relations[n]` row label, `Received fields: ...` 를, relation type typo 는 nearest relation type hint 와 structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` 를 포함한다. invalid-only batch 는 row-level `changed` / `alreadyExists` write metadata 와 top-level `postWriteMaintenance` 를 포함하지 않는다. analyze_repo_structure suggestedRelations · infer_imports moduleEdges 수신 직후 적합. changed batch 는 최종 graph 기준 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / `byPhase`·`bySeverity`·`byKind` bucket / action `score` / executable `proposedAction` 포함). |
+| `remove_relation` / `replace_relation` | exact typed edge를 rationale와 함께 제거하거나 target/type/rationale를 한 파일 write로 교체. dry-run 기본, `confirm:true`, `expected_mtime` 지원 |
+| `reclassify_concept` | kind/slug/domain과 모든 backlink를 원자적으로 이동하고 custom prose는 보존. dry-run 기본, `confirm:true` write |
 
 `query_ontology({operation:"cycles"})` 는 cycle 의 slug path 인 `nodes[]` 를
 유지하면서 같은 순서의 `nodeSummaries[]` 를 반환한다. agent 는 dependency
@@ -120,8 +126,8 @@ containment-specific check 만 skip 한다.
 | `absorb_document` | **⚠ DESTRUCTIVE (external file), Slice 0** — CLAUDE.md/AGENTS.md 형태의 markdown 파일을 typed vault 노드로 흡수해 tech lead 의 기존 agent-instruction 파일이 이중 관리되지 않게 한다. `##` 섹션 단위로 분리 — rule/policy/decision 섹션은 `role: policy` frontmatter 를 가진 `kind: document` 노드로, architecture/component 섹션은 *제안만* (자동 작성 없음), injection-suspect 패턴(Tier 1 — instruction-hijack 문구, shell/SQL fragment) 섹션은 카테고리와 무관하게 흡수 대상에서 제외한다. `confirm:true` 없이는 dry-run(분류 계획만, 쓰기 없음), `confirm:true` 지정 시 흡수된 섹션을 기록하고 원본은 `<file>.pre-absorb.bak` 로 백업한 뒤 흡수되지 않은 모든 섹션을 그대로 보존하는 slim pointer 로 재작성한다 (내용 파괴 없음). 기존 backup 을 덮어쓰지 않고 throw. CLI 대응: `ontology-atlas absorb <file...> [--write]`. |
 
 환경변수 `OATLAS_VAULT` 로 vault 위치 지정. 등록 가이드: `mcp/README.md`. 1줄 verify:
-`npm run verify` (mcp/) — parser smoke, server boot, 25-tool inventory
-(`16 read + 9 write` split 포함), strict argument schema 와 graph-query enum schema,
+`npm run verify` (mcp/) — parser smoke, server boot, 31-tool inventory
+(`18 read + 13 write` split 포함), strict argument schema 와 graph-query enum schema,
 strict schema/runtime unknown-tool, unknown-argument, and invalid-enum rejection,
 unknown-tool / unknown-argument structured repair fields (`receivedTool`, `receivedArgument`, `unknownArguments`, `suggestion`, `allowedTools`, `allowedArguments` — 단일 unknown argument 도 `unknownArguments` 배열 포함),
 `add_concepts` / `add_relations` row-isolation runtime smoke (`concepts[n]` / `relations[n]` row label, `add_concepts` duplicate slug structured `rowName` / `firstSeenAt` 포함),
@@ -876,7 +882,7 @@ verify / dogfood 가 같은 helper 로 annotation drift 를 막아 agent 가
 사람이 읽는 표시명 / 읽기 전용 탐색 / 위험한 쓰기 / 안전한 재시도 / 외부-world 접근 여부를
 tool metadata 만으로 구분할 수 있게 한다.
 installed verify 의 `tools/list` 성공 라인도 같은 annotation summary helper 를 사용해
-`25/25 titled; 16/16 read; 9/9 write; 4/4 destructive; 2/2 idempotent; 25/25 local-only`
+`31/31 titled; 18/18 read; 13/13 write; 8/8 destructive; 3/3 idempotent; 31/31 local-only`
 coverage 를 직접 출력한다. source dogfood 와 설치 verify 가 같은 사람이 읽는 증거를
 공유하므로 annotation gate 가 통과했지만 로그에서는 숨는 상태를 줄인다.
 inventory name gate 도 성공 로그에서 `tools/list inventory names — missing/extra/duplicate/invalid checks passed`

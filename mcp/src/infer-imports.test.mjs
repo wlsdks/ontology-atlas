@@ -343,6 +343,22 @@ test('unresolved relative — 누락 파일 reason: relative-not-found', () => {
   }
 });
 
+test('TypeScript NodeNext — .js specifier resolves to .ts source', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src/features/a'), { recursive: true });
+    mkdirSync(join(r, 'src/features/b'), { recursive: true });
+    writeFileSync(join(r, 'src/features/a/index.ts'), "import '../b/index.js';\n");
+    writeFileSync(join(r, 'src/features/b/index.ts'), 'export const b = 1;\n');
+  });
+  try {
+    const r = inferImports(root);
+    assert.equal(r.unresolved.length, 0);
+    assert.equal(r.edges[0]?.to, 'src/features/b/index.ts');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('node_modules / dist / .next ignored', () => {
   const root = withRepo((r) => {
     mkdirSync(join(r, 'src/a'), { recursive: true });

@@ -331,7 +331,7 @@
     "includeTopologyTitle": "Topology workbench",
     "includeTopologyBody": "The decision surface for exploring the whole vault as a map + INDEX + datasheet.",
     "includeMcpTitle": "MCP server auto-registration",
-    "includeMcpCount": "25 tools",
+    "includeMcpCount": "31 tools",
     "includeMcpBody": "Claude Code · Codex read and write the same vault — zero setup.",
     "includeCliTitle": "CLI",
     "includeCliCount": "{count} commands",

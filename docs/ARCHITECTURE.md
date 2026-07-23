@@ -46,13 +46,14 @@ tags: [architecture, infra, overview]
 
 ┌────────────────────────────────────────────────────────┐
 │ MCP server (mcp/, v0.12.0)                              │
-│ ├─ 16 read tools  list/get/find/query/validate ·        │
+│ ├─ 18 read tools  connection/git proof · list/get/find ·│
 │ │                  compile_ontology · query_ontology ·  │
 │ │                  analyze_repo_structure · infer_imports│
-│ └─ 8 write tools  add_concept · add_concepts ·          │
+│ └─ 13 write tools add_concept · add_concepts ·          │
 │                    add_relation · add_relations ·       │
-│                    patch_concept · delete_concept ·     │
-│                    rename_concept · merge_concepts      │
+│                    remove/replace relation · patch ·    │
+│                    reclassify · delete/rename/merge ·   │
+│                    absorb_document · git_snapshot       │
 │                                                         │
 │ AI agent (Claude Code, Cursor, …) reads/writes the     │
 │ same vault directory the user picked in /docs.         │

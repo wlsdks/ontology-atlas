@@ -48,7 +48,8 @@ test.describe("local ontology workspace capability gate (N1)", () => {
     await page.getByRole("button", { name: "Collapse document list" }).click();
     await expect(page.getByRole("navigation", { name: "Document list" })).toBeHidden();
     await page.getByRole("button", { name: "Expand document list" }).click();
-    await expect(page.getByRole("navigation", { name: "Document list" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Agent Graph Workflow" })).toBeVisible();
+    const documentList = page.getByRole("navigation", { name: "Document list" });
+    await expect(documentList).toBeVisible();
+    await expect(documentList.getByRole("button", { name: "Agent Graph Workflow" })).toBeVisible();
   });
 });

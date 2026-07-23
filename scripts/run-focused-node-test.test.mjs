@@ -187,6 +187,38 @@ describe('focused node test wrapper', () => {
     );
   });
 
+  it('recognizes repository custom integration harness summaries', () => {
+    const output = [];
+    const errors = [];
+    const exitCode = runFocusedNodeTest({
+      argv: ['--test-name-pattern', '^bootstrap', 'cli/src/integration.test.mjs'],
+      stdout: { write: (text) => output.push(text) },
+      stderr: { write: (text) => errors.push(text) },
+      spawn() {
+        return {
+          status: 0,
+          signal: null,
+          stdout: [
+            'TAP version 13',
+            '# cli integration: 3 passed, 0 failed, 20 skipped',
+            '# Subtest: cli/src/integration.test.mjs',
+            'ok 1 - cli/src/integration.test.mjs',
+            '1..1',
+            '# tests 1',
+            '# pass 1',
+            '# fail 0',
+            '# cancelled 0',
+            '# skipped 0',
+          ].join('\n'),
+          stderr: '',
+        };
+      },
+    });
+
+    assert.equal(exitCode, 0, errors.join(''));
+    assert.match(output.join(''), /matched=3/);
+  });
+
   it('fails when a focused pattern matches zero tests even though node exits cleanly', () => {
     withFixture("import test from 'node:test';\ntest('target case', () => {});\n", (file) => {
       const result = run(['--test-name-pattern', 'missing case', file]);

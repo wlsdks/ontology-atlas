@@ -330,22 +330,22 @@ async function runInit(targetArg, opts = {}) {
   // Existing .mcp.json in either location is preserved (user might have
   // other servers wired) — a `.mcp.json.example` is dropped instead so the
   // user can diff and merge by hand.
-  function mcpConfigForVault(omotVault) {
+  function mcpConfigForVault(omotVault, repoRoot) {
     return {
       mcpServers: {
         'ontology-atlas': {
           command: serverCommand.command,
           args: serverCommand.args,
-          env: { OATLAS_VAULT: omotVault },
+          env: { OATLAS_VAULT: omotVault, OATLAS_REPO_ROOT: repoRoot },
         },
       },
     };
   }
-  function writeMcpJson(dir, omotVault, label) {
+  function writeMcpJson(dir, omotVault, repoRoot, label) {
     const mcpJson = join(dir, '.mcp.json');
     const mcpExample = join(dir, '.mcp.json.example');
     const mcpJsonText =
-      JSON.stringify(mcpConfigForVault(omotVault), null, 2) + '\n';
+      JSON.stringify(mcpConfigForVault(omotVault, repoRoot), null, 2) + '\n';
     if (!existsSync(mcpJson)) {
       writeFileSync(mcpJson, mcpJsonText);
       ok(`  ${label}/.mcp.json (OATLAS_VAULT=${omotVault})`);
@@ -364,7 +364,7 @@ async function runInit(targetArg, opts = {}) {
     return `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
   }
 
-  function codexConfigForVault(omotVault) {
+  function codexConfigForVault(omotVault, repoRoot) {
     const args = serverCommand.args.map(tomlString).join(', ');
     return [
       '[mcp_servers.ontology-atlas]',
@@ -373,16 +373,17 @@ async function runInit(targetArg, opts = {}) {
       '',
       '[mcp_servers.ontology-atlas.env]',
       `OATLAS_VAULT = ${tomlString(omotVault)}`,
+      `OATLAS_REPO_ROOT = ${tomlString(repoRoot)}`,
       '',
     ].join('\n');
   }
 
-  function writeCodexConfig(dir, omotVault, label) {
+  function writeCodexConfig(dir, omotVault, repoRoot, label) {
     const codexDir = join(dir, '.codex');
     const codexConfig = join(codexDir, 'config.toml');
     if (!existsSync(codexDir)) mkdirSync(codexDir, { recursive: true });
     if (!existsSync(codexConfig)) {
-      writeFileSync(codexConfig, codexConfigForVault(omotVault));
+      writeFileSync(codexConfig, codexConfigForVault(omotVault, repoRoot));
       ok(`  ${label}/.codex/config.toml (OATLAS_VAULT=${omotVault})`);
     } else {
       warn(
@@ -391,20 +392,22 @@ async function runInit(targetArg, opts = {}) {
     }
   }
 
-  // 1. Vault target itself — vault is cwd, OATLAS_VAULT='.'
-  writeMcpJson(target, '.', 'vault');
-  writeCodexConfig(target, '.', 'vault');
+  const cwdPath = cwd();
+  let vaultRepoArg = relative(target, cwdPath) || '.';
+  if (!vaultRepoArg.startsWith('.')) vaultRepoArg = `./${vaultRepoArg}`;
+  // 1. Vault target itself — vault is cwd; repo root remains explicit.
+  writeMcpJson(target, '.', vaultRepoArg, 'vault');
+  writeCodexConfig(target, '.', vaultRepoArg, 'vault');
 
   // 2. cwd (codebase root) — only if distinct from target. OATLAS_VAULT is the
   //    relative path from cwd to target.
-  const cwdPath = cwd();
   let cwdVaultArg = '.';
   if (resolve(cwdPath) !== resolve(target)) {
     let omotRel = relative(cwdPath, target) || '.';
     if (!omotRel.startsWith('.')) omotRel = `./${omotRel}`;
     cwdVaultArg = omotRel;
-    writeMcpJson(cwdPath, omotRel, 'cwd');
-    writeCodexConfig(cwdPath, omotRel, 'cwd');
+    writeMcpJson(cwdPath, omotRel, '.', 'cwd');
+    writeCodexConfig(cwdPath, omotRel, '.', 'cwd');
   }
 
   const codexSetupCommand = [
@@ -414,6 +417,8 @@ async function runInit(targetArg, opts = {}) {
     'ontology-atlas',
     '--env',
     `OATLAS_VAULT=${target}`,
+    '--env',
+    `OATLAS_REPO_ROOT=${cwdPath}`,
     '--',
     serverCommand.command,
     ...serverCommand.args,

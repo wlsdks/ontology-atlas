@@ -4,7 +4,8 @@
       "command": "node",
       "args": ["./mcp/src/index.js"],
       "env": {
-        "OATLAS_VAULT": "./docs/ontology"
+        "OATLAS_VAULT": "./docs/ontology",
+        "OATLAS_REPO_ROOT": "."
       }
     }
   }

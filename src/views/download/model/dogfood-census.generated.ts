@@ -18,7 +18,7 @@ export interface DogfoodCensus {
 
 export const DOGFOOD_CENSUS: DogfoodCensus = {
   "concepts": 104,
-  "relations": 468,
+  "relations": 470,
   "kinds": {
     "project": 1,
     "domain": 6,
@@ -84,7 +84,7 @@ export const DOGFOOD_CENSUS: DogfoodCensus = {
   ],
   "hub": {
     "slug": "mcp-server",
-    "title": "MCP Server (25 tools)",
+    "title": "MCP Server (31 tools)",
     "domain": "ai-agent-partner"
   }
 };

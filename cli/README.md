@@ -12,7 +12,7 @@ $EDITOR project.md
 That's it. You now have a frontmatter-based memory vault that humans and AI
 agents (Claude Code, Cursor, Codex, etc.) can read and write together.
 
-Requires Node 20+. The CLI installs and spawns `ontology-atlas-mcp`, which
+Requires Node 24+ (Active LTS as of 2026-07). The CLI installs and spawns `ontology-atlas-mcp`, which
 uses the same Node floor.
 
 ## Commands (R12)
@@ -395,8 +395,8 @@ and the vault folder:
 - `.mcp.json` for Claude Code / Cursor
 - `.codex/config.toml` for Codex
 
-Open either folder in the agent, restart it, and it exposes **24 tools**
-(16 read + 8 write).
+Open either folder in the agent, restart it, and it exposes **31 tools**
+(18 read + 13 write).
 
 ```jsonc
 // .mcp.json (in your agent's config dir)
@@ -443,14 +443,15 @@ actions, which trims duplicates and reorders graph arrays through the same MCP
 if an action would patch anything outside compiler relation-array keys or if the
 declared action keys do not match the frontmatter patch.
 
-24 tools:
-`list_concepts` / `get_concept` / `get_concepts` / `find_evidence` /
+31 tools:
+`connection_info` / `git_status` / `list_concepts` / `get_concept` / `get_concepts` / `find_evidence` /
 `find_backlinks` / `find_neighbors` / `find_path` / `list_kinds` /
 `find_orphans` / `query_concepts` / `compile_ontology` / `query_ontology` /
-`validate_vault` / `analyze_repo_structure` / `infer_imports` / `index_project` (read 16) +
+`validate_vault` / `analyze_repo_structure` / `infer_imports` / `index_project` (read 18) +
 `add_concept` / `add_concepts` /
-`add_relation` / `add_relations` / `patch_concept` / `delete_concept` /
-`rename_concept` / `merge_concepts` (write 8).
+`add_relation` / `add_relations` / `remove_relation` / `replace_relation` /
+`patch_concept` / `reclassify_concept` / `delete_concept` /
+`rename_concept` / `merge_concepts` / `absorb_document` / `git_snapshot` (write 13).
 
 ## See the graph
 

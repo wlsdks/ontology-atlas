@@ -47,7 +47,15 @@ import {
 
 const MAX_DEPTH_CAP = 10;
 const MAX_FILES_CAP = 50000;
-const ALLOWED_FLAGS = ['--vault', '--json', '--skip-imports', '--max-depth', '--max-files', '--threshold'];
+const ALLOWED_FLAGS = ['--vault', '--json', '--skip-imports', '--reapply', '--max-depth', '--max-files', '--threshold'];
+
+const FRESH_VAULT_SLUGS = new Set([
+  'README',
+  'project',
+  'domains/example-domain',
+  'capabilities/example-capability',
+  'elements/example-element',
+]);
 
 
 export async function runBootstrap(args) {
@@ -83,6 +91,17 @@ export async function runBootstrap(args) {
   }
 
   const concepts = collectConcepts(analyzeResult);
+  const vaultState = await inspectBootstrapVault(vaultRoot);
+  if (vaultState?.grown && !parsed.reapply) {
+    return printGrownVaultPlan({
+      parsed,
+      target,
+      vaultRoot,
+      analyzeResult,
+      concepts,
+      vaultState,
+    });
+  }
   const prunedStarters =
     concepts.length > 0 ? pruneUntouchedStarterNodes(vaultRoot) : null;
   let conceptsRows = [];
@@ -191,6 +210,8 @@ export async function runBootstrap(args) {
     process.stdout.write(
       JSON.stringify(
         {
+          mode: 'apply',
+          apply: true,
           rootPath: analyzeResult.rootPath,
           framework: analyzeResult.framework,
           analyze: {
@@ -369,6 +390,7 @@ function collectConcepts(analyzeResult) {
       kind: 'element',
       title: e.title,
       ...(e.domain ? { domain: e.domain } : {}),
+      ...(e.evidence?.source ? { path: e.evidence.source } : {}),
     });
   }
   return out;
@@ -573,6 +595,7 @@ function parseArgs(args) {
     vault: null,
     json: false,
     skipImports: false,
+    reapply: false,
   };
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
@@ -581,6 +604,7 @@ function parseArgs(args) {
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
     else if (a === '--skip-imports') flags.skipImports = true;
+    else if (a === '--reapply') flags.reapply = true;
     else if (a === '--max-depth')
       flags.maxDepth = parseBoundedNonNegativeIntegerFlag('--max-depth', args[++i], { max: MAX_DEPTH_CAP });
     else if (a.startsWith('--max-depth='))
@@ -611,6 +635,7 @@ function parseArgs(args) {
     vault: flags.vault || '.',
     json: flags.json,
     skipImports: flags.skipImports,
+    reapply: flags.reapply,
     maxDepth: flags.maxDepth,
     maxFiles: flags.maxFiles,
     threshold: flags.threshold,
@@ -621,12 +646,13 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas bootstrap [rootPath] [--vault path] [--threshold N]\n` +
-      `                           [--skip-imports] [--json]\n` +
+      `                           [--skip-imports] [--reapply] [--json]\n` +
       `                           [--max-depth N] [--max-files N]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
       `  1줄 full bootstrap. analyze --apply (노드 + suggested relations) +\n` +
       `  infer-imports --apply (depends_on edges) 를 합친 적용 명령.\n` +
       `  agent-less 환경 (CI · plain shell) 또는 새 repo 진입 직후 흐름.\n\n` +
+      `  이미 성장한 vault는 기본적으로 plan-only. 다시 쓰려면 --reapply.\n` +
       `  --max-depth N: analyze folder walk default 2, range 0-${MAX_DEPTH_CAP}.\n` +
       `  --max-files N: import walk default 5000, max ${MAX_FILES_CAP} hard stop.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
@@ -634,6 +660,78 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas bootstrap ~/my-app --vault .    # 다른 repo 분석\n` +
       `  ontology-atlas bootstrap --threshold 3         # 약한 import 차단\n` +
       `  ontology-atlas bootstrap --skip-imports        # 노드만 (1단계)\n` +
+      `  ontology-atlas bootstrap --reapply             # 성장한 vault에 명시 재적용\n` +
       `  ontology-atlas bootstrap --json                # 머신 가독\n`,
   );
+}
+
+async function inspectBootstrapVault(vaultRoot) {
+  try {
+    const result = await callMcpTool(vaultRoot, 'list_concepts', { limit: 500 });
+    if (!result || !Array.isArray(result.nodes)) return null;
+    const nonStarterSlugs = result.nodes
+      .map((node) => node.slug)
+      .filter((slug) => !FRESH_VAULT_SLUGS.has(slug));
+    return {
+      total: result.total,
+      slugs: result.nodes.map((node) => node.slug),
+      nonStarterSlugs,
+      grown: nonStarterSlugs.length > 0,
+    };
+  } catch {
+    // Older/fake MCP servers used by compatibility tests may not expose the
+    // preflight read. Keep the existing bootstrap path instead of failing.
+    return null;
+  }
+}
+
+async function printGrownVaultPlan({ parsed, target, vaultRoot, analyzeResult, concepts, vaultState }) {
+  let importsResult = null;
+  if (!parsed.skipImports) {
+    try {
+      importsResult = await callMcpTool(vaultRoot, 'infer_imports', {
+        rootPath: target,
+        maxFiles: parsed.maxFiles,
+      });
+      assertInferImportsResult(importsResult);
+    } catch (err) {
+      process.stderr.write(
+        `${COLORS.red}error${COLORS.reset}  infer_imports: ${err instanceof Error ? err.message : String(err)}\n`,
+      );
+      return 2;
+    }
+  }
+  const payload = {
+    mode: 'plan',
+    apply: false,
+    rootPath: analyzeResult.rootPath,
+    vaultRoot,
+    guard: {
+      reason: 'vault-already-grown',
+      currentNodes: vaultState.total,
+      nonStarterSlugs: vaultState.nonStarterSlugs,
+      recovery: 'Review this plan, then pass --reapply only if analyzer output should be merged again.',
+    },
+    plan: {
+      concepts: concepts.length,
+      suggestedRelations: analyzeResult.suggestedRelations?.length ?? 0,
+      importRelations: importsResult?.moduleEdges?.length ?? 0,
+      unresolvedImports: importsResult?.unresolved?.length ?? 0,
+    },
+    analyze: analyzeResult,
+    imports: importsResult,
+  };
+  if (parsed.json) {
+    process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
+  } else {
+    process.stdout.write(
+      `${COLORS.bold}bootstrap plan${COLORS.reset} ${COLORS.dim}repo=${target}\n` +
+        `               vault=${vaultRoot}${COLORS.reset}\n\n` +
+        `  ${COLORS.yellow}protected${COLORS.reset} vault already has ${vaultState.total} nodes; no files were changed.\n` +
+        `  candidates: ${concepts.length} concepts · ${payload.plan.suggestedRelations} suggested relations · ` +
+        `${payload.plan.importRelations} import relations\n` +
+        `  ${COLORS.dim}Review the plan and use --reapply only for an intentional merge.${COLORS.reset}\n`,
+    );
+  }
+  return 0;
 }
