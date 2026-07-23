@@ -1,4 +1,5 @@
 import { deriveDisplayTitle } from '@/shared/lib/derive-display-title';
+import { humanizeCodePathTitle } from '@/shared/lib/humanize-code-path-title';
 import type { VaultDoc, VaultManifest } from '../model/types';
 
 /**
@@ -165,10 +166,19 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
     idSlug = doc.slug.split('/').pop() || doc.slug;
   }
   const id = `${rawKind}:${idSlug}`;
+  const baseDisplay = deriveDisplayTitle(fm, title);
+  // element 노드는 title 이 코드 경로 원문(`src/foo/bar-baz.ts`)인 경우가
+  // 많아 비개발자에게 그대로 노출하면 가독성이 떨어진다. display 필드도
+  // 괄호 컷도 없어 baseDisplay 가 title 그대로일 때만 경로 → 사람 이름
+  // 변환을 시도한다 (명시적 display: 는 여전히 최우선).
+  const display =
+    rawKind === 'element' && baseDisplay === title
+      ? humanizeCodePathTitle(title) ?? baseDisplay
+      : baseDisplay;
   return {
     id,
     title,
-    display: deriveDisplayTitle(fm, title),
+    display,
     kind: rawKind,
     sourceSlug: doc.slug,
     source: 'frontmatter',
@@ -310,7 +320,9 @@ function deriveOntologyFromVaultUncached(
         nodes.set(elId, {
           id: elId,
           title: folderRef?.kind === 'element' ? folderRef.title : el,
-          display: deriveDisplayTitle(undefined, folderRef?.kind === 'element' ? folderRef.title : el),
+          display:
+            humanizeCodePathTitle(el) ??
+            deriveDisplayTitle(undefined, folderRef?.kind === 'element' ? folderRef.title : el),
           kind: 'element',
           sourceSlug: doc.slug,
           source: 'frontmatter',

@@ -124,6 +124,13 @@ export interface TopologyV2DetailPanelLabels {
 export interface TopologyV2DetailPanelProps {
   slug: string;
   title: string;
+  /**
+   * 슬라이스 B (element 라벨 인간화) — `title` 이 표시용으로 변환된 값일 때
+   * (예: element 노드의 코드 경로 원문 → "Bar Baz" 같은 사람 이름), 원문을
+   * 보존해서 보여주는 모노 서브라인. 호출자가 display !== 원문 title 일
+   * 때만 넘긴다 — 같으면 undefined/null 로 생략해 중복 렌더를 막는다.
+   */
+  sourceTitle?: string | null;
   kind: string;
   /**
    * N6 (persona-ux-2026-07 report — PM 페르소나 "어디 소속?" 1차 질문에
@@ -229,6 +236,7 @@ const ACTION_TILE_DISABLED_CLASS =
 export function TopologyV2DetailPanel({
   slug,
   title,
+  sourceTitle = null,
   kind,
   domain,
   powered,
@@ -495,6 +503,14 @@ export function TopologyV2DetailPanel({
               {title}
             </h2>
           </div>
+          {sourceTitle && sourceTitle !== title ? (
+            <div
+              data-testid="topology-v2-detail-panel-source-path"
+              className="pl-[13.5px] font-mono text-[11px] text-[color:var(--color-text-quaternary)] break-all"
+            >
+              {sourceTitle}
+            </div>
+          ) : null}
           <div className="flex items-center gap-1.5 pl-[13.5px]">
             <span className="text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)]">
               {labels.kindLabel}

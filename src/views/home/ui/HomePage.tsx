@@ -3433,6 +3433,7 @@ export function HomePage() {
                 presence={nodePanelPresence.exiting ? "exiting" : "entering"}
                 slug={panelDatasheetModel.slug}
                 title={panelDatasheetModel.title}
+                sourceTitle={panelDatasheetModel.sourceTitle}
                 kind={panelDatasheetModel.kind}
                 domain={panelDatasheetModel.domain}
                 powered={panelDatasheetModel.powered}
