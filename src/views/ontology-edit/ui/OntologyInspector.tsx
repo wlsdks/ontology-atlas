@@ -520,7 +520,7 @@ function EphemeralDetail({
           title={t("deselectAriaLabel")}
           className="rounded-md p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
         >
-          ×
+          <X size={14} aria-hidden="true" />
         </button>
       </div>
       <label className="flex flex-col gap-1.5">
@@ -884,7 +884,7 @@ function VaultDetail({
           title={t("deselectAriaLabel")}
           className="rounded-md p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-ring-a46)] focus-visible:ring-inset"
         >
-          ×
+          <X size={14} aria-hidden="true" />
         </button>
       </div>
       <p className="-mt-2 truncate pl-[22px] font-mono text-label tracking-[0.02em] text-[color:var(--color-text-quaternary)]">
@@ -1515,7 +1515,7 @@ function ArrayKeyEditor({
                 >
                   <span className="font-mono break-all">{slug}</span>
                   <span aria-hidden className="text-[color:var(--color-text-tertiary)]">
-                    ×
+                    <X size={14} aria-hidden="true" />
                   </span>
                 </button>
               </li>

@@ -60,7 +60,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
                 Ontology Atlas
               </span>
             </span>
-            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">/</span>
+            <span aria-hidden className="text-body text-[color:var(--color-text-quaternary)]">/</span>
             <Link
               href="/"
               className="inline-flex items-center gap-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
@@ -68,7 +68,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
               <ArrowLeft size={14} />
               {t('back')}
             </Link>
-            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">/</span>
+            <span aria-hidden className="text-body text-[color:var(--color-text-quaternary)]">/</span>
             <span className="text-[12px] text-[color:var(--color-text-tertiary)]">{t('eyebrow')}</span>
             <span className="ml-auto">
               <LocaleSwitch />
