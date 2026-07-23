@@ -84,9 +84,9 @@ describe('DownloadPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/hosted site does not open or edit vault folders/i)).toBeInTheDocument();
     expect(screen.getByText(/Obsidian-style direct download/i)).toBeInTheDocument();
-    expect(screen.getByText(/Verify agent access/i)).toBeInTheDocument();
+    expect(screen.getByText(/Connect your AI assistant/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/Codex, Claude Code, or Cursor reads and writes the same vault over MCP/i),
+      screen.getByText(/paste it into your AI coding assistant \(Claude, Codex, Cursor, …\)/i),
     ).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
   });
