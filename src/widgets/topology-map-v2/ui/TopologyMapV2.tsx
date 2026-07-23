@@ -144,6 +144,13 @@ export interface TopologyMapV2Props {
    */
   agentFocusNodeId?: string | null;
   /**
+   * 최근 변경 스포트라이트 (`?recent=`, 협의회 설계 2026-07-23) — non-null 이면
+   * 이 집합 밖 노드/엣지를 rest 알파까지 침강시키는 렌즈 ON. 집합 안 노드는
+   * HomePage 가 fresh 채널 키(changedSlugs)를 같은 창으로 교체해 켠다.
+   * null/생략 = off.
+   */
+  spotlightIds?: ReadonlySet<string> | null;
+  /**
    * S4 "영역 전개" — 지도가 이 노드의 세계로 전환된 상태 (`?realm=slug`), 없으면
    * 전체 지도. HomePage 가 URL 에서 내린다.
    */
@@ -171,7 +178,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, canvasLabel, visitedTrail } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, canvasLabel, visitedTrail } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -196,6 +203,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       onZoomTierChange,
       onContextMenuNode,
       agentFocusNodeId,
+      spotlightIds,
       livePhysics,
       expandedParents,
       onToggleCluster,

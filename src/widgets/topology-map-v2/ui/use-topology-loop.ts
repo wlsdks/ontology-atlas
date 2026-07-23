@@ -27,7 +27,7 @@ import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCamer
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { computeTopologyClusterState } from "./topology-cluster-state";
 import type { ClusterChip } from "../model/density-gate";
-import { clusterMoreChipId, EGO_NEIGHBOR_CHIP_ID, EGO_NEIGHBOR_LIMIT, parseClusterMoreChipId, rankEgoNeighborsByDOI, scheduleRipple, selectiveEgoNeighbors, stepEmphasis, type EgoNeighborRankEntry } from "../model/focus-state";
+import { clusterMoreChipId, EGO_NEIGHBOR_CHIP_ID, EGO_NEIGHBOR_LIMIT, parseClusterMoreChipId, rankEgoNeighborsByDOI, scheduleRipple, selectiveEgoNeighbors, stepEmphasis, stepFocusRamp, type EgoNeighborRankEntry } from "../model/focus-state";
 import { buildFootprintRanks } from "../model/footprint-ring";
 import {
   INITIAL_REALM_TRANSITION_STATE,
@@ -157,6 +157,14 @@ export interface UseTopologyLoopArgs {
    */
   agentFocusNodeId?: string | null;
   /**
+   * 최근 변경 스포트라이트 (협의회 설계 2026-07-23) — non-null 이면 렌즈 ON:
+   * 이 집합 밖 노드/엣지를 `--topology-v2-spotlight-rest-alpha` 까지 침강.
+   * 켜고 끄는 전이는 focusDimTau 램프 재사용(<200ms 체감), reduced-motion
+   * 즉착. null/생략 = off (회귀 0). 집합 자체는 HomePage 가 `?recent=` 창의
+   * mtime 산수(useAdaptiveRecentChanges)로 만든다.
+   */
+  spotlightIds?: ReadonlySet<string> | null;
+  /**
    * M-9 — "그래프"(살아있는 그래프) 토글. true 면 force 시뮬을 상시 웜
    * 상태로 유지해 레이아웃이 유기적으로 계속 이완한다 (옵시디언식 촉각).
    * 유휴 게이트는 simWarm 경유로 자동 활동 인정. false 로 돌아가면 heat
@@ -212,7 +220,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, livePhysics = false, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, visitedTrail = EMPTY_TRAIL } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, livePhysics = false, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, visitedTrail = EMPTY_TRAIL } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -484,6 +492,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const prevCameraSampleRef = useRef<{ x: number; y: number; s: number } | null>(null);
   /** W6 agent visibility — mirrors `agentFocusNodeId` prop into a ref for the rAF closure, same pattern as `focusedSlugRef`. */
   const agentFocusNodeIdRef = useRef<string | null>(agentFocusNodeId);
+  /** 스포트라이트 — prop 미러(같은 패턴) + on/off 지수 램프(0..1, 프레임 바디가 step). */
+  const spotlightIdsRef = useRef<ReadonlySet<string> | null>(spotlightIds);
+  const spotlightRampRef = useRef(0);
   /** M-9 — mirrors `livePhysics` into a ref for the rAF closure. */
   const livePhysicsRef = useRef<boolean>(false);
   /** M-5 — mirror the tier-change callback into a ref for the rAF closure, and
@@ -535,6 +546,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     agentFocusNodeIdRef.current = agentFocusNodeId;
   }, [agentFocusNodeId]);
+  useEffect(() => {
+    spotlightIdsRef.current = spotlightIds;
+  }, [spotlightIds]);
 
   useEffect(() => {
     livePhysicsRef.current = livePhysics;
@@ -1102,6 +1116,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // 여기서 명시적으로 활동으로 친다(deselect 링 잔류 회귀 차단).
           focusFadeSettling:
             colorFocusRef.current !== null && focusedSlugRef.current === null && selectedEdgeRef.current === null,
+          // 스포트라이트 on/off 전이 중(램프 미도달)은 활동 — 램프 step 이
+          // 프레임 바디 안에서만 일어나므로 focusFadeSettling 과 같은 계약.
+          spotlightSettling:
+            Math.abs(spotlightRampRef.current - (spotlightIdsRef.current !== null ? 1 : 0)) > 0.01,
           // S6 — 이탈 역재생은 홈 스프링(homing)을 안 쓰므로 여기서 직접 깨워
           // 둬야 안무가 유휴 게이트에 얼지 않는다.
         }) ||
@@ -1878,6 +1896,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // 선택 링이 이미 있으므로 제외). 배열이 짧아(≤30) 매 프레임 계산 비용 무시.
       const footprintRanksById = buildFootprintRanks(visitedTrailRef.current, focusedNodeId);
 
+      // 스포트라이트 on/off 지수 램프 — focusDimTau 재사용(신규 easing 0).
+      // reduced-motion 은 즉착(정적 대비만으로 정보 성립 — 협의회 §④).
+      spotlightRampRef.current = reducedMotionRef.current
+        ? (spotlightIdsRef.current !== null ? 1 : 0)
+        : stepFocusRamp(spotlightRampRef.current, spotlightIdsRef.current !== null, dt, tokens.focusDimTau);
+
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
       drawTopologyFrame({
@@ -1921,6 +1945,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         // S8 결함 6 — 영역 활성 시에만 우주 도트를 넘긴다(결계로 클립).
         realmCosmosPoints: realmWarding ? cosmosPointsRef.current : null,
         footprintRanksById,
+        spotlightIds: spotlightIdsRef.current,
+        spotlightRamp: spotlightRampRef.current,
       });
 
       handle = requestAnimationFrame(frame);

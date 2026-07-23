@@ -1345,6 +1345,15 @@
     --topology-v2-node-stroke-element: #34343b;
     --topology-v2-node-fill-dim: #1a1a1e;
     --topology-v2-node-stroke-dim: #2b2b2f;
+    /* 최근 변경 스포트라이트 rest 알파 (협의회 설계 2026-07-23). product
+       reason: "지난 N일 변경" 렌즈 ON 일 때 창 밖 노드/엣지를 이 알파까지
+       침강시켜 변경 노드(fresh 채널)가 대비로 이긴다 — "빛내기"가 아니라
+       "가라앉히기"(glow/pulse 금지 헌장 안에서 소유자의 '한눈에' 욕구 충족).
+       ego dim(0.15)보다 옅은 이유: 전체-지도 렌즈에선 나머지 구조가 맥락으로
+       계속 읽혀야 한다(ego 는 국소 포커스라 더 깊이 가라앉힘). state/layer:
+       map 렌즈. 반응형: 값 자체는 폭 무관(알파 스칼라). marker: 렌즈 상태는
+       URL `?recent=` 로 결정론 재현 가능. */
+    --topology-v2-spotlight-rest-alpha: 0.35;
     --topology-v2-node-fill-stale: #141418;
     --topology-v2-node-stroke-stale: #454549;
     --topology-v2-node-hole-fill: #0c0c10;

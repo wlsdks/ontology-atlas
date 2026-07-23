@@ -15,7 +15,7 @@ import {
 } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BookOpen, FolderOpen, HelpCircle, Plus, Waypoints, X } from "lucide-react";
+import { BookOpen, FolderOpen, HelpCircle, History, Plus, Waypoints, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
@@ -27,7 +27,8 @@ import {
   useFirstRunSampleModeSettled,
 } from "@/features/first-run-starter";
 import { HeroCollapsed } from "@/widgets/hero-header";
-import { useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
+import { GitStatusTile, useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
+import { AtlasGitPanel } from "@/widgets/atlas-git-panel";
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { SearchHint } from "@/widgets/search-hint";
@@ -150,7 +151,7 @@ import { resolveDeeplinkMissDecision } from "../lib/deeplink-miss-notice";
 import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
-import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
+import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
@@ -337,6 +338,7 @@ export function HomePage() {
     insightsReturnTab,
     expandedParents: expandedParentSlugs,
     realmSlug,
+    recentWindow,
   } = routeState;
   const renderProjects = projects;
   // 밀도 게이트 (fable 설계) — URL `?open=` 의 부모 slug 목록을 Set 으로
@@ -426,42 +428,8 @@ export function HomePage() {
   // (indexPanelCollapsedStored 등)에 의존하므로, 레일이 렌더할 노드를
   // Context 로 등록한다(`useNavRailSettingsSlot`) — 다른 라우트로 이동하면
   // effect cleanup 이 자동으로 비운다.
-  const navRailSettingsSlot = useMemo(
-    () => (
-      <TopologyV2SettingsGear
-        indexDefaultCollapsed={indexPanelCollapsedStored}
-        onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
-        changeVaultHref="/docs/?intent=local"
-        popoverAlign="left"
-        popoverSide="top"
-        // M-4 (2) — keyboard-opened transients (⌘K palette, `D` docs drawer)
-        // don't fire the `mousedown`-outside the gear's own outside-click
-        // handler relies on, so they'd leave the gear stacked underneath.
-        // Signal them here so the gear demotes itself. Pointer-driven surfaces
-        // (node/edge click, context menu, graph toggle) already close it via
-        // outside-click.
-        suppressed={ontologySearchOpen || docsDrawerOpen}
-        labels={{
-          trigger: t('controls.settingsGearAriaLabel'),
-          heading: t('controls.settingsGearHeading'),
-          locale: t('controls.settingsGearLocale'),
-          indexDefault: t('controls.settingsGearIndexDefault'),
-          indexDefaultExpanded: t('controls.settingsGearIndexDefaultExpanded'),
-          indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
-          changeVault: t('controls.settingsGearChangeVault'),
-          changeVaultAriaLabel: t('controls.settingsGearChangeVaultAriaLabel'),
-        }}
-      />
-    ),
-    [
-      indexPanelCollapsedStored,
-      handleChangeIndexDefaultCollapsed,
-      ontologySearchOpen,
-      docsDrawerOpen,
-      t,
-    ],
-  );
-  useNavRailSettingsSlot(navRailSettingsSlot);
+  // 레일 설정 슬롯 memo 는 아래(vault·ontologyChangeset 정의 뒤)로 이동 —
+  // 발자취(GitStatusTile)가 vault 경로와 세션 changeset 을 읽어야 해서다.
   // Clicking the collapsed edge tab always means "give the slot back to
   // INDEX" — the analysis rail owns the slot only because of a non-overview
   // mode (focus/path/health), so returning to overview is always enough.
@@ -497,9 +465,21 @@ export function HomePage() {
   const { insight: ontologyInsight } = useOntologyInsight();
   // S-C1 — 노드 데이터시트 "언제 바뀌었나" (mode-aware manifest updatedAt).
   const docFreshnessIndex = useVaultDocFreshnessIndex();
-  // P4a — "최근 변경" 렌즈(mtime 7일 창). `computeRecentChanges` 순수 함수 +
+  // P4a — "최근 변경" 렌즈(mtime 창). `computeRecentChanges` 순수 함수 +
   // 이 훅과 같은 session-snapshot 시각 규율(`use-recent-changes.ts`).
-  const recentChanges = useAdaptiveRecentChanges();
+  // 스포트라이트 (협의회 2026-07-23): `?recent=` 숫자 프리셋이면 그 창으로
+  // 고정, "auto"/off 면 기존 적응 사다리 — 지도 침강과 INDEX 렌즈가 이 훅
+  // 하나(단일 진실원)를 공유한다.
+  const spotlightOn = recentWindow !== null;
+  const recentChanges = useAdaptiveRecentChanges(
+    spotlightOn && recentWindow !== "auto" ? recentWindow : undefined,
+  );
+  const handleToggleSpotlight = useCallback(() => {
+    setRouteState((current) => ({
+      ...current,
+      recentWindow: current.recentWindow === null ? "auto" : null,
+    }));
+  }, [setRouteState]);
   // "N일 전" 계산의 기준 시각 — 일 단위 해상도라 세션 시작 스냅샷이면 충분
   // (render 중 Date.now() 는 react-hooks/purity 위반; 세션 동안 라벨이
   // 흔들리지 않는 것도 changeBaseline 과 같은 이유로 오히려 바람직하다).
@@ -581,6 +561,60 @@ export function HomePage() {
   // S1.1 — 토폴로지를 온톨로지의 1차 편집 surface 로. writable 로컬 vault 면
   // 선택 노드를 자기 .md 문서로 해석해 전체 상세(A1)의 본문 인라인 편집을 허용.
   const vault = useLocalVault();
+  // 발자취(Atlas Git) 패널 — 레일 타일 클릭으로 열리는 스냅샷/히스토리 표면.
+  const [gitPanelOpen, setGitPanelOpen] = useState(false);
+  // Tauri 데스크톱이면 vault 절대 경로(브리지 활성), 웹 FSA 핸들이면 null →
+  // 타일/패널이 세션 changeset 기반으로 정직하게 강등한다.
+  const gitVaultPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
+  // 레일 하단 설정 슬롯 — 발자취 타일 + 설정 기어를 한 fragment 로 등록.
+  // (perf/persistent-shell: 레일은 layout 상주, 이 페이지가 슬롯만 주입.)
+  const navRailSettingsSlot = useMemo(
+    () => (
+      <>
+        <GitStatusTile
+          onActivate={() => setGitPanelOpen(true)}
+          panelOpen={gitPanelOpen}
+          vaultPath={gitVaultPath}
+          sessionDirty={ontologyChangeset.touchedNodeIds.size > 0}
+        />
+        <TopologyV2SettingsGear
+          indexDefaultCollapsed={indexPanelCollapsedStored}
+          onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
+          changeVaultHref="/docs/?intent=local"
+          popoverAlign="left"
+          popoverSide="top"
+          // M-4 (2) — keyboard-opened transients (⌘K palette, `D` docs drawer)
+          // don't fire the `mousedown`-outside the gear's own outside-click
+          // handler relies on, so they'd leave the gear stacked underneath.
+          // Signal them here so the gear demotes itself. Pointer-driven surfaces
+          // (node/edge click, context menu, graph toggle) already close it via
+          // outside-click.
+          suppressed={ontologySearchOpen || docsDrawerOpen}
+          labels={{
+            trigger: t('controls.settingsGearAriaLabel'),
+            heading: t('controls.settingsGearHeading'),
+            locale: t('controls.settingsGearLocale'),
+            indexDefault: t('controls.settingsGearIndexDefault'),
+            indexDefaultExpanded: t('controls.settingsGearIndexDefaultExpanded'),
+            indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
+            changeVault: t('controls.settingsGearChangeVault'),
+            changeVaultAriaLabel: t('controls.settingsGearChangeVaultAriaLabel'),
+          }}
+        />
+      </>
+    ),
+    [
+      indexPanelCollapsedStored,
+      handleChangeIndexDefaultCollapsed,
+      ontologySearchOpen,
+      docsDrawerOpen,
+      gitPanelOpen,
+      gitVaultPath,
+      ontologyChangeset,
+      t,
+    ],
+  );
+  useNavRailSettingsSlot(navRailSettingsSlot);
   // 온보딩 디자이너 지적 — 첫 실행 카드를 닫으면 "폴더 열기" 진입점이 설정
   // 기어 뒤로 사라졌다. 정적 샘플 모드(카드 dismiss 와 무관)일 때 상단 유틸리티
   // 열에 조용한 "내 데이터로 전환 ⌘O" 필을 상시 노출하고, 실제 vault 가
@@ -1005,18 +1039,24 @@ export function HomePage() {
   // draw. `buildTopologyV2Graph` derives the real adapter-contract
   // nodes/edges from the same `ontologyInsight` the other two engines
   // already draw (topology-v2-adapter.ts).
+  // 스포트라이트 (협의회 조건 2) — 렌즈 ON 동안 지도 fresh 채널의 키는
+  // mtime 창 set **단독**이다(세션 changeset 과 동시 주입 금지 — 한 채널에
+  // 두 의미를 섞으면 "이게 왜 켜졌지"를 답할 수 없다). OFF 면 종전 세션
+  // changeset 동작 그대로. 침강 대상(spotlightIds)도 같은 set — 단일 진실원.
+  const spotlightIds = spotlightOn ? recentChanges.recentNodeIds : null;
+  const freshChannelSlugs = spotlightOn ? recentChanges.recentNodeIds : changedSlugs;
   const topologyV2Graph = useMemo(() => {
     if (synthSize != null) {
       const synth = synthesizeVaultGraph(synthSize);
-      return buildTopologyV2Graph(synth.nodes, synth.edges, { changedSlugs });
+      return buildTopologyV2Graph(synth.nodes, synth.edges, { changedSlugs: freshChannelSlugs });
     }
     return ontologyInsight
       ? buildTopologyV2Graph(ontologyInsight.nodes, ontologyInsight.edges, {
-          changedSlugs,
+          changedSlugs: freshChannelSlugs,
           dustySlugs,
         })
       : { nodes: [], edges: [] };
-  }, [synthSize, ontologyInsight, changedSlugs, dustySlugs]);
+  }, [synthSize, ontologyInsight, freshChannelSlugs, dustySlugs]);
 
   const canvasSelectedSlug = selectedProject?.slug ?? selectedOntologyNode?.id ?? selectedSlug;
   const drawerProject = selectedProject;
@@ -2475,11 +2515,40 @@ export function HomePage() {
                         compact={topologyUtilityChromeCompact}
                         icon={<Waypoints />}
                         active={analysisMode === "graph"}
-                        // <xl 아이콘-only — 라벨 사다리(겹침 소탕 2026-07-23).
+                        // <2xl 아이콘-only — 라벨 사다리(겹침 소탕 2026-07-23).
+                        // 스포트라이트 칩 추가로 레인이 넓어져 1440 에서 검색
+                        // 레인과 재충돌(실측 18px) — 토글류(그래프·최근 변경)
+                        // 라벨을 한 단계 먼저 접어 주 CTA(Switch) 라벨을 지킨다.
                         // aria-label + 툴팁이 뜻을 보존한다.
-                        className="max-xl:[&_[data-chip-label]]:hidden"
+                        className="max-2xl:[&_[data-chip-label]]:hidden"
                       >
                         {t('controls.graphToggleLabel')}
+                      </ChromeChip>
+                    </Tooltip>
+                    {/* 최근 변경 스포트라이트 (협의회 설계 2026-07-23) — 렌즈
+                        토글. 그래프 토글과 같은 ChromeChip 문법/축약 사다리.
+                        상태는 URL `?recent=` 단일 진실원 (공유/에이전트 재현). */}
+                    <Tooltip content={t('controls.spotlightTooltip')} side="bottom" withProvider={false}>
+                      <ChromeChip
+                        onClick={handleToggleSpotlight}
+                        aria-pressed={spotlightOn}
+                        aria-label={t('controls.spotlightAriaLabel')}
+                        data-testid="topology-spotlight-toggle"
+                        data-utility-action-token-contract="support-surface-family"
+                        data-utility-action-surface-token="--chrome-surface"
+                        data-utility-action-border-token="--chrome-border"
+                        data-utility-action-hover-surface-token="--color-overlay-2"
+                        data-utility-action-active-surface-token="--chrome-active-surface"
+                        data-utility-action-active-border-token="--chrome-active-border"
+                        data-utility-action-shadow-token="--chrome-shadow"
+                        data-utility-action-focus-ring-token="--color-indigo-accent"
+                        compact={topologyUtilityChromeCompact}
+                        icon={<History />}
+                        active={spotlightOn}
+                        // 그래프 토글과 같은 <2xl 아이콘-only 사다리(위 주석).
+                        className="max-2xl:[&_[data-chip-label]]:hidden"
+                      >
+                        {t('controls.spotlightLabel')}
                       </ChromeChip>
                     </Tooltip>
                     <Tooltip content={t('controls.docsTooltip')} side="bottom" withProvider={false}>
@@ -3061,6 +3130,7 @@ export function HomePage() {
                     onContextMenuNode={handleContextMenuNode}
                     minimal={localGraphRoot !== null}
                     agentFocusNodeId={agentFocusNodeId}
+                    spotlightIds={spotlightIds}
                     expandedParents={expandedParentSet}
                     onToggleCluster={handleToggleCluster}
                     onHoverCluster={handleHoverCluster}
@@ -3500,6 +3570,30 @@ export function HomePage() {
           onSelectNode={(node) => handleSelect(node.id)}
           onSelectProject={(project) => handleSelect(project.slug)}
         />
+        {/* 발자취(Atlas Git) 시트 — 레일 타일이 연다. AgentConnectSheet 와
+            같은 scrim+중앙 카드 모달 골격(같은 토큰, modality 증명 — 스크림
+            클릭 닫기). 패널 내용/조회는 위젯 자기완결. */}
+        {gitPanelOpen ? (
+          <div
+            data-interactive-overlay="true"
+            data-testid="atlas-git-scrim"
+            className="pointer-events-auto fixed inset-0 z-50 flex items-stretch justify-center bg-[color:var(--color-backdrop-medium)] sm:items-center sm:p-6"
+            onClick={() => setGitPanelOpen(false)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              onClick={(event) => event.stopPropagation()}
+              className="flex h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve))] w-full flex-col overflow-y-auto border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-2xl sm:h-auto sm:max-h-[calc(100vh-3rem)] sm:max-w-[560px] sm:rounded-[var(--topology-shortcut-sheet-radius)]"
+            >
+              <AtlasGitPanel
+                vaultPath={gitVaultPath}
+                sessionChangeset={ontologyChangeset}
+                onClose={() => setGitPanelOpen(false)}
+              />
+            </div>
+          </div>
+        ) : null}
         <AgentConnectSheet
           open={agentConnect.open}
           onClose={() => {
