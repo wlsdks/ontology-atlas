@@ -112,6 +112,7 @@ import {
   computeDomainCensusRows,
   computeOntologyChangeset,
   domainCensusById,
+  filterTreeExcludeKind,
   formatAgentPostChangeSyncPacket,
   useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
@@ -158,6 +159,7 @@ import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
 import { AgentConnectSheet, useAgentConnectLauncher } from "@/widgets/agent-connect";
 import { TopologyV2EdgePanel } from "@/widgets/topology-map-v2/ui/TopologyV2EdgePanel";
+import { PLAIN_TIER_REVEAL } from "@/widgets/topology-map-v2/model/tier-visibility";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { buildFullDetailGroups, buildFullDetailReachModel } from "@/widgets/full-detail-a1";
@@ -245,12 +247,45 @@ const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
 /** INDEX panel preference (B3 허브가 곧 지도) — separate key from the legacy
  * hero-rail `LEFT_PANEL_COLLAPSED_KEY` above, a different feature entirely. */
 const INDEX_PANEL_COLLAPSED_KEY = "demo:index-panel-collapsed:v1";
+/**
+ * 슬라이스 C (개발/비개발 모드 토글) — 표시-렌즈 필터(데이터 무변경). true 면
+ * 비개발(일반) 모드: element 티어 기본 숨김(클릭 ego 는 예외 공개) + plain
+ * 어휘 + 경로 서브정보 숨김 + 개발자 크롬 숨김. localStorage 만 진실원 —
+ * `useLocalStorageBoolean` 은 setItem 후 리렌더 트리거가 없어(구독만) 여기선
+ * useState 미러 + setter 에서 setItem 동기화 패턴을 쓴다(기존
+ * `setIndexPreference` 의 "저장+즉시 적용" 계약과 동일).
+ */
+const AUDIENCE_PLAIN_KEY = "demo:audience-plain:v1";
+
+function readAudiencePlainPreference(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(AUDIENCE_PLAIN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export function HomePage() {
   const t = useTranslations('topology');
   const tKinds = useTranslations('kinds');
   const tAgentConnect = useTranslations('agentConnect');
   const relationVocabulary = useRelationVocabulary();
+  // 슬라이스 C — lazy initializer 는 클라이언트에서만 실제 실행(SSR 은 항상
+  // false), 클라이언트 hydration 도 localStorage 없는 서버 프리렌더 기준
+  // false 와 같아 hydration mismatch 없음(다른 세션 플래그와 같은 패턴).
+  const [audiencePlain, setAudiencePlainState] = useState<boolean>(readAudiencePlainPreference);
+  const setAudiencePlain = useCallback((next: boolean) => {
+    try {
+      window.localStorage.setItem(AUDIENCE_PLAIN_KEY, next ? "1" : "0");
+    } catch {
+      /* private mode — session-only, no persistence */
+    }
+    setAudiencePlainState(next);
+  }, []);
+  // 슬라이스 C — 지도 표면의 관계 어휘 레지스터. 비개발(plain) 모드는
+  // 데이터시트와 같은 plain 레지스터로 통일.
+  const relationRegister: "formal" | "plain" = audiencePlain ? "plain" : "formal";
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
   const localGraphRoot =
     localGraphStack.length > 0 ? localGraphStack[localGraphStack.length - 1] : null;
@@ -583,15 +618,21 @@ export function HomePage() {
   const navRailSettingsSlot = useMemo(
     () => (
       <>
-        <GitStatusTile
-          onActivate={() => setGitPanelOpen(true)}
-          panelOpen={gitPanelOpen}
-          vaultPath={gitVaultPath}
-          sessionDirty={ontologyChangeset.touchedNodeIds.size > 0}
-        />
+        {/* 슬라이스 C — 비개발(plain) 모드는 발자취(Atlas Git) 타일을 개발자
+            크롬으로 간주해 숨긴다. */}
+        {audiencePlain ? null : (
+          <GitStatusTile
+            onActivate={() => setGitPanelOpen(true)}
+            panelOpen={gitPanelOpen}
+            vaultPath={gitVaultPath}
+            sessionDirty={ontologyChangeset.touchedNodeIds.size > 0}
+          />
+        )}
         <TopologyV2SettingsGear
           indexDefaultCollapsed={indexPanelCollapsedStored}
           onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
+          audiencePlain={audiencePlain}
+          onChangeAudiencePlain={setAudiencePlain}
           changeVaultHref="/docs/?intent=local"
           popoverAlign="left"
           popoverSide="top"
@@ -611,6 +652,9 @@ export function HomePage() {
             indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
             changeVault: t('controls.settingsGearChangeVault'),
             changeVaultAriaLabel: t('controls.settingsGearChangeVaultAriaLabel'),
+            audience: t('controls.settingsGearAudience'),
+            audienceDev: t('controls.settingsGearAudienceDev'),
+            audiencePlain: t('controls.settingsGearAudiencePlain'),
           }}
         />
       </>
@@ -618,6 +662,8 @@ export function HomePage() {
     [
       indexPanelCollapsedStored,
       handleChangeIndexDefaultCollapsed,
+      audiencePlain,
+      setAudiencePlain,
       ontologySearchOpen,
       docsDrawerOpen,
       gitPanelOpen,
@@ -700,7 +746,7 @@ export function HomePage() {
       (e) => e.from === selectedEdge.sourceId && e.to === selectedEdge.targetId,
     );
     const why = edgeRecord?.label?.trim() || null;
-    const typeLabel = relationVocabulary(selectedEdge.relationType, "formal");
+    const typeLabel = relationVocabulary(selectedEdge.relationType, relationRegister);
     // 과제 ⑩ — 엣지 문장/양 끝 노드 라벨은 표시용 짧은 제목.
     const fromDisplay = from.display ?? from.title;
     const toDisplay = to.display ?? to.title;
@@ -728,7 +774,7 @@ export function HomePage() {
       builderEditHref: buildOntologyBuilderNodeHrefFromGraphId(from.id),
       why,
     };
-  }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary]);
+  }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary, relationRegister]);
   // P3c — 엣지 호버 마이크로카드 (클릭 팝오버의 가벼운 전신).
   const [hoverEdge, setHoverEdge] = useState<{
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null };
@@ -757,12 +803,12 @@ export function HomePage() {
         from: from.title,
         to: to.title,
       }),
-      typeLabel: relationVocabulary(hoverEdge.edge.relationType, "formal"),
+      typeLabel: relationVocabulary(hoverEdge.edge.relationType, relationRegister),
       why: edgeRecord?.label?.trim() || null,
       x: hoverEdge.x,
       y: hoverEdge.y,
     };
-  }, [hoverEdge, ontologyInsight, t, relationVocabulary]);
+  }, [hoverEdge, ontologyInsight, t, relationVocabulary, relationRegister]);
   // S2 파트 5C — 클러스터 칩 호버 툴팁 상태 + 문장 모델. 부모 제목/카운트를
   // i18n(`cluster.tooltipCollapsed/Expanded`) 에 넣어 완성한 평문 한 줄.
   const [hoverCluster, setHoverCluster] = useState<{
@@ -2669,6 +2715,8 @@ export function HomePage() {
                       <TopologyV2SettingsGear
                         indexDefaultCollapsed={indexPanelCollapsedStored}
                         onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
+                        audiencePlain={audiencePlain}
+                        onChangeAudiencePlain={setAudiencePlain}
                         changeVaultHref="/docs/?intent=local"
                         triggerVariant="chrome-tile"
                         popoverAlign="right"
@@ -2683,6 +2731,9 @@ export function HomePage() {
                           indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
                           changeVault: t('controls.settingsGearChangeVault'),
                           changeVaultAriaLabel: t('controls.settingsGearChangeVaultAriaLabel'),
+                          audience: t('controls.settingsGearAudience'),
+                          audienceDev: t('controls.settingsGearAudienceDev'),
+                          audiencePlain: t('controls.settingsGearAudiencePlain'),
                         }}
                       />
                     </div>
@@ -2943,7 +2994,14 @@ export function HomePage() {
                     />
                   ) : (
                   <TopologyIndexPanel
-                    treeResult={indexTreeResult}
+                    // 슬라이스 C — 비개발(plain) 모드는 element 행만 제외한
+                    // 파생 트리를 내린다(표시 게이트, 데이터 무변경). realm
+                    // 대장/census/카운트는 여전히 `indexTreeResult` 원본을 쓴다.
+                    treeResult={
+                      audiencePlain
+                        ? { ...indexTreeResult, roots: filterTreeExcludeKind(indexTreeResult.roots, "element") }
+                        : indexTreeResult
+                    }
                     totalConcepts={topologyTotalNodes}
                     totalRelations={topologyTotalRelations}
                     domainCount={indexDomainCount}
@@ -3004,27 +3062,34 @@ export function HomePage() {
                         ? t('workspace.growthThisWeek', { count: recentlyUpdatedCount })
                         : undefined
                     }
-                    agentHandoff={{
-                      briefText: indexAgentHandoffBriefText,
-                      reanalyzeText: indexAgentHandoffReanalyzeText,
-                      syncText: indexAgentHandoffSyncText,
-                      labels: {
-                        menuLabel: t("index.agentHandoff"),
-                        menuAria: t("index.agentHandoffAria"),
-                        briefCopy: t("analysis.overviewBriefCopy"),
-                        briefCopied: t("analysis.overviewBriefCopied"),
-                        briefCopyAriaLabel: t("analysis.overviewBriefCopyAriaLabel"),
-                        briefCopiedAriaLabel: t("analysis.overviewBriefCopiedAriaLabel"),
-                        reanalyzeCopy: t("analysis.overviewReanalyzeCopy"),
-                        reanalyzeCopied: t("analysis.overviewReanalyzeCopied"),
-                        reanalyzeCopyAriaLabel: t("analysis.overviewReanalyzeCopyAriaLabel"),
-                        reanalyzeCopiedAriaLabel: t("analysis.overviewReanalyzeCopiedAriaLabel"),
-                        syncCopy: t("analysis.overviewSyncCopy"),
-                        syncCopied: t("analysis.overviewSyncCopied"),
-                        syncCopyAriaLabel: t("analysis.overviewSyncCopyAriaLabel"),
-                        syncCopiedAriaLabel: t("analysis.overviewSyncCopiedAriaLabel"),
-                      },
-                    }}
+                    // 슬라이스 C — 비개발(plain) 모드는 인계 메뉴를 개발자
+                    // 크롬으로 간주해 undefined 전달(위젯 기존 계약 — 미전달
+                    // 시 메뉴 미렌더).
+                    agentHandoff={
+                      audiencePlain
+                        ? undefined
+                        : {
+                            briefText: indexAgentHandoffBriefText,
+                            reanalyzeText: indexAgentHandoffReanalyzeText,
+                            syncText: indexAgentHandoffSyncText,
+                            labels: {
+                              menuLabel: t("index.agentHandoff"),
+                              menuAria: t("index.agentHandoffAria"),
+                              briefCopy: t("analysis.overviewBriefCopy"),
+                              briefCopied: t("analysis.overviewBriefCopied"),
+                              briefCopyAriaLabel: t("analysis.overviewBriefCopyAriaLabel"),
+                              briefCopiedAriaLabel: t("analysis.overviewBriefCopiedAriaLabel"),
+                              reanalyzeCopy: t("analysis.overviewReanalyzeCopy"),
+                              reanalyzeCopied: t("analysis.overviewReanalyzeCopied"),
+                              reanalyzeCopyAriaLabel: t("analysis.overviewReanalyzeCopyAriaLabel"),
+                              reanalyzeCopiedAriaLabel: t("analysis.overviewReanalyzeCopiedAriaLabel"),
+                              syncCopy: t("analysis.overviewSyncCopy"),
+                              syncCopied: t("analysis.overviewSyncCopied"),
+                              syncCopyAriaLabel: t("analysis.overviewSyncCopyAriaLabel"),
+                              syncCopiedAriaLabel: t("analysis.overviewSyncCopiedAriaLabel"),
+                            },
+                          }
+                    }
                     labels={{
                       label: t("index.label"),
                       fold: t("index.fold"),
@@ -3191,6 +3256,9 @@ export function HomePage() {
                     realmEnterTooltip={t('realm.enterTooltip')}
                     canvasLabel={t('canvas.ariaLabel')}
                     visitedTrail={footprintVisitedIds}
+                    // 슬라이스 C — 비개발(plain) 모드는 element 티어를 도달
+                    // 불가 밴드로 밀어 상시 숨김(ego 예외는 그대로).
+                    tierReveal={audiencePlain ? PLAIN_TIER_REVEAL : undefined}
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas ? (
@@ -3357,7 +3425,7 @@ export function HomePage() {
                 )}
                 aria-hidden={v2DatasheetModel ? true : undefined}
               >
-                <TopologyRelationLegend />
+                <TopologyRelationLegend register={relationRegister} />
                 <FirstRunReadout
                   projectCount={firstRunProjectCount}
                   domainCount={indexDomainCount}
@@ -3506,6 +3574,10 @@ export function HomePage() {
                     ? () => setFullDetailSlug(selectedOntologyNode.id)
                     : undefined
                 }
+                // 슬라이스 C — 비개발(plain) 모드는 인계 복사 타일 + 원문
+                // 경로 서브라인(슬라이스 B)을 개발자 크롬으로 간주해 숨긴다.
+                showHandoff={!audiencePlain}
+                showSourcePath={!audiencePlain}
                 className="max-lg:w-[min(520px,calc(100vw-1.5rem))]"
               />
             ) : null}

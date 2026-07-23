@@ -204,6 +204,17 @@ export interface TopologyV2DetailPanelProps {
    */
   presence?: "entering" | "exiting";
   className?: string;
+  /**
+   * 슬라이스 C (개발/비개발 모드 토글) — 인계 복사(handoff) 액션 타일. 기본
+   * `true`(기존 렌더 유지). 비개발(plain) 모드에서 HomePage 가 `false` 를
+   * 넘겨 개발자 크롬으로 숨긴다.
+   */
+  showHandoff?: boolean;
+  /**
+   * 슬라이스 C — 원문 경로 서브라인(슬라이스 B, `sourceTitle`). 기본
+   * `true`. 비개발(plain) 모드에서 `false` — 코드 경로는 개발자 어휘.
+   */
+  showSourcePath?: boolean;
 }
 
 // 데이터시트 내부 정제 (2026-07-23) — `justify-start` + 고정 상단 패딩: 라벨이
@@ -256,6 +267,8 @@ export function TopologyV2DetailPanel({
   onOpenFullDetail,
   presence = "entering",
   className,
+  showHandoff = true,
+  showSourcePath = true,
 }: TopologyV2DetailPanelProps) {
   const metricSegments = buildV2MetricSegments(metric, {
     contains: labels.metricContains,
@@ -503,7 +516,7 @@ export function TopologyV2DetailPanel({
               {title}
             </h2>
           </div>
-          {sourceTitle && sourceTitle !== title ? (
+          {showSourcePath && sourceTitle && sourceTitle !== title ? (
             <div
               data-testid="topology-v2-detail-panel-source-path"
               className="pl-[13.5px] font-mono text-[11px] text-[color:var(--color-text-quaternary)] break-all"
@@ -636,19 +649,21 @@ export function TopologyV2DetailPanel({
             <span>{labels.actionEditRelations}</span>
           </Link>,
         )}
-        {withActionTip(
-          labels.actionCopyHandoffTip,
-          <button
-            type="button"
-            onClick={() => onCopyHandoff(handoffText)}
-            aria-label={labels.handoff}
-            data-testid="topology-v2-detail-panel-action-handoff"
-            className={ACTION_TILE_CLASS}
-          >
-            <Copy size={15} aria-hidden="true" />
-            <span>{labels.actionCopyHandoff}</span>
-          </button>,
-        )}
+        {showHandoff
+          ? withActionTip(
+              labels.actionCopyHandoffTip,
+              <button
+                type="button"
+                onClick={() => onCopyHandoff(handoffText)}
+                aria-label={labels.handoff}
+                data-testid="topology-v2-detail-panel-action-handoff"
+                className={ACTION_TILE_CLASS}
+              >
+                <Copy size={15} aria-hidden="true" />
+                <span>{labels.actionCopyHandoff}</span>
+              </button>,
+            )
+          : null}
         {withActionTip(
           labels.actionPathTip,
           <button

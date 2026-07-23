@@ -56,6 +56,14 @@ export const DEFAULT_TIER_REVEAL: TierRevealConfig = {
   element: { enterRatio: 2.3, fullRatio: 2.85 },
 };
 
+/** 비개발(plain) 렌즈 — element 티어를 도달 불가 밴드로 밀어 상시 숨김.
+ * ego 예외(effectiveNodeAlpha)는 그대로 — "클릭하면 그 노드의 요소는
+ * 보인다"(기본 숨김 + opt-in 공개). 유한 센티널이라 smoothstep NaN 없음. */
+export const PLAIN_TIER_REVEAL: TierRevealConfig = {
+  capability: DEFAULT_TIER_REVEAL.capability,
+  element: { enterRatio: 1e6, fullRatio: 2e6 },
+};
+
 /**
  * Zoom ratio = `cameraScale / overviewEntryScale`. `1.0` exactly at the overview
  * entry (where `cameraScale === overviewEntryScale`), `>1` zoomed in, `<1`

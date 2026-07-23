@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { Orbit } from "lucide-react";
 import { useTopologyLoop } from "./use-topology-loop";
+import type { TierRevealConfig } from "../model/tier-visibility";
 
 /**
  * `TopologyMapV2` — the single canvas-2D render engine that replaces
@@ -175,10 +176,16 @@ export interface TopologyMapV2Props {
    * 발자국 없음.
    */
   visitedTrail?: readonly string[];
+  /**
+   * 슬라이스 C (개발/비개발 모드 토글) — 표시-렌즈 티어 게이트 config. 생략
+   * 시 `DEFAULT_TIER_REVEAL`(개발 모드). HomePage 가 비개발(plain) 모드에서
+   * `PLAIN_TIER_REVEAL`(element 상시 숨김)을 넘긴다.
+   */
+  tierReveal?: TierRevealConfig;
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, canvasLabel, visitedTrail } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, canvasLabel, visitedTrail, tierReveal } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -212,6 +219,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       onEnterRealm,
       realmEnterButtonRef,
       visitedTrail,
+      tierReveal,
     });
 
   return (

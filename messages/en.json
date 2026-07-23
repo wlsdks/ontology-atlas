@@ -2365,7 +2365,10 @@
       "settingsGearIndexDefaultExpanded": "Expanded",
       "settingsGearIndexDefaultCollapsed": "Collapsed",
       "settingsGearChangeVault": "Switch vault",
-      "settingsGearChangeVaultAriaLabel": "Open the workspace to pick a different local vault folder"
+      "settingsGearChangeVaultAriaLabel": "Open the workspace to pick a different local vault folder",
+      "settingsGearAudience": "View mode",
+      "settingsGearAudienceDev": "Developer",
+      "settingsGearAudiencePlain": "General"
     },
     "empty": {
       "noMatchesTitle": "No matching items",

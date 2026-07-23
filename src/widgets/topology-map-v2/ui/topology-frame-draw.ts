@@ -12,7 +12,7 @@ import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selec
 import { footprintRingStyle, FOOTPRINT_RING_OFFSET } from "../model/footprint-ring";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-parallax";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
-import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha } from "../model/tier-visibility";
+import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
 import { DISC_LABEL_TOP_K, LABEL_TOP_K, selectDiscLabelEligible, selectTopKLabels, type LabelRankEntry } from "../model/label-lod";
 import { draw as gridDraw, lerpColorHex } from "../render/grid";
 import {
@@ -403,6 +403,13 @@ export interface FrameDrawParams {
   spotlightIds: ReadonlySet<string> | null;
   /** 스포트라이트 on/off 지수 램프 0..1 — loop 가 `stepFocusRamp`(focusDimTau 재사용)로 step. */
   spotlightRamp: number;
+  /**
+   * 슬라이스 C (개발/비개발 모드 토글) — 티어 게이트 config. 생략 시
+   * `DEFAULT_TIER_REVEAL`(개발 모드). 비개발(plain) 모드는 HomePage 가
+   * `PLAIN_TIER_REVEAL`(element 상시 숨김)을 넘긴다 — 그리기 게이트도 히트/
+   * 팬-클램프와 같은 config 를 봐야 lockstep 이 깨지지 않는다.
+   */
+  tierReveal?: TierRevealConfig;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -449,6 +456,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     footprintRanksById,
     spotlightIds,
     spotlightRamp,
+    tierReveal = DEFAULT_TIER_REVEAL,
   } = params;
 
   // 스포트라이트 침강 배수 — 렌즈 ON + 램프 진행 중 + 포커스/엣지선택 비활성
@@ -539,7 +547,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const effectiveAlphaById = effectiveAlphaByIdReused;
   for (const node of world.nodes) {
     const tierKind = realmTierKinds?.get(node.id) ?? node.kind;
-    const tierAlpha = nodeTierAlpha(tierKind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL);
+    const tierAlpha = nodeTierAlpha(tierKind, node.isHub, zoomRatio, tierReveal);
     tierAlphaById.set(node.id, tierAlpha);
     const isPairMember =
       focusedNodeId === null &&
@@ -1072,7 +1080,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // (circuit) bands the label budget goes to the highest-degree nodes; at the
   // deepest element zoom the budget lifts and every label returns. Exempt from
   // the budget: ego focus members and the hovered node only.
-  const applyLabelTopK = classifyZoomTier(zoomRatio) !== "element";
+  const applyLabelTopK = classifyZoomTier(zoomRatio, tierReveal) !== "element";
   // High-fan disc 밀도 처방: an expanded phyllotaxis disc can hold dozens–
   // hundreds of children. Blanket-exempting them all (the old behavior) punched
   // a wall of ~60 labels across the map. Instead, per disc only the DOI top-K

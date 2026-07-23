@@ -2365,7 +2365,10 @@
       "settingsGearIndexDefaultExpanded": "펼침",
       "settingsGearIndexDefaultCollapsed": "접힘",
       "settingsGearChangeVault": "vault 바꾸기",
-      "settingsGearChangeVaultAriaLabel": "다른 로컬 vault 폴더를 고르러 워크스페이스 열기"
+      "settingsGearChangeVaultAriaLabel": "다른 로컬 vault 폴더를 고르러 워크스페이스 열기",
+      "settingsGearAudience": "보기 모드",
+      "settingsGearAudienceDev": "개발",
+      "settingsGearAudiencePlain": "일반"
     },
     "empty": {
       "noMatchesTitle": "필터에 맞는 항목 없음",

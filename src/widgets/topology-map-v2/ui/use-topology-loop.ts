@@ -15,7 +15,7 @@ import type { CameraAxes, CameraTarget } from "../engine/camera";
 import { cameraTransitionDurationMs, easeCameraKeyframe, type CameraKeyframe, type CameraTween } from "../model/camera-easing";
 import { stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
 import { isCameraUnsettled, isCanvasActive, shouldSkipFrame } from "../model/idle-gate";
-import { classifyZoomTier, type ZoomTier } from "../model/tier-visibility";
+import { classifyZoomTier, DEFAULT_TIER_REVEAL, type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../interaction/pointer-state-machine";
@@ -209,6 +209,13 @@ export interface UseTopologyLoopArgs {
    * 발자국 없음(회귀 0).
    */
   visitedTrail?: readonly string[];
+  /**
+   * 슬라이스 C (개발/비개발 모드 토글) — 표시-렌즈 티어 게이트 config. 생략 시
+   * `DEFAULT_TIER_REVEAL`(개발 모드 — capability/element 모두 정상 줌 반응).
+   * HomePage 가 비개발(plain) 모드에서 `PLAIN_TIER_REVEAL`(element 상시 숨김)
+   * 을 넘긴다 — 드로우/히트/팬-클램프 전부 이 값 하나로 정합된다.
+   */
+  tierReveal?: TierRevealConfig;
 }
 
 const EMPTY_EXPANDED_SET: ReadonlySet<string> = new Set();
@@ -220,7 +227,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, livePhysics = false, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, visitedTrail = EMPTY_TRAIL } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, livePhysics = false, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, visitedTrail = EMPTY_TRAIL, tierReveal = DEFAULT_TIER_REVEAL } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -501,6 +508,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * track the last emitted tier so the callback fires only on transitions. */
   const onZoomTierChangeRef = useRef<typeof onZoomTierChange>(onZoomTierChange);
   const lastZoomTierRef = useRef<ZoomTier | null>(null);
+  /** 슬라이스 C — 티어 게이트 config 미러(같은 패턴). rAF 클로저 + 포인터 핸들러가 공유. */
+  const tierRevealRef = useRef<TierRevealConfig>(tierReveal);
 
   /**
    * S3 마감 폴리시 (fable 설계) — begin a cubic ease-in-out camera transition
@@ -553,6 +562,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     livePhysicsRef.current = livePhysics;
   }, [livePhysics]);
+
+  useEffect(() => {
+    tierRevealRef.current = tierReveal;
+  }, [tierReveal]);
 
   useEffect(() => {
     selectedEdgeRef.current = selectedEdge;
@@ -1425,6 +1438,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         egoRevealById: egoRevealRef.current,
         focusRampById: focusRampRef.current,
         appearById: appearRef.current,
+        tierReveal: tierRevealRef.current,
       });
       cameraRef.current = camera;
 
@@ -1504,7 +1518,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // 미루고, 정착(active/idle) 후 아래 비교가 최종 tier 를 한 번만 방출한다.
       const realmTransitioning =
         realmTransitionRef.current.phase === "entering" || realmTransitionRef.current.phase === "exiting";
-      const nextZoomTier = classifyZoomTier(zoomRatio);
+      const nextZoomTier = classifyZoomTier(zoomRatio, tierRevealRef.current);
       if (!realmTransitioning && nextZoomTier !== lastZoomTierRef.current) {
         lastZoomTierRef.current = nextZoomTier;
         onZoomTierChangeRef.current?.(nextZoomTier);
@@ -1947,6 +1961,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         footprintRanksById,
         spotlightIds: spotlightIdsRef.current,
         spotlightRamp: spotlightRampRef.current,
+        tierReveal: tierRevealRef.current,
       });
 
       handle = requestAnimationFrame(frame);
@@ -1997,6 +2012,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     hoveredClusterIdRef,
     realmParallaxRef,
     realmTierKindsRef,
+    tierRevealRef,
     onSelect,
     onSelectEdge,
     onHoverEdge,
