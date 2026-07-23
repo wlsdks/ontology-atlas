@@ -1,0 +1,1095 @@
+// Atlas Git — Tauri 네이티브 git 계층 (데스크톱 앱이 vault 를 git 으로 버전
+// 기록하게 하는 IPC). 웹 GUI 는 다음 단계가 이 `#[tauri::command]` 들을
+// invoke 한다. `std::process::Command` 로 시스템 git 을 셸아웃하며, 안전
+// 규칙은 JS `git-snapshot.mjs`(cli/ · mcp/ 미러)를 Rust 로 그대로 옮긴 것이다.
+//
+// ── Atlas Git 신뢰 헌장 (이 파일이 지켜야 하는 불변식) ─────────────────────
+//  1. 기본 로컬 커밋만 — 전송(push/pull)은 명시 인자/호출로만(opt-in).
+//  2. git 미초기화 시 자동 `git init` 절대 금지 — 상태로만 알린다.
+//  3. 토큰/로그인/자격증명 취급 0 — 오직 로컬 git 프로세스.
+//  4. vault 밖 파일은 절대 건드리지 않는다 — `git commit -m <msg> -- <pathspec>`
+//     의 "partial commit" 격리로 vault 밖에 이미 staged 된 변경은 그대로 두고
+//     pathspec 범위만 커밋한다. untracked 신규 파일도 vault 범위만 `git add`.
+//  5. 어떤 것도 자동 실행/자동 백업 강제 금지 — 전부 명시 호출로만.
+//
+// 우아한 실패: 예상 실패(레포 아님 · non-fast-forward · 훅 거부 · 충돌)는
+// 패닉/스택트레이스 대신 `Result<_, String>` 의 깔끔한 한 줄로 돌려준다.
+
+use serde::Serialize;
+use std::fs;
+use std::path::{Component, Path, PathBuf};
+use std::process::Command;
+
+// ── vault 경로 검증 (절대경로 인젝션 방어) ─────────────────────────────────
+// vault_path 는 JS(웹 GUI)에서 넘어온다. 존재 + 디렉토리임을 확인하고
+// canonicalize 해 심볼릭 링크/상대 조각을 실경로로 확정한 뒤에만 git 의
+// cwd 로 쓴다. pathspec 은 repo_root 기준 상대로 계산되므로 vault 밖으로
+// 새는 add/commit 이 원천적으로 불가능하다.
+fn validate_vault_dir(vault_path: &str) -> Result<PathBuf, String> {
+    if vault_path.trim().is_empty() {
+        return Err("vault 경로가 비어 있어요.".into());
+    }
+    let path = PathBuf::from(vault_path);
+    let metadata =
+        fs::metadata(&path).map_err(|_| "vault 경로가 존재하지 않아요.".to_string())?;
+    if !metadata.is_dir() {
+        return Err("vault 경로가 디렉토리가 아니에요.".into());
+    }
+    fs::canonicalize(&path).map_err(|err| format!("vault 경로를 확정할 수 없어요: {err}"))
+}
+
+// ── 저수준 git 셸아웃 ──────────────────────────────────────────────────────
+struct GitRun {
+    success: bool,
+    stdout: String,
+    stderr: String,
+}
+
+/// git 을 `cwd` 에서 실행하고 stdout/stderr 를 캡처한다. spawn 자체가 실패할
+/// 때만(예: git 미설치) `Err`. non-zero exit 는 `success:false` 로 담아
+/// 호출자가 판단하게 한다 — stderr 가 사용자 터미널을 어지럽히지 않게 pipe.
+fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
+    let output = Command::new("git")
+        .args(args)
+        .current_dir(cwd)
+        .output()
+        .map_err(|err| format!("git 을 실행할 수 없어요 (설치 확인): {err}"))?;
+    Ok(GitRun {
+        success: output.status.success(),
+        stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
+        stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+    })
+}
+
+// ── 레포 발견 (자동 init 금지 — 상태로만) ──────────────────────────────────
+/// vault 를 담은 git repo 최상위. git repo 밖이면 `Ok(None)`.
+fn find_repo_root(vault_dir: &Path) -> Result<Option<PathBuf>, String> {
+    let out = run_git(vault_dir, &["rev-parse", "--show-toplevel"])?;
+    if !out.success {
+        return Ok(None);
+    }
+    let trimmed = out.stdout.trim();
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+    // git 이 돌려준 toplevel 을 canonicalize — pathspec 계산 시 vault_dir 과
+    // 같은 실경로 기준을 쓰기 위함(/var → /private/var 등 불일치 방지).
+    let root = PathBuf::from(trimmed);
+    Ok(Some(fs::canonicalize(&root).unwrap_or(root)))
+}
+
+/// 커밋/히스토리/diff/pull 처럼 repo 가 반드시 필요한 커맨드용. repo 밖이면
+/// "자동 init 안 함" 안내를 담은 `Err` — 신뢰 헌장 ②.
+fn require_repo_root(vault_dir: &Path) -> Result<PathBuf, String> {
+    match find_repo_root(vault_dir)? {
+        Some(root) => Ok(root),
+        None => Err("이 vault 는 git 저장소 안에 있지 않아요. Atlas 는 자동으로 `git init` 하지 않아요 — 버전 기록을 원하면 직접 실행하세요: git init".into()),
+    }
+}
+
+/// repo_root 기준 vault 의 pathspec — vault 가 repo root 자체면 ".".
+fn vault_pathspec(repo_root: &Path, vault_dir: &Path) -> String {
+    match vault_dir.strip_prefix(repo_root) {
+        Ok(rel) => {
+            let mut parts: Vec<String> = Vec::new();
+            for component in rel.components() {
+                if let Component::Normal(part) = component {
+                    parts.push(part.to_string_lossy().into_owned());
+                }
+            }
+            if parts.is_empty() {
+                ".".into()
+            } else {
+                parts.join("/")
+            }
+        }
+        Err(_) => ".".into(),
+    }
+}
+
+// ── porcelain 파싱 ─────────────────────────────────────────────────────────
+struct PorcelainRow {
+    index: char,
+    worktree: char,
+    path: String,
+    renamed_from: Option<String>,
+}
+
+fn parse_porcelain(out: &str) -> Vec<PorcelainRow> {
+    out.lines()
+        .filter(|line| line.len() >= 3)
+        .map(|line| {
+            let bytes = line.as_bytes();
+            let index = bytes[0] as char;
+            let worktree = bytes[1] as char;
+            // 첫 3바이트(상태 2 + 공백 1)는 항상 ASCII → byte 3 은 char 경계.
+            let rest = &line[3..];
+            let mut renamed_from = None;
+            let mut path = rest.to_string();
+            if let Some(arrow) = rest.find(" -> ") {
+                renamed_from = Some(rest[..arrow].to_string());
+                path = rest[arrow + 4..].to_string();
+            }
+            PorcelainRow {
+                index,
+                worktree,
+                path,
+                renamed_from,
+            }
+        })
+        .collect()
+}
+
+/// `git status --porcelain -- <pathspec>` → 행 배열. git 실패 시 `Err`.
+fn get_porcelain_status(repo_root: &Path, pathspec: &str) -> Result<Vec<PorcelainRow>, String> {
+    let out = run_git(
+        repo_root,
+        &[
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+            "--",
+            pathspec,
+        ],
+    )?;
+    if !out.success {
+        return Err(format!(
+            "git status 실패: {}",
+            first_nonempty_line(&out.stderr).unwrap_or_else(|| "unknown error".into())
+        ));
+    }
+    Ok(parse_porcelain(&out.stdout))
+}
+
+/// pathspec 없는 전체 repo porcelain — staged-outside-vault 가드용. 실패 시 빈 목록.
+fn get_full_porcelain_status(repo_root: &Path) -> Vec<PorcelainRow> {
+    match run_git(
+        repo_root,
+        &["status", "--porcelain", "--untracked-files=all"],
+    ) {
+        Ok(out) if out.success => parse_porcelain(&out.stdout),
+        _ => Vec::new(),
+    }
+}
+
+fn classify_change(row: &PorcelainRow) -> &'static str {
+    if row.index == 'D' || row.worktree == 'D' {
+        return "deleted";
+    }
+    if row.index == 'R' {
+        return "renamed";
+    }
+    if (row.index == '?' && row.worktree == '?') || row.index == 'A' {
+        return "added";
+    }
+    "modified"
+}
+
+// ── frontmatter kind/slug (경량 파서) ──────────────────────────────────────
+// 의미 정보용 최소 추출 — 파일 선두 `---` 블록에서 top-level `kind:`/`slug:`만
+// 읽는다. 커밋을 막지 않는 best-effort(실패해도 경로 기반 slug 로 진행).
+fn read_kind_slug(abs_path: &Path) -> (Option<String>, Option<String>) {
+    let Ok(raw) = fs::read_to_string(abs_path) else {
+        return (None, None);
+    };
+    let mut lines = raw.lines();
+    if lines.next().map(|l| l.trim_end()) != Some("---") {
+        return (None, None);
+    }
+    let mut kind = None;
+    let mut slug = None;
+    for line in lines {
+        let trimmed = line.trim_end();
+        if trimmed == "---" {
+            break;
+        }
+        if let Some(rest) = line.strip_prefix("kind:") {
+            let value = unquote(rest.trim());
+            if !value.is_empty() {
+                kind = Some(value);
+            }
+        } else if let Some(rest) = line.strip_prefix("slug:") {
+            let value = unquote(rest.trim());
+            if !value.is_empty() {
+                slug = Some(value);
+            }
+        }
+    }
+    (kind, slug)
+}
+
+fn unquote(value: &str) -> String {
+    let bytes = value.as_bytes();
+    if value.len() >= 2
+        && ((bytes[0] == b'"' && bytes[value.len() - 1] == b'"')
+            || (bytes[0] == b'\'' && bytes[value.len() - 1] == b'\''))
+    {
+        value[1..value.len() - 1].to_string()
+    } else {
+        value.to_string()
+    }
+}
+
+// ── 변경 요약 ──────────────────────────────────────────────────────────────
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ChangeEntry {
+    path: String,
+    status: String,
+    kind: Option<String>,
+    slug: String,
+    renamed_from: Option<String>,
+}
+
+fn build_change_summary(
+    rows: &[PorcelainRow],
+    repo_root: &Path,
+    vault_dir: &Path,
+) -> Vec<ChangeEntry> {
+    rows.iter()
+        .map(|row| {
+            let abs_path = repo_root.join(&row.path);
+            let status = classify_change(row);
+            let mut kind = None;
+            let mut slug = path_based_slug(vault_dir, &abs_path);
+            if row.path.ends_with(".md") && status != "deleted" {
+                let (k, s) = read_kind_slug(&abs_path);
+                if k.is_some() {
+                    kind = k;
+                }
+                if let Some(s) = s {
+                    slug = s;
+                }
+            }
+            let renamed_from = if status == "renamed" {
+                row.renamed_from.clone()
+            } else {
+                None
+            };
+            ChangeEntry {
+                path: row.path.clone(),
+                status: status.to_string(),
+                kind,
+                slug,
+                renamed_from,
+            }
+        })
+        .collect()
+}
+
+fn path_based_slug(vault_dir: &Path, abs_path: &Path) -> String {
+    let rel = abs_path
+        .strip_prefix(vault_dir)
+        .unwrap_or(abs_path)
+        .to_string_lossy()
+        .replace('\\', "/");
+    rel.strip_suffix(".md").unwrap_or(&rel).to_string()
+}
+
+/// 의미 단위 커밋 요약 한 줄 — kind별 카운트 + 대표 슬러그 최대 3개.
+fn format_snapshot_summary(changes: &[ChangeEntry]) -> String {
+    let added = changes.iter().filter(|c| c.status == "added").count();
+    let modified = changes.iter().filter(|c| c.status == "modified").count();
+    let removed = changes.iter().filter(|c| c.status == "deleted").count();
+    let renamed = changes.iter().filter(|c| c.status == "renamed").count();
+
+    let mut parts: Vec<String> = Vec::new();
+    if added > 0 {
+        parts.push(format!(
+            "+{added} concept{}",
+            if added == 1 { "" } else { "s" }
+        ));
+    }
+    if modified > 0 {
+        parts.push(format!("~{modified} updated"));
+    }
+    if renamed > 0 {
+        parts.push(format!("→{renamed} renamed"));
+    }
+    if removed > 0 {
+        parts.push(format!("-{removed} removed"));
+    }
+
+    let headline = if parts.is_empty() {
+        "ontology snapshot: no concept changes".to_string()
+    } else {
+        format!("ontology snapshot: {}", parts.join(", "))
+    };
+
+    let slugs: Vec<&str> = changes.iter().map(|c| c.slug.as_str()).collect();
+    let shown = &slugs[..slugs.len().min(3)];
+    let overflow = slugs.len() - shown.len();
+    if shown.is_empty() {
+        headline
+    } else {
+        let overflow_text = if overflow > 0 {
+            format!(", +{overflow}")
+        } else {
+            String::new()
+        };
+        format!("{headline} ({}{overflow_text})", shown.join(", "))
+    }
+}
+
+fn status_mark(status: &str) -> char {
+    match status {
+        "added" => 'A',
+        "modified" => 'M',
+        "deleted" => 'D',
+        "renamed" => 'R',
+        _ => '?',
+    }
+}
+
+/// custom 메시지면 auto summary 를 본문에 겹쳐 담아 의미 맥락을 보존한다.
+fn build_commit_message(
+    subject: &str,
+    auto_summary: &str,
+    changes: &[ChangeEntry],
+    has_custom_message: bool,
+) -> String {
+    let mut body: Vec<String> = Vec::new();
+    if has_custom_message {
+        body.push(auto_summary.to_string());
+        body.push(String::new());
+    }
+    for c in changes {
+        body.push(format!("  {}  {}", status_mark(&c.status), c.path));
+    }
+    format!("{subject}\n\n{}", body.join("\n"))
+}
+
+/// vault pathspec 밖에서 이미 staged 된 경로 — 보호 경고용(커밋엔 안 섞임).
+fn find_staged_outside_vault(rows: &[PorcelainRow], pathspec: &str) -> Vec<String> {
+    rows.iter()
+        .filter(|row| {
+            let is_staged = row.index != ' ' && row.index != '?';
+            is_staged && !is_under_pathspec(&row.path, pathspec)
+        })
+        .map(|row| row.path.clone())
+        .collect()
+}
+
+fn is_under_pathspec(path: &str, pathspec: &str) -> bool {
+    if pathspec == "." {
+        return true;
+    }
+    path == pathspec || path.starts_with(&format!("{pathspec}/"))
+}
+
+fn first_nonempty_line(text: &str) -> Option<String> {
+    text.lines()
+        .map(|l| l.trim())
+        .find(|l| !l.is_empty())
+        .map(|l| l.to_string())
+}
+
+// ── 우아한 실패 분류 (git-snapshot.mjs classifyGitError 미러) ──────────────
+struct GitErrorInfo {
+    #[allow(dead_code)]
+    reason: &'static str,
+    message: String,
+    note: Option<String>,
+    guidance: Option<String>,
+}
+
+fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
+    let text = raw.to_lowercase();
+    let first_line = first_nonempty_line(raw);
+
+    if text.contains("non-fast-forward")
+        || text.contains("updates were rejected")
+        || (text.contains("[rejected]") && text.contains("fetch first"))
+    {
+        return GitErrorInfo {
+            reason: "push-non-fast-forward",
+            message: "원격이 앞섰어요 — `git pull` 후 다시 스냅샷하세요.".into(),
+            note: Some("커밋은 이미 로컬에 기록됨".into()),
+            guidance: Some("git pull".into()),
+        };
+    }
+
+    if text.contains("gpg failed to sign")
+        || text.contains("signing failed")
+        || (text.contains("gpg") && text.contains("sign"))
+    {
+        return GitErrorInfo {
+            reason: "gpg-sign-failed",
+            message: "커밋 서명(gpg)에 실패했어요 — 서명 키를 확인하세요.".into(),
+            note: first_line,
+            guidance: Some("git config commit.gpgsign false   # 서명을 끄고 다시 스냅샷".into()),
+        };
+    }
+
+    if text.contains("cannot do a partial commit") {
+        return GitErrorInfo {
+            reason: "merge-in-progress",
+            message: "머지/리베이스가 진행 중이라 vault 범위만 커밋할 수 없어요 — 진행 중인 작업을 먼저 마치거나 중단하세요.".into(),
+            note: None,
+            guidance: Some("git status   # 진행 중 상태 확인".into()),
+        };
+    }
+
+    if text.contains("conflict") || text.contains("automatic merge failed") {
+        return GitErrorInfo {
+            reason: "pull-conflict",
+            message: "pull 중 충돌이 났어요 — 충돌 파일을 해결한 뒤 커밋하세요.".into(),
+            note: None,
+            guidance: Some("git status   # 충돌 파일 확인".into()),
+        };
+    }
+
+    if text.contains("would be overwritten") || text.contains("overwritten by merge") {
+        return GitErrorInfo {
+            reason: "local-changes",
+            message: "커밋 안 된 로컬 변경이 있어 막혔어요 — 먼저 스냅샷으로 커밋하거나 stash 하세요."
+                .into(),
+            note: None,
+            guidance: None,
+        };
+    }
+
+    if text.contains("no tracking information")
+        || text.contains("couldn't find remote ref")
+        || text.contains("no such remote")
+    {
+        return GitErrorInfo {
+            reason: "no-upstream",
+            message: "이 브랜치에 연결된 원격이 없어요 — 먼저 upstream 을 설정하세요.".into(),
+            note: None,
+            guidance: Some("git push -u origin <branch>".into()),
+        };
+    }
+
+    if text.contains("pre-commit") || text.contains("commit-msg") || text.contains("hook") {
+        return GitErrorInfo {
+            reason: "pre-commit-hook",
+            message: "커밋 훅이 스냅샷을 거부했어요 — 훅이 보고한 문제를 고친 뒤 다시 스냅샷하세요.".into(),
+            note: first_line,
+            guidance: None,
+        };
+    }
+
+    if operation == "commit" {
+        return GitErrorInfo {
+            reason: "commit-rejected",
+            message: "커밋이 거부됐어요 (커밋 훅이 막았을 수 있어요).".into(),
+            note: first_line,
+            guidance: None,
+        };
+    }
+    GitErrorInfo {
+        reason: "git-command-failed",
+        message: format!("git {operation} 명령이 실패했어요."),
+        note: first_line,
+        guidance: None,
+    }
+}
+
+/// 분류 결과를 사용자용 한 줄 문자열로 — Result<_, String> 의 Err 페이로드.
+fn classified_error_string(info: &GitErrorInfo) -> String {
+    let mut out = info.message.clone();
+    if let Some(note) = &info.note {
+        out.push_str(&format!(" ({note})"));
+    }
+    if let Some(guidance) = &info.guidance {
+        out.push_str(&format!(" → {guidance}"));
+    }
+    out
+}
+
+fn git_error_text(run: &GitRun) -> String {
+    let mut parts = Vec::new();
+    if !run.stderr.trim().is_empty() {
+        parts.push(run.stderr.clone());
+    }
+    if !run.stdout.trim().is_empty() {
+        parts.push(run.stdout.clone());
+    }
+    parts.join("\n")
+}
+
+// ── upstream / 브랜치 조회 ─────────────────────────────────────────────────
+fn get_current_branch(repo_root: &Path) -> Option<String> {
+    let out = run_git(repo_root, &["rev-parse", "--abbrev-ref", "HEAD"]).ok()?;
+    if !out.success {
+        return None;
+    }
+    let trimmed = out.stdout.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+fn get_upstream_ref(repo_root: &Path) -> Option<String> {
+    let out = run_git(
+        repo_root,
+        &["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
+    )
+    .ok()?;
+    if !out.success {
+        return None;
+    }
+    let trimmed = out.stdout.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+fn get_head_hash(repo_root: &Path) -> Option<String> {
+    let out = run_git(repo_root, &["rev-parse", "HEAD"]).ok()?;
+    if !out.success {
+        return None;
+    }
+    let trimmed = out.stdout.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+fn get_remote_url(repo_root: &Path, remote_name: &str) -> Option<String> {
+    let out = run_git(repo_root, &["remote", "get-url", remote_name]).ok()?;
+    if !out.success {
+        return None;
+    }
+    let trimmed = out.stdout.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+// ── 결과 타입 (웹 GUI 가 소비) ─────────────────────────────────────────────
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitStatusResult {
+    /// vault 가 git repo 안인가 — 웹 GUI 버튼 상태 판단의 1차 신호.
+    initialized: bool,
+    /// repo 최상위 절대경로 (initialized 일 때만).
+    repo_root: Option<String>,
+    /// 현재 브랜치명.
+    branch: Option<String>,
+    /// upstream ref (예: origin/main) — 없으면 null(push 불가 안내).
+    upstream: Option<String>,
+    /// vault 범위의 미커밋 변경 수.
+    changed_count: usize,
+    /// vault 밖에 이미 staged 된 경로(스냅샷이 건드리지 않음 — 정보용).
+    staged_outside_vault: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PushOutcome {
+    pushed: bool,
+    remote_url: Option<String>,
+    /// 실패 시 사용자용 한 줄.
+    message: Option<String>,
+    guidance: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitSnapshotResult {
+    committed: bool,
+    /// "no-changes" | null(커밋됨).
+    reason: Option<String>,
+    commit_hash: Option<String>,
+    subject: Option<String>,
+    /// 의미 단위 auto 요약 한 줄.
+    summary: Option<String>,
+    counts: SnapshotCounts,
+    files: Vec<ChangeEntry>,
+    staged_outside_vault: Vec<String>,
+    /// push 를 요청(opt-in)했을 때만 채워짐.
+    push: Option<PushOutcome>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnapshotCounts {
+    added: usize,
+    modified: usize,
+    deleted: usize,
+    renamed: usize,
+    total: usize,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitCommitInfo {
+    short_hash: String,
+    hash: String,
+    subject: String,
+    relative_time: String,
+    iso_time: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitDiffResult {
+    count: usize,
+    files: Vec<ChangeEntry>,
+    /// 추적 파일의 텍스트 diff (신규 파일은 목록으로만).
+    diff: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitPullResult {
+    ok: bool,
+    upstream: String,
+    /// pull 결과 요약 마지막 줄 (예: "Already up to date.").
+    summary: String,
+}
+
+// ── #[tauri::command] 세트 ─────────────────────────────────────────────────
+
+/// vault 의 git 상태 요약 — 초기화 여부 + 브랜치/upstream + 미커밋 변경 수.
+/// 웹 GUI 가 "스냅샷/push/pull" 버튼 활성화를 판단하는 데 쓴다. repo 밖이면
+/// 에러가 아니라 `initialized:false` 로 알린다(자동 init 금지).
+#[tauri::command]
+pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+    let Some(repo_root) = find_repo_root(&vault_dir)? else {
+        return Ok(GitStatusResult {
+            initialized: false,
+            repo_root: None,
+            branch: None,
+            upstream: None,
+            changed_count: 0,
+            staged_outside_vault: Vec::new(),
+        });
+    };
+    let pathspec = vault_pathspec(&repo_root, &vault_dir);
+    let rows = get_porcelain_status(&repo_root, &pathspec)?;
+    let full_rows = get_full_porcelain_status(&repo_root);
+    let staged_outside = find_staged_outside_vault(&full_rows, &pathspec);
+
+    Ok(GitStatusResult {
+        initialized: true,
+        repo_root: Some(repo_root.to_string_lossy().into_owned()),
+        branch: get_current_branch(&repo_root),
+        upstream: get_upstream_ref(&repo_root),
+        changed_count: rows.len(),
+        staged_outside_vault: staged_outside,
+    })
+}
+
+/// vault 범위만 add + commit 하는 의미 단위 스냅샷. `message` 없으면 auto
+/// 요약을 subject 로 쓴다. `push` 가 true 일 때만 upstream 으로 전송(opt-in).
+/// 커밋할 변경이 없으면 에러가 아니라 `committed:false, reason:"no-changes"`.
+#[tauri::command]
+pub fn git_snapshot(
+    vault_path: String,
+    message: Option<String>,
+    push: Option<bool>,
+) -> Result<GitSnapshotResult, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+    let repo_root = require_repo_root(&vault_dir)?;
+    let pathspec = vault_pathspec(&repo_root, &vault_dir);
+
+    let rows = get_porcelain_status(&repo_root, &pathspec)?;
+    if rows.is_empty() {
+        return Ok(GitSnapshotResult {
+            committed: false,
+            reason: Some("no-changes".into()),
+            commit_hash: None,
+            subject: None,
+            summary: None,
+            counts: SnapshotCounts {
+                added: 0,
+                modified: 0,
+                deleted: 0,
+                renamed: 0,
+                total: 0,
+            },
+            files: Vec::new(),
+            staged_outside_vault: Vec::new(),
+            push: None,
+        });
+    }
+
+    let changes = build_change_summary(&rows, &repo_root, &vault_dir);
+    let auto_summary = format_snapshot_summary(&changes);
+    let custom = message.as_deref().map(str::trim).filter(|m| !m.is_empty());
+    let subject = custom.unwrap_or(&auto_summary).to_string();
+    let full_message =
+        build_commit_message(&subject, &auto_summary, &changes, custom.is_some());
+
+    let full_rows = get_full_porcelain_status(&repo_root);
+    let staged_outside = find_staged_outside_vault(&full_rows, &pathspec);
+
+    // 신뢰 헌장 ④ — vault 범위의 untracked 신규 파일만 먼저 add. tracked 파일의
+    // 변경/삭제는 이어지는 pathspec partial-commit 이 index 를 건드리지 않고 담는다.
+    let untracked: Vec<&str> = rows
+        .iter()
+        .filter(|r| r.index == '?' && r.worktree == '?')
+        .map(|r| r.path.as_str())
+        .collect();
+    if !untracked.is_empty() {
+        let mut add_args: Vec<&str> = vec!["add", "--"];
+        add_args.extend_from_slice(&untracked);
+        let add_run = run_git(&repo_root, &add_args)?;
+        if !add_run.success {
+            let info = classify_git_error(&git_error_text(&add_run), "commit");
+            return Err(classified_error_string(&info));
+        }
+    }
+
+    let commit_run = run_git(
+        &repo_root,
+        &["commit", "-m", &full_message, "--", &pathspec],
+    )?;
+    if !commit_run.success {
+        let info = classify_git_error(&git_error_text(&commit_run), "commit");
+        return Err(classified_error_string(&info));
+    }
+
+    let commit_hash = get_head_hash(&repo_root);
+
+    let counts = SnapshotCounts {
+        added: changes.iter().filter(|c| c.status == "added").count(),
+        modified: changes.iter().filter(|c| c.status == "modified").count(),
+        deleted: changes.iter().filter(|c| c.status == "deleted").count(),
+        renamed: changes.iter().filter(|c| c.status == "renamed").count(),
+        total: changes.len(),
+    };
+
+    // push 는 opt-in 명시일 때만 — upstream 없으면 자동 `-u` 설정 안 함(헌장 ①).
+    let push_outcome = if push.unwrap_or(false) {
+        Some(run_push(&repo_root))
+    } else {
+        None
+    };
+
+    Ok(GitSnapshotResult {
+        committed: true,
+        reason: None,
+        commit_hash,
+        subject: Some(subject),
+        summary: Some(auto_summary),
+        counts,
+        files: changes,
+        staged_outside_vault: staged_outside,
+        push: push_outcome,
+    })
+}
+
+/// 커밋은 이미 로컬에 있으므로 push 실패는 Err 로 크래시시키지 않고
+/// `PushOutcome{pushed:false, ...}` 안내로 담는다.
+fn run_push(repo_root: &Path) -> PushOutcome {
+    let Some(upstream) = get_upstream_ref(repo_root) else {
+        let branch = get_current_branch(repo_root).unwrap_or_else(|| "<branch>".into());
+        return PushOutcome {
+            pushed: false,
+            remote_url: None,
+            message: Some("push 실패 — 이 브랜치에 upstream 이 없어요. 커밋은 로컬에 기록됨.".into()),
+            guidance: Some(format!("git push -u origin {branch}")),
+        };
+    };
+    match run_git(repo_root, &["push"]) {
+        Ok(out) if out.success => {
+            let remote_name = upstream.split('/').next().unwrap_or("origin");
+            PushOutcome {
+                pushed: true,
+                remote_url: get_remote_url(repo_root, remote_name),
+                message: None,
+                guidance: None,
+            }
+        }
+        Ok(out) => {
+            let info = classify_git_error(&git_error_text(&out), "push");
+            PushOutcome {
+                pushed: false,
+                remote_url: None,
+                message: Some(info.message),
+                guidance: info.guidance,
+            }
+        }
+        Err(err) => PushOutcome {
+            pushed: false,
+            remote_url: None,
+            message: Some(err),
+            guidance: None,
+        },
+    }
+}
+
+/// vault 경로에 닿은 최근 커밋 요약(해시/메시지/시간) — 옵시디언 Git 히스토리
+/// 패리티. 커밋이 하나도 없으면 빈 목록.
+#[tauri::command]
+pub fn git_history(
+    vault_path: String,
+    limit: Option<u32>,
+) -> Result<Vec<GitCommitInfo>, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+    let repo_root = require_repo_root(&vault_dir)?;
+    let pathspec = vault_pathspec(&repo_root, &vault_dir);
+    let max_count = limit.unwrap_or(10).max(1).to_string();
+    const SEP: char = '\x1f';
+    let format = format!("--pretty=format:%h{SEP}%H{SEP}%s{SEP}%cr{SEP}%cI");
+
+    let out = run_git(
+        &repo_root,
+        &[
+            "log",
+            &format!("--max-count={max_count}"),
+            &format,
+            "--",
+            &pathspec,
+        ],
+    )?;
+    if !out.success {
+        // 커밋 0개(아직 히스토리 없음) 등 — 빈 목록으로 우아하게.
+        return Ok(Vec::new());
+    }
+    let trimmed = out.stdout.trim();
+    if trimmed.is_empty() {
+        return Ok(Vec::new());
+    }
+    let commits = trimmed
+        .lines()
+        .filter(|l| !l.is_empty())
+        .filter_map(|line| {
+            let mut fields = line.split(SEP);
+            Some(GitCommitInfo {
+                short_hash: fields.next()?.to_string(),
+                hash: fields.next()?.to_string(),
+                subject: fields.next().unwrap_or("").to_string(),
+                relative_time: fields.next().unwrap_or("").to_string(),
+                iso_time: fields.next().unwrap_or("").to_string(),
+            })
+        })
+        .collect();
+    Ok(commits)
+}
+
+/// 아직 커밋 안 된 vault 범위 변경의 파일 목록 + 텍스트 diff.
+#[tauri::command]
+pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+    let repo_root = require_repo_root(&vault_dir)?;
+    let pathspec = vault_pathspec(&repo_root, &vault_dir);
+
+    let rows = get_porcelain_status(&repo_root, &pathspec)?;
+    let changes = build_change_summary(&rows, &repo_root, &vault_dir);
+
+    // HEAD 있으면 HEAD 기준, 없으면(커밋 0개) index 기준으로 폴백.
+    let diff = match run_git(&repo_root, &["diff", "HEAD", "--", &pathspec]) {
+        Ok(out) if out.success => out.stdout,
+        _ => match run_git(&repo_root, &["diff", "--", &pathspec]) {
+            Ok(out) if out.success => out.stdout,
+            _ => String::new(),
+        },
+    };
+
+    Ok(GitDiffResult {
+        count: changes.len(),
+        files: changes,
+        diff,
+    })
+}
+
+/// upstream 에서 git pull (opt-in 전송). upstream 없음/충돌/비-fast-forward 를
+/// 크래시 없이 깔끔한 Err 로 안내한다.
+#[tauri::command]
+pub fn git_pull(vault_path: String) -> Result<GitPullResult, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+    let repo_root = require_repo_root(&vault_dir)?;
+
+    let Some(upstream) = get_upstream_ref(&repo_root) else {
+        let branch = get_current_branch(&repo_root).unwrap_or_else(|| "<branch>".into());
+        return Err(format!(
+            "이 브랜치에 연결된 원격이 없어요 — 먼저 upstream 을 설정하세요. → git push -u origin {branch}"
+        ));
+    };
+
+    let out = run_git(&repo_root, &["pull"])?;
+    if !out.success {
+        let info = classify_git_error(&git_error_text(&out), "pull");
+        return Err(classified_error_string(&info));
+    }
+    let summary = out
+        .stdout
+        .trim()
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        .last()
+        .unwrap_or("up to date")
+        .to_string();
+
+    Ok(GitPullResult {
+        ok: true,
+        upstream,
+        summary,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn vault_pathspec_returns_dot_when_vault_is_repo_root() {
+        let root = Path::new("/repo");
+        assert_eq!(vault_pathspec(root, Path::new("/repo")), ".");
+    }
+
+    #[test]
+    fn vault_pathspec_returns_relative_when_vault_nested() {
+        let root = Path::new("/repo");
+        assert_eq!(
+            vault_pathspec(root, Path::new("/repo/docs/ontology")),
+            "docs/ontology"
+        );
+    }
+
+    #[test]
+    fn parse_porcelain_reads_status_codes_and_paths() {
+        let rows = parse_porcelain("?? docs/new.md\n M docs/edit.md\nD  docs/gone.md\n");
+        assert_eq!(rows.len(), 3);
+        assert_eq!(rows[0].index, '?');
+        assert_eq!(rows[0].worktree, '?');
+        assert_eq!(rows[0].path, "docs/new.md");
+        assert_eq!(rows[1].index, ' ');
+        assert_eq!(rows[1].worktree, 'M');
+        assert_eq!(rows[2].index, 'D');
+    }
+
+    #[test]
+    fn parse_porcelain_reads_rename_source() {
+        let rows = parse_porcelain("R  docs/old.md -> docs/new.md\n");
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].index, 'R');
+        assert_eq!(rows[0].renamed_from.as_deref(), Some("docs/old.md"));
+        assert_eq!(rows[0].path, "docs/new.md");
+    }
+
+    #[test]
+    fn classify_change_maps_status_codes() {
+        let mk = |i: char, w: char| PorcelainRow {
+            index: i,
+            worktree: w,
+            path: "x".into(),
+            renamed_from: None,
+        };
+        assert_eq!(classify_change(&mk('?', '?')), "added");
+        assert_eq!(classify_change(&mk('A', ' ')), "added");
+        assert_eq!(classify_change(&mk(' ', 'M')), "modified");
+        assert_eq!(classify_change(&mk('D', ' ')), "deleted");
+        assert_eq!(classify_change(&mk(' ', 'D')), "deleted");
+        assert_eq!(classify_change(&mk('R', ' ')), "renamed");
+    }
+
+    #[test]
+    fn find_staged_outside_vault_flags_staged_paths_beyond_pathspec() {
+        let rows = parse_porcelain("M  src/other.rs\nM  docs/inside.md\n?? docs/untracked.md\n");
+        let outside = find_staged_outside_vault(&rows, "docs");
+        assert_eq!(outside, vec!["src/other.rs".to_string()]);
+    }
+
+    #[test]
+    fn find_staged_outside_vault_dot_pathspec_never_flags() {
+        let rows = parse_porcelain("M  src/other.rs\n");
+        assert!(find_staged_outside_vault(&rows, ".").is_empty());
+    }
+
+    #[test]
+    fn format_snapshot_summary_counts_and_slugs() {
+        let changes = vec![
+            ChangeEntry {
+                path: "docs/a.md".into(),
+                status: "added".into(),
+                kind: None,
+                slug: "a".into(),
+                renamed_from: None,
+            },
+            ChangeEntry {
+                path: "docs/b.md".into(),
+                status: "modified".into(),
+                kind: None,
+                slug: "b".into(),
+                renamed_from: None,
+            },
+        ];
+        let summary = format_snapshot_summary(&changes);
+        assert!(summary.contains("+1 concept"));
+        assert!(summary.contains("~1 updated"));
+        assert!(summary.contains("(a, b)"));
+    }
+
+    #[test]
+    fn format_snapshot_summary_truncates_slug_list() {
+        let changes: Vec<ChangeEntry> = (0..5)
+            .map(|i| ChangeEntry {
+                path: format!("docs/n{i}.md"),
+                status: "added".into(),
+                kind: None,
+                slug: format!("n{i}"),
+                renamed_from: None,
+            })
+            .collect();
+        let summary = format_snapshot_summary(&changes);
+        assert!(summary.contains("+5 concepts"));
+        assert!(summary.contains("+2)")); // 3 shown + overflow 2
+    }
+
+    #[test]
+    fn build_commit_message_embeds_auto_summary_for_custom_message() {
+        let changes = vec![ChangeEntry {
+            path: "docs/a.md".into(),
+            status: "added".into(),
+            kind: None,
+            slug: "a".into(),
+            renamed_from: None,
+        }];
+        let msg = build_commit_message("my subject", "ontology snapshot: +1 concept (a)", &changes, true);
+        assert!(msg.starts_with("my subject\n\n"));
+        assert!(msg.contains("ontology snapshot: +1 concept (a)"));
+        assert!(msg.contains("  A  docs/a.md"));
+    }
+
+    #[test]
+    fn classify_git_error_detects_non_fast_forward() {
+        let info = classify_git_error("! [rejected] main -> main (non-fast-forward)", "push");
+        assert_eq!(info.reason, "push-non-fast-forward");
+        assert!(info.guidance.as_deref() == Some("git pull"));
+    }
+
+    #[test]
+    fn classify_git_error_detects_hook_rejection() {
+        let info = classify_git_error("pre-commit hook failed", "commit");
+        assert_eq!(info.reason, "pre-commit-hook");
+    }
+
+    #[test]
+    fn classify_git_error_commit_fallback() {
+        let info = classify_git_error("something weird happened", "commit");
+        assert_eq!(info.reason, "commit-rejected");
+    }
+
+    #[test]
+    fn validate_vault_dir_rejects_missing_path() {
+        let err = validate_vault_dir("/path/does/not/exist/atlas").unwrap_err();
+        assert!(!err.is_empty());
+    }
+
+    #[test]
+    fn read_kind_slug_extracts_frontmatter_fields() {
+        let dir = std::env::temp_dir().join(format!("atlas-git-test-{}", std::process::id()));
+        let _ = fs::create_dir_all(&dir);
+        let file = dir.join("node.md");
+        fs::write(&file, "---\nkind: capability\nslug: \"my-cap\"\n---\n# Body\n").unwrap();
+        let (kind, slug) = read_kind_slug(&file);
+        assert_eq!(kind.as_deref(), Some("capability"));
+        assert_eq!(slug.as_deref(), Some("my-cap"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+}
