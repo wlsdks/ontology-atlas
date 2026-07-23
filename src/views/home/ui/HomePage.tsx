@@ -2717,7 +2717,12 @@ export function HomePage() {
                     renderedIndexState === "expanded"
                       ? "var(--topology-index-inset)"
                       : "var(--topology-index-top)",
-                  bottom: renderedIndexState === "expanded" ? "var(--topology-index-inset)" : undefined,
+                  // rank7 — 하단 인셋은 전용 토큰: 데스크톱에선 크롬 인셋과
+                  // 동일, <md 시트 모드에선 BottomTabBar 예약고 위로 올라간다.
+                  bottom:
+                    renderedIndexState === "expanded"
+                      ? "var(--topology-index-bottom-inset)"
+                      : undefined,
                 }}
               >
                 {renderedIndexState === "expanded" && indexTreeResult ? (
@@ -3157,7 +3162,7 @@ export function HomePage() {
                   필요 없으므로 패널이 열려 있는 동안 조용히 사라진다. */}
               <div
                 className={cn(
-                  "pointer-events-none absolute bottom-[var(--topology-relation-legend-inset)] right-[var(--topology-relation-legend-inset)] z-20 flex flex-col items-end gap-3 whitespace-nowrap transition-opacity duration-180 ease-out motion-reduce:transition-none",
+                  "pointer-events-none absolute bottom-[var(--topology-relation-legend-bottom-inset)] right-[var(--topology-relation-legend-inset)] z-20 flex flex-col items-end gap-3 whitespace-nowrap transition-opacity duration-180 ease-out motion-reduce:transition-none",
                   v2DatasheetModel ? "opacity-0" : "opacity-100",
                 )}
                 aria-hidden={v2DatasheetModel ? true : undefined}

@@ -1101,6 +1101,10 @@
     --topology-minimap-surface: rgba(10, 12, 15, 0.94);
     --topology-relation-legend-width: clamp(252px, 18vw, 304px);
     --topology-relation-legend-inset: 24px;
+    /* 우하단 판독계 스택의 하단 전용 인셋 — 기본은 좌우와 동일하지만 <lg
+       (BottomTabBar 구간)에선 예약고 위로 올라간다(소유자 실보고 2026-07-23,
+       태블릿 하단 겹침 — readout 이 탭바 뒤로 가려짐). */
+    --topology-relation-legend-bottom-inset: var(--topology-relation-legend-inset);
     --topology-relation-legend-minimap-gap: 12px;
     --topology-relation-legend-bottom: calc(
       24px + 183px + var(--topology-relation-legend-minimap-gap)
@@ -1741,6 +1745,10 @@
        계산하지 말 것, 이 값을 쓰는 요소가 이미 `topology-ui-scale` 을
        달고 있어 zoom 이 자기 자신의 top 오프셋에도 적용된다. */
     --topology-index-width: 300px;
+    /* 확장 INDEX 하단 인셋 — 기본은 좌/상과 같은 크롬 인셋. <md 시트 모드
+       (아래 media 오버라이드)에서는 BottomTabBar 예약고 위로 올라간다
+       (반응형 감사 rank7). */
+    --topology-index-bottom-inset: var(--topology-index-inset);
     --topology-index-tab-width: 26px;
     /* 18→24px (feat/chrome-system §4) — 크롬 시스템의 24px 정렬 레일에
        수렴. --chrome-inset 참조로 단일 출처 유지. */
@@ -1811,6 +1819,31 @@
       --topology-v2-panel-bottom-reserve: calc(
         var(--topology-mobile-bottom-tab-reserve) + 8px
       );
+      /* 확장 INDEX 하단도 탭바가 존재하는 전 구간(<lg)에서 예약고 위로 —
+         767 에서만 올리면 768–1023 에서 패널 푸터(AGENT HANDOFF)가 탭바
+         뒤로 33px 파고든다 (소유자 실보고 2026-07-23, 태블릿 하단 겹침). */
+      --topology-index-bottom-inset: calc(
+        var(--topology-mobile-bottom-tab-reserve) + 12px
+      );
+      /* 우하단 판독계(범례+상태 readout)도 동일 — 탭바 뒤 가림 제거. */
+      --topology-relation-legend-bottom-inset: calc(
+        var(--topology-mobile-bottom-tab-reserve) + 12px
+      );
+    }
+  }
+
+  /*
+   * `<md` 확장 INDEX = 풀-블리드 시트 (반응형 감사 rank7, Image #8 소유자
+   * 질문의 답). 좁은 화면에서 300px 좌측 오버레이는 캔버스의 절반 이상을
+   * 영구 잠식해 "지도 옆 패널"도 "지도 위 시트"도 아닌 어정쩡한 상태였다.
+   * 태블릿/폰에서는 "한 번에 하나의 주 뷰" — 확장 INDEX 는 인셋만 남기고
+   * 전폭 시트가 되고(뒤 지도는 컨텍스트로만 비침), 접으면 지도가 전폭.
+   * 하단은 BottomTabBar 예약고(GlobalSearch 시트와 같은 패턴) 위로.
+   * md(768)+ 는 종전 300px 사이드 패널 그대로.
+   */
+  @media (max-width: 767px) {
+    :root {
+      --topology-index-width: calc(100vw - 2 * var(--topology-index-inset));
     }
   }
 

@@ -89,7 +89,7 @@ export function ProjectSelectorPage() {
   return (
     <div className="flex min-h-screen w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
-      <main id="main" className="min-w-0 flex-1 bg-[color:var(--color-canvas)]">
+      <main id="main" className="min-w-0 flex-1 bg-[color:var(--color-canvas)] max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]">
         <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6">
           <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
           <AppSettingsMenu mode={dataSourceMode} />

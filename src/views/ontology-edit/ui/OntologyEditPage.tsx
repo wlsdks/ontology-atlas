@@ -1389,7 +1389,7 @@ export function OntologyEditPage() {
           className={
             fullscreen
               ? "flex h-full w-full flex-1 flex-col px-2 py-2"
-              : "mx-auto flex h-full min-h-0 w-full max-w-[1800px] flex-1 flex-col px-3 py-3 md:px-5 md:py-4"
+              : "mx-auto flex h-full min-h-0 w-full max-w-[1800px] flex-1 flex-col px-3 py-3 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+16px)] md:px-5 md:py-4"
           }
         >
         {/* 헤더 1행(A3, builder-v2 시안 §topbar) — 좌: 브레드크럼+census(engraved)

@@ -234,7 +234,7 @@ function EditorContent({
   return (
     <div className="flex min-h-screen w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
-      <main id="main" className="min-w-0 flex-1 bg-[color:var(--color-canvas)] px-4 py-8 md:px-12 md:py-10">
+      <main id="main" className="min-w-0 flex-1 bg-[color:var(--color-canvas)] px-4 py-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-12 md:py-10">
       {/* 960 — RATIO-SYSTEM.md 유틸리티 컬럼. ProjectForm 의 640 폼 컬럼 +
           260 미리보기 컬럼 + gap 이 여유 있게 들어간다. */}
       <div className="mx-auto max-w-[960px]">
