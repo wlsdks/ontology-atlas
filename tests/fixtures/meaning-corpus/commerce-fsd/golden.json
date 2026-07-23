@@ -1,0 +1,55 @@
+{
+  "id": "commerce-fsd",
+  "architecture": "feature-sliced frontend",
+  "expected": {
+    "project": {
+      "slug": "northstar-commerce",
+      "title": "Northstar Commerce",
+      "definition": "A commerce workspace that keeps purchase completion and sellable inventory consistent."
+    },
+    "domains": [
+      {
+        "slug": "domains/purchase",
+        "title": "Purchase",
+        "definition": "The responsibility boundary for turning a reviewed cart into a confirmed order.",
+        "evidence": ["README.md", "docs/PRODUCT.md"]
+      },
+      {
+        "slug": "domains/inventory",
+        "title": "Inventory",
+        "definition": "The responsibility boundary for maintaining trustworthy sellable stock.",
+        "evidence": ["README.md", "docs/PRODUCT.md"]
+      }
+    ],
+    "capabilities": [
+      {
+        "slug": "capabilities/checkout",
+        "title": "Checkout",
+        "domain": "domains/purchase",
+        "definition": "Authorize a purchase and produce an order confirmation.",
+        "evidence": ["README.md", "src/features/checkout"]
+      },
+      {
+        "slug": "capabilities/inventory-sync",
+        "title": "Inventory Sync",
+        "domain": "domains/inventory",
+        "definition": "Reconcile storefront availability with warehouse stock.",
+        "evidence": ["README.md", "src/features/inventory-sync"]
+      }
+    ],
+    "implementationEvidence": [
+      "src/features/checkout",
+      "src/features/inventory-sync",
+      "src/features/theme-toggle",
+      "src/widgets/cart-summary"
+    ],
+    "forbiddenBusinessConcepts": ["capabilities/theme-toggle"],
+    "competencyAnswers": {
+      "scope": "Independent merchants completing orders without overselling.",
+      "domains": "Purchase owns order confirmation; Inventory owns sellable stock.",
+      "abilities": "Checkout completes purchases and Inventory Sync reconciles availability.",
+      "evidence": "README product prose and the two feature directories jointly support the abilities.",
+      "impact": "Checkout depends on trustworthy inventory availability before confirmation."
+    }
+  }
+}

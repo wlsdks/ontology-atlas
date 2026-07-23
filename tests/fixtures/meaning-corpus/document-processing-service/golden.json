@@ -1,0 +1,50 @@
+{
+  "id": "document-processing-service",
+  "architecture": "generic service",
+  "expected": {
+    "project": {
+      "slug": "document-intake-service",
+      "title": "Document Intake Service",
+      "definition": "A service that produces reviewable, source-traceable records from submitted documents."
+    },
+    "domains": [
+      {
+        "slug": "domains/intake",
+        "title": "Intake",
+        "definition": "The responsibility boundary for accepting documents and preserving source identity.",
+        "evidence": ["README.md", "docs/strategy/vision.md"]
+      },
+      {
+        "slug": "domains/review",
+        "title": "Review",
+        "definition": "The responsibility boundary for resolving uncertain extraction before publication.",
+        "evidence": ["README.md", "docs/strategy/vision.md"]
+      }
+    ],
+    "capabilities": [
+      {
+        "slug": "capabilities/intake",
+        "title": "Document Intake",
+        "domain": "domains/intake",
+        "definition": "Accept a document while retaining its source provenance.",
+        "evidence": ["README.md", "src/intake"]
+      },
+      {
+        "slug": "capabilities/review",
+        "title": "Uncertainty Review",
+        "domain": "domains/review",
+        "definition": "Route uncertain fields to a human decision before publication.",
+        "evidence": ["README.md", "src/review"]
+      }
+    ],
+    "implementationEvidence": ["src/intake", "src/review", "src/logger"],
+    "forbiddenBusinessConcepts": ["capabilities/logger"],
+    "competencyAnswers": {
+      "scope": "Operations teams creating trustworthy records from inconsistent documents.",
+      "domains": "Intake owns source preservation; Review owns uncertainty resolution.",
+      "abilities": "Document intake and uncertainty review realize the product outcome.",
+      "evidence": "README and vision prose establish intent while source folders establish implementation.",
+      "impact": "Intake provenance must remain available to review and publication."
+    }
+  }
+}

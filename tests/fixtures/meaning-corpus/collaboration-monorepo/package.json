@@ -1,0 +1,5 @@
+{
+  "name": "@relay/collaboration",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"]
+}
