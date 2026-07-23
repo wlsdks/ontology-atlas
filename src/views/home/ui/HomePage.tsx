@@ -3469,6 +3469,13 @@ export function HomePage() {
                   actionCopyHandoff: t("nodeDatasheet.actionCopyHandoff"),
                   actionPath: t("nodeDatasheet.actionPath"),
                   actionRealm: t("realm.enterAction"),
+                  // 결과-설명 툴팁 (소유자 승인) — 라벨 반복이 아닌 "누르면
+                  // 무엇이 되는가" 평문. 영역 전개는 기존 궤도 버튼 툴팁 재사용.
+                  actionDocumentTip: t("nodeDatasheet.actionDocumentTip"),
+                  actionEditRelationsTip: t("nodeDatasheet.actionEditRelationsTip"),
+                  actionCopyHandoffTip: t("nodeDatasheet.actionCopyHandoffTip"),
+                  actionPathTip: t("nodeDatasheet.actionPathTip"),
+                  actionRealmTip: t("realm.enterTooltip"),
                 }}
                 onSelectConnection={(id) => handleSelect(id)}
                 onCopyHandoff={copyV2NodeHandoff}
