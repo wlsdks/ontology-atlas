@@ -79,6 +79,33 @@ export function realmLayoutKind(depth: number): LayoutNodeKind {
   return "element";
 }
 
+/** 영역 링 스케일이 전역 스파인과 일치하는 깊이 상한 — depth 3+ 는 스파인 링 그대로. */
+export const REALM_FILL_FULL_DEPTH = 3;
+
+/** 서브트리 최대 깊이 (루트만이면 0). 순수·결정론. */
+export function realmMaxDepth(subtree: RealmSubtree): number {
+  let max = 0;
+  for (const d of subtree.depthById.values()) if (d > max) max = d;
+  return max;
+}
+
+/**
+ * 깊이 파생 영역 링 — maxDepth 가 얕을수록 depth1 링을 안으로 당겨
+ * "빈 annulus" 를 없앤다. 스케일 s = fill(min(maxDepth,3)) / base.domain 을
+ * 세 링에 동일 적용해 비율 보존. maxDepth ≥ 3 이면 s = 1 → 기존 좌표와
+ * 바이트 동일 (깊은 영역 회귀 0).
+ */
+export function realmRingsForDepth(
+  maxDepth: number,
+  base: LayoutRings,
+  fill: { depth1: number; depth2: number; depth3: number },
+): LayoutRings {
+  const capped = Math.max(1, Math.min(maxDepth, REALM_FILL_FULL_DEPTH));
+  const target = capped === 1 ? fill.depth1 : capped === 2 ? fill.depth2 : fill.depth3;
+  const s = base.domain > 0 ? target / base.domain : 1;
+  return { domain: base.domain * s, capability: base.capability * s, element: base.element * s };
+}
+
 /**
  * 영역 로컬 좌표 — 서브트리를 깊이 기준으로 `computeConcentricLayout` 에 태워
  * 루트를 원점에 둔 재배치 좌표를 낸다. 렌더 kind 는 무시하고 깊이만 매핑하므로,
@@ -121,9 +148,9 @@ export function computeWardingRadius(
 }
 
 /** 가시-멤버 결계 마진 = 콘텐츠 반경(가장 먼 엣지 도달거리)의 이 비율. */
-export const WARDING_VISIBLE_MARGIN_RATIO = 0.15;
+export const WARDING_VISIBLE_MARGIN_RATIO = 0.1;
 /** 가시-멤버 결계 마진 하한(월드 유닛) — 루트만 보일 때도 최소 이만큼 감싼다. */
-export const WARDING_VISIBLE_MIN_MARGIN = 60;
+export const WARDING_VISIBLE_MIN_MARGIN = 40;
 
 /**
  * S9 결함 2 — **현재 렌더되는 멤버**만으로 낸 결계 반경. 밀도 게이트로 접혀

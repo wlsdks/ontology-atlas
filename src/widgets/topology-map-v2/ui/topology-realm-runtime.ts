@@ -13,6 +13,8 @@ import {
   computeVisibleBounds,
   computeVisibleWardingRadius,
   extractRealmSubtree,
+  realmMaxDepth,
+  realmRingsForDepth,
   type RealmBounds,
 } from "../model/realm";
 import type { LayoutRadii, LayoutRings } from "../model/layout";
@@ -158,11 +160,11 @@ export function buildRealmRuntimeData(
     else containsChildren.set(e.sourceId, [e.targetId]);
   }
   const subtree = extractRealmSubtree(rootId, containsChildren);
-  const rings: LayoutRings = {
-    domain: tokens.layoutRingDomain,
-    capability: tokens.layoutRingCapability,
-    element: tokens.layoutRingElement,
-  };
+  const rings: LayoutRings = realmRingsForDepth(
+    realmMaxDepth(subtree),
+    { domain: tokens.layoutRingDomain, capability: tokens.layoutRingCapability, element: tokens.layoutRingElement },
+    { depth1: tokens.realmFillRadius1, depth2: tokens.realmFillRadius2, depth3: tokens.realmFillRadius3 },
+  );
   const radii: LayoutRadii = {
     project: tokens.radiusProject,
     domain: tokens.radiusDomain,

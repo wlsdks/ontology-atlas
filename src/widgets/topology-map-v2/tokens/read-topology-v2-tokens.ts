@@ -79,6 +79,12 @@ export interface TopologyV2Tokens {
   layoutRingDomain: number;
   layoutRingCapability: number;
   layoutRingElement: number;
+  /** `--topology-v2-realm-fill-radius-1` — 영역 전개 maxDepth=1 서브트리의 도메인 링(월드 유닛, `model/realm.ts#realmRingsForDepth`). */
+  realmFillRadius1: number;
+  /** `--topology-v2-realm-fill-radius-2` — 영역 전개 maxDepth=2 서브트리의 도메인 링. */
+  realmFillRadius2: number;
+  /** `--topology-v2-realm-fill-radius-3` — 영역 전개 maxDepth≥3 서브트리의 도메인 링(= 전역 스파인 링과 동일). */
+  realmFillRadius3: number;
   edgeBowContains: number;
   edgeBowDepends: number;
   edgeBlendContains: number;
@@ -262,6 +268,9 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "layoutRingDomain", cssVar: "--topology-v2-layout-ring-domain", kind: "number" },
   { key: "layoutRingCapability", cssVar: "--topology-v2-layout-ring-capability", kind: "number" },
   { key: "layoutRingElement", cssVar: "--topology-v2-layout-ring-element", kind: "number" },
+  { key: "realmFillRadius1", cssVar: "--topology-v2-realm-fill-radius-1", kind: "number" },
+  { key: "realmFillRadius2", cssVar: "--topology-v2-realm-fill-radius-2", kind: "number" },
+  { key: "realmFillRadius3", cssVar: "--topology-v2-realm-fill-radius-3", kind: "number" },
   { key: "edgeBowContains", cssVar: "--topology-v2-edge-bow-contains", kind: "number" },
   { key: "edgeBowDepends", cssVar: "--topology-v2-edge-bow-depends", kind: "number" },
   { key: "edgeBlendContains", cssVar: "--topology-v2-edge-blend-contains", kind: "number" },

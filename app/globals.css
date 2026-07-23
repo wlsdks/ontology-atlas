@@ -1478,6 +1478,10 @@
     --topology-v2-layout-ring-domain: 250;
     --topology-v2-layout-ring-capability: 145;
     --topology-v2-layout-ring-element: 90;
+    /* 영역 전개 깊이 파생 링 — 얕은 서브트리 빈 annulus 제거, 소유자 실보고 2026-07. */
+    --topology-v2-realm-fill-radius-1: 130;
+    --topology-v2-realm-fill-radius-2: 190;
+    --topology-v2-realm-fill-radius-3: 250;
     --topology-v2-edge-bow-contains: 70;
     --topology-v2-edge-bow-depends: 92;
     --topology-v2-edge-blend-contains: 0.46;

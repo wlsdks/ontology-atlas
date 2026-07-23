@@ -64,6 +64,9 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-layout-ring-domain": "250",
   "--topology-v2-layout-ring-capability": "145",
   "--topology-v2-layout-ring-element": "90",
+  "--topology-v2-realm-fill-radius-1": "130",
+  "--topology-v2-realm-fill-radius-2": "190",
+  "--topology-v2-realm-fill-radius-3": "250",
   "--topology-v2-edge-bow-contains": "70",
   "--topology-v2-edge-bow-depends": "92",
   "--topology-v2-edge-blend-contains": "0.46",
@@ -163,6 +166,9 @@ describe("resolveTopologyV2Tokens", () => {
     expect(tokens.nodeSheenBlend).toBeCloseTo(0.6, 3);
     expect(tokens.radiusProject).toBe(30);
     expect(tokens.radiusElement).toBe(7);
+    expect(tokens.realmFillRadius1).toBe(130);
+    expect(tokens.realmFillRadius2).toBe(190);
+    expect(tokens.realmFillRadius3).toBe(250);
     expect(tokens.cameraSpringAngFreqInteractive).toBeCloseTo(12, 3);
     expect(tokens.cameraSpringAngFreqTransition).toBeCloseTo(4.7, 3);
     expect(tokens.cameraMomentumDecay).toBe(0.998);
