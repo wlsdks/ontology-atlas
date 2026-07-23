@@ -312,6 +312,22 @@ export function buildV2EvidenceRows(
   return rows;
 }
 
+/**
+ * 파일경로형 문자열(슬러그/vault-path)의 마지막 세그먼트만 뽑는다 — sticky
+ * 푸터가 전체 slug(`ontology/capabilities/mcp-server`)를 상시 노출하던 것의
+ * 정리(Toss C2 청중 언어 평문화, 2026-07-24). `/`가 없으면 원문 그대로
+ * 반환(이미 짧으므로 자를 것이 없음). 순수/결정론 — `buildV2EvidenceRows`의
+ * title/path 분리와 같은 "마지막 슬래시 기준" 규칙을 재사용한다.
+ *
+ * 화면엔 이 결과만 보이고 원문 전체는 `title=` 네이티브 툴팁으로 접힌다 —
+ * "전체 상세 →" 링크가 이미 목적지를 담당하므로 정보 손실은 없다(패널 쪽
+ * 렌더는 `TopologyV2DetailPanel.tsx`의 sticky 푸터/근거 행 참고).
+ */
+export function slugDisplaySegment(slug: string): string {
+  const lastSlash = slug.lastIndexOf("/");
+  return lastSlash === -1 ? slug : slug.slice(lastSlash + 1);
+}
+
 export interface V2HandoffInput {
   slug: string;
   kind: string;
