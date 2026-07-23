@@ -127,7 +127,7 @@ describe("TopologyV2DetailPanel — viewport clamp (P3-③)", () => {
 });
 
 describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYSTEM §4)", () => {
-  it("renders an evidence group with its row's title/path when evidence rows exist", () => {
+  it("renders an evidence group with its row's title when evidence rows exist", () => {
     renderPanel(undefined, {
       rows: [{ id: "capabilities/product-owner-operating-system", title: "product-owner-operating-system", path: "capabilities/" }],
       total: 1,
@@ -138,7 +138,22 @@ describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYST
     expect(group).not.toBeNull();
     expect(group!.textContent).toContain("evidence");
     expect(screen.getByText("product-owner-operating-system")).toBeInTheDocument();
-    expect(screen.getByText("capabilities/")).toBeInTheDocument();
+  });
+
+  // Toss C2 (2026-07-24) — the raw vault-path prefix (`row.path`) used to
+  // render as an always-visible mono span next to the title, opaque to a
+  // non-developer. It no longer renders in the visible DOM text; the row's
+  // link carries the full `row.id` slug as a native `title=` hover instead
+  // (information preserved, just no longer competing for first-read
+  // attention with the "근거" plain label).
+  it("folds the evidence row's path behind a hover title instead of always-visible text", () => {
+    renderPanel(undefined, {
+      rows: [{ id: "capabilities/product-owner-operating-system", title: "product-owner-operating-system", path: "capabilities/" }],
+      total: 1,
+    });
+    expect(screen.queryByText("capabilities/")).not.toBeInTheDocument();
+    const link = screen.getByText("product-owner-operating-system").closest("a");
+    expect(link).toHaveAttribute("title", "capabilities/product-owner-operating-system");
   });
 
   it("does not render the evidence group when there are no evidence rows", () => {
@@ -157,6 +172,53 @@ describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYST
       "href",
       expect.stringContaining("product-owner-operating-system"),
     );
+  });
+});
+
+// Toss C2 (2026-07-24) — the sticky footer used to show the FULL `slug`
+// (`ontology/capabilities/mcp-server`) always visible, mono/quaternary but
+// still raw and unreadable to a non-developer. It now shows only the last
+// path segment and folds the full slug behind a native `title=` hover — the
+// "전체 상세 →" link already owns navigating to the full record.
+describe("TopologyV2DetailPanel — sticky 푸터 slug 평문화 (Toss C2)", () => {
+  it("shows only the slug's last segment in visible text, with the full slug as a hover title", () => {
+    render(
+      <TopologyV2DetailPanel
+        slug="ontology/capabilities/mcp-server"
+        title="MCP Server"
+        kind="capability"
+        domain={null}
+        powered={false}
+        metric={{ contains: 0, usedBy: 0, dependsOn: 0, evidence: 0 }}
+        groups={{
+          contains: { rows: [], total: 0 },
+          usedBy: { rows: [], total: 0 },
+          dependsOn: { rows: [], total: 0 },
+          belongsTo: { rows: [], total: 0 },
+        }}
+        evidence={{ rows: [], total: 0 }}
+        handoffText="node: ontology/capabilities/mcp-server"
+        documentHref={null}
+        builderEditHref="/ontology/edit/?node=ontology%2Fcapabilities%2Fmcp-server"
+        labels={labels}
+        onSelectConnection={() => {}}
+        onCopyHandoff={() => {}}
+        onClose={() => {}}
+        onSetPathSource={() => {}}
+      />,
+    );
+    const slugEl = screen.getByTestId("topology-v2-detail-panel-slug");
+    expect(slugEl).toHaveTextContent("mcp-server");
+    expect(slugEl.textContent).not.toContain("ontology/capabilities");
+    expect(slugEl).toHaveAttribute("title", "ontology/capabilities/mcp-server");
+  });
+
+  it("shows the slug as-is when it has no path segment to fold", () => {
+    renderPanel();
+    // fixture slug is "domains/views" — but a slug with no "/" should render
+    // unchanged (nothing to fold).
+    const slugEl = screen.getByTestId("topology-v2-detail-panel-slug");
+    expect(slugEl).toHaveTextContent("views");
   });
 });
 

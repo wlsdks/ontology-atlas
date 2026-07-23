@@ -8,6 +8,7 @@ import {
   buildV2MetricSegments,
   formatV2MetricLine,
   groupV2ConnectionsByDirection,
+  slugDisplaySegment,
   summarizeContainsByPathPrefix,
   type V2DatasheetConnection,
 } from "./topology-v2-datasheet";
@@ -324,6 +325,22 @@ describe("buildV2EvidenceRows — 근거(evidence) group promotion (RATIO-SYSTEM
     expect(buildV2EvidenceRows(["", "  ", "capabilities/x"])).toEqual([
       { id: "capabilities/x", title: "x", path: "capabilities/" },
     ]);
+  });
+});
+
+// Toss C2 (청중 언어 평문화, 2026-07-24) — the sticky footer folds the full
+// slug behind a hover title and shows only this segment in visible text.
+describe("slugDisplaySegment — sticky 푸터 slug 평문화 (Toss C2)", () => {
+  it("returns the last path segment of a folder-shaped slug", () => {
+    expect(slugDisplaySegment("ontology/capabilities/mcp-server")).toBe("mcp-server");
+  });
+
+  it("returns the slug unchanged when it has no folder segment", () => {
+    expect(slugDisplaySegment("standalone-doc")).toBe("standalone-doc");
+  });
+
+  it("returns an empty string for a trailing-slash slug (defensive, no crash)", () => {
+    expect(slugDisplaySegment("domains/")).toBe("");
   });
 });
 

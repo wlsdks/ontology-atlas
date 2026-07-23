@@ -7,6 +7,7 @@ import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { isContainmentRelation } from "@/shared/lib/ontology-tree";
 import {
   buildV2MetricSegments,
+  slugDisplaySegment,
   V2_CONTAINS_SUMMARY_THRESHOLD,
   type V2ConnectionGroupsView,
   type V2ConnectionGroupView,
@@ -63,6 +64,16 @@ import { Tooltip } from "@/shared/ui/tooltip";
  * in the usedBy group when the underlying `contains` edge exists — this is
  * additive promotion, not a removal, since the group still needs to show
  * every direct edge for agent handoff completeness.
+ *
+ * Toss C2 (청중 언어 평문화, 2026-07-24): the "담는 것/쓰는 곳/기대는 곳/근거"
+ * plain labels used to sit right next to jargon that undercut them — the
+ * sticky footer's raw `slug` (`ontology/capabilities/mcp-server`) and each
+ * evidence row's raw vault-path prefix were ALWAYS visible, unreadable to a
+ * non-developer. Both now show only the readable leaf segment
+ * (`slugDisplaySegment` / `V2EvidenceRow.title`) and fold the full path
+ * behind a native `title=` hover tooltip — information is not lost (the
+ * "전체 상세 →" link already owns navigating to the full record), just no
+ * longer competing for first-read attention with the plain-language facts.
  */
 
 export interface TopologyV2DetailPanelLabels {
@@ -421,6 +432,13 @@ export function TopologyV2DetailPanel({
   // (unlike `onSelectConnection`'s canvas-node ids, which are a different
   // namespace). No TraceMark here: these aren't canvas edges. Same header/
   // list shape as usedBy/dependsOn.
+  //
+  // Toss C2 — `row.path` (the folder prefix, e.g. "capabilities/") used to
+  // render as an always-visible mono span next to the title. That's a raw
+  // vault path, opaque to a non-developer, sitting right next to the plain
+  // "근거" label. It now only surfaces via the row's native `title=` hover
+  // (full `row.id` slug) — the row's own link already takes you to the doc,
+  // so the path adds nothing a click doesn't already resolve.
   const renderEvidenceGroup = () => {
     if (evidence.total === 0) return null;
     return (
@@ -445,16 +463,12 @@ export function TopologyV2DetailPanel({
               <Link
                 href={buildDocsVaultHref({ slug: row.id })}
                 data-datasheet-evidence={row.id}
+                title={row.id}
                 className="flex min-h-[32px] w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-2 transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
               >
                 <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--topology-v2-panel-text-secondary)]">
                   {row.title}
                 </span>
-                {row.path ? (
-                  <span className="shrink-0 font-mono text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]">
-                    {row.path}
-                  </span>
-                ) : null}
               </Link>
             </li>
           ))}
@@ -724,10 +738,18 @@ export function TopologyV2DetailPanel({
           넘기면 이 푸터가 스크롤 밖에 숨는데 스크롤 어포던스가 없어 "전체
           상세"가 존재하지 않는 것처럼 읽혔다(P3-③ 의 후속). 패널 스크롤
           컨테이너 안에서 sticky + 불투명 패널 surface 로 항상 보이게 한다 —
-          내용이 다 보일 땐 기존과 동일한 자리(sticky 비활성 상태와 동일). */}
+          내용이 다 보일 땐 기존과 동일한 자리(sticky 비활성 상태와 동일).
+          Toss C2 (2026-07-24) — 전체 `slug`(`ontology/capabilities/mcp-server`)
+          가 상시 노출돼 비개발자에겐 불투명했다. 화면엔 마지막 세그먼트만
+          남기고(`slugDisplaySegment`), 전체 경로는 `title=` hover 로 접는다 —
+          "전체 상세 →" 링크가 목적지를 이미 담당하므로 정보 손실은 없다. */}
       <div className="sticky -bottom-[var(--topology-v2-panel-pad)] -mx-[var(--topology-v2-panel-pad)] -mb-[var(--topology-v2-panel-pad)] flex items-center gap-2 rounded-b-[var(--topology-v2-panel-radius)] border-t border-[color:var(--topology-v2-panel-divider)] bg-[color:var(--topology-v2-panel-surface)] px-[var(--topology-v2-panel-pad)] py-2">
-        <span className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]">
-          {slug}
+        <span
+          data-testid="topology-v2-detail-panel-slug"
+          title={slug}
+          className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+        >
+          {slugDisplaySegment(slug)}
         </span>
         {onOpenFullDetail ? (
           <button
