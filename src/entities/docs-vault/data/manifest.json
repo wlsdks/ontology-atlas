@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-23T04:01:11.038Z",
+  "generatedAt": "2026-07-23T05:05:46.512Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1112,7 +1112,7 @@
       ],
       "excerpt": "빈 폴더, cold-start bootstrap, strict input recovery, 관계/노드 destructive workflow, Git 상태 조합, packed install, Node 24 최신 runtime을 대상으로 명시적 runtime 시나리오 128건을 실행했다. 직렬 108건과 동시 read RPC 20건이며, 별도로 unit/integration/package/contract/build gate를 반복했다. 기본 MCP CRUD와 strict schema는 강했다. 실제 결함은 주로 “source checkout은 green이지만 설치 패키지",
       "wordCount": 796,
-      "updatedAt": "2026-07-23T04:00:17.047Z",
+      "updatedAt": "2026-07-23T13:11:18+09:00",
       "linksOut": []
     },
     {
@@ -4592,7 +4592,7 @@
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 빈 폴더부터 Git edge case와 packed install까지 128개의 명시적 runtime 시나리오(직렬 108 + 병렬 RPC 20)를 실행했",
       "wordCount": 34821,
-      "updatedAt": "2026-07-23T03:58:10.731Z",
+      "updatedAt": "2026-07-23T13:11:18+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5653,6 +5653,11 @@
           "slug": "prose-wiki-absorption"
         },
         {
+          "depth": 3,
+          "text": "Interop — export to a standard graph format",
+          "slug": "interop-export-to-a-standard-graph-format"
+        },
+        {
           "depth": 4,
           "text": "Read tools (15)",
           "slug": "read-tools-15"
@@ -5724,8 +5729,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 11589,
-      "updatedAt": "2026-07-23T11:32:37+09:00",
+      "wordCount": 11863,
+      "updatedAt": "2026-07-23T13:47:52+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6903,7 +6908,7 @@
       ],
       "excerpt": "@modelcontextprotocol/sdk 안정판 1.x 기반 stdio JSON-RPC 서버. 31 도구 노출 (read 18 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전을 반환해 잘못된 폴더 작업을 막는 첫 호출 proof · gitstatus · vault 범위의 로컬 Git HEAD/branch/변경 파일과 vault 밖 변경·staging·detached HEAD·진행 중 operation 위험을 구조화해 반환하는 re",
       "wordCount": 13362,
-      "updatedAt": "2026-07-23T03:59:00.108Z",
+      "updatedAt": "2026-07-23T13:11:18+09:00",
       "linksOut": []
     },
     {
