@@ -2,6 +2,18 @@
 
 > Auto-loaded. Single source of truth for tokens / motion / forbidden visual patterns: `@docs/DESIGN-SYSTEM.md`.
 
+## 스케일 고정 계약 (2026-07-24 소유자 확정 — 이탈은 결함)
+
+- 크롬 필/타일 **36px**(`--chrome-tile-size`) · 크롬 라벨 **`text-label`(11px)**
+- 레일 아이콘 **20px 단일**(`--app-nav-rail-icon-size`, 로고만 26)
+- **≥1920 zoom 금지**(1:1), 2400+만 1.1 — 비정수 zoom 은 폰트 래스터 왜곡
+- 본문 폰트 **Pretendard Variable** 셀프호스팅 (Inter 폐기 — latin 서브셋 한글 혼합 사고)
+- 타입 램프 스텝을 새로 만들면 `src/shared/lib/cn.ts` 의 `TYPE_RAMP_STEPS` 에
+  **반드시 등록** — 미등록 스텝은 tailwind-merge 가 색상으로 오분류해 크기를
+  조용히 드롭한다 (2026-07-23 크롬 16px 렌더 사고, `cn.test.ts` 가드).
+- 루트 16px 상속으로 렌더되는 텍스트 = 램프 미적용 결함. 상세 표:
+  `docs/DESIGN-SYSTEM.md` "스케일 고정 계약" 절.
+
 ## 디자인 헌장 (요약)
 
 - **Linear 베이스**. 무채색 + 단일 인디고 (`#5e6ad2`) 라는 극단적 제약으로 AI 생성 UI 클리셰 차단.

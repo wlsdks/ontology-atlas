@@ -356,6 +356,26 @@ Reference anchors for this bar:
 
 Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actual implementation.
 
+### 스케일 고정 계약 (2026-07-24, 소유자 확정 — "지금 이대로 고정")
+
+크기 계열 4연속 처방(zoom 제거 → 필 36 → Pretendard → twMerge 오분류 근본
+수정 → 레일 20 통일) 후 소유자가 현 스케일을 표준으로 고정했다. 아래 값이
+전 페이지의 크기 기준선이며, 이탈은 결함이다:
+
+| 항목 | 고정값 | 토큰/출처 |
+|---|---|---|
+| 크롬 필/타일 높이 | **36px** | `--chrome-tile-size` |
+| 크롬 라벨 | **11px** (`text-label`) | ChromeChip/상태 칩 |
+| 레일 아이콘 | **20px 단일** (로고만 26) | `--app-nav-rail-icon-size` |
+| ≥1920 배율 | **1:1 (zoom 없음)**, 2400+만 1.1 | `.topology-ui-scale` |
+| 본문 폰트 | **Pretendard Variable** (셀프호스팅) | `--font-sans` |
+| 타입 램프 | caption 9.5 · label 11 · body 12.5 · body-lg 14 · title 16 · display 23 · hero 30 | `--text-*` |
+
+주의: 타입 램프 유틸은 `cn()`(`src/shared/lib/cn.ts`)의 extendTailwindMerge
+등록과 **반드시 동기** — 미등록 스텝은 색상으로 오분류되어 크기가 조용히
+드롭된다(2026-07-23 크롬 16px 렌더 사고의 근본 원인, cn.test.ts 가 가드).
+루트 16px 상속으로 렌더되는 텍스트 표면은 전부 램프 미적용 결함이다.
+
 ### Backgrounds
 
 - `--color-canvas`: `#08090a`
