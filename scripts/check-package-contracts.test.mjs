@@ -2569,7 +2569,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /const installedCliDir =/);
     assert.match(smoke, /installed CLI package npm test/);
     assert.match(smoke, /node --test src\\\/lib\\\/\\\*\\\.test\\\.mjs/);
-    assert.match(smoke, /# fail 0/);
+    assert.match(smoke, /NODE_TEST_ZERO_FAILURES_RE/);
     assert.match(smoke, /workspace_brief — \.\*next actions, \.\*health checks/);
     assert.match(smoke, /directMcpVerify/);
     assert.match(smoke, /directMcpVerifyVaultFlag/);

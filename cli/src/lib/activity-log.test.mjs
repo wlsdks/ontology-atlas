@@ -3,11 +3,23 @@
 // heartbeat agent 를 복사하는지, best-effort(어떤 입력에도 throw 안 함)인지.
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { recordCliWrite } from './activity-log.mjs';
-import { readActivityEntries } from '../../../mcp/src/activity-log.mjs';
+
+// Resolve through the declared package dependency instead of escaping into the
+// monorepo. This keeps the published CLI's own `npm test` runnable after both
+// tarballs are installed in an otherwise empty directory.
+const monorepoActivityLogPath = fileURLToPath(
+  new URL('../../../mcp/src/activity-log.mjs', import.meta.url),
+);
+const activityLogModulePath = existsSync(monorepoActivityLogPath)
+  ? monorepoActivityLogPath
+  : createRequire(import.meta.url).resolve('ontology-atlas-mcp/src/activity-log.mjs');
+const { readActivityEntries } = await import(pathToFileURL(activityLogModulePath).href);
 
 function tmpVault() {
   return mkdtempSync(join(tmpdir(), 'cli-activity-log-'));

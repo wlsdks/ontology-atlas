@@ -32,8 +32,10 @@ export function inspectVaultGit({ repoRoot, vaultRoot }) {
 
   const head = git(gitRoot, ['rev-parse', 'HEAD'], { allowFailure: true });
   const branch = git(gitRoot, ['symbolic-ref', '--quiet', '--short', 'HEAD'], { allowFailure: true });
-  const scoped = git(gitRoot, ['status', '--porcelain=v1', '--untracked-files=all', '--', vaultRelative]);
-  const all = git(gitRoot, ['status', '--porcelain=v1', '--untracked-files=all']);
+  // `-z` disables Git's C-style path quoting and makes filenames containing
+  // spaces, unicode, tabs, or newlines unambiguous for machine consumers.
+  const scoped = git(gitRoot, ['status', '--porcelain=v1', '-z', '--untracked-files=all', '--', vaultRelative]);
+  const all = git(gitRoot, ['status', '--porcelain=v1', '-z', '--untracked-files=all']);
   const files = parsePorcelain(scoped.stdout);
   const allFiles = parsePorcelain(all.stdout);
   const stagedOutsideVault = allFiles
@@ -41,6 +43,7 @@ export function inspectVaultGit({ repoRoot, vaultRoot }) {
     .map((row) => row.path);
   const outsideVaultChanges = allFiles.filter((row) => !isInsidePathspec(row.path, vaultRelative));
   const operationInProgress = detectGitOperation(gitRoot);
+  const detachedHead = head.ok && !branch.ok;
 
   return {
     operation: 'git_status',
@@ -50,7 +53,7 @@ export function inspectVaultGit({ repoRoot, vaultRoot }) {
     vaultPathspec: vaultRelative,
     head: head.ok ? head.stdout.trim() : null,
     branch: branch.ok ? branch.stdout.trim() : null,
-    detachedHead: !branch.ok,
+    detachedHead,
     operationInProgress,
     counts: {
       total: files.length,
@@ -63,10 +66,11 @@ export function inspectVaultGit({ repoRoot, vaultRoot }) {
     files,
     stagedOutsideVault,
     risk: {
-      level: operationInProgress || !head.ok ? 'high' : stagedOutsideVault.length > 0 ? 'medium' : 'low',
+      level: operationInProgress || !head.ok || detachedHead ? 'high' : stagedOutsideVault.length > 0 ? 'medium' : 'low',
       warnings: [
         ...(operationInProgress ? [`git ${operationInProgress} is in progress; snapshot is blocked`] : []),
         ...(!head.ok ? ['repository has no HEAD commit yet; create an initial commit before MCP snapshots'] : []),
+        ...(detachedHead ? ['repository is on a detached HEAD; snapshot is blocked to prevent an orphan commit'] : []),
         ...(stagedOutsideVault.length > 0
           ? [`${stagedOutsideVault.length} staged file(s) outside the vault will not be included`]
           : []),
@@ -104,6 +108,9 @@ export function snapshotVaultGit({ repoRoot, vaultRoot, confirm = false, expecte
   if (status.operationInProgress) {
     throw new Error(`git ${status.operationInProgress} is in progress; finish or abort it before snapshotting.`);
   }
+  if (status.detachedHead) {
+    throw new Error('Git is on a detached HEAD; switch to a branch before snapshotting to prevent an orphan commit.');
+  }
   if (typeof expectedHead !== 'string' || !expectedHead) {
     throw new Error('expectedHead is required when confirm:true. Use the exact expectedHead from the dry-run preview.');
   }
@@ -137,24 +144,31 @@ function git(cwd, args, { allowFailure = false } = {}) {
 }
 
 function parsePorcelain(text) {
-  return String(text)
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => {
-      const index = line[0] || ' ';
-      const worktree = line[1] || ' ';
-      const rawPath = line.slice(3);
-      const path = rawPath.includes(' -> ') ? rawPath.split(' -> ').at(-1) : rawPath;
-      const untracked = index === '?' && worktree === '?';
-      return {
-        path,
-        index,
-        worktree,
-        status: untracked ? 'untracked' : index === 'D' || worktree === 'D' ? 'deleted' : index === 'A' ? 'added' : 'modified',
-        staged: !untracked && index !== ' ',
-        unstaged: untracked || worktree !== ' ',
-      };
+  const records = String(text).split('\0');
+  const rows = [];
+  for (let indexInRecords = 0; indexInRecords < records.length; indexInRecords += 1) {
+    const line = records[indexInRecords];
+    if (!line) continue;
+    const index = line[0] || ' ';
+    const worktree = line[1] || ' ';
+    const path = line.slice(3);
+    // In porcelain v1 -z mode, rename/copy records contain the destination
+    // path first and the source path in the following NUL-delimited record.
+    // The destination is the path agents should use for subsequent operations.
+    if (['R', 'C'].includes(index) || ['R', 'C'].includes(worktree)) {
+      indexInRecords += 1;
+    }
+    const untracked = index === '?' && worktree === '?';
+    rows.push({
+      path,
+      index,
+      worktree,
+      status: untracked ? 'untracked' : index === 'D' || worktree === 'D' ? 'deleted' : index === 'A' ? 'added' : 'modified',
+      staged: !untracked && index !== ' ',
+      unstaged: untracked || worktree !== ' ',
     });
+  }
+  return rows;
 }
 
 function isInsidePathspec(path, pathspec) {
@@ -173,6 +187,7 @@ function detectGitOperation(repoRoot) {
 }
 
 function semanticSubject(files) {
+  if (files.length === 0) return 'ontology snapshot: no vault changes';
   const counts = {
     added: files.filter((row) => row.status === 'added' || row.status === 'untracked').length,
     modified: files.filter((row) => row.status === 'modified').length,

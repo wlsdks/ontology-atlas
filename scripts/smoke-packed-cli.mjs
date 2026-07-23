@@ -34,6 +34,7 @@ const CLI_PKG = JSON.parse(readFileSync(join(CLI_DIR, 'package.json'), 'utf-8'))
 const mcpToolMetadata = parseMcpToolMetadataFromDescription(MCP_PKG.description);
 const expectedToolCount = mcpToolMetadata?.toolCount;
 const expectedToolSplitRe = mcpToolMetadata?.splitPattern;
+const NODE_TEST_ZERO_FAILURES_RE = /(?:#|ℹ) fail 0/;
 const expectedToolsListAnnotationRe = new RegExp(regexEscape(expectedToolsListAnnotationSummary()));
 const tunedDiagnosisScopeRe = new RegExp(regexEscape(tunedHealthScopeOutputSummary()));
 const tunedWorkspaceBriefScopeRe = new RegExp(regexEscape(tunedWorkspaceBriefScopeOutputSummary()));
@@ -285,7 +286,7 @@ try {
     label: 'installed CLI package npm test',
   });
   assert.match(installedCliPackageTest.stdout, /node --test src\/lib\/\*\.test\.mjs/);
-  assert.match(installedCliPackageTest.stdout, /# fail 0/);
+  assert.match(installedCliPackageTest.stdout, NODE_TEST_ZERO_FAILURES_RE);
   const cliMcpVerifyArgs = (args = []) => ['mcp-verify', ...args];
   assert.deepEqual(cliMcpVerifyArgs(['ontology', '--timeout-ms', '3000']), [
     'mcp-verify',
@@ -330,7 +331,7 @@ try {
   assert.match(cliMcpVerify.stdout, /workspace_brief_tuned — .*next actions, .*health checks/);
   assert.match(cliMcpVerify.stdout, tunedWorkspaceBriefScopeRe);
   assert.match(cliMcpVerify.stdout, /workspace_brief non-blocking advisory nextActions/);
-  assert.match(cliMcpVerify.stdout, /compile_issues:warn/);
+  assert.match(cliMcpVerify.stdout, /relation_recommendations:warn/);
   assert.match(cliMcpVerify.stdout, /health — .*checks/);
   assert.match(cliMcpVerify.stdout, /health — .*compile_issues:(pass|warn)/);
   assert.match(cliMcpVerify.stdout, /health_tuned — .*checks/);
@@ -628,7 +629,7 @@ try {
   assert.match(mcpVerify.stdout, /workspace_brief_tuned — .*next actions, .*health checks/);
   assert.match(mcpVerify.stdout, tunedWorkspaceBriefScopeRe);
   assert.match(mcpVerify.stdout, /workspace_brief non-blocking advisory nextActions/);
-  assert.match(mcpVerify.stdout, /compile_issues:warn/);
+  assert.match(mcpVerify.stdout, /relation_recommendations:warn/);
   assert.match(mcpVerify.stdout, /health — .*checks/);
   assert.match(mcpVerify.stdout, /health — .*compile_issues:(pass|warn)/);
   assert.match(mcpVerify.stdout, /health_tuned — .*checks/);
@@ -898,10 +899,10 @@ try {
   assert.match(duplicatePositionalDirectMcpVerifyVault.stderr, /Unexpected extra vault argument:/);
 
   const compile = runRaw(cliBin, ['compile', 'ontology', '--summary'], { cwd: projectDir });
-  assertStatus(compile, 1, 'installed CLI compile dangling summary');
+  assertStatus(compile, 0, 'installed CLI compile starter summary');
   assert.match(compile.stdout, /compiled ontology/);
   assert.match(compile.stdout, /5 nodes/);
-  assert.match(compile.stdout, /issues.*1/);
+  assert.match(compile.stdout, /issues.*0/);
 
   const cycleVault = join(projectDir, 'cycle-vault');
   writeCycleVault(cycleVault);

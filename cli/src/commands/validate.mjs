@@ -144,7 +144,7 @@ export function runValidate(args) {
     const report = reportByFile.get(file);
     if (!report || report.issues.length === 0) continue;
     reports.push({
-      file: relative(process.cwd(), file),
+      file: relative(vaultPath, file).replace(/\\/g, '/'),
       report,
     });
     if (report.issues.some((i) => i.severity === 'error')) errorFiles += 1;
