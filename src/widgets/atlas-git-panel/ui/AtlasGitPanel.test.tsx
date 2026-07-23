@@ -122,7 +122,9 @@ describe("AtlasGitPanel — 웹(브라우저 vault) 강등", () => {
 
   it("shows the empty-session message when the changeset has no changes", async () => {
     renderPanel(<AtlasGitPanel sessionChangeset={null} onClose={() => {}} />);
-    expect(await screen.findByText("이 세션에서 감지된 변경이 없어요.")).toBeInTheDocument();
+    // Image #16 재구성 — 빈 상태 문장이 섹션 라벨("이 세션에서 감지된 변경")을
+    // 반복하지 않는 짧은 상태 카피로 교체됨.
+    expect(await screen.findByText("아직 없어요 — 문서를 고치면 여기에 나타나요.")).toBeInTheDocument();
   });
 });
 

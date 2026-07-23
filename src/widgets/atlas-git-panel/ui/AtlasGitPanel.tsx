@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
-import { Check, Copy, X } from "lucide-react";
+import { Check, Copy, History, Monitor, X } from "lucide-react";
 import { copyText } from "@/shared/lib/copy-text";
 import {
   formatSnapshotSummary,
@@ -166,29 +166,33 @@ export function AtlasGitPanel({
     <section
       aria-label={t("title")}
       data-testid="atlas-git-panel"
-      className={cn(
-        "flex w-full flex-col gap-4 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4",
-        className,
-      )}
+      // 시트 골격은 호스트(HomePage 의 scrim+카드 셸)가 소유한다 — 여기서
+      // 보더/배경을 또 얹으면 이중 카드가 된다(소유자 실보고 2026-07-23
+      // "보기 안 좋고"). AgentConnectSheet 와 같은 역할 분담: 패널은 내용만.
+      className={cn("flex w-full flex-col", className)}
     >
-      <header className="flex items-start justify-between gap-2">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-body font-medium text-[color:var(--color-text-primary)]">
+      {/* AgentConnectSheet 헤더 문법 — 인디고 mono eyebrow + body 서브타이틀,
+          border-b 로 본문과 분리. 글자 크기 한 단 승격(소유자: "글자 너무 작아"). */}
+      <header className="flex shrink-0 items-start justify-between gap-2 border-b border-[color:var(--color-border-soft)] px-5 py-4">
+        <div>
+          <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+            <History size={11} aria-hidden />
             {t("title")}
-          </h2>
-          <p className="text-caption text-[color:var(--color-text-tertiary)]">{t("subtitle")}</p>
+          </p>
+          <p className="mt-1 text-body leading-relaxed text-[color:var(--color-text-secondary)]">{t("subtitle")}</p>
         </div>
         <button
           type="button"
           aria-label={t("close")}
           data-testid="atlas-git-close"
           onClick={onClose}
-          className="rounded p-1 text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+          className="rounded p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
         >
-          <X size={14} aria-hidden />
+          <X size={15} aria-hidden />
         </button>
       </header>
 
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-4">
       {desktop ? (
         <DesktopBody
           t={t}
@@ -221,6 +225,7 @@ export function AtlasGitPanel({
           copyCliCommand={copyCliCommand}
         />
       )}
+      </div>
     </section>
   );
 }
@@ -523,45 +528,61 @@ function WebBody({
     : [];
 
   return (
-    <div className="flex flex-col gap-3" data-testid="atlas-git-web-body">
-      <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-5" data-testid="atlas-git-web-body">
+      {/* 세션 변경 — AgentConnectSheet 상태 블록 문법(라벨 + 표면 카드 +
+          상태 점). 이전엔 라벨("이 세션에서 감지된 변경")과 빈 상태 문장
+          ("...감지된 변경이 없어요")이 사실상 중복이었다(소유자 실보고
+          Image #16) — 카드 안 문장은 라벨을 반복하지 않는 짧은 상태로. */}
+      <section aria-label={t("webSummaryTitle")} className="flex flex-col gap-1.5">
         <SectionLabel>{t("webSummaryTitle")}</SectionLabel>
-        {rows.length > 0 ? (
-          <ul className="flex flex-wrap gap-x-3 gap-y-1">
-            {rows.map(([key, count]) => (
-              <li key={key} className="text-label text-[color:var(--color-text-secondary)]">
-                {t(key, { count })}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-label text-[color:var(--color-text-tertiary)]">{t("webNoChanges")}</p>
-        )}
-      </div>
+        <div className="flex items-center gap-2.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
+          <span
+            aria-hidden
+            className="h-2 w-2 shrink-0 rounded-full"
+            style={{
+              backgroundColor:
+                rows.length > 0 ? "var(--color-status-warning)" : "var(--color-text-quaternary)",
+            }}
+          />
+          {rows.length > 0 ? (
+            <ul className="flex flex-wrap gap-x-3 gap-y-1">
+              {rows.map(([key, count]) => (
+                <li key={key} className="text-body text-[color:var(--color-text-secondary)]">
+                  {t(key, { count })}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-body text-[color:var(--color-text-tertiary)]">{t("webNoChanges")}</p>
+          )}
+        </div>
+      </section>
 
-      <div className="flex flex-col gap-1.5">
-        <p className="text-caption text-[color:var(--color-text-quaternary)]">
+      {/* CLI 인계 — FirstRunStarter cli-bridge 행 문법(설명 + code + 복사
+          버튼을 한 카드로 묶음). 코드/버튼 크기 한 단 승격. */}
+      <section aria-label={t("webCommandHint")} className="flex flex-col gap-1.5">
+        <p className="text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
           {t("webCommandHint")}
         </p>
-        <div className="flex items-center gap-2">
-          <code className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-label text-[color:var(--color-text-secondary)]">
+        <div className="flex items-center justify-between gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2">
+          <code className="min-w-0 truncate font-mono text-[12.5px] text-[color:var(--color-text-secondary)]">
             {SNAPSHOT_CLI_COMMAND}
           </code>
           <button
             type="button"
             data-testid="atlas-git-web-copy"
             onClick={copyCliCommand}
-            className="inline-flex items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
-            {commandCopied ? <Check size={10} aria-hidden /> : <Copy size={10} aria-hidden />}
+            {commandCopied ? <Check size={11} aria-hidden /> : <Copy size={11} aria-hidden />}
             {commandCopied ? t("webCopied") : t("webCopyCommand")}
           </button>
         </div>
-      </div>
-
-      <p className="text-caption text-[color:var(--color-text-quaternary)]">
-        {t("webDesktopHint")}
-      </p>
+        <p className="flex items-center gap-1.5 text-label text-[color:var(--color-text-quaternary)]">
+          <Monitor size={11} aria-hidden className="shrink-0" />
+          {t("webDesktopHint")}
+        </p>
+      </section>
     </div>
   );
 }

@@ -2947,7 +2947,7 @@
     "webNodesRemoved": "nodes removed {count}",
     "webEdgesAdded": "relations added {count}",
     "webEdgesRemoved": "relations removed {count}",
-    "webNoChanges": "No changes detected this session.",
+    "webNoChanges": "Nothing yet — edit a document and it shows up here.",
     "webCommandHint": "Run this in a terminal to record the current changes as a git snapshot.",
     "webCopyCommand": "Copy command",
     "webCopied": "Copied",

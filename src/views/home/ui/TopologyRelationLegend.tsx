@@ -63,7 +63,10 @@ export function TopologyRelationLegend({
               "repeating-linear-gradient(90deg, var(--topology-relation-spine-halo) 0 4px, transparent 4px 7px)",
           }}
         />
-        {relationVocabulary("depends", register)}
+        {/* 어휘 사전 canonical 키는 `depends_on` — 렌더 축약형 "depends" 를
+            넘기면 미지 타입 raw fallback 으로 ko 에서 "DEPENDS" 가 노출됐다
+            (소유자 스크린샷 실발견 2026-07-23). */}
+        {relationVocabulary("depends_on", register)}
       </span>
     </div>
   );

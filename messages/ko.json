@@ -2947,7 +2947,7 @@
     "webNodesRemoved": "노드 삭제 {count}",
     "webEdgesAdded": "관계 추가 {count}",
     "webEdgesRemoved": "관계 삭제 {count}",
-    "webNoChanges": "이 세션에서 감지된 변경이 없어요.",
+    "webNoChanges": "아직 없어요 — 문서를 고치면 여기에 나타나요.",
     "webCommandHint": "터미널에서 실행하면 지금 변경이 git 스냅샷으로 남아요.",
     "webCopyCommand": "명령 복사",
     "webCopied": "복사됨",
