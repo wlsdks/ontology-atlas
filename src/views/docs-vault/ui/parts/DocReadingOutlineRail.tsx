@@ -8,7 +8,12 @@ export interface DocReadingOutlineRailProps {
 }
 
 /**
- * 좌측 빈 띠(사이드바–본문 사이)에 상시 렌더하는 읽기 전용 목차 레일.
+ * 우측 빈 띠(본문–문서정보 인스펙터 사이)에 상시 렌더하는 읽기 전용 목차 레일.
+ *
+ * GitHub·대부분 문서 리더의 "on this page" 관례를 따라 본문 오른쪽에 둔다
+ * (2026-07 Apple TOC 배치 정리 — 이전엔 사이드바 바로 옆 좌측에 있어
+ * 레일·문서목록·TOC·본문 4컬럼처럼 읽혔다). `맨 위로` 버튼(`BackToTopButton`)
+ * 은 같은 우하단 모서리 충돌을 피해 좌측으로 이동.
  *
  * `DocsVaultDocOutlinePanel` 의 목차 부분과 별개 표면 — 그 패널은 공유·출력·
  * 파일관리 조작 chrome 전용으로 남기고, 이 레일은 순수 읽기 보조
@@ -21,9 +26,11 @@ export interface DocReadingOutlineRailProps {
  * 뷰포트 게이트는 CSS 가 결정 — 이 컴포넌트는 항상 렌더된 것을 전제로 한 순수 표시.
  *
  * 뷰포트 게이트가 `lg`(1024) 가 아니라 `min-[1440px]` 인 이유: 본문 불침범
- * 불변식의 산수. 본문 글리프 시작 x = (뷰포트 − 좌측 크롬 344 − 760)/2 + 40,
- * 레일 우변 = 24 + 폭. 168px 레일은 뷰포트 ≈1404px 아래에서, 200px 레일은
- * ≈1520px 아래에서 본문 텍스트와 겹친다. 그래서 1440px 부터 168px 로 표시하고
+ * 불변식의 산수. 본문은 `mx-auto max-w-760` 이라 좌우 여백이 대칭이므로
+ * 좌측 기준으로 유도했던 산수가 우측에도 그대로 적용된다: 본문 글리프
+ * 끝단까지의 여백 = (뷰포트 − 좌측 크롬 344 − 760)/2 − 40, 레일 좌변 =
+ * 24 + 폭. 168px 레일은 뷰포트 ≈1404px 아래에서, 200px 레일은 ≈1520px
+ * 아래에서 본문 텍스트와 겹친다. 그래서 1440px 부터 168px 로 표시하고
  * (1440 에서 글리프까지 16px 여유), 1536px 부터 200px 로 넓힌다 (32px 여유).
  * 그 아래 뷰포트는 레일 숨김 + 문서 정보 인스펙터의 목차가 fallback.
  */
@@ -37,7 +44,7 @@ export function DocReadingOutlineRail({
     <nav
       aria-label={t("railAria")}
       data-testid="doc-reading-outline-rail"
-      className="absolute bottom-6 left-6 top-6 hidden w-[168px] flex-col overflow-y-auto min-[1440px]:flex min-[1536px]:w-[200px]"
+      className="absolute bottom-6 right-6 top-6 hidden w-[168px] flex-col overflow-y-auto min-[1440px]:flex min-[1536px]:w-[200px]"
     >
       <span className="mb-2 flex-none font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {t("railLabel")} · {headings.length}
