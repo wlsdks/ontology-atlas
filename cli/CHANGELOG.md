@@ -1,5 +1,19 @@
 # Changelog — ontology-atlas (CLI)
 
+## Unreleased
+
+### Fixed — installed-package and external-vault contracts
+
+- `validate --json` now reports issue files relative to the selected vault,
+  so an absolute external vault returns `capabilities/auth.md` instead of a
+  cwd-relative `../../..` path.
+- Installed CLI tests now resolve the activity-log helper through the declared
+  `ontology-atlas-mcp` dependency when monorepo source is absent.
+- Packed smoke tests accept the Node 24 test runner's `ℹ fail 0` reporter and
+  assert the current clean-starter/health contracts.
+- Added an end-to-end bootstrap regression that creates a one-domain repo,
+  lands the graph, and requires the immediate MCP verifier to pass 31/31.
+
 ## 0.11.0 — 2026-05-16
 
 ### Changed — graph write commands

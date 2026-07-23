@@ -555,7 +555,7 @@ function tailSlug(slug) {
 
 function matchDomainSlug(name, domains) {
   const candidateTokens = semanticTokens(name);
-  if (candidateTokens.size === 0) return null;
+  if (candidateTokens.size === 0) return domains.length === 1 ? domains[0].slug : null;
   let best = null;
   let bestScore = 0;
   let tied = false;
@@ -573,7 +573,12 @@ function matchDomainSlug(name, domains) {
       tied = true;
     }
   }
-  return bestScore > 0 && !tied ? best : null;
+  if (bestScore > 0 && !tied) return best;
+  // With exactly one README-backed business domain there is no competing
+  // meaning to invent: assigning unmatched implementation candidates to that
+  // sole domain creates a valid containment spine. Multiple domains remain
+  // unassigned unless token evidence disambiguates them.
+  return domains.length === 1 ? domains[0].slug : null;
 }
 
 function semanticTokens(value) {

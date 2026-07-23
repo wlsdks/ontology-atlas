@@ -4895,7 +4895,7 @@ function queryOntologyTool(args = {}) {
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
   const queryResult = queryCompiledOntology(artifact, args, { ontologyAtlasIgnorePatterns });
   const result = ['health', 'workspace_brief', 'agent_brief'].includes(args.operation)
-    ? attachVaultValidation(queryResult)
+    ? attachVaultValidation(queryResult, args)
     : queryResult;
   return {
     ...result,
@@ -4912,7 +4912,7 @@ function queryOntologyTool(args = {}) {
   };
 }
 
-function attachVaultValidation(result) {
+function attachVaultValidation(result, args = {}) {
   const validation = validateVaultTool({ repoRoot: REPO_ROOT });
   const driftCount = validation.pathDrift?.drifts?.length ?? 0;
   const errorCount = validation.summary.errorFiles;
@@ -4929,6 +4929,20 @@ function attachVaultValidation(result) {
           : 'Vault schema, graph references, and implementation paths validate cleanly.',
   };
   const needsAttention = check.status !== 'pass';
+  const wasHealthy = result.status === 'healthy';
+  const validationAction = {
+    id: 'vault_validation',
+    kind: 'validate_vault',
+    severity: check.status === 'fail' ? 'fail' : 'warn',
+    count: check.count,
+    message: check.message,
+  };
+  const defaultLimit = result.operation === 'workspace_brief' ? 10 : 5;
+  const actionLimit = typeof args.limit === 'number' ? args.limit : defaultLimit;
+  const withValidationAction = (actions = []) => needsAttention
+    ? [validationAction, ...actions.filter((action) => action.id !== validationAction.id)]
+      .slice(0, actionLimit)
+    : actions;
 
   if (result.operation === 'health') {
     return {
@@ -4948,6 +4962,7 @@ function attachVaultValidation(result) {
         checks: [...result.health.checks, check],
         validation,
       },
+      nextActions: withValidationAction(result.nextActions),
     };
   }
   if (result.operation === 'agent_brief') {
@@ -4959,6 +4974,9 @@ function attachVaultValidation(result) {
         status: needsAttention && result.readiness.status === 'ready'
           ? 'needs_attention'
           : result.readiness.status,
+        score: needsAttention && wasHealthy
+          ? Math.max(0, result.readiness.score - 25)
+          : result.readiness.score,
         healthChecks: result.readiness.healthChecks + 1,
       },
       health: {
@@ -4967,6 +4985,7 @@ function attachVaultValidation(result) {
         checks: [...result.health.checks, check],
         validation,
       },
+      nextActions: withValidationAction(result.nextActions),
     };
   }
   return result;

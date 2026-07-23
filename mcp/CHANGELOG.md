@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Fixed — adversarial MCP dogfood round 2
+
+- `git_status` now parses `git status --porcelain=v1 -z`, preserving Unicode
+  and whitespace paths instead of Git C-quoted octal strings.
+- Detached HEAD is now `high` risk and `git_snapshot(confirm:true)` hard-blocks
+  it, preventing agent-created orphan commits.
+- No-change snapshot previews use the stable subject
+  `ontology snapshot: no vault changes`.
+- A sole README-backed business domain is the deterministic parent for
+  otherwise unmatched analyzer capability/element candidates. The minimal
+  `Accounts` + `src/features/auth` bootstrap now validates cleanly and passes
+  the installed 31/31 MCP verifier.
+- `health`, `workspace_brief`, and `agent_brief` now add a
+  `vault_validation` next action when whole-vault validation needs attention.
+  Validator-only readiness downgrades also reduce the agent-brief score.
+
 ### Changed — MCP SDK stability baseline
 
 - Pin `@modelcontextprotocol/sdk` to exact `1.29.0`, the latest stable v1 SDK as

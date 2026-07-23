@@ -2053,13 +2053,18 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.equal(result.meaningGate.policy, "business-first");
     assert.equal(result.meaningGate.sourceStructureRole, "implementation-evidence");
     assert.equal(result.meaningGate.businessOntology.domains, 1);
-    assert.equal(result.meaningGate.businessOntology.capabilities, 1);
-    assert.equal(result.meaningGate.businessOntology.evidence, 2);
+    assert.equal(result.meaningGate.businessOntology.capabilities, 2);
+    assert.equal(result.meaningGate.businessOntology.evidence, 3);
     assert.deepEqual(result.meaningGate.businessOntology.evidenceRows, [
       {
         slug: "capabilities/auth",
         kind: "capability",
         source: "docs/ontology/capabilities/auth.md",
+      },
+      {
+        slug: "capabilities/billing",
+        kind: "capability",
+        source: "src/features/billing",
       },
       {
         slug: "domains/auth",
@@ -2068,16 +2073,8 @@ await test("index_project — repo analysis, import indexing, and vault validati
       },
     ]);
     assert.equal(result.meaningGate.implementationEvidence.elements, 0);
-    assert.equal(result.meaningGate.implementationEvidence.reviewRequiredCapabilities, 1);
-    assert.deepEqual(result.meaningGate.implementationEvidence.reviewRequiredRows, [
-      {
-        slug: "capabilities/billing",
-        reason: "no README/domain evidence for business meaning",
-        evidence: {
-          source: "src/features/billing",
-        },
-      },
-    ]);
+    assert.equal(result.meaningGate.implementationEvidence.reviewRequiredCapabilities, 0);
+    assert.deepEqual(result.meaningGate.implementationEvidence.reviewRequiredRows, []);
     assert.match(result.meaningGate.reviewQuestions[0], /business\/product/);
     assert.equal(result.validation.problemFiles, 0);
     assert.equal(result.next.applyTool, "add_concepts + add_relations");
@@ -2750,22 +2747,39 @@ await test("query_ontology health/workspace_brief — validator findings cannot 
     { slug: "project", content: "---\nkind: project\ntitle: Project\ndomains: [domains/core]\n---\n" },
     { slug: "domains/core", content: "---\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run]\n---\n" },
     // Structurally connected, but schema-invalid: capability has no domain.
-    { slug: "capabilities/run", content: "---\nkind: capability\ntitle: Run\nelements: []\n---\n" },
+    { slug: "capabilities/run", content: "---\nkind: capability\ntitle: Run\nelements: [elements/worker]\n---\n" },
+    { slug: "elements/worker", content: "---\nkind: element\ntitle: Worker\ndomain: domains/core\n---\n" },
   ]);
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "query_ontology", { operation: "health" }),
       callTool(3, "query_ontology", { operation: "workspace_brief" }),
+      callTool(4, "query_ontology", { operation: "agent_brief" }),
     ]);
     const health = getCallParsed(responses, 2);
     const brief = getCallParsed(responses, 3);
+    const agentBrief = getCallParsed(responses, 4);
     assert.equal(health.status, "needs_attention");
     assert.equal(health.validation.summary.warningFiles, 1);
     assert.equal(health.checks.find((check) => check.id === "vault_validation").status, "warn");
     assert.equal(brief.status, "needs_attention");
     assert.equal(brief.health.validation.summary.warningFiles, 1);
     assert.equal(brief.health.checks.find((check) => check.id === "vault_validation").status, "warn");
+    assert.deepEqual(
+      brief.nextActions.find((action) => action.id === "vault_validation"),
+      {
+        id: "vault_validation",
+        kind: "validate_vault",
+        severity: "warn",
+        count: 1,
+        message: "1 validator or source-path warning(s) require review.",
+      },
+    );
+    assert.equal(agentBrief.status, "needs_attention");
+    assert.equal(agentBrief.readiness.status, "needs_attention");
+    assert.equal(agentBrief.readiness.score, 75);
+    assert.equal(agentBrief.nextActions[0].id, "vault_validation");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

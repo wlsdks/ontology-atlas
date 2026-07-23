@@ -6,6 +6,25 @@
 
 ---
 
+## 2026-07-23 — MCP adversarial dogfood round 2
+
+빈 폴더부터 Git edge case와 packed install까지 128개의 명시적 runtime
+시나리오(직렬 108 + 병렬 RPC 20)를 실행했다. source checkout에서만 보이지
+않던 배포 패키지 결함, 첫 bootstrap 직후 verifier 실패, Unicode Git 경로,
+detached HEAD 고아 커밋, 진단 상태/next-action 모순, 외부 vault 오류 경로를
+회귀 테스트와 함께 수정했다.
+
+- 단일 README domain은 unmatched code candidate의 안전한 유일 parent가 되어,
+  `Accounts` + `features/auth` cold start가 곧바로 MCP verify 31/31을 통과한다.
+- `git_status`는 NUL-delimited porcelain을 사용해 한글·공백 경로를 그대로
+  반환하며, detached HEAD는 high risk + snapshot confirm hard block이다.
+- `health` / `workspace_brief` / `agent_brief`는 validator 문제를
+  `vault_validation` next action으로 노출하고 readiness score에도 반영한다.
+- packed CLI는 설치된 MCP dependency만으로 자체 테스트 가능하고 Node 24
+  reporter/clean-starter 계약을 검증한다.
+- 상세 매트릭스와 남은 P2/P3 후보는
+  `docs/archive/dogfood-mcp-round-2-2026-07-23.md`에 기록했다.
+
 ## 2026-07-23 — `ontology-atlas snapshot`: vault 를 git 커밋으로 (Atlas Git 슬라이스 1)
 
 vault 는 git 이 진실원인데 비개발자·데스크톱 사용자는 버전 기록/백업 수단이

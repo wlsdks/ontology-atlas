@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-23T02:16:35.790Z",
+  "generatedAt": "2026-07-23T04:01:11.038Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -219,7 +219,7 @@
       ],
       "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
       "wordCount": 1935,
-      "updatedAt": "2026-07-23T01:58:15.304Z",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -931,7 +931,7 @@
       ],
       "excerpt": "Scope: start from a genuinely empty folder, create a small FSD TypeScript product, initialize a vault, bootstrap it, connect a dedicated MCP stdio server, exercise read/write/error/recovery flows, absorb agent policy, repeat bootstrap, and finish with the installed-style mcp-verify gate. Fixture: .tmp/atlas-blank-dogfo",
       "wordCount": 2933,
-      "updatedAt": "2026-07-23T02:14:39.010Z",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": []
     },
     {
@@ -1010,6 +1010,109 @@
       "excerpt": "Setup: /tmp/ontology-atlas-dogfood- 에 작은 todo app (4 도메인: auth/task/notification/user) 만든 후, npm link 로 cli + mcp 글로벌 시뮬. 외부 사용자 첫 흐름 시뮬레이션. 2 critical friction — fix 가치 큼, publish 후에도 그대로 (즉시 fix 가능) 2 setup friction — publish 가 원래 plan 이라 publish 후 사라짐 (fix 불필요) MCP 14 tools 동작 — sandbox vault (7 nodes) 에 spawn 후 lis",
       "wordCount": 941,
       "updatedAt": "2026-06-06T02:19:43+09:00",
+      "linksOut": []
+    },
+    {
+      "slug": "archive/dogfood-mcp-round-2-2026-07-23",
+      "path": "docs/archive/dogfood-mcp-round-2-2026-07-23.md",
+      "title": "MCP dogfood round 2 — 2026-07-23",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "MCP dogfood round 2 — 2026-07-23",
+          "slug": "mcp-dogfood-round-2-2026-07-23"
+        },
+        {
+          "depth": 2,
+          "text": "결론",
+          "slug": "결론"
+        },
+        {
+          "depth": 2,
+          "text": "Product-owner pass",
+          "slug": "product-owner-pass"
+        },
+        {
+          "depth": 2,
+          "text": "실행 매트릭스",
+          "slug": "실행-매트릭스"
+        },
+        {
+          "depth": 2,
+          "text": "수정한 결함",
+          "slug": "수정한-결함"
+        },
+        {
+          "depth": 3,
+          "text": "1. Packed CLI test가 monorepo 밖에서 실패",
+          "slug": "1-packed-cli-test가-monorepo-밖에서-실패"
+        },
+        {
+          "depth": 3,
+          "text": "2. Node 24 test reporter contract drift",
+          "slug": "2-node-24-test-reporter-contract-drift"
+        },
+        {
+          "depth": 3,
+          "text": "3. Packed smoke의 오래된 starter/health 가정",
+          "slug": "3-packed-smoke의-오래된-starterhealth-가정"
+        },
+        {
+          "depth": 3,
+          "text": "4. `needs_attention`인데 next action/score는 healthy",
+          "slug": "4-needs_attention인데-next-actionscore는-healthy"
+        },
+        {
+          "depth": 3,
+          "text": "5. Git Unicode/space path가 C-quoted octal string",
+          "slug": "5-git-unicodespace-path가-c-quoted-octal-string"
+        },
+        {
+          "depth": 3,
+          "text": "6. 첫 bootstrap 직후 verifier 실패",
+          "slug": "6-첫-bootstrap-직후-verifier-실패"
+        },
+        {
+          "depth": 3,
+          "text": "7. Detached HEAD에서 agent가 고아 commit 생성",
+          "slug": "7-detached-head에서-agent가-고아-commit-생성"
+        },
+        {
+          "depth": 3,
+          "text": "8. 외부 절대 vault validate path",
+          "slug": "8-외부-절대-vault-validate-path"
+        },
+        {
+          "depth": 3,
+          "text": "9. No-change snapshot subject",
+          "slug": "9-no-change-snapshot-subject"
+        },
+        {
+          "depth": 2,
+          "text": "남은 개선 후보",
+          "slug": "남은-개선-후보"
+        },
+        {
+          "depth": 3,
+          "text": "P2 — destructive preview 공통 계약",
+          "slug": "p2-destructive-preview-공통-계약"
+        },
+        {
+          "depth": 3,
+          "text": "P2 — `absorb_document` 외부 파일 confirm gate",
+          "slug": "p2-absorb_document-외부-파일-confirm-gate"
+        },
+        {
+          "depth": 2,
+          "text": "최종 품질 기준",
+          "slug": "최종-품질-기준"
+        }
+      ],
+      "excerpt": "빈 폴더, cold-start bootstrap, strict input recovery, 관계/노드 destructive workflow, Git 상태 조합, packed install, Node 24 최신 runtime을 대상으로 명시적 runtime 시나리오 128건을 실행했다. 직렬 108건과 동시 read RPC 20건이며, 별도로 unit/integration/package/contract/build gate를 반복했다. 기본 MCP CRUD와 strict schema는 강했다. 실제 결함은 주로 “source checkout은 green이지만 설치 패키지",
+      "wordCount": 796,
+      "updatedAt": "2026-07-23T04:00:17.047Z",
       "linksOut": []
     },
     {
@@ -2948,6 +3051,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-23 — MCP adversarial dogfood round 2",
+          "slug": "2026-07-23-mcp-adversarial-dogfood-round-2"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-23 — `ontology-atlas snapshot`: vault 를 git 커밋으로 (Atlas Git 슬라이스 1)",
           "slug": "2026-07-23-ontology-atlas-snapshot-vault-를-git-커밋으로-atlas-git-슬라이스-1"
         },
@@ -4482,9 +4590,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. vault 는 git 이 진실원인데 비개발자·데스크톱 사용자는 버전 기록/백업 수단이 없고, 개발자에게도 온톨로지 변경이 코드 커밋에 섞여 히스토리에서 안",
-      "wordCount": 34690,
-      "updatedAt": "2026-07-23T07:48:26+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 빈 폴더부터 Git edge case와 packed install까지 128개의 명시적 runtime 시나리오(직렬 108 + 병렬 RPC 20)를 실행했",
+      "wordCount": 34821,
+      "updatedAt": "2026-07-23T03:58:10.731Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5617,7 +5725,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
       "wordCount": 11589,
-      "updatedAt": "2026-07-23T01:58:15.304Z",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5674,7 +5782,7 @@
       ],
       "excerpt": "이 문서는 제품을 느낌이 아니라 공개·인용 가능한 학술/표준/craft 레퍼런스에 묶어 둔다. \"온톨로지가 뭔지도 모르면서 만드는\" 것을 막기 위한 근거 모음 — 무엇이 이미 있고, 우리가 그 위에서 우리만의 것을 어디서 어떻게 다르게 만드는지. 인용 규율: 여기 실린 레퍼런스는 전부 공개 논문 / W3C 표준 / 공개 서적 / 공개 블로그이며, 2026-06-01 자동 리서치 워크플로(6 facet × research→adversarial fact-check)에서 각 출처의 제목·저자·URL 을 독립 웹 확인(25/25 verified) 한 것만 실었다. 링크/인용",
       "wordCount": 2653,
-      "updatedAt": "2026-06-06T02:19:43+09:00",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": []
     },
     {
@@ -5823,7 +5931,7 @@
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~280. HN expects substantive Show HN posts, not one-liners.)",
       "wordCount": 439,
-      "updatedAt": "2026-07-21T02:02:13+09:00",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": []
     },
     {
@@ -5881,7 +5989,7 @@
       ],
       "excerpt": "오픈소스 launch 단계의 publication 초안 모음. 메인테이너가 시점에 맞춰 직접 publish. 1. 사전 준비 [ ] CLI npm 배포 — cli/ 와 mcp/ 둘 다 npm publish [ ] 정적 호스팅 (GitHub Pages / Vercel / Netlify / Cloudflare Pages 등) 배포 — pnpm build → out/ 업로드. 자세한 가이드는 docs/DEPLOYMENT.md. [ ] hosted demo URL 이 README + CLI 안내 문구와 일치하는지 재확인 [ ] 30s demo gif 녹화 + docs/lau",
       "wordCount": 551,
-      "updatedAt": "2026-07-23T02:02:58.616Z",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": []
     },
     {
@@ -5929,7 +6037,7 @@
       ],
       "excerpt": "Reddit responds best to honest, problem-first framing. Each subreddit has its own norms; copy below tuned per audience. Title: ontology-atlas — frontmatter as a codebase ontology, AI agents read it via MCP Body (400~500 words, Reddit allows long-form better than HN): my-project/ ├── project.md ├── domains/ │ ├── auth.m",
       "wordCount": 933,
-      "updatedAt": "2026-07-18T17:37:31+09:00",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": []
     },
     {
@@ -5987,7 +6095,7 @@
       ],
       "excerpt": "X 의 언어는 짧고 시각적. 5–7 트윗 짜리 thread 가 sweet spot. 각 트윗 280 chars 안. 1 트윗 = 1 idea. yaml kind: capability domain: domains/auth dependson: [capabilities/signup] Post the thread in one go (drafts feature) Pin tweet 1 to profile Quote-tweet your HN submission link in a separate post a few hours later Tag relevant accounts onl",
       "wordCount": 442,
-      "updatedAt": "2026-07-18T17:37:31+09:00",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": []
     },
     {
@@ -6759,9 +6867,12 @@
           "capabilities/frontmatter-to-ontology"
         ],
         "elements": [
+          "cli/src/commands/validate.mjs",
+          "cli/src/integration.test.mjs",
           "mcp/scripts/json-rpc-lines.mjs",
           "mcp/scripts/verify.mjs",
           "mcp/src/analyze.mjs",
+          "mcp/src/analyze.test.mjs",
           "mcp/src/git-tools.mjs",
           "mcp/src/git-tools.test.mjs",
           "mcp/src/index.js",
@@ -6790,9 +6901,9 @@
           "slug": "mcp-server-31-tools"
         }
       ],
-      "excerpt": "@modelcontextprotocol/sdk 안정판 1.x 기반 stdio JSON-RPC 서버. 31 도구 노출 (read 18 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전을 반환해 잘못된 폴더 작업을 막는 첫 호출 proof · gitstatus · vault 범위의 로컬 Git HEAD/branch/변경 파일과 vault 밖 변경·staging·진행 중 operation 위험을 구조화해 반환하는 read-only 도구 · g",
-      "wordCount": 13316,
-      "updatedAt": "2026-07-23T02:02:03.878Z",
+      "excerpt": "@modelcontextprotocol/sdk 안정판 1.x 기반 stdio JSON-RPC 서버. 31 도구 노출 (read 18 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전을 반환해 잘못된 폴더 작업을 막는 첫 호출 proof · gitstatus · vault 범위의 로컬 Git HEAD/branch/변경 파일과 vault 밖 변경·staging·detached HEAD·진행 중 operation 위험을 구조화해 반환하는 re",
+      "wordCount": 13362,
+      "updatedAt": "2026-07-23T03:59:00.108Z",
       "linksOut": []
     },
     {
@@ -7723,7 +7834,7 @@
       ],
       "excerpt": "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 31 도구 (read 18 + write 13) 를 stdin/stdout JSON-RPC 로 노출. 등록 가이드: mcp/README.md. 사용자 LLM 비용을 cloud 로 옮기지 않음 — agent 가 자기 LLM 으로 호출. .claude/hooks/block-npm-publish.sh 는 agent 가 사용자 명시 승인 없이 npm publish 계열 명령을 실행하지 못하게 막는 안전장치다. pnpm test:cla",
       "wordCount": 78,
-      "updatedAt": "2026-07-23T02:16:30.014Z",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": []
     },
     {
@@ -8034,7 +8145,7 @@
       "headings": [],
       "excerpt": "src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx renders the app-wide settings panel: display mode, language, ontology workspace access, and AI agent connection verification, grouped as five tabs (General / MCP+Agents / Vault / Appearance / Verification) behind one gear trigger. Before feat/rail-rollout (2026-07) t",
       "wordCount": 551,
-      "updatedAt": "2026-07-21T01:05:59+09:00",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": []
     },
     {
@@ -9066,7 +9177,7 @@
       ],
       "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 여기서 ontology 는 단순한 그래프 그림이 아니라 프로젝트가 무엇으로 이루어져 있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델이다. project, domain, capability, element 노드와 contains, dependson, relates, describes 같은 관계를 markdown frontmatter 로 저장하고, CLI/",
       "wordCount": 436,
-      "updatedAt": "2026-07-23T02:16:30.014Z",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": []
     },
     {
@@ -9622,7 +9733,7 @@
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
       "wordCount": 4921,
-      "updatedAt": "2026-07-23T02:02:58.615Z",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -10104,7 +10215,7 @@
       ],
       "excerpt": "This project publishes two npm packages: · Package · Path · What · Required? · ontology-atlas-mcp · mcp/ · MCP server (AI agents read/write the vault) · Required — the core of the AI agent integration · ontology-atlas · cli/ · 25-command developer CLI (vault scaffold, bootstrap, compile, graph CRUD/deep dive) · Recomme",
       "wordCount": 1156,
-      "updatedAt": "2026-07-23T02:01:20.011Z",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": []
     },
     {
@@ -10142,7 +10253,7 @@
       ],
       "excerpt": "Current as of 2026-05-18. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontology-engine.mjs, and cli/src/index.mjs first. ontology-atlas is now best described as a repo-native memory layer for Claude Code, Cursor,",
       "wordCount": 814,
-      "updatedAt": "2026-07-23T07:48:26+09:00",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": [
         "../README",
         "PRODUCT-OWNER-OPERATING-SYSTEM",
@@ -10207,7 +10318,7 @@
       ],
       "excerpt": "2026-07-17 기준 전 레이어 조사(웹 프론트·데스크톱·CLI/MCP·LLM/Layer 2 인프라 4건) 후 확정한 판정. 판정 원칙: 검증된 스택은 유지가 기본값 (전면 재작성 반려 판정과 동일 논리 — 교체는 측정된 이득이 마이그레이션 비용을 명확히 넘을 때만). 다음 전면 재검토: 2027-01 또는 갈림길 조건 발화 시. 일부 조사는 세션 검색 예산 소진으로 학습 데이터+공식 문서 fetch 기반 — ⚠ 표기 항목은 실행 전 재검증. · 레이어 · 현재 · 판정 · 근거 · Next.js · 16.2.x static export · KEEP · stati",
       "wordCount": 881,
-      "updatedAt": "2026-07-23T01:51:30.612Z",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": []
     },
     {
@@ -10718,7 +10829,7 @@
       ],
       "excerpt": "Common issues users hit when starting with ontology-atlas. If your case isn't here, open an issue: https://github.com/wlsdks/ontology-atlas/issues npm caches the package locally. Force a fresh fetch: The target folder already has README.md / project.md / etc. — the CLI never overwrites existing files. Either: Delete th",
       "wordCount": 1216,
-      "updatedAt": "2026-06-06T02:19:43+09:00",
+      "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": []
     }
   ],
@@ -13104,6 +13215,13 @@
             "type": "doc",
             "slug": "archive/dogfood-friction-2026-05-06",
             "title": "Dogfood friction report — external-user simulation (2026-05-06)"
+          },
+          {
+            "name": "dogfood-mcp-round-2-2026-07-23",
+            "path": "archive/dogfood-mcp-round-2-2026-07-23",
+            "type": "doc",
+            "slug": "archive/dogfood-mcp-round-2-2026-07-23",
+            "title": "MCP dogfood round 2 — 2026-07-23"
           },
           {
             "name": "dogfood-paravel-2026-05-06",

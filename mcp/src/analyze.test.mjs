@@ -228,6 +228,28 @@ test('README domain and feature with same name do not collide', () => {
   }
 });
 
+test('A sole README domain is the deterministic parent for otherwise unmatched code candidates', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'bootstrap-app' }));
+    writeFileSync(join(r, 'README.md'), '# Bootstrap App\n\n## Accounts\n');
+    mkdirSync(join(r, 'src/features/auth'), { recursive: true });
+    writeFileSync(join(r, 'src/features/auth/index.ts'), 'export const auth = true;\n');
+    mkdirSync(join(r, 'src/entities/session'), { recursive: true });
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.equal(r.capabilities[0].domain, 'domains/accounts');
+    assert.equal(r.elements[0].domain, 'domains/accounts');
+    assert.deepEqual(r.suggestedRelations, [
+      { from: 'bootstrap-app', to: 'domains/accounts', type: 'contains' },
+      { from: 'domains/accounts', to: 'capabilities/auth', type: 'contains' },
+      { from: 'domains/accounts', to: 'elements/src/entities/session', type: 'contains' },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('Business containment spine — fuzzy domain match connects project → domain → nodes', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'claims' }));

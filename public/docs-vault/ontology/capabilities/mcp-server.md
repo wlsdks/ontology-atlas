@@ -4,7 +4,7 @@ kind: capability
 title: MCP Server (31 tools)
 domain: ai-agent-partner
 dependencies: [capabilities/frontmatter-to-ontology]
-elements: [mcp/scripts/json-rpc-lines.mjs, mcp/scripts/verify.mjs, mcp/src/analyze.mjs, mcp/src/git-tools.mjs, mcp/src/git-tools.test.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/integration.test.mjs, mcp/src/json-rpc-lines.test.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/suggestions.mjs, mcp/src/suggestions.test.mjs, mcp/src/vault.mjs, mcp/src/verify-script.test.mjs, scripts/dogfood-mcp-walk.mjs, scripts/dogfood-mcp-walk.test.mjs, scripts/lib/test-name-pattern.mjs, scripts/lib/test-name-pattern.test.mjs, scripts/run-focused-node-test.mjs, scripts/run-focused-node-test.test.mjs]
+elements: [cli/src/commands/validate.mjs, cli/src/integration.test.mjs, mcp/scripts/json-rpc-lines.mjs, mcp/scripts/verify.mjs, mcp/src/analyze.mjs, mcp/src/analyze.test.mjs, mcp/src/git-tools.mjs, mcp/src/git-tools.test.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/integration.test.mjs, mcp/src/json-rpc-lines.test.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/suggestions.mjs, mcp/src/suggestions.test.mjs, mcp/src/vault.mjs, mcp/src/verify-script.test.mjs, scripts/dogfood-mcp-walk.mjs, scripts/dogfood-mcp-walk.test.mjs, scripts/lib/test-name-pattern.mjs, scripts/lib/test-name-pattern.test.mjs, scripts/run-focused-node-test.mjs, scripts/run-focused-node-test.test.mjs]
 ---
 
 # MCP Server (31 tools)
@@ -15,8 +15,8 @@ elements: [mcp/scripts/json-rpc-lines.mjs, mcp/scripts/verify.mjs, mcp/src/analy
 | 도구 | 동작 |
 |---|---|
 | `connection_info` | active vault/repo root와 해석 출처, 서버 버전을 반환해 잘못된 폴더 작업을 막는 첫 호출 proof |
-| `git_status` | vault 범위의 로컬 Git HEAD/branch/변경 파일과 vault 밖 변경·staging·진행 중 operation 위험을 구조화해 반환하는 read-only 도구 |
-| `git_snapshot` | validator error, merge/rebase/cherry-pick/revert, stale `expectedHead`를 차단하고 vault pathspec만 로컬 commit하는 dry-run-first checkpoint. repo init과 remote push는 지원하지 않는다. |
+| `git_status` | vault 범위의 로컬 Git HEAD/branch/변경 파일과 vault 밖 변경·staging·detached HEAD·진행 중 operation 위험을 구조화해 반환하는 read-only 도구. NUL-delimited porcelain으로 한글·공백 경로를 그대로 보존한다. |
+| `git_snapshot` | validator error, detached HEAD, merge/rebase/cherry-pick/revert, stale `expectedHead`를 차단하고 vault pathspec만 로컬 commit하는 dry-run-first checkpoint. repo init과 remote push는 지원하지 않는다. |
 | `list_concepts` | vault 의 모든 노드 (enum-validated kind 필터, limit default 100 / max 500) |
 | `get_concept` | 단일 slug 의 frontmatter + body excerpt + graph neighbors + `outgoingEdges[]` |
 | `get_concepts` | **R+** 배치 reader — 여러 slug 한 호출에 (max 50, 입력 순서 보존, missing/invalid slug row 는 partial result 로 격리) |
@@ -44,6 +44,12 @@ elements: [mcp/scripts/json-rpc-lines.mjs, mcp/scripts/verify.mjs, mcp/src/analy
 유지하면서 같은 순서의 `nodeSummaries[]` 를 반환한다. agent 는 dependency
 cycle 을 받자마자 title/domain 맥락을 읽을 수 있고, 별도 `get_concept`
 round-trip 없이 어떤 capability 가 순환하는지 판단할 수 있다.
+
+`health` / `workspace_brief` / `agent_brief` 는 whole-vault validator 결과도
+같은 diagnosis 에 붙인다. validator warning/failure 는 `vault_validation`
+next action 으로 노출되고, validator 만 readiness 를 낮춘 경우에도
+`agent_brief.readiness.score` 를 함께 낮춰 `needs_attention + 100점` 모순을
+만들지 않는다.
 
 MCP `agent_brief` 의 business-first lens 는 이제 verify contract 에서도
 fail-closed 로 검증한다. `businessOntologyLens.policy` 는 `business-first`,

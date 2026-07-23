@@ -2283,6 +2283,21 @@ await test('validate --json --strict — summary.strict=true, warning 시 exit 1
   }
 });
 
+await test('validate --json reports issue files relative to an absolute external vault', async () => {
+  const root = withVault([
+    { slug: 'capabilities/auth', content: '---\nkind: capability\ntitle: Auth\n---\n' },
+  ]);
+  try {
+    const r = await run(['validate', root, '--json']);
+    assert.equal(r.code, 0);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.problems[0].file, 'capabilities/auth.md');
+    assert.doesNotMatch(data.problems[0].file, /^\.\.\//);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('validate --json — clean vault: scanned/problems[]/summary 노출, exit 0 (R+ cycle 40)', async () => {
   // capability 는 domain 누락 시 missing-expected-field warning. project 로
   // 정말 깨끗한 vault 만든다.
@@ -7911,6 +7926,43 @@ await test('bootstrap --skip-imports — 1단계 (analyze) 만, imports 영역 s
     assert.match(clean, /1\) analyze/);
     assert.match(clean, /skipped \(--skip-imports\)/);
     assert.equal(existsSyncTest(join(vault, 'bs-app.md')), true);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('bootstrap --skip-imports — sole README domain yields a verifier-clean vault', async () => {
+  const vault = withVault([]);
+  const repo = mkdtempSync(join(tmpdir(), 'cli-bootstrap-single-domain-'));
+  try {
+    writeFileSync(join(repo, 'package.json'), '{"name":"bootstrap-app"}\n', 'utf-8');
+    writeFileSync(join(repo, 'README.md'), '# Bootstrap App\n\n## Accounts\n', 'utf-8');
+    mkdirSync(join(repo, 'src', 'features', 'auth'), { recursive: true });
+    writeFileSync(
+      join(repo, 'src', 'features', 'auth', 'index.ts'),
+      'export const login = () => true;\n',
+      'utf-8',
+    );
+
+    const bootstrap = await run([
+      'bootstrap',
+      repo,
+      '--vault',
+      vault,
+      '--skip-imports',
+      '--json',
+    ]);
+    assert.equal(bootstrap.code, 0, `stdout: ${bootstrap.stdout}\nstderr: ${bootstrap.stderr}`);
+    const payload = JSON.parse(bootstrap.stdout);
+    assert.equal(payload.summary.errors, 0);
+    const capability = readFileSync(join(vault, 'capabilities', 'auth.md'), 'utf-8');
+    assert.match(capability, /domain: domains\/accounts/);
+
+    const verify = await run(['mcp-verify', vault]);
+    assert.equal(verify.code, 0, `stdout: ${verify.stdout}\nstderr: ${verify.stderr}`);
+    assert.match(stripAnsi(verify.stdout), /tools\/list 31\/31/);
+    assert.match(stripAnsi(verify.stdout), /All passed —/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
