@@ -1171,7 +1171,10 @@
      * 이 토큰만 참조하고 인라인 hex/px 재구현 금지(`design.md` "인라인
      * 재구현 금지" 규범).
      */
-    --chrome-tile-size: 44px;
+    /* 44 → 36 (소유자 3차 보고 2026-07-23: zoom 제거 후에도 "딱봐도 크다")
+       — 크롬 밀도 자체를 프로 툴바 급(32~36)으로. 단일 토큰이므로 전 크롬
+       필/타일/상태 칩/플로팅 스택이 함께 내려간다. */
+    --chrome-tile-size: 36px;
     --chrome-radius: 10px;
     --chrome-radius-inner: 7px;
     --chrome-icon: 16px;
