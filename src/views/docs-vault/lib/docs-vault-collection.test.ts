@@ -6,6 +6,7 @@ import {
   resolveDocsVaultSlugAlias,
   resolveDocsVaultCollection,
   shouldDeferDocsVaultDefaultSelection,
+  shouldShowSampleWelcomeNote,
 } from './docs-vault-collection';
 
 function doc(
@@ -94,6 +95,41 @@ describe('docs vault collections', () => {
       shouldDeferDocsVaultDefaultSelection({
         normalizedQuerySlug: null,
         selectedSlug: null,
+      }),
+    ).toBe(false);
+  });
+
+  it('shows the sample welcome note only on a fresh, undismissed sample landing', () => {
+    expect(
+      shouldShowSampleWelcomeNote({
+        source: 'server',
+        normalizedQuerySlug: null,
+        dismissed: false,
+      }),
+    ).toBe(true);
+    // 명시적 딥링크(?slug=)로 들어오면 노트를 건너뛴다 — 공유 링크는
+    // 그 문서로 바로 가야 한다.
+    expect(
+      shouldShowSampleWelcomeNote({
+        source: 'server',
+        normalizedQuerySlug: 'ARCHITECTURE',
+        dismissed: false,
+      }),
+    ).toBe(false);
+    // 사용자가 실제 문서를 골랐으면(dismissed) 다시 밀어붙이지 않는다.
+    expect(
+      shouldShowSampleWelcomeNote({
+        source: 'server',
+        normalizedQuerySlug: null,
+        dismissed: true,
+      }),
+    ).toBe(false);
+    // 로컬(사용자 자신의) vault 에는 애초에 해당 없음.
+    expect(
+      shouldShowSampleWelcomeNote({
+        source: 'local',
+        normalizedQuerySlug: null,
+        dismissed: false,
       }),
     ).toBe(false);
   });

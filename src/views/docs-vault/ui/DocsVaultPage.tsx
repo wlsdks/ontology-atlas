@@ -65,6 +65,7 @@ import {
   resolveDocsVaultSlugAlias,
   resolveDocsVaultCollection,
   shouldDeferDocsVaultDefaultSelection,
+  shouldShowSampleWelcomeNote,
   type DocsVaultCollection,
 } from '../lib/docs-vault-collection';
 import {
@@ -122,6 +123,7 @@ import { DocsVaultDocOutlinePanel } from "./parts/DocsVaultDocOutlinePanel";
 import { DocReadingOutlineRail } from "./parts/DocReadingOutlineRail";
 import { BackToTopButton } from "./parts/BackToTopButton";
 import { SampleNotice } from "./parts/SampleNotice";
+import { SampleWelcomeNote } from "./parts/SampleWelcomeNote";
 import { EmptyState } from "./parts/EmptyState";
 import { DocsHeaderTile } from "./parts/DocsHeaderTile";
 import { DocsVaultVaultChip } from "./parts/DocsVaultVaultChip";
@@ -195,6 +197,10 @@ function DocsVaultContent() {
     undefined,
   );
   const [editing, setEditing] = useState(false);
+  // Toss D1 정리(2026-07) — 샘플 진입 안내 노트를 사용자가 실제 문서를
+  // 골라(handleSelect) 스스로 닫았는지. `shouldShowSampleWelcomeNote` 가
+  // 이 값과 source/딥링크 여부를 합쳐 최종 표시를 판정한다.
+  const [sampleWelcomeDismissed, setSampleWelcomeDismissed] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [docCollection, setDocCollection] =
     useState<DocsVaultCollection>('guides');
@@ -424,6 +430,9 @@ function DocsVaultContent() {
     // 소스 전환 시 선택 해제 — 동일 slug 가 다른 볼트에 있을 가능성 적음.
     setSelectedSlug(null);
     setActiveTag(null);
+    // 샘플 모드로 (재)진입할 때마다 안내 노트를 다시 보여준다 — 이전 세션에서
+    // 닫았더라도 "샘플 vs 내 vault" 전환은 방향 감각을 다시 짚어줄 가치가 있다.
+    if (next === 'server') setSampleWelcomeDismissed(false);
     replaceUrlState(
       next === 'server'
         ? { slug: null, view, intent: null }
@@ -785,6 +794,11 @@ function DocsVaultContent() {
     () => resolveDocsVaultSlugAlias(querySlug, manifest.docs),
     [manifest.docs, querySlug],
   );
+  const showSampleWelcomeNote = shouldShowSampleWelcomeNote({
+    source,
+    normalizedQuerySlug,
+    dismissed: sampleWelcomeDismissed,
+  });
   const prevQuerySlug = usePrevious(normalizedQuerySlug);
   useEffect(() => {
     if (prevQuerySlug !== normalizedQuerySlug && normalizedQuerySlug !== selectedSlug) {
@@ -1006,6 +1020,9 @@ function DocsVaultContent() {
       setHighlightQuery(query);
       setRecentSlugs(pushRecentDoc(recentKey, slug));
       replaceUrlState({ slug });
+      // 사용자가 직접 문서를 골랐으면 샘플 진입 안내 노트를 다시 밀어붙이지
+      // 않는다(기본 선택 effect 는 이 함수를 거치지 않아 영향받지 않음).
+      setSampleWelcomeDismissed(true);
     },
     [recentKey, replaceUrlState, setRecentSlugs],
   );
@@ -1719,15 +1736,34 @@ function DocsVaultContent() {
         <main id="main" className="flex min-w-0 flex-1 flex-col overflow-hidden">
           {selectedDoc ? (
             <div className="flex min-h-0 flex-1 flex-col">
-              {/* ehead — dir/file mono + preview/edit seg + sync status
-                  (docs-vault-final spec §우 에디터/프리뷰 헤더). */}
-              <div className="flex flex-none items-center gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-2.5">
-                <span className="min-w-0 flex-1 truncate font-mono text-body text-[color:var(--color-text-secondary)]">
-                  <span className="text-[color:var(--color-text-quaternary)]">
-                    {splitVaultSlugPath(selectedDoc.slug).dir}
+              {/* 샘플 진입 안내 — Toss D1 정리(2026-07): 딥링크 없이 샘플
+                  모드로 착지하면 이 노트가 (개발 문서 본문보다 먼저) 이
+                  문서함이 무엇이고 어떻게 쓰는지 평문으로 짚어준다. 사용자가
+                  실제 문서를 고르면(handleSelect) 사라진다. */}
+              {!editing && showSampleWelcomeNote ? (
+                <SampleWelcomeNote
+                  canOpenLocalVault={!localSourceDisabled}
+                  onOpenFolder={() => handleSourceChange('local')}
+                  onDismiss={() => setSampleWelcomeDismissed(true)}
+                />
+              ) : null}
+              {/* ehead — 표시명(title) + preview/edit seg + sync status
+                  (docs-vault-final spec §우 에디터/프리뷰 헤더). Toss D2
+                  정리(2026-07) — 이전엔 `dir/file.md` 내부 파일명만 mono 로
+                  보여 비개발자에게 "README.md" 같은 raw 파일명이 1차
+                  레이블이었다. title 을 1행 주 레이블로 올리고, 파일 경로는
+                  2행 caption(secondary)으로 낮춘다 — 트리(`DocsVaultTree`)의
+                  `title ?? name` 우선순위와 같은 계약을 여기도 일관 적용. */}
+              <div className="flex flex-none items-center gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-2">
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-body font-medium text-[color:var(--color-text-primary)]">
+                    {selectedDoc.title}
                   </span>
-                  {splitVaultSlugPath(selectedDoc.slug).name}.md
-                </span>
+                  <span className="truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                    <span>{splitVaultSlugPath(selectedDoc.slug).dir}</span>
+                    {splitVaultSlugPath(selectedDoc.slug).name}.md
+                  </span>
+                </div>
                 {canEditCurrent ? (
                   <div
                     role="tablist"
