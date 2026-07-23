@@ -20,12 +20,15 @@ export interface ChangelogPreviewEntry {
   title: string;
 }
 
-export const CHANGELOG_PREVIEW_AS_OF = "2026-07-18";
+export const CHANGELOG_PREVIEW_AS_OF = "2026-07-19";
 
+// 사용자 향 항목만 싣는다 — 렌더러 삭제/리팩터 같은 내부 개발 항목은
+// 여기 노출하지 않는다 (드리프트 가드는 changelog-preview.test.ts 가
+// docs/CHANGELOG.md 실 헤더와 대조).
 export const CHANGELOG_PREVIEW_ENTRIES: readonly ChangelogPreviewEntry[] = [
   {
-    date: "2026-07-18",
-    title: "Project detail Connection map 제거 + SigmaTopology 렌더러 물리 삭제",
+    date: "2026-07-19",
+    title: "라이트 모드 전면 폐기 (dark-only)",
   },
   {
     date: "2026-07-18",

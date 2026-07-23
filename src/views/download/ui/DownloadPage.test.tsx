@@ -46,7 +46,7 @@ describe('DownloadPage', () => {
   it('keeps the hosted page focused on app releases instead of browser vault work', () => {
     renderDownloadPage();
 
-    expect(screen.getByRole('link', { name: /Open macOS releases/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Check GitHub releases/i })).toHaveAttribute(
       'href',
       GITHUB_RELEASES_URL,
     );
@@ -84,9 +84,9 @@ describe('DownloadPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/hosted site does not open or edit vault folders/i)).toBeInTheDocument();
     expect(screen.getByText(/Obsidian-style direct download/i)).toBeInTheDocument();
-    expect(screen.getByText(/Verify agent access/i)).toBeInTheDocument();
+    expect(screen.getByText(/Connect your AI assistant/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/Codex, Claude Code, or Cursor reads and writes the same vault over MCP/i),
+      screen.getByText(/paste it into your AI coding assistant \(Claude, Codex, Cursor, …\)/i),
     ).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
   });
@@ -100,6 +100,12 @@ describe('DownloadPage', () => {
     expect(screen.getByText('One folder, three views')).toBeInTheDocument();
     // dogfood census is real data (build-time generated), not a placeholder.
     expect(screen.getByRole('img', { name: /Topology miniature/i })).toBeInTheDocument();
+    // [download-honesty] the census card's concepts/relations counts need a
+    // scope label so they aren't mistaken for the count shown once a user
+    // loads their own vault in the app (different definition, different number).
+    expect(
+      screen.getByText(/Counts this repo's own docs\/ontology vault/i),
+    ).toBeInTheDocument();
   });
 
   it('copies the local release completion audit command', async () => {
@@ -140,7 +146,7 @@ describe('DownloadPage', () => {
       screen.queryByText(/Firebase Hosting must deploy the promo\/download site/i),
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/Local completion audit/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Open macOS releases/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Check GitHub releases/i })).toHaveAttribute(
       'href',
       GITHUB_RELEASES_URL,
     );

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Check, CheckCircle2, Clipboard, Download, ExternalLink, Orbit, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, Clipboard, ExternalLink, Orbit, ShieldCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
@@ -97,7 +97,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
               <MacosDownloadLink
                 className={cn(buttonVariants({ size: 'lg' }), 'rounded-full min-w-[13rem]')}
               >
-                <Download size={16} />
+                <ExternalLink size={16} />
                 {t('primaryCta')}
               </MacosDownloadLink>
               <a
@@ -549,6 +549,16 @@ function IntroVaultInstrument() {
           <span className="text-[9px] uppercase tracking-[0.18em]">{t('relationsUnit')}</span>
         </span>
       </div>
+
+      {/* [download-honesty] 이 카드의 숫자(census.concepts)는 이 저장소
+          docs/ontology 의 frontmatter 노드 합이다. 앱에서 자신의 vault 를
+          열면 다른 정의(런타임 파생 그래프)로 다른 숫자가 나온다 — 문맥
+          라벨 없이는 같은 사용자가 두 숫자를 3배 차이로 보고 신뢰를
+          잃는다. 앱 사이드 파생 로직은 이 파일 소유권 밖이라 건드리지
+          않는다. */}
+      <p className="break-keep border-t border-[color:var(--color-border-soft)] px-4 pt-1.5 pb-1 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+        {t('scopeNote')}
+      </p>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-[color:var(--color-border-soft)] px-4 py-2.5">
         <IntroKindLegendItem kind="project" count={census.kinds.project} />
