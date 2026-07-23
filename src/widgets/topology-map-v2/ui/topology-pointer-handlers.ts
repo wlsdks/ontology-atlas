@@ -137,6 +137,18 @@ export interface PointerHandlerRefs {
   dragStartPosRef: Ref<{ x: number; y: number } | null>;
   /** The altitude band's "100%" fit scale — used to derive farT for tier-aware (visible-only) hit-testing. */
   overviewScaleRef: Ref<number>;
+  /**
+   * 터치 핀치줌 (반응형 감사 rank4, 2026-07-23) — 활성 터치 포인터
+   * (pointerId → 캔버스 좌표). 훅이 소유하는 ref 여야 한다: 이 팩토리는 매
+   * 렌더 재호출되므로 팩토리-로컬 상태는 제스처 중 리렌더에 증발한다.
+   * 생략 시 핀치 비활성(하위호환 — 기존 테스트/호출부 무변경).
+   */
+  activeTouchesRef?: Ref<Map<number, { x: number; y: number }>>;
+  /**
+   * rank4 — 진행 중 핀치의 직전 프레임 상태(두 손가락 거리 + 중점). null =
+   * 핀치 아님. 줌 배율은 거리 비율, 팬은 중점 이동에서 유도한다.
+   */
+  pinchRef?: Ref<{ dist: number; midX: number; midY: number } | null>;
   onSelect?: (slug: string) => void;
   /** P3b — 노드가 잡히지 않은 지점의 클릭이 엣지 근접일 때. */
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
@@ -220,8 +232,12 @@ export interface PointerHandlerRefs {
 export interface TopologyPointerHandlers {
   handlePointerDown: (e: ReactPointerEvent<HTMLCanvasElement>) => void;
   handlePointerMove: (e: ReactPointerEvent<HTMLCanvasElement>) => void;
-  handlePointerUp: () => void;
-  handlePointerCancel: () => void;
+  /**
+   * rank4 — 이벤트는 optional: JSX 배선(onPointerUp)은 이벤트를 넘겨 터치
+   * 부기가 돌고, 내부 no-arg 호출(stuck-drag guard 등)은 부기를 생략한다.
+   */
+  handlePointerUp: (e?: ReactPointerEvent<HTMLCanvasElement>) => void;
+  handlePointerCancel: (e?: ReactPointerEvent<HTMLCanvasElement>) => void;
   /**
    * FIX (QA first-light pass — console error sweep): takes a native
    * `WheelEvent`, not React's synthetic `WheelEvent<...>`. React attaches its
@@ -270,6 +286,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     dragAffectedSetRef,
     dragStartPosRef,
     overviewScaleRef,
+    activeTouchesRef,
+    pinchRef,
     hoveredEdgeRef,
     selectedEdgeRef,
     clusterChipsRef,
@@ -464,6 +482,24 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     canvasRectRef.current = { left: domRect.left, top: domRect.top };
     const rect = canvasRectRef.current;
     const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    // rank4 터치 핀치줌 — 터치 포인터 등록. 두 번째 손가락이 닿는 순간 진행
+    // 중이던 단일 손가락 제스처(프레스/팬)를 클릭 커밋 없이 취소하고 핀치로
+    // 전환한다(두 손가락을 얹는 행위가 노드 선택이 되면 안 됨). 세 번째 이상
+    // 손가락은 무시 — 핀치는 처음 두 포인터의 좌표만 본다(Map 삽입 순서 보존).
+    if (activeTouchesRef && e.pointerType === "touch") {
+      activeTouchesRef.current.set(e.pointerId, { x: point.x, y: point.y });
+      if (activeTouchesRef.current.size === 2 && pinchRef) {
+        handlePointerCancel();
+        const pts = [...activeTouchesRef.current.values()];
+        pinchRef.current = {
+          dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+          midX: (pts[0].x + pts[1].x) / 2,
+          midY: (pts[0].y + pts[1].y) / 2,
+        };
+        return; // 기계 전이 없음 — 이 제스처는 카메라 전용
+      }
+      if (activeTouchesRef.current.size > 2) return;
+    }
     const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
     const { next } = transitionPointerState(pointerMachineRef.current, { type: "pointerdown", point, hitNodeId }, tokens.hysteresisPx);
     pointerMachineRef.current = next;
@@ -477,6 +513,55 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     if (!tokens || !world) return;
     const rect = currentRect(e.currentTarget);
     const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+
+    // rank4 터치 핀치줌 — 두 손가락 이동을 카메라 줌+팬으로. 수학은
+    // `handleWheel` 과 동일 계약: 카메라 TARGET 기준 합성(스프링 지연 무관),
+    // effective min/max 클램프, 인터랙티브 스프링. 직전 중점 아래 월드 좌표가
+    // 새 중점 아래로 오도록 tx/ty 를 풀면 줌 앵커와 두-손가락 팬이 한 식으로
+    // 떨어진다: tx' = worldAtPrevMid − (mid' − c)/scale'.
+    if (activeTouchesRef && e.pointerType === "touch" && activeTouchesRef.current.has(e.pointerId)) {
+      activeTouchesRef.current.set(e.pointerId, { x: point.x, y: point.y });
+      const pinch = pinchRef?.current;
+      if (pinch && pinchRef && activeTouchesRef.current.size >= 2) {
+        const pts = [...activeTouchesRef.current.values()];
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        const midX = (pts[0].x + pts[1].x) / 2;
+        const midY = (pts[0].y + pts[1].y) / 2;
+        if (pinch.dist > 0 && dist > 0) {
+          // 카메라 모션 시작 — 호버 카드류는 즉시 강등(휠과 같은 규칙).
+          clearEdgeHover();
+          clearClusterHover();
+          if (cameraTweenRef) cameraTweenRef.current = null;
+          const { width, height } = viewportRef.current;
+          const target = cameraTargetRef.current;
+          const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+          const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
+          const effectiveScaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
+          const newScale = Math.min(effectiveScaleMax, Math.max(effectiveScaleMin, target.tscale * (dist / pinch.dist)));
+          const worldAtPrevMidX = (pinch.midX - width / 2) / target.tscale + target.tx;
+          const worldAtPrevMidY = (pinch.midY - height / 2) / target.tscale + target.ty;
+          const afterX = worldAtPrevMidX - (midX - width / 2) / newScale;
+          const afterY = worldAtPrevMidY - (midY - height / 2) / newScale;
+          cameraTargetRef.current = { tx: afterX, ty: afterY, tscale: newScale };
+          dampingRef.current = tokens.cameraDampingDefault;
+          cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
+          // 잔여 플릭 속도 차단(휠과 동일) — 핀치는 타깃 구동.
+          const cam = cameraRef.current;
+          if (cam.x.velocity !== 0 || cam.y.velocity !== 0) {
+            cameraRef.current = { ...cam, x: { value: cam.x.value, velocity: 0 }, y: { value: cam.y.value, velocity: 0 } };
+          }
+          if (reducedMotionRef.current) {
+            cameraRef.current = {
+              x: { value: afterX, velocity: 0 },
+              y: { value: afterY, velocity: 0 },
+              scale: { value: newScale, velocity: 0 },
+            };
+          }
+        }
+        pinchRef.current = { dist, midX, midY };
+        return; // 핀치 중엔 단일 포인터 이동 로직(팬/호버/드래그)을 타지 않는다
+      }
+    }
 
     // Stuck-drag guard (QA 소실 B fallback): a button-less move during an
     // active gesture means we missed the real `pointerup` (capture unsupported
@@ -644,7 +729,16 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e?: ReactPointerEvent<HTMLCanvasElement>) => {
+    // rank4 터치 핀치줌 — 터치 해제 부기. 핀치(또는 핀치의 잔여 손가락) up 은
+    // 클릭/플릭 로직을 타지 않는다: 핀치 진입 시 기계는 이미 cancel 로 idle 이고,
+    // 일반 단일 탭은 up 시점 phase 가 pressed/dragging 이라 이 조기 반환에
+    // 걸리지 않는다. (내부 no-arg 호출 — stuck-drag guard — 은 부기 생략.)
+    if (e && activeTouchesRef && e.pointerType === "touch" && activeTouchesRef.current.has(e.pointerId)) {
+      activeTouchesRef.current.delete(e.pointerId);
+      if (pinchRef?.current && activeTouchesRef.current.size < 2) pinchRef.current = null;
+      if (pointerMachineRef.current.phase === "idle") return;
+    }
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) return;
     // P3b — 클릭 지점(드래그가 아니면 downPoint 가 곧 클릭 좌표) 스냅샷.
@@ -810,7 +904,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     }
   };
 
-  const handlePointerCancel = () => {
+  const handlePointerCancel = (e?: ReactPointerEvent<HTMLCanvasElement>) => {
+    // rank4 터치 핀치줌 — 취소된 터치 포인터 부기(브라우저 제스처 가로채기 등).
+    if (e && activeTouchesRef && e.pointerType === "touch") {
+      activeTouchesRef.current.delete(e.pointerId);
+      if (pinchRef?.current && activeTouchesRef.current.size < 2) pinchRef.current = null;
+    }
     clearEdgeHover();
     clearClusterHover();
     const tokens = readTopologyV2TokensOrNull();

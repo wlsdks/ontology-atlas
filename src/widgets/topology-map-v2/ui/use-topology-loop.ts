@@ -230,6 +230,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const simRef = useRef<ForceSimulation | null>(null);
   const heatRef = useRef(0);
   const nodeDragRef = useRef<NodeDragState | null>(null);
+  /** rank4 터치 핀치줌 — 활성 터치 포인터(pointerId → 캔버스 좌표). 핸들러 팩토리는 매 렌더 재생성되므로 훅이 상태를 소유한다. */
+  const activeTouchesRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  /** rank4 — 진행 중 핀치의 직전 프레임 거리/중점(null = 핀치 아님). */
+  const pinchRef = useRef<{ dist: number; midX: number; midY: number } | null>(null);
   /** C1 B1/B2 — the active (or just-released, through its settle burst) drag's tug/settle-restriction set. */
   const dragAffectedSetRef = useRef<{ draggedId: string; oneHop: ReadonlySet<string>; twoHop: ReadonlySet<string> } | null>(null);
   /** C1 B1 — the dragged node's world position at grab time (for computing this drag's total displacement Δ). */
@@ -1958,6 +1962,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dragAffectedSetRef,
     dragStartPosRef,
     overviewScaleRef,
+    activeTouchesRef,
+    pinchRef,
     hoveredEdgeRef,
     selectedEdgeRef,
     clusterChipsRef,
