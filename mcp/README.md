@@ -737,7 +737,7 @@ A successful run looks like this:
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 104 total query results (limited true)
-✓ analyze_repo_structure — fsd (6 domain candidates, 13 capability candidates, 39 element candidates)
+✓ analyze_repo_structure — fsd (6 domain candidates, 14 capability candidates, 39 element candidates)
 ✓ infer_imports — 938 files scanned, 547 module edges (elements/src/views/home->elements/src/entities/knowledge-graph x28 (static:28), elements/src/widgets/docs-vault->elements/src/entities/docs-vault x16 (static:16), +545 more)
 ✓ index_project — 56 concept candidates, 547 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
