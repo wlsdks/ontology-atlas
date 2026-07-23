@@ -76,6 +76,11 @@ const messages = {
       copied: "에이전트 핸드오프 호출을 복사했어요",
       openDocument: "문서 열기 →",
     },
+    codeLocations: {
+      heading: "코드 위치",
+      copy: "복사",
+      copied: "복사됨",
+    },
     body: {
       title: "본문",
       empty: "작성된 본문이 없습니다.",
@@ -221,5 +226,32 @@ describe("FullDetailA1", () => {
     expect(screen.getByTestId("node-explanation-read")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("node-explanation-edit-button"));
     expect(screen.getByTestId("node-explanation-edit")).toBeInTheDocument();
+  });
+});
+
+// R+ "코드 위치" (code location) — the REAL code evidence (raw file paths),
+// distinct from the `node.slug` already shown top-right (a vault-doc
+// reference, not code).
+describe("FullDetailA1 — 코드 위치 (code location) section", () => {
+  it("renders a heading + row for each code path when codeLocations is non-empty", () => {
+    renderFullDetail({ codeLocations: ["mcp/src/index.js", "mcp/src/verify.mjs"] });
+    expect(screen.getByText("코드 위치")).toBeInTheDocument();
+    expect(screen.getByText("mcp/src/index.js")).toBeInTheDocument();
+    expect(screen.getByText("mcp/src/verify.mjs")).toBeInTheDocument();
+  });
+
+  it("omits the section entirely when codeLocations is empty or omitted", () => {
+    renderFullDetail();
+    expect(
+      screen.getByTestId("full-detail-a1").querySelector("[data-fulldetail-code-locations]"),
+    ).toBeNull();
+  });
+
+  it("copies the path when the row's copy button is clicked", () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    renderFullDetail({ codeLocations: ["mcp/src/index.js"] });
+    fireEvent.click(screen.getByTestId("full-detail-a1-code-location-copy"));
+    expect(writeText).toHaveBeenCalledWith("mcp/src/index.js");
   });
 });

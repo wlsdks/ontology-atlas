@@ -1946,7 +1946,11 @@
       "exampleTitleFor": "{kind} 예시",
       "exampleCopy": "복사",
       "exampleCopied": "복사됨",
-      "exampleCopyAriaLabel": "예시 frontmatter 복사"
+      "exampleCopyAriaLabel": "예시 frontmatter 복사",
+      "codeLocationsHeading": "코드 위치",
+      "codeLocationsCopy": "복사",
+      "codeLocationsCopied": "복사됨",
+      "codeLocationsCopyAriaLabel": "{path} 경로 복사"
     },
     "readingAids": {
       "backToTop": "맨 위로",
@@ -2275,12 +2279,17 @@
       "metricContainsHelp": "이 노드가 직접 담고 있는 하위 항목들 — 하위 전체가 아니라 바로 아래 한 단계예요.",
       "metricUsedByHelp": "이 노드를 직접 쓰는(가리키는) 다른 항목들.",
       "metricDependsOnHelp": "이 노드가 직접 기대는(필요로 하는) 다른 항목들.",
-      "metricEvidenceHelp": "이 노드를 뒷받침하는 실제 문서/코드 — 클릭하면 원본으로 가요.",
+      "metricEvidenceHelp": "이 노드가 유래한 근거 문서가 있는지 여부예요 — 선언됨이면 클릭해 원본으로 가요.",
+      "metricEvidenceDeclared": "선언됨",
+      "metricEvidenceUndeclared": "미선언",
       "metricHelp": "모두 이 노드와 직접 연결된 것만 셉니다 — 여러 단계 건너뛴 합계가 아니에요.",
       "containsShowAll": "전체 보기",
       "containsShowSummary": "요약 보기",
       "containsOtherGroup": "기타",
       "noConnections": "아직 기록된 관계 없음 · 관계는 frontmatter 로 선언돼요",
+      "codeLocationsLabel": "코드 위치",
+      "codeLocationsCopyLabel": "경로 복사",
+      "codeLocationsCopiedLabel": "복사됨",
       "handoff": "에이전트 인계 복사",
       "handoffCopied": "에이전트 인계를 복사했어요",
       "openFullDetail": "전체 상세 →",
@@ -2614,6 +2623,11 @@
       "copied": "에이전트 핸드오프 호출을 복사했어요",
       "openDocument": "문서 열기 →",
       "openBuilder": "빌더에서 수정 →"
+    },
+    "codeLocations": {
+      "heading": "코드 위치",
+      "copy": "복사",
+      "copied": "복사됨"
     },
     "body": {
       "title": "본문",

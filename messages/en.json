@@ -1946,7 +1946,11 @@
       "exampleTitleFor": "Example {kind}",
       "exampleCopy": "Copy",
       "exampleCopied": "Copied",
-      "exampleCopyAriaLabel": "Copy the example frontmatter"
+      "exampleCopyAriaLabel": "Copy the example frontmatter",
+      "codeLocationsHeading": "Code location",
+      "codeLocationsCopy": "Copy",
+      "codeLocationsCopied": "Copied",
+      "codeLocationsCopyAriaLabel": "Copy the path {path}"
     },
     "readingAids": {
       "backToTop": "Back to top",
@@ -2275,12 +2279,17 @@
       "metricContainsHelp": "Items this node directly contains — one level down, not the full subtree.",
       "metricUsedByHelp": "Other items that directly use (point at) this node.",
       "metricDependsOnHelp": "Other items this node directly leans on.",
-      "metricEvidenceHelp": "The real docs/code backing this node — click to open the source.",
+      "metricEvidenceHelp": "Whether this node has a source document it came from — when declared, click to open it.",
+      "metricEvidenceDeclared": "declared",
+      "metricEvidenceUndeclared": "undeclared",
       "metricHelp": "Every count here is a direct connection to this node — not a multi-hop total.",
       "containsShowAll": "view all",
       "containsShowSummary": "summary",
       "containsOtherGroup": "other",
       "noConnections": "no relations recorded yet · relations are declared in frontmatter",
+      "codeLocationsLabel": "code location",
+      "codeLocationsCopyLabel": "copy path",
+      "codeLocationsCopiedLabel": "copied",
       "handoff": "Copy agent handoff",
       "handoffCopied": "Agent handoff copied",
       "openFullDetail": "Full detail →",
@@ -2614,6 +2623,11 @@
       "copied": "Copied the agent handoff call",
       "openDocument": "Open document →",
       "openBuilder": "Edit in builder →"
+    },
+    "codeLocations": {
+      "heading": "Code location",
+      "copy": "Copy",
+      "copied": "Copied"
     },
     "body": {
       "title": "Body",

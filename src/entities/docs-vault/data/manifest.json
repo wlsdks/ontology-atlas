@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-23T15:07:28.329Z",
+  "generatedAt": "2026-07-23T18:15:11.902Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3167,6 +3167,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-24 — \"코드 위치\" 섹션 + \"근거\" 카운트 오표기 정정",
+          "slug": "2026-07-24-코드-위치-섹션-근거-카운트-오표기-정정"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-24 — 스케일 고정 계약 (크기·타이포 4연속 처방의 종착)",
           "slug": "2026-07-24-스케일-고정-계약-크기타이포-4연속-처방의-종착"
         },
@@ -4731,9 +4736,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자가 \"아이콘·버튼·글자가 크다\"를 연속 보고 — 근본 원인은 tailwind-merge 가 커스텀 타입 램프를 색상으로 오분류해 크기 클래스를 드롭,",
-      "wordCount": 35887,
-      "updatedAt": "2026-07-23T15:07:27.945Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 제품의 핵심 약속(\"business core → implementation evidence\")을 지탱하는 유일한 필드(frontmatter elements",
+      "wordCount": 36046,
+      "updatedAt": "2026-07-24T03:11:12+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5307,7 +5312,7 @@
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
       "wordCount": 12614,
-      "updatedAt": "2026-07-23T15:00:49.039Z",
+      "updatedAt": "2026-07-24T00:07:54+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",

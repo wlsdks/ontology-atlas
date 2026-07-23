@@ -212,3 +212,69 @@ describe("DocFrontmatterBlock", () => {
     expect(screen.queryByTestId("doc-frontmatter-validator-warnings")).not.toBeInTheDocument();
   });
 });
+
+// R+ "코드 위치" (code location) — frontmatter `elements: [...]` is the vault's
+// ONLY real code evidence, but it wasn't in `GRAPH_KEYS` above (not a
+// single-line key:value fact) so it was invisible even when expanded. This
+// adds a dedicated, distinguishable section: raw code paths (plain
+// monospace) rather than the clickable `REFERENCE_KEYS` ref-token pattern.
+describe("DocFrontmatterBlock — 코드 위치 (code location) section", () => {
+  const docWithElements: VaultDoc = {
+    ...doc,
+    frontmatter: {
+      ...doc.frontmatter,
+      elements: ["mcp/src/index.js", "mcp/src/verify.mjs"],
+    },
+  };
+
+  it("expanding the block reveals a code-location row for each frontmatter `elements` path", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={docWithElements} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
+    const section = screen.getByTestId("doc-frontmatter-code-locations");
+    expect(within(section).getByText("mcp/src/index.js")).toBeInTheDocument();
+    expect(within(section).getByText("mcp/src/verify.mjs")).toBeInTheDocument();
+  });
+
+  it("omits the section when the document has no `elements` frontmatter", () => {
+    renderBlock();
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
+    expect(screen.queryByTestId("doc-frontmatter-code-locations")).not.toBeInTheDocument();
+  });
+
+  it("excludes `elements` entries that don't look like code paths (e.g. a stray vault-node ref)", () => {
+    const mixedDoc: VaultDoc = {
+      ...doc,
+      frontmatter: {
+        ...doc.frontmatter,
+        elements: ["mcp/src/index.js", "capabilities/mcp-server"],
+      },
+    };
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={mixedDoc} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
+    const section = screen.getByTestId("doc-frontmatter-code-locations");
+    expect(within(section).getByText("mcp/src/index.js")).toBeInTheDocument();
+    expect(within(section).queryByText("capabilities/mcp-server")).not.toBeInTheDocument();
+  });
+
+  it("copies the path when the row's copy button is clicked", () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={docWithElements} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
+    const copyButtons = screen.getAllByTestId("doc-frontmatter-code-location-copy");
+    fireEvent.click(copyButtons[0]);
+    expect(writeText).toHaveBeenCalledWith("mcp/src/index.js");
+  });
+});

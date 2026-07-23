@@ -2,12 +2,13 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Link2, X } from "lucide-react";
+import { Check, Clipboard, Link2, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import ReactMarkdown from "react-markdown";
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
 import { useToast } from "@/shared/ui";
 import {
   NodeExplanationEdit,
@@ -76,6 +77,13 @@ export interface FullDetailA1Props {
   onClose: () => void;
   onBackToMap?: () => void;
   documentHref?: string | null;
+  /**
+   * "코드 위치" (code location) — the node's REAL code evidence: raw file
+   * paths (`deriveCodeLocations`), not the self-referential vault-doc slug
+   * `node.slug` already shows above. Omitted/empty hides the section —
+   * never fabricated.
+   */
+  codeLocations?: readonly string[];
   className?: string;
 }
 
@@ -90,6 +98,7 @@ export function FullDetailA1({
   onClose,
   onBackToMap,
   documentHref,
+  codeLocations = [],
   className,
 }: FullDetailA1Props) {
   const t = useTranslations("fullDetailA1");
@@ -270,6 +279,27 @@ export function FullDetailA1({
         }}
       />
 
+      {codeLocations.length > 0 ? (
+        <section
+          data-fulldetail-code-locations
+          className="mt-5.5 flex flex-col gap-1.5 rounded-card border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-3.5 py-3"
+        >
+          <span className="text-body font-medium text-[color:var(--topology-v2-panel-text-primary)]">
+            {t("codeLocations.heading")}
+          </span>
+          <ul className="flex flex-col gap-1">
+            {codeLocations.map((path) => (
+              <FullDetailCodeLocationRow
+                key={path}
+                path={path}
+                copyLabel={t("codeLocations.copy")}
+                copiedLabel={t("codeLocations.copied")}
+              />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <FullDetailA1ReachPanel
         className="mt-5.5"
         reach={reach}
@@ -349,5 +379,48 @@ export function FullDetailA1({
         )}
       </section>
     </div>
+  );
+}
+
+/**
+ * One "코드 위치" row for the full-detail surface — same shape as the
+ * topology datasheet's `CodeLocationRow` (truncated-middle mono path + a
+ * per-row copy button with its own `useCopyFeedback` state), duplicated here
+ * rather than shared across widgets: FSD forbids widget→widget imports, and
+ * promoting a two-line JSX row to `shared/ui` for one reuse wasn't worth a
+ * new cross-widget dependency.
+ */
+function FullDetailCodeLocationRow({
+  path,
+  copyLabel,
+  copiedLabel,
+}: {
+  path: string;
+  copyLabel: string;
+  copiedLabel: string;
+}) {
+  const { state, copy } = useCopyFeedback();
+  return (
+    <li
+      data-fulldetail-code-location={path}
+      className="flex min-h-[32px] w-full items-center gap-2 rounded-chip px-1.5 py-1.5"
+    >
+      <span
+        title={path}
+        className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--topology-v2-panel-text-tertiary)]"
+      >
+        {truncateMiddlePath(path)}
+      </span>
+      <button
+        type="button"
+        onClick={() => void copy(path)}
+        aria-label={state === "copied" ? copiedLabel : copyLabel}
+        title={state === "copied" ? copiedLabel : copyLabel}
+        data-testid="full-detail-a1-code-location-copy"
+        className="shrink-0 rounded-chip p-1 text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+      >
+        {state === "copied" ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
+      </button>
+    </li>
   );
 }
