@@ -146,6 +146,25 @@ describe("AppNavRail", () => {
     expect(screen.getByRole("button", { name: "설정 슬롯" })).toBeInTheDocument();
   });
 
+  // 소유자 실보고 2026-07-23 — 레일 아이콘 사다리(로고 26 / 목적지 24+라벨 /
+  // 유틸 18). 하단 유틸 타일(활동)이 목적지 크기(--app-nav-rail-icon-size)를
+  // 그대로 쓰면 설정 기어보다 커 보이는 회귀가 재발한다.
+  it("keeps the agent utility tile icon on the utility ladder (--app-nav-rail-utility-icon-size), below the destination tier", () => {
+    renderRail();
+    const agentIcon = screen
+      .getByTestId("app-nav-rail-agent-status")
+      .querySelector("svg");
+    expect(agentIcon?.getAttribute("class") ?? "").toContain(
+      "--app-nav-rail-utility-icon-size",
+    );
+    const destinationIcon = screen
+      .getByTestId("app-nav-rail-item-map")
+      .querySelector("svg");
+    expect(destinationIcon?.getAttribute("class") ?? "").toContain(
+      "--app-nav-rail-icon-size",
+    );
+  });
+
   // 과제 ⑪ — LNB 컨텍스트 이월. 지도에서 노드를 선택한 채 문서함 항목으로
   // 이동하면 그 노드의 문서가 바로 열려야 한다(선택과 무관한 기본 화면 금지).
   it("overrides the docs item's href with contextHrefs.docs when provided", () => {

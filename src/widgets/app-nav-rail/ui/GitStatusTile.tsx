@@ -89,10 +89,12 @@ export function GitStatusTile({
         className,
       )}
     >
+      {/* 유틸리티 티어 아이콘 사다리 — `AppNavRail.tsx` 활동 타일과 동일 토큰
+          (`--app-nav-rail-utility-icon-size`, 소유자 실보고 2026-07-23). */}
       <History
         size={18}
         aria-hidden
-        className="h-[var(--app-nav-rail-icon-size)] w-[var(--app-nav-rail-icon-size)]"
+        className="h-[var(--app-nav-rail-utility-icon-size)] w-[var(--app-nav-rail-utility-icon-size)]"
       />
       {dirty ? (
         <span

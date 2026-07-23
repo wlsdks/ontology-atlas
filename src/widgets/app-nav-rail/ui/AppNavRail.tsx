@@ -233,10 +233,14 @@ export function AppNavRail({
               "enabled:cursor-pointer enabled:hover:bg-[color:var(--color-overlay-2)] enabled:hover:text-[color:var(--color-text-primary)] enabled:active:translate-y-px enabled:active:bg-[color:var(--color-overlay-3)]",
           )}
         >
+          {/* 유틸리티 티어 아이콘 사다리(로고 26 / 목적지 24+라벨 / 유틸 18) —
+              소유자 실보고 2026-07-23: 하단 유틸 아이콘이 목적지 크기(24)를
+              그대로 써 설정 기어보다 커 보였다. 유틸 3타일(활동·발자취·설정)은
+              `--app-nav-rail-utility-icon-size` 하나로 앉는다. */}
           <Activity
             size={18}
             aria-hidden
-            className="h-[var(--app-nav-rail-icon-size)] w-[var(--app-nav-rail-icon-size)]"
+            className="h-[var(--app-nav-rail-utility-icon-size)] w-[var(--app-nav-rail-utility-icon-size)]"
           />
           {hasFreshHeartbeat ? (
             <span

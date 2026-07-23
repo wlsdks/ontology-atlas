@@ -646,6 +646,11 @@ export function HomePage() {
           audiencePlain={audiencePlain}
           onChangeAudiencePlain={setAudiencePlain}
           changeVaultHref="/docs/?intent=local"
+          // 레일 하단 유틸 3타일(활동·발자취·설정)을 한 타일 문법에 앉힌다
+          // (소유자 실보고 2026-07-23 — 기어만 36px 보더 floating 표면 + 16px
+          // 아이콘이라 이질적이었다). `--app-nav-rail-tile-*` +
+          // `--app-nav-rail-utility-icon-size` 계약.
+          triggerVariant="rail-tile"
           popoverAlign="left"
           popoverSide="top"
           // M-4 (2) — keyboard-opened transients (⌘K palette, `D` docs drawer)
@@ -2697,28 +2702,40 @@ export function HomePage() {
                         active={spotlightOn}
                         // 그래프 토글과 같은 <2xl 아이콘-only 사다리(위 주석).
                         className="max-2xl:[&_[data-chip-label]]:hidden"
+                        // P2 결함④ 후속 (소유자 실보고 2026-07-23, 상단 크롬
+                        // 과밀) — 시간창/건수 카운트를 레인에 떠 있던 무라벨
+                        // mono 텍스트 대신 칩 내부 badge 로 흡수한다(문서 칩의
+                        // 고정 수 badge 와 같은 문법·토큰). INDEX 세그먼트가
+                        // 같은 "최근 N일 · count" 를 이미 노출하므로 중복
+                        // 문자열도 제거되고, badge 는 compact/축약 사다리와
+                        // 무관하게 항상 남아 <xl 에서도 건수가 보인다. 시간창은
+                        // aria-label·title 로 보존.
+                        badge={
+                          spotlightOn ? (
+                            <span
+                              aria-live="polite"
+                              data-testid="topology-spotlight-window-summary"
+                              data-utility-count-badge="spotlight-recent"
+                              data-surface-token="--topology-utility-lane-count-surface"
+                              data-text-token="--topology-utility-lane-count-text"
+                              className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--topology-utility-lane-count-surface)] px-1.5 font-mono text-[10px] tabular-nums text-[color:var(--topology-utility-lane-count-text)]"
+                              aria-label={t('controls.spotlightWindowSummary', {
+                                days: recentChanges.windowDays,
+                                count: recentChanges.recentNodeIds.size,
+                              })}
+                              title={t('controls.spotlightWindowSummary', {
+                                days: recentChanges.windowDays,
+                                count: recentChanges.recentNodeIds.size,
+                              })}
+                            >
+                              {recentChanges.recentNodeIds.size}
+                            </span>
+                          ) : null
+                        }
                       >
                         {t('controls.spotlightLabel')}
                       </ChromeChip>
                     </Tooltip>
-                    {/* P2 결함④ — 렌즈 ON 인데 INDEX 가 접혀 있으면 적용
-                        시간창/건수를 알 텍스트가 화면 어디에도 없었다. 칩
-                        옆(유틸리티 레인 안, 같은 높이)에 조용한 mono 카운트.
-                        aria-live 로 접근성 겸용. <xl 에서는 레인 폭 보호를
-                        위해 숨긴다(검색 레인 겹침 재발 방지 — 다른 칩들과
-                        같은 축약 사다리). */}
-                    {spotlightOn ? (
-                      <span
-                        aria-live="polite"
-                        data-testid="topology-spotlight-window-summary"
-                        className="hidden shrink-0 whitespace-nowrap font-mono text-[10px] tabular-nums text-[color:var(--color-text-quaternary)] xl:inline"
-                      >
-                        {t('controls.spotlightWindowSummary', {
-                          days: recentChanges.windowDays,
-                          count: recentChanges.recentNodeIds.size,
-                        })}
-                      </span>
-                    ) : null}
                     <Tooltip content={t('controls.docsTooltip')} side="bottom" withProvider={false}>
                     <ChromeChip
                       onClick={() => setDocsDrawerOpen((v) => !v)}

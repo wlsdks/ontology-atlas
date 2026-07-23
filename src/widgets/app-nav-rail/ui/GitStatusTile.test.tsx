@@ -48,6 +48,13 @@ describe("GitStatusTile — 웹(브리지 없음)", () => {
     fireEvent.click(tile);
     expect(onActivate).toHaveBeenCalledTimes(1);
   });
+
+  // 소유자 실보고 2026-07-23 — 유틸 티어 아이콘 사다리(활동 타일과 동일 토큰).
+  it("keeps the History icon on the utility ladder (--app-nav-rail-utility-icon-size)", () => {
+    renderTile(<GitStatusTile onActivate={() => {}} />);
+    const icon = screen.getByTestId("app-nav-rail-git-tile").querySelector("svg");
+    expect(icon?.getAttribute("class") ?? "").toContain("--app-nav-rail-utility-icon-size");
+  });
 });
 
 describe("GitStatusTile — 데스크톱(Tauri)", () => {
