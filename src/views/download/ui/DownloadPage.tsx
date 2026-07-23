@@ -70,10 +70,9 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
             </Link>
             <span aria-hidden className="text-[color:var(--color-text-quaternary)]">/</span>
             <span className="text-[12px] text-[color:var(--color-text-tertiary)]">{t('eyebrow')}</span>
-            <span className={`ml-auto text-[11px] tracking-[0.08em] ${numeralClass}`}>
-              macOS · DMG · GitHub Release
+            <span className="ml-auto">
+              <LocaleSwitch />
             </span>
-            <LocaleSwitch />
           </nav>
 
           {/* 소개 섹션 (root-first-open Slice 2) — 구 LandingPage(`/`) 의
@@ -105,7 +104,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
                 href={GITHUB_REPOSITORY_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full')}
+                className={cn(buttonVariants({ variant: 'ghost', size: 'md' }), 'rounded-full')}
               >
                 <ExternalLink size={16} />
                 {t('sourceCta')}
@@ -339,12 +338,12 @@ function IntroSection() {
           </p>
           <h2
             id="download-intro-heading"
-            className="text-[clamp(2rem,4.4vw,3.4rem)] leading-[1.06] font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]"
+            className="text-[clamp(1.6rem,3vw,2.2rem)] leading-[1.06] font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]"
           >
             {t('titleLine1')} <br />
             <span className="text-[color:var(--color-indigo-accent)]">{t('titleEmphasis')}</span>
           </h2>
-          <p className="max-w-xl break-keep text-[13.5px] leading-7 text-[color:var(--color-text-secondary)]">
+          <p className="max-w-xl break-keep text-[15px] leading-8 text-[color:var(--color-text-secondary)]">
             {t('subtitle')}
           </p>
         </div>

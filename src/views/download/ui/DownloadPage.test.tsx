@@ -94,8 +94,8 @@ describe('DownloadPage', () => {
   it('renders the intro section absorbed from the retired LandingPage (root-first-open Slice 2) with the real dogfood census', () => {
     renderDownloadPage();
 
-    expect(screen.getByText('Codebase ontology')).toBeInTheDocument();
-    expect(screen.getByText('that grows with AI')).toBeInTheDocument();
+    expect(screen.getByText('Until we all finally')).toBeInTheDocument();
+    expect(screen.getByText('see the same thing')).toBeInTheDocument();
     expect(screen.getByText('Write a markdown file per piece')).toBeInTheDocument();
     expect(screen.getByText('One folder, three views')).toBeInTheDocument();
     // dogfood census is real data (build-time generated), not a placeholder.

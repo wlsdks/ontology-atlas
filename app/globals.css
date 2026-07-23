@@ -514,7 +514,63 @@
   .topology-chrome-in {
     animation: topologyChromeIn var(--topology-motion-panel-duration)
       var(--topology-motion-ease-out) both;
-    transform-origin: center top;
+    /* 클릭 포커스 시그니처 — 상세 팝오버가 클릭한 노드의 화면 좌표 방향에서
+       자라나게, 소비처(HomePage 포지셔너)가 노드 스크린 좌표를 이 변수로
+       주입한다(px 로컬 좌표). 미주입 시 기존 `center top` — 엣지 패널·상태
+       칩 등 다른 크롬은 종전과 동일. CSS 변수는 상속되므로 포지셔너에 걸면
+       내부 `.topology-chrome-in` 패널이 읽는다. */
+    transform-origin: var(--topology-chrome-in-origin, center top);
+  }
+
+  /* rank2 — 상세 패널 퇴장 대칭. 등장(topologyChromeIn)만 있고 닫힘 시 React 가
+     즉시 언마운트해 "툭 사라짐"으로 읽혔다. 등장의 역 궤적(opacity 1→0 +
+     translateY 0→3px + scale 1→0.98)을 chrome-in 보다 짧게(≈120ms, panel
+     duration 의 2/3) 태운 뒤 presence 게이트가 언마운트한다. 헌장 준수 —
+     blur/glow 없음, scale 은 등장 문법의 역재생(호버 scale 아님).
+     transform-origin 은 등장과 같은 변수(클릭 노드 방향)로 접힌다.
+     prefers-reduced-motion 은 아래 base 레이어 전역 규칙으로 즉시 소멸. */
+  @keyframes topologyChromeOut {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateY(3px) scale(0.98);
+    }
+  }
+
+  .topology-chrome-out {
+    animation: topologyChromeOut
+      calc(var(--topology-motion-panel-duration) * 0.67)
+      var(--topology-motion-ease-out) both;
+    transform-origin: var(--topology-chrome-in-origin, center top);
+    pointer-events: none;
+  }
+
+  /* W6 LNB 에이전트 heartbeat 점 — 마운트 시 "상태가 깨어난다"는 촉감. 슬라이드
+     대신 중앙 원점에서 opacity 0→1 + scale 0.4→1 로 켜지듯 등장한다(급작 pop
+     방지). 새 duration/easing 없이 크롬 모션 패밀리 토큰
+     (`--topology-motion-panel-duration` 180ms + `--topology-motion-ease-out`)만
+     재사용 — 토큰 drift 0. prefers-reduced-motion 은 아래 base 레이어 전역 규칙
+     (animation-duration 0.01ms)이 즉시 등장으로 무력화. */
+  @keyframes railStatusDotIn {
+    from {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .rail-status-dot-in {
+    animation: railStatusDotIn var(--topology-motion-panel-duration)
+      var(--topology-motion-ease-out) both;
+    transform-origin: center;
   }
 
   /*
@@ -954,17 +1010,9 @@
     --topology-overview-readiness-border: rgba(139, 151, 255, 0.24);
     --topology-overview-readiness-meter-surface: rgba(255, 255, 255, 0.045);
     --topology-overview-readiness-meter-border: rgba(255, 255, 255, 0.08);
-    --topology-overview-readiness-ready-meter: linear-gradient(
-      90deg,
-      rgba(139, 151, 255, 0.86),
-      rgba(72, 184, 203, 0.78)
-    );
+    --topology-overview-readiness-ready-meter: var(--color-indigo-a58);
     --topology-overview-readiness-preflight-meter: rgba(217, 161, 65, 0.72);
-    --topology-overview-readiness-review-meter: repeating-linear-gradient(
-      90deg,
-      rgba(226, 105, 105, 0.78) 0 4px,
-      rgba(226, 105, 105, 0.30) 4px 7px
-    );
+    --topology-overview-readiness-review-meter: var(--color-status-danger);
     --topology-path-handoff-surface: rgba(139, 151, 255, 0.045);
     --topology-path-handoff-border: rgba(139, 151, 255, 0.16);
     --topology-path-handoff-text: rgba(222, 225, 255, 0.54);
@@ -1466,6 +1514,18 @@
     --topology-v2-hysteresis-px: 7;
     --topology-v2-emphasis-rise-tau: 0.09;
     --topology-v2-emphasis-decay-tau: 0.15;
+    /* 클릭 포커스 신호 모션 — 노드 클릭 시 이웃=인디고·나머지=회색으로 램프-dim
+       되는 색 전이의 시정수(대칭 rise/decay 하나). 카메라 다이브(~200~420ms)와
+       같은 시간축에 얹어 "클릭이 배경을 물러나게 했다"는 인과가 하드 컷이 아니라
+       한 제스처로 읽히게 한다. deselect 시 같은 τ 로 되돌아가며 배경 dim·선택
+       링이 함께 페이드아웃. `stepFocusRamp` 가 소비(`model/focus-state.ts`). */
+    --topology-v2-focus-dim-tau: 0.16;
+    /* rank7 — 클러스터 칩 펼침/접힘 램프의 시정수(대칭 rise/decay 하나). 접힌
+       부모의 자식 서브트리가 펼쳐질 때 자식 draw 알파를 0→1 로, 접힐 때 1→0 으로
+       이 τ 로 보간해 "툭 나타남/사라짐" 하드 컷을 없앤다. 카메라 줌과 무관하게
+       일관된 등장·퇴장 페이드. emphasis(0.09) 보다 살짝 길어(~0.17s) 서브트리가
+       한 덩어리로 열리는 리듬을 만든다. `stepEmphasis` 재사용(`focus-state.ts`). */
+    --topology-v2-cluster-reveal-tau: 0.17;
     --topology-v2-ripple-stagger-ms: 55;
     --topology-v2-breathe-amplitude: 0.04;
     --topology-v2-breathe-freq-rad: 1.15;
@@ -1587,6 +1647,11 @@
     --topology-v2-panel-divider: #23232a;
     --topology-v2-panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
     --topology-v2-panel-row-hover: rgba(255, 255, 255, 0.045);
+    /* rank3 — 패널 액션/행의 press(active) 표면. hover(0.045)보다 한 단 진한
+       알파로 "누르는 순간"의 촉각을 색만으로 준다(Toss press-state 최우선).
+       transform/scale 없음 — pointer down 동안만 표면이 눌린 듯 짙어졌다 뗄 때
+       hover 로 복귀. transition-colors(150ms)로 하드 토글 방지. */
+    --topology-v2-panel-row-active: rgba(255, 255, 255, 0.08);
     --topology-v2-panel-metric-surface: rgba(255, 255, 255, 0.028);
     --topology-v2-panel-metric-text: #b6b6c0;
     --topology-v2-panel-action-surface: rgba(255, 255, 255, 0.03);

@@ -1,11 +1,13 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useCallback, type ReactNode } from "react";
+import { useRouter, usePathname } from "@/i18n/navigation";
 import {
   AppNavRail,
   NavRailShellProvider,
   useNavRailShellValue,
 } from "@/widgets/app-nav-rail";
+import { AgentConnectLauncherProvider, useAgentConnectLauncher } from "@/widgets/agent-connect";
 
 /**
  * perf/persistent-shell — 레일(AppNavRail)을 8개 페이지 각각의 개별 마운트
@@ -26,25 +28,60 @@ import {
  * 선언한 높이가 그대로 flex 행의 실제 높이를 결정하고, 레일은 기본
  * `align-items: stretch` 로 거기 맞춰 늘어난다 — 페이지별 스크롤/뷰포트
  * 계약을 바꾸지 않는다.
+ *
+ * `AgentConnectLauncherProvider` 도 여기서 상주한다 — 레일의 에이전트 타일이
+ * 어느 페이지에서든 연결 시트를 "열려는 의도" 를 세우면, 지형도로 이동한 뒤에도
+ * (레이아웃 상주라) 그 의도가 살아남아 HomePage 가 마운트 직후 소비한다.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <NavRailShellProvider>
-      <div className="flex w-full">
-        <AppNavRailSlot />
-        <div className="flex min-w-0 flex-1 flex-col">{children}</div>
-      </div>
+      <AgentConnectLauncherProvider>
+        <div className="flex w-full">
+          <AppNavRailSlot />
+          <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+        </div>
+      </AgentConnectLauncherProvider>
     </NavRailShellProvider>
   );
 }
 
+/** `/` 와 `/topology*` 는 둘 다 HomePage(연결 시트 소유자)를 렌더한다. */
+function isTopologyHubPath(pathname: string): boolean {
+  return pathname === "/" || pathname.startsWith("/topology");
+}
+
 function AppNavRailSlot() {
   const { settingsSlot, hidden, contextHrefs } = useNavRailShellValue();
+  const launcher = useAgentConnectLauncher();
+  const router = useRouter();
+  const pathname = usePathname() ?? "/";
+
+  // P4-② 분기(TopologyIndexPanel 푸터와 동일 계약) — 연결됨: 활동
+  // 다이제스트(인사이트)로. 미연결/stale: 연결 시트를 여는 전역 의도를 세운다.
+  // 시트 본체는 HomePage 소유이므로 지형도 밖이면 지형도로 이동 —
+  // launcher.wantOpen 이 레이아웃 상주라 도착한 HomePage 가 곧바로 소비한다.
+  const onAgentTileActivate = useCallback(
+    (connected: boolean) => {
+      if (connected) {
+        router.push("/ontology/insights/");
+        return;
+      }
+      launcher.open();
+      if (!isTopologyHubPath(pathname)) {
+        router.push("/topology/");
+      }
+    },
+    [launcher, router, pathname],
+  );
+
   return (
     <AppNavRail
       settingsSlot={settingsSlot ?? undefined}
       hidden={hidden}
       contextHrefs={contextHrefs}
+      onAgentTileActivate={onAgentTileActivate}
+      agentConnectOpen={launcher.wantOpen}
     />
   );
 }

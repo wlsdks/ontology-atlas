@@ -34,6 +34,14 @@ export interface AppNavRailProps {
    *  항목/키 미지정 시 기존 정적 href 그대로 — `AppShell`이
    *  `useNavRailShellValue()`로 읽은 값을 그대로 넘긴다. */
   contextHrefs?: NavRailContextHrefs | null;
+  /** 하단 에이전트 타일 클릭 핸들러 — `connected` 는 레일이 자신의 heartbeat
+   *  상태로 판정해 넘긴다(P4-② 분기). `AppShell` 이 연결됨→인사이트 이동,
+   *  미연결→연결 시트 열기(전역 launcher)로 라우팅한다. 미지정 시 타일은
+   *  표시 전용으로 남는다(레일이 다른 컨텍스트에서 마운트되는 경우 대비). */
+  onAgentTileActivate?: ((connected: boolean) => void) | null;
+  /** 연결 시트가 현재 열려 있는지 — 타일의 `aria-expanded` 진실원(전역
+   *  launcher `wantOpen`). */
+  agentConnectOpen?: boolean;
   className?: string;
 }
 
@@ -61,7 +69,14 @@ interface RailDestination {
  *
  * 표시 breakpoint 는 `lg` (≥1024px) — 그 아래는 `BottomTabBar` 가 담당한다.
  */
-export function AppNavRail({ settingsSlot, hidden, contextHrefs, className }: AppNavRailProps) {
+export function AppNavRail({
+  settingsSlot,
+  hidden,
+  contextHrefs,
+  onAgentTileActivate = null,
+  agentConnectOpen = false,
+  className,
+}: AppNavRailProps) {
   const t = useTranslations("navRail");
   const tLive = useTranslations("liveActivity");
   const pathname = usePathname() ?? "/";
@@ -195,11 +210,28 @@ export function AppNavRail({ settingsSlot, hidden, contextHrefs, className }: Ap
       </nav>
 
       <div className="mt-auto flex w-full flex-col items-center gap-1 pt-2">
-        <div
+        {/* 에이전트 타일 — 클릭 가능. 연결됨: 활동 다이제스트(인사이트)로,
+            미연결/stale: 연결 시트를 연다(P4-② 분기, AppShell 이 라우팅).
+            aria: 미연결일 때만 dialog 를 여므로 그때만 haspopup/expanded. */}
+        <button
+          type="button"
           title={agentTitle}
           aria-label={agentTitle}
+          aria-haspopup={onAgentTileActivate && !hasFreshHeartbeat ? "dialog" : undefined}
+          aria-expanded={
+            onAgentTileActivate && !hasFreshHeartbeat ? agentConnectOpen : undefined
+          }
+          onClick={onAgentTileActivate ? () => onAgentTileActivate(hasFreshHeartbeat) : undefined}
+          disabled={!onAgentTileActivate}
           data-testid="app-nav-rail-agent-status"
-          className="relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card text-[color:var(--color-text-tertiary)]"
+          className={cn(
+            // 상태 안무 = 클러스터 칩(ChromeChip) 계약과 동급: rest → hover(색-웨이크)
+            // → active(1px 눌림 + overlay-3 서피스, 촉각감) → focus-visible 링.
+            // transform 을 transition 대상에 포함해 눌림 해제가 급작스럽지 않게 이완.
+            "relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card text-[color:var(--color-text-tertiary)] transition-[color,background-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+            onAgentTileActivate &&
+              "enabled:cursor-pointer enabled:hover:bg-[color:var(--color-overlay-2)] enabled:hover:text-[color:var(--color-text-primary)] enabled:active:translate-y-px enabled:active:bg-[color:var(--color-overlay-3)]",
+          )}
         >
           <Activity
             size={18}
@@ -210,10 +242,10 @@ export function AppNavRail({ settingsSlot, hidden, contextHrefs, className }: Ap
             <span
               aria-hidden="true"
               data-testid="app-nav-rail-agent-dot"
-              className="absolute right-1.5 top-1 h-1.5 w-1.5 rounded-full bg-[color:var(--topology-v2-amber-hub)]"
+              className="rail-status-dot-in absolute right-1.5 top-1 h-1.5 w-1.5 rounded-full bg-[color:var(--topology-v2-amber-hub)]"
             />
           ) : null}
-        </div>
+        </button>
         {settingsSlot}
       </div>
     </aside>
