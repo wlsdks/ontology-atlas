@@ -71,5 +71,13 @@ export function useFirstRunStarter() {
     busy,
     scaffolding,
     errorText,
+    /**
+     * ease-of-use G1 (2026-07-23) — File System Access 미지원 브라우저
+     * (Safari/Firefox) 판별. 폴더 열기·새 vault 만들기 둘 다 FSA 를 쓰므로
+     * 미지원이면 주 CTA 를 "눌러야 실패"가 아니라 **사전에** 정직하게
+     * 강등한다(모듈이 소비). `use-local-vault` 가 SSR-일치를 위해 hydration
+     * 후 'unsupported' 로 전환하는 기존 상태를 읽기만 한다.
+     */
+    fsaUnsupported: vault.status === 'unsupported',
   };
 }

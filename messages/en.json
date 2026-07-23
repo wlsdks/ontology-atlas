@@ -235,6 +235,8 @@
     "createBusy": "Writing starter structure…",
     "dismissLabel": "Just looking around here",
     "errorFallback": "Could not open the folder. Try again.",
+    "unsupportedNotice": "This browser can't open local folders. Open it in the macOS app or Chrome/Edge and the map lights up with your markdown folder.",
+    "unsupportedCta": "Get the macOS app",
     "cliBridgeToggle": "If you're a developer —",
     "cliBridgeLabel": "To start automatically from your codebase",
     "cliBridgeCopy": "Copy command",

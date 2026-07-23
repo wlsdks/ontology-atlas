@@ -235,6 +235,8 @@
     "createBusy": "시작 구조 작성 중…",
     "dismissLabel": "여기서 둘러볼게요",
     "errorFallback": "폴더를 열지 못했습니다. 다시 시도해 주세요.",
+    "unsupportedNotice": "이 브라우저는 로컬 폴더 열기를 지원하지 않아요. macOS 앱이나 Chrome/Edge 에서 열면 내 마크다운 폴더로 지도가 켜져요.",
+    "unsupportedCta": "macOS 앱 받기",
     "cliBridgeToggle": "개발자라면 —",
     "cliBridgeLabel": "코드베이스에서 자동으로 시작하려면",
     "cliBridgeCopy": "명령 복사",
