@@ -6,7 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { isContainmentRelation } from "@/shared/lib/ontology-tree";
 import {
-  formatV2MetricLine,
+  buildV2MetricSegments,
   V2_CONTAINS_SUMMARY_THRESHOLD,
   type V2ConnectionGroupsView,
   type V2ConnectionGroupView,
@@ -179,8 +179,12 @@ export interface TopologyV2DetailPanelProps {
   className?: string;
 }
 
+// 데이터시트 내부 정제 (2026-07-23) — `justify-start` + 고정 상단 패딩: 라벨이
+// 로케일에 따라 1줄/2줄로 갈려도 네 타일의 아이콘이 같은 y 에 정렬된다
+// (grid 가 높이는 이미 균등화하므로, 남는 공백은 아래로만 빠진다). 2줄 라벨은
+// `leading-[1.2]` 로 조인다.
 const ACTION_TILE_CLASS =
-  "flex flex-col items-center justify-center gap-1 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-1 py-1.5 text-center text-[10.5px] font-medium text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]";
+  "flex flex-col items-center justify-start gap-1 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-1 pt-2 pb-1.5 text-center text-[10.5px] font-medium leading-[1.2] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]";
 const ACTION_TILE_DISABLED_CLASS =
   "pointer-events-none opacity-40";
 
@@ -206,7 +210,7 @@ export function TopologyV2DetailPanel({
   onOpenFullDetail,
   className,
 }: TopologyV2DetailPanelProps) {
-  const metricLine = formatV2MetricLine(metric, {
+  const metricSegments = buildV2MetricSegments(metric, {
     contains: labels.metricContains,
     usedBy: labels.metricUsedBy,
     dependsOn: labels.metricDependsOn,
@@ -264,9 +268,12 @@ export function TopologyV2DetailPanel({
           >
             {label}
           </span>
+          {/* 그룹 카운트는 메트릭 스트립의 값과 "같은 숫자" (M-2 계약) —
+              같은 잉크(`--topology-v2-panel-metric-text`)로 페어링해 스트립의
+              각 카운트가 아래 자기 그룹으로 시선 연결되게 한다. */}
           <span
             data-datasheet-group-total={group}
-            className="font-mono text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+            className="font-mono text-[10px] text-[color:var(--topology-v2-panel-metric-text)]"
           >
             {view.total}
           </span>
@@ -365,7 +372,7 @@ export function TopologyV2DetailPanel({
           </span>
           <span
             data-datasheet-group-total="evidence"
-            className="font-mono text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+            className="font-mono text-[10px] text-[color:var(--topology-v2-panel-metric-text)]"
           >
             {evidence.total}
           </span>
@@ -420,6 +427,12 @@ export function TopologyV2DetailPanel({
         className ?? "",
       ].join(" ")}
     >
+      {/* 정체 클러스터 (2026-07-23 내부 정제) — 헤더와 각인 메트릭은 둘 다
+          "이 노드가 무엇인가"를 말하므로 root 의 14px 섹션 리듬보다 조이는
+          8px 로 근접시킨다. gap 사다리: 14(섹션) / 8(정체 내부) / 4(액션·
+          그룹 헤더-행) — 균일 14px 단일 리듬이 그룹 경계를 못 만들던 문제의
+          근접성(proximity) 처방. */}
+      <div className="flex flex-col gap-2">
       {/* Header — kind miniature + name + power dot + close */}
       <div className="flex items-start gap-2">
         <div className="mt-[1px]">
@@ -489,17 +502,39 @@ export function TopologyV2DetailPanel({
         </button>
       </div>
 
-      {/* One engraved metric line — no subtitle + boxes triplication */}
+      {/* One engraved metric line — no subtitle + boxes triplication.
+          라벨(tertiary)과 값(metric-text)의 잉크를 분리 — 숫자가 데이터,
+          단어는 눈금(Tufte data-ink). 값 잉크는 아래 그룹 헤더 카운트와 같아
+          스트립 카운트 → 해당 그룹의 시선 연결을 잉크 페어링만으로 만든다
+          (스크롤 등 신규 인터랙션 없음). */}
       <div
         data-datasheet-metric="engraved"
         title={labels.metricHelp}
         className="rounded-[var(--topology-v2-panel-row-radius)] bg-[color:var(--topology-v2-panel-metric-surface)] px-2 py-1.5"
       >
-        <span className="font-mono text-[12.5px] tracking-[0.01em] text-[color:var(--topology-v2-panel-metric-text)]">
-          {metricLine}
+        <span className="font-mono text-[12.5px] tracking-[0.01em]">
+          {metricSegments.map((seg, i) => (
+            <span key={seg.key} data-metric-segment={seg.key}>
+              {i > 0 ? (
+                <span className="text-[color:var(--topology-v2-panel-text-quaternary)]">
+                  {" · "}
+                </span>
+              ) : null}
+              <span className="text-[color:var(--topology-v2-panel-text-tertiary)]">
+                {seg.label}
+              </span>{" "}
+              <span className="text-[color:var(--topology-v2-panel-metric-text)]">
+                {seg.value}
+              </span>
+            </span>
+          ))}
         </span>
       </div>
+      </div>
 
+      {/* 액션 클러스터 — 4-up 타일과 "영역 전개"는 같은 재질(보더+표면 토큰)의
+          한 계기 묶음이므로 그리드 내부와 같은 4px 로 묶는다. */}
+      <div className="flex flex-col gap-1">
       {/* W2-A action row — 4-up tile grid (문서/관계 편집/인계 복사/경로).
           Same construction for every tile (border + hover surface tokens) so
           the row reads as one instrument, not four unrelated buttons. */}
@@ -570,9 +605,13 @@ export function TopologyV2DetailPanel({
           <span>{labels.actionRealm}</span>
         </button>
       ) : null}
+      </div>
 
-      {/* Connections grouped by relation type */}
-      <div className="flex flex-col gap-2.5">
+      {/* Connections grouped by relation type — 그룹 사이는 root 와 같은
+          `--topology-v2-panel-gap`(14px): 각 typed-fact 그룹이 자체 섹션으로
+          읽히게 한다 (구 10px 는 행 자체 패딩(12px 시각 간격)과 구분이 안 돼
+          그룹 경계가 뭉개졌다). */}
+      <div className="flex flex-col gap-[var(--topology-v2-panel-gap)]">
         {hasConnections ? (
           <>
             {renderGroup("contains", labels.metricContains, labels.metricContainsHelp, groups.contains)}

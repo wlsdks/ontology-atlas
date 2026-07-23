@@ -26,6 +26,7 @@ export {
   buildV2Connections,
   buildV2ConnectionGroups,
   buildV2EvidenceRows,
+  buildV2MetricSegments,
   formatV2HandoffText,
   formatV2MetricLine,
   groupV2ConnectionsByDirection,
@@ -42,6 +43,7 @@ export type {
   V2DatasheetConnection,
   V2EvidenceRow,
   V2GroupedConnections,
+  V2MetricSegment,
   V2HandoffInput,
   V2MetricValues,
 } from './ui/topology-v2-datasheet';
