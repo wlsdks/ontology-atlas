@@ -38,6 +38,7 @@
 //     extractionContract: {
 //       standard, status, assertionPolicy, competencyQuestions, qualityGates,
 //     },
+//     semanticEvidence: [{ source, role, title, headings, excerpt, trust, riskFlags }],
 //     suggestedRelations: [{ from, to, type }],
 //     skipped: [{ path, reason }],
 //   }
@@ -426,6 +427,9 @@ function buildExtractionContract({
       proposedBusinessConcepts,
       implementationEvidenceAvailable: observedImplementationEvidence > 0,
       semanticEvidenceAvailable: semanticEvidence.length > 0,
+      semanticEvidenceReviewRequired: semanticEvidence.filter(
+        (row) => row.riskFlags.length > 0,
+      ).length,
       typedRelationsProposed: suggestedRelations.length,
       provenanceAttached:
         domains.every((row) => Boolean(row.evidence?.source)) &&
@@ -437,6 +441,7 @@ function buildExtractionContract({
     limitations: [
       'Repository structure can prove implementation shape, but cannot by itself prove business meaning.',
       'README headings and source-folder names remain proposals until a human or persisted ontology establishes shared intent.',
+      'Instructions, future-state claims, negations, and deprecated-state prose are review signals, not current business facts.',
       'Completeness is evaluated against competency questions, not against the number of discovered folders.',
     ],
     nextStep:
@@ -498,13 +503,64 @@ function collectSemanticEvidence(rootPath, skipped = []) {
     selected.push(row);
     selectedSources.add(row.source);
   }
-  return selected.map((row) => ({
-    source: row.source,
-    role: row.role,
-    title: row.title,
-    headings: row.headings,
-    excerpt: row.excerpt,
-  }));
+  return selected.map((row) => {
+    const riskFlags = scanSemanticEvidenceRisks(row);
+    return {
+      source: row.source,
+      role: row.role,
+      title: row.title,
+      headings: row.headings,
+      excerpt: row.excerpt,
+      trust: semanticEvidenceTrust(riskFlags),
+      riskFlags,
+    };
+  });
+}
+
+function scanSemanticEvidenceRisks({ headings = [], excerpt = '' }) {
+  const text = `${headings.join('\n')}\n${excerpt}`;
+  const risks = [];
+  if (
+    /\b(?:ignore|disregard|override)\b.{0,80}\b(?:previous|prior|system|developer|agent|instructions?)\b/is.test(text) ||
+    /\b(?:system|developer)\s+prompt\b/i.test(text)
+  ) {
+    risks.push('instruction-injection');
+  }
+  if (
+    /\b(?:call|invoke|execute|run)\s+(?:the\s+)?(?:add_concepts?|patch_concept|add_relations?|rename_concept)\b/i.test(text)
+  ) {
+    risks.push('ontology-write-instruction');
+  }
+  if (
+    /\b(?:roadmap|planned|planning to|will support|future state|coming soon|not yet)\b/i.test(text) ||
+    /(?:향후|추후|예정|계획 중)/.test(text)
+  ) {
+    risks.push('future-state-claim');
+  }
+  if (
+    /\b(?:does not|do not|not a|not yet|never supports?|out of scope|non-goal)\b/i.test(text) ||
+    /(?:지원하지 않|범위가 아니|제공하지 않)/.test(text)
+  ) {
+    risks.push('negated-claim');
+  }
+  if (
+    /\b(?:deprecated|legacy|no longer|removed)\b/i.test(text) ||
+    /(?:폐기|더 이상|제거됨)/.test(text)
+  ) {
+    risks.push('deprecated-state');
+  }
+  return risks;
+}
+
+function semanticEvidenceTrust(riskFlags) {
+  if (
+    riskFlags.includes('instruction-injection') ||
+    riskFlags.includes('ontology-write-instruction')
+  ) {
+    return 'untrusted-instruction';
+  }
+  if (riskFlags.length > 0) return 'claim-review-required';
+  return 'candidate-evidence';
 }
 
 function discoverSemanticEvidenceCandidates(rootPath) {
