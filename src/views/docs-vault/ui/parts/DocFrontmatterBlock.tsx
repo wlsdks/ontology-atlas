@@ -1,8 +1,10 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { ChevronRight, Pencil } from "lucide-react";
+import { Check, ChevronRight, Clipboard, Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { buildNewNodeDoc, type VaultDoc } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
+import { looksLikeCodePath } from "@/shared/lib/humanize-code-path-title";
+import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import {
   validateVaultDocFrontmatter,
@@ -226,7 +228,29 @@ export function DocFrontmatterBlock({
     } => f.value !== null,
   );
 
-  if (fields.length === 0) return null;
+  // "코드 위치" — the REAL code evidence: raw file paths from frontmatter
+  // `elements: [...]`. `elements` isn't in `GRAPH_KEYS` above (it's not a
+  // single-line key:value fact, and its entries need a distinct visual
+  // treatment — raw code paths are NOT vault-node references, so they must
+  // not read as clickable like the `REFERENCE_KEYS` tokens above). Filtered
+  // through `looksLikeCodePath` so a folder-prefixed vault ref accidentally
+  // placed in `elements:` doesn't masquerade as a code path.
+  const codeLocations: string[] = [];
+  {
+    const raw = doc.frontmatter?.elements;
+    const seen = new Set<string>();
+    if (Array.isArray(raw)) {
+      for (const entry of raw) {
+        if (typeof entry !== "string") continue;
+        const trimmed = entry.trim();
+        if (!trimmed || seen.has(trimmed) || !looksLikeCodePath(trimmed)) continue;
+        seen.add(trimmed);
+        codeLocations.push(trimmed);
+      }
+    }
+  }
+
+  if (fields.length === 0 && codeLocations.length === 0) return null;
 
   const kindValue = currentKind;
   const slugValue = formatValue(doc.frontmatter?.slug) ?? doc.slug;
@@ -358,6 +382,28 @@ export function DocFrontmatterBlock({
             ---
           </div>
         </div>
+        {codeLocations.length > 0 ? (
+          <div
+            data-testid="doc-frontmatter-code-locations"
+            className="mt-2 flex flex-col gap-1 border-t border-[color:var(--color-divider)] pt-2 font-sans"
+          >
+            <div className="flex items-center gap-1.5 text-label text-[color:var(--color-text-quaternary)]">
+              <span>{t("codeLocationsHeading")}</span>
+              <span className="font-mono">{codeLocations.length}</span>
+            </div>
+            <ul className="flex flex-col gap-0.5">
+              {codeLocations.map((path) => (
+                <CodeLocationRow
+                  key={path}
+                  path={path}
+                  copyLabel={t("codeLocationsCopy")}
+                  copiedLabel={t("codeLocationsCopied")}
+                  copyAriaLabel={t("codeLocationsCopyAriaLabel", { path })}
+                />
+              ))}
+            </ul>
+          </div>
+        ) : null}
         {canQuickPatch ? (
           editing ? (
             <div className="mt-3 flex flex-col gap-2 border-t border-[color:var(--color-divider)] pt-3 font-sans">
@@ -508,5 +554,45 @@ export function DocFrontmatterBlock({
         </div>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * One "코드 위치" row — a raw code path (truncated middle, full path on
+ * hover) + a per-row copy button. Deliberately plain text, not a `Link`/
+ * button like the `REFERENCE_KEYS` ref tokens above — a code path isn't a
+ * vault node, so it must not visually promise navigation it can't deliver.
+ */
+function CodeLocationRow({
+  path,
+  copyLabel,
+  copiedLabel,
+  copyAriaLabel,
+}: {
+  path: string;
+  copyLabel: string;
+  copiedLabel: string;
+  copyAriaLabel: string;
+}) {
+  const { state, copy } = useCopyFeedback();
+  return (
+    <li className="flex items-center gap-2 py-0.5">
+      <span
+        title={path}
+        className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--color-text-tertiary)]"
+      >
+        {truncateMiddlePath(path)}
+      </span>
+      <button
+        type="button"
+        onClick={() => void copy(path)}
+        aria-label={copyAriaLabel}
+        title={state === "copied" ? copiedLabel : copyLabel}
+        data-testid="doc-frontmatter-code-location-copy"
+        className="shrink-0 rounded-sm p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
+      >
+        {state === "copied" ? <Check size={11} aria-hidden /> : <Clipboard size={11} aria-hidden />}
+      </button>
+    </li>
   );
 }

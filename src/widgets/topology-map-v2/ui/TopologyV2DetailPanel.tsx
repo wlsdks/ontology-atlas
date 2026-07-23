@@ -1,10 +1,12 @@
 "use client";
 
 import { type KeyboardEvent as ReactKeyboardEvent, type ReactElement, useCallback, useState } from "react";
-import { Copy, FileText, GitBranch, Orbit, Route, X } from "lucide-react";
+import { Check, Clipboard, Copy, FileText, GitBranch, Orbit, Route, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { isContainmentRelation } from "@/shared/lib/ontology-tree";
+import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import {
   buildV2MetricSegments,
   slugDisplaySegment,
@@ -94,6 +96,17 @@ export interface TopologyV2DetailPanelLabels {
   metricDependsOn: string;
   metricEvidence: string;
   /**
+   * R+ 근거 misnomer fix — `evidenceIds` is always 0 or 1 entries (the
+   * node's own source-doc slug, a self-reference — see
+   * `entities/knowledge-graph/lib/code-locations.ts`'s doc comment), so
+   * showing it as a raw count ("근거 1") reads as a meaningful tally when
+   * it's really a binary "does this node have a source doc" fact. These
+   * replace the numeric value in both the metric strip's evidence segment
+   * and the evidence group's header count.
+   */
+  metricEvidenceDeclared: string;
+  metricEvidenceUndeclared: string;
+  /**
    * H1 B2/A — typed-fact 그룹 라벨의 hover 한 줄 풀이(비개발자 언어) + 스코프
    * 명시("직접" 연결 기준). `title` 속성으로만 노출 — 아이콘/추가 표면 없음.
    * 미지정(undefined)이면 title 없이 렌더(하위 호환).
@@ -130,6 +143,11 @@ export interface TopologyV2DetailPanelLabels {
   actionCopyHandoffTip?: string;
   actionPathTip?: string;
   actionRealmTip?: string;
+  /** "코드 위치" — the real code-location group (`codeLocations` prop),
+   * distinct from the "근거" group above (source-doc reference). */
+  codeLocationsLabel: string;
+  codeLocationsCopyLabel: string;
+  codeLocationsCopiedLabel: string;
 }
 
 export interface TopologyV2DetailPanelProps {
@@ -165,6 +183,14 @@ export interface TopologyV2DetailPanelProps {
    * has no `evidenceIds` (hides the group entirely, same convention as
    * usedBy/dependsOn). */
   evidence: { rows: readonly V2EvidenceRow[]; total: number };
+  /**
+   * "코드 위치" (code location) — the node's REAL code evidence: raw file
+   * paths (`src/foo/bar.ts`), not the self-referential vault-doc slug in
+   * `evidence` above. Built by `deriveCodeLocations` from the node's own
+   * title (when it's a path-titled element) plus its direct `contains`
+   * children. Empty hides the section — never fabricated.
+   */
+  codeLocations: readonly string[];
   /**
    * S-C1 (owner 2026-07-20: "변경일 이런거? 그래야 구분이 될거 아냐") —
    * pre-formatted "언제 바뀌었나" label ("오늘" / "3일 전" / null when the
@@ -267,6 +293,7 @@ export function TopologyV2DetailPanel({
   metric,
   groups,
   evidence,
+  codeLocations,
   updatedAtLabel = null,
   handoffText,
   documentHref,
@@ -289,11 +316,19 @@ export function TopologyV2DetailPanel({
     dependsOn: labels.metricDependsOn,
     evidence: labels.metricEvidence,
   });
+  // R+ 근거 misnomer fix — `metric.evidence`/`evidence.total` is a raw 0|1
+  // count (`evidenceIds` self-reference), never a meaningful tally. Both the
+  // metric strip and the group header show this binary chip text instead of
+  // the number itself (the underlying `V2MetricValues`/`V2MetricSegment`
+  // stay numeric — only the DISPLAY here is overridden).
+  const evidenceDeclaredLabel =
+    evidence.total > 0 ? labels.metricEvidenceDeclared : labels.metricEvidenceUndeclared;
   const hasConnections =
     groups.contains.total > 0 ||
     groups.usedBy.total > 0 ||
     groups.dependsOn.total > 0 ||
-    evidence.total > 0;
+    evidence.total > 0 ||
+    codeLocations.length > 0;
 
   // S2 파트 3 — 긴 "담는 것" 리스트는 경로 프리픽스 요약으로 접고, "전체 보기"
   // 토글로 기존 리스트를 편다(세션 임시 상태). 노드가 바뀌면 기본(요약)으로 리셋
@@ -454,7 +489,7 @@ export function TopologyV2DetailPanel({
             data-datasheet-group-total="evidence"
             className="font-mono text-[10px] text-[color:var(--topology-v2-panel-metric-text)]"
           >
-            {evidence.total}
+            {evidenceDeclaredLabel}
           </span>
         </div>
         <ul className="flex flex-col">
@@ -471,6 +506,41 @@ export function TopologyV2DetailPanel({
                 </span>
               </Link>
             </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
+  // "코드 위치" group — the node's REAL code evidence (raw file paths),
+  // distinct from the "근거" group above (source-doc slug reference). Rows
+  // are plain monospace text (not a `Link`/button) — raw code paths aren't
+  // vault nodes, so the clickable-ref visual pattern would misrepresent them
+  // as navigable. Each row gets a lightweight copy affordance since a path
+  // is exactly the string an agent/developer wants on the clipboard next.
+  const renderCodeLocationsGroup = () => {
+    if (codeLocations.length === 0) return null;
+    return (
+      <div className="flex flex-col gap-1" data-datasheet-group="code-locations">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+            {labels.codeLocationsLabel}
+          </span>
+          <span
+            data-datasheet-group-total="code-locations"
+            className="font-mono text-[10px] text-[color:var(--topology-v2-panel-metric-text)]"
+          >
+            {codeLocations.length}
+          </span>
+        </div>
+        <ul className="flex flex-col">
+          {codeLocations.map((path) => (
+            <CodeLocationRow
+              key={path}
+              path={path}
+              copyLabel={labels.codeLocationsCopyLabel}
+              copiedLabel={labels.codeLocationsCopiedLabel}
+            />
           ))}
         </ul>
       </div>
@@ -612,7 +682,7 @@ export function TopologyV2DetailPanel({
                 {seg.label}
               </span>{" "}
               <span className="text-[color:var(--topology-v2-panel-metric-text)]">
-                {seg.value}
+                {seg.key === "evidence" ? evidenceDeclaredLabel : seg.value}
               </span>
             </span>
           ))}
@@ -723,6 +793,7 @@ export function TopologyV2DetailPanel({
             {renderGroup("usedBy", labels.metricUsedBy, labels.metricUsedByHelp, groups.usedBy)}
             {renderGroup("dependsOn", labels.metricDependsOn, labels.metricDependsOnHelp, groups.dependsOn)}
             {renderEvidenceGroup()}
+            {renderCodeLocationsGroup()}
           </>
         ) : (
           <span className="text-[11.5px] text-[color:var(--topology-v2-panel-text-tertiary)]">
@@ -763,5 +834,46 @@ export function TopologyV2DetailPanel({
         ) : null}
       </div>
     </div>
+  );
+}
+
+/**
+ * One "코드 위치" row — raw code path (truncated middle, full path on hover)
+ * + a per-row copy button. A dedicated component (not inline in the map
+ * callback) because each row owns its OWN copy-feedback state
+ * (`useCopyFeedback`) — copying one path must not flip every row's icon.
+ */
+function CodeLocationRow({
+  path,
+  copyLabel,
+  copiedLabel,
+}: {
+  path: string;
+  copyLabel: string;
+  copiedLabel: string;
+}) {
+  const { state, copy } = useCopyFeedback();
+  return (
+    <li
+      data-datasheet-code-location={path}
+      className="flex min-h-[32px] w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-2"
+    >
+      <span
+        title={path}
+        className="min-w-0 flex-1 truncate font-mono text-[12px] text-[color:var(--topology-v2-panel-text-tertiary)]"
+      >
+        {truncateMiddlePath(path)}
+      </span>
+      <button
+        type="button"
+        onClick={() => void copy(path)}
+        aria-label={state === "copied" ? copiedLabel : copyLabel}
+        title={state === "copied" ? copiedLabel : copyLabel}
+        data-testid="topology-v2-detail-panel-code-location-copy"
+        className="shrink-0 rounded-[var(--topology-v2-panel-row-radius)] p-1 text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+      >
+        {state === "copied" ? <Check size={11} aria-hidden /> : <Clipboard size={11} aria-hidden />}
+      </button>
+    </li>
   );
 }

@@ -105,6 +105,7 @@ import {
   buildOntologyBuilderNodeHrefFromGraphId,
   buildOntologyHealthSignals,
   buildOntologyInsightsReturnHref,
+  deriveCodeLocations,
   useRelationVocabulary,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
@@ -1508,6 +1509,11 @@ export function HomePage() {
       ontologyInsight.nodes,
       ontologyInsight.edges,
     );
+    const codeLocations = deriveCodeLocations(
+      selectedOntologyNode.id,
+      ontologyInsight.nodes,
+      ontologyInsight.edges,
+    );
     const projectTitle =
       ontologyInsight.nodes.find((n) => n.kind === "project")?.title ?? null;
     const loadedBody =
@@ -1536,6 +1542,7 @@ export function HomePage() {
       },
       groups,
       reach,
+      codeLocations,
       breadcrumb: {
         projectTitle,
         // P0c — 정본 census (renderProjects 이중 가산 제거)
@@ -3699,6 +3706,7 @@ export function HomePage() {
                 metric={panelDatasheetModel.metric}
                 groups={panelDatasheetModel.groups}
                 evidence={panelDatasheetModel.evidence}
+                codeLocations={panelDatasheetModel.codeLocations}
                 updatedAtLabel={panelDatasheetModel.updatedAtLabel}
                 handoffText={panelDatasheetModel.handoffText}
                 documentHref={panelDatasheetModel.documentHref}
@@ -3725,6 +3733,10 @@ export function HomePage() {
                   metricUsedBy: t("nodeDatasheet.metricUsedBy"),
                   metricDependsOn: relationVocabulary("depends_on", "plain"),
                   metricEvidence: relationVocabulary("describes", "plain"),
+                  // R+ 근거 misnomer fix — evidenceIds 는 0|1 self-reference라
+                  // 숫자 대신 선언됨/미선언 이진 칩으로 렌더.
+                  metricEvidenceDeclared: t("nodeDatasheet.metricEvidenceDeclared"),
+                  metricEvidenceUndeclared: t("nodeDatasheet.metricEvidenceUndeclared"),
                   // H1 B2/A — typed-fact 라벨 hover 풀이 + "직접" 연결 스코프 명시.
                   metricContainsHelp: t("nodeDatasheet.metricContainsHelp"),
                   metricUsedByHelp: t("nodeDatasheet.metricUsedByHelp"),
@@ -3732,6 +3744,10 @@ export function HomePage() {
                   metricEvidenceHelp: t("nodeDatasheet.metricEvidenceHelp"),
                   metricHelp: t("nodeDatasheet.metricHelp"),
                   noConnections: t("nodeDatasheet.noConnections"),
+                  // R+ "코드 위치" — 실제 코드 근거(원문 파일 경로) 섹션.
+                  codeLocationsLabel: t("nodeDatasheet.codeLocationsLabel"),
+                  codeLocationsCopyLabel: t("nodeDatasheet.codeLocationsCopyLabel"),
+                  codeLocationsCopiedLabel: t("nodeDatasheet.codeLocationsCopiedLabel"),
                   handoff: t("nodeDatasheet.handoff"),
                   close: t("controls.close"),
                   openFullDetail: t("nodeDatasheet.openFullDetail"),
@@ -3870,6 +3886,7 @@ export function HomePage() {
               bodyMarkdown={fullDetailA1Model.bodyMarkdown}
               explanationEdit={fullDetailA1Model.explanationEdit}
               documentHref={fullDetailA1Model.documentHref}
+              codeLocations={fullDetailA1Model.codeLocations}
               onSelectNode={(id) => handleSelect(id)}
               onClose={handleClose}
               onBackToMap={handleClose}

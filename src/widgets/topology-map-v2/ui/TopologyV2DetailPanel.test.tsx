@@ -27,6 +27,11 @@ const labels = {
   metricUsedBy: "used by",
   metricDependsOn: "leans on",
   metricEvidence: "evidence",
+  metricEvidenceDeclared: "declared",
+  metricEvidenceUndeclared: "undeclared",
+  codeLocationsLabel: "code location",
+  codeLocationsCopyLabel: "copy",
+  codeLocationsCopiedLabel: "copied",
   noConnections: "no relations recorded yet · relations are declared in frontmatter",
   handoff: "Copy next action",
   close: "Close",
@@ -54,6 +59,7 @@ function renderPanel(
     sourceTitle?: string | null;
     showHandoff?: boolean;
     showSourcePath?: boolean;
+    codeLocations?: readonly string[];
   } = {},
 ) {
   render(
@@ -72,6 +78,7 @@ function renderPanel(
         belongsTo: { rows: [], total: 0 },
       }}
       evidence={evidence}
+      codeLocations={overrides.codeLocations ?? []}
       handoffText="node: domains/views"
       documentHref={
         overrides.documentHref !== undefined
@@ -175,6 +182,77 @@ describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYST
   });
 });
 
+// R+ 근거 misnomer fix — `evidenceIds` is always 0 or 1 entries (a
+// self-reference to the node's own source doc), so a raw numeric "근거 N"
+// misreads as a meaningful tally. The metric strip and the evidence group
+// header now show a binary declared/undeclared chip instead of the number.
+describe("TopologyV2DetailPanel — 근거 declared/undeclared chip (not a count)", () => {
+  it("shows the 'declared' chip text (not a number) in the metric strip when evidence rows exist", () => {
+    renderPanel(undefined, {
+      rows: [{ id: "capabilities/mcp-server", title: "mcp-server", path: "capabilities/" }],
+      total: 1,
+    });
+    const metric = screen
+      .getByTestId("topology-v2-detail-panel")
+      .querySelector("[data-datasheet-metric='engraved']");
+    const seg = metric!.querySelector("[data-metric-segment='evidence']");
+    expect(seg!.textContent).toContain(labels.metricEvidenceDeclared);
+    expect(seg!.textContent).not.toContain("evidence 1");
+  });
+
+  it("shows the 'declared' chip text in the evidence group header total, not the numeral", () => {
+    renderPanel(undefined, {
+      rows: [{ id: "capabilities/mcp-server", title: "mcp-server", path: "capabilities/" }],
+      total: 1,
+    });
+    const total = document.querySelector("[data-datasheet-group-total='evidence']");
+    expect(total!.textContent).toBe(labels.metricEvidenceDeclared);
+  });
+
+  it("shows the 'undeclared' chip text when the node has no evidence rows", () => {
+    renderPanel(undefined, { rows: [], total: 0 });
+    const metric = screen
+      .getByTestId("topology-v2-detail-panel")
+      .querySelector("[data-datasheet-metric='engraved']");
+    const seg = metric!.querySelector("[data-metric-segment='evidence']");
+    expect(seg!.textContent).toContain(labels.metricEvidenceUndeclared);
+  });
+});
+
+// R+ "코드 위치" (code location) — the REAL code evidence (raw file paths),
+// distinct from the "근거" group above (source-doc slug reference).
+describe("TopologyV2DetailPanel — 코드 위치 (code location) group", () => {
+  it("renders a code-location row for each path when codeLocations is non-empty", () => {
+    renderPanel(undefined, undefined, {
+      codeLocations: ["mcp/src/index.js", "mcp/src/verify.mjs"],
+    });
+    const group = document.querySelector("[data-datasheet-group='code-locations']");
+    expect(group).not.toBeNull();
+    expect(screen.getByText("mcp/src/index.js")).toBeInTheDocument();
+    expect(screen.getByText("mcp/src/verify.mjs")).toBeInTheDocument();
+  });
+
+  it("does not render the code-location group when there are no code paths", () => {
+    renderPanel(undefined, undefined, { codeLocations: [] });
+    expect(document.querySelector("[data-datasheet-group='code-locations']")).toBeNull();
+  });
+
+  it("renders a plain (non-link) row for a raw code path — distinguishable from the clickable evidence/connection rows", () => {
+    renderPanel(undefined, undefined, { codeLocations: ["mcp/src/index.js"] });
+    const row = screen.getByText("mcp/src/index.js").closest("li");
+    expect(row).not.toBeNull();
+    expect(row!.querySelector("a")).toBeNull();
+  });
+
+  it("copies the path when the row's copy button is clicked", () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    renderPanel(undefined, undefined, { codeLocations: ["mcp/src/index.js"] });
+    fireEvent.click(screen.getByTestId("topology-v2-detail-panel-code-location-copy"));
+    expect(writeText).toHaveBeenCalledWith("mcp/src/index.js");
+  });
+});
+
 // Toss C2 (2026-07-24) — the sticky footer used to show the FULL `slug`
 // (`ontology/capabilities/mcp-server`) always visible, mono/quaternary but
 // still raw and unreadable to a non-developer. It now shows only the last
@@ -197,6 +275,7 @@ describe("TopologyV2DetailPanel — sticky 푸터 slug 평문화 (Toss C2)", () 
           belongsTo: { rows: [], total: 0 },
         }}
         evidence={{ rows: [], total: 0 }}
+        codeLocations={[]}
         handoffText="node: ontology/capabilities/mcp-server"
         documentHref={null}
         builderEditHref="/ontology/edit/?node=ontology%2Fcapabilities%2Fmcp-server"
@@ -308,6 +387,7 @@ describe("TopologyV2DetailPanel — M-2 typed containment split", () => {
           belongsTo: { rows: [], total: 0 },
         }}
         evidence={{ rows: [], total: 0 }}
+        codeLocations={[]}
         handoffText="node: domains/ai-agent-partner"
         documentHref={null}
         builderEditHref="/ontology/edit/?node=domains%2Fai-agent-partner"
@@ -385,6 +465,7 @@ describe("TopologyV2DetailPanel — P3-① 미기록 관계 empty-state (0 vs �
           belongsTo: { rows: [], total: 0 },
         }}
         evidence={{ rows: [], total: 0 }}
+        codeLocations={[]}
         handoffText="node: src/widgets/global-search"
         documentHref={null}
         builderEditHref="/ontology/edit/?node=src%2Fwidgets%2Fglobal-search"
@@ -505,6 +586,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
           belongsTo: { rows: [], total: 0 },
         }}
         evidence={{ rows: [], total: 0 }}
+        codeLocations={[]}
         handoffText="node: domains/cli"
         documentHref={null}
         builderEditHref="/ontology/edit/?node=domains%2Fcli"
@@ -551,6 +633,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
           belongsTo: { rows: [], total: 0 },
         }}
         evidence={{ rows: [], total: 0 }}
+        codeLocations={[]}
         handoffText="node: domains/small"
         documentHref={null}
         builderEditHref="/ontology/edit/?node=domains%2Fsmall"
@@ -595,6 +678,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
           belongsTo: { rows: [], total: 0 },
         }}
         evidence={{ rows: [], total: 0 }}
+        codeLocations={[]}
         handoffText="node: domains/flat"
         documentHref={null}
         builderEditHref="/ontology/edit/?node=domains%2Fflat"

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import {
   buildOntologyBuilderNodeHrefFromGraphId,
+  deriveCodeLocations,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
@@ -65,6 +66,13 @@ export interface NodeDatasheetDerivation {
     metric: { contains: number; usedBy: number; dependsOn: number; evidence: number };
     groups: ReturnType<typeof buildV2ConnectionGroups>;
     evidence: { rows: ReturnType<typeof buildV2EvidenceRows>; total: number };
+    /**
+     * "코드 위치" — the node's REAL code evidence (raw file paths from vault
+     * frontmatter `elements: [...]`), distinct from `evidence` above
+     * (which is the self-referential source-doc slug, `evidenceIds`). See
+     * `deriveCodeLocations`'s doc comment for why the two must stay separate.
+     */
+    codeLocations: string[];
     handoffText: string;
     documentHref: string | null;
     builderEditHref: string;
@@ -100,6 +108,7 @@ export function useNodeDatasheetModel({
     const connections = buildV2Connections(selectedOntologyNode.id, insight.nodes, insight.edges);
     const groups = buildV2ConnectionGroups(connections);
     const evidenceRows = buildV2EvidenceRows(selectedOntologyNode.evidenceIds);
+    const codeLocations = deriveCodeLocations(selectedOntologyNode.id, insight.nodes, insight.edges);
     const metric = {
       contains: groups.contains.total,
       usedBy: groups.usedBy.total,
@@ -139,6 +148,7 @@ export function useNodeDatasheetModel({
       metric,
       groups,
       evidence: { rows: evidenceRows, total: evidenceRows.length },
+      codeLocations,
       handoffText,
       // 문서 딥링크는 vault 파일 경로(`?slug=`)로 — 노드 id → 문서 slug 변환은
       // sourceSlug(focus 모델의 순수 파생) 한 곳에서만 나온다(H5 계약 item 2).
