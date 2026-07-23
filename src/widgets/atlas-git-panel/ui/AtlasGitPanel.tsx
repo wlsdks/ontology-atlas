@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
-import { Check, Copy, History, Monitor, X } from "lucide-react";
+// `History as HistoryIcon` — 사용성 검수 P0 (2026-07-23): 특정 HMR/번들 상태에서
+// bare `History` 식별자가 전역 DOM History 생성자로 해석돼 `<History>` JSX 가
+// "Illegal constructor" 로 화면 전체를 에러 바운더리로 추락시켰다(스택 확보,
+// 간헐). 전역과 절대 충돌하지 않는 별칭으로 원천 차단.
+import { Check, Copy, History as HistoryIcon, Monitor, X } from "lucide-react";
 import { copyText } from "@/shared/lib/copy-text";
 import {
   formatSnapshotSummary,
@@ -176,7 +180,7 @@ export function AtlasGitPanel({
       <header className="flex shrink-0 items-start justify-between gap-2 border-b border-[color:var(--color-border-soft)] px-5 py-4">
         <div>
           <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
-            <History size={11} aria-hidden />
+            <HistoryIcon size={11} aria-hidden />
             {t("title")}
           </p>
           <p className="mt-1 text-body leading-relaxed text-[color:var(--color-text-secondary)]">{t("subtitle")}</p>

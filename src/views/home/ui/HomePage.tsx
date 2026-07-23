@@ -15,7 +15,9 @@ import {
 } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BookOpen, FolderOpen, HelpCircle, History, Plus, Waypoints, X } from "lucide-react";
+// `History as HistoryIcon` — 전역 DOM History 생성자와의 충돌 원천 차단
+// (사용성 검수 P0, AtlasGitPanel 과 동일 처방).
+import { BookOpen, FolderOpen, HelpCircle, History as HistoryIcon, Plus, Waypoints, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
@@ -2619,7 +2621,7 @@ export function HomePage() {
                         data-utility-action-shadow-token="--chrome-shadow"
                         data-utility-action-focus-ring-token="--color-indigo-accent"
                         compact={topologyUtilityChromeCompact}
-                        icon={<History />}
+                        icon={<HistoryIcon />}
                         active={spotlightOn}
                         // 그래프 토글과 같은 <2xl 아이콘-only 사다리(위 주석).
                         className="max-2xl:[&_[data-chip-label]]:hidden"
