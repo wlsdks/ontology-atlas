@@ -374,6 +374,12 @@ describe('verify.mjs first-contact gates', () => {
       minLength: 1,
       pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$',
     };
+    const destructivePreviewProperties = {
+      previewReady: { type: 'boolean' },
+      canConfirm: { type: 'boolean' },
+      wouldChange: { type: 'boolean' },
+      blockedReasons: { type: 'array', items: nonBlankStringSchema },
+    };
     const nonBlankStringOrArraySchema = {
       type: ['array', 'string'],
       minLength: 1,
@@ -945,10 +951,14 @@ describe('verify.mjs first-contact gates', () => {
         },
         outputSchema: {
           type: 'object',
-          required: ['ok', 'oldSlug', 'newSlug', 'sourcePath', 'targetPath', 'moved', 'backlinkUpdates'],
+          required: [
+            'ok', 'dryRun', 'previewReady', 'canConfirm', 'wouldChange', 'blockedReasons',
+            'oldSlug', 'newSlug', 'sourcePath', 'targetPath', 'moved', 'backlinkUpdates',
+          ],
           properties: {
             ok: { type: 'boolean' },
             dryRun: { type: 'boolean' },
+            ...destructivePreviewProperties,
             oldSlug: { type: 'string' },
             newSlug: { type: 'string' },
             sourcePath: { type: 'string' },
@@ -975,10 +985,14 @@ describe('verify.mjs first-contact gates', () => {
         },
         outputSchema: {
           type: 'object',
-          required: ['ok', 'fromSlug', 'intoSlug', 'fromPath', 'deleted', 'backlinkUpdates', 'capturedFrom'],
+          required: [
+            'ok', 'dryRun', 'previewReady', 'canConfirm', 'wouldChange', 'blockedReasons',
+            'fromSlug', 'intoSlug', 'fromPath', 'deleted', 'backlinkUpdates', 'capturedFrom',
+          ],
           properties: {
             ok: { type: 'boolean' },
             dryRun: { type: 'boolean' },
+            ...destructivePreviewProperties,
             fromSlug: { type: 'string' },
             intoSlug: { type: 'string' },
             fromPath: { type: 'string' },
@@ -1006,10 +1020,14 @@ describe('verify.mjs first-contact gates', () => {
         },
         outputSchema: {
           type: 'object',
-          required: ['ok', 'slug', 'filePath'],
+          required: [
+            'ok', 'dryRun', 'previewReady', 'canConfirm', 'wouldChange', 'blockedReasons',
+            'slug', 'filePath',
+          ],
           properties: {
             ok: { type: 'boolean' },
             dryRun: { type: 'boolean' },
+            ...destructivePreviewProperties,
             slug: nonBlankStringSchema,
             filePath: nonBlankStringSchema,
             backlinks: { type: 'array', items: backlinkRowSchema },
@@ -5507,6 +5525,10 @@ describe('verify.mjs first-contact gates', () => {
     const renamePayload = {
       ok: false,
       dryRun: true,
+      previewReady: true,
+      canConfirm: true,
+      wouldChange: true,
+      blockedReasons: [],
       oldSlug: 'old',
       newSlug: 'new',
       moved: false,
@@ -5776,8 +5798,28 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       destructiveDryRunFailure({
         result: {
-          content: [{ text: JSON.stringify({ ok: false, dryRun: true, slug: 'gone', backlinks: [], message: 'dry-run — force:true to apply' }) }],
-          structuredContent: { ok: false, dryRun: true, slug: 'gone', backlinks: [], message: 'dry-run — force:true to apply' },
+          content: [{ text: JSON.stringify({
+            ok: false,
+            dryRun: true,
+            previewReady: true,
+            canConfirm: true,
+            wouldChange: true,
+            blockedReasons: [],
+            slug: 'gone',
+            backlinks: [],
+            message: 'dry-run — force:true to apply',
+          }) }],
+          structuredContent: {
+            ok: false,
+            dryRun: true,
+            previewReady: true,
+            canConfirm: true,
+            wouldChange: true,
+            blockedReasons: [],
+            slug: 'gone',
+            backlinks: [],
+            message: 'dry-run — force:true to apply',
+          },
         },
       }, 'delete_concept'),
       null,
@@ -5790,6 +5832,10 @@ describe('verify.mjs first-contact gates', () => {
               text: JSON.stringify({
                 ok: false,
                 dryRun: true,
+                previewReady: true,
+                canConfirm: false,
+                wouldChange: true,
+                blockedReasons: ['1 backlink requires force:true'],
                 slug: 'gone',
                 backlinks: [{ slug: ' ref', kind: 'capability', title: 'Ref', mtime: 1 }],
                 message: 'dry-run — force:true to apply',
@@ -5799,6 +5845,10 @@ describe('verify.mjs first-contact gates', () => {
           structuredContent: {
             ok: false,
             dryRun: true,
+            previewReady: true,
+            canConfirm: false,
+            wouldChange: true,
+            blockedReasons: ['1 backlink requires force:true'],
             slug: 'gone',
             backlinks: [{ slug: ' ref', kind: 'capability', title: 'Ref', mtime: 1 }],
             message: 'dry-run — force:true to apply',
@@ -5815,6 +5865,10 @@ describe('verify.mjs first-contact gates', () => {
               text: JSON.stringify({
                 ok: false,
                 dryRun: true,
+                previewReady: true,
+                canConfirm: false,
+                wouldChange: true,
+                blockedReasons: ['1 backlink requires force:true'],
                 slug: 'gone',
                 backlinks: [{ slug: 'ref', kind: 'capability', title: 'Ref', mtime: 1, matchedKeys: [' relates'] }],
                 message: 'dry-run — force:true to apply',
@@ -5824,6 +5878,10 @@ describe('verify.mjs first-contact gates', () => {
           structuredContent: {
             ok: false,
             dryRun: true,
+            previewReady: true,
+            canConfirm: false,
+            wouldChange: true,
+            blockedReasons: ['1 backlink requires force:true'],
             slug: 'gone',
             backlinks: [{ slug: 'ref', kind: 'capability', title: 'Ref', mtime: 1, matchedKeys: [' relates'] }],
             message: 'dry-run — force:true to apply',
@@ -5838,6 +5896,10 @@ describe('verify.mjs first-contact gates', () => {
     const deletePayload = {
       ok: false,
       dryRun: true,
+      previewReady: true,
+      canConfirm: true,
+      wouldChange: true,
+      blockedReasons: [],
       slug: 'gone',
       backlinks: [],
       message: 'dry-run — force:true to apply',
@@ -7192,6 +7254,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(request.params.name, 'absorb_document');
     assert.equal(typeof request.params.arguments.filePath, 'string');
     assert.ok(request.params.arguments.filePath.length > 0);
+    assert.equal(request.params.arguments.allowOutsideRepo, true);
     // dry-run — confirm must be omitted/false so the live walk never writes.
     assert.equal(request.params.arguments.confirm, undefined);
   });
@@ -7224,7 +7287,12 @@ describe('verify.mjs first-contact gates', () => {
         wrapAbsorbResponse({
           ok: false,
           dryRun: true,
+          previewReady: true,
+          canConfirm: true,
+          wouldChange: true,
+          blockedReasons: [],
           filePath: '/tmp/CLAUDE.md',
+          outsideRepo: true,
           sourceLabel: 'CLAUDE',
           title: 'Sample Team Agent Guide',
           summary: { total: 2, absorbed: 1, suggested: 1, injectionSuspect: 0, unclassified: 0 },
@@ -7263,7 +7331,12 @@ describe('verify.mjs first-contact gates', () => {
     const base = {
       ok: false,
       dryRun: true,
+      previewReady: true,
+      canConfirm: true,
+      wouldChange: true,
+      blockedReasons: [],
       filePath: '/tmp/CLAUDE.md',
+      outsideRepo: true,
       sourceLabel: 'CLAUDE',
       summary: { total: 1, absorbed: 1, suggested: 0, injectionSuspect: 0, unclassified: 0 },
       sections: [{

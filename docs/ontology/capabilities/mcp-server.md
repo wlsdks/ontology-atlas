@@ -4,7 +4,7 @@ kind: capability
 title: MCP Server (31 tools)
 domain: ai-agent-partner
 dependencies: [capabilities/frontmatter-to-ontology]
-elements: [cli/src/commands/validate.mjs, cli/src/integration.test.mjs, mcp/scripts/json-rpc-lines.mjs, mcp/scripts/verify.mjs, mcp/src/analyze.mjs, mcp/src/analyze.test.mjs, mcp/src/git-tools.mjs, mcp/src/git-tools.test.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/integration.test.mjs, mcp/src/json-rpc-lines.test.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/suggestions.mjs, mcp/src/suggestions.test.mjs, mcp/src/vault.mjs, mcp/src/verify-script.test.mjs, scripts/dogfood-mcp-walk.mjs, scripts/dogfood-mcp-walk.test.mjs, scripts/lib/test-name-pattern.mjs, scripts/lib/test-name-pattern.test.mjs, scripts/run-focused-node-test.mjs, scripts/run-focused-node-test.test.mjs]
+elements: [cli/src/commands/validate.mjs, cli/src/integration.test.mjs, mcp/scripts/json-rpc-lines.mjs, mcp/scripts/verify.mjs, mcp/src/analyze.mjs, mcp/src/analyze.test.mjs, mcp/src/git-tools.mjs, mcp/src/git-tools.test.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/integration.test.mjs, mcp/src/json-rpc-lines.test.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/suggestions.mjs, mcp/src/suggestions.test.mjs, mcp/src/vault.mjs, mcp/src/verify-script.test.mjs, scripts/check-package-contracts.test.mjs, scripts/dogfood-mcp-walk.mjs, scripts/dogfood-mcp-walk.test.mjs, scripts/lib/test-name-pattern.mjs, scripts/lib/test-name-pattern.test.mjs, scripts/run-focused-node-test.mjs, scripts/run-focused-node-test.test.mjs, scripts/smoke-packed-cli.mjs]
 ---
 
 # MCP Server (31 tools)
@@ -39,6 +39,16 @@ elements: [cli/src/commands/validate.mjs, cli/src/integration.test.mjs, mcp/scri
 | `add_relations` | **R+** 배치 edge writer — 여러 edge 한 호출에 (max 50, 응답 row 순서 보존, 저장 배열은 dedup + sort, idempotent, partial result). row-level non-object / unknown-field / missing endpoint / relation type typo 입력도 해당 row 만 실패하고, 실패 row 는 `errorCode` 와 `rowName` / `missingSlug` / `similarSlugs` / `createTool` / `valueName` / `receivedValue` / `suggestion` / `allowedValues` / `receivedField` / `unknownFields` / `allowedFields` / `receivedFields` 같은 구조화 repair field 를 함께 반환한다. 단일 unknown-field 도 `receivedField` 와 1-row `unknownFields` 를 같이 제공하고, multi unknown-field 는 모든 offending field 와 nearest field hint, structured `rowName` / `allowedFields` / `receivedFields`, `relations[n]` row label, `Received fields: ...` 를, relation type typo 는 nearest relation type hint 와 structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` 를 포함한다. invalid-only batch 는 row-level `changed` / `alreadyExists` write metadata 와 top-level `postWriteMaintenance` 를 포함하지 않는다. analyze_repo_structure suggestedRelations · infer_imports moduleEdges 수신 직후 적합. changed batch 는 최종 graph 기준 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / `byPhase`·`bySeverity`·`byKind` bucket / action `score` / executable `proposedAction` 포함). |
 | `remove_relation` / `replace_relation` | exact typed edge를 rationale와 함께 제거하거나 target/type/rationale를 한 파일 write로 교체. dry-run 기본, `confirm:true`, `expected_mtime` 지원 |
 | `reclassify_concept` | kind/slug/domain과 모든 backlink를 원자적으로 이동하고 custom prose는 보존. dry-run 기본, `confirm:true` write |
+
+파괴적 도구 8개(`git_snapshot`, relation remove/replace, rename/reclassify/merge/delete,
+`absorb_document`)는 `previewReady`, `canConfirm`, `wouldChange`,
+`blockedReasons[]`를 공통 required output으로 제공한다. agent는 legacy `ok`나
+자연어 메시지를 해석하지 않고 이 네 필드로 confirm 가능 여부를 결정한다.
+`absorb_document`는 source와 repo root를 `realpath`로 비교해 symlink escape를
+포함한 저장소 밖 rewrite를 기본 차단하고, `allowOutsideRepo:true`가 있을 때만
+명시적으로 허용한다. relation writer는 저장된 canonical slug뿐 아니라 unique
+tail/frontmatter slug alias와 그 `relation_notes` key도 같은 edge로 해석해
+add 중복, remove/replace false-missing, rationale 고아화를 막는다.
 
 `query_ontology({operation:"cycles"})` 는 cycle 의 slug path 인 `nodes[]` 를
 유지하면서 같은 순서의 `nodeSummaries[]` 를 반환한다. agent 는 dependency

@@ -84,13 +84,29 @@ export function inspectVaultGit({ repoRoot, vaultRoot }) {
 
 export function snapshotVaultGit({ repoRoot, vaultRoot, confirm = false, expectedHead, message }) {
   const status = inspectVaultGit({ repoRoot, vaultRoot });
-  if (!status.ok) return { ...status, operation: 'git_snapshot', dryRun: !confirm, committed: false };
+  if (!status.ok) {
+    return {
+      ...status,
+      operation: 'git_snapshot',
+      dryRun: !confirm,
+      committed: false,
+      previewReady: false,
+      canConfirm: false,
+      wouldChange: false,
+      blockedReasons: [status.reason],
+    };
+  }
   const subject = message || semanticSubject(status.files);
+  const blockedReasons = snapshotBlockedReasons(status);
   const preview = {
     operation: 'git_snapshot',
     ok: true,
     dryRun: !confirm,
     committed: false,
+    previewReady: !confirm,
+    canConfirm: !confirm && status.files.length > 0 && blockedReasons.length === 0,
+    wouldChange: !confirm && status.files.length > 0,
+    blockedReasons: !confirm ? blockedReasons : [],
     repoRoot: status.repoRoot,
     vaultRoot: status.vaultRoot,
     vaultPathspec: status.vaultPathspec,
@@ -130,6 +146,23 @@ export function snapshotVaultGit({ repoRoot, vaultRoot, confirm = false, expecte
     commitHash: nextHead,
     commitSummary: commit.stdout.trim(),
   };
+}
+
+function snapshotBlockedReasons(status) {
+  return [
+    ...(status.operationInProgress
+      ? [`git ${status.operationInProgress} is in progress; finish or abort it before confirmation`]
+      : []),
+    ...(!status.head
+      ? ['repository has no HEAD commit; create an initial commit before confirmation']
+      : []),
+    ...(status.detachedHead
+      ? ['repository is on a detached HEAD; switch to a branch before confirmation']
+      : []),
+    ...(status.files.length === 0
+      ? ['vault has no changes; confirmation would be a no-op']
+      : []),
+  ];
 }
 
 function git(cwd, args, { allowFailure = false } = {}) {

@@ -55,6 +55,10 @@ test('snapshotVaultGit is dry-run first and commits only the vault pathspec', ()
     assert.equal(preview.dryRun, true);
     assert.equal(preview.committed, false);
     assert.equal(preview.pushSupported, false);
+    assert.equal(preview.previewReady, true);
+    assert.equal(preview.canConfirm, true);
+    assert.equal(preview.wouldChange, true);
+    assert.deepEqual(preview.blockedReasons, []);
 
     const result = snapshotVaultGit({
       repoRoot: root,
@@ -64,6 +68,10 @@ test('snapshotVaultGit is dry-run first and commits only the vault pathspec', ()
       message: 'docs(ontology): snapshot vault',
     });
     assert.equal(result.committed, true);
+    assert.equal(result.previewReady, false);
+    assert.equal(result.canConfirm, false);
+    assert.equal(result.wouldChange, false);
+    assert.deepEqual(result.blockedReasons, []);
     assert.notEqual(result.commitHash, result.previousHead);
     assert.equal(git(root, 'show', '--pretty=', '--name-only', 'HEAD'), 'vault/project.md');
     assert.equal(git(root, 'diff', '--cached', '--name-only'), 'outside.txt');
@@ -92,6 +100,10 @@ test('snapshotVaultGit returns a stable subject when the vault has no changes', 
     assert.equal(preview.reason, 'no-changes');
     assert.equal(preview.subject, 'ontology snapshot: no vault changes');
     assert.equal(preview.committed, false);
+    assert.equal(preview.previewReady, true);
+    assert.equal(preview.canConfirm, false);
+    assert.equal(preview.wouldChange, false);
+    assert.match(preview.blockedReasons.join('\n'), /no changes/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -107,6 +119,10 @@ test('detached HEAD is high risk and snapshot confirmation is blocked', () => {
     const preview = snapshotVaultGit({ repoRoot: root, vaultRoot: vault });
     assert.equal(preview.risk.level, 'high');
     assert.match(preview.risk.warnings.join('\n'), /detached HEAD/);
+    assert.equal(preview.previewReady, true);
+    assert.equal(preview.canConfirm, false);
+    assert.equal(preview.wouldChange, true);
+    assert.match(preview.blockedReasons.join('\n'), /detached HEAD/);
     assert.throws(
       () => snapshotVaultGit({
         repoRoot: root,

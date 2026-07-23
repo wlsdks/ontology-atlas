@@ -50,9 +50,9 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { basename, relative, resolve } from 'node:path';
+import { basename, relative, resolve, sep } from 'node:path';
 
-import { existsSync, readFileSync, copyFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, copyFileSync, realpathSync, statSync } from 'node:fs';
 import {
   GRAPH_ARRAY_KEYS,
   VaultConflictError,
@@ -572,6 +572,31 @@ const GIT_RISK_OUTPUT_SCHEMA = Object.freeze({
   required: ['level', 'warnings'],
   additionalProperties: false,
 });
+const DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES = Object.freeze({
+  previewReady: {
+    type: 'boolean',
+    description: 'True only when this response is a complete dry-run preview that an agent can review.',
+  },
+  canConfirm: {
+    type: 'boolean',
+    description: 'True only when repeating the call with confirm:true can perform the previewed change without another explicit safety opt-in.',
+  },
+  wouldChange: {
+    type: 'boolean',
+    description: 'True only when the dry-run predicts a disk or Git change.',
+  },
+  blockedReasons: {
+    type: 'array',
+    items: NON_BLANK_STRING_SCHEMA,
+    description: 'Machine-readable human explanations for every condition currently blocking confirmation.',
+  },
+});
+const DESTRUCTIVE_PREVIEW_REQUIRED = Object.freeze([
+  'previewReady',
+  'canConfirm',
+  'wouldChange',
+  'blockedReasons',
+]);
 const GIT_RESULT_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
@@ -613,6 +638,19 @@ const GIT_RESULT_OUTPUT_SCHEMA = Object.freeze({
   },
   required: ['operation', 'ok', 'repoRoot', 'vaultRoot'],
   additionalProperties: false,
+});
+const GIT_SNAPSHOT_OUTPUT_SCHEMA = Object.freeze({
+  ...GIT_RESULT_OUTPUT_SCHEMA,
+  properties: {
+    ...GIT_RESULT_OUTPUT_SCHEMA.properties,
+    ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
+  },
+  required: [
+    ...GIT_RESULT_OUTPUT_SCHEMA.required,
+    'dryRun',
+    'committed',
+    ...DESTRUCTIVE_PREVIEW_REQUIRED,
+  ],
 });
 
 // import-time throw 면 stdio transport 가 붙기 전 stack trace 가 stderr 로
@@ -694,12 +732,13 @@ Throughout: the user (via your add_concepts / add_relations calls) is the single
 
 ## Write tools — safety patterns
 
+- **Every destructive dry-run** returns the same decision contract: \`previewReady\` says the preview is complete, \`wouldChange\` says confirmation would mutate disk/Git, \`canConfirm\` says the exact reviewed call is safe to repeat with \`confirm:true\`, and \`blockedReasons[]\` explains every remaining gate. Decide from these fields rather than the legacy \`ok\` flag, which describes operation-specific success.
 - **\`add_concept\`** throws on duplicate slug — use \`patch_concept\` to update an existing node, never delete-then-add (that loses backlinks).
 - **\`remove_relation\` / \`replace_relation\` / \`reclassify_concept\`** are dry-run by default and require \`confirm: true\` to write. They preserve rationale/backlinks atomically and should replace manual whole-array frontmatter surgery.
 - **\`rename_concept\` / \`merge_concepts\`** are dry-run by default. The first call returns an \`updates\` preview (every affected file's before/after). To commit, repeat the call with \`confirm: true\`. \`rename_concept\` refuses an existing \`newSlug\` unless you intentionally pass \`overwrite: true\`. Backlinks are redirected atomically — much safer than \`patch_concept\` + N find_backlinks loops.
 - **\`delete_concept\`** refuses by default if any backlinks remain. The error response captures the deleted frontmatter + body so a mistake is recoverable. Pass \`force: true\` only after confirming with the user that dangling referrers are acceptable.
 - **\`git_status\` / \`git_snapshot\`** expose local, vault-scoped Git checkpoints. Start with \`git_snapshot({})\`; the dry-run returns the exact \`expectedHead\`, files, validator summary, and risk warnings. Commit only by repeating with \`confirm:true\` and that exact HEAD. The tool never initializes a repository, includes paths outside the vault, pushes, or runs during merge/rebase/cherry-pick/revert. Tool annotations are hints; these runtime guards are authoritative.
-- **\`absorb_document\`** (Slice 0 — the "absorption tool") converts a CLAUDE.md/AGENTS.md-style file into typed vault nodes. Dry-run by default (plan only); \`confirm: true\` writes rule/policy sections as \`kind: document\` (\`role: policy\`) nodes, backs up the source to \`<file>.pre-absorb.bak\`, and rewrites it into a slim pointer that preserves every non-absorbed section (architecture/component suggestions, unclassified prose, and injection-suspect sections) verbatim. Architecture/component sections are reported as candidates only — never auto-written; land them yourself with \`add_concept\` if useful.
+- **\`absorb_document\`** (Slice 0 — the "absorption tool") converts a CLAUDE.md/AGENTS.md-style file into typed vault nodes. Dry-run by default (plan only); \`confirm: true\` writes rule/policy sections as \`kind: document\` (\`role: policy\`) nodes, backs up the source to \`<file>.pre-absorb.bak\`, and rewrites it into a slim pointer that preserves every non-absorbed section (architecture/component suggestions, unclassified prose, and injection-suspect sections) verbatim. If the canonical source path is outside \`repoRoot\` (including an inside-repo symlink that resolves outside), confirmation is blocked until the caller explicitly passes \`allowOutsideRepo:true\` after reviewing the absolute path. Architecture/component sections are reported as candidates only — never auto-written; land them yourself with \`add_concept\` if useful.
 - **\`expected_mtime\` (all write tools)** — to guard against concurrent edits by the human or another agent: capture \`mtime\` from \`get_concept\`, pass it as \`expected_mtime\` on the next write. If the file changed in between, the call throws \`VaultConflictError\` instead of silently overwriting.
 
 ## When a tool throws — read the error suffix
@@ -761,7 +800,7 @@ const TOOLS = [
   {
     name: 'git_snapshot',
     description:
-      'Create a local, vault-scoped Git checkpoint. Dry-run by default and returns exact expectedHead, files, validation, and risk. confirm:true requires that expectedHead, blocks validator errors and Git operations in progress, commits only the vault pathspec, leaves outside files untouched, and never pushes.',
+      'Create a local, vault-scoped Git checkpoint. Dry-run by default and returns exact expectedHead, files, validation, risk, and the shared previewReady/canConfirm/wouldChange/blockedReasons safety contract. confirm:true requires that expectedHead, blocks validator errors and Git operations in progress, commits only the vault pathspec, leaves outside files untouched, and never pushes.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -778,7 +817,7 @@ const TOOLS = [
         ),
       },
     },
-    outputSchema: GIT_RESULT_OUTPUT_SCHEMA,
+    outputSchema: GIT_SNAPSHOT_OUTPUT_SCHEMA,
   },
   {
     name: 'list_concepts',
@@ -1352,11 +1391,12 @@ const TOOLS = [
       type: 'object',
       properties: {
         ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
+        ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
         exists: { type: 'boolean' }, from: NON_BLANK_STRING_SCHEMA, to: NON_BLANK_STRING_SCHEMA,
         type: NON_BLANK_STRING_SCHEMA, key: NON_BLANK_STRING_SCHEMA,
         removedRationale: { type: 'string' }, postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
-      required: ['ok', 'dryRun', 'changed', 'exists', 'from', 'to', 'type', 'key'],
+      required: ['ok', 'dryRun', 'changed', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'exists', 'from', 'to', 'type', 'key'],
       additionalProperties: false,
     },
   },
@@ -1378,11 +1418,12 @@ const TOOLS = [
       type: 'object',
       properties: {
         ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
+        ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
         from: NON_BLANK_STRING_SCHEMA,
         oldRelation: { type: 'object' }, newRelation: { type: 'object' },
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
-      required: ['ok', 'dryRun', 'changed', 'from', 'oldRelation', 'newRelation'],
+      required: ['ok', 'dryRun', 'changed', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'from', 'oldRelation', 'newRelation'],
       additionalProperties: false,
     },
   },
@@ -3016,6 +3057,7 @@ const TOOLS = [
       properties: {
         ok: { type: 'boolean' },
         dryRun: { type: 'boolean' },
+        ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
         oldSlug: { type: 'string' },
         newSlug: { type: 'string' },
         sourcePath: { type: 'string' },
@@ -3026,7 +3068,7 @@ const TOOLS = [
         changed: { type: 'boolean' },
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
-      required: ['ok', 'oldSlug', 'newSlug', 'sourcePath', 'targetPath', 'moved', 'backlinkUpdates'],
+      required: ['ok', 'dryRun', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'oldSlug', 'newSlug', 'sourcePath', 'targetPath', 'moved', 'backlinkUpdates'],
       additionalProperties: false,
     },
   },
@@ -3050,6 +3092,7 @@ const TOOLS = [
       type: 'object',
       properties: {
         ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
+        ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
         oldSlug: NON_BLANK_STRING_SCHEMA, newSlug: NON_BLANK_STRING_SCHEMA,
         oldKind: NON_BLANK_STRING_SCHEMA, newKind: NON_BLANK_STRING_SCHEMA,
         sourcePath: NON_BLANK_STRING_SCHEMA, targetPath: NON_BLANK_STRING_SCHEMA,
@@ -3057,7 +3100,7 @@ const TOOLS = [
         backlinkUpdates: BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA,
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
-      required: ['ok', 'dryRun', 'changed', 'oldSlug', 'newSlug', 'oldKind', 'newKind', 'sourcePath', 'targetPath', 'bodyAction', 'backlinkUpdates'],
+      required: ['ok', 'dryRun', 'changed', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'oldSlug', 'newSlug', 'oldKind', 'newKind', 'sourcePath', 'targetPath', 'bodyAction', 'backlinkUpdates'],
       additionalProperties: false,
     },
   },
@@ -3097,6 +3140,7 @@ const TOOLS = [
       properties: {
         ok: { type: 'boolean' },
         dryRun: { type: 'boolean' },
+        ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
         fromSlug: { type: 'string' },
         intoSlug: { type: 'string' },
         fromPath: { type: 'string' },
@@ -3107,7 +3151,7 @@ const TOOLS = [
         changed: { type: 'boolean' },
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
-      required: ['ok', 'fromSlug', 'intoSlug', 'fromPath', 'deleted', 'backlinkUpdates', 'capturedFrom'],
+      required: ['ok', 'dryRun', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'fromSlug', 'intoSlug', 'fromPath', 'deleted', 'backlinkUpdates', 'capturedFrom'],
       additionalProperties: false,
     },
   },
@@ -3150,6 +3194,7 @@ const TOOLS = [
       properties: {
         ok: { type: 'boolean' },
         dryRun: { type: 'boolean' },
+        ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
         slug: NON_BLANK_STRING_SCHEMA,
         filePath: NON_BLANK_STRING_SCHEMA,
         backlinks: { type: 'array', items: BACKLINK_ROW_OUTPUT_SCHEMA },
@@ -3160,7 +3205,7 @@ const TOOLS = [
         captured: CAPTURED_DOC_OUTPUT_SCHEMA,
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
-      required: ['ok', 'slug', 'filePath'],
+      required: ['ok', 'dryRun', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'slug', 'filePath'],
       additionalProperties: false,
     },
   },
@@ -3181,7 +3226,8 @@ const TOOLS = [
       '  2. With confirm: true, absorbed sections are written as document nodes, the source file is backed up ' +
       'to `<file>.pre-absorb.bak`, then rewritten into a "slim pointer" that reproduces every non-absorbed ' +
       'section (suggested, unclassified, or injection-suspect) verbatim — content is never destroyed. ' +
-      'Throws instead of overwriting an existing backup file.',
+      'Throws instead of overwriting an existing backup file. The canonical source path must be inside repoRoot; ' +
+      'outside paths (including symlink escapes) require an reviewed dry-run plus explicit allowOutsideRepo:true.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -3189,6 +3235,11 @@ const TOOLS = [
         confirm: {
           type: 'boolean',
           description: 'Actually write when true. Omit or false for a dry-run (plan only, no writes).',
+        },
+        allowOutsideRepo: {
+          type: 'boolean',
+          description:
+            'Explicit destructive opt-in required only when filePath resolves outside repoRoot. Dry-run reports outsideRepo and keeps canConfirm:false without it.',
         },
       },
       required: ['filePath'],
@@ -3198,7 +3249,9 @@ const TOOLS = [
       properties: {
         ok: { type: 'boolean' },
         dryRun: { type: 'boolean' },
+        ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
         filePath: NON_BLANK_STRING_SCHEMA,
+        outsideRepo: { type: 'boolean' },
         sourceLabel: NON_BLANK_STRING_SCHEMA,
         title: { type: ['string', 'null'] },
         summary: {
@@ -3249,7 +3302,7 @@ const TOOLS = [
         message: NON_BLANK_STRING_SCHEMA,
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
-      required: ['ok', 'dryRun', 'filePath', 'sourceLabel', 'summary', 'sections', 'message'],
+      required: ['ok', 'dryRun', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'filePath', 'outsideRepo', 'sourceLabel', 'summary', 'sections', 'message'],
       additionalProperties: false,
     },
   },
@@ -4347,7 +4400,20 @@ function gitSnapshotTool({ confirm = false, expectedHead, message } = {}) {
     expectedHead,
     message,
   });
-  if (!result.risk) return { ...result, validation };
+  const validationBlocker =
+    validation.errorFiles > 0
+      ? `validate_vault reports ${validation.errorFiles} file(s) with errors; repair them before confirmation`
+      : null;
+  const blockedReasons = [
+    ...(Array.isArray(result.blockedReasons) ? result.blockedReasons : []),
+    ...(validationBlocker ? [validationBlocker] : []),
+  ];
+  const guardedResult = {
+    ...result,
+    canConfirm: result.canConfirm === true && !validationBlocker,
+    blockedReasons: [...new Set(blockedReasons)],
+  };
+  if (!result.risk) return { ...guardedResult, validation };
 
   const validationWarnings = [
     ...(validation.warningFiles > 0
@@ -4358,7 +4424,7 @@ function gitSnapshotTool({ confirm = false, expectedHead, message } = {}) {
       : []),
   ];
   return {
-    ...result,
+    ...guardedResult,
     validation,
     risk: {
       level:
@@ -4400,7 +4466,7 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
   const doc = readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, canonicalFrom));
   if (key === 'domain') {
     const existingDomain = doc.frontmatter.domain;
-    if (existingDomain === canonicalTo) {
+    if (relationRefMatches(existingDomain, canonicalTo)) {
       return { ok: true, alreadyExists: true, changed: false, from: canonicalFrom, to: canonicalTo, type };
     }
     if (typeof existingDomain === 'string' && existingDomain.trim()) {
@@ -4423,7 +4489,7 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
     };
   }
   const existing = Array.isArray(doc.frontmatter[key]) ? doc.frontmatter[key] : [];
-  if (existing.includes(canonicalTo)) {
+  if (existing.some((ref) => relationRefMatches(ref, canonicalTo))) {
     return { ok: true, alreadyExists: true, changed: false, from: canonicalFrom, to: canonicalTo, type };
   }
   const next = normalizeRelationRefs([...existing, canonicalTo]);
@@ -4452,9 +4518,32 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
   };
 }
 
+function relationRefMatches(storedRef, canonicalTo) {
+  if (typeof storedRef !== 'string') return false;
+  const candidate = storedRef.trim();
+  if (!candidate) return false;
+  if (candidate === canonicalTo) return true;
+  return resolveExistingVaultSlug(candidate) === canonicalTo;
+}
+
 function relationExists(doc, key, canonicalTo) {
-  if (key === 'domain') return doc.frontmatter.domain === canonicalTo;
-  return Array.isArray(doc.frontmatter[key]) && doc.frontmatter[key].includes(canonicalTo);
+  if (key === 'domain') return relationRefMatches(doc.frontmatter.domain, canonicalTo);
+  return Array.isArray(doc.frontmatter[key])
+    && doc.frontmatter[key].some((ref) => relationRefMatches(ref, canonicalTo));
+}
+
+function matchingRelationNoteKeys(notes, canonicalTo) {
+  return Object.keys(notes).filter((ref) => relationRefMatches(ref, canonicalTo));
+}
+
+function destructivePreviewState({ dryRun, wouldChange, blockedReasons = [] }) {
+  const reasons = [...new Set(blockedReasons.filter((reason) => typeof reason === 'string' && reason.trim()))];
+  return {
+    previewReady: dryRun,
+    canConfirm: dryRun && wouldChange && reasons.length === 0,
+    wouldChange: dryRun && wouldChange,
+    blockedReasons: reasons,
+  };
 }
 
 function removeRelation({ from, to, type, confirm = false, expected_mtime }) {
@@ -4477,13 +4566,32 @@ function removeRelation({ from, to, type, confirm = false, expected_mtime }) {
   const notes = doc.frontmatter.relation_notes && typeof doc.frontmatter.relation_notes === 'object'
     ? { ...doc.frontmatter.relation_notes }
     : {};
-  const removedRationale = typeof notes[canonicalTo] === 'string' ? notes[canonicalTo] : undefined;
-  const base = { ok: exists, dryRun: !confirm, changed: false, exists, from: canonicalFrom, to: canonicalTo, type, key, ...(removedRationale ? { removedRationale } : {}) };
+  const matchingNoteKeys = matchingRelationNoteKeys(notes, canonicalTo);
+  const removedRationale = matchingNoteKeys
+    .map((key) => notes[key])
+    .find((value) => typeof value === 'string');
+  const dryRun = !confirm;
+  const base = {
+    ok: exists,
+    dryRun,
+    changed: false,
+    ...destructivePreviewState({
+      dryRun,
+      wouldChange: exists,
+      blockedReasons: exists ? [] : ['relation does not exist; confirmation would be a no-op'],
+    }),
+    exists,
+    from: canonicalFrom,
+    to: canonicalTo,
+    type,
+    key,
+    ...(removedRationale ? { removedRationale } : {}),
+  };
   if (!exists || !confirm) return base;
   const patch = key === 'domain'
     ? { domain: null }
-    : { [key]: doc.frontmatter[key].filter((ref) => ref !== canonicalTo) };
-  delete notes[canonicalTo];
+    : { [key]: doc.frontmatter[key].filter((ref) => !relationRefMatches(ref, canonicalTo)) };
+  for (const noteKey of matchingNoteKeys) delete notes[noteKey];
   patch.relation_notes = Object.keys(notes).length > 0 ? notes : null;
   patchFrontmatter(VAULT_ROOT, canonicalFrom, patch, { expectedMtime: expected_mtime });
   return { ...base, ok: true, dryRun: false, changed: true, postWriteMaintenance: compactPostWriteMaintenance() };
@@ -4508,19 +4616,32 @@ function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = 
   if (!relationExists(doc, oldKey, canonicalOldTo)) throw new Error(`Relation does not exist: ${canonicalFrom} --${oldType}--> ${canonicalOldTo}.`);
   const oldRelation = { to: canonicalOldTo, type: oldType, key: oldKey };
   const newRelation = { to: canonicalNewTo, type: newType, key: newKey };
-  const base = { ok: false, dryRun: !confirm, changed: false, from: canonicalFrom, oldRelation, newRelation };
+  const dryRun = !confirm;
+  const base = {
+    ok: false,
+    dryRun,
+    changed: false,
+    ...destructivePreviewState({ dryRun, wouldChange: true }),
+    from: canonicalFrom,
+    oldRelation,
+    newRelation,
+  };
   if (!confirm) return base;
   const patch = {};
   if (oldKey === 'domain') patch.domain = null;
-  else patch[oldKey] = (doc.frontmatter[oldKey] || []).filter((ref) => ref !== canonicalOldTo);
+  else patch[oldKey] = (doc.frontmatter[oldKey] || [])
+    .filter((ref) => !relationRefMatches(ref, canonicalOldTo));
   if (newKey === 'domain') patch.domain = canonicalNewTo;
   else {
     const starting = oldKey === newKey ? patch[newKey] : (Array.isArray(doc.frontmatter[newKey]) ? doc.frontmatter[newKey] : []);
     patch[newKey] = normalizeRelationRefs([...starting, canonicalNewTo]);
   }
   const notes = doc.frontmatter.relation_notes && typeof doc.frontmatter.relation_notes === 'object' ? { ...doc.frontmatter.relation_notes } : {};
-  const priorWhy = notes[canonicalOldTo];
-  delete notes[canonicalOldTo];
+  const oldNoteKeys = matchingRelationNoteKeys(notes, canonicalOldTo);
+  const priorWhy = oldNoteKeys
+    .map((key) => notes[key])
+    .find((value) => typeof value === 'string');
+  for (const noteKey of oldNoteKeys) delete notes[noteKey];
   const nextWhy = typeof why === 'string' && why.trim() ? why.trim() : priorWhy;
   if (nextWhy) notes[canonicalNewTo] = nextWhy;
   patch.relation_notes = Object.keys(notes).length > 0 ? notes : null;
@@ -5580,6 +5701,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     return {
       ok: false,
       dryRun: true,
+      ...destructivePreviewState({ dryRun: true, wouldChange: true }),
       oldSlug,
       newSlug,
       sourcePath,
@@ -5609,6 +5731,8 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
 
   return {
     ok: true,
+    dryRun: false,
+    ...destructivePreviewState({ dryRun: false, wouldChange: false }),
     oldSlug,
     newSlug,
     sourcePath,
@@ -5667,7 +5791,21 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
   const backlinkUpdates = canonicalNew === canonicalOld
     ? { updates: [], totalUpdated: 0 }
     : redirectBacklinks(VAULT_ROOT, canonicalOld, canonicalNew, { dryRun: true });
-  const base = { ok: false, dryRun: !confirm, changed: false, oldSlug: canonicalOld, newSlug: canonicalNew, oldKind, newKind, sourcePath, targetPath, bodyAction, backlinkUpdates };
+  const dryRun = !confirm;
+  const base = {
+    ok: false,
+    dryRun,
+    changed: false,
+    ...destructivePreviewState({ dryRun, wouldChange: true }),
+    oldSlug: canonicalOld,
+    newSlug: canonicalNew,
+    oldKind,
+    newKind,
+    sourcePath,
+    targetPath,
+    bodyAction,
+    backlinkUpdates,
+  };
   if (!confirm) return base;
   const nextFrontmatter = { ...sourceDoc.frontmatter, slug: canonicalNew, kind: newKind };
   if (domain === null || !['capability', 'element'].includes(newKind)) delete nextFrontmatter.domain;
@@ -5710,6 +5848,7 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime }) 
     return {
       ok: false,
       dryRun: true,
+      ...destructivePreviewState({ dryRun: true, wouldChange: true }),
       fromSlug,
       intoSlug,
       fromPath,
@@ -5728,6 +5867,8 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime }) 
 
   return {
     ok: true,
+    dryRun: false,
+    ...destructivePreviewState({ dryRun: false, wouldChange: false }),
     fromSlug,
     intoSlug,
     fromPath,
@@ -5749,13 +5890,31 @@ const ABSORB_BACKUP_SUFFIX = '.pre-absorb.bak';
 // path; core plan logic lives in ./absorb.mjs (mirrored at
 // cli/src/lib/absorb.mjs, kept in lock-step by
 // tests/contract/absorb.contract.test.ts).
-function absorbDocumentTool({ filePath, confirm = false }) {
+function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = false }) {
   requireNonBlankString(filePath, 'filePath');
   requireOptionalBoolean(confirm, 'confirm');
-  const abs = resolve(filePath);
-  if (!existsSync(abs) || !statSync(abs).isFile()) {
-    throw new Error(`file not found: ${abs}`);
+  requireOptionalBoolean(allowOutsideRepo, 'allowOutsideRepo');
+  const requestedPath = resolve(filePath);
+  if (!existsSync(requestedPath) || !statSync(requestedPath).isFile()) {
+    throw new Error(`file not found: ${requestedPath}`);
   }
+  // Resolve symlinks before enforcing the boundary. Otherwise a path that
+  // appears to live inside repoRoot could rewrite a target outside it.
+  const abs = realpathSync(requestedPath);
+  const canonicalRepoRoot = realpathSync(REPO_ROOT);
+  const repoRelative = relative(canonicalRepoRoot, abs);
+  const outsideRepo = repoRelative === '..' || repoRelative.startsWith(`..${sep}`);
+  const backupPath = `${abs}${ABSORB_BACKUP_SUFFIX}`;
+  const blockedReasons = [
+    ...(outsideRepo && !allowOutsideRepo
+      ? [
+          `source file is outside repoRoot (${canonicalRepoRoot}); repeat with allowOutsideRepo:true only after reviewing the absolute path`,
+        ]
+      : []),
+    ...(existsSync(backupPath)
+      ? [`backup already exists and would be overwritten: ${backupPath}`]
+      : []),
+  ];
   const raw = readFileSync(abs, 'utf-8');
   const sourceLabel = basename(abs).replace(/\.md$/i, '');
   const plan = buildAbsorptionPlan(raw, {
@@ -5779,7 +5938,13 @@ function absorbDocumentTool({ filePath, confirm = false }) {
     return {
       ok: false,
       dryRun: true,
+      ...destructivePreviewState({
+        dryRun: true,
+        wouldChange: true,
+        blockedReasons,
+      }),
       filePath: abs,
+      outsideRepo,
       sourceLabel,
       title: plan.title,
       summary: plan.summary,
@@ -5787,11 +5952,19 @@ function absorbDocumentTool({ filePath, confirm = false }) {
       message:
         `dry-run — ${plan.summary.absorbed} section(s) would be absorbed as document/policy nodes, ` +
         `${plan.summary.suggested} suggested (not written), ${plan.summary.injectionSuspect} injection-suspect ` +
-        `(excluded from absorption). Pass confirm:true to write.`,
+        `(excluded from absorption). ` +
+        (blockedReasons.length > 0
+          ? `Confirmation is blocked: ${blockedReasons.join('; ')}.`
+          : 'Pass confirm:true to write.'),
     };
   }
 
-  const backupPath = `${abs}${ABSORB_BACKUP_SUFFIX}`;
+  if (outsideRepo && !allowOutsideRepo) {
+    throw new Error(
+      `absorb_document blocked: source file is outside repoRoot (${canonicalRepoRoot}): ${abs}. ` +
+        'Run a dry-run, review the absolute path, then pass allowOutsideRepo:true only if this rewrite is intended.',
+    );
+  }
   if (existsSync(backupPath)) {
     throw new Error(
       `backup already exists, refusing to overwrite: ${backupPath} — remove or rename it first.`,
@@ -5822,7 +5995,9 @@ function absorbDocumentTool({ filePath, confirm = false }) {
   return {
     ok: true,
     dryRun: false,
+    ...destructivePreviewState({ dryRun: false, wouldChange: false }),
     filePath: abs,
+    outsideRepo,
     sourceLabel,
     title: plan.title,
     summary: plan.summary,
@@ -5850,9 +6025,18 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
   const backlinks = findBacklinks(VAULT_ROOT, slug);
 
   if (!confirm) {
+    const blockedReasons =
+      backlinks.length > 0 && !force
+        ? [`${backlinks.length} backlink(s) require force:true before confirmation`]
+        : [];
     return {
       ok: false,
       dryRun: true,
+      ...destructivePreviewState({
+        dryRun: true,
+        wouldChange: true,
+        blockedReasons,
+      }),
       slug,
       filePath,
       backlinks,
@@ -5876,6 +6060,8 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
   });
   return {
     ok: true,
+    dryRun: false,
+    ...destructivePreviewState({ dryRun: false, wouldChange: false }),
     slug,
     filePath: deleted.filePath ?? filePath,
     forced: backlinks.length > 0 ? true : undefined,

@@ -1464,7 +1464,7 @@ describe('package contract helpers', () => {
       verifySection,
       new RegExp(`✓ read census consistency — ${compiled.nodeCount} nodes across list_kinds/list_concepts/compile_ontology/overview, ${Object.keys(compiled.byKind).length} kinds`),
     );
-    assert.match(verifySection, /✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
+    assert.match(verifySection, /✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
     assert.match(
       verifySection,
       /✓ structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance (2\/2 \(resume skipped: no actions\)|3\/3), graph 13\/13/,
@@ -1517,7 +1517,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /invalid `add_relations` type hints/);
     assert.match(verifySection, /`concepts\[n\]` \/\s+`relations\[n\]` error labels/);
     assert.match(verifySection, /Destructive dry-run smoke calls `rename_concept`, `merge_concepts`, and\s+`delete_concept` against live vault slugs without writing/);
-    assert.match(verifySection, /preview is missing or includes `changed` or `postWriteMaintenance`/);
+    assert.match(verifySection, /preview is missing, its `previewReady` \/ `canConfirm` \/ `wouldChange` \/\s+`blockedReasons` decision fields contradict one another, or it includes\s+`changed` or `postWriteMaintenance`/);
+    assert.match(verifySection, /shared four-field destructive preview schema on all eight\s+destructive tools and `absorb_document\.allowOutsideRepo`/);
     assert.match(verifySection, /row-level `ok:false`\s+results[\s\S]*closest-value hints for invalid relation types[\s\S]*top-level\s+tool error/);
     assert.match(verifySection, /`initialize\.instructions` gate fails/);
     assert.match(verifySection, /read-only diagnosis flow/);
@@ -2679,7 +2680,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /add_concepts — non-object, single\\\/multi unknown-field repair, Received fields, duplicate-slug rows isolated with input indexes, and invalid-only batches return no write metadata/);
     assert.match(smoke, /add_relations — non-object, single\\\/multi unknown-field repair, Received fields, invalid-type rows isolated with input indexes and closest-value hints, and invalid-only batches return no write metadata/);
     assert.match(smoke, /batch caps — get_concepts\\\/add_concepts\\\/add_relations reject 51 rows with invalid_arguments/);
-    assert.match(smoke, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
+    assert.match(smoke, /destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\\\/canConfirm contract without write-maintenance/);
     assert.match(smoke, /structuredContentVerifySummary/);
     assert.match(smoke, /installedVerifyStructuredContentRe/);
     assert.match(smoke, /hasMaintenanceResume: true/);
