@@ -75,6 +75,47 @@ describe("DocFrontmatterBlock", () => {
     expect(summary.getByText("6 fields")).toBeInTheDocument();
   });
 
+  it("linkifies resolvable reference slugs and navigates on click, leaving unresolved ones plain", () => {
+    const onNavigate = vi.fn();
+    // domain(developer-experience)·depends_on(mcp-server) 은 vault 에 있고,
+    // ghost-ref 는 없다고 가정.
+    const resolveRef = (token: string) =>
+      token === "developer-experience"
+        ? "domains/developer-experience"
+        : token === "mcp-server"
+          ? "capabilities/mcp-server"
+          : null;
+    const docWithGhost: VaultDoc = {
+      ...doc,
+      frontmatter: { ...doc.frontmatter, depends_on: ["mcp-server", "ghost-ref"] },
+    };
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={docWithGhost} onNavigate={onNavigate} resolveRef={resolveRef} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
+
+    const domainRef = screen.getByTestId("doc-frontmatter-ref-developer-experience");
+    expect(domainRef.tagName).toBe("BUTTON");
+    fireEvent.click(domainRef);
+    expect(onNavigate).toHaveBeenCalledWith("domains/developer-experience");
+
+    fireEvent.click(screen.getByTestId("doc-frontmatter-ref-mcp-server"));
+    expect(onNavigate).toHaveBeenCalledWith("capabilities/mcp-server");
+
+    // 미해소 참조는 버튼이 되지 않는다.
+    expect(screen.queryByTestId("doc-frontmatter-ref-ghost-ref")).not.toBeInTheDocument();
+    expect(screen.getByText("ghost-ref")).toBeInTheDocument();
+  });
+
+  it("keeps reference fields plain text when no resolveRef/onNavigate is supplied", () => {
+    renderBlock();
+    fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
+    expect(screen.queryByTestId("doc-frontmatter-ref-developer-experience")).not.toBeInTheDocument();
+    expect(screen.getByText("developer-experience")).toBeInTheDocument();
+  });
+
   it("hides the quick-patch action when canEdit/onPatch are not supplied (read-only default)", () => {
     renderBlock();
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
