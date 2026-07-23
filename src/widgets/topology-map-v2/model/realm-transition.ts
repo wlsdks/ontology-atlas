@@ -302,6 +302,25 @@ export function realmOutsideReturnReach(
 }
 
 /**
+ * 밖 노드 역중력 귀환 중 알파(0..1) — 모션 감사 처방 B (S7, fable 설계).
+ * 순수 위상→알파 사상: `1 - realmOutsideReturnReach(elapsed, duration)`.
+ * `realmOutsideReturnReach` 는 완전 이탈=1 → 홈=0 로 줄어드는 reach 팩터라,
+ * 그 보수(complement)는 완전 이탈=0(안 보임) → 홈=1(풀 알파)로 늘어나는
+ * "materialize" 알파다. 입장 fling 의 감산적(subtractive, 멀어질수록
+ * 사라짐) 우아함과 대칭인 가산적(additive, 가까워질수록 나타남) 우아함 —
+ * 이전엔 밖 노드가 하드 컬 상태에서 alpha 오버라이드 없이 위치만
+ * 되감겨, 뷰포트 컬(`isEdgeCulled`)에 걸리는 순간 풀 알파로 한 프레임에
+ * 팝인했다(온셋 ink 급증, 소유자 모션 감사). 새 easing/토큰 0 — 기존
+ * `realmOutsideReturnReach` 램프를 그대로 재사용. 순수·결정론.
+ */
+export function realmOutsideReturnAlpha(
+  elapsed: number,
+  duration: number = REALM_EXIT_OUTSIDE_RETURN_MS,
+): number {
+  return 1 - realmOutsideReturnReach(elapsed, duration);
+}
+
+/**
  * 밖 노드의 이번 프레임 귀환 좌표 — `realmOutsidePosition`(fling)의 역재생.
  * `from` 은 노드의 **원래(홈) 좌표**(입장 시 fling 출발점). reach 팩터가 1→0 로
  * 줄며 반경·컬이 되감겨 정확히 `from` 으로 착지한다(입장 궤적 완전 역전 — 튐

@@ -21,6 +21,7 @@ import {
   realmInsideFlipDelayFor,
   realmInsidePosition,
   realmOutsidePosition,
+  realmOutsideReturnAlpha,
   realmOutsideReturnPosition,
   realmOutsideReturnReach,
   realmTransitionReducer,
@@ -249,6 +250,33 @@ describe("realmOutsideReturnReach (S6 역중력 reach 1→0)", () => {
 
   it("duration<=0 이면 0", () => {
     expect(realmOutsideReturnReach(5, 0)).toBe(0);
+  });
+});
+
+describe("realmOutsideReturnAlpha (S7 밖 노드 귀환 materialize — 모션 감사 처방 B)", () => {
+  it("elapsed 0 → 0(완전 이탈, 안 보임), duration → 1(홈, 풀 알파)", () => {
+    expect(realmOutsideReturnAlpha(0)).toBeCloseTo(0);
+    expect(realmOutsideReturnAlpha(REALM_EXIT_OUTSIDE_RETURN_MS)).toBeCloseTo(1);
+  });
+
+  it("reach 의 정확한 보수다(1 - reach) — 항상 합이 1", () => {
+    const d = REALM_EXIT_OUTSIDE_RETURN_MS;
+    for (const t of [0, d * 0.25, d * 0.5, d * 0.75, d]) {
+      expect(realmOutsideReturnAlpha(t, d) + realmOutsideReturnReach(t, d)).toBeCloseTo(1);
+    }
+  });
+
+  it("단조 증가 — 귀환할수록 더 또렷해진다(팝인 없이 램프)", () => {
+    const d = REALM_EXIT_OUTSIDE_RETURN_MS;
+    const early = realmOutsideReturnAlpha(d * 0.2, d);
+    const mid = realmOutsideReturnAlpha(d * 0.5, d);
+    const late = realmOutsideReturnAlpha(d * 0.8, d);
+    expect(early).toBeLessThan(mid);
+    expect(mid).toBeLessThan(late);
+  });
+
+  it("duration<=0 이면 1(reduced-motion — 즉시 풀 알파, reach 0 의 보수)", () => {
+    expect(realmOutsideReturnAlpha(5, 0)).toBe(1);
   });
 });
 

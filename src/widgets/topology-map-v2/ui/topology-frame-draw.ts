@@ -13,7 +13,14 @@ import { footprintRingStyle, FOOTPRINT_RING_OFFSET } from "../model/footprint-ri
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-parallax";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
-import { DISC_LABEL_TOP_K, LABEL_TOP_K, selectDiscLabelEligible, selectTopKLabels, type LabelRankEntry } from "../model/label-lod";
+import {
+  DISC_LABEL_TOP_K,
+  LABEL_TOP_K,
+  isEgoNeighborLabelExempt,
+  selectDiscLabelEligible,
+  selectTopKLabels,
+  type LabelRankEntry,
+} from "../model/label-lod";
 import { draw as gridDraw, lerpColorHex } from "../render/grid";
 import {
   ACTIVITY_MARK_GAP,
@@ -384,6 +391,15 @@ export interface FrameDrawParams {
   /** S4 — 전개 순간의 도트 방사 시차 팩터 0..1 (전환 중에만 >0). */
   realmDustParallax: number;
   /**
+   * S7 — 영역 퇴장(exiting) 중 하드 컬됐던 밖 노드의 귀환 materialize 알파
+   * (모션 감사 처방 B). `realm-transition.ts#realmOutsideReturnAlpha` 로 계산 —
+   * 완전 이탈=0(안 보임) → 홈=1(풀 알파). 이 노드의 `effectiveAlphaById` 항목에
+   * 곱해져 노드 자신과, `edgeTierAlpha`(min 결합)를 통해 그 노드로 향하는 엣지
+   * 모두를 램프시킨다 — 뷰포트 컬 경계에 걸리는 순간 풀 알파로 팝인하던 결함의
+   * 수정. null 이면 미적용(entering/active/idle — 회귀 0).
+   */
+  realmOutsideReturnAlphaById: ReadonlyMap<string, number> | null;
+  /**
    * 발자국 트레일 (fable 설계) — 세션 동안 방문(ego 포커스)한 노드의 최근성
    * rank(0 = 가장 최근). `model/footprint-ring.ts#buildFootprintRanks` 가 만든다.
    * 각 방문 노드에 옅은 pale 인디고 헤어라인 링을 최근성으로 감쇠해 얹는다
@@ -458,6 +474,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     realmDepthById,
     realmDepthParallax,
     realmDustParallax,
+    realmOutsideReturnAlphaById,
     realmCosmosPoints,
     footprintRanksById,
     spotlightIds,
@@ -569,14 +586,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 램프로 떠오른다(끄면 램프 감쇠로 자연 강하).
     const spotlightReveal =
       spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id) ? spotlightRamp : 0;
-    effectiveAlphaById.set(
-      node.id,
-      effectiveNodeAlpha(
-        tierAlpha,
-        isEgoMember,
-        Math.max(isPairMember ? 1 : (egoRevealById.get(node.id) ?? 0), spotlightReveal),
-      ),
+    const baseAlpha = effectiveNodeAlpha(
+      tierAlpha,
+      isEgoMember,
+      Math.max(isPairMember ? 1 : (egoRevealById.get(node.id) ?? 0), spotlightReveal),
     );
+    // S7 — 영역 퇴장 중 귀환하는 밖 노드는 이 램프로 강등(모션 감사 처방 B). 이
+    // 노드로 향하는 엣지는 `edgeTierAlpha`(min 결합)를 통해 같은 프레임에서
+    // 자동으로 따라온다 — 별도 엣지 경로 없이 노드 alpha 하나로 충분.
+    const returnAlpha = realmOutsideReturnAlphaById?.get(node.id);
+    effectiveAlphaById.set(node.id, returnAlpha !== undefined ? baseAlpha * returnAlpha : baseAlpha);
   }
 
   // S8 결함 1 — 펼친 부모(파선 오라 대상) + 그 디스크(부모 + contains 하위 전이
@@ -1149,6 +1168,29 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     }
     return selectDiscLabelEligible(rankedByDisc, DISC_LABEL_TOP_K);
   })();
+  // 노드 감사 처방 — 포커스(ego) 도메인 자식 라벨 겹침 LOD. `neighborsOfFocused`
+  // 는 EGO_NEIGHBOR_LIMIT(24) 이하면 전원 full 점등되고(선택적 ego 컷은 >24 에서만
+  // 발동), 이전엔 그 전원이 무조건 라벨 exempt 였다 — 자식 18개짜리 도메인을
+  // 포커스하면 겹치는 라벨이 그대로 다 그려졌다(위 high-fan disc 처방과 같은
+  // 문제, 여긴 처방이 없었다). 같은 DOI-top-K 컷(`selectDiscLabelEligible`)을
+  // 이웃 집합에도 적용 — 상위 degree 이웃만 무조건 라벨, 컷 밖은 일반 greedy
+  // 경쟁으로 강등(겹치지 않으면 여전히 뜬다 — "과하지 않게", 라벨 다 지우지
+  // 않음). `DISC_LABEL_TOP_K` 이하 소규모 포커스는 전원 그대로 exempt(회귀 0).
+  const egoNeighborLabelEligibleIds: ReadonlySet<string> | null =
+    applyLabelTopK && focusedNodeId !== null && neighborsOfFocused.size > DISC_LABEL_TOP_K
+      ? selectDiscLabelEligible(
+          [
+            rankEgoNeighborsByDOI(
+              [...neighborsOfFocused].map((id) => ({
+                id,
+                kind: world.nodeById.get(id)?.kind ?? "element",
+                degree: world.neighborMap.get(id)?.size ?? 0,
+              })),
+            ),
+          ],
+          DISC_LABEL_TOP_K,
+        )
+      : null;
   const labelRankEntries: LabelRankEntry[] = [];
   const labelCandidates: LabelCandidate<LabelPayload>[] = [];
   world.nodes.forEach((node, index) => {
@@ -1219,10 +1261,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const shiftX = anchorX - screen.x;
     const shiftY = clampedAnchorY - anchorY;
     if (applyLabelTopK) {
-      // Real exempt = ego focus members + the hovered node only. Expanded-disc
-      // children are NOT exempt: the ones that survived the per-disc DOI cut
-      // above compete in the normal LABEL_TOP_K budget like any other node.
-      const exempt = egoState === "center" || egoState === "neighbor" || isHovered;
+      // Real exempt = the focused center + the hovered node, always. An ego
+      // NEIGHBOR is exempt too unless the focus is over the readable DOI-top-K
+      // band, in which case only the DOI winners keep the exemption (노드 감사
+      // 처방 — see `isEgoNeighborLabelExempt`).
+      const exempt =
+        egoState === "center" ||
+        isHovered ||
+        (egoState === "neighbor" && isEgoNeighborLabelExempt(node.id, egoNeighborLabelEligibleIds));
       labelRankEntries.push({ id: node.id, degree: world.neighborMap.get(node.id)?.size ?? 0, exempt });
     }
     labelCandidates.push({
