@@ -262,7 +262,7 @@
     "prevLabel": "이전",
     "nextLabel": "다음",
     "skipLabel": "건너뛰기",
-    "finishLabel": "마침",
+    "finishLabel": "완료",
     "waitingForClickLabel": "밝게 남은 점을 눌러보세요",
     "clickSuccessLabel": "잘했어요 — 방금 문서 한 장을 연 거예요",
     "finishTourAction": "구경 끝 — 지도로",
@@ -278,7 +278,7 @@
       },
       "relations": {
         "title": "선은 관계예요",
-        "body": "이어진 실선은 이 안에 들어 있어요, 점선은 이것에 기대고 있어요라는 뜻이에요. 여기 범례가 항상 알려줘요."
+        "body": "실선은 이 안에 들어 있다는 뜻, 점선은 이것에 기대고 있다는 뜻이에요. 여기 범례가 항상 알려줘요."
       },
       "tryClick": {
         "title": "직접 눌러보세요",
@@ -298,7 +298,7 @@
       },
       "agent": {
         "title": "AI 에이전트와 같이 키우기",
-        "body": "Claude Code 같은 코딩 에이전트가 이 지도를 읽고 씁니다. INDEX 의 시작 카드에 있는 명령 한 줄이면 내 코드베이스로 이 지도를 만들 수 있어요."
+        "body": "Claude Code 같은 코딩 에이전트가 이 지도를 읽고 써요. INDEX 의 시작 카드에 있는 명령 한 줄이면 내 코드베이스로 이 지도를 만들 수 있어요."
       }
     }
   },
