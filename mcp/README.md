@@ -302,7 +302,7 @@ the explicit CLI wrapper arguments without changing into `mcp/`; use
 
 ### 2. Restart the agent
 
-The server connects over stdio. You should now see 25 tools under the `ontology-atlas` namespace.
+The server connects over stdio. You should now see 31 tools under the `ontology-atlas` namespace.
 
 ### 3. Call the tools
 
@@ -314,10 +314,16 @@ The server connects over stdio. You should now see 25 tools under the `ontology-
 → mcp__ontology-atlas__get_concept({ slug: 'capabilities/mcp-server' })
 ```
 
-## The 25 tools
+## The 31 tools
 
 | Tool | What it does |
 |---|---|
+| `connection_info` | First-call connection proof: resolved vault/repository roots, resolution sources, same-root warning, restart requirement, and server identity. Run it before repository analysis or writes. |
+| `git_status` | Read-only, vault-scoped Git status: HEAD/branch, changed vault files, outside-vault counts, staged-outside warnings, and merge/rebase/cherry-pick/revert risk. Never initializes, stages, commits, or pushes. |
+| `git_snapshot` | Local vault checkpoint with a mandatory dry-run/`confirm:true` flow and exact `expectedHead` concurrency guard. Runs vault validation, blocks validation errors and in-progress Git operations, commits only the vault pathspec, preserves outside staging, and never pushes. |
+| `remove_relation` | Removes one exact typed edge and its matching `relation_notes` rationale. Dry-run by default; `confirm:true` writes. Supports `expected_mtime` and is idempotent when already absent. |
+| `replace_relation` | Atomically replaces one relation target/type and moves or replaces its rationale in the same source-file write. Dry-run by default; `confirm:true` writes. Supports `expected_mtime`. |
+| `reclassify_concept` | Atomically changes a node's kind and optional slug/domain while rewriting backlinks. Preserves custom prose, replaces only generated starter prose for the old kind, requires a domain for capability/element targets, and is dry-run by default with `confirm:true` to write. |
 | `list_concepts` | Lists every node in the vault (any `.md` with a `kind:` frontmatter). Options: enum-validated `kind` (project/domain/capability/element/document/vault-readme; typos fail with nearest-value hints instead of empty lists), `domain` (filter by frontmatter `domain:` slug — combine with `kind` for "all capabilities under auth" in one call), `since` (mtime-based incremental sync — only nodes with `mtime > since` ms; pair with the `mtime` returned in earlier responses for "what changed since I last looked"; strict `>` so re-passing the prior max does not double-fetch), `summary` (opt-in — when true, each row includes a prose `summary` (max 200 chars, heading/표/코드/리스트/인용 skip — same `extractSummaryExcerpt` helper as `get_concept` / `find_evidence`) so agents get list + previews in one call instead of N follow-up `get_concept` calls; default off to keep payload small), `limit` (default 100, max 500). Each node row includes `mtime` (ms) — agents can sort/filter "what changed recently" without a follow-up `get_concept` call. **R11+**: when the vault has frontmatter corruption or whole-vault graph-reference drift, response includes `vaultWarnings: { errorCount, warningCount }` so AI agents can flag it to the user. |
 | `get_concept` | Fetches a single node by `slug` (no extension): frontmatter + body excerpt (R+ — *prose-only*: heading / 표 / 코드블록 / 리스트 / 인용 skip 후 첫 단락만 — agent 가 markdown table syntax 대신 사람이 의도한 설명문을 받음, max 800 chars) + graph `neighbors` (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`) + `outgoingEdges[]` (`{to, via}`) + `mtime` (ms — pass to subsequent `patch_concept` / `delete_concept` as `expected_mtime` to detect concurrent external edits). **R11+**: response includes `warnings: [...]` when this doc has frontmatter issues, graph-array canonicality drift, or dangling outgoing graph references. **Ask-to-Grow**: when the slug doesn't resolve, the error's `structuredContent.growthHint` carries a did-you-mean near-slug or an `add_concept` scaffold. |
 | `get_concepts` | **R+** Batch reader — accepts an array of slugs (max 50), returns `concepts[]` with the same per-row shape as `get_concept` (frontmatter + excerpt + neighbors + mtime + warnings?). Order of `concepts[]` matches input `slugs[]`. Missing or invalid slug rows return `{ slug, ok: false, error }` rather than aborting the batch, so later valid slugs still resolve. Replaces N×`get_concept` round-trips when an agent already has K specific slugs (e.g. from `list_concepts` / `find_path` / `find_orphans`) and needs full bodies for all of them. |
@@ -345,6 +351,10 @@ The server connects over stdio. You should now see 25 tools under the `ontology-
 | `rename_concept` | **v0.7 ⚠ MULTI-FILE** Atomically renames a slug — moves the .md file, updates the moved file's `slug:` key, and rewrites every backlink (frontmatter array entries, inline string keys like `domain`, body links `[[oldSlug]]` / `(oldSlug.md)`). Tail-only references (`mcp-server` for `capabilities/mcp-server`) are also redirected. Without `confirm:true`, runs as a dry-run with a full update preview; each `backlinkUpdates.updates[]` row includes the referrer `slug`, `title`, changed frontmatter keys, and `bodyChanged`. Throws if `newSlug` already exists unless `overwrite:true` is passed. Replaces the manual loop of `find_backlinks` + N `patch_concept` calls. **R11**: optional `expected_mtime` for the source slug. Confirmed renames return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers. |
 | `merge_concepts` | **v0.7 ⚠ DESTRUCTIVE MULTI-FILE** Folds `fromSlug` into `intoSlug` — every backlink to `fromSlug` is redirected, then `fromSlug.md` is deleted. The `intoSlug` node is preserved as-is (frontmatter / body are not auto-merged — use `patch_concept` after if you want to combine descriptions). Without `confirm:true`, runs as a dry-run; each `backlinkUpdates.updates[]` row includes the referrer `slug`, `title`, changed frontmatter keys, and `bodyChanged`. **R11**: optional `expected_mtime` for `fromSlug`. Confirmed merges return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers. |
 | `absorb_document` | **Slice 0 ⚠ DESTRUCTIVE (external file)** — the "absorption tool". Converts a CLAUDE.md/AGENTS.md-style markdown file into typed vault nodes so a tech lead's existing agent-instruction file stops needing dual maintenance. Splits the file by `##` sections; rule/policy/decision sections become `kind: document` nodes with a `role: policy` frontmatter extra, architecture/component sections are reported as element/capability *suggestions only* (never auto-written), and sections matching an injection-suspect pattern (Tier 1 — instruction-hijack phrasing, shell/SQL fragments) are excluded from absorption regardless of category. Without `confirm:true`, runs as a dry-run (classification plan only, no writes). With `confirm:true`, absorbed sections are written, the source file is backed up to `<file>.pre-absorb.bak`, and rewritten into a slim pointer that reproduces every non-absorbed section verbatim — content is never destroyed. Throws instead of overwriting an existing backup. CLI equivalent: `ontology-atlas absorb <file...> [--write]`. Only ever reads a **local** markdown file — for wiki exports (Confluence/Notion/on-prem wikis) a separately-registered third-party MCP (e.g. Atlassian's official Confluence MCP) reads the page first and the result is saved as a local file before calling this tool; see the `/ontology-absorb-confluence` skill. This is agent-mediated absorption, not a Confluence integration this repo ships. |
+
+`add_concept` and `add_concepts` also accept an optional repository-relative
+`path` and preserve it in frontmatter as implementation evidence. The same
+path is checked by `validate_vault` against the configured repository root.
 
 `query_ontology({operation:"cycles"})` keeps the slug path in each
 `cycles[].nodes` array and also returns aligned `cycles[].nodeSummaries`
@@ -597,7 +607,7 @@ A successful run looks like this:
 · step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=../docs/ontology, timeout=15000ms)
 ✓ initialize OK — server ontology-atlas-mcp@0.12.0
 ✓ initialize instructions — tool inventory plus first-contact safety and recovery guidance present
-✓ tools/list 25/25 (25/25 titled; 16/16 read; 9/9 write; 4/4 destructive; 2/2 idempotent; 25/25 local-only) — absorb_document · add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · delete_concept · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · index_project · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · rename_concept · validate_vault
+✓ tools/list 31/31 (31/31 titled; 18/18 read; 13/13 write; 8/8 destructive; 3/3 idempotent; 31/31 local-only)
 ✓ tools/list inventory names — missing/extra/duplicate/invalid checks passed
 ✓ tools/list schema contract — strict arguments + annotations + graph-query enums + graph kind enums/descriptions + write relation enums + health tuning + post-write maintenance schema
 ✓ strict arguments — unknown tool argument rejected at runtime
@@ -630,29 +640,29 @@ A successful run looks like this:
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 104 total query results (limited true)
-✓ analyze_repo_structure — fsd (5 domain candidates, 18 capability candidates, 29 element candidates)
-✓ infer_imports — 820 files scanned, 510 module edges (elements/src/views/home->capabilities/knowledge-graph x28 (static:28), elements/src/views/ontology-insights->capabilities/knowledge-graph x15 (static:15), +508 more)
-✓ index_project — 52 concept candidates, 503 import relations, validation 0 problem files
+✓ analyze_repo_structure — fsd (5 domain candidates, 11 capability candidates, 36 element candidates)
+✓ infer_imports — 904 files scanned, 526 module edges (elements/src/views/home->elements/src/entities/knowledge-graph x28 (static:28), elements/src/views/ontology-insights->elements/src/entities/knowledge-graph x15 (static:15), +524 more)
+✓ index_project — 53 concept candidates, 526 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
 ✓ list_kinds — 105 nodes (capability:39, document:3, domain:6, element:55, project:1, vault-readme:1)
 ✓ validate_vault — 105 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (105 nodes, 1 next action, 5 health checks, growth actions:1 external:1 ignoredExternal:214)
+✓ workspace_brief — healthy (105 nodes, 1 next action, 6 health checks, growth actions:1 external:1 ignoredExternal:216)
 · workspace_brief non-blocking advisory nextActions — materialize_external_elements:info:1 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 6 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (105 nodes, 2 next actions, 5 health checks, growth actions:1 external:1 ignoredExternal:214; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (105 nodes, 2 next actions, 6 health checks, growth actions:1 external:1 ignoredExternal:216; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 · workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:4 - The scoped ontology graph has disconnected actionable islands., materialize_external_elements:info:1 - Materialize frequently referenced external files as element nodes when they should be first-class.
-✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
-✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:4; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
+✓ health — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1, +1 more)
+✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:4, +1 more; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
 · health_tuned non-blocking advisory checks — components:info:4 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph 6b0c44b801ea (105 nodes, 563 edges, issues 0)
-✓ compile_ontology page — 1/105 nodes, 1/563 edges
-✓ compile_ontology indexes — out 105, in 104, edgeById 563, aliases 209, edges 348/215/0
-✓ overview — graph 6b0c44b801ea (105 nodes, 563 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 105, edges 563)
-✓ project_map query_plan — aggregate_scan (medium, nodes 105, edges 563)
+✓ compile_ontology — graph ca43737a5248 (105 nodes, 565 edges, issues 0)
+✓ compile_ontology page — 1/105 nodes, 1/565 edges
+✓ compile_ontology indexes — out 105, in 104, edgeById 565, aliases 209, edges 348/217/0
+✓ overview — graph ca43737a5248 (105 nodes, 565 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 105, edges 565)
+✓ project_map query_plan — aggregate_scan (medium, nodes 105, edges 565)
 ✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ all_paths — src/widgets/bottom-tab-bar → project (5/15 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
@@ -660,7 +670,7 @@ A successful run looks like this:
 ✓ read census consistency — 105 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
 ✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 13/13
 
-All passed — register .mcp.json with your MCP client and restart to use the 25 tools.
+All passed — register .mcp.json with your MCP client and restart to use the 31 tools.
 ```
 
 On failure, it tells you which step blocked progress and prints a diagnostic message. The
@@ -872,7 +882,7 @@ After you add `.mcp.json` / `.codex/config.toml` and restart the agent, try the 
 > 7. Call `query_ontology({ operation: "overview", limit: 5 })` to confirm graph-query summaries work without fetching the full compile artifact.
 > 8. Call `query_ontology({ operation: "query_plan", targetOperation: "overview" })` and `query_ontology({ operation: "query_plan", targetOperation: "project_map" })` before heavier graph exploration so the agent sees the cost/index contract across more than one operation.
 
-If those read-only calls respond cleanly, the agent can see the vault and its graph health. Once an agent starts *committing* its analysis of your codebase to the ontology through these 25 tools (16 read + 9 write), the human + AI co-authoring loop is officially open.
+If those read-only calls respond cleanly, the agent can see the vault and its graph health. Once an agent starts *committing* its analysis of your codebase to the ontology through these 31 tools (18 read + 13 write), the human + AI co-authoring loop is officially open.
 
 ## Design principles
 

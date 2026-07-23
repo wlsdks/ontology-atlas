@@ -7,7 +7,7 @@
 // 않는 *도구 핸들러 자체* 의 input → routing → output 흐름 회귀 차단.
 
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
@@ -100,10 +100,10 @@ function makeVault(seed = []) {
  * tmp vault 에 server spawn → requests JSON-RPC 로 보내고 모든 응답 수집.
  * 1.5s timeout 후 SIGTERM. 응답 = JSON.parse 가능한 stdout line 들.
  */
-function rpc(vaultRoot, requests, timeoutMs = 1500) {
+function rpc(vaultRoot, requests, timeoutMs = 1500, extraEnv = {}) {
   return new Promise((resolveP, rejectP) => {
     const proc = spawn("node", [SERVER_ENTRY], {
-      env: { ...process.env, OATLAS_VAULT: vaultRoot },
+      env: { ...process.env, OATLAS_VAULT: vaultRoot, ...extraEnv },
       stdio: ["pipe", "pipe", "pipe"],
     });
     const stdoutDecoder = new StringDecoder("utf8");
@@ -1953,7 +1953,7 @@ await test("analyze_repo_structure — bootstrap candidates expose structuredCon
     assert.deepEqual(result.project, { slug: "sample-app", title: "Sample App" });
     assert.ok(result.domains.some((domain) => domain.slug === "domains/auth"));
     assert.ok(result.capabilities.some((capability) => capability.slug === "capabilities/auth"));
-    assert.ok(result.suggestedRelations.some((relation) => relation.from === "sample-app" && relation.to === "capabilities/auth" && relation.type === "contains"));
+    assert.ok(result.suggestedRelations.some((relation) => relation.from === "domains/auth" && relation.to === "capabilities/auth" && relation.type === "contains"));
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
@@ -1973,6 +1973,7 @@ await test("infer_imports — import graph exposes structuredContent", async () 
         'import { user } from "../../entities/user";',
         'import "@/shared/api/client";',
         'import "zod";',
+        'import "./missing";',
         'export const auth = user;',
         "",
       ].join("\n"),
@@ -1992,8 +1993,11 @@ await test("infer_imports — import graph exposes structuredContent", async () 
     assert.ok(result.edges.some((edge) => edge.from === "src/features/auth/index.ts" && edge.to === "src/entities/user/index.ts" && edge.kind === "static"));
     assert.ok(result.edges.some((edge) => edge.from === "src/features/auth/index.ts" && edge.to === "src/shared/api/client.ts"));
     assert.ok(result.externalImports.some((entry) => entry.from === "src/features/auth/index.ts" && entry.spec === "zod"));
-    assert.ok(result.moduleEdges.some((edge) => edge.from === "capabilities/auth" && edge.to === "capabilities/user" && edge.count >= 1));
+    assert.ok(result.moduleEdges.some((edge) => edge.from === "capabilities/auth" && edge.to === "elements/src/entities/user" && edge.count >= 1));
     assert.ok(result.moduleEdges.some((edge) => edge.from === "capabilities/auth" && edge.to === "elements/src/shared/api/client" && edge.count >= 1));
+    assert.equal(result.reconciliationSummary.unresolvedImports, 1);
+    assert.match(result.reconciliationSummary.hint, /unresolved import/i);
+    assert.doesNotMatch(result.reconciliationSummary.hint, /are in sync/i);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
@@ -2044,7 +2048,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.equal(result.rootPath, repoRoot);
     assert.equal(result.analyze.framework, "fsd");
     assert.equal(result.plan.concepts, 4);
-    assert.equal(result.plan.suggestedRelations, 2);
+    assert.equal(result.plan.suggestedRelations, 3);
     assert.ok(result.plan.importRelations >= 1);
     assert.equal(result.meaningGate.policy, "business-first");
     assert.equal(result.meaningGate.sourceStructureRole, "implementation-evidence");
@@ -2736,6 +2740,32 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.match(agentBrief.writePolicy.join("\n"), /Run read tools first/);
     assert.match(agentBrief.writePolicy.join("\n"), /relationDecisionGuide/);
     assert.match(agentBrief.writePolicy.join("\n"), /find_backlinks before rename_concept/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("query_ontology health/workspace_brief — validator findings cannot report healthy", async () => {
+  const root = makeVault([
+    { slug: "project", content: "---\nkind: project\ntitle: Project\ndomains: [domains/core]\n---\n" },
+    { slug: "domains/core", content: "---\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run]\n---\n" },
+    // Structurally connected, but schema-invalid: capability has no domain.
+    { slug: "capabilities/run", content: "---\nkind: capability\ntitle: Run\nelements: []\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_ontology", { operation: "health" }),
+      callTool(3, "query_ontology", { operation: "workspace_brief" }),
+    ]);
+    const health = getCallParsed(responses, 2);
+    const brief = getCallParsed(responses, 3);
+    assert.equal(health.status, "needs_attention");
+    assert.equal(health.validation.summary.warningFiles, 1);
+    assert.equal(health.checks.find((check) => check.id === "vault_validation").status, "warn");
+    assert.equal(brief.status, "needs_attention");
+    assert.equal(brief.health.validation.summary.warningFiles, 1);
+    assert.equal(brief.health.checks.find((check) => check.id === "vault_validation").status, "warn");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -4259,6 +4289,39 @@ await test("add_concepts — 배치 write, 순서 보존 + partial result", asyn
   }
 });
 
+await test("add_concept/add_concepts — implementation path is preserved as evidence", async () => {
+  const root = makeVault([]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concept", {
+        slug: "elements/router",
+        kind: "element",
+        title: "Router",
+        domain: "domains/navigation",
+        path: "src/router.ts",
+      }),
+      callTool(3, "add_concepts", {
+        concepts: [{
+          slug: "elements/store",
+          kind: "element",
+          title: "Store",
+          domain: "domains/data",
+          path: "src/store.ts",
+        }],
+      }),
+      callTool(4, "get_concepts", { slugs: ["elements/router", "elements/store"] }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), false);
+    assert.equal(getCallParsed(responses, 3).concepts[0].ok, true);
+    const docs = getCallParsed(responses, 4).concepts;
+    assert.equal(docs[0].frontmatter.path, "src/router.ts");
+    assert.equal(docs[1].frontmatter.path, "src/store.ts");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("add_concept/add_concepts — 명시한 빈 body 는 기본 본문으로 대체하지 않음", async () => {
   const root = makeVault([]);
   try {
@@ -5734,6 +5797,151 @@ await test("add_relation — tail/frontmatter slug alias 를 canonical slug 로 
     const login = getCallParsed(responses, 5);
     assert.deepEqual(project.frontmatter.domains, ["domains/auth"]);
     assert.equal(login.frontmatter.domain, "domains/auth");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("connection_info — active vault/repo roots and resolution sources are explicit", async () => {
+  const root = makeVault([]);
+  const repoRoot = dirname(root);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "connection_info"),
+    ], 1500, { OATLAS_REPO_ROOT: repoRoot });
+    const info = getCallParsed(responses, 2);
+    assert.equal(info.vaultRoot, root);
+    assert.equal(info.repoRoot, repoRoot);
+    assert.equal(info.vaultResolution, "OATLAS_VAULT");
+    assert.equal(info.repoResolution, "OATLAS_REPO_ROOT");
+    assert.equal(info.server.name, "ontology-atlas-mcp");
+    assert.equal(info.restartRequiredForRootChange, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("git_status/git_snapshot — validated dry-run and vault-only local commit", async () => {
+  const root = makeVault([
+    { slug: "project", content: "---\nkind: project\ntitle: Project\n---\n" },
+  ]);
+  const git = (...args) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8" }).trim();
+  try {
+    git("init", "-b", "main");
+    git("config", "user.name", "Atlas Integration");
+    git("config", "user.email", "atlas@example.test");
+    writeFileSync(join(root, "outside.txt"), "outside v1\n");
+    git("add", ".");
+    git("commit", "-m", "initial");
+    const expectedHead = git("rev-parse", "HEAD");
+    writeFileSync(join(root, "project.md"), "---\nkind: project\ntitle: Updated Project\n---\n");
+
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "git_status"),
+      callTool(3, "git_snapshot"),
+      callTool(4, "git_snapshot", {
+        confirm: true,
+        expectedHead,
+        message: "docs(ontology): snapshot integration vault",
+      }),
+      callTool(5, "git_status"),
+    ], 3000, { OATLAS_REPO_ROOT: root });
+    const status = getCallParsed(responses, 2);
+    const preview = getCallParsed(responses, 3);
+    const committed = getCallParsed(responses, 4);
+    const clean = getCallParsed(responses, 5);
+    assert.equal(status.counts.total, 1);
+    assert.equal(preview.dryRun, true);
+    assert.equal(preview.expectedHead, expectedHead);
+    assert.equal(preview.validation.errorFiles, 0);
+    assert.equal(preview.pushSupported, false);
+    assert.equal(committed.committed, true);
+    assert.notEqual(committed.commitHash, expectedHead);
+    assert.equal(clean.counts.total, 0);
+    assert.equal(git("show", "--pretty=", "--name-only", "HEAD"), "project.md");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("remove_relation — dry-run then confirmed removal also removes rationale", async () => {
+  const root = makeVault([
+    { slug: "project", content: "---\nkind: project\ntitle: Project\ncontains: [domains/auth]\nrelation_notes: { domains/auth: Owns auth }\n---\n" },
+    { slug: "domains/auth", content: "---\nkind: domain\ntitle: Auth\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "remove_relation", { from: "project", to: "domains/auth", type: "contains" }),
+      callTool(3, "remove_relation", { from: "project", to: "domains/auth", type: "contains", confirm: true }),
+      callTool(4, "get_concept", { slug: "project" }),
+    ]);
+    assert.equal(getCallParsed(responses, 2).dryRun, true);
+    assert.equal(getCallParsed(responses, 2).changed, false);
+    assert.equal(getCallParsed(responses, 3).changed, true);
+    const project = getCallParsed(responses, 4);
+    assert.deepEqual(project.frontmatter.contains, []);
+    assert.equal(project.frontmatter.relation_notes, undefined);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("replace_relation — atomically replaces target/type and rationale", async () => {
+  const root = makeVault([
+    { slug: "project", content: "---\nkind: project\ntitle: Project\ncontains: [domains/auth]\nrelation_notes: { domains/auth: Old reason }\n---\n" },
+    { slug: "domains/auth", content: "---\nkind: domain\ntitle: Auth\n---\n" },
+    { slug: "domains/identity", content: "---\nkind: domain\ntitle: Identity\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "replace_relation", {
+        from: "project", oldTo: "domains/auth", oldType: "contains",
+        newTo: "domains/identity", newType: "domains", why: "Canonical ownership", confirm: true,
+      }),
+      callTool(3, "get_concept", { slug: "project" }),
+    ]);
+    assert.equal(getCallParsed(responses, 2).changed, true);
+    const project = getCallParsed(responses, 3);
+    assert.deepEqual(project.frontmatter.contains, []);
+    assert.deepEqual(project.frontmatter.domains, ["domains/identity"]);
+    assert.equal(project.frontmatter.relation_notes["domains/identity"], "Canonical ownership");
+    assert.equal(project.frontmatter.relation_notes["domains/auth"], undefined);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("reclassify_concept — kind/slug/domain/body and backlinks move together", async () => {
+  const root = makeVault([
+    { slug: "project", content: "---\nkind: project\ntitle: Project\ncontains: [capabilities/claim]\n---\n" },
+    { slug: "domains/review", content: "---\nkind: domain\ntitle: Review\n---\n" },
+    { slug: "capabilities/claim", content: "---\nslug: capabilities/claim\nkind: capability\ntitle: Claim\n---\n\n# Claim\n\nA *capability* is one user-visible feature within a domain.\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "reclassify_concept", {
+        slug: "capabilities/claim", newSlug: "elements/src/entities/claim",
+        newKind: "element", domain: "domains/review",
+      }),
+      callTool(3, "reclassify_concept", {
+        slug: "capabilities/claim", newSlug: "elements/src/entities/claim",
+        newKind: "element", domain: "domains/review", confirm: true,
+      }),
+      callTool(4, "get_concept", { slug: "elements/src/entities/claim" }),
+      callTool(5, "get_concept", { slug: "project" }),
+    ]);
+    assert.equal(getCallParsed(responses, 2).dryRun, true);
+    assert.equal(getCallParsed(responses, 3).changed, true);
+    const claim = getCallParsed(responses, 4);
+    assert.equal(claim.frontmatter.kind, "element");
+    assert.equal(claim.frontmatter.domain, "domains/review");
+    assert.match(claim.excerpt, /An \*element\*/i);
+    assert.deepEqual(getCallParsed(responses, 5).frontmatter.contains, ["elements/src/entities/claim"]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

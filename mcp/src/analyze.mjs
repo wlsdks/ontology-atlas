@@ -91,9 +91,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   const project = detectProject(rootPath, skipped);
   const { domains, readmePath } = detectDomainsFromReadme(rootPath);
   const existingOntologyEvidence = detectExistingOntologyEvidence(rootPath, skipped);
-  const domainSlugsByTail = new Map(
-    domains.map((domain) => [tailSlug(domain.slug), domain.slug]),
-  );
+  const domainForName = (name) => matchDomainSlug(name, domains);
 
   // SOURCE_FOLDERS 중 첫 번째 존재하는 것을 src dir 로
   let srcDir = null;
@@ -141,9 +139,10 @@ export function analyzeRepoStructure(rootPath, options = {}) {
           }
           const subPath = join(dir, sub);
           if (!statSync(subPath).isDirectory()) continue;
-          // features/ 와 entities/ 의 sub 는 capability 후보, widgets/views 는
-          // element 후보 (FSD 정의)
-          const isCapabilityish = r === 'features' || r === 'entities';
+          // FSD semantics: features are user-facing capability candidates;
+          // entities/widgets/views are implementation evidence, not business
+          // capabilities merely because they have a directory.
+          const isCapabilityish = r === 'features';
           const slug = isCapabilityish
             ? `capabilities/${sub}`
             : `elements/${relative(rootPath, subPath)}`;
@@ -154,8 +153,8 @@ export function analyzeRepoStructure(rootPath, options = {}) {
             capabilities.push({
               slug,
               title: humanize(sub),
-              ...(domainSlugsByTail.has(slugify(sub))
-                ? { domain: domainSlugsByTail.get(slugify(sub)) }
+              ...(domainForName(sub)
+                ? { domain: domainForName(sub) }
                 : {}),
               evidence,
             });
@@ -163,6 +162,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
             elements.push({
               slug,
               title: humanize(sub),
+              ...(domainForName(sub) ? { domain: domainForName(sub) } : {}),
               evidence,
             });
           }
@@ -180,8 +180,8 @@ export function analyzeRepoStructure(rootPath, options = {}) {
         capabilities.push({
           slug: `capabilities/${sub}`,
           title: humanize(sub),
-          ...(domainSlugsByTail.has(slugify(sub))
-            ? { domain: domainSlugsByTail.get(slugify(sub)) }
+          ...(domainForName(sub)
+            ? { domain: domainForName(sub) }
             : {}),
           evidence: { source: relative(rootPath, subPath) },
         });
@@ -192,6 +192,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
             elements.push({
               slug: `elements/${relative(rootPath, ep)}`,
               title: `${humanize(sub)} entry`,
+              ...(domainForName(sub) ? { domain: domainForName(sub) } : {}),
               evidence: { source: relative(rootPath, ep) },
             });
             break;
@@ -201,15 +202,23 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     }
   }
 
-  // suggested relations:
-  //   - 각 capability → project (capabilities[]) endorse 후보
-  //   - 각 capability 의 첫 element → element relation
+  // Suggested relations form one coherent containment spine. A README-backed
+  // domain sits under the project; matched capabilities/elements sit under
+  // that domain. Evidence without a defensible domain match remains directly
+  // under the project instead of inventing business meaning.
   const suggestedRelations = [];
   if (project) {
-    for (const cap of capabilities) {
+    for (const domain of domains) {
       suggestedRelations.push({
         from: project.slug,
-        to: cap.slug,
+        to: domain.slug,
+        type: 'contains',
+      });
+    }
+    for (const node of [...capabilities, ...elements]) {
+      suggestedRelations.push({
+        from: node.domain ?? project.slug,
+        to: node.slug,
         type: 'contains',
       });
     }
@@ -542,6 +551,38 @@ function slugify(s) {
 
 function tailSlug(slug) {
   return String(slug).split('/').filter(Boolean).at(-1) ?? '';
+}
+
+function matchDomainSlug(name, domains) {
+  const candidateTokens = semanticTokens(name);
+  if (candidateTokens.size === 0) return null;
+  let best = null;
+  let bestScore = 0;
+  let tied = false;
+  for (const domain of domains) {
+    const domainTokens = semanticTokens(tailSlug(domain.slug));
+    let overlap = 0;
+    for (const token of candidateTokens) {
+      if (domainTokens.has(token)) overlap += 1;
+    }
+    if (overlap > bestScore) {
+      best = domain.slug;
+      bestScore = overlap;
+      tied = false;
+    } else if (overlap > 0 && overlap === bestScore) {
+      tied = true;
+    }
+  }
+  return bestScore > 0 && !tied ? best : null;
+}
+
+function semanticTokens(value) {
+  return new Set(
+    slugify(String(value))
+      .split('-')
+      .filter(Boolean)
+      .map((token) => (token.length > 3 && token.endsWith('s') ? token.slice(0, -1) : token)),
+  );
 }
 
 function validateRootPath(rootPath) {

@@ -434,7 +434,7 @@ await test('agent-setup — writes agent configs for an existing vault without s
       'graph_briefs',
     ]);
     assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'config_state').proves, /root-specific/);
-    assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'mcp_verify').proves, /24 tools/);
+    assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'mcp_verify').proves, /complete tool inventory/);
     assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'json_gate').proves, /ok\/performanceOk/);
     assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'graph_briefs').proves, /workspace-brief/);
 
@@ -2851,7 +2851,7 @@ async function buildGraphFixture() {
     {
       slug: 'capabilities/foo',
       content:
-        '---\nkind: capability\nslug: capabilities/foo\ntitle: Foo\ndomain: domains/auth\nelements: [src/foo.ts]\n---\n\n# Foo\n',
+        '---\nkind: capability\nslug: capabilities/foo\ntitle: Foo\ndomain: domains/auth\nelements: [mcp/src/index.js]\n---\n\n# Foo\n',
     },
     {
       slug: 'capabilities/bar',
@@ -2861,7 +2861,7 @@ async function buildGraphFixture() {
     {
       slug: 'domains/auth',
       content:
-        '---\nkind: domain\nslug: domains/auth\ntitle: Auth\ncapabilities: [capabilities/foo, capabilities/bar]\n---\n\n# Auth\n',
+        '---\nkind: domain\nslug: domains/auth\ntitle: Auth\ncapabilities: [capabilities/bar, capabilities/foo]\n---\n\n# Auth\n',
     },
   ]);
   return root;
@@ -8236,18 +8236,42 @@ await test('bootstrap — fails closed when add_relations response rows drift', 
   }
 });
 
-await test('bootstrap 두번째 실행 — idempotent (errors 0)', async () => {
+await test('bootstrap 두번째 실행 — grown vault는 plan-only로 보호한다', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   try {
     const r1 = await run(['bootstrap', repo, '--vault', vault]);
     assert.equal(r1.code, 0);
-    const r2 = await run(['bootstrap', repo, '--vault', vault]);
+    const before = readFileSync(join(vault, 'capabilities', 'auth.md'), 'utf-8');
+    const r2 = await run(['bootstrap', repo, '--vault', vault, '--json']);
     assert.equal(r2.code, 0, `2nd run failed: ${r2.stdout}`);
-    const clean = stripAnsi(r2.stdout);
-    assert.match(clean, /already existed/);
-    // errors 0 — 모든 행이 already exists / alreadyExists.
-    assert.match(clean, /0 errors/);
+    const data = JSON.parse(r2.stdout);
+    assert.equal(data.mode, 'plan');
+    assert.equal(data.apply, false);
+    assert.equal(data.guard.reason, 'vault-already-grown');
+    assert.equal(data.plan.concepts, 3);
+    assert.equal(
+      readFileSync(join(vault, 'capabilities', 'auth.md'), 'utf-8'),
+      before,
+      'repeat bootstrap must not rewrite curated docs',
+    );
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('bootstrap --reapply — grown vault에 명시적으로 재적용한다', async () => {
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  try {
+    assert.equal((await run(['bootstrap', repo, '--vault', vault])).code, 0);
+    const r = await run(['bootstrap', repo, '--vault', vault, '--reapply', '--json']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.mode, 'apply');
+    assert.equal(data.apply, true);
+    assert.equal(data.summary.errors, 0);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });

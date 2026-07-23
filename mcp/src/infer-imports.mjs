@@ -427,9 +427,14 @@ function resolveRelativeImport(spec, fromDir) {
   const base = resolve(fromDir, spec);
   // exact file
   if (existsSync(base) && statSync(base).isFile()) return base;
+  // NodeNext/ESM TypeScript commonly writes runtime `.js` specifiers in
+  // `.ts` source. Resolve the source sibling before declaring drift.
+  const sourceBase = /\.(?:mjs|cjs|js|jsx)$/i.test(base)
+    ? base.replace(/\.(?:mjs|cjs|js|jsx)$/i, '')
+    : base;
   // try extensions
   for (const ext of RESOLVE_EXT_ORDER) {
-    const cand = base + ext;
+    const cand = sourceBase + ext;
     if (existsSync(cand) && statSync(cand).isFile()) return cand;
   }
   // try base/index.* (folder)
@@ -455,12 +460,12 @@ function moduleOf(filePath, sourceFolders) {
       const next = parts[i + 1];
       // capability 류 bucket — analyze 가 inner name 만 slug 으로 쓰므로
       // capabilities/ 아래에 둔다.
-      const capabilityBuckets = new Set(['features', 'entities']);
+      const capabilityBuckets = new Set(['features']);
       if (capabilityBuckets.has(next) && parts[i + 2]) {
         return `capabilities/${stripSourceExtension(parts[i + 2])}`;
       }
       // element 류 bucket — analyze 가 elements/src/... path-style 을 쓴다.
-      const elementBuckets = new Set(['widgets', 'views']);
+      const elementBuckets = new Set(['entities', 'widgets', 'views']);
       if (elementBuckets.has(next) && parts[i + 2]) {
         return `elements/${parts[i]}/${next}/${stripSourceExtension(parts[i + 2])}`;
       }

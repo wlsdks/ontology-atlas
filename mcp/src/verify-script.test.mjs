@@ -220,7 +220,7 @@ describe('verify.mjs first-contact gates', () => {
     tools.find((tool) => tool.name === 'list_concepts').annotations.openWorldHint = true;
     assert.equal(
       toolsListAnnotationSummary(tools),
-      '25/25 titled; 16/16 read; 9/9 write; 4/4 destructive; 2/2 idempotent; 24/25 local-only',
+      `${EXPECTED_TOOLS.length}/${EXPECTED_TOOLS.length} titled; ${EXPECTED_READ_TOOLS.length}/${EXPECTED_READ_TOOLS.length} read; ${EXPECTED_WRITE_TOOLS.length}/${EXPECTED_WRITE_TOOLS.length} write; ${EXPECTED_DESTRUCTIVE_TOOLS.length}/${EXPECTED_DESTRUCTIVE_TOOLS.length} destructive; ${EXPECTED_IDEMPOTENT_TOOLS.length}/${EXPECTED_IDEMPOTENT_TOOLS.length} idempotent; ${EXPECTED_TOOLS.length - 1}/${EXPECTED_TOOLS.length} local-only`,
     );
     assert.equal(toolsListAnnotationSummary(null), 'missing tools/list');
   });
@@ -5102,7 +5102,7 @@ describe('verify.mjs first-contact gates', () => {
           { name: 'titel', suggestion: 'title' },
           { name: 'domian', suggestion: 'domain' },
         ],
-        allowedFields: ['slug', 'kind', 'title', 'domain', 'capabilities', 'elements', 'body'],
+        allowedFields: ['slug', 'kind', 'title', 'domain', 'capabilities', 'elements', 'path', 'body'],
         receivedFields: ['domian', 'kind', 'slug', 'titel', 'title'],
       },
       {
@@ -5133,7 +5133,7 @@ describe('verify.mjs first-contact gates', () => {
         rowName: 'concepts[4]',
         receivedField: 'titel',
         unknownFields: [{ name: 'titel', suggestion: 'title' }],
-        allowedFields: ['slug', 'kind', 'title', 'domain', 'capabilities', 'elements', 'body'],
+        allowedFields: ['slug', 'kind', 'title', 'domain', 'capabilities', 'elements', 'path', 'body'],
         receivedFields: ['kind', 'slug', 'titel', 'title'],
       },
     ];

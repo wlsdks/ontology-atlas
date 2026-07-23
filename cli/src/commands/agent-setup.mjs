@@ -81,7 +81,7 @@ const FIRST_CONTACT_PROOF_CONTRACT = Object.freeze([
   Object.freeze({
     id: 'mcp_verify',
     label: 'MCP verify',
-    proves: 'mcp-verify can boot the local MCP server, list the 24 tools, and read the target vault.',
+    proves: 'mcp-verify can boot the local MCP server, verify the complete tool inventory, and read the target vault.',
   }),
   Object.freeze({
     id: 'json_gate',
@@ -183,6 +183,7 @@ function buildAgentSetup(parsed) {
       owner: 'vault',
       root: vaultRoot,
       omotVault: '.',
+      repoRootArg: toOmotVaultArg(vaultRoot, codebaseRoot),
       reason: 'open the vault folder itself in Claude Code, Cursor, or Codex',
     },
   ];
@@ -191,6 +192,7 @@ function buildAgentSetup(parsed) {
       owner: 'codebase',
       root: codebaseRoot,
       omotVault: rootVaultArg,
+      repoRootArg: '.',
       reason: 'open the codebase root while the ontology lives in a subfolder',
     });
   }
@@ -232,6 +234,8 @@ function buildAgentSetup(parsed) {
         'ontology-atlas',
         '--env',
         `OATLAS_VAULT=${vaultRoot}`,
+        '--env',
+        `OATLAS_REPO_ROOT=${codebaseRoot}`,
         '--',
         serverCommand.command,
         ...serverCommand.args,
@@ -245,7 +249,7 @@ function buildAgentSetup(parsed) {
       genericClient: JSON.stringify({
         command: serverCommand.command,
         args: serverCommand.args,
-        env: { OATLAS_VAULT: vaultRoot },
+        env: { OATLAS_VAULT: vaultRoot, OATLAS_REPO_ROOT: codebaseRoot },
       }),
     },
     docs: {
@@ -261,7 +265,7 @@ function buildAgentSetup(parsed) {
 
 function checkMcpJson(target, serverCommand, write) {
   const path = join(target.root, '.mcp.json');
-  const expected = mcpConfigForVault(serverCommand, target.omotVault);
+  const expected = mcpConfigForVault(serverCommand, target.omotVault, target.repoRootArg);
   const expectedText = JSON.stringify(expected, null, 2) + '\n';
   if (!existsSync(path)) {
     if (write) {
@@ -272,7 +276,7 @@ function checkMcpJson(target, serverCommand, write) {
   }
 
   const current = readFileSync(path, 'utf-8');
-  const status = inspectMcpJson(current, target.omotVault);
+  const status = inspectMcpJson(current, target.omotVault, target.repoRootArg);
   if (status.ready) return row(target, 'mcp-json', path, 'ready', 'none', status.message);
 
   const examplePath = join(target.root, '.mcp.json.example');
@@ -287,7 +291,7 @@ function checkMcpJson(target, serverCommand, write) {
 function checkCodexConfig(target, serverCommand, write) {
   const codexDir = join(target.root, '.codex');
   const path = join(codexDir, 'config.toml');
-  const expectedText = codexConfigForVault(serverCommand, target.omotVault);
+  const expectedText = codexConfigForVault(serverCommand, target.omotVault, target.repoRootArg);
   if (!existsSync(path)) {
     if (write) {
       mkdirSync(codexDir, { recursive: true });
@@ -298,7 +302,7 @@ function checkCodexConfig(target, serverCommand, write) {
   }
 
   const current = readFileSync(path, 'utf-8');
-  const status = inspectCodexConfig(current, target.omotVault);
+  const status = inspectCodexConfig(current, target.omotVault, target.repoRootArg);
   if (status.ready) return row(target, 'codex-toml', path, 'ready', 'none', status.message);
 
   const examplePath = join(codexDir, 'config.toml.example');
@@ -325,7 +329,7 @@ function row(target, kind, path, status, action, message, examplePath = null) {
   };
 }
 
-function inspectMcpJson(text, expectedVault) {
+function inspectMcpJson(text, expectedVault, expectedRepoRoot) {
   try {
     const parsed = JSON.parse(text);
     const server = parsed?.mcpServers?.['ontology-atlas'];
@@ -338,6 +342,9 @@ function inspectMcpJson(text, expectedVault) {
         message: `OATLAS_VAULT is ${JSON.stringify(server.env?.OATLAS_VAULT)}; expected ${JSON.stringify(expectedVault)}`,
       };
     }
+    if (server.env?.OATLAS_REPO_ROOT !== expectedRepoRoot) {
+      return { ready: false, message: `OATLAS_REPO_ROOT is ${JSON.stringify(server.env?.OATLAS_REPO_ROOT)}; expected ${JSON.stringify(expectedRepoRoot)}` };
+    }
     if (typeof server.command !== 'string' || server.command.length === 0 || !Array.isArray(server.args)) {
       return { ready: false, message: 'server command/args shape is incomplete' };
     }
@@ -347,7 +354,7 @@ function inspectMcpJson(text, expectedVault) {
   }
 }
 
-function inspectCodexConfig(text, expectedVault) {
+function inspectCodexConfig(text, expectedVault, expectedRepoRoot) {
   const serverSection = getTomlSection(text, 'mcp_servers.ontology-atlas');
   if (!serverSection) {
     return { ready: false, message: 'missing [mcp_servers.ontology-atlas] section' };
@@ -364,6 +371,10 @@ function inspectCodexConfig(text, expectedVault) {
       message: `OATLAS_VAULT is ${JSON.stringify(actualVault)}; expected ${JSON.stringify(expectedVault)}`,
     };
   }
+  const repoMatch = envSection?.match(/OATLAS_REPO_ROOT\s*=\s*"((?:\\.|[^"\\])*)"/);
+  if (!repoMatch) return { ready: false, message: 'missing OATLAS_REPO_ROOT env entry' };
+  const actualRepoRoot = unescapeTomlString(repoMatch[1]);
+  if (actualRepoRoot !== expectedRepoRoot) return { ready: false, message: `OATLAS_REPO_ROOT is ${JSON.stringify(actualRepoRoot)}; expected ${JSON.stringify(expectedRepoRoot)}` };
   if (!/command\s*=\s*"/.test(serverSection) || !/args\s*=\s*\[/.test(serverSection)) {
     return { ready: false, message: 'command/args shape is incomplete' };
   }
@@ -480,19 +491,19 @@ function toOmotVaultArg(root, vaultRoot) {
   return rel;
 }
 
-function mcpConfigForVault(serverCommand, omotVault) {
+function mcpConfigForVault(serverCommand, omotVault, repoRootArg) {
   return {
     mcpServers: {
       'ontology-atlas': {
         command: serverCommand.command,
         args: serverCommand.args,
-        env: { OATLAS_VAULT: omotVault },
+        env: { OATLAS_VAULT: omotVault, OATLAS_REPO_ROOT: repoRootArg },
       },
     },
   };
 }
 
-function codexConfigForVault(serverCommand, omotVault) {
+function codexConfigForVault(serverCommand, omotVault, repoRootArg) {
   const args = serverCommand.args.map(tomlString).join(', ');
   return [
     '[mcp_servers.ontology-atlas]',
@@ -501,6 +512,7 @@ function codexConfigForVault(serverCommand, omotVault) {
     '',
     '[mcp_servers.ontology-atlas.env]',
     `OATLAS_VAULT = ${tomlString(omotVault)}`,
+    `OATLAS_REPO_ROOT = ${tomlString(repoRootArg)}`,
     '',
   ].join('\n');
 }

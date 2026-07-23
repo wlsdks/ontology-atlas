@@ -105,6 +105,7 @@ function runVerifyScript(verifyScript, vaultRoot, timeoutMs, vaultArg) {
       env: {
         ...process.env,
         OATLAS_VAULT: vaultRoot,
+        OATLAS_REPO_ROOT: process.env.OATLAS_REPO_ROOT || process.cwd(),
         OATLAS_VERIFY_RETRY_EXAMPLE: mcpVerifyRetryExample(vaultArg),
         ...(timeoutMs ? { OATLAS_VERIFY_TIMEOUT_MS: String(timeoutMs) } : {}),
       },

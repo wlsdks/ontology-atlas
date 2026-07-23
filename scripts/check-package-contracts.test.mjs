@@ -101,8 +101,11 @@ function importKindSummary(kindCounts) {
   return [...known, ...extra].join('/');
 }
 
-function healthCheckSummary(checks) {
-  return checks.map((check) => `${check.id}:${check.status}:${check.count}`).join(', ');
+function healthCheckSummary(checks, limit = 5) {
+  const entries = checks.map((check) => `${check.id}:${check.status}:${check.count}`);
+  const shown = entries.slice(0, limit);
+  const suffix = entries.length > shown.length ? `, \\+${entries.length - shown.length} more` : '';
+  return `${shown.join(', ')}${suffix}`;
 }
 
 function runNodeScript(args) {
@@ -123,7 +126,7 @@ describe('package contract helpers', () => {
     assert.match(section, /`\/ontology\/insights`/);
     assert.match(section, /`\/projects`/);
     assert.match(section, /\*\*MCP server\*\*/);
-    assert.match(section, /16 read \+ 9 write/);
+    assert.match(section, /18 read \+ 13 write/);
     assert.match(section, /Every surface reads and writes the\nsame `\.md` files/);
     assert.doesNotMatch(readme, /## Three views, one vault/);
     assert.doesNotMatch(readme, /## Three views plus MCP, one vault/);
@@ -1300,6 +1303,14 @@ describe('package contract helpers', () => {
       operation: 'health',
       ...VERIFY_TUNED_HEALTH_ARGS,
     }, diagnosisOptions);
+    // The MCP wrapper appends whole-vault validation to the graph-engine
+    // diagnosis. Model that installed-surface check when verifying the README
+    // sample instead of comparing it with the lower-level core result alone.
+    const validatorPassCheck = { id: 'vault_validation', status: 'pass', count: 0 };
+    workspaceBrief.health.checks.push(validatorPassCheck);
+    tunedWorkspaceBrief.health.checks.push(validatorPassCheck);
+    health.checks.push(validatorPassCheck);
+    tunedHealth.checks.push(validatorPassCheck);
     const analyzedRepo = analyzeRepoStructure(process.cwd(), { maxDepth: 2 });
     const inferredImports = inferImports(process.cwd());
     const topModuleEdge = inferredImports.moduleEdges[0];
@@ -1458,7 +1469,7 @@ describe('package contract helpers', () => {
       verifySection,
       /✓ structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance (2\/2 \(resume skipped: no actions\)|3\/3), graph 13\/13/,
     );
-    assert.match(verifySection, /All passed — register \.mcp\.json with your MCP client and restart to use the 25 tools/);
+    assert.match(verifySection, /All passed — register \.mcp\.json with your MCP client and restart to use the 31 tools/);
     assert.match(verifySection, /`list_concepts`, a project-node `list_concepts` probe,\s+`get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`,\s+`query_concepts`, limited `query_concepts`, `analyze_repo_structure`,\s+`infer_imports`, `index_project`, `find_neighbors`, `find_path`, `find_orphans`,\s+`list_kinds`, `validate_vault`/);
     assert.match(verifySection, /batch success rows\s+and partial rows are verified during installation checks/);
     assert.match(verifySection, /`query_ontology\(\{operation:"neighbors"\}\)`/);
@@ -2568,7 +2579,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /vault total 5 nodes/);
     assert.match(smoke, /expectedToolsListAnnotationSummary/);
     assert.match(smoke, /expectedToolsListAnnotationRe/);
-    assert.equal(expectedToolsListAnnotationSummary(), '25/25 titled; 16/16 read; 9/9 write; 4/4 destructive; 2/2 idempotent; 25/25 local-only');
+    assert.equal(expectedToolsListAnnotationSummary(), '31/31 titled; 18/18 read; 13/13 write; 8/8 destructive; 3/3 idempotent; 31/31 local-only');
     assert.match(smoke, /--vault requires a path value/);
     assert.match(smoke, /npm run verify -- \\\[vault\\\] \\\[--timeout-ms N\\\]/);
     assert.match(smoke, /npm run verify -- --vault path --timeout-ms 15000/);

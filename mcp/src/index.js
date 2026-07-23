@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /**
- * ontology-atlas-mcp — MCP 서버 (도구 25종 = read 16 + write 9).
+ * ontology-atlas-mcp — local ontology read/write server.
  *
  * AI agent (Claude Code 등) 가 vault 의 ontology 를 읽고 쓸 수 있게.
  *
- * read 16:
+ * read 18:
+ *   - connection_info        — active vault/repo roots + server version
+ *   - git_status             — vault-scoped local git state + risk summary
  *   - list_concepts          — vault 의 노드 목록 (kind / domain / since / summary)
  *   - get_concept            — 단일 노드 + graph 이웃 + mtime
  *   - get_concepts           — 배치 read (slugs[] → concepts[], partial 허용)
@@ -22,7 +24,7 @@
  *   - infer_imports          — R17, TS/JS import graph → depends_on 후보 (side effect 0)
  *   - index_project          — repo 분석 + import graph + vault validation plan (side effect 0)
  *
- * write 9:
+ * write 13:
  *   - add_concept       — 새 노드 (.md 파일 작성, 기존 slug 면 throw)
  *   - add_concepts      — 배치 write (concepts[] → results[], partial 허용)
  *   - add_relation      — 두 노드 사이 edge (frontmatter 배열 키 append)
@@ -32,6 +34,7 @@
  *   - rename_concept    — slug 변경 + 모든 backlink 의 array/body 자동 redirect
  *   - merge_concepts    — 두 노드 합치기 (from 의 모든 backlink 를 into 로 redirect 후 from 삭제)
  *   - absorb_document   — Slice 0, CLAUDE.md/AGENTS.md 흡수 → document/policy 노드 + slim pointer (dry-run + 인젝션 Tier 1)
+ *   - git_snapshot      — validated, vault-scoped local commit (dry-run + expected HEAD; never pushes)
  *
  * 환경 변수:
  *   OATLAS_VAULT=/abs/path/to/vault   — vault root 디렉토리. 미지정 시 cwd.
@@ -90,6 +93,7 @@ import { compileOntology } from './ontology-compiler.mjs';
 import { reconcileImportEdges } from './reconcile-imports.mjs';
 import { detectVaultPathDrift, suggestPathReconciliations } from './detect-drift.mjs';
 import { scoreEvidence } from './evidence-rank.mjs';
+import { inspectVaultGit, snapshotVaultGit } from './git-tools.mjs';
 import { createCompiledOntologyCache } from './compiled-cache.mjs';
 import {
   EDGE_TARGET_KIND_VALUES,
@@ -132,6 +136,9 @@ process.stdout.setMaxListeners(Math.max(process.stdout.getMaxListeners(), STDIO_
 process.stderr.setMaxListeners(Math.max(process.stderr.getMaxListeners(), STDIO_MAX_LISTENERS));
 
 const VAULT_ROOT = resolve(process.env.OATLAS_VAULT || process.cwd());
+const REPO_ROOT = resolve(process.env.OATLAS_REPO_ROOT || process.cwd());
+const VAULT_RESOLUTION = process.env.OATLAS_VAULT ? 'OATLAS_VAULT' : 'process.cwd';
+const REPO_RESOLUTION = process.env.OATLAS_REPO_ROOT ? 'OATLAS_REPO_ROOT' : 'process.cwd';
 const SERVER_VERSION = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
 ).version;
@@ -530,6 +537,83 @@ const RELATION_TYPE_UNION = RELATION_TYPE_VALUES
   .map((type) => `'${type}'`)
   .join('|');
 const ADD_RELATION_TYPE_SCHEMA = { ...NON_BLANK_STRING_SCHEMA, enum: WRITE_RELATION_TYPE_VALUES };
+const GIT_FILE_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    path: NON_BLANK_STRING_SCHEMA,
+    index: { type: 'string', minLength: 1, maxLength: 1 },
+    worktree: { type: 'string', minLength: 1, maxLength: 1 },
+    status: { type: 'string', enum: ['untracked', 'added', 'modified', 'deleted'] },
+    staged: { type: 'boolean' },
+    unstaged: { type: 'boolean' },
+  },
+  required: ['path', 'index', 'worktree', 'status', 'staged', 'unstaged'],
+  additionalProperties: false,
+});
+const GIT_COUNTS_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    total: { type: 'integer', minimum: 0 },
+    staged: { type: 'integer', minimum: 0 },
+    unstaged: { type: 'integer', minimum: 0 },
+    untracked: { type: 'integer', minimum: 0 },
+    outsideVault: { type: 'integer', minimum: 0 },
+    stagedOutsideVault: { type: 'integer', minimum: 0 },
+  },
+  required: ['total', 'staged', 'unstaged', 'untracked', 'outsideVault', 'stagedOutsideVault'],
+  additionalProperties: false,
+});
+const GIT_RISK_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    level: { type: 'string', enum: ['low', 'medium', 'high'] },
+    warnings: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+  },
+  required: ['level', 'warnings'],
+  additionalProperties: false,
+});
+const GIT_RESULT_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    operation: { type: 'string', enum: ['git_status', 'git_snapshot'] },
+    ok: { type: 'boolean' },
+    reason: NON_BLANK_STRING_SCHEMA,
+    repoRoot: NON_BLANK_STRING_SCHEMA,
+    vaultRoot: NON_BLANK_STRING_SCHEMA,
+    vaultPathspec: NON_BLANK_STRING_SCHEMA,
+    head: { type: ['string', 'null'] },
+    branch: { type: ['string', 'null'] },
+    detachedHead: { type: 'boolean' },
+    operationInProgress: { type: ['string', 'null'] },
+    counts: GIT_COUNTS_OUTPUT_SCHEMA,
+    files: { type: 'array', items: GIT_FILE_OUTPUT_SCHEMA },
+    stagedOutsideVault: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+    risk: GIT_RISK_OUTPUT_SCHEMA,
+    dryRun: { type: 'boolean' },
+    committed: { type: 'boolean' },
+    expectedHead: { type: ['string', 'null'] },
+    previousHead: NON_BLANK_STRING_SCHEMA,
+    subject: NON_BLANK_STRING_SCHEMA,
+    commitHash: NON_BLANK_STRING_SCHEMA,
+    commitSummary: { type: 'string' },
+    pushSupported: { type: 'boolean' },
+    pushReason: NON_BLANK_STRING_SCHEMA,
+    validation: {
+      type: 'object',
+      properties: {
+        scanned: { type: 'integer', minimum: 0 },
+        problemFiles: { type: 'integer', minimum: 0 },
+        errorFiles: { type: 'integer', minimum: 0 },
+        warningFiles: { type: 'integer', minimum: 0 },
+        pathDrifts: { type: 'integer', minimum: 0 },
+      },
+      required: ['scanned', 'problemFiles', 'errorFiles', 'warningFiles', 'pathDrifts'],
+      additionalProperties: false,
+    },
+  },
+  required: ['operation', 'ok', 'repoRoot', 'vaultRoot'],
+  additionalProperties: false,
+});
 
 // import-time throw 면 stdio transport 가 붙기 전 stack trace 가 stderr 로
 // 새고 클라이언트 (Claude Code 등) 에선 silent crash 로 보인다. 친절한 한
@@ -553,10 +637,10 @@ try {
 // 매번 시행착오로 학습되는 문제를 단번에 해소.
 const SERVER_INSTRUCTIONS = `ontology-atlas — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
 
-## Tool inventory (25 tools = read 16 + write 9)
+## Tool inventory (31 tools = read 18 + write 13)
 
-**read** — \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_neighbors\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`compile_ontology\` · \`query_ontology\` · \`validate_vault\` · \`analyze_repo_structure\` · \`infer_imports\` · \`index_project\`.
-**write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`add_relations\` · \`patch_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\` · \`absorb_document\`.
+**read** — \`connection_info\` · \`git_status\` · \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_neighbors\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`compile_ontology\` · \`query_ontology\` · \`validate_vault\` · \`analyze_repo_structure\` · \`infer_imports\` · \`index_project\`.
+**write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`add_relations\` · \`remove_relation\` · \`replace_relation\` · \`patch_concept\` · \`reclassify_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\` · \`absorb_document\` · \`git_snapshot\`.
 
 ## Kind hierarchy (top → leaf)
 
@@ -571,7 +655,8 @@ const SERVER_INSTRUCTIONS = `ontology-atlas — vault of markdown files where ea
 
 ### A. Vault already has nodes (typical) — orient first
 
-1. \`list_kinds\` — see the kind census (how many projects/domains/capabilities/…).
+1. \`connection_info\` — prove the resolved vault and repository roots before analysis or writes. Root env changes require a server restart.
+2. \`list_kinds\` — see the kind census (how many projects/domains/capabilities/…).
 2. \`list_concepts\` — full node table. Pass \`summary: true\` for prose previews per row (avoid N follow-up \`get_concept\` calls). Pass \`since: <prevMaxMtime>\` for incremental sync. Watch \`vaultWarnings\` — if non-zero, surface it to the user before making decisions on stale data.
 3. \`validate_vault({})\` — read-only frontmatter health check. Run this during first-contact before proposing writes; report blocking errors separately from advisory warnings.
 4. \`query_ontology({operation:'agent_brief'})\` — Claude Code/Codex handoff: readiness, structured \`businessOntologyLens\` for the business-first \`outcome\` → \`domain\` → \`capability\` → \`element\` read order, copyable \`handoffPrompt\`, structured \`cliFallbackCommands[]\` for connector-less sessions, graph entrypoints, first MCP calls, \`graphDbQueryPack\` for \`facets\`, \`schema\`, \`match_nodes\`, \`match_edges\`, \`domain_matrix\`, \`centrality\`, \`all_paths\`, \`explain_relation\`, and \`business_questions\` outcome / domain-boundary / capability-claim / implementation-evidence scans, investigation playbooks including \`graph_traversal\` (\`schema\` → \`query_plan(all_paths)\` → \`all_paths\` → \`pattern_walk\` → \`project_map\`) with \`evidence[]\` and \`stopWhen[]\` checklists, \`traversalStrategy\` (\`plan_before_enumeration\` / \`bounded_path_evidence\` / \`containment_cross_check\`) for performance-aware graph traversal, write guardrails (\`preflight_relation\` / \`preflight_rename\` / \`post_change_sync\`), \`relationDecisionGuide\` for \`relation_check\` outcomes (\`skip_existing\` / \`review_inverse\` / \`safe_to_add\` / \`review_new_schema\`), \`resultContracts\` requiring \`all_paths\` callers to report \`limit\`, \`searchBudget\`, \`expandedStates\`, \`exhaustive\`, \`truncatedByBudget\`, \`totalPathsExact\`, \`evidence.status\`, \`evidence.reason\`, and \`evidence.pathsComplete\`, plus \`match_nodes\` / \`match_edges\` callers to report \`totalMatches\`, \`limited\`, and \`followUp\` details before treating scan rows as evidence, embedded health, and read-first write policy in one response.
@@ -610,8 +695,10 @@ Throughout: the user (via your add_concepts / add_relations calls) is the single
 ## Write tools — safety patterns
 
 - **\`add_concept\`** throws on duplicate slug — use \`patch_concept\` to update an existing node, never delete-then-add (that loses backlinks).
+- **\`remove_relation\` / \`replace_relation\` / \`reclassify_concept\`** are dry-run by default and require \`confirm: true\` to write. They preserve rationale/backlinks atomically and should replace manual whole-array frontmatter surgery.
 - **\`rename_concept\` / \`merge_concepts\`** are dry-run by default. The first call returns an \`updates\` preview (every affected file's before/after). To commit, repeat the call with \`confirm: true\`. \`rename_concept\` refuses an existing \`newSlug\` unless you intentionally pass \`overwrite: true\`. Backlinks are redirected atomically — much safer than \`patch_concept\` + N find_backlinks loops.
 - **\`delete_concept\`** refuses by default if any backlinks remain. The error response captures the deleted frontmatter + body so a mistake is recoverable. Pass \`force: true\` only after confirming with the user that dangling referrers are acceptable.
+- **\`git_status\` / \`git_snapshot\`** expose local, vault-scoped Git checkpoints. Start with \`git_snapshot({})\`; the dry-run returns the exact \`expectedHead\`, files, validator summary, and risk warnings. Commit only by repeating with \`confirm:true\` and that exact HEAD. The tool never initializes a repository, includes paths outside the vault, pushes, or runs during merge/rebase/cherry-pick/revert. Tool annotations are hints; these runtime guards are authoritative.
 - **\`absorb_document\`** (Slice 0 — the "absorption tool") converts a CLAUDE.md/AGENTS.md-style file into typed vault nodes. Dry-run by default (plan only); \`confirm: true\` writes rule/policy sections as \`kind: document\` (\`role: policy\`) nodes, backs up the source to \`<file>.pre-absorb.bak\`, and rewrites it into a slim pointer that preserves every non-absorbed section (architecture/component suggestions, unclassified prose, and injection-suspect sections) verbatim. Architecture/component sections are reported as candidates only — never auto-written; land them yourself with \`add_concept\` if useful.
 - **\`expected_mtime\` (all write tools)** — to guard against concurrent edits by the human or another agent: capture \`mtime\` from \`get_concept\`, pass it as \`expected_mtime\` on the next write. If the file changed in between, the call throws \`VaultConflictError\` instead of silently overwriting.
 
@@ -639,6 +726,60 @@ const server = new Server(
 // ── 도구 정의 ─────────────────────────────────────────────────────────────
 
 const TOOLS = [
+  {
+    name: 'connection_info',
+    description:
+      'Return the exact active vault root and code-repository root used by this MCP process, including how each root was resolved. Call first when a client may have stale configuration or multiple workspaces. Root changes require restarting the MCP process.',
+    inputSchema: { type: 'object', properties: {} },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        vaultRoot: NON_BLANK_STRING_SCHEMA,
+        repoRoot: NON_BLANK_STRING_SCHEMA,
+        vaultResolution: { type: 'string', enum: ['OATLAS_VAULT', 'process.cwd'] },
+        repoResolution: { type: 'string', enum: ['OATLAS_REPO_ROOT', 'process.cwd'] },
+        sameRoot: { type: 'boolean' },
+        restartRequiredForRootChange: { type: 'boolean' },
+        server: {
+          type: 'object',
+          properties: { name: NON_BLANK_STRING_SCHEMA, version: NON_BLANK_STRING_SCHEMA },
+          required: ['name', 'version'],
+          additionalProperties: false,
+        },
+      },
+      required: ['vaultRoot', 'repoRoot', 'vaultResolution', 'repoResolution', 'sameRoot', 'restartRequiredForRootChange', 'server'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'git_status',
+    description:
+      'Inspect local Git state for the active vault only. Returns HEAD/branch, vault files, outside-vault change counts, staged-outside-vault warnings, and in-progress operation risk. Read-only; never initializes, stages, commits, or pushes.',
+    inputSchema: { type: 'object', properties: {} },
+    outputSchema: GIT_RESULT_OUTPUT_SCHEMA,
+  },
+  {
+    name: 'git_snapshot',
+    description:
+      'Create a local, vault-scoped Git checkpoint. Dry-run by default and returns exact expectedHead, files, validation, and risk. confirm:true requires that expectedHead, blocks validator errors and Git operations in progress, commits only the vault pathspec, leaves outside files untouched, and never pushes.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        confirm: {
+          type: 'boolean',
+          description: 'Default false. Set true only after reviewing the dry-run preview and its risk/validation fields.',
+        },
+        expectedHead: nonBlankStringSchema(
+          'Required with confirm:true. Copy the exact expectedHead returned by the immediately preceding dry-run; this prevents committing after a concurrent HEAD change.',
+        ),
+        message: nonBlankStringSchema(
+          'Optional local commit subject, one line and at most 200 characters. A deterministic ontology snapshot subject is generated when omitted.',
+          { maxLength: 200, pattern: '^[^\\r\\n]+$' },
+        ),
+      },
+    },
+    outputSchema: GIT_RESULT_OUTPUT_SCHEMA,
+  },
   {
     name: 'list_concepts',
     description:
@@ -935,6 +1076,9 @@ const TOOLS = [
           items: NON_BLANK_STRING_SCHEMA,
           description: 'Element slugs this node uses (project / capability).',
         },
+        path: nonBlankStringSchema(
+          'Implementation source path for an element (repo-relative). Preserved as evidence and checked by validate_vault path drift.',
+        ),
         body: {
           type: 'string',
           description: 'Markdown body (optional). When omitted a kind-specific starter body is written so the file is self-explanatory in the editor.',
@@ -986,6 +1130,7 @@ const TOOLS = [
               domain: NON_BLANK_STRING_SCHEMA,
               capabilities: { type: 'array', maxItems: GRAPH_REF_ARRAY_MAX_ITEMS, items: NON_BLANK_STRING_SCHEMA },
               elements: { type: 'array', maxItems: GRAPH_REF_ARRAY_MAX_ITEMS, items: NON_BLANK_STRING_SCHEMA },
+              path: NON_BLANK_STRING_SCHEMA,
               body: { type: 'string' },
             },
             required: ['slug', 'kind', 'title'],
@@ -1185,6 +1330,59 @@ const TOOLS = [
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
       required: ['relations'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'remove_relation',
+    description:
+      'Safely remove one exact typed relation and its `relation_notes` rationale from a source node. Defaults to dry-run; pass confirm:true to write. Supports expected_mtime conflict protection. Use this instead of replacing a whole frontmatter array with patch_concept.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        from: nonBlankStringSchema('Source slug.'),
+        to: nonBlankStringSchema('Target slug.'),
+        type: ADD_RELATION_TYPE_SCHEMA,
+        confirm: { type: 'boolean', description: 'Actually remove when true; default is dry-run.' },
+        expected_mtime: { type: 'number', minimum: 0 },
+      },
+      required: ['from', 'to', 'type'],
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
+        exists: { type: 'boolean' }, from: NON_BLANK_STRING_SCHEMA, to: NON_BLANK_STRING_SCHEMA,
+        type: NON_BLANK_STRING_SCHEMA, key: NON_BLANK_STRING_SCHEMA,
+        removedRationale: { type: 'string' }, postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+      },
+      required: ['ok', 'dryRun', 'changed', 'exists', 'from', 'to', 'type', 'key'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'replace_relation',
+    description:
+      'Atomically replace one exact relation with a new target and/or type, moving or replacing its rationale in the same frontmatter write. Defaults to dry-run; pass confirm:true to write. Supports expected_mtime.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        from: nonBlankStringSchema('Source slug.'), oldTo: nonBlankStringSchema('Current target slug.'),
+        oldType: ADD_RELATION_TYPE_SCHEMA, newTo: nonBlankStringSchema('Replacement target slug.'),
+        newType: ADD_RELATION_TYPE_SCHEMA, why: { type: 'string', maxLength: 300 },
+        confirm: { type: 'boolean' }, expected_mtime: { type: 'number', minimum: 0 },
+      },
+      required: ['from', 'oldTo', 'oldType', 'newTo', 'newType'],
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
+        from: NON_BLANK_STRING_SCHEMA,
+        oldRelation: { type: 'object' }, newRelation: { type: 'object' },
+        postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+      },
+      required: ['ok', 'dryRun', 'changed', 'from', 'oldRelation', 'newRelation'],
       additionalProperties: false,
     },
   },
@@ -2385,6 +2583,7 @@ const TOOLS = [
             inCodeMissingFromVault: { type: 'integer', minimum: 0 },
             inCodeMissingEndpointAbsent: { type: 'integer', minimum: 0 },
             inVaultNotInCode: { type: 'integer', minimum: 0 },
+            unresolvedImports: { type: 'integer', minimum: 0 },
             hint: { type: 'string' },
           },
         },
@@ -2832,6 +3031,37 @@ const TOOLS = [
     },
   },
   {
+    name: 'reclassify_concept',
+    description:
+      '⚠ MULTI-FILE WRITE — change a concept kind and optionally its canonical slug/domain in one previewable transaction. Redirects backlinks like rename_concept and replaces a generated starter body with the new kind template while preserving custom prose. Defaults to dry-run.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        slug: nonBlankStringSchema('Current canonical slug.'),
+        newKind: { type: 'string', enum: ['project', 'domain', 'capability', 'element', 'document'] },
+        newSlug: nonBlankStringSchema('Optional new canonical slug.'),
+        domain: { type: ['string', 'null'], description: 'New domain; required for capability/element.' },
+        body: { type: 'string', description: 'Optional explicit replacement body.' },
+        confirm: { type: 'boolean' }, expected_mtime: { type: 'number', minimum: 0 },
+      },
+      required: ['slug', 'newKind'],
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
+        oldSlug: NON_BLANK_STRING_SCHEMA, newSlug: NON_BLANK_STRING_SCHEMA,
+        oldKind: NON_BLANK_STRING_SCHEMA, newKind: NON_BLANK_STRING_SCHEMA,
+        sourcePath: NON_BLANK_STRING_SCHEMA, targetPath: NON_BLANK_STRING_SCHEMA,
+        bodyAction: { type: 'string', enum: ['preserved', 'replaced_explicitly', 'regenerated_starter'] },
+        backlinkUpdates: BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA,
+        postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+      },
+      required: ['ok', 'dryRun', 'changed', 'oldSlug', 'newSlug', 'oldKind', 'newKind', 'sourcePath', 'targetPath', 'bodyAction', 'backlinkUpdates'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'merge_concepts',
     description:
       '⚠ DESTRUCTIVE MULTI-FILE WRITE — fold one node into another. Every backlink to fromSlug is ' +
@@ -3026,6 +3256,8 @@ const TOOLS = [
 ];
 
 const READ_TOOL_NAMES = new Set([
+  'connection_info',
+  'git_status',
   'list_concepts',
   'get_concept',
   'get_concepts',
@@ -3045,9 +3277,13 @@ const READ_TOOL_NAMES = new Set([
 ]);
 
 const DESTRUCTIVE_TOOL_NAMES = new Set([
+  'git_snapshot',
   'delete_concept',
   'merge_concepts',
   'rename_concept',
+  'remove_relation',
+  'replace_relation',
+  'reclassify_concept',
   // absorb_document overwrites the external source file in place (backed up
   // first to <file>.pre-absorb.bak, but still an irreversible-by-default
   // rewrite of a file outside the vault).
@@ -3057,6 +3293,7 @@ const DESTRUCTIVE_TOOL_NAMES = new Set([
 const IDEMPOTENT_TOOL_NAMES = new Set([
   'add_relation',
   'add_relations',
+  'remove_relation',
 ]);
 
 function toolTitle(name) {
@@ -3097,6 +3334,10 @@ function summarizeWrite(name, args, result) {
       return { target: args.slug, summary: `add_concept ${args.kind}:${args.slug}` };
     case 'add_relation':
       return { target: args.from, summary: `${args.from} --${args.type}--> ${args.to}`, why: args.why ?? null };
+    case 'remove_relation':
+      return result?.dryRun ? null : { target: args.from, summary: `remove ${args.from} --${args.type}--> ${args.to}` };
+    case 'replace_relation':
+      return result?.dryRun ? null : { target: args.from, summary: `replace ${args.from} --${args.oldType}--> ${args.oldTo} with --${args.newType}--> ${args.newTo}`, why: args.why ?? null };
     case 'add_concepts': {
       const okRows = (result?.concepts ?? []).filter((row) => row?.ok).length;
       return okRows > 0 ? { target: '(batch)', summary: `add_concepts ${okRows}행 성공` } : null;
@@ -3109,6 +3350,8 @@ function summarizeWrite(name, args, result) {
       return { target: args.slug, summary: `patch_concept ${args.slug}` };
     case 'rename_concept':
       return result?.dryRun ? null : { target: args.newSlug, summary: `rename ${args.oldSlug} → ${args.newSlug}` };
+    case 'reclassify_concept':
+      return result?.dryRun ? null : { target: result?.newSlug ?? args.slug, summary: `reclassify ${args.slug} → ${args.newKind}` };
     case 'merge_concepts':
       return result?.dryRun ? null : { target: args.intoSlug, summary: `merge ${args.fromSlug} → ${args.intoSlug}` };
     case 'delete_concept':
@@ -3148,6 +3391,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     const args = normalizeToolArguments(request.params.arguments, name);
     switch (name) {
+      case 'connection_info':
+        return ok(connectionInfoTool());
+      case 'git_status':
+        return ok(gitStatusTool());
+      case 'git_snapshot':
+        // The commit itself is the durable audit record. Writing the activity
+        // log after committing would immediately make the vault dirty again.
+        return ok(gitSnapshotTool(args));
       case 'list_concepts':
         return ok(listConcepts(args));
       case 'get_concept':
@@ -3162,6 +3413,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return ok(logWrite(name, args, addConceptsBatch(args)));
       case 'add_relation':
         return ok(logWrite(name, args, addRelation(args)));
+      case 'remove_relation':
+        return ok(logWrite(name, args, removeRelation(args)));
+      case 'replace_relation':
+        return ok(logWrite(name, args, replaceRelation(args)));
       case 'add_relations':
         return ok(logWrite(name, args, addRelationsBatch(args)));
       case 'patch_concept':
@@ -3192,6 +3447,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return ok(indexProjectTool(args));
       case 'rename_concept':
         return ok(logWrite(name, args, renameConcept(args)));
+      case 'reclassify_concept':
+        return ok(logWrite(name, args, reclassifyConcept(args)));
       case 'merge_concepts':
         return ok(logWrite(name, args, mergeConcepts(args)));
       case 'delete_concept':
@@ -3857,13 +4114,14 @@ function requireValidFrontmatterPatch(frontmatter) {
   }
 }
 
-function addConcept({ slug, kind, title, domain, capabilities, elements, body }, options = {}) {
+function addConcept({ slug, kind, title, domain, capabilities, elements, path, body }, options = {}) {
   requireNonBlankString(slug, 'slug');
   requireNonBlankString(kind, 'kind');
   requireNonBlankString(title, 'title');
   if (domain !== undefined) requireNonBlankString(domain, 'domain');
   requireOptionalStringArray(capabilities, 'capabilities', { max: GRAPH_REF_ARRAY_MAX_ITEMS });
   requireOptionalStringArray(elements, 'elements', { max: GRAPH_REF_ARRAY_MAX_ITEMS });
+  if (path !== undefined) requireNonBlankString(path, 'path');
   if (body !== undefined && typeof body !== 'string') {
     throw new Error('body must be a string.');
   }
@@ -3886,6 +4144,7 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, body },
     domain,
     capabilities,
     elements,
+    path,
   });
   // 성장하는 vault 의 #1 실패 모드(중복 노드) 안전망 — write *전* 기존 노드를
   // 훑어 같은 title 이 있으면 advisory 경고. write 를 막지 않는다. batch
@@ -3955,6 +4214,7 @@ function addConceptsBatch({ concepts }) {
         'domain',
         'capabilities',
         'elements',
+        'path',
         'body',
       ]);
       if (slug && seenInBatch.has(slug)) {
@@ -4014,6 +4274,76 @@ const RELATION_KEY = {
   domain: 'domain',
 };
 const RELATION_TYPES = WRITE_RELATION_TYPE_VALUES;
+
+function connectionInfoTool() {
+  return {
+    vaultRoot: VAULT_ROOT,
+    repoRoot: REPO_ROOT,
+    vaultResolution: VAULT_RESOLUTION,
+    repoResolution: REPO_RESOLUTION,
+    sameRoot: VAULT_ROOT === REPO_ROOT,
+    restartRequiredForRootChange: true,
+    server: { name: 'ontology-atlas-mcp', version: SERVER_VERSION },
+  };
+}
+
+function gitStatusTool() {
+  return inspectVaultGit({ repoRoot: REPO_ROOT, vaultRoot: VAULT_ROOT });
+}
+
+function gitSnapshotTool({ confirm = false, expectedHead, message } = {}) {
+  requireOptionalBoolean(confirm, 'confirm');
+  requireOptionalNonBlankString(expectedHead, 'expectedHead');
+  requireOptionalNonBlankString(message, 'message');
+  if (message !== undefined && (message.length > 200 || /[\r\n]/.test(message))) {
+    throw new Error('message must be one line and at most 200 characters.');
+  }
+
+  const report = validateVaultTool();
+  const validation = {
+    scanned: report.scanned,
+    problemFiles: report.summary.problemFiles,
+    errorFiles: report.summary.errorFiles,
+    warningFiles: report.summary.warningFiles,
+    pathDrifts: report.pathDrift.drifts.length,
+  };
+  if (confirm && validation.errorFiles > 0) {
+    throw new Error(
+      `git_snapshot blocked: validate_vault found ${validation.errorFiles} file(s) with errors. Repair them and run a new dry-run.`,
+    );
+  }
+
+  const result = snapshotVaultGit({
+    repoRoot: REPO_ROOT,
+    vaultRoot: VAULT_ROOT,
+    confirm,
+    expectedHead,
+    message,
+  });
+  if (!result.risk) return { ...result, validation };
+
+  const validationWarnings = [
+    ...(validation.warningFiles > 0
+      ? [`validate_vault reports ${validation.warningFiles} warning-only file(s)`]
+      : []),
+    ...(validation.pathDrifts > 0
+      ? [`validate_vault reports ${validation.pathDrifts} code-path drift(s)`]
+      : []),
+  ];
+  return {
+    ...result,
+    validation,
+    risk: {
+      level:
+        validation.errorFiles > 0
+          ? 'high'
+          : validationWarnings.length > 0 && result.risk.level === 'low'
+            ? 'medium'
+            : result.risk.level,
+      warnings: [...result.risk.warnings, ...validationWarnings],
+    },
+  };
+}
 
 function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
   requireNonBlankString(from, 'from');
@@ -4093,6 +4423,82 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
       ? {}
       : { postWriteMaintenance: compactPostWriteMaintenance() }),
   };
+}
+
+function relationExists(doc, key, canonicalTo) {
+  if (key === 'domain') return doc.frontmatter.domain === canonicalTo;
+  return Array.isArray(doc.frontmatter[key]) && doc.frontmatter[key].includes(canonicalTo);
+}
+
+function removeRelation({ from, to, type, confirm = false, expected_mtime }) {
+  requireNonBlankString(from, 'from');
+  requireNonBlankString(to, 'to');
+  requireNonBlankString(type, 'type');
+  requireOptionalBoolean(confirm, 'confirm');
+  requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
+  const key = RELATION_KEY[type];
+  if (!key) throw new Error(formatAllowedValueError('type', type, RELATION_TYPES));
+  const canonicalFrom = resolveExistingVaultSlug(from);
+  const canonicalTo = resolveExistingVaultSlug(to);
+  if (!canonicalFrom) throw new Error(missingSlugMessage('Source slug does not exist in vault', from));
+  if (!canonicalTo) throw new Error(missingSlugMessage('Target slug does not exist in vault', to));
+  const doc = readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, canonicalFrom));
+  if (typeof expected_mtime === 'number' && doc.mtime !== expected_mtime) {
+    throw new VaultConflictError(canonicalFrom, expected_mtime, doc.mtime);
+  }
+  const exists = relationExists(doc, key, canonicalTo);
+  const notes = doc.frontmatter.relation_notes && typeof doc.frontmatter.relation_notes === 'object'
+    ? { ...doc.frontmatter.relation_notes }
+    : {};
+  const removedRationale = typeof notes[canonicalTo] === 'string' ? notes[canonicalTo] : undefined;
+  const base = { ok: exists, dryRun: !confirm, changed: false, exists, from: canonicalFrom, to: canonicalTo, type, key, ...(removedRationale ? { removedRationale } : {}) };
+  if (!exists || !confirm) return base;
+  const patch = key === 'domain'
+    ? { domain: null }
+    : { [key]: doc.frontmatter[key].filter((ref) => ref !== canonicalTo) };
+  delete notes[canonicalTo];
+  patch.relation_notes = Object.keys(notes).length > 0 ? notes : null;
+  patchFrontmatter(VAULT_ROOT, canonicalFrom, patch, { expectedMtime: expected_mtime });
+  return { ...base, ok: true, dryRun: false, changed: true, postWriteMaintenance: compactPostWriteMaintenance() };
+}
+
+function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = false, expected_mtime }) {
+  for (const [value, name] of [[from, 'from'], [oldTo, 'oldTo'], [oldType, 'oldType'], [newTo, 'newTo'], [newType, 'newType']]) requireNonBlankString(value, name);
+  requireOptionalBoolean(confirm, 'confirm');
+  requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
+  const oldKey = RELATION_KEY[oldType];
+  const newKey = RELATION_KEY[newType];
+  if (!oldKey) throw new Error(formatAllowedValueError('oldType', oldType, RELATION_TYPES));
+  if (!newKey) throw new Error(formatAllowedValueError('newType', newType, RELATION_TYPES));
+  const canonicalFrom = resolveExistingVaultSlug(from);
+  const canonicalOldTo = resolveExistingVaultSlug(oldTo);
+  const canonicalNewTo = resolveExistingVaultSlug(newTo);
+  if (!canonicalFrom) throw new Error(missingSlugMessage('Source slug does not exist in vault', from));
+  if (!canonicalOldTo) throw new Error(missingSlugMessage('Old target slug does not exist in vault', oldTo));
+  if (!canonicalNewTo) throw new Error(missingSlugMessage('New target slug does not exist in vault', newTo));
+  const doc = readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, canonicalFrom));
+  if (typeof expected_mtime === 'number' && doc.mtime !== expected_mtime) throw new VaultConflictError(canonicalFrom, expected_mtime, doc.mtime);
+  if (!relationExists(doc, oldKey, canonicalOldTo)) throw new Error(`Relation does not exist: ${canonicalFrom} --${oldType}--> ${canonicalOldTo}.`);
+  const oldRelation = { to: canonicalOldTo, type: oldType, key: oldKey };
+  const newRelation = { to: canonicalNewTo, type: newType, key: newKey };
+  const base = { ok: false, dryRun: !confirm, changed: false, from: canonicalFrom, oldRelation, newRelation };
+  if (!confirm) return base;
+  const patch = {};
+  if (oldKey === 'domain') patch.domain = null;
+  else patch[oldKey] = (doc.frontmatter[oldKey] || []).filter((ref) => ref !== canonicalOldTo);
+  if (newKey === 'domain') patch.domain = canonicalNewTo;
+  else {
+    const starting = oldKey === newKey ? patch[newKey] : (Array.isArray(doc.frontmatter[newKey]) ? doc.frontmatter[newKey] : []);
+    patch[newKey] = normalizeRelationRefs([...starting, canonicalNewTo]);
+  }
+  const notes = doc.frontmatter.relation_notes && typeof doc.frontmatter.relation_notes === 'object' ? { ...doc.frontmatter.relation_notes } : {};
+  const priorWhy = notes[canonicalOldTo];
+  delete notes[canonicalOldTo];
+  const nextWhy = typeof why === 'string' && why.trim() ? why.trim() : priorWhy;
+  if (nextWhy) notes[canonicalNewTo] = nextWhy;
+  patch.relation_notes = Object.keys(notes).length > 0 ? notes : null;
+  patchFrontmatter(VAULT_ROOT, canonicalFrom, patch, { expectedMtime: expected_mtime });
+  return { ...base, ok: true, dryRun: false, changed: true, postWriteMaintenance: compactPostWriteMaintenance() };
 }
 
 function resolveExistingVaultSlug(slug, docs = null) {
@@ -4487,8 +4893,12 @@ function queryOntologyTool(args = {}) {
   validateQueryOntologyArgs(args);
   const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
+  const queryResult = queryCompiledOntology(artifact, args, { ontologyAtlasIgnorePatterns });
+  const result = ['health', 'workspace_brief', 'agent_brief'].includes(args.operation)
+    ? attachVaultValidation(queryResult)
+    : queryResult;
   return {
-    ...queryCompiledOntology(artifact, args, { ontologyAtlasIgnorePatterns }),
+    ...result,
     compiledSummary: {
       nodes: artifact.nodeCount,
       edges: artifact.edgeCount,
@@ -4500,6 +4910,66 @@ function queryOntologyTool(args = {}) {
       issues: artifact.issues.length,
     },
   };
+}
+
+function attachVaultValidation(result) {
+  const validation = validateVaultTool({ repoRoot: REPO_ROOT });
+  const driftCount = validation.pathDrift?.drifts?.length ?? 0;
+  const errorCount = validation.summary.errorFiles;
+  const warningCount = validation.summary.warningFiles + driftCount;
+  const check = {
+    id: 'vault_validation',
+    status: errorCount > 0 ? 'fail' : warningCount > 0 ? 'warn' : 'pass',
+    count: errorCount + warningCount,
+    message:
+      errorCount > 0
+        ? `${errorCount} file(s) have blocking schema/frontmatter errors.`
+        : warningCount > 0
+          ? `${warningCount} validator or source-path warning(s) require review.`
+          : 'Vault schema, graph references, and implementation paths validate cleanly.',
+  };
+  const needsAttention = check.status !== 'pass';
+
+  if (result.operation === 'health') {
+    return {
+      ...result,
+      status: needsAttention ? 'needs_attention' : result.status,
+      checks: [...result.checks, check],
+      validation,
+    };
+  }
+  if (result.operation === 'workspace_brief') {
+    return {
+      ...result,
+      status: needsAttention ? 'needs_attention' : result.status,
+      health: {
+        ...result.health,
+        status: needsAttention ? 'needs_attention' : result.health.status,
+        checks: [...result.health.checks, check],
+        validation,
+      },
+    };
+  }
+  if (result.operation === 'agent_brief') {
+    return {
+      ...result,
+      status: needsAttention ? 'needs_attention' : result.status,
+      readiness: {
+        ...result.readiness,
+        status: needsAttention && result.readiness.status === 'ready'
+          ? 'needs_attention'
+          : result.readiness.status,
+        healthChecks: result.readiness.healthChecks + 1,
+      },
+      health: {
+        ...result.health,
+        status: needsAttention ? 'needs_attention' : result.health.status,
+        checks: [...result.health.checks, check],
+        validation,
+      },
+    };
+  }
+  return result;
 }
 
 function validateQueryOntologyArgs(args = {}) {
@@ -4710,7 +5180,7 @@ function validateVaultTool({ repoRoot } = {}) {
   // (default: server cwd). Surfaced here because it is a vault-health signal the
   // agent already runs validate_vault for at first-contact. The agent fixes via
   // patch_concept (correct the path) or by removing the stale entry.
-  const driftRoot = repoRoot ? resolve(repoRoot) : process.cwd();
+  const driftRoot = repoRoot ? resolve(repoRoot) : REPO_ROOT;
   const drift = detectVaultPathDrift({
     docs,
     repoRoot: driftRoot,
@@ -4829,9 +5299,7 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
   requireOptionalNonNegativeInteger(maxDepth, 'maxDepth', { max: 10 });
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
-  const target = rootPath
-    ? resolve(rootPath)
-    : process.cwd();
+  const target = rootPath ? resolve(rootPath) : REPO_ROOT;
   return analyzeRepoStructure(target, {
     maxDepth,
     ignore,
@@ -4846,7 +5314,7 @@ function inferImportsTool({ rootPath, sourceFolders, ignore, maxFiles, reconcile
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
   requireOptionalPositiveInteger(maxFiles, 'maxFiles', { max: 50000 });
   requireOptionalBoolean(reconcile, 'reconcile');
-  const target = rootPath ? resolve(rootPath) : process.cwd();
+  const target = rootPath ? resolve(rootPath) : REPO_ROOT;
   const result = inferImports(target, {
     sourceFolders,
     ignore,
@@ -4887,11 +5355,17 @@ function inferImportsTool({ rootPath, sourceFolders, ignore, maxFiles, reconcile
           `${r.inVaultNotInCode.length} vault depends_on edge(s) have no matching code import (review for stale)`,
         );
       }
+      if (result.unresolved.length > 0) {
+        parts.push(
+          `${result.unresolved.length} unresolved import(s) could not be compared with the vault (inspect unresolved before claiming sync)`,
+        );
+      }
       result.reconciliationSummary = {
         inBoth: r.inBoth.length,
         inCodeMissingFromVault: r.inCodeMissingFromVault.length,
         inCodeMissingEndpointAbsent: r.inCodeMissingEndpointAbsent.length,
         inVaultNotInCode: r.inVaultNotInCode.length,
+        unresolvedImports: result.unresolved.length,
         hint:
           parts.length > 0
             ? `${parts.join('; ')}.`
@@ -4913,7 +5387,7 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
   requireOptionalPositiveInteger(threshold, 'threshold');
   requireOptionalBoolean(skipImports, 'skipImports');
 
-  const target = rootPath ? resolve(rootPath) : process.cwd();
+  const target = rootPath ? resolve(rootPath) : REPO_ROOT;
   const analyze = analyzeRepoStructure(target, { maxDepth });
   let imports = null;
   if (!skipImports) {
@@ -5098,6 +5572,67 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     changed: true,
     postWriteMaintenance: compactPostWriteMaintenance(),
   };
+}
+
+function looksLikeGeneratedStarter(body, kind) {
+  const text = String(body || '');
+  if (text.length > 800) return false;
+  const markers = {
+    project: /One- or two-line summary of this project/i,
+    domain: /A \*domain\* is a large area of the project/i,
+    capability: /A \*capability\* is one user-visible feature/i,
+    element: /implementation element/i,
+    document: /source document/i,
+  };
+  return Boolean(markers[kind]?.test(text));
+}
+
+function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = false, expected_mtime }) {
+  requireNonBlankString(slug, 'slug');
+  requireNonBlankString(newKind, 'newKind');
+  if (!ADD_CONCEPT_KINDS.has(newKind)) throw new Error(formatAllowedValueError('newKind', newKind, [...ADD_CONCEPT_KINDS]));
+  requireOptionalNonBlankString(newSlug, 'newSlug');
+  requireOptionalBoolean(confirm, 'confirm');
+  requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
+  if (domain !== undefined && domain !== null) requireNonBlankString(domain, 'domain');
+  if (body !== undefined && typeof body !== 'string') throw new Error('body must be a string.');
+  if ((newKind === 'capability' || newKind === 'element') && (domain === undefined || domain === null)) {
+    throw new Error(`domain is required when reclassifying to kind "${newKind}".`);
+  }
+  const canonicalOld = resolveExistingVaultSlug(slug);
+  if (!canonicalOld) throw new Error(missingSlugMessage('Source slug does not exist in vault', slug));
+  const canonicalNew = newSlug || canonicalOld;
+  if (canonicalNew !== canonicalOld && vaultSlugExists(VAULT_ROOT, canonicalNew)) throw new Error(`Target slug already exists: "${canonicalNew}".`);
+  const sourcePath = slugToPath(VAULT_ROOT, canonicalOld);
+  const targetPath = slugToPath(VAULT_ROOT, canonicalNew);
+  const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
+  if (typeof expected_mtime === 'number' && sourceDoc.mtime !== expected_mtime) throw new VaultConflictError(canonicalOld, expected_mtime, sourceDoc.mtime);
+  const oldKind = sourceDoc.frontmatter.kind;
+  const title = sourceDoc.frontmatter.title || canonicalNew.split('/').pop();
+  let nextBody = sourceDoc.body;
+  let bodyAction = 'preserved';
+  if (body !== undefined) {
+    nextBody = body;
+    bodyAction = 'replaced_explicitly';
+  } else if (looksLikeGeneratedStarter(sourceDoc.body, oldKind)) {
+    nextBody = defaultBody(newKind, title);
+    bodyAction = 'regenerated_starter';
+  }
+  const backlinkUpdates = canonicalNew === canonicalOld
+    ? { updates: [], totalUpdated: 0 }
+    : redirectBacklinks(VAULT_ROOT, canonicalOld, canonicalNew, { dryRun: true });
+  const base = { ok: false, dryRun: !confirm, changed: false, oldSlug: canonicalOld, newSlug: canonicalNew, oldKind, newKind, sourcePath, targetPath, bodyAction, backlinkUpdates };
+  if (!confirm) return base;
+  const nextFrontmatter = { ...sourceDoc.frontmatter, slug: canonicalNew, kind: newKind };
+  if (domain === null || !['capability', 'element'].includes(newKind)) delete nextFrontmatter.domain;
+  else if (domain !== undefined) nextFrontmatter.domain = domain;
+  mkdirSync(dirname(targetPath), { recursive: true });
+  writeFileSync(targetPath, buildMarkdown({ frontmatter: nextFrontmatter, body: nextBody }), 'utf-8');
+  const appliedBacklinks = canonicalNew === canonicalOld
+    ? backlinkUpdates
+    : redirectBacklinks(VAULT_ROOT, canonicalOld, canonicalNew, { dryRun: false });
+  if (sourcePath !== targetPath) unlinkSync(sourcePath);
+  return { ...base, ok: true, dryRun: false, changed: true, backlinkUpdates: appliedBacklinks, postWriteMaintenance: compactPostWriteMaintenance() };
 }
 
 function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime }) {

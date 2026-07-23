@@ -17,7 +17,7 @@ function withRepo(setup) {
   return root;
 }
 
-test('FSD repo — features/ + entities/ → capabilities, widgets/ + views/ → elements', () => {
+test('FSD repo — features/ → capabilities, entities/widgets/views → implementation elements', () => {
   const root = withRepo((r) => {
     writeFileSync(
       join(r, 'package.json'),
@@ -38,11 +38,11 @@ test('FSD repo — features/ + entities/ → capabilities, widgets/ + views/ →
     assert.equal(r.framework, 'fsd');
     assert.deepEqual(
       [...r.capabilities.map((c) => c.slug)].sort(),
-      ['capabilities/auth', 'capabilities/billing', 'capabilities/user'],
+      ['capabilities/auth', 'capabilities/billing'],
     );
     assert.deepEqual(
       [...r.elements.map((e) => e.slug)].sort(),
-      ['elements/src/views/home', 'elements/src/widgets/header'],
+      ['elements/src/entities/user', 'elements/src/views/home', 'elements/src/widgets/header'],
     );
     assert.deepEqual(
       r.domains.map((d) => d.slug),
@@ -219,7 +219,35 @@ test('README domain and feature with same name do not collide', () => {
     assert.deepEqual(r.domains.map((d) => d.slug), ['domains/capture']);
     assert.deepEqual(r.capabilities.map((c) => c.slug), ['capabilities/capture']);
     assert.equal(r.capabilities[0].domain, 'domains/capture');
-    assert.equal(r.suggestedRelations[0].to, 'capabilities/capture');
+    assert.deepEqual(r.suggestedRelations, [
+      { from: 'notes', to: 'domains/capture', type: 'contains' },
+      { from: 'domains/capture', to: 'capabilities/capture', type: 'contains' },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Business containment spine — fuzzy domain match connects project → domain → nodes', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'claims' }));
+    writeFileSync(join(r, 'README.md'), '# Claims\n\n## Evidence Intake\n\n## Claim Review\n');
+    mkdirSync(join(r, 'src/features/capture-evidence'), { recursive: true });
+    mkdirSync(join(r, 'src/features/review-claims'), { recursive: true });
+    mkdirSync(join(r, 'src/entities/claim'), { recursive: true });
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.equal(r.capabilities[0].domain, 'domains/evidence-intake');
+    assert.equal(r.capabilities[1].domain, 'domains/claim-review');
+    assert.equal(r.elements[0].domain, 'domains/claim-review');
+    assert.deepEqual(r.suggestedRelations, [
+      { from: 'claims', to: 'domains/evidence-intake', type: 'contains' },
+      { from: 'claims', to: 'domains/claim-review', type: 'contains' },
+      { from: 'domains/evidence-intake', to: 'capabilities/capture-evidence', type: 'contains' },
+      { from: 'domains/claim-review', to: 'capabilities/review-claims', type: 'contains' },
+      { from: 'domains/claim-review', to: 'elements/src/entities/claim', type: 'contains' },
+    ]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -94,9 +94,20 @@ function tapPatternMatchCount(output, pattern) {
   return count;
 }
 
+function customHarnessMatchCount(output) {
+  const match = String(output).match(
+    /^# (?:cli )?integration: (\d+) passed, (\d+) failed(?:, \d+ skipped)?$/m,
+  );
+  return match
+    ? Number.parseInt(match[1], 10) + Number.parseInt(match[2], 10)
+    : null;
+}
+
 function focusedMatchedCount({ output, pattern, testTargets, pass, fail, cancelled }) {
   const setupFailures = setupFailureCount(output, testTargets);
   const patternMatches = tapPatternMatchCount(output, pattern);
+  const customMatches = customHarnessMatchCount(output);
+  if (customMatches !== null) return Math.max(0, customMatches - setupFailures);
   if (patternMatches !== null) return Math.max(0, patternMatches - setupFailures);
   return Math.max(0, pass + fail + cancelled - setupFailures);
 }

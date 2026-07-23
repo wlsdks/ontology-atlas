@@ -29,7 +29,7 @@
 | 레이어 | 현재 | 판정 | 근거 |
 |---|---|---|---|
 | 모듈 형식 | 평문 .mjs ESM | **KEEP + JSDoc 강화** | TS 전환은 빌드 파이프라인 비용 > 이득. 경로: JSDoc → (선택) `tsc --emit-declaration-only`로 .d.ts 배포 |
-| Node engines | `>=20` | **UPGRADE `>=22`** | v20은 2026-04 maintenance 전환, v24 Krypton이 Active LTS. 최소 요구는 22, CI는 24에서 실행 |
+| Node engines | `>=24` | **CURRENT** | v20은 2026-04 EOL. v24 Krypton Active LTS를 최소 계약과 CI 기준으로 사용 |
 | arg 파싱 | 수동 (cli-args.mjs) | **KEEP** | flat 45 명령·저복잡 플래그엔 충분. citty 등 채택은 이득이 --help 자동화 수준 — 반려 |
 | MCP SDK | 1.29.x | **KEEP + watch** | stdio transport만 사용 중이라 안정. N2(레지스트리 등재) 시점에 공식 registry 요구사항·tool schema 변경 확인 ⚠ |
 | Vitest / Playwright | 4.x / 1.59.x | **KEEP** | 안정. 메이저 업그레이드는 release note 검토 후 기회적으로 |

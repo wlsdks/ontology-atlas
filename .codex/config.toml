@@ -4,3 +4,4 @@ command = "node"
 
 [mcp_servers.ontology-atlas.env]
 OATLAS_VAULT = "./docs/ontology"
+OATLAS_REPO_ROOT = "."

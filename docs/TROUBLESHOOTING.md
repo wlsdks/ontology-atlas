@@ -108,7 +108,7 @@ Check the directory's write permission with `ls -ld $OATLAS_VAULT`. The agent ru
 
 ### MCP server starts then exits immediately
 
-Usually a Node version mismatch. The server requires Node 20+:
+Usually a Node version mismatch. The server requires Node 24+:
 
 ```bash
 node --version            # must print v20.x or higher

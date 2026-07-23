@@ -120,7 +120,11 @@ if (hasCommand('claude')) {
     cwd: project,
     env: { ...process.env, HOME: fakeHome },
   });
-  assert.match(claude.stdout, /ontology-atlas: .*Connected/);
+  // Current Claude Code may require an explicit first-run trust approval for a
+  // project-local MCP server. Seeing the registered server in that state still
+  // proves clean onboarding wrote a discoverable configuration; the user must
+  // complete the client-owned approval before tool calls can connect.
+  assert.match(claude.stdout, /ontology-atlas: .*(Connected|Pending approval)/);
 } else {
   console.log('skip claude clean check: claude command not found');
 }
