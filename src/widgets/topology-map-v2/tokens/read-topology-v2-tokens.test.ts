@@ -91,6 +91,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-overview-entry-ratio": "0.95",
   "--topology-v2-focus-fit-max-scale": "1.9",
   "--topology-v2-focus-bbox-margin": "70",
+  "--topology-v2-focus-max-zoom-ratio": "1.8",
   "--topology-v2-hysteresis-px": "7",
   "--topology-v2-emphasis-rise-tau": "0.09",
   "--topology-v2-emphasis-decay-tau": "0.15",

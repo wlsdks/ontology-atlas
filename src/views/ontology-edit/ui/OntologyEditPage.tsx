@@ -2213,7 +2213,7 @@ export function OntologyEditPage() {
                   aria-label={t("detailsSheetClose")}
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                 >
-                  ×
+                  <X size={14} aria-hidden="true" />
                 </button>
               </header>
               {ephemeralSelected ? (
@@ -2266,7 +2266,7 @@ export function OntologyEditPage() {
                   aria-label={t("anchorDialogClose")}
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                 >
-                  ×
+                  <X size={14} aria-hidden="true" />
                 </button>
               </header>
               <div className="grid max-h-[min(70dvh,640px)] gap-2 overflow-y-auto p-4 sm:grid-cols-2">
