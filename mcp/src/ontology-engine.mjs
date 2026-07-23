@@ -2407,6 +2407,8 @@ export function createOntologyEngine(artifact, options = {}) {
       .sort(compareEdges)
       .map((edge) => {
         const slug = suggestedSlugForReference(edge.ref, 'element');
+        const sourceNode = nodeBySlug.get(edge.from);
+        const domain = sourceNode?.kind === 'domain' ? sourceNode.slug : sourceNode?.domain;
         return {
           kind: 'materialize_external_element',
           score: 0.8,
@@ -2420,9 +2422,11 @@ export function createOntologyEngine(artifact, options = {}) {
               slug,
               kind: 'element',
               title: titleFromReference(edge.ref),
+              ...(domain ? { domain } : {}),
+              path: edge.ref,
             },
           },
-          node: summarizeNode(nodeBySlug.get(edge.from)),
+          node: summarizeNode(sourceNode),
         };
       });
 

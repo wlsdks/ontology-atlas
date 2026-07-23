@@ -49,7 +49,7 @@ test('FSD repo — features/ → capabilities, entities/widgets/views → implem
       ['domains/authentication', 'domains/billing'],
     );
     assert.equal(r.project.slug, 'my-app');
-    assert.equal(r.project.title, 'Sample');
+    assert.equal(r.project.title, 'My App');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -85,6 +85,66 @@ test('No package.json — README H1 fallback for project title', () => {
   try {
     const r = analyzeRepoStructure(root);
     assert.equal(r.project.title, 'Cool Lib');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('README title ignores fenced shell comments and supports centered HTML H1', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'muse' }));
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '<h1 align="center">Muse</h1>',
+        '',
+        '```bash',
+        '# Requirements: Node.js 22',
+        'pnpm install',
+        '```',
+        '',
+      ].join('\n'),
+    );
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.equal(r.project.title, 'Muse');
+    const readmeEvidence = r.semanticEvidence.find((row) => row.source === 'README.md');
+    assert.equal(readmeEvidence.role, 'mission');
+    assert.equal(readmeEvidence.title, 'Muse');
+    assert.doesNotMatch(readmeEvidence.excerpt, /Requirements: Node\.js/);
+    assert.equal(r.extractionContract.qualityGates.semanticEvidenceAvailable, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('semantic evidence discovery ranks generic product/strategy docs without project-specific paths', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'portable-app' }));
+    mkdirSync(join(r, 'docs/strategy'), { recursive: true });
+    mkdirSync(join(r, 'docs/goals'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs/strategy/north-star.md'),
+      '# North Star\n\n## User need\n\nProduct goal: preserve a user workflow across sessions.\n',
+    );
+    writeFileSync(
+      join(r, 'docs/goals/backlog.md'),
+      '# Backlog\n\nImplementation plan and roadmap items.\n',
+    );
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.ok(
+      r.semanticEvidence.some(
+        (row) =>
+          row.source === 'docs/strategy/north-star.md' &&
+          row.role === 'product-contract',
+      ),
+    );
+    assert.ok(
+      r.semanticEvidence.every((row) => row.source !== 'docs/goals/backlog.md'),
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -138,6 +198,10 @@ test('Narrative / language-guide / sentence README H2s skipped from domains', ()
         '## Three views plus MCP, one vault', // sentence (comma)
         '## 한국어 가이드', // language guide
         '## English Guide', // language guide
+        '## Providers and local path', // operational setup section
+        '## Provider Management', // real domain — kept
+        '## Providers and local marketplace', // real domain — kept
+        '## Provider and offline services', // real domain — kept
         '## Billing', // real domain — kept
         '',
       ].join('\n'),
@@ -147,7 +211,73 @@ test('Narrative / language-guide / sentence README H2s skipped from domains', ()
     const r = analyzeRepoStructure(root);
     assert.deepEqual(
       r.domains.map((d) => d.slug),
-      ['domains/billing'],
+      [
+        'domains/provider-management',
+        'domains/providers-and-local-marketplace',
+        'domains/provider-and-offline-services',
+        'domains/billing',
+      ],
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('pnpm workspace — operational README sections stay out of domains and workspace packages become elements', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'package.json'),
+      JSON.stringify({ name: 'muse', packageManager: 'pnpm@10.18.0' }),
+    );
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '# Muse',
+        '',
+        '## 📊 Muse in numbers',
+        '## ⚡ Install and quick start',
+        '## 🔧 Core capabilities',
+        '## 🧩 Providers and local path',
+        '## ✅ Verification',
+        '## 📖 Documentation',
+        '## 💬 Community and support',
+        '',
+      ].join('\n'),
+    );
+    mkdirSync(join(r, 'apps', 'api'), { recursive: true });
+    mkdirSync(join(r, 'apps', 'web'), { recursive: true });
+    mkdirSync(join(r, 'packages', 'attunement'), { recursive: true });
+    mkdirSync(join(r, 'packages', 'shared'), { recursive: true });
+    writeFileSync(join(r, 'apps', 'api', 'package.json'), '{"name":"@muse/api"}\n');
+    writeFileSync(join(r, 'apps', 'web', 'package.json'), '{"name":"@muse/web"}\n');
+    writeFileSync(
+      join(r, 'packages', 'attunement', 'package.json'),
+      '{"name":"@muse/attunement"}\n',
+    );
+    writeFileSync(join(r, 'packages', 'shared', 'package.json'), '{"name":"@muse/shared"}\n');
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.equal(r.framework, 'generic');
+    assert.deepEqual(r.domains, []);
+    assert.deepEqual(
+      r.elements.map((element) => element.slug),
+      [
+        'elements/apps/api',
+        'elements/apps/web',
+        'elements/packages/attunement',
+        'elements/packages/shared',
+      ],
+    );
+    assert.deepEqual(
+      r.suggestedRelations.map((relation) => relation.to),
+      r.elements.map((element) => element.slug),
+    );
+    assert.deepEqual(
+      analyzeRepoStructure(root, { ignore: ['packages'] }).elements.map(
+        (element) => element.slug,
+      ),
+      ['elements/apps/api', 'elements/apps/web'],
     );
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -275,7 +405,7 @@ test('Business containment spine — fuzzy domain match connects project → dom
   }
 });
 
-test('Meaning gate separates business ontology candidates from implementation evidence', () => {
+test('Meaning gate separates shared ontology, business proposals, and implementation evidence', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'shop' }));
     writeFileSync(join(r, 'README.md'), '# Shop\n\n## Checkout\n\n## Inventory\n');
@@ -287,20 +417,28 @@ test('Meaning gate separates business ontology candidates from implementation ev
     const r = analyzeRepoStructure(root);
     assert.equal(r.meaningGate.policy, 'business-first');
     assert.equal(r.meaningGate.sourceStructureRole, 'implementation-evidence');
-    assert.deepEqual(r.meaningGate.businessOntology.domains, [
-      'domains/checkout',
-      'domains/inventory',
-    ]);
-    assert.deepEqual(r.meaningGate.businessOntology.capabilities, [
-      'capabilities/checkout',
-    ]);
+    assert.deepEqual(r.meaningGate.businessOntology.domains, []);
+    assert.deepEqual(r.meaningGate.businessOntology.capabilities, []);
+    assert.deepEqual(
+      r.meaningGate.proposedBusinessOntology.domains.map((row) => row.slug),
+      ['domains/checkout', 'domains/inventory'],
+    );
+    assert.deepEqual(
+      r.meaningGate.proposedBusinessOntology.capabilities.map((row) => row.slug),
+      ['capabilities/checkout', 'capabilities/theme-toggle'],
+    );
     assert.deepEqual(r.meaningGate.implementationEvidence.elements, [
       'elements/src/widgets/header',
     ]);
     assert.deepEqual(r.meaningGate.implementationEvidence.reviewRequiredCapabilities, [
       {
+        slug: 'capabilities/checkout',
+        reason: 'source folder is implementation evidence, not proof of a shared capability meaning',
+        evidence: { source: 'src/features/checkout' },
+      },
+      {
         slug: 'capabilities/theme-toggle',
-        reason: 'no README/domain evidence for business meaning',
+        reason: 'source folder is implementation evidence, not proof of a shared capability meaning',
         evidence: { source: 'src/features/theme-toggle' },
       },
     ]);
@@ -309,6 +447,13 @@ test('Meaning gate separates business ontology candidates from implementation ev
         question.includes('business/product'),
       ),
     );
+    assert.equal(r.extractionContract.standard, 'formal-explicit-shared-conceptualization');
+    assert.equal(r.extractionContract.status, 'evidence-gathering');
+    assert.equal(r.extractionContract.assertionPolicy.automaticBusinessAssertions, 0);
+    assert.equal(r.extractionContract.assertionPolicy.humanApprovalRequired, true);
+    assert.equal(r.extractionContract.qualityGates.proposedBusinessConcepts, 4);
+    assert.equal(r.extractionContract.qualityGates.uncertaintyExplicit, true);
+    assert.equal(r.extractionContract.competencyQuestions.length, 5);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -377,6 +522,31 @@ test('Meaning gate uses existing ontology domain docs as business evidence', () 
         source: 'docs/ontology/domains/operations.md',
       },
     ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Default starter ontology nodes are not counted as shared business evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'new-app' }));
+    mkdirSync(join(r, 'docs/ontology/domains'), { recursive: true });
+    mkdirSync(join(r, 'docs/ontology/capabilities'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs/ontology/domains/example-domain.md'),
+      '---\nkind: domain\ntitle: Example domain\n---\n',
+    );
+    writeFileSync(
+      join(r, 'docs/ontology/capabilities/example-capability.md'),
+      '---\nkind: capability\ntitle: Example capability\n---\n',
+    );
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.deepEqual(r.meaningGate.businessOntology.domains, []);
+    assert.deepEqual(r.meaningGate.businessOntology.capabilities, []);
+    assert.equal(r.extractionContract.status, 'scope-discovery-required');
+    assert.equal(r.extractionContract.qualityGates.sharedBusinessConceptsAvailable, false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

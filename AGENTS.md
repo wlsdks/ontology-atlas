@@ -268,8 +268,9 @@ A 30-second read at the top of the task often replaces a 10-minute re-discovery 
 
 **Bootstrap an empty vault** (R16). When a user just ran `ontology-atlas init` on a fresh repo and the vault has only the 5 starter nodes, don't make the user hand-author every node. Use the **`/ontology-bootstrap`** skill (`.claude/skills/ontology-bootstrap/SKILL.md` or `.agents/skills/ontology-bootstrap/SKILL.md`):
 
-- It calls `analyze_repo_structure` once. **Side effect 0** — returns deterministic candidates (project + domains[] + capabilities[] + elements[] + suggestedRelations[]) by reading `package.json` / `README.md` H2 sections / `src/` folder layout (FSD or generic). Vault NOT modified.
-- Shows the candidates compactly, lets the user prune / refine, then lands the accepted ones via `add_concept` / `add_relation`. Single source of truth preserved — only the user (via your subsequent calls) writes to the vault.
+- It calls `index_project` once. **Side effect 0** — returns implementation candidates, bounded semantic evidence, an extraction contract, current-vault alignment, and competency questions. Vault NOT modified.
+- It separates observed source/import facts from proposed meanings and persisted shared concepts. Every proposed domain/capability needs a definition, includes/excludes boundary, citation, confidence, counterexample check, and competency-question coverage; folders/packages remain element evidence unless product meaning is independently supported.
+- Shows the evidence-backed proposal compactly, lets the user accept / select / refine, then lands only accepted concepts and relations via `add_concepts` / `add_relations`. Single source of truth preserved — only the user (via your subsequent calls) writes to the vault.
 - Companion to `/ontology-sync` (incremental, post-bootstrap) and `/ontology-extract` (prose ingress).
 
 **Extract from prose** (R+). When the user shares a meeting note, PR description, RFC draft, or any prose paragraph and asks to "extract ontology from this" or similar, use the **`/ontology-extract`** skill (`.claude/skills/ontology-extract/SKILL.md` or `.agents/skills/ontology-extract/SKILL.md`):

@@ -4,32 +4,21 @@ kind: capability
 title: Ontology-Bootstrap Skill (.claude/skills/ontology-bootstrap)
 display: Ontology-Bootstrap Skill
 domain: ai-agent-partner
-elements: [.claude/skills/ontology-bootstrap/SKILL.md]
+elements: [.agents/skills/ontology-bootstrap/guides/meaning-extraction.md, .agents/skills/ontology-bootstrap/SKILL.md]
 ---
 
-R16 follow-up — `/ontology-bootstrap` slash skill 의 cold-start counterpart. `/ontology-sync` 가 *이미 자란 vault* 의 incremental sync 라면, 이 skill 은 *fresh init 직후 빈 vault* 를 codebase 에서 *한 번에* 채우는 흐름.
+# Ontology Bootstrap Skill
 
-## 흐름 (R+, 3 round-trips)
+`ontology-bootstrap`은 비어 있거나 starter-only인 vault에서 첫 공유 온톨로지를 만드는 Atlas-only 에이전트 워크플로다. 저장소 폴더를 라벨링하는 기능이 아니라, `index_project`가 반환한 semantic evidence와 extraction contract를 사람이 검토할 수 있는 의미 모델로 변환한다.
 
-1. `list_kinds` — vault 가 진짜 cold-start 인지 (≤ 5 nodes) 확인
-2. `analyze_repo_structure` 1 회 호출 (mcp 도구, R16 v0.8.0)
-   — `package.json` / `README.md` H2 / `src/` 폴더 → deterministic 후보. side effect 0. 후보 slug 는 `domains/*`, `capabilities/*`, `elements/src/...` 로 생성돼 README H2 와 feature folder 이름이 같아도 충돌하지 않음.
-3. 후보를 사용자에게 *5 줄 max* 요약 (kind 별 count + 상위 3 + evidence)
-4. 사용자 분기 — yes / pick / refine
-5. **`add_concepts`** (R+ batch writer, max 50) 1 회 — project + domains + capabilities + elements 일괄 land. 그 다음 **`add_relations`** (R+ batch edge writer, max 50) 1 회 — suggestedRelations 일괄 land. 두 호출 모두 partial result · idempotent.
-6. 마무리 — `list_kinds` + 사용자에게 census diff 보여주기 ("vault 5 → 18 nodes")
+## Meaning contract
 
-## 단일 source of truth
+- `observed`: MCP가 직접 반환한 문서, 경로, 패키지, import 사실
+- `proposed`: observed evidence에서 해석했지만 아직 승인되지 않은 의미
+- `shared`: 사용자가 승인해 vault에 저장한 개념
 
-skill 자체는 *agent prompt instruction*. 진입은 `add_concepts` / `add_relations` 만 — vault frontmatter 가 유일 진실원. analyze 는 read only.
+추출 순서는 project outcome → stable responsibility domains → observable implementation-independent capabilities → concrete elements → typed relations다. 각 domain/capability에는 비순환 정의, 포함/제외 경계, source citation, confidence, counterevidence 또는 uncertainty가 필요하다. 폴더·패키지·팀·기술·README 섹션은 독립적인 의미 증거가 없으면 business concept가 아니라 implementation evidence로 남는다.
 
-## Mission align
+모든 competency question에 답하고 unsupported assertion, citation gap, implementation leakage, undefined/circular concept를 0으로 만든 뒤 사용자 승인을 받는다. semantic evidence가 없거나 MCP 계약이 stale하거나 vault가 분석 대상과 불일치하면 쓰지 않고 fail closed 한다.
 
-이전: 사용자 init 후 *수동 add 25 회* (Paravel real-codebase 측정 친구션).
-이후 (R+): agent 가 한 번 분석 → 30+ 후보 → 1-click confirm → **batch 2 호출 (add_concepts + add_relations) → 총 3 round-trip 으로 vault 채워짐**. 첫 user *Aha moment*.
-
-## 참조
-
-- `.claude/skills/ontology-bootstrap/SKILL.md` — agent prompt
-- `mcp/src/analyze.mjs` — deterministic helper (R16)
-- `cli/src/commands/analyze.mjs` — cli wrapper
+Muse forward-test에서는 2,000개 파일과 41개 구현 요소를 읽고 5개 domain 및 13개 capability를 출처와 함께 제안했다. unsupported assertion 0, citation gap 0, implementation-name leakage 0, circular concept 0, competency question 5/5였으며, 활성 vault가 Muse와 달라 쓰기 단계는 중단했다.

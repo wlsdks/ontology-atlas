@@ -1462,7 +1462,7 @@ describe('verify.mjs first-contact gates', () => {
         },
         outputSchema: {
           type: 'object',
-          required: ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'suggestedRelations', 'skipped'],
+          required: ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence', 'suggestedRelations', 'skipped'],
           properties: {
             rootPath: { type: 'string' },
             project: {

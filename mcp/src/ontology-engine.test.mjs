@@ -3397,6 +3397,8 @@ describe('queryCompiledOntology', () => {
         slug: 'elements/src/auth/login',
         kind: 'element',
         title: 'Login',
+        domain: 'auth-domain',
+        path: 'src/auth/login.ts',
       },
     ]);
     assert.deepEqual(result.danglingReferences.rows.map((row) => row.proposedAction.args), [
@@ -3624,6 +3626,8 @@ describe('queryCompiledOntology', () => {
             slug: 'elements/src/auth/login',
             kind: 'element',
             title: 'Login',
+            domain: 'domains/auth',
+            path: 'src/auth/login.ts',
           },
         },
       ],
