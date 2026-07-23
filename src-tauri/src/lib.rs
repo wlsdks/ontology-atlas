@@ -9,6 +9,9 @@ use std::sync::Mutex;
 use std::time::{Duration, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
+/// Atlas Git — vault 를 git 으로 버전 기록하는 네이티브 계층 (웹 GUI 가 invoke).
+mod git;
+
 const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
@@ -5734,6 +5737,11 @@ pub fn run() {
             open_vault_in_finder,
             ensure_default_vault_parent_dir,
             start_vault_watch,
+            git::git_status,
+            git::git_snapshot,
+            git::git_history,
+            git::git_diff,
+            git::git_pull,
         ])
         .build(tauri::generate_context!())
         .expect("error while building ontology-atlas desktop app")

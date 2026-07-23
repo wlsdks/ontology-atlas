@@ -91,9 +91,10 @@ function parsePorcelain(out) {
     });
 }
 
-/** porcelain 행 하나를 'added' | 'modified' | 'deleted' 로 분류. */
+/** porcelain 행 하나를 'added' | 'modified' | 'deleted' | 'renamed' 로 분류. */
 export function classifyChange(row) {
   if (row.index === 'D' || row.worktree === 'D') return 'deleted';
+  if (row.index === 'R') return 'renamed';
   if ((row.index === '?' && row.worktree === '?') || row.index === 'A') return 'added';
   return 'modified';
 }
@@ -123,7 +124,9 @@ export function buildChangeSummary(rows, { repoRoot, vaultRoot }) {
         // 읽기 실패 — kind 없이 경로 기반 slug 로 진행 (커밋 자체는 막지 않음).
       }
     }
-    return { path: row.path, absPath, status, kind, slug };
+    // LOW-5: rename 은 이전 경로를 보존해 히스토리에서 "renamed A → B" 로 읽히게 한다.
+    const renamedFrom = status === 'renamed' && row.renamedFrom ? row.renamedFrom : null;
+    return { path: row.path, absPath, status, kind, slug, renamedFrom };
   });
 }
 
@@ -135,10 +138,12 @@ export function formatSnapshotSummary(changes) {
   const added = changes.filter((c) => c.status === 'added').length;
   const modified = changes.filter((c) => c.status === 'modified').length;
   const removed = changes.filter((c) => c.status === 'deleted').length;
+  const renamed = changes.filter((c) => c.status === 'renamed').length;
 
   const parts = [];
   if (added > 0) parts.push(`+${added} concept${added === 1 ? '' : 's'}`);
   if (modified > 0) parts.push(`~${modified} updated`);
+  if (renamed > 0) parts.push(`→${renamed} renamed`);
   if (removed > 0) parts.push(`-${removed} removed`);
 
   const headline = parts.length > 0 ? `ontology snapshot: ${parts.join(', ')}` : 'ontology snapshot: no concept changes';
@@ -207,4 +212,198 @@ export function pushCurrentBranch({ repoRoot, run = defaultRun }) {
 
 export function getRemoteUrl({ repoRoot, remoteName, run = defaultRun }) {
   return run(['remote', 'get-url', remoteName], repoRoot).trim();
+}
+
+// ── 우아한 실패 (HIGH-1) ──────────────────────────────────────────────────
+// commitPathspec / pushCurrentBranch / pullCurrentBranch 는 execFileSync 의
+// throw 를 그대로 전파한다. 커맨드 래퍼는 그 에러를 `classifyGitError` 로
+// 넘겨 raw 스택트레이스 크래시 대신 "한 줄 원인 + 다음 행동" 으로 바꾼다.
+// 순수 함수 — I/O 없음, stderr 는 래퍼가 쓴다.
+
+/** execFileSync 에러의 stderr/stdout/message 를 하나의 문자열로 합친다. */
+function gitErrorText(err) {
+  if (!err) return '';
+  const parts = [];
+  for (const key of ['stderr', 'stdout']) {
+    const v = err[key];
+    if (typeof v === 'string') parts.push(v);
+    else if (v && typeof v.toString === 'function') parts.push(v.toString('utf-8'));
+  }
+  if (typeof err.message === 'string') parts.push(err.message);
+  return parts.join('\n');
+}
+
+/**
+ * git 실패 에러를 사용자가 이해할 한 줄 + 다음 행동으로 분류.
+ * @param {Error} err execFileSync 가 던진 에러
+ * @param {{ operation?: 'commit'|'push'|'pull'|'git' }} opts
+ * @returns {{ reason: string, message: string, note: string|null, guidance: string|null }}
+ */
+export function classifyGitError(err, { operation = 'git' } = {}) {
+  const raw = gitErrorText(err);
+  const text = raw.toLowerCase();
+  const firstLine = raw.split('\n').map((l) => l.trim()).filter(Boolean)[0] || null;
+
+  // push: 원격이 앞섬 (non-fast-forward). 커밋은 이미 로컬에 있으므로 안내만.
+  if (
+    text.includes('non-fast-forward') ||
+    text.includes('updates were rejected') ||
+    (text.includes('[rejected]') && text.includes('fetch first'))
+  ) {
+    return {
+      reason: 'push-non-fast-forward',
+      message: '원격이 앞섰어요 — `git pull` 후 다시 스냅샷하세요.',
+      note: '커밋은 이미 로컬에 기록됨',
+      guidance: 'git pull',
+    };
+  }
+
+  // gpg 서명 실패
+  if (
+    text.includes('gpg failed to sign') ||
+    text.includes('signing failed') ||
+    (text.includes('gpg') && text.includes('sign'))
+  ) {
+    return {
+      reason: 'gpg-sign-failed',
+      message: '커밋 서명(gpg)에 실패했어요 — 서명 키를 확인하세요.',
+      note: firstLine,
+      guidance: 'git config commit.gpgsign false   # 서명을 끄고 다시 스냅샷',
+    };
+  }
+
+  // merge / rebase 진행 중 — pathspec 부분 커밋 불가
+  if (
+    text.includes('cannot do a partial commit during a merge') ||
+    text.includes('cannot do a partial commit during a rebase') ||
+    text.includes('cannot do a partial commit')
+  ) {
+    return {
+      reason: 'merge-in-progress',
+      message: '머지/리베이스가 진행 중이라 vault 범위만 커밋할 수 없어요 — 진행 중인 작업을 먼저 마치거나 중단하세요.',
+      note: null,
+      guidance: 'git status   # 진행 중 상태 확인',
+    };
+  }
+
+  // pull: 충돌
+  if (text.includes('conflict') || text.includes('automatic merge failed')) {
+    return {
+      reason: 'pull-conflict',
+      message: 'pull 중 충돌이 났어요 — 충돌 파일을 해결한 뒤 커밋하세요.',
+      note: null,
+      guidance: 'git status   # 충돌 파일 확인',
+    };
+  }
+
+  // 커밋 안 된 로컬 변경이 pull 로 덮어써질 위험
+  if (text.includes('would be overwritten') || text.includes('overwritten by merge')) {
+    return {
+      reason: 'local-changes',
+      message: '커밋 안 된 로컬 변경이 있어 막혔어요 — 먼저 snapshot 으로 커밋하거나 stash 하세요.',
+      note: null,
+      guidance: 'ontology-atlas snapshot   # 로컬 변경을 먼저 커밋',
+    };
+  }
+
+  // pull: 원격/추적 정보 없음
+  if (
+    text.includes('no tracking information') ||
+    text.includes("couldn't find remote ref") ||
+    text.includes('no such remote')
+  ) {
+    return {
+      reason: 'no-upstream',
+      message: '이 브랜치에 연결된 원격이 없어요 — 먼저 upstream 을 설정하세요.',
+      note: null,
+      guidance: 'git push -u origin <branch>',
+    };
+  }
+
+  // pre-commit / commit-msg 훅 거부 (훅이 "hook"/"pre-commit" 을 남긴 경우)
+  if (text.includes('pre-commit') || text.includes('commit-msg') || text.includes('hook')) {
+    return {
+      reason: 'pre-commit-hook',
+      message: '커밋 훅이 스냅샷을 거부했어요 — 훅이 보고한 문제를 고친 뒤 다시 스냅샷하세요.',
+      note: firstLine,
+      guidance: null,
+    };
+  }
+
+  // 미분류 — raw 스택트레이스 대신 operation 별 깔끔한 fallback + git 첫 줄.
+  if (operation === 'commit') {
+    return {
+      reason: 'commit-rejected',
+      message: '커밋이 거부됐어요 (커밋 훅이 막았을 수 있어요).',
+      note: firstLine,
+      guidance: null,
+    };
+  }
+  return {
+    reason: 'git-command-failed',
+    message: `git ${operation} 명령이 실패했어요.`,
+    note: firstLine,
+    guidance: null,
+  };
+}
+
+// ── 옵시디언 Git 패리티 (읽기 전용 + opt-in 전송) ─────────────────────────
+const LOG_FIELD_SEP = '\x1f';
+
+/**
+ * vault pathspec 에 닿은 최근 커밋 N개 (git log -- <pathspec>).
+ * 커밋이 하나도 없거나 repo 오류면 null (호출자가 "히스토리 없음" 안내).
+ * @returns {{ shortHash: string, hash: string, subject: string, relativeTime: string, isoTime: string }[] | null}
+ */
+export function getVaultLog({ repoRoot, pathspec, limit = 10, run = defaultRun }) {
+  let out;
+  try {
+    out = run(
+      [
+        'log',
+        `--max-count=${limit}`,
+        `--pretty=format:%h${LOG_FIELD_SEP}%H${LOG_FIELD_SEP}%s${LOG_FIELD_SEP}%cr${LOG_FIELD_SEP}%cI`,
+        '--',
+        pathspec,
+      ],
+      repoRoot,
+    );
+  } catch {
+    return null; // 아직 커밋 없음 / repo 아님
+  }
+  if (typeof out !== 'string') return null;
+  const trimmed = out.trim();
+  if (!trimmed) return [];
+  return trimmed
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      const [shortHash, hash, subject, relativeTime, isoTime] = line.split(LOG_FIELD_SEP);
+      return { shortHash, hash, subject, relativeTime, isoTime };
+    });
+}
+
+/**
+ * 아직 커밋 안 된 vault 범위 변경의 diff (git diff HEAD -- <pathspec>).
+ * HEAD 가 없으면 (커밋 0개) 인덱스 기준으로 폴백. 실패 시 null.
+ * (untracked 신규 파일은 diff 에 안 잡히므로 파일 목록으로 별도 표시한다.)
+ */
+export function getVaultDiff({ repoRoot, pathspec, run = defaultRun }) {
+  try {
+    return run(['diff', 'HEAD', '--', pathspec], repoRoot);
+  } catch {
+    try {
+      return run(['diff', '--', pathspec], repoRoot);
+    } catch {
+      return null;
+    }
+  }
+}
+
+/**
+ * 현재 브랜치를 upstream 에서 pull (opt-in). 충돌/비-fast-forward/원격 없음은
+ * throw 로 전파 → 래퍼가 `classifyGitError` 로 우아하게 변환한다.
+ */
+export function pullCurrentBranch({ repoRoot, run = defaultRun }) {
+  return run(['pull'], repoRoot);
 }
