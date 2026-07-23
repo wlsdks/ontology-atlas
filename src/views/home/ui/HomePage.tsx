@@ -3373,6 +3373,13 @@ export function HomePage() {
                     onSelectEdge={(edge) => {
                       setFullDetailSlug(null);
                       setHoverEdge(null); // 팝오버가 열리면 마이크로카드는 강등
+                      // 노드 핸즈온 감사(2026-07-24) A안 — 노드 포커스 중 엣지
+                      // 클릭이 삼켜지던 결함(엣지 패널 게이트 `!selectedOntologyNode`).
+                      // 엣지 선택 = 페어 포커스는 노드 ego 포커스를 **대체**하는
+                      // 게 정의(두 transient 표면 동시 금지)이므로, onSelect 이
+                      // selectedEdge 를 지우는 것과 대칭으로 여기서 노드 포커스를
+                      // 해제해 게이트를 연다. 카메라는 overview→엣지 경로와 동일.
+                      if (selectedOntologyNode) handleClose();
                       setSelectedEdge(edge);
                     }}
                     onHoverEdge={handleHoverEdge}
