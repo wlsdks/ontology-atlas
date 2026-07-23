@@ -126,8 +126,11 @@ describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYST
       rows: [{ id: "capabilities/product-owner-operating-system", title: "product-owner-operating-system", path: "capabilities/" }],
       total: 1,
     });
-    const group = screen.getByText("evidence").closest("[data-datasheet-group='evidence']");
+    // 잉크 분리 후 메트릭 스트립에도 "evidence" 라벨 span 이 생겨 getByText 는
+    // 다중 매치 — 그룹 마커로 직접 조회한다.
+    const group = document.querySelector("[data-datasheet-group='evidence']");
     expect(group).not.toBeNull();
+    expect(group!.textContent).toContain("evidence");
     expect(screen.getByText("product-owner-operating-system")).toBeInTheDocument();
     expect(screen.getByText("capabilities/")).toBeInTheDocument();
   });
@@ -204,6 +207,35 @@ describe("TopologyV2DetailPanel — M-2 typed containment split", () => {
     expect(document.querySelector("[data-datasheet-group='contains']")).toBeNull();
     const metric = screen.getByTestId("topology-v2-detail-panel").querySelector("[data-datasheet-metric='engraved']");
     expect(metric?.textContent).not.toContain("contains");
+  });
+});
+
+// 데이터시트 내부 정제 (2026-07-23) — 메트릭 스트립이 한 덩어리 문자열로
+// 읽히던 문제: 라벨은 tertiary, 값은 `--topology-v2-panel-metric-text` 잉크로
+// 분리하고, 그룹 헤더 카운트도 같은 값 잉크를 쓴다 — 스트립의 각 카운트가
+// 아래 자기 그룹으로 잉크 페어링만으로 시선 연결되는 계약(신규 인터랙션 0).
+describe("TopologyV2DetailPanel — metric strip label/value ink split", () => {
+  it("renders each metric segment structured (label + value spans) instead of one joined string", () => {
+    renderPanel();
+    const metric = screen
+      .getByTestId("topology-v2-detail-panel")
+      .querySelector("[data-datasheet-metric='engraved']");
+    expect(metric).not.toBeNull();
+    const seg = metric!.querySelector("[data-metric-segment='usedBy']");
+    expect(seg).not.toBeNull();
+    expect(seg!.textContent).toContain("used by 1");
+    // the value carries the engraved-number ink token, the label does not
+    const valueSpan = Array.from(seg!.querySelectorAll("span")).find(
+      (s) => s.textContent === "1",
+    );
+    expect(valueSpan?.className).toContain("--topology-v2-panel-metric-text");
+  });
+
+  it("pairs the group header count with the SAME engraved-number ink as the strip value", () => {
+    renderPanel();
+    const total = document.querySelector("[data-datasheet-group-total='usedBy']");
+    expect(total).not.toBeNull();
+    expect(total!.className).toContain("--topology-v2-panel-metric-text");
   });
 });
 

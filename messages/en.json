@@ -2175,7 +2175,7 @@
       "actionsGroupLabel": "Node actions",
       "actionDocument": "Document",
       "actionEditRelations": "Edit relations",
-      "actionCopyHandoff": "Copy agent handoff",
+      "actionCopyHandoff": "Copy handoff",
       "actionPath": "Path",
       "updated_today": "changed today",
       "updated_yesterday": "changed yesterday",

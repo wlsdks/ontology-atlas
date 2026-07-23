@@ -226,24 +226,52 @@ export interface V2MetricLabels {
   evidence: string;
 }
 
+/** One typed segment of the engraved metric line — `key` matches the
+ * connection-group id below it (`data-datasheet-group`), so the strip and the
+ * groups stay reconciled by construction. */
+export interface V2MetricSegment {
+  key: "contains" | "usedBy" | "dependsOn" | "evidence";
+  label: string;
+  value: number;
+}
+
 /**
- * The ONE engraved metric line — "담는 것 18 · 쓰는 곳 4 · 기대는 곳 2 · 근거 1".
- * Replaces the old subtitle + count boxes (the owner's "정보가 세 번 나온다"
- * complaint); every fact appears exactly once. M-2: the leading "담는 것"
- * segment appears ONLY for container nodes (`contains > 0`) — a leaf's line
- * stays "쓰는 곳 · 기대는 곳 · 근거", so the typed split adds signal for
- * domains without adding a "담는 것 0" to every element.
+ * The ONE engraved metric line's segments — "담는 것 18 · 쓰는 곳 4 · 기대는
+ * 곳 2 · 근거 1". Replaces the old subtitle + count boxes (the owner's
+ * "정보가 세 번 나온다" complaint); every fact appears exactly once. M-2: the
+ * leading "담는 것" segment appears ONLY for container nodes (`contains > 0`)
+ * — a leaf's line stays "쓰는 곳 · 기대는 곳 · 근거", so the typed split adds
+ * signal for domains without adding a "담는 것 0" to every element.
+ *
+ * 데이터시트 내부 정제 (2026-07-23) — segments are exposed structured (not
+ * only joined) so the panel can set label ink (tertiary) apart from value ink
+ * (`--topology-v2-panel-metric-text`): the numbers are the data, the words
+ * are the scale markings (Tufte data-ink). Each segment's ink pairing is the
+ * SAME pairing the group headers use, which is what visually links a strip
+ * count to its group below without any new interaction.
  */
+export function buildV2MetricSegments(
+  values: V2MetricValues,
+  labels: V2MetricLabels,
+): V2MetricSegment[] {
+  const segments: V2MetricSegment[] = [];
+  if (values.contains > 0)
+    segments.push({ key: "contains", label: labels.contains, value: values.contains });
+  segments.push({ key: "usedBy", label: labels.usedBy, value: values.usedBy });
+  segments.push({ key: "dependsOn", label: labels.dependsOn, value: values.dependsOn });
+  segments.push({ key: "evidence", label: labels.evidence, value: values.evidence });
+  return segments;
+}
+
+/** Joined-string form of `buildV2MetricSegments` — kept for handoff/plain
+ * text consumers and as the single source of the "label value · …" grammar. */
 export function formatV2MetricLine(
   values: V2MetricValues,
   labels: V2MetricLabels,
 ): string {
-  const segments: string[] = [];
-  if (values.contains > 0) segments.push(`${labels.contains} ${values.contains}`);
-  segments.push(`${labels.usedBy} ${values.usedBy}`);
-  segments.push(`${labels.dependsOn} ${values.dependsOn}`);
-  segments.push(`${labels.evidence} ${values.evidence}`);
-  return segments.join(" · ");
+  return buildV2MetricSegments(values, labels)
+    .map((s) => `${s.label} ${s.value}`)
+    .join(" · ");
 }
 
 /** One row in the promoted 근거(evidence) group — RATIO-SYSTEM §4 scale-up

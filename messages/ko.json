@@ -2175,7 +2175,7 @@
       "actionsGroupLabel": "노드 행동",
       "actionDocument": "문서",
       "actionEditRelations": "관계 편집",
-      "actionCopyHandoff": "에이전트 인계 복사",
+      "actionCopyHandoff": "인계 복사",
       "actionPath": "경로",
       "updated_today": "오늘 바뀜",
       "updated_yesterday": "어제 바뀜",

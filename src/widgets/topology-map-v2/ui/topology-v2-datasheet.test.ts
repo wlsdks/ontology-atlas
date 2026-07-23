@@ -5,6 +5,7 @@ import {
   buildV2ConnectionGroups,
   buildV2EvidenceRows,
   formatV2HandoffText,
+  buildV2MetricSegments,
   formatV2MetricLine,
   groupV2ConnectionsByDirection,
   summarizeContainsByPathPrefix,
@@ -215,6 +216,29 @@ describe("formatV2MetricLine — M-2 typed segments", () => {
     expect(
       formatV2MetricLine({ contains: 0, usedBy: 0, dependsOn: 0, evidence: 0 }, labels),
     ).toBe("쓰는 곳 0 · 기대는 곳 0 · 근거 0");
+  });
+
+  // 데이터시트 내부 정제 (2026-07-23) — 패널이 라벨/값 잉크를 분리 렌더할 수
+  // 있게 세그먼트를 구조화해 노출한다. key 는 아래 연결 그룹의
+  // `data-datasheet-group` id 와 동일 — 스트립 카운트와 그룹 카운트가 구성상
+  // 같은 사실임을 타입으로 고정한다.
+  it("buildV2MetricSegments exposes the same segments structured, keyed by the group ids", () => {
+    expect(
+      buildV2MetricSegments({ contains: 18, usedBy: 4, dependsOn: 2, evidence: 1 }, labels),
+    ).toEqual([
+      { key: "contains", label: "담는 것", value: 18 },
+      { key: "usedBy", label: "쓰는 곳", value: 4 },
+      { key: "dependsOn", label: "기대는 곳", value: 2 },
+      { key: "evidence", label: "근거", value: 1 },
+    ]);
+  });
+
+  it("buildV2MetricSegments omits the contains segment for a leaf, like the joined line", () => {
+    expect(
+      buildV2MetricSegments({ contains: 0, usedBy: 3, dependsOn: 5, evidence: 2 }, labels).map(
+        (s) => s.key,
+      ),
+    ).toEqual(["usedBy", "dependsOn", "evidence"]);
   });
 });
 
