@@ -1752,7 +1752,6 @@
       "factElement": "Elements",
       "factDocument": "Documents",
       "factRelations": "Relations",
-      "domainRowSummary": "{total} — {cap} capabilities · {el} elements",
       "footDetail": "Details →",
       "footTopologyView": "View in topology →",
       "footUpdated": "Updated {date} · {path}",

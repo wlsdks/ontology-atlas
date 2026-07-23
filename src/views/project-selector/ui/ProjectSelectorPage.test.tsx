@@ -140,7 +140,21 @@ describe("ProjectSelectorPage", () => {
     renderPage();
     expect(screen.getByTestId("project-selector-activity-row")).toBeInTheDocument();
     expect(screen.getByText("capabilities/mcp-server")).toBeInTheDocument();
-    expect(screen.getByText("write 도구로 확장")).toBeInTheDocument();
+    // 2줄 스택 통일 이후 subtitle 은 도메인 + 설명을 한 줄로 합친다
+    // (RecentNodeRow — Apple C3 unification). 이 파일의 mock 노드 id 는
+    // (kind:folder/slug) tailSlug 계산 규약과 우연히 불일치해 nodeId 매칭이
+    // 항상 실패하므로 domainTitle 은 fallback("—")으로 남는다 — 실제 매칭
+    // 경로는 ProjectSelectorPage.activity-link.test.tsx 가 전담 검증한다.
+    expect(screen.getByText("— · write 도구로 확장")).toBeInTheDocument();
+  });
+
+  it("puts the project cards before the recent-activity feed (Toss P1 — primary content first)", () => {
+    renderPage();
+    const card = screen.getByTestId("project-selector-card");
+    const activityRow = screen.getByTestId("project-selector-activity-row");
+    // DOM order === source order for sibling sections here — compareDocumentPosition
+    // confirms the card is earlier in document order than the activity row.
+    expect(card.compareDocumentPosition(activityRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("renders a full-width project card with fact strip and domain composition row", () => {

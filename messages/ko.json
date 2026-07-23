@@ -1752,7 +1752,6 @@
       "factElement": "요소",
       "factDocument": "문서",
       "factRelations": "관계",
-      "domainRowSummary": "{total} — 역량 {cap} · 요소 {el}",
       "footDetail": "상세 →",
       "footTopologyView": "지도에서 보기 →",
       "footUpdated": "갱신 {date} · {path}",

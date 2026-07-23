@@ -13,15 +13,19 @@ import { useProjects } from "@/features/project-data-source";
 import { LiveActivityIndicator, useOntologyInsight } from "@/features/vault-ontology";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { useLocalVault } from "@/features/docs-vault-local";
+import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { formatDate } from "@/shared/lib/format-date";
 import { buildContainmentParents } from "@/shared/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { HexMark } from "@/shared/ui/hex-mark";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
+import { DomainCapacityBar } from "@/widgets/domain-capacity-bar";
+import { RecentNodeRow } from "@/widgets/recent-node-row";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { computeWorkspaceCensus } from "../lib/workspace-census";
 import { buildProjectCardFacts } from "../lib/project-card-facts";
 import { buildDomainCompositionRows, type DomainCompositionRow } from "../lib/domain-composition";
+import { resolveProjectCardDescription } from "../lib/project-card-description";
 import {
   buildRecentActivityRows,
   resolveRecentActivityAgo,
@@ -50,6 +54,7 @@ function formatAgo(ago: RecentActivityAgo, t: SelectorTranslator) {
 
 export function ProjectSelectorPage() {
   const t = useTranslations("projectPages.selector");
+  const kindLabel = useOntologyKindLabel();
   useDocumentTitle(t("documentTitle"));
 
   const { projects } = useProjects();
@@ -133,78 +138,10 @@ export function ProjectSelectorPage() {
           {t("lede")}
         </p>
 
-        {recentActivityRows.length > 0 ? (
-          <section className="mt-7">
-            <div className="mb-3 flex items-center gap-2.5">
-              <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
-                {t("activityHeading")}
-              </span>
-              <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                {t("activityCaption")}
-              </span>
-            </div>
-            <div className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-2 shadow-[inset_0_1px_0_var(--color-overlay-2)]">
-              {recentActivityRows.map((row, index) => {
-                const rowClassName = `flex items-center gap-2.5 min-h-8 py-1.5 text-body text-[color:var(--color-text-secondary)] ${
-                  index > 0 ? "border-t border-[color:var(--color-divider)]" : ""
-                } ${row.nodeId ? "-mx-1.5 rounded-md px-1.5 transition-colors hover:bg-[color:var(--color-overlay-1)]" : ""}`;
-                const rowContent = (
-                  <>
-                    <TopologyV2KindGlyph kind={row.kind} size={14} />
-                    <span
-                      title={row.title}
-                      className="min-w-0 shrink truncate text-body text-[color:var(--color-text-secondary)]"
-                    >
-                      {row.title}
-                    </span>
-                    {row.what ? (
-                      <span
-                        title={row.what}
-                        className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-tertiary)]"
-                      >
-                        {row.what}
-                      </span>
-                    ) : (
-                      <span className="min-w-0 flex-1" />
-                    )}
-                    <span
-                      title={row.domainTitle ?? undefined}
-                      className="max-w-[150px] shrink truncate text-caption text-[color:var(--color-text-tertiary)] sm:max-w-[220px]"
-                    >
-                      {row.domainTitle ?? t("activityNoDomain")}
-                    </span>
-                    <span
-                      title={row.slug}
-                      className="hidden shrink-0 max-w-[160px] truncate font-mono text-caption text-[color:var(--color-text-quaternary)] md:inline"
-                    >
-                      {row.slug}
-                    </span>
-                    <span className={`shrink-0 whitespace-nowrap text-label ${numeralClass}`}>
-                      {formatAgo(resolveRecentActivityAgo(row.updatedAt, new Date()), t)}
-                    </span>
-                  </>
-                );
-
-                return row.nodeId ? (
-                  <Link
-                    key={row.slug}
-                    href={buildOntologyNodeHref(row.nodeId)}
-                    aria-label={t("activityRowAriaLabel", { slug: row.slug })}
-                    data-testid="project-selector-activity-row"
-                    className={rowClassName}
-                  >
-                    {rowContent}
-                  </Link>
-                ) : (
-                  <div key={row.slug} data-testid="project-selector-activity-row" className={rowClassName}>
-                    {rowContent}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
-
+        {/* Toss P1 — 프로젝트 카드가 이 페이지의 1차 콘텐츠, 최근 활동은
+            그 아래 보조 피드다. 이전엔 활동 피드가 카드보다 위에 있어
+            초점이 경쟁했다(방문자가 찾는 건 "내 프로젝트들"이지 "최근 어떤
+            문서가 바뀌었나"가 아니다). */}
         {projects.length > 0 ? (
           <div className="mt-7 flex flex-col gap-5">
             {projects.map((project) => (
@@ -217,7 +154,9 @@ export function ProjectSelectorPage() {
                     ? true
                     : (nodeById.get(row.domainId)?.projectIds ?? []).includes(project.slug),
                 )}
+                description={resolveProjectCardDescription(docs.find((d) => d.slug === project.slug))}
                 docPath={docs.find((d) => d.slug === project.slug)?.path}
+                kindLabel={kindLabel}
                 t={t}
               />
             ))}
@@ -227,6 +166,38 @@ export function ProjectSelectorPage() {
             {t("emptyStateDesc")}
           </p>
         )}
+
+        {recentActivityRows.length > 0 ? (
+          <section className="mt-7">
+            <div className="mb-3 flex items-center gap-2.5">
+              <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+                {t("activityHeading")}
+              </span>
+              <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                {t("activityCaption")}
+              </span>
+            </div>
+            <div className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-1 shadow-[inset_0_1px_0_var(--color-overlay-2)]">
+              {recentActivityRows.map((row) => (
+                <RecentNodeRow
+                  key={row.slug}
+                  kind={row.kind}
+                  title={row.title}
+                  subtitle={
+                    row.what
+                      ? `${row.domainTitle ?? t("activityNoDomain")} · ${row.what}`
+                      : (row.domainTitle ?? t("activityNoDomain"))
+                  }
+                  trailing={formatAgo(resolveRecentActivityAgo(row.updatedAt, new Date()), t)}
+                  trailingSecondary={row.slug}
+                  href={row.nodeId ? buildOntologyNodeHref(row.nodeId) : undefined}
+                  ariaLabel={t("activityRowAriaLabel", { slug: row.slug })}
+                  testId="project-selector-activity-row"
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <section className="mt-7 rounded-panel border border-dashed border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] px-5 py-4">
           <div className="flex items-center gap-3">
@@ -282,11 +253,17 @@ interface ProjectFullCardProps {
   project: Project;
   facts: ReturnType<typeof buildProjectCardFacts>;
   domainRows: DomainCompositionRow[];
+  /** Toss P2 — 사용자가 frontmatter `description:` 에 직접 쓴 한 줄만.
+   * `Project.description` (엔티티 레이어)은 없으면 body 발췌로 fallback 하는데,
+   * 그 발췌가 내부 포지셔닝 카피일 수 있어 카드에는 절대 쓰지 않는다
+   * (`resolveProjectCardDescription` 참고). */
+  description: string | null;
   docPath: string | undefined;
+  kindLabel: (kind: string) => string;
   t: SelectorTranslator;
 }
 
-function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFullCardProps) {
+function ProjectFullCard({ project, facts, domainRows, description, docPath, kindLabel, t }: ProjectFullCardProps) {
   const maxTotal = Math.max(1, ...domainRows.map((row) => row.total));
   const ago = formatAgo(resolveRecentActivityAgo(project.updatedAt, new Date()), t);
 
@@ -306,7 +283,7 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
             <span>{t("cardUpdatedPrefix")} {ago}</span>
           </div>
           <p className="mt-1.5 text-body leading-6 text-[color:var(--color-text-tertiary)] line-clamp-2">
-            {project.description || t("cardDescriptionFallback")}
+            {description ?? t("cardDescriptionFallback")}
           </p>
         </div>
         <span className="mt-1.5 shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)]">
@@ -331,37 +308,21 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
       </div>
 
       {domainRows.length > 0 ? (
-        <div className="mt-4 flex flex-col gap-2">
-          {domainRows.map((row, index) => (
-            <div key={row.domainId} className="flex items-center gap-3 sm:gap-4">
-              <span className="flex w-[84px] min-w-0 shrink-0 items-center gap-2 truncate text-body text-[color:var(--color-text-secondary)] sm:w-[200px] md:w-[280px]">
-                <TopologyV2KindGlyph kind="domain" size={14} />
-                {row.title}
-              </span>
-              <span className="h-1 min-w-0 max-w-[640px] flex-1 overflow-hidden rounded-full bg-[color:var(--color-border-soft)]">
-                <span
-                  className="block h-full rounded-full"
-                  style={{
-                    width: `${Math.round((row.total / maxTotal) * 100)}%`,
-                    backgroundColor: index === 0 ? "var(--color-indigo-brand)" : "var(--color-border-strong)",
-                  }}
-                />
-              </span>
-              <span
-                title={t("domainRowSummary", {
-                  total: row.total,
-                  cap: row.capabilityCount,
-                  el: row.elementCount,
-                })}
-                className={`max-w-[120px] shrink truncate text-right text-label sm:max-w-none sm:shrink-0 sm:whitespace-nowrap ${numeralClass}`}
-              >
-                {t("domainRowSummary", {
-                  total: row.total,
-                  cap: row.capabilityCount,
-                  el: row.elementCount,
-                })}
-              </span>
-            </div>
+        <div className="mt-4 flex flex-col gap-1">
+          {domainRows.map((row) => (
+            <DomainCapacityBar
+              key={row.domainId}
+              row={{
+                id: row.domainId,
+                title: row.title,
+                capabilityCount: row.capabilityCount,
+                elementCount: row.elementCount,
+                total: row.total,
+              }}
+              maxTotal={maxTotal}
+              labels={{ capabilityUnit: kindLabel("capability"), elementUnit: kindLabel("element") }}
+              titleWidthClassName="sm:w-[200px] md:w-[280px]"
+            />
           ))}
         </div>
       ) : null}
