@@ -1535,9 +1535,19 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             }
           }
           recomputeWorldGeometry(world, tokens);
+          // 이탈 프레이밍 결함(노드 감사 2026-07-24): 진입 시 collapse 된 영역
+          // 레이아웃에서 `overviewScaleRef` 가 collapsed spineFit(≈0.24)로 굳어,
+          // 이탈 후 stepCamera 의 scale 상한(overviewEntryScale×maxZoomRatio)이
+          // ≈0.73 으로 눌려 카메라가 canonical overview(≈1.14)에 못 오르고
+          // 축소 프레임에 고착됐다. 역재생으로 노드가 홈으로 돌아오는 매 프레임
+          // spineBounds 가 회복되므로 상한 anchor 를 라이브로 재계산해 트윈→스프링
+          // 인계 시점에 상한이 목표를 누르지 않게 한다(fresh/deselect 경로와 동치).
+          overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
         } else if (rt.phase === "idle" && realmDataRef.current !== null) {
-          // 이탈 완료 — 역재생이 홈으로 되돌렸으니 realm 데이터 정리.
+          // 이탈 완료 — 역재생이 홈으로 되돌렸으니 realm 데이터 정리 + 홈 spineBounds
+          // 기준으로 overview anchor 를 최종 확정(위 exiting 재계산의 마감).
           realmDataRef.current = null;
+          overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
         }
       }
 
