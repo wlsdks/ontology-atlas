@@ -27,7 +27,7 @@ diff review -> better next agent task`.
 | Surface | Entry | Audience |
 |---|---|---|
 | **macOS app** (Ontology Atlas desktop distribution track) | signed DMG → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/edit`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
-| **CLI** (R12 / R14 / R15+ · 50 commands) | `init / agent-setup / agent-activity / add / import / list / find / validate / mcp-verify / query / compile` (vault basics + existing-vault Claude/Codex config repair + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile) · `index / analyze / infer-imports / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
+| **CLI** (R12 / R14 / R15+ · 51 commands) | `init / agent-setup / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / infer-imports / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 31 tools (18 read · 13 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap and index projects (R16 `analyze_repo_structure` · R17 `infer_imports` · R+ `index_project`) · compile/query/validator-backed health as graph-engine memory access |
 | **Website** | Firebase static hosting / `/` + `/download` | `/` renders the topology map directly and lets you open your own local vault folder from the browser (File System Access API, no install); `/download` is the product intro + release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
 
@@ -390,7 +390,11 @@ Empty state (0 nodes): link to `/docs` (open vault).
 
 #### Header toolbar
 - Help tooltip (palette + drag-to-connect + Save chip onboarding)
-- Export buttons (only if nodes/edges exist): Markdown · JSON-LD · GraphML
+- Export buttons (only if nodes/edges exist): Markdown · JSON-LD · GraphML — the
+  JSON-LD/GraphML serializer is shared byte-for-byte with the CLI `export`
+  command (`src/shared/lib/interop-format` ↔ `cli/src/lib/interop-format`, drift
+  guarded by `tests/contract/interop-format.contract.test.ts`); node identity is
+  the stable URN `urn:ontology-atlas:<kind>:<slug>`. See the Interop note below.
 - Layout toggle: Hierarchy / Force radio
 - Auto-layout button
 - Fullscreen toggle (`F`)
@@ -596,7 +600,7 @@ approval granularity — none of them let an agent write unreviewed nodes:
 | Input | Path | Approval unit |
 |---|---|---|
 | Pasted prose (meeting note / PR / RFC paragraph) | `/ontology-extract` skill — `find_evidence` + `similar_nodes` cross-check → candidate table | Per candidate node/edge |
-| Local CLAUDE.md/AGENTS.md-style file | `absorb_document` MCP tool / CLI `ontology-atlas absorb` — splits by `##` section, classifies policy vs. architecture, Tier 1 injection filter | Per section (dry-run first, `confirm:true` to write) |
+| Local CLAUDE.md/AGENTS.md-style file | `absorb_document` MCP tool / CLI `ontology-atlas absorb` — splits by `##` section, classifies policy vs. architecture, Tier 1 injection filter. MCP canonical paths outside `repoRoot` (including symlink escapes) need explicit `allowOutsideRepo:true` after preview | Per section (dry-run first, `confirm:true` to write) |
 | Confluence/Notion/wiki page, via a third-party wiki MCP the user already registered (e.g. Atlassian's official Confluence MCP) | `/ontology-absorb-confluence` skill — that MCP reads the page (read-only), the returned markdown is fed into the same `absorb_document` pipeline, and the source page URL is cited in each landed node's body | Per section (dry-run first, `confirm:true` to write) |
 
 The wiki path works identically for on-premise Confluence/wiki instances — the
@@ -604,6 +608,34 @@ absorption tool only ever reads a local markdown file; whatever gets it there
 (cloud MCP, on-prem export, `curl` to a file) is out of scope for this repo.
 This project does not ship a Confluence integration; it ships an absorption
 pipeline that a second, user-owned MCP can feed.
+
+### Interop — export to a standard graph format
+
+Data flows *out* the same way it flows in: as portable files, no backend. The
+CLI `ontology-atlas export [vault] --format jsonld|graphml|json` compiles the
+vault (the deterministic `compile_ontology` artifact) and writes a standard
+interchange format to stdout (status to stderr, so it pipes cleanly):
+
+- `jsonld` — RDF 1.1 JSON-LD; loads in rdflib / Protégé / any triplestore
+  (`g.parse('atlas.jsonld', format='json-ld')`).
+- `graphml` — XML graph; opens in Gephi / Cytoscape, loads via NetworkX
+  (`nx.read_graphml`) or Neo4j APOC (`apoc.import.graphml`).
+- `json` — the raw compile artifact unchanged (nodes/edges/`graphHash`).
+
+The web ERD builder's JSON-LD/GraphML export uses the *same* serializer, kept
+byte-identical by a contract test. Node identity is the stable URN
+`urn:ontology-atlas:<kind>:<slug>` (both the JSON-LD `@id` and the GraphML node
+id). Contract: **an export is a snapshot**, the compiler `graphHash` is its
+**version**, a `rename_concept` mints a *new* URN and does not rewrite URNs
+already emitted into a prior snapshot, and external/dangling refs are omitted
+(never phantom nodes). Full loading recipes live in `mcp/README.md` → *Interop*.
+Read-only MCP registration for external read consumers: set `OATLAS_READ_ONLY=1`
+(tools/list drops the 9 write tools; write calls are rejected).
+
+Staying file-only here is deliberate and matches the Obsidian precedent
+(files + offline core, servers behind an opt-in localhost plugin). A live HTTP
+transport is out of scope until two concrete external-tool requests prove that
+file export + the local stdio MCP genuinely can't serve them.
 
 **R14 — vault live updates** (`/topology` + all pages):
 
@@ -636,7 +668,13 @@ pipeline that a second, user-owned MCP can feed.
 path plus aligned `nodeSummaries[]`, so dependency-cycle diagnostics are readable
 without extra node lookups.
 
-#### Write tools (8)
+#### Write tools (13)
+
+All destructive dry-runs (`git_snapshot`, relation remove/replace,
+rename/reclassify/merge/delete, and absorb) expose the same agent decision
+contract: `previewReady`, `canConfirm`, `wouldChange`, and
+`blockedReasons[]`. Tool-specific legacy `ok` is not the confirmation signal.
+
 1. **add_concept** `{ slug, kind, title, domain?, capabilities?, elements?, body? }` — create new `.md`; graph arrays are trimmed, deduped, and sorted on write (throws on existing slug); changed writes return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers
    - **R6 validation**: title must be non-empty trimmed string (`isValidVaultTitle`)
 2. **add_concepts** `{ concepts }` — batch create nodes (max 50), order-preserving partial results; non-object row shape / unknown row field errors are isolated as `{ok:false, error}` rows, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every offending field with nearest hints, and duplicate input slugs report both the failing `concepts[n]` row and first-seen `concepts[m]` via text plus structured `rowName` / `firstSeenAt`; changed batches return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers for the final graph
@@ -664,6 +702,11 @@ without extra node lookups.
     - `intoSlug` node preserved as-is (frontmatter / body not auto-merged — use `patch_concept` after to combine)
     - `confirm: false` (dry-run) / `true` (actual)
     - Confirmed merges return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers
+9. **remove_relation** `{ from, to, type, confirm?, expected_mtime? }` — one exact typed relation and its rationale, dry-run first; an absent relation is an explicit no-op blocker
+10. **replace_relation** `{ from, oldTo, oldType, newTo, newType, why?, confirm?, expected_mtime? }` — relation target/type/rationale replacement in one source-file write
+11. **reclassify_concept** `{ slug, newKind, newSlug?, domain?, body?, confirm?, expected_mtime? }` — kind/slug/domain transition with backlink redirect and generated-starter handling
+12. **absorb_document** `{ filePath, confirm?, allowOutsideRepo? }` — classifies a local agent-instruction document, writes accepted policy nodes, backs up the source, then rewrites it as a slim pointer. Canonical paths outside `repoRoot`, including symlink escapes, are blocked until a reviewed dry-run is repeated with `allowOutsideRepo:true`
+13. **git_snapshot** `{ confirm?, expectedHead?, message? }` — validates and commits only the active vault pathspec locally; blocks stale HEAD, detached HEAD, Git operations in progress, and validator errors; never pushes
 
 ---
 

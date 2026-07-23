@@ -13,12 +13,12 @@ recompiling the same graph over and over.
 
 ## SDK and protocol baseline
 
-As of 2026-06-12, this package intentionally targets
+As of 2026-07-23, this package intentionally targets
 `@modelcontextprotocol/sdk@1.29.0`, the latest stable v1 release published on
-npm. The upstream TypeScript SDK's `main` branch is v2/pre-alpha work for the
-next MCP specification, and upstream guidance still recommends v1.x for
-production until the v2/spec update stabilizes. Keep the dependency exact, not a
-broad range, so release builds do not drift across SDK behavior during install.
+npm. The official v2 split packages are currently beta; upstream still
+recommends v1.x for production until v2 and the updated specification are
+stable. Keep the dependency exact, not a broad range, so release builds do not
+drift across SDK behavior during install.
 
 This server currently exposes a local stdio MCP surface, not a local HTTP
 server. That keeps it outside the SDK DNS-rebinding advisory scope for
@@ -35,6 +35,10 @@ MCP design contracts this package treats as release-critical:
   the verify helpers compare both payloads for parity.
 - Read tools must stay side-effect free. Write tools must keep explicit
   `expected_mtime`, dry-run, `confirm`, `overwrite`, and `force` safety gates.
+- Every destructive dry-run exposes the same machine decision fields:
+  `previewReady`, `canConfirm`, `wouldChange`, and `blockedReasons[]`. Agents
+  should use those fields instead of interpreting the tool-specific legacy
+  `ok` value.
 - Tool descriptions and initialize instructions must describe security,
   recovery, and destructive-write boundaries plainly enough for an agent to
   recover from strict-input errors without guessing.
@@ -347,7 +351,7 @@ The server connects over stdio. You should now see 31 tools under the `ontology-
 |---|---|
 | `connection_info` | First-call connection proof: resolved vault/repository roots, resolution sources, same-root warning, restart requirement, and server identity. Run it before repository analysis or writes. |
 | `git_status` | Read-only, vault-scoped Git status: HEAD/branch, changed vault files, outside-vault counts, staged-outside warnings, detached-HEAD and merge/rebase/cherry-pick/revert risk. NUL-delimited porcelain parsing preserves Unicode and whitespace paths. Never initializes, stages, commits, or pushes. |
-| `git_snapshot` | Local vault checkpoint with a mandatory dry-run/`confirm:true` flow and exact `expectedHead` concurrency guard. Runs vault validation; blocks validation errors, detached HEAD, and in-progress Git operations; commits only the vault pathspec; preserves outside staging; and never pushes. |
+| `git_snapshot` | Local vault checkpoint with a mandatory dry-run/`confirm:true` flow and exact `expectedHead` concurrency guard. Runs vault validation; blocks validation errors, detached HEAD, and in-progress Git operations; returns the shared destructive-preview decision contract; commits only the vault pathspec; preserves outside staging; and never pushes. |
 | `remove_relation` | Removes one exact typed edge and its matching `relation_notes` rationale. Dry-run by default; `confirm:true` writes. Supports `expected_mtime` and is idempotent when already absent. |
 | `replace_relation` | Atomically replaces one relation target/type and moves or replaces its rationale in the same source-file write. Dry-run by default; `confirm:true` writes. Supports `expected_mtime`. |
 | `reclassify_concept` | Atomically changes a node's kind and optional slug/domain while rewriting backlinks. Preserves custom prose, replaces only generated starter prose for the old kind, requires a domain for capability/element targets, and is dry-run by default with `confirm:true` to write. |
@@ -383,7 +387,14 @@ validation. A validator warning/failure inserts an actionable
 | `delete_concept` | **v0.4 ⚠ DESTRUCTIVE** Permanently deletes a node. Two-stage safety: ① without `confirm:true`, runs as a dry-run (with a backlinks preview); ② if backlinks exist, throws unless `force:true`. The response captures the deleted frontmatter + body so you can recover from mistakes. **R11**: optional `expected_mtime` for conflict detection. Confirmed deletes return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers. |
 | `rename_concept` | **v0.7 ⚠ MULTI-FILE** Atomically renames a slug — moves the .md file, updates the moved file's `slug:` key, and rewrites every backlink (frontmatter array entries, inline string keys like `domain`, body links `[[oldSlug]]` / `(oldSlug.md)`). Tail-only references (`mcp-server` for `capabilities/mcp-server`) are also redirected. Without `confirm:true`, runs as a dry-run with a full update preview; each `backlinkUpdates.updates[]` row includes the referrer `slug`, `title`, changed frontmatter keys, and `bodyChanged`. Throws if `newSlug` already exists unless `overwrite:true` is passed. Replaces the manual loop of `find_backlinks` + N `patch_concept` calls. **R11**: optional `expected_mtime` for the source slug. Confirmed renames return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers. |
 | `merge_concepts` | **v0.7 ⚠ DESTRUCTIVE MULTI-FILE** Folds `fromSlug` into `intoSlug` — every backlink to `fromSlug` is redirected, then `fromSlug.md` is deleted. The `intoSlug` node is preserved as-is (frontmatter / body are not auto-merged — use `patch_concept` after if you want to combine descriptions). Without `confirm:true`, runs as a dry-run; each `backlinkUpdates.updates[]` row includes the referrer `slug`, `title`, changed frontmatter keys, and `bodyChanged`. **R11**: optional `expected_mtime` for `fromSlug`. Confirmed merges return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers. |
-| `absorb_document` | **Slice 0 ⚠ DESTRUCTIVE (external file)** — the "absorption tool". Converts a CLAUDE.md/AGENTS.md-style markdown file into typed vault nodes so a tech lead's existing agent-instruction file stops needing dual maintenance. Splits the file by `##` sections; rule/policy/decision sections become `kind: document` nodes with a `role: policy` frontmatter extra, architecture/component sections are reported as element/capability *suggestions only* (never auto-written), and sections matching an injection-suspect pattern (Tier 1 — instruction-hijack phrasing, shell/SQL fragments) are excluded from absorption regardless of category. Without `confirm:true`, runs as a dry-run (classification plan only, no writes). With `confirm:true`, absorbed sections are written, the source file is backed up to `<file>.pre-absorb.bak`, and rewritten into a slim pointer that reproduces every non-absorbed section verbatim — content is never destroyed. Throws instead of overwriting an existing backup. CLI equivalent: `ontology-atlas absorb <file...> [--write]`. Only ever reads a **local** markdown file — for wiki exports (Confluence/Notion/on-prem wikis) a separately-registered third-party MCP (e.g. Atlassian's official Confluence MCP) reads the page first and the result is saved as a local file before calling this tool; see the `/ontology-absorb-confluence` skill. This is agent-mediated absorption, not a Confluence integration this repo ships. |
+| `absorb_document` | **Slice 0 ⚠ DESTRUCTIVE (source-file rewrite)** — the "absorption tool". Converts a CLAUDE.md/AGENTS.md-style markdown file into typed vault nodes so a tech lead's existing agent-instruction file stops needing dual maintenance. Splits the file by `##` sections; rule/policy/decision sections become `kind: document` nodes with a `role: policy` frontmatter extra, architecture/component sections are reported as element/capability *suggestions only* (never auto-written), and sections matching an injection-suspect pattern (Tier 1 — instruction-hijack phrasing, shell/SQL fragments) are excluded from absorption regardless of category. Without `confirm:true`, runs as a dry-run (classification plan only, no writes). The preview reports `outsideRepo`; if the canonical source path is outside `repoRoot`—including an inside-repo symlink that resolves outside—`canConfirm:false` until the caller explicitly supplies `allowOutsideRepo:true` after reviewing the absolute path. With `confirm:true`, absorbed sections are written, the source file is backed up to `<file>.pre-absorb.bak`, and rewritten into a slim pointer that reproduces every non-absorbed section verbatim. Throws instead of overwriting an existing backup. CLI equivalent: `ontology-atlas absorb <file...> [--write]`. Only ever reads a **local** markdown file — for wiki exports (Confluence/Notion/on-prem wikis) a separately-registered third-party MCP reads the page first and the result is saved as a local file before calling this tool; see the `/ontology-absorb-confluence` skill. |
+
+All eight destructive tools (`git_snapshot`, relation remove/replace, rename,
+reclassify, merge, delete, and absorb) return the same preview contract. A
+valid dry-run has `previewReady:true`; `wouldChange` distinguishes a real
+mutation from a no-op; `canConfirm` is true only when the exact reviewed call
+can proceed; `blockedReasons[]` gives every remaining safety gate. Confirmed
+responses reset the preview decision fields because they are no longer plans.
 
 `add_concept` and `add_concepts` also accept an optional repository-relative
 `path` and preserve it in frontmatter as implementation evidence. The same
@@ -701,8 +712,8 @@ A successful run looks like this:
 ✓ add_concepts — non-object, single/multi unknown-field repair, Received fields, duplicate-slug rows isolated with input indexes, and invalid-only batches return no write metadata
 ✓ add_relations — non-object, single/multi unknown-field repair, Received fields, invalid-type rows isolated with input indexes and closest-value hints, and invalid-only batches return no write metadata
 ✓ batch caps — get_concepts/add_concepts/add_relations reject 51 rows with invalid_arguments
-✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance
-✓ absorb_document dry-run — temp fixture classified (policy + architecture sections) without writing
+✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady/canConfirm contract without write-maintenance
+✓ absorb_document dry-run — outside-repo temp fixture explicitly opted in, classified (policy + architecture sections), and not written
 ✓ patch_concept conflict guard — stale expected_mtime rejected with vault_conflict
 ✓ strict enums — invalid query operation rejected with closest-value hint
 ✓ strict maintenance filters — invalid phase/severity/kind rejected at runtime (phases=validate/repair/link/materialize/review; severities=fail/warn/info; kinds=inspect_compile_issue/break_dependency_cycle/canonicalize_graph_arrays/resolve_dangling_reference/add_missing_relation/materialize_external_element/unassigned_node/empty_domain)
@@ -734,20 +745,20 @@ A successful run looks like this:
 ✓ list_kinds — 105 nodes (capability:39, document:3, domain:6, element:55, project:1, vault-readme:1)
 ✓ validate_vault — 105 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (105 nodes, 1 next action, 6 health checks, growth actions:1 external:1 ignoredExternal:219)
+✓ workspace_brief — healthy (105 nodes, 1 next action, 6 health checks, growth actions:1 external:1 ignoredExternal:222)
 · workspace_brief non-blocking advisory nextActions — materialize_external_elements:info:1 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 6 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (105 nodes, 2 next actions, 6 health checks, growth actions:1 external:1 ignoredExternal:219; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (105 nodes, 2 next actions, 6 health checks, growth actions:1 external:1 ignoredExternal:222; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 · workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:4 - The scoped ontology graph has disconnected actionable islands., materialize_external_elements:info:1 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1, +1 more)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:4, +1 more; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
 · health_tuned non-blocking advisory checks — components:info:4 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph 6d96d7676362 (105 nodes, 568 edges, issues 0)
-✓ compile_ontology page — 1/105 nodes, 1/568 edges
-✓ compile_ontology indexes — out 105, in 104, edgeById 568, aliases 209, edges 348/220/0
-✓ overview — graph 6d96d7676362 (105 nodes, 568 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 105, edges 568)
-✓ project_map query_plan — aggregate_scan (medium, nodes 105, edges 568)
+✓ compile_ontology — graph 07c3e94292ea (105 nodes, 571 edges, issues 0)
+✓ compile_ontology page — 1/105 nodes, 1/571 edges
+✓ compile_ontology indexes — out 105, in 104, edgeById 571, aliases 209, edges 348/223/0
+✓ overview — graph 07c3e94292ea (105 nodes, 571 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 105, edges 571)
+✓ project_map query_plan — aggregate_scan (medium, nodes 105, edges 571)
 ✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ all_paths — src/widgets/bottom-tab-bar → project (5/15 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
@@ -789,7 +800,11 @@ direct-read, write, maintenance-cursor, and graph-query `structuredContent` cove
 that was enforced in the run.
 Destructive dry-run smoke calls `rename_concept`, `merge_concepts`, and
 `delete_concept` against live vault slugs without writing, and fails if the
-preview is missing or includes `changed` or `postWriteMaintenance`.
+preview is missing, its `previewReady` / `canConfirm` / `wouldChange` /
+`blockedReasons` decision fields contradict one another, or it includes
+`changed` or `postWriteMaintenance`. The independent absorption smoke marks its
+temporary outside-repository fixture with `allowOutsideRepo:true`, then verifies
+the same decision contract without confirming a write.
 The `tools/list` gate also checks that every tool rejects unknown arguments via
 `additionalProperties:false`, that every tool exposes the expected
 `annotations.title` display name, `annotations.readOnlyHint` read/write split,
@@ -815,7 +830,8 @@ the graph engine's runtime allow-lists. It also checks the `list_kinds`
 `add_relation`, and `patch_concept` single writer `outputSchema` contracts, the `add_concepts`
 and `add_relations` batch writer `outputSchema` row contracts, the `rename_concept`,
 `merge_concepts`, and `delete_concept` destructive writer dry-run/confirm `outputSchema`
-contracts, the installed batch
+contracts, plus the shared four-field destructive preview schema on all eight
+destructive tools and `absorb_document.allowOutsideRepo`, the installed batch
 input schemas for the same 50-row cap used by `get_concepts`, `add_concepts`,
 and `add_relations` at runtime, the `find_orphans.kind` / `find_orphans.excludeKinds`
 node-kind enum schemas and root/sentinel default description, plus write-safety schemas for
@@ -974,10 +990,18 @@ If those read-only calls respond cleanly, the agent can see the vault and its gr
 - **stdin/stdout JSON-RPC** — Claude Code spawns the server as a child process. stdout is *protocol-only*; logs go to stderr.
 - **Synchronous fs** — MCP call frequency is low enough that async overhead isn't worth it.
 - **Frontmatter preservation** — `add_relation` keeps the existing frontmatter intact and only patches the relevant array key (idempotent — duplicates respond with `alreadyExists: true`).
-- **Vault-root sandbox** — `slug` is always vault-relative. The server never writes outside `OATLAS_VAULT`.
+- **Vault-node sandbox** — every ontology `slug` write is vault-relative.
+  `absorb_document` is the sole source-file rewrite exception: it backs up the
+  source first, defaults to the repository boundary, resolves symlinks before
+  checking that boundary, and requires `allowOutsideRepo:true` for an external
+  canonical path.
 
 ## Status
 
+- 0.12.0 current safety contract — all eight destructive tools expose
+  `previewReady` / `canConfirm` / `wouldChange` / `blockedReasons`; external or
+  symlink-escaped `absorb_document` confirmation requires
+  `allowOutsideRepo:true`.
 - Slice 0 (PRODUCT-PLAN-2026-07.md) — 25 tools. Added `absorb_document` — converts a CLAUDE.md/AGENTS.md-style markdown file into typed `document`/`role: policy` vault nodes (dry-run by default, `confirm:true` to write), reports architecture/component sections as suggestions only, and flags injection-suspect sections (Tier 1) for exclusion. CLI equivalent: `ontology-atlas absorb`.
 - 0.10.0 — 23 tools. Added `get_concepts`, `add_concepts`, `add_relations`, `validate_vault`, `find_neighbors`, `compile_ontology`, and `query_ontology` (`neighbors` / `path` / `all_paths` / `query_plan` with executable run/narrow advice / `centrality` / `communities` / `similar_nodes` / `explain_relation` / `reachability` / `pattern_walk` / `impact` / `blast_radius` / `subgraph` / `overview` / `schema` / `facets` / `match_nodes` / `match_edges` / `node_profile` / `domain_profile` / `domain_matrix` / `project_scope` / `project_map` / `relation_check` / `components` / `lineage` / `containment_tree` / `cycles` / `topological_order` / `recommend_relations` / `growth_plan` / `maintenance_plan` / `agent_brief` / `workspace_brief` / `health`); current split was 15 read + 8 write in that release.
 - 0.7.1 — 16 tools. Added `instructions` field on initialize response — Claude Code / Cursor see kind hierarchy + workflow + write-tool dry-run pattern + `expected_mtime` conflict guard guidance on connect, no per-session trial-and-error.

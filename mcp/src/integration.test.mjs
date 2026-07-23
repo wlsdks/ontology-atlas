@@ -8,7 +8,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
@@ -296,6 +296,18 @@ function assertCompactMaintenanceActionShape(action, label) {
     assert.equal(action.proposedAction.args.to, action.nodes.to.slug, `${label} add_missing_relation to matches args`);
     assert.equal(typeof action.proposedAction.args.type, "string", `${label} add_missing_relation exposes relation type`);
   }
+}
+
+function assertDestructivePreview(
+  result,
+  { canConfirm, wouldChange, blocked = 0, label = "destructive preview" },
+) {
+  assert.equal(result.dryRun, true, `${label} is a dry-run`);
+  assert.equal(result.previewReady, true, `${label} is ready for agent review`);
+  assert.equal(result.canConfirm, canConfirm, `${label} exposes confirmation readiness`);
+  assert.equal(result.wouldChange, wouldChange, `${label} exposes mutation intent`);
+  assert.ok(Array.isArray(result.blockedReasons), `${label} exposes blocker list`);
+  assert.equal(result.blockedReasons.length, blocked, `${label} blocker count`);
 }
 
 // R+ — cycle 39: 단일 도구 (get_concept · add_concept · add_relation) 의
@@ -687,7 +699,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(patchConcept?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
     const renameConcept = findTool("rename_concept");
     assert.equal(renameConcept?.outputSchema?.type, "object");
-    assert.deepEqual(renameConcept?.outputSchema?.required, ["ok", "oldSlug", "newSlug", "sourcePath", "targetPath", "moved", "backlinkUpdates"]);
+    assert.deepEqual(renameConcept?.outputSchema?.required, [
+      "ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons",
+      "oldSlug", "newSlug", "sourcePath", "targetPath", "moved", "backlinkUpdates",
+    ]);
     assert.equal(renameConcept?.outputSchema?.additionalProperties, false);
     assert.equal(renameConcept?.outputSchema?.properties?.oldSlug?.type, "string");
     assert.equal(renameConcept?.outputSchema?.properties?.newSlug?.type, "string");
@@ -716,7 +731,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(renameConcept?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
     const mergeConcepts = findTool("merge_concepts");
     assert.equal(mergeConcepts?.outputSchema?.type, "object");
-    assert.deepEqual(mergeConcepts?.outputSchema?.required, ["ok", "fromSlug", "intoSlug", "fromPath", "deleted", "backlinkUpdates", "capturedFrom"]);
+    assert.deepEqual(mergeConcepts?.outputSchema?.required, [
+      "ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons",
+      "fromSlug", "intoSlug", "fromPath", "deleted", "backlinkUpdates", "capturedFrom",
+    ]);
     assert.equal(mergeConcepts?.outputSchema?.additionalProperties, false);
     assert.equal(mergeConcepts?.outputSchema?.properties?.fromSlug?.type, "string");
     assert.equal(mergeConcepts?.outputSchema?.properties?.intoSlug?.type, "string");
@@ -735,7 +753,9 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(mergeConcepts?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
     const deleteConcept = findTool("delete_concept");
     assert.equal(deleteConcept?.outputSchema?.type, "object");
-    assert.deepEqual(deleteConcept?.outputSchema?.required, ["ok", "slug", "filePath"]);
+    assert.deepEqual(deleteConcept?.outputSchema?.required, [
+      "ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons", "slug", "filePath",
+    ]);
     assert.equal(deleteConcept?.outputSchema?.additionalProperties, false);
     assertCleanStringSchema(deleteConcept?.outputSchema?.properties?.slug, "delete slug");
     assertCleanStringSchema(deleteConcept?.outputSchema?.properties?.filePath, "delete filePath");
@@ -759,6 +779,30 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(deleteConcept?.outputSchema?.properties?.captured?.required, ["frontmatter"]);
     assert.equal(deleteConcept?.outputSchema?.properties?.captured?.additionalProperties, false);
     assert.equal(deleteConcept?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
+    const destructivePreviewTools = [
+      "remove_relation",
+      "replace_relation",
+      "rename_concept",
+      "reclassify_concept",
+      "merge_concepts",
+      "delete_concept",
+      "absorb_document",
+      "git_snapshot",
+    ];
+    for (const name of destructivePreviewTools) {
+      const schema = findTool(name)?.outputSchema;
+      for (const requiredField of ["previewReady", "canConfirm", "wouldChange", "blockedReasons"]) {
+        assert.ok(schema?.required?.includes(requiredField), `${name} requires ${requiredField}`);
+      }
+      assert.equal(schema?.properties?.previewReady?.type, "boolean", `${name} previewReady schema`);
+      assert.equal(schema?.properties?.canConfirm?.type, "boolean", `${name} canConfirm schema`);
+      assert.equal(schema?.properties?.wouldChange?.type, "boolean", `${name} wouldChange schema`);
+      assert.equal(schema?.properties?.blockedReasons?.type, "array", `${name} blockedReasons schema`);
+      assert.equal(schema?.properties?.blockedReasons?.items?.type, "string", `${name} blocker item schema`);
+    }
+    const absorbDocument = findTool("absorb_document");
+    assert.equal(absorbDocument?.inputSchema?.properties?.allowOutsideRepo?.type, "boolean");
+    assert.equal(absorbDocument?.outputSchema?.properties?.outsideRepo?.type, "boolean");
     const findDesc = (name) => findTool(name)?.description;
     const getC = findDesc("get_concept");
     const getCs = findDesc("get_concepts");
@@ -5288,7 +5332,11 @@ await test("rename_concept dry-run — preview 만, 디스크 변경 0", async (
     ]);
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
-    assert.equal(result.dryRun, true);
+    assertDestructivePreview(result, {
+      canConfirm: true,
+      wouldChange: true,
+      label: "rename_concept preview",
+    });
     assert.equal(result.moved, false);
     assert.equal(result.backlinkUpdates.totalUpdated, 1);
     assert.equal(result.changed, undefined);
@@ -5322,6 +5370,10 @@ await test("rename_concept confirm:true — 파일 이동 + backlink redirect", 
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.ok, true);
+    assert.equal(result.previewReady, false);
+    assert.equal(result.canConfirm, false);
+    assert.equal(result.wouldChange, false);
+    assert.deepEqual(result.blockedReasons, []);
     assert.equal(result.moved, true);
     assert.equal(result.backlinkUpdates.totalUpdated, 1);
     assert.equal(result.backlinkUpdates.updates[0].slug, "ref");
@@ -5396,6 +5448,10 @@ await test("merge_concepts confirm:true — fromSlug 삭제 + backlink redirect"
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.ok, true);
+    assert.equal(result.previewReady, false);
+    assert.equal(result.canConfirm, false);
+    assert.equal(result.wouldChange, false);
+    assert.deepEqual(result.blockedReasons, []);
     assert.equal(result.deleted, true);
     assert.equal(result.backlinkUpdates.totalUpdated, 1);
     assert.equal(result.changed, true);
@@ -5430,7 +5486,11 @@ await test("merge_concepts dry-run — preview 만, 디스크 변경 0", async (
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.ok, false);
-    assert.equal(result.dryRun, true);
+    assertDestructivePreview(result, {
+      canConfirm: true,
+      wouldChange: true,
+      label: "merge_concepts preview",
+    });
     assert.equal(result.deleted, false);
     assert.equal(result.backlinkUpdates.totalUpdated, 1);
     assert.equal(result.backlinkUpdates.updates[0].slug, "ref");
@@ -5462,6 +5522,11 @@ await test("delete_concept confirm:true — 삭제 후 post-write maintenance su
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.ok, true);
+    assert.equal(result.dryRun, false);
+    assert.equal(result.previewReady, false);
+    assert.equal(result.canConfirm, false);
+    assert.equal(result.wouldChange, false);
+    assert.deepEqual(result.blockedReasons, []);
     assert.equal(result.changed, true);
     assert.equal(result.captured.frontmatter.title, "Gone");
     assert.equal(result.captured.body, "- list item\n\nDelete body for captured excerpt.");
@@ -5483,14 +5548,26 @@ await test("delete_concept dry-run — backlink preview 만, 디스크 변경 0"
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "delete_concept", { slug: "gone" }),
+      callTool(3, "delete_concept", { slug: "gone", force: true }),
     ]);
     const result = getCallParsed(responses, 2);
+    const forcedPreview = getCallParsed(responses, 3);
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.ok, false);
-    assert.equal(result.dryRun, true);
+    assertDestructivePreview(result, {
+      canConfirm: false,
+      wouldChange: true,
+      blocked: 1,
+      label: "delete_concept backlink-blocked preview",
+    });
     assert.equal(result.slug, "gone");
     assert.equal(result.backlinks.length, 1);
     assert.match(result.message, /force:true/);
+    assertDestructivePreview(forcedPreview, {
+      canConfirm: true,
+      wouldChange: true,
+      label: "delete_concept force preview",
+    });
     assert.equal(result.changed, undefined);
     assert.equal(result.postWriteMaintenance, undefined);
     assert.equal(readFileSync(join(root, "gone.md"), "utf-8"), beforeGone);
@@ -5836,6 +5913,102 @@ await test("connection_info — active vault/repo roots and resolution sources a
   }
 });
 
+await test("absorb_document — repo boundary, symlink escape, explicit opt-in, and backup guard", async () => {
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-absorb-repo-"));
+  const vault = join(repoRoot, "vault");
+  const outsideRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-absorb-outside-"));
+  mkdirSync(vault);
+  const source = [
+    "# Agent Guide",
+    "",
+    "## Security Policy",
+    "",
+    "Always review destructive changes before applying them.",
+    "",
+  ].join("\n");
+  const insidePath = join(repoRoot, "AGENTS.md");
+  const outsidePath = join(outsideRoot, "AGENTS.md");
+  const symlinkPath = join(repoRoot, "linked-agents.md");
+  writeFileSync(insidePath, source, "utf-8");
+  writeFileSync(outsidePath, source, "utf-8");
+  symlinkSync(outsidePath, symlinkPath);
+  try {
+    const first = await rpc(vault, [
+      ...INIT_REQUESTS,
+      callTool(2, "absorb_document", { filePath: insidePath }),
+      callTool(3, "absorb_document", { filePath: outsidePath }),
+      callTool(4, "absorb_document", { filePath: outsidePath, confirm: true }),
+      callTool(5, "absorb_document", { filePath: symlinkPath }),
+    ], 2500, { OATLAS_REPO_ROOT: repoRoot });
+    const insidePreview = getCallParsed(first.responses, 2);
+    const outsidePreview = getCallParsed(first.responses, 3);
+    const symlinkPreview = getCallParsed(first.responses, 5);
+    assert.equal(insidePreview.outsideRepo, false);
+    assertDestructivePreview(insidePreview, {
+      canConfirm: true,
+      wouldChange: true,
+      label: "inside-repo absorb preview",
+    });
+    assert.equal(outsidePreview.outsideRepo, true);
+    assertDestructivePreview(outsidePreview, {
+      canConfirm: false,
+      wouldChange: true,
+      blocked: 1,
+      label: "outside-repo absorb preview",
+    });
+    assert.match(outsidePreview.blockedReasons[0], /allowOutsideRepo:true/);
+    assert.equal(isErrorResponse(first.responses, 4), true);
+    assert.match(first.responses.find((row) => row.id === 4).result.content[0].text, /outside repoRoot/);
+    assert.equal(symlinkPreview.outsideRepo, true, "inside symlink cannot bypass the canonical repo boundary");
+    assert.equal(symlinkPreview.canConfirm, false);
+    assert.equal(readFileSync(outsidePath, "utf-8"), source);
+    assert.equal(existsSync(`${outsidePath}.pre-absorb.bak`), false);
+    assert.deepEqual(readdirSync(vault), [], "blocked confirmation writes no vault nodes");
+
+    const second = await rpc(vault, [
+      ...INIT_REQUESTS,
+      callTool(2, "absorb_document", { filePath: outsidePath, allowOutsideRepo: true }),
+      callTool(3, "absorb_document", {
+        filePath: outsidePath,
+        allowOutsideRepo: true,
+        confirm: true,
+      }),
+    ], 3000, { OATLAS_REPO_ROOT: repoRoot });
+    const optedInPreview = getCallParsed(second.responses, 2);
+    const applied = getCallParsed(second.responses, 3);
+    assertDestructivePreview(optedInPreview, {
+      canConfirm: true,
+      wouldChange: true,
+      label: "outside-repo opted-in absorb preview",
+    });
+    assert.equal(applied.ok, true);
+    assert.equal(applied.outsideRepo, true);
+    assert.equal(applied.previewReady, false);
+    assert.equal(applied.canConfirm, false);
+    assert.equal(applied.wouldChange, false);
+    assert.deepEqual(applied.blockedReasons, []);
+    assert.equal(existsSync(`${outsidePath}.pre-absorb.bak`), true);
+    assert.equal(readFileSync(`${outsidePath}.pre-absorb.bak`, "utf-8"), source);
+    assert.notEqual(readFileSync(outsidePath, "utf-8"), source);
+
+    const third = await rpc(vault, [
+      ...INIT_REQUESTS,
+      callTool(2, "absorb_document", { filePath: outsidePath, allowOutsideRepo: true }),
+    ], 2000, { OATLAS_REPO_ROOT: repoRoot });
+    const backupBlocked = getCallParsed(third.responses, 2);
+    assertDestructivePreview(backupBlocked, {
+      canConfirm: false,
+      wouldChange: true,
+      blocked: 1,
+      label: "existing-backup absorb preview",
+    });
+    assert.match(backupBlocked.blockedReasons[0], /backup already exists/);
+  } finally {
+    rmSync(repoRoot, { recursive: true, force: true });
+    rmSync(outsideRoot, { recursive: true, force: true });
+  }
+});
+
 await test("git_status/git_snapshot — validated dry-run and vault-only local commit", async () => {
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Project\n---\n" },
@@ -5868,13 +6041,50 @@ await test("git_status/git_snapshot — validated dry-run and vault-only local c
     const clean = getCallParsed(responses, 5);
     assert.equal(status.counts.total, 1);
     assert.equal(preview.dryRun, true);
+    assert.equal(preview.previewReady, true);
+    assert.equal(preview.canConfirm, true);
+    assert.equal(preview.wouldChange, true);
+    assert.deepEqual(preview.blockedReasons, []);
     assert.equal(preview.expectedHead, expectedHead);
     assert.equal(preview.validation.errorFiles, 0);
     assert.equal(preview.pushSupported, false);
     assert.equal(committed.committed, true);
+    assert.equal(committed.previewReady, false);
+    assert.equal(committed.canConfirm, false);
+    assert.equal(committed.wouldChange, false);
+    assert.deepEqual(committed.blockedReasons, []);
     assert.notEqual(committed.commitHash, expectedHead);
     assert.equal(clean.counts.total, 0);
     assert.equal(git("show", "--pretty=", "--name-only", "HEAD"), "project.md");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("git_snapshot — validation errors remain previewable but block confirmation", async () => {
+  const root = makeVault([
+    { slug: "broken", content: "---\nkind: project\ntitle: Broken\n" },
+  ]);
+  const git = (...args) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8" }).trim();
+  try {
+    git("init", "-b", "main");
+    git("config", "user.name", "Atlas Integration");
+    git("config", "user.email", "atlas@example.test");
+    git("add", ".");
+    git("commit", "-m", "initial");
+    writeFileSync(join(root, "broken.md"), "---\nkind: project\ntitle: Still Broken\n", "utf-8");
+
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "git_snapshot"),
+    ], 2500, { OATLAS_REPO_ROOT: root });
+    const preview = getCallParsed(responses, 2);
+    assert.equal(preview.previewReady, true);
+    assert.equal(preview.wouldChange, true);
+    assert.equal(preview.canConfirm, false);
+    assert.ok(preview.validation.errorFiles > 0);
+    assert.match(preview.blockedReasons.join("\n"), /validate_vault reports .* error/i);
+    assert.equal(preview.risk.level, "high");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -5890,12 +6100,23 @@ await test("remove_relation — dry-run then confirmed removal also removes rati
       ...INIT_REQUESTS,
       callTool(2, "remove_relation", { from: "project", to: "domains/auth", type: "contains" }),
       callTool(3, "remove_relation", { from: "project", to: "domains/auth", type: "contains", confirm: true }),
-      callTool(4, "get_concept", { slug: "project" }),
+      callTool(4, "remove_relation", { from: "project", to: "domains/auth", type: "contains" }),
+      callTool(5, "get_concept", { slug: "project" }),
     ]);
-    assert.equal(getCallParsed(responses, 2).dryRun, true);
+    assertDestructivePreview(getCallParsed(responses, 2), {
+      canConfirm: true,
+      wouldChange: true,
+      label: "remove_relation preview",
+    });
     assert.equal(getCallParsed(responses, 2).changed, false);
     assert.equal(getCallParsed(responses, 3).changed, true);
-    const project = getCallParsed(responses, 4);
+    assertDestructivePreview(getCallParsed(responses, 4), {
+      canConfirm: false,
+      wouldChange: false,
+      blocked: 1,
+      label: "remove_relation no-op preview",
+    });
+    const project = getCallParsed(responses, 5);
     assert.deepEqual(project.frontmatter.contains, []);
     assert.equal(project.frontmatter.relation_notes, undefined);
   } finally {
@@ -5914,16 +6135,105 @@ await test("replace_relation — atomically replaces target/type and rationale",
       ...INIT_REQUESTS,
       callTool(2, "replace_relation", {
         from: "project", oldTo: "domains/auth", oldType: "contains",
+        newTo: "domains/identity", newType: "domains", why: "Canonical ownership",
+      }),
+      callTool(3, "replace_relation", {
+        from: "project", oldTo: "domains/auth", oldType: "contains",
         newTo: "domains/identity", newType: "domains", why: "Canonical ownership", confirm: true,
       }),
-      callTool(3, "get_concept", { slug: "project" }),
+      callTool(4, "get_concept", { slug: "project" }),
     ]);
-    assert.equal(getCallParsed(responses, 2).changed, true);
-    const project = getCallParsed(responses, 3);
+    assertDestructivePreview(getCallParsed(responses, 2), {
+      canConfirm: true,
+      wouldChange: true,
+      label: "replace_relation preview",
+    });
+    assert.equal(getCallParsed(responses, 3).changed, true);
+    const project = getCallParsed(responses, 4);
     assert.deepEqual(project.frontmatter.contains, []);
     assert.deepEqual(project.frontmatter.domains, ["domains/identity"]);
     assert.equal(project.frontmatter.relation_notes["domains/identity"], "Canonical ownership");
     assert.equal(project.frontmatter.relation_notes["domains/auth"], undefined);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("relation writes — canonicalize stored tail aliases without duplicate or false missing errors", async () => {
+  const root = makeVault([
+    {
+      slug: "domains/auth",
+      content: "---\nkind: domain\ntitle: Auth\ncapabilities: [cap-a]\nrelation_notes: { cap-a: Alias reason }\n---\n",
+    },
+    { slug: "capabilities/cap-a", content: "---\nkind: capability\ntitle: Capability A\ndomain: domains/auth\n---\n" },
+    { slug: "capabilities/cap-b", content: "---\nkind: capability\ntitle: Capability B\ndomain: domains/auth\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_relation", {
+        from: "domains/auth", to: "capabilities/cap-a", type: "capabilities",
+      }),
+      callTool(3, "replace_relation", {
+        from: "domains/auth", oldTo: "cap-a", oldType: "capabilities",
+        newTo: "cap-b", newType: "capabilities",
+      }),
+      callTool(4, "replace_relation", {
+        from: "domains/auth", oldTo: "cap-a", oldType: "capabilities",
+        newTo: "cap-b", newType: "capabilities", confirm: true,
+      }),
+      callTool(5, "get_concept", { slug: "domains/auth" }),
+    ]);
+    const addExisting = getCallParsed(responses, 2);
+    assert.equal(addExisting.alreadyExists, true);
+    assert.equal(addExisting.changed, false);
+    assertDestructivePreview(getCallParsed(responses, 3), {
+      canConfirm: true,
+      wouldChange: true,
+      label: "replace_relation tail-alias preview",
+    });
+    assert.equal(getCallParsed(responses, 4).changed, true);
+    const domain = getCallParsed(responses, 5);
+    assert.deepEqual(domain.frontmatter.capabilities, ["capabilities/cap-b"]);
+    assert.equal(domain.frontmatter.relation_notes["capabilities/cap-b"], "Alias reason");
+    assert.equal(domain.frontmatter.relation_notes["cap-a"], undefined);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("remove_relation — resolves stored frontmatter-slug aliases and their rationale keys", async () => {
+  const root = makeVault([
+    {
+      slug: "domains/auth",
+      content: "---\nkind: domain\ntitle: Auth\ncapabilities: [legacy-cap]\nrelation_notes: { legacy-cap: Legacy reason }\n---\n",
+    },
+    {
+      slug: "capabilities/canonical-cap",
+      content: "---\nslug: legacy-cap\nkind: capability\ntitle: Canonical Capability\ndomain: domains/auth\n---\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "remove_relation", {
+        from: "domains/auth", to: "capabilities/canonical-cap", type: "capabilities",
+      }),
+      callTool(3, "remove_relation", {
+        from: "domains/auth", to: "legacy-cap", type: "capabilities", confirm: true,
+      }),
+      callTool(4, "get_concept", { slug: "domains/auth" }),
+    ]);
+    assertDestructivePreview(getCallParsed(responses, 2), {
+      canConfirm: true,
+      wouldChange: true,
+      label: "remove_relation frontmatter-alias preview",
+    });
+    assert.equal(getCallParsed(responses, 2).removedRationale, "Legacy reason");
+    assert.equal(getCallParsed(responses, 3).changed, true);
+    const domain = getCallParsed(responses, 4);
+    assert.deepEqual(domain.frontmatter.capabilities, []);
+    assert.equal(domain.frontmatter.relation_notes, undefined);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -5949,7 +6259,11 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
       callTool(4, "get_concept", { slug: "elements/src/entities/claim" }),
       callTool(5, "get_concept", { slug: "project" }),
     ]);
-    assert.equal(getCallParsed(responses, 2).dryRun, true);
+    assertDestructivePreview(getCallParsed(responses, 2), {
+      canConfirm: true,
+      wouldChange: true,
+      label: "reclassify_concept preview",
+    });
     assert.equal(getCallParsed(responses, 3).changed, true);
     const claim = getCallParsed(responses, 4);
     assert.equal(claim.frontmatter.kind, "element");

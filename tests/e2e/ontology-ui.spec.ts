@@ -39,7 +39,7 @@ test.describe("ontology view UI", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/download/");
     await expect(
-      page.getByRole("heading", { name: "Codebase ontology that grows with AI" }),
+      page.getByRole("heading", { name: "Until we all finally see the same thing" }),
     ).toBeVisible();
     await expect(page.getByRole("link", { name: "Open macOS releases" })).toHaveAttribute(
       "href",

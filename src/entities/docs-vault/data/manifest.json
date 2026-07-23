@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-23T04:01:11.038Z",
+  "generatedAt": "2026-07-23T05:04:03.197Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1112,7 +1112,60 @@
       ],
       "excerpt": "빈 폴더, cold-start bootstrap, strict input recovery, 관계/노드 destructive workflow, Git 상태 조합, packed install, Node 24 최신 runtime을 대상으로 명시적 runtime 시나리오 128건을 실행했다. 직렬 108건과 동시 read RPC 20건이며, 별도로 unit/integration/package/contract/build gate를 반복했다. 기본 MCP CRUD와 strict schema는 강했다. 실제 결함은 주로 “source checkout은 green이지만 설치 패키지",
       "wordCount": 796,
-      "updatedAt": "2026-07-23T04:00:17.047Z",
+      "updatedAt": "2026-07-23T13:11:18+09:00",
+      "linksOut": []
+    },
+    {
+      "slug": "archive/dogfood-mcp-safety-round-3-2026-07-23",
+      "path": "docs/archive/dogfood-mcp-safety-round-3-2026-07-23.md",
+      "title": "MCP destructive safety dogfood round 3 — 2026-07-23",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "MCP destructive safety dogfood round 3 — 2026-07-23",
+          "slug": "mcp-destructive-safety-dogfood-round-3-2026-07-23"
+        },
+        {
+          "depth": 2,
+          "text": "결론",
+          "slug": "결론"
+        },
+        {
+          "depth": 2,
+          "text": "Product-owner pass",
+          "slug": "product-owner-pass"
+        },
+        {
+          "depth": 2,
+          "text": "공통 preview 계약",
+          "slug": "공통-preview-계약"
+        },
+        {
+          "depth": 2,
+          "text": "경계/상태 시나리오",
+          "slug": "경계상태-시나리오"
+        },
+        {
+          "depth": 2,
+          "text": "구현 안전성",
+          "slug": "구현-안전성"
+        },
+        {
+          "depth": 2,
+          "text": "검증 결과",
+          "slug": "검증-결과"
+        },
+        {
+          "depth": 2,
+          "text": "남은 개선 후보",
+          "slug": "남은-개선-후보"
+        }
+      ],
+      "excerpt": "Round 2에서 남긴 두 P2를 구현했다. 새 도구를 추가하지 않고 기존 31-tool surface의 파괴적 작업 8개를 하나의 machine-readable preview contract로 통일했으며, absorbdocument의 source rewrite를 canonical repository boundary로 제한했다. 새 tool은 필요하지 않았다. 문제는 capability 부재가 아니라 같은 결정을 도구마다 다르게 표현한 contract drift와 파일 경계 누락이었다. 별도 preflight 도구를 추가하면 agent의 선택지와 왕복만 늘어나므로 기",
+      "wordCount": 869,
+      "updatedAt": "2026-07-23T14:01:04+09:00",
       "linksOut": []
     },
     {
@@ -3051,6 +3104,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-23 — MCP destructive safety contract + absorb repo boundary",
+          "slug": "2026-07-23-mcp-destructive-safety-contract-absorb-repo-boundary"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-23 — MCP adversarial dogfood round 2",
           "slug": "2026-07-23-mcp-adversarial-dogfood-round-2"
         },
@@ -4590,9 +4648,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 빈 폴더부터 Git edge case와 packed install까지 128개의 명시적 runtime 시나리오(직렬 108 + 병렬 RPC 20)를 실행했",
-      "wordCount": 34821,
-      "updatedAt": "2026-07-23T03:58:10.731Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. AI agent가 파괴적 dry-run의 도구별 ok 의미를 추측하던 문제를 없앴다. gitsnapshot, 관계 제거/교체, rename/reclassi",
+      "wordCount": 34967,
+      "updatedAt": "2026-07-23T14:01:04+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5653,14 +5711,19 @@
           "slug": "prose-wiki-absorption"
         },
         {
+          "depth": 3,
+          "text": "Interop — export to a standard graph format",
+          "slug": "interop-export-to-a-standard-graph-format"
+        },
+        {
           "depth": 4,
           "text": "Read tools (15)",
           "slug": "read-tools-15"
         },
         {
           "depth": 4,
-          "text": "Write tools (8)",
-          "slug": "write-tools-8"
+          "text": "Write tools (13)",
+          "slug": "write-tools-13"
         },
         {
           "depth": 2,
@@ -5724,8 +5787,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 11589,
-      "updatedAt": "2026-07-23T11:32:37+09:00",
+      "wordCount": 12047,
+      "updatedAt": "2026-07-23T14:01:04+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6528,12 +6591,12 @@
     {
       "slug": "ontology/capabilities/cli-developer-entry",
       "path": "docs/ontology/capabilities/cli-developer-entry.md",
-      "title": "CLI Developer Entry (50 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)",
+      "title": "CLI Developer Entry (51 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive + interop export)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/cli-developer-entry",
         "kind": "capability",
-        "title": "CLI Developer Entry (50 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)",
+        "title": "CLI Developer Entry (51 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive + interop export)",
         "display": "CLI Developer Entry",
         "domain": "onboarding-ux",
         "dependencies": [
@@ -6557,6 +6620,7 @@
           "cli/src/commands/delete.mjs",
           "cli/src/commands/domain-matrix.mjs",
           "cli/src/commands/explain.mjs",
+          "cli/src/commands/export.mjs",
           "cli/src/commands/facets.mjs",
           "cli/src/commands/find.mjs",
           "cli/src/commands/growth.mjs",
@@ -6666,8 +6730,8 @@
         }
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
-      "wordCount": 10588,
-      "updatedAt": "2026-07-23T07:48:26+09:00",
+      "wordCount": 10595,
+      "updatedAt": "2026-07-23T05:03:48.243Z",
       "linksOut": []
     },
     {
@@ -6886,12 +6950,14 @@
           "mcp/src/suggestions.test.mjs",
           "mcp/src/vault.mjs",
           "mcp/src/verify-script.test.mjs",
+          "scripts/check-package-contracts.test.mjs",
           "scripts/dogfood-mcp-walk.mjs",
           "scripts/dogfood-mcp-walk.test.mjs",
           "scripts/lib/test-name-pattern.mjs",
           "scripts/lib/test-name-pattern.test.mjs",
           "scripts/run-focused-node-test.mjs",
-          "scripts/run-focused-node-test.test.mjs"
+          "scripts/run-focused-node-test.test.mjs",
+          "scripts/smoke-packed-cli.mjs"
         ]
       },
       "headings": [
@@ -6902,8 +6968,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 안정판 1.x 기반 stdio JSON-RPC 서버. 31 도구 노출 (read 18 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전을 반환해 잘못된 폴더 작업을 막는 첫 호출 proof · gitstatus · vault 범위의 로컬 Git HEAD/branch/변경 파일과 vault 밖 변경·staging·detached HEAD·진행 중 operation 위험을 구조화해 반환하는 re",
-      "wordCount": 13362,
-      "updatedAt": "2026-07-23T03:59:00.108Z",
+      "wordCount": 13433,
+      "updatedAt": "2026-07-23T14:01:04+09:00",
       "linksOut": []
     },
     {
@@ -13224,6 +13290,13 @@
             "title": "MCP dogfood round 2 — 2026-07-23"
           },
           {
+            "name": "dogfood-mcp-safety-round-3-2026-07-23",
+            "path": "archive/dogfood-mcp-safety-round-3-2026-07-23",
+            "type": "doc",
+            "slug": "archive/dogfood-mcp-safety-round-3-2026-07-23",
+            "title": "MCP destructive safety dogfood round 3 — 2026-07-23"
+          },
+          {
             "name": "dogfood-paravel-2026-05-06",
             "path": "archive/dogfood-paravel-2026-05-06",
             "type": "doc",
@@ -13506,7 +13579,7 @@
                 "path": "ontology/capabilities/cli-developer-entry",
                 "type": "doc",
                 "slug": "ontology/capabilities/cli-developer-entry",
-                "title": "CLI Developer Entry (50 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)"
+                "title": "CLI Developer Entry (51 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive + interop export)"
               },
               {
                 "name": "collaborator-reader-brief",

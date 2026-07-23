@@ -6,6 +6,28 @@
 
 ---
 
+## 2026-07-23 — MCP destructive safety contract + absorb repo boundary
+
+AI agent가 파괴적 dry-run의 도구별 `ok` 의미를 추측하던 문제를 없앴다.
+`git_snapshot`, 관계 제거/교체, rename/reclassify/merge/delete,
+`absorb_document` 8개 도구가 모두 `previewReady`, `canConfirm`,
+`wouldChange`, `blockedReasons[]`를 반환한다. agent는 이제 자연어 메시지나
+도구별 legacy `ok` 대신 동일한 decision contract로 confirm 가능 여부를
+판단할 수 있다.
+
+- no-op relation removal, backlink가 남은 delete, validation 오류, clean/detached
+  Git 상태, 기존 absorb backup을 각각 명시적 blocker로 표현한다.
+- `absorb_document`는 canonical source path가 `repoRoot` 밖이면 confirm을
+  거부한다. 저장소 내부 symlink가 외부 파일을 가리키는 우회도 차단하며,
+  실제 외부 rewrite는 dry-run 검토 후 `allowOutsideRepo:true`를 명시해야 한다.
+- verifier가 공통 output schema와 runtime decision consistency를 검사하고,
+  외부 temp fixture에는 opt-in을 명시하되 실제 쓰기는 하지 않는다.
+- relation add/remove/replace가 저장된 unique tail alias와 frontmatter `slug`
+  alias를 canonical edge로 해석한다. shorthand로 저장된 기존 vault에서도
+  중복 edge, false-missing 오류, `relation_notes` rationale 고아화를 만들지 않는다.
+- 상세 adversarial matrix는
+  `docs/archive/dogfood-mcp-safety-round-3-2026-07-23.md`에 기록했다.
+
 ## 2026-07-23 — MCP adversarial dogfood round 2
 
 빈 폴더부터 Git edge case와 packed install까지 128개의 명시적 runtime
