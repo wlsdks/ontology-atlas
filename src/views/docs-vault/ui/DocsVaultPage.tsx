@@ -87,6 +87,7 @@ import type { VaultCommand } from '@/widgets/docs-vault/model/command';
 import {
   PINNED_DOCS_STORAGE_PREFIX,
 } from '@/widgets/docs-vault/lib/pinned-docs';
+import { useDocsBodyIndex } from '@/widgets/docs-vault/lib/use-docs-body-index';
 import {
   migrateLegacyRecentDocs,
   pushRecentDoc,
@@ -896,6 +897,11 @@ function DocsVaultContent() {
     () => new Set(collectionDocs.map((doc) => doc.slug)),
     [collectionDocs],
   );
+  // 팔레트 본문 전문 검색 인덱스 — 본문 소스는 viewer 와 동일 (로컬:
+  // FileSystemFileHandle lazy read, static: 번들 content.json + fetch).
+  // mtime 키 캐시라 폴링 diff 재빌드 후엔 변경 문서만 재독한다.
+  const { bodyIndex: docsBodyIndex, indexing: docsBodyIndexing } =
+    useDocsBodyIndex({ docs: collectionDocs, getDocContent });
   const collectionCounts = useMemo<Record<DocsVaultCollection, number>>(
     () => ({
       guides: filterDocsByCollection(manifest.docs, 'guides').length,
@@ -1949,6 +1955,8 @@ function DocsVaultContent() {
             onTagSelect={(tag) => setActiveTag(tag)}
             initialQuery={paletteQuery ?? ''}
             getDocHref={getDocHref}
+            bodyIndex={docsBodyIndex}
+            bodyIndexing={docsBodyIndexing}
           />
         ) : null}
       </AnimatePresence>
