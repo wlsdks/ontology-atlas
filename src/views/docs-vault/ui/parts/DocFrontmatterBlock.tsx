@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { ChevronRight, Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { buildNewNodeDoc, type VaultDoc } from "@/entities/docs-vault";
@@ -63,6 +63,34 @@ function isEditableKind(kind: string): kind is EditableKind {
   return (EDITABLE_KINDS as readonly string[]).includes(kind);
 }
 
+// 다른 vault 노드를 슬러그로 가리키는 참조 키 — 읽기 모드에서 해소 가능한
+// 토큰은 클릭 내비게이션을 준다. evidence(파일 경로) / category / status(enum)
+// 는 노드 참조가 아니라 제외한다.
+const REFERENCE_KEYS = new Set<string>([
+  "domain",
+  "depends_on",
+  "relates_to",
+  "contains",
+  "belongs_to",
+]);
+
+function toRefTokens(value: unknown): { tokens: string[]; isArray: boolean } {
+  if (Array.isArray(value)) {
+    return {
+      tokens: value
+        .filter((v): v is string => typeof v === "string")
+        .map((v) => v.trim())
+        .filter(Boolean),
+      isArray: true,
+    };
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return { tokens: trimmed ? [trimmed] : [], isArray: false };
+  }
+  return { tokens: [], isArray: false };
+}
+
 function formatValue(value: unknown): string | null {
   if (value == null) return null;
   if (Array.isArray(value)) {
@@ -93,6 +121,11 @@ export interface DocFrontmatterBlockProps {
   /** 확정된 필드만 담아 호출 — 저장은 caller (updateFrontmatter conflict
    *  guard 경유) 책임. */
   onPatch?: (patch: DocFrontmatterPatch) => Promise<void>;
+  /** 참조 슬러그를 클릭했을 때 해당 문서로 이동 — 없으면 참조는 평문. */
+  onNavigate?: (slug: string) => void;
+  /** 맨슬러그(frontmatter 참조 표기)를 실제 네비게이션 슬러그로 해소.
+   *  null 이면 vault 에 없는 참조라 링크로 만들지 않는다. */
+  resolveRef?: (token: string) => string | null;
 }
 
 export function DocFrontmatterBlock({
@@ -100,6 +133,8 @@ export function DocFrontmatterBlock({
   canEdit = false,
   domainOptions = [],
   onPatch,
+  onNavigate,
+  resolveRef,
 }: DocFrontmatterBlockProps) {
   const t = useTranslations("docsVault.frontmatterBlock");
   const kindLabel = useOntologyKindLabel();
@@ -173,10 +208,23 @@ export function DocFrontmatterBlock({
     }
   }, [currentKind, domainOptions, kindLabel, t]);
 
-  const fields = GRAPH_KEYS.map((key) => ({
-    key: key as string,
-    value: formatValue(doc.frontmatter?.[key]),
-  })).filter((f): f is { key: string; value: string } => f.value !== null);
+  const fields = GRAPH_KEYS.map((key) => {
+    const raw = doc.frontmatter?.[key];
+    const ref = REFERENCE_KEYS.has(key) ? toRefTokens(raw) : null;
+    return {
+      key: key as string,
+      value: formatValue(raw),
+      refTokens: ref?.tokens ?? null,
+      refIsArray: ref?.isArray ?? false,
+    };
+  }).filter(
+    (f): f is {
+      key: string;
+      value: string;
+      refTokens: string[] | null;
+      refIsArray: boolean;
+    } => f.value !== null,
+  );
 
   if (fields.length === 0) return null;
 
@@ -260,20 +308,52 @@ export function DocFrontmatterBlock({
           <div className="text-[color:var(--color-text-quaternary)]" aria-hidden>
             ---
           </div>
-          {fields.map(({ key, value }) => (
-            <div key={key} className="flex min-w-0 flex-wrap gap-x-1.5">
-              <span className="text-[color:var(--color-text-quaternary)]">{key}:</span>
-              <span
-                className={
-                  key === "kind"
-                    ? "font-semibold text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
-                    : "min-w-0 truncate text-[color:var(--color-text-secondary)]"
-                }
-              >
-                {value}
-              </span>
-            </div>
-          ))}
+          {fields.map(({ key, value, refTokens }) => {
+            const linkable =
+              refTokens != null &&
+              refTokens.length > 0 &&
+              onNavigate != null &&
+              refTokens.some((tok) => resolveRef?.(tok) != null);
+            return (
+              <div key={key} className="flex min-w-0 flex-wrap gap-x-1.5">
+                <span className="text-[color:var(--color-text-quaternary)]">{key}:</span>
+                {linkable ? (
+                  <span className="min-w-0 break-words text-[color:var(--color-text-secondary)]">
+                    {refTokens!.map((tok, index) => {
+                      const target = resolveRef?.(tok) ?? null;
+                      return (
+                        <Fragment key={`${tok}-${index}`}>
+                          {index > 0 ? <span aria-hidden>, </span> : null}
+                          {target != null ? (
+                            <button
+                              type="button"
+                              onClick={() => onNavigate!(target)}
+                              data-testid={`doc-frontmatter-ref-${tok}`}
+                              className="rounded-sm text-[color:var(--color-indigo-pale-a90)] underline decoration-[color:var(--color-indigo-line-a35)] underline-offset-2 transition-colors hover:text-[color:var(--color-text-primary)] hover:decoration-[color:var(--color-indigo-line-a45)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[color:var(--color-indigo-line-a45)]"
+                            >
+                              {tok}
+                            </button>
+                          ) : (
+                            <span>{tok}</span>
+                          )}
+                        </Fragment>
+                      );
+                    })}
+                  </span>
+                ) : (
+                  <span
+                    className={
+                      key === "kind"
+                        ? "font-semibold text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+                        : "min-w-0 truncate text-[color:var(--color-text-secondary)]"
+                    }
+                  >
+                    {value}
+                  </span>
+                )}
+              </div>
+            );
+          })}
           <div className="text-[color:var(--color-text-quaternary)]" aria-hidden>
             ---
           </div>

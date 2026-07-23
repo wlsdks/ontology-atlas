@@ -821,6 +821,24 @@ function DocsVaultContent() {
     () => new Set(manifest.docs.map((d) => d.slug)),
     [manifest],
   );
+  // frontmatter 참조는 맨슬러그(ai-agent-partner)로 쓰지만 doc.slug 는 경로형
+  // (ontology/domains/ai-agent-partner)이다. 맨슬러그·frontmatter.slug·경로
+  // 꼬리 세 표기를 실제 네비게이션 slug 로 해소한다(경로형 우선, frontmatter
+  // 맨슬러그가 꼬리보다 authoritative). 미해소 참조는 링크로 만들지 않는다.
+  const refSlugResolver = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const d of manifest.docs) map.set(d.slug, d.slug);
+    for (const d of manifest.docs) {
+      const fmSlug =
+        typeof d.frontmatter?.slug === "string" ? d.frontmatter.slug.trim() : "";
+      if (fmSlug && !map.has(fmSlug)) map.set(fmSlug, d.slug);
+    }
+    for (const d of manifest.docs) {
+      const tail = d.slug.split("/").pop() ?? "";
+      if (tail && !map.has(tail)) map.set(tail, d.slug);
+    }
+    return map;
+  }, [manifest]);
   // 열린 문서 탭 워킹셋 — docs-chrome-round 슬라이스 B. sourceKey 는
   // useDocsVaultPersistence 의 recentKey 를 그대로 재사용해 vault 별 분리
   // 규약을 새로 만들지 않는다('server' | `local:<handle.name>`). 활성
@@ -1871,6 +1889,8 @@ function DocsVaultContent() {
                             canEdit={canEditCurrent}
                             domainOptions={domainOptions}
                             onPatch={handlePatchDocFrontmatter}
+                            onNavigate={handleSelect}
+                            resolveRef={(token) => refSlugResolver.get(token) ?? null}
                           />
                         ) : null}
                         <DocMetaBar doc={selectedDoc} />
