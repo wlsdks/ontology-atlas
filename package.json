@@ -166,6 +166,7 @@
     "lucide-react": "^1.25.0",
     "next": "16.2.11",
     "next-intl": "^4.13.3",
+    "pretendard": "^1.3.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "^7.82.0",
