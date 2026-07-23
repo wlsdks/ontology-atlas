@@ -32,7 +32,7 @@ import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { slugify } from "@/shared/lib/slugify";
 import { useNavRailHidden } from "@/widgets/app-nav-rail";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
-import { MountedGlobalSearch } from "@/widgets/global-search";
+import { MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
 import { ChromeTile, HexMark, Tooltip, useToast } from "@/shared/ui";
 import {
   BUILDER_WRITE_BAR_RESERVE_PX,
@@ -321,6 +321,23 @@ export function OntologyEditPage() {
   // (JSON-LD/GraphML)·지우기 7개 버튼을 "⋯" 오버플로 팝오버 하나로 축약.
   // 기능은 무손실 — 각 항목이 기존 핸들러/상태를 그대로 재사용한다.
   const [headerOverflowOpen, setHeaderOverflowOpen] = useState(false);
+  // P3 결함⑥ (사용성 전수 검수 2026-07-23) — 검색 팔레트(⌘K)와 앱 설정
+  // 다이얼로그가 각자 self-managed open state 였던 탓에 둘이 동시에 뜰 수
+  // 있었다(transient 강등 위반). 두 state 를 이 페이지가 소유해 대칭으로
+  // 서로를 닫는다 — 열리는 쪽이 이긴다, 스택 금지. `MountedGlobalSearch` 를
+  // controlled 로 돌리면 내장 ⌘K 바인딩이 꺼지므로(controlled mount 계약)
+  // 같은 hotkey 훅을 여기서 직접 걸어 대칭 로직을 함께 태운다.
+  const [searchPaletteOpen, setSearchPaletteOpenState] = useState(false);
+  const [appSettingsOpen, setAppSettingsOpenState] = useState(false);
+  const setSearchPaletteOpen = useCallback((next: boolean) => {
+    setSearchPaletteOpenState(next);
+    if (next) setAppSettingsOpenState(false);
+  }, []);
+  const setAppSettingsOpen = useCallback((next: boolean) => {
+    setAppSettingsOpenState(next);
+    if (next) setSearchPaletteOpenState(false);
+  }, []);
+  useGlobalSearchHotkey(searchPaletteOpen, setSearchPaletteOpen);
   // Blast-radius modal state — driven by deleteVaultDoc requesting a
   // confirmation. Stays null when the user is not actively confirming a
   // delete; opens when delete is clicked and resolves on cancel/confirm.
@@ -1380,6 +1397,8 @@ export function OntologyEditPage() {
             미작동으로 읽혔다(페르소나 N9). resolveBuilderShortcut 의
             P/D/C/E 단축키도 metaKey 조합은 무시하므로 충돌 없음. */}
         <MountedGlobalSearch
+          open={searchPaletteOpen}
+          onOpenChange={setSearchPaletteOpen}
           onSelectNode={(node) => {
             openNodeDetails(node.id);
           }}
@@ -1494,7 +1513,7 @@ export function OntologyEditPage() {
             {fullscreen ? null : (
               <>
                 <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
-                <AppSettingsMenu mode={dataSourceMode} />
+                <AppSettingsMenu mode={dataSourceMode} open={appSettingsOpen} onOpenChange={setAppSettingsOpen} />
               </>
             )}
             <ChromeTile

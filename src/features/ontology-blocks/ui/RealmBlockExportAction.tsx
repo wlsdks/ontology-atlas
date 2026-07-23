@@ -29,9 +29,13 @@ type ExportPhase = "idle" | "exporting" | "done" | "error";
  *
  * FirstRunStarterModule 과 같은 자립 모듈 계약 — vault 상태(`useLocalVault`)
  * 와 라벨(`ontologyBlocks` i18n)을 스스로 읽어, 호스트 위젯의 prop 표면을
- * 늘리지 않는다. 로컬 vault 미로드(정적 샘플)면 렌더 자체를 하지 않고,
- * 디렉터리 picker 가 없는 환경(Safari/Firefox·일부 WebView)은 비활성 +
- * 짧은 힌트로 사전 강등한다 (G1 — 눌러야 실패 금지).
+ * 늘리지 않는다.
+ *
+ * P1 결함② (사용성 전수 검수 2026-07-23) — 로컬 vault 미로드(정적 샘플)일 때
+ * 이 액션이 흔적 없이 사라져 "기능 존재 은폐"로 읽혔다. 이제 같은 자리에
+ * disabled + "내 폴더를 열면 쓸 수 있어요" 힌트로 남는다 — G1 이 이미 세운
+ * "디렉터리 picker 없는 환경은 비활성 + 힌트" 사전 강등 패턴과 동일 문법을
+ * vault-미로드 사유로 확장한 것뿐, 새 패턴 아님.
  */
 export function RealmBlockExportAction({
   rootTitle,
@@ -43,13 +47,12 @@ export function RealmBlockExportAction({
   const [phase, setPhase] = useState<ExportPhase>("idle");
   const [exportedCount, setExportedCount] = useState(0);
 
-  if (status !== "loaded" || !manifest) return null;
-
+  const vaultLoaded = status === "loaded" && Boolean(manifest);
   const supported =
     typeof window !== "undefined" && "showDirectoryPicker" in window;
 
   const runExport = async () => {
-    if (phase === "exporting") return;
+    if (phase === "exporting" || !vaultLoaded || !manifest) return;
     setPhase("exporting");
     try {
       const target = (await (
@@ -116,9 +119,15 @@ export function RealmBlockExportAction({
       <button
         type="button"
         onClick={() => void runExport()}
-        disabled={!supported || phase === "exporting"}
+        disabled={!vaultLoaded || !supported || phase === "exporting"}
         aria-label={t("exportAria")}
-        title={supported ? t("exportAria") : t("exportUnsupportedHint")}
+        title={
+          !vaultLoaded
+            ? t("vaultRequiredHint")
+            : supported
+              ? t("exportAria")
+              : t("exportUnsupportedHint")
+        }
         data-testid="realm-block-export"
         className="inline-flex shrink-0 items-center gap-1 rounded-[var(--chrome-radius-inner)] px-1 py-0.5 text-label text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
       >

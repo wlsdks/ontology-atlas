@@ -15,7 +15,7 @@ import type { CameraAxes, CameraTarget } from "../engine/camera";
 import { cameraTransitionDurationMs, easeCameraKeyframe, type CameraKeyframe, type CameraTween } from "../model/camera-easing";
 import { stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
 import { isCameraUnsettled, isCanvasActive, shouldSkipFrame } from "../model/idle-gate";
-import { classifyZoomTier, type ZoomTier } from "../model/tier-visibility";
+import { classifyZoomTier, DEFAULT_TIER_REVEAL, type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../interaction/pointer-state-machine";
@@ -203,12 +203,25 @@ export interface UseTopologyLoopArgs {
   /** S4 — 궤도 "전개" 버튼 DOM (캔버스 좌표 앵커, 매 프레임 카메라 추종). */
   realmEnterButtonRef?: RefObject<HTMLButtonElement | null>;
   /**
+   * 결계 하단 센서스 각인 문구 — "○○ · 요소 N" (사용자 어휘 "이것만 보기",
+   * 2026-07-23 소유자 결정 — 내부명 realm 유지). HomePage 가 원장 census 와
+   * 같은 출처로 포맷해 내려보낸다(위젯은 i18n/census 를 직접 만지지 않는다).
+   */
+  realmCaption?: string | null;
+  /**
    * 발자국 트레일 (fable 설계) — 세션 동안 방문(ego 포커스)한 노드 id 목록
    * (오래된 → 최근 순서). HomePage 세션 state 가 내려보낸다. 각 방문 노드에
    * 최근성 감쇠 헤어라인 링을 얹는다 — URL 비영속·정적 표기. 생략/빈 배열 =
    * 발자국 없음(회귀 0).
    */
   visitedTrail?: readonly string[];
+  /**
+   * 슬라이스 C (개발/비개발 모드 토글) — 표시-렌즈 티어 게이트 config. 생략 시
+   * `DEFAULT_TIER_REVEAL`(개발 모드 — capability/element 모두 정상 줌 반응).
+   * HomePage 가 비개발(plain) 모드에서 `PLAIN_TIER_REVEAL`(element 상시 숨김)
+   * 을 넘긴다 — 드로우/히트/팬-클램프 전부 이 값 하나로 정합된다.
+   */
+  tierReveal?: TierRevealConfig;
 }
 
 const EMPTY_EXPANDED_SET: ReadonlySet<string> = new Set();
@@ -220,7 +233,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, livePhysics = false, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, visitedTrail = EMPTY_TRAIL } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, livePhysics = false, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, tierReveal = DEFAULT_TIER_REVEAL } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -251,6 +264,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** C1 B3 — active auto-arrange homing springs, keyed by node id; empty/absent when no relayout is in flight. */
   const homeSpringsRef = useRef<Map<string, HomeSpringState>>(new Map());
   const homingActiveRef = useRef(false);
+  /**
+   * 결계 불변식 (소유자 실보고 2026-07-23, 루트가 자기 결계 밖) — 영역 active 중
+   * 호밍의 노드별 목표 오버라이드. null 이면 전역 `homeX`/`homeY`, 영역 중엔
+   * `insideTargets`(영역 좌표계) 가 목표다. 전역 홈으로 호밍하면 결계 원은 영역
+   * 원점에 남는데 노드는 스파인 좌표로 날아가 "루트가 원 밖" 이 됐다. 호밍
+   * 수렴/취소 시 함께 클리어.
+   */
+  const homeTargetOverrideRef = useRef<ReadonlyMap<string, { x: number; y: number }> | null>(null);
+  /** 결계 불변식 — 직전 프레임의 pin-drag 노드 id (릴리즈 전이 감지). */
+  const prevPinnedNodeIdRef = useRef<string | null>(null);
 
   // --- S4 "영역 전개" 상태 ---
   /** 전환 상태기계 (idle/entering/active/exiting). */
@@ -307,6 +330,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const realmTierKindsRef = useRef<ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null>(null);
   /** 영역 루트의 contains 조상 체인 캐시 — 바깥 밀도 게이트가 영역 내부를 가리지 않게 펼침 취급할 집합. */
   const realmExpandChainRef = useRef<{ rootId: string; chain: ReadonlySet<string> } | null>(null);
+  /** 결계 센서스 캡션 prop 미러 — rAF 프레임 클로저가 최신 문구를 읽는다. */
+  const realmCaptionRef = useRef<string | null>(realmCaption);
+  realmCaptionRef.current = realmCaption;
 
   const cameraRef = useRef<CameraAxes>({
     x: { value: 0, velocity: 0 },
@@ -501,6 +527,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * track the last emitted tier so the callback fires only on transitions. */
   const onZoomTierChangeRef = useRef<typeof onZoomTierChange>(onZoomTierChange);
   const lastZoomTierRef = useRef<ZoomTier | null>(null);
+  /** 슬라이스 C — 티어 게이트 config 미러(같은 패턴). rAF 클로저 + 포인터 핸들러가 공유. */
+  const tierRevealRef = useRef<TierRevealConfig>(tierReveal);
 
   /**
    * S3 마감 폴리시 (fable 설계) — begin a cubic ease-in-out camera transition
@@ -553,6 +581,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     livePhysicsRef.current = livePhysics;
   }, [livePhysics]);
+
+  useEffect(() => {
+    tierRevealRef.current = tierReveal;
+  }, [tierReveal]);
 
   useEffect(() => {
     selectedEdgeRef.current = selectedEdge;
@@ -720,6 +752,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dragTugOffsetsRef.current.clear();
     homeSpringsRef.current.clear();
     homingActiveRef.current = false;
+    homeTargetOverrideRef.current = null;
+    prevPinnedNodeIdRef.current = null;
     onVisibleCountChange?.(nodes.length);
     onGraphStatsChange?.({ nodes: nodes.length, relations: edges.length });
     trySnapInitialCamera(tokens);
@@ -789,6 +823,26 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
     if (!tokens || !world || width <= 0 || height <= 0 || !hasInitializedRef.current) return;
+    // 결계 불변식 (소유자 실보고 2026-07-23) — 영역 전개 중의 fit/재배치 카메라는
+    // 전역 스파인이 아니라 **영역 콘텐츠 bbox** 로 복귀한다. 전역 overview 로
+    // 트윈하면 카메라가 결계 세계를 떠나 "빈 원 + 어딘가의 노드들" 이 된다
+    // (S9 결함 1 의 deselect 복귀와 같은 계약).
+    const realmData = realmDataRef.current;
+    const realmPhase = realmTransitionRef.current.phase;
+    if (realmData !== null && (realmPhase === "entering" || realmPhase === "active")) {
+      const bounds = realmVisibleBounds(
+        world,
+        realmData,
+        new Set([...expandedParentsRef.current, realmData.rootId]),
+        tokens,
+      );
+      const target = realmCameraTarget(bounds, tokens, width, height);
+      cameraTargetRef.current = target;
+      dampingRef.current = tokens.cameraDampingDefault;
+      cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+      beginCameraTween(target);
+      return;
+    }
     // Panel-aware: spring back to the overview centered in the VISIBLE area, not
     // behind the left ReaderLens panel (Design Guardian 카메라 반려). Fits the
     // SPINE bbox (not the full 295-node bounds) so "fit view" reframes the same
@@ -827,6 +881,34 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dragAffectedSetRef.current = null;
     dragStartPosRef.current = null;
     dragTugOffsetsRef.current.clear();
+
+    // 결계 불변식 (소유자 실보고 2026-07-23, 재현 경로 ②) — 영역 전개 중의
+    // Auto-arrange 는 "이 세계를 다시 정돈" 이다: 호밍 목표는 전역 `homeX/homeY`
+    // 가 아니라 **영역 재배치 좌표**(insideTargets). 전역 홈으로 보내면 결계
+    // 원은 영역 원점에 남고 멤버 전원이 스파인 좌표로 날아가 "루트가 자기 결계
+    // 밖" 이 됐다. 밖 노드는 하드 컬 상태라 스프링을 만들지 않는다.
+    // 이탈(exiting) 중의 재배치는 전역 경로 — 역재생의 목적지가 전역 홈이므로
+    // 영역 타깃 호밍이 닫히는 세계로 노드를 되돌리면 안 된다.
+    const realmData = realmDataRef.current;
+    const realmPhase = realmTransitionRef.current.phase;
+    if (realmData !== null && (realmPhase === "entering" || realmPhase === "active")) {
+      simRef.current = createForceSimulation(
+        world.nodes.map((n) => {
+          const t = realmData.insideTargets.get(n.id);
+          return { id: n.id, x: t?.x ?? n.x, y: t?.y ?? n.y };
+        }),
+        world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
+      );
+      const springs = new Map<string, HomeSpringState>();
+      for (const node of world.nodes) {
+        if (realmData.insideTargets.has(node.id)) springs.set(node.id, initHomeSpring(node.x, node.y));
+      }
+      homeSpringsRef.current = springs;
+      homeTargetOverrideRef.current = realmData.insideTargets;
+      homingActiveRef.current = true;
+      return;
+    }
+
     simRef.current = createForceSimulation(
       world.nodes.map((n) => ({ id: n.id, x: n.homeX, y: n.homeY })),
       world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
@@ -837,6 +919,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       springs.set(node.id, initHomeSpring(node.x, node.y));
     }
     homeSpringsRef.current = springs;
+    homeTargetOverrideRef.current = null;
     homingActiveRef.current = true;
   }, [relayoutToken]);
 
@@ -974,6 +1057,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // 호밍은 진입 중 realm 이 좌표를 소유하므로 끈다.
       homingActiveRef.current = false;
       homeSpringsRef.current.clear();
+      homeTargetOverrideRef.current = null;
       // 카메라: 결계 원 fit 으로 돌리 인 (기존 큐빅 트윈 재사용).
       if (width > 0 && height > 0 && hasInitializedRef.current) {
         // S8 결함 2 — 해제 시 복귀할 "원래 보던 곳" 키프레임을 진입 직전 카메라
@@ -1013,11 +1097,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const springs = new Map<string, HomeSpringState>();
         for (const node of world.nodes) springs.set(node.id, initHomeSpring(node.x, node.y));
         homeSpringsRef.current = springs;
+        homeTargetOverrideRef.current = null; // 이탈 목표는 전역 홈
         homingActiveRef.current = true;
       } else {
         // 안 노드 역FLIP + 밖 노드 역중력 귀환은 realm 데이터가 소유 → 홈 스프링 끔.
         homingActiveRef.current = false;
         homeSpringsRef.current.clear();
+        homeTargetOverrideRef.current = null;
         // S8 결함 5 — 정착 후 드래그로 멤버가 옮겨졌을 수 있으므로, 역FLIP 시작점
         // (insideTargets)을 현재 라이브 좌표로 갱신해 이탈 첫 프레임의 튐을 없앤다.
         const data = realmDataRef.current;
@@ -1146,6 +1232,67 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       if (pinned && homingActiveRef.current) {
         homingActiveRef.current = false;
         homeSpringsRef.current.clear();
+        homeTargetOverrideRef.current = null;
+      }
+
+      // --- 결계 불변식 (소유자 실보고 2026-07-23, 재현 경로 ①) — 영역 멤버가
+      // 결계 **밖**에서 릴리즈되면 영역 타깃으로 재홈잉한다(고무줄 복귀). 결계는
+      // 경계다: 루트(타깃=원점)를 끌어내 놓으면 "자기 결계 밖의 루트" 로 세계
+      // 문법이 깨진다. 안쪽 릴리즈는 자유 배치 유지(MindNode 식) — Auto-arrange
+      // 가 언제든 정돈한다. 기존 홈 스프링 + 목표 오버라이드 재사용, 신규 모션 0. ---
+      {
+        const pinnedId = nodeDragRef.current?.nodeId ?? null;
+        const releasedId = prevPinnedNodeIdRef.current !== null && pinnedId === null ? prevPinnedNodeIdRef.current : null;
+        prevPinnedNodeIdRef.current = pinnedId;
+        const realmData = realmDataRef.current;
+        if (releasedId !== null && realmData !== null && realmTransitionRef.current.phase === "active") {
+          const target = realmData.insideTargets.get(releasedId);
+          const released = world.nodeById.get(releasedId);
+          const radius = wardingFitRef.current?.value ?? realmData.wardingRadius;
+          const outside =
+            released !== undefined &&
+            Math.hypot(released.x - realmData.wardingCenter.x, released.y - realmData.wardingCenter.y) > radius;
+          if (target && released && outside) {
+            // 재홈잉 대상 = 릴리즈 노드 + 이번 드래그의 터그 영향권(1/2-hop) 중
+            // 영역 멤버. 릴리즈 노드만 스프링하면 터그로 끌려온 이웃이 변위
+            // 채로 동결된다(정상 릴리즈의 settle 이 터그를 0 으로 되감는 경로를
+            // 아래 heat=0 이 끊으므로) — 결계 위반은 흐트러진 무리 전체를
+            // 제자리로 정돈한다 (스코프 좁힌 relayout 과 같은 문법).
+            const affected = dragAffectedSetRef.current;
+            const springIds = new Set<string>([releasedId]);
+            if (affected !== null && affected.draggedId === releasedId) {
+              for (const id of affected.oneHop) springIds.add(id);
+              for (const id of affected.twoHop) springIds.add(id);
+            }
+            // settle burst 대신 홈 스프링이 좌표를 소유 — 둘이 같은 노드를 놓고
+            // 싸우지 않게 열/터그를 접는다 (relayout 과 같은 배타 계약).
+            heatRef.current = 0;
+            dragAffectedSetRef.current = null;
+            dragTugOffsetsRef.current.clear();
+            const springs = new Map(homeSpringsRef.current);
+            const override = new Map(homeTargetOverrideRef.current ?? []);
+            for (const id of springIds) {
+              const t = realmData.insideTargets.get(id);
+              const n = world.nodeById.get(id);
+              if (!t || !n) continue;
+              springs.set(id, initHomeSpring(n.x, n.y));
+              override.set(id, t);
+            }
+            homeSpringsRef.current = springs;
+            homeTargetOverrideRef.current = override;
+            homingActiveRef.current = true;
+            // sim 내부 좌표도 복귀 목표로 재시드 — 다음 드래그의 applyForcePositions
+            // 가 stale 드롭 좌표를 되쓰지 않게 (S8 결함 5와 같은 계약). heat=0 이라
+            // 스프링 수렴 전엔 sim 이 tick 하지 않아 목표 좌표 시드가 안전하다.
+            simRef.current = createForceSimulation(
+              world.nodes.map((n) => {
+                const t = override.get(n.id);
+                return { id: n.id, x: t?.x ?? n.x, y: t?.y ?? n.y };
+              }),
+              world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
+            );
+          }
+        }
       }
       if (sim && (heatRef.current > 0 || pinned)) {
         // C1 B2 — radius-limited release settle: restrict BOTH the live-drag
@@ -1244,33 +1391,42 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // run in the same frame in practice).
       if (homingActiveRef.current) {
         // A8 — reduced-motion users get the relayout RESULT, not the journey.
+        // 결계 불변식 — 영역 중 호밍 목표는 오버라이드(영역 insideTargets)가
+        // 우선한다. null 이면 기존 전역 homeX/homeY 계약 그대로.
+        const homeOverride = homeTargetOverrideRef.current;
         if (reducedMotionRef.current) {
           for (const node of world.nodes) {
             if (!homeSpringsRef.current.has(node.id)) continue;
-            node.x = node.homeX;
-            node.y = node.homeY;
+            const t = homeOverride?.get(node.id);
+            node.x = t?.x ?? node.homeX;
+            node.y = t?.y ?? node.homeY;
           }
           recomputeWorldGeometry(world, tokens);
           homingActiveRef.current = false;
           homeSpringsRef.current.clear();
+          homeTargetOverrideRef.current = null;
         } else {
           let allConverged = true;
           for (const node of world.nodes) {
             const spring = homeSpringsRef.current.get(node.id);
             if (!spring) continue;
+            const t = homeOverride?.get(node.id);
+            const targetX = t?.x ?? node.homeX;
+            const targetY = t?.y ?? node.homeY;
             // A5 — homing has its own ω (7.5): a relayout is a layout
             // CORRECTION and should end decisively, unlike the camera's
             // cinematic transition spring (4.7) this used to borrow.
-            const nextSpring = stepHomeSpring(spring, node.homeX, node.homeY, dt, tokens.nodeHomeSpringAngFreq, tokens.cameraDampingDefault);
+            const nextSpring = stepHomeSpring(spring, targetX, targetY, dt, tokens.nodeHomeSpringAngFreq, tokens.cameraDampingDefault);
             homeSpringsRef.current.set(node.id, nextSpring);
             node.x = nextSpring.x.value;
             node.y = nextSpring.y.value;
-            if (!isHomeSpringConverged(nextSpring, node.homeX, node.homeY, HOME_CONVERGE_EPSILON)) allConverged = false;
+            if (!isHomeSpringConverged(nextSpring, targetX, targetY, HOME_CONVERGE_EPSILON)) allConverged = false;
           }
           recomputeWorldGeometry(world, tokens);
           if (allConverged) {
             homingActiveRef.current = false;
             homeSpringsRef.current.clear();
+            homeTargetOverrideRef.current = null;
           }
         }
       }
@@ -1425,6 +1581,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         egoRevealById: egoRevealRef.current,
         focusRampById: focusRampRef.current,
         appearById: appearRef.current,
+        tierReveal: tierRevealRef.current,
       });
       cameraRef.current = camera;
 
@@ -1504,7 +1661,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // 미루고, 정착(active/idle) 후 아래 비교가 최종 tier 를 한 번만 방출한다.
       const realmTransitioning =
         realmTransitionRef.current.phase === "entering" || realmTransitionRef.current.phase === "exiting";
-      const nextZoomTier = classifyZoomTier(zoomRatio);
+      const nextZoomTier = classifyZoomTier(zoomRatio, tierRevealRef.current);
       if (!realmTransitioning && nextZoomTier !== lastZoomTierRef.current) {
         lastZoomTierRef.current = nextZoomTier;
         onZoomTierChangeRef.current?.(nextZoomTier);
@@ -1736,7 +1893,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // --- S4 "영역 전개" — 밖 노드 하드 컬(fling 완료 후) + 결계 링 파라미터 ---
       const realmState = realmTransitionRef.current;
       const realmData = realmDataRef.current;
-      let realmWarding: { centerX: number; centerY: number; radius: number; drawProgress: number } | null = null;
+      let realmWarding: { centerX: number; centerY: number; radius: number; drawProgress: number; caption: string | null } | null = null;
       let realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null = null;
       let realmDustParallax = 0;
       // S5 — 깊이 연출용: 선명도(entering+active)는 depthById, 시차(active 만)는
@@ -1800,6 +1957,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           drawProgress: exiting
             ? realmWardingEraseProgress(now - realmState.startMs)
             : realmWardingDrawProgress(now - realmState.startMs - REALM_WARDING_DRAW_DELAY_MS),
+          // 결계 센서스 각인 — 원이 "무엇의 경계인지" 스스로 말한다 (진입 시 1회 파생).
+          caption: realmCaptionRef.current,
         };
       }
 
@@ -1947,6 +2106,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         footprintRanksById,
         spotlightIds: spotlightIdsRef.current,
         spotlightRamp: spotlightRampRef.current,
+        tierReveal: tierRevealRef.current,
       });
 
       handle = requestAnimationFrame(frame);
@@ -1997,6 +2157,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     hoveredClusterIdRef,
     realmParallaxRef,
     realmTierKindsRef,
+    tierRevealRef,
     onSelect,
     onSelectEdge,
     onHoverEdge,

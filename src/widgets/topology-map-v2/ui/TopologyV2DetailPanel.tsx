@@ -124,6 +124,13 @@ export interface TopologyV2DetailPanelLabels {
 export interface TopologyV2DetailPanelProps {
   slug: string;
   title: string;
+  /**
+   * 슬라이스 B (element 라벨 인간화) — `title` 이 표시용으로 변환된 값일 때
+   * (예: element 노드의 코드 경로 원문 → "Bar Baz" 같은 사람 이름), 원문을
+   * 보존해서 보여주는 모노 서브라인. 호출자가 display !== 원문 title 일
+   * 때만 넘긴다 — 같으면 undefined/null 로 생략해 중복 렌더를 막는다.
+   */
+  sourceTitle?: string | null;
   kind: string;
   /**
    * N6 (persona-ux-2026-07 report — PM 페르소나 "어디 소속?" 1차 질문에
@@ -197,6 +204,17 @@ export interface TopologyV2DetailPanelProps {
    */
   presence?: "entering" | "exiting";
   className?: string;
+  /**
+   * 슬라이스 C (개발/비개발 모드 토글) — 인계 복사(handoff) 액션 타일. 기본
+   * `true`(기존 렌더 유지). 비개발(plain) 모드에서 HomePage 가 `false` 를
+   * 넘겨 개발자 크롬으로 숨긴다.
+   */
+  showHandoff?: boolean;
+  /**
+   * 슬라이스 C — 원문 경로 서브라인(슬라이스 B, `sourceTitle`). 기본
+   * `true`. 비개발(plain) 모드에서 `false` — 코드 경로는 개발자 어휘.
+   */
+  showSourcePath?: boolean;
 }
 
 // 데이터시트 내부 정제 (2026-07-23) — `justify-start` + 고정 상단 패딩: 라벨이
@@ -208,13 +226,15 @@ export interface TopologyV2DetailPanelProps {
 // transition-colors(150ms)로 하드 토글 방지 — transform/scale 없음.
 /**
  * 결과-설명 툴팁 래퍼 — tip 이 있으면 shared Tooltip 으로 감싸고, 없으면
- * 트리거를 그대로 반환(하위호환·DOM 무증가). side="bottom": 타일 행이 패널
- * 상단부라 위로 띄우면 메트릭 라인을 가린다.
+ * 트리거를 그대로 반환(하위호환·DOM 무증가). side="top": 타일 바로 아래에
+ * "영역 전개" 같은 다음 행동 버튼이 있어 side="bottom" 이면 hover 중 그
+ * 버튼을 덮어 클릭을 방해한다(사용성 검수 판정). 위로 띄우면 메트릭 라인을
+ * 잠깐 가리지만 그건 hover 중에만이고, 다음 행동을 막지는 않는다.
  */
 function withActionTip(tip: string | undefined, trigger: ReactElement): ReactElement {
   if (!tip) return trigger;
   return (
-    <Tooltip content={tip} side="bottom">
+    <Tooltip content={tip} side="top">
       {trigger}
     </Tooltip>
   );
@@ -229,6 +249,7 @@ const ACTION_TILE_DISABLED_CLASS =
 export function TopologyV2DetailPanel({
   slug,
   title,
+  sourceTitle = null,
   kind,
   domain,
   powered,
@@ -248,6 +269,8 @@ export function TopologyV2DetailPanel({
   onOpenFullDetail,
   presence = "entering",
   className,
+  showHandoff = true,
+  showSourcePath = true,
 }: TopologyV2DetailPanelProps) {
   const metricSegments = buildV2MetricSegments(metric, {
     contains: labels.metricContains,
@@ -495,6 +518,14 @@ export function TopologyV2DetailPanel({
               {title}
             </h2>
           </div>
+          {showSourcePath && sourceTitle && sourceTitle !== title ? (
+            <div
+              data-testid="topology-v2-detail-panel-source-path"
+              className="pl-[13.5px] font-mono text-[11px] text-[color:var(--color-text-quaternary)] break-all"
+            >
+              {sourceTitle}
+            </div>
+          ) : null}
           <div className="flex items-center gap-1.5 pl-[13.5px]">
             <span className="text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)]">
               {labels.kindLabel}
@@ -620,19 +651,21 @@ export function TopologyV2DetailPanel({
             <span>{labels.actionEditRelations}</span>
           </Link>,
         )}
-        {withActionTip(
-          labels.actionCopyHandoffTip,
-          <button
-            type="button"
-            onClick={() => onCopyHandoff(handoffText)}
-            aria-label={labels.handoff}
-            data-testid="topology-v2-detail-panel-action-handoff"
-            className={ACTION_TILE_CLASS}
-          >
-            <Copy size={15} aria-hidden="true" />
-            <span>{labels.actionCopyHandoff}</span>
-          </button>,
-        )}
+        {showHandoff
+          ? withActionTip(
+              labels.actionCopyHandoffTip,
+              <button
+                type="button"
+                onClick={() => onCopyHandoff(handoffText)}
+                aria-label={labels.handoff}
+                data-testid="topology-v2-detail-panel-action-handoff"
+                className={ACTION_TILE_CLASS}
+              >
+                <Copy size={15} aria-hidden="true" />
+                <span>{labels.actionCopyHandoff}</span>
+              </button>,
+            )
+          : null}
         {withActionTip(
           labels.actionPathTip,
           <button

@@ -5,6 +5,7 @@ import {
   countMatchingTreeNodes,
   filterTreeByNodeIds,
   filterTreeByQuery,
+  filterTreeExcludeKind,
   knowledgeNodeMatchesQuery,
 } from "./filter-tree";
 
@@ -250,5 +251,75 @@ describe("filterTreeByNodeIds", () => {
   it("트리에 없는 id 는 무시 (제거된 노드 등)", () => {
     const r = filterTreeByNodeIds(tree.roots, new Set(["ghost"]));
     expect(r).toEqual([]);
+  });
+});
+
+// 슬라이스 C (개발/비개발 모드 토글) — 비개발(plain) 모드의 INDEX 트리에서
+// element 행을 제외한다. 데이터 자체는 무변경 — 이 함수는 트리 뷰만 가지치기
+// 한다(카운트/census 는 이 함수의 출력을 쓰지 않는다).
+describe("filterTreeExcludeKind (슬라이스 C — 비개발 모드 element 행 제외)", () => {
+  // root (project)
+  // ├─ child-1 (capability, 로그인)
+  // │  └─ grand-1 (element, 세션)
+  // └─ child-2 (capability, 로그아웃)
+  const nodes = [
+    node("root", "프로젝트", "project"),
+    withParent(node("child-1", "로그인", "capability")),
+    withParent(node("grand-1", "세션", "element")),
+    withParent(node("child-2", "로그아웃", "capability")),
+  ];
+  const edges = [
+    { id: "e1", from: "root", to: "child-1", type: "contains", projectIds: [], evidenceIds: [], lastApprovedAt: APPROVED_AT, lastApprovedBy: "test" },
+    { id: "e2", from: "child-1", to: "grand-1", type: "contains", projectIds: [], evidenceIds: [], lastApprovedAt: APPROVED_AT, lastApprovedBy: "test" },
+    { id: "e3", from: "root", to: "child-2", type: "contains", projectIds: [], evidenceIds: [], lastApprovedAt: APPROVED_AT, lastApprovedBy: "test" },
+  ];
+  const tree = buildOntologyTree(nodes, edges);
+
+  it("해당 kind 의 서브트리를 제거한다 (자손 포함)", () => {
+    const r = filterTreeExcludeKind(tree.roots, "element");
+    expect(r).toHaveLength(1); // root
+    expect(r[0]?.children).toHaveLength(2); // child-1, child-2 그대로
+    const child1 = r[0]?.children.find((c) => c.node.id === "child-1");
+    expect(child1?.children).toHaveLength(0); // grand-1(element) 제거됨
+  });
+
+  it("구조를 보존한다 — 제외 대상이 아닌 노드는 그대로 남는다", () => {
+    const r = filterTreeExcludeKind(tree.roots, "element");
+    expect(r[0]?.node.id).toBe("root");
+    expect(r[0]?.children.map((c) => c.node.id).sort()).toEqual(["child-1", "child-2"]);
+  });
+
+  it("입력을 변경하지 않는다 (불변)", () => {
+    const beforeIds = tree.roots.map((r) => r.node.id);
+    const beforeChildCounts = tree.roots.map((r) => r.children.length);
+    filterTreeExcludeKind(tree.roots, "element");
+    expect(tree.roots.map((r) => r.node.id)).toEqual(beforeIds);
+    expect(tree.roots.map((r) => r.children.length)).toEqual(beforeChildCounts);
+    // grand-1(element) 는 여전히 원본 트리 안에 남아 있다.
+    const child1 = tree.roots[0]?.children.find((c) => c.node.id === "child-1");
+    expect(child1?.children).toHaveLength(1);
+    expect(child1?.children[0]?.node.id).toBe("grand-1");
+  });
+
+  it("결정론적이다 — 같은 입력에 같은 출력", () => {
+    const r1 = filterTreeExcludeKind(tree.roots, "element");
+    const r2 = filterTreeExcludeKind(tree.roots, "element");
+    expect(r1).toEqual(r2);
+  });
+
+  it("제외 대상 kind 가 root 자체면 그 root 를 제거한다", () => {
+    const rootIsElement = [
+      node("solo-root", "고아", "element"),
+    ];
+    const soloTree = buildOntologyTree(rootIsElement, []);
+    const r = filterTreeExcludeKind(soloTree.roots, "element");
+    expect(r).toEqual([]);
+  });
+
+  it("해당 kind 가 없으면 트리 전체를 그대로 반환한다", () => {
+    const r = filterTreeExcludeKind(tree.roots, "document");
+    expect(r).toHaveLength(1);
+    expect(r[0]?.children).toHaveLength(2);
+    expect(r[0]?.children.find((c) => c.node.id === "child-1")?.children).toHaveLength(1);
   });
 });

@@ -51,12 +51,16 @@ function renderPanel(
     onSetPathSource?: () => void;
     domain?: { id: string; title: string } | null;
     onSelectConnection?: (id: string) => void;
+    sourceTitle?: string | null;
+    showHandoff?: boolean;
+    showSourcePath?: boolean;
   } = {},
 ) {
   render(
     <TopologyV2DetailPanel
       slug="domains/views"
       title="Views"
+      sourceTitle={overrides.sourceTitle ?? null}
       kind="domain"
       domain={overrides.domain !== undefined ? overrides.domain : null}
       powered={false}
@@ -81,6 +85,8 @@ function renderPanel(
       onClose={() => {}}
       onSetPathSource={overrides.onSetPathSource ?? (() => {})}
       onOpenFullDetail={onOpenFullDetail}
+      showHandoff={overrides.showHandoff}
+      showSourcePath={overrides.showSourcePath}
     />,
   );
 }
@@ -151,6 +157,64 @@ describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYST
       "href",
       expect.stringContaining("product-owner-operating-system"),
     );
+  });
+});
+
+// 슬라이스 B (element 라벨 인간화) — display 로 인간화된 title 이 렌더될 때
+// 원문 코드 경로를 모노 서브라인으로 보존한다. 호출자가 display !== 원문일
+// 때만 sourceTitle 을 넘기는 계약이므로 패널 자체는 sourceTitle 유무 +
+// title 과의 동일 여부만으로 렌더 여부를 결정한다.
+describe("TopologyV2DetailPanel — 원문 경로 서브라인 (슬라이스 B)", () => {
+  it("sourceTitle 이 title 과 다르면 모노 서브라인으로 원문을 보존해 렌더한다", () => {
+    renderPanel(undefined, undefined, { sourceTitle: "src/foo/bar-baz.ts" });
+    const subline = screen.getByTestId("topology-v2-detail-panel-source-path");
+    expect(subline).toHaveTextContent("src/foo/bar-baz.ts");
+  });
+
+  it("sourceTitle 이 없으면(null/undefined) 서브라인을 렌더하지 않는다", () => {
+    renderPanel(undefined, undefined, {});
+    expect(
+      screen.queryByTestId("topology-v2-detail-panel-source-path"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("sourceTitle 이 title 과 같으면(중복) 서브라인을 렌더하지 않는다", () => {
+    renderPanel(undefined, undefined, { sourceTitle: "Views" });
+    expect(
+      screen.queryByTestId("topology-v2-detail-panel-source-path"),
+    ).not.toBeInTheDocument();
+  });
+});
+
+// 슬라이스 C (개발/비개발 모드 토글) — 비개발(plain) 모드는 인계 복사 액션과
+// 원문 경로 서브라인을 개발자 크롬으로 간주해 숨긴다. 기본(생략)은 둘 다 true
+// (기존 렌더 유지 — 회귀 0).
+describe("TopologyV2DetailPanel — showHandoff / showSourcePath (슬라이스 C)", () => {
+  it("showHandoff 생략 시 기본으로 인계 복사 타일을 렌더한다", () => {
+    renderPanel();
+    expect(screen.getByTestId("topology-v2-detail-panel-action-handoff")).toBeInTheDocument();
+  });
+
+  it("showHandoff=false 면 인계 복사 타일을 렌더하지 않는다", () => {
+    renderPanel(undefined, undefined, { showHandoff: false });
+    expect(
+      screen.queryByTestId("topology-v2-detail-panel-action-handoff"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("showSourcePath 생략 시 기본으로 원문 경로 서브라인을 렌더한다 (sourceTitle 이 있을 때)", () => {
+    renderPanel(undefined, undefined, { sourceTitle: "src/foo/bar-baz.ts" });
+    expect(screen.getByTestId("topology-v2-detail-panel-source-path")).toBeInTheDocument();
+  });
+
+  it("showSourcePath=false 면 sourceTitle 이 있어도 원문 경로 서브라인을 렌더하지 않는다", () => {
+    renderPanel(undefined, undefined, {
+      sourceTitle: "src/foo/bar-baz.ts",
+      showSourcePath: false,
+    });
+    expect(
+      screen.queryByTestId("topology-v2-detail-panel-source-path"),
+    ).not.toBeInTheDocument();
   });
 });
 

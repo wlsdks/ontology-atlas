@@ -621,4 +621,65 @@ describe("TopologyIndexPanel", () => {
       expect(onOpenAgentConnect).not.toHaveBeenCalled();
     });
   });
+
+  // P1 결함①a (사용성 전수 검수 2026-07-23) — 일반(비개발) 모드는
+  // element 행을 트리에서 제외하는데(호출자의 filterTreeExcludeKind), 그
+  // 사실을 설명하는 텍스트가 어디에도 없어 "역량 2 · 요소 7"인데 펼치면
+  // 2행만 보이는 정합성 결함으로 읽혔다.
+  describe("plainMode hint (P1 결함①a)", () => {
+    it("renders the quiet plain-mode hint when plainMode is true and the label is provided", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={{ ...labels, plainHint: "요소는 숨겨져 있어요" }}
+          plainMode
+        />,
+      );
+      expect(screen.getByTestId("topology-index-plain-hint")).toHaveTextContent(
+        "요소는 숨겨져 있어요",
+      );
+    });
+
+    it("does not render the hint in developer mode (plainMode omitted/false)", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={{ ...labels, plainHint: "요소는 숨겨져 있어요" }}
+        />,
+      );
+      expect(screen.queryByTestId("topology-index-plain-hint")).not.toBeInTheDocument();
+    });
+
+    it("does not render the hint when plainMode is true but no label is given (backward-compat)", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          plainMode
+        />,
+      );
+      expect(screen.queryByTestId("topology-index-plain-hint")).not.toBeInTheDocument();
+    });
+  });
 });

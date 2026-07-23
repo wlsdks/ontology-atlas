@@ -96,4 +96,52 @@ describe("DocsVaultViewer", () => {
     expect(label.tagName).toBe("SPAN");
     expect(screen.queryByRole("link", { name: /MCP docs/ })).toBeNull();
   });
+
+  // 착지 결함 (P1 검수) — 팔레트에서 넘어온 highlightQuery 로 본문 content
+  // 가 비동기 로드된 *이후* 정확히 1회 mark+scrollIntoView 되는 계약.
+  // 콘텐츠 도착 전에는 mark 자체가 존재할 수 없으므로, 이 test 는 async
+  // fetcher (findByText 로 로드 완료를 기다림)를 써서 그 타이밍을 실측한다.
+  describe("highlightQuery 착지 — 본문 로드 후 mark + scrollIntoView", () => {
+    it("본문 로드 완료 후 매치어를 mark 로 감싸고 스크롤한다", async () => {
+      const scrollSpy = vi.fn();
+      Element.prototype.scrollIntoView = scrollSpy;
+      renderViewer("Intro line.\n\nThe deterministic compile phrase lives here.", {
+        highlightQuery: "deterministic compile",
+      });
+
+      const mark = await screen.findByText("deterministic compile", {
+        selector: "mark.docs-match",
+      });
+      expect(mark).toBeInTheDocument();
+      await vi.waitFor(() => expect(scrollSpy).toHaveBeenCalled());
+    });
+
+    // 실측 회귀 재현: 본문이 ~80자에서 줄바꿈돼 매치 구절 중간에 개행이
+    // 끼어드는 실제 vault 문서 형태(AGENTS.md 컨벤션)에서도 착지돼야 한다.
+    it("본문이 줄바꿈으로 쪼개진 구절(line-wrap)도 mark + 스크롤된다", async () => {
+      const scrollSpy = vi.fn();
+      Element.prototype.scrollIntoView = scrollSpy;
+      renderViewer(
+        "Give it a local, git-backed\nmental model it can read, query, and maintain.",
+        { highlightQuery: "git-backed mental model" },
+      );
+
+      await screen.findByText((_, node) => {
+        if (node?.tagName !== "MARK") return false;
+        return (node.textContent ?? "").replace(/\s+/g, " ") ===
+          "git-backed mental model";
+      });
+      await vi.waitFor(() => expect(scrollSpy).toHaveBeenCalled());
+    });
+
+    it("highlightQuery 없으면 mark 를 만들지 않고 스크롤도 안 한다", async () => {
+      const scrollSpy = vi.fn();
+      Element.prototype.scrollIntoView = scrollSpy;
+      renderViewer("Intro line.\n\nThe deterministic compile phrase lives here.");
+
+      await screen.findByText(/deterministic compile phrase/);
+      expect(document.querySelector("mark.docs-match")).toBeNull();
+      expect(scrollSpy).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -35,7 +35,7 @@ describe("상단 크롬 상태 칩 규격 (S10 결함 1)", () => {
 
   it("영역 칩이 규격 클래스를 그대로 쓴다 (자기 scale 재적용 없음)", () => {
     render(
-      <TopologyRealmChip title="AI Agent Partner" prefixLabel="영역" clearAriaLabel="전체 지도로" onClear={() => {}} />,
+      <TopologyRealmChip title="AI Agent Partner" beforeLabel="" afterLabel="만 보는 중" clearAriaLabel="전체 지도" onClear={() => {}} />,
     );
     const chip = screen.getByTestId("topology-realm-chip");
     expect(chip.className).toBe(CHROME_STATUS_CHIP_CLASS);

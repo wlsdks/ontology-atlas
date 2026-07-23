@@ -313,6 +313,24 @@ function drawTrackedText(
 }
 
 /**
+ * 계기 캡션 — 지도 주석(결계 센서스 등)용 tracked-caps 한 줄. 도메인 워터마크와
+ * 정확히 같은 문법(10px 600 + 1.6 트래킹 + 대문자)을 화면 고정 크기로 그린다 —
+ * 줌과 무관하게 항상 판독계 크기로 읽히는 annotation 잉크. 신규 폰트/토큰 0.
+ */
+export function drawInstrumentCaption(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  cx: number,
+  cy: number,
+  color: string,
+  alpha: number,
+): void {
+  if (alpha <= 0.02) return;
+  ctx.font = scaledLabelFont("domain", 1);
+  drawTrackedText(ctx, text.toUpperCase(), cx, cy, color, DOMAIN_TRACKING, alpha);
+}
+
+/**
  * Draws one node's label. Domain draws up to TWO things at the same anchor —
  * the always-readable compact label (`computeLabelAlpha`) and the separate
  * far-field spaced-caps watermark (`computeDomainWatermarkAlpha`) — since

@@ -62,4 +62,25 @@ describe('FirstRunReadout', () => {
     render(<FirstRunReadout projectCount={1} domainCount={6} />);
     expect(screen.getByTestId('first-run-readout')).toBeInTheDocument();
   });
+
+  // P1 결함①(b), 사용성 전수 검수 2026-07-23 — 비개발(plain) 모드에서는
+  // element 티어가 도달 불가(`PLAIN_TIER_REVEAL`)라 "줌인하면 요소가
+  // 나타납니다"가 영원히 거짓으로 남는다. plain 모드는 tier 와 무관하게
+  // 항상 클릭 기반 plain 문구를 보여준다.
+  describe('audiencePlain (P1 결함①b)', () => {
+    it('shows the plain click-based hint instead of the zoom hint, regardless of tier', () => {
+      render(<FirstRunReadout projectCount={1} domainCount={6} tier="circuit" audiencePlain />);
+      expect(screen.getByTestId('first-run-readout-zoom-hint')).toHaveTextContent('zoomHintPlain');
+    });
+
+    it('never drops the plain hint even at the element tier (zoom cannot reveal elements in plain mode)', () => {
+      render(<FirstRunReadout projectCount={1} domainCount={6} tier="element" audiencePlain />);
+      expect(screen.getByTestId('first-run-readout-zoom-hint')).toHaveTextContent('zoomHintPlain');
+    });
+
+    it('leaves the developer-mode zoom hint untouched when audiencePlain is false/omitted', () => {
+      render(<FirstRunReadout projectCount={1} domainCount={6} tier="spine" />);
+      expect(screen.getByTestId('first-run-readout-zoom-hint')).toHaveTextContent('zoomHint');
+    });
+  });
 });

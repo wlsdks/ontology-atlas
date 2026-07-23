@@ -15,7 +15,9 @@ import {
 } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BookOpen, FolderOpen, HelpCircle, History, Plus, Waypoints, X } from "lucide-react";
+// `History as HistoryIcon` — 전역 DOM History 생성자와의 충돌 원천 차단
+// (사용성 검수 P0, AtlasGitPanel 과 동일 처방).
+import { BookOpen, FolderOpen, HelpCircle, History as HistoryIcon, Plus, Waypoints, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
@@ -112,6 +114,7 @@ import {
   computeDomainCensusRows,
   computeOntologyChangeset,
   domainCensusById,
+  filterTreeExcludeKind,
   formatAgentPostChangeSyncPacket,
   useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
@@ -158,6 +161,7 @@ import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
 import { AgentConnectSheet, useAgentConnectLauncher } from "@/widgets/agent-connect";
 import { TopologyV2EdgePanel } from "@/widgets/topology-map-v2/ui/TopologyV2EdgePanel";
+import { PLAIN_TIER_REVEAL } from "@/widgets/topology-map-v2/model/tier-visibility";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { buildFullDetailGroups, buildFullDetailReachModel } from "@/widgets/full-detail-a1";
@@ -245,12 +249,48 @@ const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
 /** INDEX panel preference (B3 허브가 곧 지도) — separate key from the legacy
  * hero-rail `LEFT_PANEL_COLLAPSED_KEY` above, a different feature entirely. */
 const INDEX_PANEL_COLLAPSED_KEY = "demo:index-panel-collapsed:v1";
+/**
+ * 슬라이스 C (개발/비개발 모드 토글) — 표시-렌즈 필터(데이터 무변경). true 면
+ * 비개발(일반) 모드: element 티어 기본 숨김(클릭 ego 는 예외 공개) + plain
+ * 어휘 + 경로 서브정보 숨김 + 개발자 크롬 숨김. localStorage 만 진실원 —
+ * `useLocalStorageBoolean` 은 setItem 후 리렌더 트리거가 없어(구독만) 여기선
+ * useState 미러 + setter 에서 setItem 동기화 패턴을 쓴다(기존
+ * `setIndexPreference` 의 "저장+즉시 적용" 계약과 동일).
+ */
+const AUDIENCE_PLAIN_KEY = "demo:audience-plain:v1";
+
+function readAudiencePlainPreference(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(AUDIENCE_PLAIN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export function HomePage() {
   const t = useTranslations('topology');
   const tKinds = useTranslations('kinds');
   const tAgentConnect = useTranslations('agentConnect');
+  // P2 결함⑤ — <lg 발자취 chrome-tile 진입점의 aria-label/title (`atlasGit`
+  // 네임스페이스는 이미 `GitStatusTile` 이 쓰는 것과 같은 키를 재사용한다).
+  const tAtlasGit = useTranslations('atlasGit');
   const relationVocabulary = useRelationVocabulary();
+  // 슬라이스 C — lazy initializer 는 클라이언트에서만 실제 실행(SSR 은 항상
+  // false), 클라이언트 hydration 도 localStorage 없는 서버 프리렌더 기준
+  // false 와 같아 hydration mismatch 없음(다른 세션 플래그와 같은 패턴).
+  const [audiencePlain, setAudiencePlainState] = useState<boolean>(readAudiencePlainPreference);
+  const setAudiencePlain = useCallback((next: boolean) => {
+    try {
+      window.localStorage.setItem(AUDIENCE_PLAIN_KEY, next ? "1" : "0");
+    } catch {
+      /* private mode — session-only, no persistence */
+    }
+    setAudiencePlainState(next);
+  }, []);
+  // 슬라이스 C — 지도 표면의 관계 어휘 레지스터. 비개발(plain) 모드는
+  // 데이터시트와 같은 plain 레지스터로 통일.
+  const relationRegister: "formal" | "plain" = audiencePlain ? "plain" : "formal";
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
   const localGraphRoot =
     localGraphStack.length > 0 ? localGraphStack[localGraphStack.length - 1] : null;
@@ -480,6 +520,18 @@ export function HomePage() {
       recentWindow: current.recentWindow === null ? "auto" : null,
     }));
   }, [setRouteState]);
+  // 소유자 지시 (Image #14): "전체 변경점을 보여주는 거면 아예 zoom out 을
+  // 크게" — 렌즈가 켜지는 순간 카메라를 전체 fit 으로 물러나 변경 지점
+  // 전부(자동 전개 포함)가 한 화면에 들어오게 한다. off→on 전이에서만 1회
+  // (렌즈 중 수동 탐색을 방해하지 않음), 기존 fit 토큰 재사용 — 신규 카메라
+  // 프리미티브 0.
+  const prevSpotlightOnRef = useRef(spotlightOn);
+  useEffect(() => {
+    if (spotlightOn && !prevSpotlightOnRef.current) {
+      setFitViewToken((token) => token + 1);
+    }
+    prevSpotlightOnRef.current = spotlightOn;
+  }, [spotlightOn]);
   // "N일 전" 계산의 기준 시각 — 일 단위 해상도라 세션 시작 스냅샷이면 충분
   // (render 중 Date.now() 는 react-hooks/purity 위반; 세션 동안 라벨이
   // 흔들리지 않는 것도 changeBaseline 과 같은 이유로 오히려 바람직하다).
@@ -571,15 +623,21 @@ export function HomePage() {
   const navRailSettingsSlot = useMemo(
     () => (
       <>
-        <GitStatusTile
-          onActivate={() => setGitPanelOpen(true)}
-          panelOpen={gitPanelOpen}
-          vaultPath={gitVaultPath}
-          sessionDirty={ontologyChangeset.touchedNodeIds.size > 0}
-        />
+        {/* 슬라이스 C — 비개발(plain) 모드는 발자취(Atlas Git) 타일을 개발자
+            크롬으로 간주해 숨긴다. */}
+        {audiencePlain ? null : (
+          <GitStatusTile
+            onActivate={() => setGitPanelOpen(true)}
+            panelOpen={gitPanelOpen}
+            vaultPath={gitVaultPath}
+            sessionDirty={ontologyChangeset.touchedNodeIds.size > 0}
+          />
+        )}
         <TopologyV2SettingsGear
           indexDefaultCollapsed={indexPanelCollapsedStored}
           onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
+          audiencePlain={audiencePlain}
+          onChangeAudiencePlain={setAudiencePlain}
           changeVaultHref="/docs/?intent=local"
           popoverAlign="left"
           popoverSide="top"
@@ -599,6 +657,12 @@ export function HomePage() {
             indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
             changeVault: t('controls.settingsGearChangeVault'),
             changeVaultAriaLabel: t('controls.settingsGearChangeVaultAriaLabel'),
+            audience: t('controls.settingsGearAudience'),
+            audienceDev: t('controls.settingsGearAudienceDev'),
+            audiencePlain: t('controls.settingsGearAudiencePlain'),
+            // P2 결함③ — "보기 모드" 행 아래 caption. 발견은 됐어도 뜻이
+            // 없던 결함.
+            audienceCaption: t('controls.settingsGearAudienceCaption'),
           }}
         />
       </>
@@ -606,6 +670,8 @@ export function HomePage() {
     [
       indexPanelCollapsedStored,
       handleChangeIndexDefaultCollapsed,
+      audiencePlain,
+      setAudiencePlain,
       ontologySearchOpen,
       docsDrawerOpen,
       gitPanelOpen,
@@ -688,7 +754,7 @@ export function HomePage() {
       (e) => e.from === selectedEdge.sourceId && e.to === selectedEdge.targetId,
     );
     const why = edgeRecord?.label?.trim() || null;
-    const typeLabel = relationVocabulary(selectedEdge.relationType, "formal");
+    const typeLabel = relationVocabulary(selectedEdge.relationType, relationRegister);
     // 과제 ⑩ — 엣지 문장/양 끝 노드 라벨은 표시용 짧은 제목.
     const fromDisplay = from.display ?? from.title;
     const toDisplay = to.display ?? to.title;
@@ -716,7 +782,7 @@ export function HomePage() {
       builderEditHref: buildOntologyBuilderNodeHrefFromGraphId(from.id),
       why,
     };
-  }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary]);
+  }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary, relationRegister]);
   // P3c — 엣지 호버 마이크로카드 (클릭 팝오버의 가벼운 전신).
   const [hoverEdge, setHoverEdge] = useState<{
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null };
@@ -745,12 +811,12 @@ export function HomePage() {
         from: from.title,
         to: to.title,
       }),
-      typeLabel: relationVocabulary(hoverEdge.edge.relationType, "formal"),
+      typeLabel: relationVocabulary(hoverEdge.edge.relationType, relationRegister),
       why: edgeRecord?.label?.trim() || null,
       x: hoverEdge.x,
       y: hoverEdge.y,
     };
-  }, [hoverEdge, ontologyInsight, t, relationVocabulary]);
+  }, [hoverEdge, ontologyInsight, t, relationVocabulary, relationRegister]);
   // S2 파트 5C — 클러스터 칩 호버 툴팁 상태 + 문장 모델. 부모 제목/카운트를
   // i18n(`cluster.tooltipCollapsed/Expanded`) 에 넣어 완성한 평문 한 줄.
   const [hoverCluster, setHoverCluster] = useState<{
@@ -1972,6 +2038,17 @@ export function HomePage() {
     };
   }, [resolvedRealmSlug, indexTreeResult, ontologyInsight, realmNodeById, relationVocabulary]);
   const realmActive = resolvedRealmSlug !== null && realmLedgerModel !== null;
+  // 결계 하단 각인 — "○○ · 요소 N" (사용자 어휘 "이것만 보기", 2026-07-23 소유자
+  // 결정). 원장 패널과 **같은 census 객체 + 같은 단위 키**(index.elementsShort /
+  // capabilitiesShort)를 쓰므로 한 화면의 같은 사실이 두 숫자로 갈라질 수 없다.
+  const realmCaption = useMemo(() => {
+    if (!realmLedgerModel) return null;
+    const { census, rootTitle } = realmLedgerModel;
+    const parts: string[] = [];
+    if (census.elementCount > 0) parts.push(`${t("index.elementsShort")} ${census.elementCount}`);
+    if (census.capabilityCount > 0) parts.push(`${t("index.capabilitiesShort")} ${census.capabilityCount}`);
+    return parts.length > 0 ? `${rootTitle} · ${parts.join(" · ")}` : rootTitle;
+  }, [realmLedgerModel, t]);
   // root-first-open v3 우하단 판독(`FirstRunReadout`) 의 "N project" 숫자 —
   // 실데이터, indexDomainCount 와 같은 ontologyInsight 파생이라 drift 불가.
   const firstRunProjectCount = useMemo(
@@ -2378,9 +2455,13 @@ export function HomePage() {
                     }}
                     realmChip={
                       resolvedRealmSlug && realmTitle ? (
+                        // 사용자 어휘는 "이것만 보기"(2026-07-23 소유자 결정), 내부명 realm 유지.
+                        // chipViewing 템플릿("Viewing only {title}" / "{title}만 보는 중")을
+                        // sentinel 로 쪼개 제목 앞/뒤 문구를 로케일 무관하게 얻는다.
                         <TopologyRealmChip
                           title={realmTitle}
-                          prefixLabel={t("realm.chipPrefix")}
+                          beforeLabel={t("realm.chipViewing", { title: "\u0000" }).split("\u0000")[0] ?? ""}
+                          afterLabel={t("realm.chipViewing", { title: "\u0000" }).split("\u0000")[1] ?? ""}
                           clearAriaLabel={t("realm.chipClear")}
                           onClear={handleExitRealm}
                         />
@@ -2561,7 +2642,7 @@ export function HomePage() {
                         data-utility-action-shadow-token="--chrome-shadow"
                         data-utility-action-focus-ring-token="--color-indigo-accent"
                         compact={topologyUtilityChromeCompact}
-                        icon={<History />}
+                        icon={<HistoryIcon />}
                         active={spotlightOn}
                         // 그래프 토글과 같은 <2xl 아이콘-only 사다리(위 주석).
                         className="max-2xl:[&_[data-chip-label]]:hidden"
@@ -2569,6 +2650,24 @@ export function HomePage() {
                         {t('controls.spotlightLabel')}
                       </ChromeChip>
                     </Tooltip>
+                    {/* P2 결함④ — 렌즈 ON 인데 INDEX 가 접혀 있으면 적용
+                        시간창/건수를 알 텍스트가 화면 어디에도 없었다. 칩
+                        옆(유틸리티 레인 안, 같은 높이)에 조용한 mono 카운트.
+                        aria-live 로 접근성 겸용. <xl 에서는 레인 폭 보호를
+                        위해 숨긴다(검색 레인 겹침 재발 방지 — 다른 칩들과
+                        같은 축약 사다리). */}
+                    {spotlightOn ? (
+                      <span
+                        aria-live="polite"
+                        data-testid="topology-spotlight-window-summary"
+                        className="hidden shrink-0 whitespace-nowrap font-mono text-[10px] tabular-nums text-[color:var(--color-text-quaternary)] xl:inline"
+                      >
+                        {t('controls.spotlightWindowSummary', {
+                          days: recentChanges.windowDays,
+                          count: recentChanges.recentNodeIds.size,
+                        })}
+                      </span>
+                    ) : null}
                     <Tooltip content={t('controls.docsTooltip')} side="bottom" withProvider={false}>
                     <ChromeChip
                       onClick={() => setDocsDrawerOpen((v) => !v)}
@@ -2647,6 +2746,35 @@ export function HomePage() {
                         </button>
                       </Tooltip>
                     ) : null}
+                    {/* 발자취(Atlas Git) <lg 진입점 (P2 결함⑤, 사용성 전수
+                        검수 2026-07-23) — <lg 에서 내비 레일이 사라지며
+                        스포트라이트·설정은 이 유틸리티 레인으로 이식됐는데
+                        발자취(GitStatusTile) 만 진입 경로가 완전히
+                        소실됐다. 설정 기어와 같은 --chrome-tile-size
+                        문법으로 같은 열에 추가 — 클릭은 레일 슬롯과 동일한
+                        setGitPanelOpen(true). 비개발(plain) 모드는 레일
+                        슬롯(위 navRailSettingsSlot)과 같은 계약으로 숨긴다. */}
+                    {audiencePlain ? null : (
+                      <button
+                        type="button"
+                        onClick={() => setGitPanelOpen(true)}
+                        aria-label={tAtlasGit('tileLabel')}
+                        title={tAtlasGit('tileLabel')}
+                        aria-haspopup="dialog"
+                        aria-expanded={gitPanelOpen}
+                        data-testid="topology-footprint-lg-tile"
+                        className="relative lg:hidden flex size-[var(--chrome-tile-size)] items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
+                      >
+                        <HistoryIcon className="size-[var(--topology-chrome-icon-size)]" aria-hidden />
+                        {ontologyChangeset.touchedNodeIds.size > 0 ? (
+                          <span
+                            aria-hidden="true"
+                            data-testid="topology-footprint-lg-tile-dot"
+                            className="absolute right-1.5 top-1 h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-warning)]"
+                          />
+                        ) : null}
+                      </button>
+                    )}
                     {/* 설정 기어 <lg 진입점 (겹침 소탕 2026-07-23) — 내비 레일
                         (lg+ 전용)의 기어 슬롯이 사라지는 <lg 에서 지도의 설정
                         (언어·INDEX 기본 상태·vault 교체) 접근 수단이 0 이었다.
@@ -2657,6 +2785,8 @@ export function HomePage() {
                       <TopologyV2SettingsGear
                         indexDefaultCollapsed={indexPanelCollapsedStored}
                         onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
+                        audiencePlain={audiencePlain}
+                        onChangeAudiencePlain={setAudiencePlain}
                         changeVaultHref="/docs/?intent=local"
                         triggerVariant="chrome-tile"
                         popoverAlign="right"
@@ -2671,6 +2801,10 @@ export function HomePage() {
                           indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
                           changeVault: t('controls.settingsGearChangeVault'),
                           changeVaultAriaLabel: t('controls.settingsGearChangeVaultAriaLabel'),
+                          audience: t('controls.settingsGearAudience'),
+                          audienceDev: t('controls.settingsGearAudienceDev'),
+                          audiencePlain: t('controls.settingsGearAudiencePlain'),
+                          audienceCaption: t('controls.settingsGearAudienceCaption'),
                         }}
                       />
                     </div>
@@ -2910,7 +3044,7 @@ export function HomePage() {
                       maxDomainDescendantCount={indexMaxDomainDescendantCount}
                       domainCensus={indexDomainCensus}
                       labels={{
-                        label: t("realm.chipPrefix"),
+                        label: t("realm.ledger.heading"),
                         elementsShort: t("index.elementsShort"),
                         capabilitiesShort: t("index.capabilitiesShort"),
                         depthShort: t("realm.ledger.depthShort"),
@@ -2931,7 +3065,14 @@ export function HomePage() {
                     />
                   ) : (
                   <TopologyIndexPanel
-                    treeResult={indexTreeResult}
+                    // 슬라이스 C — 비개발(plain) 모드는 element 행만 제외한
+                    // 파생 트리를 내린다(표시 게이트, 데이터 무변경). realm
+                    // 대장/census/카운트는 여전히 `indexTreeResult` 원본을 쓴다.
+                    treeResult={
+                      audiencePlain
+                        ? { ...indexTreeResult, roots: filterTreeExcludeKind(indexTreeResult.roots, "element") }
+                        : indexTreeResult
+                    }
                     totalConcepts={topologyTotalNodes}
                     totalRelations={topologyTotalRelations}
                     domainCount={indexDomainCount}
@@ -2939,6 +3080,10 @@ export function HomePage() {
                     selectedId={canvasSelectedSlug}
                     onSelect={(id) => handleSelect(id)}
                     onCollapse={handleIndexCollapse}
+                    // P1 결함①a — element 행이 왜 안 보이는지 설명하는
+                    // 조용한 힌트 행 게이트. treeResult 는 이미 위에서
+                    // element 를 제외했다(단일 진실원 무변경).
+                    plainMode={audiencePlain}
                     onOpenAgentConnect={agentConnectLauncher.open}
                     // P4-② (2026-07-21 리텐션 라운드) — 이미 연결된
                     // 에이전트가 있는 2일차+ 사용자에게 "Updated with AI"
@@ -2992,27 +3137,34 @@ export function HomePage() {
                         ? t('workspace.growthThisWeek', { count: recentlyUpdatedCount })
                         : undefined
                     }
-                    agentHandoff={{
-                      briefText: indexAgentHandoffBriefText,
-                      reanalyzeText: indexAgentHandoffReanalyzeText,
-                      syncText: indexAgentHandoffSyncText,
-                      labels: {
-                        menuLabel: t("index.agentHandoff"),
-                        menuAria: t("index.agentHandoffAria"),
-                        briefCopy: t("analysis.overviewBriefCopy"),
-                        briefCopied: t("analysis.overviewBriefCopied"),
-                        briefCopyAriaLabel: t("analysis.overviewBriefCopyAriaLabel"),
-                        briefCopiedAriaLabel: t("analysis.overviewBriefCopiedAriaLabel"),
-                        reanalyzeCopy: t("analysis.overviewReanalyzeCopy"),
-                        reanalyzeCopied: t("analysis.overviewReanalyzeCopied"),
-                        reanalyzeCopyAriaLabel: t("analysis.overviewReanalyzeCopyAriaLabel"),
-                        reanalyzeCopiedAriaLabel: t("analysis.overviewReanalyzeCopiedAriaLabel"),
-                        syncCopy: t("analysis.overviewSyncCopy"),
-                        syncCopied: t("analysis.overviewSyncCopied"),
-                        syncCopyAriaLabel: t("analysis.overviewSyncCopyAriaLabel"),
-                        syncCopiedAriaLabel: t("analysis.overviewSyncCopiedAriaLabel"),
-                      },
-                    }}
+                    // 슬라이스 C — 비개발(plain) 모드는 인계 메뉴를 개발자
+                    // 크롬으로 간주해 undefined 전달(위젯 기존 계약 — 미전달
+                    // 시 메뉴 미렌더).
+                    agentHandoff={
+                      audiencePlain
+                        ? undefined
+                        : {
+                            briefText: indexAgentHandoffBriefText,
+                            reanalyzeText: indexAgentHandoffReanalyzeText,
+                            syncText: indexAgentHandoffSyncText,
+                            labels: {
+                              menuLabel: t("index.agentHandoff"),
+                              menuAria: t("index.agentHandoffAria"),
+                              briefCopy: t("analysis.overviewBriefCopy"),
+                              briefCopied: t("analysis.overviewBriefCopied"),
+                              briefCopyAriaLabel: t("analysis.overviewBriefCopyAriaLabel"),
+                              briefCopiedAriaLabel: t("analysis.overviewBriefCopiedAriaLabel"),
+                              reanalyzeCopy: t("analysis.overviewReanalyzeCopy"),
+                              reanalyzeCopied: t("analysis.overviewReanalyzeCopied"),
+                              reanalyzeCopyAriaLabel: t("analysis.overviewReanalyzeCopyAriaLabel"),
+                              reanalyzeCopiedAriaLabel: t("analysis.overviewReanalyzeCopiedAriaLabel"),
+                              syncCopy: t("analysis.overviewSyncCopy"),
+                              syncCopied: t("analysis.overviewSyncCopied"),
+                              syncCopyAriaLabel: t("analysis.overviewSyncCopyAriaLabel"),
+                              syncCopiedAriaLabel: t("analysis.overviewSyncCopiedAriaLabel"),
+                            },
+                          }
+                    }
                     labels={{
                       label: t("index.label"),
                       fold: t("index.fold"),
@@ -3049,6 +3201,8 @@ export function HomePage() {
                       uncatalogedDocsAction: t("index.uncatalogedDocsAction"),
                       dustyNodesLabel: t("index.dustyNodesLabel", { count: dustySlugs.size }),
                       dustyNodesAction: t("index.dustyNodesAction"),
+                      // P1 결함①a — plainMode 일 때만 실제 렌더(패널 게이트).
+                      plainHint: t("index.plainHint"),
                     }}
                   />
                   )}
@@ -3177,8 +3331,12 @@ export function HomePage() {
                     onEnterRealm={handleEnterRealm}
                     realmEnterLabel={t('realm.enterAction')}
                     realmEnterTooltip={t('realm.enterTooltip')}
+                    realmCaption={realmCaption}
                     canvasLabel={t('canvas.ariaLabel')}
                     visitedTrail={footprintVisitedIds}
+                    // 슬라이스 C — 비개발(plain) 모드는 element 티어를 도달
+                    // 불가 밴드로 밀어 상시 숨김(ego 예외는 그대로).
+                    tierReveal={audiencePlain ? PLAIN_TIER_REVEAL : undefined}
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas ? (
@@ -3345,11 +3503,15 @@ export function HomePage() {
                 )}
                 aria-hidden={v2DatasheetModel ? true : undefined}
               >
-                <TopologyRelationLegend />
+                <TopologyRelationLegend register={relationRegister} />
                 <FirstRunReadout
                   projectCount={firstRunProjectCount}
                   domainCount={indexDomainCount}
                   tier={mapZoomTier}
+                  // P1 결함①b — plain 모드는 element 티어에 절대 도달하지
+                  // 않으므로(PLAIN_TIER_REVEAL) tier 기반 힌트 드롭 로직이
+                  // 항상 거짓을 말했다. plain 문구로 치환.
+                  audiencePlain={audiencePlain}
                 />
               </div>
 
@@ -3421,6 +3583,7 @@ export function HomePage() {
                 presence={nodePanelPresence.exiting ? "exiting" : "entering"}
                 slug={panelDatasheetModel.slug}
                 title={panelDatasheetModel.title}
+                sourceTitle={panelDatasheetModel.sourceTitle}
                 kind={panelDatasheetModel.kind}
                 domain={panelDatasheetModel.domain}
                 powered={panelDatasheetModel.powered}
@@ -3493,6 +3656,10 @@ export function HomePage() {
                     ? () => setFullDetailSlug(selectedOntologyNode.id)
                     : undefined
                 }
+                // 슬라이스 C — 비개발(plain) 모드는 인계 복사 타일 + 원문
+                // 경로 서브라인(슬라이스 B)을 개발자 크롬으로 간주해 숨긴다.
+                showHandoff={!audiencePlain}
+                showSourcePath={!audiencePlain}
                 className="max-lg:w-[min(520px,calc(100vw-1.5rem))]"
               />
             ) : null}

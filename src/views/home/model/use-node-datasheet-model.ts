@@ -52,6 +52,12 @@ export interface NodeDatasheetDerivation {
     slug: string;
     nodeId: string;
     title: string;
+    /**
+     * 슬라이스 B (라벨 인간화) — 표시 제목이 원문 title 과 다를 때(경로
+     * 인간화 등)만 원문을 담는다. 데이터시트가 모노 서브라인으로 보존 렌더.
+     * 같으면 null(서브라인 미렌더).
+     */
+    sourceTitle: string | null;
     kind: string;
     domain: { id: string; title: string } | null;
     powered: boolean;
@@ -119,6 +125,8 @@ export function useNodeDatasheetModel({
       nodeId: selectedOntologyNode.id,
       // 과제 ⑩ — 컴팩트 팝오버 헤더는 표시용 짧은 제목.
       title: nodeFocus.displayTitle,
+      sourceTitle:
+        selectedOntologyNode.title !== nodeFocus.displayTitle ? selectedOntologyNode.title : null,
       kind: nodeFocus.kind,
       domain: nodeFocusData?.significance.ownerDomainId
         ? {

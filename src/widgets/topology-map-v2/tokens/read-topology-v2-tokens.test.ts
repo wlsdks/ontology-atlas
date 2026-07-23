@@ -64,6 +64,9 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-layout-ring-domain": "250",
   "--topology-v2-layout-ring-capability": "145",
   "--topology-v2-layout-ring-element": "90",
+  "--topology-v2-realm-fill-radius-1": "130",
+  "--topology-v2-realm-fill-radius-2": "190",
+  "--topology-v2-realm-fill-radius-3": "250",
   "--topology-v2-edge-bow-contains": "70",
   "--topology-v2-edge-bow-depends": "92",
   "--topology-v2-edge-blend-contains": "0.46",
@@ -94,6 +97,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-focus-dim-tau": "0.16",
   "--topology-v2-cluster-reveal-tau": "0.17",
   "--topology-v2-spotlight-rest-alpha": "0.35",
+  "--topology-v2-spotlight-ring-speed": "0.012",
   "--topology-v2-ripple-stagger-ms": "55",
   "--topology-v2-breathe-amplitude": "0.04",
   "--topology-v2-breathe-freq-rad": "1.15",
@@ -149,6 +153,7 @@ describe("resolveTopologyV2Tokens", () => {
     expect(tokens.nodeHomeSpringAngFreq).toBeCloseTo(7.5, 3);
     expect(tokens.focusDimTau).toBeCloseTo(0.16, 3);
     expect(tokens.spotlightRestAlpha).toBeCloseTo(0.35, 3);
+    expect(tokens.spotlightRingSpeed).toBeCloseTo(0.012, 4);
     expect(tokens.egoRevealRiseTau).toBeCloseTo(0.22, 3);
     expect(tokens.egoRevealDecayTau).toBeCloseTo(0.12, 3);
     expect(tokens.rippleStaggerMaxMs).toBeCloseTo(180, 3);
@@ -161,6 +166,9 @@ describe("resolveTopologyV2Tokens", () => {
     expect(tokens.nodeSheenBlend).toBeCloseTo(0.6, 3);
     expect(tokens.radiusProject).toBe(30);
     expect(tokens.radiusElement).toBe(7);
+    expect(tokens.realmFillRadius1).toBe(130);
+    expect(tokens.realmFillRadius2).toBe(190);
+    expect(tokens.realmFillRadius3).toBe(250);
     expect(tokens.cameraSpringAngFreqInteractive).toBeCloseTo(12, 3);
     expect(tokens.cameraSpringAngFreqTransition).toBeCloseTo(4.7, 3);
     expect(tokens.cameraMomentumDecay).toBe(0.998);

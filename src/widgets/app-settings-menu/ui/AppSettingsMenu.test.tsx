@@ -138,3 +138,59 @@ describe('AppSettingsMenu vault-tools merge', () => {
     expect(screen.getByText('nav.settingsMenu.mcpProofTitle')).toBeInTheDocument();
   });
 });
+
+/**
+ * P3 결함⑥ (사용성 전수 검수 2026-07-23) — 검색 팔레트(⌘K)가 이 다이얼로그
+ * 위에 중첩되는 결함의 처방. 기존엔 `open` 이 전부 내부 state 라 호출부가
+ * "팔레트가 열렸다"는 사실을 이 위젯에 전달할 방법이 없었다. `MountedGlobalSearch`
+ * 와 같은 controlled/uncontrolled 겸용 패턴 — `open`/`onOpenChange` 를 주면
+ * controlled, 생략하면 기존 self-managed 동작 그대로(하위호환, DocsVaultPage
+ * 등 미변경 호출부는 영향 없음).
+ */
+describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
+  beforeEach(() => {
+    mocks.isDesktopRuntime = false;
+  });
+
+  it('stays uncontrolled (self-managed) when open/onOpenChange are omitted — existing behavior unchanged', () => {
+    render(<AppSettingsMenu mode="static" />);
+    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(screen.getByTestId('app-settings-trigger'));
+    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('app-settings-popover')).toBeInTheDocument();
+  });
+
+  it('renders open when the controlled `open` prop is true, without needing a trigger click', () => {
+    render(<AppSettingsMenu mode="static" open onOpenChange={() => {}} />);
+    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('app-settings-popover')).toBeInTheDocument();
+  });
+
+  it('clicking the trigger reports the toggle via onOpenChange instead of managing its own state', () => {
+    const onOpenChange = vi.fn();
+    render(<AppSettingsMenu mode="static" open={false} onOpenChange={onOpenChange} />);
+    fireEvent.click(screen.getByTestId('app-settings-trigger'));
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+    // controlled — the prop the test passed in never changed, so the component
+    // still reports itself closed until the caller re-renders it open.
+    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('⌘K while controlled-open reports close via onOpenChange (Guardian B2 — palette wins, settings demotes)', () => {
+    const onOpenChange = vi.fn();
+    render(<AppSettingsMenu mode="static" open onOpenChange={onOpenChange} />);
+    fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
+      key: 'k',
+      metaKey: true,
+      bubbles: true,
+    });
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('the close button reports close via onOpenChange when controlled', () => {
+    const onOpenChange = vi.fn();
+    render(<AppSettingsMenu mode="static" open onOpenChange={onOpenChange} />);
+    fireEvent.click(screen.getByLabelText('nav.settingsMenu.closeLabel'));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+});

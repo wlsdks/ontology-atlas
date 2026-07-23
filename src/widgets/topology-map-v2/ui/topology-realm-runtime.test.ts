@@ -5,6 +5,8 @@ import { buildTopologyWorld } from "./topology-world";
 import type { TopologyV2Edge, TopologyV2Node } from "./TopologyMapV2";
 import { buildRealmRuntimeData, realmCameraTarget, realmVisibleBounds } from "./topology-realm-runtime";
 import { DENSITY_GATE_THRESHOLD } from "../model/density-gate";
+import { computeRealmLayout, extractRealmSubtree } from "../model/realm";
+import type { LayoutRings } from "../model/layout";
 
 const tokens = {
   radiusProject: 20,
@@ -14,6 +16,9 @@ const tokens = {
   layoutRingDomain: 250,
   layoutRingCapability: 145,
   layoutRingElement: 90,
+  realmFillRadius1: 130,
+  realmFillRadius2: 190,
+  realmFillRadius3: 250,
   edgeBowContains: 70,
   edgeBowDepends: 92,
   edgeBlendContains: 0.46,
@@ -122,6 +127,71 @@ describe("buildRealmRuntimeData", () => {
     expect(target.ty).toBeCloseTo((data.bounds.minY + data.bounds.maxY) / 2, 4);
     expect(target.tscale).toBeLessThanOrEqual(2.6);
     expect(target.tscale).toBeGreaterThanOrEqual(0.24);
+  });
+});
+
+/**
+ * 슬라이스 A — 영역(realm) 링이 서브트리 최대 깊이에서 파생되는지. 얕은
+ * 서브트리(capability 루트 + element 자식 2개, maxDepth=1)는 250 전역
+ * 스파인 링이 아니라 130(`realmFillRadius1`)으로 당겨야 "빈 annulus" 가
+ * 없다(소유자 실보고 2026-07-23).
+ */
+describe("buildRealmRuntimeData — depth-derived realm ring fill (Slice A)", () => {
+  function buildShallowCapabilityWorld() {
+    const nodes: TopologyV2Node[] = [
+      inputNode({ id: "c", kind: "capability" }),
+      inputNode({ id: "e1", kind: "element" }),
+      inputNode({ id: "e2", kind: "element" }),
+    ];
+    const edges: TopologyV2Edge[] = [containsEdge("c", "e1"), containsEdge("c", "e2")];
+    return buildTopologyWorld(nodes, edges, tokens);
+  }
+
+  it("pulls a shallow (maxDepth=1) realm's depth-1 children to ≈130, not the 250 global spine ring", () => {
+    const world = buildShallowCapabilityWorld();
+    const data = buildRealmRuntimeData(world, "c", tokens)!;
+    for (const id of ["e1", "e2"]) {
+      const p = data.insideTargets.get(id)!;
+      const r = Math.hypot(p.x, p.y);
+      expect(r).toBeCloseTo(tokens.realmFillRadius1, 0);
+      expect(r).toBeLessThan(tokens.layoutRingDomain);
+    }
+  });
+
+  it("tightens the warding radius for the shallow realm (no longer stretched to the 250-ring scale)", () => {
+    const world = buildShallowCapabilityWorld();
+    const shallow = buildRealmRuntimeData(world, "c", tokens)!;
+    // 자식이 ~130 반경에 앉으므로 결계도 그 근방이어야 한다 — 250 스파인 기준이면
+    // 훨씬 커야 할 값(> 250)보다 뚜렷이 작다.
+    expect(shallow.wardingRadius).toBeLessThan(tokens.layoutRingDomain);
+  });
+
+  it("leaves a deep (maxDepth≥3) realm's coordinates identical to the unscaled base rings — regression guard", () => {
+    const world = buildFixtureWorld();
+    const data = buildRealmRuntimeData(world, "p", tokens)!;
+    // p ⊃ d(⊃ c ⊃ e) + p ⊃ d2(⊃ x) — maxDepth from "p" is 3 (p→d→c→e), so
+    // realmRingsForDepth caps at depth3 → s=1 → base rings unscaled.
+    const childrenByParent = new Map<string, string[]>([
+      ["p", ["d", "d2"]],
+      ["d", ["c"]],
+      ["c", ["e"]],
+      ["d2", ["x"]],
+    ]);
+    const subtree = extractRealmSubtree("p", childrenByParent);
+    const baseRings: LayoutRings = {
+      domain: tokens.layoutRingDomain,
+      capability: tokens.layoutRingCapability,
+      element: tokens.layoutRingElement,
+    };
+    const expected = computeRealmLayout(subtree, baseRings, {
+      project: tokens.radiusProject,
+      domain: tokens.radiusDomain,
+      capability: tokens.radiusCapability,
+      element: tokens.radiusElement,
+    });
+    for (const [id, p] of expected) {
+      expect(data.insideTargets.get(id)).toEqual({ x: p.x, y: p.y });
+    }
   });
 });
 

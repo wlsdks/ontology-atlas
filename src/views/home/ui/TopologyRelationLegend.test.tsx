@@ -14,12 +14,13 @@ describe("TopologyRelationLegend", () => {
     // Both labels come from the shared relation-vocabulary dictionary
     // (`useRelationVocabulary(type, "formal")`); the mocked `useTranslations`
     // is an identity function, so the formal register resolves to the raw
-    // edge-type keys "contains" / "depends".
+    // edge-type keys "contains" / "depends_on" (canonical — 축약형 "depends"
+    // 는 사전 미지 타입이라 ko 에서 raw fallback 노출 버그가 있었다).
     // 2026-07-23 (Image #9): the old right-hand item was a decorative
     // "confidence" gradient with no backing data — replaced by the real
     // `depends` (dashed) encoding the map actually draws.
     expect(legend).toHaveTextContent("contains");
-    expect(legend).toHaveTextContent("depends");
+    expect(legend).toHaveTextContent("depends_on");
     expect(legend).not.toHaveTextContent("overviewRelationLegendQuality");
   });
 });

@@ -109,10 +109,17 @@ describe('RealmBlockExportAction', () => {
     delete (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker;
   });
 
-  it('renders nothing without a loaded vault (정적 샘플 모드 — 액션 숨김)', () => {
+  it('P1 결함② — is disabled with a "open your folder" hint (not hidden) when no vault is loaded', () => {
+    // 정적 샘플 모드에서 이 액션이 흔적 없이 사라져 "기능 존재 은폐"로 읽혔다
+    // (사용성 전수 검수). null 렌더 대신 같은 자리에 disabled + 힌트.
     mocks.vault = { ...makeVault(), status: 'idle', manifest: null };
     render(<RealmBlockExportAction rootTitle="Views" census={census} subtree={subtree} />);
-    expect(screen.queryByTestId('realm-block-export')).not.toBeInTheDocument();
+    const button = screen.getByTestId('realm-block-export');
+    expect(button).toBeInTheDocument();
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('title', 'vaultRequiredHint');
+    fireEvent.click(button);
+    expect(mocks.vault.fileHandles).toBeDefined(); // no crash / no-op click
   });
 
   it('is disabled with a hint when the environment has no directory picker (G1 — 눌러야 실패 금지)', () => {

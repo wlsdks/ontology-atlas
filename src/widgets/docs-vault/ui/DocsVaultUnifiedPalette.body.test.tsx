@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render as rtlRender, screen } from '@testing-library/react';
+import { fireEvent, render as rtlRender, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import koMessages from '../../../../messages/ko.json';
 import { DocsVaultUnifiedPalette } from './DocsVaultUnifiedPalette';
@@ -105,10 +105,21 @@ describe('DocsVaultUnifiedPalette — 본문 검색 결과', () => {
     ).toBeInTheDocument();
   });
 
-  it('본문 히트 행 선택 시 onDocSelect 에 쿼리가 전달된다 (뷰어 착지)', () => {
+  it('본문 히트 행 선택 시 onDocSelect 에 쿼리가 전달된다 (뷰어 착지 — 마우스)', () => {
     const onDocSelect = vi.fn();
     renderPalette({ initialQuery: 'deterministic', bodyIndex, onDocSelect });
     screen.getByText('Beta Doc').closest('a')!.click();
+    expect(onDocSelect).toHaveBeenCalledWith('beta', 'deterministic');
+  });
+
+  // 착지 결함 (P1 검수) — 키보드(Enter) 경로도 마우스와 동일하게 쿼리를
+  // 넘겨야 한다. row.onRun 참조는 공유되지만 실측 회귀 방지를 위해 별도
+  // assertion 으로 고정.
+  it('본문 히트 행 선택 시 onDocSelect 에 쿼리가 전달된다 (뷰어 착지 — 키보드 Enter)', () => {
+    const onDocSelect = vi.fn();
+    renderPalette({ initialQuery: 'deterministic', bodyIndex, onDocSelect });
+    const input = screen.getByRole('combobox');
+    fireEvent.keyDown(input, { key: 'Enter' });
     expect(onDocSelect).toHaveBeenCalledWith('beta', 'deterministic');
   });
 

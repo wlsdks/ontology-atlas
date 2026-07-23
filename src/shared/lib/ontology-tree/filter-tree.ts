@@ -83,6 +83,35 @@ export function filterTreeByQuery(
 }
 
 /**
+ * 슬라이스 C (개발/비개발 모드 토글) — 지정한 `kind` 의 노드와 그 서브트리를
+ * 통째로 제외한다. 비개발(일반) 모드의 INDEX 트리가 element 행을 기본
+ * 숨기는 데 쓴다 — **데이터 무변경**: 이 함수는 원본 `roots`/그래프를
+ * 건드리지 않고 표시용 파생 트리만 가지치기한다. 카운트/census 는 이 함수의
+ * 출력이 아니라 전체 그래프에서 별도로 계산돼야 한다(호출자 책임 — 표시
+ * 필터가 진실 숫자를 왜곡하면 안 된다).
+ *
+ * `filterTreeByQuery`/`filterTreeByNodeIds` 와 달리 조상 chain 을 "보존"하지
+ * 않는다 — 제외 kind 자체가 조상이면(흔치 않지만) 그 서브트리 전체가
+ * 사라진다. 순수 함수(입력 불변), 결정론적.
+ */
+export function filterTreeExcludeKind(
+  roots: readonly OntologyTreeNode[],
+  kind: string,
+): OntologyTreeNode[] {
+  function visit(node: OntologyTreeNode): OntologyTreeNode | null {
+    if (node.node.kind === kind) return null;
+    const filteredChildren = node.children
+      .map(visit)
+      .filter((c): c is OntologyTreeNode => c !== null);
+    return { ...node, children: filteredChildren };
+  }
+
+  return roots
+    .map(visit)
+    .filter((n): n is OntologyTreeNode => n !== null);
+}
+
+/**
  * 트리에서 주어진 id 집합(`ids`)에 속한 노드만 남기되 **부모 chain 보존** —
  * "변경점만 보기"(B2) 의 트리 스코핑.
  *

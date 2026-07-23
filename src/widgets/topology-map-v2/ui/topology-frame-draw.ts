@@ -12,7 +12,7 @@ import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selec
 import { footprintRingStyle, FOOTPRINT_RING_OFFSET } from "../model/footprint-ring";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-parallax";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
-import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha } from "../model/tier-visibility";
+import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
 import { DISC_LABEL_TOP_K, LABEL_TOP_K, selectDiscLabelEligible, selectTopKLabels, type LabelRankEntry } from "../model/label-lod";
 import { draw as gridDraw, lerpColorHex } from "../render/grid";
 import {
@@ -21,6 +21,7 @@ import {
   computeDomainWatermarkAlpha,
   computeLabelAlpha,
   draw as labelsDraw,
+  drawInstrumentCaption,
   LABEL_OFFSET,
   labelZoomScale,
   measureLabelWidth,
@@ -62,6 +63,11 @@ import { isSpineNode, radiusForKind, type TopologyWorld, type WorldNode } from "
  */
 const EXPANDED_AURA_RING_OFFSET = 6;
 const EXPANDED_AURA_DASH: readonly number[] = [3, 3];
+/** 영역 루트 앵커 링 알파 — 결계(0.5)보다 한 단계 또렷한 실선 헤어라인(중심이 주인공). */
+const REALM_ROOT_ANCHOR_ALPHA = 0.7;
+/** 결계 센서스 각인 — 원 하단 바깥 오프셋(px, 화면 고정)과 잉크 알파. */
+const WARDING_CAPTION_OFFSET_PX = 24;
+const WARDING_CAPTION_ALPHA = 0.62;
 const EXPANDED_AURA_ALPHA = 0.55;
 /**
  * S8 결함 1 — 확장 디스크와 무관한 배경 노드를 확장 중 미세 dim 해 "어지러움"을
@@ -361,7 +367,7 @@ export interface FrameDrawParams {
    * 반경에 1px 인디고 헤어라인 원을 두른다. `drawProgress` 0..1 로 stroke 를
    * 자기 드로잉한다(전환 초반 ~200ms). null 이면 미표시(회귀 0).
    */
-  wardingRing: { centerX: number; centerY: number; radius: number; drawProgress: number } | null;
+  wardingRing: { centerX: number; centerY: number; radius: number; drawProgress: number; caption: string | null } | null;
   /** S4 — 멤버별 깊이 기반 티어 kind 오버라이드 (영역 세계의 티어 = 재배치 깊이). */
   realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null;
   /**
@@ -403,6 +409,13 @@ export interface FrameDrawParams {
   spotlightIds: ReadonlySet<string> | null;
   /** 스포트라이트 on/off 지수 램프 0..1 — loop 가 `stepFocusRamp`(focusDimTau 재사용)로 step. */
   spotlightRamp: number;
+  /**
+   * 슬라이스 C (개발/비개발 모드 토글) — 티어 게이트 config. 생략 시
+   * `DEFAULT_TIER_REVEAL`(개발 모드). 비개발(plain) 모드는 HomePage 가
+   * `PLAIN_TIER_REVEAL`(element 상시 숨김)을 넘긴다 — 그리기 게이트도 히트/
+   * 팬-클램프와 같은 config 를 봐야 lockstep 이 깨지지 않는다.
+   */
+  tierReveal?: TierRevealConfig;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -449,6 +462,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     footprintRanksById,
     spotlightIds,
     spotlightRamp,
+    tierReveal = DEFAULT_TIER_REVEAL,
   } = params;
 
   // 스포트라이트 침강 배수 — 렌즈 ON + 램프 진행 중 + 포커스/엣지선택 비활성
@@ -539,7 +553,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const effectiveAlphaById = effectiveAlphaByIdReused;
   for (const node of world.nodes) {
     const tierKind = realmTierKinds?.get(node.id) ?? node.kind;
-    const tierAlpha = nodeTierAlpha(tierKind, node.isHub, zoomRatio, DEFAULT_TIER_REVEAL);
+    const tierAlpha = nodeTierAlpha(tierKind, node.isHub, zoomRatio, tierReveal);
     tierAlphaById.set(node.id, tierAlpha);
     const isPairMember =
       focusedNodeId === null &&
@@ -851,6 +865,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         hoverEmphasis: emphasis,
         selectionPulse: selectionPulseVisual,
         agentFocus: agentFocusNodeId !== null && node.id === agentFocusNodeId,
+        // 스포트라이트 변경-노드 링 (Image #14) — 렌즈 ON + 창 안 노드에만.
+        // dashOffset = now×speed 회전 위상(reduced-motion 정적), alpha = 램프.
+        spotlightRing:
+          spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id)
+            ? {
+                alpha: spotlightRamp,
+                dashOffset: reducedMotion ? 0 : (now * tokens.spotlightRingSpeed) % 9,
+              }
+            : null,
         now,
         reducedMotion,
       },
@@ -914,7 +937,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
 
     // S8 결함 1 — 펼친 부모 구분: 노드 디스크 바깥에 파선 오라 링(선택 ego 링은
     // 실선이라 채널 충돌 없음). 노드 위에 얹되 알파는 노드 티어 알파를 따른다.
-    if (expandedParentIds.has(node.id)) {
+    // 단, 스포트라이트 변경-노드 링(앰버 파선, 같은 r+6 궤도)이 활성인 노드에선
+    // 오라를 양보한다 — 두 파선이 같은 반경에서 인터리브되어 두-색 브레이드로
+    // 읽히는 결함(모션 검수 2026-07-23 프레임 증거). 렌즈 중 변경 노드는 앰버
+    // 링 하나가 "전개+변경"을 다 말한다(궤도당 신호 1개); 변경 아닌 전개
+    // 조상(티어 관통 전개)은 기존 인디고 오라 유지.
+    if (
+      expandedParentIds.has(node.id) &&
+      !(spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id))
+    ) {
       ctx.save();
       ctx.setLineDash([...EXPANDED_AURA_DASH]);
       ctx.globalAlpha = tierAlpha * EXPANDED_AURA_ALPHA;
@@ -924,6 +955,22 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ctx.arc(screen.x, screen.y, screenRadius + EXPANDED_AURA_RING_OFFSET, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    // 영역 루트 앵커 링 (소유자 실보고 2026-07-23 "루트가 유령 같다") — 영역
+    // 전개 중 루트(depth 0)에 결계와 **같은 인디고 실선 헤어라인** 링을 두른다.
+    // 세계의 경계(큰 원)와 그 중심(작은 링)이 같은 잉크로 호응해 "이 원은 이
+    // 노드의 세계" 가 기하만으로 읽힌다. 파선 오라(확장)·앰버 링과 채널 분리,
+    // glow 0, 신규 토큰 0 (tokens.indigo 재사용).
+    if (realmDepthById !== null && realmDepthById.get(node.id) === 0 && wardingRing !== null) {
+      ctx.save();
+      ctx.globalAlpha = tierAlpha * REALM_ROOT_ANCHOR_ALPHA * wardingRing.drawProgress;
+      ctx.strokeStyle = tokens.indigo;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(screen.x, screen.y, screenRadius + EXPANDED_AURA_RING_OFFSET, 0, Math.PI * 2);
+      ctx.stroke();
       ctx.restore();
     }
     ctx.globalAlpha = 1;
@@ -947,6 +994,21 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ctx.stroke();
     ctx.restore();
     ctx.globalAlpha = 1;
+
+    // 결계 센서스 각인 — 원 하단 바깥, tracked-caps 계기 문법(도메인 워터마크와
+    // 동일 폰트/트래킹, 화면 고정 크기). 원이 "무엇의 경계인지" 스스로 말한다
+    // ("2 ELEMENTS" 류). 잉크는 노드 라벨과 같은 neutral(labelDomain), 링
+    // 자기드로잉 진행도에 실려 함께 나타나고 함께 지워진다. 신규 토큰 0.
+    if (wardingRing.caption && wardingRing.drawProgress > 0.05) {
+      drawInstrumentCaption(
+        ctx,
+        wardingRing.caption,
+        center.x,
+        center.y + screenRadius + WARDING_CAPTION_OFFSET_PX,
+        tokens.labelDomain,
+        WARDING_CAPTION_ALPHA * wardingRing.drawProgress,
+      );
+    }
   }
 
   // --- 밀도 게이트 클러스터 칩 (fable 설계) — 노드 위, 라벨 아래에 그린다.
@@ -1055,7 +1117,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // (circuit) bands the label budget goes to the highest-degree nodes; at the
   // deepest element zoom the budget lifts and every label returns. Exempt from
   // the budget: ego focus members and the hovered node only.
-  const applyLabelTopK = classifyZoomTier(zoomRatio) !== "element";
+  const applyLabelTopK = classifyZoomTier(zoomRatio, tierReveal) !== "element";
   // High-fan disc 밀도 처방: an expanded phyllotaxis disc can hold dozens–
   // hundreds of children. Blanket-exempting them all (the old behavior) punched
   // a wall of ~60 labels across the map. Instead, per disc only the DOI top-K

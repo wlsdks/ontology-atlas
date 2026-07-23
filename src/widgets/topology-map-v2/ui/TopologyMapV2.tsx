@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { Orbit } from "lucide-react";
 import { useTopologyLoop } from "./use-topology-loop";
+import type { TierRevealConfig } from "../model/tier-visibility";
 
 /**
  * `TopologyMapV2` — the single canvas-2D render engine that replaces
@@ -157,10 +158,16 @@ export interface TopologyMapV2Props {
   realmRootId?: string | null;
   /** S4 — 궤도 "전개" 버튼 클릭 → 이 slug 로 영역 진입 (HomePage 가 URL 왕복). */
   onEnterRealm?: (slug: string) => void;
-  /** S4 — 궤도 버튼 접근성 라벨 (i18n, HomePage 주입). */
+  /** S4 — 궤도 버튼 접근성 라벨 (i18n, HomePage 주입). 사용자 어휘는 "이것만 보기"(2026-07-23 소유자 결정), 내부명 realm 유지. */
   realmEnterLabel?: string;
-  /** S4 — 궤도 버튼 호버 마이크로 툴팁 문구 ("이 노드의 영역만 펼쳐요"). */
+  /** S4 — 궤도 버튼 호버 마이크로 툴팁 문구 ("이 노드 안쪽만 봐요"). */
   realmEnterTooltip?: string;
+  /**
+   * 결계 하단 센서스 각인 — "○○ · 요소 N" (i18n, HomePage 주입). 원장 패널의
+   * census 와 단일 출처가 되도록 위젯이 직접 세지 않고 문자열로 받는다.
+   * null/생략 = 각인 없음.
+   */
+  realmCaption?: string | null;
   /**
    * H3 P2 — 캔버스 접근성 라벨(i18n, HomePage 주입). canvas 는 회화 픽셀이라
    * 스크린리더에 빈 그래픽으로 읽힌다 → `role="img"` + 이 라벨로 "무엇인지 +
@@ -175,10 +182,16 @@ export interface TopologyMapV2Props {
    * 발자국 없음.
    */
   visitedTrail?: readonly string[];
+  /**
+   * 슬라이스 C (개발/비개발 모드 토글) — 표시-렌즈 티어 게이트 config. 생략
+   * 시 `DEFAULT_TIER_REVEAL`(개발 모드). HomePage 가 비개발(plain) 모드에서
+   * `PLAIN_TIER_REVEAL`(element 상시 숨김)을 넘긴다.
+   */
+  tierReveal?: TierRevealConfig;
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, canvasLabel, visitedTrail } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, tierReveal } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -211,7 +224,9 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       realmRootId,
       onEnterRealm,
       realmEnterButtonRef,
+      realmCaption,
       visitedTrail,
+      tierReveal,
     });
 
   return (

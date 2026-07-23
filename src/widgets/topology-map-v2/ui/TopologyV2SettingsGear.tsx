@@ -53,12 +53,31 @@ export interface TopologyV2SettingsGearLabels {
    *  open a different local folder without leaving the map to hunt for it. */
   changeVault: string;
   changeVaultAriaLabel: string;
+  /**
+   * 슬라이스 C (개발/비개발 모드 토글) — "보기 모드" 행. `audience` 는 행
+   * 라벨, `audienceDev`/`audiencePlain` 은 2-세그먼트 토글의 두 옵션 라벨.
+   */
+  audience: string;
+  audienceDev: string;
+  audiencePlain: string;
+  /**
+   * P2 결함③ (사용성 전수 검수 2026-07-23) — "보기 모드" 토글 자체엔 존재
+   * 발견성이 있어도(기어 안), 무엇을 바꾸는지 설명이 0 이었다. 행 아래
+   * caption 한 줄. 생략하면 렌더하지 않는다(하위호환).
+   */
+  audienceCaption?: string;
 }
 
 export interface TopologyV2SettingsGearProps {
   /** Current INDEX-panel-collapsed-by-default preference. */
   indexDefaultCollapsed: boolean;
   onChangeIndexDefaultCollapsed: (next: boolean) => void;
+  /**
+   * 슬라이스 C (개발/비개발 모드 토글) — 현재 "비개발(plain)" 모드인가. true 면
+   * element 티어 상시 숨김 + plain 어휘 + 개발자 크롬 숨김(HomePage 가 적용).
+   */
+  audiencePlain: boolean;
+  onChangeAudiencePlain: (next: boolean) => void;
   /** `/docs` href that lets the user pick a different vault folder. */
   changeVaultHref: string;
   labels: TopologyV2SettingsGearLabels;
@@ -105,6 +124,8 @@ export interface TopologyV2SettingsGearProps {
 export function TopologyV2SettingsGear({
   indexDefaultCollapsed,
   onChangeIndexDefaultCollapsed,
+  audiencePlain,
+  onChangeAudiencePlain,
   changeVaultHref,
   labels,
   className,
@@ -208,6 +229,49 @@ export function TopologyV2SettingsGear({
             <SettingsRow label={labels.locale}>
               <LocaleSwitch />
             </SettingsRow>
+            {/* 슬라이스 C (개발/비개발 모드 토글) — "INDEX 기본 상태" 바로 위,
+                같은 SettingsRow + 2-세그먼트 토글 패턴. */}
+            <SettingsRow label={labels.audience}>
+              <div
+                role="group"
+                aria-label={labels.audience}
+                data-testid="topology-v2-settings-gear-audience"
+                className="inline-flex items-center gap-px rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-px text-[11px]"
+              >
+                {(
+                  [
+                    { value: false, label: labels.audienceDev },
+                    { value: true, label: labels.audiencePlain },
+                  ] as const
+                ).map((option) => {
+                  const active = option.value === audiencePlain;
+                  return (
+                    <button
+                      key={String(option.value)}
+                      type="button"
+                      onClick={() => onChangeAudiencePlain(option.value)}
+                      aria-pressed={active}
+                      className={[
+                        "flex h-8 items-center justify-center rounded-[4px] px-2 font-medium transition-colors",
+                        active
+                          ? "bg-[color:var(--color-panel)] text-[color:var(--color-text-primary)]"
+                          : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]",
+                      ].join(" ")}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </SettingsRow>
+            {labels.audienceCaption ? (
+              <p
+                data-testid="topology-v2-settings-gear-audience-caption"
+                className="-mt-2 text-[10.5px] leading-[1.5] text-[color:var(--color-text-quaternary)]"
+              >
+                {labels.audienceCaption}
+              </p>
+            ) : null}
             <SettingsRow label={labels.indexDefault}>
               <div
                 role="group"

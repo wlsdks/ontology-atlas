@@ -10,6 +10,7 @@ import {
   isNodeHittable,
   isSpineOnlyZoom,
   nodeTierAlpha,
+  PLAIN_TIER_REVEAL,
 } from "./tier-visibility";
 
 // zoomRatio: 1 = overview entry, >1 zoomed IN, <1 zoomed OUT.
@@ -214,6 +215,64 @@ describe("isNodeHittable", () => {
     expect(isNodeHittable({ id: "capability:full", kind: "capability", isHub: false }, DEFAULT_TIER_REVEAL.capability.fullRatio, null, undefined)).toBe(
       true,
     );
+  });
+});
+
+/**
+ * 슬라이스 C (개발/비개발 모드 토글) — 비개발(plain) 렌즈는 element 티어를
+ * 도달 불가 밴드(1e6/2e6)로 밀어 상시 숨김. capability 는 DEFAULT 와 동일
+ * (지도 상위 구조는 그대로), ego 예외(effectiveNodeAlpha)는 이 config 와
+ * 무관하게 그대로 작동한다.
+ */
+describe("PLAIN_TIER_REVEAL (슬라이스 C — 비개발 모드 element 상시 숨김)", () => {
+  const REALISTIC_RATIOS = [0.5, 1, 1.5, 2, 2.85, 4, 10, 50];
+
+  it("hides elements at every realistic zoom ratio (0.5~50)", () => {
+    for (const ratio of REALISTIC_RATIOS) {
+      expect(nodeTierAlpha("element", false, ratio, PLAIN_TIER_REVEAL)).toBe(0);
+    }
+  });
+
+  it("never produces NaN even far past the finite sentinel band", () => {
+    for (const ratio of [...REALISTIC_RATIOS, 1e6, 2e6, 1e7]) {
+      const alpha = nodeTierAlpha("element", false, ratio, PLAIN_TIER_REVEAL);
+      expect(Number.isNaN(alpha)).toBe(false);
+    }
+  });
+
+  it("leaves other kinds identical to DEFAULT_TIER_REVEAL", () => {
+    for (const ratio of REALISTIC_RATIOS) {
+      expect(nodeTierAlpha("project", false, ratio, PLAIN_TIER_REVEAL)).toBe(
+        nodeTierAlpha("project", false, ratio, DEFAULT_TIER_REVEAL),
+      );
+      expect(nodeTierAlpha("domain", false, ratio, PLAIN_TIER_REVEAL)).toBe(
+        nodeTierAlpha("domain", false, ratio, DEFAULT_TIER_REVEAL),
+      );
+      expect(nodeTierAlpha("capability", false, ratio, PLAIN_TIER_REVEAL)).toBe(
+        nodeTierAlpha("capability", false, ratio, DEFAULT_TIER_REVEAL),
+      );
+    }
+  });
+
+  it("classifyZoomTier never reports 'element' under the plain config", () => {
+    for (const ratio of REALISTIC_RATIOS) {
+      expect(classifyZoomTier(ratio, PLAIN_TIER_REVEAL)).not.toBe("element");
+    }
+  });
+
+  it("still reveals a hidden element once it's the ego-focused node (click-to-reveal exception)", () => {
+    const tierAlpha = nodeTierAlpha("element", false, 1, PLAIN_TIER_REVEAL);
+    expect(tierAlpha).toBe(0);
+    // ego exemption is a separate function, config-independent — a focused
+    // element still reaches full opacity via effectiveNodeAlpha's ramp.
+    expect(effectiveNodeAlpha(tierAlpha, true, 1)).toBe(1);
+  });
+
+  it("isNodeHittable also gates a non-focused element out under the plain config", () => {
+    const hiddenElement = { id: "element:hidden", kind: "element" as const, isHub: false };
+    expect(isNodeHittable(hiddenElement, 1, null, undefined, PLAIN_TIER_REVEAL)).toBe(false);
+    // But the ego exception still makes the focused element itself hittable.
+    expect(isNodeHittable(hiddenElement, 1, "element:hidden", new Set(), PLAIN_TIER_REVEAL)).toBe(true);
   });
 });
 

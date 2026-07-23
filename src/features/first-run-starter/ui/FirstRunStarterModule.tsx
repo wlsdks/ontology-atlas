@@ -161,6 +161,16 @@ export function FirstRunStarterModule({
         </button>
       </p>
 
+      {/* P2 결함③ (사용성 전수 검수 2026-07-23) — 비개발자가 기어 속 "보기
+          모드" 토글의 존재를 알 방법이 0 이었다. 배너/팝업 없이, dismiss 행
+          바로 아래 조용한 한 줄로 유도 경로 하나만 확보한다. */}
+      <p
+        data-testid="first-run-starter-plain-mode-hint"
+        className="mt-1 text-[10.5px] leading-[1.5] text-[color:var(--topology-v2-panel-text-quaternary)]"
+      >
+        {t("plainModeHint")}
+      </p>
+
       {/* P1-① — 코드베이스 자동 부트스트랩(CLI/에이전트 전용)으로 가는 다리.
           위 두 버튼(폴더 열기 / 새 vault 만들기)은 빈 vault 를 여는 경로일
           뿐, "내 리포를 분석해서 채워줘"에는 답하지 못한다 — 그 답은

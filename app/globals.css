@@ -1354,6 +1354,18 @@
        map 렌즈. 반응형: 값 자체는 폭 무관(알파 스칼라). marker: 렌즈 상태는
        URL `?recent=` 로 결정론 재현 가능. */
     --topology-v2-spotlight-rest-alpha: 0.35;
+    /* 스포트라이트 변경-노드 링의 파선 회전 속도(px/ms) — 소유자 지시
+       2026-07-23 "변경된 것만 테두리가 돌아가게": 침강 대비만으론 element
+       뷰에서 변경 노드가 안 읽혀(실보고 Image #14), 렌즈 ON 동안 변경
+       노드에 amberHub 파선 링을 lineDashOffset 으로 회전시킨다. glow/blur
+       0 — 헌장의 회전 금지 아님(코멧=상시 모션 선례, 에이전트 포커스 링
+       =amberHub 선례). 0.012 ≈ 파선 한 주기(9px)/750ms — 렌즈는 지도를
+       *읽는 동안* 켜 두는 지속 모드라, 초기값 500ms(2Hz)는 다수 링에서
+       조급하게 읽혔다(모션 검수 2026-07-23 프레임 증거). HIG deference
+       (모션이 콘텐츠와 경쟁 금지) + Toss 인지부하 최소화에 따라 ~1.3Hz 로
+       감속 — "살아있음"은 유지, 재촉은 제거. reduced-motion 은 정적
+       파선(회전 0). */
+    --topology-v2-spotlight-ring-speed: 0.012;
     --topology-v2-node-fill-stale: #141418;
     --topology-v2-node-stroke-stale: #454549;
     --topology-v2-node-hole-fill: #0c0c10;
@@ -1466,6 +1478,10 @@
     --topology-v2-layout-ring-domain: 250;
     --topology-v2-layout-ring-capability: 145;
     --topology-v2-layout-ring-element: 90;
+    /* 영역 전개 깊이 파생 링 — 얕은 서브트리 빈 annulus 제거, 소유자 실보고 2026-07. */
+    --topology-v2-realm-fill-radius-1: 130;
+    --topology-v2-realm-fill-radius-2: 190;
+    --topology-v2-realm-fill-radius-3: 250;
     --topology-v2-edge-bow-contains: 70;
     --topology-v2-edge-bow-depends: 92;
     --topology-v2-edge-blend-contains: 0.46;

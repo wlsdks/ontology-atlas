@@ -234,6 +234,7 @@
     "createLabel": "✚ 새 vault 만들기",
     "createBusy": "시작 구조 작성 중…",
     "dismissLabel": "여기서 둘러볼게요",
+    "plainModeHint": "더 쉬운 보기가 필요하면 왼쪽 아래 톱니에서 '일반'을 켜세요",
     "errorFallback": "폴더를 열지 못했습니다. 다시 시도해 주세요.",
     "unsupportedNotice": "이 브라우저는 로컬 폴더 열기를 지원하지 않아요. macOS 앱이나 Chrome/Edge 에서 열면 내 마크다운 폴더로 지도가 켜져요.",
     "unsupportedCta": "macOS 앱 받기",
@@ -252,7 +253,8 @@
       "tier_spine": "Spine view",
       "tier_circuit": "Circuit view",
       "tier_element": "Element view",
-      "zoomHint": "줌인하면 요소가 나타납니다"
+      "zoomHint": "줌인하면 요소가 나타납니다",
+      "zoomHintPlain": "점을 누르면 그 안의 요소가 보여요"
     }
   },
   "ontologyBlocks": {
@@ -262,6 +264,7 @@
     "exportDone": "{count}개 내보냄",
     "exportError": "내보내지 못했습니다. 다시 시도해 주세요.",
     "exportUnsupportedHint": "이 환경은 폴더 선택을 지원하지 않아요",
+    "vaultRequiredHint": "내 폴더를 열면 쓸 수 있어요",
     "importAction": "블록 가져오기",
     "importAria": "블록 폴더를 골라 병합 미리보기 열기",
     "importEmpty": "가져올 .md 없음",
@@ -1879,7 +1882,22 @@
       "editTitleLabel": "Title",
       "editSave": "저장",
       "editSaving": "저장 중…",
-      "editCancel": "취소"
+      "editCancel": "취소",
+      "validatorWarningsAriaLabel": "Vault 검증 경고",
+      "validatorIssues": {
+        "unclosedFrontmatter": "frontmatter 가 닫히지 않아 이 문서는 노드로 인식되지 않아요.",
+        "emptyKind": "kind 값이 비어 있어요 — 그래프 노드로 인식되지 않아요.",
+        "missingKind": "kind 가 없어서 이 문서는 아직 그래프 노드가 아니에요.",
+        "unknownKind": "kind 값이 알려진 종류가 아니에요 — 그래프에서 인식되지 않을 수 있어요.",
+        "missingExpectedField": "이 kind 에 필요한 필드(예: domain)가 비어 있어요 — 트리에서 부모를 찾지 못해요.",
+        "nonCanonicalGraphArray": "관계 목록의 정렬/중복 상태가 정리되지 않았어요 — 자동으로 정리할 수 있어요.",
+        "parseZeroKeys": "frontmatter 블록은 있지만 값을 하나도 읽지 못했어요 — 형식을 확인해 주세요."
+      },
+      "exampleToggle": "규격 예시 보기",
+      "exampleTitleFor": "{kind} 예시",
+      "exampleCopy": "복사",
+      "exampleCopied": "복사됨",
+      "exampleCopyAriaLabel": "예시 frontmatter 복사"
     },
     "readingAids": {
       "backToTop": "맨 위로",
@@ -2350,7 +2368,12 @@
       "settingsGearIndexDefaultExpanded": "펼침",
       "settingsGearIndexDefaultCollapsed": "접힘",
       "settingsGearChangeVault": "vault 바꾸기",
-      "settingsGearChangeVaultAriaLabel": "다른 로컬 vault 폴더를 고르러 워크스페이스 열기"
+      "settingsGearChangeVaultAriaLabel": "다른 로컬 vault 폴더를 고르러 워크스페이스 열기",
+      "settingsGearAudience": "보기 모드",
+      "settingsGearAudienceDev": "개발",
+      "settingsGearAudiencePlain": "일반",
+      "settingsGearAudienceCaption": "일반 — 코드 요소를 접고 쉬운 말로 보여줘요",
+      "spotlightWindowSummary": "최근 {days}일 · {count}"
     },
     "empty": {
       "noMatchesTitle": "필터에 맞는 항목 없음",
@@ -2416,7 +2439,8 @@
       "uncatalogedDocsLabel": "지도에 없는 문서 {count}개",
       "uncatalogedDocsAction": "올리기",
       "dustyNodesLabel": "먼지 앉은 노드 {count}개 — 오래 손대지 않았어요",
-      "dustyNodesAction": "할 일 보기"
+      "dustyNodesAction": "할 일 보기",
+      "plainHint": "요소는 숨겨져 있어요 — 지도의 점을 누르면 그 요소들이 보여요"
     },
     "deeplinkNotFound": "노드를 찾을 수 없습니다: {query}",
     "bootstrap": {
@@ -2461,18 +2485,19 @@
       "tooltipExpanded": "「{name}」 — 하위 전체 {total}개 · 이 티어 {hidden}개 펼침. 클릭하면 접어요"
     },
     "realm": {
-      "enterAction": "영역 전개",
-      "enterTooltip": "이 노드의 영역만 펼쳐요",
-      "chipPrefix": "영역",
-      "chipClear": "영역 나가기",
+      "enterAction": "이것만 보기",
+      "enterTooltip": "이 노드 안쪽만 봐요",
+      "chipViewing": "{title}만 보는 중",
+      "chipClear": "전체 지도",
       "ledger": {
+        "heading": "이것만 보는 중",
         "depthShort": "깊이",
-        "searchPlaceholder": "이 영역에서 검색",
-        "exit": "영역 해제",
+        "searchPlaceholder": "여기서 검색",
+        "exit": "전체 지도",
         "boundaryHeading": "바깥과 닿은 관계 {count}",
-        "boundaryToggleAria": "결계 관계 목록 펼치기 · 접기",
-        "boundaryJump": "이 영역으로 이동",
-        "boundaryJumpAria": "이 밖 노드가 속한 영역으로 이동",
+        "boundaryToggleAria": "바깥과 닿은 관계 목록 펼치기 · 접기",
+        "boundaryJump": "저쪽만 보기",
+        "boundaryJumpAria": "이 바깥 노드가 속한 쪽만 보기",
         "boundaryEmpty": "바깥과 닿은 관계가 없어요"
       }
     },
@@ -2929,7 +2954,7 @@
     "webNodesRemoved": "노드 삭제 {count}",
     "webEdgesAdded": "관계 추가 {count}",
     "webEdgesRemoved": "관계 삭제 {count}",
-    "webNoChanges": "이 세션에서 감지된 변경이 없어요.",
+    "webNoChanges": "아직 없어요 — 문서를 고치면 여기에 나타나요.",
     "webCommandHint": "터미널에서 실행하면 지금 변경이 git 스냅샷으로 남아요.",
     "webCopyCommand": "명령 복사",
     "webCopied": "복사됨",

@@ -12,7 +12,7 @@ import { computePanBounds, stepCamera, type CameraAxes, type CameraTarget } from
 import { computeAltitudeBand, computeFarT } from "../model/altitude";
 import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis, stepFocusRamp } from "../model/focus-state";
 import { edgePairKey, selectEgoContainsComets, updateParticles } from "../render/edge-fireflies";
-import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom } from "../model/tier-visibility";
+import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom, type TierRevealConfig } from "../model/tier-visibility";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "./topology-camera-math";
 import type { TopologyWorld } from "./topology-world";
@@ -114,6 +114,12 @@ export interface PhysicsStepInput {
    * fades an untracked node).
    */
   appearById: Map<string, number>;
+  /**
+   * 슬라이스 C (개발/비개발 모드 토글) — 티어 게이트 config. 생략 시
+   * `DEFAULT_TIER_REVEAL`. 팬-클램프의 spine-only 판정이 드로우/히트와 같은
+   * config 를 봐야 한다.
+   */
+  tierReveal?: TierRevealConfig;
 }
 
 export interface PhysicsStepResult {
@@ -152,6 +158,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     egoRevealById,
     focusRampById,
     appearById,
+    tierReveal = DEFAULT_TIER_REVEAL,
   } = input;
 
   // Tier visibility rides a SEPARATE zoom-ratio signal (not farT): entry scale
@@ -188,7 +195,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
         tokens.cameraFocusPanMargin,
       )
     : computePanBounds(
-        isSpineOnlyZoom(preStepZoomRatio, DEFAULT_TIER_REVEAL) ? world.spineBounds : world.bounds,
+        isSpineOnlyZoom(preStepZoomRatio, tierReveal) ? world.spineBounds : world.bounds,
       );
 
   // C1 A1: the camera's real zoom-in ceiling is now ratio-based (viewport-

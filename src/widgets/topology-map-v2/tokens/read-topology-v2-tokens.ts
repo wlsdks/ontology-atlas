@@ -79,6 +79,12 @@ export interface TopologyV2Tokens {
   layoutRingDomain: number;
   layoutRingCapability: number;
   layoutRingElement: number;
+  /** `--topology-v2-realm-fill-radius-1` — 영역 전개 maxDepth=1 서브트리의 도메인 링(월드 유닛, `model/realm.ts#realmRingsForDepth`). */
+  realmFillRadius1: number;
+  /** `--topology-v2-realm-fill-radius-2` — 영역 전개 maxDepth=2 서브트리의 도메인 링. */
+  realmFillRadius2: number;
+  /** `--topology-v2-realm-fill-radius-3` — 영역 전개 maxDepth≥3 서브트리의 도메인 링(= 전역 스파인 링과 동일). */
+  realmFillRadius3: number;
   edgeBowContains: number;
   edgeBowDepends: number;
   edgeBlendContains: number;
@@ -144,6 +150,8 @@ export interface TopologyV2Tokens {
    * 전이는 기존 `focusDimTau` 램프를 재사용한다(신규 easing 0).
    */
   spotlightRestAlpha: number;
+  /** `--topology-v2-spotlight-ring-speed` — 변경-노드 파선 링 회전 속도(px/ms). */
+  spotlightRingSpeed: number;
   rippleStaggerMs: number;
   breatheAmplitude: number;
   breatheFreqRad: number;
@@ -260,6 +268,9 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "layoutRingDomain", cssVar: "--topology-v2-layout-ring-domain", kind: "number" },
   { key: "layoutRingCapability", cssVar: "--topology-v2-layout-ring-capability", kind: "number" },
   { key: "layoutRingElement", cssVar: "--topology-v2-layout-ring-element", kind: "number" },
+  { key: "realmFillRadius1", cssVar: "--topology-v2-realm-fill-radius-1", kind: "number" },
+  { key: "realmFillRadius2", cssVar: "--topology-v2-realm-fill-radius-2", kind: "number" },
+  { key: "realmFillRadius3", cssVar: "--topology-v2-realm-fill-radius-3", kind: "number" },
   { key: "edgeBowContains", cssVar: "--topology-v2-edge-bow-contains", kind: "number" },
   { key: "edgeBowDepends", cssVar: "--topology-v2-edge-bow-depends", kind: "number" },
   { key: "edgeBlendContains", cssVar: "--topology-v2-edge-blend-contains", kind: "number" },
@@ -289,6 +300,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "emphasisDecayTau", cssVar: "--topology-v2-emphasis-decay-tau", kind: "number" },
   { key: "focusDimTau", cssVar: "--topology-v2-focus-dim-tau", kind: "number" },
   { key: "spotlightRestAlpha", cssVar: "--topology-v2-spotlight-rest-alpha", kind: "number" },
+  { key: "spotlightRingSpeed", cssVar: "--topology-v2-spotlight-ring-speed", kind: "number" },
   { key: "clusterRevealTau", cssVar: "--topology-v2-cluster-reveal-tau", kind: "number" },
   { key: "rippleStaggerMs", cssVar: "--topology-v2-ripple-stagger-ms", kind: "number" },
   { key: "breatheAmplitude", cssVar: "--topology-v2-breathe-amplitude", kind: "number" },

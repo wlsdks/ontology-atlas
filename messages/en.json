@@ -234,6 +234,7 @@
     "createLabel": "✚ Create a new vault",
     "createBusy": "Writing starter structure…",
     "dismissLabel": "Just looking around here",
+    "plainModeHint": "Need an easier view? Turn on \"General\" in the gear at the bottom left",
     "errorFallback": "Could not open the folder. Try again.",
     "unsupportedNotice": "This browser can't open local folders. Open it in the macOS app or Chrome/Edge and the map lights up with your markdown folder.",
     "unsupportedCta": "Get the macOS app",
@@ -252,7 +253,8 @@
       "tier_spine": "Spine view",
       "tier_circuit": "Circuit view",
       "tier_element": "Element view",
-      "zoomHint": "zoom in to reveal elements"
+      "zoomHint": "zoom in to reveal elements",
+      "zoomHintPlain": "click a dot to reveal its elements"
     }
   },
   "ontologyBlocks": {
@@ -262,6 +264,7 @@
     "exportDone": "Exported {count}",
     "exportError": "Could not export. Try again.",
     "exportUnsupportedHint": "This environment can't pick a folder",
+    "vaultRequiredHint": "Open your folder to use this",
     "importAction": "Import block",
     "importAria": "Pick a block folder to open a merge preview",
     "importEmpty": "No .md files to import",
@@ -1879,7 +1882,22 @@
       "editTitleLabel": "Title",
       "editSave": "Save",
       "editSaving": "Saving…",
-      "editCancel": "Cancel"
+      "editCancel": "Cancel",
+      "validatorWarningsAriaLabel": "Vault validation warnings",
+      "validatorIssues": {
+        "unclosedFrontmatter": "The frontmatter block never closes, so this document isn't recognized as a node.",
+        "emptyKind": "The kind value is empty — it won't be recognized as a graph node.",
+        "missingKind": "No kind — this document isn't a graph node yet.",
+        "unknownKind": "This kind isn't one of the recognized values — it may not show up in the graph.",
+        "missingExpectedField": "A field this kind expects (e.g. domain) is empty — the tree can't find its parent.",
+        "nonCanonicalGraphArray": "A relation list isn't sorted/deduplicated — it can be cleaned up automatically.",
+        "parseZeroKeys": "There's a frontmatter block but no values could be read from it — check the formatting."
+      },
+      "exampleToggle": "View spec example",
+      "exampleTitleFor": "Example {kind}",
+      "exampleCopy": "Copy",
+      "exampleCopied": "Copied",
+      "exampleCopyAriaLabel": "Copy the example frontmatter"
     },
     "readingAids": {
       "backToTop": "Back to top",
@@ -2350,7 +2368,12 @@
       "settingsGearIndexDefaultExpanded": "Expanded",
       "settingsGearIndexDefaultCollapsed": "Collapsed",
       "settingsGearChangeVault": "Switch vault",
-      "settingsGearChangeVaultAriaLabel": "Open the workspace to pick a different local vault folder"
+      "settingsGearChangeVaultAriaLabel": "Open the workspace to pick a different local vault folder",
+      "settingsGearAudience": "View mode",
+      "settingsGearAudienceDev": "Developer",
+      "settingsGearAudiencePlain": "General",
+      "settingsGearAudienceCaption": "General — folds away code elements and uses plain language",
+      "spotlightWindowSummary": "Last {days}d · {count}"
     },
     "empty": {
       "noMatchesTitle": "No matching items",
@@ -2416,7 +2439,8 @@
       "uncatalogedDocsLabel": "{count} docs not on the map",
       "uncatalogedDocsAction": "Promote",
       "dustyNodesLabel": "{count} nodes gathering dust — untouched for a while",
-      "dustyNodesAction": "See to-dos"
+      "dustyNodesAction": "See to-dos",
+      "plainHint": "Elements are hidden — click a dot on the map to reveal its elements"
     },
     "deeplinkNotFound": "Node not found: {query}",
     "bootstrap": {
@@ -2461,18 +2485,19 @@
       "tooltipExpanded": "“{name}” — {total} total under it · {hidden} expanded at this tier. Click to collapse"
     },
     "realm": {
-      "enterAction": "Expand realm",
-      "enterTooltip": "Expand just this node’s realm",
-      "chipPrefix": "Realm",
-      "chipClear": "Exit realm",
+      "enterAction": "View only this",
+      "enterTooltip": "See only this node and what’s inside",
+      "chipViewing": "Viewing only {title}",
+      "chipClear": "Full map",
       "ledger": {
+        "heading": "Viewing only",
         "depthShort": "depth",
-        "searchPlaceholder": "Search this realm",
-        "exit": "Exit realm",
+        "searchPlaceholder": "Search here",
+        "exit": "Full map",
         "boundaryHeading": "Reaches outside · {count}",
         "boundaryToggleAria": "Expand or collapse the boundary-relation list",
-        "boundaryJump": "Go to this realm",
-        "boundaryJumpAria": "Jump to the realm this outside node belongs to",
+        "boundaryJump": "View only that area",
+        "boundaryJumpAria": "View only the area this outside node belongs to",
         "boundaryEmpty": "No relations reach outside"
       }
     },
@@ -2884,7 +2909,7 @@
     "otherToolsSeeDocs": "Same standard triple · see each tool's docs for the config location"
   },
   "atlasGit": {
-    "tileLabel": "Snapshot",
+    "tileLabel": "Footprints",
     "tileTitleClean": "Footprints — no unrecorded changes",
     "tileTitleDirty": "Footprints — {count} unrecorded changes",
     "title": "Footprints",
@@ -2929,7 +2954,7 @@
     "webNodesRemoved": "nodes removed {count}",
     "webEdgesAdded": "relations added {count}",
     "webEdgesRemoved": "relations removed {count}",
-    "webNoChanges": "No changes detected this session.",
+    "webNoChanges": "Nothing yet — edit a document and it shows up here.",
     "webCommandHint": "Run this in a terminal to record the current changes as a git snapshot.",
     "webCopyCommand": "Copy command",
     "webCopied": "Copied",

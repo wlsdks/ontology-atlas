@@ -30,11 +30,17 @@ const labels = {
   indexDefaultCollapsed: "Collapsed",
   changeVault: "Switch vault",
   changeVaultAriaLabel: "Open the workspace to pick a different local vault folder",
+  audience: "View mode",
+  audienceDev: "Developer",
+  audiencePlain: "General",
+  audienceCaption: "General — folds away code elements and uses plain language",
 };
 
 function renderGear(
   onChangeIndexDefaultCollapsed: (next: boolean) => void = () => {},
   indexDefaultCollapsed = false,
+  onChangeAudiencePlain: (next: boolean) => void = () => {},
+  audiencePlain = false,
 ) {
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
@@ -43,6 +49,8 @@ function renderGear(
         onChangeIndexDefaultCollapsed={onChangeIndexDefaultCollapsed}
         changeVaultHref="/docs/?intent=local"
         labels={labels}
+        audiencePlain={audiencePlain}
+        onChangeAudiencePlain={onChangeAudiencePlain}
       />
     </NextIntlClientProvider>,
   );
@@ -119,6 +127,8 @@ describe("TopologyV2SettingsGear — utility-rail settings popover", () => {
         <TopologyV2SettingsGear
           indexDefaultCollapsed={false}
           onChangeIndexDefaultCollapsed={() => {}}
+          audiencePlain={false}
+          onChangeAudiencePlain={() => {}}
           changeVaultHref="/docs/?intent=local"
           labels={labels}
           suppressed={false}
@@ -133,6 +143,8 @@ describe("TopologyV2SettingsGear — utility-rail settings popover", () => {
         <TopologyV2SettingsGear
           indexDefaultCollapsed={false}
           onChangeIndexDefaultCollapsed={() => {}}
+          audiencePlain={false}
+          onChangeAudiencePlain={() => {}}
           changeVaultHref="/docs/?intent=local"
           labels={labels}
           suppressed={true}
@@ -172,6 +184,8 @@ describe("TopologyV2SettingsGear — utility-rail settings popover", () => {
         <TopologyV2SettingsGear
           indexDefaultCollapsed={false}
           onChangeIndexDefaultCollapsed={() => {}}
+          audiencePlain={false}
+          onChangeAudiencePlain={() => {}}
           changeVaultHref="/docs/?intent=local"
           labels={labels}
           popoverAlign="left"
@@ -190,6 +204,8 @@ describe("TopologyV2SettingsGear — utility-rail settings popover", () => {
         <TopologyV2SettingsGear
           indexDefaultCollapsed={false}
           onChangeIndexDefaultCollapsed={() => {}}
+          audiencePlain={false}
+          onChangeAudiencePlain={() => {}}
           changeVaultHref="/docs/?intent=local"
           labels={labels}
           popoverAlign="left"
@@ -201,5 +217,72 @@ describe("TopologyV2SettingsGear — utility-rail settings popover", () => {
     const popover = screen.getByTestId("topology-v2-settings-gear-popover");
     expect(popover.className).toContain("bottom-[calc(100%+8px)]");
     expect(popover.className).not.toContain("top-[calc(100%+8px)]");
+  });
+});
+
+// 슬라이스 C (개발/비개발 모드 토글) — "INDEX 기본 상태" 행과 같은 SettingsRow
+// + 2-세그먼트 토글 패턴의 새 "보기 모드" 행.
+describe("TopologyV2SettingsGear — 보기 모드(audience) 행 (슬라이스 C)", () => {
+  it("renders the 보기 모드 row with its label in the popover", () => {
+    renderGear();
+    fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
+    const popover = screen.getByTestId("topology-v2-settings-gear-popover");
+    expect(within(popover).getByTestId("topology-v2-settings-gear-audience")).toBeInTheDocument();
+    expect(within(popover).getByText(labels.audience)).toBeInTheDocument();
+  });
+
+  it("calls onChangeAudiencePlain(true) when the 일반(plain) option is picked", () => {
+    const onChangeAudiencePlain = vi.fn();
+    renderGear(() => {}, false, onChangeAudiencePlain, false);
+    fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
+    fireEvent.click(screen.getByRole("button", { name: labels.audiencePlain }));
+    expect(onChangeAudiencePlain).toHaveBeenCalledWith(true);
+  });
+
+  it("calls onChangeAudiencePlain(false) when the 개발(dev) option is picked", () => {
+    const onChangeAudiencePlain = vi.fn();
+    renderGear(() => {}, false, onChangeAudiencePlain, true);
+    fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
+    fireEvent.click(screen.getByRole("button", { name: labels.audienceDev }));
+    expect(onChangeAudiencePlain).toHaveBeenCalledWith(false);
+  });
+
+  it("reflects the current mode via aria-pressed on the active segment", () => {
+    renderGear(() => {}, false, () => {}, true);
+    fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
+    expect(screen.getByRole("button", { name: labels.audiencePlain })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: labels.audienceDev })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  // P2 결함③ (사용성 전수 검수 2026-07-23) — 토글에 설명이 전혀 없어 비개발자가
+  // "일반" 이 뭘 바꾸는지 알 방법이 없었다. 행 아래 caption 한 줄.
+  it("P2 결함③ — renders a caption line under the 보기 모드 row when provided", () => {
+    renderGear();
+    fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
+    const popover = screen.getByTestId("topology-v2-settings-gear-popover");
+    expect(within(popover).getByText(labels.audienceCaption)).toBeInTheDocument();
+  });
+
+  it("P2 결함③ — omits the caption line when the label isn't provided (backward-compat)", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <TopologyV2SettingsGear
+          indexDefaultCollapsed={false}
+          onChangeIndexDefaultCollapsed={() => {}}
+          audiencePlain={false}
+          onChangeAudiencePlain={() => {}}
+          changeVaultHref="/docs/?intent=local"
+          labels={{ ...labels, audienceCaption: undefined }}
+        />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
+    expect(screen.queryByTestId("topology-v2-settings-gear-audience-caption")).not.toBeInTheDocument();
   });
 });

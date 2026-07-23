@@ -122,4 +122,52 @@ describe("DocFrontmatterBlock", () => {
     fireEvent.click(screen.getByTestId("doc-frontmatter-summary"));
     expect(screen.queryByText("kind / domain / title 수정")).not.toBeInTheDocument();
   });
+
+  it("renders no validator-warnings row when the frontmatter is clean", () => {
+    renderBlock();
+    expect(screen.queryByTestId("doc-frontmatter-validator-warnings")).not.toBeInTheDocument();
+  });
+
+  it("surfaces a plain-language validator warning for a capability missing domain — no raw code exposed", () => {
+    const noDomainDoc: VaultDoc = {
+      ...doc,
+      frontmatter: { kind: "capability", slug: doc.slug, title: doc.title },
+    };
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={noDomainDoc} />
+      </NextIntlClientProvider>,
+    );
+    const warnings = screen.getByTestId("doc-frontmatter-validator-warnings");
+    expect(within(warnings).getByText(/domain/)).toBeInTheDocument();
+    expect(within(warnings).queryByText("missing-expected-field")).not.toBeInTheDocument();
+  });
+
+  it("offers a collapsed spec-example disclosure for a known kind, derived from the shared new-doc starter", () => {
+    renderBlock();
+    expect(screen.queryByTestId("doc-frontmatter-example")).not.toBeInTheDocument();
+
+    const toggle = screen.getByTestId("doc-frontmatter-example-toggle");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    const example = screen.getByTestId("doc-frontmatter-example");
+    expect(within(example).getByText(/kind: capability/)).toBeInTheDocument();
+    expect(within(example).getByText(/domain: example-domain/)).toBeInTheDocument();
+  });
+
+  it("hides the spec-example disclosure when the document has no recognizable kind", () => {
+    const noKindDoc: VaultDoc = {
+      ...doc,
+      frontmatter: { status: "draft", slug: doc.slug, title: doc.title },
+    };
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={noKindDoc} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByTestId("doc-frontmatter-example-toggle")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("doc-frontmatter-validator-warnings")).not.toBeInTheDocument();
+  });
 });

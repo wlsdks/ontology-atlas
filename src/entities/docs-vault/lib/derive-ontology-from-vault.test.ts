@@ -371,3 +371,55 @@ describe("domains[] folder-prefixed ref (리텐션 P4-① 팬텀 도메인 회�
     expect(result.nodes.some((n) => n.id === "domain:auth")).toBe(true);
   });
 });
+
+describe("element display 인간화 — 슬라이스 B (코드 경로 → 사람 이름)", () => {
+  it("elements[] 로 합성되는 element 노드 — title 은 원문 경로, display 는 인간화", () => {
+    const manifest = makeManifest([
+      makeDoc({
+        slug: "capabilities/writer",
+        frontmatter: {
+          kind: "capability",
+          title: "Writer",
+          elements: ["src/foo/bar-baz.ts"],
+        },
+      }),
+    ]);
+    const result = deriveOntologyFromVault(manifest);
+    const el = result.nodes.find((n) => n.kind === "element" && n.title === "src/foo/bar-baz.ts");
+    expect(el).toBeDefined();
+    expect(el?.title).toBe("src/foo/bar-baz.ts");
+    expect(el?.display).toBe("Bar Baz");
+  });
+
+  it("element doc 에 display: 가 명시되면 인간화가 지지 않는다", () => {
+    const manifest = makeManifest([
+      makeDoc({
+        slug: "elements/bar-baz",
+        title: "src/foo/bar-baz.ts",
+        frontmatter: {
+          kind: "element",
+          title: "src/foo/bar-baz.ts",
+          display: "커스텀 이름",
+        },
+      }),
+    ]);
+    const result = deriveOntologyFromVault(manifest);
+    const el = result.nodes.find((n) => n.id === "element:bar-baz");
+    expect(el?.title).toBe("src/foo/bar-baz.ts");
+    expect(el?.display).toBe("커스텀 이름");
+  });
+
+  it("element 가 아닌 kind 는 경로처럼 보여도 인간화되지 않는다", () => {
+    const manifest = makeManifest([
+      makeDoc({
+        slug: "capabilities/src-tool",
+        title: "src/tools/exporter.ts",
+        frontmatter: { kind: "capability", title: "src/tools/exporter.ts" },
+      }),
+    ]);
+    const result = deriveOntologyFromVault(manifest);
+    const cap = result.nodes.find((n) => n.id === "capability:src-tool");
+    expect(cap?.title).toBe("src/tools/exporter.ts");
+    expect(cap?.display).toBe("src/tools/exporter.ts");
+  });
+});

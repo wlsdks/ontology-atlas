@@ -28,7 +28,7 @@ import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
 import { EGO_NEIGHBOR_CHIP_ID, parseClusterMoreChipId, scheduleRipple } from "../model/focus-state";
 import { type Pulse } from "../render/edge-fireflies";
 import type { ForceSimulation } from "../model/force-layout";
-import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable, isSpineOnlyZoom } from "../model/tier-visibility";
+import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable, isSpineOnlyZoom, type TierRevealConfig } from "../model/tier-visibility";
 import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
 import { hitTestEdges, type EdgeHitCandidate } from "./topology-edge-hit";
 import { clusterBadgeLabel, clusterBadgeRect, clusterChipLabel, clusterChipRect, clusterChipScale } from "../render/cluster-chips";
@@ -188,6 +188,12 @@ export interface PointerHandlerRefs {
    * 프레임 드로우와 **같은 게이트**로 채운다(영역 비활성이면 null).
    */
   realmTierKindsRef?: Ref<ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null>;
+  /**
+   * 슬라이스 C (개발/비개발 모드 토글) — 티어 게이트 config 미러(드로우와
+   * **같은** config 여야 히트/팬-클램프가 그려진 것과 lockstep). 생략 시
+   * `DEFAULT_TIER_REVEAL`.
+   */
+  tierRevealRef?: Ref<TierRevealConfig>;
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
     position: { x: number; y: number } | null,
@@ -295,6 +301,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     hoveredClusterIdRef,
     realmParallaxRef,
     realmTierKindsRef,
+    tierRevealRef,
     onSelect,
     onSelectEdge,
     onHoverEdge,
@@ -385,7 +392,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       tokens,
       px,
       py,
-      (node) => isNodeHittable(node, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL, clusteredIds, realmTierKinds),
+      (node) => isNodeHittable(node, zoomRatio, focusedNodeId, neighborsOfFocused, tierRevealRef?.current ?? DEFAULT_TIER_REVEAL, clusteredIds, realmTierKinds),
       renderOffsetForNode,
     );
   };
@@ -416,7 +423,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const realmTierKinds = realmTierKindsRef?.current ?? null;
     const hittable = new Set(
       world.nodes
-        .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, DEFAULT_TIER_REVEAL, clusteredIds, realmTierKinds))
+        .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, tierRevealRef?.current ?? DEFAULT_TIER_REVEAL, clusteredIds, realmTierKinds))
         .map((n) => n.id),
     );
     // 히트테스트 역전 방지(패널3-S3) — 끝 노드 몸통 반경(스크린 px)을
@@ -817,7 +824,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       if (world) {
         const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
         const zoomRatio = computeZoomRatio(cameraRef.current.scale.value, overviewEntryScale);
-        const boundsSource = isSpineOnlyZoom(zoomRatio, DEFAULT_TIER_REVEAL) ? world.spineBounds : world.bounds;
+        const boundsSource = isSpineOnlyZoom(zoomRatio, tierRevealRef?.current ?? DEFAULT_TIER_REVEAL) ? world.spineBounds : world.bounds;
         clampedLanding = clampPointToPanBounds(px.landingTarget, py.landingTarget, computePanBounds(boundsSource));
       }
       cameraTargetRef.current = { tx: clampedLanding.x, ty: clampedLanding.y, tscale: cameraTargetRef.current.tscale };

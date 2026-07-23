@@ -182,6 +182,15 @@ describe('FirstRunStarterModule', () => {
     expect(screen.getByTestId('first-run-starter-dismiss')).toBeInTheDocument();
   });
 
+  // P2 결함③ (사용성 전수 검수 2026-07-23) — 비개발자가 "일반" 보기 모드
+  // 토글의 존재를 알 방법이 없었다. dismiss 행 근처에 조용한 유도 한 줄.
+  it('P2 결함③ — renders a quiet nudge toward the plain-mode gear toggle near the dismiss row', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+
+    const hint = screen.getByTestId('first-run-starter-plain-mode-hint');
+    expect(hint).toHaveTextContent('plainModeHint');
+  });
+
   it('copies the CLI bootstrap command to the clipboard once the disclosure is open', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });

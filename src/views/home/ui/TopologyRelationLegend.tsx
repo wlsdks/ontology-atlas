@@ -1,6 +1,6 @@
 "use client";
 
-import { useRelationVocabulary } from "@/entities/knowledge-graph";
+import { useRelationVocabulary, type RelationRegister } from "@/entities/knowledge-graph";
 
 /**
  * 지도 우하단 상시 계기 — 선 인코딩(spine/terminal · quality stroke) 을
@@ -28,8 +28,16 @@ import { useRelationVocabulary } from "@/entities/knowledge-graph";
  * stroke-weak, 217,161,65)라 hub/Layer-0 예약 톤을 관계선에 흘렸다. 지도가
  * 실제로 그리는 인코딩은 "타입"이다 — contains=실선 spine, depends=파선.
  * 그래서 범례를 실제 인코딩(contains 실선 / depends 파선) 설명으로 교체한다.
+ *
+ * 슬라이스 C (개발/비개발 모드 토글) — `register` prop (기본 `"formal"`).
+ * 비개발(plain) 모드에서 HomePage 가 `"plain"` 을 넘겨 데이터시트와 같은
+ * 어휘(plain 레지스터)로 통일한다.
  */
-export function TopologyRelationLegend() {
+export function TopologyRelationLegend({
+  register = "formal",
+}: {
+  register?: RelationRegister;
+} = {}) {
   const relationVocabulary = useRelationVocabulary();
 
   return (
@@ -42,7 +50,7 @@ export function TopologyRelationLegend() {
           <span className="absolute left-0 right-1 top-1/2 h-px -translate-y-1/2 rounded-full bg-[color:var(--topology-relation-spine-halo)]" />
           <span className="absolute right-0 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-[color:var(--topology-relation-spine-terminal)]" />
         </span>
-        {relationVocabulary("contains", "formal")}
+        {relationVocabulary("contains", register)}
       </span>
       <span className="flex items-center gap-2">
         {/* depends 엣지는 파선으로 그려진다 — 범례도 파선 스와치로 실제
@@ -55,7 +63,10 @@ export function TopologyRelationLegend() {
               "repeating-linear-gradient(90deg, var(--topology-relation-spine-halo) 0 4px, transparent 4px 7px)",
           }}
         />
-        {relationVocabulary("depends", "formal")}
+        {/* 어휘 사전 canonical 키는 `depends_on` — 렌더 축약형 "depends" 를
+            넘기면 미지 타입 raw fallback 으로 ko 에서 "DEPENDS" 가 노출됐다
+            (소유자 스크린샷 실발견 2026-07-23). */}
+        {relationVocabulary("depends_on", register)}
       </span>
     </div>
   );
