@@ -4,7 +4,7 @@ kind: capability
 title: Ontology-Bootstrap Skill (.claude/skills/ontology-bootstrap)
 display: Ontology-Bootstrap Skill
 domain: ai-agent-partner
-elements: [.agents/skills/ontology-bootstrap/guides/meaning-extraction.md, .agents/skills/ontology-bootstrap/SKILL.md]
+elements: [.agents/skills/ontology-bootstrap/guides/meaning-extraction.md, .agents/skills/ontology-bootstrap/SKILL.md, mcp/src/meaning-evaluation.mjs, scripts/evaluate-meaning-corpus.mjs]
 ---
 
 # Ontology Bootstrap Skill
