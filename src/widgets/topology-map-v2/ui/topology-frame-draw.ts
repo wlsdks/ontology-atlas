@@ -1027,6 +1027,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
             id,
             kind: world.nodeById.get(id)?.kind ?? "element",
             degree: world.neighborMap.get(id)?.size ?? 0,
+            // childrenByParent 유도 = 전원 contains — 균일 가중치, 순서 불변.
+            relationType: "contains",
           })),
         ),
       );

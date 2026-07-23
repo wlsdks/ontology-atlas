@@ -581,6 +581,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           id,
           kind: world.nodeById.get(id)?.kind ?? "element",
           degree: world.neighborMap.get(id)?.size ?? 0,
+          // childrenByParent 는 containment(parentId ← contains) 유도라 전원
+          // contains — 균일 가중치라 상대 순서는 종전과 동일(결정론 유지).
+          relationType: "contains",
         })),
       );
       batchRestrict = new Set<string>([newlyExpanded, ...ranked.slice(0, EGO_NEIGHBOR_LIMIT)]);
@@ -1564,10 +1567,32 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const focusId = focusedSlugRef.current;
         const neighbors = focusId ? world.neighborMap.get(focusId) : undefined;
         if (focusId && neighbors && neighbors.size > EGO_NEIGHBOR_LIMIT) {
+          // DOI 관계 위계 — 포커스 노드에 닿는 엣지의 원 relationType(WorldEdge.
+          // relationType, contains|depends 2치로 뭉개기 전)을 이웃별로 수집한다.
+          // 같은 페어에 엣지가 여럿이면 강한 쪽(contains > depends > relates)을
+          // 남긴다 — DOI 는 "가장 강한 구조적 결속"으로 랭크하는 게 맞다.
+          // O(E) 스캔이지만 이 블록은 >24 이웃 허브 포커스 중에만 돈다.
+          const relTier = (t: string): number =>
+            t === "contains" || t === "belongs_to" ? 3 : t === "depends_on" ? 2 : 1;
+          const relByNeighbor = new Map<string, string>();
+          for (const edge of world.edges) {
+            const other =
+              edge.sourceId === focusId ? edge.targetId : edge.targetId === focusId ? edge.sourceId : null;
+            if (other === null) continue;
+            const prevRel = relByNeighbor.get(other);
+            if (prevRel === undefined || relTier(edge.relationType) > relTier(prevRel)) {
+              relByNeighbor.set(other, edge.relationType);
+            }
+          }
           const entries: EgoNeighborRankEntry[] = [];
           for (const id of neighbors) {
             const n = world.nodeById.get(id);
-            entries.push({ id, kind: n?.kind ?? "element", degree: world.neighborMap.get(id)?.size ?? 0 });
+            entries.push({
+              id,
+              kind: n?.kind ?? "element",
+              degree: world.neighborMap.get(id)?.size ?? 0,
+              relationType: relByNeighbor.get(id),
+            });
           }
           const ranked = rankEgoNeighborsByDOI(entries);
           const sel = selectiveEgoNeighbors(ranked, egoRevealBatchesRef.current);
@@ -1629,6 +1654,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               id,
               kind: world.nodeById.get(id)?.kind ?? "element",
               degree: world.neighborMap.get(id)?.size ?? 0,
+              // childrenByParent 유도 = 전원 contains — 균일 가중치, 순서 불변.
+              relationType: "contains",
             })),
           );
           // shown = 배치수 × 24 (selectiveEgoNeighbors 와 동일 산식, 순서 보존
