@@ -2050,9 +2050,12 @@ describe('package contract helpers', () => {
     assert.match(vaultTooling, /static dogfood manifest freshness/);
     assert.match(vaultTooling, /pnpm test:vault:audit/);
     assert.match(vaultTooling, /focused vault audit CLI argument contract/);
-    assert.match(readme, /\*\*Static dogfood manifest\*\* \| `pnpm docs-vault:check` keeps committed `src\/entities\/docs-vault\/data\/manifest\.json` and `public\/docs-vault\/` in sync with `docs\/`/);
-    assert.match(readme, /pnpm docs-vault:check\s+# committed docs-vault output freshness/);
-    assert.match(readme, /CI runs `docs-vault:check`, `vault:validate`, `test:vault:validate`,\s+`vault:audit`, `test:vault:audit`, and `package:check`/);
+    // README 제품 쇼케이스 전면 개편(#555) 추종 — "Verifiable promises" 표와
+    // CI 나열 문단이 은퇴하고 dogfood/계약 게이트 코드블록으로 압축됐다.
+    // 발견 가능성 계약의 본질(docs-vault:check 와 package:check 가 README 에서
+    // 보인다)만 현행 문구로 고정한다.
+    assert.match(readme, /pnpm docs-vault:check\s+# committed app sample matches docs\//);
+    assert.match(readme, /pnpm package:check\s+# MCP\/CLI\/docs\/performance contracts/);
     assert.match(agents, /pnpm test:vault:validate\s+# focused validator CLI argument contract/);
     assert.match(agents, /pnpm test:contracts\s+# focused cross-package contract suite/);
     assert.match(agents, /pnpm vault:audit\s+# capability\/element path drift guard \(R12\)/);
