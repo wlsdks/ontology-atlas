@@ -21,7 +21,7 @@ export interface GuidedTourCardProps {
  */
 export function GuidedTourCard({ tour, placement, width, style }: GuidedTourCardProps) {
   const t = useTranslations("guidedTour");
-  const { step, stepIndex, visibleSteps, back, advance, skip, finishAsDone, chooseDevBranch, hasSelection, devBranchAvailable } = tour;
+  const { step, stepIndex, personaSteps, personaStepIndex, back, advance, skip, finishAsDone, chooseDevBranch, hasSelection, devBranchAvailable } = tour;
 
   // 포커스 이동 (2026-07-23 Guardian 정정) — role="dialog" 카드가 열리거나
   // 단계가 바뀌면 포커스를 카드로 옮긴다(aria-label 재낭독 + 키보드 사용자의
@@ -35,8 +35,12 @@ export function GuidedTourCard({ tour, placement, width, style }: GuidedTourCard
 
   if (!step) return null;
 
-  const total = visibleSteps.length;
-  const current = stepIndex + 1;
+  // 진행 표시는 순간 해석 가능한 `visibleSteps` 가 아니라 페르소나 고정 여정
+  // (`personaSteps`) 기준 — 분모가 같은 투어 안에서 요동치지 않는다(2026-07-23
+  // 최종 스윕 P2). 스킵된 단계는 지나친 점으로 보인다. 내비게이션([이전]
+  // 활성 여부 포함)은 계속 `visibleSteps` 인덱스를 쓴다.
+  const total = personaSteps.length;
+  const current = personaStepIndex + 1;
   const isFirst = stepIndex <= 0;
   const isBranchStep = step.id === "recent";
   const isDevFinalStep = step.id === "agent";
@@ -76,14 +80,14 @@ export function GuidedTourCard({ tour, placement, width, style }: GuidedTourCard
       </div>
 
       <div className="mb-2 flex items-center gap-1" aria-hidden>
-        {visibleSteps.map((s, i) => (
+        {personaSteps.map((s, i) => (
           <span
             key={s.id}
             data-testid="guided-tour-dot"
-            data-active={i === stepIndex ? "true" : "false"}
+            data-active={i === personaStepIndex ? "true" : "false"}
             className={cn(
               "h-1.5 w-1.5 rounded-full",
-              i === stepIndex
+              i === personaStepIndex
                 ? "bg-[color:var(--color-indigo-brand)]"
                 : "bg-[color:var(--color-border-strong)]",
             )}

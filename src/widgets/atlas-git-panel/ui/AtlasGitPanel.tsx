@@ -569,7 +569,7 @@ function WebBody({
           {t("webCommandHint")}
         </p>
         <div className="flex items-center justify-between gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2">
-          <code className="min-w-0 truncate font-mono text-[12.5px] text-[color:var(--color-text-secondary)]">
+          <code className="min-w-0 truncate font-mono text-body text-[color:var(--color-text-secondary)]">
             {SNAPSHOT_CLI_COMMAND}
           </code>
           <button

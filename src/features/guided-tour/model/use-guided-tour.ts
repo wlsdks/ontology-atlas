@@ -38,6 +38,17 @@ export interface UseGuidedTourResult {
   step: TourStep | null;
   stepIndex: number;
   visibleSteps: readonly TourStep[];
+  /**
+   * 진행 표시 전용 (2026-07-23 최종 스윕 P2 정정) — 페르소나 필터만 적용한
+   * 전체 여정. `visibleSteps` 는 순간의 앵커 해석 가능 여부에 따라 길이가
+   * 요동쳐(선택 중 유틸리티 레인 접힘 → recent 단계 증발 → "5/5" 다음이
+   * "5/6") 진행률 신뢰를 깼다. 분모/진행 점은 이 고정 여정(비개발 7 · dev
+   * 분기 8)으로 그리고, 내비게이션(스킵 규칙)은 계속 `visibleSteps` 를 쓴다 —
+   * 스킵된 단계는 그냥 지나친 점으로 보인다.
+   */
+  personaSteps: readonly TourStep[];
+  /** 현재 단계의 `personaSteps` 내 위치 (진행 점/N-of-M 표시용). */
+  personaStepIndex: number;
   /** 지도 선택 상태 그대로 미러 — 카드가 4단계(try-click) 대기/성공 문구를
    *  고르는 데 쓴다(`GuidedTourCard`). */
   hasSelection: boolean;
@@ -106,6 +117,13 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
 
   const stepIndex = visibleSteps.findIndex((s) => s.id === stepId);
   const step = stepIndex >= 0 ? visibleSteps[stepIndex] : (visibleSteps[0] ?? null);
+
+  // 진행 표시 전용 고정 여정 — 위 인터페이스 주석 참조.
+  const personaSteps = useMemo(
+    () => TOUR_STEPS.filter((s) => s.persona === "all" || s.persona === persona),
+    [persona],
+  );
+  const personaStepIndex = step ? personaSteps.findIndex((s) => s.id === step.id) : -1;
 
   // datasheet 이탈이 대기 중 — `onLeaveDatasheet` 가 선택을 지운 뒤
   // `hasSelection` 이 실제로 false 로 정착할 때까지 다음 단계 결정을
@@ -300,6 +318,8 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     step,
     stepIndex,
     visibleSteps,
+    personaSteps,
+    personaStepIndex,
     hasSelection,
     start,
     advance,
