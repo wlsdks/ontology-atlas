@@ -72,9 +72,12 @@ describe('searchDocs — 본문(body) 최하위 티어', () => {
     expect(out[0].titleHit).toBeNull();
     expect(out[0].bodyHit).not.toBeNull();
     const hit = out[0].bodyHit!;
+    // 정확 구절 부스트 — 스니펫은 첫 토큰이 아니라 매치된 전체 구절을
+    // 하이라이트한다(P1 검수 #2: 클릭한 결과의 스니펫에 실제 매치어가
+    // 있어야 함).
     expect(
       hit.text.slice(hit.hit.start, hit.hit.end).toLowerCase(),
-    ).toBe('deterministic');
+    ).toBe('deterministic compile');
     expect(hit.text).toContain('deterministic compile phrase');
   });
 
@@ -121,6 +124,62 @@ describe('searchDocs — 본문(body) 최하위 티어', () => {
     const bodyIndex = bodyIndexOf({ a: 'compile is discussed here' });
     const out = searchDocs('graph compile', docs, 30, bodyIndex);
     expect(out.map((m) => m.doc.slug)).toEqual(['a']);
+  });
+
+  // 착지 결함 (P1 검수) #2 — 정확 구절 매치 문서가 흩어진 토큰 AND 매치
+  // 문서보다 랭킹 상위에 와야 신뢰 회복. 그래야 클릭한 1위 결과의 스니펫에
+  // 실제로 하이라이트 가능한 매치어가 존재한다(뷰어 착지 전제조건).
+  it('정확 구절 매치 문서가 흩어진 토큰 매치 문서보다 위 (본문 정확-구절 부스트)', () => {
+    const docs = [
+      // 토큰이 각각은 있지만 구절로 안 이어짐(흩어진 매치) — idx 0 이라
+      // 기존 로직이면 오히려 이 문서가 앞서던 회귀 케이스.
+      doc('scattered', 'zzz'),
+      // "deterministic compile" 이 그대로 이어지는 정확 구절.
+      doc('exact', 'yyy'),
+    ];
+    const bodyIndex = bodyIndexOf({
+      scattered: 'deterministic is discussed, and later compile appears too',
+      exact: `${'filler '.repeat(50)}the deterministic compile phrase lives here`,
+    });
+    const out = searchDocs('deterministic compile', docs, 30, bodyIndex);
+    expect(out.map((m) => m.doc.slug)).toEqual(['exact', 'scattered']);
+    // 1위 스니펫엔 실제 매치어(전체 구절)가 있어야 한다.
+    expect(out[0].bodyHit).not.toBeNull();
+    const hit = out[0].bodyHit!;
+    expect(hit.text.slice(hit.hit.start, hit.hit.end).toLowerCase()).toBe(
+      'deterministic compile',
+    );
+  });
+
+  it('정확 구절 매치는 줄바꿈으로 쪼개져도(줄-랩) 찾아 부스트한다', () => {
+    const docs = [doc('wrapped', 'zzz')];
+    const bodyIndex = bodyIndexOf({
+      wrapped: 'Give it a local, git-backed\nmental model it can read.',
+    });
+    const out = searchDocs('git-backed mental model', docs, 30, bodyIndex);
+    expect(out).toHaveLength(1);
+    expect(out[0].bodyHit).not.toBeNull();
+    const hit = out[0].bodyHit!;
+    // extractBodySnippet 이 개행을 표시용 공백으로 눌러도(한 줄 스니펫),
+    // hit 범위는 실제 매치된 구절 길이(개행 포함 원문 기준)를 그대로
+    // 보존해야 한다 — 부스트가 올바른 위치/길이를 찾았다는 증거.
+    expect(hit.text.slice(hit.hit.start, hit.hit.end)).toBe(
+      'git-backed mental model',
+    );
+  });
+
+  it('정확-구절 부스트 최댓값(idx 0)도 제목 최저점(20) 은 절대 못 이긴다', () => {
+    const docs = [
+      // title 매치가 idx 80 초과로 잘려 최저 title 점수(20)만 받는 최악 케이스.
+      doc('title-hit', `${'x'.repeat(90)}needle phrase`),
+      doc('body-exact', 'zzz'),
+    ];
+    // 본문 idx 0 — 정확-구절 부스트가 최댓값을 받는 최유리 케이스.
+    const bodyIndex = bodyIndexOf({
+      'body-exact': 'needle phrase right at the very start of the body',
+    });
+    const out = searchDocs('needle phrase', docs, 30, bodyIndex);
+    expect(out.map((m) => m.doc.slug)).toEqual(['title-hit', 'body-exact']);
   });
 
   it('메타데이터에도 매치된 문서는 bodyHit 스니펫을 같이 들 수 있다', () => {
