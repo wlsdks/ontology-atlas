@@ -983,7 +983,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const nodeScreenRadius = parentNode
       ? radiusForKind(parentNode.kind, tokens) * parentNode.magnitudeScale * camera.scale.value
       : undefined;
-    ctx.globalAlpha = parentAlpha;
+    // 스포트라이트 침강 상속 (소유자 실보고 Image #13 — "+60 유령 칩"):
+    // 침강은 노드 draw 에서 직접 곱해 effectiveAlphaById 에 없으므로, 칩이
+    // 이걸 상속하지 않으면 부모 노드는 0.35 로 가라앉았는데 칩만 풀 알파로
+    // 남아 빈 캔버스에 혼자 떠 있는 버튼처럼 읽힌다. 호버는 면제(상호작용
+    // 대상 또렷 — 노드와 같은 규칙).
+    ctx.globalAlpha =
+      parentAlpha *
+      spotlightSink(
+        (spotlightIds !== null && spotlightIds.has(chip.parentId)) || isChipHovered,
+      );
     drawClusterChip(
       ctx,
       {
