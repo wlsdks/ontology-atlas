@@ -1,0 +1,91 @@
+import { fireEvent, render } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import koMessages from "../../../../../messages/ko.json";
+import type { useTranslations } from "next-intl";
+import { DocsVaultTabStrip } from "./DocsVaultTabStrip";
+import type { DocTab } from "../../lib/doc-tabs";
+
+// jsdom 엔 ResizeObserver 가 없다 — 최소 stub.
+beforeAll(() => {
+  if (!(globalThis as { ResizeObserver?: unknown }).ResizeObserver) {
+    class ResizeObserverStub {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    (globalThis as { ResizeObserver?: unknown }).ResizeObserver = ResizeObserverStub;
+  }
+});
+
+function makeTabs(n: number): DocTab[] {
+  return Array.from({ length: n }, (_, i) => ({
+    slug: `doc-${i}`,
+    title: `문서 ${i}`,
+    lastActivatedAt: i,
+  }));
+}
+
+function renderStrip(tabs: DocTab[], activeSlug: string) {
+  const t = ((key: string, values?: Record<string, unknown>) => {
+    if (key === "tabs.closeAria") return `${values?.title} 닫기`;
+    if (key === "tabs.stripAriaLabel") return "열린 문서";
+    return key;
+  }) as unknown as ReturnType<typeof useTranslations<"docsVault">>;
+  return render(
+    <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <DocsVaultTabStrip
+        tabs={tabs}
+        activeSlug={activeSlug}
+        onActivate={vi.fn()}
+        onClose={vi.fn()}
+        t={t}
+      />
+    </NextIntlClientProvider>,
+  );
+}
+
+// nav 의 스크롤 메트릭을 지정 — jsdom 은 전부 0 이라 직접 목킹한다.
+function mockScrollMetrics(
+  nav: HTMLElement,
+  { scrollLeft, clientWidth, scrollWidth }: { scrollLeft: number; clientWidth: number; scrollWidth: number },
+) {
+  Object.defineProperty(nav, "clientWidth", { configurable: true, value: clientWidth });
+  Object.defineProperty(nav, "scrollWidth", { configurable: true, value: scrollWidth });
+  Object.defineProperty(nav, "scrollLeft", { configurable: true, writable: true, value: scrollLeft });
+}
+
+describe("DocsVaultTabStrip — 오버플로 엣지 페이드 신호", () => {
+  it("탭이 안 넘치면 페이드 마스크가 없다", () => {
+    const { container } = renderStrip(makeTabs(2), "doc-0");
+    const nav = container.querySelector("nav")!;
+    mockScrollMetrics(nav, { scrollLeft: 0, clientWidth: 800, scrollWidth: 300 });
+    fireEvent.scroll(nav);
+    expect(nav.getAttribute("data-edge-overflow")).toBeNull();
+  });
+
+  it("오른쪽에 숨은 탭이 있으면 오른쪽 페이드만 켠다", () => {
+    const { container } = renderStrip(makeTabs(20), "doc-0");
+    const nav = container.querySelector("nav")!;
+    mockScrollMetrics(nav, { scrollLeft: 0, clientWidth: 300, scrollWidth: 2000 });
+    fireEvent.scroll(nav);
+    expect(nav.getAttribute("data-edge-overflow")).toBe("right");
+    expect(nav.style.maskImage).toContain("transparent 100%");
+  });
+
+  it("가운데로 스크롤하면 양쪽 페이드를 켠다", () => {
+    const { container } = renderStrip(makeTabs(20), "doc-10");
+    const nav = container.querySelector("nav")!;
+    mockScrollMetrics(nav, { scrollLeft: 500, clientWidth: 300, scrollWidth: 2000 });
+    fireEvent.scroll(nav);
+    expect(nav.getAttribute("data-edge-overflow")).toBe("both");
+  });
+
+  it("끝까지 스크롤하면 왼쪽 페이드만 켠다", () => {
+    const { container } = renderStrip(makeTabs(20), "doc-19");
+    const nav = container.querySelector("nav")!;
+    mockScrollMetrics(nav, { scrollLeft: 1700, clientWidth: 300, scrollWidth: 2000 });
+    fireEvent.scroll(nav);
+    expect(nav.getAttribute("data-edge-overflow")).toBe("left");
+  });
+});

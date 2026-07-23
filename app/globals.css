@@ -1338,6 +1338,10 @@
        data-token="docs-tab". */
     --docs-tab-min: 132px;
     --docs-tab-max: 208px;
+    /* 탭 스트립 오버플로 엣지 페이드 — 열린 문서가 넘칠 때 "더 있음"을
+       알리는 정적 mask 폭. 색/glow/모션 0(mask-image 알파만). 숨은 콘텐츠가
+       있는 방향에만 적용(DocsVaultTabStrip 스크롤 상태로 조건부). */
+    --docs-tab-edge-fade: 22px;
     /* 문서함 점검 모달 — 세로 3행 스택 단일 폭. 브레이크포인트 0 계약(3-across
        그리드 폐기) 이라 뷰포트별 분기 없이 이 값 하나만 쓴다. 마커
        data-token="docs-audit-modal". */
