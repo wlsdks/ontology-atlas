@@ -182,6 +182,16 @@ Unresolved conflicts may remain only when explicitly shown to the user.
 
 ### 8. Ask for approval before writing
 
+Before showing the approval prompt, call `analyze_repo_structure` again with
+the complete `proposal` object (project, domains, capabilities, citations,
+numeric confidence, and all five competency answers). Treat
+`proposalValidation.canWrite` as a hard precondition:
+
+- if false, show and resolve every error finding, then repeat the validation;
+- if true, it means the proposal is structurally evidence-ready, not that the
+  user has approved it;
+- never translate warnings into silent acceptance.
+
 Show a compact proposal grouped by project, domains, capabilities, elements,
 and relations. Include definitions and evidence, not only slugs. Offer:
 

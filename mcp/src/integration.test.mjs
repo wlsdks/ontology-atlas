@@ -561,7 +561,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     assert.equal(analyzeRepo?.inputSchema?.properties?.ignore?.maxItems, 200);
     assert.equal(analyzeRepo?.outputSchema?.type, "object");
-    assert.deepEqual(analyzeRepo?.outputSchema?.required, ["rootPath", "framework", "domains", "capabilities", "elements", "meaningGate", "extractionContract", "semanticEvidence", "suggestedRelations", "skipped"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.required, ["rootPath", "framework", "domains", "capabilities", "elements", "meaningGate", "extractionContract", "semanticEvidence", "proposalValidation", "suggestedRelations", "skipped"]);
     assert.equal(analyzeRepo?.outputSchema?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.project?.required, ["slug", "title"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.project?.additionalProperties, false);
@@ -569,6 +569,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.required, ["slug", "title", "evidence"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.additionalProperties, false);
     assert.equal(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.properties?.evidence?.additionalProperties, false);
+    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.required, ["project", "domains", "capabilities", "competencyAnswers"]);
+    assert.equal(analyzeRepo?.inputSchema?.properties?.proposal?.additionalProperties, false);
+    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.required, ["status", "canWrite", "summary", "gates", "findings", "nextStep"]);
+    assert.equal(analyzeRepo?.outputSchema?.properties?.proposalValidation?.additionalProperties, false);
     const analyzeMeaningGate = analyzeRepo?.outputSchema?.properties?.meaningGate;
     assert.deepEqual(analyzeMeaningGate?.required, ["policy", "sourceStructureRole", "businessOntology", "proposedBusinessOntology", "implementationEvidence", "reviewQuestions"]);
     assert.equal(analyzeMeaningGate?.additionalProperties, false);
@@ -2013,6 +2017,65 @@ await test("analyze_repo_structure — bootstrap candidates expose structuredCon
     assert.ok(result.domains.some((domain) => domain.slug === "domains/auth"));
     assert.ok(result.capabilities.some((capability) => capability.slug === "capabilities/auth"));
     assert.ok(result.suggestedRelations.some((relation) => relation.from === "domains/auth" && relation.to === "capabilities/auth" && relation.type === "contains"));
+    assert.equal(result.proposalValidation.status, "not-provided");
+    assert.equal(result.proposalValidation.canWrite, false);
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
+await test("analyze_repo_structure — validates a complete meaning proposal before writes", async () => {
+  const vaultRoot = makeVault();
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-proposal-"));
+  try {
+    writeFileSync(join(repoRoot, "package.json"), JSON.stringify({ name: "claims" }), "utf-8");
+    writeFileSync(
+      join(repoRoot, "README.md"),
+      "# Claims\n\nTeams need reviewable claims.\n\n## Review\n\nReview claims before publication.\n",
+      "utf-8",
+    );
+    mkdirSync(join(repoRoot, "src", "review"), { recursive: true });
+    writeFileSync(join(repoRoot, "src", "review", "index.ts"), "export const review = true;\n", "utf-8");
+    const proposal = {
+      project: {
+        slug: "claims",
+        title: "Claims",
+        definition: "A system for publishing reviewable claims.",
+        evidence: ["README.md"],
+        confidence: 0.9,
+      },
+      domains: [{
+        slug: "domains/review",
+        title: "Review",
+        definition: "The responsibility boundary for deciding whether claims may be published.",
+        evidence: ["README.md"],
+        confidence: 0.9,
+      }],
+      capabilities: [{
+        slug: "capabilities/review",
+        title: "Claim Review",
+        definition: "Evaluate a claim before publication.",
+        domain: "domains/review",
+        evidence: ["README.md", "src/review"],
+        confidence: 0.9,
+      }],
+      competencyAnswers: {
+        scope: "Teams publishing reviewable claims.",
+        domains: "Review owns publication readiness.",
+        abilities: "Claim Review evaluates claims.",
+        evidence: "README and source implementation.",
+        impact: "Review decisions gate publication.",
+      },
+    };
+    const { responses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "analyze_repo_structure", { rootPath: repoRoot, proposal }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.proposalValidation.status, "pass");
+    assert.equal(result.proposalValidation.canWrite, true);
+    assert.equal(result.proposalValidation.summary.errors, 0);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });

@@ -29,6 +29,7 @@
     "src/absorb.mjs",
     "src/activity-log.mjs",
     "src/analyze.mjs",
+    "src/meaning-evaluation.mjs",
     "src/infer-imports.mjs",
     "src/reconcile-imports.mjs",
     "src/detect-drift.mjs",

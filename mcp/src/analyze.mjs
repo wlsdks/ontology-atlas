@@ -45,6 +45,7 @@
 
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, basename, relative } from 'node:path';
+import { validateMeaningProposalAgainstAnalysis } from './meaning-evaluation.mjs';
 
 const DEFAULT_IGNORE = new Set([
   'node_modules',
@@ -268,7 +269,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
 
   void readmePath; // signal used
 
-  return {
+  const result = {
     rootPath,
     framework,
     project,
@@ -293,6 +294,13 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     semanticEvidence,
     suggestedRelations,
     skipped,
+  };
+  return {
+    ...result,
+    proposalValidation: validateMeaningProposalAgainstAnalysis(
+      result,
+      options.proposal,
+    ),
   };
 }
 
