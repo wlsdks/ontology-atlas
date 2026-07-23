@@ -137,6 +137,13 @@ export interface TopologyV2Tokens {
    * consistent across zoom. Reuses `stepEmphasis` (`model/focus-state.ts`).
    */
   clusterRevealTau: number;
+  /**
+   * `--topology-v2-spotlight-rest-alpha` — 최근 변경 스포트라이트 렌즈 ON 일 때
+   * 창 밖 노드/엣지가 가라앉는 목표 알파(협의회 설계 2026-07-23). ego dim 보다
+   * 옅게 유지해 전체-지도 렌즈에서 구조 맥락이 계속 읽히게 한다. 켜고 끄는
+   * 전이는 기존 `focusDimTau` 램프를 재사용한다(신규 easing 0).
+   */
+  spotlightRestAlpha: number;
   rippleStaggerMs: number;
   breatheAmplitude: number;
   breatheFreqRad: number;
@@ -281,6 +288,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "emphasisRiseTau", cssVar: "--topology-v2-emphasis-rise-tau", kind: "number" },
   { key: "emphasisDecayTau", cssVar: "--topology-v2-emphasis-decay-tau", kind: "number" },
   { key: "focusDimTau", cssVar: "--topology-v2-focus-dim-tau", kind: "number" },
+  { key: "spotlightRestAlpha", cssVar: "--topology-v2-spotlight-rest-alpha", kind: "number" },
   { key: "clusterRevealTau", cssVar: "--topology-v2-cluster-reveal-tau", kind: "number" },
   { key: "rippleStaggerMs", cssVar: "--topology-v2-ripple-stagger-ms", kind: "number" },
   { key: "breatheAmplitude", cssVar: "--topology-v2-breathe-amplitude", kind: "number" },

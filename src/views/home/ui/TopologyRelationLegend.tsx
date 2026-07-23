@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { useRelationVocabulary } from "@/entities/knowledge-graph";
 
 /**
@@ -17,17 +16,20 @@ import { useRelationVocabulary } from "@/entities/knowledge-graph";
  * 이 계기를 놓을 여유 공간이 없고, 선 인코딩보다 노드 자체 탐색이
  * 우선이라는 판단(UX 교차검증 라운드, 2026-07-19).
  *
- * P1a-1 (persona 실측 N5 — 표면마다 4벌 관계 어휘): 왼쪽 spine 항목은
- * `contains` 관계 타입 그 자체라 `useRelationVocabulary`(entities/
- * knowledge-graph) formal 레지스터에서 가져온다 — 인사이트·빌더와 같은
- * "포함" 단어. 오른쪽 quality 항목은 관계 타입이 아니라 모든 엣지에 걸친
- * 근거 확실도 gradient(강함↔약함)라 타입 사전에 없다 — 이전 라벨 "신뢰"가
- * "포함" 옆에서 마치 두 번째 관계 타입인 것처럼 읽혀 사용자가 다른 관계
- * 타입 이름으로 오인했다(같은 조사 N5). "확실도"로 바꿔 타입이 아닌 확신
- * 정도임을 분명히 한다.
+ * P1a-1 (persona 실측 N5 — 표면마다 4벌 관계 어휘): 두 항목 모두
+ * `useRelationVocabulary`(entities/knowledge-graph) formal 레지스터에서
+ * 가져온다 — 인사이트·빌더와 같은 "포함"/"의존" 단어.
+ *
+ * 2026-07-23 (Image #9 소유자 관찰 + salience 리서치): 오른쪽 항목이
+ * 이전엔 "확실도(confidence)" gradient(강함↔약함) 였다. 그러나 ① vault
+ * 관계에 confidence 필드가 0건이고 ② 렌더러도 per-edge confidence 로 색을
+ * 바꾸지 않아, 이 스와치는 존재하지 않는 데이터의 범례(장식)였다(Tufte
+ * chartjunk). 게다가 gradient 의 weak 끝이 amber(--topology-relation-
+ * stroke-weak, 217,161,65)라 hub/Layer-0 예약 톤을 관계선에 흘렸다. 지도가
+ * 실제로 그리는 인코딩은 "타입"이다 — contains=실선 spine, depends=파선.
+ * 그래서 범례를 실제 인코딩(contains 실선 / depends 파선) 설명으로 교체한다.
  */
 export function TopologyRelationLegend() {
-  const t = useTranslations("topology.analysis");
   const relationVocabulary = useRelationVocabulary();
 
   return (
@@ -43,15 +45,17 @@ export function TopologyRelationLegend() {
         {relationVocabulary("contains", "formal")}
       </span>
       <span className="flex items-center gap-2">
+        {/* depends 엣지는 파선으로 그려진다 — 범례도 파선 스와치로 실제
+            렌더를 그대로 반영(같은 인디고 relation ink, hue 무변). */}
         <span
           aria-hidden
           className="h-[2px] w-8 shrink-0 rounded-full"
           style={{
             backgroundImage:
-              "linear-gradient(90deg, var(--topology-relation-stroke-strong), var(--topology-relation-stroke-weak))",
+              "repeating-linear-gradient(90deg, var(--topology-relation-spine-halo) 0 4px, transparent 4px 7px)",
           }}
         />
-        {t("overviewRelationLegendQuality")}
+        {relationVocabulary("depends", "formal")}
       </span>
     </div>
   );

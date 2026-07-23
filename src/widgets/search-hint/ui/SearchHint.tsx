@@ -12,10 +12,19 @@ interface Props {
   onRelayout: () => void;
   density?: 'default' | 'compact-focus';
   /**
-   * Phone selected-node focus에서는 popover가 입력 우선권을 가진다.
-   * 검색/정렬 utility lane은 tablet 이상에서만 남겨 hit area 충돌을 피한다.
+   * Selected-node focus 에서는 popover 가 입력 우선권을 가진다. 노드 팝오버가
+   * `lg` 미만에서 상단 중앙(fixed inset-x-3 top-[72px])을 차지하므로, 이
+   * 레인은 같은 구간(<lg)에서 물러난다 — 겹침 소탕 2026-07-23 에서 <md → <lg
+   * 로 확장 (레인 자체가 <lg 우측 2행으로 내려와 팝오버 영역과 겹치기 때문).
    */
   phoneFocusSuppressed?: boolean;
+  /**
+   * `<md` 확장 INDEX = 풀-블리드 시트 (반응형 감사 rank7). 시트가 주 표면인
+   * 동안 상단 크롬은 시트 뒤에 깔린 채 상단 8px 만 삐져나와 보였다(겹침
+   * 소탕 실측 600×900). 시트가 열려 있으면 이 레인은 <md 에서 완전히
+   * 물러난다 — utility lane 과 같은 "시트가 주 표면, 크롬은 강등" 문법.
+   */
+  phoneSheetSuppressed?: boolean;
   /**
    * path 모드 상태 칩(`TopologyPathChip`, 분석 패널 완전 소멸 2단계 §b) —
    * "상단 중앙 검색 옆"이라는 배치 요구를 이 컴포넌트의 기존 중앙 정렬
@@ -64,6 +73,7 @@ export function SearchHint({
   onRelayout,
   density = 'default',
   phoneFocusSuppressed = false,
+  phoneSheetSuppressed = false,
   pathChip,
   returnChip,
   realmChip,
@@ -82,9 +92,20 @@ export function SearchHint({
 
   return (
     <div
+      // 겹침 소탕 2026-07-23 (Image #9) — 상단 중앙 정렬은 lg+ 부터만.
+      // <lg 에서는 중앙 레인이 확장 INDEX(좌 300px)·우측 utility lane 과 3파전
+      // 으로 겹쳤다(768 실측: search lane 251–556 × INDEX 24–324 × lane
+      // 245–744). 기존 <md 폰 문법(우측 열 2행, top-[4.75rem] = 크롬 인셋
+      // 24 + 타일 44 + gap 8)을 <lg 전 구간으로 확장한다.
       className={cn(
-        "topology-ui-scale pointer-events-auto absolute right-4 top-[4.75rem] z-20 md:left-1/2 md:right-auto md:top-6 md:-translate-x-1/2 xl:top-8",
-        phoneFocusSuppressed ? "hidden md:block" : undefined,
+        "topology-ui-scale pointer-events-auto absolute right-4 top-[4.75rem] z-20 md:right-6 lg:left-1/2 lg:right-auto lg:top-6 lg:-translate-x-1/2 xl:top-8",
+        // 두 강등이 동시일 땐 더 엄격한 focus(<lg)가 이긴다 — 두 클래스를
+        // 같이 얹으면 md:block 이 hidden 을 md 에서 되살려 충돌한다.
+        phoneFocusSuppressed
+          ? "hidden lg:block"
+          : phoneSheetSuppressed
+            ? "hidden md:block"
+            : undefined,
       )}
       data-testid="topology-search-action-lane"
       data-search-lane-density={density}
@@ -92,7 +113,10 @@ export function SearchHint({
         compact ? 'icon-first-focus-search' : 'labeled-search-utility'
       }
       data-phone-focus-utility-contract={
-        phoneFocusSuppressed ? "hidden-below-md-while-node-popover-owns-focus" : undefined
+        phoneFocusSuppressed ? "hidden-below-lg-while-node-popover-owns-focus" : undefined
+      }
+      data-phone-sheet-utility-contract={
+        phoneSheetSuppressed ? "hidden-below-md-while-index-sheet-owns-surface" : undefined
       }
       data-search-lane-compact-width-token={
         compact ? '--topology-search-lane-compact-width' : undefined

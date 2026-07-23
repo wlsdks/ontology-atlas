@@ -355,7 +355,7 @@ export function OntologyInsightsPage() {
           <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
           <AppSettingsMenu mode={dataSourceMode} />
         </div>
-        <main id="main" className="mx-auto w-full max-w-[var(--page-max)] px-6 py-8 md:px-10">
+        <main id="main" className="mx-auto w-full max-w-[var(--page-max)] px-6 py-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-10">
         <MountedGlobalSearch />
 
         <header className="flex flex-wrap items-end gap-4">

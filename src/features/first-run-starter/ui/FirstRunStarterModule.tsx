@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight, FolderOpen } from "lucide-react";
+import { ArrowRight, ChevronRight, FolderOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { CompactCopyButton } from "@/shared/ui";
 import { useFirstRunStarter } from "../model/use-first-run-starter";
@@ -48,6 +49,7 @@ export function FirstRunStarterModule({
     busy,
     scaffolding,
     errorText,
+    fsaUnsupported,
   } = useFirstRunStarter();
   const { state: cliCopyState, copy: copyCliCommand } = useCopyFeedback();
   // 온보딩 디자이너 지적 — npx 명령 블록이 비개발자(기획/마케팅/리더십)
@@ -98,30 +100,57 @@ export function FirstRunStarterModule({
         <MeterCell value={domains} label={t("meterDomains")} />
       </div>
 
-      <button
-        type="button"
-        onClick={() => void openFolder()}
-        disabled={busy}
-        data-testid="first-run-starter-open"
-        className="relative flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-[13px] font-semibold text-white shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
-      >
-        <FolderOpen size={14} aria-hidden />
-        {busy && !scaffolding ? t("openBusy") : t("openLabel")}
-        <span className="rounded border border-b-2 border-white/35 px-1.5 py-px font-mono text-[9px] font-medium opacity-80">
-          ⌘O
-        </span>
-      </button>
-
-      <p className="mb-1 mt-3 flex items-center justify-between gap-4 text-[11.5px]">
+      {fsaUnsupported ? (
+        /* ease-of-use G1 (2026-07-23) — Safari/Firefox 는 File System Access
+           API 가 없어 폴더 열기·새 vault 만들기 둘 다 눌러야만 실패했다(가장
+           눈에 띄는 인디고 버튼이 에러 한 줄로 끝나는 첫인상). 사전에 정직하게
+           강등: 미지원 고지 한 줄 + macOS 앱(/download) 링크로 치환. */
+        <div
+          data-testid="first-run-starter-unsupported"
+          className="rounded-lg border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.45)] px-3 py-2.5"
+        >
+          <p className="text-[11.5px] leading-[1.6] text-[color:var(--topology-v2-panel-text-tertiary)]">
+            {t("unsupportedNotice")}
+          </p>
+          <Link
+            href="/download/"
+            data-testid="first-run-starter-unsupported-cta"
+            className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
+          >
+            {t("unsupportedCta")}
+            <ArrowRight size={12} aria-hidden />
+          </Link>
+        </div>
+      ) : (
         <button
           type="button"
-          onClick={() => void createVault()}
+          onClick={() => void openFolder()}
           disabled={busy}
-          data-testid="first-run-starter-create"
-          className="border-b border-transparent pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          data-testid="first-run-starter-open"
+          className="relative flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-[13px] font-semibold text-white shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
         >
-          {scaffolding ? t("createBusy") : t("createLabel")}
+          <FolderOpen size={14} aria-hidden />
+          {busy && !scaffolding ? t("openBusy") : t("openLabel")}
+          <span className="rounded border border-b-2 border-white/35 px-1.5 py-px font-mono text-[9px] font-medium opacity-80">
+            ⌘O
+          </span>
         </button>
+      )}
+
+      <p className="mb-1 mt-3 flex items-center justify-between gap-4 text-[11.5px]">
+        {fsaUnsupported ? (
+          <span aria-hidden />
+        ) : (
+          <button
+            type="button"
+            onClick={() => void createVault()}
+            disabled={busy}
+            data-testid="first-run-starter-create"
+            className="border-b border-transparent pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          >
+            {scaffolding ? t("createBusy") : t("createLabel")}
+          </button>
+        )}
         <button
           type="button"
           onClick={dismiss}

@@ -220,6 +220,49 @@ describe("rankEgoNeighborsByDOI (S2 파트 3a)", () => {
     // 결정론: 재실행해도 동일.
     expect(rankEgoNeighborsByDOI([...neighbors].reverse())).toEqual(ranked);
   });
+
+  it("같은 kind·같은 degree 면 관계 타입 위계가 가른다 — contains > depends > relates", () => {
+    // slug 를 관계 위계와 **역순**으로 배치 — slug 사전순만으로는 이 기대
+    // 순서가 절대 안 나오게 해 관계 가중치 자체를 못박는다.
+    const neighbors: EgoNeighborRankEntry[] = [
+      { id: "el-a", kind: "element", degree: 4, relationType: "relates" },
+      { id: "el-b", kind: "element", degree: 4, relationType: "depends_on" },
+      { id: "el-c", kind: "element", degree: 4, relationType: "contains" },
+      { id: "el-d", kind: "element", degree: 4, relationType: "belongs_to" },
+    ];
+    const ranked = rankEgoNeighborsByDOI(neighbors);
+    // contains/belongs_to(3, 동가중치 → slug 사전순) > depends_on(2) > relates(1).
+    expect(ranked).toEqual(["el-c", "el-d", "el-b", "el-a"]);
+    // 결정론: 입력 순서 무관.
+    expect(rankEgoNeighborsByDOI([...neighbors].reverse())).toEqual(ranked);
+  });
+
+  it("kind 가중치가 관계 타입보다 우선한다 — domain-relates 가 element-contains 를 앞선다", () => {
+    const neighbors: EgoNeighborRankEntry[] = [
+      { id: "el-contains", kind: "element", degree: 99, relationType: "contains" },
+      { id: "dom-relates", kind: "domain", degree: 0, relationType: "relates" },
+      { id: "cap-relates", kind: "capability", degree: 0, relationType: "relates" },
+    ];
+    expect(rankEgoNeighborsByDOI(neighbors)).toEqual(["dom-relates", "cap-relates", "el-contains"]);
+  });
+
+  it("관계 타입이 degree 보다 우선한다 — 저차수 contains 자식이 고차수 relates 이웃을 앞선다", () => {
+    const neighbors: EgoNeighborRankEntry[] = [
+      { id: "el-relates-hub", kind: "element", degree: 40, relationType: "relates" },
+      { id: "el-contains-leaf", kind: "element", degree: 1, relationType: "contains" },
+    ];
+    expect(rankEgoNeighborsByDOI(neighbors)).toEqual(["el-contains-leaf", "el-relates-hub"]);
+  });
+
+  it("relationType 미상(생략)은 가중치 1 — 레이아웃 등 기존 호출부의 순서를 바꾸지 않는다", () => {
+    const neighbors: EgoNeighborRankEntry[] = [
+      { id: "el-unknown", kind: "element", degree: 4 },
+      { id: "el-relates", kind: "element", degree: 4, relationType: "relates" },
+      { id: "el-exotic", kind: "element", degree: 4, relationType: "describes" },
+    ];
+    // 셋 다 가중치 1 → degree 동률 → slug 사전순.
+    expect(rankEgoNeighborsByDOI(neighbors)).toEqual(["el-exotic", "el-relates", "el-unknown"]);
+  });
 });
 
 describe("selectiveEgoNeighbors (S2 파트 3a)", () => {

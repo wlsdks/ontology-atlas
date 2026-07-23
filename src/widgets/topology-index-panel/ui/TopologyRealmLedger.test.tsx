@@ -4,6 +4,18 @@ import { buildOntologyTree } from "@/shared/lib/ontology-tree";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { TopologyRealmLedger, type RealmBoundaryRow } from "./TopologyRealmLedger";
 
+// 온톨로지 블록 export 액션은 자체 vault(useLocalVault)/i18n 컨텍스트가 필요한
+// 자립 모듈 — 동작은 `RealmBlockExportAction.test.tsx` 가 단위 검증하므로
+// 여기선 스텁 (TopologyIndexPanel.test 의 FirstRunStarterModule 스텁과 같은
+// 패턴). 이 파일은 렛저가 액션을 mount 한다는 사실만 본다.
+const exportActionProps = vi.hoisted(() => ({ current: null as unknown }));
+vi.mock("@/features/ontology-blocks", () => ({
+  RealmBlockExportAction: (props: unknown) => {
+    exportActionProps.current = props;
+    return null;
+  },
+}));
+
 function makeNode(id: string, kind: string, title?: string): KnowledgeGraphNode {
   return {
     id,
@@ -98,6 +110,18 @@ describe("TopologyRealmLedger", () => {
     expect(screen.getByTestId("topology-realm-census")).toHaveTextContent(
       "elements 1 · capabilities 1 · depth 2",
     );
+  });
+
+  it("mounts the realm block export action with the realm root title/census/subtree (Slice A wiring)", () => {
+    renderLedger();
+    const props = exportActionProps.current as {
+      rootTitle: string;
+      census: { elementCount: number };
+      subtree: { node: { id: string } };
+    };
+    expect(props.rootTitle).toBe("Views");
+    expect(props.census.elementCount).toBe(1);
+    expect(props.subtree.node.id).toBe("D1");
   });
 
   it("renders only the realm subtree rows (root's children), not the root itself", () => {

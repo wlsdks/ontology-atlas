@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../../messages/ko.json";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
+import type { AgentFilesUiModel } from "../../lib/agent-files";
 import { DocsSidebarBody } from "./DocsSidebarBody";
 
 function makeDoc(slug: string, title: string, updatedAt: string): VaultDoc {
@@ -31,7 +32,10 @@ function makeManifest(docs: VaultDoc[]): VaultManifest {
   };
 }
 
-function renderSidebar(docs: VaultDoc[], overrides: { canCreateNewDoc?: boolean } = {}) {
+function renderSidebar(
+  docs: VaultDoc[],
+  overrides: { canCreateNewDoc?: boolean; agentFiles?: AgentFilesUiModel | null } = {},
+) {
   const manifest = makeManifest(docs);
   const onSelect = vi.fn();
   const onCreateNewDoc = vi.fn();
@@ -53,6 +57,7 @@ function renderSidebar(docs: VaultDoc[], overrides: { canCreateNewDoc?: boolean 
         onTagSelect={() => {}}
         onCreateNewDoc={onCreateNewDoc}
         canCreateNewDoc={overrides.canCreateNewDoc ?? true}
+        agentFiles={overrides.agentFiles ?? null}
       />
     </NextIntlClientProvider>,
   );
@@ -93,6 +98,50 @@ describe("DocsSidebarBody — P4a 최근 바뀐 문서 스트립", () => {
     const { onSelect } = renderSidebar([makeDoc("a", "Recent Doc", recentIso)]);
     fireEvent.click(screen.getByText("Recent Doc"));
     expect(onSelect).toHaveBeenCalledWith("a");
+  });
+});
+
+describe("DocsSidebarBody — 에이전트 파일 그룹 (읽기 전용 감지)", () => {
+  const model: AgentFilesUiModel = {
+    records: [
+      { slug: "CLAUDE", path: "CLAUDE.md", kind: "instructions", tools: ["claude-code"], drift: ["missing-agents-import"] },
+      { slug: "AGENTS", path: "AGENTS.md", kind: "instructions", tools: ["codex", "cursor", "gemini-cli"], drift: [] },
+    ],
+    driftCount: 1,
+  };
+
+  it("stays hidden when the vault does not include the repo root (agentFiles=null)", () => {
+    renderSidebar([]);
+    expect(screen.queryByTestId("docs-sidebar-agent-files")).not.toBeInTheDocument();
+  });
+
+  it("renders tool badges per file and an amber drift badge on drifted files", () => {
+    renderSidebar([], { agentFiles: model });
+    expect(screen.getByTestId("docs-sidebar-agent-files")).toBeInTheDocument();
+    expect(screen.getByText("CLAUDE.md")).toBeInTheDocument();
+    expect(screen.getByText("Claude Code")).toBeInTheDocument();
+    expect(screen.getByText("Codex · Cursor · Gemini CLI")).toBeInTheDocument();
+    expect(screen.getByTestId("docs-sidebar-agent-file-drift-CLAUDE")).toBeInTheDocument();
+    expect(screen.queryByTestId("docs-sidebar-agent-file-drift-AGENTS")).not.toBeInTheDocument();
+    expect(screen.getByTestId("docs-sidebar-agent-files-drift-count")).toBeInTheDocument();
+  });
+
+  it("clicking a file opens it through the existing editor path (onSelect)", () => {
+    const { onSelect } = renderSidebar([], { agentFiles: model });
+    fireEvent.click(screen.getByText("AGENTS.md"));
+    expect(onSelect).toHaveBeenCalledWith("AGENTS");
+  });
+
+  it("hides the drift count pill when everything is in sync", () => {
+    renderSidebar([], {
+      agentFiles: {
+        records: [
+          { slug: "CLAUDE", path: "CLAUDE.md", kind: "instructions", tools: ["claude-code"], drift: [] },
+        ],
+        driftCount: 0,
+      },
+    });
+    expect(screen.queryByTestId("docs-sidebar-agent-files-drift-count")).not.toBeInTheDocument();
   });
 });
 

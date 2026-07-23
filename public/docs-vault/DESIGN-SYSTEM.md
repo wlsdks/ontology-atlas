@@ -997,6 +997,34 @@ portable, named, inspectable, and testable across tools. This repo does not
 copy third-party component skins, palettes, layouts, screenshots, assets, or
 animation signatures.
 
+### Touch & tablet responsive contract (2026-07-23, 반응형 감사 라운드)
+
+폭 브레이크포인트만으로는 "태블릿=터치"를 표현할 수 없다 — 1024px 디스플레이는
+fine-pointer 노트북일 수도, coarse-pointer 12.9" iPad 일 수도 있다. 그래서 터치
+축은 **별도 계약**이다:
+
+- **`--touch-target-min: 44px`** (`:root`) + **`@media (pointer: coarse)`**
+  블록이 단일 출처. coarse 에서만 `--app-nav-rail-tile-height`(32→44) ·
+  `--topology-chrome-control-height`(clamp 32–36→44) ·
+  `--topology-shortcut-sheet-close-size` 를 44px 로 승격한다. fine-pointer 는
+  밀도 유지. 다크 단일·색 무변 — 높이/히트 영역만.
+- **하단 탭바 예약고** — BottomTabBar 가 존재하는 `<lg` 전 구간에서, 하단에
+  앵커되거나 스크롤 끝을 갖는 표면은 `--topology-mobile-bottom-tab-reserve`
+  (56px + safe-area) 를 차감/패딩해야 한다. 적용 지점: 확장 INDEX
+  (`--topology-index-bottom-inset`) · 우하단 판독계
+  (`--topology-relation-legend-bottom-inset`, 하단 전용 분리 토큰) · 데이터시트
+  max-height(`--topology-v2-panel-bottom-reserve` 단일 knob) · 콘텐츠 페이지
+  main 의 `max-lg` 하단 패딩. **"탭바 뒤로 가려져 도달 불가"는 결함이다** —
+  새 하단 앵커 표면을 만들면 이 예약고부터 계약하라.
+- **`<md` 확장 INDEX = 풀-블리드 시트** — `--topology-index-width` 가 `<md`
+  에서 `calc(100vw - 2 * var(--topology-index-inset))` 로 전환된다. 좁은
+  화면은 "한 번에 하나의 주 뷰": 펼치면 시트(지도는 컨텍스트), 접으면 지도
+  전폭. 경계는 GlobalSearch 의 시트↔플로팅 분기와 같은 md(768) — 시트류
+  표면은 이 경계를 공유한다.
+- **정직한 강등** — 데스크톱 워크벤치 표면(빌더 3-pane 등)을 태블릿 폭에
+  억지로 밀어넣지 않는다. 빌더 캔버스 게이트는 lg(1024)+; 그 아래는 트리
+  편집 + 토폴로지 fallback 이 정답이다.
+
 ## Category differentiation strategy
 
 Differentiate by **border style**, not color — the only color (indigo) is reserved for hub nodes:

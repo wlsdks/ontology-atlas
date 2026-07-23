@@ -1101,6 +1101,10 @@
     --topology-minimap-surface: rgba(10, 12, 15, 0.94);
     --topology-relation-legend-width: clamp(252px, 18vw, 304px);
     --topology-relation-legend-inset: 24px;
+    /* 우하단 판독계 스택의 하단 전용 인셋 — 기본은 좌우와 동일하지만 <lg
+       (BottomTabBar 구간)에선 예약고 위로 올라간다(소유자 실보고 2026-07-23,
+       태블릿 하단 겹침 — readout 이 탭바 뒤로 가려짐). */
+    --topology-relation-legend-bottom-inset: var(--topology-relation-legend-inset);
     --topology-relation-legend-minimap-gap: 12px;
     --topology-relation-legend-bottom: calc(
       24px + 183px + var(--topology-relation-legend-minimap-gap)
@@ -1180,6 +1184,18 @@
        쓰는 단일 채색 원칙 그대로, 알파만 다르다. */
     --chrome-active-surface: rgba(94, 106, 210, 0.12);
     --chrome-active-border: rgba(94, 106, 210, 0.4);
+
+    /*
+     * Touch-target contract (반응형 감사 rank2, 2026-07-23). Width breakpoints
+     * cannot express "this is a tablet/touch device" — a 1024px display can be
+     * a fine-pointer laptop or a coarse-pointer 12.9" iPad. So the touch axis is
+     * a SEPARATE contract: `--touch-target-min` (Apple HIG / Material 44px min)
+     * that a `@media (pointer: coarse)` block (below the :root close) promotes
+     * interactive tile heights to. Fine-pointer devices keep the denser 32–36px
+     * values; only coarse-pointer devices inflate. Dark-only, color unchanged —
+     * height/hit-area only.
+     */
+    --touch-target-min: 44px;
 
     /*
      * B2+ 페이지 롤아웃 전역 승격 토큰 (feat/landing-b2plus).
@@ -1329,6 +1345,15 @@
     --topology-v2-node-stroke-element: #34343b;
     --topology-v2-node-fill-dim: #1a1a1e;
     --topology-v2-node-stroke-dim: #2b2b2f;
+    /* 최근 변경 스포트라이트 rest 알파 (협의회 설계 2026-07-23). product
+       reason: "지난 N일 변경" 렌즈 ON 일 때 창 밖 노드/엣지를 이 알파까지
+       침강시켜 변경 노드(fresh 채널)가 대비로 이긴다 — "빛내기"가 아니라
+       "가라앉히기"(glow/pulse 금지 헌장 안에서 소유자의 '한눈에' 욕구 충족).
+       ego dim(0.15)보다 옅은 이유: 전체-지도 렌즈에선 나머지 구조가 맥락으로
+       계속 읽혀야 한다(ego 는 국소 포커스라 더 깊이 가라앉힘). state/layer:
+       map 렌즈. 반응형: 값 자체는 폭 무관(알파 스칼라). marker: 렌즈 상태는
+       URL `?recent=` 로 결정론 재현 가능. */
+    --topology-v2-spotlight-rest-alpha: 0.35;
     --topology-v2-node-fill-stale: #141418;
     --topology-v2-node-stroke-stale: #454549;
     --topology-v2-node-hole-fill: #0c0c10;
@@ -1620,7 +1645,11 @@
        각 요소 옆(§2.6 아래 개별 JSX 클래스)에서 title 13.5→15px, 행
        12→13px, metric 11.5→12.5px 로 한 단계씩 올랐다 — 이 파일은 구조
        토큰만, 타입 크기는 컴포넌트가 소유. */
-    --topology-v2-panel-width: 352px;
+    /* 반응형 감사 rank3 (2026-07-23) — 고정 352px 는 태블릿 포트레이트(~600px)
+       에서 뷰포트의 59% 를 덮어 지도를 잠식했다. 노드 팝오버가 이미 쓰는
+       `min(target, 100vw - gap)` 패턴으로 통일: 넓은 화면에선 352px 그대로,
+       좁은 화면에선 좌우 여백(28px)을 뺀 폭까지 자연히 줄어든다. */
+    --topology-v2-panel-width: min(352px, calc(100vw - 28px));
     /* P3-③ (2026-07-21 리텐션 라운드) — 1440×900 에서 연결이 많은 노드는
        패널 콘텐츠(액션 4-up + contains/usedBy/dependsOn/evidence 그룹)가
        뷰포트를 넘겨 "전체 상세 →" 푸터가 화면 밖(y=911)으로 밀려나 마우스로
@@ -1632,8 +1661,13 @@
        1920 에서 데이터시트가 화면 하단 관통) — zoom 된 서브트리 안에서
        100dvh(CSS px)는 시각적으로 zoom 배가 되므로 factor 로 나눠 실제
        보이는 뷰포트 높이에 clamp 한다. factor 1 에서는 종전과 동일. */
+    /* 반응형 감사 rank3 (2026-07-23) — bottom reserve is a single knob so the
+       `<lg` override (below) can add the fixed BottomTabBar height + safe-area
+       and stop the datasheet from underlapping the tab bar on tablet/mobile. */
+    --topology-v2-panel-bottom-reserve: 8px;
     --topology-v2-panel-max-height: calc(
-      100dvh / var(--topology-ui-scale-factor) - var(--topology-node-popover-top) - 8px
+      100dvh / var(--topology-ui-scale-factor) - var(--topology-node-popover-top) -
+        var(--topology-v2-panel-bottom-reserve)
     );
     /* 9→12px (feat/chrome-system §9, INDEX 패널 v2.1) — 데이터시트와
        INDEX 가 공유하는 패널 계층의 radius 를 크롬 시스템의 4계층 스텝
@@ -1720,6 +1754,10 @@
        계산하지 말 것, 이 값을 쓰는 요소가 이미 `topology-ui-scale` 을
        달고 있어 zoom 이 자기 자신의 top 오프셋에도 적용된다. */
     --topology-index-width: 300px;
+    /* 확장 INDEX 하단 인셋 — 기본은 좌/상과 같은 크롬 인셋. <md 시트 모드
+       (아래 media 오버라이드)에서는 BottomTabBar 예약고 위로 올라간다
+       (반응형 감사 rank7). */
+    --topology-index-bottom-inset: var(--topology-index-inset);
     --topology-index-tab-width: 26px;
     /* 18→24px (feat/chrome-system §4) — 크롬 시스템의 24px 정렬 레일에
        수렴. --chrome-inset 참조로 단일 출처 유지. */
@@ -1756,6 +1794,66 @@
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: var(--topology-overview-proof-summary-lines);
+  }
+
+  /*
+   * Coarse-pointer (touch) contract — 반응형 감사 rank2 (2026-07-23).
+   * The missing axis: width breakpoints alone can't tell a 1024–1366px display
+   * apart as fine-pointer laptop vs coarse-pointer 12.9" iPad. This block is the
+   * single source that promotes interactive control heights to
+   * `--touch-target-min` (44px) on coarse devices only, resolving both the
+   * band-B defect (32px nav-rail tiles handed to touch users at ≥1024) and the
+   * band-A touch-target shortfall. Fine-pointer devices are untouched and keep
+   * the denser desktop values. Dark-only, color unchanged — height/hit-area only.
+   */
+  @media (pointer: coarse) {
+    :root {
+      --app-nav-rail-tile-height: max(
+        calc(32px * var(--topology-ui-scale-factor)),
+        var(--touch-target-min)
+      );
+      --topology-chrome-control-height: var(--touch-target-min);
+      --topology-chrome-control-height-compact: var(--touch-target-min);
+      --topology-shortcut-sheet-close-size: var(--touch-target-min);
+    }
+  }
+
+  /*
+   * `<lg` (BottomTabBar 표시 구간) 데이터시트 max-height — 하단 고정 탭바
+   * (56px + safe-area) 만큼 예약고를 더 빼 언더랩 제거 (반응형 감사 rank3).
+   * lg(1024) 이상에선 탭바가 `lg:hidden` 이라 종전 8px 여유 그대로.
+   */
+  @media (max-width: 1023px) {
+    :root {
+      --topology-v2-panel-bottom-reserve: calc(
+        var(--topology-mobile-bottom-tab-reserve) + 8px
+      );
+      /* 확장 INDEX 하단도 탭바가 존재하는 전 구간(<lg)에서 예약고 위로 —
+         767 에서만 올리면 768–1023 에서 패널 푸터(AGENT HANDOFF)가 탭바
+         뒤로 33px 파고든다 (소유자 실보고 2026-07-23, 태블릿 하단 겹침). */
+      --topology-index-bottom-inset: calc(
+        var(--topology-mobile-bottom-tab-reserve) + 12px
+      );
+      /* 우하단 판독계(범례+상태 readout)도 동일 — 탭바 뒤 가림 제거. */
+      --topology-relation-legend-bottom-inset: calc(
+        var(--topology-mobile-bottom-tab-reserve) + 12px
+      );
+    }
+  }
+
+  /*
+   * `<md` 확장 INDEX = 풀-블리드 시트 (반응형 감사 rank7, Image #8 소유자
+   * 질문의 답). 좁은 화면에서 300px 좌측 오버레이는 캔버스의 절반 이상을
+   * 영구 잠식해 "지도 옆 패널"도 "지도 위 시트"도 아닌 어정쩡한 상태였다.
+   * 태블릿/폰에서는 "한 번에 하나의 주 뷰" — 확장 INDEX 는 인셋만 남기고
+   * 전폭 시트가 되고(뒤 지도는 컨텍스트로만 비침), 접으면 지도가 전폭.
+   * 하단은 BottomTabBar 예약고(GlobalSearch 시트와 같은 패턴) 위로.
+   * md(768)+ 는 종전 300px 사이드 패널 그대로.
+   */
+  @media (max-width: 767px) {
+    :root {
+      --topology-index-width: calc(100vw - 2 * var(--topology-index-inset));
+    }
   }
 
   @media (max-width: 640px) {

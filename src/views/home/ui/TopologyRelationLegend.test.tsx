@@ -7,16 +7,19 @@ vi.mock("next-intl", () => ({
 }));
 
 describe("TopologyRelationLegend", () => {
-  it("always renders the spine and quality-stroke key regardless of first-run state", () => {
+  it("renders the two real edge-type encodings (contains solid / depends dashed) regardless of first-run state", () => {
     render(<TopologyRelationLegend />);
 
     const legend = screen.getByTestId("topology-relation-legend");
-    // P1a-1: the spine label now comes from the shared relation-vocabulary
-    // dictionary (`useRelationVocabulary("contains", "formal")`) instead of
-    // its own `overviewRelationLegendSpine` i18n key — the mocked
-    // `useTranslations` above is an identity function, so the formal
-    // register resolves to the raw edge-type key "contains".
+    // Both labels come from the shared relation-vocabulary dictionary
+    // (`useRelationVocabulary(type, "formal")`); the mocked `useTranslations`
+    // is an identity function, so the formal register resolves to the raw
+    // edge-type keys "contains" / "depends".
+    // 2026-07-23 (Image #9): the old right-hand item was a decorative
+    // "confidence" gradient with no backing data — replaced by the real
+    // `depends` (dashed) encoding the map actually draws.
     expect(legend).toHaveTextContent("contains");
-    expect(legend).toHaveTextContent("overviewRelationLegendQuality");
+    expect(legend).toHaveTextContent("depends");
+    expect(legend).not.toHaveTextContent("overviewRelationLegendQuality");
   });
 });

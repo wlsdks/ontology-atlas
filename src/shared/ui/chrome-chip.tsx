@@ -57,7 +57,13 @@ export const ChromeChip = forwardRef<HTMLButtonElement, ChromeChipProps>(
     >
       {icon}
       {children ? (
-        <span className={cn('truncate', compact && 'sr-only')}>{children}</span>
+        // `data-chip-label` — data-chip-kbd 와 같은 반응형 훅. 호출부가
+        // `max-xl:[&_[data-chip-label]]:hidden` 류의 폭-기반 축약(아이콘-only)
+        // 을 걸 수 있다 (좁은 뷰포트 상단 크롬 열 겹침 소탕, 2026-07-23).
+        // aria-label 이 있는 칩에서만 시각 라벨을 숨길 것.
+        <span data-chip-label className={cn('truncate', compact && 'sr-only')}>
+          {children}
+        </span>
       ) : null}
       {badge}
       {kbd ? (

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { Cable, Check, ChevronDown, Copy, X } from "lucide-react";
+import { ArrowRight, Cable, Check, ChevronDown, Copy, X } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { copyText } from "@/shared/lib/copy-text";
@@ -214,9 +215,23 @@ export function AgentConnectSheet({
                   {t("registerLabel")}
                 </p>
                 {snippets.needsManualPath ? (
-                  <p className="text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
-                    {t("manualPathHint")}
-                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+                      {t("manualPathHint")}
+                    </p>
+                    {/* ease-of-use G3 (2026-07-23) — 비개발자는 "절대 경로를 직접
+                        채우라"는 안내 앞에서 사실상 막힌다(브라우저는 구조적으로
+                        폴더 경로를 앱에 알려주지 않는다). 정직한 강등의 나머지
+                        반쪽: macOS 앱에서는 이 칸이 자동으로 채워진다는 다리. */}
+                    <Link
+                      href="/download/"
+                      data-testid="agent-connect-manual-path-app-cta"
+                      className="inline-flex w-fit items-center gap-1 text-label font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                    >
+                      {t("manualPathAppCta")}
+                      <ArrowRight size={11} aria-hidden />
+                    </Link>
+                  </div>
                 ) : null}
                 <CopyBlock label={t("claudeCode")} value={snippets.mcpJson} testId="agent-connect-copy-mcp" />
                 <CopyBlock label={t("codex")} value={snippets.codexCommand} testId="agent-connect-copy-codex" />

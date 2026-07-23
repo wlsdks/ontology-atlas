@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import {
+  Bot,
   ChevronDown,
   Clock,
   FileText,
@@ -13,6 +14,7 @@ import {
 import { useTranslations } from "next-intl";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { selectRecentVaultDocs } from "@/shared/lib/ontology-tree";
+import { AGENT_TOOL_LABELS, type AgentFilesUiModel } from "../../lib/agent-files";
 import type { DocsVaultCollection } from "../../lib/docs-vault-collection";
 import { DocsVaultTree } from "@/widgets/docs-vault/ui/DocsVaultTree";
 import { Tooltip } from "@/shared/ui";
@@ -54,6 +56,13 @@ export interface DocsSidebarBodyProps {
    */
   onCreateNewDoc: () => void;
   canCreateNewDoc: boolean;
+  /**
+   * "에이전트 파일" 그룹 — vault 가 repo 루트를 포함할 때만
+   * (CLAUDE.md/AGENTS.md 존재, `useAgentFilesModel` 게이트) non-null.
+   * 파일별 "어느 도구가 읽나" 배지 + drift 배지(amber warning — 미결 주의).
+   * 읽기 전용 감지: 클릭은 기존 에디터로 여는 것이 전부, 변환/수리 없음.
+   */
+  agentFiles?: AgentFilesUiModel | null;
 }
 
 // "최근 바뀐 문서" 스트립에 노출할 최대 행 수. 7일 창은 대량 커밋일에
@@ -87,8 +96,10 @@ export function DocsSidebarBody({
   onTagSelect,
   onCreateNewDoc,
   canCreateNewDoc,
+  agentFiles = null,
 }: DocsSidebarBodyProps) {
   const t = useTranslations("vaultWidgets.parts.sidebar");
+  const tAgentFiles = useTranslations("agentFiles");
   const [treeQuery, setTreeQuery] = useState("");
   // P4a — "최근 바뀐 문서" 진입점. `selectRecentVaultDocs` 는 INDEX 지도 렌즈
   // (`useRecentChanges`)와 같은 mtime 7일 창 산수(`recent-changes.ts`)를
@@ -322,6 +333,70 @@ export function DocsSidebarBody({
           채우며 스크롤한다 (flex-1 min-h-0); Pinned/Recent 는 목록이 짧으므로
           flex-none + 자체 max-height 스크롤. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {/* "에이전트 파일" 그룹 — 트리 상단 고정. vault 가 repo 루트일 때만
+            (useAgentFilesModel 게이트) 나타난다. FSA 는 상위 폴더에 접근할 수
+            없으므로 docs/ontology 같은 하위 vault 에서는 그룹 자체를 렌더하지
+            않는 것이 정직하다. drift 배지는 신호 톤 warning(amber) — 미결
+            주의 상태. 읽기 전용: 클릭 = 기존 에디터로 열기. */}
+        {agentFiles && agentFiles.records.length > 0 ? (
+          <section
+            data-testid="docs-sidebar-agent-files"
+            className="flex-none border-b border-[color:var(--color-overlay-2)] pb-1"
+          >
+            <div className="flex items-center gap-1.5 px-3 pb-1.5 pt-3" title={tAgentFiles("headerHint")}>
+              <Bot size={10} className="flex-none text-[color:var(--color-text-quaternary)]" aria-hidden />
+              <span className="flex-1 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+                {tAgentFiles("header")}
+              </span>
+              {agentFiles.driftCount > 0 ? (
+                <span
+                  data-testid="docs-sidebar-agent-files-drift-count"
+                  className="flex-none rounded-full border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-1.5 font-mono text-caption tabular-nums text-[color:var(--color-amber-source-a90)]"
+                >
+                  {tAgentFiles("driftCount", { count: agentFiles.driftCount })}
+                </span>
+              ) : null}
+            </div>
+            <ul aria-label={tAgentFiles("listAria")} className="flex flex-col gap-0.5 px-2">
+              {agentFiles.records.map((record) => {
+                const active = selectedSlug === record.slug;
+                const driftTitle = record.drift
+                  .map((code) => tAgentFiles(`drift.${code}`))
+                  .join("\n");
+                return (
+                  <li key={record.path}>
+                    <button
+                      type="button"
+                      onClick={() => onSelect(record.slug)}
+                      title={driftTitle || undefined}
+                      aria-current={active ? "true" : undefined}
+                      className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-body transition-colors ${
+                        active
+                          ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
+                          : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                      }`}
+                    >
+                      <FileText size={11} className="flex-none opacity-60" aria-hidden />
+                      <span className="min-w-0 flex-1 truncate">{record.path}</span>
+                      <span className="flex-none font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                        {record.tools.map((tool) => AGENT_TOOL_LABELS[tool] ?? tool).join(" · ")}
+                      </span>
+                      {record.drift.length > 0 ? (
+                        <span
+                          data-testid={`docs-sidebar-agent-file-drift-${record.slug}`}
+                          className="flex-none rounded-sm border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-1 font-mono text-caption text-[color:var(--color-amber-source-a90)]"
+                        >
+                          {tAgentFiles("driftBadge")}
+                        </span>
+                      ) : null}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ) : null}
+
         {pinnedSlugs.length > 0 ? (
           <section className="flex-none border-b border-[color:var(--color-overlay-2)] pb-1">
             <SectionLabel>{t("pinnedHeader", { count: pinnedSlugs.length })}</SectionLabel>
