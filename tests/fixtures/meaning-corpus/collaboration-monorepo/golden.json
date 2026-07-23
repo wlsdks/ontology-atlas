@@ -1,0 +1,57 @@
+{
+  "id": "collaboration-monorepo",
+  "architecture": "workspace monorepo",
+  "expected": {
+    "project": {
+      "slug": "relay-collaboration",
+      "title": "Relay Collaboration",
+      "definition": "A shared operational picture for teams responding to an incident."
+    },
+    "domains": [
+      {
+        "slug": "domains/coordination",
+        "title": "Coordination",
+        "definition": "The responsibility boundary for publishing and acknowledging incident decisions.",
+        "evidence": ["README.md", "docs/SYSTEM-MAP.md"]
+      },
+      {
+        "slug": "domains/access-control",
+        "title": "Access Control",
+        "definition": "The responsibility boundary for incident workspace authority.",
+        "evidence": ["README.md", "docs/SYSTEM-MAP.md"]
+      }
+    ],
+    "capabilities": [
+      {
+        "slug": "capabilities/decision-broadcast",
+        "title": "Decision Broadcast",
+        "domain": "domains/coordination",
+        "definition": "Publish an operational decision and distribute it to active responders.",
+        "evidence": ["README.md", "packages/realtime"]
+      },
+      {
+        "slug": "capabilities/acknowledgement-tracking",
+        "title": "Acknowledgement Tracking",
+        "domain": "domains/coordination",
+        "definition": "Show which responders have acknowledged a decision.",
+        "evidence": ["README.md", "apps/web"]
+      },
+      {
+        "slug": "capabilities/workspace-authorization",
+        "title": "Workspace Authorization",
+        "domain": "domains/access-control",
+        "definition": "Evaluate whether a member may read, coordinate, or administer an incident.",
+        "evidence": ["README.md", "packages/policy"]
+      }
+    ],
+    "implementationEvidence": ["apps/web", "packages/realtime", "packages/policy"],
+    "forbiddenBusinessConcepts": ["capabilities/web", "capabilities/realtime", "capabilities/policy"],
+    "competencyAnswers": {
+      "scope": "Incident responders maintaining a shared operational picture.",
+      "domains": "Coordination owns decisions; Access Control owns workspace authority.",
+      "abilities": "Decision broadcast, acknowledgement tracking, and workspace authorization realize the outcome.",
+      "evidence": "README responsibilities, the system map, and workspace packages triangulate the claims.",
+      "impact": "Policy changes can block publication while realtime changes affect decision distribution."
+    }
+  }
+}
