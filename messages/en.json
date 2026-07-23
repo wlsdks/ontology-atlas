@@ -243,6 +243,9 @@
     "cliBridgeCopy": "Copy command",
     "cliBridgeCopied": "Copied",
     "cliBridgeCopyAriaLabel": "Copy the bootstrap command to paste in your terminal",
+    "sampleSourceAria": "Choose a sample to explore",
+    "sampleSourceDogfood": "Explore this tool",
+    "sampleSourceStorefront": "See an example business",
     "nodeHint": {
       "action": "Tap a node on the map",
       "reason": "everything here is a real document"

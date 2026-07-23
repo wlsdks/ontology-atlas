@@ -5,6 +5,7 @@ import { ArrowRight, ChevronRight, FolderOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { useSampleSource } from "@/features/vault-sample-source";
 import { CompactCopyButton } from "@/shared/ui";
 import { useFirstRunStarter } from "../model/use-first-run-starter";
 
@@ -52,6 +53,11 @@ export function FirstRunStarterModule({
     fsaUnsupported,
   } = useFirstRunStarter();
   const { state: cliCopyState, copy: copyCliCommand } = useCopyFeedback();
+  // P0 공감형 샘플 vault (2026-07) — 비개발자가 dogfood(이 도구 자기 설명)
+  // 대신 즉시 알아볼 수 있는 예시 비즈니스를 고를 수 있는 첫 실행 선택.
+  // static 모드에서만 소비(local 모드는 useOntologyInsight 가 이 값을
+  // 무시한다).
+  const [sampleSource, setSampleSource] = useSampleSource();
   // 온보딩 디자이너 지적 — npx 명령 블록이 비개발자(기획/마케팅/리더십)
   // 첫 화면에 상시 노출돼 시선을 뺏었다. 기본 접힘 disclosure 뒤로 보내
   // 개발자만 펼쳐 보게 한다. 카드가 리마운트될 때까지 세션 내 상태.
@@ -94,10 +100,50 @@ export function FirstRunStarterModule({
         {t("contextRest")}
       </p>
 
-      <div className="mb-4 grid grid-cols-3 divide-x divide-[color:var(--topology-v2-panel-divider)] rounded-[9px] border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.55)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
+      <div className="mb-3 grid grid-cols-3 divide-x divide-[color:var(--topology-v2-panel-divider)] rounded-[9px] border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.55)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
         <MeterCell value={concepts} label={t("meterConcepts")} />
         <MeterCell value={relations} label={t("meterRelations")} />
         <MeterCell value={domains} label={t("meterDomains")} />
+      </div>
+
+      {/* P0 공감형 샘플 vault — dogfood(이 도구 자기 설명) 는 비개발자에게
+          와닿지 않는다는 실측 문제의 완화책. 즉시 알아볼 수 있는 예시
+          비즈니스("온라인 쇼핑몰")로 한 클릭 전환. 기존 "전체 | 최근 변경"
+          세그먼트(TopologyIndexPanel)와 같은 토큰/구조를 재사용. */}
+      <div
+        role="tablist"
+        aria-label={t("sampleSourceAria")}
+        data-testid="first-run-starter-sample-source"
+        className="mb-4 grid shrink-0 grid-cols-2 gap-1 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-overlay-1)] p-1"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={sampleSource === "dogfood"}
+          data-testid="first-run-starter-sample-source-dogfood"
+          onClick={() => setSampleSource("dogfood")}
+          className={`min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
+            sampleSource === "dogfood"
+              ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
+              : "text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+          }`}
+        >
+          {t("sampleSourceDogfood")}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={sampleSource === "storefront"}
+          data-testid="first-run-starter-sample-source-storefront"
+          onClick={() => setSampleSource("storefront")}
+          className={`min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
+            sampleSource === "storefront"
+              ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
+              : "text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+          }`}
+        >
+          {t("sampleSourceStorefront")}
+        </button>
       </div>
 
       {fsaUnsupported ? (

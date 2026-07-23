@@ -1,0 +1,1440 @@
+{
+  "version": "2026-04-23",
+  "generatedAt": "2026-07-23T17:21:19.741Z",
+  "docs": [
+    {
+      "slug": "capabilities/cart",
+      "path": "samples/storefront/capabilities/cart.md",
+      "title": "장바구니",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/cart",
+        "kind": "capability",
+        "title": "장바구니",
+        "domain": "order",
+        "elements": [
+          "cart-session"
+        ],
+        "relates": [
+          "domains/payment"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "장바구니",
+          "slug": "장바구니"
+        }
+      ],
+      "excerpt": "고객이 여러 상품을 한데 모아 두었다가 한 번에 결제로 넘길 수 있게 담아두는 기능입니다. 담긴 상품과 수량은 결제 화면으로 그대로 전달됩니다.",
+      "wordCount": 23,
+      "updatedAt": "2026-07-23T17:09:23.413Z",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/coupon-issue",
+      "path": "samples/storefront/capabilities/coupon-issue.md",
+      "title": "쿠폰 발급",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/coupon-issue",
+        "kind": "capability",
+        "title": "쿠폰 발급",
+        "domain": "marketing",
+        "elements": [
+          "coupon-engine"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "쿠폰 발급",
+          "slug": "쿠폰-발급"
+        }
+      ],
+      "excerpt": "특정 회원이나 전체 고객에게 할인 쿠폰을 발급합니다. 발급된 쿠폰은 결제 금액을 낮추는 데 쓰이고, 이메일 캠페인으로 함께 안내됩니다.",
+      "wordCount": 21,
+      "updatedAt": "2026-07-23T17:09:45.101Z",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/email-campaign",
+      "path": "samples/storefront/capabilities/email-campaign.md",
+      "title": "이메일 캠페인",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/email-campaign",
+        "kind": "capability",
+        "title": "이메일 캠페인",
+        "domain": "marketing",
+        "dependencies": [
+          "capabilities/coupon-issue"
+        ],
+        "elements": [
+          "email-sender"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "이메일 캠페인",
+          "slug": "이메일-캠페인"
+        }
+      ],
+      "excerpt": "신상품 소식이나 발급된 쿠폰을 이메일로 고객에게 안내합니다. 보통 쿠폰 발급 직후에 그 쿠폰을 알리는 캠페인이 뒤따르므로 쿠폰 발급 기능에 의존합니다.",
+      "wordCount": 23,
+      "updatedAt": "2026-07-23T17:09:47.136Z",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/inventory-management",
+      "path": "samples/storefront/capabilities/inventory-management.md",
+      "title": "재고 관리",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/inventory-management",
+        "kind": "capability",
+        "title": "재고 관리",
+        "domain": "catalog",
+        "elements": [
+          "inventory-api"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "재고 관리",
+          "slug": "재고-관리"
+        }
+      ],
+      "excerpt": "상품별 재고 수량을 추적하고, 주문이 확정될 때마다 수량을 차감합니다. 재고가 부족하면 주문 생성 자체가 성립하지 않습니다.",
+      "wordCount": 19,
+      "updatedAt": "2026-07-23T17:09:35.169Z",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/order-cancel",
+      "path": "samples/storefront/capabilities/order-cancel.md",
+      "title": "주문 취소",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/order-cancel",
+        "kind": "capability",
+        "title": "주문 취소",
+        "domain": "order",
+        "dependencies": [
+          "capabilities/payment-authorize"
+        ],
+        "relates": [
+          "domains/fulfillment"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "주문 취소",
+          "slug": "주문-취소"
+        }
+      ],
+      "excerpt": "고객이나 운영자가 아직 배송이 시작되지 않은 주문을 취소합니다. 이미 승인된 결제 건은 취소와 함께 결제 도메인에서 되돌려야 하므로 결제 승인 기능에 의존합니다.",
+      "wordCount": 25,
+      "updatedAt": "2026-07-23T17:09:27.830Z",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/order-create",
+      "path": "samples/storefront/capabilities/order-create.md",
+      "title": "주문 생성",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/order-create",
+        "kind": "capability",
+        "title": "주문 생성",
+        "domain": "order",
+        "dependencies": [
+          "capabilities/inventory-management",
+          "capabilities/payment-authorize"
+        ],
+        "elements": [
+          "order-table"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "주문 생성",
+          "slug": "주문-생성"
+        }
+      ],
+      "excerpt": "장바구니 내용을 실제 주문으로 확정합니다. 결제 승인이 통과하고 재고가 확보되어야만 주문이 성립하므로, 결제·재고 관리 두 기능에 모두 의존합니다.",
+      "wordCount": 21,
+      "updatedAt": "2026-07-23T17:18:49.630Z",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/payment-authorize",
+      "path": "samples/storefront/capabilities/payment-authorize.md",
+      "title": "결제 승인",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/payment-authorize",
+        "kind": "capability",
+        "title": "결제 승인",
+        "domain": "payment",
+        "elements": [
+          "payment-gateway"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "결제 승인",
+          "slug": "결제-승인"
+        }
+      ],
+      "excerpt": "카드사·PG사에 결제 요청을 보내고 승인 결과를 받아옵니다. 주문 생성·주문 취소 모두 이 승인 결과를 전제로 다음 단계로 넘어갑니다.",
+      "wordCount": 21,
+      "updatedAt": "2026-07-23T17:09:29.703Z",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/product-register",
+      "path": "samples/storefront/capabilities/product-register.md",
+      "title": "상품 등록",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/product-register",
+        "kind": "capability",
+        "title": "상품 등록",
+        "domain": "catalog",
+        "elements": [
+          "product-image-storage"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "상품 등록",
+          "slug": "상품-등록"
+        }
+      ],
+      "excerpt": "판매할 상품의 이름·가격·이미지·설명을 등록합니다. 등록된 상품만 장바구니에 담기거나 주문될 수 있습니다.",
+      "wordCount": 14,
+      "updatedAt": "2026-07-23T17:09:33.339Z",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/refund-process",
+      "path": "samples/storefront/capabilities/refund-process.md",
+      "title": "환불 처리",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/refund-process",
+        "kind": "capability",
+        "title": "환불 처리",
+        "domain": "payment",
+        "dependencies": [
+          "capabilities/payment-authorize"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "환불 처리",
+          "slug": "환불-처리"
+        }
+      ],
+      "excerpt": "취소나 반품이 확정된 주문의 결제 금액을 고객에게 되돌려줍니다. 승인됐던 결제 건을 근거로 환불 금액과 대상을 계산하므로 결제 승인 기능에 의존합니다.",
+      "wordCount": 23,
+      "updatedAt": "2026-07-23T17:09:31.503Z",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/return-intake",
+      "path": "samples/storefront/capabilities/return-intake.md",
+      "title": "반품 접수",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/return-intake",
+        "kind": "capability",
+        "title": "반품 접수",
+        "domain": "fulfillment",
+        "dependencies": [
+          "capabilities/refund-process"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "반품 접수",
+          "slug": "반품-접수"
+        }
+      ],
+      "excerpt": "배송이 끝난 상품을 고객이 다시 돌려보내는 절차를 접수합니다. 반품이 승인되면 환불 처리로 이어져 결제 도메인의 환불 기능에 의존합니다.",
+      "wordCount": 21,
+      "updatedAt": "2026-07-23T17:09:43.165Z",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/review-write",
+      "path": "samples/storefront/capabilities/review-write.md",
+      "title": "리뷰 작성",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/review-write",
+        "kind": "capability",
+        "title": "리뷰 작성",
+        "domain": "customer",
+        "dependencies": [
+          "capabilities/order-create"
+        ],
+        "elements": [
+          "review-store"
+        ],
+        "relates": [
+          "domains/catalog"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "리뷰 작성",
+          "slug": "리뷰-작성"
+        }
+      ],
+      "excerpt": "구매를 마친 고객이 상품에 후기와 별점을 남깁니다. 실제로 주문을 완료한 고객만 리뷰를 남길 수 있도록 주문 생성 기능에 의존합니다.",
+      "wordCount": 22,
+      "updatedAt": "2026-07-23T17:09:39.447Z",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/shipment-tracking",
+      "path": "samples/storefront/capabilities/shipment-tracking.md",
+      "title": "배송 추적",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/shipment-tracking",
+        "kind": "capability",
+        "title": "배송 추적",
+        "domain": "fulfillment",
+        "elements": [
+          "carrier-integration-api",
+          "notification-queue"
+        ],
+        "relates": [
+          "domains/order"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "배송 추적",
+          "slug": "배송-추적"
+        }
+      ],
+      "excerpt": "배송사로 넘어간 주문의 이동 상태(집화·배송중·완료)를 고객이 실시간으로 확인할 수 있게 합니다. 상태가 바뀔 때마다 고객에게 알림도 함께 보냅니다.",
+      "wordCount": 21,
+      "updatedAt": "2026-07-23T17:09:41.323Z",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/signup",
+      "path": "samples/storefront/capabilities/signup.md",
+      "title": "회원가입",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/signup",
+        "kind": "capability",
+        "title": "회원가입",
+        "domain": "customer",
+        "elements": [
+          "customer-auth"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "회원가입",
+          "slug": "회원가입"
+        }
+      ],
+      "excerpt": "고객이 이메일이나 소셜 계정으로 쇼핑몰 회원이 됩니다. 회원 인증이 있어야 장바구니 저장, 주문 내역 조회, 리뷰 작성 같은 개인화 기능을 쓸 수 있습니다.",
+      "wordCount": 25,
+      "updatedAt": "2026-07-23T17:09:36.976Z",
+      "linksOut": []
+    },
+    {
+      "slug": "domains/catalog",
+      "path": "samples/storefront/domains/catalog.md",
+      "title": "상품",
+      "tags": [],
+      "frontmatter": {
+        "slug": "domains/catalog",
+        "kind": "domain",
+        "title": "상품",
+        "capabilities": [
+          "inventory-management",
+          "product-register"
+        ],
+        "relates": [
+          "domains/marketing",
+          "domains/order"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "상품",
+          "slug": "상품"
+        }
+      ],
+      "excerpt": "판매할 상품을 등록하고 재고 수량을 관리하는 도메인입니다. 상품 정보와 재고 상태는 장바구니 담기·주문 생성이 성립하기 위한 전제 조건입니다.",
+      "wordCount": 20,
+      "updatedAt": "2026-07-23T17:18:39.660Z",
+      "linksOut": []
+    },
+    {
+      "slug": "domains/customer",
+      "path": "samples/storefront/domains/customer.md",
+      "title": "회원",
+      "tags": [],
+      "frontmatter": {
+        "slug": "domains/customer",
+        "kind": "domain",
+        "title": "회원",
+        "capabilities": [
+          "review-write",
+          "signup"
+        ],
+        "relates": [
+          "domains/order"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "회원",
+          "slug": "회원"
+        }
+      ],
+      "excerpt": "고객이 쇼핑몰에 가입하고, 구매한 상품에 리뷰를 남기는 도메인입니다. 회원 인증은 장바구니·주문·리뷰 등 대부분의 개인화 기능의 전제가 됩니다.",
+      "wordCount": 19,
+      "updatedAt": "2026-07-23T17:18:43.016Z",
+      "linksOut": []
+    },
+    {
+      "slug": "domains/fulfillment",
+      "path": "samples/storefront/domains/fulfillment.md",
+      "title": "배송",
+      "tags": [],
+      "frontmatter": {
+        "slug": "domains/fulfillment",
+        "kind": "domain",
+        "title": "배송",
+        "capabilities": [
+          "return-intake",
+          "shipment-tracking"
+        ],
+        "relates": [
+          "domains/order"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "배송",
+          "slug": "배송"
+        }
+      ],
+      "excerpt": "결제가 끝난 주문을 실제로 고객에게 보내고, 필요하면 반품을 접수하는 도메인입니다. 배송사 연동과 환불 처리가 맞물려 동작합니다.",
+      "wordCount": 18,
+      "updatedAt": "2026-07-23T17:18:46.638Z",
+      "linksOut": []
+    },
+    {
+      "slug": "domains/marketing",
+      "path": "samples/storefront/domains/marketing.md",
+      "title": "마케팅",
+      "tags": [],
+      "frontmatter": {
+        "slug": "domains/marketing",
+        "kind": "domain",
+        "title": "마케팅",
+        "capabilities": [
+          "coupon-issue",
+          "email-campaign"
+        ],
+        "relates": [
+          "domains/catalog",
+          "domains/customer"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "마케팅",
+          "slug": "마케팅"
+        }
+      ],
+      "excerpt": "쿠폰을 발급하고 이메일 캠페인으로 고객에게 알리는 도메인입니다. 상품·회원 도메인의 데이터를 바탕으로 재구매를 유도하는 역할을 합니다.",
+      "wordCount": 17,
+      "updatedAt": "2026-07-23T17:09:19.285Z",
+      "linksOut": []
+    },
+    {
+      "slug": "domains/order",
+      "path": "samples/storefront/domains/order.md",
+      "title": "주문",
+      "tags": [],
+      "frontmatter": {
+        "slug": "domains/order",
+        "kind": "domain",
+        "title": "주문",
+        "capabilities": [
+          "cart",
+          "order-cancel",
+          "order-create"
+        ],
+        "relates": [
+          "domains/fulfillment",
+          "domains/payment"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "주문",
+          "slug": "주문"
+        }
+      ],
+      "excerpt": "고객이 상품을 장바구니에 담는 순간부터 주문을 확정하거나 취소하기까지의 흐름을 다룹니다. 결제·재고·배송 도메인과 맞물려 움직이는 쇼핑몰의 중심 도메인입니다.",
+      "wordCount": 19,
+      "updatedAt": "2026-07-23T17:18:36.827Z",
+      "linksOut": []
+    },
+    {
+      "slug": "domains/payment",
+      "path": "samples/storefront/domains/payment.md",
+      "title": "결제",
+      "tags": [],
+      "frontmatter": {
+        "slug": "domains/payment",
+        "kind": "domain",
+        "title": "결제",
+        "capabilities": [
+          "payment-authorize",
+          "refund-process"
+        ],
+        "relates": [
+          "domains/order"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "결제",
+          "slug": "결제"
+        }
+      ],
+      "excerpt": "카드사·PG(결제 대행)를 통해 결제를 승인하고, 취소·반품 시 환불을 처리하는 도메인입니다. 주문 확정과 취소 모두 이 도메인의 승인 결과에 의존합니다.",
+      "wordCount": 21,
+      "updatedAt": "2026-07-23T17:09:11.326Z",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/carrier-integration-api",
+      "path": "samples/storefront/elements/carrier-integration-api.md",
+      "title": "배송사 연동 API",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/carrier-integration-api",
+        "kind": "element",
+        "title": "배송사 연동 API",
+        "domain": "fulfillment"
+      },
+      "headings": [],
+      "excerpt": "택배사 시스템과 연결해 송장 번호로 배송 상태를 조회하는 연동. 배송 추적 기능이 고객에게 보여주는 상태 값은 이 API 응답을 그대로 가져온 것입니다.",
+      "wordCount": 22,
+      "updatedAt": "2026-07-23T17:10:02.558Z",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/cart-session",
+      "path": "samples/storefront/elements/cart-session.md",
+      "title": "장바구니 세션",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/cart-session",
+        "kind": "element",
+        "title": "장바구니 세션",
+        "domain": "order"
+      },
+      "headings": [],
+      "excerpt": "장바구니에 담긴 상품 목록을 로그인 여부와 무관하게 임시로 저장하는 저장소. 결제 화면으로 넘어갈 때 이 세션의 내용을 그대로 읽어 주문 초안을 만듭니다.",
+      "wordCount": 22,
+      "updatedAt": "2026-07-23T17:09:52.990Z",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/coupon-engine",
+      "path": "samples/storefront/elements/coupon-engine.md",
+      "title": "쿠폰 엔진",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/coupon-engine",
+        "kind": "element",
+        "title": "쿠폰 엔진",
+        "domain": "marketing"
+      },
+      "headings": [],
+      "excerpt": "쿠폰 발급 조건과 할인율을 계산하고, 결제 시점에 쿠폰 적용 가능 여부를 판정하는 엔진. 발급된 쿠폰의 사용 이력도 함께 관리합니다.",
+      "wordCount": 19,
+      "updatedAt": "2026-07-23T17:10:06.206Z",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/customer-auth",
+      "path": "samples/storefront/elements/customer-auth.md",
+      "title": "회원 인증",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/customer-auth",
+        "kind": "element",
+        "title": "회원 인증",
+        "domain": "customer"
+      },
+      "headings": [],
+      "excerpt": "로그인·비밀번호·소셜 인증을 처리하는 회원 인증 시스템. 주문 내역 조회, 리뷰 작성 등 회원 전용 기능은 모두 이 인증을 거칩니다.",
+      "wordCount": 19,
+      "updatedAt": "2026-07-23T17:10:00.394Z",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/email-sender",
+      "path": "samples/storefront/elements/email-sender.md",
+      "title": "이메일 발송 서비스",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/email-sender",
+        "kind": "element",
+        "title": "이메일 발송 서비스",
+        "domain": "marketing"
+      },
+      "headings": [],
+      "excerpt": "이메일 캠페인 콘텐츠를 대량으로 발송하는 서비스. 발급된 쿠폰을 알리거나 신상품 소식을 전할 때 이 서비스를 통해 고객 받은편지함으로 전달됩니다.",
+      "wordCount": 19,
+      "updatedAt": "2026-07-23T17:10:09.863Z",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/inventory-api",
+      "path": "samples/storefront/elements/inventory-api.md",
+      "title": "재고 API",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/inventory-api",
+        "kind": "element",
+        "title": "재고 API",
+        "domain": "catalog"
+      },
+      "headings": [],
+      "excerpt": "상품별 재고 수량을 조회하고 차감·복구하는 내부 API. 주문 생성 시점에 재고를 먼저 확인하고, 취소 시에는 되돌려 놓습니다.",
+      "wordCount": 17,
+      "updatedAt": "2026-07-23T17:09:58.540Z",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/notification-queue",
+      "path": "samples/storefront/elements/notification-queue.md",
+      "title": "알림 큐",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/notification-queue",
+        "kind": "element",
+        "title": "알림 큐",
+        "domain": "fulfillment"
+      },
+      "headings": [],
+      "excerpt": "배송 상태가 바뀔 때마다 고객에게 보낼 알림(문자·푸시)을 순서대로 쌓아두는 큐. 배송 추적 기능이 상태 변경을 감지하면 이 큐에 알림 작업을 등록합니다.",
+      "wordCount": 21,
+      "updatedAt": "2026-07-23T17:10:11.946Z",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/order-table",
+      "path": "samples/storefront/elements/order-table.md",
+      "title": "주문 테이블",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/order-table",
+        "kind": "element",
+        "title": "주문 테이블",
+        "domain": "order"
+      },
+      "headings": [],
+      "excerpt": "확정된 주문의 상품·수량·금액·상태를 저장하는 데이터베이스 테이블. 주문 취소·환불·배송 추적 등 이후 모든 처리가 이 기록을 기준으로 이뤄집니다.",
+      "wordCount": 17,
+      "updatedAt": "2026-07-23T17:09:54.859Z",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/payment-gateway",
+      "path": "samples/storefront/elements/payment-gateway.md",
+      "title": "결제 게이트웨이 연동",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/payment-gateway",
+        "kind": "element",
+        "title": "결제 게이트웨이 연동",
+        "domain": "payment"
+      },
+      "headings": [],
+      "excerpt": "카드사·간편결제사와 통신하는 PG(결제 대행) 연동 모듈. 결제 승인 요청과 환불 요청 모두 이 연동을 거쳐 실제 금융망으로 전달됩니다.",
+      "wordCount": 18,
+      "updatedAt": "2026-07-23T17:09:56.666Z",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/product-image-storage",
+      "path": "samples/storefront/elements/product-image-storage.md",
+      "title": "상품 이미지 스토리지",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/product-image-storage",
+        "kind": "element",
+        "title": "상품 이미지 스토리지",
+        "domain": "catalog"
+      },
+      "headings": [],
+      "excerpt": "상품 등록 시 업로드되는 대표 이미지·상세 이미지를 저장하는 파일 스토리지. 상품 목록·상세 페이지가 렌더링될 때 여기서 이미지를 불러옵니다.",
+      "wordCount": 18,
+      "updatedAt": "2026-07-23T17:10:08.200Z",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/review-store",
+      "path": "samples/storefront/elements/review-store.md",
+      "title": "리뷰 저장소",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/review-store",
+        "kind": "element",
+        "title": "리뷰 저장소",
+        "domain": "customer"
+      },
+      "headings": [],
+      "excerpt": "고객이 남긴 후기 텍스트, 별점, 첨부 이미지를 저장하는 저장소. 상품 상세 페이지의 리뷰 목록은 이 저장소에서 조회한 데이터입니다.",
+      "wordCount": 18,
+      "updatedAt": "2026-07-23T17:10:04.410Z",
+      "linksOut": []
+    },
+    {
+      "slug": "project",
+      "path": "samples/storefront/project.md",
+      "title": "온라인 쇼핑몰",
+      "tags": [],
+      "frontmatter": {
+        "slug": "storefront",
+        "kind": "project",
+        "title": "온라인 쇼핑몰",
+        "domains": [
+          "catalog",
+          "customer",
+          "fulfillment",
+          "marketing",
+          "order",
+          "payment"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "온라인 쇼핑몰",
+          "slug": "온라인-쇼핑몰"
+        }
+      ],
+      "excerpt": "고객이 상품을 둘러보고 장바구니에 담아 결제하면, 그 주문이 재고·배송·환불까지 이어지는 일반적인 이커머스 사업의 예시 온톨로지입니다. 실제 회사가 아니라 \"이 지도가 우리 비즈니스에도 이렇게 쓰일 수 있겠다\"를 한눈에 보여주기 위한 샘플입니다. 주문(order) · 결제(payment) · 상품(catalog) · 회원(customer) · 배송(fulfillment) · 마케팅(marketing) 6개 도메인이 서로 의존하고 참조하는 관계를 그대로 그래프로 옮겨, 개발자가 아니어도 \"이 기능이 왜 저 기능에 의존하는지\"를 바로 읽을 수 있게 구성했습니다.",
+      "wordCount": 66,
+      "updatedAt": "2026-07-23T17:18:32.893Z",
+      "linksOut": []
+    }
+  ],
+  "backlinksDetail": {
+    "elements/cart-session": [
+      {
+        "fromSlug": "capabilities/cart",
+        "context": "frontmatter · **[cart-session]**",
+        "linkText": "cart-session"
+      }
+    ],
+    "domains/payment": [
+      {
+        "fromSlug": "capabilities/cart",
+        "context": "frontmatter · **[domains/payment]**",
+        "linkText": "domains/payment"
+      },
+      {
+        "fromSlug": "capabilities/payment-authorize",
+        "context": "frontmatter · **[payment]**",
+        "linkText": "payment"
+      },
+      {
+        "fromSlug": "capabilities/refund-process",
+        "context": "frontmatter · **[payment]**",
+        "linkText": "payment"
+      },
+      {
+        "fromSlug": "domains/order",
+        "context": "frontmatter · **[domains/payment]**",
+        "linkText": "domains/payment"
+      },
+      {
+        "fromSlug": "elements/payment-gateway",
+        "context": "frontmatter · **[payment]**",
+        "linkText": "payment"
+      },
+      {
+        "fromSlug": "project",
+        "context": "frontmatter · **[payment]**",
+        "linkText": "payment"
+      }
+    ],
+    "domains/order": [
+      {
+        "fromSlug": "capabilities/cart",
+        "context": "frontmatter · **[order]**",
+        "linkText": "order"
+      },
+      {
+        "fromSlug": "capabilities/order-cancel",
+        "context": "frontmatter · **[order]**",
+        "linkText": "order"
+      },
+      {
+        "fromSlug": "capabilities/order-create",
+        "context": "frontmatter · **[order]**",
+        "linkText": "order"
+      },
+      {
+        "fromSlug": "capabilities/shipment-tracking",
+        "context": "frontmatter · **[domains/order]**",
+        "linkText": "domains/order"
+      },
+      {
+        "fromSlug": "domains/catalog",
+        "context": "frontmatter · **[domains/order]**",
+        "linkText": "domains/order"
+      },
+      {
+        "fromSlug": "domains/customer",
+        "context": "frontmatter · **[domains/order]**",
+        "linkText": "domains/order"
+      },
+      {
+        "fromSlug": "domains/fulfillment",
+        "context": "frontmatter · **[domains/order]**",
+        "linkText": "domains/order"
+      },
+      {
+        "fromSlug": "domains/payment",
+        "context": "frontmatter · **[domains/order]**",
+        "linkText": "domains/order"
+      },
+      {
+        "fromSlug": "elements/cart-session",
+        "context": "frontmatter · **[order]**",
+        "linkText": "order"
+      },
+      {
+        "fromSlug": "elements/order-table",
+        "context": "frontmatter · **[order]**",
+        "linkText": "order"
+      },
+      {
+        "fromSlug": "project",
+        "context": "frontmatter · **[order]**",
+        "linkText": "order"
+      }
+    ],
+    "elements/coupon-engine": [
+      {
+        "fromSlug": "capabilities/coupon-issue",
+        "context": "frontmatter · **[coupon-engine]**",
+        "linkText": "coupon-engine"
+      }
+    ],
+    "domains/marketing": [
+      {
+        "fromSlug": "capabilities/coupon-issue",
+        "context": "frontmatter · **[marketing]**",
+        "linkText": "marketing"
+      },
+      {
+        "fromSlug": "capabilities/email-campaign",
+        "context": "frontmatter · **[marketing]**",
+        "linkText": "marketing"
+      },
+      {
+        "fromSlug": "domains/catalog",
+        "context": "frontmatter · **[domains/marketing]**",
+        "linkText": "domains/marketing"
+      },
+      {
+        "fromSlug": "elements/coupon-engine",
+        "context": "frontmatter · **[marketing]**",
+        "linkText": "marketing"
+      },
+      {
+        "fromSlug": "elements/email-sender",
+        "context": "frontmatter · **[marketing]**",
+        "linkText": "marketing"
+      },
+      {
+        "fromSlug": "project",
+        "context": "frontmatter · **[marketing]**",
+        "linkText": "marketing"
+      }
+    ],
+    "elements/email-sender": [
+      {
+        "fromSlug": "capabilities/email-campaign",
+        "context": "frontmatter · **[email-sender]**",
+        "linkText": "email-sender"
+      }
+    ],
+    "capabilities/coupon-issue": [
+      {
+        "fromSlug": "capabilities/email-campaign",
+        "context": "frontmatter · **[capabilities/coupon-issue]**",
+        "linkText": "capabilities/coupon-issue"
+      },
+      {
+        "fromSlug": "domains/marketing",
+        "context": "frontmatter · **[coupon-issue]**",
+        "linkText": "coupon-issue"
+      }
+    ],
+    "elements/inventory-api": [
+      {
+        "fromSlug": "capabilities/inventory-management",
+        "context": "frontmatter · **[inventory-api]**",
+        "linkText": "inventory-api"
+      }
+    ],
+    "domains/catalog": [
+      {
+        "fromSlug": "capabilities/inventory-management",
+        "context": "frontmatter · **[catalog]**",
+        "linkText": "catalog"
+      },
+      {
+        "fromSlug": "capabilities/product-register",
+        "context": "frontmatter · **[catalog]**",
+        "linkText": "catalog"
+      },
+      {
+        "fromSlug": "capabilities/review-write",
+        "context": "frontmatter · **[domains/catalog]**",
+        "linkText": "domains/catalog"
+      },
+      {
+        "fromSlug": "domains/marketing",
+        "context": "frontmatter · **[domains/catalog]**",
+        "linkText": "domains/catalog"
+      },
+      {
+        "fromSlug": "elements/inventory-api",
+        "context": "frontmatter · **[catalog]**",
+        "linkText": "catalog"
+      },
+      {
+        "fromSlug": "elements/product-image-storage",
+        "context": "frontmatter · **[catalog]**",
+        "linkText": "catalog"
+      },
+      {
+        "fromSlug": "project",
+        "context": "frontmatter · **[catalog]**",
+        "linkText": "catalog"
+      }
+    ],
+    "capabilities/payment-authorize": [
+      {
+        "fromSlug": "capabilities/order-cancel",
+        "context": "frontmatter · **[capabilities/payment-authorize]**",
+        "linkText": "capabilities/payment-authorize"
+      },
+      {
+        "fromSlug": "capabilities/order-create",
+        "context": "frontmatter · **[capabilities/payment-authorize]**",
+        "linkText": "capabilities/payment-authorize"
+      },
+      {
+        "fromSlug": "capabilities/refund-process",
+        "context": "frontmatter · **[capabilities/payment-authorize]**",
+        "linkText": "capabilities/payment-authorize"
+      },
+      {
+        "fromSlug": "domains/payment",
+        "context": "frontmatter · **[payment-authorize]**",
+        "linkText": "payment-authorize"
+      }
+    ],
+    "domains/fulfillment": [
+      {
+        "fromSlug": "capabilities/order-cancel",
+        "context": "frontmatter · **[domains/fulfillment]**",
+        "linkText": "domains/fulfillment"
+      },
+      {
+        "fromSlug": "capabilities/return-intake",
+        "context": "frontmatter · **[fulfillment]**",
+        "linkText": "fulfillment"
+      },
+      {
+        "fromSlug": "capabilities/shipment-tracking",
+        "context": "frontmatter · **[fulfillment]**",
+        "linkText": "fulfillment"
+      },
+      {
+        "fromSlug": "domains/order",
+        "context": "frontmatter · **[domains/fulfillment]**",
+        "linkText": "domains/fulfillment"
+      },
+      {
+        "fromSlug": "elements/carrier-integration-api",
+        "context": "frontmatter · **[fulfillment]**",
+        "linkText": "fulfillment"
+      },
+      {
+        "fromSlug": "elements/notification-queue",
+        "context": "frontmatter · **[fulfillment]**",
+        "linkText": "fulfillment"
+      },
+      {
+        "fromSlug": "project",
+        "context": "frontmatter · **[fulfillment]**",
+        "linkText": "fulfillment"
+      }
+    ],
+    "elements/order-table": [
+      {
+        "fromSlug": "capabilities/order-create",
+        "context": "frontmatter · **[order-table]**",
+        "linkText": "order-table"
+      }
+    ],
+    "capabilities/inventory-management": [
+      {
+        "fromSlug": "capabilities/order-create",
+        "context": "frontmatter · **[capabilities/inventory-management]**",
+        "linkText": "capabilities/inventory-management"
+      },
+      {
+        "fromSlug": "domains/catalog",
+        "context": "frontmatter · **[inventory-management]**",
+        "linkText": "inventory-management"
+      }
+    ],
+    "elements/payment-gateway": [
+      {
+        "fromSlug": "capabilities/payment-authorize",
+        "context": "frontmatter · **[payment-gateway]**",
+        "linkText": "payment-gateway"
+      }
+    ],
+    "elements/product-image-storage": [
+      {
+        "fromSlug": "capabilities/product-register",
+        "context": "frontmatter · **[product-image-storage]**",
+        "linkText": "product-image-storage"
+      }
+    ],
+    "capabilities/refund-process": [
+      {
+        "fromSlug": "capabilities/return-intake",
+        "context": "frontmatter · **[capabilities/refund-process]**",
+        "linkText": "capabilities/refund-process"
+      },
+      {
+        "fromSlug": "domains/payment",
+        "context": "frontmatter · **[refund-process]**",
+        "linkText": "refund-process"
+      }
+    ],
+    "elements/review-store": [
+      {
+        "fromSlug": "capabilities/review-write",
+        "context": "frontmatter · **[review-store]**",
+        "linkText": "review-store"
+      }
+    ],
+    "capabilities/order-create": [
+      {
+        "fromSlug": "capabilities/review-write",
+        "context": "frontmatter · **[capabilities/order-create]**",
+        "linkText": "capabilities/order-create"
+      },
+      {
+        "fromSlug": "domains/order",
+        "context": "frontmatter · **[order-create]**",
+        "linkText": "order-create"
+      }
+    ],
+    "domains/customer": [
+      {
+        "fromSlug": "capabilities/review-write",
+        "context": "frontmatter · **[customer]**",
+        "linkText": "customer"
+      },
+      {
+        "fromSlug": "capabilities/signup",
+        "context": "frontmatter · **[customer]**",
+        "linkText": "customer"
+      },
+      {
+        "fromSlug": "domains/marketing",
+        "context": "frontmatter · **[domains/customer]**",
+        "linkText": "domains/customer"
+      },
+      {
+        "fromSlug": "elements/customer-auth",
+        "context": "frontmatter · **[customer]**",
+        "linkText": "customer"
+      },
+      {
+        "fromSlug": "elements/review-store",
+        "context": "frontmatter · **[customer]**",
+        "linkText": "customer"
+      },
+      {
+        "fromSlug": "project",
+        "context": "frontmatter · **[customer]**",
+        "linkText": "customer"
+      }
+    ],
+    "elements/carrier-integration-api": [
+      {
+        "fromSlug": "capabilities/shipment-tracking",
+        "context": "frontmatter · **[carrier-integration-api]**",
+        "linkText": "carrier-integration-api"
+      }
+    ],
+    "elements/notification-queue": [
+      {
+        "fromSlug": "capabilities/shipment-tracking",
+        "context": "frontmatter · **[notification-queue]**",
+        "linkText": "notification-queue"
+      }
+    ],
+    "elements/customer-auth": [
+      {
+        "fromSlug": "capabilities/signup",
+        "context": "frontmatter · **[customer-auth]**",
+        "linkText": "customer-auth"
+      }
+    ],
+    "capabilities/product-register": [
+      {
+        "fromSlug": "domains/catalog",
+        "context": "frontmatter · **[product-register]**",
+        "linkText": "product-register"
+      }
+    ],
+    "capabilities/review-write": [
+      {
+        "fromSlug": "domains/customer",
+        "context": "frontmatter · **[review-write]**",
+        "linkText": "review-write"
+      }
+    ],
+    "capabilities/signup": [
+      {
+        "fromSlug": "domains/customer",
+        "context": "frontmatter · **[signup]**",
+        "linkText": "signup"
+      }
+    ],
+    "capabilities/return-intake": [
+      {
+        "fromSlug": "domains/fulfillment",
+        "context": "frontmatter · **[return-intake]**",
+        "linkText": "return-intake"
+      }
+    ],
+    "capabilities/shipment-tracking": [
+      {
+        "fromSlug": "domains/fulfillment",
+        "context": "frontmatter · **[shipment-tracking]**",
+        "linkText": "shipment-tracking"
+      }
+    ],
+    "capabilities/email-campaign": [
+      {
+        "fromSlug": "domains/marketing",
+        "context": "frontmatter · **[email-campaign]**",
+        "linkText": "email-campaign"
+      }
+    ],
+    "capabilities/cart": [
+      {
+        "fromSlug": "domains/order",
+        "context": "frontmatter · **[cart]**",
+        "linkText": "cart"
+      }
+    ],
+    "capabilities/order-cancel": [
+      {
+        "fromSlug": "domains/order",
+        "context": "frontmatter · **[order-cancel]**",
+        "linkText": "order-cancel"
+      }
+    ]
+  },
+  "tags": {},
+  "tree": {
+    "name": "storefront",
+    "path": "",
+    "type": "dir",
+    "children": [
+      {
+        "name": "capabilities",
+        "path": "capabilities",
+        "type": "dir",
+        "children": [
+          {
+            "name": "cart",
+            "path": "capabilities/cart",
+            "type": "doc",
+            "slug": "capabilities/cart",
+            "title": "장바구니"
+          },
+          {
+            "name": "coupon-issue",
+            "path": "capabilities/coupon-issue",
+            "type": "doc",
+            "slug": "capabilities/coupon-issue",
+            "title": "쿠폰 발급"
+          },
+          {
+            "name": "email-campaign",
+            "path": "capabilities/email-campaign",
+            "type": "doc",
+            "slug": "capabilities/email-campaign",
+            "title": "이메일 캠페인"
+          },
+          {
+            "name": "inventory-management",
+            "path": "capabilities/inventory-management",
+            "type": "doc",
+            "slug": "capabilities/inventory-management",
+            "title": "재고 관리"
+          },
+          {
+            "name": "order-cancel",
+            "path": "capabilities/order-cancel",
+            "type": "doc",
+            "slug": "capabilities/order-cancel",
+            "title": "주문 취소"
+          },
+          {
+            "name": "order-create",
+            "path": "capabilities/order-create",
+            "type": "doc",
+            "slug": "capabilities/order-create",
+            "title": "주문 생성"
+          },
+          {
+            "name": "payment-authorize",
+            "path": "capabilities/payment-authorize",
+            "type": "doc",
+            "slug": "capabilities/payment-authorize",
+            "title": "결제 승인"
+          },
+          {
+            "name": "product-register",
+            "path": "capabilities/product-register",
+            "type": "doc",
+            "slug": "capabilities/product-register",
+            "title": "상품 등록"
+          },
+          {
+            "name": "refund-process",
+            "path": "capabilities/refund-process",
+            "type": "doc",
+            "slug": "capabilities/refund-process",
+            "title": "환불 처리"
+          },
+          {
+            "name": "return-intake",
+            "path": "capabilities/return-intake",
+            "type": "doc",
+            "slug": "capabilities/return-intake",
+            "title": "반품 접수"
+          },
+          {
+            "name": "review-write",
+            "path": "capabilities/review-write",
+            "type": "doc",
+            "slug": "capabilities/review-write",
+            "title": "리뷰 작성"
+          },
+          {
+            "name": "shipment-tracking",
+            "path": "capabilities/shipment-tracking",
+            "type": "doc",
+            "slug": "capabilities/shipment-tracking",
+            "title": "배송 추적"
+          },
+          {
+            "name": "signup",
+            "path": "capabilities/signup",
+            "type": "doc",
+            "slug": "capabilities/signup",
+            "title": "회원가입"
+          }
+        ]
+      },
+      {
+        "name": "domains",
+        "path": "domains",
+        "type": "dir",
+        "children": [
+          {
+            "name": "catalog",
+            "path": "domains/catalog",
+            "type": "doc",
+            "slug": "domains/catalog",
+            "title": "상품"
+          },
+          {
+            "name": "customer",
+            "path": "domains/customer",
+            "type": "doc",
+            "slug": "domains/customer",
+            "title": "회원"
+          },
+          {
+            "name": "fulfillment",
+            "path": "domains/fulfillment",
+            "type": "doc",
+            "slug": "domains/fulfillment",
+            "title": "배송"
+          },
+          {
+            "name": "marketing",
+            "path": "domains/marketing",
+            "type": "doc",
+            "slug": "domains/marketing",
+            "title": "마케팅"
+          },
+          {
+            "name": "order",
+            "path": "domains/order",
+            "type": "doc",
+            "slug": "domains/order",
+            "title": "주문"
+          },
+          {
+            "name": "payment",
+            "path": "domains/payment",
+            "type": "doc",
+            "slug": "domains/payment",
+            "title": "결제"
+          }
+        ]
+      },
+      {
+        "name": "elements",
+        "path": "elements",
+        "type": "dir",
+        "children": [
+          {
+            "name": "carrier-integration-api",
+            "path": "elements/carrier-integration-api",
+            "type": "doc",
+            "slug": "elements/carrier-integration-api",
+            "title": "배송사 연동 API"
+          },
+          {
+            "name": "cart-session",
+            "path": "elements/cart-session",
+            "type": "doc",
+            "slug": "elements/cart-session",
+            "title": "장바구니 세션"
+          },
+          {
+            "name": "coupon-engine",
+            "path": "elements/coupon-engine",
+            "type": "doc",
+            "slug": "elements/coupon-engine",
+            "title": "쿠폰 엔진"
+          },
+          {
+            "name": "customer-auth",
+            "path": "elements/customer-auth",
+            "type": "doc",
+            "slug": "elements/customer-auth",
+            "title": "회원 인증"
+          },
+          {
+            "name": "email-sender",
+            "path": "elements/email-sender",
+            "type": "doc",
+            "slug": "elements/email-sender",
+            "title": "이메일 발송 서비스"
+          },
+          {
+            "name": "inventory-api",
+            "path": "elements/inventory-api",
+            "type": "doc",
+            "slug": "elements/inventory-api",
+            "title": "재고 API"
+          },
+          {
+            "name": "notification-queue",
+            "path": "elements/notification-queue",
+            "type": "doc",
+            "slug": "elements/notification-queue",
+            "title": "알림 큐"
+          },
+          {
+            "name": "order-table",
+            "path": "elements/order-table",
+            "type": "doc",
+            "slug": "elements/order-table",
+            "title": "주문 테이블"
+          },
+          {
+            "name": "payment-gateway",
+            "path": "elements/payment-gateway",
+            "type": "doc",
+            "slug": "elements/payment-gateway",
+            "title": "결제 게이트웨이 연동"
+          },
+          {
+            "name": "product-image-storage",
+            "path": "elements/product-image-storage",
+            "type": "doc",
+            "slug": "elements/product-image-storage",
+            "title": "상품 이미지 스토리지"
+          },
+          {
+            "name": "review-store",
+            "path": "elements/review-store",
+            "type": "doc",
+            "slug": "elements/review-store",
+            "title": "리뷰 저장소"
+          }
+        ]
+      },
+      {
+        "name": "project",
+        "path": "project",
+        "type": "doc",
+        "slug": "project",
+        "title": "온라인 쇼핑몰"
+      }
+    ]
+  }
+}

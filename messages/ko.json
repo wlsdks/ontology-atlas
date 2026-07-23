@@ -243,6 +243,9 @@
     "cliBridgeCopy": "명령 복사",
     "cliBridgeCopied": "복사됨",
     "cliBridgeCopyAriaLabel": "터미널에서 붙여넣을 부트스트랩 명령 복사",
+    "sampleSourceAria": "둘러볼 샘플 선택",
+    "sampleSourceDogfood": "이 도구 살펴보기",
+    "sampleSourceStorefront": "예시 비즈니스 보기",
     "nodeHint": {
       "action": "지도의 노드를 눌러보세요",
       "reason": "모든 것이 진짜 문서예요"

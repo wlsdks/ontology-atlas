@@ -56,6 +56,7 @@ describe('FirstRunStarterModule', () => {
     mocks.vault = makeVault();
     mocks.mode = 'static';
     window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
+    window.localStorage.removeItem('demo:sample-source:v1');
   });
 
   it('renders the real census numbers passed in (concepts/relations/domains)', () => {
@@ -203,6 +204,36 @@ describe('FirstRunStarterModule', () => {
 
     const hint = screen.getByTestId('first-run-starter-plain-mode-hint');
     expect(hint).toHaveTextContent('plainModeHint');
+  });
+
+  // P0 공감형 샘플 vault (2026-07) — dogfood(이 도구 자기 설명)가 비개발자에게
+  // 와닿지 않는다는 문제의 완화책. "이 도구 살펴보기"/"예시 비즈니스 보기"
+  // 세그먼트가 렌더되고, 클릭이 localStorage 선호도(`useSampleSource` 의
+  // 진실원)를 갱신하는지 고정한다.
+  it('renders the sample-source segment defaulting to "dogfood" and persists a switch to "storefront"', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+
+    const dogfoodTab = screen.getByTestId('first-run-starter-sample-source-dogfood');
+    const storefrontTab = screen.getByTestId('first-run-starter-sample-source-storefront');
+    expect(dogfoodTab).toHaveAttribute('aria-selected', 'true');
+    expect(storefrontTab).toHaveAttribute('aria-selected', 'false');
+
+    fireEvent.click(storefrontTab);
+
+    expect(storefrontTab).toHaveAttribute('aria-selected', 'true');
+    expect(dogfoodTab).toHaveAttribute('aria-selected', 'false');
+    expect(window.localStorage.getItem('demo:sample-source:v1')).toBe('storefront');
+  });
+
+  it('restores a previously persisted "storefront" sample-source choice on mount', () => {
+    window.localStorage.setItem('demo:sample-source:v1', 'storefront');
+
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+
+    expect(screen.getByTestId('first-run-starter-sample-source-storefront')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   it('copies the CLI bootstrap command to the clipboard once the disclosure is open', async () => {

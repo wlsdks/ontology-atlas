@@ -37,6 +37,30 @@ const CONTENT_OUT = path.join(
   'data',
   'content.json',
 );
+// P0 공감형 샘플 vault (2026-07) — 비개발자가 dogfood(이 도구 자체 설명)
+// 대신 즉시 알아볼 수 있는 예시 비즈니스("온라인 쇼핑몰")를 볼 수 있게
+// `samples/storefront/` 를 별도 매니페스트/콘텐츠 쌍으로 빌드한다. dogfood
+// 출력(manifest.json/content.json/public/docs-vault)은 절대 건드리지 않는다 —
+// `docs-vault:check` 가 그대로 통과해야 한다. public raw 복사와 dogfood
+// census 모듈은 storefront 에는 만들지 않는다(스코프 최소화 — 소비처가
+// 아직 JSON import 뿐).
+const SAMPLES_STOREFRONT_DIR = path.join(ROOT, 'samples', 'storefront');
+const STOREFRONT_MANIFEST_OUT = path.join(
+  ROOT,
+  'src',
+  'entities',
+  'docs-vault',
+  'data',
+  'sample-storefront.manifest.json',
+);
+const STOREFRONT_CONTENT_OUT = path.join(
+  ROOT,
+  'src',
+  'entities',
+  'docs-vault',
+  'data',
+  'sample-storefront.content.json',
+);
 // /download 소개 섹션의 evidence 미니어처(VaultInstrument)가 소비하는
 // dogfood vault census. manifest.json(400KB)을 그 번들에 싣지 않기 위해
 // 작은 상수 모듈로 분리 생성. root-first-open R+ 이전엔 `/` 의 LandingPage
@@ -140,8 +164,8 @@ async function walk(dir) {
 // parser 는 scripts/lib/parse-frontmatter.mjs 의 단일 진실원에서 import.
 // (R11 — 빌드 스크립트 / validator CLI / 런타임 파서 drift 방지)
 
-function slugFromPath(full) {
-  const rel = path.relative(DOCS_DIR, full).replace(/\\/g, '/');
+function slugFromPath(full, baseDir = DOCS_DIR) {
+  const rel = path.relative(baseDir, full).replace(/\\/g, '/');
   return rel.replace(/\.md$/, '');
 }
 
@@ -466,24 +490,20 @@ async function assertOutputsCurrent({ manifest, content, publicFiles, censusModu
   }
 }
 
-async function buildDocsVault({ check = false } = {}) {
-  if (!existsSync(DOCS_DIR)) {
-    console.error(`[docs-vault] docs/ 디렉터리가 없음: ${DOCS_DIR}`);
-    process.exit(1);
-  }
-
-  if (!check) {
-    // public/docs-vault 를 먼저 비움 — 삭제된 문서가 stale 로 남지 않게
-    if (existsSync(PUBLIC_OUT)) {
-      await rm(PUBLIC_OUT, { recursive: true, force: true });
-    }
-    await ensureDir(PUBLIC_OUT);
-    await ensureDir(path.dirname(MANIFEST_OUT));
-  }
-
-  const files = await walk(DOCS_DIR);
-  const gitDates = gitLastCommitDates(ROOT, DOCS_DIR);
-  const previousManifest = await readJsonIfExists(MANIFEST_OUT);
+/**
+ * 한 vault 디렉터리(docs/ 또는 samples/storefront/)를 스캔해서
+ * manifest/content/publicFiles 를 조립하는 공용 코어. dogfood(docs/) 빌드가
+ * 원래 갖고 있던 로직 그대로 — 새 샘플 vault(storefront)를 추가하며
+ * dogfood 출력에 바이트 단위 회귀가 없도록 분리만 했다(동작 변경 없음).
+ * `publicOutDir` 가 주어지면 `!check` 일 때 raw md 를 그 아래로 복사한다
+ * (storefront 는 아직 공개 raw 사본이 필요한 소비처가 없어 `null`).
+ */
+async function scanVaultDir(
+  dir,
+  { rootDir = ROOT, previousManifest = null, publicOutDir = null, check = false } = {},
+) {
+  const files = await walk(dir);
+  const gitDates = gitLastCommitDates(rootDir, dir);
   const previousDocsBySlug = new Map(
     (previousManifest?.docs ?? []).map((doc) => [doc.slug, doc]),
   );
@@ -496,7 +516,7 @@ async function buildDocsVault({ check = false } = {}) {
 
   for (const full of files) {
     const raw = await readFile(full, 'utf8');
-    const slug = slugFromPath(full);
+    const slug = slugFromPath(full, dir);
     const { frontmatter, body } = parseFrontmatter(raw);
     const headings = extractHeadings(body);
     const title =
@@ -529,7 +549,7 @@ async function buildDocsVault({ check = false } = {}) {
       tagsMap.get(tag).add(slug);
     }
     const st = await stat(full);
-    const relPath = path.relative(ROOT, full).replace(/\\/g, '/');
+    const relPath = path.relative(rootDir, full).replace(/\\/g, '/');
     const committedAt = gitDates.dirty.has(relPath) ? null : gitDates.dates.get(relPath);
     const nextDoc = {
       slug,
@@ -561,9 +581,9 @@ async function buildDocsVault({ check = false } = {}) {
     publicFiles.push({ relativePath: `${slug}.md`, raw });
     content[slug] = raw;
 
-    if (!check) {
+    if (!check && publicOutDir) {
       // raw md 를 public/docs-vault 아래 slug 로 복사. 경로의 서브디렉토리까지 생성.
-      const outPath = path.join(PUBLIC_OUT, `${slug}.md`);
+      const outPath = path.join(publicOutDir, `${slug}.md`);
       await ensureDir(path.dirname(outPath));
       await writeFile(outPath, raw, 'utf8');
     }
@@ -671,6 +691,33 @@ async function buildDocsVault({ check = false } = {}) {
     manifest.generatedAt = previousManifest.generatedAt;
   }
 
+  return { manifest, content, publicFiles };
+}
+
+async function buildDocsVault({ check = false } = {}) {
+  if (!existsSync(DOCS_DIR)) {
+    console.error(`[docs-vault] docs/ 디렉터리가 없음: ${DOCS_DIR}`);
+    process.exit(1);
+  }
+
+  if (!check) {
+    // public/docs-vault 를 먼저 비움 — 삭제된 문서가 stale 로 남지 않게
+    if (existsSync(PUBLIC_OUT)) {
+      await rm(PUBLIC_OUT, { recursive: true, force: true });
+    }
+    await ensureDir(PUBLIC_OUT);
+    await ensureDir(path.dirname(MANIFEST_OUT));
+  }
+
+  const previousManifest = await readJsonIfExists(MANIFEST_OUT);
+  const { manifest, content, publicFiles } = await scanVaultDir(DOCS_DIR, {
+    rootDir: ROOT,
+    previousManifest,
+    publicOutDir: PUBLIC_OUT,
+    check,
+  });
+  const { docs, backlinksDetail, tags } = manifest;
+
   const censusDocs = dogfoodDocsForCensus(docs);
   const censusModule = renderDogfoodCensusModule(
     dogfoodVaultGraphSummary(censusDocs),
@@ -694,6 +741,65 @@ async function buildDocsVault({ check = false } = {}) {
   );
 }
 
+/**
+ * 샘플 storefront vault (`samples/storefront/`) 빌드 — dogfood 와 별도
+ * manifest/content 쌍만 만든다. public raw 사본·census 모듈·PUBLIC_OUT 초기화
+ * 없음(아직 필요한 소비처가 없어 스코프를 최소화했다 — 필요해지면 이 함수
+ * 안에서만 확장).
+ */
+async function buildStorefrontSample({ check = false } = {}) {
+  if (!existsSync(SAMPLES_STOREFRONT_DIR)) {
+    console.error(`[docs-vault] samples/storefront/ 디렉터리가 없음: ${SAMPLES_STOREFRONT_DIR}`);
+    process.exit(1);
+  }
+
+  if (!check) {
+    await ensureDir(path.dirname(STOREFRONT_MANIFEST_OUT));
+  }
+
+  const previousManifest = await readJsonIfExists(STOREFRONT_MANIFEST_OUT);
+  const { manifest, content } = await scanVaultDir(SAMPLES_STOREFRONT_DIR, {
+    rootDir: ROOT,
+    previousManifest,
+    publicOutDir: null,
+    check,
+  });
+  manifest.tree.name = 'storefront';
+
+  if (check) {
+    const issues = [];
+    const currentManifest = await readJsonIfExists(STOREFRONT_MANIFEST_OUT);
+    if (!currentManifest) {
+      issues.push(`missing ${path.relative(ROOT, STOREFRONT_MANIFEST_OUT)}`);
+    } else if (
+      stableStringify(comparableManifest(currentManifest)) !==
+      stableStringify(comparableManifest(manifest))
+    ) {
+      issues.push(`stale ${path.relative(ROOT, STOREFRONT_MANIFEST_OUT)}`);
+    }
+    const currentContent = await readJsonIfExists(STOREFRONT_CONTENT_OUT);
+    if (!currentContent) {
+      issues.push(`missing ${path.relative(ROOT, STOREFRONT_CONTENT_OUT)}`);
+    } else if (stableStringify(currentContent) !== stableStringify(content)) {
+      issues.push(`stale ${path.relative(ROOT, STOREFRONT_CONTENT_OUT)}`);
+    }
+    if (issues.length > 0) {
+      console.error('[docs-vault] storefront sample outputs are stale:');
+      for (const issue of issues) console.error(`  - ${issue}`);
+      console.error('[docs-vault] run `pnpm docs-vault:build` to refresh them.');
+      process.exit(1);
+    }
+    console.log(`[docs-vault] storefront sample current · ${manifest.docs.length} docs`);
+    return;
+  }
+
+  await writeFile(STOREFRONT_MANIFEST_OUT, JSON.stringify(manifest, null, 2), 'utf8');
+  await writeFile(STOREFRONT_CONTENT_OUT, JSON.stringify(content, null, 2), 'utf8');
+  console.log(
+    `[docs-vault] storefront sample ${manifest.docs.length} docs → ${path.relative(ROOT, STOREFRONT_MANIFEST_OUT)}`,
+  );
+}
+
 async function main() {
   const args = parseArgs();
   if (args.help) {
@@ -706,6 +812,7 @@ async function main() {
     process.exit(2);
   }
   await buildDocsVault({ check: args.check });
+  await buildStorefrontSample({ check: args.check });
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
