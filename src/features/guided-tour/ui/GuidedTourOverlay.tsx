@@ -98,7 +98,14 @@ export function GuidedTourOverlay({ tour, canvasAnchorRef }: GuidedTourOverlayPr
   const cardWidth = Math.min(360, viewport.width - 32);
   // 실제 카드 높이는 콘텐츠에 따라 auto — 배치 계산은 근사 높이로 충분(카드
   // 자체는 `top`/`left` 고정 후 내용에 맞춰 자란다, 클램프가 여유 마진을 둠).
-  const cardHeight = step.id === "recent" ? 240 : step.interactive ? 220 : 190;
+  // 상수는 1440x900 실측(2026-07-24 투어 다듬기 패스, Playwright
+  // `guided-tour.spec.ts` 로 8단계 전부의 렌더된 카드 높이를 측정) 기준 —
+  // 실제 높이보다 살짝 크게 잡아야 안전한 방향이다(작게 잡으면 "below"
+  // 배치가 카드 실제 하단을 뷰포트 가장자리 밖으로 밀 수 있다). 이전 상수는
+  // try-click 이 실측(183.5px)보다 36.5px 나 과대추정(220px, 반대 방향이라
+  // 안전하긴 했지만 여백이 불필요하게 컸다)이었고 recent 는 반대로
+  // 11.5px 과소추정(240px vs 실측 251.5px)이었다.
+  const cardHeight = step.id === "recent" ? 255 : step.interactive ? 195 : 205;
   const placement = computeCardPlacement({
     targetRect: anchorRect,
     cardWidth,

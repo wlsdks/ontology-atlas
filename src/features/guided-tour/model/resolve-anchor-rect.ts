@@ -15,11 +15,21 @@ export interface AnchorBox {
  * `[data-testid="<testId>"]` 를 찾아 뷰포트 기준 박스를 반환한다. 요소가
  * 없거나, 크기가 0(예: `display:none`)이거나, 뷰포트 밖(완전히 가려짐)이면
  * `null` — 호출부(`computeVisibleSteps`)가 그 단계를 자동 스킵하는 신호.
+ *
+ * SSR 가드 — `useGuidedTour` 의 `visibleSteps` useMemo 는 (투어가 닫혀
+ * 있어도) 매 렌더 이 함수를 호출하고, 그 첫 렌더는 서버에서도 돈다(Next
+ * 클라이언트 컴포넌트도 초기 HTML 은 서버가 만든다). `doc` 인자 없이 호출한
+ * 서버 쪽에서는 전역 `document` 참조 자체가 `ReferenceError`(2026-07-24
+ * 발견 — 모든 페이지 최초 요청마다 서버 콘솔에 스택 트레이스가 찍혔다,
+ * 화면엔 안 보이는 이유는 하이드레이션 후 클라이언트 재실행이 정상값으로
+ * 덮어써서다). `typeof document` 로 존재 여부만 먼저 확인해 서버에서는
+ * 조용히 `null`(= 앵커 미해석 취급)로 떨어뜨린다.
  */
 export function resolveAnchorRect(
   testId: string,
-  doc: Document = document,
+  doc: Document | undefined = typeof document === "undefined" ? undefined : document,
 ): AnchorBox | null {
+  if (!doc) return null;
   const el = doc.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
   if (!el) return null;
   const rect = el.getBoundingClientRect();
