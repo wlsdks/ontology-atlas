@@ -39,18 +39,21 @@ describe('export-graph', () => {
       expect(doc['@context']).toBeDefined();
       expect(doc['@context']['@vocab']).toBe('https://schema.org/');
       expect(doc['@graph']).toHaveLength(2);
-      const project = doc['@graph'][0];
+      // nodes are sorted by slug — 'auth-platform' < 'login-flow'.
+      const project = doc['@graph'].find((n: { kind: string }) => n.kind === 'project');
       expect(project['@type']).toBe('Project');
       expect(project.kind).toBe('project');
+      expect(project.slug).toBe('auth-platform');
       expect(project.title).toBe('Auth platform');
-      // related_to is the v1 edge type (single 'related_to' literal in schema).
-      expect(project.related_to).toEqual({ '@id': expect.stringMatching(/capability:login/) });
+      // web 'related_to' edges map to the canonical 'relates' predicate.
+      expect(project.relates).toEqual({ '@id': expect.stringMatching(/capability:login/) });
     });
 
-    it('emits stable URN with shortId suffix', () => {
+    it('emits slug-based URN (no ephemeral shortId suffix)', () => {
       const out = buildJsonLd({ ephemeralNodes: nodes, ephemeralEdges: [] });
-      // URN 은 항상 ephemeral id 의 shortId suffix 로 collision 방지.
-      expect(out).toMatch(/urn:ontology-atlas:project:auth-platform-/);
+      // URN 은 vault slug 기반 — ephemeral id 는 새어 나가지 않는다.
+      expect(out).toContain('urn:ontology-atlas:project:auth-platform');
+      expect(out).not.toMatch(/urn:ontology-atlas:project:auth-platform-[a-z0-9]/);
     });
 
     it('disambiguates duplicate-titled nodes (collision fix)', () => {
@@ -69,17 +72,19 @@ describe('export-graph', () => {
   });
 
   describe('buildGraphML', () => {
-    it('emits well-formed XML with kind/title/edgeType attributes', () => {
+    it('emits well-formed XML with kind/title/via attributes', () => {
       const out = buildGraphML({ ephemeralNodes: nodes, ephemeralEdges: edges });
       expect(out).toContain('<?xml version="1.0"');
       expect(out).toContain('<graphml');
       expect(out).toContain('<key id="kind"');
       expect(out).toContain('<key id="title"');
-      expect(out).toContain('<key id="edgeType"');
+      expect(out).toContain('<key id="via"');
       expect(out).toContain('<data key="kind">project</data>');
       expect(out).toContain('<data key="title">Auth platform</data>');
-      expect(out).toContain('<data key="edgeType">related_to</data>');
-      expect(out).toMatch(/<edge id="e0" source="project_auth-platform_[^"]+" target="capability_login-flow_[^"]+">/);
+      expect(out).toContain('<data key="via">relates</data>');
+      expect(out).toContain(
+        '<edge id="e0" source="urn:ontology-atlas:project:auth-platform" target="urn:ontology-atlas:capability:login-flow">',
+      );
     });
 
     it('escapes XML special chars in title', () => {
