@@ -2112,7 +2112,9 @@ describe('package contract helpers', () => {
     const readme = readFileSync('README.md', 'utf-8');
     const agentsGuide = readFileSync('AGENTS.md', 'utf-8');
     const dogfoodRow = readme.split('| **Dogfooding** |')[1]?.split('\n')[0] ?? '';
-    const agentWorkflow = readme.split('## Agent Workflow')[1]?.split('## Web Routes')[0] ?? '';
+    const agentWorkflow = readme
+      .split('### Start from a focused handoff')[1]
+      ?.split('### Query graph-database behavior')[0] ?? '';
     // dogfood 유지보수 명령 상세는 README 마케팅 재작성(2026-07)에서
     // docs/DEVELOPMENT-CHECKS.md 로 이관 — 발견 가능성 계약은 그 문서로 이어진다.
     const helpfulCommands = readFileSync('docs/DEVELOPMENT-CHECKS.md', 'utf-8');
