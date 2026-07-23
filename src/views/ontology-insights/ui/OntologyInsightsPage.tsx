@@ -49,10 +49,12 @@ import { findDependencyCycles, type DependencyCycle } from "../lib/dependency-cy
 import { computeCensusHealth } from "../lib/census-health";
 import { buildDependsOnRows } from "../lib/depends-on-rows";
 import { buildHubEgoThumbnail } from "../lib/hub-ego-thumbnail";
+import { buildDomainCouplingSummary } from "../lib/domain-coupling-rows";
 import { FRESHNESS_WINDOW_WEEKS, computeFreshnessSummary } from "../lib/freshness";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { DoNextTab, type DoNextTouchUp } from "./tabs/DoNextTab";
 import { RelationsTab, type RelationHubRow } from "./tabs/RelationsTab";
+import { DomainCouplingCard } from "./tabs/DomainCouplingCard";
 import { FreshnessTab } from "./tabs/FreshnessTab";
 import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
 
@@ -177,6 +179,11 @@ export function OntologyInsightsPage() {
     [nodes, edges],
   );
 
+  // 랭크 #12 (14-lens audit) — computeDomainCouplingMatrix 는 이미 존재하고
+  // 단위 테스트도 있었지만 어떤 UI 소비자도 없었다(CLI/MCP 왕복으로만 확인
+  // 가능). 구조 탭에 "도메인 결합" 카드로 처음 표면화.
+  const domainCoupling = useMemo(() => buildDomainCouplingSummary(nodes, edges), [nodes, edges]);
+
   const hubRanking = useMemo(() => rankAllByDegree(nodes, edges), [nodes, edges]);
   const hubs = useMemo<RelationHubRow[]>(
     () =>
@@ -293,6 +300,18 @@ export function OntologyInsightsPage() {
     connectionsUnit: t("connectionsUnit"),
     hubTruncated: (shown: number, total: number) => t("hubTruncated", { shown, total }),
     hubThumbnailCaption: t("hubThumbnailCaption"),
+  };
+  const domainCouplingLabels = {
+    title: t("domainCouplingTitle"),
+    emptyTitle: t("domainCouplingEmptyTitle"),
+    emptyDescription: t("domainCouplingEmptyDescription"),
+    pairsUnit: t("domainCouplingPairsUnit"),
+    boundaryTitle: t("domainCouplingBoundaryTitle"),
+    boundarySelfLabel: t("domainCouplingSelfLabel"),
+    boundaryCrossLabel: t("domainCouplingCrossLabel"),
+    boundaryCaption: t("domainCouplingBoundaryCaption"),
+    examplesCaption: t("domainCouplingExamplesCaption"),
+    pairTruncated: (shown: number, total: number) => t("domainCouplingPairTruncated", { shown, total }),
   };
   const doNextLabels = {
     agentReadinessTitle: t("agentReadinessTitle"),
@@ -508,6 +527,20 @@ export function OntologyInsightsPage() {
                   ariaLabel: (title) => t("hubRowAriaLabel", { title }),
                 }}
                 labels={relationsLabels}
+              />
+              <DomainCouplingCard
+                domainCount={domainCoupling.domainCount}
+                crossDomainEdgeCount={domainCoupling.crossDomainEdgeCount}
+                pairs={domainCoupling.pairs}
+                totalPairCount={domainCoupling.totalPairCount}
+                boundaries={domainCoupling.boundaries}
+                isColdStart={domainCoupling.isColdStart}
+                edgeTypeLabel={edgeTypeLabel}
+                nodeLink={{
+                  href: mapNodeHref,
+                  ariaLabel: (title) => t("hubRowAriaLabel", { title }),
+                }}
+                labels={domainCouplingLabels}
               />
               </div>
             ) : null}
