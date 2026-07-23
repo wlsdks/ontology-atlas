@@ -25,6 +25,14 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
+  // dev 전용 Next 인디케이터(N 원형)가 기본 top-right 에서 실제 크롬(설정
+  // 기어·SETTINGS·Workspace 칩)을 가리고 클릭까지 가로챘다(겹침 소탕
+  // 2026-07-23, 768 실측 — 소유자의 "N 아바타 겹침" 실보고의 정체).
+  // 모든 페이지의 우상단은 유틸리티 크롬 소유라 좌하단으로 옮긴다.
+  // 프로덕션 빌드에는 렌더되지 않는 dev 전용 표면.
+  devIndicators: {
+    position: 'bottom-left',
+  },
 };
 
 export default withNextIntl(nextConfig);

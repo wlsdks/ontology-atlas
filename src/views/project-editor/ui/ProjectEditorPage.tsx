@@ -234,7 +234,10 @@ function EditorContent({
   return (
     <div className="flex min-h-screen w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
-      <main id="main" className="min-w-0 flex-1 bg-[color:var(--color-canvas)] px-4 py-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-12 md:py-10">
+      {/* 하단 예약고는 base pb + lg:pb — `max-lg:pb-[...]` 는 `md:py-10` 보다
+          스타일시트 앞에 emit 되어 768–1023 에서 조용히 패배한다 (빌더 main 과
+          동일 처방, 겹침 소탕 2026-07-23). */}
+      <main id="main" className="min-w-0 flex-1 bg-[color:var(--color-canvas)] px-4 pt-8 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-12 md:pt-10 lg:pb-10">
       {/* 960 — RATIO-SYSTEM.md 유틸리티 컬럼. ProjectForm 의 640 폼 컬럼 +
           260 미리보기 컬럼 + gap 이 여유 있게 들어간다. */}
       <div className="mx-auto max-w-[960px]">

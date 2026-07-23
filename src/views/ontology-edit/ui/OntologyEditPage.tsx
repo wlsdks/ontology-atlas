@@ -1389,7 +1389,13 @@ export function OntologyEditPage() {
           className={
             fullscreen
               ? "flex h-full w-full flex-1 flex-col px-2 py-2"
-              : "mx-auto flex h-full min-h-0 w-full max-w-[1800px] flex-1 flex-col px-3 py-3 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+16px)] md:px-5 md:py-4"
+              : // 하단 예약고는 base pb + lg:pb 오버라이드로 구성한다 —
+                // `max-lg:pb-[...]`(max-width 변형)는 `md:py-4`(min-width 변형)
+                // 보다 스타일시트 앞에 emit 되어 768–1023 에서 조용히 패배,
+                // fallback 카드 하단 41px 이 탭바 뒤로 파고들었다(Image #12
+                // 실측: 카드 bottom 1008 vs 탭바 top 967). 변형 순서에 기대지
+                // 않는 결정론적 구성으로 교체.
+                "mx-auto flex h-full min-h-0 w-full max-w-[1800px] flex-1 flex-col px-3 pt-3 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+16px)] md:px-5 md:pt-4 lg:pb-4"
           }
         >
         {/* 헤더 1행(A3, builder-v2 시안 §topbar) — 좌: 브레드크럼+census(engraved)
@@ -1430,7 +1436,12 @@ export function OntologyEditPage() {
             </span>
             <span
               data-token="engraved-numeral"
-              className="hidden font-mono text-label tracking-[0.06em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] sm:inline"
+              // Image #11 (소유자 실보고 2026-07-23) — 이 census 문장(~400px)이
+              // <lg 에서 헤더를 2행으로 무너뜨리고 dirty 상태가 붕 떴다. <lg 는
+              // 캔버스가 아닌 fallback 카드 표면(아래 lg:hidden 섹션)이라 캔버스
+              // census 가 설 자리가 없다 — lg+ 에서만 편다. 수치는 INDEX·인사이트
+              // ·프로젝트 카드가 같은 출처로 상시 노출.
+              className="hidden font-mono text-label tracking-[0.06em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] lg:inline"
             >
               {shouldShowFocusedCensus({
                 shownCount: shownNodeCount,
@@ -1459,7 +1470,10 @@ export function OntologyEditPage() {
           <p
             role="status"
             aria-live="polite"
-            className="mx-auto hidden min-w-0 truncate font-mono text-label text-[color:var(--color-text-tertiary)] md:block"
+            // Image #11 — <lg 는 편집 캔버스가 없는 fallback 표면이라 dirty
+            // 상태가 설명할 상태 변화가 없다. 2행 랩의 두 번째 원인 제거
+            // (md:block → lg:block).
+            className="mx-auto hidden min-w-0 truncate font-mono text-label text-[color:var(--color-text-tertiary)] lg:block"
           >
             <span
               aria-hidden="true"
@@ -2277,7 +2291,10 @@ export function OntologyEditPage() {
         {/* 태블릿/모바일 fallback — lg 미만(반응형 감사 rank5)에서 3-pane 이
             겹치므로 트리편집 + 토폴로지 진입점 노출. 캔버스 게이트(lg:flex)와
             정확히 상보(lg:hidden)여서 768–1023 에도 빈 화면이 안 생긴다. */}
-        <section className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-6 py-10 text-center lg:hidden">
+        {/* Image #12 (소유자 실보고 2026-07-23) — 수직 중앙정렬이 태블릿
+            세로(1024px+)에서 위아래 거대한 빈 띠를 만들었다. 상단 정렬 +
+            고정 상단 오프셋(pt-16)으로 위 스트립들과 이어지는 수직 리듬. */}
+        <section className="flex flex-1 flex-col items-center justify-start gap-4 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-6 pb-10 pt-16 text-center lg:hidden">
           <div className="flex flex-col gap-2">
             <p className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--color-indigo-accent)]">
               {t("mobileEyebrow")}

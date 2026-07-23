@@ -82,6 +82,16 @@ export interface TopologyV2SettingsGearProps {
    */
   suppressed?: boolean;
   /**
+   * Trigger surface family (default `"floating"`, the original 36px
+   * floating-control tile). `"chrome-tile"` renders the trigger with the
+   * top-chrome ChromeChip/ChromeTile contract (`--chrome-tile-size` 44px ·
+   * `--chrome-radius` · `--chrome-surface/border/shadow`) so it can sit
+   * inside the top-right utility lane without breaking the row's uniform
+   * control height (겹침 소탕 2026-07-23 — <lg 에서 내비 레일이 사라져 설정
+   * 접근이 끊기던 결함의 진입점).
+   */
+  triggerVariant?: "floating" | "chrome-tile";
+  /**
    * Which side of the trigger the popover opens toward (default `"bottom"`,
    * the original placement — plenty of canvas below the right utility
    * rail's top-anchored gear). feat/chrome-system's nav-rail placement sits
@@ -99,6 +109,7 @@ export function TopologyV2SettingsGear({
   labels,
   className,
   suppressed = false,
+  triggerVariant = "floating",
   popoverAlign = "right",
   popoverSide = "bottom",
 }: TopologyV2SettingsGearProps) {
@@ -167,7 +178,15 @@ export function TopologyV2SettingsGear({
         aria-label={labels.trigger}
         title={labels.trigger}
         data-testid="topology-v2-settings-gear-trigger"
-        className="flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--topology-floating-control-border)] bg-[color:var(--topology-floating-control-surface)] text-[color:var(--topology-floating-control-icon)] shadow-[var(--topology-floating-control-shadow)] transition-colors hover:bg-[color:var(--topology-floating-control-hover-surface)] hover:text-[color:var(--topology-floating-control-icon-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+        data-trigger-variant={triggerVariant}
+        className={cn(
+          "flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+          triggerVariant === "chrome-tile"
+            ? // 상단 utility lane 의 ChromeChip/ChromeTile 표면 계약 —
+              // 같은 행의 44px 타일들과 높이·radius·표면이 일치해야 한다.
+              "size-[var(--chrome-tile-size)] rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            : "h-9 w-9 rounded-md border border-[color:var(--topology-floating-control-border)] bg-[color:var(--topology-floating-control-surface)] text-[color:var(--topology-floating-control-icon)] shadow-[var(--topology-floating-control-shadow)] hover:bg-[color:var(--topology-floating-control-hover-surface)] hover:text-[color:var(--topology-floating-control-icon-hover)]",
+        )}
       >
         <Settings className="h-4 w-4" aria-hidden />
       </button>

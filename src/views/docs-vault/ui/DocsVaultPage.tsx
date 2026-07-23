@@ -1375,7 +1375,11 @@ function DocsVaultContent() {
           여기서 완전히 삭제(읽기 전용 샘플 배너 1곳 + /download 만 소유,
           design-prescription.md ②). "문서함" h1 은 sr-only 로만 유지
           (내비 레일 + 브레드크럼과의 3중 라벨 해소). */}
-      <header className="relative isolate flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 bg-[color:var(--color-panel)] px-3 py-2 md:px-4 lg:h-11 lg:min-h-0 lg:flex-nowrap lg:gap-2 lg:py-0">
+      {/* 태블릿 최상단 세로 압축 (소유자 실보고 2026-07-23) — 단일 행 전환을
+          lg → md 로 내린다. 768 실측: zone-l(~230px) + zone-r(~343px) = 573px
+          로 한 행(728px)에 여유 있게 들어가는데도 2행 wrap(총 ~90px)이었다.
+          <md 는 기존 2행 wrap 유지(zero-overflow 계약). */}
+      <header className="relative isolate flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 bg-[color:var(--color-panel)] px-3 py-2 md:h-11 md:min-h-0 md:flex-nowrap md:gap-2 md:px-4 md:py-0">
         <h1 className="sr-only">{t('header.title')}</h1>
         {/* 헤더 baseline — 탭 스트립의 "한 끗"(design-prescription.md §10.2
             ⑥): 활성 탭 아래에서만 이 1px 라인이 2px 인디고 언더라인으로
@@ -1399,7 +1403,10 @@ function DocsVaultContent() {
         <div
           data-docs-header-zone="identity"
           className={cn(
-            "flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:gap-3 lg:flex-nowrap",
+            // md 단일 행 전환(태블릿 최상단 세로 압축) — w-full 강제는 <md 2행
+            // wrap 시절의 잔재라 md 부터 내용 폭으로. 상주 목록 pane 정렬
+            // 계약(lg:w-[calc...])은 pane 이 lg+ 전용이므로 그대로 lg 에서만.
+            "flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:w-auto md:flex-nowrap md:gap-3",
             docListCollapsed
               ? "lg:w-auto"
               : "lg:w-[calc(var(--docs-list-width)-1.5rem)]",
@@ -1475,7 +1482,10 @@ function DocsVaultContent() {
             내용물을 캡 왼쪽 밖으로 흘려 탭 스트립을 덮었다(1440 실측 28px).
             캡을 제거해 자연 폭을 갖게 하면 zone-c(flex-1 min-w-0 스크롤
             스트립)가 그만큼 줄어들 뿐 겹침이 구조적으로 불가능해진다. */}
-        <div className="flex w-full flex-none flex-wrap items-center justify-end gap-2 lg:w-auto lg:flex-nowrap">
+        {/* md 단일 행 전환 — w-full 을 md 부터 풀고 ml-auto 로 우측 정렬
+            (zone-c 탭 스트립은 lg+ 전용 flex-1 이라 md 구간엔 자연 공백이
+            없다). lg 에선 zone-c 가 여백을 소유하므로 ml-auto 는 no-op. */}
+        <div className="flex w-full flex-none flex-wrap items-center justify-end gap-2 md:ml-auto md:w-auto md:flex-nowrap">
           {/* Source 토글 — 이전엔 advanced dropdown 안 깊숙이 묻혀 있던 가장
               중요한 결정 (샘플 vs 내 vault) 를 헤더에 직접 노출. */}
           <div
@@ -1780,7 +1790,11 @@ function DocsVaultContent() {
                   ) : null}
                   <div
                     ref={articleScrollRef}
-                    className="min-h-0 flex-1 overflow-auto"
+                    // <lg 스크롤 끝 예약고 — 이 컨테이너 하단이 고정 탭바 뒤로
+                    // 17px 파고들어(768/834/600 실측 공통) 마지막 줄이 스크롤
+                    // 끝에서 가려졌다. 탭바 예약고 + 12px 를 스크롤 콘텐츠
+                    // 안쪽 패딩으로 확보 (겹침 소탕 2026-07-23).
+                    className="min-h-0 flex-1 overflow-auto max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]"
                   >
                     {editing && canEditCurrent && editResolver ? (
                       <DocsVaultEditor

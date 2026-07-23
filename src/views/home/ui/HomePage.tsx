@@ -2307,6 +2307,10 @@ export function HomePage() {
                   <SearchHint
                     density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
                     phoneFocusSuppressed={selectedNodeFocusActive}
+                    // <md 확장 INDEX 는 풀-블리드 시트 — 시트가 주 표면인 동안
+                    // 상단 크롬 열은 강등된다 (겹침 소탕 2026-07-23, rank7 시트
+                    // 문법의 완성). utility lane 의 hidden md:flex 와 같은 계약.
+                    phoneSheetSuppressed={renderedIndexState === "expanded"}
                     onOpenSearch={() => {
                       setOntologySearchOpen(true);
                     }}
@@ -2383,7 +2387,20 @@ export function HomePage() {
                   />
                   {selectedNodeOwnsRightRail ? null : (
                     <div
-                      className="topology-ui-scale absolute right-4 top-4 z-20 flex items-center gap-[var(--topology-utility-lane-gap)] md:right-6 md:top-6 xl:right-8 xl:top-8"
+                      // 겹침 소탕 2026-07-23 — ① <md 확장 INDEX(풀-블리드 시트)
+                      // 동안은 시트가 주 표면이므로 레인 전체가 물러난다(시트
+                      // 상단 인셋 24px 위로 칩 상단 8px 이 삐져나와 보이던 결함).
+                      // ② 칩별 라벨은 아래 max-xl/max-2xl [data-chip-label]
+                      // 사다리로 축약 — 라벨 총폭 499px 가 768–1365 구간에서
+                      // 중앙 검색 레인·확장 INDEX 와 겹치던 원인.
+                      className={`topology-ui-scale absolute right-4 top-4 z-20 items-center gap-[var(--topology-utility-lane-gap)] md:right-6 md:top-6 xl:right-8 xl:top-8 ${
+                        renderedIndexState === "expanded" ? "hidden md:flex" : "flex"
+                      }`}
+                      data-phone-sheet-utility-contract={
+                        renderedIndexState === "expanded"
+                          ? "hidden-below-md-while-index-sheet-owns-surface"
+                          : undefined
+                      }
                       data-testid="topology-utility-action-lane"
                       data-utility-lane-density={
                         topologyUtilityChromeCompact ? "compact-focus" : "default"
@@ -2415,6 +2432,14 @@ export function HomePage() {
                           compact={topologyUtilityChromeCompact}
                           icon={<FolderOpen className="text-[color:var(--color-indigo-accent)]" />}
                           kbd="⌘O"
+                          // 겹침 소탕 2026-07-23 — 레인 축약 사다리: <2xl 은 kbd
+                          // 캡 접기(검색 칩의 기존 max-2xl ⌘K 규칙과 대칭),
+                          // <xl 은 라벨 접기(아이콘-only). 이 칩의 라벨+kbd 총폭
+                          // 225px 가 768–1365 에서 중앙 검색 레인·확장 INDEX 와
+                          // 겹치던 주범(1280 실측 35px 침범). aria-label·툴팁이
+                          // 뜻을 보존하고 첫 실행 카드 CTA 가 같은 액션을 상시
+                          // 라벨로 노출한다.
+                          className="max-2xl:[&_[data-chip-kbd]]:hidden max-xl:[&_[data-chip-label]]:hidden"
                         >
                           {t('controls.switchToMyDataLabel')}
                         </ChromeChip>
@@ -2450,6 +2475,9 @@ export function HomePage() {
                         compact={topologyUtilityChromeCompact}
                         icon={<Waypoints />}
                         active={analysisMode === "graph"}
+                        // <xl 아이콘-only — 라벨 사다리(겹침 소탕 2026-07-23).
+                        // aria-label + 툴팁이 뜻을 보존한다.
+                        className="max-xl:[&_[data-chip-label]]:hidden"
                       >
                         {t('controls.graphToggleLabel')}
                       </ChromeChip>
@@ -2467,6 +2495,10 @@ export function HomePage() {
                       compact={topologyUtilityChromeCompact}
                       icon={<BookOpen className="text-[color:var(--color-indigo-accent)]" />}
                       kbd="D"
+                      // 레인 축약 사다리(겹침 소탕 2026-07-23): <2xl kbd 접기 ·
+                      // <xl 라벨 접기. 고정 문서 수 badge 는 compact 규칙과
+                      // 동일하게 항상 남는다.
+                      className="max-2xl:[&_[data-chip-kbd]]:hidden max-xl:[&_[data-chip-label]]:hidden"
                       badge={
                         docsPinnedCount > 0 ? (
                           <span
@@ -2516,12 +2548,45 @@ export function HomePage() {
                           }`}
                         >
                           <Plus className="size-[var(--topology-chrome-icon-size)]" aria-hidden />
-                          <span className={topologyUtilityChromeCompact ? "sr-only" : undefined}>
+                          {/* <xl 아이콘-only — 레인 라벨 사다리(겹침 소탕
+                              2026-07-23). aria-label + 툴팁이 뜻을 보존한다. */}
+                          <span
+                            className={
+                              topologyUtilityChromeCompact ? "sr-only" : "max-xl:hidden"
+                            }
+                          >
                             {t('createNode.toggleLabel')}
                           </span>
                         </button>
                       </Tooltip>
                     ) : null}
+                    {/* 설정 기어 <lg 진입점 (겹침 소탕 2026-07-23) — 내비 레일
+                        (lg+ 전용)의 기어 슬롯이 사라지는 <lg 에서 지도의 설정
+                        (언어·INDEX 기본 상태·vault 교체) 접근 수단이 0 이었다.
+                        레일 슬롯과 같은 컴포넌트·같은 state 를 chrome-tile 변형
+                        으로 레인 끝에 꽂는다 — 하단 탭바 5-목적지 계약은 불변.
+                        lg+ 에선 레일 기어가 담당하므로 이 타일은 사라진다. */}
+                    <div className="lg:hidden">
+                      <TopologyV2SettingsGear
+                        indexDefaultCollapsed={indexPanelCollapsedStored}
+                        onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
+                        changeVaultHref="/docs/?intent=local"
+                        triggerVariant="chrome-tile"
+                        popoverAlign="right"
+                        popoverSide="bottom"
+                        suppressed={ontologySearchOpen || docsDrawerOpen}
+                        labels={{
+                          trigger: t('controls.settingsGearAriaLabel'),
+                          heading: t('controls.settingsGearHeading'),
+                          locale: t('controls.settingsGearLocale'),
+                          indexDefault: t('controls.settingsGearIndexDefault'),
+                          indexDefaultExpanded: t('controls.settingsGearIndexDefaultExpanded'),
+                          indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
+                          changeVault: t('controls.settingsGearChangeVault'),
+                          changeVaultAriaLabel: t('controls.settingsGearChangeVaultAriaLabel'),
+                        }}
+                      />
+                    </div>
                     </div>
                   )}
                 </>
@@ -3072,7 +3137,12 @@ export function HomePage() {
                       ? "top-[var(--topology-shortcuts-help-focus-phone-top)]"
                       : "top-[var(--topology-shortcuts-help-phone-top)]"
                   } z-20 items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] md:right-6 md:top-[var(--topology-shortcuts-help-desktop-top)] md:flex xl:right-8 size-[var(--chrome-tile-size)] ${
-                    topologyShortcutHelpPhoneVisible ? "flex" : "hidden"
+                    // <md 확장 INDEX(풀-블리드 시트) 동안 "?" 타일이 시트 위에
+                    // 떠서 겹쳤다(600×900 실측 y188) — 시트가 주 표면, 크롬
+                    // 강등(겹침 소탕 2026-07-23). md+ 는 md:flex 가 유지.
+                    topologyShortcutHelpPhoneVisible && renderedIndexState !== "expanded"
+                      ? "flex"
+                      : "hidden"
                   }`}
                 >
                   <HelpCircle className="size-[var(--chrome-icon)]" aria-hidden />
