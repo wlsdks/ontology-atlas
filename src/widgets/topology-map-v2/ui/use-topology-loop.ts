@@ -43,6 +43,7 @@ import {
   realmInsideFlipDelayFor,
   realmInsidePosition,
   realmOutsidePosition,
+  realmOutsideReturnAlpha,
   realmOutsideReturnPosition,
   realmTransitionReducer,
   realmWardingDrawProgress,
@@ -1930,6 +1931,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // 밴드 오프셋. 시차는 위 스텝이 이미 active+유의미일 때만 ref 를 채웠다.
       let realmDepthById: ReadonlyMap<string, number> | null = null;
       let realmDepthParallax: { depth2: DepthParallaxOffset; depth3: DepthParallaxOffset } | null = null;
+      // S7 — 이탈 중 귀환하는 밖 노드의 materialize 알파(모션 감사 처방 B).
+      // exiting 이고 reduced-motion 이 아닐 때만 채운다 — reduced-motion 은
+      // exit effect 가 이미 즉시 홈으로 스냅해 이 프레임을 지나가지 않는다.
+      let realmOutsideReturnAlphaById: Map<string, number> | null = null;
       if (
         realmData &&
         (realmState.phase === "entering" || realmState.phase === "active" || realmState.phase === "exiting")
@@ -1943,6 +1948,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           : null;
         if (realmState.phase === "entering" && !reducedMotionRef.current) {
           realmDustParallax = realmDustParallaxFactor(now - realmState.startMs);
+        }
+        // S7 — 귀환 중인 밖 노드마다 materialize 알파를 채운다. 위 좌표 스텝
+        // (S6)이 같은 `elapsed - REALM_EXIT_OUTSIDE_RETURN_DELAY_MS` 를 좌표에
+        // 쓰므로 여기서도 그대로 재사용해 위치와 알파가 항상 같은 프레임에서
+        // 일치한다(drift 0).
+        if (exiting && !reducedMotionRef.current) {
+          const elapsed = now - realmState.startMs - REALM_EXIT_OUTSIDE_RETURN_DELAY_MS;
+          const alphaMap = new Map<string, number>();
+          for (const id of realmData.outsideFrom.keys()) {
+            alphaMap.set(id, realmOutsideReturnAlpha(elapsed, REALM_EXIT_OUTSIDE_RETURN_MS));
+          }
+          realmOutsideReturnAlphaById = alphaMap;
         }
         // 이탈 중엔 밖 노드가 귀환하므로 컬하지 않는다(isRealmOutsideCulled 가
         // exiting 에 false). entering/active 에서만 fling 완료 후 하드 컬.
@@ -2150,6 +2167,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         realmDepthById,
         realmDepthParallax,
         realmDustParallax,
+        realmOutsideReturnAlphaById,
         // S8 결함 6 — 영역 활성 시에만 우주 도트를 넘긴다(결계로 클립).
         realmCosmosPoints: realmWarding ? cosmosPointsRef.current : null,
         footprintRanksById,
