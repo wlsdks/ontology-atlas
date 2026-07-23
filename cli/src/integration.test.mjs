@@ -85,6 +85,7 @@ function withVault(seed = []) {
 let passed = 0;
 let failed = 0;
 let skipped = 0;
+let matched = 0;
 const TEST_FILTER = resolveTestFilter();
 const TEST_NAME_PATTERN = TEST_FILTER.pattern;
 
@@ -102,6 +103,7 @@ async function test(name, fn) {
     skipped += 1;
     return;
   }
+  matched += 1;
   try {
     await fn();
     passed += 1;
@@ -293,7 +295,7 @@ await test('init --quick-start — scaffolds, bootstraps from the repo, and ends
     // bootstrap actually ran — same evidence the analyze --apply tests use
     // (untouched starter project.md is pruned and replaced by <slug>.md).
     const projectDoc = readFileSync(join(vault, 'quick-start-app.md'), 'utf-8');
-    assert.match(projectDoc, /title: Quick start fixture app/);
+    assert.match(projectDoc, /title: Quick Start App/);
     assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), true);
 
     // .mcp.json still generated (already unconditional, verify quick-start keeps it).
@@ -1033,7 +1035,7 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     assert.match(clean, /neighbors — elements\/example-element/);
     assert.match(clean, /path — elements\/example-element → project \(1 hop, 1 edge\)/);
     assert.match(clean, /project_scope/);
-    assert.match(clean, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
+    assert.match(clean, /destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
     assert.match(clean, /all_paths — elements\/example-element → project/);
     assert.match(clean, /structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance 3\/3, graph 13\/13/);
   } finally {
@@ -1095,7 +1097,7 @@ await test('mcp-verify — verifies maintenance cursor resume when actions exist
     assert.match(clean, /kind add_missing_relation:1/);
     assert.match(clean, /maintenance cursor — resume afterActionId advanced \(maint_[a-f0-9]{8}; 0 remaining actions/);
     assert.match(clean, /query_concepts limited — 1 query result \/ 2 total query results \(limited true\)/);
-    assert.match(clean, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
+    assert.match(clean, /destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
     assert.match(clean, /all_paths — core → project/);
     assert.match(clean, /structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance 3\/3, graph 13\/13/);
   } finally {
@@ -6786,7 +6788,7 @@ await test('analyze --apply — project slug can replace untouched starter proje
     const r = await run(['analyze', repo, '--vault', vault, '--apply']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const projectDoc = readFileSync(join(vault, 'project.md'), 'utf-8');
-    assert.match(projectDoc, /title: Real project app/);
+    assert.match(projectDoc, /title: Project/);
     assert.doesNotMatch(projectDoc, /title: My project/);
     assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), true);
   } finally {
@@ -6814,8 +6816,8 @@ await test('analyze --apply — concepts/relations vault 에 land', async () => 
     assert.equal(existsSyncTest(projectFile), true, 'project file landed');
     const fm = readFileSync(projectFile, 'utf-8');
     assert.match(fm, /kind: project/);
-    // analyze 가 pkg.description 을 title 로 사용 (혹은 fallback humanize).
-    assert.match(fm, /title: Test app for analyze --apply/);
+    // package description is prose, not identity; title falls back to package name.
+    assert.match(fm, /title: Test App/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -7833,6 +7835,62 @@ await test('bootstrap — analyze + infer-imports 한 명령으로 land (FSD slu
   }
 });
 
+await test('bootstrap --skip-imports — 50개를 넘는 concept 후보를 MCP batch cap에 맞춰 분할', async () => {
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  const fakeMcp = join(vault, 'fake-mcp-bootstrap-concept-chunks.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.method === 'initialize') {",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: {} }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'analyze_repo_structure') {",
+      "    const elements = Array.from({ length: 51 }, (_, index) => ({ slug: `elements/item-${index}`, title: `Item ${index}`, evidence: { source: `src/item-${index}.ts` } }));",
+      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [], capabilities: [], elements, suggestedRelations: [], skipped: [] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'add_concepts') {",
+      "    const concepts = msg.params.arguments.concepts;",
+      "    if (concepts.length > 50) {",
+      "      console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32602, message: `Too many concepts: ${concepts.length}. Max 50 per call` } }));",
+      "      return;",
+      "    }",
+      "    const payload = { concepts: concepts.map((concept) => ({ slug: concept.slug, ok: true, filePath: `/tmp/${concept.slug}.md`, changed: true })) };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run([
+      'bootstrap',
+      repo,
+      '--vault',
+      vault,
+      '--skip-imports',
+      '--json',
+    ], {
+      env: { OATLAS_MCP_PATH: fakeMcp },
+    });
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.analyze.concepts.length, 52);
+    assert.equal(data.analyze.concepts[0].slug, 'demo');
+    assert.equal(data.analyze.concepts.at(-1).slug, 'elements/item-50');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 await test('bootstrap — single-file layered repo import endpoints 먼저 생성 후 depends_on land', async () => {
   const vault = withVault([]);
   const repo = makeSingleFileLayeredRepo();
@@ -7961,7 +8019,7 @@ await test('bootstrap --skip-imports — sole README domain yields a verifier-cl
 
     const verify = await run(['mcp-verify', vault]);
     assert.equal(verify.code, 0, `stdout: ${verify.stdout}\nstderr: ${verify.stderr}`);
-    assert.match(stripAnsi(verify.stdout), /tools\/list 31\/31/);
+    assert.match(stripAnsi(verify.stdout), /tools\/list 32\/32/);
     assert.match(stripAnsi(verify.stdout), /All passed —/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
@@ -8126,7 +8184,7 @@ await test('index — human plan shows business ontology evidence rows before ap
     assert.match(clean, /review required/);
     assert.match(clean, /capabilities\/billing/);
     assert.match(clean, /src\/features\/billing/);
-    assert.match(clean, /no README\/domain evidence for business meaning/);
+    assert.match(clean, /source folder is implementation evidence, not proof of a shared capability meaning/);
     assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
@@ -8281,7 +8339,7 @@ await test('bootstrap — fails closed when add_relations response rows drift', 
     });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
-    assert.match(stripAnsi(r.stderr), /add_relations chunk @0\.relations\[0\]\.to must be a non-empty string/);
+    assert.match(stripAnsi(r.stderr), /add_relations\.relations\[0\]\.to must be a non-empty string/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -8332,7 +8390,7 @@ await test('bootstrap --reapply — grown vault에 명시적으로 재적용한�
 
 const skippedSuffix = skipped > 0 ? `, ${skipped} skipped` : '';
 console.log(`\ncli integration: ${passed} passed, ${failed} failed${skippedSuffix}`);
-if (TEST_NAME_PATTERN && passed === 0) {
+if (TEST_NAME_PATTERN && matched === 0) {
   console.error(formatNoTestMatchMessage('cli', TEST_FILTER));
   process.exit(1);
 }

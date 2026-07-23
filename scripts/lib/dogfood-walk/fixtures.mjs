@@ -27,11 +27,15 @@ import {
 import { GRAPH_ARRAY_KEYS } from "../../../mcp/src/vault.mjs";
 
 export const WRITE_TOOL_NAMES = new Set([
+  "git_snapshot",
   "add_concept",
   "add_concepts",
   "add_relation",
   "add_relations",
+  "remove_relation",
+  "replace_relation",
   "patch_concept",
+  "reclassify_concept",
   "delete_concept",
   "rename_concept",
   "merge_concepts",
@@ -1543,6 +1547,10 @@ export function makeDogfoodToolsList() {
           type: "string",
           enum: WRITE_RELATION_TYPE_VALUES,
         };
+        tool.inputSchema.properties.why = {
+          type: "string",
+          maxLength: 300,
+        };
         tool.outputSchema = {
           type: "object",
           required: ["ok", "from", "to", "type"],
@@ -1579,14 +1587,21 @@ export function makeDogfoodToolsList() {
       if (["rename_concept", "merge_concepts", "delete_concept"].includes(name)) {
         tool.inputSchema.properties.confirm = { type: "boolean" };
       }
+      if (name === "absorb_document") {
+        tool.inputSchema.properties.allowOutsideRepo = { type: "boolean" };
+      }
       if (name === "rename_concept") {
         tool.inputSchema.properties.overwrite = { type: "boolean" };
         tool.outputSchema = {
           type: "object",
-          required: ["ok", "oldSlug", "newSlug", "sourcePath", "targetPath", "moved", "backlinkUpdates"],
+          required: ["ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons", "oldSlug", "newSlug", "sourcePath", "targetPath", "moved", "backlinkUpdates"],
           properties: {
             ok: { type: "boolean" },
             dryRun: { type: "boolean" },
+            previewReady: { type: "boolean" },
+            canConfirm: { type: "boolean" },
+            wouldChange: { type: "boolean" },
+            blockedReasons: { type: "array", items: nonBlankStringSchemaFixture() },
             oldSlug: { type: "string" },
             newSlug: { type: "string" },
             sourcePath: { type: "string" },
@@ -1603,10 +1618,14 @@ export function makeDogfoodToolsList() {
       if (name === "merge_concepts") {
         tool.outputSchema = {
           type: "object",
-          required: ["ok", "fromSlug", "intoSlug", "fromPath", "deleted", "backlinkUpdates", "capturedFrom"],
+          required: ["ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons", "fromSlug", "intoSlug", "fromPath", "deleted", "backlinkUpdates", "capturedFrom"],
           properties: {
             ok: { type: "boolean" },
             dryRun: { type: "boolean" },
+            previewReady: { type: "boolean" },
+            canConfirm: { type: "boolean" },
+            wouldChange: { type: "boolean" },
+            blockedReasons: { type: "array", items: nonBlankStringSchemaFixture() },
             fromSlug: { type: "string" },
             intoSlug: { type: "string" },
             fromPath: { type: "string" },
@@ -1624,10 +1643,14 @@ export function makeDogfoodToolsList() {
         tool.inputSchema.properties.force = { type: "boolean" };
         tool.outputSchema = {
           type: "object",
-          required: ["ok", "slug", "filePath"],
+          required: ["ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons", "slug", "filePath"],
           properties: {
             ok: { type: "boolean" },
             dryRun: { type: "boolean" },
+            previewReady: { type: "boolean" },
+            canConfirm: { type: "boolean" },
+            wouldChange: { type: "boolean" },
+            blockedReasons: { type: "array", items: nonBlankStringSchemaFixture() },
             slug: nonBlankStringSchemaFixture(),
             filePath: nonBlankStringSchemaFixture(),
             backlinks: { type: "array", items: backlinkRowSchemaFixture() },
@@ -1637,6 +1660,19 @@ export function makeDogfoodToolsList() {
             changed: { type: "boolean" },
             captured: capturedDocSchemaFixture(),
             postWriteMaintenance: postWriteMaintenanceSchemaFixture(),
+          },
+          additionalProperties: false,
+        };
+      }
+      if (EXPECTED_DESTRUCTIVE_TOOLS.includes(name) && !tool.outputSchema) {
+        tool.outputSchema = {
+          type: "object",
+          required: ["previewReady", "canConfirm", "wouldChange", "blockedReasons"],
+          properties: {
+            previewReady: { type: "boolean" },
+            canConfirm: { type: "boolean" },
+            wouldChange: { type: "boolean" },
+            blockedReasons: { type: "array", items: nonBlankStringSchemaFixture() },
           },
           additionalProperties: false,
         };
@@ -1761,7 +1797,7 @@ export const okShape = {
           { name: "titel", suggestion: "title" },
           { name: "domian", suggestion: "domain" },
         ],
-        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "body"],
+        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "path", "body"],
         receivedFields: ["domian", "kind", "slug", "titel", "title"],
       },
       {
@@ -1793,7 +1829,7 @@ export const okShape = {
         receivedField: "titel",
         suggestion: "title",
         unknownFields: [{ name: "titel", suggestion: "title" }],
-        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "body"],
+        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "path", "body"],
         receivedFields: ["kind", "slug", "titel", "title"],
       },
     ],
@@ -1811,7 +1847,7 @@ export const okShape = {
           { name: "titel", suggestion: "title" },
           { name: "domian", suggestion: "domain" },
         ],
-        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "body"],
+        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "path", "body"],
         receivedFields: ["domian", "kind", "slug", "titel", "title"],
       },
       {
@@ -1843,7 +1879,7 @@ export const okShape = {
         receivedField: "titel",
         suggestion: "title",
         unknownFields: [{ name: "titel", suggestion: "title" }],
-        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "body"],
+        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "path", "body"],
         receivedFields: ["kind", "slug", "titel", "title"],
       },
     ],
@@ -2027,6 +2063,10 @@ export const okShape = {
           text: JSON.stringify({
             ok: false,
             dryRun: true,
+            previewReady: true,
+            canConfirm: true,
+            wouldChange: true,
+            blockedReasons: [],
             oldSlug: "capabilities/mcp-server",
             newSlug: "capabilities/mcp-server-dogfood-dry-run",
             sourcePath: "/tmp/vault/capabilities/mcp-server.md",
@@ -2040,6 +2080,10 @@ export const okShape = {
       structuredContent: {
         ok: false,
         dryRun: true,
+        previewReady: true,
+        canConfirm: true,
+        wouldChange: true,
+        blockedReasons: [],
         oldSlug: "capabilities/mcp-server",
         newSlug: "capabilities/mcp-server-dogfood-dry-run",
         sourcePath: "/tmp/vault/capabilities/mcp-server.md",
@@ -2057,6 +2101,10 @@ export const okShape = {
           text: JSON.stringify({
             ok: false,
             dryRun: true,
+            previewReady: true,
+            canConfirm: true,
+            wouldChange: true,
+            blockedReasons: [],
             fromSlug: "capabilities/mcp-server",
             intoSlug: "domains/ai-agent-partner",
             fromPath: "/tmp/vault/capabilities/mcp-server.md",
@@ -2070,6 +2118,10 @@ export const okShape = {
       structuredContent: {
         ok: false,
         dryRun: true,
+        previewReady: true,
+        canConfirm: true,
+        wouldChange: true,
+        blockedReasons: [],
         fromSlug: "capabilities/mcp-server",
         intoSlug: "domains/ai-agent-partner",
         fromPath: "/tmp/vault/capabilities/mcp-server.md",
@@ -2087,6 +2139,10 @@ export const okShape = {
           text: JSON.stringify({
             ok: false,
             dryRun: true,
+            previewReady: true,
+            canConfirm: true,
+            wouldChange: true,
+            blockedReasons: [],
             slug: "capabilities/mcp-server",
             filePath: "/tmp/vault/capabilities/mcp-server.md",
             backlinks: [],
@@ -2097,6 +2153,10 @@ export const okShape = {
       structuredContent: {
         ok: false,
         dryRun: true,
+        previewReady: true,
+        canConfirm: true,
+        wouldChange: true,
+        blockedReasons: [],
         slug: "capabilities/mcp-server",
         filePath: "/tmp/vault/capabilities/mcp-server.md",
         backlinks: [],

@@ -28,8 +28,15 @@
 //       policy: 'business-first',
 //       sourceStructureRole: 'implementation-evidence',
 //       businessOntology: { domains: [slug], capabilities: [slug], evidence: [{ slug, kind, source }] },
+//       proposedBusinessOntology: {
+//         domains: [{ slug, reason, evidence }],
+//         capabilities: [{ slug, reason, evidence }],
+//       },
 //       implementationEvidence: { elements: [slug], reviewRequiredCapabilities: [{ slug, reason, evidence }] },
 //       reviewQuestions: [string],
+//     },
+//     extractionContract: {
+//       standard, status, assertionPolicy, competencyQuestions, qualityGates,
 //     },
 //     suggestedRelations: [{ from, to, type }],
 //     skipped: [{ path, reason }],
@@ -57,7 +64,31 @@ const DEFAULT_IGNORE = new Set([
   'venv',
 ]);
 
-const SOURCE_FOLDERS = ['src', 'lib', 'app', 'packages'];
+const SOURCE_FOLDERS = ['src', 'lib', 'app'];
+const WORKSPACE_FOLDERS = ['apps', 'packages'];
+const STARTER_ONTOLOGY_SLUGS = new Set([
+  'domains/example-domain',
+  'capabilities/example-capability',
+]);
+const SEMANTIC_EVIDENCE_SEEDS = [
+  ['README.md', 'mission'],
+  ['docs/FEATURES.md', 'product-capabilities'],
+  ['docs/SYSTEM-MAP.md', 'architecture'],
+  ['AGENTS.md', 'agent-guidance'],
+];
+const SEMANTIC_EVIDENCE_MAX_EXCERPT = 1200;
+const SEMANTIC_EVIDENCE_MAX_HEADINGS = 8;
+const SEMANTIC_EVIDENCE_MAX_DOCUMENTS = 6;
+const SEMANTIC_DISCOVERY_MAX_FILES = 200;
+const SEMANTIC_DISCOVERY_SKIP_DIRS = new Set([
+  'archive',
+  'assets',
+  'benchmarks',
+  'evaluations',
+  'goals',
+  'images',
+  'ontology',
+]);
 const IGNORE_ARRAY_MAX_ITEMS = 200;
 
 const ELEMENT_ENTRY_FILES = [
@@ -91,6 +122,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   const project = detectProject(rootPath, skipped);
   const { domains, readmePath } = detectDomainsFromReadme(rootPath);
   const existingOntologyEvidence = detectExistingOntologyEvidence(rootPath, skipped);
+  const semanticEvidence = collectSemanticEvidence(rootPath, skipped);
   const domainForName = (name) => matchDomainSlug(name, domains);
 
   // SOURCE_FOLDERS 중 첫 번째 존재하는 것을 src dir 로
@@ -202,6 +234,14 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     }
   }
 
+  elements.push(
+    ...detectWorkspaceElements(rootPath, {
+      ignore,
+      domainForName,
+      skipped,
+    }),
+  );
+
   // Suggested relations form one coherent containment spine. A README-backed
   // domain sits under the project; matched capabilities/elements sit under
   // that domain. Evidence without a defensible domain match remains directly
@@ -240,6 +280,16 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       elements,
       existingOntologyEvidence,
     }),
+    extractionContract: buildExtractionContract({
+      project,
+      domains,
+      capabilities,
+      elements,
+      existingOntologyEvidence,
+      suggestedRelations,
+      semanticEvidence,
+    }),
+    semanticEvidence,
     suggestedRelations,
     skipped,
   };
@@ -250,12 +300,11 @@ function buildMeaningGate({ domains, capabilities, elements, existingOntologyEvi
     existingOntologyEvidence.map((evidence) => [evidence.slug, evidence]),
   );
   const existingDomainEvidence = existingOntologyEvidence.filter((evidence) => evidence.kind === 'domain');
-  const businessDomains = [
-    ...new Set([
-      ...domains.map((domain) => domain.slug),
-      ...existingDomainEvidence.map((evidence) => evidence.slug),
-    ]),
-  ];
+  // A README heading is evidence that a phrase is important enough to document,
+  // not evidence that people share it as a stable business responsibility
+  // boundary. Only persisted ontology docs count as already-shared concepts;
+  // README/code-derived rows remain explicit proposals.
+  const businessDomains = [...new Set(existingDomainEvidence.map((evidence) => evidence.slug))];
   const existingByElement = new Map();
   for (const evidence of existingOntologyEvidence) {
     if (evidence.kind !== 'capability') continue;
@@ -272,7 +321,6 @@ function buildMeaningGate({ domains, capabilities, elements, existingOntologyEvi
       evidenceByBusinessCapabilitySlug.set(evidence.slug, evidence);
       return [evidence.slug];
     }
-    if (capability.domain) return [capability.slug];
     return [];
   });
   const businessCapabilitySet = new Set(businessCapabilities);
@@ -282,21 +330,22 @@ function buildMeaningGate({ domains, capabilities, elements, existingOntologyEvi
   const reviewRequiredCapabilities = capabilities
     .filter(
       (capability) =>
-        !capability.domain &&
         !existingBySlug.has(capability.slug) &&
         !matchedCapabilityCandidateSlugs.has(capability.slug),
     )
     .map((capability) => ({
       slug: capability.slug,
-      reason: 'no README/domain evidence for business meaning',
+      reason: 'source folder is implementation evidence, not proof of a shared capability meaning',
       evidence: capability.evidence,
     }));
-  const businessEvidence = uniqueEvidenceRows([
-    ...domains.map((domain) => ({
+  const reviewRequiredDomains = domains
+    .filter((domain) => !existingBySlug.has(domain.slug))
+    .map((domain) => ({
       slug: domain.slug,
-      kind: 'domain',
-      source: domain.evidence.source,
-    })),
+      reason: 'README heading is a concept clue, not proof of a shared business boundary',
+      evidence: domain.evidence,
+    }));
+  const businessEvidence = uniqueEvidenceRows([
     ...existingDomainEvidence.map(formatOntologyEvidence),
     ...businessCapabilities.flatMap((capability) => {
       const existing = existingBySlug.get(capability) ?? evidenceByBusinessCapabilitySlug.get(capability);
@@ -319,6 +368,10 @@ function buildMeaningGate({ domains, capabilities, elements, existingOntologyEvi
       capabilities: [...businessCapabilitySet],
       evidence: businessEvidence,
     },
+    proposedBusinessOntology: {
+      domains: reviewRequiredDomains,
+      capabilities: reviewRequiredCapabilities,
+    },
     implementationEvidence: {
       elements: elements.map((element) => element.slug),
       reviewRequiredCapabilities,
@@ -328,6 +381,269 @@ function buildMeaningGate({ domains, capabilities, elements, existingOntologyEvi
       'Which source path, README heading, import edge, or file-level element proves the implementation evidence?',
       'Should this code structure stay evidence-only instead of becoming a domain or capability node?',
     ],
+  };
+}
+
+function buildExtractionContract({
+  project,
+  domains,
+  capabilities,
+  elements,
+  existingOntologyEvidence,
+  suggestedRelations,
+  semanticEvidence,
+}) {
+  const persistedBusinessConcepts = existingOntologyEvidence.filter(
+    (evidence) => evidence.kind === 'domain' || evidence.kind === 'capability',
+  ).length;
+  const proposedBusinessConcepts = domains.length + capabilities.length;
+  const observedImplementationEvidence = elements.length;
+  return {
+    standard: 'formal-explicit-shared-conceptualization',
+    status:
+      persistedBusinessConcepts > 0
+        ? 'grounded-in-existing-ontology'
+        : observedImplementationEvidence > 0 || proposedBusinessConcepts > 0
+          ? 'evidence-gathering'
+          : 'scope-discovery-required',
+    assertionPolicy: {
+      sourceFacts: 'observed',
+      readmeAndFolderMeanings: 'proposed',
+      persistedOntologyMeanings: 'shared',
+      automaticBusinessAssertions: 0,
+      humanApprovalRequired: true,
+    },
+    competencyQuestions: [
+      'What product/system outcome and user problem define the ontology scope?',
+      'Which stable business responsibilities or decision boundaries form its domains?',
+      'Which observable abilities realize those outcomes inside each domain?',
+      'Which source artifacts provide implementation evidence for each ability?',
+      'Which typed dependencies explain change impact across the model?',
+    ],
+    qualityGates: {
+      scopeCandidateAvailable: Boolean(project),
+      sharedBusinessConceptsAvailable: persistedBusinessConcepts > 0,
+      proposedBusinessConcepts,
+      implementationEvidenceAvailable: observedImplementationEvidence > 0,
+      semanticEvidenceAvailable: semanticEvidence.length > 0,
+      typedRelationsProposed: suggestedRelations.length,
+      provenanceAttached:
+        domains.every((row) => Boolean(row.evidence?.source)) &&
+        capabilities.every((row) => Boolean(row.evidence?.source)) &&
+        elements.every((row) => Boolean(row.evidence?.source)),
+      uncertaintyExplicit: true,
+      approvalRequired: true,
+    },
+    limitations: [
+      'Repository structure can prove implementation shape, but cannot by itself prove business meaning.',
+      'README headings and source-folder names remain proposals until a human or persisted ontology establishes shared intent.',
+      'Completeness is evaluated against competency questions, not against the number of discovered folders.',
+    ],
+    nextStep:
+      'Use semanticEvidence to propose defined domains and capabilities; cite a source for every claim, test the result against the competency questions, and keep unproven meanings in review.',
+  };
+}
+
+function collectSemanticEvidence(rootPath, skipped = []) {
+  const candidates = discoverSemanticEvidenceCandidates(rootPath);
+  const rows = [];
+  for (const { source, role, pathScore } of candidates) {
+    const path = join(rootPath, source);
+    if (!existsSync(path)) continue;
+    try {
+      const text = readFileSync(path, 'utf-8');
+      const extracted = extractSemanticDocument(text);
+      if (!extracted.excerpt && extracted.headings.length === 0) continue;
+      rows.push({
+        source,
+        role,
+        title: extracted.title || humanize(basename(source).replace(/\.md$/i, '')),
+        headings: extracted.headings,
+        excerpt: extracted.excerpt,
+        _score: pathScore + semanticContentScore(extracted),
+      });
+    } catch (err) {
+      skipped.push({
+        path,
+        reason: `semantic-evidence-read-error: ${err.message}`,
+      });
+    }
+  }
+  const ranked = rows.sort(
+    (a, b) => b._score - a._score || a.source.localeCompare(b.source),
+  );
+  const selected = [];
+  const selectedSources = new Set();
+  // Preserve evidence-role diversity before filling remaining slots by score.
+  // Otherwise a large feature catalog can crowd mission/strategy/architecture
+  // evidence out of the bounded packet.
+  for (const role of [
+    'mission',
+    'product-contract',
+    'product-capabilities',
+    'architecture',
+    'agent-guidance',
+  ]) {
+    const row = ranked.find(
+      (candidate) =>
+        candidate.role === role && !selectedSources.has(candidate.source),
+    );
+    if (!row) continue;
+    selected.push(row);
+    selectedSources.add(row.source);
+  }
+  for (const row of ranked) {
+    if (selected.length >= SEMANTIC_EVIDENCE_MAX_DOCUMENTS) break;
+    if (selectedSources.has(row.source)) continue;
+    selected.push(row);
+    selectedSources.add(row.source);
+  }
+  return selected.map((row) => ({
+    source: row.source,
+    role: row.role,
+    title: row.title,
+    headings: row.headings,
+    excerpt: row.excerpt,
+  }));
+}
+
+function discoverSemanticEvidenceCandidates(rootPath) {
+  const bySource = new Map();
+  for (const [source, role] of SEMANTIC_EVIDENCE_SEEDS) {
+    if (existsSync(join(rootPath, source))) {
+      bySource.set(source, { source, role, pathScore: 100 });
+    }
+  }
+  const docsRoot = join(rootPath, 'docs');
+  if (!existsSync(docsRoot) || !statSync(docsRoot).isDirectory()) {
+    return [...bySource.values()];
+  }
+  let filesSeen = 0;
+  function visit(dir) {
+    if (filesSeen >= SEMANTIC_DISCOVERY_MAX_FILES) return;
+    for (const entry of readdirSync(dir).sort()) {
+      if (filesSeen >= SEMANTIC_DISCOVERY_MAX_FILES) return;
+      const path = join(dir, entry);
+      const stat = statSync(path);
+      if (stat.isDirectory()) {
+        if (!SEMANTIC_DISCOVERY_SKIP_DIRS.has(entry.toLowerCase())) visit(path);
+        continue;
+      }
+      if (!entry.toLowerCase().endsWith('.md')) continue;
+      filesSeen += 1;
+      const source = relative(rootPath, path);
+      if (bySource.has(source)) continue;
+      const classified = classifySemanticEvidencePath(source);
+      if (classified) bySource.set(source, { source, ...classified });
+    }
+  }
+  visit(docsRoot);
+  return [...bySource.values()];
+}
+
+function classifySemanticEvidencePath(source) {
+  const normalized = source.toLowerCase();
+  if (/(?:^|\/)(?:readme|features?|capabilit(?:y|ies)|feature-catalog)(?:[._/-]|$)/.test(normalized)) {
+    return { role: 'product-capabilities', pathScore: 70 };
+  }
+  if (/(?:^|\/)(?:product|strategy|vision|mission|direction|principles?)(?:[._/-]|$)/.test(normalized)) {
+    return { role: 'product-contract', pathScore: 65 };
+  }
+  if (/(?:^|\/)(?:architecture|system-map|system_map|system|domain-map)(?:[._/-]|$)/.test(normalized)) {
+    return { role: 'architecture', pathScore: 60 };
+  }
+  if (/(?:^|\/)glossary(?:[._/-]|$)/.test(normalized)) {
+    return { role: 'product-contract', pathScore: 50 };
+  }
+  return null;
+}
+
+function semanticContentScore({ title, headings, excerpt }) {
+  const text = `${title ?? ''}\n${headings.join('\n')}\n${excerpt}`.toLowerCase();
+  let score = 0;
+  for (const pattern of [
+    /\bproduct goal\b/,
+    /\buser need\b/,
+    /\bmission\b/,
+    /\bcapabilit(?:y|ies)\b/,
+    /\bresponsibilit(?:y|ies)\b/,
+    /\bdomain\b/,
+    /한 줄 정의/,
+    /제품 목표/,
+    /기능 정의/,
+  ]) {
+    if (pattern.test(text)) score += 12;
+  }
+  if (/\b(?:backlog|roadmap|implementation plan|research findings|competitor)\b/.test(text)) {
+    score -= 20;
+  }
+  return score;
+}
+
+function extractSemanticDocument(text) {
+  const lines = text.split(/\r?\n/);
+  const headings = [];
+  const prose = [];
+  let proseLength = 0;
+  let title = null;
+  let fence = null;
+  let frontmatter = lines[0]?.trim() === '---';
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const rawLine = lines[lineIndex];
+    const line = rawLine.trim();
+    if (frontmatter) {
+      if (lineIndex > 0 && line === '---') frontmatter = false;
+      continue;
+    }
+    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      const marker = fenceMatch[1][0];
+      fence = fence === marker ? null : fence ?? marker;
+      continue;
+    }
+    if (fence) continue;
+    const markdownHeading = line.match(/^(#{1,3})\s+(.+?)\s*$/);
+    const htmlHeading = line.match(/<h([1-3])\b[^>]*>(.*?)<\/h\1>/i);
+    if (markdownHeading || htmlHeading) {
+      const level = markdownHeading
+        ? markdownHeading[1].length
+        : Number(htmlHeading[1]);
+      const value = (markdownHeading ? markdownHeading[2] : htmlHeading[2])
+        .replace(/<[^>]+>/g, '')
+        .replace(/\[(.*?)\]\([^)]*\)/g, '$1')
+        .trim();
+      if (!value) continue;
+      if (level === 1 && !title) title = value;
+      if (headings.length < SEMANTIC_EVIDENCE_MAX_HEADINGS) headings.push(value);
+      continue;
+    }
+    if (
+      !line ||
+      /^<!--/.test(line) ||
+      /^<\/?(?:p|div|img|a)\b/i.test(line) ||
+      /^!\[/.test(line) ||
+      /^[-*_]{3,}$/.test(line) ||
+      /shields\.io/.test(line)
+    ) {
+      continue;
+    }
+    const cleaned = line
+      .replace(/^>\s*/, '')
+      .replace(/^[-*]\s+/, '')
+      .replace(/\[(.*?)\]\([^)]*\)/g, '$1')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&(?:nbsp|middot|amp|lt|gt);/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (cleaned && proseLength < SEMANTIC_EVIDENCE_MAX_EXCERPT) {
+      prose.push(cleaned);
+      proseLength += cleaned.length + 1;
+    }
+  }
+  return {
+    title,
+    headings,
+    excerpt: prose.join(' ').slice(0, SEMANTIC_EVIDENCE_MAX_EXCERPT).trim(),
   };
 }
 
@@ -358,9 +674,10 @@ function detectProject(rootPath, skipped = []) {
       const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
       const slugRaw = String(pkg.name || basename(rootPath));
       const slug = slugRaw.replace(/^@/, '').replace(/\//g, '-');
-      const title =
-        (typeof pkg.description === 'string' && pkg.description.trim()) ||
-        humanize(slug);
+      // package.json `description` is explanatory prose, not an identity label.
+      // Using it as `title` produced sentence-long project names (Muse exposed
+      // this in dogfood). Prefer the README H1, then the package name.
+      const title = detectReadmeH1(rootPath) || humanize(slug);
       return { slug, title };
     } catch (err) {
       skipped.push({
@@ -369,22 +686,39 @@ function detectProject(rootPath, skipped = []) {
       });
     }
   }
-  // README first H1
+  const readmeTitle = detectReadmeH1(rootPath);
+  if (readmeTitle) return { slug: basename(rootPath), title: readmeTitle };
+  return { slug: basename(rootPath), title: humanize(basename(rootPath)) };
+}
+
+function detectReadmeH1(rootPath) {
   for (const cand of ['README.md', 'readme.md', 'README']) {
-    const p = join(rootPath, cand);
-    if (!existsSync(p)) continue;
+    const path = join(rootPath, cand);
+    if (!existsSync(path)) continue;
     try {
-      const text = readFileSync(p, 'utf-8');
-      const m = text.match(/^#\s+(.+?)\s*$/m);
-      if (m) {
-        const title = m[1].trim();
-        return { slug: basename(rootPath), title };
+      const lines = readFileSync(path, 'utf-8').split(/\r?\n/);
+      let fence = null;
+      for (const line of lines) {
+        const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
+        if (fenceMatch) {
+          const marker = fenceMatch[1][0];
+          fence = fence === marker ? null : fence ?? marker;
+          continue;
+        }
+        if (fence) continue;
+        const markdownHeading = line.match(/^#\s+(.+?)\s*$/);
+        if (markdownHeading) return markdownHeading[1].trim();
+        const htmlHeading = line.match(/<h1\b[^>]*>(.*?)<\/h1>/i);
+        if (htmlHeading) {
+          const title = htmlHeading[1].replace(/<[^>]+>/g, '').trim();
+          if (title) return title;
+        }
       }
     } catch {
-      // ignore
+      // A missing/unreadable README is not fatal to repository analysis.
     }
   }
-  return { slug: basename(rootPath), title: humanize(basename(rootPath)) };
+  return null;
 }
 
 function detectExistingOntologyEvidence(rootPath, skipped = []) {
@@ -433,6 +767,7 @@ function readOntologyEvidence(rootPath, ontologyRoot, path) {
   if (kind !== 'domain' && kind !== 'capability') return null;
   const source = relative(rootPath, path);
   const slug = frontmatter.slug || relative(ontologyRoot, path).replace(/\.md$/i, '');
+  if (STARTER_ONTOLOGY_SLUGS.has(slug)) return null;
   return { slug, kind, source, elements: frontmatter.elements ?? [] };
 }
 
@@ -492,6 +827,9 @@ function detectDomainsFromReadme(rootPath) {
         const m = lines[i].match(/^##\s+(.+?)\s*$/);
         if (!m) continue;
         const title = m[1].trim();
+        const normalizedTitle = title
+          .replace(/^[^a-z0-9가-힣]+/i, '')
+          .trim();
         // README H2 is a heuristic domain source. Skip headers that are almost
         // never real codebase domains and only add bootstrap noise: generic doc
         // sections, narrative / question-style headers ("Why It Exists"),
@@ -501,12 +839,17 @@ function detectDomainsFromReadme(rootPath) {
         if (
           // generic doc sections (exact match)
           /^(usage|installation|getting started|quick start|license|contributing|requirements|features|setup|status|tech stack|architecture|folder map|routes|tests?|documentation|overview|development|deployment|changelog|roadmap|faq|demo|examples?|guides?|table of contents|toc|acknowledge?ments?)$/i.test(
-            title,
+            normalizedTitle,
+          ) ||
+          // operational / aggregate sections that describe the README, not a
+          // product ownership boundary
+          /\bin numbers$|^install\b|^core capabilities$|^providers? and (?:local|offline) (?:path|setup|mode)$|^verification$|^community(?: and support)?$/i.test(
+            normalizedTitle,
           ) ||
           // narrative / question-style headers
-          /^(why|what|how|when|where|who)\b/i.test(title) ||
+          /^(why|what|how|when|where|who)\b/i.test(normalizedTitle) ||
           // language-guide / translation section headers
-          /가이드|\bguide\b/i.test(title) ||
+          /가이드|\bguide\b/i.test(normalizedTitle) ||
           // sentence-like headers (clause separator or long phrase)
           title.includes(',') ||
           wordCount > 5
@@ -531,6 +874,39 @@ function detectDomainsFromReadme(rootPath) {
     }
   }
   return { domains: [], readmePath: null };
+}
+
+function detectWorkspaceElements(rootPath, { ignore, domainForName, skipped }) {
+  const elements = [];
+  for (const folder of WORKSPACE_FOLDERS) {
+    const workspaceRoot = join(rootPath, folder);
+    if (ignore.has(folder)) {
+      if (existsSync(workspaceRoot)) {
+        skipped.push({ path: workspaceRoot, reason: 'dotfile/ignore' });
+      }
+      continue;
+    }
+    if (!existsSync(workspaceRoot) || !statSync(workspaceRoot).isDirectory()) {
+      continue;
+    }
+    for (const entry of readdirSync(workspaceRoot).sort()) {
+      const memberPath = join(workspaceRoot, entry);
+      if (ignore.has(entry) || entry.startsWith('.')) {
+        skipped.push({ path: memberPath, reason: 'dotfile/ignore' });
+        continue;
+      }
+      if (!statSync(memberPath).isDirectory()) continue;
+      if (!existsSync(join(memberPath, 'package.json'))) continue;
+      const source = relative(rootPath, memberPath);
+      elements.push({
+        slug: `elements/${source}`,
+        title: humanize(entry),
+        ...(domainForName(entry) ? { domain: domainForName(entry) } : {}),
+        evidence: { source },
+      });
+    }
+  }
+  return elements;
 }
 
 function humanize(s) {

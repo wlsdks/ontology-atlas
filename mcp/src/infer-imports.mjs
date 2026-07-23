@@ -125,17 +125,21 @@ export function inferImports(rootPath, options = {}) {
   const maxFiles = optionalPositiveInteger(options.maxFiles, 'maxFiles', { max: 50000 }) ?? 5000;
   const sourceFolders = optionalStringArray(options.sourceFolders, 'sourceFolders', {
     max: SOURCE_FOLDER_ARRAY_MAX_ITEMS,
-    fallback: ['src', 'lib', 'app', 'packages'],
+    fallback: ['src', 'lib', 'app', 'apps', 'packages'],
   });
 
   // Resolve search roots — defined source folders that exist, plus rootPath
   // itself if no source folder exists (so simple repos still work).
   const roots = [];
+  let configuredRootExists = false;
   for (const f of sourceFolders) {
     const p = join(rootPath, f);
-    if (existsSync(p) && statSync(p).isDirectory()) roots.push(p);
+    if (!existsSync(p) || !statSync(p).isDirectory()) continue;
+    configuredRootExists = true;
+    if (ignore.has(f)) continue;
+    roots.push(p);
   }
-  if (roots.length === 0) roots.push(rootPath);
+  if (roots.length === 0 && !configuredRootExists) roots.push(rootPath);
 
   const files = [];
   for (const r of roots) walk(r, ignore, files, maxFiles);
@@ -156,7 +160,7 @@ export function inferImports(rootPath, options = {}) {
 
     for (const match of content.matchAll(IMPORT_RE)) {
       const spec = match[1];
-      classify(spec, file, dir, rootPath, edges, externalImports, unresolved, importKindOf(match[0]), pathAliases);
+      classify(spec, file, dir, rootPath, edges, externalImports, unresolved, importKindOf(match[0]), pathAliases, ignore);
     }
     for (const match of content.matchAll(SIDE_IMPORT_RE)) {
       // SIDE_IMPORT_RE matches a superset of IMPORT_RE in some cases —
@@ -168,7 +172,7 @@ export function inferImports(rootPath, options = {}) {
       const window = content.slice(Math.max(0, idx - 10), idx + 2);
       if (/from\s*$/.test(window.replace(/\s+$/, ''))) continue;
       const spec = match[1];
-      classify(spec, file, dir, rootPath, edges, externalImports, unresolved, 'side', pathAliases);
+      classify(spec, file, dir, rootPath, edges, externalImports, unresolved, 'side', pathAliases, ignore);
     }
   }
 
@@ -176,8 +180,8 @@ export function inferImports(rootPath, options = {}) {
   // first segment under one of the source folders.
   const moduleCount = new Map();
   for (const e of edges) {
-    const fm = moduleOf(e.from, sourceFolders);
-    const tm = moduleOf(e.to, sourceFolders);
+    const fm = moduleOf(e.from, sourceFolders, rootPath);
+    const tm = moduleOf(e.to, sourceFolders, rootPath);
     if (!fm || !tm || fm === tm) continue;
     const key = `${fm} → ${tm}`;
     const bucket = moduleCount.get(key) ?? {
@@ -267,7 +271,7 @@ function importKindOf(rawMatch) {
   return 'static';
 }
 
-function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOverride, pathAliases = []) {
+function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOverride, pathAliases = [], ignore = DEFAULT_IGNORE) {
   const kind = kindOverride ?? 'static';
   if (!spec) {
     unresolved.push({ from: relative(rootPath, file), spec, reason: 'empty' });
@@ -276,9 +280,11 @@ function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOv
   if (spec.startsWith('.') || isAbsolute(spec)) {
     const resolved = resolveRelativeImport(spec, dir);
     if (resolved && existsSync(resolved)) {
+      const resolvedRelative = relative(rootPath, resolved);
+      if (isIgnoredPath(resolvedRelative, ignore)) return;
       edges.push({
         from: relative(rootPath, file),
-        to: relative(rootPath, resolved),
+        to: resolvedRelative,
         kind,
       });
     } else {
@@ -293,9 +299,11 @@ function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOv
   const aliasResolved = resolveAliasImport(spec, rootPath, pathAliases);
   if (aliasResolved.matched) {
     if (aliasResolved.path) {
+      const resolvedRelative = relative(rootPath, aliasResolved.path);
+      if (isIgnoredPath(resolvedRelative, ignore)) return;
       edges.push({
         from: relative(rootPath, file),
-        to: relative(rootPath, aliasResolved.path),
+        to: resolvedRelative,
         kind,
       });
       return;
@@ -308,6 +316,10 @@ function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOv
     return;
   }
   external.push({ from: relative(rootPath, file), spec });
+}
+
+function isIgnoredPath(filePath, ignore) {
+  return filePath.split(/[\\/]/).some((segment) => ignore.has(segment));
 }
 
 function resolveAliasImport(spec, rootPath, pathAliases = []) {
@@ -447,7 +459,7 @@ function resolveRelativeImport(spec, fromDir) {
   return null;
 }
 
-function moduleOf(filePath, sourceFolders) {
+function moduleOf(filePath, sourceFolders, rootPath) {
   // filePath is relative to rootPath. Find first segment that's a source
   // folder, then take the next segment as the "module" id.
   //
@@ -456,8 +468,15 @@ function moduleOf(filePath, sourceFolders) {
   // import-derived edges can be applied directly after bootstrap.
   const parts = filePath.split(/[\\/]/);
   for (let i = 0; i < parts.length - 1; i += 1) {
+    if (i !== 0) continue;
     if (sourceFolders.includes(parts[i])) {
       const next = parts[i + 1];
+      if (
+        (parts[i] === 'apps' || parts[i] === 'packages') &&
+        existsSync(join(rootPath, parts[i], next, 'package.json'))
+      ) {
+        return `elements/${parts[i]}/${next}`;
+      }
       // capability 류 bucket — analyze 가 inner name 만 slug 으로 쓰므로
       // capabilities/ 아래에 둔다.
       const capabilityBuckets = new Set(['features']);

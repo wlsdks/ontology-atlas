@@ -48,6 +48,7 @@ const EQUALITY_FILTER_KEYS = ["kind", "domain", "slug", "title"];
 let passed = 0;
 let failed = 0;
 let skipped = 0;
+let matched = 0;
 const TEST_FILTER = resolveTestFilter();
 const TEST_NAME_PATTERN = TEST_FILTER.pattern;
 
@@ -65,6 +66,7 @@ function test(name, fn) {
     skipped += 1;
     return Promise.resolve();
   }
+  matched += 1;
   return fn()
     .then(() => {
       passed += 1;
@@ -559,7 +561,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     assert.equal(analyzeRepo?.inputSchema?.properties?.ignore?.maxItems, 200);
     assert.equal(analyzeRepo?.outputSchema?.type, "object");
-    assert.deepEqual(analyzeRepo?.outputSchema?.required, ["rootPath", "framework", "domains", "capabilities", "elements", "meaningGate", "suggestedRelations", "skipped"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.required, ["rootPath", "framework", "domains", "capabilities", "elements", "meaningGate", "extractionContract", "semanticEvidence", "suggestedRelations", "skipped"]);
     assert.equal(analyzeRepo?.outputSchema?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.project?.required, ["slug", "title"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.project?.additionalProperties, false);
@@ -568,7 +570,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.additionalProperties, false);
     assert.equal(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.properties?.evidence?.additionalProperties, false);
     const analyzeMeaningGate = analyzeRepo?.outputSchema?.properties?.meaningGate;
-    assert.deepEqual(analyzeMeaningGate?.required, ["policy", "sourceStructureRole", "businessOntology", "implementationEvidence", "reviewQuestions"]);
+    assert.deepEqual(analyzeMeaningGate?.required, ["policy", "sourceStructureRole", "businessOntology", "proposedBusinessOntology", "implementationEvidence", "reviewQuestions"]);
     assert.equal(analyzeMeaningGate?.additionalProperties, false);
     assert.deepEqual(analyzeMeaningGate?.properties?.businessOntology?.required, ["domains", "capabilities", "evidence"]);
     assert.equal(analyzeMeaningGate?.properties?.businessOntology?.properties?.domains?.items?.type, "string");
@@ -1681,6 +1683,17 @@ await test("initialize — instructions 필드 (#45) AI agent 안내 노출", as
     assert.match(instructions, /compile_ontology/);
     assert.match(instructions, /query_ontology/);
     assert.match(instructions, /validate_vault/);
+    // Cold-start meaning extraction must fail closed instead of promoting
+    // repository structure directly into accepted business concepts.
+    assert.match(instructions, /semanticEvidence/);
+    assert.match(instructions, /extractionContract/);
+    assert.match(instructions, /observed facts, proposed meanings, and persisted shared concepts/);
+    assert.match(instructions, /non-circular definition/);
+    assert.match(instructions, /includes\/excludes boundary/);
+    assert.match(instructions, /unsupported assertions/);
+    assert.match(instructions, /implementation-name leakage/);
+    assert.match(instructions, /Unknown is a valid result/);
+    assert.match(instructions, /obtain explicit user approval/);
     assert.match(instructions, /read-only first-contact diagnosis/);
     assert.match(instructions, /operation:'agent_brief'/);
     assert.match(instructions, /Claude Code\/Codex handoff/);
@@ -2112,29 +2125,29 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.ok(result.plan.importRelations >= 1);
     assert.equal(result.meaningGate.policy, "business-first");
     assert.equal(result.meaningGate.sourceStructureRole, "implementation-evidence");
-    assert.equal(result.meaningGate.businessOntology.domains, 1);
-    assert.equal(result.meaningGate.businessOntology.capabilities, 2);
-    assert.equal(result.meaningGate.businessOntology.evidence, 3);
+    assert.equal(result.meaningGate.businessOntology.domains, 0);
+    assert.equal(result.meaningGate.businessOntology.capabilities, 1);
+    assert.equal(result.meaningGate.businessOntology.evidence, 1);
     assert.deepEqual(result.meaningGate.businessOntology.evidenceRows, [
       {
         slug: "capabilities/auth",
         kind: "capability",
         source: "docs/ontology/capabilities/auth.md",
       },
+    ]);
+    assert.equal(result.meaningGate.proposedBusinessOntology.domains, 1);
+    assert.equal(result.meaningGate.proposedBusinessOntology.capabilities, 1);
+    assert.equal(result.meaningGate.implementationEvidence.elements, 0);
+    assert.equal(result.meaningGate.implementationEvidence.reviewRequiredCapabilities, 1);
+    assert.deepEqual(result.meaningGate.implementationEvidence.reviewRequiredRows, [
       {
         slug: "capabilities/billing",
-        kind: "capability",
-        source: "src/features/billing",
-      },
-      {
-        slug: "domains/auth",
-        kind: "domain",
-        source: "README.md",
+        reason: "source folder is implementation evidence, not proof of a shared capability meaning",
+        evidence: { source: "src/features/billing" },
       },
     ]);
-    assert.equal(result.meaningGate.implementationEvidence.elements, 0);
-    assert.equal(result.meaningGate.implementationEvidence.reviewRequiredCapabilities, 0);
-    assert.deepEqual(result.meaningGate.implementationEvidence.reviewRequiredRows, []);
+    assert.equal(result.extractionContract.assertionPolicy.automaticBusinessAssertions, 0);
+    assert.equal(result.extractionContract.assertionPolicy.humanApprovalRequired, true);
     assert.match(result.meaningGate.reviewQuestions[0], /business\/product/);
     assert.equal(result.validation.problemFiles, 0);
     assert.equal(result.next.applyTool, "add_concepts + add_relations");
@@ -4138,6 +4151,10 @@ await test("get_concept — 존재하지 않는 slug 는 growthHint 를 실은 e
     const withCandidate = getCallStructured(responses, 2);
     assert.equal(withCandidate.errorCode, "not_found");
     assert.equal(withCandidate.error, "Doc not found: capabilities/log");
+    assert.equal(withCandidate.missingSlug, "capabilities/log");
+    assert.deepEqual(withCandidate.similarSlugs, ["capabilities/login"]);
+    assert.deepEqual(withCandidate.recoveryTools, ["list_concepts", "find_evidence"]);
+    assert.equal(withCandidate.createTool, "add_concept");
     assert.ok(withCandidate.growthHint, "expected growthHint on not-found error");
     assert.match(withCandidate.growthHint.reason, /"capabilities\/log" does not resolve/);
     assert.deepEqual(withCandidate.growthHint.exampleCall, {
@@ -4289,6 +4306,12 @@ await test("get_concepts — 배치 read, 입력 순서 보존 + partial result"
     assert.equal(result.concepts[1].slug, "missing-slug");
     assert.equal(result.concepts[1].ok, false);
     assert.match(result.concepts[1].error, /not found/i);
+    assert.equal(result.concepts[1].errorCode, "not_found");
+    assert.equal(result.concepts[1].missingSlug, "missing-slug");
+    assert.deepEqual(result.concepts[1].similarSlugs, []);
+    assert.deepEqual(result.concepts[1].recoveryTools, ["list_concepts", "find_evidence"]);
+    assert.equal(result.concepts[1].createTool, "add_concept");
+    assert.equal(result.concepts[1].growthHint.exampleCall.tool, "add_concept");
     // 그 다음 valid 한 slug 는 정상 처리.
     assert.equal(result.concepts[2].slug, "alpha");
     assert.equal(result.concepts[2].ok, true);
@@ -6082,6 +6105,35 @@ await test("builder_context — persisted Builder focus, positions, and agent ha
   }
 });
 
+await test("query_ontology — unresolved compiled slug exposes structured recovery fields", async () => {
+  const root = makeVault([
+    {
+      slug: "capabilities/login",
+      content: "---\nkind: capability\ntitle: Login\n---\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_ontology", {
+        operation: "builder_context",
+        slug: "capabilities/logn",
+      }),
+    ]);
+
+    assert.equal(isErrorResponse(responses, 2), true);
+    const structured = getCallStructured(responses, 2);
+    assert.equal(structured.errorCode, "not_found");
+    assert.equal(structured.missingSubject, "slug");
+    assert.equal(structured.missingSlug, "capabilities/logn");
+    assert.deepEqual(structured.similarSlugs, ["capabilities/login"]);
+    assert.deepEqual(structured.recoveryTools, ["list_concepts", "find_evidence"]);
+    assert.equal(structured.createTool, "add_concept");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("absorb_document — repo boundary, symlink escape, explicit opt-in, and backup guard", async () => {
   const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-absorb-repo-"));
   const vault = join(repoRoot, "vault");
@@ -6454,7 +6506,7 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
 
 const skippedSuffix = skipped > 0 ? `, ${skipped} skipped` : "";
 console.log(`\nintegration: ${passed} passed, ${failed} failed${skippedSuffix}`);
-if (TEST_NAME_PATTERN && passed === 0) {
+if (TEST_NAME_PATTERN && matched === 0) {
   console.error(formatNoTestMatchMessage("MCP", TEST_FILTER));
   process.exit(1);
 }

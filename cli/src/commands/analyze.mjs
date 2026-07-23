@@ -7,11 +7,13 @@ import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import {
-  assertConceptBatchResult,
-  assertRelationBatchResult,
   formatConceptBatchFailureLabel,
   formatRelationBatchFailureLabel,
 } from '../lib/batch-results.mjs';
+import {
+  callConceptBatches,
+  callRelationBatches,
+} from '../lib/mcp-batches.mjs';
 import { assertAnalyzeRepoStructureResult } from '../lib/repo-analysis-results.mjs';
 import {
   pruneUntouchedStarterNodes,
@@ -185,8 +187,7 @@ function parseArgs(args) {
 async function runApply(vaultRoot, result, json) {
   // concepts[] 조립 — project 먼저 (capability 의 domain reference 가 의미
   // 가 있으려면 domain 이 먼저 와야 하고, 그 전에 project 가). add_concepts
-  // 는 cap 50 이라 여기 한 번에 land 가능한 수준이 아니면 chunk 가 필요
-  // 하지만 analyze 의 current heuristic 은 보통 30 이하라 하나로 충분.
+  // 는 cap 50 이므로 대형 저장소 후보는 shared batch helper가 분할한다.
   const concepts = [];
   if (result.project) {
     concepts.push({
@@ -218,10 +219,9 @@ async function runApply(vaultRoot, result, json) {
   const prunedStarters =
     concepts.length > 0 ? pruneUntouchedStarterNodes(vaultRoot) : null;
 
-  let conceptsResult;
+  let conceptRows;
   try {
-    conceptsResult = await callBatch(vaultRoot, 'add_concepts', { concepts });
-    assertConceptBatchResult(conceptsResult, 'add_concepts', { expectedCount: concepts.length });
+    conceptRows = await callConceptBatches(vaultRoot, concepts);
   } catch (err) {
     restorePrunedStarterNodes(vaultRoot, prunedStarters);
     process.stderr.write(
@@ -231,13 +231,10 @@ async function runApply(vaultRoot, result, json) {
   }
 
   const relations = result.suggestedRelations ?? [];
-  let relationsResult = { relations: [] };
+  let relationRows = [];
   if (relations.length > 0) {
     try {
-      relationsResult = await callBatch(vaultRoot, 'add_relations', {
-        relations,
-      });
-      assertRelationBatchResult(relationsResult, 'add_relations', { expectedCount: relations.length });
+      relationRows = await callRelationBatches(vaultRoot, relations);
     } catch (err) {
       process.stderr.write(
         `${COLORS.red}error${COLORS.reset}  add_relations: ${err instanceof Error ? err.message : String(err)}\n`,
@@ -248,9 +245,6 @@ async function runApply(vaultRoot, result, json) {
 
   // mcp 응답 shape — add_concepts 는 { concepts: [...] }, add_relations 는
   // { relations: [...] }. 두 도구가 다른 키.
-  const conceptRows = conceptsResult.concepts ?? [];
-  const relationRows = relationsResult.relations ?? [];
-
   const summary = summarize(conceptRows, relationRows);
   // R+ — apply 흐름 마무리 census (cycle 38, shared helper).
   const vaultCensus = await getVaultCensus(vaultRoot);
@@ -347,11 +341,6 @@ function summarize(conceptRows, relationRows) {
     relationsErrors,
     errors: conceptsErrors + relationsErrors,
   };
-}
-
-// callMcpTool already unwraps MCP structuredContent/text fallback into the tool payload.
-async function callBatch(vaultRoot, name, args) {
-  return callMcpTool(vaultRoot, name, args);
 }
 
 function printUsage(stream = process.stderr) {

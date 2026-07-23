@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { redirectBacklinks } from "./vault.mjs";
+import { findBacklinks, redirectBacklinks } from "./vault.mjs";
 
 let passed = 0;
 let failed = 0;
@@ -190,6 +190,56 @@ test("객체 맵 키 충돌 — 기존(new 키) 값이 이긴다 (조용한 덮�
   const after = readMd(root, "user2");
   assert.match(after, /capabilities\/new-name: 새 노트/);
   assert.doesNotMatch(after, /옛 노트/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("동일 tail 이 여러 kind 에 있으면 exact target 만 redirect", () => {
+  const root = makeVault();
+  writeMd(
+    root,
+    "capabilities/shared-name",
+    "---\nslug: capabilities/shared-name\nkind: capability\ntitle: Capability\n---\n",
+  );
+  writeMd(
+    root,
+    "elements/shared-name",
+    "---\nslug: elements/shared-name\nkind: element\ntitle: Element\n---\n",
+  );
+  writeMd(
+    root,
+    "domain",
+    "---\nkind: domain\ncapabilities: [shared-name]\n---\nsee [[shared-name]].\n",
+  );
+  writeMd(
+    root,
+    "project",
+    "---\nkind: project\nelements: [elements/shared-name]\n---\nsee [[elements/shared-name]].\n",
+  );
+
+  const result = redirectBacklinks(
+    root,
+    "elements/shared-name",
+    "elements/renamed-element",
+    { dryRun: true },
+  );
+
+  assert.equal(result.totalUpdated, 1);
+  assert.equal(result.updates[0].slug, "project");
+  assert.equal(readMd(root, "capabilities/shared-name").includes("capabilities/renamed-element"), false);
+  assert.match(readMd(root, "domain"), /capabilities: \[shared-name\]/);
+  assert.match(readMd(root, "domain"), /\[\[shared-name\]\]/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("findBacklinks 는 ambiguous tail 을 exact target backlink 로 오인하지 않는다", () => {
+  const root = makeVault();
+  writeMd(root, "capabilities/shared-name", "---\nkind: capability\n---\n");
+  writeMd(root, "elements/shared-name", "---\nkind: element\n---\n");
+  writeMd(root, "domain", "---\nkind: domain\ncapabilities: [shared-name]\n---\n");
+  writeMd(root, "project", "---\nkind: project\nelements: [elements/shared-name]\n---\n");
+
+  const backlinks = findBacklinks(root, "elements/shared-name");
+  assert.deepEqual(backlinks.map((row) => row.slug), ["project"]);
   rmSync(root, { recursive: true, force: true });
 });
 

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-23T07:21:19.891Z",
+  "generatedAt": "2026-07-23T08:42:56.554Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -219,7 +219,7 @@
       ],
       "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
       "wordCount": 1935,
-      "updatedAt": "2026-07-23T11:32:37+09:00",
+      "updatedAt": "2026-07-23T15:29:58+09:00",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -1072,7 +1072,7 @@
       ],
       "excerpt": "Date: 2026-07-23 Target: main-2 source checkout + docs/ontology dogfood vault Runtime: Node 24 Earlier rounds emphasized blank-folder bootstrap, destructive-write safety, and general graph health. This round followed four different agent moments: 1. an upgraded repository whose already-running MCP client still exposes ",
       "wordCount": 963,
-      "updatedAt": "2026-07-23T06:15:28.446Z",
+      "updatedAt": "2026-07-23T15:29:58+09:00",
       "linksOut": []
     },
     {
@@ -5923,7 +5923,7 @@
       ],
       "excerpt": "이 문서는 제품을 느낌이 아니라 공개·인용 가능한 학술/표준/craft 레퍼런스에 묶어 둔다. \"온톨로지가 뭔지도 모르면서 만드는\" 것을 막기 위한 근거 모음 — 무엇이 이미 있고, 우리가 그 위에서 우리만의 것을 어디서 어떻게 다르게 만드는지. 인용 규율: 여기 실린 레퍼런스는 전부 공개 논문 / W3C 표준 / 공개 서적 / 공개 블로그이며, 2026-06-01 자동 리서치 워크플로(6 facet × research→adversarial fact-check)에서 각 출처의 제목·저자·URL 을 독립 웹 확인(25/25 verified) 한 것만 실었다. 링크/인용",
       "wordCount": 2653,
-      "updatedAt": "2026-07-23T11:32:37+09:00",
+      "updatedAt": "2026-07-23T15:29:58+09:00",
       "linksOut": []
     },
     {
@@ -6072,7 +6072,7 @@
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~280. HN expects substantive Show HN posts, not one-liners.)",
       "wordCount": 439,
-      "updatedAt": "2026-07-23T11:32:37+09:00",
+      "updatedAt": "2026-07-23T15:29:58+09:00",
       "linksOut": []
     },
     {
@@ -6130,7 +6130,7 @@
       ],
       "excerpt": "오픈소스 launch 단계의 publication 초안 모음. 메인테이너가 시점에 맞춰 직접 publish. 1. 사전 준비 [ ] CLI npm 배포 — cli/ 와 mcp/ 둘 다 npm publish [ ] 정적 호스팅 (GitHub Pages / Vercel / Netlify / Cloudflare Pages 등) 배포 — pnpm build → out/ 업로드. 자세한 가이드는 docs/DEPLOYMENT.md. [ ] hosted demo URL 이 README + CLI 안내 문구와 일치하는지 재확인 [ ] 30s demo gif 녹화 + docs/lau",
       "wordCount": 552,
-      "updatedAt": "2026-07-23T05:57:49.514Z",
+      "updatedAt": "2026-07-23T15:29:58+09:00",
       "linksOut": []
     },
     {
@@ -6178,7 +6178,7 @@
       ],
       "excerpt": "Reddit responds best to honest, problem-first framing. Each subreddit has its own norms; copy below tuned per audience. Title: ontology-atlas — frontmatter as a codebase ontology, AI agents read it via MCP Body (400~500 words, Reddit allows long-form better than HN): my-project/ ├── project.md ├── domains/ │ ├── auth.m",
       "wordCount": 933,
-      "updatedAt": "2026-07-23T11:32:37+09:00",
+      "updatedAt": "2026-07-23T15:29:58+09:00",
       "linksOut": []
     },
     {
@@ -6236,7 +6236,7 @@
       ],
       "excerpt": "X 의 언어는 짧고 시각적. 5–7 트윗 짜리 thread 가 sweet spot. 각 트윗 280 chars 안. 1 트윗 = 1 idea. yaml kind: capability domain: domains/auth dependson: [capabilities/signup] Post the thread in one go (drafts feature) Pin tweet 1 to profile Quote-tweet your HN submission link in a separate post a few hours later Tag relevant accounts onl",
       "wordCount": 442,
-      "updatedAt": "2026-07-23T11:32:37+09:00",
+      "updatedAt": "2026-07-23T15:29:58+09:00",
       "linksOut": []
     },
     {
@@ -7051,7 +7051,7 @@
       ],
       "excerpt": "@modelcontextprotocol/sdk 안정판 1.x 기반 stdio JSON-RPC 서버. 32 도구 노출 (read 19 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-lev",
       "wordCount": 13578,
-      "updatedAt": "2026-07-23T06:16:16.542Z",
+      "updatedAt": "2026-07-23T15:29:58+09:00",
       "linksOut": []
     },
     {
@@ -7098,34 +7098,25 @@
         "display": "Ontology-Bootstrap Skill",
         "domain": "ai-agent-partner",
         "elements": [
-          ".claude/skills/ontology-bootstrap/SKILL.md"
+          ".agents/skills/ontology-bootstrap/guides/meaning-extraction.md",
+          ".agents/skills/ontology-bootstrap/SKILL.md"
         ]
       },
       "headings": [
         {
-          "depth": 2,
-          "text": "흐름 (R+, 3 round-trips)",
-          "slug": "흐름-r-3-round-trips"
+          "depth": 1,
+          "text": "Ontology Bootstrap Skill",
+          "slug": "ontology-bootstrap-skill"
         },
         {
           "depth": 2,
-          "text": "단일 source of truth",
-          "slug": "단일-source-of-truth"
-        },
-        {
-          "depth": 2,
-          "text": "Mission align",
-          "slug": "mission-align"
-        },
-        {
-          "depth": 2,
-          "text": "참조",
-          "slug": "참조"
+          "text": "Meaning contract",
+          "slug": "meaning-contract"
         }
       ],
-      "excerpt": "R16 follow-up — /ontology-bootstrap slash skill 의 cold-start counterpart. /ontology-sync 가 이미 자란 vault 의 incremental sync 라면, 이 skill 은 fresh init 직후 빈 vault 를 codebase 에서 한 번에 채우는 흐름. 1. listkinds — vault 가 진짜 cold-start 인지 (≤ 5 nodes) 확인 2. analyzerepostructure 1 회 호출 (mcp 도구, R16 v0.8.0) — package.json / README.md H",
-      "wordCount": 258,
-      "updatedAt": "2026-07-23T01:38:39+09:00",
+      "excerpt": "ontology-bootstrap은 비어 있거나 starter-only인 vault에서 첫 공유 온톨로지를 만드는 Atlas-only 에이전트 워크플로다. 저장소 폴더를 라벨링하는 기능이 아니라, indexproject가 반환한 semantic evidence와 extraction contract를 사람이 검토할 수 있는 의미 모델로 변환한다. observed: MCP가 직접 반환한 문서, 경로, 패키지, import 사실 proposed: observed evidence에서 해석했지만 아직 승인되지 않은 의미 shared: 사용자가 승인해 vault에 저장한 개념 ",
+      "wordCount": 177,
+      "updatedAt": "2026-07-23T17:42:33+09:00",
       "linksOut": []
     },
     {
@@ -7291,6 +7282,9 @@
         "dependencies": [
           "capabilities/cli-developer-entry",
           "capabilities/mcp-server"
+        ],
+        "relates": [
+          "capabilities/ontology-bootstrap-skill"
         ]
       },
       "headings": [
@@ -7300,9 +7294,9 @@
           "slug": "project-ontology-indexing"
         }
       ],
-      "excerpt": "Long-running project ontology indexing entrypoint. indexproject gives AI agents one read-only checkpoint that combines repo structure analysis, import-edge indexing, and vault validation before any write. The CLI pair is ontology-atlas index: default mode prints a side-effect-free plan, and --apply delegates to the exi",
-      "wordCount": 649,
-      "updatedAt": "2026-07-21T01:05:59+09:00",
+      "excerpt": "indexproject is the canonical read-only checkpoint for turning an unfamiliar repository into an evidence-backed ontology proposal. It combines repository-shape analysis, import evidence, active-vault validation, candidate reconciliation, and exact review calls without writing markdown. The CLI pair is ontology-atlas in",
+      "wordCount": 339,
+      "updatedAt": "2026-07-23T17:42:33+09:00",
       "linksOut": []
     },
     {
@@ -8293,7 +8287,7 @@
       "headings": [],
       "excerpt": "src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx renders the app-wide settings panel: display mode, language, ontology workspace access, and AI agent connection verification, grouped as five tabs (General / MCP+Agents / Vault / Appearance / Verification) behind one gear trigger. Before feat/rail-rollout (2026-07) t",
       "wordCount": 551,
-      "updatedAt": "2026-07-23T11:32:37+09:00",
+      "updatedAt": "2026-07-23T15:29:58+09:00",
       "linksOut": []
     },
     {
@@ -9325,7 +9319,7 @@
       ],
       "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 여기서 ontology 는 단순한 그래프 그림이 아니라 프로젝트가 무엇으로 이루어져 있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델이다. project, domain, capability, element 노드와 contains, dependson, relates, describes 같은 관계를 markdown frontmatter 로 저장하고, CLI/",
       "wordCount": 438,
-      "updatedAt": "2026-07-23T06:06:43.044Z",
+      "updatedAt": "2026-07-23T15:29:58+09:00",
       "linksOut": []
     },
     {
@@ -9881,7 +9875,7 @@
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
       "wordCount": 4926,
-      "updatedAt": "2026-07-23T05:57:33.340Z",
+      "updatedAt": "2026-07-23T15:29:58+09:00",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -10363,7 +10357,7 @@
       ],
       "excerpt": "This project publishes two npm packages: · Package · Path · What · Required? · ontology-atlas-mcp · mcp/ · MCP server (AI agents read/write the vault) · Required — the core of the AI agent integration · ontology-atlas · cli/ · 25-command developer CLI (vault scaffold, bootstrap, compile, graph CRUD/deep dive) · Recomme",
       "wordCount": 1156,
-      "updatedAt": "2026-07-23T11:32:37+09:00",
+      "updatedAt": "2026-07-23T15:29:58+09:00",
       "linksOut": []
     },
     {
@@ -10401,7 +10395,7 @@
       ],
       "excerpt": "Current as of 2026-05-18. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontology-engine.mjs, and cli/src/index.mjs first. ontology-atlas is now best described as a repo-native memory layer for Claude Code, Cursor,",
       "wordCount": 814,
-      "updatedAt": "2026-07-23T11:32:37+09:00",
+      "updatedAt": "2026-07-23T15:29:58+09:00",
       "linksOut": [
         "../README",
         "PRODUCT-OWNER-OPERATING-SYSTEM",
@@ -11302,6 +11296,11 @@
       {
         "fromSlug": "ontology/capabilities/ontology-extract-skill",
         "context": "(capability / element / domain) 가 자란다 — LLM 이 매개라서 가능한 path. ## 다른 두 skill 과의 관계 | Skill | 입력 | 출력 | |---|---|---| | **[capabilities/ontology-bootstrap-skill]** | 빈 vault + 코드 (analyze_repo_structure) | 첫 5–15 노드 | | [[capabilities/ontology-sync-skill]] | code change (git diff) |",
+        "linkText": "capabilities/ontology-bootstrap-skill"
+      },
+      {
+        "fromSlug": "ontology/capabilities/project-ontology-indexing",
+        "context": "frontmatter · **[capabilities/ontology-bootstrap-skill]**",
         "linkText": "capabilities/ontology-bootstrap-skill"
       },
       {

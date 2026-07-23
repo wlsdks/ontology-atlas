@@ -249,6 +249,91 @@ test('module-level edge collapse (FSD features/ — capability folder slug, anal
   }
 });
 
+test('module-level edge collapse (workspace packages — analyzer element slug parity)', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'apps', 'api', 'src'), { recursive: true });
+    mkdirSync(join(r, 'packages', 'memory', 'src'), { recursive: true });
+    mkdirSync(join(r, 'packages', 'shared', 'src'), { recursive: true });
+    mkdirSync(join(r, 'scripts', 'lib'), { recursive: true });
+    writeFileSync(
+      join(r, 'apps', 'api', 'package.json'),
+      '{"name":"@muse/api"}\n',
+    );
+    writeFileSync(
+      join(r, 'packages', 'memory', 'package.json'),
+      '{"name":"@muse/memory"}\n',
+    );
+    writeFileSync(
+      join(r, 'packages', 'shared', 'package.json'),
+      '{"name":"@muse/shared"}\n',
+    );
+    writeFileSync(
+      join(r, 'packages', 'memory', 'src', 'index.ts'),
+      'import { json } from "../../shared/src/index";\nexport { json };\n',
+    );
+    writeFileSync(
+      join(r, 'packages', 'shared', 'src', 'index.ts'),
+      'export const json = true;\n',
+    );
+    writeFileSync(
+      join(r, 'apps', 'api', 'src', 'index.ts'),
+      [
+        'import { json } from "../../../packages/shared/src/index";',
+        'import "../../../scripts/lib/helper";',
+        'export { json };',
+      ].join('\n'),
+    );
+    writeFileSync(join(r, 'scripts', 'lib', 'helper.ts'), 'export const helper = true;\n');
+  });
+  try {
+    const r = inferImports(root);
+    assert.deepEqual(r.moduleEdges, [
+      {
+        from: 'elements/apps/api',
+        to: 'elements/packages/shared',
+        count: 1,
+        kindCounts: { static: 1 },
+      },
+      {
+        from: 'elements/packages/memory',
+        to: 'elements/packages/shared',
+        count: 1,
+        kindCounts: { static: 1 },
+      },
+    ]);
+    assert.deepEqual(
+      inferImports(root, {
+        sourceFolders: ['apps', 'packages'],
+        ignore: ['packages'],
+      }).moduleEdges,
+      [],
+    );
+    assert.deepEqual(
+      inferImports(root, {
+        sourceFolders: ['apps', 'packages'],
+        ignore: ['shared'],
+      }).moduleEdges,
+      [],
+    );
+    assert.deepEqual(
+      inferImports(root, {
+        sourceFolders: ['packages'],
+        ignore: ['packages'],
+      }),
+      {
+        rootPath: root,
+        filesScanned: 0,
+        edges: [],
+        externalImports: [],
+        unresolved: [],
+        moduleEdges: [],
+      },
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('module-level edge collapse (single-file layered repo classifies support layers precisely)', () => {
   const root = withRepo((r) => {
     mkdirSync(join(r, 'src/features'), { recursive: true });

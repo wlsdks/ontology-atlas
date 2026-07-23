@@ -23,11 +23,13 @@ import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import {
-  assertConceptBatchResult,
-  assertRelationBatchResult,
   formatConceptBatchFailureLabel,
   formatRelationBatchFailureLabel,
 } from '../lib/batch-results.mjs';
+import {
+  callConceptBatches,
+  callRelationBatches,
+} from '../lib/mcp-batches.mjs';
 import { assertInferImportsResult } from '../lib/import-analysis-results.mjs';
 import { assertAnalyzeRepoStructureResult } from '../lib/repo-analysis-results.mjs';
 import {
@@ -107,9 +109,7 @@ export async function runBootstrap(args) {
   let conceptsRows = [];
   if (concepts.length > 0) {
     try {
-      const r = await callMcpTool(vaultRoot, 'add_concepts', { concepts });
-      assertConceptBatchResult(r, 'add_concepts', { expectedCount: concepts.length });
-      conceptsRows = r.concepts ?? [];
+      conceptsRows = await callConceptBatches(vaultRoot, concepts);
     } catch (err) {
       restorePrunedStarterNodes(vaultRoot, prunedStarters);
       process.stderr.write(
@@ -166,13 +166,13 @@ export async function runBootstrap(args) {
     );
     if (importEndpointConcepts.length > 0) {
       try {
-        const r = await callMcpTool(vaultRoot, 'add_concepts', {
-          concepts: importEndpointConcepts,
-        });
-        assertConceptBatchResult(r, 'add_concepts(import endpoints)', {
-          expectedCount: importEndpointConcepts.length,
-        });
-        importEndpointRows = r.concepts ?? [];
+        importEndpointRows = await callConceptBatches(
+          vaultRoot,
+          importEndpointConcepts,
+          {
+            context: 'add_concepts(import endpoints)',
+          },
+        );
       } catch (err) {
         process.stderr.write(
           `${COLORS.red}error${COLORS.reset}  add_concepts(import endpoints): ${err instanceof Error ? err.message : String(err)}\n`,
@@ -510,22 +510,14 @@ function titleFromSlug(slug) {
 // add_relations 의 50-row chunk 분할. 호출 실패 (mcp throw) 시 null 리턴.
 async function applyRelations(vaultRoot, relations) {
   if (!Array.isArray(relations) || relations.length === 0) return [];
-  const all = [];
-  for (let i = 0; i < relations.length; i += 50) {
-    const chunk = relations.slice(i, i + 50);
-    let res;
-    try {
-      res = await callMcpTool(vaultRoot, 'add_relations', { relations: chunk });
-      assertRelationBatchResult(res, `add_relations chunk @${i}`, { expectedCount: chunk.length });
-    } catch (err) {
-      process.stderr.write(
-        `${COLORS.red}error${COLORS.reset}  add_relations chunk @${i}: ${err instanceof Error ? err.message : String(err)}\n`,
-      );
-      return null;
-    }
-    for (const r of res.relations ?? []) all.push(r);
+  try {
+    return await callRelationBatches(vaultRoot, relations);
+  } catch (err) {
+    process.stderr.write(
+      `${COLORS.red}error${COLORS.reset}  add_relations: ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    return null;
   }
-  return all;
 }
 
 function combineSummary(

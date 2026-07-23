@@ -746,24 +746,24 @@ A successful run looks like this:
 ✓ list_kinds — 105 nodes (capability:39, document:3, domain:6, element:55, project:1, vault-readme:1)
 ✓ validate_vault — 105 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (105 nodes, 1 next action, 6 health checks, growth actions:1 external:1 ignoredExternal:222)
+✓ workspace_brief — healthy (105 nodes, 1 next action, 6 health checks, growth actions:3 external:3 ignoredExternal:221)
 · workspace_brief non-blocking advisory nextActions — materialize_external_elements:info:1 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 6 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (105 nodes, 2 next actions, 6 health checks, growth actions:1 external:1 ignoredExternal:222; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (105 nodes, 2 next actions, 6 health checks, growth actions:3 external:3 ignoredExternal:221; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 · workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:4 - The scoped ontology graph has disconnected actionable islands., materialize_external_elements:info:1 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1, +1 more)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:4, +1 more; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
 · health_tuned non-blocking advisory checks — components:info:4 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph a955077644a6 (105 nodes, 572 edges, issues 0)
-✓ compile_ontology page — 1/105 nodes, 1/572 edges
-✓ compile_ontology indexes — out 105, in 104, edgeById 572, aliases 209, edges 349/223/0
-✓ overview — graph a955077644a6 (105 nodes, 572 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 105, edges 572)
-✓ project_map query_plan — aggregate_scan (medium, nodes 105, edges 572)
+✓ compile_ontology — graph cacbe18eef68 (105 nodes, 574 edges, issues 0)
+✓ compile_ontology page — 1/105 nodes, 1/574 edges
+✓ compile_ontology indexes — out 105, in 104, edgeById 574, aliases 209, edges 350/224/0
+✓ overview — graph cacbe18eef68 (105 nodes, 574 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 105, edges 574)
+✓ project_map query_plan — aggregate_scan (medium, nodes 105, edges 574)
 ✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ all_paths — src/widgets/bottom-tab-bar → project (5/15 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
-✓ project_scope — project (101 nodes, internalEdges 331)
+✓ project_scope — project (101 nodes, internalEdges 332)
 ✓ read census consistency — 105 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
 ✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 13/13
 

@@ -790,12 +790,17 @@ export function findBacklinks(rootPath, targetSlug) {
 function buildRefResolver(docs) {
   const slugs = new Set(docs.map((d) => d.slug));
   const tailToFull = new Map();
+  const ambiguousTails = new Set();
   const frontmatterSlugToFull = new Map();
   for (const slug of slugs) {
     const tail = slug.split('/').pop();
-    if (tail && tail !== slug && !tailToFull.has(tail)) {
-      tailToFull.set(tail, slug);
+    if (!tail || tail === slug || ambiguousTails.has(tail)) continue;
+    if (tailToFull.has(tail)) {
+      tailToFull.delete(tail);
+      ambiguousTails.add(tail);
+      continue;
     }
+    tailToFull.set(tail, slug);
   }
   for (const doc of docs) {
     const fmSlug = doc.frontmatter.slug;
@@ -807,6 +812,7 @@ function buildRefResolver(docs) {
     if (typeof ref !== 'string') return null;
     if (slugs.has(ref)) return ref;
     if (frontmatterSlugToFull.has(ref)) return frontmatterSlugToFull.get(ref);
+    if (ambiguousTails.has(ref)) return null;
     if (tailToFull.has(ref)) return tailToFull.get(ref);
     for (const slug of slugs) {
       if (slug.endsWith(`/${ref}`)) return slug;
@@ -847,12 +853,20 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
   const docs = loadVaultDocs(rootPath);
   const targetTail = targetSlug.split('/').pop();
   const nextTail = nextSlug.split('/').pop();
+  const tailMatches = docs
+    .map((doc) => doc.slug)
+    .filter((slug) => slug.split('/').pop() === targetTail);
+  // A bare/suffix tail is shorthand only while it uniquely resolves. When
+  // capabilities/foo and elements/foo both exist, rewriting "foo" would
+  // silently redirect whichever concept the author meant and can even mutate
+  // the other node's frontmatter slug. Exact canonical refs remain safe.
+  const canRewriteTail = tailMatches.length === 1 && tailMatches[0] === targetSlug;
 
   function rewriteArrayItem(value) {
     if (typeof value !== 'string') return { value, changed: false };
     if (value === targetSlug) return { value: nextSlug, changed: true };
-    if (value === targetTail) return { value: nextTail, changed: true };
-    if (value.endsWith(`/${targetTail}`)) {
+    if (canRewriteTail && value === targetTail) return { value: nextTail, changed: true };
+    if (canRewriteTail && value.endsWith(`/${targetTail}`)) {
       // path-prefixed tail — 보존 prefix + 새 tail
       const prefix = value.slice(0, value.length - targetTail.length);
       return { value: `${prefix}${nextTail}`, changed: true };
@@ -935,7 +949,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
       nextBody = nextBody.split(`[[${targetSlug}]]`).join(`[[${nextSlug}]]`);
       bodyChanged = true;
     }
-    if (nextBody.includes(`[[${targetTail}]]`)) {
+    if (canRewriteTail && nextBody.includes(`[[${targetTail}]]`)) {
       nextBody = nextBody.split(`[[${targetTail}]]`).join(`[[${nextTail}]]`);
       bodyChanged = true;
     }

@@ -211,6 +211,128 @@ const REVIEW_REQUIRED_CAPABILITY_ROW_SCHEMA = Object.freeze({
   required: ['slug', 'reason', 'evidence'],
   additionalProperties: false,
 });
+const PROPOSED_BUSINESS_CONCEPT_ROW_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    slug: NON_BLANK_STRING_SCHEMA,
+    reason: NON_BLANK_STRING_SCHEMA,
+    evidence: {
+      type: 'object',
+      properties: {
+        source: NON_BLANK_STRING_SCHEMA,
+        line: { type: 'integer', minimum: 1 },
+      },
+      required: ['source'],
+      additionalProperties: false,
+    },
+  },
+  required: ['slug', 'reason', 'evidence'],
+  additionalProperties: false,
+});
+const SEMANTIC_EVIDENCE_ROW_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    source: NON_BLANK_STRING_SCHEMA,
+    role: {
+      type: 'string',
+      enum: [
+        'mission',
+        'product-capabilities',
+        'product-contract',
+        'architecture',
+        'agent-guidance',
+      ],
+    },
+    title: NON_BLANK_STRING_SCHEMA,
+    headings: {
+      type: 'array',
+      maxItems: 8,
+      items: NON_BLANK_STRING_SCHEMA,
+    },
+    excerpt: { type: 'string', maxLength: 1200 },
+  },
+  required: ['source', 'role', 'title', 'headings', 'excerpt'],
+  additionalProperties: false,
+});
+const EXTRACTION_CONTRACT_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    standard: NON_BLANK_STRING_SCHEMA,
+    status: {
+      type: 'string',
+      enum: [
+        'grounded-in-existing-ontology',
+        'evidence-gathering',
+        'scope-discovery-required',
+      ],
+    },
+    assertionPolicy: {
+      type: 'object',
+      properties: {
+        sourceFacts: { type: 'string', enum: ['observed'] },
+        readmeAndFolderMeanings: { type: 'string', enum: ['proposed'] },
+        persistedOntologyMeanings: { type: 'string', enum: ['shared'] },
+        automaticBusinessAssertions: { type: 'integer', enum: [0] },
+        humanApprovalRequired: { type: 'boolean', enum: [true] },
+      },
+      required: [
+        'sourceFacts',
+        'readmeAndFolderMeanings',
+        'persistedOntologyMeanings',
+        'automaticBusinessAssertions',
+        'humanApprovalRequired',
+      ],
+      additionalProperties: false,
+    },
+    competencyQuestions: {
+      type: 'array',
+      minItems: 1,
+      items: NON_BLANK_STRING_SCHEMA,
+    },
+    qualityGates: {
+      type: 'object',
+      properties: {
+        scopeCandidateAvailable: { type: 'boolean' },
+        sharedBusinessConceptsAvailable: { type: 'boolean' },
+        proposedBusinessConcepts: { type: 'integer', minimum: 0 },
+        implementationEvidenceAvailable: { type: 'boolean' },
+        semanticEvidenceAvailable: { type: 'boolean' },
+        typedRelationsProposed: { type: 'integer', minimum: 0 },
+        provenanceAttached: { type: 'boolean' },
+        uncertaintyExplicit: { type: 'boolean', enum: [true] },
+        approvalRequired: { type: 'boolean', enum: [true] },
+      },
+      required: [
+        'scopeCandidateAvailable',
+        'sharedBusinessConceptsAvailable',
+        'proposedBusinessConcepts',
+        'implementationEvidenceAvailable',
+        'semanticEvidenceAvailable',
+        'typedRelationsProposed',
+        'provenanceAttached',
+        'uncertaintyExplicit',
+        'approvalRequired',
+      ],
+      additionalProperties: false,
+    },
+    limitations: {
+      type: 'array',
+      minItems: 1,
+      items: NON_BLANK_STRING_SCHEMA,
+    },
+    nextStep: NON_BLANK_STRING_SCHEMA,
+  },
+  required: [
+    'standard',
+    'status',
+    'assertionPolicy',
+    'competencyQuestions',
+    'qualityGates',
+    'limitations',
+    'nextStep',
+  ],
+  additionalProperties: false,
+});
 const RELATION_ARRAY_PATCH_SCHEMA = Object.freeze({
   type: 'object',
   properties: Object.fromEntries(
@@ -763,7 +885,7 @@ const SERVER_INSTRUCTIONS = `ontology-atlas — vault of markdown files where ea
 13. \`query_concepts(filter)\` — structured questions like \`kind=capability AND domain=auth AND NOT has(elements)\` (= "unfinished caps under auth").
 14. \`compile_ontology({includeIndexes:true})\` — compiler-style graph artifact: canonical nodes, edges, aliases, issues, stable \`graphHash\`, \`maxMtime\`, and query indexes.
 15. \`query_ontology({operation:${QUERY_ONTOLOGY_OPERATION_UNION}, ...})\` — graph-engine query over the compiled artifact. Use \`neighbors\` for local graph view, \`path\` for one relation route, \`all_paths\` for bounded simple paths between two nodes, \`query_plan\` for an EXPLAIN-style side-effect-free cost/index estimate before running a target operation (including filter-preserving \`suggestedQuery\` and \`estimate.totalMatches\` for \`match_nodes\` / \`match_edges\`), \`centrality\` for PageRank-style core-node ranking plus bridge/authority/hub lists, \`communities\` for label-propagation clusters inside the graph, \`similar_nodes\` before writes to catch likely duplicate or overlapping concepts, \`explain_relation\` for direct edges + shortest path + shared-neighbor explanation between two nodes, \`reachability\` for transitive graph closure from a start node, \`pattern_walk\` for explicit relation-sequence paths such as project → domains → capabilities, \`impact\` for "what depends on this?" change analysis, \`blast_radius\` for impact grouped by kind/domain with cross-domain edge risk, \`subgraph\` for a bounded N-hop graph slice, \`builder_context\` for persisted Builder focus/layout plus safe MCP write handoff, \`overview\` for dashboard-style graph aggregates, \`schema\` for \`(:kind)-[:relation]->(:kind)\` patterns, \`facets\` for filter/dashboard aggregates, \`match_nodes\` for graph DB-style node rows with degree filters plus a \`followUp\` packet for focused next queries, \`match_edges\` for graph DB-style edge pattern rows plus a \`followUp\` packet for focused relation evidence and preflight, \`node_profile\` for a single node detail dashboard, \`domain_profile\` for a domain detail dashboard, \`domain_matrix\` for domain-to-domain coupling, \`project_scope\` for a project-contained graph slice, \`project_map\` for a domain-by-domain project map, \`relation_check\` before writes, \`components\` to find disconnected graph islands, \`lineage\` and \`containment_tree\` for project/domain/capability containment, \`cycles\` for directed dependency-cycle checks, \`topological_order\` for prerequisite-first dependency ordering, \`recommend_relations\` for safe domain-containment suggestions, \`growth_plan\` for side-effect-free ontology expansion candidates, \`maintenance_plan\` for ordered post-write graph cleanup/repair actions, \`agent_brief\` for Claude Code/Codex handoff prompt, recipes, graph entrypoints, playbook evidence/stopWhen checklists, write guardrails, \`graph_traversal\` playbook, \`traversalStrategy\` for plan-first bounded traversal, \`relationDecisionGuide\`, \`resultContracts\` for interpreting \`all_paths\` completeness (\`limit\` / \`searchBudget\` / \`expandedStates\` / \`exhaustive\` / \`truncatedByBudget\` / \`totalPathsExact\` plus \`evidence.status\` / \`evidence.reason\` / \`evidence.pathsComplete\`) and \`match_nodes\` / \`match_edges\` followUp evidence, and read-first write policy, \`workspace_brief\` for first-contact status + next actions, and \`health\` for a one-shot graph integrity dashboard.
-16. \`index_project({rootPath, maxFiles, threshold})\` — one read-only indexing checkpoint for large projects. It combines \`analyze_repo_structure\`, \`infer_imports\`, and \`validate_vault\` into counts, phases, validation status, and next write actions. It never writes markdown; land accepted candidates with \`add_concepts\` / \`add_relations\` or CLI \`ontology-atlas index --apply\`.
+16. \`index_project({rootPath, maxFiles, threshold})\` — one read-only indexing checkpoint for large projects. It combines repository analysis, imports, vault validation/alignment, bounded semantic evidence, and an extraction contract. Treat source/import facts as observed, generated meanings as proposed, and only user-approved persisted concepts as shared. It never writes markdown.
 
 All read-tool match rows share the same shape \`{slug, kind, title, domain, mtime, ...}\` — same sort/filter logic works across every read tool.
 
@@ -775,14 +897,19 @@ All tool input schemas are strict: unknown arguments are rejected instead of bei
 
 ### B. Vault is empty / cold-start — bootstrap from code (R16 / R17 / R+)
 
-When the user says "이 codebase 분석해줘" or you find only the 5 starter nodes. **Modern path is 3 round-trips total — analyze + add_concepts + add_relations** (down from per-row K calls):
+When the user says "이 codebase 분석해줘" or you find only starter nodes:
 
-1. \`analyze_repo_structure\` — walk \`package.json\` / \`README.md\` H2 / \`src/\` (FSD vs generic detect). Returns deterministic candidates (project + domains[] + capabilities[] + elements[] + suggestedRelations[]). **side effect 0 — vault NOT modified.** Show the candidates compactly, let the user prune / refine.
-2. \`add_concepts({concepts: [...]})\` — assemble the accepted project + domains + capabilities + elements into one array (max 50) and land them in **one batch call**. Each row processed independently: existing-slug / invalid-kind / missing-required / non-object row / unknown row fields surface as \`{ok: false, error}\` with a \`concepts[n]\` row label; single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`; multi unknown-field rows report every unknown field with nearest hints and \`Received fields: ...\`; the rest still land. Pre-checks duplicate slugs *within input batch*: the later row fails with \`concepts[n] duplicate slug in input batch; first seen at concepts[m]\`, so remove or rename the later row before retrying. Invalid-only batches return no row-level write metadata and no top-level \`postWriteMaintenance\`; if every row failed, treat the call as dry validation evidence and retry corrected rows. Use single \`add_concept\` only when you need atomic per-call semantics.
-3. \`add_relations({relations: [...]})\` — convert \`suggestedRelations\` into the same shape and land all edges in **one batch call**. Each row processed independently: missing source/target / unknown type / non-object row / unknown row fields surface as \`{ok: false, error}\` with a \`relations[n]\` row label; unknown type row errors include a closest-value hint such as \`Did you mean "depends_on"?\`; single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`; multi unknown-field rows report every unknown field with nearest hints and \`Received fields: ...\`; the rest still land. Invalid-only batches return no row-level \`changed\` / \`alreadyExists\` write metadata and no top-level \`postWriteMaintenance\`; if every row failed, treat the call as dry validation evidence and retry corrected rows. Idempotent (\`alreadyExists: true\` on second run); 50-row chunk if you have more.
-4. (Optional, R17) \`infer_imports\` for TS/JS \`depends_on\` edges from the actual import graph. Then another \`add_relations\` batch with \`type: 'depends_on'\`. The CLI \`ontology-atlas bootstrap\` packages all 4 steps into one command.
+1. Call \`index_project\`. Require \`sideEffect: 0\`, \`semanticEvidence\`, \`extractionContract\`, \`meaningGate\`, and \`validation.alignment\`. If these fields are absent, stop as a stale/incompatible MCP process; do not fall back to folder-derived business meaning.
+2. Build an evidence ledger from mission/outcome, product contract, shipped capabilities, architecture, and agent-guidance sources. Distinguish shipped, planned, conflicting, and unknown claims.
+3. Extract in order: project outcome → stable responsibility domains → observable implementation-independent capabilities → concrete elements → typed relations. A folder, package, team, technology, or README section is not a domain/capability without independent semantic evidence.
+4. Give every proposed domain/capability a non-circular definition, includes/excludes boundary, citation, confidence, and counterevidence/uncertainty. Keep observed facts, proposed meanings, and persisted shared concepts separate.
+5. Answer every \`extractionContract.competencyQuestions\` item. Report unsupported assertions, citation gaps, implementation-name leakage, undefined/circular concepts, unresolved conflicts, and question coverage. Do not write while the first four counts are non-zero.
+6. Show the evidence-backed proposal and obtain explicit user approval. Unknown is a valid result; invented completeness is not.
+7. Persist only accepted rows with \`add_concepts\` / \`add_relations\` (max 50 each), then run \`validate_vault\`, \`compile_ontology({summary:true})\`, and verify a project → domain → capability → element path.
 
-Throughout: the user (via your add_concepts / add_relations calls) is the single source of truth — never auto-write proposals without their confirmation.
+A non-object row, unknown row fields, missing endpoint, or duplicate slug fail independently with \`ok: false\`. Invalid-only batches return no row-level write metadata and no top-level \`postWriteMaintenance\`; treat them as dry validation evidence. For relation batches, Invalid-only batches return no row-level \`changed\` / \`alreadyExists\` write metadata and no top-level \`postWriteMaintenance\`; treat them as dry validation evidence. An unknown type row includes a closest-value hint such as \`Did you mean "depends_on"?\`. Duplicate slugs fail as \`concepts[n] duplicate slug in input batch; first seen at concepts[m]\`. Retry only corrected rows.
+
+The user is the single source of truth. Never auto-write generated proposals.
 
 ## Write tools — safety patterns
 
@@ -1038,7 +1165,7 @@ const TOOLS = [
   {
     name: 'get_concepts',
     description:
-      'Fetch *multiple* nodes in one call — same per-row shape as `get_concept` (frontmatter + excerpt + neighbors + mtime + warnings?), but accepts an array of slugs or unique aliases. Use when you have K specific slugs from `list_concepts` / `find_path` / `find_orphans` etc. and need their full details — saves K-1 round-trips. Order of `concepts[]` matches input `slugs[]`; successful rows return canonical `slug`. Missing or invalid slug rows return `{ slug, ok: false, error }` rather than aborting the batch, so later valid slugs still resolve — agents handle partial results gracefully.',
+      'Fetch *multiple* nodes in one call — same per-row shape as `get_concept` (frontmatter + excerpt + neighbors + mtime + warnings?), but accepts an array of slugs or unique aliases. Use when you have K specific slugs from `list_concepts` / `find_path` / `find_orphans` etc. and need their full details — saves K-1 round-trips. Order of `concepts[]` matches input `slugs[]`; successful rows return canonical `slug`. Missing or invalid slug rows return `{ slug, ok: false, error, errorCode, ...repairFields }` rather than aborting the batch, including missing-node guidance and `growthHint` when available, so later valid slugs still resolve and agents can recover without parsing prose.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1063,7 +1190,11 @@ const TOOLS = [
                 type: 'boolean',
                 description: 'True for resolved concept rows; false for missing or invalid input rows.',
               },
-              slug: NON_BLANK_STRING_SCHEMA,
+              slug: {
+                ...NON_BLANK_STRING_SCHEMA,
+                description:
+                  'Canonical slug for successful rows; the original input value for invalid partial rows.',
+              },
               frontmatter: {
                 type: 'object',
                 description: 'Resolved markdown frontmatter for successful rows.',
@@ -1092,6 +1223,13 @@ const TOOLS = [
                 type: 'string',
                 description: 'Human-readable error for partial rows.',
               },
+              errorCode: { type: 'string' },
+              missingSubject: { type: 'string' },
+              missingSlug: { type: 'string' },
+              similarSlugs: { type: 'array', items: { type: 'string' } },
+              recoveryTools: { type: 'array', items: { type: 'string' } },
+              createTool: { type: 'string' },
+              growthHint: GROWTH_HINT_OUTPUT_SCHEMA,
             },
             required: ['ok', 'slug'],
             additionalProperties: false,
@@ -2557,6 +2695,7 @@ const TOOLS = [
       '  - relative imports (./, ../) → resolved to file paths\n' +
       '  - dynamic import() / require() / export ... from\n' +
       '  - bare side-effect imports (import "X")\n' +
+      '  - apps/* and packages/* workspace imports collapse to analyzer-compatible element slugs\n' +
       '  - external (npm) imports listed separately\n' +
       '  - tsconfig.json compilerOptions.paths aliases first, then fallback common @/* aliases → resolved to internal files when the target exists; otherwise unresolved as alias-not-found\n\n' +
       'Use after analyze_repo_structure to pull *real* dependency edges from the code, not just suggestedRelations heuristics. ' +
@@ -2574,7 +2713,7 @@ const TOOLS = [
           maxItems: SOURCE_FOLDER_ARRAY_MAX_ITEMS,
           items: NON_BLANK_STRING_SCHEMA,
           description:
-            "Source folders to walk (default: ['src','lib','app','packages']). " +
+            "Source folders to walk (default: ['src','lib','app','apps','packages']). " +
             'If none exist, falls back to rootPath.',
         },
         ignore: {
@@ -2719,6 +2858,7 @@ const TOOLS = [
     description:
       'Project ontology indexing plan — run analyze_repo_structure + infer_imports + validate_vault in one read-only call. ' +
       'Use for large or already-existing projects where the agent needs a resumable ontology indexing checkpoint before writing. ' +
+      'Its extractionContract treats source facts as observed evidence, README/folder meanings as proposals, and only persisted ontology meanings as shared; it also returns competency questions, uncertainty, approval gates, and whether active-vault validation actually applies to the analyzed project. ' +
       'The plan distinguishes raw candidates into existing, ambiguous-alias review, and genuinely new buckets, then returns exact reviewCalls for retrieving full rows. ' +
       'side effect 0: this tool never writes markdown. To land accepted candidates, use add_concepts/add_relations explicitly or the CLI `ontology-atlas index --apply` command.',
     inputSchema: {
@@ -2829,8 +2969,23 @@ const TOOLS = [
             errorFiles: { type: 'integer', minimum: 0 },
             warningFiles: { type: 'integer', minimum: 0 },
             pathDrift: { type: 'integer', minimum: 0 },
+            appliesToAnalyzedProject: { type: 'boolean' },
+            alignment: {
+              type: 'string',
+              enum: ['matching-project', 'uninitialized-vault', 'mismatched-project', 'unknown'],
+            },
+            note: NON_BLANK_STRING_SCHEMA,
           },
-          required: ['scanned', 'problemFiles', 'errorFiles', 'warningFiles', 'pathDrift'],
+          required: [
+            'scanned',
+            'problemFiles',
+            'errorFiles',
+            'warningFiles',
+            'pathDrift',
+            'appliesToAnalyzedProject',
+            'alignment',
+            'note',
+          ],
           additionalProperties: false,
         },
         meaningGate: {
@@ -2851,6 +3006,25 @@ const TOOLS = [
                 },
               },
               required: ['domains', 'capabilities', 'evidence', 'evidenceRows'],
+              additionalProperties: false,
+            },
+            proposedBusinessOntology: {
+              type: 'object',
+              properties: {
+                domains: { type: 'integer', minimum: 0 },
+                capabilities: { type: 'integer', minimum: 0 },
+                domainRows: {
+                  type: 'array',
+                  maxItems: MEANING_GATE_REVIEW_ROW_LIMIT,
+                  items: PROPOSED_BUSINESS_CONCEPT_ROW_SCHEMA,
+                },
+                capabilityRows: {
+                  type: 'array',
+                  maxItems: MEANING_GATE_REVIEW_ROW_LIMIT,
+                  items: PROPOSED_BUSINESS_CONCEPT_ROW_SCHEMA,
+                },
+              },
+              required: ['domains', 'capabilities', 'domainRows', 'capabilityRows'],
               additionalProperties: false,
             },
             implementationEvidence: {
@@ -2876,10 +3050,16 @@ const TOOLS = [
             'policy',
             'sourceStructureRole',
             'businessOntology',
+            'proposedBusinessOntology',
             'implementationEvidence',
             'reviewQuestions',
           ],
           additionalProperties: false,
+        },
+        extractionContract: EXTRACTION_CONTRACT_OUTPUT_SCHEMA,
+        semanticEvidence: {
+          type: 'array',
+          items: SEMANTIC_EVIDENCE_ROW_SCHEMA,
         },
         next: {
           type: 'object',
@@ -2916,7 +3096,7 @@ const TOOLS = [
           additionalProperties: false,
         },
       },
-      required: ['mode', 'sideEffect', 'rootPath', 'vaultRoot', 'analyze', 'imports', 'plan', 'validation', 'meaningGate', 'next'],
+      required: ['mode', 'sideEffect', 'rootPath', 'vaultRoot', 'analyze', 'imports', 'plan', 'validation', 'meaningGate', 'extractionContract', 'semanticEvidence', 'next'],
       additionalProperties: false,
     },
   },
@@ -2925,12 +3105,13 @@ const TOOLS = [
     description:
       'R16 (autonomous ingest base) — analyze a code repository and propose ontology node candidates. ' +
       'side effect 0 (vault frontmatter NOT modified). Returns deterministic candidates the agent ' +
-      'should review and selectively pass to add_concept. Detects:\n' +
+      'should review and selectively pass to add_concept. Repository structure is implementation evidence, not automatic business meaning: extractionContract and proposedBusinessOntology make that uncertainty explicit. Detects:\n' +
       '  - package.json `name` → project candidate\n' +
       '  - README.md first H1 → project title fallback\n' +
       '  - README.md H2 sections (skipping generic "Usage"/"Installation"/etc) → domain candidates\n' +
       '  - src/features|entities|widgets|views/* (FSD) → capability/element candidates\n' +
-      '  - src/* depth-1 folders (generic) → capability candidates + index entry → element\n\n' +
+      '  - src/* depth-1 folders (generic) → capability candidates + index entry → element\n' +
+      '  - apps/* and packages/* members with package.json → implementation element candidates\n\n' +
       'Use this once when a user asks "이 codebase 분석해줘" / "bootstrap the ontology". ' +
       'Single source of truth preserved — only the user (via your subsequent add_concept calls) ' +
       'writes to the vault.',
@@ -3079,6 +3260,21 @@ const TOOLS = [
               required: ['domains', 'capabilities', 'evidence'],
               additionalProperties: false,
             },
+            proposedBusinessOntology: {
+              type: 'object',
+              properties: {
+                domains: {
+                  type: 'array',
+                  items: PROPOSED_BUSINESS_CONCEPT_ROW_SCHEMA,
+                },
+                capabilities: {
+                  type: 'array',
+                  items: PROPOSED_BUSINESS_CONCEPT_ROW_SCHEMA,
+                },
+              },
+              required: ['domains', 'capabilities'],
+              additionalProperties: false,
+            },
             implementationEvidence: {
               type: 'object',
               properties: {
@@ -3116,10 +3312,16 @@ const TOOLS = [
             'policy',
             'sourceStructureRole',
             'businessOntology',
+            'proposedBusinessOntology',
             'implementationEvidence',
             'reviewQuestions',
           ],
           additionalProperties: false,
+        },
+        extractionContract: EXTRACTION_CONTRACT_OUTPUT_SCHEMA,
+        semanticEvidence: {
+          type: 'array',
+          items: SEMANTIC_EVIDENCE_ROW_SCHEMA,
         },
         skipped: {
           type: 'array',
@@ -3141,6 +3343,8 @@ const TOOLS = [
         'capabilities',
         'elements',
         'meaningGate',
+        'extractionContract',
+        'semanticEvidence',
         'suggestedRelations',
         'skipped',
       ],
@@ -3706,6 +3910,9 @@ function error(err) {
   // 경로가 Error 인스턴스에 실어 둔 growthHint 를 여기서 한 곳에 모아
   // structuredContent 로 얹는다. 성공 응답에는 절대 나타나지 않는다.
   const growthHint = err && typeof err === 'object' ? err.growthHint : undefined;
+  const repairFields = err && typeof err === 'object' && err.repairFields
+    ? err.repairFields
+    : {};
   return {
     content: [{ type: 'text', text: `Error: ${message}` }],
     isError: true,
@@ -3714,6 +3921,7 @@ function error(err) {
       errorCode: classifyErrorCode(err, message),
       error: message,
       ...details,
+      ...repairFields,
       ...(growthHint ? { growthHint } : {}),
     },
   };
@@ -3812,6 +4020,20 @@ function structuredErrorDetails(message) {
     });
   }
 
+  const unresolvedCompiledSlug = message.match(
+    /^(.+?) "([^"]+)" does not resolve to a compiled ontology node\.(?: Did you mean: (.+)\?)?$/i,
+  );
+  if (unresolvedCompiledSlug) {
+    const [, subject, slug, similarText] = unresolvedCompiledSlug;
+    return {
+      missingSubject: subject,
+      missingSlug: slug,
+      recoveryTools: ['list_concepts', 'find_evidence'],
+      createTool: 'add_concept',
+      similarSlugs: similarText ? splitCommaList(similarText) : [],
+    };
+  }
+
   const existingDoc = message.match(
     /^Doc already exists at "([^"]+)"\. To update fields, use patch_concept\(slug, frontmatter, body, expected_mtime\)\. To rename, use rename_concept\(oldSlug, newSlug\)\. Never delete-then-add/i,
   );
@@ -3886,7 +4108,9 @@ function classifyErrorCode(err, message) {
   if (/^Unknown field /i.test(message) || /^Unknown fields in /i.test(message)) {
     return 'invalid_arguments';
   }
-  if (/not found|does not exist/i.test(message)) return 'not_found';
+  if (/not found|does not exist|does not resolve to a compiled ontology node/i.test(message)) {
+    return 'not_found';
+  }
   if (/already exists|conflict|identical/i.test(message)) return 'conflict';
   if (/must be|must not|cannot be|At least one|Invalid value|Received:|points outside|Too many/i.test(message)) {
     return 'invalid_arguments';
@@ -4058,6 +4282,13 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
 function docNotFoundError(slug) {
   const err = new Error(`Doc not found: ${slug}`);
   const candidateSlugs = suggestSimilarSlugs(VAULT_ROOT, slug);
+  err.repairFields = {
+    missingSubject: 'Doc not found',
+    missingSlug: slug,
+    recoveryTools: ['list_concepts', 'find_evidence'],
+    createTool: 'add_concept',
+    similarSlugs: candidateSlugs,
+  };
   err.growthHint = buildSlugNotFoundGrowthHint({ slug, candidateSlugs });
   return err;
 }
@@ -4140,8 +4371,19 @@ function getConceptsBatch({ slugs }) {
       return { ok: true, ...result };
     } catch (err) {
       const msg = err && err.message ? err.message : String(err);
+      const repairFields = err && typeof err === 'object' && err.repairFields
+        ? err.repairFields
+        : {};
+      const growthHint = err && typeof err === 'object' ? err.growthHint : undefined;
       // Doc not found 같은 친화 메시지를 그대로 surface — 절대 경로 leak 방지.
-      return { slug, ok: false, error: msg };
+      return {
+        slug,
+        ok: false,
+        error: msg,
+        ...structuredRowErrorDetails(err, msg),
+        ...repairFields,
+        ...(growthHint ? { growthHint } : {}),
+      };
     }
   });
   return { concepts };
@@ -5744,6 +5986,38 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
     ...analyze.elements,
   ];
   const compiled = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
+  const vaultProjectNodes = (compiled.nodes ?? []).filter((node) => node.kind === 'project');
+  const analyzedProjectSlug = analyze.project?.slug ?? null;
+  const matchingVaultProject = analyzedProjectSlug
+    ? vaultProjectNodes.find(
+        (node) =>
+          node.slug === analyzedProjectSlug ||
+          node.frontmatter?.slug === analyzedProjectSlug ||
+          compiled.indexes?.aliasToSlug?.[analyzedProjectSlug] === node.slug,
+      )
+    : null;
+  const vaultRelativeToTarget = relative(target, VAULT_ROOT);
+  const vaultInsideTarget =
+    vaultRelativeToTarget === '' ||
+    (!vaultRelativeToTarget.startsWith(`..${sep}`) && vaultRelativeToTarget !== '..');
+  const uninitializedVault =
+    vaultProjectNodes.length === 1 &&
+    vaultProjectNodes[0].slug === 'project' &&
+    /^my project$/i.test(String(vaultProjectNodes[0].title ?? ''));
+  const validationAlignment = matchingVaultProject
+    ? 'matching-project'
+    : uninitializedVault
+      ? 'uninitialized-vault'
+      : vaultProjectNodes.length > 0 && analyzedProjectSlug
+        ? 'mismatched-project'
+        : 'unknown';
+  const validationAppliesToAnalyzedProject =
+    Boolean(matchingVaultProject) || (uninitializedVault && vaultInsideTarget);
+  const validationNote = validationAppliesToAnalyzedProject
+    ? validationAlignment === 'matching-project'
+      ? 'The active vault project identity matches the analyzed repository.'
+      : 'The starter vault is inside the analyzed repository; validation is a pre-bootstrap baseline.'
+    : 'The active vault is not proven to describe the analyzed repository; treat these counts as active-vault diagnostics, not analyzed-project quality.';
   const existingSlugs = new Set((compiled.nodes ?? []).map((node) => node.slug));
   const aliasToSlug = compiled.indexes?.aliasToSlug ?? {};
   const ambiguousAliases = new Set(
@@ -5837,6 +6111,9 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
       errorFiles: validation.summary?.errorFiles ?? 0,
       warningFiles: validation.summary?.warningFiles ?? 0,
       pathDrift: validation.pathDrift?.drifts?.length ?? 0,
+      appliesToAnalyzedProject: validationAppliesToAnalyzedProject,
+      alignment: validationAlignment,
+      note: validationNote,
     },
     meaningGate: {
       policy: analyze.meaningGate.policy,
@@ -5846,6 +6123,16 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
         capabilities: analyze.meaningGate.businessOntology.capabilities.length,
         evidence: analyze.meaningGate.businessOntology.evidence.length,
         evidenceRows: summarizeBusinessEvidenceRows(analyze.meaningGate.businessOntology.evidence),
+      },
+      proposedBusinessOntology: {
+        domains: analyze.meaningGate.proposedBusinessOntology.domains.length,
+        capabilities: analyze.meaningGate.proposedBusinessOntology.capabilities.length,
+        domainRows: summarizeProposedBusinessConceptRows(
+          analyze.meaningGate.proposedBusinessOntology.domains,
+        ),
+        capabilityRows: summarizeProposedBusinessConceptRows(
+          analyze.meaningGate.proposedBusinessOntology.capabilities,
+        ),
       },
       implementationEvidence: {
         elements: analyze.meaningGate.implementationEvidence.elements.length,
@@ -5857,10 +6144,12 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
       },
       reviewQuestions: analyze.meaningGate.reviewQuestions,
     },
+    extractionContract: analyze.extractionContract,
+    semanticEvidence: analyze.semanticEvidence,
     next: {
       applyTool: 'add_concepts + add_relations',
       cliApply: 'ontology-atlas index [rootPath] --apply --vault [vault]',
-      review: 'plan.concepts counts raw candidates; inspect conceptDelta, manually resolve ambiguous aliases, then run reviewCalls to retrieve exact rows before applying.',
+      review: 'plan.concepts counts raw candidates, not accepted ontology claims; inspect extractionContract and proposedBusinessOntology, manually resolve ambiguous aliases, answer the competency questions, then run reviewCalls before applying.',
       reviewCalls,
     },
   };
@@ -5886,6 +6175,17 @@ function summarizeReviewRequiredCapabilityRows(rows) {
     reason: row.reason,
     evidence: {
       source: row.evidence.source,
+    },
+  }));
+}
+
+function summarizeProposedBusinessConceptRows(rows) {
+  return rows.slice(0, MEANING_GATE_REVIEW_ROW_LIMIT).map((row) => ({
+    slug: row.slug,
+    reason: row.reason,
+    evidence: {
+      source: row.evidence.source,
+      ...(row.evidence.line ? { line: row.evidence.line } : {}),
     },
   }));
 }
