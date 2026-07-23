@@ -1182,6 +1182,18 @@
     --chrome-active-border: rgba(94, 106, 210, 0.4);
 
     /*
+     * Touch-target contract (반응형 감사 rank2, 2026-07-23). Width breakpoints
+     * cannot express "this is a tablet/touch device" — a 1024px display can be
+     * a fine-pointer laptop or a coarse-pointer 12.9" iPad. So the touch axis is
+     * a SEPARATE contract: `--touch-target-min` (Apple HIG / Material 44px min)
+     * that a `@media (pointer: coarse)` block (below the :root close) promotes
+     * interactive tile heights to. Fine-pointer devices keep the denser 32–36px
+     * values; only coarse-pointer devices inflate. Dark-only, color unchanged —
+     * height/hit-area only.
+     */
+    --touch-target-min: 44px;
+
+    /*
      * B2+ 페이지 롤아웃 전역 승격 토큰 (feat/landing-b2plus).
      * `--topology-v2-*` 는 feature flag scope 라 topology 밖 페이지에서 직접
      * 참조 금지 (DESIGN-SYSTEM v2 §스코프 주의) — 랜딩이 필요로 하는 값만
@@ -1620,7 +1632,11 @@
        각 요소 옆(§2.6 아래 개별 JSX 클래스)에서 title 13.5→15px, 행
        12→13px, metric 11.5→12.5px 로 한 단계씩 올랐다 — 이 파일은 구조
        토큰만, 타입 크기는 컴포넌트가 소유. */
-    --topology-v2-panel-width: 352px;
+    /* 반응형 감사 rank3 (2026-07-23) — 고정 352px 는 태블릿 포트레이트(~600px)
+       에서 뷰포트의 59% 를 덮어 지도를 잠식했다. 노드 팝오버가 이미 쓰는
+       `min(target, 100vw - gap)` 패턴으로 통일: 넓은 화면에선 352px 그대로,
+       좁은 화면에선 좌우 여백(28px)을 뺀 폭까지 자연히 줄어든다. */
+    --topology-v2-panel-width: min(352px, calc(100vw - 28px));
     /* P3-③ (2026-07-21 리텐션 라운드) — 1440×900 에서 연결이 많은 노드는
        패널 콘텐츠(액션 4-up + contains/usedBy/dependsOn/evidence 그룹)가
        뷰포트를 넘겨 "전체 상세 →" 푸터가 화면 밖(y=911)으로 밀려나 마우스로
@@ -1632,8 +1648,13 @@
        1920 에서 데이터시트가 화면 하단 관통) — zoom 된 서브트리 안에서
        100dvh(CSS px)는 시각적으로 zoom 배가 되므로 factor 로 나눠 실제
        보이는 뷰포트 높이에 clamp 한다. factor 1 에서는 종전과 동일. */
+    /* 반응형 감사 rank3 (2026-07-23) — bottom reserve is a single knob so the
+       `<lg` override (below) can add the fixed BottomTabBar height + safe-area
+       and stop the datasheet from underlapping the tab bar on tablet/mobile. */
+    --topology-v2-panel-bottom-reserve: 8px;
     --topology-v2-panel-max-height: calc(
-      100dvh / var(--topology-ui-scale-factor) - var(--topology-node-popover-top) - 8px
+      100dvh / var(--topology-ui-scale-factor) - var(--topology-node-popover-top) -
+        var(--topology-v2-panel-bottom-reserve)
     );
     /* 9→12px (feat/chrome-system §9, INDEX 패널 v2.1) — 데이터시트와
        INDEX 가 공유하는 패널 계층의 radius 를 크롬 시스템의 4계층 스텝
@@ -1756,6 +1777,41 @@
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: var(--topology-overview-proof-summary-lines);
+  }
+
+  /*
+   * Coarse-pointer (touch) contract — 반응형 감사 rank2 (2026-07-23).
+   * The missing axis: width breakpoints alone can't tell a 1024–1366px display
+   * apart as fine-pointer laptop vs coarse-pointer 12.9" iPad. This block is the
+   * single source that promotes interactive control heights to
+   * `--touch-target-min` (44px) on coarse devices only, resolving both the
+   * band-B defect (32px nav-rail tiles handed to touch users at ≥1024) and the
+   * band-A touch-target shortfall. Fine-pointer devices are untouched and keep
+   * the denser desktop values. Dark-only, color unchanged — height/hit-area only.
+   */
+  @media (pointer: coarse) {
+    :root {
+      --app-nav-rail-tile-height: max(
+        calc(32px * var(--topology-ui-scale-factor)),
+        var(--touch-target-min)
+      );
+      --topology-chrome-control-height: var(--touch-target-min);
+      --topology-chrome-control-height-compact: var(--touch-target-min);
+      --topology-shortcut-sheet-close-size: var(--touch-target-min);
+    }
+  }
+
+  /*
+   * `<lg` (BottomTabBar 표시 구간) 데이터시트 max-height — 하단 고정 탭바
+   * (56px + safe-area) 만큼 예약고를 더 빼 언더랩 제거 (반응형 감사 rank3).
+   * lg(1024) 이상에선 탭바가 `lg:hidden` 이라 종전 8px 여유 그대로.
+   */
+  @media (max-width: 1023px) {
+    :root {
+      --topology-v2-panel-bottom-reserve: calc(
+        var(--topology-mobile-bottom-tab-reserve) + 8px
+      );
+    }
   }
 
   @media (max-width: 640px) {
