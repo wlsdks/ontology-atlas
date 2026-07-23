@@ -2032,6 +2032,17 @@ export function HomePage() {
     };
   }, [resolvedRealmSlug, indexTreeResult, ontologyInsight, realmNodeById, relationVocabulary]);
   const realmActive = resolvedRealmSlug !== null && realmLedgerModel !== null;
+  // 결계 하단 각인 — "○○ · 요소 N" (사용자 어휘 "이것만 보기", 2026-07-23 소유자
+  // 결정). 원장 패널과 **같은 census 객체 + 같은 단위 키**(index.elementsShort /
+  // capabilitiesShort)를 쓰므로 한 화면의 같은 사실이 두 숫자로 갈라질 수 없다.
+  const realmCaption = useMemo(() => {
+    if (!realmLedgerModel) return null;
+    const { census, rootTitle } = realmLedgerModel;
+    const parts: string[] = [];
+    if (census.elementCount > 0) parts.push(`${t("index.elementsShort")} ${census.elementCount}`);
+    if (census.capabilityCount > 0) parts.push(`${t("index.capabilitiesShort")} ${census.capabilityCount}`);
+    return parts.length > 0 ? `${rootTitle} · ${parts.join(" · ")}` : rootTitle;
+  }, [realmLedgerModel, t]);
   // root-first-open v3 우하단 판독(`FirstRunReadout`) 의 "N project" 숫자 —
   // 실데이터, indexDomainCount 와 같은 ontologyInsight 파생이라 drift 불가.
   const firstRunProjectCount = useMemo(
@@ -2438,9 +2449,13 @@ export function HomePage() {
                     }}
                     realmChip={
                       resolvedRealmSlug && realmTitle ? (
+                        // 사용자 어휘는 "이것만 보기"(2026-07-23 소유자 결정), 내부명 realm 유지.
+                        // chipViewing 템플릿("Viewing only {title}" / "{title}만 보는 중")을
+                        // sentinel 로 쪼개 제목 앞/뒤 문구를 로케일 무관하게 얻는다.
                         <TopologyRealmChip
                           title={realmTitle}
-                          prefixLabel={t("realm.chipPrefix")}
+                          beforeLabel={t("realm.chipViewing", { title: "\u0000" }).split("\u0000")[0] ?? ""}
+                          afterLabel={t("realm.chipViewing", { title: "\u0000" }).split("\u0000")[1] ?? ""}
                           clearAriaLabel={t("realm.chipClear")}
                           onClear={handleExitRealm}
                         />
@@ -2975,7 +2990,7 @@ export function HomePage() {
                       maxDomainDescendantCount={indexMaxDomainDescendantCount}
                       domainCensus={indexDomainCensus}
                       labels={{
-                        label: t("realm.chipPrefix"),
+                        label: t("realm.ledger.heading"),
                         elementsShort: t("index.elementsShort"),
                         capabilitiesShort: t("index.capabilitiesShort"),
                         depthShort: t("realm.ledger.depthShort"),
@@ -3256,6 +3271,7 @@ export function HomePage() {
                     onEnterRealm={handleEnterRealm}
                     realmEnterLabel={t('realm.enterAction')}
                     realmEnterTooltip={t('realm.enterTooltip')}
+                    realmCaption={realmCaption}
                     canvasLabel={t('canvas.ariaLabel')}
                     visitedTrail={footprintVisitedIds}
                     // 슬라이스 C — 비개발(plain) 모드는 element 티어를 도달

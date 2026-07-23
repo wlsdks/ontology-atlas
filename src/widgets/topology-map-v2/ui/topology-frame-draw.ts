@@ -21,6 +21,7 @@ import {
   computeDomainWatermarkAlpha,
   computeLabelAlpha,
   draw as labelsDraw,
+  drawInstrumentCaption,
   LABEL_OFFSET,
   labelZoomScale,
   measureLabelWidth,
@@ -62,6 +63,11 @@ import { isSpineNode, radiusForKind, type TopologyWorld, type WorldNode } from "
  */
 const EXPANDED_AURA_RING_OFFSET = 6;
 const EXPANDED_AURA_DASH: readonly number[] = [3, 3];
+/** 영역 루트 앵커 링 알파 — 결계(0.5)보다 한 단계 또렷한 실선 헤어라인(중심이 주인공). */
+const REALM_ROOT_ANCHOR_ALPHA = 0.7;
+/** 결계 센서스 각인 — 원 하단 바깥 오프셋(px, 화면 고정)과 잉크 알파. */
+const WARDING_CAPTION_OFFSET_PX = 24;
+const WARDING_CAPTION_ALPHA = 0.62;
 const EXPANDED_AURA_ALPHA = 0.55;
 /**
  * S8 결함 1 — 확장 디스크와 무관한 배경 노드를 확장 중 미세 dim 해 "어지러움"을
@@ -361,7 +367,7 @@ export interface FrameDrawParams {
    * 반경에 1px 인디고 헤어라인 원을 두른다. `drawProgress` 0..1 로 stroke 를
    * 자기 드로잉한다(전환 초반 ~200ms). null 이면 미표시(회귀 0).
    */
-  wardingRing: { centerX: number; centerY: number; radius: number; drawProgress: number } | null;
+  wardingRing: { centerX: number; centerY: number; radius: number; drawProgress: number; caption: string | null } | null;
   /** S4 — 멤버별 깊이 기반 티어 kind 오버라이드 (영역 세계의 티어 = 재배치 깊이). */
   realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null;
   /**
@@ -951,6 +957,22 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ctx.setLineDash([]);
       ctx.restore();
     }
+
+    // 영역 루트 앵커 링 (소유자 실보고 2026-07-23 "루트가 유령 같다") — 영역
+    // 전개 중 루트(depth 0)에 결계와 **같은 인디고 실선 헤어라인** 링을 두른다.
+    // 세계의 경계(큰 원)와 그 중심(작은 링)이 같은 잉크로 호응해 "이 원은 이
+    // 노드의 세계" 가 기하만으로 읽힌다. 파선 오라(확장)·앰버 링과 채널 분리,
+    // glow 0, 신규 토큰 0 (tokens.indigo 재사용).
+    if (realmDepthById !== null && realmDepthById.get(node.id) === 0 && wardingRing !== null) {
+      ctx.save();
+      ctx.globalAlpha = tierAlpha * REALM_ROOT_ANCHOR_ALPHA * wardingRing.drawProgress;
+      ctx.strokeStyle = tokens.indigo;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(screen.x, screen.y, screenRadius + EXPANDED_AURA_RING_OFFSET, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
     ctx.globalAlpha = 1;
   }
 
@@ -972,6 +994,21 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ctx.stroke();
     ctx.restore();
     ctx.globalAlpha = 1;
+
+    // 결계 센서스 각인 — 원 하단 바깥, tracked-caps 계기 문법(도메인 워터마크와
+    // 동일 폰트/트래킹, 화면 고정 크기). 원이 "무엇의 경계인지" 스스로 말한다
+    // ("2 ELEMENTS" 류). 잉크는 노드 라벨과 같은 neutral(labelDomain), 링
+    // 자기드로잉 진행도에 실려 함께 나타나고 함께 지워진다. 신규 토큰 0.
+    if (wardingRing.caption && wardingRing.drawProgress > 0.05) {
+      drawInstrumentCaption(
+        ctx,
+        wardingRing.caption,
+        center.x,
+        center.y + screenRadius + WARDING_CAPTION_OFFSET_PX,
+        tokens.labelDomain,
+        WARDING_CAPTION_ALPHA * wardingRing.drawProgress,
+      );
+    }
   }
 
   // --- 밀도 게이트 클러스터 칩 (fable 설계) — 노드 위, 라벨 아래에 그린다.

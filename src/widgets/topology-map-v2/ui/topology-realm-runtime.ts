@@ -121,13 +121,36 @@ export function realmVisibleBounds(
   tokens: TopologyV2Tokens,
 ): RealmBounds {
   const points: { x: number; y: number }[] = [];
+  const reaches: number[] = [];
   let maxNodeRadius = 0;
   for (const [id, t] of collectVisibleMemberTargets(world, data.memberIds, data.insideTargets, expandedParents)) {
     const n = world.nodeById.get(id);
-    if (n) maxNodeRadius = Math.max(maxNodeRadius, radiusForKind(n.kind, tokens) * n.magnitudeScale);
+    const nr = n ? radiusForKind(n.kind, tokens) * n.magnitudeScale : 0;
+    if (nr > maxNodeRadius) maxNodeRadius = nr;
     points.push(t);
+    reaches.push(Math.hypot(t.x, t.y) + nr);
   }
-  return computeVisibleBounds(points, CONTENT_BOUNDS_MARGIN + maxNodeRadius, data.bounds);
+  const contentBounds = computeVisibleBounds(points, CONTENT_BOUNDS_MARGIN + maxNodeRadius, data.bounds);
+  // 결계 원 포함 프레이밍 — 같은 가시 집합으로 잰 결계 반경과 합집합 (아래
+  // `buildRealmRuntimeData` 의 프레이밍 계약과 동일).
+  return unionWithWardingCircle(contentBounds, computeVisibleWardingRadius(reaches));
+}
+
+/**
+ * 카메라 fit bbox = 콘텐츠 bbox ∪ 결계 원 bbox. 결계 원은 영역 표면의 프레임
+ * (하단 센서스 각인 포함)이라 잘리면 "우연한 호" 로 읽힌다 (소유자 실보고
+ * 2026-07-23 "원이 왜 존재하는지 모르겠다"). S9 의 "콘텐츠가 주인공(결계는
+ * 화면 밖 가장자리에 걸려도 좋다)" 은 접힌 자식까지 세던 유령 반경 시절의
+ * 계약 — 가시-멤버 반경(S9 결함 2)이 된 지금 결계는 콘텐츠 +10% 여백이라
+ * 원을 담아도 과대 축소가 없다. 순수.
+ */
+function unionWithWardingCircle(bounds: RealmBounds, wardingRadius: number): RealmBounds {
+  return {
+    minX: Math.min(bounds.minX, -wardingRadius),
+    minY: Math.min(bounds.minY, -wardingRadius),
+    maxX: Math.max(bounds.maxX, wardingRadius),
+    maxY: Math.max(bounds.maxY, wardingRadius),
+  };
 }
 
 /**
@@ -207,15 +230,17 @@ export function buildRealmRuntimeData(
   }
   const wardingRadius = computeVisibleWardingRadius(reaches);
 
-  // 카메라 fit 은 결계(마진 포함 원)가 아니라 **가시 콘텐츠 bbox** 기준 — 결계에
-  // 맞추면 세계가 화면 중앙에 조그맣게 보인다. 결계는 화면 밖 가장자리에 걸려도
-  // 좋다: 콘텐츠가 주인공.
-  const bounds = computeVisibleBounds(visibleMemberPoints, CONTENT_BOUNDS_MARGIN + maxNodeRadius, {
-    minX: -wardingRadius,
-    minY: -wardingRadius,
-    maxX: wardingRadius,
-    maxY: wardingRadius,
-  });
+  // 카메라 fit = 가시 콘텐츠 bbox ∪ 결계 원 bbox (`unionWithWardingCircle` 주석
+  // 참조 — 결계 원은 영역 표면의 프레임이므로 잘리지 않게 담는다).
+  const bounds = unionWithWardingCircle(
+    computeVisibleBounds(visibleMemberPoints, CONTENT_BOUNDS_MARGIN + maxNodeRadius, {
+      minX: -wardingRadius,
+      minY: -wardingRadius,
+      maxX: wardingRadius,
+      maxY: wardingRadius,
+    }),
+    wardingRadius,
+  );
 
   return {
     rootId,

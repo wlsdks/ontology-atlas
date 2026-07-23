@@ -107,9 +107,24 @@ export function realmRingsForDepth(
 }
 
 /**
+ * 소수-자식 수평 구도 상한 — depth1 자식이 이 수 이하면 전체 레이아웃을 −90°
+ * 회전해 자식을 **수평축**에 앉힌다. TAU 등분은 N=1(위 꼭짓점 하나), N=2(위/
+ * 아래 덤벨)에서 "우연히 원 안에 있는 점들"로 읽히고, 세로 엣지가 자식 라벨을
+ * 관통한다 (소유자 실보고 2026-07-23, 얕은 capability 영역 실증). 수평 구도는
+ * 라벨(가로 텍스트)·읽기 방향과 정렬되고, 원 하단을 결계 캡션 자리로 비운다.
+ * N≥3 은 TAU 등분이 이미 의도적 다각형(삼각/다이아)으로 읽히므로 미변경 —
+ * 깊은 영역 좌표 회귀 0.
+ */
+export const REALM_HORIZON_MAX_DEPTH1 = 2;
+
+/**
  * 영역 로컬 좌표 — 서브트리를 깊이 기준으로 `computeConcentricLayout` 에 태워
  * 루트를 원점에 둔 재배치 좌표를 낸다. 렌더 kind 는 무시하고 깊이만 매핑하므로,
  * 예컨대 element 를 루트로 전개해도 그 직속 자식이 도메인 링에 앉는다.
+ *
+ * depth1 자식이 `REALM_HORIZON_MAX_DEPTH1` 이하인 얕은-팬 영역은 비루트 전체를
+ * 원점 기준 −90° 강체 회전한다((x,y)→(y,−x)) — 첫 자식이 왼쪽, 둘째가 오른쪽.
+ * 강체 회전이라 상대 기하(부채꼴·분리·결계 반경)는 바이트 동일하게 보존된다.
  */
 export function computeRealmLayout(
   subtree: RealmSubtree,
@@ -117,8 +132,10 @@ export function computeRealmLayout(
   radii: LayoutRadii,
 ): Map<string, LayoutPoint> {
   const layoutInput: LayoutGraphNode[] = [];
+  let depth1Count = 0;
   for (const id of subtree.depthById.keys()) {
     const depth = subtree.depthById.get(id) ?? 0;
+    if (depth === 1) depth1Count += 1;
     layoutInput.push({
       id,
       kind: realmLayoutKind(depth),
@@ -126,6 +143,11 @@ export function computeRealmLayout(
     });
   }
   const points = computeConcentricLayout(layoutInput, rings, { radii });
+  if (depth1Count >= 1 && depth1Count <= REALM_HORIZON_MAX_DEPTH1) {
+    return new Map(
+      points.map((p) => (p.id === subtree.rootId ? [p.id, p] : [p.id, { id: p.id, x: p.y, y: -p.x }])),
+    );
+  }
   return new Map(points.map((p) => [p.id, p]));
 }
 

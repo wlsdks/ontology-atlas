@@ -12,7 +12,7 @@ import {
   WARDING_VISIBLE_MARGIN_RATIO,
   WARDING_VISIBLE_MIN_MARGIN,
 } from "./realm";
-import type { LayoutRadii, LayoutRings } from "./layout";
+import { computeConcentricLayout, type LayoutRadii, type LayoutRings } from "./layout";
 
 const RINGS: LayoutRings = { domain: 250, capability: 145, element: 90 };
 const RADII: LayoutRadii = { project: 25, domain: 17, capability: 11, element: 7 };
@@ -152,6 +152,60 @@ describe("computeRealmLayout", () => {
     const a = computeRealmLayout(extractRealmSubtree("c", fixtureChildren()), RINGS, RADII);
     const b = computeRealmLayout(extractRealmSubtree("c", fixtureChildren()), RINGS, RADII);
     expect([...a.entries()]).toEqual([...b.entries()]);
+  });
+});
+
+describe("computeRealmLayout — 소수-자식 수평 구도 (소유자 실보고 2026-07-23)", () => {
+  it("depth1 자식 2개는 수평축에 앉는다 — 첫 자식 왼쪽, 둘째 오른쪽", () => {
+    const sub = extractRealmSubtree("c", new Map([["c", ["e1", "e2"]]]));
+    const layout = computeRealmLayout(sub, RINGS, RADII);
+    expect(layout.get("c")).toEqual({ id: "c", x: 0, y: 0 });
+    const e1 = layout.get("e1")!;
+    const e2 = layout.get("e2")!;
+    // TAU 등분(위/아래 덤벨)의 −90° 강체 회전: (0,−R)→(−R,0), (0,R)→(R,0).
+    expect(e1.x).toBeLessThan(0);
+    expect(Math.abs(e1.y)).toBeLessThan(1e-9);
+    expect(e2.x).toBeGreaterThan(0);
+    expect(Math.abs(e2.y)).toBeLessThan(1e-9);
+  });
+
+  it("depth1 자식 1개는 수평축(왼쪽)에 앉는다 — 같은 −90° 강체 회전 규칙", () => {
+    const sub = extractRealmSubtree("c", new Map([["c", ["only"]]]));
+    const layout = computeRealmLayout(sub, RINGS, RADII);
+    const only = layout.get("only")!;
+    expect(only.x).toBeLessThan(0); // (0,−R)→(−R,0)
+    expect(Math.abs(only.y)).toBeLessThan(1e-9);
+  });
+
+  it("회전은 강체다 — 미회전 concentric 레이아웃의 정확한 (x,y)→(y,−x) 사상", () => {
+    const children = new Map([
+      ["c", ["e1", "e2"]],
+      ["e1", ["g1"]],
+    ]);
+    const sub = extractRealmSubtree("c", children);
+    const rotated = computeRealmLayout(sub, RINGS, RADII);
+    // 동일 입력을 직접 concentric 에 태운 미회전 기준과 좌표 단위로 대조한다.
+    const rawInput = [...sub.depthById.keys()].map((id) => ({
+      id,
+      kind: realmLayoutKind(sub.depthById.get(id) ?? 0),
+      parentId: id === sub.rootId ? null : sub.parentById.get(id) ?? null,
+    }));
+    const raw = new Map(computeConcentricLayout(rawInput, RINGS, { radii: RADII }).map((p) => [p.id, p]));
+    for (const id of ["e1", "e2", "g1"]) {
+      const r = raw.get(id)!;
+      const p = rotated.get(id)!;
+      expect(p.x).toBeCloseTo(r.y, 10);
+      expect(p.y).toBeCloseTo(-r.x, 10);
+    }
+  });
+
+  it("depth1 자식 3개 이상은 미회전 — 첫 자식이 위(-90°) 그대로 (깊은/넓은 영역 회귀 0)", () => {
+    const sub = extractRealmSubtree("c", new Map([["c", ["a", "b", "d"]]]));
+    const layout = computeRealmLayout(sub, RINGS, RADII);
+    const a = layout.get("a")!;
+    // TAU 등분 시작각 −90°: 첫 자식은 위쪽(x≈0, y<0).
+    expect(Math.abs(a.x)).toBeLessThan(1e-9);
+    expect(a.y).toBeLessThan(0);
   });
 });
 

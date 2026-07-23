@@ -2479,18 +2479,19 @@
       "tooltipExpanded": "「{name}」 — 하위 전체 {total}개 · 이 티어 {hidden}개 펼침. 클릭하면 접어요"
     },
     "realm": {
-      "enterAction": "영역 전개",
-      "enterTooltip": "이 노드의 영역만 펼쳐요",
-      "chipPrefix": "영역",
-      "chipClear": "영역 나가기",
+      "enterAction": "이것만 보기",
+      "enterTooltip": "이 노드 안쪽만 봐요",
+      "chipViewing": "{title}만 보는 중",
+      "chipClear": "전체 지도",
       "ledger": {
+        "heading": "이것만 보는 중",
         "depthShort": "깊이",
-        "searchPlaceholder": "이 영역에서 검색",
-        "exit": "영역 해제",
+        "searchPlaceholder": "여기서 검색",
+        "exit": "전체 지도",
         "boundaryHeading": "바깥과 닿은 관계 {count}",
-        "boundaryToggleAria": "결계 관계 목록 펼치기 · 접기",
-        "boundaryJump": "이 영역으로 이동",
-        "boundaryJumpAria": "이 밖 노드가 속한 영역으로 이동",
+        "boundaryToggleAria": "바깥과 닿은 관계 목록 펼치기 · 접기",
+        "boundaryJump": "저쪽만 보기",
+        "boundaryJumpAria": "이 바깥 노드가 속한 쪽만 보기",
         "boundaryEmpty": "바깥과 닿은 관계가 없어요"
       }
     },
