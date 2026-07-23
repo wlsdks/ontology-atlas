@@ -1,8 +1,16 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { VaultDoc } from "@/entities/docs-vault";
+import { buildNewNodeDoc, type VaultDoc } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import {
+  validateVaultDocFrontmatter,
+  type VaultDocumentIssue,
+  type VaultIssueCode,
+} from "@/shared/lib/validate-vault-document";
+import { mapVaultIssueCodeToPlainMessage } from "@/shared/lib/vault-issue-plain-message";
+import { CompactCopyButton } from "@/shared/ui";
 
 /**
  * Engraved frontmatter visualization — "frontmatter 가 곧 그래프" made literal
@@ -105,6 +113,65 @@ export function DocFrontmatterBlock({
   const [draftKind, setDraftKind] = useState(currentKind ?? "");
   const [draftDomain, setDraftDomain] = useState(currentDomain);
   const [draftTitle, setDraftTitle] = useState(currentTitle);
+
+  // ② validator warning 인라인 — 편집 중이면 draft(kind/domain), 아니면
+  // 저장된 frontmatter 를 대상으로 debounce(400ms) 후 검증. "missing-expected-
+  // field" 같은 warning 만 조용한 인라인 행으로 보여준다(error 는 별개 —
+  // 이 슬라이스는 validator *warning* 만 다룬다).
+  const activeKind = editing ? draftKind : currentKind ?? "";
+  const activeDomain = editing ? draftDomain : currentDomain;
+  const [debouncedValidation, setDebouncedValidation] = useState({
+    kind: activeKind,
+    domain: activeDomain,
+  });
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setDebouncedValidation({ kind: activeKind, domain: activeDomain });
+    }, 400);
+    return () => window.clearTimeout(handle);
+  }, [activeKind, activeDomain]);
+
+  const validationWarnings = useMemo<VaultDocumentIssue[]>(() => {
+    if (!debouncedValidation.kind) return [];
+    const frontmatterForValidation: Record<string, unknown> = {
+      ...(doc.frontmatter ?? {}),
+      kind: debouncedValidation.kind,
+      domain: debouncedValidation.domain,
+    };
+    return validateVaultDocFrontmatter(frontmatterForValidation).issues.filter(
+      (issue) => issue.severity === "warning",
+    );
+  }, [doc.frontmatter, debouncedValidation]);
+
+  const issueMessageDict = useMemo<Partial<Record<VaultIssueCode, string>>>(
+    () => ({
+      "unclosed-frontmatter": t("validatorIssues.unclosedFrontmatter"),
+      "empty-kind": t("validatorIssues.emptyKind"),
+      "missing-kind": t("validatorIssues.missingKind"),
+      "unknown-kind": t("validatorIssues.unknownKind"),
+      "missing-expected-field": t("validatorIssues.missingExpectedField"),
+      "non-canonical-graph-array": t("validatorIssues.nonCanonicalGraphArray"),
+      "parse-zero-keys": t("validatorIssues.parseZeroKeys"),
+    }),
+    [t],
+  );
+
+  // ③ "규격 예시 보기" — 현재 문서 kind 의 완성 예시를, 새 문서 생성이 이미
+  // 쓰는 스키마 스타터(NewDocKindDialog 선택 → buildNewNodeDoc →
+  // buildVaultMarkdown)에서 그대로 파생한다. 복제 없음, 같은 원천 재사용.
+  const [exampleOpen, setExampleOpen] = useState(false);
+  const { state: exampleCopyState, copy: copyExample } = useCopyFeedback();
+  const exampleDoc = useMemo(() => {
+    if (!currentKind) return null;
+    try {
+      const exampleTitle = t("exampleTitleFor", { kind: kindLabel(currentKind) });
+      const needsDomain = currentKind === "capability" || currentKind === "element";
+      const domain = needsDomain ? domainOptions[0]?.slug ?? "example-domain" : undefined;
+      return buildNewNodeDoc({ title: exampleTitle, kind: currentKind, domain }).markdown;
+    } catch {
+      return null;
+    }
+  }, [currentKind, domainOptions, kindLabel, t]);
 
   const fields = GRAPH_KEYS.map((key) => ({
     key: key as string,
@@ -305,6 +372,61 @@ export function DocFrontmatterBlock({
           {t("note")}
         </p>
       </details>
+      {validationWarnings.length > 0 ? (
+        <div
+          data-testid="doc-frontmatter-validator-warnings"
+          aria-label={t("validatorWarningsAriaLabel")}
+          className="mt-2 flex flex-col gap-1 font-sans"
+        >
+          {validationWarnings.map((issue, index) => (
+            <p
+              key={`${issue.code}-${index}`}
+              className="rounded-sm border border-[color:var(--color-amber-docs-a18)] bg-[color:var(--color-amber-source-a08)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-amber-docs-a92)]"
+            >
+              {mapVaultIssueCodeToPlainMessage(issue.code, issueMessageDict)}
+            </p>
+          ))}
+        </div>
+      ) : null}
+      {exampleDoc ? (
+        <div className="mt-2 font-sans">
+          <button
+            type="button"
+            onClick={() => setExampleOpen((v) => !v)}
+            aria-expanded={exampleOpen}
+            aria-controls="doc-frontmatter-example"
+            data-testid="doc-frontmatter-example-toggle"
+            className="flex items-center gap-1 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+          >
+            <ChevronRight
+              size={11}
+              aria-hidden
+              className={`transition-transform duration-150 motion-reduce:transition-none ${
+                exampleOpen ? "rotate-90" : ""
+              }`}
+            />
+            {t("exampleToggle")}
+          </button>
+          {exampleOpen ? (
+            <div
+              id="doc-frontmatter-example"
+              data-testid="doc-frontmatter-example"
+              className="mt-2 flex items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2"
+            >
+              <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words font-mono text-label leading-[1.6] text-[color:var(--color-text-secondary)]">
+                {exampleDoc}
+              </pre>
+              <CompactCopyButton
+                copied={exampleCopyState === "copied"}
+                label={exampleCopyState === "copied" ? t("exampleCopied") : t("exampleCopy")}
+                ariaLabel={t("exampleCopyAriaLabel")}
+                onClick={() => void copyExample(exampleDoc)}
+                data-testid="doc-frontmatter-example-copy"
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -1879,7 +1879,22 @@
       "editTitleLabel": "Title",
       "editSave": "저장",
       "editSaving": "저장 중…",
-      "editCancel": "취소"
+      "editCancel": "취소",
+      "validatorWarningsAriaLabel": "Vault 검증 경고",
+      "validatorIssues": {
+        "unclosedFrontmatter": "frontmatter 가 닫히지 않아 이 문서는 노드로 인식되지 않아요.",
+        "emptyKind": "kind 값이 비어 있어요 — 그래프 노드로 인식되지 않아요.",
+        "missingKind": "kind 가 없어서 이 문서는 아직 그래프 노드가 아니에요.",
+        "unknownKind": "kind 값이 알려진 종류가 아니에요 — 그래프에서 인식되지 않을 수 있어요.",
+        "missingExpectedField": "이 kind 에 필요한 필드(예: domain)가 비어 있어요 — 트리에서 부모를 찾지 못해요.",
+        "nonCanonicalGraphArray": "관계 목록의 정렬/중복 상태가 정리되지 않았어요 — 자동으로 정리할 수 있어요.",
+        "parseZeroKeys": "frontmatter 블록은 있지만 값을 하나도 읽지 못했어요 — 형식을 확인해 주세요."
+      },
+      "exampleToggle": "규격 예시 보기",
+      "exampleTitleFor": "{kind} 예시",
+      "exampleCopy": "복사",
+      "exampleCopied": "복사됨",
+      "exampleCopyAriaLabel": "예시 frontmatter 복사"
     },
     "readingAids": {
       "backToTop": "맨 위로",

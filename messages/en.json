@@ -1879,7 +1879,22 @@
       "editTitleLabel": "Title",
       "editSave": "Save",
       "editSaving": "Saving…",
-      "editCancel": "Cancel"
+      "editCancel": "Cancel",
+      "validatorWarningsAriaLabel": "Vault validation warnings",
+      "validatorIssues": {
+        "unclosedFrontmatter": "The frontmatter block never closes, so this document isn't recognized as a node.",
+        "emptyKind": "The kind value is empty — it won't be recognized as a graph node.",
+        "missingKind": "No kind — this document isn't a graph node yet.",
+        "unknownKind": "This kind isn't one of the recognized values — it may not show up in the graph.",
+        "missingExpectedField": "A field this kind expects (e.g. domain) is empty — the tree can't find its parent.",
+        "nonCanonicalGraphArray": "A relation list isn't sorted/deduplicated — it can be cleaned up automatically.",
+        "parseZeroKeys": "There's a frontmatter block but no values could be read from it — check the formatting."
+      },
+      "exampleToggle": "View spec example",
+      "exampleTitleFor": "Example {kind}",
+      "exampleCopy": "Copy",
+      "exampleCopied": "Copied",
+      "exampleCopyAriaLabel": "Copy the example frontmatter"
     },
     "readingAids": {
       "backToTop": "Back to top",
