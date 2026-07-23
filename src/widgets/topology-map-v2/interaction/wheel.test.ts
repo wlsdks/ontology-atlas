@@ -36,13 +36,13 @@ describe("normalizeWheelDeltaY", () => {
  * design round's spec.
  */
 describe("computeWheelZoomFactor", () => {
-  it("uses the 0.0020 sensitivity constant (up from the old 0.0016 — owner: zoom felt sluggish)", () => {
-    expect(WHEEL_ZOOM_SENSITIVITY).toBeCloseTo(0.002, 6);
+  it("uses the 0.0023 sensitivity constant (0.0016→0.0020→0.0023, owner: zoom felt slow)", () => {
+    expect(WHEEL_ZOOM_SENSITIVITY).toBeCloseTo(0.0023, 6);
   });
 
-  it("yields ≈1.27x zoom-in for a standard 120px notch (scroll up = negative deltaY)", () => {
+  it("yields ≈1.32x zoom-in for a standard 120px notch (scroll up = negative deltaY)", () => {
     const factor = computeWheelZoomFactor(-120);
-    expect(factor).toBeCloseTo(Math.exp(0.24), 6);
+    expect(factor).toBeCloseTo(Math.exp(120 * 0.0023), 6);
     expect(factor).toBeGreaterThan(1.18); // above d3-zoom's own per-notch ratio
   });
 
