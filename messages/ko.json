@@ -2262,7 +2262,6 @@
       "overviewBriefWorkspaceCheck": "작업공간 점검",
       "overviewBriefMcpWorkspaceCheck": "MCP 작업공간 점검",
       "healthEvidenceUrl": "URL",
-      "overviewRelationLegendQuality": "확실도",
       "pathChipUnresolved": "경로: {source} → 대상 선택",
       "pathChipResolved": "{source} → {target} · {hops}홉",
       "pathChipNoPath": "{source} → {target} · 경로 없음",

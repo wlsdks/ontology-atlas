@@ -2262,7 +2262,6 @@
       "overviewBriefWorkspaceCheck": "Workspace check",
       "overviewBriefMcpWorkspaceCheck": "MCP workspace check",
       "healthEvidenceUrl": "URL",
-      "overviewRelationLegendQuality": "Confidence",
       "pathChipUnresolved": "Path: {source} → choose a target",
       "pathChipResolved": "{source} → {target} · {hops, plural, one {# hop} other {# hops}}",
       "pathChipNoPath": "{source} → {target} · no path found",
