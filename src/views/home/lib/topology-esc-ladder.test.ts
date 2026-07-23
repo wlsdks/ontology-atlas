@@ -6,6 +6,7 @@ import {
 
 const BASE: TopologyEscLadderInput = {
   contextMenuOpen: false,
+  tourOpen: false,
   createNodeOpen: false,
   searchOpen: false,
   fullDetailOpen: false,
@@ -68,11 +69,12 @@ describe("resolveTopologyEscLadderAction", () => {
     ).toBe("close-context-menu");
   });
 
-  it("closes the W2-B context menu first, above every other tier including the create-node composer", () => {
+  it("closes the W2-B context menu first, above every other tier including the guided tour and create-node composer", () => {
     expect(
       resolveTopologyEscLadderAction({
         ...BASE,
         contextMenuOpen: true,
+        tourOpen: true,
         createNodeOpen: true,
         fullDetailOpen: true,
         selectedRelationActive: true,
@@ -82,7 +84,36 @@ describe("resolveTopologyEscLadderAction", () => {
     ).toBe("close-context-menu");
   });
 
-  it("closes the create-node composer above every other tier once the context menu is closed", () => {
+  it("closes the guided tour right after the context menu, above the create-node composer and everything below it", () => {
+    expect(
+      resolveTopologyEscLadderAction({
+        ...BASE,
+        tourOpen: true,
+        createNodeOpen: true,
+        fullDetailOpen: true,
+        selectedRelationActive: true,
+        hasSelection: true,
+        hasLocalGraphRoot: true,
+      }),
+    ).toBe("close-tour");
+  });
+
+  it("the realm and edge popover still win over an open guided tour (they sit above the context menu too)", () => {
+    expect(
+      resolveTopologyEscLadderAction({ ...BASE, realmActive: true, tourOpen: true }),
+    ).toBe("close-realm");
+    expect(
+      resolveTopologyEscLadderAction({ ...BASE, selectedEdgeActive: true, tourOpen: true }),
+    ).toBe("close-edge-popover");
+  });
+
+  it("with the tour closed the ladder is unchanged (no regression)", () => {
+    expect(
+      resolveTopologyEscLadderAction({ ...BASE, tourOpen: false, createNodeOpen: true }),
+    ).toBe("close-create-node");
+  });
+
+  it("closes the create-node composer above every other tier once the context menu and tour are closed", () => {
     expect(
       resolveTopologyEscLadderAction({
         ...BASE,

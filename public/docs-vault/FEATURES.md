@@ -203,6 +203,16 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Shortcuts button** (`?`) → `ShortcutSheet`
 - **Settings gear** (`TopologyV2SettingsGear`, 2026-07-18) → compact anchored popover (228px), no scrim: 언어 (`LocaleSwitch`) · 테마 (`ThemeToggle`) · INDEX 기본 상태 (expanded/collapsed default, writes the same localStorage key the INDEX panel reads). Self-closes; owns its own Escape so the global topology Esc ladder doesn't double-fire. Desktop-only (1512/1920 scope)
 
+#### Guided tour (`topology-tour-button`, 2026-07-23, `src/features/guided-tour`)
+- **Compass** tile, "?" 타일 바로 위 — 지도 화면 전담 의미 문해 투어. 수동 진입만(첫 실행 자동 팝업 없음), md+ 전용(`hidden md:flex`, 폰은 제외)
+- 8 declarative steps, plain-language copy, no jargon even for "ontology" itself: 지도=문서(1) · 점의 크기/모양(2, 캔버스 노드 앵커) · 관계 범례(3) · 직접 눌러보기(4, 인터랙티브 — 실제 클릭을 기다렸다가 자동 진행) · 데이터시트(5, 4단계 선택 성공 시에만 노출) · INDEX(6) · 최근 변경 렌즈(7, 여기서 "구경 끝" 또는 "저는 개발자예요" 로 분기) · 에이전트 다리(8, dev 분기 — `FirstRunStarterModule` 하이라이트)
+- Each step's anchor auto-skips (and the `N/M` progress-dot denominator shrinks) when its target isn't resolvable — missing element, `display:none`, or off-viewport
+- Highlight technique: a `box-shadow: 0 0 0 9999px` scrim-and-cutout paint (not a glow ring — `blur 0`), CSS-transitioned (180ms) between DOM-anchored steps, and a per-frame `worldToScreen` canvas projection (same technique as the realm "전개" button) for the two canvas-node steps — both painted on the same z-70 overlay layer so every step dims the surrounding chrome identically
+- The interactive step 4 is a click **funnel**, not a free-for-all: a 4-strip transparent blocker leaves only the spotlit domain dot's cutout clickable (chrome — the tour tile itself, search, "?" — stays blocked), and the anchored dot is a spine-visible domain whose click deterministically opens the datasheet
+- Opening the tour demotes other transient surfaces (shortcuts sheet, docs drawer, create-node composer, search palette) and temporarily hides `SampleNodeHint`; `Esc` closes only the tour (ladder tier between the context menu and the create-node composer — the first-run starter's capture-phase Esc yields while the tour overlay is open)
+- Focus follows the dialog card on open/step change and returns to the launcher tile on close; the "I'm a developer →" branch button only renders when its step-8 anchor (the first-run starter card) is still present
+- Completion/skip status persists to `localStorage` (`guided-tour:v1`) but never blocks re-running the tour from the same tile
+
 #### Top-left brand pill (`HeroCollapsed`, compact-only since 2026-06-11)
 - One pill, no expanded hero state (removed — it competed with the map for attention): selected project name, or workspace subtitle (concept/relation counts + weekly growth signal when > 0)
 - Source Vault (`/docs`) and Ontology (`/ontology`) quick links inline

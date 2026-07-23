@@ -56,6 +56,14 @@ export function useFirstRunStarter() {
     if (!visible) return;
     const handler = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
+      // 가이드 투어(`src/features/guided-tour`)가 열려 있는 동안은 양보한다
+      // (2026-07-23 Guardian 실측 정정) — 투어의 Esc 계약은 "투어만 닫는다"
+      // (`topology-esc-ladder.ts` `close-tour` 단)인데, 이 캡처 핸들러가
+      // 버블 사다리보다 먼저 실행돼 Escape 를 삼키고 **보이지도 않는**(투어
+      // 스크림 아래) 첫 실행 카드를 영구 dismiss 해버렸다. 투어 오버레이의
+      // DOM 존재가 신호 — 카드가 스크림에 덮인 동안 이 카드는 최상위 표면이
+      // 아니므로 Esc 소유권이 없다.
+      if (document.querySelector('[data-testid="guided-tour-overlay"]') !== null) return;
       event.preventDefault();
       dismiss();
     };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, type RefObject } from "react";
 import { Orbit } from "lucide-react";
 import { useTopologyLoop } from "./use-topology-loop";
 import type { TierRevealConfig } from "../model/tier-visibility";
@@ -188,10 +188,26 @@ export interface TopologyMapV2Props {
    * `PLAIN_TIER_REVEAL`(element 상시 숨김)을 넘긴다.
    */
   tierReveal?: TierRevealConfig;
+  /**
+   * 가이드 투어 (2026-07-23, `src/features/guided-tour`) — 캔버스 노드 앵커
+   * (2·4단계) 프로젝션 계약. DOM 이 아닌 노드를 가리키므로 realm "전개" 버튼
+   * 선례(`use-topology-loop.ts` 의 매 프레임 `worldToScreen` 블록)를 그대로
+   * 복제한다. 이 노드 id 가 non-null 인 동안 loop 가 `tourAnchorRef` 의 DOM
+   * 에 매 프레임 transform + `--tour-anchor-r` 를 써넣는다. id 해석(project/
+   * domain/hub 선택)은 HomePage(`resolve-tour-anchor-node.ts`)가 담당 — 이
+   * 위젯은 순수 프로젝션만 한다.
+   */
+  tourAnchorNodeId?: string | null;
+  /**
+   * 가이드 투어 앵커 원 DOM — HomePage/`GuidedTourOverlay` 가 만들어 이
+   * 위젯에도 같이 내려준다(오버레이가 컷아웃 배치 기준 rect 를 읽는 쪽).
+   * 실제 엘리먼트는 이 컴포넌트가 렌더하고 ref 만 외부에서 공유한다.
+   */
+  tourAnchorRef?: RefObject<HTMLDivElement | null>;
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, tierReveal } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, tierReveal, tourAnchorNodeId = null, tourAnchorRef } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -227,6 +243,8 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       realmCaption,
       visitedTrail,
       tierReveal,
+      tourAnchorNodeId,
+      tourAnchorRef,
     });
 
   return (
@@ -274,6 +292,25 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
             </span>
           ) : null}
         </button>
+      ) : null}
+      {/* 가이드 투어 캔버스 노드 앵커(2·4단계) — realm 버튼과 같은 프로젝션
+          기법(loop 가 매 프레임 transform + `--tour-anchor-r` 갱신). 페인트
+          없는 **측정 프로브**다: 스크림/컷아웃 페인트는 GuidedTourOverlay 가
+          z-70 오버레이 레이어에서 이 rect 를 읽어 그린다 (2026-07-23 Guardian
+          정정 — 위젯 내부 z-40 에서 스크림을 그리면 상단 툴바 등 바깥 크롬이
+          스크림 위에 떠서 testid 단계와 감광 레이어링이 어긋났다). */}
+      {tourAnchorRef ? (
+        <div
+          ref={tourAnchorRef}
+          data-testid="topology-tour-anchor"
+          aria-hidden
+          className="pointer-events-none absolute left-0 top-0 z-40"
+          style={{
+            width: "calc(var(--tour-anchor-r, 0px) * 2)",
+            height: "calc(var(--tour-anchor-r, 0px) * 2)",
+            visibility: tourAnchorNodeId ? "visible" : "hidden",
+          }}
+        />
       ) : null}
       {clusterHint ? (
         <span

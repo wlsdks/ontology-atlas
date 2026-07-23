@@ -6,6 +6,49 @@
 
 ---
 
+## 2026-07-23 — 가이드 투어 (지도 화면 의미 문해 온보딩)
+
+`SampleNodeHint`(1줄 힌트) · `ShortcutSheet`(단축키만) · `FirstRunStarterModule`
+(시작 행동만) 사이의 공백 — "온톨로지 개념 자체(이 지도 = md 문서)를 설명하는
+표면이 0" — 를 메우는 지도 화면(`/`) 전담 8단계 투어 (`src/features/guided-tour`).
+
+- **8 선언적 단계** — 지도=문서(1) · 점의 크기/모양(2, 캔버스 노드 프로젝션
+  앵커) · 관계 범례(3) · 직접 눌러보기(4, 인터랙티브 — 실제 클릭을 기다렸다가
+  자동 진행) · 데이터시트(5, 4단계 선택 성공 시에만) · INDEX(6) · 최근 변경
+  렌즈(7, "구경 끝" / "저는 개발자예요" 2-way 분기) · 에이전트 다리(8, dev
+  분기 — `FirstRunStarterModule` 하이라이트만, 내용 중복 없음). 앵커가
+  해석 불가(요소 부재/`display:none`/뷰포트 밖)면 그 단계는 자동 스킵되고
+  진행 점(`N/M`) 분모도 같이 줄어든다.
+- **스크림+컷아웃** — 대상 rect 에 `box-shadow: 0 0 0 9999px` 스프레드로
+  바깥을 어둡게 하는 페인트 기법(blur 0, glow/neon 링과는 다름 — 코드
+  주석으로 명시). 캔버스 노드 앵커(2·4단계)는 realm "전개" 버튼과 같은
+  매 프레임 `worldToScreen` 프로젝션 — 위젯 쪽 앵커 div 는 페인트 없는
+  측정 프로브이고(`TopologyMapV2Props` 에 `tourAnchorNodeId`/`tourAnchorRef`
+  2개 prop 만 추가), 원형 컷아웃 페인트는 오버레이가 같은 z-70 레이어에서
+  그린다 — testid 단계와 캔버스 단계의 감광(스크림 위/아래 크롬)이 동일.
+- **인터랙티브 4단계 funnel** — 전면 클릭 통과가 아니라 컷아웃 bbox 4방향
+  투명 스트립 차단: 스포트라이트된 domain 점(스파인 티어 상시 가시 + 클릭 =
+  선택)만 클릭이 통과하고, 나머지 크롬(투어 타일 재진입/검색/"?")은 막힌다.
+  카피도 "밝게 남은 점을 눌러보세요"로 정합.
+- **Guardian 실측 정정 4건** — ① 카드 포커스 이동(tabIndex −1 + 단계 전환
+  focus, 닫힘 시 트리거 복원) ② try-click 앵커를 isHub(스파인에서 "+N"
+  클러스터 칩으로 접혀 클릭 = 확장·투어 고착)에서 domain 으로 정정 ③ 투어
+  open 동안 첫 실행 카드의 캡처-phase Escape 소비 양보(스크림 아래 카드가
+  Esc 를 삼켜 영구 dismiss 되던 결함) ④ 첫 실행 카드가 이미 dismiss 된
+  사용자의 "저는 개발자예요 →" welcome 리셋 루프 차단(`devBranchAvailable`
+  게이트 + done 수렴).
+- **진입 타일** — "?" 단축키 타일 바로 위, Compass 아이콘, md+ 전용
+  (`hidden md:flex`, 폰 제외). 우측 유틸리티 레일이 2타일 → 3타일로 현행화.
+- **신규 토큰 2개** — `--topology-tour-scrim-surface`(0.6, 기존 blocking
+  backdrop 0.72 보다 옅게) · `--topology-tour-transition-ms`(180ms, 기존
+  크롬 리듬과 동일). `docs/DESIGN-SYSTEM.md` 등재.
+- **Esc 사다리** — `contextMenuOpen` 다음, `createNodeOpen` 앞에 `tourOpen`
+  단 추가(`topology-esc-ladder.ts`). Escape 는 투어만 닫는다(`skipped` 기록).
+- **완료/중단 상태** — `localStorage guided-tour:v1 = 'done' | 'skipped'`,
+  중간 단계 저장 없음(2분짜리 — 재진입은 항상 처음부터), 재실행은 항상 가능.
+- 외부 투어 라이브러리 의존 0 — 선언적 단계 배열 + 순수 배치/스킵 함수로
+  자체 구현(신뢰 헌장 · local-first · 정적 export 호환).
+
 ## 2026-07-23 — 태블릿·터치 반응형 파운데이션 + 지도 의미론 정합 라운드
 
 3밴드 반응형 감사(7–13" 태블릿 · 14/16" 노트북 · 1920/2560 와이드, 33
