@@ -60,6 +60,12 @@ export interface TopologyV2SettingsGearLabels {
   audience: string;
   audienceDev: string;
   audiencePlain: string;
+  /**
+   * P2 결함③ (사용성 전수 검수 2026-07-23) — "보기 모드" 토글 자체엔 존재
+   * 발견성이 있어도(기어 안), 무엇을 바꾸는지 설명이 0 이었다. 행 아래
+   * caption 한 줄. 생략하면 렌더하지 않는다(하위호환).
+   */
+  audienceCaption?: string;
 }
 
 export interface TopologyV2SettingsGearProps {
@@ -258,6 +264,14 @@ export function TopologyV2SettingsGear({
                 })}
               </div>
             </SettingsRow>
+            {labels.audienceCaption ? (
+              <p
+                data-testid="topology-v2-settings-gear-audience-caption"
+                className="-mt-2 text-[10.5px] leading-[1.5] text-[color:var(--color-text-quaternary)]"
+              >
+                {labels.audienceCaption}
+              </p>
+            ) : null}
             <SettingsRow label={labels.indexDefault}>
               <div
                 role="group"

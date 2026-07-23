@@ -107,10 +107,17 @@ describe('BlockImportModule', () => {
     stubPicker(fakeBlockDir(BLOCK_FILES));
   });
 
-  it('renders nothing without a loaded vault (static sample mode)', () => {
+  it('P1 결함② — is disabled with a "open your folder" hint (not hidden) without a loaded vault', () => {
+    // 정적 샘플 모드에서 "블록 가져오기" 가 흔적 없이 사라져 기능 존재를
+    // 은폐했다(사용성 전수 검수). null 렌더 대신 같은 자리에 disabled + 힌트.
     mocks.vault = makeVault({ status: 'idle', manifest: null });
     render(<BlockImportModule />);
-    expect(screen.queryByTestId('block-import-open')).not.toBeInTheDocument();
+    const button = screen.getByTestId('block-import-open');
+    expect(button).toBeInTheDocument();
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('title', 'vaultRequiredHint');
+    fireEvent.click(button);
+    expect(screen.queryByTestId('block-import-dialog')).not.toBeInTheDocument();
   });
 
   it('opens a merge preview after picking a folder WITHOUT writing to the vault (dry-run 절대 계약)', async () => {

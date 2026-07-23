@@ -234,6 +234,7 @@
     "createLabel": "✚ 새 vault 만들기",
     "createBusy": "시작 구조 작성 중…",
     "dismissLabel": "여기서 둘러볼게요",
+    "plainModeHint": "더 쉬운 보기가 필요하면 왼쪽 아래 톱니에서 '일반'을 켜세요",
     "errorFallback": "폴더를 열지 못했습니다. 다시 시도해 주세요.",
     "unsupportedNotice": "이 브라우저는 로컬 폴더 열기를 지원하지 않아요. macOS 앱이나 Chrome/Edge 에서 열면 내 마크다운 폴더로 지도가 켜져요.",
     "unsupportedCta": "macOS 앱 받기",
@@ -252,7 +253,8 @@
       "tier_spine": "Spine view",
       "tier_circuit": "Circuit view",
       "tier_element": "Element view",
-      "zoomHint": "줌인하면 요소가 나타납니다"
+      "zoomHint": "줌인하면 요소가 나타납니다",
+      "zoomHintPlain": "점을 누르면 그 안의 요소가 보여요"
     }
   },
   "ontologyBlocks": {
@@ -262,6 +264,7 @@
     "exportDone": "{count}개 내보냄",
     "exportError": "내보내지 못했습니다. 다시 시도해 주세요.",
     "exportUnsupportedHint": "이 환경은 폴더 선택을 지원하지 않아요",
+    "vaultRequiredHint": "내 폴더를 열면 쓸 수 있어요",
     "importAction": "블록 가져오기",
     "importAria": "블록 폴더를 골라 병합 미리보기 열기",
     "importEmpty": "가져올 .md 없음",
@@ -2368,7 +2371,9 @@
       "settingsGearChangeVaultAriaLabel": "다른 로컬 vault 폴더를 고르러 워크스페이스 열기",
       "settingsGearAudience": "보기 모드",
       "settingsGearAudienceDev": "개발",
-      "settingsGearAudiencePlain": "일반"
+      "settingsGearAudiencePlain": "일반",
+      "settingsGearAudienceCaption": "일반 — 코드 요소를 접고 쉬운 말로 보여줘요",
+      "spotlightWindowSummary": "최근 {days}일 · {count}"
     },
     "empty": {
       "noMatchesTitle": "필터에 맞는 항목 없음",
@@ -2434,7 +2439,8 @@
       "uncatalogedDocsLabel": "지도에 없는 문서 {count}개",
       "uncatalogedDocsAction": "올리기",
       "dustyNodesLabel": "먼지 앉은 노드 {count}개 — 오래 손대지 않았어요",
-      "dustyNodesAction": "할 일 보기"
+      "dustyNodesAction": "할 일 보기",
+      "plainHint": "요소는 숨겨져 있어요 — 지도의 점을 누르면 그 요소들이 보여요"
     },
     "deeplinkNotFound": "노드를 찾을 수 없습니다: {query}",
     "bootstrap": {

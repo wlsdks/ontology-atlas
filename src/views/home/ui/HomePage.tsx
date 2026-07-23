@@ -272,6 +272,9 @@ export function HomePage() {
   const t = useTranslations('topology');
   const tKinds = useTranslations('kinds');
   const tAgentConnect = useTranslations('agentConnect');
+  // P2 결함⑤ — <lg 발자취 chrome-tile 진입점의 aria-label/title (`atlasGit`
+  // 네임스페이스는 이미 `GitStatusTile` 이 쓰는 것과 같은 키를 재사용한다).
+  const tAtlasGit = useTranslations('atlasGit');
   const relationVocabulary = useRelationVocabulary();
   // 슬라이스 C — lazy initializer 는 클라이언트에서만 실제 실행(SSR 은 항상
   // false), 클라이언트 hydration 도 localStorage 없는 서버 프리렌더 기준
@@ -657,6 +660,9 @@ export function HomePage() {
             audience: t('controls.settingsGearAudience'),
             audienceDev: t('controls.settingsGearAudienceDev'),
             audiencePlain: t('controls.settingsGearAudiencePlain'),
+            // P2 결함③ — "보기 모드" 행 아래 caption. 발견은 됐어도 뜻이
+            // 없던 결함.
+            audienceCaption: t('controls.settingsGearAudienceCaption'),
           }}
         />
       </>
@@ -2644,6 +2650,24 @@ export function HomePage() {
                         {t('controls.spotlightLabel')}
                       </ChromeChip>
                     </Tooltip>
+                    {/* P2 결함④ — 렌즈 ON 인데 INDEX 가 접혀 있으면 적용
+                        시간창/건수를 알 텍스트가 화면 어디에도 없었다. 칩
+                        옆(유틸리티 레인 안, 같은 높이)에 조용한 mono 카운트.
+                        aria-live 로 접근성 겸용. <xl 에서는 레인 폭 보호를
+                        위해 숨긴다(검색 레인 겹침 재발 방지 — 다른 칩들과
+                        같은 축약 사다리). */}
+                    {spotlightOn ? (
+                      <span
+                        aria-live="polite"
+                        data-testid="topology-spotlight-window-summary"
+                        className="hidden shrink-0 whitespace-nowrap font-mono text-[10px] tabular-nums text-[color:var(--color-text-quaternary)] xl:inline"
+                      >
+                        {t('controls.spotlightWindowSummary', {
+                          days: recentChanges.windowDays,
+                          count: recentChanges.recentNodeIds.size,
+                        })}
+                      </span>
+                    ) : null}
                     <Tooltip content={t('controls.docsTooltip')} side="bottom" withProvider={false}>
                     <ChromeChip
                       onClick={() => setDocsDrawerOpen((v) => !v)}
@@ -2722,6 +2746,35 @@ export function HomePage() {
                         </button>
                       </Tooltip>
                     ) : null}
+                    {/* 발자취(Atlas Git) <lg 진입점 (P2 결함⑤, 사용성 전수
+                        검수 2026-07-23) — <lg 에서 내비 레일이 사라지며
+                        스포트라이트·설정은 이 유틸리티 레인으로 이식됐는데
+                        발자취(GitStatusTile) 만 진입 경로가 완전히
+                        소실됐다. 설정 기어와 같은 --chrome-tile-size
+                        문법으로 같은 열에 추가 — 클릭은 레일 슬롯과 동일한
+                        setGitPanelOpen(true). 비개발(plain) 모드는 레일
+                        슬롯(위 navRailSettingsSlot)과 같은 계약으로 숨긴다. */}
+                    {audiencePlain ? null : (
+                      <button
+                        type="button"
+                        onClick={() => setGitPanelOpen(true)}
+                        aria-label={tAtlasGit('tileLabel')}
+                        title={tAtlasGit('tileLabel')}
+                        aria-haspopup="dialog"
+                        aria-expanded={gitPanelOpen}
+                        data-testid="topology-footprint-lg-tile"
+                        className="relative lg:hidden flex size-[var(--chrome-tile-size)] items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
+                      >
+                        <HistoryIcon className="size-[var(--topology-chrome-icon-size)]" aria-hidden />
+                        {ontologyChangeset.touchedNodeIds.size > 0 ? (
+                          <span
+                            aria-hidden="true"
+                            data-testid="topology-footprint-lg-tile-dot"
+                            className="absolute right-1.5 top-1 h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-warning)]"
+                          />
+                        ) : null}
+                      </button>
+                    )}
                     {/* 설정 기어 <lg 진입점 (겹침 소탕 2026-07-23) — 내비 레일
                         (lg+ 전용)의 기어 슬롯이 사라지는 <lg 에서 지도의 설정
                         (언어·INDEX 기본 상태·vault 교체) 접근 수단이 0 이었다.
@@ -2751,6 +2804,7 @@ export function HomePage() {
                           audience: t('controls.settingsGearAudience'),
                           audienceDev: t('controls.settingsGearAudienceDev'),
                           audiencePlain: t('controls.settingsGearAudiencePlain'),
+                          audienceCaption: t('controls.settingsGearAudienceCaption'),
                         }}
                       />
                     </div>
@@ -3026,6 +3080,10 @@ export function HomePage() {
                     selectedId={canvasSelectedSlug}
                     onSelect={(id) => handleSelect(id)}
                     onCollapse={handleIndexCollapse}
+                    // P1 결함①a — element 행이 왜 안 보이는지 설명하는
+                    // 조용한 힌트 행 게이트. treeResult 는 이미 위에서
+                    // element 를 제외했다(단일 진실원 무변경).
+                    plainMode={audiencePlain}
                     onOpenAgentConnect={agentConnectLauncher.open}
                     // P4-② (2026-07-21 리텐션 라운드) — 이미 연결된
                     // 에이전트가 있는 2일차+ 사용자에게 "Updated with AI"
@@ -3143,6 +3201,8 @@ export function HomePage() {
                       uncatalogedDocsAction: t("index.uncatalogedDocsAction"),
                       dustyNodesLabel: t("index.dustyNodesLabel", { count: dustySlugs.size }),
                       dustyNodesAction: t("index.dustyNodesAction"),
+                      // P1 결함①a — plainMode 일 때만 실제 렌더(패널 게이트).
+                      plainHint: t("index.plainHint"),
                     }}
                   />
                   )}
@@ -3448,6 +3508,10 @@ export function HomePage() {
                   projectCount={firstRunProjectCount}
                   domainCount={indexDomainCount}
                   tier={mapZoomTier}
+                  // P1 결함①b — plain 모드는 element 티어에 절대 도달하지
+                  // 않으므로(PLAIN_TIER_REVEAL) tier 기반 힌트 드롭 로직이
+                  // 항상 거짓을 말했다. plain 문구로 치환.
+                  audiencePlain={audiencePlain}
                 />
               </div>
 

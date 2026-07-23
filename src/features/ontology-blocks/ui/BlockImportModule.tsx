@@ -23,14 +23,19 @@ interface PreviewSource {
 
 /**
  * 온톨로지 블록 Slice A — "블록 가져오기" (병합 프리뷰). 전역 INDEX 패널
- * (`TopologyIndexPanel`)의 vault 로드 상태에서만 렌더되는 자립 모듈 —
- * FirstRunStarterModule 과 같은 계약(상태·라벨 자급, 호스트 prop 표면 0).
+ * (`TopologyIndexPanel`) 안에 상시 마운트되는 자립 모듈 — FirstRunStarterModule
+ * 과 같은 계약(상태·라벨 자급, 호스트 prop 표면 0).
  *
  * 절대 계약: **승인 전 쓰기 0.** 폴더 선택 → 공유 파서로 .md 파싱 →
  * `planBlockImport` 순수 dry-run 으로 신규/충돌 리포트만 만든 뒤, 사용자가
  * scrim 딸린 다이얼로그에서 확인해야만 기존 vault 쓰기 경로(`createDoc`)로
  * 기록한다. 충돌 해소는 건너뛰기(기본) 또는 블록명 자동 접두사 — CLI
  * `import --rename` 과 같은 -2/-3 폴백까지 정합 (`merge-plan.ts` 참고).
+ *
+ * P1 결함② (사용성 전수 검수 2026-07-23) — 로컬 vault 미로드(정적 샘플)일 때
+ * "블록 가져오기" 행이 흔적 없이 사라져 "기능 존재 은폐"로 읽혔다. 이제
+ * 같은 자리에 disabled + "내 폴더를 열면 쓸 수 있어요" 힌트로 남는다 —
+ * `RealmBlockExportAction` G1 강등과 같은 문법.
  */
 export function BlockImportModule() {
   const t = useTranslations("ontologyBlocks");
@@ -43,6 +48,7 @@ export function BlockImportModule() {
   );
   const [dialogError, setDialogError] = useState(false);
 
+  const vaultLoaded = status === "loaded" && Boolean(manifest);
   const open = preview !== null;
   useBodyScrollLock(open);
 
@@ -69,11 +75,10 @@ export function BlockImportModule() {
     });
   }, [preview, existingSlugs, resolution]);
 
-  if (status !== "loaded" || !manifest) return null;
-
   const supported = typeof window !== "undefined" && "showDirectoryPicker" in window;
 
   const pickBlockFolder = async () => {
+    if (!vaultLoaded) return;
     setInlineText(null);
     try {
       const dir = (await (
@@ -133,8 +138,14 @@ export function BlockImportModule() {
       <button
         type="button"
         onClick={() => void pickBlockFolder()}
-        disabled={!supported}
-        title={supported ? t("importAria") : t("exportUnsupportedHint")}
+        disabled={!vaultLoaded || !supported}
+        title={
+          !vaultLoaded
+            ? t("vaultRequiredHint")
+            : supported
+              ? t("importAria")
+              : t("exportUnsupportedHint")
+        }
         data-testid="block-import-open"
         className="mt-2 flex shrink-0 items-center gap-2 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] px-2 py-1.5 text-left text-label transition-colors enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)] disabled:opacity-50"
       >

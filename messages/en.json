@@ -234,6 +234,7 @@
     "createLabel": "✚ Create a new vault",
     "createBusy": "Writing starter structure…",
     "dismissLabel": "Just looking around here",
+    "plainModeHint": "Need an easier view? Turn on \"General\" in the gear at the bottom left",
     "errorFallback": "Could not open the folder. Try again.",
     "unsupportedNotice": "This browser can't open local folders. Open it in the macOS app or Chrome/Edge and the map lights up with your markdown folder.",
     "unsupportedCta": "Get the macOS app",
@@ -252,7 +253,8 @@
       "tier_spine": "Spine view",
       "tier_circuit": "Circuit view",
       "tier_element": "Element view",
-      "zoomHint": "zoom in to reveal elements"
+      "zoomHint": "zoom in to reveal elements",
+      "zoomHintPlain": "click a dot to reveal its elements"
     }
   },
   "ontologyBlocks": {
@@ -262,6 +264,7 @@
     "exportDone": "Exported {count}",
     "exportError": "Could not export. Try again.",
     "exportUnsupportedHint": "This environment can't pick a folder",
+    "vaultRequiredHint": "Open your folder to use this",
     "importAction": "Import block",
     "importAria": "Pick a block folder to open a merge preview",
     "importEmpty": "No .md files to import",
@@ -2368,7 +2371,9 @@
       "settingsGearChangeVaultAriaLabel": "Open the workspace to pick a different local vault folder",
       "settingsGearAudience": "View mode",
       "settingsGearAudienceDev": "Developer",
-      "settingsGearAudiencePlain": "General"
+      "settingsGearAudiencePlain": "General",
+      "settingsGearAudienceCaption": "General — folds away code elements and uses plain language",
+      "spotlightWindowSummary": "Last {days}d · {count}"
     },
     "empty": {
       "noMatchesTitle": "No matching items",
@@ -2434,7 +2439,8 @@
       "uncatalogedDocsLabel": "{count} docs not on the map",
       "uncatalogedDocsAction": "Promote",
       "dustyNodesLabel": "{count} nodes gathering dust — untouched for a while",
-      "dustyNodesAction": "See to-dos"
+      "dustyNodesAction": "See to-dos",
+      "plainHint": "Elements are hidden — click a dot on the map to reveal its elements"
     },
     "deeplinkNotFound": "Node not found: {query}",
     "bootstrap": {

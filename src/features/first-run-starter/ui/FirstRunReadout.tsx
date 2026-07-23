@@ -14,6 +14,14 @@ export interface FirstRunReadoutProps {
    * to "spine" (the overview entry) when the map hasn't reported yet.
    */
   tier?: "spine" | "circuit" | "element";
+  /**
+   * P1 결함①b (사용성 전수 검수 2026-07-23) — 비개발(plain) 모드에서는
+   * element 티어가 도달 불가 밴드로 밀려 있어(`PLAIN_TIER_REVEAL`) 줌으로는
+   * 절대 element 가 드러나지 않는다. "줌인하면 요소가 나타납니다"는 이
+   * 모드에서 항상 거짓이므로, `tier` 와 무관하게 클릭 기반 plain 문구로
+   * 치환한다(드롭하지 않음 — 이 모드에선 그 안내가 항상 유효하다).
+   */
+  audiencePlain?: boolean;
 }
 
 /**
@@ -36,7 +44,12 @@ export interface FirstRunReadoutProps {
  * 둘러보는 동안은 방향성 지표로 남아있는 게 유용하다(이전 오픈소스 스트립과
  * 같은 지속성).
  */
-export function FirstRunReadout({ projectCount, domainCount, tier = "spine" }: FirstRunReadoutProps) {
+export function FirstRunReadout({
+  projectCount,
+  domainCount,
+  tier = "spine",
+  audiencePlain = false,
+}: FirstRunReadoutProps) {
   const t = useTranslations("firstRunStarter.readout");
   const visible = useFirstRunSampleModeSettled();
 
@@ -45,7 +58,10 @@ export function FirstRunReadout({ projectCount, domainCount, tier = "spine" }: F
   const tierLabel = t(`tier_${tier}`);
   // At the element tier the "zoom in to see elements" promise is already
   // fulfilled — showing it would be a lie (M-5). Below it, keep the guidance.
-  const showZoomHint = tier !== "element";
+  // P1 결함①b — plain 모드는 이 tier 판정 자체가 무의미하다(줌으로는 절대
+  // element 에 도달 못 함) — 항상 보여주고 문구만 클릭 기반으로 바꾼다.
+  const showZoomHint = audiencePlain || tier !== "element";
+  const zoomHintText = audiencePlain ? t("zoomHintPlain") : t("zoomHint");
 
   return (
     <div
@@ -67,7 +83,7 @@ export function FirstRunReadout({ projectCount, domainCount, tier = "spine" }: F
       {showZoomHint ? (
         <>
           <Dot />
-          <span data-testid="first-run-readout-zoom-hint">{t("zoomHint")}</span>
+          <span data-testid="first-run-readout-zoom-hint">{zoomHintText}</span>
         </>
       ) : null}
     </div>

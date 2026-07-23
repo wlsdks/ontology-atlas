@@ -33,6 +33,7 @@ const labels = {
   audience: "View mode",
   audienceDev: "Developer",
   audiencePlain: "General",
+  audienceCaption: "General — folds away code elements and uses plain language",
 };
 
 function renderGear(
@@ -257,5 +258,31 @@ describe("TopologyV2SettingsGear — 보기 모드(audience) 행 (슬라이스 C
       "aria-pressed",
       "false",
     );
+  });
+
+  // P2 결함③ (사용성 전수 검수 2026-07-23) — 토글에 설명이 전혀 없어 비개발자가
+  // "일반" 이 뭘 바꾸는지 알 방법이 없었다. 행 아래 caption 한 줄.
+  it("P2 결함③ — renders a caption line under the 보기 모드 row when provided", () => {
+    renderGear();
+    fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
+    const popover = screen.getByTestId("topology-v2-settings-gear-popover");
+    expect(within(popover).getByText(labels.audienceCaption)).toBeInTheDocument();
+  });
+
+  it("P2 결함③ — omits the caption line when the label isn't provided (backward-compat)", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <TopologyV2SettingsGear
+          indexDefaultCollapsed={false}
+          onChangeIndexDefaultCollapsed={() => {}}
+          audiencePlain={false}
+          onChangeAudiencePlain={() => {}}
+          changeVaultHref="/docs/?intent=local"
+          labels={{ ...labels, audienceCaption: undefined }}
+        />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("topology-v2-settings-gear-trigger"));
+    expect(screen.queryByTestId("topology-v2-settings-gear-audience-caption")).not.toBeInTheDocument();
   });
 });

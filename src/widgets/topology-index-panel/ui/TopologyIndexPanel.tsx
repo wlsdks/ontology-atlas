@@ -69,6 +69,12 @@ export interface TopologyIndexPanelLabels {
    *  신선도 탭 이동 액션. 중립 톤만 — warning 사다리 금지 (Guardian 1차). */
   dustyNodesLabel: string;
   dustyNodesAction: string;
+  /**
+   * P1 결함①a (사용성 전수 검수 2026-07-23) — 일반(비개발) 모드에서 element
+   * 행이 트리에서 빠졌다는 사실을 설명하는 조용한 한 줄 힌트. `plainMode`
+   * 와 함께 있을 때만 렌더 — 생략하면 힌트 자체가 없다(하위호환).
+   */
+  plainHint?: string;
 }
 
 export interface TopologyIndexPanelProps {
@@ -145,6 +151,12 @@ export interface TopologyIndexPanelProps {
   recentWindow?: "auto" | 1 | 7 | 30;
   /** 프리셋 칩 클릭 → 창 전환(즉시 적용 — 팝업/확인 금지 계약). */
   onWindowChange?: (window: "auto" | 1 | 7 | 30) => void;
+  /**
+   * P1 결함①a — 일반(비개발) 모드 표시 게이트. `treeResult` 자체에서 element
+   * 행을 빼는 건 호출자(HomePage, `filterTreeExcludeKind`)의 일 — 이 플래그는
+   * "왜 안 보이는지"를 설명하는 힌트 행 렌더 여부만 결정한다(데이터 무변경).
+   */
+  plainMode?: boolean;
 }
 
 /**
@@ -188,6 +200,7 @@ export function TopologyIndexPanel({
   onLensChange,
   recentWindow = "auto",
   onWindowChange,
+  plainMode = false,
 }: TopologyIndexPanelProps) {
   const [query, setQuery] = useState("");
   const [openIds, setOpenIds] = useState<Set<string>>(
@@ -439,6 +452,17 @@ export function TopologyIndexPanel({
             </button>
           ))}
         </div>
+      ) : null}
+
+      {/* P1 결함①a — 일반(비개발) 모드에서 element 행이 빠져 있는 이유를
+          설명하는 조용한 한 줄. 트리 위, 렌즈/프리셋 칩 아래. */}
+      {plainMode && labels.plainHint ? (
+        <p
+          data-testid="topology-index-plain-hint"
+          className="mb-2 shrink-0 text-label text-[color:var(--topology-v2-panel-text-quaternary)]"
+        >
+          {labels.plainHint}
+        </p>
       ) : null}
 
       <nav

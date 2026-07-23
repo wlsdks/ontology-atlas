@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Bot, Check, Copy, FolderOpen, Languages, Settings, Terminal, X } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/navigation';
@@ -26,13 +26,38 @@ type SettingsMenuTab = 'general' | 'mcpAgents' | 'vault' | 'appearance' | 'verif
  * 개별 마운트). general / mcpAgents / vault / appearance / verification 5
  * 탭 — 언어 전환(appearance)도 여기 흡수돼 있어 AppNavRail 자체에는
  * 별도 설정 트리거가 없어도 기능 손실이 없다.
+ *
+ * P3 결함⑥ (사용성 전수 검수 2026-07-23) — 이 다이얼로그가 열린 채 ⌘K 를
+ * 누르면 검색 팔레트가 그 위에 겹쳤다. 아래 `onKeyDown` 은 이미 "팔레트가
+ * 열리면 설정을 demote" 하는 절반(Guardian B2)을 처리하지만, 반대 방향
+ * ("설정을 열면 팔레트를 닫는다")은 이 위젯이 팔레트의 open state 를 모르면
+ * 불가능했다 — `open`/`onOpenChange` 를 optional controlled prop 으로 열어
+ * `MountedGlobalSearch` 와 같은 계약을 준다. 둘 다 생략하면 기존 self-managed
+ * 그대로(하위호환 — DocsVaultPage 등 미변경 호출부는 영향 없음).
  */
-export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
+export interface AppSettingsMenuProps {
+  mode: 'static' | 'local';
+  /** controlled open state. 미지정 시 self-managed(기존 동작). */
+  open?: boolean;
+  /** controlled 모드에서 open 이 바뀔 때마다 호출 — 호출자가 실제 state 를 갱신한다. */
+  onOpenChange?: (next: boolean) => void;
+}
+
+export function AppSettingsMenu({ mode, open: openProp, onOpenChange }: AppSettingsMenuProps) {
   const t = useTranslations('nav.settingsMenu');
   const { state: copyState, copy } = useCopyFeedback();
   const router = useRouter();
   const localVault = useLocalVault();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? openProp : internalOpen;
+  const setOpen = useCallback(
+    (next: boolean) => {
+      if (isControlled) onOpenChange?.(next);
+      else setInternalOpen(next);
+    },
+    [isControlled, onOpenChange],
+  );
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsMenuTab>('general');
   const [vaultRevealError, setVaultRevealError] = useState<string | null>(null);
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
@@ -133,6 +158,15 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
     ['disconnected', 'mcpStateDisconnectedLabel', 'mcpStateDisconnectedBody', X, 'var(--color-text-tertiary)'],
   ] as const;
 
+  // P3 결함⑥ — controlled 모드에서 이 `<details>` 는 React state 가 곧
+  // 진실원이어야 한다. `<summary>` 클릭의 preventDefault() 는 보통 native
+  // toggle 을 막지만, 그 타이밍에 기대는 대신 매 렌더마다 DOM 의 `open`
+  // 프로퍼티를 React 값으로 명시적으로 되맞춰 race 자체를 구조적으로 없앤다
+  // (uncontrolled 모드에서도 안전 — 같은 값이면 no-op).
+  useEffect(() => {
+    if (detailsRef.current) detailsRef.current.open = open;
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const timer = window.setTimeout(() => {
@@ -152,7 +186,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
 
     document.addEventListener('mousedown', handleMouseDown);
     return () => document.removeEventListener('mousedown', handleMouseDown);
-  }, [open]);
+  }, [open, setOpen]);
 
   const closePanel = (returnFocus = true) => {
     setOpen(false);
@@ -187,7 +221,7 @@ export function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
         data-testid="app-settings-trigger"
         onClick={(event) => {
           event.preventDefault();
-          setOpen((current) => !current);
+          setOpen(!open);
         }}
         className="inline-flex h-8 cursor-pointer list-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
       >

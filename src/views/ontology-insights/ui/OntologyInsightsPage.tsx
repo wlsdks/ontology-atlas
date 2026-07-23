@@ -31,7 +31,7 @@ import {
   computeKindDistribution,
   rankAllByDegree,
 } from "@/shared/lib/ontology-tree";
-import { MountedGlobalSearch } from "@/widgets/global-search";
+import { MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { EmptyState, HexMark, TabBar } from "@/shared/ui";
 import {
@@ -86,6 +86,24 @@ export function OntologyInsightsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const tab = parseInsightsTab(searchParams.get("tab"));
+
+  // P3 결함⑥ (사용성 전수 검수 2026-07-23) — 검색 팔레트(⌘K)와 앱 설정
+  // 다이얼로그가 각자 self-managed open state 였던 탓에 둘이 동시에 뜰 수
+  // 있었다(transient 강등 위반). 두 state 를 이 페이지가 소유해 대칭으로
+  // 서로를 닫는다 — 열리는 쪽이 이긴다, 스택 금지. `MountedGlobalSearch` 를
+  // controlled 로 돌리면 내장 ⌘K 바인딩이 꺼지므로(controlled mount 계약)
+  // 같은 hotkey 훅을 여기서 직접 걸어 대칭 로직을 함께 태운다.
+  const [searchPaletteOpen, setSearchPaletteOpenState] = useState(false);
+  const [appSettingsOpen, setAppSettingsOpenState] = useState(false);
+  const setSearchPaletteOpen = useCallback((next: boolean) => {
+    setSearchPaletteOpenState(next);
+    if (next) setAppSettingsOpenState(false);
+  }, []);
+  const setAppSettingsOpen = useCallback((next: boolean) => {
+    setAppSettingsOpenState(next);
+    if (next) setSearchPaletteOpenState(false);
+  }, []);
+  useGlobalSearchHotkey(searchPaletteOpen, setSearchPaletteOpen);
 
   // 지도 딥링크에 출처 마커(`via=insights:<tab>`)를 새긴다 — 지도(HomePage)가
   // 이 마커로 "인사이트로 돌아가기" 복귀 칩을 렌더하고, 클릭 시 이 탭으로
@@ -353,10 +371,10 @@ export function OntologyInsightsPage() {
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6">
           <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
-          <AppSettingsMenu mode={dataSourceMode} />
+          <AppSettingsMenu mode={dataSourceMode} open={appSettingsOpen} onOpenChange={setAppSettingsOpen} />
         </div>
         <main id="main" className="mx-auto w-full max-w-[var(--page-max)] px-6 py-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-10">
-        <MountedGlobalSearch />
+        <MountedGlobalSearch open={searchPaletteOpen} onOpenChange={setSearchPaletteOpen} />
 
         <header className="flex flex-wrap items-end gap-4">
           <h1 className="inline-flex items-center gap-2 text-display font-[var(--font-weight-signature)] tracking-[-0.015em] text-[color:var(--color-text-primary)]">
