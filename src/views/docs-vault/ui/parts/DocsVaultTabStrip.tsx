@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { useTranslations } from "next-intl";
 import { FileText, X } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
@@ -48,6 +48,38 @@ export function DocsVaultTabStrip({
   t,
 }: DocsVaultTabStripProps) {
   const activeTabRef = useRef<HTMLButtonElement | null>(null);
+  const stripRef = useRef<HTMLElement | null>(null);
+  // 열린 문서 워킹셋이 스트립 폭을 넘칠 때, 숨은 탭이 있는 쪽에만 엣지
+  // 페이드를 켠다 — 넘침 어포던스 0(조용한 은닉) 결함 정정. mask 알파만
+  // 쓰므로 색/glow/모션 0, reduced-motion 무관.
+  const [edgeOverflow, setEdgeOverflow] = useState({ left: false, right: false });
+
+  const recomputeEdges = useCallback(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    const maxScroll = strip.scrollWidth - strip.clientWidth;
+    const left = strip.scrollLeft > 1;
+    const right = strip.scrollLeft < maxScroll - 1;
+    setEdgeOverflow((prev) =>
+      prev.left === left && prev.right === right ? prev : { left, right },
+    );
+  }, []);
+
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    recomputeEdges();
+    strip.addEventListener("scroll", recomputeEdges, { passive: true });
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(recomputeEdges)
+        : null;
+    resizeObserver?.observe(strip);
+    return () => {
+      strip.removeEventListener("scroll", recomputeEdges);
+      resizeObserver?.disconnect();
+    };
+  }, [recomputeEdges, tabs.length]);
 
   useEffect(() => {
     // JS 스크롤 애니메이션은 globals.css 의 reduced-motion base layer 가
@@ -85,10 +117,31 @@ export function DocsVaultTabStrip({
 
   if (tabs.length === 0) return null;
 
+  // 숨은 콘텐츠가 있는 엣지에만 투명 페이드. 양쪽/한쪽/없음 4상태.
+  const fade = "var(--docs-tab-edge-fade)";
+  const maskImage = edgeOverflow.left && edgeOverflow.right
+    ? `linear-gradient(to right, transparent 0, black ${fade}, black calc(100% - ${fade}), transparent 100%)`
+    : edgeOverflow.right
+      ? `linear-gradient(to right, black calc(100% - ${fade}), transparent 100%)`
+      : edgeOverflow.left
+        ? `linear-gradient(to right, transparent 0, black ${fade})`
+        : undefined;
+
   return (
     <nav
+      ref={stripRef}
       aria-label={t("tabs.stripAriaLabel")}
+      data-edge-overflow={
+        edgeOverflow.left && edgeOverflow.right
+          ? "both"
+          : edgeOverflow.right
+            ? "right"
+            : edgeOverflow.left
+              ? "left"
+              : undefined
+      }
       className="docs-vault-tab-strip flex h-full min-w-0 flex-1 items-stretch overflow-x-auto"
+      style={maskImage ? { maskImage, WebkitMaskImage: maskImage } : undefined}
     >
       {tabs.map((tab) => {
         const active = tab.slug === activeSlug;
