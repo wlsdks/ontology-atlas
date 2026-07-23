@@ -130,6 +130,33 @@ triple is the same shape shown in the manual snippets above, standalone:
 (monorepo/source checkout: swap `"args"` for `["/absolute/path/to/mcp/src/index.js"]`
 and `"command"` for `"node"`, matching the manual Claude Code/Cursor snippet above.)
 
+#### Read-only registration (`OATLAS_READ_ONLY`)
+
+When the registrant is **not** the vault owner — a shared dashboard, a review
+bot, an external tool that only needs to *read* the graph — add
+`"OATLAS_READ_ONLY": "1"` to the `env`:
+
+```json
+{
+  "command": "npx",
+  "args": ["-y", "ontology-atlas-mcp"],
+  "env": {
+    "OATLAS_VAULT": "/absolute/path/to/vault",
+    "OATLAS_READ_ONLY": "1"
+  }
+}
+```
+
+In read-only mode the server advertises **only the 16 read tools** in
+`tools/list` (the 9 write tools — `add_concept`, `add_concepts`,
+`add_relation`, `add_relations`, `patch_concept`, `rename_concept`,
+`merge_concepts`, `delete_concept`, `absorb_document` — disappear), and any
+direct call to a write tool is rejected even if the client cached an older
+tool list. This is the trust-charter-aligned surface for third-party
+registration: a read consumer gets zero paths to the user's disk. Accepted
+truthy values: `1`, `true`, `yes`, `on` (case-insensitive); anything else
+leaves the full read+write surface intact.
+
 Steps for a fourth client:
 
 1. Find where your client registers MCP servers (its docs likely mention
@@ -478,6 +505,58 @@ ranking cost before running graph centrality. For `all_paths`, `limit` and
 and inspect `evidence.status`, `evidence.pathsComplete`, `exhaustive`, and
 `truncatedByBudget` before treating returned paths or `totalPaths` as complete
 evidence.
+
+## Interop — export to a standard graph format
+
+The vault is markdown, but the graph it encodes is portable. `ontology-atlas
+export` compiles the vault (the same deterministic `compile_ontology` artifact
+an agent reads) and serializes it to a standard interchange format on **stdout**:
+
+```bash
+ontology-atlas export [vault] --format jsonld    # RDF 1.1 JSON-LD (default)
+ontology-atlas export [vault] --format graphml   # XML graph (Gephi / Cytoscape)
+ontology-atlas export [vault] --format json      # raw compile artifact, unchanged
+```
+
+The payload goes to stdout and status to stderr, so it pipes cleanly into other
+tools. Node identity is a stable URN — `urn:ontology-atlas:<kind>:<slug>` — used
+as both the JSON-LD `@id` and the GraphML node id, so both formats share one
+identity. Edge `via` keys become `oatlas:` predicates (JSON-LD) / a `via`
+attribute (GraphML). The web ERD builder's *Export* menu (`/ontology/edit`)
+emits byte-identical output through the same serializer (`interop-format`,
+lock-stepped by `tests/contract/interop-format.contract.test.ts`).
+
+### Loading recipes
+
+```bash
+# Gephi / Cytoscape — open the .graphml directly:
+ontology-atlas export docs/ontology --format graphml > atlas.graphml
+
+# Neo4j — GraphML via APOC (apoc.import.graphml), from the browser or cypher-shell:
+ontology-atlas export docs/ontology --format graphml > /import/atlas.graphml
+#   CALL apoc.import.graphml('atlas.graphml', {readLabels: true})
+
+# NetworkX (Python):
+#   import networkx as nx; G = nx.read_graphml('atlas.graphml')
+
+# rdflib / any triplestore / Protégé — JSON-LD is RDF 1.1:
+ontology-atlas export docs/ontology --format jsonld > atlas.jsonld
+#   import rdflib; g = rdflib.Graph(); g.parse('atlas.jsonld', format='json-ld')
+```
+
+### The interop contract (read this before wiring a pipeline)
+
+- **An export is a snapshot, not a live link.** Re-run `export` to refresh.
+- **`graphHash` is the version.** The `--format json` artifact carries the
+  compiler's `graphHash`; identical hashes mean identical graphs. Key your
+  downstream cache/diff on it.
+- **A rename mints a *new* URN and does not rewrite already-emitted URNs.**
+  `rename_concept` changes the slug, so the URN of that node changes in the
+  *next* export. URNs written into a prior snapshot are not retroactively
+  fixed — external consumers key on the URN and re-import to pick up renames.
+- **External / dangling refs are omitted.** An interop snapshot only emits
+  edges whose endpoints are both real vault nodes; it never mints phantom
+  nodes for unresolved element paths.
 
 ## Frontmatter shape per kind (R14)
 

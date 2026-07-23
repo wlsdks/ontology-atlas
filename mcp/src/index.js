@@ -3304,7 +3304,20 @@ function toolTitle(name) {
     .join(' ');
 }
 
-const TOOLS_FOR_LIST = TOOLS.map((tool) => ({
+// OATLAS_READ_ONLY — when set, the server advertises and accepts only the read
+// tools. Trust-charter aligned surface for third-party / untrusted registration
+// (Fable interop memo): a consumer that only needs to *read* the vault (Neo4j
+// loaders, dashboards, review bots) can register the server with zero risk of a
+// write reaching the user's disk. Every write tool disappears from tools/list
+// AND is rejected if called directly (defense in depth against cached lists).
+// Recommended whenever the registrant is not the vault owner.
+function parseReadOnlyEnv(value) {
+  if (typeof value !== 'string') return false;
+  return ['1', 'true', 'yes', 'on'].includes(value.trim().toLowerCase());
+}
+const READ_ONLY_MODE = parseReadOnlyEnv(process.env.OATLAS_READ_ONLY);
+
+const TOOLS_FOR_LIST_ALL = TOOLS.map((tool) => ({
   ...tool,
   annotations: {
     ...(tool.annotations || {}),
@@ -3319,7 +3332,13 @@ const TOOLS_FOR_LIST = TOOLS.map((tool) => ({
     additionalProperties: false,
   },
 }));
-const TOOL_BY_NAME = new Map(TOOLS_FOR_LIST.map((tool) => [tool.name, tool]));
+// tools/list surface — filtered down to read tools in read-only mode.
+const TOOLS_FOR_LIST = READ_ONLY_MODE
+  ? TOOLS_FOR_LIST_ALL.filter((tool) => READ_TOOL_NAMES.has(tool.name))
+  : TOOLS_FOR_LIST_ALL;
+// Full registry stays complete so unknown-tool suggestions + the read-only
+// guard can reason about every tool name regardless of what tools/list shows.
+const TOOL_BY_NAME = new Map(TOOLS_FOR_LIST_ALL.map((tool) => [tool.name, tool]));
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS_FOR_LIST }));
 
@@ -3389,6 +3408,14 @@ function logWrite(name, args, result) {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name } = request.params;
   try {
+    // Read-only guard — reject any known write tool even if the caller has a
+    // stale tools/list that still shows it. Unknown names fall through to the
+    // normal unknown-tool error below.
+    if (READ_ONLY_MODE && TOOL_BY_NAME.has(name) && !READ_TOOL_NAMES.has(name)) {
+      throw new Error(
+        `Tool "${name}" is unavailable: server is in read-only mode (OATLAS_READ_ONLY). Only read tools are exposed.`,
+      );
+    }
     const args = normalizeToolArguments(request.params.arguments, name);
     switch (name) {
       case 'connection_info':

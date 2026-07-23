@@ -47,6 +47,7 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
   'project-map': runner('project-map.mjs', 'runProjectMap'),
   query: runner('query.mjs', 'runQuery'),
   compile: runner('compile.mjs', 'runCompile'),
+  export: runner('export.mjs', 'runExport'),
   rename: runner('rename.mjs', 'runRename'),
   merge: runner('merge.mjs', 'runMerge'),
   delete: runner('delete.mjs', 'runDelete'),

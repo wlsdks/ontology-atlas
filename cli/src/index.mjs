@@ -126,6 +126,8 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --limit N --item-limit N --json
   npx ontology-atlas compile [vault]         Deterministic graph compile + optional reorder
        --summary --fix --json                 ${COLORS.dim}hash/counts · canonicalize relation arrays${COLORS.reset}
+  npx ontology-atlas export [vault]          ${COLORS.green}Interop export${COLORS.reset} — compile → standard exchange format (stdout)
+       --format jsonld|graphml|json           ${COLORS.dim}RDF JSON-LD · Gephi GraphML · raw artifact${COLORS.reset}
   npx ontology-atlas overview [vault]         Vault first-contact dashboard (counts + 분포 + 허브)
        --limit N --json                       ${COLORS.dim}허브 N 개 (default 10) · machine output${COLORS.reset}
   npx ontology-atlas hubs [vault]             Centrality 4 rankings — PageRank / Bridges / Authorities / Hubs
