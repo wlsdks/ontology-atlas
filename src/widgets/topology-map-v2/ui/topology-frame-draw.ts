@@ -923,7 +923,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
 
     // S8 결함 1 — 펼친 부모 구분: 노드 디스크 바깥에 파선 오라 링(선택 ego 링은
     // 실선이라 채널 충돌 없음). 노드 위에 얹되 알파는 노드 티어 알파를 따른다.
-    if (expandedParentIds.has(node.id)) {
+    // 단, 스포트라이트 변경-노드 링(앰버 파선, 같은 r+6 궤도)이 활성인 노드에선
+    // 오라를 양보한다 — 두 파선이 같은 반경에서 인터리브되어 두-색 브레이드로
+    // 읽히는 결함(모션 검수 2026-07-23 프레임 증거). 렌즈 중 변경 노드는 앰버
+    // 링 하나가 "전개+변경"을 다 말한다(궤도당 신호 1개); 변경 아닌 전개
+    // 조상(티어 관통 전개)은 기존 인디고 오라 유지.
+    if (
+      expandedParentIds.has(node.id) &&
+      !(spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id))
+    ) {
       ctx.save();
       ctx.setLineDash([...EXPANDED_AURA_DASH]);
       ctx.globalAlpha = tierAlpha * EXPANDED_AURA_ALPHA;
