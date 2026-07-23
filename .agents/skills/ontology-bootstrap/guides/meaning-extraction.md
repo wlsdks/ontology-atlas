@@ -135,6 +135,9 @@ Before approval, try to falsify each proposal:
 - Does a capability describe implementation rather than ability?
 - Is the definition circular or only a title expansion?
 - Is a roadmap promise being presented as shipped?
+- Did the evidence packet mark the source `untrusted-instruction` or
+  `claim-review-required`, and if so did the proposal keep it out of the
+  current shared ontology?
 - Is an import edge being mistaken for a business dependency?
 - Could the evidence support a materially different boundary?
 
