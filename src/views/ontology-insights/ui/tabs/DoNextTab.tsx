@@ -25,6 +25,8 @@ import type { DependencyCycle, DependencyCyclesResult } from "../../lib/dependen
 
 export interface DoNextTabLabels {
   agentReadinessTitle: string;
+  /** 준비도 밴드 제목 아래 평문 한 줄 — 전문용어(ready/preflight/review) 를 비전문가에게 풀어준다. 큐 힌트와 같은 슬롯 패턴. */
+  agentReadinessHint?: string;
   agentReadinessReady: string;
   agentReadinessPreflight: string;
   agentReadinessReview: string;
@@ -43,6 +45,12 @@ export interface DoNextTabLabels {
   sectionOrphan: string;
   sectionPromotion: string;
   sectionCycle: string;
+  /** 각 큐 섹션 헤더 아래 평문 한 줄 — "이게 왜 할 일인가"를 비전문가도 알게. */
+  hintNeglectedHub: string;
+  hintOrphan: string;
+  hintPromotion: string;
+  /** promotion 행 근거 수치 ("참조 {count}개"). */
+  promotionMetric: (count: number) => string;
   /** 경로가 maxPathNodes 로 잘렸을 때 노드 생략 표기. */
   cycleMoreNodes: (count: number) => string;
   neglectedHubMetric: (degree: number, agoDays: number) => string;
@@ -329,7 +337,7 @@ function TouchUpBand({
     <section
       aria-label={labels.touchUpBandTitle}
       data-testid="do-next-touchups"
-      className="flex flex-col gap-2 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+      className="flex flex-col gap-2 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)]"
     >
       <div className="flex items-baseline gap-2">
         <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
@@ -414,6 +422,7 @@ function TouchUpBand({
 
 function QueueSection({
   title,
+  hint,
   rows,
   totalCount,
   metric,
@@ -422,6 +431,8 @@ function QueueSection({
   labels,
 }: {
   title: string;
+  /** 헤더 아래 평문 한 줄 — "왜 할 일인가"를 비전문가도 알게. */
+  hint?: string;
   rows: DoNextRow[];
   totalCount: number;
   metric: (row: DoNextRow) => string | null;
@@ -433,11 +444,16 @@ function QueueSection({
   const hiddenCount = Math.max(0, totalCount - rows.length);
   return (
     <section aria-label={title} className="flex flex-col">
-      <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] pb-2">
-        <span className="text-body font-medium text-[color:var(--color-text-primary)]">{title}</span>
-        <span className="font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
-          {totalCount}
-        </span>
+      <div className="flex flex-col gap-1 border-b border-[color:var(--color-divider)] pb-2">
+        <div className="flex items-baseline gap-2">
+          <span className="text-body font-medium text-[color:var(--color-text-primary)]">{title}</span>
+          <span className="font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+            {totalCount}
+          </span>
+        </div>
+        {hint ? (
+          <p className="text-label leading-snug text-[color:var(--color-text-quaternary)]">{hint}</p>
+        ) : null}
       </div>
       {rows.map((row) => {
         const metricText = metric(row);
@@ -581,9 +597,21 @@ export function DoNextTab({
         ? labels.repairQueueActionKindOrphan
         : labels.repairQueueActionKindPromotion
     : null;
-  const neglectedRows = queue.rows.filter((row) => row.rowKind === "neglected-hub");
-  const orphanRows = queue.rows.filter((row) => row.rowKind === "orphan");
-  const promotionRows = queue.rows.filter((row) => row.rowKind === "promotion");
+  // ③↔큐 중복 제거 — "오늘의 손질" 밴드는 큐/사이클 상위에서 절단해 오므로
+  // 큐 섹션 첫 행과 100% 겹친다(같은 방치 허브/고아/승격 후보). 밴드에 이미
+  // 올라온 nodeId 를 큐 행에서 걸러 같은 항목이 위아래로 두 번 보이지 않게
+  // 한다. 섹션 헤더 totalCount(queue.counts.*)와 "외 N개" 라인은 그대로 두어
+  // 전체 규모는 보존한다(구조 필터일 뿐, 색/토큰 변경 없음).
+  const bandIds = new Set(touchUps.map((item) => item.nodeId));
+  const neglectedRows = queue.rows.filter(
+    (row) => row.rowKind === "neglected-hub" && !bandIds.has(row.nodeId),
+  );
+  const orphanRows = queue.rows.filter(
+    (row) => row.rowKind === "orphan" && !bandIds.has(row.nodeId),
+  );
+  const promotionRows = queue.rows.filter(
+    (row) => row.rowKind === "promotion" && !bandIds.has(row.nodeId),
+  );
   const hasCycles = cycles.cycles.length > 0;
   const queueEmpty = queue.rows.length === 0 && !hasCycles;
 
@@ -592,183 +620,162 @@ export function DoNextTab({
       {touchUps.length > 0 ? (
         <TouchUpBand items={touchUps} mapHref={mapHref} builderHref={builderHref} labels={labels} />
       ) : null}
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-[1.2fr_1fr]">
-      <section
-        aria-label={labels.queueTitle}
-        // 섹션 간 갭 16px 는 행 피치(~53px)보다 약해 다음 섹션 헤딩이 위
-        // 목록에 붙어 읽혔다(게슈탈트 근접성 역전) — 24px 로 섹션 경계를
-        // 행 간격 위로 올린다.
-        className="flex min-h-0 min-w-0 flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
-      >
-        <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
-          {labels.queueTitle}
-        </span>
-        {queueEmpty ? (
-          <p className="text-body text-[color:var(--color-text-quaternary)]">{labels.emptyQueue}</p>
-        ) : (
-          <>
-            <QueueSection
-              title={labels.sectionNeglectedHub}
-              rows={neglectedRows}
-              totalCount={queue.counts.neglectedHub}
-              metric={(row) =>
-                row.degree !== undefined && row.agoDays !== undefined
-                  ? labels.neglectedHubMetric(row.degree, row.agoDays)
-                  : null
-              }
-              mapHref={mapHref}
-              builderHref={builderHref}
-              labels={labels}
-            />
-            <QueueSection
-              title={labels.sectionOrphan}
-              rows={orphanRows}
-              totalCount={queue.counts.orphan}
-              metric={() => null}
-              mapHref={mapHref}
-              builderHref={builderHref}
-              labels={labels}
-            />
-            <QueueSection
-              title={labels.sectionPromotion}
-              rows={promotionRows}
-              totalCount={queue.counts.promotion}
-              metric={() => null}
-              mapHref={mapHref}
-              builderHref={builderHref}
-              labels={labels}
-            />
-            <CycleSection
-              cycles={cycles}
-              mapHref={mapHref}
-              nodeTitle={nodeTitle}
-              cycleHandoff={cycleHandoff}
-              labels={labels}
-            />
-          </>
-        )}
-      </section>
-
+      <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
+      {/* 상태 밴드 — 에이전트 준비도 + 수리 큐를 상단 풀폭 2열 요약으로.
+          이전엔 큐 옆 세로 카드(self-start)라 큐가 길면 우측 아래로 거대한
+          빈 여백이 생겼다(Guardian 관찰). 상단 밴드로 올려 여백을 없애고
+          "전체 상태 → 지금 할 일" 순으로 읽히게 한다. */}
       <section
         aria-label={labels.agentReadinessTitle}
-        // Guardian 관찰 — 수리 큐가 얕을 때 카드가 좌측 큐 높이까지 늘어나
-        // 빈 여백으로 읽혔다: 내용 높이만큼만 (lg 그리드에서 self-start).
-        className="flex min-h-0 min-w-0 flex-col self-start rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        className="flex min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        <div
-          aria-label={`${labels.agentReadinessTitle}: ${agentReadiness.ready} ${labels.agentReadinessReady} · ${agentReadiness.preflight} ${labels.agentReadinessPreflight} · ${agentReadiness.review} ${labels.agentReadinessReview}`}
-          data-testid="insights-agent-readiness"
-          className="mb-3.5 border-b border-[color:var(--color-divider)] pb-3.5"
-        >
-          <div className="flex items-baseline gap-2">
-            <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
-              {labels.agentReadinessTitle}
-            </span>
-            <span className="ml-auto flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
-              <span>
-                {agentReadiness.ready}{" "}
-                <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
-                  {labels.agentReadinessReady}
-                </span>
-              </span>
-              <span>
-                {agentReadiness.preflight}{" "}
-                <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
-                  {labels.agentReadinessPreflight}
-                </span>
-              </span>
-              <span>
-                {agentReadiness.review}{" "}
-                <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
-                  {labels.agentReadinessReview}
-                </span>
-              </span>
-            </span>
-          </div>
+        <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
           <div
-            data-testid="insights-agent-readiness-meter"
-            className="mt-2 flex h-1.5 w-full overflow-hidden rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-2)]"
+            aria-label={`${labels.agentReadinessTitle}: ${agentReadiness.ready} ${labels.agentReadinessReady} · ${agentReadiness.preflight} ${labels.agentReadinessPreflight} · ${agentReadiness.review} ${labels.agentReadinessReview}`}
+            data-testid="insights-agent-readiness"
           >
-            <span
-              aria-hidden
-              className="bg-[color:var(--topology-overview-readiness-ready-meter,var(--color-overlay-3))]"
-              style={{ flexGrow: readinessTotal > 0 ? agentReadiness.ready : 1 }}
-            />
-            <span
-              aria-hidden
-              className="bg-[color:var(--topology-overview-readiness-preflight-meter,var(--color-status-warning))]"
-              style={{ flexGrow: readinessTotal > 0 ? agentReadiness.preflight : 0 }}
-            />
-            <span
-              aria-hidden
-              className="bg-[color:var(--topology-overview-readiness-review-meter,var(--color-status-danger))]"
-              style={{ flexGrow: readinessTotal > 0 ? agentReadiness.review : 0 }}
-            />
-          </div>
-        </div>
-        <div data-testid="insights-repair-queue">
-          <div className="flex items-baseline gap-2">
-            <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
-              {labels.repairQueueTitle}
-            </span>
-            <span className="ml-auto flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
-              <span>
-                {healthQueue.staleCount}{" "}
-                <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
-                  {labels.repairQueueStale}
-                </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+                {labels.agentReadinessTitle}
               </span>
-              <span>
-                {healthQueue.orphanCount}{" "}
-                <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
-                  {labels.repairQueueOrphan}
-                </span>
-              </span>
-              <span>
-                {healthQueue.promotionCount}{" "}
-                <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
-                  {labels.repairQueuePromotion}
-                </span>
-              </span>
-            </span>
-          </div>
-          {healthQueue.actionTarget ? (
-            <div
-              data-testid="insights-repair-queue-target"
-              className="mt-2.5 flex min-w-0 items-center justify-between gap-2"
-            >
-              <span className="flex min-w-0 items-center gap-1.5 text-body text-[color:var(--color-text-secondary)]">
-                {repairActionKindLabel ? (
-                  <span className="shrink-0 rounded border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 text-caption leading-none text-[color:var(--color-text-tertiary)]">
-                    {repairActionKindLabel}
+              <span className="ml-auto flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+                <span
+                  className={
+                    agentReadiness.ready === 0 ? "text-[color:var(--color-text-quaternary)]" : undefined
+                  }
+                >
+                  {agentReadiness.ready}{" "}
+                  <span className="text-caption tracking-normal text-[color:var(--color-text-quaternary)]">
+                    {labels.agentReadinessReady}
                   </span>
-                ) : null}
-                <span className="min-w-0 truncate">{healthQueue.actionTarget.title}</span>
-              </span>
-              <span className="flex shrink-0 items-center gap-1.5">
-                <Link
-                  href={healthQueue.builderHref(healthQueue.actionTarget.slug)}
-                  data-testid="insights-repair-queue-builder-link"
-                  className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-label font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+                </span>
+                <span
+                  className={
+                    agentReadiness.preflight === 0 ? "text-[color:var(--color-text-quaternary)]" : undefined
+                  }
                 >
-                  {labels.repairQueueOpenBuilder}
-                </Link>
-                <Link
-                  href={healthQueue.ontologyHref(healthQueue.actionTarget.slug)}
-                  className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                  {agentReadiness.preflight}{" "}
+                  <span className="text-caption tracking-normal text-[color:var(--color-text-quaternary)]">
+                    {labels.agentReadinessPreflight}
+                  </span>
+                </span>
+                <span
+                  className={
+                    agentReadiness.review === 0 ? "text-[color:var(--color-text-quaternary)]" : undefined
+                  }
                 >
-                  {labels.repairQueueOpenOntology}
-                </Link>
+                  {agentReadiness.review}{" "}
+                  <span className="text-caption tracking-normal text-[color:var(--color-text-quaternary)]">
+                    {labels.agentReadinessReview}
+                  </span>
+                </span>
               </span>
             </div>
-          ) : (
-            <p className="mt-2 text-body text-[color:var(--color-text-quaternary)]">{labels.repairQueueEmpty}</p>
-          )}
+            {labels.agentReadinessHint ? (
+              <p className="mt-1 text-label leading-snug text-[color:var(--color-text-quaternary)]">
+                {labels.agentReadinessHint}
+              </p>
+            ) : null}
+            <div
+              data-testid="insights-agent-readiness-meter"
+              className="mt-2 flex h-2 w-full overflow-hidden rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-2)]"
+            >
+              <span
+                aria-hidden
+                className="bg-[color:var(--color-indigo-a58)]"
+                style={{ flexGrow: readinessTotal > 0 ? agentReadiness.ready : 1 }}
+              />
+              <span
+                aria-hidden
+                className="bg-[color:var(--color-status-warning)]"
+                style={{ flexGrow: readinessTotal > 0 ? agentReadiness.preflight : 0 }}
+              />
+              <span
+                aria-hidden
+                className="bg-[color:var(--color-status-danger)]"
+                style={{ flexGrow: readinessTotal > 0 ? agentReadiness.review : 0 }}
+              />
+            </div>
+          </div>
+          <div
+            data-testid="insights-repair-queue"
+            className="sm:border-l sm:border-[color:var(--color-divider)] sm:pl-8"
+          >
+            <div className="flex items-baseline gap-2">
+              <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+                {labels.repairQueueTitle}
+              </span>
+              <span className="ml-auto flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+                <span
+                  className={
+                    healthQueue.staleCount === 0 ? "text-[color:var(--color-text-quaternary)]" : undefined
+                  }
+                >
+                  {healthQueue.staleCount}{" "}
+                  <span className="text-caption tracking-normal text-[color:var(--color-text-quaternary)]">
+                    {labels.repairQueueStale}
+                  </span>
+                </span>
+                <span
+                  className={
+                    healthQueue.orphanCount === 0 ? "text-[color:var(--color-text-quaternary)]" : undefined
+                  }
+                >
+                  {healthQueue.orphanCount}{" "}
+                  <span className="text-caption tracking-normal text-[color:var(--color-text-quaternary)]">
+                    {labels.repairQueueOrphan}
+                  </span>
+                </span>
+                <span
+                  className={
+                    healthQueue.promotionCount === 0 ? "text-[color:var(--color-text-quaternary)]" : undefined
+                  }
+                >
+                  {healthQueue.promotionCount}{" "}
+                  <span className="text-caption tracking-normal text-[color:var(--color-text-quaternary)]">
+                    {labels.repairQueuePromotion}
+                  </span>
+                </span>
+              </span>
+            </div>
+            {healthQueue.actionTarget ? (
+              <div
+                data-testid="insights-repair-queue-target"
+                className="mt-2.5 flex min-w-0 items-center justify-between gap-2"
+              >
+                <span className="flex min-w-0 items-center gap-1.5 text-body text-[color:var(--color-text-secondary)]">
+                  {repairActionKindLabel ? (
+                    <span className="shrink-0 rounded border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 text-caption leading-none text-[color:var(--color-text-tertiary)]">
+                      {repairActionKindLabel}
+                    </span>
+                  ) : null}
+                  <span className="min-w-0 truncate">{healthQueue.actionTarget.title}</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <Link
+                    href={healthQueue.builderHref(healthQueue.actionTarget.slug)}
+                    data-testid="insights-repair-queue-builder-link"
+                    className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-label font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+                  >
+                    {labels.repairQueueOpenBuilder}
+                  </Link>
+                  <Link
+                    href={healthQueue.ontologyHref(healthQueue.actionTarget.slug)}
+                    className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                  >
+                    {labels.repairQueueOpenOntology}
+                  </Link>
+                </span>
+              </div>
+            ) : (
+              <p className="mt-2 text-body text-[color:var(--color-text-quaternary)]">{labels.repairQueueEmpty}</p>
+            )}
+          </div>
         </div>
         {activityDigest && activityDigest.latest.length > 0 ? (
           <div
             data-testid="insights-activity-digest"
-            className="mt-3.5 border-t border-[color:var(--color-divider)] pt-3.5"
+            className="mt-5 border-t border-[color:var(--color-divider)] pt-4"
           >
             <div className="flex items-baseline gap-2">
               <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
@@ -787,10 +794,6 @@ export function DoNextTab({
                       <span className="text-[color:var(--color-text-quaternary)]"> · {entry.agent}</span>
                     ) : null}
                   </p>
-                  {/* P4-② — add_relation 의 --why 근거. 저장은 이미 되고 있었지만
-                      (relation_notes frontmatter) 어떤 화면에도 안 보였다. 이 카드가
-                      감사 로그 요약을 그대로 보여주는 표면이니 여기 truncate 로
-                      같이 노출한다. */}
                   {entry.why ? (
                     <p
                       data-testid="do-next-digest-why"
@@ -806,6 +809,67 @@ export function DoNextTab({
             <p className="mt-2 text-label text-[color:var(--color-text-quaternary)]">{labels.digestApproveHint}</p>
           </div>
         ) : null}
+      </section>
+
+      <section
+        aria-label={labels.queueTitle}
+        // 섹션 간 갭 16px 는 행 피치(~53px)보다 약해 다음 섹션 헤딩이 위
+        // 목록에 붙어 읽혔다(게슈탈트 근접성 역전) — 24px 로 섹션 경계를
+        // 행 간격 위로 올린다.
+        className="flex min-h-0 min-w-0 flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+      >
+        <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+          {labels.queueTitle}
+        </span>
+        {queueEmpty ? (
+          <p className="text-body text-[color:var(--color-text-quaternary)]">{labels.emptyQueue}</p>
+        ) : (
+          <>
+            <QueueSection
+              title={labels.sectionNeglectedHub}
+              hint={labels.hintNeglectedHub}
+              rows={neglectedRows}
+              totalCount={queue.counts.neglectedHub}
+              metric={(row) =>
+                row.degree !== undefined && row.agoDays !== undefined
+                  ? labels.neglectedHubMetric(row.degree, row.agoDays)
+                  : null
+              }
+              mapHref={mapHref}
+              builderHref={builderHref}
+              labels={labels}
+            />
+            <QueueSection
+              title={labels.sectionOrphan}
+              hint={labels.hintOrphan}
+              rows={orphanRows}
+              totalCount={queue.counts.orphan}
+              metric={() => null}
+              mapHref={mapHref}
+              builderHref={builderHref}
+              labels={labels}
+            />
+            <QueueSection
+              title={labels.sectionPromotion}
+              hint={labels.hintPromotion}
+              rows={promotionRows}
+              totalCount={queue.counts.promotion}
+              metric={(row) =>
+                row.degree !== undefined ? labels.promotionMetric(row.degree) : null
+              }
+              mapHref={mapHref}
+              builderHref={builderHref}
+              labels={labels}
+            />
+            <CycleSection
+              cycles={cycles}
+              mapHref={mapHref}
+              nodeTitle={nodeTitle}
+              cycleHandoff={cycleHandoff}
+              labels={labels}
+            />
+          </>
+        )}
       </section>
       </div>
     </div>

@@ -56,9 +56,11 @@ describe("DocMetaBar", () => {
       screen.getByRole("region", { name: "지도 근거" }),
     ).toBeInTheDocument();
     expect(screen.getByText("지도 근거")).toBeInTheDocument();
+    // 경로 mono 칩은 의도적으로 제거됨(qw6) — canonical 경로는 ehead 가 소유해
+    // 메타바에서 중복 노출하지 않는다.
     expect(
-      screen.getByText("docs/ontology/capabilities/agent-graph-readiness.md"),
-    ).toBeInTheDocument();
+      screen.queryByText("docs/ontology/capabilities/agent-graph-readiness.md"),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByText(
         "이 문서 속성이 capability 개념으로 연결됩니다. 에이전트는 이 근거를 쿼리, 인용, 갱신할 수 있습니다.",
@@ -75,10 +77,11 @@ describe("DocMetaBar", () => {
       frontmatter: {},
     });
 
-    expect(screen.getByText("docs/README.md")).toBeInTheDocument();
+    // 경로 mono 칩 제거(qw6) — ehead 가 파일 정체성을 소유.
+    expect(screen.queryByText("docs/README.md")).not.toBeInTheDocument();
     expect(
       screen.getByText(
-        "그래프를 뒷받침하는 로컬 마크다운 근거입니다. 에이전트는 지도를 갱신하기 전에 이 레코드를 인용할 수 있습니다.",
+        "그래프를 뒷받침하는 로컬 마크다운 근거로, 에이전트가 지도 갱신 전 인용할 수 있습니다.",
       ),
     ).toBeInTheDocument();
     expect(

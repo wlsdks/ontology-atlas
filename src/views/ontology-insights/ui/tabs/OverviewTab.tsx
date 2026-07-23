@@ -66,7 +66,7 @@ export function OverviewTab({
           aria-label={labels.kindCensusTitle}
           className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
         >
-          <CardHead label={labels.kindCensusTitle} gcap="kind census" count={totalNodes} />
+          <CardHead label={labels.kindCensusTitle} count={totalNodes} />
           <div
             aria-hidden
             className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full border border-[color:var(--color-divider)]"
@@ -113,7 +113,7 @@ export function OverviewTab({
           aria-label={labels.domainCapacityTitle}
           className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
         >
-          <CardHead label={labels.domainCapacityTitle} gcap="domain capacity" count={domainRows.length} />
+          <CardHead label={labels.domainCapacityTitle} count={domainRows.length} />
           {domainRows.length === 0 ? (
             <p className="mt-3.5 flex-1 text-body text-[color:var(--color-text-quaternary)]">{labels.noDomains}</p>
           ) : (
@@ -159,13 +159,10 @@ export function OverviewTab({
   );
 }
 
-function CardHead({ label, gcap, count }: { label: string; gcap: string; count: number }) {
+function CardHead({ label, count }: { label: string; count: number }) {
   return (
     <div className="flex items-baseline gap-2.5">
       <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">{label}</span>
-      <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-        {gcap}
-      </span>
       <span className="ml-auto font-mono text-body tabular-nums text-[color:var(--topology-v2-numeral-face)]">
         {count}
       </span>

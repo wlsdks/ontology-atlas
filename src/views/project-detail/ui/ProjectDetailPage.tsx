@@ -614,9 +614,18 @@ export function ProjectDetailPage({
                 {t("handoffGcap")}
               </span>
             </div>
-            <pre className="mb-3 overflow-x-auto font-mono text-[11.5px] leading-[1.7] whitespace-pre-wrap text-[color:var(--color-text-tertiary)]">
-              {handoffSnippet}
-            </pre>
+            {/* insights 하단 핸드오프와 같은 패턴 — 코드 문자열은 사람 시선의
+                attention winner 가 되지 않게 접어 숨기고(내용은 보존, 버튼이
+                복사), 평문 캡션으로 "사람은 안 읽어도 됨 · AI 에이전트용"을
+                명시한다. summary 가 접기/펼치기 토글 겸 캡션. */}
+            <details className="mb-3">
+              <summary className="cursor-pointer select-none text-[12px] leading-[1.6] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+                {t("handoffHumanCaption")}
+              </summary>
+              <pre className="mt-2 overflow-x-auto font-mono text-[11.5px] leading-[1.7] whitespace-pre-wrap text-[color:var(--color-text-quaternary)]">
+                {handoffSnippet}
+              </pre>
+            </details>
             <Button type="button" variant="outline" size="sm" onClick={handleCopyHandoff}>
               {handoffCopyLabel}
             </Button>

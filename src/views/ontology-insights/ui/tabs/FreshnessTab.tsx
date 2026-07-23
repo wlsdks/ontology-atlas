@@ -168,9 +168,6 @@ export function FreshnessTab({
           <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
             {labels.recentUpdatesTitle}
           </span>
-          <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-            recent updates
-          </span>
         </div>
         <div className="mt-2 flex flex-1 flex-col">
           {recent.length === 0 ? (

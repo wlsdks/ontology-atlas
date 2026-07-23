@@ -6,6 +6,12 @@ import type {
 export interface OntologyHealthSignalCandidate {
   slug: string;
   name: string;
+  /**
+   * 들어오는 참조 수(fan-in). promotion 후보에만 채워진다 — "왜 상위 개념
+   * 후보인가"의 근거 수치라 표면(할 일 큐)이 "참조 N개"로 그대로 보여준다.
+   * stale/orphan 후보는 undefined.
+   */
+  fanIn?: number;
 }
 
 export interface OntologyHealthSignals {
@@ -55,7 +61,10 @@ export function buildOntologyHealthSignals(
       .map(toSignalCandidate),
     promotion: candidates
       .filter((node) => (degreeByNode.get(node.id)?.incoming ?? 0) >= promotionMinFanIn)
-      .map(toSignalCandidate),
+      .map((node) => ({
+        ...toSignalCandidate(node),
+        fanIn: degreeByNode.get(node.id)?.incoming ?? 0,
+      })),
   };
 }
 

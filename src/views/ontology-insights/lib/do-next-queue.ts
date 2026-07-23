@@ -105,12 +105,14 @@ export function buildDoNextQueue(
     handoffPayload: `find_neighbors({slug:"${mcpRef(slug)}"}) 로 이웃 후보 확인 → relation_check 사전 점검 → add_relation({from:"${mcpRef(slug)}", to:"<대상>", type:"relates", why:"<근거 한 줄>"})`,
   }));
 
-  const promotions: DoNextRow[] = signals.promotion.map(({ slug, name }) => ({
+  const promotions: DoNextRow[] = signals.promotion.map(({ slug, name, fanIn }) => ({
     id: `promotion:${slug}`,
     rowKind: "promotion",
     nodeId: slug,
     title: name,
     nodeKind: nodeById.get(slug)?.kind ?? "unknown",
+    // "왜 뽑혔나"의 근거 — 들어오는 참조 수. 행 metric("참조 N개")으로 그대로 노출.
+    degree: fanIn,
     handoffPayload: `query_ontology({operation:"node_profile", slug:"${mcpRef(slug)}"}) 로 fan-in 확인 → 승격이 맞으면 patch_concept 로 kind 상향 또는 add_concept 로 상위 개념 신설`,
   }));
 
