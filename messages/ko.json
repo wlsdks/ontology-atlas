@@ -331,7 +331,7 @@
     "includeTopologyTitle": "topology 워크벤치",
     "includeTopologyBody": "vault 전체를 지도 + INDEX + 데이터시트로 탐색하는 결정 서피스.",
     "includeMcpTitle": "MCP 서버 자동등록",
-    "includeMcpCount": "31 tools",
+    "includeMcpCount": "32 tools",
     "includeMcpBody": "Claude Code · Codex 가 같은 vault 를 읽고 쓴다 — 설정 0.",
     "includeCliTitle": "CLI",
     "includeCliCount": "{count} 명령",

@@ -1561,6 +1561,91 @@ describe('queryCompiledOntology', () => {
     assert.equal(exactLimit.limited, false);
   });
 
+  it('returns persisted builder context with focus URL, layout, and safe agent handoff', () => {
+    const docs = [
+      doc('domains/auth', {
+        slug: 'auth-domain',
+        kind: 'domain',
+        title: 'Auth',
+        canvasPosition: { x: 120, y: 80 },
+      }, 11),
+      doc('capabilities/login', {
+        kind: 'capability',
+        title: 'Login',
+        domain: 'auth-domain',
+        canvasPosition: { x: 360, y: 80 },
+      }, 12),
+      doc('capabilities/session', {
+        kind: 'capability',
+        title: 'Session',
+        dependencies: ['capabilities/login'],
+      }, 13),
+    ];
+    const graph = compileOntology(docs, { includeIndexes: true });
+    const result = queryCompiledOntology(
+      graph,
+      {
+        operation: 'builder_context',
+        slug: 'auth-domain',
+        direction: 'incoming',
+        depth: 1,
+      },
+      { sourceDocs: docs },
+    );
+
+    assert.equal(result.operation, 'builder_context');
+    assert.equal(result.source, 'persisted_vault');
+    assert.equal(result.focus, 'domains/auth');
+    assert.deepEqual(result.builder, {
+      href: '/ontology/edit/?node=domain%3Aauth',
+      focusParam: 'domain:auth',
+      unsavedDraftsIncluded: false,
+    });
+    assert.deepEqual(
+      result.nodes.map((row) => ({
+        slug: row.slug,
+        distance: row.distance,
+        canvasPosition: row.canvasPosition,
+        expected_mtime: row.expected_mtime,
+      })),
+      [
+        {
+          slug: 'domains/auth',
+          distance: 0,
+          canvasPosition: { x: 120, y: 80 },
+          expected_mtime: 11,
+        },
+        {
+          slug: 'capabilities/login',
+          distance: 1,
+          canvasPosition: { x: 360, y: 80 },
+          expected_mtime: 12,
+        },
+      ],
+    );
+    const roundTrip = queryCompiledOntology(
+      graph,
+      {
+        operation: 'builder_context',
+        slug: result.builder.focusParam,
+        direction: 'incoming',
+        depth: 1,
+      },
+      { sourceDocs: docs },
+    );
+    assert.equal(roundTrip.focus, result.focus);
+    assert.equal(roundTrip.builder.focusParam, result.builder.focusParam);
+    assert.equal(roundTrip.builder.href, result.builder.href);
+    assert.deepEqual(result.agentHandoff.writeTools, [
+      'add_concepts',
+      'relation_check',
+      'add_relations',
+      'patch_concept',
+    ]);
+    assert.match(result.agentHandoff.constraints.join('\n'), /unsaved Builder drafts/i);
+    assert.match(result.agentHandoff.constraints.join('\n'), /expected_mtime/);
+  });
+
   it('returns graph overview aggregates for dashboard-style use', () => {
     const result = queryCompiledOntology(artifact(), {
       operation: 'overview',

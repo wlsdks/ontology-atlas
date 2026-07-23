@@ -8,7 +8,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
@@ -1448,6 +1448,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         "impact",
         "blast_radius",
         "subgraph",
+        "builder_context",
         "overview",
         "schema",
         "facets",
@@ -1488,6 +1489,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         "impact",
         "blast_radius",
         "subgraph",
+        "builder_context",
         "overview",
         "schema",
         "facets",
@@ -2049,7 +2051,12 @@ await test("infer_imports — import graph exposes structuredContent", async () 
 });
 
 await test("index_project — repo analysis, import indexing, and vault validation expose one read-only plan", async () => {
-  const vaultRoot = makeVault();
+  const vaultRoot = makeVault([
+    {
+      slug: "project",
+      content: "---\nslug: sample-app\nkind: project\ntitle: Existing Sample App\n---\n",
+    },
+  ]);
   const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-"));
   try {
     writeFileSync(
@@ -2092,6 +2099,15 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.equal(result.rootPath, repoRoot);
     assert.equal(result.analyze.framework, "fsd");
     assert.equal(result.plan.concepts, 4);
+    assert.deepEqual(result.plan.conceptDelta, {
+      candidates: 4,
+      existing: 1,
+      ambiguous: 0,
+      new: 3,
+      limited: false,
+      sampleAmbiguousSlugs: [],
+      sampleNewSlugs: ["capabilities/auth", "capabilities/billing", "domains/auth"],
+    });
     assert.equal(result.plan.suggestedRelations, 3);
     assert.ok(result.plan.importRelations >= 1);
     assert.equal(result.meaningGate.policy, "business-first");
@@ -2122,7 +2138,59 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.match(result.meaningGate.reviewQuestions[0], /business\/product/);
     assert.equal(result.validation.problemFiles, 0);
     assert.equal(result.next.applyTool, "add_concepts + add_relations");
+    assert.deepEqual(result.next.reviewCalls, [
+      {
+        tool: "analyze_repo_structure",
+        arguments: { rootPath: repoRoot },
+      },
+      {
+        tool: "infer_imports",
+        arguments: { rootPath: repoRoot },
+      },
+    ]);
     assert.equal(existsSync(join(vaultRoot, "sample-app.md")), false);
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
+await test("index_project — ambiguous aliases stay in review instead of becoming new concepts", async () => {
+  const vaultRoot = makeVault([
+    {
+      slug: "domains/shared",
+      content: "---\nkind: domain\ntitle: Shared Domain\n---\n",
+    },
+    {
+      slug: "capabilities/shared",
+      content: "---\nkind: capability\ntitle: Shared Capability\ndomain: domains/shared\n---\n",
+    },
+  ]);
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-ambiguous-"));
+  try {
+    writeFileSync(
+      join(repoRoot, "package.json"),
+      JSON.stringify({ name: "shared", description: "Shared" }, null, 2),
+      "utf-8",
+    );
+    const { responses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "index_project", {
+        rootPath: repoRoot,
+        skipImports: true,
+      }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.deepEqual(result.plan.conceptDelta, {
+      candidates: 1,
+      existing: 0,
+      ambiguous: 1,
+      new: 0,
+      limited: false,
+      sampleAmbiguousSlugs: ["shared"],
+      sampleNewSlugs: [],
+    });
+    assert.match(result.next.review, /manually resolve ambiguous aliases/);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
@@ -5704,7 +5772,7 @@ await test("add_relation — missing endpoints include recovery and create hints
       assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
       const text = responses.find((r) => r.id === id).result.content[0].text;
       assert.match(text, /Use list_concepts\(\) to see all slugs/);
-      assert.match(text, /find_evidence\(query\)/);
+      assert.match(text, /find_evidence\(\{title:"[^"]+"\}\)/);
       assert.match(text, /add_concept\(slug, kind, title\)/);
     }
     assert.match(responses.find((r) => r.id === 2).result.content[0].text, /Source slug does not exist in vault/);
@@ -5907,7 +5975,108 @@ await test("connection_info — active vault/repo roots and resolution sources a
     assert.equal(info.vaultResolution, "OATLAS_VAULT");
     assert.equal(info.repoResolution, "OATLAS_REPO_ROOT");
     assert.equal(info.server.name, "ontology-atlas-mcp");
+    assert.equal(info.server.readOnly, false);
+    assert.equal(info.server.toolCount, EXPECTED_TOOLS.length);
+    assert.ok(info.server.toolNames.includes("git_history"));
+    assert.ok(info.server.toolNames.includes("query_ontology"));
+    assert.match(info.server.toolsetHash, /^[a-f0-9]{64}$/);
     assert.equal(info.restartRequiredForRootChange, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("connection_info — repository root auto-discovers from a nested Git vault", async () => {
+  const root = mkdtempSync(join(tmpdir(), "ontology-atlas-repo-discovery-"));
+  const vault = join(root, "docs", "ontology");
+  try {
+    mkdirSync(vault, { recursive: true });
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "feature.ts"), "export const feature = true;\n");
+    writeFileSync(
+      join(vault, "feature.md"),
+      "---\nslug: feature\nkind: element\ntitle: Feature\npath: src/feature.ts\n---\n",
+    );
+    execFileSync("git", ["-C", root, "init", "-b", "main"], { stdio: "ignore" });
+    const { responses } = await rpc(vault, [
+      ...INIT_REQUESTS,
+      callTool(2, "connection_info"),
+      callTool(3, "validate_vault"),
+    ]);
+    const info = getCallParsed(responses, 2);
+    const validation = getCallParsed(responses, 3);
+    assert.equal(info.repoRoot, realpathSync(root));
+    assert.equal(info.repoResolution, "git.rev-parse");
+    assert.equal(validation.pathDrift.repoRoot, realpathSync(root));
+    assert.equal(validation.pathDrift.drifts.length, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("connection_info — read-only mode fingerprints the actually advertised toolset", async () => {
+  const root = makeVault([]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      { jsonrpc: "2.0", id: 2, method: "tools/list", params: {} },
+      callTool(3, "connection_info"),
+    ], 1500, { OATLAS_READ_ONLY: "1" });
+    const listed = responses.find((row) => row.id === 2)?.result?.tools ?? [];
+    const info = getCallParsed(responses, 3);
+    assert.equal(info.server.readOnly, true);
+    assert.equal(info.server.toolCount, EXPECTED_READ_TOOLS.length);
+    assert.deepEqual(info.server.toolNames, listed.map((tool) => tool.name));
+    assert.ok(info.server.toolNames.includes("git_history"));
+    assert.ok(!info.server.toolNames.includes("git_snapshot"));
+    assert.match(info.server.toolsetHash, /^[a-f0-9]{64}$/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("builder_context — persisted Builder focus, positions, and agent handoff", async () => {
+  const root = makeVault([
+    {
+      slug: "domains/auth",
+      content: "---\nkind: domain\ntitle: Auth\ncanvasPosition:\n  x: 100\n  y: 80\n---\n",
+    },
+    {
+      slug: "capabilities/login",
+      content: "---\nkind: capability\ntitle: Login\ndomain: domains/auth\ncanvasPosition:\n  x: 340\n  y: 80\n---\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_ontology", {
+        operation: "builder_context",
+        slug: "domains/auth",
+        direction: "incoming",
+        depth: 1,
+      }),
+      callTool(3, "query_ontology", {
+        operation: "builder_context",
+        slug: "domain:auth",
+        direction: "incoming",
+        depth: 1,
+      }),
+    ]);
+    const context = getCallParsed(responses, 2);
+    const roundTrip = getCallParsed(responses, 3);
+    assert.equal(context.operation, "builder_context");
+    assert.equal(context.focus, "domains/auth");
+    assert.equal(context.source, "persisted_vault");
+    assert.equal(context.builder.href, "/ontology/edit/?node=domain%3Aauth");
+    assert.equal(context.builder.unsavedDraftsIncluded, false);
+    assert.equal(roundTrip.focus, context.focus);
+    assert.deepEqual(roundTrip.builder, context.builder);
+    assert.deepEqual(context.nodes.map((row) => row.canvasPosition), [
+      { x: 100, y: 80 },
+      { x: 340, y: 80 },
+    ]);
+    assert.ok(context.agentHandoff.writeTools.includes("patch_concept"));
+    assert.match(context.agentHandoff.constraints.join("\n"), /expected_mtime/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -6027,19 +6196,27 @@ await test("git_status/git_snapshot — validated dry-run and vault-only local c
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "git_status"),
-      callTool(3, "git_snapshot"),
-      callTool(4, "git_snapshot", {
+      callTool(3, "git_history", { limit: 5 }),
+      callTool(4, "git_snapshot"),
+      callTool(5, "git_snapshot", {
         confirm: true,
         expectedHead,
         message: "docs(ontology): snapshot integration vault",
       }),
-      callTool(5, "git_status"),
+      callTool(6, "git_status"),
     ], 3000, { OATLAS_REPO_ROOT: root });
     const status = getCallParsed(responses, 2);
-    const preview = getCallParsed(responses, 3);
-    const committed = getCallParsed(responses, 4);
-    const clean = getCallParsed(responses, 5);
+    const history = getCallParsed(responses, 3);
+    const preview = getCallParsed(responses, 4);
+    const committed = getCallParsed(responses, 5);
+    const clean = getCallParsed(responses, 6);
     assert.equal(status.counts.total, 1);
+    assert.equal(history.operation, "git_history");
+    assert.deepEqual(history.commits.map((row) => row.subject), ["initial"]);
+    assert.equal(history.limited, false);
+    assert.equal(history.hasMore, false);
+    assert.equal(history.shallow, false);
+    assert.equal(history.historyComplete, true);
     assert.equal(preview.dryRun, true);
     assert.equal(preview.previewReady, true);
     assert.equal(preview.canConfirm, true);

@@ -4,9 +4,10 @@
  *
  * AI agent (Claude Code 등) 가 vault 의 ontology 를 읽고 쓸 수 있게.
  *
- * read 18:
+ * read 19:
  *   - connection_info        — active vault/repo roots + server version
  *   - git_status             — vault-scoped local git state + risk summary
+ *   - git_history            — vault-scoped commit history (read-only)
  *   - list_concepts          — vault 의 노드 목록 (kind / domain / since / summary)
  *   - get_concept            — 단일 노드 + graph 이웃 + mtime
  *   - get_concepts           — 배치 read (slugs[] → concepts[], partial 허용)
@@ -18,7 +19,7 @@
  *   - find_orphans           — 어느 다른 노드도 frontmatter 에서 가리키지 않는 doc
  *   - query_concepts         — typed filter DSL (kind=X AND has(Y) AND NOT ...)
  *   - compile_ontology       — vault 를 deterministic graph artifact 로 compile
- *   - query_ontology         — compiled graph engine query (neighbors / path / all_paths / query_plan / centrality / communities / similar_nodes / explain_relation / reachability / pattern_walk / impact / blast_radius / subgraph / overview / schema / facets / match_nodes / match_edges / node_profile / domain_profile / domain_matrix / project_scope / project_map / relation_check / components / lineage / containment_tree / cycles / topological_order / recommend_relations / growth_plan / maintenance_plan / agent_brief / workspace_brief / health)
+ *   - query_ontology         — compiled graph engine query (neighbors / path / all_paths / query_plan / centrality / communities / similar_nodes / explain_relation / reachability / pattern_walk / impact / blast_radius / subgraph / builder_context / overview / schema / facets / match_nodes / match_edges / node_profile / domain_profile / domain_matrix / project_scope / project_map / relation_check / components / lineage / containment_tree / cycles / topological_order / recommend_relations / growth_plan / maintenance_plan / agent_brief / workspace_brief / health)
  *   - validate_vault         — vault 전체 health 한 호출 (per-doc + byCode aggregate)
  *   - analyze_repo_structure — R16, code repo 분석 → ontology 후보 (side effect 0)
  *   - infer_imports          — R17, TS/JS import graph → depends_on 후보 (side effect 0)
@@ -37,7 +38,8 @@
  *   - git_snapshot      — validated, vault-scoped local commit (dry-run + expected HEAD; never pushes)
  *
  * 환경 변수:
- *   OATLAS_VAULT=/abs/path/to/vault   — vault root 디렉토리. 미지정 시 cwd.
+ *   OATLAS_VAULT=/abs/path/to/vault       — vault root 디렉토리. 미지정 시 cwd.
+ *   OATLAS_REPO_ROOT=/abs/path/to/repo    — repository root. 미지정 시 vault의 Git top-level, 없으면 cwd.
  *
  * 사용:
  *   $ npx ontology-atlas-mcp
@@ -51,6 +53,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { basename, relative, resolve, sep } from 'node:path';
+import { createHash } from 'node:crypto';
 
 import { existsSync, readFileSync, copyFileSync, realpathSync, statSync } from 'node:fs';
 import {
@@ -93,7 +96,12 @@ import { compileOntology } from './ontology-compiler.mjs';
 import { reconcileImportEdges } from './reconcile-imports.mjs';
 import { detectVaultPathDrift, suggestPathReconciliations } from './detect-drift.mjs';
 import { scoreEvidence } from './evidence-rank.mjs';
-import { inspectVaultGit, snapshotVaultGit } from './git-tools.mjs';
+import {
+  discoverGitRepositoryRoot,
+  inspectVaultGit,
+  inspectVaultGitHistory,
+  snapshotVaultGit,
+} from './git-tools.mjs';
 import { createCompiledOntologyCache } from './compiled-cache.mjs';
 import {
   EDGE_TARGET_KIND_VALUES,
@@ -136,9 +144,20 @@ process.stdout.setMaxListeners(Math.max(process.stdout.getMaxListeners(), STDIO_
 process.stderr.setMaxListeners(Math.max(process.stderr.getMaxListeners(), STDIO_MAX_LISTENERS));
 
 const VAULT_ROOT = resolve(process.env.OATLAS_VAULT || process.cwd());
-const REPO_ROOT = resolve(process.env.OATLAS_REPO_ROOT || process.cwd());
+const DISCOVERED_REPO_ROOT =
+  discoverGitRepositoryRoot(VAULT_ROOT) ??
+  discoverGitRepositoryRoot(process.cwd());
+const REPO_ROOT = resolve(
+  process.env.OATLAS_REPO_ROOT ||
+  DISCOVERED_REPO_ROOT ||
+  process.cwd(),
+);
 const VAULT_RESOLUTION = process.env.OATLAS_VAULT ? 'OATLAS_VAULT' : 'process.cwd';
-const REPO_RESOLUTION = process.env.OATLAS_REPO_ROOT ? 'OATLAS_REPO_ROOT' : 'process.cwd';
+const REPO_RESOLUTION = process.env.OATLAS_REPO_ROOT
+  ? 'OATLAS_REPO_ROOT'
+  : DISCOVERED_REPO_ROOT
+    ? 'git.rev-parse'
+    : 'process.cwd';
 const SERVER_VERSION = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
 ).version;
@@ -652,6 +671,41 @@ const GIT_SNAPSHOT_OUTPUT_SCHEMA = Object.freeze({
     ...DESTRUCTIVE_PREVIEW_REQUIRED,
   ],
 });
+const GIT_HISTORY_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    operation: { type: 'string', enum: ['git_history'] },
+    ok: { type: 'boolean' },
+    reason: NON_BLANK_STRING_SCHEMA,
+    repoRoot: NON_BLANK_STRING_SCHEMA,
+    vaultRoot: NON_BLANK_STRING_SCHEMA,
+    vaultPathspec: NON_BLANK_STRING_SCHEMA,
+    head: { type: ['string', 'null'] },
+    branch: { type: ['string', 'null'] },
+    limit: { type: 'integer', minimum: 1, maximum: 100 },
+    count: { type: 'integer', minimum: 0 },
+    limited: { type: 'boolean' },
+    hasMore: { type: 'boolean' },
+    shallow: { type: 'boolean' },
+    historyComplete: { type: 'boolean' },
+    commits: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          hash: NON_BLANK_STRING_SCHEMA,
+          shortHash: NON_BLANK_STRING_SCHEMA,
+          authoredAt: NON_BLANK_STRING_SCHEMA,
+          subject: { type: 'string' },
+        },
+        required: ['hash', 'shortHash', 'authoredAt', 'subject'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['operation', 'ok', 'repoRoot', 'vaultRoot'],
+  additionalProperties: false,
+});
 
 // import-time throw 면 stdio transport 가 붙기 전 stack trace 가 stderr 로
 // 새고 클라이언트 (Claude Code 등) 에선 silent crash 로 보인다. 친절한 한
@@ -675,9 +729,9 @@ try {
 // 매번 시행착오로 학습되는 문제를 단번에 해소.
 const SERVER_INSTRUCTIONS = `ontology-atlas — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
 
-## Tool inventory (31 tools = read 18 + write 13)
+## Tool inventory (32 tools = read 19 + write 13)
 
-**read** — \`connection_info\` · \`git_status\` · \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_neighbors\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`compile_ontology\` · \`query_ontology\` · \`validate_vault\` · \`analyze_repo_structure\` · \`infer_imports\` · \`index_project\`.
+**read** — \`connection_info\` · \`git_status\` · \`git_history\` · \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_neighbors\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`compile_ontology\` · \`query_ontology\` · \`validate_vault\` · \`analyze_repo_structure\` · \`infer_imports\` · \`index_project\`.
 **write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`add_relations\` · \`remove_relation\` · \`replace_relation\` · \`patch_concept\` · \`reclassify_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\` · \`absorb_document\` · \`git_snapshot\`.
 
 ## Kind hierarchy (top → leaf)
@@ -708,7 +762,7 @@ const SERVER_INSTRUCTIONS = `ontology-atlas — vault of markdown files where ea
 12. \`find_orphans\` — spot nodes that no other node points to (cleanup or deletion candidates; project roots and vault README are excluded by default).
 13. \`query_concepts(filter)\` — structured questions like \`kind=capability AND domain=auth AND NOT has(elements)\` (= "unfinished caps under auth").
 14. \`compile_ontology({includeIndexes:true})\` — compiler-style graph artifact: canonical nodes, edges, aliases, issues, stable \`graphHash\`, \`maxMtime\`, and query indexes.
-15. \`query_ontology({operation:${QUERY_ONTOLOGY_OPERATION_UNION}, ...})\` — graph-engine query over the compiled artifact. Use \`neighbors\` for local graph view, \`path\` for one relation route, \`all_paths\` for bounded simple paths between two nodes, \`query_plan\` for an EXPLAIN-style side-effect-free cost/index estimate before running a target operation (including filter-preserving \`suggestedQuery\` and \`estimate.totalMatches\` for \`match_nodes\` / \`match_edges\`), \`centrality\` for PageRank-style core-node ranking plus bridge/authority/hub lists, \`communities\` for label-propagation clusters inside the graph, \`similar_nodes\` before writes to catch likely duplicate or overlapping concepts, \`explain_relation\` for direct edges + shortest path + shared-neighbor explanation between two nodes, \`reachability\` for transitive graph closure from a start node, \`pattern_walk\` for explicit relation-sequence paths such as project → domains → capabilities, \`impact\` for "what depends on this?" change analysis, \`blast_radius\` for impact grouped by kind/domain with cross-domain edge risk, \`subgraph\` for a bounded N-hop graph slice, \`overview\` for dashboard-style graph aggregates, \`schema\` for \`(:kind)-[:relation]->(:kind)\` patterns, \`facets\` for filter/dashboard aggregates, \`match_nodes\` for graph DB-style node rows with degree filters plus a \`followUp\` packet for focused next queries, \`match_edges\` for graph DB-style edge pattern rows plus a \`followUp\` packet for focused relation evidence and preflight, \`node_profile\` for a single node detail dashboard, \`domain_profile\` for a domain detail dashboard, \`domain_matrix\` for domain-to-domain coupling, \`project_scope\` for a project-contained graph slice, \`project_map\` for a domain-by-domain project map, \`relation_check\` before writes, \`components\` to find disconnected graph islands, \`lineage\` and \`containment_tree\` for project/domain/capability containment, \`cycles\` for directed dependency-cycle checks, \`topological_order\` for prerequisite-first dependency ordering, \`recommend_relations\` for safe domain-containment suggestions, \`growth_plan\` for side-effect-free ontology expansion candidates, \`maintenance_plan\` for ordered post-write graph cleanup/repair actions, \`agent_brief\` for Claude Code/Codex handoff prompt, recipes, graph entrypoints, playbook evidence/stopWhen checklists, write guardrails, \`graph_traversal\` playbook, \`traversalStrategy\` for plan-first bounded traversal, \`relationDecisionGuide\`, \`resultContracts\` for interpreting \`all_paths\` completeness (\`limit\` / \`searchBudget\` / \`expandedStates\` / \`exhaustive\` / \`truncatedByBudget\` / \`totalPathsExact\` plus \`evidence.status\` / \`evidence.reason\` / \`evidence.pathsComplete\`) and \`match_nodes\` / \`match_edges\` followUp evidence, and read-first write policy, \`workspace_brief\` for first-contact status + next actions, and \`health\` for a one-shot graph integrity dashboard.
+15. \`query_ontology({operation:${QUERY_ONTOLOGY_OPERATION_UNION}, ...})\` — graph-engine query over the compiled artifact. Use \`neighbors\` for local graph view, \`path\` for one relation route, \`all_paths\` for bounded simple paths between two nodes, \`query_plan\` for an EXPLAIN-style side-effect-free cost/index estimate before running a target operation (including filter-preserving \`suggestedQuery\` and \`estimate.totalMatches\` for \`match_nodes\` / \`match_edges\`), \`centrality\` for PageRank-style core-node ranking plus bridge/authority/hub lists, \`communities\` for label-propagation clusters inside the graph, \`similar_nodes\` before writes to catch likely duplicate or overlapping concepts, \`explain_relation\` for direct edges + shortest path + shared-neighbor explanation between two nodes, \`reachability\` for transitive graph closure from a start node, \`pattern_walk\` for explicit relation-sequence paths such as project → domains → capabilities, \`impact\` for "what depends on this?" change analysis, \`blast_radius\` for impact grouped by kind/domain with cross-domain edge risk, \`subgraph\` for a bounded N-hop graph slice, \`builder_context\` for persisted Builder focus/layout plus safe MCP write handoff, \`overview\` for dashboard-style graph aggregates, \`schema\` for \`(:kind)-[:relation]->(:kind)\` patterns, \`facets\` for filter/dashboard aggregates, \`match_nodes\` for graph DB-style node rows with degree filters plus a \`followUp\` packet for focused next queries, \`match_edges\` for graph DB-style edge pattern rows plus a \`followUp\` packet for focused relation evidence and preflight, \`node_profile\` for a single node detail dashboard, \`domain_profile\` for a domain detail dashboard, \`domain_matrix\` for domain-to-domain coupling, \`project_scope\` for a project-contained graph slice, \`project_map\` for a domain-by-domain project map, \`relation_check\` before writes, \`components\` to find disconnected graph islands, \`lineage\` and \`containment_tree\` for project/domain/capability containment, \`cycles\` for directed dependency-cycle checks, \`topological_order\` for prerequisite-first dependency ordering, \`recommend_relations\` for safe domain-containment suggestions, \`growth_plan\` for side-effect-free ontology expansion candidates, \`maintenance_plan\` for ordered post-write graph cleanup/repair actions, \`agent_brief\` for Claude Code/Codex handoff prompt, recipes, graph entrypoints, playbook evidence/stopWhen checklists, write guardrails, \`graph_traversal\` playbook, \`traversalStrategy\` for plan-first bounded traversal, \`relationDecisionGuide\`, \`resultContracts\` for interpreting \`all_paths\` completeness (\`limit\` / \`searchBudget\` / \`expandedStates\` / \`exhaustive\` / \`truncatedByBudget\` / \`totalPathsExact\` plus \`evidence.status\` / \`evidence.reason\` / \`evidence.pathsComplete\`) and \`match_nodes\` / \`match_edges\` followUp evidence, and read-first write policy, \`workspace_brief\` for first-contact status + next actions, and \`health\` for a one-shot graph integrity dashboard.
 16. \`index_project({rootPath, maxFiles, threshold})\` — one read-only indexing checkpoint for large projects. It combines \`analyze_repo_structure\`, \`infer_imports\`, and \`validate_vault\` into counts, phases, validation status, and next write actions. It never writes markdown; land accepted candidates with \`add_concepts\` / \`add_relations\` or CLI \`ontology-atlas index --apply\`.
 
 All read-tool match rows share the same shape \`{slug, kind, title, domain, mtime, ...}\` — same sort/filter logic works across every read tool.
@@ -737,7 +791,7 @@ Throughout: the user (via your add_concepts / add_relations calls) is the single
 - **\`remove_relation\` / \`replace_relation\` / \`reclassify_concept\`** are dry-run by default and require \`confirm: true\` to write. They preserve rationale/backlinks atomically and should replace manual whole-array frontmatter surgery.
 - **\`rename_concept\` / \`merge_concepts\`** are dry-run by default. The first call returns an \`updates\` preview (every affected file's before/after). To commit, repeat the call with \`confirm: true\`. \`rename_concept\` refuses an existing \`newSlug\` unless you intentionally pass \`overwrite: true\`. Backlinks are redirected atomically — much safer than \`patch_concept\` + N find_backlinks loops.
 - **\`delete_concept\`** refuses by default if any backlinks remain. The error response captures the deleted frontmatter + body so a mistake is recoverable. Pass \`force: true\` only after confirming with the user that dangling referrers are acceptable.
-- **\`git_status\` / \`git_snapshot\`** expose local, vault-scoped Git checkpoints. Start with \`git_snapshot({})\`; the dry-run returns the exact \`expectedHead\`, files, validator summary, and risk warnings. Commit only by repeating with \`confirm:true\` and that exact HEAD. The tool never initializes a repository, includes paths outside the vault, pushes, or runs during merge/rebase/cherry-pick/revert. Tool annotations are hints; these runtime guards are authoritative.
+- **\`git_status\` / \`git_history\` / \`git_snapshot\`** expose local, vault-scoped Git evidence and checkpoints. Use \`git_history({limit})\` to inspect only commits that touched the active vault. Start a checkpoint with \`git_snapshot({})\`; the dry-run returns the exact \`expectedHead\`, files, validator summary, and risk warnings. Commit only by repeating with \`confirm:true\` and that exact HEAD. The tools never initialize a repository, include paths outside the vault, or push; snapshot also refuses merge/rebase/cherry-pick/revert. Tool annotations are hints; these runtime guards are authoritative.
 - **\`absorb_document\`** (Slice 0 — the "absorption tool") converts a CLAUDE.md/AGENTS.md-style file into typed vault nodes. Dry-run by default (plan only); \`confirm: true\` writes rule/policy sections as \`kind: document\` (\`role: policy\`) nodes, backs up the source to \`<file>.pre-absorb.bak\`, and rewrites it into a slim pointer that preserves every non-absorbed section (architecture/component suggestions, unclassified prose, and injection-suspect sections) verbatim. If the canonical source path is outside \`repoRoot\` (including an inside-repo symlink that resolves outside), confirmation is blocked until the caller explicitly passes \`allowOutsideRepo:true\` after reviewing the absolute path. Architecture/component sections are reported as candidates only — never auto-written; land them yourself with \`add_concept\` if useful.
 - **\`expected_mtime\` (all write tools)** — to guard against concurrent edits by the human or another agent: capture \`mtime\` from \`get_concept\`, pass it as \`expected_mtime\` on the next write. If the file changed in between, the call throws \`VaultConflictError\` instead of silently overwriting.
 
@@ -745,8 +799,8 @@ Throughout: the user (via your add_concepts / add_relations calls) is the single
 
 Every error message ends with the canonical fix tool. Examples:
 - \`Doc already exists at "X". To update fields, use **patch_concept**(...).\`
-- \`Doc not found: "Y". Use **list_concepts**() to see all slugs, or **find_evidence**(query) to search by title. Similar slugs in this vault: ...\`
-- \`Source slug does not exist in vault: "Z". Use list_concepts() to see all slugs, or find_evidence(query) to search by title. If the endpoint is real but absent, create it first with add_concept(slug, kind, title). Similar slugs in this vault: ...\`
+- \`Doc not found: "Y". Use **list_concepts**() to see all slugs, or **find_evidence**({title:"Y"}) to search by title. Similar slugs in this vault: ...\`
+- \`Source slug does not exist in vault: "Z". Use list_concepts() to see all slugs, or find_evidence({title:"Z"}) to search by title. If the endpoint is real but absent, create it first with add_concept(slug, kind, title). Similar slugs in this vault: ...\`
 
 Don't retry blindly — parse the suffix and pivot to the suggested tool.
 
@@ -776,13 +830,23 @@ const TOOLS = [
         vaultRoot: NON_BLANK_STRING_SCHEMA,
         repoRoot: NON_BLANK_STRING_SCHEMA,
         vaultResolution: { type: 'string', enum: ['OATLAS_VAULT', 'process.cwd'] },
-        repoResolution: { type: 'string', enum: ['OATLAS_REPO_ROOT', 'process.cwd'] },
+        repoResolution: {
+          type: 'string',
+          enum: ['OATLAS_REPO_ROOT', 'git.rev-parse', 'process.cwd'],
+        },
         sameRoot: { type: 'boolean' },
         restartRequiredForRootChange: { type: 'boolean' },
         server: {
           type: 'object',
-          properties: { name: NON_BLANK_STRING_SCHEMA, version: NON_BLANK_STRING_SCHEMA },
-          required: ['name', 'version'],
+          properties: {
+            name: NON_BLANK_STRING_SCHEMA,
+            version: NON_BLANK_STRING_SCHEMA,
+            readOnly: { type: 'boolean' },
+            toolCount: { type: 'integer', minimum: 1 },
+            toolNames: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+            toolsetHash: NON_BLANK_STRING_SCHEMA,
+          },
+          required: ['name', 'version', 'readOnly', 'toolCount', 'toolNames', 'toolsetHash'],
           additionalProperties: false,
         },
       },
@@ -796,6 +860,23 @@ const TOOLS = [
       'Inspect local Git state for the active vault only. Returns HEAD/branch, vault files, outside-vault change counts, staged-outside-vault warnings, and in-progress operation risk. Read-only; never initializes, stages, commits, or pushes.',
     inputSchema: { type: 'object', properties: {} },
     outputSchema: GIT_RESULT_OUTPUT_SCHEMA,
+  },
+  {
+    name: 'git_history',
+    description:
+      'Read commit history scoped to the active vault path only. Returns bounded newest-first hashes, subjects, and authored timestamps plus limited/hasMore, shallow-repository state, and historyComplete so agents do not mistake a truncated or shallow view for complete evidence. Commits that touched only files outside the vault are excluded. Read-only; never initializes, fetches, pulls, commits, or pushes.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 100,
+          description: 'Maximum newest-first vault commits to return. Defaults to 20; maximum 100.',
+        },
+      },
+    },
+    outputSchema: GIT_HISTORY_OUTPUT_SCHEMA,
   },
   {
     name: 'git_snapshot',
@@ -2072,7 +2153,7 @@ const TOOLS = [
   {
     name: 'query_ontology',
     description:
-      'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route between two nodes with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance), `query_plan` (EXPLAIN-style side-effect-free cost/index estimate plus execution advice before a target operation, filter-preserving suggestedQuery, and filter-aware estimate.totalMatches for match_nodes/match_edges), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation clusters inside the graph), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges, shortest path, and shared-neighbor explanation between two nodes), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths such as project → domains → capabilities), `impact` (incoming by default: what depends on this node), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice for UI/agent views), `overview` (counts, relation distribution, and hubs), `schema` (kind-relation-kind patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters plus a followUp packet for the first returned row), `match_edges` (graph DB-style edge pattern rows plus a followUp packet for the first returned real edge), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before add_relation), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, ready cursor `cursor.found=true` / `cursor.reason=null`, cursor `nextAfterActionId`/`hasMore` pagination metadata, afterActionId resume, unknown-cursor empty page with `cursor.nextAfterActionId=null` / `cursor.hasMore=false`, kind filters, executable graph-array canonicalization, `executable` flags, and current-page `nextExecutableAction` / `nextReviewAction` pointers), `agent_brief` (Claude Code/Codex handoff prompt, structured businessOntologyLens with business-first outcome → domain → capability → element read order, graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, explain_relation, and business_questions scans for outcome / domain boundary / capability claim nodes / implementation evidence edges, structured cliFallbackCommands, recipes, graph entrypoints, graph_traversal playbook, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance, playbook evidence/stopWhen checklists, write guardrails, relationDecisionGuide, resultContracts for all_paths completeness and match_nodes/match_edges followUp evidence, and read-first write policy), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard). ' +
+      'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route between two nodes with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance), `query_plan` (EXPLAIN-style side-effect-free cost/index estimate plus execution advice before a target operation, filter-preserving suggestedQuery, and filter-aware estimate.totalMatches for match_nodes/match_edges), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation clusters inside the graph), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges, shortest path, and shared-neighbor explanation between two nodes), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths such as project → domains → capabilities), `impact` (incoming by default: what depends on this node), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice for UI/agent views), `builder_context` (persisted Builder focus, layout positions, direct graph slice, and safe write handoff; unsaved UI drafts are explicitly excluded), `overview` (counts, relation distribution, and hubs), `schema` (kind-relation-kind patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters plus a followUp packet for the first returned row), `match_edges` (graph DB-style edge pattern rows plus a followUp packet for the first returned real edge), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before add_relation), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, ready cursor `cursor.found=true` / `cursor.reason=null`, cursor `nextAfterActionId`/`hasMore` pagination metadata, afterActionId resume, unknown-cursor empty page with `cursor.nextAfterActionId=null` / `cursor.hasMore=false`, kind filters, executable graph-array canonicalization, `executable` flags, and current-page `nextExecutableAction` / `nextReviewAction` pointers), `agent_brief` (Claude Code/Codex handoff prompt, structured businessOntologyLens with business-first outcome → domain → capability → element read order, graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, explain_relation, and business_questions scans for outcome / domain boundary / capability claim nodes / implementation evidence edges, structured cliFallbackCommands, recipes, graph entrypoints, graph_traversal playbook, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance, playbook evidence/stopWhen checklists, write guardrails, relationDecisionGuide, resultContracts for all_paths completeness and match_nodes/match_edges followUp evidence, and read-first write policy), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard). ' +
       'Accepts canonical slugs or unique aliases. side effect 0. Use this when you need graph-database-like answers without pulling the full compile_ontology payload.',
     inputSchema: {
       type: 'object',
@@ -2096,9 +2177,9 @@ const TOOLS = [
             'centrality/communities only: positive integer PageRank or label-propagation iteration count. Defaults to 20, max 100.',
         },
         slug: nonBlankStringSchema(
-          'Center/root node slug or unique alias. Required for neighbors, reachability, pattern_walk, impact, blast_radius, subgraph, lineage, node_profile, and domain_profile; optional root for containment_tree.',
+          'Center/root node slug or unique alias. builder_context also accepts its own canonical Builder focusParam (for example domain:auth). Required for neighbors, reachability, pattern_walk, impact, blast_radius, subgraph, builder_context, lineage, node_profile, and domain_profile; optional root for containment_tree.',
         ),
-        seed: nonBlankStringSchema('Alias for slug when operation is subgraph.'),
+        seed: nonBlankStringSchema('Alias for slug when operation is subgraph or builder_context.'),
         candidateSlug: nonBlankStringSchema(
           'similar_nodes only: proposed slug for a not-yet-written concept candidate.',
         ),
@@ -2118,7 +2199,7 @@ const TOOLS = [
           type: 'string',
           enum: ['incoming', 'outgoing', 'both', 'undirected'],
           description:
-            'neighbors/reachability/impact/blast_radius/subgraph: incoming, outgoing, or both. path/all_paths/explain_relation/reachability also accepts undirected.',
+            'neighbors/reachability/impact/blast_radius/subgraph/builder_context: incoming, outgoing, or both. path/all_paths/explain_relation/reachability also accepts undirected.',
         },
         types: {
           type: 'array',
@@ -2352,7 +2433,7 @@ const TOOLS = [
       'Replaces the K-round-trip pattern of `list_concepts` then per-doc `get_concept` (whose `warnings: [...]` is per-file). ' +
       `8 issue codes — ${VAULT_ISSUE_CODE_DESCRIPTION}. ` +
       'Returns `{ scanned, problems: [{slug, issues: [{code, severity, message}]}], summary: { problemFiles, errorFiles, warningFiles, byCode: { code: { severity, count, files } } } }`. ' +
-      'Also returns `pathDrift`: frontmatter `path:` / `elements:` source paths that no longer exist on disk (vault→code drift), resolved against `repoRoot` (default: server cwd). Ontology-slug references are never flagged. Fix via `patch_concept` or remove the stale entry. ' +
+      'Also returns `pathDrift`: frontmatter `path:` / `elements:` source paths that no longer exist on disk (vault→code drift), resolved against `repoRoot` (default: the active resolved repository root from connection_info). Ontology-slug references are never flagged. Fix via `patch_concept` or remove the stale entry. ' +
       'side effect 0. Use when an agent needs the *whole-vault* health view: first-contact before writes, before / after a batch write, or surfacing issues to the user.',
     inputSchema: {
       type: 'object',
@@ -2360,7 +2441,7 @@ const TOOLS = [
         repoRoot: {
           ...NON_BLANK_STRING_SCHEMA,
           description:
-            'Repository root that frontmatter source paths resolve against, for the pathDrift check. Defaults to the MCP server cwd. Pass this if the vault lives apart from the code repo.',
+            'Repository root that frontmatter source paths resolve against, for the pathDrift check. Defaults to the active resolved repository root from connection_info. Pass this if the vault lives apart from the code repo.',
         },
       },
     },
@@ -2486,7 +2567,7 @@ const TOOLS = [
       properties: {
         rootPath: {
           ...NON_BLANK_STRING_SCHEMA,
-          description: 'Repository root to analyze. Defaults to MCP server cwd.',
+          description: 'Repository root to analyze. Defaults to the active resolved repository root from connection_info.',
         },
         sourceFolders: {
           type: 'array',
@@ -2638,13 +2719,14 @@ const TOOLS = [
     description:
       'Project ontology indexing plan — run analyze_repo_structure + infer_imports + validate_vault in one read-only call. ' +
       'Use for large or already-existing projects where the agent needs a resumable ontology indexing checkpoint before writing. ' +
+      'The plan distinguishes raw candidates into existing, ambiguous-alias review, and genuinely new buckets, then returns exact reviewCalls for retrieving full rows. ' +
       'side effect 0: this tool never writes markdown. To land accepted candidates, use add_concepts/add_relations explicitly or the CLI `ontology-atlas index --apply` command.',
     inputSchema: {
       type: 'object',
       properties: {
         rootPath: {
           ...NON_BLANK_STRING_SCHEMA,
-          description: 'Repository root to index. Defaults to MCP server cwd.',
+          description: 'Repository root to index. Defaults to the active resolved repository root from connection_info.',
         },
         maxDepth: {
           type: 'integer',
@@ -2702,11 +2784,41 @@ const TOOLS = [
           type: 'object',
           properties: {
             concepts: { type: 'integer', minimum: 0 },
+            conceptDelta: {
+              type: 'object',
+              properties: {
+                candidates: { type: 'integer', minimum: 0 },
+                existing: { type: 'integer', minimum: 0 },
+                ambiguous: { type: 'integer', minimum: 0 },
+                new: { type: 'integer', minimum: 0 },
+                limited: { type: 'boolean' },
+                sampleAmbiguousSlugs: {
+                  type: 'array',
+                  maxItems: 10,
+                  items: NON_BLANK_STRING_SCHEMA,
+                },
+                sampleNewSlugs: {
+                  type: 'array',
+                  maxItems: 10,
+                  items: NON_BLANK_STRING_SCHEMA,
+                },
+              },
+              required: [
+                'candidates',
+                'existing',
+                'ambiguous',
+                'new',
+                'limited',
+                'sampleAmbiguousSlugs',
+                'sampleNewSlugs',
+              ],
+              additionalProperties: false,
+            },
             suggestedRelations: { type: 'integer', minimum: 0 },
             importRelations: { type: 'integer', minimum: 0 },
             phases: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
           },
-          required: ['concepts', 'suggestedRelations', 'importRelations', 'phases'],
+          required: ['concepts', 'conceptDelta', 'suggestedRelations', 'importRelations', 'phases'],
           additionalProperties: false,
         },
         validation: {
@@ -2775,8 +2887,32 @@ const TOOLS = [
             applyTool: NON_BLANK_STRING_SCHEMA,
             cliApply: NON_BLANK_STRING_SCHEMA,
             review: NON_BLANK_STRING_SCHEMA,
+            reviewCalls: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  tool: {
+                    type: 'string',
+                    enum: ['analyze_repo_structure', 'infer_imports'],
+                  },
+                  arguments: {
+                    type: 'object',
+                    properties: {
+                      rootPath: NON_BLANK_STRING_SCHEMA,
+                      maxDepth: { type: 'integer', minimum: 0, maximum: 10 },
+                      maxFiles: { type: 'integer', minimum: 1, maximum: 50000 },
+                    },
+                    required: ['rootPath'],
+                    additionalProperties: false,
+                  },
+                },
+                required: ['tool', 'arguments'],
+                additionalProperties: false,
+              },
+            },
           },
-          required: ['applyTool', 'cliApply', 'review'],
+          required: ['applyTool', 'cliApply', 'review', 'reviewCalls'],
           additionalProperties: false,
         },
       },
@@ -3311,6 +3447,7 @@ const TOOLS = [
 const READ_TOOL_NAMES = new Set([
   'connection_info',
   'git_status',
+  'git_history',
   'list_concepts',
   'get_concept',
   'get_concepts',
@@ -3475,6 +3612,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return ok(connectionInfoTool());
       case 'git_status':
         return ok(gitStatusTool());
+      case 'git_history':
+        return ok(gitHistoryTool(args));
       case 'git_snapshot':
         // The commit itself is the durable audit record. Writing the activity
         // log after committing would immediately make the vault dirty again.
@@ -3659,7 +3798,7 @@ function structuredErrorDetails(message) {
   }
 
   const missingSlug = message.match(
-    /^(.+?): "([^"]+)"\. Use list_concepts\(\) to see all slugs, or find_evidence\(query\) to search by title\.(?: If the endpoint is real but absent, create it first with add_concept\(slug, kind, title\)\.)?(?: Similar slugs in this vault: (.+)\.)?$/i,
+    /^(.+?): "([^"]+)"\. Use list_concepts\(\) to see all slugs, or find_evidence\(\{title:"[^"]*"\}\) to search by title\.(?: If the endpoint is real but absent, create it first with add_concept\(slug, kind, title\)\.)?(?: Similar slugs in this vault: (.+)\.)?$/i,
   );
   if (missingSlug) {
     const [, subject, slug, similarText] = missingSlug;
@@ -4356,6 +4495,10 @@ const RELATION_KEY = {
 const RELATION_TYPES = WRITE_RELATION_TYPE_VALUES;
 
 function connectionInfoTool() {
+  const toolNames = TOOLS_FOR_LIST.map((tool) => tool.name);
+  const toolsetHash = createHash('sha256')
+    .update(JSON.stringify(TOOLS_FOR_LIST))
+    .digest('hex');
   return {
     vaultRoot: VAULT_ROOT,
     repoRoot: REPO_ROOT,
@@ -4363,12 +4506,28 @@ function connectionInfoTool() {
     repoResolution: REPO_RESOLUTION,
     sameRoot: VAULT_ROOT === REPO_ROOT,
     restartRequiredForRootChange: true,
-    server: { name: 'ontology-atlas-mcp', version: SERVER_VERSION },
+    server: {
+      name: 'ontology-atlas-mcp',
+      version: SERVER_VERSION,
+      readOnly: READ_ONLY_MODE,
+      toolCount: toolNames.length,
+      toolNames,
+      toolsetHash,
+    },
   };
 }
 
 function gitStatusTool() {
   return inspectVaultGit({ repoRoot: REPO_ROOT, vaultRoot: VAULT_ROOT });
+}
+
+function gitHistoryTool({ limit = 20 } = {}) {
+  requireOptionalPositiveInteger(limit, 'limit', { max: 100 });
+  return inspectVaultGitHistory({
+    repoRoot: REPO_ROOT,
+    vaultRoot: VAULT_ROOT,
+    limit,
+  });
 }
 
 function gitSnapshotTool({ confirm = false, expectedHead, message } = {}) {
@@ -5041,7 +5200,10 @@ function queryOntologyTool(args = {}) {
   validateQueryOntologyArgs(args);
   const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
-  const queryResult = queryCompiledOntology(artifact, args, { ontologyAtlasIgnorePatterns });
+  const queryResult = queryCompiledOntology(artifact, args, {
+    ontologyAtlasIgnorePatterns,
+    ...(args.operation === 'builder_context' ? { sourceDocs: loadVaultDocs(VAULT_ROOT) } : {}),
+  });
   const result = ['health', 'workspace_brief', 'agent_brief'].includes(args.operation)
     ? attachVaultValidation(queryResult, args)
     : queryResult;
@@ -5344,7 +5506,7 @@ function validateVaultTool({ repoRoot } = {}) {
   }
   // Atlas roadmap Track A #2 — vault→code path drift: frontmatter path:/elements:
   // entries that no longer exist on disk. Read-only; resolves against repoRoot
-  // (default: server cwd). Surfaced here because it is a vault-health signal the
+  // (default: active resolved repository root). Surfaced here because it is a vault-health signal the
   // agent already runs validate_vault for at first-contact. The agent fixes via
   // patch_concept (correct the path) or by removing the stale entry.
   const driftRoot = repoRoot ? resolve(repoRoot) : REPO_ROOT;
@@ -5575,7 +5737,66 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
     analyze.domains.length +
     analyze.capabilities.length +
     analyze.elements.length;
+  const conceptCandidates = [
+    ...(analyze.project ? [analyze.project] : []),
+    ...analyze.domains,
+    ...analyze.capabilities,
+    ...analyze.elements,
+  ];
+  const compiled = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
+  const existingSlugs = new Set((compiled.nodes ?? []).map((node) => node.slug));
+  const aliasToSlug = compiled.indexes?.aliasToSlug ?? {};
+  const ambiguousAliases = new Set(
+    (compiled.ambiguousAliases ?? []).map((row) => row.alias),
+  );
+  const candidateSlugs = conceptCandidates.map((candidate) => candidate.slug);
+  const existingConceptSlugs = candidateSlugs
+    .filter((slug) => existingSlugs.has(slug) || aliasToSlug[slug])
+    .sort();
+  const ambiguousConceptSlugs = candidateSlugs
+    .filter(
+      (slug) =>
+        !existingSlugs.has(slug) &&
+        !aliasToSlug[slug] &&
+        ambiguousAliases.has(slug),
+    )
+    .sort();
+  const newConceptSlugs = candidateSlugs
+    .filter(
+      (slug) =>
+        !existingSlugs.has(slug) &&
+        !aliasToSlug[slug] &&
+        !ambiguousAliases.has(slug),
+    )
+    .sort();
+  const conceptDelta = {
+    candidates: conceptCount,
+    existing: existingConceptSlugs.length,
+    ambiguous: ambiguousConceptSlugs.length,
+    new: newConceptSlugs.length,
+    limited: newConceptSlugs.length > 10 || ambiguousConceptSlugs.length > 10,
+    sampleAmbiguousSlugs: ambiguousConceptSlugs.slice(0, 10),
+    sampleNewSlugs: newConceptSlugs.slice(0, 10),
+  };
   const importRelations = imports?.moduleEdges?.length ?? 0;
+  const reviewCalls = [
+    {
+      tool: 'analyze_repo_structure',
+      arguments: {
+        rootPath: analyze.rootPath,
+        ...(maxDepth !== undefined ? { maxDepth } : {}),
+      },
+    },
+    ...(imports
+      ? [{
+          tool: 'infer_imports',
+          arguments: {
+            rootPath: analyze.rootPath,
+            ...(maxFiles !== undefined ? { maxFiles } : {}),
+          },
+        }]
+      : []),
+  ];
 
   return {
     mode: 'plan',
@@ -5600,6 +5821,7 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
       : null,
     plan: {
       concepts: conceptCount,
+      conceptDelta,
       suggestedRelations: analyze.suggestedRelations.length,
       importRelations,
       phases: [
@@ -5638,7 +5860,8 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
     next: {
       applyTool: 'add_concepts + add_relations',
       cliApply: 'ontology-atlas index [rootPath] --apply --vault [vault]',
-      review: 'Review candidates before applying on large or noisy repos.',
+      review: 'plan.concepts counts raw candidates; inspect conceptDelta, manually resolve ambiguous aliases, then run reviewCalls to retrieve exact rows before applying.',
+      reviewCalls,
     },
   };
 }
@@ -6079,7 +6302,7 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
 function missingSlugMessage(prefix, slug, { createHint = false } = {}) {
   const suggestions = suggestSimilarSlugs(VAULT_ROOT, slug);
   const lines = [
-    `${prefix}: "${slug}". Use list_concepts() to see all slugs, or find_evidence(query) to search by title.`,
+    `${prefix}: "${slug}". Use list_concepts() to see all slugs, or find_evidence({title:"${slug}"}) to search by title.`,
   ];
   if (createHint) {
     lines.push('If the endpoint is real but absent, create it first with add_concept(slug, kind, title).');

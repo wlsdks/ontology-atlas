@@ -47,8 +47,8 @@ docs/ontology/
 ### Claude Code 같은 AI agent 가 읽을 때
 MCP 서버 등록 — `mcp/README.md` 의 `.mcp.json` 예시 참고.
 
-31 도구 (read 18 + write 13):
-- **read** — `connection_info` · `git_status` · `list_concepts` · `get_concept` · `get_concepts` · `find_evidence` · `find_backlinks` · `find_neighbors` · `find_path` · `list_kinds` · `find_orphans` · `query_concepts` · `compile_ontology` · `query_ontology` · `validate_vault` · `analyze_repo_structure` · `infer_imports` · `index_project`
+32 도구 (read 19 + write 13):
+- **read** — `connection_info` · `git_status` · `git_history` · `list_concepts` · `get_concept` · `get_concepts` · `find_evidence` · `find_backlinks` · `find_neighbors` · `find_path` · `list_kinds` · `find_orphans` · `query_concepts` · `compile_ontology` · `query_ontology` · `validate_vault` · `analyze_repo_structure` · `infer_imports` · `index_project`
 - **write** — `absorb_document` · `add_concept` · `add_concepts` · `add_relation` · `add_relations` · `remove_relation` · `replace_relation` · `patch_concept` · `reclassify_concept` · `delete_concept` · `rename_concept` · `merge_concepts` · `git_snapshot`
 
 agent UX: 단일 도구 (`add_concept` / `add_relation` / `get_concept`) 의 description 이 batch 짝 (`add_concepts` / `add_relations` / `get_concepts`) cross-reference. 5+ 노드 land 는 batch 쓰면 K → 1 round-trip.

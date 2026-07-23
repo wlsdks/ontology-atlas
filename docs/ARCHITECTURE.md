@@ -45,8 +45,8 @@ tags: [architecture, infra, overview]
        ↑ stdio JSON-RPC
 
 ┌────────────────────────────────────────────────────────┐
-│ MCP server (mcp/, v0.12.0)                              │
-│ ├─ 18 read tools  connection/git proof · list/get/find ·│
+│ MCP server (mcp/, v0.13.0)                              │
+│ ├─ 19 read tools  connection/git proof · list/get/find ·│
 │ │                  compile_ontology · query_ontology ·  │
 │ │                  analyze_repo_structure · infer_imports│
 │ └─ 13 write tools add_concept · add_concepts ·          │

@@ -1,11 +1,16 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { inspectVaultGit, snapshotVaultGit } from './git-tools.mjs';
+import {
+  discoverGitRepositoryRoot,
+  inspectVaultGit,
+  inspectVaultGitHistory,
+  snapshotVaultGit,
+} from './git-tools.mjs';
 
 function git(root, ...args) {
   return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
@@ -41,6 +46,83 @@ test('inspectVaultGit reports vault files and outside staged risk separately', (
     assert.equal(status.risk.level, 'medium');
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('discoverGitRepositoryRoot resolves a nested vault and returns null outside Git', () => {
+  const { root, vault } = makeRepo();
+  const outside = mkdtempSync(join(tmpdir(), 'ontology-atlas-no-git-'));
+  try {
+    assert.equal(discoverGitRepositoryRoot(vault), realpathSync(root));
+    assert.equal(discoverGitRepositoryRoot(outside), null);
+    assert.equal(discoverGitRepositoryRoot(join(outside, 'missing')), null);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('inspectVaultGitHistory returns only commits that touched the vault pathspec', () => {
+  const { root, vault } = makeRepo();
+  try {
+    writeFileSync(join(root, 'outside.txt'), 'outside v2\n');
+    git(root, 'add', 'outside.txt');
+    git(root, 'commit', '-m', 'outside only');
+
+    writeFileSync(join(vault, 'project.md'), '---\nkind: project\ntitle: Updated\n---\n');
+    git(root, 'add', 'vault/project.md');
+    git(root, 'commit', '-m', 'vault update');
+
+    const history = inspectVaultGitHistory({ repoRoot: root, vaultRoot: vault, limit: 10 });
+    assert.equal(history.operation, 'git_history');
+    assert.equal(history.ok, true);
+    assert.equal(history.vaultPathspec, 'vault');
+    assert.equal(history.limit, 10);
+    assert.equal(history.count, 2);
+    assert.equal(history.limited, false);
+    assert.equal(history.hasMore, false);
+    assert.equal(history.shallow, false);
+    assert.equal(history.historyComplete, true);
+    assert.deepEqual(history.commits.map((row) => row.subject), ['vault update', 'initial']);
+    assert.ok(history.commits.every((row) => /^[a-f0-9]{40}$/.test(row.hash)));
+    assert.ok(history.commits.every((row) => /^[a-f0-9]+$/.test(row.shortHash)));
+    assert.ok(history.commits.every((row) => !Number.isNaN(Date.parse(row.authoredAt))));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('inspectVaultGitHistory applies a bounded limit and reports non-repository scope safely', () => {
+  const { root, vault } = makeRepo();
+  const outside = mkdtempSync(join(tmpdir(), 'ontology-atlas-git-history-outside-'));
+  try {
+    writeFileSync(join(vault, 'project.md'), '---\nkind: project\ntitle: Updated\n---\n');
+    git(root, 'add', 'vault/project.md');
+    git(root, 'commit', '-m', 'vault update');
+
+    const limited = inspectVaultGitHistory({ repoRoot: root, vaultRoot: vault, limit: 1 });
+    assert.equal(limited.count, 1);
+    assert.equal(limited.limited, true);
+    assert.equal(limited.hasMore, true);
+    assert.equal(limited.shallow, false);
+    assert.equal(limited.historyComplete, false);
+    assert.deepEqual(limited.commits.map((row) => row.subject), ['vault update']);
+
+    const unavailable = inspectVaultGitHistory({
+      repoRoot: outside,
+      vaultRoot: outside,
+      limit: 5,
+    });
+    assert.deepEqual(unavailable, {
+      operation: 'git_history',
+      ok: false,
+      reason: 'not-a-git-repository',
+      repoRoot: outside,
+      vaultRoot: outside,
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
   }
 });
 

@@ -143,6 +143,7 @@ export function cleanupAbsorbFixture() {
 export const EXPECTED_READ_TOOLS = [
   'connection_info',
   'git_status',
+  'git_history',
   'list_concepts',
   'get_concept',
   'get_concepts',
