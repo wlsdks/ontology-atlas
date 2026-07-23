@@ -1938,23 +1938,26 @@
   @media (min-width: 1920px) {
     :root {
       --topology-relation-legend-inset: 32px;
-      /* 1.15 → 1.08 (소유자 실보고 2026-07-23: 1920 에서 버튼이 커 보임 —
-         "아주 약간만") — zoom 과 factor 는 항상 짝으로 움직인다. */
-      --topology-ui-scale-factor: 1.08;
+      /* 소유자 재보고 (2026-07-23 2차): 1.08 로 줄여도 "여전히 크고 폰트가
+         이상함" — 비정수 zoom 은 텍스트를 소수 배율로 래스터라이즈해 흐릿한
+         "이상한 폰트"를 만들고, 크기 체감도 남는다. ≥1920 확대는 제거하고
+         네이티브 1:1 로 — 1440 과 동일한 물리 크기, 선명한 텍스트. */
+      --topology-ui-scale-factor: 1;
     }
 
     .topology-ui-scale {
-      zoom: 1.08;
+      zoom: 1;
     }
   }
 
   @media (min-width: 2400px) {
     :root {
-      --topology-ui-scale-factor: 1.2;
+      /* 2400+ 초광폭만 완만한 보정 유지 (1.3→1.2→1.1 단계 축소). */
+      --topology-ui-scale-factor: 1.1;
     }
 
     .topology-ui-scale {
-      zoom: 1.2;
+      zoom: 1.1;
     }
   }
 
