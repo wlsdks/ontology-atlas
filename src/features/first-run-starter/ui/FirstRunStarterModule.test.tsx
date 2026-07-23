@@ -164,6 +164,20 @@ describe('FirstRunStarterModule', () => {
     expect(screen.getByText('npx ontology-atlas init && npx ontology-atlas bootstrap')).toBeInTheDocument();
   });
 
+  // 소유자 실보고 2026-07-23 — 라벨·명령·복사가 한 행을 3분할해 명령이
+  // "npx ontology-atlas i…" 로 잘렸다. 코드 라인은 말줄임 대신 전폭 +
+  // 단어 경계 줄바꿈이어야 명령 전문이 복사 전에 눈으로 검증된다.
+  it('renders the command as a full-width wrapping code line — never mid-word ellipsis', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    fireEvent.click(screen.getByTestId('first-run-starter-cli-toggle'));
+
+    const code = screen.getByText('npx ontology-atlas init && npx ontology-atlas bootstrap');
+    expect(code.tagName).toBe('CODE');
+    expect(code.className).not.toContain('truncate');
+    expect(code.className).toContain('whitespace-pre-wrap');
+    expect(code.className).toContain('break-words');
+  });
+
   // ease-of-use G1 (2026-07-23) — Safari/Firefox 는 FSA 가 없어 가장 눈에
   // 띄는 인디고 CTA 가 "눌러야 실패"였다. 미지원 상태에선 사전에 정직하게
   // 강등: 폴더 열기·새 vault 만들기 대신 고지 한 줄 + /download 링크.

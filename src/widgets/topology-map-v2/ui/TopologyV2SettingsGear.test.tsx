@@ -286,3 +286,41 @@ describe("TopologyV2SettingsGear — 보기 모드(audience) 행 (슬라이스 C
     expect(screen.queryByTestId("topology-v2-settings-gear-audience-caption")).not.toBeInTheDocument();
   });
 });
+
+describe("TopologyV2SettingsGear — rail-tile trigger variant (레일 유틸 타일 문법)", () => {
+  // 소유자 실보고 2026-07-23 — 레일 하단 3타일(활동·발자취·설정) 중 기어만
+  // 36px 보더 floating 표면 + 16px 아이콘이라 이질적이었다. rail-tile 변형은
+  // `--app-nav-rail-tile-*` 지오메트리 + `--app-nav-rail-utility-icon-size`
+  // 아이콘 사다리를 활동/발자취 타일과 공유해야 한다.
+  it("rail-tile: trigger sits on the nav-rail utility tile contract (tile geometry + utility icon ladder)", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <TopologyV2SettingsGear
+          indexDefaultCollapsed={false}
+          onChangeIndexDefaultCollapsed={() => {}}
+          audiencePlain={false}
+          onChangeAudiencePlain={() => {}}
+          changeVaultHref="/docs/?intent=local"
+          labels={labels}
+          triggerVariant="rail-tile"
+        />
+      </NextIntlClientProvider>,
+    );
+    const trigger = screen.getByTestId("topology-v2-settings-gear-trigger");
+    expect(trigger).toHaveAttribute("data-trigger-variant", "rail-tile");
+    expect(trigger.className).toContain("--app-nav-rail-tile-height");
+    expect(trigger.className).toContain("--app-nav-rail-tile-width");
+    // floating 변형의 보더/그림자 표면 토큰이 섞이면 안 된다.
+    expect(trigger.className).not.toContain("--topology-floating-control-border");
+    const icon = trigger.querySelector("svg");
+    expect(icon?.getAttribute("class") ?? "").toContain("--app-nav-rail-utility-icon-size");
+  });
+
+  it("floating(default): keeps the original 16px icon (h-4 w-4) — no utility ladder leak", () => {
+    renderGear();
+    const trigger = screen.getByTestId("topology-v2-settings-gear-trigger");
+    expect(trigger).toHaveAttribute("data-trigger-variant", "floating");
+    const icon = trigger.querySelector("svg");
+    expect(icon?.getAttribute("class") ?? "").toContain("h-4");
+  });
+});

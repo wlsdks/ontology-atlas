@@ -108,8 +108,15 @@ export interface TopologyV2SettingsGearProps {
    * inside the top-right utility lane without breaking the row's uniform
    * control height (겹침 소탕 2026-07-23 — <lg 에서 내비 레일이 사라져 설정
    * 접근이 끊기던 결함의 진입점).
+   *
+   * `"rail-tile"` renders the trigger with the nav-rail utility-tile contract
+   * (`--app-nav-rail-tile-width/height` geometry · borderless overlay hover ·
+   * 1px active press · `--app-nav-rail-utility-icon-size` icon) so the rail's
+   * bottom stack (활동·발자취·설정) sits on ONE tile grammar — 소유자 실보고
+   * 2026-07-23: the floating 36px bordered tile + 16px icon made the gear a
+   * third, mismatched surface family inside the rail.
    */
-  triggerVariant?: "floating" | "chrome-tile";
+  triggerVariant?: "floating" | "chrome-tile" | "rail-tile";
   /**
    * Which side of the trigger the popover opens toward (default `"bottom"`,
    * the original placement — plenty of canvas below the right utility
@@ -206,10 +213,23 @@ export function TopologyV2SettingsGear({
             ? // 상단 utility lane 의 ChromeChip/ChromeTile 표면 계약 —
               // 같은 행의 44px 타일들과 높이·radius·표면이 일치해야 한다.
               "size-[var(--chrome-tile-size)] rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-            : "h-9 w-9 rounded-md border border-[color:var(--topology-floating-control-border)] bg-[color:var(--topology-floating-control-surface)] text-[color:var(--topology-floating-control-icon)] shadow-[var(--topology-floating-control-shadow)] hover:bg-[color:var(--topology-floating-control-hover-surface)] hover:text-[color:var(--topology-floating-control-icon-hover)]",
+            : triggerVariant === "rail-tile"
+              ? // 내비 레일 유틸리티 타일 계약 — 활동(AppNavRail)·발자취
+                // (GitStatusTile)와 같은 지오메트리·상태 안무(rest → hover
+                // 색-웨이크 → active 1px 눌림 + overlay-3 → focus 링).
+                "h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] rounded-card text-[color:var(--color-text-tertiary)] transition-[color,background-color,transform] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:bg-[color:var(--color-overlay-3)]"
+              : "h-9 w-9 rounded-md border border-[color:var(--topology-floating-control-border)] bg-[color:var(--topology-floating-control-surface)] text-[color:var(--topology-floating-control-icon)] shadow-[var(--topology-floating-control-shadow)] hover:bg-[color:var(--topology-floating-control-hover-surface)] hover:text-[color:var(--topology-floating-control-icon-hover)]",
         )}
       >
-        <Settings className="h-4 w-4" aria-hidden />
+        <Settings
+          className={
+            triggerVariant === "rail-tile"
+              ? // 유틸리티 티어 아이콘 사다리 — 활동·발자취 타일과 동일 토큰.
+                "h-[var(--app-nav-rail-utility-icon-size)] w-[var(--app-nav-rail-utility-icon-size)]"
+              : "h-4 w-4"
+          }
+          aria-hidden
+        />
       </button>
       {open ? (
         <div

@@ -196,26 +196,31 @@ export function FirstRunStarterModule({
           {t("cliBridgeToggle")}
         </button>
         {cliOpen ? (
+          /* 소유자 실보고 2026-07-23 — 라벨·명령·복사 버튼이 한 행을 3분할해
+             명령이 중간-단어 말줄임("npx ontology-atlas i…")으로 잘렸다.
+             헤더행(라벨 + 복사)과 전폭 코드 라인(단어 경계 줄바꿈)으로 분리 —
+             복사할 명령 전문이 항상 보인다. */
           <div
             id="first-run-starter-cli-bridge"
             data-testid="first-run-starter-cli-bridge"
-            className="mt-2 flex items-center justify-between gap-2 rounded-md border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.35)] px-2.5 py-2"
+            className="mt-2 rounded-md border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.35)] px-2.5 py-2"
           >
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] leading-tight text-[color:var(--topology-v2-panel-text-quaternary)]">
+            <div className="flex items-center justify-between gap-2">
+              <p className="min-w-0 break-keep text-[10px] leading-tight text-[color:var(--topology-v2-panel-text-quaternary)]">
                 {t("cliBridgeLabel")}
               </p>
-              <code className="mt-0.5 block truncate font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-secondary)]">
-                {CLI_BOOTSTRAP_COMMAND}
-              </code>
+              <CompactCopyButton
+                copied={cliCopyState === "copied"}
+                label={cliCopyState === "copied" ? t("cliBridgeCopied") : t("cliBridgeCopy")}
+                ariaLabel={t("cliBridgeCopyAriaLabel")}
+                onClick={() => void copyCliCommand(CLI_BOOTSTRAP_COMMAND)}
+                data-testid="first-run-starter-cli-bridge-copy"
+                className="-my-1.5 -mr-1.5 shrink-0"
+              />
             </div>
-            <CompactCopyButton
-              copied={cliCopyState === "copied"}
-              label={cliCopyState === "copied" ? t("cliBridgeCopied") : t("cliBridgeCopy")}
-              ariaLabel={t("cliBridgeCopyAriaLabel")}
-              onClick={() => void copyCliCommand(CLI_BOOTSTRAP_COMMAND)}
-              data-testid="first-run-starter-cli-bridge-copy"
-            />
+            <code className="mt-1 block whitespace-pre-wrap break-words font-mono text-[10.5px] leading-[1.6] text-[color:var(--topology-v2-panel-text-secondary)]">
+              {CLI_BOOTSTRAP_COMMAND}
+            </code>
           </div>
         ) : null}
       </div>
