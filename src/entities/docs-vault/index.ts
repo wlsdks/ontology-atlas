@@ -7,6 +7,12 @@ export type {
 } from './model/types';
 export { default as vaultManifest } from './data/manifest.json';
 export { default as vaultContent } from './data/content.json';
+// P0 공감형 샘플 vault (2026-07) — 비개발자가 즉시 알아볼 수 있는 예시
+// 비즈니스("온라인 쇼핑몰"). dogfood(vaultManifest/vaultContent)와 별도
+// 진실원 — `scripts/build-docs-vault.mjs` 가 `samples/storefront/` 에서
+// 빌드한다.
+export { default as sampleStorefrontManifest } from './data/sample-storefront.manifest.json';
+export { default as sampleStorefrontContent } from './data/sample-storefront.content.json';
 export {
   buildLocalManifest,
   buildLocalManifestWithEntries,
