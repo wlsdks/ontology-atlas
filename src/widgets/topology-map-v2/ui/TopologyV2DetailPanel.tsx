@@ -226,13 +226,15 @@ export interface TopologyV2DetailPanelProps {
 // transition-colors(150ms)로 하드 토글 방지 — transform/scale 없음.
 /**
  * 결과-설명 툴팁 래퍼 — tip 이 있으면 shared Tooltip 으로 감싸고, 없으면
- * 트리거를 그대로 반환(하위호환·DOM 무증가). side="bottom": 타일 행이 패널
- * 상단부라 위로 띄우면 메트릭 라인을 가린다.
+ * 트리거를 그대로 반환(하위호환·DOM 무증가). side="top": 타일 바로 아래에
+ * "영역 전개" 같은 다음 행동 버튼이 있어 side="bottom" 이면 hover 중 그
+ * 버튼을 덮어 클릭을 방해한다(사용성 검수 판정). 위로 띄우면 메트릭 라인을
+ * 잠깐 가리지만 그건 hover 중에만이고, 다음 행동을 막지는 않는다.
  */
 function withActionTip(tip: string | undefined, trigger: ReactElement): ReactElement {
   if (!tip) return trigger;
   return (
-    <Tooltip content={tip} side="bottom">
+    <Tooltip content={tip} side="top">
       {trigger}
     </Tooltip>
   );

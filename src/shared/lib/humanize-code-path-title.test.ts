@@ -75,4 +75,24 @@ describe("humanizeCodePathTitle", () => {
     const input = "src/widgets/topology-map-v2/ui/topology-world.ts";
     expect(humanizeCodePathTitle(input)).toBe(humanizeCodePathTitle(input));
   });
+
+  it("SKILL.md 는 확장자 제거 후 generic 흡수되어 부모 디렉토리명을 쓴다", () => {
+    expect(
+      humanizeCodePathTitle(".claude/skills/ontology-sync/SKILL.md"),
+    ).toBe("Ontology Sync");
+  });
+
+  it("index.ts 의 부모마저 generic(lib) 이면 한 단계 더 승격한다(최대 2단계)", () => {
+    expect(humanizeCodePathTitle("src/lib/index.ts")).toBe("Src");
+  });
+
+  it("3글자 이하의 짧은 잔재 세그먼트(목록 밖 단어)는 부모 세그먼트로 승격한다", () => {
+    expect(
+      humanizeCodePathTitle("src/widgets/topology-map-v2/db.ts"),
+    ).toBe("Topology Map V2");
+  });
+
+  it("generic 목록에 새로 추가된 단어(src/lib/ui/api/util 등)도 승격 대상이다", () => {
+    expect(humanizeCodePathTitle("cli/src")).toBe("Cli");
+  });
 });
