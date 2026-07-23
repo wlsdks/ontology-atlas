@@ -62,6 +62,40 @@ describe("useGuidedTour", () => {
     expect(window.localStorage.getItem(TEST_KEY)).toBe("skipped");
   });
 
+  // 2026-07-23 최종 스윕 P2 — 앵커 해석 가능 여부가 순간마다 바뀌어도(선택 중
+  // 유틸리티 레인 접힘 → recent 증발) 진행 표시 분모는 페르소나 고정 여정
+  // (비개발 7) 그대로여야 한다. "5/5" 다음이 "5/6" 이 되는 요동 회귀 차단.
+  it("keeps the display denominator (personaSteps) fixed while anchor resolvability fluctuates", () => {
+    let resolvable = true;
+    const { result, rerender } = renderHook(
+      ({ hasSelection: sel }: { hasSelection: boolean }) =>
+        useGuidedTour({
+          hasSelection: sel,
+          canResolveAnchor: () => resolvable,
+          storageKey: TEST_KEY,
+        }),
+      { initialProps: { hasSelection: false } },
+    );
+    act(() => result.current.start());
+    expect(result.current.personaSteps).toHaveLength(7);
+    expect(result.current.personaStepIndex).toBe(0);
+
+    // recent/relations 등 testid 앵커가 일시적으로 전부 해석 불가가 돼도
+    // (visibleSteps 는 줄어들지만) 표시 여정은 7 그대로.
+    resolvable = false;
+    rerender({ hasSelection: true });
+    expect(result.current.visibleSteps.length).toBeLessThan(7);
+    expect(result.current.personaSteps).toHaveLength(7);
+
+    // dev 분기 시에만 8 로 — 사용자가 명시적으로 한 단계를 더 선택한 경우다.
+    resolvable = true;
+    rerender({ hasSelection: true });
+    act(() => result.current.chooseDevBranch());
+    expect(result.current.personaSteps).toHaveLength(8);
+    expect(result.current.step?.id).toBe("agent");
+    expect(result.current.personaStepIndex).toBe(7);
+  });
+
   it("datasheet only appears in visibleSteps once a selection exists", () => {
     const { result, rerender } = setup(false);
     act(() => result.current.start());

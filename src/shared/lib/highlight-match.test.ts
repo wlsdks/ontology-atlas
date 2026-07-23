@@ -90,4 +90,46 @@ describe("splitHighlightSegments", () => {
     const segs = splitHighlightSegments(text, "needle phrase");
     expect(segs.filter((s) => s.match)).toHaveLength(2);
   });
+
+  // 착지 결함 (최종 라이브 스윕 P2) — search.ts 의 searchDocs 는 멀티 토큰
+  // 쿼리를 AND 매치로 취급한다: 각 토큰이 문서 어딘가(제목/발췌/본문 등)에
+  // 있기만 하면 히트로 인정하고, 본문에서 구절이 실제로 안 이어지면
+  // bodyTierScore(최하위 티어)로 채점한다 — 구절 존재를 요구하지 않는다.
+  // 하지만 뷰어 하이라이트(splitHighlightSegments)는 지금까지 구절 전체가
+  // 어딘가에 연속으로 있어야만 매치를 인정했다 — 두 계약이 어긋나면
+  // "검색은 매치라고 판단했는데 뷰어엔 mark 가 0개"인 착지 결함이 난다.
+  // (재현: `/ko/docs/` → "관계 타입" 검색 → CLI Developer Entry 본문
+  // 매치 결과 클릭 → scrollTop 0, mark 0개. "관계 타입" 구절은 그 문서
+  // 어디에도 연속으로 존재하지 않지만 "관계"와 "타입" 토큰은 각각 존재.)
+  it("멀티 토큰 쿼리 — 구절이 어디에도 연속으로 없으면 개별 토큰을 OR 로 매치(스캐터드 AND 매치 착지)", () => {
+    const text = "이 관계는 유용하다. 나중에 타입을 정의한다.";
+    // "관계 타입" 구절은 이 텍스트 어디에도 연속으로 존재하지 않는다.
+    const segs = splitHighlightSegments(text, "관계 타입");
+    const matched = segs.filter((s) => s.match).map((s) => s.text);
+    expect(matched).toEqual(["관계", "타입"]);
+    // 무손실 재조합 계약 유지.
+    expect(segs.map((s) => s.text).join("")).toBe(text);
+  });
+
+  it("멀티 토큰 스캐터드 폴백 — 토큰 중 일부만 존재해도 존재하는 토큰만 매치", () => {
+    const text = "관계만 있고 다른 단어는 없다.";
+    const segs = splitHighlightSegments(text, "관계 타입");
+    const matched = segs.filter((s) => s.match).map((s) => s.text);
+    expect(matched).toEqual(["관계"]);
+  });
+
+  it("멀티 토큰 스캐터드 폴백 — 토큰이 전혀 없으면 여전히 비매치", () => {
+    const text = "아무 관련도 없는 문장이다.";
+    const segs = splitHighlightSegments(text, "관계 타입");
+    expect(segs).toEqual([{ text, match: false }]);
+  });
+
+  it("구절 매치가 있으면 폴백을 타지 않고 구절 그대로 우선한다", () => {
+    // "관계 타입" 이 연속으로 존재하면 (설령 개별 토큰이 다른 곳에 더 있어도)
+    // 기존 구절-매치 경로가 우선한다 — 오늘 이미 고친 줄바꿈 유연 매칭 회귀 방지.
+    const text = "먼저 관계 타입 순서로 쓴다. 그리고 타입만 다시 언급.";
+    const segs = splitHighlightSegments(text, "관계 타입");
+    const matched = segs.filter((s) => s.match).map((s) => s.text);
+    expect(matched).toEqual(["관계 타입"]);
+  });
 });
