@@ -1808,10 +1808,11 @@ export function OntologyEditPage() {
           </div>
         ) : null}
         {/* 빌더는 palette (200) + canvas + inspector (280) = 480px+ 의 ERD
-            레이아웃 — 모바일 (<md, 768px 미만) viewport 에서는 컬럼이 겹쳐
-            unreadable. 데스크톱 권장 안내 + 트리 / 토폴로지 fallback CTA 를
-            모바일에만 노출. md+ 에서는 정상 빌더. */}
-        <section className="relative hidden flex-1 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] md:flex">
+            레이아웃. 반응형 감사 rank5(정직한 강등, 2026-07-23) — 게이트를
+            md(768)→lg(1024) 로 상향. 768–1023(태블릿 포트레이트)에서 3-pane
+            을 억지로 밀어넣던 크램을 없애고, 대신 트리편집+토폴로지 fallback
+            으로 흡수한다(캔버스보다 실용적). lg+ 에서만 정상 빌더 캔버스. */}
+        <section className="relative hidden flex-1 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] lg:flex">
           <OntologyKindPalette
             collapsed={paletteCollapsed}
             onToggleCollapsed={togglePalette}
@@ -2273,9 +2274,10 @@ export function OntologyEditPage() {
             </div>
           </div>
         ) : null}
-        {/* 모바일 fallback — md 미만에서 빌더 layout 이 겹치므로 데스크톱
-            안내 + 트리 / 토폴로지 진입점 노출. */}
-        <section className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-6 py-10 text-center md:hidden">
+        {/* 태블릿/모바일 fallback — lg 미만(반응형 감사 rank5)에서 3-pane 이
+            겹치므로 트리편집 + 토폴로지 진입점 노출. 캔버스 게이트(lg:flex)와
+            정확히 상보(lg:hidden)여서 768–1023 에도 빈 화면이 안 생긴다. */}
+        <section className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-6 py-10 text-center lg:hidden">
           <div className="flex flex-col gap-2">
             <p className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--color-indigo-accent)]">
               {t("mobileEyebrow")}
@@ -2290,19 +2292,19 @@ export function OntologyEditPage() {
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Link
               href={treeHref}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a14)] px-3 text-body text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)]"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full py-1.5 border border-[color:var(--color-indigo-border-a46)] bg-[color:var(--color-indigo-a14)] px-3 text-body text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a66)]"
             >
               {t("mobileTreeCta")}
             </Link>
             <Link
               href="/topology/"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full py-1.5 border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
             >
               {t("mobileTopologyCta")}
             </Link>
             <Link
               href="/ontology/insights/"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-green-a28)] bg-[color:var(--color-green-a08)] px-3 text-body text-[color:var(--color-green-text)] transition-colors hover:border-[color:var(--color-green-a44)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full py-1.5 border border-[color:var(--color-green-a28)] bg-[color:var(--color-green-a08)] px-3 text-body text-[color:var(--color-green-text)] transition-colors hover:border-[color:var(--color-green-a44)] hover:text-[color:var(--color-text-primary)]"
             >
               <ShieldCheck size={13} aria-hidden />
               {t("mobileValidateCta")}
