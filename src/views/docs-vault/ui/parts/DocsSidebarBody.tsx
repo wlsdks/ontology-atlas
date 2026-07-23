@@ -151,6 +151,13 @@ export function DocsSidebarBody({
         .includes(normalizedTreeQuery),
     ).length;
   }, [manifest.docs, normalizedTreeQuery]);
+  // 헤더 음각 숫자는 부제와 같은 집합을 세야 한다 — 검색/태그 필터가 걸린
+  // 상태에서 부제는 "N개 검색됨"인데 숫자만 전체 총계를 보이면 모순이다.
+  const headerCount = normalizedTreeQuery
+    ? queryMatchCount
+    : activeTag
+      ? (manifest.tags[activeTag]?.length ?? 0)
+      : manifest.docs.length;
   const collectionOptions: DocsVaultCollection[] = ["guides", "ontology"];
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -169,9 +176,10 @@ export function DocsSidebarBody({
         </div>
         <span
           data-token="engraved-numeral"
+          data-filtered={normalizedTreeQuery || activeTag ? "true" : undefined}
           className="flex-none font-mono text-body tabular-nums text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
         >
-          {manifest.docs.length}
+          {headerCount}
         </span>
         {/* [D-4] 트리 상단 "새 문서" 진입점 — 이전엔 샘플(읽기 전용) 모드에서
             진입로 자체가 통째로 사라져 기능 존재를 알 수 없었다. 비활성

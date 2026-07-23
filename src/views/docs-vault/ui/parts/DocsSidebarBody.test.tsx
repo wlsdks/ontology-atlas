@@ -101,6 +101,36 @@ describe("DocsSidebarBody — P4a 최근 바뀐 문서 스트립", () => {
   });
 });
 
+describe("DocsSidebarBody — 헤더 음각 숫자는 필터 집합을 센다", () => {
+  function numeral() {
+    return document.querySelector('[data-token="engraved-numeral"]') as HTMLElement;
+  }
+
+  it("검색 필터 없을 때는 전체 문서 수를 보인다", () => {
+    renderSidebar([
+      makeDoc("payment", "결제 문서", new Date().toISOString()),
+      makeDoc("order", "주문 문서", new Date().toISOString()),
+      makeDoc("ship", "배송 문서", new Date().toISOString()),
+    ]);
+    expect(numeral()).toHaveTextContent("3");
+    expect(numeral()).not.toHaveAttribute("data-filtered");
+  });
+
+  it("검색어를 입력하면 숫자가 매칭 수로 줄고 data-filtered 가 켜진다", () => {
+    renderSidebar([
+      makeDoc("payment", "결제 문서", new Date().toISOString()),
+      makeDoc("order", "주문 문서", new Date().toISOString()),
+      makeDoc("ship", "배송 문서", new Date().toISOString()),
+    ]);
+    const search = screen.getByPlaceholderText(
+      koMessages.vaultWidgets.parts.sidebar.searchPlaceholder,
+    );
+    fireEvent.change(search, { target: { value: "결제" } });
+    expect(numeral()).toHaveTextContent("1");
+    expect(numeral()).toHaveAttribute("data-filtered", "true");
+  });
+});
+
 describe("DocsSidebarBody — 에이전트 파일 그룹 (읽기 전용 감지)", () => {
   const model: AgentFilesUiModel = {
     records: [
