@@ -19,7 +19,7 @@ describe('ChromeTile', () => {
     expect(tile).toHaveAttribute('title', '문서함');
   });
 
-  it('uses the 44px chrome-tile-size + 10px chrome-radius token contract', () => {
+  it('uses the chrome-tile-size(36px) + 10px chrome-radius token contract', () => {
     render(<ChromeTile icon={<svg />} title="설정" />);
     const tile = screen.getByRole('button');
     expect(tile.className).toContain('size-[var(--chrome-tile-size)]');

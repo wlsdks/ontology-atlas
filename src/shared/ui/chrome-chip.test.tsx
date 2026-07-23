@@ -15,7 +15,7 @@ describe('ChromeChip', () => {
     expect(chip).toHaveTextContent('D');
   });
 
-  it('uses the 44px chrome-tile-size height + 10px chrome-radius token contract', () => {
+  it('uses the chrome-tile-size(36px) height + 10px chrome-radius token contract', () => {
     render(<ChromeChip>자동 정렬</ChromeChip>);
     const chip = screen.getByRole('button');
     expect(chip.className).toContain('h-[var(--chrome-tile-size)]');
