@@ -318,7 +318,12 @@ export function computeFocusCameraTarget(
   const h = Math.max(1, (egoBounds.maxY - egoBounds.minY) * marginRatio);
   const fitScale = Math.min(viewportWidth / w, viewportHeight / h);
   const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
-  const scale = Math.min(effectiveMax, Math.max(overviewEntryScale, fitScale));
+  // 소유자 실보고 (2026-07-24) — 이웃이 숨은 상태(스포트라이트 등)에선 ego
+  // bbox 가 작아 fit 이 현미경 줌으로 치솟는다. 선택 프레이밍의 줌인은
+  // overviewEntryScale × focusMaxZoomRatio 를 상한으로 — ego 멤버는 tier
+  // 면제라 이 배율에서도 전부 보이고, 줌아웃 방향 fit 은 제한하지 않는다.
+  const focusZoomInCeiling = overviewEntryScale * (tokens.focusMaxZoomRatio ?? Number.POSITIVE_INFINITY);
+  const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(overviewEntryScale, fitScale));
 
   return {
     tx: centerX,
@@ -357,6 +362,11 @@ export function computeClusterFitTarget(
   const h = Math.max(1, (disc.maxY - disc.minY) * marginRatio);
   const fitScale = Math.min(viewportWidth / w, viewportHeight / h);
   const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
-  const scale = Math.min(effectiveMax, Math.max(overviewEntryScale, fitScale));
+  // 소유자 실보고 (2026-07-24) — 이웃이 숨은 상태(스포트라이트 등)에선 ego
+  // bbox 가 작아 fit 이 현미경 줌으로 치솟는다. 선택 프레이밍의 줌인은
+  // overviewEntryScale × focusMaxZoomRatio 를 상한으로 — ego 멤버는 tier
+  // 면제라 이 배율에서도 전부 보이고, 줌아웃 방향 fit 은 제한하지 않는다.
+  const focusZoomInCeiling = overviewEntryScale * (tokens.focusMaxZoomRatio ?? Number.POSITIVE_INFINITY);
+  const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(overviewEntryScale, fitScale));
   return { tx: centerX, ty: centerY, tscale: scale };
 }

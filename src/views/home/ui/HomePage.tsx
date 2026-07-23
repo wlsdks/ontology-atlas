@@ -1404,9 +1404,11 @@ export function HomePage() {
   useEffect(() => {
     if (!topologySelectionActive) setIndexManualExpandDuringSelection(false);
   }, [topologySelectionActive]);
+  // 소유자 후속 (2026-07-24): 영역/스포트라이트 원장도 노드 선택 중엔 닫는다
+  // — "좌/우 패널이 다 열려 불편". 탈출 어포던스는 상단 영역/렌즈 칩의 ✕ 와
+  // Esc 가 유지하므로 원장 상시 노출이 필수는 아니다. 선택 해제 시 복귀.
   const renderedIndexState: IndexPanelState =
     topologySelectionActive &&
-    resolvedRealmSlug === null &&
     !indexManualExpandDuringSelection &&
     baseRenderedIndexState === "expanded"
       ? "collapsed"

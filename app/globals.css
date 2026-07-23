@@ -1583,6 +1583,12 @@
        패딩도 비례해서 커진다(고정 px 라면 큰 fan 엔 패딩이 상대적으로 작아
        빡빡했을 것). `topology-camera-math.ts#computeFocusCameraTarget` 참고. */
     --topology-v2-focus-bbox-margin: 1.15;
+    /* 소유자 실보고 (2026-07-24, 기능점검): 스포트라이트처럼 이웃이 숨어
+       ego bbox 가 작아지면 클릭 fit 이 현미경 줌으로 치솟아 매번 휠로
+       되돌려야 했다. 선택 프레이밍의 줌인 상한 — overviewEntryScale ×
+       이 비율을 넘지 않는다 (ego 멤버는 tier 면제라 이 배율에서도 전부
+       보인다). 줌아웃 방향 fit 은 제한 없음. */
+    --topology-v2-focus-max-zoom-ratio: 1.8;
     --topology-v2-hysteresis-px: 7;
     --topology-v2-emphasis-rise-tau: 0.09;
     --topology-v2-emphasis-decay-tau: 0.15;

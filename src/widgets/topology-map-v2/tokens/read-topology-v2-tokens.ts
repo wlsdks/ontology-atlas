@@ -126,6 +126,8 @@ export interface TopologyV2Tokens {
   overviewEntryRatio: number;
   focusFitMaxScale: number;
   focusBboxMargin: number;
+  /** 선택(ego) 프레이밍의 줌인 상한 배율 — overviewEntryScale 기준 ratio. */
+  focusMaxZoomRatio: number;
   hysteresisPx: number;
   emphasisRiseTau: number;
   emphasisDecayTau: number;
@@ -295,6 +297,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "overviewEntryRatio", cssVar: "--topology-v2-overview-entry-ratio", kind: "number" },
   { key: "focusFitMaxScale", cssVar: "--topology-v2-focus-fit-max-scale", kind: "number" },
   { key: "focusBboxMargin", cssVar: "--topology-v2-focus-bbox-margin", kind: "number" },
+  { key: "focusMaxZoomRatio", cssVar: "--topology-v2-focus-max-zoom-ratio", kind: "number" },
   { key: "hysteresisPx", cssVar: "--topology-v2-hysteresis-px", kind: "number" },
   { key: "emphasisRiseTau", cssVar: "--topology-v2-emphasis-rise-tau", kind: "number" },
   { key: "emphasisDecayTau", cssVar: "--topology-v2-emphasis-decay-tau", kind: "number" },
