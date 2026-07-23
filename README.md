@@ -248,8 +248,8 @@ same `.md` files from a different angle.
 | `/ontology/insights` — turns the same frontmatter into a work queue: neglected hubs, promotion candidates, kind census, relation breakdown, and agent readiness. | `/projects` — every `kind: project` doc as a card, with the domains, capabilities, and evidence counts derived from the containment graph. |
 
 A sixth surface has no screenshot because it is agent-facing: the **MCP server**
-(`mcp/`) exposes the same vault to Claude Code, Cursor, and Codex as **31 tools
-over stdio JSON-RPC — 18 read + 13 write**. Every surface reads and writes the
+(`mcp/`) exposes the same vault to Claude Code, Cursor, and Codex as **32 tools
+over stdio JSON-RPC — 19 read + 13 write**. Every surface reads and writes the
 same `.md` files; pick the interface that matches the task and the vault stays
 the source of truth.
 
