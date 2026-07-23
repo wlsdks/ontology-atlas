@@ -31,6 +31,7 @@
  */
 
 import { DENSITY_GATE_THRESHOLD } from "./density-gate";
+import { rankEgoNeighborsByDOI } from "./focus-state";
 
 export type LayoutNodeKind = "project" | "domain" | "capability" | "element";
 
@@ -140,6 +141,27 @@ export function computeConcentricLayout(
 ): LayoutPoint[] {
   const placed = new Map<string, PlacedPoint>();
 
+  // 각 노드의 containment 자식 수 — phyllotaxis 디스크 자식을 DOI 로 정렬할 때
+  // "허브도(度)" 프록시로 쓴다(layout 은 전체 엣지를 모르므로 자식 수가 유일한
+  // 구조적 허브 신호). i=0(중심 최근접)에 최고 DOI 허브 capability 가 오도록.
+  const childCount = new Map<string, number>();
+  for (const n of nodes) {
+    if (n.parentId !== null) childCount.set(n.parentId, (childCount.get(n.parentId) ?? 0) + 1);
+  }
+  /**
+   * phyllotaxis 디스크에 얹기 직전 자식을 rankEgoNeighborsByDOI(domain3 >
+   * capability2 > element1 → degree → slug)로 안정 정렬한다. Vogel 나선
+   * r=spacing·√i 라 중심 최근접(i=0)=최고 DOI 허브, rim=저차수 leaf → 중심→바깥
+   * 자연 읽기 순서. slug tiebreak 로 결정론(byte-identical). 임계 이하 부채꼴
+   * 경로는 이 정렬을 타지 않아 종전 좌표와 바이트 동일.
+   */
+  const rankDiscChildren = (children: readonly LayoutGraphNode[]): LayoutGraphNode[] => {
+    const byId = new Map(children.map((c) => [c.id, c]));
+    return rankEgoNeighborsByDOI(
+      children.map((c) => ({ id: c.id, kind: c.kind, degree: childCount.get(c.id) ?? 0 })),
+    ).map((id) => byId.get(id) as LayoutGraphNode);
+  };
+
   const project = nodes.find((n) => n.kind === "project");
   if (project) {
     placed.set(project.id, { x: 0, y: 0, angle: 0 });
@@ -168,7 +190,7 @@ export function computeConcentricLayout(
     // 밀도 게이트: 초대형 부채꼴은 반지름이 폭주하므로 phyllotaxis 디스크로
     // 유계 배치한다 (임계 이하 부모는 아래 부채꼴 경로를 바이트 동일하게 탄다).
     if (fan.length > PHYLLOTAXIS_THRESHOLD) {
-      placePhyllotaxisDisk(domainPoint, fan, rings.capability, placed);
+      placePhyllotaxisDisk(domainPoint, rankDiscChildren(fan), rings.capability, placed);
       return;
     }
     // High-child-count de-pileup: push the ring out and widen the arc
@@ -197,7 +219,7 @@ export function computeConcentricLayout(
     if (!elements.length) return;
     // 밀도 게이트: element 도 임계 초과 시 phyllotaxis 디스크 (부채꼴 폭주 방지).
     if (elements.length > PHYLLOTAXIS_THRESHOLD) {
-      placePhyllotaxisDisk(capPoint, elements, rings.element, placed);
+      placePhyllotaxisDisk(capPoint, rankDiscChildren(elements), rings.element, placed);
       return;
     }
     const elR = rings.element * Math.max(1, elements.length / ELEMENT_DENSITY_THRESHOLD);
@@ -213,7 +235,7 @@ export function computeConcentricLayout(
     });
   });
 
-  placeRemainingByParentChain(nodes, rings, placed);
+  placeRemainingByParentChain(nodes, rings, placed, rankDiscChildren);
   placeOrphans(nodes, rings, placed);
 
   relaxCollisions(nodes, placed, options);
@@ -234,6 +256,7 @@ function placeRemainingByParentChain(
   nodes: readonly LayoutGraphNode[],
   rings: LayoutRings,
   placed: Map<string, PlacedPoint>,
+  rankDiscChildren: (children: readonly LayoutGraphNode[]) => LayoutGraphNode[],
 ): void {
   // 깊은 체인도 수렴하도록 진행이 있는 동안 반복 (입력 순서 고정 → 결정론).
   for (let pass = 0; pass < nodes.length; pass += 1) {
@@ -250,7 +273,7 @@ function placeRemainingByParentChain(
       if (!parentPoint) continue;
       // 밀도 게이트: 비표준 계보의 대량 자식도 phyllotaxis 디스크로 유계 배치.
       if (kids.length > PHYLLOTAXIS_THRESHOLD) {
-        placePhyllotaxisDisk(parentPoint, kids, rings.element, placed);
+        placePhyllotaxisDisk(parentPoint, rankDiscChildren(kids), rings.element, placed);
         continue;
       }
       const r = rings.element * Math.max(1, kids.length / ELEMENT_DENSITY_THRESHOLD);

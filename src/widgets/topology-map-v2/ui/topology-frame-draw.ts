@@ -6,14 +6,14 @@
  */
 
 import type { CameraAxes } from "../engine/camera";
-import { resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
+import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selection-pulse";
 import { footprintRingStyle, FOOTPRINT_RING_OFFSET } from "../model/footprint-ring";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-parallax";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha } from "../model/tier-visibility";
-import { LABEL_TOP_K, selectTopKLabels, type LabelRankEntry } from "../model/label-lod";
+import { DISC_LABEL_TOP_K, LABEL_TOP_K, selectDiscLabelEligible, selectTopKLabels, type LabelRankEntry } from "../model/label-lod";
 import { draw as gridDraw, lerpColorHex } from "../render/grid";
 import {
   ACTIVITY_MARK_GAP,
@@ -66,8 +66,10 @@ const EXPANDED_AURA_ALPHA = 0.55;
 /**
  * S8 결함 1 — 확장 디스크와 무관한 배경 노드를 확장 중 미세 dim 해 "어지러움"을
  * 줄인다(확장이 없으면 1.0, 회귀 0). 색이 아니라 알파만 낮춘다.
+ * 고팬아웃 배치-공개(2026-07) 처방 5 — 배치가 소수(상위 24)만 크게 드러내므로
+ * 배경을 한 단계 더 낮춰(0.5→0.42) 드러난 배치가 더 또렷이 읽히게 한다.
  */
-const BACKGROUND_DIM_WHEN_EXPANDED = 0.5;
+const BACKGROUND_DIM_WHEN_EXPANDED = 0.42;
 
 const EMPTY_NEIGHBOR_SET: ReadonlySet<string> = new Set();
 /** Design Guardian 처방 E — 포커스 없음(또는 인시던트 contains 0개)일 때 재사용하는 빈 캡 Set. */
@@ -76,6 +78,16 @@ const EMPTY_EGO_CONTAINS_COMETS: ReadonlySet<string> = new Set();
 // site in `drawTopologyFrame` below for why this is safe.
 const tierAlphaByIdReused = new Map<string, number>();
 const effectiveAlphaByIdReused = new Map<string, number>();
+// 그룹 A — 클러스터 칩 hover 색 이징 앵커. 어느 칩이 언제부터 hover 됐는지
+// 하나만 추적한다(동시 hover 는 1개). rest→hover 색 램프(~150ms)를 이 시작
+// 시각으로 유도한다. reduced-motion 이면 즉시 스냅이라 앵커를 안 쓴다.
+const CLUSTER_CHIP_HOVER_MS = 150;
+let clusterChipHoverAnim: { id: string; startAt: number } | null = null;
+// rank9 — 지난 프레임에 배치된 라벨 id 집합(히스테리시스: 같은 우선순위 안에서
+// 직전 placed 를 우대) + present 램프 스텝용 직전 타임스탬프(dt 유도, `now`
+// 는 monotonic). 모듈 상태 — `clusterChipHoverAnim` 과 같은 프레임-지속 패턴.
+let prevPlacedLabelIds: ReadonlySet<string> = new Set();
+let lastLabelRampNow = 0;
 // Project bumped 2 → 1.5 (canvas-emphasis slice §A1) to match the owner spec's
 // "외곽 스트로크 1.5px 앰버" exactly — the outer stroke itself now hardcodes
 // amber for project (see `resolveNodeVisual` below), so its width is spec'd
@@ -129,47 +141,101 @@ interface NodeVisual {
   breatheEnabled: boolean;
 }
 
+/**
+ * The one place the click-focus color signature lives. Instead of hard-
+ * switching to the dim/ego palette the instant a focus commits, it computes
+ * BOTH the node's normal (no-focus) look and its focused-state target, then
+ * lerps between them by `focusRamp` (0..1, `stepFocusRamp`). So a click's
+ * dim (background→gray) / ego (neighbor→indigo, center→bright) color swap eases
+ * IN on the camera-dive time axis (owner headline: "하드 컷으로 읽히지 않게"),
+ * and a deselect eases it back OUT — the caller keeps `colorEgoState` pinned to
+ * the retained focus while the ramp decays, so the dim target persists to fade
+ * FROM instead of snapping to normal. Only color+dash+breathe here; center
+ * radius easing is in the draw loop. No new hue — every lerp target is an
+ * existing token.
+ */
 function resolveNodeVisual(
   node: WorldNode,
-  egoState: NodeEgoState,
+  colorEgoState: NodeEgoState,
   emphasis: number,
-  focusedNodeId: string | null,
+  colorFocusedNodeId: string | null,
   isEmphasizedNeighbor: boolean,
   tokens: TopologyV2Tokens,
   reducedMotion: boolean,
+  focusRamp: number,
 ): NodeVisual {
   const freshness = resolveFreshnessVisual({ fresh: node.fresh, stale: node.stale, hub: node.isHub }, reducedMotion);
   const lineWidth = LINE_WIDTH_BY_KIND[node.kind];
+  const dash = freshness.dash;
 
-  if (egoState === "dim") {
-    return { fill: tokens.nodeFillDim, stroke: tokens.nodeStrokeDim, dash: freshness.dash, lineWidth, breatheEnabled: false };
-  }
+  // --- Normal (no-focus) target: the look a node holds when nothing is
+  // focused. Canvas-emphasis slice §A1 — project keeps its hardcoded amber
+  // outer stroke (design.md reserves amber for Layer-0 containers); its
+  // selection/neighbor emphasis lives in the ring overlays, never a body
+  // indigo lerp, so the amber identity is never muddied.
+  let normalFill: string;
+  let normalStroke: string;
+  let normalBreathe = freshness.breatheEnabled;
   if (freshness.useStaleFillStroke) {
-    return { fill: tokens.nodeFillStale, stroke: tokens.nodeStrokeStale, dash: freshness.dash, lineWidth, breatheEnabled: false };
+    normalFill = tokens.nodeFillStale;
+    normalStroke = tokens.nodeStrokeStale;
+    normalBreathe = false;
+  } else if (node.kind === "project") {
+    normalFill = tierFill(node.kind, tokens);
+    normalStroke = tokens.amberHub;
+  } else {
+    normalFill = tierFill(node.kind, tokens);
+    let stroke = tierStroke(node.kind, tokens);
+    if (freshness.strokeIndigoLerp > 0) stroke = lerpColorHex(stroke, tokens.indigo, freshness.strokeIndigoLerp);
+    // No-focus hover ripple — only when there is no focus classification at all
+    // (live or retained); focus owns emphasis otherwise.
+    if (!colorFocusedNodeId && emphasis > 0.02) stroke = lerpColorHex(stroke, tokens.indigo, Math.min(1, emphasis));
+    normalStroke = stroke;
   }
 
-  // Canvas-emphasis slice §A1 — the project (Layer-0 container) hexagon's own
-  // outer stroke is hardcoded amber, NOT tier-neutral-then-ego-tinted like
-  // every other kind (design.md explicitly reserves amber for "Hub 노드와
-  // Layer 0 컨테이너"). Selection/hover/neighbor emphasis is still fully
-  // visible for project — it just moves to the dedicated ring overlays
-  // (`render/node-shapes.ts`'s `strokeKindOutline` calls under
-  // `egoState === "center"` / `isHovered`) instead of recoloring the body, so
-  // the amber identity never gets muddied by an indigo lerp.
-  if (node.kind === "project") {
-    return { fill: tierFill(node.kind, tokens), stroke: tokens.amberHub, dash: freshness.dash, lineWidth, breatheEnabled: freshness.breatheEnabled };
+  const ramp = Math.min(1, Math.max(0, focusRamp));
+  // Fast path: no focus intensity → byte-identical to the pre-ramp no-focus look.
+  if (ramp <= 0.001) {
+    return { fill: normalFill, stroke: normalStroke, dash, lineWidth, breatheEnabled: normalBreathe };
   }
 
-  let stroke = tierStroke(node.kind, tokens);
-  if (freshness.strokeIndigoLerp > 0) stroke = lerpColorHex(stroke, tokens.indigo, freshness.strokeIndigoLerp);
-  if (!focusedNodeId && emphasis > 0.02) stroke = lerpColorHex(stroke, tokens.indigo, Math.min(1, emphasis));
-  if (egoState === "neighbor") stroke = lerpColorHex(stroke, tokens.indigo, 0.5);
-  // Panel-linked ripple: the hovered detail-row's neighbor pushes past the flat
-  // 0.5 neighbor tint toward the brightest indigo, tracking its emphasis ramp.
-  if (isEmphasizedNeighbor && emphasis > 0.02) stroke = lerpColorHex(stroke, tokens.indigoBright, Math.min(1, emphasis));
-  if (egoState === "center") stroke = tokens.indigoBright;
+  // --- Focused-state target: dim / neighbor / center, keyed on the (retained)
+  // color ego state so the target survives a deselect while the ramp decays.
+  let focusedFill: string;
+  let focusedStroke: string;
+  let focusedBreathe = normalBreathe;
+  if (colorEgoState === "dim") {
+    focusedFill = tokens.nodeFillDim;
+    focusedStroke = tokens.nodeStrokeDim;
+    focusedBreathe = false;
+  } else if (freshness.useStaleFillStroke) {
+    focusedFill = tokens.nodeFillStale;
+    focusedStroke = tokens.nodeStrokeStale;
+    focusedBreathe = false;
+  } else if (node.kind === "project") {
+    focusedFill = tierFill(node.kind, tokens);
+    focusedStroke = tokens.amberHub;
+  } else {
+    focusedFill = tierFill(node.kind, tokens);
+    let stroke = tierStroke(node.kind, tokens);
+    if (freshness.strokeIndigoLerp > 0) stroke = lerpColorHex(stroke, tokens.indigo, freshness.strokeIndigoLerp);
+    if (colorEgoState === "neighbor") stroke = lerpColorHex(stroke, tokens.indigo, 0.5);
+    // Panel-linked ripple: the hovered detail-row's neighbor pushes past the
+    // flat 0.5 neighbor tint toward the brightest indigo, tracking its emphasis.
+    if (isEmphasizedNeighbor && emphasis > 0.02) stroke = lerpColorHex(stroke, tokens.indigoBright, Math.min(1, emphasis));
+    if (colorEgoState === "center") stroke = tokens.indigoBright;
+    focusedStroke = stroke;
+  }
 
-  return { fill: tierFill(node.kind, tokens), stroke, dash: freshness.dash, lineWidth, breatheEnabled: freshness.breatheEnabled };
+  return {
+    fill: lerpColorHex(normalFill, focusedFill, ramp),
+    stroke: lerpColorHex(normalStroke, focusedStroke, ramp),
+    dash,
+    lineWidth,
+    // dash/breathe can't tween — they cross over once the ramp is mostly to the
+    // focused side (a dimmed node stops breathing, etc.).
+    breatheEnabled: ramp > 0.5 ? focusedBreathe : normalBreathe,
+  };
 }
 
 export interface FrameDrawParams {
@@ -202,6 +268,58 @@ export interface FrameDrawParams {
   emphasisById: ReadonlyMap<string, number>;
   /** C1 A2 — ego tier-reveal ramp (`topology-physics-step.ts` steps it), consumed by `effectiveNodeAlpha`. */
   egoRevealById: ReadonlyMap<string, number>;
+  /**
+   * Click-focus signature — per-node 0..1 ramp stepped by `stepTopologyPhysics`.
+   * `resolveNodeVisual` lerps normal→dim/ego color by it and the draw loop eases
+   * the center node's radius 1→1.12, so the dim/ego swap eases in with the
+   * camera dive and back out on deselect. Empty/missing = 0 (no focus intensity,
+   * regression-free).
+   */
+  focusRampById: ReadonlyMap<string, number>;
+  /**
+   * rank8 — new-node appear ramp (nodeId → 0..1), stepped by `stepTopologyPhysics`.
+   * The node draw multiplies effRadius (0.6→1 micro scale) and globalAlpha (0→1)
+   * by it so a node introduced on a world rebuild swells in instead of hard-
+   * popping. Missing entry = 1 (untracked/existing nodes never fade). Omitted map
+   * = no appear animation (regression-free).
+   */
+  appearById?: ReadonlyMap<string, number>;
+  /**
+   * rank7 — cluster expand/collapse reveal ramp (parentId → 0..1), stepped by the
+   * loop. The node pass multiplies a just-expanded disc child's globalAlpha by its
+   * nearest expanded-ancestor parent's ramp (fade IN on expand); `drawClusterChip`
+   * fades the pill/badge form in by it. Missing/omitted = 1 (no fade).
+   */
+  chipRevealById?: ReadonlyMap<string, number>;
+  /**
+   * 고팬아웃 배치-공개(2026-07) — per-child batch reveal ramp (childId → 0..1),
+   * stepped by the loop with a DOI-ordered center-out stagger. For a batch-
+   * revealed disc child this REPLACES the per-parent group fade (`chipRevealById`)
+   * as the node's reveal multiplier + drives the micro appearScale (0.6→1), so an
+   * expanded parent's first batch resolves child-by-child in DOI order instead of
+   * all-at-once. Only children currently in a visible batch have an entry; every
+   * other node falls back to the group/world-appear path (regression-free).
+   */
+  batchAppearById?: ReadonlyMap<string, number>;
+  /**
+   * rank9 — per-label present ramp (nodeId → 0..1), MUTATED in place by the label
+   * pass: rises toward 1 while a label is greedily placed this frame, decays
+   * toward 0 while its on-screen candidate loses placement, so LOD churn fades
+   * instead of flickering. Omitted = labels draw at full alpha (regression-free).
+   */
+  labelPresentById?: Map<string, number>;
+  /**
+   * The node id whose focus classification drives the COLOR ramp — normally the
+   * live `focusedNodeId`, but RETAINED by the caller for the ~160ms after a
+   * deselect while `focusRampById` decays, so the dim/ego target the colors fade
+   * FROM persists instead of snapping to normal (④ 선택 링 · 배경 dim 페이드아웃).
+   * `null` once nothing is focused and the ramp has reached 0. Kept separate
+   * from live `focusedNodeId` so labels / tier-reveal / camera never inherit the
+   * retention lag — only node body color + rings do.
+   */
+  colorFocusedNodeId: string | null;
+  /** Edge-pair analogue of `colorFocusedNodeId` — the retained selected edge for the color ramp (⑨). */
+  colorSelectedEdge: EdgePairFocus | null;
   reducedMotion: boolean;
   /**
    * R6 호버 펄스 — 노드 호버가 발사한 활성 일회성 신호들(`use-topology-loop.ts`가
@@ -295,6 +413,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     selectedEdge,
     emphasisById,
     egoRevealById,
+    focusRampById,
+    appearById,
+    chipRevealById,
+    batchAppearById,
+    labelPresentById,
+    colorFocusedNodeId,
+    colorSelectedEdge,
     reducedMotion,
     pulses,
     selectionPulse,
@@ -358,6 +483,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
 
   const project = (x: number, y: number) => worldToScreen(camera, viewportWidth, viewportHeight, x, y);
   const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
+  // Click-focus color signature — the ego classification for the COLOR ramp
+  // uses the RETAINED focus (`colorFocusedNodeId`/`colorSelectedEdge`), which
+  // equals the live focus while a selection is active and lingers ~160ms after
+  // a deselect so the fade-out has a dim/ego target to ease from. Everything
+  // else on this frame still keys off the live `focusedNodeId` — no retention
+  // bleed into labels, tier reveal, or camera.
+  const colorNeighbors = colorFocusedNodeId
+    ? world.neighborMap.get(colorFocusedNodeId) ?? EMPTY_NEIGHBOR_SET
+    : EMPTY_NEIGHBOR_SET;
 
   // Semantic-zoom tier gating (`model/tier-visibility.ts`): at the overview
   // entry only project + domain + hub draw; capabilities/elements (and any edge
@@ -397,6 +531,27 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       effectiveNodeAlpha(tierAlpha, isEgoMember, isPairMember ? 1 : (egoRevealById.get(node.id) ?? 0)),
     );
   }
+
+  // S8 결함 1 — 펼친 부모(파선 오라 대상) + 그 디스크(부모 + contains 하위 전이
+  // 폐포) 집합. 배경 dim 은 "확장 중" 무관 노드에만 걸어야 하므로 디스크 멤버를
+  // 미리 모은다. 확장이 없으면 둘 다 비어 회귀 0. ego(`이웃 +N`) 칩은 제외.
+  // 엣지 루프의 depends 억제(고팬아웃 배치-공개 처방 4)도 `anyExpanded` 를
+  // 읽으므로 엣지 그리기 **앞**에서 계산한다.
+  const expandedParentIds = new Set<string>();
+  const expandedDiscIds = new Set<string>();
+  for (const chip of clusterChips) {
+    if (!chip.expanded || chip.ego) continue;
+    expandedParentIds.add(chip.parentId);
+    const stack = [chip.parentId];
+    while (stack.length > 0) {
+      const id = stack.pop() as string;
+      if (expandedDiscIds.has(id)) continue;
+      expandedDiscIds.add(id);
+      const children = world.childrenByParent.get(id);
+      if (children) stack.push(...children);
+    }
+  }
+  const anyExpanded = expandedParentIds.size > 0;
 
   // Design Guardian 승인 처방 E — 선택(ego) 시 인시던트 contains 엣지 코멧
   // 캡. `topology-physics-step.ts`가 위상 전진을 게이트하는 것과 정확히 같은
@@ -442,7 +597,23 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         (emphasizedNeighborId !== null &&
           touches &&
           (edge.sourceId === emphasizedNeighborId || edge.targetId === emphasizedNeighborId));
-      const edgeEgoState = resolveEdgeEgoStateWithPair(touches, focusedNodeId, selectedEdge, isSelectedEdge);
+      let edgeEgoState = resolveEdgeEgoStateWithPair(touches, focusedNodeId, selectedEdge, isSelectedEdge);
+      // 고팬아웃 배치-공개(2026-07) 처방 4 — 펼침 중 depends 억제. 배치 자식이
+      // DOI 순으로 드러나는 동안 무관한 depends 실타래가 지도를 뒤덮으면 방금
+      // 드러난 소수가 안 읽힌다. anyExpanded 이고 contains 가 아니며(계층 실선은
+      // 유지) 이미 ego/선택/호버/emphasis 로 살아있지 않은 depends 엣지는 dim
+      // 잉크로 강등한다. 자식 hover/ego 시 touches/emphasized/isSelected 가 참이라
+      // 기존 코멧/강조 규칙이 그 엣지를 되살린다(회귀 0).
+      if (
+        anyExpanded &&
+        kind !== "contains" &&
+        edgeEgoState !== "ego" &&
+        !isSelectedEdge &&
+        !emphasized &&
+        !touches
+      ) {
+        edgeEgoState = "dim";
+      }
       ctx.globalAlpha = passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha;
       tracesDraw(
         ctx,
@@ -498,24 +669,22 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ctx.globalAlpha = 1;
   }
 
-  // S8 결함 1 — 펼친 부모(파선 오라 대상) + 그 디스크(부모 + contains 하위 전이
-  // 폐포) 집합. 배경 dim 은 "확장 중" 무관 노드에만 걸어야 하므로 디스크 멤버를
-  // 미리 모은다. 확장이 없으면 둘 다 비어 회귀 0. ego(`이웃 +N`) 칩은 제외.
-  const expandedParentIds = new Set<string>();
-  const expandedDiscIds = new Set<string>();
-  for (const chip of clusterChips) {
-    if (!chip.expanded || chip.ego) continue;
-    expandedParentIds.add(chip.parentId);
-    const stack = [chip.parentId];
-    while (stack.length > 0) {
-      const id = stack.pop() as string;
-      if (expandedDiscIds.has(id)) continue;
-      expandedDiscIds.add(id);
-      const children = world.childrenByParent.get(id);
-      if (children) stack.push(...children);
+  // rank7 — a just-expanded disc child's reveal multiplier = its NEAREST
+  // expanded-ancestor parent's ramp (walk contains-parent chain up). Already-
+  // expanded parents sit at ramp 1 → multiply-by-1 (no regression); a parent
+  // still ramping fades its direct children (and deeper descendants) IN. Nodes
+  // outside any expanded disc → 1.
+  const nearestExpandedRevealMul = (nodeId: string): number => {
+    if (!chipRevealById || expandedParentIds.size === 0) return 1;
+    let cursor = world.nodeById.get(nodeId)?.parentId ?? null;
+    let guard = 0;
+    while (cursor && guard < 64) {
+      if (expandedParentIds.has(cursor)) return chipRevealById.get(cursor) ?? 1;
+      cursor = world.nodeById.get(cursor)?.parentId ?? null;
+      guard += 1;
     }
-  }
-  const anyExpanded = expandedParentIds.size > 0;
+    return 1;
+  };
 
   for (const node of world.nodes) {
     // 밀도 게이트: 접힌 부모의 서브트리 노드는 칩으로 대체되어 그리지 않는다.
@@ -523,17 +692,42 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const tierAlpha = effectiveAlphaById.get(node.id) ?? 1;
     if (tierAlpha <= 0.02) continue;
     const egoState = resolveNodeEgoStateWithPair(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
+    // Color signature uses the RETAINED focus classification (persists through a
+    // deselect fade) + this node's focus ramp — everything else keeps the live
+    // `egoState`.
+    const colorEgoState = resolveNodeEgoStateWithPair(node.id, colorFocusedNodeId, colorNeighbors, colorSelectedEdge);
+    const focusRamp = focusRampById.get(node.id) ?? 0;
     const emphasis = emphasisById.get(node.id) ?? 0;
     const isEmphasizedNeighbor = emphasizedNeighborId !== null && node.id === emphasizedNeighborId && egoState === "neighbor";
-    const visual = resolveNodeVisual(node, egoState, emphasis, focusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion);
+    const visual = resolveNodeVisual(node, colorEgoState, emphasis, colorFocusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion, focusRamp);
 
     const baseRadius = radiusForKind(node.kind, tokens) * node.magnitudeScale;
+    // rank8 — new-node appear ramp: micro scale 0.6→1 + alpha 0→1. rank7 —
+    // just-expanded disc child reveal: alpha ×= nearest expanded parent's ramp.
+    // Both default to 1 (no map / existing node / not in an expanding disc), so
+    // steady state is unchanged (regression 0).
+    const appear = Math.min(1, Math.max(0, appearById?.get(node.id) ?? 1));
+    // 고팬아웃 배치-공개 — 배치로 드러나는 자식은 per-child stagger 램프
+    // (`batchAppearById`)가 부모 그룹 페이드(`nearestExpandedRevealMul`)를
+    // 대체한다(이중 페이드 방지) + 미세 appearScale 을 이 값으로 몬다. 배치
+    // 자식이 아니면 기존 그룹/월드-등장 경로(회귀 0).
+    const batchAppear = batchAppearById?.get(node.id);
+    const revealMul =
+      batchAppear !== undefined
+        ? Math.min(1, Math.max(0, batchAppear))
+        : Math.min(1, Math.max(0, nearestExpandedRevealMul(node.id)));
+    const scaleDriver = batchAppear !== undefined ? Math.min(1, Math.max(0, batchAppear)) : appear;
+    const appearScale = 0.6 + 0.4 * scaleDriver;
+    const appearRevealAlpha = appear * revealMul;
     let breathe = 1;
     if (visual.breatheEnabled) {
       breathe = 1 + tokens.breatheAmplitude * Math.sin((now / 1000) * tokens.breatheFreqRad + phaseForId(node.id));
     }
-    let effRadius = baseRadius * breathe;
-    if (egoState === "center") effRadius *= 1.12;
+    let effRadius = baseRadius * breathe * appearScale;
+    // Center node grows 1→1.12 ON the focus ramp (eases in with the dive, back
+    // out on deselect) — retained `colorEgoState` so the shrink survives the
+    // deselect fade.
+    if (colorEgoState === "center") effRadius *= 1 + 0.12 * Math.min(1, Math.max(0, focusRamp));
     if (!focusedNodeId) {
       effRadius += emphasis * (node.id === hoveredNodeId ? baseRadius * 0.16 : baseRadius * 0.08);
     } else if (isEmphasizedNeighbor) {
@@ -566,7 +760,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         ? BACKGROUND_DIM_WHEN_EXPANDED
         : 1;
 
-    ctx.globalAlpha = tierAlpha * realmClarityAlpha * backgroundDim;
+    ctx.globalAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha;
     // Sheen top stop = lerp(fill, tint, blend) — resolved here (token layer)
     // so `render/node-shapes.ts` stays token-free and pure.
     const sheenTop = lerpColorHex(visual.fill, tokens.nodeSheenTint, tokens.nodeSheenBlend);
@@ -595,7 +789,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         screenY: screen.y,
         screenRadius,
         farT,
-        egoState,
+        // Rings (selection double-ring, hub, project decor) follow the RETAINED
+        // color ego so the selection ring holds through the deselect fade and
+        // clears only once the ramp reaches 0 — instead of snapping off the
+        // instant `focusedNodeId` goes null (④). Equals live `egoState` while a
+        // selection is active.
+        egoState: colorEgoState,
         fill: visual.fill,
         stroke: visual.stroke,
         lineWidth: visual.lineWidth,
@@ -604,6 +803,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         sheenTop,
         countLabel: showCount ? String(node.count) : null,
         isHovered,
+        // rank5 — hover ring alpha rides this node's hover-ripple emphasis
+        // (same scalar the body wake uses) so it fades up instead of hard-popping.
+        hoverEmphasis: emphasis,
         selectionPulse: selectionPulseVisual,
         agentFocus: agentFocusNodeId !== null && node.id === agentFocusNodeId,
         now,
@@ -637,7 +839,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         screenY: screen.y,
         screenRadius,
         color: egoState === "dim" ? tokens.nodeStrokeDim : visual.stroke,
-        alpha: farT * tierAlpha * realmClarityAlpha * backgroundDim,
+        alpha: farT * tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha,
       });
     }
 
@@ -650,7 +852,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     if (footprintRank !== undefined) {
       const ringStyle = footprintRingStyle(footprintRank);
       ctx.save();
-      ctx.globalAlpha = tierAlpha * realmClarityAlpha * backgroundDim * ringStyle.alpha;
+      ctx.globalAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha * ringStyle.alpha;
       ctx.strokeStyle = tokens.edgeSelected;
       ctx.lineWidth = ringStyle.lineWidth;
       ctx.beginPath();
@@ -709,9 +911,25 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // 티어로 사라지면 칩도 사라진다. 미확장 접힘 칩의 자식/엣지는 이미 위에서
   // 스킵됐다. anchor 는 월드 좌표라 카메라 팬/줌을 함께 탄다. ---
   const chipScale = clusterChipScale(camera.scale.value);
+  // 그룹 A — hover 이징 앵커 정리: hover 대상이 바뀌거나 사라지면 리셋해
+  // 다시 hover 될 때 램프가 0 부터 다시 오르게 한다(스냅 방지).
+  if (clusterChipHoverAnim !== null && clusterChipHoverAnim.id !== hoveredClusterId) {
+    clusterChipHoverAnim = null;
+  }
   for (const chip of clusterChips) {
     const parentAlpha = effectiveAlphaById.get(chip.parentId) ?? 1;
     if (parentAlpha <= 0.02) continue;
+    const isChipHovered = hoveredClusterId === chip.parentId;
+    // hover 색 이징 진행도 0..1 — reduced-motion 이면 즉시 스냅.
+    let hoverT = 0;
+    if (isChipHovered) {
+      if (reducedMotion) {
+        hoverT = 1;
+      } else {
+        if (clusterChipHoverAnim === null) clusterChipHoverAnim = { id: chip.parentId, startAt: now };
+        hoverT = Math.min(1, (now - clusterChipHoverAnim.startAt) / CLUSTER_CHIP_HOVER_MS);
+      }
+    }
     const screen = project(chip.anchor.x, chip.anchor.y);
     // 부모→칩 점선 커넥터의 시작점 = 부모 노드의 라이브 스크린 좌표.
     const parentNode = world.nodeById.get(chip.parentId);
@@ -730,18 +948,27 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         screenY: screen.y,
         count: chip.count,
         expanded: chip.expanded,
-        hovered: hoveredClusterId === chip.parentId,
+        hovered: isChipHovered,
+        hoverT,
+        // rank7 — ego(`+N`) 칩은 reveal 대상 아님(항상 즉시). 그 외엔 램프값 전달.
+        revealT: chip.ego ? undefined : chipRevealById?.get(chip.parentId),
         scale: chipScale,
-        childKind: chip.childKind,
         parentScreenX: parentScreen?.x,
         parentScreenY: parentScreen?.y,
         nodeScreenRadius,
       },
       {
+        // rest = 조용한 중립 pill(border=nodeStrokeDomain) — 진짜 노드 선택
+        // 인디고와 경쟁 안 함. `＋`=인디고, 숫자=중립 numeralFace(포커스 중에도
+        // 포커스 노드가 attention winner). hover 에서만 인디고로 깨어난다.
         surface: tokens.nodeFillDim,
-        border: tokens.indigo,
-        glyph: tokens.nodeStrokeDim,
-        text: tokens.indigoBright,
+        border: tokens.nodeStrokeDomain,
+        plusInk: tokens.indigo,
+        numeralInk: tokens.numeralFace,
+        tether: tokens.edgeContains,
+        hoverSurface: tokens.nodeFillCapability,
+        hoverBorder: tokens.indigo,
+        hoverInk: tokens.indigoBright,
       },
     );
     ctx.globalAlpha = 1;
@@ -775,18 +1002,37 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // Label top-K LOD (S3 마감 폴리시, fable 설계): at the overview/spine and mid
   // (circuit) bands the label budget goes to the highest-degree nodes; at the
   // deepest element zoom the budget lifts and every label returns. Exempt from
-  // the budget: ego focus members, the hovered node, and the children of an
-  // EXPANDED cluster disc (you clicked the chip to read them).
+  // the budget: ego focus members and the hovered node only.
   const applyLabelTopK = classifyZoomTier(zoomRatio) !== "element";
+  // High-fan disc 밀도 처방: an expanded phyllotaxis disc can hold dozens–
+  // hundreds of children. Blanket-exempting them all (the old behavior) punched
+  // a wall of ~60 labels across the map. Instead, per disc only the DOI top-K
+  // children (rankEgoNeighborsByDOI: domain > capability > element → degree →
+  // slug) are eligible to carry a label; they still compete in the normal
+  // LABEL_TOP_K budget, and every child past the cut renders as a dot (hover/ego
+  // re-labels it individually). `expandedDiscChildIds` = all expanded children
+  // (to force the non-eligible ones to dots); `discLabelEligibleIds` = the
+  // per-disc DOI winners.
   const expandedDiscChildIds = new Set<string>();
-  if (applyLabelTopK) {
+  const discLabelEligibleIds = (() => {
+    if (!applyLabelTopK) return new Set<string>();
+    const rankedByDisc: string[][] = [];
     for (const chip of clusterChips) {
       if (!chip.expanded) continue;
-      for (const childId of world.childrenByParent.get(chip.parentId) ?? []) {
-        expandedDiscChildIds.add(childId);
-      }
+      const childIds = world.childrenByParent.get(chip.parentId) ?? [];
+      for (const id of childIds) expandedDiscChildIds.add(id);
+      rankedByDisc.push(
+        rankEgoNeighborsByDOI(
+          childIds.map((id) => ({
+            id,
+            kind: world.nodeById.get(id)?.kind ?? "element",
+            degree: world.neighborMap.get(id)?.size ?? 0,
+          })),
+        ),
+      );
     }
-  }
+    return selectDiscLabelEligible(rankedByDisc, DISC_LABEL_TOP_K);
+  })();
   const labelRankEntries: LabelRankEntry[] = [];
   const labelCandidates: LabelCandidate<LabelPayload>[] = [];
   world.nodes.forEach((node, index) => {
@@ -801,6 +1047,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     if (revealAlpha <= 0.02) return;
     const egoState = resolveNodeEgoStateWithPair(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
     const isHovered = hoveredNodeId !== null && node.id === hoveredNodeId;
+    // High-fan disc density gate: an expanded-disc child that didn't make its
+    // disc's DOI top-K stays a DOT (no label candidate) — unless it's the
+    // hovered node or an ego member, which re-earn a label. Skipping here (before
+    // the text measure) also avoids the wasted layout work for the dropped ones.
+    if (
+      applyLabelTopK &&
+      expandedDiscChildIds.has(node.id) &&
+      !discLabelEligibleIds.has(node.id) &&
+      egoState !== "center" &&
+      egoState !== "neighbor" &&
+      !isHovered
+    ) {
+      return;
+    }
     const compactAlpha = computeLabelAlpha({ kind: node.kind, farT, egoState, isHovered, revealAlpha });
     // Domain draws TWO effects at once (the always-readable compact label AND
     // the separate far-field watermark) — a candidate must be built whenever
@@ -843,11 +1103,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const shiftX = anchorX - screen.x;
     const shiftY = clampedAnchorY - anchorY;
     if (applyLabelTopK) {
-      const exempt =
-        egoState === "center" ||
-        egoState === "neighbor" ||
-        isHovered ||
-        expandedDiscChildIds.has(node.id);
+      // Real exempt = ego focus members + the hovered node only. Expanded-disc
+      // children are NOT exempt: the ones that survived the per-disc DOI cut
+      // above compete in the normal LABEL_TOP_K budget like any other node.
+      const exempt = egoState === "center" || egoState === "neighbor" || isHovered;
       labelRankEntries.push({ id: node.id, degree: world.neighborMap.get(node.id)?.size ?? 0, exempt });
     }
     labelCandidates.push({
@@ -885,7 +1144,45 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       })()
     : labelCandidates;
 
-  for (const { payload } of greedyPlaceLabels(placedLabelCandidates)) {
+  // rank9 — greedy 배치에 직전 프레임 placed 우대(히스테리시스)로 같은 우선순위
+  // 안의 LOD churn 을 억제한다. 결과 placed id 집합을 다음 프레임 우대 기준으로
+  // 남긴다.
+  const placedResult = greedyPlaceLabels(placedLabelCandidates, (c) =>
+    prevPlacedLabelIds.has(c.payload.nodeId),
+  );
+  const placedIds = new Set<string>(placedResult.map((c) => c.payload.nodeId));
+
+  // rank9 — LOD present 램프. 화면 안 후보별로 placed(1)/미배치(0) 를 향해
+  // tipFadeMs(120ms, 재사용)에 걸쳐 선형 페이드한다. placed 는 램프로 페이드-인,
+  // 방금 이탈했지만 아직 화면 안인 후보는 잔여 램프로 페이드-아웃(하드 컷 제거).
+  // 화면 밖으로 나간 id 는 컬링이므로 램프에서 제거(다음 등장 시 0 부터 재상승).
+  // `labelPresentById` 미제공(기존 테스트 경로)이면 종전과 동일하게 placed 만
+  // 알파 1 로 그린다(회귀 0).
+  const presenceById = labelPresentById;
+  const drawList: { payload: LabelPayload; presenceAlpha: number }[] = [];
+  if (presenceById) {
+    const dtSec = lastLabelRampNow === 0 ? 0 : Math.min((now - lastLabelRampNow) / 1000, 0.05);
+    lastLabelRampNow = now;
+    const stepPer = tokens.tipFadeMs > 0 ? dtSec / (tokens.tipFadeMs / 1000) : 1;
+    const onScreenIds = new Set<string>();
+    for (const candidate of labelCandidates) {
+      const id = candidate.payload.nodeId;
+      onScreenIds.add(id);
+      const target = placedIds.has(id) ? 1 : 0;
+      const prev = presenceById.get(id) ?? (target === 1 && prevPlacedLabelIds.has(id) ? 1 : 0);
+      const next = reducedMotion
+        ? target
+        : Math.min(1, Math.max(0, prev + (target === 1 ? stepPer : -stepPer)));
+      presenceById.set(id, next);
+      if (next > 0.02) drawList.push({ payload: candidate.payload, presenceAlpha: next });
+    }
+    for (const id of [...presenceById.keys()]) if (!onScreenIds.has(id)) presenceById.delete(id);
+  } else {
+    for (const c of placedResult) drawList.push({ payload: c.payload, presenceAlpha: 1 });
+  }
+  prevPlacedLabelIds = placedIds;
+
+  for (const { payload, presenceAlpha } of drawList) {
     labelsDraw(
       ctx,
       {
@@ -900,6 +1197,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         revealAlpha: payload.revealAlpha,
         agentFocus: payload.agentFocus,
         fontScale: labelScale,
+        presenceAlpha,
       },
       {
         labelProject: tokens.labelProject,

@@ -103,9 +103,27 @@ export function resolveLabelPriority(input: LabelPriorityInput): number {
  * Greedy priority suppression: sort by priority (then stable `order`), place a
  * label only if its bbox doesn't overlap any already-placed one. Deterministic —
  * identical input → identical placed list.
+ *
+ * rank9 — optional `isPreferred` hysteresis: within the SAME priority tier, a
+ * candidate the predicate marks (e.g. it was placed last frame) sorts ahead of a
+ * non-preferred one, so an already-showing label keeps its slot instead of being
+ * evicted by an equal-priority newcomer that merely has a lower `order`. Kind
+ * priority still dominates (a domain never yields to a preferred element), so
+ * this only breaks ties — enough to stop same-tier LOD churn without changing the
+ * ladder. Omitted → identical to the pre-rank9 behavior (deterministic).
  */
-export function greedyPlaceLabels<T>(candidates: readonly LabelCandidate<T>[]): LabelCandidate<T>[] {
-  const sorted = [...candidates].sort((a, b) => a.priority - b.priority || a.order - b.order);
+export function greedyPlaceLabels<T>(
+  candidates: readonly LabelCandidate<T>[],
+  isPreferred?: (candidate: LabelCandidate<T>) => boolean,
+): LabelCandidate<T>[] {
+  const pref = isPreferred ?? (() => false);
+  const sorted = [...candidates].sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    const pa = pref(a) ? 0 : 1;
+    const pb = pref(b) ? 0 : 1;
+    if (pa !== pb) return pa - pb;
+    return a.order - b.order;
+  });
   const placed: LabelCandidate<T>[] = [];
   for (const candidate of sorted) {
     if (placed.some((p) => bboxesOverlap(p.bbox, candidate.bbox))) continue;

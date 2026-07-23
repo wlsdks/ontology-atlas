@@ -48,6 +48,26 @@ export const EGO_NEIGHBOR_LIMIT = 24;
  */
 export const EGO_NEIGHBOR_CHIP_ID = "__ego_neighbors__";
 
+/**
+ * 고팬아웃 배치-공개(2026-07) — 펼친 클러스터 부모의 **잔여 배치**를 대신하는
+ * `+N 더보기` 칩의 합성 parentId prefix. `이웃 +N` 칩(EGO_NEIGHBOR_CHIP_ID)과
+ * 동형이되, 펼침은 여러 부모가 동시에 존재할 수 있어 단일 예약어로는 부족하다 —
+ * 실제 부모 id 를 prefix 로 감싸 각 부모의 잔여 칩을 구분한다. 포인터 핸들러가
+ * 이 접두어를 보고 URL 토글(접기) 대신 **그 부모의 다음 배치**를 점등한다.
+ * 실제 부모 slug 와 충돌하지 않게 예약 접두어를 쓴다.
+ */
+export const CLUSTER_MORE_CHIP_PREFIX = "__cluster_more__:";
+
+/** 실제 부모 id → `+N 더보기` 칩의 합성 id. */
+export function clusterMoreChipId(parentId: string): string {
+  return CLUSTER_MORE_CHIP_PREFIX + parentId;
+}
+
+/** 합성 `+N 더보기` 칩 id → 실제 부모 id(아니면 null). draw/hit/pointer 공용. */
+export function parseClusterMoreChipId(chipId: string): string | null {
+  return chipId.startsWith(CLUSTER_MORE_CHIP_PREFIX) ? chipId.slice(CLUSTER_MORE_CHIP_PREFIX.length) : null;
+}
+
 export interface EgoNeighborRankEntry {
   id: string;
   kind: string;
@@ -264,4 +284,28 @@ export function stepEmphasis(
     return currentEmphasis + (1 - currentEmphasis) * (1 - Math.exp(-dt / riseTau));
   }
   return currentEmphasis + (0 - currentEmphasis) * (1 - Math.exp(-dt / decayTau));
+}
+
+/**
+ * One exponential-smoothing step of a single node's **focus ramp** — a scalar
+ * 0..1 that rises toward 1 while ANY focus is active (a clicked node OR a
+ * selected edge-pair) and falls toward 0 when none is. It is the shared time
+ * base for the click-focus signature: `topology-frame-draw.ts#resolveNodeVisual`
+ * lerps each node's normal color toward its dim/ego target by this factor (and
+ * eases the center node's radius 1→1.12), so the dim/neighbor/center color swap
+ * a click triggers ramps IN with the camera dive instead of hard-cutting, and a
+ * deselect ramps it back OUT (owner headline: "하드 컷으로 읽히지 않게"). One
+ * symmetric τ (`--topology-v2-focus-dim-tau`) — the color transition should feel
+ * the same entering and leaving. Sibling to `stepEmphasis` (hover ripple) and
+ * the ego-reveal ramp; kept separate because those gate on narrower conditions
+ * (hover ego-set / tier exemption) than "is the scene focused at all".
+ *
+ * @param current 0..1 previous ramp value
+ * @param focusActive true if a node OR edge-pair focus is live this frame
+ * @param dt elapsed seconds since the last step
+ * @param tau `--topology-v2-focus-dim-tau` (≈0.16s)
+ */
+export function stepFocusRamp(current: number, focusActive: boolean, dt: number, tau: number): number {
+  const target = focusActive ? 1 : 0;
+  return current + (target - current) * (1 - Math.exp(-dt / tau));
 }

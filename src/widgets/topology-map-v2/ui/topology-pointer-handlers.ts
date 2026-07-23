@@ -25,7 +25,7 @@ import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent }
 import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
 import type { CameraTween } from "../model/camera-easing";
 import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
-import { EGO_NEIGHBOR_CHIP_ID, scheduleRipple } from "../model/focus-state";
+import { EGO_NEIGHBOR_CHIP_ID, parseClusterMoreChipId, scheduleRipple } from "../model/focus-state";
 import { type Pulse } from "../render/edge-fireflies";
 import type { ForceSimulation } from "../model/force-layout";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable, isSpineOnlyZoom } from "../model/tier-visibility";
@@ -100,6 +100,13 @@ export interface PointerHandlerRefs {
    * once at `pointerdown` and reuse it for the whole gesture instead.
    */
   canvasRectRef: Ref<{ left: number; top: number } | null>;
+  /**
+   * rank4 — the canvas element itself, so `pointerup`/`pointercancel` (which
+   * carry no event target of their own here) can restore the cursor after a
+   * node pin-drag ends ("grabbing" → default). Optional; omitted keeps the
+   * cursor unmanaged on release (the next `pointermove` still recomputes it).
+   */
+  canvasRef?: Ref<HTMLCanvasElement | null>;
   focusedSlugRef: Ref<string | null>;
   hoveredNodeIdRef: Ref<string | null>;
   rippleStartRef: Ref<Map<string, number>>;
@@ -195,6 +202,12 @@ export interface PointerHandlerRefs {
   /** S2 파트 3a — `이웃 +N` 칩 클릭 → 다음 이웃 배치 점등(URL 토글과 별개). */
   onExpandEgoNeighbors?: () => void;
   /**
+   * 고팬아웃 배치-공개(2026-07) — 펼친 클러스터 부모의 `+N 더보기` 칩 클릭 →
+   * 그 부모의 다음 배치 점등(URL 토글=접기 와 별개, 세션 임시). 인자는 합성
+   * 칩 id 에서 해석한 **실제 부모** id.
+   */
+  onExpandClusterBatch?: (parentId: string) => void;
+  /**
    * W2-B node right-click context menu. Called with the hit node's id and the
    * event's viewport-space coordinates (`clientX`/`clientY`, matching the
    * cursor-anchored menu position contract). Omitted keeps `handleContextMenu`
@@ -245,6 +258,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     dragHistoryRef,
     camStartAtDownRef,
     canvasRectRef,
+    canvasRef,
     focusedSlugRef,
     hoveredNodeIdRef,
     rippleStartRef,
@@ -271,6 +285,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     onToggleCluster,
     onHoverCluster,
     onExpandEgoNeighbors,
+    onExpandClusterBatch,
   } = refs;
 
   /**
@@ -512,6 +527,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         const pin = computePinWorld(pw.x, pw.y, drag.offset);
         sim.movePin(pin.x, pin.y);
         heatRef.current = NODE_DRAG_HEAT_MS;
+        // rank4 — 노드를 쥐고 옮기는 동안 "grabbing" 커서(순수 CSS). 놓으면
+        // pointerup/cancel 이 복원한다.
+        e.currentTarget.style.cursor = "grabbing";
         return;
       }
 
@@ -565,8 +583,15 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         hoveredEdgeRef.current = payload;
         onHoverEdge(payload, payload ? { x: e.clientX, y: e.clientY } : null);
       }
-      // 커서 어포던스 — "잡을 수 있으면 읽을 수 있다".
-      e.currentTarget.style.cursor = edgeHit !== null || hitNodeId !== null ? "pointer" : "";
+      // 커서 어포던스 — "잡을 수 있으면 읽을 수 있다". rank4 — 드래그 가능한
+      // 노드 위에서는 "grab"(집을 수 있다), 엣지는 "pointer"(클릭). 모든 가시
+      // 노드는 sim 에 있어 pin-drag 가능하므로 노드 호버 = grab.
+      const draggableHit = hitNodeId !== null && (simRef.current?.hasNode(hitNodeId) ?? false);
+      e.currentTarget.style.cursor = draggableHit
+        ? "grab"
+        : edgeHit !== null || hitNodeId !== null
+          ? "pointer"
+          : "";
     }
 
     // 밀도 게이트 — 클러스터 칩 호버: 커서 pointer + 보더 강조 미러(노드
@@ -586,12 +611,17 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
             clearEdgeHover();
             const chip = clusterChipsRef?.current?.find((c) => c.parentId === chipHit);
             if (chip) {
+              // 고팬아웃 배치-공개 — `+N 더보기` 칩은 합성 id 라 실제 부모로
+              // 해석해 툴팁이 부모 제목/자손 수를 찾게 한다(기존 접힘 툴팁 문구
+              // 재사용 — 새 i18n 없이 "접힘 N · 하위 전체 M"). expanded 는
+              // 이미 false(접힘 pill)라 접힘 문구가 뜬다.
+              const realParent = parseClusterMoreChipId(chip.parentId) ?? chip.parentId;
               onHoverCluster({
-                parentId: chip.parentId,
+                parentId: realParent,
                 count: chip.count,
                 // 패널3-S6 — 부모의 하위 전체 자손 수(노드 뱃지와 동일 출처
                 // `WorldNode.count` = descendantCount). 라이브 월드에서 조회.
-                descendantTotal: world.nodeById.get(chip.parentId)?.count ?? chip.count,
+                descendantTotal: world.nodeById.get(realParent)?.count ?? chip.count,
                 expanded: chip.expanded,
                 position: { x: e.clientX, y: e.clientY },
               });
@@ -635,6 +665,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       // through the settle burst above (B2), cleared once heat reaches 0
       // (`use-topology-loop.ts`'s rAF loop).
       dragStartPosRef.current = null;
+      // rank4 — 드래그가 끝났으니 "grabbing" 커서를 해제한다(다음 pointermove 가
+      // 호버 여부에 따라 grab/pointer/"" 로 다시 세팅).
+      if (canvasRef?.current) canvasRef.current.style.cursor = "";
       return;
     }
 
@@ -711,11 +744,24 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // 밀도 게이트 — 빈 공간(노드 미히트) 클릭이 클러스터 칩 위면 확장 토글.
     // 엣지 선택/바닥 해제보다 우선한다(칩은 명시적 대화형 크롬). 노드 클릭=ego
     // 포커스 계약은 위 select 분기에서 이미 처리돼 여기 도달하지 않는다.
-    if (commitClick && commitClick.nodeId === null && clickPoint && (onToggleCluster || onExpandEgoNeighbors)) {
+    if (
+      commitClick &&
+      commitClick.nodeId === null &&
+      clickPoint &&
+      (onToggleCluster || onExpandEgoNeighbors || onExpandClusterBatch)
+    ) {
       const chipParent = hitTestClusterChip(clickPoint.x, clickPoint.y);
       if (chipParent === EGO_NEIGHBOR_CHIP_ID) {
         // S2 파트 3a — `이웃 +N` 칩: URL 토글이 아니라 다음 이웃 배치를 점등.
         onExpandEgoNeighbors?.();
+        clearClusterHover();
+        return;
+      }
+      // 고팬아웃 배치-공개 — `+N 더보기` 칩(합성 id): URL 토글(접기)이 아니라
+      // 그 부모의 다음 배치를 점등. 실제 부모 id 로 해석해 전달.
+      const moreParent = chipParent === null ? null : parseClusterMoreChipId(chipParent);
+      if (moreParent !== null) {
+        onExpandClusterBatch?.(moreParent);
         clearClusterHover();
         return;
       }
@@ -774,6 +820,8 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       nodeDragRef.current = null;
       heatRef.current = Math.max(heatRef.current, tokens?.nodeReleaseSettleMs ?? 900);
       dragStartPosRef.current = null;
+      // rank4 — 취소도 "grabbing" 커서를 복원한다.
+      if (canvasRef?.current) canvasRef.current.style.cursor = "";
     }
     if (!tokens) {
       pointerMachineRef.current = INITIAL_POINTER_MACHINE_STATE;

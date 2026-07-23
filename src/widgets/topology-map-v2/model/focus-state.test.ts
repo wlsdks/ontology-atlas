@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clusterMoreChipId,
+  CLUSTER_MORE_CHIP_PREFIX,
   EGO_NEIGHBOR_LIMIT,
   isNodeEmphasisActive,
+  parseClusterMoreChipId,
   rankEgoNeighborsByDOI,
   resolveEdgeEgoState,
   resolveEdgeEgoStateWithPair,
@@ -12,6 +15,7 @@ import {
   scheduleRipple,
   selectiveEgoNeighbors,
   stepEmphasis,
+  stepFocusRamp,
   type EgoNeighborRankEntry,
 } from "./focus-state";
 
@@ -152,6 +156,34 @@ describe("stepEmphasis", () => {
   });
 });
 
+describe("stepFocusRamp (클릭 포커스 색 램프)", () => {
+  const TAU = 0.16;
+
+  it("rises toward 1 while a focus is active", () => {
+    // dt = tau -> factor = 1 - exp(-1) ≈ 0.6321206
+    expect(stepFocusRamp(0, true, TAU, TAU)).toBeCloseTo(0.6321206, 5);
+  });
+
+  it("falls toward 0 when no focus is active, symmetric with the rise", () => {
+    // from 1: next = 1 + (0 - 1) * 0.6321206 = 0.3678794
+    expect(stepFocusRamp(1, false, TAU, TAU)).toBeCloseTo(0.3678794, 5);
+  });
+
+  it("stays within [0,1] and settles near 1 over many active steps", () => {
+    let ramp = 0;
+    for (let i = 0; i < 120; i += 1) ramp = stepFocusRamp(ramp, true, 1 / 60, TAU);
+    expect(ramp).toBeGreaterThan(0.99);
+    expect(ramp).toBeLessThanOrEqual(1);
+  });
+
+  it("decays back to ~0 over many inactive steps (deselect fade-out)", () => {
+    let ramp = 1;
+    for (let i = 0; i < 120; i += 1) ramp = stepFocusRamp(ramp, false, 1 / 60, TAU);
+    expect(ramp).toBeLessThan(0.01);
+    expect(ramp).toBeGreaterThanOrEqual(0);
+  });
+});
+
 describe("edge pair focus (선 선택 = 페어 포커스)", () => {
   const pair = { sourceId: "a", targetId: "b" };
 
@@ -205,5 +237,23 @@ describe("selectiveEgoNeighbors (S2 파트 3a)", () => {
     expect(selectiveEgoNeighbors(ids, 2).visibleNeighbors.size).toBe(48);
     expect(selectiveEgoNeighbors(ids, 3).hiddenCount).toBe(0);
     expect(selectiveEgoNeighbors(ids, 9).hiddenCount).toBe(0);
+  });
+});
+
+describe("clusterMoreChipId / parseClusterMoreChipId (고팬아웃 배치-공개)", () => {
+  it("실제 부모 id 를 예약 접두어로 감싸고 다시 원복한다(왕복)", () => {
+    const wrapped = clusterMoreChipId("domain-onboarding");
+    expect(wrapped).toBe(`${CLUSTER_MORE_CHIP_PREFIX}domain-onboarding`);
+    expect(parseClusterMoreChipId(wrapped)).toBe("domain-onboarding");
+  });
+
+  it("합성 id 가 아니면 null — 실제 노드 id/ego 칩 id 는 배치 분기로 새지 않는다", () => {
+    expect(parseClusterMoreChipId("domain-onboarding")).toBeNull();
+    expect(parseClusterMoreChipId("__ego_neighbors__")).toBeNull();
+    expect(parseClusterMoreChipId("")).toBeNull();
+  });
+
+  it("빈 부모 id 도 접두어만으로 왕복(경계)", () => {
+    expect(parseClusterMoreChipId(clusterMoreChipId(""))).toBe("");
   });
 });

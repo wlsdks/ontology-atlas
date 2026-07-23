@@ -1,14 +1,22 @@
 /**
  * 밀도 게이트 슬라이스 (fable 설계) — 클러스터 칩의 순수 Canvas 2D 드로우.
- * 접힌 부모의 자식들을 대신하는 "칩"(겹친 노드 글리프 스택 + rounded-rect +
- * mono `+N` / `− N`)을 그린다. 색은 무채색 surface + 인디고 1계열만
+ * 접힌 부모의 자식들을 대신하는 "칩"(rounded-rect pill + mono composite
+ * `＋N` + 디스클로저 caret)을 그린다. 색은 무채색 surface + 인디고 1계열만
  * (`docs/DESIGN-SYSTEM.md` 단일 인디고 헌장) — 새 hue/글로우 없음.
  *
- * S2 파트 5A (소유자 실보고 "칩이 안 예쁘다 / 무슨 의미인지 모르겠다"):
- * ① 겹친-노드 미니 글리프를 자식 kind(원=capability, 사각=element)로 반영해
- *    "무엇이 접혔나"를 형태로 읽히게, ② 부모→칩 짧은 점선 커넥터 1개로 소속을
- *    잇고, ③ 줌 스케일을 따라(`clusterChipScale`) 존재감 있게 키운다.
- *    펼침 라벨은 `− 63`(숫자 유지 — `−` 단독은 의미 상실).
+ * 그룹 A 리디자인 (소유자 실보고 "＋63 이 먼지처럼 읽힌다 / 무슨 의미인지
+ * 모르겠다"):
+ * ① 대비 ~1.1:1 로 먼지처럼 읽히던 겹친-노드 글리프 스택을 폐기하고, 선행
+ *    존에 단일 composite `＋N`(`＋`=인디고, 숫자=중립 numeralFace mono
+ *    tabular)으로 "접힌 묶음 N개"가 또렷한 한 덩어리로 읽히게 한다.
+ * ② rest 는 조용한 중립 pill(border=nodeStrokeDomain) — 진짜 노드 선택
+ *    인디고와 경쟁하지 않는다. hover 에서만 surface/border/ink 가 인디고로
+ *    깨어난다(색만 보간, ~150ms; transform/scale/글로우 금지). 카운트 뒤
+ *    소형 caret `›`(hover `⌄`)로 "열기 N" 어포던스.
+ * ③ 부모→칩 tether 는 depends 점선과 질감을 달리하고(dash [3,3],
+ *    strokeStyle edgeContains) 부모 끝점에 2px 인디고 dot 을 찍어 소속을 잇되
+ *    '엣지 수프'에 섞이지 않게 한다.
+ *    펼침 라벨은 부모 우상단 `−N` 코너 배지로 대칭 유지.
  *
  * 히트테스트(`ui/topology-pointer-handlers.ts`)와 드로우가 **같은 사각형**을
  * 써야 클릭 좌표가 어긋나지 않으므로, 사각형 계산은 이 파일의
@@ -17,14 +25,16 @@
  * 하나로 통일해 히트/드로우가 절대 어긋나지 않는다.
  */
 
+import { lerpColorHex } from "./grid";
+
 /** 칩 기준 높이(px, 스크린 스페이스 — `clusterChipScale` 로 줌 스케일을 곱한다). */
 export const CLUSTER_CHIP_HEIGHT = 28;
 /** mono 폰트 기준 크기(px). */
 const CHIP_FONT_SIZE = 13;
 /** mono 글자당 근사 폭(px) — 히트/드로우 폭 일치용 결정론 상수. */
 const CHIP_CHAR_WIDTH = 7.8;
-/** 겹친 노드 글리프 스택이 차지하는 왼쪽 폭. */
-const CHIP_GLYPH_WIDTH = 22;
+/** composite `＋N` 앞의 선행 존 폭(px) — pill 을 조이고 `＋`를 앉힌다. */
+const CHIP_GLYPH_WIDTH = 14;
 /** 텍스트 좌우 패딩. */
 const CHIP_PAD_X = 9;
 
@@ -129,7 +139,9 @@ export function drawClusterBadge(
   ctx.strokeStyle = colors.border;
   ctx.stroke();
 
-  ctx.fillStyle = colors.text;
+  // 배지 숫자도 중립 numeralFace — 포커스 중에도 포커스 노드가 attention
+  // winner 를 유지하도록 indigoBright 를 쓰지 않는다.
+  ctx.fillStyle = colors.numeralInk;
   ctx.font = `600 ${BADGE_FONT_SIZE * scale}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -155,14 +167,22 @@ export function clusterChipRect(
 }
 
 export interface ClusterChipColors {
-  /** 무채색 pill surface. */
+  /** rest pill surface(무채색 dim). */
   surface: string;
-  /** 인디고 1계열 얇은 보더. */
+  /** rest 얇은 보더(중립 nodeStrokeDomain) — 노드 선택 인디고와 경쟁 안 함. */
   border: string;
-  /** 겹친 노드 글리프 채움(무채색 dim). */
-  glyph: string;
-  /** `+N` / `− N` 텍스트(인디고 계열 또는 numeral face). */
-  text: string;
+  /** composite `＋` 글리프 rest 잉크(인디고). */
+  plusInk: string;
+  /** 카운트 숫자 + 펼침 배지 rest 잉크(중립 numeralFace, mono tabular). */
+  numeralInk: string;
+  /** 부모→칩 tether stroke(edgeContains — depends 잉크와 명도대 어긋냄). */
+  tether: string;
+  /** hover pill surface(nodeFillCapability). */
+  hoverSurface: string;
+  /** hover 보더(인디고). */
+  hoverBorder: string;
+  /** hover 시 `＋`/숫자 잉크(indigoBright). */
+  hoverInk: string;
 }
 
 /** 수동 rounded-rect 경로 (jsdom 등 `ctx.roundRect` 미구현 환경 방어). */
@@ -181,24 +201,6 @@ function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w:
   ctx.closePath();
 }
 
-/** 자식 kind 별 미니 글리프 모양 — capability=원, element/그외=사각(노드 형태 반영). */
-function glyphShapePath(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  half: number,
-  childKind: string | undefined,
-): void {
-  if (childKind === "capability") {
-    ctx.beginPath();
-    ctx.arc(cx, cy, half, 0, Math.PI * 2);
-    ctx.closePath();
-  } else {
-    // element/기타 = 살짝 둥근 사각(노드의 사각 실루엣 반영).
-    roundedRectPath(ctx, cx - half, cy - half, half * 2, half * 2, half * 0.35);
-  }
-}
-
 export interface ClusterChipDrawInput {
   /** 칩 중심 스크린 좌표. */
   screenX: number;
@@ -206,10 +208,21 @@ export interface ClusterChipDrawInput {
   count: number;
   expanded: boolean;
   hovered: boolean;
+  /**
+   * hover 이징 진행도 0..1(색만 보간). 프레임 루프가 `now` 로 ~150ms 램프를
+   * 만들어 넘긴다. prefers-reduced-motion 이면 hovered?1:0 으로 즉시 스냅.
+   * 미지정이면 `hovered` 로 폴백(0/1).
+   */
+  hoverT?: number;
+  /**
+   * rank7 — 펼침/접힘 reveal 램프 0..1(펼치면 1, 접히면 0 수렴, 루프가 넘김).
+   * 현재 표시되는 칩 형태(펼침=badge / 접힘=pill)의 알파를 이 값으로 페이드인해
+   * "툭 전환"을 없앤다: badge 알파 = revealT, pill 알파 = 1−revealT. 미지정이면
+   * 알파 1(하위호환 — 하드 표시). 색만/알파만 — 위치 이동 없음.
+   */
+  revealT?: number;
   /** 줌 스케일(카메라 스케일에서 `clusterChipScale` 로 유도). 기본 1. */
   scale?: number;
-  /** 접힌 자식의 kind — 미니 글리프 모양 결정(원/사각). */
-  childKind?: string;
   /** 부모 노드 스크린 좌표 — 있으면 부모→칩 짧은 점선 커넥터를 그린다. */
   parentScreenX?: number;
   parentScreenY?: number;
@@ -231,6 +244,16 @@ export function drawClusterChip(
   colors: ClusterChipColors,
 ): void {
   const scale = input.scale ?? 1;
+
+  // rank7 — 현재 형태(펼침=badge / 접힘=pill)의 알파를 reveal 램프로 페이드인.
+  // 미지정이면 1(하위호환). 호출부가 세팅한 baseAlpha(부모 티어 알파)에 곱한다.
+  const formAlpha =
+    input.revealT === undefined
+      ? 1
+      : Math.min(1, Math.max(0, input.expanded ? input.revealT : 1 - input.revealT));
+  const baseAlpha = ctx.globalAlpha;
+  if (formAlpha < 0.01) return;
+  ctx.globalAlpha = baseAlpha * formAlpha;
 
   // S10 결함 2 — 펼침 상태는 떠다니는 알약이 아니라 부모 노드 우상단 배지로
   // 그린다(파선 오라/라벨 겹침 원천 차단). 부모 좌표 + 노드 반지름이 있어야
@@ -254,61 +277,76 @@ export function drawClusterChip(
         colors,
       );
     }
+    ctx.globalAlpha = baseAlpha; // rank7 — reveal formAlpha 복원.
     return;
   }
 
   const label = clusterChipLabel(input.count, input.expanded);
   const rect = clusterChipRect(input.screenX, input.screenY, label, scale);
 
-  // 부모→칩 점선 커넥터 (소속이 읽히도록) — 접힘 전용. pill 을 나중에
-  // 채워 커넥터의 pill 안쪽 구간은 자연히 가려진다.
+  // hover 이징 — 색만 보간(transition-colors 성격). rest(조용한 중립) →
+  // hover(인디고로 깨어남). transform/scale/글로우 없음. hex 토큰 간 RGB lerp.
+  const t = input.hoverT ?? (input.hovered ? 1 : 0);
+  const mix = (rest: string, hover: string): string =>
+    t <= 0 ? rest : t >= 1 ? hover : lerpColorHex(rest, hover, t);
+  const surface = mix(colors.surface, colors.hoverSurface);
+  const border = mix(colors.border, colors.hoverBorder);
+  const plusColor = mix(colors.plusInk, colors.hoverInk);
+  const numColor = mix(colors.numeralInk, colors.hoverInk);
+
+  // 부모→칩 tether — depends 점선과 질감을 달리해(dash [3,3], strokeStyle
+  // edgeContains 로 의존 잉크와 명도대 어긋냄) '엣지 수프'에 안 섞이게. 부모
+  // 끝점에 2px 인디고 dot 으로 소속을 못 박는다. pill 을 나중에 채워 tether 의
+  // pill 안쪽 구간은 자연히 가려진다.
   if (input.parentScreenX !== undefined && input.parentScreenY !== undefined) {
     ctx.save();
-    ctx.setLineDash([2 * scale, 3 * scale]);
+    ctx.setLineDash([3 * scale, 3 * scale]);
     ctx.beginPath();
     ctx.moveTo(input.parentScreenX, input.parentScreenY);
     ctx.lineTo(input.screenX, input.screenY);
-    ctx.strokeStyle = colors.border;
+    ctx.strokeStyle = colors.tether;
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.setLineDash([]);
+    // 부모 끝점 앵커 dot — tether 시작점을 못 박아 소속을 읽히게.
+    ctx.beginPath();
+    ctx.arc(input.parentScreenX, input.parentScreenY, 2 * scale, 0, Math.PI * 2);
+    ctx.fillStyle = colors.plusInk;
+    ctx.fill();
     ctx.restore();
   }
 
   // pill
   roundedRectPath(ctx, rect.x, rect.y, rect.w, rect.h, rect.h / 2);
-  ctx.fillStyle = colors.surface;
+  ctx.fillStyle = surface;
   ctx.fill();
   ctx.lineWidth = input.hovered ? 1.5 : 1;
-  ctx.strokeStyle = colors.border;
+  ctx.strokeStyle = border;
   ctx.stroke();
 
-  // 겹친 노드 글리프 스택 — 숨은 자식 신호(자식 kind 반영, 2~3개 겹침). pill
-  // 위에 얹어 채움에 가려지지 않게. 접힘 전용(펼침은 위에서 배지로 반환됨).
-  {
-    const gy = input.screenY;
-    const gcx = rect.x + CHIP_GLYPH_WIDTH * 0.55 * scale;
-    const half = 4.4 * scale;
-    const step = 3.4 * scale;
-    // 뒤(우)→앞(좌) 순서로 겹쳐, 앞 글리프가 뒤 글리프를 일부 가리는 스택.
-    for (const dx of [step, 0, -step]) {
-      // 얇은 surface 링으로 글리프 간 분리(겹침이 뭉치지 않게).
-      ctx.fillStyle = colors.surface;
-      glyphShapePath(ctx, gcx + dx, gy, half + 1.1 * scale, input.childKind);
-      ctx.fill();
-      ctx.fillStyle = colors.glyph;
-      glyphShapePath(ctx, gcx + dx, gy, half, input.childKind);
-      ctx.fill();
-    }
-  }
-
-  // 텍스트 — glyph 오른쪽에 mono `+N`(접힘 전용).
-  ctx.fillStyle = colors.text;
+  // composite `＋N` + 디스클로저 caret — pill 중앙에 한 덩어리로. `＋`는 인디고,
+  // 숫자는 중립 numeralFace(mono tabular), caret 은 border 잉크로 "열기 N"
+  // 어포던스만. 히트박스는 위 rect 가 진실원이므로 텍스트는 자유롭게 중앙정렬.
   ctx.font = `600 ${CHIP_FONT_SIZE * scale}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  const textX = rect.x + (CHIP_GLYPH_WIDTH + CHIP_PAD_X * 0.5) * scale;
-  ctx.fillText(label, textX, input.screenY + 0.5 * scale);
+  const plus = "+";
+  const num = String(input.count);
+  const caret = ` ${input.hovered ? "⌄" : "›"}`;
+  const plusW = ctx.measureText(plus).width;
+  const numW = ctx.measureText(num).width;
+  const caretW = ctx.measureText(caret).width;
+  const ty = input.screenY + 0.5 * scale;
+  let tx = input.screenX - (plusW + numW + caretW) / 2;
+  ctx.fillStyle = plusColor;
+  ctx.fillText(plus, tx, ty);
+  tx += plusW;
+  ctx.fillStyle = numColor;
+  ctx.fillText(num, tx, ty);
+  tx += numW;
+  ctx.fillStyle = border;
+  ctx.fillText(caret, tx, ty);
   ctx.textAlign = "start";
   ctx.textBaseline = "alphabetic";
+  ctx.globalAlpha = baseAlpha; // rank7 — reveal formAlpha 복원.
 }

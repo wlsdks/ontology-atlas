@@ -235,8 +235,11 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
           type="button"
           data-testid="topology-realm-enter-button"
           aria-label={realmEnterLabel}
-          className="group absolute left-0 top-0 z-40 hidden h-7 w-7 items-center justify-center rounded-full border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] text-[color:var(--topology-v2-indigo-bright)] shadow-[var(--topology-v2-panel-shadow)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
-          style={{ display: "none" }}
+          // rank6 — 항상 flex 로 레이아웃하고 opacity/pointer-events(loop 이
+          // 매 프레임 갱신)로만 나타나고 사라진다. display 하드 토글의 "툭"
+          // 대신 opacity transition(150ms)로 페이드 — 카메라 추종은 유지.
+          className="group absolute left-0 top-0 z-40 flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] text-[color:var(--topology-v2-indigo-bright)] shadow-[var(--topology-v2-panel-shadow)] transition-[opacity,background-color] duration-150 ease-[var(--topology-motion-ease-out)] hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+          style={{ opacity: 0, pointerEvents: "none" }}
         >
           <Orbit size={15} aria-hidden />
           {realmEnterTooltip ? (

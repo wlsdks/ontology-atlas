@@ -176,6 +176,14 @@ export interface TopologyV2DetailPanelProps {
    * opt-in (`.claude/rules/design.md` "풀스크린 드로어는 opt-in"). Omitted
    * hides the link (e.g. read-only embeds). */
   onOpenFullDetail?: () => void;
+  /**
+   * rank2 — 등장/퇴장 대칭. `"entering"`(기본, 생략 포함)이면 클릭 노드 방향에서
+   * 자라나는 `.topology-chrome-in`, `"exiting"`이면 그 역궤적 `.topology-chrome-out`
+   * 을 입힌다. HomePage 의 presence 게이트가 선택 해제 시 이 값을 `"exiting"`으로
+   * 바꾼 뒤 애니메이션이 끝나면 언마운트한다 — React 즉시 언마운트의 "툭 사라짐"
+   * 제거. prefers-reduced-motion 은 globals.css 전역 규칙으로 즉시 소멸.
+   */
+  presence?: "entering" | "exiting";
   className?: string;
 }
 
@@ -183,8 +191,11 @@ export interface TopologyV2DetailPanelProps {
 // 로케일에 따라 1줄/2줄로 갈려도 네 타일의 아이콘이 같은 y 에 정렬된다
 // (grid 가 높이는 이미 균등화하므로, 남는 공백은 아래로만 빠진다). 2줄 라벨은
 // `leading-[1.2]` 로 조인다.
+// rank3 — press(active) 촉각: hover 위에 한 단 진한 `panel-row-active` 표면을
+// pointer-down 동안만 얹어 "누르는 순간"을 색만으로 알린다(Toss press-state).
+// transition-colors(150ms)로 하드 토글 방지 — transform/scale 없음.
 const ACTION_TILE_CLASS =
-  "flex flex-col items-center justify-start gap-1 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-1 pt-2 pb-1.5 text-center text-[10.5px] font-medium leading-[1.2] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]";
+  "flex flex-col items-center justify-start gap-1 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-1 pt-2 pb-1.5 text-center text-[10.5px] font-medium leading-[1.2] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]";
 const ACTION_TILE_DISABLED_CLASS =
   "pointer-events-none opacity-40";
 
@@ -208,6 +219,7 @@ export function TopologyV2DetailPanel({
   onSetPathSource,
   onEnterRealm,
   onOpenFullDetail,
+  presence = "entering",
   className,
 }: TopologyV2DetailPanelProps) {
   const metricSegments = buildV2MetricSegments(metric, {
@@ -264,7 +276,7 @@ export function TopologyV2DetailPanel({
         <div className="flex items-center gap-2">
           <span
             title={help}
-            className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-tertiary)]"
+            className="text-[10px] text-[color:var(--topology-v2-panel-text-tertiary)]"
           >
             {label}
           </span>
@@ -285,7 +297,7 @@ export function TopologyV2DetailPanel({
               type="button"
               onClick={() => setShowAllContains((v) => !v)}
               data-testid="topology-v2-contains-summary-toggle"
-              className="ml-auto shrink-0 text-[10.5px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+              className="ml-auto shrink-0 text-[10.5px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)] active:text-[color:var(--topology-v2-panel-text-primary)]"
             >
               {showAllContains ? labels.containsShowSummary : labels.containsShowAll}
             </button>
@@ -329,7 +341,7 @@ export function TopologyV2DetailPanel({
                 type="button"
                 onClick={() => onSelectConnection(row.id)}
                 data-datasheet-connection={row.id}
-                className="flex w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-1.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+                className="flex min-h-[32px] w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-2 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
               >
                 <TopologyV2TraceMark containment={isContainmentRelation(row.relationType)} />
                 <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--topology-v2-panel-text-secondary)]">
@@ -366,7 +378,7 @@ export function TopologyV2DetailPanel({
         <div className="flex items-center gap-2">
           <span
             title={labels.metricEvidenceHelp}
-            className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-tertiary)]"
+            className="text-[10px] text-[color:var(--topology-v2-panel-text-tertiary)]"
           >
             {labels.metricEvidence}
           </span>
@@ -383,7 +395,7 @@ export function TopologyV2DetailPanel({
               <Link
                 href={buildDocsVaultHref({ slug: row.id })}
                 data-datasheet-evidence={row.id}
-                className="flex w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-1.5 transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+                className="flex min-h-[32px] w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-2 transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
               >
                 <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--topology-v2-panel-text-secondary)]">
                   {row.title}
@@ -414,11 +426,13 @@ export function TopologyV2DetailPanel({
       // 화면 밖으로 밀려나 마우스로 닿지 않았다(1440×900, y=911 실측). 뷰포트
       // 기준 max-height + 내부 스크롤로 패널이 항상 뷰포트 안에 온전히 앵커
       // 되도록 clamp한다.
+      data-presence={presence}
       className={[
         // R4 모션 헌법 — 노드 팝오버 등장 문법(단일 `.topology-chrome-in`:
         // opacity+3px translateY+scale 0.98→1, 180ms, ease-out). slug 로 keyed
-        // 되어 다른 노드 선택마다 재발화.
-        "topology-chrome-in",
+        // 되어 다른 노드 선택마다 재발화. rank2 — presence="exiting" 이면
+        // 역궤적 `.topology-chrome-out`(≈120ms)으로 접힌 뒤 언마운트된다.
+        presence === "exiting" ? "topology-chrome-out" : "topology-chrome-in",
         "flex w-[var(--topology-v2-panel-width)] flex-col gap-[var(--topology-v2-panel-gap)]",
         "max-h-[var(--topology-v2-panel-max-height)] overflow-y-auto",
         "rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)]",
@@ -459,27 +473,29 @@ export function TopologyV2DetailPanel({
               {labels.kindLabel}
             </span>
             <span className="text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
-            <span className="text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">
-              {powered ? labels.poweredOn : labels.poweredOff}
-            </span>
+            {/* Guardian 처방 (2026-07-23) — 파워닷 + "최근 갱신" 단어 +
+                updatedAtLabel 이 같은 신선도를 3중 반복하던 것을 정리:
+                updatedAtLabel 이 있으면 그 한 줄만 렌더하고(전원 단어 생략),
+                없을 때만 전원 단어로 폴백한다. */}
             {updatedAtLabel ? (
-              <>
-                <span className="text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
-                <span
-                  data-testid="topology-v2-datasheet-updated-at"
-                  className="text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]"
-                >
-                  {updatedAtLabel}
-                </span>
-              </>
-            ) : null}
+              <span
+                data-testid="topology-v2-datasheet-updated-at"
+                className="text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+              >
+                {updatedAtLabel}
+              </span>
+            ) : (
+              <span className="text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+                {powered ? labels.poweredOn : labels.poweredOff}
+              </span>
+            )}
           </div>
           {domain ? (
             <button
               type="button"
               onClick={() => onSelectConnection(domain.id)}
               data-testid="topology-v2-detail-panel-domain"
-              className="flex min-w-0 max-w-full items-center gap-1 self-start pl-[13.5px] text-left transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+              className="flex min-w-0 max-w-full items-center gap-1 self-start pl-[13.5px] text-left transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)] active:text-[color:var(--topology-v2-panel-text-primary)]"
             >
               <span className="shrink-0 whitespace-nowrap text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)]">
                 {labels.domainLabel}
@@ -496,7 +512,7 @@ export function TopologyV2DetailPanel({
           onClick={onClose}
           aria-label={labels.close}
           data-testid="topology-v2-detail-panel-close"
-          className="-mr-1 -mt-1 shrink-0 rounded-[var(--topology-v2-panel-row-radius)] p-1 text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          className="-mr-1 -mt-1 shrink-0 rounded-[var(--topology-v2-panel-row-radius)] p-1 text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]"
         >
           <X size={14} />
         </button>
@@ -599,7 +615,7 @@ export function TopologyV2DetailPanel({
           type="button"
           onClick={onEnterRealm}
           data-testid="topology-v2-detail-panel-action-realm"
-          className="flex items-center justify-center gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-2 py-1.5 text-[12px] font-medium text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+          className="flex items-center justify-center gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-2 py-1.5 text-[12px] font-medium text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
         >
           <Orbit size={15} aria-hidden="true" />
           <span>{labels.actionRealm}</span>
@@ -643,7 +659,7 @@ export function TopologyV2DetailPanel({
             type="button"
             onClick={onOpenFullDetail}
             data-testid="topology-v2-detail-panel-open-full-detail"
-            className="shrink-0 text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+            className="shrink-0 text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)] active:text-[color:var(--topology-v2-panel-text-primary)]"
           >
             {labels.openFullDetail}
           </button>

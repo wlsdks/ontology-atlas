@@ -123,6 +123,20 @@ export interface TopologyV2Tokens {
   hysteresisPx: number;
   emphasisRiseTau: number;
   emphasisDecayTau: number;
+  /**
+   * `--topology-v2-focus-dim-tau` — the click-focus color-ramp time constant
+   * (`model/focus-state.ts#stepFocusRamp`). One symmetric τ for the normal↔dim/
+   * ego color transition so a click's dim/ego swap eases in on the camera-dive
+   * time axis instead of hard-cutting, and a deselect eases it back out.
+   */
+  focusDimTau: number;
+  /**
+   * `--topology-v2-cluster-reveal-tau` — the cluster expand/collapse reveal ramp
+   * time constant (rank7). One symmetric τ so a collapsed parent's child subtree
+   * fades IN (0→1) on expand and OUT (1→0) on collapse instead of hard-cutting,
+   * consistent across zoom. Reuses `stepEmphasis` (`model/focus-state.ts`).
+   */
+  clusterRevealTau: number;
   rippleStaggerMs: number;
   breatheAmplitude: number;
   breatheFreqRad: number;
@@ -266,6 +280,8 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "hysteresisPx", cssVar: "--topology-v2-hysteresis-px", kind: "number" },
   { key: "emphasisRiseTau", cssVar: "--topology-v2-emphasis-rise-tau", kind: "number" },
   { key: "emphasisDecayTau", cssVar: "--topology-v2-emphasis-decay-tau", kind: "number" },
+  { key: "focusDimTau", cssVar: "--topology-v2-focus-dim-tau", kind: "number" },
+  { key: "clusterRevealTau", cssVar: "--topology-v2-cluster-reveal-tau", kind: "number" },
   { key: "rippleStaggerMs", cssVar: "--topology-v2-ripple-stagger-ms", kind: "number" },
   { key: "breatheAmplitude", cssVar: "--topology-v2-breathe-amplitude", kind: "number" },
   { key: "breatheFreqRad", cssVar: "--topology-v2-breathe-freq-rad", kind: "number" },
