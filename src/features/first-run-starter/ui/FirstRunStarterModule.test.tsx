@@ -32,6 +32,14 @@ vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
 }));
 
+vi.mock('@/i18n/navigation', () => ({
+  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
 function makeVault(): MockVault {
   return {
     status: 'idle',
@@ -154,6 +162,24 @@ describe('FirstRunStarterModule', () => {
 
     expect(screen.getByTestId('first-run-starter-cli-bridge')).toBeInTheDocument();
     expect(screen.getByText('npx ontology-atlas init && npx ontology-atlas bootstrap')).toBeInTheDocument();
+  });
+
+  // ease-of-use G1 (2026-07-23) — Safari/Firefox 는 FSA 가 없어 가장 눈에
+  // 띄는 인디고 CTA 가 "눌러야 실패"였다. 미지원 상태에선 사전에 정직하게
+  // 강등: 폴더 열기·새 vault 만들기 대신 고지 한 줄 + /download 링크.
+  it('demotes both FSA CTAs to an honest notice + download link when the browser is unsupported', () => {
+    mocks.vault.status = 'unsupported';
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+
+    expect(screen.queryByTestId('first-run-starter-open')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('first-run-starter-create')).not.toBeInTheDocument();
+    expect(screen.getByTestId('first-run-starter-unsupported')).toHaveTextContent('unsupportedNotice');
+    expect(screen.getByTestId('first-run-starter-unsupported-cta')).toHaveAttribute(
+      'href',
+      '/download/',
+    );
+    // "여기서 둘러볼게요"(dismiss) 는 미지원과 무관하게 유지.
+    expect(screen.getByTestId('first-run-starter-dismiss')).toBeInTheDocument();
   });
 
   it('copies the CLI bootstrap command to the clipboard once the disclosure is open', async () => {

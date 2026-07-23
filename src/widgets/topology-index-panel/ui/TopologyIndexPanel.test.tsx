@@ -32,6 +32,17 @@ vi.mock("@/features/first-run-starter", () => ({
   },
 }));
 
+// 온톨로지 블록 "가져오기" 모듈도 같은 이유(자체 vault/i18n 컨텍스트 필요,
+// 동작은 `BlockImportModule.test.tsx` 가 단위 검증)로 스텁 — 이 파일은
+// 패널이 모듈을 mount 한다는 사실만 본다.
+const blockImportMounted = vi.hoisted(() => ({ current: 0 }));
+vi.mock("@/features/ontology-blocks", () => ({
+  BlockImportModule: () => {
+    blockImportMounted.current += 1;
+    return null;
+  },
+}));
+
 function makeNode(id: string, kind: string, title?: string): KnowledgeGraphNode {
   return {
     id,
@@ -99,6 +110,24 @@ function buildFixtureTree() {
 }
 
 describe("TopologyIndexPanel", () => {
+  it("mounts the ontology block import module (Slice A wiring)", () => {
+    blockImportMounted.current = 0;
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+    expect(blockImportMounted.current).toBe(1);
+  });
+
   it("renders the project root and reveals children on caret expand", () => {
     const treeResult = buildFixtureTree();
     render(

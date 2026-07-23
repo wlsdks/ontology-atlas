@@ -1,6 +1,6 @@
 "use client";
 
-import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useState } from "react";
+import { type KeyboardEvent as ReactKeyboardEvent, type ReactElement, useCallback, useState } from "react";
 import { Copy, FileText, GitBranch, Orbit, Route, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
@@ -15,6 +15,7 @@ import {
   type V2MetricValues,
 } from "./topology-v2-datasheet";
 import { TopologyV2KindGlyph, TopologyV2TraceMark } from "@/shared/ui/topology-v2-kind-glyph";
+import { Tooltip } from "@/shared/ui/tooltip";
 
 /**
  * topology-map-v2 "component datasheet" node panel
@@ -107,6 +108,17 @@ export interface TopologyV2DetailPanelLabels {
   actionPath: string;
   /** S4 "영역 전개" 2차 발견 경로 액션 라벨 ("영역 전개"). */
   actionRealm: string;
+  /**
+   * 결과-설명 툴팁 (소유자 승인 2026-07-23) — 4-up 타일 라벨은 압축 전문어
+   * ("인계 복사" 등)라 라벨 *반복*이 아닌 "누르면 무엇이 되는가"를 평문으로
+   * 설명한다. 전부 optional — 생략하면 툴팁 없음(하위호환). 터치엔 hover 가
+   * 없으므로 툴팁은 보조일 뿐, 라벨+aria 가 자립 본체다(원칙).
+   */
+  actionDocumentTip?: string;
+  actionEditRelationsTip?: string;
+  actionCopyHandoffTip?: string;
+  actionPathTip?: string;
+  actionRealmTip?: string;
 }
 
 export interface TopologyV2DetailPanelProps {
@@ -194,6 +206,21 @@ export interface TopologyV2DetailPanelProps {
 // rank3 — press(active) 촉각: hover 위에 한 단 진한 `panel-row-active` 표면을
 // pointer-down 동안만 얹어 "누르는 순간"을 색만으로 알린다(Toss press-state).
 // transition-colors(150ms)로 하드 토글 방지 — transform/scale 없음.
+/**
+ * 결과-설명 툴팁 래퍼 — tip 이 있으면 shared Tooltip 으로 감싸고, 없으면
+ * 트리거를 그대로 반환(하위호환·DOM 무증가). side="bottom": 타일 행이 패널
+ * 상단부라 위로 띄우면 메트릭 라인을 가린다.
+ */
+function withActionTip(tip: string | undefined, trigger: ReactElement): ReactElement {
+  if (!tip) return trigger;
+  return (
+    <Tooltip content={tip} side="bottom">
+      {trigger}
+    </Tooltip>
+  );
+}
+
+
 const ACTION_TILE_CLASS =
   "flex flex-col items-center justify-start gap-1 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-1 pt-2 pb-1.5 text-center text-[10.5px] font-medium leading-[1.2] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]";
 const ACTION_TILE_DISABLED_CLASS =
@@ -561,14 +588,17 @@ export function TopologyV2DetailPanel({
         className="grid grid-cols-4 gap-1"
       >
         {documentHref ? (
-          <Link
-            href={documentHref}
-            data-testid="topology-v2-detail-panel-action-document"
-            className={ACTION_TILE_CLASS}
-          >
-            <FileText size={15} aria-hidden="true" />
-            <span>{labels.actionDocument}</span>
-          </Link>
+          withActionTip(
+            labels.actionDocumentTip,
+            <Link
+              href={documentHref}
+              data-testid="topology-v2-detail-panel-action-document"
+              className={ACTION_TILE_CLASS}
+            >
+              <FileText size={15} aria-hidden="true" />
+              <span>{labels.actionDocument}</span>
+            </Link>,
+          )
         ) : (
           <span
             aria-disabled="true"
@@ -579,48 +609,60 @@ export function TopologyV2DetailPanel({
             <span>{labels.actionDocument}</span>
           </span>
         )}
-        <Link
-          href={builderEditHref}
-          data-testid="topology-v2-detail-panel-action-edit"
-          className={ACTION_TILE_CLASS}
-        >
-          <GitBranch size={15} aria-hidden="true" />
-          <span>{labels.actionEditRelations}</span>
-        </Link>
-        <button
-          type="button"
-          onClick={() => onCopyHandoff(handoffText)}
-          aria-label={labels.handoff}
-          data-testid="topology-v2-detail-panel-action-handoff"
-          className={ACTION_TILE_CLASS}
-        >
-          <Copy size={15} aria-hidden="true" />
-          <span>{labels.actionCopyHandoff}</span>
-        </button>
-        <button
-          type="button"
-          onClick={onSetPathSource}
-          data-testid="topology-v2-detail-panel-action-path"
-          className={ACTION_TILE_CLASS}
-        >
-          <Route size={15} aria-hidden="true" />
-          <span>{labels.actionPath}</span>
-        </button>
+        {withActionTip(
+          labels.actionEditRelationsTip,
+          <Link
+            href={builderEditHref}
+            data-testid="topology-v2-detail-panel-action-edit"
+            className={ACTION_TILE_CLASS}
+          >
+            <GitBranch size={15} aria-hidden="true" />
+            <span>{labels.actionEditRelations}</span>
+          </Link>,
+        )}
+        {withActionTip(
+          labels.actionCopyHandoffTip,
+          <button
+            type="button"
+            onClick={() => onCopyHandoff(handoffText)}
+            aria-label={labels.handoff}
+            data-testid="topology-v2-detail-panel-action-handoff"
+            className={ACTION_TILE_CLASS}
+          >
+            <Copy size={15} aria-hidden="true" />
+            <span>{labels.actionCopyHandoff}</span>
+          </button>,
+        )}
+        {withActionTip(
+          labels.actionPathTip,
+          <button
+            type="button"
+            onClick={onSetPathSource}
+            data-testid="topology-v2-detail-panel-action-path"
+            className={ACTION_TILE_CLASS}
+          >
+            <Route size={15} aria-hidden="true" />
+            <span>{labels.actionPath}</span>
+          </button>,
+        )}
       </div>
 
       {/* S4 "영역 전개" 2차 발견 경로 — 컨테이너 노드에서만(HomePage 가 주입).
           궤도 버튼과 같은 액션 하나: 이 노드의 세계로 지도를 전환한다. */}
-      {onEnterRealm ? (
-        <button
-          type="button"
-          onClick={onEnterRealm}
-          data-testid="topology-v2-detail-panel-action-realm"
-          className="flex items-center justify-center gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-2 py-1.5 text-[12px] font-medium text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
-        >
-          <Orbit size={15} aria-hidden="true" />
-          <span>{labels.actionRealm}</span>
-        </button>
-      ) : null}
+      {onEnterRealm
+        ? withActionTip(
+            labels.actionRealmTip,
+            <button
+              type="button"
+              onClick={onEnterRealm}
+              data-testid="topology-v2-detail-panel-action-realm"
+              className="flex items-center justify-center gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-2 py-1.5 text-[12px] font-medium text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
+            >
+              <Orbit size={15} aria-hidden="true" />
+              <span>{labels.actionRealm}</span>
+            </button>,
+          )
+        : null}
       </div>
 
       {/* Connections grouped by relation type — 그룹 사이는 root 와 같은

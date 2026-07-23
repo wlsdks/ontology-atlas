@@ -17,12 +17,14 @@ import {
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
 import { LiveAnnouncer } from '@/shared/ui';
 import { searchDocs, type DocsSearchMatch } from '../lib/search';
+import type { DocsBodyIndex } from '../lib/body-index';
 import { githubBlobUrl } from '../lib/resolve-doc-link';
 import type { VaultCommand } from '../model/command';
 
-// 본문 검색이 없어 0건이 났을 때 안내하는 캐노니컬 문서 바로가기. vault
-// 바깥(repo)에 사는 관문 문서라 GitHub blob 외부 링크로 연다 — DocsVaultViewer
-// 의 vault-외부 링크 처리와 같은 방식(resolve-doc-link.githubBlobUrl) 재사용.
+// 제목·태그·요약·본문 전부에서 0건이 났을 때 안내하는 캐노니컬 문서 바로가기.
+// vault 바깥(repo)에 사는 관문 문서라 GitHub blob 외부 링크로 연다 —
+// DocsVaultViewer 의 vault-외부 링크 처리와 같은 방식
+// (resolve-doc-link.githubBlobUrl) 재사용.
 const CANONICAL_DOC_LINKS: Array<{ labelKey: string; repoPath: string }> = [
   { labelKey: 'canonicalMcp', repoPath: 'mcp/README.md' },
   { labelKey: 'canonicalCli', repoPath: 'cli/README.md' },
@@ -43,6 +45,10 @@ interface Props {
   /** 초기 쿼리 — `> ` (명령) / `#` (태그) / '' (기본). */
   initialQuery?: string;
   getDocHref?: (slug: string) => string;
+  /** 본문 검색 인덱스 (`use-docs-body-index`). 미제공 시 본문 티어 비활성. */
+  bodyIndex?: DocsBodyIndex;
+  /** 본문 인덱스 구축 중 여부 — 0건 안내에 "곧 보강" 힌트를 덧붙인다. */
+  bodyIndexing?: boolean;
 }
 
 // combobox aria-activedescendant 가 가리킬 option id — listbox 옵션 li 와
@@ -60,6 +66,8 @@ interface PaletteRow {
   hint?: string;
   /** 오른쪽에 표시할 보조 텍스트. 단축키·slug·count. */
   meta?: string;
+  /** label 아래 둘째 줄 — 본문 히트 스니펫 등. */
+  sub?: React.ReactNode;
   icon: React.ReactNode;
   onRun: () => void;
 }
@@ -106,6 +114,8 @@ export function DocsVaultUnifiedPalette({
   onTagSelect,
   initialQuery = '',
   getDocHref = (slug) => buildDocsVaultHref({ slug }),
+  bodyIndex,
+  bodyIndexing = false,
 }: Props) {
   const t = useTranslations('vaultWidgets.palette');
   const [query, setQuery] = useState(initialQuery);
@@ -312,12 +322,18 @@ export function DocsVaultUnifiedPalette({
       return { rows: out, sections };
     }
 
-    // mixed 모드 — 문서 먼저, 명령 보조로
-    const docMatches: DocsSearchMatch[] = searchDocs(trimmed, docs, 15);
+    // mixed 모드 — 문서 먼저, 명령 보조로. bodyIndex 가 있으면 본문 티어까지
+    // 검색 (제목 히트가 항상 위 — search.ts 의 최하위 티어 점수 계약).
+    const docMatches: DocsSearchMatch[] = searchDocs(trimmed, docs, 15, bodyIndex);
     const docRows: PaletteRow[] = docMatches.map((m) => ({
       kind: 'doc' as const,
       key: `doc:${m.doc.slug}`,
       label: <Highlight text={m.doc.title} hit={m.titleHit} />,
+      // 본문 히트 스니펫 — 제목이 이미 매치를 보여주는 행에는 중복 표시 안 함.
+      sub:
+        m.bodyHit && !m.titleHit ? (
+          <Highlight text={m.bodyHit.text} hit={m.bodyHit.hit} />
+        ) : undefined,
       icon: (
         <FileText
           size={11}
@@ -375,6 +391,7 @@ export function DocsVaultUnifiedPalette({
     query,
     commands,
     docs,
+    bodyIndex,
     bySlug,
     pinnedSlugs,
     recentSlugs,
@@ -406,8 +423,10 @@ export function DocsVaultUnifiedPalette({
         ? t('noMatches')
         : t('resultsAnnounce', { count: rows.length });
 
-  // 문서 검색(mixed) 모드에서 0건일 때만 본문검색 미지원 안내를 띄운다.
-  // 명령(`>`)·태그(`#`) 모드의 0건은 기존 noMatches 로 충분.
+  // 문서 검색(mixed) 모드에서 0건일 때만 확장 안내(어디까지 검색했는지 +
+  // 캐노니컬 문서 바로가기)를 띄운다. 본문 인덱스가 아직 구축 중이면 "곧
+  // 보강될 수 있음" 힌트를 덧붙인다. 명령(`>`)·태그(`#`) 모드의 0건은 기존
+  // noMatches 로 충분.
   const trimmedQuery = query.trim();
   const isDocSearchZero =
     trimmedQuery !== '' &&
@@ -524,6 +543,11 @@ export function DocsVaultUnifiedPalette({
                 <p className="mt-1 text-caption text-[color:var(--color-text-tertiary)]">
                   {t('noBodySearchHint')}
                 </p>
+                {bodyIndexing ? (
+                  <p className="mt-1 text-caption text-[color:var(--color-text-quaternary)]">
+                    {t('bodyIndexingNotice')}
+                  </p>
+                ) : null}
                 <p className="mt-4 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
                   {t('canonicalDocsLabel')}
                 </p>
@@ -646,8 +670,15 @@ function ResultRow({
       <span className="flex h-5 w-5 flex-none items-center justify-center text-[color:var(--color-text-quaternary)]">
         {row.icon}
       </span>
-      <span className="flex-1 truncate text-body text-[color:var(--color-text-primary)]">
-        {row.label}
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-body text-[color:var(--color-text-primary)]">
+          {row.label}
+        </span>
+        {row.sub ? (
+          <span className="block truncate text-caption text-[color:var(--color-text-tertiary)]">
+            {row.sub}
+          </span>
+        ) : null}
       </span>
       {row.meta ? (
         <span className="truncate font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">

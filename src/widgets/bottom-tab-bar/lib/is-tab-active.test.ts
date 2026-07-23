@@ -56,14 +56,17 @@ describe("isBottomTabActive", () => {
 });
 
 describe("shouldHideBottomTabBar", () => {
-  it("hides mobile app navigation on public marketing and download pages", () => {
-    expect(shouldHideBottomTabBar("/", false)).toBe(true);
+  it("hides mobile app navigation only on the standalone /download page", () => {
     expect(shouldHideBottomTabBar("/download", false)).toBe(true);
     expect(shouldHideBottomTabBar("/en/download", false)).toBe(true);
     expect(shouldHideBottomTabBar("/download/", true)).toBe(true);
   });
 
-  it("keeps mobile app navigation once the root is an active local workspace", () => {
+  it("keeps mobile app navigation on the root topology hub (root-first-open) even with no vault", () => {
+    // Regression: root-first-open made `/` the topology hub (dogfood sample +
+    // first-run starter), not a marketing page. Hiding the tab bar here left
+    // tablet/mobile first-run visitors with zero global nav.
+    expect(shouldHideBottomTabBar("/", false)).toBe(false);
     expect(shouldHideBottomTabBar("/", true)).toBe(false);
     expect(shouldHideBottomTabBar("/docs", false)).toBe(false);
   });

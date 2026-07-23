@@ -93,6 +93,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-emphasis-decay-tau": "0.15",
   "--topology-v2-focus-dim-tau": "0.16",
   "--topology-v2-cluster-reveal-tau": "0.17",
+  "--topology-v2-spotlight-rest-alpha": "0.35",
   "--topology-v2-ripple-stagger-ms": "55",
   "--topology-v2-breathe-amplitude": "0.04",
   "--topology-v2-breathe-freq-rad": "1.15",
@@ -147,6 +148,7 @@ describe("resolveTopologyV2Tokens", () => {
     expect(tokens.nodeReleaseSettleMs).toBeCloseTo(900, 3);
     expect(tokens.nodeHomeSpringAngFreq).toBeCloseTo(7.5, 3);
     expect(tokens.focusDimTau).toBeCloseTo(0.16, 3);
+    expect(tokens.spotlightRestAlpha).toBeCloseTo(0.35, 3);
     expect(tokens.egoRevealRiseTau).toBeCloseTo(0.22, 3);
     expect(tokens.egoRevealDecayTau).toBeCloseTo(0.12, 3);
     expect(tokens.rippleStaggerMaxMs).toBeCloseTo(180, 3);

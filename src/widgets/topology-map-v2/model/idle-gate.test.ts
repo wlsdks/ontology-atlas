@@ -13,6 +13,7 @@ const IDLE: CanvasActivityFlags = {
   breathing: false,
   cameraMoving: false,
   focusFadeSettling: false,
+  spotlightSettling: false,
 };
 
 describe("isCanvasActive", () => {

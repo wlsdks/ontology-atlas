@@ -69,7 +69,21 @@ export interface HomeRouteState {
    * (`enterRealmRouteState`) — 영역은 새 좌표계이므로 이전 확장 상태가 무의미하다.
    */
   realmSlug: string | null;
+  /**
+   * 최근 변경 스포트라이트 (`?recent=auto|1|7|30`, 협의회 설계 2026-07-23) —
+   * non-null 이면 지도가 "지난 N일 동안 디스크가 바뀐 노드"를 fresh 채널로
+   * 켜고 나머지를 침강시키는 렌즈 모드다. `"auto"` = 기존 적응 사다리
+   * (`useAdaptiveRecentChanges` 7→3→1일)가 창을 고른다; 숫자 = 명시 창 고정.
+   * URL 에 사는 이유: 공유 링크·에이전트가 "사람이 보던 것과 같은 창"을
+   * 재현/가독할 수 있어야 하고, INDEX 렌즈와 지도 침강이 **단일 진실원**
+   * (이 값 하나)에서 구동돼야 두 표면의 창 불일치가 구조적으로 불가능해진다.
+   * null = off (파라미터 부재).
+   */
+  recentWindow: RecentSpotlightWindow | null;
 }
+
+/** 스포트라이트 창 — "auto"(적응 사다리) 또는 명시 일수 프리셋. */
+export type RecentSpotlightWindow = "auto" | 1 | 7 | 30;
 
 const HOME_QUERY_KEYS = {
   project: "p",
@@ -86,6 +100,7 @@ const HOME_QUERY_KEYS = {
   index: "index",
   open: "open",
   realm: "realm",
+  recent: "recent",
   via: ONTOLOGY_DEEPLINK_VIA_KEY,
 } as const;
 
@@ -118,7 +133,27 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   insightsReturnTab: null,
   expandedParents: [],
   realmSlug: null,
+  recentWindow: null,
 };
+
+/**
+ * 스포트라이트 — `?recent=` 값 파싱. `auto`/`1`/`7`/`30` 만 유효, 그 외/부재는
+ * null(off). 순수 함수 — 잘못된 값은 조용히 off 로 강등(범례 없는 상태 오염
+ * 방지).
+ */
+export function parseRecentWindowParam(raw: string | null): RecentSpotlightWindow | null {
+  if (raw === "auto") return "auto";
+  if (raw === "1") return 1;
+  if (raw === "7") return 7;
+  if (raw === "30") return 30;
+  return null;
+}
+
+/** 스포트라이트 창 → URL 값 직렬화 (null = 파라미터 제거). */
+export function serializeRecentWindowParam(window: RecentSpotlightWindow | null): string | null {
+  if (window === null) return null;
+  return window === "auto" ? "auto" : String(window);
+}
 
 /**
  * 밀도 게이트 — `?open=` 값 파싱: 콤마 분리, 트림, 빈 항목 무시, 중복 제거.
@@ -305,6 +340,7 @@ export function parseHomeRouteState(
       searchParams.get(HOME_QUERY_KEYS.open),
     ),
     realmSlug: searchParams.get(HOME_QUERY_KEYS.realm) || null,
+    recentWindow: parseRecentWindowParam(searchParams.get(HOME_QUERY_KEYS.recent)),
   };
 }
 
@@ -433,6 +469,7 @@ export function applyHomeRouteState(
     state.expandedParents.length > 0 ? state.expandedParents.join(",") : null,
   );
   setOrDelete(next, HOME_QUERY_KEYS.realm, state.realmSlug);
+  setOrDelete(next, HOME_QUERY_KEYS.recent, serializeRecentWindowParam(state.recentWindow));
   setOrDelete(
     next,
     HOME_QUERY_KEYS.via,

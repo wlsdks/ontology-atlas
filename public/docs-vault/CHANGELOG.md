@@ -6,6 +6,36 @@
 
 ---
 
+## 2026-07-23 — 태블릿·터치 반응형 파운데이션 + 지도 의미론 정합 라운드
+
+3밴드 반응형 감사(7–13" 태블릿 · 14/16" 노트북 · 1920/2560 와이드, 33
+findings)와 salience 리서치(Furnas DOI · SKOS 위계)를 근거로 태블릿
+접근성 절벽과 지도 의미론 결함을 한 라운드에 소탕했다.
+
+- **태블릿 첫 진입 내비 0 버그 복구** — root-first-open 이후에도 `/`+무vault
+  에서 BottomTabBar 를 숨기던 조건 제거. `<lg` 에선 탭바가 유일한 전역
+  내비였다.
+- **`@media (pointer: coarse)` 터치 축 신설** — `--touch-target-min: 44px`
+  계약. 폭 브레이크포인트로는 "태블릿=터치"를 표현할 수 없어서, coarse
+  포인터에서만 nav-rail 타일·크롬 컨트롤·시트 닫기를 44px 로 승격.
+- **`<md` 확장 INDEX = 풀-블리드 시트** — 300px 좌측 오버레이가 좁은 화면의
+  절반을 잠식하던 것을 "한 번에 하나의 주 뷰"로: 펼치면 시트, 접으면 지도
+  전폭. md+ 는 종전 사이드 패널.
+- **하단 탭바 가림 전면 소탕** — 확장 INDEX 푸터·우하단 판독계·콘텐츠
+  페이지 5곳(insights/projects/detail/editor/builder)의 스크롤 끝이 탭바
+  뒤로 가려지던 결함을 예약고 토큰으로 일괄 해소.
+- **빌더 정직한 강등** — 캔버스 게이트 md→lg. 768–1023 태블릿에 3-pane 을
+  억지로 밀어넣던 크램을 트리편집+토폴로지 fallback 으로 흡수.
+- **데이터시트 반응형화** — 고정 352px → `min(352px, 100vw-28px)`, `<lg`
+  max-height 에 탭바 예약고 차감.
+- **지도 범례 정직화** — 데이터가 0건인 "확실도(confidence)" gradient
+  범례(장식 + amber 누출)를 실제 인코딩(contains 실선 / depends 파선)
+  설명으로 교체. 수치 confidence frontmatter 는 도입하지 않기로 결정 —
+  이 제품의 관계 확실도는 relation_notes + declaredBySlug + git diff 라는
+  정성 채널이다(salience 리서치 verdict).
+- **관계 타입 위계 → DOI 랭킹** — contains > depends > relates 가 렌더
+  (실선/파선)에만 있고 랭킹에 없던 gap 정정. 이웃 24-컷·라벨 8-컷에서
+  contains 자식이 스쳐가는 relates 이웃보다 먼저 노출된다.
 ## 2026-07-23 — MCP Builder handoff + vault Git history + live toolset proof
 
 반복적인 graph health 확인이 아니라 실제 Builder/Git/클라이언트 업그레이드

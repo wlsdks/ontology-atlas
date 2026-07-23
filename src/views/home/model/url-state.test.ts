@@ -34,6 +34,33 @@ describe("parseHomeRouteState", () => {
       insightsReturnTab: null,
       expandedParents: [],
       realmSlug: null,
+      recentWindow: null,
+    });
+  });
+
+  // 최근 변경 스포트라이트 (협의회 설계 2026-07-23) — `?recent=` 은 지도
+  // 침강과 INDEX 렌즈를 동시에 구동하는 단일 진실원이라 파싱 계약을 고정한다.
+  it("reads ?recent= as the spotlight window — auto or 1/7/30 presets", () => {
+    expect(parseHomeRouteState(new URLSearchParams("recent=auto"))).toMatchObject({
+      recentWindow: "auto",
+    });
+    expect(parseHomeRouteState(new URLSearchParams("recent=7"))).toMatchObject({
+      recentWindow: 7,
+    });
+    expect(parseHomeRouteState(new URLSearchParams("recent=1"))).toMatchObject({
+      recentWindow: 1,
+    });
+    expect(parseHomeRouteState(new URLSearchParams("recent=30"))).toMatchObject({
+      recentWindow: 30,
+    });
+  });
+
+  it("silently demotes invalid ?recent= values to off (no lens-state pollution)", () => {
+    expect(parseHomeRouteState(new URLSearchParams("recent=90"))).toMatchObject({
+      recentWindow: null,
+    });
+    expect(parseHomeRouteState(new URLSearchParams("recent=yesterday"))).toMatchObject({
+      recentWindow: null,
     });
   });
 
@@ -189,6 +216,7 @@ describe("applyHomeRouteState", () => {
       insightsReturnTab: null,
       expandedParents: [],
       realmSlug: null,
+      recentWindow: null,
     });
 
     expect(params.toString()).toBe(
@@ -211,6 +239,7 @@ describe("applyHomeRouteState", () => {
       insightsReturnTab: null,
       expandedParents: [],
       realmSlug: null,
+      recentWindow: null,
     });
 
     expect(params.toString()).toBe(
@@ -231,6 +260,7 @@ describe("applyHomeRouteState", () => {
       insightsReturnTab: null,
       expandedParents: [],
       realmSlug: null,
+      recentWindow: null,
     });
 
     expect(hidden.toString()).toBe("");
@@ -253,12 +283,34 @@ describe("applyHomeRouteState", () => {
         insightsReturnTab: null,
         expandedParents: [],
         realmSlug: null,
+        recentWindow: null,
       },
     );
 
     expect(params.toString()).toBe(
       "mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
     );
+  });
+
+  // 스포트라이트 왕복 안정 — 공유 링크/에이전트 판독 계약.
+  it("serializes ?recent= for auto and numeric windows, omits it when off", () => {
+    const auto = applyHomeRouteState(new URLSearchParams(), {
+      ...DEFAULT_HOME_ROUTE_STATE,
+      recentWindow: "auto",
+    });
+    expect(auto.toString()).toBe("recent=auto");
+
+    const seven = applyHomeRouteState(new URLSearchParams(), {
+      ...DEFAULT_HOME_ROUTE_STATE,
+      recentWindow: 7,
+    });
+    expect(seven.toString()).toBe("recent=7");
+
+    const off = applyHomeRouteState(new URLSearchParams("recent=auto"), {
+      ...DEFAULT_HOME_ROUTE_STATE,
+      recentWindow: null,
+    });
+    expect(off.toString()).toBe("");
   });
 
   it("serializes indexState when set, omits it when null", () => {

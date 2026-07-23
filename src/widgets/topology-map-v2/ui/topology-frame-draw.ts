@@ -390,6 +390,19 @@ export interface FrameDrawParams {
    * 영역 활성(wardingRing 존재) 시에만 결계 원으로 클립해 그린다. null 이면 미표시.
    */
   realmCosmosPoints: readonly DustPoint[] | null;
+  /**
+   * 최근 변경 스포트라이트 (협의회 설계 2026-07-23) — non-null 이면 렌즈 ON:
+   * 이 집합 **밖** 노드(와 양끝이 모두 집합 안이 아닌 엣지)를 `spotlightRamp`
+   * 진행에 따라 `tokens.spotlightRestAlpha` 까지 침강시킨다. 집합 안 노드는
+   * 여기서 밝히지 않는다 — 어댑터가 fresh 채널 키를 mtime 창으로 교체해 이미
+   * 켠다("빛내기"가 아니라 "가라앉히기"). ego/엣지 포커스가 활성인 동안은
+   * 침강을 적용하지 않는다(주의 레이어: 선택 > 렌즈, 이중 dim 금지). 호버
+   * 노드도 면제(상호작용 대상은 항상 또렷 — realm 선명도와 같은 규칙).
+   * null = off (회귀 0).
+   */
+  spotlightIds: ReadonlySet<string> | null;
+  /** 스포트라이트 on/off 지수 램프 0..1 — loop 가 `stepFocusRamp`(focusDimTau 재사용)로 step. */
+  spotlightRamp: number;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -434,7 +447,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     realmDustParallax,
     realmCosmosPoints,
     footprintRanksById,
+    spotlightIds,
+    spotlightRamp,
   } = params;
+
+  // 스포트라이트 침강 배수 — 렌즈 ON + 램프 진행 중 + 포커스/엣지선택 비활성
+  // 일 때만 유효(선택 > 렌즈 우선순위). inSpotlight=false 대상에 적용한다.
+  const spotlightLensActive =
+    spotlightIds !== null && spotlightRamp > 0.001 && colorFocusedNodeId === null && colorSelectedEdge === null;
+  const spotlightSink = (inSpotlight: boolean): number =>
+    spotlightLensActive && !inSpotlight ? 1 - spotlightRamp * (1 - tokens.spotlightRestAlpha) : 1;
 
   // S5 깊이 연출 — 노드 하나의 렌더 오프셋(월드 단위, 시차)과 깊이 선명도
   // 배수를 한 곳에서 계산해 드로우 전체가 일관되게 쓴다. 영역 밖(depthById 에
@@ -526,9 +548,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const isEgoMember =
       isPairMember ||
       (focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocused.has(node.id)));
+    // 스포트라이트 티어 관통 공개 (소유자: "눈으로 보는 노드를 보고 바로
+    // 파악") — 변경 노드가 줌 티어 아래(element 등)에 숨어 있으면 렌즈가
+    // 켜져도 안 보인다. ego 이웃과 같은 tier-exemption reveal 채널에
+    // 스포트라이트 램프를 합류시켜, 렌즈 ON 동안 변경 노드는 줌 무관하게
+    // 램프로 떠오른다(끄면 램프 감쇠로 자연 강하).
+    const spotlightReveal =
+      spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id) ? spotlightRamp : 0;
     effectiveAlphaById.set(
       node.id,
-      effectiveNodeAlpha(tierAlpha, isEgoMember, isPairMember ? 1 : (egoRevealById.get(node.id) ?? 0)),
+      effectiveNodeAlpha(
+        tierAlpha,
+        isEgoMember,
+        Math.max(isPairMember ? 1 : (egoRevealById.get(node.id) ?? 0), spotlightReveal),
+      ),
     );
   }
 
@@ -614,7 +647,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ) {
         edgeEgoState = "dim";
       }
-      ctx.globalAlpha = passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha;
+      // 스포트라이트 — 양끝이 모두 창 안일 때만 정상 잉크(변경 노드 간 연결
+      // 은 구조를 보여줘야 함), 아니면 침강. 호버/선택 엣지는 이미 위 분기가
+      // ego/selected 로 살린다.
+      const edgeSpotlightSink = spotlightSink(
+        spotlightIds !== null && spotlightIds.has(edge.sourceId) && spotlightIds.has(edge.targetId),
+      );
+      ctx.globalAlpha = (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) * edgeSpotlightSink;
       tracesDraw(
         ctx,
         {
@@ -760,7 +799,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         ? BACKGROUND_DIM_WHEN_EXPANDED
         : 1;
 
-    ctx.globalAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha;
+    // 스포트라이트 — 창 밖 노드 침강(호버는 면제: 상호작용 대상은 또렷).
+    const nodeSpotlightSink = spotlightSink(
+      (spotlightIds !== null && spotlightIds.has(node.id)) || isHoveredNode,
+    );
+    ctx.globalAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha * nodeSpotlightSink;
     // Sheen top stop = lerp(fill, tint, blend) — resolved here (token layer)
     // so `render/node-shapes.ts` stays token-free and pure.
     const sheenTop = lerpColorHex(visual.fill, tokens.nodeSheenTint, tokens.nodeSheenBlend);
@@ -940,7 +983,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const nodeScreenRadius = parentNode
       ? radiusForKind(parentNode.kind, tokens) * parentNode.magnitudeScale * camera.scale.value
       : undefined;
-    ctx.globalAlpha = parentAlpha;
+    // 스포트라이트 침강 상속 (소유자 실보고 Image #13 — "+60 유령 칩"):
+    // 침강은 노드 draw 에서 직접 곱해 effectiveAlphaById 에 없으므로, 칩이
+    // 이걸 상속하지 않으면 부모 노드는 0.35 로 가라앉았는데 칩만 풀 알파로
+    // 남아 빈 캔버스에 혼자 떠 있는 버튼처럼 읽힌다. 호버는 면제(상호작용
+    // 대상 또렷 — 노드와 같은 규칙).
+    ctx.globalAlpha =
+      parentAlpha *
+      spotlightSink(
+        (spotlightIds !== null && spotlightIds.has(chip.parentId)) || isChipHovered,
+      );
     drawClusterChip(
       ctx,
       {
@@ -1027,6 +1079,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
             id,
             kind: world.nodeById.get(id)?.kind ?? "element",
             degree: world.neighborMap.get(id)?.size ?? 0,
+            // childrenByParent 유도 = 전원 contains — 균일 가중치, 순서 불변.
+            relationType: "contains",
           })),
         ),
       );

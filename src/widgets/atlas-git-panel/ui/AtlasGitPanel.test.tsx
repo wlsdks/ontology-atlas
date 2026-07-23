@@ -1,0 +1,236 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import koMessages from "../../../../messages/ko.json";
+import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
+import { AtlasGitPanel } from "./AtlasGitPanel";
+
+const tauriApiMock = vi.hoisted(() => ({
+  runtimeAvailable: false,
+  invoke: vi.fn(),
+}));
+
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: tauriApiMock.invoke,
+  isTauri: () => tauriApiMock.runtimeAvailable,
+}));
+
+afterEach(() => {
+  tauriApiMock.runtimeAvailable = false;
+  tauriApiMock.invoke.mockReset();
+});
+
+function renderPanel(ui: React.ReactElement) {
+  return render(
+    <NextIntlClientProvider locale="ko" messages={koMessages}>
+      {ui}
+    </NextIntlClientProvider>,
+  );
+}
+
+const STATUS_WITH_CHANGES = {
+  initialized: true,
+  repoRoot: "/repo",
+  branch: "main",
+  upstream: "origin/main",
+  changedCount: 2,
+  stagedOutsideVault: [],
+};
+
+const DIFF_WITH_CHANGES = {
+  count: 2,
+  files: [
+    {
+      path: "docs/capabilities/foo.md",
+      status: "added",
+      kind: "capability",
+      slug: "capabilities/foo",
+      renamedFrom: null,
+    },
+    {
+      path: "docs/elements/bar.md",
+      status: "modified",
+      kind: "element",
+      slug: "elements/bar",
+      renamedFrom: null,
+    },
+  ],
+  diff: "diff --git a/docs/elements/bar.md b/docs/elements/bar.md\n+new line\n",
+};
+
+const HISTORY = [
+  {
+    shortHash: "abc1234",
+    hash: "abc1234def5678",
+    subject: "ontology snapshot: +1 concept (capabilities/foo)",
+    relativeTime: "2 hours ago",
+    isoTime: "2026-07-23T10:00:00+09:00",
+  },
+];
+
+function installDesktopGit({
+  status = STATUS_WITH_CHANGES,
+  diff = DIFF_WITH_CHANGES,
+  history = HISTORY,
+  snapshot = { committed: true, subject: "s", summary: "s", push: null },
+}: {
+  status?: unknown;
+  diff?: unknown;
+  history?: unknown;
+  snapshot?: unknown;
+} = {}) {
+  tauriApiMock.runtimeAvailable = true;
+  tauriApiMock.invoke.mockImplementation(async (command: string) => {
+    if (command === "git_status") return status;
+    if (command === "git_diff") return diff;
+    if (command === "git_history") return history;
+    if (command === "git_snapshot") return snapshot;
+    throw new Error(`unexpected command: ${command}`);
+  });
+}
+
+function snapshotInvokeCalls() {
+  return tauriApiMock.invoke.mock.calls.filter(([command]) => command === "git_snapshot");
+}
+
+describe("AtlasGitPanel — 웹(브라우저 vault) 강등", () => {
+  it("renders the session changeset summary, CLI command, and desktop hint without any invoke", async () => {
+    const changeset = {
+      addedNodes: ["a"],
+      removedNodes: [],
+      changedNodes: ["b", "c"],
+      addedEdges: ["e1"],
+      removedEdges: [],
+      total: 4,
+      touchedNodeIds: new Set(["a", "b", "c"]),
+      removedNodeKinds: new Map(),
+    } satisfies OntologyChangeset;
+
+    renderPanel(<AtlasGitPanel sessionChangeset={changeset} onClose={() => {}} />);
+
+    expect(await screen.findByTestId("atlas-git-web-body")).toBeInTheDocument();
+    expect(screen.getByText("노드 추가 1")).toBeInTheDocument();
+    expect(screen.getByText("노드 수정 2")).toBeInTheDocument();
+    expect(screen.getByText("관계 추가 1")).toBeInTheDocument();
+    expect(screen.getByText("ontology-atlas snapshot")).toBeInTheDocument();
+    expect(screen.getByTestId("atlas-git-web-copy")).toBeInTheDocument();
+    expect(
+      screen.getByText("데스크톱 앱에서는 여기서 바로 스냅샷할 수 있어요."),
+    ).toBeInTheDocument();
+    expect(tauriApiMock.invoke).not.toHaveBeenCalled();
+  });
+
+  it("shows the empty-session message when the changeset has no changes", async () => {
+    renderPanel(<AtlasGitPanel sessionChangeset={null} onClose={() => {}} />);
+    expect(await screen.findByText("이 세션에서 감지된 변경이 없어요.")).toBeInTheDocument();
+  });
+});
+
+describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
+  it("shows the kind-grouped change summary and recent history", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+
+    const groups = await screen.findByTestId("atlas-git-change-groups");
+    expect(groups).toHaveTextContent("capability");
+    expect(groups).toHaveTextContent("추가 1");
+    expect(groups).toHaveTextContent("element");
+    expect(groups).toHaveTextContent("수정 1");
+    expect(groups).toHaveTextContent("capabilities/foo");
+
+    expect(screen.getByTestId("atlas-git-history-item")).toHaveTextContent(
+      "ontology snapshot: +1 concept (capabilities/foo)",
+    );
+    expect(screen.getByTestId("atlas-git-history-item")).toHaveTextContent("abc1234");
+  });
+
+  it("does NOT invoke git_snapshot before the explicit confirm click (신뢰 헌장 — 자동 실행 0)", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+
+    const snapshotButton = await screen.findByTestId("atlas-git-snapshot-button");
+    expect(snapshotInvokeCalls()).toHaveLength(0);
+
+    fireEvent.click(snapshotButton);
+    // 확인 스텝이 열렸을 뿐 — 아직 invoke 0.
+    expect(await screen.findByTestId("atlas-git-confirm-step")).toBeInTheDocument();
+    expect(snapshotInvokeCalls()).toHaveLength(0);
+
+    fireEvent.click(screen.getByTestId("atlas-git-confirm-button"));
+    await waitFor(() => expect(snapshotInvokeCalls()).toHaveLength(1));
+    // push 는 opt-in 기본 off.
+    expect(snapshotInvokeCalls()[0][1]).toMatchObject({ vaultPath: "/repo/vault", push: false });
+  });
+
+  it("passes push:true only when the opt-in checkbox is explicitly checked", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+
+    fireEvent.click(await screen.findByTestId("atlas-git-snapshot-button"));
+    const checkbox = screen.getByTestId("atlas-git-push-optin");
+    expect(checkbox).not.toBeChecked();
+    fireEvent.click(checkbox);
+    fireEvent.click(screen.getByTestId("atlas-git-confirm-button"));
+    await waitFor(() => expect(snapshotInvokeCalls()).toHaveLength(1));
+    expect(snapshotInvokeCalls()[0][1]).toMatchObject({ push: true });
+  });
+
+  it("disables the snapshot button and says 변경 없음 when there are no changes", async () => {
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, changedCount: 0 },
+      diff: { count: 0, files: [], diff: "" },
+      history: HISTORY,
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+
+    const button = await screen.findByTestId("atlas-git-snapshot-button");
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent("변경 없음");
+  });
+
+  it("shows the no-auto-init guidance when the vault is outside a git repo", async () => {
+    installDesktopGit({
+      status: {
+        initialized: false,
+        repoRoot: null,
+        branch: null,
+        upstream: null,
+        changedCount: 0,
+        stagedOutsideVault: [],
+      },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+
+    expect(await screen.findByTestId("atlas-git-not-initialized")).toHaveTextContent(
+      "git init",
+    );
+    expect(screen.queryByTestId("atlas-git-snapshot-button")).not.toBeInTheDocument();
+  });
+
+  it("toggles the uncommitted diff as a mono pre block", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+
+    fireEvent.click(await screen.findByTestId("atlas-git-diff-toggle"));
+    expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
+    fireEvent.click(screen.getByTestId("atlas-git-diff-toggle"));
+    expect(screen.queryByTestId("atlas-git-diff-pre")).not.toBeInTheDocument();
+  });
+
+  it("expands a history item to its full hash + iso time on click", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+
+    fireEvent.click(await screen.findByTestId("atlas-git-history-item"));
+    expect(screen.getByTestId("atlas-git-history-detail")).toHaveTextContent("abc1234def5678");
+  });
+
+  it("calls onClose from the header close button", async () => {
+    installDesktopGit();
+    const onClose = vi.fn();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={onClose} />);
+
+    fireEvent.click(await screen.findByTestId("atlas-git-close"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});

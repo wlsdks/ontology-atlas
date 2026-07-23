@@ -39,6 +39,12 @@ export interface CanvasActivityFlags {
   breathing: boolean;
   /** 카메라가 아직 움직임 (스프링 미정착). */
   cameraMoving: boolean;
+  /**
+   * 최근 변경 스포트라이트 램프가 목표(on=1 / off=0)에 미도달 — 켜고 끄는
+   * 침강/복귀 전이가 진행 중이다. 램프 step 은 프레임 바디 안에서만 일어나므로
+   * focusFadeSettling 과 같은 이유로 명시 활동으로 친다(전이 중 동결 방지).
+   */
+  spotlightSettling: boolean;
 }
 
 export function isCanvasActive(flags: CanvasActivityFlags): boolean {
@@ -51,7 +57,8 @@ export function isCanvasActive(flags: CanvasActivityFlags): boolean {
     flags.emphasisTarget ||
     flags.breathing ||
     flags.cameraMoving ||
-    flags.focusFadeSettling
+    flags.focusFadeSettling ||
+    flags.spotlightSettling
   );
 }
 

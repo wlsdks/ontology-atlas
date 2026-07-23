@@ -88,7 +88,10 @@ describe("SearchHint", () => {
     );
   });
 
-  it("can suppress the phone focus lane while keeping tablet and desktop utility access", () => {
+  it("can suppress the focus lane below lg while keeping desktop utility access", () => {
+    // 겹침 소탕 2026-07-23 — 노드 팝오버가 <lg 에서 상단 중앙(fixed inset-x-3
+    // top-[72px])을 차지하고, 이 레인도 <lg 우측 2행으로 내려왔으므로 focus
+    // 강등 구간이 <md → <lg 로 확장됐다.
     render(
       <SearchHint
         density="compact-focus"
@@ -101,9 +104,41 @@ describe("SearchHint", () => {
     const lane = screen.getByTestId("topology-search-action-lane");
     expect(lane).toHaveAttribute(
       "data-phone-focus-utility-contract",
-      "hidden-below-md-while-node-popover-owns-focus",
+      "hidden-below-lg-while-node-popover-owns-focus",
+    );
+    expect(lane).toHaveClass("hidden");
+    expect(lane).toHaveClass("lg:block");
+  });
+
+  it("demotes below md while the expanded INDEX sheet owns the surface", () => {
+    // <md 확장 INDEX 는 풀-블리드 시트 — 시트가 주 표면인 동안 크롬 열은
+    // 물러난다 (utility lane 의 hidden md:flex 와 같은 계약).
+    render(
+      <SearchHint phoneSheetSuppressed onOpenSearch={vi.fn()} onRelayout={vi.fn()} />,
+    );
+
+    const lane = screen.getByTestId("topology-search-action-lane");
+    expect(lane).toHaveAttribute(
+      "data-phone-sheet-utility-contract",
+      "hidden-below-md-while-index-sheet-owns-surface",
     );
     expect(lane).toHaveClass("hidden");
     expect(lane).toHaveClass("md:block");
+  });
+
+  it("lets the stricter focus suppression win when both suppressions are active", () => {
+    render(
+      <SearchHint
+        phoneFocusSuppressed
+        phoneSheetSuppressed
+        onOpenSearch={vi.fn()}
+        onRelayout={vi.fn()}
+      />,
+    );
+
+    const lane = screen.getByTestId("topology-search-action-lane");
+    expect(lane).toHaveClass("hidden");
+    expect(lane).toHaveClass("lg:block");
+    expect(lane).not.toHaveClass("md:block");
   });
 });

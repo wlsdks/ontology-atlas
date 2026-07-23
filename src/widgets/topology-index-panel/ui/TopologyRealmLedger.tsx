@@ -13,6 +13,7 @@ import {
   type DomainCensusRow,
   type OntologyTreeNode,
 } from "@/shared/lib/ontology-tree";
+import { RealmBlockExportAction } from "@/features/ontology-blocks";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import {
   flattenVisibleRowIds,
@@ -186,9 +187,15 @@ export function TopologyRealmLedger({
       {/* ── 1. 헤더 ── caps eyebrow + 제목 + census 한 줄 + 조용한 해제. */}
       <header className="mb-3 shrink-0 px-0.5">
         <div className="mb-1 flex items-center justify-between gap-2">
-          <span className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--topology-v2-panel-text-tertiary)]">
+          <span className="min-w-0 flex-1 truncate font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--topology-v2-panel-text-tertiary)]">
             {labels.label}
           </span>
+          {/* 온톨로지 블록 Slice A — "이 영역을 블록으로 내보내기". 자립
+              모듈(FirstRunStarterModule 계약): vault 상태·라벨을 스스로
+              읽어 이 위젯의 prop 표면을 늘리지 않고, 로컬 vault 미로드
+              (정적 샘플)면 스스로 null 렌더. exit 텍스트 버튼과 같은 조용한
+              액션 문법으로 그 옆에 선다. */}
+          <RealmBlockExportAction rootTitle={rootTitle} census={census} subtree={subtree} />
           <button
             type="button"
             onClick={onExit}

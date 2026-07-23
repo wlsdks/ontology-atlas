@@ -73,12 +73,34 @@ export interface EgoNeighborRankEntry {
   kind: string;
   /** 전체 차수(이웃 수) — 동일 kind 안에서 허브를 우선 노출. */
   degree: number;
+  /**
+   * 이 이웃과 포커스 노드를 잇는 엣지의 **원 관계 타입**(`WorldEdge.relationType`
+   * — contains|depends 2치 kind 로 뭉개기 전 값). DOI 랭크에서 kind 다음
+   * 우선순위로 관계 위계(contains > depends > relates)를 반영한다. 관계 맥락이
+   * 없는 호출부(예: 레이아웃 디스크 정렬)는 생략 가능 — 미상은 가중치 1로 취급.
+   */
+  relationType?: string;
+}
+
+/**
+ * 관계 타입 위계 가중치 — 렌더의 잉크 사다리(실선 contains > 파선 depends >
+ * 약한 relates)와 같은 위계를 DOI 랭크에도 반영한다. containment(contains/
+ * belongs_to) 3 > dependency(depends_on) 2 > 그 외(relates/related_to/
+ * describes/…)·미상 1. 결정론 유지 — 순수 매핑, 부수효과 없음.
+ */
+function relationTypeWeight(relationType: string | undefined): number {
+  if (relationType === "contains" || relationType === "belongs_to") return 3;
+  if (relationType === "depends_on") return 2;
+  return 1;
 }
 
 /**
  * DOI(degree-of-interest) 랭크 — 결정론: ① kind 가중치(domain 3 > capability 2 >
- * element/기타 1) 내림차순 → ② degree 내림차순 → ③ slug(id) 사전순. Furnas
- * (1986) DOI 처럼 "구조적으로 중요한" 이웃을 먼저 보여준다(도메인·허브 우선).
+ * element/기타 1) 내림차순 → ② 관계 타입 가중치(contains 3 > depends 2 >
+ * relates/기타 1) 내림차순 → ③ degree 내림차순 → ④ slug(id) 사전순. Furnas
+ * (1986) DOI 처럼 "구조적으로 중요한" 이웃을 먼저 보여준다 — 도메인·허브 우선,
+ * 그리고 같은 kind·degree 라면 contains 자식이 스쳐가는 relates 이웃을 앞선다
+ * (렌더 위계와 랭크 위계 정렬). kind 가중치가 관계 타입보다 우선한다.
  */
 export function rankEgoNeighborsByDOI(neighbors: readonly EgoNeighborRankEntry[]): string[] {
   const weight = (kind: string): number => (kind === "domain" ? 3 : kind === "capability" ? 2 : 1);
@@ -86,6 +108,7 @@ export function rankEgoNeighborsByDOI(neighbors: readonly EgoNeighborRankEntry[]
     .sort(
       (a, b) =>
         weight(b.kind) - weight(a.kind) ||
+        relationTypeWeight(b.relationType) - relationTypeWeight(a.relationType) ||
         b.degree - a.degree ||
         (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
     )
