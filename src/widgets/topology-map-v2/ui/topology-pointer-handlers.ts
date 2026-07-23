@@ -41,7 +41,7 @@ import {
   transitionPointerState,
   type PointerMachineState,
 } from "../interaction/pointer-state-machine";
-import { computeWheelZoomFactor, normalizeWheelDeltaY } from "../interaction/wheel";
+import { computeWheelZoomFactor, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
 import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, hitTestWorld, screenToWorld, worldToScreen } from "./topology-camera-math";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import { radiusForKind, type TopologyWorld } from "./topology-world";
@@ -941,6 +941,14 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     e.preventDefault();
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) return;
+    // 트랙패드 글라이드 가드 (소유자 실보고 2026-07-23) — 손가락이 얹힌 채
+    // 흘러나오는 |delta| < 4px 미세 wheel 노이즈는 줌으로 합성하지 않는다.
+    // 이 노이즈가 "엣지에 마우스만 올려도 화면이 움직/흔들림"의 유입로였다.
+    // 핀치(ctrlKey wheel)와 의도적 노치/스크롤은 그대로 통과. preventDefault
+    // 는 유지(페이지 스크롤 유출 방지), 호버 카드도 유지(모션이 없으므로).
+    const { height: vpH } = viewportRef.current;
+    const glideDeltaY = normalizeWheelDeltaY(e.deltaY, e.deltaMode, vpH);
+    if (shouldIgnoreWheelGlide(glideDeltaY, e.ctrlKey)) return;
     // 엣지/클러스터 호버 카드 잔류(패널2/3) — 휠/카메라 모션이 시작되는 순간
     // 카드는 즉시 사라져야 한다. 카드는 idle 호버에만 앵커되므로, 줌으로
     // 좌표가 흐르는 동안 pointermove 없이 잔류해 3티어 줌을 관통해 남았다.
