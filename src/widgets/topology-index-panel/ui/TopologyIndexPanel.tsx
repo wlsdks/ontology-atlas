@@ -157,6 +157,19 @@ export interface TopologyIndexPanelProps {
    * "왜 안 보이는지"를 설명하는 힌트 행 렌더 여부만 결정한다(데이터 무변경).
    */
   plainMode?: boolean;
+  /**
+   * 오버뷰 좌측 레일 attention winner 단일화 (2026-07-24) — vault 미연결
+   * (정적 샘플) 상태에서 "먼지 앉은 노드 N" 행과 "인계" 메뉴는 노출하지
+   * 않는다. 두 표면 모두 *현재 로드된 그래프*를 서술한다 — 샘플 모드에선
+   * 그 그래프가 사용자의 프로젝트가 아니라 이 제품 자신의 dogfood
+   * vault라서, 방치 카운트도 에이전트 인계 명령도 첫 방문자에게는 남의
+   * 저장소 얘기라 잡음이다(`BlockImportModule`의 "vault 없인 기능 자체가
+   * 작동 안 함" 케이스와는 다른 문제 — 그쪽은 P1 결함②에 따라 여전히
+   * disabled+힌트로 존치, 완전 은폐 금지). 생략 시 기존 하위호환 동작
+   * (항상 노출)을 유지 — 실 vault 연결(`vaultLoaded=true`)이면 두 행이
+   * 그대로 다시 나타난다(값 삭제가 아니라 강등).
+   */
+  vaultLoaded?: boolean;
 }
 
 /**
@@ -201,6 +214,7 @@ export function TopologyIndexPanel({
   recentWindow = "auto",
   onWindowChange,
   plainMode = false,
+  vaultLoaded = true,
 }: TopologyIndexPanelProps) {
   const [query, setQuery] = useState("");
   const [openIds, setOpenIds] = useState<Set<string>>(
@@ -511,7 +525,7 @@ export function TopologyIndexPanel({
           (HomePage, `deriveBootstrapPlan` — 이미 kind 있는 문서는 제외된
           카운트) 를 그대로 받는다 — 새 파생 없음. 0 이거나 승격 핸들러가
           없으면 행 자체를 숨긴다. */}
-      {uncatalogedDocCount && uncatalogedDocCount > 0 && onPromoteUncatalogedDocs ? (
+      {vaultLoaded && uncatalogedDocCount && uncatalogedDocCount > 0 && onPromoteUncatalogedDocs ? (
         <button
           type="button"
           onClick={onPromoteUncatalogedDocs}
@@ -535,7 +549,7 @@ export function TopologyIndexPanel({
           신선도 탭은 도메인 단위 최신성 히트스트립이라 "51개가 오래 방치"
           라는 약속과 정반대 그림("오늘 다 갱신")으로 읽혔다. 실제 오래된
           노드 목록("오래 안 바뀐 허브" + 오늘의 손질)은 할 일 탭이 답한다. */}
-      {dustyNodeCount && dustyNodeCount > 0 ? (
+      {vaultLoaded && dustyNodeCount && dustyNodeCount > 0 ? (
         <Link
           href="/ontology/insights?tab=do-next"
           data-testid="topology-index-dusty-nodes"
@@ -598,7 +612,7 @@ export function TopologyIndexPanel({
         )}
         {footerGrowthText ? <span className="min-w-0 flex-1 truncate whitespace-nowrap">{footerGrowthText}</span> : null}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
-          {agentHandoff ? (
+          {agentHandoff && vaultLoaded ? (
             <TopologyIndexAgentHandoff
               briefText={agentHandoff.briefText}
               reanalyzeText={agentHandoff.reanalyzeText}

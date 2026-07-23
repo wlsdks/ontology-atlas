@@ -3154,6 +3154,13 @@ export function HomePage() {
                     // 조용한 힌트 행 게이트. treeResult 는 이미 위에서
                     // element 를 제외했다(단일 진실원 무변경).
                     plainMode={audiencePlain}
+                    // 오버뷰 좌측 레일 attention winner 단일화 (2026-07-24) —
+                    // vault 미연결(정적 샘플) 동안은 "먼지 앉은 노드" 행과
+                    // "인계" 메뉴가 이 제품 자신의 dogfood vault 상태를
+                    // 서술해 첫 방문자에게 남의 저장소 잡음으로 읽힌다.
+                    // `canCreateNode`(= vault.manifest !== null)가 이미 이
+                    // 페이지의 "vault 로드됨" 단일 진실원이므로 그대로 재사용.
+                    vaultLoaded={canCreateNode}
                     onOpenAgentConnect={agentConnectLauncher.open}
                     // P4-② (2026-07-21 리텐션 라운드) — 이미 연결된
                     // 에이전트가 있는 2일차+ 사용자에게 "Updated with AI"

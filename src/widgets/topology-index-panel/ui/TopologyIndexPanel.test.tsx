@@ -682,4 +682,101 @@ describe("TopologyIndexPanel", () => {
       expect(screen.queryByTestId("topology-index-plain-hint")).not.toBeInTheDocument();
     });
   });
+
+  // 오버뷰 좌측 레일 attention winner 단일화 (2026-07-24) — vault 미연결
+  // (정적 샘플) 상태에서 "먼지 앉은 노드"/"인계" 같은 유지보수·에이전트
+  // 컨트롤은 첫 방문자에게 노출하지 않는다. 실 데이터(dustyNodeCount,
+  // agentHandoff)는 그대로 받되 `vaultLoaded=false`면 렌더만 억제하고,
+  // `vaultLoaded=true`(또는 생략 — 하위호환 기본값)면 그대로 나타나야 한다.
+  describe("vault-connected gate for maintenance/agent controls (P1 오버뷰 레일)", () => {
+    const agentHandoffProp = {
+      briefText: "brief",
+      reanalyzeText: "reanalyze",
+      syncText: "sync",
+      labels: {
+        menuLabel: "인계",
+        menuAria: "인계 메뉴",
+        briefCopy: "브리핑 복사",
+        briefCopied: "복사됨",
+        briefCopyAriaLabel: "브리핑 복사",
+        briefCopiedAriaLabel: "복사됨",
+        reanalyzeCopy: "재분석 복사",
+        reanalyzeCopied: "복사됨",
+        reanalyzeCopyAriaLabel: "재분석 복사",
+        reanalyzeCopiedAriaLabel: "복사됨",
+        syncCopy: "동기화 복사",
+        syncCopied: "복사됨",
+        syncCopyAriaLabel: "동기화 복사",
+        syncCopiedAriaLabel: "복사됨",
+      },
+    };
+
+    it("hides the dusty-nodes row and the agent-handoff menu when vaultLoaded is false, even though counts/props are non-empty", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          dustyNodeCount={51}
+          agentHandoff={agentHandoffProp}
+          uncatalogedDocCount={3}
+          onPromoteUncatalogedDocs={() => {}}
+          vaultLoaded={false}
+        />,
+      );
+      expect(screen.queryByTestId("topology-index-dusty-nodes")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("topology-index-agent-handoff")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("topology-index-uncataloged-docs")).not.toBeInTheDocument();
+    });
+
+    it("shows the dusty-nodes row and the agent-handoff menu once vaultLoaded is true", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          dustyNodeCount={51}
+          agentHandoff={agentHandoffProp}
+          uncatalogedDocCount={3}
+          onPromoteUncatalogedDocs={() => {}}
+          vaultLoaded
+        />,
+      );
+      expect(screen.getByTestId("topology-index-dusty-nodes")).toBeInTheDocument();
+      expect(screen.getByTestId("topology-index-agent-handoff")).toBeInTheDocument();
+      expect(screen.getByTestId("topology-index-uncataloged-docs")).toBeInTheDocument();
+    });
+
+    it("defaults to shown (vaultLoaded omitted) for backward compatibility with existing callers", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          dustyNodeCount={51}
+          agentHandoff={agentHandoffProp}
+        />,
+      );
+      expect(screen.getByTestId("topology-index-dusty-nodes")).toBeInTheDocument();
+      expect(screen.getByTestId("topology-index-agent-handoff")).toBeInTheDocument();
+    });
+  });
 });
