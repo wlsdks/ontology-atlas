@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-23T08:42:56.554Z",
+  "generatedAt": "2026-07-23T08:52:52.213Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4723,7 +4723,7 @@
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 3밴드 반응형 감사(7–13\" 태블릿 · 14/16\" 노트북 · 1920/2560 와이드, 33 findings)와 salience 리서치(Furnas D",
       "wordCount": 35418,
-      "updatedAt": "2026-07-23T07:21:04.558Z",
+      "updatedAt": "2026-07-23T15:29:58+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5866,7 +5866,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
       "wordCount": 12182,
-      "updatedAt": "2026-07-23T07:21:04.559Z",
+      "updatedAt": "2026-07-23T16:15:48+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6810,7 +6810,7 @@
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
       "wordCount": 10606,
-      "updatedAt": "2026-07-23T07:21:04.559Z",
+      "updatedAt": "2026-07-23T16:15:48+09:00",
       "linksOut": []
     },
     {
@@ -7099,7 +7099,9 @@
         "domain": "ai-agent-partner",
         "elements": [
           ".agents/skills/ontology-bootstrap/guides/meaning-extraction.md",
-          ".agents/skills/ontology-bootstrap/SKILL.md"
+          ".agents/skills/ontology-bootstrap/SKILL.md",
+          "mcp/src/meaning-evaluation.mjs",
+          "scripts/evaluate-meaning-corpus.mjs"
         ]
       },
       "headings": [
@@ -7116,7 +7118,7 @@
       ],
       "excerpt": "ontology-bootstrap은 비어 있거나 starter-only인 vault에서 첫 공유 온톨로지를 만드는 Atlas-only 에이전트 워크플로다. 저장소 폴더를 라벨링하는 기능이 아니라, indexproject가 반환한 semantic evidence와 extraction contract를 사람이 검토할 수 있는 의미 모델로 변환한다. observed: MCP가 직접 반환한 문서, 경로, 패키지, import 사실 proposed: observed evidence에서 해석했지만 아직 승인되지 않은 의미 shared: 사용자가 승인해 vault에 저장한 개념 ",
       "wordCount": 177,
-      "updatedAt": "2026-07-23T17:42:33+09:00",
+      "updatedAt": "2026-07-23T08:52:44.778Z",
       "linksOut": []
     },
     {
