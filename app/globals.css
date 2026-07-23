@@ -227,7 +227,7 @@
   --color-backdrop-medium: rgba(8, 9, 10, 0.6);
 
   /* 폰트 패밀리 */
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-sans: var(--font-pretendard), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 
   /* Linear 고유 — 510 weight (regular와 medium 사이) */
@@ -887,6 +887,16 @@
     --app-nav-rail-logo-size: calc(38px * var(--topology-ui-scale-factor));
     --app-nav-rail-logo-icon-size: calc(26px * var(--topology-ui-scale-factor));
     --app-nav-rail-icon-size: calc(24px * var(--topology-ui-scale-factor));
+    /*
+     * 레일 하단 유틸리티 티어(활동·발자취·설정) 아이콘 사다리 — 목적지
+     * 티어(24px + 라벨)보다 한 단계 아래(18px = lucide 기본, 각 타일이
+     * 이미 `size={18}` 로 선언하던 값). 소유자 실보고 2026-07-23: 유틸
+     * 아이콘(24px)이 설정 기어(16px)보다 커 레일 하단 3타일의 시각 무게가
+     * 제각각이었다. 유틸 3타일은 이 토큰 + `--app-nav-rail-tile-*` 지오메트리
+     * 하나로 앉는다 (`AppNavRail.tsx` · `GitStatusTile.tsx` ·
+     * `TopologyV2SettingsGear.tsx` rail-tile variant).
+     */
+    --app-nav-rail-utility-icon-size: calc(18px * var(--topology-ui-scale-factor));
     --app-nav-rail-label-size: calc(9.5px * var(--topology-ui-scale-factor));
     --app-nav-rail-tile-width: calc(38px * var(--topology-ui-scale-factor));
     --app-nav-rail-tile-height: calc(32px * var(--topology-ui-scale-factor));

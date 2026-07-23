@@ -1,14 +1,20 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { JetBrains_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import { SITE_URL } from '@/shared/config';
 import { withBasePath } from '@/shared/lib/base-path';
 import './globals.css';
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
+// 소유자 실보고 (2026-07-23): Inter latin 서브셋만 로드되어 한글이 시스템
+// 폴백(Apple SD Gothic)으로 떨어짐 — 라틴/숫자와 한글의 굵기·x-height 가
+// 어긋나 버튼 라벨이 "이상하게" 보였다. Pretendard 는 Inter 와 메트릭
+// 호환으로 설계된 한글 폰트라 라틴 룩은 유지하면서 한·영 혼용이 한 가족으로
+// 렌더된다. 셀프호스팅(npm 패키지, CDN 0 — local-first).
+const pretendard = localFont({
+  src: '../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2',
+  variable: '--font-pretendard',
   display: 'swap',
-  axes: ['opsz'],
+  weight: '45 920',
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -74,7 +80,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full overflow-x-hidden`}
+      className={`${pretendard.variable} ${jetbrainsMono.variable} h-full overflow-x-hidden`}
     >
       <body className="flex min-h-full flex-col overflow-x-hidden pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0">
         <script
