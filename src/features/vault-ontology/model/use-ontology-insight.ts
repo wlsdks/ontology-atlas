@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useDataSourceMode } from '@/features/data-source-mode';
+import { useSampleSource } from '@/features/vault-sample-source';
 import {
   type KnowledgeGraphNode,
   type KnowledgeGraphEdge,
@@ -10,6 +11,7 @@ import {
 import {
   deriveOntologyFromVault,
   vaultManifest as staticVaultManifestRaw,
+  sampleStorefrontManifest as storefrontVaultManifestRaw,
   type VaultManifest,
   type VaultOntologyDerivation,
 } from '@/entities/docs-vault';
@@ -28,6 +30,12 @@ const VAULT_SENTINEL_AUTHOR = 'vault-frontmatter';
 const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
 const STATIC_DERIVATION: VaultOntologyDerivation =
   deriveOntologyFromVault(staticVaultManifest);
+
+// P0 공감형 샘플 vault — "예시 비즈니스 보기" 선택 시 진실원(dogfood 와 같은
+// 빌드타임 JSON import 라 module-load 1 회 derive + 메모이즈).
+const storefrontVaultManifest = storefrontVaultManifestRaw as VaultManifest;
+const STOREFRONT_DERIVATION: VaultOntologyDerivation =
+  deriveOntologyFromVault(storefrontVaultManifest);
 
 export function derivationToInsight(
   d: VaultOntologyDerivation,
@@ -115,14 +123,20 @@ const STATIC_INSIGHT: { insight: KnowledgeProjectInsight; error: null } = {
   insight: derivationToInsight(STATIC_DERIVATION),
   error: null,
 };
+const STOREFRONT_INSIGHT: { insight: KnowledgeProjectInsight; error: null } = {
+  insight: derivationToInsight(STOREFRONT_DERIVATION),
+  error: null,
+};
 
 /**
  * Mode-aware ontology insight 어댑터. 2 모드:
  *
  * - **local** → `useVaultOntology` 결과를 `KnowledgeProjectInsight` shape 로
  *   변환. 사용자 디스크의 frontmatter 가 진실원.
- * - **static** → 빌드타임 dogfood 매니페스트 derivation. JSON import 라
- *   module-load 에 1 회 derive (메모이즈).
+ * - **static** → 빌드타임 내장 샘플 매니페스트 derivation. JSON import 라
+ *   module-load 에 1 회 derive (메모이즈). `useSampleSource` 가 dogfood(기본)
+ *   /storefront 둘 중 어느 샘플을 보여줄지 고른다 — local 모드에서는 이
+ *   선택이 아예 읽히지 않는다(사용자 vault 가 항상 우선).
  */
 export function useOntologyInsight(): {
   insight: KnowledgeProjectInsight | null;
@@ -130,12 +144,15 @@ export function useOntologyInsight(): {
 } {
   const mode = useDataSourceMode();
   const vault = useVaultOntology();
+  const [sampleSource] = useSampleSource();
 
   return useMemo(() => {
-    if (mode === 'static') return STATIC_INSIGHT;
+    if (mode === 'static') {
+      return sampleSource === 'storefront' ? STOREFRONT_INSIGHT : STATIC_INSIGHT;
+    }
     return {
       insight: derivationToInsight(vault),
       error: null,
     };
-  }, [mode, vault]);
+  }, [mode, vault, sampleSource]);
 }
