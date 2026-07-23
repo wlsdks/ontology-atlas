@@ -2939,6 +2939,20 @@ export function HomePage() {
                       ids: recentChanges.recentNodeIds,
                       agentAttributedNodeId: agentAttributedRecentNodeId,
                     }}
+                    // 스포트라이트 단일 진실원 (협의회 §⑤) — URL `?recent=`
+                    // 하나가 지도 침강과 이 렌즈를 동시 구동. 렌즈 탭 클릭 =
+                    // 스포트라이트 on/off, 프리셋 칩 = 창 즉시 전환.
+                    lens={spotlightOn ? "recent" : "all"}
+                    onLensChange={(next) =>
+                      setRouteState((current) => ({
+                        ...current,
+                        recentWindow: next === "recent" ? (current.recentWindow ?? "auto") : null,
+                      }))
+                    }
+                    recentWindow={recentWindow ?? "auto"}
+                    onWindowChange={(next) =>
+                      setRouteState((current) => ({ ...current, recentWindow: next }))
+                    }
                     // P4c — "지도에 없는 문서 N개 · 올리기". `bootstrapPlan` 은
                     // vault 가 로드되기만 하면(빈 지도든 아니든) 항상 계산돼
                     // 있으므로 새 파생 없이 그 카운트를 그대로 노출한다 —
@@ -3004,6 +3018,12 @@ export function HomePage() {
                       }),
                       segmentRecentAria: t("index.segmentRecentAria"),
                       recentEmptyHint: t("index.recentEmptyHint", { days: recentChanges.windowDays }),
+                      // 스포트라이트 창 프리셋 칩 라벨 (협의회 §②).
+                      windowChipAuto: t("index.windowChipAuto"),
+                      windowChip1: t("index.windowChipDays", { days: 1 }),
+                      windowChip7: t("index.windowChipDays", { days: 7 }),
+                      windowChip30: t("index.windowChipDays", { days: 30 }),
+                      windowChipsAria: t("index.windowChipsAria"),
                       agentBadge: t("index.agentBadge"),
                       uncatalogedDocsLabel: t("index.uncatalogedDocsLabel", {
                         count: bootstrapPlan?.elements.length ?? 0,

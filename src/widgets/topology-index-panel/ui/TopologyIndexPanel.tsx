@@ -54,6 +54,12 @@ export interface TopologyIndexPanelLabels {
   segmentRecentAria: string;
   /** P4a — "최근 변경" 렌즈가 활성인데 결과가 0일 때. */
   recentEmptyHint: string;
+  /** 스포트라이트 창 프리셋 칩 (협의회 §②, 렌즈 활성 시) — 전부 제공될 때만 칩 행 렌더. */
+  windowChipAuto?: string;
+  windowChip1?: string;
+  windowChip7?: string;
+  windowChip30?: string;
+  windowChipsAria?: string;
   /** P4b — heartbeat 귀속 배지. */
   agentBadge: string;
   /** P4c — "지도에 없는 문서 N개"(호출자가 count 를 이미 포맷). */
@@ -127,6 +133,18 @@ export interface TopologyIndexPanelProps {
    * 같은 숫자. 생략하면 종전 트리 워크 유지.
    */
   domainCensus?: ReadonlyMap<string, DomainCensusRow> | null;
+  /**
+   * 스포트라이트 단일 진실원 (협의회 §⑤, 2026-07-23) — 제공되면 렌즈가
+   * **controlled** 가 된다: URL `?recent=` 하나가 지도 침강과 이 렌즈를 동시
+   * 구동해 두 표면의 창 불일치가 구조적으로 불가능해진다. 생략 시 기존 로컬
+   * state 그대로(하위호환 — 다른 호출부/테스트 무영향).
+   */
+  lens?: "all" | "recent";
+  onLensChange?: (lens: "all" | "recent") => void;
+  /** 스포트라이트 창 — "auto"(적응 사다리) 또는 1/7/30 프리셋. 칩 활성 표시용. */
+  recentWindow?: "auto" | 1 | 7 | 30;
+  /** 프리셋 칩 클릭 → 창 전환(즉시 적용 — 팝업/확인 금지 계약). */
+  onWindowChange?: (window: "auto" | 1 | 7 | 30) => void;
 }
 
 /**
@@ -165,7 +183,12 @@ export function TopologyIndexPanel({
   onPromoteUncatalogedDocs = null,
   onOpenAgentConnect = null,
   agentActivityHref = null,
-  domainCensus = null,}: TopologyIndexPanelProps) {
+  domainCensus = null,
+  lens: lensProp,
+  onLensChange,
+  recentWindow = "auto",
+  onWindowChange,
+}: TopologyIndexPanelProps) {
   const [query, setQuery] = useState("");
   const [openIds, setOpenIds] = useState<Set<string>>(
     () => new Set(treeResult.roots.map((root) => root.node.id)),
@@ -173,7 +196,14 @@ export function TopologyIndexPanel({
   // P4a — "최근 변경" 렌즈. 검색이 활성이면 검색이 우선한다(둘을 동시에 좁히면
   // "왜 안 보이지"가 두 원인으로 갈라져 헷갈린다) — 렌즈는 검색이 비어 있을
   // 때만 트리를 좁힌다.
-  const [lens, setLens] = useState<"all" | "recent">("all");
+  // 스포트라이트 (협의회 §⑤) — lensProp 제공 시 controlled(단일 진실원 =
+  // URL `?recent=`), 아니면 종전 로컬 state.
+  const [lensLocal, setLensLocal] = useState<"all" | "recent">("all");
+  const lens = lensProp ?? lensLocal;
+  const setLens = (next: "all" | "recent") => {
+    if (onLensChange) onLensChange(next);
+    else setLensLocal(next);
+  };
   const trimmedQuery = query.trim();
   const isFiltering = trimmedQuery.length > 0;
   const lensActive = !isFiltering && lens === "recent" && recentChanges !== null;
@@ -374,6 +404,40 @@ export function TopologyIndexPanel({
           >
             {labels.segmentRecent}
           </button>
+        </div>
+      ) : null}
+
+      {/* 스포트라이트 창 프리셋 (협의회 §② — 팝업/확인 금지, 클릭=즉시 적용).
+          렌즈 활성 + controlled + 라벨 4종 제공 시에만. "auto"=적응 사다리. */}
+      {lensActive && onWindowChange && labels.windowChipAuto && labels.windowChip1 && labels.windowChip7 && labels.windowChip30 ? (
+        <div
+          role="radiogroup"
+          aria-label={labels.windowChipsAria ?? labels.segmentRecentAria}
+          data-testid="topology-index-window-chips"
+          className="mb-3 flex shrink-0 items-center gap-1"
+        >
+          {([
+            ["auto", labels.windowChipAuto],
+            [1, labels.windowChip1],
+            [7, labels.windowChip7],
+            [30, labels.windowChip30],
+          ] as const).map(([value, label]) => (
+            <button
+              key={String(value)}
+              type="button"
+              role="radio"
+              aria-checked={recentWindow === value}
+              data-testid={`topology-index-window-chip-${value}`}
+              onClick={() => onWindowChange(value)}
+              className={`rounded-full border px-2 py-0.5 text-caption transition-colors ${
+                recentWindow === value
+                  ? "border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
+                  : "border-[color:var(--topology-v2-panel-border)] text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       ) : null}
 
