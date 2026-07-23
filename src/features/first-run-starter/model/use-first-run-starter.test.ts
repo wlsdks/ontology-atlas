@@ -118,6 +118,28 @@ describe('useFirstRunStarter', () => {
     window.removeEventListener('keydown', bubbleHandler);
   });
 
+  it('yields Escape to the guided tour while its overlay is open (no silent permanent dismiss)', () => {
+    // 2026-07-23 Guardian 실측 회귀 가드 — 투어 스크림 아래에 덮인 카드가
+    // 캡처 단계에서 Escape 를 삼켜 영구 dismiss 되고, 투어의 `close-tour`
+    // 사다리 단이 그 keypress 를 영영 못 받았다.
+    const overlay = document.createElement('div');
+    overlay.setAttribute('data-testid', 'guided-tour-overlay');
+    document.body.appendChild(overlay);
+    try {
+      const { result } = renderHook(() => useFirstRunStarter());
+
+      const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+      act(() => {
+        window.dispatchEvent(event);
+      });
+
+      expect(result.current.visible).toBe(true);
+      expect(event.defaultPrevented).toBe(false);
+    } finally {
+      overlay.remove();
+    }
+  });
+
   it('does nothing on Escape when not visible', () => {
     mocks.sampleModeSettled = false;
     renderHook(() => useFirstRunStarter());

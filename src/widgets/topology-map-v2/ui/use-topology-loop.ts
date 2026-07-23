@@ -222,6 +222,15 @@ export interface UseTopologyLoopArgs {
    * 을 넘긴다 — 드로우/히트/팬-클램프 전부 이 값 하나로 정합된다.
    */
   tierReveal?: TierRevealConfig;
+  /**
+   * 가이드 투어 (2026-07-23) — 캔버스 노드 앵커(2·4단계) 프로젝션 대상 노드
+   * id, 또는 `null`(해당 단계가 아니거나 앵커 노드를 못 찾음). realm "전개"
+   * 버튼과 나란한 블록이 매 프레임 `tourAnchorRef` 의 DOM 에 transform +
+   * `--tour-anchor-r` 를 써넣는다.
+   */
+  tourAnchorNodeId?: string | null;
+  /** 가이드 투어 앵커 원 DOM(`TopologyMapV2` 가 렌더, ref 만 공유). */
+  tourAnchorRef?: RefObject<HTMLDivElement | null>;
 }
 
 const EMPTY_EXPANDED_SET: ReadonlySet<string> = new Set();
@@ -233,7 +242,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, livePhysics = false, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, tierReveal = DEFAULT_TIER_REVEAL } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, livePhysics = false, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -305,6 +314,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const onEnterRealmRef = useRef<typeof onEnterRealm>(onEnterRealm);
   /** 궤도 버튼 DOM 미러 (rAF 마운트 전용 effect 가 prop ref 를 dep 으로 걸지 않게). */
   const realmEnterButtonElRef = useRef<HTMLButtonElement | null>(null);
+  /** 가이드 투어 앵커 원 DOM 미러 — 같은 이유(realm 버튼과 동형). */
+  const tourAnchorElRef = useRef<HTMLDivElement | null>(null);
   // --- S5 깊이 시차 (영역 active 중 카메라 입력 반응) ---
   /** depth2(capability 링) 시차 오프셋(월드 단위). 카메라 정지 시 0 수렴. */
   const realmParallaxDepth2Ref = useRef<DepthParallaxOffset>(ZERO_PARALLAX);
@@ -518,6 +529,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const prevCameraSampleRef = useRef<{ x: number; y: number; s: number } | null>(null);
   /** W6 agent visibility — mirrors `agentFocusNodeId` prop into a ref for the rAF closure, same pattern as `focusedSlugRef`. */
   const agentFocusNodeIdRef = useRef<string | null>(agentFocusNodeId);
+  /** 가이드 투어 — `tourAnchorNodeId` prop 미러(같은 패턴). */
+  const tourAnchorNodeIdRef = useRef<string | null>(tourAnchorNodeId);
   /** 스포트라이트 — prop 미러(같은 패턴) + on/off 지수 램프(0..1, 프레임 바디가 step). */
   const spotlightIdsRef = useRef<ReadonlySet<string> | null>(spotlightIds);
   const spotlightRampRef = useRef(0);
@@ -562,6 +575,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   });
 
   useEffect(() => {
+    tourAnchorElRef.current = tourAnchorRef?.current ?? null;
+  });
+
+  useEffect(() => {
     focusedSlugRef.current = focusedSlug;
     // 선택/해제는 정적 상태 전이 — 유휴 스킵 중에도 한 번 다시 그린다
     // (selectedEdge 효과와 대칭). 해제 시 이 wake 가 없으면 retained
@@ -574,6 +591,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     agentFocusNodeIdRef.current = agentFocusNodeId;
   }, [agentFocusNodeId]);
+  useEffect(() => {
+    tourAnchorNodeIdRef.current = tourAnchorNodeId;
+  }, [tourAnchorNodeId]);
   useEffect(() => {
     spotlightIdsRef.current = spotlightIds;
   }, [spotlightIds]);
@@ -1992,6 +2012,25 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             realmEnterTargetRef.current = null;
             btn.style.opacity = "0";
             btn.style.pointerEvents = "none";
+          }
+        }
+      }
+
+      // --- 가이드 투어 캔버스 노드 앵커(2·4단계) 프로젝션 — realm 버튼
+      // 블록과 나란한 동형 블록. `tourAnchorNodeId` 가 가리키는 노드의 화면
+      // 좌표 + 반경을 매 프레임 원(div)에 써넣는다. TopologyMapV2 가 그
+      // 원 자체를 스크림 컷아웃으로 그린다(CSS transition 없음 — 이 매
+      // 프레임 transform 이 곧 모션, spec §5). ---
+      {
+        const anchorEl = tourAnchorElRef.current;
+        if (anchorEl) {
+          const anchorId = tourAnchorNodeIdRef.current;
+          const node = anchorId ? world.nodeById.get(anchorId) : undefined;
+          if (node) {
+            const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value;
+            const s = worldToScreen(camera, width, height, node.x, node.y);
+            anchorEl.style.transform = `translate(-50%, -50%) translate(${s.x}px, ${s.y}px)`;
+            anchorEl.style.setProperty("--tour-anchor-r", `${rr + 10}px`);
           }
         }
       }

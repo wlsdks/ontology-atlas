@@ -43,6 +43,15 @@ export interface TopologyEscLadderInput {
    *  context menu that outlives the keypress meant to dismiss whatever else
    *  is open would read as stuck chrome. */
   contextMenuOpen: boolean;
+  /**
+   * Guided tour open (`src/features/guided-tour`). Ranked right after the
+   * context menu and before the create-node composer — "가장 최근에 연
+   * 전이 표면 우선" 계약. The tour installs its own transparent viewport
+   * blocker, so leaving it open on Escape would read as the app ignoring
+   * the keypress entirely. Escape closes ONLY the tour (records `skipped`);
+   * it does not fall through to anything else on the same press.
+   */
+  tourOpen: boolean;
   /** Create-node composer open (defense in depth — the composer already
    *  closes itself on Escape while it holds focus; this covers the case
    *  where focus has moved outside it while it's still blocking the page). */
@@ -81,6 +90,7 @@ export type TopologyEscLadderAction =
   | "close-realm"
   | "close-edge-popover"
   | "close-context-menu"
+  | "close-tour"
   | "close-create-node"
   | "close-full-detail"
   | "close-relation-lens"
@@ -91,12 +101,13 @@ export type TopologyEscLadderAction =
 
 /**
  * Resolves what a single Escape keypress should do, in priority order:
- * realm → edge popover → context menu → create-node composer → search palette (deferred to its own
- * handler) → full-detail drawer → relation lens → close the node popover (ego
- * focus survives) → deselect the current node → pop one level of the
- * local-graph breadcrumb → nothing. Each tier closes exactly one thing; the
- * caller re-evaluates on the next keypress, which is what makes this "one step
- * at a time" rather than "close everything".
+ * realm → edge popover → context menu → guided tour → create-node composer →
+ * search palette (deferred to its own handler) → full-detail drawer →
+ * relation lens → close the node popover (ego focus survives) → deselect the
+ * current node → pop one level of the local-graph breadcrumb → nothing. Each
+ * tier closes exactly one thing; the caller re-evaluates on the next
+ * keypress, which is what makes this "one step at a time" rather than "close
+ * everything".
  */
 export function resolveTopologyEscLadderAction(
   input: TopologyEscLadderInput,
@@ -108,6 +119,7 @@ export function resolveTopologyEscLadderAction(
   // 종전 인라인 순서를 그대로 사다리로 옮긴 것 — 회귀 0).
   if (input.selectedEdgeActive) return "close-edge-popover";
   if (input.contextMenuOpen) return "close-context-menu";
+  if (input.tourOpen) return "close-tour";
   if (input.createNodeOpen) return "close-create-node";
   // The palette (Radix Dialog) already closes itself on Escape — returning
   // "none" here means the window ladder does nothing this keypress, so only

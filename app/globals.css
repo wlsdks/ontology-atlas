@@ -1222,6 +1222,17 @@
     --kind-glyph-edge-contains: #4a4a54;
     --kind-glyph-edge-relates: #5c5c72;
     --topology-blocking-backdrop-surface: rgba(0, 0, 0, 0.72);
+    /* 가이드 투어 (2026-07-23, `src/features/guided-tour`) — 스크림+컷아웃
+       페인트. `--topology-blocking-backdrop-surface`(0.72)보다 옅다: 투어는
+       "무엇을 가리키는지" 계기 안내라 지도가 비쳐 보여야 한다(composer
+       blocking scrim 은 완전한 차단 의도라 더 짙다). blur 0 의 불투명
+       마스크 — glow/neon 링(`0 0 ... rgba(indigo)` + blur>0 발광)과는 다른
+       기법이므로 이 토큰을 glow 용도로 확장하지 않는다. */
+    --topology-tour-scrim-surface: rgba(0, 0, 0, 0.6);
+    /* 단계 전환 컷아웃 rect 보간 duration — 크롬 `duration-180` 리듬과 동일,
+       200ms 미만 규칙 충족. `prefers-reduced-motion` 은 `motion-reduce:
+       transition-none` 로 제거(즉시 스냅). */
+    --topology-tour-transition-ms: 180ms;
     --topology-blocking-map-opacity: 0.24;
     --topology-blocking-map-filter: saturate(0.58);
     --topology-blocking-composer-top: clamp(7.5rem, 12vh, 9.5rem);
@@ -1252,11 +1263,16 @@
     --topology-analysis-panel-path-collapsed-scroll-end-reserve: 12px;
     --topology-shortcuts-help-phone-top: 188px;
     --topology-shortcuts-help-focus-phone-top: 208px;
-    /* 우측 세로 레일 2타일(전체보기/단축키) 리듬 — 죽은 "조절" 트리거 타일
-       철거 후 "?" 단축키 타일은 Fit 타일(44px) 바로 아래 한 칸: control-desktop-top
-       + 1×타일 + 8px gap. (구 3타일 시절엔 2×타일 + 16px 였다.) */
-    --topology-shortcuts-help-desktop-top: calc(
+    /* 우측 세로 레일 3타일(전체보기/가이드 투어/단축키) 리듬 — 가이드 투어
+       진입 타일(2026-07-23, `topology-tour-button`)이 Fit 타일과 "?" 타일
+       사이에 끼어들며 2타일 → 3타일로 현행화. 기존 두 top 토큰과 같은
+       control-desktop-top 기준 산식 패턴을 그대로 따른다(JSX 인라인 calc
+       대신 토큰 하나로 — 다른 모든 우측 레일 타일이 이 관례). */
+    --topology-tour-help-desktop-top: calc(
       var(--topology-floating-control-desktop-top) + var(--chrome-tile-size) + 8px
+    );
+    --topology-shortcuts-help-desktop-top: calc(
+      var(--topology-floating-control-desktop-top) + (var(--chrome-tile-size) + 8px) * 2
     );
     /* 설정 기어 (`TopologyV2SettingsGear`, chrome-datasheet-final.html 시안) —
        우측 유틸리티 레일의 "?" 버튼 바로 아래 한 칸. fit/필터 스택과 같은

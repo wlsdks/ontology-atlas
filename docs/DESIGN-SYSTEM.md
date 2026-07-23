@@ -763,6 +763,29 @@ names in component data markers and tests whenever a surface depends on
   `--topology-blocking-composer-shadow`: blocking composer visual contract. The
   form must read as the sole active write surface over the dimmed topology map,
   using token-backed elevation rather than ad hoc glow or hard-coded colors.
+- `--topology-tour-scrim-surface` / `--topology-tour-transition-ms` (2026-07-23,
+  guided tour, `src/features/guided-tour`): the tour's scrim-and-cutout
+  contract. The scrim is a `box-shadow: 0 0 0 9999px var(--topology-tour-scrim-surface)`
+  spread painted on the target rect with `blur 0` — an opaque mask, not the
+  forbidden `0 0 ... blur>0` glow/neon ring; the code carries a comment making
+  that distinction explicit at each call site. The surface is intentionally
+  lighter than `--topology-blocking-backdrop-surface` (0.6 vs 0.72) so the map
+  stays legible behind it — the tour is a pointing gesture, not a full block.
+  `--topology-tour-transition-ms` (180ms) drives the cutout rect's
+  top/left/width/height interpolation between steps, matching the existing
+  180ms chrome rhythm and staying under the 200ms motion ceiling;
+  `motion-reduce:transition-none` removes it entirely for
+  `prefers-reduced-motion`. The canvas-node anchor steps (2 and 4) skip this
+  CSS transition altogether — the per-frame `worldToScreen` projection in
+  `use-topology-loop.ts` (the same technique as the realm "전개" button) is
+  itself the motion, so imposing a CSS transition on top would fight the
+  camera. All scrim/cutout paint — rect and circle alike — lives on the
+  overlay's z-70 layer (the widget-side canvas anchor is a paint-free
+  measurement probe), so DOM-anchored and canvas-anchored steps dim the
+  surrounding chrome identically. The interactive step's blocker is a
+  4-strip transparent funnel around the cutout bbox (no new tokens — the
+  strips carry no paint); it blocks every surface except the spotlit node,
+  which is what keeps the tour from stacking transient UI on top of itself.
 - `--topology-path-route-surface` / `--topology-path-route-border` /
   `--topology-path-route-chip-surface` /
   `--topology-path-route-chip-border` /

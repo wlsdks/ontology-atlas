@@ -257,6 +257,51 @@
       "zoomHintPlain": "점을 누르면 그 안의 요소가 보여요"
     }
   },
+  "guidedTour": {
+    "progressLabel": "{current}/{total}",
+    "prevLabel": "이전",
+    "nextLabel": "다음",
+    "skipLabel": "건너뛰기",
+    "finishLabel": "마침",
+    "waitingForClickLabel": "밝게 남은 점을 눌러보세요",
+    "clickSuccessLabel": "잘했어요 — 방금 문서 한 장을 연 거예요",
+    "finishTourAction": "구경 끝 — 지도로",
+    "devBranchAction": "저는 개발자예요 →",
+    "steps": {
+      "welcome": {
+        "title": "이 지도는 문서예요",
+        "body": "여기 보이는 점 하나하나가 실제 마크다운 문서 한 장이에요. 지도 전체가 우리 제품이 무엇으로 이루어져 있고, 서로 어떻게 얽혀 있는지를 그린 한 장의 그림이에요. 2분이면 다 봐요."
+      },
+      "nodes": {
+        "title": "점의 크기와 모양",
+        "body": "가장 큰 점이 제품 전체, 그 다음이 영역, 작은 점이 하나하나의 기능과 부품이에요. 점의 생김새가 곧 무엇인지를 말해요."
+      },
+      "relations": {
+        "title": "선은 관계예요",
+        "body": "이어진 실선은 이 안에 들어 있어요, 점선은 이것에 기대고 있어요라는 뜻이에요. 여기 범례가 항상 알려줘요."
+      },
+      "tryClick": {
+        "title": "직접 눌러보세요",
+        "body": "지도에서 밝게 남아 있는 점을 눌러보세요. 그 점의 이야기 — 무엇이고, 무엇과 이어져 있는지 — 가 카드로 열려요."
+      },
+      "datasheet": {
+        "title": "카드 = 문서의 앞면",
+        "body": "이 카드 내용은 전부 그 마크다운 문서에 적힌 그대로예요. 여기서 고치면 파일이 바뀌고, 파일을 고치면 여기가 바뀌어요."
+      },
+      "index": {
+        "title": "INDEX — 지도의 목차",
+        "body": "지도가 그림이라면 INDEX 는 목록이에요. 이름으로 찾을 땐 여기가 빨라요."
+      },
+      "recent": {
+        "title": "무엇이 최근에 바뀌었나",
+        "body": "이 스위치를 켜면 최근에 바뀐 것만 밝게 남아요. 오랜만에 돌아왔을 때 여기부터 보면 돼요."
+      },
+      "agent": {
+        "title": "AI 에이전트와 같이 키우기",
+        "body": "Claude Code 같은 코딩 에이전트가 이 지도를 읽고 씁니다. INDEX 의 시작 카드에 있는 명령 한 줄이면 내 코드베이스로 이 지도를 만들 수 있어요."
+      }
+    }
+  },
   "ontologyBlocks": {
     "exportAction": "블록 내보내기",
     "exportAria": "이 영역의 원본 .md 를 블록 폴더로 내보내기",
@@ -2359,6 +2404,8 @@
       "reviewAria": "기준 이후 변경점 {count}개 — 온톨로지 변경점 패널에서 리뷰",
       "changeAnnouncement": "개념 {count}개 갱신됨 — 반영됨",
       "close": "닫기",
+      "tourTooltip": "가이드 투어",
+      "tourAriaLabel": "가이드 투어 시작",
       "shortcutsTooltip": "키보드 단축키 (?)",
       "shortcutsAriaLabel": "키보드 단축키 보기",
       "settingsGearAriaLabel": "지도 설정 열기",

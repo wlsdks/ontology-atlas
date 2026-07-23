@@ -257,6 +257,51 @@
       "zoomHintPlain": "click a dot to reveal its elements"
     }
   },
+  "guidedTour": {
+    "progressLabel": "{current}/{total}",
+    "prevLabel": "Back",
+    "nextLabel": "Next",
+    "skipLabel": "Skip",
+    "finishLabel": "Finish",
+    "waitingForClickLabel": "Click the dot left bright",
+    "clickSuccessLabel": "Nice — you just opened a real document",
+    "finishTourAction": "Done — back to the map",
+    "devBranchAction": "I'm a developer →",
+    "steps": {
+      "welcome": {
+        "title": "This map is documents",
+        "body": "Every dot you see here is one real markdown file. The whole map is a single picture of what our product is made of and how the pieces connect. Takes about 2 minutes."
+      },
+      "nodes": {
+        "title": "Size and shape of the dots",
+        "body": "The biggest dot is the whole product, the next size down is an area, and the small dots are individual features and parts. A dot's shape tells you what it is."
+      },
+      "relations": {
+        "title": "Lines are relationships",
+        "body": "A solid line means \"contained in\", a dashed line means \"depends on\". The legend here always reminds you."
+      },
+      "tryClick": {
+        "title": "Try clicking one",
+        "body": "Click the dot left bright on the map. Its story — what it is and what it connects to — opens in a card."
+      },
+      "datasheet": {
+        "title": "The card is the front of the document",
+        "body": "Everything in this card comes straight from that markdown file. Edit here and the file changes; edit the file and this changes."
+      },
+      "index": {
+        "title": "INDEX — the map's table of contents",
+        "body": "If the map is a picture, INDEX is a list. It's the fastest way to find something by name."
+      },
+      "recent": {
+        "title": "What changed recently",
+        "body": "Flip this switch and only the recently changed stuff stays bright. Good place to start when you're coming back after a while."
+      },
+      "agent": {
+        "title": "Growing it together with an AI agent",
+        "body": "Coding agents like Claude Code can read and write this map. One command in the INDEX starter card builds this map from your own codebase."
+      }
+    }
+  },
   "ontologyBlocks": {
     "exportAction": "Export block",
     "exportAria": "Export this realm's original .md files as a block folder",
@@ -2359,6 +2404,8 @@
       "reviewAria": "{count} changes since baseline — review in the ontology changes panel",
       "changeAnnouncement": "{count} concepts updated — synced",
       "close": "Close",
+      "tourTooltip": "Guided tour",
+      "tourAriaLabel": "Start the guided tour",
       "shortcutsTooltip": "Keyboard shortcuts (?)",
       "shortcutsAriaLabel": "View keyboard shortcuts",
       "settingsGearAriaLabel": "Open map settings",

@@ -17,7 +17,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 // `History as HistoryIcon` — 전역 DOM History 생성자와의 충돌 원천 차단
 // (사용성 검수 P0, AtlasGitPanel 과 동일 처방).
-import { BookOpen, FolderOpen, HelpCircle, History as HistoryIcon, Plus, Waypoints, X } from "lucide-react";
+import { BookOpen, Compass, FolderOpen, HelpCircle, History as HistoryIcon, Plus, Waypoints, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
@@ -216,6 +216,13 @@ import { TopologyReviewLink } from "./TopologyReviewLink";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 import { resolveTopologyEscLadderAction } from "../lib/topology-esc-ladder";
+import {
+  GuidedTourOverlay,
+  resolveAnchorRect,
+  useGuidedTour,
+  type TourAnchor,
+} from "@/features/guided-tour";
+import { resolveTourAnchorNodeId } from "../lib/resolve-tour-anchor-node";
 
 /**
  * rank2 — 상세 패널 퇴장 대칭용 경량 presence 게이트. `open` 이 false 로 떨어지면
@@ -1642,6 +1649,43 @@ export function HomePage() {
     }));
   }, [setRouteState]);
 
+  // 가이드 투어 (2026-07-23, `src/features/guided-tour`) — 지도 화면(/) 전담
+  // 의미 문해 투어. `canResolveTourAnchor` 는 이 view 가 testid(DOM) 또는
+  // canvas-node(그래프) 앵커를 실제로 해석해 feature 에 불리언만 돌려준다 —
+  // feature 는 widgets 를 import 하지 않는다(FSD).
+  const canResolveTourAnchor = useCallback(
+    (anchor: TourAnchor) => {
+      if (anchor === null) return true;
+      if (anchor.type === "canvas-node") {
+        return resolveTourAnchorNodeId(topologyV2Graph.nodes, anchor.target) !== null;
+      }
+      return resolveAnchorRect(anchor.value) !== null;
+    },
+    [topologyV2Graph],
+  );
+  const tour = useGuidedTour({
+    hasSelection: canvasSelectedSlug != null,
+    canResolveAnchor: canResolveTourAnchor,
+    // 실측 회귀 — 5단계(datasheet)를 떠날 때 선택을 안 지우면 노드 포커스가
+    // 유틸리티 레인(스포트라이트 토글 포함)을 계속 접어, 7단계(recent) 앵커가
+    // 영구히 해석 불가능해지고 8단계(dev 분기)가 도달 불가능해졌다.
+    onLeaveDatasheet: handleClose,
+  });
+  const tourAnchorRef = useRef<HTMLDivElement | null>(null);
+  const tourAnchorNodeId =
+    tour.open && tour.step && tour.step.anchor !== null && tour.step.anchor.type === "canvas-node"
+      ? resolveTourAnchorNodeId(topologyV2Graph.nodes, tour.step.anchor.target)
+      : null;
+  // 투어를 열 때 다른 전이 표면을 강등한다(§4 "열림 시" 계약) — create-node
+  // composer 와 같은 "openX 가 나머지를 닫는다" 관례를 그대로 따른다.
+  const openGuidedTour = useCallback(() => {
+    setOntologySearchOpen(false);
+    setShortcutsOpen(false);
+    setDocsDrawerOpen(false);
+    closeCreateNode();
+    tour.start();
+  }, [closeCreateNode, tour]);
+
   // P0#3 — Esc staged-close ladder (docs/FEATURES.md / shortcut sheet's
   // `stepCloseOverlays` promise: "Close drawers and overlays one step at a
   // time"). The composer/shortcuts/docs-drawer overlays already close
@@ -1678,6 +1722,7 @@ export function HomePage() {
         realmActive: resolvedRealmSlug !== null,
         selectedEdgeActive: selectedEdge !== null,
         contextMenuOpen: contextMenuNode !== null,
+        tourOpen: tour.open,
         createNodeOpen,
         searchOpen: ontologySearchOpen,
         fullDetailOpen,
@@ -1701,6 +1746,11 @@ export function HomePage() {
           break;
         case "close-context-menu":
           closeContextMenu();
+          break;
+        case "close-tour":
+          // §4 Esc 계약 — Escape 는 투어만 닫는다('skipped' 기록), 다른
+          // 표면으로 낙하하지 않는다(한 keypress = 한 표면).
+          tour.skip();
           break;
         case "close-create-node":
           closeCreateNode();
@@ -1744,6 +1794,7 @@ export function HomePage() {
     selectedEdge,
     resolvedRealmSlug,
     handleExitRealm,
+    tour,
   ]);
 
   const handleSelectImpactMode = useCallback(
@@ -3337,6 +3388,9 @@ export function HomePage() {
                     // 슬라이스 C — 비개발(plain) 모드는 element 티어를 도달
                     // 불가 밴드로 밀어 상시 숨김(ego 예외는 그대로).
                     tierReveal={audiencePlain ? PLAIN_TIER_REVEAL : undefined}
+                    // 가이드 투어 — 캔버스 노드 앵커(2·4단계) 프로젝션.
+                    tourAnchorNodeId={tourAnchorNodeId}
+                    tourAnchorRef={tourAnchorRef}
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas ? (
@@ -3361,8 +3415,29 @@ export function HomePage() {
                   onFitView={() => setFitViewToken((t) => t + 1)}
                 />
               )}
-              {/* 단축키/제스처 도움말 진입점 — 우상단 Fit 타일 아래 36×36 아이콘.
-                  phone 은 primary read rail(path/health) 과 충돌하지 않는 overview/focus 에서만 노출한다. */}
+              {/* 가이드 투어 진입 (2026-07-23, `src/features/guided-tour`) —
+                  "?" 타일 바로 위 형제, 같은 chrome-tile 토큰 가족. "?" 의
+                  phone 가시성 분기(topologyShortcutHelpPhoneVisible)는 복제하지
+                  않는다 — 투어는 md+ 전용 고정(`hidden md:flex`, spec §4). */}
+              {createNodeOpen ||
+              selectedRelationActive ||
+              topologyBlockingOverlayActive ||
+              selectedNodeFocusActive ? null : (
+                <Tooltip content={t('controls.tourTooltip')} side="left" withProvider={false}>
+                  <button
+                    type="button"
+                    onClick={openGuidedTour}
+                    aria-label={t('controls.tourAriaLabel')}
+                    data-testid="topology-tour-button"
+                    className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] md:right-6 md:top-[var(--topology-tour-help-desktop-top)] md:flex xl:right-8 size-[var(--chrome-tile-size)]"
+                  >
+                    <Compass className="size-[var(--chrome-icon)]" aria-hidden />
+                  </button>
+                </Tooltip>
+              )}
+              {/* 단축키/제스처 도움말 진입점 — 우상단 Fit 타일 아래 두 칸(투어
+                  타일 다음), 36×36 아이콘. phone 은 primary read rail
+                  (path/health) 과 충돌하지 않는 overview/focus 에서만 노출한다. */}
               {createNodeOpen ||
               selectedRelationActive ||
               topologyBlockingOverlayActive ||
@@ -3417,7 +3492,8 @@ export function HomePage() {
               )}
               {/* 설정 기어는 좌측 내비 레일 하단으로 이관됐다
                   (feat/chrome-system — chrome-rail-combined.html). 죽은 "조절"
-                  패널 철거 후 우측 세로 레일은 지도 전용 2타일(전체보기/단축키)만. */}
+                  패널 철거 후 우측 세로 레일은 지도 전용 3타일(전체보기/가이드
+                  투어/단축키, 2026-07-23 투어 타일 추가로 2→3 현행화)만. */}
               <HubRail
                 projects={renderProjects}
                 selectedSlug={canvasSelectedSlug}
@@ -3518,7 +3594,7 @@ export function HomePage() {
               {/* 샘플 모드 첫 방문 1회성 지도 힌트 — 하단 중앙, pointer-events-none
                   이라 노드 클릭을 막지 않는다(통과 클릭 = 소멸). 첫 노드 선택 시
                   영구 소멸(localStorage). 소스: features/first-run-starter. */}
-              <SampleNodeHint hasSelection={Boolean(canvasSelectedSlug)} />
+              <SampleNodeHint hasSelection={Boolean(canvasSelectedSlug)} hidden={tour.open} />
 
             </>
         </div>
@@ -3839,6 +3915,7 @@ export function HomePage() {
               : null
           }
         />
+        <GuidedTourOverlay tour={tour} canvasAnchorRef={tourAnchorRef} />
       </div>
     </main>
   );
