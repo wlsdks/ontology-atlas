@@ -64,6 +64,29 @@ export function selectDiscLabelEligible(
   return eligible;
 }
 
+/**
+ * 포커스(ego) 도메인 자식 라벨 겹침 LOD (노드 감사 처방). A focused node's
+ * 1-hop neighbors were unconditionally label-EXEMPT regardless of count — fine
+ * up to a handful, but a domain with more children than the readable
+ * `DISC_LABEL_TOP_K` band (the same "읽히는 라벨 한 줌" precedent the expanded-
+ * disc cut above uses) painted every child's label and let them collide. This
+ * mirrors that exact precedent for the ego-reveal path: below the cap every
+ * neighbor stays exempt (`doiEligibleIds === null` — caller's signal that no
+ * cut was needed, regression 0 for the common small-fan-out focus); at/above
+ * it, only the DOI-top-K neighbors (`selectDiscLabelEligible`) keep the
+ * exemption — everyone else falls back into the normal top-K/greedy
+ * competition, which still shows them if nothing collides ("과하지 않게" — no
+ * blanket label wipe, only the ones that would overlap get demoted to a dot).
+ * Pure — the caller computes `doiEligibleIds` (ranking needs edge/degree data
+ * this module doesn't own).
+ */
+export function isEgoNeighborLabelExempt(
+  neighborId: string,
+  doiEligibleIds: ReadonlySet<string> | null,
+): boolean {
+  return doiEligibleIds === null || doiEligibleIds.has(neighborId);
+}
+
 export interface LabelRankEntry {
   /** Node id (== vault slug id) — the deterministic tiebreaker on equal degree. */
   id: string;

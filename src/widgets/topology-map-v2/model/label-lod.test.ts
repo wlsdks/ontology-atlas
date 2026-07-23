@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { DISC_LABEL_TOP_K, LABEL_TOP_K, selectDiscLabelEligible, selectTopKLabels, type LabelRankEntry } from "./label-lod";
+import {
+  DISC_LABEL_TOP_K,
+  LABEL_TOP_K,
+  isEgoNeighborLabelExempt,
+  selectDiscLabelEligible,
+  selectTopKLabels,
+  type LabelRankEntry,
+} from "./label-lod";
 
 const entry = (id: string, degree: number, exempt = false): LabelRankEntry => ({ id, degree, exempt });
 
@@ -98,5 +105,39 @@ describe("selectDiscLabelEligible (high-fan disc label budget)", () => {
   it("exposes a per-disc budget in the readable 6–8 band", () => {
     expect(DISC_LABEL_TOP_K).toBeGreaterThanOrEqual(6);
     expect(DISC_LABEL_TOP_K).toBeLessThanOrEqual(8);
+  });
+});
+
+describe("isEgoNeighborLabelExempt (포커스 도메인 자식 라벨 겹침 LOD, 노드 감사 처방)", () => {
+  it("null eligible set (focus under the DISC_LABEL_TOP_K band) keeps every neighbor exempt", () => {
+    expect(isEgoNeighborLabelExempt("any-id", null)).toBe(true);
+  });
+
+  it("non-null eligible set only exempts the DOI winners", () => {
+    const eligible = new Set(["a", "b"]);
+    expect(isEgoNeighborLabelExempt("a", eligible)).toBe(true);
+    expect(isEgoNeighborLabelExempt("c", eligible)).toBe(false);
+  });
+
+  it("end-to-end: a focused domain's 18 same-kind children caps to DISC_LABEL_TOP_K exempt labels", () => {
+    // Reproduces the audited scenario: a focus with 18 neighbors, all the same
+    // kind/degree (a typical domain's capability children) — before this fix,
+    // `neighborsOfFocused.size > DISC_LABEL_TOP_K` would still exempt all 18
+    // unconditionally; now only the DOI-ranked top-K keep the exemption.
+    const neighborIds = Array.from({ length: 18 }, (_, i) => `child-${String(i).padStart(2, "0")}`);
+    const ranked = neighborIds; // identical kind/degree → DOI rank falls back to id-ascending, already sorted.
+    const eligible = selectDiscLabelEligible([ranked], DISC_LABEL_TOP_K);
+    const exemptCount = neighborIds.filter((id) => isEgoNeighborLabelExempt(id, eligible)).length;
+    expect(exemptCount).toBe(DISC_LABEL_TOP_K);
+    expect(isEgoNeighborLabelExempt("child-00", eligible)).toBe(true);
+    expect(isEgoNeighborLabelExempt("child-17", eligible)).toBe(false);
+  });
+
+  it("a small focus (≤ DISC_LABEL_TOP_K neighbors) is unaffected — caller passes null, regression 0", () => {
+    // The caller (`ui/topology-frame-draw.ts`) only computes a non-null eligible
+    // set when `neighborsOfFocused.size > DISC_LABEL_TOP_K`; below that, every
+    // neighbor stays exempt exactly as before this fix.
+    const neighborIds = ["a", "b", "c"];
+    expect(neighborIds.every((id) => isEgoNeighborLabelExempt(id, null))).toBe(true);
   });
 });
