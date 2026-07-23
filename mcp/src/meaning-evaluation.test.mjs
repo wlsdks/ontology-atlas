@@ -6,7 +6,10 @@ import { fileURLToPath } from 'node:url';
 import {
   evaluateMeaningProposal,
   proposalFromGolden,
+  repositoryProposalFromGolden,
+  validateMeaningProposalAgainstAnalysis,
 } from './meaning-evaluation.mjs';
+import { analyzeRepoStructure } from './analyze.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtureRoot = join(here, '../../tests/fixtures/meaning-corpus/commerce-fsd');
@@ -71,4 +74,26 @@ test('invalid proposal rows and confidence ranges fail closed', () => {
   const result = evaluateMeaningProposal(expected, proposal);
   assert.equal(result.passed, false);
   assert.deepEqual(result.findings.invalidConfidenceSlugs, ['capabilities/checkout']);
+});
+
+test('repository proposal passes only when definitions, citations, domains, and competency answers resolve', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = repositoryProposalFromGolden(expected);
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+  assert.equal(result.status, 'pass');
+  assert.equal(result.canWrite, true);
+  assert.equal(result.summary.errors, 0);
+  assert.ok(Object.values(result.gates).every(Boolean));
+});
+
+test('repository proposal blocks unknown citations and unresolved capability domains', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = repositoryProposalFromGolden(expected);
+  proposal.capabilities[0].evidence = ['docs/imaginary.md'];
+  proposal.capabilities[0].domain = 'domains/imaginary';
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+  assert.equal(result.status, 'fail');
+  assert.equal(result.canWrite, false);
+  assert.ok(result.findings.some((row) => row.code === 'unknown-citation'));
+  assert.ok(result.findings.some((row) => row.code === 'unresolved-capability-domain'));
 });

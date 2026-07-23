@@ -268,7 +268,7 @@ A 30-second read at the top of the task often replaces a 10-minute re-discovery 
 
 **Bootstrap an empty vault** (R16). When a user just ran `ontology-atlas init` on a fresh repo and the vault has only the 5 starter nodes, don't make the user hand-author every node. Use the **`/ontology-bootstrap`** skill (`.claude/skills/ontology-bootstrap/SKILL.md` or `.agents/skills/ontology-bootstrap/SKILL.md`):
 
-- It calls `index_project` once. **Side effect 0** — returns implementation candidates, bounded semantic evidence, an extraction contract, current-vault alignment, and competency questions. Vault NOT modified.
+- It calls `index_project` for evidence, then calls `analyze_repo_structure` with the complete meaning `proposal`. **Side effect 0** — semantic evidence carries `trust`/`riskFlags`; the round-trip `proposalValidation` checks definitions, citations, risk controls, confidence, domain placement, and competency answers. Require `canWrite:true` before user approval and any write. Vault NOT modified.
 - It separates observed source/import facts from proposed meanings and persisted shared concepts. Every proposed domain/capability needs a definition, includes/excludes boundary, citation, confidence, counterexample check, and competency-question coverage; folders/packages remain element evidence unless product meaning is independently supported.
 - Shows the evidence-backed proposal compactly, lets the user accept / select / refine, then lands only accepted concepts and relations via `add_concepts` / `add_relations`. Single source of truth preserved — only the user (via your subsequent calls) writes to the vault.
 - Companion to `/ontology-sync` (incremental, post-bootstrap) and `/ontology-extract` (prose ingress).

@@ -1463,7 +1463,7 @@ export function toolsListSchemaFailure(tools) {
   if (analyzeTool.outputSchema?.type !== 'object') {
     return 'analyze_repo_structure outputSchema root drift';
   }
-  if (!sameArray(analyzeTool.outputSchema?.required, ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence', 'suggestedRelations', 'skipped'])) {
+  if (!sameArray(analyzeTool.outputSchema?.required, ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence', 'proposalValidation', 'suggestedRelations', 'skipped'])) {
     return 'analyze_repo_structure outputSchema required drift';
   }
   if (analyzeTool.outputSchema?.additionalProperties !== false) {
