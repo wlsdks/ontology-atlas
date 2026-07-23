@@ -120,6 +120,16 @@ export interface NodeShapeDrawState {
    */
   agentFocus: boolean;
   /**
+   * 스포트라이트 변경-노드 링 (소유자 지시 2026-07-23, Image #14 — "변경된
+   * 것만 테두리가 돌아가게"). 렌즈 ON 동안 mtime 창 안 노드에 amberHub
+   * **회전 파선** kind-outline 을 얹는다 — 침강 대비만으론 element 뷰에서
+   * 변경 노드가 안 읽히던 실보고의 처방. glow/blur 0(발광 대신 재질),
+   * amberHub 는 에이전트 포커스 링과 같은 신호 톤 선례. `alpha` = 렌즈
+   * 램프(켜고 끄기 페이드), `dashOffset` = 회전 위상(px, reduced-motion 은
+   * 호출자가 0 고정 → 정적 파선). null = 미표시.
+   */
+  spotlightRing: { alpha: number; dashOffset: number } | null;
+  /**
    * Design Guardian 처방 L — 호버 circuit-trace shimmer 의 시간원. 프레임의
    * `performance.now()` 호환 타임스탬프(픽셀 드로우 자체는 시간을 모르는
    * 순수 계층이 아니므로 여기서만 받는다) + reduced-motion 게이트. 정지 호버
@@ -461,6 +471,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     hoverEmphasis,
     selectionPulse,
     agentFocus,
+    spotlightRing,
     now,
     reducedMotion,
   } = state;
@@ -526,6 +537,18 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   // each other.
   if (agentFocus && egoState !== "dim") {
     strokeKindOutline(ctx, kind, x, y, r + AGENT_FOCUS_RING_OFFSET, farT, tokens.amberHub, 1, 1);
+  }
+
+  // 스포트라이트 변경-노드 링 (Image #14 처방) — amberHub **회전 파선**
+  // kind-outline. 오프셋 r+6: hub(r+4)·agentFocus(r+8) 사이의 자기 자리 —
+  // 셋이 공존해도 스택(대체 아님). lineDashOffset 이 회전 위상; reduced-
+  // motion 은 호출자가 dashOffset 0 을 고정해 정적 파선이 된다. glow 0.
+  if (spotlightRing !== null && egoState !== "dim") {
+    ctx.setLineDash([5, 4]);
+    ctx.lineDashOffset = -spotlightRing.dashOffset;
+    strokeKindOutline(ctx, kind, x, y, r + 6, farT, tokens.amberHub, 1.2, spotlightRing.alpha);
+    ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
   }
 
   // Canvas-emphasis slice §A — project hexagon's own decorative identity

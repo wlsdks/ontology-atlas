@@ -851,6 +851,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         hoverEmphasis: emphasis,
         selectionPulse: selectionPulseVisual,
         agentFocus: agentFocusNodeId !== null && node.id === agentFocusNodeId,
+        // 스포트라이트 변경-노드 링 (Image #14) — 렌즈 ON + 창 안 노드에만.
+        // dashOffset = now×speed 회전 위상(reduced-motion 정적), alpha = 램프.
+        spotlightRing:
+          spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id)
+            ? {
+                alpha: spotlightRamp,
+                dashOffset: reducedMotion ? 0 : (now * tokens.spotlightRingSpeed) % 9,
+              }
+            : null,
         now,
         reducedMotion,
       },

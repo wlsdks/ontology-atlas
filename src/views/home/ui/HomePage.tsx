@@ -480,6 +480,18 @@ export function HomePage() {
       recentWindow: current.recentWindow === null ? "auto" : null,
     }));
   }, [setRouteState]);
+  // 소유자 지시 (Image #14): "전체 변경점을 보여주는 거면 아예 zoom out 을
+  // 크게" — 렌즈가 켜지는 순간 카메라를 전체 fit 으로 물러나 변경 지점
+  // 전부(자동 전개 포함)가 한 화면에 들어오게 한다. off→on 전이에서만 1회
+  // (렌즈 중 수동 탐색을 방해하지 않음), 기존 fit 토큰 재사용 — 신규 카메라
+  // 프리미티브 0.
+  const prevSpotlightOnRef = useRef(spotlightOn);
+  useEffect(() => {
+    if (spotlightOn && !prevSpotlightOnRef.current) {
+      setFitViewToken((token) => token + 1);
+    }
+    prevSpotlightOnRef.current = spotlightOn;
+  }, [spotlightOn]);
   // "N일 전" 계산의 기준 시각 — 일 단위 해상도라 세션 시작 스냅샷이면 충분
   // (render 중 Date.now() 는 react-hooks/purity 위반; 세션 동안 라벨이
   // 흔들리지 않는 것도 changeBaseline 과 같은 이유로 오히려 바람직하다).

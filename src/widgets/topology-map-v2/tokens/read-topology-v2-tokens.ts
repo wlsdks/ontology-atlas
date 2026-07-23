@@ -144,6 +144,8 @@ export interface TopologyV2Tokens {
    * 전이는 기존 `focusDimTau` 램프를 재사용한다(신규 easing 0).
    */
   spotlightRestAlpha: number;
+  /** `--topology-v2-spotlight-ring-speed` — 변경-노드 파선 링 회전 속도(px/ms). */
+  spotlightRingSpeed: number;
   rippleStaggerMs: number;
   breatheAmplitude: number;
   breatheFreqRad: number;
@@ -289,6 +291,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "emphasisDecayTau", cssVar: "--topology-v2-emphasis-decay-tau", kind: "number" },
   { key: "focusDimTau", cssVar: "--topology-v2-focus-dim-tau", kind: "number" },
   { key: "spotlightRestAlpha", cssVar: "--topology-v2-spotlight-rest-alpha", kind: "number" },
+  { key: "spotlightRingSpeed", cssVar: "--topology-v2-spotlight-ring-speed", kind: "number" },
   { key: "clusterRevealTau", cssVar: "--topology-v2-cluster-reveal-tau", kind: "number" },
   { key: "rippleStaggerMs", cssVar: "--topology-v2-ripple-stagger-ms", kind: "number" },
   { key: "breatheAmplitude", cssVar: "--topology-v2-breathe-amplitude", kind: "number" },

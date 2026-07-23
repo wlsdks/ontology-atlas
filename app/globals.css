@@ -1354,6 +1354,14 @@
        map 렌즈. 반응형: 값 자체는 폭 무관(알파 스칼라). marker: 렌즈 상태는
        URL `?recent=` 로 결정론 재현 가능. */
     --topology-v2-spotlight-rest-alpha: 0.35;
+    /* 스포트라이트 변경-노드 링의 파선 회전 속도(px/ms) — 소유자 지시
+       2026-07-23 "변경된 것만 테두리가 돌아가게": 침강 대비만으론 element
+       뷰에서 변경 노드가 안 읽혀(실보고 Image #14), 렌즈 ON 동안 변경
+       노드에 amberHub 파선 링을 lineDashOffset 으로 회전시킨다. glow/blur
+       0 — 헌장의 회전 금지 아님(코멧=상시 모션 선례, 에이전트 포커스 링
+       =amberHub 선례). 0.018 ≈ 파선 한 주기(9px)/500ms — 시선을 끌되
+       조급하지 않게. reduced-motion 은 정적 파선(회전 0). */
+    --topology-v2-spotlight-ring-speed: 0.018;
     --topology-v2-node-fill-stale: #141418;
     --topology-v2-node-stroke-stale: #454549;
     --topology-v2-node-hole-fill: #0c0c10;
