@@ -351,7 +351,7 @@ try {
   assert.match(cliMcpVerify.stdout, /add_concepts — non-object, single\/multi unknown-field repair, Received fields, duplicate-slug rows isolated with input indexes, and invalid-only batches return no write metadata/);
   assert.match(cliMcpVerify.stdout, /add_relations — non-object, single\/multi unknown-field repair, Received fields, invalid-type rows isolated with input indexes and closest-value hints, and invalid-only batches return no write metadata/);
   assert.match(cliMcpVerify.stdout, /batch caps — get_concepts\/add_concepts\/add_relations reject 51 rows with invalid_arguments/);
-  assert.match(cliMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
+  assert.match(cliMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
   assert.match(cliMcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(cliMcpVerify.stdout, /maintenance cursor — ready page stable/);
   assert.match(cliMcpVerify.stdout, /neighbors — elements\/example-element/);
@@ -458,7 +458,7 @@ try {
     cliMaintenanceResumeMcpVerify.stdout,
     /maintenance cursor — resume afterActionId advanced \(maint_[a-f0-9]{8}; 0 remaining actions/,
   );
-  assert.match(cliMaintenanceResumeMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
+  assert.match(cliMaintenanceResumeMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
   assert.match(
     cliMaintenanceResumeMcpVerify.stdout,
     installedVerifyStructuredContentRe,
@@ -649,7 +649,7 @@ try {
   assert.match(mcpVerify.stdout, /add_concepts — non-object, single\/multi unknown-field repair, Received fields, duplicate-slug rows isolated with input indexes, and invalid-only batches return no write metadata/);
   assert.match(mcpVerify.stdout, /add_relations — non-object, single\/multi unknown-field repair, Received fields, invalid-type rows isolated with input indexes and closest-value hints, and invalid-only batches return no write metadata/);
   assert.match(mcpVerify.stdout, /batch caps — get_concepts\/add_concepts\/add_relations reject 51 rows with invalid_arguments/);
-  assert.match(mcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
+  assert.match(mcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
   assert.match(mcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(mcpVerify.stdout, /maintenance cursor — ready page stable/);
   assert.match(mcpVerify.stdout, /neighbors — elements\/example-element/);
@@ -678,7 +678,7 @@ try {
   assert.match(directMcpVerify.stdout, /add_concepts — non-object, single\/multi unknown-field repair, Received fields, duplicate-slug rows isolated with input indexes, and invalid-only batches return no write metadata/);
   assert.match(directMcpVerify.stdout, /add_relations — non-object, single\/multi unknown-field repair, Received fields, invalid-type rows isolated with input indexes and closest-value hints, and invalid-only batches return no write metadata/);
   assert.match(directMcpVerify.stdout, /batch caps — get_concepts\/add_concepts\/add_relations reject 51 rows with invalid_arguments/);
-  assert.match(directMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
+  assert.match(directMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
   assert.match(directMcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(directMcpVerify.stdout, /maintenance cursor — ready page stable/);
   assert.match(directMcpVerify.stdout, installedVerifyStructuredContentRe);
@@ -697,7 +697,7 @@ try {
     directMcpMaintenanceResumeVerify.stdout,
     /maintenance cursor — resume afterActionId advanced \(maint_[a-f0-9]{8}; 0 remaining actions/,
   );
-  assert.match(directMcpMaintenanceResumeVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
+  assert.match(directMcpMaintenanceResumeVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
   assert.match(
     directMcpMaintenanceResumeVerify.stdout,
     installedVerifyStructuredContentRe,

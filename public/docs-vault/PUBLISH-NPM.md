@@ -31,7 +31,7 @@ cd mcp
 npm pack --dry-run
 # Tarball Contents — README.md, package.json, runtime src/*.mjs/js,
 # parser smoke fixture, scripts/verify.mjs
-# Current package: ontology-atlas-mcp@0.12.0
+# Current package: ontology-atlas-mcp@0.13.0
 
 cd ../cli
 npm pack --dry-run
@@ -114,7 +114,7 @@ If a name is taken:
 cd mcp
 npm publish --access=public
 # Enter OTP when prompted (if 2FA enabled)
-# "+ ontology-atlas-mcp@0.12.0" = success
+# "+ ontology-atlas-mcp@0.13.0" = success
 ```
 
 Verify:
@@ -133,7 +133,7 @@ OATLAS_VAULT=/path/to/some/folder npx -y ontology-atlas-mcp
 ## Step 4 — Publish the CLI (optional)
 
 Publish MCP first. The CLI package depends on the current MCP package
-(`ontology-atlas-mcp@^0.12.0`) for graph-level commands such as `compile`,
+(`ontology-atlas-mcp@^0.13.0`) for graph-level commands such as `compile`,
 `bootstrap`, `rename`, and `node`.
 
 ```bash
@@ -183,7 +183,7 @@ In `~/.config/claude-code/mcp.json` (or wherever your agent reads MCP config):
 }
 ```
 
-Restart Claude Code. The tool list should show the `ontology-atlas` namespace with 31 tools.
+Restart Claude Code. The tool list should show the `ontology-atlas` namespace with 32 tools.
 
 ### B) Start a user vault (CLI path)
 
@@ -209,14 +209,14 @@ ls -la
 Within 24 hours of publish, you can unpublish (for honest mistakes):
 
 ```bash
-npm unpublish ontology-atlas-mcp@0.12.0
+npm unpublish ontology-atlas-mcp@0.13.0
 npm unpublish ontology-atlas@0.11.0
 ```
 
 After 24 hours, unpublish is no longer allowed — only `deprecate` (installers see a warning, the version stays):
 
 ```bash
-npm deprecate ontology-atlas-mcp@0.12.0 "0.12.0 has a critical bug, use 0.12.1+"
+npm deprecate ontology-atlas-mcp@0.13.0 "0.13.0 has a critical bug, use 0.13.1+"
 npm deprecate ontology-atlas@0.11.0 "0.11.0 has a critical bug, use 0.11.1+"
 ```
 
@@ -231,11 +231,11 @@ After code changes, you must bump the version — npm rejects republishing the s
 
 ```bash
 cd mcp
-# Patch (bug fix): 0.12.0 → 0.12.1
+# Patch (bug fix): 0.13.0 → 0.13.1
 npm version patch
-# Or minor: 0.12.0 → 0.13.0
+# Or minor: 0.13.0 → 0.14.0
 npm version minor
-# Or major: 0.12.0 → 1.0.0
+# Or major: 0.13.0 → 1.0.0
 npm version major
 
 npm publish --access=public

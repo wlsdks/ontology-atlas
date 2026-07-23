@@ -143,6 +143,7 @@ export function cleanupAbsorbFixture() {
 export const EXPECTED_READ_TOOLS = [
   'connection_info',
   'git_status',
+  'git_history',
   'list_concepts',
   'get_concept',
   'get_concepts',
@@ -1930,7 +1931,10 @@ export function toolsListSchemaFailure(tools) {
     ['add_relations', 'relations'],
   ]) {
     const tool = tools.find((candidate) => candidate?.name === toolName);
-    if (!tool) return `tools/list response missing ${toolName} tool`;
+    // toolsListSchemaFailure also supports focused unit fixtures containing a
+    // subset of the registry. Live verification separately enforces the full
+    // inventory, then validates every destructive tool present here.
+    if (!tool) continue;
     if (!sameArray(tool.inputSchema?.required, [propertyName])) {
       return `${toolName} required schema drift`;
     }
@@ -2229,7 +2233,20 @@ export function toolsListSchemaFailure(tools) {
   if (renameConceptTool.outputSchema?.type !== 'object') {
     return 'rename_concept outputSchema root drift';
   }
-  if (!sameArray(renameConceptTool.outputSchema?.required, ['ok', 'oldSlug', 'newSlug', 'sourcePath', 'targetPath', 'moved', 'backlinkUpdates'])) {
+  if (!sameArray(renameConceptTool.outputSchema?.required, [
+    'ok',
+    'dryRun',
+    'previewReady',
+    'canConfirm',
+    'wouldChange',
+    'blockedReasons',
+    'oldSlug',
+    'newSlug',
+    'sourcePath',
+    'targetPath',
+    'moved',
+    'backlinkUpdates',
+  ])) {
     return 'rename_concept outputSchema required drift';
   }
   if (renameConceptTool.outputSchema?.additionalProperties !== false) {
@@ -2259,7 +2276,20 @@ export function toolsListSchemaFailure(tools) {
   if (mergeConceptsTool.outputSchema?.type !== 'object') {
     return 'merge_concepts outputSchema root drift';
   }
-  if (!sameArray(mergeConceptsTool.outputSchema?.required, ['ok', 'fromSlug', 'intoSlug', 'fromPath', 'deleted', 'backlinkUpdates', 'capturedFrom'])) {
+  if (!sameArray(mergeConceptsTool.outputSchema?.required, [
+    'ok',
+    'dryRun',
+    'previewReady',
+    'canConfirm',
+    'wouldChange',
+    'blockedReasons',
+    'fromSlug',
+    'intoSlug',
+    'fromPath',
+    'deleted',
+    'backlinkUpdates',
+    'capturedFrom',
+  ])) {
     return 'merge_concepts outputSchema required drift';
   }
   if (mergeConceptsTool.outputSchema?.additionalProperties !== false) {
@@ -2294,7 +2324,16 @@ export function toolsListSchemaFailure(tools) {
   if (deleteConceptTool.outputSchema?.type !== 'object') {
     return 'delete_concept outputSchema root drift';
   }
-  if (!sameArray(deleteConceptTool.outputSchema?.required, ['ok', 'slug', 'filePath'])) {
+  if (!sameArray(deleteConceptTool.outputSchema?.required, [
+    'ok',
+    'dryRun',
+    'previewReady',
+    'canConfirm',
+    'wouldChange',
+    'blockedReasons',
+    'slug',
+    'filePath',
+  ])) {
     return 'delete_concept outputSchema required drift';
   }
   if (deleteConceptTool.outputSchema?.additionalProperties !== false) {
@@ -2322,6 +2361,39 @@ export function toolsListSchemaFailure(tools) {
   if (deleteCapturedFailure) return deleteCapturedFailure;
   if (outputPropertyAt(deleteConceptTool, ['properties', 'postWriteMaintenance'])?.type !== 'object') {
     return 'delete_concept outputSchema postWriteMaintenance drift';
+  }
+
+  for (const toolName of [
+    'remove_relation',
+    'replace_relation',
+    'rename_concept',
+    'reclassify_concept',
+    'merge_concepts',
+    'delete_concept',
+    'absorb_document',
+    'git_snapshot',
+  ]) {
+    const tool = tools.find((candidate) => candidate?.name === toolName);
+    // Focused unit fixtures may omit tools outside their contract slice.
+    // The live first-contact inventory gate independently requires all tools.
+    if (!tool) continue;
+    for (const requiredField of ['previewReady', 'canConfirm', 'wouldChange', 'blockedReasons']) {
+      if (!tool.outputSchema?.required?.includes(requiredField)) {
+        return `${toolName} outputSchema must require ${requiredField}`;
+      }
+    }
+    for (const propertyName of ['previewReady', 'canConfirm', 'wouldChange']) {
+      if (outputPropertyAt(tool, ['properties', propertyName])?.type !== 'boolean') {
+        return `${toolName} outputSchema ${propertyName} destructive preview contract drift`;
+      }
+    }
+    const blockedReasons = outputPropertyAt(tool, ['properties', 'blockedReasons']);
+    if (
+      blockedReasons?.type !== 'array' ||
+      nonBlankStringSchemaFailure(blockedReasons?.items)
+    ) {
+      return `${toolName} outputSchema blockedReasons destructive preview contract drift`;
+    }
   }
 
   for (const toolName of [
@@ -2369,6 +2441,13 @@ export function toolsListSchemaFailure(tools) {
   const overwrite = propertyAt(renameTool, ['properties', 'overwrite']);
   if (overwrite?.type !== 'boolean') {
     return 'rename_concept.overwrite destructive safety schema drift';
+  }
+  const absorbDocumentTool = tools.find((candidate) => candidate?.name === 'absorb_document');
+  const allowOutsideRepo = absorbDocumentTool
+    ? propertyAt(absorbDocumentTool, ['properties', 'allowOutsideRepo'])
+    : null;
+  if (absorbDocumentTool && allowOutsideRepo?.type !== 'boolean') {
+    return 'absorb_document.allowOutsideRepo destructive boundary schema drift';
   }
 
   for (const toolName of [
@@ -3824,7 +3903,10 @@ export function buildFirstContactRequests() {
       // vault under test). Unconditional: no vault dependency, so this is
       // part of the initial batch rather than a reactive follow-up like the
       // rename/merge/delete dry-run smokes.
-      params: { name: 'absorb_document', arguments: { filePath: ABSORB_FIXTURE_PATH } },
+      params: {
+        name: 'absorb_document',
+        arguments: { filePath: ABSORB_FIXTURE_PATH, allowOutsideRepo: true },
+      },
     },
     {
       jsonrpc: '2.0',
@@ -4447,6 +4529,8 @@ export function destructiveDryRunFailure(response, toolName) {
   if (parsed.ok !== false || parsed.dryRun !== true) {
     return `${toolName} dry-run response must be ok:false with dryRun:true`;
   }
+  const previewFailure = destructivePreviewContractFailure(parsed, `${toolName} dry-run`);
+  if (previewFailure) return previewFailure;
   if (Object.prototype.hasOwnProperty.call(parsed, 'changed')) {
     return `${toolName} dry-run response unexpectedly included changed`;
   }
@@ -4457,6 +4541,9 @@ export function destructiveDryRunFailure(response, toolName) {
     return `${toolName} dry-run response missing follow-up safety hint`;
   }
   if (toolName === 'rename_concept') {
+    if (parsed.canConfirm !== true || parsed.blockedReasons.length !== 0) {
+      return 'rename_concept dry-run response must be immediately confirmable';
+    }
     if (parsed.moved !== false || typeof parsed.oldSlug !== 'string' || typeof parsed.newSlug !== 'string') {
       return 'rename_concept dry-run response missing rename preview fields';
     }
@@ -4464,6 +4551,9 @@ export function destructiveDryRunFailure(response, toolName) {
     if (backlinkFailure) return backlinkFailure;
   }
   if (toolName === 'merge_concepts') {
+    if (parsed.canConfirm !== true || parsed.blockedReasons.length !== 0) {
+      return 'merge_concepts dry-run response must be immediately confirmable';
+    }
     if (parsed.deleted !== false || typeof parsed.fromSlug !== 'string' || typeof parsed.intoSlug !== 'string') {
       return 'merge_concepts dry-run response missing merge preview fields';
     }
@@ -4476,6 +4566,10 @@ export function destructiveDryRunFailure(response, toolName) {
     }
     const backlinkRowsFailure = destructiveBacklinkRowsFailure(parsed.backlinks, toolName, 'backlinks');
     if (backlinkRowsFailure) return backlinkRowsFailure;
+    const expectedCanConfirm = parsed.backlinks.length === 0;
+    if (parsed.canConfirm !== expectedCanConfirm) {
+      return `delete_concept dry-run response canConfirm must be ${expectedCanConfirm} for ${parsed.backlinks.length} backlink(s)`;
+    }
   }
   return null;
 }
@@ -4501,6 +4595,14 @@ export function absorbDocumentDryRunFailure(response) {
   if (structuredFailure) return structuredFailure;
   if (parsed.ok !== false || parsed.dryRun !== true) {
     return 'absorb_document dry-run response must be ok:false with dryRun:true';
+  }
+  const previewFailure = destructivePreviewContractFailure(parsed, 'absorb_document dry-run');
+  if (previewFailure) return previewFailure;
+  if (parsed.outsideRepo !== true) {
+    return 'absorb_document dry-run response must identify the temp fixture as outside repoRoot';
+  }
+  if (parsed.canConfirm !== true || parsed.blockedReasons.length !== 0) {
+    return 'absorb_document dry-run response with allowOutsideRepo:true must be immediately confirmable';
   }
   if (Object.prototype.hasOwnProperty.call(parsed, 'changed')) {
     return 'absorb_document dry-run response unexpectedly included changed';
@@ -4546,6 +4648,31 @@ export function absorbDocumentDryRunFailure(response) {
   // guard against a classifier regression silently collapsing that.
   if (summary.absorbed < 1 || summary.suggested < 1) {
     return 'absorb_document dry-run response did not classify the fixture as expected (need >=1 absorb and >=1 suggest section)';
+  }
+  return null;
+}
+
+function destructivePreviewContractFailure(parsed, label) {
+  if (parsed.previewReady !== true) {
+    return `${label} response must expose previewReady:true`;
+  }
+  if (typeof parsed.canConfirm !== 'boolean') {
+    return `${label} response must expose boolean canConfirm`;
+  }
+  if (parsed.wouldChange !== true) {
+    return `${label} response must expose wouldChange:true`;
+  }
+  if (
+    !Array.isArray(parsed.blockedReasons) ||
+    parsed.blockedReasons.some((reason) => !isCleanNonBlankString(reason))
+  ) {
+    return `${label} response must expose clean blockedReasons[]`;
+  }
+  if (parsed.canConfirm && parsed.blockedReasons.length > 0) {
+    return `${label} response cannot be confirmable while blockedReasons is non-empty`;
+  }
+  if (!parsed.canConfirm && parsed.blockedReasons.length === 0) {
+    return `${label} response with canConfirm:false must explain why in blockedReasons`;
   }
   return null;
 }
@@ -7795,14 +7922,14 @@ async function step2BootAndCall() {
           return res(false);
         }
         destructiveDryRunCount = destructiveDryRunResponses.length;
-        log('ok', `destructive dry-runs — ${destructiveDryRunResponses.map(([toolName]) => toolName).join(' · ')} preview without write-maintenance`);
+        log('ok', `destructive dry-runs — ${destructiveDryRunResponses.map(([toolName]) => toolName).join(' · ')} previewReady/canConfirm contract without write-maintenance`);
       }
       const absorbDocumentDryRunFailureMessage = absorbDocumentDryRunFailure(absorbDocumentDryRunRes);
       if (absorbDocumentDryRunFailureMessage) {
         log('fail', absorbDocumentDryRunFailureMessage);
         return res(false);
       }
-      log('ok', 'absorb_document dry-run — temp fixture classified (policy + architecture sections) without writing');
+      log('ok', 'absorb_document dry-run — outside-repo temp fixture explicitly opted in, classified (policy + architecture sections), and not written');
       if (patchConflictGuardRes) {
         const patchConflictFailure = patchConflictGuardFailure(patchConflictGuardRes);
         if (patchConflictFailure) {

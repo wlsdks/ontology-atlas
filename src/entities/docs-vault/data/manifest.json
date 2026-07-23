@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-23T07:12:31.377Z",
+  "generatedAt": "2026-07-23T07:21:19.891Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1013,6 +1013,69 @@
       "linksOut": []
     },
     {
+      "slug": "archive/dogfood-mcp-builder-git-round-4-2026-07-23",
+      "path": "docs/archive/dogfood-mcp-builder-git-round-4-2026-07-23.md",
+      "title": "MCP dogfood round 4 — Builder · Git history · live toolset proof",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "MCP dogfood round 4 — Builder · Git history · live toolset proof",
+          "slug": "mcp-dogfood-round-4-builder-git-history-live-toolset-proof"
+        },
+        {
+          "depth": 2,
+          "text": "Why this round was different",
+          "slug": "why-this-round-was-different"
+        },
+        {
+          "depth": 2,
+          "text": "Live evidence",
+          "slug": "live-evidence"
+        },
+        {
+          "depth": 2,
+          "text": "Changes selected from the evidence",
+          "slug": "changes-selected-from-the-evidence"
+        },
+        {
+          "depth": 3,
+          "text": "1. `git_history` read tool",
+          "slug": "1-git_history-read-tool"
+        },
+        {
+          "depth": 3,
+          "text": "2. `query_ontology({operation:\"builder_context\"})`",
+          "slug": "2-query_ontologyoperationbuilder_context"
+        },
+        {
+          "depth": 3,
+          "text": "3. Live toolset proof in `connection_info`",
+          "slug": "3-live-toolset-proof-in-connection_info"
+        },
+        {
+          "depth": 3,
+          "text": "4. Recovery and mature-index handoff",
+          "slug": "4-recovery-and-mature-index-handoff"
+        },
+        {
+          "depth": 2,
+          "text": "Deliberately not built",
+          "slug": "deliberately-not-built"
+        },
+        {
+          "depth": 2,
+          "text": "Verification matrix",
+          "slug": "verification-matrix"
+        }
+      ],
+      "excerpt": "Date: 2026-07-23 Target: main-2 source checkout + docs/ontology dogfood vault Runtime: Node 24 Earlier rounds emphasized blank-folder bootstrap, destructive-write safety, and general graph health. This round followed four different agent moments: 1. an upgraded repository whose already-running MCP client still exposes ",
+      "wordCount": 963,
+      "updatedAt": "2026-07-23T06:15:28.446Z",
+      "linksOut": []
+    },
+    {
       "slug": "archive/dogfood-mcp-round-2-2026-07-23",
       "path": "docs/archive/dogfood-mcp-round-2-2026-07-23.md",
       "title": "MCP dogfood round 2 — 2026-07-23",
@@ -1113,6 +1176,59 @@
       "excerpt": "빈 폴더, cold-start bootstrap, strict input recovery, 관계/노드 destructive workflow, Git 상태 조합, packed install, Node 24 최신 runtime을 대상으로 명시적 runtime 시나리오 128건을 실행했다. 직렬 108건과 동시 read RPC 20건이며, 별도로 unit/integration/package/contract/build gate를 반복했다. 기본 MCP CRUD와 strict schema는 강했다. 실제 결함은 주로 “source checkout은 green이지만 설치 패키지",
       "wordCount": 796,
       "updatedAt": "2026-07-23T13:11:18+09:00",
+      "linksOut": []
+    },
+    {
+      "slug": "archive/dogfood-mcp-safety-round-3-2026-07-23",
+      "path": "docs/archive/dogfood-mcp-safety-round-3-2026-07-23.md",
+      "title": "MCP destructive safety dogfood round 3 — 2026-07-23",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "MCP destructive safety dogfood round 3 — 2026-07-23",
+          "slug": "mcp-destructive-safety-dogfood-round-3-2026-07-23"
+        },
+        {
+          "depth": 2,
+          "text": "결론",
+          "slug": "결론"
+        },
+        {
+          "depth": 2,
+          "text": "Product-owner pass",
+          "slug": "product-owner-pass"
+        },
+        {
+          "depth": 2,
+          "text": "공통 preview 계약",
+          "slug": "공통-preview-계약"
+        },
+        {
+          "depth": 2,
+          "text": "경계/상태 시나리오",
+          "slug": "경계상태-시나리오"
+        },
+        {
+          "depth": 2,
+          "text": "구현 안전성",
+          "slug": "구현-안전성"
+        },
+        {
+          "depth": 2,
+          "text": "검증 결과",
+          "slug": "검증-결과"
+        },
+        {
+          "depth": 2,
+          "text": "남은 개선 후보",
+          "slug": "남은-개선-후보"
+        }
+      ],
+      "excerpt": "Round 2에서 남긴 두 P2를 구현했다. 새 도구를 추가하지 않고 기존 31-tool surface의 파괴적 작업 8개를 하나의 machine-readable preview contract로 통일했으며, absorbdocument의 source rewrite를 canonical repository boundary로 제한했다. 새 tool은 필요하지 않았다. 문제는 capability 부재가 아니라 같은 결정을 도구마다 다르게 표현한 contract drift와 파일 경계 누락이었다. 별도 preflight 도구를 추가하면 agent의 선택지와 왕복만 늘어나므로 기",
+      "wordCount": 869,
+      "updatedAt": "2026-07-23T14:24:22+09:00",
       "linksOut": []
     },
     {
@@ -3056,6 +3172,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-23 — MCP Builder handoff + vault Git history + live toolset proof",
+          "slug": "2026-07-23-mcp-builder-handoff-vault-git-history-live-toolset-proof"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-23 — MCP destructive safety contract + absorb repo boundary",
+          "slug": "2026-07-23-mcp-destructive-safety-contract-absorb-repo-boundary"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-23 — MCP adversarial dogfood round 2",
           "slug": "2026-07-23-mcp-adversarial-dogfood-round-2"
         },
@@ -4596,8 +4722,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 3밴드 반응형 감사(7–13\" 태블릿 · 14/16\" 노트북 · 1920/2560 와이드, 33 findings)와 salience 리서치(Furnas D",
-      "wordCount": 35073,
-      "updatedAt": "2026-07-23T14:53:18+09:00",
+      "wordCount": 35418,
+      "updatedAt": "2026-07-23T07:21:04.558Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5654,8 +5780,8 @@
         },
         {
           "depth": 2,
-          "text": "3. MCP server (31 tools)",
-          "slug": "3-mcp-server-31-tools"
+          "text": "3. MCP server (32 tools)",
+          "slug": "3-mcp-server-32-tools"
         },
         {
           "depth": 4,
@@ -5669,13 +5795,13 @@
         },
         {
           "depth": 4,
-          "text": "Read tools (15)",
-          "slug": "read-tools-15"
+          "text": "Read tools (19)",
+          "slug": "read-tools-19"
         },
         {
           "depth": 4,
-          "text": "Write tools (8)",
-          "slug": "write-tools-8"
+          "text": "Write tools (13)",
+          "slug": "write-tools-13"
         },
         {
           "depth": 2,
@@ -5739,8 +5865,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 11870,
-      "updatedAt": "2026-07-23T07:11:02.168Z",
+      "wordCount": 12182,
+      "updatedAt": "2026-07-23T07:21:04.559Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6003,8 +6129,8 @@
         }
       ],
       "excerpt": "오픈소스 launch 단계의 publication 초안 모음. 메인테이너가 시점에 맞춰 직접 publish. 1. 사전 준비 [ ] CLI npm 배포 — cli/ 와 mcp/ 둘 다 npm publish [ ] 정적 호스팅 (GitHub Pages / Vercel / Netlify / Cloudflare Pages 등) 배포 — pnpm build → out/ 업로드. 자세한 가이드는 docs/DEPLOYMENT.md. [ ] hosted demo URL 이 README + CLI 안내 문구와 일치하는지 재확인 [ ] 30s demo gif 녹화 + docs/lau",
-      "wordCount": 551,
-      "updatedAt": "2026-07-23T11:32:37+09:00",
+      "wordCount": 552,
+      "updatedAt": "2026-07-23T05:57:49.514Z",
       "linksOut": []
     },
     {
@@ -6684,7 +6810,7 @@
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
       "wordCount": 10606,
-      "updatedAt": "2026-07-23T07:11:25.304Z",
+      "updatedAt": "2026-07-23T07:21:04.559Z",
       "linksOut": []
     },
     {
@@ -6873,12 +6999,12 @@
     {
       "slug": "ontology/capabilities/mcp-server",
       "path": "docs/ontology/capabilities/mcp-server.md",
-      "title": "MCP Server (31 tools)",
+      "title": "MCP Server (32 tools)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/mcp-server",
         "kind": "capability",
-        "title": "MCP Server (31 tools)",
+        "title": "MCP Server (32 tools)",
         "domain": "ai-agent-partner",
         "dependencies": [
           "capabilities/frontmatter-to-ontology"
@@ -6903,24 +7029,29 @@
           "mcp/src/suggestions.test.mjs",
           "mcp/src/vault.mjs",
           "mcp/src/verify-script.test.mjs",
+          "scripts/check-package-contracts.test.mjs",
           "scripts/dogfood-mcp-walk.mjs",
           "scripts/dogfood-mcp-walk.test.mjs",
           "scripts/lib/test-name-pattern.mjs",
           "scripts/lib/test-name-pattern.test.mjs",
           "scripts/run-focused-node-test.mjs",
-          "scripts/run-focused-node-test.test.mjs"
+          "scripts/run-focused-node-test.test.mjs",
+          "scripts/smoke-packed-cli.mjs"
+        ],
+        "relates": [
+          "capabilities/builder-canvas-polish"
         ]
       },
       "headings": [
         {
           "depth": 1,
-          "text": "MCP Server (31 tools)",
-          "slug": "mcp-server-31-tools"
+          "text": "MCP Server (32 tools)",
+          "slug": "mcp-server-32-tools"
         }
       ],
-      "excerpt": "@modelcontextprotocol/sdk 안정판 1.x 기반 stdio JSON-RPC 서버. 31 도구 노출 (read 18 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전을 반환해 잘못된 폴더 작업을 막는 첫 호출 proof · gitstatus · vault 범위의 로컬 Git HEAD/branch/변경 파일과 vault 밖 변경·staging·detached HEAD·진행 중 operation 위험을 구조화해 반환하는 re",
-      "wordCount": 13362,
-      "updatedAt": "2026-07-23T13:11:18+09:00",
+      "excerpt": "@modelcontextprotocol/sdk 안정판 1.x 기반 stdio JSON-RPC 서버. 32 도구 노출 (read 19 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-lev",
+      "wordCount": 13578,
+      "updatedAt": "2026-07-23T06:16:16.542Z",
       "linksOut": []
     },
     {
@@ -9193,8 +9324,8 @@
         }
       ],
       "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 여기서 ontology 는 단순한 그래프 그림이 아니라 프로젝트가 무엇으로 이루어져 있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델이다. project, domain, capability, element 노드와 contains, dependson, relates, describes 같은 관계를 markdown frontmatter 로 저장하고, CLI/",
-      "wordCount": 436,
-      "updatedAt": "2026-07-23T11:32:37+09:00",
+      "wordCount": 438,
+      "updatedAt": "2026-07-23T06:06:43.044Z",
       "linksOut": []
     },
     {
@@ -9749,8 +9880,8 @@
         }
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
-      "wordCount": 4921,
-      "updatedAt": "2026-07-23T11:32:37+09:00",
+      "wordCount": 4926,
+      "updatedAt": "2026-07-23T05:57:33.340Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -10945,7 +11076,7 @@
       },
       {
         "fromSlug": "README",
-        "context": "SKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | **[`../mcp/README.md`]** | MCP registration, 31 tools, tool contracts, verification | Canonical agent interface | | [`../cli/README.md`](../cli/",
+        "context": "SKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | **[`../mcp/README.md`]** | MCP registration, 32 tools, tool contracts, verification | Canonical agent interface | | [`../cli/README.md`](../cli/",
         "linkText": "`../mcp/README.md`"
       }
     ],
@@ -11086,7 +11217,7 @@
     "../cli/README": [
       {
         "fromSlug": "README",
-        "context": "EADME.md`](../mcp/README.md) | MCP registration, 31 tools, tool contracts, verification | Canonical agent interface | | **[`../cli/README.md`]** | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface | | [`DESIGN-SYSTEM.",
+        "context": "EADME.md`](../mcp/README.md) | MCP registration, 32 tools, tool contracts, verification | Canonical agent interface | | **[`../cli/README.md`]** | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface | | [`DESIGN-SYSTEM.",
         "linkText": "`../cli/README.md`"
       }
     ],
@@ -12523,6 +12654,23 @@
         "linkText": "ontology-core"
       }
     ],
+    "ontology/capabilities/builder-canvas-polish": [
+      {
+        "fromSlug": "ontology/capabilities/mcp-server",
+        "context": "frontmatter · **[capabilities/builder-canvas-polish]**",
+        "linkText": "capabilities/builder-canvas-polish"
+      },
+      {
+        "fromSlug": "ontology/documents/views-domain-boundary-audit",
+        "context": "frontmatter · **[capabilities/builder-canvas-polish]**",
+        "linkText": "capabilities/builder-canvas-polish"
+      },
+      {
+        "fromSlug": "ontology/domains/views",
+        "context": "frontmatter · **[builder-canvas-polish]**",
+        "linkText": "builder-canvas-polish"
+      }
+    ],
     "ontology/domains/mode-aware-adapters": [
       {
         "fromSlug": "ontology/capabilities/mode-aware-adapter",
@@ -12847,18 +12995,6 @@
         "fromSlug": "ontology/domains/ai-agent-partner",
         "context": "frontmatter · **[capabilities/project-ontology-indexing]**",
         "linkText": "capabilities/project-ontology-indexing"
-      }
-    ],
-    "ontology/capabilities/builder-canvas-polish": [
-      {
-        "fromSlug": "ontology/documents/views-domain-boundary-audit",
-        "context": "frontmatter · **[capabilities/builder-canvas-polish]**",
-        "linkText": "capabilities/builder-canvas-polish"
-      },
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[builder-canvas-polish]**",
-        "linkText": "builder-canvas-polish"
       }
     ],
     "ontology/capabilities/agent-connect-sheet": [
@@ -13234,11 +13370,25 @@
             "title": "Dogfood friction report — external-user simulation (2026-05-06)"
           },
           {
+            "name": "dogfood-mcp-builder-git-round-4-2026-07-23",
+            "path": "archive/dogfood-mcp-builder-git-round-4-2026-07-23",
+            "type": "doc",
+            "slug": "archive/dogfood-mcp-builder-git-round-4-2026-07-23",
+            "title": "MCP dogfood round 4 — Builder · Git history · live toolset proof"
+          },
+          {
             "name": "dogfood-mcp-round-2-2026-07-23",
             "path": "archive/dogfood-mcp-round-2-2026-07-23",
             "type": "doc",
             "slug": "archive/dogfood-mcp-round-2-2026-07-23",
             "title": "MCP dogfood round 2 — 2026-07-23"
+          },
+          {
+            "name": "dogfood-mcp-safety-round-3-2026-07-23",
+            "path": "archive/dogfood-mcp-safety-round-3-2026-07-23",
+            "type": "doc",
+            "slug": "archive/dogfood-mcp-safety-round-3-2026-07-23",
+            "title": "MCP destructive safety dogfood round 3 — 2026-07-23"
           },
           {
             "name": "dogfood-paravel-2026-05-06",
@@ -13572,7 +13722,7 @@
                 "path": "ontology/capabilities/mcp-server",
                 "type": "doc",
                 "slug": "ontology/capabilities/mcp-server",
-                "title": "MCP Server (31 tools)"
+                "title": "MCP Server (32 tools)"
               },
               {
                 "name": "mode-aware-adapter",

@@ -140,6 +140,7 @@ export const QUERY_ONTOLOGY_OPERATIONS = Object.freeze([
   'impact',
   'blast_radius',
   'subgraph',
+  'builder_context',
   'overview',
   'schema',
   'facets',
@@ -209,6 +210,9 @@ export function queryCompiledOntology(artifact, query = {}, options = {}) {
   }
   if (operation === 'subgraph') {
     return engine.subgraph(query.slug ?? query.seed, query);
+  }
+  if (operation === 'builder_context') {
+    return engine.builderContext(query.slug ?? query.seed, query);
   }
   if (operation === 'overview') {
     return engine.overview(query);
@@ -286,6 +290,9 @@ export function createOntologyEngine(artifact, options = {}) {
     : [];
   const nodes = Array.isArray(artifact?.nodes) ? artifact.nodes : [];
   const edges = Array.isArray(artifact?.edges) ? artifact.edges : [];
+  const sourceDocBySlug = new Map(
+    (Array.isArray(options.sourceDocs) ? options.sourceDocs : []).map((doc) => [doc.slug, doc]),
+  );
   const nodeBySlug = new Map(nodes.map((node) => [node.slug, node]));
   const aliasToSlug = new Map(
     (Array.isArray(artifact?.aliases) ? artifact.aliases : []).map(({ alias, slug }) => [
@@ -637,14 +644,22 @@ export function createOntologyEngine(artifact, options = {}) {
       targetOperation === 'reachability' ||
       targetOperation === 'impact' ||
       targetOperation === 'blast_radius' ||
-      targetOperation === 'subgraph'
+      targetOperation === 'subgraph' ||
+      targetOperation === 'builder_context'
     ) {
       const slug = resolve(options.slug ?? options.seed, 'slug');
-      const direction = normalizeTraversalDirection(
-        options.direction,
-        targetOperation === 'impact' || targetOperation === 'blast_radius' ? 'incoming' : 'outgoing',
-      );
-      const depth = normalizeDepth(options.depth, targetOperation === 'reachability' ? 3 : 2);
+      const defaultDirection =
+        targetOperation === 'impact' || targetOperation === 'blast_radius'
+          ? 'incoming'
+          : targetOperation === 'builder_context'
+            ? 'both'
+            : 'outgoing';
+      const direction = targetOperation === 'builder_context'
+        ? normalizeDirection(options.direction, defaultDirection)
+        : normalizeTraversalDirection(options.direction, defaultDirection);
+      const defaultDepth =
+        targetOperation === 'reachability' ? 3 : targetOperation === 'builder_context' ? 1 : 2;
+      const depth = normalizeDepth(options.depth, defaultDepth);
       const traversal = traversalEstimate(slug, direction, typeSet, depth);
       normalized.slug = slug;
       normalized.direction = direction;
@@ -1246,6 +1261,51 @@ export function createOntologyEngine(artifact, options = {}) {
         node: nodeBySlug.get(row.slug),
       })),
       edges: internalEdges,
+    };
+  }
+
+  function builderContext(slugOrAlias, options = {}) {
+    const focus = resolve(normalizeBuilderFocusInput(slugOrAlias), 'slug');
+    const focusNode = nodeBySlug.get(focus);
+    const focusParam = builderFocusParam(focusNode);
+    const direction = normalizeDirection(options.direction, 'both');
+    const depth = normalizeDepth(options.depth, 1);
+    const slice = subgraph(focus, { ...options, direction, depth });
+    const rows = slice.nodes.map((row) => {
+      const sourceDoc = sourceDocBySlug.get(row.slug);
+      return {
+        ...row,
+        node: summarizeNode(row.node),
+        canvasPosition: normalizeCanvasPosition(sourceDoc?.frontmatter?.canvasPosition),
+        expected_mtime: row.node?.mtime ?? sourceDoc?.mtime ?? null,
+      };
+    });
+
+    return {
+      operation: 'builder_context',
+      source: 'persisted_vault',
+      focus,
+      builder: {
+        href: `/ontology/edit/?node=${encodeURIComponent(focusParam)}`,
+        focusParam,
+        unsavedDraftsIncluded: false,
+      },
+      direction,
+      depth,
+      totalNodes: slice.totalNodes,
+      totalEdges: slice.totalEdges,
+      limited: slice.limited,
+      nodes: rows,
+      edges: slice.edges,
+      agentHandoff: {
+        writeTools: ['add_concepts', 'relation_check', 'add_relations', 'patch_concept'],
+        constraints: [
+          'Only persisted vault documents are visible; unsaved Builder drafts must be saved before MCP can inspect them.',
+          'Run relation_check before add_relations when introducing a new edge pattern.',
+          'Use patch_concept with the row expected_mtime when changing canvasPosition or other existing frontmatter.',
+          'Re-run builder_context after writes to verify the persisted graph and layout handoff.',
+        ],
+      },
     };
   }
 
@@ -4085,6 +4145,7 @@ export function createOntologyEngine(artifact, options = {}) {
     impact,
     blastRadius,
     subgraph,
+    builderContext,
     overview,
     schema,
     facets,
@@ -5201,7 +5262,8 @@ function buildSaferPlannedQuery(targetOperation, normalized, estimate, hasWarnin
     targetOperation === 'reachability' ||
     targetOperation === 'impact' ||
     targetOperation === 'blast_radius' ||
-    targetOperation === 'subgraph'
+    targetOperation === 'subgraph' ||
+    targetOperation === 'builder_context'
   ) {
     if (typeof safer.depth === 'number') safer.depth = Math.max(1, Math.min(safer.depth - 1, 2));
     if (!Array.isArray(safer.types) || safer.types.length === 0) safer.types = ['depends_on', 'relates'];
@@ -5404,6 +5466,41 @@ function normalizeLimit(value, fallback = DEFAULT_LIMIT, name = 'limit', maximum
     throw new Error(`${name} must be <= ${maximum}.`);
   }
   return value;
+}
+
+function normalizeCanvasPosition(value) {
+  if (
+    value &&
+    typeof value === 'object' &&
+    Number.isFinite(value.x) &&
+    Number.isFinite(value.y)
+  ) {
+    return { x: value.x, y: value.y };
+  }
+  return null;
+}
+
+function builderFocusParam(node) {
+  const slug = node?.slug || '';
+  if (!['project', 'domain', 'capability', 'element'].includes(node?.kind)) return slug;
+  const tail = slug.includes('/') ? slug.slice(slug.indexOf('/') + 1) : slug;
+  return `${node.kind}:${tail}`;
+}
+
+function normalizeBuilderFocusInput(value) {
+  if (typeof value !== 'string') return value;
+  const normalized = value.trim().replace(/^\/+/, '').replace(/^ontology\//, '');
+  if (!normalized || normalized.includes('/')) return normalized;
+  const [kind, ...tailParts] = normalized.split(':');
+  const tail = tailParts.join(':').trim();
+  if (!tail) return normalized;
+  if (kind === 'project') return tail;
+  const folder = {
+    domain: 'domains',
+    capability: 'capabilities',
+    element: 'elements',
+  }[kind];
+  return folder ? `${folder}/${tail}` : normalized;
 }
 
 function normalizeSearchBudget(value) {

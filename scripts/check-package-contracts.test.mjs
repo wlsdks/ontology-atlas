@@ -126,7 +126,7 @@ describe('package contract helpers', () => {
     assert.match(section, /`\/ontology\/insights`/);
     assert.match(section, /`\/projects`/);
     assert.match(section, /\*\*MCP server\*\*/);
-    assert.match(section, /18 read \+ 13 write/);
+    assert.match(section, /19 read \+ 13 write/);
     assert.match(section, /Every surface reads and writes the\nsame `\.md` files/);
     assert.doesNotMatch(readme, /## Three views, one vault/);
     assert.doesNotMatch(readme, /## Three views plus MCP, one vault/);
@@ -875,7 +875,7 @@ describe('package contract helpers', () => {
     const features = readFileSync('docs/FEATURES.md', 'utf-8');
     const row = readme.split('| `query_ontology` |')[1]?.split('\n')[0] ?? '';
     const addConceptRow = readme.split('| `add_concept` |')[1]?.split('\n')[0] ?? '';
-    const featureRow = features.split('12. **query_ontology**')[1]?.split('\n')[0] ?? '';
+    const featureRow = features.split('15. **query_ontology**')[1]?.split('\n')[0] ?? '';
     const strictInputSection = readme.split('String-array options are strict too:')[1]?.split('Scalar string options')[0] ?? '';
     const toolNameSection = readme.split('Unknown tool names fail closed too.')[1]?.split('String-array options are strict too:')[0] ?? '';
     const scalarInputSection = readme.split('Scalar string options follow the same boundary across read and write tools:')[1]?.split('Boolean options are also validated explicitly')[0] ?? '';
@@ -1019,8 +1019,8 @@ describe('package contract helpers', () => {
   it('keeps docs aligned with repo analysis MCP argument names', () => {
     const features = readFileSync('docs/FEATURES.md', 'utf-8');
     const mcpReadme = readFileSync('mcp/README.md', 'utf-8');
-    const analyzeLine = features.split('14. **analyze_repo_structure**')[1]?.split('\n')[0] ?? '';
-    const inferLine = features.split('15. **infer_imports**')[1]?.split('\n')[0] ?? '';
+    const analyzeLine = features.split('17. **analyze_repo_structure**')[1]?.split('\n')[0] ?? '';
+    const inferLine = features.split('18. **infer_imports**')[1]?.split('\n')[0] ?? '';
     const mcpInferRow = mcpReadme.split('| `infer_imports` |')[1]?.split('\n')[0] ?? '';
 
     assert.match(analyzeLine, /`?\{ rootPath\?, maxDepth\?, ignore\? \}`?/);
@@ -1040,7 +1040,7 @@ describe('package contract helpers', () => {
 
   it('keeps docs aligned with find_orphans root defaults', () => {
     const features = readFileSync('docs/FEATURES.md', 'utf-8');
-    const line = features.split('9. **find_orphans**')[1]?.split('\n')[0] ?? '';
+    const line = features.split('12. **find_orphans**')[1]?.split('\n')[0] ?? '';
 
     assert.match(line, /defaults exclude `project` and `vault-readme`/);
     assert.match(line, /excludeKinds: \[\]/);
@@ -1049,7 +1049,7 @@ describe('package contract helpers', () => {
 
   it('keeps docs aligned with find_neighbors defaults', () => {
     const features = readFileSync('docs/FEATURES.md', 'utf-8');
-    const line = features.split('6. **find_neighbors**')[1]?.split('\n')[0] ?? '';
+    const line = features.split('9. **find_neighbors**')[1]?.split('\n')[0] ?? '';
 
     assert.match(line, /`includeNodes` defaults true/);
     assert.match(line, /`limit` defaults 100\/max 500/);
@@ -1090,7 +1090,7 @@ describe('package contract helpers', () => {
     const features = readFileSync('docs/FEATURES.md', 'utf-8');
     const mcpReadme = readFileSync('mcp/README.md', 'utf-8');
     const dogfoodMcpDoc = readFileSync('docs/ontology/capabilities/mcp-server.md', 'utf-8');
-    const featureLine = features.split('11. **compile_ontology**')[1]?.split('\n')[0] ?? '';
+    const featureLine = features.split('14. **compile_ontology**')[1]?.split('\n')[0] ?? '';
     const mcpReadmeRow = mcpReadme.split('| `compile_ontology` |')[1]?.split('\n')[0] ?? '';
     const dogfoodRow = dogfoodMcpDoc.split('| `compile_ontology` |')[1]?.split('\n')[0] ?? '';
 
@@ -1464,12 +1464,12 @@ describe('package contract helpers', () => {
       verifySection,
       new RegExp(`✓ read census consistency — ${compiled.nodeCount} nodes across list_kinds/list_concepts/compile_ontology/overview, ${Object.keys(compiled.byKind).length} kinds`),
     );
-    assert.match(verifySection, /✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
+    assert.match(verifySection, /✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
     assert.match(
       verifySection,
       /✓ structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance (2\/2 \(resume skipped: no actions\)|3\/3), graph 13\/13/,
     );
-    assert.match(verifySection, /All passed — register \.mcp\.json with your MCP client and restart to use the 31 tools/);
+    assert.match(verifySection, /All passed — register \.mcp\.json with your MCP client and restart to use the 32 tools/);
     assert.match(verifySection, /`list_concepts`, a project-node `list_concepts` probe,\s+`get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`,\s+`query_concepts`, limited `query_concepts`, `analyze_repo_structure`,\s+`infer_imports`, `index_project`, `find_neighbors`, `find_path`, `find_orphans`,\s+`list_kinds`, `validate_vault`/);
     assert.match(verifySection, /batch success rows\s+and partial rows are verified during installation checks/);
     assert.match(verifySection, /`query_ontology\(\{operation:"neighbors"\}\)`/);
@@ -1517,7 +1517,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /invalid `add_relations` type hints/);
     assert.match(verifySection, /`concepts\[n\]` \/\s+`relations\[n\]` error labels/);
     assert.match(verifySection, /Destructive dry-run smoke calls `rename_concept`, `merge_concepts`, and\s+`delete_concept` against live vault slugs without writing/);
-    assert.match(verifySection, /preview is missing or includes `changed` or `postWriteMaintenance`/);
+    assert.match(verifySection, /preview is missing, its `previewReady` \/ `canConfirm` \/ `wouldChange` \/\s+`blockedReasons` decision fields contradict one another, or it includes\s+`changed` or `postWriteMaintenance`/);
+    assert.match(verifySection, /shared four-field destructive preview schema on all eight\s+destructive tools and `absorb_document\.allowOutsideRepo`/);
     assert.match(verifySection, /row-level `ok:false`\s+results[\s\S]*closest-value hints for invalid relation types[\s\S]*top-level\s+tool error/);
     assert.match(verifySection, /`initialize\.instructions` gate fails/);
     assert.match(verifySection, /read-only diagnosis flow/);
@@ -2579,7 +2580,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /vault total 5 nodes/);
     assert.match(smoke, /expectedToolsListAnnotationSummary/);
     assert.match(smoke, /expectedToolsListAnnotationRe/);
-    assert.equal(expectedToolsListAnnotationSummary(), '31/31 titled; 18/18 read; 13/13 write; 8/8 destructive; 3/3 idempotent; 31/31 local-only');
+    assert.equal(expectedToolsListAnnotationSummary(), '32/32 titled; 19/19 read; 13/13 write; 8/8 destructive; 3/3 idempotent; 32/32 local-only');
     assert.match(smoke, /--vault requires a path value/);
     assert.match(smoke, /npm run verify -- \\\[vault\\\] \\\[--timeout-ms N\\\]/);
     assert.match(smoke, /npm run verify -- --vault path --timeout-ms 15000/);
@@ -2679,7 +2680,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /add_concepts — non-object, single\\\/multi unknown-field repair, Received fields, duplicate-slug rows isolated with input indexes, and invalid-only batches return no write metadata/);
     assert.match(smoke, /add_relations — non-object, single\\\/multi unknown-field repair, Received fields, invalid-type rows isolated with input indexes and closest-value hints, and invalid-only batches return no write metadata/);
     assert.match(smoke, /batch caps — get_concepts\\\/add_concepts\\\/add_relations reject 51 rows with invalid_arguments/);
-    assert.match(smoke, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
+    assert.match(smoke, /destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\\\/canConfirm contract without write-maintenance/);
     assert.match(smoke, /structuredContentVerifySummary/);
     assert.match(smoke, /installedVerifyStructuredContentRe/);
     assert.match(smoke, /hasMaintenanceResume: true/);

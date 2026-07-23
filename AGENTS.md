@@ -4,7 +4,7 @@
 
 ## Project overview
 
-`ontology-atlas` is **a local-first ontology workbench for understanding a product/system from business core to implementation evidence**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Planners, marketers, C-level decision-makers, developers, and AI agents should be able to read the same graph: business/product domains, capabilities, ownership, dependencies, evidence, and impact. Developers edit via CLI (`ontology-atlas` 52 commands — vault scaffold, agent setup repair, agent-file drift readout, agent activity heartbeat, MCP verify, deterministic graph compile, standard-format interop export, bounded path enumeration, transitive reachability, relation preflight + write, commit preflight, git snapshot, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (31 tools).
+`ontology-atlas` is **a local-first ontology workbench for understanding a product/system from business core to implementation evidence**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Planners, marketers, C-level decision-makers, developers, and AI agents should be able to read the same graph: business/product domains, capabilities, ownership, dependencies, evidence, and impact. Developers edit via CLI (`ontology-atlas` 52 commands — vault scaffold, agent setup repair, agent-file drift readout, agent activity heartbeat, MCP verify, deterministic graph compile, standard-format interop export, bounded path enumeration, transitive reachability, relation preflight + write, commit preflight, git snapshot, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (32 tools).
 
 Atlas does not try to replace CodeGraph, grep, AST indexes, language servers,
 or source search. Those tools answer structural code questions. Atlas gives
@@ -106,7 +106,7 @@ src/                       FSD layers
   ├── features/            interaction units
   ├── entities/            business entities
   └── shared/              UI · lib · config primitives
-mcp/                       MCP server (the AI agent's surface) — npm pkg, 31 tools
+mcp/                       MCP server (the AI agent's surface) — npm pkg, 32 tools
 cli/                       CLI binary (developer's daily entry point) — npm pkg, 52 commands
                            init / agent-setup / agent-files / add / import / list / find / validate / mcp-verify / query / compile / export
                            analyze / infer-imports / bootstrap / preflight / snapshot
@@ -240,7 +240,7 @@ Long-form docs:
 - `@docs/FEATURES.md` — features users can use right now
 - `@docs/ARCHITECTURE.md` · `@docs/DESIGN-SYSTEM.md`
 - `@docs/CHANGELOG.md` — chronological user-visible changes
-- `@mcp/README.md` — AI agent partner (MCP 31 tools — read 18 + write 13) registration + usage
+- `@mcp/README.md` — AI agent partner (MCP 32 tools — read 19 + write 13) registration + usage
 - `@docs/archive/` — historical analysis docs (no longer normative)
 
 ## This project's own ontology

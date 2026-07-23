@@ -36,6 +36,56 @@ findings)와 salience 리서치(Furnas DOI · SKOS 위계)를 근거로 태블�
 - **관계 타입 위계 → DOI 랭킹** — contains > depends > relates 가 렌더
   (실선/파선)에만 있고 랭킹에 없던 gap 정정. 이웃 24-컷·라벨 8-컷에서
   contains 자식이 스쳐가는 relates 이웃보다 먼저 노출된다.
+## 2026-07-23 — MCP Builder handoff + vault Git history + live toolset proof
+
+반복적인 graph health 확인이 아니라 실제 Builder/Git/클라이언트 업그레이드
+흐름으로 dogfood했다. 그 과정에서 연결된 Codex 프로세스가 저장소의 최신
+31-tool 서버 대신 예전 25-tool 목록을 계속 광고하고, 오류 안내가
+`find_evidence(query)`를 권하지만 실제 스키마는 `{title}`인 계약 드리프트를
+재현했다.
+
+- MCP v0.13.0은 32 tools(19 read + 13 write)다. 새 `git_history`는 active
+  vault pathspec을 건드린 commit만 newest-first로 반환하고, vault 밖만 바꾼
+  commit은 제외한다. fetch/pull/push나 write는 하지 않는다.
+- `query_ontology({operation:"builder_context"})`는 저장된 vault node를 canonical
+  Builder deep link로 열고, bounded neighborhood, `canvasPosition`,
+  `expected_mtime`, 안전한 low-level write 순서를 함께 반환한다. 저장 전 UI
+  draft는 볼 수 없다고 명시해 숨은 상태를 꾸며내지 않는다. 출력한
+  `<kind>:<slug>` focus를 다음 `builder_context` 입력으로 그대로 재사용할 수
+  있어 Builder↔MCP 왕복이 대칭이다.
+- `connection_info.server`는 실제 광고 중인 `readOnly`, `toolCount`,
+  `toolNames`, `toolsetHash`를 반환한다. upgrade 후 agent가 자신의 cached
+  tool surface와 비교해 MCP restart 필요 여부를 증명할 수 있다. 명시적 repo
+  root가 없으면 active vault의 Git top-level을 찾아 package-local 실행이
+  정상 source path를 drift로 오판하지 않는다.
+- `git_history`는 `limited` / `hasMore`, shallow 상태, `historyComplete`를
+  반환하며, `index_project.conceptDelta`는 ambiguous alias를 new bucket에서
+  분리해 자동 적용 후보로 제시하지 않는다.
+- 모든 missing-slug 복구 문구를 실행 가능한
+  `find_evidence({title:"..."})` 형태로 고쳤고 structured recovery parsing도
+  같은 계약을 따른다.
+
+## 2026-07-23 — MCP destructive safety contract + absorb repo boundary
+
+AI agent가 파괴적 dry-run의 도구별 `ok` 의미를 추측하던 문제를 없앴다.
+`git_snapshot`, 관계 제거/교체, rename/reclassify/merge/delete,
+`absorb_document` 8개 도구가 모두 `previewReady`, `canConfirm`,
+`wouldChange`, `blockedReasons[]`를 반환한다. agent는 이제 자연어 메시지나
+도구별 legacy `ok` 대신 동일한 decision contract로 confirm 가능 여부를
+판단할 수 있다.
+
+- no-op relation removal, backlink가 남은 delete, validation 오류, clean/detached
+  Git 상태, 기존 absorb backup을 각각 명시적 blocker로 표현한다.
+- `absorb_document`는 canonical source path가 `repoRoot` 밖이면 confirm을
+  거부한다. 저장소 내부 symlink가 외부 파일을 가리키는 우회도 차단하며,
+  실제 외부 rewrite는 dry-run 검토 후 `allowOutsideRepo:true`를 명시해야 한다.
+- verifier가 공통 output schema와 runtime decision consistency를 검사하고,
+  외부 temp fixture에는 opt-in을 명시하되 실제 쓰기는 하지 않는다.
+- relation add/remove/replace가 저장된 unique tail alias와 frontmatter `slug`
+  alias를 canonical edge로 해석한다. shorthand로 저장된 기존 vault에서도
+  중복 edge, false-missing 오류, `relation_notes` rationale 고아화를 만들지 않는다.
+- 상세 adversarial matrix는
+  `docs/archive/dogfood-mcp-safety-round-3-2026-07-23.md`에 기록했다.
 
 ## 2026-07-23 — MCP adversarial dogfood round 2
 

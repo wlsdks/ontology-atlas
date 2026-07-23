@@ -231,7 +231,7 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 | **Planner / PM / marketer** | Understand the product/business core, narratives, ownership, and change impact without reading source | installed macOS app (`/ontology`, `/topology`, `/docs`), static/shared vault exports |
 | **C-level / decision-maker** | See what the organization/system is made of, which capabilities matter, and what changes affect strategic bets | overview, topology, graph proof/impact summaries |
 | **Developer** | Maintain the graph as implementation changes; connect code artifacts to domains/capabilities | CLI (`ontology-atlas init/list/validate/add/find/import/index`), installed macOS app (`/ontology`, `/docs`) |
-| **AI agent** (Claude Code, Codex, Cursor, …) | Read for context · write back findings · keep the graph current through verified MCP/CLI loops | MCP server (31 tools — read 18 + write 13), vault-scoped Git checkpoint, agent heartbeat, agent brief |
+| **AI agent** (Claude Code, Codex, Cursor, …) | Read for context · write back findings · keep the graph current through verified MCP/CLI loops | MCP server (32 tools — read 19 + write 13), vault-scoped Git evidence/checkpoint, Builder handoff, agent heartbeat, agent brief |
 
 The single artifact serves all audiences: a local, git-backed ontology that
 links business language, product capabilities, implementation evidence, and
@@ -568,7 +568,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 ### ✅ Phase 3 — AI agent partner — merged
 
 1. ✅ `mcp/` package — MCP server (`ontology-atlas-mcp`)
-2. ✅ 31 tools (read 18 + write 13): connection/root proof, vault-scoped Git status and local snapshots, list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, and dry-run-first rename/merge/delete/absorb writes.
+2. ✅ 32 tools (read 19 + write 13): connection/root/toolset proof, vault-scoped Git status/history and local snapshots, persisted Builder context, list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, and dry-run-first rename/merge/delete/absorb writes.
 3. ✅ CLI command (`ontology-atlas`) — `npx ontology-atlas init <folder>` scaffolds the vault. The installed app `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
 5. ✅ `docs/ontology/` dogfood vault — 105 nodes describing our own mental model, including agent-practice notes as document nodes
