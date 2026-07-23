@@ -1612,6 +1612,7 @@
     "insights": {
       "title": "Graph insights",
       "subtitle": "Your whole folder at a glance — every number is computed automatically from the documents",
+      "audienceBanner": "This screen is a maintenance board for the people and AI agents who keep the ontology in shape.",
       "censusConcepts": "Concepts",
       "censusRelations": "Relations",
       "censusDomains": "Domains",
