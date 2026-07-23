@@ -1058,6 +1058,24 @@ export function HomePage() {
       : { nodes: [], edges: [] };
   }, [synthSize, ontologyInsight, freshChannelSlugs, dustySlugs]);
 
+  // 스포트라이트 자동 전개 (소유자 2026-07-23: "노드 눌러야 나오는 곳의
+  // 변경이면 그냥 다 펼쳐놔 — 연결된 거 싹 다") — 변경 노드가 클러스터 칩에
+  // 접혀 안 보이면 렌즈가 거짓말이 된다. 변경 노드 전체의 containment 조상
+  // 체인을 **파생 전개**로 합친다. URL `?open=` 은 건드리지 않는다:
+  // `?recent=` 에서 결정론 파생되므로 공유 링크 재현성이 유지되고, 렌즈를
+  // 끄면 사용자의 원래 전개 상태로 자연 복귀한다(수동 전개 오염 0).
+  const spotlightExpandedParents = useMemo(() => {
+    if (!spotlightIds || spotlightIds.size === 0 || topologyV2Graph.edges.length === 0) return null;
+    const parentOf = buildContainmentParentMap(topologyV2Graph.edges);
+    const merged = new Set(expandedParentSet);
+    for (const id of spotlightIds) {
+      for (const ancestor of deriveDeeplinkAncestorExpansion(id, parentOf, [])) {
+        merged.add(ancestor);
+      }
+    }
+    return merged;
+  }, [spotlightIds, topologyV2Graph, expandedParentSet]);
+
   const canvasSelectedSlug = selectedProject?.slug ?? selectedOntologyNode?.id ?? selectedSlug;
   const drawerProject = selectedProject;
 
@@ -3151,7 +3169,7 @@ export function HomePage() {
                     minimal={localGraphRoot !== null}
                     agentFocusNodeId={agentFocusNodeId}
                     spotlightIds={spotlightIds}
-                    expandedParents={expandedParentSet}
+                    expandedParents={spotlightExpandedParents ?? expandedParentSet}
                     onToggleCluster={handleToggleCluster}
                     onHoverCluster={handleHoverCluster}
                     clusterHint={t('cluster.hint')}

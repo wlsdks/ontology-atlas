@@ -548,9 +548,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const isEgoMember =
       isPairMember ||
       (focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocused.has(node.id)));
+    // 스포트라이트 티어 관통 공개 (소유자: "눈으로 보는 노드를 보고 바로
+    // 파악") — 변경 노드가 줌 티어 아래(element 등)에 숨어 있으면 렌즈가
+    // 켜져도 안 보인다. ego 이웃과 같은 tier-exemption reveal 채널에
+    // 스포트라이트 램프를 합류시켜, 렌즈 ON 동안 변경 노드는 줌 무관하게
+    // 램프로 떠오른다(끄면 램프 감쇠로 자연 강하).
+    const spotlightReveal =
+      spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id) ? spotlightRamp : 0;
     effectiveAlphaById.set(
       node.id,
-      effectiveNodeAlpha(tierAlpha, isEgoMember, isPairMember ? 1 : (egoRevealById.get(node.id) ?? 0)),
+      effectiveNodeAlpha(
+        tierAlpha,
+        isEgoMember,
+        Math.max(isPairMember ? 1 : (egoRevealById.get(node.id) ?? 0), spotlightReveal),
+      ),
     );
   }
 
