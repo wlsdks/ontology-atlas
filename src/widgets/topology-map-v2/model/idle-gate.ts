@@ -25,6 +25,16 @@ export interface CanvasActivityFlags {
   egoTailAnimating: boolean;
   /** 호버/패널 강조 대상 존재 (리플 램프 가능 구간). */
   emphasisTarget: boolean;
+  /**
+   * 선택 해제 페이드 진행 중 — 라이브 포커스(노드/엣지)는 없는데 retained
+   * colorFocus(선택 링 + 배경 dim 의 색 타깃)가 아직 남아 focus 램프가 0 으로
+   * 감쇠하는 중. 이 구간은 위 어떤 플래그(코멧·카메라·호버)와도 무관하게
+   * 활동이다 — 램프 감쇠·colorFocus 클리어는 프레임 바디 안에서만 일어나므로,
+   * 유휴 스킵이 여기서 끼면 링이 풀 opacity 로 얼어붙는다(deselect 회귀).
+   * reduced-motion 이면 램프가 한 프레임에 스냅→클리어되므로 딱 1 프레임만
+   * 깨어 있으면 된다.
+   */
+  focusFadeSettling: boolean;
   /** fresh 노드 브리드 (reduced-motion 이면 false 로 넘길 것). */
   breathing: boolean;
   /** 카메라가 아직 움직임 (스프링 미정착). */
@@ -40,7 +50,8 @@ export function isCanvasActive(flags: CanvasActivityFlags): boolean {
     flags.egoTailAnimating ||
     flags.emphasisTarget ||
     flags.breathing ||
-    flags.cameraMoving
+    flags.cameraMoving ||
+    flags.focusFadeSettling
   );
 }
 

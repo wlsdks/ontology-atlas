@@ -90,6 +90,16 @@ export interface NodeShapeDrawState {
    */
   isHovered: boolean;
   /**
+   * rank5 — the hovered node's own hover-ripple emphasis (0..1, the SAME
+   * `emphasisById` scalar the body wake rides, rise τ 0.09). The static hover
+   * preview ring's alpha is multiplied by it so the ring rises ON the body's
+   * wake curve instead of hard-popping to full opacity on the first hover frame.
+   * Only read while `isHovered`; defaults to 1 when omitted (callers that don't
+   * thread emphasis keep the pre-rank5 always-solid ring). reduced-motion snaps
+   * emphasis to 1, so the ring is instantly solid there.
+   */
+  hoverEmphasis?: number;
+  /**
    * One-shot commit-pulse visual for the just-selected (`egoState ===
    * "center"`) node, or `null` outside its brief window (already played out,
    * `prefers-reduced-motion`, or this isn't the node that was just clicked).
@@ -448,6 +458,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     sheenTop,
     countLabel,
     isHovered,
+    hoverEmphasis,
     selectionPulse,
     agentFocus,
     now,
@@ -546,7 +557,12 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   // `hoveredNodeId` under focus), so this never collides with the selection
   // ring below — but the `egoState` guards stay as defense in depth.
   if (isHovered && egoState !== "dim" && egoState !== "center") {
-    strokeKindOutline(ctx, kind, x, y, r + HOVER_RING_OFFSET, farT, tokens.hoverRing, 1, 1);
+    // rank5 — ring alpha rides the body's hover-ripple wake (`emphasisById`,
+    // rise τ 0.09) so it fades up with the disc instead of a first-frame hard
+    // pop. Omitted emphasis → 1 (pre-rank5 solid ring); reduced-motion snaps
+    // emphasis to 1 upstream, so the ring is instantly solid there.
+    const ringAlpha = Math.min(1, Math.max(0, hoverEmphasis ?? 1));
+    strokeKindOutline(ctx, kind, x, y, r + HOVER_RING_OFFSET, farT, tokens.hoverRing, 1, ringAlpha);
     // Design Guardian 처방 L — shimmer 아크는 정지 링 위의 순수 모션 오버레이라
     // reduced-motion 사용자에겐 정지 링만 남기고 완전히 미표시(새 분기 없이
     // 여기 한 곳에서만 게이트).

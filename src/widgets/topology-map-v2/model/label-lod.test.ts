@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { LABEL_TOP_K, selectTopKLabels, type LabelRankEntry } from "./label-lod";
+import { DISC_LABEL_TOP_K, LABEL_TOP_K, selectDiscLabelEligible, selectTopKLabels, type LabelRankEntry } from "./label-lod";
 
 const entry = (id: string, degree: number, exempt = false): LabelRankEntry => ({ id, degree, exempt });
 
@@ -61,5 +61,42 @@ describe("selectTopKLabels", () => {
 
   it("exposes the default budget of 20", () => {
     expect(LABEL_TOP_K).toBe(20);
+  });
+});
+
+describe("selectDiscLabelEligible (high-fan disc label budget)", () => {
+  it("takes each disc's top-k ranked ids (union across discs)", () => {
+    const discA = ["a1", "a2", "a3", "a4"]; // already DOI-ranked by the caller
+    const discB = ["b1", "b2"];
+    const eligible = selectDiscLabelEligible([discA, discB], 2);
+    expect([...eligible].sort()).toEqual(["a1", "a2", "b1", "b2"]);
+  });
+
+  it("caps a large disc so past-the-cut children are excluded (rest → dots)", () => {
+    const disc = Array.from({ length: 60 }, (_, i) => `n${i}`);
+    const eligible = selectDiscLabelEligible([disc], 8);
+    expect(eligible.size).toBe(8);
+    expect(eligible.has("n0")).toBe(true);
+    expect(eligible.has("n7")).toBe(true);
+    expect(eligible.has("n8")).toBe(false);
+    expect(eligible.has("n59")).toBe(false);
+  });
+
+  it("keeps a disc smaller than k whole", () => {
+    expect([...selectDiscLabelEligible([["x", "y"]], 8)].sort()).toEqual(["x", "y"]);
+  });
+
+  it("k <= 0 yields an empty set", () => {
+    expect(selectDiscLabelEligible([["x", "y"]], 0).size).toBe(0);
+  });
+
+  it("defaults to DISC_LABEL_TOP_K when k is omitted", () => {
+    const disc = Array.from({ length: 20 }, (_, i) => `n${i}`);
+    expect(selectDiscLabelEligible([disc]).size).toBe(DISC_LABEL_TOP_K);
+  });
+
+  it("exposes a per-disc budget in the readable 6–8 band", () => {
+    expect(DISC_LABEL_TOP_K).toBeGreaterThanOrEqual(6);
+    expect(DISC_LABEL_TOP_K).toBeLessThanOrEqual(8);
   });
 });

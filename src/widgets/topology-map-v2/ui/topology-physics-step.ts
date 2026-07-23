@@ -10,7 +10,7 @@
 
 import { computePanBounds, stepCamera, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { computeAltitudeBand, computeFarT } from "../model/altitude";
-import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis } from "../model/focus-state";
+import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis, stepFocusRamp } from "../model/focus-state";
 import { edgePairKey, selectEgoContainsComets, updateParticles } from "../render/edge-fireflies";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom } from "../model/tier-visibility";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
@@ -41,6 +41,14 @@ export interface PhysicsStepInput {
   dt: number;
   now: number;
   focusedNodeId: string | null;
+  /**
+   * True while an edge-pair focus is live (`selectedEdge !== null`) with no node
+   * focus — the click-focus dim ramp treats edge selection as "the scene is
+   * focused" too, so selecting/deselecting a line ramps the same normal↔dim
+   * transition instead of snapping (⑨ 엣지 선택 dim 스냅 제거). Only the ramp
+   * gate uses it; the ego/pair CLASSIFICATION still lives in the draw pass.
+   */
+  pairFocusActive: boolean;
   hoveredNodeId: string | null;
   /**
    * The one neighbor the user is hovering in the detail panel's "연결된 노드"
@@ -84,6 +92,28 @@ export interface PhysicsStepInput {
    * it here would either break that contract or require loosening it.
    */
   egoRevealById: Map<string, number>;
+  /**
+   * Click-focus signature — mutated in place like `emphasisById`. Each node's
+   * scalar 0..1 ramps toward 1 while ANY focus is live (node OR edge-pair) and
+   * toward 0 otherwise, on `--topology-v2-focus-dim-tau`. `topology-frame-draw.ts`
+   * lerps normal→dim/ego color and eases the center radius by this factor, so
+   * the dim/ego swap a click triggers rides the camera-dive time axis instead of
+   * hard-cutting (and reverses on deselect). Per-node (not one scalar) so a node
+   * that appears mid-focus — e.g. an expanded cluster child — ramps INTO dim
+   * from 0 rather than snapping in already-dimmed.
+   */
+  focusRampById: Map<string, number>;
+  /**
+   * rank8 — new-node appear ramp, mutated in place like `emphasisById`. Seeded
+   * to 0 for nodes that first appear on a world rebuild (existing nodes stay 1)
+   * by `use-topology-loop.ts`; stepped here toward 1 for every present node on
+   * `egoRevealRiseTau` (reused — same "content resolves onto the scene" rise as
+   * the ego reveal). `topology-frame-draw.ts` multiplies effRadius (0.6→1 micro
+   * scale) and globalAlpha (0→1) by it so a new node swells in instead of
+   * hard-popping. reduced-motion snaps to 1. Missing entry defaults to 1 (never
+   * fades an untracked node).
+   */
+  appearById: Map<string, number>;
 }
 
 export interface PhysicsStepResult {
@@ -111,6 +141,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     dt,
     now,
     focusedNodeId,
+    pairFocusActive,
     hoveredNodeId,
     panelEmphasisNodeId,
     isDragging,
@@ -119,6 +150,8 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     emphasisById,
     rippleStartById,
     egoRevealById,
+    focusRampById,
+    appearById,
   } = input;
 
   // Tier visibility rides a SEPARATE zoom-ratio signal (not farT): entry scale
@@ -202,6 +235,10 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
 
   const activeEgoId = focusedNodeId ? null : hoveredNodeId;
   const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
+  // Click-focus signature — the whole scene is "focused" if a node OR an
+  // edge-pair is selected. One shared gate so node-click and edge-click drive
+  // the same normal↔dim color ramp (owner headline motion).
+  const focusActive = focusedNodeId !== null || pairFocusActive;
   for (const node of world.nodes) {
     const isHoverEgoMember =
       !!activeEgoId && (node.id === activeEgoId || world.neighborMap.get(activeEgoId)?.has(node.id) === true);
@@ -233,6 +270,24 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
       reducedMotion
         ? (isEgoMember ? 1 : 0)
         : stepEmphasis(previousReveal, isEgoMember, true, dt, tokens.egoRevealRiseTau, tokens.egoRevealDecayTau),
+    );
+
+    // Click-focus color ramp — one exp-smoothing step toward "scene focused"
+    // (1) or not (0). A8 reduced motion snaps to the end state (the color swap
+    // still lands, just without the interpolated journey).
+    const previousFocusRamp = focusRampById.get(node.id) ?? 0;
+    focusRampById.set(
+      node.id,
+      reducedMotion ? (focusActive ? 1 : 0) : stepFocusRamp(previousFocusRamp, focusActive, dt, tokens.focusDimTau),
+    );
+
+    // rank8 — new-node appear ramp: rise every present node's value toward 1
+    // (seed 0 for fresh nodes / 1 for existing set upstream). Reuses the ego
+    // reveal's rise τ so a new node resolves with the same cadence content does.
+    const previousAppear = appearById.get(node.id) ?? 1;
+    appearById.set(
+      node.id,
+      reducedMotion ? 1 : stepEmphasis(previousAppear, true, true, dt, tokens.egoRevealRiseTau, tokens.egoRevealRiseTau),
     );
   }
 

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { Cable, Check, Copy, X } from "lucide-react";
+import { Cable, Check, ChevronDown, Copy, X } from "lucide-react";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { copyText } from "@/shared/lib/copy-text";
@@ -89,7 +89,22 @@ export function AgentConnectSheet({
   const t = useTranslations("agentConnect");
   const dialogRef = useRef<HTMLElement | null>(null);
   const [handoffCopied, setHandoffCopied] = useState(false);
+  const [otherToolsOpen, setOtherToolsOpen] = useState(false);
   useBodyScrollLock(open);
+
+  // "다른 툴로 연결" — 정적 표. 대부분의 MCP 클라이언트가 같은 표준 stdio
+  // triple(command/args/env)을 쓰고, 다른 건 설정 파일 *위치* 뿐이다. 빠르게
+  // 변하는 경로는 하드코딩하지 않고 "각 툴 문서 참고" 로 남긴다.
+  const otherTools: ReadonlyArray<{ tool: string; locations: readonly string[]; note: string }> = [
+    { tool: "Claude Code", locations: [".mcp.json"], note: t("otherToolsProjectRoot") },
+    {
+      tool: "Cursor",
+      locations: [".cursor/mcp.json", "~/.cursor/mcp.json"],
+      note: t("otherToolsCursorScopes"),
+    },
+    { tool: "Codex", locations: [".codex/config.toml", "codex mcp add"], note: t("otherToolsCodexNote") },
+    { tool: "Antigravity · Windsurf · Zed", locations: [], note: t("otherToolsSeeDocs") },
+  ];
 
   useEffect(() => {
     if (!open) return;
@@ -218,6 +233,97 @@ export function AgentConnectSheet({
                     {t("writeConfigs")}
                   </button>
                 ) : null}
+              </section>
+
+              {/* 다른 툴로 연결 — 접힌 정적 표. 표준 stdio triple 은 모든 MCP
+                  클라이언트가 동일, 다른 건 설정 파일 위치뿐. */}
+              <section aria-label={t("otherToolsToggle")} className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => setOtherToolsOpen((v) => !v)}
+                  aria-expanded={otherToolsOpen}
+                  data-testid="agent-connect-other-tools-toggle"
+                  className="flex items-center gap-1.5 self-start font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                >
+                  <ChevronDown
+                    size={11}
+                    aria-hidden
+                    className="transition-transform"
+                    style={{ transform: otherToolsOpen ? "rotate(0deg)" : "rotate(-90deg)" }}
+                  />
+                  {t("otherToolsToggle")}
+                </button>
+                <AnimatePresence initial={false}>
+                  {otherToolsOpen && (
+                    <motion.div
+                      key="other-tools"
+                      // 디스클로저 = 부드러운 높이 펼침(0→auto)+페이드. caret 회전과
+                      // 짝을 이뤄 "펼쳐진다"는 감각. MOTION.medium(280ms easeOut) 재사용,
+                      // overflow-hidden 으로 펼침 중 클리핑. MotionConfig reducedMotion=
+                      // "user"(레이아웃 상주 MotionProvider)가 감소 선호 시 스냅.
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={MOTION.medium}
+                      style={{ overflow: "hidden" }}
+                      data-testid="agent-connect-other-tools"
+                    >
+                      <div className="flex flex-col gap-3 pt-0.5">
+                    <p className="text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+                      {t("otherToolsIntro")}
+                    </p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse text-label">
+                        <thead>
+                          <tr className="border-b border-[color:var(--color-border-soft)] text-left text-[color:var(--color-text-quaternary)]">
+                            <th className="py-1.5 pr-3 font-medium">{t("otherToolsColTool")}</th>
+                            <th className="py-1.5 font-medium">{t("otherToolsColLocation")}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {otherTools.map((row) => (
+                            <tr
+                              key={row.tool}
+                              className="border-b border-[color:var(--color-border-soft)] align-top last:border-b-0"
+                            >
+                              <td className="whitespace-nowrap py-2 pr-3 text-[color:var(--color-text-secondary)]">
+                                {row.tool}
+                              </td>
+                              <td className="py-2 text-[color:var(--color-text-tertiary)]">
+                                {row.locations.length > 0 ? (
+                                  <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                                    {row.locations.map((loc, i) => (
+                                      <span key={loc} className="inline-flex items-center gap-1.5">
+                                        {i > 0 ? (
+                                          <span aria-hidden className="text-[color:var(--color-text-quaternary)]">
+                                            /
+                                          </span>
+                                        ) : null}
+                                        <code className="rounded bg-[color:var(--color-overlay-1)] px-1 py-0.5 font-mono text-[color:var(--color-text-secondary)]">
+                                          {loc}
+                                        </code>
+                                      </span>
+                                    ))}
+                                  </span>
+                                ) : null}
+                                <span className="mt-0.5 block text-caption text-[color:var(--color-text-quaternary)]">
+                                  {row.note}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <CopyBlock
+                      label={t("otherToolsTripleLabel")}
+                      value={snippets.mcpJson}
+                      testId="agent-connect-copy-triple"
+                    />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </section>
 
               {/* 이해받음의 순간 — 에이전트가 내 지도를 되말한다 */}

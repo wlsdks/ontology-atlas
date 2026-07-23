@@ -62,6 +62,13 @@ export interface LabelDrawState {
   agentFocus: boolean;
   /** B5 — 라벨 줌 스케일 (`labelZoomScale(cameraScale)`, 기본 1). */
   fontScale?: number;
+  /**
+   * rank9 — LOD present 램프 0..1(기본 1). greedy 배치 집합에 방금 진입한 라벨은
+   * 0→1 로, 이탈한(아직 화면엔 있는) 라벨은 1→0 으로 이 값이 움직여 "라벨
+   * 깜빡임"을 페이드로 바꾼다. 최종 라벨 알파에 선형으로 곱한다(색/알파만).
+   * 미지정=1(하위호환).
+   */
+  presenceAlpha?: number;
 }
 
 export interface LabelTokens {
@@ -315,15 +322,17 @@ function drawTrackedText(
 export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, tokens: LabelTokens): void {
   const { kind, text, screenX: x, screenY: y, screenRadius: r, farT, egoState, isHovered, revealAlpha, agentFocus } = state;
   const fontScale = state.fontScale ?? 1;
+  // rank9 — LOD present 램프(기본 1)를 최종 라벨 알파에 선형 곱한다.
+  const presenceAlpha = Math.min(1, Math.max(0, state.presenceAlpha ?? 1));
   const ty = y + r + LABEL_OFFSET[kind] * fontScale;
 
   if (kind === "domain") {
-    const watermarkAlpha = computeDomainWatermarkAlpha(farT, egoState);
+    const watermarkAlpha = computeDomainWatermarkAlpha(farT, egoState) * presenceAlpha;
     if (watermarkAlpha > 0.02) {
       ctx.font = scaledLabelFont("domain", fontScale);
       drawTrackedText(ctx, text.toUpperCase(), x, ty, tokens.labelDomain, DOMAIN_TRACKING, watermarkAlpha);
     }
-    const compactAlpha = computeLabelAlpha({ kind, farT, egoState, isHovered, revealAlpha });
+    const compactAlpha = computeLabelAlpha({ kind, farT, egoState, isHovered, revealAlpha }) * presenceAlpha;
     if (compactAlpha > 0.02) {
       ctx.font = scaledLabelFont("domain", fontScale);
       ctx.textAlign = "center";
@@ -340,7 +349,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, token
     return;
   }
 
-  const alpha = computeLabelAlpha({ kind, farT, egoState, isHovered, revealAlpha });
+  const alpha = computeLabelAlpha({ kind, farT, egoState, isHovered, revealAlpha }) * presenceAlpha;
   if (alpha <= 0.02) return;
 
   if (kind === "project") {

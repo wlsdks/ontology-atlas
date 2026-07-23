@@ -1742,8 +1742,11 @@ function DocsVaultContent() {
                   </div>
                 ) : null}
                 <span className="flex-none font-mono text-label text-[color:var(--color-text-quaternary)]">
-                  <span className="power mr-1.5 inline-block h-[5px] w-[5px] rounded-full bg-[color:var(--color-indigo-accent)] align-middle" aria-hidden />
-                  {isLocalSourceLoaded ? t('editorHeader.localSynced') : t('editorHeader.readOnlySample')}
+                  <span
+                    className={`power inline-block h-[5px] w-[5px] rounded-full bg-[color:var(--color-indigo-accent)] align-middle ${isLocalSourceLoaded ? 'mr-1.5' : ''}`}
+                    aria-hidden
+                  />
+                  {isLocalSourceLoaded ? t('editorHeader.localSynced') : null}
                 </span>
               </div>
 

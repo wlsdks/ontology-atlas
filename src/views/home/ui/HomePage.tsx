@@ -5,8 +5,10 @@ import { withBasePath } from "@/shared/lib/base-path";
 import { cn } from "@/shared/lib/cn";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -153,7 +155,7 @@ import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
-import { AgentConnectSheet } from "@/widgets/agent-connect";
+import { AgentConnectSheet, useAgentConnectLauncher } from "@/widgets/agent-connect";
 import { TopologyV2EdgePanel } from "@/widgets/topology-map-v2/ui/TopologyV2EdgePanel";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
@@ -209,6 +211,34 @@ import { TopologyReviewLink } from "./TopologyReviewLink";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 import { resolveTopologyEscLadderAction } from "../lib/topology-esc-ladder";
+
+/**
+ * rank2 — 상세 패널 퇴장 대칭용 경량 presence 게이트. `open` 이 false 로 떨어지면
+ * 즉시 언마운트하지 않고 `exiting=true` 로 `exitMs` 동안 패널을 유지한다(그 사이
+ * `.topology-chrome-out` 이 재생). 시간이 지나면 언마운트. `open` 이 다시 true 가
+ * 되면(재선택) 즉시 mounted/entering 으로 복귀. prefers-reduced-motion 은
+ * globals.css 전역 규칙이 애니메이션을 즉시 끝내므로 `exitMs` 만큼만 투명 유지 후
+ * 언마운트(시각적 아티팩트 없음).
+ */
+function usePanelPresence(open: boolean, exitMs: number): { mounted: boolean; exiting: boolean } {
+  const [mounted, setMounted] = useState(open);
+  const [exiting, setExiting] = useState(false);
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      setExiting(false);
+      return;
+    }
+    // open=false: 즉시 언마운트 대신 퇴장 애니 창을 연다.
+    setExiting(true);
+    const id = setTimeout(() => {
+      setMounted(false);
+      setExiting(false);
+    }, exitMs);
+    return () => clearTimeout(id);
+  }, [open, exitMs]);
+  return { mounted, exiting };
+}
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
 /** INDEX panel preference (B3 허브가 곧 지도) — separate key from the legacy
@@ -739,6 +769,16 @@ export function HomePage() {
     // topology.* 의 t 로 읽으면 MISSING_MESSAGE (e2e 가 잡은 잠복 버그).
     defaultAgentLabel: tAgentConnect("defaultAgentLabel"),
   });
+  // LNB(AppShell 상주) 에이전트 타일 → 전역 "열려는 의도". 어느 페이지에서
+  // 눌렸든 지형도로 이동해 오면 레이아웃 상주 launcher 의 wantOpen 이 살아
+  // 있어 여기서 시트를 연다(URL 파라미터 불필요). openSheet 는 "N분 전"
+  // 기준 시각도 함께 스냅한다.
+  const agentConnectLauncher = useAgentConnectLauncher();
+  const agentConnectWantOpen = agentConnectLauncher.wantOpen;
+  const openAgentConnectSheet = agentConnect.openSheet;
+  useEffect(() => {
+    if (agentConnectWantOpen) openAgentConnectSheet();
+  }, [agentConnectWantOpen, openAgentConnectSheet]);
   // HomePage 모듈화 1차 — 부트스트랩 흐름은 use-bootstrap-flow 훅 소유.
   // 완료 연출(토스트·E1 리빌)만 여기 남는다.
   const { bootstrapOpen, setBootstrapOpen, bootstrapPlan, runBootstrap } = useBootstrapFlow({
@@ -1107,6 +1147,14 @@ export function HomePage() {
     setSelectedInspectorSupportRailSlug,
   ] = useState<string | null>(null);
   const interactionSelectedSlugRef = useRef<string | null>(null);
+  // 클릭 포커스 시그니처 — 지도에서 마지막으로 눌린 화면 좌표. 상세 팝오버가
+  // "클릭한 노드에서 자라난다"는 성장 원점으로 쓴다. 캔버스 클릭이 아닌 선택
+  // (INDEX·연결 row·키보드)은 좌표가 없어 fallback(center top)으로 둔다.
+  const lastCanvasPointerRef = useRef<{ x: number; y: number; at: number } | null>(null);
+  const nodePopoverPositionerRef = useRef<HTMLDivElement | null>(null);
+  const handleCanvasPointerDownCapture = useCallback((event: ReactPointerEvent) => {
+    lastCanvasPointerRef.current = { x: event.clientX, y: event.clientY, at: performance.now() };
+  }, []);
   const [selectedRelationActive, setSelectedRelationActive] = useState(false);
   // M-7 — Escape rung 1 dismisses the node popover WITHOUT releasing the ego
   // focus (dim); rung 2 (with this true) then deselects. Reset to false on
@@ -1190,6 +1238,33 @@ export function HomePage() {
   // M-7 Esc 사다리 존중 — rung 1(팝오버만 닫힘, 선택 유지) 상태에선 좌측이
   // 돌아와야 하므로 "모델 존재"가 아니라 "데이터시트 실표시"에 결속한다.
   const topologySelectionActive = Boolean(v2DatasheetModel) && !nodePopoverDismissed;
+  // 클릭 포커스 시그니처 — 팝오버의 성장 원점(transform-origin)을 방금 클릭한
+  // 노드의 화면 좌표 방향으로 맞춘다. 패널은 slug 로 keyed 되어 노드가 바뀔
+  // 때마다 재마운트 + `.topology-chrome-in` 등장을 재발화하므로, slug 를
+  // 의존성으로 두고 paint 전(useLayoutEffect)에 포지셔너의 로컬 좌표계로 환산한
+  // 원점을 CSS 변수로 주입한다(상속 → 내부 패널이 읽음). 최근(600ms 내) 캔버스
+  // 포인터가 없으면(리스트·키보드 선택) 변수를 지워 기존 `center top`으로 폴백.
+  const nodePopoverSlug = v2DatasheetModel?.slug ?? null;
+  useLayoutEffect(() => {
+    const positioner = nodePopoverPositionerRef.current;
+    if (!positioner || nodePopoverSlug === null) return;
+    const pointer = lastCanvasPointerRef.current;
+    if (pointer === null || performance.now() - pointer.at > 600) {
+      positioner.style.removeProperty("--topology-chrome-in-origin");
+      return;
+    }
+    const rect = positioner.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      positioner.style.removeProperty("--topology-chrome-in-origin");
+      return;
+    }
+    // 클릭 지점을 패널 박스 로컬 좌표로 환산하고 박스 안으로 clamp — 패널은
+    // 우상단 고정 앵커라 노드는 대개 좌·하단에 있고, 그쪽 모서리가 원점이 되어
+    // 팝오버가 노드 방향에서 자라나는 것으로 읽힌다.
+    const ox = Math.max(0, Math.min(rect.width, pointer.x - rect.left));
+    const oy = Math.max(0, Math.min(rect.height, pointer.y - rect.top));
+    positioner.style.setProperty("--topology-chrome-in-origin", `${ox}px ${oy}px`);
+  }, [nodePopoverSlug]);
   useEffect(() => {
     if (!topologySelectionActive) setIndexManualExpandDuringSelection(false);
   }, [topologySelectionActive]);
@@ -1361,6 +1436,15 @@ export function HomePage() {
     !selectedRelationActive &&
     !createNodeOpen &&
     !nodePopoverDismissed;
+  // rank2 — 팝오버 등장/퇴장 대칭. `panelOpen` 이 false 로 떨어지면 즉시
+  // 언마운트하지 않고 퇴장 애니(≈120ms) 동안 유지한다. 퇴장 중엔 선택 파생
+  // 값(v2DatasheetModel)이 null 로 사라지므로 마지막 모델을 ref 로 잡아 그 창
+  // 동안 같은 내용을 계속 그린다(내용이 바뀌지 않고 접혀 사라지게).
+  const panelOpen = nodePopoverVisible && Boolean(v2DatasheetModel);
+  const nodePanelPresence = usePanelPresence(panelOpen, 140);
+  const retainedDatasheetRef = useRef(v2DatasheetModel);
+  if (v2DatasheetModel) retainedDatasheetRef.current = v2DatasheetModel;
+  const panelDatasheetModel = v2DatasheetModel ?? retainedDatasheetRef.current;
   const selectedInspectorSupportRailVisible =
     selectedNodeFocusActive && selectedInspectorSupportRailSlug === selectedSlug;
   const selectedNodeOwnsRightRail = selectedNodeFocusActive;
@@ -2698,7 +2782,7 @@ export function HomePage() {
                     selectedId={canvasSelectedSlug}
                     onSelect={(id) => handleSelect(id)}
                     onCollapse={handleIndexCollapse}
-                    onOpenAgentConnect={agentConnect.openSheet}
+                    onOpenAgentConnect={agentConnectLauncher.open}
                     // P4-② (2026-07-21 리텐션 라운드) — 이미 연결된
                     // 에이전트가 있는 2일차+ 사용자에게 "Updated with AI"
                     // 클릭이 "AI 에이전트 연결" 등록 모달(어제 이미 끝낸
@@ -2812,6 +2896,7 @@ export function HomePage() {
           </>
         <div
           data-testid="topology-map-surface"
+          onPointerDownCapture={handleCanvasPointerDownCapture}
           data-blocking-edit={topologyCreateNodeBlockingActive ? "true" : "false"}
           data-map-demoted={topologyCreateNodeBlockingActive ? "true" : "false"}
           data-map-dim-opacity={topologyCreateNodeBlockingActive ? "0.24" : "1"}
@@ -3126,15 +3211,13 @@ export function HomePage() {
             containerLabel={null}
           />
         ) : null}
-        {selectedOntologyNode &&
-        ontologyInsight &&
-        nodeFocus &&
-        analysisMode !== "path" &&
-        !fullDetailOpen &&
-        !selectedRelationActive &&
-        !createNodeOpen &&
-        !nodePopoverDismissed ? (
+        {/* rank2 — presence 게이트: `panelOpen` 이 꺼져도 퇴장 애니가 끝날
+            때까지(≈140ms) mounted 유지. 그 동안 `panelDatasheetModel`(마지막
+            모델 retain)로 같은 내용을 계속 그리며 `.topology-chrome-out` 으로
+            접힌다. */}
+        {nodePanelPresence.mounted && panelDatasheetModel ? (
           <div
+            ref={nodePopoverPositionerRef}
             data-testid="topology-node-popover-positioner"
             data-position-contract="selected-inspector-aligns-to-right-inset"
             data-fixed-surface-role="selected-node-inspector"
@@ -3149,23 +3232,24 @@ export function HomePage() {
             // index-top 과의 겹침 회피 gap 이 그 폭에서도 유지된다.
             className="topology-ui-scale fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
           >
-            {v2DatasheetModel ? (
+            {panelDatasheetModel ? (
               <TopologyV2DetailPanel
-                key={v2DatasheetModel.slug}
-                slug={v2DatasheetModel.slug}
-                title={v2DatasheetModel.title}
-                kind={v2DatasheetModel.kind}
-                domain={v2DatasheetModel.domain}
-                powered={v2DatasheetModel.powered}
-                metric={v2DatasheetModel.metric}
-                groups={v2DatasheetModel.groups}
-                evidence={v2DatasheetModel.evidence}
-                updatedAtLabel={v2DatasheetModel.updatedAtLabel}
-                handoffText={v2DatasheetModel.handoffText}
-                documentHref={v2DatasheetModel.documentHref}
-                builderEditHref={v2DatasheetModel.builderEditHref}
+                key={panelDatasheetModel.slug}
+                presence={nodePanelPresence.exiting ? "exiting" : "entering"}
+                slug={panelDatasheetModel.slug}
+                title={panelDatasheetModel.title}
+                kind={panelDatasheetModel.kind}
+                domain={panelDatasheetModel.domain}
+                powered={panelDatasheetModel.powered}
+                metric={panelDatasheetModel.metric}
+                groups={panelDatasheetModel.groups}
+                evidence={panelDatasheetModel.evidence}
+                updatedAtLabel={panelDatasheetModel.updatedAtLabel}
+                handoffText={panelDatasheetModel.handoffText}
+                documentHref={panelDatasheetModel.documentHref}
+                builderEditHref={panelDatasheetModel.builderEditHref}
                 labels={{
-                  kindLabel: tKinds(normalizeKindLabelKey(v2DatasheetModel.kind)),
+                  kindLabel: tKinds(normalizeKindLabelKey(panelDatasheetModel.kind)),
                   domainLabel: t("nodeDatasheet.domainLabel"),
                   poweredOn: t("nodeDatasheet.poweredOn"),
                   poweredOff: t("nodeDatasheet.poweredOff"),
@@ -3206,12 +3290,12 @@ export function HomePage() {
                 onSelectConnection={(id) => handleSelect(id)}
                 onCopyHandoff={copyV2NodeHandoff}
                 onClose={handleClose}
-                onSetPathSource={() => handleSetPathSource(v2DatasheetModel.nodeId)}
+                onSetPathSource={() => handleSetPathSource(panelDatasheetModel.nodeId)}
                 onEnterRealm={
                   // S4 — 컨테이너 노드(자식 있음)이며 영역 밖일 때만 2차 발견
                   // 경로를 노출한다. leaf/이미 영역 안이면 omit → 버튼 미표시.
-                  resolvedRealmSlug === null && v2DatasheetModel.groups.contains.total > 0
-                    ? () => handleEnterRealm(v2DatasheetModel.nodeId)
+                  resolvedRealmSlug === null && panelDatasheetModel.groups.contains.total > 0
+                    ? () => handleEnterRealm(panelDatasheetModel.nodeId)
                     : undefined
                 }
                 onOpenFullDetail={
@@ -3343,7 +3427,12 @@ export function HomePage() {
         />
         <AgentConnectSheet
           open={agentConnect.open}
-          onClose={agentConnect.closeSheet}
+          onClose={() => {
+            agentConnect.closeSheet();
+            // 전역 열기 의도도 리셋 — 안 하면 지형도 밖으로 나갔다 돌아올 때
+            // wantOpen 이 남아 시트가 재오픈된다.
+            agentConnectLauncher.close();
+          }}
           status={agentConnect.status}
           snippets={agentConnect.snippets}
           domainTitles={agentConnect.domainTitles}

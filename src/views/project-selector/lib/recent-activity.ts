@@ -8,6 +8,8 @@ export interface RecentActivityRow {
   /** 지도 포커스 딥링크 대상 graph node id (`${kind}:${tailSlug}`) — 조회
    *  실패(dangling doc) 시 null, 그때는 UI 가 행을 링크 없이 렌더한다. */
   nodeId: string | null;
+  /** 사람이 읽는 제목 — 리더로 세운다. `node?.title` 우선, 없으면 tail slug. */
+  title: string;
   domainTitle: string | null;
   what: string;
   updatedAt: Date;
@@ -63,8 +65,17 @@ export function buildRecentActivityRows(
     const domainId = node ? nearestDomainId(node, parentOf, nodeById) : null;
     const domainTitle = domainId ? (nodeById.get(domainId)?.title ?? null) : null;
     const what = doc.description || node?.summary || doc.excerpt || "";
+    const title = node?.title || tailSlug;
 
-    rows.push({ slug: doc.slug, kind, nodeId: node ? nodeId : null, domainTitle, what, updatedAt });
+    rows.push({
+      slug: doc.slug,
+      kind,
+      nodeId: node ? nodeId : null,
+      title,
+      domainTitle,
+      what,
+      updatedAt,
+    });
   }
 
   return rows.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).slice(0, limit);

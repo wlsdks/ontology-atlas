@@ -265,11 +265,18 @@ export function computeClusterDiscBounds(
   world: Pick<TopologyWorld, "nodeById" | "childrenByParent">,
   tokens: TopologyV2Tokens,
   parentId: string,
+  /**
+   * 고팬아웃 배치-공개(2026-07) — 주어지면 이 집합에 속한 노드만 bbox 에
+   * 포함한다(부모 + 이번 배치 자식). null/생략 = 부모 + 직속 자식 전체(회귀 0).
+   */
+  restrictIds?: ReadonlySet<string> | null,
 ): Bounds | null {
   const parent = world.nodeById.get(parentId);
   if (!parent) return null;
   const ids = new Set<string>([parentId]);
-  for (const id of world.childrenByParent.get(parentId) ?? []) ids.add(id);
+  for (const id of world.childrenByParent.get(parentId) ?? []) {
+    if (!restrictIds || restrictIds.has(id)) ids.add(id);
+  }
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;

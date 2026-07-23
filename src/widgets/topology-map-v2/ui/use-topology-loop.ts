@@ -27,7 +27,7 @@ import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCamer
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { computeTopologyClusterState } from "./topology-cluster-state";
 import type { ClusterChip } from "../model/density-gate";
-import { EGO_NEIGHBOR_CHIP_ID, EGO_NEIGHBOR_LIMIT, rankEgoNeighborsByDOI, selectiveEgoNeighbors, type EgoNeighborRankEntry } from "../model/focus-state";
+import { clusterMoreChipId, EGO_NEIGHBOR_CHIP_ID, EGO_NEIGHBOR_LIMIT, parseClusterMoreChipId, rankEgoNeighborsByDOI, scheduleRipple, selectiveEgoNeighbors, stepEmphasis, type EgoNeighborRankEntry } from "../model/focus-state";
 import { buildFootprintRanks } from "../model/footprint-ring";
 import {
   INITIAL_REALM_TRANSITION_STATE,
@@ -378,9 +378,71 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * `이웃 +N` 칩 클릭마다 +1. 포커스 변경 시 1 로 리셋(아래 focus 효과).
    */
   const egoRevealBatchesRef = useRef(1);
+  /**
+   * 고팬아웃 배치-공개(2026-07) — 펼친 클러스터 부모별 점등 배치 수(parentId →
+   * 배치 수, 기본 1 = 상위 24 자식). `+N 더보기` 칩 클릭마다 그 부모만 +1(URL
+   * 비영속·세션 임시). 접힌 부모는 프레임 배치 처리부에서 정리한다. `이웃 +N`
+   * 의 단일 `egoRevealBatchesRef` 를 부모별로 일반화한 것 — 펼침은 여러 부모가
+   * 동시에 존재할 수 있기 때문.
+   */
+  const clusterRevealBatchesRef = useRef<Map<string, number>>(new Map());
+  /**
+   * 고팬아웃 배치-공개 — 배치로 이번에 드러난 자식의 등장 램프(childId → 0..1).
+   * DOI 순 center-out stagger 로 0→1 수렴한다(시작 시각은 `batchAppearStartRef`).
+   * `drawTopologyFrame` 이 자식 draw 알파 + 미세 appearScale(0.6→1)에 곱한다 —
+   * 펼침 그룹 페이드(chipReveal)를 이 per-child stagger 로 대체(이중 페이드 방지).
+   * reduced-motion 은 즉시 1.
+   */
+  const batchAppearRef = useRef<Map<string, number>>(new Map());
+  /**
+   * 고팬아웃 배치-공개 — 배치 자식별 등장 램프의 시작 절대 시각(childId → ms,
+   * `performance.now()` 동일 시계). `scheduleRipple`(base 0 + i·rippleStaggerMs,
+   * rippleStaggerMaxMs 예산 cap 재사용)로 DOI rank i 순으로 채운다. 시작 전엔
+   * 램프가 0 에 머물러 "느린 열거" 없이 총 예산 안에서 압축 stagger 된다.
+   */
+  const batchAppearStartRef = useRef<Map<string, number>>(new Map());
+  /** 고팬아웃 배치-공개 — 직전 프레임에 배치로 보이던 자식(신규-공개 diff 용). */
+  const prevBatchVisibleRef = useRef<Set<string>>(new Set());
   const emphasisRef = useRef<Map<string, number>>(new Map());
   /** C1 A2 — ego tier-reveal ramp, stepped in `stepTopologyPhysics`, consumed by `drawTopologyFrame`. */
   const egoRevealRef = useRef<Map<string, number>>(new Map());
+  /**
+   * Click-focus signature — per-node 0..1 color ramp, stepped in
+   * `stepTopologyPhysics`, consumed by `drawTopologyFrame` to lerp normal↔dim/
+   * ego color + ease the center radius. Sibling to `emphasisRef`/`egoRevealRef`.
+   */
+  const focusRampRef = useRef<Map<string, number>>(new Map());
+  /**
+   * rank7 — 클러스터 칩 펼침/접힘 reveal 램프(parentId → 0..1). 펼친 부모는 1 로,
+   * 접힌 부모는 0 으로 `--topology-v2-cluster-reveal-tau` 에 exp 수렴한다. 프레임
+   * 루프가 매 프레임 스텝하고, `drawTopologyFrame` 이 ① 펼친 디스크 자식의 draw
+   * 알파에 곱해 등장 페이드를, ② `drawClusterChip` 의 pill/badge 알파 페이드인을
+   * 만든다. `stepEmphasis`(focus-state) 재사용. reduced-motion 은 즉시 스냅.
+   */
+  const chipRevealRef = useRef<Map<string, number>>(new Map());
+  /**
+   * rank8 — 신규 노드 등장 램프(nodeId → 0..1). world 재빌드 시 이전 id 집합과
+   * diff 해 **신규** 노드에만 0 을 심고(기존 노드는 1 유지 → 회귀 0), 프레임 루프가
+   * 1 로 수렴시킨다. `drawTopologyFrame` 이 effRadius(0.6→1 미세 scale)와 globalAlpha
+   * (0→1)에 곱해 노드가 "툭" 나타나지 않고 부풀며 등장하게 한다. reduced-motion 은
+   * 즉시 1. 첫 빌드(이전 집합 없음)는 전부 1 로 심어 초기 로드 연출과 충돌 방지.
+   */
+  const appearRef = useRef<Map<string, number>>(new Map());
+  const prevNodeIdsRef = useRef<Set<string>>(new Set());
+  /**
+   * rank9 — 라벨별 LOD present 램프(nodeId → 0..1). `drawTopologyFrame` 이 배치
+   * 결과를 알고 그 자리에서 스텝/소비한다(루프는 수명만 소유). 라벨 깜빡임을
+   * 페이드로 바꾼다.
+   */
+  const labelPresentRef = useRef<Map<string, number>>(new Map());
+  /**
+   * Click-focus signature — the focus classification the COLOR ramp reads from,
+   * held for the ~160ms fade after a deselect so the dim/ego target the colors
+   * ease FROM persists instead of snapping to normal (④·⑨). Mirrors the live
+   * focus while a selection is active, then lingers until the retained subject's
+   * ramp decays to ~0 (see the per-frame update after `stepTopologyPhysics`).
+   */
+  const colorFocusRef = useRef<{ focusedNodeId: string | null; selectedEdge: { sourceId: string; targetId: string } | null } | null>(null);
   const rippleStartRef = useRef<Map<string, number>>(new Map());
   const reducedMotionRef = useRef(false);
   /**
@@ -458,6 +520,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
   useEffect(() => {
     focusedSlugRef.current = focusedSlug;
+    // 선택/해제는 정적 상태 전이 — 유휴 스킵 중에도 한 번 다시 그린다
+    // (selectedEdge 효과와 대칭). 해제 시 이 wake 가 없으면 retained
+    // colorFocus 페이드가 유휴 게이트에 얼어 링이 풀 opacity 로 남는다.
+    // 이벤트 출처(빈-클릭 pointer · Escape key · 패널 X-close DOM 버튼)와
+    // 무관하게 focusedSlug→null 전이만으로 페이드를 보장한다.
+    lastActiveMsRef.current = performance.now();
   }, [focusedSlug]);
 
   useEffect(() => {
@@ -498,7 +566,26 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const { width, height } = viewportRef.current;
     if (!tokens || !world || width <= 0 || height <= 0 || !hasInitializedRef.current) return;
     const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
-    const target = computeClusterFitTarget(world, tokens, width, height, newlyExpanded, overviewEntryScale);
+    // 고팬아웃 배치-공개 — 다이브는 전량 디스크가 아니라 **이번 배치**(DOI 상위
+    // EGO_NEIGHBOR_LIMIT 자식)의 bbox 에 fit 한다. 소수를 크게 — 108 자식을
+    // 통째로 담으려 멀리 빼는 대신, 실제로 그려지는 상위 24 만 담아 크게 본다.
+    // 잔여는 접혀 있으므로 프레이밍에 넣을 필요가 없다(density-gate domain 면제
+    // 와 동일 규칙으로 게이트 자식만 랭크). 자식이 임계 이하면 restrict 없음.
+    const gatedChildren = (world.childrenByParent.get(newlyExpanded) ?? []).filter(
+      (c) => world.nodeById.get(c)?.kind !== "domain",
+    );
+    let batchRestrict: Set<string> | null = null;
+    if (gatedChildren.length > EGO_NEIGHBOR_LIMIT) {
+      const ranked = rankEgoNeighborsByDOI(
+        gatedChildren.map((id) => ({
+          id,
+          kind: world.nodeById.get(id)?.kind ?? "element",
+          degree: world.neighborMap.get(id)?.size ?? 0,
+        })),
+      );
+      batchRestrict = new Set<string>([newlyExpanded, ...ranked.slice(0, EGO_NEIGHBOR_LIMIT)]);
+    }
+    const target = computeClusterFitTarget(world, tokens, width, height, newlyExpanded, overviewEntryScale, batchRestrict);
     if (!target) return;
     dampingRef.current = tokens.cameraDampingDefault;
     cameraTargetRef.current = target;
@@ -570,6 +657,26 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     );
     const world = buildTopologyWorld(nodes, edges, tokens);
     worldRef.current = world;
+    // rank8 — 신규 노드 등장 램프 시드. 첫 빌드(이전 집합 없음)는 전부 1(연출
+    // 없음, 초기 로드 안무와 충돌 방지). 이후 빌드는 이전에 없던 id 만 0 으로
+    // 심어 부풀며 등장하게 하고, 기존 노드는 그대로(1) 둔다(회귀 0). 사라진 id
+    // 는 정리. 램프 자체의 수렴은 프레임 루프(stepTopologyPhysics)가 담당.
+    {
+      const prevIds = prevNodeIdsRef.current;
+      const appear = appearRef.current;
+      const isFirstBuild = prevIds.size === 0;
+      const nextIds = new Set<string>();
+      for (const n of world.nodes) {
+        nextIds.add(n.id);
+        if (isFirstBuild || prevIds.has(n.id)) {
+          if (!appear.has(n.id)) appear.set(n.id, 1);
+        } else {
+          appear.set(n.id, 0); // 신규 노드 — 0 에서 부풀며 등장.
+        }
+      }
+      for (const id of [...appear.keys()]) if (!nextIds.has(id)) appear.delete(id);
+      prevNodeIdsRef.current = nextIds;
+    }
     // R6 상시 혜성 — 유휴 게이트가 코멧 상시성을 알 수 있게 depends 유무를 캐시.
     hasDependsEdgesRef.current = world.edges.some((e) => e.kind === "depends");
     hasContainsEdgesRef.current = world.edges.some((e) => e.kind === "contains");
@@ -981,6 +1088,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           emphasisTarget: hoveredNodeIdRef.current !== null || panelEmphasisNodeIdRef.current !== null || hoveredClusterIdRef.current !== null,
           breathing: !reducedMotionRef.current && world.nodes.some((n) => n.fresh),
           cameraMoving,
+          // 선택 해제 페이드: 라이브 포커스는 없는데 retained colorFocus 가 아직
+          // 남아 있으면(선택 링·배경 dim 의 색 타깃) focus 램프가 0 으로 감쇠할
+          // 때까지 깨어 있어야 한다. 이 감쇠·colorFocus 클리어는 아래 프레임
+          // 바디에서만 일어나므로, 코멧/카메라 같은 우발 활동에 의존하지 않고
+          // 여기서 명시적으로 활동으로 친다(deselect 링 잔류 회귀 차단).
+          focusFadeSettling:
+            colorFocusRef.current !== null && focusedSlugRef.current === null && selectedEdgeRef.current === null,
           // S6 — 이탈 역재생은 홈 스프링(homing)을 안 쓰므로 여기서 직접 깨워
           // 둬야 안무가 유휴 게이트에 얼지 않는다.
         }) ||
@@ -1275,6 +1389,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         dt,
         now,
         focusedNodeId,
+        pairFocusActive: selectedEdgeRef.current !== null,
         hoveredNodeId,
         panelEmphasisNodeId,
         isDragging: pointerMachineRef.current.phase === "dragging",
@@ -1283,8 +1398,29 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         emphasisById: emphasisRef.current,
         rippleStartById: rippleStartRef.current,
         egoRevealById: egoRevealRef.current,
+        focusRampById: focusRampRef.current,
+        appearById: appearRef.current,
       });
       cameraRef.current = camera;
+
+      // Click-focus signature — refresh the retained color focus. While a
+      // selection is live, mirror it; after a deselect, hold the last focus so
+      // the color fade has a dim/ego target to ease from, clearing only once the
+      // retained subject's ramp has decayed (~160ms) — then the selection ring
+      // and background dim have fully faded out (④·⑨). Reduced motion snaps the
+      // ramp to 0 the same frame, so this clears immediately too.
+      {
+        const livePairFocus = selectedEdgeRef.current;
+        if (focusedNodeId !== null || livePairFocus !== null) {
+          colorFocusRef.current = { focusedNodeId, selectedEdge: livePairFocus };
+        } else if (colorFocusRef.current !== null) {
+          const retained = colorFocusRef.current;
+          const probeId =
+            retained.focusedNodeId ?? retained.selectedEdge?.sourceId ?? retained.selectedEdge?.targetId ?? null;
+          const retainedRamp = probeId !== null ? (focusRampRef.current.get(probeId) ?? 0) : 0;
+          if (retainedRamp < 0.02) colorFocusRef.current = null;
+        }
+      }
 
       // R6 호버 펄스 — 수명(420ms) 지난 펄스 제거. 발사(append)는 포인터
       // 핸들러의 호버 경로가 한다(프로토타입 startRipple 의 펄스 부분).
@@ -1457,6 +1593,97 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           }
         }
       }
+      // --- 고팬아웃 배치-공개(2026-07) — 펼친 클러스터 부모의 자식을 DOI 순
+      //     배치로 드러낸다. density-gate 는 펼친 부모의 게이트 자식을 전량
+      //     노출하므로(수백 자식이 한 번에 쏟아져 라벨/노드가 뭉갬) 여기서
+      //     런타임 후처리: ① 게이트 자식(domain 면제 — density-gate 와 동일)을
+      //     rankEgoNeighborsByDOI 정렬 ② 상위 (배치수 × EGO_NEIGHBOR_LIMIT)만
+      //     보이고 ③ 나머지 + 그 서브트리는 frameClusteredIds 로 되돌려 접고
+      //     ④ 부모 옆(펼침 배지 anchor)에 `+N 더보기` 칩(합성 id)을 얹는다. 칩
+      //     클릭은 그 부모의 배치를 +1(clusterRevealBatchesRef, URL 비영속).
+      //     학습비용 0 — `이웃 +N` 배치-공개와 동형 UX. ego 블록이 이미
+      //     frameChips 를 새 배열로 바꿨을 수 있으므로 append 로 이어받는다. ---
+      const batchAppearVisible = new Set<string>();
+      {
+        const expandedNow = new Set<string>();
+        const moreChips: ClusterChip[] = [];
+        const hiddenFromBatch = new Set<string>();
+        const prevVisible = prevBatchVisibleRef.current;
+        // 배치는 사용자가 명시적으로 펼친 부모만(URL `?open=`) 대상이다. 영역
+        // 진입이 자동 주입한 펼침(realmExpandChain — 그 세계의 스파인)은 배치로
+        // 다시 접으면 영역이 텅 비므로 제외한다.
+        const userExpanded = expandedParentsRef.current;
+        const realmChain = realmExpandChainRef.current?.chain;
+        for (const chip of clusterState.chips) {
+          if (!chip.expanded || chip.ego) continue;
+          const parentId = chip.parentId;
+          if (!userExpanded.has(parentId) || realmChain?.has(parentId)) continue;
+          expandedNow.add(parentId);
+          // density-gate 와 같은 domain 면제 — 스파인 자식은 배치 대상 아님.
+          const gated = (world.childrenByParent.get(parentId) ?? []).filter(
+            (c) => world.nodeById.get(c)?.kind !== "domain",
+          );
+          if (gated.length === 0) continue;
+          const ranked = rankEgoNeighborsByDOI(
+            gated.map((id) => ({
+              id,
+              kind: world.nodeById.get(id)?.kind ?? "element",
+              degree: world.neighborMap.get(id)?.size ?? 0,
+            })),
+          );
+          // shown = 배치수 × 24 (selectiveEgoNeighbors 와 동일 산식, 순서 보존
+          // 위해 ranked.slice 직접). 잔여는 접고 `+N 더보기` 칩으로.
+          const shown = Math.max(1, clusterRevealBatchesRef.current.get(parentId) ?? 1) * EGO_NEIGHBOR_LIMIT;
+          const visibleOrdered = ranked.slice(0, shown);
+          const hidden = ranked.slice(shown);
+          for (const id of visibleOrdered) batchAppearVisible.add(id);
+          if (hidden.length > 0) {
+            // 잔여 자식 + 그 서브트리를 접는다(부모 없이 떠도는 손자 방지 —
+            // density-gate clusteredIds 규칙과 동형).
+            const stack = [...hidden];
+            while (stack.length > 0) {
+              const id = stack.pop() as string;
+              if (hiddenFromBatch.has(id)) continue;
+              hiddenFromBatch.add(id);
+              const kids = world.childrenByParent.get(id);
+              if (kids) stack.push(...kids);
+            }
+            // `+N 더보기` 칩 — 펼침 배지 anchor(자식 디스크 바깥, outward)에 세운다.
+            // ego:true 로 표시해 펼침-디스크/그룹-리빌/chipReveal 로직에서 면제된다
+            // (포인터가 합성 id 를 실제 부모로 해석해 툴팁/배치 점등 분기).
+            moreChips.push({
+              parentId: clusterMoreChipId(parentId),
+              count: hidden.length,
+              expanded: false,
+              anchor: chip.anchor,
+              ego: true,
+            });
+          }
+          // 신규-공개 자식(직전 프레임 미공개)만 DOI 순 center-out stagger 스케줄
+          // + 램프 0 시드. scheduleRipple(base 0 + i·rippleStaggerMs,
+          // rippleStaggerMaxMs 예산 cap 재사용) — 24개도 총 ~180ms 안에 압축.
+          const newly = visibleOrdered.filter((id) => !prevVisible.has(id));
+          if (newly.length > 0) {
+            const sched = scheduleRipple(parentId, now, newly, 0, tokens.rippleStaggerMs, tokens.rippleStaggerMaxMs);
+            for (const s of sched) {
+              if (s.nodeId === parentId) continue;
+              batchAppearStartRef.current.set(s.nodeId, s.startAtMs);
+              batchAppearRef.current.set(s.nodeId, 0);
+            }
+          }
+        }
+        // 접힌 부모의 배치 카운트 정리 — 다음 펼침은 다시 상위 24 부터.
+        for (const pid of [...clusterRevealBatchesRef.current.keys()]) {
+          if (!expandedNow.has(pid)) clusterRevealBatchesRef.current.delete(pid);
+        }
+        if (hiddenFromBatch.size > 0) {
+          frameClusteredIds = new Set<string>([...frameClusteredIds, ...hiddenFromBatch]);
+        }
+        if (moreChips.length > 0) {
+          frameChips = [...frameChips, ...moreChips];
+        }
+        prevBatchVisibleRef.current = batchAppearVisible;
+      }
       // --- S4 "영역 전개" — 밖 노드 하드 컬(fling 완료 후) + 결계 링 파라미터 ---
       const realmState = realmTransitionRef.current;
       const realmData = realmDataRef.current;
@@ -1488,7 +1715,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
         // 영역 밖 부모의 밀도 칩도 영역 세계에선 존재하지 않는다 — 노드는
         // 컬되는데 칩만 남으면 빈 우주에 칩이 떠도는 결함 (실화면 실증).
-        frameChips = frameChips.filter((ch) => realmData.memberIds.has(ch.parentId));
+        // 고팬아웃 배치-공개 — `+N 더보기` 칩은 합성 id 라 실제 부모로 해석해
+        // 멤버 판정(영역 안 부모의 배치 칩은 유지, 밖 부모 것은 함께 컬).
+        frameChips = frameChips.filter((ch) =>
+          realmData.memberIds.has(parseClusterMoreChipId(ch.parentId) ?? ch.parentId),
+        );
         // S9 결함 2 — 결계 반경은 이번 프레임의 **가시 멤버**(밀도 게이트/ego 로
         // 접힌 것 제외)의 도달거리로 재적합한다. 접힌 phyllotaxis 자식까지 세던
         // 정적 `realmData.wardingRadius` 는 보이는 세계보다 훨씬 큰 원을 그렸다.
@@ -1532,19 +1763,75 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           const node = fid ? world.nodeById.get(fid) : undefined;
           const hasChildren = fid ? (world.childrenByParent.get(fid)?.length ?? 0) > 0 : false;
           const engaged = realmState.phase !== "idle";
-          if (fid && node && hasChildren && !engaged && onEnterRealmRef.current) {
+          const eligible = Boolean(fid && node && hasChildren && !engaged && onEnterRealmRef.current);
+          // rank6 — 전개 버튼은 display flex/none 하드 토글(툭 나타남/사라짐)
+          // 대신 opacity + pointer-events 로 페이드한다(CSS transition 150ms,
+          // TopologyMapV2 JSX). 포커스 노드가 남아 있는 한 매 프레임 transform
+          // 을 계속 갱신해 페이드아웃 중에도 카메라를 따라 붙는다(위치 고정 아님).
+          if (node) {
             const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value;
             const s = worldToScreen(camera, width, height, node.x, node.y);
             const off = rr + 14;
             const bx = s.x + off * Math.cos(-Math.PI / 4);
             const by = s.y + off * Math.sin(-Math.PI / 4);
-            realmEnterTargetRef.current = fid;
-            btn.style.display = "flex";
             btn.style.transform = `translate(-50%, -50%) translate(${bx}px, ${by}px)`;
+          }
+          if (eligible) {
+            realmEnterTargetRef.current = fid;
+            btn.style.opacity = "1";
+            btn.style.pointerEvents = "auto";
           } else {
             realmEnterTargetRef.current = null;
-            btn.style.display = "none";
+            btn.style.opacity = "0";
+            btn.style.pointerEvents = "none";
           }
+        }
+      }
+
+      // rank7 — 클러스터 칩 reveal 램프 스텝. 이번 프레임에 펼쳐진(!ego) 부모는
+      // 1 로, 그 외 추적 중인 부모는 0 으로 `clusterRevealTau` 에 수렴한다. ~0 에
+      // 도달하고 더는 펼쳐지지 않은 키는 정리한다. reduced-motion 은 즉시 스냅.
+      {
+        const revealMap = chipRevealRef.current;
+        const expandedNow = new Set<string>();
+        for (const ch of frameChips) {
+          if (ch.expanded && !ch.ego) expandedNow.add(ch.parentId);
+        }
+        // 추적 대상 = 지금 펼친 부모 ∪ 이미 램프가 남아 있는(페이드아웃 중) 부모.
+        const tracked = new Set<string>([...expandedNow, ...revealMap.keys()]);
+        for (const pid of tracked) {
+          const target = expandedNow.has(pid);
+          const prev = revealMap.get(pid) ?? 0;
+          const nextVal = reducedMotionRef.current
+            ? (target ? 1 : 0)
+            : stepEmphasis(prev, target, true, dt, tokens.clusterRevealTau, tokens.clusterRevealTau);
+          if (!target && nextVal <= 0.02) revealMap.delete(pid);
+          else revealMap.set(pid, nextVal);
+        }
+      }
+
+      // 고팬아웃 배치-공개 — 배치 자식의 등장 램프 스텝. 시작 시각(스태거) 이후
+      // egoRevealRiseTau 로 0→1 수렴(등장은 카메라 착지 리듬과 동일 τ 재사용).
+      // 이번 프레임 배치로 보이지 않는(접히거나 부모가 접힌) 키는 정리한다.
+      // reduced-motion 은 즉시 1(스태거 없이 스냅).
+      {
+        const appearMap = batchAppearRef.current;
+        const startMap = batchAppearStartRef.current;
+        for (const id of [...appearMap.keys()]) {
+          if (!batchAppearVisible.has(id)) {
+            appearMap.delete(id);
+            startMap.delete(id);
+            continue;
+          }
+          if (reducedMotionRef.current) {
+            appearMap.set(id, 1);
+            startMap.delete(id);
+            continue;
+          }
+          if (now < (startMap.get(id) ?? 0)) continue; // 스태거 시작 전 — 0 유지.
+          const next = stepEmphasis(appearMap.get(id) ?? 0, true, true, dt, tokens.egoRevealRiseTau, tokens.egoRevealRiseTau);
+          appearMap.set(id, next);
+          if (next >= 0.999) startMap.delete(id);
         }
       }
 
@@ -1581,6 +1868,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         selectedEdge: selectedEdgeRef.current,
         emphasisById: emphasisRef.current,
         egoRevealById: egoRevealRef.current,
+        focusRampById: focusRampRef.current,
+        appearById: appearRef.current,
+        chipRevealById: chipRevealRef.current,
+        batchAppearById: batchAppearRef.current,
+        labelPresentById: labelPresentRef.current,
+        colorFocusedNodeId: colorFocusRef.current?.focusedNodeId ?? null,
+        colorSelectedEdge: colorFocusRef.current?.selectedEdge ?? null,
         reducedMotion: reducedMotionRef.current,
         pulses: pulsesRef.current,
         selectionPulse: selectionPulseRef.current,
@@ -1625,6 +1919,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dragHistoryRef,
     camStartAtDownRef,
     canvasRectRef,
+    canvasRef,
     focusedSlugRef,
     hoveredNodeIdRef,
     rippleStartRef,
@@ -1655,6 +1950,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // 프레임이 새 배치로 다시 그린다 — 별도 wake 불필요.
     onExpandEgoNeighbors: () => {
       egoRevealBatchesRef.current += 1;
+    },
+    // 고팬아웃 배치-공개 — `+N 더보기` 칩 클릭 → 그 부모의 배치 +1(세션 임시,
+    // URL 비영속). `이웃 +N` 과 동일 — 클릭 제스처가 방금 캔버스를 활성으로
+    // 유지했으므로(유휴 grace 창) 다음 프레임이 새 배치를 DOI 순 stagger 로
+    // 다시 그린다. 별도 wake 불필요.
+    onExpandClusterBatch: (parentId: string) => {
+      const map = clusterRevealBatchesRef.current;
+      map.set(parentId, (map.get(parentId) ?? 1) + 1);
     },
   });
   /* eslint-enable react-hooks/refs */

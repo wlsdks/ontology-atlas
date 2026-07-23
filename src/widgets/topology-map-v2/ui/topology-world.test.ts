@@ -260,6 +260,20 @@ describe("computeClusterDiscBounds", () => {
     const world = discWorld([node({ id: "d", kind: "domain", x: 0, y: 0 })], { d: [] });
     expect(computeClusterDiscBounds(world, tokens, "missing")).toBeNull();
   });
+
+  it("restrictIds 를 주면 그 집합의 자식만 bbox 에 포함(고팬아웃 배치 fit)", () => {
+    const nodes: WorldNode[] = [
+      node({ id: "d", kind: "domain", x: 0, y: 0 }), // r14
+      node({ id: "c1", kind: "capability", x: 100, y: 0 }), // r8 → maxX 108
+      node({ id: "far", kind: "capability", x: 900, y: 0 }), // 접힌 잔여 — 제외돼야
+    ];
+    const world = discWorld(nodes, { d: ["c1", "far"] });
+    // 배치에 c1 만(+부모 d) 포함 — far 는 잔여라 프레이밍에서 빠진다.
+    const bounds = computeClusterDiscBounds(world, tokens, "d", new Set(["d", "c1"]));
+    expect(bounds!.maxX).toBe(108); // far(908) 아님 — 소수를 크게.
+    // restrict 없으면 far 까지 포함(회귀 0 확인).
+    expect(computeClusterDiscBounds(world, tokens, "d")!.maxX).toBe(908);
+  });
 });
 
 /** P3a — 잉크 사다리의 레벨 유도 계약. */

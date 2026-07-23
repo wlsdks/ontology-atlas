@@ -56,6 +56,13 @@ export interface DocsSidebarBodyProps {
   canCreateNewDoc: boolean;
 }
 
+// "최근 바뀐 문서" 스트립에 노출할 최대 행 수. 7일 창은 대량 커밋일에
+// 수십 건을 통과시켜(dogfood 샘플 27건) 스트립이 아래 트리와 겹치는 두 번째
+// 전체 목록 + 독립 스크롤이 됐다(사이드바에 스크롤 영역 2~3개 = "어디를
+// 드래그하지" 혼란). 최근 5건만 미리보기로 남기고 스크롤을 제거해 주
+// 스크롤을 트리 하나로 단일화한다 — 나머지는 트리가 이미 전부 담는다.
+const RECENTLY_CHANGED_STRIP_MAX = 5;
+
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
     <h3 className="flex-none px-3 pb-1.5 pt-3 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
@@ -170,7 +177,7 @@ export function DocsSidebarBody({
             disabled={!canCreateNewDoc}
             data-testid="docs-sidebar-new-doc"
             aria-label={t("newDocButtonLabel")}
-            className="inline-flex h-6 w-6 flex-none items-center justify-center rounded-md border border-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-overlay-2)] disabled:hover:text-[color:var(--color-text-tertiary)]"
+            className="inline-flex h-8 w-8 flex-none items-center justify-center rounded-md border border-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-overlay-2)] disabled:hover:text-[color:var(--color-text-tertiary)]"
           >
             <Plus size={13} aria-hidden />
           </button>
@@ -272,30 +279,41 @@ export function DocsSidebarBody({
             />
           </button>
           {recentlyChangedOpen ? (
-            <ul
-              data-testid="docs-sidebar-recently-changed-list"
-              className="flex max-h-[22vh] flex-col gap-0.5 overflow-auto px-2"
-            >
-              {recentlyChangedDocs.map((doc) => {
-                const active = selectedSlug === doc.slug;
-                return (
-                  <li key={doc.slug}>
-                    <button
-                      type="button"
-                      onClick={() => onSelect(doc.slug)}
-                      className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-body transition-colors ${
-                        active
-                          ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
-                          : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
-                      }`}
-                    >
-                      <FileText size={11} className="flex-none opacity-60" aria-hidden />
-                      <span className="min-w-0 flex-1 truncate">{doc.title}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+            <>
+              <ul
+                data-testid="docs-sidebar-recently-changed-list"
+                className="flex flex-col gap-0.5 px-2"
+              >
+                {recentlyChangedDocs
+                  .slice(0, RECENTLY_CHANGED_STRIP_MAX)
+                  .map((doc) => {
+                    const active = selectedSlug === doc.slug;
+                    return (
+                      <li key={doc.slug}>
+                        <button
+                          type="button"
+                          onClick={() => onSelect(doc.slug)}
+                          className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-body transition-colors ${
+                            active
+                              ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
+                              : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                          }`}
+                        >
+                          <FileText size={11} className="flex-none opacity-60" aria-hidden />
+                          <span className="min-w-0 flex-1 truncate">{doc.title}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+              </ul>
+              {recentlyChangedDocs.length > RECENTLY_CHANGED_STRIP_MAX ? (
+                <p className="px-3 pt-1 text-caption text-[color:var(--color-text-quaternary)]">
+                  {t("recentlyChangedMore", {
+                    count: recentlyChangedDocs.length - RECENTLY_CHANGED_STRIP_MAX,
+                  })}
+                </p>
+              ) : null}
+            </>
           ) : null}
         </section>
       ) : null}

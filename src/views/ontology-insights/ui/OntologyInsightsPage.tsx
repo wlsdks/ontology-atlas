@@ -252,7 +252,8 @@ export function OntologyInsightsPage() {
     health: t("heroHealth"),
     orphan: t("healthOrphan"),
     cycle: t("healthCycle"),
-    domainMembership: t("healthDomainMembership"),
+    membershipLabel: t("heroMembershipLabel"),
+    densityGloss: t("heroDensityGloss", { ratio: health.edgesPerConcept.toFixed(2) }),
     evidenceLinked: t("healthEvidenceLinked"),
   };
   const overviewLabels = {
@@ -277,6 +278,7 @@ export function OntologyInsightsPage() {
   };
   const doNextLabels = {
     agentReadinessTitle: t("agentReadinessTitle"),
+    agentReadinessHint: t("agentReadinessHint"),
     agentReadinessReady: t("agentReadinessReady"),
     agentReadinessPreflight: t("agentReadinessPreflight"),
     agentReadinessReview: t("agentReadinessReview"),
@@ -295,6 +297,10 @@ export function OntologyInsightsPage() {
     sectionOrphan: t("doNext.sectionOrphan"),
     sectionPromotion: t("doNext.sectionPromotion"),
     sectionCycle: t("doNext.sectionCycle"),
+    hintNeglectedHub: t("doNext.hintNeglectedHub"),
+    hintOrphan: t("doNext.hintOrphan"),
+    hintPromotion: t("doNext.hintPromotion"),
+    promotionMetric: (count: number) => t("doNext.promotionMetric", { count }),
     cycleMoreNodes: (count: number) => t("doNext.cycleMoreNodes", { count }),
     neglectedHubMetric: (degree: number, agoDays: number) =>
       t("doNext.neglectedHubMetric", { degree, days: agoDays }),

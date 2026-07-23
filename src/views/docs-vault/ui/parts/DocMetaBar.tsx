@@ -34,7 +34,6 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
   // 토폴로지가 전체 ontology 그래프를 렌더하므로 project·domain·capability·element
   // 모두 1:1 노드를 가져 토폴로지로 점프 가능 (buildTopologyDeeplinkForDoc 이 kind 별 처리).
   const topologyHref = buildTopologyDeeplinkForDoc(doc);
-  const sourcePath = doc.path || `${doc.slug}.md`;
   const proofBody =
     ontologyHref && kindValue
       ? t("recordProofOntologyBody", { kind: kindValue })
@@ -49,10 +48,6 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
         <span className="inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-label text-[color:var(--color-text-secondary)]">
           <FileText className="h-3.5 w-3.5" aria-hidden="true" />
           {t("recordProofLabel")}
-        </span>
-        <span className="min-h-7 min-w-0 rounded-md border border-[color:var(--color-overlay-1)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-label text-[color:var(--color-text-tertiary)]">
-          <span className="sr-only">{t("pathLabel")}: </span>
-          <span className="break-all">{sourcePath}</span>
         </span>
         <span className="min-h-7 min-w-0 flex-1 py-1 text-[color:var(--color-text-tertiary)]">
           {proofBody}

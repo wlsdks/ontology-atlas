@@ -120,8 +120,6 @@ export function ProjectSelectorPage() {
             <b className={numeralClass}>{census.projectCount}</b> {t("censusLineProjectLabel")}
             <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
             <b className={numeralClass}>{census.domainCount}</b> {t("censusLineDomainsLabel")}
-            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-            <b className={numeralClass}>{census.conceptCount}</b> {t("censusLineConceptsLabel")}
           </span>
           <Link
             href={newProjectHref}
@@ -147,17 +145,17 @@ export function ProjectSelectorPage() {
             </div>
             <div className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-2 shadow-[inset_0_1px_0_var(--color-overlay-2)]">
               {recentActivityRows.map((row, index) => {
-                const rowClassName = `flex items-center gap-2.5 py-1.5 text-body text-[color:var(--color-text-secondary)] ${
+                const rowClassName = `flex items-center gap-2.5 min-h-8 py-1.5 text-body text-[color:var(--color-text-secondary)] ${
                   index > 0 ? "border-t border-[color:var(--color-divider)]" : ""
                 } ${row.nodeId ? "-mx-1.5 rounded-md px-1.5 transition-colors hover:bg-[color:var(--color-overlay-1)]" : ""}`;
                 const rowContent = (
                   <>
                     <TopologyV2KindGlyph kind={row.kind} size={14} />
                     <span
-                      title={row.slug}
-                      className="min-w-0 shrink truncate font-mono text-label text-[color:var(--color-text-secondary)]"
+                      title={row.title}
+                      className="min-w-0 shrink truncate text-body text-[color:var(--color-text-secondary)]"
                     >
-                      {row.slug}
+                      {row.title}
                     </span>
                     {row.what ? (
                       <span
@@ -171,9 +169,15 @@ export function ProjectSelectorPage() {
                     )}
                     <span
                       title={row.domainTitle ?? undefined}
-                      className="max-w-[150px] shrink truncate font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] sm:max-w-[220px]"
+                      className="max-w-[150px] shrink truncate text-caption text-[color:var(--color-text-tertiary)] sm:max-w-[220px]"
                     >
                       {row.domainTitle ?? t("activityNoDomain")}
+                    </span>
+                    <span
+                      title={row.slug}
+                      className="hidden shrink-0 max-w-[160px] truncate font-mono text-caption text-[color:var(--color-text-quaternary)] md:inline"
+                    >
+                      {row.slug}
                     </span>
                     <span className={`shrink-0 whitespace-nowrap text-label ${numeralClass}`}>
                       {formatAgo(resolveRecentActivityAgo(row.updatedAt, new Date()), t)}
@@ -234,27 +238,38 @@ export function ProjectSelectorPage() {
               {t("nextSlotSub")}
             </span>
           </div>
-          <div className="mt-3 flex items-center gap-3 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-body text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
-            <span className="w-[108px] shrink-0 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-              {t("nextSlotCliLabel")}
+          {/* 사람-우선: 첫 줄은 평문 인간 경로(위 「새 프로젝트」 버튼). 아래
+              두 코드 칩은 개발자·에이전트용 선택 경로로 명시 강등한다 — 삭제
+              아님(코드 문자열 자체는 보존). */}
+          <p className="mt-3 max-w-[640px] text-body leading-6 text-[color:var(--color-text-secondary)]">
+            {t("nextSlotHumanLead")}
+          </p>
+          <div className="mt-3 border-t border-[color:var(--color-divider)] pt-3">
+            <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              {t("nextSlotCodeChipsCaption")}
             </span>
-            <code className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--color-text-secondary)]">
-              {t("nextSlotCliCommand")}
-            </code>
-            <span className="ml-auto hidden shrink-0 whitespace-nowrap font-mono text-label text-[color:var(--color-text-quaternary)] sm:inline">
-              {t("nextSlotCliCaption")}
-            </span>
-          </div>
-          <div className="mt-2 flex items-center gap-3 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-body text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
-            <span className="w-[108px] shrink-0 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-              {t("nextSlotAgentLabel")}
-            </span>
-            <code className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--color-text-secondary)]">
-              {t("nextSlotAgentCommand")}
-            </code>
-            <span className="ml-auto hidden shrink-0 whitespace-nowrap font-mono text-label text-[color:var(--color-text-quaternary)] sm:inline">
-              {t("nextSlotAgentCaption")}
-            </span>
+            <div className="mt-2 flex items-center gap-3 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-body text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
+              <span className="w-[108px] shrink-0 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                {t("nextSlotCliLabel")}
+              </span>
+              <code className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--color-text-secondary)]">
+                {t("nextSlotCliCommand")}
+              </code>
+              <span className="ml-auto hidden shrink-0 whitespace-nowrap font-mono text-label text-[color:var(--color-text-tertiary)] sm:inline">
+                {t("nextSlotCliCaption")}
+              </span>
+            </div>
+            <div className="mt-2 flex items-center gap-3 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-body text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
+              <span className="w-[108px] shrink-0 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                {t("nextSlotAgentLabel")}
+              </span>
+              <code className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--color-text-secondary)]">
+                {t("nextSlotAgentCommand")}
+              </code>
+              <span className="ml-auto hidden shrink-0 whitespace-nowrap font-mono text-label text-[color:var(--color-text-tertiary)] sm:inline">
+                {t("nextSlotAgentCaption")}
+              </span>
+            </div>
           </div>
         </section>
         </div>
@@ -289,23 +304,30 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
           <div className="mt-1 flex flex-wrap items-center gap-2 text-body text-[color:var(--color-text-tertiary)]">
             <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-indigo-brand)]" />
             <span>{t("cardUpdatedPrefix")} {ago}</span>
-            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-            <span className="min-w-0 truncate">
-              {project.description || t("cardDescriptionFallback")}
-            </span>
           </div>
+          <p className="mt-1.5 text-body leading-6 text-[color:var(--color-text-tertiary)] line-clamp-2">
+            {project.description || t("cardDescriptionFallback")}
+          </p>
         </div>
         <span className="mt-1.5 shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)]">
           {project.slug}
         </span>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-baseline gap-5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-panel-metric-surface,var(--color-overlay-1))] px-4 py-2.5 text-body">
-        <FactItem label={t("factDomain")} value={facts.domain} />
-        <FactItem label={t("factCapability")} value={facts.capability} />
-        <FactItem label={t("factElement")} value={facts.element} />
-        <FactItem label={t("factDocument")} value={facts.document} />
-        <FactItem label={t("factRelations")} value={facts.relations} />
+      {/* 규모를 잘 말하는 역량·요소를 앞·크게, 도메인·문서·관계는 부수치로
+          작게 — 색/토큰 변경 없이 크기·순서·캡션만 조정한다. */}
+      <div className="mt-4 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-panel-metric-surface,var(--color-overlay-1))] px-4 py-2.5">
+        <p className="mb-1.5 text-caption text-[color:var(--color-text-quaternary)]">
+          {t("factStripGloss")}
+        </p>
+        <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 text-body">
+          <FactItem label={t("factCapability")} value={facts.capability} emphasis />
+          <FactItem label={t("factElement")} value={facts.element} emphasis />
+          <span aria-hidden className="h-4 w-px shrink-0 self-center bg-[color:var(--color-divider)]" />
+          <FactItem label={t("factDomain")} value={facts.domain} />
+          <FactItem label={t("factDocument")} value={facts.document} />
+          <FactItem label={t("factRelations")} value={facts.relations} />
+        </div>
       </div>
 
       {domainRows.length > 0 ? (
@@ -360,7 +382,9 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
         >
           {t("footTopologyView")}
         </Link>
-        <span className="ml-auto whitespace-nowrap font-mono text-label tracking-[0.04em] text-[color:var(--color-text-quaternary)]">
+        {/* 갱신 시각은 상단 「최근 갱신」으로 일원화 — 이 줄은 파일 경로
+            브레드크럼으로 quaternary·caption 강등해 중복 경합을 없앤다. */}
+        <span className="ml-auto whitespace-nowrap font-mono text-caption tracking-[0.04em] text-[color:var(--color-text-quaternary)]">
           {t("footUpdated", {
             date: formatDate(project.updatedAt),
             path: docPath ?? project.slug,
@@ -371,10 +395,28 @@ function ProjectFullCard({ project, facts, domainRows, docPath, t }: ProjectFull
   );
 }
 
-function FactItem({ label, value }: { label: string; value: number }) {
+function FactItem({
+  label,
+  value,
+  emphasis = false,
+}: {
+  label: string;
+  value: number;
+  emphasis?: boolean;
+}) {
+  // 강조치(역량·요소)는 숫자를 앞·크게 세워 규모를 먼저 읽히고, 부수치는
+  // 작은 라벨 우선 배치로 낮춘다 — 크기/순서 차이만으로 위계.
+  if (emphasis) {
+    return (
+      <span className="inline-flex items-baseline gap-1.5">
+        <b className={`${numeralClass} text-title leading-none`}>{value}</b>
+        <span className="text-body text-[color:var(--color-text-tertiary)]">{label}</span>
+      </span>
+    );
+  }
   return (
-    <span>
-      <span className="text-[color:var(--color-text-tertiary)]">{label}</span>{" "}
+    <span className="inline-flex items-baseline gap-1.5 text-label">
+      <span className="text-[color:var(--color-text-quaternary)]">{label}</span>
       <b className={numeralClass}>{value}</b>
     </span>
   );

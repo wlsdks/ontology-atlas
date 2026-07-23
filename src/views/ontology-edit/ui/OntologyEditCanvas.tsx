@@ -68,7 +68,15 @@ function TraceLegendMark({ dash }: { dash: string }) {
 
 const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
 const BUILDER_OVERVIEW_MIN_ZOOM = 0.05;
-const BUILDER_OVERVIEW_MAX_ZOOM = 1.2;
+// Overview-fit zoom ceiling for small / focused subgraphs. Raised 1.2 → 1.6
+// (2026-07 ultrawide fix): a shallow project→domains focus set is tall-narrow,
+// so on a 2560×1440 fullscreen canvas its natural *height-limited* fit is ~1.5x.
+// The old 1.2 cap froze the graph small — loose in BOTH axes — reading as a tiny
+// graph lost in a black void (owner report). fitView always takes min(w-fit,
+// h-fit), so this only unlocks growth on tall/wide canvases; narrow 1280/1512
+// screens fit below 1.0 and are untouched. Ceiling stays under the ReactFlow
+// interactive maxZoom (2) so a 1–2 node draft can't balloon.
+const BUILDER_OVERVIEW_MAX_ZOOM = 1.6;
 
 /**
  * autoLayoutToken / layoutMode 변할 때 viewport fitView 를 부드럽게

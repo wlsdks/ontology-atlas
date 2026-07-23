@@ -341,8 +341,14 @@ export function computeClusterFitTarget(
   viewportHeight: number,
   parentId: string,
   overviewEntryScale: number,
+  /**
+   * 고팬아웃 배치-공개(2026-07) — 프레이밍에 포함할 노드 화이트리스트(부모 +
+   * 이번 배치 자식). 주어지면 디스크 bbox 를 이 집합의 노드로만 좁혀 "소수를
+   * 크게" 담는다(전량 자식으로 멀리 빼지 않음). null/생략 = 디스크 전체(회귀 0).
+   */
+  restrictIds?: ReadonlySet<string> | null,
 ): CameraTarget | null {
-  const disc = computeClusterDiscBounds(world, tokens, parentId);
+  const disc = computeClusterDiscBounds(world, tokens, parentId, restrictIds);
   if (!disc) return null;
   const marginRatio = tokens.focusBboxMargin;
   const centerX = (disc.minX + disc.maxX) / 2;

@@ -75,7 +75,7 @@ export function RelationsTab({
         aria-label={labels.relationTypesTitle}
         className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        <CardHead label={labels.relationTypesTitle} gcap="relation breakdown" count={totalEdges} />
+        <CardHead label={labels.relationTypesTitle} count={totalEdges} />
         <div
           aria-hidden
           className="mt-4 flex h-2 w-full overflow-hidden rounded-full border border-[color:var(--color-divider)]"
@@ -118,9 +118,6 @@ export function RelationsTab({
 
         <div className="mt-4 flex items-baseline gap-2">
           <span className="text-body font-medium text-[color:var(--color-text-primary)]">{labels.topDependsOnTitle}</span>
-          <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-            top depends_on
-          </span>
         </div>
         <div className="mt-1 flex flex-1 flex-col justify-evenly">
           {dependsOnRows.length === 0 ? (
@@ -165,9 +162,6 @@ export function RelationsTab({
         <div className="flex items-baseline gap-2">
           <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
             {labels.hubsTitle}
-          </span>
-          <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-            hubs by degree
           </span>
         </div>
         <div className="mt-2 flex flex-1 flex-col">
@@ -226,13 +220,10 @@ export function RelationsTab({
   );
 }
 
-function CardHead({ label, gcap, count }: { label: string; gcap: string; count: number }) {
+function CardHead({ label, count }: { label: string; count: number }) {
   return (
     <div className="flex items-baseline gap-2.5">
       <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">{label}</span>
-      <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-        {gcap}
-      </span>
       <span className="ml-auto font-mono text-body tabular-nums text-[color:var(--topology-v2-numeral-face)]">
         {count}
       </span>

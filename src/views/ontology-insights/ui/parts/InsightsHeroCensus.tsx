@@ -13,7 +13,10 @@ export interface InsightsHeroCensusLabels {
   health: string;
   orphan: string;
   cycle: string;
-  domainMembership: string;
+  /** 건강 세그먼트 주숫자(도메인 소속률) 옆 사람이 읽는 요약 — 예: "연결 잘 됨". */
+  membershipLabel: string;
+  /** 밀도비를 강등한 서브라인 — 예: "개념 1개당 평균 연결 2.34개"(ratio 이미 주입). */
+  densityGloss: string;
   evidenceLinked: string;
 }
 
@@ -35,36 +38,36 @@ export function InsightsHeroCensus({
 }) {
   return (
     <div className="flex flex-col items-stretch gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-4 sm:flex-row sm:gap-0">
-      <HeroSegment label={labels.concepts} gcap="concepts">
+      <HeroSegment label={labels.concepts}>
         <BigNum value={totalNodes} />
         <SubStrip items={kindsSummary} />
       </HeroSegment>
-      <HeroSegment label={labels.relations} gcap="relations">
+      <HeroSegment label={labels.relations}>
         <BigNum value={totalEdges} />
         <SubStrip items={relationsSummary} />
       </HeroSegment>
-      <HeroSegment label={labels.health} gcap="health">
-        <BigNum value={health.edgesPerConcept.toFixed(2)} unit="edge/concept" />
-        <div className="mt-auto flex flex-wrap items-center gap-3.5 text-label text-[color:var(--color-text-tertiary)]">
-          <HealthStat label={labels.orphan} value={health.orphanCount} />
-          <HealthStat label={labels.cycle} value={health.cycleCount} />
-          <HealthStat label={labels.domainMembership} value={`${health.domainMembershipPct}%`} />
-          <HealthStat label={labels.evidenceLinked} value={`${health.evidenceLinkedPct}%`} />
+      {/* 건강 세그먼트 — 주숫자는 밀도비(2.34 edge/concept)가 아니라 사람이
+          바로 읽는 소속률(도메인에 담긴 개념 비율) + "연결 잘 됨" 요약. 밀도비는
+          densityGloss 서브라인으로 강등한다(전문용어를 주숫자에서 내린다). */}
+      <HeroSegment label={labels.health}>
+        <BigNum value={`${health.domainMembershipPct}%`} unit={labels.membershipLabel} />
+        <div className="mt-auto flex flex-col gap-1.5">
+          <span className="text-label text-[color:var(--color-text-quaternary)]">{labels.densityGloss}</span>
+          <div className="flex flex-wrap items-center gap-3.5 text-label text-[color:var(--color-text-tertiary)]">
+            <HealthStat label={labels.orphan} value={health.orphanCount} />
+            <HealthStat label={labels.cycle} value={health.cycleCount} />
+            <HealthStat label={labels.evidenceLinked} value={`${health.evidenceLinkedPct}%`} />
+          </div>
         </div>
       </HeroSegment>
     </div>
   );
 }
 
-function HeroSegment({ label, gcap, children }: { label: string; gcap: string; children: ReactNode }) {
+function HeroSegment({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2.5 border-t border-[color:var(--color-divider)] px-6 py-0.5 pt-3 first:border-t-0 first:pt-0.5 sm:border-t-0 sm:border-l sm:pt-0.5 sm:first:border-l-0">
-      <div className="flex items-baseline gap-2 text-body font-medium text-[color:var(--color-text-secondary)]">
-        {label}
-        <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-          {gcap}
-        </span>
-      </div>
+      <div className="text-body font-medium text-[color:var(--color-text-secondary)]">{label}</div>
       {children}
     </div>
   );

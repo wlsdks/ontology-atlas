@@ -15,9 +15,11 @@
  * The gate is applied ONLY in the overview/spine and circuit bands; at the
  * deepest element zoom (`model/tier-visibility.ts#classifyZoomTier === "element"`)
  * the budget is lifted — you zoomed in to read leaves, so all labels return.
- * Exempt labels (ego focus members, expanded cluster-disc children, the hovered
- * node) are ALWAYS kept regardless of K — reading the thing you're focused on
- * or pointing at is never rationed.
+ * Exempt labels (ego focus members, the hovered node) are ALWAYS kept
+ * regardless of K — reading the thing you're focused on or pointing at is never
+ * rationed. An expanded high-fan disc is NOT blanket-exempt: only its DOI
+ * top-`DISC_LABEL_TOP_K` children become label candidates (see
+ * `selectDiscLabelEligible`), so an expand no longer punches a wall of labels.
  *
  * Pure + deterministic — no camera/canvas/DOM knowledge. The caller
  * (`ui/topology-frame-draw.ts`) builds the entries from the frame's already-
@@ -28,15 +30,51 @@
 /** Default label budget for the gated (overview/mid) bands — top 20 by degree. */
 export const LABEL_TOP_K = 20;
 
+/**
+ * Per-disc label budget for an EXPANDED high-fan phyllotaxis disc (high fan-out
+ * 밀도 처방). A domain/capability disc can hold dozens–hundreds of children; the
+ * old code exempted *every* expanded child from the top-K budget, so a single
+ * expand punched a wall of ~60 labels across the map. Instead, only each disc's
+ * DOI top-K children (`rankEgoNeighborsByDOI`: domain > capability > element →
+ * degree → slug) are promoted to label candidates and then still compete in the
+ * normal `LABEL_TOP_K` budget; the rest render as dots and re-label only on
+ * hover/ego. 6–8 is the "읽히는 라벨 한 줌" band (Shneiderman overview-first,
+ * `.claude/rules/design.md`); 8 keeps the disc's spine caps readable without the
+ * text wall.
+ */
+export const DISC_LABEL_TOP_K = 8;
+
+/**
+ * Given each expanded disc's already-DOI-ranked child ids, returns the union of
+ * each disc's top-`k` — the only expanded-disc children eligible to carry a
+ * label (they still pass through `selectTopKLabels`; everything past the cut is a
+ * dot). Pure: the DOI ranking is done by the caller (`rankEgoNeighborsByDOI`)
+ * and passed in per disc, so this stays a trivial deterministic union.
+ */
+export function selectDiscLabelEligible(
+  rankedChildrenByDisc: readonly (readonly string[])[],
+  k: number = DISC_LABEL_TOP_K,
+): Set<string> {
+  const eligible = new Set<string>();
+  const cap = Math.max(0, k);
+  for (const ranked of rankedChildrenByDisc) {
+    const take = Math.min(cap, ranked.length);
+    for (let i = 0; i < take; i += 1) eligible.add(ranked[i]);
+  }
+  return eligible;
+}
+
 export interface LabelRankEntry {
   /** Node id (== vault slug id) — the deterministic tiebreaker on equal degree. */
   id: string;
   /** Node degree (neighbor count) — the ranking key; higher wins the budget. */
   degree: number;
   /**
-   * Always-keep flag: the node is an ego focus member, an expanded cluster-disc
-   * child, or the hovered node. Exempt entries are returned unconditionally and
-   * do NOT consume the K budget (so K non-exempt labels still show alongside).
+   * Always-keep flag: the node is an ego focus member or the hovered node.
+   * Exempt entries are returned unconditionally and do NOT consume the K budget
+   * (so K non-exempt labels still show alongside). Expanded high-fan disc
+   * children are NOT exempt — they compete in the normal budget after the
+   * per-disc DOI cut (`selectDiscLabelEligible`).
    */
   exempt: boolean;
 }
