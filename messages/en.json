@@ -263,7 +263,7 @@
     "nextLabel": "Next",
     "skipLabel": "Skip",
     "finishLabel": "Finish",
-    "waitingForClickLabel": "Click the dot left bright",
+    "waitingForClickLabel": "Click the dot that's still bright",
     "clickSuccessLabel": "Nice — you just opened a real document",
     "finishTourAction": "Done — back to the map",
     "devBranchAction": "I'm a developer →",
@@ -282,7 +282,7 @@
       },
       "tryClick": {
         "title": "Try clicking one",
-        "body": "Click the dot left bright on the map. Its story — what it is and what it connects to — opens in a card."
+        "body": "Click the dot that's still bright on the map. Its story — what it is and what it connects to — opens in a card."
       },
       "datasheet": {
         "title": "The card is the front of the document",
