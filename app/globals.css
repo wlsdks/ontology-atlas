@@ -886,7 +886,9 @@
     --app-nav-rail-width: calc(64px * var(--topology-ui-scale-factor));
     --app-nav-rail-logo-size: calc(38px * var(--topology-ui-scale-factor));
     --app-nav-rail-logo-icon-size: calc(26px * var(--topology-ui-scale-factor));
-    --app-nav-rail-icon-size: calc(24px * var(--topology-ui-scale-factor));
+    /* 24 → 20 (소유자 2026-07-23: "아이콘 크기 다 같아야" — VS Code 액티비티
+       바 관례로 목적지·유틸 20px 단일 사다리, 위계는 라벨/위치가 담당). */
+    --app-nav-rail-icon-size: calc(20px * var(--topology-ui-scale-factor));
     /*
      * 레일 하단 유틸리티 티어(활동·발자취·설정) 아이콘 사다리 — 목적지
      * 티어(24px + 라벨)보다 한 단계 아래(18px = lucide 기본, 각 타일이
@@ -896,7 +898,7 @@
      * 하나로 앉는다 (`AppNavRail.tsx` · `GitStatusTile.tsx` ·
      * `TopologyV2SettingsGear.tsx` rail-tile variant).
      */
-    --app-nav-rail-utility-icon-size: calc(18px * var(--topology-ui-scale-factor));
+    --app-nav-rail-utility-icon-size: var(--app-nav-rail-icon-size);
     --app-nav-rail-label-size: calc(9.5px * var(--topology-ui-scale-factor));
     --app-nav-rail-tile-width: calc(38px * var(--topology-ui-scale-factor));
     --app-nav-rail-tile-height: calc(32px * var(--topology-ui-scale-factor));
