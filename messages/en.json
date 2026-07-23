@@ -361,13 +361,14 @@
         "svgLabel": "Topology miniature of this project's own ontology vault — {concepts} concepts and {relations} relations.",
         "conceptsUnit": "concepts",
         "relationsUnit": "relations",
+        "scopeNote": "Counts this repo's own docs/ontology vault, not the vault you'll load in the app — expect a different number there.",
         "caption": "This project's own ontology, rendered from real markdown frontmatter at build time. No mockup data."
       }
     },
     "eyebrow": "macOS app download",
     "title": "Install once. Work from your local vault.",
     "subtitle": "The desktop app opens your markdown vault directly, remembers recent vaults, and keeps the hosted site out of your daily ontology workflow.",
-    "primaryCta": "Open macOS releases",
+    "primaryCta": "Check GitHub releases",
     "sourceCta": "View source code",
     "releaseAvailabilityNote": "If no macOS DMG is visible yet, the direct-download app release is still waiting on PR review, version alignment, Developer ID signing/notarization, or the v0.1.0 GitHub Release.",
     "releaseStatusTitle": "Before the first release is fully available",
