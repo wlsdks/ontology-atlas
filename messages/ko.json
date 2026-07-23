@@ -2930,5 +2930,20 @@
     "webCopyCommand": "명령 복사",
     "webCopied": "복사됨",
     "webDesktopHint": "데스크톱 앱에서는 여기서 바로 스냅샷할 수 있어요."
+  },
+  "agentFiles": {
+    "header": "에이전트 파일",
+    "headerHint": "어느 AI 도구가 어느 지침 파일을 읽는지 — 읽기 전용 감지, 아무것도 고쳐 쓰지 않아요",
+    "driftBadge": "drift",
+    "driftCount": "drift {count}건",
+    "listAria": "에이전트 지침 파일",
+    "drift": {
+      "missing-agents-import": "CLAUDE.md 가 @AGENTS.md 를 import 하지 않아요 — Claude Code 와 AGENTS.md 를 읽는 도구가 서로 다른 지침을 봅니다",
+      "broken-agents-import": "CLAUDE.md 가 @AGENTS.md 를 import 하지만 AGENTS.md 파일이 없어요",
+      "at-ref-missing": "@참조된 파일을 찾을 수 없어요",
+      "agents-md-over-codex-cap": "AGENTS.md 가 Codex 의 32 KiB 문서 상한을 넘었어요",
+      "skill-copy-diverged": "복제된 스킬 사본(.claude/skills ↔ .agents/skills)이 서로 달라졌어요",
+      "skill-copy-file-missing": "복제 스킬 트리의 한쪽에만 있는 파일이 있어요"
+    }
   }
 }

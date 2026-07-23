@@ -117,6 +117,7 @@ import {
   type DocFrontmatterPatch,
 } from "./parts/DocFrontmatterBlock";
 import { DocsSidebarBody } from "./parts/DocsSidebarBody";
+import { useAgentFilesModel } from "../lib/use-agent-files";
 import { DocsVaultDocOutlinePanel } from "./parts/DocsVaultDocOutlinePanel";
 import { DocReadingOutlineRail } from "./parts/DocReadingOutlineRail";
 import { BackToTopButton } from "./parts/BackToTopButton";
@@ -1287,6 +1288,9 @@ function DocsVaultContent() {
     },
     [handleSelect],
   );
+  // "에이전트 파일" 그룹 — 전체 manifest 기준(컬렉션 필터와 무관). vault 가
+  // repo 루트를 포함할 때만 non-null (hook 내부 게이트), 읽기 전용 감지.
+  const agentFiles = useAgentFilesModel(manifest, localVault.fileHandles);
   const sidebarBody = (
     <DocsSidebarBody
       pinnedSlugs={collectionPinnedSlugs}
@@ -1304,6 +1308,7 @@ function DocsVaultContent() {
       onTagSelect={setActiveTag}
       onCreateNewDoc={handleOpenNewDocDialog}
       canCreateNewDoc={canEditCurrent}
+      agentFiles={agentFiles}
     />
   );
 

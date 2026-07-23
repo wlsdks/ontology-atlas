@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-23T06:21:16.452Z",
+  "generatedAt": "2026-07-23T07:12:31.377Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5739,8 +5739,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 11863,
-      "updatedAt": "2026-07-23T13:47:52+09:00",
+      "wordCount": 11870,
+      "updatedAt": "2026-07-23T07:11:02.168Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6543,12 +6543,12 @@
     {
       "slug": "ontology/capabilities/cli-developer-entry",
       "path": "docs/ontology/capabilities/cli-developer-entry.md",
-      "title": "CLI Developer Entry (50 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)",
+      "title": "CLI Developer Entry (52 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/cli-developer-entry",
         "kind": "capability",
-        "title": "CLI Developer Entry (50 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)",
+        "title": "CLI Developer Entry (52 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)",
         "display": "CLI Developer Entry",
         "domain": "onboarding-ux",
         "dependencies": [
@@ -6560,6 +6560,7 @@
           "cli/src/commands/add.mjs",
           "cli/src/commands/agent-activity.mjs",
           "cli/src/commands/agent-brief.mjs",
+          "cli/src/commands/agent-files.mjs",
           "cli/src/commands/agent-setup.mjs",
           "cli/src/commands/all-paths.mjs",
           "cli/src/commands/analyze.mjs",
@@ -6605,6 +6606,7 @@
           "cli/src/commands/validate.mjs",
           "cli/src/commands/workspace-brief.mjs",
           "cli/src/index.mjs",
+          "cli/src/lib/agent-files.mjs",
           "cli/src/lib/batch-results.mjs",
           "cli/src/lib/batch-results.test.mjs",
           "cli/src/lib/cli-args.mjs",
@@ -6681,8 +6683,8 @@
         }
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
-      "wordCount": 10588,
-      "updatedAt": "2026-07-23T07:48:26+09:00",
+      "wordCount": 10606,
+      "updatedAt": "2026-07-23T07:11:25.304Z",
       "linksOut": []
     },
     {
@@ -13521,7 +13523,7 @@
                 "path": "ontology/capabilities/cli-developer-entry",
                 "type": "doc",
                 "slug": "ontology/capabilities/cli-developer-entry",
-                "title": "CLI Developer Entry (50 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)"
+                "title": "CLI Developer Entry (52 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)"
               },
               {
                 "name": "collaborator-reader-brief",

@@ -2930,5 +2930,20 @@
     "webCopyCommand": "Copy command",
     "webCopied": "Copied",
     "webDesktopHint": "In the desktop app you can snapshot right here."
+  },
+  "agentFiles": {
+    "header": "Agent files",
+    "headerHint": "Which AI tool reads which instruction file — read-only detection, nothing is rewritten",
+    "driftBadge": "drift",
+    "driftCount": "drift {count}",
+    "listAria": "Agent instruction files",
+    "drift": {
+      "missing-agents-import": "CLAUDE.md does not import @AGENTS.md — Claude Code and AGENTS.md readers see different instructions",
+      "broken-agents-import": "CLAUDE.md imports @AGENTS.md but AGENTS.md is missing",
+      "at-ref-missing": "An @referenced file was not found",
+      "agents-md-over-codex-cap": "AGENTS.md exceeds the Codex 32 KiB project-doc cap",
+      "skill-copy-diverged": "Duplicated skill copies diverged between .claude/skills and .agents/skills",
+      "skill-copy-file-missing": "A skill file exists in only one of the duplicated skill trees"
+    }
   }
 }
