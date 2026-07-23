@@ -629,16 +629,17 @@ export function DoNextTab({
         aria-label={labels.agentReadinessTitle}
         className="flex min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
           <div
             aria-label={`${labels.agentReadinessTitle}: ${agentReadiness.ready} ${labels.agentReadinessReady} · ${agentReadiness.preflight} ${labels.agentReadinessPreflight} · ${agentReadiness.review} ${labels.agentReadinessReview}`}
             data-testid="insights-agent-readiness"
+            className="min-w-0"
           >
-            <div className="flex items-baseline gap-2">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-2">
               <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
                 {labels.agentReadinessTitle}
               </span>
-              <span className="ml-auto flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+              <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)] sm:ml-auto">
                 <span
                   className={
                     agentReadiness.ready === 0 ? "text-[color:var(--color-text-quaternary)]" : undefined
