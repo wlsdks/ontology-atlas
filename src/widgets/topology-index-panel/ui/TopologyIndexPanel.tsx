@@ -16,6 +16,7 @@ import {
   type OntologyTreeBuildResult,
 } from "@/shared/lib/ontology-tree";
 import { FirstRunStarterModule } from "@/features/first-run-starter";
+import { BlockImportModule } from "@/features/ontology-blocks";
 import { computeMaxDomainDescendantCount } from "../lib/domain-subcounts";
 import {
   flattenVisibleRowIds,
@@ -460,6 +461,12 @@ export function TopologyIndexPanel({
           </span>
         </Link>
       ) : null}
+
+      {/* 온톨로지 블록 Slice A — "블록 가져오기" (병합 프리뷰). 자립 모듈:
+          vault 로드 상태에서만 스스로 렌더(첫 실행 스타터는 vault 미로드
+          전용이라 동시 노출 없음), 라벨은 ontologyBlocks i18n 을 자급.
+          위 "지도에 없는 문서/먼지 앉은 노드" 행과 같은 조용한 행 문법. */}
+      <BlockImportModule />
 
       {/* v2.1 푸터 — 구 헤더의 "● 에이전트 동기화" 문구 + 성장 신호가
           여기로 이관. 단축키 캡은 장식(⇧⌘K 는 전역 팔레트가 이미 쓰는
