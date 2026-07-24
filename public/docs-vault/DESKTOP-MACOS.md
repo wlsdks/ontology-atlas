@@ -86,8 +86,8 @@ for a macOS prototype:
   keep the same version so the app metadata, DMG filename, and release tag do
   not drift apart.
 - the root package stays free of Firebase SDK, Firebase Admin, and Firebase CLI
-  dependencies. Firebase Hosting deploys use the separate website workflow and
-  `npx firebase-tools`, not the local-only app package.
+  dependencies (SDK ban). The hosted website deploys via the separate GitHub
+  Pages workflow, not the local-only app package.
 - `docs-vault:check`, `cli:mcp-verify`, `desktop:doctor`, `desktop:dev`,
   `desktop:smoke`, `desktop:verify-app`, `desktop:build:app`,
   `desktop:build`, `desktop:release-source`, `desktop:release-tag`,
@@ -214,22 +214,22 @@ for a macOS prototype:
   action or steering new users into the web workbench. The download page also
   states that missing first-release DMGs mean the macOS app release is still
   waiting on PR review, tag/package/Tauri/Cargo version alignment, Apple
-  signing, or the `v0.1.0` GitHub Release. It names Firebase Hosting separately
-  as the promo/download website deploy gate for the
+  signing, or the `v0.1.0` GitHub Release. It names the hosted website deploy
+  separately (GitHub Pages) as the promo/download website deploy gate for the
   hosted `/ko/download/` route. After verified public DMGs are published and the
   hosted download route is live, rebuild the hosted site with
   `NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0` to hide that pre-release checklist
   without a code change.
 - `scripts/check-hosted-download-surface.mjs` verifies the deployed hosted
-  website after Firebase Hosting deploy: `/ko/` must be promo/download-first,
+  website after the GitHub Pages deploy: `/ko/` must be promo/download-first,
   must not expose the old browser vault picker CTA, and `/ko/download/` must
   exist with the stable GitHub Releases download path instead of
   `/releases/latest`. This catches the stale live-site
-  state where the app code is ready but `ontology-atlas.web.app` still serves
-  the previous web-workbench landing page or a missing download route. If the
-  live `/ko/download/` route returns 404, merge the desktop PR so
-  `.github/workflows/deploy-hosting.yml` exists on the default branch, run
-  `gh workflow run deploy-hosting.yml --repo wlsdks/ontology-atlas`, then rerun
+  state where the app code is ready but `wlsdks.github.io/ontology-atlas` still
+  serves the previous web-workbench landing page or a missing download route. If
+  the live `/ko/download/` route returns 404, merge the desktop PR so
+  `.github/workflows/deploy-pages.yml` exists on the default branch, run
+  `gh workflow run deploy-pages.yml --repo wlsdks/ontology-atlas`, then rerun
   `pnpm desktop:verify-hosted`.
 - The `/docs/?intent=local` vault-opening path is desktop-only: hosted browser
   sessions keep `/docs` in the read-only packaged docs mode, disable the local
@@ -453,14 +453,12 @@ The default terminal output also prints `local blockers` and `external blockers`
 before the per-check list, so a pending GitHub PR check does not hide the fact
 that the local preflight path is clean and the remaining work belongs to the
 reviewer or release operator.
-For the full desktop goal audit, add `--include-hosted-surface`; this keeps the
-macOS app release gate local to GitHub Releases by default, but adds the live
-promo/download deployment as `hosted_deploy_workflow`, `hosted_deploy_secrets`,
-and `hosted_surface` in the same JSON/Markdown blocker snapshot when goal
-completion needs both surfaces. The Markdown checklist renders both Apple
-signing secrets and `FIREBASE_SERVICE_ACCOUNT_JSON` under each blocked row's
+The desktop goal audit keeps the macOS app release gate scoped to GitHub
+Releases; the hosted promo/download website deploys separately through GitHub
+Pages (`deploy-pages.yml`) and is not part of this app blocker snapshot. The
+Markdown checklist renders the Apple signing secrets under each blocked row's
 missing-secret section, so handoff reviewers do not have to cross-read the JSON
-payload to finish the hosted deploy setup. The default
+payload. The default
 `.tmp/desktop-goal-status` artifacts include `local_preflight=ok` only because
 the goal-audit wrapper has already completed the local release preflight in the
 same process chain.
@@ -478,10 +476,9 @@ handoff keeps following the real default branch if it is renamed. Markdown
 checklists label these commands as one-shell-session commands because
 `DEFAULT_BRANCH` is intentionally shared by the following fetch, source-check,
 and tag commands. Developer ID direct-download signing blockers additionally
-expose `missingSecrets[]` and hosted deploy blockers expose
-`missingHostedSecrets[]` for direct comparison against GitHub Secrets.
-Firebase Hosting is not part of the macOS app release gate;
-run `pnpm desktop:verify-hosted` after the separate website deploy.
+expose `missingSecrets[]` for direct comparison against GitHub Secrets.
+The hosted website deploy is not part of the macOS app release gate;
+run `pnpm desktop:verify-hosted` after the separate GitHub Pages deploy.
 When it reports missing secrets, set each value through `gh secret set`, for
 example:
 
@@ -537,8 +534,8 @@ stable, then runs
 itself proves the hosted CTA can reach both public release assets. It then
 records the public GitHub Release URL plus the public asset filenames, byte
 sizes, and SHA-256 values in the GitHub Actions step summary. The workflow does
-not require Firebase secrets or deploy Hosting; the installed app remains
-local-only, and website deployment stays in `.github/workflows/deploy-hosting.yml`.
+not require any website deploy secrets; the installed app remains
+local-only, and website deployment stays in `.github/workflows/deploy-pages.yml`.
 Public downloads are still a
 distribution-hardening slice until the Apple credentials are configured and the
 tag workflow runs successfully.

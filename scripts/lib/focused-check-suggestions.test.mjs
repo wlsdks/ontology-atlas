@@ -428,31 +428,12 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.commands.map((row) => row.command), ['pnpm test:claude:hooks']);
   });
 
-  it('suggests build and bundle check when the bundle guard changes', () => {
-    const result = suggestFocusedChecks(['scripts/check-bundle.mjs']);
+  it('routes the GitHub Pages deploy workflow to the desktop readiness contract', () => {
+    const result = suggestFocusedChecks(['.github/workflows/deploy-pages.yml']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), [
-      'pnpm build',
-      'pnpm bundle:check',
-    ]);
-  });
-
-  it('suggests Firebase Hosting deploy checks without folding them into app release', () => {
-    const result = suggestFocusedChecks([
-      'scripts/check-firebase-hosting-deploy-env.mjs',
-      'firebase.json',
-      '.firebaserc',
-      '.firebaseignore',
-      '.github/workflows/deploy-hosting.yml',
-    ]);
-
-    assert.deepEqual(result.commands.map((row) => row.command), [
-      'pnpm exec node --test scripts/check-firebase-hosting-deploy-env.test.mjs',
-      'pnpm test:desktop:check',
-      'pnpm desktop:check',
-      'pnpm test:dogfood:script-refs',
-      'pnpm test:mcp:docs',
-    ]);
+    const commands = result.commands.map((row) => row.command);
+    assert.ok(commands.includes('pnpm test:desktop:check'));
+    assert.doesNotMatch(commands.join(' '), /firebase|bundle:check/i);
   });
 
   it('suggests desktop readiness checks for macOS desktop distribution files', () => {
@@ -526,7 +507,6 @@ describe('focused check suggestions', () => {
       'pnpm desktop:check',
       'pnpm exec tsc --noEmit',
       'pnpm build',
-      'pnpm bundle:check',
     ]);
   });
 

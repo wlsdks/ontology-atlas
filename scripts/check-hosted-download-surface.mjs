@@ -2,7 +2,7 @@
 import http from "node:http";
 import https from "node:https";
 
-const DEFAULT_BASE_URL = "https://ontology-atlas.web.app";
+const DEFAULT_BASE_URL = "https://wlsdks.github.io/ontology-atlas";
 const DEFAULT_TIMEOUT_MS = 15000;
 
 function printHelp() {
@@ -69,8 +69,8 @@ function deploymentNextAction(error) {
     return null;
   }
   return [
-    "next: ensure .github/workflows/deploy-hosting.yml is merged into the default branch,",
-    "then run: gh workflow run deploy-hosting.yml --repo wlsdks/ontology-atlas",
+    "next: ensure .github/workflows/deploy-pages.yml is merged into the default branch,",
+    "then run: gh workflow run deploy-pages.yml --repo wlsdks/ontology-atlas",
     "after the workflow completes, rerun: pnpm desktop:verify-hosted",
   ].join(" ");
 }

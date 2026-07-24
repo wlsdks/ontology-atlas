@@ -37,9 +37,9 @@ Developer ID certificate secret is structurally valid.
 Required GitHub Actions secret names:
 ${REQUIRED_SECRETS.map((name) => `  ${name}`).join("\n")}
 
-Firebase Hosting is intentionally excluded from this macOS app release gate.
-Run the separate deploy-hosting workflow or pnpm desktop:verify-hosted for the
-static promo/download website.
+The hosted website deploy is intentionally excluded from this macOS app release
+gate. GitHub Pages (deploy-pages.yml) publishes the static promo/download site
+separately; run pnpm desktop:verify-hosted to check that surface.
 `);
 }
 

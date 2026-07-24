@@ -10,7 +10,7 @@ shipped: ontology-atlas — your codebase's mental model lives as
 markdown frontmatter. humans + AI agents author the same vault.
 
 `npx ontology-atlas init` ⤵️ 30 second start
-ontology-atlas.web.app · MIT
+wlsdks.github.io/ontology-atlas · MIT
 [demo gif: 8s loop of editing frontmatter → graph updates]
 ```
 
@@ -87,7 +87,7 @@ ontology authoring as a team sport.
 ```
 try it:
 - npx ontology-atlas init my-vault
-- demo: ontology-atlas.web.app
+- demo: wlsdks.github.io/ontology-atlas
 - repo: github.com/wlsdks/ontology-atlas
 
 solo project, MIT, korean+english docs. would love criticism — what

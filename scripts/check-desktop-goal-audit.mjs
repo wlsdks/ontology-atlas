@@ -2,16 +2,15 @@
 import { spawnSync } from "node:child_process";
 
 const DEFAULT_REPO = "wlsdks/ontology-atlas";
-const DEFAULT_HOSTED_BASE_URL = "https://ontology-atlas.web.app";
 const DEFAULT_JSON_FILE = ".tmp/desktop-goal-status.json";
 const DEFAULT_MARKDOWN_FILE = ".tmp/desktop-goal-status.md";
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:goal-audit -- --pr=NUMBER --tag=vX.Y.Z [--repo=${DEFAULT_REPO}] [--hosted-base-url=${DEFAULT_HOSTED_BASE_URL}] [--json-file=PATH] [--markdown-file=PATH]
+  console.log(`Usage: pnpm desktop:goal-audit -- --pr=NUMBER --tag=vX.Y.Z [--repo=${DEFAULT_REPO}] [--json-file=PATH] [--markdown-file=PATH]
 
 Runs the full desktop goal gate:
 1. local release preflight: app build, DMG creation, LaunchServices app content proof, DMG verify, install smoke
-2. public completion audit: PR readiness, release workflow, signing secrets, GitHub Release assets, hosted deploy workflow/secrets, and live download page
+2. public completion audit: PR readiness, release workflow, signing secrets, and GitHub Release assets
 
 This wrapper requires --pr and --tag before starting the expensive local preflight so goal completion cannot accidentally skip PR evidence.
 The release-status JSON/Markdown artifact records local_preflight=ok only when this wrapper has already passed pnpm desktop:release-preflight.
@@ -24,7 +23,6 @@ function parseArgs(argv) {
     repo: DEFAULT_REPO,
     pr: "",
     tag: "",
-    hostedBaseUrl: DEFAULT_HOSTED_BASE_URL,
     jsonFile: DEFAULT_JSON_FILE,
     markdownFile: DEFAULT_MARKDOWN_FILE,
   };
@@ -47,10 +45,6 @@ function parseArgs(argv) {
       options.tag = arg.slice("--tag=".length).trim();
       continue;
     }
-    if (arg.startsWith("--hosted-base-url=")) {
-      options.hostedBaseUrl = arg.slice("--hosted-base-url=".length).replace(/\/+$/, "");
-      continue;
-    }
     if (arg.startsWith("--json-file=")) {
       options.jsonFile = arg.slice("--json-file=".length).trim();
       continue;
@@ -70,14 +64,6 @@ function parseArgs(argv) {
   }
   if (!/^v.+/.test(options.tag)) {
     fail("--tag=vX.Y.Z is required for desktop goal completion evidence.");
-  }
-  try {
-    const hostedUrl = new URL(options.hostedBaseUrl);
-    if (!["http:", "https:"].includes(hostedUrl.protocol)) {
-      fail("--hosted-base-url must use http or https.");
-    }
-  } catch {
-    fail(`--hosted-base-url must be a valid URL, got ${options.hostedBaseUrl || "(empty)"}.`);
   }
 
   return options;
@@ -121,8 +107,6 @@ function main() {
     `--repo=${options.repo}`,
     `--pr=${options.pr}`,
     `--tag=${options.tag}`,
-    "--include-hosted-surface",
-    `--hosted-base-url=${options.hostedBaseUrl}`,
   ];
   releaseArgs.push(`--json-file=${options.jsonFile}`);
   releaseArgs.push(`--markdown-file=${options.markdownFile}`);

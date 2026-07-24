@@ -107,7 +107,7 @@
 > 이 repo 의 `package.json` 의 `scripts:` 객체에 정의된 명령어들을 모두 나열해줘.
 
 **Correct answer:**
-- Read `package.json`, list all keys in `scripts`; derive the count at measurement time instead of trusting this doc. Current examples include `dev`, `build`, `lint`, `test`, `test:run`, `vault:validate`, `test:vault:validate`, `vault:audit`, `vault:migrate`, `bundle:check`, `package:check`, `dogfood:walk`, and the focused `test:mcp:*` scripts.
+- Read `package.json`, list all keys in `scripts`; derive the count at measurement time instead of trusting this doc. Current examples include `dev`, `build`, `lint`, `test`, `test:run`, `vault:validate`, `test:vault:validate`, `vault:audit`, `vault:migrate`, `package:check`, `dogfood:walk`, and the focused `test:mcp:*` scripts.
 - Pure file-read.
 
 **Score axis emphasis:** efficiency, no-MCP-overhead.

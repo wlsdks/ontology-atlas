@@ -14,7 +14,7 @@ body:
       label: Where did you start?
       options:
         - "npx ontology-atlas init"
-        - "Hosted demo (ontology-atlas.web.app)"
+        - "Hosted demo (wlsdks.github.io/ontology-atlas)"
         - "Cloned the repo and ran pnpm dev"
         - "MCP server registered into my AI agent"
     validations:

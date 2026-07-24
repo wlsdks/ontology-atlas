@@ -757,41 +757,41 @@ A successful run looks like this:
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
 ✓ maintenance cursor — ready page stable (3 remaining actions; phase materialize:3; severity info:3; kind materialize_external_element:3; executable maint_a99608d6:materialize/materialize_external_element:info->add_concept; review none)
 ✓ maintenance cursor — resume afterActionId advanced (maint_a99608d6; 0 remaining actions; phase none; severity none; kind none; executable none; review none)
-✓ list_concepts — vault total 95 nodes (vaultRoot /path/to/docs/ontology)
+✓ list_concepts — vault total 94 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concept — project (6 outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 51 evidence results for "project"
+✓ find_evidence — 50 evidence results for "project"
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
-✓ query_concepts limited — 1 query result / 94 total query results (limited true)
+✓ query_concepts limited — 1 query result / 93 total query results (limited true)
 ✓ analyze_repo_structure — fsd (6 domain candidates, 14 capability candidates, 40 element candidates)
 ✓ infer_imports — 923 files scanned, 585 module edges (elements/src/views/home->elements/src/entities/knowledge-graph x28 (static:28), elements/src/views/ontology-insights->elements/src/entities/knowledge-graph x17 (static:17), +583 more)
 ✓ index_project — 61 concept candidates, 585 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
-✓ list_kinds — 95 nodes (capability:39, document:3, domain:6, element:45, project:1, vault-readme:1)
-✓ validate_vault — 95 files, 0 problem files
+✓ list_kinds — 94 nodes (capability:38, document:3, domain:6, element:45, project:1, vault-readme:1)
+✓ validate_vault — 94 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (95 nodes, 1 next action, 6 health checks, growth actions:3 external:3 ignoredExternal:221)
+✓ workspace_brief — healthy (94 nodes, 1 next action, 6 health checks, growth actions:3 external:3 ignoredExternal:220)
 · workspace_brief non-blocking advisory nextActions — materialize_external_elements:info:3 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 6 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (95 nodes, 2 next actions, 6 health checks, growth actions:3 external:3 ignoredExternal:221; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (94 nodes, 2 next actions, 6 health checks, growth actions:3 external:3 ignoredExternal:220; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 · workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:4 - The scoped ontology graph has disconnected actionable islands., materialize_external_elements:info:3 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1, +1 more)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:4, +1 more; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
 · health_tuned non-blocking advisory checks — components:info:4 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph 31f0b0e76716 (95 nodes, 536 edges, issues 0)
-✓ compile_ontology page — 1/95 nodes, 1/536 edges
-✓ compile_ontology indexes — out 95, in 94, edgeById 536, aliases 189, edges 312/224/0
-✓ overview — graph 31f0b0e76716 (95 nodes, 536 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 95, edges 536)
-✓ project_map query_plan — aggregate_scan (medium, nodes 95, edges 536)
+✓ compile_ontology — graph 2d5394a9e45d (94 nodes, 533 edges, issues 0)
+✓ compile_ontology page — 1/94 nodes, 1/533 edges
+✓ compile_ontology indexes — out 94, in 93, edgeById 533, aliases 187, edges 310/223/0
+✓ overview — graph 2d5394a9e45d (94 nodes, 533 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 94, edges 533)
+✓ project_map query_plan — aggregate_scan (medium, nodes 94, edges 533)
 ✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ all_paths — src/widgets/bottom-tab-bar → project (5/16 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
-✓ project_scope — project (91 nodes, internalEdges 295)
-✓ read census consistency — 95 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
+✓ project_scope — project (90 nodes, internalEdges 293)
+✓ read census consistency — 94 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
 ✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 13/13
 
 All passed — register .mcp.json with your MCP client and restart to use the 32 tools.

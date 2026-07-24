@@ -328,7 +328,6 @@ describe('package contract helpers', () => {
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /MCP README explicit/);
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /CLI README explicit/);
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /CLAUDE\.md a thin AGENTS wrapper/);
-    assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /Firebase static hosting/);
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /docs-vault freshness check/);
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /dogfood MCP docs/);
     assert.equal(
@@ -400,7 +399,6 @@ describe('package contract helpers', () => {
       'pnpm vault:validate',
       'pnpm exec tsc --noEmit',
       'pnpm build',
-      'pnpm bundle:check',
       'pnpm docs-vault:check',
       'pnpm test:docs-vault',
       'pnpm docs-vault:build',
@@ -484,13 +482,12 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /`vitest\.config\.ts` \/ `vitest\.setup\.ts` changes route to a small config smoke:\s+`pnpm exec vitest run src\/shared\/lib\/cn\.test\.ts tests\/contract\/vault-schema\.contract\.test\.ts`/);
     assert.match(checksDoc, /`playwright\.config\.ts` changes route to the local-vault picker spec first/);
     assert.match(checksDoc, /`postcss\.config\.mjs` and `app\/globals\.css` route to the overflow sweep spec/);
-    assert.match(checksDoc, /when `scripts\/check-bundle\.mjs`\s+changes, run `pnpm build` first and then `pnpm bundle:check`/);
-    assert.match(checksDoc, /The macOS desktop readiness gate is scaffold-aware and local-first: when\s+`scripts\/check-desktop-readiness\.mjs`, `scripts\/desktop-doctor\.mjs`,\s+`scripts\/desktop-smoke\.mjs`, `scripts\/package-macos-dmg\.mjs`,\s+`scripts\/verify-macos-app-launch\.mjs`, `scripts\/verify-macos-dmg\.mjs`,\s+`scripts\/verify-macos-install-smoke\.mjs`,\s+`scripts\/check-macos-download-release\.mjs`,\s+`scripts\/check-macos-release-secrets\.mjs`, `scripts\/check-macos-release-source\.mjs`,\s+`scripts\/check-macos-release-tag\.mjs`,\s+`scripts\/check-macos-release-slot\.mjs`, `scripts\/check-macos-release-github\.mjs`,\s+`scripts\/watch-macos-release-run\.mjs`,\s+`scripts\/sign-macos-app\.mjs`,\s+`scripts\/notarize-macos-dmg\.mjs`,\s+`src\/shared\/lib\/tauri-vault-fs\.ts`, `docs\/DESKTOP-MACOS\.md`, `src-tauri\/\*\*`,\s+`package\.json`, `\.github\/workflows\/release-macos\.yml`,\s+`\.github\/workflows\/deploy-hosting\.yml`, or `next\.config\.ts`\s+changes, run `pnpm desktop:check`/);
+    assert.match(checksDoc, /The macOS desktop readiness gate is scaffold-aware and local-first: when\s+`scripts\/check-desktop-readiness\.mjs`, `scripts\/desktop-doctor\.mjs`,\s+`scripts\/desktop-smoke\.mjs`, `scripts\/package-macos-dmg\.mjs`,\s+`scripts\/verify-macos-app-launch\.mjs`, `scripts\/verify-macos-dmg\.mjs`,\s+`scripts\/verify-macos-install-smoke\.mjs`,\s+`scripts\/check-macos-download-release\.mjs`,\s+`scripts\/check-macos-release-secrets\.mjs`, `scripts\/check-macos-release-source\.mjs`,\s+`scripts\/check-macos-release-tag\.mjs`,\s+`scripts\/check-macos-release-slot\.mjs`, `scripts\/check-macos-release-github\.mjs`,\s+`scripts\/watch-macos-release-run\.mjs`,\s+`scripts\/sign-macos-app\.mjs`,\s+`scripts\/notarize-macos-dmg\.mjs`,\s+`src\/shared\/lib\/tauri-vault-fs\.ts`, `docs\/DESKTOP-MACOS\.md`, `src-tauri\/\*\*`,\s+`package\.json`, `\.github\/workflows\/release-macos\.yml`,\s+`\.github\/workflows\/deploy-pages\.yml`, or `next\.config\.ts`\s+changes, run `pnpm desktop:check`/);
     assert.match(checksDoc, /The installed app's native vault bridge is part of this same gate:\s+`src-tauri\/src\/lib\.rs` must expose folder-pick, directory-list, read, write,\s+file\/directory delete, mkdir, and exists commands, and\s+`src\/shared\/lib\/tauri-vault-fs\.ts` must wrap the same commands as a handle shim\s+through `@tauri-apps\/api\/core` `invoke` \/ `isTauri`, not private Tauri\s+internals/);
     assert.match(checksDoc, /The installed app must also keep first-run\s+entry local: `src\/views\/root-entry\/ui\/RootEntryPage\.tsx` routes Tauri sessions\s+without a restored vault to `\/docs\/\?intent=local` without rendering the hosted\s+marketing page, and `DocsVaultPage` shows a vault setup welcome that opens the\s+native picker only after an explicit user action/);
     assert.match(checksDoc, /Runtime split changes in `RootEntryPage`,\s+`DocsVaultPage` persistence, or `AppSettingsMenu` route to\s+`pnpm test:desktop:runtime` before the broader readiness gate/);
     assert.match(checksDoc, /Native vault bridge changes route to\s+`pnpm test:desktop:bridge`, which runs the WebView handle-shim tests plus\s+`cargo test --manifest-path src-tauri\/Cargo\.toml` for the Rust path guard/);
-    assert.match(checksDoc, /`next\.config\.ts` is static-export source-of-truth; changes route to\s+`pnpm desktop:check`, `pnpm exec tsc --noEmit`, `pnpm build`, and then\s+`pnpm bundle:check`/);
+    assert.match(checksDoc, /`next\.config\.ts` is static-export source-of-truth; changes route to\s+`pnpm desktop:check`, `pnpm exec tsc --noEmit`, and `pnpm build`/);
     assert.match(checksDoc, /Next App Router entries under `app\/\*\*\/\*\.ts\[x\]` and `next-env\.d\.ts` route to\s+`pnpm exec tsc --noEmit`/);
     assert.match(checksDoc, /Locale routing under `src\/i18n\/\*\.ts` and message catalogs under\s+`messages\/\*\.json` route to `pnpm test:i18n:messages`/);
     assert.match(checksDoc, /`eslint\.config\.mjs` changes route to `pnpm lint`/);
@@ -504,7 +501,6 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /Root `pnpm-lock\.yaml` and MCP\/CLI package lockfiles route to\s+`pnpm test:mcp:package` plus `pnpm package:check` escalation/);
     assert.match(checksDoc, /MCP lockfile\s+changes still show `pnpm dogfood:verify` as an escalation because they touch the\s+agent runtime package directly; CLI lockfile changes stay on package contracts/);
     assert.match(checksDoc, /\| `pnpm package:check` \| Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget \|/);
-    assert.match(checksDoc, /\| `pnpm bundle:check` \| Local-first static export bundle guard for the root\/topology, download, docs, ontology, and projects routes; run after `pnpm build` when `scripts\/check-bundle\.mjs` changed \|/);
     assert.match(checksDoc, /\| `pnpm design:ontology` \| Ontology workbench design drift guard for forbidden visual patterns across Workspace, ontology operation surfaces, and shared UI primitives plus Workspace execution, Browse\/Write\/Query, Builder write\/proof, Insights query cockpit, topology legend, Product Design OS designer-bench, public reference-permission contracts, and Relief\/Topology token anti-pattern contracts \|/);
     assert.match(checksDoc, /\| `pnpm desktop:check` \| macOS desktop Tauri scaffold readiness gate for static export, image mode, docs-vault freshness, CLI\/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files \|/);
     assert.match(checksDoc, /\| `pnpm desktop:doctor` \| Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, Xcode command line tools, CLI\/MCP agent setup gates, and non-blocking local `\.app` signing state \|/);
@@ -514,11 +510,11 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm desktop:verify-install` \| Mount the DMG, require the `\/Applications` symlink target, copy the app to a temporary install folder, verify that copied app through the LaunchServices app content proof gate \(`--open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`\), then clean it up \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-preflight` \| Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI\/MCP handoff, agent JSON setup gate, build, route smoke, LaunchServices app content proof \(`--open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`\), unsigned DMG, and install smoke \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-artifact` \| Credentialed direct-download artifact command: release secrets, build, route smoke, app signing, DMG packaging, notarization, release DMG verification, and install smoke \|/);
-    assert.match(checksDoc, /\| `pnpm desktop:goal-audit` \| Full desktop goal gate: requires `--pr` and `--tag`, runs the local release preflight, then checks PR, signing, GitHub Release, hosted deploy, and download blockers, writing default `\.tmp\/desktop-goal-status` evidence with `local_preflight=ok` only after the native app and DMG install proof have passed locally \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:goal-audit` \| Full desktop goal gate: requires `--pr` and `--tag`, runs the local release preflight, then checks PR, signing, and GitHub Release \/ download blockers, writing default `\.tmp\/desktop-goal-status` evidence with `local_preflight=ok` only after the native app and DMG install proof have passed locally \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-slot` \| Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-github` \| Operator-side macOS release readiness check for gh auth, active release workflow, required Developer ID direct-download secret names, optional tag\/version alignment, clean local\/remote same-tag Git ref slots, and clean same-tag Release slot \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-run` \| Wait for the tag-push `release-macos\.yml` run scoped to the pushed tag commit, then watch that exact run to completion \|/);
-    assert.match(checksDoc, /\| `pnpm desktop:release-status` \| macOS app completion audit for tag\/package\/Tauri\/Cargo version alignment, PR review\/merge readiness, active release workflow availability, clean local\/remote same-tag Git ref slots, Developer ID direct-download secret names, public stable Release state, public DMG\/checksum download verification, owner-grouped handoff actions, and optional `--include-hosted-surface` deploy workflow, deploy secret, plus website verification \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:release-status` \| macOS app completion audit for tag\/package\/Tauri\/Cargo version alignment, PR review\/merge readiness, active release workflow availability, clean local\/remote same-tag Git ref slots, Developer ID direct-download secret names, public stable Release state, public DMG\/checksum download verification, and owner-grouped handoff actions \|/);
     assert.match(checksDoc, /\| `pnpm test:desktop:runtime` \| Hosted-vs-installed runtime split tests for `\/docs\?intent=local`, first-run desktop routing, and hosted download routing \|/);
     assert.match(checksDoc, /\| `pnpm test:desktop:bridge` \| WebView handle-shim tests plus Rust path-guard tests for the native vault bridge \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-secrets` \| Fail closed before tag release when any Developer ID direct-download signing or notarization secret is missing, blank, invalid base64, or not a PKCS#12 DER certificate payload \|/);
@@ -588,10 +584,9 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm test:mcp:suggestions` \| Enum and argument suggestion quality; use the direct sibling `pnpm exec node --test mcp\/src\/suggestions\.test\.mjs` first when `pnpm checks:changed` prints one \|/);
     assert.match(checksDoc, /CLI\/MCP verify help changes route to `pnpm test:dogfood:script-refs` too,\s+because those help surfaces list root `pnpm \.\.\.` shortcuts/);
     assert.match(checksDoc, /`pnpm checks:changed` routes dogfood shortcut helper changes to their direct\s+`pnpm exec node --test \.\.\.test\.mjs` test first, then `pnpm test:dogfood:args`,\s+`pnpm test:dogfood:script-refs`, `pnpm test:dogfood:graph-db`, or `pnpm test:dogfood:compile-fix` before\s+broader dogfood gates/);
-    assert.match(checksDoc, /`pnpm test:mcp:docs` also guards Firebase Hosting config as static-only/);
     assert.match(checksDoc, /`pnpm test:mcp:docs` also guards\s+the tracked `.mcp.json`, `.mcp.json.example`, and `.codex\/config.toml`\s+source-checkout templates/);
     assert.match(checksDoc, /Use\s+`pnpm test:mcp:registration` when only those MCP registration templates changed/);
-    assert.match(checksDoc, /Explicit root\/MCP\/CLI\/dogfood docs contracts plus Firebase static-hosting and MCP registration-template guards/);
+    assert.match(checksDoc, /Explicit root\/MCP\/CLI\/dogfood docs contracts plus MCP registration-template guards/);
     assert.match(checksDoc, /intentionally lists explicit test-name fragments/);
     assert.match(checksDoc, /instead\s+of a broad `README` token/);
     assert.match(checksDoc, /Do not append it after `pnpm integration:\* --`/);
@@ -612,7 +607,6 @@ describe('package contract helpers', () => {
       '.claude/rules/git.md',
       '.claude/rules/local-first.md',
       '.claude/rules/testing.md',
-      '.claude/skills/firebase-deploy/SKILL.md',
       '.claude/skills/ontology-bootstrap/SKILL.md',
       '.claude/skills/ontology-extract/SKILL.md',
       '.claude/skills/ontology-sync/SKILL.md',
@@ -658,89 +652,6 @@ describe('package contract helpers', () => {
     assert.equal(packageJson.scripts['ci:workflow-check'], undefined);
     assert.doesNotMatch(checksDoc, /ci:workflow-check|check-ci-workflow|push\/PR local-first CI gate|GitHub Actions workflow contract/);
     assert.match(checksDoc, /Local verification remains operator-driven/);
-  });
-
-  it('keeps Firebase static hosting config local-first', () => {
-    const firebaseConfig = JSON.parse(readFileSync('firebase.json', 'utf-8'));
-    const firebaserc = JSON.parse(readFileSync('.firebaserc', 'utf-8'));
-    const firebaseIgnore = readFileSync('.firebaseignore', 'utf-8');
-    const gitignore = readFileSync('.gitignore', 'utf-8');
-    const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
-    const deployment = readFileSync('docs/DEPLOYMENT.md', 'utf-8');
-    const skill = readFileSync('.claude/skills/firebase-deploy/SKILL.md', 'utf-8');
-    const capability = readFileSync('docs/ontology/capabilities/firebase-deploy-skill.md', 'utf-8');
-    const hostingWorkflow = readFileSync('.github/workflows/deploy-hosting.yml', 'utf-8');
-    const releaseWorkflow = readFileSync('.github/workflows/release-macos.yml', 'utf-8');
-
-    const forbiddenTopLevel = ['functions', 'firestore', 'storage', 'database', 'emulators', 'extensions'];
-    assert.deepEqual(
-      forbiddenTopLevel.filter((key) => Object.hasOwn(firebaseConfig, key)),
-      [],
-      'firebase.json must remain Hosting-only',
-    );
-    assert.equal(Array.isArray(firebaseConfig.hosting), false, 'firebase.json must keep a single Hosting target');
-    assert.deepEqual(
-      Object.keys(firebaseConfig.hosting ?? {}).sort(),
-      ['cleanUrls', 'headers', 'ignore', 'public', 'trailingSlash'].sort(),
-    );
-    assert.equal(firebaseConfig.hosting?.public, 'out');
-    assert.equal(firebaseConfig.hosting?.cleanUrls, true);
-    assert.equal(firebaseConfig.hosting?.trailingSlash, true);
-    assert.equal(Object.hasOwn(firebaseConfig.hosting ?? {}, 'rewrites'), false);
-    assert.equal(Object.hasOwn(firebaseConfig.hosting ?? {}, 'source'), false);
-    assert.equal(Object.hasOwn(firebaseConfig.hosting ?? {}, 'frameworksBackend'), false);
-    assert.equal(firebaserc.projects?.default, 'ontology-atlas');
-
-    for (const entry of ['node_modules/', '.next/', 'out/', '.git/', '.env.prod', '.local-credentials/', '*.log']) {
-      assert.match(firebaseIgnore, new RegExp(`^${regexEscape(entry)}$`, 'm'));
-    }
-    for (const entry of ['.env.prod', '.firebase/', '.local-credentials/']) {
-      assert.match(gitignore, new RegExp(`^${regexEscape(entry)}$`, 'm'));
-    }
-
-    assert.match(deployment, /does not configure rewrites, Functions, Firestore, Storage, or auth/);
-    assert.match(deployment, /pnpm firebase:deploy-check/);
-    assert.match(deployment, /\.github\/workflows\/release-macos\.yml/);
-    assert.match(deployment, /\.github\/workflows\/deploy-hosting\.yml/);
-    assert.match(deployment, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-    assert.match(deployment, /NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0/);
-    assert.match(deployment, /release-macos\.yml.+app-only/s);
-    assert.match(skill, /firebase deploy --only hosting/);
-    assert.match(skill, /pnpm firebase:deploy-check/);
-    assert.match(skill, /no Functions, Firestore, Storage, Auth, emulators, or server runtime/);
-    assert.match(skill, /pnpm test:mcp:docs/);
-    assert.match(skill, /macOS tag release workflow does not require Firebase secrets/);
-    assert.match(skill, /\.github\/workflows\/deploy-hosting\.yml/);
-    assert.match(skill, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-    assert.match(skill, /NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0/);
-    assert.equal(pkg.scripts?.['firebase:deploy-check'], 'node scripts/check-firebase-hosting-deploy-env.mjs');
-    assert.match(capability, /static host only/);
-    assert.match(capability, /pnpm firebase:deploy-check/);
-    assert.match(capability, /separate from the macOS app release workflow/);
-    assert.match(capability, /deploy-hosting\.yml/);
-    assert.match(capability, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-    assert.match(capability, /Functions, Firestore, Storage, Auth, or committed credentials/);
-    assert.match(hostingWorkflow, /release:\s*\n\s+types:\s*\[published\]/);
-    assert.match(hostingWorkflow, /workflow_dispatch:/);
-    assert.match(hostingWorkflow, /release_tag:/);
-    assert.match(hostingWorkflow, /PUBLISHED_RELEASE_TAG:\s*\$\{\{\s*github\.event\.release\.tag_name\s*\|\|\s*github\.event\.inputs\.release_tag\s*\|\|\s*''\s*\}\}/);
-    assert.match(hostingWorkflow, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-    assert.match(hostingWorkflow, /NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING:\s*["']0["']/);
-    assert.match(hostingWorkflow, /pnpm firebase:deploy-check/);
-    assert.match(hostingWorkflow, /npx --yes firebase-tools@15\.17\.0 deploy --only hosting/);
-    assert.match(hostingWorkflow, /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/);
-    assert.match(hostingWorkflow, /if:\s*env\.PUBLISHED_RELEASE_TAG != ''/);
-    assert.match(hostingWorkflow, /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/);
-    assert.match(hostingWorkflow, /Summarize hosted download deployment/);
-    assert.match(hostingWorkflow, /Hosted Download Site/);
-    assert.match(hostingWorkflow, /GITHUB_STEP_SUMMARY/);
-    assert.match(hostingWorkflow, /Verified routes:/);
-    assert.match(hostingWorkflow, /Verified release assets:/);
-    assert.doesNotMatch(releaseWorkflow, /deploy-hosting:\s*\n\s+name:\s*Deploy hosted download site/);
-    assert.doesNotMatch(releaseWorkflow, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-    assert.doesNotMatch(releaseWorkflow, /NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING:\s*["']0["']/);
-    assert.doesNotMatch(releaseWorkflow, /npx --yes firebase-tools@15\.17\.0 deploy --only hosting/);
-    assert.doesNotMatch(releaseWorkflow, /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/);
   });
 
   it('keeps the docs-vault freshness check executable from source checkout', () => {
@@ -2073,8 +1984,9 @@ describe('package contract helpers', () => {
     assert.match(prTemplate, /If hosted-vs-installed runtime routing changed: `pnpm test:desktop:runtime`/);
     assert.match(prTemplate, /If Tauri native vault bridge changed: `pnpm test:desktop:bridge`/);
     assert.match(prTemplate, /If macOS release scripts\/workflows changed: `pnpm test:desktop:check`/);
-    assert.match(prTemplate, /If Firebase Hosting config\/deploy workflow changed: `node --test scripts\/check-firebase-hosting-deploy-env\.test\.mjs`/);
-    assert.match(prTemplate, /Root package stays Firebase SDK\/Admin\/CLI-free; Firebase is Hosting-only and separate from macOS app release/);
+    assert.match(prTemplate, /If the GitHub Pages deploy workflow changed: `pnpm desktop:verify-hosted -- --base-url="https:\/\/wlsdks\.github\.io\/ontology-atlas"`/);
+    assert.match(prTemplate, /Root package stays Firebase SDK\/Admin\/CLI-free \(SDK ban\); the web host is GitHub Pages, separate from the macOS app release/);
+    assert.doesNotMatch(prTemplate, /bundle:check/);
     assert.match(prTemplate, /Ontology Atlas remains the user-facing app\/web brand; `ontology-atlas` remains repo\/CLI\/MCP\/release asset identity/);
     assert.doesNotMatch(prTemplate, /cloud-mode-only path/);
   });

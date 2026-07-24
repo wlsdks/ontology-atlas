@@ -23,7 +23,7 @@ wrap the existing Next.js static export in a Tauri shell, open the same local
 vault folder, render `/download`, `/docs`, `/ontology`, `/topology`, and
 `/ontology/edit`, and `/ontology/insights`, then verify the same CLI/MCP setup
 gates still work for Claude Code and Codex.
-The hosted Firebase site is intentionally demoted to product introduction,
+The hosted GitHub Pages site is intentionally demoted to product introduction,
 download, and read-only demo: hosted empty states and demo badges route users to
 `/download`, while the installed Tauri runtime keeps `/docs/?intent=local` as
 the writable local vault picker path.
@@ -227,10 +227,10 @@ the checksum asset. The tag workflow runs that same download verifier against
 both draft asset integrity and public downloadability for Apple Silicon and
 Intel users. After the public verifier passes, the publish job records the
 published GitHub Release URL plus the public DMG filenames, byte sizes, and
-SHA-256 values in the GitHub Actions step summary. The same release workflow intentionally avoids Firebase Hosting
+SHA-256 values in the GitHub Actions step summary. The same release workflow intentionally avoids any website
 deploy steps so signed DMGs can publish without backend or hosting credentials;
 the hosted promo/download site is deployed and verified through the separate
-`deploy-hosting.yml` path. When a requested tag has no GitHub Release yet, the verifier
+GitHub Pages `deploy-pages.yml` path. When a requested tag has no GitHub Release yet, the verifier
 reports the missing tag as the release-blocking condition instead of exposing a
 raw GitHub API 404, so the next operator action is to push the tag and let the
 macOS release workflow publish the signed/notarized assets. When the workflow
@@ -250,7 +250,7 @@ operator-side gate with a fake `gh` binary so PR-only workflow,
 missing-secret, tag/version, stale local/remote Git tag, and stale release-slot failures
 remain explicit in the PR gate. The operator-side guard also catches the
 current external blocker earlier: the repo is missing Developer ID direct-download secret names
-without making Firebase Hosting a macOS app blocker. Its missing-secret output
+without making the website deploy a macOS app blocker. Its missing-secret output
 includes `gh secret set <NAME> --repo wlsdks/ontology-atlas` hints and now
 explains each credential role: certificate import (`APPLE_CERTIFICATE_P12_BASE64`,
 `APPLE_CERTIFICATE_PASSWORD`, `APPLE_KEYCHAIN_PASSWORD`), `codesign`
@@ -303,20 +303,15 @@ the following fetch, source-check, and tag commands. Developer ID direct-downloa
 blockers expose `missingHostedSecrets[]`, and the Markdown checklist renders
 both under each blocked row's missing-secret section for direct GitHub Secrets
 reconciliation.
-Firebase Hosting remains a separate static
-website deployment checked with `pnpm desktop:verify-hosted`; when a goal runner
-needs the full desktop completion audit rather than only the app release gate,
-`--include-hosted-surface` adds that deployed promo/download workflow, website
-deploy secret, and website check as `hosted_deploy_workflow`,
-`hosted_deploy_secrets`, and `hosted_surface` in the same blocker snapshot.
-The deploy workflow can also receive a manual `release_tag`, and release
-published events set the same tag automatically; when present, the workflow runs
-`pnpm desktop:verify-download -- --tag="$PUBLISHED_RELEASE_TAG"` after hosted
-page verification so the website deploy run proves the public DMG/checksum
-assets still resolve. The same run writes a hosted download summary with the
-public URL, verified Korean landing/download routes, and release asset
-verification status to `GITHUB_STEP_SUMMARY`.
-`pnpm desktop:verify-hosted` fetches the live `ontology-atlas.web.app`
+The hosted website remains a separate static GitHub Pages
+deployment checked with `pnpm desktop:verify-hosted`, kept independent of the
+macOS app release gate.
+The GitHub Pages workflow triggers on push to `main` and on release
+publication; on a release-published event the workflow runs
+`pnpm desktop:verify-hosted -- --base-url="https://wlsdks.github.io/ontology-atlas"`
+and `pnpm desktop:verify-download -- --tag=...` so the website deploy run proves
+the public DMG/checksum assets still resolve.
+`pnpm desktop:verify-hosted` fetches the live `wlsdks.github.io/ontology-atlas`
 landing/download pages and rejects a stale public deployment that still shows
 the old browser vault picker CTA, lacks `/ko/download/`, or points the download
 CTA at `/releases/latest` instead of the stable GitHub Releases page. It also
@@ -324,9 +319,9 @@ requires the download page to include the AI agent access step, so a hosted
 deployment that omits MCP plus CLI fallback verification for Codex / Claude Code
 / Cursor cannot satisfy the macOS desktop goal.
 When that live download route returns 404, the verifier points the operator to
-merge the desktop PR so `.github/workflows/deploy-hosting.yml` is available on
+merge the desktop PR so `.github/workflows/deploy-pages.yml` is available on
 the default branch, dispatch
-`gh workflow run deploy-hosting.yml --repo wlsdks/ontology-atlas`, and rerun
+`gh workflow run deploy-pages.yml --repo wlsdks/ontology-atlas`, and rerun
 `pnpm desktop:verify-hosted`.
 It is intentionally read-only and fail-closed, so the macOS app work is not
 treated as complete while review, secrets, release publication, public asset
@@ -342,9 +337,9 @@ verification, and temporary install launch smoke before signing credentials ente
 the path.
 `pnpm desktop:goal-audit -- --pr=<number> --tag=<tag>` requires PR and tag
 evidence before starting that local gate, then chains it with
-`desktop:release-status -- --include-hosted-surface`, so the final desktop goal
+`desktop:release-status`, so the final desktop goal
 check covers both the installed app artifact path and the public GitHub
-Release/hosted download path. The wrapper writes default evidence files at
+Release download path. The wrapper writes default evidence files at
 `.tmp/desktop-goal-status.json` and `.tmp/desktop-goal-status.md` unless the
 operator passes explicit output paths, and those artifacts include
 `local_preflight=ok` only after the wrapper has already passed the local preflight.
@@ -355,11 +350,11 @@ secondary CTA opens `/download/` as a static install guide, and the hosted
 landing/download pages no longer route users into `/docs/?intent=local`. The
 download page also explains that missing first-release DMGs mean the macOS app
 release is still waiting on PR review, tag/package/Tauri/Cargo version
-alignment, Developer ID signing/notarization, or the `v0.1.0` GitHub Release, while Firebase Hosting
+alignment, Developer ID signing/notarization, or the `v0.1.0` GitHub Release, while GitHub Pages
 is named separately as the promo/download website deploy gate for hosted
 `/ko/download/`. The same checklist now exposes a copyable local completion
 audit command:
-`pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0 --include-hosted-surface --json-file=.tmp/desktop-release-status.json --markdown-file=.tmp/desktop-release-status.md`.
+`pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0 --json-file=.tmp/desktop-release-status.json --markdown-file=.tmp/desktop-release-status.md`.
 That keeps release operators and AI agents on the same owner-grouped JSON plus
 Markdown blocker snapshot before they wait on CI or mix app signing blockers
 with hosted website deployment blockers.

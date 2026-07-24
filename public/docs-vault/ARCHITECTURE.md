@@ -248,7 +248,6 @@ bare-slug fallback resolves them unchanged.
 pnpm docs-vault:build      # docs/ontology/*.md → src/entities/docs-vault/data/manifest.json
 pnpm docs-vault:check      # verify committed docs-vault outputs are fresh
 pnpm build                 # next build → static export → out/
-pnpm bundle:check          # verifies firebase SDK chunk = 0 across root/topology, download, and app routes
 pnpm vault:validate        # R11+ — frontmatter integrity + graph array drift
 pnpm test:vault:validate   # focused validator CLI argument contract
 pnpm vault:audit           # dogfood ontology capability/element paths exist in repo

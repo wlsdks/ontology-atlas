@@ -67,13 +67,12 @@ test("desktop goal audit requires tag before running preflight", () => {
   });
 });
 
-test("desktop goal audit runs preflight before full hosted release status", () => {
+test("desktop goal audit runs preflight before the full release status", () => {
   withFakePnpm(({ binPath, logPath }) => {
     const result = runGoalAudit([
       "--repo=wlsdks/ontology-atlas",
       "--pr=274",
       "--tag=v0.1.0",
-      "--hosted-base-url=http://127.0.0.1:4321",
       "--json-file=/tmp/goal.json",
       "--markdown-file=/tmp/goal.md",
     ], binPath);
@@ -95,8 +94,6 @@ test("desktop goal audit runs preflight before full hosted release status", () =
           "--repo=wlsdks/ontology-atlas",
           "--pr=274",
           "--tag=v0.1.0",
-          "--include-hosted-surface",
-          "--hosted-base-url=http://127.0.0.1:4321",
           "--json-file=/tmp/goal.json",
           "--markdown-file=/tmp/goal.md",
         ],
@@ -145,8 +142,6 @@ test("desktop goal audit returns the release status failure code", () => {
           "--repo=wlsdks/ontology-atlas",
           "--pr=274",
           "--tag=v0.1.0",
-          "--include-hosted-surface",
-          "--hosted-base-url=https://ontology-atlas.web.app",
           "--json-file=.tmp/desktop-goal-status.json",
           "--markdown-file=.tmp/desktop-goal-status.md",
         ],

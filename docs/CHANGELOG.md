@@ -6,6 +6,26 @@
 
 ---
 
+## 2026-07-24 — Firebase Hosting 인프라 제거, GitHub Pages 단일 웹 호스트
+
+R10 에서 Firebase SDK 는 이미 제거됐고, 남아 있던 것은 정적 사이트 배포
+표면(Firebase Hosting)뿐이었다. `SITE_URL` 이 이미 GitHub Pages
+(`https://wlsdks.github.io/ontology-atlas`)를 가리키고 있어 Firebase Hosting 은
+중복이었다 — 소유자 결정으로 완전히 제거하고 Pages 를 단일 웹 호스트로 정리했다.
+
+- **삭제**: `firebase.json` · `.firebaserc` · `.firebaseignore` ·
+  `.env.prod.example` · `.github/workflows/deploy-hosting.yml` ·
+  `.claude/skills/firebase-deploy/`(+`.agents/` 미러) ·
+  `scripts/check-firebase-hosting-deploy-env.mjs`(+테스트) ·
+  `scripts/check-bundle.mjs`(firebase SDK 청크 가드도 함께 제거) ·
+  dogfood `firebase-deploy-skill` capability 노드.
+- **`deploy-pages.yml` 이 유일한 배포 워크플로**: `release: published` 트리거를
+  추가하고, deploy-hosting 이 하던 hosted-download 검증(`desktop:verify-hosted` +
+  릴리스 태그 시 `desktop:verify-download`)을 Pages URL 기준으로 이식했다.
+- **`bundle:check` · `firebase:deploy-check` 스크립트 제거**. SDK 재도입 금지
+  원칙은 `forbidden.md` 가 계속 유지(패키지 의존성 가드는 desktop-readiness 에
+  남김). dogfood 센서스 95→94 노드(capability 39→38).
+
 ## 2026-07-24 — 투어 카드 단계 전환 모션 (프레임 감사 후속)
 
 최종 점검에서 28초 여정을 30fps 영상으로 뜯어보니, 급변 프레임 3개 중

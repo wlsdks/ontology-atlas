@@ -1,11 +1,15 @@
-# GitHub Pages 데모 배포 — 정적 export 를 /ontology-atlas 서브패스로 서빙.
-# Firebase Hosting(deploy-hosting.yml)과 병행: Pages 는 일 단위 하드컷이 없어
-# 트래픽 스파이크에도 데모가 죽지 않는 기본 경로다.
+# GitHub Pages — the sole web host for the static export, served at the
+# /ontology-atlas subpath. Firebase Hosting was removed (2026-07); Pages has no
+# daily transfer hard-cap, so the read-only demo stays up under traffic spikes.
+# Triggers on push to main, on GitHub Release publication (so the download
+# landing refreshes when a macOS release ships), and on manual dispatch.
 name: Deploy GitHub Pages
 
 on:
   push:
     branches: [main]
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -16,6 +20,10 @@ permissions:
 concurrency:
   group: pages
   cancel-in-progress: true
+
+env:
+  PAGES_BASE_URL: https://wlsdks.github.io/ontology-atlas
+  PUBLISHED_RELEASE_TAG: ${{ github.event.release.tag_name || '' }}
 
 jobs:
   build:
@@ -67,3 +75,45 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  verify-hosted:
+    name: Verify hosted download surface
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify hosted download surface
+        run: pnpm desktop:verify-hosted -- --base-url="$PAGES_BASE_URL"
+      - name: Verify published release download assets
+        if: env.PUBLISHED_RELEASE_TAG != ''
+        run: pnpm desktop:verify-download -- --tag="$PUBLISHED_RELEASE_TAG"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Summarize hosted download deployment
+        run: |
+          {
+            echo "## Hosted Download Site"
+            echo ""
+            echo "Public URL: ${PAGES_BASE_URL}"
+            echo ""
+            echo "Verified routes:"
+            echo "- ${PAGES_BASE_URL}/ko/"
+            echo "- ${PAGES_BASE_URL}/ko/download/"
+            echo ""
+            if [ -n "$PUBLISHED_RELEASE_TAG" ]; then
+              echo "Verified release assets: ${PUBLISHED_RELEASE_TAG}"
+            else
+              echo "Verified release assets: skipped (no release tag supplied)"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

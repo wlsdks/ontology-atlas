@@ -14,9 +14,6 @@ const requiredSecrets = [
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
 ];
-const requiredHostedSecrets = [
-  "FIREBASE_SERVICE_ACCOUNT_JSON",
-];
 function writeFakeGh(root, scenario) {
   const binPath = join(root, "fake-gh.mjs");
   writeFileSync(
@@ -74,18 +71,6 @@ if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/actions/workfl
   out({ state: scenario.workflowState ?? "active" });
   process.exit(0);
 }
-if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/actions/workflows/deploy-hosting.yml") {
-  if (scenario.hostedWorkflowMissing) {
-    err("HTTP 404: Not Found");
-    process.exit(1);
-  }
-  if (scenario.hostedWorkflowCheckFails) {
-    err("hosted workflow API unavailable");
-    process.exit(1);
-  }
-  out({ state: scenario.hostedWorkflowState ?? "active" });
-  process.exit(0);
-}
 if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/ontology-atlas/git/ref/tags/")) {
   if (scenario.gitTagExists) {
     out({ ref: "refs/tags/" + args[1].split("/").pop(), object: { sha: "0".repeat(40) } });
@@ -107,7 +92,7 @@ if (args[0] === "secret" && args[1] === "list") {
     out("not-json");
     process.exit(0);
   }
-  const names = scenario.secretNames ?? ${JSON.stringify([...requiredSecrets, ...requiredHostedSecrets])};
+  const names = scenario.secretNames ?? ${JSON.stringify([...requiredSecrets])};
   out(names.map((name) => ({ name })));
   process.exit(0);
 }
@@ -616,143 +601,6 @@ test("desktop release status blocks disabled release workflows", () => {
   });
 });
 
-test("desktop release status can include hosted surface blockers for full goal audits", () => {
-  withFakeGh({}, (fakeGhPath) => {
-    const result = runStatus(fakeGhPath, [
-      "--tag=v0.1.0",
-      "--pr=274",
-      "--include-hosted-surface",
-      "--hosted-base-url=http://127.0.0.1:1",
-      "--json",
-    ]);
-
-    assert.equal(result.status, 1);
-    const payload = JSON.parse(result.stdout);
-    assert.equal(payload.includeHostedSurface, true);
-    assert.equal(payload.hostedBaseUrl, "http://127.0.0.1:1");
-    assert.deepEqual(payload.externalBlockerIds, ["hosted_surface"]);
-    assert.deepEqual(payload.blockersByOwner, { website_operator: ["hosted_surface"] });
-    const workflow = payload.checks.find((check) => check.id === "hosted_deploy_workflow");
-    assert.equal(workflow.status, "ok");
-    assert.equal(workflow.scope, "external");
-    assert.equal(workflow.owner, "website_operator");
-    const blocker = payload.checks.find((check) => check.id === "hosted_surface");
-    assert.equal(blocker.scope, "external");
-    assert.equal(blocker.owner, "website_operator");
-    assert.equal(blocker.label, "Hosted website");
-    assert.match(blocker.detail, /127\.0\.0\.1:1/);
-    assert.deepEqual(blocker.commands, [
-      "gh workflow run deploy-hosting.yml --repo wlsdks/ontology-atlas",
-      "pnpm desktop:verify-hosted -- --base-url=http://127.0.0.1:1",
-    ]);
-  });
-});
-
-test("desktop release status blocks unavailable hosted deploy workflows in full goal audits", () => {
-  withFakeGh({ hostedWorkflowMissing: true }, (fakeGhPath) => {
-    const result = runStatus(fakeGhPath, [
-      "--tag=v0.1.0",
-      "--pr=274",
-      "--include-hosted-surface",
-      "--hosted-base-url=http://127.0.0.1:1",
-      "--json",
-    ]);
-
-    assert.equal(result.status, 1);
-    const payload = JSON.parse(result.stdout);
-    assert.deepEqual(payload.externalBlockerIds, ["hosted_deploy_workflow", "hosted_surface"]);
-    assert.deepEqual(payload.blockersByOwner, {
-      website_operator: ["hosted_deploy_workflow", "hosted_surface"],
-    });
-    const blocker = payload.checks.find((check) => check.id === "hosted_deploy_workflow");
-    assert.equal(blocker.scope, "external");
-    assert.equal(blocker.owner, "website_operator");
-    assert.equal(blocker.label, "Hosted deploy workflow");
-    assert.match(blocker.detail, /deploy-hosting\.yml is not available to GitHub/);
-    assert.match(blocker.next, /merged into the default branch/);
-    assert.deepEqual(blocker.commands, [
-      "gh api repos/wlsdks/ontology-atlas/actions/workflows/deploy-hosting.yml",
-      "gh pr view 274 --repo wlsdks/ontology-atlas --json state,mergedAt,reviewDecision,mergeStateStatus,url",
-    ]);
-  });
-});
-
-test("desktop release status blocks missing hosted deploy secrets in full goal audits", () => {
-  withFakeGh({ secretNames: requiredSecrets }, (fakeGhPath) => {
-    const result = runStatus(fakeGhPath, [
-      "--tag=v0.1.0",
-      "--pr=274",
-      "--include-hosted-surface",
-      "--hosted-base-url=http://127.0.0.1:1",
-      "--json",
-    ]);
-
-    assert.equal(result.status, 1);
-    const payload = JSON.parse(result.stdout);
-    assert.deepEqual(payload.missingSecrets, []);
-    assert.deepEqual(payload.missingHostedSecrets, requiredHostedSecrets);
-    assert.deepEqual(payload.externalBlockerIds, ["hosted_deploy_secrets", "hosted_surface"]);
-    assert.deepEqual(payload.blockersByOwner, {
-      website_operator: ["hosted_deploy_secrets", "hosted_surface"],
-    });
-    const blocker = payload.checks.find((check) => check.id === "hosted_deploy_secrets");
-    assert.equal(blocker.scope, "external");
-    assert.equal(blocker.owner, "website_operator");
-    assert.equal(blocker.label, "Hosted deploy secrets");
-    assert.match(blocker.detail, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-    assert.deepEqual(blocker.commands, [
-      "gh secret set FIREBASE_SERVICE_ACCOUNT_JSON --repo wlsdks/ontology-atlas < /path/to/FIREBASE_SERVICE_ACCOUNT_JSON",
-    ]);
-  });
-});
-
-test("desktop release status markdown lists missing hosted deploy secrets", () => {
-  withFakeGh({ secretNames: requiredSecrets }, (fakeGhPath) => {
-    const root = mkdtempSync(join(tmpdir(), "omo-release-status-md-hosted-"));
-    try {
-      const markdownPath = join(root, "release-status.md");
-      const result = runStatus(fakeGhPath, [
-        "--tag=v0.1.0",
-        "--pr=274",
-        "--include-hosted-surface",
-        "--hosted-base-url=http://127.0.0.1:1",
-        `--markdown-file=${markdownPath}`,
-      ]);
-
-      assert.equal(result.status, 1);
-      assert.ok(existsSync(markdownPath));
-      const markdown = readFileSync(markdownPath, "utf8");
-      assert.match(markdown, /- \[ \] Hosted deploy secrets \(`hosted_deploy_secrets`\)/);
-      assert.match(markdown, /  - Owner: website_operator/);
-      assert.match(markdown, /  - Missing secrets:\n    - `FIREBASE_SERVICE_ACCOUNT_JSON`/);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-});
-
-test("desktop release status blocks disabled hosted deploy workflows in full goal audits", () => {
-  withFakeGh({ hostedWorkflowState: "disabled_manually" }, (fakeGhPath) => {
-    const result = runStatus(fakeGhPath, [
-      "--tag=v0.1.0",
-      "--pr=274",
-      "--include-hosted-surface",
-      "--hosted-base-url=http://127.0.0.1:1",
-      "--json",
-    ]);
-
-    assert.equal(result.status, 1);
-    const payload = JSON.parse(result.stdout);
-    const blocker = payload.checks.find((check) => check.id === "hosted_deploy_workflow");
-    assert.equal(blocker.scope, "external");
-    assert.equal(blocker.owner, "website_operator");
-    assert.match(blocker.detail, /workflow is disabled_manually/);
-    assert.deepEqual(blocker.commands, [
-      "gh workflow enable deploy-hosting.yml --repo wlsdks/ontology-atlas",
-    ]);
-  });
-});
-
 test("desktop release status separates local and external blockers", () => {
   withFakeGh({}, (fakeGhPath) => {
     const result = runStatus(fakeGhPath, ["--tag=v9.9.9", "--pr=274", "--json"]);
@@ -1112,14 +960,13 @@ test("desktop release status help describes the completion audit", () => {
   assert.match(stdout, /--json/);
   assert.match(stdout, /--json-file=PATH/);
   assert.match(stdout, /--markdown-file=PATH/);
-  assert.match(stdout, /--include-hosted-surface/);
   assert.match(stdout, /machine-readable blocker list/);
   assert.match(stdout, /write that same payload to disk/);
   assert.match(stdout, /human-readable release checklist/);
   assert.match(stdout, /desktop:release-preflight already passed locally/);
   assert.match(stdout, /Standalone desktop:release-status runs\s+show that local proof as skipped/);
-  assert.match(stdout, /full desktop goal\s+completion audit/);
-  assert.match(stdout, /FIREBASE_SERVICE_ACCOUNT_JSON website deploy secret/);
-  assert.match(stdout, /Firebase Hosting is intentionally excluded/);
+  assert.match(stdout, /GitHub Pages \(deploy-pages\.yml\) publishes that surface separately/);
+  assert.doesNotMatch(stdout, /--include-hosted-surface/);
+  assert.doesNotMatch(stdout, /FIREBASE/);
   assert.doesNotMatch(stdout, /Hosted website/);
 });

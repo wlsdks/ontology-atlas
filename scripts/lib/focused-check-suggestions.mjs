@@ -37,18 +37,6 @@ const RULES = [
     matches: [/^scripts\/audit-vault-paths\.(?:mjs|test\.mjs)$/],
   },
   {
-    command: 'pnpm exec node --test scripts/check-firebase-hosting-deploy-env.test.mjs',
-    reason: 'Firebase Hosting static deploy preflight changed',
-    matches: [
-      /^scripts\/check-firebase-hosting-deploy-env\.(?:mjs|test\.mjs)$/,
-      /^firebase\.json$/,
-      /^\.firebaserc$/,
-      /^\.firebaseignore$/,
-      /^\.env\.prod\.example$/,
-      /^\.github\/workflows\/deploy-hosting\.yml$/,
-    ],
-  },
-  {
     command: 'pnpm test:desktop:check',
     reason: 'desktop readiness checker contract changed',
     matches: [
@@ -60,8 +48,7 @@ const RULES = [
       /^scripts\/lib\/macos-dmg-layout\.(?:mjs|test\.mjs)$/,
       /^scripts\/lib\/redact-command\.(?:mjs|test\.mjs)$/,
       /^scripts\/check-macos-download-release\.mjs$/,
-      /^scripts\/check-firebase-hosting-deploy-env\.mjs$/,
-      /^\.github\/workflows\/deploy-hosting\.yml$/,
+      /^\.github\/workflows\/deploy-pages\.yml$/,
     ],
   },
   {
@@ -99,14 +86,13 @@ const RULES = [
       /^scripts\/lib\/macos-dmg-layout\.(?:mjs|test\.mjs)$/,
       /^scripts\/lib\/redact-command\.(?:mjs|test\.mjs)$/,
       /^scripts\/check-macos-download-release\.mjs$/,
-      /^scripts\/check-firebase-hosting-deploy-env\.mjs$/,
       /^docs\/DESKTOP-MACOS\.md$/,
       /^src\/views\/docs-vault\/lib\/persistence(?:\.test)?\.ts$/,
       /^src\/shared\/lib\/tauri-vault-fs(?:\.test)?\.ts$/,
       /^src\/views\/root-entry\/ui\/RootEntryPage(?:\.test)?\.tsx$/,
       /^src\/views\/docs-vault\/ui\/DocsVaultPage\.tsx$/,
       /^src\/widgets\/app-settings-menu\/ui\/AppSettingsMenu(?:\.test)?\.tsx$/,
-      /^\.github\/workflows\/deploy-hosting\.yml$/,
+      /^\.github\/workflows\/deploy-pages\.yml$/,
       /^src-tauri\//,
       /^package\.json$/,
       /^next\.config\.ts$/,
@@ -189,7 +175,6 @@ const RULES = [
       /^scripts\/lib\/test-name-pattern\.(?:mjs|test\.mjs)$/,
       /^scripts\/run-focused-node-test\.(?:mjs|test\.mjs)$/,
       /^scripts\/dogfood-mcp-walk\.(?:mjs|test\.mjs)$/,
-      /^scripts\/check-firebase-hosting-deploy-env\.mjs$/,
       /^cli\/src\/commands\/mcp-verify\.mjs$/,
       /^mcp\/scripts\/verify\.mjs$/,
       /^README\.md$/,
@@ -326,13 +311,8 @@ const RULES = [
   },
   {
     command: 'pnpm build',
-    reason: 'static export artifact is needed before checking bundle-sensitive changes',
-    matches: [/^scripts\/check-bundle\.mjs$/, /^next\.config\.ts$/],
-  },
-  {
-    command: 'pnpm bundle:check',
-    reason: 'local-first bundle or static export config changed',
-    matches: [/^scripts\/check-bundle\.mjs$/, /^next\.config\.ts$/],
+    reason: 'static export config changed',
+    matches: [/^next\.config\.ts$/],
   },
   {
     command: 'pnpm test:mcp:dogfood:timeout',
@@ -471,7 +451,6 @@ const RULES = [
       /^mcp\/README\.md$/,
       /^cli\/README\.md$/,
       /^scripts\/check-package-contracts\.test\.mjs$/,
-      /^firebase\.json$/,
     ],
   },
   {

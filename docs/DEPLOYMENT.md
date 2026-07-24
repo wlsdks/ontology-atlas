@@ -1,6 +1,6 @@
 # Deployment
 
-> 2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (`output: 'export'`), deployable to any static host (Firebase Hosting, Vercel, Netlify, GitHub Pages, S3 + CloudFront, …). The detailed Firebase-specific guide is archived in [`docs/archive/DEPLOY-FIREBASE.md`](./archive/DEPLOY-FIREBASE.md) for reference.
+> 2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (`output: 'export'`), deployable to any static host (GitHub Pages, Vercel, Netlify, S3 + CloudFront, …). The canonical host is GitHub Pages; the old Firebase-specific guide is archived in [`docs/archive/DEPLOY-FIREBASE.md`](./archive/DEPLOY-FIREBASE.md) for historical reference only.
 
 ## Build
 
@@ -15,59 +15,35 @@ This produces an `out/` directory with HTML/JS/CSS only. No server runtime.
 
 Any static host works. Pick one:
 
-> **Official demo (2026-07): GitHub Pages.** The canonical live site is
-> `https://wlsdks.github.io/ontology-atlas/`, deployed automatically on every
-> `main` push by `.github/workflows/deploy-pages.yml` (subpath build via
-> `NEXT_PUBLIC_BASE_PATH=/ontology-atlas`). Firebase Hosting was disabled the
-> same round — Spark's 360 MB/day transfer hard-cap can take the demo down on
-> a busy day, while Pages' 100 GB/month soft limit cannot. The Firebase path
-> below remains valid for self-hosters.
+> **Official host (2026-07): GitHub Pages — the sole web host.** The canonical
+> live site is `https://wlsdks.github.io/ontology-atlas/`, deployed automatically
+> by `.github/workflows/deploy-pages.yml` on every `main` push and on GitHub
+> Release publication (subpath build via `NEXT_PUBLIC_BASE_PATH=/ontology-atlas`).
+> Firebase Hosting was removed — Pages' 100 GB/month soft limit comfortably
+> covers a read-only demo, and keeping a single static host removes a whole
+> deploy toolchain and its credentials.
 
-### Firebase Hosting
+### GitHub Pages (canonical)
 
-```bash
-pnpm build
-npm install -g firebase-tools  # or use npx
-firebase login
-firebase projects:create ontology-atlas
-firebase use ontology-atlas
-firebase deploy --only hosting
-```
+`.github/workflows/deploy-pages.yml` is the only web-deploy workflow. It:
 
-This repo already includes `firebase.json`, `.firebaserc`, and
-`.firebaseignore` for static Hosting. `firebase.json` points to `out/` and
-does not configure rewrites, Functions, Firestore, Storage, or auth.
-Maintainer deploys should copy `.env.prod.example` to the gitignored
-`.env.prod` first so the Firebase project id and live verification URLs are
-explicit before production Hosting is updated.
-Run `pnpm firebase:deploy-check` before `firebase deploy --only hosting`; it
-fails if `.env.prod` is missing, `.firebaserc` points at another project,
-Firebase config drifts away from static Hosting, or `.env.prod` could be
-committed/uploaded.
+- triggers on push to `main`, on `release: published`, and on manual
+  `workflow_dispatch`
+- builds the static export with `NEXT_PUBLIC_BASE_PATH=/ontology-atlas` and
+  `NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0`, adapts the PWA manifest to the
+  base path, disables Jekyll, and uploads/deploys the Pages artifact
+- verifies the deployed download surface with
+  `pnpm desktop:verify-hosted -- --base-url="https://wlsdks.github.io/ontology-atlas"`,
+  and on a release event also runs
+  `pnpm desktop:verify-download -- --tag=<published tag>` so the website deploy
+  record includes the public DMG/checksum asset proof
 
-The macOS tag release workflow (`.github/workflows/release-macos.yml`) is
-intentionally app-only: it publishes signed/notarized DMGs without Firebase
-secrets or Hosting deploy steps. `.github/workflows/deploy-hosting.yml` owns the
-separate website path for manual dispatch or human-created Release events. That
-workflow writes `.env.prod` from GitHub repository variables, authenticates with
-the `FIREBASE_SERVICE_ACCOUNT_JSON` secret, sets
-`NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0`, runs the same static deploy gates,
-deploys only Firebase Hosting with `firebase-tools@15.17.0`, then runs
-`pnpm desktop:verify-hosted` against the configured public URL. When the deploy
-was triggered by a published GitHub Release, or a manual dispatch supplies
-`release_tag`, it also runs `pnpm desktop:verify-download` for that tag so the
-website deploy record includes the public DMG/checksum asset proof. The final
-workflow summary records the hosted URL, verified Korean landing/download
-routes, and whether release assets were verified or skipped.
+No deploy secrets are required — Pages uses the workflow's `GITHUB_TOKEN` via
+OIDC. The macOS tag release workflow (`.github/workflows/release-macos.yml`) is
+intentionally app-only and separate: it publishes signed/notarized DMGs and does
+not deploy the website.
 
-Expected public URLs after deploy:
-
-- `https://ontology-atlas.web.app`
-- `https://ontology-atlas.firebaseapp.com`
-
-If the URL returns Firebase's "Site Not Found" page, the project/Hosting site
-does not exist yet, the local `.firebaserc` points at the wrong project, or the
-site has not been deployed after the project was created.
+Public URL after deploy: `https://wlsdks.github.io/ontology-atlas/`.
 
 ### Vercel
 
@@ -77,7 +53,7 @@ vercel --prod
 
 Vercel auto-detects Next.js. `output: 'export'` produces a static build.
 
-### GitHub Pages, Netlify, S3, …
+### Netlify, S3, other static hosts
 
 Upload the contents of `out/` to your static host. The site has no
 server-side rendering, no API routes, no environment-variable-driven
@@ -96,8 +72,6 @@ served at `/en/topology/`). Most hosts handle this out of the box.
 pnpm test:run        # unit + component
 pnpm exec tsc --noEmit
 pnpm lint
-pnpm firebase:deploy-check
-pnpm bundle:check    # local-first chunk leak guard
 pnpm build
 ```
 

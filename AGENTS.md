@@ -68,7 +68,6 @@ pnpm test:contracts               # focused cross-package contract suite
 pnpm exec tsc --noEmit
 pnpm lint
 pnpm build                        # static export → out/
-pnpm bundle:check                 # local-first chunk leak guard
 pnpm vault:validate               # frontmatter integrity (R11 — runs in CI too)
 pnpm test:vault:validate          # focused validator CLI argument contract
 pnpm vault:audit                  # capability/element path drift guard (R12)
@@ -115,7 +114,7 @@ cli/                       CLI binary (developer's daily entry point) — npm pk
                            overview / hubs / blast-radius / cycles / components / topological-order / health
                            agent-brief / workspace-brief / growth / maintenance / node / similar
 docs/                      long-form docs
-docs/ontology/             this project's own ontology vault (dogfood — 95 nodes)
+docs/ontology/             this project's own ontology vault (dogfood — 94 nodes)
                            `.ontology-atlasignore` (gitignore-style) suppresses external
                            element ref noise in growth_plan / maintenance_plan
 tests/                     Vitest unit + Playwright E2E
@@ -266,7 +265,7 @@ Long-form docs:
 This project describes its own mental model in `docs/ontology/` as frontmatter markdown (dogfooding — we describe ourselves in our own data format).
 
 - Entry points: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 95 nodes (capability 39 · document 3 · domain 6 · element 45 · project 1 · vault-readme 1)
+- 94 nodes (capability 38 · document 3 · domain 6 · element 45 · project 1 · vault-readme 1)
 - AI agents query it via the `mcp/` MCP server — registration guide in `mcp/README.md`, example in `.mcp.json.example`
 - When you discover a new domain / capability / element, add it to the same directory (with the MCP `add_concept` tool, or by hand)
 

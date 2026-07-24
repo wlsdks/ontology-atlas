@@ -13,9 +13,6 @@ const REQUIRED_SECRETS = [
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
 ];
-const REQUIRED_HOSTED_SECRETS = [
-  "FIREBASE_SERVICE_ACCOUNT_JSON",
-];
 const DIRECT_DOWNLOAD_SECRET_LABEL = "Developer ID direct-download secrets";
 const CHECK_SCOPES = new Map([
   ["github_cli_auth", "local"],
@@ -27,9 +24,6 @@ const CHECK_SCOPES = new Map([
   ["apple_release_secrets", "external"],
   ["github_release", "external"],
   ["download_assets", "external"],
-  ["hosted_deploy_workflow", "external"],
-  ["hosted_deploy_secrets", "external"],
-  ["hosted_surface", "external"],
 ]);
 const CHECK_OWNERS = new Map([
   ["github_cli_auth", "developer"],
@@ -41,9 +35,6 @@ const CHECK_OWNERS = new Map([
   ["apple_release_secrets", "release_operator"],
   ["github_release", "release_operator"],
   ["download_assets", "release_operator"],
-  ["hosted_deploy_workflow", "website_operator"],
-  ["hosted_deploy_secrets", "website_operator"],
-  ["hosted_surface", "website_operator"],
 ]);
 function defaultTag() {
   const pkg = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8"));
@@ -51,7 +42,7 @@ function defaultTag() {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] --pr=NUMBER [--include-hosted-surface] [--hosted-base-url=https://ontology-atlas.web.app] [--json] [--json-file=PATH] [--markdown-file=PATH]
+  console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] --pr=NUMBER [--json] [--json-file=PATH] [--markdown-file=PATH]
 
 Checks the public macOS release completion state in one fail-closed pass:
 release tag version alignment, pull-request merge readiness, active macOS
@@ -78,14 +69,9 @@ pnpm desktop:release-preflight already passed locally, including LaunchServices
 app content proof and DMG install smoke. Standalone desktop:release-status runs
 show that local proof as skipped instead of pretending it was checked.
 
-Firebase Hosting is intentionally excluded from this macOS app release audit.
-Use pnpm desktop:verify-hosted after the separate static promo/download website
-deploy.
-
-Pass --include-hosted-surface when using this command as the full desktop goal
-completion audit: it also checks the hosted deploy workflow, the
-FIREBASE_SERVICE_ACCOUNT_JSON website deploy secret, and the deployed
-promo/download website verifier in the same blocker list.
+The hosted promo/download website is intentionally excluded from this macOS app
+release audit. GitHub Pages (deploy-pages.yml) publishes that surface separately;
+use pnpm desktop:verify-hosted to check the deployed website.
 `);
 }
 
@@ -97,8 +83,6 @@ function parseArgs(argv) {
     json: false,
     jsonFile: "",
     markdownFile: "",
-    includeHostedSurface: false,
-    hostedBaseUrl: "https://ontology-atlas.web.app",
   };
 
   for (const arg of argv) {
@@ -131,14 +115,6 @@ function parseArgs(argv) {
       options.markdownFile = arg.slice("--markdown-file=".length).trim();
       continue;
     }
-    if (arg === "--include-hosted-surface") {
-      options.includeHostedSurface = true;
-      continue;
-    }
-    if (arg.startsWith("--hosted-base-url=")) {
-      options.hostedBaseUrl = arg.slice("--hosted-base-url=".length).replace(/\/+$/, "");
-      continue;
-    }
     fail(`unknown argument: ${arg}`);
   }
 
@@ -156,14 +132,6 @@ function parseArgs(argv) {
   }
   if (options.markdownFile && options.markdownFile.includes("\0")) {
     fail("--markdown-file must not contain null bytes.");
-  }
-  try {
-    const hostedUrl = new URL(options.hostedBaseUrl);
-    if (!["http:", "https:"].includes(hostedUrl.protocol)) {
-      fail("--hosted-base-url must use http or https.");
-    }
-  } catch {
-    fail(`--hosted-base-url must be a valid URL, got ${options.hostedBaseUrl || "(empty)"}.`);
   }
   return options;
 }
@@ -421,10 +389,6 @@ function statusOutput(result) {
 
 function workflowUnavailableMessage(repo) {
   return `release-macos.yml is not available to GitHub for ${repo}. If the workflow is still on a PR branch, merge the desktop PR before pushing the release tag.`;
-}
-
-function hostedWorkflowUnavailableMessage(repo) {
-  return `deploy-hosting.yml is not available to GitHub for ${repo}. If the workflow is still on a PR branch, merge the desktop PR before deploying the hosted download page.`;
 }
 
 async function main() {
@@ -732,87 +696,6 @@ async function main() {
     }
   }
 
-  if (options.includeHostedSurface) {
-    const hostedWorkflow = runGh([
-      "api",
-      `repos/${options.repo}/actions/workflows/deploy-hosting.yml`,
-    ], { parseJson: true });
-    if (!hostedWorkflow.ok) {
-      const detail = isNotFound(hostedWorkflow.message)
-        ? hostedWorkflowUnavailableMessage(options.repo)
-        : hostedWorkflow.message;
-      checks.push(blocked(
-        "hosted_deploy_workflow",
-        "Hosted deploy workflow",
-        detail,
-        "Ensure .github/workflows/deploy-hosting.yml is merged into the default branch and active before deploying the hosted download page.",
-        [
-          `gh api repos/${options.repo}/actions/workflows/deploy-hosting.yml`,
-          options.pr
-            ? `gh pr view ${options.pr} --repo ${options.repo} --json state,mergedAt,reviewDecision,mergeStateStatus,url`
-            : `gh workflow view deploy-hosting.yml --repo ${options.repo}`,
-        ],
-      ));
-    } else if (hostedWorkflow.value?.state !== "active") {
-      checks.push(blocked(
-        "hosted_deploy_workflow",
-        "Hosted deploy workflow",
-        `deploy-hosting.yml workflow is ${hostedWorkflow.value?.state ?? "not active"}`,
-        "Enable the deploy-hosting.yml workflow before deploying the hosted download page.",
-        [`gh workflow enable deploy-hosting.yml --repo ${options.repo}`],
-      ));
-    } else {
-      checks.push(ok("hosted_deploy_workflow", "Hosted deploy workflow", "deploy-hosting.yml is active on GitHub"));
-    }
-
-    if (repoSecretNames) {
-      const missing = REQUIRED_HOSTED_SECRETS.filter((name) => !repoSecretNames.has(name));
-      if (missing.length === 0) {
-        checks.push(ok("hosted_deploy_secrets", "Hosted deploy secrets", "required Firebase Hosting deploy secret name exists"));
-      } else {
-        checks.push(blocked(
-          "hosted_deploy_secrets",
-          "Hosted deploy secrets",
-          `missing ${missing.join(", ")}`,
-          secretSetHints(options.repo, missing),
-          secretSetCommands(options.repo, missing),
-          { missingHostedSecrets: missing },
-        ));
-      }
-    } else {
-      checks.push(blocked(
-        "hosted_deploy_secrets",
-        "Hosted deploy secrets",
-        repoSecretListError ?? "gh secret list did not return repository secrets.",
-        `Run gh secret list --repo ${options.repo}.`,
-        [`gh secret list --repo ${options.repo}`],
-      ));
-    }
-
-    const hosted = runNode([
-      "scripts/check-hosted-download-surface.mjs",
-      `--base-url=${options.hostedBaseUrl}`,
-    ]);
-    if (hosted.ok) {
-      checks.push(ok(
-        "hosted_surface",
-        "Hosted website",
-        `${options.hostedBaseUrl} is promo/download aligned`,
-      ));
-    } else {
-      checks.push(blocked(
-        "hosted_surface",
-        "Hosted website",
-        hosted.message,
-        `Deploy the static promo/download website, then run pnpm desktop:verify-hosted -- --base-url=${options.hostedBaseUrl}.`,
-        [
-          `gh workflow run deploy-hosting.yml --repo ${options.repo}`,
-          `pnpm desktop:verify-hosted -- --base-url=${options.hostedBaseUrl}`,
-        ],
-      ));
-    }
-  }
-
   renderAndExit(options, checks);
 }
 
@@ -836,8 +719,6 @@ function renderAndExit(options, checks) {
     repo: options.repo,
     tag: options.tag,
     pr: options.pr || null,
-    includeHostedSurface: options.includeHostedSurface,
-    hostedBaseUrl: options.includeHostedSurface ? options.hostedBaseUrl : null,
     ready,
     status: ready ? "ready" : "blocked",
     readyAt: ready ? generatedAt : null,
@@ -848,7 +729,6 @@ function renderAndExit(options, checks) {
     externalBlockerIds: blockers.filter((check) => check.scope === "external").map((check) => check.id),
     blockersByOwner: groupBlockersByOwner(blockers),
     missingSecrets: checks.find((check) => check.id === "apple_release_secrets")?.missingSecrets ?? [],
-    missingHostedSecrets: checks.find((check) => check.id === "hosted_deploy_secrets")?.missingHostedSecrets ?? [],
     nextActions,
     nextActionsByOwner: groupNextActionsByOwner(nextActions),
     checks,
@@ -976,10 +856,7 @@ function renderMarkdownChecklist(payload) {
           lines.push(`    - \`${command}\``);
         }
       }
-      const missingSecretNames = [
-        ...(Array.isArray(check.missingSecrets) ? check.missingSecrets : []),
-        ...(Array.isArray(check.missingHostedSecrets) ? check.missingHostedSecrets : []),
-      ];
+      const missingSecretNames = Array.isArray(check.missingSecrets) ? check.missingSecrets : [];
       if (missingSecretNames.length > 0) {
         lines.push("  - Missing secrets:");
         for (const secret of missingSecretNames) {

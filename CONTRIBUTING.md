@@ -20,7 +20,6 @@ pnpm exec tsc --noEmit
 pnpm test:run
 pnpm lint
 pnpm build                        # static export
-pnpm bundle:check                 # firebase chunk regression guard
 ```
 
 > 🇰🇷 한국어로 기여하셔도 됩니다. AGENTS.md 와 docs/* 가 한국어 + 영문 혼용입니다.
@@ -61,7 +60,6 @@ pnpm lint                       # 0 errors (warnings OK to keep)
 pnpm test:run                   # all unit + component tests pass
 pnpm exec playwright test       # if you touched user-facing flows
 pnpm build                      # static export must succeed
-pnpm bundle:check               # local-first routes must stay 0 KB firebase
 ```
 
 ### PR body template

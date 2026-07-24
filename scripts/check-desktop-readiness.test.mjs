@@ -456,7 +456,7 @@ test("desktop release helper scripts expose credential-aware help", () => {
   assert.match(releaseGithub.stdout, /GitHub-side prerequisites/);
   assert.match(releaseGithub.stdout, /APPLE_CERTIFICATE_P12_BASE64/);
   assert.doesNotMatch(releaseGithub.stdout, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-  assert.match(releaseGithub.stdout, /Firebase Hosting is intentionally excluded/);
+  assert.match(releaseGithub.stdout, /hosted website deploy is intentionally excluded/);
 
   assert.equal(releaseSource.status, 0, releaseSource.stderr);
   assert.match(releaseSource.stdout, /default-branch head/);
