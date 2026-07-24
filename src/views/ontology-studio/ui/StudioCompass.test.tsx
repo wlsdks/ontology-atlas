@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
 import type { CreateCandidate } from "../lib/build-create-node";
 import type { StudioRelation } from "../lib/build-studio-item";
+import type { PickerDiscovery } from "../lib/build-picker-discovery";
 
 const labels: StudioCompassLabels = {
   searchPlaceholder: "search",
@@ -25,6 +26,13 @@ const labels: StudioCompassLabels = {
   pickerEmpty: "empty",
   pickerKind: (k) => k,
   pickerCreateNew: "create new",
+  suggestHeading: "Suggested",
+  browseHeading: "Browse",
+  reasonSameDomain: "Same domain",
+  reasonTitleSimilar: "Similar name",
+  reasonAdjacent: "Neighbor of a neighbor",
+  browseBack: "← Domains",
+  browseNoDomain: "No domain",
   similarSuggest: (t) => `same as ${t}?`,
   similarAccept: "yes link",
   createName: "kind",
@@ -358,6 +366,113 @@ describe("StudioCompass — 평문 기록 요약 (record summary)", () => {
     expect(screen.getByTestId("studio-exit-confirm")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("studio-exit-confirm-discard"));
     expect(onExit).toHaveBeenCalled();
+  });
+});
+
+describe("StudioCompass — 발견 표면 (browse + 추천)", () => {
+  const REFUND: CreateCandidate = {
+    id: "capability:refund",
+    title: "Refund",
+    kind: "capability",
+    ref: "capabilities/refund",
+  };
+  const DISCOVERY: PickerDiscovery = {
+    suggestions: [
+      { candidate: REFUND, reason: "sameDomain" },
+      {
+        candidate: { id: "element:token", title: "Token", kind: "element", ref: "elements/token" },
+        reason: "adjacentOfAdjacent",
+      },
+    ],
+    domains: [
+      { domainId: "domain:pay", key: "domain:pay", title: "Payments", count: 2 },
+      { domainId: null, key: "__no_domain__", title: null, count: 1 },
+    ],
+    nodesByDomain: {
+      "domain:pay": [
+        REFUND,
+        { id: "capability:billing", title: "Billing", kind: "capability", ref: "capabilities/billing" },
+      ],
+      __no_domain__: [{ id: "element:orphan", title: "Orphan", kind: "element", ref: "elements/orphan" }],
+    },
+  };
+
+  function renderDiscovery(onFill = vi.fn()) {
+    const bearings: CompassBearingView[] = [
+      bearing("isA", "up", { recommended: true }),
+      bearing("dependsOn", "right"),
+      bearing("contains", "down", { expected: true }),
+      bearing("relates", "left"),
+    ];
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "MCP Server", definition: "" }}
+        bearings={bearings}
+        filledBearings={0}
+        writable
+        candidatesFor={() => [CANDIDATE]}
+        discoveryFor={() => DISCOVERY}
+        onFill={onFill}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+      />,
+    );
+    return onFill;
+  }
+
+  it("shows 추천 (with reasons) + 둘러보기 domains before the user types", () => {
+    renderDiscovery();
+    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    // discovery zones, not the flat search rows.
+    expect(screen.getByTestId("studio-picker-suggest")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-picker-browse")).toBeInTheDocument();
+    expect(screen.queryByTestId(`studio-picker-row-${CANDIDATE.id}`)).not.toBeInTheDocument();
+    // a suggestion carries its muted reason.
+    expect(screen.getByTestId("studio-suggest-row-capability:refund")).toHaveTextContent("Same domain");
+    expect(screen.getByTestId("studio-suggest-row-element:token")).toHaveTextContent(
+      "Neighbor of a neighbor",
+    );
+    // the browse zone lists a domain with its node count.
+    expect(screen.getByTestId("studio-browse-domain-domain:pay")).toHaveTextContent("Payments");
+  });
+
+  it("drills into a domain and back", () => {
+    renderDiscovery();
+    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    // nodes are hidden until a domain is opened.
+    expect(screen.queryByTestId("studio-browse-node-capability:billing")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("studio-browse-domain-domain:pay"));
+    expect(screen.getByTestId("studio-browse-node-capability:refund")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-browse-node-capability:billing")).toBeInTheDocument();
+    // back row returns to the domain list.
+    fireEvent.click(screen.getByTestId("studio-browse-back"));
+    expect(screen.getByTestId("studio-browse-domain-domain:pay")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-browse-node-capability:billing")).not.toBeInTheDocument();
+  });
+
+  it("picking from a suggestion stages the fill (reuses onFill)", () => {
+    const onFill = renderDiscovery();
+    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    fireEvent.click(screen.getByTestId("studio-suggest-row-capability:refund"));
+    expect(onFill).toHaveBeenCalledWith("isA", REFUND);
+    // picker closes after a pick.
+    expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
+  });
+
+  it("typing switches to search results, clearing returns to discovery", () => {
+    renderDiscovery();
+    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    const input = screen.getByTestId("studio-picker-input");
+    fireEvent.change(input, { target: { value: "server" } });
+    // discovery gone, flat search rows shown.
+    expect(screen.queryByTestId("studio-picker-suggest")).not.toBeInTheDocument();
+    expect(screen.getByTestId(`studio-picker-row-${CANDIDATE.id}`)).toBeInTheDocument();
+    // clearing the query returns to discovery.
+    fireEvent.change(input, { target: { value: "" } });
+    expect(screen.getByTestId("studio-picker-suggest")).toBeInTheDocument();
   });
 });
 

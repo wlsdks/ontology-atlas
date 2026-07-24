@@ -128,7 +128,14 @@
       "empty": "No matching node",
       "createNew": "Not here · create new",
       "similar": "Do you mean the existing ‘{title}’?",
-      "similarAccept": "Yes, link this →"
+      "similarAccept": "Yes, link this →",
+      "suggestHeading": "Suggested",
+      "browseHeading": "Browse",
+      "reasonSameDomain": "Same domain",
+      "reasonTitleSimilar": "Similar name",
+      "reasonAdjacent": "Neighbor of a neighbor",
+      "browseBack": "← Domains",
+      "browseNoDomain": "No domain"
     },
     "fillSaved": "Linked and saved ‘{title}’.",
     "fillCopied": "Copied the MCP command — paste it into your agent to run.",

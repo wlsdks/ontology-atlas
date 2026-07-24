@@ -56,6 +56,29 @@ function normalizeTitle(text: string): string {
 }
 
 /**
+ * 두 제목의 근접도(0~1) — 정규화 후 완전 일치면 1, 아니면 토큰 Jaccard 오버랩.
+ * `findSimilarNodeByTitle` 의 내부 점수 계산을 한 곳에 모은 순수 pairwise 헬퍼로,
+ * kind 게이트 없이 임의의 두 제목을 비교한다. 나침 무대 피커의 "이름 비슷" 추천
+ * 신호가 이 함수를 재사용해 근접 중복 감지와 유사도 수식을 단일 진실원으로 둔다.
+ */
+export function titleSimilarity(a: string, b: string): number {
+  const normA = normalizeTitle(a);
+  const normB = normalizeTitle(b);
+  if (!normA || !normB) return 0;
+  if (normA === normB) return 1;
+  const tokensA = new Set(tokenize(a));
+  const tokensB = new Set(tokenize(b));
+  if (tokensA.size === 0 || tokensB.size === 0) return 0;
+  let intersection = 0;
+  for (const token of tokensA) {
+    if (tokensB.has(token)) intersection += 1;
+  }
+  if (intersection === 0) return 0;
+  const union = new Set([...tokensA, ...tokensB]).size;
+  return intersection / union;
+}
+
+/**
  * `title`(작성 중인 새 노드 제목) 이 `kind` 가 같은 기존 후보 중 근접한 것이
  * 있으면 최고 점수 매치 하나를 반환, 없으면 null.
  */
@@ -68,30 +91,17 @@ export function findSimilarNodeByTitle(
   const normTitle = normalizeTitle(title);
   if (!normTitle || !kind) return null;
   const minScore = options.minScore ?? DEFAULT_MIN_SCORE;
-  const queryTokens = new Set(tokenize(title));
 
   let best: SimilarNodeMatch | null = null;
   for (const candidate of candidates) {
     if (!candidate || candidate.kind !== kind) continue;
     if (options.excludeSlug && candidate.slug === options.excludeSlug) continue;
-    const candidateNorm = normalizeTitle(candidate.title);
-    if (!candidateNorm) continue;
+    if (!normalizeTitle(candidate.title)) continue;
 
-    let score: number;
-    if (candidateNorm === normTitle) {
-      score = 1;
-    } else {
-      const candidateTokens = new Set(tokenize(candidate.title));
-      if (queryTokens.size === 0 || candidateTokens.size === 0) continue;
-      let intersection = 0;
-      for (const token of queryTokens) {
-        if (candidateTokens.has(token)) intersection += 1;
-      }
-      if (intersection === 0) continue;
-      const union = new Set([...queryTokens, ...candidateTokens]).size;
-      score = intersection / union;
-      if (score < minScore) continue;
-    }
+    // 완전 일치(1)는 항상 통과, 부분 겹침은 minScore 게이트를 넘어야 매치.
+    const score = titleSimilarity(title, candidate.title);
+    if (score === 0) continue;
+    if (score < 1 && score < minScore) continue;
 
     if (!best || score > best.score) {
       best = { slug: candidate.slug, title: candidate.title, kind: candidate.kind, score };

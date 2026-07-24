@@ -128,7 +128,14 @@
       "empty": "맞는 노드가 없어요",
       "createNew": "찾는 게 없어요 · 새로 만들기",
       "similar": "혹시 이미 있는 ‘{title}’ 와 같은 건가요?",
-      "similarAccept": "네, 이걸로 연결 →"
+      "similarAccept": "네, 이걸로 연결 →",
+      "suggestHeading": "추천",
+      "browseHeading": "둘러보기",
+      "reasonSameDomain": "같은 도메인",
+      "reasonTitleSimilar": "이름 비슷",
+      "reasonAdjacent": "이웃의 이웃",
+      "browseBack": "← 도메인",
+      "browseNoDomain": "도메인 없음"
     },
     "fillSaved": "‘{title}’ 를 이어 저장했어요.",
     "fillCopied": "MCP 명령을 복사했어요 — 에이전트에 붙여넣어 실행하세요.",
