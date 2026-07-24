@@ -32,6 +32,10 @@ const labels = {
   codeLocationsLabel: "code location",
   codeLocationsCopyLabel: "copy",
   codeLocationsCopiedLabel: "copied",
+  editSubjectPrefix: "Last edited",
+  editSubjectAgent: "AI agent",
+  editSubjectHuman: "me",
+  editConflictMessage: "This document changed elsewhere — check before you overwrite",
   noConnections: "no relations recorded yet · relations are declared in frontmatter",
   handoff: "Copy next action",
   close: "Close",
@@ -60,6 +64,8 @@ function renderPanel(
     showHandoff?: boolean;
     showSourcePath?: boolean;
     codeLocations?: readonly string[];
+    lastEditSubject?: { kind: "agent" | "human"; ageLabel: string } | null;
+    mtimeConflict?: boolean;
   } = {},
 ) {
   render(
@@ -87,6 +93,8 @@ function renderPanel(
       }
       builderEditHref="/ontology/edit/?node=domains%2Fviews"
       labels={labels}
+      lastEditSubject={overrides.lastEditSubject ?? null}
+      mtimeConflict={overrides.mtimeConflict ?? false}
       onSelectConnection={overrides.onSelectConnection ?? (() => {})}
       onCopyHandoff={overrides.onCopyHandoff ?? (() => {})}
       onClose={() => {}}
@@ -692,5 +700,42 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     expect(screen.queryByTestId("topology-v2-contains-summary")).not.toBeInTheDocument();
     expect(screen.queryByTestId("topology-v2-contains-summary-toggle")).not.toBeInTheDocument();
     expect(screen.getByText("leaf 0")).toBeInTheDocument();
+  });
+});
+
+// rank7 (design-council B5) — last-edit provenance + expected_mtime conflict.
+describe("TopologyV2DetailPanel — last-edit provenance", () => {
+  it("renders no subject row when lastEditSubject is null (no fabrication)", () => {
+    renderPanel();
+    expect(screen.queryByTestId("last-edit-subject-row")).not.toBeInTheDocument();
+  });
+
+  it("renders the AI agent subject row from a real, caller-resolved fact", () => {
+    renderPanel(undefined, undefined, {
+      lastEditSubject: { kind: "agent", ageLabel: "3m ago" },
+    });
+    const row = screen.getByTestId("last-edit-subject-row");
+    expect(row).toHaveAttribute("data-edit-subject-kind", "agent");
+    expect(row).toHaveTextContent("AI agent");
+    expect(row).toHaveTextContent("3m ago");
+  });
+
+  it("renders the human subject row from a real, caller-resolved fact", () => {
+    renderPanel(undefined, undefined, {
+      lastEditSubject: { kind: "human", ageLabel: "yesterday" },
+    });
+    const row = screen.getByTestId("last-edit-subject-row");
+    expect(row).toHaveAttribute("data-edit-subject-kind", "human");
+    expect(row).toHaveTextContent("me");
+  });
+
+  it("renders no conflict badge when mtimeConflict is false (default)", () => {
+    renderPanel();
+    expect(screen.queryByTestId("mtime-conflict-badge")).not.toBeInTheDocument();
+  });
+
+  it("renders the conflict badge only when the caller resolved a real mtime mismatch", () => {
+    renderPanel(undefined, undefined, { mtimeConflict: true });
+    expect(screen.getByTestId("mtime-conflict-badge")).toBeInTheDocument();
   });
 });

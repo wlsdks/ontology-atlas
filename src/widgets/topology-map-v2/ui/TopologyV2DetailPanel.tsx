@@ -17,6 +17,7 @@ import {
   type V2EvidenceRow,
   type V2MetricValues,
 } from "./topology-v2-datasheet";
+import { LastEditSubjectRow, MtimeConflictBadge } from "@/shared/ui";
 import { TopologyV2KindGlyph, TopologyV2TraceMark } from "@/shared/ui/topology-v2-kind-glyph";
 import { Tooltip } from "@/shared/ui/tooltip";
 
@@ -148,6 +149,12 @@ export interface TopologyV2DetailPanelLabels {
   codeLocationsLabel: string;
   codeLocationsCopyLabel: string;
   codeLocationsCopiedLabel: string;
+  /** rank7 (design-council B5) — "마지막 편집" 주체 행 + expected_mtime
+   *  충돌 배지 카피. `editProvenance` i18n 네임스페이스 재사용(단일 출처). */
+  editSubjectPrefix: string;
+  editSubjectAgent: string;
+  editSubjectHuman: string;
+  editConflictMessage: string;
 }
 
 export interface TopologyV2DetailPanelProps {
@@ -198,6 +205,21 @@ export interface TopologyV2DetailPanelProps {
    * label passes through the same i18n path as every other string here.
    */
   updatedAtLabel?: string | null;
+  /**
+   * rank7 (design-council B5) — last-edit provenance, pre-resolved by the
+   * caller (`resolveNodeLastEditSubject`) from real data only (a fresh
+   * agent heartbeat attributed to this node, or a same-session self-write
+   * record). `null` when neither source has evidence — the row is not
+   * rendered (no fabrication). Human vs AI is the `kind` field only, never
+   * a color.
+   */
+  lastEditSubject?: { kind: "agent" | "human"; ageLabel: string } | null;
+  /**
+   * rank7 — expected_mtime conflict badge. `true` only on a REAL mismatch
+   * between the freshness this panel opened with and the freshness now
+   * known (`hasNodeMtimeConflict`) — never shown speculatively.
+   */
+  mtimeConflict?: boolean;
   /** Pre-built agent handoff payload; the view owns clipboard + toast. */
   handoffText: string;
   /**
@@ -295,6 +317,8 @@ export function TopologyV2DetailPanel({
   evidence,
   codeLocations,
   updatedAtLabel = null,
+  lastEditSubject = null,
+  mtimeConflict = false,
   handoffText,
   documentHref,
   builderEditHref,
@@ -659,6 +683,20 @@ export function TopologyV2DetailPanel({
           <X size={14} />
         </button>
       </div>
+
+      {/* rank7 (design-council B5) — last-edit provenance + expected_mtime
+          conflict, both gated on real data by the caller. Subject row is
+          static (no motion, a plain fact); conflict badge only mounts on a
+          real mismatch and fades in via the shared `atlasStatusIn` entrance. */}
+      {lastEditSubject ? (
+        <LastEditSubjectRow
+          kind={lastEditSubject.kind}
+          prefixLabel={labels.editSubjectPrefix}
+          subjectLabel={lastEditSubject.kind === "agent" ? labels.editSubjectAgent : labels.editSubjectHuman}
+          ageLabel={lastEditSubject.ageLabel}
+        />
+      ) : null}
+      {mtimeConflict ? <MtimeConflictBadge message={labels.editConflictMessage} /> : null}
 
       {/* One engraved metric line — no subtitle + boxes triplication.
           라벨(tertiary)과 값(metric-text)의 잉크를 분리 — 숫자가 데이터,
