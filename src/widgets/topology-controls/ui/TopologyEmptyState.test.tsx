@@ -71,6 +71,22 @@ describe("TopologyEmptyState", () => {
     );
   });
 
+  // 2026-07-24 온보딩 라운드 — 웹에서 방금 로컬 vault 를 연 사용자에게
+  // "macOS 앱을 설치하고…" 다운로드 카피는 오안내다. vault 가 열려 있으면
+  // picker 경로 카피/링크를 쓴다.
+  it("hasOpenVault 면 다운로드 오안내 대신 picker 카피를 쓴다", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <TopologyEmptyState projectCount={0} reason="no-projects" hasOpenVault />
+      </NextIntlClientProvider>,
+    );
+    const panel = screen.getByRole("status");
+    expect(panel).not.toHaveTextContent("macOS 앱");
+    expect(panel).toHaveTextContent("폴더를 열고 첫 프로젝트를 만들면 지도가 시작돼요.");
+    const links = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
+    expect(links).not.toContain("/download/");
+  });
+
   it("reason 이 no-projects 면 projectCount 가 있어도 빈 프로젝트 안내를 우선한다", () => {
     renderEmpty(1, "no-projects");
     expect(

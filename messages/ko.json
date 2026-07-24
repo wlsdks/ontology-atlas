@@ -2568,7 +2568,7 @@
       "titleNoProjects": "지형도에 그릴 프로젝트가 없습니다",
       "titleNoDeps": "아직 그릴 관계가 없습니다",
       "bodyNoProjectsDownload": "macOS 앱을 설치하고 로컬 vault를 열면 첫 프로젝트 개념부터 지형도를 시작할 수 있습니다.",
-      "bodyNoProjectsPicker": "로컬 vault를 열거나 저장·편집에서 첫 프로젝트 개념을 저장하면 지형도가 시작됩니다.",
+      "bodyNoProjectsPicker": "폴더를 열고 첫 프로젝트를 만들면 지도가 시작돼요.",
       "bodyNoDeps": "저장·편집에서 개념 사이 관계를 하나 저장하면 이 화면에 선이 나타납니다.",
       "crossViewHint": "전체 지도 문서와 변경점은 개념 둘러보기·저장·편집에서 이어서 확인할 수 있습니다.",
       "ctaCreateNode": "개념 만들기",
@@ -2699,6 +2699,19 @@
       "packetReviewHint": "각 노드 맥락 검토:",
       "packetPathHint": "여정 양 끝 사이 경로 확인:",
       "packetDustyHint": "오래 손대지 않은 노드 {count}개 — 유지보수 후보 살펴보기:"
+    },
+    "startChecklist": {
+      "kicker": "{done}/{total} 완료",
+      "title": "시작 체크리스트",
+      "subtitle": "이 순서대로 하면 지도가 살아나요.",
+      "stepProject": "첫 프로젝트 만들기",
+      "stepDomain": "영역(도메인) 하나 추가",
+      "stepRelation": "두 개념을 선으로 잇기",
+      "stepAgent": "AI 에이전트 연결 (선택)",
+      "agentHint": "'빈 폴더로 새로 시작'으로 만들었다면 .mcp.json 이 이미 준비돼 있어요 — AI 도구가 이 지도를 같이 읽고 씁니다.",
+      "ctaCreate": "만들기",
+      "ctaBuilder": "빌더에서 잇기",
+      "ctaAgent": "연결 안내 열기"
     }
   },
   "fullDetailA1": {

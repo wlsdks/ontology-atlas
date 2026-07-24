@@ -63,6 +63,10 @@ const TopologyEmptyState = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.TopologyEmptyState),
   { ssr: false },
 );
+const VaultStartChecklist = dynamic(
+  () => import("@/widgets/topology-controls").then((m) => m.VaultStartChecklist),
+  { ssr: false },
+);
 const ShortcutSheet = dynamic(
   () => import("@/widgets/shortcut-sheet").then((m) => m.ShortcutSheet),
   { ssr: false },
@@ -2084,6 +2088,12 @@ export function HomePage() {
     () => ontologyInsight?.nodes.filter((node) => node.kind === "domain").length ?? 0,
     [ontologyInsight],
   );
+  // 2026-07-24 온보딩 라운드 — 빈 vault 시작 체크리스트의 완료 판정용
+  // 프로젝트 실카운트(같은 ontologyInsight 파생이라 drift 불가).
+  const checklistProjectCount = useMemo(
+    () => ontologyInsight?.nodes.filter((node) => node.kind === "project").length ?? 0,
+    [ontologyInsight],
+  );
   // Guardian I-1 — 도메인 크기 단일 진실원(그래프 BFS). INDEX 트리 행과
   // /projects·인사이트가 같은 숫자를 말하게 한다.
   const indexDomainCensus = useMemo(
@@ -3383,11 +3393,25 @@ export function HomePage() {
                     canvas. 빈 vault 는 Sigma 를 아예 마운트하지 않고 바로 빈
                     상태만 보여 WebGL/토폴로지 모양이 잠깐 보이는 회귀를 막는다. */}
                 {topologyOverlayState.kind === "structural-empty" && !createNodeOpen ? (
+                  // 2026-07-24 온보딩 라운드 — 쓰기 가능한 로컬 vault 가 열려
+                  // 있고 부트스트랩할 기존 문서도 없으면(진짜 빈 폴더) dead-end
+                  // 문구 대신 진행형 시작 체크리스트를 세운다. 문서가 있으면
+                  // 기존 "내 문서로 지도 만들기" 부트스트랩 브랜치가 우선.
+                  canCreateNode && (bootstrapPlan?.elements.length ?? 0) === 0 ? (
+                    <VaultStartChecklist
+                      projectCount={checklistProjectCount}
+                      domainCount={indexDomainCount}
+                      relationCount={topologyTotalRelations}
+                      onCreateNode={openCreateNode}
+                      onOpenAgentConnect={openAgentConnectSheet}
+                    />
+                  ) : (
                   <TopologyEmptyState
                     projectCount={emptyTopologyNodeCount}
                     reason={topologyOverlayState.emptyReason}
                     canCreateNode={canCreateNode}
                     onCreateNode={openCreateNode}
+                    hasOpenVault={vault.manifest !== null}
                     docsFoundCount={bootstrapPlan?.elements.length ?? 0}
                     onStartFromDocs={
                       bootstrapPlan && bootstrapPlan.elements.length > 0
@@ -3395,6 +3419,7 @@ export function HomePage() {
                         : undefined
                     }
                   />
+                  )
                 ) : topologyOverlayState.kind === "filter-sparse" ? (
                   <TopologyNoMatchesState
                     onClearFilters={clearTopologyFilters}

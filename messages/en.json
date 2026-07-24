@@ -2699,6 +2699,19 @@
       "packetReviewHint": "Review each node's context:",
       "packetPathHint": "Check the path between the journey endpoints:",
       "packetDustyHint": "{count} nodes untouched for a while — maintenance candidates:"
+    },
+    "startChecklist": {
+      "kicker": "{done}/{total} done",
+      "title": "Start checklist",
+      "subtitle": "Follow these steps and the map comes alive.",
+      "stepProject": "Create your first project",
+      "stepDomain": "Add one area (domain)",
+      "stepRelation": "Connect two concepts with a line",
+      "stepAgent": "Connect an AI agent (optional)",
+      "agentHint": "If you started fresh, .mcp.json is already in place — AI tools read and grow this map with you.",
+      "ctaCreate": "Create",
+      "ctaBuilder": "Connect in builder",
+      "ctaAgent": "Open connect guide"
     }
   },
   "fullDetailA1": {
