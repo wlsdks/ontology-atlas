@@ -41,7 +41,7 @@ describe("TopologyEmptyState", () => {
     );
     expect(screen.getByText("저장·편집 열기").closest("a")).toHaveAttribute(
       "href",
-      expect.stringContaining("/ontology/edit"),
+      expect.stringContaining("/ontology/studio"),
     );
     expect(screen.getAllByRole("link")).toHaveLength(3);
   });
@@ -67,7 +67,7 @@ describe("TopologyEmptyState", () => {
     );
     expect(screen.getByText("관계 만들기").closest("a")).toHaveAttribute(
       "href",
-      expect.stringContaining("/ontology/edit"),
+      expect.stringContaining("/ontology/studio"),
     );
   });
 

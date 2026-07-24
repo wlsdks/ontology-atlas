@@ -1389,7 +1389,7 @@ this surface too. Full history + KEEP/KILL/BUILD: session memory
 
 ## Page header — English caption + Korean h1
 
-The header on each operations page (currently `/ontology/edit` and `/ontology/insights`) follows a **two-line pattern**. The user-facing Korean title is the primary heading, and the English category caption serves as a micro identifier that yields one step in the visual hierarchy.
+The header on each operations page (currently `/ontology/insights`) follows a **two-line pattern**. The user-facing Korean title is the primary heading, and the English category caption serves as a micro identifier that yields one step in the visual hierarchy.
 
 ### Pattern
 
@@ -1432,7 +1432,8 @@ Example: `/ontology` page
 
 ### Surfaces where this applies (current)
 
-`/ontology/edit`, `/ontology/insights` — all follow the same pattern.
+`/ontology/insights` — follows this pattern. (`/ontology/edit`, the ERD builder,
+was retired 2026-07-24 → it now redirects to `/ontology/studio`, the 나침 무대.)
 
 The public surfaces `/`, `/topology`, `/docs`, `/projects`, `/project/[slug]` use the standalone Korean h1 pattern (without an English eyebrow caption) — these are the browse surfaces, not the operations surfaces.
 
@@ -1614,7 +1615,7 @@ Topology chrome (브랜드 pill · 상단 HUD lane · INDEX 패널 · 이후 좌
 
 `docs/prototypes/chrome-rail-combined.html` 소유자 최종 승인 — 지형도 좌측에
 상시 떠 있는 64px 세로 레일. `src/widgets/app-nav-rail`. 전역 목적지(지도·
-문서함·빌더·인사이트·프로젝트) + 하단 에이전트 상태·설정을 전담해, 브랜드
+문서함·스튜디오·인사이트·프로젝트) + 하단 에이전트 상태·설정을 전담해, 브랜드
 필의 book/network 유틸 타일과 우측 세로 레일의 설정 기어를 흡수한다.
 
 - 로고(`<BrandMark size={20} detail="compact" />`, 위 "Brand mark" 섹션 — 브랜드

@@ -89,27 +89,10 @@ describe('i18n message catalog', () => {
     assert.match(ko.download.proofChecksum, /체크섬을 검증/);
     assert.match(ko.download.step1Body, /Apple Silicon Mac 은 aarch64 DMG/);
     assert.match(ko.download.step1Body, /Intel Mac 은 x64 DMG/);
-    // `modeBadge.*` retired with `OperationsNav`/`ModeBadge` (feat/rail-rollout
-    // — the vault/demo chip that lived in the old top nav's right cluster has
-    // no rail-era replacement; `AppSettingsMenu`'s vault tab + the builder
-    // demo-mode copy below cover the same "install the macOS app" / "pick a
-    // local vault folder" guidance).
-    assert.doesNotMatch(en.ontologyPages.edit.page.toastDemoModeDownload, /\/docs|open a markdown folder/i);
-    assert.doesNotMatch(en.ontologyPages.edit.page.toastVaultEdgeDemoDownload, /\/docs|open a vault folder/i);
-    assert.match(en.ontologyPages.edit.page.toastDemoModeDownload, /install the macOS app/i);
-    assert.match(en.ontologyPages.edit.inspector.vaultFooterReadOnlyDownload, /install the macOS app/i);
-    assert.match(en.ontologyPages.edit.onboarding.stepSaveBodyDownload, /install the macOS app/i);
-    assert.doesNotMatch(en.ontologyPages.edit.onboarding.stepConnectBody, /save automatically/i);
-    assert.match(en.ontologyPages.edit.onboarding.stepConnectBody, /write preview and preflight first/i);
-    assert.match(en.ontologyPages.edit.onboarding.stepConnectBody, /choose the relation key, then save/i);
-    assert.match(en.ontologyPages.edit.page.toastDemoModePicker, /local vault folder/i);
-    assert.match(en.ontologyPages.edit.inspector.vaultFooterReadOnlyPicker, /local vault folder/i);
-    assert.match(en.ontologyPages.edit.onboarding.stepSaveBodyPicker, /top-right demo badge/i);
-    assert.match(ko.ontologyPages.edit.page.toastDemoModeDownload, /macOS 앱 설치/);
-    assert.match(ko.ontologyPages.edit.inspector.vaultFooterReadOnlyDownload, /macOS 앱/);
-    assert.doesNotMatch(ko.ontologyPages.edit.onboarding.stepConnectBody, /자동 저장/);
-    assert.match(ko.ontologyPages.edit.onboarding.stepConnectBody, /미리보기와 사전 점검/);
-    assert.match(ko.ontologyPages.edit.onboarding.stepConnectBody, /관계 종류를 고른 뒤 저장/);
+    // (Removed 2026-07-24) The `ontologyPages.edit.*` demo-mode/onboarding
+    // download-guidance assertions were dropped with the retired ERD builder —
+    // that namespace no longer exists. Topology empty-state download guidance
+    // (below) still covers the "install the macOS app" contract.
     assert.match(en.topology.empty.bodyNoProjectsDownload, /Install the macOS app/i);
     assert.match(en.topology.empty.ctaOpenVaultDownload, /Download macOS app/i);
     assert.match(ko.topology.empty.ctaOpenVaultDownload, /macOS 앱 다운로드/);
@@ -124,11 +107,12 @@ describe('i18n message catalog', () => {
     // primary-navigation copy surface for both desktop and mobile.
     assert.equal(ko.navRail.map, '지도');
     assert.equal(ko.navRail.docs, '문서함');
-    assert.equal(ko.navRail.builder, '빌더');
+    // `navRail.builder` retired 2026-07-24 with the ERD builder (studio absorbs it).
+    assert.equal(ko.navRail.studio, '스튜디오');
     assert.equal(ko.navRail.insights, '인사이트');
     assert.equal(ko.navRail.projects, '프로젝트');
     assert.doesNotMatch(
-      [ko.navRail.map, ko.navRail.docs, ko.navRail.builder, ko.navRail.insights, ko.navRail.projects].join('\n'),
+      [ko.navRail.map, ko.navRail.docs, ko.navRail.studio, ko.navRail.insights, ko.navRail.projects].join('\n'),
       /지형도|토폴로지|운영|Operations/,
     );
     assert.equal(
@@ -402,70 +386,9 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(commands.sourceLocal, /소스|Source/);
   });
 
-  it('keeps Korean builder relation write confirmation readable before graph writes', async () => {
-    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
-    const relationConfirm = ko.ontologyPages.edit.page.relationConfirm;
-    const decisions = relationConfirm.decisions;
-    const copy = [
-      relationConfirm.body,
-      relationConfirm.inferredKey,
-      relationConfirm.alternatives,
-      relationConfirm.writeBoundaryValue,
-      relationConfirm.writeKey,
-      relationConfirm.writeMeaning,
-      relationConfirm.writeFrontmatterPatch,
-      relationConfirm.mcpWriteArgs,
-      relationConfirm.mcpWritePolicy,
-      relationConfirm.mcpWritePolicyReady,
-      relationConfirm.mcpWritePolicyBlocked,
-      relationConfirm.graphRelation,
-      relationConfirm.graphSurfacesValue,
-      relationConfirm.graphAlternativeWarning,
-      relationConfirm.saveChecklistSelectedKey,
-      relationConfirm.saveChecklistPreflight,
-      relationConfirm.saveChecklistTraversal,
-      relationConfirm.preflight,
-      relationConfirm.preflightExact,
-      relationConfirm.preflightInverse,
-      relationConfirm.preflightActionSafe,
-      relationConfirm.preflightActionReview,
-      relationConfirm.preflightActionBlocked,
-      relationConfirm.traversalCheck,
-      relationConfirm.traversalCheckBody,
-      relationConfirm.traversalContract,
-      relationConfirm.traversalContractBody,
-      relationConfirm.agentCheck,
-      relationConfirm.copyCliPreflight,
-      relationConfirm.copyCliPreflightCopied,
-      relationConfirm.copyMcpPreflight,
-      relationConfirm.copyMcpPreflightCopied,
-      relationConfirm.copyMcpWrite,
-      relationConfirm.copyMcpWriteCopied,
-      decisions.safeToAdd.hint,
-      decisions.skipExisting.hint,
-      decisions.reviewInverse.hint,
-      decisions.reviewPath.hint,
-    ].join('\n');
-
-    assert.match(relationConfirm.body, /문서 속성/);
-    assert.equal(relationConfirm.writeFrontmatterPatch, '문서 속성 변경');
-    assert.equal(relationConfirm.mcpWritePolicy, 'MCP 저장 정책');
-    assert.equal(relationConfirm.saveChecklistPreflight, '관계 사전 점검 결과');
-    assert.equal(relationConfirm.saveChecklistTraversal, '전체 경로 근거');
-    assert.equal(relationConfirm.preflight, '사전 점검');
-    assert.equal(relationConfirm.traversalCheck, '전체 경로 완결성');
-    assert.equal(relationConfirm.traversalContract, '근거 기준');
-    assert.equal(relationConfirm.copyCliPreflight, 'CLI 사전 점검 복사');
-    assert.equal(relationConfirm.copyMcpPreflight, 'MCP 사전 점검 복사');
-    assert.equal(relationConfirm.copyMcpWrite, 'MCP 저장 복사');
-    assert.match(decisions.skipExisting.hint, /시작 노드의 문서 속성/);
-    const visibleCopy = copy.replace(/\{[^}]+\}/g, '').replace(/`[^`]+`/g, '');
-
-    assert.doesNotMatch(
-      visibleCopy,
-      /frontmatter|source|target|Preflight|preflight|Traversal|Evidence|edge|relation label|relation 이|relation_check|bounded all_paths|direct MCP write|MCP write|read 점검|graph 의미|graph 안|review packet|write 근거|path 를|key\b|meaning|args|patch|topology|impact|Agent 점검/,
-    );
-  });
+  // (Removed 2026-07-24) The builder relation-write-confirmation copy guard
+  // was deleted with the retired ERD builder — its
+  // `ontologyPages.edit.page.relationConfirm` namespace no longer exists.
 
   it('keeps Korean docs vault welcome contract understandable without frontmatter jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
@@ -690,44 +613,9 @@ describe('i18n message catalog', () => {
     );
   });
 
-  it('keeps the builder inspector overview tab free of graph-object jargon (chore/inspector-plain — "온톨로지 객체 근거"/"GRAPH OBJECT" badge/"query, edit, validate"/bare OUT-IN-SOURCE gauges assumed the reader already knew ontology vocabulary)', async () => {
-    const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
-    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
-    const koInspector = ko.ontologyPages.edit.inspector;
-    const enInspector = en.ontologyPages.edit.inspector;
-
-    assert.equal(koInspector.objectProofLabel, '이 항목은 마크다운 파일 하나예요');
-    assert.equal(koInspector.objectProofBody, 'AI가 이 파일을 읽고 고치고 검사할 수 있어요.');
-    assert.equal(koInspector.objectProofChip, '.md');
-    assert.equal(koInspector.objectProofOutgoing, '나가는 연결');
-    assert.equal(koInspector.objectProofIncoming, '들어오는 연결');
-    assert.equal(koInspector.objectProofSource, '원본');
-
-    assert.equal(enInspector.objectProofLabel, 'This is one markdown file');
-    assert.equal(enInspector.objectProofBody, 'AI can read, edit, and check this file.');
-    assert.equal(enInspector.objectProofChip, '.md');
-    assert.equal(enInspector.objectProofOutgoing, 'Outgoing links');
-    assert.equal(enInspector.objectProofIncoming, 'Incoming links');
-    assert.equal(enInspector.objectProofSource, 'Source');
-
-    const overviewCopy = [
-      koInspector.objectProofLabel,
-      koInspector.objectProofBody,
-      koInspector.objectProofChip,
-      koInspector.objectProofOutgoing,
-      koInspector.objectProofIncoming,
-      koInspector.objectProofSource,
-    ].join('\n');
-
-    // first-tier ontology jargon banned from the overview tab's identity
-    // card and stat gauges — plain identity sentence + plain directional
-    // labels only. Value cells (real .md filenames, counts) may still use
-    // mono paths; only the *labels* are asserted here.
-    assert.doesNotMatch(
-      overviewCopy,
-      /온톨로지 객체 근거|graph object|query|edit|validate|\bout\b|\bin\b|\bsource\b|TBox|ABox|frontmatter|slug/i,
-    );
-  });
+  // (Removed 2026-07-24) The builder inspector overview-tab jargon guard was
+  // deleted with the retired ERD builder — its `ontologyPages.edit.inspector`
+  // namespace no longer exists.
 });
 
 async function readRoutingLocales() {

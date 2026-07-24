@@ -41,8 +41,8 @@ import { hasDocMtimeConflict, resolveDocLastEditSubject } from "../../lib/resolv
  * schema recognizes, an inline edit affordance lets the reader fix
  * kind/domain/title in place — typed fields get a typed (select) tool
  * instead of raw YAML hand-editing. Saves go through the same
- * `updateFrontmatter` conflict-guarded path the builder's relation preflight
- * already uses (`OntologyEditPage.tsx`) — one write path, two surfaces.
+ * `updateFrontmatter` conflict-guarded write path the 나침 무대
+ * (`/ontology/studio`) uses for its relation writes — one write path, shared.
  */
 
 // rank7 — 안정된 빈 Map 참조. props 로 안 넘어온 경우 매 렌더 새 Map 을

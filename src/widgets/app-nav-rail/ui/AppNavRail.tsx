@@ -9,7 +9,6 @@ import {
   BookOpen,
   FolderKanban,
   Gem,
-  GitBranch,
   Map as MapIcon,
 } from "lucide-react";
 import { useLocalVault } from "@/features/docs-vault-local";
@@ -26,7 +25,7 @@ export interface AppNavRailProps {
    *  persistent-shell 이후엔 레일이 layout 에 상주하므로 `AppShell`이
    *  `useNavRailShellValue()`로 읽은 값을 그대로 넘긴다. */
   settingsSlot?: ReactNode;
-  /** true 면 레일을 언마운트하지 않고 CSS 로만 숨긴다(빌더 fullscreen).
+  /** true 면 레일을 언마운트하지 않고 CSS 로만 숨긴다(몰입 표면 fullscreen).
    *  레일이 layout 에 상주해 DOM identity 를 유지하는 게 perf/persistent-shell
    *  승격의 핵심이라 조건부 렌더링 대신 이 prop 을 쓴다. */
   hidden?: boolean;
@@ -55,9 +54,9 @@ interface RailDestination {
 
 /**
  * 좌측 64px 내비 레일 (feat/chrome-system, `docs/prototypes/chrome-rail-combined.html`
- * 소유자 최종 승인) — 전역 목적지(지도·문서함·빌더·인사이트·프로젝트) +
+ * 소유자 최종 승인) — 전역 목적지(지도·문서함·스튜디오·인사이트·프로젝트) +
  * 하단 에이전트 상태·설정을 전담하는 상시 chrome. #375 는 지형도(HomePage)만
- * 마운트했고, feat/rail-rollout (#377) 이 지형도 외 전 페이지(문서함·빌더·
+ * 마운트했고, feat/rail-rollout (#377) 이 지형도 외 전 페이지(문서함·스튜디오·
  * 인사이트·프로젝트 목록/상세/편집·다운로드)로 확장해 3-체계(OperationsNav
  * 상단 탭 + BottomTabBar + 이 레일) 내비를 1-체계로 통합했다 — 구 상단 탭
  * (`OperationsNav`)·서브탭(`OntologySubNav`)은 은퇴.
@@ -122,7 +121,6 @@ export function AppNavRail({
   const destinations: RailDestination[] = [
     { id: "map", href: "/topology/", label: t("map"), Icon: MapIcon },
     { id: "docs", href: contextHrefs?.docs ?? "/docs/", label: t("docs"), Icon: BookOpen },
-    { id: "builder", href: "/ontology/edit/", label: t("builder"), Icon: GitBranch },
     { id: "studio", href: "/ontology/studio/", label: t("studio"), Icon: Gem },
     { id: "insights", href: "/ontology/insights/", label: t("insights"), Icon: BarChart3 },
     { id: "projects", href: "/projects/", label: t("projects"), Icon: FolderKanban },

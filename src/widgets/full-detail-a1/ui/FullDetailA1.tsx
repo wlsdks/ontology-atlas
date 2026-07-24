@@ -5,7 +5,10 @@ import { useTranslations } from "next-intl";
 import { Check, Clipboard, Link2, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import ReactMarkdown from "react-markdown";
-import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
+import {
+  buildOntologyNodeHref,
+  buildOntologyStudioNodeHrefFromGraphId,
+} from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
@@ -379,11 +382,11 @@ export function FullDetailA1({
           </Link>
         ) : null}
         <Link
-          href={`/ontology/edit?node=${encodeURIComponent(node.slug)}`}
-          data-testid="full-detail-a1-open-builder"
+          href={buildOntologyStudioNodeHrefFromGraphId(node.id)}
+          data-testid="full-detail-a1-open-studio"
           className="shrink-0 text-body text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
         >
-          {t("handoff.openBuilder")}
+          {t("handoff.openStudio")}
         </Link>
       </section>
 

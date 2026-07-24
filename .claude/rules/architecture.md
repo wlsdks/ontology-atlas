@@ -32,16 +32,19 @@ src/
 ## URL 계약
 
 - 새 라우트는 `app/[locale]/` 아래에만. `src/views/` 의 페이지 컴포넌트가 1:1 대응.
-- 살아있는 라우트: `/`, `/topology/`, `/docs/`, `/ontology/`, `/ontology/edit/`,
+- 살아있는 라우트: `/`, `/topology/`, `/docs/`, `/ontology/`,
   `/ontology/studio/` (나침 무대 — 노드 의미 완성 쓰기 표면; 구 게임 예외는
   2026-07-24 폐기, 앱 전역 헌장 준수, `design.md` 참고),
   `/ontology/insights/`, `/projects/`, `/project/[slug]/`,
   `/project/[slug]/edit/`, `/project/new/`, `/project/fallback/`, `/download/`
-  (macOS 데스크톱 앱 배포). R10 (auth +
-  cloud surface 영구 제거) 이후 외 namespace (`/login`, `/signup`, `/account`,
-  `/reset-password`, `/settings/*`, `/admin/*`, `/review/*`, `/diagnostics/*`,
-  `/knowledge/*`) 부활 금지. `/ontology/relations` 도 R12 에서 제거되어 그
-  분포 정보는 `/ontology/insights` 안으로 통합되었다.
+  (macOS 데스크톱 앱 배포). `/ontology/edit/` (구 xyflow ERD 빌더) 는
+  2026-07-24 은퇴 — 스튜디오가 조립/연결/미리보기/쓰기를 모두 덮으면서
+  얇은 클라이언트 리다이렉트(→ `/ontology/studio`, `?node=` 딥링크 전달)만
+  남았다. R10 (auth + cloud surface 영구 제거) 이후 외 namespace (`/login`,
+  `/signup`, `/account`, `/reset-password`, `/settings/*`, `/admin/*`,
+  `/review/*`, `/diagnostics/*`, `/knowledge/*`) 부활 금지.
+  `/ontology/relations` 도 R12 에서 제거되어 그 분포 정보는
+  `/ontology/insights` 안으로 통합되었다.
 - 모든 라우트는 next-intl `[locale]` prefix 자동 추가 (en / ko 두 locale).
 
 ## 단일 진실원 원칙

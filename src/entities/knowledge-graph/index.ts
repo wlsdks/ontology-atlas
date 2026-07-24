@@ -14,8 +14,7 @@ export {
 export type { EdgeTypeRow, RelationRegister } from "./model";
 export {
   buildInsightsReturnMarker,
-  buildOntologyBuilderNodeHref,
-  buildOntologyBuilderNodeHrefFromGraphId,
+  buildOntologyStudioNodeHrefFromGraphId,
   buildOntologyInsightsNodeHref,
   buildOntologyInsightsReturnHref,
   buildOntologyNodeHref,

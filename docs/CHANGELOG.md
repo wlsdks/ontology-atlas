@@ -6,6 +6,32 @@
 
 ---
 
+## 2026-07-24 — ERD 빌더(`/ontology/edit`) 은퇴 → 나침 무대가 흡수 · xyflow 제거
+
+원 마스터플랜의 후속: 나침 무대(Compass Stage, `/ontology/studio`)가 노드
+조립(만들기 모드) · 관계 연결(인라인 피커 + 실 frontmatter 쓰기) · 라이브
+미리보기를 모두 덮으면서, xyflow ERD 빌더를 정식 은퇴시켰다.
+
+- **뷰 삭제**: `src/views/ontology-edit/` (OntologyEditPage/Canvas/Inspector,
+  VaultEdge/EphemeralEdge, KindPalette, lib/*, 단위 테스트 전부) 제거.
+- **라우트 → 리다이렉트**: `/ontology/edit` 는 404 대신 `/ontology/studio` 로
+  가는 얇은 클라이언트 리다이렉트로 남는다. `?node=<id>` 딥링크는 canonical
+  로 정규화해 스튜디오 ENHANCE 모드(`?node=`)로 그대로 전달 — 옛 북마크·
+  에이전트 핸드오프 링크가 스튜디오에 착지한다.
+- **`관계 편집` 재연결**: 노드 팝오버·컨텍스트 메뉴·엣지 패널의 "관계 편집"
+  액션(구 `builderEditHref`)을 `studioEditHref` 로 개명하고 대상을 스튜디오
+  노드 딥링크로 재지정. 지도 데이터시트·인사이트 액션도 동일 함수
+  (`buildOntologyStudioNodeHrefFromGraphId`)로 스튜디오를 가리킨다.
+- **네비게이션**: 좌측 레일 + 모바일 하단 탭바에서 "빌더" 항목 제거(레일 5
+  목적지 유지: 지도·문서함·스튜디오·인사이트·프로젝트). 빈 상태 CTA·전체상세
+  핸드오프도 스튜디오로 재지정.
+- **의존성**: `@xyflow/react` 를 `package.json` 에서 제거(락파일 prune +
+  `bundle:check` 는 머지 세션에서). `RouteChunkWarmup`(빌더 청크 워밍 전용)
+  삭제. e2e `ontology-builder-workflow.spec.ts` 삭제 + 라우트 리스트에서
+  `/ontology/edit` 제거. 빌더 전용 i18n 키(`ontologyPages.edit`,
+  `metadata.pages.ontologyEdit`, `navRail.builder`) 제거, 잔여 라벨은 스튜디오
+  문구로 현행화.
+
 ## 2026-07-24 — INDEX 트리 행 클릭 민감도 해소
 
 소유자 실사용 지적("셰브론 아이콘을 딱 눌러야만 열리고 조금만 빗나가면

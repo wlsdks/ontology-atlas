@@ -33,7 +33,7 @@ function renderPanel() {
       why={null}
       declaredBy={null}
       updatedAtLabel={null}
-      builderEditHref="/ontology/edit"
+      studioEditHref="/ontology/studio"
       labels={labels}
       onSelectNode={() => {}}
       onClose={() => {}}

@@ -105,7 +105,7 @@ import {
 } from "@/entities/project";
 import { buildDocsVaultHref, buildNewNodeDoc } from "@/entities/docs-vault";
 import {
-  buildOntologyBuilderNodeHrefFromGraphId,
+  buildOntologyStudioNodeHrefFromGraphId,
   buildOntologyHealthSignals,
   buildOntologyInsightsReturnHref,
   deriveCodeLocations,
@@ -776,7 +776,7 @@ export function HomePage() {
       updatedAtLabel: ago ? t(`nodeDatasheet.updated_${ago.key}`, { count: ago.count }) : null,
       // 빌더 딥링크는 canonical `<kind>:<slug>`(그래프 node id)로 통일(H5) —
       // 예전 `from.evidenceIds[0] ?? from.id` 인라인 vault-slug 링크를 대체.
-      builderEditHref: buildOntologyBuilderNodeHrefFromGraphId(from.id),
+      studioEditHref: buildOntologyStudioNodeHrefFromGraphId(from.id),
       why,
     };
   }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary, relationRegister]);
@@ -1500,7 +1500,7 @@ export function HomePage() {
     [setRouteState],
   );
   // W2-B context menu quick-action model — same construction as
-  // `v2DatasheetModel` (documentHref/builderEditHref/handoffText), but keyed
+  // `v2DatasheetModel` (documentHref/studioEditHref/handoffText), but keyed
   // off whichever node was right-clicked rather than the current selection,
   // since the context menu is reachable without selecting the node first.
   // `domainTitle: null` in the handoff payload is a deliberate simplification
@@ -1533,7 +1533,7 @@ export function HomePage() {
       slug,
       documentHref: sourceSlug ? buildDocsVaultHref({ slug: sourceSlug }) : null,
       // 빌더 딥링크는 canonical `<kind>:<slug>`(그래프 node id)로 통일(H5).
-      builderEditHref: buildOntologyBuilderNodeHrefFromGraphId(node.id),
+      studioEditHref: buildOntologyStudioNodeHrefFromGraphId(node.id),
       handoffText,
     };
   }, [contextMenuNode, ontologyInsight]);
@@ -3798,7 +3798,7 @@ export function HomePage() {
                 mtimeConflict={panelDatasheetModel.mtimeConflict}
                 handoffText={panelDatasheetModel.handoffText}
                 documentHref={panelDatasheetModel.documentHref}
-                builderEditHref={panelDatasheetModel.builderEditHref}
+                studioEditHref={panelDatasheetModel.studioEditHref}
                 labels={{
                   kindLabel: tKinds(normalizeKindLabelKey(panelDatasheetModel.kind)),
                   domainLabel: t("nodeDatasheet.domainLabel"),
@@ -3921,7 +3921,7 @@ export function HomePage() {
               why={edgePanelModel.why}
               declaredBy={edgePanelModel.declaredBy}
               updatedAtLabel={edgePanelModel.updatedAtLabel}
-              builderEditHref={edgePanelModel.builderEditHref}
+              studioEditHref={edgePanelModel.studioEditHref}
               labels={{
                 kicker: t("edgePanel.kicker"),
                 declaredByLabel: t("edgePanel.declaredBy"),
@@ -3942,7 +3942,7 @@ export function HomePage() {
           <TopologyV2ContextMenu
             position={{ x: contextMenuNode.x, y: contextMenuNode.y }}
             documentHref={contextMenuModel.documentHref}
-            builderEditHref={contextMenuModel.builderEditHref}
+            studioEditHref={contextMenuModel.studioEditHref}
             labels={{
               actionDocument: t("nodeDatasheet.actionDocument"),
               actionEditRelations: t("nodeDatasheet.actionEditRelations"),

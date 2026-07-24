@@ -29,10 +29,10 @@ describe('ChromeTile', () => {
   });
 
   it('renders as a Link when href is given', () => {
-    render(<ChromeTile icon={<svg />} title="빌더" href="/ontology/edit/" />);
-    const tile = screen.getByRole('link', { name: '빌더' });
+    render(<ChromeTile icon={<svg />} title="스튜디오" href="/ontology/studio/" />);
+    const tile = screen.getByRole('link', { name: '스튜디오' });
     expect(tile.tagName).toBe('A');
-    expect(tile).toHaveAttribute('href', '/ontology/edit/');
+    expect(tile).toHaveAttribute('href', '/ontology/studio/');
   });
 
   it('aria-label overrides title for the accessible name when provided', () => {

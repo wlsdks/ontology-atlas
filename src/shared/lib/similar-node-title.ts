@@ -8,8 +8,8 @@
  * 로직만 이식하고 vault I/O 는 없다 — 순수 함수.
  *
  * AGENTS.md: "성장하는 vault 의 #1 실패 모드는 중복/hallucinated 노드" — 지금은
- * MCP `add_concept` 경로에만 안전망이 있고, `/docs` 새 문서·`/ontology/edit`
- * `addNode` 두 GUI 경로엔 없다. 이 모듈이 그 공백을 메운다.
+ * MCP `add_concept` 경로에만 안전망이 있고, `/docs` 새 문서·`/ontology/studio`
+ * (나침 무대 CREATE) 두 GUI 경로엔 없다. 이 모듈이 그 공백을 메운다.
  *
  * 임계는 **제목 근접 + kind 일치**일 때만 — 다른 kind 의 동명 노드(예: "결제"
  * 라는 domain 과 "결제" 라는 capability)는 흔하고 정상이라 오경보가 된다.

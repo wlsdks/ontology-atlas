@@ -13,7 +13,6 @@ const ROUTES = [
   "/en/docs/",
   "/en/topology/",
   "/en/ontology/",
-  "/en/ontology/edit/",
   "/en/projects/",
 ];
 

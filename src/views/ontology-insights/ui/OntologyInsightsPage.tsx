@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import {
   buildEdgeTypeRows,
   buildInsightsReturnMarker,
-  buildOntologyBuilderNodeHrefFromGraphId,
+  buildOntologyStudioNodeHrefFromGraphId,
   buildOntologyHealthActionTarget,
   buildOntologyHealthSignals,
   buildOntologyNodeHref,
@@ -168,7 +168,7 @@ export function OntologyInsightsPage() {
       orphanCount: healthSignals.orphan.length,
       promotionCount: healthSignals.promotion.length,
       actionTarget: buildOntologyHealthActionTarget(healthSignals),
-      builderHref: buildOntologyBuilderNodeHrefFromGraphId,
+      builderHref: buildOntologyStudioNodeHrefFromGraphId,
       ontologyHref: mapNodeHref,
     }),
     [healthSignals, mapNodeHref],
@@ -488,7 +488,7 @@ export function OntologyInsightsPage() {
                 agentReadiness={agentReadiness}
                 healthQueue={healthQueue}
                 mapHref={mapNodeHref}
-                builderHref={buildOntologyBuilderNodeHrefFromGraphId}
+                builderHref={buildOntologyStudioNodeHrefFromGraphId}
                 nodeTitle={cycleNodeTitle}
                 cycleHandoff={cycleHandoff}
                 activityDigest={activityDigest}

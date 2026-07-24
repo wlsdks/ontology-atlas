@@ -2,7 +2,7 @@
 
 import { useMemo, useRef } from "react";
 import {
-  buildOntologyBuilderNodeHrefFromGraphId,
+  buildOntologyStudioNodeHrefFromGraphId,
   deriveCodeLocations,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
@@ -91,7 +91,7 @@ export interface NodeDatasheetDerivation {
     codeLocations: string[];
     handoffText: string;
     documentHref: string | null;
-    builderEditHref: string;
+    studioEditHref: string;
     /** rank7 — 실데이터 근거(heartbeat 매치 / 자기 쓰기 기록) 있을 때만
      *  non-null. 사람/AI 는 `kind` 로만 구분(hue 0). */
     lastEditSubject: { kind: LastEditSubjectKind; ageLabel: string } | null;
@@ -232,7 +232,7 @@ export function useNodeDatasheetModel({
       documentHref: nodeFocus.sourceSlug ? buildDocsVaultHref({ slug: nodeFocus.sourceSlug }) : null,
       // 빌더 딥링크는 canonical `<kind>:<slug>`(그래프 node id) 그대로 — 발신 문법
       // 통일(H5 계약 item 1). 예전 `?node=<vault slug>` 인라인 링크를 대체.
-      builderEditHref: buildOntologyBuilderNodeHrefFromGraphId(selectedOntologyNode.id),
+      studioEditHref: buildOntologyStudioNodeHrefFromGraphId(selectedOntologyNode.id),
       lastEditSubject,
       mtimeConflict,
     };
