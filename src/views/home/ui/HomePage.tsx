@@ -3758,10 +3758,9 @@ export function HomePage() {
                   metricUsedBy: t("nodeDatasheet.metricUsedBy"),
                   metricDependsOn: relationVocabulary("depends_on", "plain"),
                   metricEvidence: relationVocabulary("describes", "plain"),
-                  // R+ 근거 misnomer fix — evidenceIds 는 0|1 self-reference라
-                  // 숫자 대신 선언됨/미선언 이진 칩으로 렌더.
-                  metricEvidenceDeclared: t("nodeDatasheet.metricEvidenceDeclared"),
-                  metricEvidenceUndeclared: t("nodeDatasheet.metricEvidenceUndeclared"),
+                  // 시안 재설계 (2026-07-24) — 상단 평문 stats 라벨.
+                  statsConnected: t("nodeDatasheet.statsConnected"),
+                  statsEvidenceDocs: t("nodeDatasheet.statsEvidenceDocs"),
                   // H1 B2/A — typed-fact 라벨 hover 풀이 + "직접" 연결 스코프 명시.
                   metricContainsHelp: t("nodeDatasheet.metricContainsHelp"),
                   metricUsedByHelp: t("nodeDatasheet.metricUsedByHelp"),
