@@ -972,7 +972,7 @@
      * 아이콘(24px)이 설정 기어(16px)보다 커 레일 하단 3타일의 시각 무게가
      * 제각각이었다. 유틸 3타일은 이 토큰 + `--app-nav-rail-tile-*` 지오메트리
      * 하나로 앉는다 (`AppNavRail.tsx` · `GitStatusTile.tsx` ·
-     * `TopologyV2SettingsGear.tsx` rail-tile variant).
+     * `AppSettingsMenu.tsx` rail-tile trigger variant).
      */
     --app-nav-rail-utility-icon-size: var(--app-nav-rail-icon-size);
     --app-nav-rail-label-size: calc(9.5px * var(--topology-ui-scale-factor));
@@ -1203,7 +1203,7 @@
     --topology-floating-control-phone-bottom: calc(
       var(--topology-mobile-bottom-tab-reserve) + 56px
     );
-    /* panel surface/border/shadow/divider 는 살아 있는 `TopologyV2SettingsGear`
+    /* panel surface/border/shadow/divider 는 살아 있는 `TopologyTrailChip`
        팝오버가 공유한다. 구 조절 패널 전용 위치 토큰(phone-bottom,
        phone-max-height, desktop-top, desktop-max-height)은 패널 철거와 함께
        제거됐다 (소비처 0). */
@@ -1365,7 +1365,8 @@
     --topology-shortcuts-help-desktop-top: calc(
       var(--topology-floating-control-desktop-top) + (var(--chrome-tile-size) + 8px) * 2
     );
-    /* 설정 기어 (`TopologyV2SettingsGear`, chrome-datasheet-final.html 시안) —
+    /* 설정 톱니 (구 TopologyV2SettingsGear — 설정 통합 2026-07-24 이후
+       AppSettingsMenu 트리거, chrome-datasheet-final.html 시안) —
        우측 유틸리티 레일의 "?" 버튼 바로 아래 한 칸. fit/필터 스택과 같은
        hide 조건(createNodeOpen/selectedRelationActive/blocking-overlay/
        selectedNodeFocusActive)을 공유해 데이터시트가 뜨는 동안은 숨는다 —

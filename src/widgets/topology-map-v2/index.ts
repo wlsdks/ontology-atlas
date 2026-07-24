@@ -17,11 +17,6 @@ export type {
   TopologyV2ContextMenuProps,
   TopologyV2ContextMenuLabels,
 } from './ui/TopologyV2ContextMenu';
-export { TopologyV2SettingsGear } from './ui/TopologyV2SettingsGear';
-export type {
-  TopologyV2SettingsGearProps,
-  TopologyV2SettingsGearLabels,
-} from './ui/TopologyV2SettingsGear';
 export {
   buildV2Connections,
   buildV2ConnectionGroups,

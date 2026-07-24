@@ -21,10 +21,10 @@ vi.mock('@/features/locale-switch', () => ({
   LocaleSwitch: () => <div data-testid="locale-switch" />,
 }));
 
-// B2 병합 — AppSettingsMenu 는 이제 app-wide LocalVaultProvider 를 useLocalVault
-// 로 읽는다. 이 테스트는 provider 없이 렌더하므로 idle vault 를 mock 한다(설정
-// 파일 패널은 vault loaded 상태에서만 뜨므로 VaultAgentSetupPanel.test.tsx 가
-// 별도로 커버). LocalVaultPicker 는 stub 으로 대체해 vault 탭 도달만 확인한다.
+// 설정 통합 2026-07-24 — AppSettingsMenu 는 app-wide LocalVaultProvider 를
+// useLocalVault 로 읽는다. 이 테스트는 provider 없이 렌더하므로 idle vault 를
+// mock 한다(에이전트 상세 패널은 vault loaded 상태에서만 뜨므로
+// VaultAgentSetupPanel.test.tsx 가 별도로 커버).
 vi.mock('@/features/docs-vault-local', () => ({
   useLocalVault: () => ({
     status: 'idle',
@@ -43,7 +43,6 @@ vi.mock('@/features/docs-vault-local', () => ({
     ensureAgentConfigs: vi.fn(),
     scaffoldOntology: vi.fn(),
   }),
-  LocalVaultPicker: () => <div data-testid="local-vault-picker" />,
 }));
 
 vi.mock('@/i18n/navigation', () => ({
@@ -63,21 +62,17 @@ vi.mock('next-intl', () => ({
   useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
 }));
 
-const TAB_VAULT_NAME = /^nav\.settingsMenu\.tabVault/;
-
-function openVaultTab() {
-  render(<AppSettingsMenu mode="static" />);
+function openSheet(ui?: ReactNode) {
+  render(ui ?? <AppSettingsMenu mode="static" />);
   fireEvent.click(screen.getByTestId('app-settings-trigger'));
-  fireEvent.click(screen.getByRole('tab', { name: TAB_VAULT_NAME }));
 }
 
 /**
  * `OperationsNav`'s standalone `ModeBadge` demo-link owned this hosted-vs-
- * installed routing decision before feat/rail-rollout retired it — its exact
- * `isDesktopRuntime ? '/docs/?intent=local' : '/download/'` branch moved
- * verbatim into this widget's "vault" tab (`vaultHref`). `test:desktop:runtime`
- * still needs a direct test guarding that branch, so it now points here
- * instead of the deleted `OperationsNav.test.tsx`.
+ * installed routing decision — its exact
+ * `isDesktopRuntime ? '/docs/?intent=local' : '/download/'` branch lives in
+ * this widget's [작업공간] 문서함 링크 행 (`vaultHref`). `test:desktop:runtime`
+ * still needs a direct test guarding that branch.
  */
 describe('AppSettingsMenu desktop acquisition boundary', () => {
   beforeEach(() => {
@@ -85,67 +80,115 @@ describe('AppSettingsMenu desktop acquisition boundary', () => {
   });
 
   it('routes the hosted browser vault action to the app download page', () => {
-    openVaultTab();
-    expect(screen.getByRole('link', { name: /nav.settingsMenu.vaultTitle/i })).toHaveAttribute(
-      'href',
-      '/download/',
-    );
+    openSheet();
+    expect(
+      screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
+    ).toHaveAttribute('href', '/download/');
   });
 
   it('keeps the installed desktop app vault action on the native local picker path', () => {
     mocks.isDesktopRuntime = true;
-    openVaultTab();
-    expect(screen.getByRole('link', { name: /nav.settingsMenu.vaultTitle/i })).toHaveAttribute(
-      'href',
-      '/docs/?intent=local',
-    );
+    openSheet();
+    expect(
+      screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
+    ).toHaveAttribute('href', '/docs/?intent=local');
   });
 
   it('sends an already-loaded local vault straight back to /docs', () => {
-    render(<AppSettingsMenu mode="local" />);
-    fireEvent.click(screen.getByTestId('app-settings-trigger'));
-    fireEvent.click(screen.getByRole('tab', { name: TAB_VAULT_NAME }));
-    expect(screen.getByRole('link', { name: /nav.settingsMenu.vaultTitle/i })).toHaveAttribute(
-      'href',
-      '/docs/',
+    openSheet(<AppSettingsMenu mode="local" />);
+    expect(
+      screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
+    ).toHaveAttribute('href', '/docs/');
+  });
+});
+
+/**
+ * 설정 통합 2026-07-24 (소유자 지시) — 5탭 모달 폐지. 단일 컬럼 시트가 [화면]
+ * [작업공간] [AI 에이전트] 3그룹을 한 화면에 담고, MCP 상세는 드릴인 서브뷰
+ * 뒤로 이동한다. 기본 화면에 탭·빈 패널·MCP 증명 장문이 0 임을 가드.
+ */
+describe('AppSettingsMenu single-sheet recomposition', () => {
+  beforeEach(() => {
+    mocks.isDesktopRuntime = false;
+  });
+
+  it('renders no tabs — the sheet is a single scroll column', () => {
+    openSheet();
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
+    expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
+  });
+
+  it('overlay dims the page behind (modality scrim token)', () => {
+    openSheet();
+    expect(screen.getByTestId('app-settings-overlay').className).toContain('scrim');
+  });
+
+  it('shows the workspace folder row with a direct open action when no vault is loaded', () => {
+    openSheet();
+    expect(screen.getByTestId('app-settings-workspace-folder')).toBeInTheDocument();
+    expect(
+      screen.getByText('nav.settingsMenu.workspaceFolderEmpty'),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-open-folder')).toHaveTextContent(
+      'nav.settingsMenu.workspaceFolderOpen',
+    );
+  });
+
+  it('keeps MCP proof long-form OFF the root sheet and behind the agent drill-in', () => {
+    openSheet();
+    expect(screen.queryByText('nav.settingsMenu.mcpProofTitle')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('app-settings-agent-drillin'));
+    expect(screen.getByTestId('app-settings-agent-view')).toBeInTheDocument();
+    expect(screen.getByText('nav.settingsMenu.mcpProofTitle')).toBeInTheDocument();
+    // 뒤로가기 헤더 — 루트 시트로 복귀.
+    fireEvent.click(screen.getByTestId('app-settings-agent-back'));
+    expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
+  });
+
+  it('summarizes agent state as a single row value while no vault is loaded', () => {
+    openSheet();
+    expect(screen.getByTestId('app-settings-agent-summary')).toHaveTextContent(
+      'nav.settingsMenu.agentStatusNoVault',
     );
   });
 });
 
 /**
- * B2 병합 — 이전 문서함 헤더 VaultToolsMenu 의 로컬 vault 관리(LocalVaultPicker)가
- * 설정 메뉴 vault 탭으로 이관됐다. 여기서는 그 도달만 확인(picker 내부 동작은
- * LocalVaultPicker.test.tsx, agent 설정 패널은 VaultAgentSetupPanel.test.tsx 가 커버).
+ * screenControls — 지도(HomePage)만 주입하는 화면 상태 행(보기 모드·INDEX 기본
+ * 상태). 미주입 페이지(빌더 등)에선 행 자체가 없다.
  */
-describe('AppSettingsMenu vault-tools merge', () => {
-  beforeEach(() => {
-    mocks.isDesktopRuntime = false;
+describe('AppSettingsMenu screenControls injection', () => {
+  const controls = () => ({
+    audiencePlain: false,
+    onAudiencePlainChange: vi.fn(),
+    indexCollapsed: false,
+    onIndexCollapsedChange: vi.fn(),
   });
 
-  it('hosts the local vault picker inside the vault tab', () => {
-    openVaultTab();
-    expect(screen.getByTestId('local-vault-picker')).toBeInTheDocument();
+  it('hides view-mode and INDEX rows when screenControls is not injected', () => {
+    openSheet();
+    expect(screen.queryByTestId('app-settings-view-mode')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('app-settings-index-default')).not.toBeInTheDocument();
   });
 
-  it('does not render the vault-aware agent setup panel while no vault is loaded', () => {
-    render(<AppSettingsMenu mode="static" />);
-    fireEvent.click(screen.getByTestId('app-settings-trigger'));
-    fireEvent.click(screen.getByRole('tab', { name: /^nav\.settingsMenu\.tabMcpAgents/ }));
-    // idle vault -> panel returns null, static MCP first-calls education shows instead.
-    expect(
-      screen.queryByRole('region', { name: 'docsVault.agentSetup.ariaLabel' }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText('nav.settingsMenu.mcpProofTitle')).toBeInTheDocument();
+  it('renders both rows and reports segment changes when injected', () => {
+    const sc = controls();
+    openSheet(<AppSettingsMenu mode="static" screenControls={sc} />);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'nav.settingsMenu.viewModePlain' }),
+    );
+    expect(sc.onAudiencePlainChange).toHaveBeenCalledWith(true);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'nav.settingsMenu.indexDefaultCollapsed' }),
+    );
+    expect(sc.onIndexCollapsedChange).toHaveBeenCalledWith(true);
   });
 });
 
 /**
  * P3 결함⑥ (사용성 전수 검수 2026-07-23) — 검색 팔레트(⌘K)가 이 다이얼로그
- * 위에 중첩되는 결함의 처방. 기존엔 `open` 이 전부 내부 state 라 호출부가
- * "팔레트가 열렸다"는 사실을 이 위젯에 전달할 방법이 없었다. `MountedGlobalSearch`
- * 와 같은 controlled/uncontrolled 겸용 패턴 — `open`/`onOpenChange` 를 주면
- * controlled, 생략하면 기존 self-managed 동작 그대로(하위호환, DocsVaultPage
- * 등 미변경 호출부는 영향 없음).
+ * 위에 중첩되는 결함의 처방. `open`/`onOpenChange` 를 주면 controlled, 생략하면
+ * 기존 self-managed 동작 그대로(하위호환).
  */
 describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
   beforeEach(() => {
@@ -191,6 +234,23 @@ describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
     const onOpenChange = vi.fn();
     render(<AppSettingsMenu mode="static" open onOpenChange={onOpenChange} />);
     fireEvent.click(screen.getByLabelText('nav.settingsMenu.closeLabel'));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('Escape inside the agent drill-in returns to the root sheet before closing', () => {
+    const onOpenChange = vi.fn();
+    render(<AppSettingsMenu mode="static" open onOpenChange={onOpenChange} />);
+    fireEvent.click(screen.getByTestId('app-settings-agent-drillin'));
+    fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
+      key: 'Escape',
+      bubbles: true,
+    });
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
+      key: 'Escape',
+      bubbles: true,
+    });
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 });

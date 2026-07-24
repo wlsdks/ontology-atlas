@@ -20,7 +20,7 @@ import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-
 import type { NavRailContextHrefs } from "../model/shell-slot-context";
 
 export interface AppNavRailProps {
-  /** 설정 트리거(`TopologyV2SettingsGear` 등) — 레일 하단에 꽂는 슬롯. 완성된
+  /** 설정 트리거(`AppSettingsMenu` rail-tile 등) — 레일 하단에 꽂는 슬롯. 완성된
    *  엘리먼트를 HomePage 가 넘긴다 — widget↔widget import 를 피하고, INDEX
    *  기본 상태 같은 HomePage 소유 state 를 그대로 재사용하기 위함. perf/
    *  persistent-shell 이후엔 레일이 layout 에 상주하므로 `AppShell`이

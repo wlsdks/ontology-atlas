@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, ChevronRight, FolderOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -9,6 +9,10 @@ import { useSampleSource } from "@/features/vault-sample-source";
 import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
 import { CompactCopyButton } from "@/shared/ui";
 import { useFirstRunStarter } from "../model/use-first-run-starter";
+import {
+  readVaultGuideAutoOpened,
+  writeVaultGuideAutoOpened,
+} from "../model/vault-guide-auto-open";
 
 /**
  * P1a-2 승격 (design-council B6 rank17, 2026-07) — 도메인/역량/요소의
@@ -77,7 +81,10 @@ export function FirstRunStarterModule({
   const glossary = useTranslations("searchWidgets.shortcuts.glossary");
   const {
     visible,
+    dismissed,
+    sampleModeSettled,
     dismiss,
+    undismiss,
     openFolder,
     createVault,
     busy,
@@ -101,12 +108,48 @@ export function FirstRunStarterModule({
   // 되므로 숙련 사용자에게 시트를 강요하는 문제가 없다).
   const [guideOpen, setGuideOpen] = useState(false);
 
-  if (!visible) return null;
+  // 폴더-우선 첫 방문 (소유자 지시 2026-07-24) — 첫 화면을 열자마자 폴더
+  // 지정 유도(시트)가 첫 액션이 된다. "다음에"로 건너뛰면 자동 투어가
+  // 이어받는다(투어 가드가 시트 열림 동안 발화를 미룸). 1회 한정.
+  useEffect(() => {
+    if (!visible || readVaultGuideAutoOpened()) return undefined;
+    const id = window.setTimeout(() => {
+      writeVaultGuideAutoOpened();
+      setGuideOpen(true);
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [visible]);
+
+  // 되돌아오기 (소유자 실사용 지적 2026-07-24) — "여기서 둘러볼게요"로
+  // 카드를 닫고 예시 비즈니스를 구경하다 보면 세션 내 처음으로 돌아갈
+  // 길이 없었다. 카드가 있던 자리에 조용한 1행을 남긴다.
+  if (!visible) {
+    if (sampleModeSettled && dismissed) {
+      return (
+        <div className="border-b border-[color:var(--topology-v2-panel-divider)] px-4 py-2">
+          <button
+            type="button"
+            data-testid="first-run-starter-reopen"
+            onClick={undismiss}
+            className="flex w-full items-center gap-1.5 text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
+          >
+            <ChevronRight size={11} aria-hidden className="shrink-0 -rotate-180" />
+            {t("reopenLabel")}
+          </button>
+        </div>
+      );
+    }
+    return null;
+  }
 
   return (
     <div
       data-testid="first-run-starter"
-      className="relative border-b border-[color:var(--topology-v2-panel-divider)] bg-gradient-to-b from-[color:var(--color-indigo-a08)] via-[color:var(--color-indigo-a06)] to-transparent px-4 pb-3.5 pt-4"
+      // min-h-0 + overflow-y-auto (소유자 실보고 2026-07-24) — 카드는 INDEX
+      // 패널(flex-col h-full)의 고정 블록이라, 낮은 창에서는 카드가 공간을
+      // 다 먹고 아래(검색·트리)로 갈 방법이 없었다. 공간이 부족하면 카드가
+      // 줄어들며 내부 스크롤로 전환된다(충분하면 종전과 동일).
+      className="relative min-h-0 overflow-y-auto overscroll-contain border-b border-[color:var(--topology-v2-panel-divider)] bg-gradient-to-b from-[color:var(--color-indigo-a08)] via-[color:var(--color-indigo-a06)] to-transparent px-4 pb-3.5 pt-4"
     >
       {/* 페르소나 재조사 개선 후보 2 (2026-07-23) — 첫 실행 카드가 "이
           화면이 뭘 하는지"만 말하고 "이 제품이 뭔지"(이름)는 말하지
