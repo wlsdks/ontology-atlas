@@ -11,6 +11,11 @@ import { expect, test } from "@playwright/test";
  */
 
 async function gotoAndSettle(page: import("@playwright/test").Page, url: string) {
+  // 폴더-우선 첫 방문 시트(2026-07-24)는 별도 플로우 — 이 spec 은 투어만
+  // 검증하므로 자동 오픈 플래그를 시드해 시트가 끼어들지 않게 한다.
+  await page.addInitScript(() => {
+    window.localStorage.setItem("vault-open-guide:auto:v1", "1");
+  });
   await page.goto(url);
   await page.waitForLoadState("networkidle");
 }
