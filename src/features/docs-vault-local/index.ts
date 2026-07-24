@@ -1,5 +1,11 @@
 export { LocalVaultProvider, useLocalVault } from './model/LocalVaultProvider';
 export { VaultConflictError } from './model/use-local-vault';
+export type {
+  AgentActivityFocus,
+  AgentActivityHeartbeat,
+  AgentActivityState,
+  AgentActivityStatus,
+} from './model/agent-activity-status';
 export { shouldClearCreateIntent, shouldScaffoldAfterOpen } from './model/vault-create-flow';
 export {
   useVaultCreateFlow,

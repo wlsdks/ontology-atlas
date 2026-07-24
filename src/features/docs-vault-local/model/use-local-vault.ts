@@ -858,8 +858,22 @@ export function useLocalVaultInternal() {
   // "추가됨/편집됨" 으로 재보고하지 않도록 (부트스트랩 토스트 4연발 마찰).
   // 소비 시점에 비워지는 1회성 장부: 외부(에이전트/IDE) 변경만 토스트로 남는다.
   const selfWrittenSlugsRef = useRef<Set<string>>(new Set());
+  // rank7 (design-council B5) — "마지막 편집 · 나" 사실의 유일한 실데이터
+  // 출처. `selfWrittenSlugsRef` 와 달리 소비해도 비워지지 않는 영속 기록
+  // (slug → 마지막 자기 쓰기 시각 ms). mtime 만으로는 "누가" 바꿨는지 알 수
+  // 없다(git checkout·다른 에디터·heartbeat 없는 에이전트 세션도 mtime 을
+  // 바꾼다) — 이 세션이 실제로 로컬 vault 쓰기 API 를 거쳐 이 slug 를 쓴
+  // 사실만 기록해, 그 신뢰 가능한 부분만 "나" 로 표시한다(추측 0).
+  const [selfEditTimestamps, setSelfEditTimestamps] = useState<ReadonlyMap<string, number>>(
+    () => new Map(),
+  );
   const markSelfWrite = useCallback((slug: string) => {
     selfWrittenSlugsRef.current.add(slug);
+    setSelfEditTimestamps((prev) => {
+      const next = new Map(prev);
+      next.set(slug, Date.now());
+      return next;
+    });
   }, []);
   const consumeSelfWrittenSlugs = useCallback((): ReadonlySet<string> => {
     const consumed = selfWrittenSlugsRef.current;
@@ -1213,5 +1227,6 @@ export function useLocalVaultInternal() {
     ensureAgentConfigs,
     updateFrontmatter,
     consumeSelfWrittenSlugs,
+    selfEditTimestamps,
   };
 }
