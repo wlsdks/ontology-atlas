@@ -6,6 +6,27 @@
 
 ---
 
+## 2026-07-24 — "코드 위치" 섹션 + "근거" 카운트 오표기 정정
+
+제품의 핵심 약속("business core → implementation evidence")을 지탱하는 유일한
+필드(frontmatter `elements: [...]` 원문 코드 경로)가 세 읽기 표면 어디에도
+보이지 않았고, 대신 노출되던 "근거 N" 은 `evidenceIds`(노드 자기 자신의
+소스 문서 slug, 0/1 self-reference)를 그대로 세는 자기참조 카운트라 라벨과
+실제 값이 어긋났다.
+
+- **새 파생 함수** `deriveCodeLocations` (`entities/knowledge-graph/lib/`) —
+  노드 자신 + 직접 `contains` 자식 중 `looksLikeCodePath` 인 원문 title 만
+  모아 실제 코드 경로 목록을 만든다. 그래프 시맨틱/derivation 은 미변경 —
+  순수 read-side 파생.
+- **"코드 위치" 섹션 신설** — 토폴로지 데이터시트(`TopologyV2DetailPanel`),
+  전체 상세(`FullDetailA1`), 문서함 frontmatter 블록(`DocFrontmatterBlock`)
+  세 곳 모두 원문 파일 경로를 모노스페이스 + 가운데 생략(`truncateMiddlePath`)
+  + 행별 복사 버튼으로 표시. vault 노드 참조와 시각적으로 구분되도록 링크가
+  아닌 평문으로 렌더(코드 경로는 그래프 노드가 아니므로).
+- **"근거 N" → "선언됨/미선언" 칩** — `evidenceIds` 는 항상 0 또는 1개라
+  숫자로 보여줄 값이 아니었다. 메트릭 스트립과 근거 그룹 헤더 모두 이진
+  칩으로 교체(기존 "근거 문서로 →" 딥링크는 그대로 유지).
+
 ## 2026-07-24 — 스케일 고정 계약 (크기·타이포 4연속 처방의 종착)
 
 소유자가 "아이콘·버튼·글자가 크다"를 연속 보고 — 근본 원인은 tailwind-merge
