@@ -1351,6 +1351,13 @@ export function HomePage() {
     (key: string, count: number) => t(`nodeDatasheet.updated_${key}`, { count }),
     [t],
   );
+  // rank7 (design-council B5) — 마지막 편집 주체/충돌 배지 카피. DocFrontmatterBlock
+  // 과 같은 `editProvenance` 네임스페이스를 재사용 — 사본 없음, drift 방지.
+  const tEditProvenance = useTranslations("editProvenance");
+  const formatEditAgeLabel = useCallback(
+    (key: string, count: number) => tEditProvenance(`age.${key}`, { count }),
+    [tEditProvenance],
+  );
   const { nodeFocus, v2DatasheetModel } = useNodeDatasheetModel({
     selectedOntologyNode,
     insight: ontologyInsight,
@@ -1358,6 +1365,10 @@ export function HomePage() {
     docFreshnessIndex,
     updatedAgoNowMs,
     formatUpdatedLabel,
+    agentActivityStatus,
+    agentFocusNodeId,
+    selfEditTimestamps: vault.selfEditTimestamps,
+    formatEditAgeLabel,
   });
   // 과제 ⑪ — LNB 컨텍스트 이월. 노드를 선택한 채 좌측 레일의 "문서함"으로
   // 이동하면 선택과 무관한 `/docs/` 기본 화면이 뜨던 문제 — 데이터시트가
@@ -1539,6 +1550,14 @@ export function HomePage() {
         kind: nodeFocus.kind,
         slug,
         fresh: changedSlugs.has(selectedOntologyNode.id),
+        // rank7 (design-council B5) — 같은 노드 선택에서 나온
+        // `v2DatasheetModel`(compact 패널)의 SAME fact 를 그대로 재사용 —
+        // 이 노드의 baseline/heartbeat 판정을 두 번 만들지 않는다(count
+        // drift 방지 원칙과 동일 이유).
+        lastEditSubject:
+          v2DatasheetModel?.nodeId === selectedOntologyNode.id ? v2DatasheetModel.lastEditSubject : null,
+        mtimeConflict:
+          v2DatasheetModel?.nodeId === selectedOntologyNode.id ? v2DatasheetModel.mtimeConflict : false,
       },
       groups,
       reach,
@@ -1563,6 +1582,7 @@ export function HomePage() {
     nodeEditTarget,
     vault.manifest,
     saveNodeExplanation,
+    v2DatasheetModel,
   ]);
   const selectedNodeFocusActive =
     Boolean(
@@ -3712,6 +3732,8 @@ export function HomePage() {
                 evidence={panelDatasheetModel.evidence}
                 codeLocations={panelDatasheetModel.codeLocations}
                 updatedAtLabel={panelDatasheetModel.updatedAtLabel}
+                lastEditSubject={panelDatasheetModel.lastEditSubject}
+                mtimeConflict={panelDatasheetModel.mtimeConflict}
                 handoffText={panelDatasheetModel.handoffText}
                 documentHref={panelDatasheetModel.documentHref}
                 builderEditHref={panelDatasheetModel.builderEditHref}
@@ -3752,6 +3774,12 @@ export function HomePage() {
                   codeLocationsLabel: t("nodeDatasheet.codeLocationsLabel"),
                   codeLocationsCopyLabel: t("nodeDatasheet.codeLocationsCopyLabel"),
                   codeLocationsCopiedLabel: t("nodeDatasheet.codeLocationsCopiedLabel"),
+                  // rank7 (design-council B5) — DocFrontmatterBlock 과 같은
+                  // `editProvenance` 네임스페이스(단일 출처, drift 방지).
+                  editSubjectPrefix: tEditProvenance("prefix"),
+                  editSubjectAgent: tEditProvenance("subjectAgent"),
+                  editSubjectHuman: tEditProvenance("subjectHuman"),
+                  editConflictMessage: tEditProvenance("conflictMessage"),
                   handoff: t("nodeDatasheet.handoff"),
                   close: t("controls.close"),
                   openFullDetail: t("nodeDatasheet.openFullDetail"),

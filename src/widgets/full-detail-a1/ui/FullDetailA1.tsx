@@ -9,7 +9,7 @@ import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
-import { useToast } from "@/shared/ui";
+import { LastEditSubjectRow, MtimeConflictBadge, useToast } from "@/shared/ui";
 import {
   NodeExplanationEdit,
   type NodeExplanationEditLabels,
@@ -51,6 +51,16 @@ export interface FullDetailA1Node {
    * agent-handoff call chain. */
   slug: string;
   fresh: boolean;
+  /**
+   * rank7 (design-council B5) — last-edit provenance, pre-resolved by the
+   * caller (reuses the SAME fact `TopologyV2DetailPanel` shows for this
+   * node, `resolveNodeLastEditSubject`) from real data only. `null`/omitted
+   * when neither an agent heartbeat nor a same-session self-write names
+   * this node — the row is not rendered.
+   */
+  lastEditSubject?: { kind: "agent" | "human"; ageLabel: string } | null;
+  /** rank7 — expected_mtime conflict badge, `true` only on a real mismatch. */
+  mtimeConflict?: boolean;
 }
 
 export interface FullDetailA1Breadcrumb {
@@ -102,6 +112,9 @@ export function FullDetailA1({
   className,
 }: FullDetailA1Props) {
   const t = useTranslations("fullDetailA1");
+  // rank7 (design-council B5) — DocFrontmatterBlock/TopologyV2DetailPanel 과
+  // 같은 `editProvenance` 네임스페이스(단일 출처, drift 방지).
+  const tProvenance = useTranslations("editProvenance");
   const getKindLabel = useOntologyKindLabel();
   const { show } = useToast();
   const copyLinkFeedback = useCopyFeedback();
@@ -227,6 +240,26 @@ export function FullDetailA1({
             <span className="text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
             <span>{node.fresh ? t("freshOn") : t("freshOff")}</span>
           </div>
+          {/* rank7 (design-council B5) — last-edit provenance + expected_mtime
+              conflict, gated on real data by the caller (reuses the SAME
+              fact as the compact topology panel — no separate judgment). */}
+          {node.lastEditSubject ? (
+            <div className="mt-1">
+              <LastEditSubjectRow
+                kind={node.lastEditSubject.kind}
+                prefixLabel={tProvenance("prefix")}
+                subjectLabel={tProvenance(
+                  node.lastEditSubject.kind === "agent" ? "subjectAgent" : "subjectHuman",
+                )}
+                ageLabel={node.lastEditSubject.ageLabel}
+              />
+            </div>
+          ) : null}
+          {node.mtimeConflict ? (
+            <div className="mt-1">
+              <MtimeConflictBadge message={tProvenance("conflictMessage")} />
+            </div>
+          ) : null}
         </div>
         <div className="mt-2.5 flex shrink-0 items-center gap-3">
           <span className="font-mono text-label text-[color:var(--topology-v2-panel-text-quaternary)]">

@@ -91,6 +91,21 @@ const messages = {
       saving: "저장 중…",
     },
   },
+  editProvenance: {
+    prefix: "마지막 편집",
+    subjectAgent: "AI 에이전트",
+    subjectHuman: "나",
+    conflictMessage: "이 문서가 다른 곳에서 바뀌었어요 — 덮어쓰기 전에 확인하세요",
+    age: {
+      justNow: "방금",
+      minutesAgo: "{count}분 전",
+      hoursAgo: "{count}시간 전",
+      yesterday: "어제",
+      daysAgo: "{count}일 전",
+      weeksAgo: "{count}주 전",
+      monthsAgo: "{count}개월 전",
+    },
+  },
 };
 
 function node(id: string, kind: string, title = id): KnowledgeGraphNode {
@@ -253,5 +268,65 @@ describe("FullDetailA1 — 코드 위치 (code location) section", () => {
     renderFullDetail({ codeLocations: ["mcp/src/index.js"] });
     fireEvent.click(screen.getByTestId("full-detail-a1-code-location-copy"));
     expect(writeText).toHaveBeenCalledWith("mcp/src/index.js");
+  });
+});
+
+// rank7 (design-council B5) — last-edit provenance + expected_mtime conflict.
+describe("FullDetailA1 — last-edit provenance", () => {
+  it("renders no subject row when the node carries no lastEditSubject fact", () => {
+    renderFullDetail();
+    expect(screen.queryByTestId("last-edit-subject-row")).not.toBeInTheDocument();
+  });
+
+  it("renders the AI agent subject row from a real, caller-resolved fact", () => {
+    renderFullDetail({
+      node: {
+        id: "domain:a",
+        title: "Domain A",
+        kind: "domain",
+        slug: "domains/a",
+        fresh: true,
+        lastEditSubject: { kind: "agent", ageLabel: "3분 전" },
+      },
+    });
+    const row = screen.getByTestId("last-edit-subject-row");
+    expect(row).toHaveAttribute("data-edit-subject-kind", "agent");
+    expect(row).toHaveTextContent("AI 에이전트");
+    expect(row).toHaveTextContent("3분 전");
+  });
+
+  it("renders the human subject row from a real, caller-resolved fact", () => {
+    renderFullDetail({
+      node: {
+        id: "domain:a",
+        title: "Domain A",
+        kind: "domain",
+        slug: "domains/a",
+        fresh: true,
+        lastEditSubject: { kind: "human", ageLabel: "어제" },
+      },
+    });
+    const row = screen.getByTestId("last-edit-subject-row");
+    expect(row).toHaveAttribute("data-edit-subject-kind", "human");
+    expect(row).toHaveTextContent("나");
+  });
+
+  it("renders no conflict badge when mtimeConflict is false/omitted", () => {
+    renderFullDetail();
+    expect(screen.queryByTestId("mtime-conflict-badge")).not.toBeInTheDocument();
+  });
+
+  it("renders the conflict badge only when the caller resolved a real mtime mismatch", () => {
+    renderFullDetail({
+      node: {
+        id: "domain:a",
+        title: "Domain A",
+        kind: "domain",
+        slug: "domains/a",
+        fresh: true,
+        mtimeConflict: true,
+      },
+    });
+    expect(screen.getByTestId("mtime-conflict-badge")).toBeInTheDocument();
   });
 });

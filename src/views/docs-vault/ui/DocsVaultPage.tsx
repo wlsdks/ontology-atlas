@@ -1935,6 +1935,14 @@ function DocsVaultContent() {
                             onPatch={handlePatchDocFrontmatter}
                             onNavigate={handleSelect}
                             resolveRef={(token) => refSlugResolver.get(token) ?? null}
+                            // rank7 (design-council B5) — 마지막 편집 주체/
+                            // 충돌 배지의 실데이터 출처. 둘 다 로컬 vault
+                            // 싱글턴(`LocalVaultProvider`)이 실제로 관측한
+                            // 값만 — 서버/샘플 볼트에선 heartbeat/자기쓰기
+                            // 기록이 없으므로 컴포넌트가 알아서 아무것도
+                            // 렌더하지 않는다.
+                            agentActivityStatus={localVault.agentActivityStatus}
+                            selfEditTimestamps={localVault.selfEditTimestamps}
                           />
                         ) : null}
                         <DocMetaBar doc={selectedDoc} />

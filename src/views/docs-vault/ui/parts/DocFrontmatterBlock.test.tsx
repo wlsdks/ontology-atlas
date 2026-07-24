@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../../messages/en.json";
 import koMessages from "../../../../../messages/ko.json";
 import type { VaultDoc } from "@/entities/docs-vault";
+import type { AgentActivityStatus } from "@/features/docs-vault-local";
 import { DocFrontmatterBlock } from "./DocFrontmatterBlock";
 
 const doc: VaultDoc = {
@@ -276,5 +277,145 @@ describe("DocFrontmatterBlock — 코드 위치 (code location) section", () => 
     const copyButtons = screen.getAllByTestId("doc-frontmatter-code-location-copy");
     fireEvent.click(copyButtons[0]);
     expect(writeText).toHaveBeenCalledWith("mcp/src/index.js");
+  });
+});
+
+// rank7 (design-council B5) — last-edit provenance + expected_mtime conflict.
+describe("DocFrontmatterBlock — last-edit provenance", () => {
+  function emptyAgentActivityStatus(): AgentActivityStatus {
+    return {
+      sourcePath: ".ontology-atlas/agent-activity.json",
+      exists: false,
+      valid: false,
+      stale: false,
+      ageMs: null,
+      heartbeat: null,
+      reviewMode: "none",
+      reviewTarget: { kind: "none", ontologySlug: null, files: [], label: "none" },
+      proof: { count: 0, sources: { mcp: 0, source: 0, verification: 0 }, label: "" },
+      refreshRequest: {
+        required: false,
+        reason: null,
+        previousAgent: null,
+        previousState: null,
+        previousFocus: null,
+        previousOntologySlug: null,
+        previousFiles: [],
+        previousAgeMs: null,
+        command: null,
+        message: null,
+      },
+      errorMessage: null,
+    };
+  }
+
+  function freshHeartbeatStatus(): AgentActivityStatus {
+    return {
+      ...emptyAgentActivityStatus(),
+      exists: true,
+      valid: true,
+      stale: false,
+      ageMs: 1000,
+      heartbeat: {
+        agent: "claude-code",
+        state: "editing",
+        focus: {
+          summary: "working",
+          ontologySlug: "capabilities/cli-developer-entry",
+          files: [],
+        },
+        plan: [],
+        evidence: { mcp: [], source: [], codegraph: [], verification: [] },
+        updatedAt: new Date(Date.now() - 3 * 60_000).toISOString(),
+      },
+    };
+  }
+
+  it("renders no subject row when neither a heartbeat nor a self-edit record exists (no fabrication)", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={doc} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByTestId("last-edit-subject-row")).not.toBeInTheDocument();
+  });
+
+  it("renders the AI agent subject when a fresh heartbeat names this doc", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={doc} agentActivityStatus={freshHeartbeatStatus()} />
+      </NextIntlClientProvider>,
+    );
+    const row = screen.getByTestId("last-edit-subject-row");
+    expect(row).toHaveAttribute("data-edit-subject-kind", "agent");
+    expect(row).toHaveTextContent("AI 에이전트");
+  });
+
+  it("renders the human subject when this session self-wrote this exact doc", () => {
+    const selfEditTimestamps = new Map([[doc.slug, Date.now() - 60_000]]);
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock
+          doc={doc}
+          agentActivityStatus={emptyAgentActivityStatus()}
+          selfEditTimestamps={selfEditTimestamps}
+        />
+      </NextIntlClientProvider>,
+    );
+    const row = screen.getByTestId("last-edit-subject-row");
+    expect(row).toHaveAttribute("data-edit-subject-kind", "human");
+    expect(row).toHaveTextContent("나");
+  });
+
+  it("renders no conflict badge when the doc's mtime has not changed since it was opened", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={{ ...doc, mtime: 1000 }} agentActivityStatus={emptyAgentActivityStatus()} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByTestId("mtime-conflict-badge")).not.toBeInTheDocument();
+  });
+
+  it("renders the conflict badge when the doc's mtime changes externally after it was opened", () => {
+    const changingDoc = { ...doc, mtime: 1000 };
+    const { rerender } = render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={changingDoc} agentActivityStatus={emptyAgentActivityStatus()} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByTestId("mtime-conflict-badge")).not.toBeInTheDocument();
+
+    // simulate the background poller picking up an EXTERNAL edit (no
+    // self-edit record for this slug) while the panel stays mounted.
+    rerender(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={{ ...changingDoc, mtime: 2000 }} agentActivityStatus={emptyAgentActivityStatus()} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId("mtime-conflict-badge")).toBeInTheDocument();
+  });
+
+  it("does not flag a conflict when the mtime change is explained by this session's own save", () => {
+    const changingDoc = { ...doc, mtime: 1000 };
+    const selfEditTimestamps = new Map([[doc.slug, Date.now() + 10_000]]);
+    const { rerender } = render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock
+          doc={changingDoc}
+          agentActivityStatus={emptyAgentActivityStatus()}
+          selfEditTimestamps={new Map()}
+        />
+      </NextIntlClientProvider>,
+    );
+    rerender(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock
+          doc={{ ...changingDoc, mtime: 2000 }}
+          agentActivityStatus={emptyAgentActivityStatus()}
+          selfEditTimestamps={selfEditTimestamps}
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByTestId("mtime-conflict-badge")).not.toBeInTheDocument();
   });
 });

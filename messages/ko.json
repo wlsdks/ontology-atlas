@@ -3057,5 +3057,20 @@
       "skill-copy-diverged": "복제된 스킬 사본(.claude/skills ↔ .agents/skills)이 서로 달라졌어요",
       "skill-copy-file-missing": "복제 스킬 트리의 한쪽에만 있는 파일이 있어요"
     }
+  },
+  "editProvenance": {
+    "prefix": "마지막 편집",
+    "subjectAgent": "AI 에이전트",
+    "subjectHuman": "나",
+    "conflictMessage": "이 문서가 다른 곳에서 바뀌었어요 — 덮어쓰기 전에 확인하세요",
+    "age": {
+      "justNow": "방금",
+      "minutesAgo": "{count}분 전",
+      "hoursAgo": "{count}시간 전",
+      "yesterday": "어제",
+      "daysAgo": "{count}일 전",
+      "weeksAgo": "{count}주 전",
+      "monthsAgo": "{count}개월 전"
+    }
   }
 }

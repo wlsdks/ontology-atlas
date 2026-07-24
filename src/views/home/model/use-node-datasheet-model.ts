@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import {
   buildOntologyBuilderNodeHrefFromGraphId,
   deriveCodeLocations,
@@ -8,8 +8,12 @@ import {
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
+import type { AgentActivityStatus } from "@/features/docs-vault-local";
+import { computeEditAge } from "@/shared/lib/edit-age";
+import type { LastEditSubjectKind } from "@/shared/lib/last-edit-subject";
 import { isWithinRecentWindow } from "@/shared/lib/ontology-tree";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
+import { hasNodeMtimeConflict, resolveNodeLastEditSubject } from "../lib/resolve-node-edit-subject";
 import { buildTopologyOntologyDrawerModel } from "../lib/topology-ontology-drawer";
 import { buildTopologyNodeFocus, type TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import { buildNodeSignificance, type NodeSignificanceModel } from "../lib/topology-node-significance";
@@ -44,6 +48,18 @@ export interface UseNodeDatasheetModelArgs {
   updatedAgoNowMs: number;
   /** i18n — `nodeDatasheet.updated_<key>` 해석. */
   formatUpdatedLabel: (key: string, count: number) => string;
+  /** rank7 (design-council B5) — "마지막 편집" 주체/충돌 배지의 실데이터
+   *  출처. `emptyAgentActivityStatus()` 로 항상 defined (heartbeat 없으면
+   *  agent 후보가 자동으로 근거 없음 처리된다). */
+  agentActivityStatus: AgentActivityStatus;
+  /** W6 `resolveAgentFocusNodeId` 결과 재사용 — P4b 배지와 이 fact 가 항상
+   *  같은 노드를 가리키게(별도 재-매칭 로직 만들지 않음). */
+  agentFocusNodeId: string | null;
+  /** `useLocalVault().selfEditTimestamps` — 이번 세션이 실제로 쓴 slug 의
+   *  기록. "마지막 편집 · 나" 및 충돌 배지 둘 다의 유일한 human 근거. */
+  selfEditTimestamps: ReadonlyMap<string, number>;
+  /** i18n — `editProvenance.age.<key>` 해석. */
+  formatEditAgeLabel: (key: string, count: number) => string;
 }
 
 export interface NodeDatasheetDerivation {
@@ -76,6 +92,11 @@ export interface NodeDatasheetDerivation {
     handoffText: string;
     documentHref: string | null;
     builderEditHref: string;
+    /** rank7 — 실데이터 근거(heartbeat 매치 / 자기 쓰기 기록) 있을 때만
+     *  non-null. 사람/AI 는 `kind` 로만 구분(hue 0). */
+    lastEditSubject: { kind: LastEditSubjectKind; ageLabel: string } | null;
+    /** rank7 — 실제 mtime mismatch 있을 때만 true. */
+    mtimeConflict: boolean;
   } | null;
 }
 
@@ -86,6 +107,10 @@ export function useNodeDatasheetModel({
   docFreshnessIndex,
   updatedAgoNowMs,
   formatUpdatedLabel,
+  agentActivityStatus,
+  agentFocusNodeId,
+  selfEditTimestamps,
+  formatEditAgeLabel,
 }: UseNodeDatasheetModelArgs): NodeDatasheetDerivation {
   // drawer model 1회 빌드로 focus(팝오버 연결) + significance(평문 so-what)
   // 둘 다 파생 — 재계산 0, count drift 불가.
@@ -98,6 +123,28 @@ export function useNodeDatasheetModel({
     };
   }, [selectedOntologyNode, insight, authoredSignificance]);
   const nodeFocus = nodeFocusData?.focus ?? null;
+
+  // rank7 — 이 노드를 "연" (선택한) 시점의 freshness baseline. nodeId 가
+  // 바뀔 때만 재설정 — 같은 노드를 계속 보는 동안 폴링이 freshness 를
+  // 바꾸면 그게 바로 "연 뒤에 바뀐" 실제 신호다. ref 변경은 렌더를 새로
+  // 유발하지 않으므로 순수성 문제 없음(React 의 "렌더 중 파생 상태" 패턴).
+  // capturedAtMs 는 `updatedAgoNowMs`(세션 스냅샷, 렌더 purity — 파일 상단
+  // 계약 재사용) — 새 `Date.now()` 호출 0.
+  const editBaselineRef = useRef<{
+    nodeId: string;
+    freshnessIso: string | null;
+    capturedAtMs: number;
+  } | null>(null);
+  const currentNodeId = selectedOntologyNode?.id ?? null;
+  const currentSourceSlug = nodeFocus?.sourceSlug ?? null;
+  const currentFreshnessIso = currentSourceSlug ? docFreshnessIndex.get(currentSourceSlug) ?? null : null;
+  if (currentNodeId !== null && editBaselineRef.current?.nodeId !== currentNodeId) {
+    editBaselineRef.current = {
+      nodeId: currentNodeId,
+      freshnessIso: currentFreshnessIso,
+      capturedAtMs: updatedAgoNowMs,
+    };
+  }
 
   const v2DatasheetModel = useMemo(() => {
     if (!nodeFocus || !selectedOntologyNode || !insight) return null;
@@ -129,6 +176,36 @@ export function useNodeDatasheetModel({
     });
     const freshnessIso = nodeFocus.sourceSlug ? docFreshnessIndex.get(nodeFocus.sourceSlug) : undefined;
     const ago = freshnessIso ? computeUpdatedAgo(freshnessIso, updatedAgoNowMs) : null;
+
+    // rank7 (design-council B5) — 실데이터 2종(heartbeat 매치 / 자기 쓰기
+    // 기록)만 후보로 넣는다. 둘 다 근거 없으면 lastEditSubject 는 null.
+    const lastEditSubjectFact = resolveNodeLastEditSubject({
+      nodeId: selectedOntologyNode.id,
+      sourceSlug: nodeFocus.sourceSlug,
+      agentActivityStatus,
+      agentFocusNodeId,
+      selfEditTimestamps,
+    });
+    const lastEditSubject = lastEditSubjectFact
+      ? {
+          kind: lastEditSubjectFact.kind,
+          ageLabel: (() => {
+            const age = computeEditAge(lastEditSubjectFact.atMs, updatedAgoNowMs);
+            return formatEditAgeLabel(age.key, age.count);
+          })(),
+        }
+      : null;
+
+    const baseline = editBaselineRef.current;
+    const mtimeConflict = hasNodeMtimeConflict({
+      sourceSlug: nodeFocus.sourceSlug,
+      baselineFreshnessIso: baseline && baseline.nodeId === selectedOntologyNode.id ? baseline.freshnessIso : null,
+      currentFreshnessIso: freshnessIso ?? null,
+      baselineCapturedAtMs:
+        baseline && baseline.nodeId === selectedOntologyNode.id ? baseline.capturedAtMs : updatedAgoNowMs,
+      selfEditTimestamps,
+    });
+
     return {
       slug,
       nodeId: selectedOntologyNode.id,
@@ -156,8 +233,22 @@ export function useNodeDatasheetModel({
       // 빌더 딥링크는 canonical `<kind>:<slug>`(그래프 node id) 그대로 — 발신 문법
       // 통일(H5 계약 item 1). 예전 `?node=<vault slug>` 인라인 링크를 대체.
       builderEditHref: buildOntologyBuilderNodeHrefFromGraphId(selectedOntologyNode.id),
+      lastEditSubject,
+      mtimeConflict,
     };
-  }, [nodeFocus, selectedOntologyNode, insight, nodeFocusData, docFreshnessIndex, updatedAgoNowMs, formatUpdatedLabel]);
+  }, [
+    nodeFocus,
+    selectedOntologyNode,
+    insight,
+    nodeFocusData,
+    docFreshnessIndex,
+    updatedAgoNowMs,
+    formatUpdatedLabel,
+    agentActivityStatus,
+    agentFocusNodeId,
+    selfEditTimestamps,
+    formatEditAgeLabel,
+  ]);
 
   return { nodeFocus, significance: nodeFocusData?.significance ?? null, v2DatasheetModel };
 }

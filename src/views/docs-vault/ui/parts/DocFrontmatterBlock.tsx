@@ -1,8 +1,10 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronRight, Clipboard, Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { buildNewNodeDoc, type VaultDoc } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
+import type { AgentActivityStatus } from "@/features/docs-vault-local";
+import { computeEditAge } from "@/shared/lib/edit-age";
 import { looksLikeCodePath } from "@/shared/lib/humanize-code-path-title";
 import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
@@ -12,7 +14,8 @@ import {
   type VaultIssueCode,
 } from "@/shared/lib/validate-vault-document";
 import { mapVaultIssueCodeToPlainMessage } from "@/shared/lib/vault-issue-plain-message";
-import { CompactCopyButton } from "@/shared/ui";
+import { CompactCopyButton, LastEditSubjectRow, MtimeConflictBadge } from "@/shared/ui";
+import { hasDocMtimeConflict, resolveDocLastEditSubject } from "../../lib/resolve-doc-edit-subject";
 
 /**
  * Engraved frontmatter visualization — "frontmatter 가 곧 그래프" made literal
@@ -41,6 +44,10 @@ import { CompactCopyButton } from "@/shared/ui";
  * `updateFrontmatter` conflict-guarded path the builder's relation preflight
  * already uses (`OntologyEditPage.tsx`) — one write path, two surfaces.
  */
+
+// rank7 — 안정된 빈 Map 참조. props 로 안 넘어온 경우 매 렌더 새 Map 을
+// 만들지 않도록(useMemo dep 안정성).
+const EMPTY_SELF_EDIT_TIMESTAMPS: ReadonlyMap<string, number> = new Map();
 
 const GRAPH_KEYS = [
   "kind",
@@ -128,6 +135,14 @@ export interface DocFrontmatterBlockProps {
   /** 맨슬러그(frontmatter 참조 표기)를 실제 네비게이션 슬러그로 해소.
    *  null 이면 vault 에 없는 참조라 링크로 만들지 않는다. */
   resolveRef?: (token: string) => string | null;
+  /** rank7 (design-council B5) — "마지막 편집 · AI 에이전트" 사실의 실데이터
+   *  출처. 없으면(서버/샘플 볼트) AI 주체 행은 절대 렌더되지 않는다. */
+  agentActivityStatus?: AgentActivityStatus | null;
+  /** rank7 — "마지막 편집 · 나" 및 충돌 배지의 실데이터 출처. 이번 브라우저
+   *  세션이 실제로 vault 쓰기 API 를 거쳐 쓴 slug 의 기록
+   *  (`useLocalVault().selfEditTimestamps`). 없으면(서버/샘플 볼트) 둘 다
+   *  절대 렌더되지 않는다. */
+  selfEditTimestamps?: ReadonlyMap<string, number>;
 }
 
 export function DocFrontmatterBlock({
@@ -137,13 +152,56 @@ export function DocFrontmatterBlock({
   onPatch,
   onNavigate,
   resolveRef,
+  agentActivityStatus = null,
+  selfEditTimestamps,
 }: DocFrontmatterBlockProps) {
   const t = useTranslations("docsVault.frontmatterBlock");
+  const tProvenance = useTranslations("editProvenance");
   const kindLabel = useOntologyKindLabel();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // rank7 — 이 문서를 "연" 시점의 mtime baseline + "지금" 스냅샷(렌더
+  // purity — `useState(() => Date.now())` 지연 초기화는 이 앱의 기존
+  // `updatedAgoNowMs` 계약과 같은 패턴, `Date.now()` 를 렌더 중 직접
+  // 호출하지 않는다). 캐러가 `key={doc.slug}` 로 문서 전환마다 이 컴포넌트를
+  // remount 하므로(파일 상단 docstring 참고) 둘 다 매 새 문서마다 자연스럽게
+  // 새 baseline 으로 초기화된다.
+  const openedMtimeRef = useRef(doc.mtime);
+  const [viewOpenedAtMs] = useState(() => Date.now());
+  const resolvedSelfEditTimestamps = selfEditTimestamps ?? EMPTY_SELF_EDIT_TIMESTAMPS;
+  // rank7 — 실데이터 2종(heartbeat 매치 / 이번 세션 자기 쓰기)만 후보로
+  // 넣는다. 둘 다 근거 없으면 null → 아래 렌더에서 주체 행 자체가 없다
+  // (마케팅 칩 재탕 금지).
+  const lastEditSubjectFact = useMemo(
+    () =>
+      resolveDocLastEditSubject({
+        doc: { slug: doc.slug, path: doc.path },
+        agentActivityStatus,
+        selfEditTimestamps: resolvedSelfEditTimestamps,
+      }),
+    [doc.slug, doc.path, agentActivityStatus, resolvedSelfEditTimestamps],
+  );
+  const lastEditSubjectRow = (() => {
+    if (!lastEditSubjectFact) return null;
+    const age = computeEditAge(lastEditSubjectFact.atMs, viewOpenedAtMs);
+    return {
+      kind: lastEditSubjectFact.kind,
+      prefixLabel: tProvenance("prefix"),
+      subjectLabel: tProvenance(
+        lastEditSubjectFact.kind === "agent" ? "subjectAgent" : "subjectHuman",
+      ),
+      ageLabel: tProvenance(`age.${age.key}`, { count: age.count }),
+    };
+  })();
+  // rank7 — 실제 mtime mismatch 가 있을 때만 true(신호 인플레이션 금지).
+  const mtimeConflict = hasDocMtimeConflict({
+    doc: { slug: doc.slug, mtime: doc.mtime },
+    baselineMtime: openedMtimeRef.current,
+    baselineCapturedAtMs: viewOpenedAtMs,
+    selfEditTimestamps: resolvedSelfEditTimestamps,
+  });
   const currentKind = formatValue(doc.frontmatter?.kind);
   const currentDomain = formatValue(doc.frontmatter?.domain) ?? "";
   const currentTitle = formatValue(doc.frontmatter?.title) ?? doc.title;
@@ -498,6 +556,21 @@ export function DocFrontmatterBlock({
           {t("note")}
         </p>
       </details>
+      {lastEditSubjectRow ? (
+        <div className="mt-2 font-sans">
+          <LastEditSubjectRow
+            kind={lastEditSubjectRow.kind}
+            prefixLabel={lastEditSubjectRow.prefixLabel}
+            subjectLabel={lastEditSubjectRow.subjectLabel}
+            ageLabel={lastEditSubjectRow.ageLabel}
+          />
+        </div>
+      ) : null}
+      {mtimeConflict ? (
+        <div className="mt-2 font-sans">
+          <MtimeConflictBadge message={tProvenance("conflictMessage")} />
+        </div>
+      ) : null}
       {validationWarnings.length > 0 ? (
         <div
           data-testid="doc-frontmatter-validator-warnings"
