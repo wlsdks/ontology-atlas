@@ -8,6 +8,7 @@ import {
   buildRemovePacket,
   candidateFromNode,
   computeCreateCompleteness,
+  findCreateSlugCollision,
   groupRelationRefs,
   type CreateDraft,
   type PendingRelation,
@@ -16,6 +17,11 @@ import {
 const orderCancel = candidateFromNode({ id: "capability:order-cancel", kind: "capability", title: "주문 취소" });
 const gateway = candidateFromNode({ id: "element:gateway", kind: "element", title: "src/payment/gateway.ts" });
 const payment = candidateFromNode({ id: "capability:payment", kind: "capability", title: "결제 처리" });
+const occupiedKoreanOrderCancel = candidateFromNode({
+  id: "capability:주문-취소",
+  kind: "capability",
+  title: "주문 취소",
+});
 
 function draft(overrides: Partial<CreateDraft> = {}): CreateDraft {
   return {
@@ -46,6 +52,26 @@ describe("buildCreateNodeSlug", () => {
   });
   it("returns null when the title has no slug-able characters", () => {
     expect(buildCreateNodeSlug({ kind: "capability", title: "!!!" })).toBeNull();
+  });
+});
+
+describe("findCreateSlugCollision", () => {
+  it("finds the existing node that occupies the deterministic create slug", () => {
+    expect(
+      findCreateSlugCollision(
+        { kind: "capability", title: "주문 취소" },
+        [occupiedKoreanOrderCancel, gateway],
+      ),
+    ).toEqual(occupiedKoreanOrderCancel);
+  });
+
+  it("does not confuse the same title in another kind with a path collision", () => {
+    expect(
+      findCreateSlugCollision(
+        { kind: "element", title: "주문 취소" },
+        [occupiedKoreanOrderCancel, gateway],
+      ),
+    ).toBeNull();
   });
 });
 

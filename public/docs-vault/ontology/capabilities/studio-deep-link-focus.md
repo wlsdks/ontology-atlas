@@ -25,4 +25,6 @@ Health 핸드오프가 같은 canonical 헬퍼로 노드를 공방으로 넘겨,
 
 CREATE 모드에서 near-dup 후보를 열 때도 같은 딥링크를 쓴다: 이름이 겹치는
 기존 노드를 `?node=<id>` 로 열어 새로 만드는 대신 기존 노드를 강화하도록
-유도한다.
+유도한다. 특히 새 draft의 결정적 slug와 기존 node ref가 정확히 같으면
+`createDoc` 실패가 확정된 `그래도 새로 만들기`를 노출하지 않고, 이 기존
+노드 딥링크만 recovery action으로 남긴다.

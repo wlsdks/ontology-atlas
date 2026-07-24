@@ -198,7 +198,8 @@
       "removeLine": "cut ‘{relation}: {title}’",
       "createHeadlineDomain": "New {kind} ‘{name}’ under the {domain} domain",
       "createHeadline": "New {kind} ‘{name}’",
-      "createFileEffect": "1 file created · {count} relation line(s)."
+      "createFileEffect": "1 file created · {count} relation line(s).",
+      "createCollapsed": "1 new node · {count} relation(s)"
     },
     "empty": {
       "title": "No node to bring on stage yet",
@@ -212,6 +213,8 @@
       "domainNone": "No domain",
       "definitionPlaceholder": "One line on what this node does — definition & boundary prevent duplicates.",
       "similar": "A similar node already exists — {title} ({kind})",
+      "slugCollision": "A node already uses this path — {title} ({kind}). Rename this draft or open the existing node.",
+      "slugCollisionHint": "Rename this draft to save",
       "similarOpen": "Open that node",
       "similarAnyway": "Create anyway",
       "appliedDirect": "Created node ‘{title}’ in your folder.",

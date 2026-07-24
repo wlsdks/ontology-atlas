@@ -93,7 +93,7 @@
       "almost": "· 거의 다 됐어요",
       "done": "· 다 채웠어요"
     },
-    "framePrompt": "{name} 가 무엇인지, 주변 노드와 이어 완성해요",
+    "framePrompt": "‘{name}’의 의미를 주변 노드와 이어 완성해요",
     "guideBadge": "여기부터 채워요",
     "bottomProgress": "{total}개 중 {filled}개 채웠어요",
     "bottomRemain": "· {remain}군데 남음",
@@ -196,9 +196,10 @@
       "addLine": "‘{relation}: {title}’ 추가",
       "moveLine": "‘{title}’ 를 ‘{relation}’ 으로 이동",
       "removeLine": "‘{relation}: {title}’ 끊기",
-      "createHeadlineDomain": "{kind} ‘{name}’ 가 {domain} 도메인 아래 생겨요",
-      "createHeadline": "{kind} ‘{name}’ 가 생겨요",
-      "createFileEffect": "파일 1개 생성 · 관계 {count}줄 기록."
+      "createHeadlineDomain": "새 {kind} ‘{name}’ · {domain} 도메인 아래에 생성",
+      "createHeadline": "새 {kind} ‘{name}’ 생성",
+      "createFileEffect": "파일 1개 생성 · 관계 {count}줄 기록.",
+      "createCollapsed": "새 노드 1개 · 관계 {count}개"
     },
     "empty": {
       "title": "무대에 올릴 노드가 아직 없어요",
@@ -212,6 +213,8 @@
       "domainNone": "도메인 없음",
       "definitionPlaceholder": "이 노드가 하는 일을 한 줄로 — 정의·경계가 중복을 막아요.",
       "similar": "비슷한 노드가 이미 있어요 — {title} ({kind})",
+      "slugCollision": "같은 경로의 노드가 이미 있어요 — {title} ({kind}). 이름을 바꾸거나 기존 노드를 여세요.",
+      "slugCollisionHint": "이름을 바꾸면 저장할 수 있어요",
       "similarOpen": "그 노드 열기",
       "similarAnyway": "그래도 새로 만들기",
       "appliedDirect": "‘{title}’ 노드를 내 폴더에 만들었어요.",

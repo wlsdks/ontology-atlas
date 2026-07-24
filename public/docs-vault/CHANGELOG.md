@@ -6,6 +6,23 @@
 
 ---
 
+## 2026-07-25 — 공방 CREATE 저장 예고·중복 경계 정합
+
+관계 0개인 새 노드도 실제로는 Markdown 파일 1개를 만들지만 하단 요약이
+`기록될 내용 0가지`라고 말하던 모순을 바로잡았다. CREATE의 접힌 예고는 이제
+`새 노드 1개 · 관계 N개`, 펼친 예고는 파일 생성과 관계 줄 수를 각각 말한다.
+
+- 같은 kind·이름이 점유된 결정적 slug와 정확히 충돌하면 soft near-dup이 아닌
+  hard conflict로 판정한다. `그래도 새로 만들기`를 숨기고 저장을 비활성화해
+  실패가 확정된 `createDoc` 호출을 권하지 않는다. 같은 충돌 중에는 relation을
+  이미 stage했더라도 생성 summary·delta preview·preview 저장 우회도 함께
+  닫고, 이름 input의 invalid/describedby와 polite 경고를 연결한다.
+- 이름이 비슷하지만 경로는 다른 후보는 기존 near-dup 선택권을 유지한다.
+- 임의 이름에서 조사가 깨지던 한국어 CREATE/ENHANCE 문장을 조사 없는 형태로
+  바꾸고, 경고의 문자 기호는 공용 아이콘 라이브러리로 교체했다.
+- 설치 앱의 scratch vault에서 충돌 차단, 새 노드 생성, canonical ENHANCE
+  재진입, 실제 Markdown, validator clean까지 다시 증명했다.
+
 ## 2026-07-25 — 공방 확장 완성: 산책·델타 미리보기·지도 엣지 딥링크 (Slice 4~6)
 
 fable 기획 "발견 → 연결 → 확인 → 기록" 루프의 마지막 세 슬라이스. 이로써

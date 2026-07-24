@@ -41,6 +41,8 @@ const labels: StudioCompassLabels = {
   createDomainNone: "no domain",
   createDefinitionPlaceholder: "def",
   createSimilar: (t, k) => `${t} ${k}`,
+  createSlugCollision: (t, k) => `${t} ${k} path exists`,
+  createSlugCollisionHint: "rename to save",
   createSimilarOpen: "open",
   createSimilarAnyway: "anyway",
   edit: "edit",
@@ -808,6 +810,87 @@ describe("StudioCompass — create", () => {
     );
     expect(screen.getByTestId("studio-create-name")).toBeInTheDocument();
     // save is disabled until the node is named.
+    expect(screen.getByTestId("studio-save")).toBeDisabled();
+  });
+
+  it("blocks an exact create-path collision and only offers the existing node", () => {
+    render(
+      <StudioCompass
+        mode="create"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "주문 취소", definition: "" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down", { expected: true }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        canSave={false}
+        createKinds={[{ value: "capability", label: "capability" }]}
+        createKind="capability"
+        createSimilarHit={{
+          title: "주문 취소",
+          kind: "capability",
+          slug: "capabilities/order-cancel",
+        }}
+        createSlugCollision
+        summary={{
+          count: 1,
+          collapsed: "1 new node · 1 relation",
+          headline: "create a node",
+          lines: ["add relation"],
+          fileEffect: "1 file created",
+        }}
+        deltaPreview={buildDeltaPreview({
+          center: {
+            title: "주문 취소",
+            kind: "capability",
+            domainLabel: null,
+            isNew: true,
+          },
+          baseNeighborsByRelation: {
+            isA: [],
+            dependsOn: [],
+            contains: [],
+            relates: [],
+          },
+          changes: [
+            {
+              op: "add",
+              relation: "dependsOn",
+              target: {
+                id: "element:gateway",
+                title: "Gateway",
+                kind: "element",
+                ref: "elements/gateway",
+              },
+            },
+          ],
+        })}
+      />,
+    );
+
+    const nameInput = screen.getByTestId("studio-create-name");
+    const conflict = screen.getByTestId("studio-create-similar");
+    expect(nameInput).toHaveAttribute("aria-invalid", "true");
+    expect(nameInput).toHaveAttribute("aria-describedby", "studio-create-slug-collision");
+    expect(conflict).toHaveAttribute("id", "studio-create-slug-collision");
+    expect(conflict).toHaveAttribute("aria-live", "polite");
+    expect(conflict).toHaveTextContent(
+      "주문 취소 capability path exists",
+    );
+    expect(screen.getByRole("button", { name: "open" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "anyway" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-summary-toggle")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-preview-open")).not.toBeInTheDocument();
+    expect(screen.getByText("rename to save")).toBeInTheDocument();
     expect(screen.getByTestId("studio-save")).toBeDisabled();
   });
 });

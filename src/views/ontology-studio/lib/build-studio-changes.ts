@@ -272,6 +272,8 @@ export interface StudioSummaryVocab {
   createHeadline: (kindLabel: string, name: string, domainLabel: string | null) => string;
   /** e.g. "파일 1개 생성 · 관계 2줄 기록." */
   createFileEffect: (relationLines: number) => string;
+  /** create collapsed one-liner, e.g. "새 노드 1개 · 관계 2개" */
+  createCollapsed: (relationLines: number) => string;
   /** collapsed one-liner, e.g. "기록될 내용 2가지" */
   collapsedCount: (count: number) => string;
   /** nothing staged yet */
@@ -333,7 +335,7 @@ export function summarizeStudioChanges(
     headline: vocab.createHeadline(plan.kindLabel, plan.name, plan.domainLabel),
     lines,
     fileEffect: vocab.createFileEffect(count),
-    collapsed: vocab.collapsedCount(count),
+    collapsed: vocab.createCollapsed(count),
     empty: false,
   };
 }

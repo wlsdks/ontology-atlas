@@ -25,6 +25,7 @@ import {
   buildMcpPacket,
   buildRemovePacket,
   candidateFromNode,
+  findCreateSlugCollision,
   kindExpectsDomain,
   type CreateCandidate,
   type CreateDraft,
@@ -162,6 +163,9 @@ export function OntologyStudioPage() {
       createDomainNone: t("create.domainNone"),
       createDefinitionPlaceholder: t("create.definitionPlaceholder"),
       createSimilar: (title, kindLabelText) => t("create.similar", { title, kind: kindLabelText }),
+      createSlugCollision: (title, kindLabelText) =>
+        t("create.slugCollision", { title, kind: kindLabelText }),
+      createSlugCollisionHint: t("create.slugCollisionHint"),
       createSimilarOpen: t("create.similarOpen"),
       createSimilarAnyway: t("create.similarAnyway"),
       // Slice 1 — edit existing relations
@@ -222,6 +226,7 @@ export function OntologyStudioPage() {
           ? t("summary.createHeadlineDomain", { kind: kindLabelText, name, domain: domainLabelText })
           : t("summary.createHeadline", { kind: kindLabelText, name }),
       createFileEffect: (count) => t("summary.createFileEffect", { count }),
+      createCollapsed: (count) => t("summary.createCollapsed", { count }),
       collapsedCount: (count) => t("summary.collapsed", { count }),
       empty: t("summary.empty"),
     }),
@@ -370,10 +375,23 @@ export function OntologyStudioPage() {
     [kind, title, domainValue, definition, relations],
   );
 
+  const createSlugCollisionCandidate = useMemo(
+    () => findCreateSlugCollision({ kind, title }, candidates),
+    [kind, title, candidates],
+  );
+  const createSlugCollision = createSlugCollisionCandidate !== null;
   const createSimilarHit = useMemo(() => {
-    if (similarDismissed || !title.trim()) return null;
+    if (!title.trim()) return null;
+    if (createSlugCollisionCandidate) {
+      return {
+        slug: createSlugCollisionCandidate.ref,
+        title: createSlugCollisionCandidate.title,
+        kind: createSlugCollisionCandidate.kind,
+      };
+    }
+    if (similarDismissed) return null;
     return findSimilarNodeByTitle(title, kind, similarCandidates);
-  }, [title, kind, similarCandidates, similarDismissed]);
+  }, [title, kind, similarCandidates, similarDismissed, createSlugCollisionCandidate]);
 
   const openSimilarNode = useCallback(
     (slug: string) => {
@@ -384,7 +402,7 @@ export function OntologyStudioPage() {
   );
 
   const applyCreate = useCallback(async () => {
-    if (!title.trim()) return;
+    if (!title.trim() || createSlugCollision) return;
     if (writable) {
       try {
         const { slug, markdown } = buildCreateNodeDoc(draft);
@@ -403,7 +421,7 @@ export function OntologyStudioPage() {
     } catch {
       toast.show(t("create.copyFailed"), "info");
     }
-  }, [title, writable, draft, localVault, toast, t, router, kind]);
+  }, [title, createSlugCollision, writable, draft, localVault, toast, t, router, kind]);
 
   if (isCreate) {
     const bearings: CompassBearingView[] = RELATIONS.map((relation) => {
@@ -483,7 +501,7 @@ export function OntologyStudioPage() {
         searchNodes={candidates}
         onOpenNode={openNode}
         moreRelationsSoon={t("moreRelationsSoon")}
-        canSave={Boolean(title.trim())}
+        canSave={Boolean(title.trim()) && !createSlugCollision}
         summary={title.trim() ? createSummary : null}
         deltaPreview={title.trim() ? createDeltaPreview : null}
         onUndoChange={(index) => setRelations((prev) => prev.filter((_, i) => i !== index))}
@@ -514,6 +532,7 @@ export function OntologyStudioPage() {
         onCreateDomain={setDomainValue}
         onCreateDefinition={setDefinition}
         createSimilarHit={createSimilarHit}
+        createSlugCollision={createSlugCollision}
         onOpenSimilar={openSimilarNode}
         onDismissSimilar={() => setSimilarDismissed(true)}
       />

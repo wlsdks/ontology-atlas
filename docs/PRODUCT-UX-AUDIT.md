@@ -39,7 +39,7 @@
 | A8–A11 | 프로젝트 목록 → 생성 → 상세 → 인라인/전체 편집 | 임의 로컬 slug 생성·상세·인라인/전체 편집·원본 파일·schema 설치 앱 검증 완료 |
 | A12 | 문서함 선택 → 편집 → 저장/오류 → 재실행 | 정상 저장·동시 편집 충돌 차단·디스크 검증·재실행 복원 완료 |
 | A13–A14 | `/ontology`, 구 `/ontology/edit` 리다이렉트 | 로컬 딥링크 선택·오류 판정·공방 포커스 설치 앱 검증 완료 |
-| A15–A16 | 공방 ENHANCE/CREATE → 쓰기 → 파일 재열기 | 임시 vault의 ENHANCE 관계 쓰기·디스크/문서함 재열기 검증, Studio CREATE 계속 감사 |
+| A15–A16 | 공방 ENHANCE/CREATE → 쓰기 → 파일 재열기 | 임시 vault의 ENHANCE 관계 쓰기와 CREATE 노드 생성·중복 차단·디스크/validator/문서함 재열기 검증 완료 |
 | A17 | 인사이트 읽기·필터·지도 복귀 | 대기 |
 | A18 | 다운로드 안내 | 대기 |
 | A19 | 한국어/영어 동일 과업·동일 사실 | 대기 |
@@ -539,6 +539,59 @@
   `/ontology/edit/?node=capabilities/example-capability`도
   `/ko/ontology/studio/?node=capability%3Aexample-capability`로 이동해 같은
   `예시 기능`을 공방 중앙에 표시했다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-019 — CREATE 저장 예고가 새 노드를 0가지로 세고 확정 충돌도 저장을 허용
+
+- 심각도: `S3`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 공방 `?mode=create` → 이름·도메인·정의 입력 → 저장 예고 확인
+  → 실제 Markdown 생성 → 같은 이름으로 다시 CREATE
+- 관측: 관계를 하나도 고르지 않은 정상 draft는 새 Markdown 노드 1개를 만들지만
+  접힌 저장 예고는 `기록될 내용 0가지`라고 표시했다. 같은 kind·이름으로
+  이미 결정적 slug가 점유된 경우에도 근접 중복 안내가 `그래도 새로 만들기`와
+  활성 저장 버튼을 남겨, 누르면
+  `Document already exists: "capabilities/create-감사-기능"`으로 끝났다.
+- 사용자 문제: 저장 직전 보조 계층이 실제 파일 생성을 부정하고, 성공할 수 없는
+  액션을 계속 권해 공방 write와 vault 파일의 신뢰를 깬다.
+- 사용자 순간: 관계는 나중에 채우되 먼저 의미 있는 노드를 만들거나, 기존
+  개념과 같은 이름인지 확인하며 중복을 피하려는 순간.
+- 현재 대안: `0가지`를 무시하고 저장하거나, 실패 toast를 본 뒤 이름을 바꾸고
+  다시 모든 필드를 검토한다.
+- 온톨로지·에이전트 가치: CREATE는 사람의 draft를 같은 Markdown node handle로
+  만드는 경계다. 파일 1개와 relation N개를 구분해 말하고, 이미 점유된 slug는
+  쓰기 전에 막아야 사람과 MCP/CLI가 같은 노드 정체성을 읽는다.
+- 최소화: 새 모드·다이얼로그·장식 모션은 추가하지 않는다. create summary만
+  `새 노드 1개 · 관계 N개`로 분리하고, `buildCreateNodeSlug`와 기존 후보 ref가
+  정확히 같을 때를 hard conflict로 판정해 `기존 노드 열기`만 남기고 저장을
+  비활성화한다. 충돌 중에는 생성 summary와 delta preview도 숨겨 우회 저장과
+  거짓 예고를 함께 막고, 하단 hint는 `이름을 바꾸면 저장할 수 있어요`로
+  바뀐다. 근접 중복은 기존의 선택 가능한 soft nudge를 유지한다.
+- 디자인 계약: 중앙 draft 카드는 계속 `blocking task`, 4방위 소켓은
+  `active focus`, 하단 예고는 디스크 효과를 정확히 설명하는 `support layer`다.
+  경고는 기존 amber 토큰과 아이콘 라이브러리를 쓰며 새 색·glow·모션은 없다.
+  이름 input은 충돌 때 `aria-invalid`와 경고 id `aria-describedby`를 가지며,
+  경고는 polite live region으로 동적 상태를 알린다. 한국어 조사 의존 문장도
+  이름을 인용하는 형태로 바꿔 임의 문자열에서 `... 기능 가`처럼 깨지지 않게
+  했다.
+- 회귀 증거: slug 충돌 순수 함수, CREATE summary, 경고 액션·저장 disabled
+  컴포넌트 계약을 실패 테스트로 먼저 추가했다. 충돌 상태에 staged relation,
+  summary, delta preview까지 주입해 summary/preview가 사라지고 입력 오류가
+  경고와 연결되는 계약도 잠갔다. 집중 테스트 `3 파일 · 75개`와 TypeScript가
+  통과했고 production/desktop build도 최신 설치 앱으로 배포됐다.
+- 설치 앱 증거: scratch vault의 기존 `CREATE 감사 기능`을 입력하자
+  `같은 경로의 노드가 이미 있어요`와 `그 노드 열기`만 나타났고
+  `그래도 새로 만들기`는 사라졌으며 저장 버튼은 disabled였다. 이름을
+  `CREATE 후속 검증`으로 바꾸자 접힌 예고는 `새 노드 1개 · 관계 0개`,
+  펼친 예고는 `새 역량 ... 생성`과 `파일 1개 생성 · 관계 0줄 기록`을
+  표시했다. 저장 후 canonical `?node=capability:create-후속-검증`으로
+  전환돼 `‘CREATE 후속 검증’의 의미를 ...` 문구와 정의를 보였고,
+  실제 `capabilities/create-후속-검증.md`가 생성됐다. 같은 vault
+  `11 파일`을 검사해 `issue 0 · vault clean`을 얻었다. Guardian 후속으로
+  새 이름에서 `예시 구성요소` 관계 1개를 먼저 stage한 뒤 다시
+  `CREATE 감사 기능` 충돌을 만들었다. 최신 설치 앱/AX 트리에서 관계는 무대에
+  유지됐지만 `새 노드 1개 · 관계 1개` summary와 `미리보기`는 모두 사라졌고,
+  하단은 `이름을 바꾸면 저장할 수 있어요`와 disabled 저장만 표시했다.
 - PO·디자인 판정: **Build and verify**
 
 ## 현재 PO·디자인 판정

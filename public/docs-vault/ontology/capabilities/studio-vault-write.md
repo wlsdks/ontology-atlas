@@ -26,6 +26,14 @@ mission v2 의 *사람 + AI agent 양립* 약속의 코드 구현. 은퇴한 xyf
   - CREATE 저장 → `buildCreateNodeDoc(draft)` 가 `${kind}s/${slug}.md` 경로와
     markdown 본문을 만들고 `localVault.createDoc(slug, markdown)` 로 vault
     디스크에 새 노드를 쓴다. AI agent (MCP) 가 같은 vault 에서 즉시 본다.
+    저장 전 `buildCreateNodeSlug`와 현재 graph 후보의 folder-prefixed ref를
+    대조한다. 같은 결정적 경로가 이미 있으면 저장은 성공할 수 없으므로
+    `기존 노드 열기`만 남기고 save를 비활성화한다. 경로가 다른 near-dup은
+    soft nudge로 계속 만들기 선택권을 유지한다. hard conflict가 생기면 이미
+    stage한 relation이 있어도 생성 summary와 delta preview를 숨기고 preview
+    commit도 같은 save gate로 닫는다. 이름 input은 invalid/describedby로
+    live conflict 경고에 연결된다. 정상 저장 예고는 relation 수만 `0가지`로
+    세지 않고 `새 노드 1개 · 관계 N개`로 파일 생성과 edge를 분리해 말한다.
     저장 후 새 노드를 `?node=` 로 다시 열어 ENHANCE 로 이어가게 한다.
 - **non-writable** (sample/static/read-only): 디스크 쓰기 대신 복사 가능한
   MCP command packet 을 만든다. ENHANCE 는 `buildFillPacket(...)`, CREATE 는
