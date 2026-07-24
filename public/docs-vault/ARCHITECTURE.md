@@ -23,6 +23,7 @@ tags: [architecture, infra, overview]
 │ ├─ /docs                   vault picker + editor       │
 │ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          xyflow ERD builder          │
+│ ├─ /ontology/studio        game "강화" enhancement screen│
 │ ├─ /ontology/insights      graph census + hubs + edges │
 │ ├─ /projects               project list                │
 │ └─ /project/[slug]         project detail              │
@@ -159,6 +160,7 @@ This is the "first impression" state — visitors see a real ontology
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             ERD canvas builder (xyflow)
+/ontology/studio           immersive "강화(enhancement) screen" — node-as-game-item (scoped design exception)
 /ontology/insights         graph insights (kind dist · hubs · edge types)
 /projects                  project list (cards)
 /project/[slug]            project detail (inline edit when vault loaded)

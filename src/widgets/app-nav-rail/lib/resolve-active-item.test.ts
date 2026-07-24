@@ -18,6 +18,11 @@ describe("resolveActiveNavRailItem", () => {
     expect(resolveActiveNavRailItem("/ontology/edit/")).toBe("builder");
   });
 
+  it("matches /ontology/studio to studio, not the generic /ontology prefix", () => {
+    expect(resolveActiveNavRailItem("/ontology/studio")).toBe("studio");
+    expect(resolveActiveNavRailItem("/ontology/studio/")).toBe("studio");
+  });
+
   it("matches /ontology/insights to insights", () => {
     expect(resolveActiveNavRailItem("/ontology/insights/")).toBe("insights");
   });

@@ -58,11 +58,12 @@ describe("AppNavRail", () => {
     expect(wordmark).toHaveAttribute("translate", "no");
   });
 
-  it("renders all 5 destinations with i18n labels", () => {
+  it("renders all 6 destinations with i18n labels", () => {
     renderRail();
     expect(screen.getByTestId("app-nav-rail-item-map")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-docs")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-builder")).toBeInTheDocument();
+    expect(screen.getByTestId("app-nav-rail-item-studio")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-insights")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-projects")).toBeInTheDocument();
   });

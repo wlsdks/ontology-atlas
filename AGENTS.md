@@ -142,6 +142,9 @@ scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood w
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (B3 허브가 곧 지도 — the old tree/ego hub is retired)
 /ontology/edit             ERD canvas builder (xyflow → vault md export)
+/ontology/studio           immersive "강화(enhancement) screen" — one node as a game item you
+                           complete by socketing relation "gems" (sanctioned scoped design
+                           exception: glow/gradient/aura via `--studio-*` tokens only)
 /ontology/insights         graph insights (kind census · hubs · relation breakdown)
 /download                  macOS desktop app download (DMG)
 ```

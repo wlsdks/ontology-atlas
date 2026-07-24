@@ -9,6 +9,7 @@
       "projects": "Projects",
       "ontology": "Ontology",
       "ontologyEdit": "Edit Relations",
+      "ontologyStudio": "Ontology Studio",
       "ontologyInsights": "Graph Insights",
       "projectNew": "New project"
     }
@@ -128,8 +129,43 @@
     "map": "Map",
     "docs": "Docs",
     "builder": "Builder",
+    "studio": "Studio",
     "insights": "Insights",
     "projects": "Projects"
+  },
+  "ontologyStudio": {
+    "mode": "Enhance",
+    "close": "Close Esc",
+    "statsTitle": "Attributes",
+    "socketsTitle": "Enhancement slots",
+    "axis": {
+      "definition": "Definition · scope",
+      "evidence": "Code evidence",
+      "contains": "Contains",
+      "dependsOn": "Depends on",
+      "relates": "Related",
+      "isA": "Parent (is-a)"
+    },
+    "statConfirmed": "Set",
+    "statMissing": "Unset",
+    "level": "Enhance Lv.{from} → Lv.{to}",
+    "levelMax": "Enhance Lv.{level} · Max",
+    "gaugeLead": "Completeness",
+    "gaugeTrail": "· once you socket the parent",
+    "gaugeMax": "Completeness {percent}% · every axis complete",
+    "isaTag": "is-a · new axis",
+    "isaPrompt": "\"What kind of thing is {title}?\"",
+    "relationMeta": "{count} linked",
+    "relatesPick": "optional",
+    "relatesEmptyHint": "Socket a related concept",
+    "add": "＋ Socket",
+    "readOnlyNote": "Read-only · this slice",
+    "enhance": "Enhance",
+    "enhanceSub": "Apply directly · to your folder",
+    "agent": "Hand to agent",
+    "nextSlice": "Writing opens in the next slice — this view is read-only for now.",
+    "emptyTitle": "No node to enhance yet",
+    "emptyBody": "Pick a vault or open the sample data and a node will appear here."
   },
   "liveActivity": {
     "live": "Live",

@@ -9,6 +9,7 @@
       "projects": "프로젝트",
       "ontology": "온톨로지",
       "ontologyEdit": "관계 편집",
+      "ontologyStudio": "온톨로지 스튜디오",
       "ontologyInsights": "그래프 인사이트",
       "projectNew": "새 프로젝트"
     }
@@ -128,8 +129,43 @@
     "map": "지도",
     "docs": "문서함",
     "builder": "빌더",
+    "studio": "스튜디오",
     "insights": "인사이트",
     "projects": "프로젝트"
+  },
+  "ontologyStudio": {
+    "mode": "강화",
+    "close": "닫기 Esc",
+    "statsTitle": "능력치",
+    "socketsTitle": "강화 슬롯",
+    "axis": {
+      "definition": "정의 · 경계",
+      "evidence": "근거 코드",
+      "contains": "담는 것",
+      "dependsOn": "기대는 곳",
+      "relates": "비슷한 것",
+      "isA": "상위 개념"
+    },
+    "statConfirmed": "확정",
+    "statMissing": "미정",
+    "level": "강화 Lv.{from} → Lv.{to}",
+    "levelMax": "강화 Lv.{level} · 최대",
+    "gaugeLead": "강화도",
+    "gaugeTrail": "· 상위 개념을 넣으면",
+    "gaugeMax": "강화도 {percent}% · 모든 축 완성",
+    "isaTag": "is-a · 새 축",
+    "isaPrompt": "\"{title}은(는) 무엇의 한 종류인가?\"",
+    "relationMeta": "관계 {count}",
+    "relatesPick": "선택",
+    "relatesEmptyHint": "대체·보완 관계면 연결",
+    "add": "＋ 넣기",
+    "readOnlyNote": "읽기 전용 · 이번 슬라이스",
+    "enhance": "강화하기",
+    "enhanceSub": "직접 적용 · 내 폴더에",
+    "agent": "에이전트에게 맡기기",
+    "nextSlice": "쓰기는 다음 슬라이스에서 열립니다 — 지금은 읽기 전용이에요.",
+    "emptyTitle": "강화할 노드가 아직 없어요",
+    "emptyBody": "vault 를 선택하거나 예시 데이터를 열면 강화할 노드가 나타납니다."
   },
   "liveActivity": {
     "live": "실시간",

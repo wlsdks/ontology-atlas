@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-23T18:15:11.902Z",
+  "generatedAt": "2026-07-24T03:02:36.118Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -218,8 +218,8 @@
         }
       ],
       "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
-      "wordCount": 1935,
-      "updatedAt": "2026-07-23T15:29:58+09:00",
+      "wordCount": 1951,
+      "updatedAt": "2026-07-24T12:00:57+09:00",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -3167,6 +3167,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-24 — 온톨로지 스튜디오 (게임 \"강화 화면\") Slice 1 — 읽기 전용 표면",
+          "slug": "2026-07-24-온톨로지-스튜디오-게임-강화-화면-slice-1-읽기-전용-표면"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-24 — \"코드 위치\" 섹션 + \"근거\" 카운트 오표기 정정",
           "slug": "2026-07-24-코드-위치-섹션-근거-카운트-오표기-정정"
         },
@@ -4736,9 +4741,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 제품의 핵심 약속(\"business core → implementation evidence\")을 지탱하는 유일한 필드(frontmatter elements",
-      "wordCount": 36046,
-      "updatedAt": "2026-07-24T03:11:12+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 새 라우트 /ontology/studio + 레일 LNB \"스튜디오\" 항목. 노드 하나를 게임 아이템(헥사곤)으로 놓고, 그 노드의 실제 관계(contai",
+      "wordCount": 36175,
+      "updatedAt": "2026-07-24T12:00:57+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5186,6 +5191,11 @@
         },
         {
           "depth": 2,
+          "text": "Ontology Studio — game-energy exception (owner-approved 2026-07-24)",
+          "slug": "ontology-studio-game-energy-exception-owner-approved-2026-07-24"
+        },
+        {
+          "depth": 2,
           "text": "Motion principles",
           "slug": "motion-principles"
         },
@@ -5311,8 +5321,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 12614,
-      "updatedAt": "2026-07-24T00:07:54+09:00",
+      "wordCount": 13073,
+      "updatedAt": "2026-07-24T12:00:57+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -5615,6 +5625,11 @@
         },
         {
           "depth": 3,
+          "text": "`/ontology/studio` — Ontology Studio (게임 \"강화 화면\", Slice 1 = read-only)",
+          "slug": "ontologystudio-ontology-studio-게임-강화-화면-slice-1-read-only"
+        },
+        {
+          "depth": 3,
           "text": "`/ontology/edit` — Builder (xyflow ERD canvas)",
           "slug": "ontologyedit-builder-xyflow-erd-canvas"
         },
@@ -5890,8 +5905,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 12505,
-      "updatedAt": "2026-07-23T20:11:07+09:00",
+      "wordCount": 12662,
+      "updatedAt": "2026-07-24T12:00:57+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6375,6 +6390,152 @@
       "excerpt": "Status: RFC (Request for Comments). This is a v1.0 release candidate, not a ratified standard — see §0 RFC status and feedback for the review window and how to comment. This document promotes an already-shipped, already-enforced de-facto schema into a formal specification. It does not introduce new frontmatter keys, ne",
       "wordCount": 3871,
       "updatedAt": "2026-07-17T22:26:17+09:00",
+      "linksOut": []
+    },
+    {
+      "slug": "ONTOLOGY-RIGOR-AUDIT-2026-07",
+      "path": "docs/ONTOLOGY-RIGOR-AUDIT-2026-07.md",
+      "title": "온톨로지 표현적 적정성 감사 — 전문가 8인 (2026-07-24)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "온톨로지 표현적 적정성 감사 — 전문가 8인 (2026-07-24)",
+          "slug": "온톨로지-표현적-적정성-감사-전문가-8인-2026-07-24"
+        },
+        {
+          "depth": 2,
+          "text": "심사단 (8 렌즈)",
+          "slug": "심사단-8-렌즈"
+        },
+        {
+          "depth": 2,
+          "text": "총평",
+          "slug": "총평"
+        },
+        {
+          "depth": 2,
+          "text": "✅ 제대로 표현 가능 (9)",
+          "slug": "제대로-표현-가능-9"
+        },
+        {
+          "depth": 2,
+          "text": "❌ 현재 표현 불가 (8) — 대부분 스튜디오 S2가 해결",
+          "slug": "현재-표현-불가-8-대부분-스튜디오-s2가-해결"
+        },
+        {
+          "depth": 2,
+          "text": "⚠️ 건전성 이슈 (모델이 실제로 뭉개거나 통과시키는 것)",
+          "slug": "건전성-이슈-모델이-실제로-뭉개거나-통과시키는-것"
+        },
+        {
+          "depth": 2,
+          "text": "🟢 정당한 단순화 (과잉요구 방지 — 안 해도 됨)",
+          "slug": "정당한-단순화-과잉요구-방지-안-해도-됨"
+        },
+        {
+          "depth": 2,
+          "text": "실행 가능한 공백 10 (→ 스튜디오 S2, 전부 평문 frontmatter·advisory·하위호환)",
+          "slug": "실행-가능한-공백-10-스튜디오-s2-전부-평문-frontmatteradvisory하위호환"
+        },
+        {
+          "depth": 2,
+          "text": "상호운용 (RDF/SKOS export) 판정",
+          "slug": "상호운용-rdfskos-export-판정"
+        },
+        {
+          "depth": 2,
+          "text": "로드맵 (단계·불변 원칙)",
+          "slug": "로드맵-단계불변-원칙"
+        }
+      ],
+      "excerpt": "판정: partial — \"라벨 붙은 그래프를 넘어선, 이름값을 실제로 획득한 경량 온톨로지지만 미완성.\" 이 문서는 온톨로지 전문가 8인 패널이 \"이 시스템이 제대로 된 온톨로지를 표현할 수 있는가\"를 심사한 전체 기록이다. 실행 가능한 공백은 docs/ONTOLOGY-STUDIO-PLAN.md §1(스키마 심화)이 흡수한다. 이 문서는 근거·판정 원본을 durable 하게 보존한다. 형식 온톨로지/지식표현(Gruber) · W3C 시맨틱웹(RDF/OWL/SKOS) · 기술논리(DL)/추론 · 분류학/부분전체론(mereology) · 관계 semantics/온톨로지",
+      "wordCount": 997,
+      "updatedAt": "2026-07-24T11:58:52+09:00",
+      "linksOut": []
+    },
+    {
+      "slug": "ONTOLOGY-STUDIO-PLAN",
+      "path": "docs/ONTOLOGY-STUDIO-PLAN.md",
+      "title": "온톨로지 스튜디오 — 상세 설계 & 실행 플랜 (2026-07-24)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "온톨로지 스튜디오 — 상세 설계 & 실행 플랜 (2026-07-24)",
+          "slug": "온톨로지-스튜디오-상세-설계-실행-플랜-2026-07-24"
+        },
+        {
+          "depth": 2,
+          "text": "0. 정체성 · 원칙 · IA",
+          "slug": "0-정체성-원칙-ia"
+        },
+        {
+          "depth": 2,
+          "text": "1. 온톨로지 스키마 심화 (S2) — 전문가 10 공백을 평문 frontmatter로",
+          "slug": "1-온톨로지-스키마-심화-s2-전문가-10-공백을-평문-frontmatter로"
+        },
+        {
+          "depth": 3,
+          "text": "1.1 신규 frontmatter 필드 (kind별)",
+          "slug": "11-신규-frontmatter-필드-kind별"
+        },
+        {
+          "depth": 3,
+          "text": "1.2 관계 domain/range 검증 테이블 (gap#3 — 건전성)",
+          "slug": "12-관계-domainrange-검증-테이블-gap3-건전성"
+        },
+        {
+          "depth": 3,
+          "text": "1.3 파생·검증·건전성 (계산만, 데이터 0)",
+          "slug": "13-파생검증건전성-계산만-데이터-0"
+        },
+        {
+          "depth": 3,
+          "text": "1.4 마이그레이션",
+          "slug": "14-마이그레이션"
+        },
+        {
+          "depth": 2,
+          "text": "2. 소켓/보석 시스템 — 편집 UX 심화",
+          "slug": "2-소켓보석-시스템-편집-ux-심화"
+        },
+        {
+          "depth": 2,
+          "text": "3. 변동 원장 (S3) — 변동지점 기억 + 양방향 적용",
+          "slug": "3-변동-원장-s3-변동지점-기억-양방향-적용"
+        },
+        {
+          "depth": 2,
+          "text": "4. 게임 표면 토큰 · 모션 시스템 (헌장 예외)",
+          "slug": "4-게임-표면-토큰-모션-시스템-헌장-예외"
+        },
+        {
+          "depth": 2,
+          "text": "5. 강화 vs 만들기 흐름 (두 모드)",
+          "slug": "5-강화-vs-만들기-흐름-두-모드"
+        },
+        {
+          "depth": 2,
+          "text": "6. 빌더 폐기 (S4)",
+          "slug": "6-빌더-폐기-s4"
+        },
+        {
+          "depth": 2,
+          "text": "7. 슬라이스별 실행 + 검증 계약",
+          "slug": "7-슬라이스별-실행-검증-계약"
+        },
+        {
+          "depth": 2,
+          "text": "8. 교차 매핑 (다른 트랙이 여기로 흡수/병행)",
+          "slug": "8-교차-매핑-다른-트랙이-여기로-흡수병행"
+        }
+      ],
+      "excerpt": "세션에서 소유자와 확정한 방향의 상세 설계 스펙. 로드맵 테이블이 아니라 각 슬라이스의 실제 설계 결정(스키마 의미론·소켓 편집 UX·변동 원장 모델·게임 토큰 시스템·빌더 마이그레이션)까지 담아 구현이 깊이를 잃지 않게 한다. 근거: 온톨로지 전문가 8인 심사(genuineGaps 10) · 디자인 카운슬 · 사용성 8인 · 소유자 확정 시안(node-studio-game.html·node-studio-create.html). 한 줄: 노드를 게임 아이템처럼 강화/구축하는 몰입 저작 표면. 온톨로지 관계·의미 = 소켓에 끼우는 보석. 빈 소켓(isa·정의)이 곧 채",
+      "wordCount": 1236,
+      "updatedAt": "2026-07-24T11:55:36+09:00",
       "linksOut": []
     },
     {
@@ -14614,6 +14775,20 @@
         "type": "doc",
         "slug": "ONTOLOGY-ATLAS-SPEC",
         "title": "Ontology Atlas Vault Specification v1.0-rc (RFC)"
+      },
+      {
+        "name": "ONTOLOGY-RIGOR-AUDIT-2026-07",
+        "path": "ONTOLOGY-RIGOR-AUDIT-2026-07",
+        "type": "doc",
+        "slug": "ONTOLOGY-RIGOR-AUDIT-2026-07",
+        "title": "온톨로지 표현적 적정성 감사 — 전문가 8인 (2026-07-24)"
+      },
+      {
+        "name": "ONTOLOGY-STUDIO-PLAN",
+        "path": "ONTOLOGY-STUDIO-PLAN",
+        "type": "doc",
+        "slug": "ONTOLOGY-STUDIO-PLAN",
+        "title": "온톨로지 스튜디오 — 상세 설계 & 실행 플랜 (2026-07-24)"
       },
       {
         "name": "PRODUCT-DESIGN-OPERATING-SYSTEM",

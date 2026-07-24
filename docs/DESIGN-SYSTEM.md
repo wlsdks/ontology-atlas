@@ -1327,6 +1327,59 @@ Reference anchors:
 - ❌ Overlap tolerated because the surface "mostly still works"; overlap count
   must be `0` for fixed/card surfaces in the tested state
 
+> The one carve-out to every Don't above is the **Ontology Studio game-energy
+> exception** documented in the next section — and only inside `.studio-stage`,
+> only via `--studio-*` tokens.
+
+## Ontology Studio — game-energy exception (owner-approved 2026-07-24)
+
+`/ontology/studio` is an intentionally immersive **"강화(enhancement) screen"**:
+a single ontology node is rendered as a game item you complete by socketing
+"gems" — each gem is one ontology relation (a piece of meaning). To make the
+"level up your node" metaphor land, this surface is granted a **scoped
+exception** to the charter's forbidden visual energy.
+
+**Allowed on this surface only:** focal glow + faint gold halo background,
+rotating light rays, floating particles, a rarity gradient frame + aura on the
+hexagon item, per-relation-type colored gems, a warm **gold rarity accent**
+(the "missing/new axis" signal), and a glowing gradient "강화하기" button with a
+shimmer sweep.
+
+**Hard guardrails (deviation = defect):**
+
+1. **Tokens only, scoped.** Every bit of game energy comes from `--studio-*`
+   tokens defined under the `.studio-stage` selector in `app/globals.css`, plus
+   the `.studio-*` component classes there. No other route, and no app chrome,
+   may reference a `--studio-*` token. Nothing may leak.
+2. **`.studio-stage` boundary.** Outside this subtree the full charter holds:
+   achromatic surfaces, single indigo, the 5-step surface ladder, border-style
+   category differentiation, no rarity/gold.
+3. **Rest of the charter still applies here too.** Dark-only, Pretendard, the
+   type ramp (`text-caption … text-hero`), and "no hardcoded hex in app code"
+   (raw color values live only inside the `--studio-*` token definitions).
+4. **Reduced motion.** Rays, particles, item bob, aura pulse, pip pulse, and the
+   button shimmer all freeze under `prefers-reduced-motion` (the `studio-anim-*`
+   markers + the media query in `globals.css`). The static composition must
+   stay fully legible.
+5. **No auto-expansion.** This exception is bound to `/ontology/studio`. A new
+   immersive surface does not inherit it — that needs separate owner approval.
+
+**Why it's allowed to break the rules:** the charter's restraint exists to kill
+generic "AI SaaS" cliché on the *workbench* surfaces planners and developers
+read all day. The Studio is a deliberate, bounded, opt-in moment whose whole
+job is to make growing the ontology feel rewarding — the game language is the
+product point there, not decoration. Bounding it to one tokenized surface keeps
+the rest of the app honest. Lineage: the exception is a *considered* departure,
+in the spirit of Rams' "as little design as possible" applied at the level of
+*the whole app* (one loud room, quiet everywhere else), not a license to
+decorate.
+
+Relations → gems mapping: `depends_on` → indigo gem (기대는 곳), `contains` →
+steel gem (담는 것), `related_to`/`uses`/`implements` → slate gem (비슷한 것),
+`is_a` → always-empty **gold** socket (상위 개념 — the new axis, wired in a later
+slice). Completeness score + tier are computed by the pure
+`scoreEnhancement` lib (`src/views/ontology-studio/lib/enhancement-score.ts`).
+
 ## Motion principles
 
 - Initial load: `opacity 0 → 1` + `translateY 8px → 0` (spring)

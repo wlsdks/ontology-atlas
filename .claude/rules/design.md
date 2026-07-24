@@ -51,7 +51,36 @@
 - **스케일 성능 순서:** 레이아웃 precompute/캐시 → LOD 라벨
   (`hideLabelsOnMove`/`hideEdgesOnMove`) → 엣지 컬링 유지 → 5k+ 도메인 클러스터링.
 
+## 스코프 예외 — 온톨로지 스튜디오 (게임 "강화 화면", 소유자 승인 2026-07-24)
+
+`/ontology/studio` 는 노드를 게임 아이템처럼 다루는 몰입형 "강화(enhancement)
+화면" 이다. 노드 하나를 헥사곤 아이템으로 놓고, 온톨로지 관계 하나하나를
+"보석(gem)" 으로 소켓에 끼워 의미를 완성한다. **이 표면 하나에 한해**, 헌장이
+평소 금지하는 게임 에너지 — glow · gradient · aura · particle · rarity color
+(gold/rarity) · shimmer — 를 **허용한다.**
+
+가드레일 (이탈은 결함):
+
+- **오직 `--studio-*` 토큰으로만.** 모든 게임 비주얼은 `app/globals.css` 의
+  `--studio-*` 토큰 + `.studio-stage` 하위 컴포넌트 클래스에서만 나온다. 다른
+  라우트/앱 크롬은 `--studio-*` 를 참조하지 않는다 — 누출되면 결함.
+- **`.studio-stage` 바깥으로 새지 않는다.** 레일·헤더·다른 뷰는 여전히 무채색
+  + 단일 인디고 + 5단계 서피스 헌장을 그대로 지킨다.
+- **나머지 헌장은 전부 유효.** 다크 단일, Pretendard, 타입 램프, 토큰 규율,
+  hardcoded hex 금지(스튜디오 토큰 안에서만 원색 정의 허용).
+- **reduced-motion 존중.** 파티클/오라 펄스/레이 회전/시머는
+  `prefers-reduced-motion` 에서 모두 정지 — 정적 구성만 남아도 완전히 읽혀야
+  한다 (`studio-anim-*` 마커 + globals.css 미디어쿼리).
+
+전체 근거 + 토큰 표: `docs/DESIGN-SYSTEM.md` "Ontology Studio — game-energy
+exception". 이 예외는 이 라우트에만 국한되며, 새 몰입 표면을 만들 때 자동
+확장되지 않는다 — 확장은 별도 소유자 승인이 필요하다.
+
 ## 절대 하지 말 것
+
+> 아래 금지는 앱 전역에 유효하다. **유일한 예외는 위 "온톨로지 스튜디오"
+> 스코프 예외** — `/ontology/studio` 의 `.studio-stage` 안에서 `--studio-*`
+> 토큰으로 표현된 glow/gradient/aura/particle/rarity/shimmer 뿐이다.
 
 - 토폴로지 노드 클릭 → 풀스크린/풀블리드 상세 모달 (ego 팝오버 + focus 로 대체, 상세는 opt-in)
 - 보라 → 핑크 그라디언트
