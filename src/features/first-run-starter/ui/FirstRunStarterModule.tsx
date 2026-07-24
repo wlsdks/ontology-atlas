@@ -9,6 +9,19 @@ import { useSampleSource } from "@/features/vault-sample-source";
 import { CompactCopyButton } from "@/shared/ui";
 import { useFirstRunStarter } from "../model/use-first-run-starter";
 
+/**
+ * P1a-2 승격 (design-council B6 rank17, 2026-07) — 도메인/역량/요소의
+ * 유일한 평문 정의(`searchWidgets.shortcuts.glossary.*`)가 "?" 단축키
+ * 모달 footer 에만 있어 비개발자 첫 접촉에서 안 보였다(진입 마찰). 새
+ * 카피를 쓰지 않고 같은 i18n 키를 여기 INDEX 첫실행 카드에서도 읽어
+ * 항상 보이게 승격한다 — 카드와 ShortcutSheet(`src/widgets/shortcut-sheet`)
+ * 가 같은 메시지 키를 참조하므로 drift 가 나면 두 표면이 동시에 틀어져
+ * 바로 드러난다. 순서 배열은 지도 계층 순서(도메인 → 역량 → 요소)와
+ * 같게 로컬로 한 번 더 선언 — features 는 widgets 를 import 할 수 없어
+ * (FSD 역방향 금지) ShortcutSheet 의 상수를 그대로 가져올 수 없다.
+ */
+const GLOSSARY_TERMS = ["domain", "capability", "element"] as const;
+
 export interface FirstRunStarterModuleProps {
   /** 실데이터 census — TopologyIndexPanel 이 이미 받는 값 그대로 전달. */
   concepts: number;
@@ -42,6 +55,9 @@ export function FirstRunStarterModule({
   domains,
 }: FirstRunStarterModuleProps) {
   const t = useTranslations("firstRunStarter");
+  // rank17 — ShortcutSheet 와 같은 i18n 네임스페이스를 그대로 재사용
+  // (`searchWidgets.shortcuts.glossary.*`). 새 카피 0, 단일 출처.
+  const glossary = useTranslations("searchWidgets.shortcuts.glossary");
   const {
     visible,
     dismiss,
@@ -216,6 +232,37 @@ export function FirstRunStarterModule({
       >
         {t("plainModeHint")}
       </p>
+
+      {/* rank17 (design-council B6) — 도메인/역량/요소 3-용어 정의를 "?"
+          단축키 모달에서 이 첫실행 카드로 승격. disclosure 뒤에 숨기지
+          않고 항상 보이는 3줄 — 완전 초심자가 지도를 처음 열자마자 세
+          단어의 뜻을 알 수 있어야 하는 표면이라 접힘 대상이 아니다. */}
+      <div className="mt-3 border-t border-[color:var(--topology-v2-panel-divider)] pt-3">
+        <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[color:var(--topology-v2-panel-text-quaternary)]">
+          {glossary("title")}
+        </p>
+        <dl data-testid="first-run-starter-glossary" className="space-y-1">
+          {GLOSSARY_TERMS.map((term) => (
+            <div
+              key={term}
+              className="flex flex-wrap items-baseline gap-x-1.5 text-[11px] leading-[1.5]"
+            >
+              <dt className="shrink-0 font-medium text-[color:var(--topology-v2-panel-text-secondary)]">
+                {glossary(`${term}Term`)}
+              </dt>
+              <span
+                aria-hidden="true"
+                className="text-[color:var(--topology-v2-panel-text-quaternary)]"
+              >
+                =
+              </span>
+              <dd className="text-[color:var(--topology-v2-panel-text-tertiary)]">
+                {glossary(`${term}Definition`)}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
 
       {/* P1-① — 코드베이스 자동 부트스트랩(CLI/에이전트 전용)으로 가는 다리.
           위 두 버튼(폴더 열기 / 새 vault 만들기)은 빈 vault 를 여는 경로일
