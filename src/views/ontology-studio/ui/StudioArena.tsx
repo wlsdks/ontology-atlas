@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { Bot, Zap } from "lucide-react";
+import { Bot, Plus, Zap } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import type { StudioGem, StudioGemKind, StudioItem } from "../lib/build-studio-item";
 
@@ -88,6 +88,9 @@ export interface StudioArenaProps {
   onDeferredAction: () => void;
   /** Static particle positions (avoids `Math.random` in render → SSR-stable). */
   particleSeeds: ReadonlyArray<{ left: number; top: number; dur: number; delay: number; opacity: number }>;
+  /** Slice 2 — enter CREATE (만들기) mode. Omitted → the entry is not rendered. */
+  onCreate?: () => void;
+  createLabel?: string;
 }
 
 export function StudioArena({
@@ -96,6 +99,8 @@ export function StudioArena({
   kindLabel,
   onDeferredAction,
   particleSeeds,
+  onCreate,
+  createLabel,
 }: StudioArenaProps) {
   const { node, stats, score, projectedScore } = item;
   const maxed = score.level >= score.pips.length;
@@ -170,9 +175,28 @@ export function StudioArena({
             {labels.mode}
           </span>
         </div>
+        {onCreate ? (
+          <button
+            type="button"
+            onClick={onCreate}
+            data-testid="studio-create-entry"
+            className="ml-auto inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-label font-semibold transition-colors"
+            style={{
+              color: "var(--studio-indigo-bright)",
+              borderColor: "var(--studio-indigo-a45)",
+              background: "var(--studio-indigo-a10)",
+            }}
+          >
+            <Plus size={13} aria-hidden />
+            {createLabel}
+          </button>
+        ) : null}
         <span
           data-testid="studio-close"
-          className="ml-auto rounded-lg border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label text-[color:var(--color-text-quaternary)]"
+          className={cn(
+            "rounded-lg border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label text-[color:var(--color-text-quaternary)]",
+            !onCreate && "ml-auto",
+          )}
         >
           {labels.close}
         </span>

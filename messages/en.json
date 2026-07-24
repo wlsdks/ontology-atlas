@@ -165,7 +165,74 @@
     "agent": "Hand to agent",
     "nextSlice": "Writing opens in the next slice — this view is read-only for now.",
     "emptyTitle": "No node to enhance yet",
-    "emptyBody": "Pick a vault or open the sample data and a node will appear here."
+    "emptyBody": "Pick a vault or open the sample data and a node will appear here.",
+    "create": {
+      "entry": "＋ New node",
+      "mode": "＋ Create",
+      "title": "Create a new node",
+      "close": "Close Esc",
+      "kindLabel": "Kind",
+      "nameLabel": "Name",
+      "namePlaceholder": "New node name — e.g. Cancel payment",
+      "domainLabel": "Parent domain",
+      "domainNone": "No domain",
+      "definitionLabel": "Definition · one line",
+      "definitionPlaceholder": "What this node does, in one line — a clear definition/boundary is what stops duplicates.",
+      "gaugeLabel": "Completeness",
+      "gaugeNote": "{filled} of 6 filled — wire the rest one button at a time on the right.",
+      "assembleTitle": "Assemble relations",
+      "assembleSubtitle": "Where this node attaches · one connection per button",
+      "progress": "{filled}/{total} filled",
+      "relation": {
+        "isA": {
+          "title": "Parent concept",
+          "type": "is-a",
+          "hint": "\"What kind of thing is this?\" — pick one parent to open the axis",
+          "add": "Link a parent"
+        },
+        "dependsOn": {
+          "title": "Depends on",
+          "type": "depends",
+          "hint": "The nodes this one relies on to work",
+          "add": "Add link"
+        },
+        "contains": {
+          "title": "Contains",
+          "type": "contains",
+          "hint": "The elements that implement this node (files · schemas · APIs)",
+          "add": "Add element"
+        },
+        "relates": {
+          "title": "Related",
+          "type": "relates",
+          "hint": "Link it if it substitutes or complements another node",
+          "add": "Add link"
+        }
+      },
+      "isaTag": "new axis",
+      "optionalTag": "optional",
+      "emptyCard": "Nothing yet — wire it with the button",
+      "pickerPlaceholder": "Search existing nodes…",
+      "pickerEmpty": "No matching node",
+      "pickerHint": "Click to attach",
+      "previewLabel": "So far\nit looks like",
+      "previewGhostIsa": "＋ Wire a relation and it appears here",
+      "similarMessage": "A similar node already exists — {title} ({kind} · {domain})",
+      "similarOpen": "Open that node",
+      "similarCreateAnyway": "Create new anyway",
+      "ledgerCount": "things assembled",
+      "pendingNode": "Create node ({kind})",
+      "pendingRelation": "{relation} → {target}",
+      "applyDirect": "Apply directly",
+      "applyDirectSub": "Write to your folder",
+      "applyDirectDisabled": "Open a vault to write",
+      "applyAgent": "Hand to agent",
+      "applyAgentSub": "Copy MCP commands",
+      "appliedDirect": "Created node \"{title}\" in your folder.",
+      "applyFailed": "Couldn't create it — {message}",
+      "copiedAgent": "Copied the MCP commands — paste them to your agent to run.",
+      "copyFailed": "Copy was blocked — please try again."
+    }
   },
   "liveActivity": {
     "live": "Live",

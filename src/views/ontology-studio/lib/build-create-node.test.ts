@@ -1,0 +1,139 @@
+import { describe, expect, it } from "vitest";
+import {
+  buildCreateNodeDoc,
+  buildCreateNodeSlug,
+  buildMcpPacket,
+  candidateFromNode,
+  computeCreateCompleteness,
+  groupRelationRefs,
+  type CreateDraft,
+  type PendingRelation,
+} from "./build-create-node";
+
+const orderCancel = candidateFromNode({ id: "capability:order-cancel", kind: "capability", title: "주문 취소" });
+const gateway = candidateFromNode({ id: "element:gateway", kind: "element", title: "src/payment/gateway.ts" });
+const payment = candidateFromNode({ id: "capability:payment", kind: "capability", title: "결제 처리" });
+
+function draft(overrides: Partial<CreateDraft> = {}): CreateDraft {
+  return {
+    kind: "capability",
+    title: "결제 취소",
+    domainValue: "payments",
+    definition: "결제 후 사용자가 주문을 취소하면 승인을 취소한다",
+    relations: [],
+    ...overrides,
+  };
+}
+
+describe("candidateFromNode", () => {
+  it("computes the folder-prefixed ref the derivation resolves", () => {
+    expect(orderCancel.ref).toBe("capabilities/order-cancel");
+    expect(gateway.ref).toBe("elements/gateway");
+  });
+  it("prefers the display title", () => {
+    const c = candidateFromNode({ id: "domain:auth", kind: "domain", title: "auth", display: "인증" });
+    expect(c.title).toBe("인증");
+    expect(c.ref).toBe("domains/auth");
+  });
+});
+
+describe("buildCreateNodeSlug", () => {
+  it("slugs into the kind folder, preserving Korean", () => {
+    expect(buildCreateNodeSlug({ kind: "capability", title: "결제 취소" })).toBe("capabilities/결제-취소");
+  });
+  it("returns null when the title has no slug-able characters", () => {
+    expect(buildCreateNodeSlug({ kind: "capability", title: "!!!" })).toBeNull();
+  });
+});
+
+describe("groupRelationRefs", () => {
+  it("groups by frontmatter key in card order and dedupes", () => {
+    const relations: PendingRelation[] = [
+      { type: "dependsOn", candidate: orderCancel },
+      { type: "dependsOn", candidate: orderCancel }, // dup
+      { type: "contains", candidate: gateway },
+      { type: "isA", candidate: payment },
+    ];
+    expect(groupRelationRefs(relations)).toEqual([
+      { key: "broader", refs: ["capabilities/payment"] },
+      { key: "dependencies", refs: ["capabilities/order-cancel"] },
+      { key: "contains", refs: ["elements/gateway"] },
+    ]);
+  });
+});
+
+describe("buildCreateNodeDoc", () => {
+  it("serializes the assembled node with runtime-read relation keys", () => {
+    const { slug, markdown } = buildCreateNodeDoc(
+      draft({
+        relations: [
+          { type: "dependsOn", candidate: orderCancel },
+          { type: "contains", candidate: gateway },
+          { type: "isA", candidate: payment },
+        ],
+      }),
+    );
+    expect(slug).toBe("capabilities/결제-취소");
+    expect(markdown).toContain("kind: capability");
+    expect(markdown).toContain("domain: payments");
+    expect(markdown).toContain("title: 결제 취소");
+    // dependsOn writes `dependencies` (dogfood + runtime convention, not depends_on)
+    expect(markdown).toContain("dependencies: [capabilities/order-cancel]");
+    expect(markdown).toContain("contains: [elements/gateway]");
+    // is_a is additive as `broader:` (S3 wires validation)
+    expect(markdown).toContain("broader: [capabilities/payment]");
+    expect(markdown).toContain("definition: 결제 후");
+    expect(markdown).toContain("# 결제 취소");
+  });
+
+  it("omits domain for project/domain kinds", () => {
+    const { markdown } = buildCreateNodeDoc(draft({ kind: "domain", title: "결제", domainValue: null }));
+    expect(markdown).not.toContain("domain:");
+  });
+
+  it("throws on an empty title", () => {
+    expect(() => buildCreateNodeDoc(draft({ title: "   " }))).toThrow();
+  });
+});
+
+describe("buildMcpPacket", () => {
+  it("reflects the assembled node and its relations as add_concept + add_relation", () => {
+    const packet = buildMcpPacket(
+      draft({
+        relations: [
+          { type: "dependsOn", candidate: orderCancel },
+          { type: "isA", candidate: payment },
+        ],
+      }),
+    );
+    expect(packet).toContain('add_concept(slug: "capabilities/결제-취소", kind: "capability", title: "결제 취소", domain: "payments", definition: "결제 후');
+    expect(packet).toContain('add_relation(from: "capabilities/결제-취소", to: "capabilities/order-cancel", type: "depends_on")');
+    expect(packet).toContain('add_relation(from: "capabilities/결제-취소", to: "capabilities/payment", type: "is_a")');
+  });
+});
+
+describe("computeCreateCompleteness", () => {
+  it("is 33% with name + one relation (2 of 6 checkpoints)", () => {
+    const c = computeCreateCompleteness(
+      draft({ definition: "", relations: [{ type: "dependsOn", candidate: orderCancel }] }),
+    );
+    expect(c.filledCount).toBe(2);
+    expect(c.percent).toBe(33);
+    expect(c.pips[0]).toBe("on"); // name
+    expect(c.pips[1]).toBe("next"); // definition is the next gap
+  });
+  it("reaches 100% when every checkpoint is filled", () => {
+    const c = computeCreateCompleteness(
+      draft({
+        relations: [
+          { type: "isA", candidate: payment },
+          { type: "dependsOn", candidate: orderCancel },
+          { type: "contains", candidate: gateway },
+          { type: "relates", candidate: payment },
+        ],
+      }),
+    );
+    expect(c.percent).toBe(100);
+    expect(c.pips.every((p) => p === "on")).toBe(true);
+  });
+});

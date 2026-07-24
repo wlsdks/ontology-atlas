@@ -1,0 +1,237 @@
+/**
+ * Studio CREATE (만들기) mode — pure, deterministic model for assembling a
+ * brand-new ontology node and its typed relations, then serializing that draft
+ * two ways: (1) a vault `.md` document for the DIRECT-APPLY path (written to the
+ * user's disk via `createDoc`), and (2) a copyable MCP command packet for the
+ * DELEGATE path (`에이전트에게 맡기기`).
+ *
+ * Slice 2 of the Ontology Studio track. Enhance (Slice 1) reads ONE existing
+ * node; Create ASSEMBLES a new one by clicking relation cards. The two apply
+ * routes keep the single source of truth intact — the vault (or the agent that
+ * runs the packet) is always the writer; this module only produces strings.
+ *
+ * Frontmatter relation keys are the ones the RUNTIME derivation
+ * (`deriveOntologyFromVault`) actually reads so a direct-applied node shows up
+ * on the map immediately:
+ *   - contains   → `contains`
+ *   - dependsOn  → `dependencies`  (matches the dogfood vault convention +
+ *                  runtime derive — schema.mjs's `depends_on` alias is a known
+ *                  drift; the validator accepts both)
+ *   - relates    → `relates`
+ *   - isA        → `broader`       (S3 additive — the runtime does not derive an
+ *                  is_a edge yet; the key is written so S3 can wire validation)
+ * The definition is written as `definition:` (S3 additive — full validation lands
+ * in S3; today it is an inert, portable frontmatter fact).
+ */
+
+import { slugify } from "@/shared/lib/slugify";
+import { vaultFolderForKind } from "@/entities/docs-vault";
+
+/** The four node kinds a user can assemble in Create mode (project → element). */
+export const CREATE_NODE_KINDS = ["project", "domain", "capability", "element"] as const;
+export type CreateNodeKind = (typeof CREATE_NODE_KINDS)[number];
+
+/**
+ * Relation cards, in display order: is_a (the new axis) first, then the three
+ * relations the enhance surface already renders as gems.
+ */
+export const CREATE_RELATION_TYPES = ["isA", "dependsOn", "contains", "relates"] as const;
+export type CreateRelationType = (typeof CREATE_RELATION_TYPES)[number];
+
+/** Relation type → the frontmatter array key the runtime derivation reads. */
+export const RELATION_FRONTMATTER_KEY: Record<CreateRelationType, string> = {
+  contains: "contains",
+  dependsOn: "dependencies",
+  relates: "relates",
+  isA: "broader",
+};
+
+/** Relation type → the MCP `add_relation` edge type (for the agent packet). */
+export const RELATION_EDGE_TYPE: Record<CreateRelationType, string> = {
+  contains: "contains",
+  dependsOn: "depends_on",
+  relates: "related_to",
+  isA: "is_a",
+};
+
+/** A pickable existing node — the frontmatter-writable `ref` is precomputed. */
+export interface CreateCandidate {
+  /** Graph node id, e.g. `capability:mcp-server`. */
+  id: string;
+  title: string;
+  kind: string;
+  /** Folder-prefixed ref the derivation resolves, e.g. `capabilities/mcp-server`. */
+  ref: string;
+}
+
+export interface PendingRelation {
+  type: CreateRelationType;
+  candidate: CreateCandidate;
+}
+
+export interface CreateDraft {
+  kind: CreateNodeKind;
+  title: string;
+  /** Parent domain tail-slug (e.g. `views`) — null for project/domain kinds. */
+  domainValue: string | null;
+  definition: string;
+  relations: PendingRelation[];
+}
+
+/**
+ * Turn an insight graph node (`id = kind:tail`) into a pickable candidate with a
+ * folder-prefixed `ref` the vault derivation can resolve. Falls back to
+ * slugifying the id tail when the id is not `kind:tail` shaped.
+ */
+export function candidateFromNode(node: {
+  id: string;
+  kind: string;
+  title: string;
+  display?: string;
+}): CreateCandidate {
+  const prefix = `${node.kind}:`;
+  const tail = node.id.startsWith(prefix) ? node.id.slice(prefix.length) : slugify(node.id);
+  const ref = `${vaultFolderForKind(node.kind)}/${tail || slugify(node.title)}`;
+  return { id: node.id, title: node.display ?? node.title, kind: node.kind, ref };
+}
+
+/** Whether `kind` expects a parent domain (capability / element). */
+export function kindExpectsDomain(kind: CreateNodeKind): boolean {
+  return kind === "capability" || kind === "element";
+}
+
+/** The vault slug the new node will occupy, or null when the title is unusable. */
+export function buildCreateNodeSlug(draft: Pick<CreateDraft, "kind" | "title">): string | null {
+  const tail = slugify(draft.title);
+  if (!tail) return null;
+  return `${vaultFolderForKind(draft.kind)}/${tail}`;
+}
+
+function quoteYamlScalar(v: string): string {
+  return /[:#[\]{}"',&|*!%@`]/.test(v) ? `"${v.replace(/"/g, '\\"')}"` : v;
+}
+
+/** Dedupe pending relations by (type, candidate.id) preserving first-seen order. */
+function dedupeRelations(relations: readonly PendingRelation[]): PendingRelation[] {
+  const seen = new Set<string>();
+  const out: PendingRelation[] = [];
+  for (const rel of relations) {
+    const key = `${rel.type}:${rel.candidate.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(rel);
+  }
+  return out;
+}
+
+/** Group deduped relation refs by their frontmatter key, in card order. */
+export function groupRelationRefs(relations: readonly PendingRelation[]): Array<{
+  key: string;
+  refs: string[];
+}> {
+  const deduped = dedupeRelations(relations);
+  const out: Array<{ key: string; refs: string[] }> = [];
+  for (const type of CREATE_RELATION_TYPES) {
+    const refs = deduped.filter((r) => r.type === type).map((r) => r.candidate.ref);
+    if (refs.length > 0) out.push({ key: RELATION_FRONTMATTER_KEY[type], refs });
+  }
+  return out;
+}
+
+/**
+ * Serialize the draft into a vault `.md` document (slug + markdown). Reuses the
+ * shared `buildNewNodeDoc` base serialization (identical to /docs + the builder)
+ * and injects the definition + relation-array keys before the closing `---`, so
+ * the base frontmatter (slug/kind/domain/title) stays byte-identical.
+ */
+export function buildCreateNodeDoc(draft: CreateDraft): { slug: string; markdown: string } {
+  const title = draft.title.trim();
+  if (!title) throw new Error("title must not be empty");
+  const slug = buildCreateNodeSlug({ kind: draft.kind, title });
+  if (!slug) throw new Error("title produced an empty slug");
+
+  const extra: string[] = [];
+  const definition = draft.definition.trim();
+  if (definition) extra.push(`definition: ${quoteYamlScalar(definition)}`);
+  for (const { key, refs } of groupRelationRefs(draft.relations)) {
+    extra.push(`${key}: [${refs.join(", ")}]`);
+  }
+
+  const lines: string[] = ["---", `slug: ${slug}`, `kind: ${draft.kind}`];
+  const domain = draft.domainValue?.trim();
+  if (domain && kindExpectsDomain(draft.kind)) lines.push(`domain: ${quoteYamlScalar(domain)}`);
+  lines.push(`title: ${quoteYamlScalar(title)}`);
+  lines.push(...extra);
+  lines.push("---", "", `# ${title}`, "");
+  if (definition) lines.push(definition, "");
+
+  return { slug, markdown: lines.join("\n") };
+}
+
+/**
+ * Build the copyable MCP command packet for the DELEGATE path. This is the ONLY
+ * active write route in read-only / sample mode — the agent runs these calls
+ * against the vault it is registered on.
+ */
+export function buildMcpPacket(draft: CreateDraft): string {
+  const title = draft.title.trim();
+  const slug = buildCreateNodeSlug({ kind: draft.kind, title }) ?? `${draft.kind}s/new-node`;
+  const q = (v: string) => `"${v.replace(/"/g, '\\"')}"`;
+
+  const conceptArgs = [`slug: ${q(slug)}`, `kind: ${q(draft.kind)}`, `title: ${q(title)}`];
+  const domain = draft.domainValue?.trim();
+  if (domain && kindExpectsDomain(draft.kind)) conceptArgs.push(`domain: ${q(domain)}`);
+  const definition = draft.definition.trim();
+  if (definition) conceptArgs.push(`definition: ${q(definition)}`);
+
+  const lines: string[] = [`add_concept(${conceptArgs.join(", ")})`];
+  for (const rel of dedupeRelations(draft.relations)) {
+    lines.push(
+      `add_relation(from: ${q(slug)}, to: ${q(rel.candidate.ref)}, type: ${q(RELATION_EDGE_TYPE[rel.type])})`,
+    );
+  }
+  return lines.join("\n");
+}
+
+/**
+ * Six completeness checkpoints (name · definition · is_a · depends · contains ·
+ * relates) drive the rising gauge. Deterministic so the gauge and the pips never
+ * disagree. Percent = round(filled / 6 · 100).
+ */
+export const CREATE_CHECKPOINTS = 6;
+
+export interface CreateCompleteness {
+  percent: number;
+  filledCount: number;
+  total: number;
+  /** One state per checkpoint: the first unfilled after the filled ones is `next`. */
+  pips: Array<"on" | "next" | "off">;
+}
+
+export function computeCreateCompleteness(draft: CreateDraft): CreateCompleteness {
+  const has = (type: CreateRelationType) => draft.relations.some((r) => r.type === type);
+  const checks = [
+    draft.title.trim().length > 0,
+    draft.definition.trim().length > 0,
+    has("isA"),
+    has("dependsOn"),
+    has("contains"),
+    has("relates"),
+  ];
+  const filledCount = checks.filter(Boolean).length;
+  let nextAssigned = false;
+  const pips = checks.map((filled) => {
+    if (filled) return "on" as const;
+    if (!nextAssigned) {
+      nextAssigned = true;
+      return "next" as const;
+    }
+    return "off" as const;
+  });
+  return {
+    percent: Math.round((filledCount / CREATE_CHECKPOINTS) * 100),
+    filledCount,
+    total: CREATE_CHECKPOINTS,
+    pips,
+  };
+}

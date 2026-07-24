@@ -165,7 +165,74 @@
     "agent": "에이전트에게 맡기기",
     "nextSlice": "쓰기는 다음 슬라이스에서 열립니다 — 지금은 읽기 전용이에요.",
     "emptyTitle": "강화할 노드가 아직 없어요",
-    "emptyBody": "vault 를 선택하거나 예시 데이터를 열면 강화할 노드가 나타납니다."
+    "emptyBody": "vault 를 선택하거나 예시 데이터를 열면 강화할 노드가 나타납니다.",
+    "create": {
+      "entry": "＋ 노드 만들기",
+      "mode": "＋ 만들기",
+      "title": "새 노드 만들기",
+      "close": "닫기 Esc",
+      "kindLabel": "종류",
+      "nameLabel": "이름",
+      "namePlaceholder": "새 노드 이름 — 예: 결제 취소",
+      "domainLabel": "소속 도메인",
+      "domainNone": "도메인 없음",
+      "definitionLabel": "정의 · 한 줄",
+      "definitionPlaceholder": "이 노드가 하는 일을 한 줄로 — 정의·경계가 중복을 막는 핵심이에요.",
+      "gaugeLabel": "완성도",
+      "gaugeNote": "6가지 중 {filled}가지 채움 — 오른쪽에서 버튼으로 하나씩 이어요.",
+      "assembleTitle": "관계 조립",
+      "assembleSubtitle": "이 노드가 어디에 붙는지 · 버튼으로 하나씩 이어요",
+      "progress": "{filled}/{total} 채움",
+      "relation": {
+        "isA": {
+          "title": "상위 개념",
+          "type": "is-a",
+          "hint": "\"이 노드는 무엇의 한 종류인가?\" — 상위를 하나 고르면 축이 생겨요",
+          "add": "상위 개념 잇기"
+        },
+        "dependsOn": {
+          "title": "기대는 곳",
+          "type": "depends",
+          "hint": "이 노드가 동작하려고 기대는 다른 노드",
+          "add": "연결 추가"
+        },
+        "contains": {
+          "title": "담는 것",
+          "type": "contains",
+          "hint": "이 노드를 구현하는 요소(파일·스키마·API)",
+          "add": "요소 담기"
+        },
+        "relates": {
+          "title": "비슷한 것",
+          "type": "relates",
+          "hint": "대체·보완 관계라면 이어요",
+          "add": "연결 추가"
+        }
+      },
+      "isaTag": "새 축",
+      "optionalTag": "선택",
+      "emptyCard": "아직 없음 — 버튼으로 이어요",
+      "pickerPlaceholder": "기존 노드 검색…",
+      "pickerEmpty": "맞는 노드가 없어요",
+      "pickerHint": "클릭해서 붙이기",
+      "previewLabel": "지금까지\n이런 모양",
+      "previewGhostIsa": "＋ 관계를 이으면 여기 나타나요",
+      "similarMessage": "비슷한 노드가 이미 있어요 — {title} ({kind} · {domain})",
+      "similarOpen": "그 노드 열기",
+      "similarCreateAnyway": "그래도 새로 만들기",
+      "ledgerCount": "가지 만들어짐",
+      "pendingNode": "노드 생성 ({kind})",
+      "pendingRelation": "{relation} → {target}",
+      "applyDirect": "직접 적용",
+      "applyDirectSub": "내 폴더에 쓰기",
+      "applyDirectDisabled": "vault 를 열어야 써요",
+      "applyAgent": "에이전트에게 맡기기",
+      "applyAgentSub": "MCP 명령 복사",
+      "appliedDirect": "\"{title}\" 노드를 내 폴더에 만들었어요.",
+      "applyFailed": "만들지 못했어요 — {message}",
+      "copiedAgent": "MCP 명령을 복사했어요 — 에이전트에 붙여넣어 실행하세요.",
+      "copyFailed": "복사가 막혔어요 — 다시 시도해 주세요."
+    }
   },
   "liveActivity": {
     "live": "실시간",
