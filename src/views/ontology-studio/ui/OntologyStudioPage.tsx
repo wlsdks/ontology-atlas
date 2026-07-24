@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { parseOntologyStudioEditParam } from "@/entities/knowledge-graph";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { useLocalVault } from "@/features/docs-vault-local";
@@ -321,6 +322,33 @@ export function OntologyStudioPage() {
       changes,
     );
   }, [enhanceItem, changes]);
+
+  // Slice 6 — 지도 엣지 딥링크. `?edit=<relation>:<targetId>` arrives when a map
+  // edge's "공방에서 이 관계 고치기" is clicked. Resolve the target satellite on the
+  // focal's BASE bearings (not the projection — a deep-link opens on saved data)
+  // so the stage can open THAT relation's edit card with the satellite highlighted.
+  const editRequest = useMemo(
+    () => parseOntologyStudioEditParam(searchParams.get("edit")),
+    [searchParams],
+  );
+  const editTarget = useMemo(() => {
+    if (!editRequest || !enhanceItem) return null;
+    const group = enhanceItem.bearings[BEARING_OF[editRequest.relation]];
+    const neighbor = group.neighbors.find((n) => n.id === editRequest.targetId);
+    return neighbor ? { relation: editRequest.relation, neighbor } : null;
+  }, [editRequest, enhanceItem]);
+  // Stale deep-link (edge no longer on the focal) → one quiet honest toast, then
+  // just show the node. Guarded to fire once per (focal, edit) so re-renders and
+  // data loads don't re-toast. Only fires once graph data is present (enhanceItem
+  // resolved) so a mid-load miss isn't mistaken for a stale link.
+  const staleEditToastRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!editRequest || !enhanceItem || editTarget) return;
+    const key = `${enhanceFocalId ?? ""}|${searchParams.get("edit") ?? ""}`;
+    if (staleEditToastRef.current === key) return;
+    staleEditToastRef.current = key;
+    toast.show(t("staleEditLink"), "info");
+  }, [editRequest, enhanceItem, editTarget, enhanceFocalId, searchParams, toast, t]);
   // The picker's discovery surface (추천 + 둘러보기) for a socket's relation —
   // excludes self + already-connected + staged targets. Read-only, deterministic.
   const discoveryFor = useCallback(
@@ -678,6 +706,7 @@ export function OntologyStudioPage() {
       editabilityOf={(relation, neighbor) =>
         writable ? isRelationEditableFromFocal(focalDoc?.frontmatter, relation, neighbor) : true
       }
+      initialEdit={editTarget}
       bearingLabelFor={relationShort}
       pendingNeighborIds={projection.pendingTargetIds}
       summary={summary}
@@ -691,7 +720,9 @@ export function OntologyStudioPage() {
       searchNodes={candidates}
       onOpenNode={openNode}
       onSaveAndOpenNode={commitThenOpen}
-      arrivedFrom={backTo?.id ?? null}
+      // Slice 6 — a deep-link arrival highlights its edit target satellite (reuses
+      // the Slice 4 arrival ring); otherwise the walked-from node keeps the ring.
+      arrivedFrom={editTarget?.neighbor.id ?? backTo?.id ?? null}
       backTo={backTo}
       moreRelationsSoon={t("moreRelationsSoon")}
     />

@@ -202,6 +202,14 @@ export interface StudioCompassProps {
   onRemove?: (relation: StudioRelation, neighbor: StudioSatellite) => void;
   /** Whether this neighbor is editable from the FOCAL node's own frontmatter. */
   editabilityOf?: (relation: StudioRelation, neighbor: StudioSatellite) => boolean;
+  /**
+   * Slice 6 — 지도 엣지 딥링크. A `?edit=<relation>:<targetId>` arrival seeds this
+   * so the stage opens with THAT relation's edit card already open (same card as
+   * clicking ···). The page resolves the satellite (null when the edge is stale)
+   * and pairs this with `arrivedFrom` on the same id for the arrival highlight.
+   * Keyed remount per focal makes it a one-shot mount seed.
+   */
+  initialEdit?: { relation: StudioRelation; neighbor: StudioSatellite } | null;
   /** Plain bearing name for a relation (retype option labels). */
   bearingLabelFor?: (relation: StudioRelation) => string;
   /** neighbor ids with a staged (not-yet-saved) change → "저장 대기" cue. */
@@ -414,8 +422,13 @@ export function StudioCompass(props: StudioCompassProps) {
   const [query, setQuery] = useState("");
   /** Which filled lane has its overflow ("+N 더 보기") list popover open. */
   const [openFold, setOpenFold] = useState<StudioBearing | null>(null);
-  /** Which existing relation has its inline edit card open (Slice 1). */
-  const [openEdit, setOpenEdit] = useState<{ relation: StudioRelation; neighbor: StudioSatellite } | null>(null);
+  /** Which existing relation has its inline edit card open (Slice 1). Slice 6
+   * seeds it from a `?edit=` deep-link so the card opens on arrival — the stage
+   * remounts per focal (`key` in the page), so this initializer runs once per
+   * focal, never re-seeding on unrelated re-renders. */
+  const [openEdit, setOpenEdit] = useState<{ relation: StudioRelation; neighbor: StudioSatellite } | null>(
+    props.initialEdit ?? null,
+  );
   /** exit confirm popover (Slice 2 escape hatch). */
   const [confirmExit, setConfirmExit] = useState(false);
   /** record-summary expanded (Slice 2 — "이렇게 기록됩니다"). */

@@ -325,6 +325,22 @@ describe("StudioCompass — 지지대 편집 (edit existing relations)", () => {
     renderEditable({ pendingNeighborIds: new Set(["el:x"]) });
     expect(screen.getByTestId("studio-satellite-right")).toHaveTextContent("unsaved");
   });
+
+  it("Slice 6 — a `?edit=` deep-link opens the relation's edit card on mount", () => {
+    // no click: the card is seeded open from the deep-link arrival.
+    renderEditable({
+      initialEdit: { relation: "dependsOn", neighbor: NEIGHBOR },
+      arrivedFrom: "el:x",
+    });
+    expect(screen.getByTestId("studio-edit-card")).toBeInTheDocument();
+    // and the target satellite carries the arrival highlight ring.
+    expect(screen.getByTestId("studio-arrival-right")).toBeInTheDocument();
+  });
+
+  it("Slice 6 — no deep-link leaves the edit card closed (opt-in click only)", () => {
+    renderEditable();
+    expect(screen.queryByTestId("studio-edit-card")).not.toBeInTheDocument();
+  });
 });
 
 describe("StudioCompass — 평문 기록 요약 (record summary)", () => {

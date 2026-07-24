@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T15:45:52.182Z",
+  "generatedAt": "2026-07-24T17:31:42.774Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-25 — 공방 확장 완성: 산책·델타 미리보기·지도 엣지 딥링크 (Slice 4~6)",
+          "slug": "2026-07-25-공방-확장-완성-산책델타-미리보기지도-엣지-딥링크-slice-46"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-25 — 공방 소켓 피커: 검색-우선 → 발견-우선 (Slice 3)",
+          "slug": "2026-07-25-공방-소켓-피커-검색-우선-발견-우선-slice-3"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-25 — 스튜디오 → 공방 개명 (\"지도에서 발견하고, 공방에서 완성한다\")",
           "slug": "2026-07-25-스튜디오-공방-개명-지도에서-발견하고-공방에서-완성한다"
         },
@@ -4753,9 +4763,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. /ontology/studio 쓰기 표면의 사용자 노출 이름을 \"스튜디오\"에서 \"공방\"(영문 Workshop)으로 바꿨다 — fable 네이밍 판정, 소유",
-      "wordCount": 37801,
-      "updatedAt": "2026-07-24T15:44:48.281Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. fable 기획 \"발견 → 연결 → 확인 → 기록\" 루프의 마지막 세 슬라이스. 이로써 \"여러 노드 간 관계 수정 + 미리보기 + 연결 발견\"이 모드 증식",
+      "wordCount": 38117,
+      "updatedAt": "2026-07-24T17:31:32.807Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5334,7 +5344,7 @@
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
       "wordCount": 13101,
-      "updatedAt": "2026-07-24T15:44:15.834Z",
+      "updatedAt": "2026-07-25T00:53:21+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -5883,7 +5893,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
       "wordCount": 12088,
-      "updatedAt": "2026-07-24T15:43:23.039Z",
+      "updatedAt": "2026-07-25T00:53:21+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -7419,7 +7429,7 @@
       ],
       "excerpt": "/ontology/studio?node=<graph-node-id 는 나침 무대를 그 vault 노드를 focal 아이템으로 놓은 상태로 연다 (OntologyStudioPage 의 requestedNode). 요청한 id 가 현재 그래프에 있으면 그 노드가, 없으면 selectDefaultStudioNodeId 의 기본 노드가 무대 중앙에 놓인다. 은퇴한 xyflow 빌더의 /ontology/edit?node= 딥링크가 하던 \"검사에서 편집으로 바로 넘기기\" 역할을 이어받는다. /topology 의 detail 패널 / Focus / Path / Health 핸드오",
       "wordCount": 116,
-      "updatedAt": "2026-07-24T15:38:54.835Z",
+      "updatedAt": "2026-07-25T00:53:21+09:00",
       "linksOut": []
     },
     {
@@ -8357,7 +8367,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (canvas-2D topology-map-v2 spatial network — /, /topology), 둘러보기 (/ontology 는 토폴로지 INDEX 로 흡수된 얇은 리다이렉트 + 노드 detail), 공방 (나침 무대 /ontology/studio — 노드 의미를 관계 소켓으로 완성해 실제 frontmatter 를 쓰는 표면; 구 xyflow ERD 빌더 /ontology/edit 는 2026-07-24 은퇴하고 공방으로 리다이렉트). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Workshop ",
       "wordCount": 85,
-      "updatedAt": "2026-07-24T15:38:12.616Z",
+      "updatedAt": "2026-07-25T00:53:21+09:00",
       "linksOut": []
     },
     {
@@ -9212,7 +9222,7 @@
       ],
       "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. 정체성 (2026-07): agent-native, human-sovereign. 에이전트를 위한 메모리가 아니라 에이전트가 1급 사용자인 공유 의미 계층 — 에이전트는 MCP/CLI 로 신선도를 유지하는 엔진이자 최대 소비자, 사람은 평문 마크다운·git diff·로컬 디스크 진실원을 통한 의미의 최종 결정권자. 훅은 에이전트 통증(\"코드베이스 장기 구조를 까먹는다\"), 본질은 공유 계층. 이 프로젝트의 ontology 는 비즈니",
       "wordCount": 180,
-      "updatedAt": "2026-07-24T20:43:12+09:00",
+      "updatedAt": "2026-07-25T00:53:21+09:00",
       "linksOut": []
     },
     {

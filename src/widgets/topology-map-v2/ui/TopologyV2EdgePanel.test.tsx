@@ -21,7 +21,7 @@ const labels = {
   openDoc: "Open doc",
 };
 
-function renderPanel() {
+function renderPanel(studioEditHref: string | null = "/ontology/studio") {
   return render(
     <TopologyV2EdgePanel
       sentence="A depends on B"
@@ -33,7 +33,7 @@ function renderPanel() {
       why={null}
       declaredBy={null}
       updatedAtLabel={null}
-      studioEditHref="/ontology/studio"
+      studioEditHref={studioEditHref}
       labels={labels}
       onSelectNode={() => {}}
       onClose={() => {}}
@@ -68,5 +68,24 @@ describe("TopologyV2EdgePanel — focus contract (H3 P1)", () => {
     expect(document.activeElement).toBe(trigger);
 
     trigger.remove();
+  });
+});
+
+describe("TopologyV2EdgePanel — 공방 편집 딥링크 (Slice 6)", () => {
+  it("renders the '고치기' action pointing at the deep-link when editable", () => {
+    renderPanel("/ontology/studio/?node=capability%3Aa&edit=dependsOn:capability%3Ab");
+    const edit = screen.getByTestId("topology-v2-edge-edit");
+    expect(edit).toHaveTextContent("Edit relation");
+    expect(edit).toHaveAttribute(
+      "href",
+      "/ontology/studio/?node=capability%3Aa&edit=dependsOn:capability%3Ab",
+    );
+  });
+
+  it("omits the action for a non-editable edge (null href) — no dead affordance", () => {
+    renderPanel(null);
+    expect(screen.queryByTestId("topology-v2-edge-edit")).not.toBeInTheDocument();
+    // the rest of the panel still renders.
+    expect(screen.getByTestId("topology-v2-edge-sentence")).toBeInTheDocument();
   });
 });
