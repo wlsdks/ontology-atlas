@@ -163,6 +163,7 @@
     "enhance": "Enhance",
     "enhanceSub": "Apply directly · to your folder",
     "agent": "Hand to agent",
+    "mapAria": "Map of the {title} node and its directly connected neighbors — use the list to the right for keyboard navigation.",
     "nextSlice": "Writing opens in the next slice — this view is read-only for now.",
     "emptyTitle": "No node to enhance yet",
     "emptyBody": "Pick a vault or open the sample data and a node will appear here.",
