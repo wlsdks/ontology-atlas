@@ -107,6 +107,7 @@ export interface StudioCompassLabels {
   // ── Slice 1 — 지지대 편집 (edit existing relations) ──
   edit: string; // "···" affordance aria-label / tooltip
   editTitle: string; // card heading, e.g. "이 관계 고치기"
+  close: string; // shared accessible name for icon-only inline-card close controls
   editRetypeHeading: string; // "다른 방향으로 옮기기"
   editMoveTo: (bearingLabel: string) => string; // per retype option label
   editDelete: string; // "관계 끊기"
@@ -529,6 +530,20 @@ export function StudioCompass(props: StudioCompassProps) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [previewOpen]);
+
+  // The relation edit card is an anchored nonmodal surface: keyboard focus
+  // remains on the satellite's edit trigger, so one global Escape closes only
+  // this card and naturally leaves focus at that trigger.
+  useEffect(() => {
+    if (!openEdit) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      setOpenEdit(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [openEdit]);
 
   const previewAvailable = Boolean(props.deltaPreview?.hasDelta);
 
@@ -1378,7 +1393,12 @@ function LaneOverflowList({
         <span className="min-w-0 truncate text-caption font-semibold text-[color:var(--color-text-secondary)] [word-break:keep-all]">
           {labels.foldTitle(view.laneLabel, view.neighbors.length)}
         </span>
-        <button type="button" onClick={onClose} className="ml-auto flex-none text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]">
+        <button
+          type="button"
+          aria-label={labels.close}
+          onClick={onClose}
+          className="ml-auto flex-none text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]"
+        >
           <X size={13} aria-hidden />
         </button>
       </div>
@@ -1482,7 +1502,12 @@ function InlineEditCard({
         <span className="min-w-0 flex-1 truncate text-caption font-semibold text-[color:var(--color-text-secondary)] [word-break:keep-all]">
           {labels.editTitle}
         </span>
-        <button type="button" onClick={onClose} className="flex-none text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]">
+        <button
+          type="button"
+          aria-label={labels.close}
+          onClick={onClose}
+          className="flex-none text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]"
+        >
           <X size={13} aria-hidden />
         </button>
       </div>
@@ -1696,7 +1721,12 @@ function InlinePicker({
       <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
         <span className="text-caption font-semibold text-[color:var(--color-text-secondary)]">{labels.pickerTitle(question)}</span>
         <span className="text-label text-[color:var(--color-text-quaternary)]">{labels.pickerSub}</span>
-        <button type="button" onClick={onClose} className="ml-auto text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]">
+        <button
+          type="button"
+          aria-label={labels.close}
+          onClick={onClose}
+          className="ml-auto text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]"
+        >
           <X size={13} aria-hidden />
         </button>
       </div>

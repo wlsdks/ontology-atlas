@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
 import type { CreateCandidate } from "../lib/build-create-node";
 import type { StudioRelation } from "../lib/build-studio-item";
@@ -45,6 +45,7 @@ const labels: StudioCompassLabels = {
   createSimilarAnyway: "anyway",
   edit: "edit",
   editTitle: "edit this relation",
+  close: "close",
   editRetypeHeading: "move to",
   editMoveTo: (b) => `move to ${b}`,
   editDelete: "cut relation",
@@ -154,7 +155,9 @@ describe("StudioCompass — enhance", () => {
     expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("studio-socket-up"));
-    expect(screen.getByTestId("studio-picker")).toBeInTheDocument();
+    const picker = screen.getByTestId("studio-picker");
+    expect(picker).toBeInTheDocument();
+    expect(within(picker).getByRole("button", { name: "close" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("studio-picker-row-capability:server-interface"));
     expect(onFill).toHaveBeenCalledWith("isA", CANDIDATE);
@@ -250,6 +253,7 @@ describe("StudioCompass — navigation affordances", () => {
     fireEvent.click(screen.getByTestId("studio-lane-more-right"));
     const list = screen.getByTestId("studio-lane-list-right");
     expect(list).toBeInTheDocument();
+    expect(within(list).getByRole("button", { name: "close" })).toBeInTheDocument();
     // all five neighbors are listed, including the folded ones.
     fireEvent.click(screen.getByTestId("studio-lane-row-el:4"));
     expect(onOpenNode).toHaveBeenCalledWith("el:4");
@@ -300,6 +304,19 @@ describe("StudioCompass — 지지대 편집 (edit existing relations)", () => {
     // retype option shows the plain bearing label, not the current bearing.
     fireEvent.click(screen.getByTestId("studio-edit-retype-contains"));
     expect(onRetype).toHaveBeenCalledWith("dependsOn", "contains", NEIGHBOR);
+  });
+
+  it("names the edit-card close control and Escape closes back to its trigger", () => {
+    renderEditable();
+    const trigger = screen.getByTestId("studio-edit-right");
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    expect(screen.getByRole("button", { name: "close" })).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(screen.queryByTestId("studio-edit-card")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 
   it("cut takes a 1-step confirm before firing onRemove", () => {

@@ -167,6 +167,7 @@ export function OntologyStudioPage() {
       // Slice 1 — edit existing relations
       edit: t("edit"),
       editTitle: t("editTitle"),
+      close: t("preview.close"),
       editRetypeHeading: t("editRetypeHeading"),
       editMoveTo: (bearingLabelText) => t("editMoveTo", { bearing: bearingLabelText }),
       editDelete: t("editDelete"),

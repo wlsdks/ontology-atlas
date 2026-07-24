@@ -16,3 +16,10 @@ The Relief-family URL modes (`overview` / `focus` / `path` / `health`) are all s
 - **health** (previously a queue-count chip on the old rail) has no map entry point at all now — the repair queue lives on `/ontology/insights`' relations tab, directly below the agent-readiness gauge, reusing the same `buildOntologyHealthActionTarget` picking rule the map used to use (now hoisted to `entities/knowledge-graph`) so the "next repair target" can't drift between the two surfaces.
 
 The Graph view (`mode=graph`) is the Obsidian-style living graph: the full ontology node set under an always-on d3-force simulation (Web Worker), single-node elastic drag (grabbed node pins to the cursor, neighbors respond through link springs, release hands the node back to physics), hover ego highlight, and an always-visible `contains` backbone drawn with opaque pre-blended ink tokens (`--topology-graph-edge-*`) because the WebGL edge compositing renders low-alpha colors as effectively opaque. Node clicks keep graph mode (no focus hijack); deep inspection hands off to the Relief views.
+
+**Agent handoff source boundary (2026-07-25).** The node datasheet's copied
+handoff now names its source explicitly. A loaded local vault emits
+`source: loaded-vault` and may propose `get_concept` followed by a guarded
+write. The bundled read-only sample emits `source: read-only-sample`, a
+`write_guard`, and only asks the user to open a real markdown vault before
+copying again. Sample facts therefore cannot masquerade as writable MCP facts.

@@ -35,3 +35,9 @@ mission v2 의 *사람 + AI agent 양립* 약속의 코드 구현. 은퇴한 xyf
 
 folder mapping: capability→capabilities, element→elements, domain→domains,
 project→projects, 그 외 kind+s.
+
+Anchored relation-edit, missing-socket picker, and overflow-list cards remain
+nonmodal parts of the compass stage. Their icon close controls expose the
+shared localized `close` name to assistive technology. While a relation-edit
+card is open, `Escape` dismisses only that card and leaves the ENHANCE context
+intact; this is an interaction contract and does not change frontmatter data.

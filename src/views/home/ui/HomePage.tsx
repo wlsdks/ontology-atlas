@@ -636,6 +636,8 @@ export function HomePage() {
   // Tauri 데스크톱이면 vault 절대 경로(브리지 활성), 웹 FSA 핸들이면 null →
   // 타일/패널이 세션 changeset 기반으로 정직하게 강등한다.
   const gitVaultPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
+  const handoffSource: "loaded-vault" | "read-only-sample" =
+    vault.status === "loaded" ? "loaded-vault" : "read-only-sample";
   // 레일 하단 설정 슬롯 — 발자취 타일 + 설정 기어를 한 fragment 로 등록.
   // (perf/persistent-shell: 레일은 layout 상주, 이 페이지가 슬롯만 주입.)
   const navRailSettingsSlot = useMemo(
@@ -1407,6 +1409,7 @@ export function HomePage() {
   const { nodeFocus, v2DatasheetModel } = useNodeDatasheetModel({
     selectedOntologyNode,
     insight: ontologyInsight,
+    handoffSource,
     authoredSignificance,
     docFreshnessIndex,
     updatedAgoNowMs,
@@ -1528,6 +1531,7 @@ export function HomePage() {
     const groups = buildV2ConnectionGroups(connections);
     const evidenceRows = buildV2EvidenceRows(node.evidenceIds);
     const handoffText = formatV2HandoffText({
+      source: handoffSource,
       slug,
       kind: node.kind,
       domainTitle: null,
@@ -1547,7 +1551,7 @@ export function HomePage() {
       studioEditHref: buildOntologyStudioNodeHrefFromGraphId(node.id),
       handoffText,
     };
-  }, [contextMenuNode, ontologyInsight]);
+  }, [contextMenuNode, handoffSource, ontologyInsight]);
   // A1 "데이터시트 확장판" 전체 상세 — TopologyOntologyDrawer(배지 수프 +
   // reach 쿼리빌더 + collaborator brief)를 대체. groups/reach 는 compact
   // datasheet 와 동일 소스(buildV2Connections 파생, buildOntologyReachability

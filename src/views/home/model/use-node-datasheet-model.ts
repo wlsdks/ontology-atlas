@@ -41,6 +41,8 @@ import {
 export interface UseNodeDatasheetModelArgs {
   selectedOntologyNode: KnowledgeGraphNode | null;
   insight: { nodes: readonly KnowledgeGraphNode[]; edges: readonly KnowledgeGraphEdge[] } | null;
+  /** Static samples are facts to inspect, never an MCP write target. */
+  handoffSource: "loaded-vault" | "read-only-sample";
   /** frontmatter `significance` (approach C override) — 있으면 derive 대신. */
   authoredSignificance: string | null;
   docFreshnessIndex: ReadonlyMap<string, string>;
@@ -103,6 +105,7 @@ export interface NodeDatasheetDerivation {
 export function useNodeDatasheetModel({
   selectedOntologyNode,
   insight,
+  handoffSource,
   authoredSignificance,
   docFreshnessIndex,
   updatedAgoNowMs,
@@ -163,6 +166,7 @@ export function useNodeDatasheetModel({
       evidence: evidenceRows.length,
     };
     const handoffText = formatV2HandoffText({
+      source: handoffSource,
       slug,
       kind: nodeFocus.kind,
       domainTitle: nodeFocusData?.significance.ownerDomainTitle ?? null,
@@ -240,6 +244,7 @@ export function useNodeDatasheetModel({
     nodeFocus,
     selectedOntologyNode,
     insight,
+    handoffSource,
     nodeFocusData,
     docFreshnessIndex,
     updatedAgoNowMs,

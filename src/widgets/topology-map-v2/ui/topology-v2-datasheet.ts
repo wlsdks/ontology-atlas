@@ -326,6 +326,8 @@ export function slugDisplaySegment(slug: string): string {
 }
 
 export interface V2HandoffInput {
+  /** The graph facts and the MCP write target must describe the same source. */
+  source: "loaded-vault" | "read-only-sample";
   slug: string;
   kind: string;
   domainTitle: string | null;
@@ -359,7 +361,12 @@ export interface V2HandoffInput {
 export function formatV2HandoffText(input: V2HandoffInput): string {
   const list = (names: readonly string[]) =>
     names.length > 0 ? names.join(", ") : "-";
+  const next =
+    input.source === "loaded-vault"
+      ? `next: get_concept("${input.slug}") → review context, then patch_concept / add_relation as needed`
+      : "next: open a markdown vault, then copy a node handoff from that loaded vault";
   return [
+    `source: ${input.source}`,
     `node: ${input.slug}`,
     `kind: ${input.kind}`,
     `domain: ${input.domainTitle ?? "-"}`,
@@ -370,6 +377,11 @@ export function formatV2HandoffText(input: V2HandoffInput): string {
     `contains_names: ${list(input.containsNames)}`,
     `used_by_names: ${list(input.usedByNames)}`,
     `depends_names: ${list(input.dependsNames)}`,
-    `next: get_concept("${input.slug}") → review context, then patch_concept / add_relation as needed`,
+    ...(input.source === "read-only-sample"
+      ? [
+          "write_guard: do not run get_concept / patch_concept / add_relation for this sample node",
+        ]
+      : []),
+    next,
   ].join("\n");
 }

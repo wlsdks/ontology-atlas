@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T18:09:51.815Z",
+  "generatedAt": "2026-07-24T18:36:09.633Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6978,7 +6978,7 @@
       ],
       "excerpt": "2026-07-24 온보딩 라운드 — 라이브 답사(비개발자 피드백)로 확인한 첫 사용 이탈 지점 4곳을 기존 온보딩 자산의 재배치로 해소한 역량. 새 시스템을 만들지 않고 결정적 순간에 가이드를 세운다. 1. 가이드 투어 첫 방문 자동 시작 — 샘플 모드 정착 + guided-tour:v1 미기록이면 900ms 뒤 1회 자동 시작. canAutoStartGuidedTour (src/features/guided-tour/model/auto-start-guard.ts)가 모달/포커스 이탈/이미 열린 투어를 가드(stacked-transient 금지). 첫 실행 카드에 \"",
       "wordCount": 218,
-      "updatedAt": "2026-07-24T18:09:40.010Z",
+      "updatedAt": "2026-07-25T03:11:06+09:00",
       "linksOut": []
     },
     {
@@ -7485,8 +7485,8 @@
         }
       ],
       "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 은퇴한 xyflow ERD 빌더 (/ontology/edit) 가 하던 vault 쓰기 경로는 이제 나침 무대 (Compass Stage, /ontology/studio) 가 이어받았다. 한 노드를 게임 아이템처럼 놓고 관계 소켓을 채우면 그 채움이 곧 실제 frontmatter write 다. OntologyStudioPage 는 두 fill-state 를 한 라우트에서 처리한다 (mode 탭 없음): 기본 = 기존 노드를 ?node=<id 로 열어 부분 채움 (ENHANCE), ?mode=c",
-      "wordCount": 236,
-      "updatedAt": "2026-07-24T20:43:12+09:00",
+      "wordCount": 291,
+      "updatedAt": "2026-07-24T18:36:05.495Z",
       "linksOut": []
     },
     {
@@ -7506,8 +7506,8 @@
       },
       "headings": [],
       "excerpt": "/topology exposes a two-view switch — Map (Relief) and Graph — instead of five peer mode tabs (2026-07 owner feedback: the four Relief-family modes looked like the same sparse card screen with different panels, so mode proliferation read as \"five confusing siblings\"). 분석 패널 완전 소멸 2단계 (2026-07) removed the dedicated Top",
-      "wordCount": 437,
-      "updatedAt": "2026-07-19T04:28:34+09:00",
+      "wordCount": 500,
+      "updatedAt": "2026-07-24T18:36:05.494Z",
       "linksOut": []
     },
     {
@@ -8395,7 +8395,7 @@
       ],
       "excerpt": "src/shared/lib/use-dialog-focus-trap.ts — 첫 실행 과정의 모달 표면이 공유하는 키보드·포커스 계약. 열릴 때 대화상자 또는 지정한 최초 제어로 포커스를 옮긴다. Tab과 Shift+Tab 순환을 모달 내부의 조작 가능한 항목에 가둔다. 닫힐 때 모달을 연 제어로 포커스를 복원한다. 허용된 표면은 Escape로 닫을 수 있다. 현재 소비자는 VaultOpenGuideSheet와 GuidedTourOverlay다. 가이드 투어의 지도 상호작용 단계는 카드 내부의 실제 버튼을 제공하며, 이 버튼을 키보드로 활성화하면 강조 노드를 선택하고 ",
       "wordCount": 86,
-      "updatedAt": "2026-07-24T18:09:40.011Z",
+      "updatedAt": "2026-07-25T03:11:06+09:00",
       "linksOut": []
     },
     {
@@ -10157,14 +10157,24 @@
           "slug": "ux-007-번역-계약-테스트-다섯-건이-현재-메시지와-역방향으로-드리프트"
         },
         {
+          "depth": 3,
+          "text": "UX-008 — 읽기 전용 샘플의 AI 인계가 실제 vault 쓰기 명령을 제안",
+          "slug": "ux-008-읽기-전용-샘플의-ai-인계가-실제-vault-쓰기-명령을-제안"
+        },
+        {
+          "depth": 3,
+          "text": "UX-009 — 공방 인라인 관계 카드의 닫기 제어가 이름과 Escape 계약을 잃음",
+          "slug": "ux-009-공방-인라인-관계-카드의-닫기-제어가-이름과-escape-계약을-잃음"
+        },
+        {
           "depth": 2,
           "text": "현재 PO·디자인 판정",
           "slug": "현재-po디자인-판정"
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다. 4. 실패 테스트를 먼저 추가한다. 5. 가장 작은 일관된 슬라이스로 수정한다. 6. 집중 테스트와 /Appl",
-      "wordCount": 1062,
-      "updatedAt": "2026-07-24T18:05:46.085Z",
+      "wordCount": 1602,
+      "updatedAt": "2026-07-24T18:35:20.211Z",
       "linksOut": []
     },
     {
