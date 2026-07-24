@@ -13,9 +13,9 @@ describe("resolveActiveNavRailItem", () => {
     expect(resolveActiveNavRailItem("/docs/")).toBe("docs");
   });
 
-  it("matches /ontology/edit to builder, not the generic /ontology prefix", () => {
-    expect(resolveActiveNavRailItem("/ontology/edit")).toBe("builder");
-    expect(resolveActiveNavRailItem("/ontology/edit/")).toBe("builder");
+  it("folds the retired /ontology/edit builder route into studio (it redirects there)", () => {
+    expect(resolveActiveNavRailItem("/ontology/edit")).toBe("studio");
+    expect(resolveActiveNavRailItem("/ontology/edit/")).toBe("studio");
   });
 
   it("matches /ontology/studio to studio, not the generic /ontology prefix", () => {

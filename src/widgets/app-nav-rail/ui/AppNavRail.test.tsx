@@ -58,14 +58,15 @@ describe("AppNavRail", () => {
     expect(wordmark).toHaveAttribute("translate", "no");
   });
 
-  it("renders all 6 destinations with i18n labels", () => {
+  it("renders all 5 destinations with i18n labels", () => {
     renderRail();
     expect(screen.getByTestId("app-nav-rail-item-map")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-docs")).toBeInTheDocument();
-    expect(screen.getByTestId("app-nav-rail-item-builder")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-studio")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-insights")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-projects")).toBeInTheDocument();
+    // 은퇴한 ERD 빌더(2026-07-24) — 레일에서 제거됨.
+    expect(screen.queryByTestId("app-nav-rail-item-builder")).not.toBeInTheDocument();
   });
 
   it("marks the current route active via aria-current + data-active", () => {
@@ -193,9 +194,9 @@ describe("AppNavRail", () => {
       <AppNavRail contextHrefs={{ docs: "/docs/?slug=capabilities/mcp-server" }} />,
     );
     expect(screen.getByTestId("app-nav-rail-item-map")).toHaveAttribute("href", "/topology/");
-    expect(screen.getByTestId("app-nav-rail-item-builder")).toHaveAttribute(
+    expect(screen.getByTestId("app-nav-rail-item-studio")).toHaveAttribute(
       "href",
-      "/ontology/edit/",
+      "/ontology/studio/",
     );
     expect(screen.getByTestId("app-nav-rail-item-insights")).toHaveAttribute(
       "href",

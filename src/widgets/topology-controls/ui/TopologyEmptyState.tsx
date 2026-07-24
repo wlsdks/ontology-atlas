@@ -121,7 +121,7 @@ export function TopologyEmptyState({
             {t('ctaTree')}
           </Link>
           <Link
-            href="/ontology/edit/"
+            href="/ontology/studio/"
             className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] px-4 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
           >
             <GitBranch size={14} aria-hidden="true" />

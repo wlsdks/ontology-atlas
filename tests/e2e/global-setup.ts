@@ -20,8 +20,6 @@ const WARMUP_PATHS = [
   "/en/topology/",
   "/ko/docs/",
   "/en/docs/",
-  "/en/ontology/edit/",
-  "/ko/ontology/edit/",
   "/en/ontology/insights/",
   "/en/projects/",
   "/en/download/",

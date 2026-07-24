@@ -27,7 +27,7 @@ export interface TopologyV2EdgePanelProps {
   declaredBy: { slug: string; href: string } | null;
   /** 선언 문서의 변경 시점 라벨 (S-C1 사다리 재사용) — null 이면 생략. */
   updatedAtLabel: string | null;
-  builderEditHref: string;
+  studioEditHref: string;
   labels: {
     kicker: string;
     declaredByLabel: string;
@@ -50,7 +50,7 @@ export function TopologyV2EdgePanel({
   why = null,
   declaredBy,
   updatedAtLabel,
-  builderEditHref,
+  studioEditHref,
   labels,
   onSelectNode,
   fromId,
@@ -149,7 +149,7 @@ export function TopologyV2EdgePanel({
       ) : null}
 
       <Link
-        href={builderEditHref}
+        href={studioEditHref}
         data-testid="topology-v2-edge-edit"
         className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] text-[11.5px] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
       >
