@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bot, Plus, Zap } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { TopologyMapV2 } from "@/widgets/topology-map-v2";
@@ -101,12 +101,24 @@ export function StudioArena({
   // content bbox and draws the warding ring; deferring by a frame lets the
   // world initialize first so the entering transition has real bounds to tween.
   const [realmRoot, setRealmRoot] = useState<string | null>(null);
+  // realm 진입 후 fit-to-bounds 를 걸어야 노드 세계가 임베드 뷰포트를 채운다
+  // (안 걸면 작은 클러스터가 하단 중앙에 몰려 빈 그리드만 커진다). realm 이
+  // 자리잡은 다음 프레임에 fitViewToken 을 올린다.
+  const [fitToken, setFitToken] = useState(0);
   useEffect(() => {
     // rAF (not a synchronous set) so the map mounts at overview, then enters the
     // realm on the next frame once the world has real bounds to tween into.
-    const id = requestAnimationFrame(() => setRealmRoot(node.id));
-    return () => cancelAnimationFrame(id);
+    const id = requestAnimationFrame(() => {
+      setRealmRoot(node.id);
+      const fitId = requestAnimationFrame(() => setFitToken((t) => t + 1));
+      fitRafRef.current = fitId;
+    });
+    return () => {
+      cancelAnimationFrame(id);
+      if (fitRafRef.current != null) cancelAnimationFrame(fitRafRef.current);
+    };
   }, [node.id]);
+  const fitRafRef = useRef<number | null>(null);
 
   const statValue = (key: string): { value: string; done: boolean; delta?: string } => {
     switch (key) {
