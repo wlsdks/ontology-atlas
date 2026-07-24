@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { BookOpen, Search, X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED } from '@/shared/motion';
 import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
 import type { Project } from '@/entities/project';
 import { useTaxonomy } from '@/features/taxonomy';
@@ -171,6 +172,10 @@ function SearchPaletteDialog({
   const listRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const { categoryLabel, statusLabel } = useTaxonomy();
+  // rank2 — 임계감쇠 오버레이 스프링(오버슈트 0) 단일 통일. reduced-motion
+  // 사용자는 translate 없이 120ms opacity 크로스페이드만.
+  const reducedMotion = useReducedMotion();
+  const panelTransition = reducedMotion ? OVERLAY_SPRING_REDUCED : OVERLAY_SPRING;
   const [recentSlugs] = useState<string[]>(() => readRecentSlugs());
   const recentProjects = useMemo(
     () =>
@@ -214,9 +219,12 @@ function SearchPaletteDialog({
   );
   const activeRow = rows[activeIndex] ?? null;
 
-  // mount 직후 focus (input ref가 연결된 다음 프레임)
+  // mount 직후 focus (input ref가 연결된 다음 프레임). rank18 — preventScroll
+  // 로 배경 스크롤 점프 방지.
   useEffect(() => {
-    const id = requestAnimationFrame(() => inputRef.current?.focus());
+    const id = requestAnimationFrame(() =>
+      inputRef.current?.focus({ preventScroll: true }),
+    );
     return () => cancelAnimationFrame(id);
   }, []);
 
@@ -307,25 +315,34 @@ function SearchPaletteDialog({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.15 }}
+      // rank2 — 스크림은 --topology-motion-panel-duration(180ms)과 값을
+      // 맞춘 opacity 크로스페이드. reduced-motion 은 120ms(OVERLAY_SPRING_REDUCED).
+      transition={{ duration: reducedMotion ? 0.12 : 0.18 }}
       data-interactive-overlay="true"
+      data-overlay-spring="true"
       className="fixed inset-0 z-50 flex items-stretch justify-center md:items-start md:px-[max(1rem,env(safe-area-inset-left))] md:pt-[max(4rem,env(safe-area-inset-top))] md:pr-[max(1rem,env(safe-area-inset-right))]"
     >
       <div
         data-testid="search-palette-backdrop"
-        className="absolute inset-0 bg-[color:var(--color-backdrop-strong)]"
+        className="absolute inset-0 bg-[color:var(--overlay-scrim)]"
         onClick={onClose}
       />
 
       {/* 모바일은 풀스크린 시트 (rounded 없이 inset-0 가득 채움), md+ 는
           기존 floating 카드 (max-w-xl, rounded-[22px], 위에서 슬라이드).
-          기존 spring transition 은 데스크톱 결을 유지. */}
+          rank2 — 3종 오버레이 공용 임계감쇠 스프링(OVERLAY_SPRING, 오버슈트
+          0). 진입은 opacity 0→1 + translateY 8px→0 만 — scale 없음
+          (hover:scale-* 혼동 방지). 캔버스 2-param 물리 모델과는 별도
+          튜닝(app/globals.css `--overlay-spring-*` 토큰 주석의 변환식 참조,
+          "동일 스프링 상속" 아님). */}
       <motion.div
         ref={dialogRef}
-        initial={{ y: -20, opacity: 0 }}
+        initial={{ y: 8, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        exit={{ y: -20, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+        exit={{ y: 8, opacity: 0 }}
+        transition={panelTransition}
+        data-overlay-spring="true"
+        data-search-palette-panel="true"
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -367,7 +384,7 @@ function SearchPaletteDialog({
             type="button"
             onClick={onClose}
             aria-label={t('closeAriaLabel')}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            className="flex h-[var(--overlay-close-size)] w-[var(--overlay-close-size)] items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
           >
             <X size={15} />
           </button>
