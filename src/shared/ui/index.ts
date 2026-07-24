@@ -36,3 +36,9 @@ export { BrandMark, BRAND_MARK_AMBER, type BrandMarkProps } from './brand-mark';
 export { HexMark, type HexMarkProps } from './hex-mark';
 export { CompactCopyButton, type CompactCopyButtonProps } from './compact-copy-button';
 export { SimilarNodeWarning, type SimilarNodeWarningProps } from './similar-node-warning';
+export {
+  LastEditSubjectRow,
+  type LastEditSubjectKind,
+  type LastEditSubjectRowProps,
+} from './last-edit-subject-row';
+export { MtimeConflictBadge, type MtimeConflictBadgeProps } from './mtime-conflict-badge';
