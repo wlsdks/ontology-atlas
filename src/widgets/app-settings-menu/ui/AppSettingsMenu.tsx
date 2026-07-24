@@ -1,49 +1,117 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import type { ReactNode } from 'react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Check,
+  HardDrive,
+  Settings,
+  X,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { Bot, Check, Copy, FolderOpen, Languages, Settings, Terminal, X } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
-import { LocalVaultPicker, useLocalVault } from '@/features/docs-vault-local';
-import {
-  getTauriVaultRootPath,
-  isTauriVaultRuntime,
-  openTauriVaultInFinder,
-} from '@/shared/lib/tauri-vault-fs';
+import { useLocalVault } from '@/features/docs-vault-local';
+import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
+import { cn } from '@/shared/lib/cn';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
-type SettingsMenuTab = 'general' | 'mcpAgents' | 'vault' | 'appearance' | 'verification';
-
 /**
- * 상시 앱 설정 진입점 — 이전엔 `OperationsNav` (구 상단 탭 내비, feat/rail-rollout
- * 에서 은퇴) 우측에 살던 컴포넌트. 좌측 `AppNavRail` 은 폭이 좁아(64~88px) 이
- * 컴포넌트의 popover(228~1024px, 5-tab 패널)를 직접 품기 어려워, 별도
- * 위젯으로 분리해 레일이 상주하는 각 페이지 헤더에 얹는다 — 기능 손실 0
- * 원칙(LiveActivityIndicator 는 같은 방식으로 `@/features/vault-ontology` 에서
- * 개별 마운트). general / mcpAgents / vault / appearance / verification 5
- * 탭 — 언어 전환(appearance)도 여기 흡수돼 있어 AppNavRail 자체에는
- * 별도 설정 트리거가 없어도 기능 손실이 없다.
+ * 단일 설정 표면 (설정 통합 2026-07-24, 소유자 지시) — 이전엔 설정이 두 곳에
+ * 흩어져 있었다: ① 나브레일 톱니의 "지도 설정" 팝오버(TopologyV2SettingsGear —
+ * 언어·보기 모드·INDEX 기본 상태·vault 바꾸기), ② 각 페이지 헤더 "설정" 필의
+ * 5탭 "앱 설정" 모달(3탭이 사실상 링크 한 줄 + 거대한 빈 여백). 이 위젯이
+ * 이제 유일한 설정의 집이다: 탭 폐지, 단일 컬럼 시트, "그룹 헤더 + 즉시 조작
+ * 행" 문법(Toss 공개 발표 — 한 화면에 한 가지, 위계의 단순화).
  *
- * P3 결함⑥ (사용성 전수 검수 2026-07-23) — 이 다이얼로그가 열린 채 ⌘K 를
- * 누르면 검색 팔레트가 그 위에 겹쳤다. 아래 `onKeyDown` 은 이미 "팔레트가
- * 열리면 설정을 demote" 하는 절반(Guardian B2)을 처리하지만, 반대 방향
- * ("설정을 열면 팔레트를 닫는다")은 이 위젯이 팔레트의 open state 를 모르면
- * 불가능했다 — `open`/`onOpenChange` 를 optional controlled prop 으로 열어
- * `MountedGlobalSearch` 와 같은 계약을 준다. 둘 다 생략하면 기존 self-managed
- * 그대로(하위호환 — DocsVaultPage 등 미변경 호출부는 영향 없음).
+ * - [화면] 언어 · (호스트 주입 시) 보기 모드 · INDEX 기본 상태. 지도 화면
+ *   상태(HomePage state)는 `screenControls` optional prop 으로 주입 — 미주입
+ *   페이지(빌더 등)에서는 해당 행이 렌더되지 않는다.
+ * - [작업공간] 현재 vault 이름/상태 1행 + 폴더 열기/바꾸기 + 문서함 링크.
+ *   구 vault 탭의 LocalVaultPicker 전체 표면(Finder 열기·경로 복사·새로고침)은
+ *   /docs vault 필이 담당 — 여기는 상태 확인과 교체라는 고빈도 경로만.
+ * - [AI 에이전트] 상태 요약 1행 → "연결·검증" 드릴인 서브뷰(뒤로가기 헤더)로
+ *   `VaultAgentSetupPanel` 이동. MCP 증명 장문·상태 카드 그리드·판정 순서
+ *   문서는 기본 화면에 절대 노출하지 않는다.
+ *
+ * P3 결함⑥ 계약 유지 — `open`/`onOpenChange` optional controlled prop, ⌘K 는
+ * 팔레트에 양보(settings demote), Escape 는 이 다이얼로그가 소유하고
+ * stopPropagation 으로 지도 Esc 래더에 새지 않는다.
  */
+
+type SettingsView = 'root' | 'agent';
+
+export interface AppSettingsScreenControls {
+  audiencePlain: boolean;
+  onAudiencePlainChange: (next: boolean) => void;
+  indexCollapsed: boolean;
+  onIndexCollapsedChange: (next: boolean) => void;
+}
+
 export interface AppSettingsMenuProps {
   mode: 'static' | 'local';
   /** controlled open state. 미지정 시 self-managed(기존 동작). */
   open?: boolean;
   /** controlled 모드에서 open 이 바뀔 때마다 호출 — 호출자가 실제 state 를 갱신한다. */
   onOpenChange?: (next: boolean) => void;
+  /**
+   * 지도(HomePage) 전용 화면 상태 주입 — 보기 모드(개발/일반)와 INDEX 기본
+   * 상태. 주입한 페이지에서만 [화면] 그룹에 해당 행이 나타난다.
+   */
+  screenControls?: AppSettingsScreenControls;
+  /**
+   * 트리거 표면 계약. `header-pill`(기본) = 페이지 헤더의 "설정" 필.
+   * `rail-tile` = 나브레일 하단 유틸 타일(활동·발자취와 같은
+   * `--app-nav-rail-tile-*` 지오메트리). `chrome-tile` = <lg 상단 유틸리티
+   * 레인의 `--chrome-tile-size` 타일. 구 TopologyV2SettingsGear 의 트리거
+   * 문법을 그대로 승계한다 — 팝오버 대신 이 시트가 열리는 것만 다르다.
+   */
+  triggerVariant?: 'header-pill' | 'rail-tile' | 'chrome-tile';
 }
 
-export function AppSettingsMenu({ mode, open: openProp, onOpenChange }: AppSettingsMenuProps) {
+/** AI 에이전트 첫 접촉 증명 패킷 — 사람이 읽는 카드 대신 에이전트에 그대로
+ *  붙여넣는 typed handoff. 구 5탭 시절 mcpAgents 탭의 정적 교육 카드 그리드가
+ *  하던 말이 전부 이 패킷 안에 있다(표면은 죽고 handoff 는 산다). */
+const MCP_FIRST_CALLS_PACKET = [
+  'Ontology Atlas MCP first-contact proof packet',
+  '',
+  'Direct MCP proof inside the current agent session:',
+  '1. codex mcp list',
+  '2. tools/list -> 24 tools including index_project and query_ontology',
+  '3. query_ontology({"operation":"agent_brief"})',
+  '4. query_ontology({"operation":"workspace_brief"})',
+  '5. query_ontology({"operation":"health"})',
+  '',
+  'If direct MCP tools are missing, this is CLI fallback proof only:',
+  'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
+  '',
+  'Stale client cache hint:',
+  'If the client still says 23 tools or query_ontology is not callable, reload/restart the agent or refresh cached MCP tools.',
+  '',
+  'Project ontology indexing checkpoint (side effect 0):',
+  'Replace [codebase-root] with the current checkout path before running project indexing.',
+  'index_project({"rootPath":"[codebase-root]"})',
+  'node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
+  '',
+  'Meaning gate: report the business/product domain and capability first, then cite code index rows as implementation evidence.',
+  'Business evidence: include meaningGate.businessOntology.evidence rows from README and docs/ontology.',
+  'Review queue: include meaningGate.implementationEvidence.reviewRequiredRows so humans can name folders that still lack product meaning.',
+  'Do not promote source folders to capabilities when existing ontology evidence maps them through matching slugs or capability elements.',
+].join('\n');
+
+export function AppSettingsMenu({
+  mode,
+  open: openProp,
+  onOpenChange,
+  screenControls,
+  triggerVariant = 'header-pill',
+}: AppSettingsMenuProps) {
   const t = useTranslations('nav.settingsMenu');
   const { state: copyState, copy } = useCopyFeedback();
   const router = useRouter();
@@ -58,27 +126,18 @@ export function AppSettingsMenu({ mode, open: openProp, onOpenChange }: AppSetti
     },
     [isControlled, onOpenChange],
   );
-  const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsMenuTab>('general');
-  const [vaultRevealError, setVaultRevealError] = useState<string | null>(null);
+  const [view, setView] = useState<SettingsView>('root');
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const titleId = useId();
-  const mcpTitleId = useId();
-  const generalTitleId = useId();
   const isDesktopRuntime = isTauriVaultRuntime();
 
-  // B2 병합 — 이전 문서함 헤더의 VaultToolsMenu 가 들고 있던 로컬 vault 컨텍스트
-  // (설정 파일 상태·수리·복사 패킷·검증 게이트)를 설정 메뉴가 흡수했다.
-  // LocalVaultProvider 는 app/[locale]/layout.tsx 에 상주하므로 AppSettingsMenu 가
-  // 어느 페이지 헤더에 얹혀도 같은 vault 를 읽는다(props 주입 불필요).
-  const vaultRootPath = localVault.handle
-    ? getTauriVaultRootPath(localVault.handle)
-    : null;
   const isLocalVaultLoaded = localVault.status === 'loaded';
-  const canEditCurrentVault = isLocalVaultLoaded;
   const showVaultManagement = localVault.status !== 'unsupported';
-  const localVaultValidationSummary = useMemo(() => {
+  const vaultBusy = localVault.status === 'opening' || localVault.status === 'loading';
+  const localVaultValidationSummary = (() => {
     if (localVault.status !== 'loaded' || !localVault.manifest) return null;
     const summary = summarizeVaultValidation(
       localVault.manifest.docs.map((doc) => ({
@@ -87,22 +146,8 @@ export function AppSettingsMenu({ mode, open: openProp, onOpenChange }: AppSetti
       })),
     );
     if (summary.errorCount === 0 && summary.warningCount === 0) return null;
-    return {
-      errorCount: summary.errorCount,
-      warningCount: summary.warningCount,
-    };
-  }, [localVault.status, localVault.manifest]);
-
-  const handleRevealVaultPath = async (rootPath: string) => {
-    setVaultRevealError(null);
-    try {
-      await openTauriVaultInFinder(rootPath);
-    } catch (err) {
-      setVaultRevealError(
-        err instanceof Error ? err.message : t('vaultRevealErrorFallback'),
-      );
-    }
-  };
+    return { errorCount: summary.errorCount, warningCount: summary.warningCount };
+  })();
 
   // AGENT-GRAPH-WORKFLOW 가이드는 문서함(/docs) 안 드로어라 설정 메뉴에서
   // 직접 열 수 없다 — 설정을 닫고 문서함으로 이동해 사용자가 이어서 연다.
@@ -110,62 +155,47 @@ export function AppSettingsMenu({ mode, open: openProp, onOpenChange }: AppSetti
     setOpen(false);
     router.push('/docs/');
   };
-  const vaultHref = mode === 'local' ? '/docs/' : isDesktopRuntime ? '/docs/?intent=local' : '/download/';
+  const vaultHref =
+    mode === 'local' ? '/docs/' : isDesktopRuntime ? '/docs/?intent=local' : '/download/';
   const vaultBody = mode === 'local' ? t('vaultBodyLocal') : t('vaultBodyStatic');
   const vaultCta = mode === 'local' ? t('vaultCtaLocal') : t('vaultCtaStatic');
-  const settingsTabs: ReadonlyArray<{
-    id: SettingsMenuTab;
-    label: string;
-    description: string;
-  }> = [
-    { id: 'general', label: t('tabGeneral'), description: t('tabGeneralDesc') },
-    { id: 'mcpAgents', label: t('tabMcpAgents'), description: t('tabMcpAgentsDesc') },
-    { id: 'vault', label: t('tabVault'), description: t('tabVaultDesc') },
-    { id: 'appearance', label: t('tabAppearance'), description: t('tabAppearanceDesc') },
-    { id: 'verification', label: t('tabVerification'), description: t('tabVerificationDesc') },
-  ];
-  const mcpFirstCalls = [
-    'Ontology Atlas MCP first-contact proof packet',
-    '',
-    'Direct MCP proof inside the current agent session:',
-    '1. codex mcp list',
-    '2. tools/list -> 24 tools including index_project and query_ontology',
-    '3. query_ontology({"operation":"agent_brief"})',
-    '4. query_ontology({"operation":"workspace_brief"})',
-    '5. query_ontology({"operation":"health"})',
-    '',
-    'If direct MCP tools are missing, this is CLI fallback proof only:',
-    'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
-    '',
-    'Stale client cache hint:',
-    'If the client still says 23 tools or query_ontology is not callable, reload/restart the agent or refresh cached MCP tools.',
-    '',
-    'Project ontology indexing checkpoint (side effect 0):',
-    'Replace [codebase-root] with the current checkout path before running project indexing.',
-    'index_project({"rootPath":"[codebase-root]"})',
-    'node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
-    '',
-    'Meaning gate: report the business/product domain and capability first, then cite code index rows as implementation evidence.',
-    'Business evidence: include meaningGate.businessOntology.evidence rows from README and docs/ontology.',
-    'Review queue: include meaningGate.implementationEvidence.reviewRequiredRows so humans can name folders that still lack product meaning.',
-    'Do not promote source folders to capabilities when existing ontology evidence maps them through matching slugs or capability elements.',
-  ].join('\n');
-  const mcpStateRows = [
-    ['connected', 'mcpStateConnectedLabel', 'mcpStateConnectedBody', Check, 'var(--color-success-text-a95)'],
-    ['setup', 'mcpStateSetupOnlyLabel', 'mcpStateSetupOnlyBody', Terminal, 'var(--color-indigo-accent)'],
-    ['restart', 'mcpStateRestartLabel', 'mcpStateRestartBody', Terminal, 'var(--color-amber-docs-a95)'],
-    ['fallback', 'mcpStateCliFallbackLabel', 'mcpStateCliFallbackBody', Terminal, 'var(--color-amber-docs-a95)'],
-    ['disconnected', 'mcpStateDisconnectedLabel', 'mcpStateDisconnectedBody', X, 'var(--color-text-tertiary)'],
-  ] as const;
+
+  // AI 에이전트 요약 1행 — 설정 파일 준비 상태를 한 값으로 접는다. 상세
+  // (파일별 상태·수리·복사 패킷·검증 게이트)는 드릴인 서브뷰가 소유.
+  const agentConfig = localVault.agentConfigStatus;
+  const agentConfigTotal = 3;
+  const agentConfigReadyCount = agentConfig
+    ? [
+        agentConfig.mcpJson && agentConfig.mcpJsonValid !== false,
+        agentConfig.codexConfig && agentConfig.codexConfigValid !== false,
+        agentConfig.mcpExample && agentConfig.mcpExampleValid !== false,
+      ].filter(Boolean).length
+    : 0;
+  const agentSummary =
+    isLocalVaultLoaded && agentConfig
+      ? agentConfigReadyCount === agentConfigTotal
+        ? t('agentStatusReady', { ready: agentConfigReadyCount, total: agentConfigTotal })
+        : t('agentStatusRepair', { ready: agentConfigReadyCount, total: agentConfigTotal })
+      : t('agentStatusNoVault');
+  const agentSummaryNeedsAttention =
+    isLocalVaultLoaded && agentConfig != null && agentConfigReadyCount < agentConfigTotal;
 
   // P3 결함⑥ — controlled 모드에서 이 `<details>` 는 React state 가 곧
-  // 진실원이어야 한다. `<summary>` 클릭의 preventDefault() 는 보통 native
-  // toggle 을 막지만, 그 타이밍에 기대는 대신 매 렌더마다 DOM 의 `open`
-  // 프로퍼티를 React 값으로 명시적으로 되맞춰 race 자체를 구조적으로 없앤다
-  // (uncontrolled 모드에서도 안전 — 같은 값이면 no-op).
+  // 진실원이어야 한다. 매 렌더마다 DOM `open` 을 React 값으로 되맞춰 race 를
+  // 구조적으로 없앤다 (uncontrolled 모드에서도 같은 값이면 no-op).
   useEffect(() => {
     if (detailsRef.current) detailsRef.current.open = open;
   }, [open]);
+
+  // 닫힐 때 드릴인 상태 초기화 — 다시 열면 항상 루트 시트부터. effect 가 아닌
+  // 렌더 중 이전값 latch(React 공식 "adjusting state when a prop changes"
+  // 패턴)라 cascading effect 렌더가 없다 (구 설정 기어의 suppressed 처리와
+  // 같은 관례).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (!open) setView('root');
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -177,13 +207,15 @@ export function AppSettingsMenu({ mode, open: openProp, onOpenChange }: AppSetti
 
   useEffect(() => {
     if (!open) return;
-
     const handleMouseDown = (event: MouseEvent) => {
       const details = detailsRef.current;
-      if (!details || details.contains(event.target as Node)) return;
+      const overlay = overlayRef.current;
+      const target = event.target as Node;
+      // 오버레이는 portal(body 직속)이라 details.contains 만으로는 시트 내부
+      // 클릭을 "바깥"으로 오판한다 — 둘 다 검사.
+      if (details?.contains(target) || overlay?.contains(target)) return;
       setOpen(false);
     };
-
     document.addEventListener('mousedown', handleMouseDown);
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, [open, setOpen]);
@@ -210,6 +242,14 @@ export function AppSettingsMenu({ mode, open: openProp, onOpenChange }: AppSetti
         }
         if (event.key !== 'Escape') return;
         event.preventDefault();
+        // 지도 Esc 래더(window keydown)가 같은 keypress 에 이중으로 반응하지
+        // 않도록 이 다이얼로그가 Escape 를 소유한다 — "one overlay owns one
+        // Escape" (구 설정 기어와 같은 계약).
+        event.stopPropagation();
+        if (view === 'agent') {
+          setView('root');
+          return;
+        }
         closePanel();
       }}
     >
@@ -219,25 +259,53 @@ export function AppSettingsMenu({ mode, open: openProp, onOpenChange }: AppSetti
         aria-expanded={open}
         title={t('triggerTitle')}
         data-testid="app-settings-trigger"
+        data-trigger-variant={triggerVariant}
         onClick={(event) => {
           event.preventDefault();
           setOpen(!open);
         }}
-        className="inline-flex h-8 cursor-pointer list-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
+        className={cn(
+          'cursor-pointer list-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden',
+          triggerVariant === 'rail-tile'
+            ? // 나브레일 유틸리티 타일 계약 — 활동(AppNavRail)·발자취
+              // (GitStatusTile)와 같은 지오메트리·상태 안무.
+              'flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card text-[color:var(--color-text-tertiary)] transition-[color,background-color,transform] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:bg-[color:var(--color-overlay-3)]'
+            : triggerVariant === 'chrome-tile'
+              ? // <lg 상단 유틸리티 레인의 ChromeTile 계약 — 같은 행 타일들과
+                // 높이·radius·표면 일치.
+                'flex size-[var(--chrome-tile-size)] items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
+              : 'inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
+        )}
       >
-        <Settings size={14} aria-hidden />
-        <span className="hidden font-mono text-caption uppercase tracking-[0.08em] sm:inline">
-          {t('settingsLabel')}
-        </span>
+        <Settings
+          size={triggerVariant === 'header-pill' ? 14 : undefined}
+          aria-hidden
+          className={
+            triggerVariant === 'rail-tile'
+              ? 'h-[var(--app-nav-rail-utility-icon-size)] w-[var(--app-nav-rail-utility-icon-size)]'
+              : triggerVariant === 'chrome-tile'
+                ? 'size-[var(--topology-chrome-icon-size)]'
+                : undefined
+          }
+        />
+        {triggerVariant === 'header-pill' ? (
+          <span className="hidden font-mono text-caption uppercase tracking-[0.08em] sm:inline">
+            {t('settingsLabel')}
+          </span>
+        ) : null}
       </summary>
+      {open && typeof document !== 'undefined'
+        ? createPortal(
       <div
-        // 닫힌 native <details> 콘텐츠는 스펙상 렌더링만 스킵할 뿐 항상
-        // display:none 이 되는 건 아니다(content-visibility 계열 구현) — 그
-        // 결과 desktop 폭의 내부 tab strip 이 실제 layout box 를 유지해 모바일
-        // 뷰포트에서 document.body.scrollWidth 를 밀어 올렸다(overflow-sweep
-        // mobile-390/360 회귀). `hidden` + `group-open:flex` 로 열림 상태를
-        // 명시적 display 값에 묶어 확정적으로 닫는다.
-        className="fixed inset-0 z-40 hidden items-center justify-center overflow-hidden p-3 group-open:flex sm:p-6"
+        ref={overlayRef}
+        // portal(body 직속) — 트리거가 어느 크롬 컨테이너(나브레일·상단
+        // 유틸 레인·페이지 헤더)에 앉아 있어도 그 컨테이너의 stacking
+        // context 에 z-40 오버레이가 갇히지 않는다(<lg 크롬 레인에서 INDEX
+        // 패널이 시트 위에 그려지던 결함의 구조적 처방). 조건부 렌더라 구
+        // `hidden`+`group-open:flex` display 묶기(overflow-sweep 회귀 방지)도
+        // 필요 없어졌다. scrim: 모달은 지도/페이지를 dim + block 해야
+        // 한다(design.md modality 계약) — `--color-scrim-a54` 단일 토큰.
+        className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[color:var(--color-scrim-a54)] p-3 sm:p-6"
         data-testid="app-settings-overlay"
         onMouseDown={(event) => {
           if (event.target !== event.currentTarget) return;
@@ -249,23 +317,34 @@ export function AppSettingsMenu({ mode, open: openProp, onOpenChange }: AppSetti
           role="dialog"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="flex h-[calc(100dvh-1.5rem)] max-h-[48rem] w-full max-w-[64rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[0_28px_90px_var(--color-shadow-a58)] sm:h-[calc(100dvh-3rem)]"
+          className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[34rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[0_28px_90px_var(--color-shadow-a58)] sm:max-h-[min(46rem,calc(100dvh-3rem))]"
           data-testid="app-settings-popover"
         >
-          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] p-4 pb-3">
-            <div className="flex min-w-0 items-start gap-3">
-              <Settings size={17} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
-              <div className="min-w-0">
-                <h2
-                  id={titleId}
-                  className="text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
+            <div className="flex min-w-0 items-center gap-2">
+              {view === 'agent' ? (
+                <button
+                  type="button"
+                  aria-label={t('agentBackLabel')}
+                  data-testid="app-settings-agent-back"
+                  onClick={() => setView('root')}
+                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                 >
-                  {t('title')}
-                </h2>
-                <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
-                  {t('subtitle')}
-                </p>
-              </div>
+                  <ChevronLeft size={14} aria-hidden />
+                </button>
+              ) : (
+                <Settings
+                  size={15}
+                  aria-hidden
+                  className="shrink-0 text-[color:var(--color-indigo-accent)]"
+                />
+              )}
+              <h2
+                id={titleId}
+                className="truncate text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+              >
+                {view === 'agent' ? t('agentTitle') : t('title')}
+              </h2>
             </div>
             <button
               type="button"
@@ -277,482 +356,369 @@ export function AppSettingsMenu({ mode, open: openProp, onOpenChange }: AppSetti
             </button>
           </div>
 
-          <div
-            className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 sm:p-4 md:grid-cols-[13rem_minmax(0,1fr)]"
-            data-testid="app-settings-body"
-          >
-            <nav
-              role="tablist"
-              aria-label={t('settingsTabsAriaLabel')}
-              data-layout="lnb"
-              className="flex shrink-0 gap-1 overflow-x-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1 md:min-h-0 md:flex-col md:overflow-visible"
-            >
-              {settingsTabs.map((tab) => {
-                const active = activeSettingsTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    aria-controls={`app-settings-panel-${tab.id}`}
-                    id={`app-settings-tab-${tab.id}`}
-                    onClick={() => setActiveSettingsTab(tab.id)}
-                    className={
-                      active
-                        ? "min-w-[7.25rem] rounded-md border border-[color:var(--color-indigo-a34)] bg-[color:var(--color-indigo-a14)] px-2.5 py-2 text-left text-[color:var(--color-text-primary)] md:min-h-[4rem]"
-                        : "min-w-[7.25rem] rounded-md border border-transparent px-2.5 py-2 text-left text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] md:min-h-[4rem]"
-                    }
-                  >
-                    <span className="block font-mono text-caption uppercase tracking-[0.08em]">
-                      {tab.label}
-                    </span>
-                    <span className="mt-1 hidden text-caption leading-4 text-[color:var(--color-text-tertiary)] md:block">
-                      {tab.description}
-                    </span>
-                  </button>
-                );
-              })}
-            </nav>
-
-            {activeSettingsTab === 'verification' ? (
-              <section
-                id="app-settings-panel-verification"
-                role="tabpanel"
-                aria-labelledby="app-settings-tab-verification"
-                aria-label={t('tabVerification')}
-                className="min-h-0 overflow-y-auto rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] p-3"
-              >
-                <h3
-                  id={mcpTitleId}
-                  className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
-                >
-                  {t('connectionStatusTitle')}
-                </h3>
-                <div
-                  className="mt-2 grid gap-1.5 rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-overlay-recessed-a14)] p-2.5 sm:grid-cols-3"
-                  data-testid="mcp-live-verdict-strip"
-                >
-                  <div className="min-w-0 rounded-md border border-[color:var(--color-success-a20)] bg-[color:var(--color-success-a06)] p-2">
-                    <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-success-text-a95)]">
-                      <Check size={11} aria-hidden />
-                      {t('liveVerdictSetup')}
-                    </p>
-                    <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                      {t('liveVerdictSetupMeta')}
-                    </p>
-                  </div>
-                  <div className="min-w-0 rounded-md border border-[color:var(--color-amber-signal-a24)] bg-[color:var(--color-amber-signal-a07)] p-2">
-                    <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
-                      <Terminal size={11} aria-hidden />
-                      {t('liveVerdictSession')}
-                    </p>
-                    <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                      {t('liveVerdictSessionMeta')}
-                    </p>
-                  </div>
-                  <div className="min-w-0 rounded-md border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-line-a06)] p-2">
-                    <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
-                      <Terminal size={11} aria-hidden />
-                      {t('liveVerdictFallback')}
-                    </p>
-                    <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                      {t('liveVerdictFallbackMeta')}
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className="mt-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5"
-                  data-testid="mcp-connection-state-ladder"
-                >
-                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
-                    {t('stateLadderTitle')}
-                  </p>
-                  <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                    {t('stateLadderBody')}
-                  </p>
-                  <div className="mt-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-5">
-                    {mcpStateRows.map(([id, labelKey, bodyKey, Icon, iconColor]) => (
-                      <div
-                        key={id}
-                        className="flex min-w-0 items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)] p-2"
-                      >
-                        <Icon
-                          size={12}
-                          aria-hidden
-                          className="mt-0.5 shrink-0"
-                          style={{ color: iconColor }}
-                        />
-                        <div className="min-w-0">
-                          <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
-                            {t(labelKey)}
-                          </p>
-                          <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                            {t(bodyKey)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="mcp-connection-status-summary">
-                <div className="rounded-lg border border-[color:var(--color-success-a24)] bg-[color:var(--color-success-a07)] p-2.5">
-                  <div className="flex items-start gap-2">
-                    <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-success-text-a95)]" />
-                    <div className="min-w-0">
-                      <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-success-text-a95)]">
-                        {t('setupReadyTitle')}
-                      </p>
-                      <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                        {t('setupReadyBody')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-lg border border-[color:var(--color-amber-signal-a28)] bg-[color:var(--color-amber-signal-a07)] p-2.5">
-                  <div className="flex items-start gap-2">
-                    <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-amber-docs-a95)]" />
-                    <div className="min-w-0">
-                      <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
-                        {t('directProofTitle')}
-                      </p>
-                      <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                        {t('directProofBody')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-lg border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-line-a06)] p-2.5">
-                  <div className="flex items-start gap-2">
-                    <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
-                    <div className="min-w-0">
-                      <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
-                        {t('fallbackProofTitle')}
-                      </p>
-                      <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                        {t('fallbackProofBody')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-lg border border-[color:var(--color-amber-signal-a28)] bg-[color:var(--color-amber-signal-a07)] p-2.5">
-                  <div className="flex items-start gap-2">
-                    <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-amber-docs-a95)]" />
-                    <div className="min-w-0">
-                      <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
-                        {t('staleCacheTitle')}
-                      </p>
-                      <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                        {t('staleCacheBody')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                className="mt-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5"
-                data-testid="mcp-proof-decision-order"
-              >
-                <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                  {t('proofDecisionTitle')}
-                </p>
-                <ol className="mt-2 grid gap-1.5 text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                  <li className="flex gap-2">
-                    <span className="font-mono text-[color:var(--color-success-text-a95)]">1</span>
-                    <span>{t('proofDecisionSetup')}</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-mono text-[color:var(--color-indigo-accent)]">2</span>
-                    <span>{t('proofDecisionInventory')}</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-mono text-[color:var(--color-amber-docs-a95)]">3</span>
-                    <span>{t('proofDecisionSession')}</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-mono text-[color:var(--color-amber-docs-a95)]">4</span>
-                    <span>{t('proofDecisionFallback')}</span>
-                  </li>
-                </ol>
-              </div>
-              </section>
-            ) : null}
-
-          {activeSettingsTab === 'general' ? (
-          <section
-            id="app-settings-panel-general"
-            role="tabpanel"
-            aria-labelledby="app-settings-tab-general"
-            aria-label={t('tabGeneral')}
-            className="grid min-h-0 gap-2 overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
-          >
-            <h3
-              id={generalTitleId}
-              className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
-            >
-              {t('generalSettingsTitle')}
-            </h3>
-            <Link
-              href="/ontology/insights/"
-              className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 text-left transition-colors hover:border-[color:var(--color-indigo-line-a32)]"
-            >
-              <Bot size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
-              <span className="min-w-0">
-                <span className="block font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                  {t('agentTitle')}
-                </span>
-                <span className="mt-1 block break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
-                  {t('agentBody')}
-                </span>
-                <span className="mt-1 block font-mono text-caption text-[color:var(--color-indigo-accent)]">
-                  {t('agentCta')}
-                </span>
-              </span>
-            </Link>
-          </section>
-          ) : null}
-
-          {activeSettingsTab === 'vault' ? (
-          <section
-            id="app-settings-panel-vault"
-            role="tabpanel"
-            aria-labelledby="app-settings-tab-vault"
-            aria-label={t('tabVault')}
-            // Guardian B2 — 고정 높이 다이얼로그의 grid stretch 가 1줄짜리
-            // 박스를 3줄만큼 늘리던 잉크 역전: content-start 로 내용 높이.
-            className="grid min-h-0 content-start gap-2 overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
-          >
-            <Link
-              href={vaultHref}
-              className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 text-left transition-colors hover:border-[color:var(--color-indigo-line-a32)]"
-            >
-              <FolderOpen size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
-              <span className="min-w-0">
-                <span className="block font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                  {t('vaultTitle')}
-                </span>
-                <span className="mt-1 block break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
-                  {vaultBody}
-                </span>
-                <span className="mt-1 block font-mono text-caption text-[color:var(--color-indigo-accent)]">
-                  {vaultCta}
-                </span>
-              </span>
-            </Link>
-            {/* B2 병합 — 문서함 헤더 드롭다운(VaultToolsMenu)이 들고 있던 로컬
-                vault 관리(폴더 열기·닫기·새로고침·Finder·최근·권한 복구)를 여기로
-                이관. 헤더 vault pill 의 "vault 바꾸기"는 고빈도 swap 만 남기고,
-                나머지 관리 동작은 이 설정 탭이 유일한 집이다. */}
-            {showVaultManagement ? (
-              <>
-                <LocalVaultPicker
-                  status={localVault.status}
-                  handleName={localVault.handle?.name ?? null}
-                  rootPath={vaultRootPath}
-                  docCount={localVault.manifest?.docs.length ?? 0}
-                  errorMessage={localVault.errorMessage}
-                  errorCode={localVault.errorCode}
-                  lastLoadedAt={localVault.lastLoadedAt}
-                  validationSummary={localVaultValidationSummary}
-                  recentVaults={localVault.recentVaults}
-                  onOpen={localVault.open}
-                  onOpenRecent={localVault.openRecent}
-                  onForgetRecent={localVault.forgetRecent}
-                  onClose={localVault.close}
-                  onRefresh={localVault.refresh}
-                  onRequestPermission={localVault.requestPermission}
-                  onReveal={handleRevealVaultPath}
-                />
-                {vaultRevealError ? (
-                  <p className="rounded-sm border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-2 py-1 text-label leading-4 text-[color:var(--color-status-danger)]">
-                    {t('vaultRevealError', { message: vaultRevealError })}
-                  </p>
-                ) : null}
-              </>
-            ) : null}
-          </section>
-          ) : null}
-
-          {activeSettingsTab === 'appearance' ? (
-          <section
-            id="app-settings-panel-appearance"
-            role="tabpanel"
-            aria-labelledby="app-settings-tab-appearance"
-            aria-label={t('tabAppearance')}
-            className="grid min-h-0 gap-2 overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
-          >
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5">
-              <div className="flex min-w-0 items-start gap-2">
-                <Languages size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
-                <div className="min-w-0">
-                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                    {t('languageTitle')}
-                  </p>
-                  <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
-                    {t('languageBody')}
-                  </p>
-                </div>
-              </div>
-              <LocaleSwitch />
-            </div>
-          </section>
-          ) : null}
-
-          {activeSettingsTab === 'mcpAgents' ? (
-          <div
-            id="app-settings-panel-mcpAgents"
-            role="tabpanel"
-            aria-labelledby="app-settings-tab-mcpAgents"
-            aria-label={t('tabMcpAgents')}
-            // Guardian B2 — truncate 가 동작하려면 grid track 이 min-content
-            // 로 팽창하지 못하게 min-w-0 (수평 오버플로 78px 회귀의 근원).
-            className="grid min-h-0 min-w-0 gap-3 overflow-y-auto"
-          >
-            {/* B2 병합 — 로컬 vault 가 로드돼 있으면 vault-aware 설정 패널이
-                권위 표면이다(설정 파일 상태·수리·경로 채운 복사 패킷). 이때 정적
-                first-calls 교육 블록은 중복(둘 다 first-contact 패킷을 다룸)이라
-                숨기고, vault 미로드 상태에서만 정적 교육을 노출한다. mcpAgents 의
-                state-decision-table(구 mcpStateRows 매트릭스)은 verification 탭의
-                동일 state ladder 와 중복이라 제거됐다. */}
-            {isLocalVaultLoaded ? (
-              <VaultAgentSetupPanel
-                canEditCurrent={canEditCurrentVault}
-                localVault={localVault}
-                validationSummary={localVaultValidationSummary}
-                onOpenWorkflowGuide={handleOpenWorkflowGuide}
-              />
-            ) : (
-            <div className="min-w-0 rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 items-start gap-2">
-                <Terminal size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
-                <div className="min-w-0">
-                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
-                    {t('mcpProofTitle')}
-                  </p>
-                  <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
-                    {t('mcpProofBody')}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => void copy(mcpFirstCalls)}
-                className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-indigo-line-a32)] px-2 font-mono text-caption text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
-              >
-                {copyState === 'copied' ? <Check size={12} aria-hidden /> : <Copy size={12} aria-hidden />}
-                {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
-              </button>
-            </div>
-            <div className="mt-3 grid gap-2 text-caption leading-4 text-[color:var(--color-text-secondary)] sm:grid-cols-2">
-              <div
-                data-testid="direct-mcp-proof"
-                className="rounded-lg border border-[color:var(--color-success-a26)] bg-[color:var(--color-success-a06)] p-2.5"
-              >
-                <div className="flex items-start gap-2">
-                  <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-success-text-a95)]" />
-                  <div className="min-w-0">
-                    <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-success-text-a95)]">
-                      {t('mcpProofDirectLabel')}
-                    </p>
-                    <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                      {t('mcpProofDirectBody')}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-2 grid gap-1.5 rounded-md bg-[color:var(--color-overlay-recessed)] p-2 font-mono">
-                  <span>{t('mcpProofCallCodex')}</span>
-                  <span>{t('mcpProofCallTools')}</span>
-                  <span>{t('mcpProofCallAgent')}</span>
-                  <span>{t('mcpProofCallWorkspace')}</span>
-                  <span>{t('mcpProofCallHealth')}</span>
-                </div>
-              </div>
-              <div
-                data-testid="cli-fallback-proof"
-                className="rounded-lg border border-[color:var(--color-amber-signal-a30)] bg-[color:var(--color-amber-signal-a07)] p-2.5"
-              >
-                <div className="flex items-start gap-2">
-                  <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-amber-docs-a95)]" />
-                  <div className="min-w-0">
-                    <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
-                      {t('mcpProofFallbackLabel')}
-                    </p>
-                    <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                      {t('mcpProofFallbackBody')}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-2 grid gap-1.5 rounded-md bg-[color:var(--color-overlay-recessed)] p-2 font-mono">
-                  <span className="text-[color:var(--color-text-tertiary)]">{t('mcpProofFallback')}</span>
-                  <span className="text-[color:var(--color-amber-docs-a95)]">{t('mcpProofStaleCache')}</span>
-                </div>
-              </div>
-              <div
-                data-testid="project-indexing-checkpoint"
-                className="grid gap-1.5 rounded-lg border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-line-a06)] p-2.5 font-mono sm:col-span-2"
-              >
-                <span className="text-[color:var(--color-indigo-accent)]">{t('projectIndexTitle')}</span>
-                <span>{t('projectIndexMcp')}</span>
-                <span>{t('projectIndexCli')}</span>
-                <span>{t('projectIndexMeaningGate')}</span>
-                <span>{t('projectIndexEvidence')}</span>
-                <span>{t('projectIndexReview')}</span>
-                <span className="text-[color:var(--color-amber-docs-a95)]">{t('projectIndexApply')}</span>
-              </div>
-            </div>
+          {view === 'agent' ? (
             <div
-              className="mt-3 border-t border-[color:var(--color-border-soft)] pt-3"
-              data-testid="mcp-client-proof-locations"
+              className="grid min-h-0 flex-1 content-start gap-3 overflow-y-auto p-4"
+              data-testid="app-settings-agent-view"
             >
-              <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
-                {t('clientProofTitle')}
-              </p>
-              <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
-                {t('clientProofBody')}
-              </p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
-                    {t('clientCodexTitle')}
-                  </p>
-                  <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                    {t('clientCodexBody')}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
-                    {t('clientClaudeTitle')}
-                  </p>
-                  <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                    {t('clientClaudeBody')}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
-                    {t('clientCursorVsCodeTitle')}
-                  </p>
-                  <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                    {t('clientCursorVsCodeBody')}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
-                    {t('clientInspectorTitle')}
-                  </p>
-                  <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-                    {t('clientInspectorBody')}
-                  </p>
-                </div>
-              </div>
+              {isLocalVaultLoaded ? (
+                <VaultAgentSetupPanel
+                  canEditCurrent={isLocalVaultLoaded}
+                  localVault={localVault}
+                  validationSummary={localVaultValidationSummary}
+                  onOpenWorkflowGuide={handleOpenWorkflowGuide}
+                />
+              ) : (
+                <>
+                  <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
+                    <p className="text-label font-medium text-[color:var(--color-text-secondary)]">
+                      {t('agentStatusNoVault')}
+                    </p>
+                    <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+                      {t('agentNoVaultHint')}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
+                    <p className="text-label font-medium text-[color:var(--color-text-secondary)]">
+                      {t('mcpProofTitle')}
+                    </p>
+                    <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+                      {t('mcpProofBody')}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void copy(MCP_FIRST_CALLS_PACKET)}
+                      className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a32)] px-2 font-mono text-caption text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                    >
+                      {copyState === 'copied' ? (
+                        <Check size={12} aria-hidden />
+                      ) : (
+                        <Copy size={12} aria-hidden />
+                      )}
+                      {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
+          ) : (
+            <div
+              className="grid min-h-0 flex-1 content-start gap-4 overflow-y-auto p-4"
+              data-testid="app-settings-body"
+            >
+              <SettingsGroup label={t('groupScreen')}>
+                <SettingsRow label={t('languageTitle')} control={<LocaleSwitch />} />
+                {screenControls ? (
+                  <>
+                    <SettingsRow
+                      label={t('viewModeLabel')}
+                      caption={t('viewModeCaption')}
+                      control={
+                        <SegmentSwitch
+                          ariaLabel={t('viewModeLabel')}
+                          testId="app-settings-view-mode"
+                          value={screenControls.audiencePlain}
+                          onChange={screenControls.onAudiencePlainChange}
+                          options={[
+                            { value: false, label: t('viewModeDev') },
+                            { value: true, label: t('viewModePlain') },
+                          ]}
+                        />
+                      }
+                    />
+                    <SettingsRow
+                      label={t('indexDefaultLabel')}
+                      control={
+                        <SegmentSwitch
+                          ariaLabel={t('indexDefaultLabel')}
+                          testId="app-settings-index-default"
+                          value={screenControls.indexCollapsed}
+                          onChange={screenControls.onIndexCollapsedChange}
+                          options={[
+                            { value: false, label: t('indexDefaultExpanded') },
+                            { value: true, label: t('indexDefaultCollapsed') },
+                          ]}
+                        />
+                      }
+                    />
+                  </>
+                ) : null}
+              </SettingsGroup>
+
+              <SettingsGroup label={t('groupWorkspace')}>
+                {showVaultManagement ? (
+                  <SettingsRow
+                    testId="app-settings-workspace-folder"
+                    label={t('workspaceFolderLabel')}
+                    caption={
+                      localVault.status === 'error'
+                        ? (localVault.errorMessage ?? t('workspaceFolderErrorFallback'))
+                        : localVault.status === 'permission-needed'
+                          ? t('workspaceFolderPermissionCaption')
+                          : isLocalVaultLoaded
+                            ? localVaultValidationSummary
+                              ? t('workspaceFolderDocCountIssues', {
+                                  count: localVault.manifest?.docs.length ?? 0,
+                                  errors: localVaultValidationSummary.errorCount,
+                                  warnings: localVaultValidationSummary.warningCount,
+                                })
+                              : t('workspaceFolderDocCount', {
+                                  count: localVault.manifest?.docs.length ?? 0,
+                                })
+                            : undefined
+                    }
+                    captionTone={
+                      localVault.status === 'error'
+                        ? 'danger'
+                        : localVault.status === 'permission-needed'
+                          ? 'warning'
+                          : 'neutral'
+                    }
+                    control={
+                      <>
+                        <span
+                          className={cn(
+                            'max-w-[10rem] truncate text-label',
+                            isLocalVaultLoaded
+                              ? 'text-[color:var(--color-text-primary)]'
+                              : 'text-[color:var(--color-text-quaternary)]',
+                          )}
+                        >
+                          {isLocalVaultLoaded && localVault.handle
+                            ? localVault.handle.name
+                            : localVault.status === 'permission-needed'
+                              ? (localVault.handle?.name ?? t('workspaceFolderEmpty'))
+                              : t('workspaceFolderEmpty')}
+                        </span>
+                        {localVault.status === 'permission-needed' ? (
+                          <button
+                            type="button"
+                            onClick={() => localVault.requestPermission()}
+                            className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-amber-source-a35)] px-2.5 text-label text-[color:var(--color-status-warning)] transition-colors hover:bg-[color:var(--color-amber-source-a12)]"
+                          >
+                            {t('workspaceFolderPermissionAction')}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void localVault.open()}
+                            disabled={vaultBusy}
+                            data-testid="app-settings-open-folder"
+                            className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] disabled:opacity-60"
+                          >
+                            {vaultBusy
+                              ? t('workspaceFolderOpening')
+                              : isLocalVaultLoaded || localVault.status === 'error'
+                                ? t('workspaceFolderChange')
+                                : t('workspaceFolderOpen')}
+                          </button>
+                        )}
+                      </>
+                    }
+                  />
+                ) : null}
+                {/* 최근 작업공간 — vault 가 안 열려 있을 때만(복구 경로).
+                    로드 중엔 "바꾸기"(OS 픽커)가 고빈도 경로다. */}
+                {showVaultManagement &&
+                !isLocalVaultLoaded &&
+                localVault.recentVaults.length > 0
+                  ? localVault.recentVaults.map((record) => (
+                      <div
+                        key={record.desktopRootPath ?? `${record.id}:${record.name}`}
+                        className="flex min-h-11 items-center gap-2 px-3 py-1.5"
+                        data-testid="app-settings-recent-vault"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => void localVault.openRecent(record)}
+                          disabled={vaultBusy}
+                          aria-label={t('workspaceRecentOpenAria', { name: record.name })}
+                          title={record.desktopRootPath ?? record.name}
+                          className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 py-1 text-left transition-colors hover:bg-[color:var(--color-overlay-2)] disabled:opacity-60"
+                        >
+                          <HardDrive
+                            size={12}
+                            aria-hidden
+                            className="shrink-0 text-[color:var(--color-indigo-accent)]"
+                          />
+                          <span className="min-w-0">
+                            <span className="block truncate text-label text-[color:var(--color-text-secondary)]">
+                              {record.name}
+                            </span>
+                            {record.desktopRootPath ? (
+                              <span className="block truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                                {record.desktopRootPath}
+                              </span>
+                            ) : null}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void localVault.forgetRecent(record)}
+                          aria-label={t('workspaceRecentForgetAria', { name: record.name })}
+                          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-danger-a10)] hover:text-[color:var(--color-status-danger)]"
+                        >
+                          <X size={12} aria-hidden />
+                        </button>
+                      </div>
+                    ))
+                  : null}
+                <Link
+                  href={vaultHref}
+                  className="flex min-h-12 items-center justify-between gap-3 px-3 py-2 transition-colors hover:bg-[color:var(--color-overlay-2)]"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-label text-[color:var(--color-text-secondary)]">
+                      {t('vaultTitle')}
+                    </span>
+                    <span className="mt-0.5 block break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+                      {vaultBody}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1 text-label text-[color:var(--color-indigo-accent)]">
+                    {vaultCta}
+                    <ChevronRight size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+                  </span>
+                </Link>
+              </SettingsGroup>
+
+              <SettingsGroup label={t('groupAgent')}>
+                <button
+                  type="button"
+                  data-testid="app-settings-agent-drillin"
+                  onClick={() => setView('agent')}
+                  className="flex min-h-12 w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-label text-[color:var(--color-text-secondary)]">
+                      {t('agentTitle')}
+                    </span>
+                    <span className="mt-0.5 block break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+                      {t('agentBody')}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <span
+                      className={cn(
+                        'text-label',
+                        agentSummaryNeedsAttention
+                          ? 'text-[color:var(--color-status-warning)]'
+                          : 'text-[color:var(--color-text-tertiary)]',
+                      )}
+                      data-testid="app-settings-agent-summary"
+                    >
+                      {agentSummary}
+                    </span>
+                    <ChevronRight size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+                  </span>
+                </button>
+              </SettingsGroup>
             </div>
-            )}
-          </div>
-          ) : null}
+          )}
         </div>
-      </div>
-      </div>
+      </div>,
+          document.body,
+        )
+        : null}
     </details>
+  );
+}
+
+/** 그룹 헤더 + 행 컨테이너 — Toss 식 "그룹 헤더 + 즉시 조작 행" 문법의 뼈대. */
+function SettingsGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <section aria-label={label}>
+      <h3 className="px-1 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        {label}
+      </h3>
+      <div className="mt-1.5 divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+/** 한 행 = 라벨(+필요시 1줄 설명) 좌측, 현재값+조작 우측. */
+function SettingsRow({
+  label,
+  caption,
+  captionTone = 'neutral',
+  control,
+  testId,
+}: {
+  label: string;
+  caption?: string;
+  captionTone?: 'neutral' | 'warning' | 'danger';
+  control: ReactNode;
+  testId?: string;
+}) {
+  return (
+    <div
+      className="flex min-h-12 items-center justify-between gap-3 px-3 py-2"
+      data-testid={testId}
+    >
+      <div className="min-w-0">
+        <p className="text-label text-[color:var(--color-text-secondary)]">{label}</p>
+        {caption ? (
+          <p
+            className={cn(
+              'mt-0.5 break-keep text-caption leading-4',
+              captionTone === 'danger'
+                ? 'text-[color:var(--color-status-danger)]'
+                : captionTone === 'warning'
+                  ? 'text-[color:var(--color-status-warning)]'
+                  : 'text-[color:var(--color-text-quaternary)]',
+            )}
+          >
+            {caption}
+          </p>
+        ) : null}
+      </div>
+      <div className="flex shrink-0 items-center gap-2">{control}</div>
+    </div>
+  );
+}
+
+/** 2-세그먼트 토글 — LocaleSwitch 와 같은 표면 문법(구 설정 기어에서 승계). */
+function SegmentSwitch({
+  ariaLabel,
+  value,
+  options,
+  onChange,
+  testId,
+}: {
+  ariaLabel: string;
+  value: boolean;
+  options: ReadonlyArray<{ value: boolean; label: string }>;
+  onChange: (next: boolean) => void;
+  testId?: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={ariaLabel}
+      data-testid={testId}
+      className="inline-flex items-center gap-px rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-px text-label"
+    >
+      {options.map((option) => {
+        const active = option.value === value;
+        return (
+          <button
+            key={String(option.value)}
+            type="button"
+            onClick={() => onChange(option.value)}
+            aria-pressed={active}
+            className={cn(
+              'flex h-8 items-center justify-center rounded-chip px-2 font-medium transition-colors',
+              active
+                ? 'bg-[color:var(--color-panel)] text-[color:var(--color-text-primary)]'
+                : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]',
+            )}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }

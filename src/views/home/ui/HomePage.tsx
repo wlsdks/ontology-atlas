@@ -28,7 +28,6 @@ import {
   SampleNodeHint,
   useFirstRunSampleModeSettled,
 } from "@/features/first-run-starter";
-import { HeroCollapsed } from "@/widgets/hero-header";
 import { GitStatusTile, useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { AtlasGitPanel } from "@/widgets/atlas-git-panel";
 import dynamic from "next/dynamic";
@@ -176,13 +175,13 @@ import {
   TopologyV2DetailPanel,
   TopologyV2EdgeHoverCard,
   TopologyV2ClusterHoverCard,
-  TopologyV2SettingsGear,
   buildV2Connections,
   buildV2ConnectionGroups,
   buildV2EvidenceRows,
   formatV2HandoffText,
   clearTopologyV2TokensCache,
 } from "@/widgets/topology-map-v2";
+import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { buildTopologyV2Graph } from "../lib/topology-v2-adapter";
 import { deriveDustySlugs } from "../lib/topology-dusty";
 import { clampSynthSize, synthesizeVaultGraph } from "../lib/synth-vault";
@@ -647,41 +646,20 @@ export function HomePage() {
             sessionDirty={ontologyChangeset.touchedNodeIds.size > 0}
           />
         )}
-        <TopologyV2SettingsGear
-          indexDefaultCollapsed={indexPanelCollapsedStored}
-          onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
-          audiencePlain={audiencePlain}
-          onChangeAudiencePlain={setAudiencePlain}
-          changeVaultHref="/docs/?intent=local"
-          // 레일 하단 유틸 3타일(활동·발자취·설정)을 한 타일 문법에 앉힌다
-          // (소유자 실보고 2026-07-23 — 기어만 36px 보더 floating 표면 + 16px
-          // 아이콘이라 이질적이었다). `--app-nav-rail-tile-*` +
-          // `--app-nav-rail-utility-icon-size` 계약.
+        {/* 설정 통합 2026-07-24 — 구 "지도 설정" 팝오버(TopologyV2SettingsGear)
+            폐지. 톱니는 이제 단일 설정 시트(AppSettingsMenu)를 연다. 지도
+            전용 화면 상태(보기 모드·INDEX 기본 상태)는 screenControls 로
+            주입 — 미주입 페이지(빌더 등)에선 해당 행이 없다. 시트는 scrim
+            동반 모달이라 구 기어의 suppressed(transient 상호배제) 신호가
+            더는 필요 없다(⌘K demote 는 시트가 자체 처리). */}
+        <AppSettingsMenu
+          mode={vault.status === 'loaded' ? 'local' : 'static'}
           triggerVariant="rail-tile"
-          popoverAlign="left"
-          popoverSide="top"
-          // M-4 (2) — keyboard-opened transients (⌘K palette, `D` docs drawer)
-          // don't fire the `mousedown`-outside the gear's own outside-click
-          // handler relies on, so they'd leave the gear stacked underneath.
-          // Signal them here so the gear demotes itself. Pointer-driven surfaces
-          // (node/edge click, context menu, graph toggle) already close it via
-          // outside-click.
-          suppressed={ontologySearchOpen || docsDrawerOpen}
-          labels={{
-            trigger: t('controls.settingsGearAriaLabel'),
-            heading: t('controls.settingsGearHeading'),
-            locale: t('controls.settingsGearLocale'),
-            indexDefault: t('controls.settingsGearIndexDefault'),
-            indexDefaultExpanded: t('controls.settingsGearIndexDefaultExpanded'),
-            indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
-            changeVault: t('controls.settingsGearChangeVault'),
-            changeVaultAriaLabel: t('controls.settingsGearChangeVaultAriaLabel'),
-            audience: t('controls.settingsGearAudience'),
-            audienceDev: t('controls.settingsGearAudienceDev'),
-            audiencePlain: t('controls.settingsGearAudiencePlain'),
-            // P2 결함③ — "보기 모드" 행 아래 caption. 발견은 됐어도 뜻이
-            // 없던 결함.
-            audienceCaption: t('controls.settingsGearAudienceCaption'),
+          screenControls={{
+            audiencePlain,
+            onAudiencePlainChange: setAudiencePlain,
+            indexCollapsed: indexPanelCollapsedStored,
+            onIndexCollapsedChange: handleChangeIndexDefaultCollapsed,
           }}
         />
       </>
@@ -691,12 +669,10 @@ export function HomePage() {
       handleChangeIndexDefaultCollapsed,
       audiencePlain,
       setAudiencePlain,
-      ontologySearchOpen,
-      docsDrawerOpen,
       gitPanelOpen,
       gitVaultPath,
       ontologyChangeset,
-      t,
+      vault.status,
     ],
   );
   useNavRailSettingsSlot(navRailSettingsSlot);
@@ -2494,91 +2470,11 @@ export function HomePage() {
                 </div>
               </div>
             </div>
-            {(() => {
-              // R6 오버뷰 census 필 제거(소유자 "필요없어 보임") — 개념/관계·
-              // 이번 주·샘플 카운트는 첫 실행 카드/INDEX 패널이 이미 담당(중복
-              // 잉크). 브랜드 필은 선택/관계 렌즈/드로어 등 affordance 가 있는
-              // 비-오버뷰 상태에서만 남긴다(순수 오버뷰에선 렌더하지 않는다).
-              // 2026-07-23 소유자 실보고: 노드 선택 상태의 "선택한 개념" 필도
-              // 은퇴 — 선택은 팝오버/링이 이미 말하고, INDEX 재열기는 세로 탭이
-              // 담당해 중복. 프로젝트 선택/드로어/관계 렌즈 상태만 유지.
-              const heroPillAffordance =
-                Boolean(selectedProject) || drawerOpen || selectedRelationActive;
-              return (
-                <div
-                  // xl:left-8(32px) → xl:left-[var(--chrome-inset)](24px) —
-                  // feat/chrome-system §4, 24px 정렬 레일에 수렴(단일 출처).
-                  className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-[var(--chrome-inset)] xl:top-8"
-                  data-testid="topology-top-left-chrome-group"
-                  data-workspace-context-state={
-                    selectedRelationActive
-                      ? "compact-active-relation"
-                      : selectedNodeFocusActive
-                        ? selectedInspectorSupportRailVisible
-                          ? "selected-inspector-support-open"
-                          : "selected-inspector-support-closed"
-                        : "default"
-                  }
-                  data-selected-inspector-support-rail={
-                    selectedNodeFocusActive
-                      ? selectedInspectorSupportRailVisible
-                        ? "open"
-                        : "closed"
-                      : undefined
-                  }
-                  data-selected-inspector-support-contract={
-                    selectedNodeFocusActive
-                      ? "left-panel-collapsed-until-user-expands"
-                      : undefined
-                  }
-                >
-                  {heroPillAffordance ? (
-                    <HeroCollapsed
-                      // 확장 hero 가 사라진 surface — 드로어/인스펙터가 열려
-                      // 있을 때만 토글/닫기 동작으로.
-                      onExpand={
-                        selectedNodeFocusActive
-                          ? handleToggleSelectedInspectorSupportRail
-                          : drawerOpen
-                            ? handleClose
-                            : undefined
-                      }
-                      title={selectedProject?.name ?? t('workspace.fallbackTitle')}
-                      // R6 — census subtitle(개념/관계·이번 주·샘플) 제거. affordance
-                      // 상태의 평문 eyebrow 만 남긴다(숫자는 INDEX 패널로 이관).
-                      subtitle={
-                        selectedProject || selectedNodeFocusActive || selectedRelationActive
-                          ? t('workspace.selectedEyebrow')
-                          : t('workspace.expandHint')
-                      }
-                      icon={selectedProject?.icon ?? null}
-                      ariaLabel={
-                        selectedNodeFocusActive
-                          ? selectedInspectorSupportRailVisible
-                            ? t('hero.collapseLeftPanel')
-                            : t('hero.expandLeftPanel')
-                          : drawerOpen
-                            ? t('hero.closeSelected')
-                            : t('hero.expandLeftPanel')
-                      }
-                      titleText={
-                        selectedNodeFocusActive
-                          ? selectedInspectorSupportRailVisible
-                            ? t('hero.collapseLeftPanel')
-                            : t('hero.expandLeftPanel')
-                          : drawerOpen
-                            ? t('hero.closeSelected')
-                            : t('hero.expandLeftPanel')
-                      }
-                      compact={selectedRelationActive}
-                    />
-                  ) : null}
-                  {/* WorkspaceOntologyStrip 제거(2026-06-11) — 분석 패널과
-                      겹쳤고(사용자 보고), 카운트는 pill·범례가, 온톨로지
-                      진입은 우측 라운드 버튼이 이미 담당. */}
-                </div>
-              );
-            })()}
+            {/* 좌상단 브랜드/워크스페이스 필 완전 은퇴 (소유자 지시
+                2026-07-24) — R6(오버뷰 제거)·7-23(선택 상태 은퇴) 이후에도
+                drawerOpen 조건이 남아 노드 클릭마다 사실상 부활했다. 선택은
+                팝오버/링이, INDEX 재열기는 세로 탭이, 프로젝트 이동은 레일이
+                이미 담당 — 중복 잉크라 마운트 자체를 제거한다. */}
             <div
               data-testid="topology-command-chrome"
               data-command-chrome-state={topologyUtilityChromeState}
@@ -2961,36 +2857,20 @@ export function HomePage() {
                         ) : null}
                       </button>
                     )}
-                    {/* 설정 기어 <lg 진입점 (겹침 소탕 2026-07-23) — 내비 레일
-                        (lg+ 전용)의 기어 슬롯이 사라지는 <lg 에서 지도의 설정
-                        (언어·INDEX 기본 상태·vault 교체) 접근 수단이 0 이었다.
-                        레일 슬롯과 같은 컴포넌트·같은 state 를 chrome-tile 변형
-                        으로 레인 끝에 꽂는다 — 하단 탭바 5-목적지 계약은 불변.
-                        lg+ 에선 레일 기어가 담당하므로 이 타일은 사라진다. */}
+                    {/* 설정 <lg 진입점 (겹침 소탕 2026-07-23) — 내비 레일
+                        (lg+ 전용)의 설정 슬롯이 사라지는 <lg 에서 설정 접근
+                        수단이 0 이었다. 레일 슬롯과 같은 단일 설정 시트를
+                        chrome-tile 변형으로 레인 끝에 꽂는다 — 하단 탭바
+                        5-목적지 계약은 불변. lg+ 에선 레일 톱니가 담당. */}
                     <div className="lg:hidden">
-                      <TopologyV2SettingsGear
-                        indexDefaultCollapsed={indexPanelCollapsedStored}
-                        onChangeIndexDefaultCollapsed={handleChangeIndexDefaultCollapsed}
-                        audiencePlain={audiencePlain}
-                        onChangeAudiencePlain={setAudiencePlain}
-                        changeVaultHref="/docs/?intent=local"
+                      <AppSettingsMenu
+                        mode={vault.status === 'loaded' ? 'local' : 'static'}
                         triggerVariant="chrome-tile"
-                        popoverAlign="right"
-                        popoverSide="bottom"
-                        suppressed={ontologySearchOpen || docsDrawerOpen}
-                        labels={{
-                          trigger: t('controls.settingsGearAriaLabel'),
-                          heading: t('controls.settingsGearHeading'),
-                          locale: t('controls.settingsGearLocale'),
-                          indexDefault: t('controls.settingsGearIndexDefault'),
-                          indexDefaultExpanded: t('controls.settingsGearIndexDefaultExpanded'),
-                          indexDefaultCollapsed: t('controls.settingsGearIndexDefaultCollapsed'),
-                          changeVault: t('controls.settingsGearChangeVault'),
-                          changeVaultAriaLabel: t('controls.settingsGearChangeVaultAriaLabel'),
-                          audience: t('controls.settingsGearAudience'),
-                          audienceDev: t('controls.settingsGearAudienceDev'),
-                          audiencePlain: t('controls.settingsGearAudiencePlain'),
-                          audienceCaption: t('controls.settingsGearAudienceCaption'),
+                        screenControls={{
+                          audiencePlain,
+                          onAudiencePlainChange: setAudiencePlain,
+                          indexCollapsed: indexPanelCollapsedStored,
+                          onIndexCollapsedChange: handleChangeIndexDefaultCollapsed,
                         }}
                       />
                     </div>

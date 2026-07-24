@@ -81,7 +81,7 @@ export function useNavRailShellValue(): NavRailShellState {
 }
 
 /**
- * 페이지가 레일 하단에 자기 설정 UI(예: 지형도의 `TopologyV2SettingsGear`)를
+ * 페이지가 레일 하단에 자기 설정 UI(예: 지형도의 설정 시트 트리거(`AppSettingsMenu` rail-tile))를
  * 꽂을 때 쓴다. `slot`이 리렌더마다 새 객체여도 무방 — 실제 내용이 바뀔 때만
  * effect 가 다시 돈다는 보장은 없으니 호출 측에서 `useMemo`로 슬롯 자체를
  * 안정화하는 편이 불필요한 재등록을 줄인다. 언마운트 시 자동으로 비운다.
