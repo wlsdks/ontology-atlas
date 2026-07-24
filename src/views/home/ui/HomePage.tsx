@@ -164,6 +164,7 @@ import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-cen
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
+import { restoreTopologyFocusAfterDatasheetClose } from "../lib/topology-focus-return";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
 import { AgentConnectSheet, useAgentConnectLauncher } from "@/widgets/agent-connect";
@@ -1745,6 +1746,15 @@ export function HomePage() {
         current.analysisMode === "focus" ? "overview" : current.analysisMode,
     }));
   }, [setRouteState]);
+
+  const handleDatasheetClose = useCallback(() => {
+    const focusReturnNodeId = panelDatasheetModel?.nodeId ?? null;
+    handleClose();
+    if (typeof window === "undefined") return;
+    window.requestAnimationFrame(() => {
+      restoreTopologyFocusAfterDatasheetClose(focusReturnNodeId);
+    });
+  }, [handleClose, panelDatasheetModel?.nodeId]);
 
   // 가이드 투어 (2026-07-23, `src/features/guided-tour`) — 지도 화면(/) 전담
   // 의미 문해 투어. `canResolveTourAnchor` 는 이 view 가 testid(DOM) 또는
@@ -3880,7 +3890,7 @@ export function HomePage() {
                 }}
                 onSelectConnection={(id) => handleSelect(id)}
                 onCopyHandoff={copyV2NodeHandoff}
-                onClose={handleClose}
+                onClose={handleDatasheetClose}
                 onSetPathSource={() => handleSetPathSource(panelDatasheetModel.nodeId)}
                 onEnterRealm={
                   // S4 — 컨테이너 노드(자식 있음)이며 영역 밖일 때만 2차 발견

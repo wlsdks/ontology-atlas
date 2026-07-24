@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T19:21:05.880Z",
+  "generatedAt": "2026-07-24T19:50:31.685Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7713,8 +7713,8 @@
       },
       "headings": [],
       "excerpt": "/topology supports ontology-aware node inspection instead of treating non-project nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer starts with a fixed node profile labeled \"개념 정보\" / \"Concept profile\": kind/lens, source slug, and a short description summary. That s",
-      "wordCount": 756,
-      "updatedAt": "2026-07-24T20:43:12+09:00",
+      "wordCount": 827,
+      "updatedAt": "2026-07-24T19:47:05.021Z",
       "linksOut": []
     },
     {
@@ -9425,7 +9425,7 @@
       ],
       "excerpt": "Markdown editor used by Source Vault for local .md files. It keeps file writes explicit through the Save button / Cmd+S, blocks silent overwrite on disk conflicts, and stores unsaved edits as a browser-local temporary draft before final disk save. The editor exposes that contract in the UI as separate Auto backup and F",
       "wordCount": 251,
-      "updatedAt": "2026-07-24T19:19:07.503Z",
+      "updatedAt": "2026-07-25T04:21:27+09:00",
       "linksOut": []
     },
     {
@@ -10177,14 +10177,19 @@
           "slug": "ux-011-외부-편집-뒤-저장이-최신-mtime을-기준으로-삼아-변경을-덮어씀"
         },
         {
+          "depth": 3,
+          "text": "UX-012 — 노드 상세를 닫으면 키보드 포커스가 사라짐",
+          "slug": "ux-012-노드-상세를-닫으면-키보드-포커스가-사라짐"
+        },
+        {
           "depth": 2,
           "text": "현재 PO·디자인 판정",
           "slug": "현재-po디자인-판정"
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다. 4. 실패 테스트를 먼저 추가한다. 5. 가장 작은 일관된 슬라이스로 수정한다. 6. 집중 테스트와 /Appl",
-      "wordCount": 2215,
-      "updatedAt": "2026-07-24T19:21:00.263Z",
+      "wordCount": 2577,
+      "updatedAt": "2026-07-24T19:50:27.972Z",
       "linksOut": []
     },
     {
