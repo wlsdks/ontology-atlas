@@ -58,6 +58,9 @@ export function GuidedTourCard({ tour, placement, width, style }: GuidedTourCard
       className={cn(
         "fixed z-[75] rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--color-panel)] p-4 shadow-[var(--chrome-shadow)]",
         "transition-opacity duration-[var(--topology-tour-transition-ms)] ease-out motion-reduce:transition-none",
+        // 단계 전환 등장 — 오버레이가 `key={step.id}` 로 remount 시키므로 이
+        // 키프레임(기존 패널 크로스페이드 재사용)이 매 단계 한 번 돈다.
+        "animate-[panelCrossfadeIn_var(--topology-motion-panel-duration)_var(--topology-motion-ease-out)] motion-reduce:animate-none",
         "focus:outline-none",
       )}
       style={{ width, ...style }}
