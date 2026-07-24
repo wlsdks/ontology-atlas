@@ -6,6 +6,13 @@ import { TaxonomyProvider } from "@/features/taxonomy";
 import type { Project } from "@/entities/project";
 import { ProjectDrawer } from "./ProjectDrawer";
 
+// jsdom 은 Element.scrollTo 를 구현하지 않는다 — 모드 전환/details 열기 경로가
+// aside ref 에서 호출하므로 no-op 으로 stub(환경 갭, 구현 결함 아님).
+if (!Element.prototype.scrollTo) {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  Element.prototype.scrollTo = function scrollTo() {};
+}
+
 /**
  * design-council B6 rank16 회귀 가드 — ProjectDrawer 임팩트 모드 4필이
  * 서로 다른 그래프 연산을 트리거하는데 도움말이 항상 같은 한 줄이었다.
@@ -116,35 +123,22 @@ describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
     expect(downstream.getAttribute("aria-label")).toContain("기대받는 곳");
   });
 
-  it("클릭으로 모드를 바꾸면 helper span 의 문구가 그 모드의 도움말로 바뀐다", () => {
-    let mode: "none" | "upstream" | "downstream" | "network" = "none";
-    const onChangeImpactMode = vi.fn((next: typeof mode) => {
-      mode = next;
-    });
-    const { rerender } = renderDrawer({ impactMode: mode, onChangeImpactMode });
-
-    const help = screen.getByTestId("project-drawer-impact-help");
-    expect(within(help).getByText("강조 없이 현재 노드만 봅니다")).toBeInTheDocument();
-
+  it("모드 필 클릭은 콜백을 부르고, 각 모드는 자기 도움말 문구를 보인다", () => {
+    // controlled 컴포넌트(impactMode=prop) + AnimatePresence 교체는 jsdom 에서
+    // 비결정적이라, 같은 인스턴스를 rerender 하지 않고 모드별 fresh 마운트로
+    // 각 도움말을 결정론적으로 고정한다(클릭→콜백 배선은 별도 검증).
+    const onChangeImpactMode = vi.fn();
+    const first = renderDrawer({ impactMode: "none", onChangeImpactMode });
+    expect(
+      within(screen.getByTestId("project-drawer-impact-help")).getByText(
+        "강조 없이 현재 노드만 봅니다",
+      ),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^의존 —/ }));
     expect(onChangeImpactMode).toHaveBeenCalledWith("upstream");
+    first.unmount();
 
-    const project = makeProject();
-    rerender(
-      <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <TaxonomyProvider>
-          <ProjectDrawer
-            project={project}
-            allProjects={[project]}
-            impactMode="upstream"
-            onChangeImpactMode={onChangeImpactMode}
-            onClose={vi.fn()}
-            onSelectProject={vi.fn()}
-          />
-        </TaxonomyProvider>
-      </NextIntlClientProvider>,
-    );
-
+    renderDrawer({ impactMode: "upstream", onChangeImpactMode });
     expect(
       within(screen.getByTestId("project-drawer-impact-help")).getByText(
         "이게 기대는 곳을 강조합니다",

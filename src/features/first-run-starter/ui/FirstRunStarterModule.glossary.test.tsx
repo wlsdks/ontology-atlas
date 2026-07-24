@@ -86,8 +86,11 @@ describe("FirstRunStarterModule 3-용어 glossary 승격 (rank17)", () => {
     // <details> 등 접힘 컨테이너가 아니라 바로 렌더된 <dl> 이어야 한다.
     expect(glossary.tagName).toBe("DL");
 
+    // title 은 <dl> 위 라벨(<p>)이라 dl 밖에서 찾는다.
+    expect(
+      screen.getByText(koMessages.searchWidgets.shortcuts.glossary.title),
+    ).toBeInTheDocument();
     const body = within(glossary);
-    expect(body.getByText(koMessages.searchWidgets.shortcuts.glossary.title)).toBeInTheDocument();
     expect(body.getByText(koMessages.searchWidgets.shortcuts.glossary.domainTerm)).toBeInTheDocument();
     expect(
       body.getByText(koMessages.searchWidgets.shortcuts.glossary.domainDefinition),
