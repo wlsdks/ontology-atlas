@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T22:02:46.797Z",
+  "generatedAt": "2026-07-24T22:15:50.370Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-25 — 언어 전환에서 현재 과업 URL 상태 보존",
+          "slug": "2026-07-25-언어-전환에서-현재-과업-url-상태-보존"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-25 — 다운로드 첫 화면을 설치 판단 우선으로 재정렬",
           "slug": "2026-07-25-다운로드-첫-화면을-설치-판단-우선으로-재정렬"
         },
@@ -4778,9 +4783,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. /download로 직접 들어온 사용자가 구 LandingPage 소개 전체를 지나야 릴리스 상태를 볼 수 있던 정보 위계를 바로잡았다. 다운로드 제목·G",
-      "wordCount": 38444,
-      "updatedAt": "2026-07-24T22:02:30.266Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 인사이트 신선도처럼 query로 선택 상태를 갖는 화면에서 EN/KO를 바꾸면 query가 사라져 기본 탭으로 돌아가던 문제를 수정했다. locale pa",
+      "wordCount": 38521,
+      "updatedAt": "2026-07-24T22:15:36.419Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5907,8 +5912,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
-      "wordCount": 12138,
-      "updatedAt": "2026-07-24T22:02:30.264Z",
+      "wordCount": 12143,
+      "updatedAt": "2026-07-24T22:15:36.416Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6943,7 +6948,7 @@
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
       "wordCount": 3701,
-      "updatedAt": "2026-07-24T22:02:30.266Z",
+      "updatedAt": "2026-07-25T07:07:51+09:00",
       "linksOut": []
     },
     {
@@ -8605,9 +8610,9 @@
           "slug": "locale-switch"
         }
       ],
-      "excerpt": "src/features/locale-switch/ui/LocaleSwitch.tsx renders the compact EN / KO language toggle used in the public landing and other top-level chrome. The switch persists the selected locale in ontology-atlas:locale, rewrites the current locale-prefixed URL without a full reload, and keeps each language button at a 32px min",
-      "wordCount": 71,
-      "updatedAt": "2026-06-06T02:19:43+09:00",
+      "excerpt": "src/features/locale-switch/ui/LocaleSwitch.tsx renders the compact EN / KO language toggle used in the public landing and other top-level chrome. The switch persists the selected locale in ontology-atlas:locale, rewrites only the current URL's locale segment without a full reload, and keeps each language button at a 32",
+      "wordCount": 114,
+      "updatedAt": "2026-07-24T22:15:36.417Z",
       "linksOut": []
     },
     {
@@ -10242,14 +10247,19 @@
           "slug": "ux-021-다운로드-경로의-첫-화면이-설치-판단-대신-제품-소개를-먼저-요구"
         },
         {
+          "depth": 3,
+          "text": "UX-022 — 언어 전환이 현재 인사이트 과업을 기본 탭으로 초기화",
+          "slug": "ux-022-언어-전환이-현재-인사이트-과업을-기본-탭으로-초기화"
+        },
+        {
           "depth": 2,
           "text": "현재 PO·디자인 판정",
           "slug": "현재-po디자인-판정"
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다. 4. 실패 테스트를 먼저 추가한다. 5. 가장 작은 일관된 슬라이스로 수정한다. 6. 집중 테스트와 /Appl",
-      "wordCount": 5540,
-      "updatedAt": "2026-07-24T22:02:30.264Z",
+      "wordCount": 5903,
+      "updatedAt": "2026-07-24T22:15:36.417Z",
       "linksOut": []
     },
     {

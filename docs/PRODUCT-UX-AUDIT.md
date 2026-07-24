@@ -42,7 +42,7 @@
 | A15–A16 | 공방 ENHANCE/CREATE → 쓰기 → 파일 재열기 | 임시 vault의 ENHANCE 관계 쓰기와 CREATE 노드 생성·중복 차단·디스크/validator/문서함 재열기 검증 완료 |
 | A17 | 인사이트 읽기·필터·지도 복귀 | 읽기·탭 키보드·지도 왕복 1차 설치 앱 검증 완료 |
 | A18 | 다운로드 안내 | 설치 가능 여부·CTA·대기 상태 첫 화면/키보드 검증 완료 |
-| A19 | 한국어/영어 동일 과업·동일 사실 | 대기 |
+| A19 | 한국어/영어 동일 과업·동일 사실 | 인사이트 신선도 KO↔EN 동일 URL·탭·사실 왕복 검증 완료 |
 | A20 | 1100×800, 1512×917, 1920×1080, 2560×1440 + reduced motion | 대기 |
 
 ## 이슈 장부
@@ -669,6 +669,54 @@
   release availability 안내가 동시에 보였다. 소개 히어로는 divider 아래에서
   시작했다. AX 키보드 순서는 primary CTA → source CTA였고 두 링크의 실제
   GitHub 목적지도 유지됐다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-022 — 언어 전환이 현재 인사이트 과업을 기본 탭으로 초기화
+
+- 심각도: `S3`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 인사이트 `신선도` 검토 → 설정 → EN 전환 → 같은 검토 계속
+- 관측 현상: 설치 앱에서 `/ko/ontology/insights/?tab=freshness`와 선택된
+  `신선도` 탭을 만든 뒤 EN을 선택하면 `/en/ontology/insights/`로 이동해
+  query가 사라지고 기본 `DO NEXT` 탭이 열렸다. 설정 시트는 닫히고 포커스는
+  HTML 문서 루트로 이동했다.
+- 사용자 문제: 언어는 같은 과업의 표현만 바꾸는 제어인데 현재 검토 대상과
+  위치를 함께 버려, 사용자가 다시 신선도 탭을 찾아야 한다.
+- 사용자 순간: 다국어 팀원이 같은 온톨로지 사실·필터·선택 상태를 다른
+  언어로 확인하거나 화면을 공유하는 순간이다.
+- 현재 대안: 언어 전환 뒤 사라진 query 상태를 기억해 같은 탭·노드·필터를
+  수동으로 다시 연다.
+- 온톨로지·에이전트 가치: 어권이 바뀌어도 같은 vault facts와 decision
+  context를 가리켜야 사람과 에이전트의 인계가 동일한 상태를 재현한다.
+- 최소화: 화면·토큰·자산·모션은 바꾸지 않는다. locale path segment만
+  교체하되 클릭 순간의 raw query와 hash를 그대로 붙이고
+  `router.replace`로 히스토리 증가 없이 전환한다.
+- 검증 계획: locale-prefixed/non-prefixed와 trailing slash, 중복 query,
+  Unicode/reserved value, hash를 pure helper 테스트로 고정한다. 설치 앱에서
+  KO freshness → EN freshness → KO freshness 왕복 후 URL·선택 탭·표시
+  facts·`documentElement.lang`·locale `aria-pressed`가 같은 과업을 유지하는지
+  확인한다. 설정 닫힘과 문서 루트 포커스는 별도 접근성 잔여 이슈로 기록한다.
+- 수정: locale segment만 교체하는 `buildLocaleTarget`에 클릭 순간의
+  `window.location.search`·`hash`를 전달한다. URLSearchParams 재직렬화를
+  피했기 때문에 중복 key 순서와 원래 인코딩도 그대로 남는다.
+  `router.replace(target, { scroll: false })`로 history와 검토 위치를 늘리거나
+  초기화하지 않는다.
+- 회귀 증거: `LocaleSwitch.test.tsx` 7개가 raw query/hash, 중복 key,
+  Unicode/reserved encoding, locale-prefixed/non-prefixed, `/en`·`/en/`·`/`
+  trailing slash와 실제 replace 인수를 고정한다. 설정 통합 테스트를 포함한
+  집중 테스트는 `2 파일 · 23개`, TypeScript, touched ESLint, production
+  build와 desktop deploy가 통과했다.
+- 설치 앱 증거: `/Applications/Ontology Atlas.app` 1512×917에서
+  `/ko/ontology/insights/?tab=freshness`의 `신선도 12주`와
+  `11 개념 · 10 관계 · 1 도메인`을 확인한 뒤 설정에서 EN을 선택했다.
+  `/en/ontology/insights/?tab=freshness`, `FRESHNESS 12W`,
+  `11 Concepts · 10 Relations · 1 Domains`가 유지됐고, 설정을 다시 열었을
+  때 EN은 `aria-pressed=true`, KO는 false였다. KO로 되돌린 뒤에도 같은
+  query·신선도 탭·세 사실이 복구됐다.
+- 잔여 판정: locale navigation 뒤 설정 시트가 닫히고 포커스가 새 문서의
+  HTML root로 가는 현재 동작은 trap이나 과업 상태 유실은 아니지만,
+  전환 호출점 복귀가 더 나은지는 A20 접근성·reduced-motion sweep에서
+  별도로 판정한다.
 - PO·디자인 판정: **Build and verify**
 
 ## 현재 PO·디자인 판정

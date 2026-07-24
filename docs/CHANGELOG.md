@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-07-25 — 언어 전환에서 현재 과업 URL 상태 보존
+
+인사이트 `신선도`처럼 query로 선택 상태를 갖는 화면에서 EN/KO를 바꾸면
+query가 사라져 기본 탭으로 돌아가던 문제를 수정했다.
+
+- locale path segment만 바꾸고 raw query·hash는 그대로 유지한다. 중복 key
+  순서와 기존 Unicode/reserved-character 인코딩도 재직렬화하지 않는다.
+- `router.replace(..., { scroll: false })`를 유지해 history를 늘리거나 같은
+  검토 위치를 초기화하지 않는다.
+- 설치 앱에서 KO `신선도` → EN `FRESHNESS` → KO `신선도` 왕복 뒤에도
+  `?tab=freshness`, 개념/관계/도메인 facts, 선택 탭이 같음을 확인했다.
+
 ## 2026-07-25 — 다운로드 첫 화면을 설치 판단 우선으로 재정렬
 
 `/download`로 직접 들어온 사용자가 구 LandingPage 소개 전체를 지나야

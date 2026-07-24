@@ -704,13 +704,10 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
   uses, so desktop and mobile can never disagree on which destination is lit
 
 ### `AppSettingsMenu` (per-page header — Projects list, Docs, Insights)
-- The old `OperationsNav` gear-triggered settings modal, extracted into its
-  own widget (`src/widgets/app-settings-menu`) because the rail is too narrow
-  (`--app-nav-rail-width`) to host its popover. Same 5 tabs as before:
-  General / MCP+Agents / Vault / Appearance / Verification — `ThemeToggle`
-  and `LocaleSwitch` live inside the Appearance tab; Verification surfaces the
-  MCP connection-state ladder and proof-decision order; MCP+Agents exposes a
-  copyable first-contact MCP proof prompt
+- The old 5-tab settings modal is now one compact settings sheet
+  (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI
+  agent entry are scanned in one column. `LocaleSwitch` is an immediate screen
+  control; the long MCP connection proof stays behind the AI agent drill-in.
 - `LiveActivityIndicator` (agent activity heartbeat status, unchanged) mounts
   next to it on the same three pages — this pairing is the "zero feature
   loss" replacement for what `OperationsNav`'s right-hand cluster used to show
@@ -737,7 +734,11 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
 
 ### `LocaleSwitch`
 - Two-button toggle EN / KO
-- Replaces locale prefix in pathname; preserves rest (NOT query params — Scenario 9 finding, R9 deferred)
+- Replaces only the locale prefix while preserving the raw query and hash,
+  including duplicate-key order and existing encoding. Uses
+  `router.replace(..., {scroll: false})`, so changing the language does not add
+  browser history or reset URL-addressed task state such as the selected
+  Insights tab.
 - localStorage `ontology-atlas:locale`
 
 ### `ThemeToggle`
