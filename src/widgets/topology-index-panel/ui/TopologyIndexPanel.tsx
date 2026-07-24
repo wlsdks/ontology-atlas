@@ -105,6 +105,9 @@ export interface TopologyIndexPanelProps {
    * 시 카드가 CTA 를 렌더하지 않는다.
    */
   onStartTour?: () => void;
+  /** 2026-07-24 온보딩 라운드 — 첫 실행 카드의 '쉬운 말로 보기' 1클릭 토글.
+   *  audiencePlain 상태는 HomePage 소유(`plainMode` prop 과 같은 출처). */
+  onEnablePlainMode?: () => void;
   labels: TopologyIndexPanelLabels;
   className?: string;
   /** 푸터 "에이전트 동기화" 뒤에 붙는 성장 신호 조각(예: " · 이번 주 +1") —
@@ -215,6 +218,7 @@ export function TopologyIndexPanel({
   onOpenAgentConnect = null,
   agentActivityHref = null,
   onStartTour,
+  onEnablePlainMode,
   domainCensus = null,
   lens: lensProp,
   onLensChange,
@@ -332,6 +336,8 @@ export function TopologyIndexPanel({
         relations={totalRelations}
         domains={domainCount}
         onStartTour={onStartTour}
+        onEnablePlainMode={onEnablePlainMode}
+        audiencePlain={plainMode}
       />
       {/* v2.1 헤더 — 라벨 + 실측 총수 + 접기만. 에이전트 동기화 상태는
           푸터로 이관(아래) — 헤더는 "이 패널이 무엇인지", 푸터는 "언제

@@ -362,7 +362,8 @@
       "tier_element": "Element view",
       "zoomHint": "zoom in to reveal elements",
       "zoomHintPlain": "click a dot to reveal its elements"
-    }
+    },
+    "plainModeCta": "Switch to plain-language view"
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",

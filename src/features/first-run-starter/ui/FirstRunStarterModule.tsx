@@ -34,6 +34,13 @@ export interface FirstRunStarterModuleProps {
    * 생략하면 CTA 를 렌더하지 않는다.
    */
   onStartTour?: () => void;
+  /**
+   * 2026-07-24 온보딩 라운드 — 톱니 메뉴 안에만 있던 '일반(쉬운 말)' 보기를
+   * 첫 실행 카드에서 1클릭으로 켠다. 콜백이 있으면 힌트 문장 대신 토글
+   * 버튼을 렌더하고, 이미 켜져 있으면(audiencePlain) 아무것도 안 보여준다.
+   */
+  onEnablePlainMode?: () => void;
+  audiencePlain?: boolean;
 }
 
 /**
@@ -61,6 +68,8 @@ export function FirstRunStarterModule({
   relations,
   domains,
   onStartTour,
+  onEnablePlainMode,
+  audiencePlain = false,
 }: FirstRunStarterModuleProps) {
   const t = useTranslations("firstRunStarter");
   // rank17 — ShortcutSheet 와 같은 i18n 네임스페이스를 그대로 재사용
@@ -251,14 +260,28 @@ export function FirstRunStarterModule({
       </p>
 
       {/* P2 결함③ (사용성 전수 검수 2026-07-23) — 비개발자가 기어 속 "보기
-          모드" 토글의 존재를 알 방법이 0 이었다. 배너/팝업 없이, dismiss 행
-          바로 아래 조용한 한 줄로 유도 경로 하나만 확보한다. */}
-      <p
-        data-testid="first-run-starter-plain-mode-hint"
-        className="mt-1 text-[10.5px] leading-[1.5] text-[color:var(--topology-v2-panel-text-quaternary)]"
-      >
-        {t("plainModeHint")}
-      </p>
+          모드" 토글의 존재를 알 방법이 0 이었다. 2026-07-24 온보딩 라운드:
+          콜백이 오면 힌트 문장을 1클릭 토글 버튼으로 승격("톱니에서 켜세요"
+          라는 원거리 안내 자체가 마찰이었다). 콜백이 없으면 종전 힌트 유지. */}
+      {onEnablePlainMode ? (
+        audiencePlain ? null : (
+          <button
+            type="button"
+            data-testid="first-run-plain-toggle"
+            onClick={onEnablePlainMode}
+            className="mt-1 text-[11px] text-[color:var(--color-indigo-accent)] underline-offset-2 transition-colors hover:underline"
+          >
+            {t("plainModeCta")}
+          </button>
+        )
+      ) : (
+        <p
+          data-testid="first-run-starter-plain-mode-hint"
+          className="mt-1 text-[10.5px] leading-[1.5] text-[color:var(--topology-v2-panel-text-quaternary)]"
+        >
+          {t("plainModeHint")}
+        </p>
+      )}
 
       {/* rank17 (design-council B6) — 도메인/역량/요소 3-용어 정의를 "?"
           단축키 모달에서 이 첫실행 카드로 승격. disclosure 뒤에 숨기지

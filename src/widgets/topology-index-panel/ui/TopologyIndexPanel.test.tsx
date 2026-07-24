@@ -401,6 +401,11 @@ describe("TopologyIndexPanel", () => {
       concepts: 102,
       relations: 478,
       domains: 6,
+      // 2026-07-24 온보딩 라운드 — 투어/일반 모드 콜백은 HomePage 가 줄 때만
+      // 정의된다(이 테스트는 미전달 → undefined 통과 확인).
+      onStartTour: undefined,
+      onEnablePlainMode: undefined,
+      audiencePlain: false,
     });
   });
 

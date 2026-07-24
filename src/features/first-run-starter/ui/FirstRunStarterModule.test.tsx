@@ -86,6 +86,38 @@ describe('FirstRunStarterModule', () => {
     expect(screen.queryByTestId('first-run-tour-cta')).not.toBeInTheDocument();
   });
 
+  // 2026-07-24 온보딩 라운드 — 톱니 속 '일반' 토글의 원거리 힌트를 1클릭
+  // 토글로 승격. 콜백이 있으면 버튼, 이미 켜져 있으면 비노출, 콜백이 없으면
+  // 종전 힌트 문장 유지(P2 결함③ 하위호환).
+  it('promotes the plain-mode hint to a one-click toggle when the callback is provided', () => {
+    const onEnablePlainMode = vi.fn();
+    render(
+      <FirstRunStarterModule
+        concepts={1}
+        relations={1}
+        domains={1}
+        onEnablePlainMode={onEnablePlainMode}
+      />,
+    );
+    expect(screen.queryByTestId('first-run-starter-plain-mode-hint')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('first-run-plain-toggle'));
+    expect(onEnablePlainMode).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the plain-mode toggle entirely once plain mode is already on', () => {
+    render(
+      <FirstRunStarterModule
+        concepts={1}
+        relations={1}
+        domains={1}
+        onEnablePlainMode={vi.fn()}
+        audiencePlain
+      />,
+    );
+    expect(screen.queryByTestId('first-run-plain-toggle')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('first-run-starter-plain-mode-hint')).not.toBeInTheDocument();
+  });
+
   // 페르소나 재조사 개선 후보 2 (2026-07-23) — 완전 초심자는 카드에서
   // 화면 설명은 읽지만 제품 이름을 알 방법이 없었다. 브랜드 워드마크
   // 한 줄이 캡션 위에 항상 렌더되는지 고정한다.

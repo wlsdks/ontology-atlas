@@ -3205,6 +3205,7 @@ export function HomePage() {
                     onSelect={(id) => handleSelect(id)}
                     onCollapse={handleIndexCollapse}
                     onStartTour={openGuidedTour}
+                    onEnablePlainMode={() => setAudiencePlain(true)}
                     // P1 결함①a — element 행이 왜 안 보이는지 설명하는
                     // 조용한 힌트 행 게이트. treeResult 는 이미 위에서
                     // element 를 제외했다(단일 진실원 무변경).
