@@ -10,6 +10,9 @@ import {
 } from "../model/resolve-anchor-rect";
 import { GuidedTourCard } from "./GuidedTourCard";
 
+/** 4단계 funnel 구멍의 프로브 대비 여유 — 시각 노드와의 순간 오차 흡수. */
+const TOUR_HOLE_PADDING = 16;
+
 export interface GuidedTourOverlayProps {
   tour: UseGuidedTourResult;
   /**
@@ -116,7 +119,19 @@ export function GuidedTourOverlay({ tour, canvasAnchorRef }: GuidedTourOverlayPr
 
   const isInteractive = Boolean(step.interactive);
   // 인터랙티브(4단계) 클릭 funnel — 컷아웃 원의 bbox 만 캔버스로 통과.
-  const interactiveHole = isInteractive ? anchorRect : null;
+  // 구멍은 프로브 rect 보다 사방 16px 넓게 뚫는다 — 카메라 스프링 진행 중
+  // 스트립(React state, 1프레임 지연)과 그려진 노드 사이의 순간 오차를
+  // 흡수해 "밝은 노드를 눌렀는데 안 먹는" 정지를 막는다 (2026-07-24 라이브
+  // 관측 하드닝, `guided-tour.spec.ts` "probe center" 회귀).
+  const interactiveHole =
+    isInteractive && anchorRect
+      ? {
+          top: anchorRect.top - TOUR_HOLE_PADDING,
+          left: anchorRect.left - TOUR_HOLE_PADDING,
+          width: anchorRect.width + TOUR_HOLE_PADDING * 2,
+          height: anchorRect.height + TOUR_HOLE_PADDING * 2,
+        }
+      : null;
 
   return (
     <div data-testid="guided-tour-overlay" data-tour-step={step.id}>
