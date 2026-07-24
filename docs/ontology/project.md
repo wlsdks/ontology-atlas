@@ -33,4 +33,4 @@ capability boundary 를 설명할 때 들어오고, source artifact 는 그 의�
 - **md 가 진실원**: vault 의 frontmatter 가 ontology 그대로
 - **local-first**: 사용자 디스크 (vault) 가 단일 진실원. 인증 / 백엔드 의존 0.
 - **AI agent partner**: MCP 서버를 통해 Claude Code 등이 ontology 를 read/write
-- **2 view**: topology (canvas-2D `topology-map-v2` — `/`, `/topology`, 문서함 INDEX 포함; `/ontology` 는 그 안으로 흡수되는 얇은 리다이렉트), studio (나침 무대 `/ontology/studio` — 노드 의미 완성 + frontmatter 쓰기 표면; 구 xyflow ERD 빌더 `/ontology/edit` 는 2026-07-24 은퇴 → 스튜디오로 리다이렉트)
+- **2 view**: topology (canvas-2D `topology-map-v2` — `/`, `/topology`, 문서함 INDEX 포함; `/ontology` 는 그 안으로 흡수되는 얇은 리다이렉트), workshop (나침 무대 `/ontology/studio` — 노드 의미 완성 + frontmatter 쓰기 표면; 구 xyflow ERD 빌더 `/ontology/edit` 는 2026-07-24 은퇴 → 공방으로 리다이렉트)

@@ -8,7 +8,7 @@
       "download": "다운로드",
       "projects": "프로젝트",
       "ontology": "온톨로지",
-      "ontologyStudio": "온톨로지 스튜디오",
+      "ontologyStudio": "온톨로지 공방",
       "ontologyInsights": "그래프 인사이트",
       "projectNew": "새 프로젝트"
     }
@@ -76,7 +76,7 @@
     "ariaLabel": "주요 이동",
     "map": "지도",
     "docs": "문서함",
-    "studio": "스튜디오",
+    "studio": "공방",
     "insights": "인사이트",
     "projects": "프로젝트"
   },
@@ -1101,7 +1101,7 @@
         "neglectedHubMetric": "연결 {degree} · {days}일째 그대로",
         "cycleMetric": "노드 {length}",
         "openMap": "지도",
-        "openBuilder": "스튜디오",
+        "openBuilder": "공방",
         "handoffCopy": "에이전트에게",
         "emptyQueue": "지금은 손볼 것이 없어요 — 그래프가 건강합니다.",
         "moreCount": "외 {count}개 — 전체는 에이전트 핸드오프로",
@@ -1791,8 +1791,8 @@
       "pathChipPacketHopsUnknown": "경로 없음",
       "pathChipPacketSourceOntologyUrl": "출발 온톨로지 URL",
       "pathChipPacketTargetOntologyUrl": "도착 온톨로지 URL",
-      "pathChipPacketSourceBuilderUrl": "출발 스튜디오 URL",
-      "pathChipPacketTargetBuilderUrl": "도착 스튜디오 URL",
+      "pathChipPacketSourceBuilderUrl": "출발 공방 URL",
+      "pathChipPacketTargetBuilderUrl": "도착 공방 URL",
       "pathChipPacketMcpCheck": "MCP 점검"
     },
     "insightsReturn": {
@@ -2030,7 +2030,7 @@
       "copy": "다음 액션 복사",
       "copied": "에이전트 핸드오프 호출을 복사했어요",
       "openDocument": "문서 열기 →",
-      "openStudio": "스튜디오에서 완성 →"
+      "openStudio": "공방에서 완성 →"
     },
     "codeLocations": {
       "heading": "코드 위치",

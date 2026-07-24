@@ -8,7 +8,7 @@
       "download": "Download",
       "projects": "Projects",
       "ontology": "Ontology",
-      "ontologyStudio": "Ontology Studio",
+      "ontologyStudio": "Ontology Workshop",
       "ontologyInsights": "Graph Insights",
       "projectNew": "New project"
     }
@@ -76,7 +76,7 @@
     "ariaLabel": "Primary navigation",
     "map": "Map",
     "docs": "Docs",
-    "studio": "Studio",
+    "studio": "Workshop",
     "insights": "Insights",
     "projects": "Projects"
   },
@@ -1101,7 +1101,7 @@
         "neglectedHubMetric": "{degree} links · unchanged {days}d",
         "cycleMetric": "{length} nodes",
         "openMap": "Map",
-        "openBuilder": "Studio",
+        "openBuilder": "Workshop",
         "handoffCopy": "To agent",
         "emptyQueue": "Nothing needs attention — the graph is healthy.",
         "moreCount": "+{count} more — full list via agent handoff",
@@ -1696,7 +1696,7 @@
       "actionCopyHandoff": "Copy handoff",
       "actionPath": "Path",
       "actionDocumentTip": "Open this node's source markdown document",
-      "actionEditRelationsTip": "Complete this node's connections in the studio",
+      "actionEditRelationsTip": "Complete this node's connections in the workshop",
       "actionCopyHandoffTip": "Copy this node's context to paste to an AI agent",
       "actionPathTip": "Find a connection path from this node to another on the map",
       "updated_today": "changed today",
@@ -1791,8 +1791,8 @@
       "pathChipPacketHopsUnknown": "no path found",
       "pathChipPacketSourceOntologyUrl": "Source ontology URL",
       "pathChipPacketTargetOntologyUrl": "Target ontology URL",
-      "pathChipPacketSourceBuilderUrl": "Source studio URL",
-      "pathChipPacketTargetBuilderUrl": "Target studio URL",
+      "pathChipPacketSourceBuilderUrl": "Source workshop URL",
+      "pathChipPacketTargetBuilderUrl": "Target workshop URL",
       "pathChipPacketMcpCheck": "MCP check"
     },
     "insightsReturn": {
@@ -2030,7 +2030,7 @@
       "copy": "Copy next action",
       "copied": "Copied the agent handoff call",
       "openDocument": "Open document →",
-      "openStudio": "Complete in studio →"
+      "openStudio": "Complete in workshop →"
     },
     "codeLocations": {
       "heading": "Code location",

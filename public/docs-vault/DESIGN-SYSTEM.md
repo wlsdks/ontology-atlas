@@ -1328,10 +1328,10 @@ Reference anchors:
   must be `0` for fixed/card surfaces in the tested state
 
 > There is no carve-out. Every Don't above holds **app-wide, including the
-> Ontology Studio** — the old game-energy exception was retired 2026-07-24 (see
+> Ontology Workshop (공방)** — the old game-energy exception was retired 2026-07-24 (see
 > the next section).
 
-## Ontology Studio — 나침 무대 (Compass Stage); game exception RETIRED 2026-07-24
+## Ontology Workshop — 공방 (Compass Stage); game exception RETIRED 2026-07-24
 
 `/ontology/studio` is the vault **write surface** — where a human or AI agent
 completes a node's meaning by filling its missing typed relations, and creates
@@ -1346,9 +1346,9 @@ game," not a finished game — and this surface is **decision material** (planne
 execs, developers, agents read it), where rarity glow *erodes trust*. Scoping
 the energy to `--studio-*` tokens was itself an admission that it could never
 fully commit. The exception was a considered mistake; removing it makes the
-Studio finally look like this app.
+workshop finally look like this app.
 
-**What the Studio is now (restrained, full charter):**
+**What the Workshop is now (restrained, full charter):**
 
 - **Compass Stage.** The focal node is the center hero card; relation *types* are
   nailed to fixed bearings — UP = 상위개념 (is_a), DOWN = 담는 것 (contains),
@@ -1433,7 +1433,7 @@ Example: `/ontology` page
 ### Surfaces where this applies (current)
 
 `/ontology/insights` — follows this pattern. (`/ontology/edit`, the ERD builder,
-was retired 2026-07-24 → it now redirects to `/ontology/studio`, the 나침 무대.)
+was retired 2026-07-24 → it now redirects to `/ontology/studio`, the 공방 (Compass Stage).)
 
 The public surfaces `/`, `/topology`, `/docs`, `/projects`, `/project/[slug]` use the standalone Korean h1 pattern (without an English eyebrow caption) — these are the browse surfaces, not the operations surfaces.
 
@@ -1615,7 +1615,7 @@ Topology chrome (브랜드 pill · 상단 HUD lane · INDEX 패널 · 이후 좌
 
 `docs/prototypes/chrome-rail-combined.html` 소유자 최종 승인 — 지형도 좌측에
 상시 떠 있는 64px 세로 레일. `src/widgets/app-nav-rail`. 전역 목적지(지도·
-문서함·스튜디오·인사이트·프로젝트) + 하단 에이전트 상태·설정을 전담해, 브랜드
+문서함·공방·인사이트·프로젝트) + 하단 에이전트 상태·설정을 전담해, 브랜드
 필의 book/network 유틸 타일과 우측 세로 레일의 설정 기어를 흡수한다.
 
 - 로고(`<BrandMark size={20} detail="compact" />`, 위 "Brand mark" 섹션 — 브랜드

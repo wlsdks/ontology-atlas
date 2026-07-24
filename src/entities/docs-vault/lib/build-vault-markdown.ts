@@ -4,7 +4,7 @@
  * 원래 은퇴한 ERD 빌더(구 `src/views/ontology-edit`) 안에 있던 직렬화 함수를
  * S1.0(ontology-first/topology-as-ontology 재구성)에서 entity 레이어로 추출.
  * 여러 view 가 cross-view import 없이 같은 vault `.md` 직렬화를 재사용하기
- * 위함(현재는 docs-vault·스튜디오 쓰기 경로). 동작은 추출 전과 동일하게 유지
+ * 위함(현재는 docs-vault·공방 쓰기 경로). 동작은 추출 전과 동일하게 유지
  * (slug·kind·title frontmatter + `# title` 본문) — 풍부한 frontmatter(domain,
  * 관계 키)·기존 본문 보존이 필요한 *기존 노드 편집*은 별도 patch 경로가 담당.
  */
