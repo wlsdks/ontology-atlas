@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { useSampleSource } from "@/features/vault-sample-source";
+import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
 import { CompactCopyButton } from "@/shared/ui";
 import { useFirstRunStarter } from "../model/use-first-run-starter";
 
@@ -85,6 +86,11 @@ export function FirstRunStarterModule({
   // 첫 화면에 상시 노출돼 시선을 뺏었다. 기본 접힘 disclosure 뒤로 보내
   // 개발자만 펼쳐 보게 한다. 카드가 리마운트될 때까지 세션 내 상태.
   const [cliOpen, setCliOpen] = useState(false);
+  // 2026-07-24 온보딩 라운드 — 폴더 CTA 가 사전 설명 0으로 OS 선택창을
+  // 직행해 첫 사용자가 무엇을 골라야 하는지 몰랐다. 두 CTA 모두 안내
+  // 시트를 먼저 거친다(이 카드는 vault 미선택 신규 사용자에게만 렌더
+  // 되므로 숙련 사용자에게 시트를 강요하는 문제가 없다).
+  const [guideOpen, setGuideOpen] = useState(false);
 
   if (!visible) return null;
 
@@ -193,7 +199,7 @@ export function FirstRunStarterModule({
       ) : (
         <button
           type="button"
-          onClick={() => void openFolder()}
+          onClick={() => setGuideOpen(true)}
           disabled={busy}
           data-testid="first-run-starter-open"
           className="relative flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-[13px] font-semibold text-white shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
@@ -226,7 +232,7 @@ export function FirstRunStarterModule({
         ) : (
           <button
             type="button"
-            onClick={() => void createVault()}
+            onClick={() => setGuideOpen(true)}
             disabled={busy}
             data-testid="first-run-starter-create"
             className="border-b border-transparent pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
@@ -347,6 +353,19 @@ export function FirstRunStarterModule({
           {errorText || t("errorFallback")}
         </p>
       ) : null}
+
+      <VaultOpenGuideSheet
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        onPickExisting={() => {
+          setGuideOpen(false);
+          void openFolder();
+        }}
+        onCreateNew={() => {
+          setGuideOpen(false);
+          void createVault();
+        }}
+      />
     </div>
   );
 }

@@ -54,3 +54,7 @@ export {
   type BootstrapVaultWriter,
   type ExecuteBootstrapResult,
 } from './lib/execute-bootstrap-plan';
+export {
+  VaultOpenGuideSheet,
+  type VaultOpenGuideSheetProps,
+} from './ui/VaultOpenGuideSheet';

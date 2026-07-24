@@ -110,15 +110,20 @@ describe('FirstRunStarterModule', () => {
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
   });
 
-  it('wires "open my folder" to vault.open() directly', () => {
+  // 2026-07-24 온보딩 라운드 — 폴더 CTA 는 OS 선택창 직행 대신 사전 안내
+  // 시트를 먼저 연다. "기존 폴더 선택" 확정 후에만 vault.open() 이 불린다.
+  it('opens the guide sheet first, then wires "choose existing" to vault.open()', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
     fireEvent.click(screen.getByTestId('first-run-starter-open'));
+    expect(mocks.vault.open).not.toHaveBeenCalled();
+    expect(screen.getByTestId('vault-guide-sheet')).toBeInTheDocument();
 
+    fireEvent.click(screen.getByTestId('vault-guide-pick-existing'));
     expect(mocks.vault.open).toHaveBeenCalledTimes(1);
   });
 
-  it('scaffolds a starter structure after "create a new vault" opens an empty folder', async () => {
+  it('scaffolds a starter structure after the sheet\'s "start fresh" opens an empty folder', async () => {
     mocks.vault.open = vi.fn(async () => {
       mocks.vault.status = 'loaded';
       mocks.vault.manifest = { docs: [] };
@@ -126,6 +131,8 @@ describe('FirstRunStarterModule', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
     fireEvent.click(screen.getByTestId('first-run-starter-create'));
+    expect(screen.getByTestId('vault-guide-sheet')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('vault-guide-create-new'));
 
     await waitFor(() => {
       expect(mocks.vault.scaffoldOntology).toHaveBeenCalledTimes(1);
