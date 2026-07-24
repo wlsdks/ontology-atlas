@@ -11,6 +11,13 @@
 - scale 기반 hover (`hover:scale-*`)
 - 둘 이상의 채색 시스템 (인디고 외 새 brand color 추가)
 
+**단 하나의 스코프 예외 (소유자 승인 2026-07-24)**: `/ontology/studio` — 게임
+"강화 화면". 이 라우트의 `.studio-stage` 안에서 **`--studio-*` 토큰으로만**
+glow/gradient/aura/particle/rarity(gold) color/shimmer 를 허용한다. 앱 크롬·
+다른 라우트로 누출 금지, 나머지 헌장은 전부 유효. 근거·가드레일:
+`@.claude/rules/design.md` "스코프 예외 — 온톨로지 스튜디오" ·
+`@docs/DESIGN-SYSTEM.md` "Ontology Studio — game-energy exception".
+
 세부: `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`.
 
 ## 라우팅

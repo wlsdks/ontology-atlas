@@ -361,6 +361,14 @@ Empty state (0 nodes): link to `/docs` (open vault).
 
 ---
 
+### `/ontology/studio` — Ontology Studio (게임 "강화 화면", Slice 1 = read-only)
+- 노드 하나를 게임 아이템(헥사곤)으로 놓고, 그 노드의 실제 온톨로지 관계를 관계 타입별 색 "보석"으로 소켓에 끼우는 몰입형 강화 화면. 레일 LNB "스튜디오"에서 진입.
+- **실데이터**: `useOntologyInsight`(지도/인사이트와 같은 파생 그래프)에서 노드의 `contains`(담는 것)·`depends_on`(기대는 곳)·`related_to`/`uses`(비슷한 것) 관계 + 코드 근거(`deriveCodeLocations`) + 정의 유무를 읽어 능력치·보석·소켓으로 렌더.
+- **강화도/레벨**: 정의·근거·각 관계 축·`is_a` 유무로 결정론적 완성도 %(순수 함수 `scoreEnhancement`)와 Lv 티어 pip 계산. `is_a`(상위 개념)는 아직 스키마에 없어 **항상 빈 골드 소켓** — 채우면 얼마나 오르는지 초록 델타로 미리보기(쓰기 연결은 다음 슬라이스).
+- **노드 선택**: `?node=<id>` 딥링크 우선, 없으면 활성 vault(또는 dogfood/storefront 샘플)에서 가장 연결 많은 역량 노드 자동 선택.
+- **읽기 전용(이번 슬라이스)**: 강화하기 / 넣기 / 에이전트에게 맡기기 버튼은 올바른 어포던스로 렌더되지만 "다음 슬라이스" 안내 토스트만 띄운다.
+- **디자인**: 소유자 승인 스코프 예외 — glow/gradient/aura/particle/rarity(gold)/shimmer 를 `.studio-stage` 안에서 `--studio-*` 토큰으로만 사용(앱 크롬 누출 금지). `prefers-reduced-motion` 에서 모든 모션 정지. 상세: `docs/DESIGN-SYSTEM.md` "Ontology Studio — game-energy exception".
+
 ### `/ontology/edit` — Builder (xyflow ERD canvas)
 - **Drop-to-add**: 포트에서 빈 캔버스로 드래그를 놓으면 그 자리에 자식 kind 초안이 생기고 연결까지 이어진다(인스펙터 이름 입력 자동 포커스).
 

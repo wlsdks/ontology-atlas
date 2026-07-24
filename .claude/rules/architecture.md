@@ -33,6 +33,7 @@ src/
 
 - 새 라우트는 `app/[locale]/` 아래에만. `src/views/` 의 페이지 컴포넌트가 1:1 대응.
 - 살아있는 라우트: `/`, `/topology/`, `/docs/`, `/ontology/`, `/ontology/edit/`,
+  `/ontology/studio/` (게임 "강화 화면" — 스코프 디자인 예외, `design.md` 참고),
   `/ontology/insights/`, `/projects/`, `/project/[slug]/`,
   `/project/[slug]/edit/`, `/project/new/`, `/project/fallback/`, `/download/`
   (macOS 데스크톱 앱 배포). R10 (auth +
