@@ -2,6 +2,8 @@
 slug: elements/example-element
 kind: element
 title: Example element
+display_ko: 예시 구성요소
+display_en: Example element
 domain: domains/example-domain
 ---
 

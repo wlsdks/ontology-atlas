@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Cable, Check, ClipboardCopy, Plus } from "lucide-react";
+import { Cable, Check, ClipboardCopy, Plus, Sparkles } from "lucide-react";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 
 /**
@@ -23,6 +23,15 @@ export interface VaultStartChecklistProps {
   relationCount: number;
   /** 에이전트 heartbeat 연결 여부 (HomePage `useAgentConnectLauncher` 상태). */
   agentConnected?: boolean;
+  /**
+   * "시작 문서 만들기" (2026-07-24) — '기존 폴더 선택'으로 **빈 폴더**를 연
+   * 사용자는 '빈 폴더로 새로 시작' 경로가 주는 스타터 5문서 + `.mcp.json`
+   * 을 못 받는다(local-first 원칙상 남의 폴더에 자동으로 쓰지 않는다).
+   * 그래서 자동 실행 대신 **버튼**으로 같은 스캐폴드를 제공한다. 이미
+   * 문서가 있는 vault 에서는 HomePage 가 이 콜백을 넘기지 않는다.
+   */
+  onScaffoldStarter?: (() => void) | null;
+  scaffolding?: boolean;
   /** "AI 에이전트 연결" 시트 열기 — 1단계 주 CTA. */
   onOpenAgentConnect?: (() => void) | null;
   /**
@@ -40,6 +49,8 @@ export function VaultStartChecklist({
   agentConnected = false,
   onOpenAgentConnect = null,
   onCreateNode,
+  onScaffoldStarter = null,
+  scaffolding = false,
   analyzePrompt,
 }: VaultStartChecklistProps) {
   const t = useTranslations("topology.startChecklist");
@@ -86,8 +97,19 @@ export function VaultStartChecklist({
     {
       id: "manual",
       done: projectCount > 0,
-      label: t("stepManual"),
-      cta: (
+      label: onScaffoldStarter ? t("stepScaffold") : t("stepManual"),
+      cta: onScaffoldStarter ? (
+        <button
+          type="button"
+          onClick={onScaffoldStarter}
+          disabled={scaffolding}
+          data-testid="checklist-cta-scaffold"
+          className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] disabled:opacity-60"
+        >
+          <Sparkles size={11} aria-hidden />
+          {scaffolding ? t("ctaScaffoldBusy") : t("ctaScaffold")}
+        </button>
+      ) : (
         <button
           type="button"
           onClick={() => onCreateNode("project")}

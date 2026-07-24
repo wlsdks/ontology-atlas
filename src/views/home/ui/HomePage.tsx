@@ -2145,6 +2145,29 @@ export function HomePage() {
   );
   // 2026-07-24 온보딩 라운드 — 빈 vault 시작 체크리스트의 완료 판정용
   // 프로젝트 실카운트(같은 ontologyInsight 파생이라 drift 불가).
+  // 빈 폴더 스타터 스캐폴드 (2026-07-24) — '빈 폴더로 새로 시작' 과 같은
+  // `scaffoldOntology()` 를 체크리스트 버튼으로도 노출한다. 자동 실행이
+  // 아니라 명시 클릭이라 local-first 원칙(남의 폴더에 무단 쓰기 금지)을
+  // 지킨다.
+  const [starterScaffolding, setStarterScaffolding] = useState(false);
+  const handleScaffoldStarter = useCallback(async () => {
+    setStarterScaffolding(true);
+    try {
+      const result = await vault.scaffoldOntology();
+      toast.show(
+        t("startChecklist.scaffoldToast", { count: result.created }),
+        "success",
+      );
+    } catch (err) {
+      toast.show(
+        err instanceof Error && err.message ? err.message : t("createNode.toastError"),
+        "error",
+      );
+    } finally {
+      setStarterScaffolding(false);
+    }
+  }, [vault, toast, t]);
+
   const checklistProjectCount = useMemo(
     () => ontologyInsight?.nodes.filter((node) => node.kind === "project").length ?? 0,
     [ontologyInsight],
@@ -3376,6 +3399,16 @@ export function HomePage() {
                       agentConnected={agentConnect.status.kind === "connected"}
                       onCreateNode={openCreateNodeWithKind}
                       onOpenAgentConnect={openAgentConnectSheet}
+                      // '기존 폴더 선택'으로 빈 폴더를 연 사용자에게 '빈
+                      // 폴더로 새로 시작' 과 같은 스타터를 버튼으로 제공한다
+                      // (2026-07-24). 문서가 이미 있으면 미전달 → 종전
+                      // '직접 만들기' 행 유지.
+                      onScaffoldStarter={
+                        (vault.manifest?.docs.length ?? 0) === 0
+                          ? handleScaffoldStarter
+                          : null
+                      }
+                      scaffolding={starterScaffolding}
                       analyzePrompt={t("startChecklist.analyzePrompt")}
                     />
                   ) : (

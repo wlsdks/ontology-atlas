@@ -69,3 +69,26 @@ describe("VaultStartChecklist (에이전트-우선, 2026-07-24 소유자 지시)
     expect(screen.getByTestId("checklist-cta-analyze")).toBeInTheDocument();
   });
 });
+
+// 빈 폴더 스타터 버튼 (2026-07-24) — '기존 폴더 선택'으로 빈 폴더를 연
+// 사용자에게 '빈 폴더로 새로 시작' 과 같은 스캐폴드를 버튼으로 제공한다.
+describe("VaultStartChecklist — 빈 폴더 스타터 버튼", () => {
+  it("onScaffoldStarter 가 있으면 세 번째 단계가 스캐폴드 CTA 로 바뀐다", () => {
+    const onScaffoldStarter = vi.fn();
+    renderChecklist({ onScaffoldStarter });
+    expect(screen.queryByTestId("checklist-cta-project")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("checklist-cta-scaffold"));
+    expect(onScaffoldStarter).toHaveBeenCalledTimes(1);
+  });
+
+  it("스캐폴드 중에는 버튼이 잠긴다", () => {
+    renderChecklist({ onScaffoldStarter: vi.fn(), scaffolding: true });
+    expect(screen.getByTestId("checklist-cta-scaffold")).toBeDisabled();
+  });
+
+  it("문서가 이미 있는 vault(콜백 미전달)에서는 직접 만들기 CTA 를 유지한다", () => {
+    renderChecklist();
+    expect(screen.getByTestId("checklist-cta-project")).toBeInTheDocument();
+    expect(screen.queryByTestId("checklist-cta-scaffold")).not.toBeInTheDocument();
+  });
+});

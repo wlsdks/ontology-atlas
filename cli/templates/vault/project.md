@@ -2,6 +2,8 @@
 slug: project
 kind: project
 title: My project
+display_ko: 내 프로젝트
+display_en: My project
 domains:
   - domains/example-domain
 capabilities:

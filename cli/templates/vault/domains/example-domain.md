@@ -2,6 +2,8 @@
 slug: domains/example-domain
 kind: domain
 title: Example domain
+display_ko: 예시 영역
+display_en: Example domain
 capabilities:
   - capabilities/example-capability
 ---
