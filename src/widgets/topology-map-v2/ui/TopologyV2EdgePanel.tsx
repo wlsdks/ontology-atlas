@@ -27,7 +27,13 @@ export interface TopologyV2EdgePanelProps {
   declaredBy: { slug: string; href: string } | null;
   /** 선언 문서의 변경 시점 라벨 (S-C1 사다리 재사용) — null 이면 생략. */
   updatedAtLabel: string | null;
-  studioEditHref: string;
+  /**
+   * 공방(Compass Stage) 편집 딥링크 — 이 관계를 authored 한 노드를 focal 로 열고
+   * 해당 관계 편집 카드를 편다 (Slice 6). null 이면 공방에서 편집 불가한
+   * 엣지(describes·도메인 멤버십 등)이라 "고치기" 액션을 렌더하지 않는다
+   * (dead affordance 금지).
+   */
+  studioEditHref: string | null;
   labels: {
     kicker: string;
     declaredByLabel: string;
@@ -148,13 +154,15 @@ export function TopologyV2EdgePanel({
         </div>
       ) : null}
 
-      <Link
-        href={studioEditHref}
-        data-testid="topology-v2-edge-edit"
-        className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] text-[11.5px] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
-      >
-        {labels.editRelation}
-      </Link>
+      {studioEditHref ? (
+        <Link
+          href={studioEditHref}
+          data-testid="topology-v2-edge-edit"
+          className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] text-[11.5px] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+        >
+          {labels.editRelation}
+        </Link>
+      ) : null}
     </aside>
   );
 }

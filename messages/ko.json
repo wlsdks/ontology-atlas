@@ -187,6 +187,7 @@
     "commitCopied": "MCP 명령을 복사했어요 — 에이전트에 붙여넣어 실행하세요.",
     "commitFailed": "저장하지 못했어요 — {message}",
     "nothingToCommit": "기록할 변경이 없어요.",
+    "staleEditLink": "이 관계를 찾지 못했어요 — 지도가 최신이 아닐 수 있어요.",
     "summary": {
       "collapsed": "기록될 내용 {count}가지",
       "empty": "기록할 변경이 없어요",
@@ -1974,7 +1975,7 @@
     "edgePanel": {
       "kicker": "관계",
       "declaredBy": "선언한 문서",
-      "editRelation": "관계 편집",
+      "editRelation": "공방에서 이 관계 고치기",
       "close": "닫기",
       "openDoc": "열기"
     },

@@ -15,14 +15,20 @@ export type { EdgeTypeRow, RelationRegister } from "./model";
 export {
   buildInsightsReturnMarker,
   buildOntologyStudioNodeHrefFromGraphId,
+  buildOntologyStudioEdgeHref,
   buildOntologyInsightsNodeHref,
   buildOntologyInsightsReturnHref,
   buildOntologyNodeHref,
+  edgeAuthoredByFromNode,
+  studioEditRelationForEdgeType,
+  parseOntologyStudioEditParam,
   ONTOLOGY_DEEPLINK_VIA_KEY,
+  ONTOLOGY_STUDIO_EDIT_KEY,
   parseInsightsReturnMarker,
   resolveOntologyBuilderNodeSlug,
   resolveOntologyBuilderNodeSlugFromGraphId,
 } from "./lib/ontology-node-href";
+export type { StudioEditRelation } from "./lib/ontology-node-href";
 export {
   buildOntologyHealthActionTarget,
   buildOntologyHealthSignals,

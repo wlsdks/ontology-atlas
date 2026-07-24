@@ -187,6 +187,7 @@
     "commitCopied": "Copied the MCP command — paste it into your agent to run.",
     "commitFailed": "Couldn't save — {message}",
     "nothingToCommit": "Nothing to record.",
+    "staleEditLink": "Couldn't find that relation — the map may be out of date.",
     "summary": {
       "collapsed": "{count} change(s) to record",
       "empty": "Nothing to record",
@@ -1974,7 +1975,7 @@
     "edgePanel": {
       "kicker": "Relation",
       "declaredBy": "Declared in",
-      "editRelation": "Edit relation",
+      "editRelation": "Fix this relation in the workshop",
       "close": "Close",
       "openDoc": "open"
     },

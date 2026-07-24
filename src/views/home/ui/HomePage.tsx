@@ -106,9 +106,12 @@ import {
 import { buildDocsVaultHref, buildNewNodeDoc } from "@/entities/docs-vault";
 import {
   buildOntologyStudioNodeHrefFromGraphId,
+  buildOntologyStudioEdgeHref,
   buildOntologyHealthSignals,
   buildOntologyInsightsReturnHref,
   deriveCodeLocations,
+  edgeAuthoredByFromNode,
+  studioEditRelationForEdgeType,
   useRelationVocabulary,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
@@ -763,6 +766,16 @@ export function HomePage() {
       ? docFreshnessIndex.get(selectedEdge.declaredBySlug)
       : undefined;
     const ago = declaredIso ? computeUpdatedAgo(declaredIso, updatedAgoNowMs) : null;
+    // Slice 6 — 공방 엣지 딥링크. 이 엣지가 공방의 네 편집 가능한 bearing 중
+    // 하나이고(그 외 describes/도메인 멤버십은 null → 액션 미노출), 정말 `from`
+    // 노드의 프론트매터에서 authored 됐을 때만 "이 관계 고치기" 딥링크를
+    // 만든다. focal = 저자(`from`), 편집 카드는 `to` 위성에 열린다. 편집 불가면
+    // null → EdgePanel 이 액션을 렌더하지 않는다(dead affordance 금지).
+    const studioRelation = studioEditRelationForEdgeType(selectedEdge.relationType);
+    const studioEditHref =
+      studioRelation && edgeAuthoredByFromNode(selectedEdge.declaredBySlug, from.evidenceIds[0])
+        ? buildOntologyStudioEdgeHref(from.id, to.id, studioRelation)
+        : null;
     return {
       sentence,
       typeLabel,
@@ -774,9 +787,7 @@ export function HomePage() {
         ? { slug: selectedEdge.declaredBySlug, href: buildDocsVaultHref({ slug: selectedEdge.declaredBySlug }) }
         : null,
       updatedAtLabel: ago ? t(`nodeDatasheet.updated_${ago.key}`, { count: ago.count }) : null,
-      // 빌더 딥링크는 canonical `<kind>:<slug>`(그래프 node id)로 통일(H5) —
-      // 예전 `from.evidenceIds[0] ?? from.id` 인라인 vault-slug 링크를 대체.
-      studioEditHref: buildOntologyStudioNodeHrefFromGraphId(from.id),
+      studioEditHref,
       why,
     };
   }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary, relationRegister]);
