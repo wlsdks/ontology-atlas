@@ -1732,14 +1732,24 @@ export function HomePage() {
   // 기록하므로 재방문에는 다시 뜨지 않고, 로컬 vault 사용자에게는
   // `sampleModeSettled` 가 false 라 애초에 발화하지 않는다.
   const autoTourFiredRef = useRef(false);
+  // `openGuidedTour` 는 tour 객체 의존이라 매 렌더 재생성 — dep 로 두면
+  // effect 가 렌더마다 타이머를 지우고 다시 못 세운다(실측 회귀). ref 미러로
+  // deps 를 `sampleModeSettled` 하나로 고정하고, 발화 성공 시점에만 가드를
+  // 세운다.
+  const openGuidedTourRef = useRef(openGuidedTour);
+  useEffect(() => {
+    openGuidedTourRef.current = openGuidedTour;
+  }, [openGuidedTour]);
   useEffect(() => {
     if (autoTourFiredRef.current || !sampleModeSettled) return undefined;
-    if (readGuidedTourStatus() !== null || tour.open) return undefined;
-    autoTourFiredRef.current = true;
+    if (readGuidedTourStatus() !== null) return undefined;
     // 레이아웃/카메라 정착 뒤에 열어 1단계 카드가 안정된 화면 위에 뜬다.
-    const id = window.setTimeout(openGuidedTour, 900);
+    const id = window.setTimeout(() => {
+      autoTourFiredRef.current = true;
+      openGuidedTourRef.current();
+    }, 900);
     return () => window.clearTimeout(id);
-  }, [sampleModeSettled, tour.open, openGuidedTour]);
+  }, [sampleModeSettled]);
 
   // P0#3 — Esc staged-close ladder (docs/FEATURES.md / shortcut sheet's
   // `stepCloseOverlays` promise: "Close drawers and overlays one step at a
