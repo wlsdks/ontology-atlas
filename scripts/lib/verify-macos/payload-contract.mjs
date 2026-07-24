@@ -178,7 +178,11 @@ export function validateWebviewVerifyPayload(payload, {
   ) {
     return "WebView did not report the reader decision lens marker";
   }
-  if (webviewPath.includes("/topology") && payload.markers.topologyRelief !== true) {
+  if (
+    webviewPath.includes("/topology") &&
+    !topologyMapCanvasActive &&
+    payload.markers.topologyRelief !== true
+  ) {
     return "WebView did not report the Relief topology marker";
   }
   const connectorLabelPassMs = markerNumber(
@@ -4397,4 +4401,3 @@ export function validateWebviewVerifyPayload(payload, {
   }
   return null;
 }
-

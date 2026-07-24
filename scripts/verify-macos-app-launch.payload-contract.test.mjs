@@ -7921,6 +7921,18 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     }, { expectedPath: "/en/topology/" }),
     /Relief topology marker/,
   );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      markers: {
+        ...payload.markers,
+        topologyRelief: false,
+        topologyMapEngine: "v2",
+      },
+    }, { expectedPath: "/en/topology/" }),
+    null,
+  );
   assert.match(
     validateWebviewVerifyPayload({
       ...payload,
