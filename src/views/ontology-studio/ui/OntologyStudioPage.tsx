@@ -15,7 +15,6 @@ import {
   selectDefaultStudioNodeId,
   BEARING_FRONTMATTER_KEY,
   type StudioBearing,
-  type StudioItem,
   type StudioRelation,
 } from "../lib/build-studio-item";
 import {
@@ -40,6 +39,7 @@ import {
   type StudioChange,
   type StudioSummaryVocab,
 } from "../lib/build-studio-changes";
+import { buildPickerDiscovery } from "../lib/build-picker-discovery";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
 
 /**
@@ -146,6 +146,13 @@ export function OntologyStudioPage() {
       pickerEmpty: t("picker.empty"),
       pickerKind: (kindLabelText) => kindLabelText,
       pickerCreateNew: t("picker.createNew"),
+      suggestHeading: t("picker.suggestHeading"),
+      browseHeading: t("picker.browseHeading"),
+      reasonSameDomain: t("picker.reasonSameDomain"),
+      reasonTitleSimilar: t("picker.reasonTitleSimilar"),
+      reasonAdjacent: t("picker.reasonAdjacent"),
+      browseBack: t("picker.browseBack"),
+      browseNoDomain: t("picker.browseNoDomain"),
       similarSuggest: (title) => t("picker.similar", { title }),
       similarAccept: t("picker.similarAccept"),
       createName: t("kindLabel"),
@@ -268,6 +275,40 @@ export function OntologyStudioPage() {
     setPrevFocalId(enhanceFocalId);
     setChanges([]);
   }
+
+  // Slice 3 — the enhance stage's focal item + optimistic projection, lifted
+  // above the create early-return so `discoveryFor` is a STABLE memoized
+  // callback (the picker memoizes discovery per socket-open on its identity).
+  const enhanceItem = useMemo(
+    () => (enhanceFocalId ? buildStudioItem(enhanceFocalId, nodes, edges) : null),
+    [enhanceFocalId, nodes, edges],
+  );
+  const enhanceProjection = useMemo(() => {
+    if (!enhanceItem) return null;
+    return projectBearings(
+      {
+        isA: enhanceItem.bearings.up.neighbors,
+        dependsOn: enhanceItem.bearings.right.neighbors,
+        contains: enhanceItem.bearings.down.neighbors,
+        relates: enhanceItem.bearings.left.neighbors,
+      },
+      changes,
+    );
+  }, [enhanceItem, changes]);
+  // The picker's discovery surface (추천 + 둘러보기) for a socket's relation —
+  // excludes self + already-connected + staged targets. Read-only, deterministic.
+  const discoveryFor = useCallback(
+    (relation: StudioRelation) =>
+      buildPickerDiscovery({
+        focalId: enhanceItem?.node.id ?? "",
+        nodes,
+        edges,
+        relation,
+        allowedKinds: CANDIDATE_KINDS[relation],
+        stagedTargetIds: enhanceProjection?.pendingTargetIds,
+      }),
+    [enhanceItem, nodes, edges, enhanceProjection],
+  );
 
   const draft: CreateDraft = useMemo(
     () => ({ kind, title, domainValue, definition, relations }),
@@ -411,16 +452,7 @@ export function OntologyStudioPage() {
   }
 
   // ─────────────────────────────── ENHANCE ───────────────────────────────
-  const item: StudioItem | null = (() => {
-    if (nodes.length === 0) return null;
-    const targetId =
-      (requestedNode && nodes.some((n) => n.id === requestedNode) ? requestedNode : null) ??
-      selectDefaultStudioNodeId(nodes, edges);
-    if (!targetId) return null;
-    return buildStudioItem(targetId, nodes, edges);
-  })();
-
-  if (!item) {
+  if (!enhanceItem || !enhanceProjection) {
     return (
       <div className="flex h-[100dvh] items-center justify-center bg-[color:var(--color-canvas)] p-6">
         <EmptyState
@@ -442,23 +474,17 @@ export function OntologyStudioPage() {
     );
   }
 
-  const focalItem = item;
+  const focalItem = enhanceItem;
   const sourceSlug = focalItem.node.sourceSlug;
   const focalDoc =
     writable && localVault.manifest
       ? localVault.manifest.docs.find((d) => d.slug === sourceSlug)
       : undefined;
 
-  // Base (on-disk) neighbors per relation + the optimistic projection of the
-  // pending changes. The stage renders the PROJECTION so struts/satellites move
-  // before the disk write; the summary + commit consume the same `changes`.
-  const baseNeighbors = {
-    isA: focalItem.bearings.up.neighbors,
-    dependsOn: focalItem.bearings.right.neighbors,
-    contains: focalItem.bearings.down.neighbors,
-    relates: focalItem.bearings.left.neighbors,
-  };
-  const projection = projectBearings(baseNeighbors, changes);
+  // Optimistic projection of the pending changes (computed above). The stage
+  // renders the PROJECTION so struts/satellites move before the disk write; the
+  // summary + commit consume the same `changes`.
+  const projection = enhanceProjection;
 
   // Guide the next empty socket in the same priority buildStudioItem uses.
   const GUIDE_ORDER: StudioRelation[] = ["isA", "contains", "dependsOn", "relates"];
@@ -562,6 +588,7 @@ export function OntologyStudioPage() {
       writable={writable}
       candidatesFor={(relation, query) => makeCandidatesFor(relation, query, excludeFor(relation))}
       similarFor={(relation, query) => makeSimilarFor(relation, query, excludeFor(relation))}
+      discoveryFor={discoveryFor}
       onFill={(relation, candidate) =>
         stage({
           type: "add",

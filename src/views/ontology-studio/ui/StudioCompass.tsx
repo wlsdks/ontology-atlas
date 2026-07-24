@@ -9,6 +9,7 @@ import type {
   StudioSatellite,
 } from "../lib/build-studio-item";
 import type { CreateCandidate, CreateNodeKind } from "../lib/build-create-node";
+import type { PickerDiscovery, PickerSuggestionReason } from "../lib/build-picker-discovery";
 
 /**
  * 나침 무대 (Compass Stage) — the ontology WRITE surface. One focal node sits
@@ -83,6 +84,14 @@ export interface StudioCompassLabels {
   pickerEmpty: string;
   pickerKind: (kindLabel: string) => string;
   pickerCreateNew: string;
+  // ── Slice 3 — 발견 표면 (browse + 추천) ──
+  suggestHeading: string; // "추천"
+  browseHeading: string; // "둘러보기"
+  reasonSameDomain: string; // "같은 도메인"
+  reasonTitleSimilar: string; // "이름 비슷"
+  reasonAdjacent: string; // "이웃의 이웃"
+  browseBack: string; // "← 도메인"
+  browseNoDomain: string; // "도메인 없음"
   /** near-dup suggestion. (title) → message. */
   similarSuggest: (title: string) => string;
   similarAccept: string;
@@ -132,6 +141,12 @@ export interface StudioCompassProps {
   /** Fill a socket. Returns candidate rows for the picker + a near-dup hit. */
   candidatesFor: (relation: StudioRelation, query: string) => CreateCandidate[];
   similarFor?: (relation: StudioRelation, query: string) => CreateCandidate | null;
+  /**
+   * Slice 3 — the picker's EMPTY (pre-typing) discovery surface: 추천 + 둘러보기.
+   * Omit → the picker shows the flat search rows immediately (isolated render /
+   * create mode). Computed lazily per socket-open (memoized inside the picker).
+   */
+  discoveryFor?: (relation: StudioRelation) => PickerDiscovery;
   onFill: (relation: StudioRelation, candidate: CreateCandidate) => void;
   onSave: () => void;
   onExit: () => void;
@@ -604,6 +619,7 @@ export function StudioCompass(props: StudioCompassProps) {
           {/* inline anchored picker */}
           {openRelation && openLayout && openLayout.layout.socket ? (
             <InlinePicker
+              key={openRelation}
               socket={openLayout.layout.socket}
               bearing={openLayout.view.bearing}
               cardLeft={cardLeft}
@@ -613,6 +629,7 @@ export function StudioCompass(props: StudioCompassProps) {
               labels={labels}
               rows={pickerRows}
               similarHit={similarHit}
+              discoveryFor={props.discoveryFor}
               kindLabelFor={kindLabelFor}
               query={query}
               onQuery={setQuery}
@@ -1370,6 +1387,15 @@ function placePicker(
   return { left, top, maxHeight };
 }
 
+/** Quiet section eyebrow inside the discovery picker (추천 / 둘러보기). */
+function PickerSectionHeading({ label }: { label: string }) {
+  return (
+    <div className="px-2.5 pb-1 pt-1.5 text-label uppercase tracking-[0.05em] text-[color:var(--color-text-quaternary)]">
+      {label}
+    </div>
+  );
+}
+
 function InlinePicker({
   socket,
   bearing,
@@ -1380,6 +1406,7 @@ function InlinePicker({
   labels,
   rows,
   similarHit,
+  discoveryFor,
   kindLabelFor,
   query,
   onQuery,
@@ -1396,6 +1423,7 @@ function InlinePicker({
   labels: StudioCompassLabels;
   rows: CreateCandidate[];
   similarHit: CreateCandidate | null;
+  discoveryFor?: (relation: StudioRelation) => PickerDiscovery;
   kindLabelFor: (kind: string) => string;
   query: string;
   onQuery: (q: string) => void;
@@ -1407,6 +1435,23 @@ function InlinePicker({
   const { left, top, maxHeight } = placePicker(bearing, socket, cardLeft, cardRight);
   // Reserve chrome (header + search + create footer) so the list scrolls within.
   const listMax = Math.max(96, maxHeight - 156);
+
+  // ── Slice 3 — discovery (추천 + 둘러보기) while the search box is empty ──
+  // Computed once per socket-open (this component is keyed by relation, so it
+  // remounts on socket switch) and dropped the moment the user starts typing.
+  const emptyQuery = query.trim() === "";
+  const discovery = useMemo(
+    () => (emptyQuery && discoveryFor ? discoveryFor(relation) : null),
+    [emptyQuery, discoveryFor, relation],
+  );
+  // Which domain the 둘러보기 drill-down is inside (null = top-level domain list).
+  const [browseKey, setBrowseKey] = useState<string | null>(null);
+  const reasonLabel = (reason: PickerSuggestionReason): string =>
+    reason === "sameDomain"
+      ? labels.reasonSameDomain
+      : reason === "titleSimilar"
+        ? labels.reasonTitleSimilar
+        : labels.reasonAdjacent;
   return (
     <div
       data-testid="studio-picker"
@@ -1432,8 +1477,82 @@ function InlinePicker({
           className="w-full bg-transparent text-body text-[color:var(--color-text-secondary)] outline-none placeholder:text-[color:var(--color-text-quaternary)]"
         />
       </div>
-      <div className="overflow-y-auto p-1.5" style={{ maxHeight: listMax }}>
-        {rows.length === 0 ? (
+      <div className="overflow-y-auto p-1.5" style={{ maxHeight: listMax }} data-testid="studio-picker-body">
+        {discovery ? (
+          discovery.suggestions.length === 0 && discovery.domains.length === 0 ? (
+            <div className="px-3 py-3 text-center text-label text-[color:var(--color-text-quaternary)]">{labels.pickerEmpty}</div>
+          ) : (
+            <>
+              {/* 추천 — up to 5 likely candidates, each with a muted reason. */}
+              {discovery.suggestions.length > 0 ? (
+                <div data-testid="studio-picker-suggest" className="mb-1">
+                  <PickerSectionHeading label={labels.suggestHeading} />
+                  {discovery.suggestions.map((s) => (
+                    <button
+                      key={s.candidate.id}
+                      type="button"
+                      data-testid={`studio-suggest-row-${s.candidate.id}`}
+                      onClick={() => onPick(s.candidate)}
+                      className="flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors hover:bg-[color:var(--color-indigo-a08)]"
+                    >
+                      <KindGlyph kind={s.candidate.kind} />
+                      <span className="min-w-0 truncate text-body text-[color:var(--color-text-primary)]">{s.candidate.title}</span>
+                      <span className="ml-auto flex-none text-label text-[color:var(--color-text-quaternary)]">{reasonLabel(s.reason)}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              {/* 둘러보기 — domain drill-down (default = domain list). */}
+              <div data-testid="studio-picker-browse">
+                <PickerSectionHeading label={labels.browseHeading} />
+                {browseKey === null ? (
+                  discovery.domains.map((d) => (
+                    <button
+                      key={d.key}
+                      type="button"
+                      data-testid={`studio-browse-domain-${d.key}`}
+                      onClick={() => setBrowseKey(d.key)}
+                      className="flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors hover:bg-[color:var(--color-indigo-a08)]"
+                    >
+                      <span className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
+                        {d.title ?? labels.browseNoDomain}
+                      </span>
+                      <span className="ml-auto flex-none rounded-[5px] border border-[color:var(--color-border-soft)] px-1.5 py-px text-label text-[color:var(--color-text-quaternary)]">
+                        {d.count}
+                      </span>
+                      <ChevronDown size={13} aria-hidden className="-rotate-90 flex-none text-[color:var(--color-text-quaternary)]" />
+                    </button>
+                  ))
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      data-testid="studio-browse-back"
+                      onClick={() => setBrowseKey(null)}
+                      className="flex w-full items-center gap-1.5 rounded-[8px] px-2.5 py-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                    >
+                      {labels.browseBack}
+                    </button>
+                    {(discovery.nodesByDomain[browseKey] ?? []).map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        data-testid={`studio-browse-node-${c.id}`}
+                        onClick={() => onPick(c)}
+                        className="flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors hover:bg-[color:var(--color-indigo-a08)]"
+                      >
+                        <KindGlyph kind={c.kind} />
+                        <span className="min-w-0 truncate text-body text-[color:var(--color-text-primary)]">{c.title}</span>
+                        <span className="ml-auto flex-none text-label text-[color:var(--color-text-quaternary)]">{labels.pickerKind(kindLabelFor(c.kind))}</span>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
+            </>
+          )
+        ) : rows.length === 0 ? (
           <div className="px-3 py-3 text-center text-label text-[color:var(--color-text-quaternary)]">{labels.pickerEmpty}</div>
         ) : (
           rows.map((c) => (
