@@ -20,10 +20,12 @@ relates: [elements/ontology-node-detail-modal]
 > `/topology`'s `?p=<id>&index=expanded` and redirects; `/topology`
 > (`HomePage`) is the one place that actually resolves `?p=` against the
 > live vault. The `OntologyEditPage.tsx` / `BuilderWriteSummary` paragraph
-> below is still accurate in spirit (`BuilderWriteSummary` now lives in its
-> own file, `src/views/ontology-edit/ui/BuilderWriteSummary.tsx`, after a
-> sub-component decomposition) but the exact insights-resolver claim in the
-> middle paragraph is stale.
+> below is now fully obsolete — the xyflow ERD builder (`/ontology/edit`)
+> was retired 2026-07-24. The live graph-id → deeplink builder is now
+> `buildOntologyStudioNodeHrefFromGraphId` in
+> `src/entities/knowledge-graph/lib/ontology-node-href.ts`, which the
+> topology drawer uses to hand a node into the 나침 무대
+> (`/ontology/studio?node=<id>`, see `capabilities/studio-deep-link-focus`).
 
 `src/views/ontology-view/lib/resolve-deeplink-node.ts` resolved `/ontology?node=...` into the selected ontology node for the former tree hub.
 
@@ -31,4 +33,4 @@ It accepted both canonical ontology IDs such as `capability:mcp-server` and vaul
 
 `src/views/ontology-insights/lib/resolve-insights-query-node.ts` applied the same compatibility rule for `/ontology/insights?node=...`. It also accepted project frontmatter slug aliases such as `ontology-atlas` for `project:ontology-atlas`, so builder proof links from the auto-focused root project opened the focused proof panel instead of falling back to the generic query cockpit.
 
-`src/views/ontology-edit/ui/OntologyEditPage.tsx` keeps `BuilderWriteSummary` on the same contract: if a saved concept has a vault slug, proof links use it; if only a graph node id is available, the summary still emits a focused `/ontology/insights/?node=...` link.
+(Obsolete after the 2026-07-24 builder retirement.) The former `src/views/ontology-edit/ui/OntologyEditPage.tsx` kept `BuilderWriteSummary` on the same contract: if a saved concept had a vault slug, proof links used it; if only a graph node id was available, the summary still emitted a focused `/ontology/insights/?node=...` link. That surface is gone; the 나침 무대 studio now consumes the same graph-id/slug deeplink contract via `buildOntologyStudioNodeHrefFromGraphId`.
