@@ -69,6 +69,7 @@ const GRAPH_ARRAY_KEYS = [
   'relates',
   'contains',
   'describes',
+  'broader',
 ];
 
 export function validateVaultDocument(raw) {

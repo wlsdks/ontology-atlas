@@ -83,104 +83,73 @@
     "projects": "Projects"
   },
   "ontologyStudio": {
-    "mode": "Enhance",
-    "close": "Close Esc",
-    "statsTitle": "Attributes",
-    "socketsTitle": "Enhancement slots",
-    "axis": {
-      "definition": "Definition · scope",
-      "evidence": "Code evidence",
-      "contains": "Contains",
-      "dependsOn": "Depends on",
-      "relates": "Related",
-      "isA": "Parent (is-a)"
+    "searchPlaceholder": "Node to bring on stage…",
+    "exit": "Stop",
+    "moreRelations": "More relations",
+    "flowEyebrow": "Completeness",
+    "flowCount": "{filled} of {total} directions filled",
+    "flowHint": {
+      "start": "· start here",
+      "half": "· halfway there",
+      "almost": "· almost done",
+      "done": "· all filled"
     },
-    "statConfirmed": "Set",
-    "statMissing": "Unset",
-    "level": "Enhance Lv.{from} → Lv.{to}",
-    "levelMax": "Enhance Lv.{level} · Max",
-    "gaugeLead": "Completeness",
-    "gaugeTrail": "· once you socket the parent",
-    "gaugeMax": "Completeness {percent}% · every axis complete",
-    "isaTag": "is-a · new axis",
-    "isaPrompt": "\"What kind of thing is {title}?\"",
-    "relationMeta": "{count} linked",
-    "relatesPick": "optional",
-    "relatesEmptyHint": "Socket a related concept",
-    "add": "＋ Socket",
-    "readOnlyNote": "Read-only · this slice",
-    "enhance": "Enhance",
-    "enhanceSub": "Apply directly · to your folder",
-    "agent": "Hand to agent",
-    "mapAria": "Map of the {title} node and its directly connected neighbors — use the list to the right for keyboard navigation.",
-    "nextSlice": "Writing opens in the next slice — this view is read-only for now.",
-    "emptyTitle": "No node to enhance yet",
-    "emptyBody": "Pick a vault or open the sample data and a node will appear here.",
+    "framePrompt": "Complete what {name} is by linking it to nearby nodes",
+    "guideBadge": "Start here",
+    "bottomProgress": "{filled} of {total} filled",
+    "bottomRemain": "· {remain} to go",
+    "bottomDone": "· all filled",
+    "save": "Confirm & save",
+    "saveHint": "You can save now even before it's all filled",
+    "foldMore": "more",
+    "question": {
+      "isA": "What kind of thing is this node?",
+      "dependsOn": "What does this node lean on?",
+      "contains": "What does it hold inside?",
+      "relates": "Something similar or interchangeable?"
+    },
+    "laneLabel": {
+      "isA": "a kind of",
+      "dependsOn": "what this node leans on",
+      "contains": "what this node holds",
+      "relates": "similar or interchangeable"
+    },
+    "emptyHint": {
+      "isA": "Pick one broader concept to complete it",
+      "dependsOn": "Link a node it leans on",
+      "contains": "what this node holds",
+      "relates": "Link if it's an alternative or complement"
+    },
+    "picker": {
+      "sub": "pick to link right away",
+      "placeholder": "Search existing nodes…",
+      "empty": "No matching node",
+      "createNew": "Not here · create new",
+      "similar": "Do you mean the existing ‘{title}’?",
+      "similarAccept": "Yes, link this →"
+    },
+    "fillSaved": "Linked and saved ‘{title}’.",
+    "fillCopied": "Copied the MCP command — paste it into your agent to run.",
+    "fillCopyFailed": "Copy was blocked — please try again.",
+    "fillFailed": "Couldn't save — {message}",
+    "autoSaved": "Already saved — filling a socket saves it right there.",
+    "empty": {
+      "title": "No node to bring on stage yet",
+      "body": "Pick a vault or open the sample data and nodes appear.",
+      "create": "＋ Create a node"
+    },
+    "kindLabel": "Kind",
     "create": {
-      "entry": "＋ New node",
-      "mode": "＋ Create",
-      "title": "Create a new node",
-      "close": "Close Esc",
-      "kindLabel": "Kind",
-      "nameLabel": "Name",
-      "namePlaceholder": "New node name — e.g. Cancel payment",
-      "domainLabel": "Parent domain",
+      "framePrompt": "Decide what the new node is, then link it to nearby nodes",
+      "namePlaceholder": "New node name — e.g. Payment cancel",
       "domainNone": "No domain",
-      "definitionLabel": "Definition · one line",
-      "definitionPlaceholder": "What this node does, in one line — a clear definition/boundary is what stops duplicates.",
-      "gaugeLabel": "Completeness",
-      "gaugeNote": "{filled} of 6 filled — wire the rest one button at a time on the right.",
-      "assembleTitle": "Assemble relations",
-      "assembleSubtitle": "Where this node attaches · one connection per button",
-      "progress": "{filled}/{total} filled",
-      "relation": {
-        "isA": {
-          "title": "Parent concept",
-          "type": "is-a",
-          "hint": "\"What kind of thing is this?\" — pick one parent to open the axis",
-          "add": "Link a parent"
-        },
-        "dependsOn": {
-          "title": "Depends on",
-          "type": "depends",
-          "hint": "The nodes this one relies on to work",
-          "add": "Add link"
-        },
-        "contains": {
-          "title": "Contains",
-          "type": "contains",
-          "hint": "The elements that implement this node (files · schemas · APIs)",
-          "add": "Add element"
-        },
-        "relates": {
-          "title": "Related",
-          "type": "relates",
-          "hint": "Link it if it substitutes or complements another node",
-          "add": "Add link"
-        }
-      },
-      "isaTag": "new axis",
-      "optionalTag": "optional",
-      "emptyCard": "Nothing yet — wire it with the button",
-      "pickerPlaceholder": "Search existing nodes…",
-      "pickerEmpty": "No matching node",
-      "pickerHint": "Click to attach",
-      "previewLabel": "So far\nit looks like",
-      "previewGhostIsa": "＋ Wire a relation and it appears here",
-      "similarMessage": "A similar node already exists — {title} ({kind} · {domain})",
+      "definitionPlaceholder": "One line on what this node does — definition & boundary prevent duplicates.",
+      "similar": "A similar node already exists — {title} ({kind})",
       "similarOpen": "Open that node",
-      "similarCreateAnyway": "Create new anyway",
-      "ledgerCount": "things assembled",
-      "pendingNode": "Create node ({kind})",
-      "pendingRelation": "{relation} → {target}",
-      "applyDirect": "Apply directly",
-      "applyDirectSub": "Write to your folder",
-      "applyDirectDisabled": "Open a vault to write",
-      "applyAgent": "Hand to agent",
-      "applyAgentSub": "Copy MCP commands",
-      "appliedDirect": "Created node \"{title}\" in your folder.",
-      "applyFailed": "Couldn't create it — {message}",
-      "copiedAgent": "Copied the MCP commands — paste them to your agent to run.",
+      "similarAnyway": "Create anyway",
+      "appliedDirect": "Created node ‘{title}’ in your folder.",
+      "applyFailed": "Couldn't create — {message}",
+      "copiedAgent": "Copied the MCP command — paste it into your agent to run.",
       "copyFailed": "Copy was blocked — please try again."
     }
   },
@@ -504,7 +473,8 @@
     "implements": "Implements",
     "uses": "Uses",
     "describes": "Describes",
-    "related_to": "Related to"
+    "related_to": "Related to",
+    "is_a": "is-a"
   },
   "edgeTypesPlain": {
     "contains": "contains",
@@ -513,7 +483,8 @@
     "implements": "implements",
     "uses": "uses",
     "describes": "evidence",
-    "related_to": "related"
+    "related_to": "related",
+    "is_a": "a kind of"
   },
   "topologyWidgets": {
     "controls": {

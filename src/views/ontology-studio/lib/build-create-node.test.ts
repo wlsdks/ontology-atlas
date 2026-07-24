@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildCreateNodeDoc,
   buildCreateNodeSlug,
+  buildFillPacket,
   buildMcpPacket,
   candidateFromNode,
   computeCreateCompleteness,
@@ -108,7 +109,24 @@ describe("buildMcpPacket", () => {
     );
     expect(packet).toContain('add_concept(slug: "capabilities/결제-취소", kind: "capability", title: "결제 취소", domain: "payments", definition: "결제 후');
     expect(packet).toContain('add_relation(from: "capabilities/결제-취소", to: "capabilities/order-cancel", type: "depends_on")');
-    expect(packet).toContain('add_relation(from: "capabilities/결제-취소", to: "capabilities/payment", type: "is_a")');
+    // is-a lands as a `broader:` frontmatter array on the new node itself (MCP
+    // has no is_a edge type) — NOT an add_relation edge.
+    expect(packet).toContain('broader: ["capabilities/payment"]');
+    expect(packet).not.toContain('type: "is_a"');
+  });
+});
+
+describe("buildFillPacket", () => {
+  it("emits add_relation for a depends-on fill on an existing node", () => {
+    expect(buildFillPacket("capabilities/mcp-server", "dependsOn", "capabilities/parser")).toBe(
+      'add_relation(from: "capabilities/mcp-server", to: "capabilities/parser", type: "depends_on")',
+    );
+  });
+
+  it("patches the broader frontmatter key for an is-a fill (no is_a edge type)", () => {
+    expect(buildFillPacket("capabilities/mcp-server", "isA", "capabilities/server-interface")).toBe(
+      'patch_concept(slug: "capabilities/mcp-server", frontmatter: { broader: ["capabilities/server-interface"] })',
+    );
   });
 });
 

@@ -46,12 +46,17 @@ export const RELATION_FRONTMATTER_KEY: Record<CreateRelationType, string> = {
   isA: "broader",
 };
 
-/** Relation type → the MCP `add_relation` edge type (for the agent packet). */
-export const RELATION_EDGE_TYPE: Record<CreateRelationType, string> = {
+/**
+ * Non-is_a relation type → the MCP `add_relation` edge type (agent packet).
+ * `isA` is deliberately absent: the MCP write surface has no `is_a` edge type,
+ * so is-a is applied via the `broader` frontmatter key (add_concept extra for a
+ * new node, patch_concept for an existing one) — see `buildMcpPacket` /
+ * `buildFillPacket`.
+ */
+export const RELATION_EDGE_TYPE: Record<Exclude<CreateRelationType, "isA">, string> = {
   contains: "contains",
   dependsOn: "depends_on",
   relates: "related_to",
-  isA: "is_a",
 };
 
 /** A pickable existing node — the frontmatter-writable `ref` is precomputed. */
@@ -184,13 +189,39 @@ export function buildMcpPacket(draft: CreateDraft): string {
   const definition = draft.definition.trim();
   if (definition) conceptArgs.push(`definition: ${q(definition)}`);
 
+  const deduped = dedupeRelations(draft.relations);
+  // is-a lands as a `broader:` frontmatter array on the new node itself (MCP has
+  // no is_a edge type). Non-is_a relations are add_relation edges.
+  const broaderRefs = deduped.filter((r) => r.type === "isA").map((r) => r.candidate.ref);
+  if (broaderRefs.length > 0) {
+    conceptArgs.push(`broader: [${broaderRefs.map((r) => q(r)).join(", ")}]`);
+  }
+
   const lines: string[] = [`add_concept(${conceptArgs.join(", ")})`];
-  for (const rel of dedupeRelations(draft.relations)) {
+  for (const rel of deduped) {
+    if (rel.type === "isA") continue;
     lines.push(
       `add_relation(from: ${q(slug)}, to: ${q(rel.candidate.ref)}, type: ${q(RELATION_EDGE_TYPE[rel.type])})`,
     );
   }
   return lines.join("\n");
+}
+
+/**
+ * Single-socket MCP command for the ENHANCE read-only fallback — filling one
+ * relation on an EXISTING focal node. is-a patches the `broader` frontmatter
+ * key (MCP has no is_a edge type); the rest are `add_relation` edges.
+ */
+export function buildFillPacket(
+  focalSlug: string,
+  relation: CreateRelationType,
+  candidateRef: string,
+): string {
+  const q = (v: string) => `"${v.replace(/"/g, '\\"')}"`;
+  if (relation === "isA") {
+    return `patch_concept(slug: ${q(focalSlug)}, frontmatter: { broader: [${q(candidateRef)}] })`;
+  }
+  return `add_relation(from: ${q(focalSlug)}, to: ${q(candidateRef)}, type: ${q(RELATION_EDGE_TYPE[relation])})`;
 }
 
 /**

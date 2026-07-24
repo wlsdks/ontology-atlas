@@ -8,6 +8,7 @@
  *   behavior:  `depends_on`, `implements`, `uses` (동작)
  *   evidence:  `describes` (document → 개념)
  *   weak:      `related_to` (약 연관)
+ *   taxonomy:  `is_a` (상위 개념 — SKOS skos:broader, frontmatter `broader:`)
  *
  * `KnowledgeGraphEdge.type` 자체는 backwards-compat 으로 `string` 을 유지.
  * 타입드 writer / typed reader 가 필요한 경우 이 union 을 사용한다.
@@ -19,7 +20,8 @@ export type KnowledgeEdgeType =
   | 'implements'
   | 'uses'
   | 'describes'
-  | 'related_to';
+  | 'related_to'
+  | 'is_a';
 
 /** Runtime 검증·iteration 용 — 위 union 과 1:1 일치. */
 export const KNOWLEDGE_EDGE_TYPES: readonly KnowledgeEdgeType[] = [
@@ -30,6 +32,7 @@ export const KNOWLEDGE_EDGE_TYPES: readonly KnowledgeEdgeType[] = [
   'uses',
   'describes',
   'related_to',
+  'is_a',
 ] as const;
 
 /**

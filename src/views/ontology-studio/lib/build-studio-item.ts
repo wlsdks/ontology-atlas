@@ -1,13 +1,20 @@
 /**
  * Turn real ontology graph data (the SAME `KnowledgeGraphNode` / edge shapes
- * `useOntologyInsight` produces) into the Studio "item" view model — the
- * hexagon subject, its equipped relation gems, the enhancement sockets, and
- * the completeness score. Pure + deterministic so it can be unit-tested with a
- * fixed node/edge fixture and never disagrees with what the surface renders.
+ * `useOntologyInsight` produces) into the Studio "나침 무대(compass stage)" view
+ * model: one focal node at center, its typed neighbors grouped onto FOUR fixed
+ * compass bearings, and which bearing to guide the user toward next.
  *
- * Slice 1 is READ-ONLY: every count and neighbor label comes straight from the
- * derived graph. The `is_a` socket is always empty (the schema has no is_a axis
- * yet) — that is the surface's headline call to action, wired in Slice 2.
+ * Pure + deterministic so it can be unit-tested with a fixed node/edge fixture
+ * and never disagrees with what the compass renders.
+ *
+ * Bearing → relation → frontmatter key:
+ *   UP    상위개념   is_a        → `broader`      (SKOS skos:broader)
+ *   RIGHT 기대는 곳  depends_on  → `dependencies`
+ *   DOWN  담는 것    contains    → `contains`
+ *   LEFT  비슷한 것  related_to  → `relates`
+ *
+ * The relation TYPE names are invisible metadata — the socket asks a
+ * plain-language question instead (see `messages/*.json` `ontologyStudio`).
  */
 
 import {
@@ -16,44 +23,56 @@ import {
   type ConnectionSourceEdge,
   type ConnectionSourceNode,
 } from "@/shared/lib/ontology-tree";
-import {
-  deriveCodeLocations,
-  type KnowledgeGraphEdge,
-  type KnowledgeGraphNode,
-} from "@/entities/knowledge-graph";
-import {
-  projectWithIsA,
-  scoreEnhancement,
-  type EnhancementInputs,
-  type EnhancementScore,
-} from "./enhancement-score";
+import { candidateFromNode } from "./build-create-node";
 
 /** Structural node shape — a subset of `KnowledgeGraphNode`. */
 export interface StudioSourceNode extends ConnectionSourceNode {
   summary?: string;
+  /** Canonical source doc slug — where the node's frontmatter lives (write target). */
+  evidenceIds?: string[];
 }
 export type StudioSourceEdge = ConnectionSourceEdge;
 
-/** A relation category rendered as a socket row + orbiting gem(s). */
-export type StudioGemKind = "isA" | "dependsOn" | "contains" | "relates";
+export type StudioBearing = "up" | "right" | "down" | "left";
+/** Render order: up first (the hero is-a gap), then right, down, left. */
+export const STUDIO_BEARINGS: readonly StudioBearing[] = ["up", "right", "down", "left"] as const;
 
-export interface StudioGem {
-  kind: StudioGemKind;
-  /** Whether the socket is filled (has ≥1 relation) or an empty enhancement slot. */
-  filled: boolean;
-  /** Relation instances feeding this socket (neighbor display titles). */
-  neighbors: string[];
-  count: number;
+/** A relation category — one per bearing. */
+export type StudioRelation = "isA" | "dependsOn" | "contains" | "relates";
+
+export const BEARING_RELATION: Record<StudioBearing, StudioRelation> = {
+  up: "isA",
+  right: "dependsOn",
+  down: "contains",
+  left: "relates",
+};
+
+/** Relation → the frontmatter array key the runtime derivation reads. */
+export const BEARING_FRONTMATTER_KEY: Record<StudioRelation, string> = {
+  isA: "broader",
+  dependsOn: "dependencies",
+  contains: "contains",
+  relates: "relates",
+};
+
+export interface StudioSatellite {
+  id: string;
+  title: string;
+  kind: string;
+  /** Folder-prefixed ref the derivation resolves, e.g. `capabilities/mcp-server`. */
+  ref: string;
 }
 
-export interface StudioStats {
-  hasDefinition: boolean;
-  evidenceCount: number;
-  containsCount: number;
-  dependsOnCount: number;
-  usedByCount: number;
-  relatesCount: number;
-  hasIsA: boolean;
+export interface StudioBearingGroup {
+  bearing: StudioBearing;
+  relation: StudioRelation;
+  frontmatterKey: string;
+  neighbors: StudioSatellite[];
+  filled: boolean;
+  /** The single guided empty socket ("여기부터 채워요"). At most one bearing true. */
+  recommended: boolean;
+  /** DOWN when empty — expected-but-missing (amber). */
+  expected: boolean;
 }
 
 export interface StudioItem {
@@ -65,24 +84,20 @@ export interface StudioItem {
     kind: string;
     /** Parent domain's display title, when the node belongs to one. */
     domainLabel: string | null;
+    /** One-line definition / summary (frontmatter description → body excerpt). */
+    definition: string;
+    /** Vault doc slug the focal node's frontmatter lives in (write target). */
+    sourceSlug: string;
   };
-  stats: StudioStats;
-  score: EnhancementScore;
-  /** Projected score if the empty gold is_a socket were filled. */
-  projectedScore: EnhancementScore;
-  /** Ordered sockets: is_a first (the new axis), then filled relation sockets. */
-  gems: StudioGem[];
-  /** Orbiting gems around the hexagon — one per relation instance + one empty gold is_a orb. */
-  orbits: Array<{ kind: StudioGemKind; filled: boolean }>;
+  bearings: Record<StudioBearing, StudioBearingGroup>;
+  /** Ordered [up, right, down, left] for iteration. */
+  order: StudioBearingGroup[];
+  /** How many of the 4 bearings are filled. */
+  filledBearings: number;
+  totalBearings: 4;
 }
 
 const RELATES_TYPES = new Set(["related_to", "uses", "implements"]);
-/** Cap orbiting gems so the ring around the hexagon stays legible. */
-const MAX_ORBIT_GEMS = 8;
-
-function hasText(value: string | undefined): boolean {
-  return typeof value === "string" && value.trim().length > 0;
-}
 
 /**
  * Pick a sensible default node to enhance when no `?node=` deeplink is given:
@@ -120,9 +135,25 @@ export function selectDefaultStudioNodeId(
   return rank(capabilities) ?? rank(nonContainers) ?? rank(nodes);
 }
 
+function toSatellite(conn: { id: string; title: string; kind: string }): StudioSatellite {
+  const ref = candidateFromNode({ id: conn.id, kind: conn.kind, title: conn.title }).ref;
+  return { id: conn.id, title: conn.title, kind: conn.kind, ref };
+}
+
+function dedupeById<T extends { id: string }>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const row of rows) {
+    if (seen.has(row.id)) continue;
+    seen.add(row.id);
+    out.push(row);
+  }
+  return out;
+}
+
 /**
- * Assemble the Studio item for `nodeId`. Returns `null` when the node is not in
- * the graph (deleted deeplink, empty vault).
+ * Assemble the Studio compass item for `nodeId`. Returns `null` when the node
+ * is not in the graph (deleted deeplink, empty vault).
  */
 export function buildStudioItem(
   nodeId: string,
@@ -135,76 +166,53 @@ export function buildStudioItem(
   const connections = buildConnections(nodeId, nodes, edges);
   const roles = groupConnectionsByRole(connections);
 
-  // Precise per-type buckets (the socket labels are typed facts, so we split by
-  // relationType rather than the role grouping's direction-only dependsOn).
+  const isA = connections.filter(
+    (c) => c.relationType === "is_a" && c.direction === "outgoing",
+  );
   const dependsOn = connections.filter(
     (c) => c.relationType === "depends_on" && c.direction === "outgoing",
-  );
-  const usedBy = connections.filter(
-    (c) => c.relationType === "depends_on" && c.direction === "incoming",
   );
   const relates = dedupeById(connections.filter((c) => RELATES_TYPES.has(c.relationType)));
   const contains = roles.contains;
 
   const domainParent = roles.belongsTo.find((c) => c.kind === "domain") ?? null;
 
-  const stats: StudioStats = {
-    hasDefinition: hasText(node.summary),
-    // deriveCodeLocations only reads id/title/kind (+ edges), so the structural
-    // StudioSourceNode subset is safe — the missing KnowledgeGraphNode fields
-    // (projectIds/evidenceIds/timestamps) are never touched. Cast keeps this
-    // lib testable with minimal fixtures while reusing the rank-1 accessor.
-    evidenceCount: deriveCodeLocations(
-      nodeId,
-      nodes as unknown as readonly KnowledgeGraphNode[],
-      edges as unknown as readonly KnowledgeGraphEdge[],
-    ).length,
-    containsCount: contains.length,
-    dependsOnCount: dependsOn.length,
-    usedByCount: usedBy.length,
-    relatesCount: relates.length,
-    hasIsA: false, // Slice 1 — no is_a axis in schema yet.
+  const bearingNeighbors: Record<StudioBearing, StudioSatellite[]> = {
+    up: dedupeById(isA.map(toSatellite)),
+    right: dedupeById(dependsOn.map(toSatellite)),
+    down: dedupeById(contains.map(toSatellite)),
+    left: dedupeById(relates.map(toSatellite)),
   };
 
-  const scoreInputs: EnhancementInputs = {
-    hasDefinition: stats.hasDefinition,
-    hasEvidence: stats.evidenceCount > 0,
-    containsCount: stats.containsCount,
-    dependsOnCount: stats.dependsOnCount,
-    relatesCount: stats.relatesCount,
-    hasIsA: stats.hasIsA,
+  // The single guided empty socket: first empty bearing in [up, down, right, left]
+  // priority — the is-a gap is the hero, then contains (expected), then the rest.
+  const guidePriority: StudioBearing[] = ["up", "down", "right", "left"];
+  const recommendedBearing =
+    guidePriority.find((b) => bearingNeighbors[b].length === 0) ?? null;
+
+  const makeGroup = (bearing: StudioBearing): StudioBearingGroup => {
+    const relation = BEARING_RELATION[bearing];
+    const neighbors = bearingNeighbors[bearing];
+    const filled = neighbors.length > 0;
+    return {
+      bearing,
+      relation,
+      frontmatterKey: BEARING_FRONTMATTER_KEY[relation],
+      neighbors,
+      filled,
+      recommended: !filled && bearing === recommendedBearing,
+      expected: !filled && bearing === "down",
+    };
   };
 
-  const gems: StudioGem[] = [
-    { kind: "isA", filled: false, neighbors: [], count: 0 },
-    {
-      kind: "dependsOn",
-      filled: dependsOn.length > 0,
-      neighbors: dependsOn.map((c) => c.title),
-      count: dependsOn.length,
-    },
-    {
-      kind: "contains",
-      filled: contains.length > 0,
-      neighbors: contains.map((c) => c.title),
-      count: contains.length,
-    },
-    {
-      kind: "relates",
-      filled: relates.length > 0,
-      neighbors: relates.map((c) => c.title),
-      count: relates.length,
-    },
-  ];
-
-  const orbits: StudioItem["orbits"] = [
-    ...dependsOn.map(() => ({ kind: "dependsOn" as const, filled: true })),
-    ...contains.map(() => ({ kind: "contains" as const, filled: true })),
-    ...relates.map(() => ({ kind: "relates" as const, filled: true })),
-  ];
-  const capped = orbits.slice(0, MAX_ORBIT_GEMS - 1);
-  // The empty gold is_a orb always rides the ring — the missing axis made visible.
-  capped.push({ kind: "isA", filled: false });
+  const bearings: Record<StudioBearing, StudioBearingGroup> = {
+    up: makeGroup("up"),
+    right: makeGroup("right"),
+    down: makeGroup("down"),
+    left: makeGroup("left"),
+  };
+  const order = STUDIO_BEARINGS.map((b) => bearings[b]);
+  const filledBearings = order.filter((g) => g.filled).length;
 
   return {
     node: {
@@ -213,22 +221,12 @@ export function buildStudioItem(
       label: node.display ?? node.title,
       kind: node.kind,
       domainLabel: domainParent ? domainParent.title : null,
+      definition: (node.summary ?? "").trim(),
+      sourceSlug: node.evidenceIds?.[0] ?? candidateFromNode(node).ref,
     },
-    stats,
-    score: scoreEnhancement(scoreInputs),
-    projectedScore: projectWithIsA(scoreInputs),
-    gems,
-    orbits: capped,
+    bearings,
+    order,
+    filledBearings,
+    totalBearings: 4,
   };
-}
-
-function dedupeById<T extends { id: string }>(rows: T[]): T[] {
-  const seen = new Set<string>();
-  const out: T[] = [];
-  for (const row of rows) {
-    if (seen.has(row.id)) continue;
-    seen.add(row.id);
-    out.push(row);
-  }
-  return out;
 }
