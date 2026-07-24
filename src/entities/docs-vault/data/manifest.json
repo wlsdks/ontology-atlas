@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T21:52:28.883Z",
+  "generatedAt": "2026-07-24T22:02:46.797Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-25 — 다운로드 첫 화면을 설치 판단 우선으로 재정렬",
+          "slug": "2026-07-25-다운로드-첫-화면을-설치-판단-우선으로-재정렬"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-25 — 인사이트 탭 키보드·포커스 계약 복구",
           "slug": "2026-07-25-인사이트-탭-키보드포커스-계약-복구"
         },
@@ -4773,9 +4778,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 인사이트의 할 일·구조·신선도 제어는 role=tab을 선언했지만 세 탭이 모두 순차 Tab 이동에 들어가고 방향키가 동작하지 않았다. 이제 선택 탭 한 ",
-      "wordCount": 38352,
-      "updatedAt": "2026-07-24T21:50:23.078Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. /download로 직접 들어온 사용자가 구 LandingPage 소개 전체를 지나야 릴리스 상태를 볼 수 있던 정보 위계를 바로잡았다. 다운로드 제목·G",
+      "wordCount": 38444,
+      "updatedAt": "2026-07-24T22:02:30.266Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5902,8 +5907,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
-      "wordCount": 12123,
-      "updatedAt": "2026-07-25T06:31:47+09:00",
+      "wordCount": 12138,
+      "updatedAt": "2026-07-24T22:02:30.264Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6615,7 +6620,7 @@
       "headings": [],
       "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Do next / Structure / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Insi",
       "wordCount": 507,
-      "updatedAt": "2026-07-24T21:50:23.078Z",
+      "updatedAt": "2026-07-25T06:53:55+09:00",
       "linksOut": []
     },
     {
@@ -6937,8 +6942,8 @@
       },
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
-      "wordCount": 3631,
-      "updatedAt": "2026-07-24T23:45:18+09:00",
+      "wordCount": 3701,
+      "updatedAt": "2026-07-24T22:02:30.266Z",
       "linksOut": []
     },
     {
@@ -10232,14 +10237,19 @@
           "slug": "ux-020-인사이트-탭이-복합-위젯을-선언하고-일반-링크처럼-동작"
         },
         {
+          "depth": 3,
+          "text": "UX-021 — 다운로드 경로의 첫 화면이 설치 판단 대신 제품 소개를 먼저 요구",
+          "slug": "ux-021-다운로드-경로의-첫-화면이-설치-판단-대신-제품-소개를-먼저-요구"
+        },
+        {
           "depth": 2,
           "text": "현재 PO·디자인 판정",
           "slug": "현재-po디자인-판정"
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다. 4. 실패 테스트를 먼저 추가한다. 5. 가장 작은 일관된 슬라이스로 수정한다. 6. 집중 테스트와 /Appl",
-      "wordCount": 5229,
-      "updatedAt": "2026-07-24T21:52:13.098Z",
+      "wordCount": 5540,
+      "updatedAt": "2026-07-24T22:02:30.264Z",
       "linksOut": []
     },
     {

@@ -113,6 +113,13 @@ the public onboarding copy: download the DMG, move the app into Applications,
 pick the local vault folder, then verify Codex / Claude Code / Cursor access
 through Settings -> MCP/Agents so the AI agent reads and writes the same vault
 over MCP with CLI fallback.
+The download route treats installation availability as its first decision
+surface: the download heading, GitHub Releases/source actions, checked-in
+version/DMG/architecture/minimum-OS facts, checksum state, and honest pending
+note render before the product introduction. The retained intro, dogfood
+miniature, and value-chain rail sit below a divider as secondary explanation.
+This preserves the same content while ensuring a person or agent can determine
+that no public asset exists without scrolling through marketing context first.
 `pnpm checks:changed` also routes desktop-related edits to this gate, and routes
 checker, doctor, and smoke implementation edits through focused
 `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` and

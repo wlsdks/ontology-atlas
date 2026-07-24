@@ -41,7 +41,7 @@
 | A13–A14 | `/ontology`, 구 `/ontology/edit` 리다이렉트 | 로컬 딥링크 선택·오류 판정·공방 포커스 설치 앱 검증 완료 |
 | A15–A16 | 공방 ENHANCE/CREATE → 쓰기 → 파일 재열기 | 임시 vault의 ENHANCE 관계 쓰기와 CREATE 노드 생성·중복 차단·디스크/validator/문서함 재열기 검증 완료 |
 | A17 | 인사이트 읽기·필터·지도 복귀 | 읽기·탭 키보드·지도 왕복 1차 설치 앱 검증 완료 |
-| A18 | 다운로드 안내 | 대기 |
+| A18 | 다운로드 안내 | 설치 가능 여부·CTA·대기 상태 첫 화면/키보드 검증 완료 |
 | A19 | 한국어/영어 동일 과업·동일 사실 | 대기 |
 | A20 | 1100×800, 1512×917, 1920×1080, 2560×1440 + reduced motion | 대기 |
 
@@ -632,6 +632,43 @@
   이동했다. 신선도 탭에서 Tab을 누르자 비선택 할 일/구조를 다시 밟지 않고
   패널의 첫 `지도에서 보기` 링크로 이동했다. 키보드 스크린샷에서 inset
   focus ring은 tablist 경계 안에 완전히 남아 잘리지 않았다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-021 — 다운로드 경로의 첫 화면이 설치 판단 대신 제품 소개를 먼저 요구
+
+- 심각도: `S3`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: `/download` 진입 → 현재 설치 가능 여부 확인 → GitHub Release 이동
+- 관측: 1512×917 첫 화면은 breadcrumb가 `macOS 앱 다운로드`인데도 구
+  LandingPage에서 옮긴 소개 히어로·dogfood 미니어처·가치 카드가 전부
+  차지했다. 실제 다운로드 제목·CTA·버전/DMG/체크섬·대기 상태는 스크롤
+  아래에 있었다. 현재 `gh release list --repo wlsdks/ontology-atlas`도
+  공개 릴리스 0건이라, “지금 받을 수 없음”이 가장 중요한 사실이었다.
+- 사용자 문제: 설치하려고 온 사용자는 긴 제품 설명을 먼저 읽고 스크롤한
+  뒤에야 다운로드 asset이 아직 없다는 사실을 알 수 있다.
+- 현재 대안: 소개 전체를 지나 다운로드 구간을 찾거나, GitHub 저장소를 직접
+  열어 Releases가 비어 있는지 확인한다.
+- 온톨로지·에이전트 가치: 앱 설치는 로컬 vault와 MCP/CLI 에이전트 협업을
+  시작하는 진입 경계다. 릴리스 상태를 먼저 정확히 보여야 사람이 설치 가능성과
+  다음 행동을 판단하고, 에이전트도 존재하지 않는 asset을 안내하지 않는다.
+- 최소화: 콘텐츠·링크·토큰은 삭제하거나 새로 만들지 않는다. 기존 다운로드
+  h1, GitHub Releases/소스 CTA, release facts, checksum과 availability를
+  소개보다 먼저 두고, 제품 소개는 divider 아래 보조 설명으로 내린다.
+  owner 전용 first-release checklist가 명시적으로 켜진 경우에도 상태 설명 뒤,
+  소개 앞에 유지한다.
+- 디자인 계약: 첫 attention winner는 다운로드 결정이고 소개는 secondary
+  explanation이다. 새 색·자산·모션 없이 기존 divider/spacing/token만
+  사용한다. 문서 heading도 h1 다운로드 → h2 소개 순서가 된다.
+- 회귀 증거: DownloadPage DOM 계약은 h1·primary/source CTA·fact strip·
+  checksum·availability가 모두 소개 h2보다 먼저 오고, primary CTA가 source
+  CTA보다 먼저 오는 순서를 고정한다. 다운로드 집중 테스트 `4 파일 · 20개`,
+  TypeScript, touched ESLint, production/desktop build가 통과했다.
+- 설치 앱 증거: 최신 `/Applications/Ontology Atlas.app`의 `/ko/download/`
+  1512×917 무스크롤 첫 화면에서 h1, `GitHub에서 릴리스 확인`, `소스 코드
+  보기`, v0.1.0/DMG/Apple Silicon+Intel/macOS 12 facts, checksum 게시 대기,
+  release availability 안내가 동시에 보였다. 소개 히어로는 divider 아래에서
+  시작했다. AX 키보드 순서는 primary CTA → source CTA였고 두 링크의 실제
+  GitHub 목적지도 유지됐다.
 - PO·디자인 판정: **Build and verify**
 
 ## 현재 PO·디자인 판정
