@@ -107,8 +107,9 @@ describe('i18n message catalog', () => {
     // primary-navigation copy surface for both desktop and mobile.
     assert.equal(ko.navRail.map, '지도');
     assert.equal(ko.navRail.docs, '문서함');
-    // `navRail.builder` retired 2026-07-24 with the ERD builder (studio absorbs it).
-    assert.equal(ko.navRail.studio, '스튜디오');
+    // `navRail.builder` retired 2026-07-24 with the ERD builder (the workshop absorbs it).
+    // 2026-07-25: 스튜디오 → 공방 개명 (라벨만, `navRail.studio` 키는 유지).
+    assert.equal(ko.navRail.studio, '공방');
     assert.equal(ko.navRail.insights, '인사이트');
     assert.equal(ko.navRail.projects, '프로젝트');
     assert.doesNotMatch(

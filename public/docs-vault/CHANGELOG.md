@@ -6,6 +6,22 @@
 
 ---
 
+## 2026-07-25 — 스튜디오 → 공방 개명 ("지도에서 발견하고, 공방에서 완성한다")
+
+`/ontology/studio` 쓰기 표면의 사용자 노출 **이름**을 "스튜디오"에서
+"**공방**"(영문 Workshop)으로 바꿨다 — fable 네이밍 판정, 소유자 승인. 지도에서
+노드를 발견하고, 공방에서 그 의미를 완성한다는 제품 서사에 맞춘 이름이다.
+설계 메타포 "나침 무대(Compass Stage)"는 영문 보조 이름으로 그대로 유지한다.
+
+- **라벨만 교체, URL·코드 계약 유지**: 라우트 `/ontology/studio`, 파일·컴포넌트
+  이름, `data-testid`, i18n **키** 이름, `ontologyStudio.*` 네임스페이스, MCP
+  패킷 안 URL 은 전부 그대로다(딥링크·에이전트 핸드오프·코드 호환). 바뀐 것은
+  사람이 보는 문자열뿐 — 레일 라벨(`navRail.studio`), 페이지 타이틀, 팝오버
+  액션, 경로 패킷 라벨의 값.
+- **i18n**: ko "스튜디오"→"공방", en "Studio"→"Workshop" (값만, 키 parity 유지).
+- **문서**: AGENTS.md·FEATURES.md·DESIGN-SYSTEM.md·architecture.md 라우트 라벨을
+  공방(Compass Stage)로, dogfood vault 프로즈(project.md·views.md) 이름 반영.
+
 ## 2026-07-24 — Firebase Hosting 인프라 제거, GitHub Pages 단일 웹 호스트
 
 R10 에서 Firebase SDK 는 이미 제거됐고, 남아 있던 것은 정적 사이트 배포

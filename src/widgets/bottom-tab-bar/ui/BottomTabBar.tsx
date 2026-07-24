@@ -17,8 +17,8 @@ interface TabItem {
 }
 
 // 모바일 한정 하단 탭바 — 데스크톱 `AppNavRail` (lg+) 의 코어 목적지를 공유한다
-// (feat/rail-rollout, 3-체계 → 1-체계 통합). 스튜디오는 몰입형 쓰기 표면이라
-// 데스크톱 레일 전용이고, 은퇴한 ERD 빌더 탭은 제거됐다(2026-07-24, 스튜디오가
+// (feat/rail-rollout, 3-체계 → 1-체계 통합). 공방은 몰입형 쓰기 표면이라
+// 데스크톱 레일 전용이고, 은퇴한 ERD 빌더 탭은 제거됐다(2026-07-24, 공방이
 // 흡수). active 판정도 `resolveActiveNavDestination` 을 공유해 두 위젯이 절대
 // 갈라지지 않는다.
 const TABS: ReadonlyArray<TabItem> = [

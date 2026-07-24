@@ -29,8 +29,8 @@ describe('ChromeTile', () => {
   });
 
   it('renders as a Link when href is given', () => {
-    render(<ChromeTile icon={<svg />} title="스튜디오" href="/ontology/studio/" />);
-    const tile = screen.getByRole('link', { name: '스튜디오' });
+    render(<ChromeTile icon={<svg />} title="공방" href="/ontology/studio/" />);
+    const tile = screen.getByRole('link', { name: '공방' });
     expect(tile.tagName).toBe('A');
     expect(tile).toHaveAttribute('href', '/ontology/studio/');
   });

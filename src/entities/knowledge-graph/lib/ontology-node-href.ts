@@ -75,14 +75,14 @@ export function resolveOntologyBuilderNodeSlugFromGraphId(nodeId: string): strin
 }
 
 /**
- * 스튜디오 딥링크 발신자 (지도·인사이트·팝오버 → `/ontology/studio`) — URL
+ * 공방 딥링크 발신자 (지도·인사이트·팝오버 → `/ontology/studio`) — URL
  * 계약의 공통 id 문법인 canonical `<kind>:<slug>` 를 실어 보낸다. 은퇴한 ERD
  * 빌더(`/ontology/edit`)를 대체한 나침 무대(Compass Stage)가 이 `?node=` 를
  * 받아 해당 노드를 ENHANCE 모드로 열고 관계 소켓을 채우게 한다.
  *
  * `translateOntologyDeeplinkToTopologyParam` 로 정규화하는 이유: 입력이 이미
  * canonical(`capability:foo`)이면 그대로, 복수-슬래시(`capabilities/foo`)면
- * `capability:foo` 로 승격, bare/evidence-path 는 통과 — 스튜디오의
+ * `capability:foo` 로 승격, bare/evidence-path 는 통과 — 공방의
  * `n.id === requestedNode` 매칭이 두 문법 모두에서 성립하도록 한 문법으로
  * 수렴한다(지도 `?p=`·온톨로지 리다이렉트와 같은 정규화기 재사용).
  */

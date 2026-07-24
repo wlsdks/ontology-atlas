@@ -4,7 +4,7 @@
 > Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR #355~#366 —
 > `docs/prototypes/` 승인 시안 기반으로 `/`·`/topology`·`/project/[slug]`·
 > `/ontology/studio`·`/ontology/insights`·`/docs`·`/projects`·`/download`·project
-> 폼을 재구성. 3-tab insights, 352px 데이터시트, 나침 무대 쓰기 표면, engraved census
+> 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved census
 > 헤더가 모두 이 라운드에서 나옴 — 세부는 §2 각 라우트 절 참고). Earlier
 > (2026-05-31): real-time **adaptive** vault polling, `/docs` editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, `find_evidence` relevance ranking, `validate_vault` vault→code `pathDrift`, `infer_imports` edge reconciliation. Earlier still (2026-05-28): graph DB health gate, `/ontology` Browse / Write / Query loop, Builder proof handoff role, desktop route smoke.
 > Routes section UI detail remains a maintained product snapshot. When route
@@ -37,7 +37,7 @@ input (humans + AI agents)     parse           store              output
         ▼                       ▼                ▼                ▼
   .md in vault  →          frontmatter   →  user disk      →  Browse (/, /ontology) tree+ego
   (frontmatter)                              (vault)           Topology (/, /topology) canvas-2D map/graph
-  + AI agent (MCP)                                            Studio (/ontology/studio) write surface
+  + AI agent (MCP)                                            Workshop (/ontology/studio) write surface
                                                               App views (/ontology, /topology, /docs)
                                                               Insights (/ontology/insights) census
 ```
@@ -340,7 +340,7 @@ that floats over the map, reusing the same `buildOntologyTree` /
 `filterTreeByQuery` the old tree page used, so row search/select behavior is
 unchanged even though the surface is.
 
-`/ontology/studio` (Write, the 나침 무대) and `/ontology/insights` (Query) are
+`/ontology/studio` (Write, the 공방 / Compass Stage) and `/ontology/insights` (Query) are
 unaffected — only the Browse leg of the old Browse/Write/Query loop moved.
 
 ---
@@ -379,8 +379,8 @@ Empty state (0 nodes): link to `/docs` (open vault).
 
 ---
 
-### `/ontology/studio` — 나침 무대 (Compass Stage), the vault write surface
-- 노드의 **의미를 완성**하는 쓰기 표면. focal 노드를 중앙 hero 로 놓고, 관계 종류를 고정 방위에 못박는다 — 위=상위개념(is_a)·아래=담는것(contains)·오른쪽=기대는곳(depends)·왼쪽=비슷한것(relates). 레일 LNB "스튜디오"에서 진입. **한 표면, 두 채움상태, 모드 탭 없음.**
+### `/ontology/studio` — 공방 (Compass Stage), the vault write surface
+- 노드의 **의미를 완성**하는 쓰기 표면. focal 노드를 중앙 hero 로 놓고, 관계 종류를 고정 방위에 못박는다 — 위=상위개념(is_a)·아래=담는것(contains)·오른쪽=기대는곳(depends)·왼쪽=비슷한것(relates). 레일 LNB "공방"에서 진입. **한 표면, 두 채움상태, 모드 탭 없음.**
 - **강화(enhance)**: 기존 노드를 열어(`?node=<id>` 딥링크, 없으면 가장 연결 많은 역량 자동 선택) 빠진 관계를 채운다. 채워진 관계=실선 인디고 지지대 + 위성 카드, 빠진 관계=파선 **라인아트 소켓**(보석 아님). 하나만 "여기부터 채워요" 로 안내.
 - **만들기(create, `?mode=create`)**: 같은 무대를 전부 빈 상태로 — kind/이름/도메인/정의 draft 카드 + 4방위 빈 소켓. 근접중복 가드, 라이브 미리보기.
 - **진짜 쓰기**: 소켓을 채우면 실제 frontmatter 관계 배열에 쓴다(`localVault.updateFrontmatter`). 읽기 전용 vault 면 AI 에이전트 위임용 **MCP 명령 패킷**을 클립보드로. 인라인 앵커 피커에서 후보 선택 or "새로 만들기".
@@ -390,12 +390,12 @@ Empty state (0 nodes): link to `/docs` (open vault).
 
 ### `/ontology/edit` — RETIRED (2026-07-24) → redirects to `/ontology/studio`
 
-The xyflow ERD canvas builder was removed once the 나침 무대(Compass Stage,
+The xyflow ERD canvas builder was removed once the 공방(Compass Stage,
 `/ontology/studio`) covered node assembly (CREATE mode), relation connecting
 (inline picker + real frontmatter writes), and live preview. `/ontology/edit`
 is now a thin client redirect to `/ontology/studio` that forwards any `?node=`
-deep-link (normalized to the canonical `<kind>:<slug>` id) into the studio's
-ENHANCE mode — old bookmarks and agent-handoff links land in the studio, not a
+deep-link (normalized to the canonical `<kind>:<slug>` id) into the workshop's
+ENHANCE mode — old bookmarks and agent-handoff links land in the workshop, not a
 404. The `@xyflow/react` dependency, the builder view, its keyboard shortcuts,
 and the builder-only i18n strings were all removed. See `/ontology/studio`
 above for the surviving write surface.
@@ -693,8 +693,8 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
 `OntologySubNav` are retired (deleted, not just unmounted).
 
 ### `AppNavRail` (desktop, `lg:` and up — left side, on every page)
-- 5 destinations: Map (`/`, `/topology`) · Docs (`/docs`) · Studio
-  (`/ontology/studio`, 나침 무대) · Insights (`/ontology/insights`) · Projects
+- 5 destinations: Map (`/`, `/topology`) · Docs (`/docs`) · Workshop
+  (`/ontology/studio`, 공방 / Compass Stage) · Insights (`/ontology/insights`) · Projects
   (`/projects` or `/project/*`)
 - Bottom of rail: agent-activity status dot + an optional `settingsSlot`
   (only `HomePage` passes one — `TopologyV2SettingsGear`)
@@ -719,7 +719,7 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
 
 ### `BottomTabBar` (mobile only, `lg:` hidden)
 - Core destinations shared with `AppNavRail`: Map · Docs · Insights · Projects
-  (Studio is the immersive write surface — desktop-rail only; the retired ERD
+  (Workshop is the immersive write surface — desktop-rail only; the retired ERD
   builder tab was removed 2026-07-24)
 - Min height 56 px (safe-area)
 - Hidden on public marketing/download surfaces: `/` while no local vault is
@@ -793,7 +793,7 @@ For full reasoning see `docs/CHANGELOG.md`. High-level:
 
 ## 7. Deferred (future rounds — wait-for-signal)
 
-- `/ontology/edit` builder reconsideration — **SUPERSEDED 2026-07-24: the ERD builder was retired.** It had been kept as a constrained workbench surface (focus a saved slug, preview source-file frontmatter writes, run relation preflight, hand off to Insights/Topology). Once the 나침 무대(`/ontology/studio`) covered assemble/connect/preview/write, the xyflow builder was removed and `/ontology/edit` became a redirect to the studio. Users who prefer direct markdown still edit frontmatter in `/docs` or CLI/MCP; the studio is the visual relation-repair / write-review surface.
+- `/ontology/edit` builder reconsideration — **SUPERSEDED 2026-07-24: the ERD builder was retired.** It had been kept as a constrained workbench surface (focus a saved slug, preview source-file frontmatter writes, run relation preflight, hand off to Insights/Topology). Once the 공방(`/ontology/studio`) covered assemble/connect/preview/write, the xyflow builder was removed and `/ontology/edit` became a redirect to the workshop. Users who prefer direct markdown still edit frontmatter in `/docs` or CLI/MCP; the workshop is the visual relation-repair / write-review surface.
 - ~~Phase 4 PM polish~~ — **dropped** (R11 #25, PRODUCT-DIRECTION v3). PM-primary 결정 reverted.
 - Search palette unification (`⌘K` + `⇧⌘K`) — R5 skip: not duplicates, would require ranking/section redesign.
 - LocalVaultPicker hoist out of dropdown — R5 skip: dead-end already closed by R4 J.

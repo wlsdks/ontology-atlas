@@ -152,7 +152,7 @@ describe("resolveOntologyBuilderNodeSlug", () => {
 });
 
 describe("buildOntologyStudioNodeHrefFromGraphId", () => {
-  // URL 계약: 스튜디오 발신 링크는 canonical `<kind>:<slug>` 로 통일한다.
+  // URL 계약: 공방 발신 링크는 canonical `<kind>:<slug>` 로 통일한다.
   it("canonical graph id 를 그대로 실어 보낸다", () => {
     expect(resolveOntologyBuilderNodeSlugFromGraphId("domain:views")).toBe(
       "domains/views",

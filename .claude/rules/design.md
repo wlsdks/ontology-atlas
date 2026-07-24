@@ -60,19 +60,19 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 정체성인 앱에서 게임 미학은 "완성된 게임" 이 아니라 "코스프레" 로 읽히며,
 의사결정 자료(기획자·임원·개발자·에이전트가 보는)의 신뢰를 갉아먹었다.
 
-- 스튜디오는 이제 절제된 **나침 무대(Compass Stage)** 다 — 관계 종류별 고정
+- 이 표면(현 공방)은 이제 절제된 **나침 무대(Compass Stage)** 다 — 관계 종류별 고정
   방위 + 라인아트 소켓 + 인디고 프로그레스 + 200ms opacity/color 확정 모션.
   **앱 전역과 동일한 헌장** (무채색 + 단일 인디고 + `--color-*` 토큰)만 쓴다.
-- **glow/rarity/particle/gem 은 스튜디오에서도 금지.** `--studio-*` 게임 토큰
+- **glow/rarity/particle/gem 은 공방에서도 금지.** `--studio-*` 게임 토큰
   블록은 `app/globals.css` 에서 제거됐다. amber 는 "빈(강하게 기대되는) 소켓"
   신호로만.
-- design-guardian 은 이제 스튜디오 표면에서도 glow/rarity/particle 을 **반려**한다.
+- design-guardian 은 이제 공방 표면에서도 glow/rarity/particle 을 **반려**한다.
 - 배경 + KEEP/KILL/BUILD: `[[ontology-studio-game-direction]]`. 중독은 파티클이
   아니라 루프(다음 할 일 → 즉시 반영 → 진전 누적)에서 온다.
 
 ## 절대 하지 말 것
 
-> 아래 금지는 앱 전역에 유효하다 — **스튜디오 포함, 예외 없음** (구 게임 예외는
+> 아래 금지는 앱 전역에 유효하다 — **공방 포함, 예외 없음** (구 게임 예외는
 > 위에서 강등됨).
 
 - 토폴로지 노드 클릭 → 풀스크린/풀블리드 상세 모달 (ego 팝오버 + focus 로 대체, 상세는 opt-in)

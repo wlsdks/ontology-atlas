@@ -15,7 +15,7 @@
 `/ontology/studio` 의 `.studio-stage` 안에서 `--studio-*` 토큰으로 glow/gradient/
 aura/particle/rarity(gold)/shimmer 를 허용했으나, fable 판정 B + 소유자 확정으로
 **되돌렸다** — "게임처럼 중독되게" 는 은유였지 사양이 아니었고, 게임 미학이
-의사결정 자료의 신뢰를 갉아먹었다(예외는 실수였다). 스튜디오는 이제 절제된
+의사결정 자료의 신뢰를 갉아먹었다(예외는 실수였다). 이 표면(현 공방)은 이제 절제된
 **나침 무대(Compass Stage)** 로, 앱 전역과 동일하게 무채색 + 단일 인디고 +
 `--color-*` 토큰만 쓰며 **glow/rarity/particle/gem 은 여기서도 금지**다. `--studio-*`
 게임 토큰 블록은 `app/globals.css` 에서 제거됐다. 중독은 파티클이 아니라 루프

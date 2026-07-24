@@ -54,9 +54,9 @@ interface RailDestination {
 
 /**
  * 좌측 64px 내비 레일 (feat/chrome-system, `docs/prototypes/chrome-rail-combined.html`
- * 소유자 최종 승인) — 전역 목적지(지도·문서함·스튜디오·인사이트·프로젝트) +
+ * 소유자 최종 승인) — 전역 목적지(지도·문서함·공방·인사이트·프로젝트) +
  * 하단 에이전트 상태·설정을 전담하는 상시 chrome. #375 는 지형도(HomePage)만
- * 마운트했고, feat/rail-rollout (#377) 이 지형도 외 전 페이지(문서함·스튜디오·
+ * 마운트했고, feat/rail-rollout (#377) 이 지형도 외 전 페이지(문서함·공방·
  * 인사이트·프로젝트 목록/상세/편집·다운로드)로 확장해 3-체계(OperationsNav
  * 상단 탭 + BottomTabBar + 이 레일) 내비를 1-체계로 통합했다 — 구 상단 탭
  * (`OperationsNav`)·서브탭(`OntologySubNav`)은 은퇴.

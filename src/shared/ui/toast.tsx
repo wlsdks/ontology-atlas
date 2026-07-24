@@ -21,7 +21,7 @@ interface ToastApi {
  * - tone 별 색은 `<Toaster />` 의 toastOptions.classNames 로 디자인 헌장 §11
  *   준수 (인디고 alpha + 무채색, glow 0)
  * - **다크 단일 계약**: `theme="dark"` 를 명시해 sonner 기본 라이트 테마의
- *   흰색 팝업을 차단한다 (소유자 실보고 2026-07-24: 스튜디오 알림이 흰색
+ *   흰색 팝업을 차단한다 (소유자 실보고 2026-07-24: 공방 알림이 흰색
  *   오프브랜드로 떴다 — 원인은 `theme` 미지정 시 sonner 가 light 로 폴백).
  * - **닫기 어포던스**: `closeButton` 으로 모든 팝업에 실제 닫기 버튼을 단다.
  *
