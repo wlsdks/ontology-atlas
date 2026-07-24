@@ -38,6 +38,7 @@ import { CopyProjectLinkButton } from "@/features/project-share";
 import { useTaxonomy } from "@/features/taxonomy";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { PublicQuickActions } from "@/widgets/public-quick-actions";
+import { IMPACT_MODE_COPY_KEYS } from "../lib/impact-mode-copy";
 
 interface Props {
   project: Project | null;
@@ -232,6 +233,12 @@ export function ProjectDrawer({
         : null,
     [allProjects, impactMode, project],
   );
+  // rank16 (design council B6) — 4개 임팩트 모드 필이 각기 다른 그래프
+  // 연산이라 도움말도 모드별로 달라야 한다. 활성 모드의 도움말 키를 여기
+  // 한 곳에서 찾아 helper span 과 crossfade 애니메이션 키로 같이 쓴다.
+  const impactModeHelpKey =
+    IMPACT_MODE_COPY_KEYS.find((item) => item.mode === impactMode)?.helpKey ??
+    "impactHelpNone";
 
   // 공개용 드로어는 "설명 → 핵심 정보 → 연결" 순서가 먼저 읽히도록 요약 정보를 묶는다.
   const signalItems = project
@@ -625,7 +632,10 @@ export function ProjectDrawer({
                   expander 가 열어도 빈 칸만 노출. Hub/Node 에만 표시. */}
               {!isContainerNode && (
               <details className="mt-5 overflow-hidden rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]">
-                <summary className="group flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]">
+                <summary
+                  data-testid="project-drawer-more-info-summary"
+                  className="group flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                >
                   <div className="min-w-0">
                     <p>{t("moreInfoSummary")}</p>
                     <p className="mt-1 text-xs font-normal text-[color:var(--color-text-tertiary)]">
@@ -662,9 +672,24 @@ export function ProjectDrawer({
                       {impactInsight ? (
                         <span
                           id="project-drawer-impact-help"
+                          data-testid="project-drawer-impact-help"
                           className="text-xs text-[color:var(--color-text-tertiary)]"
                         >
-                          {impactMode === "none" ? t("impactNone") : t("impactConnections")}
+                          {/* rank16 — 모드 전환 시 헬퍼 텍스트만 120ms
+                              crossfade(클릭 확정 시에만, hover 아님). 노드
+                              선택/드래그 물리와 무관한 순수 텍스트 교체라
+                              모드별 문구를 즉시 실감할 수 있어야 한다. */}
+                          <AnimatePresence mode="wait" initial={false}>
+                            <motion.span
+                              key={impactModeHelpKey}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={reducedMotion ? { duration: 0 } : MOTION.instant}
+                            >
+                              {t(impactModeHelpKey)}
+                            </motion.span>
+                          </AnimatePresence>
                         </span>
                       ) : null}
                     </div>
@@ -701,13 +726,18 @@ export function ProjectDrawer({
 
                     {impactInsight && (
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {[
-                          { mode: "none" as const, label: t("impactModeNone") },
-                          { mode: "upstream" as const, label: t("impactModeUpstream") },
-                          { mode: "downstream" as const, label: t("impactModeDownstream") },
-                          { mode: "network" as const, label: t("impactModeNetwork") },
-                        ].map((item) => {
+                        {/* rank16 (design council B6) — 4개 필이 각기 다른
+                            그래프 연산(강조 없음 / 의존 폐쇄집합 / 피의존
+                            폐쇄집합 / 양방향 폐쇄집합)을 트리거하는데 이전엔
+                            title/aria-label 이 아예 없어 hover 로도 방향을
+                            구분할 수 없었다. title(마우스 tooltip) 은 모드별
+                            도움말을, aria-label 은 시각 라벨을 앞에 포함해
+                            (Label-in-Name) 스크린리더/터치에서도 같은 정보를
+                            전달한다 — title 단독 의존 금지. */}
+                        {IMPACT_MODE_COPY_KEYS.map((item) => {
                           const active = impactMode === item.mode;
+                          const label = t(item.labelKey);
+                          const help = t(item.helpKey);
                           return (
                             <button
                               key={item.mode}
@@ -715,6 +745,8 @@ export function ProjectDrawer({
                               onClick={() => onChangeImpactMode(item.mode)}
                               aria-pressed={active}
                               aria-describedby="project-drawer-impact-help"
+                              title={help}
+                              aria-label={`${label} — ${help}`}
                               className={cn(
                                 "rounded-full border px-3 py-2 font-mono text-caption uppercase tracking-[0.08em] transition-colors",
                                 active
@@ -722,7 +754,7 @@ export function ProjectDrawer({
                                   : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
                               )}
                             >
-                              {item.label}
+                              {label}
                             </button>
                           );
                         })}
