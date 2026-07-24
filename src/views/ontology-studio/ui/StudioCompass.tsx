@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Check, Plus, Search, X } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Check, ChevronDown, Plus, Search, X } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import type {
   StudioBearing,
@@ -72,6 +72,10 @@ export interface StudioCompassLabels {
   save: string;
   saveHint: string;
   foldMore: (n: number) => string;
+  /** Lane overflow popover title, e.g. "이 노드가 품고 있는 것 · 92". */
+  foldTitle: (label: string, total: number) => string;
+  defMore: string;
+  defLess: string;
   // picker
   pickerTitle: (question: string) => string;
   pickerSub: string;
@@ -115,6 +119,12 @@ export interface StudioCompassProps {
   onExit: () => void;
   /** Picker "찾는 게 없어요 · 새로 만들기" bridge — opt-in, enhance mode routes to create. */
   onCreateNew?: () => void;
+  /** All vault nodes, for the top-bar node search. Omit → static placeholder (isolated render/tests). */
+  searchNodes?: CreateCandidate[];
+  /** Load another node on the stage (top-bar search pick · satellite / fold-row click). */
+  onOpenNode?: (id: string) => void;
+  /** Honest "곧 제공" label for the not-yet-built rare-relations affordance. */
+  moreRelationsSoon?: string;
 
   // create-only identity editing
   createKinds?: CompassKindOption[];
@@ -162,11 +172,12 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
   const withFold = overflow > 0;
 
   if (!view.filled) {
-    // Empty socket + dashed strut into it.
+    // Empty socket + dashed strut into it. Boxes are sized with comfortable
+    // inner padding (≥14px) so the plain-language question never touches a wall.
     if (view.bearing === "up") {
-      const w = 250;
-      const h = 78;
-      const y = cardTop - 44 - h;
+      const w = 264;
+      const h = 96;
+      const y = cardTop - 46 - h;
       const x = CX - w / 2;
       return {
         sats: [],
@@ -177,9 +188,9 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
       };
     }
     if (view.bearing === "down") {
-      const w = 226;
-      const h = 66;
-      const y = cardBottom + 44;
+      const w = 240;
+      const h = 82;
+      const y = cardBottom + 46;
       const x = CX - w / 2;
       return {
         sats: [],
@@ -190,8 +201,8 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
       };
     }
     // left / right empty socket
-    const w = 226;
-    const h = 66;
+    const w = 240;
+    const h = 82;
     const y = CY - h / 2;
     if (view.bearing === "right") {
       const x = cardRight + 128;
@@ -296,15 +307,40 @@ export function StudioCompass(props: StudioCompassProps) {
 
   const [openRelation, setOpenRelation] = useState<StudioRelation | null>(null);
   const [query, setQuery] = useState("");
+  /** Which filled lane has its overflow ("+N 더 보기") list popover open. */
+  const [openFold, setOpenFold] = useState<StudioBearing | null>(null);
+  // Transient surfaces (picker / fold list / search) reset automatically: the
+  // enhance instance is keyed by node id in the page, so switching nodes remounts.
 
   const cardH = mode === "create" ? CARD_CREATE_H : CARD.h;
   const cardTop = CY - cardH / 2;
+  const cardBottom = CY + cardH / 2;
   const cardLeft = CX - CARD.w / 2;
+  const cardRight = CX + CARD.w / 2;
 
   const layouts = useMemo(
     () => bearings.map((b) => ({ view: b, layout: layoutLane(b, cardH) })),
     [bearings, cardH],
   );
+
+  // Vertically center the actual cluster (card + sockets + satellites + folds) in
+  // the stage so the top/bottom margins balance instead of the fixed 600 board.
+  const contentOffsetY = useMemo(() => {
+    let minY = cardTop;
+    let maxY = cardBottom;
+    for (const { layout } of layouts) {
+      if (layout.socket) {
+        minY = Math.min(minY, layout.socket.y - 18); // room for the eyebrow/label row
+        maxY = Math.max(maxY, layout.socket.y + layout.socket.h);
+      }
+      for (const s of layout.sats) {
+        minY = Math.min(minY, s.y - 20); // lane-head label sits ~20px above
+        maxY = Math.max(maxY, s.y + SAT.h);
+      }
+      if (layout.fold) maxY = Math.max(maxY, layout.fold.y + 30);
+    }
+    return CY - (minY + maxY) / 2;
+  }, [layouts, cardTop, cardBottom]);
 
   const openLayout = layouts.find((l) => l.view.relation === openRelation) ?? null;
   const pickerRows = openRelation ? candidatesFor(openRelation, query) : [];
@@ -328,11 +364,16 @@ export function StudioCompass(props: StudioCompassProps) {
       data-testid="studio-compass-stage"
     >
       {/* ── Top bar ── */}
-      <header className="relative z-[6] flex items-center gap-3.5 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5">
-        <div className="flex h-8 w-[300px] items-center gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-body text-[color:var(--color-text-quaternary)]">
-          <Search size={14} aria-hidden className="flex-none" />
-          <span className="truncate">{labels.searchPlaceholder}</span>
-        </div>
+      <header className="relative z-[7] flex items-center gap-3.5 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5">
+        <NodeSearch
+          placeholder={labels.searchPlaceholder}
+          nodes={props.searchNodes}
+          kindLabelFor={kindLabelFor}
+          pickerKind={labels.pickerKind}
+          emptyLabel={labels.pickerEmpty}
+          currentName={focal.name}
+          onOpenNode={props.onOpenNode}
+        />
         <div className="flex items-center gap-2 text-caption text-[color:var(--color-text-tertiary)]">
           <span className="font-semibold text-[color:var(--color-text-secondary)]">{focal.name || "—"}</span>
           <span className="text-[color:var(--color-text-quaternary)]">·</span>
@@ -383,18 +424,32 @@ export function StudioCompass(props: StudioCompassProps) {
           {labels.framePrompt(focal.name || "…")}
         </div>
 
-        {/* rare relations — top right */}
+        {/* rare relations — top right. Not built yet: honest disabled "곧 제공"
+            rather than a dead affordance (house rule: no dead click targets). */}
         <button
           type="button"
-          className="absolute right-5 top-3.5 z-[4] flex h-7 items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-2.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+          disabled
+          aria-disabled="true"
+          title={props.moreRelationsSoon}
+          className="absolute right-5 top-3.5 z-[4] flex h-7 cursor-default items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-2.5 text-caption text-[color:var(--color-text-quaternary)] opacity-60"
         >
           <span className="text-[color:var(--color-text-quaternary)]">＋</span> {labels.moreRelations}
+          {props.moreRelationsSoon ? (
+            <span className="ml-0.5 rounded-[4px] border border-[color:var(--color-border-soft)] px-1 py-px text-label tracking-[0.02em] text-[color:var(--color-text-quaternary)]">
+              {props.moreRelationsSoon}
+            </span>
+          ) : null}
         </button>
 
-        {/* the fixed-coordinate board, centered */}
+        {/* the fixed-coordinate board — centered on its actual content so the
+            top/bottom stage margins balance in either fill-state (#7). */}
         <div
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-          style={{ width: BOARD.w, height: BOARD.h }}
+          className="absolute left-1/2 top-1/2"
+          style={{
+            width: BOARD.w,
+            height: BOARD.h,
+            transform: `translate(-50%, calc(-50% + ${contentOffsetY}px))`,
+          }}
         >
           {/* struts overlay */}
           <svg
@@ -415,7 +470,7 @@ export function StudioCompass(props: StudioCompassProps) {
                   className="transition-[stroke] duration-200 motion-reduce:transition-none"
                   stroke={
                     view.filled
-                      ? "var(--color-indigo)"
+                      ? "var(--color-indigo-brand)"
                       : view.expected
                         ? "var(--color-amber-muted-a62)"
                         : "var(--color-border-strong)"
@@ -432,7 +487,7 @@ export function StudioCompass(props: StudioCompassProps) {
                   cx={view.bearing === "right" ? CX + CARD.w / 2 + 62 : CX - CARD.w / 2 - 62}
                   cy={CY}
                   r={2}
-                  fill="var(--color-indigo)"
+                  fill="var(--color-indigo-brand)"
                 />
               ) : null,
             )}
@@ -450,13 +505,20 @@ export function StudioCompass(props: StudioCompassProps) {
               labels={labels}
               kindLabelFor={kindLabelFor}
               onOpen={() => openPicker(view.relation)}
+              onOpenNode={props.onOpenNode}
+              onToggleFold={() => setOpenFold((cur) => (cur === view.bearing ? null : view.bearing))}
+              foldOpen={openFold === view.bearing}
+              onCloseFold={() => setOpenFold(null)}
             />
           ))}
 
           {/* inline anchored picker */}
-          {openRelation && openLayout ? (
+          {openRelation && openLayout && openLayout.layout.socket ? (
             <InlinePicker
-              anchor={openLayout.layout.anchor}
+              socket={openLayout.layout.socket}
+              bearing={openLayout.view.bearing}
+              cardLeft={cardLeft}
+              cardRight={cardRight}
               relation={openRelation}
               question={bearings.find((b) => b.relation === openRelation)?.question ?? ""}
               labels={labels}
@@ -481,8 +543,8 @@ export function StudioCompass(props: StudioCompassProps) {
           style={{
             borderTop: "1.4px dashed var(--color-border-strong)",
             borderBottom: "1.4px dashed var(--color-border-strong)",
-            borderLeft: "1.6px solid var(--color-indigo)",
-            borderRight: "1.6px solid var(--color-indigo)",
+            borderLeft: "1.6px solid var(--color-indigo-brand)",
+            borderRight: "1.6px solid var(--color-indigo-brand)",
           }}
         />
         <span className="text-caption text-[color:var(--color-text-secondary)]" data-testid="studio-bottom-progress">
@@ -495,7 +557,7 @@ export function StudioCompass(props: StudioCompassProps) {
             data-testid="studio-save"
             disabled={props.canSave === false}
             onClick={onSave}
-            className="flex h-[34px] items-center gap-2 rounded-lg bg-[color:var(--color-indigo)] px-4 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
+            className="flex h-[34px] items-center gap-2 rounded-lg bg-[color:var(--color-indigo-brand)] px-4 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
           >
             {mode === "create" ? <Check size={15} aria-hidden /> : null}
             {labels.save}
@@ -517,9 +579,12 @@ function CenterCard(
   },
 ) {
   const { mode, focal, cardH, cardTop, cardLeft, bearings } = props;
+  const [defExpanded, setDefExpanded] = useState(false);
+  const definition = focal.definition || "";
+  const definitionLong = definition.length > 120;
   const borderFor = (bearing: StudioBearing) => {
     const v = bearings.find((b) => b.bearing === bearing);
-    if (v?.filled) return "2px solid var(--color-indigo)";
+    if (v?.filled) return "2px solid var(--color-indigo-brand)";
     if (v?.expected) return "1.5px dashed var(--color-amber-muted-a62)";
     return "1.5px dashed var(--color-border-strong)";
   };
@@ -577,10 +642,10 @@ function CenterCard(
           value={focal.name}
           onChange={(e) => props.onCreateName?.(e.target.value)}
           placeholder={props.labels.createNamePlaceholder}
-          className="w-full bg-transparent text-large font-semibold leading-[1.08] tracking-[-0.022em] text-[color:var(--color-text-primary)] outline-none placeholder:font-normal placeholder:text-[color:var(--color-text-quaternary)]"
+          className="w-full bg-transparent text-large font-semibold leading-[1.08] tracking-[-0.022em] text-[color:var(--color-text-primary)] outline-none [word-break:keep-all] placeholder:font-normal placeholder:text-[color:var(--color-text-quaternary)]"
         />
       ) : (
-        <div className="text-large font-semibold leading-[1.08] tracking-[-0.022em] text-[color:var(--color-text-primary)]">
+        <div className="text-large font-semibold leading-[1.08] tracking-[-0.022em] text-[color:var(--color-text-primary)] [word-break:keep-all]">
           {focal.name}
         </div>
       )}
@@ -590,7 +655,7 @@ function CenterCard(
           data-testid="studio-create-domain"
           value={props.createDomainValue ?? ""}
           onChange={(e) => props.onCreateDomain?.(e.target.value || null)}
-          className="mt-2.5 w-full rounded-[8px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-label text-[color:var(--color-text-secondary)] outline-none"
+          className="mt-3 w-full rounded-[8px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 text-label text-[color:var(--color-text-secondary)] outline-none"
         >
           <option value="">{props.labels.createDomainNone}</option>
           {props.createDomains.map((d) => (
@@ -607,14 +672,33 @@ function CenterCard(
           value={focal.definition}
           onChange={(e) => props.onCreateDefinition?.(e.target.value)}
           placeholder={props.labels.createDefinitionPlaceholder}
-          rows={2}
-          className="mt-2.5 w-full resize-none bg-transparent text-caption leading-[1.55] text-[color:var(--color-text-tertiary)] outline-none placeholder:text-[color:var(--color-text-quaternary)]"
+          className="mt-3 min-h-[60px] w-full flex-1 resize-none bg-transparent text-caption leading-[1.6] text-[color:var(--color-text-tertiary)] outline-none [word-break:keep-all] placeholder:text-[color:var(--color-text-quaternary)]"
         />
-      ) : (
-        <div className="mt-3 max-w-[322px] text-caption leading-[1.55] text-[color:var(--color-text-tertiary)] line-clamp-3">
-          {focal.definition || ""}
+      ) : definition ? (
+        <div className="relative mt-3">
+          <div className="max-w-[322px] text-caption leading-[1.55] text-[color:var(--color-text-tertiary)] line-clamp-3 [word-break:keep-all]">
+            {definition}
+          </div>
+          {definitionLong ? (
+            <button
+              type="button"
+              data-testid="studio-def-more"
+              onClick={() => setDefExpanded((v) => !v)}
+              className="mt-1 text-label font-medium text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+            >
+              {defExpanded ? props.labels.defLess : props.labels.defMore}
+            </button>
+          ) : null}
+          {defExpanded ? (
+            <div
+              className="absolute left-0 top-full z-[5] mt-1 max-h-[220px] w-[calc(100%+8px)] overflow-y-auto rounded-[10px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-3 text-caption leading-[1.6] text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+              style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+            >
+              {definition}
+            </div>
+          ) : null}
         </div>
-      )}
+      ) : null}
 
       {mode === "create" && props.createSimilarHit ? (
         <div
@@ -654,13 +738,25 @@ function LaneRender({
   labels,
   kindLabelFor,
   onOpen,
+  onOpenNode,
+  onToggleFold,
+  foldOpen,
+  onCloseFold,
 }: {
   view: CompassBearingView;
   layout: LaneLayout;
   labels: StudioCompassLabels;
   kindLabelFor: (kind: string) => string;
   onOpen: () => void;
+  onOpenNode?: (id: string) => void;
+  onToggleFold: () => void;
+  foldOpen: boolean;
+  onCloseFold: () => void;
 }) {
+  const satNav = (id: string) => {
+    if (onOpenNode) return () => onOpenNode(id);
+    return undefined;
+  };
   return (
     <>
       {/* lane head label for a filled lane */}
@@ -669,37 +765,70 @@ function LaneRender({
           className="absolute z-[3] flex items-center gap-1.5 whitespace-nowrap text-label tracking-[0.01em] text-[color:var(--color-text-tertiary)]"
           style={laneHeadPos(view, layout)}
         >
-          <span className="h-1 w-1 flex-none rounded-full bg-[color:var(--color-indigo)]" />
+          <span className="h-1 w-1 flex-none rounded-full bg-[color:var(--color-indigo-brand)]" />
           {view.laneLabel}
         </div>
       ) : null}
 
-      {/* satellites */}
-      {layout.sats.map(({ sat, x, y }) => (
-        <div
-          key={sat.id}
-          data-testid={`studio-satellite-${view.bearing}`}
-          className="absolute z-[2] flex items-center gap-2.5 rounded-[10px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3"
-          style={{ left: x, top: y, width: SAT.w, height: SAT.h }}
-        >
-          <KindGlyph kind={sat.kind} />
-          <span className="flex min-w-0 flex-col">
-            <span className="truncate text-body font-medium text-[color:var(--color-text-primary)]">{sat.title}</span>
-            <span className="truncate text-label text-[color:var(--color-text-quaternary)]">{kindLabelFor(sat.kind)}</span>
-          </span>
-        </div>
-      ))}
+      {/* satellites — click loads that node onto the stage */}
+      {layout.sats.map(({ sat, x, y }) => {
+        const onClick = satNav(sat.id);
+        const Tag = onClick ? "button" : "div";
+        return (
+          <Tag
+            key={sat.id}
+            {...(onClick ? { type: "button" as const, onClick } : {})}
+            data-testid={`studio-satellite-${view.bearing}`}
+            className={cn(
+              "absolute z-[2] flex items-center gap-2.5 rounded-[10px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 text-left transition-colors",
+              onClick && "hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-indigo-a08)]",
+            )}
+            style={{ left: x, top: y, width: SAT.w, height: SAT.h }}
+          >
+            <KindGlyph kind={sat.kind} />
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate text-body font-medium text-[color:var(--color-text-primary)]">{sat.title}</span>
+              <span className="truncate text-label text-[color:var(--color-text-quaternary)]">{kindLabelFor(sat.kind)}</span>
+            </span>
+          </Tag>
+        );
+      })}
 
-      {/* fold */}
+      {/* fold — toggles a scrollable list of all this lane's neighbors */}
       {layout.fold ? (
-        <div
-          className="absolute z-[2] flex items-center gap-2 rounded-[10px] border border-[color:var(--color-border-soft)] px-3 text-caption text-[color:var(--color-text-tertiary)]"
+        <button
+          type="button"
+          data-testid={`studio-lane-more-${view.bearing}`}
+          aria-expanded={foldOpen}
+          onClick={onToggleFold}
+          className={cn(
+            "absolute z-[2] flex items-center gap-2 rounded-[10px] border px-3 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]",
+            foldOpen
+              ? "border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a08)]"
+              : "border-[color:var(--color-border-soft)]",
+          )}
           style={{ left: layout.fold.x, top: layout.fold.y, width: SAT.w, height: 30 }}
         >
           <span className="font-semibold text-[color:var(--color-text-secondary)]">+{layout.fold.count}</span>
           {labels.foldMore(layout.fold.count)}
-          <span className="ml-auto text-[color:var(--color-text-quaternary)]">⌄</span>
-        </div>
+          <ChevronDown
+            size={13}
+            aria-hidden
+            className={cn("ml-auto text-[color:var(--color-text-quaternary)] transition-transform", foldOpen && "rotate-180")}
+          />
+        </button>
+      ) : null}
+
+      {/* fold overflow list */}
+      {layout.fold && foldOpen ? (
+        <LaneOverflowList
+          view={view}
+          layout={layout}
+          labels={labels}
+          kindLabelFor={kindLabelFor}
+          onOpenNode={onOpenNode}
+          onClose={onCloseFold}
+        />
       ) : null}
 
       {/* empty socket */}
@@ -710,7 +839,7 @@ function LaneRender({
           data-relation={view.relation}
           onClick={onOpen}
           className={cn(
-            "absolute z-[2] flex flex-col items-start justify-center gap-1 rounded-[12px] px-4 text-left transition-colors",
+            "absolute z-[2] flex flex-col items-start justify-center gap-1.5 rounded-[12px] px-4 py-3.5 text-left transition-colors",
           )}
           style={{
             left: layout.socket.x,
@@ -740,14 +869,95 @@ function LaneRender({
           ) : (
             <span className="text-label text-[color:var(--color-text-quaternary)]">{view.emptyHint}</span>
           )}
-          <span className="flex items-center gap-2 text-callout font-medium text-[color:var(--color-text-secondary)]">
-            <span className="text-[color:var(--color-text-quaternary)]">＋</span>
-            {view.question}
+          <span className="flex items-start gap-2 text-callout font-medium text-[color:var(--color-text-secondary)]">
+            <span className="mt-px flex-none text-[color:var(--color-text-quaternary)]">＋</span>
+            <span className="[word-break:keep-all]">{view.question}</span>
           </span>
         </button>
       ) : null}
     </>
   );
+}
+
+// ── Lane overflow list — all of one lane's neighbors, scrollable, navigable ────
+function LaneOverflowList({
+  view,
+  layout,
+  labels,
+  kindLabelFor,
+  onOpenNode,
+  onClose,
+}: {
+  view: CompassBearingView;
+  layout: LaneLayout;
+  labels: StudioCompassLabels;
+  kindLabelFor: (kind: string) => string;
+  onOpenNode?: (id: string) => void;
+  onClose: () => void;
+}) {
+  const W = 288;
+  const foldX = layout.fold?.x ?? 0;
+  const foldY = layout.fold?.y ?? 0;
+  const cardRight = CX + CARD.w / 2;
+  const estH = Math.min(300, 60 + view.neighbors.length * 40);
+  // Anchor beside the fold on the outward side so the center card stays clear.
+  // up/down folds are centered under the card → send the list to the right gutter.
+  const left =
+    view.bearing === "right"
+      ? clampX(foldX + SAT.w + 12, W)
+      : view.bearing === "left"
+        ? clampX(foldX - W - 12, W)
+        : clampX(cardRight + 14, W);
+  const top =
+    view.bearing === "up" || view.bearing === "down"
+      ? clampY(CY - estH / 2, estH)
+      : clampY(foldY + 30 - estH / 2, estH);
+  return (
+    <div
+      data-testid={`studio-lane-list-${view.bearing}`}
+      className="absolute z-[8] rounded-[13px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
+      style={{ left, top, width: W, boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+    >
+      <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
+        <span className="min-w-0 truncate text-caption font-semibold text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+          {labels.foldTitle(view.laneLabel, view.neighbors.length)}
+        </span>
+        <button type="button" onClick={onClose} className="ml-auto flex-none text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]">
+          <X size={13} aria-hidden />
+        </button>
+      </div>
+      <div className="max-h-[260px] overflow-y-auto p-1.5">
+        {view.neighbors.map((sat) => {
+          const onClick = onOpenNode ? () => onOpenNode(sat.id) : undefined;
+          const Tag = onClick ? "button" : "div";
+          return (
+            <Tag
+              key={sat.id}
+              {...(onClick ? { type: "button" as const, onClick } : {})}
+              data-testid={`studio-lane-row-${sat.id}`}
+              className={cn(
+                "flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors",
+                onClick && "hover:bg-[color:var(--color-indigo-a08)]",
+              )}
+            >
+              <KindGlyph kind={sat.kind} />
+              <span className="truncate text-body text-[color:var(--color-text-primary)]">{sat.title}</span>
+              <span className="ml-auto flex-none text-label text-[color:var(--color-text-quaternary)]">{kindLabelFor(sat.kind)}</span>
+            </Tag>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Clamp a picker/list left edge inside the board with an 8px gutter. */
+function clampX(x: number, w: number): number {
+  return Math.min(Math.max(x, 8), BOARD.w - w - 8);
+}
+/** Clamp a picker/list top edge inside the board so its full height stays visible. */
+function clampY(y: number, h: number): number {
+  return Math.min(Math.max(y, 8), Math.max(8, BOARD.h - h - 8));
 }
 
 function laneHeadPos(view: CompassBearingView, layout: LaneLayout): React.CSSProperties {
@@ -758,8 +968,48 @@ function laneHeadPos(view: CompassBearingView, layout: LaneLayout): React.CSSPro
 }
 
 // ── Inline anchored picker (dark canonical) ──────────────────────────────────
+/**
+ * Anchor the picker to the clicked socket on its OUTWARD side so it never covers
+ * the center card and always stays inside the board (#6):
+ *   up   → right gutter, top-aligned to the socket
+ *   down → right gutter, bottom-anchored
+ *   left → below the left socket (stays left of the card)
+ *   right→ below the right socket (stays right of the card)
+ */
+function placePicker(
+  bearing: StudioBearing,
+  socket: { x: number; y: number; w: number; h: number },
+  cardLeft: number,
+  cardRight: number,
+): { left: number; top: number; maxHeight: number } {
+  const W = 300;
+  const GAP = 14;
+  const PAD = 8;
+  const rightGutter = Math.min(cardRight + GAP, BOARD.w - PAD - W);
+  const CAP = 384;
+  if (bearing === "up") {
+    const top = clampY(socket.y, 160);
+    return { left: rightGutter, top, maxHeight: Math.min(CAP, BOARD.h - PAD - top) };
+  }
+  if (bearing === "down") {
+    const maxHeight = Math.min(CAP, BOARD.h - 2 * PAD);
+    return { left: rightGutter, top: Math.max(PAD, BOARD.h - PAD - maxHeight), maxHeight };
+  }
+  // left / right — drop below the socket, kept on the socket's side of the card.
+  const top = socket.y + socket.h + GAP;
+  const maxHeight = Math.min(CAP, BOARD.h - PAD - top);
+  const left =
+    bearing === "left"
+      ? Math.min(Math.max(socket.x, PAD), Math.max(PAD, cardLeft - GAP - W))
+      : Math.max(Math.min(socket.x + socket.w - W, BOARD.w - PAD - W), cardRight + GAP);
+  return { left, top, maxHeight };
+}
+
 function InlinePicker({
-  anchor,
+  socket,
+  bearing,
+  cardLeft,
+  cardRight,
   relation,
   question,
   labels,
@@ -772,7 +1022,10 @@ function InlinePicker({
   onClose,
   onCreateNew,
 }: {
-  anchor: { x: number; y: number };
+  socket: { x: number; y: number; w: number; h: number };
+  bearing: StudioBearing;
+  cardLeft: number;
+  cardRight: number;
   relation: StudioRelation;
   question: string;
   labels: StudioCompassLabels;
@@ -786,17 +1039,15 @@ function InlinePicker({
   onCreateNew?: () => void;
 }) {
   const W = 300;
-  // Keep the popover inside the board horizontally.
-  const left = Math.min(Math.max(anchor.x - W / 2, 8), BOARD.w - W - 8);
-  const placeBelow = anchor.y < BOARD.h / 2;
-  const top = placeBelow ? anchor.y + 16 : undefined;
-  const bottom = placeBelow ? undefined : BOARD.h - anchor.y + 16;
+  const { left, top, maxHeight } = placePicker(bearing, socket, cardLeft, cardRight);
+  // Reserve chrome (header + search + create footer) so the list scrolls within.
+  const listMax = Math.max(96, maxHeight - 156);
   return (
     <div
       data-testid="studio-picker"
       data-relation={relation}
-      className="absolute z-[8] rounded-[13px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-      style={{ left, top, bottom, width: W, boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+      className="absolute z-[8] flex flex-col rounded-[13px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
+      style={{ left, top, width: W, maxHeight, boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
     >
       <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
         <span className="text-caption font-semibold text-[color:var(--color-text-secondary)]">{labels.pickerTitle(question)}</span>
@@ -816,7 +1067,7 @@ function InlinePicker({
           className="w-full bg-transparent text-body text-[color:var(--color-text-secondary)] outline-none placeholder:text-[color:var(--color-text-quaternary)]"
         />
       </div>
-      <div className="max-h-[220px] overflow-y-auto p-1.5">
+      <div className="overflow-y-auto p-1.5" style={{ maxHeight: listMax }}>
         {rows.length === 0 ? (
           <div className="px-3 py-3 text-center text-label text-[color:var(--color-text-quaternary)]">{labels.pickerEmpty}</div>
         ) : (
@@ -870,17 +1121,121 @@ function InlinePicker({
   );
 }
 
+// ── Top-bar node search — type → filtered vault nodes → load onto the stage ───
+function NodeSearch({
+  placeholder,
+  nodes,
+  kindLabelFor,
+  pickerKind,
+  emptyLabel,
+  currentName,
+  onOpenNode,
+}: {
+  placeholder: string;
+  nodes?: CreateCandidate[];
+  kindLabelFor: (kind: string) => string;
+  pickerKind: (kindLabel: string) => string;
+  emptyLabel: string;
+  currentName: string;
+  onOpenNode?: (id: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  // Static placeholder when the surface renders in isolation (no data / handler).
+  if (!nodes || !onOpenNode) {
+    return (
+      <div className="flex h-8 w-[300px] items-center gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-body text-[color:var(--color-text-quaternary)]">
+        <Search size={14} aria-hidden className="flex-none" />
+        <span className="truncate">{placeholder}</span>
+      </div>
+    );
+  }
+
+  const q = query.trim().toLowerCase();
+  const rows = nodes
+    .filter((n) => (q ? n.title.toLowerCase().includes(q) || n.ref.toLowerCase().includes(q) : true))
+    .filter((n) => n.title !== currentName)
+    .slice(0, 8);
+
+  const pick = (id: string) => {
+    onOpenNode(id);
+    setQuery("");
+    setOpen(false);
+  };
+
+  return (
+    <div
+      ref={boxRef}
+      className="relative w-[300px]"
+      onBlur={(e) => {
+        if (!boxRef.current?.contains(e.relatedTarget as Node | null)) setOpen(false);
+      }}
+    >
+      <div className="flex h-8 items-center gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-body focus-within:border-[color:var(--color-indigo-a46)]">
+        <Search size={14} aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]" />
+        <input
+          data-testid="studio-node-search"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              setOpen(false);
+              (e.target as HTMLInputElement).blur();
+            }
+            if (e.key === "Enter" && rows[0]) pick(rows[0].id);
+          }}
+          placeholder={placeholder}
+          className="w-full bg-transparent text-[color:var(--color-text-secondary)] outline-none placeholder:text-[color:var(--color-text-quaternary)]"
+        />
+      </div>
+      {open ? (
+        <div
+          data-testid="studio-node-search-results"
+          className="absolute left-0 top-[calc(100%+6px)] z-[9] w-[340px] overflow-hidden rounded-[12px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
+          style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+        >
+          <div className="max-h-[320px] overflow-y-auto p-1.5">
+            {rows.length === 0 ? (
+              <div className="px-3 py-3 text-center text-label text-[color:var(--color-text-quaternary)]">{emptyLabel}</div>
+            ) : (
+              rows.map((n) => (
+                <button
+                  key={n.id}
+                  type="button"
+                  data-testid={`studio-node-search-row-${n.id}`}
+                  onClick={() => pick(n.id)}
+                  className="flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors hover:bg-[color:var(--color-indigo-a08)]"
+                >
+                  <KindGlyph kind={n.kind} />
+                  <span className="min-w-0 truncate text-body text-[color:var(--color-text-primary)] [word-break:keep-all]">{n.title}</span>
+                  <span className="ml-auto flex-none text-label text-[color:var(--color-text-quaternary)]">{pickerKind(kindLabelFor(n.kind))}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 // ── Mini compass rose (flow cue) — the four bearings at a glance ──────────────
 function MiniRose({ bearings }: { bearings: CompassBearingView[] }) {
   const by = (b: StudioBearing) => bearings.find((v) => v.bearing === b);
   const pip = (b: StudioBearing, cx: number, cy: number) => {
     const v = by(b);
-    if (v?.filled) return <circle cx={cx} cy={cy} r={2.6} fill="var(--color-indigo)" />;
+    if (v?.filled) return <circle cx={cx} cy={cy} r={2.6} fill="var(--color-indigo-brand)" />;
     if (v?.recommended)
       return (
         <>
           <circle cx={cx} cy={cy} r={2.6} fill="none" stroke="var(--color-border-strong)" strokeWidth={1.5} />
-          <circle cx={cx} cy={cy} r={1} fill="var(--color-indigo)" />
+          <circle cx={cx} cy={cy} r={1} fill="var(--color-indigo-brand)" />
         </>
       );
     if (v?.expected) return <circle cx={cx} cy={cy} r={2.6} fill="none" stroke="var(--color-amber-muted-a62)" strokeWidth={1.5} />;

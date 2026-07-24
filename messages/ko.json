@@ -84,6 +84,7 @@
     "searchPlaceholder": "무대에 올릴 노드…",
     "exit": "그만하기",
     "moreRelations": "다른 관계",
+    "moreRelationsSoon": "곧",
     "flowEyebrow": "완성도",
     "flowCount": "{total}방향 중 {filled} 채움",
     "flowHint": {
@@ -100,6 +101,9 @@
     "save": "확인하고 저장",
     "saveHint": "아직 다 안 채워도 지금 저장할 수 있어요",
     "foldMore": "더 보기",
+    "foldTitle": "{label} · {total}",
+    "defMore": "더 보기",
+    "defLess": "접기",
     "question": {
       "isA": "이 노드는 무엇의 한 종류인가요?",
       "dependsOn": "이 노드가 기대는 것은?",
