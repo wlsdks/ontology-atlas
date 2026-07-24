@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, ChevronRight, FolderOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -9,6 +9,10 @@ import { useSampleSource } from "@/features/vault-sample-source";
 import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
 import { CompactCopyButton } from "@/shared/ui";
 import { useFirstRunStarter } from "../model/use-first-run-starter";
+import {
+  readVaultGuideAutoOpened,
+  writeVaultGuideAutoOpened,
+} from "../model/vault-guide-auto-open";
 
 /**
  * P1a-2 승격 (design-council B6 rank17, 2026-07) — 도메인/역량/요소의
@@ -100,6 +104,18 @@ export function FirstRunStarterModule({
   // 시트를 먼저 거친다(이 카드는 vault 미선택 신규 사용자에게만 렌더
   // 되므로 숙련 사용자에게 시트를 강요하는 문제가 없다).
   const [guideOpen, setGuideOpen] = useState(false);
+
+  // 폴더-우선 첫 방문 (소유자 지시 2026-07-24) — 첫 화면을 열자마자 폴더
+  // 지정 유도(시트)가 첫 액션이 된다. "다음에"로 건너뛰면 자동 투어가
+  // 이어받는다(투어 가드가 시트 열림 동안 발화를 미룸). 1회 한정.
+  useEffect(() => {
+    if (!visible || readVaultGuideAutoOpened()) return undefined;
+    const id = window.setTimeout(() => {
+      writeVaultGuideAutoOpened();
+      setGuideOpen(true);
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [visible]);
 
   if (!visible) return null;
 
