@@ -71,7 +71,7 @@ describe('DownloadPage', () => {
       screen.getByText(/v0\.1\.0 GitHub Release is the source of truth for verified Apple Silicon and Intel DMGs/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Separately, Firebase Hosting must deploy the promo\/download site so \/ko\/download\/ is live after the app release/i),
+      screen.getByText(/Separately, GitHub Pages must deploy the promo\/download site so \/ko\/download\/ is live after the app release/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/Local completion audit/i)).toBeInTheDocument();
     expect(
@@ -143,7 +143,7 @@ describe('DownloadPage', () => {
       screen.queryByText(/v0\.1\.0 tag must match package\.json, Tauri, and Cargo metadata/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/Firebase Hosting must deploy the promo\/download site/i),
+      screen.queryByText(/GitHub Pages must deploy the promo\/download site/i),
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/Local completion audit/i)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Check GitHub releases/i })).toHaveAttribute(
