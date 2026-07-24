@@ -328,11 +328,13 @@ describe('FirstRunStarterModule', () => {
     expect(dogfoodTab).toHaveAttribute('aria-selected', 'true');
     expect(storefrontTab).toHaveAttribute('aria-selected', 'false');
 
+    // 2026-07-24 구조 개편 — 샘플 선택은 "무엇을 볼지 골랐다"는 신호라
+    // 카드가 접히고 INDEX 에 자리를 넘긴다(되돌아오기 1행이 항상 남는다).
     fireEvent.click(storefrontTab);
 
-    expect(storefrontTab).toHaveAttribute('aria-selected', 'true');
-    expect(dogfoodTab).toHaveAttribute('aria-selected', 'false');
     expect(window.localStorage.getItem('demo:sample-source:v1')).toBe('storefront');
+    expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
+    expect(screen.getByTestId('first-run-starter-reopen')).toBeInTheDocument();
   });
 
   it('restores a previously persisted "storefront" sample-source choice on mount', () => {
@@ -359,5 +361,67 @@ describe('FirstRunStarterModule', () => {
         'npx ontology-atlas init && npx ontology-atlas bootstrap',
       );
     });
+  });
+});
+
+// 2026-07-24 구조 개편 (소유자 지적: "상단 스크롤 따로 하단 스크롤 따로") —
+// 가이드 카드와 INDEX(children)는 배타적으로 그려 패널 스크롤이 항상 1개다.
+describe('FirstRunStarterModule — 가이드/INDEX 배타 렌더', () => {
+  // 이 describe 는 위 블록 밖이라 자체 초기화가 필요하다(세션 dismiss 는
+  // 파일 전체에 남는다).
+  beforeEach(() => {
+    mocks.vault = makeVault();
+    mocks.mode = 'static';
+    window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
+    window.localStorage.removeItem('demo:sample-source:v1');
+    window.localStorage.setItem('vault-open-guide:auto:v1', '1');
+  });
+
+  it('가이드가 펼쳐져 있으면 INDEX children 을 렌더하지 않는다', () => {
+    render(
+      <FirstRunStarterModule concepts={1} relations={1} domains={1}>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+    expect(screen.getByTestId('first-run-starter')).toBeInTheDocument();
+    expect(screen.queryByTestId('index-body')).not.toBeInTheDocument();
+  });
+
+  it('닫으면 되돌아오기 1행 + INDEX children 이 열린다', () => {
+    render(
+      <FirstRunStarterModule concepts={1} relations={1} domains={1}>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+    fireEvent.click(screen.getByTestId('first-run-starter-dismiss'));
+
+    expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
+    expect(screen.getByTestId('first-run-starter-reopen')).toBeInTheDocument();
+    expect(screen.getByTestId('index-body')).toBeInTheDocument();
+  });
+
+  it('되돌아오기를 누르면 다시 가이드가 패널을 차지한다', () => {
+    render(
+      <FirstRunStarterModule concepts={1} relations={1} domains={1}>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+    fireEvent.click(screen.getByTestId('first-run-starter-dismiss'));
+    fireEvent.click(screen.getByTestId('first-run-starter-reopen'));
+
+    expect(screen.getByTestId('first-run-starter')).toBeInTheDocument();
+    expect(screen.queryByTestId('index-body')).not.toBeInTheDocument();
+  });
+
+  it('로컬 vault 모드에서는 가이드 없이 INDEX 만 그린다', () => {
+    mocks.mode = 'local';
+    render(
+      <FirstRunStarterModule concepts={1} relations={1} domains={1}>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+    expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('first-run-starter-reopen')).not.toBeInTheDocument();
+    expect(screen.getByTestId('index-body')).toBeInTheDocument();
   });
 });

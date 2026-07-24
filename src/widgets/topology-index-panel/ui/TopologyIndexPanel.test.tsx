@@ -26,9 +26,12 @@ vi.mock("@/i18n/navigation", () => ({
 // props without pulling in vault/i18n providers.
 const firstRunStarterProps = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock("@/features/first-run-starter", () => ({
-  FirstRunStarterModule: (props: unknown) => {
+  // 2026-07-24 구조 개편 — 모듈이 INDEX 본문(children)을 감싸고 가이드와
+  // 배타적으로 그린다. 스텁은 "가이드 없음" 상태(=children 그대로)를 흉내
+  // 내 이 파일이 INDEX 동작만 검증하게 한다.
+  FirstRunStarterModule: (props: { children?: React.ReactNode }) => {
     firstRunStarterProps.current = props;
-    return null;
+    return <>{props.children}</>;
   },
 }));
 
@@ -397,7 +400,7 @@ describe("TopologyIndexPanel", () => {
       />,
     );
 
-    expect(firstRunStarterProps.current).toEqual({
+    expect(firstRunStarterProps.current).toMatchObject({
       concepts: 102,
       relations: 478,
       domains: 6,

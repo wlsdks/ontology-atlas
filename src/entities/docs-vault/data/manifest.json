@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T09:30:50.467Z",
+  "generatedAt": "2026-07-24T09:41:04.072Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3167,6 +3167,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-24 — INDEX 패널 구조 개편: 가이드와 목록의 배타 분리",
+          "slug": "2026-07-24-index-패널-구조-개편-가이드와-목록의-배타-분리"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-24 — 노드 이름 어권 레이어(읽기+쓰기) · 투어 링 정합",
           "slug": "2026-07-24-노드-이름-어권-레이어읽기쓰기-투어-링-정합"
         },
@@ -4766,9 +4771,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. ① 투어 스포트라이트 링 정합 — 링이 노드와 어긋나 보이던 문제(줌 125% 재현에서 Δ42px)를 DOM 원 폐기 + 엔진 직접 렌더로 해결. 같은 w",
-      "wordCount": 36815,
-      "updatedAt": "2026-07-24T09:30:29.462Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 지적(\"상단 스크롤 따로 하단 스크롤 따로 — 구조 자체를 바꿔야\") 반영. 한 패널 안에 스크롤 영역이 둘이던 구조를 폐기하고, 첫 실행 가이드 ",
+      "wordCount": 36909,
+      "updatedAt": "2026-07-24T09:41:03.455Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5936,7 +5941,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
       "wordCount": 12923,
-      "updatedAt": "2026-07-24T09:30:49.962Z",
+      "updatedAt": "2026-07-24T18:32:05+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -8219,7 +8224,7 @@
       ],
       "excerpt": "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 31 도구 (read 18 + write 13) 를 stdin/stdout JSON-RPC 로 노출. 등록 가이드: mcp/README.md. 사용자 LLM 비용을 cloud 로 옮기지 않음 — agent 가 자기 LLM 으로 호출. .claude/hooks/block-npm-publish.sh 는 agent 가 사용자 명시 승인 없이 npm publish 계열 명령을 실행하지 못하게 막는 안전장치다. pnpm test:cla",
       "wordCount": 78,
-      "updatedAt": "2026-07-24T18:19:30+09:00",
+      "updatedAt": "2026-07-24T18:32:05+09:00",
       "linksOut": []
     },
     {
@@ -8254,7 +8259,7 @@
       ],
       "excerpt": "useDataSourceMode() 가 local / static 분기 결정. R10 (auth + cloud surface 영구 제거) 이후 두 mode 만 존재. 같은 hook 호출이 mode 별로 다른 source 를 본다 — 사용자에겐 단일 UX. 미래 cloud collab 단계가 다시 도입될 때 'cloud' mode 와 그 adapter 를 새로 추가.",
       "wordCount": 50,
-      "updatedAt": "2026-07-24T18:19:30+09:00",
+      "updatedAt": "2026-07-24T18:32:05+09:00",
       "linksOut": []
     },
     {
@@ -8300,7 +8305,7 @@
       ],
       "excerpt": "cross-cutting. 다크 단일 테마 (라이트 모드는 2026-07-19 전략 폐기), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curso",
       "wordCount": 350,
-      "updatedAt": "2026-07-24T18:19:30+09:00",
+      "updatedAt": "2026-07-24T18:32:05+09:00",
       "linksOut": []
     },
     {
@@ -8338,7 +8343,7 @@
       ],
       "excerpt": "4-layer class hierarchy (Project · Domain · Capability · Element + Document) + 7 edge types (KNOWLEDGEEDGETYPES) + evidence-grounded statements. Vault frontmatter is the single source of truth — derive-ontology-from-vault turns \\.md\\ frontmatter into the in-memory graph. Architecture overview: \\docs/ARCHITECTURE.md\\.",
       "wordCount": 43,
-      "updatedAt": "2026-07-24T18:19:30+09:00",
+      "updatedAt": "2026-07-24T18:32:05+09:00",
       "linksOut": []
     },
     {
@@ -8386,7 +8391,7 @@
       ],
       "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 short-circuit. R14 부터는 visible 인 동안 5s polling 으로 focus 안 해도 자동 반영 (vault-live-updates). 자세한 원칙: .claude/rules/local-first.md. 사용자 surface: docs/FEATURES.md.",
       "wordCount": 45,
-      "updatedAt": "2026-07-24T18:19:30+09:00",
+      "updatedAt": "2026-07-24T18:32:05+09:00",
       "linksOut": []
     },
     {
@@ -8481,7 +8486,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-07-24T18:19:30+09:00",
+      "updatedAt": "2026-07-24T18:32:05+09:00",
       "linksOut": []
     },
     {
@@ -9519,7 +9524,7 @@
       ],
       "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. 정체성 (2026-07): agent-native, human-sovereign. 에이전트를 위한 메모리가 아니라 에이전트가 1급 사용자인 공유 의미 계층 — 에이전트는 MCP/CLI 로 신선도를 유지하는 엔진이자 최대 소비자, 사람은 평문 마크다운·git diff·로컬 디스크 진실원을 통한 의미의 최종 결정권자. 훅은 에이전트 통증(\"코드베이스 장기 구조를 까먹는다\"), 본질은 공유 계층. 이 프로젝트의 ontology 는 비즈니",
       "wordCount": 161,
-      "updatedAt": "2026-07-24T18:19:30+09:00",
+      "updatedAt": "2026-07-24T18:32:05+09:00",
       "linksOut": []
     },
     {

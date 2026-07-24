@@ -326,11 +326,12 @@ export function TopologyIndexPanel({
       className={`flex h-full flex-col rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-3 shadow-[var(--topology-v2-panel-shadow)] ${className ?? ""}`}
       style={{ width: "var(--topology-index-width)" }}
     >
-      {/* "시작하기" 모듈 (root-first-open v3, `first-run-v3-flagship.html`) —
-          vault 미선택 + 정적 모드 + 세션 내 미dismiss 일 때만 자체 렌더,
-          그 외엔 null. INDEX 패널 자체의 prop 표면은 안 늘어난다 — 이미
-          받는 census(totalConcepts/totalRelations/domainCount)를 그대로
-          넘길 뿐, 표시 여부/액션은 모듈이 스스로 결정한다. */}
+      {/* "시작하기" 모듈 (root-first-open v3, `first-run-v3-flagship.html`).
+          2026-07-24 구조 개편(소유자 지적 "상단 스크롤 따로 하단 스크롤
+          따로") — 카드와 INDEX 를 **배타적 두 상태**로 분리한다. 가이드가
+          펼쳐져 있으면 카드가 패널 전체를 차지하고(스크롤 1개), 사용자가
+          선택하면 접히면서 INDEX(children)가 열린다. 모듈이 children 을
+          받아 어느 쪽을 그릴지 결정 — 위젯은 INDEX 본문만 넘긴다. */}
       <FirstRunStarterModule
         concepts={totalConcepts}
         relations={totalRelations}
@@ -338,7 +339,7 @@ export function TopologyIndexPanel({
         onStartTour={onStartTour}
         onEnablePlainMode={onEnablePlainMode}
         audiencePlain={plainMode}
-      />
+      >
       {/* v2.1 헤더 — 라벨 + 실측 총수 + 접기만. 에이전트 동기화 상태는
           푸터로 이관(아래) — 헤더는 "이 패널이 무엇인지", 푸터는 "언제
           마지막으로 살아있었는지"를 말한다.
@@ -645,6 +646,7 @@ export function TopologyIndexPanel({
           </span>
         </div>
       </div>
+      </FirstRunStarterModule>
     </aside>
   );
 }
