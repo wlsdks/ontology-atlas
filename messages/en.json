@@ -3057,5 +3057,20 @@
       "skill-copy-diverged": "Duplicated skill copies diverged between .claude/skills and .agents/skills",
       "skill-copy-file-missing": "A skill file exists in only one of the duplicated skill trees"
     }
+  },
+  "editProvenance": {
+    "prefix": "Last edited",
+    "subjectAgent": "AI agent",
+    "subjectHuman": "me",
+    "conflictMessage": "This document changed elsewhere — check before you overwrite",
+    "age": {
+      "justNow": "just now",
+      "minutesAgo": "{count}m ago",
+      "hoursAgo": "{count}h ago",
+      "yesterday": "yesterday",
+      "daysAgo": "{count}d ago",
+      "weeksAgo": "{count}w ago",
+      "monthsAgo": "{count}mo ago"
+    }
   }
 }
