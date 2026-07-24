@@ -12,13 +12,18 @@ interface ToastApi {
 }
 
 /**
- * sonner 기반 토스트.
+ * sonner 기반 토스트 — 앱의 **단일 canonical 알림 팝업**이다. 개별 화면이
+ * 각자 팝업을 만들지 않고 전부 `useToast().show()` 로 이 컴포넌트를 거친다.
  *
  * 변경:
  * - 자체 ToastProvider (framer-motion + state stack) → sonner `<Toaster />`
  * - aria-live + 우하단 stack + auto dismiss = sonner 내장 동작
  * - tone 별 색은 `<Toaster />` 의 toastOptions.classNames 로 디자인 헌장 §11
  *   준수 (인디고 alpha + 무채색, glow 0)
+ * - **다크 단일 계약**: `theme="dark"` 를 명시해 sonner 기본 라이트 테마의
+ *   흰색 팝업을 차단한다 (소유자 실보고 2026-07-24: 스튜디오 알림이 흰색
+ *   오프브랜드로 떴다 — 원인은 `theme` 미지정 시 sonner 가 light 로 폴백).
+ * - **닫기 어포던스**: `closeButton` 으로 모든 팝업에 실제 닫기 버튼을 단다.
  *
  * 호출 사이트 (~50 곳) 는 무수정. `useToast().show(message, tone)` API 유지.
  *
@@ -30,6 +35,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <>
       {children}
       <Toaster
+        theme="dark"
+        closeButton
         position="bottom-right"
         // 하단 오프셋만 CSS 변수로 받아, 하단에 쓰기 바가 있는 빌더 페이지가
         // 토스트를 바 위로 밀어 "vault 에 쓰기" 버튼을 가리지 않게 한다
@@ -52,12 +59,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         toastOptions={{
           classNames: {
             toast:
-              'rounded-full border bg-[color:var(--color-panel)] px-3.5 py-2 text-body shadow-[0_10px_28px_var(--color-shadow-a42)]',
+              'rounded-full border bg-[color:var(--color-panel)] px-3.5 py-2 text-body text-[color:var(--color-text-primary)] shadow-[0_10px_28px_var(--color-shadow-a42)]',
             success:
               'border-[color:var(--color-success-a35)] text-[color:var(--color-text-primary)]',
             info: 'border-[color:var(--color-indigo-line-a35)] text-[color:var(--color-text-primary)]',
             error:
               'border-[color:var(--color-danger-a32)] text-[color:var(--color-text-primary)]',
+            // Close affordance — token-styled so it reads as our dark chrome,
+            // never sonner's default light chip.
+            closeButton:
+              'border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-secondary)] hover:text-[color:var(--color-text-primary)]',
           },
         }}
       />
