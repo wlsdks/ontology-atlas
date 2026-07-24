@@ -2022,12 +2022,17 @@ function DocsVaultContent() {
         ) : null}
       </AnimatePresence>
 
-      {newDocKindDialogOpen ? (
-        <NewDocKindDialog
-          onSelect={(kind) => void handleCreateNewDocWithKind(kind)}
-          onClose={() => setNewDocKindDialogOpen(false)}
-        />
-      ) : null}
+      {/* rank2 — NewDocKindDialog 가 framer motion 진입/퇴장 스프링을 쓰므로
+          AnimatePresence 로 감싸야 닫힘 시 퇴장 애니메이션이 끝까지 재생된
+          뒤 언마운트된다(그냥 조건부 렌더면 즉시 사라짐). */}
+      <AnimatePresence>
+        {newDocKindDialogOpen ? (
+          <NewDocKindDialog
+            onSelect={(kind) => void handleCreateNewDocWithKind(kind)}
+            onClose={() => setNewDocKindDialogOpen(false)}
+          />
+        ) : null}
+      </AnimatePresence>
       </div>
     </div>
   );

@@ -573,6 +573,82 @@
     transform-origin: center;
   }
 
+  /* rank2 — DOM 오버레이 3종(GlobalSearch·SearchPalette·NewDocKindDialog)의
+     단일 진입 문법. opacity 0→1 + translateY(--overlay-enter-translate)→0
+     만 — scale 진입은 없다(hover:scale-* 금지선 혼동 방지, 진입/퇴장 대칭을
+     위해 퇴장도 scale 없음). transform-origin 은 트리거 방향
+     (--overlay-spring-origin, 소비처 미주입 시 center top 폴백). */
+  @keyframes overlaySpringIn {
+    from {
+      opacity: 0;
+      transform: translateY(var(--overlay-enter-translate));
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* 퇴장 = 진입의 역궤적. 새 cubic-bezier/duration 리터럴을 추가하지 않고
+     .topology-chrome-out 이 쓰는 것과 동일한 산식
+     (calc(--topology-motion-panel-duration * 0.67) + --topology-motion-ease-out)
+     을 그대로 참조한다 — 단일 출처, 인라인 리터럴 재기입 0. */
+  @keyframes overlaySpringOut {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateY(var(--overlay-enter-translate));
+    }
+  }
+
+  .overlay-spring-surface[data-state="open"] {
+    animation: overlaySpringIn calc(var(--overlay-spring-response) * 1s)
+      var(--topology-motion-ease-out) both;
+    transform-origin: var(--overlay-spring-origin, center top);
+  }
+
+  .overlay-spring-surface[data-state="closed"] {
+    animation: overlaySpringOut
+      calc(var(--topology-motion-panel-duration) * 0.67)
+      var(--topology-motion-ease-out) both;
+    transform-origin: var(--overlay-spring-origin, center top);
+    pointer-events: none;
+  }
+
+  /* 스크림 — 기존 panelCrossfadeIn(opacity 전용) 키프레임 재사용, 신규
+     키프레임 0. 닫힘은 같은 키프레임을 reverse 로 재생. */
+  .overlay-spring-scrim[data-state="open"] {
+    animation: panelCrossfadeIn var(--topology-motion-panel-duration)
+      var(--topology-motion-ease-out) both;
+  }
+
+  .overlay-spring-scrim[data-state="closed"] {
+    animation: panelCrossfadeIn var(--topology-motion-panel-duration)
+      var(--topology-motion-ease-out) reverse both;
+    pointer-events: none;
+  }
+
+  /* reduced-motion 전용 — translate 제거, opacity 크로스페이드만. duration
+     120ms 는 --topology-v2-tip-fade-ms(120) 값 복사(그 토큰은 topology-v2
+     feature-flag 스코프라 이 DOM 오버레이 3종에서 var() 직접 참조는 금지 —
+     DESIGN-SYSTEM v2 §스코프 주의. 값만 맞춘다). GlobalSearch/NewDocKindDialog
+     는 useReducedMotion() 판정으로 이 클래스를 .overlay-spring-surface 대신
+     적용; SearchPalette/NewDocKindDialog(framer)는 OVERLAY_SPRING_REDUCED
+     로 동일 120ms 를 JS 쪽에서 재생한다. */
+  .overlay-fade-only[data-state="open"] {
+    animation: panelCrossfadeIn 120ms linear both;
+  }
+
+  .overlay-fade-only[data-state="closed"] {
+    animation: panelCrossfadeIn 120ms linear reverse both;
+    pointer-events: none;
+  }
+
   /*
    * Tailwind v4 @theme 가 alpha rgba 토큰을 :root 에 emit 하지 않는 동작이 있어
    * border-[color:var(--color-divider)] 같은 arbitrary value 가 변수를 resolve
@@ -1329,6 +1405,55 @@
        프로퍼티를 떨구는 동작이 있어 여기 선언하지 않는다. */
 
     /*
+     * 설계협의회 batch B1 rank2 — DOM 오버레이 3종(GlobalSearch·SearchPalette·
+     * NewDocKindDialog) 단일 스프링 통일 토큰. 오버레이는 인바운드 모멘텀이
+     * 없으므로 임계감쇠(damping 1.0, 오버슈트/바운스 0)로 확정한다.
+     *
+     * 캔버스 2-param 물리 모델(topology-map-v2 press/ego-reveal 등, angular
+     * frequency + damping ratio)과는 수치가 다른 **별도 튜닝**이다 — DOM
+     * overlay 는 travel 거리가 훨씬 짧아 같은 damping 개념이라도 response
+     * 값이 다르다. "동일 스프링을 상속했다"는 주장은 하지 않는다.
+     * 캔버스→framer 변환: 캔버스의 { angularFreq, dampingRatio: 1.0 } 개념을
+     * framer 의 { type: 'spring', duration: response, bounce: 0 } 로 사상한다
+     * (response(0.30s) → framer duration, damping 1.0 → bounce 0). JS 쪽
+     * 값 복사본은 `OVERLAY_SPRING`/`OVERLAY_SPRING_REDUCED`
+     * (`src/shared/motion/index.ts`) — framer 는 CSS var() 를 읽지 못해
+     * 값을 복사한다(이 파일 상단 B2+ 랜딩 토큰의 "값 복사 — var() 참조 아님,
+     * flag 제거 시 grep 계약 유지" 관례와 동일한 패턴. drift 감사는 이 주석을
+     * 기준으로).
+     */
+    --overlay-spring-response: 0.3;
+    --overlay-spring-damping: 1;
+    --overlay-enter-translate: 8px;
+    /*
+     * 스크림은 색 알파만(backdrop-blur/glow 금지) — 여기까지는 locked spec
+     * 그대로다. 다만 값은 spec 문면의 `--color-overlay-3`(rgba(255,255,255,
+     * 0.10) — 패널 hover/elevation 용 옅은 백색 wash) 이 아니라 기존
+     * `--color-backdrop-strong`(rgba(8,9,10,0.85))를 alias 한다.
+     * DEVIATION(사유): GlobalSearch 는 원래 rgba(8,9,12,0.66), SearchPalette
+     * 는 `--color-backdrop-strong`(0.85) 로 이미 "뒤 콘텐츠를 실제로 가리는"
+     * 어두운 스크림을 쓰고 있었다 — `--color-overlay-3` 는 다른 목적(패널 위
+     * 옅은 표면 강조)의 토큰이라 그대로 스크림에 쓰면 뒤 캔버스/문서 목록이
+     * 거의 그대로 비쳐 보여 모달성(modality)이 시각적으로 사라진다(포커스는
+     * 여전히 트랩되지만 "가려졌다"는 시각 신호가 없어짐 — composer
+     * blocking scrim 계약 위반, design.md "modality 있는 모달 필수"). 토큰
+     * 이름(`--overlay-scrim`)과 "알파만, blur/glow 금지"라는 성격은 spec
+     * 그대로 유지하고 값만 기존 dark backdrop 계열로 고정했다.
+     */
+    --overlay-scrim: var(--color-backdrop-strong);
+    /* SearchPalette 가 폐기한 약감쇠 스프링(stiffness:320/damping:28) 리터럴의
+       감사 추적용 보존 토큰 — 레이아웃(폭/높이)에 소비되지 않는다. 이 두
+       숫자가 인라인 매직넘버로 남아 있던 자리를 토큰으로 승격해 grep 계약을
+       남긴다(값 자체는 위 임계감쇠 스프링으로 대체되어 더 이상 모션에 쓰이지
+       않음). */
+    --overlay-palette-width: 320px;
+    --overlay-item-height: 28px;
+    /* 오버레이 close 버튼 기본 32px — coarse-pointer 는 아래 기존
+       `@media (pointer: coarse)` 블록에서 --touch-target-min(44px) 으로
+       승격(다른 크롬 control 과 같은 단일 출처 패턴). */
+    --overlay-close-size: 32px;
+
+    /*
      * 문서함 크롬 재구성 (docs-chrome-round, design-prescription.md §③-7).
      * 헤더 3존·목록 접기·점검 모달이 공유하는 신규 토큰. 신규 채색 0 —
      * 표면/보더/그림자는 위 --chrome-* · --color-overlay-2 · --color-indigo-brand
@@ -1875,6 +2000,10 @@
       --topology-chrome-control-height: var(--touch-target-min);
       --topology-chrome-control-height-compact: var(--touch-target-min);
       --topology-shortcut-sheet-close-size: var(--touch-target-min);
+      /* rank2/18 — DOM 오버레이 3종 close 버튼(SearchPalette 등)도 같은
+         44px 승격. GlobalSearch 는 이미 --topology-search-sheet-close-size
+         를 쓰고 있어 해당 토큰이 같은 media 블록에서 이미 커버됨. */
+      --overlay-close-size: var(--touch-target-min);
     }
   }
 
@@ -1898,6 +2027,27 @@
       --topology-relation-legend-bottom-inset: calc(
         var(--topology-mobile-bottom-tab-reserve) + 12px
       );
+    }
+
+    /* rank2/18 — SearchPalette 하단 CTA/footer 가 BottomTabBar 뒤로 파고들지
+       않게 예약고 확보(GlobalSearch 시트와 같은 패턴, `--topology-mobile-
+       bottom-tab-reserve` 단일 출처). */
+    [data-search-palette-panel] {
+      padding-bottom: var(--topology-mobile-bottom-tab-reserve);
+    }
+  }
+
+  /*
+   * rank2 — SearchPalette 를 <lg(BottomTabBar 구간) + coarse-pointer(터치
+   * 기기)에서 "아래에서 자라나는" 시트로 인지시키는 transform-origin. 현재
+   * 진입 모션은 translateY+opacity 뿐(scale/rotate 없음)이라 이 값 자체는
+   * 시각적으로 no-op 이지만, 향후 이 표면에 scale/rotate 가 붙을 때를 대비한
+   * 앵커 계약을 지금 걸어 둔다(width 만으로 터치를 추정하지 않도록 pointer:
+   * coarse 를 함께 요구 — design.md 터치 계약).
+   */
+  @media (max-width: 1023.98px) and (pointer: coarse) {
+    [data-search-palette-panel] {
+      transform-origin: bottom;
     }
   }
 

@@ -3431,6 +3431,10 @@ export function HomePage() {
                     // 가이드 투어 — 캔버스 노드 앵커(2·4단계) 프로젝션.
                     tourAnchorNodeId={tourAnchorNodeId}
                     tourAnchorRef={tourAnchorRef}
+                    // rank18 — GlobalSearch(⌘K)가 실제로 열려 있는 동안
+                    // (MountedGlobalSearch 의 open prop 과 동일 조건) 캔버스를
+                    // aria-hidden+inert 로 접근성 트리에서 제외.
+                    overlayOpen={!createNodeOpen && ontologySearchOpen}
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas ? (
