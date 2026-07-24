@@ -32,7 +32,6 @@ const ROUTES = [
   // R10 (auth + cloud surface 영구 제거) 이후 살아있는 user-facing surface 만.
   "/en/topology/",
   "/en/ontology/",
-  "/en/ontology/edit/",
   "/en/ontology/insights/",
   "/en/docs/",
   "/en/download/",

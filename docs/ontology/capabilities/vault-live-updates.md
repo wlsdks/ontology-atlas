@@ -4,7 +4,7 @@ kind: capability
 title: Vault Live Updates (5s polling + diff toast + graph pulse)
 domain: vault-local-first
 elements: [elements/ontology-description-helper, src/entities/docs-vault/lib/build-local-manifest.ts, src/features/docs-vault-local/lib/diff-manifest.ts, src/features/docs-vault-local/model/use-local-vault.ts, src/features/docs-vault-local/model/VaultDiffToaster.tsx, src/widgets/topology-map-v2]
-relates: [capabilities/builder-vault-write, capabilities/mcp-conflict-guard]
+relates: [capabilities/mcp-conflict-guard, capabilities/studio-vault-write]
 dependencies: [capabilities/topology-canvas-render]
 ---
 

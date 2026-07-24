@@ -33,7 +33,7 @@ export interface TopologyV2ContextMenuProps {
   /** Viewport-space anchor (the right-click's `clientX`/`clientY`). */
   position: { x: number; y: number };
   documentHref: string | null;
-  builderEditHref: string;
+  studioEditHref: string;
   labels: TopologyV2ContextMenuLabels;
   onCopyHandoff: () => void;
   onSetPathSource: () => void;
@@ -71,7 +71,7 @@ const MENU_ITEM_DISABLED_CLASS = "pointer-events-none opacity-40";
 export function TopologyV2ContextMenu({
   position,
   documentHref,
-  builderEditHref,
+  studioEditHref,
   labels,
   onCopyHandoff,
   onSetPathSource,
@@ -135,7 +135,7 @@ export function TopologyV2ContextMenu({
         </span>
       )}
       <Link
-        href={builderEditHref}
+        href={studioEditHref}
         role="menuitem"
         data-testid="topology-v2-context-menu-edit"
         className={MENU_ITEM_CLASS}

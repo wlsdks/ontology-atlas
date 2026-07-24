@@ -14,8 +14,8 @@ import { Component, type ReactNode } from 'react';
  *     <RiskyChild />
  *   </ErrorBoundary>
  *
- * fallback 은 함수 — caller 가 도메인-tuned UI (eg. Sigma 전용 reload CTA,
- * xyflow 전용 retry 버튼) 작성. error 객체 포함 — 디버그용.
+ * fallback 은 함수 — caller 가 도메인-tuned UI (eg. 캔버스 렌더러 전용 reload
+ * CTA, 그래프 뷰 전용 retry 버튼) 작성. error 객체 포함 — 디버그용.
  */
 
 interface ErrorBoundaryProps {

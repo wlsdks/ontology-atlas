@@ -86,7 +86,7 @@ No `.env`, no auth provider, no backend setup needed. Round 10 (2026-05) permane
 - **Language** TypeScript 5
 - **Style** Tailwind CSS 4 (`@theme` CSS-based tokens)
 - **i18n** next-intl 4.11 with `/[locale]/` URL prefix (en / ko)
-- **Visualization** Custom canvas-2D engine (`topology-map-v2`) for `/`, `/topology` · Graphology ForceAtlas2 (physics, shared by the canvas engine and the ERD builder) · xyflow (`/ontology/edit` ERD builder) — Sigma.js 는 folder-topology 미니맵 삭제(2026-07 P5)와 함께 의존성까지 제거
+- **Visualization** Custom canvas-2D engine (`topology-map-v2`) for `/`, `/topology` · Graphology ForceAtlas2 (physics) · `/ontology/studio` (나침 무대) is the write surface — the old xyflow ERD builder at `/ontology/edit` was RETIRED 2026-07-24 (studio covers assemble/connect/preview/write; `@xyflow/react` dependency removed). Sigma.js 는 folder-topology 미니맵 삭제(2026-07 P5)와 함께 의존성까지 제거
 - **Local-first** File System Access API + IndexedDB (vault handle persistence)
 - **AI agent** `@modelcontextprotocol/sdk` (stdin/stdout JSON-RPC server, `mcp/` package)
 - **State** in-memory + IndexedDB (vault handle) · React local state · URL state
@@ -115,7 +115,7 @@ cli/                       CLI binary (developer's daily entry point) — npm pk
                            overview / hubs / blast-radius / cycles / components / topological-order / health
                            agent-brief / workspace-brief / growth / maintenance / node / similar
 docs/                      long-form docs
-docs/ontology/             this project's own ontology vault (dogfood — 106 nodes)
+docs/ontology/             this project's own ontology vault (dogfood — 95 nodes)
                            `.ontology-atlasignore` (gitignore-style) suppresses external
                            element ref noise in growth_plan / maintenance_plan
 tests/                     Vitest unit + Playwright E2E
@@ -141,7 +141,10 @@ scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood w
 /project/new               new project form
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (B3 허브가 곧 지도 — the old tree/ego hub is retired)
-/ontology/edit             ERD canvas builder (xyflow → vault md export)
+/ontology/edit             RETIRED (2026-07-24) — the xyflow ERD builder was removed once the
+                           studio covered assemble/connect/preview/write. Now a thin client
+                           redirect to /ontology/studio (forwarding any ?node= deep-link) so
+                           old bookmarks/agent-handoff links land in the studio, not a 404.
 /ontology/studio           나침 무대 (Compass Stage) — the vault write surface, restrained
                            (no game energy; the old `--studio-*` glow/gem exception was RETIRED
                            2026-07-24 — fable verdict B + owner: "게임처럼 중독되게" was a
@@ -263,7 +266,7 @@ Long-form docs:
 This project describes its own mental model in `docs/ontology/` as frontmatter markdown (dogfooding — we describe ourselves in our own data format).
 
 - Entry points: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 106 nodes (capability 40 · document 3 · domain 6 · element 55 · project 1 · vault-readme 1)
+- 95 nodes (capability 39 · document 3 · domain 6 · element 45 · project 1 · vault-readme 1)
 - AI agents query it via the `mcp/` MCP server — registration guide in `mcp/README.md`, example in `.mcp.json.example`
 - When you discover a new domain / capability / element, add it to the same directory (with the MCP `add_concept` tool, or by hand)
 

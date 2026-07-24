@@ -237,11 +237,11 @@ export interface TopologyV2DetailPanelProps {
    * (the tile renders disabled rather than linking to a guessed URL).
    */
   documentHref: string | null;
-  /** W2-A "관계 편집" action tile target — the ERD builder deep link
-   * (`/ontology/edit/?node=<slug>`, existing receiver in `OntologyEditPage`
-   * via `resolveBuilderQueryNodeSlug`). Always available (any slug resolves
-   * or falls back to the builder's own selection UI). */
-  builderEditHref: string;
+  /** W2-A "관계 편집" action tile target — the 나침 무대(Compass Stage) deep
+   * link (`/ontology/studio/?node=<id>`, ENHANCE mode opens this node with its
+   * relation sockets). Replaced the retired ERD builder (2026-07-24). Always
+   * available (any id resolves or the studio falls back to its default node). */
+  studioEditHref: string;
   labels: TopologyV2DetailPanelLabels;
   onSelectConnection: (id: string) => void;
   onCopyHandoff: (text: string) => void;
@@ -436,7 +436,7 @@ export function TopologyV2DetailPanel({
   mtimeConflict = false,
   handoffText,
   documentHref,
-  builderEditHref,
+  studioEditHref,
   labels,
   onSelectConnection,
   onCopyHandoff,
@@ -821,7 +821,7 @@ export function TopologyV2DetailPanel({
           {withActionTip(
             labels.actionEditRelationsTip,
             <Link
-              href={builderEditHref}
+              href={studioEditHref}
               data-testid="topology-v2-detail-panel-action-edit"
               className={ACTION_TILE_CLASS}
             >

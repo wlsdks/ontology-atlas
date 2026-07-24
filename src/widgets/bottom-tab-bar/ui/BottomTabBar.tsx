@@ -2,7 +2,7 @@
 
 import { Link, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { BarChart3, BookOpen, FolderKanban, GitBranch, Map as MapIcon } from 'lucide-react';
+import { BarChart3, BookOpen, FolderKanban, Map as MapIcon } from 'lucide-react';
 import { useLocalVault } from '@/features/docs-vault-local';
 import { resolveActiveNavDestination, type AppNavDestinationId } from '@/shared/lib/nav-destination';
 import { shouldHideBottomTabBar } from '../lib/is-tab-active';
@@ -16,13 +16,14 @@ interface TabItem {
   icon: typeof MapIcon;
 }
 
-// 모바일 한정 하단 탭바 — 데스크톱 `AppNavRail` (lg+) 과 정확히 같은 5
-// destination (feat/rail-rollout, 3-체계 → 1-체계 통합). active 판정도
-// `resolveActiveNavDestination` 을 공유해 두 위젯이 절대 갈라지지 않는다.
+// 모바일 한정 하단 탭바 — 데스크톱 `AppNavRail` (lg+) 의 코어 목적지를 공유한다
+// (feat/rail-rollout, 3-체계 → 1-체계 통합). 스튜디오는 몰입형 쓰기 표면이라
+// 데스크톱 레일 전용이고, 은퇴한 ERD 빌더 탭은 제거됐다(2026-07-24, 스튜디오가
+// 흡수). active 판정도 `resolveActiveNavDestination` 을 공유해 두 위젯이 절대
+// 갈라지지 않는다.
 const TABS: ReadonlyArray<TabItem> = [
   { id: 'map', href: '/topology/', labelKey: 'map', icon: MapIcon },
   { id: 'docs', href: '/docs/', labelKey: 'docs', icon: BookOpen },
-  { id: 'builder', href: '/ontology/edit/', labelKey: 'builder', icon: GitBranch },
   { id: 'insights', href: '/ontology/insights/', labelKey: 'insights', icon: BarChart3 },
   { id: 'projects', href: '/projects/', labelKey: 'projects', icon: FolderKanban },
 ];

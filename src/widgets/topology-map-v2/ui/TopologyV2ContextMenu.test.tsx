@@ -30,7 +30,7 @@ function renderMenu(overrides: {
     <TopologyV2ContextMenu
       position={{ x: 100, y: 200 }}
       documentHref={overrides.documentHref !== undefined ? overrides.documentHref : "/docs/domains/views"}
-      builderEditHref="/ontology/edit/?node=domains%2Fviews"
+      studioEditHref="/ontology/studio/?node=domains%2Fviews"
       labels={labels}
       onCopyHandoff={overrides.onCopyHandoff ?? (() => {})}
       onSetPathSource={overrides.onSetPathSource ?? (() => {})}
@@ -46,7 +46,7 @@ describe("TopologyV2ContextMenu", () => {
     expect(screen.getByTestId("topology-v2-context-menu-document")).toBeInTheDocument();
     expect(screen.getByTestId("topology-v2-context-menu-edit")).toHaveAttribute(
       "href",
-      expect.stringContaining("/ontology/edit/"),
+      expect.stringContaining("/ontology/studio/"),
     );
     expect(screen.getByTestId("topology-v2-context-menu-handoff")).toBeInTheDocument();
     expect(screen.getByTestId("topology-v2-context-menu-path")).toBeInTheDocument();

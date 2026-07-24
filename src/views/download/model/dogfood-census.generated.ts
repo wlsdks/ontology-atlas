@@ -17,13 +17,13 @@ export interface DogfoodCensus {
 }
 
 export const DOGFOOD_CENSUS: DogfoodCensus = {
-  "concepts": 105,
-  "relations": 483,
+  "concepts": 94,
+  "relations": 451,
   "kinds": {
     "project": 1,
     "domain": 6,
-    "capability": 40,
-    "element": 55,
+    "capability": 39,
+    "element": 45,
     "document": 3
   },
   "domains": [
@@ -49,7 +49,7 @@ export const DOGFOOD_CENSUS: DogfoodCensus = {
     },
     {
       "slug": "views",
-      "title": "Views (Topology · Browse · Builder)"
+      "title": "Views (Topology · Browse · Studio)"
     }
   ],
   "domainRelates": [

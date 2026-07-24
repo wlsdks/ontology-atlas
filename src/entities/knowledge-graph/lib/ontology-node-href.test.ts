@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "../model";
 import {
   buildInsightsReturnMarker,
-  buildOntologyBuilderNodeHref,
-  buildOntologyBuilderNodeHrefFromGraphId,
+  buildOntologyStudioNodeHrefFromGraphId,
   buildOntologyInsightsNodeHref,
   buildOntologyInsightsReturnHref,
   buildOntologyNodeHref,
@@ -73,7 +72,7 @@ describe("insights return marker", () => {
   });
 });
 
-describe("buildOntologyBuilderNodeHref", () => {
+describe("resolveOntologyBuilderNodeSlug", () => {
   function node(overrides: Partial<KnowledgeGraphNode>): KnowledgeGraphNode {
     return {
       id: "capability:mcp-server",
@@ -87,7 +86,7 @@ describe("buildOntologyBuilderNodeHref", () => {
     };
   }
 
-  it("vault source slug 를 builder focus query 로 사용", () => {
+  it("vault source slug 를 focus query 로 사용", () => {
     const selected = node({
       id: "capability:mcp-server",
       evidenceIds: ["capabilities/mcp-server"],
@@ -95,9 +94,6 @@ describe("buildOntologyBuilderNodeHref", () => {
 
     expect(resolveOntologyBuilderNodeSlug(selected)).toBe(
       "capabilities/mcp-server",
-    );
-    expect(buildOntologyBuilderNodeHref(selected)).toBe(
-      `/ontology/edit/?node=${encodeURIComponent("capabilities/mcp-server")}`,
     );
   });
 
@@ -155,16 +151,16 @@ describe("buildOntologyBuilderNodeHref", () => {
   });
 });
 
-describe("buildOntologyBuilderNodeHrefFromGraphId", () => {
-  // H5 URL 계약: 빌더 발신 링크는 canonical `<kind>:<slug>` 로 통일한다.
+describe("buildOntologyStudioNodeHrefFromGraphId", () => {
+  // URL 계약: 스튜디오 발신 링크는 canonical `<kind>:<slug>` 로 통일한다.
   it("canonical graph id 를 그대로 실어 보낸다", () => {
     expect(resolveOntologyBuilderNodeSlugFromGraphId("domain:views")).toBe(
       "domains/views",
     );
     expect(
-      buildOntologyBuilderNodeHrefFromGraphId("capability:topology-analysis-modes"),
+      buildOntologyStudioNodeHrefFromGraphId("capability:topology-analysis-modes"),
     ).toBe(
-      `/ontology/edit/?node=${encodeURIComponent(
+      `/ontology/studio/?node=${encodeURIComponent(
         "capability:topology-analysis-modes",
       )}`,
     );
@@ -174,8 +170,8 @@ describe("buildOntologyBuilderNodeHrefFromGraphId", () => {
     expect(resolveOntologyBuilderNodeSlugFromGraphId("project:ontology-atlas")).toBe(
       "ontology-atlas",
     );
-    expect(buildOntologyBuilderNodeHrefFromGraphId("project:ontology-atlas")).toBe(
-      `/ontology/edit/?node=${encodeURIComponent("project:ontology-atlas")}`,
+    expect(buildOntologyStudioNodeHrefFromGraphId("project:ontology-atlas")).toBe(
+      `/ontology/studio/?node=${encodeURIComponent("project:ontology-atlas")}`,
     );
   });
 
@@ -186,9 +182,9 @@ describe("buildOntologyBuilderNodeHrefFromGraphId", () => {
       ),
     ).toBe("capabilities/topology-analysis-modes");
     expect(
-      buildOntologyBuilderNodeHrefFromGraphId("capabilities/topology-analysis-modes"),
+      buildOntologyStudioNodeHrefFromGraphId("capabilities/topology-analysis-modes"),
     ).toBe(
-      `/ontology/edit/?node=${encodeURIComponent(
+      `/ontology/studio/?node=${encodeURIComponent(
         "capability:topology-analysis-modes",
       )}`,
     );

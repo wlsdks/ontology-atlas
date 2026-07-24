@@ -10,10 +10,10 @@ import { routing } from '@/i18n/routing';
 // Static export — must resolve at build time.
 export const dynamic = 'force-static';
 
-// 사용자가 직접 진입 가능한 모든 정적 surface. /ontology/edit 빌더는
-// 이전엔 빠져 있어 SEO 에 안 잡혔는데, AGENTS.md 의 routes 표에 1급
-// surface 로 명시되어 있고 데모 모드에서도 read-only 로 로드 가능 → 색인
-// 가치 충분. /project/new 는 vault-mode 진입 후만 의미 있어 제외.
+// 사용자가 직접 진입 가능한 모든 정적 surface. /ontology/studio(나침 무대)는
+// AGENTS.md routes 표의 1급 write surface 이고 데모 모드에서도 read-only 로
+// 로드 가능 → 색인 가치 충분(은퇴한 /ontology/edit 빌더 자리를 대체).
+// /project/new 는 vault-mode 진입 후만 의미 있어 제외.
 const STATIC_ROUTES = [
   '',
   'projects',
@@ -21,7 +21,7 @@ const STATIC_ROUTES = [
   'topology',
   'docs',
   'ontology',
-  'ontology/edit',
+  'ontology/studio',
   'ontology/insights',
 ];
 

@@ -91,7 +91,7 @@ function renderPanel(
           ? overrides.documentHref
           : "/docs/domains/views"
       }
-      builderEditHref="/ontology/edit/?node=domains%2Fviews"
+      studioEditHref="/ontology/studio/?node=domains%2Fviews"
       labels={labels}
       lastEditSubject={overrides.lastEditSubject ?? null}
       mtimeConflict={overrides.mtimeConflict ?? false}
@@ -277,7 +277,7 @@ describe("TopologyV2DetailPanel — sticky 푸터 slug 평문화 (Toss C2)", () 
         codeLocations={[]}
         handoffText="node: ontology/capabilities/mcp-server"
         documentHref={null}
-        builderEditHref="/ontology/edit/?node=ontology%2Fcapabilities%2Fmcp-server"
+        studioEditHref="/ontology/studio/?node=ontology%2Fcapabilities%2Fmcp-server"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -389,7 +389,7 @@ describe("TopologyV2DetailPanel — M-2 typed containment split", () => {
         codeLocations={[]}
         handoffText="node: domains/ai-agent-partner"
         documentHref={null}
-        builderEditHref="/ontology/edit/?node=domains%2Fai-agent-partner"
+        studioEditHref="/ontology/studio/?node=domains%2Fai-agent-partner"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -458,7 +458,7 @@ describe("TopologyV2DetailPanel — P3-① 미기록 관계 empty-state (0 vs �
         codeLocations={[]}
         handoffText="node: src/widgets/global-search"
         documentHref={null}
-        builderEditHref="/ontology/edit/?node=src%2Fwidgets%2Fglobal-search"
+        studioEditHref="/ontology/studio/?node=src%2Fwidgets%2Fglobal-search"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -513,10 +513,10 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("links the 관계 편집 tile to the builder deep link", () => {
+  it("links the 관계 편집 tile to the studio deep link", () => {
     renderPanel();
     const link = screen.getByTestId("topology-v2-detail-panel-action-edit");
-    expect(link).toHaveAttribute("href", expect.stringContaining("/ontology/edit/"));
+    expect(link).toHaveAttribute("href", expect.stringContaining("/ontology/studio/"));
   });
 
   it("copies the handoff text when the 인계 복사 tile is clicked", () => {
@@ -579,7 +579,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
         codeLocations={[]}
         handoffText="node: domains/cli"
         documentHref={null}
-        builderEditHref="/ontology/edit/?node=domains%2Fcli"
+        studioEditHref="/ontology/studio/?node=domains%2Fcli"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -626,7 +626,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
         codeLocations={[]}
         handoffText="node: domains/small"
         documentHref={null}
-        builderEditHref="/ontology/edit/?node=domains%2Fsmall"
+        studioEditHref="/ontology/studio/?node=domains%2Fsmall"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -671,7 +671,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
         codeLocations={[]}
         handoffText="node: domains/flat"
         documentHref={null}
-        builderEditHref="/ontology/edit/?node=domains%2Fflat"
+        studioEditHref="/ontology/studio/?node=domains%2Fflat"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -779,7 +779,7 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
         codeLocations={[]}
         handoffText="node: domains/ai-agent-partner"
         documentHref={null}
-        builderEditHref="/ontology/edit/?node=domains%2Fai-agent-partner"
+        studioEditHref="/ontology/studio/?node=domains%2Fai-agent-partner"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}
@@ -822,7 +822,7 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
         codeLocations={[]}
         handoffText="node: domains/ai-agent-partner"
         documentHref={null}
-        builderEditHref="/ontology/edit/?node=domains%2Fai-agent-partner"
+        studioEditHref="/ontology/studio/?node=domains%2Fai-agent-partner"
         labels={labels}
         onSelectConnection={() => {}}
         onCopyHandoff={() => {}}

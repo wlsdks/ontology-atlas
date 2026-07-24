@@ -13,7 +13,7 @@ import {
  * perf/persistent-shell — AppNavRail이 `app/[locale]/layout.tsx`로 승격되며
  * (모든 라우트 이동에서 레일 DOM identity 유지, 콘텐츠 영역만 교체) 페이지별로
  * 달랐던 두 가지를 더는 prop 으로 직접 넘길 수 없다: (1) 지형도(HomePage)만
- * 꽂던 `settingsSlot` 게어, (2) 빌더(OntologyEditPage)의 fullscreen 레일 숨김.
+ * 꽂던 `settingsSlot` 게어, (2) 몰입 표면의 fullscreen 레일 숨김.
  * 둘 다 "리프 페이지 state → 레이아웃에 상주하는 레일" 역방향 데이터 흐름이라
  * Context 로 해결한다 — 페이지는 훅으로 값을 등록만 하고, 레일은 그 값을
  * 그대로 렌더한다. 레일 컴포넌트 자체는 마운트/언마운트되지 않는다(hidden 은
@@ -96,7 +96,7 @@ export function useNavRailSettingsSlot(slot: ReactNode | null): void {
 }
 
 /**
- * 페이지가 레일을 CSS 로만 숨길 때 쓴다(빌더 fullscreen). 레일은 언마운트되지
+ * 페이지가 레일을 CSS 로만 숨길 때 쓴다(몰입 표면 fullscreen). 레일은 언마운트되지
  * 않는다 — identity 유지가 이 승격의 핵심이라 unmount 는 회귀.
  */
 export function useNavRailHidden(hidden: boolean): void {

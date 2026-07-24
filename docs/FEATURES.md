@@ -3,8 +3,8 @@
 > Complete inventory of features users can **actually use right now**.
 > Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR #355~#366 —
 > `docs/prototypes/` 승인 시안 기반으로 `/`·`/topology`·`/project/[slug]`·
-> `/ontology/edit`·`/ontology/insights`·`/docs`·`/projects`·`/download`·project
-> 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census
+> `/ontology/studio`·`/ontology/insights`·`/docs`·`/projects`·`/download`·project
+> 폼을 재구성. 3-tab insights, 352px 데이터시트, 나침 무대 쓰기 표면, engraved census
 > 헤더가 모두 이 라운드에서 나옴 — 세부는 §2 각 라우트 절 참고). Earlier
 > (2026-05-31): real-time **adaptive** vault polling, `/docs` editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, `find_evidence` relevance ranking, `validate_vault` vault→code `pathDrift`, `infer_imports` edge reconciliation. Earlier still (2026-05-28): graph DB health gate, `/ontology` Browse / Write / Query loop, Builder proof handoff role, desktop route smoke.
 > Routes section UI detail remains a maintained product snapshot. When route
@@ -26,7 +26,7 @@ diff review -> better next agent task`.
 
 | Surface | Entry | Audience |
 |---|---|---|
-| **macOS app** (Ontology Atlas desktop distribution track) | signed DMG → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/edit`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
+| **macOS app** (Ontology Atlas desktop distribution track) | signed DMG → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/studio`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
 | **CLI** (R12 / R14 / R15+ · 52 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / infer-imports / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 32 tools (18 read · 13 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap and index projects (R16 `analyze_repo_structure` · R17 `infer_imports` · R+ `index_project`) · compile/query/validator-backed health as graph-engine memory access |
 | **Website** | Firebase static hosting / `/` + `/download` | `/` renders the topology map directly and lets you open your own local vault folder from the browser (File System Access API, no install); `/download` is the product intro + release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
@@ -37,7 +37,7 @@ input (humans + AI agents)     parse           store              output
         ▼                       ▼                ▼                ▼
   .md in vault  →          frontmatter   →  user disk      →  Browse (/, /ontology) tree+ego
   (frontmatter)                              (vault)           Topology (/, /topology) canvas-2D map/graph
-  + AI agent (MCP)                                            Builder (/ontology/edit) xyflow ERD
+  + AI agent (MCP)                                            Studio (/ontology/studio) write surface
                                                               App views (/ontology, /topology, /docs)
                                                               Insights (/ontology/insights) census
 ```
@@ -53,7 +53,7 @@ input (humans + AI agents)     parse           store              output
 | **local** | desktop app vault folder active | vault manifest is the source of truth |
 | **static** | no active vault | build-time dogfood manifest (this project's own ontology) |
 
-**Effect**: when a user opens a vault folder in the installed app, `/`, `/topology`, `/projects`, `/project/[slug]`, `/ontology`, `/ontology/insights`, and `/ontology/edit` all switch to vault data instantly. Mutations (create / edit / delete / connect) are mode-aware: local → write to vault `.md`; static → rejected with toast (read-only) and routed toward the macOS app download on hosted web.
+**Effect**: when a user opens a vault folder in the installed app, `/`, `/topology`, `/projects`, `/project/[slug]`, `/ontology`, `/ontology/insights`, and `/ontology/studio` all switch to vault data instantly. Mutations (create / edit / delete / connect) are mode-aware: local → write to vault `.md`; static → rejected with toast (read-only) and routed toward the macOS app download on hosted web.
 
 **Bootstrap from existing docs (2026-07-20, Slice 1)**: opening a folder that
 already has markdown but no `kind:` frontmatter used to strand the user on a
@@ -340,8 +340,8 @@ that floats over the map, reusing the same `buildOntologyTree` /
 `filterTreeByQuery` the old tree page used, so row search/select behavior is
 unchanged even though the surface is.
 
-`/ontology/edit` (Builder) and `/ontology/insights` (Query) are unaffected —
-only the Browse leg of the old Browse/Write/Query loop moved.
+`/ontology/studio` (Write, the 나침 무대) and `/ontology/insights` (Query) are
+unaffected — only the Browse leg of the old Browse/Write/Query loop moved.
 
 ---
 
@@ -388,83 +388,18 @@ Empty state (0 nodes): link to `/docs` (open vault).
 - **완성도**: 중앙 카드 4변 테두리(빈=파선·찬=실선) + 평문 캡션("4개 중 2개 채웠어요") + 좌상단 플로우 큐(미니 나침반). % 링·레벨·레어도 없음.
 - **디자인**: 앱 전역과 동일한 **절제 헌장** — 무채색 + 단일 인디고 + `--color-*` 토큰. amber 는 "빈(강하게 기대되는) 소켓" 신호로만. **glow/gradient/gem/particle/gold 금지**(구 게임 예외는 2026-07-24 폐기). 모션은 소켓 채움 200ms opacity/color 하나, `prefers-reduced-motion` 정지. 평문 질문("이 노드는 무엇의 한 종류인가요?")으로 은어 0.
 
-### `/ontology/edit` — Builder (xyflow ERD canvas)
-- **Drop-to-add**: 포트에서 빈 캔버스로 드래그를 놓으면 그 자리에 자식 kind 초안이 생기고 연결까지 이어진다(인스펙터 이름 입력 자동 포커스).
+### `/ontology/edit` — RETIRED (2026-07-24) → redirects to `/ontology/studio`
 
-#### Layout (3-pane, resident only on xl+ — rebuilt 2026-07-18)
-- Left palette (`OntologyKindPalette`, 240 px, collapsible to 44 px icon-only) · Center canvas (flex-1) · Right inspector (340 px, collapsible) — all three resident together only at `xl+`
-- Below `xl` (but `md+`): the inspector becomes a centered modal sheet (scrim, `xl:hidden`) instead of a resident pane; a compact "open inspector" chip takes its place inline
-- Mobile (<md): fallback card (eyebrow + title + body) with links to `/ontology` and `/topology` — layouts collide below `md`, so the builder doesn't try to render
+The xyflow ERD canvas builder was removed once the 나침 무대(Compass Stage,
+`/ontology/studio`) covered node assembly (CREATE mode), relation connecting
+(inline picker + real frontmatter writes), and live preview. `/ontology/edit`
+is now a thin client redirect to `/ontology/studio` that forwards any `?node=`
+deep-link (normalized to the canonical `<kind>:<slug>` id) into the studio's
+ENHANCE mode — old bookmarks and agent-handoff links land in the studio, not a
+404. The `@xyflow/react` dependency, the builder view, its keyboard shortcuts,
+and the builder-only i18n strings were all removed. See `/ontology/studio`
+above for the surviving write surface.
 
-#### Left palette (`OntologyKindPalette`)
-- 4 kind buttons: Project / Domain / Capability / Element
-- Click or `P` `D` `C` `E` → add ephemeral node
-- Collapsed state: 44 px, icon-only (localStorage)
-
-#### Center canvas (`ReactFlow` + dagre/force layout)
-- Saved node entry rail: flat full-width canvas status strip with degree-ranked persisted project/domain/capability/element nodes, visible slug labels on every focus node, explicit `pick focus node` contract, active focused-slug chip, and highlighted current node so details, relation writes, and proof handoffs stay on the same vault slug before drawing
-- Layout modes: Hierarchy (dagre LR, default) / Force (FA2)
-- Auto-layout button (Wand2 icon) ignores frontmatter `canvasPosition` (in-memory only)
-- Vault nodes: draggable, drag-stop patches `canvasPosition`
-- Ephemeral nodes: in-memory until save
-- MiniMap (bottom-right)
-- Connection preview: indigo dashed bezier
-- **Edge persistence**:
-  - vault↔vault drag → auto-persist to source frontmatter array (R4 verified)
-  - ephemeral endpoint drag → amber dashed `EphemeralEdge` with center "Save" chip (R4 cut I, R5 cut N validates title before persist to prevent `untitled.md` pollution)
-  - relation write confirm and post-save handoff keep the graph proof path visible: Topology Path, endpoint focus, `/ontology/insights/` query cockpit, copyable CLI/MCP preflight, bounded `all_paths` contract, the `14 checks` runtime gate, and post-change sync gate.
-- **Proof packet**: the header `Proof` cell shows the same `14 graph checks` runtime gate used by Source Vault and Insights, names `runtime replay` plus `relation_name_parity` and `pattern_walk` / `project_map` in the visible cell copy, then copies a graph DB-style runbook. The packet starts with the portable setup gate (`agent-brief --verify-fallbacks --json`), `agent-brief --graph-db-pack`, and the direct `pnpm dogfood:graph-db` runtime replay, so Builder verification begins from the same local graph DB pack contract as Insights. Overview mode then runs `workspace_brief`, `query_plan(match_nodes)`, `match_nodes`, planned generic `match_edges`, planned `depends_on` public relation scans, planned frontmatter-key `elements` scans, `facets`, `schema`, and `health`; CLI fallbacks include the matching `--plan` scans before raw `match-nodes` / `match-edges`. Selected-node mode prefers the canonical vault slug for the visible Insights link, card copy, and MCP/CLI proof commands, then adds `node_profile`, incoming `blast_radius`, planned incoming/outgoing edge scans, planned `depends_on` relation-name parity scans, `query_plan(all_paths)`, bounded `all_paths`, `relation_check` target/type placeholders, shell-safe CLI fallbacks, the scan-to-proof checklist, and the shared post-change sync gate. The cell also exposes a direct sync-gate copy action for users who already have enough query evidence.
-- **`BuilderWriteConfirmBar`** (2026-07-18, bottom of canvas, md+) — a single status/action bar with a status line (`relationPending` / `draftReady` / `draftNeedsName` / clean) and two actions: "dry-run" and "vault 에 쓰기" (routes to whichever existing handler applies — confirm pending relation / save ephemeral node / open detail)
-- **Relation trace-mark** (`relation-trace-mark.ts`) — the same solid/dashed/dotted convention used in the topology datasheet and `/project/[slug]`: containment keys (`domains`/`capabilities`/`elements`/`contains`) solid, `dependencies`/`relates` dashed, `describes` (evidence) dotted
-
-#### Right inspector
-- **Ephemeral node**: name input (auto-focus + select) · slug preview · coordinate display · Save button (`Enter`, disabled if title empty/placeholder)
-- **Vault node**: title rename (Enter to commit) · slug (read-only) · vault/dogfood badge · backlinks chips
-- Editable (when canEdit + live vault):
-  - Literal editors: domain (single-line, blur to commit), description (multiline)
-  - Array editors: capabilities / elements / dependencies / relates — chip list with `✕` to remove, input + Add to append, newly added items 1.2 s amber highlight
-- Delete button (vault node only) → `BlastRadiusConfirm` modal (backlinks shown)
-
-#### Header toolbar
-- Help tooltip (palette + drag-to-connect + Save chip onboarding)
-- Export buttons (only if nodes/edges exist): Markdown · JSON-LD · GraphML — the
-  JSON-LD/GraphML serializer is shared byte-for-byte with the CLI `export`
-  command (`src/shared/lib/interop-format` ↔ `cli/src/lib/interop-format`, drift
-  guarded by `tests/contract/interop-format.contract.test.ts`); node identity is
-  the stable URN `urn:ontology-atlas:<kind>:<slug>`. See the Interop note below.
-- Layout toggle: Hierarchy / Force radio
-- Auto-layout button
-- Fullscreen toggle (`F`)
-- Clear ephemeral button (two-step confirm, 3 s timeout)
-
-#### `BuilderOnboarding` (when canvas empty)
-- 3-step coach mark: Palette → Connect → Save chip
-- "Don't show again" toggle (localStorage)
-- Footer shortcuts hint (`P/D/C/E new node · Del delete · Esc cancel`)
-
-#### Empty-canvas placeholder text
-- P5d (N7) — the persistent centered hint (shown whenever the canvas has
-  zero nodes, independent of the dismissible `BuilderOnboarding` coach
-  mark) now names the `P`/`D`/`C`/`E` shortcuts alongside "pick a kind on
-  the left" — a persona found the shortcuts by accident (fat-fingering)
-  with no on-screen hint once onboarding was dismissed. Repeated presses of
-  the same shortcut already offset each new node 24px so they don't stack
-  exactly on top of each other (`useEphemeralNodes`, shared with
-  drop-to-add placement) — that part was already correct; only the missing
-  hint was the gap.
-
-#### Keyboard shortcuts
-| Key | Action |
-|---|---|
-| `P` / `N` | Add Project |
-| `D` | Add Domain |
-| `C` | Add Capability |
-| `E` | Add Element |
-| `F` | Toggle fullscreen |
-| `Del` / `Backspace` | Delete selected ephemeral (vault nodes protected) |
-| `⌘K` (no `Shift`) | Global search (P5d/N9 — was `⇧⌘K`; the builder has no competing project-only `SearchPalette`, so it now matches the app-wide `⌘K` convention) |
-| `Esc` | Clear selection or exit fullscreen |
-| `Enter` (inspector input) | Save ephemeral node / commit vault rename |
 
 ---
 
@@ -659,8 +594,9 @@ interchange format to stdout (status to stderr, so it pipes cleanly):
   (`nx.read_graphml`) or Neo4j APOC (`apoc.import.graphml`).
 - `json` — the raw compile artifact unchanged (nodes/edges/`graphHash`).
 
-The web ERD builder's JSON-LD/GraphML export uses the *same* serializer, kept
-byte-identical by a contract test. Node identity is the stable URN
+The CLI `export` command emits JSON-LD/GraphML from this *same* serializer, kept
+byte-identical by a contract test. (The web ERD builder that also consumed it was
+retired 2026-07-24 with the rest of `/ontology/edit`.) Node identity is the stable URN
 `urn:ontology-atlas:<kind>:<slug>` (both the JSON-LD `@id` and the GraphML node
 id). Contract: **an export is a snapshot**, the compiler `graphHash` is its
 **version**, a `rename_concept` mints a *new* URN and does not rewrite URNs
@@ -758,16 +694,16 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
 `OntologySubNav` are retired (deleted, not just unmounted).
 
 ### `AppNavRail` (desktop, `lg:` and up — left side, on every page)
-- 5 destinations: Map (`/`, `/topology`) · Docs (`/docs`) · Builder
-  (`/ontology/edit`) · Insights (`/ontology/insights`) · Projects (`/projects`
-  or `/project/*`)
+- 5 destinations: Map (`/`, `/topology`) · Docs (`/docs`) · Studio
+  (`/ontology/studio`, 나침 무대) · Insights (`/ontology/insights`) · Projects
+  (`/projects` or `/project/*`)
 - Bottom of rail: agent-activity status dot + an optional `settingsSlot`
   (only `HomePage` passes one — `TopologyV2SettingsGear`)
 - Active-item detection: shared `resolveActiveNavDestination`
   (`src/shared/lib/nav-destination.ts`) — the SAME function `BottomTabBar`
   uses, so desktop and mobile can never disagree on which destination is lit
 
-### `AppSettingsMenu` (per-page header — Projects list, Builder, Insights)
+### `AppSettingsMenu` (per-page header — Projects list, Docs, Insights)
 - The old `OperationsNav` gear-triggered settings modal, extracted into its
   own widget (`src/widgets/app-settings-menu`) because the rail is too narrow
   (`--app-nav-rail-width`) to host its popover. Same 5 tabs as before:
@@ -783,8 +719,9 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
   three pages that used to mount `OperationsNav` keep it
 
 ### `BottomTabBar` (mobile only, `lg:` hidden)
-- Same 5 destinations/labels/icons as `AppNavRail`: Map · Docs · Builder ·
-  Insights · Projects
+- Core destinations shared with `AppNavRail`: Map · Docs · Insights · Projects
+  (Studio is the immersive write surface — desktop-rail only; the retired ERD
+  builder tab was removed 2026-07-24)
 - Min height 56 px (safe-area)
 - Hidden on public marketing/download surfaces: `/` while no local vault is
   loaded, and `/download/`
@@ -817,7 +754,7 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
 | `⌘K` | Home / Topology / Ontology / Projects / Docs | Project / node search palette |
 | `⇧⌘K` | Home / Topology / Ontology | Global search (nodes + projects) |
 | `D` | Home / Topology | Toggle docs drawer |
-| `?` | Home / Topology / Builder | Toggle shortcut sheet |
+| `?` | Home / Topology | Toggle shortcut sheet |
 | `Esc` | All | Layered close (drawer / palette / local graph) |
 | `P` / `N` | Builder | Add Project node |
 | `D` | Builder | Add Domain node |
@@ -857,7 +794,7 @@ For full reasoning see `docs/CHANGELOG.md`. High-level:
 
 ## 7. Deferred (future rounds — wait-for-signal)
 
-- `/ontology/edit` builder reconsideration — **closed as a constrained workbench surface, not a general diagram editor**. The builder stays because it now has a narrow job: focus a saved slug, preview source-file frontmatter writes, run relation preflight before save, and hand off to Insights/Topology for graph proof after save. Users who prefer direct markdown can still edit frontmatter in `/docs` or CLI/MCP; the builder exists for visual relation repair and write review, not as the primary authoring path.
+- `/ontology/edit` builder reconsideration — **SUPERSEDED 2026-07-24: the ERD builder was retired.** It had been kept as a constrained workbench surface (focus a saved slug, preview source-file frontmatter writes, run relation preflight, hand off to Insights/Topology). Once the 나침 무대(`/ontology/studio`) covered assemble/connect/preview/write, the xyflow builder was removed and `/ontology/edit` became a redirect to the studio. Users who prefer direct markdown still edit frontmatter in `/docs` or CLI/MCP; the studio is the visual relation-repair / write-review surface.
 - ~~Phase 4 PM polish~~ — **dropped** (R11 #25, PRODUCT-DIRECTION v3). PM-primary 결정 reverted.
 - Search palette unification (`⌘K` + `⇧⌘K`) — R5 skip: not duplicates, would require ranking/section redesign.
 - LocalVaultPicker hoist out of dropdown — R5 skip: dead-end already closed by R4 J.

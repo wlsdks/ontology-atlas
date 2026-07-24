@@ -8,7 +8,7 @@ elements:
   - mcp/src/vault.mjs
   - src/features/docs-vault-local/model/use-local-vault.ts
   - src/features/project-data-source/model/use-project-mutations.ts
-  - src/views/ontology-edit/ui/OntologyEditPage.tsx
+  - src/views/ontology-studio/ui/OntologyStudioPage.tsx
 dependencies:
   - capabilities/mcp-server
 ---

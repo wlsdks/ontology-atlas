@@ -75,20 +75,19 @@ export function resolveOntologyBuilderNodeSlugFromGraphId(nodeId: string): strin
 }
 
 /**
- * 빌더 딥링크 발신자 (지도·인사이트·팝오버 → `/ontology/edit`) — URL 계약의
- * 공통 id 문법인 canonical `<kind>:<slug>` 를 실어 보낸다. 예전엔 복수-슬래시
- * vault 폴더형(`capabilities/foo`)을 실었지만, 그 표기는 화면마다 갈라진
- * 4파라미터·2문법의 한 축이었다(H5). 이제 발신은 canonical 한 문법으로 통일하고,
- * 수신부(`resolveBuilderQueryNodeSlug`)가 canonical 을 1급으로 받으며 복수-슬래시는
- * 레거시 별칭으로 남겨 기존 공유 링크를 깨지 않는다.
+ * 스튜디오 딥링크 발신자 (지도·인사이트·팝오버 → `/ontology/studio`) — URL
+ * 계약의 공통 id 문법인 canonical `<kind>:<slug>` 를 실어 보낸다. 은퇴한 ERD
+ * 빌더(`/ontology/edit`)를 대체한 나침 무대(Compass Stage)가 이 `?node=` 를
+ * 받아 해당 노드를 ENHANCE 모드로 열고 관계 소켓을 채우게 한다.
  *
  * `translateOntologyDeeplinkToTopologyParam` 로 정규화하는 이유: 입력이 이미
  * canonical(`capability:foo`)이면 그대로, 복수-슬래시(`capabilities/foo`)면
- * `capability:foo` 로 승격, bare/evidence-path 는 통과 — 지도(`?p=`)·온톨로지
- * 리다이렉트와 같은 정규화기를 재사용해 한 문법으로 수렴한다.
+ * `capability:foo` 로 승격, bare/evidence-path 는 통과 — 스튜디오의
+ * `n.id === requestedNode` 매칭이 두 문법 모두에서 성립하도록 한 문법으로
+ * 수렴한다(지도 `?p=`·온톨로지 리다이렉트와 같은 정규화기 재사용).
  */
-export function buildOntologyBuilderNodeHrefFromGraphId(nodeId: string): string {
-  return `/ontology/edit/?node=${encodeURIComponent(
+export function buildOntologyStudioNodeHrefFromGraphId(nodeId: string): string {
+  return `/ontology/studio/?node=${encodeURIComponent(
     translateOntologyDeeplinkToTopologyParam(nodeId),
   )}`;
 }
@@ -104,14 +103,6 @@ export function resolveOntologyBuilderNodeSlug(
   if (sourceSlug) return sourceSlug;
 
   return resolveOntologyBuilderNodeSlugFromGraphId(node.id);
-}
-
-export function buildOntologyBuilderNodeHref(
-  node: KnowledgeGraphNode,
-): string {
-  return `/ontology/edit/?node=${encodeURIComponent(
-    resolveOntologyBuilderNodeSlug(node),
-  )}`;
 }
 
 export function buildOntologyInsightsNodeHref(
