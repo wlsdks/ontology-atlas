@@ -132,10 +132,18 @@ marketing landing page at all — with no vault selected it renders `HomePage`
 sample, read-only, plus a **first-run starter module** integrated into the
 INDEX panel itself (no floating card/dock — `FirstRunStarterModule`,
 `src/features/first-run-starter/`): census meters (concepts/relations/
-domains, real data) + "open my markdown folder" (calls
-`useLocalVault().open()` directly, same File System Access API path as the
-desktop picker) + "create a new vault" + "just looking around" dismiss
-(sessionStorage — reappears next session, not on reload). A brand-pill
+domains, real data — ko 라벨 개념/관계/도메인) + "open my markdown folder" +
+"create a new vault" + "just looking around" dismiss (sessionStorage —
+reappears next session, not on reload). 2026-07-24 온보딩 라운드: 두 폴더
+CTA 는 OS 선택창 직행 대신 **사전 안내 시트**(`VaultOpenGuideSheet`,
+`src/features/docs-vault-local/`)를 먼저 연다 — 안심 3줄(아무 마크다운
+폴더나 OK / 파일은 로컬 유지 / 빈 폴더면 시작 문서 자동 생성) + 기존
+폴더 선택·빈 폴더로 새로 시작 분기. 카드에는 "2분 구경하기" 투어 CTA 와
+"쉬운 말로 보기 켜기" 1클릭 토글(톱니 속 '일반' 모드 승격)도 추가.
+빈 vault 를 연 직후에는 dead-end 문구 대신 **시작 체크리스트**
+(`VaultStartChecklist`, `src/widgets/topology-controls/`)가 선다 —
+프로젝트 → 도메인 → 관계 → AI 에이전트 연결(선택) 4단계, 실카운트에서
+완료 상태 파생, 웹에서 macOS 설치를 권하던 오안내 브랜치 제거. A brand-pill
 `SAMPLE` badge and a bottom-right map readout ("N project · N domains ·
 Spine view · zoom in to reveal elements") stay visible for the whole static
 session regardless of whether the starter module was dismissed. The former
@@ -204,7 +212,8 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Settings gear** (`TopologyV2SettingsGear`, 2026-07-18) → compact anchored popover (228px), no scrim: 언어 (`LocaleSwitch`) · 테마 (`ThemeToggle`) · INDEX 기본 상태 (expanded/collapsed default, writes the same localStorage key the INDEX panel reads). Self-closes; owns its own Escape so the global topology Esc ladder doesn't double-fire. Desktop-only (1512/1920 scope)
 
 #### Guided tour (`topology-tour-button`, 2026-07-23, `src/features/guided-tour`)
-- **Compass** tile, "?" 타일 바로 위 — 지도 화면 전담 의미 문해 투어. 수동 진입만(첫 실행 자동 팝업 없음), md+ 전용(`hidden md:flex`, 폰은 제외)
+- **Compass** tile, "?" 타일 바로 위 — 지도 화면 전담 의미 문해 투어. md+ 전용(`hidden md:flex`, 폰은 제외)
+- **첫 방문 자동 시작 (2026-07-24 온보딩 라운드)** — 샘플 모드 정착 + `guided-tour:v1` 미기록이면 900ms 뒤 1회 자동 시작. skip 이 `skipped` 를 기록해 재방문엔 다시 안 뜨고, 로컬 vault 사용자에게는 발화하지 않는다. 발화 순간 모달(`aria-modal`)이 열려 있거나 문서 포커스가 나가 있거나 투어가 이미 열려 있으면 조용히 건너뛴다(`canAutoStartGuidedTour` — stacked-transient 가드). 수동 진입은 컴퍼스 타일 + 첫 실행 카드의 "2분 구경하기" CTA 두 경로
 - 8 declarative steps, plain-language copy, no jargon even for "ontology" itself: 지도=문서(1) · 점의 크기/모양(2, 캔버스 노드 앵커) · 관계 범례(3) · 직접 눌러보기(4, 인터랙티브 — 실제 클릭을 기다렸다가 자동 진행) · 데이터시트(5, 4단계 선택 성공 시에만 노출) · INDEX(6) · 최근 변경 렌즈(7, 여기서 "구경 끝" 또는 "저는 개발자예요" 로 분기) · 에이전트 다리(8, dev 분기 — `FirstRunStarterModule` 하이라이트)
 - Each step's anchor auto-skips (and the `N/M` progress-dot denominator shrinks) when its target isn't resolvable — missing element, `display:none`, or off-viewport
 - Highlight technique: a `box-shadow: 0 0 0 9999px` scrim-and-cutout paint (not a glow ring — `blur 0`), CSS-transitioned (180ms) between DOM-anchored steps, and a per-frame `worldToScreen` canvas projection (same technique as the realm "전개" button) for the two canvas-node steps — both painted on the same z-70 overlay layer so every step dims the surrounding chrome identically

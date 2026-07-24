@@ -17,12 +17,12 @@ export interface DogfoodCensus {
 }
 
 export const DOGFOOD_CENSUS: DogfoodCensus = {
-  "concepts": 104,
-  "relations": 482,
+  "concepts": 105,
+  "relations": 483,
   "kinds": {
     "project": 1,
     "domain": 6,
-    "capability": 39,
+    "capability": 40,
     "element": 55,
     "document": 3
   },
