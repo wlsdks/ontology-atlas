@@ -1892,6 +1892,39 @@
        명도만 조정, 새 hue 없음). 검색 아이콘/셰브론 같은 장식 소비처는 살짝
        밝아질 뿐 리듬 훼손 최소. 토큰 변경이라 dev 서버(:3107) 재시작 필요. */
     --topology-v2-panel-text-quaternary: #82828a;
+
+    /* 노드 팝오버 재설계 (2026-07-24 소유자 승인 시안 — mockup-panel-detail):
+       균형 헤더(이름 hero + kind 배지 + 도메인 칩) · 평문 stats · 조용한 액션
+       스트립 · 방향 아이콘+카운트 칩+언더라인이 있는 관계 그룹 · 인디고 primary
+       푸터. 모든 신규 표면은 이 `--topology-v2-panel-*` 네임스페이스에서만
+       정의하고, 원색은 전역 무채/단일 인디고 사다리(`--color-indigo-a*`)를
+       참조해 새 hue 를 만들지 않는다(헌장 준수). */
+    /* 그룹 사이 리듬 — 그룹 내부 행 간격보다 훨씬 크게(space encodes grouping) */
+    --topology-v2-panel-zone-gap: 28px;
+    /* 풀블리드 존 디바이더 — 큰 구조적 분리(패널 divider 재사용) */
+    --topology-v2-panel-zone-divider: var(--topology-v2-panel-divider);
+    /* kind 배지 필 — 조용한 elevated 표면 + 얇은 보더 */
+    --topology-v2-panel-kind-badge-surface: rgba(255, 255, 255, 0.04);
+    --topology-v2-panel-kind-badge-border: rgba(255, 255, 255, 0.07);
+    /* 도메인 칩 — 단일 인디고 저채도 tint(네비게이션 어포던스) */
+    --topology-v2-panel-domain-surface: var(--color-indigo-a08);
+    --topology-v2-panel-domain-surface-hover: var(--color-indigo-a12);
+    --topology-v2-panel-domain-border: var(--color-indigo-a16);
+    --topology-v2-panel-domain-border-hover: var(--color-indigo-a24);
+    --topology-v2-panel-domain-text: var(--color-indigo-text-soft);
+    /* 관계 그룹 헤더 언더라인 + 방향 글리프 잉크 */
+    --topology-v2-panel-group-underline: var(--topology-v2-panel-divider);
+    --topology-v2-panel-group-dir: var(--topology-v2-panel-text-tertiary);
+    /* 관계 카운트 칩 — 인디고 저채도(같은 인디고 1계열) */
+    --topology-v2-panel-count-surface: var(--color-indigo-a08);
+    --topology-v2-panel-count-text: var(--color-indigo-text-soft);
+    /* 푸터 primary — 인디고 채움(패널 안 단 하나의 강조) */
+    --topology-v2-panel-primary-surface: var(--color-indigo-a12);
+    --topology-v2-panel-primary-surface-hover: var(--color-indigo-a16);
+    --topology-v2-panel-primary-border: var(--color-indigo-a34);
+    --topology-v2-panel-primary-border-hover: var(--color-indigo-a46);
+    --topology-v2-panel-primary-text: var(--color-indigo-text-strong);
+
     /* 연결 그룹 trace 미니라인 — 캔버스 엣지와 같은 계열(contains 실선/depends 점선) */
     /* A1 전체 상세 인디고 보더 — 기존 rgba(94,106,210,0.5) 리터럴 2곳의 토큰化
        (Guardian A1 follow-up P2). */

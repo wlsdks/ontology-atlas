@@ -2356,6 +2356,8 @@
       "metricEvidenceHelp": "이 노드의 원본 문서가 있는지 여부예요 — '문서 있음'이면 클릭해 원본으로 가요.",
       "metricEvidenceDeclared": "문서 있음",
       "metricEvidenceUndeclared": "문서 없음",
+      "statsConnected": "이어진 곳",
+      "statsEvidenceDocs": "근거 문서",
       "metricHelp": "모두 이 노드와 직접 연결된 것만 셉니다 — 여러 단계 건너뛴 합계가 아니에요.",
       "containsShowAll": "전체 보기",
       "containsShowSummary": "요약 보기",

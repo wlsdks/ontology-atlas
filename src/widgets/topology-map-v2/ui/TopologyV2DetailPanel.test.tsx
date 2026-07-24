@@ -27,8 +27,8 @@ const labels = {
   metricUsedBy: "used by",
   metricDependsOn: "leans on",
   metricEvidence: "evidence",
-  metricEvidenceDeclared: "declared",
-  metricEvidenceUndeclared: "undeclared",
+  statsConnected: "Connected",
+  statsEvidenceDocs: "Source docs",
   codeLocationsLabel: "code location",
   codeLocationsCopyLabel: "copy",
   codeLocationsCopiedLabel: "copied",
@@ -190,40 +190,31 @@ describe("TopologyV2DetailPanel — 근거(evidence) group promotion (RATIO-SYST
   });
 });
 
-// R+ 근거 misnomer fix — `evidenceIds` is always 0 or 1 entries (a
-// self-reference to the node's own source doc), so a raw numeric "근거 N"
-// misreads as a meaningful tally. The metric strip and the evidence group
-// header now show a binary declared/undeclared chip instead of the number.
-describe("TopologyV2DetailPanel — 근거 declared/undeclared chip (not a count)", () => {
-  it("shows the 'declared' chip text (not a number) in the metric strip when evidence rows exist", () => {
+// 시안 재설계 (2026-07-24) — the engraved per-type metric strip is replaced by
+// a plain aggregate stats line ("Connected N · Source docs M"); the per-type
+// counts now live once each in their own relation-group header count chips.
+describe("TopologyV2DetailPanel — 근거 evidence count (numeric, in stats + group)", () => {
+  it("shows the evidence total in the plain stats line (Source docs M)", () => {
     renderPanel(undefined, {
       rows: [{ id: "capabilities/mcp-server", title: "mcp-server", path: "capabilities/" }],
       total: 1,
     });
-    const metric = screen
-      .getByTestId("topology-v2-detail-panel")
-      .querySelector("[data-datasheet-metric='engraved']");
-    const seg = metric!.querySelector("[data-metric-segment='evidence']");
-    expect(seg!.textContent).toContain(labels.metricEvidenceDeclared);
-    expect(seg!.textContent).not.toContain("evidence 1");
+    const stats = screen.getByTestId("topology-v2-detail-panel-stats");
+    expect(stats.textContent).toContain(labels.statsEvidenceDocs);
+    expect(stats.textContent).toContain("1");
+    // the old engraved metric strip is gone
+    expect(
+      screen.getByTestId("topology-v2-detail-panel").querySelector("[data-datasheet-metric='engraved']"),
+    ).toBeNull();
   });
 
-  it("shows the 'declared' chip text in the evidence group header total, not the numeral", () => {
+  it("shows the evidence count as a number in the group header total (matches the mockup)", () => {
     renderPanel(undefined, {
       rows: [{ id: "capabilities/mcp-server", title: "mcp-server", path: "capabilities/" }],
       total: 1,
     });
     const total = document.querySelector("[data-datasheet-group-total='evidence']");
-    expect(total!.textContent).toBe(labels.metricEvidenceDeclared);
-  });
-
-  it("shows the 'undeclared' chip text when the node has no evidence rows", () => {
-    renderPanel(undefined, { rows: [], total: 0 });
-    const metric = screen
-      .getByTestId("topology-v2-detail-panel")
-      .querySelector("[data-datasheet-metric='engraved']");
-    const seg = metric!.querySelector("[data-metric-segment='evidence']");
-    expect(seg!.textContent).toContain(labels.metricEvidenceUndeclared);
+    expect(total!.textContent).toBe("1");
   });
 });
 
@@ -411,45 +402,36 @@ describe("TopologyV2DetailPanel — M-2 typed containment split", () => {
     expect(group).not.toBeNull();
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
     expect(screen.getByText("Agent Config")).toBeInTheDocument();
-    // the metric line leads with the "contains" typed segment
-    const metric = screen.getByTestId("topology-v2-detail-panel").querySelector("[data-datasheet-metric='engraved']");
-    expect(metric?.textContent).toContain("contains 2");
+    // the contains group header carries the typed label + its own count chip
+    expect(group!.textContent).toContain("contains");
+    expect(document.querySelector("[data-datasheet-group-total='contains']")!.textContent).toBe("2");
   });
 
-  it("omits the 담는 것 segment + group for a leaf node (contains 0)", () => {
+  it("omits the 담는 것 group for a leaf node (contains 0)", () => {
     renderPanel();
     expect(document.querySelector("[data-datasheet-group='contains']")).toBeNull();
-    const metric = screen.getByTestId("topology-v2-detail-panel").querySelector("[data-datasheet-metric='engraved']");
-    expect(metric?.textContent).not.toContain("contains");
+    expect(document.querySelector("[data-datasheet-group-total='contains']")).toBeNull();
   });
 });
 
-// 데이터시트 내부 정제 (2026-07-23) — 메트릭 스트립이 한 덩어리 문자열로
-// 읽히던 문제: 라벨은 tertiary, 값은 `--topology-v2-panel-metric-text` 잉크로
-// 분리하고, 그룹 헤더 카운트도 같은 값 잉크를 쓴다 — 스트립의 각 카운트가
-// 아래 자기 그룹으로 잉크 페어링만으로 시선 연결되는 계약(신규 인터랙션 0).
-describe("TopologyV2DetailPanel — metric strip label/value ink split", () => {
-  it("renders each metric segment structured (label + value spans) instead of one joined string", () => {
+// 시안 재설계 (2026-07-24) — plain aggregate stats line: "Connected <N> ·
+// Source docs <M>". N = contains + usedBy + dependsOn totals; per-type detail
+// lives in each relation group's own indigo count chip.
+describe("TopologyV2DetailPanel — plain stats line + group count chips", () => {
+  it("renders the aggregate stats line with the connected total (usedBy 1 + dependsOn 2)", () => {
     renderPanel();
-    const metric = screen
-      .getByTestId("topology-v2-detail-panel")
-      .querySelector("[data-datasheet-metric='engraved']");
-    expect(metric).not.toBeNull();
-    const seg = metric!.querySelector("[data-metric-segment='usedBy']");
-    expect(seg).not.toBeNull();
-    expect(seg!.textContent).toContain("used by 1");
-    // the value carries the engraved-number ink token, the label does not
-    const valueSpan = Array.from(seg!.querySelectorAll("span")).find(
-      (s) => s.textContent === "1",
-    );
-    expect(valueSpan?.className).toContain("--topology-v2-panel-metric-text");
+    const stats = screen.getByTestId("topology-v2-detail-panel-stats");
+    expect(stats.textContent).toContain(labels.statsConnected);
+    // contains 0 + usedBy 1 + dependsOn 2 = 3
+    expect(stats.textContent).toContain("3");
   });
 
-  it("pairs the group header count with the SAME engraved-number ink as the strip value", () => {
+  it("gives each relation group header an indigo count chip (not the old metric ink)", () => {
     renderPanel();
     const total = document.querySelector("[data-datasheet-group-total='usedBy']");
     expect(total).not.toBeNull();
-    expect(total!.className).toContain("--topology-v2-panel-metric-text");
+    expect(total!.className).toContain("--topology-v2-panel-count-text");
+    expect(total!.textContent).toBe("1");
   });
 });
 
@@ -524,11 +506,11 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     expect(link).toHaveAttribute("href", expect.stringContaining("/docs/domains/views"));
   });
 
-  it("disables the 문서 tile when the node has no sourceSlug/document href", () => {
+  it("hides the 문서 tile when the node has no sourceSlug/document href (no dead affordance)", () => {
     renderPanel(undefined, undefined, { documentHref: null });
-    const tile = screen.getByTestId("topology-v2-detail-panel-action-document");
-    expect(tile.tagName).not.toBe("A");
-    expect(tile).toHaveAttribute("aria-disabled", "true");
+    expect(
+      screen.queryByTestId("topology-v2-detail-panel-action-document"),
+    ).not.toBeInTheDocument();
   });
 
   it("links the 관계 편집 tile to the builder deep link", () => {
@@ -737,5 +719,138 @@ describe("TopologyV2DetailPanel — last-edit provenance", () => {
   it("renders the conflict badge only when the caller resolved a real mtime mismatch", () => {
     renderPanel(undefined, undefined, { mtimeConflict: true });
     expect(screen.getByTestId("mtime-conflict-badge")).toBeInTheDocument();
+  });
+});
+
+// 시안 재설계 (2026-07-24, 소유자 승인 mockup-panel-detail) — 균형 헤더(이름
+// hero + kind 배지 + 도메인 칩), 방향 아이콘 + 카운트 칩 + 언더라인 그룹 헤더,
+// 행 왼쪽 kind 글리프, 조용한 액션 스트립, 인디고 primary 푸터.
+describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
+  it("renders the node name as the header hero (title2/650, truncatable)", () => {
+    renderPanel();
+    const name = screen.getByRole("heading", { level: 2 });
+    expect(name).toHaveTextContent("Views");
+    expect(name.className).toContain("text-[20px]");
+    expect(name.className).toContain("truncate");
+  });
+
+  it("renders a quiet kind badge with the localized kind word next to the name", () => {
+    renderPanel();
+    const panel = screen.getByTestId("topology-v2-detail-panel");
+    // kindLabel appears in the header badge (fixture kind = 'domain' → 'Domain')
+    expect(panel.textContent).toContain(labels.kindLabel);
+    // the header badge carries the kind-badge surface token
+    const badge = Array.from(panel.querySelectorAll("span")).find((s) =>
+      s.className.includes("--topology-v2-panel-kind-badge-surface"),
+    );
+    expect(badge).toBeTruthy();
+    expect(badge!.textContent).toContain(labels.kindLabel);
+  });
+
+  it("no longer renders the floating power-state dot", () => {
+    renderPanel();
+    expect(
+      screen.getByTestId("topology-v2-detail-panel").querySelector("[data-power-state]"),
+    ).toBeNull();
+  });
+
+  it("renders each relation group header with an underline divider + directional glyph + count chip", () => {
+    render(
+      <TopologyV2DetailPanel
+        slug="domains/ai-agent-partner"
+        title="AI Agent Partner"
+        kind="domain"
+        domain={null}
+        powered={false}
+        metric={{ contains: 2, usedBy: 0, dependsOn: 0, evidence: 0 }}
+        groups={{
+          contains: {
+            rows: [
+              { id: "capability:mcp-server", title: "MCP Server", kind: "capability", relationType: "contains", direction: "outgoing" },
+              { id: "element:agent-config", title: "Agent Config", kind: "element", relationType: "contains", direction: "outgoing" },
+            ],
+            total: 2,
+          },
+          usedBy: { rows: [], total: 0 },
+          dependsOn: { rows: [], total: 0 },
+          belongsTo: { rows: [], total: 0 },
+        }}
+        evidence={{ rows: [], total: 0 }}
+        codeLocations={[]}
+        handoffText="node: domains/ai-agent-partner"
+        documentHref={null}
+        builderEditHref="/ontology/edit/?node=domains%2Fai-agent-partner"
+        labels={labels}
+        onSelectConnection={() => {}}
+        onCopyHandoff={() => {}}
+        onClose={() => {}}
+        onSetPathSource={() => {}}
+      />,
+    );
+    const group = document.querySelector("[data-datasheet-group='contains']");
+    expect(group).not.toBeNull();
+    // header underline token present
+    const header = group!.querySelector("[class*='--topology-v2-panel-group-underline']");
+    expect(header).not.toBeNull();
+    // count chip carries the indigo count token
+    const chip = group!.querySelector("[data-datasheet-group-total='contains']");
+    expect(chip!.className).toContain("--topology-v2-panel-count-text");
+    // each row carries the canvas kind glyph (data-kind-glyph), no right-aligned kind word
+    const glyphs = group!.querySelectorAll("[data-kind-glyph]");
+    expect(glyphs.length).toBe(2);
+  });
+
+  it("renders the relation zone with the enlarged between-group gap token (28px rhythm)", () => {
+    render(
+      <TopologyV2DetailPanel
+        slug="domains/ai-agent-partner"
+        title="AI Agent Partner"
+        kind="domain"
+        domain={null}
+        powered={false}
+        metric={{ contains: 1, usedBy: 0, dependsOn: 0, evidence: 0 }}
+        groups={{
+          contains: {
+            rows: [{ id: "capability:x", title: "X", kind: "capability", relationType: "contains", direction: "outgoing" }],
+            total: 1,
+          },
+          usedBy: { rows: [], total: 0 },
+          dependsOn: { rows: [], total: 0 },
+          belongsTo: { rows: [], total: 0 },
+        }}
+        evidence={{ rows: [], total: 0 }}
+        codeLocations={[]}
+        handoffText="node: domains/ai-agent-partner"
+        documentHref={null}
+        builderEditHref="/ontology/edit/?node=domains%2Fai-agent-partner"
+        labels={labels}
+        onSelectConnection={() => {}}
+        onCopyHandoff={() => {}}
+        onClose={() => {}}
+        onSetPathSource={() => {}}
+      />,
+    );
+    const zone = document
+      .querySelector("[data-datasheet-group='contains']")!
+      .closest("div[class*='--topology-v2-panel-zone-gap']");
+    expect(zone).not.toBeNull();
+  });
+
+  it("renders the footer '전체 상세' as the single indigo-filled primary", () => {
+    renderPanel(vi.fn());
+    const primary = screen.getByTestId("topology-v2-detail-panel-open-full-detail");
+    expect(primary.className).toContain("--topology-v2-panel-primary-surface");
+    expect(primary.className).toContain("--topology-v2-panel-primary-text");
+  });
+
+  it("renders the domain chip as an indigo-tinted navigable chip (surface token + chevron)", () => {
+    renderPanel(undefined, undefined, {
+      domain: { id: "domains/ai-agent-partner", title: "AI Agent Partner" },
+    });
+    const chip = screen.getByTestId("topology-v2-detail-panel-domain");
+    expect(chip.className).toContain("--topology-v2-panel-domain-surface");
+    expect(chip).toHaveAttribute("aria-label", expect.stringContaining("AI Agent Partner"));
+    // a chevron (svg) affordance is present
+    expect(chip.querySelector("svg")).not.toBeNull();
   });
 });

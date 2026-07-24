@@ -1,14 +1,12 @@
 "use client";
 
-import { type KeyboardEvent as ReactKeyboardEvent, type ReactElement, useCallback, useState } from "react";
-import { Check, Clipboard, Copy, FileText, GitBranch, Orbit, Route, X } from "lucide-react";
+import { type KeyboardEvent as ReactKeyboardEvent, type ReactElement, type ReactNode, useCallback, useState } from "react";
+import { Check, ChevronRight, Clipboard, Copy, FileText, GitBranch, Orbit, Route, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
-import { isContainmentRelation } from "@/shared/lib/ontology-tree";
 import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import {
-  buildV2MetricSegments,
   slugDisplaySegment,
   V2_CONTAINS_SUMMARY_THRESHOLD,
   type V2ConnectionGroupsView,
@@ -18,7 +16,7 @@ import {
   type V2MetricValues,
 } from "./topology-v2-datasheet";
 import { LastEditSubjectRow, MtimeConflictBadge } from "@/shared/ui";
-import { TopologyV2KindGlyph, TopologyV2TraceMark } from "@/shared/ui/topology-v2-kind-glyph";
+import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { Tooltip } from "@/shared/ui/tooltip";
 
 /**
@@ -27,10 +25,22 @@ import { Tooltip } from "@/shared/ui/tooltip";
  * `atlas:feature:topology-map-v2` flag is on — the flag-off path keeps the
  * shared `TopologyNodePopover` byte-identical, so the Sigma engine is
  * untouched (lead design decision). Re-presents the SAME selection facts the
- * shared popover derives, at instrument density: a kind-shape miniature +
- * power dot header, ONE engraved metric line (no triplication), connections
- * grouped by relation type with a canvas-matching trace mini-line (no badge
- * pile), and an agent-handoff copy row.
+ * shared popover derives.
+ *
+ * 시안 재설계 (2026-07-24, 소유자 승인 mockup `mockup-panel-detail.html`):
+ * a BALANCED identity header — node name hero (left) + quiet kind badge and
+ * close (right), then freshness (left) + a navigable indigo domain chip
+ * (right), so neither side is barren for long names. Below, a divided
+ * "ops" zone = a PLAIN aggregate stats line ("이어진 곳 N · 근거 문서 M",
+ * no heavy metric pill — the per-type counts live once each in their own
+ * group headers) + a QUIET ghost action strip (문서/관계 편집/인계 복사/경로/
+ * 영역 전개, hidden when a handler/href is absent). Then a relations zone with
+ * a wide 28px between-group rhythm (`--topology-v2-panel-zone-gap`), each group
+ * self-evident: a directional glyph + bold plain label + indigo count chip +
+ * underline, rows carrying the canvas kind glyph (no competing kind word).
+ * Footer stays sticky: slug (quiet) + ONE indigo-filled primary "전체 상세 →".
+ * The floating power dot was removed (unexplained mark); `powered` now only
+ * feeds the freshness fallback word.
  *
  * FSD: this widget owns its own prop shape — the view (`HomePage`) maps
  * `TopologyNodeFocusModel` into these props, so the import direction stays
@@ -44,8 +54,9 @@ import { Tooltip } from "@/shared/ui/tooltip";
  * when non-empty, i.e. container nodes) instead of folding into "기대는 곳" by
  * raw direction — the exact typed-fact collapse the UX round flagged. Group
  * headers reuse `labels.metricContains`/`metricUsedBy`/`metricDependsOn` (no
- * separate group-label strings) so the words match too; the per-row `TraceMark`
- * still marks containment vs depends within a row.
+ * separate group-label strings) so the words match too. (재설계 후 the relation
+ * TYPE is encoded by the group itself — 담는 것 vs 기대는 곳 — so each row's
+ * left mark is the neighbour's canvas kind glyph, not a TraceMark line.)
  *
  * RATIO-SYSTEM §4 scale-up (`docs/prototypes/chrome-datasheet-final.html`,
  * owner: "정보는 좋은데 너무 작고 그래") promotes a THIRD group — 근거
@@ -97,16 +108,14 @@ export interface TopologyV2DetailPanelLabels {
   metricDependsOn: string;
   metricEvidence: string;
   /**
-   * R+ 근거 misnomer fix — `evidenceIds` is always 0 or 1 entries (the
-   * node's own source-doc slug, a self-reference — see
-   * `entities/knowledge-graph/lib/code-locations.ts`'s doc comment), so
-   * showing it as a raw count ("근거 1") reads as a meaningful tally when
-   * it's really a binary "does this node have a source doc" fact. These
-   * replace the numeric value in both the metric strip's evidence segment
-   * and the evidence group's header count.
+   * 시안 재설계 (2026-07-24) — 평문 stats 한 줄 "이어진 곳 <N> · 근거 문서
+   * <M>". 각인 메트릭 스트립(타입별 분해)을 대체한다 — 타입별 카운트는 아래
+   * 각 관계 그룹 헤더의 카운트 칩으로 이미 한 번씩 나타나므로, 상단은 집계만
+   * 말한다(한 사실은 한 번). `statsConnected` = contains+usedBy+dependsOn 합,
+   * `statsEvidenceDocs` = 근거 문서(evidence) 수.
    */
-  metricEvidenceDeclared: string;
-  metricEvidenceUndeclared: string;
+  statsConnected: string;
+  statsEvidenceDocs: string;
   /**
    * H1 B2/A — typed-fact 그룹 라벨의 hover 한 줄 풀이(비개발자 언어) + 스코프
    * 명시("직접" 연결 기준). `title` 속성으로만 노출 — 아이콘/추가 표면 없음.
@@ -300,10 +309,116 @@ function withActionTip(tip: string | undefined, trigger: ReactElement): ReactEle
 }
 
 
+// 시안 재설계 (2026-07-24) — 액션은 무거운 보더 박스가 아니라 조용한 ghost
+// 아이콘+라벨(아이콘 위, 10px 라벨 아래). 표면/보더 없음 — hover/active 에만
+// row-hover/active 표면이 얹힌다. flex-1 로 스트립을 균등 분할한다.
 const ACTION_TILE_CLASS =
-  "flex flex-col items-center justify-start gap-1 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-1 pt-2 pb-1.5 text-center text-[10.5px] font-medium leading-[1.2] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]";
-const ACTION_TILE_DISABLED_CLASS =
-  "pointer-events-none opacity-40";
+  "flex flex-1 flex-col items-center justify-start gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] px-1 py-1.5 text-center text-[10px] font-medium leading-[1.1] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]";
+
+/**
+ * 관계 그룹 헤더의 방향 글리프 — 승인된 시안(mockup-panel-detail)의 SVG 를
+ * 그대로 옮긴다. 담는 것=아래로 소유(계층), 쓰는 곳=밖에서 들어옴(arrow-in),
+ * 기대는 곳=밖으로 나감(arrow-out), 근거=문서, 코드=`</>`. currentColor 로만
+ * 그려 잉크는 부모의 `--topology-v2-panel-group-dir` 텍스트 색을 상속한다.
+ */
+function GroupDirIcon({ variant }: { variant: "contains" | "usedBy" | "dependsOn" | "evidence" | "code" }) {
+  const common = {
+    width: 15,
+    height: 15,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.5,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+  switch (variant) {
+    case "contains":
+      return (
+        <svg {...common}>
+          <circle cx={12} cy={5} r={2.2} />
+          <path d="M12 7v4M12 11H6v3M12 11h6v3" />
+          <circle cx={6} cy={17} r={2.2} />
+          <circle cx={18} cy={17} r={2.2} />
+        </svg>
+      );
+    case "usedBy":
+      return (
+        <svg {...common}>
+          <circle cx={18} cy={12} r={2.4} />
+          <path d="M4 12h10M11 8.5l3.5 3.5-3.5 3.5" />
+        </svg>
+      );
+    case "dependsOn":
+      return (
+        <svg {...common}>
+          <circle cx={6} cy={12} r={2.4} />
+          <path d="M8.4 12h10M15 8.5l3.5 3.5-3.5 3.5" />
+        </svg>
+      );
+    case "evidence":
+      return (
+        <svg {...common}>
+          <path d="M7 3h7l4 4v14H7z" />
+          <path d="M14 3v4h4M10 13h5M10 16h5" />
+        </svg>
+      );
+    case "code":
+      return (
+        <svg {...common}>
+          <path d="M9 8l-4 4 4 4M15 8l4 4-4 4" />
+        </svg>
+      );
+  }
+}
+
+/**
+ * 관계 그룹 공통 셸 — 방향 글리프 + 평문 볼드 라벨 + 인디고 카운트 칩 +
+ * 언더라인 디바이더가 있는 헤더, 그 아래 행 목록. 모든 그룹(담는 것/쓰는 곳/
+ * 기대는 곳/근거/코드 위치)이 같은 골격으로 읽히게 한 곳에서 렌더한다.
+ */
+function RelationGroupShell({
+  groupKey,
+  dir,
+  label,
+  help,
+  count,
+  headerExtra,
+  children,
+}: {
+  groupKey: string;
+  dir: "contains" | "usedBy" | "dependsOn" | "evidence" | "code";
+  label: string;
+  help?: string;
+  count: number;
+  headerExtra?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col" data-datasheet-group={groupKey}>
+      <div className="mb-1.5 flex items-center gap-2 border-b border-[color:var(--topology-v2-panel-group-underline)] px-0.5 pb-2">
+        <span className="flex h-4 w-4 shrink-0 items-center justify-center text-[color:var(--topology-v2-panel-group-dir)]">
+          <GroupDirIcon variant={dir} />
+        </span>
+        <span
+          title={help}
+          className="text-[12px] font-semibold tracking-[0.005em] text-[color:var(--topology-v2-panel-text-secondary)]"
+        >
+          {label}
+        </span>
+        <span
+          data-datasheet-group-total={groupKey}
+          className="rounded-[5px] bg-[color:var(--topology-v2-panel-count-surface)] px-1.5 py-px font-mono text-[10px] leading-[1.5] text-[color:var(--topology-v2-panel-count-text)]"
+        >
+          {count}
+        </span>
+        {headerExtra}
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export function TopologyV2DetailPanel({
   slug,
@@ -334,19 +449,10 @@ export function TopologyV2DetailPanel({
   showHandoff = true,
   showSourcePath = true,
 }: TopologyV2DetailPanelProps) {
-  const metricSegments = buildV2MetricSegments(metric, {
-    contains: labels.metricContains,
-    usedBy: labels.metricUsedBy,
-    dependsOn: labels.metricDependsOn,
-    evidence: labels.metricEvidence,
-  });
-  // R+ 근거 misnomer fix — `metric.evidence`/`evidence.total` is a raw 0|1
-  // count (`evidenceIds` self-reference), never a meaningful tally. Both the
-  // metric strip and the group header show this binary chip text instead of
-  // the number itself (the underlying `V2MetricValues`/`V2MetricSegment`
-  // stay numeric — only the DISPLAY here is overridden).
-  const evidenceDeclaredLabel =
-    evidence.total > 0 ? labels.metricEvidenceDeclared : labels.metricEvidenceUndeclared;
+  // 시안 재설계 (2026-07-24) — 상단 stats 는 집계 한 줄. 타입별 분해는 아래
+  // 각 관계 그룹 헤더의 카운트 칩이 담당한다(한 사실 한 번). 연결 수는
+  // contains+usedBy+dependsOn 합(= 각 그룹 total 의 합, 구성상 동일 숫자).
+  const connectedTotal = metric.contains + metric.usedBy + metric.dependsOn;
   const hasConnections =
     groups.contains.total > 0 ||
     groups.usedBy.total > 0 ||
@@ -376,6 +482,7 @@ export function TopologyV2DetailPanel({
   // guarantee.
   const renderGroup = (
     group: "contains" | "usedBy" | "dependsOn",
+    dir: "contains" | "usedBy" | "dependsOn",
     label: string,
     help: string | undefined,
     view: V2ConnectionGroupView,
@@ -391,44 +498,35 @@ export function TopologyV2DetailPanel({
       view.summary.usable &&
       view.total > V2_CONTAINS_SUMMARY_THRESHOLD &&
       !showAllContains;
+    const summaryToggle =
+      group === "contains" &&
+      view.summary !== undefined &&
+      view.summary.usable &&
+      view.total > V2_CONTAINS_SUMMARY_THRESHOLD ? (
+        <button
+          type="button"
+          onClick={() => setShowAllContains((v) => !v)}
+          data-testid="topology-v2-contains-summary-toggle"
+          className="ml-auto shrink-0 text-[10.5px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)] active:text-[color:var(--topology-v2-panel-text-primary)]"
+        >
+          {showAllContains ? labels.containsShowSummary : labels.containsShowAll}
+        </button>
+      ) : undefined;
     return (
-      <div className="flex flex-col gap-1" data-datasheet-group={group}>
-        <div className="flex items-center gap-2">
-          <span
-            title={help}
-            className="text-[10px] text-[color:var(--topology-v2-panel-text-tertiary)]"
-          >
-            {label}
-          </span>
-          {/* 그룹 카운트는 메트릭 스트립의 값과 "같은 숫자" (M-2 계약) —
-              같은 잉크(`--topology-v2-panel-metric-text`)로 페어링해 스트립의
-              각 카운트가 아래 자기 그룹으로 시선 연결되게 한다. */}
-          <span
-            data-datasheet-group-total={group}
-            className="font-mono text-[10px] text-[color:var(--topology-v2-panel-metric-text)]"
-          >
-            {view.total}
-          </span>
-          {group === "contains" &&
-          view.summary !== undefined &&
-          view.summary.usable &&
-          view.total > V2_CONTAINS_SUMMARY_THRESHOLD ? (
-            <button
-              type="button"
-              onClick={() => setShowAllContains((v) => !v)}
-              data-testid="topology-v2-contains-summary-toggle"
-              className="ml-auto shrink-0 text-[10.5px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)] active:text-[color:var(--topology-v2-panel-text-primary)]"
-            >
-              {showAllContains ? labels.containsShowSummary : labels.containsShowAll}
-            </button>
-          ) : null}
-        </div>
+      <RelationGroupShell
+        groupKey={group}
+        dir={dir}
+        label={label}
+        help={help}
+        count={view.total}
+        headerExtra={summaryToggle}
+      >
         {useSummary && view.summary ? (
           <ul className="flex flex-col gap-0.5" data-testid="topology-v2-contains-summary">
             {view.summary.groups.map((g) => (
               <li
                 key={`contains-summary:${g.key}`}
-                className="flex items-center gap-2 px-1.5 py-1"
+                className="flex items-center gap-2 px-2 py-1"
               >
                 <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-[color:var(--topology-v2-panel-text-secondary)]">
                   {g.key}
@@ -439,7 +537,7 @@ export function TopologyV2DetailPanel({
               </li>
             ))}
             {view.summary.otherCount > 0 ? (
-              <li className="flex items-center gap-2 px-1.5 py-1">
+              <li className="flex items-center gap-2 px-2 py-1">
                 <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-[color:var(--topology-v2-panel-text-tertiary)]">
                   {labels.containsOtherGroup}
                 </span>
@@ -450,37 +548,39 @@ export function TopologyV2DetailPanel({
             ) : null}
           </ul>
         ) : (
-        <ul className="flex flex-col">
-          {view.rows.map((row: V2DatasheetConnection) => (
-            // Neighbor `id` is unique within a direction group post-dedup
-            // (`groupV2ConnectionsByDirection`) — the same neighbor can still
-            // appear once per group (mutual dependency, item 5 — no
-            // cross-group dedup), which is a different `group` prefix.
-            <li key={`${group}:${row.id}`}>
-              <button
-                type="button"
-                onClick={() => onSelectConnection(row.id)}
-                data-datasheet-connection={row.id}
-                className="flex min-h-[32px] w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-2 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
-              >
-                <TopologyV2TraceMark containment={isContainmentRelation(row.relationType)} />
-                <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--topology-v2-panel-text-secondary)]">
-                  {row.title}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+          <ul className="flex flex-col">
+            {view.rows.map((row: V2DatasheetConnection) => (
+              // Neighbor `id` is unique within a direction group post-dedup
+              // (`groupV2ConnectionsByDirection`) — the same neighbor can still
+              // appear once per group (mutual dependency, item 5 — no
+              // cross-group dedup), which is a different `group` prefix.
+              // 시안: 행의 왼쪽 마크는 캔버스와 같은 kind 글리프(무엇인지) —
+              // 관계 타입은 그룹 자체(담는 것/기대는 곳)가 이미 인코딩한다.
+              <li key={`${group}:${row.id}`}>
+                <button
+                  type="button"
+                  onClick={() => onSelectConnection(row.id)}
+                  data-datasheet-connection={row.id}
+                  className="flex min-h-[33px] w-full items-center gap-2.5 rounded-[var(--topology-v2-panel-row-radius)] px-2 py-1.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
+                >
+                  <TopologyV2KindGlyph kind={row.kind} />
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--topology-v2-panel-text-secondary)]">
+                    {row.title}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
         {overflow > 0 && !useSummary ? (
           <span
             data-datasheet-group-overflow={group}
-            className="pl-[28px] font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+            className="pl-[34px] pt-0.5 font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]"
           >
             +{overflow}
           </span>
         ) : null}
-      </div>
+      </RelationGroupShell>
     );
   };
 
@@ -501,21 +601,13 @@ export function TopologyV2DetailPanel({
   const renderEvidenceGroup = () => {
     if (evidence.total === 0) return null;
     return (
-      <div className="flex flex-col gap-1" data-datasheet-group="evidence">
-        <div className="flex items-center gap-2">
-          <span
-            title={labels.metricEvidenceHelp}
-            className="text-[10px] text-[color:var(--topology-v2-panel-text-tertiary)]"
-          >
-            {labels.metricEvidence}
-          </span>
-          <span
-            data-datasheet-group-total="evidence"
-            className="font-mono text-[10px] text-[color:var(--topology-v2-panel-metric-text)]"
-          >
-            {evidenceDeclaredLabel}
-          </span>
-        </div>
+      <RelationGroupShell
+        groupKey="evidence"
+        dir="evidence"
+        label={labels.metricEvidence}
+        help={labels.metricEvidenceHelp}
+        count={evidence.total}
+      >
         <ul className="flex flex-col">
           {evidence.rows.map((row) => (
             <li key={`evidence:${row.id}`}>
@@ -523,8 +615,13 @@ export function TopologyV2DetailPanel({
                 href={buildDocsVaultHref({ slug: row.id })}
                 data-datasheet-evidence={row.id}
                 title={row.id}
-                className="flex min-h-[32px] w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-2 transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
+                className="flex min-h-[33px] w-full items-center gap-2.5 rounded-[var(--topology-v2-panel-row-radius)] px-2 py-1.5 transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
               >
+                <FileText
+                  size={14}
+                  aria-hidden="true"
+                  className="shrink-0 text-[color:var(--topology-v2-panel-text-tertiary)]"
+                />
                 <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--topology-v2-panel-text-secondary)]">
                   {row.title}
                 </span>
@@ -532,7 +629,7 @@ export function TopologyV2DetailPanel({
             </li>
           ))}
         </ul>
-      </div>
+      </RelationGroupShell>
     );
   };
 
@@ -545,18 +642,12 @@ export function TopologyV2DetailPanel({
   const renderCodeLocationsGroup = () => {
     if (codeLocations.length === 0) return null;
     return (
-      <div className="flex flex-col gap-1" data-datasheet-group="code-locations">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-[color:var(--topology-v2-panel-text-tertiary)]">
-            {labels.codeLocationsLabel}
-          </span>
-          <span
-            data-datasheet-group-total="code-locations"
-            className="font-mono text-[10px] text-[color:var(--topology-v2-panel-metric-text)]"
-          >
-            {codeLocations.length}
-          </span>
-        </div>
+      <RelationGroupShell
+        groupKey="code-locations"
+        dir="code"
+        label={labels.codeLocationsLabel}
+        count={codeLocations.length}
+      >
         <ul className="flex flex-col">
           {codeLocations.map((path) => (
             <CodeLocationRow
@@ -567,7 +658,7 @@ export function TopologyV2DetailPanel({
             />
           ))}
         </ul>
-      </div>
+      </RelationGroupShell>
     );
   };
 
@@ -583,7 +674,9 @@ export function TopologyV2DetailPanel({
       // 연결이 많은 노드에서 콘텐츠가 뷰포트를 넘기면 "전체 상세 →" 푸터가
       // 화면 밖으로 밀려나 마우스로 닿지 않았다(1440×900, y=911 실측). 뷰포트
       // 기준 max-height + 내부 스크롤로 패널이 항상 뷰포트 안에 온전히 앵커
-      // 되도록 clamp한다.
+      // 되도록 clamp한다. 시안 재설계(2026-07-24) — root 는 패딩 없이 스크롤
+      // 컨테이너로만 두고, 각 존(정체/ops/관계)이 자기 패딩을 갖는다. 그래야
+      // 풀블리드 존 디바이더(`zdiv`)와 sticky 푸터가 음수 마진 없이 앵커된다.
       data-presence={presence}
       className={[
         // R4 모션 헌법 — 노드 팝오버 등장 문법(단일 `.topology-chrome-in`:
@@ -591,245 +684,207 @@ export function TopologyV2DetailPanel({
         // 되어 다른 노드 선택마다 재발화. rank2 — presence="exiting" 이면
         // 역궤적 `.topology-chrome-out`(≈120ms)으로 접힌 뒤 언마운트된다.
         presence === "exiting" ? "topology-chrome-out" : "topology-chrome-in",
-        "flex w-[var(--topology-v2-panel-width)] flex-col gap-[var(--topology-v2-panel-gap)]",
+        "flex w-[var(--topology-v2-panel-width)] flex-col",
         "max-h-[var(--topology-v2-panel-max-height)] overflow-y-auto",
         "rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)]",
-        "bg-[color:var(--topology-v2-panel-surface)] p-[var(--topology-v2-panel-pad)]",
+        "bg-[color:var(--topology-v2-panel-surface)]",
         "shadow-[var(--topology-v2-panel-shadow)]",
         className ?? "",
       ].join(" ")}
     >
-      {/* 정체 클러스터 (2026-07-23 내부 정제) — 헤더와 각인 메트릭은 둘 다
-          "이 노드가 무엇인가"를 말하므로 root 의 14px 섹션 리듬보다 조이는
-          8px 로 근접시킨다. gap 사다리: 14(섹션) / 8(정체 내부) / 4(액션·
-          그룹 헤더-행) — 균일 14px 단일 리듬이 그룹 경계를 못 만들던 문제의
-          근접성(proximity) 처방. */}
-      <div className="flex flex-col gap-2">
-      {/* Header — kind miniature + name + power dot + close */}
-      <div className="flex items-start gap-2">
-        <div className="mt-[1px]">
-          <TopologyV2KindGlyph kind={kind} />
+      {/* ZONE 1 · IDENTITY — 균형 헤더: 이름 hero(좌) + kind 배지·닫기(우),
+          아래 신선도(좌) + 도메인 칩(우). 양쪽이 질량을 가져 우측 공백이
+          생기지 않고 긴 이름에서도 성립한다. */}
+      <div className="px-[var(--topology-v2-panel-pad)] pt-[15px] pb-4">
+        <div className="mb-[11px] flex items-center gap-2.5">
+          <h2 className="min-w-0 flex-1 truncate text-[20px] font-[650] leading-[1.2] tracking-[-0.015em] text-[color:var(--topology-v2-panel-text-primary)]">
+            {title}
+          </h2>
+          {/* kind = 읽히는 텍스트 배지(글리프 + 단어), 우측 counterweight */}
+          <span className="flex shrink-0 items-center gap-1.5 rounded-[6px] border border-[color:var(--topology-v2-panel-kind-badge-border)] bg-[color:var(--topology-v2-panel-kind-badge-surface)] py-[3px] pl-[7px] pr-[9px] text-[11px] font-semibold tracking-[0.01em] text-[color:var(--topology-v2-panel-text-secondary)]">
+            <TopologyV2KindGlyph kind={kind} size={12} />
+            {labels.kindLabel}
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={labels.close}
+            data-testid="topology-v2-detail-panel-close"
+            className="-mr-1 shrink-0 rounded-[var(--topology-v2-panel-row-radius)] p-1 text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]"
+          >
+            <X size={15} />
+          </button>
         </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <div className="flex items-center gap-1.5">
+        {showSourcePath && sourceTitle && sourceTitle !== title ? (
+          <div
+            data-testid="topology-v2-detail-panel-source-path"
+            className="mb-2 font-mono text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)] break-all"
+          >
+            {sourceTitle}
+          </div>
+        ) : null}
+        {/* meta row: 신선도(좌) · 도메인 칩(우) */}
+        <div className="flex items-center justify-between gap-3">
+          {updatedAtLabel ? (
             <span
-              data-power-state={powered ? "on" : "off"}
-              aria-hidden="true"
-              className="inline-block h-[6px] w-[6px] shrink-0 rounded-full"
-              style={{
-                backgroundColor: powered
-                  ? "var(--topology-v2-panel-power-on)"
-                  : "var(--topology-v2-panel-power-off)",
-              }}
-            />
-            <h2 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-[-0.01em] text-[color:var(--topology-v2-panel-text-primary)]">
-              {title}
-            </h2>
-          </div>
-          {showSourcePath && sourceTitle && sourceTitle !== title ? (
-            <div
-              data-testid="topology-v2-detail-panel-source-path"
-              className="pl-[13.5px] font-mono text-[11px] text-[color:var(--color-text-quaternary)] break-all"
+              data-testid="topology-v2-datasheet-updated-at"
+              className="shrink-0 text-[12px] text-[color:var(--topology-v2-panel-text-quaternary)]"
             >
-              {sourceTitle}
-            </div>
-          ) : null}
-          <div className="flex items-center gap-1.5 pl-[13.5px]">
-            <span className="text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)]">
-              {labels.kindLabel}
+              {updatedAtLabel}
             </span>
-            <span className="text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
-            {/* Guardian 처방 (2026-07-23) — 파워닷 + "최근 갱신" 단어 +
-                updatedAtLabel 이 같은 신선도를 3중 반복하던 것을 정리:
-                updatedAtLabel 이 있으면 그 한 줄만 렌더하고(전원 단어 생략),
-                없을 때만 전원 단어로 폴백한다. */}
-            {updatedAtLabel ? (
-              <span
-                data-testid="topology-v2-datasheet-updated-at"
-                className="text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]"
-              >
-                {updatedAtLabel}
-              </span>
-            ) : (
-              <span className="text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">
-                {powered ? labels.poweredOn : labels.poweredOff}
-              </span>
-            )}
-          </div>
+          ) : (
+            <span className="shrink-0 text-[12px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+              {powered ? labels.poweredOn : labels.poweredOff}
+            </span>
+          )}
           {domain ? (
             <button
               type="button"
               onClick={() => onSelectConnection(domain.id)}
+              aria-label={`${labels.domainLabel} ${domain.title}`}
               data-testid="topology-v2-detail-panel-domain"
-              className="flex min-w-0 max-w-full items-center gap-1 self-start pl-[13.5px] text-left transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)] active:text-[color:var(--topology-v2-panel-text-primary)]"
+              className="flex min-w-0 items-center gap-1.5 rounded-[8px] border border-[color:var(--topology-v2-panel-domain-border)] bg-[color:var(--topology-v2-panel-domain-surface)] py-1.5 pl-2.5 pr-2 text-left transition-colors hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-domain-surface-hover)]"
             >
-              <span className="shrink-0 whitespace-nowrap text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+              <span className="shrink-0 text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)]">
                 {labels.domainLabel}
               </span>
-              <span className="shrink-0 text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
-              <span className="truncate text-[11px] font-medium text-[color:var(--topology-v2-panel-text-secondary)]">
+              <span className="truncate text-[12px] font-semibold text-[color:var(--topology-v2-panel-domain-text)]">
                 {domain.title}
               </span>
+              <ChevronRight
+                size={13}
+                aria-hidden="true"
+                className="shrink-0 text-[color:var(--topology-v2-panel-domain-text)] opacity-65"
+              />
             </button>
           ) : null}
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={labels.close}
-          data-testid="topology-v2-detail-panel-close"
-          className="-mr-1 -mt-1 shrink-0 rounded-[var(--topology-v2-panel-row-radius)] p-1 text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]"
+      </div>
+
+      <hr className="h-px border-0 bg-[color:var(--topology-v2-panel-zone-divider)]" />
+
+      {/* ZONE 2 · OPS — last-edit/충돌(실데이터 있을 때만) + 평문 stats +
+          조용한 액션 스트립. */}
+      <div className="flex flex-col gap-3 px-[var(--topology-v2-panel-pad)] pt-3 pb-2.5">
+        {/* rank7 (design-council B5) — last-edit provenance + expected_mtime
+            conflict, both gated on real data by the caller. */}
+        {lastEditSubject ? (
+          <LastEditSubjectRow
+            kind={lastEditSubject.kind}
+            prefixLabel={labels.editSubjectPrefix}
+            subjectLabel={lastEditSubject.kind === "agent" ? labels.editSubjectAgent : labels.editSubjectHuman}
+            ageLabel={lastEditSubject.ageLabel}
+          />
+        ) : null}
+        {mtimeConflict ? <MtimeConflictBadge message={labels.editConflictMessage} /> : null}
+
+        {/* 평문 stats — 집계 한 줄(무거운 pill 없음). 타입별 분해는 아래 각
+            관계 그룹 헤더 카운트가 담당(한 사실 한 번). 전체 라인 스코프
+            풀이는 `metricHelp` 툴팁으로 보존. */}
+        <div
+          data-testid="topology-v2-detail-panel-stats"
+          title={labels.metricHelp}
+          className="flex items-center gap-1.5 text-[13px] text-[color:var(--topology-v2-panel-text-tertiary)]"
         >
-          <X size={14} />
-        </button>
-      </div>
+          <span>{labels.statsConnected}</span>
+          <b className="font-[650] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
+            {connectedTotal}
+          </b>
+          <span className="text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
+          <span>{labels.statsEvidenceDocs}</span>
+          <b className="font-[650] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
+            {evidence.total}
+          </b>
+        </div>
 
-      {/* rank7 (design-council B5) — last-edit provenance + expected_mtime
-          conflict, both gated on real data by the caller. Subject row is
-          static (no motion, a plain fact); conflict badge only mounts on a
-          real mismatch and fades in via the shared `atlasStatusIn` entrance. */}
-      {lastEditSubject ? (
-        <LastEditSubjectRow
-          kind={lastEditSubject.kind}
-          prefixLabel={labels.editSubjectPrefix}
-          subjectLabel={lastEditSubject.kind === "agent" ? labels.editSubjectAgent : labels.editSubjectHuman}
-          ageLabel={lastEditSubject.ageLabel}
-        />
-      ) : null}
-      {mtimeConflict ? <MtimeConflictBadge message={labels.editConflictMessage} /> : null}
-
-      {/* One engraved metric line — no subtitle + boxes triplication.
-          라벨(tertiary)과 값(metric-text)의 잉크를 분리 — 숫자가 데이터,
-          단어는 눈금(Tufte data-ink). 값 잉크는 아래 그룹 헤더 카운트와 같아
-          스트립 카운트 → 해당 그룹의 시선 연결을 잉크 페어링만으로 만든다
-          (스크롤 등 신규 인터랙션 없음). */}
-      <div
-        data-datasheet-metric="engraved"
-        title={labels.metricHelp}
-        className="rounded-[var(--topology-v2-panel-row-radius)] bg-[color:var(--topology-v2-panel-metric-surface)] px-2 py-1.5"
-      >
-        <span className="font-mono text-[12.5px] tracking-[0.01em]">
-          {metricSegments.map((seg, i) => (
-            <span key={seg.key} data-metric-segment={seg.key}>
-              {i > 0 ? (
-                <span className="text-[color:var(--topology-v2-panel-text-quaternary)]">
-                  {" · "}
-                </span>
-              ) : null}
-              <span className="text-[color:var(--topology-v2-panel-text-tertiary)]">
-                {seg.label}
-              </span>{" "}
-              <span className="text-[color:var(--topology-v2-panel-metric-text)]">
-                {seg.key === "evidence" ? evidenceDeclaredLabel : seg.value}
-              </span>
-            </span>
-          ))}
-        </span>
-      </div>
-      </div>
-
-      {/* 액션 클러스터 — 4-up 타일과 "영역 전개"는 같은 재질(보더+표면 토큰)의
-          한 계기 묶음이므로 그리드 내부와 같은 4px 로 묶는다. */}
-      <div className="flex flex-col gap-1">
-      {/* W2-A action row — 4-up tile grid (문서/관계 편집/인계 복사/경로).
-          Same construction for every tile (border + hover surface tokens) so
-          the row reads as one instrument, not four unrelated buttons. */}
-      <div
-        role="group"
-        aria-label={labels.actionsGroupLabel}
-        data-testid="topology-v2-detail-panel-actions"
-        className="grid grid-cols-4 gap-1"
-      >
-        {documentHref ? (
-          withActionTip(
-            labels.actionDocumentTip,
+        {/* 액션 스트립 — 조용한 ghost 아이콘+라벨(무거운 박스 아님). 핸들러/
+            href 가 없는 항목은 렌더하지 않는다(죽은 어포던스 금지). */}
+        <div
+          role="group"
+          aria-label={labels.actionsGroupLabel}
+          data-testid="topology-v2-detail-panel-actions"
+          className="flex items-stretch gap-0.5"
+        >
+          {documentHref
+            ? withActionTip(
+                labels.actionDocumentTip,
+                <Link
+                  href={documentHref}
+                  data-testid="topology-v2-detail-panel-action-document"
+                  className={ACTION_TILE_CLASS}
+                >
+                  <FileText size={16} aria-hidden="true" />
+                  <span>{labels.actionDocument}</span>
+                </Link>,
+              )
+            : null}
+          {withActionTip(
+            labels.actionEditRelationsTip,
             <Link
-              href={documentHref}
-              data-testid="topology-v2-detail-panel-action-document"
+              href={builderEditHref}
+              data-testid="topology-v2-detail-panel-action-edit"
               className={ACTION_TILE_CLASS}
             >
-              <FileText size={15} aria-hidden="true" />
-              <span>{labels.actionDocument}</span>
+              <GitBranch size={16} aria-hidden="true" />
+              <span>{labels.actionEditRelations}</span>
             </Link>,
-          )
-        ) : (
-          <span
-            aria-disabled="true"
-            data-testid="topology-v2-detail-panel-action-document"
-            className={[ACTION_TILE_CLASS, ACTION_TILE_DISABLED_CLASS].join(" ")}
-          >
-            <FileText size={15} aria-hidden="true" />
-            <span>{labels.actionDocument}</span>
-          </span>
-        )}
-        {withActionTip(
-          labels.actionEditRelationsTip,
-          <Link
-            href={builderEditHref}
-            data-testid="topology-v2-detail-panel-action-edit"
-            className={ACTION_TILE_CLASS}
-          >
-            <GitBranch size={15} aria-hidden="true" />
-            <span>{labels.actionEditRelations}</span>
-          </Link>,
-        )}
-        {showHandoff
-          ? withActionTip(
-              labels.actionCopyHandoffTip,
-              <button
-                type="button"
-                onClick={() => onCopyHandoff(handoffText)}
-                aria-label={labels.handoff}
-                data-testid="topology-v2-detail-panel-action-handoff"
-                className={ACTION_TILE_CLASS}
-              >
-                <Copy size={15} aria-hidden="true" />
-                <span>{labels.actionCopyHandoff}</span>
-              </button>,
-            )
-          : null}
-        {withActionTip(
-          labels.actionPathTip,
-          <button
-            type="button"
-            onClick={onSetPathSource}
-            data-testid="topology-v2-detail-panel-action-path"
-            className={ACTION_TILE_CLASS}
-          >
-            <Route size={15} aria-hidden="true" />
-            <span>{labels.actionPath}</span>
-          </button>,
-        )}
-      </div>
-
-      {/* S4 "영역 전개" 2차 발견 경로 — 컨테이너 노드에서만(HomePage 가 주입).
-          궤도 버튼과 같은 액션 하나: 이 노드의 세계로 지도를 전환한다. */}
-      {onEnterRealm
-        ? withActionTip(
-            labels.actionRealmTip,
+          )}
+          {showHandoff
+            ? withActionTip(
+                labels.actionCopyHandoffTip,
+                <button
+                  type="button"
+                  onClick={() => onCopyHandoff(handoffText)}
+                  aria-label={labels.handoff}
+                  data-testid="topology-v2-detail-panel-action-handoff"
+                  className={ACTION_TILE_CLASS}
+                >
+                  <Copy size={16} aria-hidden="true" />
+                  <span>{labels.actionCopyHandoff}</span>
+                </button>,
+              )
+            : null}
+          {withActionTip(
+            labels.actionPathTip,
             <button
               type="button"
-              onClick={onEnterRealm}
-              data-testid="topology-v2-detail-panel-action-realm"
-              className="flex items-center justify-center gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-2 py-1.5 text-[12px] font-medium text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
+              onClick={onSetPathSource}
+              data-testid="topology-v2-detail-panel-action-path"
+              className={ACTION_TILE_CLASS}
             >
-              <Orbit size={15} aria-hidden="true" />
-              <span>{labels.actionRealm}</span>
+              <Route size={16} aria-hidden="true" />
+              <span>{labels.actionPath}</span>
             </button>,
-          )
-        : null}
+          )}
+          {/* S4 "영역 전개" 2차 발견 경로 — 컨테이너 노드에서만(HomePage 주입). */}
+          {onEnterRealm
+            ? withActionTip(
+                labels.actionRealmTip,
+                <button
+                  type="button"
+                  onClick={onEnterRealm}
+                  data-testid="topology-v2-detail-panel-action-realm"
+                  className={ACTION_TILE_CLASS}
+                >
+                  <Orbit size={16} aria-hidden="true" />
+                  <span>{labels.actionRealm}</span>
+                </button>,
+              )
+            : null}
+        </div>
       </div>
 
-      {/* Connections grouped by relation type — 그룹 사이는 root 와 같은
-          `--topology-v2-panel-gap`(14px): 각 typed-fact 그룹이 자체 섹션으로
-          읽히게 한다 (구 10px 는 행 자체 패딩(12px 시각 간격)과 구분이 안 돼
-          그룹 경계가 뭉개졌다). */}
-      <div className="flex flex-col gap-[var(--topology-v2-panel-gap)]">
+      <hr className="h-px border-0 bg-[color:var(--topology-v2-panel-zone-divider)]" />
+
+      {/* ZONE 3 · RELATIONS — 그룹 사이 리듬은 `--topology-v2-panel-zone-gap`
+          (28px)로 그룹 내부 행 간격보다 훨씬 크게 벌려 각 typed-fact 블록이
+          자체 섹션으로 읽히게 한다("space encodes grouping"). */}
+      <div className="flex flex-col gap-[var(--topology-v2-panel-zone-gap)] px-[var(--topology-v2-panel-pad)] py-[18px]">
         {hasConnections ? (
           <>
-            {renderGroup("contains", labels.metricContains, labels.metricContainsHelp, groups.contains)}
-            {renderGroup("usedBy", labels.metricUsedBy, labels.metricUsedByHelp, groups.usedBy)}
-            {renderGroup("dependsOn", labels.metricDependsOn, labels.metricDependsOnHelp, groups.dependsOn)}
+            {renderGroup("contains", "contains", labels.metricContains, labels.metricContainsHelp, groups.contains)}
+            {renderGroup("usedBy", "usedBy", labels.metricUsedBy, labels.metricUsedByHelp, groups.usedBy)}
+            {renderGroup("dependsOn", "dependsOn", labels.metricDependsOn, labels.metricDependsOnHelp, groups.dependsOn)}
             {renderEvidenceGroup()}
             {renderCodeLocationsGroup()}
           </>
@@ -840,19 +895,11 @@ export function TopologyV2DetailPanel({
         )}
       </div>
 
-      {/* Footer — slug + opt-in full-detail link. The agent-handoff button
-          moved up into the W2-A action row (`data-testid=".../action-handoff"`)
-          — this row no longer duplicates it.
-          검수 Pass A 소견 (2026-07-23) — 1440×900에서 콘텐츠가 max-height 를
-          넘기면 이 푸터가 스크롤 밖에 숨는데 스크롤 어포던스가 없어 "전체
-          상세"가 존재하지 않는 것처럼 읽혔다(P3-③ 의 후속). 패널 스크롤
-          컨테이너 안에서 sticky + 불투명 패널 surface 로 항상 보이게 한다 —
-          내용이 다 보일 땐 기존과 동일한 자리(sticky 비활성 상태와 동일).
-          Toss C2 (2026-07-24) — 전체 `slug`(`ontology/capabilities/mcp-server`)
-          가 상시 노출돼 비개발자에겐 불투명했다. 화면엔 마지막 세그먼트만
-          남기고(`slugDisplaySegment`), 전체 경로는 `title=` hover 로 접는다 —
-          "전체 상세 →" 링크가 목적지를 이미 담당하므로 정보 손실은 없다. */}
-      <div className="sticky -bottom-[var(--topology-v2-panel-pad)] -mx-[var(--topology-v2-panel-pad)] -mb-[var(--topology-v2-panel-pad)] flex items-center gap-2 rounded-b-[var(--topology-v2-panel-radius)] border-t border-[color:var(--topology-v2-panel-divider)] bg-[color:var(--topology-v2-panel-surface)] px-[var(--topology-v2-panel-pad)] py-2">
+      {/* Footer (sticky) — slug(좌, 마지막 세그먼트만·전체는 title= hover) +
+          인디고 채움 primary "전체 상세 →"(단 하나의 강조). root 가 무패딩
+          스크롤 컨테이너라 음수 마진 없이 sticky bottom-0 로 앵커된다 —
+          내용이 넘칠 때도 항상 뷰포트 안에 남는다(P3-③). */}
+      <div className="sticky bottom-0 flex items-center gap-2.5 rounded-b-[var(--topology-v2-panel-radius)] border-t border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-[var(--topology-v2-panel-pad)] py-[11px]">
         <span
           data-testid="topology-v2-detail-panel-slug"
           title={slug}
@@ -865,7 +912,7 @@ export function TopologyV2DetailPanel({
             type="button"
             onClick={onOpenFullDetail}
             data-testid="topology-v2-detail-panel-open-full-detail"
-            className="shrink-0 text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)] active:text-[color:var(--topology-v2-panel-text-primary)]"
+            className="shrink-0 rounded-[8px] border border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] px-3 py-[7px] text-[12px] font-semibold text-[color:var(--topology-v2-panel-primary-text)] transition-colors hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]"
           >
             {labels.openFullDetail}
           </button>

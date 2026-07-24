@@ -2356,6 +2356,8 @@
       "metricEvidenceHelp": "Whether this node has a source document it came from — when declared, click to open it.",
       "metricEvidenceDeclared": "declared",
       "metricEvidenceUndeclared": "undeclared",
+      "statsConnected": "Connected",
+      "statsEvidenceDocs": "Source docs",
       "metricHelp": "Every count here is a direct connection to this node — not a multi-hop total.",
       "containsShowAll": "view all",
       "containsShowSummary": "summary",
