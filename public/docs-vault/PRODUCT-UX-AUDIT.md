@@ -37,9 +37,9 @@
 | A6 | 지도 경로 탐색 | 프로젝트 → AI Agent Partner 1홉 경로·복사 패킷 설치 앱 검증 |
 | A7 | 지도 노드 → 공방 딥링크 | AI Agent Partner → 공방 ENHANCE 딥링크 설치 앱 검증 |
 | A8–A11 | 프로젝트 목록 → 생성 → 상세 → 인라인/전체 편집 | 대기 |
-| A12 | 문서함 선택 → 편집 → 저장/오류 → 재실행 | 대기 |
+| A12 | 문서함 선택 → 편집 → 저장/오류 → 재실행 | 로컬 vault·열린 탭·활성 문서 재실행 복원 완료, 편집 저장/오류 계속 감사 |
 | A13–A14 | `/ontology`, 구 `/ontology/edit` 리다이렉트 | 대기 |
-| A15–A16 | 공방 ENHANCE/CREATE → 쓰기 → 파일 재열기 | ENHANCE 관계 편집 카드 닫기 계약 검증, 임시 vault 쓰기/재열기 대기 |
+| A15–A16 | 공방 ENHANCE/CREATE → 쓰기 → 파일 재열기 | 임시 vault의 ENHANCE 관계 쓰기·디스크/문서함 재열기 검증, Studio CREATE 계속 감사 |
 | A17 | 인사이트 읽기·필터·지도 복귀 | 대기 |
 | A18 | 다운로드 안내 | 대기 |
 | A19 | 한국어/영어 동일 과업·동일 사실 | 대기 |
@@ -191,6 +191,38 @@
   화면에서 `MCP Server` 관계 편집 카드를 열었다. macOS 접근성 트리는
   아이콘 버튼을 `button 닫기`로 식별했고, `Escape` 뒤 카드가 사라지면서
   공방의 나머지 맥락은 유지됐다.
+- PO 판정: **Build and verify**
+
+### UX-010 — 재실행 시 열린 탭은 남지만 활성 문서가 README로 돌아감
+
+- 심각도: `S3`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 임시 local vault에서 새 capability 작성 → 문서함에서 선택 →
+  앱 종료·재실행
+- 관측: 로컬 vault와 열린 탭 두 개는 복원됐지만 마지막 활성 문서와 지도 문서
+  컬렉션 대신 README/가이드 컬렉션이 표시됐다. 첫 원인은 전역 route memory가
+  `/ko/docs/` pathname만 저장해 `?slug=`를 잃는 것이었다. query를 보존한 뒤에도
+  저장된 local source가 복원되기 전 임시 server manifest의 기본 선택 effect가
+  README를 본문 state에 기록하는 두 번째 레이스가 남았다.
+- 사용자 문제: 사용자는 앱을 다시 켜면 작업하던 문서로 돌아갈 것으로 기대하지만,
+  열린 탭만 남고 본문이 다른 문서가 되어 직전 맥락을 다시 찾아야 한다.
+- 현재 대안: 남아 있는 탭을 매번 다시 클릭한다.
+- 온톨로지·에이전트 가치: 사람이 판단하던 source record와 에이전트에게 넘길
+  근거의 초점을 재실행 경계에서도 동일하게 유지한다.
+- 최소화: 새 UI나 모션을 추가하지 않는다. 현재 URL·vault별 활성 slug를
+  저장하고, 저장 source와 local manifest가 준비되기 전 기본 README 선택만
+  지연한다.
+- 디자인 계약: 문서함 계층·탭 모양·전환 모션·반응형 배치는 불변이다.
+- 수정: 전역 route memory가 query/hash와 `app:urlchange`·뒤로가기·hash 변경을
+  함께 기억한다. 열린 탭 저장소에는 명시적으로 선택한 활성 slug를 vault별로
+  분리해 기록하고, 앱 시작 시 source preference와 local manifest hydration
+  뒤에만 기본 문서를 선택한다.
+- 회귀 증거: route memory·URL state·collection selection·open tabs 집중 테스트
+  50개, 전체 테스트 3,463개, TypeScript, production build 통과.
+- 설치 앱 증거: `/tmp/ontology-atlas-ux-audit.dPX5qi`의
+  `capabilities/감사-샘플-기능`을 선택한 뒤 두 번 연속 앱을 종료·재실행했다.
+  두 번 모두 정확한 query URL, `감사 샘플 기능` 본문, 지도 문서 컬렉션,
+  README와 감사 문서의 열린 탭 두 개가 함께 복원됐다.
 - PO 판정: **Build and verify**
 
 ## 현재 PO·디자인 판정

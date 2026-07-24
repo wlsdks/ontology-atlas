@@ -63,10 +63,13 @@ export function resolveDocsVaultSlugAlias(
 export function shouldDeferDocsVaultDefaultSelection({
   normalizedQuerySlug,
   selectedSlug,
+  selectionReady = true,
 }: {
   normalizedQuerySlug: string | null;
   selectedSlug: string | null;
+  selectionReady?: boolean;
 }): boolean {
+  if (!selectionReady) return true;
   return Boolean(normalizedQuerySlug && selectedSlug !== normalizedQuerySlug);
 }
 

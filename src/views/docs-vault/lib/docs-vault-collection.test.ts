@@ -99,6 +99,23 @@ describe('docs vault collections', () => {
     ).toBe(false);
   });
 
+  it('defers the first default until the persisted source and local manifest are ready', () => {
+    expect(
+      shouldDeferDocsVaultDefaultSelection({
+        normalizedQuerySlug: 'capabilities/audit-sample',
+        selectedSlug: 'capabilities/audit-sample',
+        selectionReady: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldDeferDocsVaultDefaultSelection({
+        normalizedQuerySlug: null,
+        selectedSlug: null,
+        selectionReady: false,
+      }),
+    ).toBe(true);
+  });
+
   it('shows the sample welcome note only on a fresh, undismissed sample landing', () => {
     expect(
       shouldShowSampleWelcomeNote({

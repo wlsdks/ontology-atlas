@@ -283,7 +283,7 @@ proof.
 | **No backend or account** | The static export ships no backend, auth, or cloud SDK; your disk is the only store |
 | **Deterministic graph** | Compile and graph-query contracts are covered across MCP, CLI, and shared tests |
 | **Static web demo** | Next.js exports to `out/`; the public sample needs no server persistence |
-| **Dogfooding** | This repository's own vault has **94 nodes**: capabilities 38, document 3, domains 6, elements 45, project 1, vault-readme 1. |
+| **Dogfooding** | This repository's own vault has **95 nodes**: capabilities 38, document 3, domains 6, elements 46, project 1, vault-readme 1. |
 
 The macOS app uses a Tauri bridge to your selected folder. The hosted web app
 can open a local folder through the File System Access API. The MCP server and

@@ -212,6 +212,11 @@ function DocsVaultContent() {
   // source 초기값을 'local' 로 박아 처음부터 picker UI 가 우측 sidebar 에
   // 보이게 (eval B4 finding — 이전엔 picker 가 4-단계 깊숙이 묻혀 있었음).
   const [source, setSource] = useState<Source>('server');
+  // SSR의 안전한 기본값(server)에서 시작한 뒤 저장된 source를 읽는 동안에는
+  // 기본 README를 선택하지 않는다. 로컬 딥링크로 앱을 다시 열 때 server
+  // manifest가 먼저 렌더되어 직전 문서를 덮어쓰는 레이스를 막는다.
+  const [sourcePreferenceHydrated, setSourcePreferenceHydrated] =
+    useState(false);
   const isDesktopRuntime = useSyncExternalStore(
     subscribeDesktopRuntime,
     readDesktopRuntime,
@@ -227,6 +232,7 @@ function DocsVaultContent() {
       window.queueMicrotask(() => {
         localIntentAutoOpenRef.current = true;
         setSource('local');
+        setSourcePreferenceHydrated(true);
         setAdvancedOpen(false);
       });
     }
@@ -348,9 +354,15 @@ function DocsVaultContent() {
     // 열지 않는다.
     if (typeof window !== 'undefined') {
       const intent = new URLSearchParams(window.location.search).get('intent');
-      if (shouldHonorLocalIntent(intent, isDesktopRuntime)) return;
+      if (shouldHonorLocalIntent(intent, isDesktopRuntime)) {
+        scheduleStateSync(() => setSourcePreferenceHydrated(true));
+        return;
+      }
     }
-    scheduleStateSync(() => setSource(readStoredSource()));
+    scheduleStateSync(() => {
+      setSource(readStoredSource());
+      setSourcePreferenceHydrated(true);
+    });
   }, [isDesktopRuntime]);
 
   // 문서함 점검 중앙 모달 — design-prescription.md ③-5: 로드마다 모달이 뜨면
@@ -889,18 +901,64 @@ function DocsVaultContent() {
   // 진실원은 여전히 selectedSlug/URL — 이 훅은 열린 목록만 소유한다.
   const {
     tabs: openDocTabs,
+    hydrated: openDocTabsHydrated,
+    restoredActiveSlug,
+    rememberActiveSlug,
     openTab: openDocTab,
     closeTab: closeDocTabInWorkingSet,
   } = useOpenDocTabs({ sourceKey: recentKey, validSlugs: vaultSlugs });
+  // URL 딥링크가 없으면 vault별 탭 저장소의 마지막 활성 문서를 한 번 복원한다.
+  // sourceKey 전환 직후 기본 README가 먼저 열려 lastActivatedAt을 덮어쓰지
+  // 않도록 hydration과 복원 대상을 모두 확인한 뒤 selectedSlug를 옮긴다.
+  const [restoredDocTabsSourceKey, setRestoredDocTabsSourceKey] =
+    useState<string | null>(null);
+  const pendingRestoredActiveSlug =
+    openDocTabsHydrated &&
+    restoredDocTabsSourceKey !== recentKey &&
+    !normalizedQuerySlug
+      ? restoredActiveSlug
+      : null;
+  useEffect(() => {
+    if (!openDocTabsHydrated || restoredDocTabsSourceKey === recentKey) {
+      return;
+    }
+    scheduleStateSync(() => {
+      setRestoredDocTabsSourceKey(recentKey);
+      if (!normalizedQuerySlug && restoredActiveSlug) {
+        setSelectedSlug(restoredActiveSlug);
+        replaceUrlState({ slug: restoredActiveSlug });
+      }
+    });
+  }, [
+    openDocTabsHydrated,
+    normalizedQuerySlug,
+    recentKey,
+    replaceUrlState,
+    restoredActiveSlug,
+    restoredDocTabsSourceKey,
+  ]);
   // 문서 선택 부수효과로 탭을 연다 — sidebar/검색/딥링크 등
   // selectedSlug 를 바꾸는 모든 경로가 여기 한 곳으로 수렴해 각 호출부를
   // 개별 계측할 필요가 없다(handleSelect 자체도 결국 selectedSlug 를 바꾼다).
   useEffect(() => {
+    if (!openDocTabsHydrated) return;
+    if (
+      pendingRestoredActiveSlug &&
+      selectedSlug !== pendingRestoredActiveSlug
+    ) {
+      return;
+    }
     if (!selectedSlug) return;
     const doc = docsBySlug.get(selectedSlug);
     if (!doc) return;
     openDocTab(selectedSlug, doc.title);
-  }, [selectedSlug, docsBySlug, openDocTab]);
+  }, [
+    selectedSlug,
+    docsBySlug,
+    openDocTab,
+    openDocTabsHydrated,
+    pendingRestoredActiveSlug,
+  ]);
   const selectedDoc = selectedSlug ? (docsBySlug.get(selectedSlug) ?? null) : null;
   // P5b — frontmatter 판정 액션의 domain select 후보. vault 의 `kind: domain`
   // 문서만 — capability/element 를 잘못된 domain 에 지정했을 때 raw YAML
@@ -1041,11 +1099,15 @@ function DocsVaultContent() {
   );
 
   useEffect(() => {
+    if (!openDocTabsHydrated || pendingRestoredActiveSlug) return;
     if (selectedSlug && docsBySlug.has(selectedSlug)) return;
     if (
       shouldDeferDocsVaultDefaultSelection({
         normalizedQuerySlug,
         selectedSlug,
+        selectionReady:
+          sourcePreferenceHydrated &&
+          (source === 'server' || localVaultStatus === 'loaded'),
       })
     ) {
       return;
@@ -1074,10 +1136,11 @@ function DocsVaultContent() {
       setSelectedSlug(nextSlug);
       if (!normalizedQuerySlug) replaceUrlState({ slug: nextSlug });
     });
-  }, [collectionDocSlugs, collectionDocs, collectionPinnedSlugs, collectionRecentSlugs, docsBySlug, normalizedQuerySlug, replaceUrlState, selectedSlug]);
+  }, [collectionDocSlugs, collectionDocs, collectionPinnedSlugs, collectionRecentSlugs, docsBySlug, localVaultStatus, normalizedQuerySlug, openDocTabsHydrated, pendingRestoredActiveSlug, replaceUrlState, selectedSlug, source, sourcePreferenceHydrated]);
 
   const handleSelect = useCallback(
     (slug: string, query?: string) => {
+      rememberActiveSlug(slug);
       setSelectedSlug(slug);
       setHighlightQuery(query);
       setRecentSlugs(pushRecentDoc(recentKey, slug));
@@ -1086,7 +1149,7 @@ function DocsVaultContent() {
       // 않는다(기본 선택 effect 는 이 함수를 거치지 않아 영향받지 않음).
       setSampleWelcomeDismissed(true);
     },
-    [recentKey, replaceUrlState, setRecentSlugs],
+    [recentKey, rememberActiveSlug, replaceUrlState, setRecentSlugs],
   );
 
   // 탭 × 닫기 — implementation-contract.md §3 "close 규칙": 활성 탭을 닫으면
