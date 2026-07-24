@@ -136,10 +136,18 @@ export function TopologyIndexTreeRow({
         tabIndex={node.id === activeRowId ? 0 : -1}
         data-index-row={node.id}
         data-testid="topology-index-row"
-        onClick={() => onSelect(node.id)}
+        // 소유자 실사용 지적 (2026-07-24) — 셰브론 아이콘을 정확히 눌러야만
+        // 펼쳐지고 조금만 빗나가면 우측 상세만 열려 "너무 민감"했다. 자식이
+        // 있는 행은 클릭 한 번이 **선택 + 펼침**을 함께 한다(접기는 넓어진
+        // 셰브론 히트 영역이 담당) — 클릭이 어느 쪽으로 튈지 고민할 일이
+        // 없어진다.
+        onClick={() => {
+          onSelect(node.id);
+          if (hasChildren && !open) onToggleOpen(node.id);
+        }}
         onKeyDown={handleRowKeyDown}
         style={{ marginLeft: depth * 16 }}
-        className={`grid min-h-[34px] grid-cols-[14px_15px_1fr_auto] items-center gap-x-2 rounded-md border px-2 py-1 text-body transition-colors ${
+        className={`grid min-h-[34px] grid-cols-[22px_15px_1fr_auto] items-center gap-x-2 rounded-md border py-1 pl-1 pr-2 text-body transition-colors ${
           selected
             ? "border-[color:var(--color-indigo-a55)] bg-[color:var(--topology-v2-panel-metric-surface)] text-[color:var(--topology-v2-panel-text-primary)]"
             : "border-transparent text-[color:var(--topology-v2-panel-text-secondary)] hover:border-[color:var(--topology-v2-panel-action-border)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
@@ -159,7 +167,8 @@ export function TopologyIndexTreeRow({
           // 없으므로 presentational 로 감추는 것이 맞다.
           aria-hidden="true"
           tabIndex={-1}
-          className={`flex items-center justify-center text-[color:var(--topology-v2-panel-text-quaternary)] transition-transform ${
+          // 히트 영역은 행 높이 전체 × 22px 컬럼 — 아이콘(11px)은 그대로.
+          className={`-my-1 flex h-[34px] w-full items-center justify-center text-[color:var(--topology-v2-panel-text-quaternary)] transition-transform ${
             hasChildren ? "" : "invisible"
           } ${open ? "rotate-90" : ""}`}
         >

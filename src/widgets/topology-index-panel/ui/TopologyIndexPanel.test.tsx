@@ -788,3 +788,52 @@ describe("TopologyIndexPanel", () => {
     });
   });
 });
+
+// 소유자 실사용 지적 (2026-07-24) — 셰브론을 정확히 눌러야만 펼쳐지던
+// 민감함 해소: 자식 있는 행은 클릭 한 번이 선택 + 펼침을 함께 한다.
+describe("TopologyIndexPanel — 행 클릭 펼침", () => {
+  it("자식이 있는 행을 클릭하면 선택과 동시에 자식이 열린다", () => {
+    const onSelect = vi.fn();
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={onSelect}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+
+    const root = screen.getAllByTestId("topology-index-row")[0];
+    fireEvent.click(root);
+
+    expect(onSelect).toHaveBeenCalled();
+    expect(root).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("이미 펼쳐진 행을 다시 클릭해도 접히지 않는다(접기는 셰브론 담당)", () => {
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+    const root = screen.getAllByTestId("topology-index-row")[0];
+    fireEvent.click(root);
+    expect(root).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(root);
+    expect(root).toHaveAttribute("aria-expanded", "true");
+  });
+});

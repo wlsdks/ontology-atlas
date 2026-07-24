@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T10:05:35.992Z",
+  "generatedAt": "2026-07-24T10:21:43.583Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3167,6 +3167,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-24 — INDEX 트리 행 클릭 민감도 해소",
+          "slug": "2026-07-24-index-트리-행-클릭-민감도-해소"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-24 — 스타터 vault 어권 라벨 + 빈 폴더 스캐폴드 버튼",
           "slug": "2026-07-24-스타터-vault-어권-라벨-빈-폴더-스캐폴드-버튼"
         },
@@ -4781,9 +4786,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 온보딩 잔여 갭 2건. ① 스타터 노드가 화면 언어로 읽힌다 — 새 vault 5개 시작 문서(README/project/domain/capability/",
-      "wordCount": 37217,
-      "updatedAt": "2026-07-24T19:04:43+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 실사용 지적(\"셰브론 아이콘을 딱 눌러야만 열리고 조금만 빗나가면 우측 상세로 이동 — 너무 민감\"). 세 가지를 함께 고쳤다. ① 펼침 히트 영역",
+      "wordCount": 37312,
+      "updatedAt": "2026-07-24T10:21:43.068Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
