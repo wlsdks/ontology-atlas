@@ -180,6 +180,12 @@ export function OntologyStudioPage() {
       exitConfirmDiscard: t("exitConfirmDiscard"),
       exitConfirmKeep: t("exitConfirmKeep"),
       commitEmptyHint: t("commitEmptyHint"),
+      // Slice 4 — 나침반 산책 (compass walk)
+      walkTo: t("walkTo"),
+      walkBackAria: (name) => t("walkBackAria", { name }),
+      walkConfirmTitle: (count) => t("walkConfirmTitle", { count }),
+      walkConfirmSave: t("walkConfirmSave"),
+      walkConfirmDiscard: t("walkConfirmDiscard"),
     }),
     [t, isCreate, flowHint],
   );
@@ -271,7 +277,13 @@ export function OntologyStudioPage() {
   // "reset state during render when a prop changes" pattern (no effect).
   const [changes, setChanges] = useState<StudioChange[]>([]);
   const [prevFocalId, setPrevFocalId] = useState(enhanceFocalId);
+  // Slice 4 — 나침반 산책. Remember the node we just walked FROM so the new stage
+  // can (a) offer a quiet "← <이전 노드>" back affordance and (b) briefly highlight
+  // the came-from satellite for arrival orientation. Captured here (not from
+  // browser history) so the label always matches where the highlight lands.
+  const [cameFrom, setCameFrom] = useState<string | null>(null);
   if (prevFocalId !== enhanceFocalId) {
+    setCameFrom(prevFocalId);
     setPrevFocalId(enhanceFocalId);
     setChanges([]);
   }
@@ -527,10 +539,12 @@ export function OntologyStudioPage() {
       ? summarizeStudioChanges({ mode: "enhance", focalName: focalItem.node.label, changes }, summaryVocab)
       : null;
 
-  const commit = async () => {
+  // Returns true when the staged changes were persisted (writable) / copied
+  // (read-only) — the walk guard's "저장하고 이동" only navigates on a real success.
+  const commit = async (): Promise<boolean> => {
     if (changes.length === 0) {
       toast.show(t("nothingToCommit"), "info");
-      return;
+      return false;
     }
     if (writable) {
       try {
@@ -543,10 +557,11 @@ export function OntologyStudioPage() {
         await localVault.updateFrontmatter(sourceSlug, fmUpdates);
         toast.show(t("commitSaved", { count: changes.length }), "success");
         setChanges([]);
+        return true;
       } catch (err) {
         toast.show(t("commitFailed", { message: err instanceof Error ? err.message : String(err) }), "error");
+        return false;
       }
-      return;
     }
     // read-only → one copyable MCP packet. The `broader` array is idempotent, so
     // any is_a-touching line writes the SAME final array (dupes are harmless).
@@ -566,10 +581,24 @@ export function OntologyStudioPage() {
       await navigator.clipboard.writeText(lines.join("\n"));
       toast.show(t("commitCopied"), "success");
       setChanges([]);
+      return true;
     } catch {
       toast.show(t("fillCopyFailed"), "info");
+      return false;
     }
   };
+
+  // Save-then-walk for the pending-changes guard's "저장하고 이동" option. Only
+  // re-centers when the commit actually succeeded (else the changes stay staged).
+  const commitThenOpen = async (id: string) => {
+    if (await commit()) openNode(id);
+  };
+
+  // "← <이전 노드>" back affordance + arrival highlight need the came-from node's
+  // display label. Both are dropped when the came-from node is the current focal
+  // (self) or no longer in the graph.
+  const cameFromNode = cameFrom && cameFrom !== focalItem.node.id ? nodes.find((n) => n.id === cameFrom) : undefined;
+  const backTo = cameFromNode ? { id: cameFromNode.id, label: cameFromNode.display ?? cameFromNode.title } : null;
 
   return (
     <StudioCompass
@@ -612,6 +641,9 @@ export function OntologyStudioPage() {
       onCreateNew={enterCreate}
       searchNodes={candidates}
       onOpenNode={openNode}
+      onSaveAndOpenNode={commitThenOpen}
+      arrivedFrom={backTo?.id ?? null}
+      backTo={backTo}
       moreRelationsSoon={t("moreRelationsSoon")}
     />
   );

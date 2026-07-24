@@ -58,6 +58,11 @@ const labels: StudioCompassLabels = {
   exitConfirmDiscard: "discard",
   exitConfirmKeep: "keep editing",
   commitEmptyHint: "fills collect here",
+  walkTo: "walk to this node",
+  walkBackAria: (name) => `back to ${name}`,
+  walkConfirmTitle: (count) => `${count} unsaved — discard and go?`,
+  walkConfirmSave: "save and go",
+  walkConfirmDiscard: "discard and go",
 };
 
 const REL_LABEL: Record<StudioRelation, string> = {
@@ -473,6 +478,116 @@ describe("StudioCompass — 발견 표면 (browse + 추천)", () => {
     // clearing the query returns to discovery.
     fireEvent.change(input, { target: { value: "" } });
     expect(screen.getByTestId("studio-picker-suggest")).toBeInTheDocument();
+  });
+});
+
+describe("StudioCompass — 나침반 산책 (compass walk)", () => {
+  const NEIGHBOR = { id: "el:x", title: "Parser", kind: "element", ref: "elements/parser" };
+
+  function renderWalk(over: Partial<Parameters<typeof StudioCompass>[0]> = {}) {
+    const onOpenNode = vi.fn();
+    const onSaveAndOpenNode = vi.fn();
+    const bearings: CompassBearingView[] = [
+      bearing("isA", "up", { recommended: true }),
+      bearing("dependsOn", "right", { filled: true, neighbors: [NEIGHBOR] }),
+      bearing("contains", "down", { expected: true }),
+      bearing("relates", "left"),
+    ];
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "MCP Server", definition: "def" }}
+        bearings={bearings}
+        filledBearings={1}
+        writable
+        candidatesFor={() => []}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        onOpenNode={onOpenNode}
+        onSaveAndOpenNode={onSaveAndOpenNode}
+        {...over}
+      />,
+    );
+    return { onOpenNode, onSaveAndOpenNode };
+  }
+
+  it("walks straight to a node when there are no pending changes", () => {
+    const { onOpenNode } = renderWalk();
+    expect(screen.queryByTestId("studio-walk-confirm")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("studio-satellite-right"));
+    expect(onOpenNode).toHaveBeenCalledWith("el:x");
+    expect(screen.queryByTestId("studio-walk-confirm")).not.toBeInTheDocument();
+  });
+
+  it("guards a walk when changes are pending — confirm intercepts the click", () => {
+    const { onOpenNode } = renderWalk({ hasPendingChanges: true });
+    fireEvent.click(screen.getByTestId("studio-satellite-right"));
+    // navigation is deferred behind the confirm, not fired.
+    expect(onOpenNode).not.toHaveBeenCalled();
+    expect(screen.getByTestId("studio-walk-confirm")).toBeInTheDocument();
+  });
+
+  it("'버리고 이동' discards and navigates; '계속 편집' stays put", () => {
+    const { onOpenNode } = renderWalk({ hasPendingChanges: true });
+    fireEvent.click(screen.getByTestId("studio-satellite-right"));
+    fireEvent.click(screen.getByTestId("studio-walk-confirm-keep"));
+    expect(onOpenNode).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("studio-walk-confirm")).not.toBeInTheDocument();
+
+    // re-open and discard this time.
+    fireEvent.click(screen.getByTestId("studio-satellite-right"));
+    fireEvent.click(screen.getByTestId("studio-walk-confirm-discard"));
+    expect(onOpenNode).toHaveBeenCalledWith("el:x");
+    expect(screen.queryByTestId("studio-walk-confirm")).not.toBeInTheDocument();
+  });
+
+  it("'저장하고 이동' commits-then-walks via onSaveAndOpenNode (not a raw open)", () => {
+    const { onOpenNode, onSaveAndOpenNode } = renderWalk({ hasPendingChanges: true });
+    fireEvent.click(screen.getByTestId("studio-satellite-right"));
+    fireEvent.click(screen.getByTestId("studio-walk-confirm-save"));
+    expect(onSaveAndOpenNode).toHaveBeenCalledWith("el:x");
+    expect(onOpenNode).not.toHaveBeenCalled();
+  });
+
+  it("omits the 저장하고 이동 option when no save-and-walk handler is wired", () => {
+    renderWalk({ hasPendingChanges: true, onSaveAndOpenNode: undefined });
+    fireEvent.click(screen.getByTestId("studio-satellite-right"));
+    expect(screen.getByTestId("studio-walk-confirm")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-walk-confirm-save")).not.toBeInTheDocument();
+    // no dead option — only 버리고 이동 / 계속 편집 remain.
+    expect(screen.getByTestId("studio-walk-confirm-discard")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-walk-confirm-keep")).toBeInTheDocument();
+  });
+
+  it("renders the quiet '← <이전 노드>' back affordance and walks back", () => {
+    const { onOpenNode } = renderWalk({ backTo: { id: "cap:prev", label: "Payments" } });
+    const back = screen.getByTestId("studio-walk-back");
+    expect(back).toHaveTextContent("Payments");
+    expect(back).toHaveAttribute("aria-label", "back to Payments");
+    fireEvent.click(back);
+    expect(onOpenNode).toHaveBeenCalledWith("cap:prev");
+  });
+
+  it("the back affordance is also guarded when changes are pending", () => {
+    const { onOpenNode } = renderWalk({ backTo: { id: "cap:prev", label: "Payments" }, hasPendingChanges: true });
+    fireEvent.click(screen.getByTestId("studio-walk-back"));
+    expect(onOpenNode).not.toHaveBeenCalled();
+    expect(screen.getByTestId("studio-walk-confirm")).toBeInTheDocument();
+  });
+
+  it("highlights the came-from satellite for arrival orientation", () => {
+    renderWalk({ arrivedFrom: "el:x" });
+    expect(screen.getByTestId("studio-arrival-right")).toBeInTheDocument();
+    // an unrelated lane gets no arrival ring.
+    expect(screen.queryByTestId("studio-arrival-up")).not.toBeInTheDocument();
+  });
+
+  it("gives the walk affordance a discoverable title", () => {
+    renderWalk();
+    expect(screen.getByTestId("studio-satellite-right")).toHaveAttribute("title", "walk to this node");
   });
 });
 
