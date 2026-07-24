@@ -3138,6 +3138,7 @@
     "bulletAnyFolder": "아무 마크다운 폴더나 괜찮아요 — 특별한 형식이 없어도 돼요.",
     "bulletLocal": "파일은 이 컴퓨터를 떠나지 않아요. 서버 전송이 없어요.",
     "bulletStarter": "빈 폴더를 고르면 시작 문서를 자동으로 만들어 드려요.",
+    "bulletPermission": "고르고 나면 브라우저가 '허용'을 물어요 — 허용해야 지도가 켜지고, 파일은 여전히 내 컴퓨터 안에만 있어요.",
     "actionPickExisting": "기존 폴더 선택",
     "actionCreateNew": "빈 폴더로 새로 시작",
     "actionCancel": "다음에"

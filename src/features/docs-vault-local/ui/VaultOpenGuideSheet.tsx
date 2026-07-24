@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { FolderOpen, HardDrive, Sparkles, X } from "lucide-react";
+import { FolderOpen, HardDrive, ShieldCheck, Sparkles, X } from "lucide-react";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 
@@ -30,6 +30,10 @@ const BULLETS = [
   { icon: FolderOpen, key: "bulletAnyFolder" },
   { icon: HardDrive, key: "bulletLocal" },
   { icon: Sparkles, key: "bulletStarter" },
+  // 소유자 실사용 지적 (2026-07-24) — 폴더 선택 직후 브라우저의 표준
+  // 허용 확인창("이 사이트에서 파일을 보고…")을 예고하지 않아 처음 보면
+  // 우리 팝업/이상 동작으로 오인했다. 미리 한 줄로 안심시킨다.
+  { icon: ShieldCheck, key: "bulletPermission" },
 ] as const;
 
 export function VaultOpenGuideSheet({

@@ -3138,6 +3138,7 @@
     "bulletAnyFolder": "Any markdown folder works — no special format required.",
     "bulletLocal": "Files never leave this computer. Nothing is uploaded.",
     "bulletStarter": "Pick an empty folder and we scaffold starter docs for you.",
+    "bulletPermission": "After you pick, the browser asks to Allow — approve it and your files still stay on this computer.",
     "actionPickExisting": "Choose existing folder",
     "actionCreateNew": "Start fresh with an empty folder",
     "actionCancel": "Not now"
