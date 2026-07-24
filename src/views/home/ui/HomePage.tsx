@@ -882,6 +882,14 @@ export function HomePage() {
   const vaultOpenedThisSessionRef = useRef(false);
   const agentAutoPromptFiredRef = useRef(false);
   const agentConnectedNow = agentConnect.status.kind === "connected";
+  // openSheet 는 렌더마다 재생성될 수 있어 dep 로 두면 타이머가 리렌더마다
+  // 지워진다 — 자동 투어와 동일한 재장전 회귀(E2E 실측: '빈 폴더로 새로
+  // 시작' 경로는 스캐폴드 리렌더 때문에 시트가 영영 안 열렸다). ref 미러 +
+  // 발화 성공 시점에만 가드를 세운다.
+  const openAgentConnectSheetRef = useRef(openAgentConnectSheet);
+  useEffect(() => {
+    openAgentConnectSheetRef.current = openAgentConnectSheet;
+  }, [openAgentConnectSheet]);
   useEffect(() => {
     if (vault.status === "opening") vaultOpenedThisSessionRef.current = true;
     if (
@@ -892,12 +900,14 @@ export function HomePage() {
     ) {
       return undefined;
     }
-    agentAutoPromptFiredRef.current = true;
     // 스캐폴드/체크리스트가 자리 잡은 뒤 열어 "폴더 → 다음은 AI 연결" 순서가
     // 화면에서도 읽히게 한다.
-    const id = window.setTimeout(openAgentConnectSheet, 1200);
+    const id = window.setTimeout(() => {
+      agentAutoPromptFiredRef.current = true;
+      openAgentConnectSheetRef.current();
+    }, 1200);
     return () => window.clearTimeout(id);
-  }, [vault.status, agentConnectedNow, openAgentConnectSheet]);
+  }, [vault.status, agentConnectedNow]);
   // HomePage 모듈화 1차 — 부트스트랩 흐름은 use-bootstrap-flow 훅 소유.
   // 완료 연출(토스트·E1 리빌)만 여기 남는다.
   const { bootstrapOpen, setBootstrapOpen, bootstrapPlan, runBootstrap } = useBootstrapFlow({
