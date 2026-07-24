@@ -116,8 +116,10 @@ describe("GuidedTourOverlay", () => {
     expect(screen.queryByTestId("guided-tour-blocker")).not.toBeInTheDocument();
     const cutout = screen.getByTestId("guided-tour-cutout");
     expect(cutout).toHaveAttribute("data-cutout-shape", "circle");
-    // 구멍 위 스트립 높이 = 컷아웃 top (컷아웃 bbox 만 클릭 통과).
-    expect(strips[0].style.height).toBe("400px");
+    // 구멍 위 스트립 높이 = 컷아웃 top - 16px 패딩 (2026-07-24 하드닝 —
+    // funnel 구멍은 프로브 rect 보다 사방 16px 넓게 뚫려 카메라 스프링 중
+    // 시각 노드와의 순간 오차를 흡수한다).
+    expect(strips[0].style.height).toBe("384px");
   });
 
   it("applies the reduced-motion utility class to the scrim and cutout so transitions are removed for those users", () => {

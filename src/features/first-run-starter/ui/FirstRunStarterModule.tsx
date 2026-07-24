@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { useSampleSource } from "@/features/vault-sample-source";
+import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
 import { CompactCopyButton } from "@/shared/ui";
 import { useFirstRunStarter } from "../model/use-first-run-starter";
 
@@ -27,6 +28,19 @@ export interface FirstRunStarterModuleProps {
   concepts: number;
   relations: number;
   domains: number;
+  /**
+   * 2026-07-24 온보딩 라운드 — "2분 구경하기" 투어 CTA. 투어 상태기계는
+   * HomePage(view) 소유라 콜백만 받는다(FSD: feature 는 view 를 모른다).
+   * 생략하면 CTA 를 렌더하지 않는다.
+   */
+  onStartTour?: () => void;
+  /**
+   * 2026-07-24 온보딩 라운드 — 톱니 메뉴 안에만 있던 '일반(쉬운 말)' 보기를
+   * 첫 실행 카드에서 1클릭으로 켠다. 콜백이 있으면 힌트 문장 대신 토글
+   * 버튼을 렌더하고, 이미 켜져 있으면(audiencePlain) 아무것도 안 보여준다.
+   */
+  onEnablePlainMode?: () => void;
+  audiencePlain?: boolean;
 }
 
 /**
@@ -53,6 +67,9 @@ export function FirstRunStarterModule({
   concepts,
   relations,
   domains,
+  onStartTour,
+  onEnablePlainMode,
+  audiencePlain = false,
 }: FirstRunStarterModuleProps) {
   const t = useTranslations("firstRunStarter");
   // rank17 — ShortcutSheet 와 같은 i18n 네임스페이스를 그대로 재사용
@@ -78,6 +95,11 @@ export function FirstRunStarterModule({
   // 첫 화면에 상시 노출돼 시선을 뺏었다. 기본 접힘 disclosure 뒤로 보내
   // 개발자만 펼쳐 보게 한다. 카드가 리마운트될 때까지 세션 내 상태.
   const [cliOpen, setCliOpen] = useState(false);
+  // 2026-07-24 온보딩 라운드 — 폴더 CTA 가 사전 설명 0으로 OS 선택창을
+  // 직행해 첫 사용자가 무엇을 골라야 하는지 몰랐다. 두 CTA 모두 안내
+  // 시트를 먼저 거친다(이 카드는 vault 미선택 신규 사용자에게만 렌더
+  // 되므로 숙련 사용자에게 시트를 강요하는 문제가 없다).
+  const [guideOpen, setGuideOpen] = useState(false);
 
   if (!visible) return null;
 
@@ -186,7 +208,7 @@ export function FirstRunStarterModule({
       ) : (
         <button
           type="button"
-          onClick={() => void openFolder()}
+          onClick={() => setGuideOpen(true)}
           disabled={busy}
           data-testid="first-run-starter-open"
           className="relative flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-[13px] font-semibold text-white shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
@@ -199,13 +221,27 @@ export function FirstRunStarterModule({
         </button>
       )}
 
+      {/* 2026-07-24 온보딩 라운드 — 투어 진입점이 우측 레일 아이콘 하나뿐
+          이라 비개발자가 발견하지 못했다(라이브 답사 실측). 폴더 열기(1차
+          CTA) 바로 아래 2차 CTA 로 승격 — "열기 전에 구경부터" 경로. */}
+      {onStartTour ? (
+        <button
+          type="button"
+          data-testid="first-run-tour-cta"
+          onClick={onStartTour}
+          className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-[color:var(--topology-v2-panel-divider)] text-[12px] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+        >
+          {t("tourCta")}
+        </button>
+      ) : null}
+
       <p className="mb-1 mt-3 flex items-center justify-between gap-4 text-[11.5px]">
         {fsaUnsupported ? (
           <span aria-hidden />
         ) : (
           <button
             type="button"
-            onClick={() => void createVault()}
+            onClick={() => setGuideOpen(true)}
             disabled={busy}
             data-testid="first-run-starter-create"
             className="border-b border-transparent pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
@@ -224,14 +260,28 @@ export function FirstRunStarterModule({
       </p>
 
       {/* P2 결함③ (사용성 전수 검수 2026-07-23) — 비개발자가 기어 속 "보기
-          모드" 토글의 존재를 알 방법이 0 이었다. 배너/팝업 없이, dismiss 행
-          바로 아래 조용한 한 줄로 유도 경로 하나만 확보한다. */}
-      <p
-        data-testid="first-run-starter-plain-mode-hint"
-        className="mt-1 text-[10.5px] leading-[1.5] text-[color:var(--topology-v2-panel-text-quaternary)]"
-      >
-        {t("plainModeHint")}
-      </p>
+          모드" 토글의 존재를 알 방법이 0 이었다. 2026-07-24 온보딩 라운드:
+          콜백이 오면 힌트 문장을 1클릭 토글 버튼으로 승격("톱니에서 켜세요"
+          라는 원거리 안내 자체가 마찰이었다). 콜백이 없으면 종전 힌트 유지. */}
+      {onEnablePlainMode ? (
+        audiencePlain ? null : (
+          <button
+            type="button"
+            data-testid="first-run-plain-toggle"
+            onClick={onEnablePlainMode}
+            className="mt-1 text-[11px] text-[color:var(--color-indigo-accent)] underline-offset-2 transition-colors hover:underline"
+          >
+            {t("plainModeCta")}
+          </button>
+        )
+      ) : (
+        <p
+          data-testid="first-run-starter-plain-mode-hint"
+          className="mt-1 text-[10.5px] leading-[1.5] text-[color:var(--topology-v2-panel-text-quaternary)]"
+        >
+          {t("plainModeHint")}
+        </p>
+      )}
 
       {/* rank17 (design-council B6) — 도메인/역량/요소 3-용어 정의를 "?"
           단축키 모달에서 이 첫실행 카드로 승격. disclosure 뒤에 숨기지
@@ -326,6 +376,19 @@ export function FirstRunStarterModule({
           {errorText || t("errorFallback")}
         </p>
       ) : null}
+
+      <VaultOpenGuideSheet
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        onPickExisting={() => {
+          setGuideOpen(false);
+          void openFolder();
+        }}
+        onCreateNew={() => {
+          setGuideOpen(false);
+          void createVault();
+        }}
+      />
     </div>
   );
 }

@@ -91,4 +91,45 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
     await card.getByTestId("guided-tour-finish").click();
     await expect(overlay).toHaveCount(0);
   });
+
+  // 2026-07-24 라이브 결함 회귀 — 4단계(try-click)에서 스포트라이트 구멍이
+  // 그려진 노드와 어긋나면 사용자가 밝은 노드를 눌러도 4-스트립 blocker 가
+  // 클릭을 삼켜 투어가 영구 정지한다. 프로브(topology-tour-anchor)는 엔진의
+  // worldToScreen 실좌표이므로 "프로브 중심 = 항상 클릭 통과" 를 계약으로
+  // 고정한다.
+  test("step 4: probe center is click-passable and advances the tour", async ({ page }) => {
+    await gotoAndSettle(page, "/en/");
+
+    const tourButton = page.getByTestId("topology-tour-button");
+    await expect(tourButton).toBeVisible({ timeout: 15_000 });
+    await tourButton.click();
+
+    const card = page.getByTestId("guided-tour-card");
+    const overlay = page.getByTestId("guided-tour-overlay");
+    await expect(overlay).toHaveAttribute("data-tour-step", "welcome");
+    await card.getByTestId("guided-tour-next").click();
+    await expect(overlay).toHaveAttribute("data-tour-step", "nodes");
+    await card.getByTestId("guided-tour-next").click();
+    await expect(overlay).toHaveAttribute("data-tour-step", "relations");
+    await card.getByTestId("guided-tour-next").click();
+    await expect(overlay).toHaveAttribute("data-tour-step", "try-click");
+    await expect(page.getByTestId("guided-tour-cutout")).toBeVisible({ timeout: 5_000 });
+
+    const probe = page.getByTestId("topology-tour-anchor");
+    const box = await probe.boundingBox();
+    expect(box).not.toBeNull();
+    const cx = box!.x + box!.width / 2;
+    const cy = box!.y + box!.height / 2;
+
+    // 구멍-프로브 정합: 프로브 중심의 최상단 요소가 blocker 스트립이 아니라
+    // 캔버스여야 한다 (스트립이면 클릭이 캔버스에 도달하지 못한다).
+    const hitTag = await page.evaluate(
+      ([x, y]) => document.elementFromPoint(x as number, y as number)?.tagName ?? "NONE",
+      [cx, cy],
+    );
+    expect(hitTag).toBe("CANVAS");
+
+    await page.mouse.click(cx, cy);
+    await expect(overlay).toHaveAttribute("data-tour-step", "datasheet", { timeout: 5_000 });
+  });
 });

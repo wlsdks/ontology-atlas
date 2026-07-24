@@ -10,7 +10,7 @@ const labels: CreateNodeFormLabels = {
   domainPlaceholder: "도메인 slug (선택)",
   create: "만들기",
   cancel: "취소",
-  kindLabels: { domain: "도메인", capability: "역량", element: "요소" },
+  kindLabels: { project: "프로젝트", domain: "도메인", capability: "역량", element: "요소" },
 };
 
 describe("CreateNodeForm", () => {

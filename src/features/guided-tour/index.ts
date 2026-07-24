@@ -10,9 +10,11 @@ export {
 } from "./model/tour-steps";
 export {
   GUIDED_TOUR_STATUS_KEY,
+  readGuidedTourStatus,
   writeGuidedTourStatus,
   type GuidedTourStatus,
 } from "./model/tour-storage";
+export { canAutoStartGuidedTour } from "./model/auto-start-guard";
 export {
   resolveAnchorRect,
   computeCardPlacement,

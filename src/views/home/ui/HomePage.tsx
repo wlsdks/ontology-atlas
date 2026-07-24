@@ -63,6 +63,10 @@ const TopologyEmptyState = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.TopologyEmptyState),
   { ssr: false },
 );
+const VaultStartChecklist = dynamic(
+  () => import("@/widgets/topology-controls").then((m) => m.VaultStartChecklist),
+  { ssr: false },
+);
 const ShortcutSheet = dynamic(
   () => import("@/widgets/shortcut-sheet").then((m) => m.ShortcutSheet),
   { ssr: false },
@@ -219,6 +223,8 @@ import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 import { resolveTopologyEscLadderAction } from "../lib/topology-esc-ladder";
 import {
   GuidedTourOverlay,
+  canAutoStartGuidedTour,
+  readGuidedTourStatus,
   resolveAnchorRect,
   useGuidedTour,
   type TourAnchor,
@@ -1316,7 +1322,12 @@ export function HomePage() {
           ? "shortcuts"
           : "none";
   const topologyBlockingOverlayActive = topologyBlockingOverlayState !== "none";
+  // 2026-07-24 온보딩 QA — 시작 체크리스트가 "첫 프로젝트/도메인 만들기"
+  // 의도를 전달할 수 있게 컴포저 초기 kind 를 상태로 둔다. 일반 진입
+  // (+ 개념 버튼 등)은 종전 기본값(역량) 유지.
+  const [createNodeDefaultKind, setCreateNodeDefaultKind] = useState<CreateNodeKind>("capability");
   const openCreateNode = useCallback(() => {
+    setCreateNodeDefaultKind("capability");
     setOntologySearchOpen(false);
     setShortcutsOpen(false);
     setDocsDrawerOpen(false);
@@ -1327,6 +1338,13 @@ export function HomePage() {
       createNodeIntent: true,
     }));
   }, [setRouteState]);
+  const openCreateNodeWithKind = useCallback(
+    (kind: CreateNodeKind) => {
+      openCreateNode();
+      setCreateNodeDefaultKind(kind);
+    },
+    [openCreateNode],
+  );
   useEffect(() => {
     if (!createNodeIntent) return;
     let cancelled = false;
@@ -1720,6 +1738,47 @@ export function HomePage() {
     tour.start();
   }, [closeCreateNode, tour]);
 
+  // 첫 방문 자동 투어 (2026-07-24 온보딩 라운드) — 투어 자산이 있는데
+  // 진입점이 우측 레일 아이콘뿐이라 비개발자가 발견하지 못했다. 샘플
+  // 모드 정착(= vault 미선택 첫 실행, 복원 시도 완료) + 저장된 done/
+  // skipped 없음일 때 한 번만 자동 시작한다. skip 이 'skipped' 를
+  // 기록하므로 재방문에는 다시 뜨지 않고, 로컬 vault 사용자에게는
+  // `sampleModeSettled` 가 false 라 애초에 발화하지 않는다.
+  const autoTourFiredRef = useRef(false);
+  // `openGuidedTour` 는 tour 객체 의존이라 매 렌더 재생성 — dep 로 두면
+  // effect 가 렌더마다 타이머를 지우고 다시 못 세운다(실측 회귀). ref 미러로
+  // deps 를 `sampleModeSettled` 하나로 고정하고, 발화 성공 시점에만 가드를
+  // 세운다.
+  const openGuidedTourRef = useRef(openGuidedTour);
+  useEffect(() => {
+    openGuidedTourRef.current = openGuidedTour;
+  }, [openGuidedTour]);
+  useEffect(() => {
+    if (autoTourFiredRef.current || !sampleModeSettled) return undefined;
+    if (readGuidedTourStatus() !== null) return undefined;
+    // 첫 시도는 900ms 뒤 — 레이아웃/카메라 정착 뒤에 열어 1단계 카드가
+    // 안정된 화면 위에 뜬다. Design Guardian (2026-07-24) stacked-transient
+    // 가드: 발화 순간 모달(폴더 안내 시트 등)이 열려 있거나 문서 포커스가
+    // 나가 있으면(백그라운드 탭 로드 · OS 폴더 선택창) 겹쳐 쏘지 않는다.
+    // 단발이면 그 세션에서 환영 순간을 영영 잃으므로(QA 실측 — 백그라운드
+    // 탭 로드) 2초 간격으로 잠시 재시도하고, 상한 후에는 storage 미기록
+    // 상태로 조용히 물러난다 — 카드의 "2분 구경하기" CTA 가 수동 경로.
+    let timerId = 0;
+    let attempts = 0;
+    const tick = () => {
+      if (autoTourFiredRef.current) return;
+      if (canAutoStartGuidedTour()) {
+        autoTourFiredRef.current = true;
+        openGuidedTourRef.current();
+        return;
+      }
+      attempts += 1;
+      if (attempts < 10) timerId = window.setTimeout(tick, 2000);
+    };
+    timerId = window.setTimeout(tick, 900);
+    return () => window.clearTimeout(timerId);
+  }, [sampleModeSettled]);
+
   // P0#3 — Esc staged-close ladder (docs/FEATURES.md / shortcut sheet's
   // `stepCloseOverlays` promise: "Close drawers and overlays one step at a
   // time"). The composer/shortcuts/docs-drawer overlays already close
@@ -2065,6 +2124,12 @@ export function HomePage() {
   );
   const indexDomainCount = useMemo(
     () => ontologyInsight?.nodes.filter((node) => node.kind === "domain").length ?? 0,
+    [ontologyInsight],
+  );
+  // 2026-07-24 온보딩 라운드 — 빈 vault 시작 체크리스트의 완료 판정용
+  // 프로젝트 실카운트(같은 ontologyInsight 파생이라 drift 불가).
+  const checklistProjectCount = useMemo(
+    () => ontologyInsight?.nodes.filter((node) => node.kind === "project").length ?? 0,
     [ontologyInsight],
   );
   // Guardian I-1 — 도메인 크기 단일 진실원(그래프 BFS). INDEX 트리 행과
@@ -3002,11 +3067,13 @@ export function HomePage() {
                       create: t('createNode.create'),
                       cancel: t('createNode.cancel'),
                       kindLabels: {
+                        project: t('createNode.kindProject'),
                         domain: t('createNode.kindDomain'),
                         capability: t('createNode.kindCapability'),
                         element: t('createNode.kindElement'),
                       },
                     }}
+                    defaultKind={createNodeDefaultKind}
                   />
                 </div>
               </>
@@ -3177,6 +3244,8 @@ export function HomePage() {
                     selectedId={canvasSelectedSlug}
                     onSelect={(id) => handleSelect(id)}
                     onCollapse={handleIndexCollapse}
+                    onStartTour={openGuidedTour}
+                    onEnablePlainMode={() => setAudiencePlain(true)}
                     // P1 결함①a — element 행이 왜 안 보이는지 설명하는
                     // 조용한 힌트 행 게이트. treeResult 는 이미 위에서
                     // element 를 제외했다(단일 진실원 무변경).
@@ -3365,11 +3434,25 @@ export function HomePage() {
                     canvas. 빈 vault 는 Sigma 를 아예 마운트하지 않고 바로 빈
                     상태만 보여 WebGL/토폴로지 모양이 잠깐 보이는 회귀를 막는다. */}
                 {topologyOverlayState.kind === "structural-empty" && !createNodeOpen ? (
+                  // 2026-07-24 온보딩 라운드 — 쓰기 가능한 로컬 vault 가 열려
+                  // 있고 부트스트랩할 기존 문서도 없으면(진짜 빈 폴더) dead-end
+                  // 문구 대신 진행형 시작 체크리스트를 세운다. 문서가 있으면
+                  // 기존 "내 문서로 지도 만들기" 부트스트랩 브랜치가 우선.
+                  canCreateNode && (bootstrapPlan?.elements.length ?? 0) === 0 ? (
+                    <VaultStartChecklist
+                      projectCount={checklistProjectCount}
+                      domainCount={indexDomainCount}
+                      relationCount={topologyTotalRelations}
+                      onCreateNode={openCreateNodeWithKind}
+                      onOpenAgentConnect={openAgentConnectSheet}
+                    />
+                  ) : (
                   <TopologyEmptyState
                     projectCount={emptyTopologyNodeCount}
                     reason={topologyOverlayState.emptyReason}
                     canCreateNode={canCreateNode}
                     onCreateNode={openCreateNode}
+                    hasOpenVault={vault.manifest !== null}
                     docsFoundCount={bootstrapPlan?.elements.length ?? 0}
                     onStartFromDocs={
                       bootstrapPlan && bootstrapPlan.elements.length > 0
@@ -3377,6 +3460,7 @@ export function HomePage() {
                         : undefined
                     }
                   />
+                  )
                 ) : topologyOverlayState.kind === "filter-sparse" ? (
                   <TopologyNoMatchesState
                     onClearFilters={clearTopologyFilters}

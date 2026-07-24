@@ -330,14 +330,15 @@
     "sampleLabel": "지금은 샘플",
     "contextBold": "우리 제품이 어떤 부분들로 이루어져 있고, 서로 어떻게 연결돼 있는지 한눈에 보는 지도예요.",
     "contextRest": "지금은 이 프로젝트 자신의 지도(읽기 전용) — 내 마크다운 폴더를 고르면 같은 지도가 내 데이터로 켜져요. (지도의 원본은 마크다운 frontmatter 예요.)",
-    "meterConcepts": "concepts",
-    "meterRelations": "relations",
-    "meterDomains": "domains",
+    "meterConcepts": "개념",
+    "meterRelations": "관계",
+    "meterDomains": "도메인",
     "openLabel": "내 마크다운 폴더 열기",
     "openBusy": "폴더 여는 중…",
     "createLabel": "✚ 새 vault 만들기",
     "createBusy": "시작 구조 작성 중…",
     "dismissLabel": "여기서 둘러볼게요",
+    "tourCta": "2분 구경하기 — 지도 읽는 법",
     "plainModeHint": "더 쉬운 보기가 필요하면 왼쪽 아래 톱니에서 '일반'을 켜세요",
     "errorFallback": "폴더를 열지 못했습니다. 다시 시도해 주세요.",
     "unsupportedNotice": "이 브라우저는 로컬 폴더 열기를 지원하지 않아요. macOS 앱이나 Chrome/Edge 에서 열면 내 마크다운 폴더로 지도가 켜져요.",
@@ -362,7 +363,8 @@
       "tier_element": "Element view",
       "zoomHint": "줌인하면 요소가 나타납니다",
       "zoomHintPlain": "점을 누르면 그 안의 요소가 보여요"
-    }
+    },
+    "plainModeCta": "쉬운 말로 보기 켜기"
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",
@@ -2401,24 +2403,24 @@
       "metricContainsHelp": "이 노드가 직접 담고 있는 하위 항목들 — 하위 전체가 아니라 바로 아래 한 단계예요.",
       "metricUsedByHelp": "이 노드를 직접 쓰는(가리키는) 다른 항목들.",
       "metricDependsOnHelp": "이 노드가 직접 기대는(필요로 하는) 다른 항목들.",
-      "metricEvidenceHelp": "이 노드가 유래한 근거 문서가 있는지 여부예요 — 선언됨이면 클릭해 원본으로 가요.",
-      "metricEvidenceDeclared": "선언됨",
-      "metricEvidenceUndeclared": "미선언",
+      "metricEvidenceHelp": "이 노드의 원본 문서가 있는지 여부예요 — '문서 있음'이면 클릭해 원본으로 가요.",
+      "metricEvidenceDeclared": "문서 있음",
+      "metricEvidenceUndeclared": "문서 없음",
       "metricHelp": "모두 이 노드와 직접 연결된 것만 셉니다 — 여러 단계 건너뛴 합계가 아니에요.",
       "containsShowAll": "전체 보기",
       "containsShowSummary": "요약 보기",
       "containsOtherGroup": "기타",
-      "noConnections": "아직 기록된 관계 없음 · 관계는 frontmatter 로 선언돼요",
+      "noConnections": "아직 기록된 관계 없음 · 관계는 문서 상단 속성으로 기록돼요",
       "codeLocationsLabel": "코드 위치",
       "codeLocationsCopyLabel": "경로 복사",
       "codeLocationsCopiedLabel": "복사됨",
-      "handoff": "에이전트 인계 복사",
-      "handoffCopied": "에이전트 인계를 복사했어요",
+      "handoff": "AI에게 넘길 요약 복사",
+      "handoffCopied": "AI에게 넘길 요약을 복사했어요",
       "openFullDetail": "전체 상세 →",
       "actionsGroupLabel": "노드 행동",
       "actionDocument": "문서",
       "actionEditRelations": "관계 편집",
-      "actionCopyHandoff": "인계 복사",
+      "actionCopyHandoff": "AI 요약 복사",
       "actionPath": "경로",
       "actionDocumentTip": "이 노드의 원본 마크다운 문서를 문서함에서 열어요",
       "actionEditRelationsTip": "빌더에서 이 노드의 연결(관계)을 편집해요",
@@ -2441,6 +2443,7 @@
       "domainPlaceholder": "도메인 slug (선택)",
       "create": "만들기",
       "cancel": "취소",
+      "kindProject": "프로젝트",
       "kindDomain": "도메인",
       "kindCapability": "역량",
       "kindElement": "요소",
@@ -2568,7 +2571,7 @@
       "titleNoProjects": "지형도에 그릴 프로젝트가 없습니다",
       "titleNoDeps": "아직 그릴 관계가 없습니다",
       "bodyNoProjectsDownload": "macOS 앱을 설치하고 로컬 vault를 열면 첫 프로젝트 개념부터 지형도를 시작할 수 있습니다.",
-      "bodyNoProjectsPicker": "로컬 vault를 열거나 저장·편집에서 첫 프로젝트 개념을 저장하면 지형도가 시작됩니다.",
+      "bodyNoProjectsPicker": "폴더를 열고 첫 프로젝트를 만들면 지도가 시작돼요.",
       "bodyNoDeps": "저장·편집에서 개념 사이 관계를 하나 저장하면 이 화면에 선이 나타납니다.",
       "crossViewHint": "전체 지도 문서와 변경점은 개념 둘러보기·저장·편집에서 이어서 확인할 수 있습니다.",
       "ctaCreateNode": "개념 만들기",
@@ -2699,6 +2702,19 @@
       "packetReviewHint": "각 노드 맥락 검토:",
       "packetPathHint": "여정 양 끝 사이 경로 확인:",
       "packetDustyHint": "오래 손대지 않은 노드 {count}개 — 유지보수 후보 살펴보기:"
+    },
+    "startChecklist": {
+      "kicker": "{done}/{total} 완료",
+      "title": "시작 체크리스트",
+      "subtitle": "이 순서대로 하면 지도가 살아나요.",
+      "stepProject": "첫 프로젝트 만들기",
+      "stepDomain": "영역(도메인) 하나 추가",
+      "stepRelation": "두 개념을 선으로 잇기",
+      "stepAgent": "AI 에이전트 연결 (선택)",
+      "agentHint": "'빈 폴더로 새로 시작'으로 만들었다면 .mcp.json 이 이미 준비돼 있어요 — AI 도구가 이 지도를 같이 읽고 씁니다.",
+      "ctaCreate": "만들기",
+      "ctaBuilder": "빌더에서 잇기",
+      "ctaAgent": "연결 안내 열기"
     }
   },
   "fullDetailA1": {
@@ -3176,5 +3192,15 @@
       "weeksAgo": "{count}주 전",
       "monthsAgo": "{count}개월 전"
     }
+  },
+  "vaultOpenGuide": {
+    "title": "내 폴더를 지도로 켜기",
+    "subtitle": "OS 폴더 선택창이 뜨기 전에, 딱 세 가지만 알아두세요.",
+    "bulletAnyFolder": "아무 마크다운 폴더나 괜찮아요 — 특별한 형식이 없어도 돼요.",
+    "bulletLocal": "파일은 이 컴퓨터를 떠나지 않아요. 서버 전송이 없어요.",
+    "bulletStarter": "빈 폴더를 고르면 시작 문서를 자동으로 만들어 드려요.",
+    "actionPickExisting": "기존 폴더 선택",
+    "actionCreateNew": "빈 폴더로 새로 시작",
+    "actionCancel": "다음에"
   }
 }

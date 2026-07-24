@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T03:02:36.118Z",
+  "generatedAt": "2026-07-24T07:23:06.735Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -219,7 +219,7 @@
       ],
       "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
       "wordCount": 1951,
-      "updatedAt": "2026-07-24T12:00:57+09:00",
+      "updatedAt": "2026-07-24T12:04:14+09:00",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -3167,6 +3167,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-24 — 첫 실행 온보딩 가이드 강화 (비개발자 이탈 지점 4곳)",
+          "slug": "2026-07-24-첫-실행-온보딩-가이드-강화-비개발자-이탈-지점-4곳"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-24 — 온톨로지 스튜디오 Slice 2 — CREATE(만들기) 모드",
+          "slug": "2026-07-24-온톨로지-스튜디오-slice-2-create만들기-모드"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-24 — 온톨로지 스튜디오 (게임 \"강화 화면\") Slice 1 — 읽기 전용 표면",
           "slug": "2026-07-24-온톨로지-스튜디오-게임-강화-화면-slice-1-읽기-전용-표면"
         },
@@ -4741,9 +4751,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 새 라우트 /ontology/studio + 레일 LNB \"스튜디오\" 항목. 노드 하나를 게임 아이템(헥사곤)으로 놓고, 그 노드의 실제 관계(contai",
-      "wordCount": 36175,
-      "updatedAt": "2026-07-24T12:00:57+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 라이브 답사(비개발자 피드백)로 확인한 이탈 지점을 기존 온보딩 자산의 재배치로 해소. ① 가이드 투어 첫 방문 자동 시작 — 진입점이 우측 레일 아이콘뿐",
+      "wordCount": 36463,
+      "updatedAt": "2026-07-24T07:22:11.622Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5322,7 +5332,7 @@
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
       "wordCount": 13073,
-      "updatedAt": "2026-07-24T12:00:57+09:00",
+      "updatedAt": "2026-07-24T12:04:14+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -5905,8 +5915,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 12662,
-      "updatedAt": "2026-07-24T12:00:57+09:00",
+      "wordCount": 12806,
+      "updatedAt": "2026-07-24T07:21:57.194Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6534,8 +6544,8 @@
         }
       ],
       "excerpt": "세션에서 소유자와 확정한 방향의 상세 설계 스펙. 로드맵 테이블이 아니라 각 슬라이스의 실제 설계 결정(스키마 의미론·소켓 편집 UX·변동 원장 모델·게임 토큰 시스템·빌더 마이그레이션)까지 담아 구현이 깊이를 잃지 않게 한다. 근거: 온톨로지 전문가 8인 심사(genuineGaps 10) · 디자인 카운슬 · 사용성 8인 · 소유자 확정 시안(node-studio-game.html·node-studio-create.html). 한 줄: 노드를 게임 아이템처럼 강화/구축하는 몰입 저작 표면. 온톨로지 관계·의미 = 소켓에 끼우는 보석. 빈 소켓(isa·정의)이 곧 채",
-      "wordCount": 1236,
-      "updatedAt": "2026-07-24T11:55:36+09:00",
+      "wordCount": 1348,
+      "updatedAt": "2026-07-24T14:28:15+09:00",
       "linksOut": []
     },
     {
@@ -7102,6 +7112,30 @@
       "excerpt": ".claude/skills/firebase-deploy/SKILL.md is the agent-runbook for publishing the static promo/download website to Firebase Hosting. It reads local .env.prod identifiers, runs the docs/type/build/bundle gates plus pnpm firebase:deploy-check, deploys with firebase deploy --only hosting, and verifies the live web.app URL. ",
       "wordCount": 243,
       "updatedAt": "2026-05-27T09:55:35+09:00",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/first-run-onboarding-guides",
+      "path": "docs/ontology/capabilities/first-run-onboarding-guides.md",
+      "title": "First-Run Onboarding Guides (auto tour · pre-picker sheet · start checklist)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/first-run-onboarding-guides",
+        "kind": "capability",
+        "title": "First-Run Onboarding Guides (auto tour · pre-picker sheet · start checklist)",
+        "domain": "onboarding-ux",
+        "elements": []
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "First-Run Onboarding Guides",
+          "slug": "first-run-onboarding-guides"
+        }
+      ],
+      "excerpt": "2026-07-24 온보딩 라운드 — 라이브 답사(비개발자 피드백)로 확인한 첫 사용 이탈 지점 4곳을 기존 온보딩 자산의 재배치로 해소한 역량. 새 시스템을 만들지 않고 결정적 순간에 가이드를 세운다. 1. 가이드 투어 첫 방문 자동 시작 — 샘플 모드 정착 + guided-tour:v1 미기록이면 900ms 뒤 1회 자동 시작. canAutoStartGuidedTour (src/features/guided-tour/model/auto-start-guard.ts)가 모달/포커스 이탈/이미 열린 투어를 가드(stacked-transient 금지). 첫 실행 카드에 \"",
+      "wordCount": 174,
+      "updatedAt": "2026-07-24T07:22:43.420Z",
       "linksOut": []
     },
     {
@@ -8213,6 +8247,7 @@
         "capabilities": [
           "agent-config-onboarding",
           "cli-developer-entry",
+          "first-run-onboarding-guides",
           "product-owner-operating-system"
         ],
         "elements": [
@@ -8242,7 +8277,7 @@
       ],
       "excerpt": "cross-cutting. 다크 단일 테마 (라이트 모드는 2026-07-19 전략 폐기), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curso",
       "wordCount": 350,
-      "updatedAt": "2026-07-20T23:24:11+09:00",
+      "updatedAt": "2026-07-24T07:22:52.950Z",
       "linksOut": []
     },
     {
@@ -11714,6 +11749,11 @@
         "linkText": "onboarding-ux"
       },
       {
+        "fromSlug": "ontology/capabilities/first-run-onboarding-guides",
+        "context": "frontmatter · **[onboarding-ux]**",
+        "linkText": "onboarding-ux"
+      },
+      {
         "fromSlug": "ontology/capabilities/product-owner-operating-system",
         "context": "frontmatter · **[onboarding-ux]**",
         "linkText": "onboarding-ux"
@@ -13212,6 +13252,13 @@
         "linkText": "mcp-sdk"
       }
     ],
+    "ontology/capabilities/first-run-onboarding-guides": [
+      {
+        "fromSlug": "ontology/domains/onboarding-ux",
+        "context": "frontmatter · **[first-run-onboarding-guides]**",
+        "linkText": "first-run-onboarding-guides"
+      }
+    ],
     "ontology/capabilities/product-owner-operating-system": [
       {
         "fromSlug": "ontology/domains/onboarding-ux",
@@ -13889,6 +13936,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/firebase-deploy-skill",
                 "title": "Firebase Deploy Skill (.claude/skills/firebase-deploy)"
+              },
+              {
+                "name": "first-run-onboarding-guides",
+                "path": "ontology/capabilities/first-run-onboarding-guides",
+                "type": "doc",
+                "slug": "ontology/capabilities/first-run-onboarding-guides",
+                "title": "First-Run Onboarding Guides (auto tour · pre-picker sheet · start checklist)"
               },
               {
                 "name": "frontmatter-to-ontology",

@@ -13,7 +13,7 @@ import { Plus, X } from "lucide-react";
  * 디자인 헌장 준수: 무채색 + 단일 인디고, glow/scale 없음.
  */
 
-export type CreateNodeKind = "domain" | "capability" | "element";
+export type CreateNodeKind = "project" | "domain" | "capability" | "element";
 
 export interface CreateNodeFormLabels {
   headingId?: string;
@@ -27,7 +27,11 @@ export interface CreateNodeFormLabels {
   kindLabels: Record<CreateNodeKind, string>;
 }
 
-const KINDS: readonly CreateNodeKind[] = ["domain", "capability", "element"];
+// 2026-07-24 온보딩 QA — 시작 체크리스트 1단계("첫 프로젝트 만들기")가
+// 만들 수 없는 것을 시키고 있었다. 쓰기 경로(vaultFolderForKind)는 이미
+// project 를 지원하므로 선택지에 추가한다. 계층 순서(프로젝트→도메인→
+// 역량→요소)로 나열.
+const KINDS: readonly CreateNodeKind[] = ["project", "domain", "capability", "element"];
 
 export function CreateNodeForm({
   onCreate,

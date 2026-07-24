@@ -23,6 +23,7 @@ export function TopologyEmptyState({
   onCreateNode,
   docsFoundCount = 0,
   onStartFromDocs,
+  hasOpenVault = false,
 }: {
   projectCount: number;
   reason?: 'no-projects' | 'no-relations';
@@ -38,10 +39,18 @@ export function TopologyEmptyState({
    */
   docsFoundCount?: number;
   onStartFromDocs?: () => void;
+  /**
+   * 2026-07-24 온보딩 라운드 — 웹(non-Tauri)에서도 로컬 vault 를 이미 연
+   * 사용자에게는 "macOS 앱을 설치하고…" 다운로드 카피가 오안내다(방금
+   * 폴더를 열었는데 설치를 권함). vault 가 열려 있으면 picker 카피/CTA 를
+   * 쓴다.
+   */
+  hasOpenVault?: boolean;
 }) {
   const t = useTranslations('topology.empty');
   const isNoProjects = reason ? reason === 'no-projects' : projectCount === 0;
-  const isDesktopRuntime = isTauriVaultRuntime();
+  // picker 경로: 데스크톱 런타임이거나 이미 로컬 vault 를 연 웹 세션.
+  const showPickerPath = isTauriVaultRuntime() || hasOpenVault;
   const hasDocsToBootstrap = docsFoundCount > 0 && onStartFromDocs !== undefined;
   const kicker = hasDocsToBootstrap
     ? t('kickerDocsFound', { count: docsFoundCount })
@@ -72,7 +81,7 @@ export function TopologyEmptyState({
             ? t('bodyDocsFound', { count: docsFoundCount })
             : isNoProjects
               ? t(
-                  isDesktopRuntime
+                  showPickerPath
                     ? 'bodyNoProjectsPicker'
                     : 'bodyNoProjectsDownload',
                 )
@@ -120,12 +129,12 @@ export function TopologyEmptyState({
           </Link>
           {hasDocsToBootstrap ? null : (
           <Link
-            href={isDesktopRuntime ? "/docs/?intent=local" : "/download/"}
+            href={showPickerPath ? "/docs/?intent=local" : "/download/"}
             className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] px-4 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
           >
             <FolderOpen size={14} aria-hidden="true" />
             {t(
-              isDesktopRuntime
+              showPickerPath
                 ? 'ctaOpenVaultPicker'
                 : 'ctaOpenVaultDownload',
             )}

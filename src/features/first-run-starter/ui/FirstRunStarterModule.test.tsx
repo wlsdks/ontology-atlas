@@ -68,6 +68,56 @@ describe('FirstRunStarterModule', () => {
     expect(screen.getByText('6')).toBeInTheDocument();
   });
 
+  // 2026-07-24 온보딩 라운드 — 투어 진입점이 우측 레일 아이콘뿐이라
+  // 발견되지 않았다. onStartTour 가 주어지면 2차 CTA 로 렌더되고 클릭이
+  // 콜백을 부르는지, 생략 시 렌더되지 않는지 고정한다.
+  it('renders the tour CTA when onStartTour is provided and routes the click', () => {
+    const onStartTour = vi.fn();
+    render(
+      <FirstRunStarterModule concepts={1} relations={1} domains={1} onStartTour={onStartTour} />,
+    );
+    const cta = screen.getByTestId('first-run-tour-cta');
+    fireEvent.click(cta);
+    expect(onStartTour).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders no tour CTA when onStartTour is omitted', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    expect(screen.queryByTestId('first-run-tour-cta')).not.toBeInTheDocument();
+  });
+
+  // 2026-07-24 온보딩 라운드 — 톱니 속 '일반' 토글의 원거리 힌트를 1클릭
+  // 토글로 승격. 콜백이 있으면 버튼, 이미 켜져 있으면 비노출, 콜백이 없으면
+  // 종전 힌트 문장 유지(P2 결함③ 하위호환).
+  it('promotes the plain-mode hint to a one-click toggle when the callback is provided', () => {
+    const onEnablePlainMode = vi.fn();
+    render(
+      <FirstRunStarterModule
+        concepts={1}
+        relations={1}
+        domains={1}
+        onEnablePlainMode={onEnablePlainMode}
+      />,
+    );
+    expect(screen.queryByTestId('first-run-starter-plain-mode-hint')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('first-run-plain-toggle'));
+    expect(onEnablePlainMode).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the plain-mode toggle entirely once plain mode is already on', () => {
+    render(
+      <FirstRunStarterModule
+        concepts={1}
+        relations={1}
+        domains={1}
+        onEnablePlainMode={vi.fn()}
+        audiencePlain
+      />,
+    );
+    expect(screen.queryByTestId('first-run-plain-toggle')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('first-run-starter-plain-mode-hint')).not.toBeInTheDocument();
+  });
+
   // 페르소나 재조사 개선 후보 2 (2026-07-23) — 완전 초심자는 카드에서
   // 화면 설명은 읽지만 제품 이름을 알 방법이 없었다. 브랜드 워드마크
   // 한 줄이 캡션 위에 항상 렌더되는지 고정한다.
@@ -92,15 +142,20 @@ describe('FirstRunStarterModule', () => {
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
   });
 
-  it('wires "open my folder" to vault.open() directly', () => {
+  // 2026-07-24 온보딩 라운드 — 폴더 CTA 는 OS 선택창 직행 대신 사전 안내
+  // 시트를 먼저 연다. "기존 폴더 선택" 확정 후에만 vault.open() 이 불린다.
+  it('opens the guide sheet first, then wires "choose existing" to vault.open()', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
     fireEvent.click(screen.getByTestId('first-run-starter-open'));
+    expect(mocks.vault.open).not.toHaveBeenCalled();
+    expect(screen.getByTestId('vault-guide-sheet')).toBeInTheDocument();
 
+    fireEvent.click(screen.getByTestId('vault-guide-pick-existing'));
     expect(mocks.vault.open).toHaveBeenCalledTimes(1);
   });
 
-  it('scaffolds a starter structure after "create a new vault" opens an empty folder', async () => {
+  it('scaffolds a starter structure after the sheet\'s "start fresh" opens an empty folder', async () => {
     mocks.vault.open = vi.fn(async () => {
       mocks.vault.status = 'loaded';
       mocks.vault.manifest = { docs: [] };
@@ -108,6 +163,8 @@ describe('FirstRunStarterModule', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
     fireEvent.click(screen.getByTestId('first-run-starter-create'));
+    expect(screen.getByTestId('vault-guide-sheet')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('vault-guide-create-new'));
 
     await waitFor(() => {
       expect(mocks.vault.scaffoldOntology).toHaveBeenCalledTimes(1);
@@ -129,6 +186,19 @@ describe('FirstRunStarterModule', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
+  });
+
+  // 2026-07-24 QA 실측 회귀 — 사전 안내 시트가 열린 동안 Esc 는 시트만
+  // 닫아야 한다. 캡처 단계 dismiss 핸들러가 모달에 양보하는지 고정한다.
+  it('Escape while the guide sheet is open closes the sheet, not the card', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    fireEvent.click(screen.getByTestId('first-run-starter-open'));
+    expect(screen.getByTestId('vault-guide-sheet')).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    expect(screen.getByTestId('first-run-starter')).toBeInTheDocument();
+    expect(window.sessionStorage.getItem(FIRST_RUN_STARTER_DISMISSED_KEY)).toBeNull();
   });
 
   it('Escape dismisses the module', () => {

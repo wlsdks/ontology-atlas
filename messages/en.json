@@ -338,6 +338,7 @@
     "createLabel": "✚ Create a new vault",
     "createBusy": "Writing starter structure…",
     "dismissLabel": "Just looking around here",
+    "tourCta": "2-minute tour — how to read the map",
     "plainModeHint": "Need an easier view? Turn on \"General\" in the gear at the bottom left",
     "errorFallback": "Could not open the folder. Try again.",
     "unsupportedNotice": "This browser can't open local folders. Open it in the macOS app or Chrome/Edge and the map lights up with your markdown folder.",
@@ -362,7 +363,8 @@
       "tier_element": "Element view",
       "zoomHint": "zoom in to reveal elements",
       "zoomHintPlain": "click a dot to reveal its elements"
-    }
+    },
+    "plainModeCta": "Switch to plain-language view"
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",
@@ -2441,6 +2443,7 @@
       "domainPlaceholder": "domain slug (optional)",
       "create": "Create",
       "cancel": "Cancel",
+      "kindProject": "Project",
       "kindDomain": "Domain",
       "kindCapability": "Capability",
       "kindElement": "Element",
@@ -2699,6 +2702,19 @@
       "packetReviewHint": "Review each node's context:",
       "packetPathHint": "Check the path between the journey endpoints:",
       "packetDustyHint": "{count} nodes untouched for a while — maintenance candidates:"
+    },
+    "startChecklist": {
+      "kicker": "{done}/{total} done",
+      "title": "Start checklist",
+      "subtitle": "Follow these steps and the map comes alive.",
+      "stepProject": "Create your first project",
+      "stepDomain": "Add one area (domain)",
+      "stepRelation": "Connect two concepts with a line",
+      "stepAgent": "Connect an AI agent (optional)",
+      "agentHint": "If you started fresh, .mcp.json is already in place — AI tools read and grow this map with you.",
+      "ctaCreate": "Create",
+      "ctaBuilder": "Connect in builder",
+      "ctaAgent": "Open connect guide"
     }
   },
   "fullDetailA1": {
@@ -3176,5 +3192,15 @@
       "weeksAgo": "{count}w ago",
       "monthsAgo": "{count}mo ago"
     }
+  },
+  "vaultOpenGuide": {
+    "title": "Turn your folder into the map",
+    "subtitle": "Before the OS folder picker opens, three things to know.",
+    "bulletAnyFolder": "Any markdown folder works — no special format required.",
+    "bulletLocal": "Files never leave this computer. Nothing is uploaded.",
+    "bulletStarter": "Pick an empty folder and we scaffold starter docs for you.",
+    "actionPickExisting": "Choose existing folder",
+    "actionCreateNew": "Start fresh with an empty folder",
+    "actionCancel": "Not now"
   }
 }
