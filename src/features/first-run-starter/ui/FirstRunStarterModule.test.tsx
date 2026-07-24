@@ -189,6 +189,19 @@ describe('FirstRunStarterModule', () => {
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
   });
 
+  // 되돌아오기 (소유자 실사용 지적 2026-07-24) — 닫힌 카드 자리에 조용한
+  // "시작 안내 다시 열기" 행이 남고, 클릭하면 카드가 세션 내 복귀한다.
+  it('leaves a quiet reopen row after dismiss and restores the card on click', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    fireEvent.click(screen.getByTestId('first-run-starter-dismiss'));
+
+    const reopen = screen.getByTestId('first-run-starter-reopen');
+    fireEvent.click(reopen);
+
+    expect(screen.getByTestId('first-run-starter')).toBeInTheDocument();
+    expect(window.sessionStorage.getItem(FIRST_RUN_STARTER_DISMISSED_KEY)).toBeNull();
+  });
+
   // 폴더-우선 첫 방문 (소유자 지시 2026-07-24) — 첫 화면을 열자마자 폴더
   // 지정 유도 시트가 1회 자동으로 열리고, 플래그가 있으면 다시 안 뜬다.
   it('auto-opens the folder guide sheet once on the very first visit', () => {

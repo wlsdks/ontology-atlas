@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocalVault, useVaultCreateFlow } from '@/features/docs-vault-local';
 import {
+  FIRST_RUN_STARTER_DISMISSED_KEY,
   readFirstRunStarterDismissed,
   writeFirstRunStarterDismissed,
 } from './first-run-starter-dismiss';
@@ -36,6 +37,19 @@ export function useFirstRunStarter() {
   const dismiss = useCallback(() => {
     writeFirstRunStarterDismissed();
     setDismissed(true);
+  }, []);
+
+  // 되돌아오기 (소유자 실사용 지적 2026-07-24) — "여기서 둘러볼게요"로
+  // 카드를 닫고 샘플을 구경하다 보면 그 세션에서 처음(시작 안내·샘플
+  // 전환·폴더 CTA)으로 돌아갈 길이 없었다. dismiss 를 세션 내에서 되돌리는
+  // 명시 경로.
+  const undismiss = useCallback(() => {
+    try {
+      window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
+    } catch {
+      /* private mode — state 만 되돌린다 */
+    }
+    setDismissed(false);
   }, []);
 
   const openFolder = useCallback(async () => {
@@ -78,7 +92,10 @@ export function useFirstRunStarter() {
 
   return {
     visible,
+    dismissed,
+    sampleModeSettled,
     dismiss,
+    undismiss,
     openFolder,
     createVault: handleCreate,
     busy,

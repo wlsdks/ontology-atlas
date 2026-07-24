@@ -81,7 +81,10 @@ export function FirstRunStarterModule({
   const glossary = useTranslations("searchWidgets.shortcuts.glossary");
   const {
     visible,
+    dismissed,
+    sampleModeSettled,
     dismiss,
+    undismiss,
     openFolder,
     createVault,
     busy,
@@ -117,7 +120,27 @@ export function FirstRunStarterModule({
     return () => window.clearTimeout(id);
   }, [visible]);
 
-  if (!visible) return null;
+  // 되돌아오기 (소유자 실사용 지적 2026-07-24) — "여기서 둘러볼게요"로
+  // 카드를 닫고 예시 비즈니스를 구경하다 보면 세션 내 처음으로 돌아갈
+  // 길이 없었다. 카드가 있던 자리에 조용한 1행을 남긴다.
+  if (!visible) {
+    if (sampleModeSettled && dismissed) {
+      return (
+        <div className="border-b border-[color:var(--topology-v2-panel-divider)] px-4 py-2">
+          <button
+            type="button"
+            data-testid="first-run-starter-reopen"
+            onClick={undismiss}
+            className="flex w-full items-center gap-1.5 text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
+          >
+            <ChevronRight size={11} aria-hidden className="shrink-0 -rotate-180" />
+            {t("reopenLabel")}
+          </button>
+        </div>
+      );
+    }
+    return null;
+  }
 
   return (
     <div
