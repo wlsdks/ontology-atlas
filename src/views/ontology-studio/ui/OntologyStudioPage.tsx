@@ -126,6 +126,9 @@ export function OntologyStudioPage() {
       save: t("save"),
       saveHint: t("saveHint"),
       foldMore: () => t("foldMore"),
+      foldTitle: (label, total) => t("foldTitle", { label, total }),
+      defMore: t("defMore"),
+      defLess: t("defLess"),
       pickerTitle: (question) => question,
       pickerSub: t("picker.sub"),
       pickerPlaceholder: t("picker.placeholder"),
@@ -147,6 +150,10 @@ export function OntologyStudioPage() {
 
   const enterCreate = useCallback(() => router.push(CREATE_HREF), [router]);
   const exit = useCallback(() => router.push(EXIT_HREF), [router]);
+  const openNode = useCallback(
+    (id: string) => router.push(`${STUDIO_BASE}?node=${encodeURIComponent(id)}`),
+    [router],
+  );
 
   // Candidate picker for a relation — allowed kinds, minus already-linked / self.
   const makeCandidatesFor = useCallback(
@@ -279,6 +286,9 @@ export function OntologyStudioPage() {
         }
         onSave={applyCreate}
         onExit={exit}
+        searchNodes={candidates}
+        onOpenNode={openNode}
+        moreRelationsSoon={t("moreRelationsSoon")}
         canSave={Boolean(title.trim())}
         createKinds={CREATE_KINDS.map((k) => ({ value: k, label: kindLabel(k) }))}
         createKind={kind}
@@ -381,6 +391,7 @@ export function OntologyStudioPage() {
 
   return (
     <StudioCompass
+      key={focalItem.node.id}
       mode="enhance"
       labels={labels}
       kindLabelFor={kindLabel}
@@ -399,6 +410,9 @@ export function OntologyStudioPage() {
       onSave={() => toast.show(t("autoSaved"), "info")}
       onExit={exit}
       onCreateNew={enterCreate}
+      searchNodes={candidates}
+      onOpenNode={openNode}
+      moreRelationsSoon={t("moreRelationsSoon")}
     />
   );
 }

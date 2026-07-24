@@ -16,6 +16,9 @@ const labels: StudioCompassLabels = {
   save: "save",
   saveHint: "hint",
   foldMore: () => "more",
+  foldTitle: (label, total) => `${label} · ${total}`,
+  defMore: "more",
+  defLess: "less",
   pickerTitle: (q) => q,
   pickerSub: "sub",
   pickerPlaceholder: "search nodes",
@@ -137,6 +140,70 @@ describe("StudioCompass — enhance", () => {
     fireEvent.click(screen.getByTestId("studio-socket-up"));
     fireEvent.click(screen.getByTestId("studio-picker-similar-accept"));
     expect(onFill).toHaveBeenCalledWith("isA", CANDIDATE);
+  });
+});
+
+describe("StudioCompass — navigation affordances", () => {
+  const bearings = (): CompassBearingView[] => [
+    bearing("isA", "up", { recommended: true }),
+    bearing("dependsOn", "right", {
+      filled: true,
+      neighbors: Array.from({ length: 5 }, (_, i) => ({
+        id: `el:${i}`,
+        title: `Dep ${i}`,
+        kind: "element",
+        ref: `elements/dep-${i}`,
+      })),
+    }),
+    bearing("contains", "down", { expected: true }),
+    bearing("relates", "left"),
+  ];
+
+  function renderWithNav(onOpenNode = vi.fn()) {
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "MCP Server", definition: "def" }}
+        bearings={bearings()}
+        filledBearings={1}
+        writable
+        candidatesFor={() => [CANDIDATE]}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        searchNodes={[CANDIDATE]}
+        onOpenNode={onOpenNode}
+      />,
+    );
+    return onOpenNode;
+  }
+
+  it("top-bar search is a real input that navigates to a picked node", () => {
+    const onOpenNode = renderWithNav();
+    const input = screen.getByTestId("studio-node-search");
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "server" } });
+    fireEvent.click(screen.getByTestId(`studio-node-search-row-${CANDIDATE.id}`));
+    expect(onOpenNode).toHaveBeenCalledWith(CANDIDATE.id);
+  });
+
+  it("clicking a satellite loads that node onto the stage", () => {
+    const onOpenNode = renderWithNav();
+    fireEvent.click(screen.getAllByTestId("studio-satellite-right")[0]);
+    expect(onOpenNode).toHaveBeenCalledWith("el:0");
+  });
+
+  it("the '+N 더 보기' fold expands a scrollable list of all lane neighbors", () => {
+    const onOpenNode = renderWithNav();
+    expect(screen.queryByTestId("studio-lane-list-right")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("studio-lane-more-right"));
+    const list = screen.getByTestId("studio-lane-list-right");
+    expect(list).toBeInTheDocument();
+    // all five neighbors are listed, including the folded ones.
+    fireEvent.click(screen.getByTestId("studio-lane-row-el:4"));
+    expect(onOpenNode).toHaveBeenCalledWith("el:4");
   });
 });
 

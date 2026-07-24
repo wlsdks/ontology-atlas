@@ -84,6 +84,7 @@
     "searchPlaceholder": "Node to bring on stage…",
     "exit": "Stop",
     "moreRelations": "More relations",
+    "moreRelationsSoon": "Soon",
     "flowEyebrow": "Completeness",
     "flowCount": "{filled} of {total} directions filled",
     "flowHint": {
@@ -100,6 +101,9 @@
     "save": "Confirm & save",
     "saveHint": "You can save now even before it's all filled",
     "foldMore": "more",
+    "foldTitle": "{label} · {total}",
+    "defMore": "More",
+    "defLess": "Less",
     "question": {
       "isA": "What kind of thing is this node?",
       "dependsOn": "What does this node lean on?",
