@@ -2228,3 +2228,345 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 .docs-vault-tab-strip::-webkit-scrollbar {
   display: none;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Ontology Studio — SANCTIONED SCOPED EXCEPTION (owner-approved 2026-07-24)
+ *
+ * `/ontology/studio` is a deliberately immersive "강화(enhancement) screen"
+ * that treats a node like a game item you socket meaning-gems into. It is the
+ * ONE surface where the design charter's forbidden game energy — glow,
+ * gradients, aura, particles, rarity color — is ALLOWED, but ONLY through the
+ * `--studio-*` tokens below and ONLY inside `.studio-stage`. These tokens must
+ * NOT be referenced by app chrome or any other route. Everything else in the
+ * charter (dark-only, single-indigo elsewhere, token discipline, Pretendard,
+ * type ramp) still holds. Rationale + guardrails: docs/DESIGN-SYSTEM.md
+ * "Ontology Studio — game-energy exception", .claude/rules/design.md.
+ * ───────────────────────────────────────────────────────────────────────── */
+.studio-stage {
+  /* Rarity accents — a warm gold (missing/new axis) + the app indigo, brighter
+     than the charter indigo so the item reads as a lit game object. Same indigo
+     HUE family as --color-indigo-brand; the gold is scoped here only. */
+  --studio-indigo: #6b78e6;
+  --studio-indigo-bright: #8b96ff;
+  --studio-indigo-deep: #4a54c0;
+  --studio-indigo-a10: rgba(107, 120, 230, 0.1);
+  --studio-indigo-a20: rgba(107, 120, 230, 0.2);
+  --studio-indigo-a30: rgba(107, 120, 230, 0.3);
+  --studio-indigo-a45: rgba(107, 120, 230, 0.45);
+  --studio-indigo-a70: rgba(107, 120, 230, 0.7);
+  --studio-gold: #e8c579;
+  --studio-gold-bright: #f5d98f;
+  --studio-gold-a20: rgba(232, 197, 121, 0.2);
+  --studio-gold-a45: rgba(232, 197, 121, 0.45);
+  --studio-gold-a70: rgba(232, 197, 121, 0.7);
+  /* Positive "delta preview" — reuses the emerald signal hue (success family). */
+  --studio-emerald: #5fd39a;
+  --studio-emerald-a20: rgba(95, 211, 154, 0.2);
+
+  /* Dramatic stage background — focal glow + faint gold halo over the canvas. */
+  --studio-stage-bg: radial-gradient(
+      120% 78% at 50% 44%,
+      rgba(107, 120, 230, 0.16),
+      rgba(107, 120, 230, 0.04) 34%,
+      transparent 60%
+    ),
+    radial-gradient(80% 55% at 50% 42%, rgba(232, 197, 121, 0.05), transparent 55%),
+    var(--color-canvas);
+  --studio-rays: conic-gradient(
+    from 0deg,
+    transparent 0 8deg,
+    rgba(255, 255, 255, 0.014) 8deg 9deg,
+    transparent 9deg 26deg
+  );
+  --studio-particle: var(--studio-indigo-bright);
+
+  /* Item aura + rarity frame. */
+  --studio-aura: radial-gradient(
+    circle,
+    rgba(107, 120, 230, 0.34),
+    rgba(107, 120, 230, 0.09) 46%,
+    transparent 68%
+  );
+  --studio-hex-fill: linear-gradient(160deg, #20222e, #14151d 55%, #0f1017);
+  --studio-hex-frame: linear-gradient(
+    150deg,
+    var(--studio-gold-bright),
+    var(--studio-indigo) 45%,
+    var(--studio-indigo-deep) 70%,
+    var(--studio-gold) 100%
+  );
+
+  /* Relation gems — colored per relation type. */
+  --studio-gem-dep: linear-gradient(155deg, #9aa4ff, #5a63d4 45%, #3a41a0);
+  --studio-gem-con: linear-gradient(155deg, #9aa0b4, #5c6076 45%, #3a3d4c);
+  --studio-gem-rel: linear-gradient(155deg, #a9b0c8, #6a7192 45%, #454b66);
+  --studio-gem-empty: radial-gradient(circle at 50% 40%, #0a0b12, #05060a);
+  --studio-gem-dep-glow: 0 0 16px var(--studio-indigo-a45);
+  --studio-gem-con-glow: 0 0 12px rgba(150, 160, 190, 0.3);
+
+  /* Enhance button — glowing gradient + shimmer. */
+  --studio-enhance-bg: linear-gradient(
+    120deg,
+    var(--studio-indigo-deep),
+    var(--studio-indigo) 55%,
+    var(--studio-indigo-bright)
+  );
+  --studio-enhance-glow: 0 0 26px var(--studio-indigo-a45), 0 8px 24px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+@keyframes studio-spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+@keyframes studio-rise {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.7;
+  }
+  90% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateY(-220px);
+    opacity: 0;
+  }
+}
+@keyframes studio-bob {
+  50% {
+    transform: translateY(-9px);
+  }
+}
+@keyframes studio-aura-pulse {
+  50% {
+    transform: scale(1.08);
+    opacity: 0.82;
+  }
+}
+@keyframes studio-pip-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+@keyframes studio-sweep {
+  0% {
+    left: -60%;
+  }
+  55% {
+    left: 130%;
+  }
+  100% {
+    left: 130%;
+  }
+}
+
+/* reduced-motion: freeze all studio motion (rays, particles, bob, aura pulse,
+   pip pulse, button shimmer) — static composition stays fully legible. */
+@media (prefers-reduced-motion: reduce) {
+  .studio-stage [class*="studio-anim"] {
+    animation: none !important;
+  }
+  .studio-stage .studio-anim-sweep::after {
+    display: none;
+  }
+}
+
+/* Ontology Studio component classes — all scoped under `.studio-stage`, all
+   painted from the `--studio-*` tokens above. Kept here (not inline) so the
+   clip-paths, gradient frames, and pseudo-element sheen stay declarative and
+   the reduced-motion guard can target the `studio-anim-*` markers. */
+.studio-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--studio-stage-bg);
+}
+.studio-rays {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 1200px;
+  height: 1200px;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  pointer-events: none;
+  background: var(--studio-rays);
+  opacity: 0.5;
+  -webkit-mask: radial-gradient(circle, black 20%, transparent 62%);
+  mask: radial-gradient(circle, black 20%, transparent 62%);
+}
+.studio-anim-spin {
+  animation: studio-spin 60s linear infinite;
+}
+.studio-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--studio-particle);
+  box-shadow: 0 0 6px var(--studio-indigo-a70);
+  opacity: 0;
+}
+.studio-anim-rise {
+  animation: studio-rise linear infinite;
+}
+.studio-anim-bob {
+  animation: studio-bob 4.2s ease-in-out infinite;
+}
+.studio-aura {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: var(--studio-aura);
+  filter: blur(6px);
+}
+.studio-anim-aura {
+  animation: studio-aura-pulse 3s ease-in-out infinite;
+}
+.studio-hex {
+  position: relative;
+  width: 196px;
+  height: 216px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: var(--studio-hex-fill);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.studio-hex::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: inherit;
+  padding: 2px;
+  background: var(--studio-hex-frame);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.studio-hex::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 40%);
+  pointer-events: none;
+}
+/* Gem shape (socket + orbit share it). */
+.studio-gem {
+  position: relative;
+  clip-path: polygon(50% 0, 100% 27%, 82% 100%, 18% 100%, 0 27%);
+  display: grid;
+  place-items: center;
+}
+.studio-gem::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: inherit;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.28), transparent 42%);
+}
+.studio-gem--dep {
+  background: var(--studio-gem-dep);
+  box-shadow: var(--studio-gem-dep-glow), inset 0 -3px 8px rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+.studio-gem--con {
+  background: var(--studio-gem-con);
+  box-shadow: var(--studio-gem-con-glow), inset 0 -3px 8px rgba(0, 0, 0, 0.4);
+  color: #fff;
+}
+.studio-gem--rel {
+  background: var(--studio-gem-rel);
+  box-shadow: 0 0 10px rgba(150, 160, 190, 0.25), inset 0 -3px 8px rgba(0, 0, 0, 0.4);
+  color: #fff;
+}
+.studio-gem--empty {
+  background: var(--studio-gem-empty);
+  border: 1px dashed var(--studio-indigo-a45);
+  color: var(--studio-indigo-bright);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.7);
+}
+.studio-gem--isa {
+  background: var(--studio-gem-empty);
+  border: 1px dashed var(--studio-gold-a45);
+  color: var(--studio-gold-bright);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.7), 0 0 16px var(--studio-gold-a20);
+}
+.studio-anim-isa-pulse {
+  animation: studio-aura-pulse 2.4s ease-in-out infinite;
+}
+/* Orbiting gems around the hexagon. `--a` = angle set inline per gem. */
+.studio-orbit {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.studio-orbit-gem {
+  position: absolute;
+  width: 20px;
+  height: 22px;
+  clip-path: polygon(50% 0, 100% 27%, 82% 100%, 18% 100%, 0 27%);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(var(--a)) translateY(-128px) rotate(calc(-1 * var(--a)));
+}
+.studio-orbit-gem--dep {
+  background: linear-gradient(155deg, #9aa4ff, var(--studio-indigo-deep));
+  box-shadow: 0 0 12px var(--studio-indigo-a70);
+}
+.studio-orbit-gem--con {
+  background: linear-gradient(155deg, #9aa0b4, #4a4d5e);
+  box-shadow: 0 0 9px rgba(150, 160, 190, 0.5);
+}
+.studio-orbit-gem--rel {
+  background: linear-gradient(155deg, #a9b0c8, #454b66);
+  box-shadow: 0 0 9px rgba(150, 160, 190, 0.4);
+}
+.studio-orbit-gem--isa {
+  background: #0a0b12;
+  border: 1px dashed var(--studio-gold-a45);
+  box-shadow: 0 0 10px var(--studio-gold-a20);
+}
+/* Tier pips. */
+.studio-pip {
+  width: 16px;
+  height: 5px;
+  border-radius: 2px;
+  background: var(--color-overlay-3);
+}
+.studio-pip--on {
+  background: var(--studio-indigo);
+  box-shadow: 0 0 10px var(--studio-indigo-a70);
+}
+.studio-pip--next {
+  background: var(--studio-gold);
+  box-shadow: 0 0 12px var(--studio-gold-a70);
+}
+.studio-anim-pip {
+  animation: studio-pip-pulse 1.6s ease-in-out infinite;
+}
+/* Enhance button + shimmer. */
+.studio-enhance {
+  position: relative;
+  overflow: hidden;
+  background: var(--studio-enhance-bg);
+  box-shadow: var(--studio-enhance-glow);
+}
+.studio-anim-sweep::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: studio-sweep 2.6s ease-in-out infinite;
+}
