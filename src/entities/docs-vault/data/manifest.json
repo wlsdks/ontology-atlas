@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T13:24:40.643Z",
+  "generatedAt": "2026-07-24T14:25:21.554Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -218,8 +218,8 @@
         }
       ],
       "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
-      "wordCount": 1951,
-      "updatedAt": "2026-07-24T12:04:14+09:00",
+      "wordCount": 1936,
+      "updatedAt": "2026-07-24T14:07:20.300Z",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -2508,9 +2508,9 @@
           "slug": "잔여-게이트-다음-라운드"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 95 노드, CLI 48 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 94 노드, CLI 48 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
       "wordCount": 1661,
-      "updatedAt": "2026-07-24T11:52:16.630Z",
+      "updatedAt": "2026-07-24T14:02:27.992Z",
       "linksOut": []
     },
     {
@@ -3111,8 +3111,8 @@
         }
       ],
       "excerpt": "7 tasks across 3 categories. Each has a known correct answer (verifiable by human against the current docs/ontology/ vault, code, and PR history) so we can grade independent of the AI's confidence. Paste the prompt verbatim into a fresh agent session. No follow-ups. Questions where the answer requires reasoning over mu",
-      "wordCount": 815,
-      "updatedAt": "2026-06-06T02:19:43+09:00",
+      "wordCount": 814,
+      "updatedAt": "2026-07-24T14:10:16.698Z",
       "linksOut": []
     },
     {
@@ -3164,6 +3164,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-24 — Firebase Hosting 인프라 제거, GitHub Pages 단일 웹 호스트",
+          "slug": "2026-07-24-firebase-hosting-인프라-제거-github-pages-단일-웹-호스트"
         },
         {
           "depth": 2,
@@ -4796,9 +4801,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 최종 점검에서 28초 여정을 30fps 영상으로 뜯어보니, 급변 프레임 3개 중 2개가 가이드 투어 카드의 단계 전환 순간이동이었다(top/left 가 한",
-      "wordCount": 37564,
-      "updatedAt": "2026-07-24T20:50:20+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. R10 에서 Firebase SDK 는 이미 제거됐고, 남아 있던 것은 정적 사이트 배포 표면(Firebase Hosting)뿐이었다. SITEURL 이 ",
+      "wordCount": 37690,
+      "updatedAt": "2026-07-24T14:25:12.928Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -4828,8 +4833,8 @@
         },
         {
           "depth": 3,
-          "text": "Firebase Hosting",
-          "slug": "firebase-hosting"
+          "text": "GitHub Pages (canonical)",
+          "slug": "github-pages-canonical"
         },
         {
           "depth": 3,
@@ -4838,8 +4843,8 @@
         },
         {
           "depth": 3,
-          "text": "GitHub Pages, Netlify, S3, …",
-          "slug": "github-pages-netlify-s3"
+          "text": "Netlify, S3, other static hosts",
+          "slug": "netlify-s3-other-static-hosts"
         },
         {
           "depth": 2,
@@ -4862,9 +4867,9 @@
           "slug": "future-cloud-collab"
         }
       ],
-      "excerpt": "2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (Firebase Hosting, Vercel, Netlify, GitHub Pages, S3 + CloudFront, …). The detailed Firebase-specific guide is archived in docs/archive/DEPLOY-FIREBASE.md for reference.",
-      "wordCount": 654,
-      "updatedAt": "2026-07-22T00:35:26+09:00",
+      "excerpt": "2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (GitHub Pages, Vercel, Netlify, S3 + CloudFront, …). The canonical host is GitHub Pages; the old Firebase-specific guide is archived in docs/archive/DEPLOY-FIREBASE.md f",
+      "wordCount": 496,
+      "updatedAt": "2026-07-24T14:03:36.063Z",
       "linksOut": [
         "archive/DEPLOY-FIREBASE"
       ]
@@ -5429,8 +5434,8 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 4784,
-      "updatedAt": "2026-06-12T13:47:39+09:00",
+      "wordCount": 4767,
+      "updatedAt": "2026-07-24T14:08:46.305Z",
       "linksOut": []
     },
     {
@@ -5487,8 +5492,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7292,
-      "updatedAt": "2026-07-21T20:57:08+09:00",
+      "wordCount": 6985,
+      "updatedAt": "2026-07-24T13:49:08.803Z",
       "linksOut": []
     },
     {
@@ -5925,8 +5930,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 나침 무대 쓰기 표면, engraved census 헤더",
-      "wordCount": 12120,
-      "updatedAt": "2026-07-24T19:32:04+09:00",
+      "wordCount": 12087,
+      "updatedAt": "2026-07-24T14:07:42.385Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6094,7 +6099,7 @@
       ],
       "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ontology-atlas 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성",
       "wordCount": 419,
-      "updatedAt": "2026-07-24T16:53:06+09:00",
+      "updatedAt": "2026-07-24T20:57:58+09:00",
       "linksOut": []
     },
     {
@@ -6132,7 +6137,7 @@
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~280. HN expects substantive Show HN posts, not one-liners.)",
       "wordCount": 439,
-      "updatedAt": "2026-07-24T16:53:06+09:00",
+      "updatedAt": "2026-07-24T20:57:58+09:00",
       "linksOut": []
     },
     {
@@ -6905,8 +6910,8 @@
         }
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
-      "wordCount": 10606,
-      "updatedAt": "2026-07-23T16:15:48+09:00",
+      "wordCount": 10587,
+      "updatedAt": "2026-07-24T14:07:07.781Z",
       "linksOut": []
     },
     {
@@ -6960,8 +6965,8 @@
       },
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
-      "wordCount": 3684,
-      "updatedAt": "2026-06-12T12:52:11+09:00",
+      "wordCount": 3631,
+      "updatedAt": "2026-07-24T14:00:31.469Z",
       "linksOut": []
     },
     {
@@ -6986,32 +6991,6 @@
       "excerpt": "지도의 엣지를 클릭 가능한 1급 객체로 만든 역량 (2026-07-21, P3b). 빈 공간 클릭이 엣지 7px 근접이면 팝오버가 열린다: 평문 문장(\"A 가 B 에 기대요\") → 타입 → 양 끝 노드(클릭=포커스) → 관계 근거(why, relationnotes) → 선언한 vault 문서(.md 링크 + 변경 시점) → 관계 편집 딥링크. 구현: topology-edge-hit.ts(AABB 프리패스 + 베지어 16-샘플), TopologyV2EdgePanel.tsx, WorldEdge.relationType/declaredBySlug 배관. 후보는 양 끝점이 현",
       "wordCount": 93,
       "updatedAt": "2026-07-22T00:03:44+09:00",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/capabilities/firebase-deploy-skill",
-      "path": "docs/ontology/capabilities/firebase-deploy-skill.md",
-      "title": "Firebase Deploy Skill (.claude/skills/firebase-deploy)",
-      "tags": [],
-      "frontmatter": {
-        "slug": "capabilities/firebase-deploy-skill",
-        "kind": "capability",
-        "title": "Firebase Deploy Skill (.claude/skills/firebase-deploy)",
-        "domain": "ai-agent-partner",
-        "elements": [
-          ".claude/skills/firebase-deploy/SKILL.md"
-        ]
-      },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Firebase Deploy Skill",
-          "slug": "firebase-deploy-skill"
-        }
-      ],
-      "excerpt": ".claude/skills/firebase-deploy/SKILL.md is the agent-runbook for publishing the static promo/download website to Firebase Hosting. It reads local .env.prod identifiers, runs the docs/type/build/bundle gates plus pnpm firebase:deploy-check, deploys with firebase deploy --only hosting, and verifies the live web.app URL. ",
-      "wordCount": 243,
-      "updatedAt": "2026-05-27T09:55:35+09:00",
       "linksOut": []
     },
     {
@@ -8145,7 +8124,6 @@
           "capabilities/agent-connect-sheet",
           "capabilities/agent-practitioner-concerns-map",
           "capabilities/project-ontology-indexing",
-          "firebase-deploy-skill",
           "mcp-conflict-guard",
           "mcp-server",
           "ontology-bootstrap-skill",
@@ -8176,7 +8154,7 @@
       ],
       "excerpt": "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 31 도구 (read 18 + write 13) 를 stdin/stdout JSON-RPC 로 노출. 등록 가이드: mcp/README.md. 사용자 LLM 비용을 cloud 로 옮기지 않음 — agent 가 자기 LLM 으로 호출. .claude/hooks/block-npm-publish.sh 는 agent 가 사용자 명시 승인 없이 npm publish 계열 명령을 실행하지 못하게 막는 안전장치다. pnpm test:cla",
       "wordCount": 78,
-      "updatedAt": "2026-07-24T18:32:05+09:00",
+      "updatedAt": "2026-07-24T13:59:22.194Z",
       "linksOut": []
     },
     {
@@ -9864,8 +9842,8 @@
         }
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
-      "wordCount": 4926,
-      "updatedAt": "2026-07-24T16:53:06+09:00",
+      "wordCount": 4912,
+      "updatedAt": "2026-07-24T14:09:30.949Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -10963,214 +10941,6 @@
       "wordCount": 1216,
       "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": []
-    },
-    {
-      "slug": "VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
-      "path": "docs/VISUAL-DESIGN-REVIEW-BRIEF-2026-07.md",
-      "title": "Ontology Atlas — Visual Design Review Brief (2026-07)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Ontology Atlas — Visual Design Review Brief (2026-07)",
-          "slug": "ontology-atlas-visual-design-review-brief-2026-07"
-        },
-        {
-          "depth": 2,
-          "text": "1. How to use this document",
-          "slug": "1-how-to-use-this-document"
-        },
-        {
-          "depth": 2,
-          "text": "2. Compact PO framing",
-          "slug": "2-compact-po-framing"
-        },
-        {
-          "depth": 2,
-          "text": "3. Evidence reviewed",
-          "slug": "3-evidence-reviewed"
-        },
-        {
-          "depth": 3,
-          "text": "Current-session captures",
-          "slug": "current-session-captures"
-        },
-        {
-          "depth": 3,
-          "text": "Stable product captures",
-          "slug": "stable-product-captures"
-        },
-        {
-          "depth": 3,
-          "text": "Product surfaces to inspect live",
-          "slug": "product-surfaces-to-inspect-live"
-        },
-        {
-          "depth": 2,
-          "text": "4. Review method and limits",
-          "slug": "4-review-method-and-limits"
-        },
-        {
-          "depth": 2,
-          "text": "5. Consolidated diagnosis",
-          "slug": "5-consolidated-diagnosis"
-        },
-        {
-          "depth": 2,
-          "text": "6. Prioritized findings",
-          "slug": "6-prioritized-findings"
-        },
-        {
-          "depth": 3,
-          "text": "1. Relation direction and type are not reliably readable — Critical",
-          "slug": "1-relation-direction-and-type-are-not-reliably-readable-critical"
-        },
-        {
-          "depth": 3,
-          "text": "2. Graph volume is more prominent than graph insight — Critical",
-          "slug": "2-graph-volume-is-more-prominent-than-graph-insight-critical"
-        },
-        {
-          "depth": 3,
-          "text": "3. The first five seconds do not prove one work outcome — Critical",
-          "slug": "3-the-first-five-seconds-do-not-prove-one-work-outcome-critical"
-        },
-        {
-          "depth": 3,
-          "text": "4. Information that must be read is too dim — High",
-          "slug": "4-information-that-must-be-read-is-too-dim-high"
-        },
-        {
-          "depth": 3,
-          "text": "5. Project root, current selection, hover, and path state compete — High",
-          "slug": "5-project-root-current-selection-hover-and-path-state-compete-high"
-        },
-        {
-          "depth": 3,
-          "text": "6. The focused Topology state currently carries the strongest product proof — High",
-          "slug": "6-the-focused-topology-state-currently-carries-the-strongest-product-proof-high"
-        },
-        {
-          "depth": 3,
-          "text": "7. Local-first and Git-backed trust are implied rather than proved — High",
-          "slug": "7-local-first-and-git-backed-trust-are-implied-rather-than-proved-high"
-        },
-        {
-          "depth": 3,
-          "text": "8. Studio's game metaphor attracts attention but can weaken rigor — High",
-          "slug": "8-studios-game-metaphor-attracts-attention-but-can-weaken-rigor-high"
-        },
-        {
-          "depth": 3,
-          "text": "9. Topology and Studio need one semantic world, not just shared colors — High",
-          "slug": "9-topology-and-studio-need-one-semantic-world-not-just-shared-colors-high"
-        },
-        {
-          "depth": 3,
-          "text": "10. The dark negative space is potentially a premium asset — Preserve",
-          "slug": "10-the-dark-negative-space-is-potentially-a-premium-asset-preserve"
-        },
-        {
-          "depth": 3,
-          "text": "11. The gold central core is the strongest current brand seed — Opportunity",
-          "slug": "11-the-gold-central-core-is-the-strongest-current-brand-seed-opportunity"
-        },
-        {
-          "depth": 3,
-          "text": "12. Product UI and social creative are separate design problems — SNS Critical",
-          "slug": "12-product-ui-and-social-creative-are-separate-design-problems-sns-critical"
-        },
-        {
-          "depth": 2,
-          "text": "7. Material disagreements to preserve",
-          "slug": "7-material-disagreements-to-preserve"
-        },
-        {
-          "depth": 3,
-          "text": "\"The interface is too dark\"",
-          "slug": "the-interface-is-too-dark"
-        },
-        {
-          "depth": 3,
-          "text": "\"The canvas is too empty\"",
-          "slug": "the-canvas-is-too-empty"
-        },
-        {
-          "depth": 3,
-          "text": "\"Studio is the strongest screen\"",
-          "slug": "studio-is-the-strongest-screen"
-        },
-        {
-          "depth": 3,
-          "text": "\"The brand is generic\"",
-          "slug": "the-brand-is-generic"
-        },
-        {
-          "depth": 3,
-          "text": "\"Small text should be larger\"",
-          "slug": "small-text-should-be-larger"
-        },
-        {
-          "depth": 2,
-          "text": "8. Preserve before redesigning",
-          "slug": "8-preserve-before-redesigning"
-        },
-        {
-          "depth": 2,
-          "text": "9. Open questions for Fable",
-          "slug": "9-open-questions-for-fable"
-        },
-        {
-          "depth": 2,
-          "text": "10. Hypotheses worth testing",
-          "slug": "10-hypotheses-worth-testing"
-        },
-        {
-          "depth": 2,
-          "text": "11. Directional score range",
-          "slug": "11-directional-score-range"
-        },
-        {
-          "depth": 2,
-          "text": "12. Recommended agent workflow",
-          "slug": "12-recommended-agent-workflow"
-        },
-        {
-          "depth": 3,
-          "text": "Phase A — independent review",
-          "slug": "phase-a-independent-review"
-        },
-        {
-          "depth": 3,
-          "text": "Phase B — shape one design slice",
-          "slug": "phase-b-shape-one-design-slice"
-        },
-        {
-          "depth": 3,
-          "text": "Phase C — implement and verify",
-          "slug": "phase-c-implement-and-verify"
-        },
-        {
-          "depth": 2,
-          "text": "13. Copy-ready prompt A — ask Fable for an independent opinion",
-          "slug": "13-copy-ready-prompt-a-ask-fable-for-an-independent-opinion"
-        },
-        {
-          "depth": 2,
-          "text": "14. Copy-ready prompt B — implement one approved slice",
-          "slug": "14-copy-ready-prompt-b-implement-one-approved-slice"
-        },
-        {
-          "depth": 2,
-          "text": "15. Current recommendation",
-          "slug": "15-current-recommendation"
-        }
-      ],
-      "excerpt": "Status: exploratory review brief, not an approved redesign specification. Audience: Claude Code Fable, design-review agents, and the product owner. Purpose: preserve the evidence, agreements, disagreements, and open questions from a multi-perspective review so the next agent can challenge the diagnosis before proposing",
-      "wordCount": 3181,
-      "updatedAt": "2026-07-24T08:03:00.917Z",
-      "linksOut": []
     }
   ],
   "backlinksDetail": {
@@ -11294,7 +11064,7 @@
     "archive/DEPLOY-FIREBASE": [
       {
         "fromSlug": "DEPLOYMENT",
-        "context": "rebase Hosting, Vercel, Netlify, GitHub Pages, S3 + CloudFront, …). The detailed Firebase-specific guide is archived in **[`docs/archive/DEPLOY-FIREBASE.md`]** for reference. ## Build ```bash pnpm install pnpm build # static export → out/ ``` This produces an `out/`",
+        "context": "ercel, Netlify, S3 + CloudFront, …). The canonical host is GitHub Pages; the old Firebase-specific guide is archived in **[`docs/archive/DEPLOY-FIREBASE.md`]** for historical reference only. ## Build ```bash pnpm install pnpm build # static export → out/ ``` This pro",
         "linkText": "`docs/archive/DEPLOY-FIREBASE.md`"
       }
     ],
@@ -11819,11 +11589,6 @@
         "fromSlug": "ontology/capabilities/desktop-app-distribution",
         "context": "frontmatter · **[domains/ai-agent-partner]**",
         "linkText": "domains/ai-agent-partner"
-      },
-      {
-        "fromSlug": "ontology/capabilities/firebase-deploy-skill",
-        "context": "frontmatter · **[ai-agent-partner]**",
-        "linkText": "ai-agent-partner"
       },
       {
         "fromSlug": "ontology/capabilities/mcp-conflict-guard",
@@ -13001,13 +12766,6 @@
         "linkText": "capabilities/agent-connect-sheet"
       }
     ],
-    "ontology/capabilities/firebase-deploy-skill": [
-      {
-        "fromSlug": "ontology/domains/ai-agent-partner",
-        "context": "frontmatter · **[firebase-deploy-skill]**",
-        "linkText": "firebase-deploy-skill"
-      }
-    ],
     "ontology/capabilities/ontology-extract-skill": [
       {
         "fromSlug": "ontology/domains/ai-agent-partner",
@@ -13654,13 +13412,6 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/edge-meaning-popover",
                 "title": "Edge Meaning Popover (관계 팝오버)"
-              },
-              {
-                "name": "firebase-deploy-skill",
-                "path": "ontology/capabilities/firebase-deploy-skill",
-                "type": "doc",
-                "slug": "ontology/capabilities/firebase-deploy-skill",
-                "title": "Firebase Deploy Skill (.claude/skills/firebase-deploy)"
               },
               {
                 "name": "first-run-onboarding-guides",
@@ -14582,13 +14333,6 @@
         "type": "doc",
         "slug": "TROUBLESHOOTING",
         "title": "Troubleshooting"
-      },
-      {
-        "name": "VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
-        "path": "VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
-        "type": "doc",
-        "slug": "VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
-        "title": "Ontology Atlas — Visual Design Review Brief (2026-07)"
       }
     ]
   }

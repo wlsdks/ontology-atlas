@@ -75,9 +75,8 @@ hierarchical tree, xyflow ERD builder. The installed app reads/writes the
 same `.md` files through a local native vault bridge; the hosted website is only the product intro and download entry point.
 
 **Pure local-first**: no backend, no auth, no DB. The optional Firebase
-/ Firestore / Auth surfaces were permanently removed in R10. A
-`pnpm bundle:check` CI guard verifies the static export bundle stays
-firebase-free across every user-facing route.
+/ Firestore / Auth surfaces were permanently removed in R10, and the static
+site is hosted on GitHub Pages with no cloud SDK in the bundle.
 
 30-second try:
 
@@ -87,7 +86,7 @@ cd my-vault
 $EDITOR project.md
 ```
 
-Hosted demo (read-only, dogfood vault): https://ontology-atlas.web.app
+Hosted demo (read-only, dogfood vault): https://wlsdks.github.io/ontology-atlas/
 Repo: https://github.com/wlsdks/ontology-atlas
 MIT licensed.
 

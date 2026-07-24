@@ -13,7 +13,6 @@ pnpm test:mcp:docs
 pnpm vault:validate
 pnpm exec tsc --noEmit
 pnpm build
-pnpm bundle:check
 ```
 
 For user-facing UI changes, add the relevant Playwright route check.
@@ -24,8 +23,8 @@ For user-facing UI changes, add the relevant Playwright route check.
 |---|---|---|
 | App/type safety | `pnpm exec tsc --noEmit` | `pnpm build` |
 | Lint/style | `pnpm lint` | `pnpm test:run` |
-| Static deploy safety | `pnpm build` | `pnpm bundle:check` |
-| Firebase Hosting deploy | `pnpm firebase:deploy-check` | `pnpm desktop:verify-hosted` after deploy |
+| Static deploy safety | `pnpm build` | `pnpm exec tsc --noEmit` |
+| GitHub Pages deploy | `pnpm build` | `pnpm desktop:verify-hosted` after deploy |
 | Static dogfood manifest | `pnpm docs-vault:check` | `pnpm test:docs-vault` |
 | macOS desktop readiness | `pnpm desktop:check` | `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:runtime` / `pnpm test:desktop:bridge` |
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
@@ -36,37 +35,22 @@ For user-facing UI changes, add the relevant Playwright route check.
 | Dogfood MCP smoke | `pnpm dogfood:status` | `pnpm dogfood:verify` |
 | Packed CLI release | `pnpm smoke:packed-cli` | `pnpm test:mcp:package` |
 
-`pnpm test:mcp:docs` also guards Firebase Hosting config as static-only:
-`firebase.json` must stay Hosting-only, point at `out/`, and not add Functions,
-Firestore, Storage, emulators, or rewrites. `pnpm test:mcp:docs` also guards
+`pnpm test:mcp:docs` also guards
 the tracked `.mcp.json`, `.mcp.json.example`, and `.codex/config.toml`
 source-checkout templates so local agent registration keeps pointing at
 `node ./mcp/src/index.js` with `OATLAS_VAULT=./docs/ontology`. Use
 `pnpm test:mcp:registration` when only those MCP registration templates changed.
-For production Firebase Hosting, `pnpm firebase:deploy-check` is the local
-deploy preflight: it requires `.env.prod`, verifies `.firebaserc` matches
-`FIREBASE_PROJECT_ID`, keeps `firebase.json` static Hosting-only, and confirms
-`.env.prod` is excluded from both git and Firebase deploy packaging before
-`firebase deploy --only hosting`. Changes to `firebase.json`, `.firebaserc`,
-`.firebaseignore`, `.env.prod.example`, `.github/workflows/deploy-hosting.yml`,
-or `scripts/check-firebase-hosting-deploy-env.mjs` route first to the fixture
-backed `pnpm exec node --test scripts/check-firebase-hosting-deploy-env.test.mjs`;
-the live `pnpm firebase:deploy-check` still requires a local `.env.prod`.
-Firebase Hosting is deliberately separate
-from the macOS app release workflow: `.github/workflows/release-macos.yml`
-publishes signed/notarized local-only DMGs without Firebase secrets or deploy
-steps. The website maintainer path is `.github/workflows/deploy-hosting.yml` for
-manual dispatch or human-created Release events. It writes `.env.prod` from
-repository variables, authenticates with `FIREBASE_SERVICE_ACCOUNT_JSON`, sets
-`NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0`, deploys only Hosting with
-`firebase-tools@15.17.0`, and runs `pnpm desktop:verify-hosted` so the hosted
-download route can be verified separately from the app release. On
-Release-published events, or on manual dispatch when `release_tag` is supplied,
-it also runs `pnpm desktop:verify-download -- --tag="$PUBLISHED_RELEASE_TAG"` so
-the hosted deploy record proves the public DMG/checksum assets are still
-reachable. The workflow then writes the hosted public URL, verified `/ko/` and
-`/ko/download/` routes, and verified release tag status to the GitHub Actions
-step summary for reviewer handoff.
+The hosted demo website is served by GitHub Pages via
+`.github/workflows/deploy-pages.yml`, the sole web host. It builds the static
+export to the `/ontology-atlas` base path on push to `main` and on release
+publication, then runs
+`pnpm desktop:verify-hosted -- --base-url="https://wlsdks.github.io/ontology-atlas"`
+and, when a release tag is present,
+`pnpm desktop:verify-download -- --tag="$PUBLISHED_RELEASE_TAG"` so the hosted
+download route proves the public DMG/checksum assets are still reachable. GitHub
+Pages needs no deploy secrets. The website deploy is deliberately separate from
+the macOS app release workflow: `.github/workflows/release-macos.yml` publishes
+signed/notarized local-only DMGs and is separate from the website deploy.
 
 ## Vault Checks
 
@@ -155,8 +139,6 @@ with every browser journey.
 `postcss.config.mjs` and `app/globals.css` route to the overflow sweep spec,
 which exercises global Tailwind/CSS output across the core responsive routes
 without starting from every Playwright journey.
-The local-first bundle guard is artifact-based: when `scripts/check-bundle.mjs`
-changes, run `pnpm build` first and then `pnpm bundle:check`.
 The macOS desktop readiness gate is scaffold-aware and local-first: when
 `scripts/check-desktop-readiness.mjs`, `scripts/desktop-doctor.mjs`,
 `scripts/desktop-smoke.mjs`, `scripts/package-macos-dmg.mjs`,
@@ -171,7 +153,7 @@ The macOS desktop readiness gate is scaffold-aware and local-first: when
 `scripts/notarize-macos-dmg.mjs`,
 `src/shared/lib/tauri-vault-fs.ts`, `docs/DESKTOP-MACOS.md`, `src-tauri/**`,
 `package.json`, `.github/workflows/release-macos.yml`,
-`.github/workflows/deploy-hosting.yml`, or `next.config.ts`
+`.github/workflows/deploy-pages.yml`, or `next.config.ts`
 changes, run `pnpm desktop:check`; checker implementation changes also route to direct
 `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` and doctor
 implementation changes route to
@@ -280,9 +262,9 @@ top-level `blockerIds`, `localBlockerIds`, `externalBlockerIds`,
 checks, and each check also carries a stable `id`, `scope`, and `owner` such as
 `pull_request`, `apple_release_secrets`, `github_release`, and `download_assets`
 so automation does not branch on translated or edited labels. Actionable
-blockers include `commands[]` entries, Developer ID direct-download signing
-blockers expose top-level `missingSecrets[]`, and hosted deploy blockers expose
-`missingHostedSecrets[]`, so follow-up runners can execute known diagnostics,
+blockers include `commands[]` entries and Developer ID direct-download signing
+blockers expose top-level `missingSecrets[]`, so follow-up runners can execute
+known diagnostics,
 secret setup prompts, pre-tag source checks, the post-merge release tag push,
 release workflow watch scoped to the pushed tag commit, and public download
 verification without parsing prose. The default terminal output and markdown
@@ -299,20 +281,8 @@ branch through `gh repo view ... defaultBranchRef` before `git fetch`,
 command groups as one-shell-session commands because the default-branch
 variable is intentionally shared by the following fetch, source-check, and tag
 commands.
-Firebase Hosting is not part of the macOS
-app release gate by default; verify the separate website with `pnpm desktop:verify-hosted`.
-When using the command as the full desktop goal audit, pass
-`--include-hosted-surface` to add the deployed promo/download website as
-`hosted_deploy_workflow`, `hosted_deploy_secrets`, and `hosted_surface`
-blockers in the same JSON/Markdown snapshot, including
-`FIREBASE_SERVICE_ACCOUNT_JSON` in the checklist's missing-secret section;
-the hosted download page keeps macOS app release blockers aligned with
-review/signing/GitHub Release requirements while naming Firebase Hosting only
-as the separate hosted-route deploy gate instead of sending users into the
-browser workbench; the page also exposes a copyable
-`pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0 --include-hosted-surface --json-file=.tmp/desktop-release-status.json --markdown-file=.tmp/desktop-release-status.md`
-audit so release operators can capture owner-grouped JSON and Markdown blocker
-evidence locally before waiting on CI;
+The hosted GitHub Pages website is not part of the macOS
+app release gate; verify the separate website with `pnpm desktop:verify-hosted`.
 `pnpm desktop:dev` launches the Tauri shell for local prototype work, and
 `pnpm desktop:build:app` targets the macOS `.app`; release builds must first
 pass `pnpm desktop:release-secrets`, then run `pnpm desktop:sign` with a
@@ -356,10 +326,10 @@ no marketing landing detour) and offers the local-folder open CTA, and that
 the live `/ko/download/` installation route exists, carries the absorbed
 intro section, and points directly to the stable GitHub Releases page, not
 `/releases/latest`. This hosted-page check is separate from `pnpm desktop:release-status`
-so a Firebase deployment problem cannot block the local-only macOS app release.
+so a GitHub Pages deployment problem cannot block the local-only macOS app release.
 When `/ko/download/` returns 404, the recovery path is to merge the desktop PR
-so `.github/workflows/deploy-hosting.yml` is available on the default branch,
-run `gh workflow run deploy-hosting.yml --repo wlsdks/ontology-atlas`, then
+so `.github/workflows/deploy-pages.yml` is available on the default branch,
+run `gh workflow run deploy-pages.yml --repo wlsdks/ontology-atlas`, then
 rerun `pnpm desktop:verify-hosted`.
 The installed app's native vault bridge is part of this same gate:
 `src-tauri/src/lib.rs` must expose folder-pick, directory-list, read, write,
@@ -403,8 +373,7 @@ handle store filters those Tauri path records outside the Tauri runtime, so a
 hosted browser session cannot resurrect installed-app vault paths as writable
 local state.
 `next.config.ts` is static-export source-of-truth; changes route to
-`pnpm desktop:check`, `pnpm exec tsc --noEmit`, `pnpm build`, and then
-`pnpm bundle:check`.
+`pnpm desktop:check`, `pnpm exec tsc --noEmit`, and `pnpm build`.
 Next App Router entries under `app/**/*.ts[x]` and `next-env.d.ts` route to
 `pnpm exec tsc --noEmit`, so route exports, metadata routes, and page/layout
 type drift are caught before broader browser or build checks.
@@ -454,9 +423,7 @@ committing or publishing changes.
 | Command | Use when |
 |---|---|
 | `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget |
-| `pnpm bundle:check` | Local-first static export bundle guard for the root/topology, download, docs, ontology, and projects routes; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
 | `pnpm design:ontology` | Ontology workbench design drift guard for forbidden visual patterns across Workspace, ontology operation surfaces, and shared UI primitives plus Workspace execution, Browse/Write/Query, Builder write/proof, Insights query cockpit, topology legend, Product Design OS designer-bench, public reference-permission contracts, and Relief/Topology token anti-pattern contracts |
-| `pnpm firebase:deploy-check` | Firebase Hosting deploy preflight for `.env.prod`, project-id alignment, static-only Hosting config, and deploy credential ignores |
 | `pnpm desktop:check` | macOS desktop Tauri scaffold readiness gate for static export, image mode, docs-vault freshness, CLI/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files |
 | `pnpm desktop:doctor` | Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, Xcode command line tools, CLI/MCP agent setup gates, and non-blocking local `.app` signing state |
 | `pnpm desktop:smoke` | Built `out/` payload smoke for the packaged root app entry, locale routes including `/ontology/insights`, ontology workbench route titles, Download release audit (`Local completion audit` / `pnpm desktop:release-status` / `owner-grouped release blockers`), bundled Workspace graph-check copy action, route component chunk contracts, Workspace execution contract (`local markdown` / `frontmatter` / `MCP` / `runtime replay` / `relation_name_parity` / `pattern_walk/project_map`), Browse status strip (`Concept map` / `concepts` / `relations`), Browse/Write/Query proof chips (`tree projection` / `frontmatter write` / `dogfood:graph-db`), graph DB proof rail, Browse canonical slug handle, Browse sync gate copy action, Builder collapsed save/proof controls (`Save proof` / `Layout` / `Auto layout`), Builder proof chips (`local markdown` / `canvas draft` / `relation guard` / `graph db + health`), Builder draft disk-state marker (`not on disk until save`), Builder active slug handle, Builder runtime replay proof (`focused_blast_radius` / `relation_name_parity` / `pattern_walk/project_map`), Builder guard copy action, Builder sync gate copy action, Insights Query cockpit (`Readiness` / `Check order` / `AI checks` / `Terminal checks` / basic status check), Insights executable query proof (`Check order` / `AI checks` / `Terminal checks` / `Scan criteria` / `Path criteria` / setup gate), Insights reader graph operations (`facets + domain_matrix` / `match_nodes + lineage` / `blast_radius + impact` / `node_profile + reachability` / `agent_brief + health` / `business_questions`), Insights progressive business question lane (`Decision questions` / `Show answer criteria` / `Outcome distribution and domain boundary` / `Product boundary and links` / `Capability claim candidates` / `Implementation evidence links`), Insights question-level business handoffs (`Business ontology question handoff` / `Question focus: Business outcome` / `Question focus: Domain boundary` / `Question focus: Capability claim` / `Question focus: Implementation evidence`), Insights copyable business decision brief (`Business ontology decision brief` / `capability -> element match_edges`), Insights collaborator business extraction checks (`business outcome` / `business/product domain boundary` / `capability claim` / `implementation evidence`), Insights runtime gate copy action with `relation_name_parity` and `pattern_walk/project_map`, `_next` assets, and offline desktop docs before launching or bundling the `.app` / `.dmg` |
@@ -466,7 +433,7 @@ committing or publishing changes.
 | `pnpm desktop:verify-install` | Mount the DMG, require the `/Applications` symlink target, copy the app to a temporary install folder, verify that copied app through the LaunchServices app content proof gate (`--open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`), then clean it up |
 | `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI/MCP handoff, agent JSON setup gate, build, route smoke, LaunchServices app content proof (`--open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`), unsigned DMG, and install smoke |
 | `pnpm desktop:release-artifact` | Credentialed direct-download artifact command: release secrets, build, route smoke, app signing, DMG packaging, notarization, release DMG verification, and install smoke |
-| `pnpm desktop:goal-audit` | Full desktop goal gate: requires `--pr` and `--tag`, runs the local release preflight, then checks PR, signing, GitHub Release, hosted deploy, and download blockers, writing default `.tmp/desktop-goal-status` evidence with `local_preflight=ok` only after the native app and DMG install proof have passed locally |
+| `pnpm desktop:goal-audit` | Full desktop goal gate: requires `--pr` and `--tag`, runs the local release preflight, then checks PR, signing, and GitHub Release / download blockers, writing default `.tmp/desktop-goal-status` evidence with `local_preflight=ok` only after the native app and DMG install proof have passed locally |
 | `pnpm test:desktop:runtime` | Hosted-vs-installed runtime split tests for `/docs?intent=local`, first-run desktop routing, and hosted download routing |
 | `pnpm test:desktop:bridge` | WebView handle-shim tests plus Rust path-guard tests for the native vault bridge |
 | `pnpm desktop:release-secrets` | Fail closed before tag release when any Developer ID direct-download signing or notarization secret is missing, blank, invalid base64, or not a PKCS#12 DER certificate payload |
@@ -475,7 +442,7 @@ committing or publishing changes.
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
 | `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Developer ID direct-download secret names, optional tag/version alignment, clean local/remote same-tag Git ref slots, and clean same-tag Release slot |
 | `pnpm desktop:release-run` | Wait for the tag-push `release-macos.yml` run scoped to the pushed tag commit, then watch that exact run to completion |
-| `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, active release workflow availability, clean local/remote same-tag Git ref slots, Developer ID direct-download secret names, public stable Release state, public DMG/checksum download verification, owner-grouped handoff actions, and optional `--include-hosted-surface` deploy workflow, deploy secret, plus website verification |
+| `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, active release workflow availability, clean local/remote same-tag Git ref slots, Developer ID direct-download secret names, public stable Release state, public DMG/checksum download verification, and owner-grouped handoff actions |
 | `pnpm desktop:sign` | Deeply sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available; failed command logs redact notary credentials |
 | `pnpm desktop:verify-dmg` | Mount and named-checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |
@@ -507,7 +474,7 @@ committing or publishing changes.
 | `pnpm integration:cli:local-vault` | CLI local vault `add` / `import` / `list` / `find` / `validate` contracts |
 | `pnpm integration:cli:growth` | CLI `growth_plan` wrapper, candidate rendering, malformed payload, and argument contracts |
 | `pnpm test:contracts` | Cross-package schema/parser contracts |
-| `pnpm test:mcp:docs` | Explicit root/MCP/CLI/dogfood docs contracts plus Firebase static-hosting and MCP registration-template guards |
+| `pnpm test:mcp:docs` | Explicit root/MCP/CLI/dogfood docs contracts plus MCP registration-template guards |
 | `pnpm test:mcp:registration` | Source-checkout `.mcp.json` / `.mcp.json.example` / `.codex/config.toml` registration templates |
 | `pnpm test:mcp:unit` | MCP core parser, vault, compiler, query, import-analysis, and JSON-RPC line helpers; use the direct sibling `pnpm exec node --test mcp/src/<name>.test.mjs` first when `pnpm checks:changed` prints one, including `mcp/scripts/json-rpc-lines.mjs` → `mcp/src/json-rpc-lines.test.mjs` |
 | `pnpm integration:mcp` | Full MCP integration contracts; use when `mcp/src/integration.test.mjs` itself changed |
@@ -792,7 +759,7 @@ asset contains a SHA-256 line for the same DMG filename and bytes. After public
 verification, the publish job writes the published GitHub Release URL plus the
 public DMG filenames, byte sizes, and SHA-256 values to the GitHub Actions step
 summary. The separate
-`.github/workflows/deploy-hosting.yml` path deploys the hosted promo/download
+`.github/workflows/deploy-pages.yml` path deploys the hosted GitHub Pages
 site after release publication or manual dispatch and then runs
 `pnpm desktop:verify-hosted`. The verifier
 rejects unsupported extra `ontology-atlas_*.dmg` names, mixed-version
