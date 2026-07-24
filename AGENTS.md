@@ -142,13 +142,21 @@ scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood w
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (B3 허브가 곧 지도 — the old tree/ego hub is retired)
 /ontology/edit             ERD canvas builder (xyflow → vault md export)
-/ontology/studio           immersive game-styled surface (sanctioned scoped design
-                           exception: glow/gradient/aura via `--studio-*` tokens only) with two
-                           modes off one route: ENHANCE (default) = one node as a game item you
-                           complete by socketing relation "gems"; CREATE (`?mode=create`) =
-                           assemble a brand-new node — kind/name/domain/definition + relation
-                           cards with a node picker, near-dup guard, live preview, then apply
-                           direct-to-disk (loaded local vault) or as a copyable MCP command packet
+/ontology/studio           나침 무대 (Compass Stage) — the vault write surface, restrained
+                           (no game energy; the old `--studio-*` glow/gem exception was RETIRED
+                           2026-07-24 — fable verdict B + owner: "게임처럼 중독되게" was a
+                           metaphor, and loot aesthetics eroded trust in decision material).
+                           One surface, two fill-states, no mode tabs: relation types nailed to
+                           fixed compass bearings (UP=상위개념/is_a · DOWN=담는것/contains ·
+                           RIGHT=기대는곳/depends · LEFT=비슷한것/relates); missing relations are
+                           dashed line-art sockets you fill via an inline anchored picker (near-dup
+                           suggestion + "새로 만들기" bridge) — filling writes a real frontmatter
+                           relation (or an MCP packet in a read-only vault). ENHANCE = a partially
+                           filled existing node (opened via `?node=`); CREATE (`?mode=create`) = the
+                           same surface all-empty (kind/name/domain/definition draft card). Completion
+                           reads from the center card's 4-side border + a plain progress caption;
+                           addictiveness comes from the loop, not bling. is_a is a real `broader`
+                           (SKOS) relation added across derive/schema/validator.
 /ontology/insights         graph insights (kind census · hubs · relation breakdown)
 /download                  macOS desktop app download (DMG)
 ```
