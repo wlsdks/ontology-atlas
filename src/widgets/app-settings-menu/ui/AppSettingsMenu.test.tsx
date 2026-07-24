@@ -316,16 +316,23 @@ describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('Escape inside the agent drill-in returns to the root sheet before closing', () => {
+  it('Escape inside the agent drill-in restores the root row before closing', async () => {
     const onOpenChange = vi.fn();
     render(<AppSettingsMenu mode="static" open onOpenChange={onOpenChange} />);
-    fireEvent.click(screen.getByTestId('app-settings-agent-drillin'));
+    const drillIn = screen.getByTestId('app-settings-agent-drillin');
+    fireEvent.click(drillIn);
+    await waitFor(() => {
+      expect(screen.getByTestId('app-settings-agent-back')).toHaveFocus();
+    });
     fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
       key: 'Escape',
       bubbles: true,
     });
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
     expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('app-settings-agent-drillin')).toHaveFocus();
+    });
     fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
       key: 'Escape',
       bubbles: true,

@@ -53,3 +53,8 @@ the translated closed settings summary after each transition.
 The AI-agent drill-in is linked to `capabilities/agent-config-onboarding`: it
 shows actual config readiness, repair actions, copyable proof packets, MCP/CLI
 fallbacks, and verification gates only after the user asks for that detail.
+Entering the drill-in focuses its translated Back control after the root row is
+replaced. Back or the first Escape restores the exact AI-agent root row; a
+second Escape closes the modal and returns to the responsive settings trigger.
+This makes the root/detail hierarchy keyboard-readable instead of relying on
+the focus trap to recover from a removed active element.

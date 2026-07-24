@@ -184,6 +184,8 @@ export function AppSettingsMenu({
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
+  const agentBackRef = useRef<HTMLButtonElement | null>(null);
+  const agentDrillInRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useDialogFocusTrap<HTMLDivElement>({
     open,
     initialFocus: 'container',
@@ -286,6 +288,17 @@ export function AppSettingsMenu({
       window.setTimeout(() => triggerRef.current?.focus(), 0);
     }
   };
+  const openAgentView = () => {
+    setView('agent');
+    window.setTimeout(() => agentBackRef.current?.focus({ preventScroll: true }), 0);
+  };
+  const returnToRootView = () => {
+    setView('root');
+    window.setTimeout(
+      () => agentDrillInRef.current?.focus({ preventScroll: true }),
+      0,
+    );
+  };
 
   return (
     <details
@@ -307,7 +320,7 @@ export function AppSettingsMenu({
         // Escape" (구 설정 기어와 같은 계약).
         event.stopPropagation();
         if (view === 'agent') {
-          setView('root');
+          returnToRootView();
           return;
         }
         closePanel();
@@ -385,10 +398,11 @@ export function AppSettingsMenu({
             <div className="flex min-w-0 items-center gap-2">
               {view === 'agent' ? (
                 <button
+                  ref={agentBackRef}
                   type="button"
                   aria-label={t('agentBackLabel')}
                   data-testid="app-settings-agent-back"
-                  onClick={() => setView('root')}
+                  onClick={returnToRootView}
                   className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                 >
                   <ChevronLeft size={14} aria-hidden />
@@ -654,9 +668,10 @@ export function AppSettingsMenu({
 
               <SettingsGroup label={t('groupAgent')}>
                 <button
+                  ref={agentDrillInRef}
                   type="button"
                   data-testid="app-settings-agent-drillin"
-                  onClick={() => setView('agent')}
+                  onClick={openAgentView}
                   className="flex min-h-12 w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                 >
                   <span className="min-w-0">

@@ -46,6 +46,7 @@
 | A20 | 1100×800, 1512×917, 1920×1080, 2560×1440 + reduced motion | 4개 폭 충돌·잘림 0, 일반/축소 모션 설치 앱 정량 검증 완료 |
 | A21 | 설정 언어 전환 → 시트 닫힘 → 키보드 흐름 계속 | KO↔EN 동일 responsive 설정 호출점 포커스 복귀 검증 완료 |
 | A22 | 설정 시트 열기 → Tab/Shift+Tab 전체 순회 → Escape | 양방향 focus trap·원호출점 복귀 설치 앱 검증 완료 |
+| A23 | 설정 AI 에이전트 드릴인 → 뒤로가기/Escape → 루트 복귀 | 드릴인·루트 양방향 포커스 연속성 설치 앱 검증 완료 |
 
 ## 이슈 장부
 
@@ -863,11 +864,49 @@
   Escape 후에는 닫힌 `summary 앱 설정 열기`, `Value: off`에 복귀했다.
 - PO·디자인 판정: **Build and verify**
 
+### UX-026 — AI 설정 드릴인 진입이 열린 modal의 포커스를 문서 루트로 유실
+
+- 심각도: `S4`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 설정 열기 → Tab으로 `AI 에이전트 연결` → Return → 상세 읽기 →
+  Escape 또는 `설정으로 돌아가기`
+- 관측 현상: 키보드로 root row를 활성화하면 그 버튼이 agent subview와
+  교체되면서 AX focused element가 배경 `HTML content`가 됐다. 시트와
+  `aria-modal=true`는 유지됐지만 Escape는 더 이상 details의 React
+  keydown 경로에 도달하지 않았다.
+- 사용자 문제: 사용자는 새 상세가 열렸다는 시각적 변화만 받고 읽기 시작점과
+  복귀 수단을 키보드·스크린리더에서 잃는다. modal을 닫거나 root로 돌아가는
+  예측 가능한 키 경로도 끊긴다.
+- 사용자 순간: vault의 MCP/Codex 설정 준비 상태를 확인하거나 복사 패킷을
+  가져오기 위해 설정의 agent 상세로 들어가는 순간이다.
+- 현재 대안: Tab을 한 번 더 눌러 focus trap이 modal 첫 제어를 구조할 때까지
+  기다리거나 포인터로 뒤로가기/닫기를 다시 찾는다.
+- 온톨로지·에이전트 가치: AI 연결 상세는 사람과 agent의 handoff를 설명하는
+  표면이므로, UI 안의 root↔detail 관계 자체도 재현 가능한 방향성과 복귀
+  계약을 가져야 한다.
+- 최소화: subview·copy·layout·모션은 바꾸지 않는다. 진입 row와 back
+  button에 ref를 두고 view state를 바꾼 다음 DOM이 교체된 tick에 진입은
+  back button, 복귀는 원래 agent row에 `preventScroll` focus한다.
+- 디자인 계약: agent subview는 설정 modal 안의 `nested task`; 헤더의
+  `설정으로 돌아가기`가 첫 `active focus`다. root로 돌아오면 그 nested
+  task를 연 `AI 에이전트 연결` row가 `return point`를 다시 소유한다.
+- 회귀 증거: controlled-open Escape ladder 테스트가 agent row 활성화 →
+  back focus → 첫 Escape → root row focus → 두 번째 Escape close 요청
+  순서를 고정한다. A21/A22까지 포함한 집중 테스트는 `2 파일 · 27개`,
+  TypeScript와 touched ESLint가 통과했다.
+- 설치 앱 증거: `/Applications/Ontology Atlas.app`에서 root sheet의
+  `AI 에이전트 연결`을 Return으로 열자 AX focused element가
+  `button 설정으로 돌아가기`가 됐다. Escape 뒤에는 root의
+  `button AI 에이전트 연결`, 두 번째 Escape 뒤에는 닫힌
+  `summary 앱 설정 열기`, `Value: off`로 복귀했다.
+- PO·디자인 판정: **Build and verify**
+
 ## 현재 PO·디자인 판정
 
 - A1/A2 수정 슬라이스: **Build and verify**
 - A20/A21 반응형·모션·포커스 연속성 슬라이스: **Build and verify**
 - A22 modal 키보드 경계 슬라이스: **Build and verify**
+- A23 nested settings task 포커스 슬라이스: **Build and verify**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.
