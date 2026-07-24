@@ -219,6 +219,7 @@ import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 import { resolveTopologyEscLadderAction } from "../lib/topology-esc-ladder";
 import {
   GuidedTourOverlay,
+  readGuidedTourStatus,
   resolveAnchorRect,
   useGuidedTour,
   type TourAnchor,
@@ -1720,6 +1721,22 @@ export function HomePage() {
     tour.start();
   }, [closeCreateNode, tour]);
 
+  // 첫 방문 자동 투어 (2026-07-24 온보딩 라운드) — 투어 자산이 있는데
+  // 진입점이 우측 레일 아이콘뿐이라 비개발자가 발견하지 못했다. 샘플
+  // 모드 정착(= vault 미선택 첫 실행, 복원 시도 완료) + 저장된 done/
+  // skipped 없음일 때 한 번만 자동 시작한다. skip 이 'skipped' 를
+  // 기록하므로 재방문에는 다시 뜨지 않고, 로컬 vault 사용자에게는
+  // `sampleModeSettled` 가 false 라 애초에 발화하지 않는다.
+  const autoTourFiredRef = useRef(false);
+  useEffect(() => {
+    if (autoTourFiredRef.current || !sampleModeSettled) return undefined;
+    if (readGuidedTourStatus() !== null || tour.open) return undefined;
+    autoTourFiredRef.current = true;
+    // 레이아웃/카메라 정착 뒤에 열어 1단계 카드가 안정된 화면 위에 뜬다.
+    const id = window.setTimeout(openGuidedTour, 900);
+    return () => window.clearTimeout(id);
+  }, [sampleModeSettled, tour.open, openGuidedTour]);
+
   // P0#3 — Esc staged-close ladder (docs/FEATURES.md / shortcut sheet's
   // `stepCloseOverlays` promise: "Close drawers and overlays one step at a
   // time"). The composer/shortcuts/docs-drawer overlays already close
@@ -3177,6 +3194,7 @@ export function HomePage() {
                     selectedId={canvasSelectedSlug}
                     onSelect={(id) => handleSelect(id)}
                     onCollapse={handleIndexCollapse}
+                    onStartTour={openGuidedTour}
                     // P1 결함①a — element 행이 왜 안 보이는지 설명하는
                     // 조용한 힌트 행 게이트. treeResult 는 이미 위에서
                     // element 를 제외했다(단일 진실원 무변경).

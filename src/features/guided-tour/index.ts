@@ -10,6 +10,7 @@ export {
 } from "./model/tour-steps";
 export {
   GUIDED_TOUR_STATUS_KEY,
+  readGuidedTourStatus,
   writeGuidedTourStatus,
   type GuidedTourStatus,
 } from "./model/tour-storage";

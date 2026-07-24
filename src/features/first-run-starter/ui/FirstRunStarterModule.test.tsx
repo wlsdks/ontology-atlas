@@ -68,6 +68,24 @@ describe('FirstRunStarterModule', () => {
     expect(screen.getByText('6')).toBeInTheDocument();
   });
 
+  // 2026-07-24 온보딩 라운드 — 투어 진입점이 우측 레일 아이콘뿐이라
+  // 발견되지 않았다. onStartTour 가 주어지면 2차 CTA 로 렌더되고 클릭이
+  // 콜백을 부르는지, 생략 시 렌더되지 않는지 고정한다.
+  it('renders the tour CTA when onStartTour is provided and routes the click', () => {
+    const onStartTour = vi.fn();
+    render(
+      <FirstRunStarterModule concepts={1} relations={1} domains={1} onStartTour={onStartTour} />,
+    );
+    const cta = screen.getByTestId('first-run-tour-cta');
+    fireEvent.click(cta);
+    expect(onStartTour).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders no tour CTA when onStartTour is omitted', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    expect(screen.queryByTestId('first-run-tour-cta')).not.toBeInTheDocument();
+  });
+
   // 페르소나 재조사 개선 후보 2 (2026-07-23) — 완전 초심자는 카드에서
   // 화면 설명은 읽지만 제품 이름을 알 방법이 없었다. 브랜드 워드마크
   // 한 줄이 캡션 위에 항상 렌더되는지 고정한다.

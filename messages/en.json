@@ -337,6 +337,7 @@
     "createLabel": "✚ Create a new vault",
     "createBusy": "Writing starter structure…",
     "dismissLabel": "Just looking around here",
+    "tourCta": "2-minute tour — how to read the map",
     "plainModeHint": "Need an easier view? Turn on \"General\" in the gear at the bottom left",
     "errorFallback": "Could not open the folder. Try again.",
     "unsupportedNotice": "This browser can't open local folders. Open it in the macOS app or Chrome/Edge and the map lights up with your markdown folder.",

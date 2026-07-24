@@ -27,6 +27,12 @@ export interface FirstRunStarterModuleProps {
   concepts: number;
   relations: number;
   domains: number;
+  /**
+   * 2026-07-24 온보딩 라운드 — "2분 구경하기" 투어 CTA. 투어 상태기계는
+   * HomePage(view) 소유라 콜백만 받는다(FSD: feature 는 view 를 모른다).
+   * 생략하면 CTA 를 렌더하지 않는다.
+   */
+  onStartTour?: () => void;
 }
 
 /**
@@ -53,6 +59,7 @@ export function FirstRunStarterModule({
   concepts,
   relations,
   domains,
+  onStartTour,
 }: FirstRunStarterModuleProps) {
   const t = useTranslations("firstRunStarter");
   // rank17 — ShortcutSheet 와 같은 i18n 네임스페이스를 그대로 재사용
@@ -198,6 +205,20 @@ export function FirstRunStarterModule({
           </span>
         </button>
       )}
+
+      {/* 2026-07-24 온보딩 라운드 — 투어 진입점이 우측 레일 아이콘 하나뿐
+          이라 비개발자가 발견하지 못했다(라이브 답사 실측). 폴더 열기(1차
+          CTA) 바로 아래 2차 CTA 로 승격 — "열기 전에 구경부터" 경로. */}
+      {onStartTour ? (
+        <button
+          type="button"
+          data-testid="first-run-tour-cta"
+          onClick={onStartTour}
+          className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-[color:var(--topology-v2-panel-divider)] text-[12px] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+        >
+          {t("tourCta")}
+        </button>
+      ) : null}
 
       <p className="mb-1 mt-3 flex items-center justify-between gap-4 text-[11.5px]">
         {fsaUnsupported ? (

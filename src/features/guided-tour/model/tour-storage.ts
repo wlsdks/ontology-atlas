@@ -21,3 +21,20 @@ export function writeGuidedTourStatus(
     /* private mode — skip */
   }
 }
+
+/**
+ * 저장된 완료/중단 상태 읽기 — 없거나 알 수 없는 값이면 `null`. 첫 방문
+ * 자동 시작 판정(HomePage)이 "한 번이라도 done/skipped 를 기록했으면 다시
+ * 자동으로 띄우지 않는다" 에 쓴다.
+ */
+export function readGuidedTourStatus(
+  key: string = GUIDED_TOUR_STATUS_KEY,
+): GuidedTourStatus | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = window.localStorage.getItem(key);
+    return value === "done" || value === "skipped" ? value : null;
+  } catch {
+    return null;
+  }
+}
