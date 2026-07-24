@@ -6,7 +6,6 @@
 
 ---
 
-<<<<<<< HEAD
 ## 2026-07-24 — 투어 카드 단계 전환 모션 (프레임 감사 후속)
 
 최종 점검에서 28초 여정을 30fps 영상으로 뜯어보니, 급변 프레임 3개 중
@@ -16,7 +15,6 @@
 스프링을 뒤따라 끌린다), `key={step.id}` remount + **기존 패널 크로스페이드
 키프레임 재사용**으로 해결했다 — 새 카피가 그 자리에서 떠오르듯 나타나고
 추종 정확도는 그대로. 실측: 전환 직후 opacity 0.47→1.00 보간 확인.
-=======
 ## 2026-07-24 — ERD 빌더(`/ontology/edit`) 은퇴 → 나침 무대가 흡수 · xyflow 제거
 
 원 마스터플랜의 후속: 나침 무대(Compass Stage, `/ontology/studio`)가 노드
@@ -42,7 +40,6 @@
   `/ontology/edit` 제거. 빌더 전용 i18n 키(`ontologyPages.edit`,
   `metadata.pages.ontologyEdit`, `navRail.builder`) 제거, 잔여 라벨은 스튜디오
   문구로 현행화.
->>>>>>> origin/main
 
 ## 2026-07-24 — INDEX 트리 행 클릭 민감도 해소
 
