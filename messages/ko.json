@@ -2706,15 +2706,16 @@
     "startChecklist": {
       "kicker": "{done}/{total} 완료",
       "title": "시작 체크리스트",
-      "subtitle": "이 순서대로 하면 지도가 살아나요.",
-      "stepProject": "첫 프로젝트 만들기",
-      "stepDomain": "영역(도메인) 하나 추가",
-      "stepRelation": "두 개념을 선으로 잇기",
-      "stepAgent": "AI 에이전트 연결 (선택)",
+      "subtitle": "AI와 함께 채우는 게 가장 빨라요 — 순서대로 하면 지도가 살아나요.",
+      "stepAgent": "AI 에이전트 연결하기",
       "agentHint": "'빈 폴더로 새로 시작'으로 만들었다면 .mcp.json 이 이미 준비돼 있어요 — AI 도구가 이 지도를 같이 읽고 씁니다.",
       "ctaCreate": "만들기",
-      "ctaBuilder": "빌더에서 잇기",
-      "ctaAgent": "연결 안내 열기"
+      "ctaAgent": "연결 안내 열기",
+      "stepAnalyze": "AI에게 첫 분석 맡기기",
+      "stepManual": "직접 손으로 시작하기 (선택)",
+      "ctaAnalyze": "분석 지시 복사",
+      "ctaAnalyzeCopied": "복사됨 — 에이전트에 붙여넣으세요",
+      "analyzePrompt": "이 폴더는 ontology-atlas vault야. /ontology-bootstrap 스킬(또는 MCP index_project → analyze_repo_structure)로 내 코드베이스를 분석해서 프로젝트·도메인·역량 온톨로지를 제안하고, 내가 승인한 것만 vault에 써줘."
     }
   },
   "fullDetailA1": {

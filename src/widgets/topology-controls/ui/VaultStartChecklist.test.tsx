@@ -7,78 +7,65 @@ vi.mock("next-intl", () => ({
     values ? `${key}:${JSON.stringify(values)}` : key,
 }));
 
-vi.mock("@/i18n/navigation", () => ({
-  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
-    <a href={href} {...rest}>
-      {children}
-    </a>
-  ),
+vi.mock("@/shared/lib/use-copy-feedback", () => ({
+  useCopyFeedback: () => ({ state: "idle", copy: vi.fn() }),
 }));
 
-describe("VaultStartChecklist", () => {
-  it("marks steps done from live counts and routes the create CTA", () => {
-    const onCreate = vi.fn();
-    render(
-      <VaultStartChecklist
-        projectCount={0}
-        domainCount={0}
-        relationCount={0}
-        onCreateNode={onCreate}
-        onOpenAgentConnect={vi.fn()}
-      />,
-    );
-    expect(screen.getAllByTestId(/checklist-step-/)).toHaveLength(4);
-    expect(screen.getByTestId("checklist-step-project")).toHaveAttribute("data-done", "false");
+function renderChecklist(over: Partial<Parameters<typeof VaultStartChecklist>[0]> = {}) {
+  return render(
+    <VaultStartChecklist
+      projectCount={0}
+      relationCount={0}
+      agentConnected={false}
+      onCreateNode={vi.fn()}
+      onOpenAgentConnect={vi.fn()}
+      analyzePrompt="분석해줘"
+      {...over}
+    />,
+  );
+}
 
-    fireEvent.click(screen.getByTestId("checklist-cta-project"));
-    expect(onCreate).toHaveBeenCalledWith("project");
-    fireEvent.click(screen.getByTestId("checklist-cta-domain"));
-    expect(onCreate).toHaveBeenCalledWith("domain");
+describe("VaultStartChecklist (에이전트-우선, 2026-07-24 소유자 지시)", () => {
+  it("renders agent-first steps: connect → analyze → manual", () => {
+    renderChecklist();
+    const steps = screen.getAllByTestId(/checklist-step-/);
+    expect(steps.map((el) => el.getAttribute("data-testid"))).toEqual([
+      "checklist-step-agent",
+      "checklist-step-analyze",
+      "checklist-step-manual",
+    ]);
+    expect(steps.every((el) => el.getAttribute("data-done") === "false")).toBe(true);
   });
 
-  it("shows progress as counts appear", () => {
-    render(
-      <VaultStartChecklist
-        projectCount={1}
-        domainCount={1}
-        relationCount={0}
-        onCreateNode={vi.fn()}
-        onOpenAgentConnect={vi.fn()}
-      />,
-    );
-    expect(screen.getByTestId("checklist-step-project")).toHaveAttribute("data-done", "true");
-    expect(screen.getByTestId("checklist-step-domain")).toHaveAttribute("data-done", "true");
-    expect(screen.getByTestId("checklist-step-relation")).toHaveAttribute("data-done", "false");
-  });
-
-  it("routes the agent step to the connect sheet when provided", () => {
+  it("routes the agent step to the connect sheet", () => {
     const onOpenAgentConnect = vi.fn();
-    render(
-      <VaultStartChecklist
-        projectCount={0}
-        domainCount={0}
-        relationCount={0}
-        onCreateNode={vi.fn()}
-        onOpenAgentConnect={onOpenAgentConnect}
-      />,
-    );
+    renderChecklist({ onOpenAgentConnect });
     fireEvent.click(screen.getByTestId("checklist-cta-agent"));
     expect(onOpenAgentConnect).toHaveBeenCalledTimes(1);
   });
 
-  it("links the relation step to the builder", () => {
-    render(
-      <VaultStartChecklist
-        projectCount={1}
-        domainCount={1}
-        relationCount={0}
-        onCreateNode={vi.fn()}
-        onOpenAgentConnect={vi.fn()}
-      />,
-    );
-    expect(screen.getByTestId("checklist-cta-relation")).toHaveAttribute(
-      "href",
-      "/ontology/edit/",
-    );
+  it("marks the agent step done from the heartbeat signal", () => {
+    renderChecklist({ agentConnected: true });
+    expect(screen.getByTestId("checklist-step-agent")).toHaveAttribute("data-done", "true");
+    // 완료된 행은 CTA 를 감춘다 — 다음 미완료 행이 시선 승자.
+    expect(screen.queryByTestId("checklist-cta-agent")).not.toBeInTheDocument();
+  });
+
+  it("derives analyze/manual progress from live counts", () => {
+    renderChecklist({ relationCount: 2, projectCount: 1 });
+    expect(screen.getByTestId("checklist-step-analyze")).toHaveAttribute("data-done", "true");
+    expect(screen.getByTestId("checklist-step-manual")).toHaveAttribute("data-done", "true");
+  });
+
+  it("routes the manual step to the project composer", () => {
+    const onCreateNode = vi.fn();
+    renderChecklist({ onCreateNode });
+    fireEvent.click(screen.getByTestId("checklist-cta-project"));
+    expect(onCreateNode).toHaveBeenCalledWith("project");
+  });
+
+  it("offers the analysis prompt copy on the analyze step", () => {
+    renderChecklist();
+    expect(screen.getByTestId("checklist-cta-analyze")).toBeInTheDocument();
   });
 });

@@ -898,6 +898,30 @@ export function HomePage() {
   useEffect(() => {
     if (agentConnectWantOpen) openAgentConnectSheet();
   }, [agentConnectWantOpen, openAgentConnectSheet]);
+  // 폴더 연결 직후 에이전트 연결 유도 (소유자 지시 2026-07-24 2차) — "폴더를
+  // 연결하고 나면 바로 AI 에이전트 연결을 가이드해야 한다". 이 세션에서
+  // 사용자가 직접 폴더를 연 경우('opening' 경유 — IndexedDB 복원 재방문은
+  // 제외)에 한해, 미연결이면 연결 시트를 1회 자동으로 연다. 닫아도 시작
+  // 체크리스트 1단계가 미완료 강조로 남아 가이드가 끊기지 않는다.
+  const vaultOpenedThisSessionRef = useRef(false);
+  const agentAutoPromptFiredRef = useRef(false);
+  const agentConnectedNow = agentConnect.status.kind === "connected";
+  useEffect(() => {
+    if (vault.status === "opening") vaultOpenedThisSessionRef.current = true;
+    if (
+      vault.status !== "loaded" ||
+      !vaultOpenedThisSessionRef.current ||
+      agentAutoPromptFiredRef.current ||
+      agentConnectedNow
+    ) {
+      return undefined;
+    }
+    agentAutoPromptFiredRef.current = true;
+    // 스캐폴드/체크리스트가 자리 잡은 뒤 열어 "폴더 → 다음은 AI 연결" 순서가
+    // 화면에서도 읽히게 한다.
+    const id = window.setTimeout(openAgentConnectSheet, 1200);
+    return () => window.clearTimeout(id);
+  }, [vault.status, agentConnectedNow, openAgentConnectSheet]);
   // HomePage 모듈화 1차 — 부트스트랩 흐름은 use-bootstrap-flow 훅 소유.
   // 완료 연출(토스트·E1 리빌)만 여기 남는다.
   const { bootstrapOpen, setBootstrapOpen, bootstrapPlan, runBootstrap } = useBootstrapFlow({
@@ -3441,10 +3465,11 @@ export function HomePage() {
                   canCreateNode && (bootstrapPlan?.elements.length ?? 0) === 0 ? (
                     <VaultStartChecklist
                       projectCount={checklistProjectCount}
-                      domainCount={indexDomainCount}
                       relationCount={topologyTotalRelations}
+                      agentConnected={agentConnect.status.kind === "connected"}
                       onCreateNode={openCreateNodeWithKind}
                       onOpenAgentConnect={openAgentConnectSheet}
+                      analyzePrompt={t("startChecklist.analyzePrompt")}
                     />
                   ) : (
                   <TopologyEmptyState
