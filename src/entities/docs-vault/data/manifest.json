@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T23:07:13.457Z",
+  "generatedAt": "2026-07-24T23:17:09.306Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -8468,9 +8468,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx renders the app-wide settings panel: display mode, language, ontology workspace access, and AI agent connection verification, grouped as five tabs (General / MCP+Agents / Vault / Appearance / Verification) behind one gear trigger. Before feat/rail-rollout (2026-07) t",
-      "wordCount": 551,
-      "updatedAt": "2026-07-23T15:29:58+09:00",
+      "excerpt": "src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx is the app-wide settings surface. The retired five-tab workbench was simplified in 2026-07 into one centered, single-column sheet with three readable groups: Screen — language plus page-injected view mode and INDEX defaults. Workspace — current vault state, open/chan",
+      "wordCount": 327,
+      "updatedAt": "2026-07-24T23:16:59.135Z",
       "linksOut": []
     },
     {
@@ -8611,8 +8611,8 @@
         }
       ],
       "excerpt": "src/features/locale-switch/ui/LocaleSwitch.tsx renders the compact EN / KO language toggle used in the public landing and other top-level chrome. The switch persists the selected locale in ontology-atlas:locale, rewrites only the current URL's locale segment without a full reload, and keeps each language button at a 32",
-      "wordCount": 114,
-      "updatedAt": "2026-07-25T07:16:43+09:00",
+      "wordCount": 176,
+      "updatedAt": "2026-07-24T23:16:59.136Z",
       "linksOut": []
     },
     {
@@ -9140,7 +9140,7 @@
       "headings": [],
       "excerpt": "src/widgets/topology-map-canvas/ — the rebuilt map (Relief) rendering engine (2026-07, docs/TOPOLOGY-MAP-REBUILD.md). Card and connector coordinates are written once; pan/zoom is a single container CSS transform (pure camera math in lib/camera.ts with unit tests), so per-frame DOM synchronization — the jank source of t",
       "wordCount": 195,
-      "updatedAt": "2026-07-24T23:01:46.365Z",
+      "updatedAt": "2026-07-25T08:08:59+09:00",
       "linksOut": []
     },
     {
@@ -10257,14 +10257,19 @@
           "slug": "ux-023-설치-앱-검증기가-현재-atlas-셸canvas-v2-선택-맥락을-오판"
         },
         {
+          "depth": 3,
+          "text": "UX-024 — 설정에서 언어를 바꾸면 포커스가 새 문서 루트로 유실됨",
+          "slug": "ux-024-설정에서-언어를-바꾸면-포커스가-새-문서-루트로-유실됨"
+        },
+        {
           "depth": 2,
           "text": "현재 PO·디자인 판정",
           "slug": "현재-po디자인-판정"
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다. 4. 실패 테스트를 먼저 추가한다. 5. 가장 작은 일관된 슬라이스로 수정한다. 6. 집중 테스트와 /Appl",
-      "wordCount": 6369,
-      "updatedAt": "2026-07-24T23:07:04.297Z",
+      "wordCount": 6729,
+      "updatedAt": "2026-07-24T23:16:59.134Z",
       "linksOut": []
     },
     {

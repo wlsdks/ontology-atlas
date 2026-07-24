@@ -12,7 +12,7 @@ import {
   Settings,
   X,
 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { useLocalVault } from '@/features/docs-vault-local';
@@ -46,6 +46,58 @@ import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
  */
 
 type SettingsView = 'root' | 'agent';
+type SettingsTriggerVariant = 'header-pill' | 'rail-tile' | 'chrome-tile';
+
+const SETTINGS_LOCALE_FOCUS_KEY = 'ontology-atlas:settings-locale-focus';
+const SETTINGS_LOCALE_FOCUS_MAX_AGE_MS = 10_000;
+
+interface SettingsLocaleFocusIntent {
+  locale: string;
+  triggerVariant: SettingsTriggerVariant;
+  createdAt: number;
+}
+
+function rememberSettingsLocaleFocus(
+  locale: string,
+  triggerVariant: SettingsTriggerVariant,
+) {
+  try {
+    const intent: SettingsLocaleFocusIntent = {
+      locale,
+      triggerVariant,
+      createdAt: Date.now(),
+    };
+    window.sessionStorage.setItem(SETTINGS_LOCALE_FOCUS_KEY, JSON.stringify(intent));
+  } catch {
+    // sessionStorage unavailable — navigation still proceeds without restoration.
+  }
+}
+
+function consumeSettingsLocaleFocus(
+  locale: string,
+  triggerVariant: SettingsTriggerVariant,
+): boolean {
+  try {
+    const raw = window.sessionStorage.getItem(SETTINGS_LOCALE_FOCUS_KEY);
+    if (!raw) return false;
+    const intent = JSON.parse(raw) as Partial<SettingsLocaleFocusIntent>;
+    const age = Date.now() - Number(intent.createdAt);
+    if (!Number.isFinite(age) || age < 0 || age > SETTINGS_LOCALE_FOCUS_MAX_AGE_MS) {
+      window.sessionStorage.removeItem(SETTINGS_LOCALE_FOCUS_KEY);
+      return false;
+    }
+    if (intent.locale !== locale || intent.triggerVariant !== triggerVariant) return false;
+    window.sessionStorage.removeItem(SETTINGS_LOCALE_FOCUS_KEY);
+    return true;
+  } catch {
+    try {
+      window.sessionStorage.removeItem(SETTINGS_LOCALE_FOCUS_KEY);
+    } catch {
+      // sessionStorage unavailable — leave no in-memory focus contract behind.
+    }
+    return false;
+  }
+}
 
 export interface AppSettingsScreenControls {
   audiencePlain: boolean;
@@ -72,7 +124,7 @@ export interface AppSettingsMenuProps {
    * 레인의 `--chrome-tile-size` 타일. 구 TopologyV2SettingsGear 의 트리거
    * 문법을 그대로 승계한다 — 팝오버 대신 이 시트가 열리는 것만 다르다.
    */
-  triggerVariant?: 'header-pill' | 'rail-tile' | 'chrome-tile';
+  triggerVariant?: SettingsTriggerVariant;
 }
 
 /** AI 에이전트 첫 접촉 증명 패킷 — 사람이 읽는 카드 대신 에이전트에 그대로
@@ -113,6 +165,7 @@ export function AppSettingsMenu({
   triggerVariant = 'header-pill',
 }: AppSettingsMenuProps) {
   const t = useTranslations('nav.settingsMenu');
+  const locale = useLocale();
   const { state: copyState, copy } = useCopyFeedback();
   const router = useRouter();
   const localVault = useLocalVault();
@@ -204,6 +257,14 @@ export function AppSettingsMenu({
     }, 0);
     return () => window.clearTimeout(timer);
   }, [open]);
+
+  useEffect(() => {
+    if (!consumeSettingsLocaleFocus(locale, triggerVariant)) return undefined;
+    const timer = window.setTimeout(() => {
+      triggerRef.current?.focus({ preventScroll: true });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [locale, triggerVariant]);
 
   useEffect(() => {
     if (!open) return;
@@ -407,7 +468,16 @@ export function AppSettingsMenu({
               data-testid="app-settings-body"
             >
               <SettingsGroup label={t('groupScreen')}>
-                <SettingsRow label={t('languageTitle')} control={<LocaleSwitch />} />
+                <SettingsRow
+                  label={t('languageTitle')}
+                  control={
+                    <LocaleSwitch
+                      onSwitchStart={(nextLocale) =>
+                        rememberSettingsLocaleFocus(nextLocale, triggerVariant)
+                      }
+                    />
+                  }
+                />
                 {screenControls ? (
                   <>
                     <SettingsRow

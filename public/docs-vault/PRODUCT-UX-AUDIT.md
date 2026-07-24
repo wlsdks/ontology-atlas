@@ -44,6 +44,7 @@
 | A18 | 다운로드 안내 | 설치 가능 여부·CTA·대기 상태 첫 화면/키보드 검증 완료 |
 | A19 | 한국어/영어 동일 과업·동일 사실 | 인사이트 신선도 KO↔EN 동일 URL·탭·사실 왕복 검증 완료 |
 | A20 | 1100×800, 1512×917, 1920×1080, 2560×1440 + reduced motion | 4개 폭 충돌·잘림 0, 일반/축소 모션 설치 앱 정량 검증 완료 |
+| A21 | 설정 언어 전환 → 시트 닫힘 → 키보드 흐름 계속 | KO↔EN 동일 responsive 설정 호출점 포커스 복귀 검증 완료 |
 
 ## 이슈 장부
 
@@ -781,9 +782,51 @@
   재검토했고 차단 이슈 없이 승인했다.
 - PO·디자인 판정: **Build and verify**
 
+### UX-024 — 설정에서 언어를 바꾸면 포커스가 새 문서 루트로 유실됨
+
+- 심각도: `S3`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 지도 설정 열기 → KO/EN 언어 전환 → 설정을 다시 열어 같은 작업 계속
+- 관측 현상: URL·선택 탭·표시 facts는 A19에서 보존됐지만 locale segment
+  navigation이 설정 시트를 닫은 뒤 AX focused element가 새 WebView의 HTML
+  document root였다.
+- 사용자 문제: 언어 버튼은 같은 화면의 표현만 바꾸는 제어인데, 키보드
+  사용자는 전환 뒤 설정 호출점까지 주요 내비게이션과 지도 제어를 다시
+  순회해야 한다.
+- 사용자 순간: 동일 온톨로지 화면을 다른 어권으로 확인한 뒤 보기 모드,
+  INDEX 기본 상태, 작업공간 또는 AI 연결 설정을 계속 조정하는 순간이다.
+- 현재 대안: Shift+Tab/Tab으로 새 문서 전체를 다시 탐색하거나 포인터로
+  톱니를 다시 찾는다.
+- 온톨로지·에이전트 가치: query/hash가 보존한 task context와 키보드의
+  interaction context가 함께 유지돼, 사람의 재현 경로와 에이전트가 설명하는
+  현재 화면이 어권 전환 뒤에도 같은 상태를 가리킨다.
+- 최소화: 시트를 route 사이에 억지로 유지하거나 새 알림·모션·UI를 만들지
+  않는다. `LocaleSwitch`가 navigation 직전 target locale을 host callback으로
+  알리고, `AppSettingsMenu`가 현재 trigger variant와 함께 짧은 session
+  intent를 기록한다. 새 어권에서 같은 variant의 닫힌 설정 호출점만 focus한다.
+- 경계: 지도는 lg+ rail trigger와 compact chrome trigger가 동시에 mount될
+  수 있으므로 locale만 기록하면 숨은 진입점으로 잘못 복귀할 수 있다.
+  intent는 `rail-tile` / `chrome-tile` / `header-pill`까지 일치해야 소비되며,
+  10초가 지난 stale intent는 폐기한다.
+- 디자인 계약: 설정 modal은 route navigation에서 닫히고 background
+  workspace가 다시 `base task`를 소유한다. 포커스는 그 화면의 동일 설정
+  `return point`로 복귀한다. 시각 hierarchy, scrim, panel motion, tokens,
+  responsive placement는 변경하지 않는다.
+- 회귀 증거: LocaleSwitch callback이 `router.replace`보다 먼저 실행되는
+  순서, 새 어권 remount의 닫힌 설정 trigger 복귀, rail/chrome 동시 mount에서
+  exact variant 복귀를 `2 파일 · 26개` 집중 테스트로 고정했다. TypeScript와
+  touched ESLint도 통과했다.
+- 설치 앱 증거: `/Applications/Ontology Atlas.app`의 `/ko/topology/`에서
+  rail 설정을 열어 EN을 선택했다. 시트가 닫힌 `/en/topology/`의 AX focused
+  element는 `summary Open app settings`, `Value: off`였고 해당 호출점으로
+  설정을 즉시 다시 열 수 있었다. KO로 되돌린 뒤에도 focused element가
+  `summary 앱 설정 열기`, `Value: off`로 복귀했다.
+- PO·디자인 판정: **Build and verify**
+
 ## 현재 PO·디자인 판정
 
 - A1/A2 수정 슬라이스: **Build and verify**
+- A20/A21 반응형·모션·포커스 연속성 슬라이스: **Build and verify**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

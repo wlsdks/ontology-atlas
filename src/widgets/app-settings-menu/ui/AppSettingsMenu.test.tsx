@@ -1,10 +1,11 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppSettingsMenu } from './AppSettingsMenu';
 
 const mocks = vi.hoisted(() => ({
   isDesktopRuntime: false,
+  locale: 'en',
 }));
 
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({
@@ -18,7 +19,19 @@ vi.mock('@/shared/lib/use-copy-feedback', () => ({
 }));
 
 vi.mock('@/features/locale-switch', () => ({
-  LocaleSwitch: () => <div data-testid="locale-switch" />,
+  LocaleSwitch: ({
+    onSwitchStart,
+  }: {
+    onSwitchStart?: (nextLocale: string) => void;
+  }) => (
+    <button
+      type="button"
+      data-testid="locale-switch"
+      onClick={() => onSwitchStart?.('ko')}
+    >
+      locale
+    </button>
+  ),
 }));
 
 // 설정 통합 2026-07-24 — AppSettingsMenu 는 app-wide LocalVaultProvider 를
@@ -60,6 +73,7 @@ vi.mock('@/i18n/navigation', () => ({
 
 vi.mock('next-intl', () => ({
   useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
+  useLocale: () => mocks.locale,
 }));
 
 function openSheet(ui?: ReactNode) {
@@ -110,6 +124,8 @@ describe('AppSettingsMenu desktop acquisition boundary', () => {
 describe('AppSettingsMenu single-sheet recomposition', () => {
   beforeEach(() => {
     mocks.isDesktopRuntime = false;
+    mocks.locale = 'en';
+    window.sessionStorage.clear();
   });
 
   it('renders no tabs — the sheet is a single scroll column', () => {
@@ -150,6 +166,51 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     expect(screen.getByTestId('app-settings-agent-summary')).toHaveTextContent(
       'nav.settingsMenu.agentStatusNoVault',
     );
+  });
+
+  it('returns focus to the equivalent settings trigger after a locale navigation remount', async () => {
+    const first = render(<AppSettingsMenu mode="static" />);
+    fireEvent.click(screen.getByTestId('app-settings-trigger'));
+    fireEvent.click(screen.getByTestId('locale-switch'));
+    first.unmount();
+
+    mocks.locale = 'ko';
+    render(<AppSettingsMenu mode="static" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('app-settings-trigger')).toHaveFocus();
+    });
+    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('restores the exact responsive trigger variant when two settings entries remount', async () => {
+    const first = render(
+      <AppSettingsMenu mode="static" triggerVariant="chrome-tile" />,
+    );
+    fireEvent.click(screen.getByTestId('app-settings-trigger'));
+    fireEvent.click(screen.getByTestId('locale-switch'));
+    first.unmount();
+
+    mocks.locale = 'ko';
+    render(
+      <>
+        <AppSettingsMenu mode="static" triggerVariant="rail-tile" />
+        <AppSettingsMenu mode="static" triggerVariant="chrome-tile" />
+      </>,
+    );
+    const triggers = screen.getAllByTestId('app-settings-trigger');
+    const railTrigger = triggers.find(
+      (trigger) => trigger.getAttribute('data-trigger-variant') === 'rail-tile',
+    );
+    const chromeTrigger = triggers.find(
+      (trigger) => trigger.getAttribute('data-trigger-variant') === 'chrome-tile',
+    );
+
+    await waitFor(() => expect(chromeTrigger).toHaveFocus());
+    expect(railTrigger).not.toHaveFocus();
   });
 });
 

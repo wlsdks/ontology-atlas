@@ -10,6 +10,14 @@ const LOCALES = [
   { code: 'ko', label: 'KO', nameKey: 'korean' },
 ] as const;
 
+export interface LocaleSwitchProps {
+  /**
+   * Runs before navigation starts. Hosts that unmount across locale segments
+   * can record a focus-return intent without coupling this feature to them.
+   */
+  onSwitchStart?: (nextLocale: string) => void;
+}
+
 /**
  * Replace only the locale path segment. `rawSearch` and `rawHash` come
  * directly from `window.location` so duplicate keys, ordering, and their
@@ -37,7 +45,7 @@ export function buildLocaleTarget(
  * root `/` redirect picks it up next visit. Replaces `/<old>/...` with
  * `/<new>/...` while preserving query/hash task state — no full reload needed.
  */
-export function LocaleSwitch() {
+export function LocaleSwitch({ onSwitchStart }: LocaleSwitchProps = {}) {
   const t = useTranslations('locale');
   const locale = useLocale();
   const pathname = usePathname();
@@ -46,6 +54,7 @@ export function LocaleSwitch() {
 
   function switchTo(next: string) {
     if (next === locale) return;
+    onSwitchStart?.(next);
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
     } catch {
