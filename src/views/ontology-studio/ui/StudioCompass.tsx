@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, Plus, Search, X } from "lucide-react";
+import { Check, ChevronDown, MoreHorizontal, Plus, Search, X } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import type {
   StudioBearing,
@@ -94,6 +94,24 @@ export interface StudioCompassLabels {
   createSimilar: (title: string, kindLabel: string) => string;
   createSimilarOpen: string;
   createSimilarAnyway: string;
+  // ── Slice 1 — 지지대 편집 (edit existing relations) ──
+  edit: string; // "···" affordance aria-label / tooltip
+  editTitle: string; // card heading, e.g. "이 관계 고치기"
+  editRetypeHeading: string; // "다른 방향으로 옮기기"
+  editMoveTo: (bearingLabel: string) => string; // per retype option label
+  editDelete: string; // "관계 끊기"
+  editDeleteConfirm: string; // "정말 끊을까요?" (suggestion tone)
+  editDeleteYes: string; // destructive confirm (red)
+  editDeleteCancel: string; // "그대로 둘게요"
+  editElsewhere: (other: string) => string; // honest note
+  editElsewhereGo: string; // re-center button
+  pendingBadge: string; // "저장 대기"
+  // ── Slice 2 — 평문 기록 요약 ──
+  summaryUndo: string; // aria for the per-row ✕
+  exitConfirmTitle: string; // "기록 안 한 변경이 있어요"
+  exitConfirmDiscard: string; // "버리고 나가기" (red)
+  exitConfirmKeep: string; // "계속 편집"
+  commitEmptyHint: string; // enhance, nothing staged
 }
 
 export interface CompassFocal {
@@ -139,6 +157,29 @@ export interface StudioCompassProps {
   onOpenSimilar?: (slug: string) => void;
   onDismissSimilar?: () => void;
   canSave?: boolean;
+
+  // ── Slice 1 — edit existing relations (enhance) ──
+  /** Present → filled satellites gain a quiet "···" edit affordance. */
+  onRetype?: (from: StudioRelation, to: StudioRelation, neighbor: StudioSatellite) => void;
+  onRemove?: (relation: StudioRelation, neighbor: StudioSatellite) => void;
+  /** Whether this neighbor is editable from the FOCAL node's own frontmatter. */
+  editabilityOf?: (relation: StudioRelation, neighbor: StudioSatellite) => boolean;
+  /** Plain bearing name for a relation (retype option labels). */
+  bearingLabelFor?: (relation: StudioRelation) => string;
+  /** neighbor ids with a staged (not-yet-saved) change → "저장 대기" cue. */
+  pendingNeighborIds?: ReadonlySet<string>;
+
+  // ── Slice 2 — plain-language record summary + staged commit ──
+  summary?: {
+    count: number;
+    collapsed: string;
+    headline: string;
+    lines: string[];
+    fileEffect: string;
+  } | null;
+  onUndoChange?: (index: number) => void;
+  /** exit with staged changes → confirm (버리기 / 계속). */
+  hasPendingChanges?: boolean;
 }
 
 interface LaneLayout {
@@ -309,6 +350,12 @@ export function StudioCompass(props: StudioCompassProps) {
   const [query, setQuery] = useState("");
   /** Which filled lane has its overflow ("+N 더 보기") list popover open. */
   const [openFold, setOpenFold] = useState<StudioBearing | null>(null);
+  /** Which existing relation has its inline edit card open (Slice 1). */
+  const [openEdit, setOpenEdit] = useState<{ relation: StudioRelation; neighbor: StudioSatellite } | null>(null);
+  /** exit confirm popover (Slice 2 escape hatch). */
+  const [confirmExit, setConfirmExit] = useState(false);
+  /** record-summary expanded (Slice 2 — "이렇게 기록됩니다"). */
+  const [summaryOpen, setSummaryOpen] = useState(false);
   // Transient surfaces (picker / fold list / search) reset automatically: the
   // enhance instance is keyed by node id in the page, so switching nodes remounts.
 
@@ -387,14 +434,47 @@ export function StudioCompass(props: StudioCompassProps) {
             </>
           ) : null}
         </div>
-        <button
-          type="button"
-          onClick={onExit}
-          data-testid="studio-exit"
-          className="ml-auto flex h-[30px] items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-3 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
-        >
-          <span className="text-[color:var(--color-text-quaternary)]">✕</span> {labels.exit}
-        </button>
+        <div className="relative ml-auto">
+          <button
+            type="button"
+            onClick={() => (props.hasPendingChanges ? setConfirmExit(true) : onExit())}
+            data-testid="studio-exit"
+            className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-3 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+          >
+            <span className="text-[color:var(--color-text-quaternary)]">✕</span> {labels.exit}
+          </button>
+          {confirmExit ? (
+            <div
+              data-testid="studio-exit-confirm"
+              className="absolute right-0 top-[calc(100%+8px)] z-[10] w-[248px] rounded-[12px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-3.5"
+              style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+            >
+              <p className="text-caption text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+                {labels.exitConfirmTitle}
+              </p>
+              <div className="mt-3 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmExit(false)}
+                  className="rounded-md px-2.5 py-1.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                >
+                  {labels.exitConfirmKeep}
+                </button>
+                <button
+                  type="button"
+                  data-testid="studio-exit-confirm-discard"
+                  onClick={() => {
+                    setConfirmExit(false);
+                    onExit();
+                  }}
+                  className="rounded-md border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] px-2.5 py-1.5 text-label font-semibold text-[color:var(--color-danger-text)] transition-colors hover:bg-[color:var(--color-danger-a32)]"
+                >
+                  {labels.exitConfirmDiscard}
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
       </header>
 
       {/* ── Compass board ── */}
@@ -509,6 +589,15 @@ export function StudioCompass(props: StudioCompassProps) {
               onToggleFold={() => setOpenFold((cur) => (cur === view.bearing ? null : view.bearing))}
               foldOpen={openFold === view.bearing}
               onCloseFold={() => setOpenFold(null)}
+              onEditNeighbor={
+                props.onRetype || props.onRemove
+                  ? (neighbor) => {
+                      setOpenEdit({ relation: view.relation, neighbor });
+                      setOpenFold(null);
+                    }
+                  : undefined
+              }
+              pendingNeighborIds={props.pendingNeighborIds}
             />
           ))}
 
@@ -532,8 +621,77 @@ export function StudioCompass(props: StudioCompassProps) {
               onCreateNew={props.onCreateNew}
             />
           ) : null}
+
+          {/* inline anchored edit card (Slice 1 — 지지대 편집) */}
+          {openEdit ? (
+            <InlineEditCard
+              relation={openEdit.relation}
+              neighbor={openEdit.neighbor}
+              bearing={layouts.find((l) => l.view.relation === openEdit.relation)?.view.bearing ?? "right"}
+              layout={layouts.find((l) => l.view.relation === openEdit.relation)?.layout ?? null}
+              cardLeft={cardLeft}
+              cardRight={cardRight}
+              labels={labels}
+              editable={props.editabilityOf?.(openEdit.relation, openEdit.neighbor) ?? false}
+              bearingLabelFor={props.bearingLabelFor ?? ((r) => r)}
+              onRetype={(to) => {
+                props.onRetype?.(openEdit.relation, to, openEdit.neighbor);
+                setOpenEdit(null);
+              }}
+              onRemove={() => {
+                props.onRemove?.(openEdit.relation, openEdit.neighbor);
+                setOpenEdit(null);
+              }}
+              onOpenOther={() => {
+                props.onOpenNode?.(openEdit.neighbor.id);
+                setOpenEdit(null);
+              }}
+              onClose={() => setOpenEdit(null)}
+            />
+          ) : null}
         </div>
       </div>
+
+      {/* ── Record summary — quiet expandable line above the bottom bar ── */}
+      {props.summary && summaryOpen ? (
+        <div
+          data-testid="studio-summary-panel"
+          className="pointer-events-auto absolute bottom-16 left-0 right-0 z-[9] border-t border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-5 py-3"
+          style={{ boxShadow: "0 -12px 30px rgba(0,0,0,.35)" }}
+        >
+          <p className="text-caption font-medium text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+            {props.summary.headline}
+          </p>
+          {props.summary.lines.length > 0 ? (
+            <ul className="mt-2 flex flex-col gap-1">
+              {props.summary.lines.map((line, i) => (
+                <li
+                  key={`${line}-${i}`}
+                  data-testid={`studio-summary-line-${i}`}
+                  className="flex items-start gap-2 text-caption text-[color:var(--color-text-tertiary)]"
+                >
+                  <span aria-hidden className="mt-1.5 h-1 w-1 flex-none rounded-full bg-[color:var(--color-indigo-brand)]" />
+                  <span className="min-w-0 flex-1 [word-break:keep-all]">{line}</span>
+                  {props.onUndoChange ? (
+                    <button
+                      type="button"
+                      data-testid={`studio-summary-undo-${i}`}
+                      aria-label={labels.summaryUndo}
+                      onClick={() => props.onUndoChange?.(i)}
+                      className="flex-none text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                    >
+                      <X size={12} aria-hidden />
+                    </button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {props.summary.fileEffect ? (
+            <p className="mt-2 text-label text-[color:var(--color-text-quaternary)]">{props.summary.fileEffect}</p>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* ── Bottom bar ── */}
       <footer className="relative z-[6] flex items-center gap-4 border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5">
@@ -550,8 +708,22 @@ export function StudioCompass(props: StudioCompassProps) {
         <span className="text-caption text-[color:var(--color-text-secondary)]" data-testid="studio-bottom-progress">
           {labels.bottomProgress(filledBearings, 4)}
         </span>
+        {props.summary ? (
+          <button
+            type="button"
+            data-testid="studio-summary-toggle"
+            aria-expanded={summaryOpen}
+            onClick={() => setSummaryOpen((v) => !v)}
+            className="flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2.5 py-1 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+          >
+            {props.summary.collapsed}
+            <ChevronDown size={12} aria-hidden className={cn("transition-transform", summaryOpen && "rotate-180")} />
+          </button>
+        ) : null}
         <div className="ml-auto flex items-center gap-3">
-          <span className="text-label text-[color:var(--color-text-quaternary)]">{labels.saveHint}</span>
+          <span className="text-label text-[color:var(--color-text-quaternary)]">
+            {mode === "enhance" && props.summary === null ? labels.commitEmptyHint : labels.saveHint}
+          </span>
           <button
             type="button"
             data-testid="studio-save"
@@ -742,6 +914,8 @@ function LaneRender({
   onToggleFold,
   foldOpen,
   onCloseFold,
+  onEditNeighbor,
+  pendingNeighborIds,
 }: {
   view: CompassBearingView;
   layout: LaneLayout;
@@ -752,6 +926,8 @@ function LaneRender({
   onToggleFold: () => void;
   foldOpen: boolean;
   onCloseFold: () => void;
+  onEditNeighbor?: (neighbor: StudioSatellite) => void;
+  pendingNeighborIds?: ReadonlySet<string>;
 }) {
   const satNav = (id: string) => {
     if (onOpenNode) return () => onOpenNode(id);
@@ -770,27 +946,50 @@ function LaneRender({
         </div>
       ) : null}
 
-      {/* satellites — click loads that node onto the stage */}
+      {/* satellites — body click loads that node; the quiet "···" edits the
+          relation in place (Slice 1); a staged change shows a "저장 대기" chip. */}
       {layout.sats.map(({ sat, x, y }) => {
         const onClick = satNav(sat.id);
         const Tag = onClick ? "button" : "div";
+        const pending = pendingNeighborIds?.has(sat.id) ?? false;
         return (
-          <Tag
+          <div
             key={sat.id}
-            {...(onClick ? { type: "button" as const, onClick } : {})}
-            data-testid={`studio-satellite-${view.bearing}`}
-            className={cn(
-              "absolute z-[2] flex items-center gap-2.5 rounded-[10px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 text-left transition-colors",
-              onClick && "hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-indigo-a08)]",
-            )}
+            className="group absolute z-[2]"
             style={{ left: x, top: y, width: SAT.w, height: SAT.h }}
           >
-            <KindGlyph kind={sat.kind} />
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate text-body font-medium text-[color:var(--color-text-primary)]">{sat.title}</span>
-              <span className="truncate text-label text-[color:var(--color-text-quaternary)]">{kindLabelFor(sat.kind)}</span>
-            </span>
-          </Tag>
+            <Tag
+              {...(onClick ? { type: "button" as const, onClick } : {})}
+              data-testid={`studio-satellite-${view.bearing}`}
+              className={cn(
+                "flex h-full w-full items-center gap-2.5 rounded-[10px] border bg-[color:var(--color-panel)] px-3 text-left transition-colors",
+                pending
+                  ? "border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a08)]"
+                  : "border-[color:var(--color-border-soft)]",
+                onClick && !pending && "hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-indigo-a08)]",
+              )}
+            >
+              <KindGlyph kind={sat.kind} />
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-body font-medium text-[color:var(--color-text-primary)]">{sat.title}</span>
+                <span className="truncate text-label text-[color:var(--color-text-quaternary)]">
+                  {pending ? labels.pendingBadge : kindLabelFor(sat.kind)}
+                </span>
+              </span>
+            </Tag>
+            {onEditNeighbor ? (
+              <button
+                type="button"
+                data-testid={`studio-edit-${view.bearing}`}
+                aria-label={labels.edit}
+                title={labels.edit}
+                onClick={() => onEditNeighbor(sat)}
+                className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-[6px] text-[color:var(--color-text-quaternary)] opacity-70 transition-opacity transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] group-hover:opacity-100 motion-reduce:transition-none"
+              >
+                <MoreHorizontal size={14} aria-hidden />
+              </button>
+            ) : null}
+          </div>
         );
       })}
 
@@ -827,6 +1026,8 @@ function LaneRender({
           labels={labels}
           kindLabelFor={kindLabelFor}
           onOpenNode={onOpenNode}
+          onEditNeighbor={onEditNeighbor}
+          pendingNeighborIds={pendingNeighborIds}
           onClose={onCloseFold}
         />
       ) : null}
@@ -886,6 +1087,8 @@ function LaneOverflowList({
   labels,
   kindLabelFor,
   onOpenNode,
+  onEditNeighbor,
+  pendingNeighborIds,
   onClose,
 }: {
   view: CompassBearingView;
@@ -893,6 +1096,8 @@ function LaneOverflowList({
   labels: StudioCompassLabels;
   kindLabelFor: (kind: string) => string;
   onOpenNode?: (id: string) => void;
+  onEditNeighbor?: (neighbor: StudioSatellite) => void;
+  pendingNeighborIds?: ReadonlySet<string>;
   onClose: () => void;
 }) {
   const W = 288;
@@ -930,23 +1135,183 @@ function LaneOverflowList({
         {view.neighbors.map((sat) => {
           const onClick = onOpenNode ? () => onOpenNode(sat.id) : undefined;
           const Tag = onClick ? "button" : "div";
+          const pending = pendingNeighborIds?.has(sat.id) ?? false;
           return (
-            <Tag
-              key={sat.id}
-              {...(onClick ? { type: "button" as const, onClick } : {})}
-              data-testid={`studio-lane-row-${sat.id}`}
-              className={cn(
-                "flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors",
-                onClick && "hover:bg-[color:var(--color-indigo-a08)]",
-              )}
-            >
-              <KindGlyph kind={sat.kind} />
-              <span className="truncate text-body text-[color:var(--color-text-primary)]">{sat.title}</span>
-              <span className="ml-auto flex-none text-label text-[color:var(--color-text-quaternary)]">{kindLabelFor(sat.kind)}</span>
-            </Tag>
+            <div key={sat.id} className="group flex items-center rounded-[8px] transition-colors hover:bg-[color:var(--color-indigo-a08)]">
+              <Tag
+                {...(onClick ? { type: "button" as const, onClick } : {})}
+                data-testid={`studio-lane-row-${sat.id}`}
+                className="flex min-w-0 flex-1 items-center gap-2.5 px-2.5 py-2 text-left"
+              >
+                <KindGlyph kind={sat.kind} />
+                <span className="min-w-0 truncate text-body text-[color:var(--color-text-primary)]">{sat.title}</span>
+                <span className="ml-auto flex-none text-label text-[color:var(--color-text-quaternary)]">
+                  {pending ? labels.pendingBadge : kindLabelFor(sat.kind)}
+                </span>
+              </Tag>
+              {onEditNeighbor ? (
+                <button
+                  type="button"
+                  data-testid={`studio-lane-edit-${sat.id}`}
+                  aria-label={labels.edit}
+                  title={labels.edit}
+                  onClick={() => onEditNeighbor(sat)}
+                  className="mr-1.5 grid h-6 w-6 flex-none place-items-center rounded-[6px] text-[color:var(--color-text-quaternary)] opacity-70 transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] group-hover:opacity-100"
+                >
+                  <MoreHorizontal size={14} aria-hidden />
+                </button>
+              ) : null}
+            </div>
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// ── Inline anchored edit card (Slice 1 — 지지대 편집) ──────────────────────────
+/**
+ * Retype / cut ONE existing relation, anchored beside its lane so the hero stays
+ * visible. When the edge is NOT recorded on the focal node's own frontmatter
+ * (e.g. a domain "contains" a child only because the child said `domain:`), the
+ * card shows an honest note + a re-center button instead of a broken write.
+ */
+function InlineEditCard({
+  relation,
+  neighbor,
+  bearing,
+  layout,
+  cardLeft,
+  cardRight,
+  labels,
+  editable,
+  bearingLabelFor,
+  onRetype,
+  onRemove,
+  onOpenOther,
+  onClose,
+}: {
+  relation: StudioRelation;
+  neighbor: StudioSatellite;
+  bearing: StudioBearing;
+  layout: LaneLayout | null;
+  cardLeft: number;
+  cardRight: number;
+  labels: StudioCompassLabels;
+  editable: boolean;
+  bearingLabelFor: (relation: StudioRelation) => string;
+  onRetype: (to: StudioRelation) => void;
+  onRemove: () => void;
+  onOpenOther: () => void;
+  onClose: () => void;
+}) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const W = 264;
+  const GAP = 14;
+  const PAD = 8;
+  const anchor = layout?.anchor ?? { x: CX, y: CY };
+  const estH = editable ? 232 : 150;
+  // Keep the card out of the hero: right/up/down → right gutter, left → left gutter.
+  const left =
+    bearing === "left"
+      ? Math.max(PAD, cardLeft - GAP - W)
+      : Math.min(Math.max(anchor.x + GAP, cardRight + GAP), BOARD.w - PAD - W);
+  const top = clampY(anchor.y - estH / 2, estH);
+  const otherRelations = (["isA", "dependsOn", "contains", "relates"] as StudioRelation[]).filter(
+    (r) => r !== relation,
+  );
+  return (
+    <div
+      data-testid="studio-edit-card"
+      data-relation={relation}
+      className="absolute z-[9] flex flex-col rounded-[13px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
+      style={{ left, top, width: W, boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+    >
+      <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
+        <span className="min-w-0 flex-1 truncate text-caption font-semibold text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+          {labels.editTitle}
+        </span>
+        <button type="button" onClick={onClose} className="flex-none text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]">
+          <X size={13} aria-hidden />
+        </button>
+      </div>
+      <div className="flex items-center gap-2 px-3.5 pt-2.5">
+        <KindGlyph kind={neighbor.kind} />
+        <span className="min-w-0 truncate text-body font-medium text-[color:var(--color-text-primary)] [word-break:keep-all]">
+          {neighbor.title}
+        </span>
+      </div>
+
+      {editable ? (
+        <>
+          <div className="px-3.5 pb-1 pt-3">
+            <span className="text-label text-[color:var(--color-text-quaternary)]">{labels.editRetypeHeading}</span>
+          </div>
+          <div className="flex flex-col gap-1 px-2 pb-1.5">
+            {otherRelations.map((to) => (
+              <button
+                key={to}
+                type="button"
+                data-testid={`studio-edit-retype-${to}`}
+                onClick={() => onRetype(to)}
+                className="flex items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-body text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-indigo-a08)] hover:text-[color:var(--color-text-primary)]"
+              >
+                <span className="text-[color:var(--color-text-quaternary)]">→</span>
+                {labels.editMoveTo(bearingLabelFor(to))}
+              </button>
+            ))}
+          </div>
+          <div className="border-t border-[color:var(--color-divider)] p-2">
+            {confirmDelete ? (
+              <div className="flex items-center gap-2 px-1.5">
+                <span className="min-w-0 flex-1 text-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+                  {labels.editDeleteConfirm}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="flex-none rounded-md px-2 py-1 text-label text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
+                >
+                  {labels.editDeleteCancel}
+                </button>
+                <button
+                  type="button"
+                  data-testid="studio-edit-delete-confirm"
+                  onClick={onRemove}
+                  className="flex-none rounded-md border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] px-2 py-1 text-label font-semibold text-[color:var(--color-danger-text)] transition-colors hover:bg-[color:var(--color-danger-a32)]"
+                >
+                  {labels.editDeleteYes}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                data-testid="studio-edit-delete"
+                onClick={() => setConfirmDelete(true)}
+                className="flex w-full items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-body text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
+              >
+                <X size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+                {labels.editDelete}
+              </button>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="px-3.5 pb-3.5 pt-3">
+          <p className="text-label leading-[1.55] text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+            {labels.editElsewhere(neighbor.title)}
+          </p>
+          <button
+            type="button"
+            data-testid="studio-edit-open-other"
+            onClick={onOpenOther}
+            className="mt-2.5 flex items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {labels.editElsewhereGo}
+            <span className="text-[color:var(--color-text-quaternary)]">→</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
