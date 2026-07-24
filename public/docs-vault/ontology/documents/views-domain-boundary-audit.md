@@ -3,7 +3,7 @@ slug: documents/views-domain-boundary-audit
 kind: document
 title: Views Domain Boundary Audit
 relates: [documents/business-to-code-dogfood-audit]
-describes: [capabilities/agent-graph-readiness, capabilities/builder-canvas-polish, capabilities/collaborator-reader-brief, capabilities/topology-ontology-inspection, domains/views]
+describes: [capabilities/agent-graph-readiness, capabilities/collaborator-reader-brief, capabilities/topology-ontology-inspection, domains/views]
 ---
 
 > **역사적 기록.** 이 감사는 2026-07 지도 재구성 이전 구조 기준이다. 예시로 든 `insights-query-cockpit` 등 일부 element 는 재구성 과정에서 삭제/대체되었다 — 아래 클러스터 목록은 그 시점의 스냅샷이며 도메인 분리 여부에 대한 판단(Current Decision 섹션)은 유효하다.

@@ -3,7 +3,6 @@ slug: elements/ontology-design-surface-guard
 kind: element
 title: Ontology Design Surface Guard
 domain: views
-relates: [elements/builder-graph-anchor-rail]
 ---
 
 `scripts/check-ontology-design-surface.mjs` powers `pnpm design:ontology`.

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T10:21:43.583Z",
+  "generatedAt": "2026-07-24T10:49:01.333Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3167,6 +3167,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-24 — ERD 빌더(`/ontology/edit`) 은퇴 → 나침 무대가 흡수 · xyflow 제거",
+          "slug": "2026-07-24-erd-빌더ontologyedit-은퇴-나침-무대가-흡수-xyflow-제거"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-24 — INDEX 트리 행 클릭 민감도 해소",
           "slug": "2026-07-24-index-트리-행-클릭-민감도-해소"
         },
@@ -4786,9 +4791,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 실사용 지적(\"셰브론 아이콘을 딱 눌러야만 열리고 조금만 빗나가면 우측 상세로 이동 — 너무 민감\"). 세 가지를 함께 고쳤다. ① 펼침 히트 영역",
-      "wordCount": 37312,
-      "updatedAt": "2026-07-24T10:21:43.068Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 원 마스터플랜의 후속: 나침 무대(Compass Stage, /ontology/studio)가 노드 조립(만들기 모드) · 관계 연결(인라인 피커 + 실 ",
+      "wordCount": 37485,
+      "updatedAt": "2026-07-24T19:32:04+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5366,8 +5371,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 13089,
-      "updatedAt": "2026-07-24T18:50:37+09:00",
+      "wordCount": 13100,
+      "updatedAt": "2026-07-24T19:32:04+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -5680,48 +5685,8 @@
         },
         {
           "depth": 3,
-          "text": "`/ontology/edit` — Builder (xyflow ERD canvas)",
-          "slug": "ontologyedit-builder-xyflow-erd-canvas"
-        },
-        {
-          "depth": 4,
-          "text": "Layout (3-pane, resident only on xl+ — rebuilt 2026-07-18)",
-          "slug": "layout-3-pane-resident-only-on-xl-rebuilt-2026-07-18"
-        },
-        {
-          "depth": 4,
-          "text": "Left palette (`OntologyKindPalette`)",
-          "slug": "left-palette-ontologykindpalette"
-        },
-        {
-          "depth": 4,
-          "text": "Center canvas (`ReactFlow` + dagre/force layout)",
-          "slug": "center-canvas-reactflow-dagreforce-layout"
-        },
-        {
-          "depth": 4,
-          "text": "Right inspector",
-          "slug": "right-inspector"
-        },
-        {
-          "depth": 4,
-          "text": "Header toolbar",
-          "slug": "header-toolbar"
-        },
-        {
-          "depth": 4,
-          "text": "`BuilderOnboarding` (when canvas empty)",
-          "slug": "builderonboarding-when-canvas-empty"
-        },
-        {
-          "depth": 4,
-          "text": "Empty-canvas placeholder text",
-          "slug": "empty-canvas-placeholder-text"
-        },
-        {
-          "depth": 4,
-          "text": "Keyboard shortcuts",
-          "slug": "keyboard-shortcuts"
+          "text": "`/ontology/edit` — RETIRED (2026-07-24) → redirects to `/ontology/studio`",
+          "slug": "ontologyedit-retired-2026-07-24-redirects-to-ontologystudio"
         },
         {
           "depth": 3,
@@ -5905,8 +5870,8 @@
         },
         {
           "depth": 3,
-          "text": "`AppSettingsMenu` (per-page header — Projects list, Builder, Insights)",
-          "slug": "appsettingsmenu-per-page-header-projects-list-builder-insights"
+          "text": "`AppSettingsMenu` (per-page header — Projects list, Docs, Insights)",
+          "slug": "appsettingsmenu-per-page-header-projects-list-docs-insights"
         },
         {
           "depth": 3,
@@ -5954,9 +5919,9 @@
           "slug": "8-source-of-truth-files"
         }
       ],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 12971,
-      "updatedAt": "2026-07-24T18:50:37+09:00",
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 나침 무대 쓰기 표면, engraved census 헤더",
+      "wordCount": 12120,
+      "updatedAt": "2026-07-24T19:32:04+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6657,7 +6622,6 @@
           "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
           "src/shared/lib/ontology-tree/agent-query-recipes.ts",
           "src/shared/lib/ontology-tree/agent-readiness.ts",
-          "src/views/ontology-edit/ui/RelationWriteConfirm.tsx",
           "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
           "src/views/ontology-insights/ui/tabs/RelationsTab.tsx"
         ],
@@ -6669,7 +6633,7 @@
       "headings": [],
       "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Overview / Relations / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Ins",
       "wordCount": 408,
-      "updatedAt": "2026-07-21T20:57:08+09:00",
+      "updatedAt": "2026-07-24T20:40:13+09:00",
       "linksOut": []
     },
     {
@@ -6756,118 +6720,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "AI agent 기능을 추가할 때 먼저 확인하는 실패 모드 지도. Ontology Atlas 는 agent 를 직접 채팅처럼 대체하기보다, Claude Code / Codex 같은 agent 가 더 적은 추측으로 repo ontology 를 읽고, 검증하고, 갱신하게 돕는다. src/shared/lib/ontology-tree/agent-query-recipes.ts 의 AGENTPRACTITIONERCONCERNS 가 단일 source of truth 다. 현재 순서는 context, tools, evidence, drift, workflow 이며, 이 순서를 실제",
-      "wordCount": 212,
-      "updatedAt": "2026-07-18T21:07:03+09:00",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/capabilities/builder-canvas-polish",
-      "path": "docs/ontology/capabilities/builder-canvas-polish.md",
-      "title": "Builder Canvas Polish (n8n routing + 도메인 tint + 정렬 toolbar)",
-      "tags": [],
-      "frontmatter": {
-        "slug": "capabilities/builder-canvas-polish",
-        "kind": "capability",
-        "title": "Builder Canvas Polish (n8n routing + 도메인 tint + 정렬 toolbar)",
-        "domain": "views",
-        "elements": [
-          "elements/builder-command-strip",
-          "elements/builder-detail-sheet",
-          "elements/builder-graph-anchor-rail",
-          "elements/builder-write-summary",
-          "elements/ontology-design-surface-guard",
-          "elements/ontology-edit-canvas",
-          "src/shared/lib/domain-color.ts",
-          "src/views/ontology-edit/lib/align-nodes.ts",
-          "src/views/ontology-edit/lib/use-vault-graph-flow.ts",
-          "src/views/ontology-edit/ui/AlignToolbar.tsx",
-          "src/views/ontology-edit/ui/AtlasNode.tsx",
-          "src/views/ontology-edit/ui/OntologyEditCanvas.tsx"
-        ],
-        "dependencies": [
-          "capabilities/builder-vault-write"
-        ]
-      },
-      "headings": [],
-      "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (2026-05-14) 로 7 commit 단위 도입. n8n-style edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 Box-safe edge endpoints — containment edge 는 노드 오른쪽 handle 에서 나와 왼쪽 handle 로 들어가게 고정하고, s",
-      "wordCount": 599,
-      "updatedAt": "2026-07-21T01:05:59+09:00",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/capabilities/builder-deep-link-focus",
-      "path": "docs/ontology/capabilities/builder-deep-link-focus.md",
-      "title": "Builder Deep-Link Focus",
-      "tags": [],
-      "frontmatter": {
-        "slug": "capabilities/builder-deep-link-focus",
-        "kind": "capability",
-        "title": "Builder Deep-Link Focus",
-        "domain": "views",
-        "elements": [
-          "builder-node-query-focus",
-          "ontology-deeplink-node-resolver"
-        ]
-      },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Builder Deep-Link Focus",
-          "slug": "builder-deep-link-focus"
-        }
-      ],
-      "excerpt": "/ontology/edit?node=<vault-doc-slug opens the builder with the matching vault node selected in the inspector and centered on the canvas. The capability lets graph surfaces hand users directly from inspection into editing, instead of requiring them to search for the same node again. /ontology now preserves selected-node",
-      "wordCount": 129,
-      "updatedAt": "2026-05-25T17:46:12+09:00",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/capabilities/builder-relation-write-confirm",
-      "path": "docs/ontology/capabilities/builder-relation-write-confirm.md",
-      "title": "Builder Relation Write Confirm",
-      "tags": [],
-      "frontmatter": {
-        "slug": "capabilities/builder-relation-write-confirm",
-        "kind": "capability",
-        "title": "Builder Relation Write Confirm",
-        "domain": "views",
-        "elements": [
-          "builder-relation-proposal",
-          "builder-relation-write-confirm-panel"
-        ]
-      },
-      "headings": [],
-      "excerpt": "/ontology/edit does not write a vault↔vault edge immediately after a drag. It opens a confirmation step that explains the inferred relation key and the reason for that inference, lets the user choose an alternate frontmatter key, and breaks the write scope into the file path, changed markdown files, unchanged markdown ",
-      "wordCount": 744,
-      "updatedAt": "2026-06-06T02:19:43+09:00",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/capabilities/builder-vault-write",
-      "path": "docs/ontology/capabilities/builder-vault-write.md",
-      "title": "Builder ↔ Vault md write (mode-aware)",
-      "tags": [],
-      "frontmatter": {
-        "slug": "capabilities/builder-vault-write",
-        "kind": "capability",
-        "title": "Builder ↔ Vault md write (mode-aware)",
-        "domain": "views",
-        "elements": [
-          "src/features/docs-vault-local/model/use-local-vault.ts",
-          "src/views/ontology-edit/ui/OntologyEditPage.tsx"
-        ]
-      },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Builder ↔ Vault md write (mode-aware)",
-          "slug": "builder-vault-md-write-mode-aware"
-        }
-      ],
-      "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 빌더 ephemeral 노드 → mode 별 분기 저장: local: vault.manifest 가 있는 live vault 에서 vault.createDoc(${kind}s/${slug}, md) — vault 디스크 직접 작성. AI agent (MCP) 가 같은 vault 에서 즉시 본다. 새 노드 저장, inspector write, relation write 는 모두 같은 live manifest 계약으로 writable 여부를 판단해 desktop WebView route transi",
-      "wordCount": 456,
-      "updatedAt": "2026-06-03T16:33:31+09:00",
+      "excerpt": "AI agent 기능을 추가할 때 먼저 확인하는 실패 모드 지도. Ontology Atlas 는 agent 를 직접 채팅처럼 대체하기보다, Claude Code / Codex 같은 agent 가 더 적은 추측으로 repo ontology 를 읽고, 검증하고, 갱신하게 돕는다. src/shared/lib/ontology-tree/agent-query-recipes.ts 의 AGENTPRACTITIONERCONCERNS 가 단일 source of truth 다. 현재 순서는 context, tools, evidence, drift, workflow 이며, formatAg",
+      "wordCount": 250,
+      "updatedAt": "2026-07-24T20:40:13+09:00",
       "linksOut": []
     },
     {
@@ -7223,7 +7078,7 @@
           "mcp/src/vault.mjs",
           "src/features/docs-vault-local/model/use-local-vault.ts",
           "src/features/project-data-source/model/use-project-mutations.ts",
-          "src/views/ontology-edit/ui/OntologyEditPage.tsx"
+          "src/views/ontology-studio/ui/OntologyStudioPage.tsx"
         ],
         "dependencies": [
           "capabilities/mcp-server"
@@ -7253,7 +7108,7 @@
       ],
       "excerpt": "같은 .md 가 사람 GUI · 외부 에디터 · 다른 AI MCP 에 의해 동시 편집될 때 silent overwrite 차단. R11 8 에서 MCP 측 도입, R+ 에서 local UI 의 본문 저장과 frontmatter patch 경로까지 확장. 1. AI agent 가 getconcept 호출 → 응답에 mtime (ms) 포함 2. agent 가 분석 / 수정 후 patchconcept({ slug, frontmatter, expectedmtime: <prev mtime }) 호출 3. write 직전 server 가 현재 mtime 과 비교 4. 다르면 ",
       "wordCount": 183,
-      "updatedAt": "2026-07-21T01:05:59+09:00",
+      "updatedAt": "2026-07-24T20:40:13+09:00",
       "linksOut": []
     },
     {
@@ -7297,9 +7152,6 @@
           "scripts/run-focused-node-test.mjs",
           "scripts/run-focused-node-test.test.mjs",
           "scripts/smoke-packed-cli.mjs"
-        ],
-        "relates": [
-          "capabilities/builder-canvas-polish"
         ]
       },
       "headings": [
@@ -7311,7 +7163,7 @@
       ],
       "excerpt": "@modelcontextprotocol/sdk 안정판 1.x 기반 stdio JSON-RPC 서버. 32 도구 노출 (read 19 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-lev",
       "wordCount": 13578,
-      "updatedAt": "2026-07-23T15:29:58+09:00",
+      "updatedAt": "2026-07-24T20:40:13+09:00",
       "linksOut": []
     },
     {
@@ -7608,6 +7460,88 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/studio-deep-link-focus",
+      "path": "docs/ontology/capabilities/studio-deep-link-focus.md",
+      "title": "나침 무대 딥링크 포커스 (?node=)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/studio-deep-link-focus",
+        "kind": "capability",
+        "title": "나침 무대 딥링크 포커스 (?node=)",
+        "domain": "views",
+        "elements": [
+          "ontology-deeplink-node-resolver",
+          "src/views/ontology-studio/ui/OntologyStudioPage.tsx"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "나침 무대 딥링크 포커스 (?node=)",
+          "slug": "나침-무대-딥링크-포커스-node"
+        }
+      ],
+      "excerpt": "/ontology/studio?node=<graph-node-id 는 나침 무대를 그 vault 노드를 focal 아이템으로 놓은 상태로 연다 (OntologyStudioPage 의 requestedNode). 요청한 id 가 현재 그래프에 있으면 그 노드가, 없으면 selectDefaultStudioNodeId 의 기본 노드가 무대 중앙에 놓인다. 은퇴한 xyflow 빌더의 /ontology/edit?node= 딥링크가 하던 \"검사에서 편집으로 바로 넘기기\" 역할을 이어받는다. /topology 의 detail 패널 / Focus / Path / Health 핸드오",
+      "wordCount": 117,
+      "updatedAt": "2026-07-24T20:40:13+09:00",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/studio-relation-write-confirm",
+      "path": "docs/ontology/capabilities/studio-relation-write-confirm.md",
+      "title": "나침 무대 관계 쓰기 확인 (inline socket write)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/studio-relation-write-confirm",
+        "kind": "capability",
+        "title": "나침 무대 관계 쓰기 확인 (inline socket write)",
+        "domain": "views",
+        "elements": [
+          "src/views/ontology-studio/lib/build-studio-item.ts",
+          "src/views/ontology-studio/ui/StudioCompass.tsx"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "나침 무대 관계 쓰기 확인 (inline socket write)",
+          "slug": "나침-무대-관계-쓰기-확인-inline-socket-write"
+        }
+      ],
+      "excerpt": "은퇴한 xyflow 빌더의 드래그-후-확인 관계 쓰기 모달을 대체하는, 나침 무대 (/ontology/studio) 의 인라인 소켓 채우기 흐름. 노드를 헥사곤 아이템으로 놓고, 네 방위(bearing)의 관계 소켓을 인라인 picker 로 채운다. 각 소켓은 관계 타입 이름을 노출하지 않고 평문 질문으로 묻는다 (ontologyStudio i18n): 위=상위개념(isa), 오른쪽=기대는 곳(dependson), 아래=담는 것(contains), 왼쪽=비슷한 것(relatedto). 관계를 확정하기 전 계약: 관계 → frontmatter 키는 스키마 그대로. BE",
+      "wordCount": 216,
+      "updatedAt": "2026-07-24T20:40:13+09:00",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/studio-vault-write",
+      "path": "docs/ontology/capabilities/studio-vault-write.md",
+      "title": "나침 무대 ↔ Vault md write (mode-aware)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/studio-vault-write",
+        "kind": "capability",
+        "title": "나침 무대 ↔ Vault md write (mode-aware)",
+        "domain": "views",
+        "elements": [
+          "src/features/docs-vault-local/model/use-local-vault.ts",
+          "src/views/ontology-studio/lib/build-create-node.ts",
+          "src/views/ontology-studio/ui/OntologyStudioPage.tsx"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "나침 무대 ↔ Vault md write (mode-aware)",
+          "slug": "나침-무대-vault-md-write-mode-aware"
+        }
+      ],
+      "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 은퇴한 xyflow ERD 빌더 (/ontology/edit) 가 하던 vault 쓰기 경로는 이제 나침 무대 (Compass Stage, /ontology/studio) 가 이어받았다. 한 노드를 게임 아이템처럼 놓고 관계 소켓을 채우면 그 채움이 곧 실제 frontmatter write 다. OntologyStudioPage 는 두 fill-state 를 한 라우트에서 처리한다 (mode 탭 없음): 기본 = 기존 노드를 ?node=<id 로 열어 부분 채움 (ENHANCE), ?mode=c",
+      "wordCount": 236,
+      "updatedAt": "2026-07-24T20:40:13+09:00",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/topology-analysis-modes",
       "path": "docs/ontology/capabilities/topology-analysis-modes.md",
       "title": "Topology Analysis Modes",
@@ -7823,7 +7757,6 @@
         "title": "Topology Ontology Inspection",
         "domain": "views",
         "elements": [
-          "builder-node-query-focus",
           "ontology-deeplink-node-resolver",
           "topology-ontology-drawer",
           "topology-ontology-drawer-model",
@@ -7832,8 +7765,8 @@
       },
       "headings": [],
       "excerpt": "/topology supports ontology-aware node inspection instead of treating non-project nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer starts with a fixed node profile labeled \"개념 정보\" / \"Concept profile\": kind/lens, source slug, and a short description summary. That s",
-      "wordCount": 753,
-      "updatedAt": "2026-06-06T15:59:30+09:00",
+      "wordCount": 756,
+      "updatedAt": "2026-07-24T20:40:13+09:00",
       "linksOut": []
     },
     {
@@ -7879,8 +7812,8 @@
           "src/widgets/topology-map-v2"
         ],
         "relates": [
-          "capabilities/builder-vault-write",
-          "capabilities/mcp-conflict-guard"
+          "capabilities/mcp-conflict-guard",
+          "capabilities/studio-vault-write"
         ],
         "dependencies": [
           "capabilities/topology-canvas-render"
@@ -7915,7 +7848,7 @@
       ],
       "excerpt": "R14 (155-158, 2026-05-04 ~ 2026-05-05) 에 도입된 web 즉시 반영 능력. 사용자 명시 \"웹에서나 잘 반영되면 좋겠는데? 그걸 강화하는건 어때\" 의 4 단계 답. IDE / AI agent / CLI 어느 surface 가 vault .md 만지면 웹 탭이 focus 안 해도 ~5s 안에 반영. · Step · What · Where 인지 · 155 polling · 5s 간격 fingerprint check + visible-only 자동 reload · 백그라운드 · 156 graph diff pulse · 새 노드 amber sin",
       "wordCount": 554,
-      "updatedAt": "2026-07-21T01:05:59+09:00",
+      "updatedAt": "2026-07-24T20:40:13+09:00",
       "linksOut": []
     },
     {
@@ -8155,7 +8088,6 @@
         ],
         "describes": [
           "capabilities/agent-graph-readiness",
-          "capabilities/builder-canvas-polish",
           "capabilities/collaborator-reader-brief",
           "capabilities/topology-ontology-inspection",
           "domains/views"
@@ -8190,7 +8122,7 @@
       ],
       "excerpt": "역사적 기록. 이 감사는 2026-07 지도 재구성 이전 구조 기준이다. 예시로 든 insights-query-cockpit 등 일부 element 는 재구성 과정에서 삭제/대체되었다 — 아래 클러스터 목록은 그 시점의 스냅샷이며 도메인 분리 여부에 대한 판단(Current Decision 섹션)은 유효하다. This note records the current evidence for whether domains/views should stay one domain or be split into smaller ontology domains. The answer is n",
       "wordCount": 633,
-      "updatedAt": "2026-07-21T01:05:59+09:00",
+      "updatedAt": "2026-07-24T20:40:13+09:00",
       "linksOut": []
     },
     {
@@ -8341,8 +8273,7 @@
           "elements/ontology-relation-key-inference",
           "src/entities/docs-vault/lib/derive-ontology-from-vault.ts",
           "src/entities/knowledge-graph",
-          "src/entities/ontology-class",
-          "src/views/ontology-edit/ui/VaultEdge.tsx"
+          "src/entities/ontology-class"
         ],
         "relates": [
           "domains/vault-local-first",
@@ -8358,7 +8289,7 @@
       ],
       "excerpt": "4-layer class hierarchy (Project · Domain · Capability · Element + Document) + 7 edge types (KNOWLEDGEEDGETYPES) + evidence-grounded statements. Vault frontmatter is the single source of truth — derive-ontology-from-vault turns \\.md\\ frontmatter into the in-memory graph. Architecture overview: \\docs/ARCHITECTURE.md\\.",
       "wordCount": 43,
-      "updatedAt": "2026-07-24T18:32:05+09:00",
+      "updatedAt": "2026-07-24T20:40:13+09:00",
       "linksOut": []
     },
     {
@@ -8412,19 +8343,15 @@
     {
       "slug": "ontology/domains/views",
       "path": "docs/ontology/domains/views.md",
-      "title": "Views (Topology · Browse · Builder)",
+      "title": "Views (Topology · Browse · Studio)",
       "tags": [],
       "frontmatter": {
         "slug": "domains/views",
         "kind": "domain",
-        "title": "Views (Topology · Browse · Builder)",
+        "title": "Views (Topology · Browse · Studio)",
         "display_ko": "화면(뷰)",
         "capabilities": [
           "agent-graph-readiness",
-          "builder-canvas-polish",
-          "builder-deep-link-focus",
-          "builder-relation-write-confirm",
-          "builder-vault-write",
           "capabilities/agent-live-activity-contract",
           "capabilities/agent-onboarding-brief",
           "capabilities/changes-only-review",
@@ -8436,18 +8363,14 @@
           "capabilities/topology-skeleton-entry",
           "collaborator-reader-brief",
           "ontology-hub-mode-aware",
+          "studio-deep-link-focus",
+          "studio-relation-write-confirm",
+          "studio-vault-write",
           "topology-analysis-modes",
           "topology-canvas-render",
           "topology-ontology-inspection"
         ],
         "elements": [
-          "builder-node-query-focus",
-          "builder-relation-proposal",
-          "builder-relation-write-confirm-panel",
-          "elements/builder-command-strip",
-          "elements/builder-detail-sheet",
-          "elements/builder-graph-anchor-rail",
-          "elements/builder-write-summary",
           "elements/business-ontology-lens",
           "elements/dev-route-smoke",
           "elements/ontology-atlas-quality-bar",
@@ -8455,7 +8378,6 @@
           "elements/ontology-description-helper",
           "elements/ontology-design-surface-guard",
           "elements/ontology-domain-tint-contract",
-          "elements/ontology-edit-canvas",
           "elements/ontology-kind-tone-contract",
           "elements/ontology-node-detail-modal",
           "elements/ontology-reader-intent-contract",
@@ -8473,9 +8395,9 @@
           "sigma-graphology",
           "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
           "src/views/home",
-          "src/views/ontology-edit",
           "src/views/ontology-insights",
           "src/views/ontology-redirect",
+          "src/views/ontology-studio",
           "src/views/project-detail",
           "src/widgets/global-search",
           "src/widgets/topology-controls",
@@ -8483,8 +8405,7 @@
           "topology-analysis-state",
           "topology-ontology-drawer",
           "topology-ontology-drawer-model",
-          "topology-selected-node-resolver",
-          "xyflow"
+          "topology-selected-node-resolver"
         ],
         "relates": [
           "documents/views-domain-boundary-audit",
@@ -8499,9 +8420,9 @@
           "slug": "views"
         }
       ],
-      "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
-      "wordCount": 63,
-      "updatedAt": "2026-07-24T18:32:05+09:00",
+      "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (canvas-2D topology-map-v2 spatial network — /, /topology), 둘러보기 (/ontology 는 토폴로지 INDEX 로 흡수된 얇은 리다이렉트 + 노드 detail), 스튜디오 (나침 무대 /ontology/studio — 노드 의미를 관계 소켓으로 완성해 실제 frontmatter 를 쓰는 표면; 구 xyflow ERD 빌더 /ontology/edit 는 2026-07-24 은퇴하고 스튜디오로 리다이렉트). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Studio",
+      "wordCount": 85,
+      "updatedAt": "2026-07-24T20:40:13+09:00",
       "linksOut": []
     },
     {
@@ -8557,139 +8478,6 @@
       "excerpt": "src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx renders the app-wide settings panel: display mode, language, ontology workspace access, and AI agent connection verification, grouped as five tabs (General / MCP+Agents / Vault / Appearance / Verification) behind one gear trigger. Before feat/rail-rollout (2026-07) t",
       "wordCount": 551,
       "updatedAt": "2026-07-23T15:29:58+09:00",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/elements/builder-command-strip",
-      "path": "docs/ontology/elements/builder-command-strip.md",
-      "title": "Builder Command Strip",
-      "tags": [],
-      "frontmatter": {
-        "slug": "elements/builder-command-strip",
-        "kind": "element",
-        "title": "Builder Command Strip",
-        "domain": "views"
-      },
-      "headings": [],
-      "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx renders a compact state-based command strip in /ontology/edit so the builder always exposes the next useful action: start a concept, open drafts, edit the selected concept, or review a pending relation preflight. The page also consumes the shared reader= URL intent from /",
-      "wordCount": 841,
-      "updatedAt": "2026-06-06T17:58:18+09:00",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/elements/builder-detail-sheet",
-      "path": "docs/ontology/elements/builder-detail-sheet.md",
-      "title": "Builder Detail Sheet",
-      "tags": [],
-      "frontmatter": {
-        "slug": "elements/builder-detail-sheet",
-        "kind": "element",
-        "title": "Builder Detail Sheet",
-        "domain": "views"
-      },
-      "headings": [],
-      "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx opens selected builder node details in a centered dialog instead of keeping the full inspector visible as a fixed right panel. The sheet reuses OntologyInspector through its surface=\"sheet\" mode, so rename, read-only sample detail, relation arrays, backlinks, and delete f",
-      "wordCount": 440,
-      "updatedAt": "2026-06-05T13:35:36+09:00",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/elements/builder-graph-anchor-rail",
-      "path": "docs/ontology/elements/builder-graph-anchor-rail.md",
-      "title": "Builder Graph Anchor Rail",
-      "tags": [],
-      "frontmatter": {
-        "slug": "elements/builder-graph-anchor-rail",
-        "kind": "element",
-        "title": "Builder Graph Anchor Rail",
-        "domain": "views"
-      },
-      "headings": [],
-      "excerpt": "src/views/ontology-edit/lib/builder-entry-anchors.ts derives the saved node entrypoints shown at the top-left of /ontology/edit. The rail ranks persisted ontology nodes by graph degree while preserving project/domain/capability/element diversity. This makes the builder open from useful graph entrypoints instead of arbi",
-      "wordCount": 321,
-      "updatedAt": "2026-07-18T21:07:03+09:00",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/elements/builder-node-query-focus",
-      "path": "docs/ontology/elements/builder-node-query-focus.md",
-      "title": "Builder Node Query Focus",
-      "tags": [],
-      "frontmatter": {
-        "slug": "elements/builder-node-query-focus",
-        "kind": "element",
-        "title": "Builder Node Query Focus",
-        "domain": "views"
-      },
-      "headings": [],
-      "excerpt": "src/views/ontology-edit/lib/resolve-builder-query-node.ts normalizes the node query for src/views/ontology-edit/ui/OntologyEditPage.tsx, accepting exact live-vault slugs, dogfood ontology/-prefixed slugs, and frontmatter slug aliases. OntologyEditPage uses the resolved slug to select that vault node in the inspector wh",
-      "wordCount": 182,
-      "updatedAt": "2026-07-18T21:07:03+09:00",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/elements/builder-relation-proposal",
-      "path": "docs/ontology/elements/builder-relation-proposal.md",
-      "title": "Builder Relation Proposal Model",
-      "tags": [],
-      "frontmatter": {
-        "slug": "elements/builder-relation-proposal",
-        "kind": "element",
-        "title": "Builder Relation Proposal Model",
-        "domain": "views",
-        "dependencies": [
-          "elements/ontology-relation-key-inference"
-        ]
-      },
-      "headings": [],
-      "excerpt": "src/views/ontology-edit/lib/relation-proposal.ts contains the builder relation proposal model. It infers the default relation key for a drag between persisted vault nodes, formats the source-side frontmatter write preview, formats the small frontmatter patch snippet that will be appended to the source document, builds ",
-      "wordCount": 322,
-      "updatedAt": "2026-07-21T01:05:59+09:00",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/elements/builder-relation-write-confirm-panel",
-      "path": "docs/ontology/elements/builder-relation-write-confirm-panel.md",
-      "title": "Builder Relation Write Confirm Panel",
-      "tags": [],
-      "frontmatter": {
-        "slug": "elements/builder-relation-write-confirm-panel",
-        "kind": "element",
-        "title": "Builder Relation Write Confirm Panel",
-        "domain": "views",
-        "capabilities": [
-          "capabilities/agent-graph-readiness",
-          "capabilities/agent-practitioner-concerns-map",
-          "capabilities/builder-relation-write-confirm"
-        ]
-      },
-      "headings": [],
-      "excerpt": "src/views/ontology-edit/ui/RelationWriteConfirm.tsx is the confirmation panel shown after dragging between two persisted vault nodes. It makes relation writes explicit before local markdown changes happen: selected frontmatter key, inferred relation meaning, write boundary, MCP addrelation args, preflight result, bound",
-      "wordCount": 187,
-      "updatedAt": "2026-07-18T21:07:03+09:00",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/elements/builder-write-summary",
-      "path": "docs/ontology/elements/builder-write-summary.md",
-      "title": "Builder Write Summary",
-      "tags": [],
-      "frontmatter": {
-        "slug": "elements/builder-write-summary",
-        "kind": "element",
-        "title": "Builder Write Summary",
-        "domain": "views"
-      },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Builder Write Summary",
-          "slug": "builder-write-summary"
-        }
-      ],
-      "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof workflow rail for /ontology/edit. The rail is no longer always visible. The Builder opens canvas-first: the large page title is kept only as an accessibility heading, the visible header collapses to draft/link status plus to",
-      "wordCount": 479,
-      "updatedAt": "2026-06-06T04:59:50+09:00",
       "linksOut": []
     },
     {
@@ -8939,8 +8727,8 @@
       },
       "headings": [],
       "excerpt": "Partially superseded (B3 허브가 곧 지도, 2026-07). Two of the three resolvers described below are physically deleted: src/views/ontology-view/lib/resolve-deeplink-node.ts (with the rest of the tree hub, commit 3fa2c2508) and src/views/ontology-insights/lib/resolve-insights-query-node.ts (dropped when /ontology/insights was r",
-      "wordCount": 259,
-      "updatedAt": "2026-07-19T15:12:08+09:00",
+      "wordCount": 298,
+      "updatedAt": "2026-07-24T20:40:13+09:00",
       "linksOut": []
     },
     {
@@ -8976,15 +8764,12 @@
         "slug": "elements/ontology-design-surface-guard",
         "kind": "element",
         "title": "Ontology Design Surface Guard",
-        "domain": "views",
-        "relates": [
-          "elements/builder-graph-anchor-rail"
-        ]
+        "domain": "views"
       },
       "headings": [],
       "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans src/views/docs-vault, src/widgets/docs-vault, src/views/ontology-edit, src/views/ontology-insights, src/widgets/ontology-sub-nav, src/widgets/operations-nav, src/widgets/topology-index-panel, and src/shared/ui for design-system drift: glow-",
       "wordCount": 249,
-      "updatedAt": "2026-07-18T21:07:03+09:00",
+      "updatedAt": "2026-07-24T20:40:13+09:00",
       "linksOut": []
     },
     {
@@ -9008,29 +8793,6 @@
       "excerpt": "src/shared/lib/domain-color.ts is the shared visual contract for domain ownership tint across Builder and Insights surfaces. The contract separates two categorical channels: ontology kind color explains the role of a node (project, domain, capability, element, unknown), while domain tint explains which vocabulary or ow",
       "wordCount": 107,
       "updatedAt": "2026-06-06T12:39:50+09:00",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/elements/ontology-edit-canvas",
-      "path": "docs/ontology/elements/ontology-edit-canvas.md",
-      "title": "Ontology Edit Canvas",
-      "tags": [],
-      "frontmatter": {
-        "slug": "elements/ontology-edit-canvas",
-        "kind": "element",
-        "title": "Ontology Edit Canvas",
-        "domain": "views"
-      },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Ontology Edit Canvas",
-          "slug": "ontology-edit-canvas"
-        }
-      ],
-      "excerpt": "src/views/ontology-edit/ui/OntologyEditCanvas.tsx renders the xyflow canvas inside /ontology/edit, while src/views/ontology-edit/ui/OntologyEditPage.tsx owns the page-level graph entrypoint rail and write/proof controls around that canvas. The builder is optimized for graph-first work: persisted vault nodes and relatio",
-      "wordCount": 237,
-      "updatedAt": "2026-06-05T07:10:49+09:00",
       "linksOut": []
     },
     {
@@ -9103,8 +8865,8 @@
         }
       ],
       "excerpt": "src/shared/lib/ontology-reader-intent.ts defines the shared URL intent contract (ONTOLOGYREADERINTENTS: planning, marketing, leadership, developer, agent) for stakeholder handoffs. parseOntologyReaderIntent rejects unknown values so destination screens do not invent unsupported reader modes from arbitrary query strings",
-      "wordCount": 172,
-      "updatedAt": "2026-07-18T21:07:03+09:00",
+      "wordCount": 217,
+      "updatedAt": "2026-07-24T20:40:13+09:00",
       "linksOut": []
     },
     {
@@ -9483,30 +9245,6 @@
       "linksOut": []
     },
     {
-      "slug": "ontology/elements/xyflow",
-      "path": "docs/ontology/elements/xyflow.md",
-      "title": "xyflow (React Flow)",
-      "tags": [],
-      "frontmatter": {
-        "slug": "elements/xyflow",
-        "kind": "element",
-        "title": "xyflow (React Flow)",
-        "domain": "views",
-        "path": "package.json"
-      },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "xyflow (React Flow)",
-          "slug": "xyflow-react-flow"
-        }
-      ],
-      "excerpt": "ERD 스타일 노드 + edge 캔버스 라이브러리. /ontology/edit (Builder) 가 의존. 노드 가장자리 점에서 drag → 다른 노드 drop → 임시 관계 edge. F 키 fullscreen, N 키 새 project 노드, Del 선택 삭제.",
-      "wordCount": 38,
-      "updatedAt": "2026-07-21T01:05:59+09:00",
-      "linksOut": []
-    },
-    {
       "slug": "ontology/project",
       "path": "docs/ontology/project.md",
       "title": "ontology-atlas",
@@ -9538,8 +9276,8 @@
         }
       ],
       "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. 정체성 (2026-07): agent-native, human-sovereign. 에이전트를 위한 메모리가 아니라 에이전트가 1급 사용자인 공유 의미 계층 — 에이전트는 MCP/CLI 로 신선도를 유지하는 엔진이자 최대 소비자, 사람은 평문 마크다운·git diff·로컬 디스크 진실원을 통한 의미의 최종 결정권자. 훅은 에이전트 통증(\"코드베이스 장기 구조를 까먹는다\"), 본질은 공유 계층. 이 프로젝트의 ontology 는 비즈니",
-      "wordCount": 161,
-      "updatedAt": "2026-07-24T18:32:05+09:00",
+      "wordCount": 180,
+      "updatedAt": "2026-07-24T20:40:13+09:00",
       "linksOut": []
     },
     {
@@ -9589,7 +9327,7 @@
       ],
       "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 여기서 ontology 는 단순한 그래프 그림이 아니라 프로젝트가 무엇으로 이루어져 있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델이다. project, domain, capability, element 노드와 contains, dependson, relates, describes 같은 관계를 markdown frontmatter 로 저장하고, CLI/",
       "wordCount": 438,
-      "updatedAt": "2026-07-23T15:29:58+09:00",
+      "updatedAt": "2026-07-24T20:38:42+09:00",
       "linksOut": []
     },
     {
@@ -9647,29 +9385,6 @@
       "excerpt": "src/views/docs-vault/ui/DocsVaultPage.tsx renders the /docs Source Vault surface. This surface is the human-facing document view over the same local markdown vault that MCP agents read and write. It keeps the current source, selected record, editor state, command palette, graph handoff copy, and local vault persistence",
       "wordCount": 742,
       "updatedAt": "2026-06-06T04:04:04+09:00",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/src/views/ontology-edit/ui/VaultEdge.tsx",
-      "path": "docs/ontology/src/views/ontology-edit/ui/VaultEdge.tsx.md",
-      "title": "Ontology Builder Vault Edge",
-      "tags": [],
-      "frontmatter": {
-        "slug": "src/views/ontology-edit/ui/VaultEdge.tsx",
-        "kind": "element",
-        "title": "Ontology Builder Vault Edge",
-        "domain": "ontology-core"
-      },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Ontology Builder Vault Edge",
-          "slug": "ontology-builder-vault-edge"
-        }
-      ],
-      "excerpt": "src/views/ontology-edit/ui/VaultEdge.tsx renders persisted vault relations in the ontology builder canvas. It routes vault-backed edges with smooth step paths and keeps containment / relation semantics available through edge metadata. The edge endpoint coordinates are offset away from node handles before path calculati",
-      "wordCount": 90,
-      "updatedAt": "2026-06-03T20:42:01+09:00",
       "linksOut": []
     },
     {
@@ -12019,26 +11734,6 @@
         "linkText": "views"
       },
       {
-        "fromSlug": "ontology/capabilities/builder-canvas-polish",
-        "context": "frontmatter · **[views]**",
-        "linkText": "views"
-      },
-      {
-        "fromSlug": "ontology/capabilities/builder-deep-link-focus",
-        "context": "frontmatter · **[views]**",
-        "linkText": "views"
-      },
-      {
-        "fromSlug": "ontology/capabilities/builder-relation-write-confirm",
-        "context": "frontmatter · **[views]**",
-        "linkText": "views"
-      },
-      {
-        "fromSlug": "ontology/capabilities/builder-vault-write",
-        "context": "frontmatter · **[views]**",
-        "linkText": "views"
-      },
-      {
         "fromSlug": "ontology/capabilities/changes-only-review",
         "context": "frontmatter · **[views]**",
         "linkText": "views"
@@ -12062,6 +11757,21 @@
         "fromSlug": "ontology/capabilities/ontology-hub-mode-aware",
         "context": "frontmatter · **[domains/views]**",
         "linkText": "domains/views"
+      },
+      {
+        "fromSlug": "ontology/capabilities/studio-deep-link-focus",
+        "context": "frontmatter · **[views]**",
+        "linkText": "views"
+      },
+      {
+        "fromSlug": "ontology/capabilities/studio-relation-write-confirm",
+        "context": "frontmatter · **[views]**",
+        "linkText": "views"
+      },
+      {
+        "fromSlug": "ontology/capabilities/studio-vault-write",
+        "context": "frontmatter · **[views]**",
+        "linkText": "views"
       },
       {
         "fromSlug": "ontology/capabilities/topology-analysis-modes",
@@ -12119,41 +11829,6 @@
         "linkText": "domains/views"
       },
       {
-        "fromSlug": "ontology/elements/builder-command-strip",
-        "context": "frontmatter · **[views]**",
-        "linkText": "views"
-      },
-      {
-        "fromSlug": "ontology/elements/builder-detail-sheet",
-        "context": "frontmatter · **[views]**",
-        "linkText": "views"
-      },
-      {
-        "fromSlug": "ontology/elements/builder-graph-anchor-rail",
-        "context": "frontmatter · **[views]**",
-        "linkText": "views"
-      },
-      {
-        "fromSlug": "ontology/elements/builder-node-query-focus",
-        "context": "frontmatter · **[views]**",
-        "linkText": "views"
-      },
-      {
-        "fromSlug": "ontology/elements/builder-relation-proposal",
-        "context": "frontmatter · **[views]**",
-        "linkText": "views"
-      },
-      {
-        "fromSlug": "ontology/elements/builder-relation-write-confirm-panel",
-        "context": "frontmatter · **[views]**",
-        "linkText": "views"
-      },
-      {
-        "fromSlug": "ontology/elements/builder-write-summary",
-        "context": "frontmatter · **[views]**",
-        "linkText": "views"
-      },
-      {
         "fromSlug": "ontology/elements/business-ontology-lens",
         "context": "frontmatter · **[views]**",
         "linkText": "views"
@@ -12195,11 +11870,6 @@
       },
       {
         "fromSlug": "ontology/elements/ontology-domain-tint-contract",
-        "context": "frontmatter · **[views]**",
-        "linkText": "views"
-      },
-      {
-        "fromSlug": "ontology/elements/ontology-edit-canvas",
         "context": "frontmatter · **[views]**",
         "linkText": "views"
       },
@@ -12290,11 +11960,6 @@
       },
       {
         "fromSlug": "ontology/elements/topology-selected-node-resolver",
-        "context": "frontmatter · **[views]**",
-        "linkText": "views"
-      },
-      {
-        "fromSlug": "ontology/elements/xyflow",
         "context": "frontmatter · **[views]**",
         "linkText": "views"
       },
@@ -12431,11 +12096,6 @@
         "linkText": "agent-graph-readiness"
       },
       {
-        "fromSlug": "ontology/elements/builder-relation-write-confirm-panel",
-        "context": "frontmatter · **[capabilities/agent-graph-readiness]**",
-        "linkText": "capabilities/agent-graph-readiness"
-      },
-      {
         "fromSlug": "ontology/elements/ontology-node-detail-modal",
         "context": "frontmatter · **[capabilities/agent-graph-readiness]**",
         "linkText": "capabilities/agent-graph-readiness"
@@ -12497,158 +12157,6 @@
         "fromSlug": "ontology/capabilities/agent-practitioner-concerns-map",
         "context": "frontmatter · **[documents/agent-practice-research]**",
         "linkText": "documents/agent-practice-research"
-      }
-    ],
-    "ontology/elements/builder-command-strip": [
-      {
-        "fromSlug": "ontology/capabilities/builder-canvas-polish",
-        "context": "frontmatter · **[elements/builder-command-strip]**",
-        "linkText": "elements/builder-command-strip"
-      },
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[elements/builder-command-strip]**",
-        "linkText": "elements/builder-command-strip"
-      }
-    ],
-    "ontology/elements/builder-detail-sheet": [
-      {
-        "fromSlug": "ontology/capabilities/builder-canvas-polish",
-        "context": "frontmatter · **[elements/builder-detail-sheet]**",
-        "linkText": "elements/builder-detail-sheet"
-      },
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[elements/builder-detail-sheet]**",
-        "linkText": "elements/builder-detail-sheet"
-      }
-    ],
-    "ontology/elements/builder-graph-anchor-rail": [
-      {
-        "fromSlug": "ontology/capabilities/builder-canvas-polish",
-        "context": "frontmatter · **[elements/builder-graph-anchor-rail]**",
-        "linkText": "elements/builder-graph-anchor-rail"
-      },
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[elements/builder-graph-anchor-rail]**",
-        "linkText": "elements/builder-graph-anchor-rail"
-      },
-      {
-        "fromSlug": "ontology/elements/ontology-design-surface-guard",
-        "context": "frontmatter · **[elements/builder-graph-anchor-rail]**",
-        "linkText": "elements/builder-graph-anchor-rail"
-      }
-    ],
-    "ontology/elements/builder-write-summary": [
-      {
-        "fromSlug": "ontology/capabilities/builder-canvas-polish",
-        "context": "frontmatter · **[elements/builder-write-summary]**",
-        "linkText": "elements/builder-write-summary"
-      },
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[elements/builder-write-summary]**",
-        "linkText": "elements/builder-write-summary"
-      }
-    ],
-    "ontology/elements/ontology-design-surface-guard": [
-      {
-        "fromSlug": "ontology/capabilities/builder-canvas-polish",
-        "context": "frontmatter · **[elements/ontology-design-surface-guard]**",
-        "linkText": "elements/ontology-design-surface-guard"
-      },
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[elements/ontology-design-surface-guard]**",
-        "linkText": "elements/ontology-design-surface-guard"
-      }
-    ],
-    "ontology/elements/ontology-edit-canvas": [
-      {
-        "fromSlug": "ontology/capabilities/builder-canvas-polish",
-        "context": "frontmatter · **[elements/ontology-edit-canvas]**",
-        "linkText": "elements/ontology-edit-canvas"
-      },
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[elements/ontology-edit-canvas]**",
-        "linkText": "elements/ontology-edit-canvas"
-      }
-    ],
-    "ontology/capabilities/builder-vault-write": [
-      {
-        "fromSlug": "ontology/capabilities/builder-canvas-polish",
-        "context": "frontmatter · **[capabilities/builder-vault-write]**",
-        "linkText": "capabilities/builder-vault-write"
-      },
-      {
-        "fromSlug": "ontology/capabilities/vault-live-updates",
-        "context": "frontmatter · **[capabilities/builder-vault-write]**",
-        "linkText": "capabilities/builder-vault-write"
-      },
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[builder-vault-write]**",
-        "linkText": "builder-vault-write"
-      }
-    ],
-    "ontology/elements/builder-node-query-focus": [
-      {
-        "fromSlug": "ontology/capabilities/builder-deep-link-focus",
-        "context": "frontmatter · **[builder-node-query-focus]**",
-        "linkText": "builder-node-query-focus"
-      },
-      {
-        "fromSlug": "ontology/capabilities/topology-ontology-inspection",
-        "context": "frontmatter · **[builder-node-query-focus]**",
-        "linkText": "builder-node-query-focus"
-      },
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[builder-node-query-focus]**",
-        "linkText": "builder-node-query-focus"
-      }
-    ],
-    "ontology/elements/ontology-deeplink-node-resolver": [
-      {
-        "fromSlug": "ontology/capabilities/builder-deep-link-focus",
-        "context": "frontmatter · **[ontology-deeplink-node-resolver]**",
-        "linkText": "ontology-deeplink-node-resolver"
-      },
-      {
-        "fromSlug": "ontology/capabilities/topology-ontology-inspection",
-        "context": "frontmatter · **[ontology-deeplink-node-resolver]**",
-        "linkText": "ontology-deeplink-node-resolver"
-      },
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[ontology-deeplink-node-resolver]**",
-        "linkText": "ontology-deeplink-node-resolver"
-      }
-    ],
-    "ontology/elements/builder-relation-proposal": [
-      {
-        "fromSlug": "ontology/capabilities/builder-relation-write-confirm",
-        "context": "frontmatter · **[builder-relation-proposal]**",
-        "linkText": "builder-relation-proposal"
-      },
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[builder-relation-proposal]**",
-        "linkText": "builder-relation-proposal"
-      }
-    ],
-    "ontology/elements/builder-relation-write-confirm-panel": [
-      {
-        "fromSlug": "ontology/capabilities/builder-relation-write-confirm",
-        "context": "frontmatter · **[builder-relation-write-confirm-panel]**",
-        "linkText": "builder-relation-write-confirm-panel"
-      },
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[builder-relation-write-confirm-panel]**",
-        "linkText": "builder-relation-write-confirm-panel"
       }
     ],
     "ontology/capabilities/topology-change-visualization": [
@@ -12921,28 +12429,6 @@
         "fromSlug": "ontology/project",
         "context": "frontmatter · **[ontology-core]**",
         "linkText": "ontology-core"
-      },
-      {
-        "fromSlug": "ontology/src/views/ontology-edit/ui/VaultEdge.tsx",
-        "context": "frontmatter · **[ontology-core]**",
-        "linkText": "ontology-core"
-      }
-    ],
-    "ontology/capabilities/builder-canvas-polish": [
-      {
-        "fromSlug": "ontology/capabilities/mcp-server",
-        "context": "frontmatter · **[capabilities/builder-canvas-polish]**",
-        "linkText": "capabilities/builder-canvas-polish"
-      },
-      {
-        "fromSlug": "ontology/documents/views-domain-boundary-audit",
-        "context": "frontmatter · **[capabilities/builder-canvas-polish]**",
-        "linkText": "capabilities/builder-canvas-polish"
-      },
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[builder-canvas-polish]**",
-        "linkText": "builder-canvas-polish"
       }
     ],
     "ontology/domains/mode-aware-adapters": [
@@ -13040,6 +12526,23 @@
         "fromSlug": "ontology/domains/onboarding-ux",
         "context": "frontmatter · **[cli-developer-entry]**",
         "linkText": "cli-developer-entry"
+      }
+    ],
+    "ontology/elements/ontology-deeplink-node-resolver": [
+      {
+        "fromSlug": "ontology/capabilities/studio-deep-link-focus",
+        "context": "frontmatter · **[ontology-deeplink-node-resolver]**",
+        "linkText": "ontology-deeplink-node-resolver"
+      },
+      {
+        "fromSlug": "ontology/capabilities/topology-ontology-inspection",
+        "context": "frontmatter · **[ontology-deeplink-node-resolver]**",
+        "linkText": "ontology-deeplink-node-resolver"
+      },
+      {
+        "fromSlug": "ontology/domains/views",
+        "context": "frontmatter · **[ontology-deeplink-node-resolver]**",
+        "linkText": "ontology-deeplink-node-resolver"
       }
     ],
     "ontology/elements/topology-analysis-state": [
@@ -13213,6 +12716,18 @@
         "linkText": "topology-selected-node-resolver"
       }
     ],
+    "ontology/capabilities/studio-vault-write": [
+      {
+        "fromSlug": "ontology/capabilities/vault-live-updates",
+        "context": "frontmatter · **[capabilities/studio-vault-write]**",
+        "linkText": "capabilities/studio-vault-write"
+      },
+      {
+        "fromSlug": "ontology/domains/views",
+        "context": "frontmatter · **[studio-vault-write]**",
+        "linkText": "studio-vault-write"
+      }
+    ],
     "ontology/capabilities/agent-practitioner-concerns-map": [
       {
         "fromSlug": "ontology/documents/agent-practice-research",
@@ -13221,11 +12736,6 @@
       },
       {
         "fromSlug": "ontology/domains/ai-agent-partner",
-        "context": "frontmatter · **[capabilities/agent-practitioner-concerns-map]**",
-        "linkText": "capabilities/agent-practitioner-concerns-map"
-      },
-      {
-        "fromSlug": "ontology/elements/builder-relation-write-confirm-panel",
         "context": "frontmatter · **[capabilities/agent-practitioner-concerns-map]**",
         "linkText": "capabilities/agent-practitioner-concerns-map"
       }
@@ -13375,21 +12885,9 @@
         "linkText": "elements/ontology-relation-key-inference"
       },
       {
-        "fromSlug": "ontology/elements/builder-relation-proposal",
-        "context": "frontmatter · **[elements/ontology-relation-key-inference]**",
-        "linkText": "elements/ontology-relation-key-inference"
-      },
-      {
         "fromSlug": "ontology/elements/topology-analysis-state",
         "context": "frontmatter · **[elements/ontology-relation-key-inference]**",
         "linkText": "elements/ontology-relation-key-inference"
-      }
-    ],
-    "ontology/src/views/ontology-edit/ui/VaultEdge.tsx": [
-      {
-        "fromSlug": "ontology/domains/ontology-core",
-        "context": "frontmatter · **[src/views/ontology-edit/ui/VaultEdge.tsx]**",
-        "linkText": "src/views/ontology-edit/ui/VaultEdge.tsx"
       }
     ],
     "ontology/capabilities/desktop-app-distribution": [
@@ -13423,25 +12921,6 @@
         "fromSlug": "ontology/domains/vault-local-first",
         "context": "frontmatter · **[src/widgets/docs-vault/ui/DocsVaultEditor.tsx]**",
         "linkText": "src/widgets/docs-vault/ui/DocsVaultEditor.tsx"
-      }
-    ],
-    "ontology/capabilities/builder-deep-link-focus": [
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[builder-deep-link-focus]**",
-        "linkText": "builder-deep-link-focus"
-      }
-    ],
-    "ontology/capabilities/builder-relation-write-confirm": [
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[builder-relation-write-confirm]**",
-        "linkText": "builder-relation-write-confirm"
-      },
-      {
-        "fromSlug": "ontology/elements/builder-relation-write-confirm-panel",
-        "context": "frontmatter · **[capabilities/builder-relation-write-confirm]**",
-        "linkText": "capabilities/builder-relation-write-confirm"
       }
     ],
     "ontology/capabilities/agent-live-activity-contract": [
@@ -13479,6 +12958,20 @@
         "linkText": "capabilities/topology-node-significance"
       }
     ],
+    "ontology/capabilities/studio-deep-link-focus": [
+      {
+        "fromSlug": "ontology/domains/views",
+        "context": "frontmatter · **[studio-deep-link-focus]**",
+        "linkText": "studio-deep-link-focus"
+      }
+    ],
+    "ontology/capabilities/studio-relation-write-confirm": [
+      {
+        "fromSlug": "ontology/domains/views",
+        "context": "frontmatter · **[studio-relation-write-confirm]**",
+        "linkText": "studio-relation-write-confirm"
+      }
+    ],
     "ontology/capabilities/topology-analysis-modes": [
       {
         "fromSlug": "ontology/domains/views",
@@ -13498,6 +12991,13 @@
         "fromSlug": "ontology/domains/views",
         "context": "frontmatter · **[elements/ontology-atlas-quality-bar]**",
         "linkText": "elements/ontology-atlas-quality-bar"
+      }
+    ],
+    "ontology/elements/ontology-design-surface-guard": [
+      {
+        "fromSlug": "ontology/domains/views",
+        "context": "frontmatter · **[elements/ontology-design-surface-guard]**",
+        "linkText": "elements/ontology-design-surface-guard"
       }
     ],
     "ontology/elements/ontology-review-brief": [
@@ -13548,13 +13048,6 @@
         "fromSlug": "ontology/domains/views",
         "context": "frontmatter · **[src/views/project-detail]**",
         "linkText": "src/views/project-detail"
-      }
-    ],
-    "ontology/elements/xyflow": [
-      {
-        "fromSlug": "ontology/domains/views",
-        "context": "frontmatter · **[xyflow]**",
-        "linkText": "xyflow"
       }
     ]
   },
@@ -13915,34 +13408,6 @@
                 "title": "Agent Practitioner Concerns Map"
               },
               {
-                "name": "builder-canvas-polish",
-                "path": "ontology/capabilities/builder-canvas-polish",
-                "type": "doc",
-                "slug": "ontology/capabilities/builder-canvas-polish",
-                "title": "Builder Canvas Polish (n8n routing + 도메인 tint + 정렬 toolbar)"
-              },
-              {
-                "name": "builder-deep-link-focus",
-                "path": "ontology/capabilities/builder-deep-link-focus",
-                "type": "doc",
-                "slug": "ontology/capabilities/builder-deep-link-focus",
-                "title": "Builder Deep-Link Focus"
-              },
-              {
-                "name": "builder-relation-write-confirm",
-                "path": "ontology/capabilities/builder-relation-write-confirm",
-                "type": "doc",
-                "slug": "ontology/capabilities/builder-relation-write-confirm",
-                "title": "Builder Relation Write Confirm"
-              },
-              {
-                "name": "builder-vault-write",
-                "path": "ontology/capabilities/builder-vault-write",
-                "type": "doc",
-                "slug": "ontology/capabilities/builder-vault-write",
-                "title": "Builder ↔ Vault md write (mode-aware)"
-              },
-              {
                 "name": "changes-only-review",
                 "path": "ontology/capabilities/changes-only-review",
                 "type": "doc",
@@ -14074,6 +13539,27 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/session-start-ontology-context",
                 "title": "SessionStart Ontology Context Injection (.claude/hooks/inject-ontology-summary.sh)"
+              },
+              {
+                "name": "studio-deep-link-focus",
+                "path": "ontology/capabilities/studio-deep-link-focus",
+                "type": "doc",
+                "slug": "ontology/capabilities/studio-deep-link-focus",
+                "title": "나침 무대 딥링크 포커스 (?node=)"
+              },
+              {
+                "name": "studio-relation-write-confirm",
+                "path": "ontology/capabilities/studio-relation-write-confirm",
+                "type": "doc",
+                "slug": "ontology/capabilities/studio-relation-write-confirm",
+                "title": "나침 무대 관계 쓰기 확인 (inline socket write)"
+              },
+              {
+                "name": "studio-vault-write",
+                "path": "ontology/capabilities/studio-vault-write",
+                "type": "doc",
+                "slug": "ontology/capabilities/studio-vault-write",
+                "title": "나침 무대 ↔ Vault md write (mode-aware)"
               },
               {
                 "name": "topology-analysis-modes",
@@ -14255,7 +13741,7 @@
                 "path": "ontology/domains/views",
                 "type": "doc",
                 "slug": "ontology/domains/views",
-                "title": "Views (Topology · Browse · Builder)"
+                "title": "Views (Topology · Browse · Studio)"
               }
             ]
           },
@@ -14284,55 +13770,6 @@
                 "type": "doc",
                 "slug": "ontology/elements/app-settings-menu",
                 "title": "App Settings Menu"
-              },
-              {
-                "name": "builder-command-strip",
-                "path": "ontology/elements/builder-command-strip",
-                "type": "doc",
-                "slug": "ontology/elements/builder-command-strip",
-                "title": "Builder Command Strip"
-              },
-              {
-                "name": "builder-detail-sheet",
-                "path": "ontology/elements/builder-detail-sheet",
-                "type": "doc",
-                "slug": "ontology/elements/builder-detail-sheet",
-                "title": "Builder Detail Sheet"
-              },
-              {
-                "name": "builder-graph-anchor-rail",
-                "path": "ontology/elements/builder-graph-anchor-rail",
-                "type": "doc",
-                "slug": "ontology/elements/builder-graph-anchor-rail",
-                "title": "Builder Graph Anchor Rail"
-              },
-              {
-                "name": "builder-node-query-focus",
-                "path": "ontology/elements/builder-node-query-focus",
-                "type": "doc",
-                "slug": "ontology/elements/builder-node-query-focus",
-                "title": "Builder Node Query Focus"
-              },
-              {
-                "name": "builder-relation-proposal",
-                "path": "ontology/elements/builder-relation-proposal",
-                "type": "doc",
-                "slug": "ontology/elements/builder-relation-proposal",
-                "title": "Builder Relation Proposal Model"
-              },
-              {
-                "name": "builder-relation-write-confirm-panel",
-                "path": "ontology/elements/builder-relation-write-confirm-panel",
-                "type": "doc",
-                "slug": "ontology/elements/builder-relation-write-confirm-panel",
-                "title": "Builder Relation Write Confirm Panel"
-              },
-              {
-                "name": "builder-write-summary",
-                "path": "ontology/elements/builder-write-summary",
-                "type": "doc",
-                "slug": "ontology/elements/builder-write-summary",
-                "title": "Builder Write Summary"
               },
               {
                 "name": "business-ontology-lens",
@@ -14431,13 +13868,6 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-domain-tint-contract",
                 "title": "Ontology Domain Tint Contract"
-              },
-              {
-                "name": "ontology-edit-canvas",
-                "path": "ontology/elements/ontology-edit-canvas",
-                "type": "doc",
-                "slug": "ontology/elements/ontology-edit-canvas",
-                "title": "Ontology Edit Canvas"
               },
               {
                 "name": "ontology-kind-tone-contract",
@@ -14585,13 +14015,6 @@
                 "type": "doc",
                 "slug": "ontology/elements/topology-selected-node-resolver",
                 "title": "Topology Selected Node Resolver"
-              },
-              {
-                "name": "xyflow",
-                "path": "ontology/elements/xyflow",
-                "type": "doc",
-                "slug": "ontology/elements/xyflow",
-                "title": "xyflow (React Flow)"
               }
             ]
           },
@@ -14670,27 +14093,6 @@
                             "type": "doc",
                             "slug": "ontology/src/views/docs-vault/ui/DocsVaultPage.tsx",
                             "title": "Source Vault Page"
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "name": "ontology-edit",
-                    "path": "ontology/src/views/ontology-edit",
-                    "type": "dir",
-                    "children": [
-                      {
-                        "name": "ui",
-                        "path": "ontology/src/views/ontology-edit/ui",
-                        "type": "dir",
-                        "children": [
-                          {
-                            "name": "VaultEdge.tsx",
-                            "path": "ontology/src/views/ontology-edit/ui/VaultEdge.tsx",
-                            "type": "doc",
-                            "slug": "ontology/src/views/ontology-edit/ui/VaultEdge.tsx",
-                            "title": "Ontology Builder Vault Edge"
                           }
                         ]
                       }
