@@ -8,6 +8,7 @@ import {
   BarChart3,
   BookOpen,
   FolderKanban,
+  Gem,
   GitBranch,
   Map as MapIcon,
 } from "lucide-react";
@@ -122,6 +123,7 @@ export function AppNavRail({
     { id: "map", href: "/topology/", label: t("map"), Icon: MapIcon },
     { id: "docs", href: contextHrefs?.docs ?? "/docs/", label: t("docs"), Icon: BookOpen },
     { id: "builder", href: "/ontology/edit/", label: t("builder"), Icon: GitBranch },
+    { id: "studio", href: "/ontology/studio/", label: t("studio"), Icon: Gem },
     { id: "insights", href: "/ontology/insights/", label: t("insights"), Icon: BarChart3 },
     { id: "projects", href: "/projects/", label: t("projects"), Icon: FolderKanban },
   ];
