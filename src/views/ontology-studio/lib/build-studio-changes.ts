@@ -72,7 +72,12 @@ export function reduceStudioChanges(
       // Removing a freshly-added (not-yet-saved) link just cancels the add.
       if (existing?.op === "add") return withoutTarget(prev, action.target.id);
       const rest = withoutTarget(prev, action.target.id);
-      return [...rest, { op: "remove", relation: action.relation, target: action.target }];
+      // 옮겨둔(아직 저장 전) 노드를 끊으면 실제로 기록돼 있는 건 원래 방위의
+      // 관계 하나뿐이다 — retype 를 접고 TRUE original bearing 을 끊는다.
+      // 현재(옮긴 후) 방위로 끊으면 실재하지 않는 엣지를 지우려는 잘못된
+      // 쓰기(디스크 no-op / 잘못된 remove_relation 패킷)가 된다.
+      const relation = existing?.op === "retype" ? existing.from : action.relation;
+      return [...rest, { op: "remove", relation, target: action.target }];
     }
     case "retype": {
       const existing = findForTarget(prev, action.target.id);

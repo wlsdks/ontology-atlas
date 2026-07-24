@@ -53,6 +53,22 @@ describe("reduceStudioChanges", () => {
     expect(s).toEqual([{ op: "retype", from: "relates", to: "contains", target: B }]);
   });
 
+  it("retype-then-remove collapses to a remove at the TRUE original bearing (sonnet 검증 결함 1)", () => {
+    // 기대는 곳(dependsOn)에 실재하는 관계를 '비슷한 것'으로 옮겨둔 뒤 끊으면,
+    // 실제로 기록돼 있는 dependsOn 을 끊어야 한다 — 옮긴 후 방위(relates)로
+    // 끊으면 실재하지 않는 엣지를 지우려는 no-op 쓰기가 된다.
+    let s = reduceStudioChanges([], { type: "retype", from: "dependsOn", to: "relates", target: A });
+    s = reduceStudioChanges(s, { type: "remove", relation: "relates", target: A });
+    expect(s).toEqual([{ op: "remove", relation: "dependsOn", target: A }]);
+  });
+
+  it("chained-retype-then-remove still removes at the TRUE original bearing", () => {
+    let s = reduceStudioChanges([], { type: "retype", from: "dependsOn", to: "relates", target: A });
+    s = reduceStudioChanges(s, { type: "retype", from: "relates", to: "contains", target: A });
+    s = reduceStudioChanges(s, { type: "remove", relation: "contains", target: A });
+    expect(s).toEqual([{ op: "remove", relation: "dependsOn", target: A }]);
+  });
+
   it("retype back to the original bearing cancels the change", () => {
     let s = reduceStudioChanges([], { type: "retype", from: "relates", to: "dependsOn", target: B });
     s = reduceStudioChanges(s, { type: "retype", from: "dependsOn", to: "relates", target: B });
