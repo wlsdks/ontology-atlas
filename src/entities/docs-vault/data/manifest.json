@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T07:23:06.735Z",
+  "generatedAt": "2026-07-24T07:52:02.149Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2508,9 +2508,9 @@
           "slug": "잔여-게이트-다음-라운드"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 105 노드, CLI 48 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 106 노드, CLI 48 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
       "wordCount": 1661,
-      "updatedAt": "2026-07-21T23:47:32+09:00",
+      "updatedAt": "2026-07-24T16:53:06+09:00",
       "linksOut": []
     },
     {
@@ -4753,7 +4753,7 @@
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 라이브 답사(비개발자 피드백)로 확인한 이탈 지점을 기존 온보딩 자산의 재배치로 해소. ① 가이드 투어 첫 방문 자동 시작 — 진입점이 우측 레일 아이콘뿐",
       "wordCount": 36463,
-      "updatedAt": "2026-07-24T07:22:11.622Z",
+      "updatedAt": "2026-07-24T16:53:06+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5916,7 +5916,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
       "wordCount": 12806,
-      "updatedAt": "2026-07-24T07:21:57.194Z",
+      "updatedAt": "2026-07-24T16:53:06+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6084,7 +6084,7 @@
       ],
       "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ontology-atlas 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성",
       "wordCount": 419,
-      "updatedAt": "2026-07-21T02:02:13+09:00",
+      "updatedAt": "2026-07-24T16:53:06+09:00",
       "linksOut": []
     },
     {
@@ -6122,7 +6122,7 @@
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~280. HN expects substantive Show HN posts, not one-liners.)",
       "wordCount": 439,
-      "updatedAt": "2026-07-23T15:29:58+09:00",
+      "updatedAt": "2026-07-24T16:53:06+09:00",
       "linksOut": []
     },
     {
@@ -7135,7 +7135,7 @@
       ],
       "excerpt": "2026-07-24 온보딩 라운드 — 라이브 답사(비개발자 피드백)로 확인한 첫 사용 이탈 지점 4곳을 기존 온보딩 자산의 재배치로 해소한 역량. 새 시스템을 만들지 않고 결정적 순간에 가이드를 세운다. 1. 가이드 투어 첫 방문 자동 시작 — 샘플 모드 정착 + guided-tour:v1 미기록이면 900ms 뒤 1회 자동 시작. canAutoStartGuidedTour (src/features/guided-tour/model/auto-start-guard.ts)가 모달/포커스 이탈/이미 열린 투어를 가드(stacked-transient 금지). 첫 실행 카드에 \"",
       "wordCount": 174,
-      "updatedAt": "2026-07-24T07:22:43.420Z",
+      "updatedAt": "2026-07-24T16:53:06+09:00",
       "linksOut": []
     },
     {
@@ -8277,7 +8277,7 @@
       ],
       "excerpt": "cross-cutting. 다크 단일 테마 (라이트 모드는 2026-07-19 전략 폐기), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curso",
       "wordCount": 350,
-      "updatedAt": "2026-07-24T07:22:52.950Z",
+      "updatedAt": "2026-07-24T16:53:06+09:00",
       "linksOut": []
     },
     {
@@ -10098,7 +10098,7 @@
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
       "wordCount": 4926,
-      "updatedAt": "2026-07-23T15:29:58+09:00",
+      "updatedAt": "2026-07-24T16:53:06+09:00",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
