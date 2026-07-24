@@ -4,6 +4,7 @@ import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from
 import type { CreateCandidate } from "../lib/build-create-node";
 import type { StudioRelation } from "../lib/build-studio-item";
 import type { PickerDiscovery } from "../lib/build-picker-discovery";
+import { buildDeltaPreview, type DeltaPreviewLayout } from "../lib/build-delta-preview";
 
 const labels: StudioCompassLabels = {
   searchPlaceholder: "search",
@@ -63,6 +64,18 @@ const labels: StudioCompassLabels = {
   walkConfirmTitle: (count) => `${count} unsaved — discard and go?`,
   walkConfirmSave: "save and go",
   walkConfirmDiscard: "discard and go",
+  previewOpen: "preview",
+  previewTitle: "how the map changes",
+  previewCloseAria: "close preview",
+  previewClose: "close",
+  previewCenterNew: "new node",
+  previewMovedChip: "moved",
+  previewRemovedChip: "cut",
+  previewOverflow: (count) => `+${count}`,
+  previewLegendExisting: "unchanged",
+  previewLegendAdded: "new link",
+  previewLegendMoved: "moved",
+  previewLegendRemoved: "cut",
 };
 
 const REL_LABEL: Record<StudioRelation, string> = {
@@ -588,6 +601,150 @@ describe("StudioCompass — 나침반 산책 (compass walk)", () => {
   it("gives the walk affordance a discoverable title", () => {
     renderWalk();
     expect(screen.getByTestId("studio-satellite-right")).toHaveAttribute("title", "walk to this node");
+  });
+});
+
+describe("StudioCompass — 그래프 델타 미니뷰 (save preview)", () => {
+  const emptyBase = (): Record<StudioRelation, CreateCandidate[]> => ({
+    isA: [],
+    dependsOn: [],
+    contains: [],
+    relates: [],
+  });
+
+  function renderPreview(
+    deltaPreview: DeltaPreviewLayout | null | undefined,
+    onSave = vi.fn(),
+  ) {
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "MCP Server", definition: "def" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down", { expected: true }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        onFill={vi.fn()}
+        onSave={onSave}
+        onExit={vi.fn()}
+        deltaPreview={deltaPreview}
+        summary={
+          deltaPreview?.hasDelta
+            ? { count: 1, collapsed: "1", headline: "1 change", lines: ["add 'depends: Parser'"], fileEffect: "1 file." }
+            : null
+        }
+      />,
+    );
+    return onSave;
+  }
+
+  const addDelta = (): DeltaPreviewLayout =>
+    buildDeltaPreview({
+      center: { title: "MCP Server", kind: "capability", domainLabel: null, isNew: false },
+      baseNeighborsByRelation: emptyBase(),
+      changes: [
+        { op: "add", relation: "dependsOn", target: { id: "el:parser", title: "Parser", kind: "element", ref: "elements/parser" } },
+      ],
+    });
+
+  it("hides the 미리보기 affordance with no staged delta (no dead click target)", () => {
+    renderPreview(null);
+    expect(screen.queryByTestId("studio-preview-open")).not.toBeInTheDocument();
+    // an all-'existing' layout (hasDelta false) also hides it.
+    const base = emptyBase();
+    base.dependsOn = [{ id: "el:x", title: "X", kind: "element", ref: "elements/x" }];
+    renderPreview(
+      buildDeltaPreview({
+        center: { title: "MCP Server", kind: "capability", domainLabel: null, isNew: false },
+        baseNeighborsByRelation: base,
+        changes: [],
+      }),
+    );
+    expect(screen.queryByTestId("studio-preview-open")).not.toBeInTheDocument();
+  });
+
+  it("opens the scrim modal from the affordance and marks the added node indigo", () => {
+    renderPreview(addDelta());
+    expect(screen.queryByTestId("studio-preview-modal")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("studio-preview-open"));
+    const modal = screen.getByTestId("studio-preview-modal");
+    expect(modal).toBeInTheDocument();
+    expect(modal).toHaveAttribute("aria-modal", "true");
+    // the new neighbor renders as an 'added' (indigo) satellite.
+    const added = screen.getByTestId("studio-preview-sat-added");
+    expect(added).toHaveTextContent("Parser");
+    // the same plain sentence list is reused inside the preview.
+    expect(screen.getByTestId("studio-preview-summary")).toHaveTextContent("add 'depends: Parser'");
+  });
+
+  it("commits directly from the preview footer (same one-click save handler)", () => {
+    const onSave = renderPreview(addDelta());
+    fireEvent.click(screen.getByTestId("studio-preview-open"));
+    fireEvent.click(screen.getByTestId("studio-preview-save"));
+    expect(onSave).toHaveBeenCalledTimes(1);
+    // committing closes the preview.
+    expect(screen.queryByTestId("studio-preview-modal")).not.toBeInTheDocument();
+  });
+
+  it("closes on the scrim, the ✕, and Esc — nothing else moves", () => {
+    renderPreview(addDelta());
+    // scrim click
+    fireEvent.click(screen.getByTestId("studio-preview-open"));
+    fireEvent.click(screen.getByTestId("studio-preview-modal"));
+    expect(screen.queryByTestId("studio-preview-modal")).not.toBeInTheDocument();
+    // ✕ button
+    fireEvent.click(screen.getByTestId("studio-preview-open"));
+    fireEvent.click(screen.getByTestId("studio-preview-close"));
+    expect(screen.queryByTestId("studio-preview-modal")).not.toBeInTheDocument();
+    // Esc key
+    fireEvent.click(screen.getByTestId("studio-preview-open"));
+    expect(screen.getByTestId("studio-preview-modal")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByTestId("studio-preview-modal")).not.toBeInTheDocument();
+  });
+
+  it("shows the create-mode new node in the center with its 'new' chip", () => {
+    render(
+      <StudioCompass
+        mode="create"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: "Commerce", name: "Refund", definition: "" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down", { expected: true }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        canSave
+        createKinds={[{ value: "capability", label: "capability" }]}
+        createKind="capability"
+        deltaPreview={buildDeltaPreview({
+          center: { title: "Refund", kind: "capability", domainLabel: "Commerce", isNew: true },
+          baseNeighborsByRelation: emptyBase(),
+          changes: [
+            { op: "add", relation: "isA", target: { id: "cap:pay", title: "Payments", kind: "capability", ref: "capabilities/payments" } },
+          ],
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("studio-preview-open"));
+    const center = screen.getByTestId("studio-preview-center");
+    expect(center).toHaveTextContent("Refund");
+    expect(center).toHaveTextContent("new node");
   });
 });
 
