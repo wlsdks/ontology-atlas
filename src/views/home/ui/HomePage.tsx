@@ -1322,7 +1322,12 @@ export function HomePage() {
           ? "shortcuts"
           : "none";
   const topologyBlockingOverlayActive = topologyBlockingOverlayState !== "none";
+  // 2026-07-24 온보딩 QA — 시작 체크리스트가 "첫 프로젝트/도메인 만들기"
+  // 의도를 전달할 수 있게 컴포저 초기 kind 를 상태로 둔다. 일반 진입
+  // (+ 개념 버튼 등)은 종전 기본값(역량) 유지.
+  const [createNodeDefaultKind, setCreateNodeDefaultKind] = useState<CreateNodeKind>("capability");
   const openCreateNode = useCallback(() => {
+    setCreateNodeDefaultKind("capability");
     setOntologySearchOpen(false);
     setShortcutsOpen(false);
     setDocsDrawerOpen(false);
@@ -1333,6 +1338,13 @@ export function HomePage() {
       createNodeIntent: true,
     }));
   }, [setRouteState]);
+  const openCreateNodeWithKind = useCallback(
+    (kind: CreateNodeKind) => {
+      openCreateNode();
+      setCreateNodeDefaultKind(kind);
+    },
+    [openCreateNode],
+  );
   useEffect(() => {
     if (!createNodeIntent) return;
     let cancelled = false;
@@ -1744,19 +1756,27 @@ export function HomePage() {
   useEffect(() => {
     if (autoTourFiredRef.current || !sampleModeSettled) return undefined;
     if (readGuidedTourStatus() !== null) return undefined;
-    // 레이아웃/카메라 정착 뒤에 열어 1단계 카드가 안정된 화면 위에 뜬다.
-    const id = window.setTimeout(() => {
-      // Design Guardian (2026-07-24) — stacked-transient 가드. 900ms 안에
-      // 사용자가 이미 모달(폴더 안내 시트 등, role=dialog aria-modal)을
-      // 열었거나 OS 폴더 선택창으로 문서 포커스가 나간 상태면 투어(z-70)를
-      // 그 위에 겹쳐 쏘지 않는다. 이 세션은 조용히 건너뛰되 storage 는
-      // 기록하지 않아 다음 첫-방문 조건에서 다시 시도하고, 카드의
-      // "2분 구경하기" CTA 가 수동 경로로 항상 남는다.
-      autoTourFiredRef.current = true;
-      if (!canAutoStartGuidedTour()) return;
-      openGuidedTourRef.current();
-    }, 900);
-    return () => window.clearTimeout(id);
+    // 첫 시도는 900ms 뒤 — 레이아웃/카메라 정착 뒤에 열어 1단계 카드가
+    // 안정된 화면 위에 뜬다. Design Guardian (2026-07-24) stacked-transient
+    // 가드: 발화 순간 모달(폴더 안내 시트 등)이 열려 있거나 문서 포커스가
+    // 나가 있으면(백그라운드 탭 로드 · OS 폴더 선택창) 겹쳐 쏘지 않는다.
+    // 단발이면 그 세션에서 환영 순간을 영영 잃으므로(QA 실측 — 백그라운드
+    // 탭 로드) 2초 간격으로 잠시 재시도하고, 상한 후에는 storage 미기록
+    // 상태로 조용히 물러난다 — 카드의 "2분 구경하기" CTA 가 수동 경로.
+    let timerId = 0;
+    let attempts = 0;
+    const tick = () => {
+      if (autoTourFiredRef.current) return;
+      if (canAutoStartGuidedTour()) {
+        autoTourFiredRef.current = true;
+        openGuidedTourRef.current();
+        return;
+      }
+      attempts += 1;
+      if (attempts < 10) timerId = window.setTimeout(tick, 2000);
+    };
+    timerId = window.setTimeout(tick, 900);
+    return () => window.clearTimeout(timerId);
   }, [sampleModeSettled]);
 
   // P0#3 — Esc staged-close ladder (docs/FEATURES.md / shortcut sheet's
@@ -3047,11 +3067,13 @@ export function HomePage() {
                       create: t('createNode.create'),
                       cancel: t('createNode.cancel'),
                       kindLabels: {
+                        project: t('createNode.kindProject'),
                         domain: t('createNode.kindDomain'),
                         capability: t('createNode.kindCapability'),
                         element: t('createNode.kindElement'),
                       },
                     }}
+                    defaultKind={createNodeDefaultKind}
                   />
                 </div>
               </>
@@ -3421,7 +3443,7 @@ export function HomePage() {
                       projectCount={checklistProjectCount}
                       domainCount={indexDomainCount}
                       relationCount={topologyTotalRelations}
-                      onCreateNode={openCreateNode}
+                      onCreateNode={openCreateNodeWithKind}
                       onOpenAgentConnect={openAgentConnectSheet}
                     />
                   ) : (

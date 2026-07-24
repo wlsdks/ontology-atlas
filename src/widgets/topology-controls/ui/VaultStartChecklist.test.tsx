@@ -31,7 +31,9 @@ describe("VaultStartChecklist", () => {
     expect(screen.getByTestId("checklist-step-project")).toHaveAttribute("data-done", "false");
 
     fireEvent.click(screen.getByTestId("checklist-cta-project"));
-    expect(onCreate).toHaveBeenCalledTimes(1);
+    expect(onCreate).toHaveBeenCalledWith("project");
+    fireEvent.click(screen.getByTestId("checklist-cta-domain"));
+    expect(onCreate).toHaveBeenCalledWith("domain");
   });
 
   it("shows progress as counts appear", () => {

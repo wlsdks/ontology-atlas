@@ -16,8 +16,12 @@ export interface VaultStartChecklistProps {
   projectCount: number;
   domainCount: number;
   relationCount: number;
-  /** 지도 위 "첫 노드 만들기" composer 열기 (TopologyEmptyState 와 동일). */
-  onCreateNode: () => void;
+  /**
+   * 지도 위 노드 생성 composer 열기 — 단계 의도에 맞는 초기 kind 를
+   * 전달한다("첫 프로젝트 만들기" CTA 가 역량 기본값 폼을 여는 어긋남
+   * 방지, 2026-07-24 QA 실측).
+   */
+  onCreateNode: (kind: "project" | "domain") => void;
   /** "AI 에이전트 연결" 시트 열기 — 생략 시 에이전트 행은 정보만 표시. */
   onOpenAgentConnect?: (() => void) | null;
 }
@@ -44,7 +48,7 @@ export function VaultStartChecklist({
       cta: (
         <button
           type="button"
-          onClick={onCreateNode}
+          onClick={() => onCreateNode("project")}
           data-testid="checklist-cta-project"
           className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-2.5 text-label font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)]"
         >
@@ -60,7 +64,7 @@ export function VaultStartChecklist({
       cta: (
         <button
           type="button"
-          onClick={onCreateNode}
+          onClick={() => onCreateNode("domain")}
           data-testid="checklist-cta-domain"
           className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
         >

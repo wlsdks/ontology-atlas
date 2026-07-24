@@ -2442,6 +2442,7 @@
       "domainPlaceholder": "domain slug (optional)",
       "create": "Create",
       "cancel": "Cancel",
+      "kindProject": "Project",
       "kindDomain": "Domain",
       "kindCapability": "Capability",
       "kindElement": "Element",

@@ -188,6 +188,19 @@ describe('FirstRunStarterModule', () => {
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
   });
 
+  // 2026-07-24 QA 실측 회귀 — 사전 안내 시트가 열린 동안 Esc 는 시트만
+  // 닫아야 한다. 캡처 단계 dismiss 핸들러가 모달에 양보하는지 고정한다.
+  it('Escape while the guide sheet is open closes the sheet, not the card', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    fireEvent.click(screen.getByTestId('first-run-starter-open'));
+    expect(screen.getByTestId('vault-guide-sheet')).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    expect(screen.getByTestId('first-run-starter')).toBeInTheDocument();
+    expect(window.sessionStorage.getItem(FIRST_RUN_STARTER_DISMISSED_KEY)).toBeNull();
+  });
+
   it('Escape dismisses the module', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 

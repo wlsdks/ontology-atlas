@@ -2442,6 +2442,7 @@
       "domainPlaceholder": "도메인 slug (선택)",
       "create": "만들기",
       "cancel": "취소",
+      "kindProject": "프로젝트",
       "kindDomain": "도메인",
       "kindCapability": "역량",
       "kindElement": "요소",

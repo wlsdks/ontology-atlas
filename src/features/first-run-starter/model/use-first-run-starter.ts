@@ -64,6 +64,11 @@ export function useFirstRunStarter() {
       // DOM 존재가 신호 — 카드가 스크림에 덮인 동안 이 카드는 최상위 표면이
       // 아니므로 Esc 소유권이 없다.
       if (document.querySelector('[data-testid="guided-tour-overlay"]') !== null) return;
+      // 모달(사전 안내 시트 · 에이전트 연결 시트 등)이 열려 있는 동안도
+      // 동일하게 양보한다 (2026-07-24 QA 실측 — 시트에서 Esc 를 누르면
+      // 시트만 닫혀야 하는데 이 캡처 핸들러가 먼저 실행돼 보이지도 않는
+      // 첫 실행 카드를 세션에서 영구 dismiss 해버렸다).
+      if (document.querySelector('[role="dialog"][aria-modal="true"]') !== null) return;
       event.preventDefault();
       dismiss();
     };
