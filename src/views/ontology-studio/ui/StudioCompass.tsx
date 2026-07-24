@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, MoreHorizontal, Plus, Search, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, Check, ChevronDown, MoreHorizontal, Plus, Search, X } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import type {
   StudioBearing,
@@ -121,6 +121,13 @@ export interface StudioCompassLabels {
   exitConfirmDiscard: string; // "버리고 나가기" (red)
   exitConfirmKeep: string; // "계속 편집"
   commitEmptyHint: string; // enhance, nothing staged
+  // ── Slice 4 — 나침반 산책 (compass walk) ──
+  walkTo: string; // satellite hover/title — "이 노드로 걸어가기"
+  walkBackAria: (name: string) => string; // back affordance aria — "이전 노드로 돌아가기: {name}"
+  /** (count) → walk-with-pending confirm title. */
+  walkConfirmTitle: (count: number) => string;
+  walkConfirmSave: string; // "저장하고 이동"
+  walkConfirmDiscard: string; // "버리고 이동"
 }
 
 export interface CompassFocal {
@@ -195,6 +202,23 @@ export interface StudioCompassProps {
   onUndoChange?: (index: number) => void;
   /** exit with staged changes → confirm (버리기 / 계속). */
   hasPendingChanges?: boolean;
+
+  // ── Slice 4 — 나침반 산책 (compass walk) ──
+  /**
+   * The node we walked FROM (previous focal). Present → its satellite on the new
+   * stage gets a one-shot arrival highlight so "where I came from" reads (#3).
+   */
+  arrivedFrom?: string | null;
+  /**
+   * The previous node for the quiet "← <이름>" back affordance (#2). Clicking it
+   * re-centers there, routed through the same pending-changes walk guard.
+   */
+  backTo?: { id: string; label: string } | null;
+  /**
+   * Commit staged changes THEN walk to `id` — powers the "저장하고 이동" option in
+   * the walk guard. Omit → the guard offers only 버리고 이동 / 계속 편집 (#1).
+   */
+  onSaveAndOpenNode?: (id: string) => void;
 }
 
 interface LaneLayout {
@@ -371,6 +395,13 @@ export function StudioCompass(props: StudioCompassProps) {
   const [confirmExit, setConfirmExit] = useState(false);
   /** record-summary expanded (Slice 2 — "이렇게 기록됩니다"). */
   const [summaryOpen, setSummaryOpen] = useState(false);
+  /**
+   * Slice 4 — 나침반 산책. A walk with unsaved staged changes is deferred here:
+   * the target id is parked so the walk-guard confirm can resolve it (버리고/저장하고
+   * /계속). This surface is keyed by node id in the page, so it remounts per walk —
+   * pendingWalk is naturally transient (a fresh mount never inherits a stale target).
+   */
+  const [pendingWalk, setPendingWalk] = useState<string | null>(null);
   // Transient surfaces (picker / fold list / search) reset automatically: the
   // enhance instance is keyed by node id in the page, so switching nodes remounts.
 
@@ -420,6 +451,35 @@ export function StudioCompass(props: StudioCompassProps) {
     setQuery("");
   };
 
+  // ── Slice 4 — walk guard + arrival orientation ──────────────────────────────
+  // A "walk" = re-center the stage on another node (satellite / fold-row / top-bar
+  // search / back affordance). If staged changes are pending, defer the walk to a
+  // confirm instead of silently discarding them (pre-Slice-4 behaviour lost them).
+  const guardedOpen = (id: string) => {
+    if (!props.onOpenNode) return;
+    if (props.hasPendingChanges) {
+      // Close any transient surface so the confirm reads cleanly.
+      setOpenRelation(null);
+      setOpenFold(null);
+      setOpenEdit(null);
+      setPendingWalk(id);
+      return;
+    }
+    props.onOpenNode(id);
+  };
+
+  // Arrival orientation (#3): the node we came FROM is a neighbor of the new focal
+  // by definition — light its satellite for ~1.5s so "where I came from" reads.
+  // Full opacity holds, then a short opacity fade (color-only, no glow). Reduced
+  // motion snaps it off at the same 1.5s mark (motion-reduce disables the fade).
+  const arrivedFrom = props.arrivedFrom ?? null;
+  const [arrivalLit, setArrivalLit] = useState(Boolean(arrivedFrom));
+  useEffect(() => {
+    if (!arrivedFrom) return;
+    const timer = window.setTimeout(() => setArrivalLit(false), 1500);
+    return () => window.clearTimeout(timer);
+  }, [arrivedFrom]);
+
   return (
     <div
       className="relative grid h-[100dvh] min-h-0 grid-rows-[52px_1fr_64px] overflow-hidden bg-[color:var(--color-canvas)]"
@@ -434,8 +494,21 @@ export function StudioCompass(props: StudioCompassProps) {
           pickerKind={labels.pickerKind}
           emptyLabel={labels.pickerEmpty}
           currentName={focal.name}
-          onOpenNode={props.onOpenNode}
+          onOpenNode={props.onOpenNode ? guardedOpen : undefined}
         />
+        {props.backTo ? (
+          <button
+            type="button"
+            data-testid="studio-walk-back"
+            onClick={() => guardedOpen(props.backTo!.id)}
+            aria-label={labels.walkBackAria(props.backTo.label)}
+            title={labels.walkBackAria(props.backTo.label)}
+            className="flex h-[30px] max-w-[180px] items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-2.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-secondary)]"
+          >
+            <ArrowLeft size={13} aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]" />
+            <span className="min-w-0 truncate [word-break:keep-all]">{props.backTo.label}</span>
+          </button>
+        ) : null}
         <div className="flex items-center gap-2 text-caption text-[color:var(--color-text-tertiary)]">
           <span className="font-semibold text-[color:var(--color-text-secondary)]">{focal.name || "—"}</span>
           <span className="text-[color:var(--color-text-quaternary)]">·</span>
@@ -600,7 +673,9 @@ export function StudioCompass(props: StudioCompassProps) {
               labels={labels}
               kindLabelFor={kindLabelFor}
               onOpen={() => openPicker(view.relation)}
-              onOpenNode={props.onOpenNode}
+              onOpenNode={props.onOpenNode ? guardedOpen : undefined}
+              arrivalId={arrivedFrom}
+              arrivalLit={arrivalLit}
               onToggleFold={() => setOpenFold((cur) => (cur === view.bearing ? null : view.bearing))}
               foldOpen={openFold === view.bearing}
               onCloseFold={() => setOpenFold(null)}
@@ -660,8 +735,9 @@ export function StudioCompass(props: StudioCompassProps) {
                 setOpenEdit(null);
               }}
               onOpenOther={() => {
-                props.onOpenNode?.(openEdit.neighbor.id);
+                const target = openEdit.neighbor.id;
                 setOpenEdit(null);
+                guardedOpen(target);
               }}
               onClose={() => setOpenEdit(null)}
             />
@@ -754,6 +830,65 @@ export function StudioCompass(props: StudioCompassProps) {
           </button>
         </div>
       </footer>
+
+      {/* ── Walk guard (Slice 4) — pending changes + a walk request → confirm ──
+          A modal with its own scrim (blocks the board) so the choice is deliberate
+          and no staged record is lost silently. */}
+      {pendingWalk ? (
+        <div
+          data-testid="studio-walk-confirm"
+          className="absolute inset-0 z-[12] flex items-center justify-center bg-[color:var(--color-overlay-2)] px-6"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setPendingWalk(null)}
+        >
+          <div
+            className="w-[320px] rounded-[14px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-4"
+            style={{ boxShadow: "0 18px 44px rgba(0,0,0,.55)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-caption leading-[1.5] text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+              {labels.walkConfirmTitle(props.summary?.count ?? 0)}
+            </p>
+            <div className="mt-3.5 flex flex-col gap-1.5">
+              {props.onSaveAndOpenNode ? (
+                <button
+                  type="button"
+                  data-testid="studio-walk-confirm-save"
+                  onClick={() => {
+                    const target = pendingWalk;
+                    setPendingWalk(null);
+                    props.onSaveAndOpenNode?.(target);
+                  }}
+                  className="flex h-[34px] items-center justify-center gap-1.5 rounded-lg bg-[color:var(--color-indigo-brand)] px-3 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)]"
+                >
+                  {labels.walkConfirmSave}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                data-testid="studio-walk-confirm-discard"
+                onClick={() => {
+                  const target = pendingWalk;
+                  setPendingWalk(null);
+                  props.onOpenNode?.(target);
+                }}
+                className="flex h-[34px] items-center justify-center rounded-lg border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] px-3 text-caption font-semibold text-[color:var(--color-danger-text)] transition-colors hover:bg-[color:var(--color-danger-a32)]"
+              >
+                {labels.walkConfirmDiscard}
+              </button>
+              <button
+                type="button"
+                data-testid="studio-walk-confirm-keep"
+                onClick={() => setPendingWalk(null)}
+                className="flex h-[34px] items-center justify-center rounded-lg px-3 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+              >
+                {labels.exitConfirmKeep}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -928,6 +1063,8 @@ function LaneRender({
   kindLabelFor,
   onOpen,
   onOpenNode,
+  arrivalId,
+  arrivalLit,
   onToggleFold,
   foldOpen,
   onCloseFold,
@@ -940,6 +1077,10 @@ function LaneRender({
   kindLabelFor: (kind: string) => string;
   onOpen: () => void;
   onOpenNode?: (id: string) => void;
+  /** Satellite id eligible for the one-shot arrival highlight (null → none). */
+  arrivalId?: string | null;
+  /** Whether the arrival highlight is still lit (drives the color-only fade). */
+  arrivalLit?: boolean;
   onToggleFold: () => void;
   foldOpen: boolean;
   onCloseFold: () => void;
@@ -969,6 +1110,7 @@ function LaneRender({
         const onClick = satNav(sat.id);
         const Tag = onClick ? "button" : "div";
         const pending = pendingNeighborIds?.has(sat.id) ?? false;
+        const isArrival = arrivalId != null && sat.id === arrivalId;
         return (
           <div
             key={sat.id}
@@ -976,7 +1118,7 @@ function LaneRender({
             style={{ left: x, top: y, width: SAT.w, height: SAT.h }}
           >
             <Tag
-              {...(onClick ? { type: "button" as const, onClick } : {})}
+              {...(onClick ? { type: "button" as const, onClick, title: labels.walkTo } : {})}
               data-testid={`studio-satellite-${view.bearing}`}
               className={cn(
                 "flex h-full w-full items-center gap-2.5 rounded-[10px] border bg-[color:var(--color-panel)] px-3 text-left transition-colors",
@@ -1005,6 +1147,16 @@ function LaneRender({
               >
                 <MoreHorizontal size={14} aria-hidden />
               </button>
+            ) : null}
+            {/* arrival orientation (#3) — where you walked from. Indigo border
+                emphasis (color/opacity only, no glow), holds ~1.5s then fades. */}
+            {isArrival ? (
+              <span
+                aria-hidden
+                data-testid={`studio-arrival-${view.bearing}`}
+                className="pointer-events-none absolute inset-0 rounded-[10px] border-[1.5px] border-[color:var(--color-indigo-brand)] transition-opacity duration-300 motion-reduce:transition-none"
+                style={{ opacity: arrivalLit ? 1 : 0 }}
+              />
             ) : null}
           </div>
         );
