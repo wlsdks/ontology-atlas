@@ -225,6 +225,78 @@ export function buildFillPacket(
 }
 
 /**
+ * ── 지지대 편집 (Slice 1) MCP packets — read-only vault fallback ────────────
+ * When the vault is read-only (sample / dogfood), edits to EXISTING relations
+ * are emitted as copyable MCP command packets instead of a direct frontmatter
+ * write. is_a has no MCP edge type (same as `buildFillPacket`), so any change
+ * that touches the `broader` array is applied via `patch_concept` with the FULL
+ * post-change array the caller supplies in `broaderRefsAfter` — the builder
+ * stays a dumb serializer and never has to re-derive vault state.
+ */
+
+/**
+ * Remove one existing relation from the focal node.
+ *  - non-is_a → `remove_relation(from, to, type, confirm:true)`.
+ *  - is_a     → `patch_concept(slug, frontmatter:{ broader:[…post-remove] })`
+ *    (MCP has no is_a edge type). Pass the remaining broader refs.
+ */
+export function buildRemovePacket(
+  focalSlug: string,
+  relation: CreateRelationType,
+  candidateRef: string,
+  opts: { broaderRefsAfter?: readonly string[] } = {},
+): string {
+  const q = (v: string) => `"${v.replace(/"/g, '\\"')}"`;
+  if (relation === "isA") {
+    const refs = opts.broaderRefsAfter ?? [];
+    return `patch_concept(slug: ${q(focalSlug)}, frontmatter: { broader: [${refs.map((r) => q(r)).join(", ")}] })`;
+  }
+  return `remove_relation(from: ${q(focalSlug)}, to: ${q(candidateRef)}, type: ${q(RELATION_EDGE_TYPE[relation])}, confirm: true)`;
+}
+
+/**
+ * Retype one existing relation — move a neighbor from one bearing to another.
+ *  - non-is_a → non-is_a: single atomic `replace_relation(...)`.
+ *  - is_a on either side: composed, because is_a lives in the `broader` array
+ *    rather than as an MCP edge. Whichever side touches `broader` needs the FULL
+ *    post-change array in `broaderRefsAfter`.
+ */
+export function buildEditPacket(
+  focalSlug: string,
+  fromRelation: CreateRelationType,
+  toRelation: CreateRelationType,
+  candidateRef: string,
+  opts: { broaderRefsAfter?: readonly string[] } = {},
+): string {
+  const q = (v: string) => `"${v.replace(/"/g, '\\"')}"`;
+  const broaderLine = () =>
+    `patch_concept(slug: ${q(focalSlug)}, frontmatter: { broader: [${(opts.broaderRefsAfter ?? [])
+      .map((r) => q(r))
+      .join(", ")}] })`;
+
+  // is_a → other: drop from broader, add the new edge.
+  if (fromRelation === "isA" && toRelation !== "isA") {
+    return [
+      broaderLine(),
+      `add_relation(from: ${q(focalSlug)}, to: ${q(candidateRef)}, type: ${q(RELATION_EDGE_TYPE[toRelation])})`,
+    ].join("\n");
+  }
+  // other → is_a: remove the old edge, append to broader.
+  if (toRelation === "isA" && fromRelation !== "isA") {
+    return [
+      `remove_relation(from: ${q(focalSlug)}, to: ${q(candidateRef)}, type: ${q(RELATION_EDGE_TYPE[fromRelation])}, confirm: true)`,
+      broaderLine(),
+    ].join("\n");
+  }
+  // non-is_a → non-is_a: atomic replace, same target, new type.
+  return `replace_relation(from: ${q(focalSlug)}, oldTo: ${q(candidateRef)}, oldType: ${q(
+    RELATION_EDGE_TYPE[fromRelation as Exclude<CreateRelationType, "isA">],
+  )}, newTo: ${q(candidateRef)}, newType: ${q(
+    RELATION_EDGE_TYPE[toRelation as Exclude<CreateRelationType, "isA">],
+  )}, confirm: true)`;
+}
+
+/**
  * Six completeness checkpoints (name · definition · is_a · depends · contains ·
  * relates) drive the rising gauge. Deterministic so the gauge and the pips never
  * disagree. Percent = round(filled / 6 · 100).

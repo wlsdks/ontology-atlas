@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   buildCreateNodeDoc,
   buildCreateNodeSlug,
+  buildEditPacket,
   buildFillPacket,
   buildMcpPacket,
+  buildRemovePacket,
   candidateFromNode,
   computeCreateCompleteness,
   groupRelationRefs,
@@ -126,6 +128,57 @@ describe("buildFillPacket", () => {
   it("patches the broader frontmatter key for an is-a fill (no is_a edge type)", () => {
     expect(buildFillPacket("capabilities/mcp-server", "isA", "capabilities/server-interface")).toBe(
       'patch_concept(slug: "capabilities/mcp-server", frontmatter: { broader: ["capabilities/server-interface"] })',
+    );
+  });
+});
+
+describe("buildRemovePacket", () => {
+  it("removes a non-is_a relation via remove_relation", () => {
+    expect(buildRemovePacket("capabilities/focal", "dependsOn", "elements/parser")).toBe(
+      'remove_relation(from: "capabilities/focal", to: "elements/parser", type: "depends_on", confirm: true)',
+    );
+    expect(buildRemovePacket("capabilities/focal", "relates", "capabilities/topology")).toBe(
+      'remove_relation(from: "capabilities/focal", to: "capabilities/topology", type: "related_to", confirm: true)',
+    );
+  });
+
+  it("removes an is_a relation by patching the remaining broader array", () => {
+    expect(
+      buildRemovePacket("capabilities/focal", "isA", "capabilities/gone", {
+        broaderRefsAfter: ["capabilities/kept"],
+      }),
+    ).toBe('patch_concept(slug: "capabilities/focal", frontmatter: { broader: ["capabilities/kept"] })');
+  });
+});
+
+describe("buildEditPacket", () => {
+  it("non-is_a → non-is_a is one atomic replace_relation", () => {
+    expect(buildEditPacket("capabilities/focal", "relates", "dependsOn", "capabilities/topology")).toBe(
+      'replace_relation(from: "capabilities/focal", oldTo: "capabilities/topology", oldType: "related_to", newTo: "capabilities/topology", newType: "depends_on", confirm: true)',
+    );
+  });
+
+  it("is_a → other drops broader then adds the new edge", () => {
+    const out = buildEditPacket("capabilities/focal", "isA", "dependsOn", "capabilities/x", {
+      broaderRefsAfter: [],
+    });
+    expect(out).toBe(
+      [
+        'patch_concept(slug: "capabilities/focal", frontmatter: { broader: [] })',
+        'add_relation(from: "capabilities/focal", to: "capabilities/x", type: "depends_on")',
+      ].join("\n"),
+    );
+  });
+
+  it("other → is_a removes the old edge then appends to broader", () => {
+    const out = buildEditPacket("capabilities/focal", "dependsOn", "isA", "capabilities/x", {
+      broaderRefsAfter: ["capabilities/x"],
+    });
+    expect(out).toBe(
+      [
+        'remove_relation(from: "capabilities/focal", to: "capabilities/x", type: "depends_on", confirm: true)',
+        'patch_concept(slug: "capabilities/focal", frontmatter: { broader: ["capabilities/x"] })',
+      ].join("\n"),
     );
   });
 });
