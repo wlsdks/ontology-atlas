@@ -40,6 +40,7 @@ import {
   type StudioSummaryVocab,
 } from "../lib/build-studio-changes";
 import { buildPickerDiscovery } from "../lib/build-picker-discovery";
+import { buildDeltaPreview } from "../lib/build-delta-preview";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
 
 /**
@@ -186,6 +187,19 @@ export function OntologyStudioPage() {
       walkConfirmTitle: (count) => t("walkConfirmTitle", { count }),
       walkConfirmSave: t("walkConfirmSave"),
       walkConfirmDiscard: t("walkConfirmDiscard"),
+      // Slice 5 — 그래프 델타 미니뷰 (save preview)
+      previewOpen: t("preview.open"),
+      previewTitle: t("preview.title"),
+      previewCloseAria: t("preview.closeAria"),
+      previewClose: t("preview.close"),
+      previewCenterNew: t("preview.centerNew"),
+      previewMovedChip: t("preview.movedChip"),
+      previewRemovedChip: t("preview.removedChip"),
+      previewOverflow: (count) => t("preview.overflow", { count }),
+      previewLegendExisting: t("preview.legendExisting"),
+      previewLegendAdded: t("preview.legendAdded"),
+      previewLegendMoved: t("preview.legendMoved"),
+      previewLegendRemoved: t("preview.legendRemoved"),
     }),
     [t, isCreate, flowHint],
   );
@@ -398,6 +412,19 @@ export function OntologyStudioPage() {
       { mode: "create", kindLabel: kindLabel(kind), name: title.trim() || t("create.namePlaceholder"), domainLabel: domainLabelText, changes: createChanges },
       summaryVocab,
     );
+    // Slice 5 — the save-preview mini-graph for a brand-new node: the center is
+    // itself the delta (isNew), every staged relation an indigo "added" strut.
+    const createDeltaPreview = buildDeltaPreview({
+      center: {
+        title: title.trim() || t("create.namePlaceholder"),
+        kind,
+        domainLabel: domainLabelText,
+        isNew: true,
+      },
+      baseNeighborsByRelation: { isA: [], dependsOn: [], contains: [], relates: [] },
+      changes: createChanges,
+      capPerBearing: 2,
+    });
 
     return (
       <StudioCompass
@@ -429,6 +456,7 @@ export function OntologyStudioPage() {
         moreRelationsSoon={t("moreRelationsSoon")}
         canSave={Boolean(title.trim())}
         summary={title.trim() ? createSummary : null}
+        deltaPreview={title.trim() ? createDeltaPreview : null}
         onUndoChange={(index) => setRelations((prev) => prev.filter((_, i) => i !== index))}
         hasPendingChanges={Boolean(title.trim()) || relations.length > 0}
         bearingLabelFor={relationShort}
@@ -539,6 +567,26 @@ export function OntologyStudioPage() {
       ? summarizeStudioChanges({ mode: "enhance", focalName: focalItem.node.label, changes }, summaryVocab)
       : null;
 
+  // Slice 5 — the save-preview mini-graph. Existing neighborhood (achromatic
+  // context) + only the staged delta in indigo. Same `changes` as the summary so
+  // the picture and the sentences never disagree. `hasDelta` gates the affordance.
+  const deltaPreview = buildDeltaPreview({
+    center: {
+      title: focalItem.node.label,
+      kind: focalItem.node.kind,
+      domainLabel: focalItem.node.domainLabel,
+      isNew: false,
+    },
+    baseNeighborsByRelation: {
+      isA: focalItem.bearings.up.neighbors,
+      dependsOn: focalItem.bearings.right.neighbors,
+      contains: focalItem.bearings.down.neighbors,
+      relates: focalItem.bearings.left.neighbors,
+    },
+    changes,
+    capPerBearing: 2,
+  });
+
   // Returns true when the staged changes were persisted (writable) / copied
   // (read-only) — the walk guard's "저장하고 이동" only navigates on a real success.
   const commit = async (): Promise<boolean> => {
@@ -633,6 +681,7 @@ export function OntologyStudioPage() {
       bearingLabelFor={relationShort}
       pendingNeighborIds={projection.pendingTargetIds}
       summary={summary}
+      deltaPreview={deltaPreview}
       onUndoChange={(index) => stage({ type: "undo", index })}
       hasPendingChanges={changes.length > 0}
       canSave={changes.length > 0}
