@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
+import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED } from "@/shared/motion";
 import { TopologyV2KindGlyph } from "@/shared/ui";
 
 /**
@@ -14,6 +16,11 @@ import { TopologyV2KindGlyph } from "@/shared/ui";
  * kind 4종만 노출 — project 는 `/project/new` 가 이미 전용 흐름을 갖고
  * 있어 여기서 중복하지 않는다(build-vault-markdown.ts 의
  * `vaultFolderForKind` 폴더 배치와 동일 규약).
+ *
+ * 설계협의회 batch B1 rank2/18 — GlobalSearch·SearchPalette 와 같은
+ * 임계감쇠 오버레이 스프링(OVERLAY_SPRING) + focus-trap/ESC/트리거
+ * 포커스복귀 계약. 호출부(DocsVaultPage)가 `AnimatePresence` 로 감싸야
+ * 퇴장 애니메이션이 끝까지 재생된다.
  */
 const KIND_OPTIONS = ["domain", "capability", "element", "document"] as const;
 export type NewDocKind = (typeof KIND_OPTIONS)[number];
@@ -28,26 +35,82 @@ export function NewDocKindDialog({
   const t = useTranslations("docsVault.newDocDialog");
   const kindLabel = useOntologyKindLabel();
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const reducedMotion = useReducedMotion();
+  const panelTransition = reducedMotion ? OVERLAY_SPRING_REDUCED : OVERLAY_SPRING;
 
   useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
     const handler = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+      // rank18 — Tab 순환을 다이얼로그 내부에 가둔다 (SearchPalette 와
+      // 동일한 trap 패턴, 신규 라이브러리 0).
+      if (event.key !== "Tab") return;
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const items = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => !el.hasAttribute("disabled"));
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey) {
+        if (document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", handler);
-    dialogRef.current?.querySelector<HTMLElement>("button")?.focus();
-    return () => window.removeEventListener("keydown", handler);
+    // rank18 — 첫 focusable 엘리먼트(첫 kind 버튼)에 포커스, preventScroll.
+    dialogRef.current
+      ?.querySelector<HTMLElement>("button")
+      ?.focus({ preventScroll: true });
+    return () => {
+      window.removeEventListener("keydown", handler);
+      // rank18 — 트리거로 포커스 복귀.
+      previousFocusRef.current?.focus?.({ preventScroll: true });
+    };
   }, [onClose]);
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: reducedMotion ? 0.12 : 0.18 }}
+      data-overlay-spring="true"
       className="fixed inset-0 z-40 flex items-center justify-center px-4"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="fixed inset-0 -z-10 bg-[color:var(--docs-scrim)]" aria-hidden />
       <div
+        className="fixed inset-0 -z-10 bg-[color:var(--overlay-scrim)]"
+        aria-hidden
+      />
+      {/*
+       * rank2 — GlobalSearch/SearchPalette 와 같은 임계감쇠 스프링
+       * (OVERLAY_SPRING, 오버슈트 0). 진입은 opacity 0→1 +
+       * translateY 8px→0 만 — scale 없음(hover:scale-* 혼동 방지). 캔버스
+       * 2-param 물리 모델과는 별도 튜닝(app/globals.css `--overlay-spring-*`
+       * 토큰 주석의 변환식 참조, "동일 스프링 상속" 아님).
+       */}
+      <motion.div
         ref={dialogRef}
+        initial={{ y: 8, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 8, opacity: 0 }}
+        transition={panelTransition}
+        data-overlay-spring="true"
         role="dialog"
         aria-modal="true"
         aria-labelledby="new-doc-kind-dialog-title"
@@ -85,7 +148,7 @@ export function NewDocKindDialog({
         >
           {t("cancel")}
         </button>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
