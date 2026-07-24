@@ -20,7 +20,8 @@ import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { Link } from "@/i18n/navigation";
 import { slugify } from "@/shared/lib/slugify";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
-import { Tooltip, TopologyV2KindGlyph } from "@/shared/ui";
+import type { SimilarNodeMatch } from "@/shared/lib/similar-node-title";
+import { SimilarNodeWarning, Tooltip, TopologyV2KindGlyph } from "@/shared/ui";
 import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
 import type { VaultBacklinkMatch } from "../lib/find-vault-backlinks";
 import {
@@ -100,6 +101,14 @@ export interface OntologyInspectorProps {
     kind: string,
     title: string,
   ) => { title: string; path: string } | null;
+  /** design-council B2 rank4 — 지금 편집 중인 ephemeral 노드와 title-근접 +
+   *  kind-일치하는 기존 vault 노드가 있으면 caller 가 debounce 후 채운다.
+   *  null/undefined 는 "경고 없음". */
+  similarNodeMatch?: SimilarNodeMatch | null;
+  /** "그 노드 열기" — 실제 vault 노드로 점프. */
+  onOpenSimilarNode?: (slug: string) => void;
+  /** "그래도 새로 만들기" — 경고만 닫는다, 아무것도 막지 않는다. */
+  onDismissSimilarNode?: () => void;
   onSaveVaultRename?: (slug: string, nextTitle: string) => Promise<void> | void;
   onEditVaultArrayKey?: (
     slug: string,
@@ -149,6 +158,9 @@ export function OntologyInspector({
   onSaveEphemeral,
   isEphemeralSaveConflict,
   getEphemeralSaveSuggestion,
+  similarNodeMatch = null,
+  onOpenSimilarNode,
+  onDismissSimilarNode,
   onSaveVaultRename,
   onEditVaultArrayKey,
   onEditVaultLiteral,
@@ -289,6 +301,9 @@ export function OntologyInspector({
               onSave={onSaveEphemeral}
               isSaveConflict={isEphemeralSaveConflict}
               getSaveSuggestion={getEphemeralSaveSuggestion}
+              similarNodeMatch={similarNodeMatch}
+              onOpenSimilarNode={onOpenSimilarNode}
+              onDismissSimilarNode={onDismissSimilarNode}
               saving={Boolean(saving)}
               onDeselect={onClearSelection}
               readOnly={vaultReadOnly}
@@ -383,6 +398,9 @@ function EphemeralDetail({
   onSave,
   isSaveConflict,
   getSaveSuggestion,
+  similarNodeMatch = null,
+  onOpenSimilarNode,
+  onDismissSimilarNode,
   saving,
   onDeselect,
   readOnly,
@@ -399,6 +417,9 @@ function EphemeralDetail({
     kind: string,
     title: string,
   ) => { title: string; path: string } | null;
+  similarNodeMatch?: SimilarNodeMatch | null;
+  onOpenSimilarNode?: (slug: string) => void;
+  onDismissSimilarNode?: () => void;
   saving: boolean;
   onDeselect: () => void;
   /** 샘플 읽기 전용 소스 — 저장 불가. 저장 대신 vault 연결을 안내한다(감사 #2). */
@@ -556,6 +577,21 @@ function EphemeralDetail({
           className="rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2.5 py-1.5 text-body text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)]"
         />
       </label>
+      {/* design-council B2 rank4 — 비차단 근접 중복 경고. 타이핑 포커스는
+          위 input 에 그대로 남는다(autoFocus 없음) — 렌더만으로 activeElement
+          가 바뀌지 않는다. */}
+      <AnimatePresence>
+        {similarNodeMatch ? (
+          <SimilarNodeWarning
+            key={similarNodeMatch.slug}
+            message={t("similarNodeWarning", { title: similarNodeMatch.title })}
+            openLabel={t("similarNodeOpen")}
+            createAnywayLabel={t("similarNodeCreateAnyway")}
+            onOpen={() => onOpenSimilarNode?.(similarNodeMatch.slug)}
+            onCreateAnyway={() => onDismissSimilarNode?.()}
+          />
+        ) : null}
+      </AnimatePresence>
       {/* 저장 시 실제 생성될 vault 파일 경로 미리보기. 좌표(감사 #8)는
           사용자에게 의미 없는 내부 캔버스 수치라 제거했다. 파일명은 길어도
           break-all 로 4줄씩 꺾이지 않게 truncate + 전체는 title 툴팁으로
