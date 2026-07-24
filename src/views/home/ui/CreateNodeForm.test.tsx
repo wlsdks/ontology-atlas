@@ -11,6 +11,10 @@ const labels: CreateNodeFormLabels = {
   create: "만들기",
   cancel: "취소",
   kindLabels: { project: "프로젝트", domain: "도메인", capability: "역량", element: "요소" },
+  primaryNamePlaceholder: "개념 이름 (한국어)",
+  secondaryNamePlaceholder: "English name (선택)",
+  localeNamesHint: "위 칸은 지금 화면 언어 이름이에요.",
+  primaryLocaleRequired: "한국어 이름도 적어야 저장돼요",
 };
 
 describe("CreateNodeForm", () => {
@@ -80,5 +84,49 @@ describe("CreateNodeForm", () => {
     render(<CreateNodeForm onCreate={() => {}} onCancel={onCancel} labels={labels} />);
     fireEvent.click(screen.getByTestId("create-node-cancel"));
     expect(onCancel).toHaveBeenCalled();
+  });
+});
+
+// 어권별 이름 (소유자 지시 2026-07-24) — localeNames 를 주면 두 번째 칸이
+// 생기고, 다른 언어만 채운 채로는 저장이 막히며 이유가 그 자리에 뜬다.
+describe("CreateNodeForm — 어권별 이름", () => {
+  const localeNames = { primaryLocale: "ko", secondaryLocale: "en" };
+
+  it("localeNames 미전달 시 두 번째 이름 칸을 렌더하지 않는다(하위호환)", () => {
+    render(<CreateNodeForm onCreate={() => {}} labels={labels} />);
+    expect(screen.queryByTestId("create-node-title-secondary")).not.toBeInTheDocument();
+  });
+
+  it("다른 언어만 채우면 저장이 막히고 이유가 인라인으로 뜬다", () => {
+    const onCreate = vi.fn();
+    render(<CreateNodeForm onCreate={onCreate} labels={labels} localeNames={localeNames} />);
+
+    fireEvent.change(screen.getByTestId("create-node-title-secondary"), {
+      target: { value: "Payments" },
+    });
+
+    expect(screen.getByTestId("create-node-primary-required")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("create-node-submit"));
+    expect(onCreate).not.toHaveBeenCalled();
+  });
+
+  it("두 언어를 모두 채우면 localeLabels 로 전달한다", async () => {
+    const onCreate = vi.fn();
+    render(<CreateNodeForm onCreate={onCreate} labels={labels} localeNames={localeNames} />);
+
+    fireEvent.change(screen.getByTestId("create-node-title"), { target: { value: "결제" } });
+    fireEvent.change(screen.getByTestId("create-node-title-secondary"), {
+      target: { value: "Payments" },
+    });
+    fireEvent.click(screen.getByTestId("create-node-submit"));
+
+    await waitFor(() => {
+      expect(onCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "결제",
+          localeLabels: { ko: "결제", en: "Payments" },
+        }),
+      );
+    });
   });
 });

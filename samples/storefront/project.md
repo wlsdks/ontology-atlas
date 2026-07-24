@@ -2,6 +2,7 @@
 slug: storefront
 kind: project
 title: 온라인 쇼핑몰
+display_en: Online Store
 domains:
   - catalog
   - customer

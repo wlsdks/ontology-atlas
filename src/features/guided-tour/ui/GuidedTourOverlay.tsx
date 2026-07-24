@@ -188,12 +188,14 @@ export function GuidedTourOverlay({ tour, canvasAnchorRef }: GuidedTourOverlayPr
           data-testid="guided-tour-cutout"
           data-cutout-shape={step.anchor.type === "canvas-node" ? "circle" : "rect"}
           className={cn(
-            "pointer-events-none fixed z-[70] border border-[color:var(--color-border-strong)]",
+            "pointer-events-none fixed z-[70] border",
             step.anchor.type === "canvas-node"
               ? // 캔버스 노드 원 — 매 프레임 worldToScreen 추종이 곧 모션이라
                 // CSS 전환 없음(카메라 스프링과 싸우지 않는다, spec §5).
-                "rounded-full"
-              : "rounded-[var(--chrome-radius)] transition-[top,left,width,height] duration-[var(--topology-tour-transition-ms)] ease-out motion-reduce:transition-none",
+                // 보이는 링은 엔진이 캔버스에 직접 그린다(2026-07-24 정합
+                // 개선) — 여기는 감광 구멍만 남기고 보더는 투명.
+                "rounded-full border-transparent"
+              : "rounded-[var(--chrome-radius)] border-[color:var(--color-border-strong)] transition-[top,left,width,height] duration-[var(--topology-tour-transition-ms)] ease-out motion-reduce:transition-none",
           )}
           style={{
             ...(step.anchor.type === "canvas-node"

@@ -2,6 +2,7 @@
 slug: domains/fulfillment
 kind: domain
 title: 배송
+display_en: Shipping
 capabilities: [return-intake, shipment-tracking]
 relates: [domains/order]
 ---

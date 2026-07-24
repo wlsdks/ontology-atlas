@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useLocale } from 'next-intl';
 import { useDataSourceMode } from '@/features/data-source-mode';
 import { useSampleSource } from '@/features/vault-sample-source';
 import {
@@ -39,11 +40,17 @@ const STOREFRONT_DERIVATION: VaultOntologyDerivation =
 
 export function derivationToInsight(
   d: VaultOntologyDerivation,
+  /**
+   * 어권별 표시 이름 해석 (소유자 지시 2026-07-24) — stub 이 수집해 둔
+   * `display_<locale>` 중 화면 로케일과 일치하는 값을 display 로 승격.
+   * 없으면 종전 display 그대로(하위호환). 검색/매칭은 여전히 title.
+   */
+  locale?: string,
 ): KnowledgeProjectInsight {
   const nodes: KnowledgeGraphNode[] = d.nodes.map((stub) => ({
     id: stub.id,
     title: stub.title,
-    display: stub.display,
+    display: (locale && stub.displayLocales?.[locale]) || stub.display,
     kind: stub.kind,
     projectIds: [],
     // canonical 노드는 sourceSlug = 자기 자신 doc.slug, 합성 노드 (참조만 받고
@@ -119,14 +126,27 @@ export function derivationToInsight(
   };
 }
 
-const STATIC_INSIGHT: { insight: KnowledgeProjectInsight; error: null } = {
-  insight: derivationToInsight(STATIC_DERIVATION),
-  error: null,
-};
-const STOREFRONT_INSIGHT: { insight: KnowledgeProjectInsight; error: null } = {
-  insight: derivationToInsight(STOREFRONT_DERIVATION),
-  error: null,
-};
+// 로케일별 1회 계산 캐시 — 모듈-로드 단일 값이던 것을 locale 차원으로 확장
+// (derive 는 여전히 1회, insight 매핑만 로케일별).
+const staticInsightByLocale = new Map<string, { insight: KnowledgeProjectInsight; error: null }>();
+function sampleInsight(
+  source: 'dogfood' | 'storefront',
+  locale: string,
+): { insight: KnowledgeProjectInsight; error: null } {
+  const key = `${source}:${locale}`;
+  let cached = staticInsightByLocale.get(key);
+  if (!cached) {
+    cached = {
+      insight: derivationToInsight(
+        source === 'storefront' ? STOREFRONT_DERIVATION : STATIC_DERIVATION,
+        locale,
+      ),
+      error: null,
+    };
+    staticInsightByLocale.set(key, cached);
+  }
+  return cached;
+}
 
 /**
  * Mode-aware ontology insight 어댑터. 2 모드:
@@ -145,14 +165,15 @@ export function useOntologyInsight(): {
   const mode = useDataSourceMode();
   const vault = useVaultOntology();
   const [sampleSource] = useSampleSource();
+  const locale = useLocale();
 
   return useMemo(() => {
     if (mode === 'static') {
-      return sampleSource === 'storefront' ? STOREFRONT_INSIGHT : STATIC_INSIGHT;
+      return sampleInsight(sampleSource === 'storefront' ? 'storefront' : 'dogfood', locale);
     }
     return {
-      insight: derivationToInsight(vault),
+      insight: derivationToInsight(vault, locale),
       error: null,
     };
-  }, [mode, vault, sampleSource]);
+  }, [mode, vault, sampleSource, locale]);
 }

@@ -201,6 +201,13 @@ export function buildFrontmatter({ slug, kind, title, ...extras }) {
   const ordered = {};
   for (const key of schema.preferredOrder) {
     if (key in accumulator) ordered[key] = accumulator[key];
+    // 어권별 표시 이름(`display_ko` 등)은 `display` 바로 뒤에 모아 둔다 —
+    // 사람이 파일을 열었을 때 이름 계열 키가 흩어지지 않게(2026-07-24).
+    if (key === 'display') {
+      for (const localeKey of Object.keys(accumulator)) {
+        if (/^display_[a-z]{2}$/.test(localeKey)) ordered[localeKey] = accumulator[localeKey];
+      }
+    }
   }
   for (const [key, value] of Object.entries(accumulator)) {
     if (!(key in ordered)) ordered[key] = value;
@@ -248,4 +255,36 @@ export function missingExpectedFields(kind, frontmatter) {
     }
   }
   return missing;
+}
+
+/**
+ * 어권별 표시 이름 정규화 (소유자 지시 2026-07-24) — `labels: { ko, en }` →
+ * `{ display_ko, display_en }` frontmatter 키.
+ *
+ * 왜 별도 레이어인가: `title` 은 검색/매칭/파일 정체성의 단일 진실원이라
+ * 로케일별로 바꾸면 안 된다. 렌더 표면(지도 라벨·INDEX·팝오버)만 화면
+ * 로케일에 맞는 `display_<locale>` 을 읽는다
+ * (`src/features/vault-ontology/model/use-ontology-insight.ts`).
+ *
+ * 2글자 로케일 코드 + 비어있지 않은 문자열만 통과. 그 외는 조용히 무시
+ * (agent 가 잘못된 키를 보내도 vault 가 오염되지 않는다).
+ */
+export function normalizeLocaleLabels(labels) {
+  if (!labels || typeof labels !== 'object' || Array.isArray(labels)) return {};
+  const out = {};
+  for (const [locale, value] of Object.entries(labels)) {
+    if (!/^[a-z]{2}$/.test(locale)) continue;
+    if (typeof value !== 'string') continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    out[`display_${locale}`] = trimmed;
+  }
+  return out;
+}
+
+/** `normalizeLocaleLabels` 결과에서 로케일 코드만 뽑는다(경고 문구용). */
+export function localeLabelCodes(normalized) {
+  return Object.keys(normalized)
+    .map((key) => key.slice('display_'.length))
+    .sort();
 }

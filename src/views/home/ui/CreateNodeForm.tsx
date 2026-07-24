@@ -25,6 +25,11 @@ export interface CreateNodeFormLabels {
   create: string;
   cancel: string;
   kindLabels: Record<CreateNodeKind, string>;
+  /** 어권별 이름 UI — `localeNames` 를 넘길 때만 쓰인다. */
+  primaryNamePlaceholder: string;
+  secondaryNamePlaceholder: string;
+  localeNamesHint: string;
+  primaryLocaleRequired: string;
 }
 
 // 2026-07-24 온보딩 QA — 시작 체크리스트 1단계("첫 프로젝트 만들기")가
@@ -36,32 +41,64 @@ const KINDS: readonly CreateNodeKind[] = ["project", "domain", "capability", "el
 export function CreateNodeForm({
   onCreate,
   onCancel,
+  localeNames,
   labels,
   defaultKind = "capability",
 }: {
-  onCreate: (input: { title: string; kind: CreateNodeKind; domain?: string }) => void | Promise<void>;
+  onCreate: (input: {
+    title: string;
+    kind: CreateNodeKind;
+    domain?: string;
+    /** 어권별 표시 이름 — `{ ko, en }` → `display_ko` / `display_en`. */
+    localeLabels?: Record<string, string>;
+  }) => void | Promise<void>;
   onCancel?: () => void;
   labels: CreateNodeFormLabels;
   defaultKind?: CreateNodeKind;
+  /**
+   * 어권별 이름 입력 계약 (소유자 지시 2026-07-24). 지금 화면 언어가
+   * `primaryLocale`, 나머지가 `secondaryLocale`. **자기 화면 언어 칸은
+   * 필수** — 다른 언어만 채우고 넘어가면 정작 본인 화면에서 원문 title 이
+   * 그대로 보이는 사고가 난다. 생략하면 종전 단일 이름 폼(하위호환).
+   */
+  localeNames?: {
+    primaryLocale: string;
+    secondaryLocale: string;
+  };
 }) {
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState<CreateNodeKind>(defaultKind);
   const [domain, setDomain] = useState("");
+  const [secondaryName, setSecondaryName] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const canCreate = title.trim().length > 0 && !creating;
+  const primaryEmpty = title.trim().length === 0;
+  // "다른 언어만 채운" 상태 — 저장을 막고 이유를 그 자리에서 말한다(모달
+  // 대신 인라인: 입력 중 흐름을 끊지 않으면서 규칙을 즉시 학습시킨다).
+  const secondaryOnly = Boolean(localeNames) && primaryEmpty && secondaryName.trim().length > 0;
+  const canCreate = !primaryEmpty && !creating;
 
   const submit = async () => {
     if (!canCreate) return;
     setCreating(true);
     try {
+      const localeLabels = localeNames
+        ? {
+            [localeNames.primaryLocale]: title.trim(),
+            ...(secondaryName.trim()
+              ? { [localeNames.secondaryLocale]: secondaryName.trim() }
+              : {}),
+          }
+        : undefined;
       await onCreate({
         title: title.trim(),
         kind,
         domain: domain.trim() || undefined,
+        localeLabels,
       });
       setTitle("");
       setDomain("");
+      setSecondaryName("");
     } finally {
       setCreating(false);
     }
@@ -103,15 +140,48 @@ export function CreateNodeForm({
           value={title}
           autoFocus
           disabled={creating}
-          placeholder={labels.titlePlaceholder}
+          placeholder={localeNames ? labels.primaryNamePlaceholder : labels.titlePlaceholder}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") void submit();
           }}
-          aria-label={labels.titlePlaceholder}
+          aria-label={localeNames ? labels.primaryNamePlaceholder : labels.titlePlaceholder}
           data-testid="create-node-title"
           className="h-8 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
         />
+        {localeNames ? (
+          <>
+            {/* 어권별 이름 (소유자 지시 2026-07-24) — 위 칸이 지금 화면
+                언어(필수), 이 칸이 다른 언어(선택). 배지로 어느 칸이 어느
+                언어인지 한눈에 구분한다. */}
+            <input
+              type="text"
+              value={secondaryName}
+              disabled={creating}
+              placeholder={labels.secondaryNamePlaceholder}
+              onChange={(e) => setSecondaryName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void submit();
+              }}
+              aria-label={labels.secondaryNamePlaceholder}
+              data-testid="create-node-title-secondary"
+              className="h-8 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+            />
+            {secondaryOnly ? (
+              <p
+                role="alert"
+                data-testid="create-node-primary-required"
+                className="text-[11px] leading-relaxed text-[color:var(--color-status-warning)]"
+              >
+                {labels.primaryLocaleRequired}
+              </p>
+            ) : (
+              <p className="text-[10.5px] leading-relaxed text-[color:var(--color-text-quaternary)]">
+                {labels.localeNamesHint}
+              </p>
+            )}
+          </>
+        ) : null}
         <div className="flex gap-2">
           <label className="flex min-w-0 flex-1 items-center gap-1.5">
             <span className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">

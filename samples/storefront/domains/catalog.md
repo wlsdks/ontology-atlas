@@ -2,6 +2,7 @@
 slug: domains/catalog
 kind: domain
 title: 상품
+display_en: Products
 capabilities: [inventory-management, product-register]
 relates: [domains/marketing, domains/order]
 ---

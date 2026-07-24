@@ -126,6 +126,8 @@ import {
   buildFrontmatter,
   defaultBody,
   missingExpectedFields,
+  normalizeLocaleLabels,
+  localeLabelCodes,
 } from './schema.mjs';
 import {
   closestAllowedValue,
@@ -177,6 +179,23 @@ const NON_BLANK_STRING_OR_ARRAY_SCHEMA = Object.freeze({
   items: NON_BLANK_STRING_SCHEMA,
 });
 const GRAPH_REF_ARRAY_MAX_ITEMS = 500;
+
+/**
+ * 어권별 표시 이름 입력 스키마 (소유자 지시 2026-07-24). `title` 은 검색·
+ * 매칭·파일 정체성의 단일 진실원이라 로케일별로 바꾸지 않는다 — 렌더
+ * 표면(지도 라벨/INDEX/팝오버)만 화면 언어에 맞는 `display_<locale>` 을
+ * 읽는다. 한쪽만 채우면 응답에 advisory warning 이 붙는다.
+ */
+const LOCALE_LABELS_SCHEMA = Object.freeze({
+  type: 'object',
+  description:
+    'Per-locale display names, e.g. { "ko": "결제", "en": "Payments" }. Written as `display_ko` / `display_en` frontmatter keys; `title` stays the single source for search/matching. Fill BOTH locales the vault serves — a single-locale entry comes back as a warning.',
+  properties: {
+    ko: { type: 'string', description: 'Korean display name.' },
+    en: { type: 'string', description: 'English display name.' },
+  },
+  additionalProperties: { type: 'string' },
+});
 const IGNORE_ARRAY_MAX_ITEMS = 200;
 const SOURCE_FOLDER_ARRAY_MAX_ITEMS = 50;
 const MEANING_GATE_EVIDENCE_ROW_LIMIT = 5;
@@ -1488,6 +1507,7 @@ const TOOLS = [
           type: 'string',
           description: 'Markdown body (optional). When omitted a kind-specific starter body is written so the file is self-explanatory in the editor.',
         },
+        labels: LOCALE_LABELS_SCHEMA,
       },
       required: ['slug', 'kind', 'title'],
     },
@@ -1537,6 +1557,7 @@ const TOOLS = [
               elements: { type: 'array', maxItems: GRAPH_REF_ARRAY_MAX_ITEMS, items: NON_BLANK_STRING_SCHEMA },
               path: NON_BLANK_STRING_SCHEMA,
               body: { type: 'string' },
+              labels: LOCALE_LABELS_SCHEMA,
             },
             required: ['slug', 'kind', 'title'],
             additionalProperties: false,
@@ -1811,7 +1832,7 @@ const TOOLS = [
         frontmatter: {
           type: 'object',
           description:
-            'Frontmatter key/value patches (e.g. { kind: "capability", domain: "views" }). null removes the key.',
+            'Frontmatter key/value patches (e.g. { kind: "capability", domain: "views" }). null removes the key. Per-locale display names go here as `display_ko` / `display_en` — fill every locale the vault serves so both audiences read a native name (`title` stays the search/matching source).',
         },
         body: {
           type: 'string',
@@ -4732,7 +4753,7 @@ function requireValidFrontmatterPatch(frontmatter) {
   }
 }
 
-function addConcept({ slug, kind, title, domain, capabilities, elements, path, body }, options = {}) {
+function addConcept({ slug, kind, title, domain, capabilities, elements, path, body, labels }, options = {}) {
   requireNonBlankString(slug, 'slug');
   requireNonBlankString(kind, 'kind');
   requireNonBlankString(title, 'title');
@@ -4755,6 +4776,10 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
   // 배열, capability: elements 빈 배열, …) 을 채워 호출자가 부분 정보만 줘도
   // 일관된 frontmatter 가 디스크에 남도록. CLI add 와 같은 schema 모듈을
   // 공유 (contract test 가 drift 차단).
+  // 어권별 표시 이름 (소유자 지시 2026-07-24) — `labels: { ko, en }` 를
+  // `display_<locale>` 로 정규화해 같은 노드가 한국어/영어 화면에서 각각
+  // 읽히게 한다. title 은 그대로(검색/매칭/파일 정체성의 단일 진실원).
+  const localeLabels = normalizeLocaleLabels(labels);
   const fm = buildFrontmatter({
     slug,
     kind,
@@ -4763,6 +4788,7 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
     capabilities,
     elements,
     path,
+    ...localeLabels,
   });
   // 성장하는 vault 의 #1 실패 모드(중복 노드) 안전망 — write *전* 기존 노드를
   // 훑어 같은 title 이 있으면 advisory 경고. write 를 막지 않는다. batch
@@ -4780,9 +4806,17 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
   // throw 하지 않음 — agent 흐름 자연스럽게, 사용자가 후속 patch_concept 로
   // 보완 가능. (capability/element 의 domain 누락 등이 흔한 케이스)
   const missing = missingExpectedFields(kind, fm);
+  // 한쪽 어권만 채우고 넘어가는 실수 방지 — 사용자가 자기 화면 언어로만
+  // 보다가 다른 언어 사용자에게는 원문 title 이 그대로 보이는 상황을 막는다.
+  const localeCodes = localeLabelCodes(localeLabels);
+  const partialLocaleWarning =
+    localeCodes.length === 1
+      ? `labels only has "${localeCodes[0]}" — add the other locale (e.g. labels: { ko, en }) so both audiences read a native name`
+      : null;
   const warnings = [
     ...missing.map((k) => `expected field "${k}" missing for kind "${kind}"`),
     ...(duplicateWarning ? [duplicateWarning] : []),
+    ...(partialLocaleWarning ? [partialLocaleWarning] : []),
   ];
   return {
     ok: true,
@@ -4834,6 +4868,8 @@ function addConceptsBatch({ concepts }) {
         'elements',
         'path',
         'body',
+        // 어권별 표시 이름 — single add_concept 와 같은 계약(2026-07-24).
+        'labels',
       ]);
       if (slug && seenInBatch.has(slug)) {
         const firstSeenAt = `concepts[${seenInBatch.get(slug)}]`;

@@ -2402,7 +2402,11 @@
       "toastError": "Could not create the node.",
       "unavailableHeading": "Workspace required",
       "unavailableBody": "Connect a local workspace before creating concepts from the topology map.",
-      "unavailableAction": "Open workspace"
+      "unavailableAction": "Open workspace",
+      "primaryNamePlaceholder": "Concept name (English)",
+      "secondaryNamePlaceholder": "한국어 이름 (optional)",
+      "localeNamesHint": "The field above is the name for your current screen language (English). Add the Korean name so Korean screens read it too.",
+      "primaryLocaleRequired": "Add the English name to save — your screen is English, so leaving it blank shows the raw title on the map and lists."
     },
     "explanationEdit": {
       "saved": "Explanation saved",

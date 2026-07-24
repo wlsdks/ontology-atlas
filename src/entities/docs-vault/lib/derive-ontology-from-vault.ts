@@ -39,6 +39,14 @@ export interface OntologyStubNode {
    * 않는다.
    */
   display: string;
+  /**
+   * 어권별 표시 이름 (소유자 지시 2026-07-24) — frontmatter 의
+   * `display_ko:` / `display_en:` 등 `display_<locale>` 키를 그대로 수집.
+   * 해석(어느 로케일을 보여줄지)은 렌더 경계(`derivationToInsight`)가
+   * 담당 — derive 는 로케일을 모른다(모듈-로드 캐시와 충돌 방지).
+   * 검색/매칭은 여전히 `title` 전체로.
+   */
+  displayLocales?: Readonly<Record<string, string>>;
   kind: string;
   /** 어느 vault 문서 (slug) 에서 유래했는지 — evidence chain 의 시작점. */
   sourceSlug: string;
@@ -175,10 +183,21 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
     rawKind === 'element' && baseDisplay === title
       ? humanizeCodePathTitle(title) ?? baseDisplay
       : baseDisplay;
+  // 어권별 표시 이름 — `display_ko:` 처럼 `display_` 뒤 2글자 로케일 키만
+  // 수집(그 외 키는 무시, 값은 trim 비어있지 않은 문자열만).
+  let displayLocales: Record<string, string> | undefined;
+  for (const [key, value] of Object.entries(fm)) {
+    const match = /^display_([a-z]{2})$/.exec(key);
+    if (!match || typeof value !== 'string') continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    (displayLocales ??= {})[match[1]] = trimmed;
+  }
   return {
     id,
     title,
     display,
+    displayLocales,
     kind: rawKind,
     sourceSlug: doc.slug,
     source: 'frontmatter',
