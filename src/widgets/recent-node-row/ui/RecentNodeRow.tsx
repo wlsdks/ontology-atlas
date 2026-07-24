@@ -51,7 +51,11 @@ export function RecentNodeRow({
         <span className="block truncate text-body text-[color:var(--color-text-primary)]">{title}</span>
         <span className="block truncate text-label text-[color:var(--color-text-quaternary)]">{subtitle}</span>
       </span>
-      <span className="flex-none text-right">
+      {/* 좁은 화면(360px) 가로 오버플로우 방지 (2026-07-24 overflow-sweep) —
+          긴 slug(trailingSecondary)가 flex-none 로 안 줄어 body 를 밀어냈다.
+          최대폭 제약 + truncate 로 넘치지 않게 한다(제목 열이 우선 늘고,
+          꼬리는 자기 상한 안에서 말줄임). */}
+      <span className="flex-none max-w-[45%] text-right">
         <span className="block font-mono text-label tabular-nums text-[color:var(--color-text-tertiary)]">
           {trailing}
         </span>
