@@ -398,8 +398,8 @@ rejects unsupported extra `ontology-atlas_*.dmg` names so the GitHub Release
 page cannot show ambiguous macOS downloads; it also rejects duplicate architecture
 DMGs so each release has exactly one Apple Silicon and one Intel download. The
 tag workflow intentionally stops
-there: the installed macOS app is local-only and does not require Firebase
-secrets or Hosting deploy steps. The separate `deploy-hosting` workflow owns the
+there: the installed macOS app is local-only and does not require any website
+deploy secrets. The separate GitHub Pages `deploy-pages` workflow owns the
 static promo/download website and should be followed by `pnpm
 desktop:verify-hosted` when the public `/ko/download/` route is expected to be
 live.
@@ -424,13 +424,11 @@ local and remote same-tag Git ref slots, Developer ID direct-download secret nam
 GitHub Release state, and public DMG/checksum download verification all pass. Its
 `--json` mode reports `ready`, `blockerCount`, and per-check `next` actions for
 goal runners or dashboards that need structured release blockers; stdout JSON is
-compact to avoid small-buffer truncation, `--json-file` writes the same snapshot
-as a pretty disk artifact when stdout may be wrapped by package-runner logs, and
-`--include-hosted-surface` adds the `deploy-hosting.yml` workflow availability
-check, required `FIREBASE_SERVICE_ACCOUNT_JSON` website deploy secret, and
-deployed promo/download website verifier to the same blocker snapshot for full
-goal-completion audits while leaving the macOS app release gate Firebase-free by
-default.
+compact to avoid small-buffer truncation, and `--json-file` writes the same
+snapshot as a pretty disk artifact when stdout may be wrapped by package-runner
+logs. The hosted promo/download website deploys separately through GitHub Pages
+(`deploy-pages.yml`) and is intentionally not part of this macOS app release
+blocker snapshot.
 `--markdown-file` writes a reviewer/operator checklist from the same audit
 result. The snapshot carries `schemaVersion` and `generatedAt` so saved
 release evidence has a stable contract and timestamp; `status`, `readyAt`, and
@@ -571,7 +569,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 2. ✅ 32 tools (read 19 + write 13): connection/root/toolset proof, vault-scoped Git status/history and local snapshots, persisted Builder context, list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, and dry-run-first rename/merge/delete/absorb writes.
 3. ✅ CLI command (`ontology-atlas`) — `npx ontology-atlas init <folder>` scaffolds the vault. The installed app `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
-5. ✅ `docs/ontology/` dogfood vault — 95 nodes describing our own mental model, including agent-practice notes as document nodes
+5. ✅ `docs/ontology/` dogfood vault — 94 nodes describing our own mental model, including agent-practice notes as document nodes
 
 ### Agent practitioner concerns map
 

@@ -32,7 +32,7 @@
 
 export const INTEROP_URN_BASE = 'urn:ontology-atlas';
 
-const OATLAS_NS = 'https://ontology-atlas.web.app/ns#';
+const OATLAS_NS = 'https://wlsdks.github.io/ontology-atlas/ns#';
 const GRAPHML_GRAPH_ID = 'atlas';
 
 export interface InteropNode {

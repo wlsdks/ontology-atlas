@@ -14,7 +14,7 @@
 - `pnpm test:run` 깨지면 즉시 revert. green 일 때만 commit.
 - `pnpm exec tsc --noEmit` clean 이어야 한다.
 - `pnpm lint` errors 0 이어야 한다 (warnings 는 사전 존재 — 새로 추가 금지).
-- `pnpm build` + `pnpm bundle:check` 성공해야 한다.
+- `pnpm build` 성공해야 한다.
 - 디자인 헌장 (`@.claude/rules/design.md`) 위반 0 — 보라/핑크 그라디언트, glassmorphism,
   glow pulse, neon, scale hover, 둘 이상 채색 시스템 등 절대 금지.
 - mission v2 정합 — vault frontmatter 가 그래프. 백엔드 / 인증 surface 부활 금지.
@@ -105,7 +105,6 @@ Progress log 비어있으면 1) 부터 시작. 마지막 entry 가 17 이면 1) 
 - `pnpm test:run`
 - `pnpm lint`
 - 변경이 페이지 시각이나 라우팅에 영향 → `pnpm build`
-- 변경이 import 그래프에 영향 → `pnpm bundle:check`
 - 변경이 시각 / 인터랙션 → 가능하면 Playwright 1 surface 확인 (시간 허용 시)
 
 ### 5) Commit

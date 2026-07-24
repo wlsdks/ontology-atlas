@@ -63,8 +63,9 @@ src/
 
 ## 회귀 방지
 
-- 빌드 측정: `pnpm bundle:check` 가 user-facing 라우트 (`/`, `/topology`, `/docs`,
-  …) 에 firebase SDK chunk 가 들어가지 않는지 검증. R10b 에서 firebase deps 자체를
-  제거했으므로 chunk 0 이 default 통과 조건.
+- firebase / 백엔드 SDK 는 R10b 에서 의존성 자체가 제거됐다 — local-first 정적
+  export 는 어떤 cloud SDK 도 번들에 넣지 않는다. SDK 재도입 금지 원칙은
+  `forbidden.md` 가 유지한다 (구 번들 청크 가드 `check-bundle.mjs` 는 웹 호스팅이
+  GitHub Pages 단일로 정리되면서 제거됨).
 - ESLint 가 entity barrel ↔ api 분리 룰 (legacy) 을 일부 강제 — 현재는 api 폴더가
   사라졌지만 룰은 남아 미래 cloud collab 단계에서 재도입 시 가드 역할.
