@@ -66,7 +66,6 @@ const demoStoryboardDoc = readText("docs/launch/DEMO-GIF-STORYBOARD.md");
 const redditPostsDoc = readText("docs/launch/REDDIT-POSTS.md");
 const desktopOntologyDoc = readText("docs/ontology/capabilities/desktop-app-distribution.md");
 const onboardingOntologyDoc = readText("docs/ontology/domains/onboarding-ux.md");
-const firebaseDeployOntologyDoc = readText("docs/ontology/capabilities/firebase-deploy-skill.md");
 const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
 const downloadRoute = readText("app/[locale]/download/page.tsx");
 const macosDownloadLink = readText("src/features/macos-download-link/ui/MacosDownloadLink.tsx");
@@ -77,7 +76,6 @@ const tauriShim = readText("src/shared/lib/tauri-vault-fs.ts");
 const tauriInfoPlist = readText("src-tauri/Info.plist");
 const packageMacosDmgScript = readText("scripts/package-macos-dmg.mjs");
 const cleanTauriMacosAppsScript = readText("scripts/clean-tauri-macos-apps.mjs");
-const bundleCheckScript = readText("scripts/check-bundle.mjs");
 const desktopPerformanceScript = readText("scripts/check-desktop-performance.mjs");
 const verifyDmgScript = readText("scripts/verify-macos-dmg.mjs");
 const verifyAppScript = readVerifyMacosAppLaunchScript();
@@ -97,7 +95,6 @@ const releaseStatusScript = readText("scripts/check-macos-release-status.mjs");
 const goalAuditScript = readText("scripts/check-desktop-goal-audit.mjs");
 const macosReleaseNamesHelper = readText("scripts/lib/macos-release-names.mjs");
 const hostedDownloadSurfaceScript = readText("scripts/check-hosted-download-surface.mjs");
-const firebaseDeployEnvScript = readText("scripts/check-firebase-hosting-deploy-env.mjs");
 const requiredAppleSecretNames = [
   "APPLE_CERTIFICATE_P12_BASE64",
   "APPLE_CERTIFICATE_PASSWORD",
@@ -117,7 +114,7 @@ const ontologyStarterCta = readText("src/features/docs-vault-local/ui/OntologySt
 const localFsHandleStore = readText("src/entities/local-fs-handle/api/store.ts");
 const localVaultHook = readText("src/features/docs-vault-local/model/use-local-vault.ts");
 const releaseWorkflow = readText(".github/workflows/release-macos.yml");
-const hostingDeployWorkflow = readText(".github/workflows/deploy-hosting.yml");
+const pagesDeployWorkflow = readText(".github/workflows/deploy-pages.yml");
 const downloadReleaseVerifier = readText("scripts/check-macos-download-release.mjs");
 const tauriConfigPath = path.join(root, "src-tauri", "tauri.conf.json");
 const tauriCapabilityPath = path.join(root, "src-tauri", "capabilities", "default.json");
@@ -205,22 +202,6 @@ if (pkg.scripts?.["docs-vault:check"]) {
   pass("docs-vault freshness check is available before desktop packaging");
 } else {
   fail("package.json must expose docs-vault:check before desktop packaging");
-}
-
-if (
-  pkg.scripts?.["bundle:check"] === "node scripts/check-bundle.mjs" &&
-  bundleCheckScript.includes("const LOCAL_FIRST_BASE_ROUTES") &&
-  bundleCheckScript.includes("'download'") &&
-  bundleCheckScript.includes("'docs'") &&
-  bundleCheckScript.includes("'ontology'") &&
-  bundleCheckScript.includes("'topology'") &&
-  bundleCheckScript.includes("'projects'")
-) {
-  pass("bundle guard covers the hosted download and local-first app routes");
-} else {
-  fail(
-    "scripts/check-bundle.mjs must include /download plus docs/ontology/topology/projects in LOCAL_FIRST_BASE_ROUTES so Firebase chunks cannot re-enter public app/download surfaces",
-  );
 }
 
 const firebaseDependencyFields = [
@@ -561,64 +542,40 @@ if (
   hostedDownloadSurfaceScript.includes("CLI fallback") &&
   hostedDownloadSurfaceScript.includes("releases/latest") &&
   hostedDownloadSurfaceScript.includes("assertIncludes(download.body, downloadPath") &&
-  hostedDownloadSurfaceScript.includes("deploy-hosting.yml") &&
-  hostedDownloadSurfaceScript.includes("gh workflow run deploy-hosting.yml")
+  hostedDownloadSurfaceScript.includes("deploy-pages.yml") &&
+  hostedDownloadSurfaceScript.includes("gh workflow run deploy-pages.yml")
 ) {
   pass("hosted website verifier requires stable GitHub Releases CTAs and agent access proof on the download route");
 } else {
   fail(
-    "package.json must expose desktop:verify-hosted, test:desktop:check must cover it, and scripts/check-hosted-download-surface.mjs must reject stale browser-vault CTAs, require the hosted /ko/download/ route, require a stable GitHub Releases CTA plus AI-agent MCP/CLI access step on the download route, reject releases/latest, and print the deploy-hosting recovery path",
+    "package.json must expose desktop:verify-hosted, test:desktop:check must cover it, and scripts/check-hosted-download-surface.mjs must reject stale browser-vault CTAs, require the hosted /ko/download/ route, require a stable GitHub Releases CTA plus AI-agent MCP/CLI access step on the download route, reject releases/latest, and print the deploy-pages recovery path",
   );
 }
 
 if (
-  pkg.scripts?.["firebase:deploy-check"] ===
-  "node scripts/check-firebase-hosting-deploy-env.mjs" &&
-  pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-firebase-hosting-deploy-env.test.mjs") &&
-  firebaseDeployEnvScript.includes(".env.prod is missing") &&
-  firebaseDeployEnvScript.includes("FIREBASE_PROJECT_ID") &&
-  firebaseDeployEnvScript.includes("Hosting-only") &&
-  firebaseDeployEnvScript.includes(".firebaseignore")
+  /release:\s*\n\s+types:\s*\[published\]/.test(pagesDeployWorkflow) &&
+  /push:\s*\n\s+branches:\s*\[main\]/.test(pagesDeployWorkflow) &&
+  /workflow_dispatch:/.test(pagesDeployWorkflow) &&
+  /PAGES_BASE_URL:\s*https:\/\/wlsdks\.github\.io\/ontology-atlas/.test(pagesDeployWorkflow) &&
+  /NEXT_PUBLIC_BASE_PATH:\s*\/ontology-atlas/.test(pagesDeployWorkflow) &&
+  /NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING:\s*'0'/.test(pagesDeployWorkflow) &&
+  /uses:\s*actions\/setup-node@v6/.test(pagesDeployWorkflow) &&
+  /node-version:\s*24/.test(pagesDeployWorkflow) &&
+  /corepack enable/.test(pagesDeployWorkflow) &&
+  /corepack prepare pnpm@10\.18\.0 --activate/.test(pagesDeployWorkflow) &&
+  /pnpm --version/.test(pagesDeployWorkflow) &&
+  !/uses:\s*pnpm\/action-setup@/.test(pagesDeployWorkflow) &&
+  /pnpm build/.test(pagesDeployWorkflow) &&
+  /actions\/upload-pages-artifact@v3/.test(pagesDeployWorkflow) &&
+  /actions\/deploy-pages@v4/.test(pagesDeployWorkflow) &&
+  /pnpm desktop:verify-hosted -- --base-url="\$PAGES_BASE_URL"/.test(pagesDeployWorkflow) &&
+  /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/.test(pagesDeployWorkflow) &&
+  !/FIREBASE|firebase-tools|deploy --only hosting/.test(pagesDeployWorkflow)
 ) {
-  pass("Firebase Hosting deploy preflight checks env, project alignment, static-only config, and credential ignores");
+  pass("GitHub Pages workflow builds the base-path static export, deploys the sole hosted download site on push/release, and verifies the hosted download route");
 } else {
   fail(
-    "package.json must expose firebase:deploy-check, test:desktop:check must cover it, and scripts/check-firebase-hosting-deploy-env.mjs must validate .env.prod, project alignment, static-only Hosting config, and credential ignores",
-  );
-}
-
-if (
-  /release:\s*\n\s+types:\s*\[published\]/.test(hostingDeployWorkflow) &&
-  /workflow_dispatch:/.test(hostingDeployWorkflow) &&
-  /release_tag:/.test(hostingDeployWorkflow) &&
-  /PUBLISHED_RELEASE_TAG:\s*\$\{\{\s*github\.event\.release\.tag_name\s*\|\|\s*github\.event\.inputs\.release_tag\s*\|\|\s*''\s*\}\}/.test(hostingDeployWorkflow) &&
-  /FIREBASE_SERVICE_ACCOUNT_JSON/.test(hostingDeployWorkflow) &&
-  /NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING:\s*["']0["']/.test(hostingDeployWorkflow) &&
-  /FIREBASE_PROJECT_ID:\s*\$\{\{\s*vars\.FIREBASE_PROJECT_ID/.test(hostingDeployWorkflow) &&
-  /uses:\s*actions\/setup-node@v6/.test(hostingDeployWorkflow) &&
-  /node-version:\s*24/.test(hostingDeployWorkflow) &&
-  /corepack enable/.test(hostingDeployWorkflow) &&
-  /corepack prepare pnpm@10\.18\.0 --activate/.test(hostingDeployWorkflow) &&
-  /pnpm --version/.test(hostingDeployWorkflow) &&
-  !/uses:\s*pnpm\/action-setup@/.test(hostingDeployWorkflow) &&
-  /pnpm firebase:deploy-check/.test(hostingDeployWorkflow) &&
-  /pnpm test:mcp:docs/.test(hostingDeployWorkflow) &&
-  /pnpm build/.test(hostingDeployWorkflow) &&
-  /pnpm bundle:check/.test(hostingDeployWorkflow) &&
-  /firebase-tools@15\.17\.0 deploy --only hosting/.test(hostingDeployWorkflow) &&
-  /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/.test(hostingDeployWorkflow) &&
-  /if:\s*env\.PUBLISHED_RELEASE_TAG != ''/.test(hostingDeployWorkflow) &&
-  /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/.test(hostingDeployWorkflow) &&
-  /Summarize hosted download deployment/.test(hostingDeployWorkflow) &&
-  /Hosted Download Site/.test(hostingDeployWorkflow) &&
-  /GITHUB_STEP_SUMMARY/.test(hostingDeployWorkflow) &&
-  /Verified routes:/.test(hostingDeployWorkflow) &&
-  /Verified release assets:/.test(hostingDeployWorkflow)
-) {
-  pass("Firebase Hosting fallback workflow deploys the promo/download site after public macOS releases and verifies the live download route");
-} else {
-  fail(
-    ".github/workflows/deploy-hosting.yml must deploy Hosting on release publication/manual dispatch, require FIREBASE_SERVICE_ACCOUNT_JSON, hide the first-release checklist, use Node 24 with Corepack pnpm@10.18.0 without pnpm/action-setup, run the static deploy gates, deploy only Hosting, verify the hosted download route, verify published release assets when a release tag is available, and summarize the hosted URL/routes/release tag to GITHUB_STEP_SUMMARY",
+    ".github/workflows/deploy-pages.yml must deploy GitHub Pages on push to main / release publication / manual dispatch, build with the /ontology-atlas base path and NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0, use Node 24 with Corepack pnpm@10.18.0 without pnpm/action-setup, upload+deploy the Pages artifact, verify the hosted download route at the Pages URL, verify published release assets on release, and never depend on Firebase",
   );
 }
 
@@ -749,7 +706,7 @@ if (
 
 if (
   rootReadme.includes("| **App brand** | **Ontology Atlas**") &&
-  rootReadme.includes("| **Website / downloads** | **https://ontology-atlas.web.app** |") &&
+  rootReadme.includes("| **Website / downloads** | **https://wlsdks.github.io/ontology-atlas** |") &&
   rootReadme.includes("| **macOS app** | Install once, pick a local vault folder") &&
   rootReadme.includes("Ontology Atlas") &&
   rootReadme.includes("release-artifact identity") &&
@@ -781,7 +738,7 @@ if (
   desktopDoc.includes("current release") &&
   desktopDoc.includes("asset identity") &&
   desktopDoc.includes("root package stays free of Firebase SDK, Firebase Admin, and Firebase CLI") &&
-  desktopDoc.includes("separate website workflow") &&
+  desktopDoc.includes("separate GitHub Pages workflow") &&
   desktopDoc.includes("not the local-only app package") &&
   architectureDoc.includes("Tauri macOS shell (installed local workbench)") &&
   architectureDoc.includes("The public app/website brand is **Ontology Atlas**") &&
@@ -817,9 +774,7 @@ if (
 if (
   desktopOntologyDoc.includes("hosted empty states and demo badges route users to") &&
   onboardingOntologyDoc.includes("설치된 macOS 앱의 starter") &&
-  onboardingOntologyDoc.includes("CLI/app starter README") &&
-  firebaseDeployOntologyDoc.includes("static promo/download website") &&
-  firebaseDeployOntologyDoc.includes("real local vault work is routed to the installed macOS app")
+  onboardingOntologyDoc.includes("CLI/app starter README")
 ) {
   pass("dogfood ontology docs mirror the desktop-app and hosted-download split");
 } else {
@@ -875,9 +830,10 @@ if (
   /not Mac App Store submission/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
   /v0\.1\.0 GitHub Release/.test(enMessages.download?.releaseStatusRelease ?? "") &&
   /source of truth/.test(enMessages.download?.releaseStatusRelease ?? "") &&
-  /Separately, Firebase Hosting must deploy the promo\/download site/.test(
+  /Separately, GitHub Pages must deploy the promo\/download site/.test(
     enMessages.download?.releaseStatusHosted ?? "",
   ) &&
+  !/Firebase Hosting/.test(enMessages.download?.releaseStatusHosted ?? "") &&
   /\/ko\/download\//.test(enMessages.download?.releaseStatusHosted ?? "") &&
   /직접 다운로드 앱 릴리스가 PR review, version alignment, Developer ID signing\/notarization, v0\.1\.0 GitHub Release/.test(
     koMessages.download?.releaseAvailabilityNote ?? "",
@@ -898,13 +854,14 @@ if (
   /v0\.1\.0 GitHub Release/.test(koMessages.download?.releaseStatusRelease ?? "") &&
   /진실원/.test(koMessages.download?.releaseStatusRelease ?? "") &&
   /별도로/.test(koMessages.download?.releaseStatusHosted ?? "") &&
-  /Firebase Hosting/.test(koMessages.download?.releaseStatusHosted ?? "") &&
+  /GitHub Pages/.test(koMessages.download?.releaseStatusHosted ?? "") &&
+  !/Firebase Hosting/.test(koMessages.download?.releaseStatusHosted ?? "") &&
   /\/ko\/download\//.test(koMessages.download?.releaseStatusHosted ?? "")
 ) {
-  pass("hosted download page separates macOS app release blockers from the Firebase website deploy gate");
+  pass("hosted download page separates macOS app release blockers from the GitHub Pages website deploy gate");
 } else {
   fail(
-    "hosted download copy must separate macOS app blockers (PR review, version alignment, Developer ID signing/notarization, v0.1.0 Release) from the separate Firebase Hosting /ko/download/ deploy gate, and NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
+    "hosted download copy must separate macOS app blockers (PR review, version alignment, Developer ID signing/notarization, v0.1.0 Release) from the separate GitHub Pages /ko/download/ deploy gate, and NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
   );
 }
 
@@ -1014,12 +971,12 @@ if (
   requiredAppleSecretNames.every((name) =>
     desktopDoc.includes(`gh secret set ${name} --repo wlsdks/ontology-atlas < /path/to/${name}`),
   ) &&
-  desktopDoc.includes("Firebase Hosting is not part of the macOS app release gate")
+  desktopDoc.includes("The hosted website deploy is not part of the macOS app release gate")
 ) {
-  pass("desktop release docs include Developer ID direct-download secret commands and exclude Firebase from the app gate");
+  pass("desktop release docs include Developer ID direct-download secret commands and exclude the website deploy from the app gate");
 } else {
   fail(
-    "docs/DESKTOP-MACOS.md must show a gh secret set command for every Developer ID direct-download signing/notary secret and state that Firebase Hosting is separate from the macOS app release gate",
+    "docs/DESKTOP-MACOS.md must show a gh secret set command for every Developer ID direct-download signing/notary secret and state that the hosted website deploy is separate from the macOS app release gate",
   );
 }
 
@@ -1054,7 +1011,7 @@ if (
   releaseGithubScript.includes('"list"') &&
   releaseGithubScript.includes("APPLE_CERTIFICATE_P12_BASE64") &&
   releaseGithubScript.includes("release-macos.yml") &&
-  releaseGithubScript.includes("Firebase Hosting is intentionally excluded") &&
+  releaseGithubScript.includes("hosted website deploy is intentionally excluded") &&
   releaseGithubScript.includes("rev-parse") &&
   releaseGithubScript.includes("refs/tags") &&
   releaseGithubScript.includes("git/ref/tags") &&
@@ -1106,13 +1063,9 @@ if (
   releaseStatusScript.includes("release_workflow") &&
   releaseStatusScript.includes("actions/workflows/release-macos.yml") &&
   releaseStatusScript.includes("workflowUnavailableMessage") &&
-  releaseStatusScript.includes("includeHostedSurface") &&
-  releaseStatusScript.includes("hosted_deploy_workflow") &&
-  releaseStatusScript.includes("hosted_deploy_secrets") &&
-  releaseStatusScript.includes("hosted_surface") &&
-  releaseStatusScript.includes("actions/workflows/deploy-hosting.yml") &&
-  releaseStatusScript.includes("FIREBASE_SERVICE_ACCOUNT_JSON") &&
-  releaseStatusScript.includes("check-hosted-download-surface.mjs") &&
+  !releaseStatusScript.includes("deploy-hosting.yml") &&
+  !releaseStatusScript.includes("FIREBASE_SERVICE_ACCOUNT_JSON") &&
+  !releaseStatusScript.includes("--include-hosted-surface") &&
   releaseStatusScript.includes("apple_release_secrets") &&
   releaseStatusScript.includes("release_tag_slot") &&
   releaseStatusScript.includes("runGitStatus") &&
@@ -1136,14 +1089,12 @@ if (
   releaseStatusScript.includes("desktop:verify-download") &&
   releaseStatusScript.includes("renderMarkdownChecklist") &&
   releaseStatusScript.includes("fs.writeFileSync") &&
-  releaseStatusScript.includes("Firebase Hosting is intentionally excluded") &&
-  releaseStatusScript.includes("OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY") &&
-  releaseStatusScript.includes("--include-hosted-surface")
+  releaseStatusScript.includes("OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY")
 ) {
-  pass("desktop release status gate audits version alignment, PR readiness, release workflow availability, tag slots, Developer ID direct-download secrets, public release state, download assets, optional hosted deploy workflow, deploy secret, and surface, JSON blocker snapshots, and markdown operator checklists without Firebase Hosting dependencies by default");
+  pass("desktop release status gate audits version alignment, PR readiness, release workflow availability, tag slots, Developer ID direct-download secrets, public release state, and download assets in JSON blocker snapshots and markdown operator checklists, with no Firebase Hosting dependency");
 } else {
   fail(
-    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit version alignment, PR readiness, release workflow availability, local/remote Git tag slots, Developer ID direct-download secret names, public release state, public download assets, optional hosted deploy workflow, deploy secret, and surface checks, JSON blocker snapshots, and markdown operator checklists without requiring Firebase Hosting by default",
+    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit version alignment, PR readiness, release workflow availability, local/remote Git tag slots, Developer ID direct-download secret names, public release state, and public download assets in JSON blocker snapshots and markdown operator checklists, with no Firebase Hosting dependency",
   );
 }
 

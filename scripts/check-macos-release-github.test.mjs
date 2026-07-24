@@ -182,7 +182,7 @@ test("desktop GitHub release gate blocks an existing local Git tag before tag pu
   });
 });
 
-test("desktop GitHub release gate help lists every required Developer ID direct-download secret and excludes Firebase", () => {
+test("desktop GitHub release gate help lists every required Developer ID direct-download secret and excludes the hosted website deploy", () => {
   const stdout = execFileSync(process.execPath, ["scripts/check-macos-release-github.mjs", "--help"], {
     cwd: process.cwd(),
     encoding: "utf8",
@@ -192,5 +192,6 @@ test("desktop GitHub release gate help lists every required Developer ID direct-
     assert.match(stdout, new RegExp(name));
   }
   assert.doesNotMatch(stdout, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-  assert.match(stdout, /Firebase Hosting is intentionally excluded/);
+  assert.doesNotMatch(stdout, /Firebase/);
+  assert.match(stdout, /hosted website deploy is intentionally excluded/);
 });

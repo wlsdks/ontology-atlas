@@ -205,8 +205,8 @@ test("hosted download surface CLI prints the deploy recovery path for live 404s"
 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /\/ko\/download\/ returned HTTP 404/);
-    assert.match(result.stderr, /deploy-hosting\.yml is merged into the default branch/);
-    assert.match(result.stderr, /gh workflow run deploy-hosting\.yml --repo wlsdks\/ontology-atlas/);
+    assert.match(result.stderr, /deploy-pages\.yml is merged into the default branch/);
+    assert.match(result.stderr, /gh workflow run deploy-pages\.yml --repo wlsdks\/ontology-atlas/);
     assert.match(result.stderr, /pnpm desktop:verify-hosted/);
   } finally {
     await server.close();
