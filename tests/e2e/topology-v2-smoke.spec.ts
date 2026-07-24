@@ -23,6 +23,15 @@ const REAL_CAPABILITY_SLUG = "capability:topology-analysis-modes";
 // on it — same fix applied to the analogous `project-selector-new-cta`
 // duplicate in `ontology-ui.spec.ts`.
 async function gotoAndSettle(page: import("@playwright/test").Page, url: string) {
+  // 온보딩 자동 표면 억제 (2026-07-24 CI flake 정정) — /topology 는 샘플
+  // 모드 첫 방문에 폴더 안내 시트 + 900ms 자동 투어를 띄운다. 자동 투어의
+  // full-screen 스크림(z-70)이 느린 CI 러너에서 패널 액션 버튼을 덮어
+  // 클릭이 타임아웃났다(topology 스모크는 온보딩이 아니라 지도만 검증).
+  // 두 플래그를 시드해 자동 표면을 끈다 — 수동 진입은 영향 없다.
+  await page.addInitScript(() => {
+    window.localStorage.setItem("vault-open-guide:auto:v1", "1");
+    window.localStorage.setItem("guided-tour:v1", "done");
+  });
   await page.goto(url);
   await page.waitForLoadState("networkidle");
 }
