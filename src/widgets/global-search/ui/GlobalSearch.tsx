@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Command } from "cmdk";
 import * as Dialog from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useReducedMotion } from "framer-motion";
 import { Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
@@ -53,6 +54,19 @@ export function GlobalSearch({
 }: GlobalSearchProps) {
   const t = useTranslations("searchWidgets.globalSearch");
   const kindLabel = useOntologyKindLabel();
+  const reducedMotion = useReducedMotion();
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  // rank18 — 트리거로 포커스 복귀. Radix Dialog/FocusScope 가 기본으로도
+  // 복귀시키지만(내부 activeElement 캡처), 어떤 트리거 경로(버튼 클릭 ·
+  // ⌘K 단축키)로 열렸든 명시적으로 보장하기 위해 자체 ref 로도 캡처한다.
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (open) {
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
+    } else {
+      previousFocusRef.current?.focus?.({ preventScroll: true });
+    }
+  }, [open]);
   const [query, setQuery] = useState("");
   // kind / project filter chip 으로 ontology 결과 좁히기. set 으로
   // 다중 선택 (toggle) 모델. 닫을 때 query 와 함께 초기화.
@@ -171,14 +185,35 @@ export function GlobalSearch({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[color:rgba(8,9,12,0.66)]" />
+        <Dialog.Overlay
+          data-overlay-spring="true"
+          className={cn(
+            "fixed inset-0 z-50 bg-[color:var(--overlay-scrim)]",
+            reducedMotion ? "overlay-fade-only" : "overlay-spring-scrim",
+          )}
+        />
         <Dialog.Content
           aria-label={t('dialogAriaLabel')}
+          data-overlay-spring="true"
           data-global-search-responsive-contract="mobile-sheet-md-floating"
           data-global-search-floating-width-token="--topology-search-sheet-floating-width"
           data-global-search-radius-token="--topology-search-sheet-radius"
           data-global-search-mobile-bottom-reserve-token="--topology-mobile-bottom-tab-reserve"
-          className="fixed inset-0 z-50 flex items-stretch justify-center md:items-start md:px-4 md:pt-[12vh]"
+          // 애니메이션 클래스는 Dialog.Content 자신에 건다 — Radix Presence
+          // 는 자신이 렌더한 노드(target === node)의 animationend 만 듣고
+          // 자식 노드에서 버블된 이벤트는 무시하므로, 자식(Command)에 걸면
+          // 퇴장 애니메이션이 끝나기 전에 언마운트돼버린다.
+          className={cn(
+            "fixed inset-0 z-50 flex items-stretch justify-center md:items-start md:px-4 md:pt-[12vh]",
+            reducedMotion ? "overlay-fade-only" : "overlay-spring-surface",
+          )}
+          // rank18 — 열릴 때 첫 입력(검색창)에 포커스. Radix 기본 동작(첫
+          // focusable 엘리먼트)과 결과는 같지만, preventScroll 을 명시적으로
+          // 보장하기 위해 직접 지정한다.
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            inputRef.current?.focus({ preventScroll: true });
+          }}
         >
           <VisuallyHidden>
             <Dialog.Title>{t('dialogTitle')}</Dialog.Title>
@@ -195,6 +230,7 @@ export function GlobalSearch({
         <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-4 py-3">
           <Search size={14} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
           <Command.Input
+            ref={inputRef}
             value={query}
             onValueChange={setQuery}
             placeholder={

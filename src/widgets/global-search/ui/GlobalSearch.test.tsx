@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeAll, describe, expect, it, vi } from "vitest";
@@ -181,5 +182,70 @@ describe("GlobalSearch", () => {
 
     const plainRow = findOntologyOption("capability:mcp-server");
     expect(plainRow?.querySelector('[data-search-result-path-like="true"]')).toBeNull();
+  });
+
+  /**
+   * rank2/18 (설계협의회 batch B1) — 오버레이 a11y 백본. Radix Dialog 가
+   * ESC/트리거 포커스복귀를 기본 제공하지만, GlobalSearch 는 controlled
+   * (open/onOpenChange 외부 관리) 라 이 컴포넌트 레벨에서 실제로 동작하는지
+   * 고정해야 한다.
+   */
+  function Harness() {
+    const [open, setOpen] = useState(false);
+    return (
+      <>
+        <button type="button" onClick={() => setOpen(true)}>
+          open trigger
+        </button>
+        <GlobalSearch
+          open={open}
+          onOpenChange={setOpen}
+          nodes={nodes}
+          onSelectNode={() => {}}
+          projects={projects}
+          onSelectProject={() => {}}
+        />
+      </>
+    );
+  }
+
+  it("ESC 를 누르면 닫힌다 (onOpenChange(false))", () => {
+    render(<Harness />);
+    const trigger = screen.getByRole("button", { name: "open trigger" });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("닫히면 트리거로 포커스가 복귀한다", () => {
+    render(<Harness />);
+    const trigger = screen.getByRole("button", { name: "open trigger" });
+    trigger.focus();
+    fireEvent.click(trigger);
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("data-overlay-spring 검증마커가 스크림·패널에 있다", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={nodes}
+        onSelectNode={() => {}}
+        projects={projects}
+        onSelectProject={() => {}}
+      />,
+    );
+
+    expect(
+      document.querySelectorAll('[data-overlay-spring="true"]').length,
+    ).toBeGreaterThanOrEqual(2);
   });
 });

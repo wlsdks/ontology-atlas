@@ -204,10 +204,18 @@ export interface TopologyMapV2Props {
    * 실제 엘리먼트는 이 컴포넌트가 렌더하고 ref 만 외부에서 공유한다.
    */
   tourAnchorRef?: RefObject<HTMLDivElement | null>;
+  /**
+   * rank18 (설계협의회 batch B1) — DOM 오버레이(GlobalSearch 등) 가 열려
+   * 있는 동안 캔버스를 키보드/스크린리더 트리에서 제외한다. 캔버스는
+   * 회화 픽셀이라 자체 키보드 순회가 불가능하고, INDEX/데이터시트가 이미
+   * 접근 가능한 대체 목록이므로 오버레이가 열린 동안만 이 캔버스 쪽을
+   * 숨긴다(신규 대체 UI 없음 — 기존 INDEX/데이터시트 재사용).
+   */
+  overlayOpen?: boolean;
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, tierReveal, tourAnchorNodeId = null, tourAnchorRef } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -253,6 +261,10 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       data-testid="topology-map-v2"
       data-map-engine="v2"
       data-minimal={minimal ? "true" : "false"}
+      // rank18 — 오버레이가 열린 동안 캔버스를 aria 트리 + Tab 순회에서
+      // 제외(inert 는 포인터도 함께 막는다). INDEX/데이터시트가 대체 목록.
+      aria-hidden={overlayOpen}
+      inert={overlayOpen}
       style={{ position: "relative", width: "100%", height: "100%" }}
     >
       <canvas
