@@ -19,6 +19,7 @@ import type { VaultDoc, VaultManifest } from '../model/types';
  * - `relates` — string[] (related_to edge 후보)
  * - `dependencies` — string[] (depends_on edge 후보)
  * - `contains` — string[] (contains edge 후보, CLI/MCP add_relation 이 쓰는 키)
+ * - `broader` — string[] (is_a edge 후보 — 상위 개념 / SKOS skos:broader)
  *
  * mission v2: vault frontmatter 자체가 진실원이라 별도 promote / 승격 단계
  * 없음. 출력 stub 은 즉시 ontology 그래프로 surface (\`/ontology\` 트리,
@@ -60,8 +61,8 @@ export interface OntologyStubEdge {
   id: string;
   from: string;
   to: string;
-  /** 'contains' | 'depends_on' | 'describes' | 'related_to' (V1.0 7-relation 부분집합). */
-  type: 'contains' | 'depends_on' | 'describes' | 'related_to';
+  /** 'contains' | 'depends_on' | 'describes' | 'related_to' | 'is_a' (V1.0 7-relation 부분집합 + is-a 상위개념 축). */
+  type: 'contains' | 'depends_on' | 'describes' | 'related_to' | 'is_a';
   source: OntologyStubSource;
   sourceSlug: string;
   /** P6 — 이 관계의 근거 한 줄 (`relation_notes: {ref: why}`). 엣지 팝오버가 문장 아래 보여준다. */
@@ -84,6 +85,7 @@ const VALID_RELATION_TYPES = new Set([
   'depends_on',
   'describes',
   'related_to',
+  'is_a',
 ]);
 
 // export — 부트스트랩(도메인 파일화)이 같은 규칙으로 파일 tail 을 만들어야
@@ -439,6 +441,37 @@ function deriveOntologyFromVaultUncached(
         from: docNode.id,
         to: depId,
         type: 'depends_on',
+        source: 'frontmatter',
+        sourceSlug: doc.slug,
+      });
+    }
+
+    // broader[] — is_a edge (상위 개념 / SKOS skos:broader). `이 노드 IS-A 상위`
+    // 이므로 from = docNode, to = 상위 개념. Studio 나침 무대의 UP 방위가
+    // 채워지면 이 키가 쓰이고, 채워진 뒤엔 실선 strut + 위성으로 그려진다.
+    // folder-prefixed ref(`capabilities/foo`)는 실 kind 로 resolve.
+    for (const broaderRef of asStringArray(fm.broader)) {
+      const folderRef = resolveFolderPrefixedRef(broaderRef);
+      const broaderSlug = folderRef
+        ? folderRef.id.split(':').at(-1)
+        : slugifyName(broaderRef);
+      if (!broaderSlug) continue;
+      const broaderId = folderRef?.id ?? `${docNode.kind}:${broaderSlug}`;
+      if (!nodes.has(broaderId)) {
+        nodes.set(broaderId, {
+          id: broaderId,
+          title: folderRef?.title ?? broaderRef,
+          display: deriveDisplayTitle(undefined, folderRef?.title ?? broaderRef),
+          kind: folderRef?.kind ?? docNode.kind,
+          sourceSlug: doc.slug,
+          source: 'frontmatter',
+        });
+      }
+      edges.push({
+        id: `${docNode.id}--is_a-->${broaderId}`,
+        from: docNode.id,
+        to: broaderId,
+        type: 'is_a',
         source: 'frontmatter',
         sourceSlug: doc.slug,
       });

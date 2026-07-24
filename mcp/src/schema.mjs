@@ -65,7 +65,7 @@ export const VAULT_KIND_SCHEMA = {
   domain: {
     folder: 'domains/',
     arrayDefaults: ['capabilities'],
-    optional: ['depends_on', 'relates', 'description', 'display'],
+    optional: ['depends_on', 'relates', 'broader', 'description', 'display'],
     requiredExtras: [],
     preferredOrder: [
       'slug',
@@ -84,7 +84,7 @@ export const VAULT_KIND_SCHEMA = {
   capability: {
     folder: 'capabilities/',
     arrayDefaults: ['elements'],
-    optional: ['depends_on', 'relates', 'description', 'display'],
+    optional: ['depends_on', 'relates', 'broader', 'description', 'display'],
     // `domain` 은 트리 위계의 부모 — 비어 있으면 capability 가 orphan 으로
     // 떠다니며 사용자 인사이트에 분포 노이즈를 만든다. validator 가 경고.
     requiredExtras: ['domain'],
@@ -107,7 +107,7 @@ export const VAULT_KIND_SCHEMA = {
   element: {
     folder: 'elements/',
     arrayDefaults: [],
-    optional: ['path', 'depends_on', 'relates', 'description', 'display'],
+    optional: ['path', 'depends_on', 'relates', 'broader', 'description', 'display'],
     // element 는 어느 domain 안의 어느 capability 가 쓰는 단위 — domain 누락 시
     // 트리에서 sink 로 떠다닌다.
     requiredExtras: ['domain'],
@@ -144,6 +144,7 @@ const GRAPH_ARRAY_KEYS = new Set([
   'relates',
   'contains',
   'describes',
+  'broader',
 ]);
 
 function normalizeGraphArray(key, value) {

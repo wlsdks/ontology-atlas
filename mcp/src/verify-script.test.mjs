@@ -6148,7 +6148,7 @@ describe('verify.mjs first-contact gates', () => {
       null,
     );
     assert.equal(
-      strictQueryConceptsFilterFailure(strictErrorResponse('has key must be one of: domains, capabilities, elements, dependencies, relates, contains, describes, depends_on. Received: "capabilties". Did you mean "capabilities"?'), { field: 'has key', received: 'capabilties', suggestion: 'capabilities' }),
+      strictQueryConceptsFilterFailure(strictErrorResponse('has key must be one of: domains, capabilities, elements, dependencies, relates, contains, describes, broader, depends_on. Received: "capabilties". Did you mean "capabilities"?'), { field: 'has key', received: 'capabilties', suggestion: 'capabilities' }),
       null,
     );
     assert.equal(

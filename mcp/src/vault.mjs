@@ -100,6 +100,7 @@ const NEIGHBOR_KEYS = Object.freeze([
   'relates',
   'contains',
   'describes',
+  'broader',
 ]);
 
 const INLINE_NEIGHBOR_KEYS = Object.freeze(['domain']);
