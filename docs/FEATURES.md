@@ -379,13 +379,14 @@ Empty state (0 nodes): link to `/docs` (open vault).
 
 ---
 
-### `/ontology/studio` — Ontology Studio (게임 "강화 화면", Slice 1 = read-only)
-- 노드 하나를 게임 아이템(헥사곤)으로 놓고, 그 노드의 실제 온톨로지 관계를 관계 타입별 색 "보석"으로 소켓에 끼우는 몰입형 강화 화면. 레일 LNB "스튜디오"에서 진입.
-- **실데이터**: `useOntologyInsight`(지도/인사이트와 같은 파생 그래프)에서 노드의 `contains`(담는 것)·`depends_on`(기대는 곳)·`related_to`/`uses`(비슷한 것) 관계 + 코드 근거(`deriveCodeLocations`) + 정의 유무를 읽어 능력치·보석·소켓으로 렌더.
-- **강화도/레벨**: 정의·근거·각 관계 축·`is_a` 유무로 결정론적 완성도 %(순수 함수 `scoreEnhancement`)와 Lv 티어 pip 계산. `is_a`(상위 개념)는 아직 스키마에 없어 **항상 빈 골드 소켓** — 채우면 얼마나 오르는지 초록 델타로 미리보기(쓰기 연결은 다음 슬라이스).
-- **노드 선택**: `?node=<id>` 딥링크 우선, 없으면 활성 vault(또는 dogfood/storefront 샘플)에서 가장 연결 많은 역량 노드 자동 선택.
-- **읽기 전용(이번 슬라이스)**: 강화하기 / 넣기 / 에이전트에게 맡기기 버튼은 올바른 어포던스로 렌더되지만 "다음 슬라이스" 안내 토스트만 띄운다.
-- **디자인**: 소유자 승인 스코프 예외 — glow/gradient/aura/particle/rarity(gold)/shimmer 를 `.studio-stage` 안에서 `--studio-*` 토큰으로만 사용(앱 크롬 누출 금지). `prefers-reduced-motion` 에서 모든 모션 정지. 상세: `docs/DESIGN-SYSTEM.md` "Ontology Studio — game-energy exception".
+### `/ontology/studio` — 나침 무대 (Compass Stage), the vault write surface
+- 노드의 **의미를 완성**하는 쓰기 표면. focal 노드를 중앙 hero 로 놓고, 관계 종류를 고정 방위에 못박는다 — 위=상위개념(is_a)·아래=담는것(contains)·오른쪽=기대는곳(depends)·왼쪽=비슷한것(relates). 레일 LNB "스튜디오"에서 진입. **한 표면, 두 채움상태, 모드 탭 없음.**
+- **강화(enhance)**: 기존 노드를 열어(`?node=<id>` 딥링크, 없으면 가장 연결 많은 역량 자동 선택) 빠진 관계를 채운다. 채워진 관계=실선 인디고 지지대 + 위성 카드, 빠진 관계=파선 **라인아트 소켓**(보석 아님). 하나만 "여기부터 채워요" 로 안내.
+- **만들기(create, `?mode=create`)**: 같은 무대를 전부 빈 상태로 — kind/이름/도메인/정의 draft 카드 + 4방위 빈 소켓. 근접중복 가드, 라이브 미리보기.
+- **진짜 쓰기**: 소켓을 채우면 실제 frontmatter 관계 배열에 쓴다(`localVault.updateFrontmatter`). 읽기 전용 vault 면 AI 에이전트 위임용 **MCP 명령 패킷**을 클립보드로. 인라인 앵커 피커에서 후보 선택 or "새로 만들기".
+- **is_a 진짜 추가**: 상위개념(is_a)은 vault 최상위 갭이었다 — `broader`(SKOS) frontmatter 키로 파생·스키마(mcp/cli)·validator 까지 진짜 추가. 채우면 실선으로 닫힌다.
+- **완성도**: 중앙 카드 4변 테두리(빈=파선·찬=실선) + 평문 캡션("4개 중 2개 채웠어요") + 좌상단 플로우 큐(미니 나침반). % 링·레벨·레어도 없음.
+- **디자인**: 앱 전역과 동일한 **절제 헌장** — 무채색 + 단일 인디고 + `--color-*` 토큰. amber 는 "빈(강하게 기대되는) 소켓" 신호로만. **glow/gradient/gem/particle/gold 금지**(구 게임 예외는 2026-07-24 폐기). 모션은 소켓 채움 200ms opacity/color 하나, `prefers-reduced-motion` 정지. 평문 질문("이 노드는 무엇의 한 종류인가요?")으로 은어 0.
 
 ### `/ontology/edit` — Builder (xyflow ERD canvas)
 - **Drop-to-add**: 포트에서 빈 캔버스로 드래그를 놓으면 그 자리에 자식 kind 초안이 생기고 연결까지 이어진다(인스펙터 이름 입력 자동 포커스).
