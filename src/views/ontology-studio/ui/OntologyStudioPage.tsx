@@ -20,8 +20,10 @@ import {
 } from "../lib/build-studio-item";
 import {
   buildCreateNodeDoc,
+  buildEditPacket,
   buildFillPacket,
   buildMcpPacket,
+  buildRemovePacket,
   candidateFromNode,
   kindExpectsDomain,
   type CreateCandidate,
@@ -29,6 +31,15 @@ import {
   type CreateNodeKind,
   type PendingRelation,
 } from "../lib/build-create-node";
+import {
+  isRelationEditableFromFocal,
+  planRelationRefUpdates,
+  projectBearings,
+  reduceStudioChanges,
+  summarizeStudioChanges,
+  type StudioChange,
+  type StudioSummaryVocab,
+} from "../lib/build-studio-changes";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
 
 /**
@@ -144,8 +155,48 @@ export function OntologyStudioPage() {
       createSimilar: (title, kindLabelText) => t("create.similar", { title, kind: kindLabelText }),
       createSimilarOpen: t("create.similarOpen"),
       createSimilarAnyway: t("create.similarAnyway"),
+      // Slice 1 — edit existing relations
+      edit: t("edit"),
+      editTitle: t("editTitle"),
+      editRetypeHeading: t("editRetypeHeading"),
+      editMoveTo: (bearingLabelText) => t("editMoveTo", { bearing: bearingLabelText }),
+      editDelete: t("editDelete"),
+      editDeleteConfirm: t("editDeleteConfirm"),
+      editDeleteYes: t("editDeleteYes"),
+      editDeleteCancel: t("editDeleteCancel"),
+      editElsewhere: (other) => t("editElsewhere", { other }),
+      editElsewhereGo: t("editElsewhereGo"),
+      pendingBadge: t("pendingBadge"),
+      // Slice 2 — record summary + commit
+      summaryUndo: t("summaryUndo"),
+      exitConfirmTitle: t("exitConfirmTitle"),
+      exitConfirmDiscard: t("exitConfirmDiscard"),
+      exitConfirmKeep: t("exitConfirmKeep"),
+      commitEmptyHint: t("commitEmptyHint"),
     }),
     [t, isCreate, flowHint],
+  );
+
+  // Plain-language record summary vocab — one bag serving both ko + en and both
+  // modes (enhance / create). Shared by the "이렇게 기록됩니다" panel.
+  const relationShort = useCallback((relation: StudioRelation) => t(`relationShort.${relation}`), [t]);
+  const summaryVocab: StudioSummaryVocab = useMemo(
+    () => ({
+      relationLabel: relationShort,
+      addLine: (relationLabelText, title) => t("summary.addLine", { relation: relationLabelText, title }),
+      moveLine: (title, toLabel) => t("summary.moveLine", { title, relation: toLabel }),
+      removeLine: (relationLabelText, title) => t("summary.removeLine", { relation: relationLabelText, title }),
+      enhanceHeadline: (name, count) => t("summary.enhanceHeadline", { name, count }),
+      enhanceFileEffect: () => t("summary.enhanceFileEffect"),
+      createHeadline: (kindLabelText, name, domainLabelText) =>
+        domainLabelText
+          ? t("summary.createHeadlineDomain", { kind: kindLabelText, name, domain: domainLabelText })
+          : t("summary.createHeadline", { kind: kindLabelText, name }),
+      createFileEffect: (count) => t("summary.createFileEffect", { count }),
+      collapsedCount: (count) => t("summary.collapsed", { count }),
+      empty: t("summary.empty"),
+    }),
+    [t, relationShort],
   );
 
   const enterCreate = useCallback(() => router.push(CREATE_HREF), [router]);
@@ -194,6 +245,29 @@ export function OntologyStudioPage() {
   const [definition, setDefinition] = useState("");
   const [relations, setRelations] = useState<PendingRelation[]>([]);
   const [similarDismissed, setSimilarDismissed] = useState(false);
+
+  // ─────────────────────────────── ENHANCE staged changes ────────────────
+  // Which existing node the enhance stage is centered on (deeplink or default).
+  // Declared up here so the reset effect keeps a stable hook order across the
+  // create/enhance early return.
+  const enhanceFocalId = useMemo(() => {
+    if (nodes.length === 0) return null;
+    return (
+      (requestedNode && nodes.some((n) => n.id === requestedNode) ? requestedNode : null) ??
+      selectDefaultStudioNodeId(nodes, edges)
+    );
+  }, [requestedNode, nodes, edges]);
+
+  // Slice 2 — enhance is STAGED: fills / retypes / deletes accumulate here and
+  // only land on "확인하고 저장". Reset whenever the focal node changes so a new
+  // node never inherits another node's pending edits — the React-recommended
+  // "reset state during render when a prop changes" pattern (no effect).
+  const [changes, setChanges] = useState<StudioChange[]>([]);
+  const [prevFocalId, setPrevFocalId] = useState(enhanceFocalId);
+  if (prevFocalId !== enhanceFocalId) {
+    setPrevFocalId(enhanceFocalId);
+    setChanges([]);
+  }
 
   const draft: CreateDraft = useMemo(
     () => ({ kind, title, domainValue, definition, relations }),
@@ -261,6 +335,17 @@ export function OntologyStudioPage() {
     const excludeFor = (relation: StudioRelation) =>
       new Set(relations.filter((r) => r.type === relation).map((r) => r.candidate.id));
 
+    const createChanges: StudioChange[] = relations.map((r) => ({
+      op: "add",
+      relation: r.type,
+      target: { id: r.candidate.id, title: r.candidate.title, kind: r.candidate.kind, ref: r.candidate.ref },
+    }));
+    const domainLabelText = domains.find((d) => d.value === domainValue)?.title ?? null;
+    const createSummary = summarizeStudioChanges(
+      { mode: "create", kindLabel: kindLabel(kind), name: title.trim() || t("create.namePlaceholder"), domainLabel: domainLabelText, changes: createChanges },
+      summaryVocab,
+    );
+
     return (
       <StudioCompass
         mode="create"
@@ -268,7 +353,7 @@ export function OntologyStudioPage() {
         kindLabelFor={kindLabel}
         focal={{
           kindLabel: kindLabel(kind),
-          domainLabel: domains.find((d) => d.value === domainValue)?.title ?? null,
+          domainLabel: domainLabelText,
           name: title,
           definition,
         }}
@@ -290,6 +375,19 @@ export function OntologyStudioPage() {
         onOpenNode={openNode}
         moreRelationsSoon={t("moreRelationsSoon")}
         canSave={Boolean(title.trim())}
+        summary={title.trim() ? createSummary : null}
+        onUndoChange={(index) => setRelations((prev) => prev.filter((_, i) => i !== index))}
+        hasPendingChanges={Boolean(title.trim()) || relations.length > 0}
+        bearingLabelFor={relationShort}
+        editabilityOf={() => true}
+        onRemove={(relation, neighbor) =>
+          setRelations((prev) => prev.filter((r) => !(r.type === relation && r.candidate.id === neighbor.id)))
+        }
+        onRetype={(from, to, neighbor) =>
+          setRelations((prev) =>
+            prev.map((r) => (r.type === from && r.candidate.id === neighbor.id ? { ...r, type: to } : r)),
+          )
+        }
         createKinds={CREATE_KINDS.map((k) => ({ value: k, label: kindLabel(k) }))}
         createKind={kind}
         onCreateKind={(k) => {
@@ -345,45 +443,103 @@ export function OntologyStudioPage() {
   }
 
   const focalItem = item;
+  const sourceSlug = focalItem.node.sourceSlug;
   const focalDoc =
     writable && localVault.manifest
-      ? localVault.manifest.docs.find((d) => d.slug === focalItem.node.sourceSlug)
+      ? localVault.manifest.docs.find((d) => d.slug === sourceSlug)
       : undefined;
 
-  const bearings: CompassBearingView[] = focalItem.order.map((g) => ({
-    bearing: g.bearing,
-    relation: g.relation,
-    question: questionFor(g.relation),
-    laneLabel: laneLabelFor(g.relation),
-    emptyHint: emptyHintFor(g.relation),
-    neighbors: g.neighbors,
-    filled: g.filled,
-    recommended: g.recommended,
-    expected: g.expected,
-  }));
+  // Base (on-disk) neighbors per relation + the optimistic projection of the
+  // pending changes. The stage renders the PROJECTION so struts/satellites move
+  // before the disk write; the summary + commit consume the same `changes`.
+  const baseNeighbors = {
+    isA: focalItem.bearings.up.neighbors,
+    dependsOn: focalItem.bearings.right.neighbors,
+    contains: focalItem.bearings.down.neighbors,
+    relates: focalItem.bearings.left.neighbors,
+  };
+  const projection = projectBearings(baseNeighbors, changes);
 
+  // Guide the next empty socket in the same priority buildStudioItem uses.
+  const GUIDE_ORDER: StudioRelation[] = ["isA", "contains", "dependsOn", "relates"];
+  const recommendedRel = GUIDE_ORDER.find((r) => !projection.byRelation[r].filled) ?? null;
+
+  const bearings: CompassBearingView[] = RELATIONS.map((relation) => {
+    const proj = projection.byRelation[relation];
+    return {
+      bearing: BEARING_OF[relation],
+      relation,
+      question: questionFor(relation),
+      laneLabel: laneLabelFor(relation),
+      emptyHint: emptyHintFor(relation),
+      neighbors: proj.neighbors,
+      filled: proj.filled,
+      recommended: !proj.filled && relation === recommendedRel,
+      expected: !proj.filled && relation === "contains",
+    };
+  });
+  const filledBearings = RELATIONS.filter((r) => projection.byRelation[r].filled).length;
+
+  // Exclude self + everything currently (projected) on a lane from its picker.
   const excludeFor = (relation: StudioRelation) =>
-    new Set<string>([
-      focalItem.node.id,
-      ...(focalItem.bearings[BEARING_OF[relation]]?.neighbors.map((n) => n.id) ?? []),
-    ]);
+    new Set<string>([focalItem.node.id, ...projection.byRelation[relation].neighbors.map((n) => n.id)]);
 
-  const onFill = async (relation: StudioRelation, candidate: CreateCandidate) => {
-    const key = BEARING_FRONTMATTER_KEY[relation];
+  // Base frontmatter refs per relation — the source of truth for the writable
+  // commit AND direction detection (is this edge editable from the focal doc?).
+  const baseRefs: Record<StudioRelation, string[]> = {
+    isA: focalDoc ? asStringArray(focalDoc.frontmatter.broader) : [],
+    dependsOn: focalDoc ? asStringArray(focalDoc.frontmatter.dependencies) : [],
+    contains: focalDoc ? asStringArray(focalDoc.frontmatter.contains) : [],
+    relates: focalDoc ? asStringArray(focalDoc.frontmatter.relates) : [],
+  };
+
+  const stage = (action: Parameters<typeof reduceStudioChanges>[1]) =>
+    setChanges((prev) => reduceStudioChanges(prev, action));
+
+  const summary =
+    changes.length > 0
+      ? summarizeStudioChanges({ mode: "enhance", focalName: focalItem.node.label, changes }, summaryVocab)
+      : null;
+
+  const commit = async () => {
+    if (changes.length === 0) {
+      toast.show(t("nothingToCommit"), "info");
+      return;
+    }
     if (writable) {
       try {
-        const current = focalDoc ? asStringArray(focalDoc.frontmatter[key]) : [];
-        const next = Array.from(new Set([...current, candidate.ref]));
-        await localVault.updateFrontmatter(focalItem.node.sourceSlug, { [key]: next });
-        toast.show(t("fillSaved", { title: candidate.title }), "success");
+        const updates = planRelationRefUpdates(baseRefs, changes);
+        const fmUpdates: Record<string, string[]> = {};
+        for (const rel of RELATIONS) {
+          const next = updates[rel];
+          if (next) fmUpdates[BEARING_FRONTMATTER_KEY[rel]] = next;
+        }
+        await localVault.updateFrontmatter(sourceSlug, fmUpdates);
+        toast.show(t("commitSaved", { count: changes.length }), "success");
+        setChanges([]);
       } catch (err) {
-        toast.show(t("fillFailed", { message: err instanceof Error ? err.message : String(err) }), "error");
+        toast.show(t("commitFailed", { message: err instanceof Error ? err.message : String(err) }), "error");
       }
       return;
     }
+    // read-only → one copyable MCP packet. The `broader` array is idempotent, so
+    // any is_a-touching line writes the SAME final array (dupes are harmless).
     try {
-      await navigator.clipboard.writeText(buildFillPacket(focalItem.node.sourceSlug, relation, candidate.ref));
-      toast.show(t("fillCopied"), "success");
+      const broaderAfter = projection.byRelation.isA.neighbors.map((n) => n.ref);
+      const lines = changes.map((c) => {
+        if (c.op === "add") {
+          return c.relation === "isA"
+            ? buildRemovePacket(sourceSlug, "isA", c.target.ref, { broaderRefsAfter: broaderAfter })
+            : buildFillPacket(sourceSlug, c.relation, c.target.ref);
+        }
+        if (c.op === "remove") {
+          return buildRemovePacket(sourceSlug, c.relation, c.target.ref, { broaderRefsAfter: broaderAfter });
+        }
+        return buildEditPacket(sourceSlug, c.from, c.to, c.target.ref, { broaderRefsAfter: broaderAfter });
+      });
+      await navigator.clipboard.writeText(lines.join("\n"));
+      toast.show(t("commitCopied"), "success");
+      setChanges([]);
     } catch {
       toast.show(t("fillCopyFailed"), "info");
     }
@@ -402,12 +558,29 @@ export function OntologyStudioPage() {
         definition: focalItem.node.definition,
       }}
       bearings={bearings}
-      filledBearings={focalItem.filledBearings}
+      filledBearings={filledBearings}
       writable={writable}
       candidatesFor={(relation, query) => makeCandidatesFor(relation, query, excludeFor(relation))}
       similarFor={(relation, query) => makeSimilarFor(relation, query, excludeFor(relation))}
-      onFill={onFill}
-      onSave={() => toast.show(t("autoSaved"), "info")}
+      onFill={(relation, candidate) =>
+        stage({
+          type: "add",
+          relation,
+          target: { id: candidate.id, title: candidate.title, kind: candidate.kind, ref: candidate.ref },
+        })
+      }
+      onRetype={(from, to, neighbor) => stage({ type: "retype", from, to, target: neighbor })}
+      onRemove={(relation, neighbor) => stage({ type: "remove", relation, target: neighbor })}
+      editabilityOf={(relation, neighbor) =>
+        writable ? isRelationEditableFromFocal(focalDoc?.frontmatter, relation, neighbor) : true
+      }
+      bearingLabelFor={relationShort}
+      pendingNeighborIds={projection.pendingTargetIds}
+      summary={summary}
+      onUndoChange={(index) => stage({ type: "undo", index })}
+      hasPendingChanges={changes.length > 0}
+      canSave={changes.length > 0}
+      onSave={commit}
       onExit={exit}
       onCreateNew={enterCreate}
       searchNodes={candidates}
