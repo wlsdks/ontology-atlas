@@ -1794,6 +1794,24 @@ pub fn run() {
                               const topologyFrameProfile = window.__ontologyAtlasTopologyFrameProfile || null;
                               const topologyMapEngineEl = document.querySelector("[data-map-engine]");
                               const topologyMapEngine = topologyMapEngineEl?.getAttribute("data-map-engine") || "";
+                              const topologyV2DetailPanel = document.querySelector(
+                                '[data-testid="topology-v2-detail-panel"]'
+                              );
+                              const topologyV2DetailPanelRect =
+                                topologyV2DetailPanel?.getBoundingClientRect();
+                              const topologyV2DetailPanelStyle = topologyV2DetailPanel
+                                ? getComputedStyle(topologyV2DetailPanel)
+                                : null;
+                              const topologyV2DetailPanelVisible = Boolean(
+                                topologyV2DetailPanelRect &&
+                                topologyV2DetailPanelRect.width > 1 &&
+                                topologyV2DetailPanelRect.height > 1 &&
+                                topologyV2DetailPanelStyle?.display !== "none" &&
+                                topologyV2DetailPanelStyle?.visibility !== "hidden" &&
+                                Number(topologyV2DetailPanelStyle?.opacity || "1") > 0.01
+                              );
+                              const topologyV2PrefersReducedMotion =
+                                window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
                               const topologyMapCanvasCardCount = document.querySelectorAll(
                                 '[data-testid="topology-map-canvas"] [data-skeleton-card]'
                               ).length;
@@ -3237,7 +3255,7 @@ pub fn run() {
                                   ? "focus-path-state"
                                   : topologySelectedRelationClaimLens
                                     ? "active-relation-inspector"
-                                  : topologySelectedNodePopover
+                                  : topologySelectedNodePopover || topologyV2DetailPanel
                                     ? "focus-state"
                                     : "map-layer";
                               const topologyRootAttentionWinner =
@@ -5468,6 +5486,20 @@ pub fn run() {
                                   topologyFrameProfile,
                                   topologyMapEngine,
                                   topologyMapCanvasCardCount,
+                                  topologyV2DetailPanelVisible,
+                                  topologyV2DetailPanelNodeId:
+                                    topologyV2DetailPanel?.getAttribute("data-selected-node-id") || "",
+                                  topologyV2DetailPanelNodeKind:
+                                    topologyV2DetailPanel?.getAttribute("data-selected-node-kind") || "",
+                                  topologyV2DetailPanelNodeTitle:
+                                    topologyV2DetailPanel?.getAttribute("data-selected-node-title") || "",
+                                  topologyV2DetailPanelPresence:
+                                    topologyV2DetailPanel?.getAttribute("data-presence") || "",
+                                  topologyV2DetailPanelWidth:
+                                    topologyV2DetailPanelRect?.width || 0,
+                                  topologyV2DetailPanelHeight:
+                                    topologyV2DetailPanelRect?.height || 0,
+                                  topologyV2PrefersReducedMotion,
                                   topologyZoomVerifyAttempted:
                                     topologyZoomVerification?.attempted === true,
                                   topologyZoomVerifyReason:

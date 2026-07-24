@@ -3828,6 +3828,7 @@ export function HomePage() {
               <TopologyV2DetailPanel
                 key={panelDatasheetModel.slug}
                 presence={nodePanelPresence.exiting ? "exiting" : "entering"}
+                nodeId={panelDatasheetModel.nodeId}
                 slug={panelDatasheetModel.slug}
                 title={panelDatasheetModel.title}
                 sourceTitle={panelDatasheetModel.sourceTitle}

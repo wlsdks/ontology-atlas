@@ -150,6 +150,7 @@ async function verifyExecutableLaunch({
   verifyTopologyFocusNoop,
   verifyTopologyFocusZoom,
   verifyTopologyFrameProfile,
+  requireWebviewReducedMotion,
   requireAccessibilityText,
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
@@ -235,6 +236,7 @@ async function verifyExecutableLaunch({
       requireTopologyFocusNoop: verifyTopologyFocusNoop,
       requireTopologyFocusZoom: verifyTopologyFocusZoom,
       requireTopologyFrameProfile: verifyTopologyFrameProfile,
+      requireWebviewReducedMotion,
     };
     const { payload, validationError: webviewError } = await waitForWebviewVerifyPayload(
       () => stdout,
@@ -351,6 +353,7 @@ async function main() {
     verifyTopologyFocusNoop,
     verifyTopologyFocusZoom,
     verifyTopologyFrameProfile,
+    requireWebviewReducedMotion,
     requireAccessibilityText,
     printWindowDiagnostics,
     requireOwnerName,
@@ -405,11 +408,17 @@ async function main() {
   if (webviewEvidencePath && !requireWebviewContent) {
     fail("--webview-evidence requires --require-webview-content.");
   }
+  if (requireWebviewReducedMotion && !requireWebviewContent) {
+    fail("--require-webview-reduced-motion requires --require-webview-content.");
+  }
   if (requireWebviewContent && openApp) {
     fail("--require-webview-content is only supported for direct executable launch; omit --open-app.");
   }
   if (requireWebviewRoute && openApp) {
     fail("--require-webview-route is only supported for direct executable launch; omit --open-app.");
+  }
+  if (requireWebviewReducedMotion && openApp) {
+    fail("--require-webview-reduced-motion is only supported for direct executable launch; omit --open-app.");
   }
   if (webviewEvidencePath && openApp) {
     fail("--webview-evidence is only supported for direct executable launch; omit --open-app.");
@@ -542,6 +551,7 @@ async function main() {
         verifyTopologyFocusNoop,
         verifyTopologyFocusZoom,
         verifyTopologyFrameProfile,
+        requireWebviewReducedMotion,
         requireAccessibilityText,
         printWindowDiagnostics,
         requireOwnerName,

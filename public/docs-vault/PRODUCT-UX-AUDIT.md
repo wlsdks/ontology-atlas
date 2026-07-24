@@ -43,7 +43,7 @@
 | A17 | 인사이트 읽기·필터·지도 복귀 | 읽기·탭 키보드·지도 왕복 1차 설치 앱 검증 완료 |
 | A18 | 다운로드 안내 | 설치 가능 여부·CTA·대기 상태 첫 화면/키보드 검증 완료 |
 | A19 | 한국어/영어 동일 과업·동일 사실 | 인사이트 신선도 KO↔EN 동일 URL·탭·사실 왕복 검증 완료 |
-| A20 | 1100×800, 1512×917, 1920×1080, 2560×1440 + reduced motion | 대기 |
+| A20 | 1100×800, 1512×917, 1920×1080, 2560×1440 + reduced motion | 4개 폭 충돌·잘림 0, 일반/축소 모션 설치 앱 정량 검증 완료 |
 
 ## 이슈 장부
 
@@ -717,6 +717,68 @@
   HTML root로 가는 현재 동작은 trap이나 과업 상태 유실은 아니지만,
   전환 호출점 복귀가 더 나은지는 A20 접근성·reduced-motion sweep에서
   별도로 판정한다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-023 — 설치 앱 검증기가 현재 Atlas 셸·canvas-v2 선택 맥락을 오판
+
+- 심각도: `S4`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 외부 27-inch 모니터의 설치 앱에서 `/ko/topology/`를 네 폭으로
+  재배치 → 프로젝트 노드 선택 → macOS `동작 줄이기` ON/OFF → 동일 선택
+  동작 녹화·검증
+- 관측 현상: 현재 한국어 셸은 제품 이름을 `Atlas`로 표시하고
+  canvas-v2는 `TopologyV2DetailPanel`을 선택 노드의 읽기 표면으로 쓰지만,
+  검증기는 `온톨로지|Ontology` 브랜드와 폐기된
+  `topology-node-popover`만 인정했다. 실제 최신 화면·선택 맥락이 정상이어도
+  설치 앱 증거가 실패했고, OS의 reduced-motion 상태도 payload에서 판정할
+  수 없었다.
+- 사용자 문제: 감사기가 현재 제품보다 뒤처지면 실제 UI 결함과 검증기
+  false negative를 구분할 수 없어, 반응형·모션 품질을 릴리스 근거로
+  신뢰할 수 없다.
+- 사용자 순간: 14-inch급 compact 폭부터 외부 모니터 wide 폭까지 같은 지도를
+  읽고, 선택 노드에 초점을 옮기거나 macOS 접근성 설정을 켠 상태에서 작업을
+  계속하는 순간이다.
+- 현재 대안: 자동 증거를 무시하고 단일 스크린샷이나 육안 기억으로 현재
+  선택·주의 계층·축소 모션 여부를 추정한다.
+- 온톨로지·에이전트 가치: 현재 선택한 canonical `kind:slug`, 보조 상세
+  표면, 주의 계층과 OS 모션 선호가 같은 payload에 남아 사람의 화면과
+  에이전트 검증이 동일한 사실을 가리킨다.
+- 최소화: 사용자에게 보이는 레이아웃·색·카피·모션은 바꾸지 않는다.
+  현재 panel에 선택 노드 identity/role 마커를 추가하고, WebView probe가
+  실제 `matchMedia("(prefers-reduced-motion: reduce)")` 결과를 보고하게
+  하며, 필요한 감사에서만 `--require-webview-reduced-motion`을 켜
+  fail-closed로 판정한다.
+- 디자인 계약: 선택된 지도 노드는 `active focus`, 오른쪽 상세는
+  `supporting detail`, 명령 크롬은 `selected-node-inspector`다. compact에서
+  utility label을 줄이고 wide에서 복원하는 기존 단계형 계약을 유지하며,
+  새 장식·전환·토큰을 만들지 않는다.
+- 반응형 증거: `/Applications/Ontology Atlas.app`의 실제 WebView를
+  1100×768, 1512×885, 1920×917, 2560×917로 검증했다. 네 폭 모두
+  card overlap, fixed-surface overlap, card/fixed overlap, clipped card,
+  transient surface가 `0`이었다. 1100에서는 compact label, 1512에서는
+  workspace/concept label, 1920/2560에서는 전체 utility label·검색이
+  단계적으로 복원됐다. 설치 앱의 현재 세로 상한은 917px이므로
+  1920×1080·2560×1440 요청은 폭 계약을 증명하되 전체 물리 높이를
+  채우지는 않는다는 한계도 함께 기록한다.
+- 모션 증거: 외부 모니터에서 각 5초·30fps로 같은 프로젝트 → 예시 영역
+  선택을 녹화하고 전체 앱 프레임을 비교했다. 일반 모션은 69–76번의
+  8프레임(약 267ms)에 걸쳐 연속 보간됐고 프레임 차이
+  `mean 1.0457 · CV 0.164 · min 0.7902 · max 1.2562`, stall/spike `0`이었다.
+  축소 모션은 69번 한 프레임만 크게 바뀌고 다음 프레임부터 정착했으며
+  전환 뒤 10프레임 평균 차이는 `0.0152`였다. 비교 strip에서도 일반 모션의
+  연속 카메라 이동과 축소 모션의 즉시 정착이 각각 확인됐다.
+- fail-closed 증거: macOS `동작 줄이기` OFF에서 새 검증 플래그는
+  `WebView did not report reduced motion from the installed macOS preference`로
+  실패했다. ON에서는 `topologyV2PrefersReducedMotion: true`,
+  `topologyV2DetailPanelNodeId: "project:project"`, visible detail,
+  `focus-state`, `selected-node-inspector`, overlap/clipping `0`으로 통과했다.
+  감사 뒤 시스템 설정은 OFF로 원복했다.
+- 회귀 증거: 설치 앱 payload/CLI 계약 `9개`, v2 detail panel 계약 `52개`,
+  TypeScript가 통과했다. 한국어 Atlas 셸, v2 선택 identity·주의 계층,
+  reduced-motion ON/OFF 기대를 테스트로 고정한다.
+- 독립 디자인 검토: Design Guardian이 attention hierarchy, token drift,
+  일반/축소 모션, 네 폭 반응형, 설치 앱 payload와 fail-closed 계약을
+  재검토했고 차단 이슈 없이 승인했다.
 - PO·디자인 판정: **Build and verify**
 
 ## 현재 PO·디자인 판정

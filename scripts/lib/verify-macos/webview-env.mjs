@@ -59,7 +59,7 @@ export const VISUAL_EVIDENCE_MIN_NON_DARK_RATIO = 0.001;
 export const VISUAL_EVIDENCE_MIN_LUMA_SPREAD = 8;
 
 export const WEBVIEW_WORKBENCH_MARKERS = [
-  /온톨로지|Ontology/,
+  /온톨로지|Ontology|Atlas/,
   /Workspace|작업공간|저장소|문서함|Source Vault|Documents|Relief|Concept map|개념/,
 ];
 
@@ -155,4 +155,3 @@ export function isSelectedRelationPrimaryCopyActionText({
   }
   return false;
 }
-
