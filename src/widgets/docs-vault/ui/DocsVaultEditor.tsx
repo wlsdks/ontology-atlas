@@ -29,8 +29,12 @@ interface Props {
   doc: VaultDoc;
   /** md 원본 취득 — 뷰어와 동일한 resolver. 로컬 볼트는 fileHandle 로 읽기. */
   getDocContent: (slug: string) => Promise<string>;
-  /** 저장 시 호출. 실패 시 throw. */
-  onSave: (slug: string, content: string) => Promise<void>;
+  /** 저장 시 호출. expectedMtime은 이 편집기가 원문을 읽은 시점의 값. 실패 시 throw. */
+  onSave: (
+    slug: string,
+    content: string,
+    expectedMtime?: number,
+  ) => Promise<void>;
   /** 편집 종료 (저장 성공 후 또는 취소). */
   onClose: () => void;
   /** vault 의 모든 문서 (wikilink 자동완성용). 없으면 autocomplete off. */
@@ -41,6 +45,7 @@ interface EditorDraft {
   slug: string;
   content: string;
   diskContent: string;
+  diskMtime?: number;
   updatedAt: number;
 }
 
@@ -60,6 +65,8 @@ function readEditorDraft(slug: string): EditorDraft | null {
       parsed.slug !== slug ||
       typeof parsed.content !== 'string' ||
       typeof parsed.diskContent !== 'string' ||
+      (parsed.diskMtime !== undefined &&
+        typeof parsed.diskMtime !== 'number') ||
       typeof parsed.updatedAt !== 'number'
     ) {
       return null;
@@ -108,9 +115,14 @@ export function DocsVaultEditor({
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+  const [legacyDraftConflict, setLegacyDraftConflict] = useState(false);
   const [preview, setPreview] = useState(false);
   const [debounced, setDebounced] = useState<string | null>(null);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
+  // 외부 poll이 doc.mtime을 갱신해도 미저장 편집의 쓰기 기준은 최초로 읽은
+  // 디스크 버전이어야 한다. 최신 prop을 그대로 넘기면 conflict guard가
+  // 최신값끼리 비교해 외부 변경을 조용히 덮어쓴다.
+  const loadedMtimeRef = useRef<number | undefined>(doc.mtime);
   const savedFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Wikilink autocomplete 상태. open 이 null 이 아닐 때 popover 표시.
@@ -250,14 +262,19 @@ export function DocsVaultEditor({
 
   const doSave = useCallback(async () => {
     if (saving || content === null || !dirty) return;
+    if (legacyDraftConflict) {
+      setError(t('saveConflict'));
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
-      await onSave(doc.slug, content);
+      await onSave(doc.slug, content, loadedMtimeRef.current);
       setSavedContent(content);
       clearEditorDraft(doc.slug);
       setDraftSavedAt(null);
       setSavedFlash(true);
+      setLegacyDraftConflict(false);
       if (savedFlashTimerRef.current) {
         clearTimeout(savedFlashTimerRef.current);
       }
@@ -281,7 +298,7 @@ export function DocsVaultEditor({
     } finally {
       setSaving(false);
     }
-  }, [content, dirty, doc.slug, onSave, saving, t]);
+  }, [content, dirty, doc.slug, legacyDraftConflict, onSave, saving, t]);
 
   const requestClose = useCallback(() => {
     if (saving) return;
@@ -316,11 +333,20 @@ export function DocsVaultEditor({
         const draft = readEditorDraft(doc.slug);
         const shouldRestoreDraft =
           draft !== null && draft.content !== text;
+        const diskChangedSinceDraft =
+          shouldRestoreDraft && draft.diskContent !== text;
         setContent(shouldRestoreDraft ? draft.content : text);
         setSavedContent(text);
         setLoadedSlug(doc.slug);
+        loadedMtimeRef.current =
+          diskChangedSinceDraft && typeof draft.diskMtime === 'number'
+            ? draft.diskMtime
+            : doc.mtime;
         setDebounced(shouldRestoreDraft ? draft.content : text);
-        setError(null);
+        const cannotVerifyLegacyDraft =
+          diskChangedSinceDraft && typeof draft.diskMtime !== 'number';
+        setLegacyDraftConflict(cannotVerifyLegacyDraft);
+        setError(diskChangedSinceDraft ? t('saveConflict') : null);
         setSavedFlash(false);
         setDraftSavedAt(shouldRestoreDraft ? draft.updatedAt : null);
         setAutocomplete(null);
@@ -331,12 +357,21 @@ export function DocsVaultEditor({
         setSavedContent(null);
         setLoadedSlug(doc.slug);
         setDraftSavedAt(null);
+        setLegacyDraftConflict(false);
         setError(err instanceof Error ? err.message : String(err));
       });
     return () => {
       cancelled = true;
     };
-  }, [doc.slug, getDocContent]);
+  }, [doc.mtime, doc.slug, getDocContent, t]);
+
+  // 정상 저장 뒤 parent manifest가 새 mtime으로 갱신되면 다음 편집의 기준도
+  // 전진시킨다. dirty 동안의 외부 mtime 변화는 절대 흡수하지 않는다.
+  useEffect(() => {
+    if (!dirty && loadedSlug === doc.slug) {
+      loadedMtimeRef.current = doc.mtime;
+    }
+  }, [dirty, doc.mtime, doc.slug, loadedSlug]);
 
   useEffect(
     () => () => {
@@ -372,6 +407,7 @@ export function DocsVaultEditor({
         slug: doc.slug,
         content,
         diskContent: savedContent,
+        diskMtime: loadedMtimeRef.current,
         updatedAt,
       });
       setDraftSavedAt(updatedAt);

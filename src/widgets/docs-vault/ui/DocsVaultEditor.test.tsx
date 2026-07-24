@@ -52,7 +52,9 @@ describe('DocsVaultEditor', () => {
     fireEvent.change(editor, { target: { value: 'updated' } });
     fireEvent.click(screen.getByRole('button', { name: '저장' }));
 
-    await waitFor(() => expect(onSave).toHaveBeenCalledWith(doc.slug, 'updated'));
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(doc.slug, 'updated', undefined),
+    );
     await waitFor(() => expect(window.localStorage.getItem(draftKey)).toBeNull());
     expect(await screen.findByText('저장됨')).toBeInTheDocument();
     expect(screen.getByText('디스크에 반영됨')).toBeInTheDocument();
@@ -151,6 +153,46 @@ describe('DocsVaultEditor', () => {
       expect(screen.getByDisplayValue('my unsaved edits')).toBeInTheDocument(),
     );
     expect(screen.queryByDisplayValue('EXTERNAL CHANGE')).not.toBeInTheDocument();
+  });
+
+  it('saves against the mtime that was read before an external poll changed the doc', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const initialDoc = { ...doc, mtime: 1000 };
+    const firstMount = render(
+      <DocsVaultEditor
+        doc={initialDoc}
+        getDocContent={async () => 'initial'}
+        onSave={onSave}
+        onClose={vi.fn()}
+      />,
+    );
+    const editor = await screen.findByDisplayValue('initial');
+    fireEvent.change(editor, { target: { value: 'my unsaved edits' } });
+    await waitFor(() =>
+      expect(window.localStorage.getItem(draftKey)).toContain(
+        'my unsaved edits',
+      ),
+    );
+    firstMount.unmount();
+
+    render(
+      <DocsVaultEditor
+        doc={{ ...initialDoc, mtime: 2000 }}
+        getDocContent={async () => 'external agent edit'}
+        onSave={onSave}
+        onClose={vi.fn()}
+      />,
+    );
+
+    await screen.findByDisplayValue('my unsaved edits');
+    fireEvent.click(screen.getByRole('button', { name: '저장' }));
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        initialDoc.slug,
+        'my unsaved edits',
+        1000,
+      ),
+    );
   });
 
   it('does not clobber edits when a clean re-fetch resolves AFTER the user starts typing', async () => {

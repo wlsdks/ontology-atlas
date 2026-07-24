@@ -1973,13 +1973,13 @@ function DocsVaultContent() {
                         key={`edit:${source}:${selectedDoc.slug}`}
                         doc={selectedDoc}
                         getDocContent={editResolver}
-                        onSave={(slug, content) =>
+                        onSave={(slug, content, expectedMtime) =>
                           // conflict 를 swallow 하지 않고 re-throw — 그래야 에디터가
                           // 버퍼를 dirty 로 유지해 다음 poll 의 clobber 를 막는다.
                           // (구버전은 여기서 return 으로 삼켜 phantom-clean → 데이터 손실)
                           persistEditorSave(
                             localVault.saveDoc,
-                            { slug, content, expectedMtime: selectedDoc.mtime },
+                            { slug, content, expectedMtime },
                             () => toast.show(t('dialog.vaultConflict'), 'error'),
                           )
                         }
