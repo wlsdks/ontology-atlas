@@ -72,6 +72,7 @@ export function GuidedTourOverlay({ tour, canvasAnchorRef }: GuidedTourOverlayPr
   // 캔버스 노드 앵커 — 매 프레임 추종(카메라 스프링 리듬 상속, CSS 전환 없음).
   // 프로브가 아직 투영 전(0-크기)이면 null — 전체 스크림 폴백.
   const [canvasRect, setCanvasRect] = useState<AnchorBox | null>(null);
+
   useEffect(() => {
     if (!open || !step || step.anchor?.type !== "canvas-node") {
       setCanvasRect(null);
@@ -227,7 +228,20 @@ export function GuidedTourOverlay({ tour, canvasAnchorRef }: GuidedTourOverlayPr
         />
       )}
 
-      <GuidedTourCard tour={tour} placement={placement} width={cardWidth} style={{ top: placement.top, left: placement.left }} />
+      {/* 단계 전환 모션 (2026-07-24 프레임 감사) — 카드는 `transition-opacity`
+          만 있어 단계가 바뀌면 top/left 가 **순간이동**했다(30fps 영상에서
+          1프레임 점프). 위치 보간(transition)은 캔버스 노드 단계가 매 프레임
+          rect 를 추종하는 구조와 충돌하므로(카메라 스프링을 뒤따라 끌린다),
+          `key` 로 단계마다 remount 시켜 **기존 패널 크로스페이드 키프레임**을
+          재사용한다 — 새 카피가 그 자리에서 떠오르듯 나타나고, 추종 정확도는
+          그대로다. */}
+      <GuidedTourCard
+        key={step.id}
+        tour={tour}
+        placement={placement}
+        width={cardWidth}
+        style={{ top: placement.top, left: placement.left }}
+      />
     </div>
   );
 }
