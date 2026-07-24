@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T11:52:17.110Z",
+  "generatedAt": "2026-07-24T13:24:40.643Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -10963,6 +10963,214 @@
       "wordCount": 1216,
       "updatedAt": "2026-07-23T11:32:37+09:00",
       "linksOut": []
+    },
+    {
+      "slug": "VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
+      "path": "docs/VISUAL-DESIGN-REVIEW-BRIEF-2026-07.md",
+      "title": "Ontology Atlas — Visual Design Review Brief (2026-07)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Atlas — Visual Design Review Brief (2026-07)",
+          "slug": "ontology-atlas-visual-design-review-brief-2026-07"
+        },
+        {
+          "depth": 2,
+          "text": "1. How to use this document",
+          "slug": "1-how-to-use-this-document"
+        },
+        {
+          "depth": 2,
+          "text": "2. Compact PO framing",
+          "slug": "2-compact-po-framing"
+        },
+        {
+          "depth": 2,
+          "text": "3. Evidence reviewed",
+          "slug": "3-evidence-reviewed"
+        },
+        {
+          "depth": 3,
+          "text": "Current-session captures",
+          "slug": "current-session-captures"
+        },
+        {
+          "depth": 3,
+          "text": "Stable product captures",
+          "slug": "stable-product-captures"
+        },
+        {
+          "depth": 3,
+          "text": "Product surfaces to inspect live",
+          "slug": "product-surfaces-to-inspect-live"
+        },
+        {
+          "depth": 2,
+          "text": "4. Review method and limits",
+          "slug": "4-review-method-and-limits"
+        },
+        {
+          "depth": 2,
+          "text": "5. Consolidated diagnosis",
+          "slug": "5-consolidated-diagnosis"
+        },
+        {
+          "depth": 2,
+          "text": "6. Prioritized findings",
+          "slug": "6-prioritized-findings"
+        },
+        {
+          "depth": 3,
+          "text": "1. Relation direction and type are not reliably readable — Critical",
+          "slug": "1-relation-direction-and-type-are-not-reliably-readable-critical"
+        },
+        {
+          "depth": 3,
+          "text": "2. Graph volume is more prominent than graph insight — Critical",
+          "slug": "2-graph-volume-is-more-prominent-than-graph-insight-critical"
+        },
+        {
+          "depth": 3,
+          "text": "3. The first five seconds do not prove one work outcome — Critical",
+          "slug": "3-the-first-five-seconds-do-not-prove-one-work-outcome-critical"
+        },
+        {
+          "depth": 3,
+          "text": "4. Information that must be read is too dim — High",
+          "slug": "4-information-that-must-be-read-is-too-dim-high"
+        },
+        {
+          "depth": 3,
+          "text": "5. Project root, current selection, hover, and path state compete — High",
+          "slug": "5-project-root-current-selection-hover-and-path-state-compete-high"
+        },
+        {
+          "depth": 3,
+          "text": "6. The focused Topology state currently carries the strongest product proof — High",
+          "slug": "6-the-focused-topology-state-currently-carries-the-strongest-product-proof-high"
+        },
+        {
+          "depth": 3,
+          "text": "7. Local-first and Git-backed trust are implied rather than proved — High",
+          "slug": "7-local-first-and-git-backed-trust-are-implied-rather-than-proved-high"
+        },
+        {
+          "depth": 3,
+          "text": "8. Studio's game metaphor attracts attention but can weaken rigor — High",
+          "slug": "8-studios-game-metaphor-attracts-attention-but-can-weaken-rigor-high"
+        },
+        {
+          "depth": 3,
+          "text": "9. Topology and Studio need one semantic world, not just shared colors — High",
+          "slug": "9-topology-and-studio-need-one-semantic-world-not-just-shared-colors-high"
+        },
+        {
+          "depth": 3,
+          "text": "10. The dark negative space is potentially a premium asset — Preserve",
+          "slug": "10-the-dark-negative-space-is-potentially-a-premium-asset-preserve"
+        },
+        {
+          "depth": 3,
+          "text": "11. The gold central core is the strongest current brand seed — Opportunity",
+          "slug": "11-the-gold-central-core-is-the-strongest-current-brand-seed-opportunity"
+        },
+        {
+          "depth": 3,
+          "text": "12. Product UI and social creative are separate design problems — SNS Critical",
+          "slug": "12-product-ui-and-social-creative-are-separate-design-problems-sns-critical"
+        },
+        {
+          "depth": 2,
+          "text": "7. Material disagreements to preserve",
+          "slug": "7-material-disagreements-to-preserve"
+        },
+        {
+          "depth": 3,
+          "text": "\"The interface is too dark\"",
+          "slug": "the-interface-is-too-dark"
+        },
+        {
+          "depth": 3,
+          "text": "\"The canvas is too empty\"",
+          "slug": "the-canvas-is-too-empty"
+        },
+        {
+          "depth": 3,
+          "text": "\"Studio is the strongest screen\"",
+          "slug": "studio-is-the-strongest-screen"
+        },
+        {
+          "depth": 3,
+          "text": "\"The brand is generic\"",
+          "slug": "the-brand-is-generic"
+        },
+        {
+          "depth": 3,
+          "text": "\"Small text should be larger\"",
+          "slug": "small-text-should-be-larger"
+        },
+        {
+          "depth": 2,
+          "text": "8. Preserve before redesigning",
+          "slug": "8-preserve-before-redesigning"
+        },
+        {
+          "depth": 2,
+          "text": "9. Open questions for Fable",
+          "slug": "9-open-questions-for-fable"
+        },
+        {
+          "depth": 2,
+          "text": "10. Hypotheses worth testing",
+          "slug": "10-hypotheses-worth-testing"
+        },
+        {
+          "depth": 2,
+          "text": "11. Directional score range",
+          "slug": "11-directional-score-range"
+        },
+        {
+          "depth": 2,
+          "text": "12. Recommended agent workflow",
+          "slug": "12-recommended-agent-workflow"
+        },
+        {
+          "depth": 3,
+          "text": "Phase A — independent review",
+          "slug": "phase-a-independent-review"
+        },
+        {
+          "depth": 3,
+          "text": "Phase B — shape one design slice",
+          "slug": "phase-b-shape-one-design-slice"
+        },
+        {
+          "depth": 3,
+          "text": "Phase C — implement and verify",
+          "slug": "phase-c-implement-and-verify"
+        },
+        {
+          "depth": 2,
+          "text": "13. Copy-ready prompt A — ask Fable for an independent opinion",
+          "slug": "13-copy-ready-prompt-a-ask-fable-for-an-independent-opinion"
+        },
+        {
+          "depth": 2,
+          "text": "14. Copy-ready prompt B — implement one approved slice",
+          "slug": "14-copy-ready-prompt-b-implement-one-approved-slice"
+        },
+        {
+          "depth": 2,
+          "text": "15. Current recommendation",
+          "slug": "15-current-recommendation"
+        }
+      ],
+      "excerpt": "Status: exploratory review brief, not an approved redesign specification. Audience: Claude Code Fable, design-review agents, and the product owner. Purpose: preserve the evidence, agreements, disagreements, and open questions from a multi-perspective review so the next agent can challenge the diagnosis before proposing",
+      "wordCount": 3181,
+      "updatedAt": "2026-07-24T08:03:00.917Z",
+      "linksOut": []
     }
   ],
   "backlinksDetail": {
@@ -14374,6 +14582,13 @@
         "type": "doc",
         "slug": "TROUBLESHOOTING",
         "title": "Troubleshooting"
+      },
+      {
+        "name": "VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
+        "path": "VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
+        "type": "doc",
+        "slug": "VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
+        "title": "Ontology Atlas — Visual Design Review Brief (2026-07)"
       }
     ]
   }
