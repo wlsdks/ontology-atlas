@@ -223,6 +223,7 @@ import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 import { resolveTopologyEscLadderAction } from "../lib/topology-esc-ladder";
 import {
   GuidedTourOverlay,
+  canAutoStartGuidedTour,
   readGuidedTourStatus,
   resolveAnchorRect,
   useGuidedTour,
@@ -1745,7 +1746,14 @@ export function HomePage() {
     if (readGuidedTourStatus() !== null) return undefined;
     // 레이아웃/카메라 정착 뒤에 열어 1단계 카드가 안정된 화면 위에 뜬다.
     const id = window.setTimeout(() => {
+      // Design Guardian (2026-07-24) — stacked-transient 가드. 900ms 안에
+      // 사용자가 이미 모달(폴더 안내 시트 등, role=dialog aria-modal)을
+      // 열었거나 OS 폴더 선택창으로 문서 포커스가 나간 상태면 투어(z-70)를
+      // 그 위에 겹쳐 쏘지 않는다. 이 세션은 조용히 건너뛰되 storage 는
+      // 기록하지 않아 다음 첫-방문 조건에서 다시 시도하고, 카드의
+      // "2분 구경하기" CTA 가 수동 경로로 항상 남는다.
       autoTourFiredRef.current = true;
+      if (!canAutoStartGuidedTour()) return;
       openGuidedTourRef.current();
     }, 900);
     return () => window.clearTimeout(id);

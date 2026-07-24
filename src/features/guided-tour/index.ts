@@ -14,6 +14,7 @@ export {
   writeGuidedTourStatus,
   type GuidedTourStatus,
 } from "./model/tour-storage";
+export { canAutoStartGuidedTour } from "./model/auto-start-guard";
 export {
   resolveAnchorRect,
   computeCardPlacement,
