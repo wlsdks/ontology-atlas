@@ -2,6 +2,7 @@
 slug: ontology-atlas
 kind: project
 title: ontology-atlas
+display_ko: 온톨로지 아틀라스
 domains:
   - ai-agent-partner
   - mode-aware-adapters

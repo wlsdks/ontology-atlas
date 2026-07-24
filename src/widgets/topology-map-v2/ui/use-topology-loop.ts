@@ -2176,6 +2176,27 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         tierReveal: tierRevealRef.current,
       });
 
+      // 가이드 투어 스포트라이트 링 — 오버레이 DOM 원 대신 엔진이 프레임
+      // 위에 직접 그린다 (2026-07-24 소유자 실보고: DOM 원이 노드와 미세
+      // 오프셋/모양 불일치로 "딱 안 맞아" 보였다). 같은 worldToScreen ·
+      // 같은 프레임이라 그려진 노드와의 정합이 구조적으로 보장된다. 스크림
+      // 컷아웃(감광 구멍)은 계속 GuidedTourOverlay 프로브가 담당.
+      {
+        const anchorId = tourAnchorNodeIdRef.current;
+        const node = anchorId ? world.nodeById.get(anchorId) : undefined;
+        if (node) {
+          const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value;
+          const s = worldToScreen(camera, width, height, node.x, node.y);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, rr + 10, 0, Math.PI * 2);
+          ctx.strokeStyle = tokens.selectionRingIndigo;
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
       handle = requestAnimationFrame(frame);
     };
 

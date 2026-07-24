@@ -2,6 +2,7 @@
 slug: domains/payment
 kind: domain
 title: 결제
+display_en: Payments
 capabilities: [payment-authorize, refund-process]
 relates: [domains/order]
 ---

@@ -2,6 +2,7 @@
 slug: domains/order
 kind: domain
 title: 주문
+display_en: Orders
 capabilities: [cart, order-cancel, order-create]
 relates: [domains/fulfillment, domains/payment]
 ---

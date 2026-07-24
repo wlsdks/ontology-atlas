@@ -2,6 +2,7 @@
 slug: domains/customer
 kind: domain
 title: 회원
+display_en: Members
 capabilities: [review-write, signup]
 relates: [domains/order]
 ---

@@ -2,6 +2,7 @@
 slug: domains/marketing
 kind: domain
 title: 마케팅
+display_en: Marketing
 capabilities: [coupon-issue, email-campaign]
 relates: [domains/catalog, domains/customer]
 ---
