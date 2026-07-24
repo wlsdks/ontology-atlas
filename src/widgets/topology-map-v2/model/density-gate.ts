@@ -47,8 +47,6 @@ export function chipAnchorRadius(ring: number, expanded: boolean): number {
   return expanded ? ring + EXPANDED_CHIP_CLEARANCE : ring;
 }
 
-export type NodeDensityState = "visible" | "clustered";
-
 /** 칩 anchor 계산에 필요한 부모 좌표 + outward 방향(라디안, 레이아웃 부채꼴 방향). */
 export interface DensityGateParentGeometry {
   x: number;
