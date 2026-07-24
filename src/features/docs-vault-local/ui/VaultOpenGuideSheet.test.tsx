@@ -24,6 +24,7 @@ describe("VaultOpenGuideSheet", () => {
     expect(screen.getByText("bulletAnyFolder")).toBeInTheDocument();
     expect(screen.getByText("bulletLocal")).toBeInTheDocument();
     expect(screen.getByText("bulletStarter")).toBeInTheDocument();
+    expect(screen.getByText("bulletPermission")).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("vault-guide-pick-existing"));
     expect(onPick).toHaveBeenCalledTimes(1);
