@@ -19,7 +19,10 @@ relates: [elements/ontology-node-detail-modal]
 > `/ontology` now only translates the `?node=<id>` contract into
 > `/topology`'s `?p=<id>&index=expanded` and redirects; `/topology`
 > (`HomePage`) is the one place that actually resolves `?p=` against the
-> live vault. The `OntologyEditPage.tsx` / `BuilderWriteSummary` paragraph
+> live vault. Its not-found gate waits until persisted vault restoration or
+> the current source transition has settled, so a local-only node is not
+> diagnosed against the transient static sample before the local graph arrives.
+> The `OntologyEditPage.tsx` / `BuilderWriteSummary` paragraph
 > below is now fully obsolete — the xyflow ERD builder (`/ontology/edit`)
 > was retired 2026-07-24. The live graph-id → deeplink builder is now
 > `buildOntologyStudioNodeHrefFromGraphId` in

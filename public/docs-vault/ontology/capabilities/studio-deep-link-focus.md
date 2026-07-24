@@ -17,6 +17,8 @@ id 가 현재 그래프에 있으면 그 노드가, 없으면 `selectDefaultStud
 바로 넘기기" 역할을 이어받는다. `/topology` 의 detail 패널 / Focus / Path /
 Health 핸드오프가 같은 canonical 헬퍼로 노드를 공방으로 넘겨, 사용자가 같은
 노드를 다시 찾을 필요 없이 인스펙션에서 곧장 강화(쓰기)로 들어간다.
+구 `/ontology/edit?node=capabilities/foo` 진입도 얇은 redirect에서
+`/ontology/studio?node=capability:foo`로 정규화해 같은 focal item을 보존한다.
 `src/entities/knowledge-graph/lib/ontology-node-href.ts`
 (`elements/ontology-deeplink-node-resolver`) 가 graph-id ↔ `?node=` 변환을
 소유해 여러 표면이 서로 다른 형식으로 갈라지지 않게 한다.

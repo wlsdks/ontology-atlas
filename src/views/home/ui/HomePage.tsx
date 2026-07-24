@@ -521,6 +521,7 @@ export function HomePage() {
   // insight 에서 노드 정보 찾기. selectedSlug 가 ontology id 인데 project
   // 매칭이 없을 때만 사용 — 즉 토폴로지에서 domain/capability/element
   // 노드 클릭한 케이스.
+  const vault = useLocalVault();
   const { insight: ontologyInsight } = useOntologyInsight();
   // S-C1 — 노드 데이터시트 "언제 바뀌었나" (mode-aware manifest updatedAt).
   const docFreshnessIndex = useVaultDocFreshnessIndex();
@@ -603,6 +604,11 @@ export function HomePage() {
       hasOntologyMatch: Boolean(selectedOntologyNode),
       hasProjectMatch: Boolean(selectedProject),
       projectsLoaded: projectsQuery.loaded,
+      sourceReady:
+        vault.restoreAttempted &&
+        (vault.status === "idle" ||
+          vault.status === "loaded" ||
+          vault.status === "unsupported"),
     });
     if (decision.action === "none") return;
     if (!selectedSlug || deeplinkMissNotifiedRef.current === selectedSlug) return;
@@ -628,10 +634,19 @@ export function HomePage() {
     // the slug after all).
     const timer = window.setTimeout(notify, DEEPLINK_MISS_GRACE_MS);
     return () => window.clearTimeout(timer);
-  }, [selectedSlug, projectsQuery.loaded, ontologyInsight, selectedProject, selectedOntologyNode, toast, t]);
+  }, [
+    selectedSlug,
+    projectsQuery.loaded,
+    ontologyInsight,
+    selectedProject,
+    selectedOntologyNode,
+    vault.restoreAttempted,
+    vault.status,
+    toast,
+    t,
+  ]);
   // S1.1 — 토폴로지를 온톨로지의 1차 편집 surface 로. writable 로컬 vault 면
   // 선택 노드를 자기 .md 문서로 해석해 전체 상세(A1)의 본문 인라인 편집을 허용.
-  const vault = useLocalVault();
   // 발자취(Atlas Git) 패널 — 레일 타일 클릭으로 열리는 스냅샷/히스토리 표면.
   const [gitPanelOpen, setGitPanelOpen] = useState(false);
   // Tauri 데스크톱이면 vault 절대 경로(브리지 활성), 웹 FSA 핸들이면 null →

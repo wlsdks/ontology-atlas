@@ -31,6 +31,12 @@ export interface DeeplinkMissDecisionInput {
   hasProjectMatch: boolean;
   /** `useProjects().loaded` — whether the project list has settled. */
   projectsLoaded: boolean;
+  /**
+   * Whether the persisted vault restore and current ontology source have
+   * settled enough to diagnose absence. False while startup/open/reload can
+   * still replace the transient static sample with a local graph.
+   */
+  sourceReady: boolean;
 }
 
 /**
@@ -44,9 +50,11 @@ export function resolveDeeplinkMissDecision({
   hasOntologyMatch,
   hasProjectMatch,
   projectsLoaded,
+  sourceReady,
 }: DeeplinkMissDecisionInput): DeeplinkMissDecision {
   if (!selectedSlug) return { action: "none" };
   if (hasOntologyMatch || hasProjectMatch) return { action: "none" };
+  if (!sourceReady) return { action: "none" };
 
   const isKindPrefixed = selectedSlug.includes(":");
   if (isKindPrefixed || projectsLoaded) return { action: "notify-now" };

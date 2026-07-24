@@ -38,7 +38,7 @@
 | A7 | 지도 노드 → 공방 딥링크 | AI Agent Partner → 공방 ENHANCE 딥링크 설치 앱 검증 |
 | A8–A11 | 프로젝트 목록 → 생성 → 상세 → 인라인/전체 편집 | 임의 로컬 slug 생성·상세·인라인/전체 편집·원본 파일·schema 설치 앱 검증 완료 |
 | A12 | 문서함 선택 → 편집 → 저장/오류 → 재실행 | 정상 저장·동시 편집 충돌 차단·디스크 검증·재실행 복원 완료 |
-| A13–A14 | `/ontology`, 구 `/ontology/edit` 리다이렉트 | 대기 |
+| A13–A14 | `/ontology`, 구 `/ontology/edit` 리다이렉트 | 로컬 딥링크 선택·오류 판정·공방 포커스 설치 앱 검증 완료 |
 | A15–A16 | 공방 ENHANCE/CREATE → 쓰기 → 파일 재열기 | 임시 vault의 ENHANCE 관계 쓰기·디스크/문서함 재열기 검증, Studio CREATE 계속 감사 |
 | A17 | 인사이트 읽기·필터·지도 복귀 | 대기 |
 | A18 | 다운로드 안내 | 대기 |
@@ -497,6 +497,49 @@
   build, docs-vault freshness, self-vault validation도 통과했고 lint는
   오류 0·기존 경고 155개를 보고했다.
 - PO 판정: **Build and verify**
+
+### UX-018 — 유효한 로컬 온톨로지 딥링크가 선택 성공과 not-found를 동시에 표시
+
+- 심각도: `S3`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 저장된 로컬 vault 자동 복원 → 구
+  `/ontology/?node=capabilities/example-capability` 링크 직접 실행
+  → `/topology` 선택 데이터시트 확인
+- 관측: 최종 URL과 데이터시트는 `capability:example-capability`을 정확히
+  선택해 이름·kind·관계·근거·공방 링크를 표시했지만, 같은 화면 아래에
+  `노드를 찾을 수 없습니다: capability:example-capability` 오류 toast가
+  함께 남았다. 첫 렌더의 static sample에는 로컬 노드가 없어서 kind-prefixed
+  miss를 즉시 확정했고, 직후 persisted vault가 복원돼 실제 노드가 도착해도
+  이미 띄운 오류는 취소할 수 없었다.
+- 사용자 문제: 성공한 선택 사실과 실패 경고가 동시에 보여, 사용자는 지금 보는
+  개념이 실제 vault의 것인지 링크가 깨진 것인지 판단할 수 없다.
+- 사용자 순간: 과거 북마크·문서·에이전트 인계가 만든 `/ontology?node=` 링크로
+  특정 개념의 관계와 근거를 바로 검토하려는 순간.
+- 현재 대안: 오류 toast를 무시하고 데이터시트 slug와 문서 링크를 수동 대조한다.
+- 온톨로지·에이전트 가치: 딥링크는 같은 typed node handle을 사람의 지도 선택,
+  문서 근거, 공방 쓰기와 연결한다. source 복원 전에 부재를 선언하면 이 공유
+  handle의 신뢰가 깨진다.
+- 최소화: 라우트·지도·INDEX·toast UI·모션은 바꾸지 않는다. 기존 miss 판정에
+  `sourceReady`를 추가해 persisted restore 또는 vault 전환이 끝난 뒤에만 실제
+  부재를 알린다. 권한 대기·loading·오류 상태에서는 source 자체가 확정되지
+  않았으므로 not-found를 만들지 않는다.
+- 디자인 계약: 선택 데이터시트가 `active focus`, toast는 확정 오류의 보조
+  경고다. 성공 focus와 오류 경고가 같은 attention layer에서 충돌하지 않게
+  transient 오류만 제거하며 노드 kind/slug·관계·문서·공방 handoff는 유지한다.
+- 회귀 증거: `deeplink-miss-notice.test.ts`에 source 복원 전 kind-prefixed
+  miss가 `none`인 실패 테스트를 추가했고 기존 진짜 miss의 즉시/유예 판정은
+  그대로 통과한다. redirect·node href까지 묶은 집중 테스트
+  `5 파일 · 48개`, TypeScript, production/desktop build, docs-vault
+  freshness, self-vault validation이 통과했다.
+- 설치 앱 증거: 최신 `/Applications/Ontology Atlas.app`을 위 구 경로로
+  재실행했다. 최종 URL은
+  `/ko/topology/?index=expanded&p=capability%3Aexample-capability`,
+  데이터시트는 `예시 기능 · 역량`과 관계·근거·공방 링크를 표시했으며 작업
+  알림 영역에 not-found toast가 없었다. 구
+  `/ontology/edit/?node=capabilities/example-capability`도
+  `/ko/ontology/studio/?node=capability%3Aexample-capability`로 이동해 같은
+  `예시 기능`을 공방 중앙에 표시했다.
+- PO·디자인 판정: **Build and verify**
 
 ## 현재 PO·디자인 판정
 
