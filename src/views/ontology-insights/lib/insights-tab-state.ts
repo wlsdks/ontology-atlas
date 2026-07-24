@@ -30,7 +30,14 @@ export function parseInsightsTab(raw: string | null | undefined): InsightsTab {
   return LEGACY_TAB_ALIASES[raw] ?? DEFAULT_INSIGHTS_TAB;
 }
 
-/** 탭 전환 시 갈 pathname — 기본 탭은 `?tab=` 을 아예 붙이지 않아 URL 이 깔끔. */
-export function buildInsightsTabHref(tab: InsightsTab): string {
-  return tab === DEFAULT_INSIGHTS_TAB ? "/ontology/insights/" : `/ontology/insights/?tab=${tab}`;
+/**
+ * 탭 전환 시 갈 pathname — 기본 탭은 `?tab=` 을 아예 붙이지 않아 URL 이
+ * 깔끔하다. native history 로 현재 문서 안에서 query 만 바꿀 때는 locale 이
+ * 붙은 현재 pathname 을 넘겨 WebView URL과 키보드 포커스를 함께 보존한다.
+ */
+export function buildInsightsTabHref(
+  tab: InsightsTab,
+  pathname = "/ontology/insights/",
+): string {
+  return tab === DEFAULT_INSIGHTS_TAB ? pathname : `${pathname}?tab=${tab}`;
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
   buildEdgeTypeRows,
@@ -86,8 +86,19 @@ export function OntologyInsightsPage() {
   const kindLabel = useOntologyKindLabel();
   const edgeTypeLabel = useEdgeTypeLabel();
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const tab = parseInsightsTab(searchParams.get("tab"));
+  const [tab, setTabState] = useState<InsightsTab>(() =>
+    parseInsightsTab(searchParams.get("tab")),
+  );
+
+  useEffect(() => {
+    const syncTabFromHistory = () => {
+      setTabState(
+        parseInsightsTab(new URL(window.location.href).searchParams.get("tab")),
+      );
+    };
+    window.addEventListener("popstate", syncTabFromHistory);
+    return () => window.removeEventListener("popstate", syncTabFromHistory);
+  }, []);
 
   // P3 결함⑥ (사용성 전수 검수 2026-07-23) — 검색 팔레트(⌘K)와 앱 설정
   // 다이얼로그가 각자 self-managed open state 였던 탓에 둘이 동시에 뜰 수
@@ -242,7 +253,17 @@ export function OntologyInsightsPage() {
   };
 
   const setTab = (next: string) => {
-    router.replace(buildInsightsTabHref(next as InsightsTab), { scroll: false });
+    // 같은 문서의 query view만 바뀐다. Next router navigation은 WebView에서
+    // 포커스를 document root로 옮기므로 native history 통합으로 URL state만
+    // 갱신한다. 화면 state와 URL을 같은 이벤트에서 맞추므로 TabBar의 roving
+    // focus를 끊지 않고, 재진입·공유 링크는 URL을 다시 초기 진실원으로 읽는다.
+    const nextTab = next as InsightsTab;
+    setTabState(nextTab);
+    window.history.replaceState(
+      window.history.state,
+      "",
+      buildInsightsTabHref(nextTab, window.location.pathname),
+    );
   };
 
   // ③ 오늘의 손질 — 순수 함수가 우선순위/절단/콜드스타트 가드를 처리하고,

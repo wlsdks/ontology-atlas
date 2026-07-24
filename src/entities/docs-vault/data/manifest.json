@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T21:29:56.689Z",
+  "generatedAt": "2026-07-24T21:52:28.883Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-25 — 인사이트 탭 키보드·포커스 계약 복구",
+          "slug": "2026-07-25-인사이트-탭-키보드포커스-계약-복구"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-25 — 공방 CREATE 저장 예고·중복 경계 정합",
           "slug": "2026-07-25-공방-create-저장-예고중복-경계-정합"
         },
@@ -4768,9 +4773,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 관계 0개인 새 노드도 실제로는 Markdown 파일 1개를 만들지만 하단 요약이 기록될 내용 0가지라고 말하던 모순을 바로잡았다. CREATE의 접힌 예",
-      "wordCount": 38255,
-      "updatedAt": "2026-07-24T21:26:45.374Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 인사이트의 할 일·구조·신선도 제어는 role=tab을 선언했지만 세 탭이 모두 순차 Tab 이동에 들어가고 방향키가 동작하지 않았다. 이제 선택 탭 한 ",
+      "wordCount": 38352,
+      "updatedAt": "2026-07-24T21:50:23.078Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5898,7 +5903,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
       "wordCount": 12123,
-      "updatedAt": "2026-07-24T21:26:45.373Z",
+      "updatedAt": "2026-07-25T06:31:47+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6600,7 +6605,7 @@
           "src/shared/lib/ontology-tree/agent-query-recipes.ts",
           "src/shared/lib/ontology-tree/agent-readiness.ts",
           "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-          "src/views/ontology-insights/ui/tabs/RelationsTab.tsx"
+          "src/views/ontology-insights/ui/tabs/DoNextTab.tsx"
         ],
         "relates": [
           "capabilities/mcp-server",
@@ -6608,9 +6613,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Overview / Relations / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Ins",
-      "wordCount": 408,
-      "updatedAt": "2026-07-24T20:43:12+09:00",
+      "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Do next / Structure / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Insi",
+      "wordCount": 507,
+      "updatedAt": "2026-07-24T21:50:23.078Z",
       "linksOut": []
     },
     {
@@ -7436,7 +7441,7 @@
       ],
       "excerpt": "/ontology/studio?node=<graph-node-id 는 나침 무대를 그 vault 노드를 focal 아이템으로 놓은 상태로 연다 (OntologyStudioPage 의 requestedNode). 요청한 id 가 현재 그래프에 있으면 그 노드가, 없으면 selectDefaultStudioNodeId 의 기본 노드가 무대 중앙에 놓인다. 은퇴한 xyflow 빌더의 /ontology/edit?node= 딥링크가 하던 \"검사에서 편집으로 바로 넘기기\" 역할을 이어받는다. /topology 의 detail 패널 / Focus / Path / Health 핸드오",
       "wordCount": 152,
-      "updatedAt": "2026-07-24T21:19:41.979Z",
+      "updatedAt": "2026-07-25T06:31:47+09:00",
       "linksOut": []
     },
     {
@@ -7491,7 +7496,7 @@
       ],
       "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 은퇴한 xyflow ERD 빌더 (/ontology/edit) 가 하던 vault 쓰기 경로는 이제 나침 무대 (Compass Stage, /ontology/studio) 가 이어받았다. 한 노드를 게임 아이템처럼 놓고 관계 소켓을 채우면 그 채움이 곧 실제 frontmatter write 다. OntologyStudioPage 는 두 fill-state 를 한 라우트에서 처리한다 (mode 탭 없음): 기본 = 기존 노드를 ?node=<id 로 열어 부분 채움 (ENHANCE), ?mode=c",
       "wordCount": 368,
-      "updatedAt": "2026-07-24T21:26:45.374Z",
+      "updatedAt": "2026-07-25T06:31:47+09:00",
       "linksOut": []
     },
     {
@@ -10222,14 +10227,19 @@
           "slug": "ux-019-create-저장-예고가-새-노드를-0가지로-세고-확정-충돌도-저장을-허용"
         },
         {
+          "depth": 3,
+          "text": "UX-020 — 인사이트 탭이 복합 위젯을 선언하고 일반 링크처럼 동작",
+          "slug": "ux-020-인사이트-탭이-복합-위젯을-선언하고-일반-링크처럼-동작"
+        },
+        {
           "depth": 2,
           "text": "현재 PO·디자인 판정",
           "slug": "현재-po디자인-판정"
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다. 4. 실패 테스트를 먼저 추가한다. 5. 가장 작은 일관된 슬라이스로 수정한다. 6. 집중 테스트와 /Appl",
-      "wordCount": 4888,
-      "updatedAt": "2026-07-24T21:29:47.928Z",
+      "wordCount": 5229,
+      "updatedAt": "2026-07-24T21:52:13.098Z",
       "linksOut": []
     },
     {
