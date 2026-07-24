@@ -145,7 +145,11 @@ export function FirstRunStarterModule({
   return (
     <div
       data-testid="first-run-starter"
-      className="relative border-b border-[color:var(--topology-v2-panel-divider)] bg-gradient-to-b from-[color:var(--color-indigo-a08)] via-[color:var(--color-indigo-a06)] to-transparent px-4 pb-3.5 pt-4"
+      // min-h-0 + overflow-y-auto (소유자 실보고 2026-07-24) — 카드는 INDEX
+      // 패널(flex-col h-full)의 고정 블록이라, 낮은 창에서는 카드가 공간을
+      // 다 먹고 아래(검색·트리)로 갈 방법이 없었다. 공간이 부족하면 카드가
+      // 줄어들며 내부 스크롤로 전환된다(충분하면 종전과 동일).
+      className="relative min-h-0 overflow-y-auto overscroll-contain border-b border-[color:var(--topology-v2-panel-divider)] bg-gradient-to-b from-[color:var(--color-indigo-a08)] via-[color:var(--color-indigo-a06)] to-transparent px-4 pb-3.5 pt-4"
     >
       {/* 페르소나 재조사 개선 후보 2 (2026-07-23) — 첫 실행 카드가 "이
           화면이 뭘 하는지"만 말하고 "이 제품이 뭔지"(이름)는 말하지
