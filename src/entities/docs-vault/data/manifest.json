@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T10:04:23.085Z",
+  "generatedAt": "2026-07-24T10:05:35.992Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3172,6 +3172,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-24 — 온톨로지 스튜디오 = 나침 무대(Compass Stage) · 노드 팝오버 재설계 · 게임 예외 폐기",
+          "slug": "2026-07-24-온톨로지-스튜디오-나침-무대compass-stage-노드-팝오버-재설계-게임-예외-폐기"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-24 — INDEX 패널 구조 개편: 가이드와 목록의 배타 분리",
           "slug": "2026-07-24-index-패널-구조-개편-가이드와-목록의-배타-분리"
         },
@@ -4777,8 +4782,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 온보딩 잔여 갭 2건. ① 스타터 노드가 화면 언어로 읽힌다 — 새 vault 5개 시작 문서(README/project/domain/capability/",
-      "wordCount": 37021,
-      "updatedAt": "2026-07-24T10:04:22.509Z",
+      "wordCount": 37217,
+      "updatedAt": "2026-07-24T19:04:43+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5226,8 +5231,8 @@
         },
         {
           "depth": 2,
-          "text": "Ontology Studio — game-energy exception (owner-approved 2026-07-24)",
-          "slug": "ontology-studio-game-energy-exception-owner-approved-2026-07-24"
+          "text": "Ontology Studio — 나침 무대 (Compass Stage); game exception RETIRED 2026-07-24",
+          "slug": "ontology-studio-나침-무대-compass-stage-game-exception-retired-2026-07-24"
         },
         {
           "depth": 2,
@@ -5356,8 +5361,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 13073,
-      "updatedAt": "2026-07-24T12:04:14+09:00",
+      "wordCount": 13089,
+      "updatedAt": "2026-07-24T18:50:37+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -5665,8 +5670,8 @@
         },
         {
           "depth": 3,
-          "text": "`/ontology/studio` — Ontology Studio (게임 \"강화 화면\", Slice 1 = read-only)",
-          "slug": "ontologystudio-ontology-studio-게임-강화-화면-slice-1-read-only"
+          "text": "`/ontology/studio` — 나침 무대 (Compass Stage), the vault write surface",
+          "slug": "ontologystudio-나침-무대-compass-stage-the-vault-write-surface"
         },
         {
           "depth": 3,
@@ -5945,8 +5950,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/edit·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 3-pane 빌더, engraved census 헤더가 모두",
-      "wordCount": 12923,
-      "updatedAt": "2026-07-24T18:32:05+09:00",
+      "wordCount": 12971,
+      "updatedAt": "2026-07-24T18:50:37+09:00",
       "linksOut": [
         "slug",
         "project:slug",
