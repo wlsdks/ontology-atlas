@@ -6,6 +6,21 @@
 
 ---
 
+## 2026-07-24 — 온톨로지 스튜디오 Slice 2 — CREATE(만들기) 모드
+
+같은 `/ontology/studio` 라우트에 `?mode=create` 로 진입하는 **새 노드 만들기**
+표면 추가 (enhance 는 default 유지). 왼쪽 신원 폼(종류·이름·소속 도메인·정의 +
+근접 중복 가드 `SimilarNodeWarning`), 오른쪽 관계 카드 4종(상위 개념 is-a ·
+기대는 곳 · 담는 것 · 비슷한 것)을 노드 피커 버튼으로 하나씩 조립, 완성도
+게이지 + "지금까지 이런 모양" 미니 프리뷰. **두 적용 경로**: ① 직접 적용 —
+쓰기 가능한 로컬 vault 가 열려 있을 때 `createDoc` 로 `.md` 를 디스크에 씀
+(기존 `/docs`·빌더와 같은 write infra 재사용: `buildNewNodeDoc` 계열) ② 에이전트에게
+맡기기 — `add_concept` + `add_relation` MCP 명령 패킷을 클립보드로 복사(읽기
+전용/샘플 모드의 유일한 활성 경로). frontmatter 관계 키는 런타임 파생이 읽는
+키(`contains`/`dependencies`/`relates`)로 써 지도에 즉시 반영, is-a 는 `broader:`·
+정의는 `definition:` 로 additive(전체 검증은 S3). 게임 에너지는 스튜디오
+스코프 예외(`--studio-*`) 유지. 빌더(`/ontology/edit`) 은 아직 유지(S4 에서 정리).
+
 ## 2026-07-24 — 온톨로지 스튜디오 (게임 "강화 화면") Slice 1 — 읽기 전용 표면
 
 새 라우트 `/ontology/studio` + 레일 LNB "스튜디오" 항목. 노드 하나를 게임
