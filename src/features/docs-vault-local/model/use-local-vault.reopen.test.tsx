@@ -25,13 +25,17 @@ const tauri = vi.hoisted(() => ({
 }));
 
 const store = vi.hoisted(() => ({
-  getLocalFsHandle: vi.fn(async () => undefined),
+  getLocalFsHandle: vi.fn<() => Promise<LocalFsHandleRecord | undefined>>(
+    async () => undefined,
+  ),
   listRecentLocalFsHandles: vi.fn(async () => [] as LocalFsHandleRecord[]),
   putLocalFsHandle: vi.fn(async () => {}),
   touchLocalFsHandle: vi.fn(async () => {}),
   forgetRecentLocalFsHandle: vi.fn(async () => {}),
   deleteLocalFsHandle: vi.fn(async () => {}),
-  verifyHandlePermission: vi.fn(async () => 'granted' as const),
+  verifyHandlePermission: vi.fn<() => Promise<PermissionState>>(
+    async () => 'granted',
+  ),
 }));
 
 const docsVault = vi.hoisted(() => ({
@@ -80,6 +84,22 @@ afterEach(() => {
 });
 
 describe('useLocalVaultInternal — 데스크톱 최근 vault 재열기', () => {
+  it('기존 vault 권한 대기 중 폴더 선택을 취소하면 이전 상태를 그대로 복원한다', async () => {
+    store.getLocalFsHandle.mockResolvedValue(desktopRecord());
+    store.verifyHandlePermission.mockResolvedValue('prompt');
+    tauri.pickTauriVaultDirectory.mockResolvedValue(null);
+    const hook = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(hook.result.current.status).toBe('permission-needed'));
+
+    await act(async () => {
+      await hook.result.current.open();
+    });
+
+    expect(hook.result.current.status).toBe('permission-needed');
+    expect(hook.result.current.errorMessage).toBeNull();
+    expect(docsVault.buildLocalManifestWithEntries).not.toHaveBeenCalled();
+  });
+
   it('저장된 폴더가 사라졌으면 path-missing 으로 분류하고 매니페스트 빌드를 아예 시도하지 않는다', async () => {
     tauri.tauriVaultPathExists.mockResolvedValue(false);
     const hook = await mountHook();

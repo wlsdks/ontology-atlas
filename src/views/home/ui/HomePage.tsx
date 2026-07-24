@@ -1769,6 +1769,11 @@ export function HomePage() {
     tour.open && tour.step && tour.step.anchor !== null && tour.step.anchor.type === "canvas-node"
       ? resolveTourAnchorNodeId(topologyV2Graph.nodes, tour.step.anchor.target)
       : null;
+  const activateTourAnchor = useCallback(() => {
+    if (!tourAnchorNodeId) return;
+    setSelectedEdge(null);
+    handleSelect(tourAnchorNodeId);
+  }, [handleSelect, tourAnchorNodeId]);
   // 투어를 열 때 다른 전이 표면을 강등한다(§4 "열림 시" 계약) — create-node
   // composer 와 같은 "openX 가 나머지를 닫는다" 관례를 그대로 따른다.
   const openGuidedTour = useCallback(() => {
@@ -4069,7 +4074,11 @@ export function HomePage() {
               : null
           }
         />
-        <GuidedTourOverlay tour={tour} canvasAnchorRef={tourAnchorRef} />
+        <GuidedTourOverlay
+          tour={tour}
+          canvasAnchorRef={tourAnchorRef}
+          onActivateAnchor={tourAnchorNodeId ? activateTourAnchor : undefined}
+        />
       </div>
     </main>
   );

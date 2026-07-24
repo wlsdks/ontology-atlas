@@ -196,11 +196,14 @@ export function FirstRunStarterModule({
         </span>
       </p>
 
-      <p className="mb-4 text-[12px] leading-[1.65] text-[color:var(--topology-v2-panel-text-tertiary)]">
+      <p
+        data-testid="first-run-starter-context"
+        className="mb-4 text-[12px] leading-[1.65] text-[color:var(--topology-v2-panel-text-tertiary)]"
+      >
         <b className="font-semibold text-[color:var(--topology-v2-panel-text-primary)]">
-          {t("contextBold")}
+          {t(sampleSource === "storefront" ? "contextStorefrontBold" : "contextBold")}
         </b>{" "}
-        {t("contextRest")}
+        {t(sampleSource === "storefront" ? "contextStorefrontRest" : "contextRest")}
       </p>
 
       <div className="mb-3 grid grid-cols-3 divide-x divide-[color:var(--topology-v2-panel-divider)] rounded-[9px] border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.55)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">

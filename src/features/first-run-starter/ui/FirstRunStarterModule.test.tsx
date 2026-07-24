@@ -346,6 +346,12 @@ describe('FirstRunStarterModule', () => {
       'aria-selected',
       'true',
     );
+    expect(screen.getByTestId('first-run-starter-context')).toHaveTextContent(
+      'contextStorefront',
+    );
+    expect(screen.getByTestId('first-run-starter-context')).not.toHaveTextContent(
+      'contextRest',
+    );
   });
 
   it('copies the CLI bootstrap command to the clipboard once the disclosure is open', async () => {

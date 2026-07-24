@@ -315,6 +315,8 @@
     "sampleLabel": "지금은 샘플",
     "contextBold": "우리 제품이 어떤 부분들로 이루어져 있고, 서로 어떻게 연결돼 있는지 한눈에 보는 지도예요.",
     "contextRest": "지금은 이 프로젝트 자신의 지도(읽기 전용) — 내 마크다운 폴더를 고르면 같은 지도가 내 데이터로 켜져요. (지도의 원본은 마크다운 frontmatter 예요.)",
+    "contextStorefrontBold": "온라인 쇼핑몰 예시가 상품·주문·회원·배송·마케팅으로 어떻게 이어지는지 보는 지도예요.",
+    "contextStorefrontRest": "연습용 읽기 전용 샘플이에요 — 내 마크다운 폴더를 고르면 같은 지도가 내 데이터로 바뀝니다.",
     "meterConcepts": "개념",
     "meterRelations": "관계",
     "meterDomains": "도메인",

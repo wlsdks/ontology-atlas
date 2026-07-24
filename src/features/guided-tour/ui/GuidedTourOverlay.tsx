@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type RefObject } from "react";
 import { cn } from "@/shared/lib/cn";
+import { useDialogFocusTrap } from "@/shared/lib/use-dialog-focus-trap";
 import type { UseGuidedTourResult } from "../model/use-guided-tour";
 import {
   computeCardPlacement,
@@ -24,6 +25,8 @@ export interface GuidedTourOverlayProps {
    * 단계와 감광이 어긋났다).
    */
   canvasAnchorRef: RefObject<HTMLDivElement | null>;
+  /** 키보드 사용자가 4단계의 캔버스 노드 클릭을 카드 안 버튼으로 수행한다. */
+  onActivateAnchor?: () => void;
 }
 
 /**
@@ -33,8 +36,17 @@ export interface GuidedTourOverlayProps {
  * (funnel) — 스포트라이트된 노드 외의 크롬(투어 타일 재진입, 검색, 툴바)은
  * 클릭이 막힌다(stacked-transient-UI 금지 계약).
  */
-export function GuidedTourOverlay({ tour, canvasAnchorRef }: GuidedTourOverlayProps) {
+export function GuidedTourOverlay({
+  tour,
+  canvasAnchorRef,
+  onActivateAnchor,
+}: GuidedTourOverlayProps) {
   const { open, step } = tour;
+  const overlayRef = useDialogFocusTrap<HTMLDivElement>({
+    open,
+    initialFocus: "none",
+    restoreFocus: false,
+  });
 
   const [viewport, setViewport] = useState(() => ({
     width: typeof window === "undefined" ? 1440 : window.innerWidth,
@@ -135,7 +147,7 @@ export function GuidedTourOverlay({ tour, canvasAnchorRef }: GuidedTourOverlayPr
       : null;
 
   return (
-    <div data-testid="guided-tour-overlay" data-tour-step={step.id}>
+    <div ref={overlayRef} data-testid="guided-tour-overlay" data-tour-step={step.id}>
       {/* blocker — 비인터랙티브 단계는 전면 차단(스크림이 곧 dim 증거,
           modal-without-modality 금지 규칙 충족). 인터랙티브(4단계)는 전면
           통과가 아니라 컷아웃 bbox 4방향 스트립 차단 — 스포트라이트된 노드만
@@ -240,6 +252,7 @@ export function GuidedTourOverlay({ tour, canvasAnchorRef }: GuidedTourOverlayPr
         tour={tour}
         placement={placement}
         width={cardWidth}
+        onActivateAnchor={onActivateAnchor}
         style={{ top: placement.top, left: placement.left }}
       />
     </div>

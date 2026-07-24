@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { FolderOpen, HardDrive, ShieldCheck, Sparkles, X } from "lucide-react";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
+import { useDialogFocusTrap } from "@/shared/lib/use-dialog-focus-trap";
 
 /**
  * 폴더 열기 사전 안내 시트 (2026-07-24 온보딩 라운드) — 첫 실행 카드의
@@ -44,18 +44,10 @@ export function VaultOpenGuideSheet({
 }: VaultOpenGuideSheetProps) {
   const t = useTranslations("vaultOpenGuide");
   useBodyScrollLock(open);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.stopPropagation();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+  const dialogRef = useDialogFocusTrap<HTMLElement>({
+    open,
+    onEscape: onClose,
+  });
 
   return (
     <AnimatePresence>
@@ -71,6 +63,8 @@ export function VaultOpenGuideSheet({
           data-testid="vault-guide-scrim"
         >
           <motion.section
+            ref={dialogRef}
+            tabIndex={-1}
             initial={{ opacity: 0, y: 12, scale: 0.985 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.985 }}

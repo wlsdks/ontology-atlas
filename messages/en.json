@@ -315,6 +315,8 @@
     "sampleLabel": "Sample for now",
     "contextBold": "A map of what your product is made of and how the parts connect — at a glance.",
     "contextRest": "Right now it's this project's own map (read-only) — pick your markdown folder and the same map lights up with your data. (The map is generated from markdown frontmatter.)",
+    "contextStorefrontBold": "A sample map of how an online store connects products, orders, customers, delivery, and marketing.",
+    "contextStorefrontRest": "It is a read-only practice sample — pick your markdown folder and the same map switches to your data.",
     "meterConcepts": "concepts",
     "meterRelations": "relations",
     "meterDomains": "domains",

@@ -3,7 +3,7 @@ slug: capabilities/first-run-onboarding-guides
 kind: capability
 title: First-Run Onboarding Guides (auto tour · pre-picker sheet · start checklist)
 domain: onboarding-ux
-elements: []
+elements: [elements/accessible-dialog-focus-contract]
 ---
 
 # First-Run Onboarding Guides
@@ -32,3 +32,9 @@ elements: []
 투어 4단계 인터랙티브 컷아웃은 프로브 대비 16px 클릭 여유를 두고
 (`GuidedTourOverlay` `TOUR_HOLE_PADDING`), 프로브 중심 클릭 통과를
 `tests/e2e/guided-tour.spec.ts` 회귀로 고정한다.
+
+2026-07-25 사용성 감사에서 첫 실행 투어와 볼트 열기 안내 시트가 같은
+접근성 계약을 쓰도록 `Accessible Dialog Focus Contract`를 추가했다. 두
+표면 모두 열릴 때 대화상자로 포커스를 옮기고, `Tab`/`Shift+Tab`을 내부에
+가두며, 닫은 뒤 기존 실행 지점으로 포커스를 돌려준다. 투어의 인터랙티브
+단계는 키보드로도 활성화할 수 있다.

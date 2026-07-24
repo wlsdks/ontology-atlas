@@ -50,6 +50,56 @@ describe("VaultOpenGuideSheet", () => {
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 
+  it("moves focus into the dialog and traps Tab in both directions", () => {
+    render(
+      <VaultOpenGuideSheet
+        open
+        onClose={vi.fn()}
+        onPickExisting={vi.fn()}
+        onCreateNew={vi.fn()}
+      />,
+    );
+
+    const dialog = screen.getByRole("dialog");
+    const close = screen.getByTestId("vault-guide-close");
+    const cancel = screen.getByTestId("vault-guide-cancel");
+    expect(document.activeElement).toBe(dialog);
+
+    cancel.focus();
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(document.activeElement).toBe(close);
+
+    close.focus();
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(cancel);
+  });
+
+  it("restores focus to the opener when the sheet closes", () => {
+    const opener = document.createElement("button");
+    document.body.append(opener);
+    opener.focus();
+    const view = render(
+      <VaultOpenGuideSheet
+        open
+        onClose={vi.fn()}
+        onPickExisting={vi.fn()}
+        onCreateNew={vi.fn()}
+      />,
+    );
+    expect(document.activeElement).toBe(screen.getByRole("dialog"));
+
+    view.rerender(
+      <VaultOpenGuideSheet
+        open={false}
+        onClose={vi.fn()}
+        onPickExisting={vi.fn()}
+        onCreateNew={vi.fn()}
+      />,
+    );
+    expect(document.activeElement).toBe(opener);
+    opener.remove();
+  });
+
   it("renders nothing when closed", () => {
     const { container } = render(
       <VaultOpenGuideSheet
