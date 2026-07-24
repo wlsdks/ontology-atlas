@@ -305,6 +305,14 @@ For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at 
 
 When an AI agent (`add_concept`) or a developer (`ontology-atlas add` / `ontology-atlas import`) creates a new node, the frontmatter is normalized per `kind` so external `.md` ingestion stays consistent. See `mcp/README.md` for the full table and `mcp/src/schema.mjs` (mirror at `cli/src/lib/schema.mjs`) for the source. Contract test: `tests/contract/vault-schema.contract.test.ts`. Validator surfaces missing strongly-expected fields (e.g. capability/element without `domain:`) as the `missing-expected-field` warning — advisory only, not a hard error, so pre-existing vaults still pass.
 
+노드 이름은 어권별로 병기할 수 있다 — `display_ko` / `display_en` 같은
+`display_<locale>` 키를 쓰면 화면 언어에 맞는 이름이 지도·INDEX·팝오버에
+그려진다(`title` 은 검색/매칭의 단일 진실원이라 바뀌지 않는다). MCP 는
+`add_concept({ labels: { ko, en } })`, 사람은 지도 컴포저의 어권별 이름
+칸으로 쓴다. **vault 가 쓰는 로케일은 전부 채운다** — 한쪽만 채우면 다른
+언어 사용자에게 원문 title 이 그대로 노출된다(MCP 는 warning, 폼은 현재
+화면 언어 칸 필수).
+
 `ontology-atlas import <path...>` is the bulk path: hand it your own `.md` (single file, directory, or many) and each file is run through the same schema before landing in the vault. Frontmatter `kind`/`slug`/`title` win when present; `--kind` is the fallback, the first `# H1` is the title fallback, `--auto-prefix` / `--rename` / `--dry-run` cover the typical conflict cases. Same shape as `add_concept` / `add` — one schema, three entry points.
 
 ### Project containment is implicit (no `project:` key needed)

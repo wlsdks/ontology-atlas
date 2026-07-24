@@ -2,6 +2,7 @@
 slug: domains/mode-aware-adapters
 kind: domain
 title: Mode-Aware Adapters
+display_ko: 모드 인식 어댑터
 capabilities:
   - mode-aware-adapter
   - ontology-hub-mode-aware

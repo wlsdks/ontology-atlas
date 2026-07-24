@@ -2402,7 +2402,11 @@
       "toastError": "노드를 만들지 못했어요.",
       "unavailableHeading": "워크스페이스 필요",
       "unavailableBody": "토폴로지 지도에서 개념을 만들려면 먼저 로컬 워크스페이스를 연결하세요.",
-      "unavailableAction": "워크스페이스 열기"
+      "unavailableAction": "워크스페이스 열기",
+      "primaryNamePlaceholder": "개념 이름 (한국어)",
+      "secondaryNamePlaceholder": "English name (선택)",
+      "localeNamesHint": "위 칸은 지금 화면 언어(한국어) 이름이에요. 영어 이름을 같이 적으면 영어 화면에서도 읽혀요.",
+      "primaryLocaleRequired": "한국어 이름도 적어야 저장돼요 — 지금 화면이 한국어라, 비우면 지도·목록에 원문이 그대로 보여요."
     },
     "explanationEdit": {
       "saved": "설명 저장됨",

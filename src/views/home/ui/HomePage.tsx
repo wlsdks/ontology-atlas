@@ -14,7 +14,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 // `History as HistoryIcon` — 전역 DOM History 생성자와의 충돌 원천 차단
 // (사용성 검수 P0, AtlasGitPanel 과 동일 처방).
 import { BookOpen, Compass, FolderOpen, HelpCircle, History as HistoryIcon, Plus, Waypoints, X } from "lucide-react";
@@ -283,6 +283,8 @@ function readAudiencePlainPreference(): boolean {
 
 export function HomePage() {
   const t = useTranslations('topology');
+  // 어권별 이름 입력(create composer) 계약의 '지금 화면 언어'.
+  const activeLocale = useLocale();
   const tKinds = useTranslations('kinds');
   const tAgentConnect = useTranslations('agentConnect');
   // P2 결함⑤ — <lg 발자취 chrome-tile 진입점의 aria-label/title (`atlasGit`
@@ -922,7 +924,12 @@ export function HomePage() {
     },
   });
   const createNode = useCallback(
-    async (input: { title: string; kind: CreateNodeKind; domain?: string }) => {
+    async (input: {
+      title: string;
+      kind: CreateNodeKind;
+      domain?: string;
+      localeLabels?: Record<string, string>;
+    }) => {
       try {
         const { slug, markdown } = buildNewNodeDoc(input);
         await vault.createDoc(slug, markdown);
@@ -2986,8 +2993,18 @@ export function HomePage() {
                         capability: t('createNode.kindCapability'),
                         element: t('createNode.kindElement'),
                       },
+                      primaryNamePlaceholder: t('createNode.primaryNamePlaceholder'),
+                      secondaryNamePlaceholder: t('createNode.secondaryNamePlaceholder'),
+                      localeNamesHint: t('createNode.localeNamesHint'),
+                      primaryLocaleRequired: t('createNode.primaryLocaleRequired'),
                     }}
                     defaultKind={createNodeDefaultKind}
+                    // 어권별 이름 — 지금 화면 언어가 필수 칸, 나머지가 선택
+                    // 칸(소유자 지시 2026-07-24).
+                    localeNames={{
+                      primaryLocale: activeLocale,
+                      secondaryLocale: activeLocale === 'ko' ? 'en' : 'ko',
+                    }}
                   />
                 </div>
               </>

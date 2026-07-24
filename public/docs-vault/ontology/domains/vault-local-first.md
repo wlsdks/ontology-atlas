@@ -2,6 +2,7 @@
 slug: domains/vault-local-first
 kind: domain
 title: Vault — Local-First
+display_ko: Vault — 로컬 퍼스트
 capabilities: [desktop-app-distribution, vault-live-updates, vault-migrator, vault-validator]
 elements: [elements/macos-webview-content-verifier, file-system-access-api, src/entities/docs-vault, src/entities/local-fs-handle, src/features/docs-vault-local, src/features/docs-vault-local/model/agent-activity-status.ts, src/shared/lib/idb-kv.ts, src/views/docs-vault/ui/DocsVaultPage.tsx, src/widgets/docs-vault/ui/DocsVaultEditor.tsx]
 relates: [domains/mode-aware-adapters, domains/ontology-core]

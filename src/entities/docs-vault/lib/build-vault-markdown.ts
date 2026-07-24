@@ -23,6 +23,12 @@ export function buildVaultMarkdown(args: {
   /** capability/element 처럼 부모 도메인이 있는 노드의 `domain:` 키. 생략 시
    *  emit 안 함 — 추출 전(빌더)과 byte-identical 출력 보장. */
   domain?: string;
+  /**
+   * 어권별 표시 이름 (소유자 지시 2026-07-24) — `{ ko: "결제", en: "Payments" }`
+   * → `display_ko:` / `display_en:` 키. 생략하면 emit 안 함(기존 출력 불변).
+   * `title` 은 검색/매칭의 단일 진실원이라 그대로 둔다.
+   */
+  localeLabels?: Record<string, string>;
 }): string {
   const lines = ["---"];
   lines.push(`slug: ${args.slug}`);
@@ -30,6 +36,12 @@ export function buildVaultMarkdown(args: {
   const domain = args.domain?.trim();
   if (domain) lines.push(`domain: ${quoteYamlScalar(domain)}`);
   lines.push(`title: ${quoteYamlScalar(args.title)}`);
+  for (const [locale, value] of Object.entries(args.localeLabels ?? {})) {
+    if (!/^[a-z]{2}$/.test(locale)) continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    lines.push(`display_${locale}: ${quoteYamlScalar(trimmed)}`);
+  }
   lines.push("---");
   lines.push("");
   lines.push(`# ${args.title}`);
@@ -66,6 +78,7 @@ export function buildNewNodeDoc(args: {
   title: string;
   kind: string;
   domain?: string;
+  localeLabels?: Record<string, string>;
 }): { slug: string; markdown: string } {
   const title = args.title.trim();
   if (!title) throw new Error("title must not be empty");
@@ -77,6 +90,7 @@ export function buildNewNodeDoc(args: {
     title,
     slug,
     domain: args.domain,
+    localeLabels: args.localeLabels,
   });
   return { slug, markdown };
 }

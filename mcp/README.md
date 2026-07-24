@@ -612,6 +612,33 @@ label never narrows what a query can find. Most nodes never need to set
 `display` explicitly; add it only when the automatic paren-split still leaves
 a name too long or picks the wrong prefix.
 
+### `display_<locale>` — per-locale display names (2026-07-24)
+
+The same node can read natively in every language the vault serves. Pass
+`labels` to `add_concept` / `add_concepts`, or set the keys directly with
+`patch_concept`:
+
+```jsonc
+add_concept({
+  slug: "domains/payment",
+  kind: "domain",
+  title: "결제",                       // stays the search/matching source
+  labels: { ko: "결제", en: "Payments" } // → display_ko / display_en
+})
+```
+
+The renderer resolves the screen locale at the insight boundary
+(`use-ontology-insight.ts`): `display_<screen locale>` wins, then `display`,
+then `title`. Nothing about search changes — matching is always against the
+full `title`, so a localized label never narrows what a query can find.
+
+**Fill every locale the vault serves.** A single-locale `labels` object comes
+back as an advisory warning (`labels only has "en" — add the other locale …`)
+because the missing side silently falls back to the raw `title` for those
+readers. The in-app composer enforces the same rule for humans: the field for
+the current screen language is required, and the other language is offered
+right beside it.
+
 ### Element slug — two valid patterns
 
 `kind: element` allows two natural slug styles, each with different ergonomics:

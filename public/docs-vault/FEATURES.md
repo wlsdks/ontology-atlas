@@ -142,8 +142,12 @@ CTA 는 OS 선택창 직행 대신 **사전 안내 시트**(`VaultOpenGuideSheet
 "쉬운 말로 보기 켜기" 1클릭 토글(톱니 속 '일반' 모드 승격)도 추가.
 빈 vault 를 연 직후에는 dead-end 문구 대신 **시작 체크리스트**
 (`VaultStartChecklist`, `src/widgets/topology-controls/`)가 선다 —
-프로젝트 → 도메인 → 관계 → AI 에이전트 연결(선택) 4단계, 실카운트에서
-완료 상태 파생, 웹에서 macOS 설치를 권하던 오안내 브랜치 제거. A brand-pill
+소유자 지시(2026-07-24 2차)로 **에이전트-우선 3단계**: AI 에이전트
+연결(heartbeat 실판정) → 첫 분석 맡기기(에이전트 붙여넣기용 지시
+복사) → 직접 만들기(선택, project kind 프리셋 컴포저). 웹에서 macOS
+설치를 권하던 오안내 브랜치 제거. 첫 방문에는 폴더 안내 시트가
+자동으로 먼저 열리고(1회, 건너뛰기 제공), 이 세션에서 직접 폴더를
+열면 AI 에이전트 연결 시트가 1회 자동으로 이어진다. A brand-pill
 `SAMPLE` badge and a bottom-right map readout ("N project · N domains ·
 Spine view · zoom in to reveal elements") stay visible for the whole static
 session regardless of whether the starter module was dismissed. The former
@@ -210,6 +214,11 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Source button** (`D`) → `DocsQuickDrawer` overlay with pinned/recent markdown source preview
 - **Shortcuts button** (`?`) → `ShortcutSheet`
 - **Settings gear** (`TopologyV2SettingsGear`, 2026-07-18) → compact anchored popover (228px), no scrim: 언어 (`LocaleSwitch`) · 테마 (`ThemeToggle`) · INDEX 기본 상태 (expanded/collapsed default, writes the same localStorage key the INDEX panel reads). Self-closes; owns its own Escape so the global topology Esc ladder doesn't double-fire. Desktop-only (1512/1920 scope)
+
+#### 어권별 노드 이름 (`display_<locale>`, 2026-07-24)
+- frontmatter `display_ko` / `display_en` → 화면 언어에 맞는 이름을 지도 라벨·INDEX·팝오버가 그린다. 폴백 사다리: `display_<screen locale>` → `display` → `title`. 검색/매칭은 항상 `title` 전체(라벨이 검색 범위를 좁히지 않는다)
+- 쓰기 3경로: MCP `add_concept`/`add_concepts` 의 `labels: { ko, en }` · `patch_concept` 의 직접 키 · 지도 컴포저의 어권별 이름 칸
+- 한쪽만 채우는 사고 방지 — MCP 는 단일 로케일 입력에 advisory warning, 사람 폼은 **현재 화면 언어 칸이 필수**이며 다른 언어만 채우면 저장을 막고 이유를 인라인으로 설명한다(모달 없음)
 
 #### Guided tour (`topology-tour-button`, 2026-07-23, `src/features/guided-tour`)
 - **Compass** tile, "?" 타일 바로 위 — 지도 화면 전담 의미 문해 투어. md+ 전용(`hidden md:flex`, 폰은 제외)

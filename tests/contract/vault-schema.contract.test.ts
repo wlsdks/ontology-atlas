@@ -8,11 +8,13 @@ import {
   buildFrontmatter as buildMcp,
   missingExpectedFields as missingMcp,
   folderForKind as folderMcp,
+  normalizeLocaleLabels as localeMcp,
 } from "../../mcp/src/schema.mjs";
 import {
   buildFrontmatter as buildCli,
   missingExpectedFields as missingCli,
   folderForKind as folderCli,
+  normalizeLocaleLabels as localeCli,
 } from "../../cli/src/lib/schema.mjs";
 import { KIND_EXPECTED_EXTRAS } from "@/shared/lib/validate-vault-document";
 
@@ -83,5 +85,30 @@ describe("vault kind schema contract — mcp & cli agree", () => {
       expect(KIND_EXPECTED_EXTRAS.domain).toEqual([]);
       expect(KIND_EXPECTED_EXTRAS.document).toEqual([]);
     });
+  });
+});
+
+// 어권별 표시 이름 (소유자 지시 2026-07-24) — MCP(agent)와 CLI(개발자)가
+// 같은 정규화를 해야 vault 에 같은 키가 남는다. 한쪽만 고치면 여기서 깨진다.
+describe("display_<locale> 정규화 2-way contract", () => {
+  const cases = [
+    { ko: "결제", en: "Payments" },
+    { ko: "  결제  ", en: "" },
+    { kor: "무시", en: "Payments" },
+    {},
+  ];
+  it.each(cases)("normalizeLocaleLabels matches across packages (%o)", (input) => {
+    expect(localeMcp(input)).toEqual(localeCli(input));
+  });
+
+  it("emits display_<locale> in both builders identically", () => {
+    const args = {
+      slug: "domains/payment",
+      kind: "domain",
+      title: "결제",
+      ...localeMcp({ ko: "결제", en: "Payments" }),
+    };
+    expect(buildMcp(args)).toEqual(buildCli(args));
+    expect(buildMcp(args)).toMatchObject({ display_ko: "결제", display_en: "Payments" });
   });
 });

@@ -215,6 +215,11 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Shortcuts button** (`?`) → `ShortcutSheet`
 - **Settings gear** (`TopologyV2SettingsGear`, 2026-07-18) → compact anchored popover (228px), no scrim: 언어 (`LocaleSwitch`) · 테마 (`ThemeToggle`) · INDEX 기본 상태 (expanded/collapsed default, writes the same localStorage key the INDEX panel reads). Self-closes; owns its own Escape so the global topology Esc ladder doesn't double-fire. Desktop-only (1512/1920 scope)
 
+#### 어권별 노드 이름 (`display_<locale>`, 2026-07-24)
+- frontmatter `display_ko` / `display_en` → 화면 언어에 맞는 이름을 지도 라벨·INDEX·팝오버가 그린다. 폴백 사다리: `display_<screen locale>` → `display` → `title`. 검색/매칭은 항상 `title` 전체(라벨이 검색 범위를 좁히지 않는다)
+- 쓰기 3경로: MCP `add_concept`/`add_concepts` 의 `labels: { ko, en }` · `patch_concept` 의 직접 키 · 지도 컴포저의 어권별 이름 칸
+- 한쪽만 채우는 사고 방지 — MCP 는 단일 로케일 입력에 advisory warning, 사람 폼은 **현재 화면 언어 칸이 필수**이며 다른 언어만 채우면 저장을 막고 이유를 인라인으로 설명한다(모달 없음)
+
 #### Guided tour (`topology-tour-button`, 2026-07-23, `src/features/guided-tour`)
 - **Compass** tile, "?" 타일 바로 위 — 지도 화면 전담 의미 문해 투어. md+ 전용(`hidden md:flex`, 폰은 제외)
 - **첫 방문 자동 시작 (2026-07-24 온보딩 라운드)** — 샘플 모드 정착 + `guided-tour:v1` 미기록이면 900ms 뒤 1회 자동 시작. skip 이 `skipped` 를 기록해 재방문엔 다시 안 뜨고, 로컬 vault 사용자에게는 발화하지 않는다. 발화 순간 모달(`aria-modal`)이 열려 있거나 문서 포커스가 나가 있거나 투어가 이미 열려 있으면 조용히 건너뛴다(`canAutoStartGuidedTour` — stacked-transient 가드). 수동 진입은 컴퍼스 타일 + 첫 실행 카드의 "2분 구경하기" CTA 두 경로
