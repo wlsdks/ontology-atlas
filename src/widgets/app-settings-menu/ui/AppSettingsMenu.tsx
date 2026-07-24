@@ -19,6 +19,7 @@ import { useLocalVault } from '@/features/docs-vault-local';
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
+import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
 import { cn } from '@/shared/lib/cn';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
@@ -183,7 +184,13 @@ export function AppSettingsMenu({
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
-  const panelRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useDialogFocusTrap<HTMLDivElement>({
+    open,
+    initialFocus: 'container',
+    // closePanel owns the return target so ⌘K can intentionally yield focus
+    // to the command palette without the modal cleanup stealing it back.
+    restoreFocus: false,
+  });
   const titleId = useId();
   const isDesktopRuntime = isTauriVaultRuntime();
 
@@ -249,14 +256,6 @@ export function AppSettingsMenu({
     setPrevOpen(open);
     if (!open) setView('root');
   }
-
-  useEffect(() => {
-    if (!open) return;
-    const timer = window.setTimeout(() => {
-      panelRef.current?.focus();
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [open]);
 
   useEffect(() => {
     if (!consumeSettingsLocaleFocus(locale, triggerVariant)) return undefined;
@@ -376,6 +375,7 @@ export function AppSettingsMenu({
         <div
           ref={panelRef}
           role="dialog"
+          aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
           className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[34rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[0_28px_90px_var(--color-shadow-a58)] sm:max-h-[min(46rem,calc(100dvh-3rem))]"

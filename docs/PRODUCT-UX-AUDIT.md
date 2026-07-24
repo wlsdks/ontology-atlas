@@ -45,6 +45,7 @@
 | A19 | 한국어/영어 동일 과업·동일 사실 | 인사이트 신선도 KO↔EN 동일 URL·탭·사실 왕복 검증 완료 |
 | A20 | 1100×800, 1512×917, 1920×1080, 2560×1440 + reduced motion | 4개 폭 충돌·잘림 0, 일반/축소 모션 설치 앱 정량 검증 완료 |
 | A21 | 설정 언어 전환 → 시트 닫힘 → 키보드 흐름 계속 | KO↔EN 동일 responsive 설정 호출점 포커스 복귀 검증 완료 |
+| A22 | 설정 시트 열기 → Tab/Shift+Tab 전체 순회 → Escape | 양방향 focus trap·원호출점 복귀 설치 앱 검증 완료 |
 
 ## 이슈 장부
 
@@ -823,10 +824,50 @@
   `summary 앱 설정 열기`, `Value: off`로 복귀했다.
 - PO·디자인 판정: **Build and verify**
 
+### UX-025 — 설정 modal의 마지막 Tab이 열린 시트 뒤 HTML 문서로 이탈
+
+- 심각도: `S4`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 지도 설정 열기 → 닫기부터 AI 에이전트 연결까지 Tab 순회 →
+  마지막에서 Tab → 첫 제어에서 Shift+Tab → Escape
+- 관측 현상: 설치 앱에서 10번째 focusable인 `AI 에이전트 연결`까지 이동한
+  뒤 Tab을 한 번 더 누르면 시트와 scrim은 열린 채 AX focused element가
+  배경 `HTML content`로 바뀌었다.
+- 사용자 문제: 화면은 modal이라고 말하지만 키보드는 차단된 배경으로
+  이동해, 현재 위치와 다음 Tab의 결과를 예측할 수 없다. 배경은 scrim 아래라
+  focus ring도 읽기 어렵다.
+- 사용자 순간: 언어·보기·INDEX·vault·AI 연결 설정을 포인터 없이 훑고
+  처음이나 마지막 제어로 되돌아가려는 순간이다.
+- 현재 대안: 포커스가 사라진 것처럼 보이면 Escape로 시트를 닫고 다시
+  열거나 Shift+Tab을 반복해 우연히 modal 안으로 돌아온다.
+- 온톨로지·에이전트 가치: 사람의 `blocking task` 경계와 자동화가 읽는
+  dialog 경계가 일치해야 설치 앱의 설정 흐름을 재현 가능한 계약으로
+  설명할 수 있다.
+- 최소화: 새 컴포넌트·카피·토큰·모션을 만들지 않는다. 이미 투어와 vault
+  안내가 쓰는 공용 `useDialogFocusTrap`을 현재 panel ref에 연결한다.
+  initial focus와 Tab/Shift+Tab만 공용 계약이 소유하고, 기존 `closePanel`이
+  호출점 복귀를 계속 소유한다. 그래서 ⌘K demotion은 palette에 포커스를
+  양보하는 기존 예외를 유지한다. panel은 `aria-modal="true"`를 함께 선언해
+  스크린리더의 virtual navigation에도 같은 blocking 경계를 전달한다.
+- 디자인 계약: 설정 시트는 `blocking task`, 내부 제어가 유일한
+  interaction layer다. background workspace는 보이되 focusable하지 않으며,
+  마지막→닫기와 닫기→마지막이 같은 sheet 안에서 순환한다.
+- 회귀 증거: AppSettingsMenu 통합 테스트가 `role=dialog` +
+  `aria-modal=true`, panel initial focus, forward/reverse wrap을 고정한다.
+  locale 연속성 회귀까지 포함한 집중
+  테스트는 `2 파일 · 27개`, TypeScript와 touched ESLint가 통과했다.
+- 설치 앱 증거: `/Applications/Ontology Atlas.app`에서 panel container
+  → `설정 닫기` → EN → KO → 개발 → 일반 → 펼침 → 접힘 → 바꾸기 →
+  문서함 → `AI 에이전트 연결` 순으로 Tab 이동했다. 다음 Tab은
+  `설정 닫기`, 그 상태의 Shift+Tab은 `AI 에이전트 연결`로 돌아왔다.
+  Escape 후에는 닫힌 `summary 앱 설정 열기`, `Value: off`에 복귀했다.
+- PO·디자인 판정: **Build and verify**
+
 ## 현재 PO·디자인 판정
 
 - A1/A2 수정 슬라이스: **Build and verify**
 - A20/A21 반응형·모션·포커스 연속성 슬라이스: **Build and verify**
+- A22 modal 키보드 경계 슬라이스: **Build and verify**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

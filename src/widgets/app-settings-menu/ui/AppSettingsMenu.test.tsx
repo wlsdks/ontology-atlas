@@ -168,6 +168,24 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     );
   });
 
+  it('keeps forward and reverse Tab inside the modal settings sheet', async () => {
+    openSheet();
+    const panel = screen.getByTestId('app-settings-popover');
+    const close = screen.getByLabelText('nav.settingsMenu.closeLabel');
+    const last = screen.getByTestId('app-settings-agent-drillin');
+
+    await waitFor(() => expect(panel).toHaveFocus());
+    expect(panel).toHaveAttribute('aria-modal', 'true');
+
+    last.focus();
+    fireEvent.keyDown(window, { key: 'Tab' });
+    expect(close).toHaveFocus();
+
+    close.focus();
+    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+    expect(last).toHaveFocus();
+  });
+
   it('returns focus to the equivalent settings trigger after a locale navigation remount', async () => {
     const first = render(<AppSettingsMenu mode="static" />);
     fireEvent.click(screen.getByTestId('app-settings-trigger'));

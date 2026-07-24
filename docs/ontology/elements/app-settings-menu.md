@@ -28,6 +28,14 @@ backdrop, and Escape return focus to the exact trigger; the AI drill-in consumes
 the first Escape to return to the root sheet. Command-K closes without returning
 focus so the command palette can take ownership.
 
+The panel uses the shared `useDialogFocusTrap` contract. Forward Tab wraps from
+the final AI-agent drill-in to Close; reverse Tab wraps from Close to the final
+control. `role="dialog"` and `aria-modal="true"` expose the same blocking
+boundary to assistive-technology virtual navigation. The hook owns initial
+focus and containment only. `AppSettingsMenu` keeps ownership of close-time
+focus restoration so Command-K can still yield focus to the palette instead of
+having modal cleanup steal it back.
+
 Locale navigation remounts the localized shell and intentionally closes the
 sheet. Before that transition, the menu records a short-lived focus intent with
 the target locale and exact responsive trigger variant. The matching
