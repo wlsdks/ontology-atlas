@@ -2265,7 +2265,10 @@
       "renamePrompt": "New slug (without extension):",
       "renameAlreadyExists": "Document already exists: {slug}",
       "renameFailed": "Rename failed: {message}",
-      "newDocTitlePrompt": "Title for the new document:"
+      "newDocTitlePrompt": "Title for the new document:",
+      "similarNodeWarning": "A similar node already exists — {title}",
+      "similarNodeOpen": "Open that node",
+      "similarNodeCreateAnyway": "Create new anyway"
     }
   },
   "topology": {
