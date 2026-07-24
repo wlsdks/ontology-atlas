@@ -63,6 +63,21 @@ const ORBIT_CLASS: Record<StudioGemKind, string> = {
   isA: "studio-orbit-gem--isa",
 };
 
+/** Empty socket keeps its relation's CUT (hole variant) so it reads as "the
+ *  slot a {kind} gem seats into" — the puzzle fit. */
+const HOLE_CLASS: Record<"dependsOn" | "relates", string> = {
+  dependsOn: "studio-gem--h-dep",
+  relates: "studio-gem--h-rel",
+};
+
+/** Stat-rail markers share the relation cuts; definition/evidence stay a dot. */
+const STATMARK_SHAPE: Record<string, string> = {
+  contains: "studio-statmark--con",
+  dependsOn: "studio-statmark--dep",
+  relates: "studio-statmark--rel",
+  isA: "studio-statmark--isa",
+};
+
 const capText = "text-caption uppercase tracking-[0.14em] font-bold";
 
 export interface StudioArenaProps {
@@ -180,12 +195,7 @@ export function StudioArena({
                 style={{ background: "linear-gradient(100deg,var(--color-overlay-2),var(--color-overlay-1))" }}
               >
                 <span
-                  className="h-2 w-2 flex-none rounded-[2px]"
-                  style={
-                    sv.done
-                      ? { background: "var(--studio-emerald)", boxShadow: "0 0 8px var(--studio-emerald-a20)" }
-                      : { background: "var(--studio-indigo-deep)", boxShadow: "0 0 8px var(--studio-indigo-a45)" }
-                  }
+                  className={cn("studio-statmark", STATMARK_SHAPE[axis.key], sv.done && "is-done")}
                 />
                 <span className="text-body text-[color:var(--color-text-secondary)]">{labels.axis[axis.key]}</span>
                 <span className="ml-auto text-body-lg font-semibold tabular-nums text-[color:var(--color-text-primary)]">
@@ -236,13 +246,18 @@ export function StudioArena({
                 return (
                   <span
                     key={i}
-                    className={cn("studio-orbit-gem", ORBIT_CLASS[orb.kind])}
-                    style={{ ["--a"]: `${angle}deg` } as CSSProperties}
+                    className={cn("studio-orbit-gem studio-anim-orbit-twinkle", ORBIT_CLASS[orb.kind])}
+                    style={
+                      {
+                        ["--a"]: `${angle}deg`,
+                        animationDelay: `${(i * 0.53) % 4.6}s`,
+                      } as CSSProperties
+                    }
                   />
                 );
               })}
             </div>
-            <div className="studio-hex" data-testid="studio-hex">
+            <div className="studio-hex studio-anim-hex-sheen" data-testid="studio-hex">
               <div className="relative z-[2] flex flex-col items-center gap-1.5 px-4 text-center">
                 <span
                   className="text-caption font-extrabold uppercase tracking-[0.16em]"

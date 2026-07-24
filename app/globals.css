@@ -2281,12 +2281,14 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   --studio-particle: var(--studio-indigo-bright);
 
   /* Item aura + rarity frame. */
-  --studio-aura: radial-gradient(
-    circle,
-    rgba(107, 120, 230, 0.34),
-    rgba(107, 120, 230, 0.09) 46%,
-    transparent 68%
-  );
+  --studio-aura: radial-gradient(circle, rgba(139, 150, 255, 0.16) 0%, transparent 34%),
+    radial-gradient(
+      circle,
+      rgba(107, 120, 230, 0.36) 0%,
+      rgba(107, 120, 230, 0.1) 46%,
+      transparent 68%
+    ),
+    radial-gradient(circle, rgba(232, 197, 121, 0.07) 0%, transparent 56%);
   --studio-hex-fill: linear-gradient(160deg, #20222e, #14151d 55%, #0f1017);
   --studio-hex-frame: linear-gradient(
     150deg,
@@ -2296,13 +2298,38 @@ body[data-no-tabbar] [data-tabbar="primary"] {
     var(--studio-gold) 100%
   );
 
-  /* Relation gems — colored per relation type. */
-  --studio-gem-dep: linear-gradient(155deg, #9aa4ff, #5a63d4 45%, #3a41a0);
-  --studio-gem-con: linear-gradient(155deg, #9aa0b4, #5c6076 45%, #3a3d4c);
-  --studio-gem-rel: linear-gradient(155deg, #a9b0c8, #6a7192 45%, #454b66);
-  --studio-gem-empty: radial-gradient(circle at 50% 40%, #0a0b12, #05060a);
-  --studio-gem-dep-glow: 0 0 16px var(--studio-indigo-a45);
-  --studio-gem-con-glow: 0 0 12px rgba(150, 160, 190, 0.3);
+  /* Relation gems — each relation TYPE gets a distinct CUT (clip-path) so the
+     sockets read like a puzzle: an is_a spire only seats in the spire slot, a
+     depends_on diamond only in the diamond slot, etc. Shape carries meaning
+     even at orbit/stat-marker scale where color alone would be illegible. */
+  --studio-clip-isa: polygon(50% 0%, 78% 26%, 66% 100%, 34% 100%, 22% 26%);
+  --studio-clip-con: polygon(16% 3%, 84% 3%, 98% 20%, 98% 97%, 2% 97%, 2% 20%);
+  --studio-clip-dep: polygon(50% 1%, 99% 50%, 50% 99%, 1% 50%);
+  --studio-clip-rel: polygon(28% 3%, 72% 3%, 98% 50%, 72% 97%, 28% 97%, 2% 50%);
+  --studio-clip-hex: polygon(50% 0, 100% 27%, 82% 100%, 18% 100%, 0 27%);
+
+  /* Faceted gem bodies — a bright rim → saturated core → deep floor so the cut
+     catches light like a real jewel. Per relation type, one hue family each. */
+  --studio-gem-dep: linear-gradient(150deg, #b9c1ff 0%, #7783ee 30%, #4f59c4 60%, #2f378f 100%);
+  --studio-gem-con: linear-gradient(150deg, #d4dbef 0%, #969db6 32%, #626981 62%, #383d50 100%);
+  --studio-gem-rel: linear-gradient(150deg, #cbc5f2 0%, #8d86c9 32%, #605a99 62%, #383462 100%);
+  --studio-gem-gold: linear-gradient(150deg, #ffeab4 0%, #eacd82 32%, #c39a4a 62%, #8a6a2c 100%);
+  --studio-gem-hole: radial-gradient(circle at 50% 36%, #0e101a 0%, #06070c 72%);
+  /* Outer halo colors (applied via drop-shadow so they follow the cut, not a box). */
+  --studio-gem-dep-glow: rgba(123, 131, 238, 0.6);
+  --studio-gem-con-glow: rgba(184, 193, 216, 0.42);
+  --studio-gem-rel-glow: rgba(150, 140, 214, 0.5);
+  --studio-gem-gold-glow: rgba(232, 197, 121, 0.52);
+  /* Shared gem lighting — top sheen, facet glint, seated depth. */
+  --studio-gem-sheen: linear-gradient(
+    158deg,
+    rgba(255, 255, 255, 0.52) 0%,
+    rgba(255, 255, 255, 0.14) 30%,
+    transparent 50%
+  );
+  --studio-gem-facet: linear-gradient(128deg, transparent 44%, rgba(255, 255, 255, 0.34) 49%, transparent 55%),
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.72) 0 5%, transparent 32%);
+  --studio-gem-depth: inset 0 -3px 6px rgba(0, 0, 0, 0.42), inset 0 2px 3px rgba(255, 255, 255, 0.26);
 
   /* Enhance button — glowing gradient + shimmer. */
   --studio-enhance-bg: linear-gradient(
@@ -2354,14 +2381,87 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 }
 @keyframes studio-sweep {
   0% {
-    left: -60%;
+    left: -65%;
   }
-  55% {
-    left: 130%;
+  48% {
+    left: 135%;
   }
   100% {
-    left: 130%;
+    left: 135%;
   }
+}
+/* Hexagon sheen — a metallic glint sweeps once, then a long calm pause (mostly
+   static; the visible motion is a brief occasional "catch of light"). */
+@keyframes studio-hex-sheen {
+  0%,
+  62% {
+    background-position: 0 0, -80% 0;
+  }
+  80%,
+  100% {
+    background-position: 0 0, 180% 0;
+  }
+}
+/* is_a empty gold slot — a soft "fill me" breathe: rim glow + a hair of lift. */
+@keyframes studio-isa-breathe {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px var(--studio-gold-a20));
+    transform: translateY(0);
+  }
+  50% {
+    filter: drop-shadow(0 0 15px var(--studio-gold-a45));
+    transform: translateY(-1.5px);
+  }
+}
+/* Orbit gem twinkle — organic, phase-offset per gem via animation-delay. The
+   translate preserves the inline orbit placement transform via a wrapper-free
+   opacity/scale-only twinkle so the ring stays put. */
+@keyframes studio-orbit-twinkle {
+  0%,
+  100% {
+    opacity: 0.82;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+/* S2 triggers (defined now, wired when the write path lands). Both match the
+   `studio-anim-*` marker so the reduced-motion guard already freezes them. */
+@keyframes studio-gem-snap {
+  0% {
+    transform: translateY(-14px) scale(1.35);
+    opacity: 0;
+  }
+  55% {
+    transform: translateY(0) scale(0.9);
+    opacity: 1;
+  }
+  75% {
+    transform: translateY(0) scale(1.08);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+.studio-anim-snap {
+  animation: studio-gem-snap 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes studio-levelup-burst {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+.studio-anim-burst {
+  animation: studio-levelup-burst 0.7s ease-out both;
 }
 
 /* reduced-motion: freeze all studio motion (rays, particles, bob, aura pulse,
@@ -2434,75 +2534,129 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   width: 196px;
   height: 216px;
   clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-  background: var(--studio-hex-fill);
+  background: var(--studio-hex-fill),
+    radial-gradient(120% 90% at 50% 8%, rgba(139, 150, 255, 0.12), transparent 46%);
+  background-blend-mode: normal;
   display: grid;
   place-items: center;
-  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: 0 26px 64px rgba(0, 0, 0, 0.62), inset 0 -18px 40px rgba(0, 0, 0, 0.55),
+    inset 0 2px 0 rgba(255, 255, 255, 0.08);
 }
+/* Metallic beveled frame — masked ring of the rarity gradient. */
 .studio-hex::before {
   content: "";
   position: absolute;
   inset: 0;
   clip-path: inherit;
-  padding: 2px;
+  padding: 2.5px;
   background: var(--studio-hex-frame);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
+  filter: drop-shadow(0 0 4px var(--studio-indigo-a30));
 }
+/* Top glass highlight + a slow occasional sheen glint that sweeps the facet. */
 .studio-hex::after {
   content: "";
   position: absolute;
   inset: 0;
   clip-path: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 40%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 38%),
+    linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.16) 48%, transparent 56%);
+  background-size: 100% 100%, 260% 100%;
+  background-position: 0 0, -80% 0;
+  background-repeat: no-repeat;
   pointer-events: none;
 }
-/* Gem shape (socket + orbit share it). */
+.studio-anim-hex-sheen::after {
+  animation: studio-hex-sheen 7.5s ease-in-out infinite;
+}
+/* Gem — a cut jewel. Base carries the lighting; the cut (clip-path), body hue
+   and halo come from the per-relation-type modifier. Socket + orbit + stat
+   marker all reuse the same `--studio-clip-*` cuts so shape == relation type. */
 .studio-gem {
   position: relative;
-  clip-path: polygon(50% 0, 100% 27%, 82% 100%, 18% 100%, 0 27%);
+  clip-path: var(--gem-clip, var(--studio-clip-hex));
+  background: var(--gem-body, var(--studio-gem-con));
+  box-shadow: var(--studio-gem-depth);
+  filter: var(--gem-filter, drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5)));
   display: grid;
   place-items: center;
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 0.24s ease;
 }
+/* Top sheen — the polished face catching light. */
 .studio-gem::before {
   content: "";
   position: absolute;
   inset: 0;
   clip-path: inherit;
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.28), transparent 42%);
+  background: var(--studio-gem-sheen);
+  pointer-events: none;
+}
+/* Facet glint + sparkle dot — the cut's specular. */
+.studio-gem::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: inherit;
+  background: var(--gem-after, var(--studio-gem-facet));
+  pointer-events: none;
 }
 .studio-gem--dep {
-  background: var(--studio-gem-dep);
-  box-shadow: var(--studio-gem-dep-glow), inset 0 -3px 8px rgba(0, 0, 0, 0.35);
+  --gem-clip: var(--studio-clip-dep);
+  --gem-body: var(--studio-gem-dep);
+  --gem-filter: drop-shadow(0 0 7px var(--studio-gem-dep-glow)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
   color: #fff;
 }
 .studio-gem--con {
-  background: var(--studio-gem-con);
-  box-shadow: var(--studio-gem-con-glow), inset 0 -3px 8px rgba(0, 0, 0, 0.4);
+  --gem-clip: var(--studio-clip-con);
+  --gem-body: var(--studio-gem-con);
+  --gem-filter: drop-shadow(0 0 7px var(--studio-gem-con-glow)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
   color: #fff;
 }
 .studio-gem--rel {
-  background: var(--studio-gem-rel);
-  box-shadow: 0 0 10px rgba(150, 160, 190, 0.25), inset 0 -3px 8px rgba(0, 0, 0, 0.4);
+  --gem-clip: var(--studio-clip-rel);
+  --gem-body: var(--studio-gem-rel);
+  --gem-filter: drop-shadow(0 0 7px var(--studio-gem-rel-glow)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
   color: #fff;
 }
-.studio-gem--empty {
-  background: var(--studio-gem-empty);
-  border: 1px dashed var(--studio-indigo-a45);
-  color: var(--studio-indigo-bright);
-  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.7);
+/* Empty sockets keep their relation's CUT but are a dark, unlit hole — the
+   puzzle "slot" waiting for a matching gem. Faint kind-tint invites the fill. */
+.studio-gem--hole {
+  --gem-body: var(--studio-gem-hole);
+  --gem-after: none;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.78), inset 0 1px 1px rgba(255, 255, 255, 0.05);
 }
+.studio-gem--hole::before {
+  background: linear-gradient(158deg, rgba(255, 255, 255, 0.07), transparent 42%);
+}
+.studio-gem--h-dep {
+  --gem-clip: var(--studio-clip-dep);
+  --gem-filter: drop-shadow(0 0 6px var(--studio-indigo-a20));
+  color: var(--studio-indigo-bright);
+}
+.studio-gem--h-rel {
+  --gem-clip: var(--studio-clip-rel);
+  --gem-filter: drop-shadow(0 0 6px var(--studio-indigo-a20));
+  color: var(--studio-indigo-bright);
+}
+/* is_a — always-empty GOLD spire slot (the new axis). Rises, so its cut points
+   up; it breathes a "fill me" invite. */
 .studio-gem--isa {
-  background: var(--studio-gem-empty);
-  border: 1px dashed var(--studio-gold-a45);
+  --gem-clip: var(--studio-clip-isa);
+  --gem-body: radial-gradient(circle at 50% 32%, #16120a 0%, #070604 74%);
+  --gem-after: none;
+  --gem-filter: drop-shadow(0 0 8px var(--studio-gold-a20));
   color: var(--studio-gold-bright);
-  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.7), 0 0 16px var(--studio-gold-a20);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.72), inset 0 1px 1px rgba(255, 255, 255, 0.05);
 }
 .studio-anim-isa-pulse {
-  animation: studio-aura-pulse 2.4s ease-in-out infinite;
+  animation: studio-isa-breathe 2.6s ease-in-out infinite;
 }
-/* Orbiting gems around the hexagon. `--a` = angle set inline per gem. */
+/* Orbiting gems around the hexagon — the equipped relations. `--a` = angle set
+   inline per gem. Each carries its relation-type cut + faceted body, and a
+   gentle staggered twinkle so the ring feels alive, not printed. */
 .studio-orbit {
   position: absolute;
   inset: 0;
@@ -2511,29 +2665,107 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 }
 .studio-orbit-gem {
   position: absolute;
-  width: 20px;
-  height: 22px;
-  clip-path: polygon(50% 0, 100% 27%, 82% 100%, 18% 100%, 0 27%);
+  width: 21px;
+  height: 23px;
+  clip-path: var(--gem-clip, var(--studio-clip-hex));
+  background: var(--gem-body, var(--studio-gem-con));
+  filter: var(--gem-filter, drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)));
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%) rotate(var(--a)) translateY(-128px) rotate(calc(-1 * var(--a)));
 }
+.studio-orbit-gem::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: inherit;
+  background: var(--studio-gem-sheen);
+}
 .studio-orbit-gem--dep {
-  background: linear-gradient(155deg, #9aa4ff, var(--studio-indigo-deep));
-  box-shadow: 0 0 12px var(--studio-indigo-a70);
+  --gem-clip: var(--studio-clip-dep);
+  --gem-body: var(--studio-gem-dep);
+  --gem-filter: drop-shadow(0 0 8px var(--studio-gem-dep-glow));
 }
 .studio-orbit-gem--con {
-  background: linear-gradient(155deg, #9aa0b4, #4a4d5e);
-  box-shadow: 0 0 9px rgba(150, 160, 190, 0.5);
+  --gem-clip: var(--studio-clip-con);
+  --gem-body: var(--studio-gem-con);
+  --gem-filter: drop-shadow(0 0 6px var(--studio-gem-con-glow));
 }
 .studio-orbit-gem--rel {
-  background: linear-gradient(155deg, #a9b0c8, #454b66);
-  box-shadow: 0 0 9px rgba(150, 160, 190, 0.4);
+  --gem-clip: var(--studio-clip-rel);
+  --gem-body: var(--studio-gem-rel);
+  --gem-filter: drop-shadow(0 0 6px var(--studio-gem-rel-glow));
 }
 .studio-orbit-gem--isa {
-  background: #0a0b12;
-  border: 1px dashed var(--studio-gold-a45);
-  box-shadow: 0 0 10px var(--studio-gold-a20);
+  --gem-clip: var(--studio-clip-isa);
+  --gem-body: radial-gradient(circle at 50% 32%, #16120a, #070604);
+  --gem-filter: drop-shadow(0 0 9px var(--studio-gold-a20));
+}
+.studio-anim-orbit-twinkle {
+  animation: studio-orbit-twinkle 4.6s ease-in-out infinite;
+}
+/* Stat markers (left rail) — same cuts at small scale so a glance reads the
+   axis type. `.is-done` recolors to the success hue but keeps the cut. */
+.studio-statmark {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  border-radius: 3px;
+  background: var(--studio-indigo-deep);
+  filter: drop-shadow(0 0 5px var(--studio-indigo-a45));
+}
+.studio-statmark.is-done {
+  background: var(--studio-emerald);
+  filter: drop-shadow(0 0 5px var(--studio-emerald-a20));
+}
+.studio-statmark--con {
+  --gem-clip: var(--studio-clip-con);
+  clip-path: var(--gem-clip);
+  border-radius: 0;
+}
+.studio-statmark--dep {
+  --gem-clip: var(--studio-clip-dep);
+  clip-path: var(--gem-clip);
+  border-radius: 0;
+}
+.studio-statmark--rel {
+  --gem-clip: var(--studio-clip-rel);
+  clip-path: var(--gem-clip);
+  border-radius: 0;
+}
+.studio-statmark--isa {
+  --gem-clip: var(--studio-clip-isa);
+  clip-path: var(--gem-clip);
+  border-radius: 0;
+}
+/* Socket rows — hover lifts + brightens the seated gem (Apple direct-touch:
+   the object responds to the pointer). Empty slots invite a bit more. */
+.studio-socket {
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+.studio-socket .studio-gem {
+  will-change: transform;
+}
+.studio-socket:hover .studio-gem {
+  transform: translateY(-2px) scale(1.05);
+  filter: var(--gem-filter-hover, var(--gem-filter));
+}
+.studio-socket:hover.studio-socket--dep .studio-gem,
+.studio-socket:hover .studio-gem--dep {
+  --gem-filter-hover: drop-shadow(0 0 12px var(--studio-gem-dep-glow)) drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5));
+}
+.studio-socket:hover .studio-gem--con {
+  --gem-filter-hover: drop-shadow(0 0 12px var(--studio-gem-con-glow)) drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5));
+}
+.studio-socket:hover .studio-gem--rel {
+  --gem-filter-hover: drop-shadow(0 0 12px var(--studio-gem-rel-glow)) drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5));
+}
+.studio-socket:hover .studio-gem--h-dep,
+.studio-socket:hover .studio-gem--h-rel {
+  --gem-filter-hover: drop-shadow(0 0 10px var(--studio-indigo-a45));
+}
+.studio-socket:hover .studio-gem--isa {
+  --gem-filter-hover: drop-shadow(0 0 14px var(--studio-gold-a45));
 }
 /* Tier pips. */
 .studio-pip {
@@ -2564,9 +2796,17 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   content: "";
   position: absolute;
   top: 0;
-  left: -60%;
-  width: 45%;
+  left: -65%;
+  width: 55%;
   height: 100%;
-  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  animation: studio-sweep 2.6s ease-in-out infinite;
+  transform: skewX(-16deg);
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255, 255, 255, 0.16) 30%,
+    rgba(255, 255, 255, 0.42) 50%,
+    rgba(255, 255, 255, 0.16) 70%,
+    transparent
+  );
+  animation: studio-sweep 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
