@@ -83,102 +83,71 @@
     "projects": "프로젝트"
   },
   "ontologyStudio": {
-    "mode": "강화",
-    "close": "닫기 Esc",
-    "statsTitle": "능력치",
-    "socketsTitle": "강화 슬롯",
-    "axis": {
-      "definition": "정의 · 경계",
-      "evidence": "근거 코드",
-      "contains": "담는 것",
-      "dependsOn": "기대는 곳",
-      "relates": "비슷한 것",
-      "isA": "상위 개념"
+    "searchPlaceholder": "무대에 올릴 노드…",
+    "exit": "그만하기",
+    "moreRelations": "다른 관계",
+    "flowEyebrow": "완성도",
+    "flowCount": "{total}방향 중 {filled} 채움",
+    "flowHint": {
+      "start": "· 여기서 시작해요",
+      "half": "· 반쯤 왔어요",
+      "almost": "· 거의 다 됐어요",
+      "done": "· 다 채웠어요"
     },
-    "statConfirmed": "확정",
-    "statMissing": "미정",
-    "level": "강화 Lv.{from} → Lv.{to}",
-    "levelMax": "강화 Lv.{level} · 최대",
-    "gaugeLead": "강화도",
-    "gaugeTrail": "· 상위 개념을 넣으면",
-    "gaugeMax": "강화도 {percent}% · 모든 축 완성",
-    "isaTag": "is-a · 새 축",
-    "isaPrompt": "\"{title}은(는) 무엇의 한 종류인가?\"",
-    "relationMeta": "관계 {count}",
-    "relatesPick": "선택",
-    "relatesEmptyHint": "대체·보완 관계면 연결",
-    "add": "＋ 넣기",
-    "readOnlyNote": "읽기 전용 · 이번 슬라이스",
-    "enhance": "강화하기",
-    "enhanceSub": "직접 적용 · 내 폴더에",
-    "agent": "에이전트에게 맡기기",
-    "mapAria": "{title} 노드와 직접 연결된 이웃을 보여주는 지도 — 키보드 탐색은 지도 오른쪽 목록을 사용하세요.",
-    "nextSlice": "쓰기는 다음 슬라이스에서 열립니다 — 지금은 읽기 전용이에요.",
-    "emptyTitle": "강화할 노드가 아직 없어요",
-    "emptyBody": "vault 를 선택하거나 예시 데이터를 열면 강화할 노드가 나타납니다.",
+    "framePrompt": "{name} 가 무엇인지, 주변 노드와 이어 완성해요",
+    "guideBadge": "여기부터 채워요",
+    "bottomProgress": "{total}개 중 {filled}개 채웠어요",
+    "bottomRemain": "· {remain}군데 남음",
+    "bottomDone": "· 다 채웠어요",
+    "save": "확인하고 저장",
+    "saveHint": "아직 다 안 채워도 지금 저장할 수 있어요",
+    "foldMore": "더 보기",
+    "question": {
+      "isA": "이 노드는 무엇의 한 종류인가요?",
+      "dependsOn": "이 노드가 기대는 것은?",
+      "contains": "무엇을 담고 있나요?",
+      "relates": "비슷하거나 대체할 수 있는 것은?"
+    },
+    "laneLabel": {
+      "isA": "무엇의 한 종류",
+      "dependsOn": "이 노드가 기대는 것",
+      "contains": "이 노드가 품고 있는 것",
+      "relates": "비슷하거나 대체할 수 있는 것"
+    },
+    "emptyHint": {
+      "isA": "상위 개념을 하나 고르면 완성돼요",
+      "dependsOn": "기대는 노드를 이어요",
+      "contains": "이 노드가 품고 있는 것",
+      "relates": "대체·보완 관계면 이어요"
+    },
+    "picker": {
+      "sub": "골라서 바로 연결",
+      "placeholder": "기존 노드 검색…",
+      "empty": "맞는 노드가 없어요",
+      "createNew": "찾는 게 없어요 · 새로 만들기",
+      "similar": "혹시 이미 있는 ‘{title}’ 와 같은 건가요?",
+      "similarAccept": "네, 이걸로 연결 →"
+    },
+    "fillSaved": "‘{title}’ 를 이어 저장했어요.",
+    "fillCopied": "MCP 명령을 복사했어요 — 에이전트에 붙여넣어 실행하세요.",
+    "fillCopyFailed": "복사가 막혔어요 — 다시 시도해 주세요.",
+    "fillFailed": "저장하지 못했어요 — {message}",
+    "autoSaved": "이미 저장돼 있어요 — 소켓을 채우면 그 자리에서 저장돼요.",
+    "empty": {
+      "title": "무대에 올릴 노드가 아직 없어요",
+      "body": "vault 를 선택하거나 예시 데이터를 열면 노드가 나타납니다.",
+      "create": "＋ 새 노드 만들기"
+    },
+    "kindLabel": "종류",
     "create": {
-      "entry": "＋ 노드 만들기",
-      "mode": "＋ 만들기",
-      "title": "새 노드 만들기",
-      "close": "닫기 Esc",
-      "kindLabel": "종류",
-      "nameLabel": "이름",
+      "framePrompt": "새 노드가 무엇인지 정하고, 주변 노드와 이어 완성해요",
       "namePlaceholder": "새 노드 이름 — 예: 결제 취소",
-      "domainLabel": "소속 도메인",
       "domainNone": "도메인 없음",
-      "definitionLabel": "정의 · 한 줄",
-      "definitionPlaceholder": "이 노드가 하는 일을 한 줄로 — 정의·경계가 중복을 막는 핵심이에요.",
-      "gaugeLabel": "완성도",
-      "gaugeNote": "6가지 중 {filled}가지 채움 — 오른쪽에서 버튼으로 하나씩 이어요.",
-      "assembleTitle": "관계 조립",
-      "assembleSubtitle": "이 노드가 어디에 붙는지 · 버튼으로 하나씩 이어요",
-      "progress": "{filled}/{total} 채움",
-      "relation": {
-        "isA": {
-          "title": "상위 개념",
-          "type": "is-a",
-          "hint": "\"이 노드는 무엇의 한 종류인가?\" — 상위를 하나 고르면 축이 생겨요",
-          "add": "상위 개념 잇기"
-        },
-        "dependsOn": {
-          "title": "기대는 곳",
-          "type": "depends",
-          "hint": "이 노드가 동작하려고 기대는 다른 노드",
-          "add": "연결 추가"
-        },
-        "contains": {
-          "title": "담는 것",
-          "type": "contains",
-          "hint": "이 노드를 구현하는 요소(파일·스키마·API)",
-          "add": "요소 담기"
-        },
-        "relates": {
-          "title": "비슷한 것",
-          "type": "relates",
-          "hint": "대체·보완 관계라면 이어요",
-          "add": "연결 추가"
-        }
-      },
-      "isaTag": "새 축",
-      "optionalTag": "선택",
-      "emptyCard": "아직 없음 — 버튼으로 이어요",
-      "pickerPlaceholder": "기존 노드 검색…",
-      "pickerEmpty": "맞는 노드가 없어요",
-      "pickerHint": "클릭해서 붙이기",
-      "previewLabel": "지금까지\n이런 모양",
-      "previewGhostIsa": "＋ 관계를 이으면 여기 나타나요",
-      "similarMessage": "비슷한 노드가 이미 있어요 — {title} ({kind} · {domain})",
+      "definitionPlaceholder": "이 노드가 하는 일을 한 줄로 — 정의·경계가 중복을 막아요.",
+      "similar": "비슷한 노드가 이미 있어요 — {title} ({kind})",
       "similarOpen": "그 노드 열기",
-      "similarCreateAnyway": "그래도 새로 만들기",
-      "ledgerCount": "가지 만들어짐",
-      "pendingNode": "노드 생성 ({kind})",
-      "pendingRelation": "{relation} → {target}",
-      "applyDirect": "직접 적용",
-      "applyDirectSub": "내 폴더에 쓰기",
-      "applyDirectDisabled": "vault 를 열어야 써요",
-      "applyAgent": "에이전트에게 맡기기",
-      "applyAgentSub": "MCP 명령 복사",
-      "appliedDirect": "\"{title}\" 노드를 내 폴더에 만들었어요.",
+      "similarAnyway": "그래도 새로 만들기",
+      "appliedDirect": "‘{title}’ 노드를 내 폴더에 만들었어요.",
       "applyFailed": "만들지 못했어요 — {message}",
       "copiedAgent": "MCP 명령을 복사했어요 — 에이전트에 붙여넣어 실행하세요.",
       "copyFailed": "복사가 막혔어요 — 다시 시도해 주세요."
@@ -504,7 +473,8 @@
     "implements": "구현",
     "uses": "사용",
     "describes": "설명",
-    "related_to": "연관"
+    "related_to": "연관",
+    "is_a": "상위 개념"
   },
   "edgeTypesPlain": {
     "contains": "담는 것",
@@ -513,7 +483,8 @@
     "implements": "구현한 것",
     "uses": "쓰는 것",
     "describes": "근거",
-    "related_to": "관련 있음"
+    "related_to": "관련 있음",
+    "is_a": "무엇의 한 종류인지"
   },
   "topologyWidgets": {
     "controls": {

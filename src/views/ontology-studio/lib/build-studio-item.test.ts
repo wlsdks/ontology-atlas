@@ -6,80 +6,103 @@ import {
   type StudioSourceNode,
 } from "./build-studio-item";
 
-// A small graph modelled on the mockup: a "결제 승인" capability inside the
-// "결제" domain, containing one element (a code path → evidence), depending on
-// two capabilities, and related to one.
+// A small graph modelled on the compass mockup: a "결제 승인" capability inside
+// the "결제" domain, containing one element, depending on two capabilities, and
+// related to one. No `is_a` edge — so the UP bearing is the empty hero socket.
 const NODES: StudioSourceNode[] = [
   { id: "domain:payment", title: "결제 도메인", kind: "domain" },
-  { id: "cap:pay-approve", title: "결제 승인", display: "결제 승인", kind: "capability", summary: "결제 승인 정의" },
-  { id: "cap:stock-check", title: "재고 확인", kind: "capability" },
-  { id: "cap:order-create", title: "주문 생성", kind: "capability" },
-  { id: "cap:refund", title: "환불", kind: "capability" },
-  { id: "el:gateway", title: "src/payment/gateway.ts", kind: "element" },
+  {
+    id: "capability:pay-approve",
+    title: "결제 승인",
+    display: "결제 승인",
+    kind: "capability",
+    summary: "결제 승인 정의",
+    evidenceIds: ["capabilities/pay-approve"],
+  },
+  { id: "capability:stock-check", title: "재고 확인", kind: "capability" },
+  { id: "capability:order-create", title: "주문 생성", kind: "capability" },
+  { id: "capability:refund", title: "환불", kind: "capability" },
+  { id: "element:gateway", title: "src/payment/gateway.ts", kind: "element" },
+  { id: "capability:transaction", title: "거래", kind: "capability" },
 ];
 
 const EDGES: StudioSourceEdge[] = [
-  { from: "domain:payment", to: "cap:pay-approve", type: "contains" },
-  { from: "cap:pay-approve", to: "el:gateway", type: "contains" },
-  { from: "cap:pay-approve", to: "cap:stock-check", type: "depends_on" },
-  { from: "cap:pay-approve", to: "cap:order-create", type: "depends_on" },
-  { from: "cap:pay-approve", to: "cap:refund", type: "related_to" },
+  { from: "domain:payment", to: "capability:pay-approve", type: "contains" },
+  { from: "capability:pay-approve", to: "element:gateway", type: "contains" },
+  { from: "capability:pay-approve", to: "capability:stock-check", type: "depends_on" },
+  { from: "capability:pay-approve", to: "capability:order-create", type: "depends_on" },
+  { from: "capability:pay-approve", to: "capability:refund", type: "related_to" },
 ];
 
-describe("buildStudioItem", () => {
+describe("buildStudioItem — compass bearings", () => {
   it("returns null for an unknown node id", () => {
-    expect(buildStudioItem("cap:nope", NODES, EDGES)).toBeNull();
+    expect(buildStudioItem("capability:nope", NODES, EDGES)).toBeNull();
   });
 
-  it("renders the node as the hexagon subject with kind + parent domain", () => {
-    const item = buildStudioItem("cap:pay-approve", NODES, EDGES)!;
+  it("renders the focal node with kind, parent domain, definition, and write slug", () => {
+    const item = buildStudioItem("capability:pay-approve", NODES, EDGES)!;
     expect(item.node.label).toBe("결제 승인");
     expect(item.node.kind).toBe("capability");
     expect(item.node.domainLabel).toBe("결제 도메인");
+    expect(item.node.definition).toBe("결제 승인 정의");
+    // write target = the node's source doc slug (evidenceIds[0]).
+    expect(item.node.sourceSlug).toBe("capabilities/pay-approve");
   });
 
-  it("maps real relations to typed gem sockets with neighbor labels", () => {
-    const item = buildStudioItem("cap:pay-approve", NODES, EDGES)!;
-    const byKind = Object.fromEntries(item.gems.map((g) => [g.kind, g]));
+  it("groups real relations onto the four fixed bearings", () => {
+    const item = buildStudioItem("capability:pay-approve", NODES, EDGES)!;
 
-    // is_a is always the first, always-empty gold socket (the new axis).
-    expect(item.gems[0].kind).toBe("isA");
-    expect(byKind.isA.filled).toBe(false);
+    // RIGHT = depends_on (2), folder-prefixed refs computed for writing.
+    expect(item.bearings.right.filled).toBe(true);
+    expect(item.bearings.right.frontmatterKey).toBe("dependencies");
+    expect(item.bearings.right.neighbors.map((n) => n.title)).toEqual(["재고 확인", "주문 생성"]);
+    expect(item.bearings.right.neighbors[0].ref).toBe("capabilities/stock-check");
 
-    expect(byKind.dependsOn.filled).toBe(true);
-    expect(byKind.dependsOn.count).toBe(2);
-    expect(byKind.dependsOn.neighbors).toEqual(["재고 확인", "주문 생성"]);
+    // DOWN = contains (1 element).
+    expect(item.bearings.down.filled).toBe(true);
+    expect(item.bearings.down.frontmatterKey).toBe("contains");
+    expect(item.bearings.down.neighbors.map((n) => n.title)).toEqual(["src/payment/gateway.ts"]);
 
-    expect(byKind.contains.filled).toBe(true);
-    expect(byKind.contains.neighbors).toEqual(["src/payment/gateway.ts"]);
-
-    expect(byKind.relates.filled).toBe(true);
-    expect(byKind.relates.neighbors).toEqual(["환불"]);
+    // LEFT = related_to (1).
+    expect(item.bearings.left.filled).toBe(true);
+    expect(item.bearings.left.frontmatterKey).toBe("relates");
+    expect(item.bearings.left.neighbors.map((n) => n.title)).toEqual(["환불"]);
   });
 
-  it("derives stats: definition present, code evidence, relation counts", () => {
-    const item = buildStudioItem("cap:pay-approve", NODES, EDGES)!;
-    expect(item.stats.hasDefinition).toBe(true);
-    expect(item.stats.evidenceCount).toBe(1); // el:gateway is a code path
-    expect(item.stats.containsCount).toBe(1);
-    expect(item.stats.dependsOnCount).toBe(2);
-    expect(item.stats.relatesCount).toBe(1);
-    expect(item.stats.hasIsA).toBe(false);
+  it("leaves UP (is_a) empty and marks it the single recommended guided socket", () => {
+    const item = buildStudioItem("capability:pay-approve", NODES, EDGES)!;
+    expect(item.bearings.up.filled).toBe(false);
+    expect(item.bearings.up.frontmatterKey).toBe("broader");
+    expect(item.bearings.up.recommended).toBe(true);
+    // Only one recommended socket across the four bearings.
+    expect(item.order.filter((b) => b.recommended)).toHaveLength(1);
   });
 
-  it("scores the item and previews the is_a gain (80% → 100% here)", () => {
-    const item = buildStudioItem("cap:pay-approve", NODES, EDGES)!;
-    // definition + evidence + contains + depends + relates = 80, is_a missing.
-    expect(item.score.percent).toBe(80);
-    expect(item.projectedScore.percent).toBe(100);
-    expect(item.projectedScore.percent).toBeGreaterThan(item.score.percent);
+  it("counts filled bearings (3 of 4 here — up empty)", () => {
+    const item = buildStudioItem("capability:pay-approve", NODES, EDGES)!;
+    expect(item.filledBearings).toBe(3);
+    expect(item.totalBearings).toBe(4);
   });
 
-  it("always rides an empty gold is_a orb on the ring", () => {
-    const item = buildStudioItem("cap:pay-approve", NODES, EDGES)!;
-    const isAOrb = item.orbits.filter((o) => o.kind === "isA");
-    expect(isAOrb).toHaveLength(1);
-    expect(isAOrb[0].filled).toBe(false);
+  it("marks an empty DOWN (contains) bearing as expected-but-missing (amber)", () => {
+    const item = buildStudioItem("capability:transaction", NODES, EDGES)!;
+    expect(item.bearings.down.filled).toBe(false);
+    expect(item.bearings.down.expected).toBe(true);
+    // UP is still the recommended one (priority up > down).
+    expect(item.bearings.up.recommended).toBe(true);
+    expect(item.bearings.down.recommended).toBe(false);
+  });
+
+  it("renders a filled UP bearing when a broader-derived is_a edge exists", () => {
+    const edges: StudioSourceEdge[] = [
+      ...EDGES,
+      { from: "capability:pay-approve", to: "capability:transaction", type: "is_a" },
+    ];
+    const item = buildStudioItem("capability:pay-approve", NODES, edges)!;
+    expect(item.bearings.up.filled).toBe(true);
+    expect(item.bearings.up.neighbors.map((n) => n.title)).toEqual(["거래"]);
+    expect(item.bearings.up.recommended).toBe(false);
+    expect(item.filledBearings).toBe(4);
   });
 });
 
@@ -89,16 +112,15 @@ describe("selectDefaultStudioNodeId", () => {
   });
 
   it("prefers the most-connected capability", () => {
-    // cap:pay-approve has the most edges among capabilities.
-    expect(selectDefaultStudioNodeId(NODES, EDGES)).toBe("cap:pay-approve");
+    expect(selectDefaultStudioNodeId(NODES, EDGES)).toBe("capability:pay-approve");
   });
 
   it("falls back to a non-container node when no capability exists", () => {
     const nodes: StudioSourceNode[] = [
       { id: "domain:x", title: "X", kind: "domain" },
-      { id: "el:y", title: "y.ts", kind: "element" },
+      { id: "element:y", title: "y.ts", kind: "element" },
     ];
-    const edges: StudioSourceEdge[] = [{ from: "domain:x", to: "el:y", type: "contains" }];
-    expect(selectDefaultStudioNodeId(nodes, edges)).toBe("el:y");
+    const edges: StudioSourceEdge[] = [{ from: "domain:x", to: "element:y", type: "contains" }];
+    expect(selectDefaultStudioNodeId(nodes, edges)).toBe("element:y");
   });
 });
