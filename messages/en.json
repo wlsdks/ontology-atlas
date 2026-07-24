@@ -1521,6 +1521,9 @@
         "ephemeralStatusEmpty": "Name needed",
         "ephemeralSaveConflict": "{path} already exists. Rename this draft to save a new concept.",
         "ephemeralUseSuggestedName": "Rename to {title} → {path}",
+        "similarNodeWarning": "A similar node already exists — {title}",
+        "similarNodeOpen": "Open that node",
+        "similarNodeCreateAnyway": "Create new anyway",
         "ephemeralFooterEmpty": "Enter a name to save. (Press Enter to save instantly)",
         "ephemeralFooterConflict": "A file with this path already exists. Rename before saving.",
         "ephemeralFooterReady": "Press Enter to save — written as a markdown (.md) file.",
@@ -2262,7 +2265,10 @@
       "renamePrompt": "New slug (without extension):",
       "renameAlreadyExists": "Document already exists: {slug}",
       "renameFailed": "Rename failed: {message}",
-      "newDocTitlePrompt": "Title for the new document:"
+      "newDocTitlePrompt": "Title for the new document:",
+      "similarNodeWarning": "A similar node already exists — {title}",
+      "similarNodeOpen": "Open that node",
+      "similarNodeCreateAnyway": "Create new anyway"
     }
   },
   "topology": {

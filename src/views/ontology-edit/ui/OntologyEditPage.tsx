@@ -39,6 +39,10 @@ import {
   resolveToastBottomOffset,
 } from "@/shared/ui/toast-position";
 import { parseOntologyReaderIntent } from "@/shared/lib/ontology-reader-intent";
+import {
+  findSimilarNodeByTitle,
+  type SimilarNodeMatch,
+} from "@/shared/lib/similar-node-title";
 import { useEphemeralNodes } from "../lib/use-ephemeral-nodes";
 import { useEphemeralEdges } from "../lib/use-ephemeral-edges";
 import { useIsWideViewport } from "../lib/use-is-wide-viewport";
@@ -375,6 +379,31 @@ export function OntologyEditPage() {
     () => new Map(effectiveManifest.docs.map((d) => [d.slug, d])),
     [effectiveManifest],
   );
+  // design-council B2 rank4 — GUI 근접 중복 감지. 슬러그 완전 충돌(아래
+  // hasDraftPathConflict)과는 다른, 더 이른 신호: "제목이 비슷한 kind-일치
+  // 노드가 이미 있어요"를 타이핑 debounce 후 보여준다. mcp/ 의 유사도
+  // 로직을 승격한 순수 함수(src/shared/lib/similar-node-title.ts) 재사용 —
+  // mcp/ 를 src/ 에서 직접 import 하지 않는다(단일 진실원 원칙).
+  const similarNodeCandidates = useMemo(
+    () =>
+      effectiveManifest.docs.map((d) => ({
+        slug: d.slug,
+        title: d.title,
+        kind: String((d.frontmatter as Record<string, unknown> | undefined)?.kind ?? ""),
+      })),
+    [effectiveManifest],
+  );
+  const [similarNodeWarning, setSimilarNodeWarning] = useState<{
+    nodeId: string;
+    match: SimilarNodeMatch;
+  } | null>(null);
+  const similarNodeCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (similarNodeCheckTimerRef.current) clearTimeout(similarNodeCheckTimerRef.current);
+    },
+    [],
+  );
   const hasDraftPathConflict = useCallback(
     (kind: string, title: string) => {
       const slug = slugify(title);
@@ -555,6 +584,36 @@ export function OntologyEditPage() {
     setFocusNodeId(id);
     setFocusToken((n) => n + 1);
     setDetailsOpen(true);
+  }, []);
+  // design-council B2 rank4 — 타이핑 250~300ms debounce 후 근접 중복 감지.
+  // updateNode 자체는 매 keystroke 그대로 반영(기존 동작 무손실), 감지만
+  // debounce — "매 keystroke 재애니 없음"(acceptanceCriteria) 을 만족한다.
+  const handleRenameEphemeral = useCallback(
+    (id: string, title: string) => {
+      updateNode(id, { title });
+      const node = findById(id);
+      const kind = node?.kind;
+      if (similarNodeCheckTimerRef.current) clearTimeout(similarNodeCheckTimerRef.current);
+      similarNodeCheckTimerRef.current = setTimeout(() => {
+        if (!kind) return;
+        const match = findSimilarNodeByTitle(title, kind, similarNodeCandidates);
+        setSimilarNodeWarning(match ? { nodeId: id, match } : null);
+      }, 280);
+    },
+    [updateNode, findById, similarNodeCandidates],
+  );
+  // "그 노드 열기" — 실제 vault 노드로 점프(진짜 backlink, 가짜 프리뷰 아님).
+  const openSimilarNode = useCallback(
+    (slug: string) => {
+      setSimilarNodeWarning(null);
+      openNodeDetails(slug);
+    },
+    [openNodeDetails],
+  );
+  // "그래도 새로 만들기" — 생성 권한은 항상 사용자에게 있다(human-sovereign).
+  // 경고를 닫을 뿐 아무것도 막지 않는다 — ephemeral 노드는 이미 캔버스에 있다.
+  const dismissSimilarNodeWarning = useCallback(() => {
+    setSimilarNodeWarning(null);
   }, []);
   // B-3 — 저장된 엣지 클릭 → source 노드 상세를 열고 인스펙터를 관계 탭으로
   // 포커스. 캔버스에서 기존 관계를 만나 유형 변경·삭제로 가는 진입로를 준다.
@@ -1364,8 +1423,13 @@ export function OntologyEditPage() {
     vaultReadOnly: !hasLiveVault,
     isDesktopRuntime,
     untitledPlaceholder: t("untitledPlaceholder"),
-    onRenameEphemeral: (id: string, title: string) =>
-      updateNode(id, { title }),
+    onRenameEphemeral: handleRenameEphemeral,
+    similarNodeMatch:
+      similarNodeWarning && ephemeralSelected && similarNodeWarning.nodeId === ephemeralSelected.id
+        ? similarNodeWarning.match
+        : null,
+    onOpenSimilarNode: openSimilarNode,
+    onDismissSimilarNode: dismissSimilarNodeWarning,
     onSaveEphemeral: saveEphemeral,
     isEphemeralSaveConflict: hasDraftPathConflict,
     getEphemeralSaveSuggestion: getDraftPathSuggestion,

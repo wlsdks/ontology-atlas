@@ -49,7 +49,11 @@ import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
 } from '@/shared/lib/tauri-vault-fs';
-import { HexMark, Tooltip, useToast } from '@/shared/ui';
+import { HexMark, SimilarNodeWarning, Tooltip, useToast } from '@/shared/ui';
+import {
+  findSimilarNodeByTitle,
+  type SimilarNodeMatch,
+} from '@/shared/lib/similar-node-title';
 // 추출된 page-local helpers.
 import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
 import { useAdvancedMenu } from '../lib/use-advanced-menu';
@@ -741,6 +745,32 @@ function DocsVaultContent() {
     setPaletteQuery(null);
     setNewDocKindDialogOpen(true);
   }, [canEditCurrent, setAdvancedOpen, setVaultChipOpen, setPaletteQuery]);
+  // design-council B2 rank4 — GUI 근접 중복 감지. slug 완전 충돌(위 renameAlreadyExists,
+  // 손댐 없음)과는 별개의 더 이른 신호 — "제목이 비슷한 kind-일치 노드가 이미
+  // 있어요"를 실제 생성 전에 비차단으로 보여준다. 생성 로직 자체는
+  // commitCreateDoc 으로 뽑아 "그래도 새로 만들기" 경로와 공유.
+  const [pendingSimilarDoc, setPendingSimilarDoc] = useState<{
+    slug: string;
+    markdown: string;
+    match: SimilarNodeMatch;
+  } | null>(null);
+  const commitCreateDoc = useCallback(
+    async (slug: string, markdown: string) => {
+      try {
+        await localVault.createDoc(slug, markdown);
+        // 방금 만든 문서를 자동 선택 + 편집 모드 진입
+        setSelectedSlug(slug);
+        setRecentSlugs(pushRecentDoc(recentKey, slug));
+        setEditing(true);
+        replaceUrlState({ slug, view: 'doc' });
+      } catch (err) {
+        window.alert(
+          t('dialog.createFailed', { message: err instanceof Error ? err.message : String(err) }),
+        );
+      }
+    },
+    [localVault, recentKey, replaceUrlState, setRecentSlugs, t],
+  );
   const handleCreateNewDocWithKind = useCallback(
     async (kind: NewDocKind) => {
       setNewDocKindDialogOpen(false);
@@ -759,21 +789,35 @@ function DocsVaultContent() {
         window.alert(t('dialog.renameAlreadyExists', { slug }));
         return;
       }
-      try {
-        await localVault.createDoc(slug, markdown);
-        // 방금 만든 문서를 자동 선택 + 편집 모드 진입
-        setSelectedSlug(slug);
-        setRecentSlugs(pushRecentDoc(recentKey, slug));
-        setEditing(true);
-        replaceUrlState({ slug, view: 'doc' });
-      } catch (err) {
-        window.alert(
-          t('dialog.createFailed', { message: err instanceof Error ? err.message : String(err) }),
-        );
+      const candidates = manifest.docs.map((d) => ({
+        slug: d.slug,
+        title: d.title,
+        kind: String((d.frontmatter as Record<string, unknown> | undefined)?.kind ?? ''),
+      }));
+      const match = findSimilarNodeByTitle(title, kind, candidates);
+      if (match) {
+        // 비차단 — 생성을 막지 않는다, 선택지만 보여준다(human-sovereign).
+        setPendingSimilarDoc({ slug, markdown, match });
+        return;
       }
+      await commitCreateDoc(slug, markdown);
     },
-    [manifest, localVault, recentKey, replaceUrlState, setRecentSlugs, t],
+    [manifest, commitCreateDoc, t],
   );
+  const openPendingSimilarDoc = useCallback(() => {
+    if (!pendingSimilarDoc) return;
+    const targetSlug = pendingSimilarDoc.match.slug;
+    setPendingSimilarDoc(null);
+    setSelectedSlug(targetSlug);
+    setEditing(false);
+    replaceUrlState({ slug: targetSlug, view: 'doc' });
+  }, [pendingSimilarDoc, replaceUrlState]);
+  const createPendingDocAnyway = useCallback(() => {
+    if (!pendingSimilarDoc) return;
+    const { slug, markdown } = pendingSimilarDoc;
+    setPendingSimilarDoc(null);
+    void commitCreateDoc(slug, markdown);
+  }, [pendingSimilarDoc, commitCreateDoc]);
 
   // 마운트 1 회 — 초기 URL 값이 없을 때 localStorage 선호값으로 보강.
   // useRef 로 '실행 여부' 를 가두고 dep 는 컴포넌트 stable 값들만 명시.
@@ -2031,6 +2075,28 @@ function DocsVaultContent() {
             onSelect={(kind) => void handleCreateNewDocWithKind(kind)}
             onClose={() => setNewDocKindDialogOpen(false)}
           />
+        ) : null}
+      </AnimatePresence>
+
+      {/* design-council B2 rank4 — 비차단 근접 중복 경고. 화면을 덮지 않는
+          하단 고정 칩(scrim/backdrop 없음) — 뒤 콘텐츠 상호작용을 막지
+          않는다. autoFocus 없음 — 어떤 입력 포커스도 훔치지 않는다. */}
+      <AnimatePresence>
+        {pendingSimilarDoc ? (
+          <div
+            key="pending-similar-doc"
+            className="pointer-events-none fixed inset-x-0 bottom-6 z-30 flex justify-center px-4"
+          >
+            <div className="pointer-events-auto w-full max-w-[420px]">
+              <SimilarNodeWarning
+                message={t('dialog.similarNodeWarning', { title: pendingSimilarDoc.match.title })}
+                openLabel={t('dialog.similarNodeOpen')}
+                createAnywayLabel={t('dialog.similarNodeCreateAnyway')}
+                onOpen={openPendingSimilarDoc}
+                onCreateAnyway={createPendingDocAnyway}
+              />
+            </div>
+          </div>
         ) : null}
       </AnimatePresence>
       </div>
