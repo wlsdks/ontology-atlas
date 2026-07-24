@@ -1327,58 +1327,56 @@ Reference anchors:
 - ❌ Overlap tolerated because the surface "mostly still works"; overlap count
   must be `0` for fixed/card surfaces in the tested state
 
-> The one carve-out to every Don't above is the **Ontology Studio game-energy
-> exception** documented in the next section — and only inside `.studio-stage`,
-> only via `--studio-*` tokens.
+> There is no carve-out. Every Don't above holds **app-wide, including the
+> Ontology Studio** — the old game-energy exception was retired 2026-07-24 (see
+> the next section).
 
-## Ontology Studio — game-energy exception (owner-approved 2026-07-24)
+## Ontology Studio — 나침 무대 (Compass Stage); game exception RETIRED 2026-07-24
 
-`/ontology/studio` is an intentionally immersive **"강화(enhancement) screen"**:
-a single ontology node is rendered as a game item you complete by socketing
-"gems" — each gem is one ontology relation (a piece of meaning). To make the
-"level up your node" metaphor land, this surface is granted a **scoped
-exception** to the charter's forbidden visual energy.
+`/ontology/studio` is the vault **write surface** — where a human or AI agent
+completes a node's meaning by filling its missing typed relations, and creates
+new nodes. It once carried a **game-energy exception** (a node as a hexagon
+"item" you socket meaning-"gems" into: focal glow, gold rarity, light rays,
+particles, gradient frames). **That exception is retired.**
 
-**Allowed on this surface only:** focal glow + faint gold halo background,
-rotating light rays, floating particles, a rarity gradient frame + aura on the
-hexagon item, per-relation-type colored gems, a warm **gold rarity accent**
-(the "missing/new axis" signal), and a glowing gradient "강화하기" button with a
-shimmer sweep.
+**Why it was retired (fable verdict B + owner, 2026-07-24):** "게임처럼
+중독되게" was a *metaphor*, not a spec. Rendering loot-game aesthetics inside an
+app whose identity is Rams/Linear restraint read as "restraint cosplaying a
+game," not a finished game — and this surface is **decision material** (planners,
+execs, developers, agents read it), where rarity glow *erodes trust*. Scoping
+the energy to `--studio-*` tokens was itself an admission that it could never
+fully commit. The exception was a considered mistake; removing it makes the
+Studio finally look like this app.
 
-**Hard guardrails (deviation = defect):**
+**What the Studio is now (restrained, full charter):**
 
-1. **Tokens only, scoped.** Every bit of game energy comes from `--studio-*`
-   tokens defined under the `.studio-stage` selector in `app/globals.css`, plus
-   the `.studio-*` component classes there. No other route, and no app chrome,
-   may reference a `--studio-*` token. Nothing may leak.
-2. **`.studio-stage` boundary.** Outside this subtree the full charter holds:
-   achromatic surfaces, single indigo, the 5-step surface ladder, border-style
-   category differentiation, no rarity/gold.
-3. **Rest of the charter still applies here too.** Dark-only, Pretendard, the
-   type ramp (`text-caption … text-hero`), and "no hardcoded hex in app code"
-   (raw color values live only inside the `--studio-*` token definitions).
-4. **Reduced motion.** Rays, particles, item bob, aura pulse, pip pulse, and the
-   button shimmer all freeze under `prefers-reduced-motion` (the `studio-anim-*`
-   markers + the media query in `globals.css`). The static composition must
-   stay fully legible.
-5. **No auto-expansion.** This exception is bound to `/ontology/studio`. A new
-   immersive surface does not inherit it — that needs separate owner approval.
+- **Compass Stage.** The focal node is the center hero card; relation *types* are
+  nailed to fixed bearings — UP = 상위개념 (is_a), DOWN = 담는 것 (contains),
+  RIGHT = 기대는 곳 (depends), LEFT = 비슷한 것 (relates). Filled = solid indigo
+  strut + satellite card; missing = a **dashed line-art socket** (not a jewel)
+  you fill via an inline anchored picker.
+- **Completeness** reads from the center card's 4-side border (dashed = empty,
+  solid = filled) + a plain caption ("4개 중 2개 채웠어요") + a top-left flow cue
+  (mini compass). No floating % ring, no levels, no rarity.
+- **Color:** achromatic + single indigo, exactly like the rest of the app.
+  **amber** is used only as the "expected-but-missing" socket signal (the DOWN
+  bearing when strongly expected). **No glow / gradient / gem / particle / gold.**
+- **One guided next action** ("여기부터 채워요") + plain-language socket questions
+  ("이 노드는 무엇의 한 종류인가요?") — zero ontology jargon on the surface.
+- **Motion:** one interruptible ~200ms opacity/color confirm when a socket fills
+  (dashed → solid); `prefers-reduced-motion` → instant. No ambient motion.
+- **Enhance vs Create** are the same surface in different fill-states (no mode
+  tabs). Enhance = partially filled existing node (`?node=`); Create
+  (`?mode=create`) = all-empty draft card.
 
-**Why it's allowed to break the rules:** the charter's restraint exists to kill
-generic "AI SaaS" cliché on the *workbench* surfaces planners and developers
-read all day. The Studio is a deliberate, bounded, opt-in moment whose whole
-job is to make growing the ontology feel rewarding — the game language is the
-product point there, not decoration. Bounding it to one tokenized surface keeps
-the rest of the app honest. Lineage: the exception is a *considered* departure,
-in the spirit of Rams' "as little design as possible" applied at the level of
-*the whole app* (one loud room, quiet everywhere else), not a license to
-decorate.
-
-Relations → gems mapping: `depends_on` → indigo gem (기대는 곳), `contains` →
-steel gem (담는 것), `related_to`/`uses`/`implements` → slate gem (비슷한 것),
-`is_a` → always-empty **gold** socket (상위 개념 — the new axis, wired in a later
-slice). Completeness score + tier are computed by the pure
-`scoreEnhancement` lib (`src/views/ontology-studio/lib/enhancement-score.ts`).
+The `--studio-*` game token block and `.studio-*` game classes were **removed
+from `app/globals.css`**. is_a is a real writable relation via the `broader`
+(SKOS) frontmatter key (derive → `is_a` edge; registered in mcp/cli schema +
+validator). Addictiveness comes from the **loop** (next action → immediate
+reflection → accumulating progress), not from bling — Duolingo/Oura/Linear make
+"one more" with zero glow. design-guardian now rejects glow/rarity/particle on
+this surface too. Full history + KEEP/KILL/BUILD: session memory
+`ontology-studio-game-direction`.
 
 ## Motion principles
 
