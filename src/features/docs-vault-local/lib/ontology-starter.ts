@@ -15,6 +15,8 @@ const README_MD = `---
 slug: README
 kind: vault-readme
 title: My ontology vault
+display_ko: 내 온톨로지 문서함
+display_en: My ontology vault
 ---
 
 # My ontology vault
@@ -166,6 +168,8 @@ const PROJECT_MD = `---
 slug: project
 kind: project
 title: My project
+display_ko: 내 프로젝트
+display_en: My project
 domains:
   - domains/example-domain
 capabilities:
@@ -204,6 +208,8 @@ const DOMAIN_MD = `---
 slug: domains/example-domain
 kind: domain
 title: Example domain
+display_ko: 예시 영역
+display_en: Example domain
 capabilities:
   - capabilities/example-capability
 ---
@@ -235,6 +241,8 @@ const CAPABILITY_MD = `---
 slug: capabilities/example-capability
 kind: capability
 title: Example capability
+display_ko: 예시 기능
+display_en: Example capability
 domain: domains/example-domain
 elements:
   - elements/example-element
@@ -263,6 +271,8 @@ const ELEMENT_MD = `---
 slug: elements/example-element
 kind: element
 title: Example element
+display_ko: 예시 구성요소
+display_en: Example element
 domain: domains/example-domain
 ---
 

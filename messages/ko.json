@@ -2630,7 +2630,11 @@
       "stepManual": "직접 손으로 시작하기 (선택)",
       "ctaAnalyze": "분석 지시 복사",
       "ctaAnalyzeCopied": "복사됨 — 에이전트에 붙여넣으세요",
-      "analyzePrompt": "이 폴더는 ontology-atlas vault야. /ontology-bootstrap 스킬(또는 MCP index_project → analyze_repo_structure)로 내 코드베이스를 분석해서 프로젝트·도메인·역량 온톨로지를 제안하고, 내가 승인한 것만 vault에 써줘."
+      "analyzePrompt": "이 폴더는 ontology-atlas vault야. /ontology-bootstrap 스킬(또는 MCP index_project → analyze_repo_structure)로 내 코드베이스를 분석해서 프로젝트·도메인·역량 온톨로지를 제안하고, 내가 승인한 것만 vault에 써줘.",
+      "stepScaffold": "시작 문서 만들기 (버튼 한 번)",
+      "ctaScaffold": "만들어 주기",
+      "ctaScaffoldBusy": "만드는 중…",
+      "scaffoldToast": "시작 문서 {count}개를 만들었어요"
     }
   },
   "fullDetailA1": {

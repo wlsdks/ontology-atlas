@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T09:41:04.072Z",
+  "generatedAt": "2026-07-24T10:04:23.085Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3167,6 +3167,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-24 — 스타터 vault 어권 라벨 + 빈 폴더 스캐폴드 버튼",
+          "slug": "2026-07-24-스타터-vault-어권-라벨-빈-폴더-스캐폴드-버튼"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-24 — INDEX 패널 구조 개편: 가이드와 목록의 배타 분리",
           "slug": "2026-07-24-index-패널-구조-개편-가이드와-목록의-배타-분리"
         },
@@ -4771,9 +4776,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 지적(\"상단 스크롤 따로 하단 스크롤 따로 — 구조 자체를 바꿔야\") 반영. 한 패널 안에 스크롤 영역이 둘이던 구조를 폐기하고, 첫 실행 가이드 ",
-      "wordCount": 36909,
-      "updatedAt": "2026-07-24T09:41:03.455Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 온보딩 잔여 갭 2건. ① 스타터 노드가 화면 언어로 읽힌다 — 새 vault 5개 시작 문서(README/project/domain/capability/",
+      "wordCount": 37021,
+      "updatedAt": "2026-07-24T10:04:22.509Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"

@@ -2,6 +2,8 @@
 slug: capabilities/example-capability
 kind: capability
 title: Example capability
+display_ko: 예시 기능
+display_en: Example capability
 domain: domains/example-domain
 elements:
   - elements/example-element

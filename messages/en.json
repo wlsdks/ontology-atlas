@@ -2630,7 +2630,11 @@
       "stepManual": "Or start by hand (optional)",
       "ctaAnalyze": "Copy analysis prompt",
       "ctaAnalyzeCopied": "Copied — paste into your agent",
-      "analyzePrompt": "This folder is an ontology-atlas vault. Use the /ontology-bootstrap skill (or MCP index_project → analyze_repo_structure) to analyze my codebase, propose the project/domain/capability ontology, and write only what I approve to the vault."
+      "analyzePrompt": "This folder is an ontology-atlas vault. Use the /ontology-bootstrap skill (or MCP index_project → analyze_repo_structure) to analyze my codebase, propose the project/domain/capability ontology, and write only what I approve to the vault.",
+      "stepScaffold": "Create starter docs (one click)",
+      "ctaScaffold": "Create for me",
+      "ctaScaffoldBusy": "Creating…",
+      "scaffoldToast": "Created {count} starter documents"
     }
   },
   "fullDetailA1": {
