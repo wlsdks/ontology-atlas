@@ -12,7 +12,6 @@ export { default as vaultContent } from './data/content.json';
 // 진실원 — `scripts/build-docs-vault.mjs` 가 `samples/storefront/` 에서
 // 빌드한다.
 export { default as sampleStorefrontManifest } from './data/sample-storefront.manifest.json';
-export { default as sampleStorefrontContent } from './data/sample-storefront.content.json';
 export {
   buildLocalManifest,
   buildLocalManifestWithEntries,

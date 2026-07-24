@@ -10,19 +10,6 @@ export const GUIDED_TOUR_STATUS_KEY = "guided-tour:v1";
 
 export type GuidedTourStatus = "done" | "skipped";
 
-export function readGuidedTourStatus(
-  key: string = GUIDED_TOUR_STATUS_KEY,
-): GuidedTourStatus | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const v = window.localStorage.getItem(key);
-    return v === "done" || v === "skipped" ? v : null;
-  } catch {
-    // private mode 등 — 매번 새 투어로 보이는 것뿐, 안전한 폴백.
-    return null;
-  }
-}
-
 export function writeGuidedTourStatus(
   status: GuidedTourStatus,
   key: string = GUIDED_TOUR_STATUS_KEY,

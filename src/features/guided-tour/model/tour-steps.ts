@@ -33,8 +33,6 @@ export interface TourStep {
   copyKey: string;
 }
 
-export const TOUR_STORAGE_KEY = "guided-tour:v1";
-
 export const TOUR_STEPS: readonly TourStep[] = [
   { id: "welcome", anchor: null, persona: "all", copyKey: "welcome" },
   {

@@ -31,10 +31,7 @@
 export {
   buildConnections as buildV2Connections,
   groupConnectionsByDirection as groupV2ConnectionsByDirection,
-  type ConnectionSourceEdge as V2ConnectionSourceEdge,
-  type ConnectionSourceNode as V2ConnectionSourceNode,
   type DatasheetConnection as V2DatasheetConnection,
-  type GroupedConnections as V2GroupedConnections,
 } from "@/shared/lib/ontology-tree/connections";
 import { groupConnectionsByRole } from "@/shared/lib/ontology-tree/connections";
 import type { DatasheetConnection as V2DatasheetConnection } from "@/shared/lib/ontology-tree/connections";

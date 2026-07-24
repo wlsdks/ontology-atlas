@@ -31,7 +31,6 @@
  */
 
 export const INTEROP_URN_BASE = 'urn:ontology-atlas';
-export const INTEROP_SCHEMA_VERSION = 1;
 
 const OATLAS_NS = 'https://ontology-atlas.web.app/ns#';
 const GRAPHML_GRAPH_ID = 'atlas';
