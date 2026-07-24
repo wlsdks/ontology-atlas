@@ -17,11 +17,17 @@ import {
  * 부수 효과: `window.__ohMyOntologyMode` 에 현재 mode 발행 (디버그 전용).
  */
 export function useDataSourceMode(): DataSourceMode {
-  const { status: vaultStatus } = useLocalVault();
+  const { status: vaultStatus, manifest } = useLocalVault();
 
   const mode = useMemo<DataSourceMode>(
-    () => getDataSourceMode({ vaultLoaded: vaultStatus === 'loaded' }),
-    [vaultStatus],
+    () =>
+      getDataSourceMode({
+        // write/poll 뒤 증분 rebuild는 마지막으로 검증된 manifest를 보존한다.
+        // 이 짧은 loading 동안 static dogfood로 source를 바꾸면 local slug
+        // 상세·편집이 not-found로 굳는다. 첫 로드(manifest 없음)만 static.
+        vaultLoaded: vaultStatus === 'loaded' || Boolean(manifest),
+      }),
+    [manifest, vaultStatus],
   );
 
   useEffect(() => {

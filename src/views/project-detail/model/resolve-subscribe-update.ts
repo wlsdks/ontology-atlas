@@ -22,8 +22,14 @@ export function resolveSubscribeUpdate(
   latest: Project[],
   slug: string,
   fallbackProjects: Project[],
+  options: { allowFallback: boolean } = { allowFallback: true },
 ): SubscribeUpdate {
-  const related = latest.length > 0 ? latest : fallbackProjects;
+  const related =
+    latest.length > 0
+      ? latest
+      : options.allowFallback
+        ? fallbackProjects
+        : [];
   const next = related.find((p) => p.slug === slug) ?? null;
   return { next, related };
 }

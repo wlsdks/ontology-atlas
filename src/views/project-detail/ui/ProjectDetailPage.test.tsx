@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -81,6 +81,8 @@ const mocks = vi.hoisted(() => ({
   insightEdges: [] as unknown[],
   canEdit: false,
   vaultBody: null as string | null,
+  projects: [] as ReturnType<typeof baseProject>[],
+  projectsMode: "static" as "static" | "local",
 }));
 
 vi.mock("@/features/vault-ontology", () => ({
@@ -91,13 +93,19 @@ vi.mock("@/features/vault-ontology", () => ({
 }));
 
 vi.mock("@/features/project-data-source", () => ({
-  useProjects: () => ({ projects: [], loaded: true, error: null, mode: "static" }),
+  useProjects: () => ({
+    projects: mocks.projects,
+    loaded: true,
+    error: null,
+    mode: mocks.projectsMode,
+  }),
   useProjectMutations: () => ({
     canCreate: false,
     canEdit: mocks.canEdit,
     canDelete: false,
     mode: "static",
     updateProject: vi.fn(),
+    patchProject: vi.fn(),
   }),
   useProjectBody: () => ({ body: mocks.vaultBody }),
 }));
@@ -132,6 +140,22 @@ function renderPage(overrides: { related?: ReturnType<typeof baseProject>[] } = 
 describe("ProjectDetailPage", () => {
   beforeEach(() => {
     mocks.vaultBody = null;
+    mocks.projects = [];
+    mocks.projectsMode = "static";
+  });
+
+  it("local source가 확정되면 같은 slug의 static initial fact를 지운다", async () => {
+    mocks.insightNodes = [];
+    mocks.insightEdges = [];
+    mocks.projectsMode = "local";
+    renderPage();
+
+    await waitFor(() =>
+      expect(screen.getByTestId("project-detail-not-found")).toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByRole("heading", { name: "ontology-atlas" }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders the hero metric strip with real projectIds-derived counts", () => {

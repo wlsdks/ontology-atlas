@@ -21,9 +21,9 @@ import {
   useToast,
 } from "@/shared/ui";
 import {
-  getProjectDetailHref,
+  getProjectEditHref,
+  getProjectRuntimeDetailHref,
   getTopologyProjectHref,
-  projectToInput,
   resolveFallbackProjects,
   type Project,
 } from "@/entities/project";
@@ -191,15 +191,14 @@ export function ProjectDetailPage({
   const router = useRouter();
   const { show: showToast } = useToast();
   const fallbackProjects = useMemo(() => resolveFallbackProjects(), []);
-  const fallbackProject = fallbackProjects.find((item) => item.slug === slug) ?? null;
   const [project, setProject] = useState<Project | null>(
-    initialProject ?? fallbackProject,
+    initialProject,
   );
   const [related, setRelated] = useState<Project[]>(
-    initialRelated.length > 0 ? initialRelated : fallbackProjects,
+    initialRelated,
   );
   const [resolved, setResolved] = useState(
-    !slug || Boolean(initialProject) || Boolean(fallbackProject),
+    !slug || Boolean(initialProject),
   );
   const { statusLabel: rawStatusLabel } = useTaxonomy();
   // R15 (Concern 1) — derive 가 honest 가 되어 frontmatter 누락 시 undefined.
@@ -226,7 +225,7 @@ export function ProjectDetailPage({
     (nextSlug: string) => {
       setSearchOpen(false);
       if (nextSlug === slug) return;
-      router.push(getProjectDetailHref(nextSlug));
+      router.push(getProjectRuntimeDetailHref(nextSlug));
     },
     [router, slug],
   );
@@ -260,17 +259,31 @@ export function ProjectDetailPage({
       projectsQuery.projects,
       slug,
       fallbackProjects,
+      { allowFallback: projectsQuery.mode === "static" },
     );
     window.queueMicrotask(() => {
       if (cancelled) return;
-      if (next) setProject(next);
+      if (next) {
+        setProject(next);
+      } else if (projectsQuery.loaded || projectsQuery.error !== null) {
+        // local source가 확정됐는데 slug가 없으면 canonical static fact를
+        // 잔존시키지 않는다. 같은 slug라도 현재 vault가 유일한 진실원이다.
+        setProject(null);
+      }
       setRelated(nextRelated);
       if (projectsQuery.loaded || projectsQuery.error !== null) setResolved(true);
     });
     return () => {
       cancelled = true;
     };
-  }, [projectsQuery.projects, projectsQuery.loaded, projectsQuery.error, slug, fallbackProjects]);
+  }, [
+    projectsQuery.projects,
+    projectsQuery.loaded,
+    projectsQuery.error,
+    projectsQuery.mode,
+    slug,
+    fallbackProjects,
+  ]);
 
   // 이 프로젝트의 ontology 노드/관계 — 히어로 메트릭 스트립·미니 도메인
   // 지도·도메인 구성 3×2·연결된 프로젝트(relates) 가 전부 여기서 파생.
@@ -327,11 +340,6 @@ export function ProjectDetailPage({
   }));
 
   const canManageProject = projectMutations.canEdit;
-  // 모든 인라인 편집은 useProjectMutations 한 진입점으로. local (vault
-  // patch) 만 mutate 가능하고 static 은 read-only 라 mutation 시도 자체가
-  // 거절됨 — useProjectMutations 가 mode 별로 분기.
-  const persistProject = (input: Parameters<typeof projectMutations.updateProject>[0]) =>
-    projectMutations.updateProject(input);
   const projectSaveErrorMessage = (err: unknown) =>
     err instanceof VaultConflictError
       ? t("saveErrorConflict")
@@ -344,10 +352,12 @@ export function ProjectDetailPage({
   ) => {
     if (!project || !canManageProject) return;
     try {
-      await persistProject({
-        ...projectToInput(project),
-        [field]: next,
-      });
+      await projectMutations.patchProject(
+        project.slug,
+        field === "name"
+          ? { name: next }
+          : { description: next.trim() ? next : null },
+      );
       showToast(field === "name" ? t("saveSuccessName") : t("saveSuccessDescription"), "success");
     } catch (err) {
       const message = projectSaveErrorMessage(err);
@@ -367,9 +377,9 @@ export function ProjectDetailPage({
     .join(" · ");
   const storyMarkdownClassName =
     "text-[13.5px] leading-[1.75] text-[color:var(--color-text-secondary)] [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_code]:rounded [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-6 [&_h1]:text-xl [&_h1]:font-[var(--font-weight-signature)] [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-[var(--font-weight-signature)] [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-4 [&_h3]:text-base [&_h3]:text-[color:var(--color-text-primary)] [&_li]:ml-[18px] [&_li]:mb-[5px] [&_li]:list-disc [&_p]:mb-[10px] [&_strong]:font-semibold [&_strong]:text-[color:var(--color-text-primary)]";
-  const projectFullEditHref = `/project/${encodeURIComponent(project.slug)}/edit/?returnTo=${encodeURIComponent(
-    getProjectDetailHref(project.slug),
-  )}`;
+  const projectFullEditHref = getProjectEditHref(project.slug, {
+    returnTo: getProjectRuntimeDetailHref(project.slug),
+  });
 
   const metricItems: Array<{ label: string; value: number }> = [
     { label: t("metricDomains"), value: metrics.domains },
@@ -575,7 +585,7 @@ export function ProjectDetailPage({
                 {connectedProjects.slice(0, 1).map((candidate) => (
                   <Link
                     key={candidate.slug}
-                    href={getProjectDetailHref(candidate.slug)}
+                    href={getProjectRuntimeDetailHref(candidate.slug)}
                     className="group flex items-center justify-between gap-3 rounded-[9px] border border-[color:var(--color-border-soft)] px-3 py-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a28)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                   >
                     <div className="min-w-0">

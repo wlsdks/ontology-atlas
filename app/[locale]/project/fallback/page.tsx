@@ -3,14 +3,12 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { ProjectFallbackClient } from "./ProjectFallbackClient";
 
-// 정적 export 환경에서 빌드 시점에 알 수 없는 slug 가 들어와도 client
-// side 에서 URL 로부터 slug 를 추출해 ProjectDetailPage 를 렌더한다.
-// (R10 이전 Firebase Hosting rewrite 가 이 경로로 라우팅했지만 cloud
-// surface 영구 제거 후 단순 client-side fallback 으로 유지 — 빌드 시점
-// 에 prerender 안 된 slug 진입을 방지.)
+// 정적 export 환경에서 빌드 시점에 알 수 없는 로컬 vault slug도 query로
+// 받아 ProjectDetailPage 또는 ProjectEditorPage를 렌더한다. R10 이전
+// Firebase Hosting rewrite pathname도 하위 호환으로 계속 해석한다.
 //
-// 빌드 타임에 알려진 slug 는 /project/[slug]/index.html 이 우선이라
-// 이 페이지는 직접 진입 (또는 unknown slug) 시에만 발화.
+// 빌드 타임에 알려진 공개 slug의 /project/[slug]/ canonical은 그대로 두고,
+// 앱 내부 이동은 이 정적 파일 하나를 사용해 임의 slug 404를 피한다.
 export async function generateMetadata({
   params,
 }: {

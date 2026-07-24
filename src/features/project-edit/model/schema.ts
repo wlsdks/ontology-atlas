@@ -162,6 +162,13 @@ export const projectFormSchema = z
 
 export type ProjectFormValues = z.infer<typeof projectFormSchema>;
 
+/**
+ * 기존 project에 없던 taxonomy fact를 full edit가 임의 생성하지 않기 위한
+ * form-only 값. serializer로 보내기 전에 반드시 undefined로 되돌린다.
+ */
+export const PRESERVE_MISSING_TAXONOMY_VALUE =
+  "__ontology_atlas_preserve_missing__";
+
 function nextDuplicateSlug(
   baseSlug: string,
   existingSlugs: Set<string>,
@@ -180,9 +187,8 @@ export function projectToFormValues(project: Project): ProjectFormValues {
     slug: project.slug,
     name: project.name,
     nameEn: project.nameEn ?? "",
-    // R15 — Form 은 사용자 vault frontmatter 작성 도구라 form-local default 적용.
-    category: project.category ?? "uncategorized",
-    status: project.status ?? "active",
+    category: project.category ?? PRESERVE_MISSING_TAXONOMY_VALUE,
+    status: project.status ?? PRESERVE_MISSING_TAXONOMY_VALUE,
     description: project.description,
     detail: project.detail ?? "",
     tagsCsv: project.tags.join(", "),
@@ -214,7 +220,7 @@ export function duplicateProjectToFormValues(
  */
 export function formValuesToProjectInput(
   values: ProjectFormValues,
-  position: { x: number; y: number },
+  position?: { x: number; y: number },
 ): ProjectInput {
   const splitCsv = (s?: string): string[] =>
     s
@@ -228,8 +234,14 @@ export function formValuesToProjectInput(
     slug: values.slug,
     name: values.name,
     nameEn: values.nameEn || undefined,
-    category: values.category,
-    status: values.status,
+    category:
+      values.category === PRESERVE_MISSING_TAXONOMY_VALUE
+        ? undefined
+        : values.category,
+    status:
+      values.status === PRESERVE_MISSING_TAXONOMY_VALUE
+        ? undefined
+        : values.status,
     description: values.description,
     detail: values.detail || undefined,
     tags: splitCsv(values.tagsCsv),

@@ -2246,6 +2246,8 @@
         "statusMissingWarning": "Current status reference is broken. Pick another status to recover.",
         "categoryMissingOption": "Missing category · {id}",
         "statusMissingOption": "Missing status · {id}",
+        "categoryUnspecified": "Not set · preserve source",
+        "statusUnspecified": "Not set · preserve source",
         "namePlaceholder": "My project",
         "nameEnPlaceholder": "English name",
         "descriptionPlaceholder": "1-2 line summary — shown in drawer and node",

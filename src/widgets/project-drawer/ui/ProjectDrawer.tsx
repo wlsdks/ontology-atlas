@@ -23,7 +23,7 @@ import { formatDate } from "@/shared/lib/format-date";
 import {
   formatProjectIntegrityIssue,
   getProjectRelationshipMeta,
-  getProjectDetailHref,
+  getProjectRuntimeDetailHref,
   getProjectIntegrityIssues,
   ProjectMetaGrid,
   resolveProjectCompletenessInsight,
@@ -326,7 +326,7 @@ export function ProjectDrawer({
   // 상세 페이지 URL — 컨테이너 컨텍스트(`?pj=`) 까지 유지해 zoom-in 에서
   // 온 사용자가 뒤로 갈 때도 같은 컨테이너 뷰로 돌아올 수 있게.
   const detailHref = project
-    ? getProjectDetailHref(project.slug)
+    ? getProjectRuntimeDetailHref(project.slug)
     : "#";
   // 관련 문서 top 1 slug — 있으면 Source Vault가 그 문서를 바로 열게 딥링크.
   // 없으면 볼트 홈 ('/docs/') 로. URL 형식은 buildDocsVaultHref 에 위임.
@@ -764,7 +764,6 @@ export function ProjectDrawer({
                     <div className="mt-3">
                       <CopyProjectLinkButton
                         slug={project.slug}
-                        href={getProjectDetailHref(project.slug)}
                         testId="project-drawer-copy-link"
                         className="h-10 w-full justify-center"
                       />

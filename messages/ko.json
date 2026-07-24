@@ -2246,6 +2246,8 @@
         "statusMissingWarning": "현재 상태 참조가 깨졌습니다. 다른 상태를 선택해 복구하세요.",
         "categoryMissingOption": "Missing category · {id}",
         "statusMissingOption": "Missing status · {id}",
+        "categoryUnspecified": "미지정 · 원본 유지",
+        "statusUnspecified": "미지정 · 원본 유지",
         "namePlaceholder": "내 프로젝트",
         "nameEnPlaceholder": "English name",
         "descriptionPlaceholder": "1~2줄 요약 — 드로어·노드에 표시됨",

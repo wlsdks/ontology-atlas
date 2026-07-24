@@ -4,12 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { PencilLine, X } from "lucide-react";
+import { type Project } from "@/entities/project";
 import {
-  projectToInput,
-  type Project,
-  type ProjectInput,
-} from "@/entities/project";
-import { useProjectMutations } from "@/features/project-data-source";
+  type ProjectFrontmatterPatch,
+  useProjectMutations,
+} from "@/features/project-data-source";
 import { Button } from "@/shared/ui";
 
 interface Props {
@@ -34,16 +33,16 @@ function toQuickEditValues(project: Project): QuickEditValues {
   };
 }
 
-function toProjectInput(project: Project, values: QuickEditValues): ProjectInput {
+function toProjectPatch(values: QuickEditValues): ProjectFrontmatterPatch {
+  const tags = values.tags
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
   return {
-    ...projectToInput(project),
     name: values.name.trim(),
-    description: values.description.trim(),
-    owner: values.owner.trim() || undefined,
-    tags: values.tags
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean),
+    description: values.description.trim() || null,
+    owner: values.owner.trim() || null,
+    tags: tags.length > 0 ? tags : null,
   };
 }
 
@@ -63,7 +62,7 @@ export function ProjectQuickEditPanel({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const { updateProject } = useProjectMutations();
+  const { patchProject } = useProjectMutations();
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -116,9 +115,9 @@ export function ProjectQuickEditPanel({
   };
 
   const handleSubmit = async () => {
-    const nextInput = toProjectInput(project, values);
+    const nextPatch = toProjectPatch(values);
 
-    if (!nextInput.name.trim() || !nextInput.description.trim()) {
+    if (!nextPatch.name?.trim() || !nextPatch.description?.trim()) {
       setError(t("errorEmpty"));
       return;
     }
@@ -128,13 +127,13 @@ export function ProjectQuickEditPanel({
     setNotice(null);
 
     try {
-      await updateProject(nextInput);
-      const nextBaseline = toQuickEditValues({
-        ...project,
-        ...nextInput,
-        owner: nextInput.owner,
-        tags: nextInput.tags ?? [],
-      } as Project);
+      await patchProject(project.slug, nextPatch);
+      const nextBaseline: QuickEditValues = {
+        name: nextPatch.name,
+        description: nextPatch.description,
+        owner: nextPatch.owner ?? "",
+        tags: nextPatch.tags?.join(", ") ?? "",
+      };
       setBaseline(nextBaseline);
       setValues(nextBaseline);
       setNotice(

@@ -3,6 +3,7 @@ import {
   duplicateProjectToFormValues,
   formValuesToProjectInput,
   parseLinksText,
+  PRESERVE_MISSING_TAXONOMY_VALUE,
   projectFormSchema,
 } from "./schema";
 
@@ -128,6 +129,20 @@ describe("formValuesToProjectInput", () => {
       startedAt: new Date("2026-04-12T00:00:00.000Z"),
       launchedAt: new Date("2026-04-14T00:00:00.000Z"),
     });
+  });
+
+  it("form-only missing taxonomy 값은 typed fact로 직렬화하지 않는다", () => {
+    const result = formValuesToProjectInput(
+      validValues({
+        category: PRESERVE_MISSING_TAXONOMY_VALUE,
+        status: PRESERVE_MISSING_TAXONOMY_VALUE,
+      }),
+      undefined,
+    );
+
+    expect(result.category).toBeUndefined();
+    expect(result.status).toBeUndefined();
+    expect(result.position).toBeUndefined();
   });
 });
 

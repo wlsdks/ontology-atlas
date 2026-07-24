@@ -36,12 +36,10 @@ import {
   projectFormSchema,
   projectToFormValues,
   formValuesToProjectInput,
+  PRESERVE_MISSING_TAXONOMY_VALUE,
   type ProjectFormValues,
 } from "../model/schema";
-import {
-  findProjectPlacement,
-  isProjectPositionInsideCategory,
-} from "../model/placement";
+import { findProjectPlacement } from "../model/placement";
 import { DependencyPicker } from "./DependencyPicker";
 import { MarkdownField } from "./MarkdownField";
 
@@ -131,12 +129,26 @@ function buildInitialValues({
   initialStatusId?: string;
 }): ProjectFormValues {
   if (initialProject) {
-    return mode === "edit"
+    const values = mode === "edit"
       ? projectToFormValues(initialProject)
       : duplicateProjectToFormValues(
           initialProject,
           allProjects.map((project) => project.slug),
         );
+    return {
+      ...values,
+      // Duplicate/create는 새 문서라 보이는 taxonomy default를 사용한다.
+      // Edit는 원본에 없던 typed fact를 만들지 않도록 form-only preserve 값을
+      // 유지하고, 사용자가 직접 고를 때만 실제 id로 바뀐다.
+      category:
+        mode === "create"
+          ? initialProject.category ?? initialCategoryId ?? categoryId
+          : initialProject.category ?? PRESERVE_MISSING_TAXONOMY_VALUE,
+      status:
+        mode === "create"
+          ? initialProject.status ?? initialStatusId ?? statusId
+          : initialProject.status ?? PRESERVE_MISSING_TAXONOMY_VALUE,
+    };
   }
 
   return {
@@ -242,6 +254,15 @@ export function ProjectForm({
       value: category.id,
       label: category.label,
     }));
+    if (values.category === PRESERVE_MISSING_TAXONOMY_VALUE) {
+      return [
+        {
+          value: PRESERVE_MISSING_TAXONOMY_VALUE,
+          label: t("fields.categoryUnspecified"),
+        },
+        ...options,
+      ];
+    }
     if (values.category && !getCategory(values.category)) {
       return [
         {
@@ -258,6 +279,15 @@ export function ProjectForm({
       value: status.id,
       label: status.label,
     }));
+    if (values.status === PRESERVE_MISSING_TAXONOMY_VALUE) {
+      return [
+        {
+          value: PRESERVE_MISSING_TAXONOMY_VALUE,
+          label: t("fields.statusUnspecified"),
+        },
+        ...options,
+      ];
+    }
     if (values.status && !getStatus(values.status)) {
       return [
         {
@@ -425,8 +455,14 @@ export function ProjectForm({
       slug: values.slug,
       name: values.name,
       nameEn: values.nameEn || undefined,
-      category: values.category,
-      status: values.status,
+      category:
+        values.category === PRESERVE_MISSING_TAXONOMY_VALUE
+          ? undefined
+          : values.category,
+      status:
+        values.status === PRESERVE_MISSING_TAXONOMY_VALUE
+          ? undefined
+          : values.status,
       description: values.description,
       detail: values.detail || undefined,
       tags: (values.tagsCsv ?? "")
@@ -481,15 +517,36 @@ export function ProjectForm({
       if (firstField) focusField(firstField);
       return;
     }
-    const nextCategory = getCategory(parsed.data.category);
-    const nextStatus = getStatus(parsed.data.status);
-    if (!nextCategory || !nextStatus) {
+    const preservesMissingCategory =
+      mode === "edit" &&
+      !initialProject?.category &&
+      parsed.data.category === PRESERVE_MISSING_TAXONOMY_VALUE;
+    const preservesMissingStatus =
+      mode === "edit" &&
+      !initialProject?.status &&
+      parsed.data.status === PRESERVE_MISSING_TAXONOMY_VALUE;
+    const nextCategory = preservesMissingCategory
+      ? undefined
+      : getCategory(parsed.data.category);
+    const nextStatus = preservesMissingStatus
+      ? undefined
+      : getStatus(parsed.data.status);
+    if (
+      (!preservesMissingCategory && !nextCategory) ||
+      (!preservesMissingStatus && !nextStatus)
+    ) {
       const nextErrors = {
-        ...(nextCategory ? {} : { category: t("validation.categoryNotFound") }),
-        ...(nextStatus ? {} : { status: t("validation.statusNotFound") }),
+        ...(!preservesMissingCategory && !nextCategory
+          ? { category: t("validation.categoryNotFound") }
+          : {}),
+        ...(!preservesMissingStatus && !nextStatus
+          ? { status: t("validation.statusNotFound") }
+          : {}),
       };
       setErrors(nextErrors);
-      focusField(!nextCategory ? "category" : "status");
+      focusField(
+        !preservesMissingCategory && !nextCategory ? "category" : "status",
+      );
       return;
     }
 
@@ -554,13 +611,16 @@ export function ProjectForm({
       // 슬롯 배치 겹침 방지용 최신 프로젝트 목록. allProjects 가 mode-aware
       // hook (useProjects) 의 출력이라 vault / 빌드타임 dogfood 진실원과 sync.
       const latestProjects = allProjects;
-      // R15 — initialProject.position 이 undefined (vault 가 명시 안 함) 면
-      // 자동 placement 강제. category 가 바뀌었거나 inside 아니면도 동일.
+      // 신규 생성 또는 사용자가 category를 실제로 바꾼 경우에만 위치를
+      // 계산한다. Edit가 원본의 category/position 부재를 조용히 채우지 않는다.
       const initialPos = initialProject?.position;
+      const resolvedCategoryId = preservesMissingCategory
+        ? undefined
+        : parsed.data.category;
+      const categoryChanged =
+        initialProject?.category !== resolvedCategoryId;
       const position = initialProject
-        ? initialProject.category !== parsed.data.category ||
-          !initialPos ||
-          !isProjectPositionInsideCategory(nextCategory, initialPos)
+        ? categoryChanged && nextCategory
           ? findProjectPlacement(
               nextCategory,
               latestProjects.filter(
@@ -568,7 +628,9 @@ export function ProjectForm({
               ),
             )
           : initialPos
-        : findProjectPlacement(nextCategory, latestProjects);
+        : nextCategory
+          ? findProjectPlacement(nextCategory, latestProjects)
+          : undefined;
       const input = formValuesToProjectInput(parsed.data, position);
       await onSubmit(input, { behavior: submitBehavior });
       setSavedValues(parsed.data);
@@ -970,7 +1032,9 @@ export function ProjectForm({
                 options={categoryOptions}
                 aria-invalid={Boolean(errors.category)}
               />
-              {!getCategory(values.category) && values.category && (
+              {!getCategory(values.category) &&
+                values.category &&
+                values.category !== PRESERVE_MISSING_TAXONOMY_VALUE && (
                 <Hint>
                   <span data-testid="project-missing-category-warning">
                     {t("fields.categoryMissingWarning")}
@@ -994,7 +1058,9 @@ export function ProjectForm({
                 options={statusOptions}
                 aria-invalid={Boolean(errors.status)}
               />
-              {!getStatus(values.status) && values.status && (
+              {!getStatus(values.status) &&
+                values.status &&
+                values.status !== PRESERVE_MISSING_TAXONOMY_VALUE && (
                 <Hint>
                   <span data-testid="project-missing-status-warning">
                     {t("fields.statusMissingWarning")}

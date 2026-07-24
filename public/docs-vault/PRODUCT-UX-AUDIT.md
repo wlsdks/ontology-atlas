@@ -36,7 +36,7 @@
 | A5 | 관계 읽기 → 경로 → AI 요약/MCP·CLI 인계 | 샘플/실 vault 인계 경계·MCP 경로 패킷 설치 앱 검증, CLI 인계 계속 감사 |
 | A6 | 지도 경로 탐색 | 프로젝트 → AI Agent Partner 1홉 경로·복사 패킷 설치 앱 검증 |
 | A7 | 지도 노드 → 공방 딥링크 | AI Agent Partner → 공방 ENHANCE 딥링크 설치 앱 검증 |
-| A8–A11 | 프로젝트 목록 → 생성 → 상세 → 인라인/전체 편집 | 대기 |
+| A8–A11 | 프로젝트 목록 → 생성 → 상세 → 인라인/전체 편집 | 임의 로컬 slug 생성·상세·인라인/전체 편집·원본 파일·schema 설치 앱 검증 완료 |
 | A12 | 문서함 선택 → 편집 → 저장/오류 → 재실행 | 정상 저장·동시 편집 충돌 차단·디스크 검증·재실행 복원 완료 |
 | A13–A14 | `/ontology`, 구 `/ontology/edit` 리다이렉트 | 대기 |
 | A15–A16 | 공방 ENHANCE/CREATE → 쓰기 → 파일 재열기 | 임시 vault의 ENHANCE 관계 쓰기·디스크/문서함 재열기 검증, Studio CREATE 계속 감사 |
@@ -304,6 +304,198 @@
   결과까지 키보드 이동 → Enter로 상세 열기 → Tab으로 닫기 → Return을
   실행했다. 퇴장 후 동일 `감사 샘플 기능` 행에 포커스 링이 복원됐고, Tab을
   다시 순회하지 않은 다음 Return 한 번으로 같은 상세가 재개됐다.
+- PO 판정: **Build and verify**
+
+### UX-013 — 설치 앱에서 임의 로컬 프로젝트의 상세·전체 편집 경로가 열리지 않음
+
+- 심각도: `S4`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 임시 로컬 vault 열기 → 프로젝트 목록 → `My project 상세로 가기`
+  → 인라인 편집 또는 전체 편집
+- 관측: 프로젝트 카드는 실제 로컬 `kind: project` 문서를 정상 표시했지만,
+  상세 링크는 `/project/project/`를 가리켰다. 정적 export에는 빌드 시점의
+  dogfood slug만 생성되므로 설치 WebView에는 해당 파일이 없고, 포인터·접근성
+  `AXPress` 모두 아무 전환 없이 목록에 남았다. 같은 직접 경로를 전역 검색,
+  홈 드로어, 관련 프로젝트, 전체 편집, 저장 후 이동도 공유한다.
+- 사용자 문제: 사람이 이미 선택한 로컬 source of truth의 프로젝트를 목록에서
+  볼 수는 있지만 상세를 읽거나 편집할 수 없어 핵심 과업이 첫 액션에서 중단된다.
+- 사용자 순간: 임의 폴더를 연 직후 프로젝트 루트의 설명·상태·관계를 검토하고
+  다음 편집이나 지도 판단으로 이어가려는 순간.
+- 현재 대안: 문서함에서 project Markdown을 직접 찾거나 외부 편집기로 수정한다.
+- 온톨로지·에이전트 가치: 프로젝트는 containment의 루트다. 사람의 상세 판단과
+  에이전트가 읽는 동일 frontmatter 사이 진입점이 끊기면 공유 의미 계층이라는
+  제품 약속이 성립하지 않는다.
+- 최소화: 새 페이지·카드·문구·색·모션을 만들지 않는다. 빌드타임 프로젝트의
+  공개 canonical 경로는 유지하고, 앱 내부 상세·전체 편집 이동만 이미 정적으로
+  존재하는 `/project/fallback/`의 query 계약으로 모은다. 과거 CDN rewrite
+  pathname 진입도 계속 허용한다.
+- 디자인 계약: 프로젝트 목록의 `primary reading`과 상세의 `active focus` 위계는
+  그대로 둔다. 라우팅만 복구하며 전환 모션·반응형·시각 토큰을 바꾸지 않는다.
+  fallback은 같은 `ProjectDetailPage`/`ProjectEditorPage`를 렌더해 별도 UI
+  변형을 만들지 않는다.
+- 검증 계획: canonical·runtime 상세·runtime 편집 href와 fallback query/pathname
+  해석을 실패 테스트로 고정한다. 설치 앱 임시 vault에서 목록 → 상세 → 인라인
+  저장 → 전체 편집 → 저장 후 같은 상세 복귀를 실행하고 Markdown을 디스크에서
+  확인한다. 새 임의 slug 프로젝트 생성 후에도 같은 흐름을 반복한다.
+- 수정: 정적 dogfood slug는 기존 canonical 경로를 유지하고, 로컬/미확정
+  slug의 앱 내부 링크만 `/project/fallback/?slug=…`로 보낸다. fallback은
+  query의 `mode=edit`와 과거 pathname rewrite를 모두 해석해 기존 상세·편집
+  컴포넌트를 그대로 렌더한다.
+- 설치 앱 증거: scratch vault에서 `audit-second-project`를 생성해
+  `저장하고 계속 보기` → 전체 편집 → 목록 복귀 → 상세 링크를 연속 실행했다.
+  최종 URL은 `/ko/project/fallback/?slug=audit-second-project`, 화면은 실제
+  이름·설명과 `0 도메인 · 0 역량 · 0 요소` 사실을 표시했다.
+- PO 판정: **Build and verify**
+
+### UX-014 — 경로가 자유로운 project 문서 편집이 원본 대신 복제 파일을 만듦
+
+- 심각도: `S4`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: vault 루트 `project.md` 상세 → 프로젝트 이름 인라인 편집 → Enter 저장
+- 관측: 화면은 `이름 저장됨`을 알렸지만 원본 `project.md`의 `title`은 그대로였고,
+  새 `projects/project.md`가 생성됐다. 읽기 계약은 `kind: project`면 경로와
+  무관하게 project로 인정하지만 쓰기 계약은 무조건 `projects/<slug>.md`를
+  upsert해 서로 달랐다.
+- 사용자 문제: 성공 알림을 믿고 편집했는데 source of truth가 바뀌지 않고 같은
+  slug의 복제 노드가 생겨, 이후 목록·상세·에이전트가 어느 문서를 읽는지
+  비결정적이 된다.
+- 사용자 순간: 프로젝트 상세에서 이름·설명을 짧게 고쳐 사람과 에이전트가 읽는
+  동일 Markdown을 갱신하려는 순간.
+- 현재 대안: 문서함이나 외부 편집기에서 실제 파일 경로를 찾아 직접 수정하고,
+  UI가 만든 복제 파일을 수동 정리한다.
+- 온톨로지·에이전트 가치: path-agnostic project 인식과 동일한 역참조로 원본
+  `VaultDoc.slug`를 써야 frontmatter 한 장이 사람·에이전트의 단일 진실원이다.
+- 최소화: 프로젝트 모델이나 폴더 규칙을 새로 만들지 않는다. 이미 존재하는
+  `findProjectVaultDoc(manifest, projectSlug)`를 create 중복 검사,
+  update, delete의 공통 원본 경로 해석에 사용한다. 신규 생성만 기존
+  `projects/<slug>.md` 기본 경로를 유지한다.
+- 디자인 계약: 레이아웃·문구·모션은 바꾸지 않는다. 기존 성공 toast는 실제
+  원본 write가 끝난 뒤에만 의미가 성립하도록 데이터 경계만 복구한다.
+- 검증 계획: 루트 project 문서 update/delete와 경로 무관 중복 생성 거부를 hook
+  테스트로 고정한다. 설치 앱에서 원본 `project.md` mtime·frontmatter가 바뀌고
+  새 `projects/project.md`가 생기지 않는지 확인한다.
+- 수정: create/update/delete가 공통으로 `findProjectVaultDoc`에서 원본
+  `VaultDoc.slug`를 해석한다. 생성은 같은 logical slug가 경로 밖에 있어도
+  거부하고, 갱신·삭제는 실제 파일을 대상으로 한다.
+- 설치 앱 증거: 루트 `project.md`의 `title`을 인라인으로 바꾼 뒤 원본
+  frontmatter와 mtime만 갱신됐고 `projects/project.md`는 생기지 않았다.
+  전체 편집의 담당자·좌표 저장도 같은 루트 파일에 남았다.
+- PO 판정: **Build and verify**
+
+### UX-015 — vault 재로딩 순간 전체 편집이 샘플 모드로 바뀌어 not-found를 고정함
+
+- 심각도: `S4`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 프로젝트 인라인 저장 → 즉시 `프로젝트 정보 수정` → `전체 편집`
+- 관측: 로컬 write 뒤 manifest 증분 재빌드가 `status: loading`으로 전환되자,
+  이미 보존된 로컬 manifest가 있어도 data-source mode가 `static`으로 바뀌었다.
+  편집기는 dogfood 프로젝트 1개에서 로컬 slug를 못 찾고 곧바로
+  `프로젝트를 찾을 수 없습니다`를 영구 상태로 고정했다.
+- 사용자 문제: 성공 직후 이어지는 편집 액션이 실패하고, 재로딩이 끝나도 스스로
+  회복하지 않아 목록으로 후퇴해야 한다.
+- 사용자 순간: 작은 인라인 수정을 마친 뒤 태그·담당·관계를 이어서 정리하거나,
+  새 프로젝트를 생성해 `저장하고 계속`하려는 순간.
+- 현재 대안: 목록으로 돌아가 로딩이 끝날 때까지 기다린 뒤 다시 상세와 편집을
+  연다.
+- 온톨로지·에이전트 가치: 마지막으로 검증된 로컬 manifest가 있는 동안에는
+  dogfood 사실로 source를 바꾸지 않아야 같은 vault 맥락이 유지된다.
+- 최소화: 별도 로딩 화면이나 retry 버튼을 만들지 않는다. 보존 manifest가 있으면
+  transient `loading`에서도 local mode를 유지하고, 편집기는 `loaded:true`가
+  되기 전에는 not-found를 판정하지 않는다.
+- 디자인 계약: `loading`은 기존 편집기 로딩 라벨, 실제 부재만 기존 not-found를
+  사용한다. 새 색·패널·모션 없이 상태 의미만 바로잡는다.
+- 검증 계획: data-source mode가 `loading + manifest`에서 local을 유지하고,
+  project editor가 미완료 로딩을 not-found로 판정하지 않는 테스트를 추가한다.
+  설치 앱에서 인라인 저장 직후 전체 편집과 새 프로젝트 `저장하고 계속`을
+  연속 실행한다.
+- 수정: 검증된 manifest가 남아 있으면 transient `loading`에서도 local mode를
+  유지한다. 편집기는 local vault가 `loaded`가 되기 전 not-found를 확정하지
+  않고, 실제 프로젝트가 도착하면 이전 오류를 지운다.
+- 설치 앱 증거: 인라인 이름 저장 직후 전체 편집을 열어 not-found 없이 실제
+  값을 복원했고, 새 프로젝트 생성 직후에도 편집 화면이 `방금 저장했습니다`와
+  저장된 taxonomy·설명을 바로 표시했다.
+- PO 판정: **Build and verify**
+
+### UX-016 — 짧은 인라인 편집이 없던 분류·상태를 만들어 전체 편집 저장을 막음
+
+- 심각도: `S4`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: category/status가 없는 root project → 이름 인라인 저장 → 전체 편집
+  → 담당자 입력 → `저장 후 돌아가기`
+- 관측: 이름만 바꿨는데 `projectToInput`의 form 전용 기본값
+  `uncategorized/active`와 `position 0,0`, 본문 excerpt가 frontmatter에 함께
+  기록됐다. 전체 편집은 앞의 두 값을 실제 taxonomy에 없는 참조로 정확히
+  거부해 `존재하지 않는 카테고리/상태` 오류를 냈다.
+- 사용자 문제: 작은 필드 하나의 성공 저장이 보이지 않는 다른 필드를 오염시키고,
+  이어지는 전체 편집을 사용자가 고치기 전까지 막는다.
+- 사용자 순간: 상세에서 이름만 빠르게 정리한 뒤 담당·태그 같은 다른 정보를
+  전체 편집에서 이어서 저장하려는 순간.
+- 현재 대안: 생성된 frontmatter 키를 문서함에서 직접 삭제하거나, 전체 편집에서
+  원치 않던 category/status를 새로 선택한다.
+- 온톨로지·에이전트 가치: vault가 가지지 않은 typed fact를 UI가 만들면 사람과
+  에이전트 모두 fabricated classification을 사실로 읽게 된다.
+- 최소화: 전체 form의 명시적 직렬화 계약은 유지한다. 인라인 이름·설명과
+  빠른 편집 이름·설명·담당·태그만 별도 partial frontmatter patch를 사용해
+  사용자가 만진 키 외에는 보존한다. 기존 문서가 `title`만 쓰면 rename은
+  새 `name` 키를 겹쳐 만들지 않고 기존 `title`을 갱신한다.
+- 디자인 계약: 기존 inline/quick-edit UI, validation, toast, 모션을 그대로
+  사용한다. 변경 범위는 성공 toast가 말하는 필드와 실제 disk diff를 일치시키는
+  쓰기 계약뿐이다.
+- 검증 계획: partial patch가 root 원본 경로와 mtime을 쓰고, title/name 형태를
+  보존하며 category/status/position을 전달하지 않는 테스트를 추가한다.
+  설치 앱에서 이름 저장 후 disk diff를 확인하고, 전체 편집 담당자 저장과 상세
+  복귀가 추가 정정 없이 성공하는지 증명한다.
+- 수정: 상세 인라인·빠른 편집은 사용자가 만진 이름·설명·담당·태그만
+  `patchProject`로 쓴다. 전체 편집은 category/status가 없을 때 form 안에서만
+  `미지정 · 원본 유지`를 표시하고, 사용자가 새 값을 고르지 않으면 해당 typed
+  fact와 position을 쓰지 않는다. 기존 문서가 `title`만 쓰면 전체 편집도
+  `name`을 겹쳐 만들지 않고 같은 key-shape를 보존한다.
+- 설치 앱 증거: 인라인 이름 저장의 disk diff에는 기존 `title`만 바뀌었고
+  category/status/position이 생기지 않았다. 최신 설치 앱에서
+  `missing-taxonomy-project` 전체 편집은 두 선택란에
+  `미지정 · 원본 유지`를 표시했다. 담당자만 `Preserve audit`으로 저장한 실제
+  파일에는 owner만 추가되고 category/status/position/name은 생기지 않았으며
+  기존 title 형태가 유지됐다.
+- PO 판정: **Build and verify**
+
+### UX-017 — 새 프로젝트 파일이 graph node 종류 없이 생성됨
+
+- 심각도: `S4`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 프로젝트 목록 → 새 프로젝트 → 이름·설명 입력 → `생성하고 계속 보기`
+  → 실제 Markdown validator 검사
+- 관측: 화면에는 프로젝트가 정상 생성·표시됐지만 새
+  `projects/audit-second-project.md` frontmatter에 `kind: project`가 없었다.
+  `vault:validate`는 `missing-kind`를 경고했고, graph node가 되기 위한 핵심
+  typed fact가 UI 생성 경로에서만 빠졌다.
+- 사용자 문제: 성공한 프로젝트가 목록 UI에는 보이면서 ontology graph와
+  validator에는 불완전한 문서로 남아, 사람과 에이전트가 서로 다른 사실을
+  읽는다.
+- 사용자 순간: 첫 프로젝트를 폼으로 만든 직후 지도·인사이트·에이전트
+  handoff까지 같은 프로젝트가 이어질 것으로 기대하는 순간.
+- 현재 대안: 문서함이나 외부 편집기에서 `kind: project`를 직접 추가한다.
+- 온톨로지·에이전트 가치: `kind`는 Markdown을 graph node로 만드는 최소
+  계약이다. 생성 write가 이를 보장해야 frontmatter 한 장이 사람·에이전트의
+  공유 의미 계층이 된다.
+- 최소화: 폼이나 새 선택지를 추가하지 않는다. Project/ProjectInput 전용
+  serializer가 항상 `kind: project`를 정규화해 신규 생성과 전체 편집이 같은
+  schema를 쓰게 한다.
+- 디자인 계약: 레이아웃·카피·모션·반응형은 바꾸지 않는다. 화면의 성공 상태와
+  디스크의 typed fact를 일치시키는 데이터 계약만 수정한다.
+- 검증: serializer 실패 테스트에 `kind`를 고정했다. 최신 설치 앱에서
+  `kind-contract-project`를 새로 생성한 직후 파일 첫 frontmatter에
+  `kind: project`가 기록됐다. 과거 누락 문서도 전체 편집 저장으로 정규화했고,
+  동일 scratch vault `9 파일`을 다시 검사해 `issue 0 · vault clean`을 얻었다.
+- 추가 source 경계 증거: `missing-taxonomy-project` 상세에서 복사한 링크는
+  현재 locale을 포함한
+  `tauri://localhost/ko/project/fallback/?slug=missing-taxonomy-project`였다.
+  같은 scratch vault에 없는 dogfood slug `ontology-atlas`를 최신 설치 앱의
+  runtime 상세 경로로 직접 열었을 때, 실제 URL을 유지한 채
+  `프로젝트를 찾을 수 없음`을 표시했고 static 샘플 상세는 노출하지 않았다.
+- 회귀 게이트: 프로젝트 흐름 집중 테스트 `15 파일 · 80개`, 전체 테스트
+  `403 파일 · 3,491개`가 통과했다(todo 3개 별도). TypeScript, production
+  build, docs-vault freshness, self-vault validation도 통과했고 lint는
+  오류 0·기존 경고 155개를 보고했다.
 - PO 판정: **Build and verify**
 
 ## 현재 PO·디자인 판정

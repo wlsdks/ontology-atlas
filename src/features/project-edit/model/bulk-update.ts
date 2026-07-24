@@ -1,6 +1,10 @@
 import type { Category } from "@/entities/category";
 import { projectToInput } from "@/entities/project/model/to-input";
-import type { Project } from "@/entities/project/model/types";
+import type {
+  Project,
+  ProjectInput,
+  ProjectPosition,
+} from "@/entities/project/model/types";
 import { findProjectPlacement } from "./placement";
 
 function sortProjectsForBulkUpdate(projects: Project[]) {
@@ -29,7 +33,7 @@ export function buildBulkCategoryUpdateInputs(params: {
   targetSlugs: string[];
   nextCategoryId: string;
   categories: Category[];
-}) {
+}): Array<ProjectInput & { position: ProjectPosition }> {
   const targetSlugSet = new Set(params.targetSlugs);
   const targetCategory = params.categories.find(
     (category) => category.id === params.nextCategoryId,
@@ -40,7 +44,7 @@ export function buildBulkCategoryUpdateInputs(params: {
   }
 
   const nextProjects = [...params.projects];
-  const updates = [];
+  const updates: Array<ProjectInput & { position: ProjectPosition }> = [];
 
   for (const project of sortProjectsForBulkUpdate(params.projects)) {
     if (!targetSlugSet.has(project.slug) || project.category === params.nextCategoryId) {
@@ -57,7 +61,7 @@ export function buildBulkCategoryUpdateInputs(params: {
       position,
     };
 
-    updates.push(projectToInput(updatedProject));
+    updates.push({ ...projectToInput(updatedProject), position });
 
     const index = nextProjects.findIndex((candidate) => candidate.slug === project.slug);
     if (index >= 0) {

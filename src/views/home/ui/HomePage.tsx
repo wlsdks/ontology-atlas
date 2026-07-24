@@ -99,7 +99,7 @@ import {
   detectOrphanProjects,
   detectPromotionCandidates,
   detectStaleProjects,
-  getProjectDetailHref,
+  getProjectRuntimeDetailHref,
   type Project,
   type ProjectImpactMode,
 } from "@/entities/project";
@@ -2444,7 +2444,7 @@ export function HomePage() {
       const project = projectBySlug.get(slug);
       if (!project) return;
 
-      const href = getProjectDetailHref(slug);
+      const href = getProjectRuntimeDetailHref(slug);
       if (!prefetchedProjectHrefsRef.current.has(href)) {
         prefetchedProjectHrefsRef.current.add(href);
         router.prefetch(href);
