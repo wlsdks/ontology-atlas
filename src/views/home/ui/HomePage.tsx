@@ -1674,7 +1674,16 @@ export function HomePage() {
   const handleSelect = useCallback(
     (
       slug: string,
-      options?: { preserveImpact?: boolean },
+      options?: {
+        preserveImpact?: boolean;
+        /**
+         * INDEX 트리에서 고른 선택 (2026-07-24 소유자 지적) — 목록에서 행을
+         * 누르면 좌측 패널이 슬림 탭으로 접혀 방금 펼친 자식이 사라졌다.
+         * "목록을 보는 중" 이라는 맥락이 명확하므로 이 경우엔 좌측 패널을
+         * 계속 열어 둔다(지도에서 고른 선택은 종전대로 접혀 지도가 넓어진다).
+         */
+        keepIndexOpen?: boolean;
+      },
     ) => {
       // Ontology node clicks and shareable vault slugs both stay on
       // /topology; selected-node resolution happens against ontologyInsight.
@@ -1685,6 +1694,10 @@ export function HomePage() {
       // 새 노드 선택(연결 클릭 포함) = 관계 row 가 보이는 inspector 부터.
       // 사용자가 지도만 크게 보고 싶을 때 "지도 보기"로 명시적으로 접는다.
       interactionSelectedSlugRef.current = slug;
+      // INDEX 트리에서 고른 선택은 목록을 접지 않는다 (2026-07-24 소유자
+      // 지적: 행을 누르면 패널이 슬림 탭으로 접혀 방금 펼친 자식이 사라졌다).
+      // 지도에서 고른 선택은 종전대로 접혀 지도가 넓어진다.
+      if (options?.keepIndexOpen) setIndexManualExpandDuringSelection(true);
       setFullDetailSlug(null);
       setSelectedRelationActive(false);
       setNodePopoverDismissed(false);
@@ -3196,7 +3209,7 @@ export function HomePage() {
                     domainCount={indexDomainCount}
                     changedSlugs={changedSlugs}
                     selectedId={canvasSelectedSlug}
-                    onSelect={(id) => handleSelect(id)}
+                    onSelect={(id) => handleSelect(id, { keepIndexOpen: true })}
                     onCollapse={handleIndexCollapse}
                     onStartTour={openGuidedTour}
                     onEnablePlainMode={() => setAudiencePlain(true)}
