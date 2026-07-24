@@ -1,7 +1,27 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { buildStudioItem, type StudioSourceEdge, type StudioSourceNode } from "../lib/build-studio-item";
+import { buildStudioMap } from "../lib/build-studio-map";
 import { StudioArena, type StudioArenaLabels } from "./StudioArena";
+
+// The central visual is now the app's real canvas renderer. jsdom can mount it,
+// but the rAF/ResizeObserver loop is noise for a chrome test — mock it to a
+// lightweight probe that echoes the focus + node count it was handed, so we can
+// assert the arena embeds the map focused on the right node.
+vi.mock("@/widgets/topology-map-v2", () => ({
+  TopologyMapV2: (props: {
+    nodes: unknown[];
+    realmRootId?: string | null;
+    canvasLabel?: string;
+  }) => (
+    <div
+      data-testid="topology-map-v2"
+      data-realm={props.realmRootId ?? ""}
+      data-node-count={props.nodes.length}
+      aria-label={props.canvasLabel}
+    />
+  ),
+}));
 
 const NODES: StudioSourceNode[] = [
   { id: "domain:payment", title: "결제 도메인", kind: "domain" },
@@ -49,30 +69,54 @@ const labels: StudioArenaLabels = {
   enhance: "강화하기",
   enhanceSub: "직접 적용",
   agent: "에이전트에게 맡기기",
+  mapAria: "결제 승인 노드 지도",
 };
 
-const kindLabel = (kind: string) => ({ capability: "역량", domain: "도메인", element: "요소" })[kind] ?? kind;
-
+// buildStudioMap wants the richer KnowledgeGraph fields (id/evidenceIds/…),
+// absent in these structural fixtures. The arena only forwards the graph to the
+// (mocked) renderer, so filling the missing fields keeps the fixture small.
 function renderArena(onDeferredAction = vi.fn()) {
   const item = buildStudioItem("cap:pay-approve", NODES, EDGES)!;
+  const map = buildStudioMap(
+    "cap:pay-approve",
+    NODES.map((n) => ({ ...n, projectIds: [], evidenceIds: [], lastApprovedAt: new Date(0), lastApprovedBy: "" })),
+    EDGES.map((e, i) => ({
+      ...e,
+      id: `e${i}`,
+      projectIds: [],
+      evidenceIds: [],
+      lastApprovedAt: new Date(0),
+      lastApprovedBy: "",
+    })),
+  );
   render(
     <StudioArena
       item={item}
+      map={map}
       labels={labels}
-      kindLabel={kindLabel}
       onDeferredAction={onDeferredAction}
-      particleSeeds={[]}
     />,
   );
-  return { item, onDeferredAction };
+  return { item, map, onDeferredAction };
 }
 
 describe("StudioArena", () => {
-  it("renders the node as the hexagon item with its kind eyebrow", () => {
+  it("embeds the real topology map focused on the node's ego world", async () => {
+    const { map } = renderArena();
+    const embed = screen.getByTestId("studio-map");
+    const canvas = screen.getByTestId("topology-map-v2");
+    expect(embed).toContainElement(canvas);
+    // Ego subgraph = focal + its direct neighbors.
+    expect(canvas).toHaveAttribute("data-node-count", String(map.nodes.length));
+    expect(map.nodes.some((n) => n.id === "cap:pay-approve" && n.isHub)).toBe(true);
+    // The map enters the focal node's realm one frame after mount so it frames
+    // the node's own world (the amber hub of its ego graph).
+    await waitFor(() => expect(canvas).toHaveAttribute("data-realm", "cap:pay-approve"));
+  });
+
+  it("no longer hand-draws a hexagon item", () => {
     renderArena();
-    const hex = screen.getByTestId("studio-hex");
-    expect(hex).toHaveTextContent("결제 승인");
-    expect(hex).toHaveTextContent("역량");
+    expect(screen.queryByTestId("studio-hex")).toBeNull();
   });
 
   it("renders the node's real relations as filled gem sockets with neighbors", () => {

@@ -11,6 +11,7 @@ import { useOntologyKindLabel } from "@/entities/ontology-class";
 import type { SimilarNodeCandidate } from "@/shared/lib/similar-node-title";
 import { EmptyState, useToast } from "@/shared/ui";
 import { buildStudioItem, selectDefaultStudioNodeId } from "../lib/build-studio-item";
+import { buildStudioMap } from "../lib/build-studio-map";
 import {
   buildCreateNodeDoc,
   buildMcpPacket,
@@ -81,6 +82,14 @@ export function OntologyStudioPage() {
     if (!targetId) return null;
     return buildStudioItem(targetId, nodes, edges);
   }, [nodes, edges, requestedNode]);
+
+  // Ego subgraph for the focal node, adapted to the app's real map renderer —
+  // the ENHANCE arena's central visual. Keyed off the resolved item so it
+  // tracks the same focal node the stats/sockets describe.
+  const studioMap = useMemo(
+    () => (item ? buildStudioMap(item.node.id, nodes, edges) : { nodes: [], edges: [] }),
+    [item, nodes, edges],
+  );
 
   // ── CREATE mode data ───────────────────────────────────────────────────
   const writable = mode === "local" && localVault.status === "loaded";
@@ -267,6 +276,7 @@ export function OntologyStudioPage() {
     enhance: t("enhance"),
     enhanceSub: t("enhanceSub"),
     agent: t("agent"),
+    mapAria: t("mapAria", { title: item?.node.label ?? "" }),
   };
 
   if (!item) {
@@ -294,10 +304,9 @@ export function OntologyStudioPage() {
   return (
     <StudioArena
       item={item}
+      map={studioMap}
       labels={labels}
-      kindLabel={kindLabel}
       onDeferredAction={onDeferredAction}
-      particleSeeds={PARTICLE_SEEDS}
       onCreate={enterCreate}
       createLabel={t("create.entry")}
     />
