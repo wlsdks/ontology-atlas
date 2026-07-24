@@ -11,10 +11,15 @@ import { expect, test } from "@playwright/test";
  */
 
 async function gotoAndSettle(page: import("@playwright/test").Page, url: string) {
-  // 폴더-우선 첫 방문 시트(2026-07-24)는 별도 플로우 — 이 spec 은 투어만
-  // 검증하므로 자동 오픈 플래그를 시드해 시트가 끼어들지 않게 한다.
+  // 이 spec 은 투어를 **수동으로** 열어 검증한다. 두 자동 표면을 시드로
+  // 억제한다: ① 폴더-우선 안내 시트(vault-open-guide:auto:v1), ② 첫 방문
+  // 자동 투어(guided-tour:v1). 자동 투어를 끄지 않으면 900ms 발화가 수동
+  // 클릭과 경합해 느린 CI 에서 tour-button 이 오버레이에 가려 클릭이 타임
+  // 아웃된다(2026-07-24 CI flake 원인). done 시드는 재실행을 막지 않는다 —
+  // tour-button 은 저장 상태와 무관하게 항상 tour.start() 를 부른다.
   await page.addInitScript(() => {
     window.localStorage.setItem("vault-open-guide:auto:v1", "1");
+    window.localStorage.setItem("guided-tour:v1", "done");
   });
   await page.goto(url);
   await page.waitForLoadState("networkidle");

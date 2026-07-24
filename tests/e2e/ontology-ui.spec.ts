@@ -38,13 +38,16 @@ test.describe("ontology view UI", () => {
   test("desktop: /download exposes the app CTA and the absorbed intro section", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/download/");
+    // 2026-07 download 페이지 재설계 — 옛 히어로 문구/링크명이 바뀌었다
+    // (`download.title` = "Install once…", primaryCta = "Check GitHub
+    // releases"). 릴리스 href 는 primary CTA(MacosDownloadLink)가, 소스는
+    // sourceCta 가 담당한다.
     await expect(
-      page.getByRole("heading", { name: "Until we all finally see the same thing" }),
+      page.getByRole("heading", { name: "Install once. Work from your local vault." }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Open macOS releases" })).toHaveAttribute(
-      "href",
-      "https://github.com/wlsdks/ontology-atlas/releases",
-    );
+    await expect(
+      page.getByRole("link", { name: "Check GitHub releases" }).first(),
+    ).toHaveAttribute("href", "https://github.com/wlsdks/ontology-atlas/releases");
     await expect(page.getByRole("link", { name: "View source code" })).toHaveAttribute(
       "href",
       "https://github.com/wlsdks/ontology-atlas",
