@@ -30,7 +30,7 @@ const OVERVIEW_LABEL_BOTTOM_ALLOWANCE = Math.max(...Object.values(LABEL_OFFSET))
  */
 describe("computeOverviewCameraTarget", () => {
   const bounds = { minX: -100, minY: -100, maxX: 100, maxY: 100 };
-  const tokens = { cameraScaleMax: 2.6, cameraScaleMin: 0.24, overviewEntryRatio: 0.95 };
+  const tokens = { cameraScaleMax: 2.6, cameraScaleMin: 0.24, cameraSmallGraphScaleMax: 1.3, overviewEntryRatio: 0.95 };
   const FAR_HIGH_RATIO = 0.92; // --topology-v2-altitude-far-high-ratio
 
   it("scales the tight fit by overviewEntryRatio, keeping the same center", () => {
@@ -70,6 +70,31 @@ describe("computeOverviewCameraTarget", () => {
     const overview = computeOverviewCameraTarget(tiny, 1000, 1000, tokens);
     expect(overview.tscale).toBeLessThanOrEqual(tokens.cameraScaleMax + 1e-9);
   });
+
+  it("#11 — caps the fit at cameraSmallGraphScaleMax for a small (≤5-node) graph", () => {
+    // Onboarding: a 1–3-node vault has minuscule bounds, so the plain fit
+    // pins to cameraScaleMax (2.6) and a lone hexagon fills half the screen.
+    // With nodeCount ≤ 5 the fit is capped at cameraSmallGraphScaleMax (1.3),
+    // then the entry ratio applies — well under the plain-fit ceiling.
+    const tiny = { minX: -1, minY: -1, maxX: 1, maxY: 1 };
+    const clamped = computeOverviewCameraTarget(tiny, 1000, 1000, tokens, 1);
+    expect(clamped.tscale).toBeLessThanOrEqual(
+      tokens.cameraSmallGraphScaleMax * tokens.overviewEntryRatio + 1e-9,
+    );
+    // …and it must be strictly tighter than the un-clamped (no nodeCount) fit.
+    const unclamped = computeOverviewCameraTarget(tiny, 1000, 1000, tokens);
+    expect(clamped.tscale).toBeLessThan(unclamped.tscale);
+  });
+
+  it("#11 — does NOT clamp a larger graph: big bounds never reach the small-graph ceiling anyway", () => {
+    // A many-node vault (nodeCount > 5) keeps the full cameraScaleMax path, but
+    // its bounds are large so the fit is far below either ceiling — passing the
+    // count must not change the result for a normal graph.
+    const wide = { minX: -400, minY: -400, maxX: 400, maxY: 400 };
+    const withCount = computeOverviewCameraTarget(wide, 1000, 1000, tokens, 200);
+    const without = computeOverviewCameraTarget(wide, 1000, 1000, tokens);
+    expect(withCount.tscale).toBeCloseTo(without.tscale, 6);
+  });
 });
 
 /**
@@ -81,7 +106,7 @@ describe("computeOverviewCameraTarget — panel-aware safe insets", () => {
   const bounds = { minX: -100, minY: -100, maxX: 100, maxY: 100 };
   const W = 1000;
   const H = 800;
-  const base = { cameraScaleMax: 2.6, cameraScaleMin: 0.24, overviewEntryRatio: 0.95 };
+  const base = { cameraScaleMax: 2.6, cameraScaleMin: 0.24, cameraSmallGraphScaleMax: 1.3, overviewEntryRatio: 0.95 };
 
   it("renders the graph center at the visible-area midpoint, not the raw screen center", () => {
     const insetTokens = { ...base, safeInsetLeft: 344, safeInsetRight: 120, safeInsetTop: 96, safeInsetBottom: 96 };

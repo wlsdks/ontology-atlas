@@ -19,6 +19,7 @@ import { buildContainmentParents } from "@/shared/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { HexMark } from "@/shared/ui/hex-mark";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
+import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { DomainCapacityBar } from "@/widgets/domain-capacity-bar";
 import { RecentNodeRow } from "@/widgets/recent-node-row";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
@@ -63,6 +64,15 @@ export function ProjectSelectorPage() {
   const vault = useLocalVault();
   const dataSourceMode = useDataSourceMode();
 
+  // #15 설정 위치 통일 — 지도(HomePage)·인사이트와 동일하게 lg+ 는 나브레일
+  // 하단 rail-tile 톱니가 설정을 연다. <lg 는 아래 상단 유틸 레인의
+  // chrome-tile 이 담당(레일이 숨는 폭). 둘 다 uncontrolled.
+  const navRailSettingsSlot = useMemo(
+    () => <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />,
+    [dataSourceMode],
+  );
+  useNavRailSettingsSlot(navRailSettingsSlot);
+
   const nodes = useMemo(() => insight?.nodes ?? [], [insight]);
   const edges = useMemo(() => insight?.edges ?? [], [insight]);
   const nodeById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
@@ -97,7 +107,11 @@ export function ProjectSelectorPage() {
       <main id="main" className="min-w-0 flex-1 bg-[color:var(--color-canvas)] max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]">
         <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6">
           <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
-          <AppSettingsMenu mode={dataSourceMode} />
+          {/* #15 — 설정은 lg+ 에선 나브레일 하단 톱니. 레일이 숨는 <lg 에서만
+              chrome-tile 로 노출. */}
+          <div className="lg:hidden">
+            <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
+          </div>
         </div>
         <div className="mx-auto px-5 py-6 md:px-10 md:py-10" style={{ maxWidth: PAGE_MAX_WIDTH }}>
         <nav className="mb-5 flex flex-wrap items-center gap-2.5 text-body text-[color:var(--color-text-tertiary)]">

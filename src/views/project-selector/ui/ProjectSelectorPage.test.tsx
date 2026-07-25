@@ -74,6 +74,13 @@ vi.mock("@/widgets/app-settings-menu", () => ({
   AppSettingsMenu: () => <button type="button" data-testid="app-settings-trigger-stub" />,
 }));
 
+// #15 — 설정을 나브레일 하단 슬롯으로 옮기면서 페이지가 useNavRailSettingsSlot
+// 을 호출한다. 이 훅은 provider 없이는 throw 하므로(레이아웃 상주 계약),
+// 페이지 단위 테스트에선 no-op 로 스텁한다.
+vi.mock("@/widgets/app-nav-rail", () => ({
+  useNavRailSettingsSlot: () => {},
+}));
+
 vi.mock("../lib/use-vault-docs", () => ({
   useVaultDocs: () => [
     {

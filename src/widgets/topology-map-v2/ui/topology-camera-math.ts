@@ -171,16 +171,35 @@ function readSafeInsets(tokens: SafeInsetTokens): SafeInsets {
  * chrome). This is the altitude band's "100%" anchor (`overviewScaleRef`) —
  * derived here so the anchor and the panel-aware overview target stay in sync.
  */
+/**
+ * #11 — a graph with this many nodes or fewer counts as "small" for the
+ * overview-fit ceiling. A just-onboarded vault (project + a domain + one
+ * created node) has a minuscule spine bbox that the plain fit blows up to
+ * `cameraScaleMax`, so a single hexagon fills half the screen. Below this
+ * threshold the fit is capped at `cameraSmallGraphScaleMax` instead.
+ */
+export const SMALL_GRAPH_NODE_MAX = 5;
+
 export function computeOverviewFitScale(
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
   viewportWidth: number,
   viewportHeight: number,
-  tokens: Pick<TopologyV2Tokens, "cameraScaleMax" | "cameraScaleMin"> & SafeInsetTokens,
+  tokens: Pick<TopologyV2Tokens, "cameraScaleMax" | "cameraScaleMin" | "cameraSmallGraphScaleMax"> & SafeInsetTokens,
+  /**
+   * #11 — total node count. When ≤ `SMALL_GRAPH_NODE_MAX`, the fit is capped at
+   * `cameraSmallGraphScaleMax` so a tiny vault doesn't over-zoom. Omitted (the
+   * pure camera-math tests) → no small-graph clamp, previous behavior exactly.
+   */
+  nodeCount?: number,
 ): number {
   const insets = readSafeInsets(tokens);
   const effW = Math.max(1, viewportWidth - insets.left - insets.right);
   const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
-  return fitWorldTarget(bounds, effW, effH, tokens.cameraScaleMax, tokens.cameraScaleMin).tscale;
+  const maxScale =
+    nodeCount !== undefined && nodeCount <= SMALL_GRAPH_NODE_MAX
+      ? Math.min(tokens.cameraScaleMax, tokens.cameraSmallGraphScaleMax)
+      : tokens.cameraScaleMax;
+  return fitWorldTarget(bounds, effW, effH, maxScale, tokens.cameraScaleMin).tscale;
 }
 
 /**
@@ -195,10 +214,12 @@ export function computeOverviewCameraTarget(
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
   viewportWidth: number,
   viewportHeight: number,
-  tokens: Pick<TopologyV2Tokens, "cameraScaleMax" | "cameraScaleMin" | "overviewEntryRatio"> & SafeInsetTokens,
+  tokens: Pick<TopologyV2Tokens, "cameraScaleMax" | "cameraScaleMin" | "cameraSmallGraphScaleMax" | "overviewEntryRatio"> & SafeInsetTokens,
+  /** #11 — total node count, forwarded to the small-graph fit clamp. */
+  nodeCount?: number,
 ): CameraTarget {
   const insets = readSafeInsets(tokens);
-  const fitScale = computeOverviewFitScale(bounds, viewportWidth, viewportHeight, tokens);
+  const fitScale = computeOverviewFitScale(bounds, viewportWidth, viewportHeight, tokens, nodeCount);
   const tscale = Math.min(tokens.cameraScaleMax, Math.max(tokens.cameraScaleMin, fitScale * tokens.overviewEntryRatio));
   const centerX = (bounds.minX + bounds.maxX) / 2;
   const centerY = (bounds.minY + bounds.maxY) / 2;

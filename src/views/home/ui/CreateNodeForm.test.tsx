@@ -7,7 +7,9 @@ const labels: CreateNodeFormLabels = {
   titlePlaceholder: "노드 이름",
   kind: "종류",
   domain: "도메인",
-  domainPlaceholder: "도메인 slug (선택)",
+  domainQuestion: "어느 묶음(도메인)에 넣을까요? (선택)",
+  domainNone: "도메인 없음",
+  domainHelper: "도메인 = 관련 기능을 묶는 큰 영역이에요.",
   create: "만들기",
   cancel: "취소",
   kindLabels: { project: "프로젝트", domain: "도메인", capability: "역량", element: "요소" },
@@ -16,6 +18,11 @@ const labels: CreateNodeFormLabels = {
   localeNamesHint: "위 칸은 지금 화면 언어 이름이에요.",
   primaryLocaleRequired: "한국어 이름도 적어야 저장돼요",
 };
+
+const domainOptions = [
+  { value: "auth", label: "인증" },
+  { value: "billing", label: "결제" },
+];
 
 describe("CreateNodeForm", () => {
   it("title 비면 만들기 버튼 disabled", () => {
@@ -39,11 +46,21 @@ describe("CreateNodeForm", () => {
     expect(screen.getByText("노드 추가")).toHaveAttribute("id", "create-node-heading");
   });
 
-  it("title 입력 시 활성화 → onCreate 가 title·kind·domain 으로 호출", async () => {
+  it("title 입력 + 도메인 선택 → onCreate 가 title·kind·domain(slug) 으로 호출", async () => {
     const onCreate = vi.fn();
-    render(<CreateNodeForm onCreate={onCreate} labels={labels} defaultKind="capability" />);
+    render(
+      <CreateNodeForm
+        onCreate={onCreate}
+        labels={labels}
+        defaultKind="capability"
+        domainOptions={domainOptions}
+      />,
+    );
     fireEvent.change(screen.getByTestId("create-node-title"), { target: { value: "  Token Issue  " } });
-    fireEvent.change(screen.getByTestId("create-node-domain"), { target: { value: " auth " } });
+    // #8 — 자유 입력이 아니라 캐노니컬 Select: 기존 도메인을 이름으로 고르고
+    // 값은 slug(auth)가 전달된다.
+    fireEvent.click(screen.getByTestId("create-node-domain"));
+    fireEvent.click(screen.getByRole("option", { name: "인증" }));
     expect(screen.getByTestId("create-node-submit")).not.toBeDisabled();
     fireEvent.click(screen.getByTestId("create-node-submit"));
     await waitFor(() =>
@@ -51,9 +68,9 @@ describe("CreateNodeForm", () => {
     );
   });
 
-  it("domain 비면 undefined 로 전달", async () => {
+  it("도메인 없음(기본) 이면 undefined 로 전달", async () => {
     const onCreate = vi.fn();
-    render(<CreateNodeForm onCreate={onCreate} labels={labels} />);
+    render(<CreateNodeForm onCreate={onCreate} labels={labels} domainOptions={domainOptions} />);
     fireEvent.change(screen.getByTestId("create-node-title"), { target: { value: "Auth" } });
     fireEvent.click(screen.getByTestId("create-node-submit"));
     await waitFor(() =>

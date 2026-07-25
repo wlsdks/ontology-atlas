@@ -165,13 +165,6 @@ export interface UseTopologyLoopArgs {
    * mtime 산수(useAdaptiveRecentChanges)로 만든다.
    */
   spotlightIds?: ReadonlySet<string> | null;
-  /**
-   * M-9 — "그래프"(살아있는 그래프) 토글. true 면 force 시뮬을 상시 웜
-   * 상태로 유지해 레이아웃이 유기적으로 계속 이완한다 (옵시디언식 촉각).
-   * 유휴 게이트는 simWarm 경유로 자동 활동 인정. false 로 돌아가면 heat
-   * 가 자연 감쇠해 마지막 이완 위치에서 정지한다.
-   */
-  livePhysics?: boolean;
   /** 엣지 선택 = 페어 포커스 (양끝만 표시, 선택 엣지 pale 인디고). */
   selectedEdge?: { sourceId: string; targetId: string } | null;
   /**
@@ -243,7 +236,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, livePhysics = false, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -535,8 +528,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** 스포트라이트 — prop 미러(같은 패턴) + on/off 지수 램프(0..1, 프레임 바디가 step). */
   const spotlightIdsRef = useRef<ReadonlySet<string> | null>(spotlightIds);
   const spotlightRampRef = useRef(0);
-  /** M-9 — mirrors `livePhysics` into a ref for the rAF closure. */
-  const livePhysicsRef = useRef<boolean>(false);
   /** M-5 — mirror the tier-change callback into a ref for the rAF closure, and
    * track the last emitted tier so the callback fires only on transitions. */
   const onZoomTierChangeRef = useRef<typeof onZoomTierChange>(onZoomTierChange);
@@ -598,10 +589,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     spotlightIdsRef.current = spotlightIds;
   }, [spotlightIds]);
-
-  useEffect(() => {
-    livePhysicsRef.current = livePhysics;
-  }, [livePhysics]);
 
   useEffect(() => {
     tierRevealRef.current = tierReveal;
@@ -707,14 +694,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // the full bounds while the camera sits at the spine fit, zoomRatio would be
     // ≫1 at entry and capabilities would cross-fade in immediately (soup) and
     // farT would drift off circuit.
-    const target = computeOverviewCameraTarget(world.spineBounds, width, height, tokens);
+    const target = computeOverviewCameraTarget(world.spineBounds, width, height, tokens, world.nodes.length);
     cameraRef.current = {
       x: { value: target.tx, velocity: 0 },
       y: { value: target.ty, velocity: 0 },
       scale: { value: target.tscale, velocity: 0 },
     };
     cameraTargetRef.current = target;
-    overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
+    overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     hasInitializedRef.current = true;
   };
@@ -869,9 +856,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // SPINE bbox (not the full 295-node bounds) so "fit view" reframes the same
     // legible 8-node spine as the initial entry — and keeps `overviewScaleRef`
     // on the same spine bounds so the zoom-ratio/altitude anchor stays at ratio 1.
-    const overviewTarget = computeOverviewCameraTarget(world.spineBounds, width, height, tokens);
+    const overviewTarget = computeOverviewCameraTarget(world.spineBounds, width, height, tokens, world.nodes.length);
     cameraTargetRef.current = overviewTarget;
-    overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
+    overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
     dampingRef.current = tokens.cameraDampingDefault;
     // Dive-zoom fix — "fit view"/relayout is a PROGRAMMATIC camera move, so it
     // eases via the cubic transition tween (reduced-motion → spring/snap), not
@@ -1141,9 +1128,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         // S8 결함 2 — 진입 시 저장한 키프레임이 있으면 그 "원래 보던 곳"으로
         // 복귀(없으면 overview fit 폴백). 750ms 트윈 유지.
         const savedEntry = realmDataRef.current?.entryCamera ?? null;
-        const target = savedEntry ?? computeOverviewCameraTarget(world.spineBounds, width, height, tokens);
+        const target = savedEntry ?? computeOverviewCameraTarget(world.spineBounds, width, height, tokens, world.nodes.length);
         cameraTargetRef.current = target;
-        overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
+        overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
         dampingRef.current = tokens.cameraDampingDefault;
         cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
         // 750ms 트윈 — 안무(안 역FLIP 660 / 밖 귀환 650)와 동기. 입장 860 패턴.
@@ -1197,9 +1184,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         prevCameraSampleRef.current = { x: cam.x.value, y: cam.y.value, s: cam.scale.value };
         const active = isCanvasActive({
           pointerActive: pointerMachineRef.current.phase !== "idle",
-          // M-9 — 살아있는 그래프 토글은 그 자체가 활동이다 (heat 충전이
-          // 게이트 뒤에 있어 스킵 중엔 못 돌므로 플래그로 직접 각성).
-          simWarm: heatRef.current > 0 || nodeDragRef.current !== null || livePhysicsRef.current,
+          // 드래그 grab/release 가 heat 를 충전하는 동안(또는 노드가 pin 된
+          // 동안)만 시뮬을 웜으로 인정한다. 상시 물리 토글은 제거됐다(#19).
+          simWarm: heatRef.current > 0 || nodeDragRef.current !== null,
           homing: homingActiveRef.current,
           selectionPulseActive: selectionPulseRef.current !== null &&
             now - selectionPulseRef.current.startAtMs < tokens.selectPulseDurationMs,
@@ -1245,9 +1232,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // reframing only existed to chase the removed load settle). ---
       const sim = simRef.current;
       const pinned = nodeDragRef.current !== null;
-      // M-9 — 살아있는 그래프: 토글이 켜져 있는 동안 시뮬 heat 를 매 프레임
-      // 채워 물리 tick 이 계속 돈다 (유휴 게이트는 simWarm 으로 자동 각성).
-      if (livePhysicsRef.current) heatRef.current = Math.max(heatRef.current, 16.7);
       // C1 B3: a user grab interrupts any in-flight auto-arrange homing —
       // the drag wins, rather than the two fighting over the node's position.
       if (pinned && homingActiveRef.current) {
@@ -1543,12 +1527,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // 축소 프레임에 고착됐다. 역재생으로 노드가 홈으로 돌아오는 매 프레임
           // spineBounds 가 회복되므로 상한 anchor 를 라이브로 재계산해 트윈→스프링
           // 인계 시점에 상한이 목표를 누르지 않게 한다(fresh/deselect 경로와 동치).
-          overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
+          overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
         } else if (rt.phase === "idle" && realmDataRef.current !== null) {
           // 이탈 완료 — 역재생이 홈으로 되돌렸으니 realm 데이터 정리 + 홈 spineBounds
           // 기준으로 overview anchor 를 최종 확정(위 exiting 재계산의 마감).
           realmDataRef.current = null;
-          overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
+          overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
         }
       }
 

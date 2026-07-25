@@ -39,6 +39,7 @@ import {
   useLocalVault,
 } from '@/features/docs-vault-local';
 import { AppSettingsMenu } from '@/widgets/app-settings-menu';
+import { useNavRailSettingsSlot } from '@/widgets/app-nav-rail';
 import { copyText } from '@/shared/lib/copy-text';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
@@ -238,6 +239,19 @@ function DocsVaultContent() {
   // manifest가 먼저 렌더되어 직전 문서를 덮어쓰는 레이스를 막는다.
   const [sourcePreferenceHydrated, setSourcePreferenceHydrated] =
     useState(false);
+  // #15 설정 위치 통일 — 지도·인사이트·프로젝트와 동일하게 lg+ 는 나브레일
+  // 하단 rail-tile 톱니가 설정을 연다. <lg 는 헤더의 chrome-tile 이 담당
+  // (레일이 숨는 폭). 둘 다 uncontrolled.
+  const navRailSettingsSlot = useMemo(
+    () => (
+      <AppSettingsMenu
+        mode={source === 'local' ? 'local' : 'static'}
+        triggerVariant="rail-tile"
+      />
+    ),
+    [source],
+  );
+  useNavRailSettingsSlot(navRailSettingsSlot);
   const isDesktopRuntime = useSyncExternalStore(
     subscribeDesktopRuntime,
     readDesktopRuntime,
@@ -1784,8 +1798,14 @@ function DocsVaultContent() {
               AppSettingsMenu 의 vault / mcpAgents 탭이 소유한다. 헤더에는 그
               집으로 가는 설정 게어만 남긴다(신규 표면·신규 탭 0). 로컬 vault
               관리(picker)도 설정 vault 탭에서 열린다 — vault pill 은 고빈도
-              swap 만 담당. */}
-          <AppSettingsMenu mode={source === 'local' ? 'local' : 'static'} />
+              swap 만 담당. #15 — lg+ 는 나브레일 하단 톱니가 담당하고, 레일이
+              숨는 <lg 에서만 chrome-tile 로 노출한다. */}
+          <div className="lg:hidden">
+            <AppSettingsMenu
+              mode={source === 'local' ? 'local' : 'static'}
+              triggerVariant="chrome-tile"
+            />
+          </div>
         </div>
       </header>
       </div>

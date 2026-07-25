@@ -68,7 +68,6 @@ export interface TopologyMapV2Props {
   edges: readonly TopologyV2Edge[];
   focus: TopologyV2Focus;
   changedSlugs?: ReadonlySet<string>;
-  livePhysics: boolean;
   /** Increment to re-run fit-to-bounds (HomePage "지도 맞추기"). */
   fitViewToken: number;
   /** Increment to force a full relayout. */
@@ -215,7 +214,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, livePhysics, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -241,7 +240,6 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       onContextMenuNode,
       agentFocusNodeId,
       spotlightIds,
-      livePhysics,
       expandedParents,
       onToggleCluster,
       onHoverCluster,

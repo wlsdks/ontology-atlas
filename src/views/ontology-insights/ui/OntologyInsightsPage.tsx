@@ -35,6 +35,7 @@ import {
 } from "@/shared/lib/ontology-tree";
 import { MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
+import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { EmptyState, HexMark, TabBar } from "@/shared/ui";
 import {
   DEFAULT_INSIGHTS_TAB,
@@ -113,22 +114,12 @@ export function OntologyInsightsPage() {
     return () => window.removeEventListener("popstate", syncTabFromHistory);
   }, []);
 
-  // P3 결함⑥ (사용성 전수 검수 2026-07-23) — 검색 팔레트(⌘K)와 앱 설정
-  // 다이얼로그가 각자 self-managed open state 였던 탓에 둘이 동시에 뜰 수
-  // 있었다(transient 강등 위반). 두 state 를 이 페이지가 소유해 대칭으로
-  // 서로를 닫는다 — 열리는 쪽이 이긴다, 스택 금지. `MountedGlobalSearch` 를
-  // controlled 로 돌리면 내장 ⌘K 바인딩이 꺼지므로(controlled mount 계약)
-  // 같은 hotkey 훅을 여기서 직접 걸어 대칭 로직을 함께 태운다.
-  const [searchPaletteOpen, setSearchPaletteOpenState] = useState(false);
-  const [appSettingsOpen, setAppSettingsOpenState] = useState(false);
-  const setSearchPaletteOpen = useCallback((next: boolean) => {
-    setSearchPaletteOpenState(next);
-    if (next) setAppSettingsOpenState(false);
-  }, []);
-  const setAppSettingsOpen = useCallback((next: boolean) => {
-    setAppSettingsOpenState(next);
-    if (next) setSearchPaletteOpenState(false);
-  }, []);
+  // #15 설정 위치 통일 — 인사이트만 우상단 헤더 필 설정이었던 것을 다른
+  // 표면(지도)과 같은 LNB 하단 톱니로 옮겼다(아래 `useNavRailSettingsSlot`).
+  // AppSettingsMenu 는 자체적으로 ⌘K 를 받으면 시트를 닫으므로(line 331,
+  // "one overlay owns one Escape"), 검색 팔레트(모달·스크림)와 설정이 겹쳐
+  // 뜨는 경로가 없다 — 구 controlled 대칭 상호배제 상태는 필요 없어졌다.
+  const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   useGlobalSearchHotkey(searchPaletteOpen, setSearchPaletteOpen);
 
   // 지도 딥링크에 출처 마커(`via=insights:<tab>`)를 새긴다 — 지도(HomePage)가
@@ -148,6 +139,16 @@ export function OntologyInsightsPage() {
   const docFreshnessIndex = useVaultDocFreshnessIndex();
   const vault = useLocalVault();
   const dataSourceMode = useDataSourceMode();
+
+  // #15 설정 위치 통일 — 지도(HomePage)와 동일하게 lg+ 는 나브레일 하단
+  // rail-tile 톱니로 설정을 연다. <lg 는 아래 상단 유틸 레인의 chrome-tile
+  // (레일이 숨는 폭)이 담당. 둘 다 uncontrolled 라 보이는 트리거만 클릭돼
+  // 이중 포털이 나지 않는다.
+  const navRailSettingsSlot = useMemo(
+    () => <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />,
+    [dataSourceMode],
+  );
+  useNavRailSettingsSlot(navRailSettingsSlot);
 
   const nodes = insight?.nodes ?? EMPTY_NODES;
   const edges = insight?.edges ?? EMPTY_EDGES;
@@ -529,7 +530,11 @@ export function OntologyInsightsPage() {
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6">
           <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
-          <AppSettingsMenu mode={dataSourceMode} open={appSettingsOpen} onOpenChange={setAppSettingsOpen} />
+          {/* #15 — 설정은 lg+ 에선 나브레일 하단 톱니가 담당. 레일이 숨는
+              <lg 에서만 chrome-tile 로 노출(지도와 동일 계약). */}
+          <div className="lg:hidden">
+            <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
+          </div>
         </div>
         <main id="main" className="mx-auto w-full max-w-[var(--page-max)] px-6 py-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-10">
         <MountedGlobalSearch open={searchPaletteOpen} onOpenChange={setSearchPaletteOpen} />

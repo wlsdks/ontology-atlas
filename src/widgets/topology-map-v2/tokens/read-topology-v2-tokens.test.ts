@@ -83,6 +83,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-camera-flick-min-speed": "0.05",
   "--topology-v2-camera-scale-min": "0.24",
   "--topology-v2-camera-scale-max": "2.6",
+  "--topology-v2-camera-small-graph-scale-max": "1.3",
   "--topology-v2-camera-max-zoom-ratio": "3.2",
   "--topology-v2-camera-min-zoom-ratio": "0.5",
   "--topology-v2-camera-focus-pan-margin": "180",
