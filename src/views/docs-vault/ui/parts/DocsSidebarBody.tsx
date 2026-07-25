@@ -1,14 +1,17 @@
 import { useMemo, useState, type ReactNode } from "react";
 import {
+  BookOpen,
   Bot,
   ChevronDown,
   Clock,
   FileText,
+  Files,
   Hash,
   PinOff,
   Plus,
   Search,
   Star,
+  Waypoints,
   X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -80,6 +83,46 @@ function SectionLabel({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * #22 — 옵시디언식 상단 아이콘 행의 단일 버튼. hover 툴팁(평문) + active
+ * 인디고. a11y: title(툴팁) + aria-label + aria-pressed 로 스크린리더 도달.
+ */
+function RailIconButton({
+  icon,
+  label,
+  active,
+  disabled = false,
+  onClick,
+  testId,
+}: {
+  icon: ReactNode;
+  label: string;
+  active: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  testId?: string;
+}) {
+  return (
+    <Tooltip content={label}>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={label}
+        aria-pressed={active}
+        data-testid={testId}
+        className={`inline-flex h-8 w-8 flex-none items-center justify-center rounded-md border transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+          active
+            ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-pale-a95)]"
+            : "border-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+        }`}
+      >
+        {icon}
+      </button>
+    </Tooltip>
+  );
+}
+
 export function DocsSidebarBody({
   pinnedSlugs,
   recentSlugs,
@@ -101,6 +144,9 @@ export function DocsSidebarBody({
   const t = useTranslations("vaultWidgets.parts.sidebar");
   const tAgentFiles = useTranslations("agentFiles");
   const [treeQuery, setTreeQuery] = useState("");
+  // #22 — 검색 입력은 상단 아이콘 행의 토글로 열고 닫는다(옵시디언식 밀도
+  // 축소). 쿼리가 남아 있으면 강제로 열어 둔다(사라진 필터가 안 보이는 결함 방지).
+  const [searchOpen, setSearchOpen] = useState(false);
   // P4a — "최근 바뀐 문서" 진입점. `selectRecentVaultDocs` 는 INDEX 지도 렌즈
   // (`useRecentChanges`)와 같은 mtime 7일 창 산수(`recent-changes.ts`)를
   // 공유한다 — 문서함은 `VaultDoc.updatedAt` 을 직접 갖고 있어 온톨로지
@@ -111,7 +157,8 @@ export function DocsSidebarBody({
     () => selectRecentVaultDocs(manifest.docs, recentNowMs),
     [manifest.docs, recentNowMs],
   );
-  const [recentlyChangedOpen, setRecentlyChangedOpen] = useState(true);
+  // #22 — 최근 바뀐 문서는 목록 안의 조용한 섹션으로 강등, 기본 접힘.
+  const [recentlyChangedOpen, setRecentlyChangedOpen] = useState(false);
   const normalizedTreeQuery = treeQuery.trim().toLowerCase();
   // 활성 태그가 매치하는 slug 집합 — DocsVaultTree 가 매 노드 재귀 시 .has()
   // 로 조회. 매 render 새 Set 만들면 트리 내부 useMemo 들이 활성/해제 무관
@@ -151,111 +198,98 @@ export function DocsSidebarBody({
         .includes(normalizedTreeQuery),
     ).length;
   }, [manifest.docs, normalizedTreeQuery]);
-  // 헤더 음각 숫자는 부제와 같은 집합을 세야 한다 — 검색/태그 필터가 걸린
-  // 상태에서 부제는 "N개 검색됨"인데 숫자만 전체 총계를 보이면 모순이다.
-  const headerCount = normalizedTreeQuery
-    ? queryMatchCount
-    : activeTag
-      ? (manifest.tags[activeTag]?.length ?? 0)
-      : manifest.docs.length;
-  const collectionOptions: DocsVaultCollection[] = ["guides", "ontology"];
+  const collectionOptions: DocsVaultCollection[] = ["all", "guides", "ontology"];
+  const collectionIcons: Record<DocsVaultCollection, ReactNode> = {
+    all: <Files size={15} aria-hidden />,
+    guides: <BookOpen size={15} aria-hidden />,
+    ontology: <Waypoints size={15} aria-hidden />,
+  };
+  const searchExpanded = searchOpen || Boolean(treeQuery);
+  const activeCollectionCount =
+    collection === "all"
+      ? manifest.docs.length
+      : collectionCounts[collection];
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-none items-center justify-between gap-2 border-b border-[color:var(--color-overlay-2)] px-3 py-2.5">
-        <div className="min-w-0">
-          <h2 className="truncate text-body font-medium text-[color:var(--color-text-primary)]">
-            {t("treeHeader")}
-          </h2>
-          <p className="mt-0.5 truncate text-label text-[color:var(--color-text-quaternary)]">
-            {normalizedTreeQuery
-              ? t("treeSearchCount", { count: queryMatchCount })
-              : activeTag
-                ? t("treeFiltered", { tag: activeTag })
-                : t("treeCount", { count: manifest.docs.length })}
-          </p>
-        </div>
-        <span
-          data-token="engraved-numeral"
-          data-filtered={normalizedTreeQuery || activeTag ? "true" : undefined}
-          className="flex-none font-mono text-body tabular-nums text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
-        >
-          {headerCount}
-        </span>
-        {/* [D-4] 트리 상단 "새 문서" 진입점 — 이전엔 샘플(읽기 전용) 모드에서
-            진입로 자체가 통째로 사라져 기능 존재를 알 수 없었다. 비활성
-            상태에서도 버튼 + 툴팁 힌트로 "로컬 폴더를 열면 쓸 수 있다" 는
-            것을 알린다. 지도(topology)와 같은 kind-first 다이얼로그를 연다
-            (DocsVaultPage.handleOpenNewDocDialog → entities/docs-vault
-            buildNewNodeDoc, 빌더 새 노드 생성과 동일 함수). */}
-        <Tooltip
-          content={canCreateNewDoc ? t("newDocButtonLabel") : t("newDocDisabledHint")}
-        >
-          <button
-            type="button"
-            onClick={onCreateNewDoc}
-            disabled={!canCreateNewDoc}
-            data-testid="docs-sidebar-new-doc"
-            aria-label={t("newDocButtonLabel")}
-            className="inline-flex h-8 w-8 flex-none items-center justify-center rounded-md border border-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-overlay-2)] disabled:hover:text-[color:var(--color-text-tertiary)]"
-          >
-            <Plus size={13} aria-hidden />
-          </button>
-        </Tooltip>
-      </div>
+      {/* #22 — 옵시디언식 단일 아이콘 행: 전체/가이드/지도 문서 뷰 전환 +
+          검색 토글 + 새 문서. 큰 헤더·세그먼트·상시 검색창을 걷어내 밀도를
+          낮춘다. active 는 인디고, hover 툴팁이 평문으로 뜻을 설명한다. */}
       <div
-        className="mx-3 mt-2 grid flex-none grid-cols-2 gap-1 rounded-lg border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] p-1"
         role="tablist"
         aria-label={t("collectionAriaLabel")}
+        className="flex flex-none items-center gap-1 border-b border-[color:var(--color-overlay-2)] px-2 py-2"
       >
-        {collectionOptions.map((option) => {
-          const active = collection === option;
-          return (
-            <button
-              key={option}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => onCollectionChange(option)}
-              className={`min-w-0 rounded-md px-2 py-1.5 text-left transition-[background-color,color,transform,border-color] duration-150 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] ${
-                active
-                  ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]"
-                  : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
-              }`}
-            >
-              <span className="block truncate text-label font-medium">
-                {t(`collection.${option}.label`)}
-              </span>
-              <span className="mt-0.5 block truncate text-caption text-[color:var(--color-text-quaternary)]">
-                {t(`collection.${option}.count`, {
-                  count: collectionCounts[option],
-                })}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-      <label className="mx-3 mt-2 flex h-8 flex-none items-center gap-2 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 text-[color:var(--color-text-quaternary)] focus-within:border-[color:var(--color-indigo-line-a45)] focus-within:text-[color:var(--color-text-secondary)]">
-        <Search size={12} aria-hidden />
-        <span className="sr-only">{t("searchLabel")}</span>
-        <input
-          value={treeQuery}
-          onChange={(event) => setTreeQuery(event.target.value)}
-          placeholder={t("searchPlaceholder")}
-          className="min-w-0 flex-1 bg-transparent text-body text-[color:var(--color-text-secondary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
-          type="text"
-          autoComplete="off"
+        {collectionOptions.map((option) => (
+          <RailIconButton
+            key={option}
+            testId={`docs-sidebar-collection-${option}`}
+            icon={collectionIcons[option]}
+            label={t(`collection.${option}.tooltip`, {
+              count: collectionCounts[option],
+            })}
+            active={collection === option}
+            onClick={() => onCollectionChange(option)}
+          />
+        ))}
+        <span aria-hidden className="mx-0.5 h-5 w-px bg-[color:var(--color-overlay-2)]" />
+        <RailIconButton
+          testId="docs-sidebar-search-toggle"
+          icon={<Search size={15} aria-hidden />}
+          label={t("searchLabel")}
+          active={searchExpanded}
+          onClick={() => {
+            if (searchExpanded) {
+              setTreeQuery("");
+              setSearchOpen(false);
+            } else {
+              setSearchOpen(true);
+            }
+          }}
         />
-        {treeQuery ? (
-          <button
-            type="button"
-            onClick={() => setTreeQuery("")}
-            className="rounded-sm p-0.5 text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-            aria-label={t("clearSearch")}
-          >
-            <X size={11} aria-hidden />
-          </button>
-        ) : null}
-      </label>
+        <span className="flex-1" />
+        {/* [D-4] "새 문서" 진입점 — 샘플(읽기 전용) 모드에서도 버튼 + 툴팁으로
+            기능 존재를 알린다(지도와 같은 kind-first 다이얼로그). */}
+        <RailIconButton
+          testId="docs-sidebar-new-doc"
+          icon={<Plus size={15} aria-hidden />}
+          label={canCreateNewDoc ? t("newDocButtonLabel") : t("newDocDisabledHint")}
+          active={false}
+          disabled={!canCreateNewDoc}
+          onClick={onCreateNewDoc}
+        />
+      </div>
+      <p className="flex-none px-3 pt-1.5 text-caption text-[color:var(--color-text-quaternary)]">
+        {normalizedTreeQuery
+          ? t("treeSearchCount", { count: queryMatchCount })
+          : activeTag
+            ? t("treeFiltered", { tag: activeTag })
+            : t("treeCount", { count: activeCollectionCount })}
+      </p>
+      {searchExpanded ? (
+        <label className="mx-3 mt-1.5 flex h-8 flex-none items-center gap-2 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 text-[color:var(--color-text-quaternary)] focus-within:border-[color:var(--color-indigo-line-a45)] focus-within:text-[color:var(--color-text-secondary)]">
+          <Search size={12} aria-hidden />
+          <span className="sr-only">{t("searchLabel")}</span>
+          <input
+            value={treeQuery}
+            onChange={(event) => setTreeQuery(event.target.value)}
+            placeholder={t("searchPlaceholder")}
+            autoFocus
+            className="min-w-0 flex-1 bg-transparent text-body text-[color:var(--color-text-secondary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
+            type="text"
+            autoComplete="off"
+          />
+          {treeQuery ? (
+            <button
+              type="button"
+              onClick={() => setTreeQuery("")}
+              className="rounded-sm p-0.5 text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              aria-label={t("clearSearch")}
+            >
+              <X size={11} aria-hidden />
+            </button>
+          ) : null}
+        </label>
+      ) : null}
       {(activeTag || normalizedTreeQuery) ? (
         <div className="mx-3 mt-2 flex flex-none items-center justify-between gap-2 rounded-sm border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] px-2 py-1 text-label text-[color:var(--color-indigo-pale-a90)]">
           <span className="truncate">
@@ -274,73 +308,72 @@ export function DocsSidebarBody({
         </div>
       ) : null}
 
-      {/* P4a — "최근 바뀐 문서" 접이식 스트립. `recentSlugs`(아래, 세션 중
-          방문한 문서)와는 다른 개념 — 이건 실제 mtime 이 최근 7일 안인
-          문서다. 새로 열 때마다 "지난 7일 뭐가 바뀌었나"에 클릭 0회로
-          답하도록 기본 펼침. */}
-      {recentlyChangedDocs.length > 0 ? (
-        <section className="flex-none border-b border-[color:var(--color-overlay-2)] pb-1">
-          <button
-            type="button"
-            onClick={() => setRecentlyChangedOpen((open) => !open)}
-            aria-expanded={recentlyChangedOpen}
-            data-testid="docs-sidebar-recently-changed-toggle"
-            className="flex w-full items-center gap-1.5 px-3 pb-1.5 pt-3 text-left transition-colors hover:text-[color:var(--color-text-secondary)]"
-          >
-            <Clock size={10} className="flex-none text-[color:var(--color-text-quaternary)]" aria-hidden />
-            <span className="flex-1 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
-              {t("recentlyChangedHeader", { count: recentlyChangedDocs.length })}
-            </span>
-            <ChevronDown
-              size={11}
-              aria-hidden
-              className={`flex-none text-[color:var(--color-text-quaternary)] transition-transform ${recentlyChangedOpen ? "rotate-180" : ""}`}
-            />
-          </button>
-          {recentlyChangedOpen ? (
-            <>
-              <ul
-                data-testid="docs-sidebar-recently-changed-list"
-                className="flex flex-col gap-0.5 px-2"
-              >
-                {recentlyChangedDocs
-                  .slice(0, RECENTLY_CHANGED_STRIP_MAX)
-                  .map((doc) => {
-                    const active = selectedSlug === doc.slug;
-                    return (
-                      <li key={doc.slug}>
-                        <button
-                          type="button"
-                          onClick={() => onSelect(doc.slug)}
-                          className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-body transition-colors ${
-                            active
-                              ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
-                              : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
-                          }`}
-                        >
-                          <FileText size={11} className="flex-none opacity-60" aria-hidden />
-                          <span className="min-w-0 flex-1 truncate">{doc.title}</span>
-                        </button>
-                      </li>
-                    );
-                  })}
-              </ul>
-              {recentlyChangedDocs.length > RECENTLY_CHANGED_STRIP_MAX ? (
-                <p className="px-3 pt-1 text-caption text-[color:var(--color-text-quaternary)]">
-                  {t("recentlyChangedMore", {
-                    count: recentlyChangedDocs.length - RECENTLY_CHANGED_STRIP_MAX,
-                  })}
-                </p>
-              ) : null}
-            </>
-          ) : null}
-        </section>
-      ) : null}
-
-      {/* 항상 보이는 3 섹션 — Pinned / Vault / Recent. 트리(Vault)만 남는 공간을
-          채우며 스크롤한다 (flex-1 min-h-0); Pinned/Recent 는 목록이 짧으므로
-          flex-none + 자체 max-height 스크롤. */}
+      {/* 항상 보이는 섹션 — 최근 바뀐 문서(조용, 기본 접힘) / 에이전트 파일 /
+          Pinned / Vault 트리 / Recent. 트리(Vault)만 남는 공간을 채우며
+          스크롤한다 (flex-1 min-h-0). */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {/* #22 — "최근 바뀐 문서"는 이제 목록 안의 조용한 섹션(기본 접힘).
+            별도 스택으로 상단을 차지하지 않는다. `recentSlugs`(세션 중 방문)
+            와는 다른, 실제 mtime 7일 창 문서다. */}
+        {recentlyChangedDocs.length > 0 ? (
+          <section className="flex-none border-b border-[color:var(--color-overlay-2)] pb-1">
+            <button
+              type="button"
+              onClick={() => setRecentlyChangedOpen((open) => !open)}
+              aria-expanded={recentlyChangedOpen}
+              data-testid="docs-sidebar-recently-changed-toggle"
+              className="flex w-full items-center gap-1.5 px-3 pb-1.5 pt-3 text-left transition-colors hover:text-[color:var(--color-text-secondary)]"
+            >
+              <Clock size={10} className="flex-none text-[color:var(--color-text-quaternary)]" aria-hidden />
+              <span className="flex-1 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+                {t("recentlyChangedHeader", { count: recentlyChangedDocs.length })}
+              </span>
+              <ChevronDown
+                size={11}
+                aria-hidden
+                className={`flex-none text-[color:var(--color-text-quaternary)] transition-transform ${recentlyChangedOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            {recentlyChangedOpen ? (
+              <>
+                <ul
+                  data-testid="docs-sidebar-recently-changed-list"
+                  className="flex flex-col gap-0.5 px-2"
+                >
+                  {recentlyChangedDocs
+                    .slice(0, RECENTLY_CHANGED_STRIP_MAX)
+                    .map((doc) => {
+                      const active = selectedSlug === doc.slug;
+                      return (
+                        <li key={doc.slug}>
+                          <button
+                            type="button"
+                            onClick={() => onSelect(doc.slug)}
+                            className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-body transition-colors ${
+                              active
+                                ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
+                                : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                            }`}
+                          >
+                            <FileText size={11} className="flex-none opacity-60" aria-hidden />
+                            <span className="min-w-0 flex-1 truncate">{doc.title}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                </ul>
+                {recentlyChangedDocs.length > RECENTLY_CHANGED_STRIP_MAX ? (
+                  <p className="px-3 pt-1 text-caption text-[color:var(--color-text-quaternary)]">
+                    {t("recentlyChangedMore", {
+                      count: recentlyChangedDocs.length - RECENTLY_CHANGED_STRIP_MAX,
+                    })}
+                  </p>
+                ) : null}
+              </>
+            ) : null}
+          </section>
+        ) : null}
+
         {/* "에이전트 파일" 그룹 — 트리 상단 고정. vault 가 repo 루트일 때만
             (useAgentFilesModel 게이트) 나타난다. FSA 는 상위 폴더에 접근할 수
             없으므로 docs/ontology 같은 하위 vault 에서는 그룹 자체를 렌더하지

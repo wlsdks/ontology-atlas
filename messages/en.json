@@ -1025,13 +1025,20 @@
         "clearFilter": "Clear",
         "collectionAriaLabel": "Document scope",
         "collection": {
+          "all": {
+            "label": "All docs",
+            "count": "{count}",
+            "tooltip": "All docs — every document in this folder ({count})"
+          },
           "guides": {
             "label": "Guides",
-            "count": "{count}"
+            "count": "{count}",
+            "tooltip": "Guides — human-readable docs ({count})"
           },
           "ontology": {
             "label": "Map docs",
-            "count": "{count}"
+            "count": "{count}",
+            "tooltip": "Map docs — only nodes that appear on the map ({count})"
           }
         },
         "pinnedHeader": "Pinned · {count}",

@@ -1025,13 +1025,20 @@
         "clearFilter": "해제",
         "collectionAriaLabel": "문서 범위",
         "collection": {
+          "all": {
+            "label": "전체 문서",
+            "count": "{count}개",
+            "tooltip": "전체 문서 — 이 폴더의 모든 문서 ({count})"
+          },
           "guides": {
             "label": "가이드 문서",
-            "count": "{count}개"
+            "count": "{count}개",
+            "tooltip": "가이드 — 사람이 읽는 안내 문서 ({count})"
           },
           "ontology": {
             "label": "지도 문서",
-            "count": "{count}개"
+            "count": "{count}개",
+            "tooltip": "지도 문서 — 지도에 나오는 노드 문서만 ({count})"
           }
         },
         "pinnedHeader": "고정 · {count}",
