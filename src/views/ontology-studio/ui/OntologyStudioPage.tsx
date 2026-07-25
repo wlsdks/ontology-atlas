@@ -49,6 +49,7 @@ import {
 } from "../lib/build-studio-changes";
 import { buildPickerDiscovery } from "../lib/build-picker-discovery";
 import { buildDeltaPreview } from "../lib/build-delta-preview";
+import { resolveStudioFocalId } from "../lib/resolve-studio-focal";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
 
 /**
@@ -334,10 +335,10 @@ export function OntologyStudioPage() {
   // create/enhance early return.
   const enhanceFocalId = useMemo(() => {
     if (nodes.length === 0) return null;
-    return (
-      (requestedNode && nodes.some((n) => n.id === requestedNode) ? requestedNode : null) ??
-      selectDefaultStudioNodeId(nodes, edges)
-    );
+    // C3 — resolve `?node=` tolerantly (canonical / folder-prefixed / bare tail /
+    // NFD). A raw `n.id === requestedNode` missed every non-canonical form a
+    // LOCAL vault produces, so a search click silently kept the default node.
+    return resolveStudioFocalId(requestedNode, nodes) ?? selectDefaultStudioNodeId(nodes, edges);
   }, [requestedNode, nodes, edges]);
 
   // Slice 2 — enhance is STAGED: fills / retypes / deletes accumulate here and
