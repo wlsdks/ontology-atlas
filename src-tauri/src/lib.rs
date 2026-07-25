@@ -5776,6 +5776,7 @@ pub fn run() {
             terminal::terminal_resize,
             terminal::terminal_close,
             git::git_status,
+            git::git_probe,
             git::git_init,
             git::git_set_remote,
             git::git_snapshot,

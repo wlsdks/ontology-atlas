@@ -1076,6 +1076,57 @@ pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteRes
     })
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitProbe {
+    /// 이 컴퓨터에 git 이 있는가.
+    installed: bool,
+    /// `git --version` 원문 (설치돼 있을 때만) — 사용자에게 사실을 그대로 보여준다.
+    version: Option<String>,
+    /// "macos" | "windows" | "linux" — 설치 안내를 플랫폼별로 고르기 위함.
+    platform: String,
+}
+
+fn host_platform() -> &'static str {
+    if cfg!(target_os = "macos") {
+        "macos"
+    } else if cfg!(target_os = "windows") {
+        "windows"
+    } else {
+        "linux"
+    }
+}
+
+/// git 이 이 컴퓨터에 있는지 **읽기 전용**으로 확인한다.
+///
+/// 왜 별 커맨드인가: 지금까지 git 미설치는 `run_git` 의 spawn 실패가 만든
+/// 일반 에러 문자열로만 드러났다("git 을 실행할 수 없어요 (설치 확인)").
+/// 화면은 그 문자열로 **무엇을 안내해야 할지 알 수 없다** — 설치가 문제인지
+/// 폴더가 문제인지 구분이 안 된다. 타입화된 신호로 바꿔 UI 가 플랫폼에 맞는
+/// 설치 안내를 고를 수 있게 한다(소유자 요청 2026-07-26).
+///
+/// **아무것도 설치하지 않는다.** 우리는 감지하고 알려줄 뿐이고, 설치는
+/// 사용자가 자기 터미널에서 한다 — 신뢰 헌장의 "조용한 실행 0" 이 여기서도
+/// 유지된다.
+#[tauri::command]
+pub fn git_probe() -> GitProbe {
+    let platform = host_platform().to_string();
+    match Command::new("git").arg("--version").output() {
+        Ok(out) if out.status.success() => {
+            let version = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            GitProbe {
+                installed: true,
+                version: if version.is_empty() { None } else { Some(version) },
+                platform,
+            }
+        }
+        // non-zero exit 도 "실행은 됐다" 이므로 설치는 된 것으로 본다.
+        Ok(_) => GitProbe { installed: true, version: None, platform },
+        // spawn 실패 = 실행 파일이 없다.
+        Err(_) => GitProbe { installed: false, version: None, platform },
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1223,6 +1274,22 @@ mod tests {
     fn validate_vault_dir_rejects_missing_path() {
         let err = validate_vault_dir("/path/does/not/exist/atlas").unwrap_err();
         assert!(!err.is_empty());
+    }
+
+    #[test]
+    fn host_platform_is_one_of_the_three_we_guide() {
+        // 설치 안내는 플랫폼별로 다르다 — 알 수 없는 값이 나오면 UI 가 안내를
+        // 못 고른다. 셋 중 하나임을 고정한다.
+        assert!(matches!(host_platform(), "macos" | "windows" | "linux"));
+    }
+
+    #[test]
+    fn git_probe_reports_this_machine_truthfully() {
+        // 이 저장소에서 테스트가 도는 환경은 git 이 있다 — probe 가 그 사실을
+        // 그대로 말하는지(추측하지 않는지) 확인한다.
+        let probe = git_probe();
+        assert!(probe.installed);
+        assert!(probe.version.as_deref().unwrap_or("").contains("git"));
     }
 
     #[test]

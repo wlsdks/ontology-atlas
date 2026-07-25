@@ -98,10 +98,39 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 | 타입 램프 | `text-[Npx]` 금지 | 완료 디렉토리 error / 미완 warn |
 | radius 램프 | `rounded-[Npx]` 금지 | 동일 |
 | **그림자 사다리** | `shadow-[…]` 중 **`var(` 없는 것**만 금지 | 동일 |
+| **hex 색상** | Tailwind **arbitrary value 안**의 hex 만 금지 | 동일 (현재 위반 0 — 예방 게이트) |
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
 
-**아직 강제 안 되는 것** (범위 설계 필요): 하드코딩 hex · spacing(`p-[Npx]`
-— `globals.css` 에 spacing 램프 자체가 없어서 금지만 하면 대안이 없다).
+**아직 강제 안 되는 것**: spacing. `globals.css` 의 `--pad-card`/`--pad-panel`
+은 정의만 있고 **사용 0회** 인 죽은 토큰이고, arbitrary px 는 27건뿐(이탈률
+1.1%)인데 그중 3·11·18px 을 빼면 전부 1~2회짜리 **광학 보정**이다 — 램프에
+스냅시키면 오히려 정렬이 깨진다. 램프를 만드는 게 아니라 죽은 토큰 2개를
+정리하는 게 먼저다.
+
+### hex 는 왜 "모든 hex 금지" 가 아닌가
+
+전수 측정(2026-07-26) 결과 `src/`·`app/` 의 hex 127건 중 **Tailwind arbitrary
+value 안에 박힌 진짜 위반은 0건**이었다. 나머지는 전부 정당한 예외다:
+
+| 범주 | 건수 |
+|---|---|
+| 테스트 픽스처 | 83 |
+| PR 번호 주석(`#375`) — AST 룰은 주석을 안 본다 | 16 |
+| **CSS 변수가 닿지 않는 표면** — `next/og` Satori · `viewport.themeColor` · standalone HTML | 16 |
+| JS 측 토큰 진실원(`indigo-tokens.ts`) · 정적 SVG | 7 |
+| 토큰 리더 fallback (`read("--color-canvas", "#08090a")`) | 3 |
+| 마스크 알파 스텐실(`#000`) — 시각 색이 아님 | 2 |
+
+"모든 hex 금지" 는 **27건의 소음만 만들고 잡을 신호가 0** 이다. arbitrary value
+안으로 좁히면 오늘 0건 · 미래 유입만 차단한다.
+
+### ⚠️ flat config 3-블록 함정
+
+`eslint.config.mjs` 는 `no-restricted-syntax` 를 **세 블록**(전역 · migrated ·
+R6)에서 재정의한다. flat config 는 rule option 배열을 **병합하지 않고 교체**
+하므로, 새 셀렉터를 한 블록에만 넣으면 뒤 블록이 덮어써서 **조용히 무력화**된다.
+셀렉터는 반드시 공유 배열(`arbitrarySizeSelectors`)에 넣어 세 블록이 함께
+스프레드하게 한다.
 
 ### 룰을 켜기 전 반드시 측정한다
 

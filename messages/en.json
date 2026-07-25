@@ -708,6 +708,7 @@
         "openProjectPalette": "Open the search palette",
         "openGlobalPalette": "Search ontology, docs, and projects together",
         "toggleDocsDrawer": "Toggle the ontology workspace preview drawer (with edit access)",
+        "toggleAgentTerminal": "Open or close the terminal (desktop app only)",
         "showShortcuts": "Show or hide keyboard shortcuts",
         "stepCloseOverlays": "Close drawers and overlays one step at a time",
         "clickSelect": "Select a node",
@@ -2609,7 +2610,6 @@
     "initTerminalHint": "Copies the git init command",
     "initDone": "History started. {count} change(s) are not saved yet.",
     "initAlready": "This folder already keeps a history.",
-    "initNoGit": "git isn't on this computer. Install it and you can keep history right here.",
     "locationChip": "{branch} → {upstream}",
     "locationChipHint": "Saves to {branch} on this computer, sends to {upstream}",
     "noChangesHint": "This folder matches your last step. Edit a document and it shows up here.",
@@ -2668,7 +2668,30 @@
     "webTitle": "Saving happens in the app",
     "webGetApp": "Get the app",
     "retryButton": "Check again",
-    "webCommandLabel": "To save from the terminal, use this command"
+    "webCommandLabel": "To save from the terminal, use this command",
+    "install": {
+      "title": "git isn't on this computer",
+      "body": "git is the program that keeps your change history. Install it once and everything else happens on this screen.",
+      "xcode": "Install command line tools (recommended — Apple's built-in path)",
+      "brew": "If you already use Homebrew",
+      "winget": "Install with winget (recommended — built into Windows)",
+      "apt": "Debian / Ubuntu",
+      "dnf": "Fedora / RHEL",
+      "download": "Download the installer",
+      "copy": "Copy command",
+      "copied": "Copied",
+      "afterHint": "Check this screen again after installing",
+      "recheck": "Check again",
+      "checking": "Checking…"
+    },
+    "stepApp": "Open in the app",
+    "stepFolder": "Pick a folder",
+    "stepStart": "Start the history",
+    "stepDoneA11y": "Done",
+    "stepCurrentA11y": "Next step",
+    "noVaultTitle": "Pick the folder you want to keep a history for",
+    "noVaultBody": "Choose a folder in Documents and you can start keeping its changes right here.",
+    "noVaultAction": "Pick a folder"
   },
   "agentFiles": {
     "header": "Agent files",
@@ -2714,11 +2737,12 @@
   "agentTerminal": {
     "title": "Terminal",
     "close": "Close terminal",
-    "exited": "Session ended",
-    "desktopOnly": "The terminal runs in the app",
-    "desktopOnlyHint": "A browser isn't allowed to run programs on this computer.",
+    "closeEndsSession": "Closing also ends what's running",
+    "exited": "Finished running",
+    "desktopOnly": "The terminal runs in the desktop app",
+    "desktopOnlyHint": "A browser can't run programs on this computer.",
+    "downloadLink": "Get the desktop app",
     "needVault": "Open a folder first",
-    "needVaultHint": "The terminal starts in the folder you have open.",
-    "openLabel": "Open terminal"
+    "needVaultHint": "The terminal starts in the folder you have open."
   }
 }

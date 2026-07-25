@@ -135,6 +135,27 @@ export interface GitSetRemoteResult {
   replaced: string | null;
 }
 
+/** Rust `GitProbe` — 이 컴퓨터에 git 이 있는가. */
+export interface GitProbeResult {
+  installed: boolean;
+  /** `git --version` 원문 — 사용자에게 사실을 그대로 보여준다. */
+  version: string | null;
+  platform: 'macos' | 'windows' | 'linux';
+}
+
+/**
+ * git 설치 여부 확인 — **읽기 전용**. 아무것도 설치하지 않는다.
+ *
+ * 왜 필요한가: 지금까지 미설치는 일반 에러 문자열로만 드러나서 화면이 "설치가
+ * 문제인지 폴더가 문제인지" 구분할 수 없었다. 타입화된 신호가 있어야 플랫폼에
+ * 맞는 설치 안내를 고를 수 있다.
+ */
+export async function gitProbe(): Promise<GitProbeResult | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<GitProbeResult>('git_probe');
+}
+
 /** Tauri git IPC 가용 여부 — false 면 웹 강등 경로. */
 export function isGitBridgeAvailable(): boolean {
   return getInvoke() !== null;
