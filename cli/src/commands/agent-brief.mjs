@@ -195,20 +195,26 @@ async function verifyOneCliFallback(raw, vaultRoot, { timeoutMs, slowThresholdMs
     const child = await spawnFallbackCommand(parsed.args, timeoutMs);
     const elapsedMs = Math.max(0, Math.round(performance.now() - startedAt));
     const timedOut = child.timedOut === true;
-    // Readiness-signal fallbacks (`health`, `workspace-brief`, `agent-brief`)
-    // exit 1 as an ADVISORY graph-state signal — the command ran and printed
-    // valid data, the vault merely has warnings/needs_attention. That is not a
-    // command failure (a genuine MCP/parse failure exits 2 or crashes). Only a
-    // real run failure — timeout, kill signal, spawn error, or exit >= 2 —
-    // fails the gate. Treating advisory exit 1 as failure made the documented
-    // setup gate impossible to pass on any vault that isn't perfectly healthy.
-    const advisoryReadiness =
+    // Fallback CLI commands follow one exit-code convention: exit 2 (or a crash)
+    // means the MCP call/parse itself FAILED; exit 1 is an ADVISORY result — the
+    // command ran and printed valid data, it just reports a negative/empty or
+    // needs-attention answer (health needs_attention, `all-paths`/`explain`/
+    // `path`/`cycles` "no path / unrelated / none found", etc.). On a fresh or
+    // sparse vault (e.g. the 5-node starter, whose example nodes have no
+    // relations yet) those advisory exit-1s are the CORRECT answer, not a run
+    // failure. The gate proves the commands EXECUTE, so only a real run failure
+    // — timeout, kill signal, spawn error, exit >= 2, or an exit-1 that wrote to
+    // stderr (a usage/arg error, not an advisory result on stdout) — fails it.
+    // Treating every exit 1 as failure made the documented setup gate impossible
+    // to pass on any vault that isn't fully connected and perfectly healthy.
+    const wroteToStderr = ((child.stderr ?? '').trim().length > 0);
+    const advisoryResult =
       !timedOut &&
       !child.signal &&
       !child.error &&
       child.status === 1 &&
-      isReadinessSignalFallback(parsed.args);
-    const failed = timedOut || (child.status !== 0 && !advisoryReadiness);
+      !wroteToStderr;
+    const failed = timedOut || (child.status !== 0 && !advisoryResult);
     const slow = elapsedMs >= slowThresholdMs;
     const sample = failed ? sampleFallbackOutput(child.stderr || child.stdout) : '';
     return {
@@ -217,7 +223,7 @@ async function verifyOneCliFallback(raw, vaultRoot, { timeoutMs, slowThresholdMs
       status: failed ? 'fail' : 'pass',
       elapsedMs,
       exitCode: child.status,
-      ...(advisoryReadiness ? { advisory: 'readiness' } : {}),
+      ...(advisoryResult ? { advisory: 'result' } : {}),
       ...(slow ? { slow: true } : {}),
       ...(child.signal ? { signal: child.signal } : {}),
       ...(timedOut ? { timedOut: true } : {}),
@@ -225,15 +231,6 @@ async function verifyOneCliFallback(raw, vaultRoot, { timeoutMs, slowThresholdMs
       ...(timedOut ? { error: `fallback command timed out after ${timeoutMs}ms` } : {}),
       ...(!timedOut && child.error ? { error: child.error.message } : {}),
   };
-}
-
-// Fallback subcommands whose exit code 1 is an advisory readiness signal, not a
-// run failure. Kept in sync with the CLI wrappers that return
-// healthResultExitCode / workspaceBriefExitCode / agentBriefExitCode.
-const READINESS_SIGNAL_FALLBACK_SUBCOMMANDS = new Set(['health', 'workspace-brief', 'agent-brief']);
-
-function isReadinessSignalFallback(args) {
-  return Array.isArray(args) && READINESS_SIGNAL_FALLBACK_SUBCOMMANDS.has(args[0]);
 }
 
 function renderFallbackVerificationReport(report) {

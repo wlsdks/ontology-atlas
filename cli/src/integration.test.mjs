@@ -5439,11 +5439,13 @@ await test('agent-brief --verify-fallbacks --json — emits machine-readable fal
   }
 });
 
-await test('agent-brief --verify-fallbacks --json — advisory readiness exit 1 (health/needs_attention) stays green', async () => {
-  // Regression (C8b): the `health` fallback exits 1 as an ADVISORY graph-state
-  // signal on any vault that isn't perfectly healthy (here, a dependency cycle).
-  // The command ran and printed valid data, so the setup gate must stay green —
-  // otherwise the documented gate is impossible on real vaults.
+await test('agent-brief --verify-fallbacks --json — advisory exit 1 (needs_attention / no-result) stays green', async () => {
+  // Regression (C8b): fallback CLI commands signal an ADVISORY result with exit
+  // 1 (health needs_attention; all-paths/explain "no path / unrelated"). The
+  // command ran and printed valid data on stdout, so the setup gate must stay
+  // green — a fresh 5-node starter vault (example nodes with no relations yet)
+  // trips health AND all-paths AND explain, and the gate must still pass.
+  // Only a real run failure (exit >= 2, timeout, or exit-1-with-stderr) fails.
   const root = buildCycleFixture();
   try {
     const health = await run(['health', root]);
@@ -5460,7 +5462,7 @@ await test('agent-brief --verify-fallbacks --json — advisory readiness exit 1 
     assert.ok(healthRow, 'health fallback row present');
     assert.equal(healthRow.status, 'pass');
     assert.equal(healthRow.exitCode, 1);
-    assert.equal(healthRow.advisory, 'readiness');
+    assert.equal(healthRow.advisory, 'result');
     assert.ok(!Object.hasOwn(healthRow, 'outputSample'));
     assert.ok(data.commands.every((row) => row.status === 'pass'));
   } finally {
