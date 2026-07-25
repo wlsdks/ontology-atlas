@@ -1673,8 +1673,83 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 드리프트가 생기면(예: 43px, 11px radius) 시각적으로 감지하기 어렵고, 컴포넌트
 경유가 아니면 다음 토큰 개정이 그 인스턴스를 놓친다.
 
+## 컨트롤 인벤토리 (캐노니컬 컴포넌트) — 디자인 전면 정비 Phase 1 (2026-07-25)
+
+> 22건 정비의 다수(4·13·16)는 개별 결함이 아니라 **시스템 부재의 증상**이라,
+> 폼/셀렉트/빈 상태/모달의 캐노니컬 컴포넌트·토큰을 먼저 세운다. 전체 계획:
+> `docs/DESIGN-OVERHAUL-2026-07-25.md`.
+
+### 캐노니컬 컴포넌트 위치
+
+| 컴포넌트 | 위치 | 용도 |
+|---|---|---|
+| `Select` (다크 Listbox) | `src/shared/ui/select.tsx` | 네이티브 `<select>` 대체 — macOS 회색 시스템 드롭다운을 다크 앱 문법으로 |
+| `EmptyState` | `src/shared/ui/empty-state.tsx` | 빈 리스트/차트/페이지 — 스켈레톤 자리표시 + 아이콘 + 한 줄 안내 |
+| `ChromeTile` / `ChromeChip` | `src/shared/ui/chrome-tile.tsx` · `chrome-chip.tsx` | 크롬 타일/칩 (별도 "크롬 문법" 절) |
+
+### Select / Listbox (#4)
+
+- **트리거** — 40px(`--control-h-lg`, `size="md"` 는 32px `--control-h-md`),
+  `--color-overlay-1` 서피스, chevron, `role="combobox"` +
+  `aria-haspopup="listbox"` + `aria-expanded` + `aria-activedescendant`.
+- **팝오버 listbox** — `--color-elevated` 서피스, `role="listbox"`, 옵션마다
+  `role="option"` + `aria-selected`; 활성/hover 옵션은 인디고 하이라이트
+  (`--color-indigo-a16`), 선택 옵션은 인디고 체크.
+- **키보드** — ↑↓ 순환 · Enter/Space 확정 · Esc 닫기(+트리거 포커스 복귀) ·
+  Home/End · 타입어헤드(600ms 버퍼). 바깥 클릭 시 닫힘.
+- **모션** — `select-pop` 150ms, opacity + `scaleY`(origin-top) 만.
+  `prefers-reduced-motion` 에서 `animate-none` 으로 정지 (헌장의 "모션은
+  opacity/색 위주, transform 최소" 준수).
+- **API** — `{ value, onChange, options: [{value,label,description?}],
+  placeholder, ariaLabel, size?, disabled? }`. 토큰만.
+
+### EmptyState (#16)
+
+- **슬롯** — `icon`(라인아트 글리프, muted 라운드 사각) · `skeleton`(true =
+  기본 muted 막대 3줄, 또는 커스텀 ReactNode) · `title`(평문 한 줄) ·
+  `description`(다음 행동 안내) · `action`(선택 버튼).
+- **톤/정렬** — `tone` dashed(목록/카드 안, "채울 자리" 신호) | solid,
+  `align` left(기본) | center(페이지 본문 통째 빈 상황).
+- 빈 차트/목록은 "긴 공백" 대신 **채워질 형태(스켈레톤)** 를 먼저 보여준다 —
+  현재 인사이트 "가장 많이 기대는 곳" / "허브" 빈 영역에 적용.
+
+### 컨트롤 높이 토큰 (#13)
+
+```
+--control-h-sm: 28px;
+--control-h-md: 32px;   /* Select size="md", 밀도 높은 폼 컨트롤 */
+--control-h-lg: 40px;   /* Select 기본 트리거 */
+```
+
+- 크롬 필/타일은 **별도 잠금 토큰** `--chrome-tile-size`(36px)를 계속 쓴다 —
+  이 컨트롤 스케일은 크롬 시스템 **밖**의 인터랙티브 컨트롤(캐노니컬 Select,
+  폼 입력 등)용. 지도 우상단 툴바(자동 정렬·검색·살아있는 그래프·최근 변경·
+  작업공간·+ 개념)는 크롬 시스템에 속해 전부 `--chrome-tile-size`(36px)로
+  수렴한다 — "+ 개념" primary 도 같은 높이·radius·타이포(text-label·아이콘
+  14px)로 정합(#13).
+
+### 다이얼로그 폭 스케일
+
+```
+--dialog-w-sm: 420px;
+--dialog-w-md: 560px;   /* 토폴로지 "개념 추가" 컴포저 */
+--dialog-w-lg: 720px;
+```
+
+- 중앙 정렬 모달/컴포저 폭 단일 진실원. 실제 적용은
+  `w-[min(var(--dialog-w-md), calc(100vw - 2rem))]` 로 좁은 뷰포트를 감싼다.
+
+### 소비 규범 (하드)
+
+> **새 표면은 네이티브 `<select>` · 즉석 empty `<div>` 를 만들지 않는다 —
+> 반드시 캐노니컬 `Select` / `EmptyState` 를 경유한다.** 컨트롤 높이는
+> `--control-h-*`, 모달 폭은 `--dialog-w-*` 를 쓰고, 크롬 표면은 여전히
+> `ChromeTile`/`ChromeChip`. 인라인 재구현은 드리프트를 만들고 다음 토큰
+> 개정이 그 인스턴스를 놓친다.
+
 ## Changelog
 
+- 2026-07-25: 디자인 전면 정비 Phase 1 — 캐노니컬 `Select`(다크 Listbox, #4) · `EmptyState` 스켈레톤/아이콘 슬롯 확장(#16) · 컨트롤 높이 토큰 `--control-h-sm/md/lg`(#13) · 다이얼로그 폭 스케일 `--dialog-w-sm/md/lg` 신설. 공방 create 도메인 + 토폴로지 "개념 추가" kind 셀렉트가 캐노니컬 Select 로, 인사이트 depends/허브 빈 영역이 EmptyState 로 이관. "컨트롤 인벤토리" 절 참고
 - 2026-07-21: Geometry & Type Codex (R5) — `text-[Npx]`(29종·1,184건)를 7단 type 램프(`--text-caption`…`--text-hero` + `--tracking-*` 짝)로, arbitrary radius(18종)를 3단(`--radius-chip/card/panel`)으로 수렴. 박스별 규격 표 + 명시 예외 등재. ESLint `no-restricted-syntax` 가 신규 arbitrary 를 차단(마이그레이션 완료 디렉토리 error / R6 동시작업 dir warn). 시각은 ±1px 스냅 수준 유지(리디자인 아님); see "Geometry & Type Codex" 절
 - 2026-07-18: 크롬 시스템(feat/chrome-system) — `--chrome-*` 토큰 + ChromeTile/ChromeChip 컴포넌트 신설, 24px 정렬 레일로 브랜드 필/INDEX 패널/분석 패널 좌측 인셋 수렴, INDEX 패널 v2.1(헤더 "INDEX · N" + 접기, 트리 행 grid + Lucide chevron + 인셋 capacity meter, 푸터로 에이전트 동기화 이관); see `docs/prototypes/index-panel-v2-full.html`
 - 2026-07-18: Brand mark replaced — "헥사 별자리" (candidate A) across favicon, macOS app icon, and `BrandMark` shared component; see "Brand mark" section above

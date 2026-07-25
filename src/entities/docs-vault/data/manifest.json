@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-25T01:50:23.707Z",
+  "generatedAt": "2026-07-25T04:33:17.000Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-25 — codex 검수 C-A 배치 (신뢰·데이터 정합 P1 7건)",
+          "slug": "2026-07-25-codex-검수-c-a-배치-신뢰데이터-정합-p1-7건"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-25 — 디자인 전면 정비 Phase 1 (디자인 시스템 파운데이션)",
+          "slug": "2026-07-25-디자인-전면-정비-phase-1-디자인-시스템-파운데이션"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-25 — 인사이트 할 일의 실제 vault 재검증 루프 연결",
           "slug": "2026-07-25-인사이트-할-일의-실제-vault-재검증-루프-연결"
         },
@@ -4793,9 +4803,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 인사이트 → 할 일에서 고른 정확한 신호 1건이 지도·원문·공방을 거쳐 돌아올 때까지 via와 review 문맥을 보존한다. 복사·클릭·화면 방문은 완료로",
-      "wordCount": 38761,
-      "updatedAt": "2026-07-25T01:49:30.278Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 전체 검수에서 나온 신뢰·데이터 정합 결함 7건. 계획: docs/DESIGN-OVERHAUL-2026-07-25.md \"Codex 전체 검수\" C-A 절",
+      "wordCount": 39065,
+      "updatedAt": "2026-07-25T13:33:17+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -4865,6 +4875,119 @@
       "linksOut": [
         "archive/DEPLOY-FIREBASE"
       ]
+    },
+    {
+      "slug": "DESIGN-OVERHAUL-2026-07-25",
+      "path": "docs/DESIGN-OVERHAUL-2026-07-25.md",
+      "title": "디자인 전면 정비 마스터 플랜 (2026-07-25, 소유자 실보고 22건)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "디자인 전면 정비 마스터 플랜 (2026-07-25, 소유자 실보고 22건)",
+          "slug": "디자인-전면-정비-마스터-플랜-2026-07-25-소유자-실보고-22건"
+        },
+        {
+          "depth": 2,
+          "text": "대원칙 — 디자인 시스템이 본체다 (소유자 강조)",
+          "slug": "대원칙-디자인-시스템이-본체다-소유자-강조"
+        },
+        {
+          "depth": 2,
+          "text": "전체 22건 기록 (소유자 원문 요지 + 화면 증거)",
+          "slug": "전체-22건-기록-소유자-원문-요지-화면-증거"
+        },
+        {
+          "depth": 3,
+          "text": "A. 디자인 시스템 파운데이션 (Phase 1 — 최우선)",
+          "slug": "a-디자인-시스템-파운데이션-phase-1-최우선"
+        },
+        {
+          "depth": 3,
+          "text": "B. 지도(Topology) 정합 (Phase 2)",
+          "slug": "b-지도topology-정합-phase-2"
+        },
+        {
+          "depth": 3,
+          "text": "C. 모션 문법 (Phase 3 — 헌장 안에서)",
+          "slug": "c-모션-문법-phase-3-헌장-안에서"
+        },
+        {
+          "depth": 3,
+          "text": "D. 공방 후속 (Phase 3)",
+          "slug": "d-공방-후속-phase-3"
+        },
+        {
+          "depth": 3,
+          "text": "E. 온보딩/에이전트 (Phase 4)",
+          "slug": "e-온보딩에이전트-phase-4"
+        },
+        {
+          "depth": 3,
+          "text": "F. 프로젝트 탭 (Phase 4)",
+          "slug": "f-프로젝트-탭-phase-4"
+        },
+        {
+          "depth": 3,
+          "text": "G. 개인화 (Phase 5 — 큰 베팅)",
+          "slug": "g-개인화-phase-5-큰-베팅"
+        },
+        {
+          "depth": 3,
+          "text": "H. 인사이트 (Phase 2·4 분산)",
+          "slug": "h-인사이트-phase-24-분산"
+        },
+        {
+          "depth": 2,
+          "text": "Phase 0 판정 결과 (fable, 2026-07-25 — 확정)",
+          "slug": "phase-0-판정-결과-fable-2026-07-25-확정"
+        },
+        {
+          "depth": 2,
+          "text": "Codex 전체 검수 15건 편입 (2026-07-25 — P1 은 디자인 Phase 2~5 보다 선행)",
+          "slug": "codex-전체-검수-15건-편입-2026-07-25-p1-은-디자인-phase-25-보다-선행"
+        },
+        {
+          "depth": 3,
+          "text": "C-A. 신뢰·데이터 정합 배치 (P1)",
+          "slug": "c-a-신뢰데이터-정합-배치-p1"
+        },
+        {
+          "depth": 3,
+          "text": "C-B. 공방 워크플로 갭 배치 (P1+P2)",
+          "slug": "c-b-공방-워크플로-갭-배치-p1p2"
+        },
+        {
+          "depth": 3,
+          "text": "C-C. 검증·CI 신뢰 복구 배치 (P1+P2)",
+          "slug": "c-c-검증ci-신뢰-복구-배치-p1p2"
+        },
+        {
+          "depth": 3,
+          "text": "기존 항목 합류",
+          "slug": "기존-항목-합류"
+        },
+        {
+          "depth": 2,
+          "text": "실행 순서 (의존 순)",
+          "slug": "실행-순서-의존-순"
+        },
+        {
+          "depth": 2,
+          "text": "프로세스",
+          "slug": "프로세스"
+        },
+        {
+          "depth": 2,
+          "text": "헌장 리마인드 (이 정비에서 특히)",
+          "slug": "헌장-리마인드-이-정비에서-특히"
+        }
+      ],
+      "excerpt": "소유자가 실사용 스크린샷과 함께 보고한 22건 + \"디자인 시스템 구축\"이라는 메타 과제를 기록한 단일 진실원 계획 문서. 프로세스: fable 기획 → opus 검수 → sonnet/opus 코딩. 항목마다 상태를 갱신한다 (☐ 대기 · ◐ 진행 · ☑ 완료 · ✗ 반려/보류). 세션이 바뀌어도 이 문서만 읽으면 이어서 작업 가능해야 한다. \"모든 디자인의 토큰화 — 사이즈·모양 다 코드로 구성되어야 한다.\" 22건 중 다수(4·6·8·13·16·17)는 개별 수정이 아니라 시스템 부재의 증상이다. 따라서 Phase 1 에서 캐노니컬 컴포넌트/토큰을 먼저 세우고, ",
+      "wordCount": 2052,
+      "updatedAt": "2026-07-25T13:33:17+09:00",
+      "linksOut": []
     },
     {
       "slug": "design-references/DESIGN-linear",
@@ -5368,13 +5491,48 @@
         },
         {
           "depth": 2,
+          "text": "컨트롤 인벤토리 (캐노니컬 컴포넌트) — 디자인 전면 정비 Phase 1 (2026-07-25)",
+          "slug": "컨트롤-인벤토리-캐노니컬-컴포넌트-디자인-전면-정비-phase-1-2026-07-25"
+        },
+        {
+          "depth": 3,
+          "text": "캐노니컬 컴포넌트 위치",
+          "slug": "캐노니컬-컴포넌트-위치"
+        },
+        {
+          "depth": 3,
+          "text": "Select / Listbox (#4)",
+          "slug": "select-listbox-4"
+        },
+        {
+          "depth": 3,
+          "text": "EmptyState (#16)",
+          "slug": "emptystate-16"
+        },
+        {
+          "depth": 3,
+          "text": "컨트롤 높이 토큰 (#13)",
+          "slug": "컨트롤-높이-토큰-13"
+        },
+        {
+          "depth": 3,
+          "text": "다이얼로그 폭 스케일",
+          "slug": "다이얼로그-폭-스케일"
+        },
+        {
+          "depth": 3,
+          "text": "소비 규범 (하드)",
+          "slug": "소비-규범-하드"
+        },
+        {
+          "depth": 2,
           "text": "Changelog",
           "slug": "changelog"
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 13101,
-      "updatedAt": "2026-07-25T00:53:21+09:00",
+      "wordCount": 13579,
+      "updatedAt": "2026-07-25T12:51:31+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -14688,6 +14846,13 @@
         "type": "doc",
         "slug": "DEPLOYMENT",
         "title": "Deployment"
+      },
+      {
+        "name": "DESIGN-OVERHAUL-2026-07-25",
+        "path": "DESIGN-OVERHAUL-2026-07-25",
+        "type": "doc",
+        "slug": "DESIGN-OVERHAUL-2026-07-25",
+        "title": "디자인 전면 정비 마스터 플랜 (2026-07-25, 소유자 실보고 22건)"
       },
       {
         "name": "DESIGN-SYSTEM",

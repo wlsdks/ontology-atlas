@@ -5439,6 +5439,37 @@ await test('agent-brief --verify-fallbacks --json — emits machine-readable fal
   }
 });
 
+await test('agent-brief --verify-fallbacks --json — advisory exit 1 (needs_attention / no-result) stays green', async () => {
+  // Regression (C8b): fallback CLI commands signal an ADVISORY result with exit
+  // 1 (health needs_attention; all-paths/explain "no path / unrelated"). The
+  // command ran and printed valid data on stdout, so the setup gate must stay
+  // green — a fresh 5-node starter vault (example nodes with no relations yet)
+  // trips health AND all-paths AND explain, and the gate must still pass.
+  // Only a real run failure (exit >= 2, timeout, or exit-1-with-stderr) fails.
+  const root = buildCycleFixture();
+  try {
+    const health = await run(['health', root]);
+    assert.equal(health.code, 1, `expected advisory exit 1; stdout: ${health.stdout}`);
+    // --exit-zero: the fallback report drives the exit code (0 when no command
+    // FAILED to run); the vault's own readiness (needs_attention) is silenced,
+    // which is the documented mode the setup gate consumes.
+    const r = await run(['agent-brief', root, '--verify-fallbacks', '--json', '--exit-zero']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.ok, true);
+    assert.equal(data.failed, 0);
+    const healthRow = data.commands.find((row) => row.command.startsWith('ontology-atlas health '));
+    assert.ok(healthRow, 'health fallback row present');
+    assert.equal(healthRow.status, 'pass');
+    assert.equal(healthRow.exitCode, 1);
+    assert.equal(healthRow.advisory, 'result');
+    assert.ok(!Object.hasOwn(healthRow, 'outputSample'));
+    assert.ok(data.commands.every((row) => row.status === 'pass'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('agent-brief --verify-fallbacks --json — marks slow-but-passing fallback rows', async () => {
   const root = await buildGraphFixture();
   try {

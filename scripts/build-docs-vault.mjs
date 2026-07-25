@@ -337,6 +337,19 @@ async function ensureDir(dir) {
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
 }
 
+// Deterministic manifest stamp: the newest source-doc `updatedAt` (git commit
+// dates for committed docs), normalized to canonical ISO-Z. Never the build
+// wall-clock, so the same source regenerates byte-identically. Falls back to a
+// fixed epoch when there are no dated docs.
+const STABLE_GENERATED_AT_FALLBACK = '1970-01-01T00:00:00.000Z';
+export function deterministicGeneratedAt(docs) {
+  const times = (docs ?? [])
+    .map((doc) => Date.parse(doc?.updatedAt))
+    .filter((n) => !Number.isNaN(n));
+  if (times.length === 0) return STABLE_GENERATED_AT_FALLBACK;
+  return new Date(Math.max(...times)).toISOString();
+}
+
 export function comparableManifest(manifest) {
   return {
     ...manifest,
@@ -500,7 +513,7 @@ async function assertOutputsCurrent({ manifest, content, publicFiles, censusModu
  */
 async function scanVaultDir(
   dir,
-  { rootDir = ROOT, previousManifest = null, publicOutDir = null, check = false } = {},
+  { rootDir = ROOT, previousManifest = null, publicOutDir = null, check = false, treeName = 'docs' } = {},
 ) {
   const files = await walk(dir);
   const gitDates = gitLastCommitDates(rootDir, dir);
@@ -654,7 +667,7 @@ async function scanVaultDir(
 
   docs.sort((a, b) => a.slug.localeCompare(b.slug, 'ko'));
 
-  const tree = { name: 'docs', path: '', type: 'dir' };
+  const tree = { name: treeName, path: '', type: 'dir' };
   for (const doc of docs) insertIntoTree(tree, doc.slug, doc.title);
   sortTree(tree);
 
@@ -677,19 +690,19 @@ async function scanVaultDir(
 
   const manifest = {
     version: '2026-04-23',
-    generatedAt: new Date().toISOString(),
+    // Deterministic: the manifest is stamped with the most recent source-doc
+    // change (git commit dates for committed docs, fs mtime only for dirty
+    // ones), NOT the build wall-clock. So the same committed vault regenerates
+    // byte-identically on any machine at any time — no per-build churn, no
+    // "generatedAt-only" diffs to hand-revert. `previousManifest` is no longer
+    // consulted for a sticky timestamp (the value now derives purely from
+    // source), which also drops the tree.name-sensitive stabilization footgun.
+    generatedAt: deterministicGeneratedAt(docs),
     docs,
     backlinksDetail,
     tags,
     tree,
   };
-  if (
-    previousManifest &&
-    stableStringify(comparableManifest(previousManifest)) ===
-      stableStringify(comparableManifest(manifest))
-  ) {
-    manifest.generatedAt = previousManifest.generatedAt;
-  }
 
   return { manifest, content, publicFiles };
 }
@@ -763,8 +776,12 @@ async function buildStorefrontSample({ check = false } = {}) {
     previousManifest,
     publicOutDir: null,
     check,
+    // tree.name must be set BEFORE scanVaultDir's generatedAt-stabilization
+    // comparison (it compares the whole tree). Renaming afterwards left the
+    // current manifest at 'docs' while the stored one was 'storefront', so the
+    // comparison never matched and generatedAt churned on every build.
+    treeName: 'storefront',
   });
-  manifest.tree.name = 'storefront';
 
   if (check) {
     const issues = [];

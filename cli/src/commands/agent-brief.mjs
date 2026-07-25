@@ -195,7 +195,26 @@ async function verifyOneCliFallback(raw, vaultRoot, { timeoutMs, slowThresholdMs
     const child = await spawnFallbackCommand(parsed.args, timeoutMs);
     const elapsedMs = Math.max(0, Math.round(performance.now() - startedAt));
     const timedOut = child.timedOut === true;
-    const failed = timedOut || child.status !== 0;
+    // Fallback CLI commands follow one exit-code convention: exit 2 (or a crash)
+    // means the MCP call/parse itself FAILED; exit 1 is an ADVISORY result — the
+    // command ran and printed valid data, it just reports a negative/empty or
+    // needs-attention answer (health needs_attention, `all-paths`/`explain`/
+    // `path`/`cycles` "no path / unrelated / none found", etc.). On a fresh or
+    // sparse vault (e.g. the 5-node starter, whose example nodes have no
+    // relations yet) those advisory exit-1s are the CORRECT answer, not a run
+    // failure. The gate proves the commands EXECUTE, so only a real run failure
+    // — timeout, kill signal, spawn error, exit >= 2, or an exit-1 that wrote to
+    // stderr (a usage/arg error, not an advisory result on stdout) — fails it.
+    // Treating every exit 1 as failure made the documented setup gate impossible
+    // to pass on any vault that isn't fully connected and perfectly healthy.
+    const wroteToStderr = ((child.stderr ?? '').trim().length > 0);
+    const advisoryResult =
+      !timedOut &&
+      !child.signal &&
+      !child.error &&
+      child.status === 1 &&
+      !wroteToStderr;
+    const failed = timedOut || (child.status !== 0 && !advisoryResult);
     const slow = elapsedMs >= slowThresholdMs;
     const sample = failed ? sampleFallbackOutput(child.stderr || child.stdout) : '';
     return {
@@ -204,6 +223,7 @@ async function verifyOneCliFallback(raw, vaultRoot, { timeoutMs, slowThresholdMs
       status: failed ? 'fail' : 'pass',
       elapsedMs,
       exitCode: child.status,
+      ...(advisoryResult ? { advisory: 'result' } : {}),
       ...(slow ? { slow: true } : {}),
       ...(child.signal ? { signal: child.signal } : {}),
       ...(timedOut ? { timedOut: true } : {}),
