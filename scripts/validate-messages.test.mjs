@@ -59,7 +59,8 @@ describe('i18n message catalog', () => {
     assert.match(en.download.releaseStatusSecrets, /not Mac App Store submission/);
     assert.match(en.download.releaseStatusRelease, /v0\.1\.0 GitHub Release/);
     assert.match(en.download.releaseStatusRelease, /source of truth/);
-    assert.match(en.download.releaseStatusHosted, /Separately, Firebase Hosting must deploy/);
+    assert.match(en.download.releaseStatusHosted, /Separately, GitHub Pages must deploy/);
+    assert.doesNotMatch(en.download.releaseStatusHosted, /Firebase Hosting/);
     assert.match(en.download.releaseStatusHosted, /\/ko\/download\//);
     assert.match(ko.download.releaseAvailabilityNote, /macOS DMG 가 아직 보이지 않으면/);
     assert.match(ko.download.releaseAvailabilityNote, /PR review, version alignment, Developer ID signing\/notarization, v0\.1\.0 GitHub Release/);
@@ -77,7 +78,8 @@ describe('i18n message catalog', () => {
     assert.match(ko.download.releaseStatusRelease, /v0\.1\.0 GitHub Release/);
     assert.match(ko.download.releaseStatusRelease, /진실원/);
     assert.match(ko.download.releaseStatusHosted, /별도로/);
-    assert.match(ko.download.releaseStatusHosted, /Firebase Hosting/);
+    assert.match(ko.download.releaseStatusHosted, /GitHub Pages/);
+    assert.doesNotMatch(ko.download.releaseStatusHosted, /Firebase Hosting/);
     assert.match(ko.download.releaseStatusHosted, /\/ko\/download\//);
     assert.match(en.download.proofSigned, /Release gate requires/);
     assert.match(en.download.proofNotarized, /Release gate requires/);
@@ -118,16 +120,16 @@ describe('i18n message catalog', () => {
     );
     assert.equal(
       ko.nav.settingsMenu.triggerTitle,
-      '화면, 언어, 온톨로지 작업공간, MCP 연결 설정을 엽니다',
+      '화면, 언어, 작업공간, AI 에이전트 연결을 한 곳에서 조정합니다',
     );
-    assert.equal(ko.nav.settingsMenu.tabVault, '작업공간');
-    assert.equal(ko.nav.settingsMenu.tabVaultDesc, '온톨로지 작업공간 접근.');
-    assert.equal(ko.nav.settingsMenu.vaultTitle, '온톨로지 작업공간');
+    assert.equal(ko.nav.settingsMenu.groupWorkspace, '작업공간');
+    assert.equal(ko.nav.settingsMenu.workspaceFolderLabel, '작업공간 폴더');
+    assert.equal(ko.nav.settingsMenu.vaultTitle, '문서함');
     assert.equal(
       ko.nav.settingsMenu.vaultBodyLocal,
-      '현재 로컬 작업공간을 열어 파일과 온톨로지 개념을 확인합니다.',
+      '작업공간 문서를 열어 파일과 온톨로지 개념을 확인해요',
     );
-    assert.equal(ko.nav.settingsMenu.vaultCtaLocal, '작업공간 열기');
+    assert.equal(ko.nav.settingsMenu.vaultCtaLocal, '열기');
     assert.equal(ko.topology.documentTitle, '지형도');
     // 구 topologyWidgets.controls 단축키/depth 카피(depthHop·shortcutDepthAll·
     // shortcutDoubleClick·shortcutEsc)는 죽은 "지도 조절" 패널 철거(2026-07-21)로
@@ -172,38 +174,24 @@ describe('i18n message catalog', () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const settings = ko.nav.settingsMenu;
     const visibleCopy = [
-      settings.subtitle,
-      settings.tabMcpAgents,
-      settings.tabMcpAgentsDesc,
-      settings.liveVerdictSetupMeta,
-      settings.liveVerdictFallback,
-      settings.liveVerdictFallbackMeta,
-      settings.fallbackProofTitle,
-      settings.fallbackProofBody,
-      settings.staleCacheBody,
-      settings.proofDecisionSession,
-      settings.proofDecisionFallback,
+      settings.groupAgent,
       settings.agentTitle,
       settings.agentBody,
+      settings.agentStatusReady,
+      settings.agentStatusRepair,
+      settings.agentStatusNoVault,
+      settings.agentNoVaultHint,
+      settings.mcpProofTitle,
       settings.mcpProofBody,
-      settings.mcpProofDirectLabel,
-      settings.mcpProofFallbackLabel,
-      settings.mcpProofFallbackBody,
-      settings.mcpProofStaleCache,
-      settings.mcpProofFallback,
-      settings.clientProofTitle,
-      settings.clientProofBody,
-      settings.clientCodexBody,
-      settings.clientClaudeBody,
-      settings.clientCursorVsCodeBody,
+      settings.mcpProofCopy,
+      settings.mcpProofCopied,
     ].join('\n');
 
-    assert.equal(settings.tabMcpAgents, 'MCP/에이전트');
-    assert.equal(settings.liveVerdictFallback, '대체 검증은 별도');
-    assert.equal(settings.fallbackProofTitle, 'CLI 대체 검증');
-    assert.equal(settings.clientProofTitle, '다른 도구의 확인 위치');
+    assert.equal(settings.groupAgent, 'AI 에이전트');
+    assert.equal(settings.agentTitle, 'AI 에이전트 연결');
+    assert.equal(settings.mcpProofTitle, 'MCP 첫 호출');
     assert.match(visibleCopy, /에이전트/);
-    assert.match(visibleCopy, /대체 검증/);
+    assert.match(visibleCopy, /검증/);
     assert.doesNotMatch(visibleCopy, /\bAgent\b|\bFallback\b|\bclient\b|\bnamespace\b|\breload\b|\brestart\b|graph DB gate/);
   });
 
@@ -436,8 +424,8 @@ describe('i18n message catalog', () => {
       en.metadata.pages.docs,
       en.navRail.docs,
       en.nav.settingsMenu.triggerTitle,
-      en.nav.settingsMenu.subtitle,
-      en.nav.settingsMenu.tabVaultDesc,
+      en.nav.settingsMenu.groupWorkspace,
+      en.nav.settingsMenu.workspaceFolderLabel,
       en.nav.settingsMenu.vaultTitle,
       en.nav.settingsMenu.vaultBodyLocal,
       en.nav.settingsMenu.vaultBodyStatic,
@@ -487,9 +475,9 @@ describe('i18n message catalog', () => {
     // `ModeBadge` (feat/rail-rollout) — `navRail.docs` (shared by AppNavRail +
     // BottomTabBar) is the one surviving primary-nav label for this surface.
     assert.equal(en.navRail.docs, 'Docs');
-    assert.equal(en.nav.settingsMenu.vaultTitle, 'Ontology workspace');
-    assert.equal(en.nav.settingsMenu.vaultCtaLocal, 'Open workspace');
-    assert.equal(en.nav.settingsMenu.vaultCtaStatic, 'Start local workspace');
+    assert.equal(en.nav.settingsMenu.vaultTitle, 'Library');
+    assert.equal(en.nav.settingsMenu.vaultCtaLocal, 'Open');
+    assert.equal(en.nav.settingsMenu.vaultCtaStatic, 'Get started');
     assert.equal(en.docsVault.desktopWelcome.title, 'Open or create a local ontology workspace');
     assert.equal(en.docsVault.desktopWelcome.contractAriaLabel, 'Ontology workspace contract');
     assert.equal(en.docsVault.desktopWelcome.contractFilesLabel, 'Workspace files');
@@ -507,7 +495,7 @@ describe('i18n message catalog', () => {
     assert.equal(en.vaultWidgets.palette.dialogAriaLabel, 'Ontology workspace palette');
     assert.doesNotMatch(
       welcomeCopy,
-      /frontmatter|vault|Vault|Source Vault|source vault|Source records|source records|Graph DB|graph DB|DB proof|Agent\b|agent\b|nodes \{nodes\}|proof gate|relation_name_parity|pattern_walk|project_map/,
+      /frontmatter|vault|Vault|Source Vault|source vault|Source records|source records|Graph DB|graph DB|DB proof|nodes \{nodes\}|proof gate|relation_name_parity|pattern_walk|project_map/,
     );
   });
 
@@ -577,39 +565,31 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(ko.topology.index.agentHandoffAria, /동기화 게이트|재분석 지시/);
   });
 
-  it('keeps download/settings copy free of untranslated English nouns mixed into Korean sentences (chore/copy-plainlang W5 — "domain"/"capability"/"handoff"/"batch" left un-Koreanized inside otherwise-Korean sentences)', async () => {
+  it('keeps active download/settings copy free of untranslated English nouns mixed into Korean sentences', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const settings = ko.nav.settingsMenu;
     const mixedLanguageCopy = [
       ko.download.includeCliBody,
-      settings.mcpStateDisconnectedBody,
-      settings.projectIndexMeaningGate,
-      settings.projectIndexEvidence,
-      settings.projectIndexApply,
+      settings.agentBody,
+      settings.agentNoVaultHint,
+      settings.mcpProofBody,
     ].join('\n');
 
     assert.equal(ko.download.includeCliBody, '그래프 컴파일 · 에이전트 핸드오프 · 성장 큐 — 터미널이 일상 진입점.');
     assert.equal(
-      settings.mcpStateDisconnectedBody,
-      '서버 설정이 없거나 호출 가능한 도구가 없습니다. 핸드오프를 신뢰하기 전에 설정을 고치세요.',
+      settings.agentBody,
+      'MCP 설정 파일 상태 · 연결 증명 · 검증 게이트',
     );
     assert.equal(
-      settings.projectIndexMeaningGate,
-      '의미 게이트: 비즈니스/제품 도메인과 역량을 먼저 보고한 뒤, 코드 행은 구현 근거로 인용합니다.',
+      settings.agentNoVaultHint,
+      '작업공간 폴더를 열면 설정 파일 상태 확인과 수리를 여기서 할 수 있어요.',
     );
     assert.equal(
-      settings.projectIndexEvidence,
-      '비즈니스 근거: 소스 폴더를 역량으로 보기 전에 README와 docs/ontology에서 온 meaningGate.businessOntology.evidence 행을 보고합니다.',
+      settings.mcpProofBody,
+      '연결 여부는 이 화면만으로 단정하지 않고 에이전트 세션에서 증명합니다. Codex나 Claude에 서버가 보이면 이 호출 패킷을 먼저 붙여넣으세요.',
     );
-    assert.equal(
-      settings.projectIndexApply,
-      '쓰기 전 사람 검토: 후보 묶음을 승인한 뒤에만 --apply를 붙입니다.',
-    );
-    // literal JSON field paths (meaningGate.*) and CLI flags (--apply) stay as
-    // exact machine-verifiable text — only bare English *nouns* standing in
-    // for untranslated Korean words are forbidden here.
     assert.doesNotMatch(
-      mixedLanguageCopy.replace(/meaningGate\.[a-zA-Z.]+|--apply/g, ''),
+      mixedLanguageCopy,
       /\bdomain\b|\bcapability\b|\bhandoff\b|\bbatch\b|\bgrowth queue\b|\bgraph compile\b/,
     );
   });
