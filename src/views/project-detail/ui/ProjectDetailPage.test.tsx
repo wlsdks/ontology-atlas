@@ -183,11 +183,34 @@ describe("ProjectDetailPage", () => {
     renderPage();
 
     // domains=1, capabilities=1, elements=2, documents=1
-    // #10 — 통계 칩은 라벨 다음에 값이 붙는다(라벨.nextElementSibling = 값).
+    // 온톨로지 위계(도메인 ⊃ 역량 ⊃ 요소)만 칩이다 — 라벨 다음에 값이 붙는다.
     expect(screen.getByText("Domains").nextElementSibling).toHaveTextContent("1");
     expect(screen.getByText("Capabilities").nextElementSibling).toHaveTextContent("1");
     expect(screen.getByText("Elements").nextElementSibling).toHaveTextContent("2");
-    expect(screen.getByText("Documents").nextElementSibling).toHaveTextContent("1");
+  });
+
+  // 5개를 같은 무게로 두면 "다 중요하다 = 다 안 중요하다" 가 된다. 메타 수치는
+  // 종류가 달라 칩이 아니라 평문으로 내려간다 — 이 위계가 무너지지 않게 고정.
+  it("메타 수치(문서·관계)는 칩이 아니라 평문으로 강등된다", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = false;
+    renderPage();
+
+    // 칩이었다면 라벨과 값이 별 엘리먼트라 "Documents" 단독 노드가 잡힌다.
+    expect(screen.queryByText("Documents")).not.toBeInTheDocument();
+    expect(screen.getByText(/Documents\s+1/)).toBeInTheDocument();
+  });
+
+  // 히어로 수치는 이 프로젝트 몫이고 상단 census 는 볼트 전체다. 같은 화면에
+  // 다른 두 수가 있으면 하나가 틀린 것처럼 읽히므로 스코프를 말로 밝힌다.
+  it("히어로 지표에 스코프 캡션이 붙는다", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = false;
+    renderPage();
+
+    expect(screen.getByText("This project")).toBeInTheDocument();
   });
 
   it("links each domain composition card to its topology focus deep-link", () => {

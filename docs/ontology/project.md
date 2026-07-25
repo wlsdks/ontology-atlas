@@ -3,6 +3,7 @@ slug: ontology-atlas
 kind: project
 title: ontology-atlas
 display_ko: 온톨로지 아틀라스
+description: 마크다운 폴더 하나로, 사람과 AI 에이전트가 같이 읽고 고치는 제품 지도를 만드는 도구입니다.
 domains:
   - ai-agent-partner
   - mode-aware-adapters

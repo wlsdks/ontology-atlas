@@ -30,6 +30,9 @@
       "title": "설정",
       "closeLabel": "설정 닫기",
       "groupScreen": "화면",
+      "replayGuideLabel": "화면 안내",
+      "replayGuideCaption": "이 화면이 무엇을 하는 곳인지 처음 들어왔을 때처럼 다시 보여줘요",
+      "replayGuideAction": "다시 보기",
       "groupWorkspace": "작업공간",
       "groupAgent": "AI 에이전트",
       "languageTitle": "언어",
@@ -438,6 +441,46 @@
       "agent": {
         "title": "AI 에이전트와 같이 키우기",
         "body": "Claude Code 같은 코딩 에이전트가 이 지도를 읽고 써요. INDEX 의 시작 카드에 있는 명령 한 줄이면 내 코드베이스로 이 지도를 만들 수 있어요."
+      },
+      "docsWhat": {
+        "title": "지도의 점을 펼치면 여기예요",
+        "body": "지도에서 본 점 하나가 여기서는 글 한 편이에요. 읽고, 고치고, 새로 쓰는 곳이에요. 여기서 고친 내용은 내 컴퓨터의 파일에 그대로 저장돼요."
+      },
+      "docsList": {
+        "title": "왼쪽이 내 폴더 목록",
+        "body": "폴더에 있는 글이 전부 여기 나와요. 눌러서 열고, 여러 편을 탭으로 띄워 둘 수 있어요. 위쪽에서 내 폴더를 고르면 그때부터 내 글이 보여요."
+      },
+      "studioWhat": {
+        "title": "글끼리 이어 붙이는 작업대예요",
+        "body": "글은 썼는데 이게 무엇의 일부인지, 무엇에 기대고 있는지가 비어 있을 때가 많아요. 여기서 그 빈칸을 하나씩 채워요. 채운 만큼 지도의 선이 늘어나요."
+      },
+      "studioStart": {
+        "title": "둘 중 하나로 시작해요",
+        "body": "이미 있는 글을 골라 빈칸을 채우거나, 새 글을 처음부터 만들 수 있어요. 어느 쪽이든 마지막엔 내 폴더에 파일로 저장돼요."
+      },
+      "insightsWhat": {
+        "title": "전체를 점검하는 곳이에요",
+        "body": "글이 늘어나면 어디에도 안 이어진 글, 오래 손 안 댄 글이 생겨요. 여기가 그런 것들을 한 번에 찾아줘요. 무엇부터 정리할지 모를 때 여기부터 보면 돼요."
+      },
+      "insightsToday": {
+        "title": "오늘 손볼 것부터",
+        "body": "지금 고치면 가장 도움이 되는 몇 개를 맨 위에 올려 둬요. 하나를 눌러 지도에서 확인하거나 바로 고치러 갈 수 있어요."
+      },
+      "projectsWhat": {
+        "title": "제품 단위로 묶어 보는 곳이에요",
+        "body": "폴더 안의 글 중 제품 하나를 가리키는 글이 여기 카드로 서요. 그 제품이 어떤 영역들로 나뉘고 각 영역이 얼마나 큰지를 막대로 보여줘요."
+      },
+      "projectsCard": {
+        "title": "카드 하나가 제품 하나",
+        "body": "막대는 그 제품 안의 영역별 크기예요. 카드를 열면 자세한 내용이 나오고, 지도에서 그 자리로 바로 갈 수도 있어요."
+      },
+      "gitWhat": {
+        "title": "무엇이 언제 바뀌었는지 남기는 곳이에요",
+        "body": "글을 고치면 여기에 무엇이 바뀌었는지가 쌓여요. 나중에 되돌아보거나 되돌릴 수 있게 지금 상태를 통째로 저장해 둘 수도 있어요. 이 폴더 안의 글만 다뤄요."
+      },
+      "gitChanges": {
+        "title": "바뀐 것부터 확인해요",
+        "body": "고친 글이 여기 목록으로 서요. 내용을 확인한 다음 남기면 그 시점이 기록돼요. 브라우저에서는 보는 것까지 되고, 앱을 설치하면 여기서 바로 남길 수 있어요."
       }
     }
   },
@@ -1140,7 +1183,9 @@
       "tabsAriaLabel": "인사이트 탭",
       "tab": {
         "do-next": "할 일",
-        "structure": "구조",
+        "composition": "구성",
+        "connections": "연결",
+        "boundaries": "경계",
         "freshness": "신선도"
       },
       "weeksUnit": "주",
@@ -1169,17 +1214,16 @@
       "kindGlyphCaption": "글리프 = 지도의 노드 셰이프 그대로 — 패널과 캔버스는 같은 세계.",
       "domainCapacityCaption": "이 영역에 담긴 개념 수 — 역량과 요소를 합친 값이에요. 여러 도메인에 속한 개념은 각 도메인에 한 번씩 세어져 합계가 전체보다 클 수 있어요. 막대 왼쪽=역량, 오른쪽=요소.",
       "relationTypesTitle": "관계 타입",
-      "topDependsOnTitle": "가장 많이 기대는 곳",
-      "noDependsOn": "아직 「기대는 곳」이 없어요",
-      "noDependsOnHint": "공방에서 개념끼리 관계를 이어보세요.",
+      "relationTypesCaption": "관계가 어떤 성격인지 — 담는 관계에 치우쳐 있으면 「기대는」 관계를 더 그려야 한다는 신호예요.",
+      "noRelationTypes": "아직 이어진 관계가 없어요",
+      "noRelationTypesHint": "공방에서 개념끼리 관계를 이어보세요.",
       "hubsTitle": "허브 — 연결 상위",
       "noHubs": "아직 허브가 없어요",
       "noHubsHint": "관계를 더 이으면 연결이 많은 개념이 허브로 떠올라요.",
-      "connectionsUnit": "연결",
       "hubTruncated": "상위 {shown} / 전체 {total}",
       "hubRowAriaLabel": "{title} — 지도에서 보기",
       "freshnessRowAriaLabel": "{title} — 지도에서 보기",
-      "hubThumbnailCaption": "작은 그림=이 개념과 바로 이어진 이웃 · 숫자=드나드는 연결을 모두 더한 수 · 점선=다른 개념에 「기대는」 연결 비중",
+      "hubDegreeCaption": "숫자=드나드는 연결을 모두 더한 수 · 막대=이 목록 안에서의 상대 크기. 연결이 많을수록 손댔을 때 멀리 퍼져요.",
       "domainCouplingTitle": "도메인 결합",
       "domainCouplingEmptyTitle": "아직 결합 데이터가 부족해요",
       "domainCouplingEmptyDescription": "도메인 2개 이상 · 서로 다른 도메인을 잇는 교차 관계가 있어야 계산할 수 있어요.",
@@ -1327,7 +1371,7 @@
       "stateBackToWorkspace": "프로젝트 목록",
       "stateBackToMap": "지도 열기",
       "documentTitleSuffix": "Ontology Atlas",
-      "globalCensus": "{concepts} CONCEPTS · {relations} RELATIONS",
+      "globalCensus": "{concepts} 개념 · {relations} 관계",
       "heroLabel": "개별 프로젝트",
       "heroLabelHub": "허브",
       "heroLabelService": "서비스",
@@ -1349,8 +1393,7 @@
       "domainSectionRelation": "포함",
       "domainCapabilityLabel": "역량",
       "domainElementLabel": "요소",
-      "domainMoreLine": "요소 {elements}개 · 역량 {more}개 더",
-      "domainMoreLineElementsOnly": "요소 {elements}개",
+      "domainMoreLine": "역량 {more}개 더",
       "bodyCardTitle": "본문",
       "bodyCardGcap": "",
       "bodyEmptyHint": "아직 작성된 본문이 없습니다.",
@@ -1359,12 +1402,13 @@
       "connectedEmpty": "아직 다른 프로젝트와 연결되지 않았습니다.",
       "connectedEmptyHint": "두 번째 프로젝트 문서를 만들어 서로 연결하면 여기 나타납니다.",
       "connectedMoreNote": "그 외 연결 {count}개 더",
-      "handoffTitle": "에이전트 핸드오프",
-      "handoffGcap": "AI 에이전트용",
-      "handoffHumanCaption": "사람은 안 읽어도 됩니다 — AI 에이전트용",
-      "handoffCopyLabel": "다음 액션 복사",
-      "handoffCopiedLabel": "복사됨",
-      "handoffCopyErrorLabel": "복사 실패",
+      "handoffTitle": "AI에게 이어서 맡기기",
+      "handoffDesc": "복사한 내용을 Claude·Cursor 같은 AI 도구에 붙여넣으면, AI가 이 프로젝트의 지도를 이어서 읽고 시작합니다.",
+      "heroScopeCaption": "이 프로젝트",
+      "handoffHumanCaption": "복사되는 내용 미리 보기",
+      "handoffCopyLabel": "AI에게 줄 안내 복사",
+      "handoffCopiedLabel": "복사됨 — AI 채팅에 붙여넣으세요",
+      "handoffCopyErrorLabel": "복사 실패 — 다시 시도",
       "footerSummary": "{slug} · 업데이트 {date}",
       "saveSuccessName": "이름 저장됨",
       "saveSuccessDescription": "설명 저장됨",

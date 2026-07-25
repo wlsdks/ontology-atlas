@@ -30,6 +30,9 @@
       "title": "Settings",
       "closeLabel": "Close settings",
       "groupScreen": "Screen",
+      "replayGuideLabel": "Screen guide",
+      "replayGuideCaption": "Show what this screen is for, the way it appeared on your first visit",
+      "replayGuideAction": "Show again",
       "groupWorkspace": "Workspace",
       "groupAgent": "AI agent",
       "languageTitle": "Language",
@@ -438,6 +441,46 @@
       "agent": {
         "title": "Growing it together with an AI agent",
         "body": "Coding agents like Claude Code can read and write this map. One command in the INDEX starter card builds this map from your own codebase."
+      },
+      "docsWhat": {
+        "title": "Open a dot and you land here",
+        "body": "A dot on the map is one piece of writing here. This is where you read it, edit it, and write new ones. What you change here is saved straight into the files on your computer."
+      },
+      "docsList": {
+        "title": "Your folder, listed on the left",
+        "body": "Everything in the folder shows up here. Click to open, and keep several open as tabs. Pick your own folder up top and your own writing shows up instead."
+      },
+      "studioWhat": {
+        "title": "A bench for joining pieces together",
+        "body": "You wrote the piece, but what it is part of and what it leans on are often still blank. This is where you fill those blanks in, one at a time. Every blank you fill adds a line to the map."
+      },
+      "studioStart": {
+        "title": "Start with one of these two",
+        "body": "Pick something that already exists and fill in its blanks, or build a new piece from scratch. Either way it ends up as a file in your folder."
+      },
+      "insightsWhat": {
+        "title": "Where you check the whole thing",
+        "body": "As the pile grows, some pieces end up connected to nothing and some go untouched for months. This finds all of that in one place. Start here when you don't know what to tidy up first."
+      },
+      "insightsToday": {
+        "title": "What to fix today, first",
+        "body": "The few things that help most right now sit at the top. Click one to check it on the map, or go straight to fixing it."
+      },
+      "projectsWhat": {
+        "title": "Grouped by product",
+        "body": "Any piece in your folder that stands for a whole product shows up here as a card. Each card shows the areas that product splits into and how big each area is."
+      },
+      "projectsCard": {
+        "title": "One card, one product",
+        "body": "The bars are the sizes of the areas inside that product. Open the card for the details, or jump straight to its spot on the map."
+      },
+      "gitWhat": {
+        "title": "A record of what changed, and when",
+        "body": "Every edit you make piles up here. You can also save the whole current state so you can look back — or go back — later. Only the writing in this folder is touched."
+      },
+      "gitChanges": {
+        "title": "Start with what changed",
+        "body": "Everything you edited is listed here. Look it over, then save it and that moment is on the record. In a browser you can look; install the app and you can save from here too."
       }
     }
   },
@@ -1140,7 +1183,9 @@
       "tabsAriaLabel": "Insights tabs",
       "tab": {
         "do-next": "Do next",
-        "structure": "Structure",
+        "composition": "Inventory",
+        "connections": "Connections",
+        "boundaries": "Boundaries",
         "freshness": "Freshness"
       },
       "weeksUnit": "w",
@@ -1169,17 +1214,16 @@
       "kindGlyphCaption": "Glyphs match the map's node shapes exactly — panel and canvas share one world.",
       "domainCapacityCaption": "How many concepts live in this domain — capabilities plus elements. A concept in multiple domains is counted once per domain, so totals can exceed the census. Bar: left = capabilities, right = elements.",
       "relationTypesTitle": "Relation types",
-      "topDependsOnTitle": "Leans on the most",
-      "noDependsOn": "Nothing leans on anything yet",
-      "noDependsOnHint": "Connect concepts in the workshop.",
+      "relationTypesCaption": "What kind of relations you have — if containment dominates, it's a sign to draw more \"leans on\" links.",
+      "noRelationTypes": "No relations connected yet",
+      "noRelationTypesHint": "Connect concepts in the workshop.",
       "hubsTitle": "Hubs — top connected",
       "noHubs": "No hubs yet",
       "noHubsHint": "Add more relations and well-connected concepts rise as hubs.",
-      "connectionsUnit": "links",
       "hubTruncated": "Top {shown} / {total} total",
       "hubRowAriaLabel": "{title} — view on the map",
       "freshnessRowAriaLabel": "{title} — view on the map",
-      "hubThumbnailCaption": "Thumbnail = the neighbors directly linked to this concept · Number = all incoming and outgoing connections combined · Dashed line = the share that \"leans on\" other concepts",
+      "hubDegreeCaption": "Number = all incoming and outgoing connections combined · Bar = relative size within this list. The more connections, the wider a change ripples.",
       "domainCouplingTitle": "Domain coupling",
       "domainCouplingEmptyTitle": "Not enough coupling data yet",
       "domainCouplingEmptyDescription": "Needs 2+ domains and a cross-domain relation between them to compute.",
@@ -1349,8 +1393,7 @@
       "domainSectionRelation": "Contains",
       "domainCapabilityLabel": "capabilities",
       "domainElementLabel": "elements",
-      "domainMoreLine": "{elements} elements · {more} more capabilities",
-      "domainMoreLineElementsOnly": "{elements} elements",
+      "domainMoreLine": "{more} more capabilities",
       "bodyCardTitle": "Overview",
       "bodyCardGcap": "",
       "bodyEmptyHint": "No overview written yet.",
@@ -1359,12 +1402,13 @@
       "connectedEmpty": "Not connected to any other project yet.",
       "connectedEmptyHint": "Create a second project document and link the two to see it here.",
       "connectedMoreNote": "{count} more connections",
-      "handoffTitle": "Agent handoff",
-      "handoffGcap": "For AI agents",
-      "handoffHumanCaption": "You don't need to read this — it's for AI agents",
-      "handoffCopyLabel": "Copy next action",
-      "handoffCopiedLabel": "Copied",
-      "handoffCopyErrorLabel": "Copy failed",
+      "handoffTitle": "Continue with your AI",
+      "handoffDesc": "Paste the copied text into an AI tool like Claude or Cursor — it picks up this project's map and continues from here.",
+      "heroScopeCaption": "This project",
+      "handoffHumanCaption": "Preview what gets copied",
+      "handoffCopyLabel": "Copy AI starter",
+      "handoffCopiedLabel": "Copied — paste into your AI chat",
+      "handoffCopyErrorLabel": "Copy failed — try again",
       "footerSummary": "{slug} · Updated {date}",
       "saveSuccessName": "Name saved",
       "saveSuccessDescription": "Description saved",

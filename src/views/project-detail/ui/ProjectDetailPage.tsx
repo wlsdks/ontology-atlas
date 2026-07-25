@@ -38,6 +38,8 @@ import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useTaxonomy } from "@/features/taxonomy";
 import { ProjectQuickEditPanel } from "@/features/project-quick-edit";
 import { resolveSubscribeUpdate } from "../model/resolve-subscribe-update";
+import { resolveProjectTagline } from "../model/project-tagline";
+import { stripDuplicateHeading } from "../model/strip-duplicate-heading";
 import { buildProjectOntologyMetrics } from "../model/project-ontology-metrics";
 import { buildProjectDomainComposition } from "../model/domain-composition";
 import { buildConnectedProjects, findRelatesGraphProjectSlugs } from "../model/connected-projects";
@@ -407,22 +409,46 @@ export function ProjectDetailPage({
   // statusLabel(undefined) 는 "—" 를 반환(placeholder 의미 명시) — truthy 라
   // .filter(Boolean) 로 안 걸러진다. project.status 자체가 있을 때만 라인에
   // 넣어야 "개별 프로젝트 · —" 같은 대시 콜리전이 안 생긴다.
+  // 히어로는 개관, 본문은 상세 — 발췌 원문을 그대로 흘리면 어절 한가운데서
+  // 끊긴다(`project-tagline.ts` 참고). 편집 중이던 값이 있으면 그건 사용자
+  // 입력이라 손대지 않는다.
+  const heroTagline = resolveProjectTagline({ description: project.description });
+  // 본문 맨 위 `# 프로젝트명` 은 히어로 제목과 같은 문장이다 — 파일 단독으로
+  // 읽힐 땐 옳지만 이 화면에서는 같은 잉크를 두 번 쓰는 것이다.
+  const dedupedBodyContent = stripDuplicateHeading(bodyContent, project.name);
   const heroMeta = [
     project.isHub ? t("heroLabelHub") : t("heroLabel"),
     project.status ? statusLabel(project.status) : null,
   ]
     .filter(Boolean)
     .join(" · ");
+  /*
+    "그냥 글자 나열같다" 는 지적의 원인은 넷이었다: ① 문단 간격(10px)이 행간
+    (23.6px)보다 좁아 문단 경계가 사라졌고 ② 헤딩에 아래 여백이 아예 없어
+    제목이 뒤 문단에 달라붙었고 ③ 넓은 카드에 짧은 행이 걸려 읽는 눈이 갈
+    곳을 잃었고 ④ 인용·코드블록·표에 스타일이 없어 전부 같은 회색 글이었다.
+
+    위계는 **크기 도약이 아니라 무게(650) + 상하 공간(36/12)** 으로 만든다 —
+    무채색 단일 인디고 헌장에서 크기를 키우는 건 값싼 해법이고, 새 램프 스텝을
+    만들면 `TYPE_RAMP_STEPS` 등록 부채까지 생긴다. 여기 쓰인 값은 전부 기존
+    램프 안이다.
+
+    measure(70ch)는 한 행이 눈으로 좇을 수 있는 길이의 상한이다.
+  */
   const storyMarkdownClassName =
-    "text-[13.5px] leading-[1.75] text-[color:var(--color-text-secondary)] [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_code]:rounded [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-6 [&_h1]:text-xl [&_h1]:font-[var(--font-weight-signature)] [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-[var(--font-weight-signature)] [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-4 [&_h3]:text-base [&_h3]:text-[color:var(--color-text-primary)] [&_li]:ml-[18px] [&_li]:mb-[5px] [&_li]:list-disc [&_p]:mb-[10px] [&_strong]:font-semibold [&_strong]:text-[color:var(--color-text-primary)]";
+    "text-body-lg leading-[1.75] text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[650] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[650] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[650] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-[22px] [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-semibold [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-[22px]";
   const projectFullEditHref = getProjectEditHref(project.slug, {
     returnTo: getProjectRuntimeDetailHref(project.slug),
   });
 
-  const metricItems: Array<{ label: string; value: number }> = [
+  // 온톨로지 자체의 위계(도메인 ⊃ 역량 ⊃ 요소)만 칩으로 세운다.
+  const primaryMetrics: Array<{ label: string; value: number }> = [
     { label: t("metricDomains"), value: metrics.domains },
     { label: t("metricCapabilities"), value: metrics.capabilities },
     { label: t("metricElements"), value: metrics.elements },
+  ];
+  // 메타 수치는 종류가 달라 같은 무게를 줄 이유가 없다 — 평문으로 내린다.
+  const secondaryMetrics: Array<{ label: string; value: number }> = [
     { label: t("metricDocuments"), value: metrics.documents },
     { label: t("metricRelations"), value: metrics.relations },
   ];
@@ -460,27 +486,30 @@ export function ProjectDetailPage({
                 ariaLabel={t("inlineNameAria")}
                 className="text-[27px] leading-[1.05] font-[650] tracking-[-0.015em] text-pretty text-[color:var(--color-text-primary)]"
               />
+              {/*
+                메타 행은 여기서 끝난다. 예전엔 설명이 이 점-행 **안으로**
+                흘러들어, 문단 길이의 글이 13px tertiary 메타 취급을 받았다 —
+                "답답하다" 는 인상의 절반이 그것이었다. 정의는 메타보다 중요하니
+                한 단계 위 톤(secondary)으로 독립 블록에 둔다.
+              */}
               <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-[color:var(--color-text-tertiary)]">
                 <span>{heroMeta}</span>
                 <span aria-hidden className="text-[color:var(--color-text-quaternary)]">
                   ·
                 </span>
                 <span>{t("heroUpdatedAt", { date: formatDate(project.updatedAt) })}</span>
-                <span aria-hidden className="text-[color:var(--color-text-quaternary)]">
-                  ·
-                </span>
-                <InlineEditable
-                  as="span"
-                  multiline
-                  value={project.description}
-                  editable={canManageProject}
-                  onSave={(next) => saveProjectField("description", next)}
-                  ariaLabel={t("inlineDescriptionAria")}
-                  placeholder={t("inlineDescriptionPlaceholder")}
-                  dataTestId="project-detail-description"
-                  className="min-w-0"
-                />
               </div>
+              <InlineEditable
+                as="p"
+                multiline
+                value={heroTagline ?? project.description}
+                editable={canManageProject}
+                onSave={(next) => saveProjectField("description", next)}
+                ariaLabel={t("inlineDescriptionAria")}
+                placeholder={t("inlineDescriptionPlaceholder")}
+                dataTestId="project-detail-description"
+                className="mt-2.5 max-w-[64ch] text-body-lg leading-[1.6] text-[color:var(--color-text-secondary)]"
+              />
             </div>
             {/* flex-none 은 읽기전용 배지(+액션)가 390px 뷰포트를 밀어내는
                 가로 overflow 를 만들었다 — min-w-0 수축 허용 + wrap. */}
@@ -508,22 +537,44 @@ export function ProjectDetailPage({
             </div>
           </div>
 
-          {/* #10 — 통계는 거대한 숫자 대신 조용한 칩. 라벨+값이 한 줄로 붙어
-              스캔은 쉽되 본문·타이틀의 주목도를 빼앗지 않는다. */}
-          <div className="mt-auto flex flex-wrap gap-1.5 border-t border-[color:var(--color-border-soft)] pt-3.5">
-            {metricItems.map((item) => (
-              <span
-                key={item.label}
-                className="inline-flex items-baseline gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1"
-              >
-                <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
-                  {item.label}
+          {/*
+            통계는 거대한 숫자 대신 조용한 칩 — 스캔은 쉽되 타이틀의 주목도를
+            빼앗지 않는다. 다만 5개를 같은 무게로 두면 "다 중요하다 = 다 안
+            중요하다" 가 된다. 온톨로지 자체의 위계(도메인 ⊃ 역량 ⊃ 요소)와
+            메타 수치(문서·관계)는 다른 종류라, 앞 셋만 칩으로 남기고 뒤 둘은
+            평문으로 강등했다.
+
+            맨 앞의 스코프 캡션은 상단 census(볼트 전체)와의 혼동을 끊는다 —
+            같은 화면에 440 과 453 이 함께 있으면 둘 중 하나가 틀린 것처럼
+            읽힌다. 실제로는 스코프가 다를 뿐이다.
+
+            `pb-5` 는 설명 블록과 이 구분선 사이의 숨 — 예전엔 0px 이라 글자
+            바로 밑에 선이 붙어 있었다.
+          */}
+          <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-[color:var(--color-border-soft)] pt-3.5">
+            <span className="text-caption uppercase tracking-caption text-[color:var(--color-text-quaternary)]">
+              {t("heroScopeCaption")}
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {primaryMetrics.map((item) => (
+                <span
+                  key={item.label}
+                  className="inline-flex items-baseline gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1"
+                >
+                  <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                    {item.label}
+                  </span>
+                  <span className="font-mono text-label tabular-nums text-[color:var(--color-text-secondary)]">
+                    {item.value}
+                  </span>
                 </span>
-                <span className="font-mono text-label tabular-nums text-[color:var(--color-text-secondary)]">
-                  {item.value}
-                </span>
-              </span>
-            ))}
+              ))}
+            </div>
+            <span className="ml-auto font-mono text-label tabular-nums text-[color:var(--color-text-quaternary)]">
+              {secondaryMetrics
+                .map((item) => `${item.label} ${item.value}`)
+                .join(" · ")}
+            </span>
           </div>
         </div>
 
@@ -589,34 +640,20 @@ export function ProjectDetailPage({
         {activeTab === "composition" ? (
           <section data-tab-panel="composition" className="min-w-0">
             {domainComposition.domains.length > 0 ? (
-              <>
-          <div className="mb-3 flex items-center gap-2.5">
-            <TopologyV2TraceMark containment />
-            <span className="text-[14px] font-[560] tracking-[-0.01em] text-[color:var(--color-text-primary)]">
-              {t("domainSectionTitle")}
-            </span>
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-              {t("domainSectionRelation")}
-            </span>
-            <span
-              data-token="engraved-numeral"
-              className="ml-auto font-mono text-[12.5px] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
-            >
-              {domainComposition.domains.length}
-            </span>
-          </div>
-          <DomainCompositionGrid
-            domains={domainComposition.domains}
-            maxTotal={domainComposition.maxTotal}
-            capabilityLabel={t("domainCapabilityLabel")}
-            elementLabel={t("domainElementLabel")}
-            moreLine={(elements, more) =>
-              more > 0
-                ? t("domainMoreLine", { elements, more })
-                : t("domainMoreLineElementsOnly", { elements })
-            }
-          />
-              </>
+              /*
+                섹션 헤더("도메인 구성 · 포함 · 6")를 뺐다. 탭 라벨이 이미
+                "구성 6" 이라 제목도 카운트도 중복이었고, 좌측에만 33px 짜리
+                헤더가 있으니 우측 레일 첫 카드와 시작 모서리가 어긋나 격자
+                전체가 삐뚤어 보였다. 관계 종류("포함")는 카드가 글리프와
+                계량으로 이미 말한다.
+              */
+              <DomainCompositionGrid
+                domains={domainComposition.domains}
+                maxTotal={domainComposition.maxTotal}
+                capabilityLabel={t("domainCapabilityLabel")}
+                elementLabel={t("domainElementLabel")}
+                moreLine={(more) => t("domainMoreLine", { more })}
+              />
             ) : (
               // 도메인 0이어도 탭은 남는다(공간 기억) — 대신 여기서 다음 걸음을 준다.
               <div data-testid="project-detail-composition-empty">
@@ -645,10 +682,10 @@ export function ProjectDetailPage({
           {bodyContent ? (
             // #10 — 본문은 읽기 좋은 가로폭(measure)으로 제한한다.
             <div
-              className={`${storyMarkdownClassName} max-w-[68ch]`}
+              className={`${storyMarkdownClassName} max-w-[var(--measure-prose)]`}
               data-testid="project-detail-body-content"
             >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{bodyContent}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{dedupedBodyContent}</ReactMarkdown>
             </div>
           ) : (
             <div data-testid="project-detail-body-empty">
@@ -719,19 +756,29 @@ export function ProjectDetailPage({
           </section>
 
           <section className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
-            <div className="mb-2.5 flex items-baseline gap-2">
+            {/*
+              이 카드가 실제로 하는 일은 "내 AI 에게 이 프로젝트를 이어서 읽힐
+              시작 프롬프트 복사" 다. 그런데 이름이 "에이전트 핸드오프", 캡션이
+              "사람은 안 읽어도 됩니다 — AI 에이전트용" 이었다. 소유자 판정:
+              *"너무 AI같음"*. 둘 다 맞다 — 내부어인 데다, 부정 화법("안 읽어도
+              됩니다")은 읽는 사람을 밀어내면서 정작 무엇을 하는 건지는 끝내
+              말해주지 않는다.
+
+              이제 순서가 설명 → 버튼 → (접힘)미리보기 다. 무엇을 하는지 먼저
+              말하고, 코드는 보고 싶은 사람만 편다.
+            */}
+            <div className="mb-2">
               <span className="text-[13px] font-[560] text-[color:var(--color-text-primary)]">
                 {t("handoffTitle")}
               </span>
-              <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                {t("handoffGcap")}
-              </span>
             </div>
-            {/* insights 하단 핸드오프와 같은 패턴 — 코드 문자열은 사람 시선의
-                attention winner 가 되지 않게 접어 숨기고(내용은 보존, 버튼이
-                복사), 평문 캡션으로 "사람은 안 읽어도 됨 · AI 에이전트용"을
-                명시한다. summary 가 접기/펼치기 토글 겸 캡션. */}
-            <details className="mb-3">
+            <p className="mb-3 text-[12px] leading-[1.6] text-[color:var(--color-text-tertiary)]">
+              {t("handoffDesc")}
+            </p>
+            <Button type="button" variant="outline" size="sm" onClick={handleCopyHandoff}>
+              {handoffCopyLabel}
+            </Button>
+            <details className="mt-3">
               <summary className="cursor-pointer select-none text-[12px] leading-[1.6] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                 {t("handoffHumanCaption")}
               </summary>
@@ -739,9 +786,6 @@ export function ProjectDetailPage({
                 {handoffSnippet}
               </pre>
             </details>
-            <Button type="button" variant="outline" size="sm" onClick={handleCopyHandoff}>
-              {handoffCopyLabel}
-            </Button>
           </section>
         </aside>
       </section>

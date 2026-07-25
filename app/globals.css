@@ -250,6 +250,11 @@
   --section-gap: 28px;
   --card-gap: 20px;
   --card-pad: 16px;
+  /* 반복 카드 안 목록 슬롯 1행 높이 — 항목이 없어도 이 자리는 예약된다.
+     내용 길이가 카드 높이를 정하지 못하게 하는 규격(치수 규칙성). */
+  --card-row-h: 22px;
+  /* 산문 measure — 한 행이 눈으로 좇을 수 있는 길이의 상한. */
+  --measure-prose: 70ch;
   --page-bottom-breath: 40px;
 
   /*

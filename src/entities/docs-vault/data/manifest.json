@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-25T15:58:42.967Z",
+  "generatedAt": "2026-07-25T17:34:52.176Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -57,7 +57,7 @@
       ],
       "excerpt": "Current as of 2026-05-28. This is the user-facing guide for running ontology-atlas as a local PC graph memory: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is",
       "wordCount": 2212,
-      "updatedAt": "2026-07-25T15:58:42.967Z",
+      "updatedAt": "2026-07-26T01:06:18+09:00",
       "linksOut": []
     },
     {
@@ -3114,6 +3114,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 목적지마다 \"여기가 뭐 하는 곳인지\" 안내",
+          "slug": "2026-07-26-목적지마다-여기가-뭐-하는-곳인지-안내"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 — 문서함 목록 순서: 폴더 먼저 · 최근 수정순",
+          "slug": "2026-07-26-문서함-목록-순서-폴더-먼저-최근-수정순"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-25 — 지도 클러스터 칩: 라벨 겹침 차단 + 전개 코호트 표시",
           "slug": "2026-07-25-지도-클러스터-칩-라벨-겹침-차단-전개-코호트-표시"
         },
@@ -4843,9 +4853,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 실보고 두 건. +N 칩이 노드 이름 위에 겹쳐 그려졌고, 칩을 눌러 펼쳐도 \"무엇이 열렸는지\" 표시가 없어 자기 행동의 결과가 안 보였다. 겹침:",
-      "wordCount": 40287,
-      "updatedAt": "2026-07-25T22:27:59+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 요청: \"각 LNB탭 들어갔을때 가이드는 다 각각 있으면 좋겠네? 지금은 지도쪽만 있어서!\" 좌측 레일의 목적지는 여섯인데 첫 방문 안내는 지도에만",
+      "wordCount": 40592,
+      "updatedAt": "2026-07-25T17:34:49.082Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5411,6 +5421,16 @@
         },
         {
           "depth": 2,
+          "text": "Arrows carry information or they don't ship",
+          "slug": "arrows-carry-information-or-they-dont-ship"
+        },
+        {
+          "depth": 2,
+          "text": "Dimensional regularity — when content length varies",
+          "slug": "dimensional-regularity-when-content-length-varies"
+        },
+        {
+          "depth": 2,
           "text": "Ontology Workshop — 공방 (Compass Stage); game exception RETIRED 2026-07-24",
           "slug": "ontology-workshop-공방-compass-stage-game-exception-retired-2026-07-24"
         },
@@ -5591,8 +5611,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 14148,
-      "updatedAt": "2026-07-25T22:27:59+09:00",
+      "wordCount": 14799,
+      "updatedAt": "2026-07-26T02:27:21+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -5782,6 +5802,11 @@
           "depth": 4,
           "text": "Guided tour (`topology-tour-button`, 2026-07-23, `src/features/guided-tour`)",
           "slug": "guided-tour-topology-tour-button-2026-07-23-srcfeaturesguided-tour"
+        },
+        {
+          "depth": 4,
+          "text": "목적지 안내 (`DestinationGuide`, 2026-07-26, `src/features/guided-tour`)",
+          "slug": "목적지-안내-destinationguide-2026-07-26-srcfeaturesguided-tour"
         },
         {
           "depth": 4,
@@ -6140,8 +6165,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
-      "wordCount": 12143,
-      "updatedAt": "2026-07-25T07:16:43+09:00",
+      "wordCount": 12479,
+      "updatedAt": "2026-07-25T17:34:36.117Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -9497,12 +9522,14 @@
       "slug": "ontology/project",
       "path": "docs/ontology/project.md",
       "title": "ontology-atlas",
+      "description": "마크다운 폴더 하나로, 사람과 AI 에이전트가 같이 읽고 고치는 제품 지도를 만드는 도구입니다.",
       "tags": [],
       "frontmatter": {
         "slug": "ontology-atlas",
         "kind": "project",
         "title": "ontology-atlas",
         "display_ko": "온톨로지 아틀라스",
+        "description": "마크다운 폴더 하나로, 사람과 AI 에이전트가 같이 읽고 고치는 제품 지도를 만드는 도구입니다.",
         "domains": [
           "ai-agent-partner",
           "mode-aware-adapters",
@@ -9526,7 +9553,7 @@
       ],
       "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. 정체성 (2026-07): agent-native, human-sovereign. 에이전트를 위한 메모리가 아니라 에이전트가 1급 사용자인 공유 의미 계층 — 에이전트는 MCP/CLI 로 신선도를 유지하는 엔진이자 최대 소비자, 사람은 평문 마크다운·git diff·로컬 디스크 진실원을 통한 의미의 최종 결정권자. 훅은 에이전트 통증(\"코드베이스 장기 구조를 까먹는다\"), 본질은 공유 계층. 이 프로젝트의 ontology 는 비즈니",
       "wordCount": 180,
-      "updatedAt": "2026-07-25T00:53:21+09:00",
+      "updatedAt": "2026-07-25T17:34:52.176Z",
       "linksOut": []
     },
     {
