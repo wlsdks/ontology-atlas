@@ -168,21 +168,23 @@
 Phase 1(파운데이션) 직후에 배치한다. 중복은 기존 항목에 합류.
 
 ### C-A. 신뢰·데이터 정합 배치 (P1)
-- ☐ **C1 인사이트↔CLI 건강도 불일치.** 앱 "100% 수리할 것 없음" vs CLI
+- ☑ **C1 인사이트↔CLI 건강도 불일치.** 앱 "100% 수리할 것 없음" vs CLI
   "needs_attention·섬 2·누락 containment 3". 같은 규칙 공유 + 동일 fixture
-  계약 테스트. (신뢰 급소 — 최우선)
-- ☐ **C7 도메인 참조 직렬화 불일치.** 지도 생성 `domains/문의-처리` vs 공방
-  `문의-처리`. 공용 canonicalizer + 신규 저장 단일 형식.
-- ☐ **C5 문서함이 활성 로컬 vault 무시하고 Sample 우선.** "내 데이터 사라짐"
-  오해. 활성 로컬 vault 유지 + 온톨로지 작업발 이동 시 지도 문서 우선.
-- ☐ **C6 프로젝트 개명 시 display_ko/en 미갱신.** 편집 화면에 다국어 표시명
-  노출 or 스타터 기본값일 때만 안전 동반 갱신.
-- ☐ **C9 "새 볼트 만들기" 안내 vs 실동작.** 스캐폴드 즉시 실행 or 다음 버튼
-  필요함을 처음부터 정직하게. 체크리스트 ".mcp.json 준비됨" 허위 정정.
-- ☐ **C10 definition 이 문서 읽기 화면에서 숨음.** typed fact 은닉은 헌장
-  위반 — 읽기 화면 상단 요약으로 상시 노출.
-- ☐ **C11 미연결인데 "AI가 함께 갱신 중" 표시.** heartbeat 전 중립 문구
-  ("연결 대기"/"최근 작업 없음").
+  계약 테스트. (신뢰 급소 — 최우선) → `vault-health.ts` 미러 +
+  `tests/contract/vault-health.contract.test.ts` + 인사이트 수리 큐 배선.
+- ☑ **C7 도메인 참조 직렬화 불일치.** 지도 생성 `domains/문의-처리` vs 공방
+  `문의-처리`. 공용 canonicalizer + 신규 저장 단일 형식. → `canonicalizeDomainRef`
+  (bare tail-slug) 로 3 저장 경로 통일.
+- ☑ **C5 문서함이 활성 로컬 vault 무시하고 Sample 우선.** "내 데이터 사라짐"
+  오해. 활성 로컬 vault 유지. → `shouldPreferLocalOnLanding` one-shot 착지 가드.
+- ☑ **C6 프로젝트 개명 시 display_ko/en 미갱신.** 스타터 기본값일 때만 안전
+  동반 갱신. → `buildStarterDisplaySync` (inline+full 두 경로).
+- ☑ **C9 "새 볼트 만들기" 안내 vs 실동작.** 체크리스트 ".mcp.json 준비됨"
+  허위 정정. → `agentConfigStatus.mcpJson` 실파일 상태 기반 분기 문구.
+- ☑ **C10 definition 이 문서 읽기 화면에서 숨음.** typed fact 은닉은 헌장
+  위반 — 읽기 화면 상단 요약으로 상시 노출. → DocFrontmatterBlock 정의 lede.
+- ☑ **C11 미연결인데 "AI가 함께 갱신 중" 표시.** heartbeat 전 중립 문구.
+  → 미연결 분기 muted 점 + "에이전트 연결 대기"(진행형 제거).
 
 ### C-B. 공방 워크플로 갭 배치 (P1+P2)
 - ☐ **C2 "새로 만들기"가 관계 문맥 상실.** 피커→새로 만들기 진입 시 출발
