@@ -1136,3 +1136,95 @@ describe("StudioCompass — 연관 강조 (alive pair) effect", () => {
     expect(card.style.borderLeft).not.toContain("var(--color-indigo-hover)");
   });
 });
+
+// ── #2 공방 모션 카탈로그 (Phase 3) ─────────────────────────────────────────
+describe("StudioCompass — motion catalog (#2)", () => {
+  function renderMotion(over: Partial<Parameters<typeof StudioCompass>[0]> = {}) {
+    const onSave = vi.fn();
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: "AI", name: "MCP Server", definition: "def" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right", {
+            filled: true,
+            neighbors: [{ id: "el:x", title: "Parser", kind: "element", ref: "elements/parser" }],
+          }),
+          bearing("contains", "down", { expected: true }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={1}
+        writable
+        candidatesFor={() => [CANDIDATE]}
+        similarFor={() => null}
+        onFill={vi.fn()}
+        onSave={onSave}
+        onExit={vi.fn()}
+        {...over}
+      />,
+    );
+    return { onSave };
+  }
+
+  it("stage entrance — center card and its lane leaves carry the stagger-in marker", () => {
+    renderMotion();
+    expect(screen.getByTestId("studio-center-card").className).toContain("studio-stage-in");
+    const socket = screen.getByTestId("studio-socket-up");
+    expect(socket.className).toContain("studio-stage-in");
+    // each lane is offset from the card; the up lane (index 0) is +40ms.
+    expect(socket.style.getPropertyValue("--studio-stagger")).toBe("40ms");
+  });
+
+  it("picker origin-scale — opening a socket picker pops from its socket anchor", () => {
+    renderMotion();
+    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    const picker = screen.getByTestId("studio-picker");
+    expect(picker.className).toContain("studio-picker-pop");
+    expect(picker.style.getPropertyValue("--studio-picker-origin")).not.toBe("");
+  });
+
+  it("satellite FLIP — filled-lane satellites register a FLIP node for lane moves", () => {
+    renderMotion();
+    // A satellite exposes the FLIP hook attribute so a retype can animate its move.
+    expect(document.querySelector("[data-flip-sat='el:x']")).toBeInTheDocument();
+  });
+
+  const summary = {
+    count: 1,
+    collapsed: "1 change to record",
+    headline: "Record 1 change on MCP Server",
+    lines: ["add 'broader: X'"],
+    fileEffect: "1 file modified.",
+  };
+
+  it("commit convergence — save shows a converging chip then commits (motion on)", () => {
+    // jsdom has no matchMedia, so usePrefersReducedMotion resolves to false.
+    const { onSave } = renderMotion({ hasPendingChanges: true, canSave: true, summary });
+    fireEvent.click(screen.getByTestId("studio-save"));
+    expect(screen.getByTestId("studio-commit-converge")).toBeInTheDocument();
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
+
+  it("reduced-motion — save skips the converging chip and commits directly", () => {
+    // jsdom leaves window.matchMedia undefined; install one that reports reduce.
+    const original = window.matchMedia;
+    const mql = {
+      matches: true,
+      media: "(prefers-reduced-motion: reduce)",
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    } as unknown as MediaQueryList;
+    window.matchMedia = vi.fn(() => mql) as typeof window.matchMedia;
+    try {
+      const { onSave } = renderMotion({ hasPendingChanges: true, canSave: true, summary });
+      fireEvent.click(screen.getByTestId("studio-save"));
+      expect(screen.queryByTestId("studio-commit-converge")).not.toBeInTheDocument();
+      expect(onSave).toHaveBeenCalledTimes(1);
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+});
