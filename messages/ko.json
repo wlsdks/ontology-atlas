@@ -55,8 +55,8 @@
       },
       "workspaceFolderLabel": "작업공간 폴더",
       "workspaceFolderEmpty": "선택 안 됨",
-      "workspaceFolderDocCount": "문서 {count}개",
-      "workspaceFolderDocCountIssues": "문서 {count}개 · 오류 {errors} · 경고 {warnings}",
+      "workspaceFolderDocCount": "온톨로지 문서 {count}개",
+      "workspaceFolderDocCountIssues": "온톨로지 문서 {count}개 · 오류 {errors} · 경고 {warnings}",
       "workspaceFolderOpen": "폴더 열기",
       "workspaceFolderChange": "바꾸기",
       "workspaceFolderOpening": "여는 중…",
@@ -384,11 +384,11 @@
       "reason": "모든 것이 진짜 문서예요"
     },
     "readout": {
-      "projectUnit": "project",
-      "domainUnit": "domains",
-      "tier_spine": "Spine view",
-      "tier_circuit": "Circuit view",
-      "tier_element": "Element view",
+      "projectUnit": "프로젝트",
+      "domainUnit": "도메인",
+      "tier_spine": "큰 줄기 보기",
+      "tier_circuit": "연결 보기",
+      "tier_element": "요소 보기",
       "zoomHint": "줌인하면 요소가 나타납니다",
       "zoomHintPlain": "점을 누르면 그 안의 요소가 보여요"
     },
@@ -1769,7 +1769,7 @@
       "deleteFailed": "삭제 실패: {message}",
       "invalidSlug": "유효한 제목이 아닙니다.",
       "createFailed": "생성 실패: {message}",
-      "ontologyStarterDone": "ontology starter 생성 완료 — 새 파일 {created}개 · 스킵 {skipped}개. README.md 를 엽니다.",
+      "ontologyStarterDone": "ontology starter 생성 완료 — 온톨로지 개념 {concepts}개 · 에이전트 설정 파일 {configs}개 · 이미 있어 건너뜀 {skipped}개. README.md 를 엽니다.",
       "agentVerifyPromptCopied": "agent 검증 프롬프트 복사됨",
       "agentVerifyPromptCopyFailed": "agent 검증 프롬프트를 복사하지 못했습니다",
       "tocHeading": "목차",
@@ -2124,7 +2124,7 @@
       "stepScaffold": "시작 문서 만들기 (버튼 한 번)",
       "ctaScaffold": "만들어 주기",
       "ctaScaffoldBusy": "만드는 중…",
-      "scaffoldToast": "시작 문서 {count}개를 만들었어요"
+      "scaffoldToast": "온톨로지 개념 {concepts}개 · 에이전트 설정 파일 {configs}개를 만들었어요"
     }
   },
   "fullDetailA1": {

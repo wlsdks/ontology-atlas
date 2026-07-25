@@ -1153,7 +1153,11 @@ export function useLocalVaultInternal() {
     }
     const vaultHandle = state.handle;
     await requireWritePermission(vaultHandle);
-    let created = 0;
+    // #70 — 두 종류를 **따로** 센다. 예전엔 마크다운과 에이전트 설정을 한
+    // `created` 에 합쳐 토스트가 "시작 문서 8개" 라고 말했는데, 실제 온톨로지
+    // 개념은 5개였고 설정 패널은 "문서 5개" 라고 표시해 같은 볼트를 두고 두
+    // 화면이 다른 수를 말했다 (codex 감사 P2).
+    let markdownCreated = 0;
     let skipped = 0;
     for (const { relPath, content } of ONTOLOGY_STARTER_FILES) {
       // slug 는 .md 확장자 제거한 경로로. createDoc / saveDoc 의 규칙 따름.
@@ -1171,17 +1175,24 @@ export function useLocalVaultInternal() {
         const writable = await fh.createWritable();
         await writable.write(content);
         await writable.close();
-        created += 1;
+        markdownCreated += 1;
       } catch {
         skipped += 1;
       }
     }
     // Ready-to-use agent configs for "open the vault folder itself" flows.
     const agentConfigResult = await writeAgentConfigFiles(vaultHandle);
-    created += agentConfigResult.created;
     skipped += agentConfigResult.skipped;
     await load(vaultHandle);
-    return { created, skipped };
+    return {
+      /** 온톨로지 노드가 되는 마크다운 파일 수 — 지도/설정이 세는 것과 같은 단위. */
+      markdownCreated,
+      /** `.mcp.json` 등 에이전트 설정 파일 수 — 개념이 아니다. */
+      agentConfigCreated: agentConfigResult.created,
+      /** 하위 호환 총합. 사용자에게 보여줄 땐 위 둘을 따로 말한다. */
+      created: markdownCreated + agentConfigResult.created,
+      skipped,
+    };
   }, [
     state.fileHandles,
     state.handle,
