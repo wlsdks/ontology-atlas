@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { ArrowUpRight, Check, Copy, Loader2, Terminal } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
+import { useToast } from "@/shared/ui";
 
 /**
  * 클라이언트별 원클릭 연결 버튼 묶음 (#12, Phase 4). 지도 시트와 설정 패널이
@@ -49,6 +50,7 @@ export function AgentClientButtons({
   needsManualPath,
 }: AgentClientButtonsProps) {
   const t = useTranslations("agentConnect");
+  const toast = useToast();
   const [feedback, setFeedback] = useState<Record<ClientId, Feedback>>({
     claudeCode: mcpJsonReady ? "done" : "idle",
     cursor: "idle",
@@ -73,7 +75,12 @@ export function AgentClientButtons({
   async function copyAndConfirm(id: ClientId, value: string) {
     const ok = await copyText(value);
     setState(id, ok ? "copied" : "failed");
-    if (ok) window.setTimeout(() => setState(id, "idle"), 2000);
+    // 인라인 라벨 전환(2초)에 더해 캐노니컬 토스트로 확실히 확인시킨다 —
+    // sonnet 최종 검수 D3 (공방 저장 흐름과 동일한 확인 문법).
+    if (ok) {
+      toast.show(t("copiedToast"), "success");
+      window.setTimeout(() => setState(id, "idle"), 2000);
+    }
   }
 
   return (

@@ -2531,7 +2531,8 @@
     "copyCodexCommandDone": "Copied · paste in terminal",
     "deeplinkWebNote": "One-click for Cursor and VS Code needs the folder path.",
     "deeplinkWebNoteCta": "Automatic in the macOS app",
-    "serverLine": "There's no server to leave running. Your agent starts it when needed and it shuts down when done — no always-on process, no open port. That's why your data never leaves this computer."
+    "serverLine": "There's no server to leave running. Your agent starts it when needed and it shuts down when done — no always-on process, no open port. That's why your data never leaves this computer.",
+    "copiedToast": "Config copied — paste it into your tool to connect."
   },
   "atlasGit": {
     "tileLabel": "Footprints",

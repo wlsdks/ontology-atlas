@@ -2531,7 +2531,8 @@
     "copyCodexCommandDone": "복사됨 · 터미널에 붙여넣기",
     "deeplinkWebNote": "Cursor·VS Code 원클릭은 폴더 경로가 필요해요.",
     "deeplinkWebNoteCta": "macOS 앱에서 자동으로",
-    "serverLine": "따로 켜둘 서버가 없어요. 에이전트가 필요할 때 직접 실행하고, 끝나면 함께 꺼져요. 항상 도는 프로그램도 열린 포트도 없어요 — 데이터가 이 컴퓨터를 떠나지 않는 이유예요."
+    "serverLine": "따로 켜둘 서버가 없어요. 에이전트가 필요할 때 직접 실행하고, 끝나면 함께 꺼져요. 항상 도는 프로그램도 열린 포트도 없어요 — 데이터가 이 컴퓨터를 떠나지 않는 이유예요.",
+    "copiedToast": "설정을 복사했어요 — 도구에 붙여넣으면 연결돼요."
   },
   "atlasGit": {
     "tileLabel": "발자취",

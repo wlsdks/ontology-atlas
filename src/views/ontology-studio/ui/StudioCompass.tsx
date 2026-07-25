@@ -733,6 +733,19 @@ export function StudioCompass(props: StudioCompassProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [openEdit]);
 
+  // Esc = "계속 편집"(안전한 쪽)으로 그만하기 확인 팝오버를 닫는다 — sonnet
+  // 최종 검수 D2 (포커스 위치와 무관하게 동작해야 하므로 전역 리스너).
+  useEffect(() => {
+    if (!confirmExit) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      setConfirmExit(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmExit]);
+
   const saveAllowed = props.canSave !== false;
   const effectiveSummary = saveAllowed ? (props.summary ?? null) : null;
   const previewAvailable = saveAllowed && Boolean(props.deltaPreview?.hasDelta);
@@ -796,6 +809,13 @@ export function StudioCompass(props: StudioCompassProps) {
               data-testid="studio-exit-confirm"
               className="absolute right-0 top-[calc(100%+8px)] z-[10] w-[248px] rounded-[12px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-3.5"
               style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+              onKeyDown={(e) => {
+                // Esc = "계속 편집" (안전한 쪽) — sonnet 최종 검수 D2.
+                if (e.key === "Escape") {
+                  e.stopPropagation();
+                  setConfirmExit(false);
+                }
+              }}
             >
               <p className="text-caption text-[color:var(--color-text-secondary)] [word-break:keep-all]">
                 {labels.exitConfirmTitle}
