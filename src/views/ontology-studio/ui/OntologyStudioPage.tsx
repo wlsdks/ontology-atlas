@@ -54,6 +54,12 @@ import { buildDeltaPreview } from "../lib/build-delta-preview";
 import { resolveStudioFocalId } from "../lib/resolve-studio-focal";
 import { studioHasDeepLinkIntent } from "../lib/entry-choice";
 import { allowedKindsFor } from "../lib/allowed-kinds";
+import {
+  clearStudioDraft,
+  readStudioDraft,
+  saveStudioDraft,
+  useStudioDrafts,
+} from "../lib/studio-draft-store";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
 import { StudioEntryChoice } from "./StudioEntryChoice";
 
@@ -222,16 +228,22 @@ export function OntologyStudioPage() {
       pendingBadge: t("pendingBadge"),
       // Slice 2 — record summary + commit
       summaryUndo: t("summaryUndo"),
-      exitConfirmTitle: t("exitConfirmTitle"),
-      exitConfirmDiscard: t("exitConfirmDiscard"),
-      exitConfirmKeep: t("exitConfirmKeep"),
       commitEmptyHint: t("commitEmptyHint"),
       // Slice 4 — 나침반 산책 (compass walk)
       walkTo: t("walkTo"),
       walkBackAria: (name) => t("walkBackAria", { name }),
-      walkConfirmTitle: (count) => t("walkConfirmTitle", { count }),
-      walkConfirmSave: t("walkConfirmSave"),
-      walkConfirmDiscard: t("walkConfirmDiscard"),
+      // #68 — 작업중 목록
+      draftsOpen: (count) => t("drafts.open", { count }),
+      draftsOpenAria: (count) => t("drafts.openAria", { count }),
+      draftsTitle: t("drafts.title"),
+      draftsHint: t("drafts.hint"),
+      draftsCloseAria: t("drafts.closeAria"),
+      draftsCount: (count) => t("drafts.count", { count }),
+      draftsResume: t("drafts.resume"),
+      draftsDiscard: t("drafts.discard"),
+      draftsDiscardAria: (name) => t("drafts.discardAria", { name }),
+      draftsCurrent: t("drafts.current"),
+      draftsEmpty: t("drafts.empty"),
       // Slice 5 — 그래프 델타 미니뷰 (save preview)
       previewOpen: t("preview.open"),
       previewTitle: t("preview.title"),
@@ -408,6 +420,12 @@ export function OntologyStudioPage() {
   // only land on "확인하고 저장". Reset whenever the focal node changes so a new
   // node never inherits another node's pending edits — the React-recommended
   // "reset state during render when a prop changes" pattern (no effect).
+  // 저장 전 변경은 localStorage 초안으로 자동 보존된다 — 레일 이동 · 뒤로가기 ·
+  // 창 닫기 어디로 빠져나가도 사라지지 않는다(#60).
+  //
+  // 초기값은 반드시 빈 배열이다. useState 초기화에서 localStorage 를 읽으면
+  // 정적 export 의 서버 HTML(초안 없음)과 첫 클라이언트 렌더(초안 있음)가 갈려
+  // hydration 이 깨진다 — 복원은 마운트 뒤 효과에서 한다(아래).
   const [changes, setChanges] = useState<StudioChange[]>([]);
   const [prevFocalId, setPrevFocalId] = useState(enhanceFocalId);
   // Slice 4 — 나침반 산책. Remember the node we just walked FROM so the new stage
@@ -418,8 +436,28 @@ export function OntologyStudioPage() {
   if (prevFocalId !== enhanceFocalId) {
     setCameFrom(prevFocalId);
     setPrevFocalId(enhanceFocalId);
-    setChanges([]);
+    // 새 노드로 옮길 때 이전 노드의 편집을 물려받지 않는다. 다만 이제 "버린다"가
+    // 아니라 "그 노드의 초안으로 갈아끼운다" — 산책해서 돌아오면 그대로 있다.
+    setChanges(enhanceFocalId ? readStudioDraft(enhanceFocalId) : []);
   }
+
+  // 마운트/포컬 변경 후 초안 복원. 위 render-time 리셋이 산책을 덮고, 이 효과는
+  // 첫 진입(새로고침·딥링크·다른 화면에서 복귀)을 덮는다. hydration 이 끝난 뒤
+  // 실행되므로 서버 HTML 과 어긋나지 않는다.
+  useEffect(() => {
+    if (!enhanceFocalId) return;
+    const draft = readStudioDraft(enhanceFocalId);
+    if (draft.length > 0) setChanges(draft);
+  }, [enhanceFocalId]);
+
+  // #68 — '작업중이던 것' 목록. 초안은 노드 id 로만 키를 잡으므로 다른 vault 로
+  // 바꾸면 그 id 가 그래프에 없다 — 현재 그래프와의 교집합만 보여주면 별도
+  // vault 식별자 없이도 자연히 격리된다.
+  const allDrafts = useStudioDrafts();
+  const visibleDrafts = useMemo(() => {
+    const known = new Set(nodes.map((n) => n.id));
+    return allDrafts.filter((d) => known.has(d.focalId));
+  }, [allDrafts, nodes]);
 
   // Slice 3 — the enhance stage's focal item + optimistic projection, lifted
   // above the create early-return so `discoveryFor` is a STABLE memoized
@@ -828,8 +866,14 @@ export function OntologyStudioPage() {
     relates: focalDoc ? asStringArray(focalDoc.frontmatter.relates) : [],
   };
 
+  // 스테이징 = 즉시 임시저장. 확인을 묻지 않고 붙잡아 두는 것이 이 표면의 계약이다
+  // (#60 — 소유자: "입력하면 자동저장시키면 안되나? 임시저장 형태로?").
   const stage = (action: Parameters<typeof reduceStudioChanges>[1]) =>
-    setChanges((prev) => reduceStudioChanges(prev, action));
+    setChanges((prev) => {
+      const next = reduceStudioChanges(prev, action);
+      saveStudioDraft(focalItem.node.id, focalItem.node.label, next);
+      return next;
+    });
 
   const summary =
     changes.length > 0
@@ -873,6 +917,9 @@ export function OntologyStudioPage() {
         }
         await localVault.updateFrontmatter(sourceSlug, fmUpdates);
         toast.show(t("commitSaved", { count: changes.length }), "success");
+        // 디스크에 실제로 앉은 뒤에만 초안을 비운다 — 실패하면 초안이 그대로 남아야
+        // 사용자가 재시도할 수 있다.
+        clearStudioDraft(focalItem.node.id);
         setChanges([]);
         return true;
       } catch (err) {
@@ -897,6 +944,7 @@ export function OntologyStudioPage() {
       });
       await navigator.clipboard.writeText(lines.join("\n"));
       toast.show(t("commitCopied"), "success");
+      clearStudioDraft(focalItem.node.id);
       setChanges([]);
       return true;
     } catch {
@@ -958,6 +1006,13 @@ export function OntologyStudioPage() {
       deltaPreview={deltaPreview}
       onUndoChange={(index) => stage({ type: "undo", index })}
       hasPendingChanges={changes.length > 0}
+      focalId={focalItem.node.id}
+      drafts={visibleDrafts}
+      onOpenDraft={openNode}
+      onDiscardDraft={(id) => {
+        clearStudioDraft(id);
+        if (id === focalItem.node.id) setChanges([]);
+      }}
       canSave={changes.length > 0}
       onSave={commit}
       onExit={exit}

@@ -187,15 +187,9 @@
       "relates": "related"
     },
     "summaryUndo": "Undo this change",
-    "exitConfirmTitle": "You have unsaved changes. Discard them?",
-    "exitConfirmDiscard": "Discard and leave",
-    "exitConfirmKeep": "Keep editing",
     "commitEmptyHint": "Fills and edits collect here",
     "walkTo": "Walk to this node",
     "walkBackAria": "Back to previous node: {name}",
-    "walkConfirmTitle": "You have {count} unsaved change(s) — discard and go?",
-    "walkConfirmSave": "Save and go",
-    "walkConfirmDiscard": "Discard and go",
     "preview": {
       "open": "Preview",
       "title": "Here's how the map changes when you save",
@@ -251,6 +245,19 @@
       "applyFailed": "Couldn't create — {message}",
       "copiedAgent": "Copied the MCP command — paste it into your agent to run.",
       "copyFailed": "Copy was blocked — please try again."
+    },
+    "drafts": {
+      "open": "In progress {count}",
+      "openAria": "Show {count} nodes in progress",
+      "title": "What you were working on",
+      "hint": "Unsaved changes stay here. Come back any time and pick up where you left off.",
+      "closeAria": "Close the in-progress list",
+      "count": "{count} change(s)",
+      "resume": "Resume",
+      "discard": "Discard",
+      "discardAria": "Discard the in-progress changes on “{name}”",
+      "current": "On stage now",
+      "empty": "Nothing in progress right now"
     }
   },
   "liveActivity": {

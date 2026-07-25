@@ -61,15 +61,20 @@ const labels: StudioCompassLabels = {
   editElsewhereGo: "go to node",
   pendingBadge: "unsaved",
   summaryUndo: "undo",
-  exitConfirmTitle: "discard?",
-  exitConfirmDiscard: "discard",
-  exitConfirmKeep: "keep editing",
   commitEmptyHint: "fills collect here",
   walkTo: "walk to this node",
   walkBackAria: (name) => `back to ${name}`,
-  walkConfirmTitle: (count) => `${count} unsaved — discard and go?`,
-  walkConfirmSave: "save and go",
-  walkConfirmDiscard: "discard and go",
+  draftsOpen: (count) => `in progress ${count}`,
+  draftsOpenAria: (count) => `show ${count} in progress`,
+  draftsTitle: "what you were working on",
+  draftsHint: "unsaved changes stay here",
+  draftsCloseAria: "close in-progress list",
+  draftsCount: (count) => `${count} change(s)`,
+  draftsResume: "resume",
+  draftsDiscard: "discard",
+  draftsDiscardAria: (name) => `discard changes on ${name}`,
+  draftsCurrent: "on stage now",
+  draftsEmpty: "nothing in progress",
   previewOpen: "preview",
   previewTitle: "how the map changes",
   previewCloseAria: "close preview",
@@ -505,13 +510,14 @@ describe("StudioCompass — 평문 기록 요약 (record summary)", () => {
     expect(onUndoChange).toHaveBeenCalledWith(0);
   });
 
-  it("exit with pending changes confirms before leaving", () => {
+  // #60 — 저장 전 변경은 노드별 초안으로 자동 보존된다(`studio-draft-store`).
+  // 그래서 그만하기에 "저장할까요?" 를 묻지 않는다: 나가도 초안은 남고 돌아오면
+  // 그대로다. 확인 팝오버를 되살리는 변경은 이 테스트가 막는다.
+  it("exit with pending changes leaves immediately — the draft is auto-kept, not confirmed away", () => {
     const { onExit } = renderWithSummary();
     fireEvent.click(screen.getByTestId("studio-exit"));
-    expect(onExit).not.toHaveBeenCalled();
-    expect(screen.getByTestId("studio-exit-confirm")).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("studio-exit-confirm-discard"));
     expect(onExit).toHaveBeenCalled();
+    expect(screen.queryByTestId("studio-exit-confirm")).not.toBeInTheDocument();
   });
 });
 
@@ -663,44 +669,14 @@ describe("StudioCompass — 나침반 산책 (compass walk)", () => {
     expect(screen.queryByTestId("studio-walk-confirm")).not.toBeInTheDocument();
   });
 
-  it("guards a walk when changes are pending — confirm intercepts the click", () => {
+  // #60 — 저장 전 변경은 노드별 초안으로 자동 보존되므로 산책이 더 이상 확인을
+  // 거치지 않는다. 걸어가도 초안은 그 노드에 남고, 돌아오면 그대로 복원된다.
+  // 확인 모달을 되살리는 변경은 이 테스트가 막는다.
+  it("walks straight through even with pending changes — the draft is kept per node, not confirmed away", () => {
     const { onOpenNode } = renderWalk({ hasPendingChanges: true });
     fireEvent.click(screen.getByTestId("studio-satellite-right"));
-    // navigation is deferred behind the confirm, not fired.
-    expect(onOpenNode).not.toHaveBeenCalled();
-    expect(screen.getByTestId("studio-walk-confirm")).toBeInTheDocument();
-  });
-
-  it("'버리고 이동' discards and navigates; '계속 편집' stays put", () => {
-    const { onOpenNode } = renderWalk({ hasPendingChanges: true });
-    fireEvent.click(screen.getByTestId("studio-satellite-right"));
-    fireEvent.click(screen.getByTestId("studio-walk-confirm-keep"));
-    expect(onOpenNode).not.toHaveBeenCalled();
-    expect(screen.queryByTestId("studio-walk-confirm")).not.toBeInTheDocument();
-
-    // re-open and discard this time.
-    fireEvent.click(screen.getByTestId("studio-satellite-right"));
-    fireEvent.click(screen.getByTestId("studio-walk-confirm-discard"));
     expect(onOpenNode).toHaveBeenCalledWith("el:x");
     expect(screen.queryByTestId("studio-walk-confirm")).not.toBeInTheDocument();
-  });
-
-  it("'저장하고 이동' commits-then-walks via onSaveAndOpenNode (not a raw open)", () => {
-    const { onOpenNode, onSaveAndOpenNode } = renderWalk({ hasPendingChanges: true });
-    fireEvent.click(screen.getByTestId("studio-satellite-right"));
-    fireEvent.click(screen.getByTestId("studio-walk-confirm-save"));
-    expect(onSaveAndOpenNode).toHaveBeenCalledWith("el:x");
-    expect(onOpenNode).not.toHaveBeenCalled();
-  });
-
-  it("omits the 저장하고 이동 option when no save-and-walk handler is wired", () => {
-    renderWalk({ hasPendingChanges: true, onSaveAndOpenNode: undefined });
-    fireEvent.click(screen.getByTestId("studio-satellite-right"));
-    expect(screen.getByTestId("studio-walk-confirm")).toBeInTheDocument();
-    expect(screen.queryByTestId("studio-walk-confirm-save")).not.toBeInTheDocument();
-    // no dead option — only 버리고 이동 / 계속 편집 remain.
-    expect(screen.getByTestId("studio-walk-confirm-discard")).toBeInTheDocument();
-    expect(screen.getByTestId("studio-walk-confirm-keep")).toBeInTheDocument();
   });
 
   it("renders the quiet '← <이전 노드>' back affordance and walks back", () => {
@@ -712,11 +688,11 @@ describe("StudioCompass — 나침반 산책 (compass walk)", () => {
     expect(onOpenNode).toHaveBeenCalledWith("cap:prev");
   });
 
-  it("the back affordance is also guarded when changes are pending", () => {
+  it("the back affordance also walks straight through with pending changes", () => {
     const { onOpenNode } = renderWalk({ backTo: { id: "cap:prev", label: "Payments" }, hasPendingChanges: true });
     fireEvent.click(screen.getByTestId("studio-walk-back"));
-    expect(onOpenNode).not.toHaveBeenCalled();
-    expect(screen.getByTestId("studio-walk-confirm")).toBeInTheDocument();
+    expect(onOpenNode).toHaveBeenCalledWith("cap:prev");
+    expect(screen.queryByTestId("studio-walk-confirm")).not.toBeInTheDocument();
   });
 
   it("highlights the came-from satellite for arrival orientation", () => {
@@ -1226,5 +1202,110 @@ describe("StudioCompass — motion catalog (#2)", () => {
     } finally {
       window.matchMedia = original;
     }
+  });
+});
+
+// #68 — 작업중 목록 (in-progress drafts). 저장 전 변경이 노드별 초안으로 남는다는
+// 약속(#60)을 눈에 보이게 만드는 표면. 확인 팝업을 없앤 대신 "어디에 남았지?" 를
+// 답해주는 자리라, 이 목록이 사라지면 자동 임시저장이 다시 보이지 않는 약속이 된다.
+describe("StudioCompass — 작업중 목록 (drafts)", () => {
+  const DRAFTS = [
+    { focalId: "capability:mcp", title: "MCP Server", count: 2 },
+    { focalId: "capability:cli", title: "CLI Entry", count: 1 },
+  ];
+
+  function renderDrafts(over: Partial<Parameters<typeof StudioCompass>[0]> = {}) {
+    const onOpenDraft = vi.fn();
+    const onDiscardDraft = vi.fn();
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "MCP Server", definition: "def" }}
+        bearings={[
+          bearing("isA", "up"),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down"),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        focalId="capability:mcp"
+        drafts={DRAFTS}
+        onOpenDraft={onOpenDraft}
+        onDiscardDraft={onDiscardDraft}
+        {...over}
+      />,
+    );
+    return { onOpenDraft, onDiscardDraft };
+  }
+
+  it("초안이 없으면 헤더 칩 자체가 없다 — 빈 상태로 자리를 차지하지 않는다", () => {
+    renderDrafts({ drafts: [] });
+    expect(screen.queryByTestId("studio-drafts-open")).not.toBeInTheDocument();
+  });
+
+  it("헤더 칩이 작업중 개수를 들고, 눌러서 목록을 연다", () => {
+    renderDrafts();
+    const chip = screen.getByTestId("studio-drafts-open");
+    expect(chip).toHaveTextContent("in progress 2");
+    expect(screen.queryByTestId("studio-drafts-panel")).not.toBeInTheDocument();
+
+    fireEvent.click(chip);
+    expect(screen.getByTestId("studio-drafts-panel")).toBeInTheDocument();
+  });
+
+  it("지금 무대인 노드는 '이어서 하기' 대신 '지금 무대' 로 표시한다", () => {
+    renderDrafts();
+    fireEvent.click(screen.getByTestId("studio-drafts-open"));
+
+    const current = screen.getByTestId("studio-draft-row-capability:mcp");
+    expect(current).toHaveTextContent("on stage now");
+    expect(screen.queryByTestId("studio-draft-resume-capability:mcp")).not.toBeInTheDocument();
+
+    // 다른 노드는 이어서 하기가 있다.
+    expect(screen.getByTestId("studio-draft-resume-capability:cli")).toBeInTheDocument();
+  });
+
+  it("'이어서 하기' 는 그 노드로 무대를 옮기고 목록을 닫는다", () => {
+    const { onOpenDraft } = renderDrafts();
+    fireEvent.click(screen.getByTestId("studio-drafts-open"));
+    fireEvent.click(screen.getByTestId("studio-draft-resume-capability:cli"));
+
+    expect(onOpenDraft).toHaveBeenCalledWith("capability:cli");
+    expect(screen.queryByTestId("studio-drafts-panel")).not.toBeInTheDocument();
+  });
+
+  it("'버리기' 는 그 노드의 초안만 버린다 (명시적 폐기 경로)", () => {
+    const { onDiscardDraft } = renderDrafts();
+    fireEvent.click(screen.getByTestId("studio-drafts-open"));
+    fireEvent.click(screen.getByTestId("studio-draft-discard-capability:cli"));
+
+    expect(onDiscardDraft).toHaveBeenCalledWith("capability:cli");
+  });
+
+  it("미리보기는 하단 바가 아니라 헤더에 있다 (#68 — 하단은 진행·기록·저장만)", () => {
+    renderDrafts({
+      deltaPreview: buildDeltaPreview({
+        center: { title: "MCP Server", kind: "capability", domainLabel: null, isNew: false },
+        baseNeighborsByRelation: { isA: [], dependsOn: [], contains: [], relates: [] },
+        changes: [
+          {
+            op: "add",
+            relation: "isA",
+            target: { id: "el:x", title: "Parser", kind: "element", ref: "elements/parser" },
+          },
+        ],
+        capPerBearing: 2,
+      }),
+    });
+
+    const preview = screen.getByTestId("studio-preview-open");
+    expect(preview.closest("header")).not.toBeNull();
   });
 });

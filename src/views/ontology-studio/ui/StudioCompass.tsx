@@ -6,6 +6,7 @@ import {
   Check,
   ChevronDown,
   Eye,
+  FilePen,
   MoreHorizontal,
   Plus,
   Search,
@@ -154,17 +155,26 @@ export interface StudioCompassLabels {
   pendingBadge: string; // "저장 대기"
   // ── Slice 2 — 평문 기록 요약 ──
   summaryUndo: string; // aria for the per-row ✕
-  exitConfirmTitle: string; // "기록 안 한 변경이 있어요"
-  exitConfirmDiscard: string; // "버리고 나가기" (red)
-  exitConfirmKeep: string; // "계속 편집"
   commitEmptyHint: string; // enhance, nothing staged
   // ── Slice 4 — 나침반 산책 (compass walk) ──
   walkTo: string; // satellite hover/title — "이 노드로 걸어가기"
   walkBackAria: (name: string) => string; // back affordance aria — "이전 노드로 돌아가기: {name}"
-  /** (count) → walk-with-pending confirm title. */
-  walkConfirmTitle: (count: number) => string;
-  walkConfirmSave: string; // "저장하고 이동"
-  walkConfirmDiscard: string; // "버리고 이동"
+  // ── #68 — 작업중 목록 (in-progress drafts) ──
+  /** (count) → header chip "작업중 N". */
+  draftsOpen: (count: number) => string;
+  /** (count) → chip aria. */
+  draftsOpenAria: (count: number) => string;
+  draftsTitle: string; // panel heading "작업중이던 것"
+  draftsHint: string; // one plain line explaining the drafts contract
+  draftsCloseAria: string;
+  /** (count) → per-row change count. */
+  draftsCount: (count: number) => string;
+  draftsResume: string; // row action "이어서 하기"
+  draftsDiscard: string; // row action "버리기"
+  /** (name) → discard aria. */
+  draftsDiscardAria: (name: string) => string;
+  draftsCurrent: string; // badge on the row that is already on stage
+  draftsEmpty: string;
   // ── Slice 5 — 그래프 델타 미니뷰 (save preview) ──
   previewOpen: string; // quiet "미리보기" affordance beside the summary line
   previewTitle: string; // "저장하면 이렇게 변해요"
@@ -279,8 +289,21 @@ export interface StudioCompassProps {
     fileEffect: string;
   } | null;
   onUndoChange?: (index: number) => void;
-  /** exit with staged changes → confirm (버리기 / 계속). */
+  /** Any staged change on this stage (badge/affordance gating). */
   hasPendingChanges?: boolean;
+
+  // ── #68 — 작업중 목록 ──
+  /**
+   * Nodes with auto-kept drafts (`studio-draft-store`), newest first, already
+   * filtered to the current graph by the page. Rendering them here — not in a
+   * separate route — is what makes "walk away and come back" a visible loop
+   * instead of a promise.
+   */
+  drafts?: readonly { focalId: string; title: string; count: number }[];
+  /** Current stage's node id — the drafts row for it reads "지금 무대", not "이어서 하기". */
+  focalId?: string;
+  onOpenDraft?: (focalId: string) => void;
+  onDiscardDraft?: (focalId: string) => void;
 
   // ── Slice 4 — 나침반 산책 (compass walk) ──
   /**
@@ -523,18 +546,12 @@ export function StudioCompass(props: StudioCompassProps) {
     props.initialEdit ?? null,
   );
   /** exit confirm popover (Slice 2 escape hatch). */
-  const [confirmExit, setConfirmExit] = useState(false);
   /** record-summary expanded (Slice 2 — "이렇게 기록됩니다"). */
   const [summaryOpen, setSummaryOpen] = useState(false);
   /** Slice 5 — 그래프 델타 미니뷰 scrim modal (opt-in save preview). */
   const [previewOpen, setPreviewOpen] = useState(false);
-  /**
-   * Slice 4 — 나침반 산책. A walk with unsaved staged changes is deferred here:
-   * the target id is parked so the walk-guard confirm can resolve it (버리고/저장하고
-   * /계속). This surface is keyed by node id in the page, so it remounts per walk —
-   * pendingWalk is naturally transient (a fresh mount never inherits a stale target).
-   */
-  const [pendingWalk, setPendingWalk] = useState<string | null>(null);
+  const [draftsOpen, setDraftsOpen] = useState(false);
+  const drafts = props.drafts ?? [];
   /**
    * 연관 강조 (related-pair light-up). Hovering / focusing a satellite or a socket
    * marks its bearing so the PAIR — that lane's strut AND the center card's
@@ -680,20 +697,19 @@ export function StudioCompass(props: StudioCompassProps) {
     setQuery("");
   };
 
-  // ── Slice 4 — walk guard + arrival orientation ──────────────────────────────
-  // A "walk" = re-center the stage on another node (satellite / fold-row / top-bar
-  // search / back affordance). If staged changes are pending, defer the walk to a
-  // confirm instead of silently discarding them (pre-Slice-4 behaviour lost them).
+  // ── 산책 (Slice 4) + 도착 방향잡기 ──────────────────────────────────────────
+  // "산책" = 무대를 다른 노드로 재중심(위성 / 접힘 행 / 상단 검색 / 되돌아가기).
+  //
+  // 예전엔 저장 대기 변경이 있으면 확인 팝업으로 막았다(저장하고 이동 / 버리고
+  // 이동 / 계속 편집). #60 에서 저장 전 변경이 노드별 초안으로 자동 보존되면서
+  // 그 팝업은 순수 마찰이 됐다 — 걸어가도 초안은 남고, 돌아오면 그대로다.
+  // 소유자 방향: "요즘엔 귀찮은것도 싫은데". 그래서 산책은 이제 그냥 걷는다.
   const guardedOpen = (id: string) => {
     if (!props.onOpenNode) return;
-    if (props.hasPendingChanges) {
-      // Close any transient surface so the confirm reads cleanly.
-      setOpenRelation(null);
-      setOpenFold(null);
-      setOpenEdit(null);
-      setPendingWalk(id);
-      return;
-    }
+    // 열려 있던 임시 표면은 함께 닫는다 — 새 무대에 남의 팝오버가 따라오면 안 된다.
+    setOpenRelation(null);
+    setOpenFold(null);
+    setOpenEdit(null);
     props.onOpenNode(id);
   };
 
@@ -708,6 +724,18 @@ export function StudioCompass(props: StudioCompassProps) {
     const timer = window.setTimeout(() => setArrivalLit(false), 1500);
     return () => window.clearTimeout(timer);
   }, [arrivedFrom]);
+
+  // #68 — Esc 는 작업중 패널도 닫는다(비-모달, 관계 편집 카드와 같은 문법).
+  useEffect(() => {
+    if (!draftsOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      setDraftsOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [draftsOpen]);
 
   // Slice 5 — Esc closes the save-preview modal (scrim + ✕ close inline below).
   useEffect(() => {
@@ -732,19 +760,6 @@ export function StudioCompass(props: StudioCompassProps) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [openEdit]);
-
-  // Esc = "계속 편집"(안전한 쪽)으로 그만하기 확인 팝오버를 닫는다 — sonnet
-  // 최종 검수 D2 (포커스 위치와 무관하게 동작해야 하므로 전역 리스너).
-  useEffect(() => {
-    if (!confirmExit) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
-      event.preventDefault();
-      setConfirmExit(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [confirmExit]);
 
   const saveAllowed = props.canSave !== false;
   const effectiveSummary = saveAllowed ? (props.summary ?? null) : null;
@@ -795,53 +810,53 @@ export function StudioCompass(props: StudioCompassProps) {
             </>
           ) : null}
         </div>
-        <div className="relative ml-auto">
+        {/* #68 — 우측 상단 도구 묶음: 미리보기 · 작업중 · 그만하기.
+            하단 바를 전폭으로 늘려 놓던 조작들을 헤더로 올려, 하단은 "진행
+            상태 + 기록될 내용 + 저장" 만 남긴다(소유자: 하단 바 "그 자체가 좀
+            이상한데 필요한거야?"). */}
+        <div className="relative ml-auto flex items-center gap-2">
+          {previewAvailable ? (
+            <button
+              type="button"
+              data-testid="studio-preview-open"
+              onClick={() => {
+                setDraftsOpen(false);
+                setPreviewOpen(true);
+              }}
+              className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-3 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
+            >
+              <Eye size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+              {labels.previewOpen}
+            </button>
+          ) : null}
+          {drafts.length > 0 ? (
+            <button
+              type="button"
+              data-testid="studio-drafts-open"
+              aria-expanded={draftsOpen}
+              aria-label={labels.draftsOpenAria(drafts.length)}
+              onClick={() => setDraftsOpen((v) => !v)}
+              className={cn(
+                "flex h-[30px] items-center gap-1.5 rounded-lg border px-3 text-caption transition-colors",
+                draftsOpen
+                  ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-indigo-accent)]"
+                  : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
+              )}
+            >
+              <FilePen size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+              {labels.draftsOpen(drafts.length)}
+            </button>
+          ) : null}
           <button
             type="button"
-            onClick={() => (props.hasPendingChanges ? setConfirmExit(true) : onExit())}
+            // 저장 전 변경은 자동 임시저장되므로 그만하기에 확인이 필요 없다(#60) —
+            // 나가도 초안은 남고, 돌아오면 그대로다.
+            onClick={onExit}
             data-testid="studio-exit"
             className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-3 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
           >
             <span className="text-[color:var(--color-text-quaternary)]">✕</span> {labels.exit}
           </button>
-          {confirmExit ? (
-            <div
-              data-testid="studio-exit-confirm"
-              className="absolute right-0 top-[calc(100%+8px)] z-[10] w-[248px] rounded-[12px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-3.5"
-              style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
-              onKeyDown={(e) => {
-                // Esc = "계속 편집" (안전한 쪽) — sonnet 최종 검수 D2.
-                if (e.key === "Escape") {
-                  e.stopPropagation();
-                  setConfirmExit(false);
-                }
-              }}
-            >
-              <p className="text-caption text-[color:var(--color-text-secondary)] [word-break:keep-all]">
-                {labels.exitConfirmTitle}
-              </p>
-              <div className="mt-3 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmExit(false)}
-                  className="rounded-md px-2.5 py-1.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
-                >
-                  {labels.exitConfirmKeep}
-                </button>
-                <button
-                  type="button"
-                  data-testid="studio-exit-confirm-discard"
-                  onClick={() => {
-                    setConfirmExit(false);
-                    onExit();
-                  }}
-                  className="rounded-md border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] px-2.5 py-1.5 text-label font-semibold text-[color:var(--color-danger-text)] transition-colors hover:bg-[color:var(--color-danger-a32)]"
-                >
-                  {labels.exitConfirmDiscard}
-                </button>
-              </div>
-            </div>
-          ) : null}
         </div>
       </header>
 
@@ -1139,17 +1154,6 @@ export function StudioCompass(props: StudioCompassProps) {
             <ChevronDown size={12} aria-hidden className={cn("text-[color:var(--color-text-quaternary)] transition-transform", summaryOpen && "rotate-180")} />
           </button>
         ) : null}
-        {previewAvailable ? (
-          <button
-            type="button"
-            data-testid="studio-preview-open"
-            onClick={() => setPreviewOpen(true)}
-            className="flex h-8 items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
-          >
-            <Eye size={12} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
-            {labels.previewOpen}
-          </button>
-        ) : null}
         <div className="ml-auto flex items-center gap-3">
           <span className="text-label text-[color:var(--color-text-quaternary)]">
             {props.createSlugCollision
@@ -1189,62 +1193,86 @@ export function StudioCompass(props: StudioCompassProps) {
         </div>
       </footer>
 
-      {/* ── Walk guard (Slice 4) — pending changes + a walk request → confirm ──
-          A modal with its own scrim (blocks the board) so the choice is deliberate
-          and no staged record is lost silently. */}
-      {pendingWalk ? (
+
+      {/* ── #68 — 작업중 목록 (in-progress drafts) ──
+          우측에서 밀려나오는 비-모달 패널. 저장 전 변경이 노드별 초안으로 남는다는
+          약속(#60)을 눈에 보이게 만드는 곳 — "어디에 남았지?" 를 묻지 않게 한다.
+          비-모달이므로 무대를 가리지 않고, Esc 로 닫힌다. */}
+      {draftsOpen ? (
         <div
-          data-testid="studio-walk-confirm"
-          className="absolute inset-0 z-[12] flex items-center justify-center bg-[color:var(--color-overlay-2)] px-6"
+          data-testid="studio-drafts-panel"
           role="dialog"
-          aria-modal="true"
-          onClick={() => setPendingWalk(null)}
+          aria-label={labels.draftsTitle}
+          className="studio-fade-in absolute right-3 top-[52px] z-[11] flex w-[288px] flex-col rounded-[12px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
+          style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)", maxHeight: "min(420px, calc(100% - 96px))" }}
         >
-          <div
-            className="w-[320px] rounded-[14px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-4"
-            style={{ boxShadow: "0 18px 44px rgba(0,0,0,.55)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p className="text-caption leading-[1.5] text-[color:var(--color-text-secondary)] [word-break:keep-all]">
-              {labels.walkConfirmTitle(props.summary?.count ?? 0)}
-            </p>
-            <div className="mt-3.5 flex flex-col gap-1.5">
-              {props.onSaveAndOpenNode ? (
-                <button
-                  type="button"
-                  data-testid="studio-walk-confirm-save"
-                  onClick={() => {
-                    const target = pendingWalk;
-                    setPendingWalk(null);
-                    props.onSaveAndOpenNode?.(target);
-                  }}
-                  className="flex h-[34px] items-center justify-center gap-1.5 rounded-lg bg-[color:var(--color-indigo-brand)] px-3 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)]"
-                >
-                  {labels.walkConfirmSave}
-                </button>
-              ) : null}
-              <button
-                type="button"
-                data-testid="studio-walk-confirm-discard"
-                onClick={() => {
-                  const target = pendingWalk;
-                  setPendingWalk(null);
-                  props.onOpenNode?.(target);
-                }}
-                className="flex h-[34px] items-center justify-center rounded-lg border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] px-3 text-caption font-semibold text-[color:var(--color-danger-text)] transition-colors hover:bg-[color:var(--color-danger-a32)]"
-              >
-                {labels.walkConfirmDiscard}
-              </button>
-              <button
-                type="button"
-                data-testid="studio-walk-confirm-keep"
-                onClick={() => setPendingWalk(null)}
-                className="flex h-[34px] items-center justify-center rounded-lg px-3 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
-              >
-                {labels.exitConfirmKeep}
-              </button>
+          <div className="flex items-start gap-2 px-3.5 pt-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-caption font-semibold text-[color:var(--color-text-secondary)]">
+                {labels.draftsTitle}
+              </p>
+              <p className="mt-1 text-label leading-[1.5] text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
+                {labels.draftsHint}
+              </p>
             </div>
+            <button
+              type="button"
+              onClick={() => setDraftsOpen(false)}
+              aria-label={labels.draftsCloseAria}
+              className="-mr-1 flex h-6 w-6 flex-none items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+            >
+              <X size={13} aria-hidden />
+            </button>
           </div>
+          <ul className="mt-2.5 min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+            {drafts.map((draft) => {
+              const isCurrent = draft.focalId === props.focalId;
+              return (
+                <li key={draft.focalId} data-testid={`studio-draft-row-${draft.focalId}`}>
+                  <div className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-[color:var(--color-overlay-1)]">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-caption text-[color:var(--color-text-primary)]">
+                        {draft.title}
+                      </p>
+                      <p className="mt-0.5 text-label text-[color:var(--color-text-quaternary)]">
+                        {isCurrent ? labels.draftsCurrent : labels.draftsCount(draft.count)}
+                      </p>
+                    </div>
+                    {!isCurrent && props.onOpenDraft ? (
+                      <button
+                        type="button"
+                        data-testid={`studio-draft-resume-${draft.focalId}`}
+                        onClick={() => {
+                          setDraftsOpen(false);
+                          props.onOpenDraft?.(draft.focalId);
+                        }}
+                        className="flex h-7 flex-none items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]"
+                      >
+                        {labels.draftsResume}
+                      </button>
+                    ) : null}
+                    {props.onDiscardDraft ? (
+                      <button
+                        type="button"
+                        data-testid={`studio-draft-discard-${draft.focalId}`}
+                        onClick={() => props.onDiscardDraft?.(draft.focalId)}
+                        aria-label={labels.draftsDiscardAria(draft.title)}
+                        title={labels.draftsDiscard}
+                        className="flex h-7 w-7 flex-none items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-danger-a12)] hover:text-[color:var(--color-danger-text)]"
+                      >
+                        <X size={12} aria-hidden />
+                      </button>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+            {drafts.length === 0 ? (
+              <li className="px-1.5 py-3 text-caption text-[color:var(--color-text-quaternary)]">
+                {labels.draftsEmpty}
+              </li>
+            ) : null}
+          </ul>
         </div>
       ) : null}
 
