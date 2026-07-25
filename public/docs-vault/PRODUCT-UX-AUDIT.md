@@ -51,6 +51,7 @@
 | A25 | 문서함 문서 선택 → 활성 탭 닫기 → 이웃 문서 계속 읽기 | 키보드 닫기 뒤 이웃 활성 탭 포커스 복귀 설치 앱 검증 완료 |
 | A26 | 전역 레일 목적지 이동 → 새 surface 읽기 시작 | native-safe 의도 + 공방 main/h1 계약 설치 앱 왕복 검증 완료 |
 | A27 | 768–1024px 하단 탭바 이동·safe-area·레일 전환 | route 포커스·가림·overflow·단일 내비 검증, 수정 없음 |
+| A28 | 프로젝트 → 미연결 AI 타일 → 지도 연결 시트 → 닫기 | 교차 route 열기·모달 Tab 순환·타일 포커스 복귀 설치 앱 검증 완료 |
 
 ## 이슈 장부
 
@@ -1058,6 +1059,47 @@
   유지한다.
 - PO·디자인 판정: **Do not build**
 
+### UX-030 — 화면 밖 AI 연결 진입이 시트를 잃고 문서 루트로 포커스를 버림
+
+- 심각도: `S3`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 프로젝트 목록 → 전역 레일의 미연결 AI 작업 타일 Return → 지형도
+  이동과 연결 시트 열기 → Shift+Tab/Tab 순환 → Escape → AI 타일 복귀
+- 관측 현상: 설치 앱에서 미연결 타일을 키보드로 실행하면 프로젝트에서
+  지형도로 URL은 이동했지만 연결 시트가 열리지 않았고, AX focused element가
+  지형도 `HTML content`로 떨어졌다. 레이아웃 provider의 `wantOpen` state
+  commit보다 static-export/WebView route 전환이 먼저 완료되는 경계였다.
+- 사용자 문제: 사용자는 “AI 연결 안내 열기”를 실행했지만 결과 화면에서
+  아무 안내도 받지 못하고, 다시 레일 타일까지 탐색해야 한다. 보조기술에는
+  동작이 실패했는지 화면만 바뀐 것인지 구분할 단서도 없다.
+- 사용자 순간: 다른 workspace surface에서 에이전트 상태가 비어 있음을 보고
+  즉시 MCP 연결 방법을 확인하려는 첫 연결 순간이다.
+- 현재 대안: 지형도 도착 후 AI 타일을 다시 찾아 재실행하고, 시트가 열려도
+  배경으로 빠지는 Tab과 닫기 뒤 문서 루트 포커스를 수동으로 복구한다.
+- 온톨로지·에이전트 가치: 사람의 “에이전트 연결” 의도와 에이전트가 읽을
+  vault 등록 스니펫이 한 번의 행동으로 이어져야 공동 의미 계층의 시작점이
+  신뢰를 얻는다.
+- 최소화: 시트의 카피·정보 구조·토큰·기존 scrim/패널 모션은 바꾸지 않았다.
+  지형도 밖 전환에만 일회성 `agentConnect=1` marker를 붙이고 도착 즉시
+  소비·제거한다. 기존 launcher state는 `aria-expanded` 진실원으로 유지한다.
+- 디자인 계약: 연결 시트가 열리면 첫 동작인 닫기 버튼이 `active focus`를
+  소유하고, Tab/Shift+Tab은 시트 안에서 순환한다. 닫으면 살아 있는 원래
+  트리거로, route 전환으로 사라졌다면 상주 AI 타일로 복귀한다.
+- 회귀 증거: route marker가 다른 query/hash를 보존하며 한 번만 소비되는지,
+  사라진 트리거의 AI 타일 fallback, 살아 있는 시작 체크리스트 CTA 복귀,
+  자동 안내의 안전한 AI 타일 복귀, 시트 첫 포커스·양방향 Tab trap·Escape를
+  새 테스트 6개로 고정했다. AppNavRail·agent model·RouteFocusManager까지
+  포함한 집중 테스트는 `5 파일 · 33개`, TypeScript·touched ESLint(오류 0)와
+  production build가 통과했다.
+- 설치 앱 증거: `/Applications/Ontology Atlas.app`의 `/ko/projects/`에서
+  AI 타일에 키보드 포커스를 두고 Return을 실행했다. 최종 URL은 일회성
+  marker가 제거된 `/ko/topology/`, 연결 시트가 `aria-modal` dialog로
+  열렸고 AX focused element는 `button 닫기`였다. Shift+Tab은 마지막
+  `인계 텍스트 복사`, 다음 Tab은 `닫기`로 순환했다. Escape 뒤 AX focus는
+  `이 문서함에 아직 새 AI 작업 상태가 없습니다.` AI 타일로 복귀했다.
+  같은 코드로 desktop app build/deploy를 통과했다.
+- PO·디자인 판정: **Build and verify**
+
 ## 현재 PO·디자인 판정
 
 - A1/A2 수정 슬라이스: **Build and verify**
@@ -1068,6 +1110,7 @@
 - A25 문서 탭 키보드 닫기 연속성 슬라이스: **Build and verify**
 - A26 전역 레일 route·공방 landmark 슬라이스: **Build and verify**
 - A27 하단 탭바 responsive 계약: **Do not build**
+- A28 AI 연결 교차 route·모달 포커스 슬라이스: **Build and verify**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

@@ -5,9 +5,34 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+
+const AGENT_CONNECT_ROUTE_QUERY_KEY = "agentConnect";
+const AGENT_CONNECT_TILE_SELECTOR = '[data-testid="app-nav-rail-agent-status"]';
+
+/** 지형도 밖 타일 → 지형도 시트 열기 의도를 탐색 전환에도 남기는 URL 계약. */
+export const AGENT_CONNECT_ROUTE_HREF = "/topology/?agentConnect=1";
+
+/**
+ * 지형도 도착 직후 전역 시트 열기 마커만 소비한다. 다른 지도 query/hash 는
+ * 그대로 두고 history 만 정리해 뒤로가기와 공유 URL에 일회성 UI 상태가 남지
+ * 않게 한다.
+ */
+export function consumeAgentConnectRouteIntent(): boolean {
+  if (typeof window === "undefined") return false;
+  const url = new URL(window.location.href);
+  if (url.searchParams.get(AGENT_CONNECT_ROUTE_QUERY_KEY) !== "1") return false;
+  url.searchParams.delete(AGENT_CONNECT_ROUTE_QUERY_KEY);
+  window.history.replaceState(
+    window.history.state,
+    "",
+    `${url.pathname}${url.search}${url.hash}`,
+  );
+  return true;
+}
 
 /**
  * 에이전트 연결 시트의 *전역 열기 의도*. LNB(AppNavRail)는 AppShell 상주라
@@ -21,8 +46,9 @@ import {
  *   레일 클릭 → `open()` 으로 `wantOpen` 을 세운다.
  * - HomePage 는 `wantOpen` 을 구독해 자기 시트를 연다. 지형도 밖에서 눌렀다면
  *   AppShell 이 지형도로 이동시키고, 도착한 HomePage 가 여전히 살아있는(레이아웃
- *   상주) 이 컨텍스트의 `wantOpen=true` 를 보고 마운트 직후 연다 — URL 파라미터
- *   불필요.
+ *   상주) 이 컨텍스트의 `wantOpen=true` 를 보고 마운트 직후 연다. 일부
+ *   static-export/WebView 전환이 provider state commit 보다 빨라지는 경우에는
+ *   일회성 `agentConnect=1` marker 를 도착 화면이 소비해 같은 의도를 복구한다.
  * - `wantOpen` 은 레일 타일의 `aria-expanded` 진실원이기도 하다.
  */
 interface AgentConnectLauncherValue {
@@ -38,8 +64,32 @@ const AgentConnectLauncherContext = createContext<AgentConnectLauncherValue | nu
 
 export function AgentConnectLauncherProvider({ children }: { children: ReactNode }) {
   const [wantOpen, setWantOpen] = useState(false);
-  const open = useCallback(() => setWantOpen(true), []);
-  const close = useCallback(() => setWantOpen(false), []);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const shouldRestoreFocusRef = useRef(false);
+  const open = useCallback(() => {
+    const active = document.activeElement;
+    returnFocusRef.current =
+      active instanceof HTMLElement &&
+      active !== document.body &&
+      active !== document.documentElement
+        ? active
+        : document.querySelector<HTMLElement>(AGENT_CONNECT_TILE_SELECTOR);
+    shouldRestoreFocusRef.current = true;
+    setWantOpen(true);
+  }, []);
+  const close = useCallback(() => {
+    setWantOpen(false);
+    if (!shouldRestoreFocusRef.current) return;
+    shouldRestoreFocusRef.current = false;
+    const preferredTarget = returnFocusRef.current;
+    window.setTimeout(() => {
+      const target = preferredTarget?.isConnected
+        ? preferredTarget
+        : document.querySelector<HTMLElement>(AGENT_CONNECT_TILE_SELECTOR);
+      target?.focus({ preventScroll: true });
+      returnFocusRef.current = null;
+    }, 0);
+  }, []);
   const value = useMemo<AgentConnectLauncherValue>(
     () => ({ wantOpen, open, close }),
     [wantOpen, open, close],

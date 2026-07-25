@@ -167,7 +167,11 @@ import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
 import { restoreTopologyFocusAfterDatasheetClose } from "../lib/topology-focus-return";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
-import { AgentConnectSheet, useAgentConnectLauncher } from "@/widgets/agent-connect";
+import {
+  AgentConnectSheet,
+  consumeAgentConnectRouteIntent,
+  useAgentConnectLauncher,
+} from "@/widgets/agent-connect";
 import { TopologyV2EdgePanel } from "@/widgets/topology-map-v2/ui/TopologyV2EdgePanel";
 import { PLAIN_TIER_REVEAL } from "@/widgets/topology-map-v2/model/tier-visibility";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
@@ -897,14 +901,23 @@ export function HomePage() {
   });
   // LNB(AppShell 상주) 에이전트 타일 → 전역 "열려는 의도". 어느 페이지에서
   // 눌렸든 지형도로 이동해 오면 레이아웃 상주 launcher 의 wantOpen 이 살아
-  // 있어 여기서 시트를 연다(URL 파라미터 불필요). openSheet 는 "N분 전"
-  // 기준 시각도 함께 스냅한다.
+  // 있어 여기서 시트를 연다. static-export/WebView 가 그 state commit 보다
+  // 먼저 route 를 바꾸는 경우에는 일회성 URL marker 를 소비한다. openSheet 는
+  // "N분 전" 기준 시각도 함께 스냅한다.
   const agentConnectLauncher = useAgentConnectLauncher();
   const agentConnectWantOpen = agentConnectLauncher.wantOpen;
+  const requestAgentConnectOpen = agentConnectLauncher.open;
   const openAgentConnectSheet = agentConnect.openSheet;
   useEffect(() => {
-    if (agentConnectWantOpen) openAgentConnectSheet();
-  }, [agentConnectWantOpen, openAgentConnectSheet]);
+    const arrivedFromGlobalTile = consumeAgentConnectRouteIntent();
+    if (arrivedFromGlobalTile && !agentConnectWantOpen) {
+      // 일부 static-export/WebView 전환은 layout provider 상태 commit 전에 새
+      // route 를 마운트한다. URL marker 를 소비한 도착 화면이 launcher 의
+      // aria-expanded/focus-return 계약까지 다시 세워 전환 방식에 의존하지 않는다.
+      requestAgentConnectOpen();
+    }
+    if (agentConnectWantOpen || arrivedFromGlobalTile) openAgentConnectSheet();
+  }, [agentConnectWantOpen, openAgentConnectSheet, requestAgentConnectOpen]);
   // 폴더 연결 직후 에이전트 연결 유도 (소유자 지시 2026-07-24 2차) — "폴더를
   // 연결하고 나면 바로 AI 에이전트 연결을 가이드해야 한다". 이 세션에서
   // 사용자가 직접 폴더를 연 경우('opening' 경유 — IndexedDB 복원 재방문은
@@ -913,14 +926,9 @@ export function HomePage() {
   const vaultOpenedThisSessionRef = useRef(false);
   const agentAutoPromptFiredRef = useRef(false);
   const agentConnectedNow = agentConnect.status.kind === "connected";
-  // openSheet 는 렌더마다 재생성될 수 있어 dep 로 두면 타이머가 리렌더마다
-  // 지워진다 — 자동 투어와 동일한 재장전 회귀(E2E 실측: '빈 폴더로 새로
-  // 시작' 경로는 스캐폴드 리렌더 때문에 시트가 영영 안 열렸다). ref 미러 +
-  // 발화 성공 시점에만 가드를 세운다.
-  const openAgentConnectSheetRef = useRef(openAgentConnectSheet);
-  useEffect(() => {
-    openAgentConnectSheetRef.current = openAgentConnectSheet;
-  }, [openAgentConnectSheet]);
+  // 자동 안내도 launcher 를 거쳐야 닫기 뒤 안전 복귀점(AI 타일)이 생긴다.
+  // requestAgentConnectOpen 은 provider 의 stable callback이라 timer effect의
+  // 재장전 없이 사용할 수 있다.
   useEffect(() => {
     if (vault.status === "opening") vaultOpenedThisSessionRef.current = true;
     if (
@@ -935,10 +943,10 @@ export function HomePage() {
     // 화면에서도 읽히게 한다.
     const id = window.setTimeout(() => {
       agentAutoPromptFiredRef.current = true;
-      openAgentConnectSheetRef.current();
+      requestAgentConnectOpen();
     }, 1200);
     return () => window.clearTimeout(id);
-  }, [vault.status, agentConnectedNow]);
+  }, [vault.status, agentConnectedNow, requestAgentConnectOpen]);
   // HomePage 모듈화 1차 — 부트스트랩 흐름은 use-bootstrap-flow 훅 소유.
   // 완료 연출(토스트·E1 리빌)만 여기 남는다.
   const { bootstrapOpen, setBootstrapOpen, bootstrapPlan, runBootstrap } = useBootstrapFlow({
@@ -3456,7 +3464,7 @@ export function HomePage() {
                       relationCount={topologyTotalRelations}
                       agentConnected={agentConnect.status.kind === "connected"}
                       onCreateNode={openCreateNodeWithKind}
-                      onOpenAgentConnect={openAgentConnectSheet}
+                      onOpenAgentConnect={agentConnectLauncher.open}
                       // '기존 폴더 선택'으로 빈 폴더를 연 사용자에게 '빈
                       // 폴더로 새로 시작' 과 같은 스타터를 버튼으로 제공한다
                       // (2026-07-24). 문서가 이미 있으면 미전달 → 종전

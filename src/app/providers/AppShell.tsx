@@ -7,7 +7,11 @@ import {
   NavRailShellProvider,
   useNavRailShellValue,
 } from "@/widgets/app-nav-rail";
-import { AgentConnectLauncherProvider, useAgentConnectLauncher } from "@/widgets/agent-connect";
+import {
+  AGENT_CONNECT_ROUTE_HREF,
+  AgentConnectLauncherProvider,
+  useAgentConnectLauncher,
+} from "@/widgets/agent-connect";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 
 /**
@@ -71,7 +75,7 @@ function AppNavRailSlot() {
       }
       launcher.open();
       if (!isTopologyHubPath(pathname)) {
-        router.push("/topology/");
+        router.push(AGENT_CONNECT_ROUTE_HREF);
       }
     },
     [launcher, router, pathname],

@@ -119,6 +119,39 @@ export function AgentConnectSheet({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
+  // ShortcutSheet 와 같은 모달 계약: 열리면 첫 동작(닫기)으로 포커스를
+  // 넘기고, Tab/Shift+Tab 이 배경 레일·지도까지 새지 않게 내부에서 순환한다.
+  // 닫힌 뒤의 복귀 지점은 전역 launcher 가 소유한다(교차 route trigger 포함).
+  useEffect(() => {
+    if (!open) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const focusableSelector =
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const getFocusables = () =>
+      Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+        (element) => !element.hasAttribute("disabled"),
+      );
+    getFocusables()[0]?.focus({ preventScroll: true });
+
+    const trapHandler = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const items = getFocusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", trapHandler);
+    return () => window.removeEventListener("keydown", trapHandler);
+  }, [open]);
+
   // [M-12] 4개까지만 보여주되, 나머지는 "외 N개" 로 명시 — 조용한 누락은
   // "에이전트가 전부 읽는다" 는 이 화면의 신뢰 장치를 깎는다.
   const previewDomains = domainTitles.slice(0, 4);
