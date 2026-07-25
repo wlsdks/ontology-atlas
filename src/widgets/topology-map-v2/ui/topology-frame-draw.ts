@@ -905,6 +905,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         projectPinTick: tokens.projectPinTick,
         selectionIndigo: tokens.selectionRingIndigo,
         selectionHairline: tokens.selectionRingHairline,
+        neighborRing: tokens.edgeSelected,
         hoverRing: tokens.hoverRing,
         hoverShimmerSeg: tokens.hoverShimmerSeg,
         hoverShimmerPeriodMs: tokens.hoverShimmerPeriodMs,

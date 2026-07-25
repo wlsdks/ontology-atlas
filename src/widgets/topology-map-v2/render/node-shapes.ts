@@ -159,6 +159,15 @@ export interface NodeShapeTokens {
   selectionIndigo: string;
   /** Canvas-emphasis slice — the outer 6px hairline ring's color, a lower-alpha indigo (spec §B1's second ring). */
   selectionHairline: string;
+  /**
+   * #5 — the connected-neighbor ring color. A THIN pale-indigo ring on the
+   * body outline of every direct (1-hop) neighbor of the selected node, so
+   * "what this connects to" reads as clearly as the edges do. Same indigo
+   * hue as the selection ring, differentiated by VALUE only (pale
+   * `--topology-v2-edge-selected`), per the charter's selection-color ladder
+   * — never a new blue hue.
+   */
+  neighborRing: string;
   /** Canvas-emphasis slice — the hover preview ring's color (spec §C), a static 1px indigo hairline distinct from the brighter selection ring. */
   hoverRing: string;
   /** Design Guardian 처방 L — 호버 shimmer 아크 길이(둘레 비율, `--topology-v2-hover-shimmer-seg`). */
@@ -603,6 +612,17 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
         tokens.hoverShimmerColor,
       );
     }
+  }
+
+  // #5 — connected-neighbor ring. Every direct neighbor of the selected node
+  // gets a single THIN pale-indigo ring on its outline so "what this connects
+  // to" is visible as nodes, not only as highlighted edges (owner report: the
+  // relation lit up but the node on the other end stayed invisible). Same
+  // indigo hue as the center's ring, one value paler and thinner — the
+  // charter's value-only selection ladder, never a new blue hue. Sits below
+  // the `center` block so a node that is somehow both never double-draws.
+  if (egoState === "neighbor") {
+    strokeKindOutline(ctx, kind, x, y, r, farT, tokens.neighborRing, 1.25, 1);
   }
 
   // Canvas-emphasis slice §B — the selected node's STATIC double ring (2px on
