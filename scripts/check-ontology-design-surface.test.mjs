@@ -46,48 +46,44 @@ function writeCleanWorkbenchFixtures(root) {
   );
   writeFixture(
     root,
-    "src/views/ontology-edit/ui/OntologyEditPage.tsx",
+    "src/views/ontology-studio/ui/OntologyStudioPage.tsx",
     [
-      "function BuilderWriteSummary() {}",
-      "function BuilderCanvasEntryRail() {}",
-      "formatBuilderGuardPacket",
-      "formatBuilderProofPacket",
-      "formatAgentPostChangeSyncPacket",
-      "aria-label={t(\"ariaLabel\"",
-      "anchorAriaLabel",
-      "anchorSlugLabel",
-      "data-anchor-slug",
-      "activeFocusAriaLabel",
-      "activeFocus",
-      "proofChipSelected",
+      "export function OntologyStudioPage() {}",
+      "<StudioCompass",
+      "buildFillPacket(sourceSlug, c.relation, c.target.ref)",
+      "await navigator.clipboard.writeText(buildMcpPacket(draft));",
+    ].join("\n"),
+  );
+  writeFixture(
+    root,
+    "src/views/ontology-studio/ui/StudioCompass.tsx",
+    [
+      "export interface CompassBearingView {}",
+      "bottomProgress: (filled, total) => string;",
+    ].join("\n"),
+  );
+  writeFixture(
+    root,
+    "src/views/ontology-studio/lib/build-create-node.ts",
+    [
+      "export function buildMcpPacket() {}",
+      "export function buildFillPacket() {}",
     ].join("\n"),
   );
   writeFixture(
     root,
     "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-    ["<InsightsQueryPackCockpit />"].join("\n"),
+    ["<TabBar", "<InsightsHeroCensus"].join("\n"),
   );
   writeFixture(
     root,
-    "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx",
-    [
-      "function InsightsQueryPackCockpit() {}",
-      "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
-      "AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND",
-      "queryCockpitCopyRuntimeGate",
-      "queryCockpitContractsAriaLabel",
-      "queryCockpitLiveProofAriaLabel",
-      "queryCockpitEvidenceAriaLabel",
-      "focused_blast_radius",
-      "relation_name_parity",
-      "pattern_walk/project_map",
-      "--type depends_on",
-    ].join("\n"),
+    "src/views/ontology-insights/ui/tabs/OverviewTab.tsx",
+    ["function OverviewTab() {}", "InsightsHeroCensus"].join("\n"),
   );
   writeFixture(
     root,
-    "src/views/ontology-insights/ui/parts/InsightsFocusedNodeProofPanel.tsx",
-    "relationType and via",
+    "src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx",
+    ["function InsightsHandoffRow() {}", "<CopyAgentTextButton"].join("\n"),
   );
   writeFixture(
     root,
@@ -208,7 +204,7 @@ test("ontology design surface passes when visual and workbench contracts are pre
       "src/views/docs-vault",
       "src/widgets/docs-vault",
       "src/views/ontology-view",
-      "src/views/ontology-edit",
+      "src/views/ontology-studio",
       "src/views/ontology-insights",
     ],
   });
@@ -236,7 +232,7 @@ test("ontology design surface ignores test fixtures when scanning forbidden visu
       "src/views/docs-vault",
       "src/widgets/docs-vault",
       "src/views/ontology-view",
-      "src/views/ontology-edit",
+      "src/views/ontology-studio",
       "src/views/ontology-insights",
     ],
   });
@@ -256,7 +252,7 @@ test("ontology design surface reports forbidden visual drift", () => {
 
   const report = evaluateOntologyDesignSurface({
     root,
-    targetDirs: ["src/views/ontology-view", "src/views/ontology-edit", "src/views/ontology-insights"],
+    targetDirs: ["src/views/ontology-view", "src/views/ontology-studio", "src/views/ontology-insights"],
   });
 
   assert.equal(report.ok, false);
@@ -290,43 +286,41 @@ test("ontology design surface rejects kind decision full-height stripes", () => 
 test("ontology design surface reports missing workbench structure markers", () => {
   const root = makeFixture();
   writeCleanWorkbenchFixtures(root);
+  // Break the insights-tabbed-handoff contract: the 3-tab structure, real-graph
+  // census hero, and copyable agent handoff row must all be present.
   writeFixture(
     root,
-    "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx",
-    [
-      "function InsightsQueryPackCockpit() {}",
-      "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
-      "AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND",
-    ].join("\n"),
+    "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+    "// no tabs, no hero, no handoff row",
   );
   writeFixture(
     root,
-    "src/views/ontology-insights/ui/parts/InsightsFocusedNodeProofPanel.tsx",
-    "",
+    "src/views/ontology-insights/ui/tabs/OverviewTab.tsx",
+    "function OverviewTab() {}",
+  );
+  writeFixture(
+    root,
+    "src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx",
+    "function Nothing() {}",
   );
 
   const report = evaluateOntologyDesignSurface({
     root,
-    targetDirs: ["src/views/ontology-view", "src/views/ontology-edit", "src/views/ontology-insights"],
+    targetDirs: ["src/views/ontology-view", "src/views/ontology-studio", "src/views/ontology-insights"],
   });
 
   assert.equal(report.ok, false);
   assert.deepEqual(
     Array.from(new Set(report.violations.map((violation) => violation.check.id))),
-    ["query-cockpit-runtime-gate"],
+    ["insights-tabbed-handoff"],
   );
   assert.deepEqual(
     report.violations.map((violation) => violation.source),
     [
-      "missing marker: queryCockpitCopyRuntimeGate",
-      "missing marker: queryCockpitContractsAriaLabel",
-      "missing marker: queryCockpitLiveProofAriaLabel",
-      "missing marker: queryCockpitEvidenceAriaLabel",
-      "missing marker: focused_blast_radius",
-      "missing marker: relation_name_parity",
-      "missing marker: pattern_walk/project_map",
-      "missing marker: --type depends_on",
-      "missing marker: relationType and via",
+      "missing marker: TabBar",
+      "missing marker: InsightsHeroCensus",
+      "missing marker: InsightsHandoffRow",
+      "missing marker: CopyAgentTextButton",
     ],
   );
 });
@@ -346,7 +340,7 @@ test("ontology design surface reports missing workspace execution cells", () => 
 
   const report = evaluateOntologyDesignSurface({
     root,
-    targetDirs: ["src/views/ontology-view", "src/views/ontology-edit", "src/views/ontology-insights"],
+    targetDirs: ["src/views/ontology-view", "src/views/ontology-studio", "src/views/ontology-insights"],
   });
 
   assert.equal(report.ok, false);
