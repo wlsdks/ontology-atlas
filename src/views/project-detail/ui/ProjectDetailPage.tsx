@@ -25,7 +25,6 @@ import {
   getProjectEditHref,
   getProjectRuntimeDetailHref,
   getTopologyProjectHref,
-  resolveFallbackProjects,
   type Project,
 } from "@/entities/project";
 import { useProjects, useProjectMutations, useProjectBody } from "@/features/project-data-source";
@@ -191,7 +190,6 @@ export function ProjectDetailPage({
   const t = useTranslations("projectPages.detail");
   const router = useRouter();
   const { show: showToast } = useToast();
-  const fallbackProjects = useMemo(() => resolveFallbackProjects(), []);
   const [project, setProject] = useState<Project | null>(
     initialProject,
   );
@@ -256,11 +254,15 @@ export function ProjectDetailPage({
   useEffect(() => {
     if (!slug) return;
     let cancelled = false;
+    // #74 — 정적 모드 fallback 이 `SEED_PROJECTS` 15건을 들고 있었는데, 그 내용이
+    // Firebase Hosting · Sigma/WebGL · 화이트리스트 어드민처럼 **이미 제거된
+    // 기능을 사실처럼** 서술했다. 게다가 `/project/[slug]` 라우트는 vault 에서
+    // 생성되므로 그 slug 들은 애초에 도달 불가였다 — 없는 제품을 설명하는
+    // 도달 불가 데이터라 삭제했다. 프로젝트가 없으면 아래 not-found 상태가
+    // 정직하게 그 사실을 말한다.
     const { next, related: nextRelated } = resolveSubscribeUpdate(
       projectsQuery.projects,
       slug,
-      fallbackProjects,
-      { allowFallback: projectsQuery.mode === "static" },
     );
     window.queueMicrotask(() => {
       if (cancelled) return;
@@ -281,9 +283,7 @@ export function ProjectDetailPage({
     projectsQuery.projects,
     projectsQuery.loaded,
     projectsQuery.error,
-    projectsQuery.mode,
     slug,
-    fallbackProjects,
   ]);
 
   // 이 프로젝트의 ontology 노드/관계 — 히어로 메트릭 스트립·미니 도메인

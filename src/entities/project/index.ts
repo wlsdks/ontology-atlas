@@ -8,8 +8,6 @@ export type {
   ProjectInput,
 } from "./model";
 export {
-  SEED_PROJECTS,
-  resolveFallbackProjects,
   computeHubSlugs,
   getProjectRelationshipMeta,
   isProjectRecentlyUpdated,

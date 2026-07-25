@@ -18,18 +18,10 @@ export interface SubscribeUpdate {
  *
  * 규칙: "찾았을 때만 갱신, 모르면 아무 것도 안 함".
  */
-export function resolveSubscribeUpdate(
-  latest: Project[],
-  slug: string,
-  fallbackProjects: Project[],
-  options: { allowFallback: boolean } = { allowFallback: true },
-): SubscribeUpdate {
-  const related =
-    latest.length > 0
-      ? latest
-      : options.allowFallback
-        ? fallbackProjects
-        : [];
-  const next = related.find((p) => p.slug === slug) ?? null;
-  return { next, related };
+export function resolveSubscribeUpdate(latest: Project[], slug: string): SubscribeUpdate {
+  // #74 — 정적 모드 fallback 은 제거됐다. 없는 제품을 설명하는 시드 데이터를
+  // 보여주느니 "이 프로젝트가 없다" 고 말하는 편이 정직하다. 호출부의
+  // not-found 상태가 그 역할을 한다.
+  const next = latest.find((p) => p.slug === slug) ?? null;
+  return { next, related: latest };
 }
