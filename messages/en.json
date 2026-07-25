@@ -55,8 +55,8 @@
       },
       "workspaceFolderLabel": "Workspace folder",
       "workspaceFolderEmpty": "None selected",
-      "workspaceFolderDocCount": "{count} documents",
-      "workspaceFolderDocCountIssues": "{count} documents · {errors} errors · {warnings} warnings",
+      "workspaceFolderDocCount": "{count} ontology docs",
+      "workspaceFolderDocCountIssues": "{count} ontology docs · {errors} errors · {warnings} warnings",
       "workspaceFolderOpen": "Open folder",
       "workspaceFolderChange": "Change",
       "workspaceFolderOpening": "Opening…",
@@ -1769,7 +1769,7 @@
       "deleteFailed": "Delete failed: {message}",
       "invalidSlug": "Not a valid title.",
       "createFailed": "Create failed: {message}",
-      "ontologyStarterDone": "Ontology starter created — {created} new files · {skipped} skipped. Opening README.md.",
+      "ontologyStarterDone": "Ontology starter done — {concepts} ontology concepts, {configs} agent config files, {skipped} already present. Opening README.md.",
       "agentVerifyPromptCopied": "Agent verification prompt copied",
       "agentVerifyPromptCopyFailed": "Could not copy agent verification prompt",
       "tocHeading": "Contents",
@@ -2124,7 +2124,7 @@
       "stepScaffold": "Create starter docs (one click)",
       "ctaScaffold": "Create for me",
       "ctaScaffoldBusy": "Creating…",
-      "scaffoldToast": "Created {count} starter documents"
+      "scaffoldToast": "Created {concepts} ontology concepts and {configs} agent config files"
     }
   },
   "fullDetailA1": {

@@ -646,8 +646,11 @@ function DocsVaultContent() {
     setView('doc');
     setAdvancedOpen(false);
     toast.show(
+      // #70 — 개념 수와 설정 파일 수를 **따로** 말한다. 예전엔 둘을 합친
+      // `created` 라 "시작 문서 8개" 인데 실제 온톨로지 개념은 5개였다.
       t('dialog.ontologyStarterDone', {
-        created: result.created,
+        concepts: result.markdownCreated,
+        configs: result.agentConfigCreated,
         skipped: result.skipped,
       }),
       'success',

@@ -2228,7 +2228,12 @@ export function HomePage() {
     try {
       const result = await vault.scaffoldOntology();
       toast.show(
-        t("startChecklist.scaffoldToast", { count: result.created }),
+        // #70 — 개념 수와 설정 파일 수를 따로 말한다(합치면 "8개" 인데 실제
+        // 온톨로지 개념은 5개라 설정 패널의 "문서 5개" 와 어긋났다).
+        t("startChecklist.scaffoldToast", {
+          concepts: result.markdownCreated,
+          configs: result.agentConfigCreated,
+        }),
         "success",
       );
     } catch (err) {
