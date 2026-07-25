@@ -477,6 +477,22 @@
     }
   }
 
+  /* 공방(스튜디오) 저장-대기 지지대 흐름 — a staged (아직 안 쓴) relation strut
+     drifts its dash toward the center, the topology map's comet grammar mapped
+     to SVG stroke-dashoffset (color stays on the indigo ladder — no glow). Slow
+     ~2.4s low-contrast cycle = "이 연결은 살아있다/대기 중". prefers-reduced-motion
+     은 아래 전역 규칙(animation-duration 0.01ms)이 자동으로 정지 → 정적 파선만
+     남고 완전히 읽힌다. dasharray "5 7"(주기 12) 한 주기만큼 offset 을 당긴다. */
+  @keyframes studioStrutFlow {
+    to {
+      stroke-dashoffset: -12;
+    }
+  }
+
+  .studio-strut-flow {
+    animation: studioStrutFlow 2.4s linear infinite;
+  }
+
   /* S7 "영역 대장" 좌측 패널 크로스페이드 — 전역 INDEX ↔ 영역 대장 전환 시
      들어오는 표면의 짧은 페이드-인(<200ms). 두 표면이 같은 박스를 차지하므로
      페이드-인이 크로스페이드로 읽힌다. prefers-reduced-motion 은 아래 base

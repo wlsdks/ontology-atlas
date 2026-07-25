@@ -903,3 +903,61 @@ describe("StudioCompass — create", () => {
     expect(screen.getByTestId("studio-save")).toBeDisabled();
   });
 });
+
+describe("StudioCompass — 연관 강조 (alive pair) effect", () => {
+  const aliveBearings = (): CompassBearingView[] => [
+    // staged filled lane → its strut should flow (dash-flow marker class).
+    bearing("dependsOn", "right", {
+      filled: true,
+      staged: true,
+      neighbors: [{ id: "el:x", title: "Parser", kind: "element", ref: "elements/parser" }],
+    }),
+    // filled but NOT staged (saved) → solid strut, no flow marker.
+    bearing("isA", "up", {
+      filled: true,
+      neighbors: [{ id: "c:y", title: "Y", kind: "capability", ref: "capabilities/y" }],
+    }),
+    bearing("contains", "down", { expected: true }),
+    bearing("relates", "left"),
+  ];
+
+  function renderAlive() {
+    return render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: "AI", name: "MCP Server", definition: "def" }}
+        bearings={aliveBearings()}
+        filledBearings={2}
+        writable
+        candidatesFor={() => [CANDIDATE]}
+        similarFor={() => null}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+      />,
+    );
+  }
+
+  it("flows the dash on a staged strut only (comet grammar for 저장 대기)", () => {
+    const { container } = renderAlive();
+    const flowing = container.querySelectorAll(".studio-strut-flow");
+    // Only the staged (dependsOn) lane's strut carries the flow marker.
+    expect(flowing.length).toBeGreaterThan(0);
+    for (const path of flowing) {
+      expect(path.getAttribute("stroke-dasharray")).toBe("5 7");
+    }
+  });
+
+  it("lights the card's same-side border to indigo-hover when a socket is hovered", () => {
+    renderAlive();
+    const card = screen.getByTestId("studio-center-card");
+    // left is the empty 'relates' socket; hovering it brightens the left border.
+    expect(card.style.borderLeft).not.toContain("var(--color-indigo-hover)");
+    fireEvent.mouseEnter(screen.getByTestId("studio-socket-left"));
+    expect(card.style.borderLeft).toContain("var(--color-indigo-hover)");
+    fireEvent.mouseLeave(screen.getByTestId("studio-socket-left"));
+    expect(card.style.borderLeft).not.toContain("var(--color-indigo-hover)");
+  });
+});
