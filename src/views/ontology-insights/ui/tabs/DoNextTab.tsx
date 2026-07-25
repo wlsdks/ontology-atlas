@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Check, Copy, GitBranch, MoreHorizontal } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AlertTriangle, Check, Copy, FileText, GitBranch, MoreHorizontal } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
-import { cn } from "@/shared/lib/cn";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import type { OntologyHealthActionTarget } from "@/entities/knowledge-graph";
 import type { DoNextQueue, DoNextRow } from "../../lib/do-next-queue";
@@ -56,6 +55,7 @@ export interface DoNextTabLabels {
   neglectedHubMetric: (degree: number, agoDays: number) => string;
   cycleMetric: (length: number) => string;
   openMap: string;
+  openSource: string;
   openBuilder: string;
   handoffCopy: string;
   handoffCopied: string;
@@ -66,14 +66,12 @@ export interface DoNextTabLabels {
   digestApproveHint: string;
   /** P4-② — why 행 앞에 붙는 prefix ("Why · "). */
   digestWhyPrefix: string;
-  /** ③ 오늘의 손질 밴드 제목. */
+  /** 상단 우선 검토 밴드 제목. */
   touchUpBandTitle: string;
-  /** 밴드 남은 건수 배지 ("{count} left"). */
-  touchUpRemaining: (count: number) => string;
-  /** 밴드 전건 완료 시 조용한 마감 한 줄. */
-  touchUpAllDone: string;
-  /** 완료 행 표기 ("손봤어요"). */
-  touchUpDone: string;
+  /** 완료 카운트가 아니라 현재 절단한 우선 검토 큐의 규모다. */
+  touchUpPriorityCount: (count: number) => string;
+  /** 시작과 완료를 혼동하지 않도록 명시하는 실제 작업 순서. */
+  touchUpFlowHint: string;
   /** 케밥(더보기) 트리거 aria-label. */
   rowMenuTrigger: string;
 }
@@ -121,6 +119,7 @@ export interface DoNextTabProps {
   agentReadiness: DoNextTabAgentReadiness;
   healthQueue: DoNextTabHealthQueue;
   mapHref: (nodeId: string) => string;
+  sourceHref: (nodeId: string) => string | null;
   builderHref: (nodeId: string) => string;
   /** 사이클 경로 노드 id → 표시 제목. */
   nodeTitle: (nodeId: string) => string;
@@ -160,67 +159,20 @@ function HandoffCopyButton({ payload, labels }: { payload: string; labels: DoNex
 }
 
 /**
- * ③.2 완료 피드백 — 세션 한정. 밴드 행의 액션(지도/빌더/에이전트에게)을 쓰면
- * 그 행 id 를 `sessionStorage` 에 담아, 지도/빌더로 이동했다 돌아와도(=페이지
- * 재마운트) 완료 표기가 유지된다. localStorage 가 아니라 sessionStorage 라
- * 탭을 닫으면 사라진다(세션 한정) — vault 진실원과 무관한 순수 UI 상태다.
- * 배지/포인트는 만들지 않는다.
- */
-const TOUCH_UP_DONE_SESSION_KEY = "ontology-insights:touchups-done";
-
-function readDoneSession(): Set<string> {
-  if (typeof window === "undefined") return new Set();
-  try {
-    const raw = window.sessionStorage.getItem(TOUCH_UP_DONE_SESSION_KEY);
-    if (!raw) return new Set();
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? new Set(parsed.filter((value): value is string => typeof value === "string"))
-      : new Set();
-  } catch {
-    return new Set();
-  }
-}
-
-function writeDoneSession(ids: Set<string>): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.sessionStorage.setItem(TOUCH_UP_DONE_SESSION_KEY, JSON.stringify([...ids]));
-  } catch {
-    /* private mode / storage disabled — 완료 표기는 best-effort */
-  }
-}
-
-function useTouchUpCompletions() {
-  const [done, setDone] = useState<Set<string>>(() => readDoneSession());
-  const markDone = useCallback((id: string) => {
-    setDone((prev) => {
-      if (prev.has(id)) return prev;
-      const next = new Set(prev);
-      next.add(id);
-      writeDoneSession(next);
-      return next;
-    });
-  }, []);
-  return { done, markDone };
-}
-
-/**
  * ⑨.2 행 버튼 다이어트 — 주 액션(지도)만 밖에 두고 빌더·에이전트에게는 케밥
  * 안으로. 결정 포인트를 행당 3 → 1.5 로 줄인다. 별도 라이브러리 없이 손으로
  * 짠 접근 가능 메뉴(`TopologyV2ContextMenu` 와 같은 관례): 트리거는 버튼
  * (aria-haspopup/expanded), 바깥 클릭·Esc 로 닫고 Esc 는 트리거로 포커스 복귀.
  */
 function RowActionMenu({
+  sourceHref,
   builderHref,
   handoffPayload,
-  onActionUsed,
   labels,
 }: {
+  sourceHref: string | null;
   builderHref: string;
   handoffPayload: string;
-  /** 밴드 행에서만 넘긴다 — 액션 사용 시 완료 표기. */
-  onActionUsed?: () => void;
   labels: DoNextTabLabels;
 }) {
   const [open, setOpen] = useState(false);
@@ -273,13 +225,24 @@ function RowActionMenu({
           data-testid="do-next-row-menu-popover"
           className="absolute right-0 z-20 mt-1 flex min-w-[10rem] flex-col gap-0.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
         >
+          {sourceHref ? (
+            <Link
+              href={sourceHref}
+              role="menuitem"
+              data-testid="do-next-row-menu-source"
+              onClick={() => setOpen(false)}
+              className={menuItemClass}
+            >
+              <FileText size={13} aria-hidden />
+              {labels.openSource}
+            </Link>
+          ) : null}
           <Link
             href={builderHref}
             role="menuitem"
             data-testid="do-next-row-menu-builder"
             onClick={() => {
               setOpen(false);
-              onActionUsed?.();
             }}
             className={menuItemClass}
           >
@@ -293,7 +256,6 @@ function RowActionMenu({
             onClick={async () => {
               if (await copyText(handoffPayload)) {
                 setCopied(true);
-                onActionUsed?.();
                 window.setTimeout(() => {
                   setCopied(false);
                   setOpen(false);
@@ -314,25 +276,22 @@ function RowActionMenu({
 /**
  * ③ 오늘의 손질 밴드 — 할 일 탭 상단. 기존 큐/사이클에서 절단된 3건을 "왜
  * 뽑혔나" 한 줄과 함께 보여주고, 주 액션(지도) + 케밥으로 행동을 좁힌다.
- * 액션을 쓰면 세션 한정 완료 표기가 붙고 남은 카운트가 줄어든다(diegetic —
- * 그래프가 그만큼 정돈됐다는 사실만, 배지/포인트 없음).
+ * 지도 열기나 핸드오프 복사를 완료로 가장하지 않는다. 이 밴드는 우선순위를
+ * 설명하고 실제 작업 순서만 연결하며, 완료의 진실원은 vault diff/검증이다.
  */
 function TouchUpBand({
   items,
   mapHref,
+  sourceHref,
   builderHref,
   labels,
 }: {
   items: DoNextTouchUp[];
   mapHref: (nodeId: string) => string;
+  sourceHref: (nodeId: string) => string | null;
   builderHref: (nodeId: string) => string;
   labels: DoNextTabLabels;
 }) {
-  const { done, markDone } = useTouchUpCompletions();
-  const doneCount = items.reduce((count, item) => (done.has(item.id) ? count + 1 : count), 0);
-  const remaining = items.length - doneCount;
-  const allDone = remaining <= 0;
-
   return (
     <section
       aria-label={labels.touchUpBandTitle}
@@ -343,18 +302,21 @@ function TouchUpBand({
         <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
           {labels.touchUpBandTitle}
         </span>
-        {!allDone ? (
-          <span
-            data-testid="do-next-touchups-remaining"
-            className="ml-auto font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]"
-          >
-            {labels.touchUpRemaining(remaining)}
-          </span>
-        ) : null}
+        <span
+          data-testid="do-next-touchups-priority-count"
+          className="ml-auto font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]"
+        >
+          {labels.touchUpPriorityCount(items.length)}
+        </span>
       </div>
+      <p
+        data-testid="do-next-touchups-flow"
+        className="text-label leading-snug text-[color:var(--color-text-quaternary)]"
+      >
+        {labels.touchUpFlowHint}
+      </p>
       <div className="flex flex-col">
         {items.map((item) => {
-          const isDone = done.has(item.id);
           return (
             <div
               key={item.id}
@@ -367,14 +329,7 @@ function TouchUpBand({
                 <TopologyV2KindGlyph kind={item.nodeKind} size={13} />
               )}
               <div className="flex min-w-0 flex-1 flex-col">
-                <span
-                  className={cn(
-                    "truncate text-body",
-                    isDone
-                      ? "text-[color:var(--color-text-quaternary)]"
-                      : "text-[color:var(--color-text-secondary)]",
-                  )}
-                >
+                <span className="truncate text-body text-[color:var(--color-text-secondary)]">
                   {item.title}
                 </span>
                 <span className="truncate text-label text-[color:var(--color-text-quaternary)]">
@@ -382,40 +337,24 @@ function TouchUpBand({
                   {item.why}
                 </span>
               </div>
-              {isDone ? (
-                <span
-                  data-testid="do-next-touchup-done"
-                  className="flex shrink-0 items-center gap-1 text-label text-[color:var(--color-status-success)]"
+              <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
+                <Link
+                  href={mapHref(item.nodeId)}
+                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
                 >
-                  <Check size={12} aria-hidden />
-                  {labels.touchUpDone}
-                </span>
-              ) : (
-                <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
-                  <Link
-                    href={mapHref(item.nodeId)}
-                    onClick={() => markDone(item.id)}
-                    className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-                  >
-                    {labels.openMap}
-                  </Link>
-                  <RowActionMenu
-                    builderHref={builderHref(item.nodeId)}
-                    handoffPayload={item.handoffPayload}
-                    onActionUsed={() => markDone(item.id)}
-                    labels={labels}
-                  />
-                </span>
-              )}
+                  {labels.openMap}
+                </Link>
+                <RowActionMenu
+                  sourceHref={sourceHref(item.nodeId)}
+                  builderHref={builderHref(item.nodeId)}
+                  handoffPayload={item.handoffPayload}
+                  labels={labels}
+                />
+              </span>
             </div>
           );
         })}
       </div>
-      {allDone ? (
-        <p data-testid="do-next-touchups-alldone" className="text-label text-[color:var(--color-text-tertiary)]">
-          {labels.touchUpAllDone}
-        </p>
-      ) : null}
     </section>
   );
 }
@@ -427,6 +366,7 @@ function QueueSection({
   totalCount,
   metric,
   mapHref,
+  sourceHref,
   builderHref,
   labels,
 }: {
@@ -437,6 +377,7 @@ function QueueSection({
   totalCount: number;
   metric: (row: DoNextRow) => string | null;
   mapHref: (nodeId: string) => string;
+  sourceHref: (nodeId: string) => string | null;
   builderHref: (nodeId: string) => string;
   labels: DoNextTabLabels;
 }) {
@@ -482,6 +423,7 @@ function QueueSection({
                 {labels.openMap}
               </Link>
               <RowActionMenu
+                sourceHref={sourceHref(row.nodeId)}
                 builderHref={builderHref(row.nodeId)}
                 handoffPayload={row.handoffPayload}
                 labels={labels}
@@ -583,6 +525,7 @@ export function DoNextTab({
   agentReadiness,
   healthQueue,
   mapHref,
+  sourceHref,
   builderHref,
   nodeTitle,
   cycleHandoff,
@@ -618,7 +561,13 @@ export function DoNextTab({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
       {touchUps.length > 0 ? (
-        <TouchUpBand items={touchUps} mapHref={mapHref} builderHref={builderHref} labels={labels} />
+        <TouchUpBand
+          items={touchUps}
+          mapHref={mapHref}
+          sourceHref={sourceHref}
+          builderHref={builderHref}
+          labels={labels}
+        />
       ) : null}
       <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
       {/* 상태 밴드 — 에이전트 준비도 + 수리 큐를 상단 풀폭 2열 요약으로.
@@ -837,6 +786,7 @@ export function DoNextTab({
                   : null
               }
               mapHref={mapHref}
+              sourceHref={sourceHref}
               builderHref={builderHref}
               labels={labels}
             />
@@ -847,6 +797,7 @@ export function DoNextTab({
               totalCount={queue.counts.orphan}
               metric={() => null}
               mapHref={mapHref}
+              sourceHref={sourceHref}
               builderHref={builderHref}
               labels={labels}
             />
@@ -859,6 +810,7 @@ export function DoNextTab({
                 row.degree !== undefined ? labels.promotionMetric(row.degree) : null
               }
               mapHref={mapHref}
+              sourceHref={sourceHref}
               builderHref={builderHref}
               labels={labels}
             />

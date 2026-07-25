@@ -24,6 +24,7 @@ import {
 } from "@/features/vault-ontology";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { useLocalVault } from "@/features/docs-vault-local";
+import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {
   buildOntologyTree,
@@ -42,7 +43,7 @@ import {
   type InsightsTab,
 } from "../lib/insights-tab-state";
 import { computeDomainCapacityRows } from "../lib/domain-capacity";
-import { buildDoNextQueue } from "../lib/do-next-queue";
+import { buildDoNextQueue, withDoNextVerification } from "../lib/do-next-queue";
 import { pickTodaysTouchUps, type TouchUpItem } from "../lib/todays-touch-ups";
 import { countRecentEntries } from "@/shared/lib/agent-activity-log";
 import { findDependencyCycles, type DependencyCycle } from "../lib/dependency-cycles";
@@ -247,9 +248,16 @@ export function OntologyInsightsPage() {
   // graph id → vault slug(evidenceIds[0]) — MCP 핸드오프는 vault slug 를 쓴다.
   const cycleMcpRef = (nodeId: string): string =>
     nodeById.get(nodeId)?.evidenceIds[0] ?? nodeId.split(":").pop() ?? nodeId;
+  const sourceHref = (nodeId: string): string | null => {
+    const sourceSlug = nodeById.get(nodeId)?.evidenceIds[0];
+    return sourceSlug ? buildDocsVaultHref({ slug: sourceSlug }) : null;
+  };
   const cycleHandoff = (cycle: DependencyCycle): string => {
     const closed = [...cycle.nodeIds.map(cycleMcpRef), cycleMcpRef(cycle.nodeIds[0])].join(" → ");
-    return `의존 사이클: ${closed}. query_ontology({operation:"cycles"}) 로 확인 → 어느 방향을 끊을지 판단 → patch_concept 로 dependencies 수정`;
+    return withDoNextVerification(
+      `의존 사이클: ${closed}. query_ontology({operation:"cycles"}) 로 확인 → 어느 방향을 끊을지 판단 → patch_concept 로 dependencies 수정`,
+      'query_ontology({operation:"cycles"}) 로 사이클 해소 확인',
+    );
   };
 
   const setTab = (next: string) => {
@@ -364,6 +372,7 @@ export function OntologyInsightsPage() {
       t("doNext.neglectedHubMetric", { degree, days: agoDays }),
     cycleMetric: (length: number) => t("doNext.cycleMetric", { length }),
     openMap: t("doNext.openMap"),
+    openSource: t("doNext.openSource"),
     openBuilder: t("doNext.openBuilder"),
     handoffCopy: t("doNext.handoffCopy"),
     handoffCopied: t("agentCopied"),
@@ -374,9 +383,8 @@ export function OntologyInsightsPage() {
     digestApproveHint: t("doNext.digestApproveHint"),
     digestWhyPrefix: t("doNext.digestWhyPrefix"),
     touchUpBandTitle: t("doNext.touchUpBandTitle"),
-    touchUpRemaining: (count: number) => t("doNext.touchUpRemaining", { count }),
-    touchUpAllDone: t("doNext.touchUpAllDone"),
-    touchUpDone: t("doNext.touchUpDone"),
+    touchUpPriorityCount: (count: number) => t("doNext.touchUpPriorityCount", { count }),
+    touchUpFlowHint: t("doNext.touchUpFlowHint"),
     rowMenuTrigger: t("doNext.rowMenuTrigger"),
   };
   const formatDaysAgo = (days: number) => {
@@ -509,6 +517,7 @@ export function OntologyInsightsPage() {
                 agentReadiness={agentReadiness}
                 healthQueue={healthQueue}
                 mapHref={mapNodeHref}
+                sourceHref={sourceHref}
                 builderHref={buildOntologyStudioNodeHrefFromGraphId}
                 nodeTitle={cycleNodeTitle}
                 cycleHandoff={cycleHandoff}

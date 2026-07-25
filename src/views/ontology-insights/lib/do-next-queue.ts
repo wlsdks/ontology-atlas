@@ -43,6 +43,19 @@ export interface BuildDoNextQueueOptions {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const DO_NEXT_VERIFICATION_GATE =
+  'query_ontology({operation:"health"}) 로 변경 결과 재확인';
+
+/**
+ * 행별 핸드오프는 "무엇을 바꿀지"에서 끝나지 않고 같은 그래프의 health
+ * 재조회로 닫힌다. UI의 "에이전트로 검증" 라벨과 복사되는 실제 계약을 맞춘다.
+ */
+export function withDoNextVerification(
+  instruction: string,
+  resultProof: string,
+): string {
+  return `${instruction} → ${resultProof} → ${DO_NEXT_VERIFICATION_GATE}`;
+}
 
 function nodeSlug(node: KnowledgeGraphNode): string | null {
   return node.evidenceIds[0] ?? null;
@@ -80,7 +93,10 @@ export function buildDoNextQueue(
       nodeKind: node.kind,
       degree,
       agoDays,
-      handoffPayload: `query_ontology({operation:"blast_radius", slug:"${slug}"}) 로 영향권 확인 → 문서 내용 검토 후 patch_concept("${slug}", …) 로 갱신`,
+      handoffPayload: withDoNextVerification(
+        `query_ontology({operation:"blast_radius", slug:"${slug}"}) 로 영향권 확인 → 문서 내용 검토 후 patch_concept("${slug}", …) 로 갱신`,
+        `get_concept({slug:"${slug}"}) 로 갱신된 원문 확인`,
+      ),
     });
   }
   neglectedHubs.sort((a, b) => (b.degree ?? 0) * (b.agoDays ?? 0) - (a.degree ?? 0) * (a.agoDays ?? 0));
@@ -102,7 +118,10 @@ export function buildDoNextQueue(
     nodeId: slug,
     title: name,
     nodeKind: nodeById.get(slug)?.kind ?? "unknown",
-    handoffPayload: `find_neighbors({slug:"${mcpRef(slug)}"}) 로 이웃 후보 확인 → relation_check 사전 점검 → add_relation({from:"${mcpRef(slug)}", to:"<대상>", type:"relates", why:"<근거 한 줄>"})`,
+    handoffPayload: withDoNextVerification(
+      `find_neighbors({slug:"${mcpRef(slug)}"}) 로 이웃 후보 확인 → relation_check 사전 점검 → add_relation({from:"${mcpRef(slug)}", to:"<대상>", type:"relates", why:"<근거 한 줄>"})`,
+      `find_neighbors({slug:"${mcpRef(slug)}"}) 로 새 관계 확인`,
+    ),
   }));
 
   const promotions: DoNextRow[] = signals.promotion.map(({ slug, name, fanIn }) => ({
@@ -113,7 +132,10 @@ export function buildDoNextQueue(
     nodeKind: nodeById.get(slug)?.kind ?? "unknown",
     // "왜 뽑혔나"의 근거 — 들어오는 참조 수. 행 metric("참조 N개")으로 그대로 노출.
     degree: fanIn,
-    handoffPayload: `query_ontology({operation:"node_profile", slug:"${mcpRef(slug)}"}) 로 fan-in 확인 → 승격이 맞으면 patch_concept 로 kind 상향 또는 add_concept 로 상위 개념 신설`,
+    handoffPayload: withDoNextVerification(
+      `query_ontology({operation:"node_profile", slug:"${mcpRef(slug)}"}) 로 fan-in 확인 → 승격이 맞으면 patch_concept 로 kind 상향 또는 add_concept 로 상위 개념 신설`,
+      `query_ontology({operation:"node_profile", slug:"${mcpRef(slug)}"}) 로 kind와 fan-in 재확인`,
+    ),
   }));
 
   const rows = [

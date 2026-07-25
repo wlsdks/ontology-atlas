@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-25 — 인사이트 우선 검토 흐름을 확인→원문→수정→검증으로 연결",
+          "slug": "2026-07-25-인사이트-우선-검토-흐름을-확인원문수정검증으로-연결"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-25 — 언어 전환에서 현재 과업 URL 상태 보존",
           "slug": "2026-07-25-언어-전환에서-현재-과업-url-상태-보존"
         },
@@ -4783,9 +4788,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 인사이트 신선도처럼 query로 선택 상태를 갖는 화면에서 EN/KO를 바꾸면 query가 사라져 기본 탭으로 돌아가던 문제를 수정했다. locale pa",
-      "wordCount": 38521,
-      "updatedAt": "2026-07-25T07:16:43+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 인사이트 → 할 일의 상단 큐가 지도나 공방을 열기만 해도 항목을 손봤어요로 완료 처리하던 잘못된 상태 의미를 제거했다. 이동·복사는 작업의 시작이지 va",
+      "wordCount": 38628,
+      "updatedAt": "2026-07-25T01:16:09.129Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
