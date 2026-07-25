@@ -46,6 +46,9 @@ const CX = BOARD.w / 2; // 590
 const CY = BOARD.h / 2; // 300
 const CARD = { w: 372, h: 172 } as const;
 const CARD_CREATE_H = 236;
+/** Create-mode card grows when the near-dup / slug-collision banner is shown so
+ * the warning always lives INSIDE the dashed border (never bleeds past it). */
+const CARD_CREATE_H_WARN = 320;
 const SAT = { w: 226, h: 54, gap: 12 } as const;
 const MAX_VISIBLE = 2;
 const CREATE_SLUG_COLLISION_ID = "studio-create-slug-collision";
@@ -63,6 +66,12 @@ export interface CompassBearingView {
   filled: boolean;
   recommended: boolean;
   expected: boolean;
+  /**
+   * This lane carries an unsaved (저장 대기) relation — every create-mode fill,
+   * and any enhance-mode lane with a staged neighbor. Drives the slow dash-flow
+   * along the strut so a pending connection reads as "alive / not yet written".
+   */
+  staged?: boolean;
 }
 
 export interface CompassKindOption {
@@ -458,10 +467,24 @@ export function StudioCompass(props: StudioCompassProps) {
    * pendingWalk is naturally transient (a fresh mount never inherits a stale target).
    */
   const [pendingWalk, setPendingWalk] = useState<string | null>(null);
+  /**
+   * 연관 강조 (related-pair light-up). Hovering / focusing a satellite or a socket
+   * marks its bearing so the PAIR — that lane's strut AND the center card's
+   * same-side border — brightens to the indigo hover step together (color-only,
+   * ≤200ms). An open picker keeps its socket's bearing lit so the relationship
+   * being edited stays visually connected to the card.
+   */
+  const [hoveredBearing, setHoveredBearing] = useState<StudioBearing | null>(null);
   // Transient surfaces (picker / fold list / search) reset automatically: the
   // enhance instance is keyed by node id in the page, so switching nodes remounts.
 
-  const cardH = mode === "create" ? CARD_CREATE_H : CARD.h;
+  // Create-mode card grows to keep the near-dup banner inside its dashed border.
+  const cardH =
+    mode === "create"
+      ? props.createSimilarHit
+        ? CARD_CREATE_H_WARN
+        : CARD_CREATE_H
+      : CARD.h;
   const cardTop = CY - cardH / 2;
   const cardBottom = CY + cardH / 2;
   const cardLeft = CX - CARD.w / 2;
@@ -492,6 +515,10 @@ export function StudioCompass(props: StudioCompassProps) {
   }, [layouts, cardTop, cardBottom]);
 
   const openLayout = layouts.find((l) => l.view.relation === openRelation) ?? null;
+  // The bearing whose lane + card border should read as "lit": an explicit hover
+  // wins; otherwise an open socket picker keeps its own bearing connected.
+  const openBearing = openLayout?.view.bearing ?? null;
+  const activeBearing = hoveredBearing ?? openBearing;
   const pickerRows = openRelation ? candidatesFor(openRelation, query) : [];
   const similarHit =
     openRelation && similarFor ? similarFor(openRelation, query) : null;
@@ -714,27 +741,37 @@ export function StudioCompass(props: StudioCompassProps) {
             viewBox={`0 0 ${BOARD.w} ${BOARD.h}`}
             aria-hidden
           >
-            {layouts.map(({ view, layout }) =>
-              layout.struts.map((d, i) => (
+            {layouts.map(({ view, layout }) => {
+              const lit = view.bearing === activeBearing;
+              // A staged (not-yet-saved) filled lane flows a slow indigo dash —
+              // the map's comet grammar — so a pending connection reads as alive.
+              const flowing = view.filled && Boolean(view.staged);
+              const stroke = view.filled
+                ? lit
+                  ? "var(--color-indigo-hover)"
+                  : "var(--color-indigo-brand)"
+                : lit
+                  ? "var(--color-indigo-hover)"
+                  : view.expected
+                    ? "var(--color-amber-muted-a62)"
+                    : "var(--color-border-strong)";
+              return layout.struts.map((d, i) => (
                 <path
                   key={`${view.bearing}-${i}`}
                   d={d}
                   fill="none"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="transition-[stroke] duration-200 motion-reduce:transition-none"
-                  stroke={
-                    view.filled
-                      ? "var(--color-indigo-brand)"
-                      : view.expected
-                        ? "var(--color-amber-muted-a62)"
-                        : "var(--color-border-strong)"
-                  }
-                  strokeWidth={view.filled ? 1.75 : 1.5}
-                  strokeDasharray={view.filled ? undefined : "4 6"}
+                  className={cn(
+                    "transition-[stroke] duration-200 motion-reduce:transition-none",
+                    flowing && "studio-strut-flow",
+                  )}
+                  stroke={stroke}
+                  strokeWidth={view.filled || lit ? 1.75 : 1.5}
+                  strokeDasharray={flowing ? "5 7" : view.filled ? undefined : "4 6"}
                 />
-              )),
-            )}
+              ));
+            })}
             {layouts.map(({ view }) =>
               view.filled && (view.bearing === "left" || view.bearing === "right") ? (
                 <circle
@@ -749,7 +786,14 @@ export function StudioCompass(props: StudioCompassProps) {
           </svg>
 
           {/* center focal / draft card */}
-          <CenterCard {...props} cardH={cardH} cardTop={cardTop} cardLeft={cardLeft} bearings={bearings} />
+          <CenterCard
+            {...props}
+            cardH={cardH}
+            cardTop={cardTop}
+            cardLeft={cardLeft}
+            bearings={bearings}
+            activeBearing={activeBearing}
+          />
 
           {/* lanes */}
           {layouts.map(({ view, layout }) => (
@@ -761,6 +805,7 @@ export function StudioCompass(props: StudioCompassProps) {
               kindLabelFor={kindLabelFor}
               onOpen={() => openPicker(view.relation)}
               onOpenNode={props.onOpenNode ? guardedOpen : undefined}
+              onHoverBearing={setHoveredBearing}
               arrivalId={arrivedFrom}
               arrivalLit={arrivalLit}
               onToggleFold={() => setOpenFold((cur) => (cur === view.bearing ? null : view.bearing))}
@@ -873,31 +918,35 @@ export function StudioCompass(props: StudioCompassProps) {
         </div>
       ) : null}
 
-      {/* ── Bottom bar ── */}
-      <footer className="relative z-[6] flex items-center gap-4 border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5">
-        <span
-          aria-hidden
-          className="h-4 w-4 flex-none rounded-[3px]"
-          style={{
-            borderTop: "1.4px dashed var(--color-border-strong)",
-            borderBottom: "1.4px dashed var(--color-border-strong)",
-            borderLeft: "1.6px solid var(--color-indigo-brand)",
-            borderRight: "1.6px solid var(--color-indigo-brand)",
-          }}
-        />
-        <span className="text-caption text-[color:var(--color-text-secondary)]" data-testid="studio-bottom-progress">
-          {labels.bottomProgress(filledBearings, 4)}
-        </span>
+      {/* ── Bottom bar ── one rhythm: 32px controls, 8/12px gaps, aligned centers.
+          The summary + 미리보기 chips share one quiet class family; the save
+          button is the single filled control. Identical in both fill-states. */}
+      <footer className="relative z-[6] flex items-center gap-3 border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5">
+        <div className="flex items-center gap-2.5">
+          <span
+            aria-hidden
+            className="h-4 w-4 flex-none rounded-[3px]"
+            style={{
+              borderTop: "1.4px dashed var(--color-border-strong)",
+              borderBottom: "1.4px dashed var(--color-border-strong)",
+              borderLeft: "1.6px solid var(--color-indigo-brand)",
+              borderRight: "1.6px solid var(--color-indigo-brand)",
+            }}
+          />
+          <span className="text-caption text-[color:var(--color-text-secondary)]" data-testid="studio-bottom-progress">
+            {labels.bottomProgress(filledBearings, 4)}
+          </span>
+        </div>
         {effectiveSummary ? (
           <button
             type="button"
             data-testid="studio-summary-toggle"
             aria-expanded={summaryOpen}
             onClick={() => setSummaryOpen((v) => !v)}
-            className="flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2.5 py-1 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
           >
             {effectiveSummary.collapsed}
-            <ChevronDown size={12} aria-hidden className={cn("transition-transform", summaryOpen && "rotate-180")} />
+            <ChevronDown size={12} aria-hidden className={cn("text-[color:var(--color-text-quaternary)] transition-transform", summaryOpen && "rotate-180")} />
           </button>
         ) : null}
         {previewAvailable ? (
@@ -905,9 +954,9 @@ export function StudioCompass(props: StudioCompassProps) {
             type="button"
             data-testid="studio-preview-open"
             onClick={() => setPreviewOpen(true)}
-            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
           >
-            <Eye size={12} aria-hidden />
+            <Eye size={12} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
             {labels.previewOpen}
           </button>
         ) : null}
@@ -924,7 +973,7 @@ export function StudioCompass(props: StudioCompassProps) {
             data-testid="studio-save"
             disabled={props.canSave === false}
             onClick={onSave}
-            className="flex h-[34px] items-center gap-2 rounded-lg bg-[color:var(--color-indigo-brand)] px-4 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
+            className="flex h-8 items-center gap-2 rounded-lg bg-[color:var(--color-indigo-brand)] px-4 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
           >
             {mode === "create" ? <Check size={15} aria-hidden /> : null}
             {labels.save}
@@ -1023,21 +1072,25 @@ function CenterCard(
     cardTop: number;
     cardLeft: number;
     bearings: CompassBearingView[];
+    /** Bearing whose side-border should brighten with its lit lane (연관 강조). */
+    activeBearing?: StudioBearing | null;
   },
 ) {
-  const { mode, focal, cardH, cardTop, cardLeft, bearings } = props;
+  const { mode, focal, cardH, cardTop, cardLeft, bearings, activeBearing } = props;
   const [defExpanded, setDefExpanded] = useState(false);
   const definition = focal.definition || "";
   const definitionLong = definition.length > 120;
   const borderFor = (bearing: StudioBearing) => {
     const v = bearings.find((b) => b.bearing === bearing);
-    if (v?.filled) return "2px solid var(--color-indigo-brand)";
+    const lit = bearing === activeBearing;
+    if (v?.filled) return `2px solid ${lit ? "var(--color-indigo-hover)" : "var(--color-indigo-brand)"}`;
+    if (lit) return "2px solid var(--color-indigo-hover)";
     if (v?.expected) return "1.5px dashed var(--color-amber-muted-a62)";
     return "1.5px dashed var(--color-border-strong)";
   };
   return (
     <div
-      className="absolute flex flex-col rounded-[14px] bg-[color:var(--color-elevated)] px-[22px] py-[18px]"
+      className="absolute flex flex-col rounded-[14px] bg-[color:var(--color-elevated)] px-[22px] py-[18px] transition-[border-color] duration-200 motion-reduce:transition-none"
       data-testid="studio-center-card"
       style={{
         left: cardLeft,
@@ -1104,7 +1157,7 @@ function CenterCard(
           data-testid="studio-create-domain"
           value={props.createDomainValue ?? ""}
           onChange={(e) => props.onCreateDomain?.(e.target.value || null)}
-          className="mt-3 w-full rounded-[8px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 text-label text-[color:var(--color-text-secondary)] outline-none"
+          className="mt-3 h-10 w-full rounded-[8px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-caption text-[color:var(--color-text-secondary)] outline-none transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:border-[color:var(--color-indigo-a46)]"
         >
           <option value="">{props.labels.createDomainNone}</option>
           {props.createDomains.map((d) => (
@@ -1207,6 +1260,7 @@ function LaneRender({
   kindLabelFor,
   onOpen,
   onOpenNode,
+  onHoverBearing,
   arrivalId,
   arrivalLit,
   onToggleFold,
@@ -1221,6 +1275,8 @@ function LaneRender({
   kindLabelFor: (kind: string) => string;
   onOpen: () => void;
   onOpenNode?: (id: string) => void;
+  /** Report this lane's bearing as hover/focus-active (연관 강조 pair light-up). */
+  onHoverBearing?: (bearing: StudioBearing | null) => void;
   /** Satellite id eligible for the one-shot arrival highlight (null → none). */
   arrivalId?: string | null;
   /** Whether the arrival highlight is still lit (drives the color-only fade). */
@@ -1235,6 +1291,16 @@ function LaneRender({
     if (onOpenNode) return () => onOpenNode(id);
     return undefined;
   };
+  // 연관 강조 — report this lane as active on hover/focus so its strut + the
+  // card's same-side border brighten together (handled up in StudioCompass).
+  const hoverProps = onHoverBearing
+    ? {
+        onMouseEnter: () => onHoverBearing(view.bearing),
+        onMouseLeave: () => onHoverBearing(null),
+        onFocus: () => onHoverBearing(view.bearing),
+        onBlur: () => onHoverBearing(null),
+      }
+    : {};
   return (
     <>
       {/* lane head label for a filled lane */}
@@ -1260,6 +1326,7 @@ function LaneRender({
             key={sat.id}
             className="group absolute z-[2]"
             style={{ left: x, top: y, width: SAT.w, height: SAT.h }}
+            {...hoverProps}
           >
             <Tag
               {...(onClick ? { type: "button" as const, onClick, title: labels.walkTo } : {})}
@@ -1352,6 +1419,7 @@ function LaneRender({
           data-testid={`studio-socket-${view.bearing}`}
           data-relation={view.relation}
           onClick={onOpen}
+          {...hoverProps}
           className={cn(
             "absolute z-[2] flex flex-col items-start justify-center gap-1.5 rounded-[12px] px-4 py-3.5 text-left transition-colors",
           )}

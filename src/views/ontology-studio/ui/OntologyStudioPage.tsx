@@ -489,6 +489,8 @@ export function OntologyStudioPage() {
         emptyHint: emptyHintFor(relation),
         neighbors,
         filled,
+        // Every create-mode relation is unsaved until 저장 — flow its strut.
+        staged: filled,
         recommended: !filled && relation === "isA",
         expected: !filled && relation === "contains",
       };
@@ -639,6 +641,8 @@ export function OntologyStudioPage() {
       emptyHint: emptyHintFor(relation),
       neighbors: proj.neighbors,
       filled: proj.filled,
+      // A lane with a not-yet-saved neighbor flows its strut (저장 대기 = alive).
+      staged: proj.neighbors.some((n) => projection.pendingTargetIds?.has(n.id)),
       recommended: !proj.filled && relation === recommendedRel,
       expected: !proj.filled && relation === "contains",
     };
