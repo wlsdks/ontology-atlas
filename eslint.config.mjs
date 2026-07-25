@@ -38,7 +38,7 @@ const scaleGradientSelectors = [
 // "Geometry & Type Codex" 램프(text-caption…text-hero / rounded-chip…panel)
 // 로만 표현한다. 램프 밖의 의도적 예외는 `// eslint-disable-next-line
 // no-restricted-syntax -- <사유>` 로 명시. 마이그레이션 완료 디렉토리 = error,
-// 미완(topology-map-v2 · views/home · hero-header) = warn.
+// 미완(topology-map-v2 · views/home) = warn.
 const arbitrarySizeSelectors = [
   {
     selector: 'Literal[value=/text-\\[[0-9.]+px\\]/]',
@@ -74,7 +74,6 @@ const codexMigratedGlobs = [
 // R6(다른 에이전트) 동시 작업 중 — 아직 미치환, warn 으로만 신규 유입 경고.
 const codexR6Globs = [
   'src/widgets/topology-map-v2/**/*.{ts,tsx}',
-  'src/widgets/hero-header/**/*.{ts,tsx}',
   'src/views/home/**/*.{ts,tsx}',
 ];
 // 테스트는 렌더된 className 문자열을 assert 하므로 램프 룰에서 제외.
@@ -305,7 +304,7 @@ const eslintConfig = defineConfig([
     },
   },
   // R6 동시 작업 디렉토리 = warn (미치환 유입만 경고). 위 migrated 블록보다
-  // 뒤라 widgets/topology-map-v2·hero-header 는 여기서 warn 으로 내려간다.
+  // 뒤라 widgets/topology-map-v2 는 여기서 warn 으로 내려간다.
   {
     files: codexR6Globs,
     ignores: codexTestIgnores,

@@ -347,6 +347,6 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     // 됐다. 목적지에 "닫기" 는 없다 — 레일로 다른 곳에 가면 그게 나가기다.
     expect(screen.queryByTestId("atlas-git-close")).not.toBeInTheDocument();
     // 11px mono eyebrow 가 아니라 h1 — 실측에서 페이지 제목으로 너무 작았다.
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("발자취");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("기록");
   });
 });
