@@ -1,5 +1,6 @@
+import { Share2, Waypoints } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { TopologyV2KindGlyph, TopologyV2TraceMark } from "@/shared/ui";
+import { EmptyState, TopologyV2KindGlyph, TopologyV2TraceMark } from "@/shared/ui";
 import { isContainmentRelation } from "@/shared/lib/ontology-tree";
 import { getOntologyKindTone } from "@/entities/ontology-class";
 import type { DependsOnPairRow } from "../../lib/depends-on-rows";
@@ -18,8 +19,11 @@ export interface RelationsTabLabels {
   relationTypesTitle: string;
   topDependsOnTitle: string;
   noDependsOn: string;
+  /** 빈 상태 부연 — "공방에서 이어보세요" 류 다음 행동 안내. */
+  noDependsOnHint: string;
   hubsTitle: string;
   noHubs: string;
+  noHubsHint: string;
   connectionsUnit: string;
   hubTruncated: (shown: number, total: number) => string;
   hubThumbnailCaption: string;
@@ -121,7 +125,13 @@ export function RelationsTab({
         </div>
         <div className="mt-1 flex flex-1 flex-col justify-evenly">
           {dependsOnRows.length === 0 ? (
-            <p className="py-2 text-body text-[color:var(--color-text-quaternary)]">{labels.noDependsOn}</p>
+            <EmptyState
+              size="compact"
+              icon={<Share2 aria-hidden />}
+              skeleton
+              title={labels.noDependsOn}
+              description={labels.noDependsOnHint}
+            />
           ) : (
             dependsOnRows.map((row) => (
               <div
@@ -166,7 +176,13 @@ export function RelationsTab({
         </div>
         <div className="mt-2 flex flex-1 flex-col">
           {hubs.length === 0 ? (
-            <p className="py-2 text-body text-[color:var(--color-text-quaternary)]">{labels.noHubs}</p>
+            <EmptyState
+              size="compact"
+              icon={<Waypoints aria-hidden />}
+              skeleton
+              title={labels.noHubs}
+              description={labels.noHubsHint}
+            />
           ) : (
             hubs.map((hub) => {
               const meterPct = hubDegreeMax > 0 ? Math.max(6, Math.round((hub.degree / hubDegreeMax) * 100)) : 0;

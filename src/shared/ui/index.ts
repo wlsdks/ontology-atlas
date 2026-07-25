@@ -12,6 +12,7 @@ export { InfoHint } from './info-hint';
 export { ToastProvider, useToast } from './toast';
 export { DetailCard } from './detail-card';
 export { EmptyState } from './empty-state';
+export { Select, type SelectOption, type SelectProps } from './select';
 export { InlineEditable } from './inline-editable';
 export { ChipListEditor } from './chip-list-editor';
 export { LinkListEditor, type LinkItem } from './link-list-editor';

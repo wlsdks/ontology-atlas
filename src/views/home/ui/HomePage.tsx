@@ -2922,13 +2922,17 @@ export function HomePage() {
                           // 수렴 — 같은 열의 "작업공간" 칩과 나란히 있어
                           // --topology-utility-lane-height(32~36px clamp) 를
                           // 쓰면 과도기 높이 불일치가 났다(feat/chrome-finish).
-                          className={`inline-flex h-[var(--chrome-tile-size)] items-center justify-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none ${
+                          // #13 정합 (2026-07-25) — 옆 ChromeChip 들과 같은
+                          // 타이포/아이콘 규격으로 수렴: 높이 --chrome-tile-size,
+                          // radius --chrome-radius, text-label, 아이콘 size-3.5.
+                          // accent surface(인디고) 만 primary 로 남긴다.
+                          className={`inline-flex h-[var(--chrome-tile-size)] items-center justify-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-label tracking-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none [&>svg]:size-3.5 [&>svg]:shrink-0 ${
                             topologyUtilityChromeCompact
                               ? "w-[var(--chrome-tile-size)] px-0"
                               : "px-3.5"
                           }`}
                         >
-                          <Plus className="size-[var(--topology-chrome-icon-size)]" aria-hidden />
+                          <Plus aria-hidden />
                           {/* <xl 아이콘-only — 레인 라벨 사다리(겹침 소탕
                               2026-07-23). aria-label + 툴팁이 뜻을 보존한다. */}
                           <span
@@ -3060,7 +3064,11 @@ export function HomePage() {
                   aria-labelledby={CREATE_NODE_DIALOG_TITLE_ID}
                   tabIndex={-1}
                   onKeyDown={handleCreateNodePanelKeyDown}
-                  className="absolute left-1/2 top-[var(--topology-blocking-composer-top)] z-30 max-h-[var(--topology-blocking-composer-max-height)] w-[var(--topology-blocking-composer-width)] -translate-x-1/2 overflow-y-auto"
+                  // 다이얼로그 폭 스케일 채택 (#8 준비, 2026-07-25) — 공용
+                  // composer-width 대신 캐노니컬 --dialog-w-md(560px) 를 직접
+                  // 참조해 "개념 추가" 팝업이 스케일 위에 앉게 한다. 좁은
+                  // 뷰포트는 calc 로 감싼다.
+                  className="absolute left-1/2 top-[var(--topology-blocking-composer-top)] z-30 max-h-[var(--topology-blocking-composer-max-height)] w-[min(var(--dialog-w-md),calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto"
                   data-testid="topology-create-node-panel"
                   data-attention-role="blocking-composer"
                   data-placement-contract="centered-blocking-edit"
@@ -3068,7 +3076,7 @@ export function HomePage() {
                   data-elevation-contract="solid-panel-over-dimmed-map"
                   data-size-contract="bounded-centered-composer"
                   data-top-token="--topology-blocking-composer-top"
-                  data-width-token="--topology-blocking-composer-width"
+                  data-width-token="--dialog-w-md"
                   data-max-height-token="--topology-blocking-composer-max-height"
                 >
                   <CreateNodeForm
