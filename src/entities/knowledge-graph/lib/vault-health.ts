@@ -262,8 +262,10 @@ function actionableComponentCounts(graph: CompiledGraph): {
     const queue = [node.slug];
     visited.add(node.slug);
     const groupSlugs: string[] = [];
-    while (queue.length > 0) {
-      const current = queue.shift()!;
+    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    let head = 0;
+    while (head < queue.length) {
+      const current = queue[head++];
       groupSlugs.push(current);
       for (const next of adjacency.get(current) ?? []) {
         if (visited.has(next)) continue;

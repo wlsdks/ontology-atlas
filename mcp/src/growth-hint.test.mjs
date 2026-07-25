@@ -172,3 +172,23 @@ test('buildFindEvidenceZeroHitsGrowthHint — no near matches → add_concept sc
     args: { slug: 'brand-new-concept', kind: 'element', title: 'Brand New Concept' },
   });
 });
+
+// ── 한글 vault 슬러그 제안 (감사 2026-07-25) ────────────────────────────────
+
+test('한글 제목이 untitled 로 뭉개지지 않는다', () => {
+  const hint = buildFindEvidenceZeroHitsGrowthHint({ title: '인증 도메인' });
+  // 회귀 전: `[^a-z0-9]` 치환이 한글을 전부 지워 'untitled' 가 나왔고, 두 번째
+  // 한글 개념에서 슬러그가 충돌했다. `init --locale=ko` 가 기본 지원하는 경로다.
+  assert.notEqual(hint.exampleCall.args.slug, 'untitled');
+  assert.equal(hint.exampleCall.args.slug, '인증-도메인');
+});
+
+test('영문 동작은 그대로 (회귀 0)', () => {
+  const hint = buildFindEvidenceZeroHitsGrowthHint({ title: 'Payment Billing' });
+  assert.equal(hint.exampleCall.args.slug, 'payment-billing');
+});
+
+test('슬러그로 남길 글자가 없으면 여전히 untitled 로 떨어진다', () => {
+  const hint = buildFindEvidenceZeroHitsGrowthHint({ title: '!!! ???' });
+  assert.equal(hint.exampleCall.args.slug, 'untitled');
+});

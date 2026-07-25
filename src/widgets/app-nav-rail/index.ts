@@ -5,7 +5,6 @@ export {
   NavRailShellProvider,
   useNavRailShellValue,
   useNavRailSettingsSlot,
-  useNavRailHidden,
   useNavRailContextHrefs,
   type NavRailContextHrefs,
 } from "./model/shell-slot-context";

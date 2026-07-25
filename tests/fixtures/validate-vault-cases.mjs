@@ -70,4 +70,21 @@ export const VALIDATE_CASES = [
     expectedCodes: ['non-canonical-graph-array'],
     expectedOk: true,
   },
+  {
+    // 감사 2026-07-25 — `broader`(is_a / SKOS, 공방과 함께 도입)가 MCP 검증기
+    // 에만 있고 scripts/웹/CLI 3곳의 `GRAPH_ARRAY_KEYS` 에서 빠져 있었다. 그
+    // 리스트는 `non-canonical-graph-array` 와 `dangling-graph-reference` 를
+    // **동시에** 구동하므로, 누락은 곧 "에이전트가 `broader:` 에 오타 슬러그를
+    // 써도 CI 는 green" 을 뜻했다(웹 derive 는 미해석 ref 를 새 노드로 민팅 —
+    // `derive-ontology-from-vault.ts` 의 팬텀 사고와 같은 부류).
+    //
+    // 이 fixture 가 그 drift 를 3-way 로 고정한다: 다시 한 쪽만 키를 추가하면
+    // 즉시 빨개진다.
+    name: 'broader 배열도 canonical 검사를 받는다 (검증기 3-way drift 차단)',
+    // `kind: project` — capability 로 쓰면 `missing-expected-field`(domain 없음)가
+    // 함께 붙어 이 fixture 가 검사하려는 계약이 흐려진다. 옆 fixture 와 동일 조건.
+    input: '---\nkind: project\ntitle: Foo\nbroader: [z, a, z]\n---\n',
+    expectedCodes: ['non-canonical-graph-array'],
+    expectedOk: true,
+  },
 ];

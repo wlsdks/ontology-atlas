@@ -96,18 +96,6 @@ export function useNavRailSettingsSlot(slot: ReactNode | null): void {
 }
 
 /**
- * 페이지가 레일을 CSS 로만 숨길 때 쓴다(몰입 표면 fullscreen). 레일은 언마운트되지
- * 않는다 — identity 유지가 이 승격의 핵심이라 unmount 는 회귀.
- */
-export function useNavRailHidden(hidden: boolean): void {
-  const { setHidden } = useNavRailShellContext();
-  useEffect(() => {
-    setHidden(hidden);
-    return () => setHidden(false);
-  }, [hidden, setHidden]);
-}
-
-/**
  * 과제 ⑪ — 페이지가 레일 항목의 href 를 "지금 보던 것" 기준으로 바꿔 낄 때
  * 쓴다(예: 지형도가 노드를 선택한 동안 "문서함" 항목을 그 노드의 문서
  * 딥링크로). `hrefs`가 `null`이거나 특정 키가 비어 있으면 그 항목은 레일의

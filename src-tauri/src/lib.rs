@@ -982,7 +982,7 @@ pub fn run() {
                                       const focusBefore = rectOf(trackedFocus());
                                       const startX = focusBefore.left + focusBefore.width / 2;
                                       const startY = focusBefore.top + focusBefore.height / 2;
-                                      const topologyViewport = document.querySelector('[data-testid="sigma-topology-viewport"]');
+                                      const topologyViewport = document.querySelector('[data-testid="topology-map-v2"]');
                                       const workerAppliedBefore = Number(
                                         topologyViewport?.getAttribute("data-layout-worker-position-frame-applied-count") || "0"
                                       );
@@ -1059,7 +1059,7 @@ pub fn run() {
                                           const dragConnector = document.querySelector("[data-drag-cluster-connector]");
                                           const dragConnectorD = dragConnector?.getAttribute("d") || "";
                                           const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
-                                          const topologyViewport = document.querySelector('[data-testid="sigma-topology-viewport"]');
+                                          const topologyViewport = document.querySelector('[data-testid="topology-map-v2"]');
                                           result.connectorDrawable = dragConnectorD.startsWith("M ");
                                           result.connectorClearance = Number(
                                             dragConnector?.getAttribute("data-connector-clearance") || "0"
@@ -1572,7 +1572,7 @@ pub fn run() {
                                   };
                                   window.__ontologyAtlasTopologyFocusNoopVerify = result;
                                   const run = (attempt = 0) => {
-                                    const viewport = document.querySelector('[data-testid="sigma-topology-viewport"]');
+                                    const viewport = document.querySelector('[data-testid="topology-map-v2"]');
                                     if (!viewport) {
                                       if (attempt >= 20) {
                                         result.reason = "missing topology viewport";
@@ -1649,12 +1649,12 @@ pub fn run() {
                                     const bootStart = Date.now();
                                     let mouse = null;
                                     while (Date.now() - bootStart < 8000) {
-                                      mouse = document.querySelector('.sigma-mouse');
+                                      mouse = document.querySelector('[data-testid="topology-map-v2-canvas"]');
                                       if (mouse) break;
                                       await sleep(300);
                                     }
-                                    if (!mouse) { profile.reason = 'missing sigma-mouse layer'; profile.done = true; return; }
-                                    const nodesCanvas = document.querySelector('canvas.sigma-nodes');
+                                    if (!mouse) { profile.reason = 'missing topology map canvas'; profile.done = true; return; }
+                                    const nodesCanvas = document.querySelector('[data-testid="topology-map-v2-canvas"]');
                                     if (nodesCanvas) {
                                       profile.canvasBacking = { width: nodesCanvas.width, height: nodesCanvas.height };
                                     }
@@ -1831,7 +1831,7 @@ pub fn run() {
                               const topologyDragConnectorClearance =
                                 Number(topologyDragConnector?.getAttribute("data-connector-clearance") || "0") ||
                                 Number(topologyDragVerification?.connectorClearance || 0);
-                              const sigmaViewport = document.querySelector('[data-testid="sigma-topology-viewport"]');
+                              const sigmaViewport = document.querySelector('[data-testid="topology-map-v2"]');
                               const sigmaViewportRect = sigmaViewport?.getBoundingClientRect();
                               const sigmaViewportStyle = sigmaViewport ? getComputedStyle(sigmaViewport) : null;
                               const topologyStagePanClickCancelPx = Number(

@@ -1312,7 +1312,7 @@ export function HomePage() {
     if (!ok) return;
     setFootprintPacketCopied(true);
     window.setTimeout(() => setFootprintPacketCopied(false), 1600);
-  }, [footprintTrailEntries, t]);
+  }, [footprintTrailEntries, dustySlugs, t]);
   const clearFootprintTrail = useCallback(() => {
     lastVisitedNodeRef.current = null;
     setFootprintTrail([]);
@@ -1337,10 +1337,6 @@ export function HomePage() {
     },
     [],
   );
-  const [
-    selectedInspectorSupportRailSlug,
-    setSelectedInspectorSupportRailSlug,
-  ] = useState<string | null>(null);
   const interactionSelectedSlugRef = useRef<string | null>(null);
   // 클릭 포커스 시그니처 — 지도에서 마지막으로 눌린 화면 좌표. 상세 팝오버가
   // "클릭한 노드에서 자라난다"는 성장 원점으로 쓴다. 캔버스 클릭이 아닌 선택
@@ -1682,8 +1678,6 @@ export function HomePage() {
   const retainedDatasheetRef = useRef(v2DatasheetModel);
   if (v2DatasheetModel) retainedDatasheetRef.current = v2DatasheetModel;
   const panelDatasheetModel = v2DatasheetModel ?? retainedDatasheetRef.current;
-  const selectedInspectorSupportRailVisible =
-    selectedNodeFocusActive && selectedInspectorSupportRailSlug === selectedSlug;
   const selectedNodeOwnsRightRail = selectedNodeFocusActive;
   const topologyUtilityChromeState = selectedRelationActive
     ? "collapsed-active-relation"
@@ -1700,13 +1694,6 @@ export function HomePage() {
     : selectedNodeOwnsRightRail
       ? "selected-node-inspector-owns-right-rail"
       : undefined;
-
-  const handleToggleSelectedInspectorSupportRail = useCallback(() => {
-    if (!selectedSlug) return;
-    setSelectedInspectorSupportRailSlug((current) =>
-      current === selectedSlug ? null : selectedSlug,
-    );
-  }, [selectedSlug]);
 
   const handleSelect = useCallback(
     (
@@ -2245,7 +2232,7 @@ export function HomePage() {
     } finally {
       setStarterScaffolding(false);
     }
-  }, [vault, toast, t]);
+  }, [vault, toast, t, activeLocale]);
 
   const checklistProjectCount = useMemo(
     () => ontologyInsight?.nodes.filter((node) => node.kind === "project").length ?? 0,
