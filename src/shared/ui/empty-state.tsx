@@ -9,6 +9,19 @@ interface EmptyStateProps {
   title: ReactNode;
   /** 부연 설명, 다음 행동 안내. ReactNode 라 안에 Link 등을 넣을 수 있다. */
   description?: ReactNode;
+  /**
+   * 라인아트 글리프 슬롯 (lucide 아이콘 등). muted 라운드 사각 안에 담겨
+   * "여기에 무엇이 올 자리" 를 조용히 알린다. align=center 에서는 title 위,
+   * 그 외에는 title 왼쪽에 놓인다.
+   */
+  icon?: ReactNode;
+  /**
+   * 자리표시 스켈레톤. `true` 면 기본 muted 막대 3줄(리스트/차트 형태 암시),
+   * ReactNode 면 그 모양을 그대로 그린다. 빈 차트/목록이 "긴 공백" 대신
+   * 채워질 형태를 먼저 보여주게 한다 (디자인 전면 정비 #16). 순수 장식 —
+   * `aria-hidden`.
+   */
+  skeleton?: boolean | ReactNode;
   /** 우하단/하단 primary 액션 (버튼, 링크 등) */
   action?: ReactNode;
   /** 조금 더 크게 full-bleed 로 보여야 할 때 */
@@ -26,15 +39,37 @@ interface EmptyStateProps {
   className?: string;
 }
 
+/** 기본 스켈레톤 — muted 막대 3줄. 리스트/차트가 채워질 형태를 암시. */
+function DefaultSkeleton({ align }: { align: 'left' | 'center' }) {
+  const widths = ['72%', '52%', '38%'];
+  return (
+    <div
+      aria-hidden
+      data-empty-skeleton
+      className={cn('flex w-full flex-col gap-2', align === 'center' && 'items-center')}
+    >
+      {widths.map((w) => (
+        <span
+          key={w}
+          className="block h-2 rounded-full bg-[color:var(--color-overlay-2)]"
+          style={{ width: w }}
+        />
+      ))}
+    </div>
+  );
+}
+
 /**
  * 리스트/섹션이 비어 있을 때 공통 UX 를 제공. 기본 톤은 dashed border ·
- * subdued bg · 좌측 정렬 · title + description + action. 페이지 전체가
- * 비어 있는 surface 는 `tone="solid"` + `align="center"` 로 한 문장만
- * 가운데에 띄우는 패턴으로 호출.
+ * subdued bg · 좌측 정렬 · (선택)스켈레톤 + 아이콘 + title + description +
+ * action. 페이지 전체가 비어 있는 surface 는 `tone="solid"` + `align="center"`
+ * 로 한 문장만 가운데에 띄우는 패턴으로 호출.
  */
 export function EmptyState({
   title,
   description,
+  icon,
+  skeleton,
   action,
   size = 'regular',
   tone = 'dashed',
@@ -48,6 +83,59 @@ export function EmptyState({
   const padClass = size === 'compact' ? 'px-4 py-4' : 'px-5 py-6';
   // align=center 는 페이지 본문 통째로 비어 한 문장만 띄울 때 — 패딩 키움.
   const centerPadOverride = align === 'center' ? 'px-6 py-10' : null;
+  const isCenter = align === 'center';
+
+  const titleEl = (
+    <p
+      className={cn(
+        'font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]',
+        size === 'compact' ? 'text-sm' : 'text-title',
+        // align=center 한 문장 패턴 — 본문 톤 (h1 무게 없이 secondary 색).
+        isCenter && 'font-normal text-sm text-[color:var(--color-text-tertiary)]',
+      )}
+    >
+      {title}
+    </p>
+  );
+
+  const descriptionEl = description ? (
+    <p
+      className={cn(
+        'leading-6 text-[color:var(--color-text-tertiary)]',
+        size === 'compact' ? 'mt-1 text-xs' : 'mt-2 text-sm',
+      )}
+    >
+      {description}
+    </p>
+  ) : null;
+
+  const iconEl = icon ? (
+    <span
+      aria-hidden
+      data-empty-icon
+      className="inline-flex size-9 flex-none items-center justify-center rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)] [&>svg]:size-4"
+    >
+      {icon}
+    </span>
+  ) : null;
+
+  const skeletonEl = skeleton
+    ? typeof skeleton === 'boolean'
+      ? <DefaultSkeleton align={align} />
+      : (
+          <div aria-hidden data-empty-skeleton className={cn('w-full', isCenter && 'flex justify-center')}>
+            {skeleton}
+          </div>
+        )
+    : null;
+
+  // 텍스트 블록 — center 면 아이콘이 위, 아니면 왼쪽에 놓인다.
+  const textBlock = (
+    <div className="min-w-0">
+      {titleEl}
+      {descriptionEl}
+    </div>
+  );
 
   return (
     <div
@@ -55,39 +143,26 @@ export function EmptyState({
         'rounded-2xl border',
         borderClass,
         centerPadOverride ?? padClass,
-        align === 'center' && 'text-center',
+        isCenter && 'text-center',
         className,
       )}
       data-empty-tone={tone}
       data-empty-align={align}
     >
-      <p
-        className={cn(
-          'font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]',
-          size === 'compact' ? 'text-sm' : 'text-title',
-          // align=center 한 문장 패턴 — 본문 톤 (h1 무게 없이 secondary 색).
-          align === 'center' && 'font-normal text-sm text-[color:var(--color-text-tertiary)]',
-        )}
-      >
-        {title}
-      </p>
-      {description ? (
-        <p
-          className={cn(
-            'leading-6 text-[color:var(--color-text-tertiary)]',
-            size === 'compact' ? 'mt-1 text-xs' : 'mt-2 text-sm',
-          )}
-        >
-          {description}
-        </p>
-      ) : null}
+      {skeletonEl ? <div className="mb-4">{skeletonEl}</div> : null}
+      {iconEl && !isCenter ? (
+        <div className="flex items-start gap-3">
+          {iconEl}
+          {textBlock}
+        </div>
+      ) : (
+        <>
+          {iconEl && isCenter ? <div className="mb-3 flex justify-center">{iconEl}</div> : null}
+          {textBlock}
+        </>
+      )}
       {action ? (
-        <div
-          className={cn(
-            'mt-4 flex flex-wrap gap-2',
-            align === 'center' && 'justify-center',
-          )}
-        >
+        <div className={cn('mt-4 flex flex-wrap gap-2', isCenter && 'justify-center')}>
           {action}
         </div>
       ) : null}
