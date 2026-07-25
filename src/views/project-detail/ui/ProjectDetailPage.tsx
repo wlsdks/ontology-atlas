@@ -8,7 +8,7 @@ import { useRouter } from "@/i18n/navigation";
 // (`architecture.md` i18n 라우팅 가드).
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, BookOpen, FileText, Waypoints } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, Layers, Waypoints } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useTranslations } from "next-intl";
@@ -561,11 +561,24 @@ export function ProjectDetailPage({
         />
       </div>
 
-      {/* zone 2 (구성 탭) — 도메인 구성 3×N: 각 카드는 topology focus 로 이동.
-          도메인이 0개여도 **탭은 숨기지 않는다** — 탭 세트가 프로젝트마다
-          흔들리면 같은 자리를 눌렀는데 다른 게 나와 공간 기억이 깨진다. */}
-      {activeTab === "composition" && domainComposition.domains.length > 0 ? (
-        <section className="mt-[var(--section-gap)]">
+      {/* zone 3 — 본문(project.md) + 요약 레일(연결된 프로젝트 · 에이전트
+          핸드오프). Connection map 제거(c84ecb25e) 이후의 left-column-void
+          결함은 이 3존 재배치로 구조적으로 해소된다 — 좌측이 항상 도메인
+          구성/본문으로 채워진다. */}
+      {/* zone 3 — 좌: 본문(개요 탭 전용) / 우: 연결된 프로젝트 + 에이전트 핸드오프.
+          **우측 레일은 탭 밖에 둔다** — 어느 탭에서 보든 유효한 cross-tab
+          맥락이고, 특히 "연결된 프로젝트" 는 프로젝트 간 관계를 온톨로지로
+          다루는 방향의 첫 표면이라 탭 뒤에 숨기면 안 된다(기록 목적지의
+          좌/우 분할과 같은 문법). */}
+      <section className="mt-[var(--section-gap)] grid grid-cols-1 items-start gap-[var(--card-gap)] lg:grid-cols-[minmax(0,1fr)_400px]">
+        {/* 좌측 = **탭 본문**. 구성을 별 섹션으로 두고 `hidden` 으로 감췄더니
+            grid 첫 트랙이 `display:none` 으로 사라져 400px 우측 레일이 1fr
+            트랙으로 당겨져 늘어났다(실측 결함). 좌측이 **항상 무언가를 그리면**
+            트랙이 무너질 수 없다. */}
+        {activeTab === "composition" ? (
+          <section data-tab-panel="composition" className="min-w-0">
+            {domainComposition.domains.length > 0 ? (
+              <>
           <div className="mb-3 flex items-center gap-2.5">
             <TopologyV2TraceMark containment />
             <span className="text-[14px] font-[560] tracking-[-0.01em] text-[color:var(--color-text-primary)]">
@@ -592,22 +605,22 @@ export function ProjectDetailPage({
                 : t("domainMoreLineElementsOnly", { elements })
             }
           />
-        </section>
-      ) : null}
-
-      {/* zone 3 — 본문(project.md) + 요약 레일(연결된 프로젝트 · 에이전트
-          핸드오프). Connection map 제거(c84ecb25e) 이후의 left-column-void
-          결함은 이 3존 재배치로 구조적으로 해소된다 — 좌측이 항상 도메인
-          구성/본문으로 채워진다. */}
-      {/* zone 3 — 좌: 본문(개요 탭 전용) / 우: 연결된 프로젝트 + 에이전트 핸드오프.
-          **우측 레일은 탭 밖에 둔다** — 어느 탭에서 보든 유효한 cross-tab
-          맥락이고, 특히 "연결된 프로젝트" 는 프로젝트 간 관계를 온톨로지로
-          다루는 방향의 첫 표면이라 탭 뒤에 숨기면 안 된다(기록 목적지의
-          좌/우 분할과 같은 문법). */}
-      <section className="mt-[var(--section-gap)] grid grid-cols-1 items-start gap-[var(--card-gap)] lg:grid-cols-[minmax(0,1fr)_400px]">
+              </>
+            ) : (
+              // 도메인 0이어도 탭은 남는다(공간 기억) — 대신 여기서 다음 걸음을 준다.
+              <div data-testid="project-detail-composition-empty">
+                <EmptyState
+                  size="compact"
+                  icon={<Layers size={16} aria-hidden />}
+                  title={t("domainEmptyTitle")}
+                  description={t("domainEmptyHint")}
+                />
+              </div>
+            )}
+          </section>
+        ) : (
         <article
           data-tab-panel="overview"
-          hidden={activeTab !== "overview"}
           className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
         >
           <div className="mb-2.5 flex items-baseline gap-2">
@@ -636,6 +649,7 @@ export function ProjectDetailPage({
             </div>
           )}
         </article>
+        )}
 
         {/* 우측 레일은 **탭 밖**이다 (#87) — 어느 탭에서 보든 유효한 맥락이고,
             "연결된 프로젝트" 는 프로젝트 간 관계를 온톨로지로 다루는 방향의
