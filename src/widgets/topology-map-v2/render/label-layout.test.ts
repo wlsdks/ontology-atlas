@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CLUSTER_CHIP_LABEL_PRIORITY,
   clampAnchorIntoSafeRect,
   bboxesOverlap,
   ellipsizeToWidth,
@@ -165,5 +166,52 @@ describe("clampAnchorIntoSafeRect (Guardian follow-up A)", () => {
     const c = clampAnchorIntoSafeRect(-5, -5, tiny, 40, 12);
     expect(Number.isFinite(c.x)).toBe(true);
     expect(Number.isFinite(c.y)).toBe(true);
+  });
+});
+
+describe("greedyPlaceLabels — 예약 점유(S11 클러스터 칩 겹침)", () => {
+  const box = (minX: number, maxX: number): { minX: number; minY: number; maxX: number; maxY: number } => ({
+    minX,
+    maxX,
+    minY: 0,
+    maxY: 20,
+  });
+  const candidate = (priority: number, minX: number, maxX: number, id: string): LabelCandidate<string> => ({
+    priority,
+    order: 0,
+    bbox: box(minX, maxX),
+    payload: id,
+  });
+  const chip = { bbox: box(100, 160), priority: CLUSTER_CHIP_LABEL_PRIORITY };
+
+  it("칩과 겹치는 수동적 라벨(요소·역량·도메인)은 떨어진다", () => {
+    for (const priority of [3, 4, 5]) {
+      const placed = greedyPlaceLabels([candidate(priority, 120, 200, "overlaps")], undefined, [chip]);
+      expect(placed.map((c) => c.payload)).toEqual([]);
+    }
+  });
+
+  it("선택(0)·호버(1) 라벨은 칩보다 상위라 살아남는다 — 보고 있는 이름을 칩이 침묵시키지 않는다", () => {
+    for (const priority of [0, 1]) {
+      const placed = greedyPlaceLabels([candidate(priority, 120, 200, "attended")], undefined, [chip]);
+      expect(placed.map((c) => c.payload)).toEqual(["attended"]);
+    }
+  });
+
+  it("같은 우선순위(2)면 칩에 밀리지 않는다 — 엄격히 더 낮을 때만 양보", () => {
+    const placed = greedyPlaceLabels([candidate(2, 120, 200, "tie")], undefined, [chip]);
+    expect(placed.map((c) => c.payload)).toEqual(["tie"]);
+  });
+
+  it("칩과 겹치지 않는 라벨은 그대로 배치된다 — 유령 예약 없음", () => {
+    const placed = greedyPlaceLabels([candidate(5, 200, 260, "clear")], undefined, [chip]);
+    expect(placed.map((c) => c.payload)).toEqual(["clear"]);
+  });
+
+  it("reserved 미지정이면 종전과 동일하다(회귀 0)", () => {
+    const cands = [candidate(5, 120, 200, "a"), candidate(4, 130, 210, "b")];
+    expect(greedyPlaceLabels(cands).map((c) => c.payload)).toEqual(
+      greedyPlaceLabels(cands, undefined, []).map((c) => c.payload),
+    );
   });
 });

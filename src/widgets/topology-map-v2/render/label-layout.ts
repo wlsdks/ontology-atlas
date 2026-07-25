@@ -100,9 +100,40 @@ export function resolveLabelPriority(input: LabelPriorityInput): number {
 }
 
 /**
+ * A non-label surface that already owns screen area and that labels must respect
+ * (currently: density-gate cluster chips). `priority` places the box on the SAME
+ * ladder as `resolveLabelPriority` — a candidate only yields to it when the
+ * candidate's priority number is strictly larger (i.e. it ranks lower).
+ *
+ * Why a priority instead of an absolute block: a chip must not silence the label
+ * of the node the user is actively attending to. Selected(0)/hovered(1) labels
+ * outrank a chip and still draw; passive domain/capability/element labels (3/4/5)
+ * yield. See `CLUSTER_CHIP_LABEL_PRIORITY`.
+ */
+export interface ReservedBox {
+  bbox: LabelBBox;
+  priority: number;
+}
+
+/**
+ * Cluster chips sit at the project/hub tier (2) of the label ladder.
+ *
+ * rationale: a chip is an interactive affordance carrying a typed fact ("N개가
+ * 접혀 있다, 눌러서 열기") — losing it to a passive element label costs the user a
+ * control, while losing an element label costs one name that hover/ego restores.
+ * Above 2 sit only selected/hovered labels, which the user is actively attending
+ * to and which must never be silenced by a chip.
+ */
+export const CLUSTER_CHIP_LABEL_PRIORITY = 2;
+
+/**
  * Greedy priority suppression: sort by priority (then stable `order`), place a
  * label only if its bbox doesn't overlap any already-placed one. Deterministic —
  * identical input → identical placed list.
+ *
+ * `reserved` (optional) lets non-label surfaces pre-own screen area — a candidate
+ * that ranks below a reserved box and overlaps it is dropped. Omitted → identical
+ * to the pre-reservation behavior.
  *
  * rank9 — optional `isPreferred` hysteresis: within the SAME priority tier, a
  * candidate the predicate marks (e.g. it was placed last frame) sorts ahead of a
@@ -115,6 +146,7 @@ export function resolveLabelPriority(input: LabelPriorityInput): number {
 export function greedyPlaceLabels<T>(
   candidates: readonly LabelCandidate<T>[],
   isPreferred?: (candidate: LabelCandidate<T>) => boolean,
+  reserved?: readonly ReservedBox[],
 ): LabelCandidate<T>[] {
   const pref = isPreferred ?? (() => false);
   const sorted = [...candidates].sort((a, b) => {
@@ -126,6 +158,13 @@ export function greedyPlaceLabels<T>(
   });
   const placed: LabelCandidate<T>[] = [];
   for (const candidate of sorted) {
+    if (
+      reserved?.some(
+        (box) => candidate.priority > box.priority && bboxesOverlap(box.bbox, candidate.bbox),
+      )
+    ) {
+      continue;
+    }
     if (placed.some((p) => bboxesOverlap(p.bbox, candidate.bbox))) continue;
     placed.push(candidate);
   }

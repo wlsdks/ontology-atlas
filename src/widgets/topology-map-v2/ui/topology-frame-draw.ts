@@ -35,16 +35,18 @@ import {
   scaledLabelFontSize,
 } from "../render/labels";
 import {
+  CLUSTER_CHIP_LABEL_PRIORITY,
   ellipsizeToWidth,
   greedyPlaceLabels,
   clampAnchorIntoSafeRect,
   isWithinSafeRect,
   resolveLabelPriority,
   type LabelCandidate,
+  type ReservedBox,
   type SafeRect,
 } from "../render/label-layout";
 import { draw as nodeShapesDraw } from "../render/node-shapes";
-import { drawClusterChip, clusterChipScale } from "../render/cluster-chips";
+import { clusterChipOccupancyRect, drawClusterChip, clusterChipScale } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
 import { drawDiffractionSpike, drawRealmCosmos, drawStarDust, type DustPoint } from "../render/starfield";
 import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
@@ -76,6 +78,12 @@ const REALM_ROOT_ANCHOR_ALPHA = 0.7;
 const WARDING_CAPTION_OFFSET_PX = 24;
 const WARDING_CAPTION_ALPHA = 0.62;
 const EXPANDED_AURA_ALPHA = 0.55;
+/**
+ * S11 — 전개 코호트(직속 자식) 소속 링 알파. 부모 오라(0.55)보다 낮아 부모가
+ * attention winner 를 유지한다 — 자식 30개가 부모와 같은 세기로 울면 "전개된
+ * 묶음" 이 아니라 "지도가 반짝인다" 로 읽힌다.
+ */
+const EXPANDED_COHORT_ALPHA = 0.42;
 /**
  * S8 결함 1 — 확장 디스크와 무관한 배경 노드를 확장 중 미세 dim 해 "어지러움"을
  * 줄인다(확장이 없으면 1.0, 회귀 0). 색이 아니라 알파만 낮춘다.
@@ -634,9 +642,18 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // 읽으므로 엣지 그리기 **앞**에서 계산한다.
   const expandedParentIds = new Set<string>();
   const expandedDiscIds = new Set<string>();
+  // S11 결함 (소유자 실보고 "+ 버튼 눌렀을때는 뭐가 선택된건지 모르겠거든?") —
+  // 칩을 눌러 **직접 드러난** 자식 집합. 노드 클릭은 ego dim + 실선 인디고 링으로
+  // "무엇이 골라졌는지"가 즉시 읽히는데, 칩 전개는 자식이 그냥 나타날 뿐 소속
+  // 표시가 없어 사용자가 자기 행동의 결과를 못 봤다. 전이 폐포(`expandedDiscIds`)가
+  // 아니라 **직속 자식**만 표시한다 — 손자는 자기 칩으로 열린 별개 코호트다.
+  const expandedChildIds = new Set<string>();
   for (const chip of clusterChips) {
     if (!chip.expanded || chip.ego) continue;
     expandedParentIds.add(chip.parentId);
+    for (const childId of world.childrenByParent.get(chip.parentId) ?? []) {
+      expandedChildIds.add(childId);
+    }
     const stack = [chip.parentId];
     while (stack.length > 0) {
       const id = stack.pop() as string;
@@ -1008,6 +1025,38 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ctx.restore();
     }
 
+    // S11 — 전개 코호트 소속 링. 칩으로 방금 드러난 **직속 자식**에 부모 오라와
+    // **같은 파선 기하**(같은 묶음이라는 뜻)를 두르되 잉크는 탈채도 인디고
+    // (`expandedCohort`)로 한 단계 낮춘다: 부모가 주인공, 자식은 소속 표시.
+    //
+    // 왜 색이 아니라 값·기하인가 (소유자 "선택했을때 파란색이니까 다르게
+    // 구분되도록"): 헌장은 무채색 + 단일 인디고라 새 hue 가 금지다. 대신 이미
+    // 있는 사다리를 한 칸 더 쓴다 — 노드 선택 = 채도 있는 인디고 **실선**,
+    // 엣지 선택 = pale 인디고, 전개 코호트 = **탈채도 인디고 파선**. 실선/파선이
+    // 채널을 갈라 "선택" 과 "전개" 가 한눈에 다르게 읽힌다.
+    //
+    // 선택/호버 중인 자식은 건너뛴다 — 그 노드는 이미 자기 선택 링이 주인공이고,
+    // 두 링이 같은 궤도에서 겹치면 브레이드로 읽힌다(파선 오라 ↔ 앰버 링과 같은
+    // 규칙: 궤도당 신호 1개).
+    if (
+      expandedChildIds.has(node.id) &&
+      !expandedParentIds.has(node.id) &&
+      node.id !== focusedNodeId &&
+      node.id !== hoveredNodeId &&
+      !(spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id))
+    ) {
+      ctx.save();
+      ctx.setLineDash([...EXPANDED_AURA_DASH]);
+      ctx.globalAlpha = tierAlpha * EXPANDED_COHORT_ALPHA;
+      ctx.strokeStyle = tokens.expandedCohort;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(screen.x, screen.y, screenRadius + EXPANDED_AURA_RING_OFFSET, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
     // 영역 루트 앵커 링 (소유자 실보고 2026-07-23 "루트가 유령 같다") — 영역
     // 전개 중 루트(depth 0)에 결계와 **같은 인디고 실선 헤어라인** 링을 두른다.
     // 세계의 경계(큰 원)와 그 중심(작은 링)이 같은 잉크로 호응해 "이 원은 이
@@ -1071,6 +1120,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   if (clusterChipHoverAnim !== null && clusterChipHoverAnim.id !== hoveredClusterId) {
     clusterChipHoverAnim = null;
   }
+  // S11 결함 (소유자 실보고 "노드 사이에 +31 이 겹쳐지는것도 보기싫은데") — 칩이
+  // 이번 프레임에 점유한 사각형을 모아 아래 라벨 배치기에 **예약**으로 넘긴다.
+  // 칩은 라벨보다 먼저 그려지므로, 배치기가 이걸 모르면 라벨이 칩 위에 그대로
+  // 덮어 그려진다. 새 회피 알고리즘을 만들지 않고 기존 bbox 억제를 재사용한다.
+  const chipReservations: ReservedBox[] = [];
   for (const chip of clusterChips) {
     const parentAlpha = effectiveAlphaById.get(chip.parentId) ?? 1;
     if (parentAlpha <= 0.02) continue;
@@ -1105,22 +1159,37 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       spotlightSink(
         (spotlightIds !== null && spotlightIds.has(chip.parentId)) || isChipHovered,
       );
+    // draw 와 라벨 예약이 **같은 입력**을 보게 하나로 묶는다 — 갈라지면 라벨이
+    // 칩 위에 다시 겹치거나(예약 누락) 빈 곳을 피한다(유령 예약).
+    const chipDrawInput = {
+      screenX: screen.x,
+      screenY: screen.y,
+      count: chip.count,
+      expanded: chip.expanded,
+      hovered: isChipHovered,
+      hoverT,
+      // rank7 — ego(`+N`) 칩은 reveal 대상 아님(항상 즉시). 그 외엔 램프값 전달.
+      revealT: chip.ego ? undefined : chipRevealById?.get(chip.parentId),
+      scale: chipScale,
+      parentScreenX: parentScreen?.x,
+      parentScreenY: parentScreen?.y,
+      nodeScreenRadius,
+    };
+    const occupancy = clusterChipOccupancyRect(chipDrawInput);
+    if (occupancy) {
+      chipReservations.push({
+        bbox: {
+          minX: occupancy.x,
+          minY: occupancy.y,
+          maxX: occupancy.x + occupancy.w,
+          maxY: occupancy.y + occupancy.h,
+        },
+        priority: CLUSTER_CHIP_LABEL_PRIORITY,
+      });
+    }
     drawClusterChip(
       ctx,
-      {
-        screenX: screen.x,
-        screenY: screen.y,
-        count: chip.count,
-        expanded: chip.expanded,
-        hovered: isChipHovered,
-        hoverT,
-        // rank7 — ego(`+N`) 칩은 reveal 대상 아님(항상 즉시). 그 외엔 램프값 전달.
-        revealT: chip.ego ? undefined : chipRevealById?.get(chip.parentId),
-        scale: chipScale,
-        parentScreenX: parentScreen?.x,
-        parentScreenY: parentScreen?.y,
-        nodeScreenRadius,
-      },
+      chipDrawInput,
       {
         // rest = 조용한 중립 pill(border=nodeStrokeDomain) — 진짜 노드 선택
         // 인디고와 경쟁 안 함. `＋`=인디고, 숫자=중립 numeralFace(포커스 중에도
@@ -1340,8 +1409,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // rank9 — greedy 배치에 직전 프레임 placed 우대(히스테리시스)로 같은 우선순위
   // 안의 LOD churn 을 억제한다. 결과 placed id 집합을 다음 프레임 우대 기준으로
   // 남긴다.
-  const placedResult = greedyPlaceLabels(placedLabelCandidates, (c) =>
-    prevPlacedLabelIds.has(c.payload.nodeId),
+  const placedResult = greedyPlaceLabels(
+    placedLabelCandidates,
+    (c) => prevPlacedLabelIds.has(c.payload.nodeId),
+    // S11 — 칩이 점유한 영역과 겹치는 **수동적** 라벨(도메인/역량/요소)은 떨어뜨린다.
+    // 선택/호버 라벨은 칩보다 상위라 그대로 남는다(사용자가 보고 있는 이름을 칩이
+    // 침묵시키지 않는다).
+    chipReservations,
   );
   const placedIds = new Set<string>(placedResult.map((c) => c.payload.nodeId));
 

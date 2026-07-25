@@ -58,6 +58,11 @@ export interface TopologyV2Tokens {
   edgeDim: string;
   /** 엣지 선택(페어 포커스) 스트로크 — 인디고 pale 사다리 (노드 선택 표준 인디고와 값으로 구분). */
   edgeSelected: string;
+  /**
+   * S11 전개 코호트 소속 링 잉크 — 인디고 사다리 3번째 칸(탈채도). 노드 선택
+   * 실선 인디고 / 엣지 선택 pale 인디고와 채도·기하로 갈린다(새 hue 0).
+   */
+  expandedCohort: string;
   hullStroke: string;
   labelProject: string;
   labelDomain: string;
@@ -260,6 +265,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "edgeDepends", cssVar: "--topology-v2-edge-depends", kind: "color" },
   { key: "edgeDim", cssVar: "--topology-v2-edge-dim", kind: "color" },
   { key: "edgeSelected", cssVar: "--topology-v2-edge-selected", kind: "color" },
+  { key: "expandedCohort", cssVar: "--topology-v2-expanded-cohort", kind: "color" },
   { key: "hullStroke", cssVar: "--topology-v2-hull-stroke", kind: "color" },
   { key: "labelProject", cssVar: "--topology-v2-label-project", kind: "color" },
   { key: "labelDomain", cssVar: "--topology-v2-label-domain", kind: "color" },

@@ -4,6 +4,7 @@ import {
   clusterBadgeLabel,
   clusterBadgeRect,
   clusterChipLabel,
+  clusterChipOccupancyRect,
   clusterChipRect,
   clusterChipScale,
   CLUSTER_BADGE_HEIGHT,
@@ -132,5 +133,57 @@ describe("clusterBadgeRect", () => {
 
   it("배지 높이는 접힘 pill 보다 작다(미니 배지)", () => {
     expect(CLUSTER_BADGE_HEIGHT).toBeLessThan(CLUSTER_CHIP_HEIGHT);
+  });
+});
+
+/**
+ * S11 — `clusterChipOccupancyRect` 는 `drawClusterChip` 과 **같은 분기**를 타야
+ * 한다는 계약. 갈라지면 라벨이 칩 위에 다시 겹치거나(예약 누락) 아무것도 없는
+ * 곳을 피한다(유령 예약). 두 함수는 항상 함께 수정한다.
+ */
+describe("clusterChipOccupancyRect (S11 라벨 예약)", () => {
+  const base = { screenX: 400, screenY: 300, count: 31, hovered: false };
+
+  it("접힘 = pill 사각형과 정확히 일치한다", () => {
+    const rect = clusterChipOccupancyRect({ ...base, expanded: false });
+    expect(rect).toEqual(clusterChipRect(400, 300, clusterChipLabel(31, false)));
+  });
+
+  it("펼침 = 부모 우상단 배지 사각형과 정확히 일치한다", () => {
+    const rect = clusterChipOccupancyRect({
+      ...base,
+      expanded: true,
+      parentScreenX: 200,
+      parentScreenY: 250,
+      nodeScreenRadius: 18,
+    });
+    expect(rect).toEqual(clusterBadgeRect(200, 250, 18, clusterBadgeLabel(31)));
+  });
+
+  it("펼침인데 부모 지오메트리가 없으면 null — draw 도 그리지 않는다", () => {
+    expect(clusterChipOccupancyRect({ ...base, expanded: true })).toBeNull();
+  });
+
+  it("reveal 램프로 사라지는 형태는 점유하지 않는다 — 안 보이는 칩이 라벨을 밀어내면 유령 여백", () => {
+    // 접힘 pill 알파 = 1 − revealT → revealT=1 이면 pill 은 안 보인다.
+    expect(clusterChipOccupancyRect({ ...base, expanded: false, revealT: 1 })).toBeNull();
+    // 펼침 배지 알파 = revealT → revealT=0 이면 배지는 안 보인다.
+    expect(
+      clusterChipOccupancyRect({
+        ...base,
+        expanded: true,
+        revealT: 0,
+        parentScreenX: 200,
+        parentScreenY: 250,
+        nodeScreenRadius: 18,
+      }),
+    ).toBeNull();
+  });
+
+  it("줌 스케일이 예약 폭에도 그대로 반영된다", () => {
+    const small = clusterChipOccupancyRect({ ...base, expanded: false, scale: 1 })!;
+    const large = clusterChipOccupancyRect({ ...base, expanded: false, scale: 1.5 })!;
+    expect(large.w).toBeCloseTo(small.w * 1.5);
+    expect(large.h).toBeCloseTo(small.h * 1.5);
   });
 });
