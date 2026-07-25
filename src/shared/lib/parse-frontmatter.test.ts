@@ -150,9 +150,23 @@ describe('buildExcerpt — markdown is flattened to readable prose', () => {
     expect(excerpt).not.toMatch(/^\s*-\s/);
   });
 
-  it('respects the max length', () => {
-    expect(buildExcerpt('x'.repeat(500)).length).toBe(320);
-    expect(buildExcerpt('x'.repeat(500), 50).length).toBe(50);
+  it('respects the max length (잘릴 땐 말줄임표 포함 max+1 이내)', () => {
+    // 공백 없는 초장문(잘라도 어절 경계 없음) → max 에서 자르고 … 부착.
+    expect(buildExcerpt('x'.repeat(500)).length).toBeLessThanOrEqual(321);
+    expect(buildExcerpt('x'.repeat(500)).endsWith('…')).toBe(true);
+    expect(buildExcerpt('x'.repeat(500), 50).length).toBeLessThanOrEqual(51);
+  });
+
+  it('단어 중간에서 뚝 끊지 않고 어절 경계에서 자르고 말줄임표를 붙인다 (sonnet 검수 D1)', () => {
+    const prose = '이 프로젝트의 ontology 는 비즈니스 핵심과 구현 근거를 잇는다 '.repeat(20);
+    const out = buildExcerpt(prose, 60);
+    expect(out.endsWith('…')).toBe(true);
+    // 마지막 조각이 완전한 어절이어야 함(공백 뒤 절단 없음)
+    const body = out.slice(0, -1);
+    expect(prose.includes(body)).toBe(true);
+    expect(body.endsWith(' ')).toBe(false);
+    // 짧은 입력은 그대로
+    expect(buildExcerpt('짧은 문장', 320)).toBe('짧은 문장');
   });
 });
 

@@ -189,7 +189,13 @@ export function buildExcerpt(body: string, max = 320): string {
     .replace(/(?:·\s*){2,}/g, '· ') // collapse middot runs left by empty cells
     .replace(/^[\s·]+|[\s·]+$/g, '') // trim leading/trailing middots
     .trim();
-  return stripped.slice(0, max);
+  if (stripped.length <= max) return stripped;
+  // 단어 중간에서 뚝 끊기지 않게: max 이내 마지막 공백에서 자르고 말줄임표.
+  // (한국어는 공백 단위 어절이라 어절 경계, 영문은 단어 경계가 된다.)
+  const cut = stripped.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  const safe = lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut;
+  return `${safe.replace(/[\s·,.:;]+$/g, '')}…`;
 }
 
 export interface LinkContext {

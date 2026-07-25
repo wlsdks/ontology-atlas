@@ -14,6 +14,15 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
     expect(canAutoStartGuidedTour(document)).toBe(false);
   });
 
+  it("blocks auto start while a blocking edit composer (개념 추가) is open (#96)", () => {
+    vi.spyOn(document, "hasFocus").mockReturnValue(true);
+    // CreateNodeForm/OntologyBootstrapForm declare modality via
+    // data-surface-role, not role=dialog — the tour must still defer.
+    document.body.innerHTML =
+      '<section data-surface-role="blocking-edit-surface" data-testid="create-node-form"></section>';
+    expect(canAutoStartGuidedTour(document)).toBe(false);
+  });
+
   it("blocks auto start while document focus is away (OS folder picker / background tab)", () => {
     vi.spyOn(document, "hasFocus").mockReturnValue(false);
     expect(canAutoStartGuidedTour(document)).toBe(false);
