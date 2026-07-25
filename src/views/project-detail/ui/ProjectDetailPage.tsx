@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, BookOpen } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, Waypoints } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useTranslations } from "next-intl";
@@ -15,6 +15,7 @@ import { formatDate } from "@/shared/lib/format-date";
 import { MOTION } from "@/shared/motion";
 import {
   Button,
+  EmptyState,
   InlineEditable,
   TopologyV2KindGlyph,
   TopologyV2TraceMark,
@@ -470,19 +471,21 @@ export function ProjectDetailPage({
             </div>
           </div>
 
-          <div className="mt-auto flex flex-wrap items-baseline gap-x-8 gap-y-3 border-t border-[color:var(--color-border-soft)] pt-3.5">
+          {/* #10 — 통계는 거대한 숫자 대신 조용한 칩. 라벨+값이 한 줄로 붙어
+              스캔은 쉽되 본문·타이틀의 주목도를 빼앗지 않는다. */}
+          <div className="mt-auto flex flex-wrap gap-1.5 border-t border-[color:var(--color-border-soft)] pt-3.5">
             {metricItems.map((item) => (
-              <div key={item.label} className="flex flex-col gap-0.5">
-                <span
-                  data-token="engraved-numeral"
-                  className="font-mono text-[24px] leading-none font-semibold tabular-nums text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
-                >
-                  {item.value}
-                </span>
-                <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              <span
+                key={item.label}
+                className="inline-flex items-baseline gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1"
+              >
+                <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
                   {item.label}
                 </span>
-              </div>
+                <span className="font-mono text-label tabular-nums text-[color:var(--color-text-secondary)]">
+                  {item.value}
+                </span>
+              </span>
             ))}
           </div>
         </div>
@@ -556,16 +559,21 @@ export function ProjectDetailPage({
             </span>
           </div>
           {bodyContent ? (
-            <div className={storyMarkdownClassName} data-testid="project-detail-body-content">
+            // #10 — 본문은 읽기 좋은 가로폭(measure)으로 제한한다.
+            <div
+              className={`${storyMarkdownClassName} max-w-[68ch]`}
+              data-testid="project-detail-body-content"
+            >
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{bodyContent}</ReactMarkdown>
             </div>
           ) : (
-            <p
-              data-testid="project-detail-body-empty"
-              className="text-[13.5px] leading-[1.75] text-[color:var(--color-text-tertiary)]"
-            >
-              {t("bodyEmptyHint")}
-            </p>
+            <div data-testid="project-detail-body-empty">
+              <EmptyState
+                size="compact"
+                icon={<FileText size={16} aria-hidden />}
+                title={t("bodyEmptyHint")}
+              />
+            </div>
           )}
         </article>
 
@@ -611,12 +619,14 @@ export function ProjectDetailPage({
                 ) : null}
               </div>
             ) : (
-              <p data-testid="project-detail-connected-empty" className="text-[12.5px] leading-[1.65] text-[color:var(--color-text-tertiary)]">
-                {t("connectedEmpty")}
-                <span className="mt-1.5 block text-[11.5px] text-[color:var(--color-text-quaternary)]">
-                  {t("connectedEmptyHint")}
-                </span>
-              </p>
+              <div data-testid="project-detail-connected-empty">
+                <EmptyState
+                  size="compact"
+                  icon={<Waypoints size={16} aria-hidden />}
+                  title={t("connectedEmpty")}
+                  description={t("connectedEmptyHint")}
+                />
+              </div>
             )}
           </section>
 
