@@ -622,6 +622,21 @@
     }
   }
 
+  /* 캐노니컬 Select 팝오버 진입 (src/shared/ui/select.tsx). 헌장의 "모션은
+     opacity/색 위주, transform 최소" 를 지켜 opacity + scale-y(origin-top)
+     150ms 만. reduced-motion 은 컴포넌트가 animate-none 으로 정지. */
+  @keyframes select-pop {
+    from {
+      opacity: 0;
+      transform: scaleY(0.96);
+    }
+
+    to {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+  }
+
   .overlay-spring-surface[data-state="open"] {
     animation: overlaySpringIn calc(var(--overlay-spring-response) * 1s)
       var(--topology-motion-ease-out) both;
@@ -1275,6 +1290,24 @@
      * 이 토큰만 참조하고 인라인 hex/px 재구현 금지(`design.md` "인라인
      * 재구현 금지" 규범).
      */
+    /*
+     * 컨트롤 높이 스케일 (디자인 전면 정비 #13, 2026-07-25). 폼/셀렉트/토글
+     * 등 비-크롬 인터랙티브 컨트롤의 높이 단일 진실원. 크롬 필/타일은 별도
+     * 잠금 토큰(`--chrome-tile-size` 36px)을 계속 쓴다 — 이 스케일은 그 크롬
+     * 시스템 밖의 컨트롤(캐노니컬 Select 트리거, 폼 입력 등)에 쓴다.
+     *   sm 28 · md 32 · lg 40. Select 트리거는 lg(40px).
+     */
+    --control-h-sm: 28px;
+    --control-h-md: 32px;
+    --control-h-lg: 40px;
+    /*
+     * 다이얼로그 폭 스케일 (디자인 전면 정비, 2026-07-25). 중앙 정렬 모달/
+     * 컴포저 폭 단일 진실원. sm 420 · md 560 · lg 720. 실제 적용 시엔
+     * `min(var(--dialog-w-md), calc(100vw - 2rem))` 로 좁은 뷰포트를 감싼다.
+     */
+    --dialog-w-sm: 420px;
+    --dialog-w-md: 560px;
+    --dialog-w-lg: 720px;
     /* 44 → 36 (소유자 3차 보고 2026-07-23: zoom 제거 후에도 "딱봐도 크다")
        — 크롬 밀도 자체를 프로 툴바 급(32~36)으로. 단일 토큰이므로 전 크롬
        필/타일/상태 칩/플로팅 스택이 함께 내려간다. */
