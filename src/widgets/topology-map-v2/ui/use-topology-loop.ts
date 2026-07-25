@@ -694,14 +694,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // the full bounds while the camera sits at the spine fit, zoomRatio would be
     // ≫1 at entry and capabilities would cross-fade in immediately (soup) and
     // farT would drift off circuit.
-    const target = computeOverviewCameraTarget(world.spineBounds, width, height, tokens);
+    const target = computeOverviewCameraTarget(world.spineBounds, width, height, tokens, world.nodes.length);
     cameraRef.current = {
       x: { value: target.tx, velocity: 0 },
       y: { value: target.ty, velocity: 0 },
       scale: { value: target.tscale, velocity: 0 },
     };
     cameraTargetRef.current = target;
-    overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
+    overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     hasInitializedRef.current = true;
   };
@@ -856,9 +856,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // SPINE bbox (not the full 295-node bounds) so "fit view" reframes the same
     // legible 8-node spine as the initial entry — and keeps `overviewScaleRef`
     // on the same spine bounds so the zoom-ratio/altitude anchor stays at ratio 1.
-    const overviewTarget = computeOverviewCameraTarget(world.spineBounds, width, height, tokens);
+    const overviewTarget = computeOverviewCameraTarget(world.spineBounds, width, height, tokens, world.nodes.length);
     cameraTargetRef.current = overviewTarget;
-    overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
+    overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
     dampingRef.current = tokens.cameraDampingDefault;
     // Dive-zoom fix — "fit view"/relayout is a PROGRAMMATIC camera move, so it
     // eases via the cubic transition tween (reduced-motion → spring/snap), not
@@ -1128,9 +1128,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         // S8 결함 2 — 진입 시 저장한 키프레임이 있으면 그 "원래 보던 곳"으로
         // 복귀(없으면 overview fit 폴백). 750ms 트윈 유지.
         const savedEntry = realmDataRef.current?.entryCamera ?? null;
-        const target = savedEntry ?? computeOverviewCameraTarget(world.spineBounds, width, height, tokens);
+        const target = savedEntry ?? computeOverviewCameraTarget(world.spineBounds, width, height, tokens, world.nodes.length);
         cameraTargetRef.current = target;
-        overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
+        overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
         dampingRef.current = tokens.cameraDampingDefault;
         cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
         // 750ms 트윈 — 안무(안 역FLIP 660 / 밖 귀환 650)와 동기. 입장 860 패턴.
@@ -1527,12 +1527,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // 축소 프레임에 고착됐다. 역재생으로 노드가 홈으로 돌아오는 매 프레임
           // spineBounds 가 회복되므로 상한 anchor 를 라이브로 재계산해 트윈→스프링
           // 인계 시점에 상한이 목표를 누르지 않게 한다(fresh/deselect 경로와 동치).
-          overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
+          overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
         } else if (rt.phase === "idle" && realmDataRef.current !== null) {
           // 이탈 완료 — 역재생이 홈으로 되돌렸으니 realm 데이터 정리 + 홈 spineBounds
           // 기준으로 overview anchor 를 최종 확정(위 exiting 재계산의 마감).
           realmDataRef.current = null;
-          overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens);
+          overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
         }
       }
 

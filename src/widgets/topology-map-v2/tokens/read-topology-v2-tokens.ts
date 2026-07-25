@@ -116,6 +116,16 @@ export interface TopologyV2Tokens {
   cameraFlickMinSpeed: number;
   cameraScaleMin: number;
   cameraScaleMax: number;
+  /**
+   * `--topology-v2-camera-small-graph-scale-max` — #11: overview fit ceiling
+   * for a very small graph (≤5 nodes). A tiny vault (just-onboarded, one or
+   * two created nodes) has a minuscule spine bbox, so the plain fit zooms a
+   * single hexagon up to `cameraScaleMax` and it fills half the screen. This
+   * lower cap keeps a lone node at a sane size with breathing room. Only bites
+   * when the graph is small; larger vaults have big enough bounds that the fit
+   * scale never reaches this.
+   */
+  cameraSmallGraphScaleMax: number;
   /** `--topology-v2-camera-max-zoom-ratio` — the viewport-relative ceiling `computeEffectiveCameraScaleMax` derives the real zoom-in bound from (see that function's JSDoc for the audit finding this fixes). */
   cameraMaxZoomRatio: number;
   /** `--topology-v2-camera-min-zoom-ratio` — the viewport-relative floor `computeEffectiveCameraScaleMin` derives the real zoom-out bound from. */
@@ -289,6 +299,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "cameraFlickMinSpeed", cssVar: "--topology-v2-camera-flick-min-speed", kind: "number" },
   { key: "cameraScaleMin", cssVar: "--topology-v2-camera-scale-min", kind: "number" },
   { key: "cameraScaleMax", cssVar: "--topology-v2-camera-scale-max", kind: "number" },
+  { key: "cameraSmallGraphScaleMax", cssVar: "--topology-v2-camera-small-graph-scale-max", kind: "number" },
   { key: "cameraMaxZoomRatio", cssVar: "--topology-v2-camera-max-zoom-ratio", kind: "number" },
   { key: "cameraMinZoomRatio", cssVar: "--topology-v2-camera-min-zoom-ratio", kind: "number" },
   { key: "cameraFocusPanMargin", cssVar: "--topology-v2-camera-focus-pan-margin", kind: "number" },

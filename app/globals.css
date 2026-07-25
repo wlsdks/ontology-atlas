@@ -1723,6 +1723,10 @@
     --topology-v2-camera-flick-min-speed: 0.05;
     --topology-v2-camera-scale-min: 0.24;
     --topology-v2-camera-scale-max: 2.6;
+    /* #11 — overview fit ceiling for a ≤5-node graph (just-onboarded vault),
+       so a lone hexagon renders at a sane size instead of filling half the
+       screen. Only bites for tiny bounds; larger vaults never reach it. */
+    --topology-v2-camera-small-graph-scale-max: 1.3;
     /* C1 A1 (semantic-zoom 감사): 오버뷰 진입 스케일이 뷰포트 비례라(1512×917
        에서 ≈1.5) 절대값 2.6 을 그대로 "실효 최대"로 쓰면 zoomRatio 가 최대
        ≈1.8 에서 막혀 capability reveal 대역(1.5~2.0)이 못 끝나고(최대 알파
