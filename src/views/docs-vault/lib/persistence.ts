@@ -76,6 +76,21 @@ export function readStoredSource(): DocsVaultSource {
   return "server";
 }
 
+/**
+ * C5 — should landing on 문서함 auto-prefer the local source? True only when a
+ * local vault is actually loaded AND the current source isn't already local.
+ * Guards the one trust bug: a live vault must never be silently replaced by the
+ * Sample (`server`) source just because that was the last stored preference.
+ * Callers apply this ONCE per mount (a ref) so a later deliberate switch to
+ * Sample is respected — this only covers the initial landing.
+ */
+export function shouldPreferLocalOnLanding(
+  localVaultStatus: string,
+  currentSource: DocsVaultSource,
+): boolean {
+  return localVaultStatus === "loaded" && currentSource !== "local";
+}
+
 export function storeSource(v: DocsVaultSource) {
   if (typeof window === "undefined") return;
   try {

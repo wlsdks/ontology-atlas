@@ -14,6 +14,7 @@ import {
   shouldShowDesktopVaultWelcome,
   shouldSwitchToDogfoodVault,
   shouldHonorLocalIntent,
+  shouldPreferLocalOnLanding,
   storeListCollapsed,
   storeSource,
 } from "./persistence";
@@ -109,6 +110,23 @@ describe("source storage", () => {
   it("source: 잘못된 값 저장돼 있으면 'server' fallback", () => {
     window.localStorage.setItem(DOCS_VAULT_SOURCE_KEY, "garbage");
     expect(readStoredSource()).toBe("server");
+  });
+});
+
+describe("shouldPreferLocalOnLanding (C5)", () => {
+  it("prefers local when a vault is loaded and current source is Sample", () => {
+    expect(shouldPreferLocalOnLanding("loaded", "server")).toBe(true);
+  });
+
+  it("does not re-flip when already local", () => {
+    expect(shouldPreferLocalOnLanding("loaded", "local")).toBe(false);
+  });
+
+  it("does not force local while the vault is still restoring / idle / errored", () => {
+    expect(shouldPreferLocalOnLanding("idle", "server")).toBe(false);
+    expect(shouldPreferLocalOnLanding("loading", "server")).toBe(false);
+    expect(shouldPreferLocalOnLanding("error", "server")).toBe(false);
+    expect(shouldPreferLocalOnLanding("unsupported", "server")).toBe(false);
   });
 });
 
