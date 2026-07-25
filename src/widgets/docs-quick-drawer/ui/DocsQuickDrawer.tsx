@@ -22,11 +22,11 @@ import {
   findRelatedDocs,
   pinnedDocsStorageKey,
   recentDocsStorageKey,
-  vaultManifest,
   vaultScopeKey,
   type VaultManifest,
   type VaultTreeNode,
 } from "@/entities/docs-vault";
+import { useStaticVaultSource } from "@/features/vault-sample-source";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { useLocalVault } from "@/features/docs-vault-local";
 import {
@@ -293,14 +293,17 @@ export function DocsQuickDrawer({
   // `:server` 로 고정돼 다른 볼트의 목록이 섞였다 (opus5 검수 2026-07-25).
   //
   // 이제 /docs 와 같은 규칙을 쓴다: 로컬 볼트가 로드돼 있으면 그 manifest 와
-  // 그 볼트 범위의 고정/최근을, 아니면 번들(도그푸드 샘플)을 본다.
+  // 그 볼트 범위의 고정/최근을, 아니면 사용자가 고른 번들 샘플(도그푸드 /
+  // 예시 쇼핑몰)을 본다 — 번들을 직접 읽으면 샘플 선택이 여기서만 무시된다.
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
+  const staticVault = useStaticVaultSource();
   const isLocalLoaded =
     mode === "local" && localVault.status === "loaded" && Boolean(localVault.manifest);
-  const activeManifest = (isLocalLoaded && localVault.manifest
-    ? localVault.manifest
-    : vaultManifest) as VaultManifest;
+  const activeManifest: VaultManifest =
+    isLocalLoaded && localVault.manifest
+      ? localVault.manifest
+      : staticVault.manifest;
   const scope = vaultScopeKey({
     isLocalLoaded,
     handleName: localVault.handle?.name ?? null,

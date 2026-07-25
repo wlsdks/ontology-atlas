@@ -79,9 +79,9 @@ import {
   buildNewNodeDoc,
   buildOntologyDeeplinkForDoc,
   deriveOntologyFromVault,
-  vaultManifest,
   type VaultManifest,
 } from '@/entities/docs-vault';
+import { useStaticVaultSource } from '@/features/vault-sample-source';
 import { DocsVaultBacklinks } from '@/widgets/docs-vault/ui/DocsVaultBacklinks';
 import { DocsVaultEditor } from '@/widgets/docs-vault/ui/DocsVaultEditor';
 import { DocsVaultUnifiedPalette } from '@/widgets/docs-vault/ui/DocsVaultUnifiedPalette';
@@ -100,8 +100,6 @@ import {
   pushRecentDoc,
   RECENT_DOCS_STORAGE_PREFIX,
 } from '@/widgets/docs-vault/lib/recent-docs';
-
-const serverManifest = vaultManifest as VaultManifest;
 
 const subscribeDesktopRuntime = () => () => undefined;
 const readDesktopRuntime = () => isTauriVaultRuntime();
@@ -535,10 +533,14 @@ function DocsVaultContent() {
     Boolean(localVault.manifest);
 
   // 현재 활성 매니페스트 — source 에 따라 분기. 로컬은 loaded 이전엔 null.
+  // static 폴백은 사용자가 고른 샘플(도그푸드 / 예시 쇼핑몰)을 따른다 —
+  // 번들 매니페스트를 직접 읽으면 "예시 비즈니스 보기" 선택이 문서함에서만
+  // 조용히 무시돼 지도와 다른 볼트를 보여주게 된다.
+  const staticVault = useStaticVaultSource();
   const manifest: VaultManifest =
     isLocalSourceLoaded && localVault.manifest
       ? localVault.manifest
-      : serverManifest;
+      : staticVault.manifest;
   const ontologyDerivation = useMemo(
     () => deriveOntologyFromVault(manifest),
     [manifest],

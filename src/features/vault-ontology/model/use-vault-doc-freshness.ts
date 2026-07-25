@@ -3,9 +3,8 @@
 import { useMemo } from 'react';
 import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
-import { vaultManifest as staticVaultManifestRaw, type VaultManifest } from '@/entities/docs-vault';
-
-const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
+import { useStaticVaultSource } from '@/features/vault-sample-source';
+import type { VaultManifest } from '@/entities/docs-vault';
 
 export function manifestToFreshnessIndex(manifest: VaultManifest): Map<string, string> {
   const map = new Map<string, string>();
@@ -15,7 +14,6 @@ export function manifestToFreshnessIndex(manifest: VaultManifest): Map<string, s
   return map;
 }
 
-const STATIC_FRESHNESS_INDEX = manifestToFreshnessIndex(staticVaultManifest);
 const EMPTY_FRESHNESS_INDEX: Map<string, string> = new Map();
 
 /**
@@ -32,10 +30,14 @@ const EMPTY_FRESHNESS_INDEX: Map<string, string> = new Map();
 export function useVaultDocFreshnessIndex(): ReadonlyMap<string, string> {
   const mode = useDataSourceMode();
   const vault = useLocalVault();
+  // 번들 볼트가 둘(dogfood · storefront)이라 index 를 모듈 로드 시점에 못 굳힌다.
+  // 대신 모듈 상수 매니페스트를 그대로 받으므로 참조가 안정적이고, 표본을
+  // 바꿀 때만 memo 가 다시 돈다.
+  const staticSource = useStaticVaultSource();
 
   return useMemo(() => {
-    if (mode === 'static') return STATIC_FRESHNESS_INDEX;
+    if (mode === 'static') return manifestToFreshnessIndex(staticSource.manifest);
     if (vault.status !== 'loaded' || !vault.manifest) return EMPTY_FRESHNESS_INDEX;
     return manifestToFreshnessIndex(vault.manifest);
-  }, [mode, vault.status, vault.manifest]);
+  }, [mode, vault.status, vault.manifest, staticSource.manifest]);
 }

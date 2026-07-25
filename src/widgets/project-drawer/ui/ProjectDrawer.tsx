@@ -13,12 +13,8 @@ import {
 import { MOTION, SPRING } from "@/shared/motion";
 import { ArrowUpRight, BookOpen, ChevronDown, X } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
-import {
-  buildDocsVaultHref,
-  findRelatedDocs,
-  vaultManifest,
-  type VaultManifest,
-} from "@/entities/docs-vault";
+import { buildDocsVaultHref, findRelatedDocs } from "@/entities/docs-vault";
+import { useStaticVaultSource } from "@/features/vault-sample-source";
 import { formatDate } from "@/shared/lib/format-date";
 import {
   formatProjectIntegrityIssue,
@@ -275,18 +271,20 @@ export function ProjectDrawer({
   // 관련 문서 — Source Vault에서 이 프로젝트를 인용하는 md top 5.
   // 권한 없으면 섹션 자체 숨김 (게스트/로그인 안 된 사용자에게 admin 문서
   // 링크 새는 것 방지).
+  // 매니페스트를 직접 import 하면 "예시 비즈니스 보기" 선택과 무관하게 늘
+  // dogfood 문서가 나와, 화면의 다른 부분과 다른 볼트를 가리키게 된다.
+  const { manifest: staticManifest } = useStaticVaultSource();
   const relatedDocs = useMemo(() => {
     if (!project) return [];
-    const manifest = vaultManifest as VaultManifest;
     return findRelatedDocs(
-      manifest.docs,
+      staticManifest.docs,
       {
         projectSlug: project.slug,
         projectName: project.name,
       },
       5,
     );
-  }, [project]);
+  }, [project, staticManifest]);
   const relationshipSummary = project
     ? (() => {
         if (project.isHub && referencedBy.length > 0) {
