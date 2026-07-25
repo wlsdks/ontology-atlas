@@ -41,6 +41,12 @@ export interface VaultStartChecklistProps {
   onCreateNode: (kind: "project" | "domain") => void;
   /** ② 첫 분석 맡기기 — 에이전트 채팅에 붙여넣을 지시문. */
   analyzePrompt: string;
+  /**
+   * C9 — 이 폴더에 실제로 `.mcp.json` 이 존재하는지(`agentConfigStatus.mcpJson`).
+   * 힌트 문구가 "이미 준비됨" 을 무조건 단언하지 않고 실파일 상태를 반영한다.
+   * undefined 면(상태 미확인) 단언 대신 pending 문구로 안전하게 표기.
+   */
+  mcpConfigReady?: boolean;
 }
 
 export function VaultStartChecklist({
@@ -52,6 +58,7 @@ export function VaultStartChecklist({
   onScaffoldStarter = null,
   scaffolding = false,
   analyzePrompt,
+  mcpConfigReady,
 }: VaultStartChecklistProps) {
   const t = useTranslations("topology.startChecklist");
   const { state: copyState, copy: copyPrompt } = useCopyFeedback();
@@ -176,8 +183,11 @@ export function VaultStartChecklist({
             </li>
           ))}
         </ol>
+        {/* C9 — 실파일 상태 기반 정직한 문구. `.mcp.json` 이 실제로 있으면
+            "준비됨", 없으면 "만들면 생김" — "이미 준비돼 있어요" 를 무조건
+            단언하지 않는다. */}
         <p className="mt-3 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
-          {t("agentHint")}
+          {t(mcpConfigReady ? "agentHintReady" : "agentHintPending")}
         </p>
       </div>
     </div>

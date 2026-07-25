@@ -308,16 +308,17 @@ export function DocFrontmatterBlock({
     }
   }
 
-  if (fields.length === 0 && codeLocations.length === 0 && !definitionValue) return null;
-
-  const kindValue = currentKind;
-  const slugValue = formatValue(doc.frontmatter?.slug) ?? doc.slug;
   // C10 — the 공방/CREATE writer stores the node's meaning in a `definition:`
   // frontmatter key. It isn't in GRAPH_KEYS, so it used to be invisible in the
   // read view (a hidden typed fact = charter violation). Surface it as a plain,
   // always-visible lede at the top of the block so the reader sees the node's
   // meaning without expanding the frontmatter or hunting the body.
   const definitionValue = formatValue(doc.frontmatter?.definition);
+
+  if (fields.length === 0 && codeLocations.length === 0 && !definitionValue) return null;
+
+  const kindValue = currentKind;
+  const slugValue = formatValue(doc.frontmatter?.slug) ?? doc.slug;
   const canQuickPatch =
     canEdit && Boolean(onPatch) && kindValue != null && isEditableKind(kindValue);
 
