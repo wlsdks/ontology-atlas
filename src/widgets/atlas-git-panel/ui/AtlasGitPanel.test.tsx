@@ -73,11 +73,26 @@ function installDesktopGit({
   diff = DIFF_WITH_CHANGES,
   history = HISTORY,
   snapshot = { committed: true, subject: "s", summary: "s", push: null },
+  init = {
+    initialized: true,
+    reason: null,
+    repoRoot: "/repo",
+    branch: "main",
+    changedCount: 3,
+  },
+  setRemote = {
+    ok: true,
+    remote: "origin",
+    url: "git@github.com:me/repo.git",
+    replaced: null,
+  },
 }: {
   status?: unknown;
   diff?: unknown;
   history?: unknown;
   snapshot?: unknown;
+  init?: unknown;
+  setRemote?: unknown;
 } = {}) {
   tauriApiMock.runtimeAvailable = true;
   tauriApiMock.invoke.mockImplementation(async (command: string) => {
@@ -85,6 +100,8 @@ function installDesktopGit({
     if (command === "git_diff") return diff;
     if (command === "git_history") return history;
     if (command === "git_snapshot") return snapshot;
+    if (command === "git_init") return init;
+    if (command === "git_set_remote") return setRemote;
     throw new Error(`unexpected command: ${command}`);
   });
 }
@@ -109,13 +126,15 @@ describe("AtlasGitPanel — 웹(브라우저 vault) 강등", () => {
     renderPanel(<AtlasGitPanel sessionChangeset={changeset} onClose={() => {}} />);
 
     expect(await screen.findByTestId("atlas-git-web-body")).toBeInTheDocument();
-    expect(screen.getByText("노드 추가 1")).toBeInTheDocument();
-    expect(screen.getByText("노드 수정 2")).toBeInTheDocument();
+    expect(screen.getByText("개념 추가 1")).toBeInTheDocument();
+    expect(screen.getByText("개념 수정 2")).toBeInTheDocument();
     expect(screen.getByText("관계 추가 1")).toBeInTheDocument();
     expect(screen.getByText("ontology-atlas snapshot")).toBeInTheDocument();
     expect(screen.getByTestId("atlas-git-web-copy")).toBeInTheDocument();
     expect(
-      screen.getByText("데스크톱 앱에서는 여기서 바로 스냅샷할 수 있어요."),
+      screen.getByText(
+        "브라우저는 이 컴퓨터의 git 을 실행할 권한이 없어요. 무엇이 바뀌었는지는 여기서 그대로 보여드릴게요.",
+      ),
     ).toBeInTheDocument();
     expect(tauriApiMock.invoke).not.toHaveBeenCalled();
   });
@@ -124,7 +143,7 @@ describe("AtlasGitPanel — 웹(브라우저 vault) 강등", () => {
     renderPanel(<AtlasGitPanel sessionChangeset={null} onClose={() => {}} />);
     // Image #16 재구성 — 빈 상태 문장이 섹션 라벨("이 세션에서 감지된 변경")을
     // 반복하지 않는 짧은 상태 카피로 교체됨.
-    expect(await screen.findByText("아직 없어요 — 문서를 고치면 여기에 나타나요.")).toBeInTheDocument();
+    expect(await screen.findByText("아직 없어요. 문서를 고치면 여기에 나타나요.")).toBeInTheDocument();
   });
 });
 
@@ -177,7 +196,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(snapshotInvokeCalls()[0][1]).toMatchObject({ push: true });
   });
 
-  it("disables the snapshot button and says 변경 없음 when there are no changes", async () => {
+  it("disables the snapshot button and says 모두 남겼어요 when there are no changes", async () => {
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, changedCount: 0 },
       diff: { count: 0, files: [], diff: "" },
@@ -187,10 +206,10 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
 
     const button = await screen.findByTestId("atlas-git-snapshot-button");
     expect(button).toBeDisabled();
-    expect(button).toHaveTextContent("변경 없음");
+    expect(button).toHaveTextContent("모두 남겼어요");
   });
 
-  it("shows the no-auto-init guidance when the vault is outside a git repo", async () => {
+  it("offers a working start button — not a dead end — when the vault is outside a git repo", async () => {
     installDesktopGit({
       status: {
         initialized: false,
@@ -203,10 +222,102 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
 
-    expect(await screen.findByTestId("atlas-git-not-initialized")).toHaveTextContent(
-      "git init",
-    );
+    // 이 화면의 결함은 "안내만 있고 누를 것이 없다" 였다 — 버튼 존재 자체가 계약.
+    const region = await screen.findByTestId("atlas-git-not-initialized");
+    expect(region).toHaveTextContent("이 폴더의 변경을 남겨둘까요?");
+    expect(screen.getByTestId("atlas-git-init")).toBeEnabled();
+    // 무엇이 만들어지는지 + 되돌리는 방법을 누르기 전에 말한다.
+    expect(region).toHaveTextContent(".git");
+    expect(region).toHaveTextContent("그만두려면");
     expect(screen.queryByTestId("atlas-git-snapshot-button")).not.toBeInTheDocument();
+  });
+
+  it("자동 실행 0 — 마운트만으로는 git_init 을 절대 호출하지 않는다", async () => {
+    installDesktopGit({
+      status: {
+        initialized: false,
+        repoRoot: null,
+        branch: null,
+        upstream: null,
+        changedCount: 0,
+        stagedOutsideVault: [],
+      },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+    await screen.findByTestId("atlas-git-init");
+
+    // 신뢰 헌장: 쓰기 명령은 사용자 클릭 뒤에만. 읽기(git_status)는 허용.
+    const writes = tauriApiMock.invoke.mock.calls.filter(
+      ([cmd]) => cmd === "git_init" || cmd === "git_set_remote" || cmd === "git_snapshot",
+    );
+    expect(writes).toHaveLength(0);
+  });
+
+  it("기록 시작 버튼이 git_init 을 호출하고, 커밋으로 연쇄하지 않는다", async () => {
+    installDesktopGit({
+      status: {
+        initialized: false,
+        repoRoot: null,
+        branch: null,
+        upstream: null,
+        changedCount: 0,
+        stagedOutsideVault: [],
+      },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+
+    fireEvent.click(await screen.findByTestId("atlas-git-init"));
+
+    await waitFor(() =>
+      expect(
+        tauriApiMock.invoke.mock.calls.filter(([cmd]) => cmd === "git_init"),
+      ).toHaveLength(1),
+    );
+    // init 은 init 만 한다 — 자동 커밋이야말로 진짜 헌장 위반이다.
+    expect(
+      tauriApiMock.invoke.mock.calls.filter(([cmd]) => cmd === "git_snapshot"),
+    ).toHaveLength(0);
+  });
+
+  it("보낼 곳이 없으면 실패를 알리는 대신 그 자리에서 주소를 받는다", async () => {
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, upstream: null },
+      diff: { count: 0, files: [], diff: "" },
+      history: HISTORY,
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+
+    const setup = await screen.findByTestId("atlas-git-remote-setup");
+    expect(setup).toHaveTextContent("지금은 이 컴퓨터에만 쌓이고 있어요");
+
+    // 빈 입력으로는 보낼 수 없다.
+    expect(screen.getByTestId("atlas-git-remote-submit")).toBeDisabled();
+
+    fireEvent.change(screen.getByTestId("atlas-git-remote-input"), {
+      target: { value: "git@github.com:me/repo.git" },
+    });
+    fireEvent.click(screen.getByTestId("atlas-git-remote-submit"));
+
+    await waitFor(() =>
+      expect(
+        tauriApiMock.invoke.mock.calls.filter(([cmd]) => cmd === "git_set_remote"),
+      ).toHaveLength(1),
+    );
+    // 주소 등록은 전송이 아니다 — 보내기는 사용자가 따로 눌러야 한다.
+    expect(
+      tauriApiMock.invoke.mock.calls.filter(([cmd]) => cmd === "git_snapshot"),
+    ).toHaveLength(0);
+  });
+
+  it("upstream 이 있으면 주소 입력 칸을 띄우지 않는다", async () => {
+    installDesktopGit({
+      status: STATUS_WITH_CHANGES,
+      diff: { count: 0, files: [], diff: "" },
+      history: HISTORY,
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+    await screen.findByTestId("atlas-git-panel");
+    expect(screen.queryByTestId("atlas-git-remote-setup")).not.toBeInTheDocument();
   });
 
   it("toggles the uncommitted diff as a mono pre block", async () => {

@@ -5770,6 +5770,8 @@ pub fn run() {
             ensure_default_vault_parent_dir,
             start_vault_watch,
             git::git_status,
+            git::git_init,
+            git::git_set_remote,
             git::git_snapshot,
             git::git_history,
             git::git_diff,
