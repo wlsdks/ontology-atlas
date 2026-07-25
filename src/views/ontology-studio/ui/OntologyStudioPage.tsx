@@ -54,6 +54,7 @@ import { buildDeltaPreview } from "../lib/build-delta-preview";
 import { resolveStudioFocalId } from "../lib/resolve-studio-focal";
 import { studioHasDeepLinkIntent } from "../lib/entry-choice";
 import { allowedKindsFor } from "../lib/allowed-kinds";
+import { candidateMatches } from "../lib/match-candidate";
 import {
   clearStudioDraft,
   readStudioDraft,
@@ -192,6 +193,7 @@ export function OntologyStudioPage() {
       pickerSub: t("picker.sub"),
       pickerPlaceholder: t("picker.placeholder"),
       pickerEmpty: t("picker.empty"),
+      pickerBrowseEmpty: t("picker.browseEmpty"),
       pickerKind: (kindLabelText) => kindLabelText,
       pickerCreateNew: t("picker.createNew"),
       suggestHeading: t("picker.suggestHeading"),
@@ -321,11 +323,13 @@ export function OntologyStudioPage() {
       exclude: ReadonlySet<string>,
     ): CreateCandidate[] => {
       const allow = allowedKindsFor(relation, focalKind);
-      const q = query.trim().toLowerCase();
       return candidates
         .filter((c) => allow.has(c.kind))
         .filter((c) => !exclude.has(c.id))
-        .filter((c) => (q ? c.title.toLowerCase().includes(q) || c.ref.toLowerCase().includes(q) : true))
+        // #66 — 표시 이름뿐 아니라 canonical title 과 ref 까지 정규화해 본다.
+        // 예전엔 `c.title`(= display) 만 봐서 `display_ko` 가 달린 노드를 원문
+        // 이름으로 검색할 수 없었다.
+        .filter((c) => candidateMatches(c, query))
         .slice(0, 8);
     },
     [candidates],

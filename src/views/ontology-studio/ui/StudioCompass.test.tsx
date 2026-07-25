@@ -28,6 +28,7 @@ const labels: StudioCompassLabels = {
   pickerSub: "sub",
   pickerPlaceholder: "search nodes",
   pickerEmpty: "empty",
+  pickerBrowseEmpty: "nothing to link yet",
   pickerKind: (k) => k,
   pickerCreateNew: "create new",
   suggestHeading: "Suggested",
@@ -1380,5 +1381,46 @@ describe("StudioCompass — 임시 표면 상호 배타 (#62)", () => {
     fireEvent.click(screen.getByTestId("studio-drafts-open"));
     expect(screen.getByTestId("studio-drafts-panel")).toBeInTheDocument();
     expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
+  });
+});
+
+// #66 — 검색 전 빈 상태는 "맞는 노드가 없어요" 가 아니다. 아직 아무것도 찾지
+// 않았는데 없다고 단정하면 거짓말이고, 사용자는 다음에 뭘 할지 모른다.
+describe("StudioCompass — 피커 빈 상태 구분 (#66)", () => {
+  const EMPTY_DISCOVERY: PickerDiscovery = { suggestions: [], domains: [], nodesByDomain: {} };
+
+  function renderPicker(over: Partial<Parameters<typeof StudioCompass>[0]> = {}) {
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "MCP Server", definition: "def" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down"),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        discoveryFor={() => EMPTY_DISCOVERY}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        {...over}
+      />,
+    );
+  }
+
+  it("검색 전인데 이을 후보가 없으면 다음 행동을 안내한다 — '없어요' 로 끝내지 않는다", () => {
+    renderPicker();
+    fireEvent.click(screen.getByTestId("studio-socket-up"));
+
+    expect(screen.getByTestId("studio-picker-browse-empty")).toHaveTextContent(
+      "nothing to link yet",
+    );
+    expect(screen.queryByText("empty")).not.toBeInTheDocument();
   });
 });

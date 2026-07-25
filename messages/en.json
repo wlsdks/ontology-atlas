@@ -162,7 +162,8 @@
       "reasonTitleSimilar": "Similar name",
       "reasonAdjacent": "Neighbor of a neighbor",
       "browseBack": "← Domains",
-      "browseNoDomain": "No domain"
+      "browseNoDomain": "No domain",
+      "browseEmpty": "No nodes to link yet — start with “Create new” below"
     },
     "fillSaved": "Linked and saved ‘{title}’.",
     "fillCopied": "Copied the MCP command — paste it into your agent to run.",
