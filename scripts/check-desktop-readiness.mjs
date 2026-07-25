@@ -4,8 +4,18 @@ import path from "node:path";
 
 const root = process.cwd();
 
+// 검사 대상 파일이 사라지면 raw ENOENT 스택트레이스로 죽지 않고 읽을 수 있는
+// 실패로 강등한다 — 크래시는 "게이트 실패"가 아니라 "게이트 부재"로 읽혀서,
+// 삭제된 `VaultToolsMenu.tsx` 를 계속 읽던 이 스크립트가 여러 머지 동안 조용히
+// 죽어 있었다 (opus5 검수 2026-07-25). 빈 문자열을 돌려주면 뒤따르는
+// `.includes(...)` 단언이 자연스럽게 실패해 어떤 계약이 깨졌는지도 함께 나온다.
 function readText(relativePath) {
-  return fs.readFileSync(path.join(root, relativePath), "utf8");
+  const absolute = path.join(root, relativePath);
+  if (!fs.existsSync(absolute)) {
+    fail(`tracked source file is missing — ${relativePath}. Point this gate at the surface that replaced it, or drop the check.`);
+    return "";
+  }
+  return fs.readFileSync(absolute, "utf8");
 }
 
 // scripts/verify-macos-app-launch.mjs was decomposed (refactor: cohesive-seam
@@ -32,6 +42,14 @@ function fail(message) {
 
 function pass(message) {
   console.log(`✓ ${message}`);
+}
+
+// 산문 문서는 80열 랩이 걸려 같은 문장이 줄바꿈으로 쪼개진다. 문구 계약을
+// 검사할 때 줄바꿈·연속 공백을 한 칸으로 접어 "래핑 때문에 게이트가 깨지는"
+// 가짜 실패를 없앤다 (opus5 검수 — DESKTOP-MACOS.md 의 "separate GitHub\nPages
+// workflow" 가 정확히 그렇게 깨져 있었다).
+function flow(text) {
+  return text.replace(/\s+/g, " ");
 }
 
 function orderedIndexes(text, needles) {
@@ -108,7 +126,11 @@ const forbiddenFirebasePackages = ["firebase", "firebase-admin", "firebase-tools
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
 const docsVaultPage = readText("src/views/docs-vault/ui/DocsVaultPage.tsx");
 const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEmptyState.tsx");
-const vaultToolsMenu = readText("src/widgets/docs-vault/ui/VaultToolsMenu.tsx");
+// 구 `src/widgets/docs-vault/ui/VaultToolsMenu.tsx` 는 5164f68d7 (B2 — 문서함
+// vault 도구를 설정 메뉴로 합병) 에서 삭제됐다. 에이전트 셋업 표면은 설정 시트의
+// 드릴인 패널로 이사했으므로 게이트도 그쪽을 본다.
+const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx");
+const appSettingsMenu = readText("src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx");
 const localVaultPicker = readText("src/features/docs-vault-local/ui/LocalVaultPicker.tsx");
 const ontologyStarterCta = readText("src/features/docs-vault-local/ui/OntologyStarterCta.tsx");
 const localFsHandleStore = readText("src/entities/local-fs-handle/api/store.ts");
@@ -630,7 +652,14 @@ if (
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-desktop-goal-audit.test.mjs") &&
   goalAuditScript.includes("--pr=NUMBER is required") &&
   goalAuditScript.includes("desktop:release-preflight") &&
-  goalAuditScript.includes("--include-hosted-surface") &&
+  // #617 (Firebase Hosting 제거 → GitHub Pages 단일 호스트) 이후 호스팅 표면은
+  // macOS 앱 릴리스 감사에서 의도적으로 분리됐다 — Pages 는 deploy-pages.yml 이
+  // 따로 배포하고 `desktop:verify-hosted` 가 검증한다. 그래서 goal-audit 은
+  // release-status 를 호스팅 플래그 없이 부르고, 호스팅 검증기는 별도로 존재해야
+  // 한다(둘 다 없으면 호스팅이 아무 게이트에도 안 걸린다).
+  !goalAuditScript.includes("--include-hosted-surface") &&
+  releaseStatusScript.includes("use pnpm desktop:verify-hosted to check the deployed website") &&
+  pkg.scripts?.["desktop:verify-hosted"] === "node scripts/check-hosted-download-surface.mjs" &&
   goalAuditScript.includes(".tmp/desktop-goal-status.json") &&
   goalAuditScript.includes(".tmp/desktop-goal-status.md") &&
   goalAuditScript.includes("--json-file=${options.jsonFile}") &&
@@ -640,7 +669,7 @@ if (
   pass("desktop goal audit requires PR and tag evidence before chaining local preflight with public release and hosted download blockers while writing default JSON and markdown evidence");
 } else {
   fail(
-    "package.json must expose desktop:goal-audit through scripts/check-desktop-goal-audit.mjs, cover it in test:desktop:check, require --pr and --tag before preflight, then run desktop:release-preflight and desktop:release-status -- --include-hosted-surface while writing default .tmp JSON and markdown evidence ignored by git",
+    "package.json must expose desktop:goal-audit through scripts/check-desktop-goal-audit.mjs, cover it in test:desktop:check, require --pr and --tag before preflight, then run desktop:release-preflight and desktop:release-status while writing default .tmp JSON and markdown evidence ignored by git; the hosted website stays out of the app release audit (#617) and must keep its own desktop:verify-hosted gate",
   );
 }
 
@@ -671,7 +700,11 @@ if (
   !downloadPage.includes('/docs/?intent=local') &&
   docsVaultPage.includes("shouldHonorLocalIntent(intent, isDesktopRuntime)") &&
   docsVaultPage.includes("isDocsVaultLocalSourceDisabled") &&
-  docsVaultPage.includes("desktopOnlyTooltip")
+  // 구 `desktopOnlyTooltip` 키는 #435 (문서함 웹 세션 로컬 vault 개방) 에서
+  // `vaultStatus.unsupportedTooltip` 로 통합됐다. 시각 신호는 disabled + 툴팁,
+  // 스크린리더는 aria-describedby 로 *왜* 잠겼는지 듣는다 — 둘 다 요구한다.
+  docsVaultPage.includes("vaultStatus.unsupportedTooltip") &&
+  docsVaultPage.includes("docs-vault-local-unsupported-hint")
 ) {
   pass("the hosted download page does not route into the browser workbench, and /docs's own local-source tab stays desktop-only");
 } else {
@@ -704,24 +737,29 @@ if (
   );
 }
 
+// 이 블록은 한때 README 의 정체성 *표 마크업* 을 문자 그대로 검사했다 — README 가
+// 재작성되자 통째로 stale 이 됐고, 게이트 크래시에 가려 아무도 못 봤다. 이제
+// 표 형식이 아니라 **사실**을 검사한다: 브랜드, 호스팅 URL, 데스크톱 브리지,
+// 브라우저에서의 로컬 폴더 개방, 그리고 은퇴한 표면으로의 유도 금지.
+const readmeFlow = flow(rootReadme);
 if (
-  rootReadme.includes("| **App brand** | **Ontology Atlas**") &&
-  rootReadme.includes("| **Website / downloads** | **https://wlsdks.github.io/ontology-atlas** |") &&
-  rootReadme.includes("| **macOS app** | Install once, pick a local vault folder") &&
-  rootReadme.includes("Ontology Atlas") &&
-  rootReadme.includes("release-artifact identity") &&
-  rootReadme.includes("| **Website** | The root map opens straight into a real, read-only dogfood sample") &&
-  rootReadme.includes("lets you open your own local vault folder from the browser (no install)") &&
-  rootReadme.includes("root-first-open, 2026-07") &&
-  rootReadme.includes("Tauri macOS shell") &&
-  rootReadme.includes("Tauri native vault bridge") &&
+  readmeFlow.includes("# Ontology Atlas") &&
+  readmeFlow.includes("https://wlsdks.github.io/ontology-atlas/") &&
+  readmeFlow.includes("Tauri macOS shell") &&
+  readmeFlow.includes("The macOS app uses a Tauri bridge to your selected folder") &&
+  readmeFlow.includes("hosted web app can open a local folder through the File System Access API") &&
+  readmeFlow.includes("github.com/wlsdks/ontology-atlas/releases") &&
+  // 은퇴/이전 표면으로 사용자를 보내면 안 된다. `/ontology/edit` 빌더는
+  // 2026-07-24 은퇴했고, 로컬 vault 작업을 `localhost:3000/docs` 로 몰던
+  // 옛 문구도 금지다.
+  !rootReadme.includes("/ontology/edit") &&
   !rootReadme.includes("| **Web workbench** |") &&
   !rootReadme.includes("Open `http://localhost:3000`, go to `/docs`")
 ) {
-  pass("root README presents the hosted root map's direct local-folder open path alongside the macOS app as the daily heavy-lift workbench");
+  pass("root README states the brand, hosted demo, desktop Tauri bridge, and browser local-folder path without routing users to retired surfaces");
 } else {
   fail(
-    "README.md must present the hosted root map's own local-folder open path (root-first-open) while still routing daily heavy-lift local visual work to the installed macOS app",
+    "README.md must name the Ontology Atlas brand, the hosted demo URL, the desktop Tauri vault bridge, and the browser local-folder open path — and must not link the retired /ontology/edit builder or the old localhost /docs local-vault flow",
   );
 }
 
@@ -737,8 +775,8 @@ if (
   desktopDoc.includes("Ontology Atlas") &&
   desktopDoc.includes("current release") &&
   desktopDoc.includes("asset identity") &&
-  desktopDoc.includes("root package stays free of Firebase SDK, Firebase Admin, and Firebase CLI") &&
-  desktopDoc.includes("separate GitHub Pages workflow") &&
+  flow(desktopDoc).includes("root package stays free of Firebase SDK, Firebase Admin, and Firebase CLI") &&
+  flow(desktopDoc).includes("separate GitHub Pages workflow") &&
   desktopDoc.includes("not the local-only app package") &&
   architectureDoc.includes("Tauri macOS shell (installed local workbench)") &&
   architectureDoc.includes("The public app/website brand is **Ontology Atlas**") &&
@@ -808,7 +846,11 @@ if (
   downloadPage.includes("releaseStatusHosted") &&
   downloadPage.includes("showFirstReleaseChecklist") &&
   downloadRoute.includes("NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING") &&
-  downloadRoute.includes("!== '0'") &&
+  // opt-in(`=== '1'`) 이 옛 opt-out(`!== '0'`) 보다 안전하다 — 변수를 안 넣은
+  // 배포에서도 미공개 체크리스트가 새지 않는다. 게이트 의도("0이면 숨김")는
+  // 그대로 충족되므로 현행 형태를 계약으로 고정한다.
+  downloadRoute.includes("=== '1'") &&
+  !downloadRoute.includes("!== '0'") &&
   downloadRoute.includes("showFirstReleaseChecklist={showFirstReleaseChecklist}") &&
   /direct-download app release is still waiting on PR review, version alignment, Developer ID signing\/notarization, or the v0\.1\.0 GitHub Release/.test(
     enMessages.download?.releaseAvailabilityNote ?? "",
@@ -865,14 +907,21 @@ if (
   );
 }
 
+// root-first-open (2026-07) 이후 `/` 는 마케팅 랜딩이 아니라 지도 허브 자체다 —
+// vault 없이도 dogfood 샘플 + 첫 실행 스타터를 렌더한다. `<lg` 에서 이 바를
+// 숨기면 데스크톱 nav-rail(`lg:flex`)도 없어 전역 내비가 0이 되므로, 이제
+// 숨김 대상은 자체 헤더를 가진 `/download` 하나뿐이다.
 if (
   bottomTabBar.includes("shouldHideBottomTabBar(pathname") &&
   /normalized === ['"]\/download['"]/.test(bottomTabBarPolicy) &&
-  /normalized === ['"]\/['"] && !hasLoadedVault/.test(bottomTabBarPolicy)
+  /root-first-open/.test(bottomTabBarPolicy) &&
+  !/normalized === ['"]\/['"] &&\s*!hasLoadedVault/.test(bottomTabBarPolicy)
 ) {
-  pass("mobile bottom navigation is hidden on public marketing and download surfaces");
+  pass("mobile bottom navigation hides only on the standalone download page, keeping global nav on the root map");
 } else {
-  fail("BottomTabBar must hide on /download and on the public landing page until a local vault is loaded");
+  fail(
+    "BottomTabBar must hide on /download only — root-first-open made `/` the topology hub, and hiding the bar there strands <lg first-run visitors with no global nav",
+  );
 }
 
 if (
@@ -1553,7 +1602,10 @@ if (missingBundleIcons.length === 0) {
 
 if (
   rootLayout.includes("title: 'Ontology Atlas'") &&
-  rootLayout.includes("manifest: '/manifest.webmanifest'") &&
+  // GitHub Pages 는 `/ontology-atlas` base path 아래로 서빙되므로 manifest 링크는
+  // base-path 인식이어야 한다(#617). 리터럴 `/manifest.webmanifest` 는 Pages 에서
+  // 404 가 나므로 `withBasePath(...)` 형태를 계약으로 고정한다.
+  rootLayout.includes("manifest: withBasePath('/manifest.webmanifest')") &&
   rootLayout.includes("alternateName: 'ontology-atlas'") &&
   webManifest.name === "Ontology Atlas" &&
   webManifest.short_name === "Ontology Atlas" &&
@@ -1753,7 +1805,7 @@ if (
   ontologyStarterCta.includes("vaultPath") &&
   docsVaultPage.includes("vaultPath={") &&
   docsVaultPage.includes("getTauriVaultRootPath(localVault.handle)") &&
-  vaultToolsMenu.includes("vaultPath={vaultRootPath}")
+  vaultAgentSetupPanel.includes("getTauriVaultRootPath(localVault.handle)")
 ) {
   pass("desktop ontology starter copies path-aware CLI and JSON agent gates");
 } else {
@@ -1763,34 +1815,35 @@ if (
 }
 
 if (
-  vaultToolsMenu.includes("buildAgentVerifyCliCommand") &&
-  vaultToolsMenu.includes("buildAgentSetupCliCommand") &&
-  vaultToolsMenu.includes("buildAgentSetupPacket(localVault.handle?.name ?? 'vault', vaultRootPath)") &&
-  vaultToolsMenu.includes("buildAgentFirstContactProofPacket(localVault.handle?.name ?? 'vault', vaultRootPath)") &&
-  vaultToolsMenu.includes("buildOntologyStarterAgentVerifyPrompt(vaultRootPath)") &&
-  vaultToolsMenu.includes("buildOntologyStarterJsonGateCommand(vaultRootPath)") &&
-  vaultToolsMenu.includes("agentJsonGatePreview") &&
-  vaultToolsMenu.includes("hubs ${target} --plan")
+  vaultAgentSetupPanel.includes("buildAgentVerifyCliCommand") &&
+  vaultAgentSetupPanel.includes("buildAgentSetupCliCommand") &&
+  vaultAgentSetupPanel.includes("buildAgentSetupPacket(localVault.handle?.name ?? 'vault', vaultRootPath)") &&
+  vaultAgentSetupPanel.includes("buildAgentFirstContactProofPacket(localVault.handle?.name ?? 'vault', vaultRootPath)") &&
+  vaultAgentSetupPanel.includes("buildOntologyStarterAgentVerifyPrompt(vaultRootPath)") &&
+  vaultAgentSetupPanel.includes("buildOntologyStarterJsonGateCommand(vaultRootPath)") &&
+  vaultAgentSetupPanel.includes("agentJsonGatePreview") &&
+  vaultAgentSetupPanel.includes("hubs ${target} --plan")
 ) {
   pass("desktop agent setup panel copies path-aware setup packets, CLI runbooks, and JSON gates");
 } else {
   fail(
-    "VaultToolsMenu agent setup panel must copy setup packets, first-contact proof, CLI runbooks, verification prompts, and JSON gates against the selected Tauri vault path when available",
+    "VaultAgentSetupPanel must copy setup packets, first-contact proof, CLI runbooks, verification prompts, and JSON gates against the selected Tauri vault path when available",
   );
 }
 
+// 파일 내용만 보는 게이트는 컴포넌트가 어디에도 마운트되지 않아도 초록으로
+// 남는다 — 실제로 `VaultToolsMenu` 삭제 후 `LocalVaultPicker` 가 고아가 됐는데도
+// 이 스크립트는 그 파일 내용을 계속 통과시켰다. 그래서 표면 계약은 "내용 + 마운트"
+// 두 가지를 함께 요구한다.
 if (
-  vaultToolsMenu.includes("getTauriVaultRootPath") &&
-  vaultToolsMenu.includes("openTauriVaultInFinder") &&
-  localVaultPicker.includes("rootPath") &&
-  localVaultPicker.includes("copyPathAriaLabel") &&
-  localVaultPicker.includes("copyText(rootPath)") &&
-  localVaultPicker.includes("revealPathAriaLabel")
+  vaultAgentSetupPanel.includes("getTauriVaultRootPath") &&
+  appSettingsMenu.includes("import { VaultAgentSetupPanel }") &&
+  appSettingsMenu.includes("<VaultAgentSetupPanel")
 ) {
-  pass("desktop local vault tools expose, copy, and reveal the selected absolute vault path");
+  pass("desktop agent setup surface derives the absolute Tauri vault path and is actually mounted by the settings sheet");
 } else {
   fail(
-    "desktop local vault tools must expose the selected absolute Tauri vault path with copy and Finder reveal actions",
+    "the desktop agent setup surface must derive the selected absolute Tauri vault path AND be mounted by AppSettingsMenu — a file that no surface renders is not a shipped contract",
   );
 }
 
