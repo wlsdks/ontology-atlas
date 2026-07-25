@@ -1,9 +1,19 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectDetailPage } from "./ProjectDetailPage";
+
+// 탭 상태가 **URL 에 산다**(#87) — 공유·에이전트 재현을 위해. 실앱에서는
+// `router.replace` 가 리렌더를 일으켜 `useSearchParams` 가 새 값을 준다.
+// 테스트에서 둘 다 목이면 그 루프가 끊기므로, 여기서 이어 붙인다.
+const nav = vi.hoisted(() => ({ search: "", version: 0 }));
+
+vi.mock("next/navigation", () => ({
+  // `version` 을 읽어 replace 후 리렌더 시 새 인스턴스를 만든다.
+  useSearchParams: () => new URLSearchParams(nav.search),
+}));
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
@@ -11,7 +21,13 @@ vi.mock("@/i18n/navigation", () => ({
       {children}
     </a>
   ),
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: (href: string) => {
+      nav.search = href.startsWith("?") ? href.slice(1) : "";
+      nav.version += 1;
+    },
+  }),
 }));
 
 vi.mock("@/features/taxonomy", () => ({
@@ -139,6 +155,8 @@ function renderPage(overrides: { related?: ReturnType<typeof baseProject>[] } = 
 
 describe("ProjectDetailPage", () => {
   beforeEach(() => {
+    // 탭은 URL 상태라 테스트 간에 새지 않게 초기화한다.
+    nav.search = "";
     mocks.vaultBody = null;
     mocks.projects = [];
     mocks.projectsMode = "static";
@@ -176,11 +194,61 @@ describe("ProjectDetailPage", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
+    // #87 — 구성은 탭 뒤에 있고 탭 상태는 URL 이 진실원이다. 렌더 계약과
+    // 클릭 계약을 나눠 검사한다: 여기서는 "URL 이 구성이면 카드가 그려진다".
+    // (클릭 → URL 이동은 Next 의 일이라 아래 별 테스트가 URL 기록만 본다.)
+    nav.search = "tab=composition";
     renderPage();
 
     const card = screen.getByTestId("project-detail-domain-card");
     expect(card).toHaveAttribute("href", "/topology/?mode=focus&p=domain%3Aviews");
     expect(card).toHaveTextContent("Views");
+  });
+
+  it("탭을 누르면 URL 에 기록된다 — 공유·에이전트 재현이 가능해야 한다 (#87)", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = false;
+    renderPage();
+
+    fireEvent.click(screen.getByRole("tab", { name: /composition/i }));
+    expect(nav.search).toContain("tab=composition");
+  });
+
+  it("기본 탭으로 돌아가면 URL 에서 파라미터가 사라진다 (#87)", () => {
+    // 공유 링크가 짧아야 붙여넣기 쉽다 — `?tab=overview` 는 없어도 될 소음이다.
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = false;
+    nav.search = "tab=composition";
+    renderPage();
+
+    fireEvent.click(screen.getByRole("tab", { name: /overview/i }));
+    expect(nav.search).not.toContain("tab=");
+  });
+
+  it("기본은 개요 탭 — 본문이 보이고 구성 카드는 아직 없다 (#87)", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = false;
+    renderPage();
+
+    // 소유자: "스크롤로 모든거 보여주려 안해도 되니까?" — project.md 본문이
+    // 수천 px 라 구성과 같은 스크롤에 두면 구성을 스캔할 방법이 없었다.
+    expect(screen.queryByTestId("project-detail-domain-card")).not.toBeInTheDocument();
+  });
+
+  it("연결된 프로젝트는 탭 밖에 있다 — 어느 탭에서든 보인다 (#87)", () => {
+    // 프로젝트 간 관계를 온톨로지로 다루는 방향의 첫 표면이라 탭 뒤에 숨기면
+    // 안 된다. 구성 탭으로 옮겨도 그대로 있어야 한다.
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = false;
+    renderPage();
+
+    const railBefore = screen.getByTestId("project-detail-connected");
+    fireEvent.click(screen.getByRole("tab", { name: /composition/i }));
+    expect(screen.getByTestId("project-detail-connected")).toBe(railBefore);
   });
 
   it("shows a sentence-form empty state (not a numeral) when no project is connected", () => {
