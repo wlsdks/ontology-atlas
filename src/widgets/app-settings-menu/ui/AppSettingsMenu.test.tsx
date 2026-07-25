@@ -168,6 +168,19 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     expect(screen.getByTestId('app-settings-overlay').className).toContain('scrim');
   });
 
+  it('C14 — scrim and panel mount in the same tick with same-frame enter motion', () => {
+    // No lazy chunk gates the panel: the moment the sheet opens, BOTH the scrim
+    // and the panel are present synchronously (no waitFor), and both carry their
+    // --motion-base enter class so they animate in together, not one-frame-late.
+    openSheet();
+    const overlay = screen.getByTestId('app-settings-overlay');
+    const panel = screen.getByTestId('app-settings-popover');
+    expect(overlay).toBeInTheDocument();
+    expect(panel).toBeInTheDocument();
+    expect(overlay.className).toContain('app-settings-scrim-in');
+    expect(panel.className).toContain('app-settings-panel-in');
+  });
+
   it('shows the workspace folder row with a direct open action when no vault is loaded', () => {
     openSheet();
     expect(screen.getByTestId('app-settings-workspace-folder')).toBeInTheDocument();

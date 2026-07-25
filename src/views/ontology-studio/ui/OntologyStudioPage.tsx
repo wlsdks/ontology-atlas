@@ -52,8 +52,10 @@ import {
 import { buildPickerDiscovery } from "../lib/build-picker-discovery";
 import { buildDeltaPreview } from "../lib/build-delta-preview";
 import { resolveStudioFocalId } from "../lib/resolve-studio-focal";
+import { studioHasDeepLinkIntent } from "../lib/entry-choice";
 import { allowedKindsFor } from "../lib/allowed-kinds";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
+import { StudioEntryChoice } from "./StudioEntryChoice";
 
 /**
  * `/ontology/studio` — the 나침 무대 (Compass Stage), the vault WRITE surface.
@@ -102,6 +104,12 @@ export function OntologyStudioPage() {
 
   const isCreate = searchParams.get("mode") === "create";
   const requestedNode = searchParams.get("node");
+  // #1 — the entry choice moment shows ONLY on a bare `/ontology/studio` open.
+  // Any deep-link intent (mode/node/from/edit, or an insights review return)
+  // carries a decision already, so it skips the choice entirely (pure gate in
+  // lib so the deep-link-skip contract is unit-tested).
+  const hasStudioDeepLink = studioHasDeepLinkIntent(searchParams);
+  const [choiceDismissed, setChoiceDismissed] = useState(false);
   const insightsReturnTab = parseInsightsReturnMarker(
     searchParams.get(ONTOLOGY_DEEPLINK_VIA_KEY),
   );
@@ -717,6 +725,32 @@ export function OntologyStudioPage() {
         createSlugCollision={createSlugCollision}
         onOpenSimilar={openSimilarNode}
         onDismissSimilar={() => setSimilarDismissed(true)}
+      />
+    );
+  }
+
+  // ─────────────────────────────── ENTRY CHOICE (#1) ─────────────────────
+  // Bare open with a non-empty vault → let the user pick intent first instead
+  // of silently dropping into enhance. Deep-links skip this; an empty vault
+  // falls through to the enhance empty-state (which already offers create).
+  if (!hasStudioDeepLink && !choiceDismissed && nodes.length > 0) {
+    return (
+      <StudioEntryChoice
+        labels={{
+          title: t("entryChoice.title"),
+          enhanceTitle: t("entryChoice.enhanceTitle"),
+          enhanceDesc: t("entryChoice.enhanceDesc"),
+          enhanceRecommend: enhanceItem
+            ? t("entryChoice.enhanceRecommend", { name: enhanceItem.node.label })
+            : null,
+          createTitle: t("entryChoice.createTitle"),
+          createDesc: t("entryChoice.createDesc"),
+          exit: t("entryChoice.exit"),
+          dialogAria: t("entryChoice.dialogAria"),
+        }}
+        onEnhance={() => setChoiceDismissed(true)}
+        onCreate={enterCreate}
+        onExit={exit}
       />
     );
   }

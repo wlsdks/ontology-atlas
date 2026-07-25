@@ -493,6 +493,104 @@
     animation: studioStrutFlow 2.4s linear infinite;
   }
 
+  /* ── 공방 모션 카탈로그 (Phase 3 #2, 2026-07-25) ──────────────────────────
+     "의미를 확인하는" 사용성 모션 — 전부 transform/opacity, 글로우/바운스-루프
+     없음, --motion-* 토큰. prefers-reduced-motion 은 아래 base 레이어 전역
+     규칙이 자동으로 즉시 등장으로 무력화. */
+
+  /* 1) 무대 등장 — 센터 카드 → 레인이 순차로 켜진다(opacity + 6px 상승).
+     소비처가 --studio-stagger 인라인 변수로 요소별 지연을 준다(≈40ms 간격). */
+  @keyframes studioStageIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .studio-stage-in {
+    animation: studioStageIn var(--motion-base) var(--motion-ease) both;
+    animation-delay: var(--studio-stagger, 0ms);
+  }
+
+  /* 2) 피커 열림 원점 스케일 — 소켓(앵커)에서 자라난다. transform-origin 은
+     소비처가 --studio-picker-origin 으로 소켓의 로컬 좌표를 주입. */
+  @keyframes studioPickerPop {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .studio-picker-pop {
+    animation: studioPickerPop var(--motion-fast) var(--motion-ease) both;
+    transform-origin: var(--studio-picker-origin, center);
+  }
+
+  /* 4) 커밋 수렴 — 저장 순간 요약 칩이 저장 버튼 방향으로 옅어지며 미끄러진다
+     (한 박자). 소비처가 --studio-converge-x/y 로 이동 벡터를 준다. */
+  @keyframes studioSummaryConverge {
+    from {
+      opacity: 1;
+      transform: translate(0, 0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translate(
+        var(--studio-converge-x, 0),
+        var(--studio-converge-y, 8px)
+      );
+    }
+  }
+
+  .studio-summary-converge {
+    animation: studioSummaryConverge var(--motion-settle) var(--motion-ease) both;
+  }
+
+  /* ── 인사이트 모션 (Phase 3 #3, 2026-07-25) ──────────────────────────────
+     탭 전환 콘텐츠 크로스페이드 — 들어오는 탭 패널의 짧은 페이드-인. 바 채움과
+     카운트업은 각 컴포넌트가 transition/JS 로 처리(토큰 --motion-* 재사용). */
+  .insights-tab-crossfade {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
+  /* ── 설정 패널 전환 (Phase 3 C14, 2026-07-25) ────────────────────────────
+     설정 시트는 lazy chunk 가 아니라 scrim·패널이 같은 createPortal 커밋에서
+     함께 마운트된다. 다만 진입 애니메이션이 없어 scrim 배경만 먼저 칠해지고
+     패널이 한 프레임 뒤 "툭" 나타나는 스톨로 읽혔다(codex ~333ms 측정). scrim
+     과 패널을 같은 프레임에서 --motion-base 로 함께 등장시켜 하나의 의도된
+     모션으로 만든다 — 장식적 이동 없이 opacity/미세 scale 만. reduced-motion 은
+     전역 규칙이 즉시 등장으로 무력화. */
+  @keyframes settingsPanelIn {
+    from {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .app-settings-scrim-in {
+    animation: panelCrossfadeIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  .app-settings-panel-in {
+    animation: settingsPanelIn var(--motion-base) var(--motion-ease) both;
+  }
+
   /* S7 "영역 대장" 좌측 패널 크로스페이드 — 전역 INDEX ↔ 영역 대장 전환 시
      들어오는 표면의 짧은 페이드-인(<200ms). 두 표면이 같은 박스를 차지하므로
      페이드-인이 크로스페이드로 읽힌다. prefers-reduced-motion 은 아래 base
@@ -1450,6 +1548,18 @@
     --topology-motion-drag-settle-duration: 720ms;
     --topology-motion-ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
     --topology-motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* 모션 문법 (Phase 3, 2026-07-25) — 공방·인사이트의 "의미를 확인하는"
+       사용성 모션 단일 duration/easing 패밀리. 헌장 준수: transform/opacity
+       만, 글로우/바운스-루프 없음, ≤240ms, prefers-reduced-motion 은 아래
+       base 레이어 전역 규칙(animation/transition-duration 0.01ms)이 자동
+       무력화. 세 스텝: fast(칩·크로스페이드 등 즉답) · base(패널·피커 등장) ·
+       settle(재배치·안착 등 한 박자 더 긴 확정). 문서: DESIGN-SYSTEM.md
+       "모션 문법". */
+    --motion-fast: 120ms;
+    --motion-base: 180ms;
+    --motion-settle: 240ms;
+    --motion-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
     /* --topology-card-scale 은 SigmaSkeletonCards 가 viewport 폭 기준으로
        컨테이너에 JS 주입한다 — CSS 파이프라인이 utility 미참조 무단위 커스텀
        프로퍼티를 떨구는 동작이 있어 여기 선언하지 않는다. */

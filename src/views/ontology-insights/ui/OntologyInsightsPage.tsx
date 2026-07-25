@@ -619,10 +619,11 @@ export function OntologyInsightsPage() {
           </div>
         ) : (
           <div
+            key={tab}
             role="tabpanel"
             id={`insights-tabpanel-${tab}`}
             aria-labelledby={`insights-tab-${tab}`}
-            className="mt-[var(--section-gap)] flex min-h-0 flex-1 flex-col"
+            className="insights-tab-crossfade mt-[var(--section-gap)] flex min-h-0 flex-1 flex-col"
           >
             {tab === "do-next" ? (
               <DoNextTab

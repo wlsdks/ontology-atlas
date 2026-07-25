@@ -82,6 +82,16 @@
   },
   "ontologyStudio": {
     "searchPlaceholder": "무대에 올릴 노드…",
+    "entryChoice": {
+      "title": "무엇을 할까요?",
+      "enhanceTitle": "기존 노드 강화",
+      "enhanceDesc": "노드 하나를 골라 빠진 관계를 채워요.",
+      "enhanceRecommend": "추천 시작: {name}",
+      "createTitle": "새 노드 만들기",
+      "createDesc": "이름과 관계를 조립해 새 노드를 기록해요.",
+      "exit": "그만하기",
+      "dialogAria": "공방을 어떻게 시작할지 고르기"
+    },
     "exit": "그만하기",
     "returnToReview": "인사이트 검토로 돌아가기",
     "moreRelations": "다른 관계",

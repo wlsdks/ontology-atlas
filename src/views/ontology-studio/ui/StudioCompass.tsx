@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Check,
@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
+import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 import { Select } from "@/shared/ui";
 import type {
   StudioBearing,
@@ -348,11 +349,16 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
   const withFold = overflow > 0;
 
   if (!view.filled) {
-    // Empty socket + dashed strut into it. Boxes are sized with comfortable
-    // inner padding (≥14px) so the plain-language question never touches a wall.
+    // Empty socket + dashed strut into it. #6 (2026-07-25) — the boxes read as
+    // billboards, not slots: the question was `text-callout`, an UNregistered
+    // ramp step that fell back to the root 16px, and the footprints were sized
+    // for that oversize. Question is now text-body(12.5) so the footprints hug
+    // it — up keeps a touch more height for the ◈ guide badge + a 2-line wrap;
+    // the others are the compact single/two-line slot. Inner padding stays
+    // comfortable (≥10px) so the plain-language question never touches a wall.
     if (view.bearing === "up") {
-      const w = 264;
-      const h = 96;
+      const w = 224;
+      const h = 82;
       const y = cardTop - 46 - h;
       const x = CX - w / 2;
       return {
@@ -365,8 +371,8 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
       };
     }
     if (view.bearing === "down") {
-      const w = 240;
-      const h = 82;
+      const w = 204;
+      const h = 64;
       const y = cardBottom + 46;
       const x = CX - w / 2;
       return {
@@ -379,8 +385,8 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
       };
     }
     // left / right empty socket
-    const w = 240;
-    const h = 82;
+    const w = 204;
+    const h = 64;
     const y = CY - h / 2;
     if (view.bearing === "right") {
       const x = cardRight + 128;
@@ -539,6 +545,80 @@ export function StudioCompass(props: StudioCompassProps) {
   const [hoveredBearing, setHoveredBearing] = useState<StudioBearing | null>(null);
   // Transient surfaces (picker / fold list / search) reset automatically: the
   // enhance instance is keyed by node id in the page, so switching nodes remounts.
+
+  // ── 공방 모션 카탈로그 (Phase 3 #2) ────────────────────────────────────────
+  // JS-driven motions (FLIP, commit convergence) must self-skip under reduced
+  // motion — the CSS-only ones are handled by the globals base-layer rule.
+  const reduceMotion = usePrefersReducedMotion();
+
+  // Satellite FLIP — on retype a satellite moves to another lane. Play the move
+  // from its OLD screen position to the NEW one (transform-only, --motion-settle)
+  // so the eye follows where it went instead of it teleporting. A board-level
+  // id→DOM registry survives the lane-to-lane unmount/remount (a moved satellite
+  // is a fresh node in a different LaneRender subtree). The 8px threshold means
+  // the tiny stage-entrance translate never masquerades as a lane move, and
+  // reduced motion skips the whole path. Duration/easing mirror --motion-settle
+  // /--motion-ease (WAAPI can't read CSS var()s here — same copy pattern as
+  // OVERLAY_SPRING in src/shared/motion).
+  const satNodeRefs = useRef(new Map<string, HTMLElement>());
+  const satPrevRects = useRef(new Map<string, DOMRect>());
+  const registerSat = useCallback((id: string, el: HTMLElement | null) => {
+    if (el) satNodeRefs.current.set(id, el);
+    else satNodeRefs.current.delete(id);
+  }, []);
+  useLayoutEffect(() => {
+    const prev = satPrevRects.current;
+    const next = new Map<string, DOMRect>();
+    for (const [id, el] of satNodeRefs.current) {
+      // Skip mid-flight elements so a re-render doesn't read the transformed
+      // rect and start a competing animation; carry their settled rect forward.
+      if (el.getAttribute("data-flip-animating") === "true") {
+        const carried = prev.get(id);
+        if (carried) next.set(id, carried);
+        continue;
+      }
+      const rect = el.getBoundingClientRect();
+      next.set(id, rect);
+      if (reduceMotion) continue;
+      const before = prev.get(id);
+      if (!before) continue;
+      const dx = before.left - rect.left;
+      const dy = before.top - rect.top;
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) continue;
+      el.setAttribute("data-flip-animating", "true");
+      const anim = el.animate(
+        [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "translate(0, 0)" }],
+        { duration: 240, easing: "cubic-bezier(0.25, 0.1, 0.25, 1)", fill: "both" },
+      );
+      anim.onfinish = () => {
+        el.style.transform = "";
+        el.removeAttribute("data-flip-animating");
+      };
+    }
+    satPrevRects.current = next;
+  });
+
+  // Commit convergence — on 확인하고 저장 a summary chip fades/slides toward the
+  // save button (one --motion-settle beat), then the real save (toast) lands.
+  const [converging, setConverging] = useState(false);
+  const convergeTimer = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (convergeTimer.current !== null) window.clearTimeout(convergeTimer.current);
+    },
+    [],
+  );
+  const runSave = useCallback(() => {
+    // reduced motion (or nothing to summarize) → straight to save.
+    if (reduceMotion || !props.summary) {
+      onSave();
+      return;
+    }
+    setConverging(true);
+    if (convergeTimer.current !== null) window.clearTimeout(convergeTimer.current);
+    convergeTimer.current = window.setTimeout(() => setConverging(false), 240);
+    onSave();
+  }, [reduceMotion, props.summary, onSave]);
 
   // Create-mode card grows to keep the near-dup banner inside its dashed border.
   const cardH =
@@ -777,7 +857,9 @@ export function StudioCompass(props: StudioCompassProps) {
 
         {/* one calm frame prompt — top center */}
         <div className="absolute left-1/2 top-4 z-[4] flex -translate-x-1/2 flex-col items-center gap-1 text-center">
-          <div className="whitespace-nowrap text-callout tracking-[-0.006em] text-[color:var(--color-text-secondary)]">
+          {/* #6 — was `text-callout` (unregistered ramp step → root 16px). Pin to
+              the nearest real step so it stays the calm largest label, no drift. */}
+          <div className="whitespace-nowrap text-body-lg tracking-[-0.006em] text-[color:var(--color-text-secondary)]">
             {labels.framePrompt(focal.name || "…")}
           </div>
           {/* C2 — quiet origin context: this new node continues A's bearing. */}
@@ -880,14 +962,16 @@ export function StudioCompass(props: StudioCompassProps) {
             activeBearing={activeBearing}
           />
 
-          {/* lanes */}
-          {layouts.map(({ view, layout }) => (
+          {/* lanes — staggered entrance: card is 0ms, each lane +40ms after. */}
+          {layouts.map(({ view, layout }, laneIndex) => (
             <LaneRender
               key={view.bearing}
               view={view}
               layout={layout}
               labels={labels}
               kindLabelFor={kindLabelFor}
+              stageDelayMs={reduceMotion ? 0 : 40 * (laneIndex + 1)}
+              registerSat={registerSat}
               onOpen={() => openPicker(view.relation)}
               onOpenNode={props.onOpenNode ? guardedOpen : undefined}
               onHoverBearing={setHoveredBearing}
@@ -1054,11 +1138,28 @@ export function StudioCompass(props: StudioCompassProps) {
                 ? labels.commitEmptyHint
                 : labels.saveHint}
           </span>
+          {/* #2 commit convergence — a summary chip slides toward the save button
+              for one --motion-settle beat as the write commits (then the toast). */}
+          {converging && effectiveSummary ? (
+            <span
+              aria-hidden
+              data-testid="studio-commit-converge"
+              className="studio-summary-converge pointer-events-none absolute right-[128px] top-1/2 z-[7] -translate-y-1/2 whitespace-nowrap rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-1 text-label font-medium text-[color:var(--color-indigo-accent)]"
+              style={
+                {
+                  "--studio-converge-x": "104px",
+                  "--studio-converge-y": "0px",
+                } as React.CSSProperties
+              }
+            >
+              {effectiveSummary.collapsed}
+            </span>
+          ) : null}
           <button
             type="button"
             data-testid="studio-save"
             disabled={props.canSave === false}
-            onClick={onSave}
+            onClick={runSave}
             className="flex h-8 items-center gap-2 rounded-lg bg-[color:var(--color-indigo-brand)] px-4 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
           >
             {mode === "create" ? <Check size={15} aria-hidden /> : null}
@@ -1176,7 +1277,7 @@ function CenterCard(
   };
   return (
     <div
-      className="absolute flex flex-col rounded-[14px] bg-[color:var(--color-elevated)] px-[22px] py-[18px] transition-[border-color] duration-200 motion-reduce:transition-none"
+      className="studio-stage-in absolute flex flex-col rounded-[14px] bg-[color:var(--color-elevated)] px-[22px] py-[18px] transition-[border-color] duration-200 motion-reduce:transition-none"
       data-testid="studio-center-card"
       style={{
         left: cardLeft,
@@ -1355,6 +1456,8 @@ function LaneRender({
   layout,
   labels,
   kindLabelFor,
+  stageDelayMs = 0,
+  registerSat,
   onOpen,
   onOpenNode,
   onHoverBearing,
@@ -1370,6 +1473,10 @@ function LaneRender({
   layout: LaneLayout;
   labels: StudioCompassLabels;
   kindLabelFor: (kind: string) => string;
+  /** Stage-entrance stagger delay for this lane's leaves (#2). 0 under reduced motion. */
+  stageDelayMs?: number;
+  /** Board-level FLIP registry — satellite id → its DOM node (#2). */
+  registerSat?: (id: string, el: HTMLElement | null) => void;
   onOpen: () => void;
   onOpenNode?: (id: string) => void;
   /** Report this lane's bearing as hover/focus-active (연관 강조 pair light-up). */
@@ -1398,13 +1505,17 @@ function LaneRender({
         onBlur: () => onHoverBearing(null),
       }
     : {};
+  // #2 stage entrance — this lane's leaves fade+rise in after the card, offset
+  // by stageDelayMs. transform-critical satellites are excluded (FLIP owns their
+  // transform); the head/socket/chip/fold carry the stagger cue.
+  const stageStyle = { "--studio-stagger": `${stageDelayMs}ms` } as React.CSSProperties;
   return (
     <>
       {/* lane head label for a filled lane */}
       {view.filled ? (
         <div
-          className="absolute z-[3] flex items-center gap-1.5 whitespace-nowrap text-label tracking-[0.01em] text-[color:var(--color-text-tertiary)]"
-          style={laneHeadPos(view, layout)}
+          className="studio-stage-in absolute z-[3] flex items-center gap-1.5 whitespace-nowrap text-label tracking-[0.01em] text-[color:var(--color-text-tertiary)]"
+          style={{ ...laneHeadPos(view, layout), ...stageStyle }}
         >
           <span className="h-1 w-1 flex-none rounded-full bg-[color:var(--color-indigo-brand)]" />
           {view.laneLabel}
@@ -1421,6 +1532,8 @@ function LaneRender({
         return (
           <div
             key={sat.id}
+            ref={registerSat ? (el) => registerSat(sat.id, el) : undefined}
+            data-flip-sat={sat.id}
             className="group absolute z-[2]"
             style={{ left: x, top: y, width: SAT.w, height: SAT.h }}
             {...hoverProps}
@@ -1521,12 +1634,13 @@ function LaneRender({
           title={labels.addMore(view.laneLabel)}
           onClick={onOpen}
           {...hoverProps}
-          className="group/add absolute z-[2] flex items-center justify-center gap-1.5 rounded-[9px] border border-dashed border-[color:var(--color-border-strong)] text-label text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-secondary)]"
+          className="studio-stage-in group/add absolute z-[2] flex items-center justify-center gap-1.5 rounded-[9px] border border-dashed border-[color:var(--color-border-strong)] text-label text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-secondary)]"
           style={{
             left: layout.addChip.x,
             top: layout.addChip.y,
             width: layout.addChip.w,
             height: layout.addChip.h,
+            ...stageStyle,
           }}
         >
           <span aria-hidden className="text-[color:var(--color-text-tertiary)] transition-colors group-hover/add:text-[color:var(--color-indigo-text-soft)]">
@@ -1545,13 +1659,14 @@ function LaneRender({
           onClick={onOpen}
           {...hoverProps}
           className={cn(
-            "absolute z-[2] flex flex-col items-start justify-center gap-1.5 rounded-[12px] px-4 py-3.5 text-left transition-colors",
+            "studio-stage-in absolute z-[2] flex flex-col items-start justify-center gap-1 rounded-[12px] px-3.5 py-2.5 text-left transition-colors",
           )}
           style={{
             left: layout.socket.x,
             top: layout.socket.y,
             width: layout.socket.w,
             height: layout.socket.h,
+            ...stageStyle,
             border: view.recommended
               ? "2px dashed var(--color-indigo-a46)"
               : view.expected
@@ -1575,9 +1690,13 @@ function LaneRender({
           ) : (
             <span className="text-label text-[color:var(--color-text-quaternary)]">{view.emptyHint}</span>
           )}
-          <span className="flex items-start gap-2 text-callout font-medium text-[color:var(--color-text-secondary)]">
+          {/* #6 — question is text-body(12.5); `text-callout` was an unregistered
+              ramp step that silently rendered at the root 16px (the "billboard"
+              defect). max-w keeps a long question wrapping at a sane ~18-22ch
+              measure so the socket reads as a quiet slot. */}
+          <span className="flex max-w-[19ch] items-start gap-1.5 text-body font-medium text-[color:var(--color-text-secondary)] [word-break:keep-all]">
             <span className="mt-px flex-none text-[color:var(--color-text-quaternary)]">＋</span>
-            <span className="[word-break:keep-all]">{view.question}</span>
+            <span>{view.question}</span>
           </span>
         </button>
       ) : null}
@@ -1950,12 +2069,25 @@ function InlinePicker({
       : reason === "titleSimilar"
         ? labels.reasonTitleSimilar
         : labels.reasonAdjacent;
+  // #2 origin-scale — the picker grows from the socket it anchors to. It always
+  // sits just below the socket, so the transform-origin is the top edge at the
+  // socket's horizontal center (clamped inside the picker box).
+  const originX = Math.max(0, Math.min(W, socket.x + socket.w / 2 - left));
   return (
     <div
       data-testid="studio-picker"
       data-relation={relation}
-      className="absolute z-[8] flex flex-col rounded-[13px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-      style={{ left, top, width: W, maxHeight, boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+      className="studio-picker-pop absolute z-[8] flex flex-col rounded-[13px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
+      style={
+        {
+          left,
+          top,
+          width: W,
+          maxHeight,
+          boxShadow: "0 12px 34px rgba(0,0,0,.5)",
+          "--studio-picker-origin": `${originX}px 0`,
+        } as React.CSSProperties
+      }
     >
       <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
         <span className="text-caption font-semibold text-[color:var(--color-text-secondary)]">{labels.pickerTitle(question)}</span>
@@ -2363,7 +2495,7 @@ function DeltaPreviewModal({
       >
         {/* header */}
         <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-5 py-3.5">
-          <span className="min-w-0 flex-1 truncate text-callout font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
+          <span className="min-w-0 flex-1 truncate text-body-lg font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
             {labels.previewTitle}
           </span>
           <button

@@ -6,6 +6,7 @@ import { getOntologyKindTone } from "@/entities/ontology-class";
 import type { DependsOnPairRow } from "../../lib/depends-on-rows";
 import type { HubEgoThumbnail } from "../../lib/hub-ego-thumbnail";
 import { relationTypeIndigo } from "../../lib/relation-type-tone";
+import { InsightsBar } from "../parts/InsightsBar";
 
 export interface RelationHubRow {
   id: string;
@@ -91,7 +92,7 @@ export function RelationsTab({
           })}
         </div>
         <div className="mt-2.5 flex flex-col">
-          {edgeTypeRows.map((row) => {
+          {edgeTypeRows.map((row, i) => {
             const width = edgeMax > 0 ? Math.max(2, Math.round((row.count / edgeMax) * 100)) : 0;
             const pct = totalEdges > 0 ? Math.round((row.count / totalEdges) * 100) : 0;
             return (
@@ -104,10 +105,7 @@ export function RelationsTab({
                   {edgeTypeLabel(row.type)}
                 </span>
                 <span className="h-2 flex-1 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
-                  <span
-                    className="block h-full rounded-full"
-                    style={{ width: `${width}%`, backgroundColor: relationTypeIndigo(row.type) }}
-                  />
+                  <InsightsBar pct={width} color={relationTypeIndigo(row.type)} index={i} />
                 </span>
                 <span className="min-w-[52px] flex-none text-right">
                   <span className="block font-mono text-title tabular-nums text-[color:var(--topology-v2-numeral-face)]">
@@ -184,7 +182,7 @@ export function RelationsTab({
               description={labels.noHubsHint}
             />
           ) : (
-            hubs.map((hub) => {
+            hubs.map((hub, i) => {
               const meterPct = hubDegreeMax > 0 ? Math.max(6, Math.round((hub.degree / hubDegreeMax) * 100)) : 0;
               return (
               <Link
@@ -212,10 +210,7 @@ export function RelationsTab({
                     aria-hidden
                     className="mt-1 block h-1 w-14 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]"
                   >
-                    <span
-                      className="block h-full rounded-full"
-                      style={{ width: `${meterPct}%`, backgroundColor: "var(--color-indigo-a66)" }}
-                    />
+                    <InsightsBar pct={meterPct} color="var(--color-indigo-a66)" index={i} />
                   </span>
                 </span>
               </Link>

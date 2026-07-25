@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useCountUp } from "@/shared/lib/use-count-up";
 import type { CensusHealthSummary } from "../../lib/census-health";
 
 /**
@@ -50,7 +51,7 @@ export function InsightsHeroCensus({
           바로 읽는 소속률(도메인에 담긴 개념 비율) + "연결 잘 됨" 요약. 밀도비는
           densityGloss 서브라인으로 강등한다(전문용어를 주숫자에서 내린다). */}
       <HeroSegment label={labels.health}>
-        <BigNum value={`${health.domainMembershipPct}%`} unit={labels.membershipLabel} />
+        <BigNum value={health.domainMembershipPct} suffix="%" unit={labels.membershipLabel} />
         <div className="mt-auto flex flex-col gap-1.5">
           <span className="text-label text-[color:var(--color-text-quaternary)]">{labels.densityGloss}</span>
           <div className="flex flex-wrap items-center gap-3.5 text-label text-[color:var(--color-text-tertiary)]">
@@ -73,14 +74,21 @@ function HeroSegment({ label, children }: { label: string; children: ReactNode }
   );
 }
 
-function BigNum({ value, unit }: { value: number | string; unit?: string }) {
+function BigNum({ value, unit, suffix }: { value: number | string; unit?: string; suffix?: string }) {
+  // #3 — the census signature numbers count up once on mount. tabular-nums keeps
+  // the width stable as digits change; reduced-motion snaps to the final value.
+  const isNumeric = typeof value === "number";
+  const counted = useCountUp(isNumeric ? value : 0);
+  const display = isNumeric ? counted : value;
   return (
     <div
       // eslint-disable-next-line no-restricted-syntax -- 센서스 시그니처 대형 숫자(40px)는 type 램프 상단(hero 30px)을 넘는 의도적 display 예외.
       className="font-mono text-[40px] font-semibold leading-none tabular-nums tracking-[0.01em] text-[color:var(--topology-v2-numeral-face)]"
       style={{ textShadow: "0 2px 0 var(--topology-v2-numeral-shadow)" }}
+      data-testid="insights-bignum"
     >
-      {value}
+      {display}
+      {suffix ?? ""}
       {unit ? (
         <span className="ml-1.5 text-body tracking-[0.06em] text-[color:var(--color-text-quaternary)]" style={{ textShadow: "none" }}>
           {unit}
