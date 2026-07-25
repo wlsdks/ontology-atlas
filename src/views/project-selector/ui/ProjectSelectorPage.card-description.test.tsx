@@ -60,6 +60,10 @@ vi.mock("@/widgets/app-settings-menu", () => ({
   AppSettingsMenu: () => <button type="button" data-testid="app-settings-trigger-stub" />,
 }));
 
+vi.mock("@/widgets/app-nav-rail", () => ({
+  useNavRailSettingsSlot: () => {},
+}));
+
 vi.mock("../lib/use-vault-docs", () => ({
   useVaultDocs: () => [
     {
