@@ -2710,5 +2710,15 @@
     "actionPickExisting": "기존 폴더 선택",
     "actionCreateNew": "빈 폴더로 새로 시작",
     "actionCancel": "다음에"
+  },
+  "agentTerminal": {
+    "title": "터미널",
+    "close": "터미널 닫기",
+    "exited": "세션이 끝났어요",
+    "desktopOnly": "터미널은 앱에서 열려요",
+    "desktopOnlyHint": "브라우저는 이 컴퓨터의 프로그램을 실행할 권한이 없어요.",
+    "needVault": "먼저 폴더를 열어주세요",
+    "needVaultHint": "터미널은 지금 열어 둔 폴더에서 시작해요.",
+    "openLabel": "터미널 열기"
   }
 }

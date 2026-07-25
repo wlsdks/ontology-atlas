@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import {
   AppNavRail,
@@ -12,9 +12,12 @@ import {
   AgentConnectLauncherProvider,
   useAgentConnectLauncher,
 } from "@/widgets/agent-connect";
+import { AgentTerminalDock } from "@/widgets/agent-terminal";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode } from "@/features/data-source-mode";
+import { useLocalVault } from "@/features/docs-vault-local";
+import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 
 /**
@@ -49,12 +52,51 @@ export function AppShell({ children }: { children: ReactNode }) {
           더는 필요 없다(런처·패널 호스트·구 레일 타일 전부 도달 불가였다). */}
       <AgentConnectLauncherProvider>
         <RouteFocusManager />
-        <div className="flex w-full">
-          <AppNavRailSlot />
-          <div className="flex min-w-0 flex-1 flex-col">{children}</div>
-        </div>
+        <ShellWithTerminalDock>{children}</ShellWithTerminalDock>
       </AgentConnectLauncherProvider>
     </NavRailShellProvider>
+  );
+}
+
+/**
+ * 셸 본문 + 하단 터미널 도크 (#79).
+ *
+ * 도크가 **목적지가 아니라 도크**인 이유: LNB 목적지는 "가서 생각하는 장소"고
+ * 터미널은 *다른 표면을 보면서 켜두는 도구* 다. 목적지로 만들면 지도를
+ * 대체해버린다 — VS Code 가 터미널을 하단 패널에 둔 이유와 같다.
+ *
+ * 열림 상태는 셸이 소유한다 — 목적지를 옮겨 다녀도 세션이 유지돼야
+ * "켜두는 도구" 가 성립한다.
+ */
+function ShellWithTerminalDock({ children }: { children: ReactNode }) {
+  const [terminalOpen, setTerminalOpen] = useState(false);
+  const vault = useLocalVault();
+  const vaultPath = vault.handle ? (getTauriVaultRootPath(vault.handle) ?? null) : null;
+
+  // ⌘` — VS Code 와 같은 관용구. 이 키가 **세션을 시작하는 유일한 경로**이므로
+  // 자동 실행 0 이 유지된다(마운트만으로는 아무것도 안 뜬다).
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "`" || !(event.metaKey || event.ctrlKey)) return;
+      event.preventDefault();
+      setTerminalOpen((open) => !open);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  return (
+    <div className="flex h-full w-full flex-col">
+      <div className="flex min-h-0 flex-1">
+        <AppNavRailSlot />
+        <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+      </div>
+      <AgentTerminalDock
+        open={terminalOpen}
+        onClose={() => setTerminalOpen(false)}
+        vaultPath={vaultPath}
+      />
+    </div>
   );
 }
 

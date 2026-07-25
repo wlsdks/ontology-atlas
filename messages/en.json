@@ -2710,5 +2710,15 @@
     "actionPickExisting": "Choose existing folder",
     "actionCreateNew": "Start fresh with an empty folder",
     "actionCancel": "Not now"
+  },
+  "agentTerminal": {
+    "title": "Terminal",
+    "close": "Close terminal",
+    "exited": "Session ended",
+    "desktopOnly": "The terminal runs in the app",
+    "desktopOnlyHint": "A browser isn't allowed to run programs on this computer.",
+    "needVault": "Open a folder first",
+    "needVaultHint": "The terminal starts in the folder you have open.",
+    "openLabel": "Open terminal"
   }
 }
