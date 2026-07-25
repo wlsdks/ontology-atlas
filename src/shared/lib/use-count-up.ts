@@ -12,17 +12,17 @@ import { usePrefersReducedMotion } from "./use-prefers-reduced-motion";
  */
 export function useCountUp(target: number, durationMs = 400): number {
   const reduce = usePrefersReducedMotion();
-  const [value, setValue] = useState(reduce ? target : 0);
+  // Start at the target when there's nothing to animate (reduced motion, or no
+  // rAF as on the server) so no synchronous setState is needed in the effect.
+  const canAnimate = !reduce && typeof requestAnimationFrame === "function";
+  const [value, setValue] = useState(canAnimate ? 0 : target);
   const introDone = useRef(false);
   const synced = useRef(false);
 
   useEffect(() => {
     if (introDone.current) return;
     introDone.current = true;
-    if (reduce || typeof requestAnimationFrame !== "function") {
-      setValue(target);
-      return;
-    }
+    if (!canAnimate) return; // already at target
     let raf = 0;
     const start = performance.now();
     const from = 0;

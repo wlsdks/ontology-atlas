@@ -19,16 +19,16 @@ export function InsightsBar({
   testId?: string;
 }) {
   const reduce = usePrefersReducedMotion();
+  // Under reduced motion `filled` starts at the target (no visible 0). Otherwise
+  // it starts at 0 and flips to the target on the next frame so the CSS width
+  // transition runs from empty — the flip lives in the rAF callback (not the
+  // effect body) so it never cascades a synchronous re-render.
   const [filled, setFilled] = useState(reduce);
 
   useEffect(() => {
-    if (reduce) {
-      setFilled(true);
-      return;
-    }
     const raf = requestAnimationFrame(() => setFilled(true));
     return () => cancelAnimationFrame(raf);
-  }, [reduce]);
+  }, []);
 
   return (
     <span

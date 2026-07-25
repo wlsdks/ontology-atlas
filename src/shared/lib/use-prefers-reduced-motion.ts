@@ -26,8 +26,9 @@ export function usePrefersReducedMotion(): boolean {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return;
     }
+    // Initial value already read synchronously in useState; here we only
+    // subscribe to later changes (avoids a redundant setState in the effect body).
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(query.matches);
     const onChange = (event: MediaQueryListEvent) => setReduced(event.matches);
     query.addEventListener("change", onChange);
     return () => query.removeEventListener("change", onChange);
