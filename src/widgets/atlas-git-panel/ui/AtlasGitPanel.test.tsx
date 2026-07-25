@@ -123,7 +123,7 @@ describe("AtlasGitPanel — 웹(브라우저 vault) 강등", () => {
       removedNodeKinds: new Map(),
     } satisfies OntologyChangeset;
 
-    renderPanel(<AtlasGitPanel sessionChangeset={changeset} onClose={() => {}} />);
+    renderPanel(<AtlasGitPanel sessionChangeset={changeset} />);
 
     expect(await screen.findByTestId("atlas-git-web-body")).toBeInTheDocument();
     expect(screen.getByText("개념 추가 1")).toBeInTheDocument();
@@ -140,7 +140,7 @@ describe("AtlasGitPanel — 웹(브라우저 vault) 강등", () => {
   });
 
   it("shows the empty-session message when the changeset has no changes", async () => {
-    renderPanel(<AtlasGitPanel sessionChangeset={null} onClose={() => {}} />);
+    renderPanel(<AtlasGitPanel sessionChangeset={null} />);
     // Image #16 재구성 — 빈 상태 문장이 섹션 라벨("이 세션에서 감지된 변경")을
     // 반복하지 않는 짧은 상태 카피로 교체됨.
     expect(await screen.findByText("아직 없어요. 문서를 고치면 여기에 나타나요.")).toBeInTheDocument();
@@ -150,7 +150,7 @@ describe("AtlasGitPanel — 웹(브라우저 vault) 강등", () => {
 describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
   it("shows the kind-grouped change summary and recent history", async () => {
     installDesktopGit();
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     const groups = await screen.findByTestId("atlas-git-change-groups");
     expect(groups).toHaveTextContent("capability");
@@ -167,7 +167,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
 
   it("does NOT invoke git_snapshot before the explicit confirm click (신뢰 헌장 — 자동 실행 0)", async () => {
     installDesktopGit();
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     const snapshotButton = await screen.findByTestId("atlas-git-snapshot-button");
     expect(snapshotInvokeCalls()).toHaveLength(0);
@@ -185,7 +185,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
 
   it("passes push:true only when the opt-in checkbox is explicitly checked", async () => {
     installDesktopGit();
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     fireEvent.click(await screen.findByTestId("atlas-git-snapshot-button"));
     const checkbox = screen.getByTestId("atlas-git-push-optin");
@@ -202,7 +202,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
       diff: { count: 0, files: [], diff: "" },
       history: HISTORY,
     });
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     const button = await screen.findByTestId("atlas-git-snapshot-button");
     expect(button).toBeDisabled();
@@ -220,7 +220,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
         stagedOutsideVault: [],
       },
     });
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     // 이 화면의 결함은 "안내만 있고 누를 것이 없다" 였다 — 버튼 존재 자체가 계약.
     const region = await screen.findByTestId("atlas-git-not-initialized");
@@ -243,7 +243,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
         stagedOutsideVault: [],
       },
     });
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     await screen.findByTestId("atlas-git-init");
 
     // 신뢰 헌장: 쓰기 명령은 사용자 클릭 뒤에만. 읽기(git_status)는 허용.
@@ -264,7 +264,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
         stagedOutsideVault: [],
       },
     });
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     fireEvent.click(await screen.findByTestId("atlas-git-init"));
 
@@ -285,7 +285,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
       diff: { count: 0, files: [], diff: "" },
       history: HISTORY,
     });
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     const setup = await screen.findByTestId("atlas-git-remote-setup");
     expect(setup).toHaveTextContent("지금은 이 컴퓨터에만 쌓이고 있어요");
@@ -315,14 +315,14 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
       diff: { count: 0, files: [], diff: "" },
       history: HISTORY,
     });
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     await screen.findByTestId("atlas-git-panel");
     expect(screen.queryByTestId("atlas-git-remote-setup")).not.toBeInTheDocument();
   });
 
   it("toggles the uncommitted diff as a mono pre block", async () => {
     installDesktopGit();
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     fireEvent.click(await screen.findByTestId("atlas-git-diff-toggle"));
     expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
@@ -332,18 +332,21 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
 
   it("expands a history item to its full hash + iso time on click", async () => {
     installDesktopGit();
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={() => {}} />);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     fireEvent.click(await screen.findByTestId("atlas-git-history-item"));
     expect(screen.getByTestId("atlas-git-history-detail")).toHaveTextContent("abc1234def5678");
   });
 
-  it("calls onClose from the header close button", async () => {
+  it("목적지에는 닫기가 없다 — 제목은 페이지 헤드라인이다", async () => {
     installDesktopGit();
-    const onClose = vi.fn();
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" onClose={onClose} />);
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-panel");
 
-    fireEvent.click(await screen.findByTestId("atlas-git-close"));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    // 모달이 삭제되면서(#78 Scope 2) 이 패널의 유일한 소비자가 `/git/` 목적지가
+    // 됐다. 목적지에 "닫기" 는 없다 — 레일로 다른 곳에 가면 그게 나가기다.
+    expect(screen.queryByTestId("atlas-git-close")).not.toBeInTheDocument();
+    // 11px mono eyebrow 가 아니라 h1 — 실측에서 페이지 제목으로 너무 작았다.
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("발자취");
   });
 });

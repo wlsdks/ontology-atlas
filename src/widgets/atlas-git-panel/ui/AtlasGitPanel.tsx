@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 // bare `History` 식별자가 전역 DOM History 생성자로 해석돼 `<History>` JSX 가
 // "Illegal constructor" 로 화면 전체를 에러 바운더리로 추락시켰다(스택 확보,
 // 간헐). 전역과 절대 충돌하지 않는 별칭으로 원천 차단.
-import { Check, Copy, History as HistoryIcon, Monitor, ShieldCheck, X } from "lucide-react";
+import { Check, Copy, History as HistoryIcon, Monitor, ShieldCheck } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
 import {
@@ -64,12 +64,6 @@ export interface AtlasGitPanelProps {
   vaultPath?: string | null;
   /** 웹 강등 요약에 쓸 세션 changeset — HomePage 의 `ontologyChangeset`. */
   sessionChangeset?: OntologyChangeset | null;
-  onClose: () => void;
-  /**
-   * 목적지(`/git/`)로 렌더될 때 true — 헤더의 닫기 X 를 숨긴다. 목적지에는
-   * "닫기" 가 없다(레일로 다른 곳에 가면 그게 나가기다). 모달 호스트만 X 를 쓴다.
-   */
-  hideClose?: boolean;
   className?: string;
 }
 
@@ -91,8 +85,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 export function AtlasGitPanel({
   vaultPath = null,
   sessionChangeset = null,
-  onClose,
-  hideClose = false,
   className,
 }: AtlasGitPanelProps) {
   const t = useTranslations("atlasGit");
@@ -257,37 +249,28 @@ export function AtlasGitPanel({
       // "보기 안 좋고"). AgentConnectSheet 와 같은 역할 분담: 패널은 내용만.
       className={cn("flex w-full flex-col", className)}
     >
-      {/* AgentConnectSheet 헤더 문법 — 인디고 mono eyebrow + body 서브타이틀,
-          border-b 로 본문과 분리. 글자 크기 한 단 승격(소유자: "글자 너무 작아"). */}
-      <header className="flex shrink-0 items-start justify-between gap-2 border-b border-[color:var(--color-border-soft)] px-5 py-4">
-        <div>
-          <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
-            <HistoryIcon size={11} aria-hidden />
-            {t("title")}
-          </p>
-          {/* 구 `subtitle`("vault 의 변경을 git 스냅샷으로 남깁니다")은 12글자에
-              시스템 용어가 3개(vault·git·스냅샷)라 삭제했다. 그 자리를 아래
-              스코프 고지가 대신한다 — 사용자가 두 번째로 확인해야 하는 건 제품
-              설명이 아니라 "내 폴더 밖은 안 건드린다" 다. */}
-          <p className="mt-1 flex items-center gap-1.5 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
-            <ShieldCheck size={11} aria-hidden />
-            {t("scopeNotice")}
-          </p>
-        </div>
-        {hideClose ? null : (
-        <button
-          type="button"
-          aria-label={t("close")}
-          data-testid="atlas-git-close"
-          onClick={onClose}
-          className="rounded p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-        >
-          <X size={15} aria-hidden />
-        </button>
-        )}
+      {/* 페이지 헤더 (2026-07-25 목적지 승격 후속). 모달이 삭제되면서 이 패널의
+          유일한 소비자가 `/git/` 목적지가 됐는데, 헤더는 여전히 모달 문법
+          (11px 인디고 mono eyebrow + 닫기 X)이었다 — 페이지 제목으로는 너무
+          작고, 목적지에는 "닫기" 라는 개념이 없다(레일로 다른 곳에 가면 그게
+          나가기다). 램프 한 단이 아니라 **목적지 헤드라인**(`--text-display`)
+          으로 올린다. */}
+      <header className="flex shrink-0 flex-col gap-1.5 border-b border-[color:var(--color-border-soft)] px-5 pb-4 pt-1">
+        <h1 className="flex items-center gap-2 text-title font-semibold tracking-[-0.005em] text-[color:var(--color-text-primary)] sm:text-[length:var(--text-display)]">
+          <HistoryIcon size={18} aria-hidden className="text-[color:var(--color-indigo-accent)]" />
+          {t("title")}
+        </h1>
+        {/* 구 `subtitle`("vault 의 변경을 git 스냅샷으로 남깁니다")은 12글자에
+            시스템 용어가 3개(vault·git·스냅샷)라 삭제했다. 그 자리를 스코프
+            고지가 대신한다 — 사용자가 두 번째로 확인해야 하는 건 제품 설명이
+            아니라 "내 폴더 밖은 안 건드린다" 다. */}
+        <p className="flex items-center gap-1.5 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+          <ShieldCheck size={11} aria-hidden className="shrink-0" />
+          {t("scopeNotice")}
+        </p>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-5">
       {desktop ? (
         <DesktopBody
           t={t}
