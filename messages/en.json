@@ -103,6 +103,8 @@
     "saveHint": "You can save now even before it's all filled",
     "foldMore": "more",
     "foldTitle": "{label} · {total}",
+    "addMore": "Add more to ‘{label}’",
+    "addMoreShort": "Add more",
     "defMore": "More",
     "defLess": "Less",
     "question": {

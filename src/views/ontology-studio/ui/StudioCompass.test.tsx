@@ -19,6 +19,8 @@ const labels: StudioCompassLabels = {
   saveHint: "hint",
   foldMore: () => "more",
   foldTitle: (label, total) => `${label} · ${total}`,
+  addMore: (label) => `add more to ${label}`,
+  addMoreShort: "add more",
   defMore: "more",
   defLess: "less",
   pickerTitle: (q) => q,
@@ -174,6 +176,24 @@ describe("StudioCompass — enhance", () => {
     expect(onFill).toHaveBeenCalledWith("isA", CANDIDATE);
     // picker closes after a fill.
     expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
+  });
+
+  it("C4 — a FILLED lane exposes a '＋ 더 잇기' add chip that opens the same picker", () => {
+    const onFill = renderEnhance();
+    // The empty (recommended) lane has a socket, not an add chip.
+    expect(screen.queryByTestId("studio-add-more-up")).not.toBeInTheDocument();
+    // The filled `dependsOn` (right) lane has NO empty socket but DOES have the
+    // add chip — the only way to attach another relation on that bearing (C4).
+    expect(screen.queryByTestId("studio-socket-right")).not.toBeInTheDocument();
+    const addChip = screen.getByTestId("studio-add-more-right");
+    expect(addChip).toHaveAccessibleName("add more to lane-dependsOn");
+
+    fireEvent.click(addChip);
+    const picker = screen.getByTestId("studio-picker");
+    expect(picker).toHaveAttribute("data-relation", "dependsOn");
+    // and it fills that bearing in place.
+    fireEvent.click(screen.getByTestId("studio-picker-row-capability:server-interface"));
+    expect(onFill).toHaveBeenCalledWith("dependsOn", CANDIDATE);
   });
 
   it("shows the near-dup suggestion and links it on accept", () => {

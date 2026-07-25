@@ -103,6 +103,8 @@
     "saveHint": "아직 다 안 채워도 지금 저장할 수 있어요",
     "foldMore": "더 보기",
     "foldTitle": "{label} · {total}",
+    "addMore": "‘{label}’ 에 더 잇기",
+    "addMoreShort": "더 잇기",
     "defMore": "더 보기",
     "defLess": "접기",
     "question": {

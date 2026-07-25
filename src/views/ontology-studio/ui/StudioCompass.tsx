@@ -97,6 +97,10 @@ export interface StudioCompassLabels {
   foldMore: (n: number) => string;
   /** Lane overflow popover title, e.g. "이 노드가 품고 있는 것 · 92". */
   foldTitle: (label: string, total: number) => string;
+  /** C4 — filled-lane add chip. (laneLabel) → full aria/title, e.g. "이 노드가
+   * 품고 있는 것에 더 잇기". `addMoreShort` is the compact visible label. */
+  addMore: (laneLabel: string) => string;
+  addMoreShort: string;
   defMore: string;
   defLess: string;
   // picker
@@ -285,9 +289,18 @@ interface LaneLayout {
   sats: Array<{ sat: StudioSatellite; x: number; y: number }>;
   fold: { x: number; y: number; count: number } | null;
   socket: { x: number; y: number; w: number; h: number } | null;
+  /**
+   * FILLED lane only (C4) — a compact dashed "＋ 더 잇기" chip at the lane's
+   * outward end so a lane with satellites still has an entry point to add
+   * another relation on this bearing. Same picker anchor shape as `socket`.
+   */
+  addChip: { x: number; y: number; w: number; h: number } | null;
   struts: string[];
   anchor: { x: number; y: number }; // where the picker beak points
 }
+
+/** Compact add-chip footprint (C4) — narrower/shorter than an empty socket. */
+const ADD_CHIP = { w: SAT.w, h: 30 } as const;
 
 /** Vertically-centered top positions for `n` stacked satellites around `cy`. */
 function stackTops(cy: number, n: number, withFold: boolean): number[] {
@@ -322,6 +335,7 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
         sats: [],
         fold: null,
         socket: { x, y, w, h },
+        addChip: null,
         struts: [`M ${CX} ${cardTop} V ${y + h}`],
         anchor: { x: CX, y: y + h / 2 },
       };
@@ -335,6 +349,7 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
         sats: [],
         fold: null,
         socket: { x, y, w, h },
+        addChip: null,
         struts: [`M ${CX} ${cardBottom} V ${y}`],
         anchor: { x: CX, y: y + h / 2 },
       };
@@ -349,6 +364,7 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
         sats: [],
         fold: null,
         socket: { x, y, w, h },
+        addChip: null,
         struts: [`M ${cardRight} ${CY} H ${x}`],
         anchor: { x, y: CY },
       };
@@ -358,6 +374,7 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
       sats: [],
       fold: null,
       socket: { x, y, w, h },
+      addChip: null,
       struts: [`M ${cardLeft} ${CY} H ${x + w}`],
       anchor: { x: x + w, y: CY },
     };
@@ -379,14 +396,25 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
     if (busBottom - busTop > 0.5) struts.push(`M ${busX} ${busTop} V ${busBottom}`);
     for (const cyi of centers) struts.push(`M ${busX} ${cyi} H ${satMeetX}`);
     let fold: LaneLayout["fold"] = null;
+    let lastBottom = tops[tops.length - 1] + SAT.h;
     if (withFold) {
       const foldY = tops[tops.length - 1] + SAT.h + SAT.gap;
       fold = { x: satX, y: foldY, count: overflow };
       struts.push(`M ${busX} ${foldY + 15} H ${satMeetX}`);
       const newBottom = Math.max(busBottom, foldY + 15);
       struts[1] = `M ${busX} ${busTop} V ${newBottom}`;
+      lastBottom = foldY + 30;
     }
-    return { sats, fold, socket: null, struts, anchor: { x: isRight ? satX : satX + SAT.w, y: CY } };
+    // C4 — compact "＋ 더 잇기" chip below the stack (outward end).
+    const addChip = { x: satX, y: lastBottom + SAT.gap, w: ADD_CHIP.w, h: ADD_CHIP.h };
+    return {
+      sats,
+      fold,
+      socket: null,
+      addChip,
+      struts,
+      anchor: { x: isRight ? satX : satX + SAT.w, y: CY },
+    };
   }
 
   // up / down filled — vertical stack directly above/below the card.
@@ -403,10 +431,19 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
     const foldY = isDown ? y0 + visible.length * (SAT.h + SAT.gap) : y0 - (30 + SAT.gap);
     fold = { x: satX, y: foldY, count: overflow };
   }
+  // C4 — compact "＋ 더 잇기" chip at the outward end (below a DOWN stack, above
+  // an UP stack) so a filled vertical lane still has an add entry point.
+  const stackBottom = isDown
+    ? (fold ? fold.y + 30 : y0 + (visible.length - 1) * (SAT.h + SAT.gap) + SAT.h)
+    : (fold ? fold.y : y0); // up: topmost element top
+  const addChip = isDown
+    ? { x: satX, y: stackBottom + SAT.gap, w: ADD_CHIP.w, h: ADD_CHIP.h }
+    : { x: satX, y: stackBottom - SAT.gap - ADD_CHIP.h, w: ADD_CHIP.w, h: ADD_CHIP.h };
   return {
     sats,
     fold,
     socket: null,
+    addChip,
     struts,
     anchor: { x: CX, y: isDown ? y0 : y0 + SAT.h },
   };
@@ -511,6 +548,10 @@ export function StudioCompass(props: StudioCompassProps) {
         maxY = Math.max(maxY, s.y + SAT.h);
       }
       if (layout.fold) maxY = Math.max(maxY, layout.fold.y + 30);
+      if (layout.addChip) {
+        minY = Math.min(minY, layout.addChip.y);
+        maxY = Math.max(maxY, layout.addChip.y + layout.addChip.h);
+      }
     }
     return CY - (minY + maxY) / 2;
   }, [layouts, cardTop, cardBottom]);
@@ -824,11 +865,12 @@ export function StudioCompass(props: StudioCompassProps) {
             />
           ))}
 
-          {/* inline anchored picker */}
-          {openRelation && openLayout && openLayout.layout.socket ? (
+          {/* inline anchored picker — anchors to the empty socket OR (C4) to the
+              filled lane's "＋ 더 잇기" add chip (same {x,y,w,h} shape). */}
+          {openRelation && openLayout && (openLayout.layout.socket ?? openLayout.layout.addChip) ? (
             <InlinePicker
               key={openRelation}
-              socket={openLayout.layout.socket}
+              socket={(openLayout.layout.socket ?? openLayout.layout.addChip)!}
               bearing={openLayout.view.bearing}
               cardLeft={cardLeft}
               cardRight={cardRight}
@@ -1410,6 +1452,33 @@ function LaneRender({
           pendingNeighborIds={pendingNeighborIds}
           onClose={onCloseFold}
         />
+      ) : null}
+
+      {/* C4 — compact "＋ 더 잇기" chip on a FILLED lane: the entry point to add
+          another relation on this bearing once the empty socket is gone. Dashed =
+          addable (charter), quiet not shouting. Opens the SAME picker. */}
+      {layout.addChip ? (
+        <button
+          type="button"
+          data-testid={`studio-add-more-${view.bearing}`}
+          data-relation={view.relation}
+          aria-label={labels.addMore(view.laneLabel)}
+          title={labels.addMore(view.laneLabel)}
+          onClick={onOpen}
+          {...hoverProps}
+          className="group/add absolute z-[2] flex items-center justify-center gap-1.5 rounded-[9px] border border-dashed border-[color:var(--color-border-strong)] text-label text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-secondary)]"
+          style={{
+            left: layout.addChip.x,
+            top: layout.addChip.y,
+            width: layout.addChip.w,
+            height: layout.addChip.h,
+          }}
+        >
+          <span aria-hidden className="text-[color:var(--color-text-tertiary)] transition-colors group-hover/add:text-[color:var(--color-indigo-text-soft)]">
+            ＋
+          </span>
+          {labels.addMoreShort}
+        </button>
       ) : null}
 
       {/* empty socket */}

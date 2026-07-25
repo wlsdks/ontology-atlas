@@ -50,6 +50,7 @@ import {
 import { buildPickerDiscovery } from "../lib/build-picker-discovery";
 import { buildDeltaPreview } from "../lib/build-delta-preview";
 import { resolveStudioFocalId } from "../lib/resolve-studio-focal";
+import { allowedKindsFor } from "../lib/allowed-kinds";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
 
 /**
@@ -65,14 +66,6 @@ const STUDIO_BASE = "/ontology/studio";
 const CREATE_HREF = `${STUDIO_BASE}?mode=create`;
 
 const CREATE_KINDS: CreateNodeKind[] = ["project", "domain", "capability", "element"];
-
-/** Which existing-node kinds each relation offers as picker candidates. */
-const CANDIDATE_KINDS: Record<StudioRelation, ReadonlySet<string> | null> = {
-  isA: new Set(["capability", "domain", "project"]),
-  dependsOn: new Set(["capability", "element"]),
-  contains: new Set(["capability", "element"]),
-  relates: null, // any non-container
-};
 
 const RELATIONS: StudioRelation[] = ["isA", "dependsOn", "contains", "relates"];
 const BEARING_OF: Record<StudioRelation, StudioBearing> = {
@@ -171,6 +164,8 @@ export function OntologyStudioPage() {
       saveHint: t("saveHint"),
       foldMore: () => t("foldMore"),
       foldTitle: (label, total) => t("foldTitle", { label, total }),
+      addMore: (label) => t("addMore", { label }),
+      addMoreShort: t("addMoreShort"),
       defMore: t("defMore"),
       defLess: t("defLess"),
       pickerTitle: (question) => question,
@@ -289,13 +284,19 @@ export function OntologyStudioPage() {
     [router, preserveReviewContext],
   );
 
-  // Candidate picker for a relation — allowed kinds, minus already-linked / self.
+  // Candidate picker for a relation — allowed kinds (per bearing × focal kind,
+  // C12 ①), minus already-linked / self.
   const makeCandidatesFor = useCallback(
-    (relation: StudioRelation, query: string, exclude: ReadonlySet<string>): CreateCandidate[] => {
-      const allow = CANDIDATE_KINDS[relation];
+    (
+      relation: StudioRelation,
+      focalKind: string | null,
+      query: string,
+      exclude: ReadonlySet<string>,
+    ): CreateCandidate[] => {
+      const allow = allowedKindsFor(relation, focalKind);
       const q = query.trim().toLowerCase();
       return candidates
-        .filter((c) => (allow ? allow.has(c.kind) : c.kind !== "project" && c.kind !== "domain"))
+        .filter((c) => allow.has(c.kind))
         .filter((c) => !exclude.has(c.id))
         .filter((c) => (q ? c.title.toLowerCase().includes(q) || c.ref.toLowerCase().includes(q) : true))
         .slice(0, 8);
@@ -305,16 +306,18 @@ export function OntologyStudioPage() {
 
   // Near-dup nudge in the picker — the user typed the exact name of an existing node.
   const makeSimilarFor = useCallback(
-    (relation: StudioRelation, query: string, exclude: ReadonlySet<string>): CreateCandidate | null => {
+    (
+      relation: StudioRelation,
+      focalKind: string | null,
+      query: string,
+      exclude: ReadonlySet<string>,
+    ): CreateCandidate | null => {
       const q = normalize(query);
       if (q.length < 2) return null;
-      const allow = CANDIDATE_KINDS[relation];
+      const allow = allowedKindsFor(relation, focalKind);
       return (
         candidates.find(
-          (c) =>
-            (allow ? allow.has(c.kind) : c.kind !== "project" && c.kind !== "domain") &&
-            !exclude.has(c.id) &&
-            normalize(c.title) === q,
+          (c) => allow.has(c.kind) && !exclude.has(c.id) && normalize(c.title) === q,
         ) ?? null
       );
     },
@@ -413,7 +416,7 @@ export function OntologyStudioPage() {
         nodes,
         edges,
         relation,
-        allowedKinds: CANDIDATE_KINDS[relation],
+        allowedKinds: allowedKindsFor(relation, enhanceItem?.node.kind ?? null),
         stagedTargetIds: enhanceProjection?.pendingTargetIds,
       }),
     [enhanceItem, nodes, edges, enhanceProjection],
@@ -538,8 +541,8 @@ export function OntologyStudioPage() {
         bearings={bearings}
         filledBearings={filledBearings}
         writable={writable}
-        candidatesFor={(relation, query) => makeCandidatesFor(relation, query, excludeFor(relation))}
-        similarFor={(relation, query) => makeSimilarFor(relation, query, excludeFor(relation))}
+        candidatesFor={(relation, query) => makeCandidatesFor(relation, kind, query, excludeFor(relation))}
+        similarFor={(relation, query) => makeSimilarFor(relation, kind, query, excludeFor(relation))}
         onFill={(relation, candidate) =>
           setRelations((prev) =>
             prev.some((r) => r.type === relation && r.candidate.id === candidate.id)
@@ -767,8 +770,12 @@ export function OntologyStudioPage() {
       bearings={bearings}
       filledBearings={filledBearings}
       writable={writable}
-      candidatesFor={(relation, query) => makeCandidatesFor(relation, query, excludeFor(relation))}
-      similarFor={(relation, query) => makeSimilarFor(relation, query, excludeFor(relation))}
+      candidatesFor={(relation, query) =>
+        makeCandidatesFor(relation, focalItem.node.kind, query, excludeFor(relation))
+      }
+      similarFor={(relation, query) =>
+        makeSimilarFor(relation, focalItem.node.kind, query, excludeFor(relation))
+      }
       discoveryFor={discoveryFor}
       onFill={(relation, candidate) =>
         stage({
