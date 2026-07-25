@@ -1,4 +1,10 @@
-export type AppNavDestinationId = "map" | "docs" | "studio" | "insights" | "projects";
+export type AppNavDestinationId =
+  | "map"
+  | "docs"
+  | "studio"
+  | "insights"
+  | "projects"
+  | "git";
 
 /**
  * Pure prefix matcher for the canonical app destinations (feat/chrome-system
@@ -21,6 +27,7 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
   if (path.startsWith("/ontology/edit") || path.startsWith("/ontology/studio"))
     return "studio";
   if (path.startsWith("/ontology/insights")) return "insights";
+  if (path.startsWith("/git")) return "git";
   if (path.startsWith("/docs")) return "docs";
   if (path.startsWith("/projects") || path.startsWith("/project/")) return "projects";
   if (path === "/" || path.startsWith("/topology")) return "map";

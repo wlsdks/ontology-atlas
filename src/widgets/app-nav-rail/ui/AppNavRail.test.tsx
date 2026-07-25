@@ -254,3 +254,25 @@ describe("AppNavRail", () => {
     );
   });
 });
+
+describe("발자취 목적지 (2026-07-25 승격)", () => {
+  it("여섯 번째 목적지로 선다", () => {
+    renderRail();
+    expect(screen.getByTestId("app-nav-rail-item-git")).toBeInTheDocument();
+  });
+
+  it("미커밋 변경이 있으면 warning 뱃지가 뜨고, 없으면 소멸한다", () => {
+    const { unmount } = renderRail(<AppNavRail gitDirtyCount={3} />);
+    expect(screen.getByTestId("app-nav-rail-badge-git")).toHaveTextContent("3");
+    unmount();
+
+    // 0 이면 회색화가 아니라 **소멸** — ambient 신호는 없을 때 자리를 차지하지 않는다.
+    renderRail(<AppNavRail gitDirtyCount={0} />);
+    expect(screen.queryByTestId("app-nav-rail-badge-git")).not.toBeInTheDocument();
+  });
+
+  it("세 자리 카운트는 `9+` 로 막는다 (타일 지오메트리 보호)", () => {
+    renderRail(<AppNavRail gitDirtyCount={40} />);
+    expect(screen.getByTestId("app-nav-rail-badge-git")).toHaveTextContent("9+");
+  });
+});

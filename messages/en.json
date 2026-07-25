@@ -91,7 +91,8 @@
     "docs": "Docs",
     "studio": "Workshop",
     "insights": "Insights",
-    "projects": "Projects"
+    "projects": "Projects",
+    "git": "History"
   },
   "ontologyStudio": {
     "searchPlaceholder": "Node to bring on stage…",

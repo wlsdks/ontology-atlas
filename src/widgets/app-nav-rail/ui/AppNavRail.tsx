@@ -13,6 +13,10 @@ import {
   BookOpen,
   FolderKanban,
   Gem,
+  // `History as HistoryIcon` — bare `History` 는 특정 HMR/번들 상태에서 전역
+  // DOM History 생성자로 해석돼 "Illegal constructor" 로 화면을 추락시킨다
+  // (AtlasGitPanel 이 같은 사고를 겪었다). 전역과 충돌 없는 별칭으로 고정.
+  History as HistoryIcon,
   Map as MapIcon,
 } from "lucide-react";
 import { useLocalVault } from "@/features/docs-vault-local";
@@ -42,6 +46,12 @@ export interface AppNavRailProps {
    *  항목/키 미지정 시 기존 정적 href 그대로 — `AppShell`이
    *  `useNavRailShellValue()`로 읽은 값을 그대로 넘긴다. */
   contextHrefs?: NavRailContextHrefs | null;
+  /**
+   * 발자취 목적지의 미커밋 변경 수 — 화면 밖 ambient 신호. `AppShell` 이
+   * `useAtlasGitContext()` 로 읽어 넘긴다(위젯이 feature 를 직접 import 하지
+   * 않게). `0` 이면 뱃지가 소멸한다.
+   */
+  gitDirtyCount?: number;
   /** 하단 에이전트 타일 클릭 핸들러 — `connected` 는 레일이 자신의 heartbeat
    *  상태로 판정해 넘긴다(P4-② 분기). `AppShell` 이 연결됨→인사이트 이동,
    *  미연결→연결 시트 열기(전역 launcher)로 라우팅한다. 미지정 시 타일은
@@ -58,6 +68,11 @@ interface RailDestination {
   href: string;
   label: string;
   Icon: ComponentType<{ size?: number; className?: string; "aria-hidden"?: boolean }>;
+  /**
+   * 우상단 카운트 뱃지(미커밋 변경 수). `0`/`undefined` 면 **소멸** — 회색화가
+   * 아니다. 화면 밖 ambient 신호라 attention 계층에 들어가지 않는다.
+   */
+  badgeCount?: number;
 }
 
 function rememberRailRouteFocus(
@@ -98,6 +113,7 @@ export function AppNavRail({
   settingsSlot,
   hidden,
   contextHrefs,
+  gitDirtyCount = 0,
   onAgentTileActivate = null,
   agentConnectOpen = false,
   className,
@@ -149,6 +165,11 @@ export function AppNavRail({
     { id: "studio", href: "/ontology/studio/", label: t("studio"), Icon: Gem },
     { id: "insights", href: "/ontology/insights/", label: t("insights"), Icon: BarChart3 },
     { id: "projects", href: "/projects/", label: t("projects"), Icon: FolderKanban },
+    // 발자취 — 2026-07-25 목적지 승격. 구 "레일 하단 유틸 타일 + 560px 모달"
+    // 은 흡수됐다(입구가 둘이면 #65 계열 결함 재발). 아이콘은 History 유지 —
+    // git 3-노드 그래프 글리프는 이 레일에서 "온톨로지 그래프" 로 읽혀 지도
+    // 아이콘·브랜드 육각과 충돌한다(Design Guardian 반려).
+    { id: "git", href: "/git/", label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
   ];
 
   return (
@@ -192,7 +213,7 @@ export function AppNavRail({
 
       <nav aria-label={t("ariaLabel")} className="flex w-full flex-1 flex-col gap-0.5">
         <ul className="flex w-full flex-col gap-0.5">
-          {destinations.map(({ id, href, label, Icon }) => {
+          {destinations.map(({ id, href, label, Icon, badgeCount }) => {
             const isActive = activeId === id;
             const surfacePath = href.split(/[?#]/, 1)[0] || "/";
             return (
@@ -208,7 +229,7 @@ export function AppNavRail({
                 >
                   <span
                     className={cn(
-                      "flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card transition-colors",
+                      "relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card transition-colors",
                       isActive
                         ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-accent)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
                         : "text-[color:var(--color-text-tertiary)] group-hover:bg-[color:var(--color-overlay-2)] group-hover:text-[color:var(--color-text-primary)]",
@@ -219,6 +240,19 @@ export function AppNavRail({
                       aria-hidden
                       className="h-[var(--app-nav-rail-icon-size)] w-[var(--app-nav-rail-icon-size)]"
                     />
+                    {badgeCount ? (
+                      // 신호톤 warning — `--color-status-warning` 계열 알파 사다리만
+                      // 쓴다. "기록되지 않은 변경이 있다" 는 error 도 done 도 아닌
+                      // 미결/주의라 warning 정의 그대로다(GitStatusTile 이 이미
+                      // 배포한 구분의 연장 — 새 예외 아님). 3자리는 타일 지오메트리를
+                      // 깨뜨리므로 `9+` 로 막는다.
+                      <span
+                        data-testid={`app-nav-rail-badge-${id}`}
+                        className="absolute -right-1 -top-0.5 grid h-[15px] min-w-[15px] place-items-center rounded-full border border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-amber-source-a14)] px-[3px] text-[length:var(--text-caption)] font-bold leading-none tabular-nums text-[color:var(--color-status-warning)]"
+                      >
+                        {badgeCount > 9 ? "9+" : badgeCount}
+                      </span>
+                    ) : null}
                   </span>
                   <span
                     className={cn(

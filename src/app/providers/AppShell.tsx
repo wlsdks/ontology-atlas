@@ -13,8 +13,7 @@ import {
   useAgentConnectLauncher,
 } from "@/widgets/agent-connect";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
-import { AtlasGitLauncherProvider } from "@/shared/lib/atlas-git-launcher";
-import { AtlasGitPanelHost, NavRailGitTile } from "./NavRailGitTile";
+import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 
@@ -45,16 +44,15 @@ import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <NavRailShellProvider>
+      {/* 2026-07-25 — 발자취 모달 런처 제거. 목적지(`/git/`)가 lg+ 레일과
+          `<lg` 크롬 타일 양쪽에서 같은 표면을 담당하므로 셸에 상주하는 모달이
+          더는 필요 없다(런처·패널 호스트·구 레일 타일 전부 도달 불가였다). */}
       <AgentConnectLauncherProvider>
-        {/* #65 — 발자취(Atlas Git) 패널도 셸 상주. `<lg` 에서는 레일이 숨으므로
-            지도의 크롬 타일이 같은 런처로 같은 패널을 연다. */}
-        <AtlasGitLauncherProvider renderPanel={AtlasGitPanelHost}>
-          <RouteFocusManager />
-          <div className="flex w-full">
-            <AppNavRailSlot />
-            <div className="flex min-w-0 flex-1 flex-col">{children}</div>
-          </div>
-        </AtlasGitLauncherProvider>
+        <RouteFocusManager />
+        <div className="flex w-full">
+          <AppNavRailSlot />
+          <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+        </div>
       </AgentConnectLauncherProvider>
     </NavRailShellProvider>
   );
@@ -97,20 +95,24 @@ function AppNavRailSlot() {
   // 공방 1, opus5 검수 2026-07-25 실측). 페이지가 기억해야 하는 구조가 drift 의
   // 원인이므로 기본값을 셸로 올린다 — 페이지는 특별한 슬롯이 필요할 때만
   // 덮어쓴다.
-  // 발자취 타일은 항상 셸이 붙인다 — 페이지가 슬롯을 덮어써도 유틸 티어의
-  // 개수가 화면마다 달라지지 않는다.
-  const utilityTier = (
-    <>
-      <NavRailGitTile />
-      {settingsSlot ?? <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />}
-    </>
-  );
+  // 뱃지 카운트 — 목적지와 **같은 훅**을 읽는다(값이 갈리면 목록은 비었는데
+  // 숫자가 남는 신뢰 사고가 난다). 세션 changeset 기준이라 웹/데스크톱 모두
+  // 동작한다 — 데스크톱 정밀 카운트(`git_status.changedCount`)는 후속.
+  const { changeset: gitChangeset } = useAtlasGitContext();
+  const gitDirtyCount = gitChangeset.touchedNodeIds.size;
+
+  // 2026-07-25 — 발자취는 **목적지로 승격**됐고 이 유틸 타일은 흡수됐다. 입구가
+  // 둘이면(타일 + 목적지) #65 와 같은 계열의 혼란이 재발한다. 미커밋 변경 수는
+  // 목적지 아이콘의 warning 뱃지로 옮겼다.
+  const utilityTier =
+    settingsSlot ?? <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />;
 
   return (
     <AppNavRail
       settingsSlot={utilityTier}
       hidden={hidden}
       contextHrefs={contextHrefs}
+      gitDirtyCount={gitDirtyCount}
       onAgentTileActivate={onAgentTileActivate}
       agentConnectOpen={launcher.wantOpen}
     />

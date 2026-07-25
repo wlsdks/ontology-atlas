@@ -36,7 +36,7 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
-  it("페이지가 슬롯을 주입하지 않아도 활동·발자취·설정이 모두 선다", () => {
+  it("페이지가 슬롯을 주입하지 않아도 활동·설정이 선다", () => {
     render(
       <AppShell>
         <div>page</div>
@@ -45,8 +45,21 @@ describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
 
     const tier = screen.getByTestId("app-nav-rail-utility-tier");
     expect(screen.getByTestId("app-nav-rail-agent-status")).toBeInTheDocument();
-    expect(screen.getByTestId("app-nav-rail-git-tile")).toBeInTheDocument();
-    // 활동 · 발자취 · 설정(<details> 트리거) 세 자식.
-    expect(tier.children.length).toBe(3);
+    // 활동 · 설정(<details> 트리거) 두 자식.
+    expect(tier.children.length).toBe(2);
+  });
+
+  it("발자취는 유틸 타일이 아니라 목적지다 (2026-07-25 승격 — 입구 하나)", () => {
+    render(
+      <AppShell>
+        <div>page</div>
+      </AppShell>,
+    );
+
+    // 구 유틸 타일은 흡수됐다. 입구가 둘이면 #65 계열 혼란이 재발한다.
+    // (목적지 항목 자체가 뜨는지는 `AppNavRail.test.tsx` 가 본다 — 이 파일의
+    //  `@/i18n/navigation` 목이 `Link` 를 children-only 로 렌더해 testid 가
+    //  사라지므로 여기서 단언하면 거짓 실패가 난다.)
+    expect(screen.queryByTestId("app-nav-rail-git-tile")).not.toBeInTheDocument();
   });
 });
