@@ -122,7 +122,11 @@ describe('package contract helpers', () => {
 
     assert.match(section, /\*\*Map\*\*/);
     assert.match(section, /`\/docs`/);
-    assert.match(section, /`\/ontology\/edit`/);
+    // `/ontology/edit` (구 xyflow 빌더)는 2026-07-24 은퇴 — 공방이 조립/연결/
+    // 미리보기/쓰기를 모두 덮으면서 얇은 리다이렉트만 남았다. README 가 은퇴한
+    // 라우트를 소개하면 사용자를 죽은 표면으로 보낸다.
+    assert.match(section, /`\/ontology\/studio`/);
+    assert.doesNotMatch(section, /`\/ontology\/edit`/);
     assert.match(section, /`\/ontology\/insights`/);
     assert.match(section, /`\/projects`/);
     assert.match(section, /\*\*MCP server\*\*/);

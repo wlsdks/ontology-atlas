@@ -2226,7 +2226,8 @@ export function HomePage() {
   const handleScaffoldStarter = useCallback(async () => {
     setStarterScaffolding(true);
     try {
-      const result = await vault.scaffoldOntology();
+      // #73 — 화면 언어로 만든 볼트는 그 언어로 읽히게 한다.
+      const result = await vault.scaffoldOntology(activeLocale);
       toast.show(
         // #70 — 개념 수와 설정 파일 수를 따로 말한다(합치면 "8개" 인데 실제
         // 온톨로지 개념은 5개라 설정 패널의 "문서 5개" 와 어긋났다).

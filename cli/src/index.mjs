@@ -27,6 +27,23 @@ import { stampInitCompleted } from './lib/telemetry.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_ROOT = resolve(__dirname, '..', 'templates', 'vault');
+
+/**
+ * 스타터 본문 로케일 (#73). 파일 세트와 frontmatter(slug/kind/title/display_*)는
+ * 로케일 간 **동일**하고 산문 본문만 다르다 — 그래서 어떤 로케일로 만들었든
+ * 같은 그래프가 나오고, 검색의 단일 진실원인 canonical `title` 도 그대로다.
+ *
+ * 웹 워크벤치는 UI 언어를 알지만 CLI 는 모르므로 명시 플래그로 받는다.
+ * 기본값은 종전과 같은 영어 — 기존 사용자의 `init` 결과가 바뀌지 않는다.
+ */
+const TEMPLATE_ROOTS = {
+  en: TEMPLATE_ROOT,
+  ko: resolve(__dirname, '..', 'templates', 'vault-ko'),
+};
+
+function resolveTemplateRoot(locale) {
+  return TEMPLATE_ROOTS[locale] ?? TEMPLATE_ROOT;
+}
 const PKG_ROOT = resolve(__dirname, '..');
 const PKG = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf-8'));
 const require_ = createRequire(import.meta.url);
@@ -34,7 +51,7 @@ const require_ = createRequire(import.meta.url);
 const MCP_METADATA = readMcpPackageMetadata();
 const MCP_TOOL_COUNT = MCP_METADATA.toolCount ?? 'current';
 const MCP_TOOL_SPLIT = MCP_METADATA.splitText ?? 'read/write';
-const INIT_ALLOWED_FLAGS = ['--help', '--quick-start'];
+const INIT_ALLOWED_FLAGS = ['--help', '--quick-start', '--locale'];
 const TOP_LEVEL_COMMAND_VALUES = ['--help', '-h', 'help', '--version', '-v', ...CLI_COMMANDS];
 
 
@@ -205,9 +222,15 @@ function parseInitArgs(args) {
   }
   const positional = [];
   let quickStart = false;
+  // #73 — 스타터 본문 언어. 파일 세트와 frontmatter 는 동일하고 산문만 다르다.
+  let locale = 'en';
   for (const arg of args) {
     if (arg === '--quick-start') {
       quickStart = true;
+      continue;
+    }
+    if (arg.startsWith('--locale=')) {
+      locale = arg.slice('--locale='.length);
       continue;
     }
     if (arg.startsWith('-')) return { error: formatUnknownFlagError(arg, INIT_ALLOWED_FLAGS) };
@@ -216,14 +239,15 @@ function parseInitArgs(args) {
   if (positional.length > 1) {
     return { error: `too many arguments: ${positional.slice(1).join(' ')}` };
   }
-  return { target: positional[0], quickStart };
+  return { target: positional[0], quickStart, locale };
 }
 
 function printInitUsage(stream = stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas init [folder]\n` +
-      `  ontology-atlas init [folder] --quick-start\n\n` +
+      `  ontology-atlas init [folder] --quick-start\n` +
+      `  ontology-atlas init [folder] --locale=ko\n\n` +
       `Scaffold a local ontology vault. Default folder: ./vault\n\n` +
       `${COLORS.bold}--quick-start${COLORS.reset}  no-prompt one-liner (Slice 0): scaffold + bootstrap from\n` +
       `  this repo + .mcp.json (already unconditional) + an absorb suggestion when\n` +
@@ -311,14 +335,20 @@ async function runInit(targetArg, opts = {}) {
     fail(err?.message ?? String(err));
     return 2;
   }
+  const locale = typeof opts.locale === 'string' ? opts.locale.toLowerCase() : 'en';
+  if (!Object.hasOwn(TEMPLATE_ROOTS, locale)) {
+    fail(`unknown --locale "${locale}" — supported: ${Object.keys(TEMPLATE_ROOTS).join(', ')}`);
+    return 2;
+  }
+  const templateRoot = resolveTemplateRoot(locale);
   info(`scaffolding ontology vault at ${COLORS.bold}${target}${COLORS.reset}`);
 
-  if (!existsSync(TEMPLATE_ROOT)) {
-    fail(`template root not found: ${TEMPLATE_ROOT}`);
+  if (!existsSync(templateRoot)) {
+    fail(`template root not found: ${templateRoot}`);
     return 2;
   }
 
-  const { created, skipped } = copyTree(TEMPLATE_ROOT, target);
+  const { created, skipped } = copyTree(templateRoot, target);
 
   if (created === 0) {
     warn(`no new files written — target already has matching files`);
@@ -604,7 +634,7 @@ async function main() {
       printInitUsage();
       return 1;
     }
-    return runInit(parsed.target, { quickStart: parsed.quickStart });
+    return runInit(parsed.target, { quickStart: parsed.quickStart, locale: parsed.locale });
   }
 
   const runner = CLI_COMMAND_RUNNERS[SUBCOMMAND];
