@@ -80,7 +80,7 @@ const MountedGlobalSearch = dynamic(
     import("@/widgets/global-search").then((m) => m.MountedGlobalSearch),
   { ssr: false },
 );
-// perf sweep 2026-07 — `FullDetailA1` is the opt-in "전체 상세 →" overlay
+// perf sweep 2026-07 — `FullDetailA1` is the opt-in "전체 상세" overlay
 // (design.md: full-bleed detail is opt-in, never the click default), so like
 // the other overlay widgets above it has no business in the first-load
 // bundle. It statically imported `react-markdown` (+ `remark`), which alone

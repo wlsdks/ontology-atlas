@@ -25,7 +25,7 @@ export interface TopologyNodeFocusConnection {
  *
  * 풀스크린 드로어(`TopologyOntologyDrawerModel`)의 *투영*이다 — 재계산 0,
  * 따라서 카운트/연결이 드로어와 drift 하지 않는다. 팝오버는 "그 노드 +
- * 연결된 것만" 을 보여주고, 전체 상세는 `전체 상세 →` opt-in 으로 둔다.
+ * 연결된 것만" 을 보여주고, 전체 상세는 `전체 상세` opt-in 으로 둔다.
  * 설계 근거: `docs/TOPOLOGY-FOCUS-AND-SCALE.md`.
  */
 export interface TopologyNodeFocusModel {
@@ -33,7 +33,7 @@ export interface TopologyNodeFocusModel {
   title: string;
   /**
    * 과제 ⑩ — 표시용 짧은 제목. 컴팩트 팝오버 헤더는 이것을 그린다(전체
-   * `title` 은 "전체 상세 →" opt-in 표면에서만 secondary 로 보존).
+   * `title` 은 "전체 상세" opt-in 표면에서만 secondary 로 보존).
    */
   displayTitle: string;
   kind: string;

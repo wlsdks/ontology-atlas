@@ -317,7 +317,7 @@ export function buildV2EvidenceRows(
  * title/path 분리와 같은 "마지막 슬래시 기준" 규칙을 재사용한다.
  *
  * 화면엔 이 결과만 보이고 원문 전체는 `title=` 네이티브 툴팁으로 접힌다 —
- * "전체 상세 →" 링크가 이미 목적지를 담당하므로 정보 손실은 없다(패널 쪽
+ * "전체 상세" 링크가 이미 목적지를 담당하므로 정보 손실은 없다(패널 쪽
  * 렌더는 `TopologyV2DetailPanel.tsx`의 sticky 푸터/근거 행 참고).
  */
 export function slugDisplaySegment(slug: string): string {

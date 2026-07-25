@@ -38,7 +38,7 @@ import { Tooltip } from "@/shared/ui/tooltip";
  * a wide 28px between-group rhythm (`--topology-v2-panel-zone-gap`), each group
  * self-evident: a directional glyph + bold plain label + indigo count chip +
  * underline, rows carrying the canvas kind glyph (no competing kind word).
- * Footer stays sticky: slug (quiet) + ONE indigo-filled primary "전체 상세 →".
+ * Footer stays sticky: slug (quiet) + ONE indigo-filled primary "전체 상세".
  * The floating power dot was removed (unexplained mark); `powered` now only
  * feeds the freshness fallback word.
  *
@@ -86,7 +86,7 @@ import { Tooltip } from "@/shared/ui/tooltip";
  * non-developer. Both now show only the readable leaf segment
  * (`slugDisplaySegment` / `V2EvidenceRow.title`) and fold the full path
  * behind a native `title=` hover tooltip — information is not lost (the
- * "전체 상세 →" link already owns navigating to the full record), just no
+ * "전체 상세" link already owns navigating to the full record), just no
  * longer competing for first-read attention with the plain-language facts.
  */
 
@@ -130,7 +130,7 @@ export interface TopologyV2DetailPanelLabels {
   noConnections: string;
   handoff: string;
   close: string;
-  /** "전체 상세 →" opt-in link to the A1 full-detail datasheet
+  /** "전체 상세" opt-in link to the A1 full-detail datasheet
    * (`full-detail-a1` widget) — the design gate's details-on-demand step
    * beyond this compact ego popover. */
   openFullDetail: string;
@@ -679,7 +679,7 @@ export function TopologyV2DetailPanel({
       onKeyDown={handleKeyDown}
       // P3-③ (2026-07-21 리텐션 라운드) — 이 패널은 `--topology-node-popover-top`
       // 에 fixed 앵커되는데(HomePage 포지셔너), 자기 자신은 높이 제약이 없어
-      // 연결이 많은 노드에서 콘텐츠가 뷰포트를 넘기면 "전체 상세 →" 푸터가
+      // 연결이 많은 노드에서 콘텐츠가 뷰포트를 넘기면 "전체 상세" 푸터가
       // 화면 밖으로 밀려나 마우스로 닿지 않았다(1440×900, y=911 실측). 뷰포트
       // 기준 max-height + 내부 스크롤로 패널이 항상 뷰포트 안에 온전히 앵커
       // 되도록 clamp한다. 시안 재설계(2026-07-24) — root 는 패딩 없이 스크롤
@@ -904,7 +904,7 @@ export function TopologyV2DetailPanel({
       </div>
 
       {/* Footer (sticky) — slug(좌, 마지막 세그먼트만·전체는 title= hover) +
-          인디고 채움 primary "전체 상세 →"(단 하나의 강조). root 가 무패딩
+          인디고 채움 primary "전체 상세"(단 하나의 강조). root 가 무패딩
           스크롤 컨테이너라 음수 마진 없이 sticky bottom-0 로 앵커된다 —
           내용이 넘칠 때도 항상 뷰포트 안에 남는다(P3-③). */}
       <div className="sticky bottom-0 flex items-center gap-2.5 rounded-b-[var(--topology-v2-panel-radius)] border-t border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-[var(--topology-v2-panel-pad)] py-[11px]">

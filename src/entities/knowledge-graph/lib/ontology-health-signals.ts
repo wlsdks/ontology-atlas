@@ -133,8 +133,8 @@ export interface OntologyHealthActionTarget {
  * promotion (statistical suggestion, lowest urgency). Moved here from
  * `views/home/lib/topology-analysis.ts` (still re-exported there under its
  * old name for the topology map's health chip) so `/ontology/insights`'
- * RelationsTab "수리 큐" section (분석 패널 완전 소멸 2단계 §c) can reuse the
- * SAME picking rule without a cross-view import — both surfaces read this
+ * 할 일 탭 "수리 큐" section can reuse the SAME picking rule without a
+ * cross-view import — both surfaces read this
  * one entities-level function, so the two "next repair" targets can never
  * drift.
  */

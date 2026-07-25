@@ -180,7 +180,7 @@ describe("ProjectSelectorPage", () => {
     expect(
       within(card).getByRole("link", { name: "Open ontology-atlas details" }),
     ).toHaveAttribute("href", "/project/fallback/?slug=ontology-atlas");
-    expect(within(card).getByRole("link", { name: "View in topology →" })).toHaveAttribute(
+    expect(within(card).getByRole("link", { name: "View in topology" })).toHaveAttribute(
       "href",
       expect.stringContaining("ontology-atlas"),
     );

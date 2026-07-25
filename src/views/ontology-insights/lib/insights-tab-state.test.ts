@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_INSIGHTS_TAB,
+  INSIGHTS_TABS,
   buildInsightsTabHref,
   parseInsightsTab,
 } from "./insights-tab-state";
@@ -12,15 +13,26 @@ describe("parseInsightsTab", () => {
     expect(parseInsightsTab("")).toBe("do-next");
   });
 
-  it("accepts the three known tabs", () => {
-    expect(parseInsightsTab("do-next")).toBe("do-next");
-    expect(parseInsightsTab("structure")).toBe("structure");
-    expect(parseInsightsTab("freshness")).toBe("freshness");
+  it("accepts every question tab", () => {
+    expect(INSIGHTS_TABS).toEqual([
+      "do-next",
+      "composition",
+      "connections",
+      "boundaries",
+      "freshness",
+    ]);
+    for (const tab of INSIGHTS_TABS) {
+      expect(parseInsightsTab(tab)).toBe(tab);
+    }
   });
 
-  it("S5 재편 전 공유 링크 호환 — overview/relations 는 구조 탭으로", () => {
-    expect(parseInsightsTab("overview")).toBe("structure");
-    expect(parseInsightsTab("relations")).toBe("structure");
+  it("구 개요/관계 링크 호환 — 각각 구성/연결로", () => {
+    expect(parseInsightsTab("overview")).toBe("composition");
+    expect(parseInsightsTab("relations")).toBe("connections");
+  });
+
+  it("구 구조 탭 링크 호환 — 3분할의 첫 질문인 구성으로", () => {
+    expect(parseInsightsTab("structure")).toBe("composition");
   });
 
   it("falls back to the default tab for unknown values (old reader-intent tabs included)", () => {
@@ -36,13 +48,15 @@ describe("buildInsightsTabHref", () => {
   });
 
   it("appends ?tab= for non-default tabs", () => {
-    expect(buildInsightsTabHref("structure")).toBe("/ontology/insights/?tab=structure");
+    expect(buildInsightsTabHref("composition")).toBe("/ontology/insights/?tab=composition");
+    expect(buildInsightsTabHref("connections")).toBe("/ontology/insights/?tab=connections");
+    expect(buildInsightsTabHref("boundaries")).toBe("/ontology/insights/?tab=boundaries");
     expect(buildInsightsTabHref("freshness")).toBe("/ontology/insights/?tab=freshness");
   });
 
   it("preserves the current locale pathname for native history updates", () => {
-    expect(buildInsightsTabHref("structure", "/ko/ontology/insights/")).toBe(
-      "/ko/ontology/insights/?tab=structure",
+    expect(buildInsightsTabHref("composition", "/ko/ontology/insights/")).toBe(
+      "/ko/ontology/insights/?tab=composition",
     );
     expect(buildInsightsTabHref("do-next", "/en/ontology/insights/")).toBe(
       "/en/ontology/insights/",
