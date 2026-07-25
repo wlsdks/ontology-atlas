@@ -82,6 +82,16 @@
   },
   "ontologyStudio": {
     "searchPlaceholder": "Node to bring on stage…",
+    "entryChoice": {
+      "title": "What would you like to do?",
+      "enhanceTitle": "Enhance an existing node",
+      "enhanceDesc": "Pick one node and fill in the relations it's missing.",
+      "enhanceRecommend": "Suggested start: {name}",
+      "createTitle": "Create a new node",
+      "createDesc": "Assemble a name and relations to record a brand-new node.",
+      "exit": "Never mind",
+      "dialogAria": "Choose how to start in the workshop"
+    },
     "exit": "Stop",
     "returnToReview": "Back to insight review",
     "moreRelations": "More relations",
