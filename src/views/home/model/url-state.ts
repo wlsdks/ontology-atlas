@@ -14,7 +14,6 @@ import {
 export type HomePulseMode = "all" | "7d" | "30d";
 export type TopologyAnalysisMode =
   | "overview"
-  | "graph"
   | "focus"
   | "path"
   | "health";
@@ -120,7 +119,6 @@ const VALID_IMPACT: ProjectImpactMode[] = [
 const VALID_PULSE: HomePulseMode[] = ["all", "7d", "30d"];
 const VALID_ANALYSIS_MODE: TopologyAnalysisMode[] = [
   "overview",
-  "graph",
   "focus",
   "path",
   "health",

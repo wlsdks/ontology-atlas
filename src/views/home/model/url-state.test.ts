@@ -107,11 +107,13 @@ describe("parseHomeRouteState", () => {
     });
   });
 
-  it("honors mode=graph as the living-graph exploration mode", () => {
+  it("falls back to overview for the removed live-graph mode (#19)", () => {
+    // 살아있는 그래프(물리) 토글 제거 후 mode=graph 는 더는 유효 모드가
+    // 아니다 — 옛 공유 링크는 조용히 overview 로 강등된다.
     const params = new URLSearchParams("mode=graph");
 
     expect(parseHomeRouteState(params)).toMatchObject({
-      analysisMode: "graph",
+      analysisMode: "overview",
       selectedSlug: null,
     });
   });
@@ -126,15 +128,15 @@ describe("parseHomeRouteState", () => {
     });
   });
 
-  it("keeps graph mode on node selection instead of promoting to focus", () => {
-    const params = new URLSearchParams("mode=graph");
+  it("keeps the current mode on node selection instead of promoting to focus", () => {
+    const params = new URLSearchParams("mode=health");
     const state = parseHomeRouteState(params);
 
     expect(
       selectTopologyNodeRouteState(state, "domain:views"),
     ).toMatchObject({
       selectedSlug: "domain:views",
-      analysisMode: "graph",
+      analysisMode: "health",
     });
   });
 
@@ -574,13 +576,13 @@ describe("밀도 게이트 확장 상태 (?open=)", () => {
 
   it("무효 무시: 빈 항목·중복·공백은 걸러지고, 다른 파라미터 탐색은 유지된다", () => {
     const state = parseHomeRouteState(
-      new URLSearchParams("p=pick&open=,a,,a, b ,&mode=graph"),
+      new URLSearchParams("p=pick&open=,a,,a, b ,&mode=health"),
     );
     // 빈 항목/중복 제거, 트림. b 는 트림돼 살아남는다.
     expect(state.expandedParents).toEqual(["a", "b"]);
     // open 파싱이 나머지 라우트 상태를 오염시키지 않는다.
     expect(state.selectedSlug).toBe("pick");
-    expect(state.analysisMode).toBe("graph");
+    expect(state.analysisMode).toBe("health");
     // open 미지정이면 빈 배열(왕복 안전).
     expect(parseHomeRouteState(new URLSearchParams("p=pick")).expandedParents).toEqual([]);
   });

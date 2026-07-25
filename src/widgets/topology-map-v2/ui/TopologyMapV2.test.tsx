@@ -15,7 +15,6 @@ const baseProps: TopologyMapV2Props = {
   focus: {
     selectedSlug: null,
   },
-  livePhysics: false,
   fitViewToken: 0,
   relayoutToken: 0,
 };

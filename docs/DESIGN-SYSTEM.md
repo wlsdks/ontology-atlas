@@ -461,9 +461,9 @@ names in component data markers and tests whenever a surface depends on
   right-side inspector space.
 - `--topology-panel-compact-width`: compact fallback when header alignment is
   unavailable.
-- `--topology-panel-graph-width`: Graph 모드(살아있는 그래프) 레일 —
-  프롬프트 1줄 + 카운트만 담는 최소 폭. 캔버스가 주인공인 뷰라 overview 계열
-  폭을 물려받지 않는다.
+- `--topology-panel-graph-width`: (은퇴 #19, 2026-07-25) 구 Graph 모드
+  (살아있는 그래프) 레일 폭. 물리 토글이 제거되면서 소비처가 사라진
+  orphan 토큰 — 후속 정리 대기.
 - `--topology-panel-compact-reserved-width`: compact fallback with reserved
   right-side inspector space.
 - `--topology-chrome-control-height` (+ `-compact`) / `--topology-chrome-badge-size`
@@ -1723,7 +1723,7 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 
 - 크롬 필/타일은 **별도 잠금 토큰** `--chrome-tile-size`(36px)를 계속 쓴다 —
   이 컨트롤 스케일은 크롬 시스템 **밖**의 인터랙티브 컨트롤(캐노니컬 Select,
-  폼 입력 등)용. 지도 우상단 툴바(자동 정렬·검색·살아있는 그래프·최근 변경·
+  폼 입력 등)용. 지도 우상단 툴바(자동 정렬·검색·최근 변경·
   작업공간·+ 개념)는 크롬 시스템에 속해 전부 `--chrome-tile-size`(36px)로
   수렴한다 — "+ 개념" primary 도 같은 높이·radius·타이포(text-label·아이콘
   14px)로 정합(#13).

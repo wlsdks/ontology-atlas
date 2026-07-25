@@ -17,7 +17,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 // `History as HistoryIcon` — 전역 DOM History 생성자와의 충돌 원천 차단
 // (사용성 검수 P0, AtlasGitPanel 과 동일 처방).
-import { BookOpen, Compass, FolderOpen, HelpCircle, History as HistoryIcon, Plus, Waypoints, X } from "lucide-react";
+import { BookOpen, Compass, FolderOpen, HelpCircle, History as HistoryIcon, Plus, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
@@ -139,7 +139,6 @@ import {
   resolveRealmNodeId,
   buildContainmentParentMap,
   deriveDeeplinkAncestorExpansion,
-  type TopologyAnalysisMode,
 } from "../model/url-state";
 import {
   buildTopologyAnalysisSummary,
@@ -2451,18 +2450,6 @@ export function HomePage() {
     [projectBySlug, setRouteState],
   );
 
-  const handleSelectAnalysisMode = useCallback(
-    (mode: TopologyAnalysisMode) => {
-      setRouteState((current) => ({
-        ...current,
-        analysisMode: mode,
-        pathSourceSlug: mode === "path" ? current.pathSourceSlug : null,
-        pathTargetSlug: mode === "path" ? current.pathTargetSlug : null,
-      }));
-    },
-    [setRouteState],
-  );
-
   const preloadProjectAsset = useCallback(
     (slug: string) => {
       const project = projectBySlug.get(slug);
@@ -2772,43 +2759,13 @@ export function HomePage() {
                       label={(count) => t('controls.reviewLabel', { count })}
                       ariaLabel={(count) => t('controls.reviewAria', { count })}
                     />
-                    {/* 살아있는 그래프(physics on) 토글 — 분석 패널 완전 소멸
-                        2단계 §d 로 TopologyAnalysisBar 의 2-tab 모드 레일에서
-                        이관. 그 레일은 focus/path/health 가 모두 빠진 뒤
-                        overview 모드에서는 leftSlotOwner 가 INDEX 를 우선해
-                        전혀 렌더되지 않아(§a) 클릭으로 도달할 방법이 없었다
-                        — 이 유틸리티 레일 칩이 유일한 진입점이 된다. */}
-                    <Tooltip content={t('controls.graphToggleTooltip')} side="bottom" withProvider={false}>
-                      <ChromeChip
-                        onClick={() =>
-                          handleSelectAnalysisMode(analysisMode === "graph" ? "overview" : "graph")
-                        }
-                        aria-pressed={analysisMode === "graph"}
-                        aria-label={t('controls.graphToggleAriaLabel')}
-                        data-testid="topology-graph-toggle"
-                        data-utility-action-token-contract="support-surface-family"
-                        data-utility-action-surface-token="--chrome-surface"
-                        data-utility-action-border-token="--chrome-border"
-                        data-utility-action-hover-surface-token="--color-overlay-2"
-                        data-utility-action-active-surface-token="--chrome-active-surface"
-                        data-utility-action-active-border-token="--chrome-active-border"
-                        data-utility-action-shadow-token="--chrome-shadow"
-                        data-utility-action-focus-ring-token="--color-indigo-accent"
-                        compact={topologyUtilityChromeCompact}
-                        icon={<Waypoints />}
-                        active={analysisMode === "graph"}
-                        // <2xl 아이콘-only — 라벨 사다리(겹침 소탕 2026-07-23).
-                        // 스포트라이트 칩 추가로 레인이 넓어져 1440 에서 검색
-                        // 레인과 재충돌(실측 18px) — 토글류(그래프·최근 변경)
-                        // 라벨을 한 단계 먼저 접어 주 CTA(Switch) 라벨을 지킨다.
-                        // aria-label + 툴팁이 뜻을 보존한다.
-                        className="max-2xl:[&_[data-chip-label]]:hidden"
-                      >
-                        {t('controls.graphToggleLabel')}
-                      </ChromeChip>
-                    </Tooltip>
+                    {/* 살아있는 그래프(물리) 토글은 제거됐다(#19, fable 판정
+                        2026-07-25) — 상시 force 시뮬은 어느 청중의 과업에도
+                        봉사하지 않고(읽기엔 위치 안정성이 생명) 공간 기억을
+                        파괴했다. 자유 드래그는 남는다(그 노드만 이동, 세션 한정,
+                        상시 물리 없음). */}
                     {/* 최근 변경 스포트라이트 (협의회 설계 2026-07-23) — 렌즈
-                        토글. 그래프 토글과 같은 ChromeChip 문법/축약 사다리.
+                        토글. 스포트라이트 칩의 ChromeChip 문법/축약 사다리.
                         상태는 URL `?recent=` 단일 진실원 (공유/에이전트 재현). */}
                     <Tooltip content={t('controls.spotlightTooltip')} side="bottom" withProvider={false}>
                       <ChromeChip
@@ -3534,7 +3491,6 @@ export function HomePage() {
                     edges={topologyV2Graph.edges}
                     focus={{ selectedSlug: canvasSelectedSlug }}
                     changedSlugs={changedSlugs}
-                    livePhysics={analysisMode === "graph"}
                     fitViewToken={combinedFitToken}
                     relayoutToken={topologyRelayoutToken}
                     revealToken={mapRevealToken}
