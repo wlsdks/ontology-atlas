@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  activeDocTabStorageKey,
   DOC_TABS_MAX,
   closeDocTab,
   docTabsStorageKey,
   openOrActivateDocTab,
   pruneMissingDocTabs,
+  readStoredActiveDocSlug,
   readStoredDocTabs,
+  resolveRestoredActiveDocSlug,
+  storeActiveDocSlug,
   storeDocTabs,
   type DocTab,
 } from "./doc-tabs";
@@ -64,6 +68,23 @@ describe("readStoredDocTabs / storeDocTabs", () => {
   });
 });
 
+describe("readStoredActiveDocSlug / storeActiveDocSlug", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it("vault별 마지막 명시적 활성 문서를 별도 key로 round-trip 한다", () => {
+    storeActiveDocSlug("local:my-vault", "capabilities/audit-sample");
+    expect(activeDocTabStorageKey("local:my-vault")).toBe(
+      "docsVault:activeTab:local:my-vault",
+    );
+    expect(readStoredActiveDocSlug("local:my-vault")).toBe(
+      "capabilities/audit-sample",
+    );
+    expect(readStoredActiveDocSlug("server")).toBeNull();
+  });
+});
+
 describe("pruneMissingDocTabs", () => {
   it("validSlugs 에 없는 탭(rename/delete 로 사라진 문서)을 조용히 제거한다", () => {
     const tabs = [makeTab("README", 1), makeTab("GONE", 2)];
@@ -75,6 +96,55 @@ describe("pruneMissingDocTabs", () => {
     const tabs = [makeTab("README", 1)];
     const next = pruneMissingDocTabs(tabs, new Set(["README", "FEATURES"]));
     expect(next).toBe(tabs);
+  });
+});
+
+describe("resolveRestoredActiveDocSlug", () => {
+  const tabs = [
+    makeTab("README", 10),
+    makeTab("capabilities/audit-sample", 30),
+    makeTab("FEATURES", 20),
+  ];
+
+  it("URL 딥링크가 없으면 현재 vault의 가장 최근 활성 탭을 복원한다", () => {
+    expect(
+      resolveRestoredActiveDocSlug({
+        tabs,
+        validSlugs: new Set(["README", "capabilities/audit-sample", "FEATURES"]),
+        querySlug: null,
+      }),
+    ).toBe("capabilities/audit-sample");
+  });
+
+  it("명시적으로 기억한 활성 문서는 시작 기본값이 갱신한 탭 시각보다 우선한다", () => {
+    expect(
+      resolveRestoredActiveDocSlug({
+        tabs,
+        validSlugs: new Set(["README", "capabilities/audit-sample", "FEATURES"]),
+        querySlug: null,
+        storedActiveSlug: "README",
+      }),
+    ).toBe("README");
+  });
+
+  it("URL 딥링크가 있으면 저장된 활성 탭으로 덮어쓰지 않는다", () => {
+    expect(
+      resolveRestoredActiveDocSlug({
+        tabs,
+        validSlugs: new Set(["README", "capabilities/audit-sample", "FEATURES"]),
+        querySlug: "FEATURES",
+      }),
+    ).toBeNull();
+  });
+
+  it("현재 vault에서 사라진 탭은 복원 후보에서 제외한다", () => {
+    expect(
+      resolveRestoredActiveDocSlug({
+        tabs,
+        validSlugs: new Set(["README", "FEATURES"]),
+        querySlug: null,
+      }),
+    ).toBe("FEATURES");
   });
 });
 

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { TabBar } from './tab-bar';
@@ -7,6 +8,27 @@ const ITEMS = [
   { key: 'relations', label: '관계', count: 508 },
   { key: 'freshness', label: '신선도', count: '12주' },
 ];
+
+function InteractiveTabBar({
+  initialKey,
+  onSelect,
+}: {
+  initialKey: string;
+  onSelect: (key: string) => void;
+}) {
+  const [activeKey, setActiveKey] = useState(initialKey);
+  return (
+    <TabBar
+      items={ITEMS}
+      activeKey={activeKey}
+      onSelect={(key) => {
+        onSelect(key);
+        setActiveKey(key);
+      }}
+      ariaLabel="탭"
+    />
+  );
+}
 
 describe('TabBar', () => {
   it('renders every tab with its label and engraved count', () => {
@@ -21,9 +43,13 @@ describe('TabBar', () => {
     const active = screen.getByRole('tab', { name: /관계/ });
     const inactive = screen.getByRole('tab', { name: /개요/ });
     expect(active).toHaveAttribute('aria-selected', 'true');
+    expect(active).toHaveAttribute('tabindex', '0');
     expect(inactive).toHaveAttribute('aria-selected', 'false');
+    expect(inactive).toHaveAttribute('tabindex', '-1');
     expect(active.className).toContain('color-indigo-accent');
     expect(inactive.className).toContain('border-transparent');
+    expect(active.className).toContain('focus-visible:ring-inset');
+    expect(active.className).toContain('color-indigo-ring-a46');
   });
 
   it('calls onSelect with the clicked tab key', () => {
@@ -31,6 +57,17 @@ describe('TabBar', () => {
     render(<TabBar items={ITEMS} activeKey="overview" onSelect={onSelect} ariaLabel="탭" />);
     fireEvent.click(screen.getByRole('tab', { name: /신선도/ }));
     expect(onSelect).toHaveBeenCalledWith('freshness');
+  });
+
+  it('keeps focus without navigating again when the active tab is clicked', () => {
+    const onSelect = vi.fn();
+    render(<TabBar items={ITEMS} activeKey="overview" onSelect={onSelect} ariaLabel="탭" />);
+    const overview = screen.getByRole('tab', { name: /개요/ });
+
+    fireEvent.click(overview);
+
+    expect(overview).toHaveFocus();
+    expect(onSelect).not.toHaveBeenCalled();
   });
 
   it('renders a tab with no count (no stray undefined text)', () => {
@@ -43,5 +80,71 @@ describe('TabBar', () => {
       />,
     );
     expect(screen.getByRole('tab', { name: 'A' })).toBeInTheDocument();
+  });
+
+  it('moves focus and activates tabs with horizontal arrow keys, wrapping at both ends', () => {
+    const onSelect = vi.fn();
+    render(<InteractiveTabBar initialKey="overview" onSelect={onSelect} />);
+    const overview = screen.getByRole('tab', { name: /개요/ });
+    const relations = screen.getByRole('tab', { name: /관계/ });
+    const freshness = screen.getByRole('tab', { name: /신선도/ });
+
+    overview.focus();
+    fireEvent.keyDown(overview, { key: 'ArrowRight' });
+    expect(relations).toHaveFocus();
+    expect(onSelect).toHaveBeenLastCalledWith('relations');
+
+    fireEvent.keyDown(relations, { key: 'ArrowLeft' });
+    expect(overview).toHaveFocus();
+    expect(onSelect).toHaveBeenLastCalledWith('overview');
+
+    fireEvent.keyDown(overview, { key: 'ArrowLeft' });
+    expect(freshness).toHaveFocus();
+    expect(onSelect).toHaveBeenLastCalledWith('freshness');
+  });
+
+  it('restores focus to the activated tab after the activeKey commit', () => {
+    const onSelect = vi.fn();
+    const { rerender } = render(
+      <>
+        <button type="button">바깥 포커스</button>
+        <TabBar items={ITEMS} activeKey="overview" onSelect={onSelect} ariaLabel="탭" />
+      </>,
+    );
+    const overview = screen.getByRole('tab', { name: /개요/ });
+    const relations = screen.getByRole('tab', { name: /관계/ });
+
+    overview.focus();
+    fireEvent.keyDown(overview, { key: 'ArrowRight' });
+    screen.getByRole('button', { name: '바깥 포커스' }).focus();
+
+    rerender(
+      <>
+        <button type="button">바깥 포커스</button>
+        <TabBar items={ITEMS} activeKey="relations" onSelect={onSelect} ariaLabel="탭" />
+      </>,
+    );
+
+    expect(relations).toHaveAttribute('aria-selected', 'true');
+    expect(relations).toHaveAttribute('tabindex', '0');
+    expect(overview).toHaveAttribute('tabindex', '-1');
+    expect(relations).toHaveFocus();
+  });
+
+  it('moves focus and activates the first or last tab with Home and End', () => {
+    const onSelect = vi.fn();
+    render(<TabBar items={ITEMS} activeKey="relations" onSelect={onSelect} ariaLabel="탭" />);
+    const overview = screen.getByRole('tab', { name: /개요/ });
+    const relations = screen.getByRole('tab', { name: /관계/ });
+    const freshness = screen.getByRole('tab', { name: /신선도/ });
+
+    relations.focus();
+    fireEvent.keyDown(relations, { key: 'End' });
+    expect(freshness).toHaveFocus();
+    expect(onSelect).toHaveBeenLastCalledWith('freshness');
+
+    fireEvent.keyDown(freshness, { key: 'Home' });
+    expect(overview).toHaveFocus();
+    expect(onSelect).toHaveBeenLastCalledWith('overview');
   });
 });

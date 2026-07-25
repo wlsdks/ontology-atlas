@@ -5,9 +5,17 @@ import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
 import {
   buildProjectMarkdown,
+  findProjectVaultDoc,
   projectToFrontmatter,
 } from '@/entities/docs-vault';
 import type { ProjectInput } from '@/entities/project';
+
+export interface ProjectFrontmatterPatch {
+  name?: string;
+  description?: string | null;
+  owner?: string | null;
+  tags?: string[] | null;
+}
 
 /**
  * mode 별로 분기되는 project mutation hook. 2 모드:
@@ -25,6 +33,11 @@ export interface ProjectMutations {
   createProject: (input: ProjectInput) => Promise<void>;
   /** 기존 프로젝트 갱신 (upsert). slug 가 없으면 새로 만들지만 권장하지 않음. */
   updateProject: (input: ProjectInput) => Promise<void>;
+  /** 상세/빠른 편집이 사용자가 만진 frontmatter key만 보존 갱신. */
+  patchProject: (
+    slug: string,
+    patch: ProjectFrontmatterPatch,
+  ) => Promise<void>;
   /** slug 로 삭제. 존재 안 하면 no-op. */
   deleteProject: (slug: string) => Promise<void>;
   /** UI 사전 게이트용 — 현재 모드에서 mutation 가능 여부. */
@@ -59,8 +72,11 @@ export function useProjectMutations(): ProjectMutations {
   const createProject = useCallback(
     async (input: ProjectInput) => {
       if (mode === 'static') throw new ProjectStaticModeError();
+      const existing = vault.manifest
+        ? findProjectVaultDoc(vault.manifest, input.slug)
+        : null;
       const slug = `projects/${input.slug}`;
-      if (vault.fileHandles.has(slug)) {
+      if (existing || vault.fileHandles.has(slug)) {
         throw new Error(`Project slug already exists: "${input.slug}"`);
       }
       const md = buildProjectMarkdown(input);
@@ -72,17 +88,75 @@ export function useProjectMutations(): ProjectMutations {
   const updateProject = useCallback(
     async (input: ProjectInput) => {
       if (mode === 'static') throw new ProjectStaticModeError();
-      const slug = `projects/${input.slug}`;
+      const existing = vault.manifest
+        ? findProjectVaultDoc(vault.manifest, input.slug)
+        : null;
+      const slug = existing?.slug ?? `projects/${input.slug}`;
       // 존재 여부 — 없으면 새로 만든다 (upsert 시그니처).
-      if (!vault.fileHandles.has(slug)) {
+      if (!existing && !vault.fileHandles.has(slug)) {
         const md = buildProjectMarkdown(input);
         await vault.createDoc(slug, md);
         return;
       }
       // frontmatter patch — body 는 그대로 둔다.
       const fm = projectToFrontmatter(input);
-      const expectedMtime = vault.manifest?.docs.find((doc) => doc.slug === slug)?.mtime;
+      // path-agnostic starter/외부 vault는 project 이름을 title로만 쓰기도 한다.
+      // full edit도 inline patch와 같은 key-shape를 보존해 title/name 중복을
+      // 만들지 않는다. 신규 문서는 canonical name을 계속 사용한다.
+      if (
+        existing &&
+        typeof existing.frontmatter.title === 'string' &&
+        typeof existing.frontmatter.name !== 'string'
+      ) {
+        delete fm.name;
+        fm.title = input.name;
+      }
+      const expectedMtime =
+        existing?.mtime ??
+        vault.manifest?.docs.find((doc) => doc.slug === slug)?.mtime;
       await vault.updateFrontmatter(slug, fm, { expectedMtime });
+    },
+    [mode, vault],
+  );
+
+  const patchProject = useCallback(
+    async (slug: string, patch: ProjectFrontmatterPatch) => {
+      if (mode === 'static') throw new ProjectStaticModeError();
+      const existing = vault.manifest
+        ? findProjectVaultDoc(vault.manifest, slug)
+        : null;
+      if (!existing) {
+        throw new Error(`Project not found: "${slug}"`);
+      }
+
+      const updates: Record<
+        string,
+        string | number | boolean | string[] | null
+      > = {};
+      if (patch.name !== undefined) {
+        // 외부/초기 vault의 kind:project는 title만 쓰기도 한다. 인라인 rename이
+        // name을 겹쳐 만들면 사람에게 서로 다른 두 이름이 남으므로 원형 유지.
+        const nameKey =
+          typeof existing.frontmatter.name === 'string'
+            ? 'name'
+            : typeof existing.frontmatter.title === 'string'
+              ? 'title'
+              : 'name';
+        updates[nameKey] = patch.name;
+      }
+      if (patch.description !== undefined) {
+        updates.description = patch.description;
+      }
+      if (patch.owner !== undefined) {
+        updates.owner = patch.owner;
+      }
+      if (patch.tags !== undefined) {
+        updates.tags = patch.tags;
+      }
+
+      await vault.updateFrontmatter(existing.slug, updates, {
+        expectedMtime: existing.mtime,
+      });
     },
     [mode, vault],
   );
@@ -90,7 +164,10 @@ export function useProjectMutations(): ProjectMutations {
   const deleteProject = useCallback(
     async (slug: string) => {
       if (mode === 'static') throw new ProjectStaticModeError();
-      const path = `projects/${slug}`;
+      const existing = vault.manifest
+        ? findProjectVaultDoc(vault.manifest, slug)
+        : null;
+      const path = existing?.slug ?? `projects/${slug}`;
       if (!vault.fileHandles.has(path)) return; // no-op
       await vault.deleteDoc(path);
     },
@@ -109,6 +186,7 @@ export function useProjectMutations(): ProjectMutations {
   return {
     createProject,
     updateProject,
+    patchProject,
     deleteProject,
     ...capabilities,
     mode,

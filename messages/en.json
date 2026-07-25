@@ -198,7 +198,8 @@
       "removeLine": "cut ‘{relation}: {title}’",
       "createHeadlineDomain": "New {kind} ‘{name}’ under the {domain} domain",
       "createHeadline": "New {kind} ‘{name}’",
-      "createFileEffect": "1 file created · {count} relation line(s)."
+      "createFileEffect": "1 file created · {count} relation line(s).",
+      "createCollapsed": "1 new node · {count} relation(s)"
     },
     "empty": {
       "title": "No node to bring on stage yet",
@@ -212,6 +213,8 @@
       "domainNone": "No domain",
       "definitionPlaceholder": "One line on what this node does — definition & boundary prevent duplicates.",
       "similar": "A similar node already exists — {title} ({kind})",
+      "slugCollision": "A node already uses this path — {title} ({kind}). Rename this draft or open the existing node.",
+      "slugCollisionHint": "Rename this draft to save",
       "similarOpen": "Open that node",
       "similarAnyway": "Create anyway",
       "appliedDirect": "Created node ‘{title}’ in your folder.",
@@ -315,6 +318,8 @@
     "sampleLabel": "Sample for now",
     "contextBold": "A map of what your product is made of and how the parts connect — at a glance.",
     "contextRest": "Right now it's this project's own map (read-only) — pick your markdown folder and the same map lights up with your data. (The map is generated from markdown frontmatter.)",
+    "contextStorefrontBold": "A sample map of how an online store connects products, orders, customers, delivery, and marketing.",
+    "contextStorefrontRest": "It is a read-only practice sample — pick your markdown folder and the same map switches to your data.",
     "meterConcepts": "concepts",
     "meterRelations": "relations",
     "meterDomains": "domains",
@@ -2244,6 +2249,8 @@
         "statusMissingWarning": "Current status reference is broken. Pick another status to recover.",
         "categoryMissingOption": "Missing category · {id}",
         "statusMissingOption": "Missing status · {id}",
+        "categoryUnspecified": "Not set · preserve source",
+        "statusUnspecified": "Not set · preserve source",
         "namePlaceholder": "My project",
         "nameEnPlaceholder": "English name",
         "descriptionPlaceholder": "1-2 line summary — shown in drawer and node",

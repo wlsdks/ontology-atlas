@@ -39,4 +39,13 @@ describe("buildInsightsTabHref", () => {
     expect(buildInsightsTabHref("structure")).toBe("/ontology/insights/?tab=structure");
     expect(buildInsightsTabHref("freshness")).toBe("/ontology/insights/?tab=freshness");
   });
+
+  it("preserves the current locale pathname for native history updates", () => {
+    expect(buildInsightsTabHref("structure", "/ko/ontology/insights/")).toBe(
+      "/ko/ontology/insights/?tab=structure",
+    );
+    expect(buildInsightsTabHref("do-next", "/en/ontology/insights/")).toBe(
+      "/en/ontology/insights/",
+    );
+  });
 });

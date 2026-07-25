@@ -112,6 +112,20 @@ export function buildCreateNodeSlug(draft: Pick<CreateDraft, "kind" | "title">):
   return `${vaultFolderForKind(draft.kind)}/${tail}`;
 }
 
+/**
+ * Resolve the node that already owns CREATE's deterministic target path.
+ * Near-duplicate titles remain a soft nudge; an exact path match is a hard
+ * conflict because `createDoc` cannot succeed until the draft name changes.
+ */
+export function findCreateSlugCollision(
+  draft: Pick<CreateDraft, "kind" | "title">,
+  candidates: readonly CreateCandidate[],
+): CreateCandidate | null {
+  const slug = buildCreateNodeSlug(draft);
+  if (!slug) return null;
+  return candidates.find((candidate) => candidate.ref === slug) ?? null;
+}
+
 function quoteYamlScalar(v: string): string {
   return /[:#[\]{}"',&|*!%@`]/.test(v) ? `"${v.replace(/"/g, '\\"')}"` : v;
 }

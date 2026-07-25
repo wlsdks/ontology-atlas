@@ -6,7 +6,7 @@ import {
   buildOntologyNodeHref,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
-import { type Project, getProjectDetailHref } from "@/entities/project";
+import { type Project, getProjectRuntimeDetailHref } from "@/entities/project";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { useGlobalSearchHotkey } from "../lib/use-global-search-hotkey";
@@ -23,7 +23,7 @@ export interface MountedGlobalSearchProps {
    */
   onSelectNode?: (node: KnowledgeGraphNode) => void;
   /**
-   * project 선택 시 — 미제공이면 default = `/project/[slug]/` 로 push.
+   * project 선택 시 — 미제공이면 정적 export-safe fallback 상세로 push.
    */
   onSelectProject?: (project: Project) => void;
   /**
@@ -92,8 +92,8 @@ export function MountedGlobalSearch({
           onSelectProject(project);
           return;
         }
-        // default — /project/[slug]/ 라우트로 점프.
-        router.push(getProjectDetailHref(project.slug));
+        // default — 빌드 시점에 알 수 없는 로컬 slug도 여는 fallback으로 점프.
+        router.push(getProjectRuntimeDetailHref(project.slug));
       }}
     />
   );

@@ -108,6 +108,39 @@ describe('DownloadPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('puts the download decision before the secondary product introduction', () => {
+    renderDownloadPage();
+
+    const downloadHeading = screen.getByRole('heading', { level: 1 });
+    const primaryCta = screen.getByRole('link', { name: /Check GitHub releases/i });
+    const sourceCta = screen.getByRole('link', { name: /View source code/i });
+    const factStrip = screen.getByTestId('download-fact-strip');
+    const checksumRow = screen.getByTestId('download-checksum-row');
+    const availability = screen.getByTestId('download-release-availability');
+    const introHeading = screen.getByRole('heading', {
+      level: 2,
+      name: /Until we all finally/i,
+    });
+
+    for (const decisionElement of [
+      downloadHeading,
+      primaryCta,
+      sourceCta,
+      factStrip,
+      checksumRow,
+      availability,
+    ]) {
+      expect(
+        decisionElement.compareDocumentPosition(introHeading) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
+    expect(
+      primaryCta.compareDocumentPosition(sourceCta) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('copies the local release completion audit command', async () => {
     renderDownloadPage();
 

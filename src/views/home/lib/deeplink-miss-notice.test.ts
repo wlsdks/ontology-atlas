@@ -9,6 +9,7 @@ describe("resolveDeeplinkMissDecision", () => {
         hasOntologyMatch: false,
         hasProjectMatch: false,
         projectsLoaded: true,
+        sourceReady: true,
       }),
     ).toEqual({ action: "none" });
   });
@@ -20,6 +21,7 @@ describe("resolveDeeplinkMissDecision", () => {
         hasOntologyMatch: true,
         hasProjectMatch: false,
         projectsLoaded: true,
+        sourceReady: true,
       }),
     ).toEqual({ action: "none" });
   });
@@ -31,6 +33,7 @@ describe("resolveDeeplinkMissDecision", () => {
         hasOntologyMatch: false,
         hasProjectMatch: true,
         projectsLoaded: true,
+        sourceReady: true,
       }),
     ).toEqual({ action: "none" });
   });
@@ -44,6 +47,7 @@ describe("resolveDeeplinkMissDecision", () => {
         hasOntologyMatch: false,
         hasProjectMatch: false,
         projectsLoaded: false,
+        sourceReady: true,
       }),
     ).toEqual({ action: "notify-now" });
   });
@@ -55,6 +59,7 @@ describe("resolveDeeplinkMissDecision", () => {
         hasOntologyMatch: false,
         hasProjectMatch: false,
         projectsLoaded: true,
+        sourceReady: true,
       }),
     ).toEqual({ action: "notify-now" });
   });
@@ -71,7 +76,20 @@ describe("resolveDeeplinkMissDecision", () => {
         hasOntologyMatch: false,
         hasProjectMatch: false,
         projectsLoaded: false,
+        sourceReady: true,
       }),
     ).toEqual({ action: "notify-after-grace" });
+  });
+
+  it("does not diagnose a local ontology miss before persisted source restoration settles", () => {
+    expect(
+      resolveDeeplinkMissDecision({
+        selectedSlug: "capability:local-only-node",
+        hasOntologyMatch: false,
+        hasProjectMatch: false,
+        projectsLoaded: true,
+        sourceReady: false,
+      }),
+    ).toEqual({ action: "none" });
   });
 });

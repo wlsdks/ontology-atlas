@@ -10,7 +10,13 @@ vi.mock("next-intl", () => ({
     params ? `${key}:${JSON.stringify(params)}` : key,
 }));
 
-function Harness({ hasSelection = false }: { hasSelection?: boolean }) {
+function Harness({
+  hasSelection = false,
+  onActivateAnchor,
+}: {
+  hasSelection?: boolean;
+  onActivateAnchor?: () => void;
+}) {
   const ref = createRef<HTMLDivElement>();
   const tour = useGuidedTour({ hasSelection, canResolveAnchor: () => true });
   return (
@@ -19,7 +25,11 @@ function Harness({ hasSelection = false }: { hasSelection?: boolean }) {
         start
       </button>
       <div ref={ref} data-testid="test-canvas-anchor" />
-      <GuidedTourOverlay tour={tour} canvasAnchorRef={ref} />
+      <GuidedTourOverlay
+        tour={tour}
+        canvasAnchorRef={ref}
+        onActivateAnchor={onActivateAnchor}
+      />
     </div>
   );
 }
@@ -65,6 +75,25 @@ describe("GuidedTourOverlay", () => {
     expect(document.activeElement).toBe(startBtn);
   });
 
+  it("traps Tab and Shift+Tab inside the current tour card", () => {
+    render(<Harness />);
+    act(() => screen.getByTestId("test-start").click());
+
+    const skip = screen.getByTestId("guided-tour-skip");
+    const next = screen.getByTestId("guided-tour-next");
+    next.focus();
+    act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true })));
+    expect(document.activeElement).toBe(skip);
+
+    act(() => {
+      skip.focus();
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true }),
+      );
+    });
+    expect(document.activeElement).toBe(next);
+  });
+
   it("shows progress dots matching visibleSteps.length, one active", () => {
     render(<Harness />);
     act(() => screen.getByTestId("test-start").click());
@@ -91,6 +120,20 @@ describe("GuidedTourOverlay", () => {
     expect(screen.getByTestId("guided-tour-blocker")).toHaveAttribute("data-blocking", "true");
     expect(screen.queryAllByTestId("guided-tour-blocker-strip")).toHaveLength(0);
     expect(screen.getByTestId("guided-tour-waiting")).toBeInTheDocument();
+  });
+
+  it("offers a keyboard-operable equivalent for the interactive canvas-node step", () => {
+    const onActivateAnchor = vi.fn();
+    render(<Harness onActivateAnchor={onActivateAnchor} />);
+    act(() => screen.getByTestId("test-start").click());
+    act(() => screen.getByTestId("guided-tour-next").click());
+    act(() => screen.getByTestId("guided-tour-next").click());
+    act(() => screen.getByTestId("guided-tour-next").click());
+
+    const action = screen.getByTestId("guided-tour-activate-target");
+    expect(action.tagName).toBe("BUTTON");
+    act(() => action.click());
+    expect(onActivateAnchor).toHaveBeenCalledTimes(1);
   });
 
   it("swaps to a 4-strip funnel blocker + circular cutout once the canvas anchor hole resolves", () => {

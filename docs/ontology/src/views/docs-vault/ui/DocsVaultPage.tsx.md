@@ -31,6 +31,14 @@ The page resolves docs-vault query slug aliases across packaged and local vault 
 
 When a URL query slug is still being normalized from packaged to local form, the default document fallback is deferred. That prevents deep links from briefly selecting the README or a recent record before the intended local ontology note is applied.
 
+Open source-record tabs and the explicitly active source record are persisted
+per vault. Route memory keeps the full locale route including query and hash,
+and listens to same-surface URL changes, so reopening the installed app returns
+to the exact `?slug=` record rather than only the `/docs` pathname. During
+startup, the page defers its README fallback until the persisted source and
+local manifest are ready; this prevents the temporary packaged manifest from
+overwriting a local-vault deep link before the vault finishes loading.
+
 The installed desktop welcome exposes a direct dogfood action for this repository's `docs/ontology` vault even on the generic local-vault welcome. The action resolves the preferred renamed checkout path (`/Users/jinan/side-project/ontology-atlas/docs/ontology`) first, then falls back to the current old checkout path (`/Users/jinan/side-project/oh-my-ontology/docs/ontology`) while the local folder rename is pending. That makes the app able to open Atlas's own ontology without asking the user to browse for the repo manually, and gives agent-driven verification a concrete way to prove the workbench improves codebase understanding on itself.
 
 The mobile header keeps the topology shortcut as an accessible icon-sized control instead of the full text button used on wider screens. That preserves the route from a source record to the graph while keeping the Source Vault header inside the 360px viewport with no horizontal body scroll.

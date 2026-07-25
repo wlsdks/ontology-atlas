@@ -198,6 +198,7 @@ const koVocab: StudioSummaryVocab = {
   createHeadline: (kind, name, domain) =>
     domain ? `${kind} '${name}' 가 ${domain} 도메인 아래 생겨요` : `${kind} '${name}' 가 생겨요`,
   createFileEffect: (n) => `파일 1개 생성 · 관계 ${n}줄 기록.`,
+  createCollapsed: (n) => `새 노드 1개 · 관계 ${n}개`,
   collapsedCount: (n) => `기록될 내용 ${n}가지`,
   empty: "기록할 변경이 없어요",
 };
@@ -211,6 +212,7 @@ const enVocab: StudioSummaryVocab = {
   createHeadline: (kind, name, domain) =>
     domain ? `New ${kind} '${name}' under ${domain}` : `New ${kind} '${name}'`,
   createFileEffect: (n) => `1 file created · ${n} relation line(s).`,
+  createCollapsed: (n) => `1 new node · ${n} relation(s)`,
   collapsedCount: (n) => `${n} change(s) to record`,
   empty: "Nothing staged yet",
 };
@@ -264,6 +266,7 @@ describe("summarizeStudioChanges — create", () => {
     );
     expect(s.headline).toBe("capability '결제 취소' 가 커머스 코어 도메인 아래 생겨요");
     expect(s.fileEffect).toBe("파일 1개 생성 · 관계 2줄 기록.");
+    expect(s.collapsed).toBe("새 노드 1개 · 관계 2개");
     expect(s.empty).toBe(false);
   });
 
@@ -274,5 +277,6 @@ describe("summarizeStudioChanges — create", () => {
     );
     expect(s.headline).toBe("New capability 'Refund'");
     expect(s.fileEffect).toBe("1 file created · 0 relation line(s).");
+    expect(s.collapsed).toBe("1 new node · 0 relation(s)");
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
 import type { CreateCandidate } from "../lib/build-create-node";
 import type { StudioRelation } from "../lib/build-studio-item";
@@ -41,10 +41,13 @@ const labels: StudioCompassLabels = {
   createDomainNone: "no domain",
   createDefinitionPlaceholder: "def",
   createSimilar: (t, k) => `${t} ${k}`,
+  createSlugCollision: (t, k) => `${t} ${k} path exists`,
+  createSlugCollisionHint: "rename to save",
   createSimilarOpen: "open",
   createSimilarAnyway: "anyway",
   edit: "edit",
   editTitle: "edit this relation",
+  close: "close",
   editRetypeHeading: "move to",
   editMoveTo: (b) => `move to ${b}`,
   editDelete: "cut relation",
@@ -139,6 +142,15 @@ function renderEnhance(onFill = vi.fn()) {
 }
 
 describe("StudioCompass — enhance", () => {
+  it("owns a main landmark and focal-node page heading for route arrival", () => {
+    renderEnhance();
+
+    expect(screen.getByRole("main")).toHaveAttribute("id", "main");
+    expect(
+      screen.getByRole("heading", { level: 1, name: "MCP Server" }),
+    ).toBeInTheDocument();
+  });
+
   it("renders the focal node as hero + plain-language bearing questions", () => {
     renderEnhance();
     expect(screen.getByTestId("studio-center-card")).toHaveTextContent("MCP Server");
@@ -154,7 +166,9 @@ describe("StudioCompass — enhance", () => {
     expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("studio-socket-up"));
-    expect(screen.getByTestId("studio-picker")).toBeInTheDocument();
+    const picker = screen.getByTestId("studio-picker");
+    expect(picker).toBeInTheDocument();
+    expect(within(picker).getByRole("button", { name: "close" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("studio-picker-row-capability:server-interface"));
     expect(onFill).toHaveBeenCalledWith("isA", CANDIDATE);
@@ -250,6 +264,7 @@ describe("StudioCompass — navigation affordances", () => {
     fireEvent.click(screen.getByTestId("studio-lane-more-right"));
     const list = screen.getByTestId("studio-lane-list-right");
     expect(list).toBeInTheDocument();
+    expect(within(list).getByRole("button", { name: "close" })).toBeInTheDocument();
     // all five neighbors are listed, including the folded ones.
     fireEvent.click(screen.getByTestId("studio-lane-row-el:4"));
     expect(onOpenNode).toHaveBeenCalledWith("el:4");
@@ -300,6 +315,19 @@ describe("StudioCompass — 지지대 편집 (edit existing relations)", () => {
     // retype option shows the plain bearing label, not the current bearing.
     fireEvent.click(screen.getByTestId("studio-edit-retype-contains"));
     expect(onRetype).toHaveBeenCalledWith("dependsOn", "contains", NEIGHBOR);
+  });
+
+  it("names the edit-card close control and Escape closes back to its trigger", () => {
+    renderEditable();
+    const trigger = screen.getByTestId("studio-edit-right");
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    expect(screen.getByRole("button", { name: "close" })).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(screen.queryByTestId("studio-edit-card")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 
   it("cut takes a 1-step confirm before firing onRemove", () => {
@@ -791,6 +819,87 @@ describe("StudioCompass — create", () => {
     );
     expect(screen.getByTestId("studio-create-name")).toBeInTheDocument();
     // save is disabled until the node is named.
+    expect(screen.getByTestId("studio-save")).toBeDisabled();
+  });
+
+  it("blocks an exact create-path collision and only offers the existing node", () => {
+    render(
+      <StudioCompass
+        mode="create"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "주문 취소", definition: "" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down", { expected: true }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        canSave={false}
+        createKinds={[{ value: "capability", label: "capability" }]}
+        createKind="capability"
+        createSimilarHit={{
+          title: "주문 취소",
+          kind: "capability",
+          slug: "capabilities/order-cancel",
+        }}
+        createSlugCollision
+        summary={{
+          count: 1,
+          collapsed: "1 new node · 1 relation",
+          headline: "create a node",
+          lines: ["add relation"],
+          fileEffect: "1 file created",
+        }}
+        deltaPreview={buildDeltaPreview({
+          center: {
+            title: "주문 취소",
+            kind: "capability",
+            domainLabel: null,
+            isNew: true,
+          },
+          baseNeighborsByRelation: {
+            isA: [],
+            dependsOn: [],
+            contains: [],
+            relates: [],
+          },
+          changes: [
+            {
+              op: "add",
+              relation: "dependsOn",
+              target: {
+                id: "element:gateway",
+                title: "Gateway",
+                kind: "element",
+                ref: "elements/gateway",
+              },
+            },
+          ],
+        })}
+      />,
+    );
+
+    const nameInput = screen.getByTestId("studio-create-name");
+    const conflict = screen.getByTestId("studio-create-similar");
+    expect(nameInput).toHaveAttribute("aria-invalid", "true");
+    expect(nameInput).toHaveAttribute("aria-describedby", "studio-create-slug-collision");
+    expect(conflict).toHaveAttribute("id", "studio-create-slug-collision");
+    expect(conflict).toHaveAttribute("aria-live", "polite");
+    expect(conflict).toHaveTextContent(
+      "주문 취소 capability path exists",
+    );
+    expect(screen.getByRole("button", { name: "open" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "anyway" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-summary-toggle")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-preview-open")).not.toBeInTheDocument();
+    expect(screen.getByText("rename to save")).toBeInTheDocument();
     expect(screen.getByTestId("studio-save")).toBeDisabled();
   });
 });

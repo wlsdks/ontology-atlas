@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T17:31:42.774Z",
+  "generatedAt": "2026-07-25T00:45:41.846Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,26 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-25 — 언어 전환에서 현재 과업 URL 상태 보존",
+          "slug": "2026-07-25-언어-전환에서-현재-과업-url-상태-보존"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-25 — 다운로드 첫 화면을 설치 판단 우선으로 재정렬",
+          "slug": "2026-07-25-다운로드-첫-화면을-설치-판단-우선으로-재정렬"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-25 — 인사이트 탭 키보드·포커스 계약 복구",
+          "slug": "2026-07-25-인사이트-탭-키보드포커스-계약-복구"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-25 — 공방 CREATE 저장 예고·중복 경계 정합",
+          "slug": "2026-07-25-공방-create-저장-예고중복-경계-정합"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-25 — 공방 확장 완성: 산책·델타 미리보기·지도 엣지 딥링크 (Slice 4~6)",
           "slug": "2026-07-25-공방-확장-완성-산책델타-미리보기지도-엣지-딥링크-slice-46"
         },
@@ -4763,9 +4783,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. fable 기획 \"발견 → 연결 → 확인 → 기록\" 루프의 마지막 세 슬라이스. 이로써 \"여러 노드 간 관계 수정 + 미리보기 + 연결 발견\"이 모드 증식",
-      "wordCount": 38117,
-      "updatedAt": "2026-07-24T17:31:32.807Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 인사이트 신선도처럼 query로 선택 상태를 갖는 화면에서 EN/KO를 바꾸면 query가 사라져 기본 탭으로 돌아가던 문제를 수정했다. locale pa",
+      "wordCount": 38521,
+      "updatedAt": "2026-07-25T07:16:43+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5892,8 +5912,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
-      "wordCount": 12088,
-      "updatedAt": "2026-07-25T00:53:21+09:00",
+      "wordCount": 12143,
+      "updatedAt": "2026-07-25T07:16:43+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6061,7 +6081,7 @@
       ],
       "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ontology-atlas 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성",
       "wordCount": 419,
-      "updatedAt": "2026-07-24T23:45:18+09:00",
+      "updatedAt": "2026-07-25T04:08:29+09:00",
       "linksOut": []
     },
     {
@@ -6099,7 +6119,7 @@
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~280. HN expects substantive Show HN posts, not one-liners.)",
       "wordCount": 439,
-      "updatedAt": "2026-07-24T23:45:18+09:00",
+      "updatedAt": "2026-07-25T04:08:29+09:00",
       "linksOut": []
     },
     {
@@ -6595,7 +6615,7 @@
           "src/shared/lib/ontology-tree/agent-query-recipes.ts",
           "src/shared/lib/ontology-tree/agent-readiness.ts",
           "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-          "src/views/ontology-insights/ui/tabs/RelationsTab.tsx"
+          "src/views/ontology-insights/ui/tabs/DoNextTab.tsx"
         ],
         "relates": [
           "capabilities/mcp-server",
@@ -6603,9 +6623,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Overview / Relations / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Ins",
-      "wordCount": 408,
-      "updatedAt": "2026-07-24T20:43:12+09:00",
+      "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Do next / Structure / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Insi",
+      "wordCount": 507,
+      "updatedAt": "2026-07-25T06:53:55+09:00",
       "linksOut": []
     },
     {
@@ -6927,8 +6947,8 @@
       },
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
-      "wordCount": 3631,
-      "updatedAt": "2026-07-24T23:45:18+09:00",
+      "wordCount": 3701,
+      "updatedAt": "2026-07-25T07:07:51+09:00",
       "linksOut": []
     },
     {
@@ -6965,7 +6985,9 @@
         "kind": "capability",
         "title": "First-Run Onboarding Guides (auto tour · pre-picker sheet · start checklist)",
         "domain": "onboarding-ux",
-        "elements": []
+        "elements": [
+          "elements/accessible-dialog-focus-contract"
+        ]
       },
       "headings": [
         {
@@ -6975,8 +6997,8 @@
         }
       ],
       "excerpt": "2026-07-24 온보딩 라운드 — 라이브 답사(비개발자 피드백)로 확인한 첫 사용 이탈 지점 4곳을 기존 온보딩 자산의 재배치로 해소한 역량. 새 시스템을 만들지 않고 결정적 순간에 가이드를 세운다. 1. 가이드 투어 첫 방문 자동 시작 — 샘플 모드 정착 + guided-tour:v1 미기록이면 900ms 뒤 1회 자동 시작. canAutoStartGuidedTour (src/features/guided-tour/model/auto-start-guard.ts)가 모달/포커스 이탈/이미 열린 투어를 가드(stacked-transient 금지). 첫 실행 카드에 \"",
-      "wordCount": 174,
-      "updatedAt": "2026-07-24T16:53:06+09:00",
+      "wordCount": 218,
+      "updatedAt": "2026-07-25T03:11:06+09:00",
       "linksOut": []
     },
     {
@@ -7139,9 +7161,9 @@
           "slug": "mode-aware-data-source-adapter"
         }
       ],
-      "excerpt": "R10 (auth + cloud surface 영구 제거) 이후 2 mode: local — useLocalVault().status === 'loaded' (사용자 디스크 vault) static — vault 미선택. 빌드타임 dogfood 매니페스트 (docs/ontology/) 가 fallback. useDataSourceMode() 가 두 mode 를 분기. 같은 hook 호출이 mode 별로 다른 source 를 본다 — 호출자 코드는 단일. 적용 surface: useProjects — local: vault manifest 의 kind: project ",
-      "wordCount": 107,
-      "updatedAt": "2026-07-21T01:05:59+09:00",
+      "excerpt": "R10 (auth + cloud surface 영구 제거) 이후 2 mode: local — 사용자 디스크 vault. 검증된 manifest가 있으면 증분 재로딩의 transient loading 동안에도 source를 static으로 바꾸지 않는다. static — vault 미선택. 빌드타임 dogfood 매니페스트 (docs/ontology/) 가 fallback. useDataSourceMode() 가 두 mode 를 분기. 같은 hook 호출이 mode 별로 다른 source 를 본다 — 호출자 코드는 단일. 적용 surface: useProjects — ",
+      "wordCount": 142,
+      "updatedAt": "2026-07-25T05:54:40+09:00",
       "linksOut": []
     },
     {
@@ -7428,8 +7450,8 @@
         }
       ],
       "excerpt": "/ontology/studio?node=<graph-node-id 는 나침 무대를 그 vault 노드를 focal 아이템으로 놓은 상태로 연다 (OntologyStudioPage 의 requestedNode). 요청한 id 가 현재 그래프에 있으면 그 노드가, 없으면 selectDefaultStudioNodeId 의 기본 노드가 무대 중앙에 놓인다. 은퇴한 xyflow 빌더의 /ontology/edit?node= 딥링크가 하던 \"검사에서 편집으로 바로 넘기기\" 역할을 이어받는다. /topology 의 detail 패널 / Focus / Path / Health 핸드오",
-      "wordCount": 116,
-      "updatedAt": "2026-07-25T00:53:21+09:00",
+      "wordCount": 152,
+      "updatedAt": "2026-07-25T06:31:47+09:00",
       "linksOut": []
     },
     {
@@ -7483,8 +7505,8 @@
         }
       ],
       "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 은퇴한 xyflow ERD 빌더 (/ontology/edit) 가 하던 vault 쓰기 경로는 이제 나침 무대 (Compass Stage, /ontology/studio) 가 이어받았다. 한 노드를 게임 아이템처럼 놓고 관계 소켓을 채우면 그 채움이 곧 실제 frontmatter write 다. OntologyStudioPage 는 두 fill-state 를 한 라우트에서 처리한다 (mode 탭 없음): 기본 = 기존 노드를 ?node=<id 로 열어 부분 채움 (ENHANCE), ?mode=c",
-      "wordCount": 236,
-      "updatedAt": "2026-07-24T20:43:12+09:00",
+      "wordCount": 368,
+      "updatedAt": "2026-07-25T06:31:47+09:00",
       "linksOut": []
     },
     {
@@ -7504,8 +7526,8 @@
       },
       "headings": [],
       "excerpt": "/topology exposes a two-view switch — Map (Relief) and Graph — instead of five peer mode tabs (2026-07 owner feedback: the four Relief-family modes looked like the same sparse card screen with different panels, so mode proliferation read as \"five confusing siblings\"). 분석 패널 완전 소멸 2단계 (2026-07) removed the dedicated Top",
-      "wordCount": 437,
-      "updatedAt": "2026-07-19T04:28:34+09:00",
+      "wordCount": 500,
+      "updatedAt": "2026-07-25T03:37:17+09:00",
       "linksOut": []
     },
     {
@@ -7711,8 +7733,8 @@
       },
       "headings": [],
       "excerpt": "/topology supports ontology-aware node inspection instead of treating non-project nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer starts with a fixed node profile labeled \"개념 정보\" / \"Concept profile\": kind/lens, source slug, and a short description summary. That s",
-      "wordCount": 756,
-      "updatedAt": "2026-07-24T20:43:12+09:00",
+      "wordCount": 827,
+      "updatedAt": "2026-07-25T04:51:10+09:00",
       "linksOut": []
     },
     {
@@ -8179,6 +8201,7 @@
           "elements/locale-switch",
           "elements/product-owner-operating-system-doc",
           "elements/root-locale-redirect",
+          "elements/route-focus-manager",
           "src/shared/ui/live-announcer.tsx",
           "src/shared/ui/toast.tsx",
           "src/widgets/bottom-tab-bar",
@@ -8197,7 +8220,7 @@
       ],
       "excerpt": "cross-cutting. 다크 단일 테마 (라이트 모드는 2026-07-19 전략 폐기), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curso",
       "wordCount": 350,
-      "updatedAt": "2026-07-24T18:32:05+09:00",
+      "updatedAt": "2026-07-25T09:04:01+09:00",
       "linksOut": []
     },
     {
@@ -8371,6 +8394,32 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/accessible-dialog-focus-contract",
+      "path": "docs/ontology/elements/accessible-dialog-focus-contract.md",
+      "title": "Accessible Dialog Focus Contract",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/accessible-dialog-focus-contract",
+        "kind": "element",
+        "title": "Accessible Dialog Focus Contract",
+        "domain": "onboarding-ux",
+        "dependencies": [
+          "capabilities/first-run-onboarding-guides"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Accessible Dialog Focus Contract",
+          "slug": "accessible-dialog-focus-contract"
+        }
+      ],
+      "excerpt": "src/shared/lib/use-dialog-focus-trap.ts — 첫 실행 과정의 모달 표면이 공유하는 키보드·포커스 계약. 열릴 때 대화상자 또는 지정한 최초 제어로 포커스를 옮긴다. Tab과 Shift+Tab 순환을 모달 내부의 조작 가능한 항목에 가둔다. 닫힐 때 모달을 연 제어로 포커스를 복원한다. 허용된 표면은 Escape로 닫을 수 있다. 현재 소비자는 VaultOpenGuideSheet와 GuidedTourOverlay다. 가이드 투어의 지도 상호작용 단계는 카드 내부의 실제 버튼을 제공하며, 이 버튼을 키보드로 활성화하면 강조 노드를 선택하고 ",
+      "wordCount": 86,
+      "updatedAt": "2026-07-25T03:11:06+09:00",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/agent-activity-hooks",
       "path": "docs/ontology/elements/agent-activity-hooks.md",
       "title": "Agent Activity CLI Contract",
@@ -8420,9 +8469,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx renders the app-wide settings panel: display mode, language, ontology workspace access, and AI agent connection verification, grouped as five tabs (General / MCP+Agents / Vault / Appearance / Verification) behind one gear trigger. Before feat/rail-rollout (2026-07) t",
-      "wordCount": 551,
-      "updatedAt": "2026-07-23T15:29:58+09:00",
+      "excerpt": "src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx is the app-wide settings surface. The retired five-tab workbench was simplified in 2026-07 into one centered, single-column sheet with three readable groups: Screen — language plus page-injected view mode and INDEX defaults. Workspace — current vault state, open/chan",
+      "wordCount": 455,
+      "updatedAt": "2026-07-25T08:35:16+09:00",
       "linksOut": []
     },
     {
@@ -8562,9 +8611,9 @@
           "slug": "locale-switch"
         }
       ],
-      "excerpt": "src/features/locale-switch/ui/LocaleSwitch.tsx renders the compact EN / KO language toggle used in the public landing and other top-level chrome. The switch persists the selected locale in ontology-atlas:locale, rewrites the current locale-prefixed URL without a full reload, and keeps each language button at a 32px min",
-      "wordCount": 71,
-      "updatedAt": "2026-06-06T02:19:43+09:00",
+      "excerpt": "src/features/locale-switch/ui/LocaleSwitch.tsx renders the compact EN / KO language toggle used in the public landing and other top-level chrome. The switch persists the selected locale in ontology-atlas:locale, rewrites only the current URL's locale segment without a full reload, and keeps each language button at a 32",
+      "wordCount": 176,
+      "updatedAt": "2026-07-25T08:20:01+09:00",
       "linksOut": []
     },
     {
@@ -8672,8 +8721,8 @@
       },
       "headings": [],
       "excerpt": "Partially superseded (B3 허브가 곧 지도, 2026-07). Two of the three resolvers described below are physically deleted: src/views/ontology-view/lib/resolve-deeplink-node.ts (with the rest of the tree hub, commit 3fa2c2508) and src/views/ontology-insights/lib/resolve-insights-query-node.ts (dropped when /ontology/insights was r",
-      "wordCount": 298,
-      "updatedAt": "2026-07-24T20:43:12+09:00",
+      "wordCount": 333,
+      "updatedAt": "2026-07-25T06:04:07+09:00",
       "linksOut": []
     },
     {
@@ -8918,6 +8967,33 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/route-focus-manager",
+      "path": "docs/ontology/elements/route-focus-manager.md",
+      "title": "Route Focus Manager",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/route-focus-manager",
+        "kind": "element",
+        "title": "Route Focus Manager",
+        "domain": "onboarding-ux",
+        "dependencies": [
+          "elements/app-nav-rail",
+          "elements/app-settings-menu"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Route Focus Manager",
+          "slug": "route-focus-manager"
+        }
+      ],
+      "excerpt": "src/shared/ui/route-focus-manager.tsx는 영속 AppShell에서 화면 간 client/native navigation의 키보드 읽기 시작점을 소유한다. 실제 pathname surface가 바뀌고 destination이 아직 자체 포커스를 소유하지 않았으면 page h1, h1이 없으면 main으로 포커스를 옮긴다. query/hash만 바뀌는 같은 surface와 locale-only 전환에는 개입하지 않는다. main 내부 제어나 aria-modal dialog가 이미 포커스를 소유하면 덮지 않는다. 정적 export의 Suspens",
+      "wordCount": 175,
+      "updatedAt": "2026-07-25T09:25:53+09:00",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/sigma-graphology",
       "path": "docs/ontology/elements/sigma-graphology.md",
       "title": "Graphology + ForceAtlas2",
@@ -9091,8 +9167,8 @@
       },
       "headings": [],
       "excerpt": "src/widgets/topology-map-canvas/ — the rebuilt map (Relief) rendering engine (2026-07, docs/TOPOLOGY-MAP-REBUILD.md). Card and connector coordinates are written once; pan/zoom is a single container CSS transform (pure camera math in lib/camera.ts with unit tests), so per-frame DOM synchronization — the jank source of t",
-      "wordCount": 94,
-      "updatedAt": "2026-07-03T09:29:48+09:00",
+      "wordCount": 195,
+      "updatedAt": "2026-07-25T08:08:59+09:00",
       "linksOut": []
     },
     {
@@ -9328,8 +9404,8 @@
         }
       ],
       "excerpt": "src/views/docs-vault/ui/DocsVaultPage.tsx renders the /docs Source Vault surface. This surface is the human-facing document view over the same local markdown vault that MCP agents read and write. It keeps the current source, selected record, editor state, command palette, graph handoff copy, and local vault persistence",
-      "wordCount": 742,
-      "updatedAt": "2026-06-06T04:04:04+09:00",
+      "wordCount": 823,
+      "updatedAt": "2026-07-25T04:08:29+09:00",
       "linksOut": []
     },
     {
@@ -9345,8 +9421,8 @@
       },
       "headings": [],
       "excerpt": "src/views/project-detail renders the /project/[slug] public detail page as three vertical zones: a hero metric strip (domain/capability/element/document/relation counts derived from projectIds-stamped ontology insight nodes), a domain composition grid with an honest sqrt-scaled MiniDomainMap SVG, and the body column wi",
-      "wordCount": 70,
-      "updatedAt": "2026-07-18T20:43:13+09:00",
+      "wordCount": 181,
+      "updatedAt": "2026-07-25T05:54:40+09:00",
       "linksOut": []
     },
     {
@@ -9396,8 +9472,8 @@
         }
       ],
       "excerpt": "Markdown editor used by Source Vault for local .md files. It keeps file writes explicit through the Save button / Cmd+S, blocks silent overwrite on disk conflicts, and stores unsaved edits as a browser-local temporary draft before final disk save. The editor exposes that contract in the UI as separate Auto backup and F",
-      "wordCount": 179,
-      "updatedAt": "2026-06-06T03:53:22+09:00",
+      "wordCount": 251,
+      "updatedAt": "2026-07-25T04:21:27+09:00",
       "linksOut": []
     },
     {
@@ -10064,6 +10140,199 @@
       "excerpt": "이 문서는 2026-07-17 하루 동안의 집중 재기획의 확정 산출물이다. 검증 이력: 시장·기술 조사 17건 (haiku) · 사용자 페르소나 패널 7인 · CPO 심사 (PO rubric 22/24, Chief PO Level 4) · 사상가 렌즈 패널 10인 × 3라운드 (최종 평균 7.60 — 기획 단계 캘리브레이션 기준 Obsidian/dbt의 7.3을 상회) · 도입 심사 10인 · 충분성 분석 2건. 상세 근거는 세션 기록과 메모리 참조. 결론: 기획 단계 완료. 남은 점수는 구현과 시장 증거에서 나온다. Layer 1 (로컬 코어 — 불변의 신뢰 계약)",
       "wordCount": 2205,
       "updatedAt": "2026-07-17T22:37:47+09:00",
+      "linksOut": []
+    },
+    {
+      "slug": "PRODUCT-UX-AUDIT",
+      "path": "docs/PRODUCT-UX-AUDIT.md",
+      "title": "Ontology Atlas 제품 UX 감사 장부",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Atlas 제품 UX 감사 장부",
+          "slug": "ontology-atlas-제품-ux-감사-장부"
+        },
+        {
+          "depth": 2,
+          "text": "감사 방법",
+          "slug": "감사-방법"
+        },
+        {
+          "depth": 2,
+          "text": "현재 시나리오 행렬",
+          "slug": "현재-시나리오-행렬"
+        },
+        {
+          "depth": 2,
+          "text": "이슈 장부",
+          "slug": "이슈-장부"
+        },
+        {
+          "depth": 3,
+          "text": "UX-001 — 설치 앱 검증기가 현재 canvas-v2 지도를 구형 앱으로 오판",
+          "slug": "ux-001-설치-앱-검증기가-현재-canvas-v2-지도를-구형-앱으로-오판"
+        },
+        {
+          "depth": 3,
+          "text": "UX-002 — 가이드 투어에서 키보드 포커스가 뒤 화면으로 이탈",
+          "slug": "ux-002-가이드-투어에서-키보드-포커스가-뒤-화면으로-이탈"
+        },
+        {
+          "depth": 3,
+          "text": "UX-003 — 폴더 안내 모달이 포커스를 가두거나 호출 버튼으로 복귀하지 않음",
+          "slug": "ux-003-폴더-안내-모달이-포커스를-가두거나-호출-버튼으로-복귀하지-않음"
+        },
+        {
+          "depth": 3,
+          "text": "UX-004 — 예시 비즈니스 선택 뒤 설명이 다른 데이터셋을 지칭",
+          "slug": "ux-004-예시-비즈니스-선택-뒤-설명이-다른-데이터셋을-지칭"
+        },
+        {
+          "depth": 3,
+          "text": "UX-005 — 권한 대기 상태에서 폴더 선택 취소가 잘못된 `loaded` 상태를 만듦",
+          "slug": "ux-005-권한-대기-상태에서-폴더-선택-취소가-잘못된-loaded-상태를-만듦"
+        },
+        {
+          "depth": 3,
+          "text": "UX-006 — 투어 5/7에서 설명 대상과 시각적 주목 대상이 분리됨",
+          "slug": "ux-006-투어-57에서-설명-대상과-시각적-주목-대상이-분리됨"
+        },
+        {
+          "depth": 3,
+          "text": "UX-007 — 번역 계약 테스트 다섯 건이 현재 메시지와 역방향으로 드리프트",
+          "slug": "ux-007-번역-계약-테스트-다섯-건이-현재-메시지와-역방향으로-드리프트"
+        },
+        {
+          "depth": 3,
+          "text": "UX-008 — 읽기 전용 샘플의 AI 인계가 실제 vault 쓰기 명령을 제안",
+          "slug": "ux-008-읽기-전용-샘플의-ai-인계가-실제-vault-쓰기-명령을-제안"
+        },
+        {
+          "depth": 3,
+          "text": "UX-009 — 공방 인라인 관계 카드의 닫기 제어가 이름과 Escape 계약을 잃음",
+          "slug": "ux-009-공방-인라인-관계-카드의-닫기-제어가-이름과-escape-계약을-잃음"
+        },
+        {
+          "depth": 3,
+          "text": "UX-010 — 재실행 시 열린 탭은 남지만 활성 문서가 README로 돌아감",
+          "slug": "ux-010-재실행-시-열린-탭은-남지만-활성-문서가-readme로-돌아감"
+        },
+        {
+          "depth": 3,
+          "text": "UX-011 — 외부 편집 뒤 저장이 최신 mtime을 기준으로 삼아 변경을 덮어씀",
+          "slug": "ux-011-외부-편집-뒤-저장이-최신-mtime을-기준으로-삼아-변경을-덮어씀"
+        },
+        {
+          "depth": 3,
+          "text": "UX-012 — 노드 상세를 닫으면 키보드 포커스가 사라짐",
+          "slug": "ux-012-노드-상세를-닫으면-키보드-포커스가-사라짐"
+        },
+        {
+          "depth": 3,
+          "text": "UX-013 — 설치 앱에서 임의 로컬 프로젝트의 상세·전체 편집 경로가 열리지 않음",
+          "slug": "ux-013-설치-앱에서-임의-로컬-프로젝트의-상세전체-편집-경로가-열리지-않음"
+        },
+        {
+          "depth": 3,
+          "text": "UX-014 — 경로가 자유로운 project 문서 편집이 원본 대신 복제 파일을 만듦",
+          "slug": "ux-014-경로가-자유로운-project-문서-편집이-원본-대신-복제-파일을-만듦"
+        },
+        {
+          "depth": 3,
+          "text": "UX-015 — vault 재로딩 순간 전체 편집이 샘플 모드로 바뀌어 not-found를 고정함",
+          "slug": "ux-015-vault-재로딩-순간-전체-편집이-샘플-모드로-바뀌어-not-found를-고정함"
+        },
+        {
+          "depth": 3,
+          "text": "UX-016 — 짧은 인라인 편집이 없던 분류·상태를 만들어 전체 편집 저장을 막음",
+          "slug": "ux-016-짧은-인라인-편집이-없던-분류상태를-만들어-전체-편집-저장을-막음"
+        },
+        {
+          "depth": 3,
+          "text": "UX-017 — 새 프로젝트 파일이 graph node 종류 없이 생성됨",
+          "slug": "ux-017-새-프로젝트-파일이-graph-node-종류-없이-생성됨"
+        },
+        {
+          "depth": 3,
+          "text": "UX-018 — 유효한 로컬 온톨로지 딥링크가 선택 성공과 not-found를 동시에 표시",
+          "slug": "ux-018-유효한-로컬-온톨로지-딥링크가-선택-성공과-not-found를-동시에-표시"
+        },
+        {
+          "depth": 3,
+          "text": "UX-019 — CREATE 저장 예고가 새 노드를 0가지로 세고 확정 충돌도 저장을 허용",
+          "slug": "ux-019-create-저장-예고가-새-노드를-0가지로-세고-확정-충돌도-저장을-허용"
+        },
+        {
+          "depth": 3,
+          "text": "UX-020 — 인사이트 탭이 복합 위젯을 선언하고 일반 링크처럼 동작",
+          "slug": "ux-020-인사이트-탭이-복합-위젯을-선언하고-일반-링크처럼-동작"
+        },
+        {
+          "depth": 3,
+          "text": "UX-021 — 다운로드 경로의 첫 화면이 설치 판단 대신 제품 소개를 먼저 요구",
+          "slug": "ux-021-다운로드-경로의-첫-화면이-설치-판단-대신-제품-소개를-먼저-요구"
+        },
+        {
+          "depth": 3,
+          "text": "UX-022 — 언어 전환이 현재 인사이트 과업을 기본 탭으로 초기화",
+          "slug": "ux-022-언어-전환이-현재-인사이트-과업을-기본-탭으로-초기화"
+        },
+        {
+          "depth": 3,
+          "text": "UX-023 — 설치 앱 검증기가 현재 Atlas 셸·canvas-v2 선택 맥락을 오판",
+          "slug": "ux-023-설치-앱-검증기가-현재-atlas-셸canvas-v2-선택-맥락을-오판"
+        },
+        {
+          "depth": 3,
+          "text": "UX-024 — 설정에서 언어를 바꾸면 포커스가 새 문서 루트로 유실됨",
+          "slug": "ux-024-설정에서-언어를-바꾸면-포커스가-새-문서-루트로-유실됨"
+        },
+        {
+          "depth": 3,
+          "text": "UX-025 — 설정 modal의 마지막 Tab이 열린 시트 뒤 HTML 문서로 이탈",
+          "slug": "ux-025-설정-modal의-마지막-tab이-열린-시트-뒤-html-문서로-이탈"
+        },
+        {
+          "depth": 3,
+          "text": "UX-026 — AI 설정 드릴인 진입이 열린 modal의 포커스를 문서 루트로 유실",
+          "slug": "ux-026-ai-설정-드릴인-진입이-열린-modal의-포커스를-문서-루트로-유실"
+        },
+        {
+          "depth": 3,
+          "text": "UX-027 — 설정에서 문서함으로 이동하면 새 화면의 읽기 시작점을 잃음",
+          "slug": "ux-027-설정에서-문서함으로-이동하면-새-화면의-읽기-시작점을-잃음"
+        },
+        {
+          "depth": 3,
+          "text": "UX-028 — 활성 문서 탭을 키보드로 닫으면 포커스가 앱 루트로 유실",
+          "slug": "ux-028-활성-문서-탭을-키보드로-닫으면-포커스가-앱-루트로-유실"
+        },
+        {
+          "depth": 3,
+          "text": "UX-029 — 전역 레일 이동과 공방 surface가 새 과업의 읽기 시작점을 잃음",
+          "slug": "ux-029-전역-레일-이동과-공방-surface가-새-과업의-읽기-시작점을-잃음"
+        },
+        {
+          "depth": 3,
+          "text": "A27 검증 메모 — 하단 탭바 route·safe-area 계약 유지",
+          "slug": "a27-검증-메모-하단-탭바-routesafe-area-계약-유지"
+        },
+        {
+          "depth": 3,
+          "text": "UX-030 — 화면 밖 AI 연결 진입이 시트를 잃고 문서 루트로 포커스를 버림",
+          "slug": "ux-030-화면-밖-ai-연결-진입이-시트를-잃고-문서-루트로-포커스를-버림"
+        },
+        {
+          "depth": 2,
+          "text": "현재 PO·디자인 판정",
+          "slug": "현재-po디자인-판정"
+        }
+      ],
+      "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다. 4. 실패 테스트를 먼저 추가한다. 5. 가장 작은 일관된 슬라이스로 수정한다. 6. 집중 테스트와 /Appl",
+      "wordCount": 9140,
+      "updatedAt": "2026-07-25T00:45:37.151Z",
       "linksOut": []
     },
     {
@@ -11564,6 +11833,11 @@
         "fromSlug": "ontology/domains/onboarding-ux",
         "context": "frontmatter · **[elements/app-settings-menu]**",
         "linkText": "elements/app-settings-menu"
+      },
+      {
+        "fromSlug": "ontology/elements/route-focus-manager",
+        "context": "frontmatter · **[elements/app-settings-menu]**",
+        "linkText": "elements/app-settings-menu"
       }
     ],
     "ontology/src/views/docs-vault/ui/DocsVaultPage.tsx": [
@@ -11684,6 +11958,11 @@
         "linkText": "domains/onboarding-ux"
       },
       {
+        "fromSlug": "ontology/elements/accessible-dialog-focus-contract",
+        "context": "frontmatter · **[onboarding-ux]**",
+        "linkText": "onboarding-ux"
+      },
+      {
         "fromSlug": "ontology/elements/app-nav-rail",
         "context": "frontmatter · **[onboarding-ux]**",
         "linkText": "onboarding-ux"
@@ -11715,6 +11994,11 @@
       },
       {
         "fromSlug": "ontology/elements/root-locale-redirect",
+        "context": "frontmatter · **[onboarding-ux]**",
+        "linkText": "onboarding-ux"
+      },
+      {
+        "fromSlug": "ontology/elements/route-focus-manager",
         "context": "frontmatter · **[onboarding-ux]**",
         "linkText": "onboarding-ux"
       },
@@ -12537,6 +12821,13 @@
         "linkText": "capabilities/relation-rationale"
       }
     ],
+    "ontology/elements/accessible-dialog-focus-contract": [
+      {
+        "fromSlug": "ontology/capabilities/first-run-onboarding-guides",
+        "context": "frontmatter · **[elements/accessible-dialog-focus-contract]**",
+        "linkText": "elements/accessible-dialog-focus-contract"
+      }
+    ],
     "ontology/domains/ontology-core": [
       {
         "fromSlug": "ontology/capabilities/frontmatter-to-ontology",
@@ -12614,6 +12905,11 @@
       },
       {
         "fromSlug": "ontology/elements/app-settings-menu",
+        "context": "frontmatter · **[elements/app-nav-rail]**",
+        "linkText": "elements/app-nav-rail"
+      },
+      {
+        "fromSlug": "ontology/elements/route-focus-manager",
         "context": "frontmatter · **[elements/app-nav-rail]**",
         "linkText": "elements/app-nav-rail"
       },
@@ -12955,6 +13251,11 @@
         "fromSlug": "ontology/domains/onboarding-ux",
         "context": "frontmatter · **[first-run-onboarding-guides]**",
         "linkText": "first-run-onboarding-guides"
+      },
+      {
+        "fromSlug": "ontology/elements/accessible-dialog-focus-contract",
+        "context": "frontmatter · **[capabilities/first-run-onboarding-guides]**",
+        "linkText": "capabilities/first-run-onboarding-guides"
       }
     ],
     "ontology/capabilities/product-owner-operating-system": [
@@ -13010,6 +13311,13 @@
         "fromSlug": "ontology/src/widgets/bottom-tab-bar",
         "context": "frontmatter · **[elements/root-locale-redirect]**",
         "linkText": "elements/root-locale-redirect"
+      }
+    ],
+    "ontology/elements/route-focus-manager": [
+      {
+        "fromSlug": "ontology/domains/onboarding-ux",
+        "context": "frontmatter · **[elements/route-focus-manager]**",
+        "linkText": "elements/route-focus-manager"
       }
     ],
     "ontology/src/widgets/bottom-tab-bar": [
@@ -13878,6 +14186,13 @@
             "type": "dir",
             "children": [
               {
+                "name": "accessible-dialog-focus-contract",
+                "path": "ontology/elements/accessible-dialog-focus-contract",
+                "type": "doc",
+                "slug": "ontology/elements/accessible-dialog-focus-contract",
+                "title": "Accessible Dialog Focus Contract"
+              },
+              {
                 "name": "agent-activity-hooks",
                 "path": "ontology/elements/agent-activity-hooks",
                 "type": "doc",
@@ -14051,6 +14366,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/root-locale-redirect",
                 "title": "Root Locale Redirect Fallback"
+              },
+              {
+                "name": "route-focus-manager",
+                "path": "ontology/elements/route-focus-manager",
+                "type": "doc",
+                "slug": "ontology/elements/route-focus-manager",
+                "title": "Route Focus Manager"
               },
               {
                 "name": "sigma-graphology",
@@ -14447,6 +14769,13 @@
         "type": "doc",
         "slug": "PRODUCT-PLAN-2026-07",
         "title": "Ontology Atlas — 제품 계획 v9 (확정본, 2026-07-17)"
+      },
+      {
+        "name": "PRODUCT-UX-AUDIT",
+        "path": "PRODUCT-UX-AUDIT",
+        "type": "doc",
+        "slug": "PRODUCT-UX-AUDIT",
+        "title": "Ontology Atlas 제품 UX 감사 장부"
       },
       {
         "name": "PUBLISH-NPM",

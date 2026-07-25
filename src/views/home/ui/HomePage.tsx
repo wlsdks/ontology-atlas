@@ -99,7 +99,7 @@ import {
   detectOrphanProjects,
   detectPromotionCandidates,
   detectStaleProjects,
-  getProjectDetailHref,
+  getProjectRuntimeDetailHref,
   type Project,
   type ProjectImpactMode,
 } from "@/entities/project";
@@ -164,9 +164,14 @@ import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-cen
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
+import { restoreTopologyFocusAfterDatasheetClose } from "../lib/topology-focus-return";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
-import { AgentConnectSheet, useAgentConnectLauncher } from "@/widgets/agent-connect";
+import {
+  AgentConnectSheet,
+  consumeAgentConnectRouteIntent,
+  useAgentConnectLauncher,
+} from "@/widgets/agent-connect";
 import { TopologyV2EdgePanel } from "@/widgets/topology-map-v2/ui/TopologyV2EdgePanel";
 import { PLAIN_TIER_REVEAL } from "@/widgets/topology-map-v2/model/tier-visibility";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
@@ -520,6 +525,7 @@ export function HomePage() {
   // insight 에서 노드 정보 찾기. selectedSlug 가 ontology id 인데 project
   // 매칭이 없을 때만 사용 — 즉 토폴로지에서 domain/capability/element
   // 노드 클릭한 케이스.
+  const vault = useLocalVault();
   const { insight: ontologyInsight } = useOntologyInsight();
   // S-C1 — 노드 데이터시트 "언제 바뀌었나" (mode-aware manifest updatedAt).
   const docFreshnessIndex = useVaultDocFreshnessIndex();
@@ -602,6 +608,11 @@ export function HomePage() {
       hasOntologyMatch: Boolean(selectedOntologyNode),
       hasProjectMatch: Boolean(selectedProject),
       projectsLoaded: projectsQuery.loaded,
+      sourceReady:
+        vault.restoreAttempted &&
+        (vault.status === "idle" ||
+          vault.status === "loaded" ||
+          vault.status === "unsupported"),
     });
     if (decision.action === "none") return;
     if (!selectedSlug || deeplinkMissNotifiedRef.current === selectedSlug) return;
@@ -627,15 +638,26 @@ export function HomePage() {
     // the slug after all).
     const timer = window.setTimeout(notify, DEEPLINK_MISS_GRACE_MS);
     return () => window.clearTimeout(timer);
-  }, [selectedSlug, projectsQuery.loaded, ontologyInsight, selectedProject, selectedOntologyNode, toast, t]);
+  }, [
+    selectedSlug,
+    projectsQuery.loaded,
+    ontologyInsight,
+    selectedProject,
+    selectedOntologyNode,
+    vault.restoreAttempted,
+    vault.status,
+    toast,
+    t,
+  ]);
   // S1.1 — 토폴로지를 온톨로지의 1차 편집 surface 로. writable 로컬 vault 면
   // 선택 노드를 자기 .md 문서로 해석해 전체 상세(A1)의 본문 인라인 편집을 허용.
-  const vault = useLocalVault();
   // 발자취(Atlas Git) 패널 — 레일 타일 클릭으로 열리는 스냅샷/히스토리 표면.
   const [gitPanelOpen, setGitPanelOpen] = useState(false);
   // Tauri 데스크톱이면 vault 절대 경로(브리지 활성), 웹 FSA 핸들이면 null →
   // 타일/패널이 세션 changeset 기반으로 정직하게 강등한다.
   const gitVaultPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
+  const handoffSource: "loaded-vault" | "read-only-sample" =
+    vault.status === "loaded" ? "loaded-vault" : "read-only-sample";
   // 레일 하단 설정 슬롯 — 발자취 타일 + 설정 기어를 한 fragment 로 등록.
   // (perf/persistent-shell: 레일은 layout 상주, 이 페이지가 슬롯만 주입.)
   const navRailSettingsSlot = useMemo(
@@ -879,14 +901,23 @@ export function HomePage() {
   });
   // LNB(AppShell 상주) 에이전트 타일 → 전역 "열려는 의도". 어느 페이지에서
   // 눌렸든 지형도로 이동해 오면 레이아웃 상주 launcher 의 wantOpen 이 살아
-  // 있어 여기서 시트를 연다(URL 파라미터 불필요). openSheet 는 "N분 전"
-  // 기준 시각도 함께 스냅한다.
+  // 있어 여기서 시트를 연다. static-export/WebView 가 그 state commit 보다
+  // 먼저 route 를 바꾸는 경우에는 일회성 URL marker 를 소비한다. openSheet 는
+  // "N분 전" 기준 시각도 함께 스냅한다.
   const agentConnectLauncher = useAgentConnectLauncher();
   const agentConnectWantOpen = agentConnectLauncher.wantOpen;
+  const requestAgentConnectOpen = agentConnectLauncher.open;
   const openAgentConnectSheet = agentConnect.openSheet;
   useEffect(() => {
-    if (agentConnectWantOpen) openAgentConnectSheet();
-  }, [agentConnectWantOpen, openAgentConnectSheet]);
+    const arrivedFromGlobalTile = consumeAgentConnectRouteIntent();
+    if (arrivedFromGlobalTile && !agentConnectWantOpen) {
+      // 일부 static-export/WebView 전환은 layout provider 상태 commit 전에 새
+      // route 를 마운트한다. URL marker 를 소비한 도착 화면이 launcher 의
+      // aria-expanded/focus-return 계약까지 다시 세워 전환 방식에 의존하지 않는다.
+      requestAgentConnectOpen();
+    }
+    if (agentConnectWantOpen || arrivedFromGlobalTile) openAgentConnectSheet();
+  }, [agentConnectWantOpen, openAgentConnectSheet, requestAgentConnectOpen]);
   // 폴더 연결 직후 에이전트 연결 유도 (소유자 지시 2026-07-24 2차) — "폴더를
   // 연결하고 나면 바로 AI 에이전트 연결을 가이드해야 한다". 이 세션에서
   // 사용자가 직접 폴더를 연 경우('opening' 경유 — IndexedDB 복원 재방문은
@@ -895,14 +926,9 @@ export function HomePage() {
   const vaultOpenedThisSessionRef = useRef(false);
   const agentAutoPromptFiredRef = useRef(false);
   const agentConnectedNow = agentConnect.status.kind === "connected";
-  // openSheet 는 렌더마다 재생성될 수 있어 dep 로 두면 타이머가 리렌더마다
-  // 지워진다 — 자동 투어와 동일한 재장전 회귀(E2E 실측: '빈 폴더로 새로
-  // 시작' 경로는 스캐폴드 리렌더 때문에 시트가 영영 안 열렸다). ref 미러 +
-  // 발화 성공 시점에만 가드를 세운다.
-  const openAgentConnectSheetRef = useRef(openAgentConnectSheet);
-  useEffect(() => {
-    openAgentConnectSheetRef.current = openAgentConnectSheet;
-  }, [openAgentConnectSheet]);
+  // 자동 안내도 launcher 를 거쳐야 닫기 뒤 안전 복귀점(AI 타일)이 생긴다.
+  // requestAgentConnectOpen 은 provider 의 stable callback이라 timer effect의
+  // 재장전 없이 사용할 수 있다.
   useEffect(() => {
     if (vault.status === "opening") vaultOpenedThisSessionRef.current = true;
     if (
@@ -917,10 +943,10 @@ export function HomePage() {
     // 화면에서도 읽히게 한다.
     const id = window.setTimeout(() => {
       agentAutoPromptFiredRef.current = true;
-      openAgentConnectSheetRef.current();
+      requestAgentConnectOpen();
     }, 1200);
     return () => window.clearTimeout(id);
-  }, [vault.status, agentConnectedNow]);
+  }, [vault.status, agentConnectedNow, requestAgentConnectOpen]);
   // HomePage 모듈화 1차 — 부트스트랩 흐름은 use-bootstrap-flow 훅 소유.
   // 완료 연출(토스트·E1 리빌)만 여기 남는다.
   const { bootstrapOpen, setBootstrapOpen, bootstrapPlan, runBootstrap } = useBootstrapFlow({
@@ -1407,6 +1433,7 @@ export function HomePage() {
   const { nodeFocus, v2DatasheetModel } = useNodeDatasheetModel({
     selectedOntologyNode,
     insight: ontologyInsight,
+    handoffSource,
     authoredSignificance,
     docFreshnessIndex,
     updatedAgoNowMs,
@@ -1528,6 +1555,7 @@ export function HomePage() {
     const groups = buildV2ConnectionGroups(connections);
     const evidenceRows = buildV2EvidenceRows(node.evidenceIds);
     const handoffText = formatV2HandoffText({
+      source: handoffSource,
       slug,
       kind: node.kind,
       domainTitle: null,
@@ -1547,7 +1575,7 @@ export function HomePage() {
       studioEditHref: buildOntologyStudioNodeHrefFromGraphId(node.id),
       handoffText,
     };
-  }, [contextMenuNode, ontologyInsight]);
+  }, [contextMenuNode, handoffSource, ontologyInsight]);
   // A1 "데이터시트 확장판" 전체 상세 — TopologyOntologyDrawer(배지 수프 +
   // reach 쿼리빌더 + collaborator brief)를 대체. groups/reach 는 compact
   // datasheet 와 동일 소스(buildV2Connections 파생, buildOntologyReachability
@@ -1742,6 +1770,15 @@ export function HomePage() {
     }));
   }, [setRouteState]);
 
+  const handleDatasheetClose = useCallback(() => {
+    const focusReturnNodeId = panelDatasheetModel?.nodeId ?? null;
+    handleClose();
+    if (typeof window === "undefined") return;
+    window.requestAnimationFrame(() => {
+      restoreTopologyFocusAfterDatasheetClose(focusReturnNodeId);
+    });
+  }, [handleClose, panelDatasheetModel?.nodeId]);
+
   // 가이드 투어 (2026-07-23, `src/features/guided-tour`) — 지도 화면(/) 전담
   // 의미 문해 투어. `canResolveTourAnchor` 는 이 view 가 testid(DOM) 또는
   // canvas-node(그래프) 앵커를 실제로 해석해 feature 에 불리언만 돌려준다 —
@@ -1769,6 +1806,11 @@ export function HomePage() {
     tour.open && tour.step && tour.step.anchor !== null && tour.step.anchor.type === "canvas-node"
       ? resolveTourAnchorNodeId(topologyV2Graph.nodes, tour.step.anchor.target)
       : null;
+  const activateTourAnchor = useCallback(() => {
+    if (!tourAnchorNodeId) return;
+    setSelectedEdge(null);
+    handleSelect(tourAnchorNodeId);
+  }, [handleSelect, tourAnchorNodeId]);
   // 투어를 열 때 다른 전이 표면을 강등한다(§4 "열림 시" 계약) — create-node
   // composer 와 같은 "openX 가 나머지를 닫는다" 관례를 그대로 따른다.
   const openGuidedTour = useCallback(() => {
@@ -2425,7 +2467,7 @@ export function HomePage() {
       const project = projectBySlug.get(slug);
       if (!project) return;
 
-      const href = getProjectDetailHref(slug);
+      const href = getProjectRuntimeDetailHref(slug);
       if (!prefetchedProjectHrefsRef.current.has(href)) {
         prefetchedProjectHrefsRef.current.add(href);
         router.prefetch(href);
@@ -3422,7 +3464,7 @@ export function HomePage() {
                       relationCount={topologyTotalRelations}
                       agentConnected={agentConnect.status.kind === "connected"}
                       onCreateNode={openCreateNodeWithKind}
-                      onOpenAgentConnect={openAgentConnectSheet}
+                      onOpenAgentConnect={agentConnectLauncher.open}
                       // '기존 폴더 선택'으로 빈 폴더를 연 사용자에게 '빈
                       // 폴더로 새로 시작' 과 같은 스타터를 버튼으로 제공한다
                       // (2026-07-24). 문서가 이미 있으면 미전달 → 종전
@@ -3794,6 +3836,7 @@ export function HomePage() {
               <TopologyV2DetailPanel
                 key={panelDatasheetModel.slug}
                 presence={nodePanelPresence.exiting ? "exiting" : "entering"}
+                nodeId={panelDatasheetModel.nodeId}
                 slug={panelDatasheetModel.slug}
                 title={panelDatasheetModel.title}
                 sourceTitle={panelDatasheetModel.sourceTitle}
@@ -3871,7 +3914,7 @@ export function HomePage() {
                 }}
                 onSelectConnection={(id) => handleSelect(id)}
                 onCopyHandoff={copyV2NodeHandoff}
-                onClose={handleClose}
+                onClose={handleDatasheetClose}
                 onSetPathSource={() => handleSetPathSource(panelDatasheetModel.nodeId)}
                 onEnterRealm={
                   // S4 — 컨테이너 노드(자식 있음)이며 영역 밖일 때만 2차 발견
@@ -4069,7 +4112,11 @@ export function HomePage() {
               : null
           }
         />
-        <GuidedTourOverlay tour={tour} canvasAnchorRef={tourAnchorRef} />
+        <GuidedTourOverlay
+          tour={tour}
+          canvasAnchorRef={tourAnchorRef}
+          onActivateAnchor={tourAnchorNodeId ? activateTourAnchor : undefined}
+        />
       </div>
     </main>
   );

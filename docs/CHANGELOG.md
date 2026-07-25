@@ -6,6 +6,65 @@
 
 ---
 
+## 2026-07-25 — 언어 전환에서 현재 과업 URL 상태 보존
+
+인사이트 `신선도`처럼 query로 선택 상태를 갖는 화면에서 EN/KO를 바꾸면
+query가 사라져 기본 탭으로 돌아가던 문제를 수정했다.
+
+- locale path segment만 바꾸고 raw query·hash는 그대로 유지한다. 중복 key
+  순서와 기존 Unicode/reserved-character 인코딩도 재직렬화하지 않는다.
+- `router.replace(..., { scroll: false })`를 유지해 history를 늘리거나 같은
+  검토 위치를 초기화하지 않는다.
+- 설치 앱에서 KO `신선도` → EN `FRESHNESS` → KO `신선도` 왕복 뒤에도
+  `?tab=freshness`, 개념/관계/도메인 facts, 선택 탭이 같음을 확인했다.
+
+## 2026-07-25 — 다운로드 첫 화면을 설치 판단 우선으로 재정렬
+
+`/download`로 직접 들어온 사용자가 구 LandingPage 소개 전체를 지나야
+릴리스 상태를 볼 수 있던 정보 위계를 바로잡았다. 다운로드 제목·GitHub
+Releases/소스 액션·버전/DMG/아키텍처/최소 OS·체크섬과 게시 대기 상태가
+이제 제품 소개보다 먼저 나온다.
+
+- 현재 공개 릴리스가 없어도 CTA는 다운로드를 가장하지 않고
+  `GitHub에서 릴리스 확인`으로 유지하며, 같은 첫 화면에서 asset 대기 이유를
+  읽을 수 있다.
+- 기존 제품 소개·dogfood 미니어처·가치 카드는 삭제하지 않고 divider 아래
+  보조 설명으로 내렸다. 새 색·자산·모션은 없다.
+- DOM 계약과 1512×917 설치 앱에서 primary/source CTA 순서와 무스크롤
+  release facts·availability 노출을 고정했다.
+
+## 2026-07-25 — 인사이트 탭 키보드·포커스 계약 복구
+
+인사이트의 할 일·구조·신선도 제어는 `role=tab`을 선언했지만 세 탭이 모두
+순차 Tab 이동에 들어가고 방향키가 동작하지 않았다. 이제 선택 탭 한 개만
+Tab 순서에 남고, 좌우 방향키는 순환하며 Home/End는 처음·끝 탭을 즉시
+활성화한다.
+
+- 기존 `?tab=` 딥링크와 `aria-controls`/`tabpanel` 관계는 유지한다.
+- 전체 router navigation 대신 현재 locale pathname의 query만 native history로
+  갱신해 선택 탭 포커스를 보존하며, 선택된 탭을 다시 눌러 같은 URL을
+  불필요하게 재탐색하지 않는다.
+- 포커스 표시는 디자인 시스템의 전용 indigo ring 토큰을 inset으로 사용해
+  가로 스크롤 tablist에서도 잘리지 않는다. 레이아웃, 패널 내용, 색 의미,
+  전환 모션은 바꾸지 않았다.
+
+## 2026-07-25 — 공방 CREATE 저장 예고·중복 경계 정합
+
+관계 0개인 새 노드도 실제로는 Markdown 파일 1개를 만들지만 하단 요약이
+`기록될 내용 0가지`라고 말하던 모순을 바로잡았다. CREATE의 접힌 예고는 이제
+`새 노드 1개 · 관계 N개`, 펼친 예고는 파일 생성과 관계 줄 수를 각각 말한다.
+
+- 같은 kind·이름이 점유된 결정적 slug와 정확히 충돌하면 soft near-dup이 아닌
+  hard conflict로 판정한다. `그래도 새로 만들기`를 숨기고 저장을 비활성화해
+  실패가 확정된 `createDoc` 호출을 권하지 않는다. 같은 충돌 중에는 relation을
+  이미 stage했더라도 생성 summary·delta preview·preview 저장 우회도 함께
+  닫고, 이름 input의 invalid/describedby와 polite 경고를 연결한다.
+- 이름이 비슷하지만 경로는 다른 후보는 기존 near-dup 선택권을 유지한다.
+- 임의 이름에서 조사가 깨지던 한국어 CREATE/ENHANCE 문장을 조사 없는 형태로
+  바꾸고, 경고의 문자 기호는 공용 아이콘 라이브러리로 교체했다.
+- 설치 앱의 scratch vault에서 충돌 차단, 새 노드 생성, canonical ENHANCE
+  재진입, 실제 Markdown, validator clean까지 다시 증명했다.
+
 ## 2026-07-25 — 공방 확장 완성: 산책·델타 미리보기·지도 엣지 딥링크 (Slice 4~6)
 
 fable 기획 "발견 → 연결 → 확인 → 기록" 루프의 마지막 세 슬라이스. 이로써

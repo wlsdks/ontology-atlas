@@ -51,7 +51,15 @@ export type {
 } from "./model";
 // R10b — cloud entity api 영구 제거. mission v2 (vault frontmatter = 진실원)
 // 정합. 미래 cloud collab 단계가 다시 도입될 때 새 api/ 폴더로.
-export { getProjectDetailHref, getProjectDetailUrl } from "./lib/detail-href";
+export {
+  getProjectDetailHref,
+  getProjectDetailUrl,
+  getProjectEditHref,
+  getProjectRuntimeDetailHref,
+  getProjectRuntimeDetailUrl,
+  resolveProjectFallbackRoute,
+} from "./lib/detail-href";
+export type { ProjectFallbackRoute } from "./lib/detail-href";
 export { getTopologyFocusHref, getTopologyProjectHref } from "./lib/topology-href";
 export { ProjectCard } from "./ui/ProjectCard";
 export type { CardCategoryMeta, CardStatusDotColor, ProjectCardViewMode } from "./ui/ProjectCard";

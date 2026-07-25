@@ -56,6 +56,9 @@ export function projectToFrontmatter(
   project: ProjectFrontmatterShape,
 ): Record<string, string | number | boolean | string[]> {
   const out: Record<string, string | number | boolean | string[]> = {};
+  // 이 매퍼의 입력은 Project/ProjectInput 으로 이미 타입이 확정된 쓰기 경로다.
+  // 신규 문서와 full edit 모두 graph node 계약을 잃지 않도록 kind 를 정규화한다.
+  out.kind = 'project';
   out.name = project.name;
   out.slug = project.slug;
   // R15 — category 가 optional 이라 명시 없으면 frontmatter 에서도 omit

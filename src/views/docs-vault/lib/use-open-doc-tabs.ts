@@ -5,7 +5,10 @@ import {
   closeDocTab,
   openOrActivateDocTab,
   pruneMissingDocTabs,
+  readStoredActiveDocSlug,
   readStoredDocTabs,
+  resolveRestoredActiveDocSlug,
+  storeActiveDocSlug,
   storeDocTabs,
   type DocTab,
 } from "./doc-tabs";
@@ -31,6 +34,12 @@ export interface UseOpenDocTabsArgs {
 
 export interface UseOpenDocTabsResult {
   tabs: DocTab[];
+  /** 현재 sourceKey의 저장 탭을 읽은 뒤에만 true. */
+  hydrated: boolean;
+  /** URL 딥링크가 없을 때 호출부가 한 번 복원할 직전 활성 문서. */
+  restoredActiveSlug: string | null;
+  /** 명시적인 사용자 문서 선택만 별도 active key로 기억한다. */
+  rememberActiveSlug: (slug: string) => void;
   /** 이미 열려 있으면 activate(+title 갱신)만, 없으면 새 탭 추가(+LRU). */
   openTab: (slug: string, title: string) => void;
   /** 탭을 닫는다. 다음에 activate 해야 할 slug(또는 마지막 탭이면 null)를
@@ -43,6 +52,11 @@ export function useOpenDocTabs({
   validSlugs,
 }: UseOpenDocTabsArgs): UseOpenDocTabsResult {
   const [tabs, setTabs] = useState<DocTab[]>([]);
+  const [hydratedSourceKey, setHydratedSourceKey] = useState<string | null>(null);
+  const [storedActive, setStoredActive] = useState<{
+    sourceKey: string;
+    slug: string | null;
+  } | null>(null);
   // storeDocTabs 호출 시점에 "지금" sourceKey 를 참조하기 위한 ref —
   // openTab/closeTab 을 sourceKey 변경마다 재생성하지 않기 위해 state 대신 ref.
   const sourceKeyRef = useRef(sourceKey);
@@ -55,7 +69,14 @@ export function useOpenDocTabs({
   // 같은 배치에 먼저 예약된 openTab updater 가 쓴 결과를 못 보고 덮어쓴다.
   useEffect(() => {
     sourceKeyRef.current = sourceKey;
-    scheduleStateSync(() => setTabs(() => readStoredDocTabs(sourceKey)));
+    scheduleStateSync(() => {
+      setTabs(() => readStoredDocTabs(sourceKey));
+      setStoredActive({
+        sourceKey,
+        slug: readStoredActiveDocSlug(sourceKey),
+      });
+      setHydratedSourceKey(sourceKey);
+    });
   }, [sourceKey]);
 
   // vault 의 실재 slug 목록이 바뀔 때(문서 rename/delete, vault 최초 로드)
@@ -99,5 +120,29 @@ export function useOpenDocTabs({
     [],
   );
 
-  return { tabs, openTab, closeTab };
+  const rememberActiveSlug = useCallback((slug: string) => {
+    const key = sourceKeyRef.current;
+    storeActiveDocSlug(key, slug);
+    setStoredActive({ sourceKey: key, slug });
+  }, []);
+
+  const hydrated = hydratedSourceKey === sourceKey;
+  const restoredActiveSlug = hydrated
+    ? resolveRestoredActiveDocSlug({
+        tabs,
+        validSlugs,
+        querySlug: null,
+        storedActiveSlug:
+          storedActive?.sourceKey === sourceKey ? storedActive.slug : null,
+      })
+    : null;
+
+  return {
+    tabs,
+    hydrated,
+    restoredActiveSlug,
+    rememberActiveSlug,
+    openTab,
+    closeTab,
+  };
 }

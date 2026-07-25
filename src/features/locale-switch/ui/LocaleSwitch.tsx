@@ -10,12 +10,42 @@ const LOCALES = [
   { code: 'ko', label: 'KO', nameKey: 'korean' },
 ] as const;
 
+export interface LocaleSwitchProps {
+  /**
+   * Runs before navigation starts. Hosts that unmount across locale segments
+   * can record a focus-return intent without coupling this feature to them.
+   */
+  onSwitchStart?: (nextLocale: string) => void;
+}
+
+/**
+ * Replace only the locale path segment. `rawSearch` and `rawHash` come
+ * directly from `window.location` so duplicate keys, ordering, and their
+ * original encoding survive a language-only transition byte-for-byte.
+ */
+export function buildLocaleTarget(
+  pathname: string,
+  currentLocale: string,
+  nextLocale: string,
+  rawSearch = '',
+  rawHash = '',
+): string {
+  const segments = pathname.split('/');
+  if (segments[1] === currentLocale) {
+    segments[1] = nextLocale;
+  } else {
+    segments.splice(1, 0, nextLocale);
+  }
+  const localizedPath = segments.join('/') || `/${nextLocale}/`;
+  return `${localizedPath}${rawSearch}${rawHash}`;
+}
+
 /**
  * Compact two-button locale toggle. Persists choice in localStorage so the
  * root `/` redirect picks it up next visit. Replaces `/<old>/...` with
- * `/<new>/...` in the current URL — no full reload needed.
+ * `/<new>/...` while preserving query/hash task state — no full reload needed.
  */
-export function LocaleSwitch() {
+export function LocaleSwitch({ onSwitchStart }: LocaleSwitchProps = {}) {
   const t = useTranslations('locale');
   const locale = useLocale();
   const pathname = usePathname();
@@ -24,20 +54,21 @@ export function LocaleSwitch() {
 
   function switchTo(next: string) {
     if (next === locale) return;
+    onSwitchStart?.(next);
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
     } catch {
       // localStorage unavailable — proceed without persistence
     }
-    const segments = pathname.split('/');
-    if (segments[1] === locale) {
-      segments[1] = next;
-    } else {
-      segments.splice(1, 0, next);
-    }
-    const target = segments.join('/') || `/${next}/`;
+    const target = buildLocaleTarget(
+      pathname,
+      locale,
+      next,
+      window.location.search,
+      window.location.hash,
+    );
     startTransition(() => {
-      router.replace(target);
+      router.replace(target, { scroll: false });
     });
   }
 

@@ -1,6 +1,11 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { docTabsStorageKey, readStoredDocTabs } from "./doc-tabs";
+import {
+  docTabsStorageKey,
+  readStoredActiveDocSlug,
+  readStoredDocTabs,
+  storeActiveDocSlug,
+} from "./doc-tabs";
 import { useOpenDocTabs } from "./use-open-doc-tabs";
 
 const SOURCE = "server";
@@ -30,8 +35,34 @@ describe("useOpenDocTabs", () => {
     const { result } = renderHook(() =>
       useOpenDocTabs({ sourceKey: SOURCE, validSlugs: new Set(["a", "b", "c"]) }),
     );
+    expect(result.current.hydrated).toBe(false);
     await act(async () => {});
     expect(result.current.tabs.map((tab) => tab.slug)).toEqual(["a", "b", "c"]);
+    expect(result.current.hydrated).toBe(true);
+    expect(result.current.restoredActiveSlug).toBe("c");
+  });
+
+  it("restores the separately remembered active slug before timestamp fallback", async () => {
+    seed(["a", "b", "c"]);
+    storeActiveDocSlug(SOURCE, "a");
+    const { result } = renderHook(() =>
+      useOpenDocTabs({ sourceKey: SOURCE, validSlugs: new Set(["a", "b", "c"]) }),
+    );
+    await act(async () => {});
+    expect(result.current.restoredActiveSlug).toBe("a");
+  });
+
+  it("remembers an explicit active slug for the current vault", async () => {
+    seed(["a", "b"]);
+    const { result } = renderHook(() =>
+      useOpenDocTabs({ sourceKey: SOURCE, validSlugs: new Set(["a", "b"]) }),
+    );
+    await act(async () => {});
+    act(() => {
+      result.current.rememberActiveSlug("b");
+    });
+    expect(readStoredActiveDocSlug(SOURCE)).toBe("b");
+    expect(result.current.restoredActiveSlug).toBe("b");
   });
 
   it("keeps the stored tabs when a document opens before hydration settles", () => {

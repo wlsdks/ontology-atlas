@@ -10,6 +10,7 @@ export interface GuidedTourCardProps {
   tour: UseGuidedTourResult;
   placement: CardPlacement;
   width: number;
+  onActivateAnchor?: () => void;
   style?: React.CSSProperties;
 }
 
@@ -19,7 +20,13 @@ export interface GuidedTourCardProps {
  * (spec §3-D). 표면은 기존 5단계 패널 토큰만 — `--color-panel` ·
  * `--chrome-border` · `--chrome-shadow` · `--chrome-radius`.
  */
-export function GuidedTourCard({ tour, placement, width, style }: GuidedTourCardProps) {
+export function GuidedTourCard({
+  tour,
+  placement,
+  width,
+  onActivateAnchor,
+  style,
+}: GuidedTourCardProps) {
   const t = useTranslations("guidedTour");
   const { step, stepIndex, personaSteps, personaStepIndex, back, advance, skip, finishAsDone, chooseDevBranch, hasSelection, devBranchAvailable } = tour;
 
@@ -53,7 +60,7 @@ export function GuidedTourCard({ tour, placement, width, style }: GuidedTourCard
       data-testid="guided-tour-card"
       data-tour-card-side={placement.side}
       role="dialog"
-      aria-modal="false"
+      aria-modal="true"
       aria-label={t(`steps.${step.copyKey}.title`)}
       className={cn(
         "fixed z-[75] rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--color-panel)] p-4 shadow-[var(--chrome-shadow)]",
@@ -106,12 +113,17 @@ export function GuidedTourCard({ tour, placement, width, style }: GuidedTourCard
       </p>
 
       {isInteractive ? (
-        <div
-          data-testid={hasSelection ? "guided-tour-success" : "guided-tour-waiting"}
+        <button
+          type="button"
+          onClick={onActivateAnchor}
+          disabled={!onActivateAnchor || hasSelection}
+          data-testid="guided-tour-activate-target"
           className="flex h-8 items-center justify-center rounded-[var(--chrome-radius-inner)] border border-dashed border-[color:var(--chrome-border)] text-center text-body text-[color:var(--color-text-tertiary)]"
         >
-          {hasSelection ? t("clickSuccessLabel") : t("waitingForClickLabel")}
-        </div>
+          <span data-testid={hasSelection ? "guided-tour-success" : "guided-tour-waiting"}>
+            {hasSelection ? t("clickSuccessLabel") : t("waitingForClickLabel")}
+          </span>
+        </button>
       ) : null}
 
       {isBranchStep ? (

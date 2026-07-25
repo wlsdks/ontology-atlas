@@ -78,10 +78,11 @@ export interface Project {
 export type ProjectInput = {
   slug: string;
   name: string;
-  category: ProjectCategory;
-  status: ProjectStatus;
+  /** edit는 원본에 없던 typed fact를 만들지 않도록 미지정을 보존할 수 있다. */
+  category?: ProjectCategory;
+  status?: ProjectStatus;
   description: string;
-  position: ProjectPosition;
+  position?: ProjectPosition;
   nameEn?: string;
   detail?: string;
   tags?: string[];

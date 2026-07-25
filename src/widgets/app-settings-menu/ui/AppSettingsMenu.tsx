@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { ReactNode } from 'react';
+import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,14 +12,19 @@ import {
   Settings,
   X,
 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { useLocalVault } from '@/features/docs-vault-local';
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
+import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
 import { cn } from '@/shared/lib/cn';
+import {
+  buildRouteFocusHref,
+  rememberRouteFocusIntent,
+} from '@/shared/ui/route-focus-manager';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
 /**
@@ -46,6 +51,58 @@ import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
  */
 
 type SettingsView = 'root' | 'agent';
+type SettingsTriggerVariant = 'header-pill' | 'rail-tile' | 'chrome-tile';
+
+const SETTINGS_LOCALE_FOCUS_KEY = 'ontology-atlas:settings-locale-focus';
+const SETTINGS_LOCALE_FOCUS_MAX_AGE_MS = 10_000;
+
+interface SettingsLocaleFocusIntent {
+  locale: string;
+  triggerVariant: SettingsTriggerVariant;
+  createdAt: number;
+}
+
+function rememberSettingsLocaleFocus(
+  locale: string,
+  triggerVariant: SettingsTriggerVariant,
+) {
+  try {
+    const intent: SettingsLocaleFocusIntent = {
+      locale,
+      triggerVariant,
+      createdAt: Date.now(),
+    };
+    window.sessionStorage.setItem(SETTINGS_LOCALE_FOCUS_KEY, JSON.stringify(intent));
+  } catch {
+    // sessionStorage unavailable — navigation still proceeds without restoration.
+  }
+}
+
+function consumeSettingsLocaleFocus(
+  locale: string,
+  triggerVariant: SettingsTriggerVariant,
+): boolean {
+  try {
+    const raw = window.sessionStorage.getItem(SETTINGS_LOCALE_FOCUS_KEY);
+    if (!raw) return false;
+    const intent = JSON.parse(raw) as Partial<SettingsLocaleFocusIntent>;
+    const age = Date.now() - Number(intent.createdAt);
+    if (!Number.isFinite(age) || age < 0 || age > SETTINGS_LOCALE_FOCUS_MAX_AGE_MS) {
+      window.sessionStorage.removeItem(SETTINGS_LOCALE_FOCUS_KEY);
+      return false;
+    }
+    if (intent.locale !== locale || intent.triggerVariant !== triggerVariant) return false;
+    window.sessionStorage.removeItem(SETTINGS_LOCALE_FOCUS_KEY);
+    return true;
+  } catch {
+    try {
+      window.sessionStorage.removeItem(SETTINGS_LOCALE_FOCUS_KEY);
+    } catch {
+      // sessionStorage unavailable — leave no in-memory focus contract behind.
+    }
+    return false;
+  }
+}
 
 export interface AppSettingsScreenControls {
   audiencePlain: boolean;
@@ -72,7 +129,7 @@ export interface AppSettingsMenuProps {
    * 레인의 `--chrome-tile-size` 타일. 구 TopologyV2SettingsGear 의 트리거
    * 문법을 그대로 승계한다 — 팝오버 대신 이 시트가 열리는 것만 다르다.
    */
-  triggerVariant?: 'header-pill' | 'rail-tile' | 'chrome-tile';
+  triggerVariant?: SettingsTriggerVariant;
 }
 
 /** AI 에이전트 첫 접촉 증명 패킷 — 사람이 읽는 카드 대신 에이전트에 그대로
@@ -113,6 +170,7 @@ export function AppSettingsMenu({
   triggerVariant = 'header-pill',
 }: AppSettingsMenuProps) {
   const t = useTranslations('nav.settingsMenu');
+  const locale = useLocale();
   const { state: copyState, copy } = useCopyFeedback();
   const router = useRouter();
   const localVault = useLocalVault();
@@ -130,7 +188,15 @@ export function AppSettingsMenu({
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
-  const panelRef = useRef<HTMLDivElement | null>(null);
+  const agentBackRef = useRef<HTMLButtonElement | null>(null);
+  const agentDrillInRef = useRef<HTMLButtonElement | null>(null);
+  const panelRef = useDialogFocusTrap<HTMLDivElement>({
+    open,
+    initialFocus: 'container',
+    // closePanel owns the return target so ⌘K can intentionally yield focus
+    // to the command palette without the modal cleanup stealing it back.
+    restoreFocus: false,
+  });
   const titleId = useId();
   const isDesktopRuntime = isTauriVaultRuntime();
 
@@ -153,12 +219,27 @@ export function AppSettingsMenu({
   // 직접 열 수 없다 — 설정을 닫고 문서함으로 이동해 사용자가 이어서 연다.
   const handleOpenWorkflowGuide = () => {
     setOpen(false);
-    router.push('/docs/');
+    rememberRouteFocusIntent('/docs/');
+    router.push(buildRouteFocusHref('/docs/'));
   };
   const vaultHref =
     mode === 'local' ? '/docs/' : isDesktopRuntime ? '/docs/?intent=local' : '/download/';
+  const vaultNavigationHref = buildRouteFocusHref(vaultHref);
   const vaultBody = mode === 'local' ? t('vaultBodyLocal') : t('vaultBodyStatic');
   const vaultCta = mode === 'local' ? t('vaultCtaLocal') : t('vaultCtaStatic');
+  const handleVaultNavigate = (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    rememberRouteFocusIntent(vaultHref);
+  };
 
   // AI 에이전트 요약 1행 — 설정 파일 준비 상태를 한 값으로 접는다. 상세
   // (파일별 상태·수리·복사 패킷·검증 게이트)는 드릴인 서브뷰가 소유.
@@ -198,12 +279,12 @@ export function AppSettingsMenu({
   }
 
   useEffect(() => {
-    if (!open) return;
+    if (!consumeSettingsLocaleFocus(locale, triggerVariant)) return undefined;
     const timer = window.setTimeout(() => {
-      panelRef.current?.focus();
+      triggerRef.current?.focus({ preventScroll: true });
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [open]);
+  }, [locale, triggerVariant]);
 
   useEffect(() => {
     if (!open) return;
@@ -226,6 +307,17 @@ export function AppSettingsMenu({
       window.setTimeout(() => triggerRef.current?.focus(), 0);
     }
   };
+  const openAgentView = () => {
+    setView('agent');
+    window.setTimeout(() => agentBackRef.current?.focus({ preventScroll: true }), 0);
+  };
+  const returnToRootView = () => {
+    setView('root');
+    window.setTimeout(
+      () => agentDrillInRef.current?.focus({ preventScroll: true }),
+      0,
+    );
+  };
 
   return (
     <details
@@ -247,7 +339,7 @@ export function AppSettingsMenu({
         // Escape" (구 설정 기어와 같은 계약).
         event.stopPropagation();
         if (view === 'agent') {
-          setView('root');
+          returnToRootView();
           return;
         }
         closePanel();
@@ -315,6 +407,7 @@ export function AppSettingsMenu({
         <div
           ref={panelRef}
           role="dialog"
+          aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
           className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[34rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[0_28px_90px_var(--color-shadow-a58)] sm:max-h-[min(46rem,calc(100dvh-3rem))]"
@@ -324,10 +417,11 @@ export function AppSettingsMenu({
             <div className="flex min-w-0 items-center gap-2">
               {view === 'agent' ? (
                 <button
+                  ref={agentBackRef}
                   type="button"
                   aria-label={t('agentBackLabel')}
                   data-testid="app-settings-agent-back"
-                  onClick={() => setView('root')}
+                  onClick={returnToRootView}
                   className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                 >
                   <ChevronLeft size={14} aria-hidden />
@@ -407,7 +501,16 @@ export function AppSettingsMenu({
               data-testid="app-settings-body"
             >
               <SettingsGroup label={t('groupScreen')}>
-                <SettingsRow label={t('languageTitle')} control={<LocaleSwitch />} />
+                <SettingsRow
+                  label={t('languageTitle')}
+                  control={
+                    <LocaleSwitch
+                      onSwitchStart={(nextLocale) =>
+                        rememberSettingsLocaleFocus(nextLocale, triggerVariant)
+                      }
+                    />
+                  }
+                />
                 {screenControls ? (
                   <>
                     <SettingsRow
@@ -564,7 +667,8 @@ export function AppSettingsMenu({
                     ))
                   : null}
                 <Link
-                  href={vaultHref}
+                  href={vaultNavigationHref}
+                  onClick={handleVaultNavigate}
                   className="flex min-h-12 items-center justify-between gap-3 px-3 py-2 transition-colors hover:bg-[color:var(--color-overlay-2)]"
                 >
                   <span className="min-w-0">
@@ -584,9 +688,10 @@ export function AppSettingsMenu({
 
               <SettingsGroup label={t('groupAgent')}>
                 <button
+                  ref={agentDrillInRef}
                   type="button"
                   data-testid="app-settings-agent-drillin"
-                  onClick={() => setView('agent')}
+                  onClick={openAgentView}
                   className="flex min-h-12 w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                 >
                   <span className="min-w-0">

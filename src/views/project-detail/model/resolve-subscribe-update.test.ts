@@ -52,6 +52,15 @@ describe("resolveSubscribeUpdate", () => {
     expect(result.next).toBe(iam);
   });
 
+  it("local source는 latest가 비어도 static fallback fact를 섞지 않는다", () => {
+    const result = resolveSubscribeUpdate([], "iam", fallback, {
+      allowFallback: false,
+    });
+
+    expect(result.next).toBeNull();
+    expect(result.related).toEqual([]);
+  });
+
   it("uses latest for related when latest is non-empty (even if slug missing)", () => {
     const latest = [makeProject("other", "Other")];
     const result = resolveSubscribeUpdate(latest, "iam", fallback);

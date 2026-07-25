@@ -1,6 +1,10 @@
 "use client";
 
-import type { ComponentType, ReactNode } from "react";
+import type {
+  ComponentType,
+  MouseEvent as ReactMouseEvent,
+  ReactNode,
+} from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -15,6 +19,10 @@ import { useLocalVault } from "@/features/docs-vault-local";
 import { formatActivityAge } from "@/features/vault-ontology";
 import { cn } from "@/shared/lib/cn";
 import { BrandMark } from "@/shared/ui";
+import {
+  buildRouteFocusHref,
+  rememberRouteFocusIntent,
+} from "@/shared/ui/route-focus-manager";
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
 import type { NavRailContextHrefs } from "../model/shell-slot-context";
 
@@ -50,6 +58,23 @@ interface RailDestination {
   href: string;
   label: string;
   Icon: ComponentType<{ size?: number; className?: string; "aria-hidden"?: boolean }>;
+}
+
+function rememberRailRouteFocus(
+  event: ReactMouseEvent<HTMLAnchorElement>,
+  pathname: string,
+) {
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  ) {
+    return;
+  }
+  rememberRouteFocusIntent(pathname);
 }
 
 /**
@@ -138,7 +163,8 @@ export function AppNavRail({
       )}
     >
       <Link
-        href="/topology/"
+        href={buildRouteFocusHref("/topology/")}
+        onClick={(event) => rememberRailRouteFocus(event, "/topology/")}
         title="Ontology Atlas"
         aria-label="Ontology Atlas"
         translate="no"
@@ -168,10 +194,12 @@ export function AppNavRail({
         <ul className="flex w-full flex-col gap-0.5">
           {destinations.map(({ id, href, label, Icon }) => {
             const isActive = activeId === id;
+            const surfacePath = href.split(/[?#]/, 1)[0] || "/";
             return (
               <li key={id}>
                 <Link
-                  href={href}
+                  href={buildRouteFocusHref(href)}
+                  onClick={(event) => rememberRailRouteFocus(event, surfacePath)}
                   title={label}
                   aria-current={isActive ? "page" : undefined}
                   data-testid={`app-nav-rail-item-${id}`}

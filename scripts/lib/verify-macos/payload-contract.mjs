@@ -15,6 +15,7 @@ export function validateWebviewVerifyPayload(payload, {
   requireTopologyFocusNoop = false,
   requireTopologyFocusZoom = false,
   requireTopologyFrameProfile = false,
+  requireWebviewReducedMotion = false,
 } = {}) {
   if (!payload || typeof payload !== "object") {
     return "missing WebView verification payload";
@@ -51,6 +52,12 @@ export function validateWebviewVerifyPayload(payload, {
   }
   if (!payload.markers || typeof payload.markers !== "object") {
     return "WebView did not report structured markers";
+  }
+  if (
+    requireWebviewReducedMotion &&
+    payload.markers.topologyV2PrefersReducedMotion !== true
+  ) {
+    return "WebView did not report reduced motion from the installed macOS preference";
   }
   if (minWebviewSize) {
     const width = Number(payload.width);
@@ -92,6 +99,9 @@ export function validateWebviewVerifyPayload(payload, {
   const topologyMapCanvasActive =
     topologyMapEngine === "canvas" || topologyMapEngine === "v2";
   const topologyMapV2Active = topologyMapEngine === "v2";
+  const topologyMapV2SelectedContextVisible =
+    topologyMapV2Active &&
+    payload.markers.topologyV2DetailPanelVisible === true;
   const topologyAnalysisMode =
     typeof payload.markers.topologyAnalysisPanelMode === "string"
       ? payload.markers.topologyAnalysisPanelMode.trim() || webviewUrl.searchParams.get("mode") || ""
@@ -178,7 +188,11 @@ export function validateWebviewVerifyPayload(payload, {
   ) {
     return "WebView did not report the reader decision lens marker";
   }
-  if (webviewPath.includes("/topology") && payload.markers.topologyRelief !== true) {
+  if (
+    webviewPath.includes("/topology") &&
+    !topologyMapCanvasActive &&
+    payload.markers.topologyRelief !== true
+  ) {
     return "WebView did not report the Relief topology marker";
   }
   const connectorLabelPassMs = markerNumber(
@@ -1018,12 +1032,39 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologySelectedFocusContextRailZoomActive === true;
     if (
       payload.markers.topologySelectedNodePopoverVisible !== true &&
+      !topologyMapV2SelectedContextVisible &&
       !selectedRelationContextVisible &&
       !selectedFocusNoopContextVisible &&
       !selectedFocusZoomContextVisible &&
       !blockingComposerOpen
     ) {
       return `WebView did not report a visible Relief selected node context for ${topologySelectedParam}`;
+    }
+    if (topologyMapV2SelectedContextVisible) {
+      const v2SelectedNodeId = String(
+        payload.markers.topologyV2DetailPanelNodeId || "",
+      ).trim();
+      const v2SelectedNodeKind = String(
+        payload.markers.topologyV2DetailPanelNodeKind || "",
+      ).trim();
+      const v2SelectedNodeTitle = String(
+        payload.markers.topologyV2DetailPanelNodeTitle || "",
+      ).trim();
+      if (v2SelectedNodeId !== topologySelectedParam) {
+        return `WebView reported canvas-v2 selected node ${v2SelectedNodeId || "unknown"}, expected ${topologySelectedParam}`;
+      }
+      if (!v2SelectedNodeKind || !v2SelectedNodeTitle) {
+        return `WebView reported incomplete canvas-v2 selected node context (${v2SelectedNodeKind || "missing kind"} / ${v2SelectedNodeTitle || "missing title"})`;
+      }
+      if (payload.markers.topologyAttentionWinner !== "focus-state") {
+        return `WebView canvas-v2 selected node attention winner was ${payload.markers.topologyAttentionWinner || "missing"}`;
+      }
+      if (payload.markers.topologyCommandChromeState !== "selected-node-inspector") {
+        return `WebView canvas-v2 selected node command chrome state was ${payload.markers.topologyCommandChromeState || "missing"}`;
+      }
+      if (payload.markers.topologyUtilityActionLaneVisible === true) {
+        return "WebView canvas-v2 selected node utility action lane was visible while inspector owns focus";
+      }
     }
     if (requireTopologyFocusNoop) {
       const focusNoopError = validateTopologyFocusNoopMarkers(payload);
@@ -4397,4 +4438,3 @@ export function validateWebviewVerifyPayload(payload, {
   }
   return null;
 }
-

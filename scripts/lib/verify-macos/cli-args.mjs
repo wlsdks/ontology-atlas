@@ -43,6 +43,7 @@ export function parseVerifyAppLaunchArgs(argv, {
     verifyTopologyFocusNoop: argv.includes("--verify-topology-focus-noop"),
     verifyTopologyFocusZoom: argv.includes("--verify-topology-focus-zoom"),
     verifyTopologyFrameProfile: argv.includes("--verify-topology-frame-profile"),
+    requireWebviewReducedMotion: argv.includes("--require-webview-reduced-motion"),
     requireOwnerName: ownerNameArg
       ? ownerNameArg.slice("--require-owner-name=".length)
       : null,
@@ -73,7 +74,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 
 
 export function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--verify-topology-selected-relation] [--verify-topology-node-popover] [--verify-topology-create-node] [--verify-topology-focus-noop] [--verify-topology-frame-profile] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--require-webview-reduced-motion] [--verify-topology-drag] [--verify-topology-selected-relation] [--verify-topology-node-popover] [--verify-topology-create-node] [--verify-topology-focus-noop] [--verify-topology-frame-profile] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -112,6 +113,9 @@ Options:
                     Save the validated WebView marker payload to PATH. Direct executable launch only.
                     This gives deterministic installed-app route evidence when macOS screen capture
                     or Computer Use observation is unavailable.
+  --require-webview-reduced-motion
+                    Require the installed WebView to report the macOS reduced-motion preference.
+                    Use after enabling Reduce Motion in System Settings; direct executable launch only.
   --require-accessibility-window
                     Require System Events to see at least one Accessibility window for the launched
                     process. This fails when macOS only exposes an app/menu tree with zero AX windows.
@@ -193,4 +197,3 @@ export function normalizeWebviewRoute(value) {
 export function normalizeAppPath(value) {
   return path.resolve(value).replace(/\/+$/, "");
 }
-

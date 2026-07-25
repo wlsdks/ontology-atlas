@@ -1,7 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
-import type { ReactNode } from "react";
+import type { MouseEventHandler, ReactNode } from "react";
 import koMessages from "../../../../messages/ko.json";
 import { AppNavRail } from "./AppNavRail";
 
@@ -27,8 +27,24 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/i18n/navigation", () => ({
-  Link: ({ href, children, ...rest }: { href: string; children: ReactNode } & Record<string, unknown>) => (
-    <a href={href} {...rest}>
+  Link: ({
+    href,
+    children,
+    onClick,
+    ...rest
+  }: {
+    href: string;
+    children: ReactNode;
+    onClick?: MouseEventHandler<HTMLAnchorElement>;
+  } & Record<string, unknown>) => (
+    <a
+      href={href}
+      onClick={(event) => {
+        onClick?.(event);
+        event.preventDefault();
+      }}
+      {...rest}
+    >
       {children}
     </a>
   ),
@@ -67,6 +83,27 @@ describe("AppNavRail", () => {
     expect(screen.getByTestId("app-nav-rail-item-projects")).toBeInTheDocument();
     // 은퇴한 ERD 빌더(2026-07-24) — 레일에서 제거됨.
     expect(screen.queryByTestId("app-nav-rail-item-builder")).not.toBeInTheDocument();
+  });
+
+  it("carries the destination reading-start intent across installed-app navigation", () => {
+    window.sessionStorage.clear();
+    renderRail();
+    const studio = screen.getByTestId("app-nav-rail-item-studio");
+
+    expect(studio).toHaveAttribute("href", "/ontology/studio/?focus=main");
+    fireEvent.click(studio);
+
+    expect(
+      JSON.parse(
+        window.sessionStorage.getItem("ontology-atlas:route-focus-intent") ?? "null",
+      ),
+    ).toMatchObject({ surfacePath: "/ontology/studio" });
+
+    window.sessionStorage.clear();
+    fireEvent.click(studio, { metaKey: true });
+    expect(
+      window.sessionStorage.getItem("ontology-atlas:route-focus-intent"),
+    ).toBeNull();
   });
 
   it("marks the current route active via aria-current + data-active", () => {
@@ -175,36 +212,45 @@ describe("AppNavRail", () => {
     );
     expect(screen.getByTestId("app-nav-rail-item-docs")).toHaveAttribute(
       "href",
-      "/docs/?slug=capabilities/mcp-server",
+      "/docs/?slug=capabilities/mcp-server&focus=main",
     );
   });
 
-  it("falls back to the default '/docs/' href when contextHrefs is absent", () => {
+  it("falls back to the default docs surface with the reading-start marker", () => {
     renderRail();
-    expect(screen.getByTestId("app-nav-rail-item-docs")).toHaveAttribute("href", "/docs/");
+    expect(screen.getByTestId("app-nav-rail-item-docs")).toHaveAttribute(
+      "href",
+      "/docs/?focus=main",
+    );
   });
 
-  it("falls back to the default '/docs/' href when contextHrefs.docs is undefined", () => {
+  it("keeps the marked default docs surface when contextHrefs.docs is undefined", () => {
     renderRail(<AppNavRail contextHrefs={{}} />);
-    expect(screen.getByTestId("app-nav-rail-item-docs")).toHaveAttribute("href", "/docs/");
+    expect(screen.getByTestId("app-nav-rail-item-docs")).toHaveAttribute(
+      "href",
+      "/docs/?focus=main",
+    );
   });
 
-  it("leaves every other destination's href unchanged when contextHrefs.docs is set", () => {
+  it("preserves every destination path while adding its reading-start marker", () => {
     renderRail(
       <AppNavRail contextHrefs={{ docs: "/docs/?slug=capabilities/mcp-server" }} />,
     );
-    expect(screen.getByTestId("app-nav-rail-item-map")).toHaveAttribute("href", "/topology/");
+    expect(screen.getByTestId("app-nav-rail-item-map")).toHaveAttribute(
+      "href",
+      "/topology/?focus=main",
+    );
     expect(screen.getByTestId("app-nav-rail-item-studio")).toHaveAttribute(
       "href",
-      "/ontology/studio/",
+      "/ontology/studio/?focus=main",
     );
     expect(screen.getByTestId("app-nav-rail-item-insights")).toHaveAttribute(
       "href",
-      "/ontology/insights/",
+      "/ontology/insights/?focus=main",
     );
     expect(screen.getByTestId("app-nav-rail-item-projects")).toHaveAttribute(
       "href",
-      "/projects/",
+      "/projects/?focus=main",
     );
   });
 });

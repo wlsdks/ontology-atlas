@@ -167,6 +167,8 @@ export interface TopologyV2DetailPanelLabels {
 }
 
 export interface TopologyV2DetailPanelProps {
+  /** Canonical `kind:slug` handle used by URL state and installed-app proof. */
+  nodeId: string;
   slug: string;
   title: string;
   /**
@@ -421,6 +423,7 @@ function RelationGroupShell({
 }
 
 export function TopologyV2DetailPanel({
+  nodeId,
   slug,
   title,
   sourceTitle = null,
@@ -667,6 +670,11 @@ export function TopologyV2DetailPanel({
       role="group"
       aria-label={title}
       data-testid="topology-v2-detail-panel"
+      data-selected-node-id={nodeId}
+      data-selected-node-kind={kind}
+      data-selected-node-title={title}
+      data-surface-role="active-node-inspector"
+      data-attention-role="supporting-detail"
       data-datasheet-density="instrument"
       onKeyDown={handleKeyDown}
       // P3-③ (2026-07-21 리텐션 라운드) — 이 패널은 `--topology-node-popover-top`

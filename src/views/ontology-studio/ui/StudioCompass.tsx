@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, ChevronDown, Eye, MoreHorizontal, Plus, Search, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  Eye,
+  MoreHorizontal,
+  Plus,
+  Search,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import type {
   StudioBearing,
@@ -38,6 +48,7 @@ const CARD = { w: 372, h: 172 } as const;
 const CARD_CREATE_H = 236;
 const SAT = { w: 226, h: 54, gap: 12 } as const;
 const MAX_VISIBLE = 2;
+const CREATE_SLUG_COLLISION_ID = "studio-create-slug-collision";
 
 export interface CompassBearingView {
   bearing: StudioBearing;
@@ -102,11 +113,14 @@ export interface StudioCompassLabels {
   createDomainNone: string;
   createDefinitionPlaceholder: string;
   createSimilar: (title: string, kindLabel: string) => string;
+  createSlugCollision: (title: string, kindLabel: string) => string;
+  createSlugCollisionHint: string;
   createSimilarOpen: string;
   createSimilarAnyway: string;
   // ── Slice 1 — 지지대 편집 (edit existing relations) ──
   edit: string; // "···" affordance aria-label / tooltip
   editTitle: string; // card heading, e.g. "이 관계 고치기"
+  close: string; // shared accessible name for icon-only inline-card close controls
   editRetypeHeading: string; // "다른 방향으로 옮기기"
   editMoveTo: (bearingLabel: string) => string; // per retype option label
   editDelete: string; // "관계 끊기"
@@ -192,6 +206,8 @@ export interface StudioCompassProps {
   onCreateDomain?: (value: string | null) => void;
   onCreateDefinition?: (def: string) => void;
   createSimilarHit?: { title: string; kind: string; slug: string } | null;
+  /** Exact deterministic path conflict — save cannot succeed until renamed. */
+  createSlugCollision?: boolean;
   onOpenSimilar?: (slug: string) => void;
   onDismissSimilar?: () => void;
   canSave?: boolean;
@@ -530,10 +546,27 @@ export function StudioCompass(props: StudioCompassProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [previewOpen]);
 
-  const previewAvailable = Boolean(props.deltaPreview?.hasDelta);
+  // The relation edit card is an anchored nonmodal surface: keyboard focus
+  // remains on the satellite's edit trigger, so one global Escape closes only
+  // this card and naturally leaves focus at that trigger.
+  useEffect(() => {
+    if (!openEdit) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      setOpenEdit(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [openEdit]);
+
+  const saveAllowed = props.canSave !== false;
+  const effectiveSummary = saveAllowed ? (props.summary ?? null) : null;
+  const previewAvailable = saveAllowed && Boolean(props.deltaPreview?.hasDelta);
 
   return (
-    <div
+    <main
+      id="main"
       className="relative grid h-[100dvh] min-h-0 grid-rows-[52px_1fr_64px] overflow-hidden bg-[color:var(--color-canvas)]"
       data-testid="studio-compass-stage"
     >
@@ -562,7 +595,9 @@ export function StudioCompass(props: StudioCompassProps) {
           </button>
         ) : null}
         <div className="flex items-center gap-2 text-caption text-[color:var(--color-text-tertiary)]">
-          <span className="font-semibold text-[color:var(--color-text-secondary)]">{focal.name || "—"}</span>
+          <h1 className="font-semibold text-[color:var(--color-text-secondary)]">
+            {focal.name || "—"}
+          </h1>
           <span className="text-[color:var(--color-text-quaternary)]">·</span>
           <span className="rounded-[5px] border border-[color:var(--color-border-soft)] px-1.5 py-px text-label tracking-[0.02em]">
             {focal.kindLabel}
@@ -798,18 +833,18 @@ export function StudioCompass(props: StudioCompassProps) {
       </div>
 
       {/* ── Record summary — quiet expandable line above the bottom bar ── */}
-      {props.summary && summaryOpen ? (
+      {effectiveSummary && summaryOpen ? (
         <div
           data-testid="studio-summary-panel"
           className="pointer-events-auto absolute bottom-16 left-0 right-0 z-[9] border-t border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-5 py-3"
           style={{ boxShadow: "0 -12px 30px rgba(0,0,0,.35)" }}
         >
           <p className="text-caption font-medium text-[color:var(--color-text-secondary)] [word-break:keep-all]">
-            {props.summary.headline}
+            {effectiveSummary.headline}
           </p>
-          {props.summary.lines.length > 0 ? (
+          {effectiveSummary.lines.length > 0 ? (
             <ul className="mt-2 flex flex-col gap-1">
-              {props.summary.lines.map((line, i) => (
+              {effectiveSummary.lines.map((line, i) => (
                 <li
                   key={`${line}-${i}`}
                   data-testid={`studio-summary-line-${i}`}
@@ -832,8 +867,8 @@ export function StudioCompass(props: StudioCompassProps) {
               ))}
             </ul>
           ) : null}
-          {props.summary.fileEffect ? (
-            <p className="mt-2 text-label text-[color:var(--color-text-quaternary)]">{props.summary.fileEffect}</p>
+          {effectiveSummary.fileEffect ? (
+            <p className="mt-2 text-label text-[color:var(--color-text-quaternary)]">{effectiveSummary.fileEffect}</p>
           ) : null}
         </div>
       ) : null}
@@ -853,7 +888,7 @@ export function StudioCompass(props: StudioCompassProps) {
         <span className="text-caption text-[color:var(--color-text-secondary)]" data-testid="studio-bottom-progress">
           {labels.bottomProgress(filledBearings, 4)}
         </span>
-        {props.summary ? (
+        {effectiveSummary ? (
           <button
             type="button"
             data-testid="studio-summary-toggle"
@@ -861,7 +896,7 @@ export function StudioCompass(props: StudioCompassProps) {
             onClick={() => setSummaryOpen((v) => !v)}
             className="flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2.5 py-1 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
           >
-            {props.summary.collapsed}
+            {effectiveSummary.collapsed}
             <ChevronDown size={12} aria-hidden className={cn("transition-transform", summaryOpen && "rotate-180")} />
           </button>
         ) : null}
@@ -878,7 +913,11 @@ export function StudioCompass(props: StudioCompassProps) {
         ) : null}
         <div className="ml-auto flex items-center gap-3">
           <span className="text-label text-[color:var(--color-text-quaternary)]">
-            {mode === "enhance" && props.summary === null ? labels.commitEmptyHint : labels.saveHint}
+            {props.createSlugCollision
+              ? labels.createSlugCollisionHint
+              : mode === "enhance" && effectiveSummary === null
+                ? labels.commitEmptyHint
+                : labels.saveHint}
           </span>
           <button
             type="button"
@@ -958,20 +997,22 @@ export function StudioCompass(props: StudioCompassProps) {
           neighborhood achromatic + only the staged delta in indigo, then the
           same plain sentence list. Commits directly from the footer (one-click
           save contract preserved) or closes. ✕ / scrim / Esc all close it. */}
-      {previewOpen && props.deltaPreview ? (
+      {previewOpen && previewAvailable && props.deltaPreview ? (
         <DeltaPreviewModal
           layout={props.deltaPreview}
           labels={labels}
           kindLabelFor={kindLabelFor}
-          summary={props.summary ?? null}
+          summary={effectiveSummary}
+          canSave={saveAllowed}
           onSave={() => {
+            if (!saveAllowed) return;
             setPreviewOpen(false);
             onSave();
           }}
           onClose={() => setPreviewOpen(false)}
         />
       ) : null}
-    </div>
+    </main>
   );
 }
 
@@ -1045,6 +1086,8 @@ function CenterCard(
       {mode === "create" ? (
         <input
           data-testid="studio-create-name"
+          aria-invalid={props.createSlugCollision || undefined}
+          aria-describedby={props.createSlugCollision ? CREATE_SLUG_COLLISION_ID : undefined}
           value={focal.name}
           onChange={(e) => props.onCreateName?.(e.target.value)}
           placeholder={props.labels.createNamePlaceholder}
@@ -1108,13 +1151,28 @@ function CenterCard(
 
       {mode === "create" && props.createSimilarHit ? (
         <div
+          id={props.createSlugCollision ? CREATE_SLUG_COLLISION_ID : undefined}
           data-testid="studio-create-similar"
+          aria-live="polite"
+          aria-atomic="true"
           className="mt-2 flex items-start gap-2 rounded-[8px] border px-2.5 py-1.5 text-label leading-[1.5] text-[color:var(--color-text-tertiary)]"
           style={{ borderColor: "var(--color-amber-muted-a34)", background: "var(--color-amber-muted-a18)" }}
         >
-          <span className="flex-none text-[color:var(--color-amber-muted-a62)]">⚠</span>
+          <TriangleAlert
+            size={14}
+            aria-hidden
+            className="mt-0.5 flex-none text-[color:var(--color-amber-muted-a62)]"
+          />
           <span className="min-w-0">
-            {props.labels.createSimilar(props.createSimilarHit.title, props.kindLabelFor(props.createSimilarHit.kind))}{" "}
+            {props.createSlugCollision
+              ? props.labels.createSlugCollision(
+                  props.createSimilarHit.title,
+                  props.kindLabelFor(props.createSimilarHit.kind),
+                )
+              : props.labels.createSimilar(
+                  props.createSimilarHit.title,
+                  props.kindLabelFor(props.createSimilarHit.kind),
+                )}{" "}
             <button
               type="button"
               onClick={() => props.onOpenSimilar?.(props.createSimilarHit!.slug)}
@@ -1122,14 +1180,18 @@ function CenterCard(
             >
               {props.labels.createSimilarOpen}
             </button>
-            {" · "}
-            <button
-              type="button"
-              onClick={() => props.onDismissSimilar?.()}
-              className="text-[color:var(--color-text-quaternary)]"
-            >
-              {props.labels.createSimilarAnyway}
-            </button>
+            {!props.createSlugCollision ? (
+              <>
+                {" · "}
+                <button
+                  type="button"
+                  onClick={() => props.onDismissSimilar?.()}
+                  className="text-[color:var(--color-text-quaternary)]"
+                >
+                  {props.labels.createSimilarAnyway}
+                </button>
+              </>
+            ) : null}
           </span>
         </div>
       ) : null}
@@ -1378,7 +1440,12 @@ function LaneOverflowList({
         <span className="min-w-0 truncate text-caption font-semibold text-[color:var(--color-text-secondary)] [word-break:keep-all]">
           {labels.foldTitle(view.laneLabel, view.neighbors.length)}
         </span>
-        <button type="button" onClick={onClose} className="ml-auto flex-none text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]">
+        <button
+          type="button"
+          aria-label={labels.close}
+          onClick={onClose}
+          className="ml-auto flex-none text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]"
+        >
           <X size={13} aria-hidden />
         </button>
       </div>
@@ -1482,7 +1549,12 @@ function InlineEditCard({
         <span className="min-w-0 flex-1 truncate text-caption font-semibold text-[color:var(--color-text-secondary)] [word-break:keep-all]">
           {labels.editTitle}
         </span>
-        <button type="button" onClick={onClose} className="flex-none text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]">
+        <button
+          type="button"
+          aria-label={labels.close}
+          onClick={onClose}
+          className="flex-none text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]"
+        >
           <X size={13} aria-hidden />
         </button>
       </div>
@@ -1696,7 +1768,12 @@ function InlinePicker({
       <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
         <span className="text-caption font-semibold text-[color:var(--color-text-secondary)]">{labels.pickerTitle(question)}</span>
         <span className="text-label text-[color:var(--color-text-quaternary)]">{labels.pickerSub}</span>
-        <button type="button" onClick={onClose} className="ml-auto text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]">
+        <button
+          type="button"
+          aria-label={labels.close}
+          onClick={onClose}
+          className="ml-auto text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]"
+        >
           <X size={13} aria-hidden />
         </button>
       </div>
@@ -2050,6 +2127,7 @@ function DeltaPreviewModal({
   labels,
   kindLabelFor,
   summary,
+  canSave,
   onSave,
   onClose,
 }: {
@@ -2063,6 +2141,7 @@ function DeltaPreviewModal({
     lines: string[];
     fileEffect: string;
   } | null;
+  canSave: boolean;
   onSave: () => void;
   onClose: () => void;
 }) {
@@ -2232,8 +2311,9 @@ function DeltaPreviewModal({
           <button
             type="button"
             data-testid="studio-preview-save"
+            disabled={!canSave}
             onClick={onSave}
-            className="flex h-[34px] items-center gap-2 rounded-lg bg-[color:var(--color-indigo-brand)] px-4 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)]"
+            className="flex h-[34px] items-center gap-2 rounded-lg bg-[color:var(--color-indigo-brand)] px-4 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
           >
             {labels.save}
             <span className="opacity-75">→</span>

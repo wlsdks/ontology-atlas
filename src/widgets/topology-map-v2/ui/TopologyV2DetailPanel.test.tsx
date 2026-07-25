@@ -70,6 +70,7 @@ function renderPanel(
 ) {
   render(
     <TopologyV2DetailPanel
+      nodeId="domain:views"
       slug="domains/views"
       title="Views"
       sourceTitle={overrides.sourceTitle ?? null}
@@ -105,6 +106,19 @@ function renderPanel(
     />,
   );
 }
+
+describe("TopologyV2DetailPanel — installed-app evidence identity", () => {
+  it("exposes the selected ontology handle and readable identity on the panel root", () => {
+    renderPanel();
+    const panel = screen.getByTestId("topology-v2-detail-panel");
+
+    expect(panel).toHaveAttribute("data-selected-node-id", "domain:views");
+    expect(panel).toHaveAttribute("data-selected-node-kind", "domain");
+    expect(panel).toHaveAttribute("data-selected-node-title", "Views");
+    expect(panel).toHaveAttribute("data-surface-role", "active-node-inspector");
+    expect(panel).toHaveAttribute("data-attention-role", "supporting-detail");
+  });
+});
 
 describe("TopologyV2DetailPanel — full-detail A1 opt-in link", () => {
   it("renders the '전체 상세 →' link when onOpenFullDetail is provided", () => {
@@ -261,6 +275,7 @@ describe("TopologyV2DetailPanel — sticky 푸터 slug 평문화 (Toss C2)", () 
   it("shows only the slug's last segment in visible text, with the full slug as a hover title", () => {
     render(
       <TopologyV2DetailPanel
+        nodeId="capability:mcp-server"
         slug="ontology/capabilities/mcp-server"
         title="MCP Server"
         kind="capability"
@@ -362,6 +377,7 @@ describe("TopologyV2DetailPanel — M-2 typed containment split", () => {
   it("renders a 담는 것(contains) group with the parent's children (not folded into 기대는 곳)", () => {
     render(
       <TopologyV2DetailPanel
+        nodeId="domain:ai-agent-partner"
         slug="domains/ai-agent-partner"
         title="AI Agent Partner"
         kind="domain"
@@ -442,6 +458,7 @@ describe("TopologyV2DetailPanel — P3-① 미기록 관계 empty-state (0 vs �
     // "아직 기록 안 됨" 임을 UI 가 정직하게 말해야 한다.
     render(
       <TopologyV2DetailPanel
+        nodeId="element:src/widgets/global-search"
         slug="src/widgets/global-search"
         title="global-search"
         kind="element"
@@ -551,6 +568,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     }));
     render(
       <TopologyV2DetailPanel
+        nodeId="domain:cli"
         slug="domains/cli"
         title="CLI"
         kind="domain"
@@ -610,6 +628,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     }));
     render(
       <TopologyV2DetailPanel
+        nodeId="domain:small"
         slug="domains/small"
         title="Small"
         kind="domain"
@@ -651,6 +670,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     }));
     render(
       <TopologyV2DetailPanel
+        nodeId="domain:flat"
         slug="domains/flat"
         title="Flat"
         kind="domain"
@@ -757,6 +777,7 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
   it("renders each relation group header with an underline divider + directional glyph + count chip", () => {
     render(
       <TopologyV2DetailPanel
+        nodeId="domain:ai-agent-partner"
         slug="domains/ai-agent-partner"
         title="AI Agent Partner"
         kind="domain"
@@ -803,6 +824,7 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
   it("renders the relation zone with the enlarged between-group gap token (28px rhythm)", () => {
     render(
       <TopologyV2DetailPanel
+        nodeId="domain:ai-agent-partner"
         slug="domains/ai-agent-partner"
         title="AI Agent Partner"
         kind="domain"

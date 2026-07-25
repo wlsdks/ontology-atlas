@@ -15,6 +15,7 @@ describe('projectToFrontmatter', () => {
 
   it('필수 필드 직렬화', () => {
     const fm = projectToFrontmatter(minimal);
+    expect(fm.kind).toBe('project');
     expect(fm.slug).toBe('auth-hub');
     expect(fm.name).toBe('인증 허브');
     expect(fm.category).toBe('platform');
@@ -63,6 +64,7 @@ describe('buildProjectMarkdown', () => {
       description: '인증 서비스',
     });
     expect(md.startsWith('---\n')).toBe(true);
+    expect(md).toContain('kind: project');
     expect(md).toContain('name: IAM');
     expect(md).toContain('slug: iam');
     expect(md).toContain('category: platform');

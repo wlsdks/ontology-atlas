@@ -169,10 +169,11 @@ IndexedDB goes straight to their own workspace, no starter surfaces at all.
 
 ### `/download` — Intro + download (absorbed the retired LandingPage, Slice 2 2026-07-18)
 
-- **Intro section** (top of the page, above the release/trust content): Ontology Atlas brand header + macOS-first title + subtitle + 3-step value chain rail (01 / 02 / 03) + the dogfood evidence instrument (project hex + domain chips + hub capability circle, real `docs/ontology` census — `src/views/download/model/dogfood-census.generated.ts`, built by `scripts/build-docs-vault.mjs`)
+- **Download decision first**: the macOS title, GitHub Releases/source actions, version/DMG/architecture/minimum-OS facts, checksum state, and honest first-release availability note render before product explanation so `/download` answers “can I install it now?” without scrolling
 - **Primary CTA**: "Open macOS releases" → GitHub Releases
 - **Secondary CTA**: "View source code" → GitHub repo
-- **First-release checklist**: shows macOS app blockers (PR review, tag/package/Tauri/Cargo version alignment, Developer ID signing/notarization, v0.1.0 GitHub Release) separately from the Firebase Hosting `/ko/download/` website deploy gate; it also exposes a copyable `pnpm desktop:release-status -- --pr=<number> --include-hosted-surface` completion audit that writes owner-grouped blocker JSON and a reviewer checklist before anyone waits on CI. Rebuild with `NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0` after verified DMGs publish and the hosted download route is live to hide it.
+- **Intro section** (secondary, below release availability): Ontology Atlas brand header + macOS-first title + subtitle + 3-step value chain rail (01 / 02 / 03) + the dogfood evidence instrument (project hex + domain chips + hub capability circle, real `docs/ontology` census — `src/views/download/model/dogfood-census.generated.ts`, built by `scripts/build-docs-vault.mjs`)
+- **First-release checklist**: owner/operator-only details show macOS app blockers (PR review, tag/package/Tauri/Cargo version alignment, Developer ID signing/notarization, v0.1.0 GitHub Release) separately from the GitHub Pages `/ko/download/` website deploy gate; it also exposes a copyable `pnpm desktop:release-status -- --pr=<number> --include-hosted-surface` completion audit. The public default hides this internal checklist; opt in only for release preparation with `NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=1`.
 - **Live deploy verification**: `pnpm desktop:verify-hosted` checks the deployed `wlsdks.github.io/ontology-atlas` root/download pages — root-first-open changed this contract from "root stays promo-only" to "root offers the local-folder open CTA directly"; it now asserts `/ko/` includes the CTA and `/ko/download/` still points to the stable GitHub Releases page, not `/releases/latest`.
 - **Privacy note**: the installed app and vault data use local disk as the source of truth; `/docs`'s own local-source *browsing* tab stays desktop-only (unrelated to opening your primary vault from `/`)
 - **Footer**: license · GitHub · stack chips · `LocaleSwitch`
@@ -382,7 +383,7 @@ Empty state (0 nodes): link to `/docs` (open vault).
 ### `/ontology/studio` — 공방 (Compass Stage), the vault write surface
 - 노드의 **의미를 완성**하는 쓰기 표면. focal 노드를 중앙 hero 로 놓고, 관계 종류를 고정 방위에 못박는다 — 위=상위개념(is_a)·아래=담는것(contains)·오른쪽=기대는곳(depends)·왼쪽=비슷한것(relates). 레일 LNB "공방"에서 진입. **한 표면, 두 채움상태, 모드 탭 없음.**
 - **강화(enhance)**: 기존 노드를 열어(`?node=<id>` 딥링크, 없으면 가장 연결 많은 역량 자동 선택) 빠진 관계를 채운다. 채워진 관계=실선 인디고 지지대 + 위성 카드, 빠진 관계=파선 **라인아트 소켓**(보석 아님). 하나만 "여기부터 채워요" 로 안내.
-- **만들기(create, `?mode=create`)**: 같은 무대를 전부 빈 상태로 — kind/이름/도메인/정의 draft 카드 + 4방위 빈 소켓. 근접중복 가드, 라이브 미리보기.
+- **만들기(create, `?mode=create`)**: 같은 무대를 전부 빈 상태로 — kind/이름/도메인/정의 draft 카드 + 4방위 빈 소켓. 저장 예고는 새 노드 1개와 relation N개를 분리해 말한다. 근접중복은 기존 노드 열기/계속 만들기를 고를 수 있지만, 같은 kind·이름이 결정적 slug까지 충돌하면 기존 노드 열기만 남기고 저장·저장 예고·delta preview를 함께 막는다. 이름 input은 경고와 접근성으로 연결된다. 라이브 미리보기 포함.
 - **진짜 쓰기**: 소켓을 채우면 실제 frontmatter 관계 배열에 쓴다(`localVault.updateFrontmatter`). 읽기 전용 vault 면 AI 에이전트 위임용 **MCP 명령 패킷**을 클립보드로. 인라인 앵커 피커에서 후보 선택 or "새로 만들기".
 - **is_a 진짜 추가**: 상위개념(is_a)은 vault 최상위 갭이었다 — `broader`(SKOS) frontmatter 키로 파생·스키마(mcp/cli)·validator 까지 진짜 추가. 채우면 실선으로 닫힌다.
 - **완성도**: 중앙 카드 4변 테두리(빈=파선·찬=실선) + 평문 캡션("4개 중 2개 채웠어요") + 좌상단 플로우 큐(미니 나침반). % 링·레벨·레어도 없음.
@@ -703,13 +704,10 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
   uses, so desktop and mobile can never disagree on which destination is lit
 
 ### `AppSettingsMenu` (per-page header — Projects list, Docs, Insights)
-- The old `OperationsNav` gear-triggered settings modal, extracted into its
-  own widget (`src/widgets/app-settings-menu`) because the rail is too narrow
-  (`--app-nav-rail-width`) to host its popover. Same 5 tabs as before:
-  General / MCP+Agents / Vault / Appearance / Verification — `ThemeToggle`
-  and `LocaleSwitch` live inside the Appearance tab; Verification surfaces the
-  MCP connection-state ladder and proof-decision order; MCP+Agents exposes a
-  copyable first-contact MCP proof prompt
+- The old 5-tab settings modal is now one compact settings sheet
+  (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI
+  agent entry are scanned in one column. `LocaleSwitch` is an immediate screen
+  control; the long MCP connection proof stays behind the AI agent drill-in.
 - `LiveActivityIndicator` (agent activity heartbeat status, unchanged) mounts
   next to it on the same three pages — this pairing is the "zero feature
   loss" replacement for what `OperationsNav`'s right-hand cluster used to show
@@ -736,7 +734,11 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
 
 ### `LocaleSwitch`
 - Two-button toggle EN / KO
-- Replaces locale prefix in pathname; preserves rest (NOT query params — Scenario 9 finding, R9 deferred)
+- Replaces only the locale prefix while preserving the raw query and hash,
+  including duplicate-key order and existing encoding. Uses
+  `router.replace(..., {scroll: false})`, so changing the language does not add
+  browser history or reset URL-addressed task state such as the selected
+  Insights tab.
 - localStorage `ontology-atlas:locale`
 
 ### `ThemeToggle`

@@ -13,7 +13,8 @@ import {
 } from "@/features/project-data-source";
 import { VaultConflictError } from "@/features/docs-vault-local";
 import {
-  getProjectDetailHref,
+  getProjectEditHref,
+  getProjectRuntimeDetailHref,
   type Project,
   type ProjectInput,
 } from "@/entities/project";
@@ -69,11 +70,11 @@ function EditorContent({
   );
   const safeReturnTo = normalizeReturnTo(returnTo);
   const safeReturnLabel = t(resolveReturnLabelKey(normalizeReturnTo(returnTo)));
-  const publicProjectHref = slug ? getProjectDetailHref(slug) : null;
+  const publicProjectHref = slug ? getProjectRuntimeDetailHref(slug) : null;
   const [project, setProject] = useState<Project | null>(null);
   // mode-aware (vault manifest 또는 빌드타임 dogfood) — useProjects 가
   // allProjects 의 단일 source.
-  const { projects: allProjects } = useProjects();
+  const { projects: allProjects, loaded: projectsLoaded } = useProjects();
   const [isDirty, setIsDirty] = useState(false);
   const [loading, setLoading] = useState(Boolean(targetSlug));
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -85,6 +86,9 @@ function EditorContent({
 
   useEffect(() => {
     if (!targetSlug) return;
+    // 첫 로드·write 직후 증분 rebuild가 끝나기 전에는 마지막 manifest나
+    // static fallback의 불완전한 목록으로 not-found를 확정하지 않는다.
+    if (!projectsLoaded) return;
 
     // useProjects 결과에서 slug 매칭으로 동기 lookup. 매칭 실패 시
     // loadError 로 빈 상세 카드 노출 (slug 가 manifest 에 없는 경우).
@@ -92,6 +96,9 @@ function EditorContent({
     if (found) {
       window.queueMicrotask(() => {
         setProject(found);
+        // persisted vault rehydrate 직전 static fallback이 먼저 보이면 한 번
+        // loadError가 잡힐 수 있다. 실제 local project가 도착하면 회복한다.
+        setLoadError(null);
         setLoading(false);
       });
       return;
@@ -102,10 +109,13 @@ function EditorContent({
         setLoading(false);
       });
     }
-  }, [targetSlug, allProjects, mode, t]);
+  }, [targetSlug, allProjects, mode, projectsLoaded, t]);
 
   const buildEditHref = (nextSlug: string) =>
-    `/project/${encodeURIComponent(nextSlug)}/edit/?returnTo=${encodeURIComponent(safeReturnTo)}&saved=1`;
+    getProjectEditHref(nextSlug, {
+      returnTo: safeReturnTo,
+      savedNotice: true,
+    });
 
   const handleSubmit = async (
     input: ProjectInput,

@@ -4,13 +4,13 @@ kind: capability
 title: Agent Graph Readiness
 domain: views
 dependencies: [capabilities/ontology-hub-mode-aware]
-elements: [elements/app-settings-menu, src/entities/knowledge-graph/lib/relation-quality.ts, src/features/vault-ontology/ui/LiveActivityIndicator.tsx, src/shared/lib/ontology-tree/agent-query-recipes.ts, src/shared/lib/ontology-tree/agent-readiness.ts, src/views/ontology-insights/ui/OntologyInsightsPage.tsx, src/views/ontology-insights/ui/tabs/RelationsTab.tsx]
+elements: [elements/app-settings-menu, src/entities/knowledge-graph/lib/relation-quality.ts, src/features/vault-ontology/ui/LiveActivityIndicator.tsx, src/shared/lib/ontology-tree/agent-query-recipes.ts, src/shared/lib/ontology-tree/agent-readiness.ts, src/views/ontology-insights/ui/OntologyInsightsPage.tsx, src/views/ontology-insights/ui/tabs/DoNextTab.tsx]
 relates: [capabilities/mcp-server, domains/ai-agent-partner]
 ---
 
 `/ontology/insights` was the original home of this readiness surface (4-tab
 reader-persona system: proof/collaboration/agent/census). The 2026-07 map
-rebuild replaced that page with a fixed 3-tab dashboard (Overview / Relations /
+rebuild replaced that page with a fixed 3-tab dashboard (Do next / Structure /
 Freshness, `src/views/ontology-insights/ui/OntologyInsightsPage.tsx`) plus a
 single bottom `InsightsHandoffRow` per tab — the row's own code comment says
 it "replaces the old 4-tab system's giant agent collaboration cockpit
@@ -25,15 +25,25 @@ The underlying readiness/graph-DB apparatus did not fully disappear — it split
   lived as `AgentReadinessGate` inside `TopologyAnalysisBar.tsx`'s overview
   panel; that panel body was retired (reader lens, handoff copy, and this
   readiness gate all duplicated what the map/INDEX/insights already showed).
-  Readiness now surfaces as a compact gauge (ready / preflight / review counts
-  + a distribution bar) at the top of `/ontology/insights`' relations tab
-  (`RelationsTab`, `src/views/ontology-insights/ui/tabs/RelationsTab.tsx`). The
+  Readiness now surfaces at the top of `/ontology/insights`' Do next tab,
+  followed by the repair queue (`DoNextTab`,
+  `src/views/ontology-insights/ui/tabs/DoNextTab.tsx`). The
   classifier itself moved down to `classifyRelationQuality` +
   `summarizeAgentReadiness` in `src/entities/knowledge-graph/lib/relation-quality.ts`
-  — the single source both `RelationsTab` and the topology map's
+  — the single source both `DoNextTab` and the topology map's
   `formatTopologyOverviewBrief` copy text (`views/home/lib/topology-analysis.ts`,
   now a thin re-export) read from, so the map's INDEX-footer handoff brief and
   the insights gauge cannot drift into two different readiness formulas.
+- **The three views share a keyboard and URL contract (A17, 2026-07-25).**
+  `src/shared/ui/tab-bar.tsx` uses roving tabindex: only the selected tab is in
+  sequential focus order, Left/Right wraps, and Home/End jump to the first or
+  last tab with automatic activation. `?tab=` remains the shareable source of
+  truth; the page updates only that query through native history while
+  preserving the locale pathname, so focus remains on the newly selected tab
+  instead of dropping to the document root. The focused tab uses the design
+  system's `--color-indigo-ring-a46` token as an inset ring so the horizontal
+  scroll container cannot clip it, while `aria-controls` continues to bind it
+  to the active `tabpanel`.
 - **Post-change sync gate survives widely.** `agent-readiness.ts`'s
   `buildAgentPostChangeSyncCliCommands` / `formatAgentPostChangeSyncPacket`
   are still the shared "run health/cycles/growth/maintenance/validate after a

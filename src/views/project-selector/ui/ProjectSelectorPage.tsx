@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
 import {
-  getProjectDetailHref,
+  getProjectRuntimeDetailHref,
   getTopologyProjectHref,
   type Project,
 } from "@/entities/project";
@@ -329,7 +329,7 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[color:var(--color-divider)] pt-2 text-body text-[color:var(--color-text-tertiary)]">
         <Link
-          href={getProjectDetailHref(project.slug)}
+          href={getProjectRuntimeDetailHref(project.slug)}
           prefetch={false}
           aria-label={t("cardDetailAriaLabel", { name: project.name })}
           className="inline-flex h-8 items-center text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"

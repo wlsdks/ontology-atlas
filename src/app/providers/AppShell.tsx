@@ -7,7 +7,12 @@ import {
   NavRailShellProvider,
   useNavRailShellValue,
 } from "@/widgets/app-nav-rail";
-import { AgentConnectLauncherProvider, useAgentConnectLauncher } from "@/widgets/agent-connect";
+import {
+  AGENT_CONNECT_ROUTE_HREF,
+  AgentConnectLauncherProvider,
+  useAgentConnectLauncher,
+} from "@/widgets/agent-connect";
+import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 
 /**
  * perf/persistent-shell — 레일(AppNavRail)을 8개 페이지 각각의 개별 마운트
@@ -37,6 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <NavRailShellProvider>
       <AgentConnectLauncherProvider>
+        <RouteFocusManager />
         <div className="flex w-full">
           <AppNavRailSlot />
           <div className="flex min-w-0 flex-1 flex-col">{children}</div>
@@ -69,7 +75,7 @@ function AppNavRailSlot() {
       }
       launcher.open();
       if (!isTopologyHubPath(pathname)) {
-        router.push("/topology/");
+        router.push(AGENT_CONNECT_ROUTE_HREF);
       }
     },
     [launcher, router, pathname],

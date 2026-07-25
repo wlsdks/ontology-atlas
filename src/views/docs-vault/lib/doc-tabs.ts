@@ -22,10 +22,15 @@ export interface DocTab {
 export const DOC_TABS_MAX = 8;
 
 const DOC_TABS_KEY_PREFIX = "docsVault:openTabs:";
+const DOC_ACTIVE_TAB_KEY_PREFIX = "docsVault:activeTab:";
 
 /** vault(sourceKey) 별로 키를 분리 — 샘플 탭이 로컬 vault 로 새지 않는다. */
 export function docTabsStorageKey(sourceKey: string): string {
   return `${DOC_TABS_KEY_PREFIX}${sourceKey}`;
+}
+
+export function activeDocTabStorageKey(sourceKey: string): string {
+  return `${DOC_ACTIVE_TAB_KEY_PREFIX}${sourceKey}`;
 }
 
 function isDocTab(value: unknown): value is DocTab {
@@ -61,6 +66,25 @@ export function storeDocTabs(sourceKey: string, tabs: DocTab[]): void {
   }
 }
 
+export function readStoredActiveDocSlug(sourceKey: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const slug = window.localStorage.getItem(activeDocTabStorageKey(sourceKey));
+    return slug && slug.trim() ? slug : null;
+  } catch {
+    return null;
+  }
+}
+
+export function storeActiveDocSlug(sourceKey: string, slug: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(activeDocTabStorageKey(sourceKey), slug);
+  } catch {
+    /* private mode / quota — 탭 목록의 lastActivatedAt fallback 사용 */
+  }
+}
+
 /**
  * 존재하지 않는 slug(rename/delete 로 사라진 문서)가 복원되면 조용히
  * 목록에서 제거. 아무것도 제거되지 않으면 원본 참조를 그대로 반환(불필요한
@@ -72,6 +96,34 @@ export function pruneMissingDocTabs(
 ): DocTab[] {
   const next = tabs.filter((tab) => validSlugs.has(tab.slug));
   return next.length === tabs.length ? tabs : next;
+}
+
+/**
+ * 앱 재실행/볼트 전환에서 URL 딥링크가 없을 때만 직전 활성 문서를 복원한다.
+ * 명시적 선택으로 저장한 active slug를 우선하고, 저장값이 없거나 현재
+ * vault에서 사라졌으면 탭의 `lastActivatedAt`을 안전한 fallback으로 쓴다.
+ */
+export function resolveRestoredActiveDocSlug({
+  tabs,
+  validSlugs,
+  querySlug,
+  storedActiveSlug = null,
+}: {
+  tabs: readonly DocTab[];
+  validSlugs: ReadonlySet<string>;
+  querySlug: string | null;
+  storedActiveSlug?: string | null;
+}): string | null {
+  if (querySlug) return null;
+  if (storedActiveSlug && validSlugs.has(storedActiveSlug)) {
+    return storedActiveSlug;
+  }
+  let latest: DocTab | null = null;
+  for (const tab of tabs) {
+    if (!validSlugs.has(tab.slug)) continue;
+    if (!latest || tab.lastActivatedAt > latest.lastActivatedAt) latest = tab;
+  }
+  return latest?.slug ?? null;
 }
 
 /** 8개 초과 시 가장 오래 activate 되지 않은 탭부터 축출(LRU). */

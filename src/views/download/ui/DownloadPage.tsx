@@ -75,12 +75,6 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
             </span>
           </nav>
 
-          {/* 소개 섹션 (root-first-open Slice 2) — 구 LandingPage(`/`) 의
-              히어로 카피 + 가치사슬 3-step + dogfood evidence 미니어처를
-              이관. `/` 는 이제 지도 자체가 첫 화면이라 별도 마케팅 랜딩이
-              없다 — 소개는 이 페이지가 "소개 + 다운로드" 둘 다 맡는다. */}
-          <IntroSection />
-
           <header className="mt-7 flex flex-wrap items-start gap-4 border-t border-[color:var(--color-divider)] pt-7">
             <div className="min-w-0">
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
@@ -115,7 +109,10 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
           {/* engraved fact strip — real repo facts only (package.json /
               tauri.conf.json). Size is deliberately absent: no DMG has been
               built yet, see release-facts.ts. */}
-          <div className="mt-6 flex flex-wrap items-baseline gap-5 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-panel-metric-surface,var(--color-overlay-1))] px-4 py-2.5 text-[12.5px]">
+          <div
+            data-testid="download-fact-strip"
+            className="mt-6 flex flex-wrap items-baseline gap-5 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-panel-metric-surface,var(--color-overlay-1))] px-4 py-2.5 text-[12.5px]"
+          >
             <FactItem label={t('factVersionLabel')} value={`v${RELEASE_VERSION}`} />
             <FactItem label={t('factFormatLabel')} value="DMG" />
             <FactItem label={t('factArchLabel')} value={t('factArchValue')} />
@@ -138,7 +135,10 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
               {t('checksumValuePending')}
             </span>
           </div>
-          <p className="mt-3 max-w-2xl text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+          <p
+            data-testid="download-release-availability"
+            className="mt-3 max-w-2xl text-[12px] leading-5 text-[color:var(--color-text-tertiary)]"
+          >
             {t('releaseAvailabilityNote')}
           </p>
 
@@ -191,6 +191,13 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
               </div>
             </div>
           ) : null}
+
+          {/* A18 — `/download`의 첫 사용자 순간은 설치 가능 여부 판단이다.
+              다운로드 CTA·실제 release facts·대기 상태를 먼저 읽힌 뒤,
+              구 LandingPage에서 이관한 소개는 보조 설명으로 강등한다. */}
+          <div className="mt-10 border-t border-[color:var(--color-divider)] pt-10">
+            <IntroSection />
+          </div>
 
           <SectionHeading label={t('includesHeading')} caption={t('includesCaption')} />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

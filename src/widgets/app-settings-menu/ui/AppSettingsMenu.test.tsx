@@ -1,10 +1,12 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { MouseEventHandler, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppSettingsMenu } from './AppSettingsMenu';
 
 const mocks = vi.hoisted(() => ({
   isDesktopRuntime: false,
+  locale: 'en',
+  rememberRouteFocusIntent: vi.fn(),
 }));
 
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({
@@ -17,8 +19,26 @@ vi.mock('@/shared/lib/use-copy-feedback', () => ({
   useCopyFeedback: () => ({ state: 'idle' as const, copy: vi.fn() }),
 }));
 
+vi.mock('@/shared/ui/route-focus-manager', () => ({
+  buildRouteFocusHref: (href: string) =>
+    `${href}${href.includes('?') ? '&' : '?'}focus=main`,
+  rememberRouteFocusIntent: mocks.rememberRouteFocusIntent,
+}));
+
 vi.mock('@/features/locale-switch', () => ({
-  LocaleSwitch: () => <div data-testid="locale-switch" />,
+  LocaleSwitch: ({
+    onSwitchStart,
+  }: {
+    onSwitchStart?: (nextLocale: string) => void;
+  }) => (
+    <button
+      type="button"
+      data-testid="locale-switch"
+      onClick={() => onSwitchStart?.('ko')}
+    >
+      locale
+    </button>
+  ),
 }));
 
 // 설정 통합 2026-07-24 — AppSettingsMenu 는 app-wide LocalVaultProvider 를
@@ -50,9 +70,21 @@ vi.mock('@/i18n/navigation', () => ({
   Link: ({
     href,
     children,
+    onClick,
     ...props
-  }: { href: string; children: ReactNode } & Record<string, unknown>) => (
-    <a href={href} {...props}>
+  }: {
+    href: string;
+    children: ReactNode;
+    onClick?: MouseEventHandler<HTMLAnchorElement>;
+  } & Record<string, unknown>) => (
+    <a
+      href={href}
+      onClick={(event) => {
+        onClick?.(event);
+        event.preventDefault();
+      }}
+      {...props}
+    >
       {children}
     </a>
   ),
@@ -60,6 +92,7 @@ vi.mock('@/i18n/navigation', () => ({
 
 vi.mock('next-intl', () => ({
   useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
+  useLocale: () => mocks.locale,
 }));
 
 function openSheet(ui?: ReactNode) {
@@ -77,13 +110,14 @@ function openSheet(ui?: ReactNode) {
 describe('AppSettingsMenu desktop acquisition boundary', () => {
   beforeEach(() => {
     mocks.isDesktopRuntime = false;
+    mocks.rememberRouteFocusIntent.mockClear();
   });
 
   it('routes the hosted browser vault action to the app download page', () => {
     openSheet();
     expect(
       screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
-    ).toHaveAttribute('href', '/download/');
+    ).toHaveAttribute('href', '/download/?focus=main');
   });
 
   it('keeps the installed desktop app vault action on the native local picker path', () => {
@@ -91,14 +125,23 @@ describe('AppSettingsMenu desktop acquisition boundary', () => {
     openSheet();
     expect(
       screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
-    ).toHaveAttribute('href', '/docs/?intent=local');
+    ).toHaveAttribute('href', '/docs/?intent=local&focus=main');
   });
 
   it('sends an already-loaded local vault straight back to /docs', () => {
     openSheet(<AppSettingsMenu mode="local" />);
     expect(
       screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
-    ).toHaveAttribute('href', '/docs/');
+    ).toHaveAttribute('href', '/docs/?focus=main');
+  });
+
+  it('records the destination reading-start intent before activating the vault link', () => {
+    openSheet(<AppSettingsMenu mode="local" />);
+    fireEvent.click(
+      screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
+    );
+
+    expect(mocks.rememberRouteFocusIntent).toHaveBeenCalledWith('/docs/');
   });
 });
 
@@ -110,6 +153,8 @@ describe('AppSettingsMenu desktop acquisition boundary', () => {
 describe('AppSettingsMenu single-sheet recomposition', () => {
   beforeEach(() => {
     mocks.isDesktopRuntime = false;
+    mocks.locale = 'en';
+    window.sessionStorage.clear();
   });
 
   it('renders no tabs — the sheet is a single scroll column', () => {
@@ -150,6 +195,69 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     expect(screen.getByTestId('app-settings-agent-summary')).toHaveTextContent(
       'nav.settingsMenu.agentStatusNoVault',
     );
+  });
+
+  it('keeps forward and reverse Tab inside the modal settings sheet', async () => {
+    openSheet();
+    const panel = screen.getByTestId('app-settings-popover');
+    const close = screen.getByLabelText('nav.settingsMenu.closeLabel');
+    const last = screen.getByTestId('app-settings-agent-drillin');
+
+    await waitFor(() => expect(panel).toHaveFocus());
+    expect(panel).toHaveAttribute('aria-modal', 'true');
+
+    last.focus();
+    fireEvent.keyDown(window, { key: 'Tab' });
+    expect(close).toHaveFocus();
+
+    close.focus();
+    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+    expect(last).toHaveFocus();
+  });
+
+  it('returns focus to the equivalent settings trigger after a locale navigation remount', async () => {
+    const first = render(<AppSettingsMenu mode="static" />);
+    fireEvent.click(screen.getByTestId('app-settings-trigger'));
+    fireEvent.click(screen.getByTestId('locale-switch'));
+    first.unmount();
+
+    mocks.locale = 'ko';
+    render(<AppSettingsMenu mode="static" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('app-settings-trigger')).toHaveFocus();
+    });
+    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('restores the exact responsive trigger variant when two settings entries remount', async () => {
+    const first = render(
+      <AppSettingsMenu mode="static" triggerVariant="chrome-tile" />,
+    );
+    fireEvent.click(screen.getByTestId('app-settings-trigger'));
+    fireEvent.click(screen.getByTestId('locale-switch'));
+    first.unmount();
+
+    mocks.locale = 'ko';
+    render(
+      <>
+        <AppSettingsMenu mode="static" triggerVariant="rail-tile" />
+        <AppSettingsMenu mode="static" triggerVariant="chrome-tile" />
+      </>,
+    );
+    const triggers = screen.getAllByTestId('app-settings-trigger');
+    const railTrigger = triggers.find(
+      (trigger) => trigger.getAttribute('data-trigger-variant') === 'rail-tile',
+    );
+    const chromeTrigger = triggers.find(
+      (trigger) => trigger.getAttribute('data-trigger-variant') === 'chrome-tile',
+    );
+
+    await waitFor(() => expect(chromeTrigger).toHaveFocus());
+    expect(railTrigger).not.toHaveFocus();
   });
 });
 
@@ -237,16 +345,23 @@ describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('Escape inside the agent drill-in returns to the root sheet before closing', () => {
+  it('Escape inside the agent drill-in restores the root row before closing', async () => {
     const onOpenChange = vi.fn();
     render(<AppSettingsMenu mode="static" open onOpenChange={onOpenChange} />);
-    fireEvent.click(screen.getByTestId('app-settings-agent-drillin'));
+    const drillIn = screen.getByTestId('app-settings-agent-drillin');
+    fireEvent.click(drillIn);
+    await waitFor(() => {
+      expect(screen.getByTestId('app-settings-agent-back')).toHaveFocus();
+    });
     fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
       key: 'Escape',
       bubbles: true,
     });
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
     expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('app-settings-agent-drillin')).toHaveFocus();
+    });
     fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
       key: 'Escape',
       bubbles: true,

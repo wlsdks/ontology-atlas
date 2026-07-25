@@ -594,6 +594,11 @@ export function useLocalVaultInternal() {
       setState(emptyState('unsupported'));
       return;
     }
+    // 네이티브/브라우저 선택창 취소는 상태 변화가 아니다. 선택창을 띄우기
+    // 직전의 권한 대기·오류·idle/loaded 계약을 통째로 복원해야 한다.
+    // `handle` 존재만 보고 loaded 로 추정하면, 권한 대기 중 취소가 잘못된
+    // 자동 refresh 를 깨워 stale 경로의 raw OS 오류를 노출한다.
+    const previousState = state;
     setState((s) => ({
       ...s,
       status: 'opening',
@@ -611,7 +616,7 @@ export function useLocalVaultInternal() {
             }
           ).showDirectoryPicker({ mode: 'read' });
       if (!handle) {
-        setState((s) => ({ ...s, status: s.handle ? 'loaded' : 'idle' }));
+        setState(previousState);
         return;
       }
       const now = Date.now();
@@ -625,9 +630,9 @@ export function useLocalVaultInternal() {
       await refreshRecentVaults();
       await load(handle);
     } catch (err) {
-      // AbortError = 사용자가 취소한 것이니 idle 로 복귀.
+      // AbortError = 사용자가 취소한 것이니 선택창 직전 상태로 복귀.
       if (err instanceof DOMException && err.name === 'AbortError') {
-        setState((s) => ({ ...s, status: s.handle ? 'loaded' : 'idle' }));
+        setState(previousState);
         return;
       }
       // 같은 이유로 ko 하드코딩 "폴더를 열지 못했습니다" 제거 — null 이면
@@ -639,7 +644,7 @@ export function useLocalVaultInternal() {
         errorCode: 'access-failed',
       }));
     }
-  }, [load, refreshRecentVaults]);
+  }, [load, refreshRecentVaults, state]);
 
   const openRecent = useCallback(
     async (record: LocalFsHandleRecord) => {

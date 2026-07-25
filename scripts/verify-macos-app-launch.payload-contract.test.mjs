@@ -4,6 +4,25 @@ import {
   parseWebviewVerifyPayload,
   validateWebviewVerifyPayload,
 } from "./verify-macos-app-launch.mjs";
+import { WEBVIEW_WORKBENCH_MARKERS } from "./lib/verify-macos/webview-env.mjs";
+
+test("WebView workbench markers accept the current Korean Atlas shell", () => {
+  const currentKoreanTopologyShell =
+    "Atlas\n지도\n문서함\n공방\n인사이트\n프로젝트\n지형도\nINDEX\n내 프로젝트";
+
+  assert.equal(
+    WEBVIEW_WORKBENCH_MARKERS.every((marker) =>
+      marker.test(currentKoreanTopologyShell),
+    ),
+    true,
+  );
+  assert.equal(
+    WEBVIEW_WORKBENCH_MARKERS.every((marker) =>
+      marker.test("Loading local app shell"),
+    ),
+    false,
+  );
+});
 
 function compactZoomDragRelationLabelMarkers(overrides = {}) {
   return {
@@ -7188,6 +7207,46 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     }, { expectedPath: "/en/topology/" }),
     null,
   );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/topology/?p=project%3Aproject",
+      title: "내 프로젝트 · 지형도 · ontology-atlas",
+      bodyText:
+        "Atlas\n지도\n문서함\n공방\n인사이트\n프로젝트\n지형도\nINDEX\n내 프로젝트",
+      markers: {
+        ...payload.markers,
+        topologyRelief: false,
+        topologyMapEngine: "v2",
+        topologyAttentionWinner: "focus-state",
+        topologyCommandChromeState: "selected-node-inspector",
+        topologyTopRelayoutLabel: "자동 정렬",
+        topologyTopSearchLabel: "검색",
+        topologyUtilityActionLaneVisible: false,
+        topologySelectedNodePopoverVisible: false,
+        topologyNodePopoverVisible: false,
+        topologyV2DetailPanelVisible: true,
+        topologyV2DetailPanelNodeId: "project:project",
+        topologyV2DetailPanelNodeKind: "project",
+        topologyV2DetailPanelNodeTitle: "내 프로젝트",
+        topologyV2PrefersReducedMotion: true,
+      },
+    }, {
+      expectedPath: "/ko/topology/?p=project%3Aproject",
+      requireWebviewReducedMotion: true,
+    }),
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      markers: {
+        ...payload.markers,
+        topologyV2PrefersReducedMotion: false,
+      },
+    }, { requireWebviewReducedMotion: true }),
+    /did not report reduced motion/,
+  );
   assert.match(
     validateWebviewVerifyPayload({
       ...payload,
@@ -7920,6 +7979,18 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/" }),
     /Relief topology marker/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      markers: {
+        ...payload.markers,
+        topologyRelief: false,
+        topologyMapEngine: "v2",
+      },
+    }, { expectedPath: "/en/topology/" }),
+    null,
   );
   assert.match(
     validateWebviewVerifyPayload({

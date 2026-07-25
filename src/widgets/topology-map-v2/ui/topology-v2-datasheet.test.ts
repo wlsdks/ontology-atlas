@@ -246,6 +246,7 @@ describe("formatV2MetricLine — M-2 typed segments", () => {
 describe("formatV2HandoffText — M-2 contains split", () => {
   it("emits a deterministic payload with contains split out of depends_on, matching the panel's typed groups", () => {
     const text = formatV2HandoffText({
+      source: "loaded-vault",
       slug: "ai-agent-partner",
       kind: "domain",
       domainTitle: "AI Agent Partner",
@@ -259,6 +260,7 @@ describe("formatV2HandoffText — M-2 contains split", () => {
     });
     expect(text).toBe(
       [
+        "source: loaded-vault",
         "node: ai-agent-partner",
         "kind: domain",
         "domain: AI Agent Partner",
@@ -276,6 +278,7 @@ describe("formatV2HandoffText — M-2 contains split", () => {
 
   it("falls back to '-' for a missing domain and for empty name lists", () => {
     const text = formatV2HandoffText({
+      source: "loaded-vault",
       slug: "orphan",
       kind: "element",
       domainTitle: null,
@@ -291,6 +294,31 @@ describe("formatV2HandoffText — M-2 contains split", () => {
     expect(text).toContain("contains_names: -");
     expect(text).toContain("used_by_names: -");
     expect(text).toContain("depends_names: -");
+  });
+
+  it("marks read-only sample facts and never suggests MCP reads or writes against a vault", () => {
+    const text = formatV2HandoffText({
+      source: "read-only-sample",
+      slug: "capabilities/product-register",
+      kind: "capability",
+      domainTitle: "상품",
+      contains: 1,
+      usedBy: 0,
+      dependsOn: 0,
+      evidence: 1,
+      containsNames: ["상품 이미지 스토리지"],
+      usedByNames: [],
+      dependsNames: [],
+    });
+
+    expect(text).toContain("source: read-only-sample");
+    expect(text).toContain(
+      "write_guard: do not run get_concept / patch_concept / add_relation for this sample node",
+    );
+    expect(text).toContain(
+      "next: open a markdown vault, then copy a node handoff from that loaded vault",
+    );
+    expect(text).not.toContain('get_concept("capabilities/product-register")');
   });
 });
 
