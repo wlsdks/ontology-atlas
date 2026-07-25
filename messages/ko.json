@@ -187,15 +187,9 @@
       "relates": "비슷한 것"
     },
     "summaryUndo": "이 변경 되돌리기",
-    "exitConfirmTitle": "아직 기록 안 한 변경이 있어요. 버릴까요?",
-    "exitConfirmDiscard": "버리고 나가기",
-    "exitConfirmKeep": "계속 편집",
     "commitEmptyHint": "채우거나 고치면 여기에 모여요",
     "walkTo": "이 노드로 걸어가기",
     "walkBackAria": "이전 노드로 돌아가기: {name}",
-    "walkConfirmTitle": "저장하지 않은 기록 {count}가지가 있어요 — 버리고 이동할까요?",
-    "walkConfirmSave": "저장하고 이동",
-    "walkConfirmDiscard": "버리고 이동",
     "preview": {
       "open": "미리보기",
       "title": "저장하면 이렇게 변해요",
@@ -251,6 +245,19 @@
       "applyFailed": "만들지 못했어요 — {message}",
       "copiedAgent": "MCP 명령을 복사했어요 — 에이전트에 붙여넣어 실행하세요.",
       "copyFailed": "복사가 막혔어요 — 다시 시도해 주세요."
+    },
+    "drafts": {
+      "open": "작업중 {count}",
+      "openAria": "작업중인 노드 {count}개 보기",
+      "title": "작업중이던 것",
+      "hint": "저장하기 전 변경은 여기 남아 있어요. 아무 때나 돌아와 이어서 하면 돼요.",
+      "closeAria": "작업중 목록 닫기",
+      "count": "{count}가지",
+      "resume": "이어서 하기",
+      "discard": "버리기",
+      "discardAria": "‘{name}’ 의 작업중 변경 버리기",
+      "current": "지금 무대",
+      "empty": "지금은 작업중인 게 없어요"
     }
   },
   "liveActivity": {
