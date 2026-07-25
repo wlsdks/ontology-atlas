@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
+import { candidateMatches } from "../lib/match-candidate";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 import { Select } from "@/shared/ui";
 import type {
@@ -116,7 +117,9 @@ export interface StudioCompassLabels {
   pickerTitle: (question: string) => string;
   pickerSub: string;
   pickerPlaceholder: string;
-  pickerEmpty: string;
+  pickerEmpty: string; // 검색했는데 결과가 없을 때
+  /** 검색 전(빈 질의)인데 둘러볼 후보조차 없을 때 — "없다" 가 아니라 "시작하는 법". */
+  pickerBrowseEmpty: string;
   pickerKind: (kindLabel: string) => string;
   pickerCreateNew: string;
   // ── Slice 3 — 발견 표면 (browse + 추천) ──
@@ -2195,7 +2198,14 @@ function InlinePicker({
       <div className="overflow-y-auto p-1.5" style={{ maxHeight: listMax }} data-testid="studio-picker-body">
         {discovery ? (
           discovery.suggestions.length === 0 && discovery.domains.length === 0 ? (
-            <div className="px-3 py-3 text-center text-label text-[color:var(--color-text-quaternary)]">{labels.pickerEmpty}</div>
+            // #66 — 아직 검색하지 않았는데 "맞는 노드가 없어요" 는 거짓말이다.
+            // 검색 전 빈 상태는 다음 행동(새로 만들기)을 알려준다.
+            <div
+              data-testid="studio-picker-browse-empty"
+              className="px-3 py-3 text-center text-label leading-[1.6] text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+            >
+              {labels.pickerBrowseEmpty}
+            </div>
           ) : (
             <>
               {/* 추천 — up to 5 likely candidates, each with a muted reason. */}
@@ -2352,9 +2362,10 @@ function NodeSearch({
     );
   }
 
-  const q = query.trim().toLowerCase();
+
   const rows = nodes
-    .filter((n) => (q ? n.title.toLowerCase().includes(q) || n.ref.toLowerCase().includes(q) : true))
+    // #66 — 표시 이름 · canonical title · ref 를 함께 본다(정규화 포함).
+    .filter((n) => candidateMatches(n, query))
     .filter((n) => n.title !== currentName)
     .slice(0, 8);
 

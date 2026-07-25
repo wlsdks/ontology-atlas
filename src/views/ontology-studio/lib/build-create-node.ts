@@ -64,7 +64,14 @@ export const RELATION_EDGE_TYPE: Record<Exclude<CreateRelationType, "isA">, stri
 export interface CreateCandidate {
   /** Graph node id, e.g. `capability:mcp-server`. */
   id: string;
+  /** 화면에 보이는 이름 — 현재 로케일의 표시 이름(`display ?? title`). */
   title: string;
+  /**
+   * frontmatter 의 canonical `title` — 검색/매칭의 단일 진실원(AGENTS.md).
+   * 표시 이름은 화면용 레이어라 매칭 범위를 줄여서는 안 된다(#66). 구 후보와의
+   * 하위 호환을 위해 optional.
+   */
+  canonicalTitle?: string;
   kind: string;
   /** Folder-prefixed ref the derivation resolves, e.g. `capabilities/mcp-server`. */
   ref: string;
@@ -115,7 +122,15 @@ export function candidateFromNode(node: {
   const prefix = `${node.kind}:`;
   const tail = node.id.startsWith(prefix) ? node.id.slice(prefix.length) : slugify(node.id);
   const ref = `${vaultFolderForKind(node.kind)}/${tail || slugify(node.title)}`;
-  return { id: node.id, title: node.display ?? node.title, kind: node.kind, ref };
+  return {
+    id: node.id,
+    title: node.display ?? node.title,
+    // 표시 이름과 별개로 원문을 함께 싣는다 — 예전엔 여기서 버려져 `display_ko`
+    // 가 달린 노드를 원문 title 로 검색할 수 없었다(#66).
+    canonicalTitle: node.title,
+    kind: node.kind,
+    ref,
+  };
 }
 
 /** Whether `kind` expects a parent domain (capability / element). */
