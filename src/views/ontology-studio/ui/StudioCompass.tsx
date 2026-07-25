@@ -2038,15 +2038,23 @@ function clampY(y: number, h: number): number {
   return Math.min(Math.max(y, 8), Math.max(8, BOARD.h - h - 8));
 }
 
+/** 세로 레인 라벨이 지지대 축에서 비켜서는 간격(#69). */
+const LANE_HEAD_AXIS_GAP = 10;
+
 function laneHeadPos(view: CompassBearingView, layout: LaneLayout): React.CSSProperties {
   if (view.bearing === "right") return { left: layout.sats[0]?.x ?? 0, top: (layout.sats[0]?.y ?? CY) - 20 };
   if (view.bearing === "left") return { left: layout.sats[0]?.x ?? 0, top: (layout.sats[0]?.y ?? CY) - 20 };
-  if (view.bearing === "up") return { left: CX - 60, top: (layout.sats[0]?.y ?? 0) - 20 };
+  // #69 — 세로 레인(up/down)의 지지대는 `CX` 축을 타고 흐른다. 라벨을 CX 중앙에
+  // 놓으면 그 선이 글자를 **가로지른다**(소유자 실보고: "파란선에 글자가
+  // 겹쳐져서 뭔가 이상하지? 가로질러서?"). 선 뒤로 넣어도 글자 사이로 비쳐
+  // 읽히므로, 라벨을 축 오른쪽으로 비켜 세워 애초에 교차하지 않게 한다 —
+  // 선로 옆 표지판 문법.
+  if (view.bearing === "up") return { left: CX + LANE_HEAD_AXIS_GAP, top: (layout.sats[0]?.y ?? 0) - 20 };
   // #94/#95 — DOWN lane head sat BELOW the last satellite (+6), landing on top
   // of the fold chip ("+90 more", +12) → collision. Mirror the UP lane: place
   // the header ABOVE the topmost DOWN satellite (in the clear gap between the
   // card and the stack) so it never overlaps the fold/add-chip cluster below.
-  return { left: CX - 60, top: (layout.sats[0]?.y ?? 0) - 20 };
+  return { left: CX + LANE_HEAD_AXIS_GAP, top: (layout.sats[0]?.y ?? 0) - 20 };
 }
 
 // ── Inline anchored picker (dark canonical) ──────────────────────────────────
@@ -2436,28 +2444,58 @@ function NodeSearch({
 }
 
 // ── Mini compass rose (flow cue) — the four bearings at a glance ──────────────
+/**
+ * 완성도 인디케이터 (#69).
+ *
+ * 소유자 실보고: "이것도 잘 안 보여.. 좀 더 잘보이게하고(조금더 키워도 될지도?)
+ * 그리고 반짝반짝 빛나면 좋을듯?" — 발광이 아니라 **상태가 눈에 들어오고 변화가
+ * 움직임으로 읽히는 것**이 요구사항이다(소유자 정정). 그래서:
+ *
+ * - 크기를 40 → 52 로, 점 반지름을 2.6 → 3.6 으로 키운다.
+ * - 채움/빈 상태의 **값 차이를 벌린다** — 채운 점은 인디고 solid + 옅은 후광
+ *   링(같은 인디고 알파, glow 아님), 빈 점은 더 조용한 보더.
+ * - 채워지는 순간 200ms 로 색과 반지름이 확정 전이한다 — 결과가 움직임으로
+ *   확인된다. `prefers-reduced-motion` 은 전이를 끈다.
+ *
+ * 헌장 준수: glow pulse · neon · halo · `0 0 …` boxShadow 없음. 무채색 + 단일
+ * 인디고, 값(밝기·크기)으로만 구분한다.
+ */
 function MiniRose({ bearings }: { bearings: CompassBearingView[] }) {
   const by = (b: StudioBearing) => bearings.find((v) => v.bearing === b);
   const pip = (b: StudioBearing, cx: number, cy: number) => {
     const v = by(b);
-    if (v?.filled) return <circle cx={cx} cy={cy} r={2.6} fill="var(--color-indigo-brand)" />;
+    const common = {
+      cx,
+      cy,
+      className: "studio-rose-pip",
+    } as const;
+    if (v?.filled) {
+      return (
+        <>
+          {/* 채움 강조 — 같은 인디고의 옅은 알파 링. 발광이 아니라 값 대비. */}
+          <circle {...common} r={6} fill="var(--color-indigo-a16)" />
+          <circle {...common} r={3.6} fill="var(--color-indigo-brand)" />
+        </>
+      );
+    }
     if (v?.recommended)
       return (
         <>
-          <circle cx={cx} cy={cy} r={2.6} fill="none" stroke="var(--color-border-strong)" strokeWidth={1.5} />
-          <circle cx={cx} cy={cy} r={1} fill="var(--color-indigo-brand)" />
+          <circle {...common} r={3.6} fill="none" stroke="var(--color-indigo-line-a45)" strokeWidth={1.6} />
+          <circle {...common} r={1.4} fill="var(--color-indigo-brand)" />
         </>
       );
-    if (v?.expected) return <circle cx={cx} cy={cy} r={2.6} fill="none" stroke="var(--color-amber-muted-a62)" strokeWidth={1.5} />;
-    return <circle cx={cx} cy={cy} r={2.6} fill="none" stroke="var(--color-border-strong)" strokeWidth={1.5} />;
+    if (v?.expected)
+      return <circle {...common} r={3.6} fill="none" stroke="var(--color-amber-muted-a62)" strokeWidth={1.6} />;
+    return <circle {...common} r={3.6} fill="none" stroke="var(--color-border-soft)" strokeWidth={1.4} />;
   };
   return (
-    <svg width={40} height={40} viewBox="0 0 40 40" className="flex-none" aria-hidden>
-      <circle cx={20} cy={20} r={15} fill="none" stroke="var(--color-border-soft)" strokeWidth={1} strokeDasharray="1 3.6" />
-      {pip("up", 20, 5)}
-      {pip("right", 35, 20)}
-      {pip("down", 20, 35)}
-      {pip("left", 5, 20)}
+    <svg width={52} height={52} viewBox="0 0 52 52" className="flex-none" aria-hidden>
+      <circle cx={26} cy={26} r={19} fill="none" stroke="var(--color-border-soft)" strokeWidth={1} strokeDasharray="1 3.6" />
+      {pip("up", 26, 7)}
+      {pip("right", 45, 26)}
+      {pip("down", 26, 45)}
+      {pip("left", 7, 26)}
     </svg>
   );
 }

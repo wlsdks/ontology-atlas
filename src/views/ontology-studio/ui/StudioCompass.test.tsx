@@ -1424,3 +1424,57 @@ describe("StudioCompass — 피커 빈 상태 구분 (#66)", () => {
     expect(screen.queryByText("empty")).not.toBeInTheDocument();
   });
 });
+
+// #69 — 지지대 축과 레인 라벨 · 완성도 인디케이터 가독성.
+// 소유자 실보고: "파란선에 글자가 겹쳐져서 뭔가 이상하지? 가로질러서?" /
+// "이것도 잘 안 보여.. 좀 더 잘보이게하고 그리고 반짝반짝 빛나면 좋을듯?"
+// (정정: 발광이 아니라 "적절히 표현 + 모션" — 헌장의 glow 금지는 그대로.)
+describe("StudioCompass — 지지대 축·완성도 인디케이터 (#69)", () => {
+  function renderCue() {
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "MCP Server", definition: "def" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right", {
+            filled: true,
+            neighbors: [{ id: "el:x", title: "Parser", kind: "element", ref: "elements/parser" }],
+          }),
+          bearing("contains", "down", {
+            filled: true,
+            neighbors: [{ id: "el:y", title: "Absorb", kind: "element", ref: "elements/absorb" }],
+          }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={2}
+        writable
+        candidatesFor={() => []}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+      />,
+    );
+  }
+
+  it("완성도 인디케이터가 4방위 점을 모두 그리고 전이 클래스를 단다", () => {
+    renderCue();
+    const cue = screen.getByTestId("studio-flow-cue");
+    const svg = cue.querySelector("svg");
+
+    expect(svg).not.toBeNull();
+    // 채운 방위는 강조 링 + 본체 2겹이라 점 개수는 4보다 많다.
+    expect(svg!.querySelectorAll(".studio-rose-pip").length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("인디케이터에 glow/halo 계열 그림자를 쓰지 않는다 (헌장)", () => {
+    renderCue();
+    const svg = screen.getByTestId("studio-flow-cue").querySelector("svg");
+    // glow 는 box-shadow `0 0 …` 또는 SVG filter(blur/glow)로 들어온다.
+    expect(svg!.outerHTML).not.toMatch(/box-shadow/i);
+    expect(svg!.outerHTML).not.toMatch(/filter=/i);
+    expect(svg!.outerHTML).not.toMatch(/feGaussianBlur/i);
+  });
+});
