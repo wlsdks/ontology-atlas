@@ -316,8 +316,22 @@ export function ShortcutSheet({ open, onClose }: Props) {
 
             {/* #67 — 목록 영역. 스크롤이 남았을 때 아래쪽에 한 단계 페이드를
                 깔아 "여기서 끝" 이 아니라 "더 있다" 로 읽히게 한다. */}
-            <div className="relative min-h-0 flex-1">
-              <div className="h-full overflow-y-auto" data-testid="shortcut-sheet-scroll">
+            {/* #67 후속 — 스크롤 영역 높이 계약.
+                이 다이얼로그는 sm+ 에서 **콘텐츠 기반 높이**(`sm:h-auto` +
+                `sm:max-h-[...]`)다. 그래서
+                  · `h-full`(=height:100%) → 래퍼 높이가 아니라 콘텐츠 높이로
+                    해석돼 `scrollHeight === clientHeight`, 스크롤이 죽고 마지막
+                    섹션이 뷰포트 밖으로 잘림(영문 `전체` 탭 실측 1112px).
+                  · `absolute inset-0` → 스크롤 자식이 흐름에서 빠져 래퍼가 0
+                    높이가 되고 다이얼로그가 232px 로 무너짐.
+                둘 다 실측으로 확인했다. 정답은 **흐름 안에서 flex 로 제한**하는
+                것: 래퍼도 flex 컬럼이고, 스크롤 자식이 `min-h-0 flex-1` 로
+                남는 공간만 먹는다. 페이드는 래퍼(relative) 하단에 앵커. */}
+            <div className="relative flex min-h-0 flex-1 flex-col">
+              <div
+                className="min-h-0 flex-1 overflow-y-auto"
+                data-testid="shortcut-sheet-scroll"
+              >
               {/* sm+ 는 2-column grid 로 펼쳐 세로 길이 줄임. 작은 뷰포트는
                   단일 컬럼 + 내부 스크롤로 넘침 방지. */}
               <div className="grid grid-cols-1 gap-x-6 divide-y divide-[color:var(--color-overlay-2)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
