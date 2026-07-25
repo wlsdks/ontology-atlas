@@ -87,6 +87,13 @@ export interface StudioCompassLabels {
   flowEyebrow: string;
   /** (filled, total) → e.g. "4방향 중 2 채움 · 반쯤 왔어요". */
   flowCount: (filled: number, total: number) => string;
+  /**
+   * C12② — quiet line under the flow cue when an ENHANCE focal already belongs
+   * to a domain. Domain membership is authored on the child's own `domain:` key
+   * (belonging, not this node's outgoing meaning), so it does NOT count toward
+   * the 4-bearing 완성도 — this line keeps 0/4 from reading as "orphan / 빈 껍데기".
+   */
+  domainMembership: (domain: string) => string;
   /** (name) → the one calm frame prompt. */
   framePrompt: (name: string) => string;
   guideBadge: string; // "여기부터 채워요"
@@ -219,6 +226,14 @@ export interface StudioCompassProps {
   createDomainValue?: string | null;
   onCreateDomain?: (value: string | null) => void;
   onCreateDefinition?: (def: string) => void;
+  /**
+   * C12③ — ONE optional secondary-locale display name (the primary name field is
+   * the current UI locale). Placeholder is locale-aware ("영어 이름 (선택)" on a
+   * ko UI, "한국어 이름 (선택)" on an en UI). Omit → no secondary field.
+   */
+  createSecondaryName?: string;
+  onCreateSecondaryName?: (name: string) => void;
+  createSecondaryNamePlaceholder?: string;
   createSimilarHit?: { title: string; kind: string; slug: string } | null;
   /** Exact deterministic path conflict — save cannot succeed until renamed. */
   createSlugCollision?: boolean;
@@ -740,6 +755,14 @@ export function StudioCompass(props: StudioCompassProps) {
             <span className="text-body text-[color:var(--color-text-secondary)]">
               {labels.flowCount(filledBearings, 4)}
             </span>
+            {mode === "enhance" && focal.domainLabel ? (
+              <span
+                data-testid="studio-domain-membership"
+                className="text-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+              >
+                {labels.domainMembership(focal.domainLabel)}
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -1194,6 +1217,18 @@ function CenterCard(
           {focal.name}
         </div>
       )}
+
+      {/* C12③ — quiet optional secondary-locale name (other-locale display). */}
+      {mode === "create" && props.onCreateSecondaryName ? (
+        <input
+          data-testid="studio-create-name-secondary"
+          value={props.createSecondaryName ?? ""}
+          onChange={(e) => props.onCreateSecondaryName?.(e.target.value)}
+          placeholder={props.createSecondaryNamePlaceholder}
+          aria-label={props.createSecondaryNamePlaceholder}
+          className="mt-2 w-full bg-transparent text-caption text-[color:var(--color-text-tertiary)] outline-none [word-break:keep-all] placeholder:text-[color:var(--color-text-quaternary)]"
+        />
+      ) : null}
 
       {mode === "create" && props.createDomains && props.createDomains.length > 0 ? (
         <div className="mt-3">

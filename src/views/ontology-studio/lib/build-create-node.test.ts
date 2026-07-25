@@ -34,6 +34,40 @@ function draft(overrides: Partial<CreateDraft> = {}): CreateDraft {
   };
 }
 
+describe("C12③ — per-locale display names", () => {
+  it("writes sorted display_<locale> keys under title in the vault doc", () => {
+    const { markdown } = buildCreateNodeDoc(
+      draft({ localeLabels: { en: "Payment cancel", ko: "결제 취소" } }),
+    );
+    // deterministic: en before ko (sorted), both right under title.
+    expect(markdown).toContain("display_en: Payment cancel");
+    expect(markdown).toContain("display_ko: 결제 취소");
+    expect(markdown.indexOf("display_en")).toBeLessThan(markdown.indexOf("display_ko"));
+    expect(markdown.indexOf("title:")).toBeLessThan(markdown.indexOf("display_en"));
+  });
+
+  it("omits display_* entirely when no locale names are given (unchanged today)", () => {
+    const { markdown } = buildCreateNodeDoc(draft());
+    expect(markdown).not.toContain("display_");
+  });
+
+  it("ignores blank / malformed locale entries", () => {
+    const { markdown } = buildCreateNodeDoc(
+      draft({ localeLabels: { ko: "  ", en: "Payment cancel", "en-US": "x" } }),
+    );
+    expect(markdown).toContain("display_en: Payment cancel");
+    expect(markdown).not.toContain("display_ko");
+    expect(markdown).not.toContain("en-US");
+  });
+
+  it("emits labels: { ... } in the MCP packet (add_concept locale-label input)", () => {
+    const packet = buildMcpPacket(draft({ localeLabels: { ko: "결제 취소", en: "Payment cancel" } }));
+    expect(packet).toContain('labels: { en: "Payment cancel", ko: "결제 취소" }');
+    // and none when absent.
+    expect(buildMcpPacket(draft())).not.toContain("labels:");
+  });
+});
+
 describe("candidateFromNode", () => {
   it("computes the folder-prefixed ref the derivation resolves", () => {
     expect(orderCancel.ref).toBe("capabilities/order-cancel");

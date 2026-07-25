@@ -82,6 +82,23 @@ export interface CreateDraft {
   domainValue: string | null;
   definition: string;
   relations: PendingRelation[];
+  /**
+   * C12③ — per-locale display names (locale → name), written as `display_<locale>`
+   * frontmatter (map/INDEX/popover render the screen-locale name; `title` stays
+   * the search/matching truth). Empty/absent → no `display_*` keys, same as today
+   * (other-locale viewers just see `title`). Keys are serialized in sorted order
+   * so the doc + MCP packet are deterministic.
+   */
+  localeLabels?: Record<string, string>;
+}
+
+/** Sorted, trimmed, non-empty `display_<locale>` entries from a draft. */
+function localeLabelEntries(draft: CreateDraft): Array<[string, string]> {
+  const raw = draft.localeLabels ?? {};
+  return Object.entries(raw)
+    .map(([locale, name]) => [locale.trim(), name.trim()] as [string, string])
+    .filter(([locale, name]) => /^[a-z]{2}$/.test(locale) && name !== "")
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
 }
 
 /**
@@ -171,6 +188,10 @@ export function buildCreateNodeDoc(draft: CreateDraft): { slug: string; markdown
   if (!slug) throw new Error("title produced an empty slug");
 
   const extra: string[] = [];
+  // C12③ — per-locale display names right under `title:`.
+  for (const [locale, name] of localeLabelEntries(draft)) {
+    extra.push(`display_${locale}: ${quoteYamlScalar(name)}`);
+  }
   const definition = draft.definition.trim();
   if (definition) extra.push(`definition: ${quoteYamlScalar(definition)}`);
   for (const { key, refs } of groupRelationRefs(draft.relations)) {
@@ -200,6 +221,13 @@ export function buildMcpPacket(draft: CreateDraft): string {
   const q = (v: string) => `"${v.replace(/"/g, '\\"')}"`;
 
   const conceptArgs = [`slug: ${q(slug)}`, `kind: ${q(draft.kind)}`, `title: ${q(title)}`];
+  // C12③ — per-locale display names as `labels: { ko, en }` (add_concept's
+  // documented locale-label input; mirrors the doc's `display_<locale>` keys).
+  const localeEntries = localeLabelEntries(draft);
+  if (localeEntries.length > 0) {
+    const pairs = localeEntries.map(([locale, name]) => `${locale}: ${q(name)}`);
+    conceptArgs.push(`labels: { ${pairs.join(", ")} }`);
+  }
   // C7 — canonical bare tail-slug `domain:` in the MCP packet too.
   const domain = canonicalizeDomainRef(draft.domainValue);
   if (domain && kindExpectsDomain(draft.kind)) conceptArgs.push(`domain: ${q(domain)}`);

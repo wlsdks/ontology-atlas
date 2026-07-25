@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import {
   buildOntologyInsightsReturnHref,
@@ -87,6 +87,9 @@ function normalize(s: string): string {
 
 export function OntologyStudioPage() {
   const t = useTranslations("ontologyStudio");
+  const locale = useLocale();
+  // C12③ — the secondary display-name locale is the OTHER of the two app locales.
+  const secondaryLocale = locale === "en" ? "ko" : "en";
   const searchParams = useSearchParams();
   const router = useRouter();
   const { insight } = useOntologyInsight();
@@ -156,6 +159,7 @@ export function OntologyStudioPage() {
       moreRelations: t("moreRelations"),
       flowEyebrow: t("flowEyebrow"),
       flowCount: (filled, total) => `${t("flowCount", { filled, total })} ${flowHint(filled)}`,
+      domainMembership: (domain) => t("domainMembership", { domain }),
       framePrompt: (name) => (isCreate ? t("create.framePrompt") : t("framePrompt", { name })),
       guideBadge: t("guideBadge"),
       bottomProgress: (filled, total) =>
@@ -331,6 +335,8 @@ export function OntologyStudioPage() {
   const [definition, setDefinition] = useState("");
   const [relations, setRelations] = useState<PendingRelation[]>([]);
   const [similarDismissed, setSimilarDismissed] = useState(false);
+  // C12③ — optional other-locale display name (primary name is the current locale).
+  const [secondaryName, setSecondaryName] = useState("");
 
   // ─────────────────────────────── ENHANCE staged changes ────────────────
   // Which existing node the enhance stage is centered on (deeplink or default).
@@ -422,9 +428,19 @@ export function OntologyStudioPage() {
     [enhanceItem, nodes, edges, enhanceProjection],
   );
 
+  // C12③ — record BOTH locales' display names only when a secondary is supplied
+  // (a half-filled pair leaves other-locale viewers seeing the raw title, so we
+  // pair the current-locale title with the secondary name or write neither).
+  const localeLabels = useMemo(
+    () =>
+      secondaryName.trim()
+        ? { [locale]: title.trim(), [secondaryLocale]: secondaryName.trim() }
+        : undefined,
+    [secondaryName, locale, secondaryLocale, title],
+  );
   const draft: CreateDraft = useMemo(
-    () => ({ kind, title, domainValue, definition, relations }),
-    [kind, title, domainValue, definition, relations],
+    () => ({ kind, title, domainValue, definition, relations, localeLabels }),
+    [kind, title, domainValue, definition, relations, localeLabels],
   );
 
   const createSlugCollisionCandidate = useMemo(
@@ -585,6 +601,9 @@ export function OntologyStudioPage() {
         createDomainValue={domainValue}
         onCreateDomain={setDomainValue}
         onCreateDefinition={setDefinition}
+        createSecondaryName={secondaryName}
+        onCreateSecondaryName={setSecondaryName}
+        createSecondaryNamePlaceholder={t("create.secondaryName")}
         createSimilarHit={createSimilarHit}
         createSlugCollision={createSlugCollision}
         onOpenSimilar={openSimilarNode}

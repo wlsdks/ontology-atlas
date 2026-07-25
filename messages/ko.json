@@ -94,6 +94,7 @@
       "almost": "· 거의 다 됐어요",
       "done": "· 다 채웠어요"
     },
+    "domainMembership": "이미 ‘{domain}’ 소속이에요",
     "framePrompt": "‘{name}’의 의미를 주변 노드와 이어 완성해요",
     "guideBadge": "여기부터 채워요",
     "bottomProgress": "{total}개 중 {filled}개 채웠어요",
@@ -213,6 +214,7 @@
     "create": {
       "framePrompt": "새 노드가 무엇인지 정하고, 주변 노드와 이어 완성해요",
       "namePlaceholder": "새 노드 이름 — 예: 결제 취소",
+      "secondaryName": "영어 이름 (선택)",
       "domainNone": "도메인 없음",
       "definitionPlaceholder": "이 노드가 하는 일을 한 줄로 — 정의·경계가 중복을 막아요.",
       "similar": "비슷한 노드가 이미 있어요 — {title} ({kind})",
