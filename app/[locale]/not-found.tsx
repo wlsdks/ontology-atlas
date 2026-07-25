@@ -51,7 +51,7 @@ export default function LocaleNotFound() {
       id="main"
       className="flex min-h-screen items-center justify-center bg-[color:var(--color-canvas)] px-6 py-10"
     >
-      <div className="w-full max-w-[440px] rounded-[22px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-7 shadow-[0_24px_48px_rgba(0,0,0,0.24)]">
+      <div className="w-full max-w-[440px] rounded-[22px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-7 shadow-[var(--shadow-elevation-2)]">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
             <Compass size={16} />

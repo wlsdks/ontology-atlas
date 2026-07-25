@@ -242,7 +242,7 @@ export function Select({
           aria-label={ariaLabel}
           aria-labelledby={ariaLabelledby}
           data-testid={dataTestid ? `${dataTestid}-listbox` : undefined}
-          className="absolute left-0 top-[calc(100%+4px)] z-40 max-h-[264px] w-full origin-top overflow-y-auto rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-1 shadow-[0_12px_34px_rgba(0,0,0,.5)] motion-safe:animate-[select-pop_150ms_ease-out] motion-reduce:animate-none"
+          className="absolute left-0 top-[calc(100%+4px)] z-40 max-h-[264px] w-full origin-top overflow-y-auto rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)] motion-safe:animate-[select-pop_150ms_ease-out] motion-reduce:animate-none"
         >
           {options.map((option, index) => {
             const isSelected = option.value === value;

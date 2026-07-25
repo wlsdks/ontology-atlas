@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 // bare `History` 식별자가 전역 DOM History 생성자로 해석돼 `<History>` JSX 가
 // "Illegal constructor" 로 화면 전체를 에러 바운더리로 추락시켰다(스택 확보,
 // 간헐). 전역과 절대 충돌하지 않는 별칭으로 원천 차단.
-import { Check, Copy, History as HistoryIcon, Monitor, ShieldCheck, X } from "lucide-react";
+import { Check, Copy, History as HistoryIcon, Monitor, ShieldCheck } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
 import {
@@ -64,12 +64,6 @@ export interface AtlasGitPanelProps {
   vaultPath?: string | null;
   /** 웹 강등 요약에 쓸 세션 changeset — HomePage 의 `ontologyChangeset`. */
   sessionChangeset?: OntologyChangeset | null;
-  onClose: () => void;
-  /**
-   * 목적지(`/git/`)로 렌더될 때 true — 헤더의 닫기 X 를 숨긴다. 목적지에는
-   * "닫기" 가 없다(레일로 다른 곳에 가면 그게 나가기다). 모달 호스트만 X 를 쓴다.
-   */
-  hideClose?: boolean;
   className?: string;
 }
 
@@ -91,8 +85,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 export function AtlasGitPanel({
   vaultPath = null,
   sessionChangeset = null,
-  onClose,
-  hideClose = false,
   className,
 }: AtlasGitPanelProps) {
   const t = useTranslations("atlasGit");
@@ -119,7 +111,8 @@ export function AtlasGitPanel({
   const [snapshotResult, setSnapshotResult] = useState<GitSnapshotResult | null>(null);
   const [snapshotError, setSnapshotError] = useState<string | null>(null);
 
-  const [diffOpen, setDiffOpen] = useState(false);
+  /** 증거 pane 탭 — 바뀐 줄 / 최근 기록. 목록 좌 · 증거 우(#85). */
+  const [evidenceTab, setEvidenceTab] = useState<"diff" | "history">("diff");
   const [expandedHash, setExpandedHash] = useState<string | null>(null);
   const [commandCopied, setCommandCopied] = useState(false);
 
@@ -179,7 +172,7 @@ export function AtlasGitPanel({
       setSnapshotResult(result);
       setConfirming(false);
       setPushOptIn(false);
-      setDiffOpen(false);
+      setEvidenceTab("diff");
       await refresh();
     } catch (err) {
       setSnapshotError(gitErrorMessage(err));
@@ -257,37 +250,28 @@ export function AtlasGitPanel({
       // "보기 안 좋고"). AgentConnectSheet 와 같은 역할 분담: 패널은 내용만.
       className={cn("flex w-full flex-col", className)}
     >
-      {/* AgentConnectSheet 헤더 문법 — 인디고 mono eyebrow + body 서브타이틀,
-          border-b 로 본문과 분리. 글자 크기 한 단 승격(소유자: "글자 너무 작아"). */}
-      <header className="flex shrink-0 items-start justify-between gap-2 border-b border-[color:var(--color-border-soft)] px-5 py-4">
-        <div>
-          <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
-            <HistoryIcon size={11} aria-hidden />
-            {t("title")}
-          </p>
-          {/* 구 `subtitle`("vault 의 변경을 git 스냅샷으로 남깁니다")은 12글자에
-              시스템 용어가 3개(vault·git·스냅샷)라 삭제했다. 그 자리를 아래
-              스코프 고지가 대신한다 — 사용자가 두 번째로 확인해야 하는 건 제품
-              설명이 아니라 "내 폴더 밖은 안 건드린다" 다. */}
-          <p className="mt-1 flex items-center gap-1.5 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
-            <ShieldCheck size={11} aria-hidden />
-            {t("scopeNotice")}
-          </p>
-        </div>
-        {hideClose ? null : (
-        <button
-          type="button"
-          aria-label={t("close")}
-          data-testid="atlas-git-close"
-          onClick={onClose}
-          className="rounded p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-        >
-          <X size={15} aria-hidden />
-        </button>
-        )}
+      {/* 페이지 헤더 (2026-07-25 목적지 승격 후속). 모달이 삭제되면서 이 패널의
+          유일한 소비자가 `/git/` 목적지가 됐는데, 헤더는 여전히 모달 문법
+          (11px 인디고 mono eyebrow + 닫기 X)이었다 — 페이지 제목으로는 너무
+          작고, 목적지에는 "닫기" 라는 개념이 없다(레일로 다른 곳에 가면 그게
+          나가기다). 램프 한 단이 아니라 **목적지 헤드라인**(`--text-display`)
+          으로 올린다. */}
+      <header className="flex shrink-0 flex-col gap-1.5 border-b border-[color:var(--color-border-soft)] px-5 pb-4 pt-1">
+        <h1 className="flex items-center gap-2 text-title font-semibold tracking-[-0.005em] text-[color:var(--color-text-primary)] sm:text-[length:var(--text-display)]">
+          <HistoryIcon size={18} aria-hidden className="text-[color:var(--color-indigo-accent)]" />
+          {t("title")}
+        </h1>
+        {/* 구 `subtitle`("vault 의 변경을 git 스냅샷으로 남깁니다")은 12글자에
+            시스템 용어가 3개(vault·git·스냅샷)라 삭제했다. 그 자리를 스코프
+            고지가 대신한다 — 사용자가 두 번째로 확인해야 하는 건 제품 설명이
+            아니라 "내 폴더 밖은 안 건드린다" 다. */}
+        <p className="flex items-center gap-1.5 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+          <ShieldCheck size={11} aria-hidden className="shrink-0" />
+          {t("scopeNotice")}
+        </p>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-5">
       {desktop ? (
         <DesktopBody
           t={t}
@@ -305,8 +289,8 @@ export function AtlasGitPanel({
           snapshotResult={snapshotResult}
           snapshotError={snapshotError}
           confirmSnapshot={confirmSnapshot}
-          diffOpen={diffOpen}
-          setDiffOpen={setDiffOpen}
+          evidenceTab={evidenceTab}
+          setEvidenceTab={setEvidenceTab}
           diffText={diffText}
           history={history}
           expandedHash={expandedHash}
@@ -337,6 +321,39 @@ export function AtlasGitPanel({
 }
 
 type Translator = ReturnType<typeof useTranslations<"atlasGit">>;
+
+/**
+ * 증거 pane 탭 (#85). 활성은 인디고 언더라인 — 채색 시스템 증식 없이 `border-b`
+ * 하나로 상태를 말한다(`design.md`: "카테고리 구분은 색이 아닌 보더 스타일").
+ */
+function EvidenceTab({
+  active,
+  testId,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  testId: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        "border-b-2 px-1.5 pb-1.5 text-label transition-colors",
+        active
+          ? "border-[color:var(--color-indigo-brand)] font-semibold text-[color:var(--color-text-primary)]"
+          : "border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
 
 /**
  * S4 — 보낼 곳(원격) 등록. **실패 지점에서 바로 해결한다**: 이전엔 push 가
@@ -435,8 +452,8 @@ function DesktopBody({
   snapshotResult,
   snapshotError,
   confirmSnapshot,
-  diffOpen,
-  setDiffOpen,
+  evidenceTab,
+  setEvidenceTab,
   diffText,
   history,
   expandedHash,
@@ -468,8 +485,8 @@ function DesktopBody({
   snapshotResult: GitSnapshotResult | null;
   snapshotError: string | null;
   confirmSnapshot: () => void;
-  diffOpen: boolean;
-  setDiffOpen: (v: boolean) => void;
+  evidenceTab: "diff" | "history";
+  setEvidenceTab: (v: "diff" | "history") => void;
   diffText: string;
   history: GitCommitInfo[];
   expandedHash: string | null;
@@ -560,7 +577,12 @@ function DesktopBody({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    // 2열 (#85) — 좌: 무엇이 바뀌었고 무엇을 남길까 / 우: 그 증거.
+    // `lg` 미만은 세로로 쌓인다(증거가 목록 아래). 증거 열 최소 폭이 **600px**
+    // 인 이유: 11px mono 80칼럼 ≈ 528px + gutter + padding. 시안 v1 의 420px 는
+    // 모든 줄을 잘랐고 **잘린 diff 는 증거가 아니다**.
+    <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,600px)]">
+      <div className="flex min-w-0 flex-col gap-4">
       {status?.branch ? (
         <p
           className="text-caption text-[color:var(--color-text-quaternary)]"
@@ -642,30 +664,6 @@ function DesktopBody({
             {t("stagedOutsideNotice", { count: status.stagedOutsideVault.length })}
           </p>
         ) : null}
-        {hasChanges ? (
-          <button
-            type="button"
-            data-testid="atlas-git-diff-toggle"
-            onClick={() => setDiffOpen(!diffOpen)}
-            className="self-start text-caption text-[color:var(--color-text-tertiary)] underline decoration-[color:var(--color-border-soft)] underline-offset-2 transition-colors hover:text-[color:var(--color-text-primary)]"
-          >
-            {diffOpen ? t("diffHide") : t("diffShow")}
-          </button>
-        ) : null}
-        {diffOpen ? (
-          diffText.trim() ? (
-            <pre
-              data-testid="atlas-git-diff-pre"
-              className="max-h-56 overflow-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 font-mono text-caption leading-relaxed text-[color:var(--color-text-secondary)]"
-            >
-              {diffText}
-            </pre>
-          ) : (
-            <p className="text-caption text-[color:var(--color-text-quaternary)]">
-              {t("diffEmpty")}
-            </p>
-          )
-        ) : null}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -743,44 +741,86 @@ function DesktopBody({
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <SectionLabel>{t("historyTitle")}</SectionLabel>
-        {history.length > 0 ? (
-          <ul className="flex flex-col">
-            {history.map((commit) => (
-              <li key={commit.hash}>
-                <button
-                  type="button"
-                  data-testid="atlas-git-history-item"
-                  aria-expanded={expandedHash === commit.hash}
-                  onClick={() =>
-                    setExpandedHash(expandedHash === commit.hash ? null : commit.hash)
-                  }
-                  className="flex w-full items-baseline gap-2 rounded px-1 py-1 text-left transition-colors hover:bg-[color:var(--color-overlay-2)]"
-                >
-                  <span className="shrink-0 font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                    {commit.shortHash}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-label text-[color:var(--color-text-secondary)]">
-                    {commit.subject}
-                  </span>
-                  <span className="shrink-0 text-caption text-[color:var(--color-text-quaternary)]">
-                    {commit.relativeTime}
-                  </span>
-                </button>
-                {expandedHash === commit.hash ? (
-                  <p
-                    className="px-1 pb-1 font-mono text-caption text-[color:var(--color-text-quaternary)]"
-                    data-testid="atlas-git-history-detail"
-                  >
-                    {t("historyItemDetail", { hash: commit.hash, isoTime: commit.isoTime })}
-                  </p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+      </div>
+
+      {/* 증거 pane — 고른 것의 근거. 탭 틀은 고정, 본문만 스크롤한다. */}
+      <div
+        data-testid="atlas-git-evidence"
+        className="flex min-h-0 min-w-0 flex-col gap-2 lg:border-l lg:border-[color:var(--color-divider)] lg:pl-5"
+      >
+        <div className="flex shrink-0 items-center gap-1.5">
+          <EvidenceTab
+            active={evidenceTab === "diff"}
+            testId="atlas-git-diff-toggle"
+            onClick={() => setEvidenceTab("diff")}
+          >
+            {t("diffTab")}
+          </EvidenceTab>
+          <EvidenceTab
+            active={evidenceTab === "history"}
+            testId="atlas-git-history-tab"
+            onClick={() => setEvidenceTab("history")}
+          >
+            {t("historyTitle")}
+          </EvidenceTab>
+        </div>
+
+        {evidenceTab === "diff" ? (
+          diffText.trim() ? (
+            <pre
+              data-testid="atlas-git-diff-pre"
+              className="min-h-0 flex-1 overflow-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 font-mono text-label leading-relaxed text-[color:var(--color-text-secondary)]"
+            >
+              {diffText}
+            </pre>
+          ) : (
+            <p className="text-label text-[color:var(--color-text-quaternary)]">
+              {hasChanges ? t("diffEmpty") : t("evidenceEmpty")}
+            </p>
+          )
         ) : (
-          <p className="text-label text-[color:var(--color-text-tertiary)]">{t("historyEmpty")}</p>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col gap-2">
+          <SectionLabel>{t("historyTitle")}</SectionLabel>
+          {history.length > 0 ? (
+            <ul className="flex flex-col">
+              {history.map((commit) => (
+                <li key={commit.hash}>
+                  <button
+                    type="button"
+                    data-testid="atlas-git-history-item"
+                    aria-expanded={expandedHash === commit.hash}
+                    onClick={() =>
+                      setExpandedHash(expandedHash === commit.hash ? null : commit.hash)
+                    }
+                    className="flex w-full items-baseline gap-2 rounded px-1 py-1 text-left transition-colors hover:bg-[color:var(--color-overlay-2)]"
+                  >
+                    <span className="shrink-0 font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                      {commit.shortHash}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-label text-[color:var(--color-text-secondary)]">
+                      {commit.subject}
+                    </span>
+                    <span className="shrink-0 text-caption text-[color:var(--color-text-quaternary)]">
+                      {commit.relativeTime}
+                    </span>
+                  </button>
+                  {expandedHash === commit.hash ? (
+                    <p
+                      className="px-1 pb-1 font-mono text-caption text-[color:var(--color-text-quaternary)]"
+                      data-testid="atlas-git-history-detail"
+                    >
+                      {t("historyItemDetail", { hash: commit.hash, isoTime: commit.isoTime })}
+                    </p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-label text-[color:var(--color-text-tertiary)]">{t("historyEmpty")}</p>
+          )}
+        </div>
+          </div>
         )}
       </div>
     </div>

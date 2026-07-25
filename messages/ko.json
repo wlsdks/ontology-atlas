@@ -92,7 +92,7 @@
     "studio": "공방",
     "insights": "인사이트",
     "projects": "프로젝트",
-    "git": "발자취"
+    "git": "기록"
   },
   "ontologyStudio": {
     "searchPlaceholder": "무대에 올릴 노드…",
@@ -2552,10 +2552,10 @@
     "copiedToast": "설정을 복사했어요 — 도구에 붙여넣으면 연결돼요."
   },
   "atlasGit": {
-    "tileLabel": "발자취",
-    "tileTitleClean": "발자취 — 모두 남겼어요",
-    "tileTitleDirty": "발자취 — 남기지 않은 변경 {count}건",
-    "title": "발자취",
+    "tileLabel": "기록",
+    "tileTitleClean": "기록 — 모두 남겼어요",
+    "tileTitleDirty": "기록 — 남기지 않은 변경 {count}건",
+    "title": "기록",
     "close": "닫기",
     "loading": "이 폴더의 변경을 확인하는 중…",
     "loadError": "이 폴더의 변경을 읽지 못했어요. 폴더가 그대로 있는지 확인한 뒤 다시 시도해 주세요.",
@@ -2583,8 +2583,8 @@
     "pushDone": "{count}개 남기고 {upstream} 으로 보냈어요",
     "pushFailed": "{remote} 에 닿지 못했어요. 남긴 {count}걸음은 이 컴퓨터에 그대로 있어요.",
     "stagedOutsideNotice": "이 폴더 밖에서 준비된 변경 {count}건은 건드리지 않아요.",
-    "historyTitle": "최근 발자취",
-    "historyEmpty": "아직 남긴 걸음이 없어요",
+    "historyTitle": "최근 기록",
+    "historyEmpty": "아직 남긴 기록이 없어요",
     "historyItemDetail": "전체 해시 {hash} · {isoTime}",
     "diffShow": "바뀐 줄",
     "diffHide": "바뀐 줄 접기",
@@ -2619,7 +2619,7 @@
     "unpushedSome": "보낼 걸음 {count}개",
     "pullButton": "받아오기",
     "pullButtonCount": "받아올 것 {count}걸음",
-    "historyButton": "최근 발자취",
+    "historyButton": "최근 기록",
     "markAddedHint": "새로 만든 문서",
     "markModifiedHint": "고친 문서",
     "markDeletedHint": "지운 문서",
@@ -2649,7 +2649,7 @@
     "remoteFailedSafe": "남긴 걸음은 이 컴퓨터에 그대로 있어요.",
     "evidenceEmpty": "왼쪽에서 문서를 고르면 무엇이 바뀌었는지 여기에 보여요.",
     "diffTab": "바뀐 줄",
-    "nodeHistoryTab": "이 문서의 발자취",
+    "nodeHistoryTab": "이 문서의 기록",
     "nodeHistoryEmpty": "이 문서는 아직 한 번도 남기지 않았어요.",
     "discardButton": "고친 내용 버리기",
     "discardConfirmTitle": "{name} 에 고친 {lines}줄을 버릴까요?",

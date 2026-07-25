@@ -38,7 +38,7 @@ const scaleGradientSelectors = [
 // "Geometry & Type Codex" 램프(text-caption…text-hero / rounded-chip…panel)
 // 로만 표현한다. 램프 밖의 의도적 예외는 `// eslint-disable-next-line
 // no-restricted-syntax -- <사유>` 로 명시. 마이그레이션 완료 디렉토리 = error,
-// 미완(topology-map-v2 · views/home · hero-header) = warn.
+// 미완(topology-map-v2 · views/home) = warn.
 const arbitrarySizeSelectors = [
   {
     selector: 'Literal[value=/text-\\[[0-9.]+px\\]/]',
@@ -60,6 +60,29 @@ const arbitrarySizeSelectors = [
     message:
       'Geometry Codex — rounded-[Npx] 하드코딩 금지 (template literal). rounded-* 램프로.',
   },
+  // 2026-07-26 — 소유자 질문("박스 모양이나 모서리나 테두리 규격 ... **md말고
+  // 코드로도**")에서 드러난 구멍. `text`/`rounded` 는 잡고 있었는데 **그림자는
+  // 룰이 없었다** — `design.md` 가 `--shadow-elevation-1/2/3` 사다리를 정의해
+  // 놨는데도 하드코딩 rgba 섀도가 5건 살아 있었다(치환 완료).
+  //
+  // **`var(` 가 없는 것만 잡는다.** `shadow-[var(--chrome-shadow)]` 는 Tailwind
+  // 에서 CSS 변수를 참조하는 **정상 문법**이지 위반이 아니다 — 초안에서 `shadow-\[`
+  // 를 통째로 금지했다가 정상 토큰 사용 90여 건까지 경고해 lint 출력이 144 →
+  // 548 로 뛰었다. 노이즈가 신호를 덮으면 게이트는 무력해진다.
+  // ⚠️ 메시지에 **리터럴 유틸리티 문법을 쓰지 말 것.** Tailwind v4 의 소스
+  // 스캐너가 이 파일의 문자열도 훑기 때문에, 예시로 적은 클래스명이 실제
+  // 클래스로 생성된다 — 2026-07-26 에 예시 하나가 `--tw-shadow: var(--...)`
+  // 라는 파싱 불가 CSS 를 만들어 프로덕션 빌드를 깨뜨렸다(Playwright 전체 실패).
+  {
+    selector: 'Literal[value=/shadow-\\[(?:(?!var\\()[^\\]])*\\]/]',
+    message:
+      'Geometry Codex — shadow 하드코딩 금지. --shadow-elevation-1/2/3 (coach-mark < popover < dialog) 또는 --topology-*-shadow 토큰을 shadow 유틸리티 안에서 var() 로 참조한다.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/shadow-\\[(?:(?!var\\()[^\\]])*\\]/]',
+    message:
+      'Geometry Codex — shadow 하드코딩 금지 (template literal). --shadow-elevation-* 토큰을 shadow 유틸리티 안에서 var() 로 참조한다.',
+  },
 ];
 
 // 마이그레이션 완료(치환 끝 · error 봉쇄) 디렉토리.
@@ -74,7 +97,6 @@ const codexMigratedGlobs = [
 // R6(다른 에이전트) 동시 작업 중 — 아직 미치환, warn 으로만 신규 유입 경고.
 const codexR6Globs = [
   'src/widgets/topology-map-v2/**/*.{ts,tsx}',
-  'src/widgets/hero-header/**/*.{ts,tsx}',
   'src/views/home/**/*.{ts,tsx}',
 ];
 // 테스트는 렌더된 className 문자열을 assert 하므로 램프 룰에서 제외.
@@ -305,7 +327,7 @@ const eslintConfig = defineConfig([
     },
   },
   // R6 동시 작업 디렉토리 = warn (미치환 유입만 경고). 위 migrated 블록보다
-  // 뒤라 widgets/topology-map-v2·hero-header 는 여기서 warn 으로 내려간다.
+  // 뒤라 widgets/topology-map-v2 는 여기서 warn 으로 내려간다.
   {
     files: codexR6Globs,
     ignores: codexTestIgnores,

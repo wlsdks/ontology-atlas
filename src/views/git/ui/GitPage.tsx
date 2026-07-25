@@ -36,21 +36,15 @@ export function GitPage() {
   return (
     <main
       data-testid="git-page"
-      className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[color:var(--color-canvas)]"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-canvas)]"
     >
-      <div className="mx-auto flex w-full max-w-[880px] flex-1 flex-col px-4 py-6 sm:px-6">
-        <AtlasGitPanel
-          vaultPath={vaultPath}
-          sessionChangeset={changeset}
-          // 목적지에는 닫기가 없다 — 레일로 다른 곳에 가면 그게 나가기다.
-          // 패널이 모달 시절 헤더에 X 를 그리므로 no-op 을 넘겨 숨긴다.
-          onClose={NOOP_CLOSE}
-          hideClose
-          className="flex-1"
-        />
+      {/* 페이지 프레임 — 모달의 560px 이 아니라 목적지 폭이다. 실측(2026-07-25)
+          에서 `max-w-[880px]` + 상단 정렬이 1200×1223 페이지의 상단 300px 만
+          채워 "미완성" 으로 읽혔다. 컨테이너를 1280 까지 열고 세로로 채운다 —
+          시안 v2 의 2열(좌 1fr + 우 ≥600px)을 담을 수 있는 폭이기도 하다. */}
+      <div className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col overflow-hidden px-4 pt-5 sm:px-8">
+        <AtlasGitPanel vaultPath={vaultPath} sessionChangeset={changeset} className="flex-1" />
       </div>
     </main>
   );
 }
-
-const NOOP_CLOSE = () => {};

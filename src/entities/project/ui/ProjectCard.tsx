@@ -134,9 +134,9 @@ export function ProjectCard({
               ? 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] text-[color:var(--color-indigo-accent)]'
               : 'border-[color:var(--color-border-strong)] bg-[color:rgba(20,21,23,0.96)] text-[color:var(--color-text-primary)] group-hover:border-[color:var(--color-indigo-a26)] group-hover:bg-[color:var(--color-indigo-a08)]',
             selected
-              ? 'h-11 w-11 text-[14px] ring-2 ring-[color:var(--color-indigo-a50)] ring-offset-2 ring-offset-[color:var(--color-canvas)] shadow-[0_16px_34px_rgba(20,24,44,0.46)]'
+              ? 'h-11 w-11 text-[14px] ring-2 ring-[color:var(--color-indigo-a50)] ring-offset-2 ring-offset-[color:var(--color-canvas)] shadow-[var(--shadow-elevation-1)]'
               : related
-                ? 'h-9 w-9 text-[13px] border-[color:var(--color-indigo-a32)] shadow-[0_12px_28px_rgba(20,24,44,0.28)]'
+                ? 'h-9 w-9 text-[13px] border-[color:var(--color-indigo-a32)] shadow-[var(--shadow-elevation-1)]'
                 : dense
                   ? 'h-7 w-7 text-[11px]'
                   : 'h-8.5 w-8.5 text-[12px]',
