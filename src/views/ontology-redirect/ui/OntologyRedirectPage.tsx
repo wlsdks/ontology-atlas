@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import {
+  ONTOLOGY_DEEPLINK_REVIEW_KEY,
   ONTOLOGY_DEEPLINK_VIA_KEY,
   parseInsightsReturnMarker,
   translateOntologyDeeplinkToTopologyParam,
@@ -35,6 +36,7 @@ export function OntologyRedirectPage() {
   const searchParams = useSearchParams();
   const nodeParam = searchParams.get("node");
   const viaParam = searchParams.get(ONTOLOGY_DEEPLINK_VIA_KEY);
+  const reviewParam = searchParams.get(ONTOLOGY_DEEPLINK_REVIEW_KEY);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -46,9 +48,12 @@ export function OntologyRedirectPage() {
     // HomePage 가 이 값으로 "인사이트로 돌아가기" 복귀 칩을 렌더한다.
     if (viaParam && parseInsightsReturnMarker(viaParam)) {
       params.set(ONTOLOGY_DEEPLINK_VIA_KEY, viaParam);
+      if (reviewParam) {
+        params.set(ONTOLOGY_DEEPLINK_REVIEW_KEY, reviewParam);
+      }
     }
     router.replace(`/topology/?${params.toString()}`);
-  }, [router, nodeParam, viaParam]);
+  }, [router, nodeParam, viaParam, reviewParam]);
 
   return null;
 }

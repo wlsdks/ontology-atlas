@@ -36,6 +36,8 @@ describe("buildDoNextQueue (S5 — 할 일 큐)", () => {
     expect(hubRow).toMatchObject({ nodeId: "capability:hub", degree: 5, agoDays: 60 });
     expect(hubRow?.handoffPayload).toContain('blast_radius');
     expect(hubRow?.handoffPayload).toContain("capabilities/hub");
+    expect(hubRow?.handoffPayload).toMatch(/patch_concept.*get_concept.*health/);
+    expect(hubRow?.handoffPayload).toContain('operation:"health"');
   });
 
   it("최근 갱신된 허브·갱신 시점 미상 허브는 방치로 단정하지 않는다", () => {
@@ -61,6 +63,24 @@ describe("buildDoNextQueue (S5 — 할 일 큐)", () => {
     expect(row?.handoffPayload).toContain('elements/alone');
     expect(row?.handoffPayload).toContain("add_relation");
     expect(row?.handoffPayload).toContain("why");
+    expect(row?.handoffPayload).toMatch(/add_relation.*find_neighbors.*health/);
+    expect(row?.handoffPayload).toContain('operation:"health"');
+  });
+
+  it("승격 후보 핸드오프도 쓰기 뒤 health 재검증으로 닫는다", () => {
+    const hub = n("element:core", "element", "elements/core", "Core");
+    const spokes = Array.from({ length: 4 }, (_, i) =>
+      n(`element:s${i}`, "element", `elements/s${i}`),
+    );
+    const edges = spokes.map((spoke) => e(spoke.id, hub.id));
+    const queue = buildDoNextQueue([hub, ...spokes], edges, new Map(), { now: NOW });
+    const promotion = queue.rows.find(
+      (row) => row.rowKind === "promotion" && row.nodeId === hub.id,
+    );
+
+    expect(promotion?.handoffPayload).toContain('operation:"node_profile"');
+    expect(promotion?.handoffPayload).toMatch(/신설.*node_profile.*health/);
+    expect(promotion?.handoffPayload).toContain('operation:"health"');
   });
 
   it("유형별 perKindLimit 로 자르되 counts 는 전체를 정직하게 보고한다", () => {
@@ -68,5 +88,7 @@ describe("buildDoNextQueue (S5 — 할 일 큐)", () => {
     const queue = buildDoNextQueue(orphans, [], new Map(), { now: NOW, perKindLimit: 3 });
     expect(queue.rows.filter((r) => r.rowKind === "orphan")).toHaveLength(3);
     expect(queue.counts.orphan).toBe(8);
+    expect(queue.activeRowIds.filter((id) => id.startsWith("orphan:"))).toHaveLength(8);
+    expect(queue.activeRowIds).toContain("orphan:element:o7");
   });
 });

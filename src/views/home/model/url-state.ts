@@ -2,6 +2,7 @@ import type { ProjectCategory } from "@/entities/project";
 import type { ProjectImpactMode } from "@/entities/project";
 import {
   buildInsightsReturnMarker,
+  ONTOLOGY_DEEPLINK_REVIEW_KEY,
   ONTOLOGY_DEEPLINK_VIA_KEY,
   parseInsightsReturnMarker,
 } from "@/entities/knowledge-graph";
@@ -51,6 +52,11 @@ export interface HomeRouteState {
    * 다시 보이는 게 맞다. Esc 사다리(M-7)에는 참여하지 않는다.
    */
   insightsReturnTab: string | null;
+  /**
+   * `할 일`에서 출발한 정확한 검토 행 id (`?review=`). 유효한 insights
+   * via 마커가 있을 때만 읽고, 지도 상호작용 동안 같이 보존한다.
+   */
+  insightsReturnReviewId: string | null;
   /**
    * 밀도 게이트 (fable 설계) — 클러스터 칩으로 접힌 부모 중 사용자가 펼친
    * 부모 slug 목록 (`?open=slug1,slug2`). 임계(12) 초과 자식을 가진 부모는
@@ -102,6 +108,7 @@ const HOME_QUERY_KEYS = {
   realm: "realm",
   recent: "recent",
   via: ONTOLOGY_DEEPLINK_VIA_KEY,
+  review: ONTOLOGY_DEEPLINK_REVIEW_KEY,
 } as const;
 
 const VALID_IMPACT: ProjectImpactMode[] = [
@@ -131,6 +138,7 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   createNodeIntent: false,
   indexState: null,
   insightsReturnTab: null,
+  insightsReturnReviewId: null,
   expandedParents: [],
   realmSlug: null,
   recentWindow: null,
@@ -317,6 +325,9 @@ export function parseHomeRouteState(
     : VALID_IMPACT.includes(impactParam as ProjectImpactMode)
       ? (impactParam as ProjectImpactMode)
       : DEFAULT_HOME_ROUTE_STATE.impactMode;
+  const insightsReturnTab = parseInsightsReturnMarker(
+    searchParams.get(HOME_QUERY_KEYS.via),
+  );
 
   return {
     selectedSlug,
@@ -333,9 +344,10 @@ export function parseHomeRouteState(
     pathTargetSlug,
     createNodeIntent: searchParams.get(HOME_QUERY_KEYS.create) === "concept",
     indexState: parseIndexPanelStateParam(searchParams.get(HOME_QUERY_KEYS.index)),
-    insightsReturnTab: parseInsightsReturnMarker(
-      searchParams.get(HOME_QUERY_KEYS.via),
-    ),
+    insightsReturnTab,
+    insightsReturnReviewId: insightsReturnTab
+      ? searchParams.get(HOME_QUERY_KEYS.review)
+      : null,
     expandedParents: parseExpandedParentsParam(
       searchParams.get(HOME_QUERY_KEYS.open),
     ),
@@ -476,6 +488,11 @@ export function applyHomeRouteState(
     state.insightsReturnTab
       ? buildInsightsReturnMarker(state.insightsReturnTab)
       : null,
+  );
+  setOrDelete(
+    next,
+    HOME_QUERY_KEYS.review,
+    state.insightsReturnTab ? state.insightsReturnReviewId : null,
   );
 
   return next;

@@ -157,6 +157,10 @@ import {
   type DocsVaultView,
 } from "../lib/persistence";
 import type { LocalFsHandleRecord } from "@/entities/local-fs-handle";
+import {
+  buildOntologyInsightsReturnHref,
+  parseInsightsReturnMarker,
+} from "@/entities/knowledge-graph";
 
 function DocsVaultContent() {
   const t = useTranslations('docsVault');
@@ -165,13 +169,29 @@ function DocsVaultContent() {
   const querySlug = searchParams?.get('slug') ?? null;
   const queryView = parseView(searchParams?.get('view'));
   const queryDogfood = searchParams?.get('dogfood') ?? null;
+  const insightsReturnTab = parseInsightsReturnMarker(
+    searchParams?.get('via'),
+  );
+  const insightsReviewId = insightsReturnTab
+    ? searchParams?.get('review') ?? null
+    : null;
   const projectsListHref = '/projects/';
   // UX 감사 (2026-07): '/' 는 하드 내비게이션 시 vault 복원 전이라 랜딩으로
   // 떨어지는 막다른 길이었다 — 크럼은 항상 지도 허브로 직행.
-  const workspaceHref = '/topology';
+  const workspaceHref = insightsReturnTab
+    ? buildOntologyInsightsReturnHref(insightsReturnTab, insightsReviewId)
+    : '/topology';
   const getDocHref = useCallback(
-    (slug: string, hash?: string) => buildDocsVaultHref({ slug, hash }),
-    [],
+    (slug: string, hash?: string) =>
+      buildDocsVaultHref({
+        slug,
+        hash,
+        via: insightsReturnTab
+          ? `insights:${insightsReturnTab}`
+          : null,
+        reviewId: insightsReviewId,
+      }),
+    [insightsReturnTab, insightsReviewId],
   );
   const getProjectHref = useCallback(
     (slug: string) => `/?p=${encodeURIComponent(slug)}`,
@@ -1501,10 +1521,16 @@ function DocsVaultContent() {
       >
         <Link
           href={workspaceHref}
-          aria-label={t('header.backToWorkspaceAriaLabel')}
+          aria-label={
+            insightsReturnTab
+              ? t('header.backToReviewAriaLabel')
+              : t('header.backToWorkspaceAriaLabel')
+          }
           className="transition-colors hover:text-[color:var(--color-text-primary)]"
         >
-          {t('header.crumbBack')}
+          {insightsReturnTab
+            ? t('header.reviewBack')
+            : t('header.crumbBack')}
         </Link>
         <span className="text-[color:var(--color-text-quaternary)]" aria-hidden>
           /

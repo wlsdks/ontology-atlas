@@ -24,6 +24,7 @@ import {
 } from "@/features/vault-ontology";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { useLocalVault } from "@/features/docs-vault-local";
+import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {
   buildOntologyTree,
@@ -42,10 +43,14 @@ import {
   type InsightsTab,
 } from "../lib/insights-tab-state";
 import { computeDomainCapacityRows } from "../lib/domain-capacity";
-import { buildDoNextQueue } from "../lib/do-next-queue";
+import { buildDoNextQueue, withDoNextVerification } from "../lib/do-next-queue";
 import { pickTodaysTouchUps, type TouchUpItem } from "../lib/todays-touch-ups";
 import { countRecentEntries } from "@/shared/lib/agent-activity-log";
 import { findDependencyCycles, type DependencyCycle } from "../lib/dependency-cycles";
+import {
+  isDoNextReviewId,
+  resolveDoNextReviewState,
+} from "../lib/review-loop";
 import { computeCensusHealth } from "../lib/census-health";
 import { buildDependsOnRows } from "../lib/depends-on-rows";
 import { buildHubEgoThumbnail } from "../lib/hub-ego-thumbnail";
@@ -89,12 +94,18 @@ export function OntologyInsightsPage() {
   const [tab, setTabState] = useState<InsightsTab>(() =>
     parseInsightsTab(searchParams.get("tab")),
   );
+  const [reviewId, setReviewId] = useState<string | null>(() =>
+    parseInsightsTab(searchParams.get("tab")) === "do-next"
+      ? searchParams.get("review")
+      : null,
+  );
 
   useEffect(() => {
     const syncTabFromHistory = () => {
-      setTabState(
-        parseInsightsTab(new URL(window.location.href).searchParams.get("tab")),
-      );
+      const nextParams = new URL(window.location.href).searchParams;
+      const nextTab = parseInsightsTab(nextParams.get("tab"));
+      setTabState(nextTab);
+      setReviewId(nextTab === "do-next" ? nextParams.get("review") : null);
     };
     window.addEventListener("popstate", syncTabFromHistory);
     return () => window.removeEventListener("popstate", syncTabFromHistory);
@@ -123,8 +134,11 @@ export function OntologyInsightsPage() {
   // 돌아온다. 이 페이지의 모든 지도행 링크(허브/의존/신선도 행, 할 일 큐,
   // 수리 큐)가 같은 빌더를 지나므로 한 곳에서 스탬프.
   const mapNodeHref = useCallback(
-    (nodeId: string) =>
-      buildOntologyNodeHref(nodeId, { via: buildInsightsReturnMarker(tab) }),
+    (nodeId: string, exactReviewId?: string) =>
+      buildOntologyNodeHref(nodeId, {
+        via: buildInsightsReturnMarker(exactReviewId ? "do-next" : tab),
+        reviewId: exactReviewId,
+      }),
     [tab],
   );
 
@@ -247,9 +261,27 @@ export function OntologyInsightsPage() {
   // graph id → vault slug(evidenceIds[0]) — MCP 핸드오프는 vault slug 를 쓴다.
   const cycleMcpRef = (nodeId: string): string =>
     nodeById.get(nodeId)?.evidenceIds[0] ?? nodeId.split(":").pop() ?? nodeId;
+  const sourceHref = (nodeId: string, exactReviewId?: string): string | null => {
+    const sourceSlug = nodeById.get(nodeId)?.evidenceIds[0];
+    return sourceSlug
+      ? buildDocsVaultHref({
+          slug: sourceSlug,
+          via: exactReviewId ? buildInsightsReturnMarker("do-next") : null,
+          reviewId: exactReviewId,
+        })
+      : null;
+  };
+  const builderHref = (nodeId: string, exactReviewId?: string): string =>
+    buildOntologyStudioNodeHrefFromGraphId(nodeId, {
+      via: exactReviewId ? buildInsightsReturnMarker("do-next") : null,
+      reviewId: exactReviewId,
+    });
   const cycleHandoff = (cycle: DependencyCycle): string => {
     const closed = [...cycle.nodeIds.map(cycleMcpRef), cycleMcpRef(cycle.nodeIds[0])].join(" → ");
-    return `의존 사이클: ${closed}. query_ontology({operation:"cycles"}) 로 확인 → 어느 방향을 끊을지 판단 → patch_concept 로 dependencies 수정`;
+    return withDoNextVerification(
+      `의존 사이클: ${closed}. query_ontology({operation:"cycles"}) 로 확인 → 어느 방향을 끊을지 판단 → patch_concept 로 dependencies 수정`,
+      'query_ontology({operation:"cycles"}) 로 사이클 해소 확인',
+    );
   };
 
   const setTab = (next: string) => {
@@ -259,12 +291,69 @@ export function OntologyInsightsPage() {
     // focus를 끊지 않고, 재진입·공유 링크는 URL을 다시 초기 진실원으로 읽는다.
     const nextTab = next as InsightsTab;
     setTabState(nextTab);
+    setReviewId(null);
     window.history.replaceState(
       window.history.state,
       "",
       buildInsightsTabHref(nextTab, window.location.pathname),
     );
   };
+
+  const activeReviewIds = useMemo(
+    () =>
+      new Set([
+        ...doNextQueue.activeRowIds,
+        ...dependencyCycles.activeCycleIds.map((id) => `cycle:${id}`),
+      ]),
+    [doNextQueue.activeRowIds, dependencyCycles.activeCycleIds],
+  );
+  const titleByReviewId = useMemo(() => {
+    const titles = new Map<string, string>();
+    for (const row of doNextQueue.rows) titles.set(row.id, row.title);
+    for (const cycle of dependencyCycles.cycles) {
+      const firstNodeId = cycle.nodeIds[0];
+      titles.set(
+        `cycle:${cycle.id}`,
+        nodeById.get(firstNodeId)?.title ?? firstNodeId,
+      );
+    }
+    return titles;
+  }, [doNextQueue.rows, dependencyCycles.cycles, nodeById]);
+  const reviewAuthoritative =
+    dataSourceMode === "local"
+      ? vault.status === "loaded"
+      : vault.status === "idle" || vault.status === "unsupported";
+  const reviewState = useMemo(
+    () =>
+      resolveDoNextReviewState({
+        reviewId,
+        authoritative: reviewAuthoritative,
+        activeReviewIds,
+        titleByReviewId,
+        cycleInventoryLimited: dependencyCycles.limited,
+      }),
+    [
+      reviewId,
+      reviewAuthoritative,
+      activeReviewIds,
+      titleByReviewId,
+      dependencyCycles.limited,
+    ],
+  );
+  const onReviewStart = useCallback(
+    (candidate: { id: string; title: string }) => {
+      setReviewId(candidate.id);
+      const next = new URL(window.location.href);
+      next.searchParams.delete("tab");
+      next.searchParams.set("review", candidate.id);
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${next.pathname}?${next.searchParams.toString()}${next.hash}`,
+      );
+    },
+    [],
+  );
 
   // ③ 오늘의 손질 — 순수 함수가 우선순위/절단/콜드스타트 가드를 처리하고,
   // 표면 문구(why)만 여기서 입힌다. 절단 결과가 3건일 때만 채워진다.
@@ -282,6 +371,7 @@ export function OntologyInsightsPage() {
     totalNodes,
     cycleTitle: cycleNodeTitle,
     cycleHandoff,
+    reviewId: isDoNextReviewId(reviewId) ? reviewId : null,
   }).map((item) => ({
     id: item.id,
     source: item.source,
@@ -364,6 +454,7 @@ export function OntologyInsightsPage() {
       t("doNext.neglectedHubMetric", { degree, days: agoDays }),
     cycleMetric: (length: number) => t("doNext.cycleMetric", { length }),
     openMap: t("doNext.openMap"),
+    openSource: t("doNext.openSource"),
     openBuilder: t("doNext.openBuilder"),
     handoffCopy: t("doNext.handoffCopy"),
     handoffCopied: t("agentCopied"),
@@ -374,10 +465,17 @@ export function OntologyInsightsPage() {
     digestApproveHint: t("doNext.digestApproveHint"),
     digestWhyPrefix: t("doNext.digestWhyPrefix"),
     touchUpBandTitle: t("doNext.touchUpBandTitle"),
-    touchUpRemaining: (count: number) => t("doNext.touchUpRemaining", { count }),
-    touchUpAllDone: t("doNext.touchUpAllDone"),
-    touchUpDone: t("doNext.touchUpDone"),
+    touchUpPriorityCount: (count: number) => t("doNext.touchUpPriorityCount", { count }),
+    touchUpFlowHint: t("doNext.touchUpFlowHint"),
     rowMenuTrigger: t("doNext.rowMenuTrigger"),
+    reviewChecking: (title: string | null) =>
+      t("doNext.reviewChecking", { title: title ?? t("doNext.reviewFallback") }),
+    reviewActive: (title: string | null) =>
+      t("doNext.reviewActive", { title: title ?? t("doNext.reviewFallback") }),
+    reviewCleared: (title: string | null) =>
+      t("doNext.reviewCleared", { title: title ?? t("doNext.reviewFallback") }),
+    reviewUnverified: (title: string | null) =>
+      t("doNext.reviewUnverified", { title: title ?? t("doNext.reviewFallback") }),
   };
   const formatDaysAgo = (days: number) => {
     if (days <= 0) return t("daysAgoToday");
@@ -509,10 +607,13 @@ export function OntologyInsightsPage() {
                 agentReadiness={agentReadiness}
                 healthQueue={healthQueue}
                 mapHref={mapNodeHref}
-                builderHref={buildOntologyStudioNodeHrefFromGraphId}
+                sourceHref={sourceHref}
+                builderHref={builderHref}
                 nodeTitle={cycleNodeTitle}
                 cycleHandoff={cycleHandoff}
                 activityDigest={activityDigest}
+                reviewState={reviewState}
+                onReviewStart={onReviewStart}
                 labels={doNextLabels}
               />
             ) : null}

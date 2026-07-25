@@ -32,6 +32,7 @@ describe("parseHomeRouteState", () => {
       createNodeIntent: true,
       indexState: null,
       insightsReturnTab: null,
+      insightsReturnReviewId: null,
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
@@ -214,6 +215,7 @@ describe("applyHomeRouteState", () => {
       createNodeIntent: true,
       indexState: null,
       insightsReturnTab: null,
+      insightsReturnReviewId: null,
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
@@ -237,6 +239,7 @@ describe("applyHomeRouteState", () => {
       createNodeIntent: false,
       indexState: null,
       insightsReturnTab: null,
+      insightsReturnReviewId: null,
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
@@ -258,6 +261,7 @@ describe("applyHomeRouteState", () => {
       createNodeIntent: false,
       indexState: null,
       insightsReturnTab: null,
+      insightsReturnReviewId: null,
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
@@ -281,6 +285,7 @@ describe("applyHomeRouteState", () => {
         createNodeIntent: false,
         indexState: null,
         insightsReturnTab: null,
+        insightsReturnReviewId: null,
         expandedParents: [],
         realmSlug: null,
         recentWindow: null,
@@ -501,27 +506,38 @@ describe("resolveTopologyNodeClickRouteState", () => {
 describe("insights return marker (?via=insights:<tab>)", () => {
   it("parses a valid insights origin marker into the return tab", () => {
     const params = new URLSearchParams(
-      "p=domain%3Aviews&via=insights%3Astructure",
+      "p=domain%3Aviews&via=insights%3Ado-next&review=neglected-hub%3Adomain%3Aviews",
     );
 
     expect(parseHomeRouteState(params)).toMatchObject({
       selectedSlug: "domain:views",
-      insightsReturnTab: "structure",
+      insightsReturnTab: "do-next",
+      insightsReturnReviewId: "neglected-hub:domain:views",
     });
   });
 
   it("ignores via values that are not the insights marker grammar", () => {
     expect(
       parseHomeRouteState(new URLSearchParams("via=somewhere-else")),
-    ).toMatchObject({ insightsReturnTab: null });
+    ).toMatchObject({
+      insightsReturnTab: null,
+      insightsReturnReviewId: null,
+    });
     // 탭 없는 접두어만으로는 복귀 목적지가 없다 — 칩 미렌더.
     expect(
-      parseHomeRouteState(new URLSearchParams("via=insights")),
-    ).toMatchObject({ insightsReturnTab: null });
+      parseHomeRouteState(
+        new URLSearchParams("via=insights&review=promotion:element:x"),
+      ),
+    ).toMatchObject({
+      insightsReturnTab: null,
+      insightsReturnReviewId: null,
+    });
   });
 
   it("survives map interactions and is deleted only by explicit dismiss", () => {
-    const params = new URLSearchParams("via=insights:do-next");
+    const params = new URLSearchParams(
+      "via=insights:do-next&review=promotion:element:x",
+    );
     const state = parseHomeRouteState(params);
 
     // 노드 클릭(선택) 후에도 마커 유지 — 칩은 지도 탐색 중 사라지지 않는다.
@@ -530,13 +546,18 @@ describe("insights return marker (?via=insights:<tab>)", () => {
     expect(applyHomeRouteState(params, afterClick).get("via")).toBe(
       "insights:do-next",
     );
+    expect(applyHomeRouteState(params, afterClick).get("review")).toBe(
+      "promotion:element:x",
+    );
 
     // 명시 dismiss(칩의 X) 만 마커를 지운다.
     const dismissed = applyHomeRouteState(params, {
       ...afterClick,
       insightsReturnTab: null,
+      insightsReturnReviewId: null,
     });
     expect(dismissed.get("via")).toBeNull();
+    expect(dismissed.get("review")).toBeNull();
   });
 });
 

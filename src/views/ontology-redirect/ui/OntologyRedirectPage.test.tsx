@@ -45,4 +45,25 @@ describe("OntologyRedirectPage", () => {
       "/topology/?index=expanded&p=mcp-server",
     );
   });
+
+  it("forwards a review id only with a valid insights return marker", () => {
+    mocks.searchParams = new URLSearchParams(
+      "node=capability:mcp-server&via=insights:do-next&review=neglected-hub:capability:mcp-server",
+    );
+    render(<OntologyRedirectPage />);
+    expect(mocks.replace).toHaveBeenCalledWith(
+      "/topology/?index=expanded&p=capability%3Amcp-server" +
+        "&via=insights%3Ado-next" +
+        "&review=neglected-hub%3Acapability%3Amcp-server",
+    );
+
+    mocks.replace.mockClear();
+    mocks.searchParams = new URLSearchParams(
+      "node=capability:mcp-server&review=neglected-hub:capability:mcp-server",
+    );
+    render(<OntologyRedirectPage />);
+    expect(mocks.replace).toHaveBeenCalledWith(
+      "/topology/?index=expanded&p=capability%3Amcp-server",
+    );
+  });
 });
