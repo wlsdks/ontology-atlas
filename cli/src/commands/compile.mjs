@@ -24,6 +24,11 @@ const CANONICALIZATION_GRAPH_ARRAY_KEYS = Object.freeze([
   'contains',
   'describes',
   'depends_on',
+  // `broader` (is_a / SKOS) — 공방과 함께 도입됐는데 이 리스트에서 빠져
+  // 있었다(감사 2026-07-25). 이 리스트는 canonical 정렬 검사와 dangling ref
+  // 검사를 **동시에** 구동하므로, 누락은 에이전트가 broader 에 오타 슬러그를
+  // 써도 CI 는 green 을 뜻했다. contract fixture 가 이 drift 를 고정한다.
+  'broader',
 ]);
 const CANONICALIZATION_GRAPH_ARRAY_KEY_SET = new Set(CANONICALIZATION_GRAPH_ARRAY_KEYS);
 const ALLOWED_FLAGS = [

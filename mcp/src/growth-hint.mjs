@@ -25,11 +25,26 @@ function titleCaseFromSlug(slug) {
   return words.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1));
 }
 
+/**
+ * 성장 힌트가 에이전트에게 제안할 슬러그.
+ *
+ * 감사 2026-07-25 — 이 함수만 `[^a-z0-9]` 로 치환해 **한글 제목이 통째로
+ * 지워지고 `untitled` 가 나왔다**. 다른 4개 구현(`shared/lib/slugify.ts` ·
+ * `derive-ontology-from-vault.ts` · `analyze.mjs` · `absorb.mjs`)은 전부
+ * `가-힣` 을 보존한다. `init --locale=ko` 가 기본 지원하는 경로라 한글 vault
+ * 사용자에게는 에이전트가 `untitled.md` 생성을 지시하고, 두 번째 한글 개념에서
+ * 슬러그가 충돌했다.
+ *
+ * 여기서 고치는 것은 **한글 소실 하나**다 — `/` 를 구분자로 남기는 이 함수 고유
+ * 동작(`Payment/Billing` → `payment-billing`)은 그대로 둔다. 5개 구현을 하나로
+ * 합치는 건 별 작업이고, 그걸 이 버그 수정에 끼워 넣으면 다른 방향의 회귀를
+ * 부른다.
+ */
 function slugify(text) {
   const slug = String(text ?? '')
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/[^a-z0-9가-힣]+/g, '-')
     .replace(/^-+|-+$/g, '');
   return slug || 'untitled';
 }

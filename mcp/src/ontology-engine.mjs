@@ -434,8 +434,10 @@ export function createOntologyEngine(artifact, options = {}) {
     const queue = [{ slug: from, hops: [from], edges: [] }];
     const visited = new Set([from]);
 
-    while (queue.length > 0) {
-      const current = queue.shift();
+    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    let head = 0;
+    while (head < queue.length) {
+      const current = queue[head++];
       if (current.hops.length - 1 >= maxHops) continue;
       for (const { next, edge } of traversalEdges(current.slug, direction, typeSet)) {
         if (visited.has(next)) continue;
@@ -928,8 +930,10 @@ export function createOntologyEngine(artifact, options = {}) {
     const collectedEdges = [];
     const queue = [discovered.get(start)];
 
-    while (queue.length > 0 && discovered.size < limit + 2) {
-      const current = queue.shift();
+    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    let head = 0;
+    while (head < queue.length && discovered.size < limit + 2) {
+      const current = queue[head++];
       if (current.distance >= depth) continue;
       const candidates = traversalEdges(current.slug, direction, typeSet);
       for (const { next, edge } of candidates) {
@@ -1093,8 +1097,10 @@ export function createOntologyEngine(artifact, options = {}) {
     const collectedEdges = [];
     const queue = [{ slug: center, distance: 0 }];
 
-    while (queue.length > 0 && discovered.size < limit + 2) {
-      const current = queue.shift();
+    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    let head = 0;
+    while (head < queue.length && discovered.size < limit + 2) {
+      const current = queue[head++];
       if (current.distance >= depth) continue;
       for (const { next, edge } of traversalEdges(current.slug, direction, typeSet)) {
         collectedEdges.push(formatPathEdge(edge, current.slug, next));
@@ -1136,8 +1142,10 @@ export function createOntologyEngine(artifact, options = {}) {
     const collectedEdges = [];
     const queue = [{ slug: center, distance: 0 }];
 
-    while (queue.length > 0 && discovered.size < limit + 2) {
-      const current = queue.shift();
+    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    let head = 0;
+    while (head < queue.length && discovered.size < limit + 2) {
+      const current = queue[head++];
       if (current.distance >= depth) continue;
       for (const { next, edge } of traversalEdges(current.slug, direction, typeSet)) {
         collectedEdges.push(formatPathEdge(edge, current.slug, next));
@@ -1221,8 +1229,10 @@ export function createOntologyEngine(artifact, options = {}) {
     const queue = [{ slug: seed, distance: 0 }];
     let limited = false;
 
-    while (queue.length > 0 && discovered.size < limit + 1) {
-      const current = queue.shift();
+    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    let head = 0;
+    while (head < queue.length && discovered.size < limit + 1) {
+      const current = queue[head++];
       if (current.distance >= depth) continue;
       const candidates = traversalEdges(current.slug, direction, typeSet);
       for (let i = 0; i < candidates.length; i += 1) {
@@ -1936,8 +1946,10 @@ export function createOntologyEngine(artifact, options = {}) {
       const slugs = [];
       visited.add(node.slug);
 
-      while (queue.length > 0) {
-        const current = queue.shift();
+      // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+      let head = 0;
+      while (head < queue.length) {
+        const current = queue[head++];
         slugs.push(current);
 
         for (const { next } of traversalEdges(current, 'undirected', typeSet)) {
@@ -2267,8 +2279,10 @@ export function createOntologyEngine(artifact, options = {}) {
     for (const rootSlug of projectRoots) {
       included.add(rootSlug);
       const queue = [rootSlug];
-      while (queue.length > 0) {
-        const current = queue.shift();
+      // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+      let head = 0;
+      while (head < queue.length) {
+        const current = queue[head++];
         for (const { next } of containmentChildren(current)) {
           if (included.has(next)) continue;
           included.add(next);
@@ -2318,8 +2332,10 @@ export function createOntologyEngine(artifact, options = {}) {
   function collectContainmentScope(rootSlug) {
     const included = new Set([rootSlug]);
     const queue = [rootSlug];
-    while (queue.length > 0) {
-      const current = queue.shift();
+    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    let head = 0;
+    while (head < queue.length) {
+      const current = queue[head++];
       for (const { next } of containmentChildren(current)) {
         if (included.has(next)) continue;
         included.add(next);
@@ -2339,8 +2355,10 @@ export function createOntologyEngine(artifact, options = {}) {
     }
     const visited = new Set([slug]);
     const queue = [slug];
-    while (queue.length > 0) {
-      const current = queue.shift();
+    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    let head = 0;
+    while (head < queue.length) {
+      const current = queue[head++];
       for (const { next } of containmentParentsFor(current)) {
         if (visited.has(next) || !scopeSlugs.has(next)) continue;
         const parent = nodeBySlug.get(next);
@@ -2550,8 +2568,10 @@ export function createOntologyEngine(artifact, options = {}) {
     const queue = [{ slug: center, distance: 0 }];
     let limited = false;
 
-    while (queue.length > 0) {
-      const current = queue.shift();
+    // head pointer 로 dequeue O(1) — Array.shift() 는 O(n) (repo 컨벤션)
+    let head = 0;
+    while (head < queue.length) {
+      const current = queue[head++];
       if (current.distance >= depth) continue;
 
       for (const { next, edge } of containmentTraversalEdges(current.slug, mode)) {
