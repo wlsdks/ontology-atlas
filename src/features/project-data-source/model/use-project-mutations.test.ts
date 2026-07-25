@@ -119,6 +119,46 @@ describe("useProjectMutations path-agnostic project source", () => {
     );
   });
 
+  it("이름 변경 시 스타터 기본값 display_ko/en 을 새 이름으로 동반 갱신한다 (C6)", async () => {
+    const manifest = makeManifest("project", "project");
+    manifest.docs[0].frontmatter = {
+      ...manifest.docs[0].frontmatter,
+      display_ko: "내 프로젝트",
+      display_en: "My project",
+    };
+    mocks.vault.manifest = manifest;
+    const { result } = renderHook(() => useProjectMutations());
+
+    await act(() =>
+      result.current.patchProject("project", { name: "아크메 콘솔" }),
+    );
+
+    expect(mocks.vault.updateFrontmatter).toHaveBeenCalledWith(
+      "project",
+      { title: "아크메 콘솔", display_ko: "아크메 콘솔", display_en: "아크메 콘솔" },
+      { expectedMtime: 123 },
+    );
+  });
+
+  it("사용자가 지정한 display 이름은 rename 시 덮어쓰지 않는다 (C6)", async () => {
+    const manifest = makeManifest("project", "project");
+    manifest.docs[0].frontmatter = {
+      ...manifest.docs[0].frontmatter,
+      display_ko: "커스텀 이름",
+      display_en: "Custom name",
+    };
+    mocks.vault.manifest = manifest;
+    const { result } = renderHook(() => useProjectMutations());
+
+    await act(() => result.current.patchProject("project", { name: "Renamed" }));
+
+    expect(mocks.vault.updateFrontmatter).toHaveBeenCalledWith(
+      "project",
+      { title: "Renamed" },
+      { expectedMtime: 123 },
+    );
+  });
+
   it("루트 project와 같은 slug의 신규 생성을 거부한다", async () => {
     const { result } = renderHook(() => useProjectMutations());
 

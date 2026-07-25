@@ -151,6 +151,7 @@ import {
   shouldShowDesktopVaultWelcome,
   shouldSwitchToDogfoodVault,
   shouldHonorLocalIntent,
+  shouldPreferLocalOnLanding,
   storeListCollapsed,
   storeSource,
   type DocsVaultSource as Source,
@@ -384,6 +385,24 @@ function DocsVaultContent() {
       setSourcePreferenceHydrated(true);
     });
   }, [isDesktopRuntime]);
+
+  // C5 — when a local vault is live, landing on 문서함 must NOT silently flip to
+  // the Sample (`server`) source just because that was the last stored
+  // preference. Users read that flip as "내 데이터가 사라졌다". The local vault
+  // restores asynchronously from IndexedDB, so we watch for it and, ONCE per
+  // mount (before any manual source switch), prefer `local`. The one-shot ref
+  // means a later deliberate switch to Sample is respected — we only guard the
+  // initial landing, never the user's own choice. Not persisted, so we don't
+  // overwrite an intentional stored preference on disk.
+  const autoLocalOnLandingRef = useRef(false);
+  useEffect(() => {
+    if (autoLocalOnLandingRef.current) return;
+    if (!sourcePreferenceHydrated) return;
+    if (shouldPreferLocalOnLanding(localVaultStatus, source)) {
+      autoLocalOnLandingRef.current = true;
+      setSource('local');
+    }
+  }, [sourcePreferenceHydrated, localVaultStatus, source]);
 
   // 문서함 점검 중앙 모달 — design-prescription.md ③-5: 로드마다 모달이 뜨면
   // modality 위반이므로 open 상태는 persist 하지 않고 항상 닫힌 채 시작한다.

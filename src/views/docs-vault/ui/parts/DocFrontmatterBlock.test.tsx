@@ -199,6 +199,32 @@ describe("DocFrontmatterBlock", () => {
     expect(within(example).getByText(/domain: example-domain/)).toBeInTheDocument();
   });
 
+  // C10 — the 공방 CREATE writer stores meaning in a `definition:` frontmatter
+  // key that isn't in GRAPH_KEYS, so it used to be invisible in the read view.
+  it("surfaces the definition frontmatter as an always-visible read-mode lede", () => {
+    const docWithDefinition: VaultDoc = {
+      ...doc,
+      frontmatter: { ...doc.frontmatter, definition: "문의를 접수하고 답변하는 역량." },
+    };
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={docWithDefinition} />
+      </NextIntlClientProvider>,
+    );
+    const lede = screen.getByTestId("doc-frontmatter-definition");
+    // visible without expanding the collapsed frontmatter block
+    expect(lede).toBeInTheDocument();
+    expect(within(lede).getByText("문의를 접수하고 답변하는 역량.")).toBeInTheDocument();
+    expect(within(lede).getByText("정의")).toBeInTheDocument();
+    const details = screen.getByTestId("doc-frontmatter-block").querySelector("details");
+    expect(details).not.toHaveAttribute("open");
+  });
+
+  it("omits the definition lede when no definition frontmatter exists", () => {
+    renderBlock();
+    expect(screen.queryByTestId("doc-frontmatter-definition")).not.toBeInTheDocument();
+  });
+
   it("hides the spec-example disclosure when the document has no recognizable kind", () => {
     const noKindDoc: VaultDoc = {
       ...doc,

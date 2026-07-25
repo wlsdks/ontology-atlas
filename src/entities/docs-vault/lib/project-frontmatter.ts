@@ -15,6 +15,43 @@
 import type { Project, ProjectInput } from '@/entities/project';
 
 /**
+ * Starter `display_<locale>` values shipped by the `ontology-atlas init`
+ * project template (`ontology-starter.ts` PROJECT_MD). C6 — these are treated
+ * as "never customized": when a project is renamed while its display name still
+ * equals one of these, the display key is auto-filled from the new title so the
+ * map/INDEX don't keep showing "내 프로젝트" / "My project" after a rename.
+ * A user who set their own display name is NOT in this set, so their choice is
+ * never overwritten.
+ */
+export const STARTER_PROJECT_DISPLAY_VALUES: ReadonlySet<string> = new Set([
+  '내 프로젝트',
+  'My project',
+]);
+
+/**
+ * Given the existing frontmatter and a new project name, compute the
+ * `display_<locale>` updates needed so stale STARTER display names track the
+ * rename. Returns only the keys that are currently at a starter default (empty
+ * object when there's nothing to sync). C6.
+ */
+export function buildStarterDisplaySync(
+  existingFrontmatter: Record<string, unknown>,
+  newName: string,
+): Record<string, string> {
+  const trimmed = newName.trim();
+  if (!trimmed) return {};
+  const updates: Record<string, string> = {};
+  for (const [key, value] of Object.entries(existingFrontmatter)) {
+    if (!/^display_[a-z]{2}$/.test(key)) continue;
+    if (typeof value !== 'string') continue;
+    if (STARTER_PROJECT_DISPLAY_VALUES.has(value.trim())) {
+      updates[key] = trimmed;
+    }
+  }
+  return updates;
+}
+
+/**
  * Project 직렬화에 사용하는 *optional* 필드 형태 — Project 와 ProjectInput
  * 양쪽이 완전 일치하지 않으므로 (예: position 이 한쪽은 required) 직렬화
  * 시점에 부분집합만 보면 충분하다.

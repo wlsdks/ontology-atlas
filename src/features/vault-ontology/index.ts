@@ -1,5 +1,6 @@
 export { useVaultOntology } from './model/use-vault-ontology';
 export { useOntologyInsight } from './model/use-ontology-insight';
+export { useVaultHealth } from './model/use-vault-health';
 export { useVaultDocFreshnessIndex } from './model/use-vault-doc-freshness';
 export { useAdaptiveRecentChanges } from './model/use-recent-changes';
 export { OntologyLiveBaselineInit } from './ui/OntologyLiveBaselineInit';

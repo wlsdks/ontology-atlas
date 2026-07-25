@@ -80,6 +80,7 @@ const labels = {
   censusRelations: "relations",
   censusDomains: "domains",
   agentSync: "Agent sync",
+  agentSyncIdle: "Agent not connected",
   capabilitiesShort: "caps",
   elementsShort: "elems",
   domainCountTitle: "겹침 포함", freshTitle: "recently updated",
@@ -603,6 +604,50 @@ describe("TopologyIndexPanel", () => {
       expect(control.tagName).toBe("BUTTON");
       fireEvent.click(control);
       expect(onOpenAgentConnect).toHaveBeenCalledTimes(1);
+    });
+
+    // C11 — no heartbeat (no agentActivityHref) must NOT show the progressive
+    // "Updated with AI" copy that implies active sync. Show the neutral idle
+    // label instead.
+    it("shows the neutral idle label (not the progressive sync copy) when there is no heartbeat", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          onOpenAgentConnect={() => {}}
+        />,
+      );
+      const control = screen.getByTestId("topology-index-agent-connect");
+      expect(control).toHaveTextContent("Agent not connected");
+      expect(control).not.toHaveTextContent("Agent sync");
+    });
+
+    it("shows the live sync copy only when connected (agentActivityHref present)", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          onOpenAgentConnect={() => {}}
+          agentActivityHref="/ontology/insights/"
+        />,
+      );
+      const control = screen.getByTestId("topology-index-agent-connect");
+      expect(control).toHaveTextContent("Agent sync");
+      expect(control).not.toHaveTextContent("Agent not connected");
     });
 
     it("deep-links to the activity digest instead of opening the modal when agentActivityHref is set (connected agent)", () => {

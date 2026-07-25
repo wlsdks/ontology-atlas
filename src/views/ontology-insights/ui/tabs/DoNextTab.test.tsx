@@ -27,10 +27,14 @@ const labels: DoNextTabLabels = {
   repairQueueStale: "stale",
   repairQueueOrphan: "orphan",
   repairQueuePromotion: "promotion",
+  repairQueueIsland: "island",
+  repairQueueMissingContainment: "missing link",
   repairQueueEmpty: "Nothing to repair right now.",
   repairQueueActionKindStale: "Stale evidence",
   repairQueueActionKindOrphan: "Orphan",
   repairQueueActionKindPromotion: "Promotion",
+  repairQueueActionKindIsland: "Disconnected island",
+  repairQueueActionKindContainment: "Missing link",
   repairQueueOpenBuilder: "Builder",
   repairQueueOpenOntology: "Map",
   queueTitle: "Worth doing now",
@@ -84,6 +88,8 @@ const emptyHealthQueue = {
   staleCount: 0,
   orphanCount: 0,
   promotionCount: 0,
+  islandCount: 0,
+  missingContainmentCount: 0,
   actionTarget: null,
   builderHref: (slug: string) => `/ontology/edit/?node=${slug}`,
   ontologyHref: (slug: string) => `/ontology/?node=${slug}`,
@@ -278,7 +284,7 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
         cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, activeCycleIds: [], limited: false }}
         agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
         healthQueue={{
-          staleCount: 0, orphanCount: 0, promotionCount: 0, actionTarget: null,
+          staleCount: 0, orphanCount: 0, promotionCount: 0, islandCount: 0, missingContainmentCount: 0, actionTarget: null,
           builderHref: (s) => s, ontologyHref: (s) => s,
         }}
         mapHref={(id) => id}
@@ -314,7 +320,7 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
         cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, activeCycleIds: [], limited: false }}
         agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
         healthQueue={{
-          staleCount: 0, orphanCount: 0, promotionCount: 0, actionTarget: null,
+          staleCount: 0, orphanCount: 0, promotionCount: 0, islandCount: 0, missingContainmentCount: 0, actionTarget: null,
           builderHref: (s) => s, ontologyHref: (s) => s,
         }}
         mapHref={(id) => id}
@@ -353,7 +359,7 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
         cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, activeCycleIds: [], limited: false }}
         agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
         healthQueue={{
-          staleCount: 0, orphanCount: 0, promotionCount: 0, actionTarget: null,
+          staleCount: 0, orphanCount: 0, promotionCount: 0, islandCount: 0, missingContainmentCount: 0, actionTarget: null,
           builderHref: (s) => s, ontologyHref: (s) => s,
         }}
         mapHref={(id) => id}

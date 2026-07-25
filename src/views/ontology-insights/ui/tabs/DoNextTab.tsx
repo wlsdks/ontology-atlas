@@ -34,10 +34,14 @@ export interface DoNextTabLabels {
   repairQueueStale: string;
   repairQueueOrphan: string;
   repairQueuePromotion: string;
+  repairQueueIsland: string;
+  repairQueueMissingContainment: string;
   repairQueueEmpty: string;
   repairQueueActionKindStale: string;
   repairQueueActionKindOrphan: string;
   repairQueueActionKindPromotion: string;
+  repairQueueActionKindIsland: string;
+  repairQueueActionKindContainment: string;
   repairQueueOpenBuilder: string;
   repairQueueOpenOntology: string;
   queueTitle: string;
@@ -106,6 +110,10 @@ export interface DoNextTabHealthQueue {
   staleCount: number;
   orphanCount: number;
   promotionCount: number;
+  // C1 — CLI-parity signals (`ontology-atlas health`): disconnected actionable
+  // islands · capability/element whose domain never links back.
+  islandCount: number;
+  missingContainmentCount: number;
   actionTarget: OntologyHealthActionTarget | null;
   builderHref: (slug: string) => string;
   ontologyHref: (slug: string) => string;
@@ -662,12 +670,15 @@ export function DoNextTab({
           : labels.reviewUnverified(reviewState.title)
     : null;
   const readinessTotal = agentReadiness.ready + agentReadiness.preflight + agentReadiness.review;
+  const REPAIR_ACTION_KIND_LABELS: Record<OntologyHealthActionTarget["kind"], string> = {
+    island: labels.repairQueueActionKindIsland,
+    containment: labels.repairQueueActionKindContainment,
+    stale: labels.repairQueueActionKindStale,
+    orphan: labels.repairQueueActionKindOrphan,
+    promotion: labels.repairQueueActionKindPromotion,
+  };
   const repairActionKindLabel = healthQueue.actionTarget
-    ? healthQueue.actionTarget.kind === "stale"
-      ? labels.repairQueueActionKindStale
-      : healthQueue.actionTarget.kind === "orphan"
-        ? labels.repairQueueActionKindOrphan
-        : labels.repairQueueActionKindPromotion
+    ? REPAIR_ACTION_KIND_LABELS[healthQueue.actionTarget.kind]
     : null;
   // ③↔큐 중복 제거 — "오늘의 손질" 밴드는 큐/사이클 상위에서 절단해 오므로
   // 큐 섹션 첫 행과 100% 겹친다(같은 방치 허브/고아/승격 후보). 밴드에 이미
@@ -839,6 +850,28 @@ export function DoNextTab({
                   {healthQueue.promotionCount}{" "}
                   <span className="text-caption tracking-normal text-[color:var(--color-text-quaternary)]">
                     {labels.repairQueuePromotion}
+                  </span>
+                </span>
+                <span
+                  className={
+                    healthQueue.islandCount === 0 ? "text-[color:var(--color-text-quaternary)]" : undefined
+                  }
+                >
+                  {healthQueue.islandCount}{" "}
+                  <span className="text-caption tracking-normal text-[color:var(--color-text-quaternary)]">
+                    {labels.repairQueueIsland}
+                  </span>
+                </span>
+                <span
+                  className={
+                    healthQueue.missingContainmentCount === 0
+                      ? "text-[color:var(--color-text-quaternary)]"
+                      : undefined
+                  }
+                >
+                  {healthQueue.missingContainmentCount}{" "}
+                  <span className="text-caption tracking-normal text-[color:var(--color-text-quaternary)]">
+                    {labels.repairQueueMissingContainment}
                   </span>
                 </span>
               </span>

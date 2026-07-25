@@ -3382,6 +3382,7 @@ export function HomePage() {
                       censusRelations: t("index.censusRelations"),
                       censusDomains: t("index.censusDomains"),
                       agentSync: t("index.agentSync"),
+                      agentSyncIdle: t("index.agentSyncIdle"),
                       capabilitiesShort: t("index.capabilitiesShort"),
                       elementsShort: t("index.elementsShort"),
                       freshTitle: t("index.freshTitle"),
@@ -3491,6 +3492,9 @@ export function HomePage() {
                       }
                       scaffolding={starterScaffolding}
                       analyzePrompt={t("startChecklist.analyzePrompt")}
+                      // C9 — 힌트가 실제 `.mcp.json` 존재를 반영하도록 실파일
+                      // 상태를 넘긴다("이미 준비됨" 허위 단언 제거).
+                      mcpConfigReady={vault.agentConfigStatus?.mcpJson ?? false}
                     />
                   ) : (
                   <TopologyEmptyState

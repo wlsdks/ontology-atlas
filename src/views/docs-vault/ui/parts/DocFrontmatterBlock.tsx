@@ -308,7 +308,14 @@ export function DocFrontmatterBlock({
     }
   }
 
-  if (fields.length === 0 && codeLocations.length === 0) return null;
+  // C10 — the 공방/CREATE writer stores the node's meaning in a `definition:`
+  // frontmatter key. It isn't in GRAPH_KEYS, so it used to be invisible in the
+  // read view (a hidden typed fact = charter violation). Surface it as a plain,
+  // always-visible lede at the top of the block so the reader sees the node's
+  // meaning without expanding the frontmatter or hunting the body.
+  const definitionValue = formatValue(doc.frontmatter?.definition);
+
+  if (fields.length === 0 && codeLocations.length === 0 && !definitionValue) return null;
 
   const kindValue = currentKind;
   const slugValue = formatValue(doc.frontmatter?.slug) ?? doc.slug;
@@ -355,6 +362,19 @@ export function DocFrontmatterBlock({
       data-testid="doc-frontmatter-block"
       className="mx-auto mt-4 max-w-[760px] px-6 md:px-10"
     >
+      {definitionValue ? (
+        <div
+          data-testid="doc-frontmatter-definition"
+          className="mb-3 border-l-2 border-[color:var(--color-border-strong)] pl-3"
+        >
+          <div className="text-label text-[color:var(--color-text-quaternary)]">
+            {t("definitionLabel")}
+          </div>
+          <p className="mt-0.5 text-body leading-relaxed text-[color:var(--color-text-secondary)]">
+            {definitionValue}
+          </p>
+        </div>
+      ) : null}
       <details
         open={open}
         onToggle={(event) => setOpen(event.currentTarget.open)}

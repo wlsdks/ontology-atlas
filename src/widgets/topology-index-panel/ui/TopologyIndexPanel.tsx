@@ -39,6 +39,8 @@ export interface TopologyIndexPanelLabels {
   censusRelations: string;
   censusDomains: string;
   agentSync: string;
+  /** C11 — 에이전트 heartbeat 이 없을 때(미연결)의 중립 문구. 진행형 금지. */
+  agentSyncIdle: string;
   capabilitiesShort: string;
   elementsShort: string;
   freshTitle: string;
@@ -619,12 +621,15 @@ export function TopologyIndexPanel({
             data-testid="topology-index-agent-connect"
             className="inline-flex min-w-0 items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors enabled:cursor-pointer enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)] enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
           >
+            {/* C11 — 미연결 상태: power-on(인디고) 점 + "AI가 함께 갱신 중"
+                진행형이 heartbeat 없이도 활동을 암시했다. 중립 muted 점 +
+                "에이전트 연결 대기" 로 정정 — 진행형 문구 금지. */}
             <span
               aria-hidden="true"
-              className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-power-on)]"
+              className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-text-quaternary)]"
             />
             <span className="min-w-0 truncate whitespace-nowrap text-[color:var(--topology-v2-panel-text-tertiary)]">
-              {labels.agentSync}
+              {labels.agentSyncIdle}
             </span>
           </button>
         )}

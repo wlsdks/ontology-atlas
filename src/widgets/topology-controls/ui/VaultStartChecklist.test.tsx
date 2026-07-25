@@ -68,6 +68,20 @@ describe("VaultStartChecklist (에이전트-우선, 2026-07-24 소유자 지시)
     renderChecklist();
     expect(screen.getByTestId("checklist-cta-analyze")).toBeInTheDocument();
   });
+
+  // C9 — the hint must reflect the REAL `.mcp.json` state, not assert it is
+  // "already prepared" regardless of whether the file exists.
+  it("shows the pending hint when .mcp.json is not present", () => {
+    renderChecklist({ mcpConfigReady: false });
+    expect(screen.getByText("agentHintPending")).toBeInTheDocument();
+    expect(screen.queryByText("agentHintReady")).not.toBeInTheDocument();
+  });
+
+  it("shows the ready hint only when .mcp.json actually exists", () => {
+    renderChecklist({ mcpConfigReady: true });
+    expect(screen.getByText("agentHintReady")).toBeInTheDocument();
+    expect(screen.queryByText("agentHintPending")).not.toBeInTheDocument();
+  });
 });
 
 // 빈 폴더 스타터 버튼 (2026-07-24) — '기존 폴더 선택'으로 빈 폴더를 연
