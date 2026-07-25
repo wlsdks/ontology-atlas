@@ -1,7 +1,17 @@
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { SEED_PROJECTS } from "./seed-data";
+import {
+  deriveProjectsFromVault,
+  vaultManifest as staticVaultManifestRaw,
+  type VaultManifest,
+} from "@/entities/docs-vault";
+
+// #74 — 예전엔 `SEO_PROJECTS`(제거된 기능을 사실처럼 서술한 데모 15건)를
+// 돌았다. 실제로 빌드되는 라우트는 `generateStaticParams` 가 vault 에서
+// 파생하는 것들이므로 같은 진실원을 본다 — 그래야 이 가드가 실제 산출물을
+// 검사한다.
+const SEO_PROJECTS = deriveProjectsFromVault(staticVaultManifestRaw as VaultManifest);
 
 // T-14. 공개 상세 SEO metadata 정합성 회귀 가드.
 //
@@ -36,7 +46,7 @@ describe("공개 상세 SEO metadata", () => {
 
     const findings: string[] = [];
 
-    for (const project of SEED_PROJECTS) {
+    for (const project of SEO_PROJECTS) {
       const html = await loadHtml(project.slug, outDir);
       if (html === null) {
         // seed 는 있는데 built HTML 이 없으면 T-13 회귀. 해당 test 가 잡으므로 여기선 skip.

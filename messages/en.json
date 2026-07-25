@@ -329,7 +329,7 @@
   "footer": {
     "license": "MIT licensed",
     "github": "GitHub",
-    "stack": "Local-first · Next.js · TypeScript · Sigma.js · MCP"
+    "stack": "Local-first · Next.js · TypeScript · Canvas 2D · MCP"
   },
   "firstRun": {
     "eyebrow": "Local-first workbench",

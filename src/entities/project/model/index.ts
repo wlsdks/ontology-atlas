@@ -8,8 +8,6 @@ export type {
   ProjectInput,
 } from './types';
 export { projectToInput } from './to-input';
-export { SEED_PROJECTS } from './seed-data';
-export { resolveFallbackProjects } from './fallback';
 export { computeHubSlugs, isSharedNode } from './hub';
 export {
   getProjectRelationshipMeta,

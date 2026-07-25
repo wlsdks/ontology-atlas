@@ -23,54 +23,33 @@ function makeProject(slug: string, name: string): Project {
   };
 }
 
+/**
+ * #74 — 정적 모드 fallback(`SEED_PROJECTS` 15건)은 제거됐다. 그 시드는
+ * Firebase Hosting · Sigma/WebGL · 화이트리스트 어드민처럼 **이미 제거된 기능을
+ * 사실처럼** 서술했고, `/project/[slug]` 라우트가 vault 에서 생성되므로 그
+ * slug 들은 애초에 도달 불가였다. 없는 제품을 설명하느니 "없다" 고 말한다.
+ */
 describe("resolveSubscribeUpdate", () => {
-  const iam = makeProject("iam", "IAM");
-  const reactor = makeProject("reactor", "Reactor");
-  const fallback = [iam, reactor];
-
-  it("returns next=null when subscribe list does not contain slug", () => {
-    // regression: 비로그인·데모 세션 으로 인해 구독한 스코프에 iam
-    // 이 없으면 next 가 null 이 되어 호출측이 setProject 를 건너뛴다.
-    const result = resolveSubscribeUpdate(
-      [makeProject("other", "Other")],
-      "iam",
-      fallback,
-    );
+  it("현재 목록에 slug 가 없으면 next=null — 호출부의 not-found 상태가 뜬다", () => {
+    const result = resolveSubscribeUpdate([makeProject("other", "Other")], "iam");
     expect(result.next).toBeNull();
   });
 
-  it("returns project when subscribe list contains slug", () => {
+  it("현재 목록에 slug 가 있으면 그 프로젝트를 돌려준다", () => {
     const freshIam = makeProject("iam", "IAM fresh");
-    const result = resolveSubscribeUpdate([freshIam], "iam", fallback);
+    const result = resolveSubscribeUpdate([freshIam], "iam");
     expect(result.next).toBe(freshIam);
   });
 
-  it("falls back to fallbackProjects for related when latest is empty", () => {
-    const result = resolveSubscribeUpdate([], "iam", fallback);
-    expect(result.related).toBe(fallback);
-    // fallback 에 iam 이 있으므로 next 는 fallback 의 iam 이 돼야 한다.
-    expect(result.next).toBe(iam);
-  });
-
-  it("local source는 latest가 비어도 static fallback fact를 섞지 않는다", () => {
-    const result = resolveSubscribeUpdate([], "iam", fallback, {
-      allowFallback: false,
-    });
-
+  it("목록이 비면 related 도 빈 배열 — 시드 데이터로 채우지 않는다", () => {
+    const result = resolveSubscribeUpdate([], "iam");
     expect(result.next).toBeNull();
     expect(result.related).toEqual([]);
   });
 
-  it("uses latest for related when latest is non-empty (even if slug missing)", () => {
-    const latest = [makeProject("other", "Other")];
-    const result = resolveSubscribeUpdate(latest, "iam", fallback);
-    expect(result.related).toBe(latest);
-    expect(result.next).toBeNull();
-  });
-
-  it("prefers latest over fallback when both contain the slug", () => {
-    const freshIam = makeProject("iam", "IAM fresh");
-    const result = resolveSubscribeUpdate([freshIam], "iam", fallback);
-    expect(result.next?.name).toBe("IAM fresh");
+  it("related 는 항상 현재 목록 그대로 — 두 진실원을 섞지 않는다", () => {
+    const list = [makeProject("iam", "IAM"), makeProject("reactor", "Reactor")];
+    const result = resolveSubscribeUpdate(list, "iam");
+    expect(result.related).toBe(list);
   });
 });
