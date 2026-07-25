@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T23:30:43.179Z",
+  "generatedAt": "2026-07-25T00:00:09.592Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -8201,6 +8201,7 @@
           "elements/locale-switch",
           "elements/product-owner-operating-system-doc",
           "elements/root-locale-redirect",
+          "elements/route-focus-manager",
           "src/shared/ui/live-announcer.tsx",
           "src/shared/ui/toast.tsx",
           "src/widgets/bottom-tab-bar",
@@ -8219,7 +8220,7 @@
       ],
       "excerpt": "cross-cutting. 다크 단일 테마 (라이트 모드는 2026-07-19 전략 폐기), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curso",
       "wordCount": 350,
-      "updatedAt": "2026-07-24T18:32:05+09:00",
+      "updatedAt": "2026-07-24T23:59:59.193Z",
       "linksOut": []
     },
     {
@@ -8470,7 +8471,7 @@
       "headings": [],
       "excerpt": "src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx is the app-wide settings surface. The retired five-tab workbench was simplified in 2026-07 into one centered, single-column sheet with three readable groups: Screen — language plus page-injected view mode and INDEX defaults. Workspace — current vault state, open/chan",
       "wordCount": 455,
-      "updatedAt": "2026-07-24T23:30:35.643Z",
+      "updatedAt": "2026-07-25T08:35:16+09:00",
       "linksOut": []
     },
     {
@@ -8963,6 +8964,33 @@
       "excerpt": "src/shared/ui/locale-redirect.tsx renders the static-export root / locale redirect fallback. It detects ontology-atlas:locale or navigator.language, redirects to /en/ or /ko/, and now keeps a dark inline fallback with direct locale links so the macOS app does not show a blank white root screen when hydration or stale b",
       "wordCount": 53,
       "updatedAt": "2026-06-06T02:19:43+09:00",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/route-focus-manager",
+      "path": "docs/ontology/elements/route-focus-manager.md",
+      "title": "Route Focus Manager",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/route-focus-manager",
+        "kind": "element",
+        "title": "Route Focus Manager",
+        "domain": "onboarding-ux",
+        "dependencies": [
+          "elements/app-nav-rail",
+          "elements/app-settings-menu"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Route Focus Manager",
+          "slug": "route-focus-manager"
+        }
+      ],
+      "excerpt": "src/shared/ui/route-focus-manager.tsx는 영속 AppShell에서 화면 간 client/native navigation의 키보드 읽기 시작점을 소유한다. 실제 pathname surface가 바뀌고 destination이 아직 자체 포커스를 소유하지 않았으면 page h1, h1이 없으면 main으로 포커스를 옮긴다. query/hash만 바뀌는 같은 surface와 locale-only 전환에는 개입하지 않는다. main 내부 제어나 aria-modal dialog가 이미 포커스를 소유하면 덮지 않는다. 정적 export의 Suspens",
+      "wordCount": 121,
+      "updatedAt": "2026-07-24T23:59:59.192Z",
       "linksOut": []
     },
     {
@@ -10272,14 +10300,19 @@
           "slug": "ux-026-ai-설정-드릴인-진입이-열린-modal의-포커스를-문서-루트로-유실"
         },
         {
+          "depth": 3,
+          "text": "UX-027 — 설정에서 문서함으로 이동하면 새 화면의 읽기 시작점을 잃음",
+          "slug": "ux-027-설정에서-문서함으로-이동하면-새-화면의-읽기-시작점을-잃음"
+        },
+        {
           "depth": 2,
           "text": "현재 PO·디자인 판정",
           "slug": "현재-po디자인-판정"
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다. 4. 실패 테스트를 먼저 추가한다. 5. 가장 작은 일관된 슬라이스로 수정한다. 6. 집중 테스트와 /Appl",
-      "wordCount": 7404,
-      "updatedAt": "2026-07-24T23:30:35.642Z",
+      "wordCount": 7831,
+      "updatedAt": "2026-07-24T23:59:59.192Z",
       "linksOut": []
     },
     {
@@ -11780,6 +11813,11 @@
         "fromSlug": "ontology/domains/onboarding-ux",
         "context": "frontmatter · **[elements/app-settings-menu]**",
         "linkText": "elements/app-settings-menu"
+      },
+      {
+        "fromSlug": "ontology/elements/route-focus-manager",
+        "context": "frontmatter · **[elements/app-settings-menu]**",
+        "linkText": "elements/app-settings-menu"
       }
     ],
     "ontology/src/views/docs-vault/ui/DocsVaultPage.tsx": [
@@ -11936,6 +11974,11 @@
       },
       {
         "fromSlug": "ontology/elements/root-locale-redirect",
+        "context": "frontmatter · **[onboarding-ux]**",
+        "linkText": "onboarding-ux"
+      },
+      {
+        "fromSlug": "ontology/elements/route-focus-manager",
         "context": "frontmatter · **[onboarding-ux]**",
         "linkText": "onboarding-ux"
       },
@@ -12846,6 +12889,11 @@
         "linkText": "elements/app-nav-rail"
       },
       {
+        "fromSlug": "ontology/elements/route-focus-manager",
+        "context": "frontmatter · **[elements/app-nav-rail]**",
+        "linkText": "elements/app-nav-rail"
+      },
+      {
         "fromSlug": "ontology/src/widgets/bottom-tab-bar",
         "context": "frontmatter · **[elements/app-nav-rail]**",
         "linkText": "elements/app-nav-rail"
@@ -13243,6 +13291,13 @@
         "fromSlug": "ontology/src/widgets/bottom-tab-bar",
         "context": "frontmatter · **[elements/root-locale-redirect]**",
         "linkText": "elements/root-locale-redirect"
+      }
+    ],
+    "ontology/elements/route-focus-manager": [
+      {
+        "fromSlug": "ontology/domains/onboarding-ux",
+        "context": "frontmatter · **[elements/route-focus-manager]**",
+        "linkText": "elements/route-focus-manager"
       }
     ],
     "ontology/src/widgets/bottom-tab-bar": [
@@ -14291,6 +14346,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/root-locale-redirect",
                 "title": "Root Locale Redirect Fallback"
+              },
+              {
+                "name": "route-focus-manager",
+                "path": "ontology/elements/route-focus-manager",
+                "type": "doc",
+                "slug": "ontology/elements/route-focus-manager",
+                "title": "Route Focus Manager"
               },
               {
                 "name": "sigma-graphology",

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { ReactNode } from 'react';
+import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -21,6 +21,10 @@ import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
 import { cn } from '@/shared/lib/cn';
+import {
+  buildRouteFocusHref,
+  rememberRouteFocusIntent,
+} from '@/shared/ui/route-focus-manager';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
 /**
@@ -215,12 +219,27 @@ export function AppSettingsMenu({
   // 직접 열 수 없다 — 설정을 닫고 문서함으로 이동해 사용자가 이어서 연다.
   const handleOpenWorkflowGuide = () => {
     setOpen(false);
-    router.push('/docs/');
+    rememberRouteFocusIntent('/docs/');
+    router.push(buildRouteFocusHref('/docs/'));
   };
   const vaultHref =
     mode === 'local' ? '/docs/' : isDesktopRuntime ? '/docs/?intent=local' : '/download/';
+  const vaultNavigationHref = buildRouteFocusHref(vaultHref);
   const vaultBody = mode === 'local' ? t('vaultBodyLocal') : t('vaultBodyStatic');
   const vaultCta = mode === 'local' ? t('vaultCtaLocal') : t('vaultCtaStatic');
+  const handleVaultNavigate = (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    rememberRouteFocusIntent(vaultHref);
+  };
 
   // AI 에이전트 요약 1행 — 설정 파일 준비 상태를 한 값으로 접는다. 상세
   // (파일별 상태·수리·복사 패킷·검증 게이트)는 드릴인 서브뷰가 소유.
@@ -648,7 +667,8 @@ export function AppSettingsMenu({
                     ))
                   : null}
                 <Link
-                  href={vaultHref}
+                  href={vaultNavigationHref}
+                  onClick={handleVaultNavigate}
                   className="flex min-h-12 items-center justify-between gap-3 px-3 py-2 transition-colors hover:bg-[color:var(--color-overlay-2)]"
                 >
                   <span className="min-w-0">

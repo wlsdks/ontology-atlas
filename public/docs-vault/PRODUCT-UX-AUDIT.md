@@ -47,6 +47,7 @@
 | A21 | 설정 언어 전환 → 시트 닫힘 → 키보드 흐름 계속 | KO↔EN 동일 responsive 설정 호출점 포커스 복귀 검증 완료 |
 | A22 | 설정 시트 열기 → Tab/Shift+Tab 전체 순회 → Escape | 양방향 focus trap·원호출점 복귀 설치 앱 검증 완료 |
 | A23 | 설정 AI 에이전트 드릴인 → 뒤로가기/Escape → 루트 복귀 | 드릴인·루트 양방향 포커스 연속성 설치 앱 검증 완료 |
+| A24 | 설정 문서함 링크 → client/native route 전환 → 새 화면 읽기 시작 | 늦은 vault 렌더까지 기다린 h1 포커스 설치 앱 검증 완료 |
 
 ## 이슈 장부
 
@@ -901,12 +902,63 @@
   `summary 앱 설정 열기`, `Value: off`로 복귀했다.
 - PO·디자인 판정: **Build and verify**
 
+### UX-027 — 설정에서 문서함으로 이동하면 새 화면의 읽기 시작점을 잃음
+
+- 심각도: `S3`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 지도 설정 열기 → Tab으로 `문서함` → Return → 문서함 과업 시작
+- 관측 현상: 설치 앱에서 `/ko/topology/`의 설정 문서함 링크를 Return으로
+  실행하면 `/ko/docs/?slug=README`로 정상 이동하지만 AX focused element는
+  새 WebView의 `HTML content`였다. 새 화면의 `문서함` h1이나 main landmark는
+  읽기 시작점을 소유하지 않았다.
+- 사용자 문제: 키보드·스크린리더 사용자는 화면이 바뀌었다는 사실과 새 과업의
+  제목을 즉시 확인하지 못하고, skip link와 전역 내비게이션부터 다시 순회해야
+  문서함 제어에 도달한다.
+- 사용자 순간: 지도에서 vault 문서를 직접 확인하거나 작업공간 폴더·문서 상태를
+  이어서 관리하려고 설정의 `문서함` CTA를 실행한 순간이다.
+- 현재 대안: 화면 전환을 시각적으로 추정한 뒤 Tab을 반복하거나, 브라우저의
+  문서 루트부터 새 화면의 h1을 수동으로 다시 탐색한다.
+- 온톨로지·에이전트 가치: 사람의 route 전환과 에이전트가 재현하는 URL이
+  동일한 새 surface의 제목·과업 경계를 가리켜야 handoff가 어디서 시작되는지
+  명확하다.
+- 최소화: query/hash만 바뀌는 같은 surface와 locale만 바뀌는 같은 과업은
+  건드리지 않는다. 실제 pathname이 다른 client navigation이 기존 포커스를
+  잃었거나, 호출점이 native navigation에도 남는 임시 `focus=main` 의도를
+  붙인 경우에만 새 page h1(없으면 `#main`)을 programmatic focus 대상으로
+  삼는다. 표식은 소비 즉시 URL에서 제거한다. 새 카피·토큰·모션·레이아웃은
+  추가하지 않는다.
+- 디자인 계약: route가 바뀌면 새 surface가 `base task`를 소유하고 그 h1이
+  첫 `active focus`다. URL query로 문서·노드 선택만 바뀌는 경우에는 현재
+  세부 과업의 포커스를 유지한다. locale 전환은 A21의 동일 설정 return point
+  계약을 우선한다.
+- 수정: 영속 `AppShell`의 `RouteFocusManager`가 pathname surface를 비교하고,
+  설정 문서함/agent workflow CTA는 session intent와 native-navigation-safe
+  `focus=main` query를 함께 남긴다. 정적 export의 Suspense와 로컬 vault
+  자동 복원이 shell보다 늦게 끝나므로 첫 `#main`을 즉시 잡지 않는다.
+  DOM이 120ms 안정된 뒤 page h1을 focus하고, 최대 2초까지만 관찰한다.
+  destination이 이미 main 내부 제어나 `aria-modal` dialog에 포커스를 둔
+  경우에는 그 소유권을 덮지 않는다.
+- 회귀 증거: 초기 mount 무개입, pathname 전환, h1 없는 main fallback,
+  workbench header의 main 바깥 h1, query-only·locale-only 무개입,
+  destination-owned focus, shell remount session intent, native URL intent,
+  Suspense 지연 및 loading→ready surface 교체를 route manager 테스트 10개로
+  고정했다. 설정 link intent와 A21–A23 회귀를 포함한 집중 테스트는
+  `3 파일 · 38개`, TypeScript와 touched ESLint가 통과했다.
+- 설치 앱 증거: `/Applications/Ontology Atlas.app`의 `/ko/topology/`에서
+  설정을 열고 Tab으로 `문서함` 링크를 선택해 Return을 실행했다. 링크의
+  native 목적지는 `/ko/docs/?focus=main`이었고, 로컬 vault가 복원된 최종
+  URL은 표식이 제거된 `/ko/docs/?slug=README`였다. AX focused element는
+  `heading 문서함, Value: 1`이어서 새 surface의 읽기 시작점을 정확히
+  소유했다. production build, desktop app build/deploy도 통과했다.
+- PO·디자인 판정: **Build and verify**
+
 ## 현재 PO·디자인 판정
 
 - A1/A2 수정 슬라이스: **Build and verify**
 - A20/A21 반응형·모션·포커스 연속성 슬라이스: **Build and verify**
 - A22 modal 키보드 경계 슬라이스: **Build and verify**
 - A23 nested settings task 포커스 슬라이스: **Build and verify**
+- A24 client route 읽기 시작점 슬라이스: **Build and verify**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

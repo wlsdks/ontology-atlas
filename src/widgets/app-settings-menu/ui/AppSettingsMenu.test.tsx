@@ -1,11 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppSettingsMenu } from './AppSettingsMenu';
 
 const mocks = vi.hoisted(() => ({
   isDesktopRuntime: false,
   locale: 'en',
+  rememberRouteFocusIntent: vi.fn(),
 }));
 
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({
@@ -16,6 +17,12 @@ vi.mock('@/shared/lib/tauri-vault-fs', () => ({
 
 vi.mock('@/shared/lib/use-copy-feedback', () => ({
   useCopyFeedback: () => ({ state: 'idle' as const, copy: vi.fn() }),
+}));
+
+vi.mock('@/shared/ui/route-focus-manager', () => ({
+  buildRouteFocusHref: (href: string) =>
+    `${href}${href.includes('?') ? '&' : '?'}focus=main`,
+  rememberRouteFocusIntent: mocks.rememberRouteFocusIntent,
 }));
 
 vi.mock('@/features/locale-switch', () => ({
@@ -63,9 +70,21 @@ vi.mock('@/i18n/navigation', () => ({
   Link: ({
     href,
     children,
+    onClick,
     ...props
-  }: { href: string; children: ReactNode } & Record<string, unknown>) => (
-    <a href={href} {...props}>
+  }: {
+    href: string;
+    children: ReactNode;
+    onClick?: MouseEventHandler<HTMLAnchorElement>;
+  } & Record<string, unknown>) => (
+    <a
+      href={href}
+      onClick={(event) => {
+        onClick?.(event);
+        event.preventDefault();
+      }}
+      {...props}
+    >
       {children}
     </a>
   ),
@@ -91,13 +110,14 @@ function openSheet(ui?: ReactNode) {
 describe('AppSettingsMenu desktop acquisition boundary', () => {
   beforeEach(() => {
     mocks.isDesktopRuntime = false;
+    mocks.rememberRouteFocusIntent.mockClear();
   });
 
   it('routes the hosted browser vault action to the app download page', () => {
     openSheet();
     expect(
       screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
-    ).toHaveAttribute('href', '/download/');
+    ).toHaveAttribute('href', '/download/?focus=main');
   });
 
   it('keeps the installed desktop app vault action on the native local picker path', () => {
@@ -105,14 +125,23 @@ describe('AppSettingsMenu desktop acquisition boundary', () => {
     openSheet();
     expect(
       screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
-    ).toHaveAttribute('href', '/docs/?intent=local');
+    ).toHaveAttribute('href', '/docs/?intent=local&focus=main');
   });
 
   it('sends an already-loaded local vault straight back to /docs', () => {
     openSheet(<AppSettingsMenu mode="local" />);
     expect(
       screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
-    ).toHaveAttribute('href', '/docs/');
+    ).toHaveAttribute('href', '/docs/?focus=main');
+  });
+
+  it('records the destination reading-start intent before activating the vault link', () => {
+    openSheet(<AppSettingsMenu mode="local" />);
+    fireEvent.click(
+      screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
+    );
+
+    expect(mocks.rememberRouteFocusIntent).toHaveBeenCalledWith('/docs/');
   });
 });
 
