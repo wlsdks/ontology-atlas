@@ -13,8 +13,6 @@ import {
   useAgentConnectLauncher,
 } from "@/widgets/agent-connect";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
-import { AtlasGitLauncherProvider } from "@/shared/lib/atlas-git-launcher";
-import { AtlasGitPanelHost } from "./NavRailGitTile";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
@@ -46,16 +44,15 @@ import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <NavRailShellProvider>
+      {/* 2026-07-25 — 발자취 모달 런처 제거. 목적지(`/git/`)가 lg+ 레일과
+          `<lg` 크롬 타일 양쪽에서 같은 표면을 담당하므로 셸에 상주하는 모달이
+          더는 필요 없다(런처·패널 호스트·구 레일 타일 전부 도달 불가였다). */}
       <AgentConnectLauncherProvider>
-        {/* #65 — 발자취(Atlas Git) 패널도 셸 상주. `<lg` 에서는 레일이 숨으므로
-            지도의 크롬 타일이 같은 런처로 같은 패널을 연다. */}
-        <AtlasGitLauncherProvider renderPanel={AtlasGitPanelHost}>
-          <RouteFocusManager />
-          <div className="flex w-full">
-            <AppNavRailSlot />
-            <div className="flex min-w-0 flex-1 flex-col">{children}</div>
-          </div>
-        </AtlasGitLauncherProvider>
+        <RouteFocusManager />
+        <div className="flex w-full">
+          <AppNavRailSlot />
+          <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+        </div>
       </AgentConnectLauncherProvider>
     </NavRailShellProvider>
   );

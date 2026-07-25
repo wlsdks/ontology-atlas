@@ -13,7 +13,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 // `History as HistoryIcon` — 전역 DOM History 생성자와의 충돌 원천 차단
 // (사용성 검수 P0, AtlasGitPanel 과 동일 처방).
@@ -29,7 +29,6 @@ import {
   useFirstRunSampleModeSettled,
 } from "@/features/first-run-starter";
 import { useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
-import { useAtlasGitLauncher } from "@/shared/lib/atlas-git-launcher";
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { SearchHint } from "@/widgets/search-hint";
@@ -645,7 +644,6 @@ export function HomePage() {
   // 선택 노드를 자기 .md 문서로 해석해 전체 상세(A1)의 본문 인라인 편집을 허용.
   // 발자취(Atlas Git) 패널 — 레일 타일 클릭으로 열리는 스냅샷/히스토리 표면.
   // #65 — 발자취 패널은 셸 소유. `<lg` 크롬 타일은 같은 런처로 그 패널을 연다.
-  const atlasGit = useAtlasGitLauncher();
   // Tauri 데스크톱이면 vault 절대 경로(브리지 활성), 웹 FSA 핸들이면 null →
   // 타일/패널이 세션 changeset 기반으로 정직하게 강등한다.
   const gitVaultPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
@@ -2902,22 +2900,22 @@ export function HomePage() {
                         </button>
                       </Tooltip>
                     ) : null}
-                    {/* 발자취(Atlas Git) <lg 진입점 (P2 결함⑤, 사용성 전수
-                        검수 2026-07-23) — <lg 에서 내비 레일이 사라지며
-                        스포트라이트·설정은 이 유틸리티 레인으로 이식됐는데
-                        발자취(GitStatusTile) 만 진입 경로가 완전히
-                        소실됐다. 설정 기어와 같은 --chrome-tile-size
-                        문법으로 같은 열에 추가 — 클릭은 레일 슬롯과 동일한
-                        setGitPanelOpen(true). 비개발(plain) 모드는 레일
-                        슬롯(위 navRailSettingsSlot)과 같은 계약으로 숨긴다. */}
-                    {audiencePlain ? null : (
-                      <button
-                        type="button"
-                        onClick={atlasGit.open}
+                    {/* 발자취 <lg 진입점. `lg+` 는 레일 목적지가 담당하고
+                        레일이 사라지는 `<lg` 에서는 이 크롬 타일이 같은
+                        목적지로 보낸다 — 브레이크포인트가 달라도 **같은
+                        표면**을 본다.
+
+                        2026-07-25: 이 타일은 원래 560px 모달을 열었다. 발자취가
+                        목적지로 승격되면서 링크로 바꿨다 — 모바일만 모달을 보면
+                        같은 기능이 두 표면으로 갈린다. `audiencePlain` 게이트도
+                        제거: 목적지는 전 청중에 노출한다("누가 언제 무슨 의미를
+                        바꿨나" 는 기획자·임원도 보는 정보이고 개발 작업이 아니다).
+                        청중에 따라 진입점 수가 달라지는 것 자체가 #65 계열이다. */}
+                    {(
+                      <Link
+                        href="/git/"
                         aria-label={tAtlasGit('tileLabel')}
                         title={tAtlasGit('tileLabel')}
-                        aria-haspopup="dialog"
-                        aria-expanded={atlasGit.isOpen}
                         data-testid="topology-footprint-lg-tile"
                         className="relative lg:hidden flex size-[var(--chrome-tile-size)] items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
                       >
@@ -2929,7 +2927,7 @@ export function HomePage() {
                             className="absolute right-1.5 top-1 h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-warning)]"
                           />
                         ) : null}
-                      </button>
+                      </Link>
                     )}
                     {/* 설정 <lg 진입점 (겹침 소탕 2026-07-23) — 내비 레일
                         (lg+ 전용)의 설정 슬롯이 사라지는 <lg 에서 설정 접근
