@@ -37,7 +37,6 @@ export {
   utf8ToBase64,
   type McpStdioConfig,
 } from './lib/mcp-deeplinks';
-export { LocalVaultPicker } from './ui/LocalVaultPicker';
 export {
   AgentClientButtons,
   type AgentClientButtonsProps,

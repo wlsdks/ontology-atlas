@@ -334,7 +334,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop local vault picker exposes recent vault recall, stale-path cleanup, hosted\/runtime filtering, and vault-local agent config validation/,
+    /✓ desktop workspace settings expose recent vault recall, absolute vault path copy\/reveal, stale-path cleanup, and vault-local agent config validation/,
   );
   assert.match(
     result.stdout,

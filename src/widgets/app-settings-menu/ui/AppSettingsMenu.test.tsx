@@ -5,18 +5,23 @@ import { AppSettingsMenu } from './AppSettingsMenu';
 
 const mocks = vi.hoisted(() => ({
   isDesktopRuntime: false,
+  vaultRootPath: null as string | null,
+  vaultStatus: 'idle' as string,
+  vaultHandleName: null as string | null,
+  revealInFinder: vi.fn(),
+  copyPath: vi.fn(),
   locale: 'en',
   rememberRouteFocusIntent: vi.fn(),
 }));
 
 vi.mock('@/shared/lib/tauri-vault-fs', () => ({
   isTauriVaultRuntime: () => mocks.isDesktopRuntime,
-  getTauriVaultRootPath: () => null,
-  openTauriVaultInFinder: vi.fn(),
+  getTauriVaultRootPath: () => mocks.vaultRootPath,
+  openTauriVaultInFinder: (...args: unknown[]) => mocks.revealInFinder(...args),
 }));
 
 vi.mock('@/shared/lib/use-copy-feedback', () => ({
-  useCopyFeedback: () => ({ state: 'idle' as const, copy: vi.fn() }),
+  useCopyFeedback: () => ({ state: 'idle' as const, copy: mocks.copyPath }),
 }));
 
 vi.mock('@/shared/ui/route-focus-manager', () => ({
@@ -47,8 +52,8 @@ vi.mock('@/features/locale-switch', () => ({
 // VaultAgentSetupPanel.test.tsx 가 별도로 커버).
 vi.mock('@/features/docs-vault-local', () => ({
   useLocalVault: () => ({
-    status: 'idle',
-    handle: null,
+    status: mocks.vaultStatus,
+    handle: mocks.vaultHandleName ? { name: mocks.vaultHandleName } : null,
     manifest: null,
     agentConfigStatus: null,
     errorMessage: null,
@@ -421,5 +426,52 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     fireEvent.click(screen.getByTestId('app-settings-glyph-set-line'));
     expect(screen.getByTestId('app-settings-glyph-set-line')).toHaveAttribute('aria-checked', 'true');
     expect(window.localStorage.getItem('ontology-atlas:glyph-set:v1')).toBe('line');
+  });
+});
+
+
+// #72 — 선택한 vault 의 절대 경로 확인/복사/Finder 열기. B2 병합에서
+// `VaultToolsMenu` 가 삭제되며 이 표면을 담당하던 `LocalVaultPicker` 가 아무
+// 데도 마운트되지 않는 고아가 됐고, 데스크톱 사용자는 "이 vault 가 디스크
+// 어디에 있나" 를 확인할 방법을 잃었다(opus5 검수 2026-07-25). 그 컴포넌트는
+// 자기 테스트에서 직접 렌더돼 통과하고 있었다 — false-green.
+describe('AppSettingsMenu — vault 절대 경로 (#72)', () => {
+  beforeEach(() => {
+    mocks.vaultRootPath = null;
+    mocks.vaultStatus = 'idle';
+    mocks.vaultHandleName = null;
+    mocks.revealInFinder.mockClear();
+    mocks.copyPath.mockClear();
+  });
+
+  it('웹(경로 없음)에서는 경로 행이 없다 — 없는 값을 있는 척하지 않는다', () => {
+    mocks.vaultStatus = 'loaded';
+    mocks.vaultHandleName = 'my-vault';
+    openSheet();
+
+    expect(screen.queryByTestId('app-settings-vault-path')).not.toBeInTheDocument();
+  });
+
+  it('데스크톱에서 절대 경로를 보여주고 복사/Finder 열기를 제공한다', () => {
+    mocks.vaultStatus = 'loaded';
+    mocks.vaultHandleName = 'my-vault';
+    mocks.vaultRootPath = '/Users/me/Team Vault/docs/ontology';
+    openSheet();
+
+    const row = screen.getByTestId('app-settings-vault-path');
+    expect(row).toHaveTextContent('/Users/me/Team Vault/docs/ontology');
+
+    fireEvent.click(screen.getByTestId('app-settings-copy-vault-path'));
+    expect(mocks.copyPath).toHaveBeenCalledWith('/Users/me/Team Vault/docs/ontology');
+
+    fireEvent.click(screen.getByTestId('app-settings-reveal-vault-path'));
+    expect(mocks.revealInFinder).toHaveBeenCalledWith('/Users/me/Team Vault/docs/ontology');
+  });
+
+  it('vault 가 안 열려 있으면 경로 행도 없다', () => {
+    mocks.vaultRootPath = '/Users/me/stale';
+    openSheet();
+
+    expect(screen.queryByTestId('app-settings-vault-path')).not.toBeInTheDocument();
   });
 });
