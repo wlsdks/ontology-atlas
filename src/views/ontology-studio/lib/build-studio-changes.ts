@@ -64,7 +64,19 @@ export function reduceStudioChanges(
     case "undo":
       return prev.filter((_, i) => i !== action.index);
     case "add": {
+      const existing = findForTarget(prev, action.target.id);
       const rest = withoutTarget(prev, action.target.id);
+      // 끊어둔(아직 저장 전) 노드를 다른 방위에 다시 이으면 실제로 필요한 건
+      // "옮기기" 한 건이다 — remove 를 버리고 add 만 남기면 원래 방위의 관계가
+      // 디스크에 그대로 남아 유령 관계가 된다(opus5 검수). 같은 방위로 되돌리면
+      // 상쇄. `remove` 는 이미 TRUE original bearing 을 들고 있다.
+      if (existing?.op === "remove") {
+        if (existing.relation === action.relation) return rest;
+        return [
+          ...rest,
+          { op: "retype", from: existing.relation, to: action.relation, target: action.target },
+        ];
+      }
       return [...rest, { op: "add", relation: action.relation, target: action.target }];
     }
     case "remove": {
