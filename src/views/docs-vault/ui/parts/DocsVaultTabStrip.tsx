@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { useTranslations } from "next-intl";
 import { FileText, X } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
@@ -49,6 +49,7 @@ export function DocsVaultTabStrip({
 }: DocsVaultTabStripProps) {
   const activeTabRef = useRef<HTMLButtonElement | null>(null);
   const stripRef = useRef<HTMLElement | null>(null);
+  const pendingKeyboardCloseRef = useRef<string | null>(null);
   // 열린 문서 워킹셋이 스트립 폭을 넘칠 때, 숨은 탭이 있는 쪽에만 엣지
   // 페이드를 켠다 — 넘침 어포던스 0(조용한 은닉) 결함 정정. mask 알파만
   // 쓰므로 색/glow/모션 0, reduced-motion 무관.
@@ -114,6 +115,16 @@ export function DocsVaultTabStrip({
     });
     return () => cancelAnimationFrame(frame);
   }, [activeSlug, tabs.length]);
+
+  useLayoutEffect(() => {
+    const closedSlug = pendingKeyboardCloseRef.current;
+    if (!closedSlug || tabs.some((tab) => tab.slug === closedSlug)) return;
+
+    const nextActiveTab = activeTabRef.current;
+    if (!nextActiveTab) return;
+    nextActiveTab.focus({ preventScroll: true });
+    pendingKeyboardCloseRef.current = null;
+  }, [activeSlug, tabs]);
 
   if (tabs.length === 0) return null;
 
@@ -189,6 +200,13 @@ export function DocsVaultTabStrip({
               aria-label={t("tabs.closeAria", { title: tab.title })}
               onClick={(event) => {
                 event.stopPropagation();
+                // 키보드 activation(click.detail=0)으로 ×를 누르면 해당 버튼은
+                // 즉시 DOM에서 사라진다. 새 활성 탭 렌더 뒤 그 탭 라벨로
+                // 포커스를 넘겨 문서 워킹셋의 현재 위치를 보존한다. 포인터
+                // 클릭은 브라우저의 자연 포커스 정책을 그대로 둔다.
+                if (event.detail === 0) {
+                  pendingKeyboardCloseRef.current = tab.slug;
+                }
                 onClose(tab.slug);
               }}
               className={cn(

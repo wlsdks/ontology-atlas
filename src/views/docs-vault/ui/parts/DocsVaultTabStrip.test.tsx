@@ -1,5 +1,6 @@
 import { fireEvent, render } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
+import { useState } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../../messages/ko.json";
 import type { useTranslations } from "next-intl";
@@ -87,5 +88,42 @@ describe("DocsVaultTabStrip — 오버플로 엣지 페이드 신호", () => {
     mockScrollMetrics(nav, { scrollLeft: 1700, clientWidth: 300, scrollWidth: 2000 });
     fireEvent.scroll(nav);
     expect(nav.getAttribute("data-edge-overflow")).toBe("left");
+  });
+});
+
+describe("DocsVaultTabStrip — 키보드 닫기 포커스", () => {
+  it("활성 탭의 닫기 버튼이 사라지면 새 활성 이웃 탭으로 포커스를 넘긴다", () => {
+    const t = ((key: string, values?: Record<string, unknown>) => {
+      if (key === "tabs.closeAria") return `${values?.title} 닫기`;
+      if (key === "tabs.stripAriaLabel") return "열린 문서";
+      return key;
+    }) as unknown as ReturnType<typeof useTranslations<"docsVault">>;
+
+    function Harness() {
+      const [tabs, setTabs] = useState(makeTabs(3));
+      const [activeSlug, setActiveSlug] = useState("doc-2");
+      return (
+        <NextIntlClientProvider locale="ko" messages={koMessages}>
+          <DocsVaultTabStrip
+            tabs={tabs}
+            activeSlug={activeSlug}
+            onActivate={setActiveSlug}
+            onClose={(slug) => {
+              setTabs((current) => current.filter((tab) => tab.slug !== slug));
+              if (slug === activeSlug) setActiveSlug("doc-1");
+            }}
+            t={t}
+          />
+        </NextIntlClientProvider>
+      );
+    }
+
+    const { getByRole } = render(<Harness />);
+    const closeButton = getByRole("button", { name: "문서 2 닫기" });
+    closeButton.focus();
+
+    fireEvent.click(closeButton, { detail: 0 });
+
+    expect(getByRole("button", { name: "문서 1" })).toHaveFocus();
   });
 });

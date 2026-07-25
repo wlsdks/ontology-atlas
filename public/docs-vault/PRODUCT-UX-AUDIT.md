@@ -48,6 +48,7 @@
 | A22 | 설정 시트 열기 → Tab/Shift+Tab 전체 순회 → Escape | 양방향 focus trap·원호출점 복귀 설치 앱 검증 완료 |
 | A23 | 설정 AI 에이전트 드릴인 → 뒤로가기/Escape → 루트 복귀 | 드릴인·루트 양방향 포커스 연속성 설치 앱 검증 완료 |
 | A24 | 설정 문서함 링크 → client/native route 전환 → 새 화면 읽기 시작 | 늦은 vault 렌더까지 기다린 h1 포커스 설치 앱 검증 완료 |
+| A25 | 문서함 문서 선택 → 활성 탭 닫기 → 이웃 문서 계속 읽기 | 키보드 닫기 뒤 이웃 활성 탭 포커스 복귀 설치 앱 검증 완료 |
 
 ## 이슈 장부
 
@@ -952,6 +953,44 @@
   소유했다. production build, desktop app build/deploy도 통과했다.
 - PO·디자인 판정: **Build and verify**
 
+### UX-028 — 활성 문서 탭을 키보드로 닫으면 포커스가 앱 루트로 유실
+
+- 심각도: `S3`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 문서함 지도 문서 선택 → 열린 활성 탭의 닫기 버튼에 Tab 이동 →
+  Return → 왼쪽 우선 이웃 문서에서 작업 계속
+- 관측 현상: 문서 선택과 범위 전환은 호출 행·탭 포커스를 유지했지만, 활성
+  문서의 닫기 버튼을 Return으로 실행하면 해당 DOM이 제거된 뒤 AX focused
+  element가 `HTML content`로 떨어졌다. URL과 본문은 이웃 문서로 정상
+  전환됐으나 열린 문서 스트립의 현재 위치를 잃었다.
+- 사용자 문제: 키보드·스크린리더 사용자는 새 활성 문서가 무엇인지 바로
+  확인하지 못하고, 전역 내비게이션과 문서함 헤더를 처음부터 다시 순회해야
+  워킹셋으로 돌아올 수 있다.
+- 사용자 순간: 여러 ontology 근거 문서를 나란히 열고 검토하다 끝낸 문서를
+  닫은 뒤 인접 문서의 판단을 이어가려는 순간이다.
+- 현재 대안: URL·본문 변경을 시각적으로 추정한 뒤 Tab을 반복하거나 포인터로
+  새 활성 탭을 다시 선택한다.
+- 온톨로지·에이전트 가치: 사람이 읽는 활성 source record와 `?slug=`로
+  에이전트에게 재현되는 문서가 바뀔 때, UI의 읽기 위치도 같은 워킹셋 문서를
+  가리켜야 인계의 현재 근거가 분명하다.
+- 최소화: 탭 수명·닫기 순서·URL·카피·토큰·모션은 바꾸지 않는다. 키보드
+  activation(`click.detail=0`)으로 닫기 버튼이 제거된 경우에만 렌더 뒤
+  authoritative 활성 탭 라벨에 `preventScroll` focus한다. 포인터 닫기는
+  브라우저의 자연 포커스 정책을 유지한다.
+- 디자인 계약: 열린 문서 스트립은 `working set`, 활성 탭은 닫기 뒤 이어질
+  `active focus`다. 기존 왼쪽 우선·오른쪽 fallback 활성 규칙과 화면의
+  `aria-current="page"` 진실원을 그대로 따른다.
+- 회귀 증거: 탭 닫기 버튼에 포커스를 둔 뒤 활성 탭을 제거·이웃 활성화하는
+  실패 테스트를 추가했고, docs tab state와 A24 query-only 무개입 경계를
+  포함한 집중 테스트는 `4 파일 · 44개`, TypeScript와 touched ESLint가
+  통과했다.
+- 설치 앱 증거: `/Applications/Ontology Atlas.app`에서 활성
+  `My ontology vault 탭 닫기`를 Return으로 실행하자 URL·본문이 왼쪽 탭이
+  없어 오른쪽 이웃인 `감사 샘플 기능`으로 전환됐고, AX focused element도
+  `button 감사 샘플 기능`이 됐다. production build와 desktop app
+  build/deploy를 통과한 동일 코드다.
+- PO·디자인 판정: **Build and verify**
+
 ## 현재 PO·디자인 판정
 
 - A1/A2 수정 슬라이스: **Build and verify**
@@ -959,6 +998,7 @@
 - A22 modal 키보드 경계 슬라이스: **Build and verify**
 - A23 nested settings task 포커스 슬라이스: **Build and verify**
 - A24 client route 읽기 시작점 슬라이스: **Build and verify**
+- A25 문서 탭 키보드 닫기 연속성 슬라이스: **Build and verify**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.
