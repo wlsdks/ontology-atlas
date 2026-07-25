@@ -686,7 +686,14 @@ export function StudioCompass(props: StudioCompassProps) {
   const similarHit =
     openRelation && similarFor ? similarFor(openRelation, query) : null;
 
+  // #62 — 무대 위 임시 표면은 서로 배타적이다. 예전엔 '+90 더 보기' 접힘
+  // 목록이 열린 채 소켓 피커가 그 위에 그대로 쌓여, 아래 목록이 반쯤 가린
+  // 상태로 둘 다 살아 있었다(opus5 검수 스크린샷). 피커를 열 때 접힘 목록·
+  // 관계 편집 카드·작업중 패널을 함께 닫는다.
   const openPicker = (relation: StudioRelation) => {
+    setOpenFold(null);
+    setOpenEdit(null);
+    setDraftsOpen(false);
     setOpenRelation((cur) => (cur === relation ? null : relation));
     setQuery("");
   };
@@ -835,7 +842,13 @@ export function StudioCompass(props: StudioCompassProps) {
               data-testid="studio-drafts-open"
               aria-expanded={draftsOpen}
               aria-label={labels.draftsOpenAria(drafts.length)}
-              onClick={() => setDraftsOpen((v) => !v)}
+              onClick={() => {
+                // #62 — 작업중 패널도 무대 위 임시 표면을 밀어낸다.
+                setOpenRelation(null);
+                setOpenFold(null);
+                setOpenEdit(null);
+                setDraftsOpen((v) => !v);
+              }}
               className={cn(
                 "flex h-[30px] items-center gap-1.5 rounded-lg border px-3 text-caption transition-colors",
                 draftsOpen
@@ -1012,7 +1025,13 @@ export function StudioCompass(props: StudioCompassProps) {
               onHoverBearing={setHoveredBearing}
               arrivalId={arrivedFrom}
               arrivalLit={arrivalLit}
-              onToggleFold={() => setOpenFold((cur) => (cur === view.bearing ? null : view.bearing))}
+              onToggleFold={() => {
+                // #62 — 접힘 목록도 같은 배타 규칙을 받는다.
+                setOpenRelation(null);
+                setOpenEdit(null);
+                setDraftsOpen(false);
+                setOpenFold((cur) => (cur === view.bearing ? null : view.bearing));
+              }}
               foldOpen={openFold === view.bearing}
               onCloseFold={() => setOpenFold(null)}
               onEditNeighbor={

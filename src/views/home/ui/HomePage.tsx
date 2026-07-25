@@ -158,6 +158,7 @@ import {
 } from "../lib/topology-render-state";
 import { resolveTopologySelectedOntologyNode } from "../lib/resolve-topology-selected-node";
 import { resolveDeeplinkMissDecision } from "../lib/deeplink-miss-notice";
+import { shouldSuppressGlobalShortcuts } from "../lib/blocking-surface";
 import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
@@ -2025,6 +2026,15 @@ export function HomePage() {
     }
   }, [docsDrawerOpen]);
 
+  // #62 — 블로킹 표면이 열려 있는 동안 전역 단축키는 죽는다. 예전엔 표면마다
+  // `if (createNodeOpen) return;` 을 손으로 달아서 **투어가 빠져 있었고**,
+  // 투어 위에 `?` 단축키 모달이 겹쳐 뜨는 상태가 실제로 재현됐다. 이제 술어
+  // 하나(`blocking-surface`)로 모아 새 표면이 생겨도 한 곳만 고치면 된다.
+  const shortcutsSuppressed = shouldSuppressGlobalShortcuts({
+    createNodeOpen,
+    tourOpen: tour.open,
+  });
+
   // 공용 useTypingShortcuts로 글로벌 키 단축키 통합.
   // ⌘K 와 ⇧⌘K 는 이제 동일한 팔레트(ontology 노드 + 프로젝트 통합 검색)를
   // 연다 — persona-P1: 예전엔 ⌘K 만 프로젝트 전용 SearchPalette 를 열어
@@ -2035,28 +2045,28 @@ export function HomePage() {
     {
       combo: { key: "k", meta: true, shift: true },
       onFire: () => {
-        if (createNodeOpen) return;
+        if (shortcutsSuppressed) return;
         setOntologySearchOpen((v) => !v);
       },
     },
     {
       combo: { key: "k", meta: true },
       onFire: () => {
-        if (createNodeOpen) return;
+        if (shortcutsSuppressed) return;
         setOntologySearchOpen((v) => !v);
       },
     },
     {
       combo: { key: "?" },
       onFire: () => {
-        if (createNodeOpen) return;
+        if (shortcutsSuppressed) return;
         setShortcutsOpen((v) => !v);
       },
     },
     {
       combo: { key: "d" },
       onFire: () => {
-        if (createNodeOpen) return;
+        if (shortcutsSuppressed) return;
         setDocsDrawerOpen((v) => !v);
       },
     },
@@ -2067,7 +2077,7 @@ export function HomePage() {
       // 게이트가 꺼져 무동작.
       combo: { key: "o", meta: true },
       onFire: () => {
-        if (createNodeOpen) return;
+        if (shortcutsSuppressed) return;
         if (!sampleModeSettled) return;
         void vault.open();
       },

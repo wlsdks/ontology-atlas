@@ -1309,3 +1309,76 @@ describe("StudioCompass — 작업중 목록 (drafts)", () => {
     expect(preview.closest("header")).not.toBeNull();
   });
 });
+
+// #62 — 무대 위 임시 표면 상호 배타. 디자인 규칙: "transient surface 는
+// unrelated surface 를 닫거나 demote 해야 한다". opus5 검수에서 '+90 더 보기'
+// 접힘 목록 위에 소켓 피커가 그대로 쌓여 둘 다 살아 있는 상태가 실측됐다.
+describe("StudioCompass — 임시 표면 상호 배타 (#62)", () => {
+  function renderStacking() {
+    const many = Array.from({ length: 6 }, (_, i) => ({
+      id: `el:${i}`,
+      title: `Element ${i}`,
+      kind: "element",
+      ref: `elements/e${i}`,
+    }));
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "MCP Server", definition: "def" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down", { filled: true, neighbors: many }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={1}
+        writable
+        candidatesFor={() => [CANDIDATE]}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        focalId="capability:mcp"
+        drafts={[{ focalId: "capability:mcp", title: "MCP Server", count: 1 }]}
+        onOpenDraft={vi.fn()}
+        onDiscardDraft={vi.fn()}
+      />,
+    );
+  }
+
+  it("소켓 피커를 열면 접힘 목록이 닫힌다 — 둘이 겹쳐 서지 않는다", () => {
+    renderStacking();
+
+    // 접힘 목록을 먼저 연다.
+    fireEvent.click(screen.getByTestId("studio-lane-more-down"));
+    expect(screen.getByTestId("studio-lane-list-down")).toBeInTheDocument();
+
+    // 그 상태에서 빈 소켓의 피커를 연다.
+    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    expect(screen.getByTestId("studio-picker")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-lane-list-down")).not.toBeInTheDocument();
+  });
+
+  it("접힘 목록을 열면 피커가 닫힌다 (반대 방향도 대칭)", () => {
+    renderStacking();
+
+    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    expect(screen.getByTestId("studio-picker")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("studio-lane-more-down"));
+    expect(screen.getByTestId("studio-lane-list-down")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
+  });
+
+  it("작업중 패널을 열면 피커·접힘 목록이 함께 닫힌다", () => {
+    renderStacking();
+
+    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    expect(screen.getByTestId("studio-picker")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("studio-drafts-open"));
+    expect(screen.getByTestId("studio-drafts-panel")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
+  });
+});
