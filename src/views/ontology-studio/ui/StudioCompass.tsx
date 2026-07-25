@@ -348,11 +348,16 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
   const withFold = overflow > 0;
 
   if (!view.filled) {
-    // Empty socket + dashed strut into it. Boxes are sized with comfortable
-    // inner padding (≥14px) so the plain-language question never touches a wall.
+    // Empty socket + dashed strut into it. #6 (2026-07-25) — the boxes read as
+    // billboards, not slots: the question was `text-callout`, an UNregistered
+    // ramp step that fell back to the root 16px, and the footprints were sized
+    // for that oversize. Question is now text-body(12.5) so the footprints hug
+    // it — up keeps a touch more height for the ◈ guide badge + a 2-line wrap;
+    // the others are the compact single/two-line slot. Inner padding stays
+    // comfortable (≥10px) so the plain-language question never touches a wall.
     if (view.bearing === "up") {
-      const w = 264;
-      const h = 96;
+      const w = 224;
+      const h = 82;
       const y = cardTop - 46 - h;
       const x = CX - w / 2;
       return {
@@ -365,8 +370,8 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
       };
     }
     if (view.bearing === "down") {
-      const w = 240;
-      const h = 82;
+      const w = 204;
+      const h = 64;
       const y = cardBottom + 46;
       const x = CX - w / 2;
       return {
@@ -379,8 +384,8 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
       };
     }
     // left / right empty socket
-    const w = 240;
-    const h = 82;
+    const w = 204;
+    const h = 64;
     const y = CY - h / 2;
     if (view.bearing === "right") {
       const x = cardRight + 128;
@@ -777,7 +782,9 @@ export function StudioCompass(props: StudioCompassProps) {
 
         {/* one calm frame prompt — top center */}
         <div className="absolute left-1/2 top-4 z-[4] flex -translate-x-1/2 flex-col items-center gap-1 text-center">
-          <div className="whitespace-nowrap text-callout tracking-[-0.006em] text-[color:var(--color-text-secondary)]">
+          {/* #6 — was `text-callout` (unregistered ramp step → root 16px). Pin to
+              the nearest real step so it stays the calm largest label, no drift. */}
+          <div className="whitespace-nowrap text-body-lg tracking-[-0.006em] text-[color:var(--color-text-secondary)]">
             {labels.framePrompt(focal.name || "…")}
           </div>
           {/* C2 — quiet origin context: this new node continues A's bearing. */}
@@ -1545,7 +1552,7 @@ function LaneRender({
           onClick={onOpen}
           {...hoverProps}
           className={cn(
-            "absolute z-[2] flex flex-col items-start justify-center gap-1.5 rounded-[12px] px-4 py-3.5 text-left transition-colors",
+            "absolute z-[2] flex flex-col items-start justify-center gap-1 rounded-[12px] px-3.5 py-2.5 text-left transition-colors",
           )}
           style={{
             left: layout.socket.x,
@@ -1575,9 +1582,13 @@ function LaneRender({
           ) : (
             <span className="text-label text-[color:var(--color-text-quaternary)]">{view.emptyHint}</span>
           )}
-          <span className="flex items-start gap-2 text-callout font-medium text-[color:var(--color-text-secondary)]">
+          {/* #6 — question is text-body(12.5); `text-callout` was an unregistered
+              ramp step that silently rendered at the root 16px (the "billboard"
+              defect). max-w keeps a long question wrapping at a sane ~18-22ch
+              measure so the socket reads as a quiet slot. */}
+          <span className="flex max-w-[19ch] items-start gap-1.5 text-body font-medium text-[color:var(--color-text-secondary)] [word-break:keep-all]">
             <span className="mt-px flex-none text-[color:var(--color-text-quaternary)]">＋</span>
-            <span className="[word-break:keep-all]">{view.question}</span>
+            <span>{view.question}</span>
           </span>
         </button>
       ) : null}
@@ -2363,7 +2374,7 @@ function DeltaPreviewModal({
       >
         {/* header */}
         <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-5 py-3.5">
-          <span className="min-w-0 flex-1 truncate text-callout font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
+          <span className="min-w-0 flex-1 truncate text-body-lg font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
             {labels.previewTitle}
           </span>
           <button
