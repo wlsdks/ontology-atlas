@@ -284,6 +284,42 @@ function makeQuickStartRepoFixture() {
   return repo;
 }
 
+await test('init --locale=ko — Korean starter bodies, identical graph, English default unchanged', async () => {
+  // #73 — 한국어 UI 로 만든 볼트가 영어 산문으로 채워져 있으면 읽을 수 없다.
+  // 파일 세트와 frontmatter 는 로케일과 무관하게 같아야 한다 — 어떤 언어로
+  // 만들었든 같은 그래프가 나오고, 검색의 단일 진실원인 canonical `title` 도
+  // 그대로여야 하기 때문이다.
+  const repo = mkdtempSync(join(tmpdir(), 'cli-init-locale-'));
+  try {
+    const ko = await run(['init', 'vault-ko', '--locale=ko'], { cwd: repo });
+    assert.equal(ko.code, 0, `stdout: ${ko.stdout}\nstderr: ${ko.stderr}`);
+    const koReadme = readFileSync(join(repo, 'vault-ko', 'README.md'), 'utf-8');
+    assert.match(koReadme, /# 내 온톨로지 문서함/);
+    // canonical title 은 로케일과 무관하게 고정 — display_* 가 화면 이름을 맡는다.
+    assert.match(koReadme, /title: My ontology vault/);
+
+    const en = await run(['init', 'vault-en'], { cwd: repo });
+    assert.equal(en.code, 0, `stdout: ${en.stdout}\nstderr: ${en.stderr}`);
+    const enReadme = readFileSync(join(repo, 'vault-en', 'README.md'), 'utf-8');
+    // 기본값은 종전과 같은 영어 — 기존 사용자의 init 결과가 바뀌지 않는다.
+    assert.match(enReadme, /# My ontology vault/);
+
+    // 두 볼트 모두 스키마상 유효하고 노드 수가 같다.
+    for (const dir of ['vault-ko', 'vault-en']) {
+      const v = await run(['validate', dir], { cwd: repo });
+      assert.equal(v.code, 0, `${dir} validate failed: ${v.stdout}${v.stderr}`);
+      assert.match(stripAnsi(v.stdout), /5 파일 스캔 — issue 0/);
+    }
+
+    // 모르는 로케일은 조용히 영어로 떨어지지 않고 명확히 실패한다.
+    const bad = await run(['init', 'vault-fr', '--locale=fr'], { cwd: repo });
+    assert.equal(bad.code, 2);
+    assert.match(stripAnsi(bad.stderr), /unknown --locale "fr" — supported: en, ko/);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 await test('init --quick-start — scaffolds, bootstraps from the repo, and ends with a compact next-steps block', async () => {
   const repo = makeQuickStartRepoFixture();
   try {

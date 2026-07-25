@@ -22,7 +22,7 @@ import {
 } from '@/entities/local-fs-handle';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import {
-  ONTOLOGY_STARTER_FILES,
+  starterFilesForLocale,
   buildCodexConfigToml,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
@@ -1147,7 +1147,12 @@ export function useLocalVaultInternal() {
    * 이미 존재하는 파일은 덮어쓰지 않고 skip. 사용자가 기존 vault 에 호출해도
    * 안전.
    */
-  const scaffoldOntology = useCallback(async () => {
+  /**
+   * #73 — 스타터 본문 언어. 화면 언어로 만든 볼트는 그 언어로 읽히는 게 맞다.
+   * 파일 세트와 frontmatter 는 로케일과 무관하게 동일하므로 어떤 언어로
+   * 만들었든 같은 그래프가 나온다(계약 테스트가 잡는다).
+   */
+  const scaffoldOntology = useCallback(async (starterLocale = 'en') => {
     if (!state.handle) {
       throw new Error('Vault is not open');
     }
@@ -1159,7 +1164,7 @@ export function useLocalVaultInternal() {
     // 화면이 다른 수를 말했다 (codex 감사 P2).
     let markdownCreated = 0;
     let skipped = 0;
-    for (const { relPath, content } of ONTOLOGY_STARTER_FILES) {
+    for (const { relPath, content } of starterFilesForLocale(starterLocale)) {
       // slug 는 .md 확장자 제거한 경로로. createDoc / saveDoc 의 규칙 따름.
       const slug = relPath.replace(/\.md$/, '');
       if (state.fileHandles.has(slug)) {

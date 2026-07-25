@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
@@ -167,6 +167,7 @@ import {
 
 function DocsVaultContent() {
   const t = useTranslations('docsVault');
+  const locale = useLocale();
   const siteT = useTranslations('metadata');
   const searchParams = useSearchParams();
   const querySlug = searchParams?.get('slug') ?? null;
@@ -639,7 +640,8 @@ function DocsVaultContent() {
   }, [canEditCurrent, selectedSlug, manifest, localVault, recentKey, setPinnedSlugs, setRecentSlugs, t]);
 
   const handleScaffoldOntologyStarter = useCallback(async () => {
-    const result = await localVault.scaffoldOntology();
+    // #73 — 화면 언어로 만든 볼트는 그 언어로 읽히게 한다.
+    const result = await localVault.scaffoldOntology(locale);
     setSelectedSlug('README');
     setRecentSlugs(pushRecentDoc(recentKey, 'README'));
     replaceUrlState({ slug: 'README', view: 'doc' });
