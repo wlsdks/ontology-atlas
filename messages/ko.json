@@ -756,6 +756,14 @@
         "focus": "focus",
         "modeToggle": "기획자/개발자",
         "queryCommandPrefix": "> "
+      },
+      "scope": {
+        "ariaLabel": "단축키 범위",
+        "current": "지금 화면",
+        "topology": "지도",
+        "docs": "문서함",
+        "all": "전체",
+        "emptyCurrent": "이 화면에는 전용 단축키가 없어요 — 위 전역 단축키를 쓰면 돼요"
       }
     },
     "hero": {

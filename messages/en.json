@@ -756,6 +756,14 @@
         "focus": "focus",
         "modeToggle": "Planner/Dev",
         "queryCommandPrefix": "> "
+      },
+      "scope": {
+        "ariaLabel": "Shortcut scope",
+        "current": "This screen",
+        "topology": "Map",
+        "docs": "Docs",
+        "all": "All",
+        "emptyCurrent": "This screen has no dedicated shortcuts — the global ones above still work"
       }
     },
     "hero": {
