@@ -28,7 +28,20 @@ export {
   buildCodexConfigTomlTemplate,
   buildMcpConfigJson,
 } from './lib/ontology-starter';
+export {
+  MCP_SERVER_NAME,
+  MCP_SERVER_PACKAGE,
+  buildCursorMcpDeeplink,
+  buildMcpDeeplinkConfig,
+  buildVsCodeMcpDeeplink,
+  utf8ToBase64,
+  type McpStdioConfig,
+} from './lib/mcp-deeplinks';
 export { LocalVaultPicker } from './ui/LocalVaultPicker';
+export {
+  AgentClientButtons,
+  type AgentClientButtonsProps,
+} from './ui/AgentClientButtons';
 export {
   buildOntologyStarterAgentVerifyPrompt,
   buildOntologyStarterCliVerifyCommands,

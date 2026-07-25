@@ -4086,6 +4086,7 @@ export function HomePage() {
           onWriteConfigs={
             isTauriVaultRuntime() && vault.manifest ? () => void vault.ensureAgentConfigs() : null
           }
+          mcpJsonReady={vault.agentConfigStatus?.mcpJson ?? false}
         />
         <ShortcutSheet
           open={!createNodeOpen && shortcutsOpen}

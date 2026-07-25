@@ -78,6 +78,10 @@ function renderPanel(
       onOpenWorkflowGuide={vi.fn()}
     />,
   );
+  // C13 — 상세 검증/스니펫/게이트는 "고급" 접기 뒤로 강등됐다. 이 접기를
+  // 검사하는 기존 어서션이 내용을 보게 펼쳐 둔다(첫 화면 3단계는 그대로 노출).
+  const advancedToggle = screen.queryByTestId('agent-setup-advanced-toggle');
+  if (advancedToggle) fireEvent.click(advancedToggle);
   return localVault;
 }
 
@@ -438,6 +442,7 @@ describe('VaultAgentSetupPanel', () => {
       />,
     );
 
+    fireEvent.click(screen.getByTestId('agent-setup-advanced-toggle'));
     fireEvent.click(screen.getByRole('button', { name: '기능 문서 열기' }));
 
     expect(onOpenWorkflowGuide).toHaveBeenCalledTimes(1);
@@ -1185,6 +1190,45 @@ describe('VaultAgentSetupPanel', () => {
       await screen.findByRole('button', {
         name: 'Codex 명령 복사됨',
       }),
+    ).toBeInTheDocument();
+  });
+
+  it('첫 화면은 3단계 + 원클릭 버튼을 보이고 상세 검증은 접혀 있다', () => {
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault()}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+    // 3단계 카드 + 클라이언트 버튼은 첫 화면에 노출
+    expect(screen.getByTestId('agent-setup-step-1')).toBeInTheDocument();
+    expect(screen.getByTestId('agent-setup-step-2')).toBeInTheDocument();
+    expect(screen.getByTestId('agent-setup-step-3')).toBeInTheDocument();
+    expect(screen.getByTestId('agent-client-claude-code')).toBeInTheDocument();
+    expect(screen.getByTestId('agent-connect-server-line')).toBeInTheDocument();
+    // 상세 검증(모드 chooser 등)은 접힌 상태라 안 보인다
+    expect(screen.queryByTestId('agent-setup-advanced')).not.toBeInTheDocument();
+    // 펼치면 나타난다
+    fireEvent.click(screen.getByTestId('agent-setup-advanced-toggle'));
+    expect(screen.getByTestId('agent-setup-advanced')).toBeInTheDocument();
+  });
+
+  it('쓰기 가능한 vault면 Claude Code·Codex 는 연결(생성) 버튼이다', () => {
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault()}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: 'Claude Code에 연결' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Codex에 연결' }),
     ).toBeInTheDocument();
   });
 });
