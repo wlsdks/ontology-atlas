@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-25T03:51:31.000Z",
+  "generatedAt": "2026-07-25T04:33:17.000Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-25 — codex 검수 C-A 배치 (신뢰·데이터 정합 P1 7건)",
+          "slug": "2026-07-25-codex-검수-c-a-배치-신뢰데이터-정합-p1-7건"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-25 — 디자인 전면 정비 Phase 1 (디자인 시스템 파운데이션)",
           "slug": "2026-07-25-디자인-전면-정비-phase-1-디자인-시스템-파운데이션"
         },
@@ -4798,9 +4803,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 22건 정비의 토대가 되는 캐노니컬 컴포넌트·토큰을 세웠다. 계획: docs/DESIGN-OVERHAUL-2026-07-25.md, 상세: docs/DES",
-      "wordCount": 38883,
-      "updatedAt": "2026-07-25T12:51:31+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 전체 검수에서 나온 신뢰·데이터 정합 결함 7건. 계획: docs/DESIGN-OVERHAUL-2026-07-25.md \"Codex 전체 검수\" C-A 절",
+      "wordCount": 39065,
+      "updatedAt": "2026-07-25T13:33:17+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -4980,8 +4985,8 @@
         }
       ],
       "excerpt": "소유자가 실사용 스크린샷과 함께 보고한 22건 + \"디자인 시스템 구축\"이라는 메타 과제를 기록한 단일 진실원 계획 문서. 프로세스: fable 기획 → opus 검수 → sonnet/opus 코딩. 항목마다 상태를 갱신한다 (☐ 대기 · ◐ 진행 · ☑ 완료 · ✗ 반려/보류). 세션이 바뀌어도 이 문서만 읽으면 이어서 작업 가능해야 한다. \"모든 디자인의 토큰화 — 사이즈·모양 다 코드로 구성되어야 한다.\" 22건 중 다수(4·6·8·13·16·17)는 개별 수정이 아니라 시스템 부재의 증상이다. 따라서 Phase 1 에서 캐노니컬 컴포넌트/토큰을 먼저 세우고, ",
-      "wordCount": 2029,
-      "updatedAt": "2026-07-25T12:49:50+09:00",
+      "wordCount": 2052,
+      "updatedAt": "2026-07-25T13:33:17+09:00",
       "linksOut": []
     },
     {
