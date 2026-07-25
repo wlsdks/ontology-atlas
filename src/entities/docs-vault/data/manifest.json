@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-25T04:33:17.000Z",
+  "generatedAt": "2026-07-25T05:49:39.000Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-25 — 디자인 전면 정비 Phase 2 (지도 정합 5건)",
+          "slug": "2026-07-25-디자인-전면-정비-phase-2-지도-정합-5건"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-25 — codex 검수 C-A 배치 (신뢰·데이터 정합 P1 7건)",
           "slug": "2026-07-25-codex-검수-c-a-배치-신뢰데이터-정합-p1-7건"
         },
@@ -4803,9 +4808,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 전체 검수에서 나온 신뢰·데이터 정합 결함 7건. 계획: docs/DESIGN-OVERHAUL-2026-07-25.md \"Codex 전체 검수\" C-A 절",
-      "wordCount": 39065,
-      "updatedAt": "2026-07-25T13:33:17+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 계획: docs/DESIGN-OVERHAUL-2026-07-25.md \"B. 지도(Topology) 정합\" · \"H\". 살아있는 그래프(물리) 토글 제거 ",
+      "wordCount": 39231,
+      "updatedAt": "2026-07-25T14:49:39+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -4986,7 +4991,7 @@
       ],
       "excerpt": "소유자가 실사용 스크린샷과 함께 보고한 22건 + \"디자인 시스템 구축\"이라는 메타 과제를 기록한 단일 진실원 계획 문서. 프로세스: fable 기획 → opus 검수 → sonnet/opus 코딩. 항목마다 상태를 갱신한다 (☐ 대기 · ◐ 진행 · ☑ 완료 · ✗ 반려/보류). 세션이 바뀌어도 이 문서만 읽으면 이어서 작업 가능해야 한다. \"모든 디자인의 토큰화 — 사이즈·모양 다 코드로 구성되어야 한다.\" 22건 중 다수(4·6·8·13·16·17)는 개별 수정이 아니라 시스템 부재의 증상이다. 따라서 Phase 1 에서 캐노니컬 컴포넌트/토큰을 먼저 세우고, ",
       "wordCount": 2052,
-      "updatedAt": "2026-07-25T13:33:17+09:00",
+      "updatedAt": "2026-07-25T14:49:39+09:00",
       "linksOut": []
     },
     {
@@ -5532,7 +5537,7 @@
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
       "wordCount": 13579,
-      "updatedAt": "2026-07-25T12:51:31+09:00",
+      "updatedAt": "2026-07-25T14:49:39+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -7693,9 +7698,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "/topology exposes a two-view switch — Map (Relief) and Graph — instead of five peer mode tabs (2026-07 owner feedback: the four Relief-family modes looked like the same sparse card screen with different panels, so mode proliferation read as \"five confusing siblings\"). 분석 패널 완전 소멸 2단계 (2026-07) removed the dedicated Top",
-      "wordCount": 500,
-      "updatedAt": "2026-07-25T03:37:17+09:00",
+      "excerpt": "/topology is a single Relief (Map) surface. The old peer-mode tabs were collapsed over 2026-07 (owner feedback: the four Relief-family modes looked like the same sparse card screen with different panels, so mode proliferation read as \"five confusing siblings\"), and the separate Graph (살아있는 그래프) view was removed outrigh",
+      "wordCount": 508,
+      "updatedAt": "2026-07-25T14:49:39+09:00",
       "linksOut": []
     },
     {
