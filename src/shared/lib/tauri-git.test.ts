@@ -12,6 +12,8 @@ vi.mock('@tauri-apps/api/core', () => ({
 
 import {
   gitDiff,
+  gitInit,
+  gitSetRemote,
   gitErrorMessage,
   gitHistory,
   gitPull,
@@ -98,6 +100,39 @@ describe('tauri git bridge', () => {
     tauriApiMock.runtimeAvailable = true;
     tauriApiMock.invoke.mockRejectedValue('이 vault 는 git 저장소 안에 있지 않아요.');
     await expect(gitDiff('/v')).rejects.toBe('이 vault 는 git 저장소 안에 있지 않아요.');
+  });
+});
+
+describe('gitInit · gitSetRemote (쓰기 — 사용자 클릭 뒤에만)', () => {
+  it('브리지가 없으면 둘 다 null — 웹에서 조용히 실패하지 않는다', async () => {
+    tauriApiMock.runtimeAvailable = false;
+    expect(await gitInit('/v')).toBeNull();
+    expect(await gitSetRemote('/v', 'git@github.com:me/repo.git')).toBeNull();
+    expect(tauriApiMock.invoke).not.toHaveBeenCalled();
+  });
+
+  it('Rust 커맨드 이름과 인자 모양을 고정한다', async () => {
+    tauriApiMock.runtimeAvailable = true;
+    tauriApiMock.invoke.mockResolvedValue({});
+    await gitInit('/v');
+    await gitSetRemote('/v', 'git@github.com:me/repo.git');
+    expect(tauriApiMock.invoke).toHaveBeenCalledWith('git_init', { vaultPath: '/v' });
+    expect(tauriApiMock.invoke).toHaveBeenCalledWith('git_set_remote', {
+      vaultPath: '/v',
+      url: 'git@github.com:me/repo.git',
+    });
+  });
+
+  it('주소를 다듬거나 추측하지 않고 사용자 입력 그대로 넘긴다', async () => {
+    // 신뢰 헌장: 우리가 원격 주소를 제안·보정·자동탐지하지 않는다. 정규화는
+    // Rust `validate_remote_url` 의 책임이고 브리지는 통과시키기만 한다.
+    tauriApiMock.runtimeAvailable = true;
+    tauriApiMock.invoke.mockResolvedValue({});
+    await gitSetRemote('/v', '  https://example.com/r.git ');
+    expect(tauriApiMock.invoke).toHaveBeenCalledWith('git_set_remote', {
+      vaultPath: '/v',
+      url: '  https://example.com/r.git ',
+    });
   });
 });
 

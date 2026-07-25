@@ -80,10 +80,15 @@ fn find_repo_root(vault_dir: &Path) -> Result<Option<PathBuf>, String> {
 
 /// 커밋/히스토리/diff/pull 처럼 repo 가 반드시 필요한 커맨드용. repo 밖이면
 /// "자동 init 안 함" 안내를 담은 `Err` — 신뢰 헌장 ②.
+///
+/// 이 문장이 *자동* init 을 하지 않는다고 말하는 것에 주의: 사용자가 화면에서
+/// 직접 누르는 `git_init` 은 별 경로다(2026-07-25 소유자 결정). 헌장이 금지한
+/// 것은 조용한 실행이고, 사용자가 자기가 고른 폴더에서 버튼을 누르는 건 그
+/// 범주가 아니다. 이 함수는 여전히 자동 init 을 하지 않는다.
 fn require_repo_root(vault_dir: &Path) -> Result<PathBuf, String> {
     match find_repo_root(vault_dir)? {
         Some(root) => Ok(root),
-        None => Err("이 vault 는 git 저장소 안에 있지 않아요. Atlas 는 자동으로 `git init` 하지 않아요 — 버전 기록을 원하면 직접 실행하세요: git init".into()),
+        None => Err("아직 이 폴더의 기록을 시작하지 않았어요. 발자취 화면에서 '기록 시작하기' 를 누르면 시작할 수 있어요.".into()),
     }
 }
 
@@ -932,6 +937,145 @@ pub fn git_pull(vault_path: String) -> Result<GitPullResult, String> {
     })
 }
 
+/// 원격 주소가 git 이 받아들일 형태인지 최소 검사 — 사용자 입력을 셸에 넘기기
+/// 전 게이트. `run_git` 이 인자 배열을 쓰므로 셸 인젝션 자체는 불가능하지만,
+/// 형태가 아닌 문자열(빈 값·공백 포함·플래그 흉내)은 여기서 거른다.
+fn validate_remote_url(url: &str) -> Result<String, String> {
+    let trimmed = url.trim();
+    if trimmed.is_empty() {
+        return Err("보낼 주소를 입력해 주세요.".into());
+    }
+    if trimmed.starts_with('-') {
+        return Err("주소가 '-' 로 시작할 수 없어요.".into());
+    }
+    if trimmed.chars().any(char::is_whitespace) {
+        return Err("주소에 공백이 들어 있어요. 저장소 주소만 붙여 주세요.".into());
+    }
+    // 흔한 4형태만 허용: scp-like(git@host:path) · https · ssh · file 경로.
+    let looks_scp = trimmed.contains('@') && trimmed.contains(':');
+    let looks_url = trimmed.starts_with("https://")
+        || trimmed.starts_with("http://")
+        || trimmed.starts_with("ssh://")
+        || trimmed.starts_with("git://");
+    let looks_path = trimmed.starts_with('/') || trimmed.starts_with("file://");
+    if !(looks_scp || looks_url || looks_path) {
+        return Err(
+            "주소 형태를 알아볼 수 없어요. 예: git@github.com:내이름/저장소.git".into(),
+        );
+    }
+    Ok(trimmed.to_string())
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitInitResult {
+    /// 이번 호출로 기록이 시작됐나. 이미 저장소였으면 false + reason.
+    initialized: bool,
+    /// "already" (이미 저장소) | null (방금 시작)
+    reason: Option<String>,
+    /// 만들어진(또는 이미 있던) repo 최상위 절대경로.
+    repo_root: String,
+    /// 시작 직후 브랜치명 — 첫 커밋 전에도 `git symbolic-ref` 로 읽힌다.
+    branch: Option<String>,
+    /// 기록 대상이 될 vault 범위 변경 수(= 아직 남기지 않은 변경).
+    changed_count: usize,
+}
+
+/// **사용자가 화면에서 직접 누를 때만** 호출되는 `git init`.
+///
+/// 신뢰 헌장 경계: 헌장이 금지하는 것은 *자동* 실행·조용한 수집이다. 사용자가
+/// 자기가 고른 볼트 폴더에서 버튼을 누르는 건 그 범주가 아니다 (2026-07-25
+/// 소유자 결정 + Design Guardian 판정). 이 명령이 지키는 선:
+///
+/// - **init 만 한다.** add/commit/push 로 연쇄하지 않는다 — 빈 저장소를 만들고
+///   호출자가 "아직 남기지 않은 변경 N건" 상태로 착지한다. 자동 커밋이야말로
+///   진짜 헌장 위반이다.
+/// - **이미 저장소면 아무것도 하지 않는다** (`reason: "already"`). 중첩 init 은
+///   기존 이력을 건드릴 수 있다.
+/// - 원격 설정·사용자 이름 설정 같은 부수 작업 0.
+#[tauri::command]
+pub fn git_init(vault_path: String) -> Result<GitInitResult, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+
+    // 이미 repo 안이면 그대로 알려준다 — 조용히 중첩 저장소를 만들지 않는다.
+    if let Some(root) = find_repo_root(&vault_dir)? {
+        let pathspec = vault_pathspec(&root, &vault_dir);
+        let changed = get_porcelain_status(&root, &pathspec)?.len();
+        return Ok(GitInitResult {
+            initialized: false,
+            reason: Some("already".into()),
+            repo_root: root.to_string_lossy().into_owned(),
+            branch: get_current_branch(&root),
+            changed_count: changed,
+        });
+    }
+
+    let out = run_git(&vault_dir, &["init"])?;
+    if !out.success {
+        let info = classify_git_error(&git_error_text(&out), "init");
+        return Err(classified_error_string(&info));
+    }
+
+    // init 직후 toplevel 을 다시 읽어 canonical 경로를 얻는다(심링크·/var 차이).
+    let root = find_repo_root(&vault_dir)?.ok_or_else(|| {
+        "기록을 시작했지만 저장소를 다시 찾지 못했어요. 폴더 권한을 확인해 주세요.".to_string()
+    })?;
+    let pathspec = vault_pathspec(&root, &vault_dir);
+    let changed = get_porcelain_status(&root, &pathspec)?.len();
+
+    Ok(GitInitResult {
+        initialized: true,
+        reason: None,
+        repo_root: root.to_string_lossy().into_owned(),
+        branch: get_current_branch(&root),
+        changed_count: changed,
+    })
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitSetRemoteResult {
+    /// 원격이 이 호출로 설정됐나.
+    ok: bool,
+    /// 원격 이름(항상 "origin").
+    remote: String,
+    /// 최종 원격 URL.
+    url: String,
+    /// 기존 origin 을 교체했으면 이전 URL — 사용자에게 무엇이 바뀌었는지 알린다.
+    replaced: Option<String>,
+}
+
+/// 보낼 곳(`origin`) 설정 — **사용자가 입력한 주소만** 쓴다. 우리가 주소를
+/// 제안·추측·자동탐지하지 않는다(신뢰 헌장: 조용한 전송 0).
+///
+/// push 는 하지 않는다 — 주소만 등록하고 호출자가 별 동작으로 보낸다. 그래야
+/// "누를 때만 나간다" 약속이 명령 경계에서 지켜진다.
+#[tauri::command]
+pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteResult, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+    let repo_root = require_repo_root(&vault_dir)?;
+    let clean = validate_remote_url(&url)?;
+
+    let existing = get_remote_url(&repo_root, "origin");
+    // 이미 origin 이 있으면 add 는 실패하므로 set-url 로 교체한다.
+    let subcommand = if existing.is_some() { "set-url" } else { "add" };
+    let out = run_git(&repo_root, &["remote", subcommand, "origin", clean.as_str()])?;
+    if !out.success {
+        let info = classify_git_error(&git_error_text(&out), "remote");
+        return Err(classified_error_string(&info));
+    }
+
+    // 교체된 경우에만 이전 주소를 돌려준다 — 사용자가 무엇이 바뀌었는지 알아야 한다.
+    let replaced = existing.filter(|prev| prev != &clean);
+
+    Ok(GitSetRemoteResult {
+        ok: true,
+        remote: "origin".into(),
+        url: clean,
+        replaced,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1079,6 +1223,34 @@ mod tests {
     fn validate_vault_dir_rejects_missing_path() {
         let err = validate_vault_dir("/path/does/not/exist/atlas").unwrap_err();
         assert!(!err.is_empty());
+    }
+
+    #[test]
+    fn validate_remote_url_accepts_the_four_real_shapes() {
+        for url in [
+            "git@github.com:me/repo.git",
+            "https://github.com/me/repo.git",
+            "ssh://git@host/me/repo.git",
+            "/Users/me/backup/repo.git",
+        ] {
+            assert_eq!(validate_remote_url(url).unwrap(), url, "should accept {url}");
+        }
+        // 앞뒤 공백은 다듬는다 — 붙여넣기가 정상 경로다.
+        assert_eq!(
+            validate_remote_url("  git@github.com:me/repo.git \n").unwrap(),
+            "git@github.com:me/repo.git"
+        );
+    }
+
+    #[test]
+    fn validate_remote_url_rejects_non_addresses() {
+        // 빈 값 · 플래그 흉내 · 내부 공백 · 형태 불명.
+        for bad in ["", "   ", "--upload-pack=evil", "git@host:a b", "저장소주소"] {
+            assert!(
+                validate_remote_url(bad).is_err(),
+                "should reject {bad:?}"
+            );
+        }
     }
 
     #[test]

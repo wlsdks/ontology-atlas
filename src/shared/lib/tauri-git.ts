@@ -113,9 +113,59 @@ export interface GitPullResult {
   summary: string;
 }
 
+/** Rust `GitInitResult`. */
+export interface GitInitResult {
+  /** 이번 호출로 기록이 시작됐나. 이미 저장소였으면 false. */
+  initialized: boolean;
+  /** `'already'`(이미 저장소) | null(방금 시작). */
+  reason: string | null;
+  repoRoot: string;
+  branch: string | null;
+  /** 시작 직후 "아직 남기지 않은 변경" 수. */
+  changedCount: number;
+}
+
+/** Rust `GitSetRemoteResult`. */
+export interface GitSetRemoteResult {
+  ok: boolean;
+  /** 항상 `'origin'`. */
+  remote: string;
+  url: string;
+  /** 기존 주소를 교체했으면 이전 주소. */
+  replaced: string | null;
+}
+
 /** Tauri git IPC 가용 여부 — false 면 웹 강등 경로. */
 export function isGitBridgeAvailable(): boolean {
   return getInvoke() !== null;
+}
+
+/**
+ * 이 폴더의 기록 시작(`git init`) — **사용자가 화면에서 직접 누를 때만**.
+ *
+ * 자동 호출 금지. 헌장이 금지하는 것은 *자동* 실행이고 사용자 클릭은 그 범주가
+ * 아니지만(2026-07-25 소유자 결정), 그 경계는 호출부가 지켜야 한다. Rust 쪽은
+ * init 만 하고 add/commit/push 로 연쇄하지 않는다 — 시작 직후 상태는 "아직
+ * 남기지 않은 변경 N건" 이다.
+ */
+export async function gitInit(vaultPath: string): Promise<GitInitResult | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<GitInitResult>('git_init', { vaultPath });
+}
+
+/**
+ * 보낼 곳(`origin`) 설정 — **사용자가 입력한 주소만** 넘긴다. 주소를 제안·추측·
+ * 자동탐지하지 말 것. 이 호출은 주소만 등록하고 **보내지 않는다** — 전송은
+ * `gitSnapshot({ push: true })` 로 사용자가 따로 눌러야 한다.
+ */
+export async function gitSetRemote(
+  vaultPath: string,
+  url: string,
+): Promise<GitSetRemoteResult | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<GitSetRemoteResult>('git_set_remote', { vaultPath, url });
 }
 
 /** vault 의 git 상태 요약. 브리지 없으면 null (웹 강등). */
