@@ -1312,7 +1312,7 @@ export function HomePage() {
     if (!ok) return;
     setFootprintPacketCopied(true);
     window.setTimeout(() => setFootprintPacketCopied(false), 1600);
-  }, [footprintTrailEntries, t]);
+  }, [footprintTrailEntries, dustySlugs, t]);
   const clearFootprintTrail = useCallback(() => {
     lastVisitedNodeRef.current = null;
     setFootprintTrail([]);
@@ -2232,7 +2232,7 @@ export function HomePage() {
     } finally {
       setStarterScaffolding(false);
     }
-  }, [vault, toast, t]);
+  }, [vault, toast, t, activeLocale]);
 
   const checklistProjectCount = useMemo(
     () => ontologyInsight?.nodes.filter((node) => node.kind === "project").length ?? 0,

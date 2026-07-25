@@ -659,6 +659,7 @@ function DocsVaultContent() {
     );
     return result;
   }, [
+    locale,
     localVault,
     recentKey,
     replaceUrlState,
