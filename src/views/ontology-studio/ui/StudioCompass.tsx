@@ -1665,7 +1665,12 @@ function LaneRender({
             left: layout.socket.x,
             top: layout.socket.y,
             width: layout.socket.w,
-            height: layout.socket.h,
+            // #94/#95 — grow to wrapped text instead of clipping. The layout
+            // height is Korean-tuned; longer English questions/eyebrows wrap to
+            // more lines, so the dashed box must expand (minHeight) rather than
+            // let the text bleed past its border. `justify-center` keeps short
+            // (Korean) content vertically centered in the base height.
+            minHeight: layout.socket.h,
             ...stageStyle,
             border: view.recommended
               ? "2px dashed var(--color-indigo-a46)"
@@ -1684,19 +1689,23 @@ function LaneRender({
               ◈ {labels.guideBadge}
             </span>
           ) : view.expected ? (
-            <span className="inline-flex items-center gap-1.5 text-label text-[color:var(--color-text-quaternary)]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-amber-signal-a60)]" /> {view.emptyHint}
+            <span className="flex w-full items-start gap-1.5 text-label text-[color:var(--color-text-quaternary)]">
+              <span className="mt-[3px] h-1.5 w-1.5 flex-none rounded-full bg-[color:var(--color-amber-signal-a60)]" />
+              <span className="min-w-0 [overflow-wrap:anywhere]">{view.emptyHint}</span>
             </span>
           ) : (
-            <span className="text-label text-[color:var(--color-text-quaternary)]">{view.emptyHint}</span>
+            <span className="block w-full text-label text-[color:var(--color-text-quaternary)] [overflow-wrap:anywhere]">{view.emptyHint}</span>
           )}
           {/* #6 — question is text-body(12.5); `text-callout` was an unregistered
               ramp step that silently rendered at the root 16px (the "billboard"
-              defect). max-w keeps a long question wrapping at a sane ~18-22ch
-              measure so the socket reads as a quiet slot. */}
-          <span className="flex max-w-[19ch] items-start gap-1.5 text-body font-medium text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+              defect). #94/#95 — keep-all stays (nice Korean 어절 wrapping) but
+              add overflow-wrap:anywhere so long English words break instead of
+              spilling past the dashed border, and widen the measure to the box
+              so English wraps to fewer lines. The box height grows (minHeight)
+              to hold the wrap. */}
+          <span className="flex max-w-full items-start gap-1.5 text-body font-medium text-[color:var(--color-text-secondary)] [word-break:keep-all] [overflow-wrap:anywhere]">
             <span className="mt-px flex-none text-[color:var(--color-text-quaternary)]">＋</span>
-            <span>{view.question}</span>
+            <span className="min-w-0">{view.question}</span>
           </span>
         </button>
       ) : null}
@@ -1963,7 +1972,11 @@ function laneHeadPos(view: CompassBearingView, layout: LaneLayout): React.CSSPro
   if (view.bearing === "right") return { left: layout.sats[0]?.x ?? 0, top: (layout.sats[0]?.y ?? CY) - 20 };
   if (view.bearing === "left") return { left: layout.sats[0]?.x ?? 0, top: (layout.sats[0]?.y ?? CY) - 20 };
   if (view.bearing === "up") return { left: CX - 60, top: (layout.sats[0]?.y ?? 0) - 20 };
-  return { left: CX - 60, top: (layout.sats[layout.sats.length - 1]?.y ?? 0) + SAT.h + 6 };
+  // #94/#95 — DOWN lane head sat BELOW the last satellite (+6), landing on top
+  // of the fold chip ("+90 more", +12) → collision. Mirror the UP lane: place
+  // the header ABOVE the topmost DOWN satellite (in the clear gap between the
+  // card and the stack) so it never overlaps the fold/add-chip cluster below.
+  return { left: CX - 60, top: (layout.sats[0]?.y ?? 0) - 20 };
 }
 
 // ── Inline anchored picker (dark canonical) ──────────────────────────────────
