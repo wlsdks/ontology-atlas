@@ -3,7 +3,13 @@ import type { DoNextQueue } from "./do-next-queue";
 import type { DependencyCyclesResult } from "./dependency-cycles";
 import { pickTodaysTouchUps, TOUCH_UP_MIN_VAULT_NODES } from "./todays-touch-ups";
 
-const noCycles: DependencyCyclesResult = { cycles: [], totalCycles: 0, hiddenCycles: 0, limited: false };
+const noCycles: DependencyCyclesResult = {
+  cycles: [],
+  totalCycles: 0,
+  hiddenCycles: 0,
+  activeCycleIds: [],
+  limited: false,
+};
 
 function neglected(nodeId: string, degree: number, agoDays: number): DoNextQueue["rows"][number] {
   return {
@@ -29,6 +35,7 @@ function promotion(nodeId: string): DoNextQueue["rows"][number] {
 function queueOf(rows: DoNextQueue["rows"]): DoNextQueue {
   return {
     rows,
+    activeRowIds: rows.map((row) => row.id),
     counts: {
       neglectedHub: rows.filter((r) => r.rowKind === "neglected-hub").length,
       orphan: rows.filter((r) => r.rowKind === "orphan").length,
@@ -49,6 +56,7 @@ describe("pickTodaysTouchUps (③ 오늘의 손질 절단)", () => {
       cycles: [{ id: "capability:a capability:b", length: 2, nodeIds: ["capability:a", "capability:b"], hiddenNodeCount: 0 }],
       totalCycles: 1,
       hiddenCycles: 0,
+      activeCycleIds: ["capability:a capability:b"],
       limited: false,
     };
     const queue = queueOf([neglected("n1", 12, 40), neglected("n2", 8, 33), promotion("p1"), orphan("o1")]);
@@ -79,5 +87,27 @@ describe("pickTodaysTouchUps (③ 오늘의 손질 절단)", () => {
     const picked = pickTodaysTouchUps(queue, noCycles, resolvers);
     // 방치 1 + 승격 0 = 1건 < 3 → 미표시 (고아는 밴드에서 제외).
     expect(picked).toEqual([]);
+  });
+
+  it("검토 왕복 중에는 1–2건만 남아도 밴드를 유지한다", () => {
+    const queue = queueOf([neglected("n1", 12, 40)]);
+    const picked = pickTodaysTouchUps(queue, noCycles, {
+      ...resolvers,
+      reviewId: "promotion:cleared",
+    });
+    expect(picked.map((item) => item.id)).toEqual(["neglected-hub:n1"]);
+  });
+
+  it("현재 exact row id가 살아 있으면 같은 node의 다른 kind가 아니라 그 행을 먼저 둔다", () => {
+    const queue = queueOf([
+      neglected("shared", 12, 40),
+      promotion("shared"),
+      promotion("other"),
+    ]);
+    const picked = pickTodaysTouchUps(queue, noCycles, {
+      ...resolvers,
+      reviewId: "promotion:shared",
+    });
+    expect(picked[0].id).toBe("promotion:shared");
   });
 });

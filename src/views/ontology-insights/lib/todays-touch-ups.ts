@@ -48,6 +48,11 @@ export interface PickTouchUpsOptions {
   cycleTitle: (nodeId: string) => string;
   /** 사이클별 에이전트 핸드오프 페이로드. */
   cycleHandoff: (cycle: DependencyCycle) => string;
+  /**
+   * 현재 검토 중인 exact row id. 있으면 1–2건뿐이어도 밴드를 유지하고,
+   * 아직 살아 있는 신호라면 첫 행으로 올린다.
+   */
+  reviewId?: string | null;
 }
 
 export const TOUCH_UP_TARGET = 3;
@@ -102,8 +107,16 @@ export function pickTodaysTouchUps(
     }));
 
   const ordered = [...forcedReview, ...neglectedHub, ...promotion];
+  const activeReviewIndex = options.reviewId
+    ? ordered.findIndex((item) => item.id === options.reviewId)
+    : -1;
+  if (activeReviewIndex > 0) {
+    const [activeReview] = ordered.splice(activeReviewIndex, 1);
+    ordered.unshift(activeReview);
+  }
 
-  // 콜드스타트 가드 ②: 3건을 못 채우면 밴드 미표시.
-  if (ordered.length < limit) return [];
+  // 검토 왕복 중에는 남은 신호가 1–2건이어도 다음 행동을 잃지 않는다.
+  // 평상시에는 기존 콜드스타트 가드(목표 수 미만이면 밴드 미표시)를 유지한다.
+  if (!options.reviewId && ordered.length < limit) return [];
   return ordered.slice(0, limit);
 }

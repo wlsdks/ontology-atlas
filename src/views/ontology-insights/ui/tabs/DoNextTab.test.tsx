@@ -60,9 +60,19 @@ const labels: DoNextTabLabels = {
   touchUpPriorityCount: (count) => `${count} priorities`,
   touchUpFlowHint: "Inspect on map → open source → edit in workshop → verify with agent",
   rowMenuTrigger: "More actions",
+  reviewChecking: (title) => `Checking ${title ?? "selected signal"}`,
+  reviewActive: (title) => `Still detected: ${title ?? "selected signal"}`,
+  reviewCleared: (title) => `Not detected in the current vault: ${title ?? "selected signal"}`,
+  reviewUnverified: (title) => `Could not verify: ${title ?? "selected signal"}`,
 };
 
-const noCycles: DependencyCyclesResult = { cycles: [], totalCycles: 0, hiddenCycles: 0, limited: false };
+const noCycles: DependencyCyclesResult = {
+  cycles: [],
+  totalCycles: 0,
+  hiddenCycles: 0,
+  activeCycleIds: [],
+  limited: false,
+};
 const cycleProps = {
   nodeTitle: (id: string) => id.replace(/^capability:/, "").toUpperCase(),
   cycleHandoff: (cycle: { id: string }) => `handoff for ${cycle.id}`,
@@ -99,6 +109,10 @@ const queue: DoNextQueue = {
       nodeKind: "element",
       handoffPayload: "find_neighbors …",
     },
+  ],
+  activeRowIds: [
+    "neglected-hub:capability:hub",
+    "orphan:element:alone",
   ],
   counts: { neglectedHub: 3, orphan: 1, promotion: 0 },
 };
@@ -144,7 +158,7 @@ describe("DoNextTab", () => {
   it("이관된 readiness 계기·수리 큐를 렌더한다 (RelationsTab 에서 이동)", () => {
     render(
       <DoNextTab
-        queue={{ rows: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
+        queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
         cycles={noCycles}
         agentReadiness={{ ready: 82, preflight: 4, review: 2 }}
         healthQueue={emptyHealthQueue}
@@ -165,7 +179,7 @@ describe("DoNextTab", () => {
   it("수리 대상이 있으면 빌더 딥링크를 노출한다", () => {
     render(
       <DoNextTab
-        queue={{ rows: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
+        queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
         agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
         healthQueue={{
           ...emptyHealthQueue,
@@ -194,11 +208,12 @@ describe("DoNextTab", () => {
       ],
       totalCycles: 1,
       hiddenCycles: 0,
+      activeCycleIds: ["capability:a\u0000capability:b\u0000capability:c"],
       limited: false,
     };
     render(
       <DoNextTab
-        queue={{ rows: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
+        queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
         cycles={cycles}
         agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
         healthQueue={emptyHealthQueue}
@@ -230,11 +245,12 @@ describe("DoNextTab", () => {
       ],
       totalCycles: 7,
       hiddenCycles: 2,
+      activeCycleIds: [long.join("\u0000")],
       limited: false,
     };
     render(
       <DoNextTab
-        queue={{ rows: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
+        queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
         cycles={cycles}
         agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
         healthQueue={emptyHealthQueue}
@@ -258,8 +274,8 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
   it("로그가 있으면 오늘 카운트 + 최근 요약 + git diff 힌트를 렌더한다", () => {
     render(
       <DoNextTab
-        queue={{ rows: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
-        cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, limited: false }}
+        queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
+        cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, activeCycleIds: [], limited: false }}
         agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
         healthQueue={{
           staleCount: 0, orphanCount: 0, promotionCount: 0, actionTarget: null,
@@ -294,8 +310,8 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
   it("why 가 있는 항목은 요약 아래에 truncate 된 이유 줄을 함께 보여준다", () => {
     render(
       <DoNextTab
-        queue={{ rows: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
-        cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, limited: false }}
+        queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
+        cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, activeCycleIds: [], limited: false }}
         agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
         healthQueue={{
           staleCount: 0, orphanCount: 0, promotionCount: 0, actionTarget: null,
@@ -333,8 +349,8 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
   it("static 모드(null)에서는 카드를 렌더하지 않는다", () => {
     render(
       <DoNextTab
-        queue={{ rows: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
-        cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, limited: false }}
+        queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
+        cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, activeCycleIds: [], limited: false }}
         agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
         healthQueue={{
           staleCount: 0, orphanCount: 0, promotionCount: 0, actionTarget: null,
@@ -387,7 +403,7 @@ describe("DoNextTab — 오늘의 손질 밴드 (③)", () => {
   function renderBand(items: DoNextTouchUp[] = touchUps) {
     return render(
       <DoNextTab
-        queue={{ rows: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
+        queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
         touchUps={items}
         cycles={noCycles}
         agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
@@ -423,6 +439,35 @@ describe("DoNextTab — 오늘의 손질 밴드 (③)", () => {
     expect(screen.queryByTestId("do-next-touchups")).toBeNull();
   });
 
+  it("밴드에 올라온 exact cycle은 아래 사이클 섹션에 중복 렌더하지 않는다", () => {
+    render(
+      <DoNextTab
+        queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
+        touchUps={[touchUps[0]]}
+        cycles={{
+          cycles: [{
+            id: "c1",
+            length: 2,
+            nodeIds: ["capability:a", "capability:b"],
+            hiddenNodeCount: 0,
+          }],
+          totalCycles: 1,
+          hiddenCycles: 0,
+          activeCycleIds: ["c1"],
+          limited: false,
+        }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        healthQueue={emptyHealthQueue}
+        mapHref={(id) => id}
+        builderHref={(id) => id}
+        {...cycleProps}
+        labels={labels}
+      />,
+    );
+    expect(screen.getAllByTestId("do-next-touchup-row")).toHaveLength(1);
+    expect(screen.queryByTestId("do-next-cycle-row")).toBeNull();
+  });
+
   it("지도 열기는 검토 시작일 뿐 완료가 아니므로 행과 우선순위 수를 유지한다", () => {
     renderBand();
     const rows = screen.getAllByTestId("do-next-touchup-row");
@@ -432,6 +477,77 @@ describe("DoNextTab — 오늘의 손질 밴드 (③)", () => {
     expect(screen.getByTestId("do-next-touchups-priority-count")).toHaveTextContent(
       "3 priorities",
     );
+  });
+
+  it("exact row id를 모든 액션 href와 검토 시작 콜백에 전달한다", () => {
+    const onReviewStart = vi.fn();
+    const mapHref = vi.fn((id: string, reviewId?: string) => `/map/${id}?review=${reviewId}`);
+    render(
+      <DoNextTab
+        queue={queue}
+        cycles={noCycles}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        healthQueue={emptyHealthQueue}
+        mapHref={mapHref}
+        builderHref={(id, reviewId) => `/studio/${id}?review=${reviewId}`}
+        sourceHref={(id, reviewId) => `/docs/${id}?review=${reviewId}`}
+        nodeTitle={(id) => id}
+        cycleHandoff={() => ""}
+        activityDigest={null}
+        reviewState={{
+          id: "orphan:element:alone",
+          phase: "active",
+          title: "Alone",
+        }}
+        onReviewStart={onReviewStart}
+        labels={labels}
+      />,
+    );
+
+    const orphanRow = screen
+      .getAllByTestId("do-next-row")
+      .find((row) => row.textContent?.includes("Alone"));
+    expect(orphanRow).toHaveAttribute("aria-current", "step");
+    expect(orphanRow?.className).toContain(
+      "focus-visible:ring-[color:var(--color-indigo-a42)]",
+    );
+    const mapLink = within(orphanRow!).getByText("Inspect on map");
+    expect(mapLink).toHaveAttribute(
+      "href",
+      "/map/element:alone?review=orphan:element:alone",
+    );
+    fireEvent.click(mapLink);
+    expect(onReviewStart).toHaveBeenCalledWith({
+      id: "orphan:element:alone",
+      title: "Alone",
+    });
+    expect(screen.getByRole("status")).toHaveTextContent("Still detected: Alone");
+  });
+
+  it("cleared 상태는 성공 장식 없이 현재 vault 관측 문장과 polite live region만 보여준다", () => {
+    render(
+      <DoNextTab
+        queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
+        cycles={noCycles}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        healthQueue={emptyHealthQueue}
+        mapHref={(id) => id}
+        builderHref={(id) => id}
+        {...cycleProps}
+        reviewState={{
+          id: "orphan:element:gone",
+          phase: "cleared",
+          title: "Gone",
+        }}
+        labels={labels}
+      />,
+    );
+
+    const status = screen.getByTestId("do-next-review-status");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(status).toHaveAttribute("aria-atomic", "true");
+    expect(status).toHaveTextContent("Not detected in the current vault: Gone");
+    expect(status.className).not.toMatch(/success|green|animate/);
   });
 
   it("에이전트 인계 복사는 복사 피드백만 주고 완료를 가장하지 않는다", async () => {

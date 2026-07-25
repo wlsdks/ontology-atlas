@@ -18,16 +18,27 @@ import { translateOntologyDeeplinkToTopologyParam } from "./translate-ontology-d
  */
 export function buildOntologyNodeHref(
   nodeId: string,
-  options?: { via?: string },
+  options?: { via?: string; reviewId?: string },
 ): string {
   const base = `/ontology/?node=${encodeURIComponent(nodeId)}`;
-  return options?.via
-    ? `${base}&${ONTOLOGY_DEEPLINK_VIA_KEY}=${encodeURIComponent(options.via)}`
-    : base;
+  const params: string[] = [];
+  if (options?.via) {
+    params.push(
+      `${ONTOLOGY_DEEPLINK_VIA_KEY}=${encodeURIComponent(options.via)}`,
+    );
+  }
+  if (options?.via && options.reviewId) {
+    params.push(
+      `${ONTOLOGY_DEEPLINK_REVIEW_KEY}=${encodeURIComponent(options.reviewId)}`,
+    );
+  }
+  return params.length > 0 ? `${base}&${params.join("&")}` : base;
 }
 
 /** 딥링크 출처 마커의 query key — insights → redirect → topology 3-hop 공유. */
 export const ONTOLOGY_DEEPLINK_VIA_KEY = "via";
+/** 인사이트 `할 일`의 정확한 검토 행 id — 유효한 via 마커와 함께만 소비한다. */
+export const ONTOLOGY_DEEPLINK_REVIEW_KEY = "review";
 
 const INSIGHTS_RETURN_MARKER_PATTERN = /^insights:([a-z][a-z0-9-]*)$/;
 
@@ -49,9 +60,14 @@ export function parseInsightsReturnMarker(
   return match ? match[1] : null;
 }
 
-/** 복귀 칩 클릭이 향하는 곳 — 원래 보던 인사이트 탭. */
-export function buildOntologyInsightsReturnHref(tab: string): string {
-  return `/ontology/insights/?tab=${encodeURIComponent(tab)}`;
+/** 복귀 칩 클릭이 향하는 곳 — 원래 보던 인사이트 탭과 검토 행. */
+export function buildOntologyInsightsReturnHref(
+  tab: string,
+  reviewId?: string | null,
+): string {
+  const params = new URLSearchParams({ tab });
+  if (reviewId) params.set(ONTOLOGY_DEEPLINK_REVIEW_KEY, reviewId);
+  return `/ontology/insights/?${params.toString()}`;
 }
 
 const KIND_TO_VAULT_FOLDER: Record<string, string> = {
@@ -86,10 +102,25 @@ export function resolveOntologyBuilderNodeSlugFromGraphId(nodeId: string): strin
  * `n.id === requestedNode` 매칭이 두 문법 모두에서 성립하도록 한 문법으로
  * 수렴한다(지도 `?p=`·온톨로지 리다이렉트와 같은 정규화기 재사용).
  */
-export function buildOntologyStudioNodeHrefFromGraphId(nodeId: string): string {
-  return `/ontology/studio/?node=${encodeURIComponent(
+export function buildOntologyStudioNodeHrefFromGraphId(
+  nodeId: string,
+  options?: { via?: string | null; reviewId?: string | null },
+): string {
+  const base = `/ontology/studio/?node=${encodeURIComponent(
     translateOntologyDeeplinkToTopologyParam(nodeId),
   )}`;
+  const params: string[] = [];
+  if (options?.via) {
+    params.push(
+      `${ONTOLOGY_DEEPLINK_VIA_KEY}=${encodeURIComponent(options.via)}`,
+    );
+  }
+  if (options?.via && options.reviewId) {
+    params.push(
+      `${ONTOLOGY_DEEPLINK_REVIEW_KEY}=${encodeURIComponent(options.reviewId)}`,
+    );
+  }
+  return params.length > 0 ? `${base}&${params.join("&")}` : base;
 }
 
 /**

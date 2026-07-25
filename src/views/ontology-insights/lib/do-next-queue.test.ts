@@ -88,5 +88,7 @@ describe("buildDoNextQueue (S5 — 할 일 큐)", () => {
     const queue = buildDoNextQueue(orphans, [], new Map(), { now: NOW, perKindLimit: 3 });
     expect(queue.rows.filter((r) => r.rowKind === "orphan")).toHaveLength(3);
     expect(queue.counts.orphan).toBe(8);
+    expect(queue.activeRowIds.filter((id) => id.startsWith("orphan:"))).toHaveLength(8);
+    expect(queue.activeRowIds).toContain("orphan:element:o7");
   });
 });

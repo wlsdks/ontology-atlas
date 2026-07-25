@@ -44,6 +44,7 @@ describe("findDependencyCycles", () => {
     expect(result.cycles).toEqual([]);
     expect(result.totalCycles).toBe(0);
     expect(result.hiddenCycles).toBe(0);
+    expect(result.activeCycleIds).toEqual([]);
   });
 
   it("사이클 0 — containment 순환은 의존 사이클이 아니다", () => {
@@ -103,6 +104,7 @@ describe("findDependencyCycles", () => {
     expect(result.totalCycles).toBe(8);
     expect(result.cycles.length).toBe(5);
     expect(result.hiddenCycles).toBe(3);
+    expect(result.activeCycleIds).toHaveLength(8);
   });
 
   it("경로 상한 — 8 노드 초과 사이클은 8개만 표기하고 hiddenNodeCount 로 정직 표기", () => {

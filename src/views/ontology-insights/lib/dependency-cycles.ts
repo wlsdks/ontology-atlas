@@ -43,6 +43,8 @@ export interface DependencyCyclesResult {
   totalCycles: number;
   /** totalCycles - cycles.length. >0 이면 "외 N개" 표기. */
   hiddenCycles: number;
+  /** 표시 상한과 무관한 현재 전체 사이클 id. exact review 판정에 쓴다. */
+  activeCycleIds: string[];
   /** 깊이 상한/작업 예산에 걸려 탐색이 잘렸는가(더 긴 사이클을 놓쳤을 수 있음). */
   limited: boolean;
 }
@@ -167,6 +169,7 @@ export function findDependencyCycles(
     cycles,
     totalCycles,
     hiddenCycles: Math.max(0, totalCycles - cycles.length),
+    activeCycleIds: allCycles.map((nodeIds) => nodeIds.join(" ")),
     limited: depthTruncated || budgetExhausted,
   };
 }

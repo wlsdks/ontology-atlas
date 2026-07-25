@@ -4,7 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { parseOntologyStudioEditParam } from "@/entities/knowledge-graph";
+import {
+  buildOntologyInsightsReturnHref,
+  ONTOLOGY_DEEPLINK_REVIEW_KEY,
+  ONTOLOGY_DEEPLINK_VIA_KEY,
+  parseInsightsReturnMarker,
+  parseOntologyStudioEditParam,
+} from "@/entities/knowledge-graph";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { useLocalVault } from "@/features/docs-vault-local";
@@ -56,7 +62,6 @@ import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from
 
 const STUDIO_BASE = "/ontology/studio";
 const CREATE_HREF = `${STUDIO_BASE}?mode=create`;
-const EXIT_HREF = "/topology";
 
 const CREATE_KINDS: CreateNodeKind[] = ["project", "domain", "capability", "element"];
 
@@ -98,6 +103,30 @@ export function OntologyStudioPage() {
 
   const isCreate = searchParams.get("mode") === "create";
   const requestedNode = searchParams.get("node");
+  const insightsReturnTab = parseInsightsReturnMarker(
+    searchParams.get(ONTOLOGY_DEEPLINK_VIA_KEY),
+  );
+  const insightsReviewId = insightsReturnTab
+    ? searchParams.get(ONTOLOGY_DEEPLINK_REVIEW_KEY)
+    : null;
+  const preserveReviewContext = useCallback(
+    (href: string) => {
+      if (!insightsReturnTab) return href;
+      const next = new URL(href, "http://ontology-atlas.local");
+      next.searchParams.set(
+        ONTOLOGY_DEEPLINK_VIA_KEY,
+        `insights:${insightsReturnTab}`,
+      );
+      if (insightsReviewId) {
+        next.searchParams.set(
+          ONTOLOGY_DEEPLINK_REVIEW_KEY,
+          insightsReviewId,
+        );
+      }
+      return `${next.pathname}${next.search}`;
+    },
+    [insightsReturnTab, insightsReviewId],
+  );
 
   const nodes = useMemo(() => insight?.nodes ?? [], [insight]);
   const edges = useMemo(() => insight?.edges ?? [], [insight]);
@@ -129,7 +158,7 @@ export function OntologyStudioPage() {
   const labels: StudioCompassLabels = useMemo(
     () => ({
       searchPlaceholder: t("searchPlaceholder"),
-      exit: t("exit"),
+      exit: insightsReturnTab ? t("returnToReview") : t("exit"),
       moreRelations: t("moreRelations"),
       flowEyebrow: t("flowEyebrow"),
       flowCount: (filled, total) => `${t("flowCount", { filled, total })} ${flowHint(filled)}`,
@@ -207,7 +236,7 @@ export function OntologyStudioPage() {
       previewLegendMoved: t("preview.legendMoved"),
       previewLegendRemoved: t("preview.legendRemoved"),
     }),
-    [t, isCreate, flowHint],
+    [t, isCreate, flowHint, insightsReturnTab],
   );
 
   // Plain-language record summary vocab — one bag serving both ko + en and both
@@ -233,11 +262,30 @@ export function OntologyStudioPage() {
     [t, relationShort],
   );
 
-  const enterCreate = useCallback(() => router.push(CREATE_HREF), [router]);
-  const exit = useCallback(() => router.push(EXIT_HREF), [router]);
+  const enterCreate = useCallback(
+    () => router.push(preserveReviewContext(CREATE_HREF)),
+    [router, preserveReviewContext],
+  );
+  const exit = useCallback(
+    () =>
+      router.push(
+        insightsReturnTab
+          ? buildOntologyInsightsReturnHref(
+              insightsReturnTab,
+              insightsReviewId,
+            )
+          : "/topology",
+      ),
+    [router, insightsReturnTab, insightsReviewId],
+  );
   const openNode = useCallback(
-    (id: string) => router.push(`${STUDIO_BASE}?node=${encodeURIComponent(id)}`),
-    [router],
+    (id: string) =>
+      router.push(
+        preserveReviewContext(
+          `${STUDIO_BASE}?node=${encodeURIComponent(id)}`,
+        ),
+      ),
+    [router, preserveReviewContext],
   );
 
   // Candidate picker for a relation — allowed kinds, minus already-linked / self.
@@ -396,9 +444,9 @@ export function OntologyStudioPage() {
   const openSimilarNode = useCallback(
     (slug: string) => {
       const node = candidates.find((c) => c.ref === slug);
-      if (node) router.push(`${STUDIO_BASE}?node=${encodeURIComponent(node.id)}`);
+      if (node) openNode(node.id);
     },
-    [candidates, router],
+    [candidates, openNode],
   );
 
   const applyCreate = useCallback(async () => {
@@ -409,7 +457,7 @@ export function OntologyStudioPage() {
         await localVault.createDoc(slug, markdown);
         toast.show(t("create.appliedDirect", { title: title.trim() }), "success");
         const tail = slug.split("/").at(-1) ?? "";
-        router.push(`${STUDIO_BASE}?node=${encodeURIComponent(`${kind}:${tail}`)}`);
+        openNode(`${kind}:${tail}`);
       } catch (err) {
         toast.show(t("create.applyFailed", { message: err instanceof Error ? err.message : String(err) }), "error");
       }
@@ -421,7 +469,7 @@ export function OntologyStudioPage() {
     } catch {
       toast.show(t("create.copyFailed"), "info");
     }
-  }, [title, createSlugCollision, writable, draft, localVault, toast, t, router, kind]);
+  }, [title, createSlugCollision, writable, draft, localVault, toast, t, kind, openNode]);
 
   if (isCreate) {
     const bearings: CompassBearingView[] = RELATIONS.map((relation) => {

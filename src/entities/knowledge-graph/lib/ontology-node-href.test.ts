@@ -49,6 +49,24 @@ describe("buildOntologyNodeHref", () => {
       `/ontology/?node=${encodeURIComponent("domain:views")}`,
     );
   });
+
+  it("검토 행 id도 지도 복귀 문맥으로 함께 보존한다", () => {
+    expect(
+      buildOntologyNodeHref("domain:views", {
+        via: "insights:do-next",
+        reviewId: "neglected-hub:domain:views",
+      }),
+    ).toBe(
+      `/ontology/?node=${encodeURIComponent("domain:views")}` +
+        `&via=${encodeURIComponent("insights:do-next")}` +
+        `&review=${encodeURIComponent("neglected-hub:domain:views")}`,
+    );
+    expect(
+      buildOntologyNodeHref("domain:views", {
+        reviewId: "orphan:domain:views",
+      }),
+    ).toBe(`/ontology/?node=${encodeURIComponent("domain:views")}`);
+  });
 });
 
 describe("insights return marker", () => {
@@ -73,7 +91,16 @@ describe("insights return marker", () => {
     expect(buildOntologyInsightsReturnHref("freshness")).toBe(
       "/ontology/insights/?tab=freshness",
     );
+    expect(
+      buildOntologyInsightsReturnHref(
+        "do-next",
+        "neglected-hub:capability:mcp-server",
+      ),
+    ).toBe(
+      "/ontology/insights/?tab=do-next&review=neglected-hub%3Acapability%3Amcp-server",
+    );
   });
+
 });
 
 describe("resolveOntologyBuilderNodeSlug", () => {
@@ -167,6 +194,20 @@ describe("buildOntologyStudioNodeHrefFromGraphId", () => {
       `/ontology/studio/?node=${encodeURIComponent(
         "capability:topology-analysis-modes",
       )}`,
+    );
+    expect(
+      buildOntologyStudioNodeHrefFromGraphId(
+        "capability:topology-analysis-modes",
+        {
+          via: "insights:do-next",
+          reviewId: "promotion:element:x",
+        },
+      ),
+    ).toBe(
+      `/ontology/studio/?node=${encodeURIComponent(
+        "capability:topology-analysis-modes",
+      )}&via=${encodeURIComponent("insights:do-next")}` +
+        `&review=${encodeURIComponent("promotion:element:x")}`,
     );
   });
 

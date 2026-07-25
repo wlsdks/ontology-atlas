@@ -399,6 +399,7 @@ export function HomePage() {
     createNodeIntent,
     indexState,
     insightsReturnTab,
+    insightsReturnReviewId,
     expandedParents: expandedParentSlugs,
     realmSlug,
     recentWindow,
@@ -2646,12 +2647,18 @@ export function HomePage() {
                     returnChip={
                       insightsReturnTab ? (
                         <TopologyInsightsReturnChip
-                          href={buildOntologyInsightsReturnHref(insightsReturnTab)}
+                          href={buildOntologyInsightsReturnHref(
+                            insightsReturnTab,
+                            insightsReturnReviewId,
+                          )}
                           label={t("insightsReturn.label")}
                           ariaLabel={t("insightsReturn.ariaLabel")}
                           dismissAriaLabel={t("insightsReturn.dismissAriaLabel")}
                           onDismiss={() => {
-                            setRouteState({ insightsReturnTab: null });
+                            setRouteState({
+                              insightsReturnTab: null,
+                              insightsReturnReviewId: null,
+                            });
                           }}
                         />
                       ) : undefined

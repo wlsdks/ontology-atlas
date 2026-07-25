@@ -29,6 +29,8 @@ export interface DoNextRow {
 
 export interface DoNextQueue {
   rows: DoNextRow[];
+  /** 표시 상한과 무관한 현재 전체 신호 id. 검토 종료 판정의 진실원. */
+  activeRowIds: string[];
   counts: { neglectedHub: number; orphan: number; promotion: number };
 }
 
@@ -146,6 +148,9 @@ export function buildDoNextQueue(
 
   return {
     rows,
+    activeRowIds: [...neglectedHubs, ...orphans, ...promotions].map(
+      (row) => row.id,
+    ),
     counts: {
       neglectedHub: neglectedHubs.length,
       orphan: orphans.length,

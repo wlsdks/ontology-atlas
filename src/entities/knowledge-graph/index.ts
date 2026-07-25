@@ -23,6 +23,7 @@ export {
   studioEditRelationForEdgeType,
   parseOntologyStudioEditParam,
   ONTOLOGY_DEEPLINK_VIA_KEY,
+  ONTOLOGY_DEEPLINK_REVIEW_KEY,
   ONTOLOGY_STUDIO_EDIT_KEY,
   parseInsightsReturnMarker,
   resolveOntologyBuilderNodeSlug,

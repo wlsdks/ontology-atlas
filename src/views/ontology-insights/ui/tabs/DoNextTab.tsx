@@ -8,6 +8,7 @@ import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import type { OntologyHealthActionTarget } from "@/entities/knowledge-graph";
 import type { DoNextQueue, DoNextRow } from "../../lib/do-next-queue";
 import type { DependencyCycle, DependencyCyclesResult } from "../../lib/dependency-cycles";
+import type { DoNextReviewState } from "../../lib/review-loop";
 
 /**
  * 탭1 "할 일" (S5, 전략 verdict B 채택) — 인사이트의 기본 탭. "무엇이
@@ -74,6 +75,10 @@ export interface DoNextTabLabels {
   touchUpFlowHint: string;
   /** 케밥(더보기) 트리거 aria-label. */
   rowMenuTrigger: string;
+  reviewChecking: (title: string | null) => string;
+  reviewActive: (title: string | null) => string;
+  reviewCleared: (title: string | null) => string;
+  reviewUnverified: (title: string | null) => string;
 }
 
 /**
@@ -118,9 +123,11 @@ export interface DoNextTabProps {
   cycles: DependencyCyclesResult;
   agentReadiness: DoNextTabAgentReadiness;
   healthQueue: DoNextTabHealthQueue;
-  mapHref: (nodeId: string) => string;
-  sourceHref: (nodeId: string) => string | null;
-  builderHref: (nodeId: string) => string;
+  mapHref: (nodeId: string, reviewId?: string) => string;
+  sourceHref: (nodeId: string, reviewId?: string) => string | null;
+  builderHref: (nodeId: string, reviewId?: string) => string;
+  reviewState?: DoNextReviewState | null;
+  onReviewStart?: (candidate: { id: string; title: string }) => void;
   /** 사이클 경로 노드 id → 표시 제목. */
   nodeTitle: (nodeId: string) => string;
   /** 사이클별 에이전트 핸드오프 페이로드(복사용). */
@@ -138,13 +145,24 @@ export interface DoNextTabProps {
   labels: DoNextTabLabels;
 }
 
-function HandoffCopyButton({ payload, labels }: { payload: string; labels: DoNextTabLabels }) {
+function HandoffCopyButton({
+  payload,
+  labels,
+  candidate,
+  onReviewStart,
+}: {
+  payload: string;
+  labels: DoNextTabLabels;
+  candidate?: { id: string; title: string };
+  onReviewStart?: (candidate: { id: string; title: string }) => void;
+}) {
   const [copied, setCopied] = useState(false);
   return (
     <button
       type="button"
       data-testid="do-next-handoff-copy"
       onClick={async () => {
+        if (candidate) onReviewStart?.(candidate);
         if (await copyText(payload)) {
           setCopied(true);
           window.setTimeout(() => setCopied(false), 1600);
@@ -168,11 +186,15 @@ function RowActionMenu({
   sourceHref,
   builderHref,
   handoffPayload,
+  candidate,
+  onReviewStart,
   labels,
 }: {
   sourceHref: string | null;
   builderHref: string;
   handoffPayload: string;
+  candidate: { id: string; title: string };
+  onReviewStart?: (candidate: { id: string; title: string }) => void;
   labels: DoNextTabLabels;
 }) {
   const [open, setOpen] = useState(false);
@@ -230,7 +252,10 @@ function RowActionMenu({
               href={sourceHref}
               role="menuitem"
               data-testid="do-next-row-menu-source"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                onReviewStart?.(candidate);
+                setOpen(false);
+              }}
               className={menuItemClass}
             >
               <FileText size={13} aria-hidden />
@@ -242,6 +267,7 @@ function RowActionMenu({
             role="menuitem"
             data-testid="do-next-row-menu-builder"
             onClick={() => {
+              onReviewStart?.(candidate);
               setOpen(false);
             }}
             className={menuItemClass}
@@ -254,6 +280,7 @@ function RowActionMenu({
             role="menuitem"
             data-testid="do-next-row-menu-handoff"
             onClick={async () => {
+              onReviewStart?.(candidate);
               if (await copyText(handoffPayload)) {
                 setCopied(true);
                 window.setTimeout(() => {
@@ -284,12 +311,18 @@ function TouchUpBand({
   mapHref,
   sourceHref,
   builderHref,
+  reviewState,
+  onReviewStart,
+  registerReviewRow,
   labels,
 }: {
   items: DoNextTouchUp[];
-  mapHref: (nodeId: string) => string;
-  sourceHref: (nodeId: string) => string | null;
-  builderHref: (nodeId: string) => string;
+  mapHref: (nodeId: string, reviewId?: string) => string;
+  sourceHref: (nodeId: string, reviewId?: string) => string | null;
+  builderHref: (nodeId: string, reviewId?: string) => string;
+  reviewState?: DoNextReviewState | null;
+  onReviewStart?: (candidate: { id: string; title: string }) => void;
+  registerReviewRow?: (id: string, element: HTMLDivElement | null) => void;
   labels: DoNextTabLabels;
 }) {
   return (
@@ -317,11 +350,21 @@ function TouchUpBand({
       </p>
       <div className="flex flex-col">
         {items.map((item) => {
+          const candidate = { id: item.id, title: item.title };
+          const active =
+            reviewState?.phase === "active" && reviewState.id === item.id;
           return (
             <div
               key={item.id}
+              ref={(element) => registerReviewRow?.(item.id, element)}
               data-testid="do-next-touchup-row"
-              className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b border-[color:var(--color-divider)] py-2.5 last:border-b-0"
+              tabIndex={-1}
+              aria-current={active ? "step" : undefined}
+              className={`flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b border-[color:var(--color-divider)] py-2.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-a42)] last:border-b-0 ${
+                active
+                  ? "bg-[color:var(--color-indigo-a06)] ring-1 ring-inset ring-[color:var(--color-indigo-a22)]"
+                  : ""
+              }`}
             >
               {item.source === "cycle" ? (
                 <AlertTriangle size={13} aria-hidden className="text-[color:var(--color-status-warning)]" />
@@ -339,15 +382,18 @@ function TouchUpBand({
               </div>
               <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
                 <Link
-                  href={mapHref(item.nodeId)}
+                  href={mapHref(item.nodeId, item.id)}
+                  onClick={() => onReviewStart?.(candidate)}
                   className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.openMap}
                 </Link>
                 <RowActionMenu
-                  sourceHref={sourceHref(item.nodeId)}
-                  builderHref={builderHref(item.nodeId)}
+                  sourceHref={sourceHref(item.nodeId, item.id)}
+                  builderHref={builderHref(item.nodeId, item.id)}
                   handoffPayload={item.handoffPayload}
+                  candidate={candidate}
+                  onReviewStart={onReviewStart}
                   labels={labels}
                 />
               </span>
@@ -368,6 +414,9 @@ function QueueSection({
   mapHref,
   sourceHref,
   builderHref,
+  reviewState,
+  onReviewStart,
+  registerReviewRow,
   labels,
 }: {
   title: string;
@@ -376,9 +425,12 @@ function QueueSection({
   rows: DoNextRow[];
   totalCount: number;
   metric: (row: DoNextRow) => string | null;
-  mapHref: (nodeId: string) => string;
-  sourceHref: (nodeId: string) => string | null;
-  builderHref: (nodeId: string) => string;
+  mapHref: (nodeId: string, reviewId?: string) => string;
+  sourceHref: (nodeId: string, reviewId?: string) => string | null;
+  builderHref: (nodeId: string, reviewId?: string) => string;
+  reviewState?: DoNextReviewState | null;
+  onReviewStart?: (candidate: { id: string; title: string }) => void;
+  registerReviewRow?: (id: string, element: HTMLDivElement | null) => void;
   labels: DoNextTabLabels;
 }) {
   if (rows.length === 0) return null;
@@ -398,13 +450,23 @@ function QueueSection({
       </div>
       {rows.map((row) => {
         const metricText = metric(row);
+        const candidate = { id: row.id, title: row.title };
+        const active =
+          reviewState?.phase === "active" && reviewState.id === row.id;
         return (
           <div
             key={row.id}
+            ref={(element) => registerReviewRow?.(row.id, element)}
             data-testid="do-next-row"
+            tabIndex={-1}
+            aria-current={active ? "step" : undefined}
             // 모바일(≤sm): 액션 3종이 한 줄에 안 들어가므로 타이틀 아래로
             // wrap (390px overflow-sweep 회귀 — 페이지 가로 스크롤 금지 계약).
-            className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b border-[color:var(--color-divider)] py-2.5 last:border-b-0"
+            className={`flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b border-[color:var(--color-divider)] py-2.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-a42)] last:border-b-0 ${
+              active
+                ? "bg-[color:var(--color-indigo-a06)] ring-1 ring-inset ring-[color:var(--color-indigo-a22)]"
+                : ""
+            }`}
           >
             <TopologyV2KindGlyph kind={row.nodeKind} size={13} />
             <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-secondary)]">
@@ -417,15 +479,18 @@ function QueueSection({
             ) : null}
             <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
               <Link
-                href={mapHref(row.nodeId)}
+                href={mapHref(row.nodeId, row.id)}
+                onClick={() => onReviewStart?.(candidate)}
                 className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
               >
                 {labels.openMap}
               </Link>
               <RowActionMenu
-                sourceHref={sourceHref(row.nodeId)}
-                builderHref={builderHref(row.nodeId)}
+                sourceHref={sourceHref(row.nodeId, row.id)}
+                builderHref={builderHref(row.nodeId, row.id)}
                 handoffPayload={row.handoffPayload}
+                candidate={candidate}
+                onReviewStart={onReviewStart}
                 labels={labels}
               />
             </span>
@@ -450,12 +515,18 @@ function CycleSection({
   mapHref,
   nodeTitle,
   cycleHandoff,
+  reviewState,
+  onReviewStart,
+  registerReviewRow,
   labels,
 }: {
   cycles: DependencyCyclesResult;
-  mapHref: (nodeId: string) => string;
+  mapHref: (nodeId: string, reviewId?: string) => string;
   nodeTitle: (nodeId: string) => string;
   cycleHandoff: (cycle: DependencyCycle) => string;
+  reviewState?: DoNextReviewState | null;
+  onReviewStart?: (candidate: { id: string; title: string }) => void;
+  registerReviewRow?: (id: string, element: HTMLDivElement | null) => void;
   labels: DoNextTabLabels;
 }) {
   if (cycles.cycles.length === 0) return null;
@@ -472,11 +543,22 @@ function CycleSection({
       </div>
       {cycles.cycles.map((cycle) => {
         const firstNodeId = cycle.nodeIds[0];
+        const reviewId = `cycle:${cycle.id}`;
+        const candidate = { id: reviewId, title: nodeTitle(firstNodeId) };
+        const active =
+          reviewState?.phase === "active" && reviewState.id === reviewId;
         return (
           <div
             key={cycle.id}
+            ref={(element) => registerReviewRow?.(reviewId, element)}
             data-testid="do-next-cycle-row"
-            className="flex min-w-0 items-center gap-2.5 border-b border-[color:var(--color-divider)] py-2.5 last:border-b-0"
+            tabIndex={-1}
+            aria-current={active ? "step" : undefined}
+            className={`flex min-w-0 items-center gap-2.5 border-b border-[color:var(--color-divider)] py-2.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-a42)] last:border-b-0 ${
+              active
+                ? "bg-[color:var(--color-indigo-a06)] ring-1 ring-inset ring-[color:var(--color-indigo-a22)]"
+                : ""
+            }`}
           >
             <span className="min-w-0 flex-1 truncate font-mono text-body text-[color:var(--color-text-secondary)]">
               {cycle.nodeIds.map((nodeId, i) => (
@@ -499,12 +581,18 @@ function CycleSection({
             </span>
             <span className="flex shrink-0 items-center gap-1.5">
               <Link
-                href={mapHref(firstNodeId)}
+                href={mapHref(firstNodeId, reviewId)}
+                onClick={() => onReviewStart?.(candidate)}
                 className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
               >
                 {labels.openMap}
               </Link>
-              <HandoffCopyButton payload={cycleHandoff(cycle)} labels={labels} />
+              <HandoffCopyButton
+                payload={cycleHandoff(cycle)}
+                labels={labels}
+                candidate={candidate}
+                onReviewStart={onReviewStart}
+              />
             </span>
           </div>
         );
@@ -530,8 +618,49 @@ export function DoNextTab({
   nodeTitle,
   cycleHandoff,
   activityDigest,
+  reviewState,
+  onReviewStart,
   labels,
 }: DoNextTabProps) {
+  const reviewStatusRef = useRef<HTMLParagraphElement | null>(null);
+  const reviewRowRefs = useRef(new Map<string, HTMLDivElement>());
+  const lastFocusedReviewKeyRef = useRef<string | null>(null);
+  const nextTouchUpId = touchUps[0]?.id;
+  const reviewPhase = reviewState?.phase;
+  const currentReviewId = reviewState?.id;
+  const registerReviewRow = (
+    id: string,
+    element: HTMLDivElement | null,
+  ) => {
+    if (element) reviewRowRefs.current.set(id, element);
+    else reviewRowRefs.current.delete(id);
+  };
+  useEffect(() => {
+    if (!reviewPhase || !currentReviewId) return;
+    const focusKey = `${currentReviewId}:${reviewPhase}`;
+    if (lastFocusedReviewKeyRef.current === focusKey) return;
+    lastFocusedReviewKeyRef.current = focusKey;
+    if (reviewPhase === "active") {
+      const activeRow = reviewRowRefs.current.get(currentReviewId);
+      if (activeRow) activeRow.focus();
+      else reviewStatusRef.current?.focus();
+      return;
+    }
+    if (reviewPhase === "cleared") {
+      if (nextTouchUpId) reviewRowRefs.current.get(nextTouchUpId)?.focus();
+      else reviewStatusRef.current?.focus();
+    }
+  }, [currentReviewId, reviewPhase, nextTouchUpId]);
+
+  const reviewStatus = reviewState
+    ? reviewState.phase === "checking"
+      ? labels.reviewChecking(reviewState.title)
+      : reviewState.phase === "active"
+        ? labels.reviewActive(reviewState.title)
+        : reviewState.phase === "cleared"
+          ? labels.reviewCleared(reviewState.title)
+          : labels.reviewUnverified(reviewState.title)
+    : null;
   const readinessTotal = agentReadiness.ready + agentReadiness.preflight + agentReadiness.review;
   const repairActionKindLabel = healthQueue.actionTarget
     ? healthQueue.actionTarget.kind === "stale"
@@ -542,30 +671,56 @@ export function DoNextTab({
     : null;
   // ③↔큐 중복 제거 — "오늘의 손질" 밴드는 큐/사이클 상위에서 절단해 오므로
   // 큐 섹션 첫 행과 100% 겹친다(같은 방치 허브/고아/승격 후보). 밴드에 이미
-  // 올라온 nodeId 를 큐 행에서 걸러 같은 항목이 위아래로 두 번 보이지 않게
+  // 올라온 exact row id 를 큐 행에서 걸러 같은 항목이 위아래로 두 번 보이지 않게
   // 한다. 섹션 헤더 totalCount(queue.counts.*)와 "외 N개" 라인은 그대로 두어
   // 전체 규모는 보존한다(구조 필터일 뿐, 색/토큰 변경 없음).
-  const bandIds = new Set(touchUps.map((item) => item.nodeId));
+  const bandIds = new Set(touchUps.map((item) => item.id));
   const neglectedRows = queue.rows.filter(
-    (row) => row.rowKind === "neglected-hub" && !bandIds.has(row.nodeId),
+    (row) => row.rowKind === "neglected-hub" && !bandIds.has(row.id),
   );
   const orphanRows = queue.rows.filter(
-    (row) => row.rowKind === "orphan" && !bandIds.has(row.nodeId),
+    (row) => row.rowKind === "orphan" && !bandIds.has(row.id),
   );
   const promotionRows = queue.rows.filter(
-    (row) => row.rowKind === "promotion" && !bandIds.has(row.nodeId),
+    (row) => row.rowKind === "promotion" && !bandIds.has(row.id),
   );
-  const hasCycles = cycles.cycles.length > 0;
+  const visibleCycleRows = cycles.cycles.filter(
+    (cycle) => !bandIds.has(`cycle:${cycle.id}`),
+  );
+  const removedVisibleCycleCount =
+    cycles.cycles.length - visibleCycleRows.length;
+  const visibleCycles: DependencyCyclesResult = {
+    ...cycles,
+    cycles: visibleCycleRows,
+    totalCycles: Math.max(0, cycles.totalCycles - removedVisibleCycleCount),
+  };
+  const hasCycles = visibleCycles.cycles.length > 0;
   const queueEmpty = queue.rows.length === 0 && !hasCycles;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
+      {reviewStatus ? (
+        <p
+          ref={reviewStatusRef}
+          data-testid="do-next-review-status"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          tabIndex={-1}
+          className="rounded-md border border-[color:var(--color-border-soft)] px-3 py-2 text-label text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-a42)]"
+        >
+          {reviewStatus}
+        </p>
+      ) : null}
       {touchUps.length > 0 ? (
         <TouchUpBand
           items={touchUps}
           mapHref={mapHref}
           sourceHref={sourceHref}
           builderHref={builderHref}
+          reviewState={reviewState}
+          onReviewStart={onReviewStart}
+          registerReviewRow={registerReviewRow}
           labels={labels}
         />
       ) : null}
@@ -788,6 +943,9 @@ export function DoNextTab({
               mapHref={mapHref}
               sourceHref={sourceHref}
               builderHref={builderHref}
+              reviewState={reviewState}
+              onReviewStart={onReviewStart}
+              registerReviewRow={registerReviewRow}
               labels={labels}
             />
             <QueueSection
@@ -799,6 +957,9 @@ export function DoNextTab({
               mapHref={mapHref}
               sourceHref={sourceHref}
               builderHref={builderHref}
+              reviewState={reviewState}
+              onReviewStart={onReviewStart}
+              registerReviewRow={registerReviewRow}
               labels={labels}
             />
             <QueueSection
@@ -812,13 +973,19 @@ export function DoNextTab({
               mapHref={mapHref}
               sourceHref={sourceHref}
               builderHref={builderHref}
+              reviewState={reviewState}
+              onReviewStart={onReviewStart}
+              registerReviewRow={registerReviewRow}
               labels={labels}
             />
             <CycleSection
-              cycles={cycles}
+              cycles={visibleCycles}
               mapHref={mapHref}
               nodeTitle={nodeTitle}
               cycleHandoff={cycleHandoff}
+              reviewState={reviewState}
+              onReviewStart={onReviewStart}
+              registerReviewRow={registerReviewRow}
               labels={labels}
             />
           </>

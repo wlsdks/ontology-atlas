@@ -83,6 +83,7 @@
   "ontologyStudio": {
     "searchPlaceholder": "무대에 올릴 노드…",
     "exit": "그만하기",
+    "returnToReview": "인사이트 검토로 돌아가기",
     "moreRelations": "다른 관계",
     "moreRelationsSoon": "곧",
     "flowEyebrow": "완성도",
@@ -1185,7 +1186,12 @@
         "touchUpFlowHint": "지도에서 확인 → 원문 확인 → 공방에서 수정 → 에이전트로 검증",
         "touchUpWhyCycle": "노드 {length}개가 서로 기다림",
         "touchUpWhyPromotion": "참조가 몰려 상위 개념 후보",
-        "rowMenuTrigger": "더보기"
+        "rowMenuTrigger": "더보기",
+        "reviewFallback": "선택한 항목",
+        "reviewChecking": "{title} 신호를 현재 vault에서 다시 확인하고 있어요.",
+        "reviewActive": "{title} 신호가 현재 vault에서 아직 감지됩니다.",
+        "reviewCleared": "현재 vault에서 {title} 신호가 감지되지 않습니다. 남은 항목을 다시 정렬했습니다.",
+        "reviewUnverified": "{title} 신호는 현재 결과만으로 해소 여부를 확인할 수 없습니다."
       }
     }
   },
@@ -1341,6 +1347,8 @@
       "openTreeAriaLabel": "문서 목록 열기",
       "openTreeTitle": "문서 목록",
       "backToWorkspaceAriaLabel": "의미 지도로 돌아가기",
+      "backToReviewAriaLabel": "인사이트 검토로 돌아가기",
+      "reviewBack": "← 인사이트 검토",
       "back": "의미 지도",
       "title": "문서함",
       "docCount": "문서 {count}개",
