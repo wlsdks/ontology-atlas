@@ -1489,6 +1489,10 @@
     --topology-shortcut-sheet-floating-width: 45rem;
     --topology-shortcut-sheet-radius: 22px;
     --topology-shortcut-sheet-close-size: 32px;
+    /* #67 — 스크롤 가능 신호(scroll edge). 목록이 잘려 보일 때 "여기서 끝" 이
+       아니라 "아래 더 있다" 로 읽히게 하는 아래쪽 페이드. 패널색 → 투명 한
+       단계뿐이라 장식 그라디언트가 아니며, 움직이지 않는다. */
+    --topology-shortcut-sheet-scroll-fade: 28px;
     --topology-bottom-tab-min-height: 56px;
     --topology-bottom-tab-surface: #08090a;
     --topology-bottom-tab-border: rgba(255, 255, 255, 0.09);

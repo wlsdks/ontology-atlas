@@ -1,6 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/i18n/navigation", () => ({
+  usePathname: () => "/topology",
+}));
 import enMessages from "../../../../messages/en.json";
 import { ShortcutSheet } from "./ShortcutSheet";
 
@@ -62,5 +66,61 @@ describe("ShortcutSheet — kind glossary (P1a-2)", () => {
     expect(
       screen.getByText("A piece of code or a doc that implements it"),
     ).toBeInTheDocument();
+  });
+});
+
+
+// #67 — 40여 행을 2열로 한 번에 쏟아 1512×900 에서 다이얼로그가 뷰포트의 95%
+// (852px)를 먹고 하단이 잘렸다. 해법은 **숨기기가 아니라 분류** — `전체` 탭이
+// 종전 목록을 그대로 유지하므로 발견 가능성을 잃지 않는다.
+describe("ShortcutSheet — 문맥 탭 (#67)", () => {
+  it("기본은 '지금 화면' — 지도에서는 문서함 섹션이 나오지 않는다", () => {
+    renderSheet();
+
+    expect(screen.getByTestId("shortcut-sheet-scope-current")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    // 지도 표면 + 전역은 보인다.
+    expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.topology)).toBeInTheDocument();
+    expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.navigation)).toBeInTheDocument();
+    // 문서함 전용 섹션은 이 탭에 없다.
+    expect(
+      screen.queryByText(enMessages.searchWidgets.shortcuts.sections.docsPalette),
+    ).not.toBeInTheDocument();
+  });
+
+  it("'전체' 탭은 모든 섹션을 되살린다 — 단축키를 숨겨 과밀을 회피하지 않는다", () => {
+    renderSheet();
+    fireEvent.click(screen.getByTestId("shortcut-sheet-scope-all"));
+
+    expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.docsPalette)).toBeInTheDocument();
+    expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.docsGraph)).toBeInTheDocument();
+    expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.topology)).toBeInTheDocument();
+  });
+
+  it("문서함 탭에서도 전역 단축키는 남는다 — 지금 누를 수 있는 키가 사라지면 안 된다", () => {
+    renderSheet();
+    fireEvent.click(screen.getByTestId("shortcut-sheet-scope-docs"));
+
+    expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.navigation)).toBeInTheDocument();
+    expect(screen.getByText(enMessages.searchWidgets.shortcuts.sections.docsPalette)).toBeInTheDocument();
+    expect(
+      screen.queryByText(enMessages.searchWidgets.shortcuts.sections.topology),
+    ).not.toBeInTheDocument();
+  });
+
+  it("탭 바와 닫기 버튼은 스크롤 영역 밖에 고정된다", () => {
+    renderSheet();
+    const tabs = screen.getByTestId("shortcut-sheet-scope-tabs");
+    const scroll = screen.getByTestId("shortcut-sheet-scroll");
+
+    expect(scroll.contains(tabs)).toBe(false);
+    expect(scroll.contains(screen.getByTestId("shortcut-sheet-close"))).toBe(false);
+  });
+
+  it("스크롤 여지를 알리는 아래쪽 페이드가 있다", () => {
+    renderSheet();
+    expect(screen.getByTestId("shortcut-sheet-scroll-fade")).toBeInTheDocument();
   });
 });
