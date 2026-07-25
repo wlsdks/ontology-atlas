@@ -25,6 +25,8 @@ export type {
 export {
   buildProjectMarkdown,
   projectToFrontmatter,
+  buildStarterDisplaySync,
+  STARTER_PROJECT_DISPLAY_VALUES,
 } from './lib/project-frontmatter';
 export {
   buildVaultMarkdown,

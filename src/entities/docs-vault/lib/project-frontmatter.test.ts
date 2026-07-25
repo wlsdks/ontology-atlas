@@ -1,8 +1,40 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildProjectMarkdown,
+  buildStarterDisplaySync,
   projectToFrontmatter,
 } from './project-frontmatter';
+
+describe('buildStarterDisplaySync (C6)', () => {
+  it('refreshes display_<locale> keys that are still at the starter default', () => {
+    const updates = buildStarterDisplaySync(
+      { kind: 'project', title: 'My project', display_ko: '내 프로젝트', display_en: 'My project' },
+      'Acme Console',
+    );
+    expect(updates).toEqual({ display_ko: 'Acme Console', display_en: 'Acme Console' });
+  });
+
+  it('never overwrites a customized display name', () => {
+    const updates = buildStarterDisplaySync(
+      { kind: 'project', display_ko: '아크메 콘솔', display_en: 'Acme Console' },
+      'Renamed',
+    );
+    expect(updates).toEqual({});
+  });
+
+  it('syncs only the locale(s) still at a starter default', () => {
+    const updates = buildStarterDisplaySync(
+      { kind: 'project', display_ko: '내 프로젝트', display_en: 'Acme Console' },
+      'Acme',
+    );
+    expect(updates).toEqual({ display_ko: 'Acme' });
+  });
+
+  it('returns nothing for a blank new name or missing display keys', () => {
+    expect(buildStarterDisplaySync({ display_ko: '내 프로젝트' }, '   ')).toEqual({});
+    expect(buildStarterDisplaySync({ kind: 'project', title: 'X' }, 'Y')).toEqual({});
+  });
+});
 
 describe('projectToFrontmatter', () => {
   const minimal = {

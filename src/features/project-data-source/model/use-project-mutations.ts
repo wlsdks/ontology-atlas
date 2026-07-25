@@ -5,6 +5,7 @@ import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
 import {
   buildProjectMarkdown,
+  buildStarterDisplaySync,
   findProjectVaultDoc,
   projectToFrontmatter,
 } from '@/entities/docs-vault';
@@ -100,6 +101,11 @@ export function useProjectMutations(): ProjectMutations {
       }
       // frontmatter patch — body 는 그대로 둔다.
       const fm = projectToFrontmatter(input);
+      // C6 — same starter-display sync as inline rename: full-form saves that
+      // change the name must also refresh a still-default display_<locale>.
+      if (existing) {
+        Object.assign(fm, buildStarterDisplaySync(existing.frontmatter, input.name));
+      }
       // path-agnostic starter/외부 vault는 project 이름을 title로만 쓰기도 한다.
       // full edit도 inline patch와 같은 key-shape를 보존해 title/name 중복을
       // 만들지 않는다. 신규 문서는 canonical name을 계속 사용한다.
@@ -143,6 +149,11 @@ export function useProjectMutations(): ProjectMutations {
               ? 'title'
               : 'name';
         updates[nameKey] = patch.name;
+        // C6 — carry the rename into any `display_<locale>` still at its starter
+        // default so the ko/en map + INDEX don't keep showing "내 프로젝트" /
+        // "My project" after the project is renamed. Customized display names
+        // are left untouched.
+        Object.assign(updates, buildStarterDisplaySync(existing.frontmatter, patch.name));
       }
       if (patch.description !== undefined) {
         updates.description = patch.description;
