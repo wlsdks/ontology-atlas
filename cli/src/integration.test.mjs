@@ -5439,6 +5439,35 @@ await test('agent-brief --verify-fallbacks --json — emits machine-readable fal
   }
 });
 
+await test('agent-brief --verify-fallbacks --json — advisory readiness exit 1 (health/needs_attention) stays green', async () => {
+  // Regression (C8b): the `health` fallback exits 1 as an ADVISORY graph-state
+  // signal on any vault that isn't perfectly healthy (here, a dependency cycle).
+  // The command ran and printed valid data, so the setup gate must stay green —
+  // otherwise the documented gate is impossible on real vaults.
+  const root = buildCycleFixture();
+  try {
+    const health = await run(['health', root]);
+    assert.equal(health.code, 1, `expected advisory exit 1; stdout: ${health.stdout}`);
+    // --exit-zero: the fallback report drives the exit code (0 when no command
+    // FAILED to run); the vault's own readiness (needs_attention) is silenced,
+    // which is the documented mode the setup gate consumes.
+    const r = await run(['agent-brief', root, '--verify-fallbacks', '--json', '--exit-zero']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.ok, true);
+    assert.equal(data.failed, 0);
+    const healthRow = data.commands.find((row) => row.command.startsWith('ontology-atlas health '));
+    assert.ok(healthRow, 'health fallback row present');
+    assert.equal(healthRow.status, 'pass');
+    assert.equal(healthRow.exitCode, 1);
+    assert.equal(healthRow.advisory, 'readiness');
+    assert.ok(!Object.hasOwn(healthRow, 'outputSample'));
+    assert.ok(data.commands.every((row) => row.status === 'pass'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('agent-brief --verify-fallbacks --json — marks slow-but-passing fallback rows', async () => {
   const root = await buildGraphFixture();
   try {
