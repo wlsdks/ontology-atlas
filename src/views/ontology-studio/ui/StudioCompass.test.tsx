@@ -228,6 +228,38 @@ describe("StudioCompass — enhance", () => {
     expect(screen.queryByTestId("studio-domain-membership")).not.toBeInTheDocument();
   });
 
+  it("C2 — picker '새로 만들기' carries the socket relation + typed query", () => {
+    const onCreateNew = vi.fn();
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "MCP Server", definition: "" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down", { expected: true }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        similarFor={() => null}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        onCreateNew={onCreateNew}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("studio-socket-down")); // contains bearing
+    fireEvent.change(screen.getByTestId("studio-picker-input"), {
+      target: { value: "결제 취소" },
+    });
+    fireEvent.click(screen.getByTestId("studio-picker-create-new"));
+    expect(onCreateNew).toHaveBeenCalledWith({ relation: "contains", query: "결제 취소" });
+  });
+
   it("shows the near-dup suggestion and links it on accept", () => {
     const onFill = vi.fn();
     const bearings: CompassBearingView[] = [
@@ -906,6 +938,36 @@ describe("StudioCompass — create", () => {
     expect(secondary).toHaveAttribute("placeholder", "English name (optional)");
     fireEvent.change(secondary, { target: { value: "Payment cancel" } });
     expect(onSecondary).toHaveBeenCalledWith("Payment cancel");
+  });
+
+  it("C2 — a create-from-socket flow shows the quiet origin context note", () => {
+    render(
+      <StudioCompass
+        mode="create"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "결제 취소", definition: "" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down", { expected: true }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        canSave
+        createKinds={[{ value: "capability", label: "capability" }]}
+        createKind="capability"
+        createOriginNote="will continue 주문 취소 · 담는 것"
+      />,
+    );
+    expect(screen.getByTestId("studio-create-origin-note")).toHaveTextContent(
+      "will continue 주문 취소 · 담는 것",
+    );
   });
 
   it("C12③ — omits the secondary name input when no handler is wired", () => {

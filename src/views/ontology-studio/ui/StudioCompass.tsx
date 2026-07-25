@@ -208,8 +208,17 @@ export interface StudioCompassProps {
   onFill: (relation: StudioRelation, candidate: CreateCandidate) => void;
   onSave: () => void;
   onExit: () => void;
-  /** Picker "찾는 게 없어요 · 새로 만들기" bridge — opt-in, enhance mode routes to create. */
-  onCreateNew?: () => void;
+  /**
+   * Picker "찾는 게 없어요 · 새로 만들기" bridge — opt-in, enhance mode routes to
+   * create. C2: the picker passes the socket's relation + typed query so CREATE
+   * opens carrying the origin (A --relation--> new) + a name prefill.
+   */
+  onCreateNew?: (ctx?: { relation: StudioRelation; query: string }) => void;
+  /**
+   * C2 — quiet create-mode context line ("‘A’ 의 ‘담는 것’ 으로 이어질 예정"),
+   * present only when CREATE was opened from a socket. Omit → no line.
+   */
+  createOriginNote?: string | null;
   /** All vault nodes, for the top-bar node search. Omit → static placeholder (isolated render/tests). */
   searchNodes?: CreateCandidate[];
   /** Load another node on the stage (top-bar search pick · satellite / fold-row click). */
@@ -767,8 +776,19 @@ export function StudioCompass(props: StudioCompassProps) {
         </div>
 
         {/* one calm frame prompt — top center */}
-        <div className="absolute left-1/2 top-4 z-[4] -translate-x-1/2 whitespace-nowrap text-center text-callout tracking-[-0.006em] text-[color:var(--color-text-secondary)]">
-          {labels.framePrompt(focal.name || "…")}
+        <div className="absolute left-1/2 top-4 z-[4] flex -translate-x-1/2 flex-col items-center gap-1 text-center">
+          <div className="whitespace-nowrap text-callout tracking-[-0.006em] text-[color:var(--color-text-secondary)]">
+            {labels.framePrompt(focal.name || "…")}
+          </div>
+          {/* C2 — quiet origin context: this new node continues A's bearing. */}
+          {mode === "create" && props.createOriginNote ? (
+            <div
+              data-testid="studio-create-origin-note"
+              className="max-w-[420px] text-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+            >
+              {props.createOriginNote}
+            </div>
+          ) : null}
         </div>
 
         {/* rare relations — top right. Not built yet: honest disabled "곧 제공"
@@ -1907,7 +1927,7 @@ function InlinePicker({
   onQuery: (q: string) => void;
   onPick: (c: CreateCandidate) => void;
   onClose: () => void;
-  onCreateNew?: () => void;
+  onCreateNew?: (ctx?: { relation: StudioRelation; query: string }) => void;
 }) {
   const W = 300;
   const { left, top, maxHeight } = placePicker(bearing, socket, cardLeft, cardRight);
@@ -2077,7 +2097,7 @@ function InlinePicker({
         <button
           type="button"
           data-testid="studio-picker-create-new"
-          onClick={onCreateNew}
+          onClick={() => onCreateNew?.({ relation, query })}
           className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-[color:var(--color-border-strong)] py-2 text-caption text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
         >
           <Plus size={13} aria-hidden className="text-[color:var(--color-text-tertiary)]" />

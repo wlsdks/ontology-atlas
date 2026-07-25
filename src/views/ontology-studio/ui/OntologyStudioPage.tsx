@@ -26,6 +26,7 @@ import {
 } from "../lib/build-studio-item";
 import {
   buildCreateNodeDoc,
+  buildCreateNodeSlug,
   buildEditPacket,
   buildFillPacket,
   buildMcpPacket,
@@ -36,6 +37,7 @@ import {
   type CreateCandidate,
   type CreateDraft,
   type CreateNodeKind,
+  type CreateOrigin,
   type PendingRelation,
 } from "../lib/build-create-node";
 import {
@@ -256,6 +258,7 @@ export function OntologyStudioPage() {
           : t("summary.createHeadline", { kind: kindLabelText, name }),
       createFileEffect: (count) => t("summary.createFileEffect", { count }),
       createCollapsed: (count) => t("summary.createCollapsed", { count }),
+      createOriginLine: (name, relation) => t("summary.createOriginLine", { name, relation }),
       collapsedCount: (count) => t("summary.collapsed", { count }),
       empty: t("summary.empty"),
     }),
@@ -337,6 +340,49 @@ export function OntologyStudioPage() {
   const [similarDismissed, setSimilarDismissed] = useState(false);
   // C12③ — optional other-locale display name (primary name is the current locale).
   const [secondaryName, setSecondaryName] = useState("");
+
+  // C2 — CREATE opened from a socket carries the origin (A --relation--> new) and
+  // a name prefill via ?from & ?rel & ?name. Resolve A tolerantly; malformed /
+  // stale context is simply ignored (falls back to a blank CREATE).
+  const createContext = useMemo(() => {
+    if (!isCreate) return null;
+    const from = searchParams.get("from");
+    const rel = searchParams.get("rel");
+    if (!from || !rel || !(RELATIONS as string[]).includes(rel)) return null;
+    const originId = resolveStudioFocalId(from, nodes);
+    if (!originId) return null;
+    const originNode = nodes.find((n) => n.id === originId);
+    if (!originNode) return null;
+    return {
+      originId,
+      originLabel: originNode.display ?? originNode.title,
+      originKind: originNode.kind,
+      originSourceSlug: originNode.evidenceIds?.[0] ?? candidateFromNode(originNode).ref,
+      relation: rel as StudioRelation,
+      name: searchParams.get("name") ?? "",
+    };
+  }, [isCreate, searchParams, nodes]);
+
+  // Seed the CREATE draft from the origin context ONCE per context (React's
+  // "reset state during render when input changes" pattern — same as the enhance
+  // focal reset below). kind is pre-filtered to the bearing's allowed target kinds.
+  const [prevCreateCtxKey, setPrevCreateCtxKey] = useState<string | null>(null);
+  const createCtxKey = createContext
+    ? `${createContext.originId}|${createContext.relation}|${createContext.name}`
+    : null;
+  if (isCreate && createCtxKey !== prevCreateCtxKey) {
+    setPrevCreateCtxKey(createCtxKey);
+    if (createContext) {
+      setTitle(createContext.name);
+      const allowed = allowedKindsFor(createContext.relation, createContext.originKind);
+      setKind(CREATE_KINDS.find((k) => allowed.has(k)) ?? "capability");
+      setDomainValue(null);
+      setDefinition("");
+      setRelations([]);
+      setSecondaryName("");
+      setSimilarDismissed(false);
+    }
+  }
 
   // ─────────────────────────────── ENHANCE staged changes ────────────────
   // Which existing node the enhance stage is centered on (deeplink or default).
@@ -471,10 +517,25 @@ export function OntologyStudioPage() {
 
   const applyCreate = useCallback(async () => {
     if (!title.trim() || createSlugCollision) return;
+    const newRef = buildCreateNodeSlug({ kind, title: title.trim() });
     if (writable) {
       try {
         const { slug, markdown } = buildCreateNodeDoc(draft);
-        await localVault.createDoc(slug, markdown);
+        // C2 — create the node, then record A --relation--> new on A's own
+        // frontmatter. Batched: the node write skips refresh so the origin
+        // update triggers the single reload (both self-marked, one paint).
+        const recordOrigin = Boolean(createContext && newRef);
+        await localVault.createDoc(slug, markdown, { skipRefresh: recordOrigin });
+        if (createContext && newRef) {
+          const key = BEARING_FRONTMATTER_KEY[createContext.relation];
+          const originDoc = localVault.manifest?.docs.find(
+            (d) => d.slug === createContext.originSourceSlug,
+          );
+          const existing = originDoc ? asStringArray(originDoc.frontmatter[key]) : [];
+          await localVault.updateFrontmatter(createContext.originSourceSlug, {
+            [key]: Array.from(new Set([...existing, newRef])),
+          });
+        }
         toast.show(t("create.appliedDirect", { title: title.trim() }), "success");
         const tail = slug.split("/").at(-1) ?? "";
         openNode(`${kind}:${tail}`);
@@ -484,12 +545,30 @@ export function OntologyStudioPage() {
       return;
     }
     try {
-      await navigator.clipboard.writeText(buildMcpPacket(draft));
+      // C2 — read-only: ONE packet with add_concept + the A→new origin relation.
+      let origin: CreateOrigin | undefined;
+      if (createContext) {
+        const broaderRefsAfter =
+          createContext.relation === "isA"
+            ? [
+                ...(buildStudioItem(createContext.originId, nodes, edges)?.bearings.up.neighbors.map(
+                  (n) => n.ref,
+                ) ?? []),
+                ...(newRef ? [newRef] : []),
+              ]
+            : undefined;
+        origin = {
+          focalSlug: createContext.originSourceSlug,
+          relation: createContext.relation,
+          broaderRefsAfter,
+        };
+      }
+      await navigator.clipboard.writeText(buildMcpPacket(draft, origin));
       toast.show(t("create.copiedAgent"), "success");
     } catch {
       toast.show(t("create.copyFailed"), "info");
     }
-  }, [title, createSlugCollision, writable, draft, localVault, toast, t, kind, openNode]);
+  }, [title, createSlugCollision, writable, draft, localVault, toast, t, kind, openNode, createContext, nodes, edges]);
 
   if (isCreate) {
     const bearings: CompassBearingView[] = RELATIONS.map((relation) => {
@@ -525,9 +604,38 @@ export function OntologyStudioPage() {
       target: { id: r.candidate.id, title: r.candidate.title, kind: r.candidate.kind, ref: r.candidate.ref },
     }));
     const domainLabelText = domains.find((d) => d.value === domainValue)?.title ?? null;
+    // C2 — the origin (A --relation--> new) surfaces as a quiet context line and
+    // as the first line of the staged record summary.
+    const originSummary = createContext
+      ? { focalName: createContext.originLabel, bearingLabel: relationShort(createContext.relation) }
+      : undefined;
+    const createOriginNote = createContext
+      ? t("create.originNote", {
+          name: createContext.originLabel,
+          bearing: relationShort(createContext.relation),
+        })
+      : null;
     const createSummary = summarizeStudioChanges(
-      { mode: "create", kindLabel: kindLabel(kind), name: title.trim() || t("create.namePlaceholder"), domainLabel: domainLabelText, changes: createChanges },
+      {
+        mode: "create",
+        kindLabel: kindLabel(kind),
+        name: title.trim() || t("create.namePlaceholder"),
+        domainLabel: domainLabelText,
+        changes: createChanges,
+        origin: originSummary,
+      },
       summaryVocab,
+    );
+    // C2 — when opened from a socket, restrict the kind chooser to the bearing's
+    // allowed target kinds (isA/dependsOn/… × A's kind); fall back to all kinds
+    // if the window is empty so the chooser is never dead.
+    const allowedCreateKinds = createContext
+      ? CREATE_KINDS.filter((k) =>
+          allowedKindsFor(createContext.relation, createContext.originKind).has(k),
+        )
+      : CREATE_KINDS;
+    const createKindOptions = (allowedCreateKinds.length > 0 ? allowedCreateKinds : CREATE_KINDS).map(
+      (k) => ({ value: k, label: kindLabel(k) }),
     );
     // Slice 5 — the save-preview mini-graph for a brand-new node: the center is
     // itself the delta (isNew), every staged relation an indigo "added" strut.
@@ -586,7 +694,8 @@ export function OntologyStudioPage() {
             prev.map((r) => (r.type === from && r.candidate.id === neighbor.id ? { ...r, type: to } : r)),
           )
         }
-        createKinds={CREATE_KINDS.map((k) => ({ value: k, label: kindLabel(k) }))}
+        createOriginNote={createOriginNote}
+        createKinds={createKindOptions}
         createKind={kind}
         onCreateKind={(k) => {
           setKind(k);
@@ -818,7 +927,21 @@ export function OntologyStudioPage() {
       canSave={changes.length > 0}
       onSave={commit}
       onExit={exit}
-      onCreateNew={enterCreate}
+      onCreateNew={(ctx) => {
+        // C2 — carry the socket's relation + typed query into CREATE so the new
+        // node lands with the A --relation--> new link + a name prefill.
+        if (!ctx) {
+          enterCreate();
+          return;
+        }
+        const params = new URLSearchParams({
+          mode: "create",
+          from: focalItem.node.id,
+          rel: ctx.relation,
+        });
+        if (ctx.query.trim()) params.set("name", ctx.query.trim());
+        router.push(preserveReviewContext(`${STUDIO_BASE}?${params.toString()}`));
+      }}
       searchNodes={candidates}
       onOpenNode={openNode}
       onSaveAndOpenNode={commitThenOpen}

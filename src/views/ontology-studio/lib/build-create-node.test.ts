@@ -68,6 +68,37 @@ describe("C12③ — per-locale display names", () => {
   });
 });
 
+describe("C2 — CREATE-from-socket origin relation in ONE MCP packet", () => {
+  it("appends add_relation A→new for a non-is_a origin bearing", () => {
+    const packet = buildMcpPacket(draft({ relations: [] }), {
+      focalSlug: "capabilities/order-cancel",
+      relation: "contains",
+    });
+    const lines = packet.split("\n");
+    expect(lines[0]).toMatch(/^add_concept\(/);
+    // the origin line records the A→new edge (A contains the new node).
+    expect(packet).toContain(
+      'add_relation(from: "capabilities/order-cancel", to: "capabilities/결제-취소", type: "contains")',
+    );
+  });
+
+  it("patches A's broader for an is_a origin using the supplied post-add array", () => {
+    const packet = buildMcpPacket(draft(), {
+      focalSlug: "capabilities/order-cancel",
+      relation: "isA",
+      broaderRefsAfter: ["domains/payments", "capabilities/결제-취소"],
+    });
+    expect(packet).toContain(
+      'patch_concept(slug: "capabilities/order-cancel", frontmatter: { broader: ["domains/payments", "capabilities/결제-취소"] })',
+    );
+    expect(packet).not.toContain("is_a");
+  });
+
+  it("no origin → packet is unchanged (just the node + its own relations)", () => {
+    expect(buildMcpPacket(draft())).not.toContain("order-cancel");
+  });
+});
+
 describe("candidateFromNode", () => {
   it("computes the folder-prefixed ref the derivation resolves", () => {
     expect(orderCancel.ref).toBe("capabilities/order-cancel");

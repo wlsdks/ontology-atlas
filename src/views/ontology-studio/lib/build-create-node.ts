@@ -211,11 +211,26 @@ export function buildCreateNodeDoc(draft: CreateDraft): { slug: string; markdown
 }
 
 /**
+ * C2 — the ORIGIN relation for a CREATE-from-socket flow: the focal node A the
+ * user came from (A --relation--> the new node). Recorded IN THE SAME operation
+ * as the node create so "새로 만들기" from A's socket never drops the A→new link.
+ * `broaderRefsAfter` is A's full post-add `broader` array (is_a only, since MCP
+ * has no is_a edge — the caller supplies it from A's existing is_a neighbors).
+ */
+export interface CreateOrigin {
+  /** A's write-target doc slug (frontmatter lives here). */
+  focalSlug: string;
+  relation: CreateRelationType;
+  broaderRefsAfter?: readonly string[];
+}
+
+/**
  * Build the copyable MCP command packet for the DELEGATE path. This is the ONLY
  * active write route in read-only / sample mode — the agent runs these calls
- * against the vault it is registered on.
+ * against the vault it is registered on. With an `origin` (C2), the packet also
+ * records A --relation--> new node so the whole intent lands in ONE paste.
  */
-export function buildMcpPacket(draft: CreateDraft): string {
+export function buildMcpPacket(draft: CreateDraft, origin?: CreateOrigin): string {
   const title = draft.title.trim();
   const slug = buildCreateNodeSlug({ kind: draft.kind, title }) ?? `${draft.kind}s/new-node`;
   const q = (v: string) => `"${v.replace(/"/g, '\\"')}"`;
@@ -248,6 +263,24 @@ export function buildMcpPacket(draft: CreateDraft): string {
     lines.push(
       `add_relation(from: ${q(slug)}, to: ${q(rel.candidate.ref)}, type: ${q(RELATION_EDGE_TYPE[rel.type])})`,
     );
+  }
+  // C2 — the origin relation A --relation--> new node, in the same packet.
+  if (origin) {
+    if (origin.relation === "isA") {
+      // A is_a new → append new to A's broader (MCP has no is_a edge type).
+      const refs = origin.broaderRefsAfter ?? [slug];
+      lines.push(
+        `patch_concept(slug: ${q(origin.focalSlug)}, frontmatter: { broader: [${refs
+          .map((r) => q(r))
+          .join(", ")}] })`,
+      );
+    } else {
+      lines.push(
+        `add_relation(from: ${q(origin.focalSlug)}, to: ${q(slug)}, type: ${q(
+          RELATION_EDGE_TYPE[origin.relation],
+        )})`,
+      );
+    }
   }
   return lines.join("\n");
 }

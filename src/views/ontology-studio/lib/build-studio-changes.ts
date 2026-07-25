@@ -279,6 +279,12 @@ export interface StudioSummaryVocab {
   createFileEffect: (relationLines: number) => string;
   /** create collapsed one-liner, e.g. "새 노드 1개 · 관계 2개" */
   createCollapsed: (relationLines: number) => string;
+  /**
+   * C2 — origin relation line for a CREATE-from-socket flow, e.g.
+   * "‘CLI’ 의 ‘담는 것’ 에 이어져요". Optional: only the page's full vocab supplies
+   * it; a create summary without an origin omits it.
+   */
+  createOriginLine?: (focalName: string, bearingLabel: string) => string;
   /** collapsed one-liner, e.g. "기록될 내용 2가지" */
   collapsedCount: (count: number) => string;
   /** nothing staged yet */
@@ -302,6 +308,8 @@ export type StudioSummaryPlan =
       name: string;
       domainLabel: string | null;
       changes: readonly StudioChange[];
+      /** C2 — the focal A this new node is being created FROM, and the bearing. */
+      origin?: { focalName: string; bearingLabel: string };
     };
 
 function changeLine(change: StudioChange, vocab: StudioSummaryVocab): string {
@@ -322,9 +330,9 @@ export function summarizeStudioChanges(
   plan: StudioSummaryPlan,
   vocab: StudioSummaryVocab,
 ): StudioChangeSummary {
-  const lines = plan.changes.map((c) => changeLine(c, vocab));
-  const count = lines.length;
   if (plan.mode === "enhance") {
+    const lines = plan.changes.map((c) => changeLine(c, vocab));
+    const count = lines.length;
     return {
       count,
       headline: count === 0 ? vocab.empty : vocab.enhanceHeadline(plan.focalName, count),
@@ -334,7 +342,15 @@ export function summarizeStudioChanges(
       empty: count === 0,
     };
   }
-  // create — the node is always created; relation lines are additive.
+  // create — the node is always created; relation lines are additive. C2: the
+  // origin relation (A --bearing--> new) is one MORE written line, listed first.
+  const draftLines = plan.changes.map((c) => changeLine(c, vocab));
+  const originLine =
+    plan.origin && vocab.createOriginLine
+      ? vocab.createOriginLine(plan.origin.focalName, plan.origin.bearingLabel)
+      : null;
+  const lines = originLine ? [originLine, ...draftLines] : draftLines;
+  const count = lines.length;
   return {
     count,
     headline: vocab.createHeadline(plan.kindLabel, plan.name, plan.domainLabel),
