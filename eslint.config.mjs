@@ -60,6 +60,25 @@ const arbitrarySizeSelectors = [
     message:
       'Geometry Codex — rounded-[Npx] 하드코딩 금지 (template literal). rounded-* 램프로.',
   },
+  // 2026-07-26 — 소유자 질문("박스 모양이나 모서리나 테두리 규격 ... **md말고
+  // 코드로도**")에서 드러난 구멍. `text`/`rounded` 는 잡고 있었는데 **그림자는
+  // 룰이 없었다** — `design.md` 가 `--shadow-elevation-1/2/3` 사다리를 정의해
+  // 놨는데도 하드코딩 rgba 섀도가 5건 살아 있었다(치환 완료).
+  //
+  // **`var(` 가 없는 것만 잡는다.** `shadow-[var(--chrome-shadow)]` 는 Tailwind
+  // 에서 CSS 변수를 참조하는 **정상 문법**이지 위반이 아니다 — 초안에서 `shadow-\[`
+  // 를 통째로 금지했다가 정상 토큰 사용 90여 건까지 경고해 lint 출력이 144 →
+  // 548 로 뛰었다. 노이즈가 신호를 덮으면 게이트는 무력해진다.
+  {
+    selector: 'Literal[value=/shadow-\\[(?:(?!var\\()[^\\]])*\\]/]',
+    message:
+      'Geometry Codex — shadow 하드코딩 금지. --shadow-elevation-1/2/3 (coach-mark < popover < dialog) 또는 --topology-*-shadow 토큰을 shadow-[var(--...)] 로 참조한다.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/shadow-\\[(?:(?!var\\()[^\\]])*\\]/]',
+    message:
+      'Geometry Codex — shadow 하드코딩 금지 (template literal). --shadow-elevation-* 토큰을 shadow-[var(--...)] 로.',
+  },
 ];
 
 // 마이그레이션 완료(치환 끝 · error 봉쇄) 디렉토리.

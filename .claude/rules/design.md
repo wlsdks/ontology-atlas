@@ -84,6 +84,40 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 - scale 기반 hover (`hover:scale-*`)
 - 둘 이상의 채색 시스템
 
+## 규격은 lint 로 강제된다 (md 만으로는 안 지켜진다)
+
+**디자인 규격을 문서에 쓰면 같은 PR 에서 `eslint.config.mjs` 에 룰을 넣는다.**
+룰 없는 규격은 지켜지지 않는다 — 2026-07-26 실측: `--shadow-elevation-1/2/3`
+사다리가 `design.md` 에 정의돼 있었는데 룰이 없어 하드코딩 rgba 섀도가 코드에
+5건 살아 있었다.
+
+현재 코드로 강제되는 것 (`no-restricted-syntax`):
+
+| 규격 | 셀렉터 | 레벨 |
+|---|---|---|
+| 타입 램프 | `text-[Npx]` 금지 | 완료 디렉토리 error / 미완 warn |
+| radius 램프 | `rounded-[Npx]` 금지 | 동일 |
+| **그림자 사다리** | `shadow-[…]` 중 **`var(` 없는 것**만 금지 | 동일 |
+| 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
+
+**아직 강제 안 되는 것** (범위 설계 필요): 하드코딩 hex · spacing(`p-[Npx]`
+— `globals.css` 에 spacing 램프 자체가 없어서 금지만 하면 대안이 없다).
+
+### 룰을 켜기 전 반드시 측정한다
+
+**새 룰이 수백 건 warning 을 만들면 그건 강제가 아니라 소음이다.** 기존 신호
+(현재 144 warning)까지 읽을 수 없게 만들어 게이트를 무력화한다.
+
+실제 사례: `shadow-\[` 를 통째로 금지했더니 lint 가 144 → 548 로 뛰었다.
+`shadow-[var(--chrome-shadow)]` 은 Tailwind 에서 CSS 변수를 참조하는 **정상
+문법**인데 그것까지 잡은 것이다. `var(` 없는 것만 잡도록 좁히니 위반은 5건,
+치환 후 144 그대로 · 소음 0. 켜기 전 절차:
+
+1. 위반을 **패턴별로 분류**한다 (정상 토큰 사용 vs 진짜 하드코딩).
+2. 진짜 위반 수가 **한 PR 로 치환 가능한 규모**인지 확인한다.
+3. 치환 → 룰 추가 → `pnpm lint` 총계가 baseline 대비 늘지 않는지 확인한다.
+4. 룰이 실제로 잡는지 **프로브 파일로 증명**한다 (위반 1줄 + 정상 1줄).
+
 ## 토큰 사용
 
 - 모든 색은 CSS 변수 (`--color-canvas`, `--color-panel`, `--color-divider` …) 를 통해 참조. hardcoded hex 금지.

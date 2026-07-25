@@ -175,7 +175,14 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
 - **Product owner gate** — `@docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` is mandatory before feature, UX, graph, MCP, CLI, workflow, or macOS-shell changes. Start with the observed phenomenon and user problem, then the user moment, current alternative, ontology value, agent value, simplification, and verification plan; write a compact PO pass before implementation; ship outcomes, not output lists. Translate solution-shaped requests into observable problems first, then end with a PO verdict (`Do not build`, `Investigate first`, `Shape a slice`, or `Build and verify`) and use the PO rubric before coding. If the pass starts from a solution instead of evidence, pause and do discovery. Treat this as the project's product-owner authority, not as optional strategy prose.
 - **Product design gate** — `@docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` is mandatory for UI, visual design, interaction, graph readability, responsive layout, and macOS workbench changes. Use it after the PO pass to name the design council lens, surface hierarchy, graph semantics, responsive contract, agent handoff contract, and installed-app proof. Public references are principle sources only; never copy proprietary assets or styling.
 - **Design Guardian** — `@.claude/agents/design-guardian.md` is the standing senior design reviewer for UI work. Use it, or an equivalent sub-agent when available, before and after meaningful Relief/Topology design changes. It rejects token drift, attention-layer collisions, hidden typed facts, decorative motion, browser-only desktop proof, and reference copying. It approves only token-backed changes with screenshot/WebView evidence and installed-app proof when desktop behavior is affected.
-- **Design system** — neutrals + a single indigo, forbidden patterns — `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`
+- **Design system** — neutrals + a single indigo, forbidden patterns — `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`.
+  **디자인 규격은 md 뿐 아니라 `eslint.config.mjs` 의 `no-restricted-syntax` 로
+  강제된다** (타입 램프 · radius 램프 · 그림자 사다리 · 금지 그라디언트). 새
+  규격을 문서에 쓰면 **같은 PR 에서 룰도 넣는다** — 룰 없는 규격은 지켜지지
+  않는다(2026-07-26 실측: 그림자 사다리가 문서에만 있어 하드코딩 5건이 살아
+  있었다). 단, **룰을 켜기 전에 위반을 패턴별로 분류하고 한 PR 로 치환 가능한
+  규모인지 측정한다** — 수백 건 warning 을 만드는 룰은 강제가 아니라 소음이고
+  기존 신호까지 덮는다. 절차는 `design.md` "규격은 lint 로 강제된다" 절.
 - **Git workflow** — conventional prefix + Korean (or English) body — `@.claude/rules/git.md`
 - **Testing & verification** — TDD-first, unit → e2e — `@.claude/rules/testing.md`
 - **Local-first** — vault folder only, no backend — `@.claude/rules/local-first.md`
