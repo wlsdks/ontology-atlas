@@ -16,7 +16,11 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { useLocalVault } from '@/features/docs-vault-local';
-import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
+import {
+  getTauriVaultRootPath,
+  isTauriVaultRuntime,
+  openTauriVaultInFinder,
+} from '@/shared/lib/tauri-vault-fs';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
@@ -40,8 +44,10 @@ import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
  *   상태(HomePage state)는 `screenControls` optional prop 으로 주입 — 미주입
  *   페이지(빌더 등)에서는 해당 행이 렌더되지 않는다.
  * - [작업공간] 현재 vault 이름/상태 1행 + 폴더 열기/바꾸기 + 문서함 링크.
- *   구 vault 탭의 LocalVaultPicker 전체 표면(Finder 열기·경로 복사·새로고침)은
- *   /docs vault 필이 담당 — 여기는 상태 확인과 교체라는 고빈도 경로만.
+ *   구 vault 탭의 LocalVaultPicker 표면 중 **경로 복사·Finder 열기**는 #72 에서
+ *   이 그룹으로 복원됐다 — B2 병합 당시 "/docs vault 필이 담당" 이라고 적었지만
+ *   실제로는 어느 표면도 그 컴포넌트를 렌더하지 않아 데스크톱에서 통째로
+ *   유실돼 있었다(opus5 검수 2026-07-25).
  * - [AI 에이전트] 상태 요약 1행 → "연결·검증" 드릴인 서브뷰(뒤로가기 헤더)로
  *   `VaultAgentSetupPanel` 이동. MCP 증명 장문·상태 카드 그리드·판정 순서
  *   문서는 기본 화면에 절대 노출하지 않는다.
@@ -171,6 +177,9 @@ export function AppSettingsMenu({
   triggerVariant = 'header-pill',
 }: AppSettingsMenuProps) {
   const t = useTranslations('nav.settingsMenu');
+  // #72 — 경로 복사/Finder 문구는 구 LocalVaultPicker 가 쓰던 키를 그대로
+  // 재사용한다(문구 중복 생성 없이 표면만 옮긴다).
+  const tPicker = useTranslations('featuresMisc.localVaultPicker');
   const locale = useLocale();
   const { state: copyState, copy } = useCopyFeedback();
   const router = useRouter();
@@ -202,6 +211,12 @@ export function AppSettingsMenu({
   const isDesktopRuntime = isTauriVaultRuntime();
 
   const isLocalVaultLoaded = localVault.status === 'loaded';
+  // #72 — 데스크톱에서만 절대 경로를 알 수 있다(웹 FSA 핸들엔 경로가 없다).
+  const vaultRootPath =
+    isLocalVaultLoaded && localVault.handle
+      ? (getTauriVaultRootPath(localVault.handle) ?? null)
+      : null;
+
   const showVaultManagement = localVault.status !== 'unsupported';
   const vaultBusy = localVault.status === 'opening' || localVault.status === 'loading';
   const localVaultValidationSummary = (() => {
@@ -622,6 +637,47 @@ export function AppSettingsMenu({
                                 : t('workspaceFolderOpen')}
                           </button>
                         )}
+                      </>
+                    }
+                  />
+                ) : null}
+                {/* #72 — 선택한 vault 의 **절대 경로** + 복사/Finder 열기.
+                    B2 병합(5164f68d7)에서 `VaultToolsMenu` 가 삭제되며 이 표면을
+                    담당하던 `LocalVaultPicker` 가 아무 데도 마운트되지 않는
+                    고아가 됐고, 데스크톱 사용자는 "이 vault 가 디스크 어디에
+                    있나" 를 확인할 방법을 잃었다(에이전트에 경로를 붙여넣는
+                    고빈도 경로). 설정 시트의 [작업공간] 그룹이 이미 폴더 열기/
+                    바꾸기를 담당하므로 여기가 제자리다. 데스크톱에서 경로가
+                    실제로 알려질 때만 렌더한다 — 웹에서는 조용히 없다. */}
+                {vaultRootPath ? (
+                  <SettingsRow
+                    testId="app-settings-vault-path"
+                    label={tPicker('copyPathTooltip')}
+                    caption={vaultRootPath}
+                    control={
+                      <>
+                        <button
+                          type="button"
+                          data-testid="app-settings-copy-vault-path"
+                          onClick={() => void copy(vaultRootPath)}
+                          aria-label={tPicker('copyPathAriaLabel', { path: vaultRootPath })}
+                          className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
+                        >
+                          {copyState === 'copied'
+                            ? tPicker('copyPathCopied')
+                            : copyState === 'failed'
+                              ? tPicker('copyPathFailed')
+                              : tPicker('copyPathTooltip')}
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="app-settings-reveal-vault-path"
+                          onClick={() => void openTauriVaultInFinder(vaultRootPath)}
+                          aria-label={tPicker('revealPathAriaLabel', { path: vaultRootPath })}
+                          className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]"
+                        >
+                          {tPicker('revealPathLabel')}
+                        </button>
                       </>
                     }
                   />

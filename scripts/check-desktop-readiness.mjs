@@ -131,7 +131,9 @@ const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEm
 // 드릴인 패널로 이사했으므로 게이트도 그쪽을 본다.
 const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx");
 const appSettingsMenu = readText("src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx");
-const localVaultPicker = readText("src/features/docs-vault-local/ui/LocalVaultPicker.tsx");
+// 구 `LocalVaultPicker` 는 B2 병합 이후 어느 표면도 렌더하지 않는 고아였고
+// (#72), 그 표면(최근 볼트 회수 · 경로 복사 · Finder 열기)은 설정 시트의
+// [작업공간] 그룹으로 복원됐다. 게이트도 살아있는 쪽을 본다.
 const ontologyStarterCta = readText("src/features/docs-vault-local/ui/OntologyStarterCta.tsx");
 const localFsHandleStore = readText("src/entities/local-fs-handle/api/store.ts");
 const localVaultHook = readText("src/features/docs-vault-local/model/use-local-vault.ts");
@@ -1858,17 +1860,22 @@ if (
   localVaultHook.includes("codexConfigValid: looksLikeOmotCodexToml(codexConfigText, { expectedVault: '.' })") &&
   localVaultHook.includes("openRecent") &&
   localVaultHook.includes("forgetRecent") &&
-  localVaultPicker.includes("recentVaults") &&
-  localVaultPicker.includes("recentOpenAriaLabel") &&
-  localVaultPicker.includes("recentOpenedSuffix") &&
-  localVaultPicker.includes("record.lastAccessedAt") &&
-  localVaultPicker.includes("recentForgetAriaLabel") &&
-  /status === ['"]permission-needed['"][\s\S]*<RecentVaultList/.test(localVaultPicker)
+  appSettingsMenu.includes("localVault.recentVaults") &&
+  appSettingsMenu.includes("localVault.openRecent(record)") &&
+  appSettingsMenu.includes("localVault.forgetRecent(record)") &&
+  appSettingsMenu.includes("record.desktopRootPath") &&
+  // #72 — 선택한 vault 의 절대 경로 확인/복사/Finder 열기. 데스크톱에서 이
+  // 경로를 못 보면 에이전트에 붙여넣을 값을 사용자가 알 방법이 없다.
+  appSettingsMenu.includes("getTauriVaultRootPath(localVault.handle)") &&
+  appSettingsMenu.includes("openTauriVaultInFinder(vaultRootPath)") &&
+  appSettingsMenu.includes("app-settings-copy-vault-path") &&
+  // 권한 재요청 중에도 최근 볼트 전환이 남아야 복구 경로가 끊기지 않는다.
+  appSettingsMenu.includes("!isLocalVaultLoaded &&")
 ) {
-  pass("desktop local vault picker exposes recent vault recall, stale-path cleanup, hosted/runtime filtering, and vault-local agent config validation");
+  pass("desktop workspace settings expose recent vault recall, absolute vault path copy/reveal, stale-path cleanup, and vault-local agent config validation");
 } else {
   fail(
-    "desktop local vault picker must expose recent vault recall, keep recent switching available during permission reauth, stale-path cleanup, hide Tauri desktop path records outside the Tauri runtime, and reject stale vault-local agent configs that do not use OATLAS_VAULT=.",
+    "the desktop workspace settings group must expose recent vault recall, keep recent switching available during permission reauth, expose the selected vault's absolute path with copy + Finder reveal, and reject stale vault-local agent configs that do not use OATLAS_VAULT=.",
   );
 }
 
@@ -1881,7 +1888,9 @@ const tauriScaffoldFiles = [
   "src-tauri/icons/icon.png",
   "src-tauri/icons/icon.icns",
   "src/shared/lib/tauri-vault-fs.test.ts",
-  "src/features/docs-vault-local/ui/LocalVaultPicker.test.tsx",
+  // #72 — 구 LocalVaultPicker 는 고아라 삭제됐다. 같은 계약(최근 볼트 회수 ·
+  // 경로 복사/Finder)은 설정 시트가 담당하며 그 테스트가 덮는다.
+  "src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx",
   "src/views/root-entry/ui/RootEntryPage.test.tsx",
   "scripts/package-macos-dmg.mjs",
   "scripts/verify-macos-app-launch.mjs",
