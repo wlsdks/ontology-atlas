@@ -138,6 +138,29 @@ export interface NodeShapeDrawState {
    */
   now: number;
   reducedMotion: boolean;
+  /**
+   * 아이콘 세트 (Phase 5 #21) — kind→실루엣 매핑은 이 값과 무관하게 항상 동일
+   * (`bodyPoints` 그대로). 이 값은 **렌더 스타일만** 바꾼다: `"fill"`(기하, 현행
+   * 기본) = kind fill + 금속 sheen 그라디언트, `"line"`(라인) = 채움 없이 flat
+   * 다크 바디(hole-fill) + 살짝 얇은 외곽선. DOM `TopologyV2KindGlyph` 의 라인
+   * 세트와 같은 스토어(`appearance-preferences`)를 읽어 두 표면이 함께 스왑된다.
+   * 생략 시 `"fill"`(회귀 0).
+   */
+  glyphStyle?: "fill" | "line";
+}
+
+/** kind→실루엣 불변, 렌더 스타일만 결정하는 순수 디스크립터 (canvas 게이트). */
+export interface GlyphStyleDescriptor {
+  /** true면 채움 없이 flat 다크 바디 + 외곽선만(라인 세트). */
+  lineOnly: boolean;
+  /** 바디 외곽선 두께 배수 — 라인 세트는 살짝 가볍다. */
+  lineWidthScale: number;
+}
+
+export function glyphStyleDescriptor(glyphStyle: "fill" | "line" | undefined): GlyphStyleDescriptor {
+  return glyphStyle === "line"
+    ? { lineOnly: true, lineWidthScale: 0.8 }
+    : { lineOnly: false, lineWidthScale: 1 };
 }
 
 export interface NodeShapeTokens {
@@ -483,7 +506,10 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     spotlightRing,
     now,
     reducedMotion,
+    glyphStyle,
   } = state;
+
+  const { lineOnly, lineWidthScale } = glyphStyleDescriptor(glyphStyle);
 
   ctx.setLineDash([...dash]);
   const points = bodyPoints(kind, x, y, r);
@@ -493,10 +519,13 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   } else {
     roundedPolygonPath(ctx, points, interpolateCornerRadius(minCornerRadius(kind, r), r, farT));
   }
-  ctx.fillStyle = resolveBodyFill(ctx, x, y, r, farT, fill, sheenTop);
+  // 라인 세트: 채움 없이 flat 다크 바디(hole-fill) — 뒤 엣지가 비치지 않도록
+  // 투명 대신 다크로 채우되 금속 sheen 은 생략(순수 외곽선 독법). 기하 세트:
+  // 기존 kind fill + sheen 그라디언트. 실루엣(패스)은 위에서 이미 동일하게 그림.
+  ctx.fillStyle = lineOnly ? tokens.holeFill : resolveBodyFill(ctx, x, y, r, farT, fill, sheenTop);
   ctx.fill();
   ctx.strokeStyle = stroke;
-  ctx.lineWidth = lineWidth;
+  ctx.lineWidth = lineWidth * lineWidthScale;
   ctx.stroke();
   ctx.setLineDash([]);
 

@@ -1785,6 +1785,18 @@
     --topology-v2-vignette-base-alpha: 0.32;
     --topology-v2-vignette-far-alpha: 0.18;
 
+    /* 캔버스 배경 세트 (Phase 5 #20, docs/DESIGN-OVERHAUL-2026-07-25.md) —
+       도트(기본, 위 blueprint grid)·성좌·등고선. 전부 정적·저대비·다크 단일.
+       배경은 언제나 데이터에 진다(Tufte): 아래 잉크 상한 토큰을 절대 넘지
+       않는다(no bg may exceed --canvas-bg-ink-max; 실사용은 0.04~0.06).
+       움직이는 그라디언트/오로라/글로우 금지 — 정적 잉크만. */
+    --canvas-bg-ink-max: 0.08;
+    /* 성좌: 1~2px 점, 밝기 2단계, 고정 시드(세션/기기 불변), 저밀도. */
+    --canvas-bg-constellation-dim: rgba(236, 236, 240, 0.03);
+    --canvas-bg-constellation-bright: rgba(236, 236, 240, 0.055);
+    /* 등고선(atlas 정체성): 저대비 곡선 — 노드/엣지 잉크보다 훨씬 옅게. */
+    --canvas-bg-contour: rgba(120, 128, 160, 0.05);
+
     /* 2.3 지오메트리 (world unit — canvas 2D 가 getComputedStyle 로 소비) */
     /* canvas-emphasis 슬라이스: 25→30 — 주변 도메인 칩(17) 대비 시각 무게가
        확실히 위가 되도록(비율 1.47→1.76×). 첫 런 v3 flagship 시안의 프로젝트

@@ -21,7 +21,7 @@ import {
   selectTopKLabels,
   type LabelRankEntry,
 } from "../model/label-lod";
-import { draw as gridDraw, lerpColorHex } from "../render/grid";
+import { draw as gridDraw, lerpColorHex, type CanvasBackgroundVariant } from "../render/grid";
 import {
   ACTIVITY_MARK_GAP,
   ACTIVITY_MARK_RADIUS,
@@ -432,6 +432,21 @@ export interface FrameDrawParams {
    * 팬-클램프와 같은 config 를 봐야 lockstep 이 깨지지 않는다.
    */
   tierReveal?: TierRevealConfig;
+  /**
+   * 아이콘 세트 (Phase 5 #21) — 노드 바디 렌더 스타일. `"fill"`(기하, 기본) /
+   * `"line"`(라인, stroke-only). kind→실루엣 매핑은 이 값과 무관(불변). DOM
+   * 글리프와 같은 스토어를 읽어 두 표면이 함께 스왑. 생략 시 `"fill"`(회귀 0).
+   */
+  glyphStyle?: "fill" | "line";
+  /**
+   * 캔버스 배경 세트 (Phase 5 #20) — `gridDraw` 로 전달. 도트(기본, blueprint
+   * grid)·성좌·등고선. 생략 시 `"dot"`(회귀 0).
+   */
+  backgroundVariant?: CanvasBackgroundVariant;
+  /** 성좌 배경 타일(variant==="constellation" 일 때만 소비). */
+  constellationPattern?: CanvasPattern | null;
+  /** 등고선 배경 타일(variant==="contour" 일 때만 소비). */
+  contourPattern?: CanvasPattern | null;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -480,6 +495,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     spotlightIds,
     spotlightRamp,
     tierReveal = DEFAULT_TIER_REVEAL,
+    glyphStyle = "fill",
+    backgroundVariant = "dot",
+    constellationPattern = null,
+    contourPattern = null,
   } = params;
 
   // 스포트라이트 침강 배수 — 렌즈 ON + 램프 진행 중 + 포커스/엣지선택 비활성
@@ -506,7 +525,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
 
   gridDraw(
     ctx,
-    { viewportWidth, viewportHeight, farT, gridPattern, originX: gridOrigin.x, originY: gridOrigin.y },
+    {
+      viewportWidth,
+      viewportHeight,
+      farT,
+      variant: backgroundVariant,
+      gridPattern,
+      constellationPattern,
+      contourPattern,
+      originX: gridOrigin.x,
+      originY: gridOrigin.y,
+    },
     {
       canvasBgNear: tokens.canvasBgNear,
       canvasBgFar: tokens.canvasBgFar,
@@ -895,6 +924,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
             : null,
         now,
         reducedMotion,
+        glyphStyle,
       },
       {
         amberHub: tokens.amberHub,

@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { domainPinTicks, hexPoints, interpolateCornerRadius, projectPinTicks, squarePoints } from "./node-shapes";
+import { domainPinTicks, glyphStyleDescriptor, hexPoints, interpolateCornerRadius, projectPinTicks, squarePoints } from "./node-shapes";
+
+describe("glyphStyleDescriptor (#21 canvas gateway — render style only, silhouette invariant)", () => {
+  it("defaults (undefined) to the fill set: no line-only, full-weight stroke", () => {
+    expect(glyphStyleDescriptor(undefined)).toEqual({ lineOnly: false, lineWidthScale: 1 });
+    expect(glyphStyleDescriptor("fill")).toEqual({ lineOnly: false, lineWidthScale: 1 });
+  });
+
+  it("line set is stroke-only and slightly lighter", () => {
+    const d = glyphStyleDescriptor("line");
+    expect(d.lineOnly).toBe(true);
+    expect(d.lineWidthScale).toBeLessThan(1);
+  });
+});
 
 describe("hexPoints", () => {
   it("returns exactly 6 points", () => {

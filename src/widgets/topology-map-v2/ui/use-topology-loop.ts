@@ -22,7 +22,9 @@ import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../inte
 import { initHomeSpring, isHomeSpringConverged, stepHomeSpring, type HomeSpringState } from "../model/relayout-home";
 import type { NodeDragState } from "./topology-pointer-handlers";
 import { buildGridPattern } from "../render/grid";
+import { buildConstellationPattern, buildContourPattern, readCanvasBgTokens } from "../render/background-patterns";
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
+import type { CanvasBackground, GlyphSet } from "@/shared/lib/appearance-preferences";
 import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { computeTopologyClusterState } from "./topology-cluster-state";
@@ -225,6 +227,17 @@ export interface UseTopologyLoopArgs {
   tourAnchorNodeId?: string | null;
   /** 가이드 투어 앵커 원 DOM(`TopologyMapV2` 가 렌더, ref 만 공유). */
   tourAnchorRef?: RefObject<HTMLDivElement | null>;
+  /**
+   * 아이콘 세트 (Phase 5 #21) — 노드 바디 렌더 스타일. `"geometric"`(기본, fill) /
+   * `"line"`(stroke-only). kind→실루엣 매핑 불변. DOM 글리프와 같은 스토어를 읽어
+   * 함께 스왑. 생략 시 `"geometric"`.
+   */
+  glyphSet?: GlyphSet;
+  /**
+   * 캔버스 배경 세트 (Phase 5 #20) — `"dot"`(기본, blueprint grid) / `"constellation"`
+   * (성좌) / `"contour"`(등고선). 생략 시 `"dot"`.
+   */
+  canvasBackground?: CanvasBackground;
 }
 
 const EMPTY_EXPANDED_SET: ReadonlySet<string> = new Set();
@@ -236,11 +249,14 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot" } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gridCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  /** 성좌/등고선 배경 타일용 오프스크린 캔버스(패턴 1회 빌드). */
+  const constellationCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const contourCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const viewportRef = useRef({ width: 0, height: 0, dpr: 1 });
   const worldRef = useRef<TopologyWorld | null>(null);
@@ -248,6 +264,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** S8 결함 6 — 영역 활성 중 결계 안 우주 도트(뷰포트당 1회 빌드, resize 갱신). */
   const cosmosPointsRef = useRef<DustPoint[]>([]);
   const gridPatternRef = useRef<CanvasPattern | null>(null);
+  const constellationPatternRef = useRef<CanvasPattern | null>(null);
+  const contourPatternRef = useRef<CanvasPattern | null>(null);
+  // Phase 5 #20/#21 — 개인화 설정 prop 을 매 프레임 읽을 수 있게 ref 미러
+  // (tierReveal 선례). 설정 변경 시 아래 effect 가 갱신한다.
+  const glyphStyleRef = useRef<"fill" | "line">(glyphSet === "line" ? "line" : "fill");
+  const canvasBackgroundRef = useRef<CanvasBackground>(canvasBackground);
 
   // Live force simulation (`model/force-layout.ts`) — seeded off the concentric
   // layout, ticked while warm (`heatRef > 0`) or while a node is pinned.
@@ -589,6 +611,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     spotlightIdsRef.current = spotlightIds;
   }, [spotlightIds]);
+  // Phase 5 #21 — 아이콘 세트 변경 시 다음 프레임부터 새 렌더 스타일.
+  useEffect(() => {
+    glyphStyleRef.current = glyphSet === "line" ? "line" : "fill";
+  }, [glyphSet]);
+  // Phase 5 #20 — 캔버스 배경 변경 시 다음 프레임부터 새 배경(패턴은 이미 빌드됨).
+  useEffect(() => {
+    canvasBackgroundRef.current = canvasBackground;
+  }, [canvasBackground]);
 
   useEffect(() => {
     tierRevealRef.current = tierReveal;
@@ -796,6 +826,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           majorColor: tokens.gridMajor,
           baseColor: tokens.canvasBgNear,
         });
+      }
+      // Phase 5 #20 — 성좌/등고선 배경 타일은 뷰포트 크기와 무관(고정 타일)이라
+      // 1회만 빌드한다. `--canvas-bg-*` 토큰은 blueprint grid 와 별개 패밀리라
+      // strict topology-v2 리더가 아닌 자체 리더(미선언 시 문서화된 기본값)로 읽는다.
+      if (!constellationCanvasRef.current) constellationCanvasRef.current = document.createElement("canvas");
+      if (!contourCanvasRef.current) contourCanvasRef.current = document.createElement("canvas");
+      if (!constellationPatternRef.current || !contourPatternRef.current) {
+        const rootStyle = getComputedStyle(document.documentElement);
+        const bgTokens = readCanvasBgTokens((name) => rootStyle.getPropertyValue(name));
+        constellationPatternRef.current = buildConstellationPattern(constellationCanvasRef.current, bgTokens);
+        contourPatternRef.current = buildContourPattern(contourCanvasRef.current, bgTokens);
       }
       dustPointsRef.current = buildDustPoints(rect.width, rect.height, computeStarDustCount(rect.width, rect.height, tokens.dustAreaPerPoint), tokens.dustParallaxMin, tokens.dustParallaxMax);
       // S8 결함 6 — 우주 도트는 dust 의 2배 밀도(레이어 2장). dust 와 같은
@@ -2158,6 +2199,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         spotlightIds: spotlightIdsRef.current,
         spotlightRamp: spotlightRampRef.current,
         tierReveal: tierRevealRef.current,
+        glyphStyle: glyphStyleRef.current,
+        backgroundVariant: canvasBackgroundRef.current,
+        constellationPattern: constellationPatternRef.current,
+        contourPattern: contourPatternRef.current,
       });
 
       // 가이드 투어 스포트라이트 링 — 오버레이 DOM 원 대신 엔진이 프레임
