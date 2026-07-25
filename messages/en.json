@@ -1364,7 +1364,9 @@
         "ariaLabel": "Switch project detail view",
         "overview": "Overview",
         "composition": "Composition"
-      }
+      },
+      "domainEmptyTitle": "No domains yet",
+      "domainEmptyHint": "Connect a domain to this project on the map and its composition shows up here."
     },
     "editor": {
       "documentTitleEdit": "Edit project · Ontology Atlas",

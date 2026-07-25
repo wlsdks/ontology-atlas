@@ -1364,7 +1364,9 @@
         "ariaLabel": "프로젝트 상세 보기 전환",
         "overview": "개요",
         "composition": "구성"
-      }
+      },
+      "domainEmptyTitle": "아직 도메인이 없어요",
+      "domainEmptyHint": "지도에서 도메인을 이 프로젝트에 연결하면 여기에 구성이 나타나요."
     },
     "editor": {
       "documentTitleEdit": "프로젝트 편집 · Ontology Atlas",
