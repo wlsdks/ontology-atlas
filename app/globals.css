@@ -491,11 +491,12 @@
   --radius-card: 9px; /* 카드·인풋·중형 서피스 */
   --radius-panel: 12px; /* 패널·모달·큰 서피스 */
 
-  /* Padding ramp — 2단. `p-[var(--pad-card)]` 형태로 명시 참조한다(패딩은
-     ESLint ban 대상이 아니라 대량 치환하지 않음 — 코덱스 표의 규격 근거이자
-     신규 코드 참조원). */
-  --pad-card: 16px; /* 카드 내부 패딩 (RATIO-SYSTEM --card-pad 와 동일값) */
-  --pad-panel: 12px; /* 패널 내부 패딩 */
+  /* 패딩에는 별도 램프를 두지 않는다. 예전엔 `--pad-card`/`--pad-panel` 이
+     있었지만 **사용 0회**였고, `--pad-card` 는 실제로 쓰이는 `--card-pad` 와
+     값이 겹쳤으며 `--pad-panel`(12px)은 패널이 실제 쓰는
+     `--topology-v2-panel-pad`(14px)와 **값까지 달랐다** — 문서가 죽은 토큰으로
+     틀린 값을 가리키던 셈이다. 카드는 `--card-pad`, 패널은
+     `--topology-v2-panel-pad` 가 단일 출처다. (2026-07-26)
 
   /* Codex 인덱스 — 기하/모션 토큰은 이 파일 하단에 이미 정의됨:
      · --chrome-tile-size (44px) 크롬 타일 정사각

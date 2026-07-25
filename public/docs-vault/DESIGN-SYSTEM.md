@@ -1590,16 +1590,30 @@ Tailwind v4 `--radius-*` 네임스페이스가 `rounded-<step>` 를 생성한다
 > 표면은 인라인 `rounded-[Npx]` 가 아니라 컴포넌트를 경유하므로 두 체계는
 > 충돌하지 않는다 — 크롬 박스는 크롬 사다리, 나머지는 이 램프.
 
-### Padding — 2단
+### Padding — 램프를 두지 않는다 (2026-07-26 정리)
 
-| 단 | 토큰 | px | 대상 |
-|---|---|---|---|
-| card | `--pad-card` | 16 | 카드 내부 패딩 (RATIO-SYSTEM `--card-pad` 와 동일값) |
-| panel | `--pad-panel` | 12 | 패널 내부 패딩 |
+| 대상 | 토큰 | px |
+|---|---|---|
+| 카드 내부 | `--card-pad` | 16 |
+| 패널 내부 | `--topology-v2-panel-pad` | 14 |
+
+**예전엔 `--pad-card`/`--pad-panel` 이라는 별도 2단 램프가 있었지만
+삭제했다.** 이유는 문서가 죽은 값을 가리키고 있었기 때문이다:
+
+- 전수 조사 결과 두 토큰의 **코드 사용은 0회**였다. 카드는 처음부터
+  `--card-pad` 를, 패널은 `--topology-v2-panel-pad` 를 쓰고 있었다.
+- `--pad-card`(16)는 `--card-pad`(16)와 값이 겹쳤다 — 같은 개념에 이름이 둘.
+- `--pad-panel`(12)은 패널이 실제 쓰는 값(14)과 **달랐다**. 이 표를 보고 새
+  패널을 만들었다면 기존 패널과 2px 어긋났을 것이다.
+
+교훈은 규격 일반에 적용된다: **아무도 안 쓰는 토큰은 규격이 아니라
+오정보다.** 램프를 만들 때는 사용처가 그 램프를 실제로 참조하는지까지가
+한 작업이다.
 
 간격 계단은 **4/8 원칙** — `gap-*` / `space-*` 는 1(4px)·2(8px)·3(12px)…
-스텝만. 패딩은 ESLint ban 대상이 아니라(대량 치환 없음) 위 토큰을
-`p-[var(--pad-card)]` 로 명시 참조한다.
+스텝만. 남아 있는 arbitrary px 패딩 27건은 전수 분류 결과 3·11·18px 를 빼면
+전부 1~2회짜리 **광학 보정**이라, 램프에 스냅시키면 오히려 정렬이 깨진다 —
+그래서 패딩에는 lint 룰을 걸지 않는다.
 
 ### 박스별 규격 표
 
@@ -1609,9 +1623,9 @@ Tailwind v4 `--radius-*` 네임스페이스가 `rounded-<step>` 를 생성한다
 |---|---|---|---|---|
 | 크롬 타일 (ChromeTile) | `--chrome-tile-size` 44px | `--chrome-radius` 10px | `--chrome-inset` 정렬 | 아이콘 16px |
 | 상태 칩 (`CHROME_STATUS_CHIP_CLASS`) | 44px (타일과 동일) | `--chrome-radius` 10px | `px-3.5` | body / label |
-| 패널 (INDEX · 데이터시트) | 콘텐츠 | `--topology-v2-panel-radius` 12px (= `rounded-panel`) | `--pad-panel` | title 헤더 · body 행 |
-| 팝오버 (ego popover) | 콘텐츠 | `rounded-panel` | `--pad-card` | title + body/label |
-| 카드 (일반) | 콘텐츠 | `rounded-card` | `--pad-card` | title + body |
+| 패널 (INDEX · 데이터시트) | 콘텐츠 | `--topology-v2-panel-radius` 12px (= `rounded-panel`) | `--topology-v2-panel-pad` | title 헤더 · body 행 |
+| 팝오버 (ego popover) | 콘텐츠 | `rounded-panel` | `--card-pad` | title + body/label |
+| 카드 (일반) | 콘텐츠 | `rounded-card` | `--card-pad` | title + body |
 | 배지·칩 (일반) | 콘텐츠 | `rounded-chip` | `px-2 py-0.5` | label (또는 caption) |
 | 입력 (input/search) | 콘텐츠 | `rounded-card` | `px-3 py-2` | body |
 | 버튼 (일반) | 콘텐츠 | `rounded-chip`~`card` | `px-3 py-1.5` | body |

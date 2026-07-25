@@ -134,11 +134,13 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 | **hex 색상** | Tailwind **arbitrary value 안**의 hex 만 금지 | 동일 (현재 위반 0 — 예방 게이트) |
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
 
-**아직 강제 안 되는 것**: spacing. `globals.css` 의 `--pad-card`/`--pad-panel`
-은 정의만 있고 **사용 0회** 인 죽은 토큰이고, arbitrary px 는 27건뿐(이탈률
-1.1%)인데 그중 3·11·18px 을 빼면 전부 1~2회짜리 **광학 보정**이다 — 램프에
-스냅시키면 오히려 정렬이 깨진다. 램프를 만드는 게 아니라 죽은 토큰 2개를
-정리하는 게 먼저다.
+**spacing 은 강제하지 않는다 (결론, 2026-07-26).** arbitrary px 는 27건뿐
+(이탈률 1.1%)이고 그중 3·11·18px 을 빼면 전부 1~2회짜리 **광학 보정**이라
+램프에 스냅시키면 오히려 정렬이 깨진다. 대신 지목했던 죽은 토큰 2개
+(`--pad-card`/`--pad-panel`)는 **삭제했다** — 사용 0회인 데다 `--pad-panel`
+은 패널의 실제 값(14px)과 달라서, 문서가 규격이 아니라 오정보를 주고 있었다.
+카드는 `--card-pad`, 패널은 `--topology-v2-panel-pad` 가 단일 출처다.
+**아무도 안 쓰는 토큰은 규격이 아니라 오정보다.**
 
 ### hex 는 왜 "모든 hex 금지" 가 아닌가
 
