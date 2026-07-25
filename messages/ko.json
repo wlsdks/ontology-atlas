@@ -1955,6 +1955,7 @@
       "censusRelations": "관계",
       "censusDomains": "도메인",
       "agentSync": "AI가 함께 갱신 중",
+      "agentSyncIdle": "에이전트 연결 대기",
       "capabilitiesShort": "역량",
       "elementsShort": "요소",
       "domainCountTitle": "여러 도메인에 속한 개념은 각 도메인에 한 번씩 세어져요 — 배지 합이 전체 개념 수보다 클 수 있어요",

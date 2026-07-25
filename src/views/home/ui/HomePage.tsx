@@ -3382,6 +3382,7 @@ export function HomePage() {
                       censusRelations: t("index.censusRelations"),
                       censusDomains: t("index.censusDomains"),
                       agentSync: t("index.agentSync"),
+                      agentSyncIdle: t("index.agentSyncIdle"),
                       capabilitiesShort: t("index.capabilitiesShort"),
                       elementsShort: t("index.elementsShort"),
                       freshTitle: t("index.freshTitle"),

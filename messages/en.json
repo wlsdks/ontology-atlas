@@ -1955,6 +1955,7 @@
       "censusRelations": "relations",
       "censusDomains": "domains",
       "agentSync": "Updated with AI",
+      "agentSyncIdle": "Agent not connected",
       "capabilitiesShort": "caps",
       "elementsShort": "elems",
       "domainCountTitle": "Concepts in multiple domains are counted once per domain — badge sums can exceed the total census.",
