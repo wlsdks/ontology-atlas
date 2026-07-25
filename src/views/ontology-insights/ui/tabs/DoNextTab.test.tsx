@@ -578,3 +578,44 @@ describe("DoNextTab — 오늘의 손질 밴드 (③)", () => {
     expect(trigger).toHaveFocus();
   });
 });
+
+// #63 — 판정 모델 단일화. opus5 검수 실측 모순: 신호가 '누락된 연결 1건' 뿐인
+// 볼트에서 `할 일 0` + "그래프가 건강합니다" + `누락된 연결 1` 이 동시에 떴고,
+// 같은 데이터에 MCP health 는 needs_attention 을 반환했다.
+describe("DoNextTab — 건강 주장은 CLI-parity 신호까지 0일 때만 (#63)", () => {
+  const emptyQueue: DoNextQueue = {
+    rows: [],
+    activeRowIds: [],
+    counts: { neglectedHub: 0, orphan: 0, promotion: 0 },
+  };
+
+  function renderWith(healthQueue: typeof emptyHealthQueue) {
+    render(
+      <DoNextTab
+        queue={emptyQueue}
+        cycles={noCycles}
+        agentReadiness={{ ready: 0, preflight: 0, review: 0 }}
+        healthQueue={healthQueue}
+        mapHref={(id) => `/ontology/?node=${encodeURIComponent(id)}`}
+        builderHref={(id) => `/ontology/edit/?node=${encodeURIComponent(id)}`}
+        {...cycleProps}
+        labels={labels}
+      />,
+    );
+  }
+
+  it("모든 신호가 0이면 '손볼 것 없음' 문구가 나온다", () => {
+    renderWith(emptyHealthQueue);
+    expect(screen.getByText(labels.emptyQueue)).toBeInTheDocument();
+  });
+
+  it("누락된 연결이 1건이면 '손볼 것 없음' 이라고 말하지 않는다", () => {
+    renderWith({ ...emptyHealthQueue, missingContainmentCount: 1 });
+    expect(screen.queryByText(labels.emptyQueue)).not.toBeInTheDocument();
+  });
+
+  it("분리된 섬이 있어도 마찬가지", () => {
+    renderWith({ ...emptyHealthQueue, islandCount: 2 });
+    expect(screen.queryByText(labels.emptyQueue)).not.toBeInTheDocument();
+  });
+});
