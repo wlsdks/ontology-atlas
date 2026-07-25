@@ -564,6 +564,33 @@
     animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
   }
 
+  /* ── 설정 패널 전환 (Phase 3 C14, 2026-07-25) ────────────────────────────
+     설정 시트는 lazy chunk 가 아니라 scrim·패널이 같은 createPortal 커밋에서
+     함께 마운트된다. 다만 진입 애니메이션이 없어 scrim 배경만 먼저 칠해지고
+     패널이 한 프레임 뒤 "툭" 나타나는 스톨로 읽혔다(codex ~333ms 측정). scrim
+     과 패널을 같은 프레임에서 --motion-base 로 함께 등장시켜 하나의 의도된
+     모션으로 만든다 — 장식적 이동 없이 opacity/미세 scale 만. reduced-motion 은
+     전역 규칙이 즉시 등장으로 무력화. */
+  @keyframes settingsPanelIn {
+    from {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .app-settings-scrim-in {
+    animation: panelCrossfadeIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  .app-settings-panel-in {
+    animation: settingsPanelIn var(--motion-base) var(--motion-ease) both;
+  }
+
   /* S7 "영역 대장" 좌측 패널 크로스페이드 — 전역 INDEX ↔ 영역 대장 전환 시
      들어오는 표면의 짧은 페이드-인(<200ms). 두 표면이 같은 박스를 차지하므로
      페이드-인이 크로스페이드로 읽힌다. prefers-reduced-motion 은 아래 base

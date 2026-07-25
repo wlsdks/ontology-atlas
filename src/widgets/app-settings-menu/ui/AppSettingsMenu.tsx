@@ -397,7 +397,7 @@ export function AppSettingsMenu({
         // `hidden`+`group-open:flex` display 묶기(overflow-sweep 회귀 방지)도
         // 필요 없어졌다. scrim: 모달은 지도/페이지를 dim + block 해야
         // 한다(design.md modality 계약) — `--color-scrim-a54` 단일 토큰.
-        className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[color:var(--color-scrim-a54)] p-3 sm:p-6"
+        className="app-settings-scrim-in fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[color:var(--color-scrim-a54)] p-3 sm:p-6"
         data-testid="app-settings-overlay"
         onMouseDown={(event) => {
           if (event.target !== event.currentTarget) return;
@@ -410,7 +410,7 @@ export function AppSettingsMenu({
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[34rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[0_28px_90px_var(--color-shadow-a58)] sm:max-h-[min(46rem,calc(100dvh-3rem))]"
+          className="app-settings-panel-in flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[34rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[0_28px_90px_var(--color-shadow-a58)] sm:max-h-[min(46rem,calc(100dvh-3rem))]"
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
