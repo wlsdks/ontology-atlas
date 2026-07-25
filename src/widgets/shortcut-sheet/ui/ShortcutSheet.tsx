@@ -41,10 +41,15 @@ const k = (i18nKey: string): ShortcutKey => ({ i18nKey });
 /**
  * P1a-2 (persona 실측 N8 — 도메인/역량/요소 정의가 작업 UI 0곳): 지도의 "?"
  * 도움말이 이미 있는 유일한 상시 도움말 표면이라 새 표면을 만들지 않고
- * 여기 footer 에 한 줄 정의 3개를 덧붙인다. kind 순서는 지도의 계층 순서
+ * 여기 footer 에 한 줄 정의를 덧붙인다. kind 순서는 지도의 계층 순서
  * (도메인 → 역량 → 요소)와 같다.
+ *
+ * 맨 앞의 `ontology` 는 제품 이름에 박혀 있으면서도 정의되는 자리가 앱
+ * 어디에도 없던 단어다 — 투어에서 한 번 이름을 붙이고 나면 "그게 뭐였지"
+ * 를 되찾을 곳이 필요하고, 그 자리는 이미 존재하는 pull-only 도움말이지
+ * 새 버튼이 아니다. 나머지 세 단어와 같은 줄 형식이라 IA 추가는 0.
  */
-const GLOSSARY_TERMS = ["domain", "capability", "element"] as const;
+const GLOSSARY_TERMS = ["ontology", "domain", "capability", "element"] as const;
 
 const SECTIONS: ShortcutSection[] = [
   {

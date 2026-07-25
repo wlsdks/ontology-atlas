@@ -58,8 +58,8 @@
       },
       "workspaceFolderLabel": "작업공간 폴더",
       "workspaceFolderEmpty": "선택 안 됨",
-      "workspaceFolderDocCount": "온톨로지 문서 {count}개",
-      "workspaceFolderDocCountIssues": "온톨로지 문서 {count}개 · 오류 {errors} · 경고 {warnings}",
+      "workspaceFolderDocCount": "개념 문서 {count}개",
+      "workspaceFolderDocCountIssues": "개념 문서 {count}개 · 오류 {errors} · 경고 {warnings}",
       "workspaceFolderOpen": "폴더 열기",
       "workspaceFolderChange": "바꾸기",
       "workspaceFolderOpening": "여는 중…",
@@ -69,7 +69,7 @@
       "workspaceRecentOpenAria": "최근 작업공간 {name} 열기",
       "workspaceRecentForgetAria": "최근 작업공간 {name} 지우기",
       "vaultTitle": "문서함",
-      "vaultBodyLocal": "작업공간 문서를 열어 파일과 온톨로지 개념을 확인해요",
+      "vaultBodyLocal": "작업공간 문서를 열어 파일과 개념을 확인해요",
       "vaultBodyStatic": "저장 가능한 폴더는 macOS 앱 또는 로컬 작업공간에서 열어요",
       "vaultCtaLocal": "열기",
       "vaultCtaStatic": "시작하기",
@@ -267,13 +267,13 @@
   },
   "liveActivity": {
     "live": "실시간",
-    "triggerTitle": "실시간: 변경된 온톨로지 개념과 AI 작업 상태 보기",
+    "triggerTitle": "실시간: 변경된 개념과 AI 작업 상태 보기",
     "changedCountLabel": "변경 {count}",
-    "changed": "현재 기준 이후 온톨로지 개념 {count}개 변경",
+    "changed": "현재 기준 이후 개념 {count}개 변경",
     "summaryTitle": "실시간 변경 기준",
-    "summaryBody": "현재 기준 이후의 온톨로지 변경을 추적 중이라는 뜻입니다. 숫자는 연결된 AI 수가 아니라 바뀐 온톨로지 개념 수입니다.",
-    "summaryZero": "현재 기준 이후 바뀐 온톨로지 개념이 없습니다.",
-    "summaryCount": "기준 이후 온톨로지 개념 {count}개가 바뀌었습니다.",
+    "summaryBody": "현재 기준 이후의 변경을 추적 중이라는 뜻입니다. 숫자는 연결된 AI 수가 아니라 바뀐 개념 수입니다.",
+    "summaryZero": "현재 기준 이후 바뀐 개념이 없습니다.",
+    "summaryCount": "기준 이후 개념 {count}개가 바뀌었습니다.",
     "summaryNotTracking": "아직 변경 기준이 활성화되지 않았습니다. 그래도 AI 작업 상태가 있으면 아래에 현재 작업을 표시합니다.",
     "summaryAction": "정확히 어떤 개념이 바뀌었는지는 개념 지도 화면의 변경점 패널에서 확인합니다.",
     "agentTitle": "AI 작업 상태",
@@ -412,7 +412,7 @@
     "steps": {
       "welcome": {
         "title": "이 지도는 문서예요",
-        "body": "여기 보이는 점 하나하나가 실제 마크다운 문서 한 장이에요. 지도 전체가 우리 제품이 무엇으로 이루어져 있고, 서로 어떻게 얽혀 있는지를 그린 한 장의 그림이에요. 2분이면 다 봐요."
+        "body": "여기 보이는 점 하나하나가 실제 마크다운 문서 한 장이에요. 지도 전체가 우리 제품이 무엇으로 이루어져 있고, 서로 어떻게 얽혀 있는지를 그린 한 장의 그림이에요. 이런 그림을 온톨로지라고 불러요 — 이름은 낯설어도, 뜻은 방금 그 한 문장이 전부예요. 2분이면 다 봐요."
       },
       "nodes": {
         "title": "점의 크기와 모양",
@@ -516,10 +516,10 @@
     "closeAria": "닫기"
   },
   "rootEntry": {
-    "openingLocalVaultPicker": "로컬 온톨로지 저장소 선택 화면으로 이동 중",
+    "openingLocalVaultPicker": "로컬 문서함 선택 화면으로 이동 중",
     "redirectEyebrow": "로컬 우선 작업공간",
-    "redirectTitle": "로컬 온톨로지 작업공간을 준비합니다",
-    "redirectBody": "설치 앱은 공개 웹 소개가 아니라 내 디스크의 온톨로지 저장소 설정 화면에서 시작합니다.",
+    "redirectTitle": "로컬 작업공간을 준비합니다",
+    "redirectBody": "설치 앱은 공개 웹 소개가 아니라 내 디스크의 문서함 설정 화면에서 시작합니다.",
     "redirectFilesProof": "마크다운 파일은 로컬에 유지",
     "redirectGraphProof": "문서 속성이 의미 그래프가 됨",
     "redirectAgentProof": "에이전트는 MCP와 CLI 대체 검증 사용"
@@ -658,7 +658,7 @@
     "globalSearch": {
       "dialogAriaLabel": "글로벌 검색",
       "dialogTitle": "글로벌 검색",
-      "dialogDescription": "온톨로지 개념과 프로젝트를 한 번에 검색합니다. 위·아래 화살표로 이동, Enter 로 선택, ESC 로 닫기.",
+      "dialogDescription": "개념과 프로젝트를 한 번에 검색합니다. 위·아래 화살표로 이동, Enter 로 선택, ESC 로 닫기.",
       "commandLabel": "글로벌 검색",
       "closeAriaLabel": "글로벌 검색 닫기",
       "placeholderWithProjects": "개념 · 프로젝트 검색 — 한·영 혼합 OK",
@@ -730,6 +730,8 @@
       "footer": "를 다시 눌러도 닫힙니다",
       "glossary": {
         "title": "지도에서 쓰는 말",
+        "ontologyTerm": "온톨로지",
+        "ontologyDefinition": "무엇이 있고 서로 어떻게 연결되는지 적어 둔 문서 묶음 — 이 지도의 원본",
         "domainTerm": "도메인",
         "domainDefinition": "기능을 묶는 큰 영역",
         "capabilityTerm": "역량",
@@ -780,7 +782,7 @@
         "toggleFullNeighbor": "전체 그래프 ↔ 선택 2-hop 토글",
         "togglePillView": "상단 pill 로 뷰 전환",
         "serverBundle": "git 번들 docs/ 열람 (기본)",
-        "localVault": "설치된 앱에서 로컬 온톨로지 폴더 열기",
+        "localVault": "설치된 앱에서 내 마크다운 폴더 열기",
         "manualRefresh": "로컬 볼트 수동 새로고침",
         "focusRefresh": "로컬 볼트 탭 포커스 복귀 시 자동 새로고침",
         "pinDoc": "고정 / 고정 해제 (고정 섹션 상단 고정)",
@@ -1176,7 +1178,7 @@
     "insights": {
       "title": "그래프 인사이트",
       "subtitle": "내 폴더 전체를 한눈에 — 모든 숫자는 문서에서 자동 계산됩니다",
-      "audienceBanner": "이 화면은 온톨로지를 관리하는 사람과 AI 에이전트를 위한 정비 보드예요.",
+      "audienceBanner": "이 화면은 지도를 가꾸는 사람과 AI 에이전트를 위한 정비 보드예요.",
       "censusConcepts": "개념",
       "censusRelations": "관계",
       "censusDomains": "도메인",
@@ -1501,7 +1503,7 @@
       "vaultPillFolders": "{count}개 폴더",
       "vaultPillSwap": "vault 바꾸기",
       "vaultPillSwapAriaLabel": "vault 소스 전환",
-      "vaultPillSampleLabel": "내장 샘플 (Atlas 자체 온톨로지)",
+      "vaultPillSampleLabel": "내장 샘플 (이 도구 자신의 문서)",
       "docListCollapse": "문서 목록 접기",
       "docListExpand": "문서 목록 펼치기"
     },
@@ -1577,9 +1579,9 @@
     },
     "desktopWelcome": {
       "eyebrow": "로컬 우선 작업공간",
-      "title": "로컬 온톨로지 문서함을 열거나 만드세요",
-      "body": "마크다운 폴더 하나를 온톨로지 문서함으로 선택하세요. Ontology Atlas는 파일을 이 Mac에 그대로 두고, 최근 문서함을 기억하며, 문서 상단의 속성을 비즈니스 개념과 관계 그래프로 바꿉니다.",
-      "dogfoodTitle": "이 repo의 docs/ontology를 온톨로지 문서함으로 여세요",
+      "title": "로컬 문서함을 열거나 만드세요",
+      "body": "마크다운 폴더 하나를 문서함으로 선택하세요. Ontology Atlas는 파일을 이 Mac에 그대로 두고, 최근 문서함을 기억하며, 문서 상단의 속성을 비즈니스 개념과 관계 그래프로 바꿉니다.",
+      "dogfoodTitle": "이 repo의 docs/ontology를 문서함으로 여세요",
       "dogfoodBody": "개발 중인 Ontology Atlas repo를 그대로 연결하려면 현재 checkout의 docs/ontology 폴더를 선택합니다. 로컬 폴더명이 아직 oh-my-ontology라면 안전하게 ontology-atlas로 바꾸기 전까지 그 경로를 사용하세요.",
       "copyDogfoodPath": "경로 복사",
       "copyDogfoodPathCopied": "복사됨",
@@ -1587,7 +1589,7 @@
       "copyDogfoodLoop": "검증 루프 복사",
       "copyDogfoodLoopCopied": "검증 루프 복사됨",
       "copyDogfoodLoopFailed": "복사 실패",
-      "contractAriaLabel": "온톨로지 문서함 실행 계약",
+      "contractAriaLabel": "문서함 실행 계약",
       "contractFilesLabel": "문서함 파일",
       "contractFilesValue": "Markdown은 로컬에 유지",
       "contractFilesBody": "선택한 폴더의 `.md` 파일이 기준입니다. 그래프 변경은 git diff로 검토됩니다.",
@@ -1597,18 +1599,18 @@
       "contractAgentLabel": "AI 확인",
       "contractAgentValue": "그래프 검사 {count}개",
       "contractAgentBody": "Claude Code, Codex, Cursor가 쓰기 전에 같은 로컬 그래프 검증 게이트를 씁니다.",
-      "actionsAriaLabel": "온톨로지 문서함 시작 액션",
-      "openTitle": "기존 온톨로지 저장소 열기",
+      "actionsAriaLabel": "문서함 시작 액션",
+      "openTitle": "기존 문서함 열기",
       "openingTitle": "폴더 여는 중…",
-      "loadingTitle": "온톨로지 저장소 빌드 중…",
-      "openBody": "이미 온톨로지 마크다운 파일이 있는 폴더를 선택합니다.",
+      "loadingTitle": "문서함 빌드 중…",
+      "openBody": "이미 마크다운 문서가 있는 폴더를 선택합니다.",
       "dogfoodOpenTitle": "docs/ontology 선택",
       "dogfoodOpenBody": "이 repo 안의 docs/ontology 폴더를 선택해 Atlas 자체를 dogfood합니다.",
-      "dogfoodDirectTitle": "이 repo 온톨로지 열기",
+      "dogfoodDirectTitle": "이 repo 문서함 열기",
       "dogfoodDirectBody": "설치 앱에서 바로 docs/ontology를 열어 Atlas가 자기 자신을 분석하게 합니다.",
-      "createTitle": "새 온톨로지 저장소 만들기",
+      "createTitle": "새 문서함 만들기",
       "createBody": "빈 폴더를 만들거나 선택한 뒤, 열리면 시작 문서를 만듭니다.",
-      "sampleTitle": "샘플 온톨로지 보기",
+      "sampleTitle": "샘플 문서함 보기",
       "sampleBody": "로컬 폴더를 고르기 전에 읽기 전용 문서로 둘러봅니다.",
       "recentTitle": "최근 저장소",
       "recentEmpty": "아직 최근 저장소가 없습니다. 폴더를 열거나 만들면 여기에 고정됩니다."
@@ -2018,8 +2020,8 @@
       "spotlightTooltip": "최근 변경 스포트라이트 — 지난 N일 동안 바뀐 노드만 또렷하게, 나머지는 가라앉혀요",
       "spotlightAriaLabel": "최근 변경 스포트라이트 전환",
       "spotlightLabel": "최근 변경",
-      "docsTooltip": "온톨로지 워크스페이스 빠른 보기 (D)",
-      "docsAriaLabel": "온톨로지 워크스페이스 빠른 보기 열기 (D)",
+      "docsTooltip": "문서함 빠른 보기 (D)",
+      "docsAriaLabel": "문서함 빠른 보기 열기 (D)",
       "docsLabel": "작업공간",
       "switchToMyDataLabel": "내 데이터로 전환",
       "switchToMyDataAriaLabel": "내 markdown 폴더를 열어 지도를 내 데이터로 채웁니다 (⌘O)",
@@ -2136,7 +2138,7 @@
       "clickHint": "클릭하면 상세 · 출처 문서"
     },
     "canvas": {
-      "ariaLabel": "온톨로지 지도 — INDEX 패널에서 같은 정보를 키보드로 탐색할 수 있어요"
+      "ariaLabel": "제품 지도 — INDEX 패널에서 같은 정보를 키보드로 탐색할 수 있어요"
     },
     "cluster": {
       "hint": "자식이 많은 그룹은 +N 칩으로 접혀 있습니다 — 칩을 클릭하면 그 그룹이 펼쳐지고, 다시 클릭하면 접힙니다.",
