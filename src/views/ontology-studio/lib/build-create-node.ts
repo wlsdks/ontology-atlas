@@ -25,6 +25,7 @@
  */
 
 import { slugify } from "@/shared/lib/slugify";
+import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
 import { vaultFolderForKind } from "@/entities/docs-vault";
 
 /** The four node kinds a user can assemble in Create mode (project → element). */
@@ -177,7 +178,8 @@ export function buildCreateNodeDoc(draft: CreateDraft): { slug: string; markdown
   }
 
   const lines: string[] = ["---", `slug: ${slug}`, `kind: ${draft.kind}`];
-  const domain = draft.domainValue?.trim();
+  // C7 — canonical bare tail-slug `domain:` (shared with the map writer).
+  const domain = canonicalizeDomainRef(draft.domainValue);
   if (domain && kindExpectsDomain(draft.kind)) lines.push(`domain: ${quoteYamlScalar(domain)}`);
   lines.push(`title: ${quoteYamlScalar(title)}`);
   lines.push(...extra);
@@ -198,7 +200,8 @@ export function buildMcpPacket(draft: CreateDraft): string {
   const q = (v: string) => `"${v.replace(/"/g, '\\"')}"`;
 
   const conceptArgs = [`slug: ${q(slug)}`, `kind: ${q(draft.kind)}`, `title: ${q(title)}`];
-  const domain = draft.domainValue?.trim();
+  // C7 — canonical bare tail-slug `domain:` in the MCP packet too.
+  const domain = canonicalizeDomainRef(draft.domainValue);
   if (domain && kindExpectsDomain(draft.kind)) conceptArgs.push(`domain: ${q(domain)}`);
   const definition = draft.definition.trim();
   if (definition) conceptArgs.push(`definition: ${q(definition)}`);

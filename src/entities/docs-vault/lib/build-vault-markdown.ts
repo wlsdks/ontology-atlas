@@ -10,6 +10,7 @@
  */
 
 import { slugify } from "@/shared/lib/slugify";
+import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
 
 function quoteYamlScalar(v: string): string {
   // 콜론 / 따옴표 등 YAML 특수문자가 있으면 안전하게 quote + escape.
@@ -33,7 +34,9 @@ export function buildVaultMarkdown(args: {
   const lines = ["---"];
   lines.push(`slug: ${args.slug}`);
   lines.push(`kind: ${args.kind}`);
-  const domain = args.domain?.trim();
+  // C7 — single canonical `domain:` serialization (bare tail-slug) so map + 공방
+  // writers agree and analytics don't split one domain into two keys.
+  const domain = canonicalizeDomainRef(args.domain);
   if (domain) lines.push(`domain: ${quoteYamlScalar(domain)}`);
   lines.push(`title: ${quoteYamlScalar(args.title)}`);
   for (const [locale, value] of Object.entries(args.localeLabels ?? {})) {
