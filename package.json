@@ -147,7 +147,6 @@
     "e2e": "playwright test"
   },
   "dependencies": {
-    "@dagrejs/dagre": "^3.0.0",
     "@hookform/resolvers": "^5.4.0",
     "@radix-ui/react-dialog": "^1.1.21",
     "@radix-ui/react-tooltip": "^1.2.14",
