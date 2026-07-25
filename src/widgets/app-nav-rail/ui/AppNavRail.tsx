@@ -237,7 +237,12 @@ export function AppNavRail({
         </ul>
       </nav>
 
-      <div className="mt-auto flex w-full flex-col items-center gap-1 pt-2">
+      {/* #65 — 하단 유틸 티어. 이 안의 구성(활동 · 발자취 · 설정)은 모든 화면에서
+          같아야 한다 — 셸(AppShell)이 소유하며 페이지가 등록하지 않는다. */}
+      <div
+        data-testid="app-nav-rail-utility-tier"
+        className="mt-auto flex w-full flex-col items-center gap-1 pt-2"
+      >
         {/* 에이전트 타일 — 클릭 가능. 연결됨: 활동 다이제스트(인사이트)로,
             미연결/stale: 연결 시트를 연다(P4-② 분기, AppShell 이 라우팅).
             aria: 미연결일 때만 dialog 를 여므로 그때만 haspopup/expanded. */}
