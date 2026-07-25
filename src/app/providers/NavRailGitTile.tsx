@@ -1,13 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-
-import { computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
-import { useOntologyInsight } from "@/features/vault-ontology";
-import { useLocalVault } from "@/features/docs-vault-local";
 import { GitStatusTile } from "@/widgets/app-nav-rail";
-import { AtlasGitPanel } from "@/widgets/atlas-git-panel";
-import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
+import { AtlasGitPanel, useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useAudiencePlain } from "@/shared/lib/audience-preference";
 import { useAtlasGitLauncher } from "@/shared/lib/atlas-git-launcher";
 
@@ -45,22 +39,6 @@ export function NavRailGitTile() {
   );
 }
 
-/** vault 경로 + 세션 changeset — 타일과 패널이 같은 값을 본다. */
-function useAtlasGitContext() {
-  const localVault = useLocalVault();
-  const { insight } = useOntologyInsight();
-  const changeBaseline = useChangeBaseline();
-
-  const changeset = useMemo(
-    () => computeOntologyChangeset(changeBaseline, insight?.nodes ?? [], insight?.edges ?? []),
-    [changeBaseline, insight],
-  );
-
-  // Tauri 데스크톱이면 vault 절대 경로(브리지 활성), 웹 FSA 핸들이면 null →
-  // 타일/패널이 세션 changeset 기반으로 정직하게 강등한다.
-  const vaultPath = localVault.handle ? (getTauriVaultRootPath(localVault.handle) ?? null) : null;
-  return { vaultPath, changeset };
-}
 
 /**
  * 패널 본체. **열렸을 때만 마운트**한다 — 닫힌 상태에서도 changeset 을 계산하면

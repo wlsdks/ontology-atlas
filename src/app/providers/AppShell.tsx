@@ -14,7 +14,8 @@ import {
 } from "@/widgets/agent-connect";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { AtlasGitLauncherProvider } from "@/shared/lib/atlas-git-launcher";
-import { AtlasGitPanelHost, NavRailGitTile } from "./NavRailGitTile";
+import { AtlasGitPanelHost } from "./NavRailGitTile";
+import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 
@@ -97,20 +98,24 @@ function AppNavRailSlot() {
   // 공방 1, opus5 검수 2026-07-25 실측). 페이지가 기억해야 하는 구조가 drift 의
   // 원인이므로 기본값을 셸로 올린다 — 페이지는 특별한 슬롯이 필요할 때만
   // 덮어쓴다.
-  // 발자취 타일은 항상 셸이 붙인다 — 페이지가 슬롯을 덮어써도 유틸 티어의
-  // 개수가 화면마다 달라지지 않는다.
-  const utilityTier = (
-    <>
-      <NavRailGitTile />
-      {settingsSlot ?? <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />}
-    </>
-  );
+  // 뱃지 카운트 — 목적지와 **같은 훅**을 읽는다(값이 갈리면 목록은 비었는데
+  // 숫자가 남는 신뢰 사고가 난다). 세션 changeset 기준이라 웹/데스크톱 모두
+  // 동작한다 — 데스크톱 정밀 카운트(`git_status.changedCount`)는 후속.
+  const { changeset: gitChangeset } = useAtlasGitContext();
+  const gitDirtyCount = gitChangeset.touchedNodeIds.size;
+
+  // 2026-07-25 — 발자취는 **목적지로 승격**됐고 이 유틸 타일은 흡수됐다. 입구가
+  // 둘이면(타일 + 목적지) #65 와 같은 계열의 혼란이 재발한다. 미커밋 변경 수는
+  // 목적지 아이콘의 warning 뱃지로 옮겼다.
+  const utilityTier =
+    settingsSlot ?? <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />;
 
   return (
     <AppNavRail
       settingsSlot={utilityTier}
       hidden={hidden}
       contextHrefs={contextHrefs}
+      gitDirtyCount={gitDirtyCount}
       onAgentTileActivate={onAgentTileActivate}
       agentConnectOpen={launcher.wantOpen}
     />

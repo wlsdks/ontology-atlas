@@ -65,6 +65,11 @@ export interface AtlasGitPanelProps {
   /** 웹 강등 요약에 쓸 세션 changeset — HomePage 의 `ontologyChangeset`. */
   sessionChangeset?: OntologyChangeset | null;
   onClose: () => void;
+  /**
+   * 목적지(`/git/`)로 렌더될 때 true — 헤더의 닫기 X 를 숨긴다. 목적지에는
+   * "닫기" 가 없다(레일로 다른 곳에 가면 그게 나가기다). 모달 호스트만 X 를 쓴다.
+   */
+  hideClose?: boolean;
   className?: string;
 }
 
@@ -87,6 +92,7 @@ export function AtlasGitPanel({
   vaultPath = null,
   sessionChangeset = null,
   onClose,
+  hideClose = false,
   className,
 }: AtlasGitPanelProps) {
   const t = useTranslations("atlasGit");
@@ -268,6 +274,7 @@ export function AtlasGitPanel({
             {t("scopeNotice")}
           </p>
         </div>
+        {hideClose ? null : (
         <button
           type="button"
           aria-label={t("close")}
@@ -277,6 +284,7 @@ export function AtlasGitPanel({
         >
           <X size={15} aria-hidden />
         </button>
+        )}
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-4">

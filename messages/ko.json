@@ -91,7 +91,8 @@
     "docs": "문서함",
     "studio": "공방",
     "insights": "인사이트",
-    "projects": "프로젝트"
+    "projects": "프로젝트",
+    "git": "발자취"
   },
   "ontologyStudio": {
     "searchPlaceholder": "무대에 올릴 노드…",
