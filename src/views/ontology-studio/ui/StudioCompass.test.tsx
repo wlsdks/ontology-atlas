@@ -142,6 +142,15 @@ function renderEnhance(onFill = vi.fn()) {
 }
 
 describe("StudioCompass — enhance", () => {
+  it("owns a main landmark and focal-node page heading for route arrival", () => {
+    renderEnhance();
+
+    expect(screen.getByRole("main")).toHaveAttribute("id", "main");
+    expect(
+      screen.getByRole("heading", { level: 1, name: "MCP Server" }),
+    ).toBeInTheDocument();
+  });
+
   it("renders the focal node as hero + plain-language bearing questions", () => {
     renderEnhance();
     expect(screen.getByTestId("studio-center-card")).toHaveTextContent("MCP Server");

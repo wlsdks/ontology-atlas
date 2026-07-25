@@ -49,6 +49,7 @@
 | A23 | 설정 AI 에이전트 드릴인 → 뒤로가기/Escape → 루트 복귀 | 드릴인·루트 양방향 포커스 연속성 설치 앱 검증 완료 |
 | A24 | 설정 문서함 링크 → client/native route 전환 → 새 화면 읽기 시작 | 늦은 vault 렌더까지 기다린 h1 포커스 설치 앱 검증 완료 |
 | A25 | 문서함 문서 선택 → 활성 탭 닫기 → 이웃 문서 계속 읽기 | 키보드 닫기 뒤 이웃 활성 탭 포커스 복귀 설치 앱 검증 완료 |
+| A26 | 전역 레일 목적지 이동 → 새 surface 읽기 시작 | native-safe 의도 + 공방 main/h1 계약 설치 앱 왕복 검증 완료 |
 
 ## 이슈 장부
 
@@ -991,6 +992,49 @@
   build/deploy를 통과한 동일 코드다.
 - PO·디자인 판정: **Build and verify**
 
+### UX-029 — 전역 레일 이동과 공방 surface가 새 과업의 읽기 시작점을 잃음
+
+- 심각도: `S4`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 문서함 또는 지도 → 전역 레일 `공방` Return → 중심 노드 과업 시작 →
+  전역 레일 `프로젝트` Return → 프로젝트 목록 읽기
+- 관측 현상: 설치 앱에서 전역 레일 링크를 키보드로 실행하면 URL과 화면은
+  바뀌지만 AX focused element가 새 WebView의 `HTML content`였다. pathname
+  변화만 보는 영속 셸 계약은 Tauri navigation/remount 경계에서 초기화됐고,
+  공방은 skip link가 `#main`을 가리키면서도 실제 main landmark와 h1이 모두
+  없어 명시적 포커스 의도도 소비할 대상이 없었다.
+- 사용자 문제: 키보드·스크린리더 사용자는 전역 목적지를 선택하고도 새 과업의
+  제목을 듣지 못하며, skip link와 전역 레일을 다시 순회해야 공방 검색·관계
+  편집 또는 프로젝트 목록에 도달한다.
+- 사용자 순간: 한 ontology 근거를 문서함에서 읽은 뒤 공방에서 관계를 보완하거나,
+  공방 작업 뒤 프로젝트 단위 현황으로 이동하는 핵심 workspace 왕복이다.
+- 현재 대안: 화면 변화를 시각적으로 추정하고 Tab을 반복하거나, 목적 화면에서
+  보이는 제목·첫 제어를 포인터로 다시 선택한다.
+- 온톨로지·에이전트 가치: 전역 레일 URL은 사람이 이동한 semantic surface와
+  에이전트가 재현할 handoff 경계를 함께 가리킨다. 공방의 현재 중심 노드가
+  h1이면 사람이 읽는 과업 제목과 에이전트가 편집할 focal node도 일치한다.
+- 최소화: 레일 목적지·아이콘·카피·레이아웃·모션은 바꾸지 않는다. 모든 전역
+  목적지 href에 기존 bounded `focus=main` 표식과 unmodified-primary session
+  intent를 재사용하고, 공방 stage root만 `main#main`, 상단 현재 중심 노드명만
+  h1으로 의미를 바로잡는다. modifier/new-tab 동작은 session intent를 남기지
+  않고 URL 표식만 새 문서에서 소비한다.
+- 디자인 계약: 전역 레일은 `surface switcher`, 도착 surface의 h1은 첫
+  `active focus`다. 공방의 h1은 장식 제목이 아니라 현재 작업 중인 focal
+  node이며, 전체 무대는 하나의 main task landmark다.
+- 회귀 증거: 레일의 5개 목적지·context docs deep-link가 query를 보존하며
+  native-safe 표식을 갖는지, primary activation만 session intent를 남기는지,
+  공방이 `main#main`과 focal h1을 소유하는지 고정했다. RouteFocusManager
+  경계까지 포함한 집중 테스트는 `3 파일 · 61개`, TypeScript와 touched
+  ESLint가 통과했다.
+- 설치 앱 증거: `/Applications/Ontology Atlas.app`의 `/ko/topology/`에서
+  `공방` 링크가 `/ko/ontology/studio/?focus=main`을 가리키는 것을 확인하고
+  Return으로 실행했다. 최종 URL은 표식이 제거된 `/ko/ontology/studio/`,
+  AX focused element는 `heading 예시 기능, Value: 1`이었다. 이어 공방에서
+  전역 레일 `프로젝트`를 Return으로 실행하자 AX focus가
+  `heading 프로젝트, Value: 1`로 옮겨졌다. production build와 desktop
+  app build/deploy를 통과한 동일 코드다.
+- PO·디자인 판정: **Build and verify**
+
 ## 현재 PO·디자인 판정
 
 - A1/A2 수정 슬라이스: **Build and verify**
@@ -999,6 +1043,7 @@
 - A23 nested settings task 포커스 슬라이스: **Build and verify**
 - A24 client route 읽기 시작점 슬라이스: **Build and verify**
 - A25 문서 탭 키보드 닫기 연속성 슬라이스: **Build and verify**
+- A26 전역 레일 route·공방 landmark 슬라이스: **Build and verify**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

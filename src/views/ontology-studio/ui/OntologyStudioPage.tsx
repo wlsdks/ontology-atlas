@@ -542,7 +542,10 @@ export function OntologyStudioPage() {
   // ─────────────────────────────── ENHANCE ───────────────────────────────
   if (!enhanceItem || !enhanceProjection) {
     return (
-      <div className="flex h-[100dvh] items-center justify-center bg-[color:var(--color-canvas)] p-6">
+      <main
+        id="main"
+        className="flex h-[100dvh] items-center justify-center bg-[color:var(--color-canvas)] p-6"
+      >
         <EmptyState
           title={t("empty.title")}
           description={t("empty.body")}
@@ -558,7 +561,7 @@ export function OntologyStudioPage() {
             </button>
           }
         />
-      </div>
+      </main>
     );
   }
 

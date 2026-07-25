@@ -565,7 +565,8 @@ export function StudioCompass(props: StudioCompassProps) {
   const previewAvailable = saveAllowed && Boolean(props.deltaPreview?.hasDelta);
 
   return (
-    <div
+    <main
+      id="main"
       className="relative grid h-[100dvh] min-h-0 grid-rows-[52px_1fr_64px] overflow-hidden bg-[color:var(--color-canvas)]"
       data-testid="studio-compass-stage"
     >
@@ -594,7 +595,9 @@ export function StudioCompass(props: StudioCompassProps) {
           </button>
         ) : null}
         <div className="flex items-center gap-2 text-caption text-[color:var(--color-text-tertiary)]">
-          <span className="font-semibold text-[color:var(--color-text-secondary)]">{focal.name || "—"}</span>
+          <h1 className="font-semibold text-[color:var(--color-text-secondary)]">
+            {focal.name || "—"}
+          </h1>
           <span className="text-[color:var(--color-text-quaternary)]">·</span>
           <span className="rounded-[5px] border border-[color:var(--color-border-soft)] px-1.5 py-px text-label tracking-[0.02em]">
             {focal.kindLabel}
@@ -1009,7 +1012,7 @@ export function StudioCompass(props: StudioCompassProps) {
           onClose={() => setPreviewOpen(false)}
         />
       ) : null}
-    </div>
+    </main>
   );
 }
 

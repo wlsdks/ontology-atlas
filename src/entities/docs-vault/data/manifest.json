@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-25T00:12:34.104Z",
+  "generatedAt": "2026-07-25T00:24:01.010Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -8989,8 +8989,8 @@
         }
       ],
       "excerpt": "src/shared/ui/route-focus-manager.tsx는 영속 AppShell에서 화면 간 client/native navigation의 키보드 읽기 시작점을 소유한다. 실제 pathname surface가 바뀌고 destination이 아직 자체 포커스를 소유하지 않았으면 page h1, h1이 없으면 main으로 포커스를 옮긴다. query/hash만 바뀌는 같은 surface와 locale-only 전환에는 개입하지 않는다. main 내부 제어나 aria-modal dialog가 이미 포커스를 소유하면 덮지 않는다. 정적 export의 Suspens",
-      "wordCount": 121,
-      "updatedAt": "2026-07-25T09:04:01+09:00",
+      "wordCount": 175,
+      "updatedAt": "2026-07-25T00:23:56.755Z",
       "linksOut": []
     },
     {
@@ -10310,14 +10310,19 @@
           "slug": "ux-028-활성-문서-탭을-키보드로-닫으면-포커스가-앱-루트로-유실"
         },
         {
+          "depth": 3,
+          "text": "UX-029 — 전역 레일 이동과 공방 surface가 새 과업의 읽기 시작점을 잃음",
+          "slug": "ux-029-전역-레일-이동과-공방-surface가-새-과업의-읽기-시작점을-잃음"
+        },
+        {
           "depth": 2,
           "text": "현재 PO·디자인 판정",
           "slug": "현재-po디자인-판정"
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다. 4. 실패 테스트를 먼저 추가한다. 5. 가장 작은 일관된 슬라이스로 수정한다. 6. 집중 테스트와 /Appl",
-      "wordCount": 8171,
-      "updatedAt": "2026-07-25T00:12:28.798Z",
+      "wordCount": 8556,
+      "updatedAt": "2026-07-25T00:23:47.815Z",
       "linksOut": []
     },
     {
