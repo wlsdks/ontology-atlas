@@ -40,6 +40,19 @@
       "indexDefaultLabel": "INDEX 기본 상태",
       "indexDefaultExpanded": "펼침",
       "indexDefaultCollapsed": "접힘",
+      "canvasBgLabel": "캔버스 배경",
+      "canvasBgCaption": "지도 배경 무늬를 골라요 — 배경은 언제나 노드·연결보다 옅어요",
+      "canvasBg": {
+        "dot": "도트(기본)",
+        "constellation": "성좌",
+        "contour": "등고선"
+      },
+      "glyphSetLabel": "노드 아이콘",
+      "glyphSetCaption": "노드 아이콘 그림체를 골라요 — 모양(종류)은 그대로예요",
+      "glyphSet": {
+        "geometric": "기하(기본)",
+        "line": "라인"
+      },
       "workspaceFolderLabel": "작업공간 폴더",
       "workspaceFolderEmpty": "선택 안 됨",
       "workspaceFolderDocCount": "문서 {count}개",

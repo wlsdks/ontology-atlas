@@ -1,6 +1,83 @@
 import { describe, expect, it } from "vitest";
 
-import { computeVignetteAlpha, lerpColorHex, GRID_TILE_PX, wrapToTile } from "./grid";
+import { computeVignetteAlpha, draw, lerpColorHex, GRID_TILE_PX, wrapToTile } from "./grid";
+
+/**
+ * Minimal Canvas2D mock recording every value assigned to `fillStyle` right
+ * before a `fillRect` — enough to prove `draw()` routes to the correct
+ * background layer per `variant` (#20), without a real canvas context.
+ */
+function makeRecordingCtx() {
+  const fillStyles: unknown[] = [];
+  let current: unknown = null;
+  const ctx = {
+    set fillStyle(v: unknown) {
+      current = v;
+    },
+    get fillStyle() {
+      return current;
+    },
+    globalAlpha: 1,
+    fillRect: () => fillStyles.push(current),
+    save: () => undefined,
+    restore: () => undefined,
+    translate: () => undefined,
+    createRadialGradient: () => ({ addColorStop: () => undefined }),
+  } as unknown as CanvasRenderingContext2D;
+  return { ctx, fillStyles };
+}
+
+const BG_TOKENS = {
+  canvasBgNear: "#0a0a0d",
+  canvasBgFar: "#050507",
+  vignetteBaseAlpha: 0.32,
+  vignetteFarAlpha: 0.18,
+};
+
+const GRID_PATTERN = { tag: "grid" } as unknown as CanvasPattern;
+const CONSTELLATION_PATTERN = { tag: "constellation" } as unknown as CanvasPattern;
+const CONTOUR_PATTERN = { tag: "contour" } as unknown as CanvasPattern;
+
+describe("render/grid draw() — background variant routing (#20)", () => {
+  const base = {
+    viewportWidth: 800,
+    viewportHeight: 600,
+    farT: 0,
+    gridPattern: GRID_PATTERN,
+    constellationPattern: CONSTELLATION_PATTERN,
+    contourPattern: CONTOUR_PATTERN,
+    originX: 0,
+    originY: 0,
+  };
+
+  it("dot (default) paints the blueprint grid pattern, not the alt patterns", () => {
+    const { ctx, fillStyles } = makeRecordingCtx();
+    draw(ctx, { ...base, variant: "dot" }, BG_TOKENS);
+    expect(fillStyles).toContain(GRID_PATTERN);
+    expect(fillStyles).not.toContain(CONSTELLATION_PATTERN);
+    expect(fillStyles).not.toContain(CONTOUR_PATTERN);
+  });
+
+  it("constellation paints the constellation pattern and never the grid", () => {
+    const { ctx, fillStyles } = makeRecordingCtx();
+    draw(ctx, { ...base, variant: "constellation" }, BG_TOKENS);
+    expect(fillStyles).toContain(CONSTELLATION_PATTERN);
+    expect(fillStyles).not.toContain(GRID_PATTERN);
+  });
+
+  it("contour paints the contour pattern and never the grid", () => {
+    const { ctx, fillStyles } = makeRecordingCtx();
+    draw(ctx, { ...base, variant: "contour" }, BG_TOKENS);
+    expect(fillStyles).toContain(CONTOUR_PATTERN);
+    expect(fillStyles).not.toContain(GRID_PATTERN);
+  });
+
+  it("omitting variant defaults to the dot/grid layer (regression-free)", () => {
+    const { ctx, fillStyles } = makeRecordingCtx();
+    draw(ctx, { ...base }, BG_TOKENS);
+    expect(fillStyles).toContain(GRID_PATTERN);
+  });
+});
 
 /**
  * `render/grid.ts`'s `draw()`/`buildGridPattern()` bodies are Canvas 2D

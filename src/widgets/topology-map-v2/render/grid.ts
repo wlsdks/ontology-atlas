@@ -105,11 +105,23 @@ export function computeVignetteAlpha(baseAlpha: number, farAlpha: number, farT: 
   return baseAlpha + farAlpha * farT;
 }
 
+/** 캔버스 배경 세트 (Phase 5 #20). 도트=현 blueprint grid(기본), 성좌/등고선은 대체 타일. */
+export type CanvasBackgroundVariant = "dot" | "constellation" | "contour";
+
+/** 성좌/등고선 타일의 반복 크기(px) — blueprint grid 와 같은 120px 배수라 같은 시차 격자. */
+export const ALT_BG_TILE_PX = 240;
+
 export interface BackgroundDrawState {
   viewportWidth: number;
   viewportHeight: number;
   farT: number;
+  /** 어느 배경을 그릴지 — 생략 시 도트(blueprint grid). */
+  variant?: CanvasBackgroundVariant;
   gridPattern: CanvasPattern | null;
+  /** 성좌 배경 타일 패턴(variant==="constellation" 일 때만 소비). */
+  constellationPattern?: CanvasPattern | null;
+  /** 등고선 배경 타일 패턴(variant==="contour" 일 때만 소비). */
+  contourPattern?: CanvasPattern | null;
   /**
    * Screen position of the world origin, so the blueprint grid is anchored to
    * the WORLD instead of the display.
@@ -139,20 +151,52 @@ export interface BackgroundTokens {
   vignetteFarAlpha: number;
 }
 
-/** Draws the background fill, grid-pattern fade, and vignette, in that order (bottom-most layer). */
+/**
+ * Fills the viewport with a camera-anchored repeating pattern, sliding the
+ * tiling with the camera (mod one tile → constant cost) and overdrawing by a
+ * tile on every side to cover the shifted seam. Shared by the blueprint grid
+ * and the alternate (constellation/contour) backgrounds so all three ride the
+ * same parallax格子.
+ */
+function fillPatternAnchored(
+  ctx: CanvasRenderingContext2D,
+  pattern: CanvasPattern,
+  w: number,
+  h: number,
+  originX: number,
+  originY: number,
+  tile: number,
+): void {
+  const ox = wrapToTile(originX, tile);
+  const oy = wrapToTile(originY, tile);
+  ctx.save();
+  ctx.fillStyle = pattern;
+  ctx.translate(ox - tile, oy - tile);
+  ctx.fillRect(0, 0, w + tile * 2, h + tile * 2);
+  ctx.restore();
+}
+
+/** Draws the background fill, the selected background layer, and the vignette, in that order (bottom-most layer). */
 export function draw(ctx: CanvasRenderingContext2D, state: BackgroundDrawState, tokens: BackgroundTokens): void {
   const { viewportWidth: w, viewportHeight: h, farT, gridPattern } = state;
+  const variant = state.variant ?? "dot";
 
   const bgBase = lerpColorHex(tokens.canvasBgNear, tokens.canvasBgFar, farT);
   ctx.fillStyle = bgBase;
   ctx.fillRect(0, 0, w, h);
 
-  if (farT < 0.98) {
+  if (variant === "constellation" && state.constellationPattern) {
+    // 정적 성좌 — farT 페이드 없이 상수 잉크(토큰 알파에 이미 담김). 배경은
+    // 언제나 데이터에 진다. blueprint grid 와 같은 카메라 시차.
+    fillPatternAnchored(ctx, state.constellationPattern, w, h, state.originX, state.originY, ALT_BG_TILE_PX);
+  } else if (variant === "contour" && state.contourPattern) {
+    // 정적 등고선 — 저대비 곡선(atlas 정체성). 엣지로 읽히지 않게 토큰 알파가
+    // 노드/엣지 잉크보다 훨씬 낮다. 상수 잉크, 카메라 시차.
+    fillPatternAnchored(ctx, state.contourPattern, w, h, state.originX, state.originY, ALT_BG_TILE_PX);
+  } else if (farT < 0.98) {
+    // 도트(기본) — blueprint grid: circuit 고도에서만 보이고 farT 로 페이드아웃.
     ctx.globalAlpha = 1 - farT;
     ctx.fillStyle = gridPattern ?? bgBase;
-    // Slide the tiling with the camera (mod one tile, so the cost is constant
-    // no matter how far the user has panned) and overdraw by a tile on every
-    // side to cover the shifted seam.
     const ox = wrapToTile(state.originX, GRID_TILE_PX);
     const oy = wrapToTile(state.originY, GRID_TILE_PX);
     ctx.save();

@@ -26,6 +26,7 @@ import {
   rememberRouteFocusIntent,
 } from '@/shared/ui/route-focus-manager';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
+import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
 
 /**
  * 단일 설정 표면 (설정 통합 2026-07-24, 소유자 지시) — 이전엔 설정이 두 곳에
@@ -546,6 +547,11 @@ export function AppSettingsMenu({
                     />
                   </>
                 ) : null}
+                {/* Phase 5 #20/#21 — 앱 전역 개인화(캔버스 배경·노드 아이콘).
+                    지도가 없는 페이지에서도 아이콘 세트는 INDEX/공방/상세 글리프에
+                    적용되고, 배경은 지도 표면에 적용된다. */}
+                <CanvasBackgroundPicker />
+                <GlyphSetPicker />
               </SettingsGroup>
 
               <SettingsGroup label={t('groupWorkspace')}>

@@ -4,6 +4,7 @@ import { useRef, type RefObject } from "react";
 import { Orbit } from "lucide-react";
 import { useTopologyLoop } from "./use-topology-loop";
 import type { TierRevealConfig } from "../model/tier-visibility";
+import type { CanvasBackground, GlyphSet } from "@/shared/lib/appearance-preferences";
 
 /**
  * `TopologyMapV2` — the single canvas-2D render engine that replaces
@@ -211,10 +212,22 @@ export interface TopologyMapV2Props {
    * 숨긴다(신규 대체 UI 없음 — 기존 INDEX/데이터시트 재사용).
    */
   overlayOpen?: boolean;
+  /**
+   * 아이콘 세트 (Phase 5 #21) — 노드 바디 렌더 스타일. HomePage 가
+   * `useGlyphSet()` 으로 읽어 내려보낸다. DOM 글리프(`TopologyV2KindGlyph`)는
+   * 같은 스토어를 스스로 읽으므로 캔버스·DOM 이 lockstep 으로 스왑된다.
+   * 생략 시 `"geometric"`.
+   */
+  glyphSet?: GlyphSet;
+  /**
+   * 캔버스 배경 세트 (Phase 5 #20) — 도트(기본)·성좌·등고선. HomePage 가
+   * `useCanvasBackground()` 로 읽어 내려보낸다. 생략 시 `"dot"`.
+   */
+  canvasBackground?: CanvasBackground;
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot" } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -251,6 +264,8 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       tierReveal,
       tourAnchorNodeId,
       tourAnchorRef,
+      glyphSet,
+      canvasBackground,
     });
 
   return (

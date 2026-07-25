@@ -40,6 +40,19 @@
       "indexDefaultLabel": "INDEX default state",
       "indexDefaultExpanded": "Expanded",
       "indexDefaultCollapsed": "Collapsed",
+      "canvasBgLabel": "Canvas background",
+      "canvasBgCaption": "Pick the map's background texture — it always stays fainter than nodes and links",
+      "canvasBg": {
+        "dot": "Dots (default)",
+        "constellation": "Constellation",
+        "contour": "Contour"
+      },
+      "glyphSetLabel": "Node icons",
+      "glyphSetCaption": "Pick the node icon style — the shapes (kinds) never change",
+      "glyphSet": {
+        "geometric": "Geometric (default)",
+        "line": "Line"
+      },
       "workspaceFolderLabel": "Workspace folder",
       "workspaceFolderEmpty": "None selected",
       "workspaceFolderDocCount": "{count} documents",

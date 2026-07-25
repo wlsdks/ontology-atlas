@@ -35,6 +35,7 @@ import { ProjectDrawer } from "@/widgets/project-drawer";
 import { SearchHint } from "@/widgets/search-hint";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
+import { useCanvasBackground, useGlyphSet } from "@/shared/lib/appearance-preferences";
 
 const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 // Bare `?p=` miss grace window — see the deeplinkMissNotifiedRef effect
@@ -310,6 +311,11 @@ export function HomePage() {
     }
     setAudiencePlainState(next);
   }, []);
+  // Phase 5 #20/#21 — 개인화 설정(설정 시트에서 변경). 캔버스 배경 세트와 노드
+  // 아이콘 세트를 앱 전역 스토어에서 읽어 지도 캔버스에 내려보낸다. DOM 글리프는
+  // 같은 스토어를 스스로 구독하므로 두 표면이 lockstep 으로 스왑된다.
+  const canvasBackground = useCanvasBackground();
+  const glyphSet = useGlyphSet();
   // 슬라이스 C — 지도 표면의 관계 어휘 레지스터. 비개발(plain) 모드는
   // 데이터시트와 같은 plain 레지스터로 통일.
   const relationRegister: "formal" | "plain" = audiencePlain ? "plain" : "formal";
@@ -3562,6 +3568,10 @@ export function HomePage() {
                     // (MountedGlobalSearch 의 open prop 과 동일 조건) 캔버스를
                     // aria-hidden+inert 로 접근성 트리에서 제외.
                     overlayOpen={!createNodeOpen && ontologySearchOpen}
+                    // Phase 5 #20/#21 — 개인화 설정(설정 시트에서 변경). DOM
+                    // 글리프는 스스로 같은 스토어를 읽어 lockstep 스왑된다.
+                    glyphSet={glyphSet}
+                    canvasBackground={canvasBackground}
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas ? (

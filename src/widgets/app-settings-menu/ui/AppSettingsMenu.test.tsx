@@ -382,3 +382,44 @@ describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 });
+
+// Phase 5 #20/#21 — 개인화 피커(캔버스 배경 3택·노드 아이콘 2택)가 [화면]
+// 그룹에 나타나고, 선택이 로컬에 지속되며 aria-checked 로 반영되는지.
+describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
+  beforeEach(() => {
+    mocks.isDesktopRuntime = false;
+    window.localStorage.clear();
+  });
+
+  it('renders the canvas-background 3-choice and node-icon 2-choice pickers', () => {
+    openSheet();
+    expect(screen.getByTestId('app-settings-canvas-background')).toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-canvas-bg-dot')).toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-canvas-bg-constellation')).toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-canvas-bg-contour')).toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-glyph-set')).toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-glyph-set-geometric')).toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-glyph-set-line')).toBeInTheDocument();
+  });
+
+  it('defaults to dot / geometric selected', () => {
+    openSheet();
+    expect(screen.getByTestId('app-settings-canvas-bg-dot')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByTestId('app-settings-glyph-set-geometric')).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('persists a canvas-background choice and reflects it in aria-checked', () => {
+    openSheet();
+    fireEvent.click(screen.getByTestId('app-settings-canvas-bg-constellation'));
+    expect(screen.getByTestId('app-settings-canvas-bg-constellation')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByTestId('app-settings-canvas-bg-dot')).toHaveAttribute('aria-checked', 'false');
+    expect(window.localStorage.getItem('ontology-atlas:canvas-background:v1')).toBe('constellation');
+  });
+
+  it('persists a node-icon set choice and reflects it in aria-checked', () => {
+    openSheet();
+    fireEvent.click(screen.getByTestId('app-settings-glyph-set-line'));
+    expect(screen.getByTestId('app-settings-glyph-set-line')).toHaveAttribute('aria-checked', 'true');
+    expect(window.localStorage.getItem('ontology-atlas:glyph-set:v1')).toBe('line');
+  });
+});
