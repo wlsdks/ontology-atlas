@@ -2,6 +2,7 @@ import { TopologyV2KindGlyph } from "@/shared/ui";
 import { getOntologyKindTone } from "@/entities/ontology-class";
 import { DomainCapacityBar } from "@/widgets/domain-capacity-bar";
 import { InsightsHeroCensus, type InsightsHeroCensusLabels } from "../parts/InsightsHeroCensus";
+import { InsightsBar } from "../parts/InsightsBar";
 import type { CensusHealthSummary } from "../../lib/census-health";
 import type { DomainCapacityRow } from "../../lib/domain-capacity";
 
@@ -84,7 +85,7 @@ export function OverviewTab({
             })}
           </div>
           <div className="mt-3 flex flex-1 flex-col justify-evenly gap-1">
-            {kindRows.map((row) => {
+            {kindRows.map((row, i) => {
               const width = kindMax > 0 ? Math.max(2, Math.round((row.count / kindMax) * 100)) : 0;
               return (
                 <div key={row.kind} className="flex items-center gap-3 py-0.5">
@@ -93,10 +94,7 @@ export function OverviewTab({
                     {kindLabel(row.kind)}
                   </span>
                   <span className="h-2 flex-1 overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
-                    <span
-                      className="block h-full rounded-full"
-                      style={{ width: `${width}%`, backgroundColor: getOntologyKindTone(row.kind).fill }}
-                    />
+                    <InsightsBar pct={width} color={getOntologyKindTone(row.kind).fill} index={i} />
                   </span>
                   <span className="w-10 flex-none text-right font-mono text-title tabular-nums text-[color:var(--topology-v2-numeral-face)]">
                     {row.count}
