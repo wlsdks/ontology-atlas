@@ -2,8 +2,30 @@ import { describe, expect, it } from 'vitest';
 import {
   buildProjectMarkdown,
   buildStarterDisplaySync,
+  isStarterProjectDescription,
   projectToFrontmatter,
 } from './project-frontmatter';
+
+describe('isStarterProjectDescription (#9)', () => {
+  it('detects the starter body summary boilerplate', () => {
+    expect(
+      isStarterProjectDescription(
+        'Write a one- or two-line summary of your project here — what / for whom / why.',
+      ),
+    ).toBe(true);
+  });
+
+  it('is false for a real user description', () => {
+    expect(isStarterProjectDescription('결제 흐름을 조율하는 서비스')).toBe(false);
+    expect(isStarterProjectDescription('A billing orchestration service')).toBe(false);
+  });
+
+  it('is false for empty / nullish', () => {
+    expect(isStarterProjectDescription('')).toBe(false);
+    expect(isStarterProjectDescription(null)).toBe(false);
+    expect(isStarterProjectDescription(undefined)).toBe(false);
+  });
+});
 
 describe('buildStarterDisplaySync (C6)', () => {
   it('refreshes display_<locale> keys that are still at the starter default', () => {

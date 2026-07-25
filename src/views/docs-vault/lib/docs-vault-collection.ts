@@ -1,7 +1,10 @@
 import type { VaultDoc } from '@/entities/docs-vault';
 import type { DocsVaultSource } from './persistence';
 
-export type DocsVaultCollection = 'guides' | 'ontology';
+export type DocsVaultCollection = 'all' | 'guides' | 'ontology';
+
+/** 실제 문서가 속하는 고유 컬렉션(전체 뷰 'all' 은 필터일 뿐 문서 속성 아님). */
+export type DocsVaultDocCollection = Exclude<DocsVaultCollection, 'all'>;
 
 const ONTOLOGY_KINDS = new Set(['project', 'domain', 'capability', 'element']);
 
@@ -11,7 +14,7 @@ function hasOntologyDescribes(frontmatter: Pick<VaultDoc, 'frontmatter'>['frontm
 
 export function resolveDocsVaultCollection(
   doc: Pick<VaultDoc, 'frontmatter' | 'path' | 'slug'>,
-): DocsVaultCollection {
+): DocsVaultDocCollection {
   const kind = String(doc.frontmatter.kind ?? '');
   if (
     ONTOLOGY_KINDS.has(kind) ||
@@ -28,6 +31,8 @@ export function filterDocsByCollection<T extends Pick<VaultDoc, 'frontmatter' | 
   docs: T[],
   collection: DocsVaultCollection,
 ): T[] {
+  // 'all' 은 필터 없음 — 이 폴더의 모든 문서.
+  if (collection === 'all') return docs;
   return docs.filter((doc) => resolveDocsVaultCollection(doc) === collection);
 }
 

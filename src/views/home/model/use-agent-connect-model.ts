@@ -5,7 +5,9 @@ import type { AgentConnectState } from "@/widgets/agent-connect";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
   buildCodexMcpAddCommandTemplate,
+  buildCursorMcpDeeplink,
   buildMcpConfigJson,
+  buildVsCodeMcpDeeplink,
 } from "@/features/docs-vault-local";
 import { formatActivityAge } from "@/features/vault-ontology";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
@@ -41,7 +43,13 @@ export interface AgentConnectModel {
   openSheet: () => void;
   closeSheet: () => void;
   status: AgentConnectState;
-  snippets: { mcpJson: string; codexCommand: string; needsManualPath: boolean };
+  snippets: {
+    mcpJson: string;
+    codexCommand: string;
+    needsManualPath: boolean;
+    cursorDeeplink: string | null;
+    vscodeDeeplink: string | null;
+  };
   domainTitles: string[];
 }
 
@@ -80,6 +88,8 @@ export function useAgentConnectModel({
       mcpJson: buildMcpConfigJson(vaultName, desktopPath),
       codexCommand: buildCodexMcpAddCommandTemplate(vaultName, desktopPath),
       needsManualPath: desktopPath === null,
+      cursorDeeplink: buildCursorMcpDeeplink(desktopPath),
+      vscodeDeeplink: buildVsCodeMcpDeeplink(desktopPath),
     };
   }, [vaultHandle]);
 

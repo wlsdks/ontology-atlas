@@ -1092,6 +1092,7 @@ function DocsVaultContent() {
     useDocsBodyIndex({ docs: collectionDocs, getDocContent });
   const collectionCounts = useMemo<Record<DocsVaultCollection, number>>(
     () => ({
+      all: manifest.docs.length,
       guides: filterDocsByCollection(manifest.docs, 'guides').length,
       ontology: filterDocsByCollection(manifest.docs, 'ontology').length,
     }),
@@ -1108,6 +1109,9 @@ function DocsVaultContent() {
 
   useEffect(() => {
     if (!selectedDoc) return;
+    // '전체 문서' 뷰에서는 문서를 골라도 컬렉션을 좁히지 않는다 — 전체를
+    // 보겠다는 사용자 의도를 문서 선택이 되돌리면 안 된다.
+    if (docCollection === 'all') return;
     const nextCollection = resolveDocsVaultCollection(selectedDoc);
     if (nextCollection !== docCollection) {
       scheduleStateSync(() => setDocCollection(nextCollection));
@@ -1121,10 +1125,10 @@ function DocsVaultContent() {
       const candidates = [
         ...pinnedSlugs,
         ...recentSlugs,
-        collection === 'guides' ? 'README' : null,
-        collection === 'guides' ? 'FEATURES' : null,
-        collection === 'guides' ? 'PRODUCT-DIRECTION' : null,
-        collection === 'guides' ? 'ARCHITECTURE' : null,
+        collection !== 'ontology' ? 'README' : null,
+        collection !== 'ontology' ? 'FEATURES' : null,
+        collection !== 'ontology' ? 'PRODUCT-DIRECTION' : null,
+        collection !== 'ontology' ? 'ARCHITECTURE' : null,
         docs[0]?.slug,
       ];
       return (

@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { PencilLine, X } from "lucide-react";
 import { type Project } from "@/entities/project";
+import { isStarterProjectDescription } from "@/entities/docs-vault";
 import {
   type ProjectFrontmatterPatch,
   useProjectMutations,
@@ -24,10 +25,43 @@ interface QuickEditValues {
   tags: string;
 }
 
+// #9 — 캐노니컬 컨트롤: --control-h-lg(40px) 높이 · rounded-md · 5단계 서피스.
+const FIELD_INPUT_CLASS =
+  "mt-1.5 h-[var(--control-h-lg)] w-full rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 text-body text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]";
+
+const TERTIARY_LINK_CLASS =
+  "text-label text-[color:var(--color-text-tertiary)] underline-offset-2 transition-colors hover:text-[color:var(--color-indigo-accent)] hover:underline";
+
+/** 캐노니컬 폼 라벨 — 평범한 텍스트 라벨 + 선택 필드의 muted "(선택)" 힌트. */
+function FieldLabel({
+  children,
+  optional,
+}: {
+  children: React.ReactNode;
+  optional?: string;
+}) {
+  return (
+    <span className="flex items-baseline gap-1.5">
+      <span className="text-label font-medium text-[color:var(--color-text-secondary)]">
+        {children}
+      </span>
+      {optional ? (
+        <span className="text-caption text-[color:var(--color-text-quaternary)]">
+          {optional}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 function toQuickEditValues(project: Project): QuickEditValues {
   return {
     name: project.name,
-    description: project.description,
+    // #9 — 스타터 기본 설명(영어 보일러플레이트)은 실값이 아니라 placeholder
+    // 로 다뤄 빈 값으로 시작한다. 사용자가 지운 뒤 쓰게 만들지 않는다.
+    description: isStarterProjectDescription(project.description)
+      ? ""
+      : project.description,
     owner: project.owner ?? "",
     tags: project.tags.join(", "),
   };
@@ -117,7 +151,8 @@ export function ProjectQuickEditPanel({
   const handleSubmit = async () => {
     const nextPatch = toProjectPatch(values);
 
-    if (!nextPatch.name?.trim() || !nextPatch.description?.trim()) {
+    // 이름만 필수 — 설명은 선택(스타터 기본을 지우게 만들지 않는 것과 짝).
+    if (!nextPatch.name?.trim()) {
       setError(t("errorEmpty"));
       return;
     }
@@ -130,7 +165,7 @@ export function ProjectQuickEditPanel({
       await patchProject(project.slug, nextPatch);
       const nextBaseline: QuickEditValues = {
         name: nextPatch.name,
-        description: nextPatch.description,
+        description: nextPatch.description ?? "",
         owner: nextPatch.owner ?? "",
         tags: nextPatch.tags?.join(", ") ?? "",
       };
@@ -201,81 +236,84 @@ export function ProjectQuickEditPanel({
 
             <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
               <label className="block">
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                  {t("fieldName")}
-                </span>
+                <FieldLabel>{t("fieldName")}</FieldLabel>
                 <input
                   data-testid="public-quick-edit-name"
                   name="projectName"
                   autoComplete="off"
                   value={values.name}
                   onChange={(event) => handleChange("name", event.target.value)}
-                  className="mt-2 h-11 w-full rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-4 text-sm text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]"
+                  className={FIELD_INPUT_CLASS}
                   placeholder={t("fieldNamePlaceholder")}
                 />
               </label>
 
               <label className="block">
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                  {t("fieldDescription")}
-                </span>
+                <FieldLabel>{t("fieldDescription")}</FieldLabel>
                 <textarea
                   data-testid="public-quick-edit-description"
                   name="projectDescription"
                   autoComplete="off"
                   value={values.description}
                   onChange={(event) => handleChange("description", event.target.value)}
-                  rows={4}
-                  className="mt-2 w-full rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-4 py-3 text-sm leading-6 text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]"
+                  rows={3}
+                  className="mt-1.5 w-full rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-body leading-relaxed text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]"
                   placeholder={t("fieldDescriptionPlaceholder")}
                 />
               </label>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                    {t("fieldOwner")}
-                  </span>
+                  <FieldLabel optional={t("optionalHint")}>{t("fieldOwner")}</FieldLabel>
                   <input
                     data-testid="public-quick-edit-owner"
                     name="projectOwner"
                     autoComplete="off"
                     value={values.owner}
                     onChange={(event) => handleChange("owner", event.target.value)}
-                    className="mt-2 h-11 w-full rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-4 text-sm text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]"
+                    className={FIELD_INPUT_CLASS}
                     placeholder={t("fieldOwnerPlaceholder")}
                   />
                 </label>
 
                 <label className="block">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                    {t("fieldTags")}
-                  </span>
+                  <FieldLabel optional={t("optionalHint")}>{t("fieldTags")}</FieldLabel>
                   <input
                     data-testid="public-quick-edit-tags"
                     name="projectTags"
                     autoComplete="off"
                     value={values.tags}
                     onChange={(event) => handleChange("tags", event.target.value)}
-                    className="mt-2 h-11 w-full rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-4 text-sm text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]"
+                    className={FIELD_INPUT_CLASS}
                     placeholder={t("fieldTagsPlaceholder")}
                   />
                 </label>
               </div>
 
               {error ? (
-                <p className="text-sm text-[color:var(--color-status-danger)]">{error}</p>
+                <p className="text-body text-[color:var(--color-status-danger)]">{error}</p>
               ) : null}
 
               {notice ? (
-                <p role="status" className="text-sm text-[color:var(--color-text-primary)]">
+                <p role="status" className="text-body text-[color:var(--color-text-primary)]">
                   {notice}
                 </p>
               ) : null}
             </div>
 
-            <div className="space-y-3 border-t border-[color:var(--color-border-soft)] px-5 py-5">
-              <div className="flex flex-wrap gap-2">
+            {/* #9 — footer: 주 액션 하나(변경 적용) + quiet 되돌리기 우측 정렬,
+                전체 편집/문서 등록은 링크형 3차 액션으로 아래에 조용히. */}
+            <div className="space-y-3 border-t border-[color:var(--color-border-soft)] px-5 py-4">
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleReset}
+                  disabled={!hasChanges || pending}
+                >
+                  {t("reset")}
+                </Button>
                 <Button
                   type="button"
                   onClick={() => void handleSubmit()}
@@ -283,31 +321,21 @@ export function ProjectQuickEditPanel({
                 >
                   {pending ? t("applying") : t("apply")}
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleReset}
-                  disabled={!hasChanges || pending}
-                >
-                  {t("reset")}
-                </Button>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {documentNewHref ? (
-                  <Link href={documentNewHref} className="inline-flex">
-                    <Button type="button" variant="ghost">
+              {documentNewHref || settingsHref ? (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                  {documentNewHref ? (
+                    <Link href={documentNewHref} className={TERTIARY_LINK_CLASS}>
                       {t("openDocument")}
-                    </Button>
-                  </Link>
-                ) : null}
-                {settingsHref ? (
-                  <Link href={settingsHref} className="inline-flex">
-                    <Button type="button" variant="outline">
+                    </Link>
+                  ) : null}
+                  {settingsHref ? (
+                    <Link href={settingsHref} className={TERTIARY_LINK_CLASS}>
                       {t("openSettings")}
-                    </Button>
-                  </Link>
-                ) : null}
-              </div>
+                    </Link>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </section>
         </div>

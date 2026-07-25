@@ -15,6 +15,8 @@ function renderSheet(onClose = vi.fn()) {
           mcpJson: '{"mcpServers":{}}',
           codexCommand: "codex mcp add ontology-atlas",
           needsManualPath: false,
+          cursorDeeplink: null,
+          vscodeDeeplink: null,
         }}
         domainTitles={["Product"]}
         handoffText="Continue the ontology task."

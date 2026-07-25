@@ -5,17 +5,21 @@ import {
   Bot,
   BookOpen,
   CheckCircle2,
+  ChevronDown,
   CircleAlert,
   ClipboardCopy,
   Terminal,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
+  AgentClientButtons,
   buildCodexConfigTomlTemplate,
   buildCodexMcpAddCommandTemplate,
+  buildCursorMcpDeeplink,
   buildMcpConfigJson,
   buildOntologyStarterAgentVerifyPrompt,
   buildOntologyStarterJsonGateCommand,
+  buildVsCodeMcpDeeplink,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
@@ -251,6 +255,42 @@ export interface VaultAgentSetupLocalVault {
   ensureAgentConfigs: () => Promise<{ created: number; skipped: number }>;
 }
 
+/** 번호 배지 + 제목 + 설명 + 내용 — 설정 패널 첫 화면 3단계 통일 문법. */
+function StepCard({
+  n,
+  title,
+  desc,
+  children,
+}: {
+  n: number;
+  title: string;
+  desc?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <section
+      data-testid={`agent-setup-step-${n}`}
+      className="flex gap-2.5 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 py-2.5"
+    >
+      <span
+        aria-hidden
+        className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-indigo-a16)] font-mono text-caption font-medium text-[color:var(--color-indigo-accent)]"
+      >
+        {n}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-label font-medium text-[color:var(--color-text-primary)]">{title}</p>
+        {desc ? (
+          <p className="mt-0.5 break-keep text-caption leading-relaxed text-[color:var(--color-text-tertiary)]">
+            {desc}
+          </p>
+        ) : null}
+        {children ? <div className="mt-2">{children}</div> : null}
+      </div>
+    </section>
+  );
+}
+
 interface Props {
   canEditCurrent: boolean;
   localVault: VaultAgentSetupLocalVault;
@@ -265,6 +305,10 @@ export function VaultAgentSetupPanel({
   onOpenWorkflowGuide,
 }: Props) {
   const t = useTranslations('docsVault');
+  // 원클릭 버튼·3단계 카피는 지도 시트와 동일 출처(`agentConnect`)를 재사용해
+  // 두 표면이 어긋나지 않게 한다.
+  const tc = useTranslations('agentConnect');
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [agentSetupBusy, setAgentSetupBusy] = useState(false);
   const [agentSetupError, setAgentSetupError] = useState<string | null>(null);
   const [agentPromptCopyState, setAgentPromptCopyState] = useState<
@@ -300,6 +344,10 @@ export function VaultAgentSetupPanel({
   const vaultRootPath = localVault.handle
     ? getTauriVaultRootPath(localVault.handle)
     : null;
+  const vaultNameForConfig = localVault.handle?.name ?? 'vault';
+  // 딥링크는 절대 경로가 있어야 성립(설치 앱). 웹은 null → 복사 강등.
+  const cursorDeeplink = buildCursorMcpDeeplink(vaultRootPath);
+  const vscodeDeeplink = buildVsCodeMcpDeeplink(vaultRootPath);
 
   async function handleEnsureAgentConfigs() {
     setAgentSetupError(null);
@@ -731,6 +779,67 @@ export function VaultAgentSetupPanel({
               ? t('agentSetup.rootSummaryReady')
               : t('agentSetup.rootSummaryMissing')}
           </p>
+
+          {/* 첫 화면 = 3단계만 (C13). 나머지 검증·스니펫·게이트는 아래 고급 접기. */}
+          <div className="mt-3 grid gap-2">
+            <StepCard n={1} title={tc('step1Title')} desc={tc('step1Desc')}>
+              <AgentClientButtons
+                onWriteConfigs={
+                  canEditCurrent ? () => void handleEnsureAgentConfigs() : null
+                }
+                cursorDeeplink={cursorDeeplink}
+                vscodeDeeplink={vscodeDeeplink}
+                mcpJsonSnippet={buildMcpConfigJson(vaultNameForConfig, vaultRootPath)}
+                codexCommand={buildCodexMcpAddCommandTemplate(
+                  vaultNameForConfig,
+                  vaultRootPath,
+                )}
+                mcpJsonReady={Boolean(agentStatus.mcpJson)}
+                needsManualPath={vaultRootPath === null}
+              />
+            </StepCard>
+            <StepCard n={2} title={tc('step2Title')} desc={tc('step2Desc')} />
+            <StepCard n={3} title={tc('step3Title')} desc={tc('step3Desc')}>
+              <div className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
+                <span
+                  aria-hidden
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{
+                    backgroundColor: agentSetupReady
+                      ? 'var(--color-status-success)'
+                      : 'var(--color-text-quaternary)',
+                  }}
+                />
+                <span className="min-w-0 flex-1 break-keep text-caption leading-4 text-[color:var(--color-text-secondary)]">
+                  {agentSetupReady
+                    ? t('agentSetup.connectionCheckReady')
+                    : t('agentSetup.connectionCheckPending', {
+                        ready: agentSetupReadyCount,
+                        total: agentSetupFiles.length,
+                      })}
+                </span>
+              </div>
+            </StepCard>
+          </div>
+
+          {/* 고급 · 자세한 검증 — 연결 파일 상태·수리·모드·게이트·CLI·복사 패킷 */}
+          <button
+            type="button"
+            onClick={() => setAdvancedOpen((v) => !v)}
+            aria-expanded={advancedOpen}
+            data-testid="agent-setup-advanced-toggle"
+            className="mt-3 flex items-center gap-1.5 self-start font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+          >
+            <ChevronDown
+              size={11}
+              aria-hidden
+              className="transition-transform"
+              style={{ transform: advancedOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+            />
+            {tc('advancedToggle')}
+          </button>
+          {advancedOpen ? (
+          <div className="mt-2" data-testid="agent-setup-advanced">
           <ul
             aria-label={t('agentSetup.connectionAriaLabel')}
             className="mt-2 grid gap-1"
@@ -1244,6 +1353,8 @@ export function VaultAgentSetupPanel({
             <Terminal size={12} aria-hidden />
             {copyCodexCliLabel}
           </button>
+          </div>
+          ) : null}
           {agentSetupError ? (
             <p
               role="alert"

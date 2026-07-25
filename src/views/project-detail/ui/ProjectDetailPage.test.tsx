@@ -165,10 +165,11 @@ describe("ProjectDetailPage", () => {
     renderPage();
 
     // domains=1, capabilities=1, elements=2, documents=1
-    expect(screen.getByText("Domains").previousElementSibling).toHaveTextContent("1");
-    expect(screen.getByText("Capabilities").previousElementSibling).toHaveTextContent("1");
-    expect(screen.getByText("Elements").previousElementSibling).toHaveTextContent("2");
-    expect(screen.getByText("Documents").previousElementSibling).toHaveTextContent("1");
+    // #10 — 통계 칩은 라벨 다음에 값이 붙는다(라벨.nextElementSibling = 값).
+    expect(screen.getByText("Domains").nextElementSibling).toHaveTextContent("1");
+    expect(screen.getByText("Capabilities").nextElementSibling).toHaveTextContent("1");
+    expect(screen.getByText("Elements").nextElementSibling).toHaveTextContent("2");
+    expect(screen.getByText("Documents").nextElementSibling).toHaveTextContent("1");
   });
 
   it("links each domain composition card to its topology focus deep-link", () => {

@@ -29,6 +29,28 @@ export const STARTER_PROJECT_DISPLAY_VALUES: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * Starter project body summary shipped by `ontology-atlas init` (PROJECT_MD).
+ * With no `description:` frontmatter the derived `Project.description` falls back
+ * to the body excerpt — this English boilerplate. #9 — quick-edit treats it as
+ * "never filled in" so it renders as a placeholder (empty value), not a real
+ * value the user has to delete before writing a real one-liner.
+ */
+export const STARTER_PROJECT_DESCRIPTION_MARKERS: readonly string[] = [
+  'Write a one- or two-line summary of your project here',
+  '프로젝트를 한두 줄로 요약',
+];
+
+export function isStarterProjectDescription(
+  description: string | null | undefined,
+): boolean {
+  if (!description) return false;
+  const trimmed = description.trim();
+  return STARTER_PROJECT_DESCRIPTION_MARKERS.some((marker) =>
+    trimmed.startsWith(marker),
+  );
+}
+
+/**
  * Given the existing frontmatter and a new project name, compute the
  * `display_<locale>` updates needed so stale STARTER display names track the
  * rename. Returns only the keys that are currently at a starter default (empty

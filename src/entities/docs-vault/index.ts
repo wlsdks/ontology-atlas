@@ -26,6 +26,8 @@ export {
   buildProjectMarkdown,
   projectToFrontmatter,
   buildStarterDisplaySync,
+  isStarterProjectDescription,
+  STARTER_PROJECT_DESCRIPTION_MARKERS,
   STARTER_PROJECT_DISPLAY_VALUES,
 } from './lib/project-frontmatter';
 export {

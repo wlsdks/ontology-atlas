@@ -49,7 +49,7 @@ function renderSidebar(
         activeTag={null}
         manifest={manifest}
         collection="guides"
-        collectionCounts={{ guides: docs.length, ontology: 0 }}
+        collectionCounts={{ all: docs.length, guides: docs.length, ontology: 0 }}
         visibleDocSlugs={new Set(docs.map((d) => d.slug))}
         onSelect={onSelect}
         onCollectionChange={() => {}}
@@ -64,14 +64,17 @@ function renderSidebar(
   return { onSelect, onCreateNewDoc };
 }
 
-describe("DocsSidebarBody — P4a 최근 바뀐 문서 스트립", () => {
+describe("DocsSidebarBody — 최근 바뀐 문서 (목록 안 조용한 섹션, 기본 접힘)", () => {
   const now = Date.now();
   const recentIso = new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(); // 2일 전
   const oldIso = new Date(now - 90 * 24 * 60 * 60 * 1000).toISOString(); // 90일 전
 
-  it("renders the strip with only recently changed docs when at least one exists", () => {
+  it("기본 접힘 — 토글을 열면 최근 변경 문서만 보인다", () => {
     renderSidebar([makeDoc("a", "Recent Doc", recentIso), makeDoc("b", "Old Doc", oldIso)]);
 
+    // #22 — 기본 접힘이라 목록은 처음에 숨어 있다.
+    expect(screen.queryByTestId("docs-sidebar-recently-changed-list")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("docs-sidebar-recently-changed-toggle"));
     expect(screen.getByTestId("docs-sidebar-recently-changed-list")).toBeInTheDocument();
     expect(screen.getByText("Recent Doc")).toBeInTheDocument();
     expect(screen.queryByText("Old Doc")).not.toBeInTheDocument();
@@ -82,52 +85,77 @@ describe("DocsSidebarBody — P4a 최근 바뀐 문서 스트립", () => {
     expect(screen.queryByTestId("docs-sidebar-recently-changed-toggle")).not.toBeInTheDocument();
   });
 
-  it("toggling the header collapses and re-expands the list", () => {
+  it("toggling the header expands and re-collapses the list", () => {
     renderSidebar([makeDoc("a", "Recent Doc", recentIso)]);
     const toggle = screen.getByTestId("docs-sidebar-recently-changed-toggle");
-    expect(screen.getByTestId("docs-sidebar-recently-changed-list")).toBeInTheDocument();
-
-    fireEvent.click(toggle);
     expect(screen.queryByTestId("docs-sidebar-recently-changed-list")).not.toBeInTheDocument();
 
     fireEvent.click(toggle);
     expect(screen.getByTestId("docs-sidebar-recently-changed-list")).toBeInTheDocument();
+
+    fireEvent.click(toggle);
+    expect(screen.queryByTestId("docs-sidebar-recently-changed-list")).not.toBeInTheDocument();
   });
 
   it("clicking a doc in the strip calls onSelect with its slug", () => {
     const { onSelect } = renderSidebar([makeDoc("a", "Recent Doc", recentIso)]);
+    fireEvent.click(screen.getByTestId("docs-sidebar-recently-changed-toggle"));
     fireEvent.click(screen.getByText("Recent Doc"));
     expect(onSelect).toHaveBeenCalledWith("a");
   });
 });
 
-describe("DocsSidebarBody — 헤더 음각 숫자는 필터 집합을 센다", () => {
-  function numeral() {
-    return document.querySelector('[data-token="engraved-numeral"]') as HTMLElement;
-  }
-
-  it("검색 필터 없을 때는 전체 문서 수를 보인다", () => {
+describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () => {
+  it("검색은 토글로 열고, 열면 입력이 나타나 매칭 수를 카운트 줄에 반영한다", () => {
     renderSidebar([
       makeDoc("payment", "결제 문서", new Date().toISOString()),
       makeDoc("order", "주문 문서", new Date().toISOString()),
       makeDoc("ship", "배송 문서", new Date().toISOString()),
     ]);
-    expect(numeral()).toHaveTextContent("3");
-    expect(numeral()).not.toHaveAttribute("data-filtered");
-  });
+    // 기본은 검색창 없음 (밀도 축소)
+    expect(
+      screen.queryByPlaceholderText(
+        koMessages.vaultWidgets.parts.sidebar.searchPlaceholder,
+      ),
+    ).not.toBeInTheDocument();
 
-  it("검색어를 입력하면 숫자가 매칭 수로 줄고 data-filtered 가 켜진다", () => {
-    renderSidebar([
-      makeDoc("payment", "결제 문서", new Date().toISOString()),
-      makeDoc("order", "주문 문서", new Date().toISOString()),
-      makeDoc("ship", "배송 문서", new Date().toISOString()),
-    ]);
+    fireEvent.click(screen.getByTestId("docs-sidebar-search-toggle"));
     const search = screen.getByPlaceholderText(
       koMessages.vaultWidgets.parts.sidebar.searchPlaceholder,
     );
     fireEvent.change(search, { target: { value: "결제" } });
-    expect(numeral()).toHaveTextContent("1");
-    expect(numeral()).toHaveAttribute("data-filtered", "true");
+    expect(screen.getAllByText("검색 결과 1개").length).toBeGreaterThan(0);
+  });
+
+  it("세 컬렉션(전체/가이드/지도 문서) 아이콘을 노출하고 클릭이 전환을 호출한다", () => {
+    const onCollectionChange = vi.fn();
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocsSidebarBody
+          pinnedSlugs={[]}
+          recentSlugs={[]}
+          selectedSlug={null}
+          docsBySlug={new Map()}
+          activeTag={null}
+          manifest={makeManifest([])}
+          collection="guides"
+          collectionCounts={{ all: 0, guides: 0, ontology: 0 }}
+          visibleDocSlugs={new Set()}
+          onSelect={() => {}}
+          onCollectionChange={onCollectionChange}
+          onTogglePin={() => {}}
+          onTagSelect={() => {}}
+          onCreateNewDoc={() => {}}
+          canCreateNewDoc
+          agentFiles={null}
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId("docs-sidebar-collection-all")).toBeInTheDocument();
+    expect(screen.getByTestId("docs-sidebar-collection-guides")).toBeInTheDocument();
+    expect(screen.getByTestId("docs-sidebar-collection-ontology")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("docs-sidebar-collection-ontology"));
+    expect(onCollectionChange).toHaveBeenCalledWith("ontology");
   });
 });
 
