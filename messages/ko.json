@@ -1396,6 +1396,7 @@
     },
     "frontmatterBlock": {
       "note": "frontmatter 가 곧 그래프 — 이 블록이 topology 의 노드와 엣지가 됩니다.",
+      "definitionLabel": "정의",
       "ariaLabel": "프론트매터 그래프 필드",
       "collapsedSummary": "속성 {count}개",
       "expandAria": "문서 속성 펼치기",

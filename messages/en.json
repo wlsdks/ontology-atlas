@@ -1396,6 +1396,7 @@
     },
     "frontmatterBlock": {
       "note": "Frontmatter is the graph — this block becomes the topology's nodes and edges.",
+      "definitionLabel": "Definition",
       "ariaLabel": "Frontmatter graph fields",
       "collapsedSummary": "{count} fields",
       "expandAria": "Expand document properties",
