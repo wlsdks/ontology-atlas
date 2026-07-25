@@ -33,10 +33,9 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ Tauri Rust package builds a ontology-atlas executable, not an ontology-atlas app binary/,
   );
-  assert.match(
-    result.stdout,
-    /✓ bundle guard covers the hosted download and local-first app routes/,
-  );
+  // 구 `bundle guard covers the hosted download and local-first app routes` 는
+  // 웹 호스팅이 GitHub Pages 단일로 정리되면서 `check-bundle.mjs` 와 함께
+  // 제거됐다(architecture.md 참고). SDK 재도입 금지는 아래 의존성 검사가 잡는다.
   assert.match(
     result.stdout,
     /✓ root package dependencies stay Firebase SDK and Firebase CLI free for the local-only app/,
@@ -162,13 +161,12 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ hosted website verifier requires stable GitHub Releases CTAs and agent access proof on the download route/,
   );
+  // Firebase Hosting 배포 프리플라이트/폴백 워크플로 검사는 #617 (Firebase 전면
+  // 제거 → GitHub Pages 단일 호스트) 에서 사라졌다. 호스팅 배포 계약은 바로 위
+  // hosted website verifier 와 아래 Pages 워크플로 검사가 대신 잡는다.
   assert.match(
     result.stdout,
-    /✓ Firebase Hosting deploy preflight checks env, project alignment, static-only config, and credential ignores/,
-  );
-  assert.match(
-    result.stdout,
-    /✓ Firebase Hosting fallback workflow deploys the promo\/download site after public macOS releases and verifies the live download route/,
+    /✓ GitHub Pages workflow builds the base-path static export, deploys the sole hosted download site on push\/release, and verifies the hosted download route/,
   );
   assert.match(
     result.stdout,
@@ -196,7 +194,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ root README presents the hosted root map's direct local-folder open path alongside the macOS app as the daily heavy-lift workbench/,
+    /✓ root README states the brand, hosted demo, desktop Tauri bridge, and browser local-folder path without routing users to retired surfaces/,
   );
   assert.match(
     result.stdout,
@@ -216,11 +214,11 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ hosted download page separates macOS app release blockers from the Firebase website deploy gate/,
+    /✓ hosted download page separates macOS app release blockers from the GitHub Pages website deploy gate/,
   );
   assert.match(
     result.stdout,
-    /✓ mobile bottom navigation is hidden on public marketing and download surfaces/,
+    /✓ mobile bottom navigation hides only on the standalone download page, keeping global nav on the root map/,
   );
   assert.match(
     result.stdout,
@@ -237,7 +235,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned releases and malformed PKCS#12 certificates/);
   assert.match(
     result.stdout,
-    /✓ desktop release docs include Developer ID direct-download secret commands and exclude Firebase from the app gate/,
+    /✓ desktop release docs include Developer ID direct-download secret commands and exclude the website deploy from the app gate/,
   );
   assert.match(
     result.stdout,
@@ -257,7 +255,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop release status gate audits version alignment, PR readiness, release workflow availability, tag slots, Developer ID direct-download secrets, public release state, download assets, optional hosted deploy workflow, deploy secret, and surface, JSON blocker snapshots, and markdown operator checklists without Firebase Hosting dependencies by default/,
+    /✓ desktop release status gate audits version alignment, PR readiness, release workflow availability, tag slots, Developer ID direct-download secrets, public release state, and download assets in JSON blocker snapshots and markdown operator checklists, with no Firebase Hosting dependency/,
   );
   assert.match(
     result.stdout,
@@ -332,7 +330,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop local vault tools expose, copy, and reveal the selected absolute vault path/,
+    /✓ desktop agent setup surface derives the absolute Tauri vault path and is actually mounted by the settings sheet/,
   );
   assert.match(
     result.stdout,
@@ -695,6 +693,27 @@ test("desktop readiness checker enforces release workflow order", () => {
   );
   assert.match(checker, /hasStrictOrder\(releaseBuildOrder\)/);
   assert.match(checker, /hasStrictOrder\(releasePublishOrder\)/);
+});
+
+// 2026-07-25 (opus5 검수): 이 게이트가 삭제된 `VaultToolsMenu.tsx` 를 계속
+// readFileSync 하다 ENOENT 스택트레이스로 죽어 있었다. 크래시는 "게이트 실패"
+// 가 아니라 "게이트 부재"로 읽히기 때문에, 검사 대상 파일이 사라지면 반드시
+// 읽을 수 있는 [desktop-check] 실패 메시지로 끝나야 한다.
+test("desktop readiness check fails readably when a tracked source file disappears", () => {
+  const checker = readFileSync("scripts/check-desktop-readiness.mjs", "utf8");
+
+  // readText 는 파일 부재를 fail() 로 강등해야 한다 — raw readFileSync 크래시 금지.
+  assert.match(checker, /function readText\(relativePath\)/);
+  assert.match(checker, /existsSync\(absolute\)/);
+  assert.match(checker, /tracked source file is missing/);
+
+  // 이 게이트가 실제로 이동한 표면(설정 메뉴의 에이전트 패널)을 겨냥해야 한다.
+  // 삭제 경위를 설명하는 주석 언급은 허용하되, 그 경로를 *읽는* 것은 금지.
+  assert.doesNotMatch(checker, /readText\([^)]*VaultToolsMenu/);
+  assert.match(
+    checker,
+    /readText\("src\/widgets\/app-settings-menu\/ui\/VaultAgentSetupPanel\.tsx"\)/,
+  );
 });
 
 test("desktop release slot gate rejects an existing same-tag release", () => {

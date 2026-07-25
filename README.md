@@ -162,7 +162,7 @@ freshness.
 |---|---|
 | **Map** (`/` and `/topology`) | Overview, semantic zoom, typed relation inspection, focus/path modes, impact, and handoff |
 | **Docs** (`/docs`) | Read and edit Markdown, inspect frontmatter evidence and backlinks, search, run workspace checks |
-| **Builder** (`/ontology/edit`) | Visually add concepts and relations with a visible write-confirm boundary |
+| **Workshop** (`/ontology/studio`) | Complete a node's meaning against four fixed relation bearings, with a visible write-confirm boundary |
 | **Insights** (`/ontology/insights`) | Agent readiness, repair queue, hubs, kind census, relation breakdown, and freshness |
 | **Projects** (`/projects`) | Project cards and domain/capability/evidence coverage derived from containment |
 
