@@ -12,6 +12,10 @@ import {
   AgentConnectLauncherProvider,
   useAgentConnectLauncher,
 } from "@/widgets/agent-connect";
+import { AppSettingsMenu } from "@/widgets/app-settings-menu";
+import { AtlasGitLauncherProvider } from "@/shared/lib/atlas-git-launcher";
+import { AtlasGitPanelHost, NavRailGitTile } from "./NavRailGitTile";
+import { useDataSourceMode } from "@/features/data-source-mode";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 
 /**
@@ -42,11 +46,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <NavRailShellProvider>
       <AgentConnectLauncherProvider>
-        <RouteFocusManager />
-        <div className="flex w-full">
-          <AppNavRailSlot />
-          <div className="flex min-w-0 flex-1 flex-col">{children}</div>
-        </div>
+        {/* #65 — 발자취(Atlas Git) 패널도 셸 상주. `<lg` 에서는 레일이 숨으므로
+            지도의 크롬 타일이 같은 런처로 같은 패널을 연다. */}
+        <AtlasGitLauncherProvider renderPanel={AtlasGitPanelHost}>
+          <RouteFocusManager />
+          <div className="flex w-full">
+            <AppNavRailSlot />
+            <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+          </div>
+        </AtlasGitLauncherProvider>
       </AgentConnectLauncherProvider>
     </NavRailShellProvider>
   );
@@ -62,6 +70,7 @@ function AppNavRailSlot() {
   const launcher = useAgentConnectLauncher();
   const router = useRouter();
   const pathname = usePathname() ?? "/";
+  const dataSourceMode = useDataSourceMode();
 
   // P4-② 분기(TopologyIndexPanel 푸터와 동일 계약) — 연결됨: 활동
   // 다이제스트(인사이트)로. 미연결/stale: 연결 시트를 여는 전역 의도를 세운다.
@@ -81,9 +90,25 @@ function AppNavRailSlot() {
     [launcher, router, pathname],
   );
 
+  // #65 — 레일 하단 유틸 티어는 셸이 기본으로 채운다. 예전엔 페이지마다
+  // `useNavRailSettingsSlot(<AppSettingsMenu triggerVariant="rail-tile" />)` 를
+  // 손으로 등록해야 했고, **공방(OntologyStudioPage)이 그걸 빠뜨려** 그 화면만
+  // 하단에 아이콘 1개(에이전트)만 남았다 (지도 3 · 문서함/인사이트/프로젝트 2 ·
+  // 공방 1, opus5 검수 2026-07-25 실측). 페이지가 기억해야 하는 구조가 drift 의
+  // 원인이므로 기본값을 셸로 올린다 — 페이지는 특별한 슬롯이 필요할 때만
+  // 덮어쓴다.
+  // 발자취 타일은 항상 셸이 붙인다 — 페이지가 슬롯을 덮어써도 유틸 티어의
+  // 개수가 화면마다 달라지지 않는다.
+  const utilityTier = (
+    <>
+      <NavRailGitTile />
+      {settingsSlot ?? <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />}
+    </>
+  );
+
   return (
     <AppNavRail
-      settingsSlot={settingsSlot ?? undefined}
+      settingsSlot={utilityTier}
       hidden={hidden}
       contextHrefs={contextHrefs}
       onAgentTileActivate={onAgentTileActivate}

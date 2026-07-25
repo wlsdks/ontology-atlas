@@ -28,13 +28,14 @@ import {
   SampleNodeHint,
   useFirstRunSampleModeSettled,
 } from "@/features/first-run-starter";
-import { GitStatusTile, useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
-import { AtlasGitPanel } from "@/widgets/atlas-git-panel";
+import { useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
+import { useAtlasGitLauncher } from "@/shared/lib/atlas-git-launcher";
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { SearchHint } from "@/widgets/search-hint";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
+import { useAudiencePlain } from "@/shared/lib/audience-preference";
 import { useCanvasBackground, useGlyphSet } from "@/shared/lib/appearance-preferences";
 
 const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
@@ -279,17 +280,6 @@ const INDEX_PANEL_COLLAPSED_KEY = "demo:index-panel-collapsed:v1";
  * useState 미러 + setter 에서 setItem 동기화 패턴을 쓴다(기존
  * `setIndexPreference` 의 "저장+즉시 적용" 계약과 동일).
  */
-const AUDIENCE_PLAIN_KEY = "demo:audience-plain:v1";
-
-function readAudiencePlainPreference(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return window.localStorage.getItem(AUDIENCE_PLAIN_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
 export function HomePage() {
   const t = useTranslations('topology');
   // 어권별 이름 입력(create composer) 계약의 '지금 화면 언어'.
@@ -303,15 +293,10 @@ export function HomePage() {
   // 슬라이스 C — lazy initializer 는 클라이언트에서만 실제 실행(SSR 은 항상
   // false), 클라이언트 hydration 도 localStorage 없는 서버 프리렌더 기준
   // false 와 같아 hydration mismatch 없음(다른 세션 플래그와 같은 패턴).
-  const [audiencePlain, setAudiencePlainState] = useState<boolean>(readAudiencePlainPreference);
-  const setAudiencePlain = useCallback((next: boolean) => {
-    try {
-      window.localStorage.setItem(AUDIENCE_PLAIN_KEY, next ? "1" : "0");
-    } catch {
-      /* private mode — session-only, no persistence */
-    }
-    setAudiencePlainState(next);
-  }, []);
+  // #65 — 공용 스토어로 승격. 셸(레일 하단 발자취 타일)도 같은 값을 읽으므로
+  // 각자 localStorage 를 읽던 구조를 없앴다 — 설정에서 바꾸면 지도와 레일이
+  // 함께 바뀐다.
+  const [audiencePlain, setAudiencePlain] = useAudiencePlain();
   // Phase 5 #20/#21 — 개인화 설정(설정 시트에서 변경). 캔버스 배경 세트와 노드
   // 아이콘 세트를 앱 전역 스토어에서 읽어 지도 캔버스에 내려보낸다. DOM 글리프는
   // 같은 스토어를 스스로 구독하므로 두 표면이 lockstep 으로 스왑된다.
@@ -659,27 +644,20 @@ export function HomePage() {
   // S1.1 — 토폴로지를 온톨로지의 1차 편집 surface 로. writable 로컬 vault 면
   // 선택 노드를 자기 .md 문서로 해석해 전체 상세(A1)의 본문 인라인 편집을 허용.
   // 발자취(Atlas Git) 패널 — 레일 타일 클릭으로 열리는 스냅샷/히스토리 표면.
-  const [gitPanelOpen, setGitPanelOpen] = useState(false);
+  // #65 — 발자취 패널은 셸 소유. `<lg` 크롬 타일은 같은 런처로 그 패널을 연다.
+  const atlasGit = useAtlasGitLauncher();
   // Tauri 데스크톱이면 vault 절대 경로(브리지 활성), 웹 FSA 핸들이면 null →
   // 타일/패널이 세션 changeset 기반으로 정직하게 강등한다.
   const gitVaultPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
   const handoffSource: "loaded-vault" | "read-only-sample" =
     vault.status === "loaded" ? "loaded-vault" : "read-only-sample";
-  // 레일 하단 설정 슬롯 — 발자취 타일 + 설정 기어를 한 fragment 로 등록.
-  // (perf/persistent-shell: 레일은 layout 상주, 이 페이지가 슬롯만 주입.)
+  // 레일 하단 설정 슬롯 — 지도 전용 화면 상태(screenControls)를 실어야 해서
+  // 이 페이지만 셸 기본 슬롯을 덮어쓴다. 발자취 타일은 #65 에서 셸(AppShell)로
+  // 올라갔다 — 페이지마다 등록해야 하는 구조가 하단 유틸 티어를 1/2/3 개로
+  // 갈라놓은 원인이었다.
   const navRailSettingsSlot = useMemo(
     () => (
       <>
-        {/* 슬라이스 C — 비개발(plain) 모드는 발자취(Atlas Git) 타일을 개발자
-            크롬으로 간주해 숨긴다. */}
-        {audiencePlain ? null : (
-          <GitStatusTile
-            onActivate={() => setGitPanelOpen(true)}
-            panelOpen={gitPanelOpen}
-            vaultPath={gitVaultPath}
-            sessionDirty={ontologyChangeset.touchedNodeIds.size > 0}
-          />
-        )}
         {/* 설정 통합 2026-07-24 — 구 "지도 설정" 팝오버(TopologyV2SettingsGear)
             폐지. 톱니는 이제 단일 설정 시트(AppSettingsMenu)를 연다. 지도
             전용 화면 상태(보기 모드·INDEX 기본 상태)는 screenControls 로
@@ -703,7 +681,6 @@ export function HomePage() {
       handleChangeIndexDefaultCollapsed,
       audiencePlain,
       setAudiencePlain,
-      gitPanelOpen,
       gitVaultPath,
       ontologyChangeset,
       vault.status,
@@ -2943,11 +2920,11 @@ export function HomePage() {
                     {audiencePlain ? null : (
                       <button
                         type="button"
-                        onClick={() => setGitPanelOpen(true)}
+                        onClick={atlasGit.open}
                         aria-label={tAtlasGit('tileLabel')}
                         title={tAtlasGit('tileLabel')}
                         aria-haspopup="dialog"
-                        aria-expanded={gitPanelOpen}
+                        aria-expanded={atlasGit.isOpen}
                         data-testid="topology-footprint-lg-tile"
                         className="relative lg:hidden flex size-[var(--chrome-tile-size)] items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
                       >
@@ -4070,27 +4047,6 @@ export function HomePage() {
         {/* 발자취(Atlas Git) 시트 — 레일 타일이 연다. AgentConnectSheet 와
             같은 scrim+중앙 카드 모달 골격(같은 토큰, modality 증명 — 스크림
             클릭 닫기). 패널 내용/조회는 위젯 자기완결. */}
-        {gitPanelOpen ? (
-          <div
-            data-interactive-overlay="true"
-            data-testid="atlas-git-scrim"
-            className="pointer-events-auto fixed inset-0 z-50 flex items-stretch justify-center bg-[color:var(--color-backdrop-medium)] sm:items-center sm:p-6"
-            onClick={() => setGitPanelOpen(false)}
-          >
-            <div
-              role="dialog"
-              aria-modal="true"
-              onClick={(event) => event.stopPropagation()}
-              className="flex h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve))] w-full flex-col overflow-y-auto border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-2xl sm:h-auto sm:max-h-[calc(100vh-3rem)] sm:max-w-[560px] sm:rounded-[var(--topology-shortcut-sheet-radius)]"
-            >
-              <AtlasGitPanel
-                vaultPath={gitVaultPath}
-                sessionChangeset={ontologyChangeset}
-                onClose={() => setGitPanelOpen(false)}
-              />
-            </div>
-          </div>
-        ) : null}
         <AgentConnectSheet
           open={agentConnect.open}
           onClose={() => {
