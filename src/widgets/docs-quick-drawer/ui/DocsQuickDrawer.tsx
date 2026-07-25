@@ -20,10 +20,15 @@ import {
 } from "lucide-react";
 import {
   findRelatedDocs,
+  pinnedDocsStorageKey,
+  recentDocsStorageKey,
   vaultManifest,
+  vaultScopeKey,
   type VaultManifest,
   type VaultTreeNode,
 } from "@/entities/docs-vault";
+import { useDataSourceMode } from "@/features/data-source-mode";
+import { useLocalVault } from "@/features/docs-vault-local";
 import {
   filterTree,
   firstDocSlug,
@@ -33,12 +38,6 @@ import {
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { cn } from "@/shared/lib/cn";
-
-// docs-vault widget 에 이미 있는 storage key 와 shape 을 그대로 참조 — 타입만
-// 같이 유지하면 두 위젯이 같은 localStorage 네임스페이스를 공유한다.
-// widget→widget import 는 FSD 경계에서 금지라, 최소 read-only 접근만 inline.
-const PINNED_KEY = "demo:docs-vault:pinned:v1:server";
-const RECENT_KEY = "demo:docs-vault:recent:v2:server";
 
 function readStoredSlugs(key: string, limit: number): string[] {
   if (typeof window === "undefined") return [];
@@ -56,14 +55,14 @@ function readStoredSlugs(key: string, limit: number): string[] {
 }
 
 /** docs-vault widget 의 togglePinnedDoc 과 동일 동작 — 고정 추가 시 맨 앞. */
-function togglePinnedInStorage(slug: string): string[] {
+function togglePinnedInStorage(pinnedKey: string, slug: string): string[] {
   if (typeof window === "undefined") return [];
-  const current = readStoredSlugs(PINNED_KEY, 500);
+  const current = readStoredSlugs(pinnedKey, 500);
   const next = current.includes(slug)
     ? current.filter((s) => s !== slug)
     : [slug, ...current];
   try {
-    window.localStorage.setItem(PINNED_KEY, JSON.stringify(next));
+    window.localStorage.setItem(pinnedKey, JSON.stringify(next));
   } catch {
     /* private mode */
   }
@@ -287,6 +286,28 @@ export function DocsQuickDrawer({
 }: Props) {
   const t = useTranslations("vaultWidgets.docsDrawer");
   const router = useRouter();
+
+  // #61 — 이 드로어는 **활성 볼트**의 빠른 접근이다(라벨도 "문서함 빠른 접근",
+  // '전체' 는 /docs 로 간다). 예전엔 빌드타임 번들 `vaultManifest` 를 직접
+  // 읽어, 5개짜리 로컬 볼트를 선택해도 Atlas 번들 문서가 나왔다. 고정/최근도
+  // `:server` 로 고정돼 다른 볼트의 목록이 섞였다 (opus5 검수 2026-07-25).
+  //
+  // 이제 /docs 와 같은 규칙을 쓴다: 로컬 볼트가 로드돼 있으면 그 manifest 와
+  // 그 볼트 범위의 고정/최근을, 아니면 번들(도그푸드 샘플)을 본다.
+  const mode = useDataSourceMode();
+  const localVault = useLocalVault();
+  const isLocalLoaded =
+    mode === "local" && localVault.status === "loaded" && Boolean(localVault.manifest);
+  const activeManifest = (isLocalLoaded && localVault.manifest
+    ? localVault.manifest
+    : vaultManifest) as VaultManifest;
+  const scope = vaultScopeKey({
+    isLocalLoaded,
+    handleName: localVault.handle?.name ?? null,
+  });
+  const pinnedKey = pinnedDocsStorageKey(scope);
+  const recentKey = recentDocsStorageKey(scope);
+
   const [query, setQuery] = useState("");
   const [pinnedSlugs, setPinnedSlugs] = useState<string[]>([]);
   const [recentSlugs, setRecentSlugs] = useState<string[]>([]);
@@ -308,15 +329,16 @@ export function DocsQuickDrawer({
     }
     // 열릴 때마다 다시 읽어 /docs 에서 방금 pin 한 것도 즉시 반영.
     queueMicrotask(() => {
-      setPinnedSlugs(readStoredSlugs(PINNED_KEY, 50));
-      setRecentSlugs(readStoredSlugs(RECENT_KEY, 5));
+      setPinnedSlugs(readStoredSlugs(pinnedKey, 50));
+      setRecentSlugs(readStoredSlugs(recentKey, 5));
     });
     previousFocusRef.current = document.activeElement as HTMLElement | null;
     const t = window.setTimeout(() => searchRef.current?.focus(), 40);
     return () => {
       window.clearTimeout(t);
     };
-  }, [open]);
+    // 볼트가 바뀌면 그 볼트 범위의 고정/최근을 다시 읽는다.
+  }, [open, pinnedKey, recentKey]);
 
   useEffect(() => {
     if (!open) return;
@@ -334,10 +356,10 @@ export function DocsQuickDrawer({
   }, [open, onClose]);
 
   const docs: FlatDoc[] = useMemo(() => {
-    const all = flattenDocs(vaultManifest.tree as VaultTreeNode)
+    const all = flattenDocs(activeManifest.tree as VaultTreeNode)
       .filter((n) => n.type === "doc" && n.slug)
       .map((n) => {
-        const meta = vaultManifest.docs.find((d) => d.slug === n.slug);
+        const meta = activeManifest.docs.find((d) => d.slug === n.slug);
         return {
           slug: n.slug as string,
           title: n.title ?? n.name,
@@ -348,7 +370,7 @@ export function DocsQuickDrawer({
         } satisfies FlatDoc;
       });
     return all;
-  }, []);
+  }, [activeManifest]);
 
   // 태그별 문서 slug set. manifest.tags 는 이미 역색인이지만 JSON 로딩시
   // readonly 로 취급 — FlatDoc.tags 에서 다시 쌓아 O(1) 조회용 Set 화.
@@ -396,7 +418,7 @@ export function DocsQuickDrawer({
   const pinnedSet = useMemo(() => new Set(pinnedSlugs), [pinnedSlugs]);
 
   const handleTogglePin = (slug: string) => {
-    setPinnedSlugs(togglePinnedInStorage(slug));
+    setPinnedSlugs(togglePinnedInStorage(pinnedKey, slug));
   };
 
   const recentViewed = useMemo(
@@ -409,7 +431,7 @@ export function DocsQuickDrawer({
   // 를 종합한 score 를 반환 — ProjectDrawer 와 동일 로직.
   const relatedDocs = useMemo(() => {
     if (!contextProject) return [];
-    const manifest = vaultManifest as VaultManifest;
+    const manifest = activeManifest;
     return findRelatedDocs(
       manifest.docs,
       {
@@ -419,7 +441,7 @@ export function DocsQuickDrawer({
       },
       6,
     );
-  }, [contextProject]);
+  }, [contextProject, activeManifest]);
 
   const trimmedQuery = query.trim().toLowerCase();
   const activeTagSlugs = useMemo(
@@ -429,11 +451,11 @@ export function DocsQuickDrawer({
   const filteredTree = useMemo(
     () =>
       filterTree(
-        vaultManifest.tree as VaultTreeNode,
+        activeManifest.tree as VaultTreeNode,
         trimmedQuery,
         activeTagSlugs,
       ),
-    [trimmedQuery, activeTagSlugs],
+    [trimmedQuery, activeTagSlugs, activeManifest],
   );
 
   // 검색/태그 모드에서 키보드 ↑/↓ 가 순회할 대상 slug 평면 리스트.

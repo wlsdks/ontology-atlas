@@ -13,6 +13,12 @@ export { default as vaultContent } from './data/content.json';
 // 빌드한다.
 export { default as sampleStorefrontManifest } from './data/sample-storefront.manifest.json';
 export {
+  pinnedDocsStorageKey,
+  recentDocsStorageKey,
+  vaultScopeKey,
+  type VaultScopeKey,
+} from './lib/vault-scope-key';
+export {
   buildLocalManifest,
   buildLocalManifestWithEntries,
   rebuildLocalManifestIncremental,
