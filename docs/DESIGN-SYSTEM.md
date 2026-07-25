@@ -992,6 +992,38 @@ New motion must name what it explains: selection, camera relocation, drag
 movement, path construction, composer blocking, or command feedback. Motion
 that only makes the screen feel busy fails the design system.
 
+### 모션 문법 (usability motion family, Phase 3 2026-07-25)
+
+공방(`/ontology/studio`)·인사이트(`/ontology/insights`)의 "의미를 확인하는"
+사용성 모션은 아래 **단일 duration/easing 패밀리** 위에서만 만든다. 전부
+transform/opacity 만 쓰고, glow·bounce-loop·ambient 반복은 금지, ≤240ms,
+`prefers-reduced-motion` 은 `app/globals.css` base 레이어 전역 규칙이 즉시
+등장으로 무력화한다.
+
+- `--motion-fast: 120ms` — 칩·탭 콘텐츠 크로스페이드·피커 원점 스케일 등 즉답.
+- `--motion-base: 180ms` — 패널/카드/무대 요소 등장(크롬 180ms 리듬과 정렬).
+- `--motion-settle: 240ms` — 위성 재배치(FLIP)·커밋 수렴 등 한 박자 더 긴 확정.
+- `--motion-ease: cubic-bezier(0.25,0.1,0.25,1)` — 위 셋의 공통 이징.
+
+캐노니컬 유틸리티 클래스(globals.css `@layer base`):
+
+- `.studio-stage-in` — 무대 등장(opacity + 6px 상승). 소비처가
+  `--studio-stagger` 인라인 변수로 요소별 지연(≈40ms 간격 = 센터 카드 → 레인
+  순차)을 준다.
+- `.studio-picker-pop` — 피커 열림 원점 스케일(scale 0.96→1 + opacity).
+  `transform-origin` 은 `--studio-picker-origin`(소켓 로컬 좌표) 주입.
+- `.studio-summary-converge` — 저장 커밋 시 요약 칩이 저장 버튼 방향으로
+  옅어지며 미끄러진다(한 박자). 이동 벡터는 `--studio-converge-x/y`.
+- 위성 재배치(FLIP)는 JS(Web Animations API)로 old→new 레인 위치를
+  transform-only 로 태운다(`--motion-settle`) — 순간이동 대신 이동을 보여
+  "어디로 갔는지"를 눈이 따라간다.
+- 소켓 채움 안착(파선→실선)은 기존 `.studio-strut-flow`/보더 전환이 담당 —
+  같은 토큰 패밀리로 정렬.
+- `.insights-tab-crossfade` — 인사이트 탭 전환 콘텐츠 크로스페이드
+  (`panelCrossfadeIn` 재사용 + `--motion-fast`). 히어로 숫자 카운트업은 JS
+  훅(`useCountUp`, `prefers-reduced-motion` 이면 즉시 최종값), 바 채움은 width
+  0→목표 transition(`--motion-settle`, 30ms 스태거).
+
 ### Tokenization Contract For Relief/Topology
 
 Relief/Topology is not allowed to rely on "looks better" CSS. A visual value is
