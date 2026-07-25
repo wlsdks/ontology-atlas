@@ -10,6 +10,15 @@ export const GUIDED_TOUR_STATUS_KEY = "guided-tour:v1";
 
 export type GuidedTourStatus = "done" | "skipped";
 
+/**
+ * 목적지별 "봤음" 키. 지도(`guided-tour:v1`)와 분리해야 문서함을 본 사람에게
+ * 공방 안내가 그대로 뜬다 — 하나로 묶으면 먼저 들어간 화면 하나가 나머지
+ * 다섯 개의 안내를 통째로 삼킨다.
+ */
+export function destinationTourStatusKey(destination: string): string {
+  return `guided-tour:${destination}:v1`;
+}
+
 export function writeGuidedTourStatus(
   status: GuidedTourStatus,
   key: string = GUIDED_TOUR_STATUS_KEY,

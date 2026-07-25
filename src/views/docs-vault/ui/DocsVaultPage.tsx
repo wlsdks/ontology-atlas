@@ -66,6 +66,12 @@ import { shouldShowOutlineRail } from '../lib/outline-rail';
 import { usePaletteState } from '../lib/use-palette-state';
 import { replaceDocsVaultUrlState } from '../lib/url-state';
 import {
+  parseDocsTreeGroup,
+  parseDocsTreeSort,
+  type DocsTreeGroup,
+  type DocsTreeSort,
+} from '@/widgets/docs-vault/lib/tree-order';
+import {
   buildTagIndexForDocs,
   filterDocsByCollection,
   resolveDocsVaultSlugAlias,
@@ -171,6 +177,9 @@ function DocsVaultContent() {
   const querySlug = searchParams?.get('slug') ?? null;
   const queryView = parseView(searchParams?.get('view'));
   const queryDogfood = searchParams?.get('dogfood') ?? null;
+  // 목록 순서 — URL 이 진실원. 모르는 값은 에러가 아니라 기본값이다.
+  const queryTreeSort = parseDocsTreeSort(searchParams?.get('sort'));
+  const queryTreeGroup = parseDocsTreeGroup(searchParams?.get('group'));
   const insightsReturnTab = parseInsightsReturnMarker(
     searchParams?.get('via'),
   );
@@ -230,6 +239,8 @@ function DocsVaultContent() {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [docCollection, setDocCollection] =
     useState<DocsVaultCollection>('guides');
+  const [treeSort, setTreeSort] = useState<DocsTreeSort>(queryTreeSort);
+  const [treeGroup, setTreeGroup] = useState<DocsTreeGroup>(queryTreeGroup);
   // ?intent=local — landing CTA "내 마크다운 폴더 열기" 의 진입 query.
   // source 초기값을 'local' 로 박아 처음부터 picker UI 가 우측 sidebar 에
   // 보이게 (eval B4 finding — 이전엔 picker 가 4-단계 깊숙이 묻혀 있었음).
@@ -929,6 +940,19 @@ function DocsVaultContent() {
       scheduleStateSync(() => setView(queryView));
     }
   }, [prevQueryView, queryView, view]);
+  // 뒤로가기·공유 링크·에이전트가 넘긴 URL 로 순서가 바뀌면 화면이 따라간다.
+  const prevQueryTreeSort = usePrevious(queryTreeSort);
+  useEffect(() => {
+    if (prevQueryTreeSort !== queryTreeSort && queryTreeSort !== treeSort) {
+      scheduleStateSync(() => setTreeSort(queryTreeSort));
+    }
+  }, [prevQueryTreeSort, queryTreeSort, treeSort]);
+  const prevQueryTreeGroup = usePrevious(queryTreeGroup);
+  useEffect(() => {
+    if (prevQueryTreeGroup !== queryTreeGroup && queryTreeGroup !== treeGroup) {
+      scheduleStateSync(() => setTreeGroup(queryTreeGroup));
+    }
+  }, [prevQueryTreeGroup, queryTreeGroup, treeGroup]);
 
   const docsBySlug = useMemo(() => {
     const map = new Map<string, (typeof manifest.docs)[number]>();
@@ -1146,6 +1170,22 @@ function DocsVaultContent() {
       );
     },
     [manifest.docs, pinnedSlugs, recentSlugs],
+  );
+
+  const handleTreeSortChange = useCallback(
+    (next: DocsTreeSort) => {
+      setTreeSort(next);
+      replaceUrlState({ sort: next });
+    },
+    [replaceUrlState],
+  );
+
+  const handleTreeGroupChange = useCallback(
+    (next: DocsTreeGroup) => {
+      setTreeGroup(next);
+      replaceUrlState({ group: next });
+    },
+    [replaceUrlState],
   );
 
   const handleCollectionChange = useCallback(
@@ -1516,6 +1556,10 @@ function DocsVaultContent() {
       onTagSelect={setActiveTag}
       onCreateNewDoc={handleOpenNewDocDialog}
       canCreateNewDoc={canEditCurrent}
+      sort={treeSort}
+      group={treeGroup}
+      onSortChange={handleTreeSortChange}
+      onGroupChange={handleTreeGroupChange}
       agentFiles={agentFiles}
     />
   );
@@ -1905,6 +1949,10 @@ function DocsVaultContent() {
             발견성은 zone-l 의 PanelLeft 타일(active 상태) + 탭 + ⌘K 3중
             담보이므로 접힘 힌트 레일이 따로 필요 없다. */}
         <aside
+          // 목적지 안내(문서함 2장짜리)가 "왼쪽이 내 폴더 목록" 을 가리킬 때
+          // 쓰는 앵커. 접혀 있으면(width 0) 앵커 해석이 실패해 안내가 한 장으로
+          // 접힌다 — 없는 곳을 가리키지 않는다.
+          data-testid="docs-vault-doc-list"
           aria-label={t('mobileDrawer.title')}
           aria-hidden={docListCollapsed}
           // aria-hidden 만으로는 width 0 뒤에 숨은 검색 input·트리 버튼이

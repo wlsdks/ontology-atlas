@@ -28,7 +28,7 @@ export function GuidedTourCard({
   style,
 }: GuidedTourCardProps) {
   const t = useTranslations("guidedTour");
-  const { step, stepIndex, personaSteps, personaStepIndex, back, advance, skip, finishAsDone, chooseDevBranch, hasSelection, devBranchAvailable } = tour;
+  const { step, stepIndex, visibleSteps, personaSteps, personaStepIndex, back, advance, skip, finishAsDone, chooseDevBranch, hasSelection, devBranchAvailable } = tour;
 
   // 포커스 이동 (2026-07-23 Guardian 정정) — role="dialog" 카드가 열리거나
   // 단계가 바뀌면 포커스를 카드로 옮긴다(aria-label 재낭독 + 키보드 사용자의
@@ -50,8 +50,12 @@ export function GuidedTourCard({
   const current = personaStepIndex + 1;
   const isFirst = stepIndex <= 0;
   const isBranchStep = step.id === "recent";
-  const isDevFinalStep = step.id === "agent";
   const isInteractive = Boolean(step.interactive);
+  // 마지막 장에서는 [다음] 이 아니라 [완료] — `advance()` 는 다음 단계가 없으면
+  // 어차피 투어를 끝내므로, 라벨이 "다음"이면 없는 다음 장을 약속하는 셈이다.
+  // 목적지 안내(2장)에서 특히 눈에 띄지만 지도에도 같은 규칙을 적용한다.
+  const isFinalStep =
+    step.id === "agent" || (stepIndex >= 0 && stepIndex === visibleSteps.length - 1);
 
   return (
     <div
@@ -163,11 +167,11 @@ export function GuidedTourCard({
           </button>
           <button
             type="button"
-            onClick={isDevFinalStep ? finishAsDone : advance}
-            data-testid={isDevFinalStep ? "guided-tour-finish" : "guided-tour-next"}
+            onClick={isFinalStep ? finishAsDone : advance}
+            data-testid={isFinalStep ? "guided-tour-finish" : "guided-tour-next"}
             className="h-8 rounded-[var(--chrome-radius-inner)] bg-[color:var(--color-indigo-brand)] px-3 text-body font-medium text-white transition-colors hover:bg-[color:var(--color-indigo-accent)]"
           >
-            {isDevFinalStep ? t("finishLabel") : t("nextLabel")}
+            {isFinalStep ? t("finishLabel") : t("nextLabel")}
           </button>
         </div>
       ) : null}

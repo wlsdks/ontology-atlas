@@ -232,6 +232,31 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - Focus follows the dialog card on open/step change and returns to the launcher tile on close; the "I'm a developer →" branch button only renders when its step-8 anchor (the first-run starter card) is still present
 - Completion/skip status persists to `localStorage` (`guided-tour:v1`) but never blocks re-running the tour from the same tile
 
+#### 목적지 안내 (`DestinationGuide`, 2026-07-26, `src/features/guided-tour`)
+소유자 요청: *"각 LNB탭 들어갔을때 가이드는 다 각각 있으면 좋겠네? 지금은
+지도쪽만 있어서!"* — 지도에만 있던 안내를 나머지 다섯 목적지로 넓혔다.
+
+- **두 번째 가이드 체계를 만들지 않았다.** 지도가 쓰던 투어 기제(`useGuidedTour`
+  상태기계 · 스크림/컷아웃 오버레이 · 카드 · 진행 점 · 건너뛰기)를 그대로 쓰고,
+  `useGuidedTour({ steps })` 로 목적지별 스텝 배열만 갈아 끼운다. 지도의
+  8단계 여정(캔버스 노드 앵커 · 인터랙티브 클릭 · 개발자 분기)은 그대로 HomePage 소유
+- **문서함 · 공방 · 인사이트 · 프로젝트 · 기록** 각각 2장 — ① 이 화면이 무엇을
+  하는 곳인지(앵커 없는 중앙 카드) ② 여기서 처음 볼 것 하나(실제 요소 스포트라이트:
+  `docs-vault-doc-list` · `studio-entry-choice` · `do-next-touchups` ·
+  `project-selector-card` · `atlas-git-panel`). 기능 나열이 아니라 "여기서 무엇을
+  할 수 있는가" 한 질문에만 답한다. 둘째 장의 앵커가 그 순간 화면에 없으면
+  (예: 문서 목록 접힘) 자동으로 한 장짜리로 접힌다
+- 셸(`AppShell`)이 소유하고 목적지마다 `key` 로 remount — 페이지가 각자 마운트하면
+  하나가 빠져도 아무도 모른다(#65 계열 drift). 지도에서는 렌더하지 않는다
+- **방해 금지** — "봤음"은 목적지마다 따로 기록한다(`guided-tour:<id>:v1`). 한 화면을
+  봤다고 나머지 다섯이 삼켜지지 않고, 본 화면은 다시 자동으로 뜨지 않는다. 자동
+  시작은 지도와 같은 가드(`canAutoStartGuidedTour`)를 통과할 때만
+- **다시 보기** — 설정 메뉴 › 화면 › "화면 안내". 여섯 목적지 전부에서 같은 자리다
+  (지도는 우상단 컴퍼스 타일이 계속 주 진입점, 이 행은 보조). 화면마다 도움말 버튼을
+  새로 만들면 화면별 크롬 수가 갈리므로 상시 표면 한 곳으로 모았다
+- 마지막 장의 버튼은 `[다음]` 이 아니라 `[완료]` — 없는 다음 장을 약속하지 않는다
+  (지도 투어에도 같은 규칙 적용)
+
 #### Top-left brand pill (`HeroCollapsed`, compact-only since 2026-06-11)
 - One pill, no expanded hero state (removed — it competed with the map for attention): selected project name, or workspace subtitle (concept/relation counts + weekly growth signal when > 0)
 - Source Vault (`/docs`) and Ontology (`/ontology`) quick links inline
@@ -282,6 +307,10 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
   - **Pinned** — pinned docs, unpin action
   - **Vault** (`DocsVaultTree`) — full folder hierarchy, kind glyphs + per-folder engraved counts, click to select, local search, tag-filter auto-expands folders
   - **Recent** — recently opened docs
+- **List order** (2026-07-26, icon-row menu next to search) — two independent axes, both carried in the URL so a link and an agent handoff reproduce the same list:
+  - `?sort=` — `name` (default, omitted) · `recent` (most recently edited first; a folder inherits the newest edit inside it)
+  - `?group=` — `folders` (default, omitted; folders before documents, as in Finder / VS Code / Obsidian) · `docs` (documents before folders)
+  - Unknown values fall back to the default instead of erroring — shared links get edited by other hands
 - Tag filter stays its own collapsible disclosure (not this screen's primary purpose); active tag keeps it open
 
 #### Mobile drawer (<lg)

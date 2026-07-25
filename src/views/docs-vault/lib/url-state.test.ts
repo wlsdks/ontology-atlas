@@ -73,4 +73,26 @@ describe('replaceDocsVaultUrlState', () => {
     replaceDocsVaultUrlState({ intent: 'local' });
     expect(currentSearch()).toBe('?intent=local');
   });
+
+  it('기본 순서는 URL 에 안 남는다 — 공유 링크를 짧게', () => {
+    window.history.replaceState({}, '', `${ORIGINAL_HREF}?sort=recent&group=docs`);
+    replaceDocsVaultUrlState({ sort: 'name', group: 'folders' });
+    expect(currentSearch()).toBe('');
+  });
+
+  it('기본이 아닌 순서는 URL 에 남아 공유·재현된다', () => {
+    replaceDocsVaultUrlState({ slug: 'README', sort: 'recent', group: 'docs' });
+    const params = new URL(window.location.href).searchParams;
+    expect(params.get('slug')).toBe('README');
+    expect(params.get('sort')).toBe('recent');
+    expect(params.get('group')).toBe('docs');
+  });
+
+  it('한 축만 바꿔도 다른 축은 그대로 남는다', () => {
+    window.history.replaceState({}, '', `${ORIGINAL_HREF}?group=docs`);
+    replaceDocsVaultUrlState({ sort: 'recent' });
+    const params = new URL(window.location.href).searchParams;
+    expect(params.get('group')).toBe('docs');
+    expect(params.get('sort')).toBe('recent');
+  });
 });

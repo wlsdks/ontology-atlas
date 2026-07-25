@@ -1,7 +1,9 @@
 import { useMemo, useState, type ReactNode } from "react";
 import {
+  ArrowDownUp,
   BookOpen,
   Bot,
+  Check,
   ChevronDown,
   Clock,
   FileText,
@@ -19,7 +21,16 @@ import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { selectRecentVaultDocs } from "@/shared/lib/ontology-tree";
 import { AGENT_TOOL_LABELS, type AgentFilesUiModel } from "../../lib/agent-files";
 import type { DocsVaultCollection } from "../../lib/docs-vault-collection";
+import { useAdvancedMenu } from "../../lib/use-advanced-menu";
 import { DocsVaultTree } from "@/widgets/docs-vault/ui/DocsVaultTree";
+import {
+  DEFAULT_DOCS_TREE_GROUP,
+  DEFAULT_DOCS_TREE_SORT,
+  DOCS_TREE_GROUPS,
+  DOCS_TREE_SORTS,
+  type DocsTreeGroup,
+  type DocsTreeSort,
+} from "@/widgets/docs-vault/lib/tree-order";
 import { Tooltip } from "@/shared/ui";
 
 /**
@@ -51,6 +62,14 @@ export interface DocsSidebarBodyProps {
   onCollectionChange: (collection: DocsVaultCollection) => void;
   onTogglePin: (slug: string) => void;
   onTagSelect: (tag: string | null) => void;
+  /**
+   * 목록 순서 — `?sort=` / `?group=` 이 진실원이고 caller 가 내려준다.
+   * 두 축인 이유와 기본값 생략 규칙은 `widgets/docs-vault/lib/tree-order.ts`.
+   */
+  sort: DocsTreeSort;
+  group: DocsTreeGroup;
+  onSortChange: (sort: DocsTreeSort) => void;
+  onGroupChange: (group: DocsTreeGroup) => void;
   /**
    * [D-4] 트리 상단 "새 문서" 진입점 — 지도(topology)와 같은 kind-first
    * 다이얼로그를 연다(DocsVaultPage.handleOpenNewDocDialog). 샘플(읽기
@@ -123,6 +142,45 @@ function RailIconButton({
   );
 }
 
+/**
+ * 목록 순서 메뉴의 한 줄. 같은 축 안에서 하나만 고를 수 있으니
+ * `menuitemradio` — 체크 표시 자리는 고른 줄이 아니어도 비워 둬 글자가
+ * 좌우로 흔들리지 않게 한다.
+ */
+function OrderOption({
+  label,
+  checked,
+  onSelect,
+  testId,
+}: {
+  label: string;
+  checked: boolean;
+  onSelect: () => void;
+  testId: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitemradio"
+      aria-checked={checked}
+      data-testid={testId}
+      onClick={onSelect}
+      className={`flex w-full items-center gap-2 rounded-sm px-1.5 py-1.5 text-left text-label transition-colors ${
+        checked
+          ? "text-[color:var(--color-indigo-pale-a95)]"
+          : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+      }`}
+    >
+      <Check
+        size={11}
+        aria-hidden
+        className={`flex-none ${checked ? "opacity-100" : "opacity-0"}`}
+      />
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+    </button>
+  );
+}
+
 export function DocsSidebarBody({
   pinnedSlugs,
   recentSlugs,
@@ -139,6 +197,10 @@ export function DocsSidebarBody({
   onTagSelect,
   onCreateNewDoc,
   canCreateNewDoc,
+  sort,
+  group,
+  onSortChange,
+  onGroupChange,
   agentFiles = null,
 }: DocsSidebarBodyProps) {
   const t = useTranslations("vaultWidgets.parts.sidebar");
@@ -147,6 +209,19 @@ export function DocsSidebarBody({
   // #22 — 검색 입력은 상단 아이콘 행의 토글로 열고 닫는다(옵시디언식 밀도
   // 축소). 쿼리가 남아 있으면 강제로 열어 둔다(사라진 필터가 안 보이는 결함 방지).
   const [searchOpen, setSearchOpen] = useState(false);
+  // 정렬/묶음은 상시 드롭다운 두 개가 아니라 아이콘 행의 메뉴 하나로 접는다
+  // — 사이드바는 좁고, 컨트롤이 목록보다 커지면 그것도 결함이다.
+  // hook 결과는 바로 구조 분해한다 — 객체째 들고 렌더에서 `.open` 을 읽으면
+  // lint 가 같은 객체의 `ref` 필드를 보고 "렌더 중 ref 접근" 으로 오탐한다.
+  const {
+    open: orderMenuOpen,
+    setOpen: setOrderMenuOpen,
+    ref: orderMenuRef,
+  } = useAdvancedMenu();
+  const orderIsDefault =
+    sort === DEFAULT_DOCS_TREE_SORT && group === DEFAULT_DOCS_TREE_GROUP;
+  // 호버 툴팁이 지금 순서를 그대로 읽어 준다 — 메뉴를 열지 않아도 알 수 있게.
+  const orderSummary = `${t("orderMenuLabel")} · ${t(`orderSort.${sort}`)} · ${t(`orderGroup.${group}`)}`;
   // P4a — "최근 바뀐 문서" 진입점. `selectRecentVaultDocs` 는 INDEX 지도 렌즈
   // (`useRecentChanges`)와 같은 mtime 7일 창 산수(`recent-changes.ts`)를
   // 공유한다 — 문서함은 `VaultDoc.updatedAt` 을 직접 갖고 있어 온톨로지
@@ -246,6 +321,54 @@ export function DocsSidebarBody({
             }
           }}
         />
+        <div ref={orderMenuRef} className="relative flex-none">
+          <RailIconButton
+            testId="docs-sidebar-order-toggle"
+            icon={<ArrowDownUp size={15} aria-hidden />}
+            label={orderSummary}
+            active={orderMenuOpen || !orderIsDefault}
+            onClick={() => setOrderMenuOpen((open) => !open)}
+          />
+          {orderMenuOpen ? (
+            <div
+              role="menu"
+              aria-label={t("orderMenuLabel")}
+              data-testid="docs-sidebar-order-menu"
+              className="absolute left-0 top-[calc(100%+6px)] z-50 w-48 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
+            >
+              <p className="px-1.5 pb-1 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+                {t("orderSortHeader")}
+              </p>
+              {DOCS_TREE_SORTS.map((option) => (
+                <OrderOption
+                  key={option}
+                  testId={`docs-sidebar-order-sort-${option}`}
+                  label={t(`orderSort.${option}`)}
+                  checked={sort === option}
+                  onSelect={() => {
+                    onSortChange(option);
+                    setOrderMenuOpen(false);
+                  }}
+                />
+              ))}
+              <p className="mt-1 border-t border-[color:var(--color-border-soft)] px-1.5 pb-1 pt-2 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+                {t("orderGroupHeader")}
+              </p>
+              {DOCS_TREE_GROUPS.map((option) => (
+                <OrderOption
+                  key={option}
+                  testId={`docs-sidebar-order-group-${option}`}
+                  label={t(`orderGroup.${option}`)}
+                  checked={group === option}
+                  onSelect={() => {
+                    onGroupChange(option);
+                    setOrderMenuOpen(false);
+                  }}
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
         <span className="flex-1" />
         {/* [D-4] "새 문서" 진입점 — 샘플(읽기 전용) 모드에서도 버튼 + 툴팁으로
             기능 존재를 알린다(지도와 같은 kind-first 다이얼로그). */}
@@ -493,6 +616,8 @@ export function DocsSidebarBody({
             selectedSlug={selectedSlug}
             onSelect={onSelect}
             query={treeQuery}
+            sort={sort}
+            group={group}
             activeTag={activeTag}
             activeTagSlugs={activeTagSlugs}
             visibleDocSlugs={visibleDocSlugs}

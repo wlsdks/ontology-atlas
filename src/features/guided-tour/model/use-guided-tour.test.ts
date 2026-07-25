@@ -267,3 +267,47 @@ describe("useGuidedTour", () => {
     expect(window.localStorage.getItem(TEST_KEY)).toBe("done");
   });
 });
+
+/**
+ * 목적지 안내(문서함·공방 등)는 **같은 상태기계**에 스텝 배열만 갈아 끼운다 —
+ * 두 번째 가이드 체계를 만들지 않았다는 것을 이 테스트가 고정한다.
+ */
+describe("useGuidedTour — 주입된 스텝 배열", () => {
+  const DEST_KEY = "guided-tour:docs:v1:test";
+  const steps = [
+    { id: "a", anchor: null, persona: "all", copyKey: "a" },
+    { id: "b", anchor: null, persona: "all", copyKey: "b" },
+  ] as const;
+
+  afterEach(() => window.localStorage.removeItem(DEST_KEY));
+
+  function setupDestination() {
+    return renderHook(() =>
+      useGuidedTour({
+        steps,
+        hasSelection: false,
+        canResolveAnchor: () => true,
+        storageKey: DEST_KEY,
+      }),
+    );
+  }
+
+  it("지도 여정 대신 주입된 배열을 밟는다", () => {
+    const { result } = setupDestination();
+    act(() => result.current.start());
+    expect(result.current.step?.id).toBe("a");
+    expect(result.current.personaSteps).toHaveLength(2);
+    act(() => result.current.advance());
+    expect(result.current.step?.id).toBe("b");
+  });
+
+  it("마지막 장에서 진행하면 그 목적지 키에만 '봤음'이 기록된다", () => {
+    const { result } = setupDestination();
+    act(() => result.current.start());
+    act(() => result.current.advance());
+    act(() => result.current.advance());
+    expect(result.current.open).toBe(false);
+    expect(window.localStorage.getItem(DEST_KEY)).toBe("done");
+    expect(window.localStorage.getItem(GUIDED_TOUR_STATUS_KEY)).toBeNull();
+  });
+});

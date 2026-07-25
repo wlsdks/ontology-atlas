@@ -1228,6 +1228,7 @@
       "domainCouplingTitle": "Domain coupling",
       "domainCouplingEmptyTitle": "Not enough coupling data yet",
       "domainCouplingEmptyDescription": "Needs 2+ domains and a cross-domain relation between them to compute.",
+      "domainCouplingEmptyAction": "Connect concepts in the workshop",
       "domainCouplingPairsUnit": "pairs",
       "domainCouplingBoundaryTitle": "Boundary pressure",
       "domainCouplingSelfLabel": "self",

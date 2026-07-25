@@ -1228,6 +1228,7 @@
       "domainCouplingTitle": "도메인 결합",
       "domainCouplingEmptyTitle": "아직 결합 데이터가 부족해요",
       "domainCouplingEmptyDescription": "도메인 2개 이상 · 서로 다른 도메인을 잇는 교차 관계가 있어야 계산할 수 있어요.",
+      "domainCouplingEmptyAction": "공방에서 개념 잇기",
       "domainCouplingPairsUnit": "쌍",
       "domainCouplingBoundaryTitle": "경계 압력",
       "domainCouplingSelfLabel": "안쪽",
