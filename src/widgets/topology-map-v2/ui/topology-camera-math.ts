@@ -391,3 +391,41 @@ export function computeClusterFitTarget(
   const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(overviewEntryScale, fitScale));
   return { tx: centerX, ty: centerY, tscale: scale };
 }
+
+/**
+ * 카메라가 모든 노드를 화면 밖으로 밀어냈는가 (#71).
+ *
+ * 왜 필요한가: 창을 다른 모니터로 옮기거나 크게 리사이즈하면 뷰포트와 DPR 이
+ * 함께 바뀌는데, 카메라는 그대로다. 그 조합에서 노드가 전부 뷰포트 밖으로
+ * 나가면 사용자에게는 **빈 지도**로 보인다 — '지도 전체 맞추기' 를 눌러야만
+ * 돌아온다(codex 감사 P1 실보고).
+ *
+ * 안전망의 규율:
+ * - **매 resize 마다 강제 전체 맞추기는 하지 않는다.** 사용자가 잡아둔 줌·위치는
+ *   의도이고, 그걸 지우는 건 다른 종류의 결함이다.
+ * - 오직 "화면 안에 노드가 하나도 없다" 는 명백한 상태에서만 보정한다.
+ * - 여유(margin)를 둬 가장자리에 살짝 걸친 노드는 '보인다' 로 센다 — 경계에서
+ *   깜빡이며 카메라가 튀는 것을 막는다.
+ */
+export function hasAnyNodeOnScreen(
+  camera: CameraAxes,
+  viewportWidth: number,
+  viewportHeight: number,
+  nodes: ReadonlyArray<{ x: number; y: number }>,
+  marginPx = 24,
+): boolean {
+  if (nodes.length === 0) return true; // 노드가 없으면 '사라진' 것도 아니다.
+  if (viewportWidth <= 0 || viewportHeight <= 0) return true; // 아직 레이아웃 전.
+  for (const node of nodes) {
+    const p = worldToScreen(camera, viewportWidth, viewportHeight, node.x, node.y);
+    if (
+      p.x >= -marginPx &&
+      p.x <= viewportWidth + marginPx &&
+      p.y >= -marginPx &&
+      p.y <= viewportHeight + marginPx
+    ) {
+      return true;
+    }
+  }
+  return false;
+}

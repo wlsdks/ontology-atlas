@@ -25,7 +25,7 @@ import { buildGridPattern } from "../render/grid";
 import { buildConstellationPattern, buildContourPattern, readCanvasBgTokens } from "../render/background-patterns";
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import type { CanvasBackground, GlyphSet } from "@/shared/lib/appearance-preferences";
-import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, worldToScreen } from "./topology-camera-math";
+import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { computeTopologyClusterState } from "./topology-cluster-state";
 import type { ClusterChip } from "../model/density-gate";
@@ -708,6 +708,25 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     return () => query.removeEventListener?.("change", onChange);
   }, []);
 
+  /**
+   * #71 안전망 — 리사이즈/모니터 이동 뒤 **노드가 하나도 화면에 없으면** 전체
+   * 맞추기로 되돌린다.
+   *
+   * 규율: 매 resize 마다 강제로 맞추지 않는다. 사용자가 잡아둔 줌·위치는 의도이고
+   * 그걸 지우는 건 다른 종류의 결함이다. 오직 "빈 지도로 보이는" 명백한 상태
+   * (`hasAnyNodeOnScreen === false`)에서만 개입한다. 튐을 막기 위해 스프링
+   * 타깃만 옮기고 값은 건드리지 않는다 — reduced-motion 은 카메라 트윈 계약이
+   * 이미 존중한다.
+   */
+  const rescueCameraIfEverythingOffscreen = (tokens: TopologyV2Tokens) => {
+    const world = worldRef.current;
+    const { width, height } = viewportRef.current;
+    if (!world || width <= 0 || height <= 0) return;
+    if (hasAnyNodeOnScreen(cameraRef.current, width, height, world.nodes)) return;
+    const target = computeOverviewCameraTarget(world.spineBounds, width, height, tokens, world.nodes.length);
+    cameraTargetRef.current = { tx: target.tx, ty: target.ty, tscale: target.tscale };
+  };
+
   const trySnapInitialCamera = (tokens: TopologyV2Tokens) => {
     if (hasInitializedRef.current) return;
     const world = worldRef.current;
@@ -847,6 +866,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         computeStarDustCount(rect.width, rect.height, tokens.dustAreaPerPoint) * 2,
       );
       trySnapInitialCamera(tokens);
+      rescueCameraIfEverythingOffscreen(tokens);
     };
 
     applyResize();
@@ -857,7 +877,30 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     }
     const observer = new ResizeObserver(applyResize);
     observer.observe(container);
-    return () => observer.disconnect();
+
+    // #71 — `ResizeObserver` 는 **크기** 변화만 본다. 창을 다른 모니터로 옮기면
+    // CSS 크기는 그대로인데 `devicePixelRatio` 만 바뀌고, 그러면 캔버스 백킹
+    // 크기가 옛 DPR 로 남아 그려지는 내용이 어긋난다. DPR 변화를 따로 듣는다.
+    // `matchMedia(resolution)` 은 현재 DPR 에서 벗어나는 순간 한 번 발화하므로
+    // 매번 새 질의로 다시 건다.
+    let dprQuery: MediaQueryList | null = null;
+    const onDprChange = () => {
+      applyResize();
+      watchDpr();
+    };
+    const watchDpr = () => {
+      if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+      dprQuery?.removeEventListener?.("change", onDprChange);
+      const dpr = window.devicePixelRatio || 1;
+      dprQuery = window.matchMedia(`(resolution: ${dpr}dppx)`);
+      dprQuery.addEventListener?.("change", onDprChange);
+    };
+    watchDpr();
+
+    return () => {
+      observer.disconnect();
+      dprQuery?.removeEventListener?.("change", onDprChange);
+    };
   }, []);
 
   // --- relayoutToken / fitViewToken — both mean "spring back to the full overview fit" ---
