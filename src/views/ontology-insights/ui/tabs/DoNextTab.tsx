@@ -706,7 +706,13 @@ export function DoNextTab({
     totalCycles: Math.max(0, cycles.totalCycles - removedVisibleCycleCount),
   };
   const hasCycles = visibleCycles.cycles.length > 0;
-  const queueEmpty = queue.rows.length === 0 && !hasCycles;
+  // #63 — "지금은 손볼 것이 없어요 — 그래프가 건강합니다" 는 CLI-parity 신호
+  // (분리된 섬 · 누락된 연결)까지 0일 때만 나온다. 예전엔 do-next 행만 보고
+  // 단정해서, 바로 아래 수리 큐가 `누락된 연결 1` 을 보여주는 화면에서도
+  // "건강합니다" 라고 말했다 (opus5 검수 실측 모순).
+  const hasClipParityIssues =
+    healthQueue.islandCount > 0 || healthQueue.missingContainmentCount > 0;
+  const queueEmpty = queue.rows.length === 0 && !hasCycles && !hasClipParityIssues;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">

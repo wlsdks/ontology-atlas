@@ -46,6 +46,7 @@ import {
 } from "../lib/insights-tab-state";
 import { computeDomainCapacityRows } from "../lib/domain-capacity";
 import { buildDoNextQueue, withDoNextVerification } from "../lib/do-next-queue";
+import { buildInsightsVerdict } from "../lib/insights-verdict";
 import { pickTodaysTouchUps, type TouchUpItem } from "../lib/todays-touch-ups";
 import { countRecentEntries } from "@/shared/lib/agent-activity-log";
 import { findDependencyCycles, type DependencyCycle } from "../lib/dependency-cycles";
@@ -382,6 +383,21 @@ export function OntologyInsightsPage() {
         return t("doNext.touchUpWhyPromotion");
     }
   };
+  // #63 — 이 화면의 단일 판정. 탭 배지 · 빈 상태 문구 · 건강 주장이 모두
+  // 여기서 나와야 같은 데이터에 서로 다른 말을 하지 않는다.
+  const insightsVerdict = useMemo(
+    () =>
+      buildInsightsVerdict({
+        islands: healthRepair.islandCount,
+        missingContainment: healthRepair.missingContainmentCount,
+        cycles: dependencyCycles.totalCycles,
+        neglectedHubs: doNextQueue.counts.neglectedHub,
+        orphans: doNextQueue.counts.orphan,
+        promotions: doNextQueue.counts.promotion,
+      }),
+    [healthRepair, dependencyCycles.totalCycles, doNextQueue.counts],
+  );
+
   const doNextTouchUps: DoNextTouchUp[] = pickTodaysTouchUps(doNextQueue, dependencyCycles, {
     totalNodes,
     cycleTitle: cycleNodeTitle,
@@ -573,10 +589,11 @@ export function OntologyInsightsPage() {
               label: t(`tab.${key}`),
               count:
                 key === "do-next"
-                  ? doNextQueue.counts.neglectedHub +
-                    doNextQueue.counts.orphan +
-                    doNextQueue.counts.promotion +
-                    dependencyCycles.totalCycles
+                  // #63 — 배지는 단일 판정 모델(`insights-verdict`)에서 나온다.
+                  // 예전엔 do-next 통계 신호만 세고 CLI-parity 신호(분리된 섬 ·
+                  // 누락된 연결)를 빠뜨려, 수리 큐가 1건을 보여주는데 배지는 0
+                  // 이라고 말하는 모순이 났다.
+                  ? insightsVerdict.total
                   : key === "structure"
                     ? totalNodes
                     : `${FRESHNESS_WINDOW_WEEKS}${t("weeksUnit")}`,
