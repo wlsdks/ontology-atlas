@@ -330,7 +330,7 @@
     "openTitle": "볼트 폴더 열기",
     "openBody": "기존 마크다운 폴더를 선택해 워크스페이스로 들어갑니다.",
     "justStartTitle": "그냥 시작하기",
-    "justStartBody": "폴더 선택 없이 문서 폴더 안에 자동으로 만들어요 — AI 에이전트도 이 폴더를 읽고 쓸 수 있어요.",
+    "justStartBody": "내 문서(Documents) › Ontology Atlas 폴더에 바로 만들어요 — 폴더 선택 없이. AI 에이전트도 이 폴더를 읽고 쓸 수 있어요.",
     "justStartBusy": "만드는 중…",
     "justStartToast": "{path} 에 만들었어요 — 에이전트도 이 폴더를 볼 수 있어요.",
     "createTitle": "새 볼트 만들기",
@@ -340,7 +340,7 @@
     "busy": "폴더 여는 중…",
     "scaffolding": "시작 구조 작성 중…",
     "errorFallback": "폴더를 열지 못했습니다. 다시 시도해 주세요.",
-    "trustLine": "Local-first · 마크다운이 진실원 · 백엔드 0"
+    "trustLine": "내 컴퓨터에만 저장돼요 · 파일은 평범한 마크다운 · 서버 없음"
   },
   "firstRunStarter": {
     "brand": "Ontology Atlas",

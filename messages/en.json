@@ -330,7 +330,7 @@
     "openTitle": "Open vault folder",
     "openBody": "Pick an existing markdown folder and enter the workspace.",
     "justStartTitle": "Just start",
-    "justStartBody": "Creates a folder in Documents automatically — no picker. Your AI agent can read and write it too.",
+    "justStartBody": "Creates it in your Documents › Ontology Atlas folder — no picker. Your AI agent can read and write it too.",
     "justStartBusy": "Creating…",
     "justStartToast": "Created at {path} — your AI agent can see this folder too.",
     "createTitle": "Create a new vault",
@@ -340,7 +340,7 @@
     "busy": "Opening folder…",
     "scaffolding": "Writing starter structure…",
     "errorFallback": "Could not open the folder. Try again.",
-    "trustLine": "Local-first · markdown is the source of truth · 0 backend"
+    "trustLine": "Stored only on your computer · plain markdown files · no server"
   },
   "firstRunStarter": {
     "brand": "Ontology Atlas",
