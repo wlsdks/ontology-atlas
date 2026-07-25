@@ -20,5 +20,13 @@ export function canAutoStartGuidedTour(doc: Document = document): boolean {
   if (doc.querySelector('[role="dialog"][aria-modal="true"]') !== null) {
     return false;
   }
+  // #96 — blocking edit composer (개념 추가 · 부트스트랩 등)는 `role=dialog`
+  // 대신 `data-surface-role="blocking-edit-surface"` (dimmed map 위 solid
+  // panel) 로 modality 를 선언한다. 이 마커도 모달 등급이므로 그 위에 투어
+  // 오버레이를 겹쳐 쏘면 안 된다 — 실측: "개념 추가" 열린 상태에서 900ms 자동
+  // 투어가 1단계 카드로 그 위에 떴다(stacked-transient 위반).
+  if (doc.querySelector('[data-surface-role="blocking-edit-surface"]') !== null) {
+    return false;
+  }
   return doc.hasFocus();
 }
