@@ -228,7 +228,13 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
             <InstallStep index="04" title={t('step4Title')} body={t('step4Body')} />
           </ol>
 
-          <div className="mt-7 grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+          {/* `min-w-0` on the tracks — without it a grid item's min-content width
+              (mono command strings, nowrap release rows) forces the track wider
+              than its fr share and the right card spills past the viewport at the
+              lg breakpoint itself (1024px: grid clientWidth 880 vs scrollWidth
+              930, card right edge 1034 > 1024). Caught by the responsive
+              overflow audit spec, not by eyeballing a wide window. */}
+          <div className="mt-7 grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
             <div className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 shadow-[inset_0_1px_0_var(--color-overlay-2)]">
               <div className="flex items-center gap-2 pb-2">
                 <ShieldCheck size={15} className="text-[color:var(--color-indigo-accent)]" />

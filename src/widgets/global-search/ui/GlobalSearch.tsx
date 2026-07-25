@@ -214,6 +214,19 @@ export function GlobalSearch({
             event.preventDefault();
             inputRef.current?.focus({ preventScroll: true });
           }}
+          // 바깥 클릭 = 닫기 (커맨드 팔레트의 사실상 표준: Linear · VS Code ·
+          // Raycast · Spotlight). Radix 의 `onPointerDownOutside` 는 여기서
+          // 발화하지 않는다 — 이 `Dialog.Content` 자체가 `fixed inset-0` 로
+          // 화면 전체를 덮는 flex 래퍼라서, 스크림처럼 보이는 영역이 실은
+          // Content **내부**이고 Radix 에게는 "바깥" 이 존재하지 않는다
+          // (소유자 실보고 2026-07-25: "바깥 클릭하면 닫혀야하는데 안닫힘").
+          // 그래서 래퍼 자신이 눌린 대상일 때만 닫는다 — 패널(Command)은 이미
+          // stopPropagation 하므로 내부 클릭은 여기 도달하지 않는다.
+          // `onPointerDown` 은 설정 시트(`AppSettingsMenu`)의 기존 스크림 계약과
+          // 같은 문법이면서 마우스·터치·펜을 함께 덮는다.
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) closeAndClear();
+          }}
         >
           <VisuallyHidden>
             <Dialog.Title>{t('dialogTitle')}</Dialog.Title>
