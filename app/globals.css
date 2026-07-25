@@ -2356,7 +2356,22 @@
   }
 
   /* 접근성: 모션 감소 선호 사용자 존중 */
-  @media (prefers-reduced-motion: reduce) {
+  /* #69 — 완성도 인디케이터 점. 채워지는 순간 색·반지름이 200ms 로 확정 전이해
+   "방금 하나 찼다" 가 움직임으로 읽힌다. glow 가 아니라 값(색·크기) 전이다. */
+.studio-rose-pip {
+  transition:
+    fill var(--motion-settle, 200ms) ease-out,
+    stroke var(--motion-settle, 200ms) ease-out,
+    r var(--motion-settle, 200ms) ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-rose-pip {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
