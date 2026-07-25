@@ -50,6 +50,7 @@
 | A24 | 설정 문서함 링크 → client/native route 전환 → 새 화면 읽기 시작 | 늦은 vault 렌더까지 기다린 h1 포커스 설치 앱 검증 완료 |
 | A25 | 문서함 문서 선택 → 활성 탭 닫기 → 이웃 문서 계속 읽기 | 키보드 닫기 뒤 이웃 활성 탭 포커스 복귀 설치 앱 검증 완료 |
 | A26 | 전역 레일 목적지 이동 → 새 surface 읽기 시작 | native-safe 의도 + 공방 main/h1 계약 설치 앱 왕복 검증 완료 |
+| A27 | 768–1024px 하단 탭바 이동·safe-area·레일 전환 | route 포커스·가림·overflow·단일 내비 검증, 수정 없음 |
 
 ## 이슈 장부
 
@@ -1035,6 +1036,28 @@
   app build/deploy를 통과한 동일 코드다.
 - PO·디자인 판정: **Build and verify**
 
+### A27 검증 메모 — 하단 탭바 route·safe-area 계약 유지
+
+- 상태: 검증 완료, 수정 없음
+- 흐름: 768px·900px web surface의 문서함 → 하단 탭바 `프로젝트` Return →
+  프로젝트 제목 읽기 → 긴 문서의 스크롤 끝 → 1023/1024px breakpoint 왕복
+- 관측 결과: 하단 탭 링크는 web client navigation에서 문서함 h1에서 프로젝트
+  h1으로 포커스를 정상 인계했고, 선택 목적지의 `aria-current="page"`도 함께
+  갱신됐다. 768px에서 document horizontal overflow는 `0px`였다.
+- 가림 계약: 문서함 내부 스크롤러의 mobile bottom reserve는 계산된
+  `68px`, 하단 탭바 높이는 `57px`였다. 스크롤 끝의 마지막 콘텐츠 bottom은
+  탭바 top보다 위에 있어 실제 overlap은 `0px`였다.
+- breakpoint 계약: 1023px에서는 하단 탭바만 `display:flex`, AppNavRail은
+  숨김이었다. 1024px에서는 AppNavRail만 `display:flex`, 하단 탭바는 숨김이라
+  전환 경계의 이중 내비·빈 구간이 없었다.
+- 설치 앱 경계: 현재 macOS 창 최소 폭에서는 `<1024px` 하단 탭바 상태까지
+  줄어들지 않는다. 따라서 실제 사용 가능한 설치 앱 폭은 A20/A26의 AppNavRail
+  증거가 소유하고, 하단 탭바는 responsive-sweep web 증거가 소유한다.
+- 최소화: 실제 과업 실패·가림·상태 불일치가 없으므로 href 표식이나 padding을
+  추가하지 않는다. 공통 RouteFocusManager와 기존 reserve token을 그대로
+  유지한다.
+- PO·디자인 판정: **Do not build**
+
 ## 현재 PO·디자인 판정
 
 - A1/A2 수정 슬라이스: **Build and verify**
@@ -1044,6 +1067,7 @@
 - A24 client route 읽기 시작점 슬라이스: **Build and verify**
 - A25 문서 탭 키보드 닫기 연속성 슬라이스: **Build and verify**
 - A26 전역 레일 route·공방 landmark 슬라이스: **Build and verify**
+- A27 하단 탭바 responsive 계약: **Do not build**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.
