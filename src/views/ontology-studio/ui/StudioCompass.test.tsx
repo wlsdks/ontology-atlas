@@ -1478,3 +1478,28 @@ describe("StudioCompass — 지지대 축·완성도 인디케이터 (#69)", () 
     expect(svg!.outerHTML).not.toMatch(/feGaussianBlur/i);
   });
 });
+
+// 최종 검수(opus5 2026-07-25) — 소켓 피커의 Esc 계약. 관계 편집 카드·미리보기·
+// 작업중 패널엔 Esc 가 있었는데 **피커만 빠져 있었다**: 검색 입력에 포커스가
+// 들어간 뒤 키보드만으로 빠져나올 방법이 없었다.
+describe("StudioCompass — 소켓 피커 Esc 계약", () => {
+  function renderPickerOpen() {
+    const onFill = renderEnhance();
+    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    return onFill;
+  }
+
+  it("피커가 Esc 로 닫힌다", () => {
+    renderPickerOpen();
+    expect(screen.getByTestId("studio-picker")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
+  });
+
+  it("Esc 로 닫아도 채우기는 일어나지 않는다 — 취소는 취소다", () => {
+    const onFill = renderPickerOpen();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onFill).not.toHaveBeenCalled();
+  });
+});

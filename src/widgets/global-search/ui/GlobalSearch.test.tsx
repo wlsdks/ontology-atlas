@@ -249,3 +249,47 @@ describe("GlobalSearch", () => {
     ).toBeGreaterThanOrEqual(2);
   });
 });
+
+// 소유자 실보고 (2026-07-25): "검색 버튼 눌렀을때 ... 바깥 클릭하면 닫혀야하는데
+// 안닫힘! 대부분 x 누르거나 바깥누르면 닫히지 않나?" — 맞다. 커맨드 팔레트의
+// 사실상 표준(Linear · VS Code · Raycast · Spotlight)이고, 이 앱의 다른 오버레이
+// (설정 시트 · 문서함 드로어 · 발자취 패널)는 이미 스크림 클릭으로 닫힌다.
+// 검색 팔레트만 어긋나 있었다.
+//
+// 왜 안 닫혔나: `Dialog.Content` 자체가 `fixed inset-0` 로 화면 전체를 덮는 flex
+// 래퍼라서, 스크림처럼 보이는 영역이 실은 Content **내부**다. Radix 의
+// `onPointerDownOutside` 에게는 "바깥" 이 존재하지 않았다.
+describe("GlobalSearch — 스크림 클릭 닫기 계약", () => {
+  const nodes: KnowledgeGraphNode[] = [
+    node({ id: "capability:mcp-server", title: "MCP Server", kind: "capability" }),
+  ];
+
+  function renderPalette(onOpenChange: (open: boolean) => void) {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={onOpenChange}
+        nodes={nodes}
+        onSelectNode={() => {}}
+      />,
+    );
+  }
+
+  it("래퍼(스크림) 를 누르면 닫힌다", () => {
+    const onOpenChange = vi.fn();
+    renderPalette(onOpenChange);
+
+    fireEvent.pointerDown(screen.getByRole("dialog"));
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("패널 내부를 누르면 닫히지 않는다 — 결과 클릭이 팔레트를 죽이면 안 된다", () => {
+    const onOpenChange = vi.fn();
+    renderPalette(onOpenChange);
+
+    fireEvent.pointerDown(screen.getByRole("combobox", { name: "Global search" }));
+
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+});

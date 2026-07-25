@@ -771,6 +771,22 @@ export function StudioCompass(props: StudioCompassProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [openEdit]);
 
+  // 소켓 피커도 같은 계약 — Esc 로 닫힌다. 최종 검수에서 이것만 빠져 있었다:
+  // 관계 편집 카드 · 미리보기 · 작업중 패널엔 Esc 가 있는데 피커는 없어서, 검색
+  // 입력에 포커스가 들어간 뒤 키보드만으로 빠져나올 방법이 없었다. 닫힌 뒤
+  // 포커스는 소켓 트리거에 남는다(앵커 비-모달 문법).
+  useEffect(() => {
+    if (!openRelation) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      setOpenRelation(null);
+      setQuery("");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [openRelation]);
+
   const saveAllowed = props.canSave !== false;
   const effectiveSummary = saveAllowed ? (props.summary ?? null) : null;
   const previewAvailable = saveAllowed && Boolean(props.deltaPreview?.hasDelta);

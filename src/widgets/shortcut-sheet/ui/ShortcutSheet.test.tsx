@@ -124,3 +124,36 @@ describe("ShortcutSheet — 문맥 탭 (#67)", () => {
     expect(screen.getByTestId("shortcut-sheet-scroll-fade")).toBeInTheDocument();
   });
 });
+
+// #67 후속 — 스크롤 영역이 실제로 **제한**돼야 한다.
+//
+// 실측 회귀(영문 `전체` 탭, 1512×806): 페이드 래퍼를 넣을 때 스크롤 div 에
+// `h-full` 을 썼는데, flex 로 높이가 정해진 래퍼(526px) 안에서 그 퍼센트가
+// 콘텐츠 높이(1112px)로 해석돼 `scrollHeight === clientHeight` 가 됐다. 결과:
+// 스크롤이 죽고 마지막 섹션이 뷰포트 밖(1256px)으로 잘렸다. jsdom 은 레이아웃을
+// 계산하지 않으므로 높이로는 못 잡는다 — **결정적인 앵커 방식**을 계약으로 잠근다.
+describe("ShortcutSheet — 스크롤 영역 높이 계약 (#67)", () => {
+  it("스크롤 영역을 래퍼에 absolute 로 못박는다 — `h-full` 퍼센트 해석에 의존하지 않는다", () => {
+    renderSheet();
+    const scroll = screen.getByTestId("shortcut-sheet-scroll");
+
+    // 흐름 안에서 flex 로 제한한다 — 남는 공간만 먹고 나머지는 스크롤.
+    expect(scroll.className).toContain("min-h-0");
+    expect(scroll.className).toContain("flex-1");
+    expect(scroll.className).toContain("overflow-y-auto");
+    // `h-full` 은 콘텐츠 높이로 해석돼 스크롤을 죽였고(1112px),
+    // `absolute` 는 흐름에서 빠져 다이얼로그를 232px 로 무너뜨렸다. 둘 다 금지.
+    expect(scroll.className).not.toContain("h-full");
+    expect(scroll.className).not.toContain("absolute");
+  });
+
+  it("래퍼도 flex 컬럼이라 자식이 남는 높이를 정확히 받는다 (+ 페이드 앵커용 relative)", () => {
+    renderSheet();
+    const wrapper = screen.getByTestId("shortcut-sheet-scroll").parentElement!;
+
+    expect(wrapper.className).toContain("relative");
+    expect(wrapper.className).toContain("min-h-0");
+    expect(wrapper.className).toContain("flex-1");
+    expect(wrapper.className).toContain("flex-col");
+  });
+});
