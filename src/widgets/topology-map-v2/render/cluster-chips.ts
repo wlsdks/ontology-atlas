@@ -166,6 +166,47 @@ export function clusterChipRect(
   return { x: screenX - w / 2, y: screenY - h / 2, w, h };
 }
 
+/**
+ * S11 결함 (소유자 실보고 "노드 사이에 +31 이 겹쳐지는것도 보기싫은데") — 칩은
+ * 노드 라벨보다 **먼저** 그려지는데(`topology-frame-draw.ts`) 라벨 배치기
+ * (`greedyPlaceLabels`)가 칩의 존재를 몰라 라벨이 칩 위에 그대로 덮어 그려졌다.
+ * 라벨 배치기에 칩을 **예약 점유자**로 넘기려면 "이번 프레임에 칩이 실제로
+ * 차지하는 사각형" 이 필요하다.
+ *
+ * `drawClusterChip` 과 **같은 분기**를 타는 것이 이 함수의 계약이다 — reveal 램프로
+ * 사라지는 중이면 null(안 보이는 칩이 라벨을 밀어내면 유령 여백이 생긴다), 펼침이면
+ * 부모 우상단 배지, 접힘이면 pill. 분기가 갈라지면 라벨이 빈 곳을 피하거나 칩 위에
+ * 다시 겹치므로 draw 와 이 함수는 반드시 함께 수정한다(`cluster-chips.test.ts` 가드).
+ */
+export function clusterChipOccupancyRect(input: ClusterChipDrawInput): ClusterChipRect | null {
+  const scale = input.scale ?? 1;
+  // drawClusterChip 의 formAlpha 와 동일식 — 램프로 사라지는 형태는 점유하지 않는다.
+  const formAlpha =
+    input.revealT === undefined
+      ? 1
+      : Math.min(1, Math.max(0, input.expanded ? input.revealT : 1 - input.revealT));
+  if (formAlpha < 0.01) return null;
+
+  if (input.expanded) {
+    if (
+      input.parentScreenX === undefined ||
+      input.parentScreenY === undefined ||
+      input.nodeScreenRadius === undefined
+    ) {
+      return null; // draw 도 이 경우 그리지 않는다(디그레이드).
+    }
+    return clusterBadgeRect(
+      input.parentScreenX,
+      input.parentScreenY,
+      input.nodeScreenRadius,
+      clusterBadgeLabel(input.count),
+      scale,
+    );
+  }
+
+  return clusterChipRect(input.screenX, input.screenY, clusterChipLabel(input.count, false), scale);
+}
+
 export interface ClusterChipColors {
   /** rest pill surface(무채색 dim). */
   surface: string;

@@ -1764,6 +1764,12 @@
     /* 엣지 선택(페어 포커스) — 인디고 pale 사다리: 노드 선택(#5e6ad2)과
        같은 계열, 밝은 값으로 구분 (채색 시스템 증식 없음). */
     --topology-v2-edge-selected: rgba(200, 210, 255, 0.66);
+    /* 전개 코호트(칩으로 드러난 직속 자식) 소속 링 — 인디고 사다리 3번째 칸.
+       노드 선택 = 채도 있는 인디고(#5e6ad2) **실선**, 엣지 선택 = pale 인디고,
+       전개 = **탈채도** 인디고 파선. hue 는 그대로 인디고 축이고 채도만 중립
+       램프쪽으로 내려 "선택" 과 "전개" 가 실선/파선 + 채도로 갈린다 —
+       새 brand color 0 (design.md 선택 색 사다리). */
+    --topology-v2-expanded-cohort: rgba(146, 156, 194, 0.72);
     --topology-v2-dust-parallax-min: 0.15;
     --topology-v2-dust-parallax-max: 0.45;
     --topology-v2-edge-depends: #4c4c63;
