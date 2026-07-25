@@ -1359,7 +1359,12 @@
       "saveErrorGeneric": "Save failed",
       "saveErrorConflict": "This project file was changed first by another editor or AI agent. Refresh and save again.",
       "saveErrorPrefix": "Save failed — {message}",
-      "readOnlyBadge": "View only — open a folder to edit"
+      "readOnlyBadge": "View only — open a folder to edit",
+      "tabs": {
+        "ariaLabel": "Switch project detail view",
+        "overview": "Overview",
+        "composition": "Composition"
+      }
     },
     "editor": {
       "documentTitleEdit": "Edit project · Ontology Atlas",
