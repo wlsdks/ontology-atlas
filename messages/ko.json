@@ -156,7 +156,7 @@
       "empty": "맞는 노드가 없어요",
       "createNew": "찾는 게 없어요 · 새로 만들기",
       "similar": "혹시 이미 있는 ‘{title}’ 와 같은 건가요?",
-      "similarAccept": "네, 이걸로 연결 →",
+      "similarAccept": "네, 이걸로 연결",
       "suggestHeading": "추천",
       "browseHeading": "둘러보기",
       "reasonSameDomain": "같은 도메인",
@@ -405,7 +405,7 @@
     "waitingForClickLabel": "밝게 남은 점을 눌러보세요",
     "clickSuccessLabel": "잘했어요 — 방금 문서 한 장을 연 거예요",
     "finishTourAction": "구경 끝 — 지도로",
-    "devBranchAction": "저는 개발자예요 →",
+    "devBranchAction": "저는 개발자예요",
     "steps": {
       "welcome": {
         "title": "이 지도는 문서예요",
@@ -566,7 +566,7 @@
     "releaseNotesCaption": "{date} 기준",
     "githubLabel": "GitHub Releases",
     "githubBody": "모든 버전 · DMG · 체크섬 · 릴리스 노트",
-    "githubOpen": "열기 →"
+    "githubOpen": "열기"
   },
   "kinds": {
     "project": "프로젝트",
@@ -1054,6 +1054,17 @@
         "searchPlaceholder": "문서 찾기",
         "clearSearch": "검색어 지우기",
         "clearFilter": "해제",
+        "orderMenuLabel": "목록 순서",
+        "orderSortHeader": "정렬",
+        "orderSort": {
+          "name": "이름순",
+          "recent": "최근 수정순"
+        },
+        "orderGroupHeader": "묶음",
+        "orderGroup": {
+          "folders": "폴더 먼저",
+          "docs": "문서 먼저"
+        },
         "collectionAriaLabel": "문서 범위",
         "collection": {
           "all": {
@@ -1283,8 +1294,8 @@
       "factElement": "요소",
       "factDocument": "문서",
       "factRelations": "관계",
-      "footDetail": "상세 →",
-      "footTopologyView": "지도에서 보기 →",
+      "footDetail": "상세",
+      "footTopologyView": "지도에서 보기",
       "footUpdated": "갱신 {date} · {path}",
       "nextSlotTitle": "다음 프로젝트 추가",
       "nextSlotSub": "폴더에 프로젝트 문서를 추가하면 같은 카드로 즉시 나타납니다.",
@@ -1307,13 +1318,14 @@
       "topBarProjectFallback": "Project",
       "topBarTopologyView": "지도에서 보기",
       "topBarDocsVault": "문서함",
-      "stateInvalidTitle": "프로젝트를 찾을 수 없음",
-      "stateInvalidDesc": "유효한 프로젝트 slug가 없어 상세 페이지를 표시할 수 없습니다.",
+      "stateInvalidTitle": "어떤 프로젝트인지 알 수 없어요",
+      "stateInvalidDesc": "주소에 프로젝트 이름이 빠져 있어요. 목록에서 다시 골라주세요.",
       "stateLoadingTitle": "프로젝트 불러오는 중",
-      "stateLoadingDesc": "프로젝트 데이터를 불러오는 중입니다.",
-      "stateNotFoundTitle": "프로젝트를 찾을 수 없음",
-      "stateNotFoundDesc": "이 slug에 해당하는 프로젝트를 찾지 못했습니다.",
-      "stateBackToWorkspace": "Workspace 지도로 돌아가기",
+      "stateLoadingDesc": "잠시만 기다려주세요.",
+      "stateNotFoundTitle": "이 프로젝트가 지금 폴더에 없어요",
+      "stateNotFoundDesc": "주소가 가리키는 프로젝트를 지금 열려 있는 폴더에서 찾지 못했어요. 다른 폴더의 링크이거나, 문서가 옮겨졌을 수 있어요.",
+      "stateBackToWorkspace": "프로젝트 목록",
+      "stateBackToMap": "지도 열기",
       "documentTitleSuffix": "Ontology Atlas",
       "globalCensus": "{concepts} CONCEPTS · {relations} RELATIONS",
       "heroLabel": "개별 프로젝트",
@@ -1331,7 +1343,7 @@
       "metricRelations": "관계",
       "minimapLabel": "도메인 지도",
       "minimapSublabel": "실카운트 비례",
-      "minimapOpenInTopology": "지도에서 보기 →",
+      "minimapOpenInTopology": "지도에서 보기",
       "minimapAria": "도메인 구성 미니 지도 — 도메인 {domains}개, 관계 {relations}개",
       "domainSectionTitle": "도메인 구성",
       "domainSectionRelation": "포함",
@@ -1500,7 +1512,7 @@
       "openFolderCta": "내 폴더 열기"
     },
     "backlinksStrip": {
-      "openInOntology": "지도에서 열기 →",
+      "openInOntology": "지도에서 열기",
       "empty": "아직 이 문서를 참조한 문서가 없습니다"
     },
     "vaultStatus": {
@@ -1837,7 +1849,7 @@
       "codeLocationsCopiedLabel": "복사됨",
       "handoff": "AI에게 넘길 요약 복사",
       "handoffCopied": "AI에게 넘길 요약을 복사했어요",
-      "openFullDetail": "전체 상세 →",
+      "openFullDetail": "전체 상세",
       "actionsGroupLabel": "노드 행동",
       "actionDocument": "문서",
       "actionEditRelations": "관계 편집",
@@ -2178,8 +2190,8 @@
       "label": "에이전트 핸드오프",
       "copy": "다음 액션 복사",
       "copied": "에이전트 핸드오프 호출을 복사했어요",
-      "openDocument": "문서 열기 →",
-      "openStudio": "공방에서 완성 →"
+      "openDocument": "문서 열기",
+      "openStudio": "공방에서 완성"
     },
     "codeLocations": {
       "heading": "코드 위치",

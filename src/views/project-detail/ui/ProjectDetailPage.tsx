@@ -8,7 +8,7 @@ import { useRouter } from "@/i18n/navigation";
 // (`architecture.md` i18n 라우팅 가드).
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, BookOpen, FileText, Layers, Waypoints } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, FolderSearch, Layers, Waypoints } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useTranslations } from "next-intl";
@@ -168,26 +168,37 @@ function ProjectDetailState({
   return (
     <ProjectDetailShell>
       <ProjectDetailTopBar slug={slug} />
-      <section className="mt-16 rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-8 py-10">
-        <p
-          data-testid={testId}
-          className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]"
-        >
-          {title}
-        </p>
-        <p className="mt-4 max-w-xl text-sm leading-relaxed text-[color:var(--color-text-secondary)]">
-          {description}
-        </p>
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Link
-            href={'/'}
-            className="inline-flex h-9 items-center gap-2 rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a16)]"
-          >
-            <ArrowLeft size={14} />
-            {t("stateBackToWorkspace")}
-          </Link>
-        </div>
-      </section>
+      {/*
+        예전엔 이 자리에 전용 카드를 따로 짰다 — 폭 전체를 쓰는 큰 상자에 글이
+        왼쪽 위에 몰려 허공이 대부분이었다. 이 앱엔 이미 "페이지 본문이 통째로
+        비었을 때" 를 위해 만든 `EmptyState`(tone=solid + align=center)가 있는데
+        이 화면만 그걸 안 썼다. 표면마다 빈 상태의 생김새가 다르면 그게 곧
+        어긋남이다 — 공용 프리미티브로 되돌린다.
+      */}
+      <div className="mx-auto mt-16 w-full max-w-lg">
+        <EmptyState
+          tone="solid"
+          align="center"
+          icon={<FolderSearch size={16} aria-hidden />}
+          title={<span data-testid={testId}>{title}</span>}
+          description={description}
+          action={
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {/* 목록이 먼저다 — 여기 온 사람이 원하는 건 "다른 프로젝트 고르기" 다. */}
+              <Link href={'/projects/'}>
+                <Button type="button" variant="primary" size="sm">
+                  {t("stateBackToWorkspace")}
+                </Button>
+              </Link>
+              <Link href={'/'}>
+                <Button type="button" variant="ghost" size="sm">
+                  {t("stateBackToMap")}
+                </Button>
+              </Link>
+            </div>
+          }
+        />
+      </div>
     </ProjectDetailShell>
   );
 }

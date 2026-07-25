@@ -156,7 +156,7 @@
       "empty": "No matching node",
       "createNew": "Not here · create new",
       "similar": "Do you mean the existing ‘{title}’?",
-      "similarAccept": "Yes, link this →",
+      "similarAccept": "Yes, link this",
       "suggestHeading": "Suggested",
       "browseHeading": "Browse",
       "reasonSameDomain": "Same domain",
@@ -405,7 +405,7 @@
     "waitingForClickLabel": "Click the dot that's still bright",
     "clickSuccessLabel": "Nice — you just opened a real document",
     "finishTourAction": "Done — back to the map",
-    "devBranchAction": "I'm a developer →",
+    "devBranchAction": "I'm a developer",
     "steps": {
       "welcome": {
         "title": "This map is documents",
@@ -566,7 +566,7 @@
     "releaseNotesCaption": "as of {date}",
     "githubLabel": "GitHub Releases",
     "githubBody": "Every version · DMGs · checksums · release notes",
-    "githubOpen": "Open →"
+    "githubOpen": "Open"
   },
   "kinds": {
     "project": "Project",
@@ -1054,6 +1054,17 @@
         "searchPlaceholder": "Find documents",
         "clearSearch": "Clear search",
         "clearFilter": "Clear",
+        "orderMenuLabel": "List order",
+        "orderSortHeader": "Sort",
+        "orderSort": {
+          "name": "By name",
+          "recent": "Recently edited"
+        },
+        "orderGroupHeader": "Grouping",
+        "orderGroup": {
+          "folders": "Folders first",
+          "docs": "Documents first"
+        },
         "collectionAriaLabel": "Document scope",
         "collection": {
           "all": {
@@ -1283,8 +1294,8 @@
       "factElement": "Elements",
       "factDocument": "Documents",
       "factRelations": "Relations",
-      "footDetail": "Details →",
-      "footTopologyView": "View in topology →",
+      "footDetail": "Details",
+      "footTopologyView": "View in topology",
       "footUpdated": "Updated {date} · {path}",
       "nextSlotTitle": "Add the next project",
       "nextSlotSub": "Add a project document to your folder and it appears here in the same card instantly.",
@@ -1307,13 +1318,14 @@
       "topBarProjectFallback": "Project",
       "topBarTopologyView": "View topology",
       "topBarDocsVault": "Source vault",
-      "stateInvalidTitle": "Project not found",
-      "stateInvalidDesc": "No valid project slug, so detail can't be displayed.",
+      "stateInvalidTitle": "We don't know which project this is",
+      "stateInvalidDesc": "The address is missing a project name. Pick one from the list.",
       "stateLoadingTitle": "Loading project",
-      "stateLoadingDesc": "Loading project data.",
-      "stateNotFoundTitle": "Project not found",
-      "stateNotFoundDesc": "No project matches this slug.",
-      "stateBackToWorkspace": "Back to workspace map",
+      "stateLoadingDesc": "One moment.",
+      "stateNotFoundTitle": "This project isn't in the current folder",
+      "stateNotFoundDesc": "We couldn't find the project this address points to in the folder you have open. It may be a link from another folder, or the document may have moved.",
+      "stateBackToWorkspace": "Project list",
+      "stateBackToMap": "Open the map",
       "documentTitleSuffix": "Ontology Atlas",
       "globalCensus": "{concepts} CONCEPTS · {relations} RELATIONS",
       "heroLabel": "Individual project",
@@ -1331,7 +1343,7 @@
       "metricRelations": "Relations",
       "minimapLabel": "Domain map",
       "minimapSublabel": "real counts, to scale",
-      "minimapOpenInTopology": "Open in topology →",
+      "minimapOpenInTopology": "Open in topology",
       "minimapAria": "Mini domain map — {domains} domains, {relations} relations",
       "domainSectionTitle": "Domain composition",
       "domainSectionRelation": "Contains",
@@ -1500,7 +1512,7 @@
       "openFolderCta": "Open my folder"
     },
     "backlinksStrip": {
-      "openInOntology": "Open in the map →",
+      "openInOntology": "Open in the map",
       "empty": "No documents link here yet"
     },
     "vaultStatus": {
@@ -1837,7 +1849,7 @@
       "codeLocationsCopiedLabel": "copied",
       "handoff": "Copy agent handoff",
       "handoffCopied": "Agent handoff copied",
-      "openFullDetail": "Full detail →",
+      "openFullDetail": "Full detail",
       "actionsGroupLabel": "Node actions",
       "actionDocument": "Document",
       "actionEditRelations": "Edit relations",
@@ -2178,8 +2190,8 @@
       "label": "Agent handoff",
       "copy": "Copy next action",
       "copied": "Copied the agent handoff call",
-      "openDocument": "Open document →",
-      "openStudio": "Complete in workshop →"
+      "openDocument": "Open document",
+      "openStudio": "Complete in workshop"
     },
     "codeLocations": {
       "heading": "Code location",
