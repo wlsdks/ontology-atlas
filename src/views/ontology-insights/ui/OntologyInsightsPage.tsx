@@ -21,6 +21,7 @@ import {
   LiveActivityIndicator,
   useOntologyInsight,
   useVaultDocFreshnessIndex,
+  useVaultHealth,
 } from "@/features/vault-ontology";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { useLocalVault } from "@/features/docs-vault-local";
@@ -52,6 +53,7 @@ import {
   resolveDoNextReviewState,
 } from "../lib/review-loop";
 import { computeCensusHealth } from "../lib/census-health";
+import { buildVaultHealthRepair } from "../lib/vault-health-repair";
 import { buildDependsOnRows } from "../lib/depends-on-rows";
 import { buildHubEgoThumbnail } from "../lib/hub-ego-thumbnail";
 import { buildDomainCouplingSummary } from "../lib/domain-coupling-rows";
@@ -187,16 +189,28 @@ export function OntologyInsightsPage() {
   // 그건 project 엔티티 전용 렌즈라 이 페이지의 온톨로지 그래프 데이터와는
   // 다른 소스다).
   const healthSignals = useMemo(() => buildOntologyHealthSignals(nodes, edges), [nodes, edges]);
+  // C1 — CLI-parity health verdict (disconnected islands · missing domain
+  // containment) read from the raw frontmatter, so the repair queue agrees with
+  // `ontology-atlas health` instead of falsely claiming "수리할 것 없음".
+  const vaultHealth = useVaultHealth();
+  const healthRepair = useMemo(
+    () => buildVaultHealthRepair(vaultHealth, nodes),
+    [vaultHealth, nodes],
+  );
   const healthQueue = useMemo(
     () => ({
       staleCount: healthSignals.stale.length,
       orphanCount: healthSignals.orphan.length,
       promotionCount: healthSignals.promotion.length,
-      actionTarget: buildOntologyHealthActionTarget(healthSignals),
+      islandCount: healthRepair.islandCount,
+      missingContainmentCount: healthRepair.missingContainmentCount,
+      // CLI-parity issues rank above the statistical stale/orphan/promotion
+      // signals — they're what flip the CLI to needs_attention.
+      actionTarget: healthRepair.actionTarget ?? buildOntologyHealthActionTarget(healthSignals),
       builderHref: buildOntologyStudioNodeHrefFromGraphId,
       ontologyHref: mapNodeHref,
     }),
-    [healthSignals, mapNodeHref],
+    [healthSignals, healthRepair, mapNodeHref],
   );
 
   const dependsOnRows = useMemo(
@@ -436,10 +450,14 @@ export function OntologyInsightsPage() {
     repairQueueStale: t("repairQueueStale"),
     repairQueueOrphan: t("repairQueueOrphan"),
     repairQueuePromotion: t("repairQueuePromotion"),
+    repairQueueIsland: t("repairQueueIsland"),
+    repairQueueMissingContainment: t("repairQueueMissingContainment"),
     repairQueueEmpty: t("repairQueueEmpty"),
     repairQueueActionKindStale: t("repairQueueActionKindStale"),
     repairQueueActionKindOrphan: t("repairQueueActionKindOrphan"),
     repairQueueActionKindPromotion: t("repairQueueActionKindPromotion"),
+    repairQueueActionKindIsland: t("repairQueueActionKindIsland"),
+    repairQueueActionKindContainment: t("repairQueueActionKindContainment"),
     repairQueueOpenBuilder: t("repairQueueOpenBuilder"),
     repairQueueOpenOntology: t("repairQueueOpenOntology"),
     queueTitle: t("doNext.queueTitle"),
