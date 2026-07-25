@@ -65,7 +65,9 @@ describe("CreateNodeForm", () => {
     const onCreate = vi.fn();
     render(<CreateNodeForm onCreate={onCreate} labels={labels} />);
     fireEvent.change(screen.getByTestId("create-node-title"), { target: { value: "Auth" } });
-    fireEvent.change(screen.getByTestId("create-node-kind"), { target: { value: "domain" } });
+    // 캐노니컬 Select — 네이티브 change 대신 트리거 열고 옵션 클릭.
+    fireEvent.click(screen.getByTestId("create-node-kind"));
+    fireEvent.click(screen.getByRole("option", { name: "도메인" }));
     fireEvent.click(screen.getByTestId("create-node-submit"));
     await waitFor(() => expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ kind: "domain" })));
   });

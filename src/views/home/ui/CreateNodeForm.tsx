@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
+import { Select } from "@/shared/ui";
 
 /**
  * S2.1a — 토폴로지에서 새 온톨로지 노드를 만드는 작은 form (presentational).
@@ -183,25 +184,21 @@ export function CreateNodeForm({
           </>
         ) : null}
         <div className="flex gap-2">
-          <label className="flex min-w-0 flex-1 items-center gap-1.5">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
             <span className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
               {labels.kind}
             </span>
-            <select
+            <Select
+              size="md"
               value={kind}
               disabled={creating}
-              onChange={(e) => setKind(e.target.value as CreateNodeKind)}
-              aria-label={labels.kind}
+              onChange={(v) => setKind(v as CreateNodeKind)}
+              ariaLabel={labels.kind}
               data-testid="create-node-kind"
-              className="h-8 min-w-0 flex-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
-            >
-              {KINDS.map((k) => (
-                <option key={k} value={k}>
-                  {labels.kindLabels[k]}
-                </option>
-              ))}
-            </select>
-          </label>
+              className="min-w-0 flex-1"
+              options={KINDS.map((k) => ({ value: k, label: labels.kindLabels[k] }))}
+            />
+          </div>
           <input
             type="text"
             value={domain}

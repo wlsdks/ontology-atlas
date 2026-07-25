@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
+import { Select } from "@/shared/ui";
 import type {
   StudioBearing,
   StudioRelation,
@@ -1153,19 +1154,18 @@ function CenterCard(
       )}
 
       {mode === "create" && props.createDomains && props.createDomains.length > 0 ? (
-        <select
-          data-testid="studio-create-domain"
-          value={props.createDomainValue ?? ""}
-          onChange={(e) => props.onCreateDomain?.(e.target.value || null)}
-          className="mt-3 h-10 w-full rounded-[8px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-caption text-[color:var(--color-text-secondary)] outline-none transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:border-[color:var(--color-indigo-a46)]"
-        >
-          <option value="">{props.labels.createDomainNone}</option>
-          {props.createDomains.map((d) => (
-            <option key={d.value} value={d.value}>
-              {d.title}
-            </option>
-          ))}
-        </select>
+        <div className="mt-3">
+          <Select
+            data-testid="studio-create-domain"
+            ariaLabel={props.labels.createDomainNone}
+            value={props.createDomainValue ?? ""}
+            onChange={(v) => props.onCreateDomain?.(v || null)}
+            options={[
+              { value: "", label: props.labels.createDomainNone },
+              ...props.createDomains.map((d) => ({ value: d.value, label: d.title })),
+            ]}
+          />
+        </div>
       ) : null}
 
       {mode === "create" ? (
