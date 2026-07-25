@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TerminalSquare, X } from "lucide-react";
 
+import { Link } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
 import {
   isTerminalAvailable,
@@ -37,10 +38,18 @@ import {
  * - **정리** — 도크를 접으면 세션을 죽인다. 좀비 셸이 사용자 기계에 남으면
  *   그건 우리가 남긴 흔적이다.
  *
- * ## 디자인
+ * ## 디자인 (Design Guardian 검수 2026-07-26)
  *
- * 무채색 + 단일 인디고. xterm 테마도 `--color-*` 토큰을 `getComputedStyle` 로
- * 읽어 캔버스와 같은 팔레트를 쓴다 — 터미널만 다른 세계로 보이지 않게.
+ * - **크롬은 앱 팔레트를 상속** — 배경/전경/커서/선택은 `--color-*` 토큰.
+ * - **셀 내용(ANSI 16색)은 외부 프로그램의 data-ink** — 무채색으로 뭉개면
+ *   `git diff` 의 빨강/초록이 의미를 잃는다. 대신 xterm 기본 형광 팔레트를
+ *   그대로 두지도 않는다(선언 안 한 채색 시스템이 하나 더 생긴다). hue 는
+ *   지키고 채도만 낮춘 `--terminal-ansi-*` 를 **명시 선언**해 쓴다.
+ * - **높이는 토큰** — `--agent-terminal-dock-height`(뷰포트 비례 clamp).
+ *   고정 320px 은 14"에서 본문의 36.7% 를 먹었다. 강등 상태는 내용이 두 줄뿐
+ *   이라 별도 토큰(`--agent-terminal-dock-height-degraded`)으로 줄인다.
+ * - **뷰포트 소유권은 셸** — `ShellWithTerminalDock` 의 `h-dvh` 칼럼 덕에
+ *   도크는 항상 화면 안에 있다. 이 컴포넌트는 위치를 스스로 정하지 않는다.
  */
 
 export interface AgentTerminalDockProps {
@@ -50,8 +59,22 @@ export interface AgentTerminalDockProps {
   vaultPath: string | null;
 }
 
-/** 도크 기본 높이(px). 드래그 리사이즈는 후속 — 먼저 열리고 도는 것이 우선. */
-const DOCK_HEIGHT = 320;
+/**
+ * 경로 머리 접기 — 경로는 **끝**(폴더 이름)이 정체성이라 오른쪽 말줄임이면
+ * 확인해야 할 부분부터 사라진다(`/Users/jinan/side-projec…`). 전체 경로는
+ * `title` 로 남아 hover·스크린리더·복사가 온전하다.
+ *
+ * `maxLength` 28 의 근거: 헤더 예산이다. 좁은 창(≈700px)에서 헤더는
+ * 아이콘 + "터미널" + 이 캡션 + 닫기를 담아야 하고, 11px mono 는 글자당
+ * ≈6.6px 이라 28자 ≈ 185px 가 캡션 몫이다. 그 안에 들어오는 경로는 접지
+ * 않는다 — 접어서 얻는 게 없는데 정보만 잃는다.
+ */
+export function elideCwdHead(cwd: string, maxLength = 28, keepSegments = 2): string {
+  if (cwd.length <= maxLength) return cwd;
+  const segments = cwd.split("/").filter(Boolean);
+  if (segments.length <= keepSegments) return cwd;
+  return `…/${segments.slice(-keepSegments).join("/")}`;
+}
 
 export function AgentTerminalDock({ open, onClose, vaultPath }: AgentTerminalDockProps) {
   const t = useTranslations("agentTerminal");
@@ -61,6 +84,24 @@ export function AgentTerminalDock({ open, onClose, vaultPath }: AgentTerminalDoc
   const [exited, setExited] = useState(false);
 
   const available = isTerminalAvailable();
+  /** 웹이거나 볼트가 없으면 셸을 못 띄운다 — 문단 두 줄짜리 강등 표면. */
+  const degraded = !available || !vaultPath;
+
+  // 도크 상태를 문서 루트에 선언한다 — 결정론적 검증 마커.
+  // PTY 실동작은 설치 앱에서만 도므로, 브라우저/WebView 캡처는 "열렸는가"를
+  // 픽셀로 추측하는 대신 이 attribute 로 확인한다(open=실동작, degraded=웹·
+  // 볼트 미선택). 레이아웃 입력이 아니다 — 높이는 셸의 `h-dvh` 칼럼이 잡는다.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!open) {
+      delete root.dataset.agentTerminal;
+      return;
+    }
+    root.dataset.agentTerminal = degraded ? "degraded" : "open";
+    return () => {
+      delete root.dataset.agentTerminal;
+    };
+  }, [open, degraded]);
 
   // 세션 수명 — 도크가 열려 있는 동안만. 닫히면 정리한다(좀비 셸 금지).
   useEffect(() => {
@@ -79,19 +120,41 @@ export function AgentTerminalDock({ open, onClose, vaultPath }: AgentTerminalDoc
         ]);
         if (disposed) return;
 
-        const read = (name: string, fallback: string) =>
-          getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+        // resolve-캐시 — getComputedStyle 은 호출마다 스타일 재계산을 강제하므로
+        // 한 번만 읽어 20개 토큰을 뽑는다. 하드코딩 fallback 은 두지 않는다:
+        // 값이 비면 xterm 기본값이 보여 토큰 오타/삭제가 즉시 드러나지만,
+        // hex fallback 은 토큰이 움직여도 조용히 옛 색을 유지해 drift 를 숨긴다.
+        const styles = getComputedStyle(document.documentElement);
+        const token = (name: string) => styles.getPropertyValue(name).trim() || undefined;
 
         const term = new Terminal({
-          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-          fontSize: 12,
+          fontFamily: token("--font-mono") ?? "ui-monospace, monospace",
+          fontSize: Number.parseFloat(token("--terminal-font-size") ?? "12"),
+          lineHeight: Number.parseFloat(token("--terminal-line-height") ?? "1.35"),
           cursorBlink: true,
-          // 앱과 같은 팔레트 — 터미널만 다른 세계로 보이지 않게.
           theme: {
-            background: read("--color-canvas", "#08090a"),
-            foreground: read("--color-text-secondary", "#d0d6e0"),
-            cursor: read("--color-indigo-brand", "#5e6ad2"),
-            selectionBackground: read("--color-overlay-3", "rgba(255,255,255,0.1)"),
+            // 크롬 — 앱과 같은 팔레트. 터미널만 다른 세계로 보이지 않게.
+            background: token("--color-canvas"),
+            foreground: token("--color-text-secondary"),
+            cursor: token("--color-indigo-brand"),
+            selectionBackground: token("--color-overlay-3"),
+            // 셀 — 외부 프로그램의 data-ink. hue 유지, 채도만 캔버스에 맞춤.
+            black: token("--terminal-ansi-black"),
+            red: token("--terminal-ansi-red"),
+            green: token("--terminal-ansi-green"),
+            yellow: token("--terminal-ansi-yellow"),
+            blue: token("--terminal-ansi-blue"),
+            magenta: token("--terminal-ansi-magenta"),
+            cyan: token("--terminal-ansi-cyan"),
+            white: token("--terminal-ansi-white"),
+            brightBlack: token("--terminal-ansi-bright-black"),
+            brightRed: token("--terminal-ansi-bright-red"),
+            brightGreen: token("--terminal-ansi-bright-green"),
+            brightYellow: token("--terminal-ansi-bright-yellow"),
+            brightBlue: token("--terminal-ansi-bright-blue"),
+            brightMagenta: token("--terminal-ansi-bright-magenta"),
+            brightCyan: token("--terminal-ansi-bright-cyan"),
+            brightWhite: token("--terminal-ansi-bright-white"),
           },
         });
         const fit = new FitAddon();
@@ -146,51 +209,61 @@ export function AgentTerminalDock({ open, onClose, vaultPath }: AgentTerminalDoc
 
   if (!open) return null;
 
+  const height = degraded
+    ? "var(--agent-terminal-dock-height-degraded)"
+    : "var(--agent-terminal-dock-height)";
+
   return (
     <section
       aria-label={t("title")}
       data-testid="agent-terminal-dock"
-      style={{ height: DOCK_HEIGHT }}
-      className="flex shrink-0 flex-col border-t border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]"
+      style={{ height }}
+      className="agent-terminal-dock flex shrink-0 flex-col border-t border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]"
     >
       <header className="flex shrink-0 items-center gap-2 border-b border-[color:var(--color-border-soft)] px-3 py-1.5">
         <TerminalSquare size={13} aria-hidden className="text-[color:var(--color-indigo-accent)]" />
-        <span className="text-label font-semibold text-[color:var(--color-text-primary)]">
+        <span className="shrink-0 text-label font-semibold text-[color:var(--color-text-primary)]">
           {t("title")}
         </span>
-        {/* 무엇이 · 어디서 도는지 항상 보인다 — 숨기면 신뢰가 깨진다. */}
+        {/* 무엇이 · 어디서 도는지 항상 보인다 — 숨기면 신뢰가 깨진다.
+            이건 마이크로 라벨이 아니라 사용자가 **확인해야 하는 영수증**이라
+            caption(9.5px) 이 아니라 label(11px) 이다. */}
         {session ? (
           <span
             data-testid="agent-terminal-context"
-            className="truncate font-mono text-caption text-[color:var(--color-text-quaternary)]"
+            title={`${session.program} · ${session.cwd}`}
+            className="min-w-0 truncate font-mono text-label text-[color:var(--color-text-tertiary)]"
           >
-            {session.program} · {session.cwd}
+            {session.program} · {elideCwdHead(session.cwd)}
           </span>
         ) : null}
         {exited ? (
-          <span className="text-caption text-[color:var(--color-text-tertiary)]">
+          <span className="shrink-0 text-label text-[color:var(--color-text-quaternary)]">
             {t("exited")}
           </span>
         ) : null}
         <div className="flex-1" />
         <button
           type="button"
-          aria-label={t("close")}
+          aria-label={session && !exited ? `${t("close")} — ${t("closeEndsSession")}` : t("close")}
+          title={session && !exited ? t("closeEndsSession") : undefined}
           data-testid="agent-terminal-close"
           onClick={handleClose}
-          className="rounded p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+          className="shrink-0 rounded p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
         >
           <X size={14} aria-hidden />
         </button>
       </header>
 
-      {available && vaultPath ? (
+      {!degraded ? (
         <div ref={hostRef} data-testid="agent-terminal-host" className="min-h-0 flex-1 px-2 py-1" />
       ) : (
-        // 정직한 강등 — 웹은 프로세스를 못 띄우고, 볼트가 없으면 어디서 돌지가 없다.
+        // 정직한 강등 — 웹은 프로세스를 못 띄우고, 볼트가 없으면 어디서 돌지가
+        // 없다. 강등은 "안 된다" 로 끝나면 막다른 길이므로 **다음 한 걸음**을
+        // 같이 준다(웹 → 데스크톱 앱 받기).
         <div
           data-testid="agent-terminal-unavailable"
-          className={cn("flex min-h-0 flex-1 flex-col justify-center gap-1.5 px-4")}
+          className={cn("flex min-h-0 flex-1 flex-col justify-center gap-1.5 px-3")}
         >
           <p className="text-body text-[color:var(--color-text-secondary)]">
             {available ? t("needVault") : t("desktopOnly")}
@@ -198,17 +271,26 @@ export function AgentTerminalDock({ open, onClose, vaultPath }: AgentTerminalDoc
           <p className="text-label text-[color:var(--color-text-quaternary)]">
             {available ? t("needVaultHint") : t("desktopOnlyHint")}
           </p>
+          {available ? null : (
+            <Link
+              href="/download/"
+              data-testid="agent-terminal-download-link"
+              className="mt-0.5 w-fit rounded text-label text-[color:var(--color-indigo-accent)] underline underline-offset-2 transition-colors hover:text-[color:var(--color-text-primary)]"
+            >
+              {t("downloadLink")}
+            </Link>
+          )}
         </div>
       )}
 
       {error ? (
         <p
           data-testid="agent-terminal-error"
-          className="shrink-0 px-4 py-2 text-label text-[color:var(--color-danger-text)]"
+          className="shrink-0 px-3 py-2 text-label text-[color:var(--color-danger-text)]"
         >
           {error}
-        </p>
-      ) : null}
+          </p>
+        ) : null}
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "./AppShell";
@@ -61,5 +61,47 @@ describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
     //  `@/i18n/navigation` 목이 `Link` 를 children-only 로 렌더해 testid 가
     //  사라지므로 여기서 단언하면 거짓 실패가 난다.)
     expect(screen.queryByTestId("app-nav-rail-git-tile")).not.toBeInTheDocument();
+  });
+});
+
+describe("터미널 도크 — 셸 소유 계약 (#79)", () => {
+  it("여는 버튼이 보인다 — 단축키만 있으면 없는 기능이다", () => {
+    // 소유자 실보고: "터미널을 여는 버튼이 없는데?" ⌃` 만 있으면 발견 불가능해
+    // 사실상 존재하지 않는 기능이다. 손잡이의 존재가 계약이다.
+    render(
+      <AppShell>
+        <div>page</div>
+      </AppShell>,
+    );
+    // 이 파일의 next-intl 목은 키를 그대로 돌려준다 — 라벨 문구가 아니라
+    // 손잡이가 있고 단축키를 새겼는지가 검사 대상이다.
+    const handle = screen.getByTestId("agent-terminal-handle");
+    expect(handle).toHaveTextContent("title");
+    expect(handle).toHaveTextContent("⌃`");
+  });
+
+  it("손잡이를 누르면 손잡이가 사라진다 — 그 자리를 도크 헤더가 이어받는다", () => {
+    // 셸의 계약은 "손잡이 ↔ 도크가 같은 자리를 번갈아 쓴다" 까지다. 도크 내부가
+    // 무엇을 그리는지는 도크 자신의 테스트가 본다(웹 강등 · 볼트 없음 등).
+    render(
+      <AppShell>
+        <div>page</div>
+      </AppShell>,
+    );
+    fireEvent.click(screen.getByTestId("agent-terminal-handle"));
+    expect(screen.queryByTestId("agent-terminal-handle")).not.toBeInTheDocument();
+  });
+
+  it("셸이 뷰포트를 소유한다 — 도크가 문서 흐름에 밀려나지 않게", () => {
+    // 소유자 실보고: "스크롤을 맨 밑으로 내려야 터미널이 나오는데.."
+    // 페이지가 `--app-viewport-h` 를 기억해야 하는 구조는 #65 와 같은 drift 다.
+    const { container } = render(
+      <AppShell>
+        <div>page</div>
+      </AppShell>,
+    );
+    const shell = container.querySelector(".h-dvh");
+    expect(shell, "셸 루트가 뷰포트 높이를 잡아야 한다").not.toBeNull();
+    expect(shell?.className).toContain("overflow-hidden");
   });
 });

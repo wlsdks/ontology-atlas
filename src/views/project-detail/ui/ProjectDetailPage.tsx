@@ -60,7 +60,7 @@ interface Props {
 
 function ProjectDetailShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="flex min-h-full w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
       {/* 하단 예약고는 base pb + lg:pb 오버라이드 — `max-lg:pb-[...]` 는
           `md:py-14` 보다 스타일시트 앞에 emit 되어 768–1023 에서 조용히 패배,

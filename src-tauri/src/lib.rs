@@ -11,6 +11,7 @@ use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
 /// Atlas Git — vault 를 git 으로 버전 기록하는 네이티브 계층 (웹 GUI 가 invoke).
 mod git;
+mod secrets;
 mod terminal;
 
 const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
@@ -5771,6 +5772,9 @@ pub fn run() {
             open_vault_in_finder,
             ensure_default_vault_parent_dir,
             start_vault_watch,
+            secrets::secret_set,
+            secrets::secret_status,
+            secrets::secret_clear,
             terminal::terminal_open,
             terminal::terminal_write,
             terminal::terminal_resize,

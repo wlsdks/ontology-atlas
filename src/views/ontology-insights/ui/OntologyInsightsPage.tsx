@@ -541,7 +541,7 @@ export function OntologyInsightsPage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="flex min-h-full w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6">

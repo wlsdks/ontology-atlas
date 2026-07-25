@@ -125,7 +125,11 @@ describe("AtlasGitPanel — 웹(브라우저 vault) 강등", () => {
 
     renderPanel(<AtlasGitPanel sessionChangeset={changeset} />);
 
-    expect(await screen.findByTestId("atlas-git-web-body")).toBeInTheDocument();
+    // 구 `atlas-git-web-body` → 셋업 프레임 (2026-07-26). 웹 강등은 이제
+    // "아직 자기 일을 못 하는" 상태 중 하나이고, 셋 상태(웹·폴더 없음·기록
+    // 시작 전)가 같은 프레임/측정폭을 공유한다.
+    const setup = await screen.findByTestId("atlas-git-setup");
+    expect(setup).toHaveAttribute("data-setup-state", "web");
     expect(screen.getByText("개념 추가 1")).toBeInTheDocument();
     expect(screen.getByText("개념 수정 2")).toBeInTheDocument();
     expect(screen.getByText("관계 추가 1")).toBeInTheDocument();
@@ -353,5 +357,190 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(screen.queryByTestId("atlas-git-close")).not.toBeInTheDocument();
     // 11px mono eyebrow 가 아니라 h1 — 실측에서 페이지 제목으로 너무 작았다.
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("기록");
+  });
+});
+
+/**
+ * 2026-07-26 재설계 — "이 화면이 지금 자기 일을 할 수 있는가" 로 갈리는
+ * 두 모양(셋업 / 작업대)의 계약.
+ */
+describe("AtlasGitPanel — 연결 셋업 모드", () => {
+  it("연결 전 세 상태는 같은 셋업 프레임을 쓴다 — 걸음마다 표면이 바뀌지 않는다", async () => {
+    // ① 웹
+    const web = renderPanel(<AtlasGitPanel />);
+    expect(await screen.findByTestId("atlas-git-setup")).toHaveAttribute(
+      "data-setup-state",
+      "web",
+    );
+    web.unmount();
+
+    // ② 앱인데 폴더 없음
+    tauriApiMock.runtimeAvailable = true;
+    const noVault = renderPanel(<AtlasGitPanel vaultPath={null} />);
+    expect(await screen.findByTestId("atlas-git-setup")).toHaveAttribute(
+      "data-setup-state",
+      "no-vault",
+    );
+    noVault.unmount();
+
+    // ③ 앱 + 폴더인데 아직 기록 시작 전
+    installDesktopGit({
+      status: {
+        initialized: false,
+        repoRoot: null,
+        branch: null,
+        upstream: null,
+        changedCount: 0,
+        stagedOutsideVault: [],
+      },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    // 로딩 → 기록 시작 전. 로딩도 같은 프레임을 쓴다(그래서 상태가 바뀌어도
+    // 화면이 튀지 않는다) — 그래서 testid 가 아니라 상태 속성을 기다린다.
+    await waitFor(() =>
+      expect(screen.getByTestId("atlas-git-setup")).toHaveAttribute(
+        "data-setup-state",
+        "not-initialized",
+      ),
+    );
+  });
+
+  it("앱 안에서 폴더가 없으면 앱을 받으라고 하지 않는다 — 폴더 고르기로 보낸다", async () => {
+    // 회귀 차단: 이전엔 이 상태가 웹 강등으로 떨어져, **이미 앱을 쓰는**
+    // 사용자에게 "브라우저는 git 을 실행할 권한이 없어요 / 앱 받기 →" 라는
+    // 거짓 안내를 보여줬다.
+    tauriApiMock.runtimeAvailable = true;
+    renderPanel(<AtlasGitPanel vaultPath={null} />);
+
+    expect(await screen.findByTestId("atlas-git-pick-vault")).toBeInTheDocument();
+    expect(screen.queryByTestId("atlas-git-web-get-app")).not.toBeInTheDocument();
+    expect(tauriApiMock.invoke).not.toHaveBeenCalled();
+  });
+
+  it("사다리는 세 걸음뿐이다 — 보낼 곳 등록은 선택이라 걸음이 아니다", async () => {
+    renderPanel(<AtlasGitPanel />);
+
+    const ladder = await screen.findByTestId("atlas-git-ladder");
+    const steps = ladder.querySelectorAll("li");
+    expect(steps).toHaveLength(3);
+    // 웹에서는 첫 걸음이 "지금 할 일", 나머지는 아직.
+    expect(steps[0]).toHaveAttribute("data-step-state", "current");
+    expect(steps[1]).toHaveAttribute("data-step-state", "todo");
+    expect(steps[2]).toHaveAttribute("data-step-state", "todo");
+    expect(ladder).not.toHaveTextContent("보낼");
+  });
+
+  it("기록 시작 전에는 사다리 세 번째 걸음이 지금 할 일이다", async () => {
+    installDesktopGit({
+      status: {
+        initialized: false,
+        repoRoot: null,
+        branch: null,
+        upstream: null,
+        changedCount: 0,
+        stagedOutsideVault: [],
+      },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    const ladder = await screen.findByTestId("atlas-git-ladder");
+    const steps = ladder.querySelectorAll("li");
+    expect(steps[0]).toHaveAttribute("data-step-state", "done");
+    expect(steps[1]).toHaveAttribute("data-step-state", "done");
+    expect(steps[2]).toHaveAttribute("data-step-state", "current");
+  });
+
+  it("셋업 주 동작은 터치 승격 토큰으로 높이를 잡는다 (coarse 44px 계약)", async () => {
+    // 이 페이지가 하는 유일한 일이 이 버튼이라, 누군가 다시 h-9 같은 고정
+    // 높이로 되돌리면 `@media (pointer: coarse)` 승격이 조용히 사라진다.
+    renderPanel(<AtlasGitPanel />);
+    const cta = await screen.findByTestId("atlas-git-web-get-app");
+    expect(cta.className).toContain("h-[var(--git-setup-action-height)]");
+  });
+
+  it("읽기 실패도 막다른 길이 아니다 — 같은 자리에서 다시 확인한다", async () => {
+    tauriApiMock.runtimeAvailable = true;
+    tauriApiMock.invoke.mockRejectedValue("not a git repository");
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    expect(await screen.findByTestId("atlas-git-load-error")).toBeInTheDocument();
+    const retry = screen.getByTestId("atlas-git-retry");
+    tauriApiMock.invoke.mockReset();
+    tauriApiMock.invoke.mockImplementation(async (command: string) => {
+      if (command === "git_status") return STATUS_WITH_CHANGES;
+      if (command === "git_diff") return DIFF_WITH_CHANGES;
+      if (command === "git_history") return HISTORY;
+      throw new Error(`unexpected command: ${command}`);
+    });
+    fireEvent.click(retry);
+
+    expect(await screen.findByTestId("atlas-git-workbench")).toBeInTheDocument();
+  });
+
+  it("연결이 끝나면 셋업 프레임이 사라지고 작업대가 온다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    expect(await screen.findByTestId("atlas-git-workbench")).toBeInTheDocument();
+    expect(screen.queryByTestId("atlas-git-setup")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("atlas-git-ladder")).not.toBeInTheDocument();
+  });
+});
+
+describe("AtlasGitPanel — 작업대 빈 상태", () => {
+  it("다 남긴 상태에서는 증거 pane 이 최근 기록으로 착지한다 (빈 우측 열 방지)", async () => {
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, changedCount: 0 },
+      diff: { count: 0, files: [], diff: "" },
+      history: HISTORY,
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    // 사용자가 아무것도 안 골랐는데도 오른쪽에 방금 남긴 걸음이 보인다.
+    expect(await screen.findByTestId("atlas-git-history-item")).toBeInTheDocument();
+    expect(screen.getByTestId("atlas-git-history-tab")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("`모두 남겼어요` 를 화면에 두 번 쓰지 않는다", async () => {
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, changedCount: 0 },
+      diff: { count: 0, files: [], diff: "" },
+      history: HISTORY,
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    await screen.findByTestId("atlas-git-snapshot-button");
+    expect(screen.getAllByText("모두 남겼어요")).toHaveLength(1);
+    // 목록 자리는 같은 문장을 반복하는 대신 "그래서 지금 무슨 상태냐" 를 말한다.
+    expect(
+      screen.getByText("지금 이 폴더와 마지막 걸음이 같아요. 문서를 고치면 여기에 나타나요."),
+    ).toBeInTheDocument();
+  });
+
+  it("남기기 버튼과 결과 문장이 키 경로가 아니라 문장을 그린다 (ICU 인자 계약)", async () => {
+    installDesktopGit({
+      snapshot: {
+        committed: true,
+        reason: null,
+        commitHash: "abc",
+        subject: "s",
+        summary: "s",
+        counts: { added: 1, modified: 1, deleted: 0, renamed: 0, total: 2 },
+        files: [],
+        stagedOutsideVault: [],
+        push: null,
+      },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    const button = await screen.findByTestId("atlas-git-snapshot-button");
+    expect(button).toHaveTextContent("2개 남기기");
+    expect(button).not.toHaveTextContent("atlasGit");
+
+    fireEvent.click(button);
+    fireEvent.click(screen.getByTestId("atlas-git-confirm-button"));
+    const result = await screen.findByTestId("atlas-git-snapshot-result");
+    expect(result).toHaveTextContent("2개 남겼어요");
+    expect(result).not.toHaveTextContent("atlasGit");
   });
 });
