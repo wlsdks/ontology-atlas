@@ -14,6 +14,7 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { AnimatePresence } from 'framer-motion';
 import {
+  ArrowLeft,
   Bot,
   ClipboardCheck,
   FileText,
@@ -50,7 +51,7 @@ import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
 } from '@/shared/lib/tauri-vault-fs';
-import { HexMark, SimilarNodeWarning, Tooltip, useToast } from '@/shared/ui';
+import { SimilarNodeWarning, Tooltip, useToast } from '@/shared/ui';
 import {
   findSimilarNodeByTitle,
   type SimilarNodeMatch,
@@ -1550,42 +1551,13 @@ function DocsVaultContent() {
           행으로 그리드를 채운다 — <lg 는 기존 2행 wrap + 모바일 drawer 를
           그대로 유지(90px 폭 뷰포트에서 단일 행이 가로 스크롤을 만들기
           때문 — local-vault-picker.spec.ts 의 zero-overflow 계약). */}
-      <div data-chrome-grid="76" className="flex-none">
-      {/* Crumbs row — engraved vault census (docs-vault-final spec §상단 헤더). */}
-      <nav
-        aria-label={t('header.breadcrumbAriaLabel')}
-        className="flex h-8 flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 text-label text-[color:var(--color-text-tertiary)] md:px-4"
-      >
-        <Link
-          href={workspaceHref}
-          aria-label={
-            insightsReturnTab
-              ? t('header.backToReviewAriaLabel')
-              : t('header.backToWorkspaceAriaLabel')
-          }
-          className="transition-colors hover:text-[color:var(--color-text-primary)]"
-        >
-          {insightsReturnTab
-            ? t('header.reviewBack')
-            : t('header.crumbBack')}
-        </Link>
-        <span className="text-[color:var(--color-text-quaternary)]" aria-hidden>
-          /
-        </span>
-        {/* H6 — 육각 운율. sr-only h1 표면이라 브레드크럼 현재-구간 라벨이
-            시각 정체성 앵커다. 무채(tertiary) 6px 급 아웃라인 헥사로 브랜드
-            형태 언어를 심되 앰버 예산은 건드리지 않는다. */}
-        <span className="inline-flex min-w-0 items-center gap-1.5">
-          <HexMark size={10} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
-          <span className="truncate text-[color:var(--color-text-secondary)]">{t('header.title')}</span>
-        </span>
-        {/* 그래프 census(개념/관계 총계)는 이 행에서 삭제됐다 — 문서를 읽는
-            표면에서 총계는 어떤 읽기 판단도 바꾸지 못하는 비행동 잉크였고,
-            같은 수치가 문서함 점검 모달의 그래프 행에 맥락(둘러보기 CTA)과
-            함께 이미 있다(zone-r 점검 타일 1클릭). 한 화면에 문서 155개 /
-            목록 53개 / 개념·관계 총계 3종 계수 체계가 겹치던 것도 함께 해소.
-            census 는 그래프가 주인공인 지도(/topology) 크롬이 계속 소유한다. */}
-      </nav>
+      <div data-chrome-grid="44" className="flex-none">
+      {/* #97 — 브레드크럼 행("워크스페이스 / 문서함") 삭제. 좌측 내비 레일이
+          이미 "문서함" 을 하이라이트해 "여기가 어디" 를 답하고, "지도로" 복귀도
+          레일의 map 목적지(→ /topology)가 소유하므로 이 행의 뒤로가기 링크는
+          중복 내비였다. 세로 공간(32px)을 회수하고, 레일이 못 하는 유일한
+          기능 — insights 리뷰에서 넘어온 문맥 복귀 — 만 헤더 zone-l 로 이관한다
+          (아래 insightsReturnTab 백 칩). "문서함" 정체성은 sr-only h1 로 유지. */}
       {/* 헤더 3존 [zone-l identity] [zone-c 탭 예약, 슬라이스 B] [zone-r
           tools] — implementation-contract.md §1. macOS 다운로드 버튼은
           여기서 완전히 삭제(읽기 전용 샘플 배너 1곳 + /download 만 소유,
@@ -1628,6 +1600,20 @@ function DocsVaultContent() {
               : "lg:w-[calc(var(--docs-list-width)-1.5rem)]",
           )}
         >
+          {/* #97 — 삭제된 브레드크럼에서 유일하게 살릴 기능: insights 리뷰에서
+              넘어온 문맥 복귀. 레일의 map 목적지가 커버 못 하는 경로라 헤더로
+              이관한다. 일반 진입(비-insights)에서는 렌더하지 않는다 — 지도
+              복귀는 좌측 레일이 소유. */}
+          {insightsReturnTab ? (
+            <Link
+              href={workspaceHref}
+              aria-label={t('header.backToReviewAriaLabel')}
+              className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] px-2 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+            >
+              <ArrowLeft size={14} aria-hidden />
+              <span className="hidden sm:inline">{t('header.reviewBack')}</span>
+            </Link>
+          ) : null}
           <button
             type="button"
             onClick={() => setSourceTreeOpen(true)}
