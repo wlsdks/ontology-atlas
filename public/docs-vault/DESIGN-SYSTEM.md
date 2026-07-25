@@ -992,6 +992,38 @@ New motion must name what it explains: selection, camera relocation, drag
 movement, path construction, composer blocking, or command feedback. Motion
 that only makes the screen feel busy fails the design system.
 
+### 모션 문법 (usability motion family, Phase 3 2026-07-25)
+
+공방(`/ontology/studio`)·인사이트(`/ontology/insights`)의 "의미를 확인하는"
+사용성 모션은 아래 **단일 duration/easing 패밀리** 위에서만 만든다. 전부
+transform/opacity 만 쓰고, glow·bounce-loop·ambient 반복은 금지, ≤240ms,
+`prefers-reduced-motion` 은 `app/globals.css` base 레이어 전역 규칙이 즉시
+등장으로 무력화한다.
+
+- `--motion-fast: 120ms` — 칩·탭 콘텐츠 크로스페이드·피커 원점 스케일 등 즉답.
+- `--motion-base: 180ms` — 패널/카드/무대 요소 등장(크롬 180ms 리듬과 정렬).
+- `--motion-settle: 240ms` — 위성 재배치(FLIP)·커밋 수렴 등 한 박자 더 긴 확정.
+- `--motion-ease: cubic-bezier(0.25,0.1,0.25,1)` — 위 셋의 공통 이징.
+
+캐노니컬 유틸리티 클래스(globals.css `@layer base`):
+
+- `.studio-stage-in` — 무대 등장(opacity + 6px 상승). 소비처가
+  `--studio-stagger` 인라인 변수로 요소별 지연(≈40ms 간격 = 센터 카드 → 레인
+  순차)을 준다.
+- `.studio-picker-pop` — 피커 열림 원점 스케일(scale 0.96→1 + opacity).
+  `transform-origin` 은 `--studio-picker-origin`(소켓 로컬 좌표) 주입.
+- `.studio-summary-converge` — 저장 커밋 시 요약 칩이 저장 버튼 방향으로
+  옅어지며 미끄러진다(한 박자). 이동 벡터는 `--studio-converge-x/y`.
+- 위성 재배치(FLIP)는 JS(Web Animations API)로 old→new 레인 위치를
+  transform-only 로 태운다(`--motion-settle`) — 순간이동 대신 이동을 보여
+  "어디로 갔는지"를 눈이 따라간다.
+- 소켓 채움 안착(파선→실선)은 기존 `.studio-strut-flow`/보더 전환이 담당 —
+  같은 토큰 패밀리로 정렬.
+- `.insights-tab-crossfade` — 인사이트 탭 전환 콘텐츠 크로스페이드
+  (`panelCrossfadeIn` 재사용 + `--motion-fast`). 히어로 숫자 카운트업은 JS
+  훅(`useCountUp`, `prefers-reduced-motion` 이면 즉시 최종값), 바 채움은 width
+  0→목표 transition(`--motion-settle`, 30ms 스태거).
+
 ### Tokenization Contract For Relief/Topology
 
 Relief/Topology is not allowed to rely on "looks better" CSS. A visual value is
@@ -1747,8 +1779,51 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 > `ChromeTile`/`ChromeChip`. 인라인 재구현은 드리프트를 만들고 다음 토큰
 > 개정이 그 인스턴스를 놓친다.
 
+## 개인화 — 캔버스 배경 세트 & 노드 아이콘 세트 (Phase 5, 2026-07-25)
+
+큰 베팅(#20/#21): 사용자가 지도 배경 무늬와 노드 아이콘 그림체를 고른다.
+헌장 안에서만 — 다크 단일, 정적, 저대비, 토큰. 진실원은 localStorage
+(`src/shared/lib/appearance-preferences.ts`), 지도 캔버스(비-React)와 모든 DOM
+글리프가 같은 스토어를 구독해 **함께 즉시 스왑**된다. 설정 시트 [화면] 그룹에
+라이브 미리보기 피커.
+
+### 캔버스 배경 시스템 (#20)
+
+- **3종 출하**: `dot`(기본, 현 blueprint grid — 변경 없음) · `constellation`
+  (고정 시드 별점, 1~2px·밝기 2단계·저밀도) · `contour`(저대비 등고선 곡선 —
+  "atlas" 정체성). 후속(백로그): 청사진 격자 · 육각 메쉬.
+- **토큰 패밀리 `--canvas-bg-*`** (`app/globals.css`) + **잉크 상한 토큰
+  `--canvas-bg-ink-max: 0.08`**. **어떤 배경도 이 알파를 넘지 못한다**(실사용
+  0.04~0.06). 배경은 언제나 데이터에 진다(Tufte) — 노드/엣지 잉크보다 훨씬
+  옅게. 성좌 별점은 `--canvas-bg-constellation-dim/bright`, 등고선은
+  `--canvas-bg-contour`.
+- **정적**: 애니메이션·그라디언트 워시·오로라·글로우 금지(헌장). 성좌/등고선은
+  오프스크린 타일 → `createPattern` → blueprint grid 와 같은 카메라 원점 시차로
+  그린다(정적, 프레임당 상수 비용). `render/grid.ts#draw()` 가 `variant` 로 분기,
+  `render/background-patterns.ts` 가 타일을 빌드. 성좌 시드는 고정(세션/기기 불변).
+- 지속: `canvasBackground` (localStorage). 지도 표면에만 적용(공방은 solid
+  `--color-canvas` 라 무관).
+
+### 노드 아이콘 세트 (#21)
+
+- **2종 출하**: `geometric`(기본, fill+금속 sheen) · `line`(stroke-only, 살짝
+  얇은 획). 후속(백로그): 필드(채움) · 미니멀 점.
+- **불변 규칙(하드)**: **kind→실루엣 매핑은 세트 간 절대 고정** — project=hex ·
+  domain=chip(둥근 사각) · capability=circle · element=via-pad(사각+홀). 세트는
+  **렌더 스타일만** 바꾼다(실루엣 계약은 `topology-v2-kind-glyph.test.tsx` /
+  `node-shapes.test.ts` 가 강제).
+- **단일 게이트웨이**: 모든 kind-glyph 렌더는 두 게이트 중 하나를 경유한다 —
+  DOM `@/shared/ui/topology-v2-kind-glyph`(`useGlyphSet()` 구독; INDEX·공방·
+  팝오버·상세·프로젝트 등 앱 전역) + 캔버스 `topology-map-v2/render/node-shapes`
+  (`glyphStyleDescriptor(fill|line)`). 둘 다 같은 `appearance-preferences`
+  스토어를 읽어 **지도·INDEX·공방이 lockstep** 으로 바뀐다("한 표면만 안 바뀌면
+  결함"). 캔버스는 세트별로 shape math 를 복제하지 않고 shared 디스크립터로
+  fill/line 만 가른다.
+- 지속: `glyphSet` (localStorage).
+
 ## Changelog
 
+- 2026-07-25: 디자인 전면 정비 Phase 5 (개인화) — 캔버스 배경 3종(도트/성좌/등고선, `--canvas-bg-*` + 잉크 상한 `--canvas-bg-ink-max`)과 노드 아이콘 세트 2종(기하/라인, kind→실루엣 불변·단일 게이트웨이). 설정 [화면] 라이브 미리보기 피커 + localStorage 지속. "개인화" 절 참고
 - 2026-07-25: 디자인 전면 정비 Phase 1 — 캐노니컬 `Select`(다크 Listbox, #4) · `EmptyState` 스켈레톤/아이콘 슬롯 확장(#16) · 컨트롤 높이 토큰 `--control-h-sm/md/lg`(#13) · 다이얼로그 폭 스케일 `--dialog-w-sm/md/lg` 신설. 공방 create 도메인 + 토폴로지 "개념 추가" kind 셀렉트가 캐노니컬 Select 로, 인사이트 depends/허브 빈 영역이 EmptyState 로 이관. "컨트롤 인벤토리" 절 참고
 - 2026-07-21: Geometry & Type Codex (R5) — `text-[Npx]`(29종·1,184건)를 7단 type 램프(`--text-caption`…`--text-hero` + `--tracking-*` 짝)로, arbitrary radius(18종)를 3단(`--radius-chip/card/panel`)으로 수렴. 박스별 규격 표 + 명시 예외 등재. ESLint `no-restricted-syntax` 가 신규 arbitrary 를 차단(마이그레이션 완료 디렉토리 error / R6 동시작업 dir warn). 시각은 ±1px 스냅 수준 유지(리디자인 아님); see "Geometry & Type Codex" 절
 - 2026-07-18: 크롬 시스템(feat/chrome-system) — `--chrome-*` 토큰 + ChromeTile/ChromeChip 컴포넌트 신설, 24px 정렬 레일로 브랜드 필/INDEX 패널/분석 패널 좌측 인셋 수렴, INDEX 패널 v2.1(헤더 "INDEX · N" + 접기, 트리 행 grid + Lucide chevron + 인셋 capacity meter, 푸터로 에이전트 동기화 이관); see `docs/prototypes/index-panel-v2-full.html`
