@@ -113,4 +113,38 @@ export const VAULT_HEALTH_CASES = [
       },
     ],
   },
+  {
+    // opus5 검수 — 사이클 열거 가지치기(역방향 도달성)가 결과를 바꾸지 않는지
+    // 강하게 잡는 케이스: 길이 4 순환 + 그와 두 노드를 공유하는 길이 3 순환 +
+    // 아무 데도 못 돌아오는 긴 사슬(가지치기가 잘라야 하는 죽은 경로).
+    name: 'overlapping cycles + dead chain → engine and app agree on the count',
+    docs: [
+      {
+        slug: 'domains/core',
+        frontmatter: {
+          kind: 'domain',
+          title: 'Core',
+          capabilities: [
+            'capabilities/a',
+            'capabilities/b',
+            'capabilities/c',
+            'capabilities/d',
+            'capabilities/e',
+            'capabilities/f',
+            'capabilities/g',
+          ],
+        },
+      },
+      // 4-cycle: a → b → c → d → a
+      { slug: 'capabilities/a', frontmatter: { kind: 'capability', title: 'A', domain: 'domains/core', depends_on: ['capabilities/b'] } },
+      { slug: 'capabilities/b', frontmatter: { kind: 'capability', title: 'B', domain: 'domains/core', depends_on: ['capabilities/c'] } },
+      { slug: 'capabilities/c', frontmatter: { kind: 'capability', title: 'C', domain: 'domains/core', depends_on: ['capabilities/d', 'capabilities/a'] } },
+      // c → a 는 3-cycle (a → b → c → a) 도 만든다 — 두 순환이 노드를 공유.
+      { slug: 'capabilities/d', frontmatter: { kind: 'capability', title: 'D', domain: 'domains/core', depends_on: ['capabilities/a'] } },
+      // 죽은 사슬: e → f → g (돌아오는 간선 없음)
+      { slug: 'capabilities/e', frontmatter: { kind: 'capability', title: 'E', domain: 'domains/core', depends_on: ['capabilities/f'] } },
+      { slug: 'capabilities/f', frontmatter: { kind: 'capability', title: 'F', domain: 'domains/core', depends_on: ['capabilities/g'] } },
+      { slug: 'capabilities/g', frontmatter: { kind: 'capability', title: 'G', domain: 'domains/core' } },
+    ],
+  },
 ];

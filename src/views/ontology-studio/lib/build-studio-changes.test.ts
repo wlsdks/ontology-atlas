@@ -53,6 +53,28 @@ describe("reduceStudioChanges", () => {
     expect(s).toEqual([{ op: "retype", from: "relates", to: "contains", target: B }]);
   });
 
+  it("remove-then-add(다른 방위)는 retype 로 접힌다 — 원래 관계가 디스크에 남지 않게 (opus5 검수)", () => {
+    // 재현: 기대는 곳의 A 를 끊고(pending remove) → 투영에서 사라진 A 를
+    // 담는 것 피커에서 다시 고르면(add), 예전 reducer 는 remove 를 버려
+    // dependsOn: A 가 디스크에 그대로 남고 contains: A 만 추가돼 유령 관계가 됐다.
+    let s = reduceStudioChanges([], { type: "remove", relation: "dependsOn", target: A });
+    s = reduceStudioChanges(s, { type: "add", relation: "contains", target: A });
+    expect(s).toEqual([{ op: "retype", from: "dependsOn", to: "contains", target: A }]);
+  });
+
+  it("remove-then-add(같은 방위)는 서로 상쇄돼 기록이 남지 않는다 (opus5 검수)", () => {
+    let s = reduceStudioChanges([], { type: "remove", relation: "relates", target: B });
+    s = reduceStudioChanges(s, { type: "add", relation: "relates", target: B });
+    expect(s).toEqual([]);
+  });
+
+  it("retype→remove→add 연쇄도 TRUE original bearing 을 기준으로 접힌다 (opus5 검수)", () => {
+    let s = reduceStudioChanges([], { type: "retype", from: "dependsOn", to: "relates", target: A });
+    s = reduceStudioChanges(s, { type: "remove", relation: "relates", target: A });
+    s = reduceStudioChanges(s, { type: "add", relation: "contains", target: A });
+    expect(s).toEqual([{ op: "retype", from: "dependsOn", to: "contains", target: A }]);
+  });
+
   it("retype-then-remove collapses to a remove at the TRUE original bearing (sonnet 검증 결함 1)", () => {
     // 기대는 곳(dependsOn)에 실재하는 관계를 '비슷한 것'으로 옮겨둔 뒤 끊으면,
     // 실제로 기록돼 있는 dependsOn 을 끊어야 한다 — 옮긴 후 방위(relates)로
