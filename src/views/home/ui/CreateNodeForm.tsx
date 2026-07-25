@@ -21,8 +21,14 @@ export interface CreateNodeFormLabels {
   heading: string;
   titlePlaceholder: string;
   kind: string;
+  /** 도메인 선택 aria 라벨. */
   domain: string;
-  domainPlaceholder: string;
+  /** #8 평문화 — 도메인 피커의 보이는 질문 라벨("어느 묶음(도메인)에 넣을까요? (선택)"). */
+  domainQuestion: string;
+  /** #8 — "도메인 없음" 옵션 라벨(도메인 미배정). */
+  domainNone: string;
+  /** #8 — "도메인" 이 뭔지 비개발자용 한 줄 설명. */
+  domainHelper: string;
   create: string;
   cancel: string;
   kindLabels: Record<CreateNodeKind, string>;
@@ -45,6 +51,7 @@ export function CreateNodeForm({
   localeNames,
   labels,
   defaultKind = "capability",
+  domainOptions = [],
 }: {
   onCreate: (input: {
     title: string;
@@ -56,6 +63,13 @@ export function CreateNodeForm({
   onCancel?: () => void;
   labels: CreateNodeFormLabels;
   defaultKind?: CreateNodeKind;
+  /**
+   * #8 평문화 — 기존 도메인 목록(값 = bare tail-slug, 라벨 = 표시 이름).
+   * 자유 입력 slug 대신 이 목록 + "도메인 없음" 에서 고른다(비개발자가
+   * slug 를 알 필요 없음). 빈 목록이면 "도메인 없음" 만 노출된다(새 볼트 —
+   * 도메인을 먼저 만든 뒤 배정하면 된다).
+   */
+  domainOptions?: readonly { value: string; label: string }[];
   /**
    * 어권별 이름 입력 계약 (소유자 지시 2026-07-24). 지금 화면 언어가
    * `primaryLocale`, 나머지가 `secondaryLocale`. **자기 화면 언어 칸은
@@ -114,7 +128,7 @@ export function CreateNodeForm({
       data-surface-token="--topology-blocking-composer-surface"
       data-border-token="--topology-blocking-composer-border"
       data-shadow-token="--topology-blocking-composer-shadow"
-      className="rounded-lg border border-[color:var(--topology-blocking-composer-border)] bg-[color:var(--topology-blocking-composer-surface)] px-4 py-3 shadow-[var(--topology-blocking-composer-shadow)]"
+      className="rounded-lg border border-[color:var(--topology-blocking-composer-border)] bg-[color:var(--topology-blocking-composer-surface)] px-5 py-4 shadow-[var(--topology-blocking-composer-shadow)]"
     >
       <div className="flex items-center justify-between gap-2">
         <p
@@ -135,7 +149,7 @@ export function CreateNodeForm({
           </button>
         ) : null}
       </div>
-      <div className="mt-2.5 flex flex-col gap-2">
+      <div className="mt-3.5 flex flex-col gap-3.5">
         <input
           type="text"
           value={title}
@@ -148,7 +162,7 @@ export function CreateNodeForm({
           }}
           aria-label={localeNames ? labels.primaryNamePlaceholder : labels.titlePlaceholder}
           data-testid="create-node-title"
-          className="h-8 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+          className="h-[var(--control-h-lg)] rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-[13px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
         />
         {localeNames ? (
           <>
@@ -166,7 +180,7 @@ export function CreateNodeForm({
               }}
               aria-label={labels.secondaryNamePlaceholder}
               data-testid="create-node-title-secondary"
-              className="h-8 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+              className="h-[var(--control-h-lg)] rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-[13px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
             />
             {secondaryOnly ? (
               <p
@@ -183,44 +197,52 @@ export function CreateNodeForm({
             )}
           </>
         ) : null}
-        <div className="flex gap-2">
-          <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <span className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              {labels.kind}
-            </span>
-            <Select
-              size="md"
-              value={kind}
-              disabled={creating}
-              onChange={(v) => setKind(v as CreateNodeKind)}
-              ariaLabel={labels.kind}
-              data-testid="create-node-kind"
-              className="min-w-0 flex-1"
-              options={KINDS.map((k) => ({ value: k, label: labels.kindLabels[k] }))}
-            />
-          </div>
-          <input
-            type="text"
+        {/* 종류 — 한 줄 라벨 + 캐노니컬 Select(#4). */}
+        <label className="flex flex-col gap-1.5">
+          <span className="font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {labels.kind}
+          </span>
+          <Select
+            size="lg"
+            value={kind}
+            disabled={creating}
+            onChange={(v) => setKind(v as CreateNodeKind)}
+            ariaLabel={labels.kind}
+            data-testid="create-node-kind"
+            options={KINDS.map((k) => ({ value: k, label: labels.kindLabels[k] }))}
+          />
+        </label>
+        {/* #8 평문화 — 자유 입력 slug 대신 기존 도메인 이름 목록 + "도메인
+            없음" 을 캐노니컬 Select 로 고른다. 비개발자가 slug 를 알 필요가
+            없고, 값은 저장 시 canonicalizeDomainRef 를 지난다(HomePage 글루). */}
+        <div className="flex flex-col gap-1.5">
+          <span className="font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {labels.domainQuestion}
+          </span>
+          <Select
+            size="lg"
             value={domain}
             disabled={creating}
-            placeholder={labels.domainPlaceholder}
-            onChange={(e) => setDomain(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void submit();
-            }}
-            aria-label={labels.domain}
+            onChange={(v) => setDomain(v)}
+            ariaLabel={labels.domain}
             data-testid="create-node-domain"
-            className="h-8 min-w-0 flex-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+            options={[
+              { value: "", label: labels.domainNone },
+              ...domainOptions.map((o) => ({ value: o.value, label: o.label })),
+            ]}
           />
+          <p className="text-[10.5px] leading-relaxed text-[color:var(--color-text-quaternary)]">
+            {labels.domainHelper}
+          </p>
         </div>
         <button
           type="button"
           onClick={() => void submit()}
           disabled={!canCreate}
           data-testid="create-node-submit"
-          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-50"
+          className="inline-flex h-[var(--control-h-lg)] items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-50"
         >
-          <Plus size={12} aria-hidden />
+          <Plus size={13} aria-hidden />
           {labels.create}
         </button>
       </div>

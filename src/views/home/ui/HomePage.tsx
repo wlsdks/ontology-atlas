@@ -979,6 +979,20 @@ export function HomePage() {
     },
     [closeCreateNode, vault, toast, t],
   );
+  // #8 평문화 — "개념 추가" 도메인 피커 옵션. 자유 입력 slug 대신 기존 도메인
+  // 노드를 이름으로 고른다. value = bare tail-slug(`domain:auth` → `auth`),
+  // 저장 시 buildNewNodeDoc 이 canonicalizeDomainRef 로 한 번 더 정규화한다.
+  const createNodeDomainOptions = useMemo(
+    () =>
+      (ontologyInsight?.nodes ?? [])
+        .filter((node) => node.kind === "domain")
+        .map((node) => ({
+          value: node.id.includes(":") ? node.id.slice(node.id.indexOf(":") + 1) : node.id,
+          label: node.display ?? node.title,
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [ontologyInsight],
+  );
   const handleCreateNodePanelKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
       if (event.key === "Escape") {
@@ -3039,13 +3053,16 @@ export function HomePage() {
                   <CreateNodeForm
                     onCreate={createNode}
                     onCancel={closeCreateNode}
+                    domainOptions={createNodeDomainOptions}
                     labels={{
                       headingId: CREATE_NODE_DIALOG_TITLE_ID,
                       heading: t('createNode.heading'),
                       titlePlaceholder: t('createNode.titlePlaceholder'),
                       kind: t('createNode.kind'),
                       domain: t('createNode.domain'),
-                      domainPlaceholder: t('createNode.domainPlaceholder'),
+                      domainQuestion: t('createNode.domainQuestion'),
+                      domainNone: t('createNode.domainNone'),
+                      domainHelper: t('createNode.domainHelper'),
                       create: t('createNode.create'),
                       cancel: t('createNode.cancel'),
                       kindLabels: {
