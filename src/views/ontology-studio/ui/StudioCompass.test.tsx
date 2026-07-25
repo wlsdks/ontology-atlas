@@ -12,6 +12,7 @@ const labels: StudioCompassLabels = {
   moreRelations: "more",
   flowEyebrow: "completeness",
   flowCount: (f, t) => `${f}/${t} filled`,
+  domainMembership: (d) => `already in ${d}`,
   framePrompt: (n) => `complete ${n}`,
   guideBadge: "start here",
   bottomProgress: (f, t) => `${f} of ${t} filled`,
@@ -19,6 +20,8 @@ const labels: StudioCompassLabels = {
   saveHint: "hint",
   foldMore: () => "more",
   foldTitle: (label, total) => `${label} · ${total}`,
+  addMore: (label) => `add more to ${label}`,
+  addMoreShort: "add more",
   defMore: "more",
   defLess: "less",
   pickerTitle: (q) => q,
@@ -174,6 +177,87 @@ describe("StudioCompass — enhance", () => {
     expect(onFill).toHaveBeenCalledWith("isA", CANDIDATE);
     // picker closes after a fill.
     expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
+  });
+
+  it("C4 — a FILLED lane exposes a '＋ 더 잇기' add chip that opens the same picker", () => {
+    const onFill = renderEnhance();
+    // The empty (recommended) lane has a socket, not an add chip.
+    expect(screen.queryByTestId("studio-add-more-up")).not.toBeInTheDocument();
+    // The filled `dependsOn` (right) lane has NO empty socket but DOES have the
+    // add chip — the only way to attach another relation on that bearing (C4).
+    expect(screen.queryByTestId("studio-socket-right")).not.toBeInTheDocument();
+    const addChip = screen.getByTestId("studio-add-more-right");
+    expect(addChip).toHaveAccessibleName("add more to lane-dependsOn");
+
+    fireEvent.click(addChip);
+    const picker = screen.getByTestId("studio-picker");
+    expect(picker).toHaveAttribute("data-relation", "dependsOn");
+    // and it fills that bearing in place.
+    fireEvent.click(screen.getByTestId("studio-picker-row-capability:server-interface"));
+    expect(onFill).toHaveBeenCalledWith("dependsOn", CANDIDATE);
+  });
+
+  it("C12② — a domain-member focal shows the quiet '이미 소속' line so 0/4 isn't read as orphan", () => {
+    renderEnhance(); // focal domainLabel = "AI"
+    const line = screen.getByTestId("studio-domain-membership");
+    expect(line).toHaveTextContent("already in AI");
+  });
+
+  it("C12② — a focal with NO domain shows no membership line", () => {
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "Orphan", definition: "" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down", { expected: true }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        similarFor={() => null}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId("studio-domain-membership")).not.toBeInTheDocument();
+  });
+
+  it("C2 — picker '새로 만들기' carries the socket relation + typed query", () => {
+    const onCreateNew = vi.fn();
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "MCP Server", definition: "" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down", { expected: true }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        similarFor={() => null}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        onCreateNew={onCreateNew}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("studio-socket-down")); // contains bearing
+    fireEvent.change(screen.getByTestId("studio-picker-input"), {
+      target: { value: "결제 취소" },
+    });
+    fireEvent.click(screen.getByTestId("studio-picker-create-new"));
+    expect(onCreateNew).toHaveBeenCalledWith({ relation: "contains", query: "결제 취소" });
   });
 
   it("shows the near-dup suggestion and links it on accept", () => {
@@ -820,6 +904,97 @@ describe("StudioCompass — create", () => {
     expect(screen.getByTestId("studio-create-name")).toBeInTheDocument();
     // save is disabled until the node is named.
     expect(screen.getByTestId("studio-save")).toBeDisabled();
+  });
+
+  it("C12③ — renders ONE optional secondary-locale name input and echoes typing", () => {
+    const onSecondary = vi.fn();
+    render(
+      <StudioCompass
+        mode="create"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "결제 취소", definition: "" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down", { expected: true }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        canSave
+        createKinds={[{ value: "capability", label: "capability" }]}
+        createKind="capability"
+        createSecondaryName=""
+        onCreateSecondaryName={onSecondary}
+        createSecondaryNamePlaceholder="English name (optional)"
+      />,
+    );
+    const secondary = screen.getByTestId("studio-create-name-secondary");
+    expect(secondary).toHaveAttribute("placeholder", "English name (optional)");
+    fireEvent.change(secondary, { target: { value: "Payment cancel" } });
+    expect(onSecondary).toHaveBeenCalledWith("Payment cancel");
+  });
+
+  it("C2 — a create-from-socket flow shows the quiet origin context note", () => {
+    render(
+      <StudioCompass
+        mode="create"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "결제 취소", definition: "" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down", { expected: true }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        canSave
+        createKinds={[{ value: "capability", label: "capability" }]}
+        createKind="capability"
+        createOriginNote="will continue 주문 취소 · 담는 것"
+      />,
+    );
+    expect(screen.getByTestId("studio-create-origin-note")).toHaveTextContent(
+      "will continue 주문 취소 · 담는 것",
+    );
+  });
+
+  it("C12③ — omits the secondary name input when no handler is wired", () => {
+    render(
+      <StudioCompass
+        mode="create"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "", definition: "" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down", { expected: true }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        canSave={false}
+        createKinds={[{ value: "capability", label: "capability" }]}
+        createKind="capability"
+      />,
+    );
+    expect(screen.queryByTestId("studio-create-name-secondary")).not.toBeInTheDocument();
   });
 
   it("blocks an exact create-path collision and only offers the existing node", () => {

@@ -94,6 +94,7 @@
       "almost": "· 거의 다 됐어요",
       "done": "· 다 채웠어요"
     },
+    "domainMembership": "이미 ‘{domain}’ 소속이에요",
     "framePrompt": "‘{name}’의 의미를 주변 노드와 이어 완성해요",
     "guideBadge": "여기부터 채워요",
     "bottomProgress": "{total}개 중 {filled}개 채웠어요",
@@ -103,6 +104,8 @@
     "saveHint": "아직 다 안 채워도 지금 저장할 수 있어요",
     "foldMore": "더 보기",
     "foldTitle": "{label} · {total}",
+    "addMore": "‘{label}’ 에 더 잇기",
+    "addMoreShort": "더 잇기",
     "defMore": "더 보기",
     "defLess": "접기",
     "question": {
@@ -200,7 +203,8 @@
       "createHeadlineDomain": "새 {kind} ‘{name}’ · {domain} 도메인 아래에 생성",
       "createHeadline": "새 {kind} ‘{name}’ 생성",
       "createFileEffect": "파일 1개 생성 · 관계 {count}줄 기록.",
-      "createCollapsed": "새 노드 1개 · 관계 {count}개"
+      "createCollapsed": "새 노드 1개 · 관계 {count}개",
+      "createOriginLine": "‘{name}’ 의 ‘{relation}’ 에 이어져요"
     },
     "empty": {
       "title": "무대에 올릴 노드가 아직 없어요",
@@ -211,6 +215,8 @@
     "create": {
       "framePrompt": "새 노드가 무엇인지 정하고, 주변 노드와 이어 완성해요",
       "namePlaceholder": "새 노드 이름 — 예: 결제 취소",
+      "secondaryName": "영어 이름 (선택)",
+      "originNote": "‘{name}’ 의 ‘{bearing}’ 로 이어질 예정",
       "domainNone": "도메인 없음",
       "definitionPlaceholder": "이 노드가 하는 일을 한 줄로 — 정의·경계가 중복을 막아요.",
       "similar": "비슷한 노드가 이미 있어요 — {title} ({kind})",

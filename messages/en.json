@@ -94,6 +94,7 @@
       "almost": "· almost done",
       "done": "· all filled"
     },
+    "domainMembership": "Already in ‘{domain}’",
     "framePrompt": "Complete what {name} is by linking it to nearby nodes",
     "guideBadge": "Start here",
     "bottomProgress": "{filled} of {total} filled",
@@ -103,6 +104,8 @@
     "saveHint": "You can save now even before it's all filled",
     "foldMore": "more",
     "foldTitle": "{label} · {total}",
+    "addMore": "Add more to ‘{label}’",
+    "addMoreShort": "Add more",
     "defMore": "More",
     "defLess": "Less",
     "question": {
@@ -200,7 +203,8 @@
       "createHeadlineDomain": "New {kind} ‘{name}’ under the {domain} domain",
       "createHeadline": "New {kind} ‘{name}’",
       "createFileEffect": "1 file created · {count} relation line(s).",
-      "createCollapsed": "1 new node · {count} relation(s)"
+      "createCollapsed": "1 new node · {count} relation(s)",
+      "createOriginLine": "Links to ‘{name}’ ’s ‘{relation}’"
     },
     "empty": {
       "title": "No node to bring on stage yet",
@@ -211,6 +215,8 @@
     "create": {
       "framePrompt": "Decide what the new node is, then link it to nearby nodes",
       "namePlaceholder": "New node name — e.g. Payment cancel",
+      "secondaryName": "한국어 이름 (선택)",
+      "originNote": "Will link as ‘{name}’ ’s ‘{bearing}’",
       "domainNone": "No domain",
       "definitionPlaceholder": "One line on what this node does — definition & boundary prevent duplicates.",
       "similar": "A similar node already exists — {title} ({kind})",

@@ -87,6 +87,13 @@ export interface StudioCompassLabels {
   flowEyebrow: string;
   /** (filled, total) → e.g. "4방향 중 2 채움 · 반쯤 왔어요". */
   flowCount: (filled: number, total: number) => string;
+  /**
+   * C12② — quiet line under the flow cue when an ENHANCE focal already belongs
+   * to a domain. Domain membership is authored on the child's own `domain:` key
+   * (belonging, not this node's outgoing meaning), so it does NOT count toward
+   * the 4-bearing 완성도 — this line keeps 0/4 from reading as "orphan / 빈 껍데기".
+   */
+  domainMembership: (domain: string) => string;
   /** (name) → the one calm frame prompt. */
   framePrompt: (name: string) => string;
   guideBadge: string; // "여기부터 채워요"
@@ -97,6 +104,10 @@ export interface StudioCompassLabels {
   foldMore: (n: number) => string;
   /** Lane overflow popover title, e.g. "이 노드가 품고 있는 것 · 92". */
   foldTitle: (label: string, total: number) => string;
+  /** C4 — filled-lane add chip. (laneLabel) → full aria/title, e.g. "이 노드가
+   * 품고 있는 것에 더 잇기". `addMoreShort` is the compact visible label. */
+  addMore: (laneLabel: string) => string;
+  addMoreShort: string;
   defMore: string;
   defLess: string;
   // picker
@@ -197,8 +208,17 @@ export interface StudioCompassProps {
   onFill: (relation: StudioRelation, candidate: CreateCandidate) => void;
   onSave: () => void;
   onExit: () => void;
-  /** Picker "찾는 게 없어요 · 새로 만들기" bridge — opt-in, enhance mode routes to create. */
-  onCreateNew?: () => void;
+  /**
+   * Picker "찾는 게 없어요 · 새로 만들기" bridge — opt-in, enhance mode routes to
+   * create. C2: the picker passes the socket's relation + typed query so CREATE
+   * opens carrying the origin (A --relation--> new) + a name prefill.
+   */
+  onCreateNew?: (ctx?: { relation: StudioRelation; query: string }) => void;
+  /**
+   * C2 — quiet create-mode context line ("‘A’ 의 ‘담는 것’ 으로 이어질 예정"),
+   * present only when CREATE was opened from a socket. Omit → no line.
+   */
+  createOriginNote?: string | null;
   /** All vault nodes, for the top-bar node search. Omit → static placeholder (isolated render/tests). */
   searchNodes?: CreateCandidate[];
   /** Load another node on the stage (top-bar search pick · satellite / fold-row click). */
@@ -215,6 +235,14 @@ export interface StudioCompassProps {
   createDomainValue?: string | null;
   onCreateDomain?: (value: string | null) => void;
   onCreateDefinition?: (def: string) => void;
+  /**
+   * C12③ — ONE optional secondary-locale display name (the primary name field is
+   * the current UI locale). Placeholder is locale-aware ("영어 이름 (선택)" on a
+   * ko UI, "한국어 이름 (선택)" on an en UI). Omit → no secondary field.
+   */
+  createSecondaryName?: string;
+  onCreateSecondaryName?: (name: string) => void;
+  createSecondaryNamePlaceholder?: string;
   createSimilarHit?: { title: string; kind: string; slug: string } | null;
   /** Exact deterministic path conflict — save cannot succeed until renamed. */
   createSlugCollision?: boolean;
@@ -285,9 +313,18 @@ interface LaneLayout {
   sats: Array<{ sat: StudioSatellite; x: number; y: number }>;
   fold: { x: number; y: number; count: number } | null;
   socket: { x: number; y: number; w: number; h: number } | null;
+  /**
+   * FILLED lane only (C4) — a compact dashed "＋ 더 잇기" chip at the lane's
+   * outward end so a lane with satellites still has an entry point to add
+   * another relation on this bearing. Same picker anchor shape as `socket`.
+   */
+  addChip: { x: number; y: number; w: number; h: number } | null;
   struts: string[];
   anchor: { x: number; y: number }; // where the picker beak points
 }
+
+/** Compact add-chip footprint (C4) — narrower/shorter than an empty socket. */
+const ADD_CHIP = { w: SAT.w, h: 30 } as const;
 
 /** Vertically-centered top positions for `n` stacked satellites around `cy`. */
 function stackTops(cy: number, n: number, withFold: boolean): number[] {
@@ -322,6 +359,7 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
         sats: [],
         fold: null,
         socket: { x, y, w, h },
+        addChip: null,
         struts: [`M ${CX} ${cardTop} V ${y + h}`],
         anchor: { x: CX, y: y + h / 2 },
       };
@@ -335,6 +373,7 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
         sats: [],
         fold: null,
         socket: { x, y, w, h },
+        addChip: null,
         struts: [`M ${CX} ${cardBottom} V ${y}`],
         anchor: { x: CX, y: y + h / 2 },
       };
@@ -349,6 +388,7 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
         sats: [],
         fold: null,
         socket: { x, y, w, h },
+        addChip: null,
         struts: [`M ${cardRight} ${CY} H ${x}`],
         anchor: { x, y: CY },
       };
@@ -358,6 +398,7 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
       sats: [],
       fold: null,
       socket: { x, y, w, h },
+      addChip: null,
       struts: [`M ${cardLeft} ${CY} H ${x + w}`],
       anchor: { x: x + w, y: CY },
     };
@@ -379,14 +420,25 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
     if (busBottom - busTop > 0.5) struts.push(`M ${busX} ${busTop} V ${busBottom}`);
     for (const cyi of centers) struts.push(`M ${busX} ${cyi} H ${satMeetX}`);
     let fold: LaneLayout["fold"] = null;
+    let lastBottom = tops[tops.length - 1] + SAT.h;
     if (withFold) {
       const foldY = tops[tops.length - 1] + SAT.h + SAT.gap;
       fold = { x: satX, y: foldY, count: overflow };
       struts.push(`M ${busX} ${foldY + 15} H ${satMeetX}`);
       const newBottom = Math.max(busBottom, foldY + 15);
       struts[1] = `M ${busX} ${busTop} V ${newBottom}`;
+      lastBottom = foldY + 30;
     }
-    return { sats, fold, socket: null, struts, anchor: { x: isRight ? satX : satX + SAT.w, y: CY } };
+    // C4 — compact "＋ 더 잇기" chip below the stack (outward end).
+    const addChip = { x: satX, y: lastBottom + SAT.gap, w: ADD_CHIP.w, h: ADD_CHIP.h };
+    return {
+      sats,
+      fold,
+      socket: null,
+      addChip,
+      struts,
+      anchor: { x: isRight ? satX : satX + SAT.w, y: CY },
+    };
   }
 
   // up / down filled — vertical stack directly above/below the card.
@@ -403,10 +455,19 @@ function layoutLane(view: CompassBearingView, cardH: number): LaneLayout {
     const foldY = isDown ? y0 + visible.length * (SAT.h + SAT.gap) : y0 - (30 + SAT.gap);
     fold = { x: satX, y: foldY, count: overflow };
   }
+  // C4 — compact "＋ 더 잇기" chip at the outward end (below a DOWN stack, above
+  // an UP stack) so a filled vertical lane still has an add entry point.
+  const stackBottom = isDown
+    ? (fold ? fold.y + 30 : y0 + (visible.length - 1) * (SAT.h + SAT.gap) + SAT.h)
+    : (fold ? fold.y : y0); // up: topmost element top
+  const addChip = isDown
+    ? { x: satX, y: stackBottom + SAT.gap, w: ADD_CHIP.w, h: ADD_CHIP.h }
+    : { x: satX, y: stackBottom - SAT.gap - ADD_CHIP.h, w: ADD_CHIP.w, h: ADD_CHIP.h };
   return {
     sats,
     fold,
     socket: null,
+    addChip,
     struts,
     anchor: { x: CX, y: isDown ? y0 : y0 + SAT.h },
   };
@@ -511,6 +572,10 @@ export function StudioCompass(props: StudioCompassProps) {
         maxY = Math.max(maxY, s.y + SAT.h);
       }
       if (layout.fold) maxY = Math.max(maxY, layout.fold.y + 30);
+      if (layout.addChip) {
+        minY = Math.min(minY, layout.addChip.y);
+        maxY = Math.max(maxY, layout.addChip.y + layout.addChip.h);
+      }
     }
     return CY - (minY + maxY) / 2;
   }, [layouts, cardTop, cardBottom]);
@@ -699,12 +764,31 @@ export function StudioCompass(props: StudioCompassProps) {
             <span className="text-body text-[color:var(--color-text-secondary)]">
               {labels.flowCount(filledBearings, 4)}
             </span>
+            {mode === "enhance" && focal.domainLabel ? (
+              <span
+                data-testid="studio-domain-membership"
+                className="text-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+              >
+                {labels.domainMembership(focal.domainLabel)}
+              </span>
+            ) : null}
           </div>
         </div>
 
         {/* one calm frame prompt — top center */}
-        <div className="absolute left-1/2 top-4 z-[4] -translate-x-1/2 whitespace-nowrap text-center text-callout tracking-[-0.006em] text-[color:var(--color-text-secondary)]">
-          {labels.framePrompt(focal.name || "…")}
+        <div className="absolute left-1/2 top-4 z-[4] flex -translate-x-1/2 flex-col items-center gap-1 text-center">
+          <div className="whitespace-nowrap text-callout tracking-[-0.006em] text-[color:var(--color-text-secondary)]">
+            {labels.framePrompt(focal.name || "…")}
+          </div>
+          {/* C2 — quiet origin context: this new node continues A's bearing. */}
+          {mode === "create" && props.createOriginNote ? (
+            <div
+              data-testid="studio-create-origin-note"
+              className="max-w-[420px] text-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+            >
+              {props.createOriginNote}
+            </div>
+          ) : null}
         </div>
 
         {/* rare relations — top right. Not built yet: honest disabled "곧 제공"
@@ -824,11 +908,12 @@ export function StudioCompass(props: StudioCompassProps) {
             />
           ))}
 
-          {/* inline anchored picker */}
-          {openRelation && openLayout && openLayout.layout.socket ? (
+          {/* inline anchored picker — anchors to the empty socket OR (C4) to the
+              filled lane's "＋ 더 잇기" add chip (same {x,y,w,h} shape). */}
+          {openRelation && openLayout && (openLayout.layout.socket ?? openLayout.layout.addChip) ? (
             <InlinePicker
               key={openRelation}
-              socket={openLayout.layout.socket}
+              socket={(openLayout.layout.socket ?? openLayout.layout.addChip)!}
               bearing={openLayout.view.bearing}
               cardLeft={cardLeft}
               cardRight={cardRight}
@@ -1153,6 +1238,18 @@ function CenterCard(
         </div>
       )}
 
+      {/* C12③ — quiet optional secondary-locale name (other-locale display). */}
+      {mode === "create" && props.onCreateSecondaryName ? (
+        <input
+          data-testid="studio-create-name-secondary"
+          value={props.createSecondaryName ?? ""}
+          onChange={(e) => props.onCreateSecondaryName?.(e.target.value)}
+          placeholder={props.createSecondaryNamePlaceholder}
+          aria-label={props.createSecondaryNamePlaceholder}
+          className="mt-2 w-full bg-transparent text-caption text-[color:var(--color-text-tertiary)] outline-none [word-break:keep-all] placeholder:text-[color:var(--color-text-quaternary)]"
+        />
+      ) : null}
+
       {mode === "create" && props.createDomains && props.createDomains.length > 0 ? (
         <div className="mt-3">
           <Select
@@ -1410,6 +1507,33 @@ function LaneRender({
           pendingNeighborIds={pendingNeighborIds}
           onClose={onCloseFold}
         />
+      ) : null}
+
+      {/* C4 — compact "＋ 더 잇기" chip on a FILLED lane: the entry point to add
+          another relation on this bearing once the empty socket is gone. Dashed =
+          addable (charter), quiet not shouting. Opens the SAME picker. */}
+      {layout.addChip ? (
+        <button
+          type="button"
+          data-testid={`studio-add-more-${view.bearing}`}
+          data-relation={view.relation}
+          aria-label={labels.addMore(view.laneLabel)}
+          title={labels.addMore(view.laneLabel)}
+          onClick={onOpen}
+          {...hoverProps}
+          className="group/add absolute z-[2] flex items-center justify-center gap-1.5 rounded-[9px] border border-dashed border-[color:var(--color-border-strong)] text-label text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-secondary)]"
+          style={{
+            left: layout.addChip.x,
+            top: layout.addChip.y,
+            width: layout.addChip.w,
+            height: layout.addChip.h,
+          }}
+        >
+          <span aria-hidden className="text-[color:var(--color-text-tertiary)] transition-colors group-hover/add:text-[color:var(--color-indigo-text-soft)]">
+            ＋
+          </span>
+          {labels.addMoreShort}
+        </button>
       ) : null}
 
       {/* empty socket */}
@@ -1803,7 +1927,7 @@ function InlinePicker({
   onQuery: (q: string) => void;
   onPick: (c: CreateCandidate) => void;
   onClose: () => void;
-  onCreateNew?: () => void;
+  onCreateNew?: (ctx?: { relation: StudioRelation; query: string }) => void;
 }) {
   const W = 300;
   const { left, top, maxHeight } = placePicker(bearing, socket, cardLeft, cardRight);
@@ -1973,7 +2097,7 @@ function InlinePicker({
         <button
           type="button"
           data-testid="studio-picker-create-new"
-          onClick={onCreateNew}
+          onClick={() => onCreateNew?.({ relation, query })}
           className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-[color:var(--color-border-strong)] py-2 text-caption text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
         >
           <Plus size={13} aria-hidden className="text-[color:var(--color-text-tertiary)]" />

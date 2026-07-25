@@ -34,6 +34,71 @@ function draft(overrides: Partial<CreateDraft> = {}): CreateDraft {
   };
 }
 
+describe("C12③ — per-locale display names", () => {
+  it("writes sorted display_<locale> keys under title in the vault doc", () => {
+    const { markdown } = buildCreateNodeDoc(
+      draft({ localeLabels: { en: "Payment cancel", ko: "결제 취소" } }),
+    );
+    // deterministic: en before ko (sorted), both right under title.
+    expect(markdown).toContain("display_en: Payment cancel");
+    expect(markdown).toContain("display_ko: 결제 취소");
+    expect(markdown.indexOf("display_en")).toBeLessThan(markdown.indexOf("display_ko"));
+    expect(markdown.indexOf("title:")).toBeLessThan(markdown.indexOf("display_en"));
+  });
+
+  it("omits display_* entirely when no locale names are given (unchanged today)", () => {
+    const { markdown } = buildCreateNodeDoc(draft());
+    expect(markdown).not.toContain("display_");
+  });
+
+  it("ignores blank / malformed locale entries", () => {
+    const { markdown } = buildCreateNodeDoc(
+      draft({ localeLabels: { ko: "  ", en: "Payment cancel", "en-US": "x" } }),
+    );
+    expect(markdown).toContain("display_en: Payment cancel");
+    expect(markdown).not.toContain("display_ko");
+    expect(markdown).not.toContain("en-US");
+  });
+
+  it("emits labels: { ... } in the MCP packet (add_concept locale-label input)", () => {
+    const packet = buildMcpPacket(draft({ localeLabels: { ko: "결제 취소", en: "Payment cancel" } }));
+    expect(packet).toContain('labels: { en: "Payment cancel", ko: "결제 취소" }');
+    // and none when absent.
+    expect(buildMcpPacket(draft())).not.toContain("labels:");
+  });
+});
+
+describe("C2 — CREATE-from-socket origin relation in ONE MCP packet", () => {
+  it("appends add_relation A→new for a non-is_a origin bearing", () => {
+    const packet = buildMcpPacket(draft({ relations: [] }), {
+      focalSlug: "capabilities/order-cancel",
+      relation: "contains",
+    });
+    const lines = packet.split("\n");
+    expect(lines[0]).toMatch(/^add_concept\(/);
+    // the origin line records the A→new edge (A contains the new node).
+    expect(packet).toContain(
+      'add_relation(from: "capabilities/order-cancel", to: "capabilities/결제-취소", type: "contains")',
+    );
+  });
+
+  it("patches A's broader for an is_a origin using the supplied post-add array", () => {
+    const packet = buildMcpPacket(draft(), {
+      focalSlug: "capabilities/order-cancel",
+      relation: "isA",
+      broaderRefsAfter: ["domains/payments", "capabilities/결제-취소"],
+    });
+    expect(packet).toContain(
+      'patch_concept(slug: "capabilities/order-cancel", frontmatter: { broader: ["domains/payments", "capabilities/결제-취소"] })',
+    );
+    expect(packet).not.toContain("is_a");
+  });
+
+  it("no origin → packet is unchanged (just the node + its own relations)", () => {
+    expect(buildMcpPacket(draft())).not.toContain("order-cancel");
+  });
+});
+
 describe("candidateFromNode", () => {
   it("computes the folder-prefixed ref the derivation resolves", () => {
     expect(orderCancel.ref).toBe("capabilities/order-cancel");
