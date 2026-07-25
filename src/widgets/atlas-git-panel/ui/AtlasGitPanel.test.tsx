@@ -159,6 +159,8 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(groups).toHaveTextContent("수정 1");
     expect(groups).toHaveTextContent("capabilities/foo");
 
+    // #85 — 이력은 증거 pane 의 두 번째 탭이다(좌: 무엇을 남길까 / 우: 증거).
+    fireEvent.click(screen.getByTestId("atlas-git-history-tab"));
     expect(screen.getByTestId("atlas-git-history-item")).toHaveTextContent(
       "ontology snapshot: +1 concept (capabilities/foo)",
     );
@@ -320,21 +322,24 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(screen.queryByTestId("atlas-git-remote-setup")).not.toBeInTheDocument();
   });
 
-  it("toggles the uncommitted diff as a mono pre block", async () => {
+  it("바뀐 줄이 증거 pane 기본 탭으로 열려 있다 (#85)", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    fireEvent.click(await screen.findByTestId("atlas-git-diff-toggle"));
-    expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
-    fireEvent.click(screen.getByTestId("atlas-git-diff-toggle"));
+    // 토글이 아니라 탭이다 — 증거는 숨겨두는 게 아니라 목록 옆에 늘 있다.
+    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
+    fireEvent.click(screen.getByTestId("atlas-git-history-tab"));
     expect(screen.queryByTestId("atlas-git-diff-pre")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("atlas-git-diff-toggle"));
+    expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
   });
 
   it("expands a history item to its full hash + iso time on click", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    fireEvent.click(await screen.findByTestId("atlas-git-history-item"));
+    fireEvent.click(await screen.findByTestId("atlas-git-history-tab"));
+    fireEvent.click(screen.getByTestId("atlas-git-history-item"));
     expect(screen.getByTestId("atlas-git-history-detail")).toHaveTextContent("abc1234def5678");
   });
 

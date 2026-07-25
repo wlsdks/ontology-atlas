@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-25T12:16:08.000Z",
+  "generatedAt": "2026-07-25T13:27:59.000Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-25 — 지도 클러스터 칩: 라벨 겹침 차단 + 전개 코호트 표시",
+          "slug": "2026-07-25-지도-클러스터-칩-라벨-겹침-차단-전개-코호트-표시"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-25 — 제거된 기능을 사실처럼 서술하던 데모 데이터 삭제",
           "slug": "2026-07-25-제거된-기능을-사실처럼-서술하던-데모-데이터-삭제"
         },
@@ -4838,9 +4843,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 프로젝트 상세의 정적 모드 fallback 이 데모 프로젝트 15건(SEEDPROJECTS)을 들고 있었는데, 그 내용이 이미 없는 기능을 사실처럼 서술했",
-      "wordCount": 40167,
-      "updatedAt": "2026-07-25T21:16:08+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 실보고 두 건. +N 칩이 노드 이름 위에 겹쳐 그려졌고, 칩을 눌러 펼쳐도 \"무엇이 열렸는지\" 표시가 없어 자기 행동의 결과가 안 보였다. 겹침:",
+      "wordCount": 40287,
+      "updatedAt": "2026-07-25T22:27:59+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5586,8 +5591,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 14084,
-      "updatedAt": "2026-07-25T16:32:05+09:00",
+      "wordCount": 14148,
+      "updatedAt": "2026-07-25T22:27:59+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",

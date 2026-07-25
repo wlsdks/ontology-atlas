@@ -69,15 +69,19 @@ const arbitrarySizeSelectors = [
   // 에서 CSS 변수를 참조하는 **정상 문법**이지 위반이 아니다 — 초안에서 `shadow-\[`
   // 를 통째로 금지했다가 정상 토큰 사용 90여 건까지 경고해 lint 출력이 144 →
   // 548 로 뛰었다. 노이즈가 신호를 덮으면 게이트는 무력해진다.
+  // ⚠️ 메시지에 **리터럴 유틸리티 문법을 쓰지 말 것.** Tailwind v4 의 소스
+  // 스캐너가 이 파일의 문자열도 훑기 때문에, 예시로 적은 클래스명이 실제
+  // 클래스로 생성된다 — 2026-07-26 에 예시 하나가 `--tw-shadow: var(--...)`
+  // 라는 파싱 불가 CSS 를 만들어 프로덕션 빌드를 깨뜨렸다(Playwright 전체 실패).
   {
     selector: 'Literal[value=/shadow-\\[(?:(?!var\\()[^\\]])*\\]/]',
     message:
-      'Geometry Codex — shadow 하드코딩 금지. --shadow-elevation-1/2/3 (coach-mark < popover < dialog) 또는 --topology-*-shadow 토큰을 shadow-[var(--...)] 로 참조한다.',
+      'Geometry Codex — shadow 하드코딩 금지. --shadow-elevation-1/2/3 (coach-mark < popover < dialog) 또는 --topology-*-shadow 토큰을 shadow 유틸리티 안에서 var() 로 참조한다.',
   },
   {
     selector: 'TemplateElement[value.raw=/shadow-\\[(?:(?!var\\()[^\\]])*\\]/]',
     message:
-      'Geometry Codex — shadow 하드코딩 금지 (template literal). --shadow-elevation-* 토큰을 shadow-[var(--...)] 로.',
+      'Geometry Codex — shadow 하드코딩 금지 (template literal). --shadow-elevation-* 토큰을 shadow 유틸리티 안에서 var() 로 참조한다.',
   },
 ];
 
