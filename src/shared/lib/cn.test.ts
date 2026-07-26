@@ -42,3 +42,35 @@ describe('cn — 타입 램프와 색상 유틸 공존', () => {
     expect(cn('text-[color:red]', 'text-[color:blue]')).toBe('text-[color:blue]');
   });
 });
+
+/**
+ * 행간 램프 × tailwind-merge 병합 가드.
+ *
+ * 실패 모드가 타입 램프와 다르다. 미등록 `leading-*` 스텝은 드롭되지 않고
+ * **둘 다 살아남는다** — 조건부로 덮어쓴 값이 CSS 소스 순서에 따라 지거나
+ * 이기는 비결정성이 된다. 크기 드롭보다 조용해서 화면을 봐도 원인을 못 찾는다.
+ */
+describe('cn — 행간 램프 충돌 병합', () => {
+  it.each([
+    ['leading-body', 'leading-prose'],
+    ['leading-caption', 'leading-label'],
+    ['leading-display', 'leading-display-tight'],
+    ['leading-title', 'leading-body-lg'],
+  ])('%s 뒤에 %s 가 오면 뒤가 이긴다', (first, second) => {
+    expect(cn(first, second)).toBe(second);
+  });
+
+  it('램프 스텝과 arbitrary 행간이 겹쳐도 나중 값이 이긴다', () => {
+    expect(cn('leading-body', 'leading-[1.9]')).toBe('leading-[1.9]');
+    expect(cn('leading-[1.9]', 'leading-prose')).toBe('leading-prose');
+  });
+
+  it('기존 named 행간 유틸리티와의 병합도 유지된다', () => {
+    expect(cn('leading-4', 'leading-label')).toBe('leading-label');
+    expect(cn('leading-prose', 'leading-relaxed')).toBe('leading-relaxed');
+  });
+
+  it('크기와 행간은 서로를 밀어내지 않는다 (다른 그룹)', () => {
+    expect(cn('text-body', 'leading-body')).toBe('text-body leading-body');
+  });
+});

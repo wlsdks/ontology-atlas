@@ -16,10 +16,36 @@ import { extendTailwindMerge } from 'tailwind-merge';
  */
 const TYPE_RAMP_STEPS = ['caption', 'label', 'body', 'body-lg', 'title', 'display', 'hero'] as const;
 
+/**
+ * 행간 램프 스텝 — 타입 램프와 같은 규율이 그대로 적용된다.
+ *
+ * 오분류의 형태는 크기 램프와 다르다. tailwind-merge 는 `leading-` 접두를
+ * 다른 그룹으로 오분류하지는 않으므로 클래스가 **드롭되지는** 않는다. 대신
+ * 커스텀 스텝을 아예 인식하지 못해 **충돌 병합이 일어나지 않는다** —
+ * `cn('leading-body', cond && 'leading-prose')` 에서 둘 다 살아남고 CSS 소스
+ * 순서가 승자를 정한다. 조건부 분기가 의도한 값을 못 이기는 조용한 비결정성이라
+ * 크기 드롭보다 찾기 어렵다.
+ *
+ * `app/globals.css` 의 `--leading-*` 램프와 반드시 동기 — 스텝을 추가하면
+ * 여기도 추가할 것 (계약 테스트: cn.test.ts).
+ */
+const LEADING_RAMP_STEPS = [
+  'caption',
+  'label',
+  'body',
+  'body-lg',
+  'title',
+  'display',
+  'hero',
+  'display-tight',
+  'prose',
+] as const;
+
 const twMerge = extendTailwindMerge({
   extend: {
     classGroups: {
       'font-size': [{ text: [...TYPE_RAMP_STEPS] }],
+      leading: [{ leading: [...LEADING_RAMP_STEPS] }],
     },
   },
 });
