@@ -793,13 +793,17 @@
     transform-origin: var(--topology-chrome-in-origin, center top);
   }
 
-  /* 전면 표면 등장 (전체 상세) — 지도 위를 불투명 표면이 덮는 순간을 하나의
-     크로스페이드로 만든다. 닫기가 이미 ~200ms 크로스페이드였는데 열기만
-     하드컷이라 **들어온 길과 나가는 길이 달랐다**(나가는 쪽이 더 좋았다).
-     이동/스케일은 쓰지 않는다: 창을 덮는 크기의 표면이 움직이면 화면이
-     흔들린 것으로 읽힌다. 새 키프레임·새 duration 0 — 크롬 모션 패밀리
-     토큰(180ms + ease-out) 재사용. reduced-motion 은 아래 base 레이어의
-     동등물 규칙이 불투명도만 남긴다. */
+  /* 지도 위 **큰 표면의 교체** 문법 — 전체 상세(전면 표면)와 INDEX 패널의
+     접힘/펼침이 이 하나를 공유한다. 같은 종류의 등장은 같게 보여야 하고,
+     둘 다 하드컷이었다: 전체 상세는 닫기만 ~200ms 크로스페이드라 들어온 길과
+     나가는 길이 달랐고(나가는 쪽이 더 좋았다), INDEX 는 300px 폭 10행이
+     1프레임에 존재/비존재를 왕복하는데 같은 클릭의 카메라는 200ms 를 썼다 —
+     한 동작에 세 개의 시간축이 있었다.
+     이동/스케일은 쓰지 않는다: 화면의 큰 부분을 차지하는 표면이 움직이면
+     화면 자체가 흔들린 것으로 읽힌다(작은 크롬의 `.topology-chrome-in` 과
+     다른 점). 새 키프레임·새 duration 0 — 크롬 모션 패밀리 토큰(180ms +
+     ease-out) 재사용이라 팝오버·패널·전면 표면이 한 클럭을 쓴다.
+     reduced-motion 은 아래 base 레이어 동등물 규칙이 불투명도만 남긴다. */
   .map-overlay-in {
     animation: panelCrossfadeIn var(--topology-motion-panel-duration)
       var(--topology-motion-ease-out) both;

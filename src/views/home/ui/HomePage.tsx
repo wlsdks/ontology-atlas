@@ -3548,12 +3548,20 @@ export function HomePage() {
                 coexisting over the map (`docs/prototypes/hub-b3-immersive.html`). */}
             {!selectedRelationActive && !topologyCreateNodeBlockingActive ? (
               <div
+                // 접힘 ↔ 펼침은 **같은 자리를 두 표면이 번갈아 쓰는 교체**다.
+                // 전이가 없어 300px 폭 10행이 1프레임에 존재/비존재를 왕복했고
+                // (휘도 Δ13.6 / 17ms), 같은 클릭의 카메라는 200ms 를 썼다 — 한
+                // 동작이 세 개의 시간을 가졌다. `key` 로 교체를 명시해 도착
+                // 표면이 지도 위 큰 표면의 공용 문법(`.map-overlay-in`,
+                // 180ms 불투명도)으로 들어온다: 팝오버·패널·전면 상세가 한
+                // 클럭을 쓴다.
+                key={renderedIndexState}
                 // `topology-ui-scale` — top-left-chrome-group(브랜드 pill)도
                 // 같은 클래스로 ≥1920px/≥2400px 에서 zoom 배율이 걸린다. 이
                 // wrapper 가 이 클래스 없이 고정 px 로만 있으면 그 zoom 배율
                 // 아래에서 pill 이 이 wrapper 보다 비례적으로 더 커져 다시
                 // 겹친다 — `--topology-index-top` 주석 참조.
-                className="topology-ui-scale absolute z-20"
+                className="map-overlay-in topology-ui-scale absolute z-20"
                 style={{
                   left: renderedIndexState === "expanded" ? "var(--topology-index-inset)" : 0,
                   // J (소유자 실보고 2026-07-23) — 상시 "지형도" 헤더가
