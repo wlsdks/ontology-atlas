@@ -122,6 +122,15 @@ interface State {
   errorCode: VaultErrorCode | null;
   /** 마지막 성공 스캔 epoch ms. picker 에서 "N초 전 스캔" 표기에 씀. */
   lastLoadedAt: number | null;
+  /**
+   * `manifest` 가 **어느 핸들에서** 빌드됐는지. `handle` 과 따로 두는 이유:
+   * 재스캔(`load`)은 시작하는 순간 `handle` 을 새 값으로, status 를 'loading'
+   * 으로 바꾸지만 `manifest` 는 아직 이전 것이다. 두 값을 비교하면 "같은 폴더를
+   * 다시 읽는 중"(내용 유효)과 "다른 폴더로 바꾸는 중"(내용 무효)을 구분할 수
+   * 있다 — 구분 없이 이전 매니페스트를 계속 쓰면 폴더를 바꾸는 1초 동안 남의
+   * 폴더 그래프가 그려진다.
+   */
+  manifestHandle: FileSystemDirectoryHandle | null;
 }
 
 export interface AgentConfigStatus {
@@ -146,6 +155,7 @@ function emptyState(status: Status = 'idle'): State {
     errorMessage: null,
     errorCode: null,
     lastLoadedAt: null,
+    manifestHandle: null,
   };
 }
 
@@ -490,6 +500,7 @@ export function useLocalVaultInternal() {
         errorMessage: null,
         errorCode: null,
         lastLoadedAt: Date.now(),
+        manifestHandle: handle,
       });
     } catch (err) {
       lastBuildRef.current = null;
@@ -511,6 +522,7 @@ export function useLocalVaultInternal() {
         errorMessage: toErrorMessage(err),
         errorCode: 'access-failed',
         lastLoadedAt: null,
+        manifestHandle: null,
       });
     }
   }, []);
@@ -1040,6 +1052,7 @@ export function useLocalVaultInternal() {
               errorMessage: null,
               errorCode: 'path-missing',
               lastLoadedAt: null,
+              manifestHandle: null,
             });
             setRestoreAttempted(true);
           }
@@ -1059,6 +1072,7 @@ export function useLocalVaultInternal() {
           errorMessage: null,
           errorCode: null,
           lastLoadedAt: null,
+          manifestHandle: null,
         });
       }
       setRestoreAttempted(true);
@@ -1166,6 +1180,21 @@ export function useLocalVaultInternal() {
     errorMessage: state.errorMessage,
     errorCode: state.errorCode,
     lastLoadedAt: state.lastLoadedAt,
+    /**
+     * **같은 폴더를 다시 읽는 중**인가. 저장 직후·탭 복귀 재스캔이 여기 해당한다.
+     *
+     * 왜 노출하나: 소비처가 `status !== 'loaded'` 만 보고 빈 결과를 돌려주면,
+     * 저장 한 번에 화면이 통째로 빈 상태로 깜빡였다가 돌아온다(2026-07-26 실측:
+     * 인라인 저장 직후 인사이트 탭 전체가 사라졌고, 그 프레임에 언마운트된
+     * 컴포넌트의 "저장했어요" 확인이 아예 안 보였다). 재독해 중이라는 것은
+     * 데이터가 없다는 뜻이 아니다 — 그동안은 방금까지의 내용을 계속 보여주는
+     * 것이 정직하다. 폴더를 **바꾸는** 중이면 false 라 이전 폴더가 새 폴더인 양
+     * 그려지는 일은 없다.
+     */
+    isReloadingSameVault:
+      state.status === 'loading' &&
+      state.manifest !== null &&
+      state.manifestHandle === state.handle,
     restoreAttempted,
     // state-derived — SSR 일치 (lazy initializer 의 isSupported() 호출
     // 회피). 'unsupported' 로 전환되는 시점은 mount 후 useEffect.

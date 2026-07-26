@@ -21,6 +21,7 @@ import {
 import {
   LiveActivityIndicator,
   useOntologyInsight,
+  useVaultConceptFacts,
   useVaultDocFreshnessIndex,
   useVaultHealth,
 } from "@/features/vault-ontology";
@@ -49,9 +50,16 @@ import { computeDomainCapacityRows } from "../lib/domain-capacity";
 import { buildImpactRanking } from "../lib/impact-ranking";
 import { buildDoNextQueue, withDoNextVerification } from "../lib/do-next-queue";
 import { buildDuplicatePairs, type DuplicatePairRow } from "../lib/duplicate-pairs";
+import {
+  buildDomainChoices,
+  buildMeaningGapRows,
+  type MeaningGapRow,
+} from "../lib/meaning-gap-rows";
+import { resolveSessionAbilities } from "../lib/session-abilities";
 import { buildInsightsVerdict } from "../lib/insights-verdict";
 import { pickTodaysTouchUps, type TouchUpItem } from "../lib/todays-touch-ups";
 import { countRecentEntries } from "@/shared/lib/agent-activity-log";
+import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
 import { findDependencyCycles, type DependencyCycle } from "../lib/dependency-cycles";
 import {
   isDoNextReviewId,
@@ -63,6 +71,7 @@ import { buildDomainCouplingSummary } from "../lib/domain-coupling-rows";
 import { FRESHNESS_WINDOW_WEEKS, computeFreshnessSummary } from "../lib/freshness";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { DoNextTab, type DoNextTouchUp } from "./tabs/DoNextTab";
+import type { MeaningGapLabels } from "./tabs/MeaningGapSection";
 import { ConnectionsTab, type ConnectionHubRow } from "./tabs/ConnectionsTab";
 import { DomainCouplingCard } from "./tabs/DomainCouplingCard";
 import { FreshnessTab } from "./tabs/FreshnessTab";
@@ -338,6 +347,64 @@ export function OntologyInsightsPage() {
     [nodes, edges, docFreshnessIndex],
   );
 
+  // 이 세션이 지금 할 수 있는 일 — 「내 몫 먼저」 배치와 행동 라벨의 유일한
+  // 입력. 역할·계정을 만들지 않고 앱이 이미 아는 사실만 쓴다.
+  const abilities = useMemo(
+    () =>
+      resolveSessionAbilities({
+        dataSourceMode,
+        vaultStatus: vault.status,
+        reloadingSameVault: vault.isReloadingSameVault,
+        agentActivity: vault.agentActivityStatus,
+      }),
+    [
+      dataSourceMode,
+      vault.status,
+      vault.isReloadingSameVault,
+      vault.agentActivityStatus,
+    ],
+  );
+
+  // 「한 문장으로 끝나는 일」 — 볼트 문서의 프론트매터 사실에서만 나온다
+  // (그래프 파생이 아니라 원문). 문서가 없는 파생 개념은 여기 오지 않는다.
+  const conceptFacts = useVaultConceptFacts();
+  const meaningGapResult = useMemo(
+    () => buildMeaningGapRows(nodes, conceptFacts, { perKindLimit: 3 }),
+    [nodes, conceptFacts],
+  );
+  const domainChoices = useMemo(() => buildDomainChoices(nodes), [nodes]);
+
+  /**
+   * 인라인 저장 — 프론트매터 **한 필드**. 쓸 파일은 행이 들고 온 `ownSlug`
+   * (`resolveNodeDocument` 가 정한 값)뿐이고, 여기서 경로를 다시 추정하지
+   * 않는다 — 추정하면 남의 문서에 쓰는 사고(#688)가 다시 열린다.
+   *
+   * `expectedMtime` 을 함께 넘겨 그 사이 사람/에이전트가 같은 파일을 고쳤으면
+   * 저장이 거부되게 한다(조용한 덮어쓰기 금지). 거부는 행 안에서 알리고,
+   * 새로 읽어와 다음 저장이 최신 기준 위에서 되게 한다.
+   */
+  const writeMeaningGap = useCallback(
+    async (row: MeaningGapRow, value: string) => {
+      const key = row.gap === "missing-definition" ? "description" : "domain";
+      const written = row.gap === "missing-domain" ? canonicalizeDomainRef(value) : value;
+      try {
+        await vault.updateFrontmatter(
+          row.ownSlug,
+          { [key]: written },
+          row.mtime === null ? {} : { expectedMtime: row.mtime },
+        );
+      } catch (error) {
+        // 충돌이면 최신 상태를 다시 읽어 둔다 — 다음 저장이 낡은 기준으로
+        // 또 막히지 않게. 에러는 그대로 올려 행이 정직하게 말하게 한다.
+        if (error instanceof Error && error.name === "VaultConflictError") {
+          await vault.refresh();
+        }
+        throw error;
+      }
+    },
+    [vault],
+  );
+
   // 의존 사이클(전략 verdict B 후보 ④) — depends_on 방향 그래프의 순환. 이미
   // 로드된 nodes/edges 에서 client 계산(MCP `cycles` 파생과 같은 의미).
   const dependencyCycles = useMemo(() => findDependencyCycles(nodes, edges), [nodes, edges]);
@@ -469,8 +536,15 @@ export function OntologyInsightsPage() {
         neglectedHubs: doNextQueue.counts.neglectedHub,
         orphans: doNextQueue.counts.orphan,
         promotions: doNextQueue.counts.promotion,
+        meaningGaps:
+          meaningGapResult.counts.missingDefinition + meaningGapResult.counts.missingDomain,
       }),
-    [healthRepair, dependencyCycles.totalCycles, doNextQueue.counts],
+    [
+      healthRepair,
+      dependencyCycles.totalCycles,
+      doNextQueue.counts,
+      meaningGapResult.counts,
+    ],
   );
 
   const doNextTouchUps: DoNextTouchUp[] = pickTodaysTouchUps(doNextQueue, dependencyCycles, {
@@ -621,6 +695,55 @@ export function OntologyInsightsPage() {
       t("doNext.reviewUnverified", { title: title ?? t("doNext.reviewFallback") }),
     evidenceBadge: t("evidenceBadge"),
     evidenceBadgeHint: t("evidenceBadgeHint"),
+    openBuilderReadOnly: t("doNext.openBuilderReadOnly"),
+    handoffCopyIdle: t("doNext.handoffCopyIdle"),
+    handoffCopiedHint: t("doNext.handoffCopiedHint"),
+    groupMeaningTitle: t("doNext.groupMeaningTitle"),
+    groupMeaningTitleReadOnly: t("doNext.groupMeaningTitleReadOnly"),
+    groupMeaningHint: t("doNext.groupMeaningHint"),
+    groupMeaningHintReadOnly: t("doNext.groupMeaningHintReadOnly"),
+    groupCodeTitle: t("doNext.groupCodeTitle"),
+    groupCodeHint: t("doNext.groupCodeHint"),
+  };
+  // 인라인 쓰기 섹션의 문구 — 행동 라벨(케밥·인계)은 큐와 **같은 키**를 쓴다.
+  // 같은 행동을 표면마다 다른 말로 부르면 사용자는 두 기능으로 읽는다.
+  const meaningGapCommon = {
+    openSource: doNextLabels.openSource,
+    openBuilder: doNextLabels.openBuilder,
+    openBuilderReadOnly: doNextLabels.openBuilderReadOnly,
+    handoffCopy: doNextLabels.handoffCopy,
+    handoffCopyIdle: doNextLabels.handoffCopyIdle,
+    handoffCopied: doNextLabels.handoffCopied,
+    handoffCopiedHint: doNextLabels.handoffCopiedHint,
+    rowMenuTrigger: doNextLabels.rowMenuTrigger,
+    openMap: doNextLabels.openMap,
+    writeHere: t("doNext.inlineWriteHere"),
+    writeHereClose: t("doNext.inlineWriteHereClose"),
+    definitionPlaceholder: t("doNext.inlineDefinitionPlaceholder"),
+    domainLegend: t("doNext.inlineDomainLegend"),
+    confirmDefinition: (file: string) => t("doNext.inlineConfirmDefinition", { file }),
+    confirmDomain: (file: string, value: string) =>
+      t("doNext.inlineConfirmDomain", { file, value }),
+    save: t("doNext.inlineSave"),
+    saving: t("doNext.inlineSaving"),
+    cancel: t("doNext.inlineCancel"),
+    cancelArmed: t("doNext.inlineCancelArmed"),
+    saved: t("doNext.inlineSaved"),
+    failed: (message: string) => t("doNext.inlineFailed", { message }),
+    conflict: t("doNext.inlineConflict"),
+    needsText: t("doNext.inlineNeedsText"),
+    needsDomain: t("doNext.inlineNeedsDomain"),
+    readOnlyHint: t("doNext.inlineReadOnlyHint"),
+  };
+  const meaningGapDefinitionLabels: MeaningGapLabels = {
+    ...meaningGapCommon,
+    sectionTitle: t("doNext.sectionMissingDefinition"),
+    hint: t("doNext.hintMissingDefinition"),
+  };
+  const meaningGapDomainLabels: MeaningGapLabels = {
+    ...meaningGapCommon,
+    sectionTitle: t("doNext.sectionMissingDomain"),
+    hint: t("doNext.hintMissingDomain"),
   };
   const formatDaysAgo = (days: number) => {
     if (days <= 0) return t("daysAgoToday");
@@ -771,6 +894,16 @@ export function OntologyInsightsPage() {
                 activityDigest={activityDigest}
                 reviewState={reviewState}
                 onReviewStart={onReviewStart}
+                abilities={abilities}
+                meaningGaps={{
+                  definitionRows: meaningGapResult.definitionRows,
+                  domainRows: meaningGapResult.domainRows,
+                  counts: meaningGapResult.counts,
+                  domainChoices,
+                  onWrite: writeMeaningGap,
+                  definitionLabels: meaningGapDefinitionLabels,
+                  domainLabels: meaningGapDomainLabels,
+                }}
                 labels={doNextLabels}
               />
             ) : null}

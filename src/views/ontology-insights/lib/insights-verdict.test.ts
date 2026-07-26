@@ -68,4 +68,22 @@ describe("buildInsightsVerdict", () => {
     expect(verdict.advisory).toBe(8);
     expect(verdict.total).toBe(12);
   });
+
+  it("의미 공백은 권장으로 세어 배지가 큐 행보다 적게 말하지 않게 한다", () => {
+    const verdict = buildInsightsVerdict({
+      islands: 0,
+      missingContainment: 0,
+      cycles: 0,
+      neglectedHubs: 0,
+      orphans: 0,
+      promotions: 0,
+      meaningGaps: 3,
+    });
+    expect(verdict.total).toBe(3);
+    expect(verdict.advisory).toBe(3);
+    expect(verdict.blocking).toBe(0);
+    // 손볼 것이 남아 있으면 어떤 표면도 "건강합니다" 라고 말하면 안 된다.
+    expect(verdict.healthy).toBe(false);
+    expect(verdict.status).toBe("healthy");
+  });
 });
