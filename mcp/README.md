@@ -50,10 +50,15 @@ MCP design contracts this package treats as release-critical:
 
 ### 1. Register with an agent
 
-The shortest path is to let the CLI or installed app starter write the agent configs:
+> **Distribution status (checked 2026-07-27):** the public
+> `ontology-atlas-mcp` and `ontology-atlas` packages return npm `E404`. Current
+> setup therefore uses a source checkout. The installed app does not write or
+> copy `npx` config while this gate is closed.
+
+The current source-checkout path is to let the local CLI write the agent configs:
 
 ```bash
-npx ontology-atlas init ./ontology
+node cli/src/index.mjs init ./ontology
 ```
 
 That creates the starter markdown vault plus ready-to-use MCP config files:
@@ -104,11 +109,11 @@ Or, once published to npm, via `npx`:
 }
 ```
 
-For manual Codex registration, either use the generated `.codex/config.toml` or
-add a global server:
+For manual Codex registration from a source checkout, use the generated
+`.codex/config.toml` or add the local server with an absolute path:
 
 ```bash
-codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/vault -- npx -y ontology-atlas-mcp
+codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/vault -- node /absolute/path/to/ontology-atlas/mcp/src/index.js
 ```
 
 If `OATLAS_VAULT` is not set, the current working directory is used as the vault root.

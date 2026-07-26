@@ -68,8 +68,83 @@
 | A37 | fresh build → packaged static route smoke → 실패 원인·다음 행동 | 현행 route/title/copy/chunk 계약으로 이관, fresh build smoke 통과 |
 | A38 | design:ontology 초록 → 실제 보호 구조 확인 → 구 3탭 fixture 거부 | 현행 5개 질문 탭·단일 panel·tab handoff 계약으로 이관 |
 | A39 | agent `builder_context` → persisted focus handoff → 현재 쓰기 표면 열기 | Workshop 직접 URL·호환 응답·설치 앱 ENHANCE proof 완료 |
+| A40 | 설치 앱 AI 연결 → 공개 패키지 해석 → 설정 생성·원클릭 등록 | npm E404를 단일 fail-closed gate로 표시, 실행 불가능한 설정·후속 단계 0개 설치 앱 검증 완료 |
 
 ## 이슈 장부
+
+### UX-044 — 공개되지 않은 CLI/MCP 패키지를 설치 앱이 즉시 연결 가능하다고 안내
+
+- 심각도: `S4`
+- 상태: 수정·fresh build·설치 앱 Computer Use 재검증 완료
+- 흐름: 설치 앱 → 설정 → AI 에이전트 연결 → Claude Code/Cursor/VS Code/Codex
+  설정 생성·복사·원클릭 등록 → 에이전트 재시작
+- 관측 현상: `npm view ontology-atlas version`과
+  `npm view ontology-atlas-mcp version`은 2026-07-27 현재 모두
+  `E404 Not Found`다. 그런데 설치 앱은 `npx -y ontology-atlas-mcp`를 담은
+  Cursor/VS Code 딥링크, `.mcp.json`, Codex 설정을 실행 가능한 연결 수단으로
+  제시하고, 파일 존재/문법만 맞으면 `ready`로 판정한다. 에이전트 process가
+  실제로 뜨는지는 이 준비 상태의 입력이 아니다.
+- 사용자·순간: 소스 체크아웃이 없는 macOS 사용자가 자기 vault를 Codex,
+  Claude Code, Cursor 또는 VS Code에 처음 연결하려는 순간이다.
+- 현재 대안: 사용자가 실패 뒤 npm 404를 직접 해석하고 repo를 clone한 다음
+  `node /absolute/path/to/mcp/src/index.js` 설정을 손으로 만들어야 한다.
+  publish는 명시적 사용자 승인 없이는 실행할 수 없다.
+- 문제: 제품이 만들고 `준비됨`이라고 부르는 설정이 실제 MCP server를 시작할
+  수 없다. 사람은 restart 이후 연결 실패를 자기 설정 문제로 오해하고,
+  agent는 Atlas의 meaning graph를 읽지 못한다.
+- ontology 가치: 설정 파일 존재와 실행 가능한 meaning-layer 연결을 분리해,
+  agent gate가 실제 source of truth 접근 가능성을 증명할 때만 준비 상태가 된다.
+- agent 가치: 실행 불가능한 `npx` handoff를 복사하지 않고, 공개 배포 전에는
+  source-checkout entrypoint와 `mcp-verify`를 명시적인 유일 fallback으로 남긴다.
+- 결과: 공개 패키지가 확인되기 전에는 앱이 자동 설정 파일을 쓰거나 npx
+  snippet/deeplink를 제공하지 않는다. 연결 표면의 첫 주의 대상은 한 개의
+  `package unavailable` gate이며, restart/connection 단계는 숨긴다.
+- 가장 위험한 가정: 정적 배포 상태가 실제 npm 상태와 다시 drift할 수 있다.
+  따라서 상태에는 확인일·패키지명을 넣고, publish 절차와 package contract가
+  공개 확인 뒤에만 상태를 전환하도록 고정한다.
+- appetite/slice: publish·sidecar 번들·업데이터는 범위 밖이다. 공통 package
+  availability 계약, 연결 UI fail-closed, starter 자동 설정 생성 중단,
+  source-checkout 안내, current docs와 regression test까지만 구현한다.
+- 단순화: 새 네트워크 poll, 새 설정 화면, 네 개 클라이언트별 오류 상태를
+  추가하지 않는다. 기존 네 버튼과 뒤 단계 대신 한 차단 상태를 공용
+  `AgentClientButtons`에서 소유한다.
+- 검증 계획: 딥링크 builder가 절대경로가 있어도 `null`을 반환하고, 연결
+  sheet/설정 패널이 package gate 한 개만 보이며 connect/restart controls를
+  숨기는 실패 테스트를 먼저 추가한다. starter는 Markdown만 만들고 agent
+  config를 쓰지 않는지 검증한다. README/MCP/CLI/Workflow 문서와 dogfood
+  ontology를 동기화한 뒤 fresh build·설치 앱 재배포·Computer Use AX tree에서
+  차단 문구와 원클릭 링크 0개를 확인한다.
+- PO verdict: `Build and verify`.
+- 디자인 가디언:
+  - primary moment: agent handoff / first connection
+  - attention winner: 배포 가능성 gate; demote: connect 버튼·restart·ready
+    파일 카운트
+  - typed fact: `package availability`와 `MCP runtime verified`는 config file
+    presence와 다른 proof다.
+  - tokens: 기존 warning/danger border·surface·text token만 재사용; 새
+    색·그림자·radius·motion 없음
+  - responsive: 기존 한 열 StepCard 안에서 reflow하며 1100×800,
+    1512×917, 1920×1080, 2560×1440 모두 별도 floating surface 0
+  - handoff: MCP=`node <source-checkout>/mcp/src/index.js`; CLI=
+    `node cli/src/index.mjs mcp-verify <vault>`; 공개 npx는 제공하지 않음
+  - proof: component/unit contract + 설치 앱 `/ko/topology` 설정의 AX tree +
+    수정 전
+    `.screenshots/ux-044-current-guidance/05-agent-connect-unpublished-package.png`
+    + 수정 후
+    `.screenshots/ux-044-current-guidance/06-agent-package-fail-closed.jpeg`
+  - verdict: `Build and verify`
+- 회귀 증거: deeplink·starter README·첫 실행 developer disclosure·공용
+  연결 sheet·설정 패널·AppSettings·local vault를 포함한 집중 Vitest
+  `7 files · 152 tests`, i18n catalog `16 tests`, desktop runtime
+  `3 files · 67 tests`, `desktop:check`, TypeScript가 통과했다. fresh static
+  build와 Tauri app build/deploy도 통과했다.
+- 설치 앱 증거: Codex Computer Use로 `/Applications/Ontology Atlas.app`의
+  설정 → AI 에이전트 연결을 다시 열었다. AX tree는 `사용 불가`,
+  `2026-07-27 공개 패키지 확인 실패`, `실행 가능한 공개 패키지 없음`,
+  `npm E404`, `소스 체크아웃 설정 보기`를 읽었고, Claude/Cursor/VS
+  Code/Codex 연결 버튼·재시작·연결 확인·고급 복사 제어는 0개였다. 시각
+  증거에서도 한 warning gate만 주의 승자로 남고 뒤 단계가 사라졌으며,
+  잘림·겹침은 없었다.
 
 ### UX-043 — agent persisted-context handoff가 퇴역 Builder URL을 반환
 

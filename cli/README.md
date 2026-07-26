@@ -4,7 +4,7 @@
 > maintain the markdown ontology vault your AI coding agent reads through MCP.
 
 ```bash
-npx ontology-atlas init my-vault
+node cli/src/index.mjs init my-vault
 cd my-vault
 $EDITOR project.md
 ```
@@ -14,6 +14,11 @@ agents (Claude Code, Cursor, Codex, etc.) can read and write together.
 
 Requires Node 24+ (Active LTS as of 2026-07). The CLI installs and spawns `ontology-atlas-mcp`, which
 uses the same Node floor.
+
+> **Distribution status (checked 2026-07-27):** `npm view ontology-atlas` and
+> `npm view ontology-atlas-mcp` currently return `E404`. The commands in this
+> source-checkout guide use `node cli/src/index.mjs`; do not present `npx` as
+> available until both packages are published and pass a fresh-shell smoke.
 
 ## Commands (R12)
 

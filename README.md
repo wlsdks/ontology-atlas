@@ -88,17 +88,23 @@ change.
 
 Requires Node.js 24.
 
+> **Current distribution status (checked 2026-07-27):** the public
+> `ontology-atlas` and `ontology-atlas-mcp` npm packages return `E404`. Until
+> the maintainer completes the guarded publish checklist, run these commands
+> from an Ontology Atlas source checkout. The app fails closed instead of
+> generating an `npx` configuration that cannot start.
+
 ```bash
 # Create a git-friendly ontology vault and agent configuration.
-npx ontology-atlas init ./ontology
+node cli/src/index.mjs init ./ontology
 
 # Analyze the repository, review the proposal, then explicitly land it.
-npx ontology-atlas index . --vault ./ontology
-npx ontology-atlas index . --vault ./ontology --apply
+node cli/src/index.mjs index . --vault ./ontology
+node cli/src/index.mjs index . --vault ./ontology --apply
 
 # Get the compact starting packet for a person or coding agent.
-npx ontology-atlas workspace-brief ./ontology
-npx ontology-atlas agent-brief ./ontology
+node cli/src/index.mjs workspace-brief ./ontology
+node cli/src/index.mjs agent-brief ./ontology
 ```
 
 `index` combines repository meaning analysis, TS/JS import evidence, and vault
@@ -109,7 +115,7 @@ The generated config connects Claude Code, Cursor, and Codex to the same vault.
 You can verify the actual MCP process and contracts at any time:
 
 ```bash
-npx ontology-atlas mcp-verify ./ontology
+node cli/src/index.mjs mcp-verify ./ontology
 ```
 
 No backend. No login. No hosted database. Open the vault in a text editor,
@@ -386,11 +392,15 @@ Ontology Atlas는 사람과 AI 에이전트가 함께 키우는 **공유 의미 
 - 백엔드, 로그인, 별도 DB가 없습니다. 파일이 그래프이고 git이 이력입니다.
 
 ```bash
-npx ontology-atlas init ./ontology
-npx ontology-atlas index . --vault ./ontology
-npx ontology-atlas index . --vault ./ontology --apply
-npx ontology-atlas agent-brief ./ontology
+node cli/src/index.mjs init ./ontology
+node cli/src/index.mjs index . --vault ./ontology
+node cli/src/index.mjs index . --vault ./ontology --apply
+node cli/src/index.mjs agent-brief ./ontology
 ```
+
+2026-07-27 기준 공개 npm 패키지는 아직 `E404`입니다. 위 명령은 Ontology
+Atlas 소스 체크아웃 루트에서 실행하며, 공개 배포와 fresh-shell `npx` 검증이
+끝나기 전에는 앱도 실행 불가능한 `npx` 설정을 만들지 않습니다.
 
 [라이브 데모](https://wlsdks.github.io/ontology-atlas/)에서 실제 dogfood
 온톨로지를 먼저 볼 수 있습니다. MCP 연결은 [MCP 가이드](mcp/README.md),

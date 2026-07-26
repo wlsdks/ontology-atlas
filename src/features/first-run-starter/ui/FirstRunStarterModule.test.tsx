@@ -268,16 +268,24 @@ describe('FirstRunStarterModule', () => {
     expect(screen.getByTestId('first-run-starter-cli-toggle')).toBeInTheDocument();
     expect(screen.queryByTestId('first-run-starter-cli-bridge')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('npx ontology-atlas init && npx ontology-atlas bootstrap'),
+      screen.queryByText('node cli/src/index.mjs init && node cli/src/index.mjs bootstrap'),
     ).not.toBeInTheDocument();
   });
 
-  it('reveals the exact init+bootstrap command when the developer disclosure is expanded', () => {
+  it('reveals the source-checkout command and package blocker when expanded', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
     fireEvent.click(screen.getByTestId('first-run-starter-cli-toggle'));
 
     expect(screen.getByTestId('first-run-starter-cli-bridge')).toBeInTheDocument();
-    expect(screen.getByText('npx ontology-atlas init && npx ontology-atlas bootstrap')).toBeInTheDocument();
+    expect(screen.getByTestId('first-run-starter-cli-unpublished')).toHaveTextContent(
+      'cliBridgeUnpublished',
+    );
+    expect(
+      screen.getByText('node cli/src/index.mjs init && node cli/src/index.mjs bootstrap'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('npx ontology-atlas init && npx ontology-atlas bootstrap'),
+    ).not.toBeInTheDocument();
   });
 
   // 소유자 실보고 2026-07-23 — 라벨·명령·복사가 한 행을 3분할해 명령이
@@ -287,7 +295,9 @@ describe('FirstRunStarterModule', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
     fireEvent.click(screen.getByTestId('first-run-starter-cli-toggle'));
 
-    const code = screen.getByText('npx ontology-atlas init && npx ontology-atlas bootstrap');
+    const code = screen.getByText(
+      'node cli/src/index.mjs init && node cli/src/index.mjs bootstrap',
+    );
     expect(code.tagName).toBe('CODE');
     expect(code.className).not.toContain('truncate');
     expect(code.className).toContain('whitespace-pre-wrap');
@@ -402,7 +412,7 @@ describe('FirstRunStarterModule', () => {
 
     await waitFor(() => {
       expect(writeText).toHaveBeenCalledWith(
-        'npx ontology-atlas init && npx ontology-atlas bootstrap',
+        'node cli/src/index.mjs init && node cli/src/index.mjs bootstrap',
       );
     });
   });

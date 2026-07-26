@@ -9,7 +9,12 @@
  * 핵심 제약: `OATLAS_VAULT` 는 **절대 경로**여야 원클릭이 성립한다. 브라우저
  * 세션은 폴더 절대 경로를 알 수 없으므로(구조적 제약) 이때 딥링크는 만들지
  * 않고 `null` 을 돌려준다 — UI 는 설정 파일 복사 경로로 정직하게 강등한다.
+ * 공개 MCP package가 아직 없을 때도 `null`이다. 절대경로만 안다고 실행
+ * 가능한 연결은 아니며, E404 package를 담은 딥링크는 설정 실패를 자동화할
+ * 뿐이다.
  */
+
+import { PUBLIC_AGENT_PACKAGES_READY } from "@/shared/config";
 
 export const MCP_SERVER_NAME = "ontology-atlas";
 export const MCP_SERVER_PACKAGE = "ontology-atlas-mcp";
@@ -25,8 +30,9 @@ export interface McpStdioConfig {
  */
 export function buildMcpDeeplinkConfig(
   vaultPath: string | null | undefined,
+  publicPackageReady = PUBLIC_AGENT_PACKAGES_READY,
 ): McpStdioConfig | null {
-  if (!vaultPath) return null;
+  if (!vaultPath || !publicPackageReady) return null;
   return {
     command: "npx",
     args: ["-y", MCP_SERVER_PACKAGE],
@@ -54,8 +60,9 @@ export function utf8ToBase64(input: string): string {
  */
 export function buildCursorMcpDeeplink(
   vaultPath: string | null | undefined,
+  publicPackageReady = PUBLIC_AGENT_PACKAGES_READY,
 ): string | null {
-  const config = buildMcpDeeplinkConfig(vaultPath);
+  const config = buildMcpDeeplinkConfig(vaultPath, publicPackageReady);
   if (!config) return null;
   const encoded = utf8ToBase64(JSON.stringify(config));
   const params = new URLSearchParams({ name: MCP_SERVER_NAME, config: encoded });
@@ -68,8 +75,9 @@ export function buildCursorMcpDeeplink(
  */
 export function buildVsCodeMcpDeeplink(
   vaultPath: string | null | undefined,
+  publicPackageReady = PUBLIC_AGENT_PACKAGES_READY,
 ): string | null {
-  const config = buildMcpDeeplinkConfig(vaultPath);
+  const config = buildMcpDeeplinkConfig(vaultPath, publicPackageReady);
   if (!config) return null;
   const payload = { name: MCP_SERVER_NAME, ...config };
   return `vscode:mcp/install?${encodeURIComponent(JSON.stringify(payload))}`;

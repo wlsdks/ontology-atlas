@@ -28,6 +28,7 @@ import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
 import { cn } from '@/shared/lib/cn';
 import { subscribeSettingsViewIntent } from '@/shared/lib/settings-view-intent';
 import { SECRET_PROVIDERS } from '@/shared/lib/tauri-secrets';
+import { AGENT_PACKAGE_DISTRIBUTION } from '@/shared/config';
 import {
   buildRouteFocusHref,
   rememberRouteFocusIntent,
@@ -558,6 +559,7 @@ export function AppSettingsMenu({
                 <VaultAgentSetupPanel
                   canEditCurrent={isLocalVaultLoaded}
                   localVault={localVault}
+                  packageDistribution={AGENT_PACKAGE_DISTRIBUTION}
                   validationSummary={localVaultValidationSummary}
                   onOpenWorkflowGuide={handleOpenWorkflowGuide}
                 />

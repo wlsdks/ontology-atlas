@@ -1,5 +1,11 @@
 # npm publish — step-by-step guide
 
+> **Current registry evidence (2026-07-27):** `npm view ontology-atlas` and
+> `npm view ontology-atlas-mcp` both return `E404 Not Found`. Public `npx`
+> setup is therefore unavailable. The product UI and starter flow must remain
+> fail-closed until a human maintainer completes this guide, both registry
+> entries resolve, and the fresh-shell smoke below passes.
+
 This project publishes two npm packages:
 
 | Package | Path | What | Required? |

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T20:59:49.234Z",
+  "generatedAt": "2026-07-26T21:31:49.630Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -56,8 +56,8 @@
         }
       ],
       "excerpt": "Current as of 2026-07-27. This is the user-facing guide for running ontology-atlas as a local meaning graph: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is t",
-      "wordCount": 2335,
-      "updatedAt": "2026-07-26T20:59:33.679Z",
+      "wordCount": 2431,
+      "updatedAt": "2026-07-26T21:24:32.619Z",
       "linksOut": []
     },
     {
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 공개되지 않은 agent 패키지를 연결 가능하다고 말하지 않는다",
+          "slug": "2026-07-27-공개되지-않은-agent-패키지를-연결-가능하다고-말하지-않는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — agent persisted context가 퇴역 Builder를 거치지 않는다",
           "slug": "2026-07-27-agent-persisted-context가-퇴역-builder를-거치지-않는다"
         },
@@ -5053,9 +5058,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. MCP buildercontext는 살아 있는 read operation이지만 반환 URL과 안내 문구가 제거된 ERD Builder를 계속 현행 표면처럼",
-      "wordCount": 51423,
-      "updatedAt": "2026-07-26T20:59:49.234Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 공개 npm 레지스트리를 직접 확인하니 ontology-atlas와 ontology-atlas-mcp가 모두 E404였지만, 설치 앱의 AI 에이전트 설정",
+      "wordCount": 51545,
+      "updatedAt": "2026-07-26T21:24:32.621Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -6421,7 +6426,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
       "wordCount": 13973,
-      "updatedAt": "2026-07-26T20:58:22.220Z",
+      "updatedAt": "2026-07-27T06:02:53+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -7074,6 +7079,7 @@
           "src/features/docs-vault-local/lib/ontology-starter.ts",
           "src/features/docs-vault-local/model/use-local-vault.ts",
           "src/features/docs-vault-local/ui/OntologyStarterCta.tsx",
+          "src/shared/config/agent-package-distribution.ts",
           "src/views/docs-vault/ui/DocsVaultPage.tsx",
           "src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx"
         ],
@@ -7091,11 +7097,16 @@
           "depth": 2,
           "text": "2026-07-27 installed-app inventory proof",
           "slug": "2026-07-27-installed-app-inventory-proof"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-27 public package availability gate",
+          "slug": "2026-07-27-public-package-availability-gate"
         }
       ],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultAgentSetupPanel (merged into AppSettingsMenu's vault / mcpAgents tabs, B2 2026-07 — the former VaultToolsMenu docs-header dropdown was retired to remove the duplicate surface) exposes the setup gate in the same language a",
-      "wordCount": 1583,
-      "updatedAt": "2026-07-27T02:35:18+09:00",
+      "wordCount": 1695,
+      "updatedAt": "2026-07-26T21:31:49.629Z",
       "linksOut": []
     },
     {
@@ -7110,12 +7121,20 @@
         "display_ko": "AI 도구 연결하기",
         "display_en": "Connect Your AI Tool",
         "domain": "ai-agent-partner",
-        "elements": []
+        "elements": [
+          "src/shared/config/agent-package-distribution.ts"
+        ]
       },
-      "headings": [],
+      "headings": [
+        {
+          "depth": 2,
+          "text": "2026-07-27 배포 가능성 주의 계층",
+          "slug": "2026-07-27-배포-가능성-주의-계층"
+        }
+      ],
       "excerpt": "INDEX 푸터의 에이전트 상태 클릭 → 연결 시트 (2026-07-21, P2a — 웨지 표면). 구성: ① heartbeat 파일 기반 연결 상태(조용한 수집 0 — 에이전트가 스스로 남긴 로컬 파일 읽기) ② Claude Code .mcp.json / Codex / generic 등록 스니펫(데스크톱 경로 자동, 웹 안내) + 데스크톱 설정 파일 자동 생성 ③ agent-brief 가 사용자의 실제 도메인 이름들을 되말하는 미리보기(이해받음의 순간 — 감정 카피 규칙: 사용자 고유 명사 원문 포함). 전략 근거: 백엔드(MCP 32도구·스킬·heartbeat)는",
-      "wordCount": 86,
-      "updatedAt": "2026-07-27T01:53:17+09:00",
+      "wordCount": 164,
+      "updatedAt": "2026-07-26T21:31:49.630Z",
       "linksOut": []
     },
     {
@@ -7697,7 +7716,7 @@
       ],
       "excerpt": "@modelcontextprotocol/sdk 안정판 1.x 기반 stdio JSON-RPC 서버. 32 도구 노출 (read 19 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-lev",
       "wordCount": 13589,
-      "updatedAt": "2026-07-26T20:55:31.111Z",
+      "updatedAt": "2026-07-27T06:02:53+09:00",
       "linksOut": []
     },
     {
@@ -10058,6 +10077,23 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/src/shared/config/agent-package-distribution.ts",
+      "path": "docs/ontology/src/shared/config/agent-package-distribution.ts.md",
+      "title": "Agent Package Distribution Gate",
+      "tags": [],
+      "frontmatter": {
+        "slug": "src/shared/config/agent-package-distribution.ts",
+        "kind": "element",
+        "title": "Agent Package Distribution Gate",
+        "domain": "ai-agent-partner"
+      },
+      "headings": [],
+      "excerpt": "Public npm availability is an explicit fail-closed product gate. It records the registry evidence date and keeps installed-app agent setup, deep links, starter config writes, and source-checkout guidance aligned until both packages are published and fresh-shell npx proof passes.",
+      "wordCount": 39,
+      "updatedAt": "2026-07-26T21:31:22.217Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/src/views/docs-vault/ui/DocsVaultPage.tsx",
       "path": "docs/ontology/src/views/docs-vault/ui/DocsVaultPage.tsx.md",
       "title": "Source Vault Page",
@@ -10553,7 +10589,7 @@
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
       "wordCount": 4963,
-      "updatedAt": "2026-07-26T20:55:31.111Z",
+      "updatedAt": "2026-07-27T06:02:53+09:00",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -10843,6 +10879,11 @@
         },
         {
           "depth": 3,
+          "text": "UX-044 — 공개되지 않은 CLI/MCP 패키지를 설치 앱이 즉시 연결 가능하다고 안내",
+          "slug": "ux-044-공개되지-않은-climcp-패키지를-설치-앱이-즉시-연결-가능하다고-안내"
+        },
+        {
+          "depth": 3,
           "text": "UX-043 — agent persisted-context handoff가 퇴역 Builder URL을 반환",
           "slug": "ux-043-agent-persisted-context-handoff가-퇴역-builder-url을-반환"
         },
@@ -11073,8 +11114,8 @@
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨 한 장 더 캡처한다. ",
-      "wordCount": 14104,
-      "updatedAt": "2026-07-26T20:59:49.232Z",
+      "wordCount": 14710,
+      "updatedAt": "2026-07-26T21:30:29.952Z",
       "linksOut": []
     },
     {
@@ -11296,9 +11337,9 @@
           "slug": "one-line-summary"
         }
       ],
-      "excerpt": "This project publishes two npm packages: · Package · Path · What · Required? · ontology-atlas-mcp · mcp/ · MCP server (AI agents read/write the vault) · Required — the core of the AI agent integration · ontology-atlas · cli/ · 25-command developer CLI (vault scaffold, bootstrap, compile, graph CRUD/deep dive) · Recomme",
-      "wordCount": 1156,
-      "updatedAt": "2026-07-23T15:29:58+09:00",
+      "excerpt": "Current registry evidence (2026-07-27): npm view ontology-atlas and npm view ontology-atlas-mcp both return E404 Not Found. Public npx setup is therefore unavailable. The product UI and starter flow must remain fail-closed until a human maintainer completes this guide, both registry entries resolve, and the fresh-shell",
+      "wordCount": 1209,
+      "updatedAt": "2026-07-26T21:24:13.238Z",
       "linksOut": []
     },
     {
@@ -12587,6 +12628,18 @@
         "linkText": "elements/app-settings-menu"
       }
     ],
+    "ontology/src/shared/config/agent-package-distribution.ts": [
+      {
+        "fromSlug": "ontology/capabilities/agent-config-onboarding",
+        "context": "frontmatter · **[src/shared/config/agent-package-distribution.ts]**",
+        "linkText": "src/shared/config/agent-package-distribution.ts"
+      },
+      {
+        "fromSlug": "ontology/capabilities/agent-connect-sheet",
+        "context": "frontmatter · **[src/shared/config/agent-package-distribution.ts]**",
+        "linkText": "src/shared/config/agent-package-distribution.ts"
+      }
+    ],
     "ontology/src/views/docs-vault/ui/DocsVaultPage.tsx": [
       {
         "fromSlug": "ontology/capabilities/agent-config-onboarding",
@@ -12843,6 +12896,11 @@
       },
       {
         "fromSlug": "ontology/project",
+        "context": "frontmatter · **[ai-agent-partner]**",
+        "linkText": "ai-agent-partner"
+      },
+      {
+        "fromSlug": "ontology/src/shared/config/agent-package-distribution.ts",
         "context": "frontmatter · **[ai-agent-partner]**",
         "linkText": "ai-agent-partner"
       }
@@ -15268,6 +15326,27 @@
                             "title": "Live Activity Indicator"
                           }
                         ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "shared",
+                "path": "ontology/src/shared",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "config",
+                    "path": "ontology/src/shared/config",
+                    "type": "dir",
+                    "children": [
+                      {
+                        "name": "agent-package-distribution.ts",
+                        "path": "ontology/src/shared/config/agent-package-distribution.ts",
+                        "type": "doc",
+                        "slug": "ontology/src/shared/config/agent-package-distribution.ts",
+                        "title": "Agent Package Distribution Gate"
                       }
                     ]
                   }

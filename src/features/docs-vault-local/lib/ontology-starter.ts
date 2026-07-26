@@ -55,7 +55,7 @@ ownership, dependency, evidence, and change impact.
 Prefer an automatic first graph? From your codebase root:
 
 \`\`\`bash
-ontology-atlas bootstrap . --vault <this-folder>
+node /absolute/path/to/ontology-atlas/cli/src/index.mjs bootstrap . --vault <this-folder>
 \`\`\`
 
 The command analyzes \`package.json\`, README headings, and \`src/\` layout,
@@ -64,32 +64,28 @@ nodes. If you edited a starter file, it is preserved.
 
 ## AI agent setup
 
-If this vault came from \`ontology-atlas init\` or the installed app starter,
-the vault folder already has:
+Public \`ontology-atlas\` and \`ontology-atlas-mcp\` packages were unavailable
+when this starter was built (npm E404, checked 2026-07-27). The installed app
+therefore creates the markdown vault only; it does not seed an \`npx\` config
+that cannot start.
 
-- \`.mcp.json\` for Claude Code / Cursor
-- \`.codex/config.toml\` for Codex
-
-Open the vault folder itself in the agent and restart it. Both config files use
-\`OATLAS_VAULT=.\`, so the agent reads and writes this folder directly.
-
-If you prefer to keep the agent opened at a separate codebase root, use the
-CLI repair path from that codebase root:
+From an Ontology Atlas source checkout, use the local CLI repair path:
 
 \`\`\`bash
-ontology-atlas agent-setup /absolute/path/to/this-vault --root . --write
+node /absolute/path/to/ontology-atlas/cli/src/index.mjs agent-setup /absolute/path/to/this-vault --root . --write
 \`\`\`
 
 It creates missing Claude Code / Cursor / Codex config files without adding
 starter markdown or overwriting existing configs. If you need a manual merge
 instead, open \`.mcp.json.example\`, replace the \`OATLAS_VAULT\` placeholder with
 the absolute path to this vault, then copy that server entry into your agent
-config.
+config. The local CLI writes \`.mcp.json\` and \`.codex/config.toml\` with the
+source entry point.
 
 Codex can also be wired globally with one command:
 
   \`\`\`bash
-  codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/this-vault -- npx -y ontology-atlas-mcp
+  codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/this-vault -- node /absolute/path/to/ontology-atlas/mcp/src/index.js
   \`\`\`
 
 ## Verify the agent loop
@@ -341,7 +337,7 @@ capabilities / elements / domain)입니다.
 첫 그래프를 자동으로 만들고 싶다면, 코드베이스 루트에서:
 
 \`\`\`bash
-ontology-atlas bootstrap . --vault <이-폴더>
+node /ontology-atlas/소스/절대/경로/cli/src/index.mjs bootstrap . --vault <이-폴더>
 \`\`\`
 
 이 명령은 \`package.json\`, README 제목, \`src/\` 구조를 분석해 손대지 않은 예시
@@ -350,31 +346,26 @@ ontology-atlas bootstrap . --vault <이-폴더>
 
 ## AI 에이전트 설정
 
-이 문서함이 \`ontology-atlas init\` 이나 설치된 앱의 스타터로 만들어졌다면
-폴더 안에 이미 다음이 있습니다:
+이 스타터를 만들 때 공개 \`ontology-atlas\`와 \`ontology-atlas-mcp\`
+패키지는 npm E404 상태였습니다(2026-07-27 확인). 설치 앱은 실행할 수 없는
+\`npx\` 설정을 심지 않고 마크다운 문서함만 만듭니다.
 
-- Claude Code / Cursor 용 \`.mcp.json\`
-- Codex 용 \`.codex/config.toml\`
-
-에이전트에서 **이 문서함 폴더 자체**를 열고 재시작하세요. 두 설정 파일 모두
-\`OATLAS_VAULT=.\` 을 쓰므로 에이전트가 이 폴더를 직접 읽고 씁니다.
-
-에이전트를 별도 코드베이스 루트에서 열어 두고 싶다면, 그 코드베이스 루트에서
-CLI 복구 경로를 씁니다:
+Ontology Atlas 소스 체크아웃이 있다면 로컬 CLI 복구 경로를 씁니다:
 
 \`\`\`bash
-ontology-atlas agent-setup /이-문서함의/절대/경로 --root . --write
+node /ontology-atlas/소스/절대/경로/cli/src/index.mjs agent-setup /이-문서함의/절대/경로 --root . --write
 \`\`\`
 
 없는 Claude Code / Cursor / Codex 설정 파일만 만들고, 스타터 마크다운을
 추가하거나 기존 설정을 덮어쓰지 않습니다. 직접 병합하려면 \`.mcp.json.example\`
 을 열어 \`OATLAS_VAULT\` 자리표시자를 이 문서함의 절대 경로로 바꾼 뒤, 그 서버
-항목을 에이전트 설정에 복사하세요.
+항목을 에이전트 설정에 복사하세요. 로컬 CLI는 소스 엔트리포인트를 쓰는
+\`.mcp.json\`과 \`.codex/config.toml\`을 만듭니다.
 
 Codex 는 명령 한 줄로 전역 등록도 됩니다:
 
 \`\`\`bash
-codex mcp add ontology-atlas --env OATLAS_VAULT=/이-문서함의/절대/경로 -- npx -y ontology-atlas-mcp
+codex mcp add ontology-atlas --env OATLAS_VAULT=/이-문서함의/절대/경로 -- node /ontology-atlas/소스/절대/경로/mcp/src/index.js
 \`\`\`
 
 ## 에이전트 연결 확인

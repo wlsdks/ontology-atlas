@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-07-27 — 공개되지 않은 agent 패키지를 연결 가능하다고 말하지 않는다
+
+공개 npm 레지스트리를 직접 확인하니 `ontology-atlas`와
+`ontology-atlas-mcp`가 모두 `E404`였지만, 설치 앱의 AI 에이전트 설정은
+`npx -y ontology-atlas-mcp` 원클릭 링크와 설정 파일을 제공하고 파일이
+존재하기만 하면 `준비됨`으로 표시했다.
+
+이제 패키지 배포 상태가 명시적 제품 계약이다. 공개 증거가 없으면 앱은 연결
+버튼·재시작·연결 확인·고급 `npx` 복사를 숨기고 소스 체크아웃 안내만 보인다.
+첫 실행 developer disclosure도 공개 명령 대신 source CLI 명령을 보여 주며,
+starter 생성은 실행 불가능한 agent config를 자동으로 쓰지 않는다. README,
+CLI/MCP 가이드, agent workflow, publish 체크리스트는 같은 E404 기준선과
+source-checkout 경로를 말한다. 공개 상태 전환은 사람 maintainer의 publish와
+fresh-shell `npx` proof 뒤에만 가능하다.
+
+TDD로 deeplink·공용 연결 버튼·설정 패널·첫 실행 disclosure의 fail-closed
+계약을 고정했고, 설치 앱 화면은 Codex Computer Use로 다시 검증한다.
+
 ## 2026-07-27 — agent persisted context가 퇴역 Builder를 거치지 않는다
 
 MCP `builder_context`는 살아 있는 read operation이지만 반환 URL과 안내

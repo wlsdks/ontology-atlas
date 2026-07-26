@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import type { VaultManifest } from '@/entities/docs-vault';
+import type { AgentPackageDistribution } from '@/shared/config';
 import { copyText } from '@/shared/lib/copy-text';
 import { TooltipProvider } from '@/shared/ui';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
@@ -16,6 +17,18 @@ vi.mock('@/shared/lib/tauri-vault-fs', () => ({
 }));
 
 const copyTextMock = vi.mocked(copyText);
+const publishedPackages: AgentPackageDistribution = {
+  status: 'published',
+  checkedAt: '2026-07-27',
+  evidence: 'npm-registry-published',
+  cliPackage: 'ontology-atlas',
+  mcpPackage: 'ontology-atlas-mcp',
+};
+const unpublishedPackages: AgentPackageDistribution = {
+  ...publishedPackages,
+  status: 'unpublished',
+  evidence: 'npm-registry-e404',
+};
 
 function render(ui: React.ReactElement) {
   return rtlRender(
@@ -74,6 +87,7 @@ function renderPanel(
     <VaultAgentSetupPanel
       canEditCurrent
       localVault={localVault}
+      packageDistribution={publishedPackages}
       validationSummary={props.validationSummary ?? null}
       onOpenWorkflowGuide={vi.fn()}
     />,
@@ -97,6 +111,7 @@ describe('VaultAgentSetupPanel', () => {
           <VaultAgentSetupPanel
             canEditCurrent
             localVault={makeLocalVault({ status: 'idle', agentConfigStatus: null })}
+            packageDistribution={publishedPackages}
             validationSummary={null}
             onOpenWorkflowGuide={vi.fn()}
           />
@@ -437,6 +452,7 @@ describe('VaultAgentSetupPanel', () => {
       <VaultAgentSetupPanel
         canEditCurrent
         localVault={localVault}
+        packageDistribution={publishedPackages}
         validationSummary={null}
         onOpenWorkflowGuide={onOpenWorkflowGuide}
       />,
@@ -1198,6 +1214,7 @@ describe('VaultAgentSetupPanel', () => {
       <VaultAgentSetupPanel
         canEditCurrent
         localVault={makeLocalVault()}
+        packageDistribution={publishedPackages}
         validationSummary={null}
         onOpenWorkflowGuide={vi.fn()}
       />,
@@ -1220,6 +1237,7 @@ describe('VaultAgentSetupPanel', () => {
       <VaultAgentSetupPanel
         canEditCurrent
         localVault={makeLocalVault()}
+        packageDistribution={publishedPackages}
         validationSummary={null}
         onOpenWorkflowGuide={vi.fn()}
       />,
@@ -1253,6 +1271,7 @@ describe('VaultAgentSetupPanel', () => {
       <VaultAgentSetupPanel
         canEditCurrent
         localVault={localVault}
+        packageDistribution={publishedPackages}
         validationSummary={null}
         onOpenWorkflowGuide={vi.fn()}
       />,
@@ -1299,6 +1318,7 @@ describe('VaultAgentSetupPanel', () => {
             mcpExampleValid: true,
           },
         })}
+        packageDistribution={publishedPackages}
         validationSummary={null}
         onOpenWorkflowGuide={vi.fn()}
       />,
@@ -1312,5 +1332,35 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.queryByRole('button', { name: 'Codex 설정 준비됨' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('공개 패키지가 없으면 실행 불가능한 설정과 후속 단계를 숨긴다', () => {
+    const localVault = makeLocalVault({
+      agentConfigStatus: {
+        mcpJson: true,
+        mcpJsonValid: true,
+        codexConfig: true,
+        codexConfigValid: true,
+        mcpExample: true,
+        mcpExampleValid: true,
+      },
+    });
+
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={localVault}
+        packageDistribution={unpublishedPackages}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('agent-package-unavailable')).toHaveTextContent('공개되지');
+    expect(screen.queryByTestId('agent-setup-step-2')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('agent-setup-step-3')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Claude Code에 연결' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('agent-setup-advanced-toggle')).not.toBeInTheDocument();
+    expect(localVault.ensureAgentConfigs).not.toHaveBeenCalled();
   });
 });

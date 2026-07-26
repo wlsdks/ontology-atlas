@@ -8,6 +8,14 @@
 workbench where markdown frontmatter is the graph, git is the audit log, and AI
 agents can read or write through MCP when they are connected.
 
+> **Package availability gate (checked 2026-07-27):** the public
+> `ontology-atlas` and `ontology-atlas-mcp` packages currently return npm
+> `E404`. The installed app therefore hides one-click connection, restart, and
+> ready-state guidance rather than creating a config that cannot boot. For
+> current development, register the MCP server from a source checkout with
+> `node /absolute/path/to/ontology-atlas/mcp/src/index.js` and run CLI proofs as
+> `node cli/src/index.mjs <command>`.
+
 ## Official Client Contract
 
 Checked against official docs on 2026-06-04:
@@ -65,9 +73,12 @@ between them does not migrate data.
 | You want graph-database-style exploration but not a database server | Graph DB pack | Bounded query plans, node/edge scans, domain matrix, paths, relation explanations, and follow-up evidence commands |
 | Setup is unclear or you opened the agent from another codebase root | Agent setup gate | Config repair commands, restart guidance, JSON readiness checks, and fallback timing before edits |
 
-For non-developers, the safest sequence is: install the macOS app, open a vault
-folder there, use the AI agent setup card, restart the agent, run the JSON
-gate, and only then ask the agent to write ontology updates.
+Until the public package gate opens, the installed app remains useful for
+reading and editing a vault but does not claim a one-click agent connection.
+Source-checkout contributors can register the local MCP entry point, restart
+their agent, run the JSON gate, and only then ask the agent to write ontology
+updates. Non-developers should wait for the app to report that the public
+packages are available instead of copying a speculative command.
 
 Read the JSON gate in three states:
 

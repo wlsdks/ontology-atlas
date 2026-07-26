@@ -7,6 +7,7 @@ import { Cable, Check, ChevronDown, Copy, X } from "lucide-react";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { copyText } from "@/shared/lib/copy-text";
+import type { AgentPackageDistribution } from "@/shared/config";
 import {
   AgentClientButtons,
   type AgentClientConfigState,
@@ -46,6 +47,7 @@ export interface AgentConnectSnippets {
 }
 
 export interface AgentConnectSheetProps {
+  packageDistribution: AgentPackageDistribution;
   open: boolean;
   onClose: () => void;
   status: AgentConnectState;
@@ -126,6 +128,7 @@ function StepRow({
 }
 
 export function AgentConnectSheet({
+  packageDistribution,
   open,
   onClose,
   status,
@@ -273,8 +276,13 @@ export function AgentConnectSheet({
 
             <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-4">
               {/* ① 연결 버튼 누르기 — 클라이언트별 원클릭 */}
-              <StepRow n={1} title={t("step1Title")} desc={t("step1Desc")}>
+              <StepRow
+                n={1}
+                title={t("step1Title")}
+                desc={packageDistribution.status === "published" ? t("step1Desc") : undefined}
+              >
                 <AgentClientButtons
+                  packageDistribution={packageDistribution}
                   onWriteConfigs={onWriteConfigs}
                   cursorDeeplink={snippets.cursorDeeplink}
                   vscodeDeeplink={snippets.vscodeDeeplink}
@@ -289,25 +297,29 @@ export function AgentConnectSheet({
                 />
               </StepRow>
 
-              {/* ② 에이전트 재시작 */}
-              <StepRow n={2} title={t("step2Title")} desc={t("step2Desc")} />
+              {packageDistribution.status === "published" ? (
+                <>
+                  {/* ② 에이전트 재시작 */}
+                  <StepRow n={2} title={t("step2Title")} desc={t("step2Desc")} />
 
-              {/* ③ 연결 확인 — heartbeat 파일 기반 (조용한 수집 0) */}
-              <StepRow n={3} title={t("step3Title")} desc={t("step3Desc")}>
-                <div
-                  data-testid="agent-connect-status"
-                  className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
-                >
-                  <span
-                    aria-hidden
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: statusDotColor }}
-                  />
-                  <p className="min-w-0 flex-1 text-body leading-relaxed text-[color:var(--color-text-secondary)]">
-                    {statusText}
-                  </p>
-                </div>
-              </StepRow>
+                  {/* ③ 연결 확인 — heartbeat 파일 기반 (조용한 수집 0) */}
+                  <StepRow n={3} title={t("step3Title")} desc={t("step3Desc")}>
+                    <div
+                      data-testid="agent-connect-status"
+                      className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
+                    >
+                      <span
+                        aria-hidden
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: statusDotColor }}
+                      />
+                      <p className="min-w-0 flex-1 text-body leading-relaxed text-[color:var(--color-text-secondary)]">
+                        {statusText}
+                      </p>
+                    </div>
+                  </StepRow>
+                </>
+              ) : null}
 
               {/* 이해받음의 순간 — 에이전트가 내 지도를 되말한다 (첫 화면 유지) */}
               {previewDomains.length > 0 ? (
@@ -339,7 +351,8 @@ export function AgentConnectSheet({
               ) : null}
 
               {/* 고급 · 자세한 검증 — 스니펫·표준 triple·다른 툴 표 강등 */}
-              <section aria-label={t("advancedToggle")} className="flex flex-col gap-3 border-t border-[color:var(--color-border-soft)] pt-4">
+              {packageDistribution.status === "published" ? (
+                <section aria-label={t("advancedToggle")} className="flex flex-col gap-3 border-t border-[color:var(--color-border-soft)] pt-4">
                 <button
                   type="button"
                   onClick={() => setAdvancedOpen((v) => !v)}
@@ -432,7 +445,8 @@ export function AgentConnectSheet({
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </section>
+                </section>
+              ) : null}
             </div>
           </motion.section>
         </motion.div>

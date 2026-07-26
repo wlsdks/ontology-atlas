@@ -191,6 +191,7 @@ import {
 } from "@/features/vault-agent";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
+import { AGENT_PACKAGE_DISTRIBUTION } from "@/shared/config";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
 import { restoreTopologyFocusAfterDatasheetClose } from "../lib/topology-focus-return";
@@ -4639,6 +4640,7 @@ export function HomePage() {
             같은 scrim+중앙 카드 모달 골격(같은 토큰, modality 증명 — 스크림
             클릭 닫기). 패널 내용/조회는 위젯 자기완결. */}
         <AgentConnectSheet
+          packageDistribution={AGENT_PACKAGE_DISTRIBUTION}
           open={agentConnect.open}
           onClose={() => {
             agentConnect.closeSheet();
