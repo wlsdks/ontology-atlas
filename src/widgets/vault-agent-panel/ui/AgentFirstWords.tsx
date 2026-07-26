@@ -63,7 +63,7 @@ export function AgentFirstWords({
                 data-first-words-slot={chip.slot}
                 data-first-words-intent={chip.intent.kind}
                 onClick={() => onPrefill?.(chip.text)}
-                className="flex min-h-11 w-full items-center rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2 text-left text-caption leading-[1.5] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+                className="flex min-h-11 w-full items-center rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2 text-left text-caption leading-caption text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
               >
                 {/* 두 줄까지. 넘치는 문장이 칩의 키를 정하게 두지 않는다. */}
                 <span className="line-clamp-2 [word-break:keep-all]">{chip.text}</span>
@@ -73,7 +73,7 @@ export function AgentFirstWords({
                 data-testid="agent-first-words-line"
                 data-first-words-slot={chip.slot}
                 data-first-words-intent={chip.intent.kind}
-                className="line-clamp-2 text-caption leading-[1.55] text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+                className="line-clamp-2 text-caption leading-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
               >
                 {chip.text}
               </p>

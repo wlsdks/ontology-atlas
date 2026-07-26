@@ -373,10 +373,14 @@ Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actua
 | ≥1920 배율 | **1:1 (zoom 없음)**, 2400+만 1.1 | `.topology-ui-scale` |
 | 본문 폰트 | **Pretendard Variable** (셀프호스팅) | `--font-sans` |
 | 타입 램프 | caption 9.5 · label 11 · body 12.5 · body-lg 14 · title 16 · display 23 · hero 30 | `--text-*` |
+| 행간 램프 | 크기와 1:1 짝 14 · **16** · 20 · 22 · 24 · 28 · 34 + 자유 2(1.06 · 1.7) | `--leading-*` |
 
 주의: 타입 램프 유틸은 `cn()`(`src/shared/lib/cn.ts`)의 extendTailwindMerge
 등록과 **반드시 동기** — 미등록 스텝은 색상으로 오분류되어 크기가 조용히
 드롭된다(2026-07-23 크롬 16px 렌더 사고의 근본 원인, cn.test.ts 가 가드).
+행간 램프도 같은 파일에 등록한다(`LEADING_RAMP_STEPS`) — 이쪽은 드롭이 아니라
+**충돌 병합 실패**라 조건부 분기가 조용히 안 먹는다. 크롬 라벨의 `leading-4`
+(16px)는 `--leading-label` 과 같은 값이라 잠금 계약이 그대로 유지된다.
 루트 16px 상속으로 렌더되는 텍스트 표면은 전부 램프 미적용 결함이다.
 
 ### Backgrounds
@@ -1831,6 +1835,65 @@ tracking 으로 응집).
 (±1px 은 램프로 흡수). 단 사이 정확히 중간(예: 15px)은 상위 단으로, 램프 밖
 값(≥1.5px 이탈)은 아래 "명시 예외"로만 남긴다.
 
+### Line-height ramp — 9단 (2026-07-27)
+
+Tailwind v4 `--leading-*` 네임스페이스가 `leading-<step>` 유틸리티를 생성한다.
+**행간은 독립 램프가 아니라 크기의 짝**이다 — 이 저장소의 실데이터가 그렇게
+말한다: named 유틸리티의 대세가 이미 px 고정(`leading-4/5/6` = 16/20/24px,
+121건)이고, 스케일 고정 계약이 이미 한 짝(크롬 라벨 11px + 16px 행간)을
+명문화해 뒀다. 치수 규칙성 헌장과도 정합한다 — **행간이 곧 행 높이의 씨앗**
+이라 px 로 고정해야 반복 카드 세트의 리듬이 글자 수·언어에 좌우되지 않는다.
+
+값은 2px 그리드이고, 짝 3개(label 16 · body 20 · title 24)는 이미 쓰이던
+`leading-4/5/6` 과 **값이 같다**. 새 규격이 아니라 이미 대세인 것에 이름을
+준 것이다.
+
+| 단 | 토큰 (유틸) | 값 | 짝 (font) | 비율 | 쓰임 — 이 행간을 언제 고르나 |
+|---|---|---|---|---|---|
+| caption | `--leading-caption` (`leading-caption`) | 14px | caption 9.5 | 1.47 | 마이크로 라벨·트랜스크립트·9~10px 보조문 |
+| label | `--leading-label` (`leading-label`) | 16px | label 11 | 1.45 | 칩·배지·크롬 라벨·카드 설명. **잠금 계약의 16px** |
+| body | `--leading-body` (`leading-body`) | 20px | body 12.5 | 1.60 | 기본 본문·리스트 행·패널 문단·목차 행 |
+| body-lg | `--leading-body-lg` (`leading-body-lg`) | 22px | body-lg 14 | 1.57 | 강조 본문·부제 |
+| title | `--leading-title` (`leading-title`) | 24px | title 16 | 1.50 | 패널/카드 제목 |
+| display | `--leading-display` (`leading-display`) | 28px | display 23 | 1.22 | 페이지 헤드라인(줄바꿈 가능) |
+| hero | `--leading-hero` (`leading-hero`) | 34px | hero 30 | 1.13 | 히어로 헤드라인(줄바꿈 가능) |
+| display-tight | `--leading-display-tight` (`leading-display-tight`) | 1.06 | 자유 | — | **이름·수치처럼 한 덩어리로 읽히는 자리** — 히어로/섹션 제목, 카드 이름, 대형 수치. **최대 2행** |
+| prose | `--leading-prose` (`leading-prose`) | 1.7 | 자유 | — | **사용자가 쓴 글** — 마크다운 뷰어/에디터, 상세 본문, pre. 읽기 폭 장문의 상한 |
+
+**판정 한 줄**: 앱이 쓴 UI 텍스트면 그 크기의 **짝**, 사용자가 쓴 글이면
+**prose**, 이름/수치면 **display-tight**.
+
+**자유 스텝 2개만 무단위인 이유**: 이 둘은 램프 밖 크기(`clamp()` 히어로,
+마크다운 내부의 중첩 크기)에도 얹히는 스텝이라, px 로 고정하면 크기마다
+토큰이 또 필요해진다. 비율이 곧 의도(응집/이완)인 자리다.
+
+**display-tight 의 경계**: 3행 이상 쌓이는 텍스트나 문장(설명·본문)에 쓰면
+결함이다 — 한글은 윗줄 받침과 아랫줄 초성이 맞닿는다. 2행까지는 허용한다
+(다운로드 히어로가 `<br />` 로 2행을 쓰는 실사용이 있다).
+
+**한글이 값의 상한을 정한다.** 한글은 라틴보다 글자 상자가 꽉 차서 같은
+행간이면 더 빽빽하게 읽힌다. 그래서 공유 램프 값은 **한글이 요구하는 여유**로
+정하고 라틴이 그 여유를 따라온다(라틴은 넉넉한 행간에 관대하고, 한글은 좁은
+행간에 관대하지 않다). **로케일별 분기는 만들지 않는다** — 한 문단 안에 두
+언어가 섞이는 앱(en UI 안의 한글 vault 데이터)이라 분기는 같은 문단의 행
+높이를 어긋나게 한다.
+
+**tailwind-merge 등록 필수.** `cn.ts` 의 `LEADING_RAMP_STEPS` 에 스텝을 함께
+등록하지 않으면 클래스가 드롭되지는 않지만 **충돌 병합이 일어나지 않는다** —
+`cn('leading-body', cond && 'leading-prose')` 에서 둘 다 살아남고 CSS 소스
+순서가 승자를 정한다. 크기 램프의 드롭 사고보다 조용해서 화면을 봐도 원인을
+못 찾는다. 가드: `cn.test.ts`.
+
+**아직 안 한 것 — companion 자동 결합.** Tailwind v4 의
+`--text-<step>--line-height` 를 정의하면 `text-<step>` 하나가 행간까지 싣고,
+"클래스를 안 쓴 자리가 루트 1.5 로 새는" 부류가 구조적으로 사라진다. 이것이
+끝그림이지만 이번에 켜지 않았다 — 실측 결과 램프 크기를 쓰면서 행간 클래스가
+없는 자리가 **830곳**이고, 대표 6개 화면만 재도 **331개 중 268개**의 행간이
+움직인다. 그중 `text-display` 는 −6.5px(34.5 → 28), `text-hero` 는 −11px 로
+**페이지 헤드라인의 눈에 보이는 리디자인**이다. tracking 을 자동 결합하지 않은
+것과 같은 이유("법전화지 리디자인 아님")로, 별도 슬라이스에서 표면 목록 +
+스크린샷 검증과 함께 켠다.
+
 ### Radius ramp — 3단 (일반 표면)
 
 Tailwind v4 `--radius-*` 네임스페이스가 `rounded-<step>` 를 생성한다.
@@ -1903,11 +1966,23 @@ no-restricted-syntax -- <사유>` 로만 남긴다. 현재 등재분:
 - **display 숫자 34~40px** — 센서스 시그니처 대형 숫자(`InsightsHeroCensus`
   40px), 반응형 히어로 강조(`DesktopVaultWelcome` md:34px). type 램프 상단
   (hero 30px)을 넘는 의도적 display.
+- **행간 1.1 (딱 1건)** — 데이터시트 액션 타일의 10px 2행 라벨
+  (`TopologyV2DetailPanel` `ACTION_TILE_LEADING`). 짝인 caption(14px)을 넣으면
+  두 행이 6px 자라 액션 스트립이 아래 메트릭 라인을 밀어내 크롬 스케일 계약을
+  깬다. 이 값이 필요한 자리가 앱에 하나뿐이라 램프를 넓히지 않는다 — 쓰임이
+  하나인 토큰은 규격이 아니라 오정보다. **별도 상수로 뽑아 둔 이유**: disable
+  주석은 줄 단위라 클래스 문자열에 붙이면 같은 줄의 `text-[Npx]` 부채까지
+  함께 침묵시킨다(실측: lint 총계가 143 → 142 로 *내려가는* 것으로 드러났다).
 
 ### Lint 봉쇄
 
 `eslint.config.mjs` 의 `no-restricted-syntax` 가 신규 `text-[Npx]` ·
-`rounded-[Npx]` arbitrary 클래스를 차단한다.
+`rounded-[Npx]` · `leading-[N]` arbitrary 클래스를 차단한다.
+
+**행간 named 유틸리티(`leading-4/5/6/relaxed/snug` 등 199건)는 룰로 잡지
+않는다.** 199 warning 은 베이스라인 143 을 덮는 소음이고, 대세인 값 3개
+(16/20/24px)는 램프 짝과 **동일해 위반도 아니다**. arbitrary 가 0 이 된 뒤
+`relaxed`/`snug` 계열만 래칫 후보로 재측정한다.
 
 - **마이그레이션 완료 디렉토리 = error** — `src/views/{ontology-insights,
   project-selector,ontology-edit,docs-vault}` · `src/shared/ui` · `src/widgets`

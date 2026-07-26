@@ -26,7 +26,7 @@ export function EmptyState({
         <h2 className="mt-3 text-display font-semibold tracking-[-0.01em] text-[color:var(--color-text-primary)]">
           {t("title")}
         </h2>
-        <p className="mx-auto mt-2 max-w-[440px] text-body leading-[1.7] text-[color:var(--color-text-tertiary)]">
+        <p className="mx-auto mt-2 max-w-[440px] text-body leading-prose text-[color:var(--color-text-tertiary)]">
           {t("body")}
         </p>
         <div className="mt-5 grid gap-2 sm:grid-cols-3">

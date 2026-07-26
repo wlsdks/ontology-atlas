@@ -100,7 +100,7 @@ function renderEvent(
     case 'user':
       return (
         <div data-testid="agent-user-turn" className="mb-3">
-          <p className="text-body leading-[1.6] text-[color:var(--color-text-primary)] [word-break:keep-all]">
+          <p className="text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all]">
             <span className="mr-1.5 text-[color:var(--color-text-quaternary)]">
               {labels.you}
             </span>
@@ -168,7 +168,7 @@ function renderEvent(
                 type="button"
                 data-testid="agent-next-step-chip"
                 onClick={() => onPrefill(event.nextStep ?? '')}
-                className="flex min-h-11 w-full items-center rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2 text-left text-caption leading-[1.5] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+                className="flex min-h-11 w-full items-center rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2 text-left text-caption leading-caption text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
               >
                 <span className="line-clamp-2 [word-break:keep-all]">{event.nextStep}</span>
               </button>
@@ -237,7 +237,7 @@ function CitedText({
   if (cursor < paragraph.text.length) parts.push(paragraph.text.slice(cursor));
 
   return (
-    <p className="text-body leading-[1.65] text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+    <p className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
       {parts}
     </p>
   );

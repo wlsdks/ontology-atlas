@@ -529,6 +529,39 @@
   --tracking-body-lg: 0em;
   --tracking-title: -0.01em;
 
+  /* Line-height ramp — 타입 스텝과 1:1 짝인 px 7개 + 자유 2개. Tailwind v4
+     `--leading-*` 네임스페이스가 leading-<step> 유틸리티를 생성한다.
+
+     왜 독립 램프(tight/snug/normal…)가 아니라 크기의 짝인가: 행간은 글자
+     크기의 속성이고, 이 저장소의 실데이터가 이미 그렇게 말한다 — named
+     유틸리티의 대세가 px 고정(leading-4/5/6 = 16/20/24px, 121건)이고
+     스케일 고정 계약이 이미 한 짝을 명문화했다(크롬 라벨 11px + 16px 행간).
+     치수 규칙성 헌장과도 정합한다: **행간이 곧 행 높이의 씨앗**이라, px 로
+     고정해야 반복 카드 세트의 리듬이 글자 수·언어에 좌우되지 않는다.
+
+     값은 2px 그리드이고, 짝 3개(label 16 · body 20 · title 24)는 이미 쓰이는
+     leading-4/5/6 과 값이 같다 — 새 규격을 만드는 게 아니라 이미 대세인 것에
+     이름을 준다.
+
+     한글이 상한을 정한다: 한글은 라틴보다 글자 상자가 꽉 차서 같은 행간이면
+     더 빽빽하게 읽힌다. 그래서 공유 램프 값은 **한글이 요구하는 여유**로
+     정하고 라틴이 그 여유를 따라온다(라틴은 넉넉한 행간에 관대하고 한글은
+     좁은 행간에 관대하지 않다). 로케일별 분기는 만들지 않는다 — 한 문단 안에
+     두 언어가 섞이는 앱이라 분기는 같은 문단의 행 높이를 어긋나게 한다. */
+  --leading-caption: 14px; /* 짝: text-caption 9.5px — 마이크로 라벨·트랜스크립트 */
+  --leading-label: 16px; /* 짝: text-label 11px — 칩·배지·크롬 라벨 (잠금 계약의 16px) */
+  --leading-body: 20px; /* 짝: text-body 12.5px — 기본 본문·리스트 행 */
+  --leading-body-lg: 22px; /* 짝: text-body-lg 14px — 강조 본문·부제 */
+  --leading-title: 24px; /* 짝: text-title 16px — 패널/카드 제목 */
+  --leading-display: 28px; /* 짝: text-display 23px — 페이지 헤드라인 */
+  --leading-hero: 34px; /* 짝: text-hero 30px — 히어로 헤드라인 */
+
+  /* 자유 스텝 2개 — 무단위인 이유: 이 둘은 램프 밖 크기(clamp 히어로,
+     마크다운 내부의 중첩 크기)에도 얹히는 스텝이라 px 로 고정하면 크기마다
+     토큰이 또 필요해진다. 비율이 곧 의도(응집/이완)인 자리다. */
+  --leading-display-tight: 1.06; /* 이름·수치처럼 한 덩어리로 읽히는 자리. 최대 2행 */
+  --leading-prose: 1.7; /* 사용자가 쓴 글(마크다운 본문·에디터·pre)의 읽기 폭 상한 */
+
   /* Radius ramp — 3단. Tailwind v4 `--radius-*` 네임스페이스가 rounded-<step>
      를 생성한다. 이 밖(sub-chip 헤어라인 1~4px, overlay sheet/card 18~28px)은
      코덱스 표의 명시 예외로만 — eslint-disable + 사유 주석 필수. */

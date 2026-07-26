@@ -48,7 +48,7 @@ export function AgentScopeSheet({
       <p className="text-body font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
         {labels.title}
       </p>
-      <p className="text-body leading-[1.65] text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+      <p className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
         {labels.body({ provider, host })}
       </p>
       <ul className="flex flex-col gap-1 text-label tracking-label text-[color:var(--color-text-tertiary)]">

@@ -351,7 +351,7 @@ export function DocsVaultViewer({
       p({ children, ...rest }) {
         return (
           <p
-            className="my-3 text-body-lg leading-[1.7] text-[color:var(--color-text-secondary)]"
+            className="my-3 text-body-lg leading-prose text-[color:var(--color-text-secondary)]"
             {...rest}
           >
             {highlightChildren(children, 'p')}
@@ -361,7 +361,7 @@ export function DocsVaultViewer({
       ul(props) {
         return (
           <ul
-            className="my-3 list-disc pl-6 text-body-lg leading-[1.75] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
+            className="my-3 list-disc pl-6 text-body-lg leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
             {...props}
           />
         );
@@ -369,7 +369,7 @@ export function DocsVaultViewer({
       ol(props) {
         return (
           <ol
-            className="my-3 list-decimal pl-6 text-body-lg leading-[1.75] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
+            className="my-3 list-decimal pl-6 text-body-lg leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
             {...props}
           />
         );
@@ -402,7 +402,7 @@ export function DocsVaultViewer({
       pre(props) {
         return (
           <pre
-            className="my-4 overflow-x-auto rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-surface-deep-a80)] p-3 font-mono text-label leading-[1.55] text-[color:var(--color-indigo-pale-a92)] md:text-body"
+            className="my-4 overflow-x-auto rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-surface-deep-a80)] p-3 font-mono text-label leading-body text-[color:var(--color-indigo-pale-a92)] md:text-body"
             {...props}
           />
         );
@@ -652,7 +652,7 @@ function CalloutBlock({
         <span aria-hidden>{s.icon}</span>
         <span>{title}</span>
       </div>
-      <div className="text-body leading-[1.65] text-[color:var(--color-text-secondary)]">
+      <div className="text-body leading-prose text-[color:var(--color-text-secondary)]">
         {children}
       </div>
     </aside>

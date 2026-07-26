@@ -107,7 +107,7 @@ export function GuidedTourCard({
       <h2 className="mb-1.5 text-body-lg tracking-body-lg font-semibold text-[color:var(--color-text-primary)]">
         {t(`steps.${step.copyKey}.title`)}
       </h2>
-      <p className="mb-3 text-body tracking-body leading-[1.6] text-[color:var(--color-text-secondary)]">
+      <p className="mb-3 text-body tracking-body leading-body text-[color:var(--color-text-secondary)]">
         {t(`steps.${step.copyKey}.body`)}
       </p>
 

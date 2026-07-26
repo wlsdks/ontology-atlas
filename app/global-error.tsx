@@ -28,7 +28,7 @@ export default function GlobalError({ error, reset }: Props) {
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               Critical error
             </p>
-            <h1 className="mt-3 text-[22px] leading-[1.15] tracking-[var(--tracking-section)] font-[var(--font-weight-signature)]">
+            <h1 className="mt-3 text-[22px] leading-display tracking-[var(--tracking-section)] font-[var(--font-weight-signature)]">
               Something went wrong while booting the app.
             </h1>
             <p className="mt-3 text-[13px] leading-6 text-[color:var(--color-text-secondary)]">

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T22:53:20.979Z",
+  "generatedAt": "2026-07-26T23:12:12.000Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 글자 크기엔 규격이 있는데 줄 간격엔 없었다 (행간 램프 9단)",
+          "slug": "2026-07-27-글자-크기엔-규격이-있는데-줄-간격엔-없었다-행간-램프-9단"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 「기록」 화면은 이 화면의 일을 정하지 않은 상태였다 (작업대 재설계)",
           "slug": "2026-07-27-기록-화면은-이-화면의-일을-정하지-않은-상태였다-작업대-재설계"
         },
@@ -5078,9 +5083,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 판정: \"이 기록 페이지도 너무 AI느낌나\". 감이 아니라 실측 가능한 여섯 가지였고, 전부 이 화면의 일을 한 문장으로 정하지 않은 데서 나왔다.",
-      "wordCount": 52897,
-      "updatedAt": "2026-07-26T22:52:09.970Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 같은 패널 안에서도 파일마다 줄 간격이 조금씩 달랐다. 눈에 띄게 이상하진 않지만 쌓이면 화면이 미묘하게 삐뚤빼뚤해지는 종류의 누수다. 전수 측정 결과 손",
+      "wordCount": 53136,
+      "updatedAt": "2026-07-27T08:12:12+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5761,6 +5766,11 @@
         },
         {
           "depth": 3,
+          "text": "Line-height ramp — 9단 (2026-07-27)",
+          "slug": "line-height-ramp-9단-2026-07-27"
+        },
+        {
+          "depth": 3,
           "text": "Radius ramp — 3단 (일반 표면)",
           "slug": "radius-ramp-3단-일반-표면"
         },
@@ -5891,8 +5901,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 16946,
-      "updatedAt": "2026-07-26T22:51:28.390Z",
+      "wordCount": 17670,
+      "updatedAt": "2026-07-27T08:12:12+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -6491,7 +6501,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
       "wordCount": 14573,
-      "updatedAt": "2026-07-26T22:53:20.979Z",
+      "updatedAt": "2026-07-27T08:04:11+09:00",
       "linksOut": [
         "slug",
         "project:slug",

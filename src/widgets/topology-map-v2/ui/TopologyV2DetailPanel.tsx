@@ -319,8 +319,8 @@ export interface TopologyV2DetailPanelProps {
 
 // 데이터시트 내부 정제 (2026-07-23) — `justify-start` + 고정 상단 패딩: 라벨이
 // 로케일에 따라 1줄/2줄로 갈려도 네 타일의 아이콘이 같은 y 에 정렬된다
-// (grid 가 높이는 이미 균등화하므로, 남는 공백은 아래로만 빠진다). 2줄 라벨은
-// `leading-[1.2]` 로 조인다.
+// (grid 가 높이는 이미 균등화하므로, 남는 공백은 아래로만 빠진다). 2줄 라벨의
+// 행간은 아래 ACTION_TILE_CLASS 가 램프 예외로 조인다.
 // rank3 — press(active) 촉각: hover 위에 한 단 진한 `panel-row-active` 표면을
 // pointer-down 동안만 얹어 "누르는 순간"을 색만으로 알린다(Toss press-state).
 // transition-colors(150ms)로 하드 토글 방지 — transform/scale 없음.
@@ -344,8 +344,22 @@ function withActionTip(tip: string | undefined, trigger: ReactElement): ReactEle
 // 시안 재설계 (2026-07-24) — 액션은 무거운 보더 박스가 아니라 조용한 ghost
 // 아이콘+라벨(아이콘 위, 10px 라벨 아래). 표면/보더 없음 — hover/active 에만
 // row-hover/active 표면이 얹힌다. flex-1 로 스트립을 균등 분할한다.
+//
+// 행간 램프의 유일한 명시 예외. 이 라벨은 10px 2행이 고정 높이 타일 안에
+// 들어가야 하는데, 짝인 --leading-caption(14px)을 넣으면 두 행이 6px 자라
+// 액션 스트립이 아래 메트릭 라인을 밀어낸다 — 크롬 스케일 계약을 깨는
+// 쪽이라 여기서는 비율 응집을 택한다. 램프를 넓히지 않는 이유: 이 값이
+// 필요한 자리는 앱 전체에 이 하나뿐이고, 쓰임이 하나인 토큰은 규격이 아니라
+// 오정보다.
+//
+// 별도 상수로 뽑은 이유: disable 주석은 **줄 단위**라 클래스 문자열에 그냥
+// 붙이면 같은 줄의 text-[Npx] 부채까지 함께 침묵시킨다. 그건 이 저장소가
+// 래칫으로 막으려던 바로 그 실패 모드(침묵하는 통과)다.
+// eslint-disable-next-line no-restricted-syntax -- 고정 높이 타일 안 10px 2행 라벨: 램프 짝은 타일을 6px 키운다
+const ACTION_TILE_LEADING = "leading-[1.1]";
+
 const ACTION_TILE_CLASS =
-  "flex flex-1 flex-col items-center justify-start gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] px-1 py-1.5 text-center text-[10px] font-medium leading-[1.1] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]";
+  `flex flex-1 flex-col items-center justify-start gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] px-1 py-1.5 text-center text-[10px] font-medium ${ACTION_TILE_LEADING} text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
 
 /**
  * 관계 그룹 헤더의 방향 글리프 — 승인된 시안(mockup-panel-detail)의 SVG 를
@@ -458,7 +472,7 @@ function RelationGroupShell({
         </span>
         <span
           data-datasheet-group-total={groupKey}
-          className="rounded-[5px] bg-[color:var(--topology-v2-panel-count-surface)] px-1.5 py-px font-mono text-[10px] leading-[1.5] text-[color:var(--topology-v2-panel-count-text)]"
+          className="rounded-[5px] bg-[color:var(--topology-v2-panel-count-surface)] px-1.5 py-px font-mono text-[10px] leading-label text-[color:var(--topology-v2-panel-count-text)]"
         >
           {count}
         </span>
@@ -753,7 +767,7 @@ export function TopologyV2DetailPanel({
           생기지 않고 긴 이름에서도 성립한다. */}
       <div className="px-[var(--topology-v2-panel-pad)] pt-[15px] pb-4">
         <div className="mb-[11px] flex items-center gap-2.5">
-          <h2 className="min-w-0 flex-1 truncate text-[20px] font-[650] leading-[1.2] tracking-[-0.015em] text-[color:var(--topology-v2-panel-text-primary)]">
+          <h2 className="min-w-0 flex-1 truncate text-[20px] font-[650] leading-title tracking-[-0.015em] text-[color:var(--topology-v2-panel-text-primary)]">
             {title}
           </h2>
           {/* kind = 읽히는 텍스트 배지(글리프 + 단어), 우측 counterweight */}

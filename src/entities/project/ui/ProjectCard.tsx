@@ -161,7 +161,7 @@ export function ProjectCard({
         >
           <p
             className={cn(
-              'line-clamp-2 leading-[1.25] font-[var(--font-weight-signature)] tracking-[var(--tracking-card)]',
+              'line-clamp-2 leading-caption font-[var(--font-weight-signature)] tracking-[var(--tracking-card)]',
               selected || related ? 'text-[12px]' : dense ? 'text-[10px]' : 'text-[11px]',
               isHub
                 ? 'text-[color:var(--color-indigo-accent)]'
@@ -255,8 +255,8 @@ export function ProjectCard({
           <p
             className={cn(
               dense
-                ? 'text-[13px] leading-[1.08] font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] md:text-[14px]'
-                : 'text-[14px] leading-[1.08] font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] md:text-[15px]',
+                ? 'text-[13px] leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] md:text-[14px]'
+                : 'text-[14px] leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] md:text-[15px]',
               isHub
                 ? 'text-[color:var(--color-indigo-accent)]'
                 : 'text-[color:var(--color-text-primary)]',
@@ -276,7 +276,7 @@ export function ProjectCard({
 
       {!dense ? (
         <div className="mt-2 flex-1" data-topology-card-detail="true">
-          <p className="line-clamp-2 text-[10px] leading-[1.35] text-[color:var(--color-text-tertiary)] md:text-[11px] md:leading-[1.45]">
+          <p className="line-clamp-2 text-[10px] leading-label text-[color:var(--color-text-tertiary)] md:text-[11px]">
             {description || (
               // 카드 높이를 유지하되 placeholder 문장이 실제 설명으로 읽히지 않도록
               // 형식·톤을 약하게 해 "설명 미등록" 상태임을 명시한다.

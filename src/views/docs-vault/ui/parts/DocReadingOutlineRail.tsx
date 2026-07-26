@@ -61,7 +61,7 @@ export function DocReadingOutlineRail({
                   onHeadingClick(heading.slug);
                 }}
                 aria-current={isActive ? "true" : undefined}
-                className={`block truncate border-l-2 py-1.5 pl-2.5 leading-[1.4] transition-colors ${
+                className={`block truncate border-l-2 py-1.5 pl-2.5 leading-body transition-colors ${
                   isActive
                     ? "border-[color:var(--color-indigo-accent)] text-[color:var(--color-text-primary)]"
                     : "border-transparent text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"

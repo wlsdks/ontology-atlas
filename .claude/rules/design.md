@@ -11,6 +11,13 @@
 - 타입 램프 스텝을 새로 만들면 `src/shared/lib/cn.ts` 의 `TYPE_RAMP_STEPS` 에
   **반드시 등록** — 미등록 스텝은 tailwind-merge 가 색상으로 오분류해 크기를
   조용히 드롭한다 (2026-07-23 크롬 16px 렌더 사고, `cn.test.ts` 가드).
+- **행간도 크기의 짝이다** — `--leading-*` 9단(px 짝 7 + 자유 `display-tight`
+  1.06 · `prose` 1.7). 앱이 쓴 UI 텍스트면 그 크기의 짝, 사용자가 쓴 글이면
+  `prose`, 이름·수치면 `display-tight`(최대 2행). 값의 상한은 한글이 정하고
+  로케일 분기는 만들지 않는다. 스텝 추가 시 `LEADING_RAMP_STEPS` 에도 등록 —
+  이쪽 실패 모드는 드롭이 아니라 **충돌 병합 실패**(둘 다 살아남아 CSS 소스
+  순서가 승자를 정한다)라 더 조용하다. 상세: `docs/DESIGN-SYSTEM.md`
+  "Line-height ramp".
 - 루트 16px 상속으로 렌더되는 텍스트 = 램프 미적용 결함. 상세 표:
   `docs/DESIGN-SYSTEM.md` "스케일 고정 계약" 절.
 
@@ -163,6 +170,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 | **그림자 사다리** | `shadow-[…]` 중 **`var(` 없는 것**만 금지 | 동일 |
 | **hex 색상** | Tailwind **arbitrary value 안**의 hex 만 금지 | 동일 (현재 위반 0 — 예방 게이트) |
 | **모션 duration** | `duration-<숫자>` 금지 (토큰 참조형은 문법상 안 걸림) | 동일 |
+| **행간 램프** | `leading-[N]` arbitrary 만 금지 (기존 named 199건은 제외) | 동일 |
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
 
 **spacing 은 강제하지 않는다 (결론, 2026-07-26).** arbitrary px 는 27건뿐

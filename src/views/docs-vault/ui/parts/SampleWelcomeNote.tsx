@@ -59,7 +59,7 @@ export function SampleWelcomeNote({
       >
         <X size={13} aria-hidden />
       </button>
-      <p className="max-w-[560px] pr-6 text-body leading-[1.5] text-[color:var(--color-text-secondary)]">
+      <p className="max-w-[560px] pr-6 text-body leading-body text-[color:var(--color-text-secondary)]">
         <span className="block font-semibold text-[color:var(--color-text-primary)]">
           {copy.title}
         </span>

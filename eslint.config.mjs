@@ -126,6 +126,27 @@ const arbitrarySizeSelectors = [
     message:
       '모션 duration 하드코딩 금지 (template literal). --motion-fast/base/settle 토큰으로.',
   },
+  // 2026-07-27 행간 — 글자 크기는 규격이 있는데 줄 사이 간격은 없었다. 전수
+  // 측정 결과 arbitrary 19종 75건이 네 클러스터로 갈렸고, 클러스터 **안**의
+  // 값 차이(같은 패널에서 1.5·1.55·1.6·1.65)는 전부 드리프트였다.
+  //
+  // 켜기 전 측정(design.md 4단계): 정상 사용으로 오인될 부류 0 — 램프 스텝은
+  // 대괄호를 안 쓰고, 기존 named 유틸리티(leading-4/relaxed 등 199건)는 이
+  // 정규식이 요구하는 숫자-대괄호 형태가 아니라 애초에 안 걸린다. named 쪽을
+  // 룰로 잡지 않는 이유: 199 warning 은 베이스라인 143 을 덮는 소음이고,
+  // 대세인 leading-4/5/6 의 값(16/20/24px)은 램프 짝과 동일해 위반도 아니다.
+  // 74건을 **먼저 치환하고** 룰을 켰으므로 켜는 순간 위반 0, 총계 불변.
+  // ⚠️ 메시지에 리터럴 유틸리티 문법 금지 — Tailwind v4 스캐너가 이 파일을 훑는다.
+  {
+    selector: 'Literal[value=/leading-\\[[0-9.]+\\]/]',
+    message:
+      '행간 하드코딩 금지. --leading-caption 부터 --leading-prose 까지 9단 램프가 만드는 유틸리티로 쓴다 (크기 스텝과 1:1 짝). 램프 밖이면 eslint-disable + 사유.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/leading-\\[[0-9.]+\\]/]',
+    message:
+      '행간 하드코딩 금지 (template literal). --leading-* 램프 토큰이 만드는 유틸리티로.',
+  },
 ];
 
 // 마이그레이션 완료(치환 끝 · error 봉쇄) 디렉토리.

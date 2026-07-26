@@ -259,7 +259,7 @@ function ChangeRow({
               </p>
               <pre
                 data-testid="agent-proposal-diff"
-                className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words text-caption leading-[1.55]"
+                className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words text-caption leading-caption"
               >
                 {renderDiff(file.before, file.after)}
               </pre>
