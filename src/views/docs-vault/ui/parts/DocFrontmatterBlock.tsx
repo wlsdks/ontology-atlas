@@ -378,7 +378,7 @@ export function DocFrontmatterBlock({
       <details
         open={open}
         onToggle={(event) => setOpen(event.currentTarget.open)}
-        className="group rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-3 font-mono text-body leading-[1.85] text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
+        className="group rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-3 font-mono text-body leading-prose text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
       >
         <summary
           data-testid="doc-frontmatter-summary"
@@ -632,7 +632,7 @@ export function DocFrontmatterBlock({
               data-testid="doc-frontmatter-example"
               className="mt-2 flex items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2"
             >
-              <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words font-mono text-label leading-[1.6] text-[color:var(--color-text-secondary)]">
+              <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words font-mono text-label leading-label text-[color:var(--color-text-secondary)]">
                 {exampleDoc}
               </pre>
               <CompactCopyButton

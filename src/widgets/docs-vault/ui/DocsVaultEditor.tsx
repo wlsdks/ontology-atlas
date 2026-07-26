@@ -774,7 +774,7 @@ export function DocsVaultEditor({
               });
             }}
             spellCheck={false}
-            className="absolute inset-0 resize-none bg-[color:var(--color-surface-deep-a40)] px-6 py-6 font-mono text-body leading-[1.7] text-[color:rgba(220,226,240,0.92)] outline-none md:px-10"
+            className="absolute inset-0 resize-none bg-[color:var(--color-surface-deep-a40)] px-6 py-6 font-mono text-body leading-prose text-[color:rgba(220,226,240,0.92)] outline-none md:px-10"
           />
           {autocomplete && acMatches.length > 0 ? (
             <div className="pointer-events-auto absolute bottom-3 left-3 z-10 w-[320px] overflow-hidden rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-surface-deep-a98)] shadow-[0_10px_30px_var(--color-shadow-a50)]">
@@ -840,19 +840,19 @@ export function DocsVaultEditor({
                   ),
                   p: (props) => (
                     <p
-                      className="my-3 text-body leading-[1.65] text-[color:var(--color-text-secondary)]"
+                      className="my-3 text-body leading-prose text-[color:var(--color-text-secondary)]"
                       {...props}
                     />
                   ),
                   ul: (props) => (
                     <ul
-                      className="my-3 list-disc pl-6 text-body leading-[1.7] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
+                      className="my-3 list-disc pl-6 text-body leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
                       {...props}
                     />
                   ),
                   ol: (props) => (
                     <ol
-                      className="my-3 list-decimal pl-6 text-body leading-[1.7] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
+                      className="my-3 list-decimal pl-6 text-body leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
                       {...props}
                     />
                   ),

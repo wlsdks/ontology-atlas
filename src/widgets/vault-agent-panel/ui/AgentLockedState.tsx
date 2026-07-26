@@ -58,7 +58,7 @@ export function AgentLockedState({
         <p className="text-body font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
           {title}
         </p>
-        <p className="text-body leading-[1.65] text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+        <p className="text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
           {body}
         </p>
       </div>
@@ -88,7 +88,7 @@ export function AgentLockedComposer({
 }) {
   const content = (
     <>
-      <span className="min-w-0 flex-1 text-body leading-[1.5] text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
+      <span className="min-w-0 flex-1 text-body leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
         {hint}
       </span>
       <span className="shrink-0 rounded-chip bg-[color:var(--color-indigo-brand)] px-3 py-1.5 text-label font-semibold tracking-label text-white">

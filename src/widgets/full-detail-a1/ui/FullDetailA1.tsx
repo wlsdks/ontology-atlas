@@ -444,7 +444,7 @@ export function FullDetailA1({
               {t("body.title")}
             </h2>
             {bodyMarkdown && bodyMarkdown.trim().length > 0 ? (
-              <div className="prose prose-invert max-w-none text-body-lg leading-[1.7] text-[color:var(--topology-v2-panel-text-secondary)]">
+              <div className="prose prose-invert max-w-none text-body-lg leading-prose text-[color:var(--topology-v2-panel-text-secondary)]">
                 <ReactMarkdown>{bodyMarkdown}</ReactMarkdown>
               </div>
             ) : (

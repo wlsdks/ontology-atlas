@@ -440,7 +440,7 @@ export function ProjectDetailPage({
     measure(70ch)는 한 행이 눈으로 좇을 수 있는 길이의 상한이다.
   */
   const storyMarkdownClassName =
-    "text-body-lg leading-[1.75] text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[650] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[650] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[650] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-[22px] [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-semibold [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-[22px]";
+    "text-body-lg leading-prose text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[650] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[650] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[650] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-[22px] [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-semibold [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-[22px]";
   const projectFullEditHref = getProjectEditHref(project.slug, {
     returnTo: getProjectRuntimeDetailHref(project.slug),
   });
@@ -488,7 +488,7 @@ export function ProjectDetailPage({
                 editable={canManageProject}
                 onSave={(next) => saveProjectField("name", next)}
                 ariaLabel={t("inlineNameAria")}
-                className="text-[27px] leading-[1.05] font-[650] tracking-[-0.015em] text-pretty text-[color:var(--color-text-primary)]"
+                className="text-[27px] leading-display-tight font-[650] tracking-[-0.015em] text-pretty text-[color:var(--color-text-primary)]"
               />
               {/*
                 메타 행은 여기서 끝난다. 예전엔 설명이 이 점-행 **안으로**
@@ -512,7 +512,7 @@ export function ProjectDetailPage({
                 ariaLabel={t("inlineDescriptionAria")}
                 placeholder={t("inlineDescriptionPlaceholder")}
                 dataTestId="project-detail-description"
-                className="mt-2.5 max-w-[64ch] text-body-lg leading-[1.6] text-[color:var(--color-text-secondary)]"
+                className="mt-2.5 max-w-[64ch] text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
               />
             </div>
             {/* flex-none 은 읽기전용 배지(+액션)가 390px 뷰포트를 밀어내는
@@ -789,17 +789,17 @@ export function ProjectDetailPage({
                 {t("handoffTitle")}
               </span>
             </div>
-            <p className="mb-3 text-[12px] leading-[1.6] text-[color:var(--color-text-tertiary)]">
+            <p className="mb-3 text-[12px] leading-body text-[color:var(--color-text-tertiary)]">
               {t("handoffDesc")}
             </p>
             <Button type="button" variant="outline" size="sm" onClick={handleCopyHandoff}>
               {handoffCopyLabel}
             </Button>
             <details className="mt-3">
-              <summary className="cursor-pointer select-none text-[12px] leading-[1.6] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+              <summary className="cursor-pointer select-none text-[12px] leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                 {t("handoffHumanCaption")}
               </summary>
-              <pre className="mt-2 overflow-x-auto font-mono text-[11.5px] leading-[1.7] whitespace-pre-wrap text-[color:var(--color-text-quaternary)]">
+              <pre className="mt-2 overflow-x-auto font-mono text-[11.5px] leading-prose whitespace-pre-wrap text-[color:var(--color-text-quaternary)]">
                 {handoffSnippet}
               </pre>
             </details>

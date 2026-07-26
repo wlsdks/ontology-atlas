@@ -393,7 +393,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
                 {!currentHasOwnSections ? (
                   <p
                     data-testid="shortcut-sheet-current-empty"
-                    className="px-5 pb-4 text-label leading-[1.6] text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+                    className="px-5 pb-4 text-label leading-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
                   >
                     {t("scope.emptyCurrent")}
                   </p>

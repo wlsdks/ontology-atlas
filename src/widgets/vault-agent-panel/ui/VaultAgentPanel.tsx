@@ -529,7 +529,7 @@ export function VaultAgentPanel({
                     submit();
                   }
                 }}
-                className="min-w-0 flex-1 resize-none rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2 text-body leading-[1.5] text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] disabled:opacity-60"
+                className="min-w-0 flex-1 resize-none rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2 text-body leading-body text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] disabled:opacity-60"
               />
               {agent.running ? (
                 <button

@@ -28,7 +28,7 @@ export function AgentPromptDisclosure({
         </p>
         <pre
           data-testid="agent-prompt-text"
-          className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-caption leading-[1.6] text-[color:var(--color-text-tertiary)]"
+          className="max-h-64 overflow-auto whitespace-pre-wrap break-words text-caption leading-caption text-[color:var(--color-text-tertiary)]"
         >
           {systemPrompt}
         </pre>

@@ -475,7 +475,7 @@ export function ProjectDrawer({
 
                     <h2
                       className={cn(
-                        "mt-2 text-hero leading-[1.04] tracking-[var(--tracking-section)] font-[var(--font-weight-signature)]",
+                        "mt-2 text-hero leading-display-tight tracking-[var(--tracking-section)] font-[var(--font-weight-signature)]",
                         isContainerNode
                           ? "text-[color:var(--color-amber-docs-a95)]"
                           : project.isHub

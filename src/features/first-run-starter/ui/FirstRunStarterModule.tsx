@@ -217,7 +217,7 @@ export function FirstRunStarterModule({
 
       <p
         data-testid="first-run-starter-context"
-        className="mb-4 text-body leading-[1.65] text-[color:var(--topology-v2-panel-text-tertiary)]"
+        className="mb-4 text-body leading-body text-[color:var(--topology-v2-panel-text-tertiary)]"
       >
         <b className="font-semibold text-[color:var(--topology-v2-panel-text-primary)]">
           {t(sampleSource === "storefront" ? "contextStorefrontBold" : "contextBold")}
@@ -281,7 +281,7 @@ export function FirstRunStarterModule({
           data-testid="first-run-starter-unsupported"
           className="rounded-lg border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.45)] px-3 py-2.5"
         >
-          <p className="text-label leading-[1.6] text-[color:var(--topology-v2-panel-text-tertiary)]">
+          <p className="text-label leading-label text-[color:var(--topology-v2-panel-text-tertiary)]">
             {t("unsupportedNotice")}
           </p>
           <Link
@@ -364,7 +364,7 @@ export function FirstRunStarterModule({
       ) : (
         <p
           data-testid="first-run-starter-plain-mode-hint"
-          className="mt-1 text-label leading-[1.5] text-[color:var(--topology-v2-panel-text-quaternary)]"
+          className="mt-1 text-label leading-label text-[color:var(--topology-v2-panel-text-quaternary)]"
         >
           {t("plainModeHint")}
         </p>
@@ -384,7 +384,7 @@ export function FirstRunStarterModule({
           {GLOSSARY_TERMS.map((term) => (
             <div
               key={term}
-              className="flex flex-wrap items-baseline gap-x-1.5 text-label leading-[1.5]"
+              className="flex flex-wrap items-baseline gap-x-1.5 text-label leading-label"
             >
               <dt className="shrink-0 font-medium text-[color:var(--topology-v2-panel-text-secondary)]">
                 {glossary(`${term}Term`)}
@@ -460,7 +460,7 @@ export function FirstRunStarterModule({
                 })}
               </p>
             ) : null}
-            <code className="mt-1 block whitespace-pre-wrap break-words font-mono text-label leading-[1.6] text-[color:var(--topology-v2-panel-text-secondary)]">
+            <code className="mt-1 block whitespace-pre-wrap break-words font-mono text-label leading-label text-[color:var(--topology-v2-panel-text-secondary)]">
               {CLI_BOOTSTRAP_COMMAND}
             </code>
           </div>
@@ -480,7 +480,7 @@ export function FirstRunStarterModule({
           {errorText ? (
             <p
               data-testid="first-run-starter-error-detail"
-              className="mt-0.5 break-words text-label leading-[1.5] text-[color:var(--topology-v2-panel-text-quaternary)]"
+              className="mt-0.5 break-words text-label leading-label text-[color:var(--topology-v2-panel-text-quaternary)]"
             >
               {errorText}
             </p>

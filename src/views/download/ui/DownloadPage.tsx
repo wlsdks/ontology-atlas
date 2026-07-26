@@ -80,7 +80,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
                 {t('downloadSectionLabel')}
               </p>
-              <h1 className="mt-1.5 max-w-2xl text-[clamp(1.9rem,4vw,2.75rem)] leading-[1.05] font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
+              <h1 className="mt-1.5 max-w-2xl text-[clamp(1.9rem,4vw,2.75rem)] leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
                 {t('title')}
               </h1>
               <p className="mt-3 max-w-xl text-[13px] leading-6 text-[color:var(--color-text-secondary)]">
@@ -351,7 +351,7 @@ function IntroSection() {
           </p>
           <h2
             id="download-intro-heading"
-            className="text-[clamp(1.6rem,3vw,2.2rem)] leading-[1.06] font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]"
+            className="text-[clamp(1.6rem,3vw,2.2rem)] leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]"
           >
             {t('titleLine1')} <br />
             <span className="text-[color:var(--color-indigo-accent)]">{t('titleEmphasis')}</span>

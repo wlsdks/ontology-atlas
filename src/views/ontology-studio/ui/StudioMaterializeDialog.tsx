@@ -149,10 +149,10 @@ export function StudioMaterializeDialog({
         </div>
 
         <div className="flex flex-col gap-3 px-5 py-4">
-          <p className="text-body tracking-body leading-[1.65] text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+          <p className="text-body tracking-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
             {labels.reason}
           </p>
-          <p className="text-body tracking-body leading-[1.65] text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+          <p className="text-body tracking-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
             {labels.action}
           </p>
 
@@ -207,7 +207,7 @@ export function StudioMaterializeDialog({
           )}
           </div>
 
-          <p className="text-label tracking-label leading-[1.6] text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+          <p className="text-label tracking-label leading-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
             {labels.scopeNote}
           </p>
         </div>

@@ -137,7 +137,7 @@ const EntryCard = ({
       <span className="text-body-lg font-medium text-[color:var(--color-text-primary)] [word-break:keep-all]">
         {title}
       </span>
-      <span className="text-caption leading-[1.5] text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+      <span className="text-caption leading-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
         {desc}
       </span>
     </span>

@@ -64,7 +64,7 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
             <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("eyebrow")}
             </p>
-            <p className="mt-1 text-body leading-[1.45] text-[color:var(--color-text-secondary)]">
+            <p className="mt-1 text-body leading-body text-[color:var(--color-text-secondary)]">
               {t("body")}
             </p>
             <div className="mt-2 flex items-center gap-1.5">

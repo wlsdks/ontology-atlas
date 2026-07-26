@@ -63,7 +63,7 @@ export function AgentHandoffCard({
         </p>
         <pre
           data-testid="agent-handoff-packet"
-          className="max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-chip bg-[color:var(--color-overlay-1)] p-2 text-caption leading-[1.55] text-[color:var(--color-text-secondary)]"
+          className="max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-chip bg-[color:var(--color-overlay-1)] p-2 text-caption leading-caption text-[color:var(--color-text-secondary)]"
         >
           {packet}
         </pre>

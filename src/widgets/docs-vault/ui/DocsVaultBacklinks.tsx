@@ -135,7 +135,7 @@ function BacklinkItem({
       </div>
       {open ? (
         <p
-          className="mt-1 whitespace-normal rounded-sm bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label leading-[1.55] text-[color:var(--color-text-quaternary)]"
+          className="mt-1 whitespace-normal rounded-sm bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]"
           dangerouslySetInnerHTML={{
             __html: formatContext(entry.context),
           }}

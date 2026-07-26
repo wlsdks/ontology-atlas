@@ -67,7 +67,7 @@ export function FullDetailA1ReachPanel({
 
   return (
     <section data-fulldetail-reach className={className}>
-      <p className="max-w-[760px] text-body-lg leading-[1.65] tracking-[-0.005em] text-[color:var(--topology-v2-panel-text-secondary)]">
+      <p className="max-w-[760px] text-body-lg leading-prose tracking-[-0.005em] text-[color:var(--topology-v2-panel-text-secondary)]">
         {labels.leadIn}{" "}
         <span
           data-fulldetail-reach-steps

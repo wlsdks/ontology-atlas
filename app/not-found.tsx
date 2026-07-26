@@ -81,7 +81,7 @@ export default function NotFound() {
             {t.label}
           </p>
         </div>
-        <h1 className="mt-4 text-[22px] leading-[1.18] tracking-[var(--tracking-section)] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+        <h1 className="mt-4 text-[22px] leading-display tracking-[var(--tracking-section)] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {t.title}
         </h1>
         <p className="mt-3 text-[13px] leading-6 text-[color:var(--color-text-secondary)]">

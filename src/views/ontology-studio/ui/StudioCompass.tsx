@@ -1282,7 +1282,7 @@ export function StudioCompass(props: StudioCompassProps) {
               <p className="text-caption font-semibold text-[color:var(--color-text-secondary)]">
                 {labels.draftsTitle}
               </p>
-              <p className="mt-1 text-label leading-[1.5] text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
+              <p className="mt-1 text-label leading-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
                 {labels.draftsHint}
               </p>
             </div>
@@ -1450,10 +1450,10 @@ function CenterCard(
           value={focal.name}
           onChange={(e) => props.onCreateName?.(e.target.value)}
           placeholder={props.labels.createNamePlaceholder}
-          className="w-full bg-transparent text-large font-semibold leading-[1.08] tracking-[-0.022em] text-[color:var(--color-text-primary)] outline-none [word-break:keep-all] placeholder:font-normal placeholder:text-[color:var(--color-text-quaternary)]"
+          className="w-full bg-transparent text-large font-semibold leading-display-tight tracking-[-0.022em] text-[color:var(--color-text-primary)] outline-none [word-break:keep-all] placeholder:font-normal placeholder:text-[color:var(--color-text-quaternary)]"
         />
       ) : (
-        <div className="text-large font-semibold leading-[1.08] tracking-[-0.022em] text-[color:var(--color-text-primary)] [word-break:keep-all]">
+        <div className="text-large font-semibold leading-display-tight tracking-[-0.022em] text-[color:var(--color-text-primary)] [word-break:keep-all]">
           {focal.name}
         </div>
       )}
@@ -1491,11 +1491,11 @@ function CenterCard(
           value={focal.definition}
           onChange={(e) => props.onCreateDefinition?.(e.target.value)}
           placeholder={props.labels.createDefinitionPlaceholder}
-          className="mt-3 min-h-[60px] w-full flex-1 resize-none bg-transparent text-caption leading-[1.6] text-[color:var(--color-text-tertiary)] outline-none [word-break:keep-all] placeholder:text-[color:var(--color-text-quaternary)]"
+          className="mt-3 min-h-[60px] w-full flex-1 resize-none bg-transparent text-caption leading-caption text-[color:var(--color-text-tertiary)] outline-none [word-break:keep-all] placeholder:text-[color:var(--color-text-quaternary)]"
         />
       ) : definition ? (
         <div className="relative mt-3">
-          <div className="max-w-[322px] text-caption leading-[1.55] text-[color:var(--color-text-tertiary)] line-clamp-3 [word-break:keep-all]">
+          <div className="max-w-[322px] text-caption leading-caption text-[color:var(--color-text-tertiary)] line-clamp-3 [word-break:keep-all]">
             {definition}
           </div>
           {definitionLong ? (
@@ -1510,7 +1510,7 @@ function CenterCard(
           ) : null}
           {defExpanded ? (
             <div
-              className="absolute left-0 top-full z-[5] mt-1 max-h-[220px] w-[calc(100%+8px)] overflow-y-auto rounded-[10px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-3 text-caption leading-[1.6] text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+              className="absolute left-0 top-full z-[5] mt-1 max-h-[220px] w-[calc(100%+8px)] overflow-y-auto rounded-[10px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-3 text-caption leading-caption text-[color:var(--color-text-secondary)] [word-break:keep-all]"
               style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
             >
               {definition}
@@ -1525,7 +1525,7 @@ function CenterCard(
           data-testid="studio-create-similar"
           aria-live="polite"
           aria-atomic="true"
-          className="mt-2 flex items-start gap-2 rounded-[8px] border px-2.5 py-1.5 text-label leading-[1.5] text-[color:var(--color-text-tertiary)]"
+          className="mt-2 flex items-start gap-2 rounded-[8px] border px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]"
           style={{ borderColor: "var(--color-amber-muted-a34)", background: "var(--color-amber-muted-a18)" }}
         >
           <TriangleAlert
@@ -2060,7 +2060,7 @@ function InlineEditCard({
         </>
       ) : (
         <div className="px-3.5 pb-3.5 pt-3">
-          <p className="text-label leading-[1.55] text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+          <p className="text-label leading-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
             {labels.editElsewhere(neighbor.title)}
           </p>
           <button
@@ -2262,7 +2262,7 @@ function InlinePicker({
             // 볼트에서도 뜨는데 문구가 볼트 전체를 부정하면 오해가 된다.
             <div
               data-testid="studio-picker-browse-empty"
-              className="px-3 py-3 text-center text-label leading-[1.6] text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+              className="px-3 py-3 text-center text-label leading-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
             >
               {labels.pickerBrowseEmpty}
             </div>
@@ -2358,7 +2358,7 @@ function InlinePicker({
       {similarHit ? (
         <div
           data-testid="studio-picker-similar"
-          className="mx-2 mb-1.5 flex items-start gap-2 rounded-[9px] border px-2.5 py-2 text-label leading-[1.5] text-[color:var(--color-text-tertiary)]"
+          className="mx-2 mb-1.5 flex items-start gap-2 rounded-[9px] border px-2.5 py-2 text-label leading-label text-[color:var(--color-text-tertiary)]"
           style={{ borderColor: "var(--color-amber-muted-a34)", background: "var(--color-amber-muted-a18)" }}
         >
           <span className="flex-none text-[color:var(--color-amber-muted-a62)]">⚠</span>
