@@ -1,10 +1,14 @@
 {
   "version": "2026-04-23",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "generatedAt": "2026-07-26T22:53:20.979Z",
 =======
   "generatedAt": "2026-07-26T22:48:51.655Z",
 >>>>>>> 73f53ec8f (docs: 행간 램프 등재 — 값 옆에 쓰임을 못 박는다)
+=======
+  "generatedAt": "2026-07-26T23:00:17.000Z",
+>>>>>>> 548d1f9e3 (chore: docs-vault 매니페스트 재생성 (행간 램프 문서 변경 반영))
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3138,6 +3142,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 새 프로젝트 만들기 화면은 만들기 화면으로 다시 만들었다",
+          "slug": "2026-07-27-새-프로젝트-만들기-화면은-만들기-화면으로-다시-만들었다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 활성 문서가 퇴역 Sigma·Builder를 현재 구현처럼 설명하지 않는다",
           "slug": "2026-07-27-활성-문서가-퇴역-sigmabuilder를-현재-구현처럼-설명하지-않는다"
         },
@@ -5093,9 +5102,14 @@
       "updatedAt": "2026-07-26T22:52:09.970Z",
 =======
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 같은 패널 안에서도 파일마다 줄 간격이 조금씩 달랐다. 눈에 띄게 이상하진 않지만 쌓이면 화면이 미묘하게 삐뚤빼뚤해지는 종류의 누수다. 전수 측정 결과 손",
+<<<<<<< HEAD
       "wordCount": 52265,
       "updatedAt": "2026-07-26T22:48:51.655Z",
 >>>>>>> 73f53ec8f (docs: 행간 램프 등재 — 값 옆에 쓰임을 못 박는다)
+=======
+      "wordCount": 52640,
+      "updatedAt": "2026-07-27T08:00:17+09:00",
+>>>>>>> 548d1f9e3 (chore: docs-vault 매니페스트 재생성 (행간 램프 문서 변경 반영))
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5916,8 +5930,12 @@
       "updatedAt": "2026-07-26T22:51:28.390Z",
 =======
       "wordCount": 17389,
+<<<<<<< HEAD
       "updatedAt": "2026-07-26T22:47:49.029Z",
 >>>>>>> 73f53ec8f (docs: 행간 램프 등재 — 값 옆에 쓰임을 못 박는다)
+=======
+      "updatedAt": "2026-07-27T08:00:17+09:00",
+>>>>>>> 548d1f9e3 (chore: docs-vault 매니페스트 재생성 (행간 램프 문서 변경 반영))
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -6325,8 +6343,8 @@
         },
         {
           "depth": 3,
-          "text": "`/project/[slug]/edit` and `/project/new` — Full editor",
-          "slug": "projectslugedit-and-projectnew-full-editor"
+          "text": "`/project/[slug]/edit` — Full editor",
+          "slug": "projectslugedit-full-editor"
         },
         {
           "depth": 4,
@@ -6350,8 +6368,8 @@
         },
         {
           "depth": 3,
-          "text": "`/project/new` — Create",
-          "slug": "projectnew-create"
+          "text": "`/project/new` — Create (restructured 2026-07-27)",
+          "slug": "projectnew-create-restructured-2026-07-27"
         },
         {
           "depth": 3,
@@ -6516,12 +6534,17 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
 <<<<<<< HEAD
+<<<<<<< HEAD
       "wordCount": 14573,
       "updatedAt": "2026-07-26T22:53:20.979Z",
 =======
       "wordCount": 13973,
       "updatedAt": "2026-07-27T06:02:53+09:00",
 >>>>>>> 73f53ec8f (docs: 행간 램프 등재 — 값 옆에 쓰임을 못 박는다)
+=======
+      "wordCount": 14197,
+      "updatedAt": "2026-07-27T07:43:37+09:00",
+>>>>>>> 548d1f9e3 (chore: docs-vault 매니페스트 재생성 (행간 램프 문서 변경 반영))
       "linksOut": [
         "slug",
         "project:slug",
