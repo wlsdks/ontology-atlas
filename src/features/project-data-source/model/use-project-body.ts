@@ -3,16 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
-import {
-  extractProjectBody,
-  findProjectVaultDoc,
-  vaultContent as staticVaultContentRaw,
-  vaultManifest as staticVaultManifestRaw,
-  type VaultManifest,
-} from '@/entities/docs-vault';
-
-const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
-const staticVaultContent = staticVaultContentRaw as Record<string, string>;
+import { useStaticVaultSource } from '@/features/vault-sample-source';
+import { extractProjectBody, findProjectVaultDoc } from '@/entities/docs-vault';
 
 export interface UseProjectBodyState {
   /** project.md 의 실제 마크다운 본문. 없거나 아직 못 읽었으면 null. */
@@ -33,6 +25,10 @@ export interface UseProjectBodyState {
 export function useProjectBody(slug: string | null): UseProjectBodyState {
   const mode = useDataSourceMode();
   const vault = useLocalVault();
+  // 매니페스트와 본문을 **짝으로** 받는다 — 예전 결함이 정확히 "매니페스트는
+  // storefront, 본문은 dogfood" 였다. 모듈 상수 한 벌을 그대로 돌려주므로
+  // 참조가 안정적이라 effect 의존성에 넣어도 재실행 루프가 없다.
+  const staticSource = useStaticVaultSource();
   const [resolved, setResolved] = useState<{ slug: string; body: string | null } | null>(
     null,
   );
@@ -50,8 +46,8 @@ export function useProjectBody(slug: string | null): UseProjectBodyState {
     }
 
     if (mode === 'static') {
-      const doc = findProjectVaultDoc(staticVaultManifest, slug);
-      const body = doc ? extractProjectBody(staticVaultContent[doc.slug]) ?? null : null;
+      const doc = findProjectVaultDoc(staticSource.manifest, slug);
+      const body = doc ? extractProjectBody(staticSource.content[doc.slug]) ?? null : null;
       window.queueMicrotask(() => {
         if (!cancelled) setResolved({ slug, body });
       });
@@ -82,7 +78,7 @@ export function useProjectBody(slug: string | null): UseProjectBodyState {
     return () => {
       cancelled = true;
     };
-  }, [slug, mode, vault.manifest, vault.fileHandles]);
+  }, [slug, mode, vault.manifest, vault.fileHandles, staticSource]);
 
   return { body: resolved && resolved.slug === slug ? resolved.body : null };
 }

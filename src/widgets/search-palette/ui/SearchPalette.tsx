@@ -10,12 +10,8 @@ import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED } from '@/shared/motion';
 import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
 import type { Project } from '@/entities/project';
 import { useTaxonomy } from '@/features/taxonomy';
-import {
-  buildDocsVaultHref,
-  vaultManifest,
-  type VaultDoc,
-  type VaultManifest,
-} from '@/entities/docs-vault';
+import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
+import { useStaticVaultSource } from '@/features/vault-sample-source';
 import { searchProjects } from '../model/fuzzy-search';
 
 // Source Vault 매칭 — 가볍게 title/excerpt/slug includes. ⌘K 팔레트는
@@ -205,11 +201,14 @@ function SearchPaletteDialog({
   }, [filteredProjects, query]);
 
   // Vault 문서 매칭 — 쿼리 있을 때 top 3.
+  // 매니페스트를 직접 import 하면 "예시 비즈니스 보기" 선택을 무시하고 늘
+  // dogfood 를 뒤진다 — 팔레트가 화면에 안 보이는 볼트를 검색하는 셈이다.
+  // 훅은 훅 규칙상 useMemo 밖에서 부르고 값만 의존성으로 넘긴다.
+  const { manifest: staticManifest } = useStaticVaultSource();
   const docResults = useMemo(() => {
     if (!query.trim()) return [];
-    const manifest = vaultManifest as VaultManifest;
-    return matchVaultDocs(query, manifest.docs);
-  }, [query]);
+    return matchVaultDocs(query, staticManifest.docs);
+  }, [query, staticManifest]);
   const rows = useMemo<PaletteRow[]>(
     () => [
       ...docResults.map((doc) => ({ kind: 'doc' as const, doc })),

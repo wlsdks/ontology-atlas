@@ -11,9 +11,7 @@ import {
 } from '@/entities/knowledge-graph';
 import {
   deriveOntologyFromVault,
-  vaultManifest as staticVaultManifestRaw,
-  sampleStorefrontManifest as storefrontVaultManifestRaw,
-  type VaultManifest,
+  resolveStaticVaultSource,
   type VaultOntologyDerivation,
 } from '@/entities/docs-vault';
 import { isContainmentRelation } from '@/shared/lib/ontology-tree';
@@ -26,17 +24,17 @@ import { useVaultOntology } from './use-vault-ontology';
 const VAULT_SENTINEL_DATE = new Date(0);
 const VAULT_SENTINEL_AUTHOR = 'vault-frontmatter';
 
-// 빌드타임 dogfood 매니페스트 — JSON import. mode === 'static' 일 때
-// 진실원. local 모드와는 별 path.
-const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
-const STATIC_DERIVATION: VaultOntologyDerivation =
-  deriveOntologyFromVault(staticVaultManifest);
-
-// P0 공감형 샘플 vault — "예시 비즈니스 보기" 선택 시 진실원(dogfood 와 같은
-// 빌드타임 JSON import 라 module-load 1 회 derive + 메모이즈).
-const storefrontVaultManifest = storefrontVaultManifestRaw as VaultManifest;
-const STOREFRONT_DERIVATION: VaultOntologyDerivation =
-  deriveOntologyFromVault(storefrontVaultManifest);
+// 번들 샘플 볼트 — mode === 'static' 일 때 진실원. local 모드와는 별 path.
+// 매니페스트는 리졸버를 통해서만 받는다: JSON 을 직접 import 하면 매니페스트와
+// 본문이 서로 다른 볼트에서 오는 사고가 다시 열린다(단일 진입점 계약,
+// tests/contract/static-vault-source.contract.test.ts).
+// 둘 다 빌드타임 JSON 이라 module-load 1 회만 derive 하고 재사용한다.
+const STATIC_DERIVATION: VaultOntologyDerivation = deriveOntologyFromVault(
+  resolveStaticVaultSource('dogfood').manifest,
+);
+const STOREFRONT_DERIVATION: VaultOntologyDerivation = deriveOntologyFromVault(
+  resolveStaticVaultSource('storefront').manifest,
+);
 
 export function derivationToInsight(
   d: VaultOntologyDerivation,

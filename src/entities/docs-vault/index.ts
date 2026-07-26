@@ -13,6 +13,10 @@ export { default as vaultContent } from './data/content.json';
 // 빌드한다.
 export { default as sampleStorefrontManifest } from './data/sample-storefront.manifest.json';
 export {
+  resolveStaticVaultSource,
+  type StaticVaultSource,
+} from './lib/static-vault-source';
+export {
   pinnedDocsStorageKey,
   recentDocsStorageKey,
   vaultScopeKey,

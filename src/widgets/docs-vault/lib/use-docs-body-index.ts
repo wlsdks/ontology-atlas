@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { vaultContent, type VaultDoc } from '@/entities/docs-vault';
+import { type VaultDoc } from '@/entities/docs-vault';
+import { useStaticVaultSource } from '@/features/vault-sample-source';
 import {
   buildBodyEntry,
   docBodyCacheKey,
@@ -46,6 +47,10 @@ export function useDocsBodyIndex({
 }: Options): { bodyIndex: DocsBodyIndex; indexing: boolean } {
   const [bodyIndex, setBodyIndex] = useState<DocsBodyIndex>(() => new Map());
   const [indexing, setIndexing] = useState(false);
+  // static 볼트의 번들 본문 — 검색 결과가 목록(매니페스트)과 같은 볼트를
+  // 가리키게 하려면 본문도 같은 샘플에서 와야 한다. 번들 content.json 을
+  // 직접 읽으면 "예시 비즈니스 보기" 에서 도그푸드 본문이 검색된다.
+  const { content: bundledContent } = useStaticVaultSource();
   /** slug → entry 캐시. docs 배열이 갈려도 key 가 같으면 재사용. */
   const cacheRef = useRef<Map<string, DocsBodyEntry>>(new Map());
   /** 실패한 key — 같은 mtime 에 대한 재시도 폭주 방지 (변경되면 재시도). */
@@ -82,7 +87,7 @@ export function useDocsBodyIndex({
       getDocContent ??
       ((slug: string) =>
         fetchServerDocContent(slug, {
-          bundledContent: vaultContent as Record<string, string>,
+          bundledContent,
           locationHref:
             typeof window === 'undefined' ? undefined : window.location.href,
         }));
@@ -121,7 +126,7 @@ export function useDocsBodyIndex({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [docs, getDocContent, startDelayMs]);
+  }, [bundledContent, docs, getDocContent, startDelayMs]);
 
   return { bodyIndex, indexing };
 }

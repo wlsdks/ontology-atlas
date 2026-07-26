@@ -9,9 +9,9 @@ import { useTranslations } from 'next-intl';
 import { ExternalLink, Hash } from 'lucide-react';
 import {
   buildDocsVaultHref,
-  vaultContent,
   type VaultDoc,
 } from '@/entities/docs-vault';
+import { useStaticVaultSource } from '@/features/vault-sample-source';
 import { splitHighlightSegments } from '@/shared/lib/highlight-match';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { fetchServerDocContent } from '../lib/server-doc-content';
@@ -64,6 +64,10 @@ export function DocsVaultViewer({
   const t = useTranslations('vaultWidgets.viewer');
   const [raw, setRaw] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // static 볼트의 번들 본문 — 매니페스트를 고른 것과 **같은 볼트**에서 와야
+  // 한다. 예전 결함이 정확히 이 어긋남이었다(매니페스트는 예시 쇼핑몰,
+  // 본문은 도그푸드라 제목과 내용이 다른 문서를 가리켰다).
+  const { content: bundledContent } = useStaticVaultSource();
 
   // raw 로드되고 highlightQuery 있으면 첫 매치로 자동 스크롤 — md-highlight
   // class 가 부여된 첫 mark 를 찾아 scrollIntoView.
@@ -85,7 +89,7 @@ export function DocsVaultViewer({
     const fetcher = getDocContent
       ? getDocContent(doc.slug)
       : fetchServerDocContent(doc.slug, {
-          bundledContent: vaultContent as Record<string, string>,
+          bundledContent,
           locationHref:
             typeof window === 'undefined' ? undefined : window.location.href,
         });
@@ -116,7 +120,7 @@ export function DocsVaultViewer({
     return () => {
       cancelled = true;
     };
-  }, [doc.slug, getDocContent]);
+  }, [bundledContent, doc.slug, getDocContent]);
 
   // 문자열 노드에 highlightQuery 매치를 <mark> 로 래핑. useMemo 내부에서
   // 의존성 추적하기 좋게 pure 함수로 분리, 클로저 대신 인자로 query 전달.

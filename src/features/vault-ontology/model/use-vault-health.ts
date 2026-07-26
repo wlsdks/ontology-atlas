@@ -4,11 +4,7 @@ import { useMemo } from 'react';
 import { useDataSourceMode } from '@/features/data-source-mode';
 import { useSampleSource } from '@/features/vault-sample-source';
 import { useLocalVault } from '@/features/docs-vault-local';
-import {
-  vaultManifest as staticVaultManifestRaw,
-  sampleStorefrontManifest as storefrontVaultManifestRaw,
-  type VaultManifest,
-} from '@/entities/docs-vault';
+import { resolveStaticVaultSource, type VaultManifest } from '@/entities/docs-vault';
 import {
   computeVaultHealth,
   type VaultHealthResult,
@@ -22,8 +18,10 @@ import {
  * derived graph. Mirrors the mode selection of `useOntologyInsight` so the
  * verdict is computed against whatever vault the rest of the page shows.
  */
-const staticManifest = staticVaultManifestRaw as VaultManifest;
-const storefrontManifest = storefrontVaultManifestRaw as VaultManifest;
+// 매니페스트는 리졸버를 통해서만 받는다 — JSON 직접 import 는 샘플 선택을
+// 우회할 수 있는 두 번째 진입점이 된다(tests/contract/static-vault-source.contract.test.ts).
+const staticManifest = resolveStaticVaultSource('dogfood').manifest;
+const storefrontManifest = resolveStaticVaultSource('storefront').manifest;
 
 const staticHealthCache = new WeakMap<VaultManifest, VaultHealthResult>();
 function manifestHealth(manifest: VaultManifest): VaultHealthResult {
