@@ -18,7 +18,10 @@
  * - `git_snapshot` — 모델의 도구가 아니라 **동의 카드의 앱 기능**이다.
  *   모델이 커밋 시점을 정하게 두지 않는다.
  * - `query_ontology` — 인자 20종짜리 만능 도구. v1 에서는 개별 읽기 도구
- *   11종으로 덮고, 필요가 실측되면 추가한다.
+ *   10종으로 덮고, 필요가 실측되면 추가한다.
+ * - `query_concepts` — 필터 표현식 파서(`mcp/src/query.mjs`)를 웹 번들에
+ *   다시 구현해야 하는데, 재구현은 곧 drift 다. `list_concepts` 의
+ *   kind/domain 필터 + `find_evidence` 가 실사용을 덮는다.
  * - `connection_info` / `compile_ontology` — 앱이 이미 아는 것.
  */
 
@@ -136,7 +139,7 @@ const RELATION_SPEC_SCHEMA: AgentJsonSchema = {
   additionalProperties: false,
 };
 
-/** 읽기 도구 11종. */
+/** 읽기 도구 10종. */
 export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
   {
     name: 'get_concept',
@@ -211,29 +214,6 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
           description: 'Max rows. Defaults to 100, max 500.',
         },
       },
-    },
-  },
-  {
-    name: 'query_concepts',
-    description:
-      'Filter nodes with an expression, e.g. `kind=capability AND has(elements)`. Supports NOT / AND / OR.',
-    effect: 'read',
-    parameters: {
-      type: 'object',
-      properties: {
-        filter: {
-          type: 'string',
-          description:
-            'Filter expression. Example: kind=capability AND has(elements). Wrap values containing whitespace with quotes.',
-        },
-        limit: {
-          type: 'integer',
-          minimum: 1,
-          maximum: 500,
-          description: 'Max rows. Defaults to 100, max 500.',
-        },
-      },
-      required: ['filter'],
     },
   },
   {
