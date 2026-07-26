@@ -38,8 +38,11 @@ const AGENT_ACTIVITY = {
   heartbeat: null,
 } as unknown as AgentActivityStatus;
 
-function renderModel(selected: KnowledgeGraphNode, nodes: KnowledgeGraphNode[]) {
-  const edges: KnowledgeGraphEdge[] = [];
+function renderModel(
+  selected: KnowledgeGraphNode,
+  nodes: KnowledgeGraphNode[],
+  edges: KnowledgeGraphEdge[] = [],
+) {
   return renderHook(() =>
     useNodeDatasheetModel({
       selectedOntologyNode: selected,
@@ -87,6 +90,37 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
     );
     // 근거 행은 그대로 남는다(팝오버가 이미 그 문서를 이름까지 붙여 보여준다).
     expect(model.v2DatasheetModel?.evidence.total).toBe(1);
+  });
+
+  // 스코프 정정 (2026-07-26) — 부모(속한 곳)를 세지 않으면 부모만 있는 노드의
+  // 팝오버가 "이어진 곳 0", 핸드오프가 "연결 0" 이 된다. 모델이 그 버킷을
+  // 끝까지 실어 나르는지 잠근다.
+  it("부모만 있는 노드도 속한 곳을 세고 핸드오프에 싣는다", () => {
+    const parent = node("capability:frontmatter-to-ontology", [], { kind: "capability" });
+    const selected = node("element:derive-ontology-from-vault", []);
+    const model = renderModel(
+      selected,
+      [selected, parent],
+      [
+        {
+          id: "e1",
+          from: parent.id,
+          to: selected.id,
+          type: "contains",
+          projectIds: [],
+          evidenceIds: [],
+          lastApprovedAt: stamp,
+          lastApprovedBy: "test",
+        },
+      ],
+    );
+
+    expect(model.v2DatasheetModel?.metric.belongsTo).toBe(1);
+    expect(model.v2DatasheetModel?.groups.belongsTo.total).toBe(1);
+    expect(model.v2DatasheetModel?.handoffText).toContain("belongs_to: 1");
+    expect(model.v2DatasheetModel?.handoffText).toContain(
+      "belongs_to_names: capability:frontmatter-to-ontology",
+    );
   });
 
   it("`hasOwnDocument` 미지정 노드는 종전대로 자기 문서로 읽는다 (하위 호환)", () => {

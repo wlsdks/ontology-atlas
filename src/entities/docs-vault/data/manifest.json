@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T06:12:41.000Z",
+  "generatedAt": "2026-07-26T06:46:27.164Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,8 +3114,18 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 지도 팝오버: 부모도 「이어진 곳」이다",
+          "slug": "2026-07-26-지도-팝오버-부모도-이어진-곳이다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — 인사이트: 숫자가 자기 스코프를 말한다",
           "slug": "2026-07-26-인사이트-숫자가-자기-스코프를-말한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 — 화면이 부르는 이름으로 찾고, 화면 언어로 만든다",
+          "slug": "2026-07-26-화면이-부르는-이름으로-찾고-화면-언어로-만든다"
         },
         {
           "depth": 2,
@@ -4923,9 +4933,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 계산은 전부 맞았다. 틀린 건 말이었다. 같은 사실이 화면마다 다른 수로 나오는데 어느 화면도 자기 수가 무엇을 세는지 말하지 않아, 사용자가 \"어느 수가",
-      "wordCount": 44259,
-      "updatedAt": "2026-07-26T15:12:41+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 「이어진 곳」은 모든 연결을 약속하는 말인데, 실제로는 네 관계 버킷 중 셋만 세고 있었다. 빠진 하나가 속한 곳(이 개념을 담고 있는 상위 개념)이라, ",
+      "wordCount": 44760,
+      "updatedAt": "2026-07-26T06:46:27.164Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"

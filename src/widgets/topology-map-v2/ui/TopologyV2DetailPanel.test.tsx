@@ -26,6 +26,7 @@ const labels = {
   containsOtherGroup: "other",
   metricUsedBy: "used by",
   metricDependsOn: "leans on",
+  metricBelongsTo: "belongs to",
   metricEvidence: "evidence",
   statsConnected: "Connected",
   statsEvidenceDocs: "Source docs",
@@ -77,7 +78,6 @@ function renderPanel(
       kind="domain"
       domain={overrides.domain !== undefined ? overrides.domain : null}
       powered={false}
-      metric={{ contains: 0, usedBy: 1, dependsOn: 2, evidence: evidence.total }}
       groups={{
         contains: { rows: [], total: 0 },
         usedBy: { rows: [], total: 1 },
@@ -281,7 +281,6 @@ describe("TopologyV2DetailPanel — sticky 푸터 slug 평문화 (Toss C2)", () 
         kind="capability"
         domain={null}
         powered={false}
-        metric={{ contains: 0, usedBy: 0, dependsOn: 0, evidence: 0 }}
         groups={{
           contains: { rows: [], total: 0 },
           usedBy: { rows: [], total: 0 },
@@ -383,7 +382,6 @@ describe("TopologyV2DetailPanel — M-2 typed containment split", () => {
         kind="domain"
         domain={null}
         powered={false}
-        metric={{ contains: 2, usedBy: 1, dependsOn: 0, evidence: 0 }}
         groups={{
           contains: {
             rows: [
@@ -451,6 +449,108 @@ describe("TopologyV2DetailPanel — plain stats line + group count chips", () =>
   });
 });
 
+// 스코프 정정 (2026-07-26) — "이어진 곳" 은 네 관계 버킷을 모두 세고, 세는
+// 버킷은 모두 그린다. 예전엔 속한 곳(들어오는 담김)만 빠져 있어서, 부모만
+// 있는 노드(dogfood 294개 중 221개 = 75%)가 "이어진 곳 0" 이라고 말했다 —
+// 바로 위에 클릭 가능한 도메인 칩을 띄운 채로. 화면이 확인 가능한 거짓을
+// 말하지 않게 잠근다.
+describe("TopologyV2DetailPanel — 부모만 있는 노드의 이어진 곳", () => {
+  const parentRow = {
+    id: "capability:frontmatter-to-ontology",
+    title: "Frontmatter → Ontology Stub",
+    kind: "capability",
+    relationType: "contains",
+    direction: "incoming" as const,
+  };
+
+  function renderParentOnly(onSelectConnection: (id: string) => void = () => {}) {
+    render(
+      <TopologyV2DetailPanel
+        nodeId="element:src/entities/docs-vault/lib/derive-ontology-from-vault.ts"
+        slug="src/entities/docs-vault/lib/derive-ontology-from-vault.ts"
+        title="Derive Ontology From Vault"
+        kind="element"
+        domain={{ id: "domain:ontology-core", title: "온톨로지 코어" }}
+        powered={false}
+        groups={{
+          contains: { rows: [], total: 0 },
+          usedBy: { rows: [], total: 0 },
+          dependsOn: { rows: [], total: 0 },
+          belongsTo: { rows: [parentRow], total: 1 },
+        }}
+        evidence={{ rows: [], total: 0 }}
+        codeLocations={[]}
+        handoffText="node: src/entities/docs-vault/lib/derive-ontology-from-vault.ts"
+        documentHref={null}
+        studioEditHref="/ontology/studio/?node=element%3Aderive-ontology-from-vault"
+        labels={labels}
+        onSelectConnection={onSelectConnection}
+        onCopyHandoff={() => {}}
+        onClose={() => {}}
+        onSetPathSource={() => {}}
+      />,
+    );
+  }
+
+  it("counts the parent — a node with a parent never reads '이어진 곳 0'", () => {
+    renderParentOnly();
+    const stats = screen.getByTestId("topology-v2-detail-panel-stats");
+    // 첫 <b> 가 연결 집계, 두 번째가 근거 문서 수.
+    expect(stats.querySelectorAll("b")[0].textContent).toBe("1");
+  });
+
+  it("draws the 속한 곳 group with the parent row, clickable like any other connection", () => {
+    const onSelectConnection = vi.fn();
+    renderParentOnly(onSelectConnection);
+    const group = document.querySelector("[data-datasheet-group='belongsTo']");
+    expect(group).not.toBeNull();
+    expect(group!.textContent).toContain(labels.metricBelongsTo);
+    expect(document.querySelector("[data-datasheet-group-total='belongsTo']")!.textContent).toBe("1");
+    fireEvent.click(screen.getByText("Frontmatter → Ontology Stub"));
+    expect(onSelectConnection).toHaveBeenCalledWith("capability:frontmatter-to-ontology");
+  });
+
+  it("does not show the '아직 기록된 관계 없음' empty-state — the parent IS a recorded relation", () => {
+    renderParentOnly();
+    expect(screen.queryByText(labels.noConnections)).not.toBeInTheDocument();
+  });
+
+  it("keeps the aggregate equal to the sum of the four rendered group totals", () => {
+    render(
+      <TopologyV2DetailPanel
+        nodeId="capability:mcp-server"
+        slug="ontology/capabilities/mcp-server"
+        title="MCP Server"
+        kind="capability"
+        domain={null}
+        powered={false}
+        groups={{
+          contains: { rows: [], total: 27 },
+          usedBy: { rows: [], total: 9 },
+          dependsOn: { rows: [], total: 1 },
+          belongsTo: { rows: [parentRow], total: 1 },
+        }}
+        evidence={{ rows: [], total: 0 }}
+        codeLocations={[]}
+        handoffText="node: ontology/capabilities/mcp-server"
+        documentHref={null}
+        studioEditHref="/ontology/studio/?node=capability%3Amcp-server"
+        labels={labels}
+        onSelectConnection={() => {}}
+        onCopyHandoff={() => {}}
+        onClose={() => {}}
+        onSetPathSource={() => {}}
+      />,
+    );
+    const stats = screen.getByTestId("topology-v2-detail-panel-stats");
+    const groupTotals = [...document.querySelectorAll("[data-datasheet-group-total]")]
+      .filter((el) => el.getAttribute("data-datasheet-group-total") !== "evidence")
+      .map((el) => Number(el.textContent));
+    expect(groupTotals.reduce((a, b) => a + b, 0)).toBe(38);
+    expect(stats.querySelectorAll("b")[0].textContent).toBe("38");
+  });
+});
+
 describe("TopologyV2DetailPanel — P3-① 미기록 관계 empty-state (0 vs 미기록 disambiguation)", () => {
   it("renders the honest 'no relations recorded yet' empty-state when a node has zero recorded relations", () => {
     // global-search 처럼 코드에선 널리 쓰이지만 vault frontmatter 에는 아직
@@ -464,7 +564,6 @@ describe("TopologyV2DetailPanel — P3-① 미기록 관계 empty-state (0 vs �
         kind="element"
         domain={null}
         powered={false}
-        metric={{ contains: 0, usedBy: 0, dependsOn: 0, evidence: 0 }}
         groups={{
           contains: { rows: [], total: 0 },
           usedBy: { rows: [], total: 0 },
@@ -574,7 +673,6 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
         kind="domain"
         domain={null}
         powered={false}
-        metric={{ contains: 60, usedBy: 0, dependsOn: 0, evidence: 0 }}
         groups={{
           contains: {
             rows, // capped preview
@@ -634,7 +732,6 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
         kind="domain"
         domain={null}
         powered={false}
-        metric={{ contains: 3, usedBy: 0, dependsOn: 0, evidence: 0 }}
         groups={{
           contains: { rows, total: 3, summary: { groups: [], otherCount: 3, total: 3, usable: false } },
           usedBy: { rows: [], total: 0 },
@@ -676,7 +773,6 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
         kind="domain"
         domain={null}
         powered={false}
-        metric={{ contains: 40, usedBy: 0, dependsOn: 0, evidence: 0 }}
         groups={{
           contains: {
             rows,
@@ -783,7 +879,6 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
         kind="domain"
         domain={null}
         powered={false}
-        metric={{ contains: 2, usedBy: 0, dependsOn: 0, evidence: 0 }}
         groups={{
           contains: {
             rows: [
@@ -830,7 +925,6 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
         kind="domain"
         domain={null}
         powered={false}
-        metric={{ contains: 1, usedBy: 0, dependsOn: 0, evidence: 0 }}
         groups={{
           contains: {
             rows: [{ id: "capability:x", title: "X", kind: "capability", relationType: "contains", direction: "outgoing" }],

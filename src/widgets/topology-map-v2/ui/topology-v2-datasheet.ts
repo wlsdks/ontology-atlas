@@ -163,9 +163,15 @@ export interface V2ConnectionGroupsView {
   usedBy: V2ConnectionGroupView;
   /** Outgoing non-containment — plain "기대는 곳" (places this leans on). */
   dependsOn: V2ConnectionGroupView;
-  /** Incoming containment — plain "속한 곳" (the parent this belongs to).
-   *  Kept for handoff/count completeness; the panel surfaces it as the domain
-   *  header (N6) rather than a group. */
+  /**
+   * Incoming containment — plain "속한 곳" (the parent(s) this node belongs to).
+   *
+   * 스코프 정정 (2026-07-26): 이 버킷은 한동안 컴팩트 팝오버에서 렌더되지도,
+   * "이어진 곳" 집계에 세어지지도 않았다. 그래서 **부모만 있는 노드**(dogfood
+   * 294개 중 221개 = 75%)의 팝오버가 "이어진 곳 0" 이라고 말했다 — 바로 위에
+   * 클릭 가능한 도메인 칩을 띄운 채로. 검증 가능한 거짓이라 팝오버도 이 그룹을
+   * 그리고 집계에 포함한다(전체 상세와 같은 네 버킷·같은 단어).
+   */
   belongsTo: V2ConnectionGroupView;
 }
 
@@ -212,6 +218,12 @@ export interface V2MetricValues {
   usedBy: number;
   /** Direct outgoing non-containment — plain "기대는 곳" (places this leans on). */
   dependsOn: number;
+  /**
+   * Direct incoming containment — plain "속한 곳" (the parent(s) this node sits
+   * inside). 부모만 있는 노드가 대다수라, 이 값이 빠지면 집계가 0 이 된다
+   * (`V2ConnectionGroupsView.belongsTo` 주석 참고).
+   */
+  belongsTo: number;
   /** Node-level evidence references — plain "근거". */
   evidence: number;
 }
@@ -220,6 +232,7 @@ export interface V2MetricLabels {
   contains: string;
   usedBy: string;
   dependsOn: string;
+  belongsTo: string;
   evidence: string;
 }
 
@@ -227,7 +240,7 @@ export interface V2MetricLabels {
  * connection-group id below it (`data-datasheet-group`), so the strip and the
  * groups stay reconciled by construction. */
 export interface V2MetricSegment {
-  key: "contains" | "usedBy" | "dependsOn" | "evidence";
+  key: "contains" | "usedBy" | "dependsOn" | "belongsTo" | "evidence";
   label: string;
   value: number;
 }
@@ -256,6 +269,10 @@ export function buildV2MetricSegments(
     segments.push({ key: "contains", label: labels.contains, value: values.contains });
   segments.push({ key: "usedBy", label: labels.usedBy, value: values.usedBy });
   segments.push({ key: "dependsOn", label: labels.dependsOn, value: values.dependsOn });
+  // "속한 곳"도 "담는 것"과 같은 규칙 — 0 일 때만 감춘다(루트/고아 노드에
+  // "속한 곳 0" 을 붙이지 않기 위해). 있는데 감추면 그게 앞서의 결함이다.
+  if (values.belongsTo > 0)
+    segments.push({ key: "belongsTo", label: labels.belongsTo, value: values.belongsTo });
   segments.push({ key: "evidence", label: labels.evidence, value: values.evidence });
   return segments;
 }
@@ -337,6 +354,10 @@ export interface V2HandoffInput {
   contains: number;
   usedBy: number;
   dependsOn: number;
+  /** Incoming containment count — 부모. 이게 빠져 있던 동안 부모만 있는 노드의
+   *  핸드오프는 `contains: 0 / used_by: 0 / depends_on: 0` 이라 에이전트에게
+   *  "고아 노드" 로 읽혔다(실제로는 도메인·역량 아래 있는 노드). */
+  belongsTo: number;
   evidence: number;
   /** Names of the containment-child (contains) group's rows. */
   containsNames: readonly string[];
@@ -344,6 +365,8 @@ export interface V2HandoffInput {
   usedByNames: readonly string[];
   /** Names of the outgoing non-containment (dependsOn) group's rows. */
   dependsNames: readonly string[];
+  /** Names of the incoming containment (belongsTo) group's rows — 부모 이름. */
+  belongsToNames: readonly string[];
 }
 
 /**
@@ -355,8 +378,9 @@ export interface V2HandoffInput {
  * M-2 payload shape change: containment is now its own `contains` /
  * `contains_names` fields, split OUT of `depends_on` / `depends_names` (which
  * previously folded containment children in via the direction-only grouping).
- * `used_by` no longer includes the parent (`belongs_to`) either — the counts
- * match the panel's typed groups and the full-detail surface exactly.
+ * `used_by` no longer includes the parent either — the parent is its own
+ * `belongs_to` / `belongs_to_names` pair (2026-07-26), so the payload carries
+ * the same four typed buckets the panel and the full-detail surface render.
  */
 export function formatV2HandoffText(input: V2HandoffInput): string {
   const list = (names: readonly string[]) =>
@@ -373,10 +397,12 @@ export function formatV2HandoffText(input: V2HandoffInput): string {
     `contains: ${input.contains}`,
     `used_by: ${input.usedBy}`,
     `depends_on: ${input.dependsOn}`,
+    `belongs_to: ${input.belongsTo}`,
     `evidence: ${input.evidence}`,
     `contains_names: ${list(input.containsNames)}`,
     `used_by_names: ${list(input.usedByNames)}`,
     `depends_names: ${list(input.dependsNames)}`,
+    `belongs_to_names: ${list(input.belongsToNames)}`,
     ...(input.source === "read-only-sample"
       ? [
           "write_guard: do not run get_concept / patch_concept / add_relation for this sample node",
