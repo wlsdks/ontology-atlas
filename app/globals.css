@@ -751,6 +751,18 @@
     transform-origin: var(--topology-chrome-in-origin, center top);
   }
 
+  /* 전면 표면 등장 (전체 상세) — 지도 위를 불투명 표면이 덮는 순간을 하나의
+     크로스페이드로 만든다. 닫기가 이미 ~200ms 크로스페이드였는데 열기만
+     하드컷이라 **들어온 길과 나가는 길이 달랐다**(나가는 쪽이 더 좋았다).
+     이동/스케일은 쓰지 않는다: 창을 덮는 크기의 표면이 움직이면 화면이
+     흔들린 것으로 읽힌다. 새 키프레임·새 duration 0 — 크롬 모션 패밀리
+     토큰(180ms + ease-out) 재사용. reduced-motion 은 아래 base 레이어의
+     동등물 규칙이 불투명도만 남긴다. */
+  .map-overlay-in {
+    animation: panelCrossfadeIn var(--topology-motion-panel-duration)
+      var(--topology-motion-ease-out) both;
+  }
+
   /* rank2 — 상세 패널 퇴장 대칭. 등장(topologyChromeIn)만 있고 닫힘 시 React 가
      즉시 언마운트해 "툭 사라짐"으로 읽혔다. 등장의 역 궤적(opacity 1→0 +
      translateY 0→3px + scale 1→0.98)을 chrome-in 보다 짧게(≈120ms, panel
