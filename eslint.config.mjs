@@ -103,6 +103,29 @@ const arbitrarySizeSelectors = [
     message:
       '디자인 헌장 — Tailwind arbitrary value 안 hex 금지 (template literal). --color-* 토큰을 var() 로.',
   },
+  // 2026-07-27 모션 duration — 그림자 사다리와 **똑같은 실패 모드**였다. 램프
+  // (--motion-fast/base/settle)를 정의해 놓고 룰이 없어, 참조하는 컴포넌트는
+  // 하나뿐인데 리터럴 30건이 그 옆에 살아 있었다.
+  //
+  // 켜기 전 측정(design.md 4단계): 위반은 tsx 30건뿐이고 정상 사용으로 오인될
+  // 부류가 없다 — 토큰 참조형은 대괄호가 뒤따라서 이 정규식(뒤에 숫자)에 애초에
+  // 안 걸린다. 그림자 룰이 필요했던 `var(` 예외 협소화가 여기선 불필요하다.
+  // 30건을 **먼저 치환하고** 룰을 켰으므로 켜는 순간 위반 0, lint 총계 불변.
+  //
+  // 앞쪽 `(?:^|[^-\w])` 는 `transition-duration-…` 같은 CSS 속성명 문자열이
+  // 오탐되는 것을 막는다.
+  // ⚠️ 메시지에 리터럴 유틸리티 문법 금지 — Tailwind v4 스캐너가 이 파일을
+  // 훑는다(2026-07-26 에 예시 하나가 프로덕션 빌드를 깨뜨렸다).
+  {
+    selector: 'Literal[value=/(?:^|[^-\\w])duration-\\d/]',
+    message:
+      '모션 duration 하드코딩 금지. 기본(--motion-fast, 확인)이면 duration 클래스를 생략하고, 표면 이동은 --motion-base, 확정은 --motion-settle 을 duration 유틸리티 안에서 var() 로 참조한다.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/(?:^|[^-\\w])duration-\\d/]',
+    message:
+      '모션 duration 하드코딩 금지 (template literal). --motion-fast/base/settle 토큰으로.',
+  },
 ];
 
 // 마이그레이션 완료(치환 끝 · error 봉쇄) 디렉토리.
