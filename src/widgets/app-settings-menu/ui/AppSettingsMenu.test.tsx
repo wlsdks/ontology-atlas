@@ -215,11 +215,40 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     );
   });
 
+  /**
+   * #80 — [AI 연결]은 새 라우트가 아니라 이 시트의 서브뷰다. 브라우저(브리지
+   * 없음)에서는 키 입력 필드를 만들지 않고 이유를 설명한다.
+   */
+  it('opens the AI connection subview from a single root row', () => {
+    openSheet();
+    expect(screen.getByTestId('app-settings-ai-summary')).toHaveTextContent(
+      'settings.ai.chipDesktopOnly',
+    );
+    fireEvent.click(screen.getByTestId('app-settings-ai-drillin'));
+    expect(screen.getByTestId('app-settings-ai-view')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-settings-body')).toBeNull();
+  });
+
+  it('renders the honest desktop-only card instead of a key field in the browser', () => {
+    openSheet();
+    fireEvent.click(screen.getByTestId('app-settings-ai-drillin'));
+    expect(screen.getByTestId('ai-connection-web-degraded')).toBeInTheDocument();
+    expect(screen.queryByTestId('ai-key-input-anthropic')).toBeNull();
+  });
+
+  it('Escape from the AI subview returns to the root sheet, not to the map', () => {
+    openSheet();
+    fireEvent.click(screen.getByTestId('app-settings-ai-drillin'));
+    fireEvent.keyDown(screen.getByTestId('app-settings-ai-view'), { key: 'Escape' });
+    expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
+  });
+
   it('keeps forward and reverse Tab inside the modal settings sheet', async () => {
     openSheet();
     const panel = screen.getByTestId('app-settings-popover');
     const close = screen.getByLabelText('nav.settingsMenu.closeLabel');
-    const last = screen.getByTestId('app-settings-agent-drillin');
+    // 시트의 마지막 초점 대상 — [AI 연결] 행이 추가되며 여기로 옮겨졌다(#80).
+    const last = screen.getByTestId('app-settings-ai-drillin');
 
     await waitFor(() => expect(panel).toHaveFocus());
     expect(panel).toHaveAttribute('aria-modal', 'true');

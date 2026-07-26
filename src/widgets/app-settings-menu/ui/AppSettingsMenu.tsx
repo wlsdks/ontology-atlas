@@ -26,12 +26,15 @@ import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
 import { cn } from '@/shared/lib/cn';
+import { SECRET_PROVIDERS } from '@/shared/lib/tauri-secrets';
 import {
   buildRouteFocusHref,
   rememberRouteFocusIntent,
 } from '@/shared/ui/route-focus-manager';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
+import { AiConnectionPanel } from './AiConnectionPanel';
+import { useAiConnection } from '../model/use-ai-connection';
 
 /**
  * 단일 설정 표면 (설정 통합 2026-07-24, 소유자 지시) — 이전엔 설정이 두 곳에
@@ -52,13 +55,15 @@ import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
  * - [AI 에이전트] 상태 요약 1행 → "연결·검증" 드릴인 서브뷰(뒤로가기 헤더)로
  *   `VaultAgentSetupPanel` 이동. MCP 증명 장문·상태 카드 그리드·판정 순서
  *   문서는 기본 화면에 절대 노출하지 않는다.
+ * - [AI 연결] (#80) 내 API 키 요약 1행 → 키 등록/연결 확인/보낸 기록 드릴인
+ *   서브뷰. 새 라우트 0개 — 설정의 집은 여기 하나다.
  *
  * P3 결함⑥ 계약 유지 — `open`/`onOpenChange` optional controlled prop, ⌘K 는
  * 팔레트에 양보(settings demote), Escape 는 이 다이얼로그가 소유하고
  * stopPropagation 으로 지도 Esc 래더에 새지 않는다.
  */
 
-type SettingsView = 'root' | 'agent';
+type SettingsView = 'root' | 'agent' | 'ai';
 type SettingsTriggerVariant = 'header-pill' | 'rail-tile' | 'chrome-tile';
 
 const SETTINGS_LOCALE_FOCUS_KEY = 'ontology-atlas:settings-locale-focus';
@@ -178,6 +183,7 @@ export function AppSettingsMenu({
   triggerVariant = 'header-pill',
 }: AppSettingsMenuProps) {
   const t = useTranslations('nav.settingsMenu');
+  const tAi = useTranslations('settings.ai');
   // #72 — 경로 복사/Finder 문구는 구 LocalVaultPicker 가 쓰던 키를 그대로
   // 재사용한다(문구 중복 생성 없이 표면만 옮긴다).
   const tPicker = useTranslations('featuresMisc.localVaultPicker');
@@ -204,6 +210,7 @@ export function AppSettingsMenu({
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const agentBackRef = useRef<HTMLButtonElement | null>(null);
   const agentDrillInRef = useRef<HTMLButtonElement | null>(null);
+  const aiDrillInRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useDialogFocusTrap<HTMLDivElement>({
     open,
     initialFocus: 'container',
@@ -281,6 +288,29 @@ export function AppSettingsMenu({
   const agentSummaryNeedsAttention =
     isLocalVaultLoaded && agentConfig != null && agentConfigReadyCount < agentConfigTotal;
 
+  // [AI 연결] (#80) — 루트 행의 요약 칩과 서브뷰가 같은 상태를 본다. 시트가
+  // 닫혀 있으면 키체인도 감사 로그도 읽지 않는다(조용한 조회 0).
+  const aiConnection = useAiConnection({
+    enabled: open,
+    vaultHandle: isLocalVaultLoaded ? (localVault.handle ?? null) : null,
+  });
+  const storedProviders = SECRET_PROVIDERS.filter(
+    (provider) => aiConnection.statuses[provider]?.stored,
+  );
+  const aiSummary = !aiConnection.bridgeAvailable
+    ? tAi('chipDesktopOnly')
+    : storedProviders.length === 0
+      ? tAi('chipEmpty')
+      : storedProviders.length === 1
+        ? tAi('chipStored', {
+            provider:
+              storedProviders[0] === 'anthropic'
+                ? tAi('providerAnthropic')
+                : tAi('providerOpenai'),
+            last4: aiConnection.statuses[storedProviders[0]]?.last4 ?? '',
+          })
+        : tAi('chipMany', { count: storedProviders.length });
+
   // P3 결함⑥ — controlled 모드에서 이 `<details>` 는 React state 가 곧
   // 진실원이어야 한다. 매 렌더마다 DOM `open` 을 React 값으로 되맞춰 race 를
   // 구조적으로 없앤다 (uncontrolled 모드에서도 같은 값이면 no-op).
@@ -327,16 +357,15 @@ export function AppSettingsMenu({
       window.setTimeout(() => triggerRef.current?.focus(), 0);
     }
   };
-  const openAgentView = () => {
-    setView('agent');
+  const openSubview = (next: Exclude<SettingsView, 'root'>) => {
+    setView(next);
     window.setTimeout(() => agentBackRef.current?.focus({ preventScroll: true }), 0);
   };
   const returnToRootView = () => {
+    // 돌아온 뒤 포커스는 **떠났던 그 행** — 드릴인/아웃이 위치 감각을 잃지 않게.
+    const target = view === 'ai' ? aiDrillInRef : agentDrillInRef;
     setView('root');
-    window.setTimeout(
-      () => agentDrillInRef.current?.focus({ preventScroll: true }),
-      0,
-    );
+    window.setTimeout(() => target.current?.focus({ preventScroll: true }), 0);
   };
 
   return (
@@ -358,7 +387,7 @@ export function AppSettingsMenu({
         // 않도록 이 다이얼로그가 Escape 를 소유한다 — "one overlay owns one
         // Escape" (구 설정 기어와 같은 계약).
         event.stopPropagation();
-        if (view === 'agent') {
+        if (view !== 'root') {
           returnToRootView();
           return;
         }
@@ -435,7 +464,7 @@ export function AppSettingsMenu({
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
             <div className="flex min-w-0 items-center gap-2">
-              {view === 'agent' ? (
+              {view !== 'root' ? (
                 <button
                   ref={agentBackRef}
                   type="button"
@@ -457,7 +486,11 @@ export function AppSettingsMenu({
                 id={titleId}
                 className="truncate text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
               >
-                {view === 'agent' ? t('agentTitle') : t('title')}
+                {view === 'agent'
+                  ? t('agentTitle')
+                  : view === 'ai'
+                    ? tAi('title')
+                    : t('title')}
               </h2>
             </div>
             <button
@@ -514,6 +547,18 @@ export function AppSettingsMenu({
                   </div>
                 </>
               )}
+            </div>
+          ) : view === 'ai' ? (
+            <div
+              className="grid min-h-0 flex-1 content-start gap-3 overflow-y-auto p-4"
+              data-testid="app-settings-ai-view"
+            >
+              <AiConnectionPanel
+                connection={aiConnection}
+                vaultRootPath={vaultRootPath}
+                downloadHref={buildRouteFocusHref('/download/')}
+                onDownloadNavigate={() => rememberRouteFocusIntent('/download/')}
+              />
             </div>
           ) : (
             <div
@@ -783,7 +828,7 @@ export function AppSettingsMenu({
                   ref={agentDrillInRef}
                   type="button"
                   data-testid="app-settings-agent-drillin"
-                  onClick={openAgentView}
+                  onClick={() => openSubview('agent')}
                   className="flex min-h-12 w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                 >
                   <span className="min-w-0">
@@ -805,6 +850,34 @@ export function AppSettingsMenu({
                       data-testid="app-settings-agent-summary"
                     >
                       {agentSummary}
+                    </span>
+                    <ChevronRight size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+                  </span>
+                </button>
+              </SettingsGroup>
+
+              <SettingsGroup label={tAi('title')}>
+                <button
+                  ref={aiDrillInRef}
+                  type="button"
+                  data-testid="app-settings-ai-drillin"
+                  onClick={() => openSubview('ai')}
+                  className="flex min-h-12 w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-label text-[color:var(--color-text-secondary)]">
+                      {tAi('rowLabel')}
+                    </span>
+                    <span className="mt-0.5 block break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+                      {tAi('rowBody')}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <span
+                      className="text-label text-[color:var(--color-text-tertiary)]"
+                      data-testid="app-settings-ai-summary"
+                    >
+                      {aiSummary}
                     </span>
                     <ChevronRight size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
                   </span>
