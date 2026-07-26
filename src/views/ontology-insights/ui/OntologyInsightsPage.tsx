@@ -49,6 +49,7 @@ import { computeDomainCapacityRows } from "../lib/domain-capacity";
 import { buildImpactRanking } from "../lib/impact-ranking";
 import { buildDoNextQueue, withDoNextVerification } from "../lib/do-next-queue";
 import { buildDuplicatePairs, type DuplicatePairRow } from "../lib/duplicate-pairs";
+import { resolveSessionAbilities } from "../lib/session-abilities";
 import { buildInsightsVerdict } from "../lib/insights-verdict";
 import { pickTodaysTouchUps, type TouchUpItem } from "../lib/todays-touch-ups";
 import { countRecentEntries } from "@/shared/lib/agent-activity-log";
@@ -338,6 +339,24 @@ export function OntologyInsightsPage() {
     [nodes, edges, docFreshnessIndex],
   );
 
+  // 이 세션이 지금 할 수 있는 일 — 「내 몫 먼저」 배치와 행동 라벨의 유일한
+  // 입력. 역할·계정을 만들지 않고 앱이 이미 아는 사실만 쓴다.
+  const abilities = useMemo(
+    () =>
+      resolveSessionAbilities({
+        dataSourceMode,
+        vaultStatus: vault.status,
+        reloadingSameVault: vault.isReloadingSameVault,
+        agentActivity: vault.agentActivityStatus,
+      }),
+    [
+      dataSourceMode,
+      vault.status,
+      vault.isReloadingSameVault,
+      vault.agentActivityStatus,
+    ],
+  );
+
   // 의존 사이클(전략 verdict B 후보 ④) — depends_on 방향 그래프의 순환. 이미
   // 로드된 nodes/edges 에서 client 계산(MCP `cycles` 파생과 같은 의미).
   const dependencyCycles = useMemo(() => findDependencyCycles(nodes, edges), [nodes, edges]);
@@ -621,6 +640,15 @@ export function OntologyInsightsPage() {
       t("doNext.reviewUnverified", { title: title ?? t("doNext.reviewFallback") }),
     evidenceBadge: t("evidenceBadge"),
     evidenceBadgeHint: t("evidenceBadgeHint"),
+    openBuilderReadOnly: t("doNext.openBuilderReadOnly"),
+    handoffCopyIdle: t("doNext.handoffCopyIdle"),
+    handoffCopiedHint: t("doNext.handoffCopiedHint"),
+    groupMeaningTitle: t("doNext.groupMeaningTitle"),
+    groupMeaningTitleReadOnly: t("doNext.groupMeaningTitleReadOnly"),
+    groupMeaningHint: t("doNext.groupMeaningHint"),
+    groupMeaningHintReadOnly: t("doNext.groupMeaningHintReadOnly"),
+    groupCodeTitle: t("doNext.groupCodeTitle"),
+    groupCodeHint: t("doNext.groupCodeHint"),
   };
   const formatDaysAgo = (days: number) => {
     if (days <= 0) return t("daysAgoToday");
@@ -771,6 +799,7 @@ export function OntologyInsightsPage() {
                 activityDigest={activityDigest}
                 reviewState={reviewState}
                 onReviewStart={onReviewStart}
+                abilities={abilities}
                 labels={doNextLabels}
               />
             ) : null}

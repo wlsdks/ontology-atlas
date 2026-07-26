@@ -16,8 +16,14 @@ import {
  */
 export function useVaultOntology(): VaultOntologyDerivation {
   const vault = useLocalVault();
+  // 같은 폴더를 다시 읽는 중(저장 직후·탭 복귀)에는 방금까지의 내용을 계속
+  // 보여준다 — 재독해는 "데이터 없음" 이 아니다. 이 구분이 없을 때 저장 한 번에
+  // 화면이 빈 상태로 깜빡였고, 그 프레임에 언마운트된 인라인 행의 "저장했어요"
+  // 확인이 사용자에게 한 번도 안 보였다(2026-07-26 실측). 폴더를 **바꾸는**
+  // 중이면 false 이므로 남의 폴더 그래프가 그려지지 않는다.
+  const usable = vault.status === 'loaded' || vault.isReloadingSameVault;
   return useMemo<VaultOntologyDerivation>(() => {
-    if (vault.status !== 'loaded' || !vault.manifest) {
+    if (!usable || !vault.manifest) {
       return {
         nodes: [],
         edges: [],
@@ -27,5 +33,5 @@ export function useVaultOntology(): VaultOntologyDerivation {
       };
     }
     return deriveOntologyFromVault(vault.manifest);
-  }, [vault.status, vault.manifest]);
+  }, [usable, vault.manifest]);
 }

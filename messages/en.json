@@ -1367,7 +1367,16 @@
         "reviewChecking": "Rechecking the {title} signal against the current folder.",
         "reviewActive": "The {title} signal is still there in the current folder.",
         "reviewCleared": "The {title} signal is gone from the current folder. Remaining items were reprioritized.",
-        "reviewUnverified": "The current result cannot verify whether the {title} signal was cleared."
+        "reviewUnverified": "The current result cannot verify whether the {title} signal was cleared.",
+        "openBuilderReadOnly": "view in workshop",
+        "handoffCopyIdle": "copy the command to hand off",
+        "handoffCopiedHint": "Copied — paste it into your AI tool or a teammate's terminal.",
+        "groupMeaningTitle": "You can fix these right now",
+        "groupMeaningTitleReadOnly": "Open your own folder to fix these",
+        "groupMeaningHint": "No code needed. Each one is settled by deciding a meaning, a home, or whether two names are the same thing.",
+        "groupMeaningHintReadOnly": "This is the example folder. Open your own and you can finish these right here — for now you can copy the command and hand it off.",
+        "groupCodeTitle": "Hand these to a developer or an AI",
+        "groupCodeHint": "These need a look at the implementation or the direction of a dependency. Copy the command and hand it off."
       },
       "topDependsOnTitle": "Leans on the most",
       "noDependsOn": "Nothing leans on anything yet",

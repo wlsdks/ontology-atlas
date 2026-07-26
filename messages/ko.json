@@ -1367,7 +1367,16 @@
         "reviewChecking": "{title} 신호를 지금 폴더에서 다시 확인하고 있어요.",
         "reviewActive": "{title} 신호가 지금 폴더에서 아직 보입니다.",
         "reviewCleared": "지금 폴더에서는 {title} 신호가 보이지 않습니다. 남은 항목을 다시 정렬했습니다.",
-        "reviewUnverified": "{title} 신호는 현재 결과만으로 해소 여부를 확인할 수 없습니다."
+        "reviewUnverified": "{title} 신호는 현재 결과만으로 해소 여부를 확인할 수 없습니다.",
+        "openBuilderReadOnly": "공방에서 보기",
+        "handoffCopyIdle": "넘길 명령 복사",
+        "handoffCopiedHint": "복사했어요 — AI 도구나 동료의 터미널에 붙여넣으면 처리돼요.",
+        "groupMeaningTitle": "지금 바로 고칠 수 있어요",
+        "groupMeaningTitleReadOnly": "내 폴더를 열면 고칠 수 있어요",
+        "groupMeaningHint": "코드를 몰라도 돼요. 뜻·소속·같은 개념인지만 정하면 끝나는 일이에요.",
+        "groupMeaningHintReadOnly": "지금은 예시 폴더예요. 내 폴더를 열면 이 일들은 여기서 바로 끝낼 수 있어요 — 지금은 명령을 복사해 넘길 수 있어요.",
+        "groupCodeTitle": "개발자·AI에게 넘길 일",
+        "groupCodeHint": "구현이나 기대는 방향을 봐야 답이 나오는 일이에요. 명령을 복사해 넘기면 돼요."
       },
       "topDependsOnTitle": "가장 많이 기대는 곳",
       "noDependsOn": "아직 「기대는 곳」이 없어요",

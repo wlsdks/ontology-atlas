@@ -73,6 +73,15 @@ const labels: DoNextTabLabels = {
   evidenceBadge: "No document",
   evidenceBadgeHint: "Another document wrote this name down.",
   reviewUnverified: (title) => `Could not verify: ${title ?? "selected signal"}`,
+  openBuilderReadOnly: "View in workshop",
+  handoffCopyIdle: "Copy the command",
+  handoffCopiedHint: "Copied — paste it into your AI tool.",
+  groupMeaningTitle: "You can fix these right now",
+  groupMeaningTitleReadOnly: "Open your own folder to fix these",
+  groupMeaningHint: "No code needed.",
+  groupMeaningHintReadOnly: "This is the example folder.",
+  groupCodeTitle: "Hand these to a developer or an AI",
+  groupCodeHint: "These need a look at the implementation.",
 };
 
 const noCycles: DependencyCyclesResult = {
@@ -163,9 +172,87 @@ describe("DoNextTab", () => {
       "/docs/?slug=capability%3Ahub",
     );
     expect(within(menu).getByTestId("do-next-row-menu-builder")).toBeInTheDocument();
-    expect(within(menu).getByTestId("do-next-row-menu-handoff")).toHaveTextContent("Verify with agent");
+    // 에이전트가 관측되지 않은 세션의 기본값 — "검증" 이 아니라 "인계" 로
+    // 번역된다(완결할 수 없는 문을 내밀지 않는다).
+    expect(within(menu).getByTestId("do-next-row-menu-handoff")).toHaveTextContent("Copy the command");
     // 잘린 만큼 정직 표기 (+2 more = counts 3 - rows 1)
     expect(screen.getByText("+2 more")).toBeInTheDocument();
+  });
+
+  it("「내 몫 먼저」 — 쓸 수 있는 세션은 의미 작업 묶음이 최상단, 읽기 전용은 뒤집힌다", () => {
+    const props = {
+      queue,
+      cycles: noCycles,
+      agentReadiness: { ready: 1, preflight: 0, review: 0 },
+      healthQueue: emptyHealthQueue,
+      mapHref: (id: string) => `/ontology/?node=${encodeURIComponent(id)}`,
+      builderHref: (id: string) => `/ontology/studio/?node=${encodeURIComponent(id)}`,
+      duplicates: [
+        {
+          id: "dup:a",
+          keepId: "capability:a",
+          keepSlug: "capabilities/a",
+          keepTitle: "결제 승인",
+          dissolveId: "capability:b",
+          dissolveSlug: "capabilities/b",
+          dissolveTitle: "결제 승인 처리",
+          kind: "capability",
+          sharedTokens: ["pay"],
+          score: 0.8,
+        },
+      ],
+      duplicateTotal: 1,
+      duplicateHandoff: () => "merge_concepts …",
+      labels,
+      ...cycleProps,
+    } as React.ComponentProps<typeof DoNextTab>;
+
+    const writable = render(
+      <DoNextTab {...props} abilities={{ canWriteVault: true, agentObserved: false }} />,
+    );
+    const groups = screen.getByTestId("do-next-groups");
+    const headings = [...groups.querySelectorAll("[data-testid^='do-next-group-']")]
+      .filter((element) => !element.getAttribute("data-testid")!.endsWith("-count"))
+      .map((element) => element.getAttribute("data-testid"));
+    expect(headings).toEqual(["do-next-group-meaning", "do-next-group-code"]);
+    expect(screen.getByTestId("do-next-group-meaning")).toHaveTextContent(
+      "You can fix these right now",
+    );
+    // 묶음 규모 = 그 묶음 섹션 총계의 합 (중복 1 + 승격 0 / 방치 3 + 고아 1).
+    expect(screen.getByTestId("do-next-group-meaning-count")).toHaveTextContent("1");
+    expect(screen.getByTestId("do-next-group-code-count")).toHaveTextContent("4");
+    writable.unmount();
+
+    render(<DoNextTab {...props} abilities={{ canWriteVault: false, agentObserved: false }} />);
+    const readOnlyHeadings = [
+      ...screen.getByTestId("do-next-groups").querySelectorAll("[data-testid^='do-next-group-']"),
+    ]
+      .filter((element) => !element.getAttribute("data-testid")!.endsWith("-count"))
+      .map((element) => element.getAttribute("data-testid"));
+    expect(readOnlyHeadings).toEqual(["do-next-group-code", "do-next-group-meaning"]);
+    // 읽기 전용에서도 의미 작업은 사라지지 않고, 무엇을 하면 고칠 수 있는지 말한다.
+    expect(screen.getByTestId("do-next-group-meaning")).toHaveTextContent(
+      "Open your own folder to fix these",
+    );
+  });
+
+  it("빈 묶음은 머리를 그리지 않는다 — 빈 헤딩은 없는 것을 있는 것처럼 말한다", () => {
+    render(
+      <DoNextTab
+        queue={queue}
+        cycles={noCycles}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        healthQueue={emptyHealthQueue}
+        mapHref={(id) => `/ontology/?node=${encodeURIComponent(id)}`}
+        builderHref={(id) => `/ontology/studio/?node=${encodeURIComponent(id)}`}
+        abilities={{ canWriteVault: true, agentObserved: true }}
+        labels={labels}
+        {...cycleProps}
+      />,
+    );
+    // 중복/승격/의미 공백이 모두 0 이라 의미 묶음은 없다.
+    expect(screen.queryByTestId("do-next-group-meaning")).toBeNull();
+    expect(screen.getByTestId("do-next-group-code")).toBeInTheDocument();
   });
 
   it("이관된 readiness 계기·수리 큐를 렌더한다 (RelationsTab 에서 이동)", () => {

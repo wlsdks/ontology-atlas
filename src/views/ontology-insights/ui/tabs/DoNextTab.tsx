@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Check, Copy, FileText, GitBranch, MoreHorizontal } from "lucide-react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { AlertTriangle } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { copyText } from "@/shared/lib/copy-text";
 import { EvidenceOnlyBadge } from "@/shared/ui/evidence-only-badge";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import type { OntologyHealthActionTarget } from "@/entities/knowledge-graph";
@@ -11,6 +10,18 @@ import type { DoNextQueue, DoNextRow } from "../../lib/do-next-queue";
 import type { DependencyCycle, DependencyCyclesResult } from "../../lib/dependency-cycles";
 import type { DuplicatePairRow } from "../../lib/duplicate-pairs";
 import type { DoNextReviewState } from "../../lib/review-loop";
+import {
+  queueGroupOrder,
+  queueGroupOrderKey,
+  sumQueueGroupCounts,
+  type QueueWorkGroup,
+} from "../../lib/queue-work-groups";
+import {
+  HandoffCopyButton,
+  RowActionMenu,
+  type QueueRowAbilities,
+  type QueueRowActionLabels,
+} from "../parts/QueueRowActions";
 
 /**
  * 탭1 "할 일" (S5, 전략 verdict B 채택) — 인사이트의 기본 탭. "무엇이
@@ -25,7 +36,7 @@ import type { DoNextReviewState } from "../../lib/review-loop";
  * 사람은 여기서 고르고, 실행은 행별 핸드오프로 에이전트에게 넘긴다.
  */
 
-export interface DoNextTabLabels {
+export interface DoNextTabLabels extends QueueRowActionLabels {
   agentReadinessTitle: string;
   /** 준비도 밴드 제목 아래 평문 한 줄 — 전문용어(ready/preflight/review) 를 비전문가에게 풀어준다. 큐 힌트와 같은 슬롯 패턴. */
   agentReadinessHint?: string;
@@ -67,11 +78,18 @@ export interface DoNextTabLabels {
   neglectedHubMetric: (degree: number, agoDays: number) => string;
   cycleMetric: (length: number) => string;
   openMap: string;
-  openSource: string;
-  openBuilder: string;
-  handoffCopy: string;
-  handoffCopied: string;
   emptyQueue: string;
+  /**
+   * 「내 몫 / 넘길 몫」 묶음 머리 — 같은 데이터를 사람의 언어 순서로 세운다.
+   * 쓰기 가능한 세션과 읽기 전용 세션이 서로 다른 문장을 쓴다(전자는 "지금
+   * 바로", 후자는 "무엇을 하면 고칠 수 있는지").
+   */
+  groupMeaningTitle: string;
+  groupMeaningTitleReadOnly: string;
+  groupMeaningHint: string;
+  groupMeaningHintReadOnly: string;
+  groupCodeTitle: string;
+  groupCodeHint: string;
   moreCount: (count: number) => string;
   digestTitle: string;
   digestToday: (count: number) => string;
@@ -84,8 +102,6 @@ export interface DoNextTabLabels {
   touchUpPriorityCount: (count: number) => string;
   /** 시작과 완료를 혼동하지 않도록 명시하는 실제 작업 순서. */
   touchUpFlowHint: string;
-  /** 케밥(더보기) 트리거 aria-label. */
-  rowMenuTrigger: string;
   reviewChecking: (title: string | null) => string;
   reviewActive: (title: string | null) => string;
   reviewCleared: (title: string | null) => string;
@@ -173,165 +189,46 @@ export interface DoNextTabProps {
     todayCount: number;
     latest: ReadonlyArray<{ at: string; summary: string; agent: string | null; why?: string | null }>;
   } | null;
+  /**
+   * 이 세션이 지금 할 수 있는 일 — 묶음 순서와 행동 라벨의 유일한 입력.
+   * 역할이 아니라 능력이다(`session-abilities.ts`). 기본값은 아무것도 못 하는
+   * 쪽이라, 넘기지 않는 호출부(테스트 등)에서 폼이 저절로 열리지 않는다.
+   */
+  abilities?: QueueRowAbilities;
   labels: DoNextTabLabels;
-}
-
-function HandoffCopyButton({
-  payload,
-  labels,
-  candidate,
-  onReviewStart,
-  compact = false,
-}: {
-  payload: string;
-  labels: DoNextTabLabels;
-  candidate?: { id: string; title: string };
-  onReviewStart?: (candidate: { id: string; title: string }) => void;
-  /** 한 줄 행에 얹히는 자리 — 높이만 한 단 낮추고 라벨/동작은 같다. */
-  compact?: boolean;
-}) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      type="button"
-      data-testid="do-next-handoff-copy"
-      onClick={async () => {
-        if (candidate) onReviewStart?.(candidate);
-        if (await copyText(payload)) {
-          setCopied(true);
-          window.setTimeout(() => setCopied(false), 1600);
-        }
-      }}
-      className={`inline-flex items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] ${
-        compact ? "min-h-7 px-2" : "min-h-8 px-2.5"
-      }`}
-    >
-      {copied ? <Check size={11} aria-hidden /> : <Copy size={11} aria-hidden />}
-      {copied ? labels.handoffCopied : labels.handoffCopy}
-    </button>
-  );
 }
 
 /**
- * ⑨.2 행 버튼 다이어트 — 주 액션(지도)만 밖에 두고 빌더·에이전트에게는 케밥
- * 안으로. 결정 포인트를 행당 3 → 1.5 로 줄인다. 별도 라이브러리 없이 손으로
- * 짠 접근 가능 메뉴(`TopologyV2ContextMenu` 와 같은 관례): 트리거는 버튼
- * (aria-haspopup/expanded), 바깥 클릭·Esc 로 닫고 Esc 는 트리거로 포커스 복귀.
+ * 묶음 머리 — 「내 몫 먼저」의 얼굴. 섹션 헤더(질문)보다 한 단 위의 잉크로
+ * 그려 세 단(카드 → 묶음 → 섹션)이 아니라 두 단으로 읽히게 한다: 큐 카드의
+ * 제목은 이제 이 머리들이 대신하므로 따로 그리지 않는다(같은 자리에 "지금"
+ * 이 두 번 나오지 않게).
  */
-function RowActionMenu({
-  sourceHref,
-  builderHref,
-  handoffPayload,
-  candidate,
-  onReviewStart,
-  labels,
+function WorkGroupHeading({
+  title,
+  count,
+  hint,
+  testId,
 }: {
-  sourceHref: string | null;
-  builderHref: string;
-  handoffPayload: string;
-  candidate: { id: string; title: string };
-  onReviewStart?: (candidate: { id: string; title: string }) => void;
-  labels: DoNextTabLabels;
+  title: string;
+  count: number;
+  hint: string;
+  testId: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.stopPropagation();
-        setOpen(false);
-        triggerRef.current?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown, true);
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown, true);
-      document.removeEventListener("keydown", onKeyDown, true);
-    };
-  }, [open]);
-
-  const menuItemClass =
-    "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-label text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]";
-
   return (
-    <div ref={containerRef} className="relative">
-      <button
-        ref={triggerRef}
-        type="button"
-        data-testid="do-next-row-menu"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={labels.rowMenuTrigger}
-        onClick={() => setOpen((value) => !value)}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
-      >
-        <MoreHorizontal size={14} aria-hidden />
-      </button>
-      {open ? (
-        <div
-          role="menu"
-          data-testid="do-next-row-menu-popover"
-          className="absolute right-0 z-20 mt-1 flex min-w-[10rem] flex-col gap-0.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
+    <div data-testid={testId} className="flex flex-col gap-1">
+      <div className="flex items-baseline gap-2">
+        <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+          {title}
+        </span>
+        <span
+          data-testid={`${testId}-count`}
+          className="font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]"
         >
-          {sourceHref ? (
-            <Link
-              href={sourceHref}
-              role="menuitem"
-              data-testid="do-next-row-menu-source"
-              onClick={() => {
-                onReviewStart?.(candidate);
-                setOpen(false);
-              }}
-              className={menuItemClass}
-            >
-              <FileText size={13} aria-hidden />
-              {labels.openSource}
-            </Link>
-          ) : null}
-          <Link
-            href={builderHref}
-            role="menuitem"
-            data-testid="do-next-row-menu-builder"
-            onClick={() => {
-              onReviewStart?.(candidate);
-              setOpen(false);
-            }}
-            className={menuItemClass}
-          >
-            <GitBranch size={13} aria-hidden />
-            {labels.openBuilder}
-          </Link>
-          <button
-            type="button"
-            role="menuitem"
-            data-testid="do-next-row-menu-handoff"
-            onClick={async () => {
-              onReviewStart?.(candidate);
-              if (await copyText(handoffPayload)) {
-                setCopied(true);
-                window.setTimeout(() => {
-                  setCopied(false);
-                  setOpen(false);
-                }, 1000);
-              }
-            }}
-            className={menuItemClass}
-          >
-            {copied ? <Check size={13} aria-hidden /> : <Copy size={13} aria-hidden />}
-            {copied ? labels.handoffCopied : labels.handoffCopy}
-          </button>
-        </div>
-      ) : null}
+          {count}
+        </span>
+      </div>
+      <p className="text-label leading-snug text-[color:var(--color-text-quaternary)]">{hint}</p>
     </div>
   );
 }
@@ -350,6 +247,7 @@ function TouchUpBand({
   reviewState,
   onReviewStart,
   registerReviewRow,
+  abilities,
   labels,
 }: {
   items: DoNextTouchUp[];
@@ -359,6 +257,7 @@ function TouchUpBand({
   reviewState?: DoNextReviewState | null;
   onReviewStart?: (candidate: { id: string; title: string }) => void;
   registerReviewRow?: (id: string, element: HTMLDivElement | null) => void;
+  abilities: QueueRowAbilities;
   labels: DoNextTabLabels;
 }) {
   return (
@@ -430,6 +329,7 @@ function TouchUpBand({
                   handoffPayload={item.handoffPayload}
                   candidate={candidate}
                   onReviewStart={onReviewStart}
+                  abilities={abilities}
                   labels={labels}
                 />
               </span>
@@ -453,6 +353,7 @@ function QueueSection({
   reviewState,
   onReviewStart,
   registerReviewRow,
+  abilities,
   labels,
 }: {
   title: string;
@@ -467,6 +368,7 @@ function QueueSection({
   reviewState?: DoNextReviewState | null;
   onReviewStart?: (candidate: { id: string; title: string }) => void;
   registerReviewRow?: (id: string, element: HTMLDivElement | null) => void;
+  abilities: QueueRowAbilities;
   labels: DoNextTabLabels;
 }) {
   if (rows.length === 0) return null;
@@ -538,6 +440,7 @@ function QueueSection({
                 handoffPayload={row.handoffPayload}
                 candidate={candidate}
                 onReviewStart={onReviewStart}
+                abilities={abilities}
                 labels={labels}
               />
             </span>
@@ -569,12 +472,14 @@ function DuplicateSection({
   totalCount,
   mapHref,
   handoff,
+  abilities,
   labels,
 }: {
   rows: DuplicatePairRow[];
   totalCount: number;
   mapHref: (nodeId: string) => string;
   handoff: (row: DuplicatePairRow) => string;
+  abilities: QueueRowAbilities;
   labels: DoNextTabLabels;
 }) {
   if (rows.length === 0) return null;
@@ -624,7 +529,12 @@ function DuplicateSection({
             >
               {labels.openMap}
             </Link>
-            <HandoffCopyButton payload={handoff(row)} labels={labels} compact />
+            <HandoffCopyButton
+              payload={handoff(row)}
+              labels={labels}
+              abilities={abilities}
+              compact
+            />
           </span>
         </div>
       ))}
@@ -646,6 +556,7 @@ function CycleSection({
   reviewState,
   onReviewStart,
   registerReviewRow,
+  abilities,
   labels,
 }: {
   cycles: DependencyCyclesResult;
@@ -655,6 +566,7 @@ function CycleSection({
   reviewState?: DoNextReviewState | null;
   onReviewStart?: (candidate: { id: string; title: string }) => void;
   registerReviewRow?: (id: string, element: HTMLDivElement | null) => void;
+  abilities: QueueRowAbilities;
   labels: DoNextTabLabels;
 }) {
   if (cycles.cycles.length === 0) return null;
@@ -718,6 +630,7 @@ function CycleSection({
               <HandoffCopyButton
                 payload={cycleHandoff(cycle)}
                 labels={labels}
+                abilities={abilities}
                 candidate={candidate}
                 onReviewStart={onReviewStart}
               />
@@ -751,6 +664,7 @@ export function DoNextTab({
   activityDigest,
   reviewState,
   onReviewStart,
+  abilities = { canWriteVault: false, agentObserved: false },
   labels,
 }: DoNextTabProps) {
   const reviewStatusRef = useRef<HTMLParagraphElement | null>(null);
@@ -841,6 +755,121 @@ export function DoNextTab({
   const queueEmpty =
     queue.rows.length === 0 && !hasCycles && !hasClipParityIssues && !hasDuplicates;
 
+  // 묶음 규모 — 섹션 헤더가 이미 찍는 총계(절단 전)를 그대로 더한다.
+  const groupCounts = sumQueueGroupCounts([
+    { section: "duplicate", total: duplicateTotal },
+    { section: "promotion", total: queue.counts.promotion },
+    { section: "neglected-hub", total: queue.counts.neglectedHub },
+    { section: "orphan", total: queue.counts.orphan },
+    { section: "cycle", total: visibleCycles.totalCycles },
+  ]);
+  const groupOrder = queueGroupOrder(abilities);
+  const meaningSections = (
+    <>
+      <DuplicateSection
+        rows={duplicates}
+        totalCount={duplicateTotal}
+        mapHref={(nodeId) => mapHref(nodeId)}
+        handoff={(row) => duplicateHandoff?.(row) ?? ""}
+        abilities={abilities}
+        labels={labels}
+      />
+      <QueueSection
+        title={labels.sectionPromotion}
+        hint={labels.hintPromotion}
+        rows={promotionRows}
+        totalCount={queue.counts.promotion}
+        metric={(row) => (row.degree !== undefined ? labels.promotionMetric(row.degree) : null)}
+        mapHref={mapHref}
+        sourceHref={sourceHref}
+        builderHref={builderHref}
+        reviewState={reviewState}
+        onReviewStart={onReviewStart}
+        registerReviewRow={registerReviewRow}
+        abilities={abilities}
+        labels={labels}
+      />
+    </>
+  );
+  const codeSections = (
+    <>
+      <QueueSection
+        title={labels.sectionNeglectedHub}
+        hint={labels.hintNeglectedHub}
+        rows={neglectedRows}
+        totalCount={queue.counts.neglectedHub}
+        metric={(row) =>
+          row.degree !== undefined && row.agoDays !== undefined
+            ? labels.neglectedHubMetric(row.degree, row.agoDays)
+            : null
+        }
+        mapHref={mapHref}
+        sourceHref={sourceHref}
+        builderHref={builderHref}
+        reviewState={reviewState}
+        onReviewStart={onReviewStart}
+        registerReviewRow={registerReviewRow}
+        abilities={abilities}
+        labels={labels}
+      />
+      <QueueSection
+        title={labels.sectionOrphan}
+        hint={labels.hintOrphan}
+        rows={orphanRows}
+        totalCount={queue.counts.orphan}
+        metric={() => null}
+        mapHref={mapHref}
+        sourceHref={sourceHref}
+        builderHref={builderHref}
+        reviewState={reviewState}
+        onReviewStart={onReviewStart}
+        registerReviewRow={registerReviewRow}
+        abilities={abilities}
+        labels={labels}
+      />
+      <CycleSection
+        cycles={visibleCycles}
+        mapHref={mapHref}
+        nodeTitle={nodeTitle}
+        cycleHandoff={cycleHandoff}
+        reviewState={reviewState}
+        onReviewStart={onReviewStart}
+        registerReviewRow={registerReviewRow}
+        abilities={abilities}
+        labels={labels}
+      />
+    </>
+  );
+  // 묶음 머리는 그 묶음에 **보이는 행이 있을 때만** 그린다 — 빈 머리는
+  // "여기 뭔가 있어야 하는데 없다" 로 읽힌다.
+  const meaningVisible = duplicates.length > 0 || promotionRows.length > 0;
+  const codeVisible =
+    neglectedRows.length > 0 || orphanRows.length > 0 || visibleCycles.cycles.length > 0;
+  const groupNode: Record<QueueWorkGroup, ReactNode> = {
+    meaning: meaningVisible ? (
+      <div key="meaning" className="flex flex-col gap-4">
+        <WorkGroupHeading
+          testId="do-next-group-meaning"
+          title={abilities.canWriteVault ? labels.groupMeaningTitle : labels.groupMeaningTitleReadOnly}
+          count={groupCounts.meaning}
+          hint={abilities.canWriteVault ? labels.groupMeaningHint : labels.groupMeaningHintReadOnly}
+        />
+        {meaningSections}
+      </div>
+    ) : null,
+    code: codeVisible ? (
+      <div key="code" className="flex flex-col gap-4">
+        <WorkGroupHeading
+          testId="do-next-group-code"
+          title={labels.groupCodeTitle}
+          count={groupCounts.code}
+          hint={labels.groupCodeHint}
+        />
+        {codeSections}
+      </div>
+    ) : null,
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
       {reviewStatus ? (
@@ -865,6 +894,7 @@ export function DoNextTab({
           reviewState={reviewState}
           onReviewStart={onReviewStart}
           registerReviewRow={registerReviewRow}
+          abilities={abilities}
           labels={labels}
         />
       ) : null}
@@ -1089,79 +1119,28 @@ export function DoNextTab({
         // 행 간격 위로 올린다.
         className="flex min-h-0 min-w-0 flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
-          {labels.queueTitle}
-        </span>
+        {/* 큐 카드의 제목은 묶음 머리가 대신한다 — 「지금 하면 좋은 일」 바로
+            아래에 「지금 바로 고칠 수 있어요」가 오면 같은 말이 두 번이고,
+            그 28px 은 이 탭의 스크롤 예산에서 나온다. 비어 있을 때만 카드가
+            스스로 이름을 말한다(랜드마크 이름은 aria-label 이 계속 지킨다). */}
         {queueEmpty ? (
-          <p className="text-body text-[color:var(--color-text-quaternary)]">{labels.emptyQueue}</p>
-        ) : (
           <>
-            <DuplicateSection
-              rows={duplicates}
-              totalCount={duplicateTotal}
-              mapHref={(nodeId) => mapHref(nodeId)}
-              handoff={(row) => duplicateHandoff?.(row) ?? ""}
-              labels={labels}
-            />
-            <QueueSection
-              title={labels.sectionNeglectedHub}
-              hint={labels.hintNeglectedHub}
-              rows={neglectedRows}
-              totalCount={queue.counts.neglectedHub}
-              metric={(row) =>
-                row.degree !== undefined && row.agoDays !== undefined
-                  ? labels.neglectedHubMetric(row.degree, row.agoDays)
-                  : null
-              }
-              mapHref={mapHref}
-              sourceHref={sourceHref}
-              builderHref={builderHref}
-              reviewState={reviewState}
-              onReviewStart={onReviewStart}
-              registerReviewRow={registerReviewRow}
-              labels={labels}
-            />
-            <QueueSection
-              title={labels.sectionOrphan}
-              hint={labels.hintOrphan}
-              rows={orphanRows}
-              totalCount={queue.counts.orphan}
-              metric={() => null}
-              mapHref={mapHref}
-              sourceHref={sourceHref}
-              builderHref={builderHref}
-              reviewState={reviewState}
-              onReviewStart={onReviewStart}
-              registerReviewRow={registerReviewRow}
-              labels={labels}
-            />
-            <QueueSection
-              title={labels.sectionPromotion}
-              hint={labels.hintPromotion}
-              rows={promotionRows}
-              totalCount={queue.counts.promotion}
-              metric={(row) =>
-                row.degree !== undefined ? labels.promotionMetric(row.degree) : null
-              }
-              mapHref={mapHref}
-              sourceHref={sourceHref}
-              builderHref={builderHref}
-              reviewState={reviewState}
-              onReviewStart={onReviewStart}
-              registerReviewRow={registerReviewRow}
-              labels={labels}
-            />
-            <CycleSection
-              cycles={visibleCycles}
-              mapHref={mapHref}
-              nodeTitle={nodeTitle}
-              cycleHandoff={cycleHandoff}
-              reviewState={reviewState}
-              onReviewStart={onReviewStart}
-              registerReviewRow={registerReviewRow}
-              labels={labels}
-            />
+            <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+              {labels.queueTitle}
+            </span>
+            <p className="text-body text-[color:var(--color-text-quaternary)]">{labels.emptyQueue}</p>
           </>
+        ) : (
+          // 묶음 순서는 세션 능력에서 나온다. `key` 가 순서를 담으므로
+          // 렌더마다가 아니라 **능력이 바뀔 때만** 크로스페이드가 돈다 —
+          // 행이 이유 없이 튀지 않는다.
+          <div
+            key={queueGroupOrderKey(abilities)}
+            data-testid="do-next-groups"
+            className="ai-row-swap flex flex-col gap-8"
+          >
+            {groupOrder.map((group) => groupNode[group])}
+          </div>
         )}
       </section>
       </div>
