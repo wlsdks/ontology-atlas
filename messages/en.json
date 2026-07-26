@@ -385,7 +385,7 @@
     "sampleSourceStorefront": "See an example business",
     "nodeHint": {
       "action": "Tap a node on the map",
-      "reason": "everything here is a real document"
+      "reason": "all of it comes from real documents"
     },
     "readout": {
       "projectUnit": "project",
@@ -406,13 +406,13 @@
     "skipLabel": "Skip",
     "finishLabel": "Finish",
     "waitingForClickLabel": "Click the dot that's still bright",
-    "clickSuccessLabel": "Nice — you just opened a real document",
+    "clickSuccessLabel": "Nice — you just opened that dot’s card",
     "finishTourAction": "Done — back to the map",
     "devBranchAction": "I'm a developer",
     "steps": {
       "welcome": {
-        "title": "This map is documents",
-        "body": "Every dot you see here is one real markdown file. The whole map is a single picture of what our product is made of and how the pieces connect. A picture like this is called an ontology — the name sounds academic, but that one sentence is all it means. Takes about 2 minutes."
+        "title": "This map comes from documents",
+        "body": "Every dot here is either one real markdown file, or something one of those files names. The whole map is a single picture of what our product is made of and how the pieces connect. A picture like this is called an ontology — the name sounds academic, but that one sentence is all it means. Takes about 2 minutes."
       },
       "nodes": {
         "title": "Size and shape of the dots",
@@ -1901,7 +1901,7 @@
       "metricContainsHelp": "Items this node directly contains — one level down, not the full subtree.",
       "metricUsedByHelp": "Other items that directly use (point at) this node.",
       "metricDependsOnHelp": "Other items this node directly leans on.",
-      "metricEvidenceHelp": "Whether this node has a source document it came from — when declared, click to open it.",
+      "metricEvidenceHelp": "The document this concept is written in — either its own page, or another page that mentions it. Click to open.",
       "metricEvidenceDeclared": "declared",
       "metricEvidenceUndeclared": "undeclared",
       "statsConnected": "Connected",
@@ -1919,10 +1919,12 @@
       "openFullDetail": "Full detail",
       "actionsGroupLabel": "Node actions",
       "actionDocument": "Document",
+      "actionMentionDocument": "Mentioned in",
       "actionEditRelations": "Edit relations",
       "actionCopyHandoff": "Copy handoff",
       "actionPath": "Path",
       "actionDocumentTip": "Open this node's source markdown document",
+      "actionMentionDocumentTip": "This concept has no document of its own yet. Opens another document that writes about it",
       "actionEditRelationsTip": "Complete this node's connections in the workshop",
       "actionCopyHandoffTip": "Copy this node's context to paste to an AI agent",
       "actionPathTip": "Find a connection path from this node to another on the map",
@@ -2275,6 +2277,8 @@
       "copy": "Copy next action",
       "copied": "Copied the agent handoff call",
       "openDocument": "Open document",
+      "openMentionDocument": "Open mentioning document",
+      "openMentionDocumentTip": "This concept has no document of its own yet. Opens another document that writes about it",
       "openStudio": "Complete in workshop"
     },
     "codeLocations": {

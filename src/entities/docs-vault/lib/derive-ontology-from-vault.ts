@@ -51,6 +51,18 @@ export interface OntologyStubNode {
   kind: string;
   /** 어느 vault 문서 (slug) 에서 유래했는지 — evidence chain 의 시작점. */
   sourceSlug: string;
+  /**
+   * 이 노드가 **자기 `.md` 문서를 가졌는지**. `sourceSlug` 만으로는 구분할 수
+   * 없다 — 문서 노드(Pass 1)는 자기 slug 를, 관계에서만 참조된 파생 노드
+   * (Pass 2)는 *자기를 인용한 남의 문서* slug 를 같은 필드에 담기 때문이다.
+   * 그래서 "이 노드의 문서 열기" 를 그리는 표면이 `sourceSlug` 를 그대로
+   * 쓰면 남의 문서를 자기 문서인 양 연다(막힘 결함).
+   *
+   * `true` = frontmatter 에 `kind:` 가 있는 실제 문서. `false` = 관계
+   * (`domain`/`capabilities`/`elements`/`contains`/`relates`/`dependencies`/
+   * `broader`)에서 이름만 불린 파생 노드 — 문서는 아직 없다.
+   */
+  hasOwnDocument: boolean;
   source: OntologyStubSource;
   /** 자유 요약 — 본문 첫 단락 또는 description 키. */
   summary?: string;
@@ -202,6 +214,8 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
     displayLocales,
     kind: rawKind,
     sourceSlug: doc.slug,
+    // Pass 1 = 실제 문서. sourceSlug 가 자기 자신이므로 "이 노드의 문서" 가 성립.
+    hasOwnDocument: true,
     source: 'frontmatter',
     summary: doc.description ?? doc.excerpt ?? undefined,
   };
@@ -254,6 +268,9 @@ function deriveOntologyFromVaultUncached(
             display: deriveDisplayTitle(undefined, folderRef?.kind === 'domain' ? folderRef.title : fm.domain.trim()),
             kind: 'domain',
             sourceSlug: doc.slug,
+            // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
+            // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
+            hasOwnDocument: false,
             source: 'frontmatter',
           });
         }
@@ -288,6 +305,9 @@ function deriveOntologyFromVaultUncached(
           display: deriveDisplayTitle(undefined, folderRef?.kind === 'domain' ? folderRef.title : dom),
           kind: 'domain',
           sourceSlug: doc.slug,
+          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
+          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
+          hasOwnDocument: false,
           source: 'frontmatter',
         });
       }
@@ -316,6 +336,9 @@ function deriveOntologyFromVaultUncached(
           display: deriveDisplayTitle(undefined, folderRef?.kind === 'capability' ? folderRef.title : cap),
           kind: 'capability',
           sourceSlug: doc.slug,
+          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
+          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
+          hasOwnDocument: false,
           source: 'frontmatter',
         });
       }
@@ -346,6 +369,9 @@ function deriveOntologyFromVaultUncached(
             deriveDisplayTitle(undefined, folderRef?.kind === 'element' ? folderRef.title : el),
           kind: 'element',
           sourceSlug: doc.slug,
+          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
+          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
+          hasOwnDocument: false,
           source: 'frontmatter',
         });
       }
@@ -376,6 +402,9 @@ function deriveOntologyFromVaultUncached(
           display: deriveDisplayTitle(undefined, folderRef?.title ?? contained),
           kind: folderRef?.kind ?? 'unknown',
           sourceSlug: doc.slug,
+          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
+          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
+          hasOwnDocument: false,
           source: 'frontmatter',
         });
       }
@@ -404,6 +433,9 @@ function deriveOntologyFromVaultUncached(
           display: deriveDisplayTitle(undefined, rel),
           kind: 'unknown',
           sourceSlug: doc.slug,
+          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
+          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
+          hasOwnDocument: false,
           source: 'frontmatter',
         });
       }
@@ -433,6 +465,9 @@ function deriveOntologyFromVaultUncached(
           display: deriveDisplayTitle(undefined, folderRef?.title ?? dep),
           kind: folderRef?.kind ?? docNode.kind,
           sourceSlug: doc.slug,
+          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
+          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
+          hasOwnDocument: false,
           source: 'frontmatter',
         });
       }
@@ -464,6 +499,9 @@ function deriveOntologyFromVaultUncached(
           display: deriveDisplayTitle(undefined, folderRef?.title ?? broaderRef),
           kind: folderRef?.kind ?? docNode.kind,
           sourceSlug: doc.slug,
+          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
+          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
+          hasOwnDocument: false,
           source: 'frontmatter',
         });
       }

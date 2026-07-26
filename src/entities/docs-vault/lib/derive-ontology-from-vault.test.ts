@@ -422,4 +422,72 @@ describe("element display 인간화 — 슬라이스 B (코드 경로 → 사람
     expect(cap?.title).toBe("src/tools/exporter.ts");
     expect(cap?.display).toBe("src/tools/exporter.ts");
   });
+  // D7 회귀 — "이 노드의 문서" 를 그리는 표면이 파생 노드의 sourceSlug(자기를
+  // 인용한 남의 문서)를 자기 문서로 오해해 다른 개념의 글을 열던 결함.
+  it("문서가 있는 노드는 hasOwnDocument=true, 참조만 된 노드는 false 다", () => {
+    const manifest = makeManifest([
+      makeDoc({
+        slug: "capabilities/frontmatter-to-ontology",
+        title: "Frontmatter to Ontology",
+        frontmatter: {
+          kind: "capability",
+          elements: ["elements/derive-ontology-from-vault"],
+          relates: ["capabilities/only-mentioned"],
+        },
+      }),
+    ]);
+    const result = deriveOntologyFromVault(manifest);
+
+    const authored = result.nodes.find(
+      (n) => n.id === "capability:frontmatter-to-ontology",
+    );
+    expect(authored?.hasOwnDocument).toBe(true);
+    expect(authored?.sourceSlug).toBe("capabilities/frontmatter-to-ontology");
+
+    // 관계에서 이름만 불린 노드 — sourceSlug 는 *자기를 인용한* 문서다.
+    const derived = result.nodes.find(
+      (n) => n.id === "element:derive-ontology-from-vault",
+    );
+    expect(derived?.hasOwnDocument).toBe(false);
+    expect(derived?.sourceSlug).toBe("capabilities/frontmatter-to-ontology");
+
+    const relatedOnly = result.nodes.find(
+      (n) => n.id === "capability:only-mentioned",
+    );
+    expect(relatedOnly?.hasOwnDocument).toBe(false);
+  });
+
+  it("모든 관계 키가 만든 파생 노드는 예외 없이 hasOwnDocument=false 다", () => {
+    const manifest = makeManifest([
+      makeDoc({
+        slug: "projects/atlas",
+        frontmatter: {
+          kind: "project",
+          slug: "atlas",
+          domains: ["domains/plural-domain"],
+          capabilities: ["capabilities/from-capabilities"],
+          elements: ["elements/from-elements"],
+          contains: ["documents/from-contains"],
+          relates: ["from-relates"],
+          dependencies: ["projects/from-dependencies"],
+          broader: ["projects/from-broader"],
+        },
+      }),
+      makeDoc({
+        slug: "capabilities/child",
+        frontmatter: { kind: "capability", domain: "Singular Domain" },
+      }),
+    ]);
+    const result = deriveOntologyFromVault(manifest);
+
+    const authoredIds = new Set(["project:atlas", "capability:child"]);
+    for (const n of result.nodes) {
+      expect({ id: n.id, own: n.hasOwnDocument }).toEqual({
+        id: n.id,
+        own: authoredIds.has(n.id),
+      });
+    }
+    // 8 개 관계 키가 각각 파생 노드를 하나씩 만든다(단수 domain 포함).
+    expect(result.nodes.filter((n) => !n.hasOwnDocument)).toHaveLength(8);
+  });
 });

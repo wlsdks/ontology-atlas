@@ -13,6 +13,8 @@ vi.mock("@/i18n/navigation", () => ({
 
 const labels = {
   actionDocument: "Document",
+  actionMentionDocument: "Mentioned in",
+  actionMentionDocumentTip: "No document of its own yet",
   actionEditRelations: "Edit relations",
   actionCopyHandoff: "Copy handoff",
   actionPath: "Path",
@@ -21,6 +23,7 @@ const labels = {
 
 function renderMenu(overrides: {
   documentHref?: string | null;
+  mentionDocumentHref?: string | null;
   onClose?: () => void;
   onCopyHandoff?: () => void;
   onSetPathSource?: () => void;
@@ -30,6 +33,7 @@ function renderMenu(overrides: {
     <TopologyV2ContextMenu
       position={{ x: 100, y: 200 }}
       documentHref={overrides.documentHref !== undefined ? overrides.documentHref : "/docs/domains/views"}
+      mentionDocumentHref={overrides.mentionDocumentHref ?? null}
       studioEditHref="/ontology/studio/?node=domains%2Fviews"
       labels={labels}
       onCopyHandoff={overrides.onCopyHandoff ?? (() => {})}
@@ -58,6 +62,27 @@ describe("TopologyV2ContextMenu", () => {
     const item = screen.getByTestId("topology-v2-context-menu-document");
     expect(item.tagName).not.toBe("A");
     expect(item).toHaveAttribute("aria-disabled", "true");
+  });
+
+  // D7 회귀 — 자기 문서가 없는 노드에서 "문서" 라벨로 남의 문서를 열던 결함.
+  // 링크는 남기되(정보 보존) 라벨이 목적지를 정직하게 말해야 한다.
+  it("relabels the item when the node has no doc of its own but is mentioned in one", () => {
+    renderMenu({
+      documentHref: null,
+      mentionDocumentHref: "/docs/?slug=ontology%2Fcapabilities%2Ffrontmatter-to-ontology",
+    });
+
+    expect(screen.queryByTestId("topology-v2-context-menu-document")).toBeNull();
+    expect(screen.queryByText("Document")).toBeNull();
+
+    const item = screen.getByTestId("topology-v2-context-menu-mention-document");
+    expect(item.tagName).toBe("A");
+    expect(item).toHaveAttribute(
+      "href",
+      "/docs/?slug=ontology%2Fcapabilities%2Ffrontmatter-to-ontology",
+    );
+    expect(item).toHaveTextContent("Mentioned in");
+    expect(item).toHaveAttribute("title", "No document of its own yet");
   });
 
   it("calls onCopyHandoff / onSetPathSource / onOpenFullDetail when clicked", () => {

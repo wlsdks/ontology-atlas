@@ -92,7 +92,18 @@ export interface NodeDatasheetDerivation {
      */
     codeLocations: string[];
     handoffText: string;
+    /**
+     * **이 노드 자신의** 문서 딥링크. 관계에서만 이름이 불린 노드(자기 `.md`
+     * 없음)는 null — 예전에는 그 노드를 인용한 남의 문서 링크가 여기 들어가
+     * "문서" 버튼이 다른 개념의 글을 열었다.
+     */
     documentHref: string | null;
+    /**
+     * 자기 문서가 없는 노드를 적어 둔 다른 문서의 딥링크. 팝오버는 이 링크를
+     * `근거` 그룹이 이미 이름까지 붙여 보여주므로 액션으로 다시 내지 않고,
+     * 근거 목록이 없는 표면(컨텍스트 메뉴 · 전체 상세)만 이 값을 쓴다.
+     */
+    mentionDocumentHref: string | null;
     studioEditHref: string;
     /** rank7 — 실데이터 근거(heartbeat 매치 / 자기 쓰기 기록) 있을 때만
      *  non-null. 사람/AI 는 `kind` 로만 구분(hue 0). */
@@ -232,8 +243,16 @@ export function useNodeDatasheetModel({
       codeLocations,
       handoffText,
       // 문서 딥링크는 vault 파일 경로(`?slug=`)로 — 노드 id → 문서 slug 변환은
-      // sourceSlug(focus 모델의 순수 파생) 한 곳에서만 나온다(H5 계약 item 2).
-      documentHref: nodeFocus.sourceSlug ? buildDocsVaultHref({ slug: nodeFocus.sourceSlug }) : null,
+      // focus 모델의 순수 파생 한 곳에서만 나온다(H5 계약 item 2). `sourceSlug`
+      // 가 아니라 `ownDocumentSlug` 를 쓰는 이유: 관계에서만 이름이 불린 노드의
+      // sourceSlug 는 자기를 인용한 *남의* 문서라, 그대로 쓰면 "문서" 버튼이
+      // 다른 개념의 글을 연다.
+      documentHref: nodeFocus.ownDocumentSlug
+        ? buildDocsVaultHref({ slug: nodeFocus.ownDocumentSlug })
+        : null,
+      mentionDocumentHref: nodeFocus.mentionedInSlug
+        ? buildDocsVaultHref({ slug: nodeFocus.mentionedInSlug })
+        : null,
       // 빌더 딥링크는 canonical `<kind>:<slug>`(그래프 node id) 그대로 — 발신 문법
       // 통일(H5 계약 item 1). 예전 `?node=<vault slug>` 인라인 링크를 대체.
       studioEditHref: buildOntologyStudioNodeHrefFromGraphId(selectedOntologyNode.id),

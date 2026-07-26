@@ -385,7 +385,7 @@
     "sampleSourceStorefront": "예시 비즈니스 보기",
     "nodeHint": {
       "action": "지도의 노드를 눌러보세요",
-      "reason": "모든 것이 진짜 문서예요"
+      "reason": "전부 진짜 문서에서 나왔어요"
     },
     "readout": {
       "projectUnit": "프로젝트",
@@ -406,13 +406,13 @@
     "skipLabel": "건너뛰기",
     "finishLabel": "완료",
     "waitingForClickLabel": "밝게 남은 점을 눌러보세요",
-    "clickSuccessLabel": "잘했어요 — 방금 문서 한 장을 연 거예요",
+    "clickSuccessLabel": "잘했어요 — 방금 그 점의 카드를 연 거예요",
     "finishTourAction": "구경 끝 — 지도로",
     "devBranchAction": "저는 개발자예요",
     "steps": {
       "welcome": {
-        "title": "이 지도는 문서예요",
-        "body": "여기 보이는 점 하나하나가 실제 마크다운 문서 한 장이에요. 지도 전체가 우리 제품이 무엇으로 이루어져 있고, 서로 어떻게 얽혀 있는지를 그린 한 장의 그림이에요. 이런 그림을 온톨로지라고 불러요 — 이름은 낯설어도, 뜻은 방금 그 한 문장이 전부예요. 2분이면 다 봐요."
+        "title": "이 지도는 문서에서 나와요",
+        "body": "여기 보이는 점은 마크다운 문서 한 장이거나, 그 문서가 이름을 적어 둔 것이에요. 지도 전체가 우리 제품이 무엇으로 이루어져 있고, 서로 어떻게 얽혀 있는지를 그린 한 장의 그림이에요. 이런 그림을 온톨로지라고 불러요 — 이름은 낯설어도, 뜻은 방금 그 한 문장이 전부예요. 2분이면 다 봐요."
       },
       "nodes": {
         "title": "점의 크기와 모양",
@@ -1901,7 +1901,7 @@
       "metricContainsHelp": "이 노드가 직접 담고 있는 하위 항목들 — 하위 전체가 아니라 바로 아래 한 단계예요.",
       "metricUsedByHelp": "이 노드를 직접 쓰는(가리키는) 다른 항목들.",
       "metricDependsOnHelp": "이 노드가 직접 기대는(필요로 하는) 다른 항목들.",
-      "metricEvidenceHelp": "이 노드의 원본 문서가 있는지 여부예요 — '문서 있음'이면 클릭해 원본으로 가요.",
+      "metricEvidenceHelp": "이 개념이 적혀 있는 문서예요 — 이 개념 자신의 글일 수도, 이 개념을 언급한 다른 글일 수도 있어요. 눌러서 열어요.",
       "metricEvidenceDeclared": "문서 있음",
       "metricEvidenceUndeclared": "문서 없음",
       "statsConnected": "이어진 곳",
@@ -1919,10 +1919,12 @@
       "openFullDetail": "전체 상세",
       "actionsGroupLabel": "노드 행동",
       "actionDocument": "문서",
+      "actionMentionDocument": "언급한 문서",
       "actionEditRelations": "관계 편집",
       "actionCopyHandoff": "AI 요약 복사",
       "actionPath": "경로",
       "actionDocumentTip": "이 노드의 원본 마크다운 문서를 문서함에서 열어요",
+      "actionMentionDocumentTip": "이 개념은 아직 자기 문서가 없어요. 이 개념을 적어 둔 다른 문서를 열어요",
       "actionEditRelationsTip": "나침 무대에서 이 노드의 연결(관계)을 완성해요",
       "actionCopyHandoffTip": "AI 에이전트에게 붙여넣을 이 노드의 맥락을 복사해요",
       "actionPathTip": "이 노드에서 다른 노드까지의 연결 경로를 지도에서 찾아요",
@@ -2275,6 +2277,8 @@
       "copy": "다음 액션 복사",
       "copied": "에이전트 핸드오프 호출을 복사했어요",
       "openDocument": "문서 열기",
+      "openMentionDocument": "언급한 문서 열기",
+      "openMentionDocumentTip": "이 개념은 아직 자기 문서가 없어요. 이 개념을 적어 둔 다른 문서를 열어요",
       "openStudio": "공방에서 완성"
     },
     "codeLocations": {

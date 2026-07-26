@@ -89,7 +89,14 @@ export interface FullDetailA1Props {
   onSelectNode: (id: string) => void;
   onClose: () => void;
   onBackToMap?: () => void;
+  /** **이 노드 자신의** 문서. 자기 `.md` 가 없으면 null/omit. */
   documentHref?: string | null;
+  /**
+   * 자기 문서가 없을 때, 이 노드를 적어 둔 다른 문서. 이 표면에는 `근거`
+   * 목록이 없어 링크를 지우면 "어디에 적혀 있나" 를 잃으므로, 목적지를
+   * 말하는 라벨로 바꿔 남긴다.
+   */
+  mentionDocumentHref?: string | null;
   /**
    * "코드 위치" (code location) — the node's REAL code evidence: raw file
    * paths (`deriveCodeLocations`), not the self-referential vault-doc slug
@@ -111,6 +118,7 @@ export function FullDetailA1({
   onClose,
   onBackToMap,
   documentHref,
+  mentionDocumentHref = null,
   codeLocations = [],
   className,
 }: FullDetailA1Props) {
@@ -379,6 +387,15 @@ export function FullDetailA1({
             className="shrink-0 text-body text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
           >
             {t("handoff.openDocument")}
+          </Link>
+        ) : mentionDocumentHref ? (
+          <Link
+            href={mentionDocumentHref}
+            title={t("handoff.openMentionDocumentTip")}
+            data-testid="full-detail-a1-open-mention-document"
+            className="shrink-0 text-body text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          >
+            {t("handoff.openMentionDocument")}
           </Link>
         ) : null}
         <Link

@@ -1,4 +1,8 @@
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import {
+  resolveNodeDocument,
+  type KnowledgeGraphEdge,
+  type KnowledgeGraphNode,
+} from "@/entities/knowledge-graph";
 import { buildContainmentParents, nearestDomainId } from "@/shared/lib/ontology-tree";
 
 /**
@@ -151,16 +155,15 @@ function slugOf(node: KnowledgeGraphNode): string {
  * Pattern Test」(원본 파일과 그 테스트 파일)가 겹침 100%로 올라왔다 —
  * 중복이 아니라 이름이 닮은 두 파일이다.
  *
- * 판별: 문서에서 온 노드는 id 꼬리가 자기 문서 slug 의 꼬리와 같다
- * (`elements/foo` → `element:foo`). 참조에서 태어난 노드는 부른 쪽 문서의
- * slug 를 달고 있어 어긋난다. 컴파일러도 문서만 노드로 만들기 때문에, 이
- * 필터는 MCP `similar_nodes` 와 보는 대상까지 같게 맞춘다.
+ * 판별은 `resolveNodeDocument` 한 곳에서만 한다 — derive 가 노드를 만들 때
+ * 남긴 사실(`hasOwnDocument`)을 읽을 뿐 화면이 다시 추정하지 않는다. 예전의
+ * "id 꼬리와 문서 slug 꼬리가 같은가" 추정은 **프로젝트 노드를 놓쳤다**:
+ * 프로젝트 id 는 frontmatter `slug:` 로 만들어져(`ontology/project.md` →
+ * `project:ontology-atlas`) 파일 이름 꼬리와 다르다. 같은 개념을 두 곳에서
+ * 각자 판정하면 반드시 갈라진다.
  */
 function hasOwnDocument(node: KnowledgeGraphNode): boolean {
-  const docSlug = node.evidenceIds[0];
-  if (!docSlug) return false;
-  const idTail = node.id.slice(node.id.indexOf(":") + 1);
-  return (docSlug.split("/").pop() ?? docSlug) === idTail;
+  return resolveNodeDocument(node).ownSlug !== null;
 }
 
 /**

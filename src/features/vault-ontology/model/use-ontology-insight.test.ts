@@ -11,6 +11,7 @@ describe('derivationToInsight', () => {
           title: 'Views',
           display: 'Views',
           kind: 'domain',
+          hasOwnDocument: true,
           source: 'frontmatter',
           sourceSlug: 'domains/views',
         },
@@ -19,6 +20,7 @@ describe('derivationToInsight', () => {
           title: 'Topology Map',
           display: 'Topology Map',
           kind: 'capability',
+          hasOwnDocument: true,
           source: 'frontmatter',
           sourceSlug: 'capabilities/topology-map',
         },
@@ -41,6 +43,52 @@ describe('derivationToInsight', () => {
     expect(insight.edges).toHaveLength(1);
     expect(insight.edges[0]?.evidenceIds).toEqual([
       'capabilities/topology-map',
+    ]);
+  });
+
+  // D7 회귀 — 두 종류의 노드가 `evidenceIds[0]` 한 칸을 공유하므로, 구분
+  // 플래그가 그래프 노드까지 따라오지 않으면 화면이 다시 남의 문서를 연다.
+  it('자기 문서 보유 여부를 그래프 노드로 그대로 옮긴다', () => {
+    const insight = derivationToInsight({
+      nodes: [
+        {
+          id: 'capability:frontmatter-to-ontology',
+          title: 'Frontmatter to Ontology',
+          display: 'Frontmatter to Ontology',
+          kind: 'capability',
+          hasOwnDocument: true,
+          source: 'frontmatter',
+          sourceSlug: 'capabilities/frontmatter-to-ontology',
+        },
+        {
+          id: 'element:derive-ontology-from-vault',
+          title: 'Derive Ontology From Vault',
+          display: 'Derive Ontology From Vault',
+          kind: 'element',
+          hasOwnDocument: false,
+          source: 'frontmatter',
+          sourceSlug: 'capabilities/frontmatter-to-ontology',
+        },
+      ],
+      edges: [],
+      sourceConceptCount: 1,
+      sourceKindCounts: { capability: 1 },
+      warnings: [],
+    } satisfies VaultOntologyDerivation);
+
+    expect(
+      insight.nodes.map((n) => [n.id, n.hasOwnDocument, n.evidenceIds[0]]),
+    ).toEqual([
+      [
+        'capability:frontmatter-to-ontology',
+        true,
+        'capabilities/frontmatter-to-ontology',
+      ],
+      [
+        'element:derive-ontology-from-vault',
+        false,
+        'capabilities/frontmatter-to-ontology',
+      ],
     ]);
   });
 });
