@@ -5780,6 +5780,7 @@ pub fn run() {
             secrets::secret_status,
             secrets::secret_clear,
             llm::secret_verify,
+            llm::llm_chat,
             terminal::terminal_open,
             terminal::terminal_write,
             terminal::terminal_resize,

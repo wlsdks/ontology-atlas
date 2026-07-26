@@ -17,7 +17,7 @@ describe('llm-audit.jsonl 계약 (Rust writer ↔ web reader)', () => {
   const entries = parseLlmAuditLog(raw);
 
   it('writer 가 쓴 완료 줄을 화면이 같은 사실로 읽는다', () => {
-    expect(entries).toHaveLength(4);
+    expect(entries).toHaveLength(5);
     expect(entries[0]).toEqual({
       v: 1,
       at: '2026-07-26T09:12:33.120Z',
@@ -27,6 +27,9 @@ describe('llm-audit.jsonl 계약 (Rust writer ↔ web reader)', () => {
       purpose: 'verify',
       question: null,
       scope: { nodes: [], promptChars: 0, vaultChars: 0 },
+      // 연결 확인 줄에는 `tools` 필드가 아예 없다 — 빈 배열("도구 0개 사용")
+      // 이라는 하지도 않은 주장 대신 null 로 읽힌다.
+      tools: null,
       payloadSha256:
         'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
       outcome: 'ok',
@@ -34,6 +37,20 @@ describe('llm-audit.jsonl 계약 (Rust writer ↔ web reader)', () => {
       responseChars: 42,
       durationMs: 640,
     });
+  });
+
+  it('에이전트 왕복 줄은 무엇을 보고 무엇을 물었는지까지 말한다', () => {
+    const agent = entries[4];
+    expect(agent.purpose).toBe('agent');
+    expect(agent.model).toBe('claude-sonnet-4-5');
+    expect(agent.question).toBe('이 노드에 빠진 관계 이어줘');
+    expect(agent.scope.nodes).toEqual(['capabilities/payment']);
+    expect(agent.scope.vaultChars).toBe(1020);
+    expect(agent.tools).toEqual([
+      { name: 'get_concept', target: 'capabilities/payment' },
+    ]);
+    // 응답 본문은 여기에도 없다 — 길이만.
+    expect(agent.responseChars).toBe(812);
   });
 
   it('전송 직전 예약 줄(결과 필드 없음)은 unknown 으로 읽힌다', () => {

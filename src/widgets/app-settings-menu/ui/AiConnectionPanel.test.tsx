@@ -412,6 +412,8 @@ describe('AiConnectionPanel audit tail', () => {
     purpose: 'verify',
     question: null,
     scope: { nodes: [], promptChars: 0, vaultChars: 0 },
+    // 연결 확인 줄에는 `tools` 필드가 없다 — 리더가 null 로 읽는 자리.
+    tools: null,
     payloadSha256: 'e3b0',
     outcome: 'ok',
     httpStatus: 200,

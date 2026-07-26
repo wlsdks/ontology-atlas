@@ -32,6 +32,12 @@ export interface LlmAuditScope {
   vaultChars: number;
 }
 
+/** 한 왕복에 실려나간 도구 호출 — 이름과 대상만. 인자 전문은 기록되지 않는다. */
+export interface LlmAuditToolRef {
+  name: string;
+  target: string;
+}
+
 export interface LlmAuditEntry {
   v: 1;
   at: string;
@@ -42,11 +48,16 @@ export interface LlmAuditEntry {
    */
   host: string | null;
   model: string | null;
-  /** `'verify' | 'ask'` — 앞으로 값이 늘어도 파서는 그대로 통과시킨다. */
+  /** `'verify' | 'agent'` — 앞으로 값이 늘어도 파서는 그대로 통과시킨다. */
   purpose: string;
   /** 사용자 본인의 말. 연결 확인은 null. */
   question: string | null;
   scope: LlmAuditScope;
+  /**
+   * 이 왕복에 실린 도구 호출들. 필드가 **없는** 줄은 `null` — 빈 배열("도구를
+   * 0개 썼다")과 다른 뜻이다. 연결 확인 줄에는 애초에 이 필드가 없다.
+   */
+  tools: LlmAuditToolRef[] | null;
   payloadSha256: string;
   outcome: LlmAuditOutcome;
   /** 아직 모를 수 있는 값들은 0 이 아니라 null — 0 은 사실 주장이다. */
@@ -72,6 +83,15 @@ function readScope(value: unknown): LlmAuditScope {
   };
 }
 
+function readTools(value: unknown): LlmAuditToolRef[] | null {
+  if (!Array.isArray(value)) return null;
+  return value.flatMap((row) => {
+    const raw = row as Partial<LlmAuditToolRef> | null;
+    if (!raw || typeof raw.name !== 'string') return [];
+    return [{ name: raw.name, target: typeof raw.target === 'string' ? raw.target : '' }];
+  });
+}
+
 export function parseLlmAuditLog(
   raw: string,
   { limit = 50 }: { limit?: number } = {},
@@ -93,6 +113,7 @@ export function parseLlmAuditLog(
         purpose: typeof parsed.purpose === 'string' ? parsed.purpose : '',
         question: typeof parsed.question === 'string' ? parsed.question : null,
         scope: readScope(parsed.scope),
+        tools: readTools(parsed.tools),
         payloadSha256:
           typeof parsed.payloadSha256 === 'string' ? parsed.payloadSha256 : '',
         outcome:
