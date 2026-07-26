@@ -536,14 +536,14 @@ level below `/projects`.
 
 ---
 
-### `/project/[slug]/edit` and `/project/new` — Full editor
+### `/project/[slug]/edit` — Full editor
 
-`ProjectForm` (2026-07-18 — 640px centered form column + 260px companion column, `docs/prototypes/project-forms-final.html` + RATIO-SYSTEM; 4 collapsible sections + sticky save bar):
+`ProjectForm` in `mode="edit"` (640px centered form column + 260px companion column, RATIO-SYSTEM; 4 sections + sticky save bar). **Create and edit no longer share one layout** (2026-07-27) — see `/project/new` below.
 
-1. **Basics** (always open) — slug (disabled in edit, auto-slugify in create) · name · nameEn · category (taxonomy select) · status (taxonomy select)
+1. **Basics** (always open) — slug (disabled in edit) · name · nameEn · category (taxonomy select) · status (taxonomy select)
 2. **Story** (collapsible) — description (required) · detail (markdown) · tags CSV · stack CSV · linksText (multiline `label|URL`)
-3. **Network** (collapsible, collapsed in create) — dependencies picker with cycle check (suggestions from description/detail text)
-4. **Operations** (collapsible, collapsed in create) — startedAt · launchedAt (date order validated) · owner · icon · progress · `isHub` checkbox
+3. **Network** (collapsible) — dependencies picker with cycle check (suggestions from description/detail text)
+4. **Operations** (collapsible) — startedAt · launchedAt (date order validated) · owner · icon · progress · `isHub` checkbox
 
 Section labels are engraved (mono uppercase caption + hairline), matching the census styling used elsewhere in this wave.
 
@@ -556,8 +556,8 @@ Section labels are engraved (mono uppercase caption + hairline), matching the ce
 #### Actions
 - Save & continue · Save & return · Cancel (with dirty-state guard via `beforeunload` + router intercept)
 - **Delete** (edit-only) — isolated in a single dashed-border danger row at the bottom of the form (2026-07-18; dashed border is the destructive-action category signal, matching the design system rule); no other delete affordance on this page
-- Form nav pills jump to sections
-- Top + bottom sticky save bar
+- Form nav pills jump to sections (edit only)
+- Top sticky + bottom save bar (edit only — create has the bottom row only)
 
 #### Companion column (260px, sidebar, collapsible <lg)
 - Live preview `ProjectCard` · completeness % · public status · change summary (max 4 items)
@@ -567,12 +567,16 @@ Section labels are engraved (mono uppercase caption + hairline), matching the ce
 
 ---
 
-### `/project/new` — Create
+### `/project/new` — Create (restructured 2026-07-27)
 
-Same `ProjectForm` minus existing-project context.
-- Submit buttons: "Create & continue" / "Create & return"
-- Tips panel (easiest path: name → category/status → description, then save)
-- `ProjectQuickCreatePanel` still exists as a component but is no longer surfaced from `/projects` (2026-07-18 — that list's empty state now points at the CLI/MCP next-slot row instead); this full form remains the canonical create path
+Create is a **different screen from edit**, not the same one with fewer values. Creating asks for one thing — make a project — so the screen asks for exactly the four fields that make one, and nothing else is on top of them.
+
+- **Four essential fields, first screen, no scroll** — name · category · status · short description. Measured at 1512×950: name at y=292, category/status at y=395, description at y=472, primary action at y=698; the whole screen fits without scrolling (also verified at 1024 and 768).
+- **The document address (slug) is a caption, not a field.** It is derived from the name; "Set it myself" opens the real input inline (validation errors targeting it open it automatically).
+- **Everything else is folded into "Fill in more"** — nameEn, detail, tags, stack, links, dependencies, dates, owner, icon, progress, hub flag. The user opens it; a validation error inside it opens it too.
+- **Actions come after the form** — Create & continue / Create & return / Cancel. The old top save cluster is gone in create mode (it let you press "create" before seeing a single input); edit mode keeps its sticky bar.
+- **One place teaches.** The four teaching surfaces that used to stack above the form (two tip cards on the page, one header help line, one "1-minute tip" disclosure) all said the same sentence and pushed the actual fields off screen. They are replaced by one subtitle line directly above the fields, plus per-field captions.
+- `ProjectQuickCreatePanel` still exists as a component but is no longer surfaced from `/projects` (2026-07-18); this full form remains the canonical create path.
 
 ### `/project/fallback` — Static-export fallback
 
