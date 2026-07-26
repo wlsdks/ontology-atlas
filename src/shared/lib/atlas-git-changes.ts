@@ -41,12 +41,19 @@ export interface AtlasGitStatusCounts {
 }
 
 /** kind 하나의 변경 묶음 — 패널의 "kind별 A/M/D + 대표 슬러그" 행. */
-export interface AtlasGitKindGroup {
+export interface AtlasGitKindGroup<T extends AtlasGitChangeLike = AtlasGitChangeLike> {
   /** frontmatter kind. 비-md/kind 미상 파일은 null (패널이 "기타" 로 라벨링). */
   kind: string | null;
   counts: AtlasGitStatusCounts;
   /** 그룹의 대표 슬러그 (등장 순, 호출자가 잘라 쓴다). */
   slugs: string[];
+  /**
+   * 원본 변경 항목 (등장 순). `slugs` 는 요약 문장용 짧은 목록이고, 이쪽은
+   * **항목별로 그릴 때** 쓴다 — 화면 행은 슬러그 말고도 상태(추가/수정/삭제)와
+   * 경로를 알아야 하는데, 슬러그만 돌려주면 소비처가 원본 배열을 다시
+   * 순회하며 슬러그로 되찾아야 한다(같은 슬러그가 두 kind 에 있으면 틀린다).
+   */
+  entries: T[];
 }
 
 /** CLI parsePorcelain 미러 — `git status --porcelain` 출력 → 행 배열. */
@@ -96,23 +103,24 @@ export function countChangesByStatus(
  * kind별 그룹 — 등장 순 유지, kind 미상(null) 그룹은 항상 마지막.
  * 패널이 "capability +2 ~1 / element ~3 / 기타 1" 식으로 렌더한다.
  */
-export function groupChangesByKind(
-  changes: readonly AtlasGitChangeLike[],
-): AtlasGitKindGroup[] {
-  const groups = new Map<string | null, AtlasGitChangeLike[]>();
+export function groupChangesByKind<T extends AtlasGitChangeLike>(
+  changes: readonly T[],
+): AtlasGitKindGroup<T>[] {
+  const groups = new Map<string | null, T[]>();
   for (const change of changes) {
     const key = change.kind ?? null;
     const list = groups.get(key);
     if (list) list.push(change);
     else groups.set(key, [change]);
   }
-  const named: AtlasGitKindGroup[] = [];
-  let other: AtlasGitKindGroup | null = null;
+  const named: AtlasGitKindGroup<T>[] = [];
+  let other: AtlasGitKindGroup<T> | null = null;
   for (const [kind, list] of groups) {
-    const group: AtlasGitKindGroup = {
+    const group: AtlasGitKindGroup<T> = {
       kind,
       counts: countChangesByStatus(list),
       slugs: list.map((c) => c.slug),
+      entries: list,
     };
     if (kind === null) other = group;
     else named.push(group);
