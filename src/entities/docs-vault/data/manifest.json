@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T08:39:20.000Z",
+  "generatedAt": "2026-07-26T09:11:51.000Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4951,11 +4951,16 @@
           "depth": 2,
           "text": "Before 2026-04-30",
           "slug": "before-2026-04-30"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 — 안 물린 게이트는 게이트가 아니다",
+          "slug": "2026-07-26-안-물린-게이트는-게이트가-아니다"
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 지도가 296개를 개념이라 세는 동안 ontology-atlas overview 와 MCP listkinds 는 96개라고 답했다. 차이 200개는 다른 ",
-      "wordCount": 46332,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "wordCount": 46465,
+      "updatedAt": "2026-07-26T18:11:51+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -6959,7 +6964,7 @@
       "headings": [],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultAgentSetupPanel (merged into AppSettingsMenu's vault / mcpAgents tabs, B2 2026-07 — the former VaultToolsMenu docs-header dropdown was retired to remove the duplicate surface) exposes the setup gate in the same language a",
       "wordCount": 1234,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -6979,7 +6984,7 @@
       "headings": [],
       "excerpt": "INDEX 푸터의 에이전트 상태 클릭 → 연결 시트 (2026-07-21, P2a — 웨지 표면). 구성: ① heartbeat 파일 기반 연결 상태(조용한 수집 0 — 에이전트가 스스로 남긴 로컬 파일 읽기) ② Claude Code .mcp.json / Codex / generic 등록 스니펫(데스크톱 경로 자동, 웹 안내) + 데스크톱 설정 파일 자동 생성 ③ agent-brief 가 사용자의 실제 도메인 이름들을 되말하는 미리보기(이해받음의 순간 — 감정 카피 규칙: 사용자 고유 명사 원문 포함). 전략 근거: 백엔드(MCP 25도구·스킬·heartbeat)는",
       "wordCount": 86,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7014,7 +7019,7 @@
       "headings": [],
       "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Do next / Structure / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Insi",
       "wordCount": 507,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7045,7 +7050,7 @@
       "headings": [],
       "excerpt": "Atlas defines a live activity contract for Claude Code / Codex sessions without pretending it can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live — ",
       "wordCount": 1346,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7081,7 +7086,7 @@
       "headings": [],
       "excerpt": "Agent onboarding brief composer — a purely-functional packet builder that was originally designed to unify the \"Copy …\" buttons scattered across the old 4-tab /ontology/insights (run order · graph-DB pack · readiness · write guardrails · CLI fallback) into a single 1-paste briefing. That insights UI is gone (2026-07 re",
       "wordCount": 255,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7109,7 +7114,7 @@
       "headings": [],
       "excerpt": "AI agent 기능을 추가할 때 먼저 확인하는 실패 모드 지도. Ontology Atlas 는 agent 를 직접 채팅처럼 대체하기보다, Claude Code / Codex 같은 agent 가 더 적은 추측으로 repo ontology 를 읽고, 검증하고, 갱신하게 돕는다. src/shared/lib/ontology-tree/agent-query-recipes.ts 의 AGENTPRACTITIONERCONCERNS 가 단일 source of truth 다. 현재 순서는 context, tools, evidence, drift, workflow 이며, formatAg",
       "wordCount": 250,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7143,7 +7148,7 @@
       ],
       "excerpt": "baseline 대비 변경된 노드만 보는 리뷰 흐름 — \"이번 세션에 뭐가 바뀌었나\"를 확인하는 기능. 원래 두 개의 분석 surface(/ontology의 OntologyChangePanel + /ontology/insights의 InsightsChangeStrip)에 드릴다운으로 존재했으나, 2026-07 지도 재구성에서 두 surface 모두 삭제됐다: src/views/ontology-view/ 디렉터리 전체(구 /ontology tree/ego 허브)와 InsightsChangeStrip.tsx가 함께 없어졌다. baseline/changeset 계산 자체(",
       "wordCount": 164,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7292,7 +7297,7 @@
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
       "wordCount": 10587,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7319,7 +7324,7 @@
       "headings": [],
       "excerpt": "Shared stakeholder reader lane for planners, marketers, C-level decision-makers, developers, and AI agents — the idea that the same graph should turn business/product meaning, ownership, dependency, evidence, and impact into something the whole decision loop can read, not just developers. 2026-07 status note. Most of t",
       "wordCount": 274,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7351,7 +7356,7 @@
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
       "wordCount": 3701,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7377,7 +7382,7 @@
       "headings": [],
       "excerpt": "지도의 엣지를 클릭 가능한 1급 객체로 만든 역량 (2026-07-21, P3b). 빈 공간 클릭이 엣지 7px 근접이면 팝오버가 열린다: 평문 문장(\"A 가 B 에 기대요\") → 타입 → 양 끝 노드(클릭=포커스) → 관계 근거(why, relationnotes) → 선언한 vault 문서(.md 링크 + 변경 시점) → 관계 편집 딥링크. 구현: topology-edge-hit.ts(AABB 프리패스 + 베지어 16-샘플), TopologyV2EdgePanel.tsx, WorldEdge.relationType/declaredBySlug 배관. 후보는 양 끝점이 현",
       "wordCount": 93,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7405,7 +7410,7 @@
       ],
       "excerpt": "2026-07-24 온보딩 라운드 — 라이브 답사(비개발자 피드백)로 확인한 첫 사용 이탈 지점 4곳을 기존 온보딩 자산의 재배치로 해소한 역량. 새 시스템을 만들지 않고 결정적 순간에 가이드를 세운다. 1. 가이드 투어 첫 방문 자동 시작 — 샘플 모드 정착 + guided-tour:v1 미기록이면 900ms 뒤 1회 자동 시작. canAutoStartGuidedTour (src/features/guided-tour/model/auto-start-guard.ts)가 모달/포커스 이탈/이미 열린 투어를 가드(stacked-transient 금지). 첫 실행 카드에 \"",
       "wordCount": 218,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7437,7 +7442,7 @@
       ],
       "excerpt": "vault 의 .md 파일 frontmatter 를 직접 읽어 OntologyStub (nodes + edges + warnings) 으로 변환. AI 추출 / 검수 큐 거치지 않는 fast-path. 이게 mission \"frontmatter 가 자기-승인\" 의 코드 표현. 지원 frontmatter 키: kind: — canonical 5: project / domain / capability / element / document title:, domain: capabilities: [], elements: [] — 배열 노드 relates: [], depende",
       "wordCount": 165,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7487,7 +7492,7 @@
       ],
       "excerpt": "같은 .md 가 사람 GUI · 외부 에디터 · 다른 AI MCP 에 의해 동시 편집될 때 silent overwrite 차단. R11 8 에서 MCP 측 도입, R+ 에서 local UI 의 본문 저장과 frontmatter patch 경로까지 확장. 1. AI agent 가 getconcept 호출 → 응답에 mtime (ms) 포함 2. agent 가 분석 / 수정 후 patchconcept({ slug, frontmatter, expectedmtime: <prev mtime }) 호출 3. write 직전 server 가 현재 mtime 과 비교 4. 다르면 ",
       "wordCount": 183,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7544,7 +7549,7 @@
       ],
       "excerpt": "@modelcontextprotocol/sdk 안정판 1.x 기반 stdio JSON-RPC 서버. 32 도구 노출 (read 19 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-lev",
       "wordCount": 13578,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7578,7 +7583,7 @@
       ],
       "excerpt": "R10 (auth + cloud surface 영구 제거) 이후 2 mode: local — 사용자 디스크 vault. 검증된 manifest가 있으면 증분 재로딩의 transient loading 동안에도 source를 static으로 바꾸지 않는다. static — vault 미선택. 빌드타임 dogfood 매니페스트 (docs/ontology/) 가 fallback. useDataSourceMode() 가 두 mode 를 분기. 같은 hook 호출이 mode 별로 다른 source 를 본다 — 호출자 코드는 단일. 적용 surface: useProjects — ",
       "wordCount": 142,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7615,7 +7620,7 @@
       ],
       "excerpt": "ontology-bootstrap은 비어 있거나 starter-only인 vault에서 첫 공유 온톨로지를 만드는 Atlas-only 에이전트 워크플로다. 저장소 폴더를 라벨링하는 기능이 아니라, indexproject가 반환한 semantic evidence와 extraction contract를 사람이 검토할 수 있는 의미 모델로 변환한다. observed: MCP가 직접 반환한 문서, 경로, 패키지, import 사실 proposed: observed evidence에서 해석했지만 아직 승인되지 않은 의미 shared: 사용자가 승인해 vault에 저장한 개념 ",
       "wordCount": 177,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7653,7 +7658,7 @@
       ],
       "excerpt": "prose (회의록 · PR 본문 · RFC 초안 · 채팅 로그 · Notion 한 단락) 에서 ontology 가 자라는 흐름. Obsidian 처럼 [[link]] 만 자라는 게 아니라 typed ontology 노드 (capability / element / domain) 가 자란다 — LLM 이 매개라서 가능한 path. · Skill · 입력 · 출력 · [[capabilities/ontology-bootstrap-skill]] · 빈 vault + 코드 (analyzerepostructure) · 첫 5–15 노드 · [[capabilities/ontolo",
       "wordCount": 281,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": [
         "ontology/link",
         "ontology/capabilities/ontology-bootstrap-skill",
@@ -7697,7 +7702,7 @@
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (module-load 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), l",
       "wordCount": 632,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7733,7 +7738,7 @@
       ],
       "excerpt": "Claude Code 가 코드 변경 후 자동으로 호출하는 user-invocable skill. .claude/skills/ontology-sync/SKILL.md 한 파일이 곧 surface — 새 capability / element / domain 가 등장하면 MCP write 도구 (addconcept / patchconcept / addrelation) 로 vault 에 반영하라는 워크플로를 LLM 에게 지시한다. MCP 서버가 런타임 도구 라면 이 skill 은 사용 규약 — read-then-write, 중복 slug 회피, 5 줄 changelog re",
       "wordCount": 105,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7765,7 +7770,7 @@
       ],
       "excerpt": "docs/PRODUCT-OWNER-OPERATING-SYSTEM.md is the product decision gate for Atlas work. It exists because the project can easily drift into a feature factory: prettier graph controls, more panels, more commands, and more AI copy without a clear user or agent outcome. The capability makes contributors translate requests int",
       "wordCount": 168,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7805,7 +7810,7 @@
       ],
       "excerpt": "indexproject is the canonical read-only checkpoint for turning an unfamiliar repository into an evidence-backed ontology proposal. It combines repository-shape analysis, import evidence, active-vault validation, candidate reconciliation, and exact review calls without writing markdown. The CLI pair is ontology-atlas in",
       "wordCount": 339,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7825,7 +7830,7 @@
       "headings": [],
       "excerpt": "관계에 \"왜\"를 붙이는 스키마 역량 (2026-07-21, P6). relationnotes: {ref: 근거 한 줄} frontmatter carrier — 파서 3계(런타임/MCP/스크립트)가 동일 해석함을 contract fixture 로 증명했고, renameconcept 는 노트 키를 함께 재작성한다(키 충돌 시 기존 new-키 값 승리 — 조용한 덮어쓰기 금지). MCP addrelation 의 why 파라미터는 관계와 근거를 한 번의 frontmatter 쓰기로 기록한다(원자성). derive 는 노트를 해당 엣지의 label 로 승격하고, 지도의 엣지 ",
       "wordCount": 83,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7855,7 +7860,7 @@
       "headings": [],
       "excerpt": "Claude Code / Codex run a repo-local SessionStart hook that injects a compact ontology vault census into agent context. The hook is intentionally small for token budget reasons: it reports total node count, kind distribution, and only an actionable drift warning when unresolved refs or compile issues exist. It does not",
       "wordCount": 111,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7884,7 +7889,7 @@
       ],
       "excerpt": "/ontology/studio?node=<graph-node-id 는 나침 무대를 그 vault 노드를 focal 아이템으로 놓은 상태로 연다 (OntologyStudioPage 의 requestedNode). 요청한 id 가 현재 그래프에 있으면 그 노드가, 없으면 selectDefaultStudioNodeId 의 기본 노드가 무대 중앙에 놓인다. 은퇴한 xyflow 빌더의 /ontology/edit?node= 딥링크가 하던 \"검사에서 편집으로 바로 넘기기\" 역할을 이어받는다. /topology 의 detail 패널 / Focus / Path / Health 핸드오",
       "wordCount": 152,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7913,7 +7918,7 @@
       ],
       "excerpt": "은퇴한 xyflow 빌더의 드래그-후-확인 관계 쓰기 모달을 대체하는, 나침 무대 (/ontology/studio) 의 인라인 소켓 채우기 흐름. 노드를 헥사곤 아이템으로 놓고, 네 방위(bearing)의 관계 소켓을 인라인 picker 로 채운다. 각 소켓은 관계 타입 이름을 노출하지 않고 평문 질문으로 묻는다 (ontologyStudio i18n): 위=상위개념(isa), 오른쪽=기대는 곳(dependson), 아래=담는 것(contains), 왼쪽=비슷한 것(relatedto). 관계를 확정하기 전 계약: 관계 → frontmatter 키는 스키마 그대로. BE",
       "wordCount": 216,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7945,7 +7950,7 @@
       ],
       "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 은퇴한 xyflow ERD 빌더 (/ontology/edit) 가 하던 vault 쓰기 경로는 이제 나침 무대 (Compass Stage, /ontology/studio) 가 이어받았다. 한 노드를 게임 아이템처럼 놓고 관계 소켓을 채우면 그 채움이 곧 실제 frontmatter write 다. OntologyStudioPage 는 두 fill-state 를 한 라우트에서 처리한다 (mode 탭 없음): 기본 = 기존 노드를 ?node=<id 로 열어 부분 채움 (ENHANCE), ?mode=c",
       "wordCount": 555,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -7968,7 +7973,7 @@
       "headings": [],
       "excerpt": "/topology is a single Relief (Map) surface. The old peer-mode tabs were collapsed over 2026-07 (owner feedback: the four Relief-family modes looked like the same sparse card screen with different panels, so mode proliferation read as \"five confusing siblings\"), and the separate Graph (살아있는 그래프) view was removed outrigh",
       "wordCount": 508,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -8016,7 +8021,7 @@
       ],
       "excerpt": "/ (root hub) 와 /topology (동일 진입) 는 자체 canvas-2D 렌더 엔진 topology-map-v2(src/widgets/topology-map-v2/)가 그린다. Sigma.js WebGL 렌더러는 은퇴했다 — Graphology + ForceAtlas2 물리 레이아웃은 그대로 재사용하되 (빌더 ERD 캔버스와 공유), 실제 픽셀은 단일 <canvas 컨테이너 위에 이 엔진이 직접 그린다. HomePage(src/views/home)가 마운트 지점이고, TopologyControls(src/widgets/topology-controls)가 ",
       "wordCount": 171,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": [
         "ontology/capabilities/topology-skeleton-entry",
         "ontology/capabilities/topology-kind-legibility"
@@ -8053,7 +8058,7 @@
       ],
       "excerpt": "/ontology 에서 \"Mark baseline\" 으로 잡은 vault 스냅샷을 기준으로, 그 이후 추가/편집/삭제된 노드를 /topology 의 Sigma 그래프에서 시각적으로 구분(recent-pulse 재사용)한다. 에이전트가 MCP 로 vault 를 편집하면 사람은 회의에서 토폴로지를 보며 \"무엇이 바뀌었나\" 를 한눈에 봐야 한다. 변경점이 화면에서 구분되면 사람과 AI agent 가 같은 변경 단위를 두고 A/B 처럼 발전시킬 수 있다. src/shared/lib/ontology-tree/change-baseline-store.ts — 모듈 싱글톤 스토어.",
       "wordCount": 166,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -8092,7 +8097,7 @@
       ],
       "excerpt": "토폴로지(/topology)를 온톨로지의 읽기 surface 가 아니라 1차 편집 surface 로 전환하는 흐름. 별도 빌더에서 \"조립\"하는 대신, 공간 그래프에서 노드를 선택해 그 자리에서 만들고·고치고·잇고·설명한다. vault .md 에 바로 쓴다. (ontology-first 재구성 spec: docs/superpowers/specs/2026-05-30-ontology-first-topology-restructure-design.md) S1 노드 속성 편집 — drawer 에서 domain 인라인 편집 → updateFrontmatter(본문 보존 patch",
       "wordCount": 153,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -8126,7 +8131,7 @@
       ],
       "excerpt": "Topology Kind Legibility makes ontology node kinds visually separable across Atlas browse, edit, and map surfaces. The capability exists because a graph full of domain, capability, and element nodes is not useful if all marks read as the same muted dot. Atlas should let a human and an AI agent quickly distinguish share",
       "wordCount": 218,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -8160,7 +8165,7 @@
       ],
       "excerpt": "기획자·C-level 등 비개발자가 토폴로지에서 노드를 클릭했을 때, 그래프 jargon(숫자·dependson)이 아니라 평문 business 문장으로 \"so what\"을 읽게 한다. 결핍 정의: 노드를 봐도 왜 중요한지·무엇에 기대는지·바뀌면 어디 영향인지가 안 읽혔다. 이미 있는 그래프 데이터에서 결정론적으로 파생 — 새 authoring 0: 무엇인가 — kind + owner domain → \"Views 영역에 속한 역량\" 왜 중요한가 — fan-in 기반 core/supporting/leaf 판정. core 임계값은 health-signal 의 PROMOT",
       "wordCount": 165,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": [
         "ontology/capabilities/topology-ontology-inspection"
       ]
@@ -8187,7 +8192,7 @@
       "headings": [],
       "excerpt": "/topology supports ontology-aware node inspection instead of treating non-project nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer starts with a fixed node profile labeled \"개념 정보\" / \"Concept profile\": kind/lens, source slug, and a short description summary. That s",
       "wordCount": 827,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -8213,7 +8218,7 @@
       ],
       "excerpt": "/topology 진입을 ForceAtlas2 scatter 대신 결정론적 중앙-방사형 구조 골격으로 렌더한다. project 정중앙(tier 0) → 도메인 ring(tier 1, 12시 기준 slug 순) → 도메인별 대표 역량(tier 2, governed subtree weight 상위 N) + contains spine 엣지. 좌표는 순수 함수가 precompute 해 replay-identical — 물리/난수 0, 진입 시 idle 모션 0. 클릭-레벨 확장(semantic zoom, 누적 드릴다운): 도메인 클릭 → 그 도메인의 모든 역량이 wedge ",
       "wordCount": 685,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -8273,7 +8278,7 @@
       ],
       "excerpt": "R14 (155-158, 2026-05-04 ~ 2026-05-05) 에 도입된 web 즉시 반영 능력. 사용자 명시 \"웹에서나 잘 반영되면 좋겠는데? 그걸 강화하는건 어때\" 의 4 단계 답. IDE / AI agent / CLI 어느 surface 가 vault .md 만지면 웹 탭이 focus 안 해도 ~5s 안에 반영. · Step · What · Where 인지 · 155 polling · 5s 간격 fingerprint check + visible-only 자동 reload · 백그라운드 · 156 graph diff pulse · 새 노드 amber sin",
       "wordCount": 554,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -8330,7 +8335,7 @@
       ],
       "excerpt": "frontmatter 가 schema 다 → 키 추가 / 이름 변경 / 값 정리 시 vault 의 N 파일을 일괄 수정해야 한다. R11 에서 마이그레이션 패턴 정립. 각 마이그레이션은 scripts/migrations/<YYYY-MM-DD-<slug.mjs 한 파일. shape: migrate(file: { path, raw, relativePath }) → { raw } · null. null = no-op. 1. Line 기반 변형 우선 — parse → reserialize 라운드트립은 주석/공백 손실 위험 2. idempotent — 두 번 적용해도 결과 동",
       "wordCount": 175,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -8385,7 +8390,7 @@
       ],
       "excerpt": "frontmatter parser 가 lenient by-design — --- 닫힘 빠짐 / 빈 키 / 잘못된 들여쓰기에서 조용히 빈 frontmatter 반환. 사용자가 .md 잘못 작성하면 노드가 graph 에서 조용히 사라짐. R11 에서 이 silent corruption 을 가시화. 1. CLI — pnpm vault:validate [vaultPath] validateVaultDocument(raw) — frontmatter corruption + graph array canonicality issue codes error 1+ 시 exit 1 (loca",
       "wordCount": 378,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -8600,7 +8605,7 @@
       ],
       "excerpt": "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 31 도구 (read 18 + write 13) 를 stdin/stdout JSON-RPC 로 노출. 등록 가이드: mcp/README.md. 사용자 LLM 비용을 cloud 로 옮기지 않음 — agent 가 자기 LLM 으로 호출. .claude/hooks/block-npm-publish.sh 는 agent 가 사용자 명시 승인 없이 npm publish 계열 명령을 실행하지 못하게 막는 안전장치다. pnpm test:cla",
       "wordCount": 78,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -8636,7 +8641,7 @@
       ],
       "excerpt": "useDataSourceMode() 가 local / static 분기 결정. R10 (auth + cloud surface 영구 제거) 이후 두 mode 만 존재. 같은 hook 호출이 mode 별로 다른 source 를 본다 — 사용자에겐 단일 UX. 미래 cloud collab 단계가 다시 도입될 때 'cloud' mode 와 그 adapter 를 새로 추가.",
       "wordCount": 50,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -8684,7 +8689,7 @@
       ],
       "excerpt": "cross-cutting. 다크 단일 테마 (라이트 모드는 2026-07-19 전략 폐기), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curso",
       "wordCount": 350,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -8722,7 +8727,7 @@
       ],
       "excerpt": "4-layer class hierarchy (Project · Domain · Capability · Element + Document) + 7 edge types (KNOWLEDGEEDGETYPES) + evidence-grounded statements. Vault frontmatter is the single source of truth — derive-ontology-from-vault turns \\.md\\ frontmatter into the in-memory graph. Architecture overview: \\docs/ARCHITECTURE.md\\.",
       "wordCount": 43,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -8771,7 +8776,7 @@
       ],
       "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 short-circuit. R14 부터는 visible 인 동안 5s polling 으로 focus 안 해도 자동 반영 (vault-live-updates). 자세한 원칙: .claude/rules/local-first.md. 사용자 surface: docs/FEATURES.md.",
       "wordCount": 45,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -8857,7 +8862,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (canvas-2D topology-map-v2 spatial network — /, /topology), 둘러보기 (/ontology 는 토폴로지 INDEX 로 흡수된 얇은 리다이렉트 + 노드 detail), 공방 (나침 무대 /ontology/studio — 노드 의미를 관계 소켓으로 완성해 실제 frontmatter 를 쓰는 표면; 구 xyflow ERD 빌더 /ontology/edit 는 2026-07-24 은퇴하고 공방으로 리다이렉트). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Workshop ",
       "wordCount": 85,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -9768,7 +9773,7 @@
       ],
       "excerpt": "우리 제품이 무엇으로 이루어져 있는지 한 장의 지도로 보여 주는 도구입니다. 지도의 원본은 사람이 읽고 고칠 수 있는 마크다운 글이고, 그 글은 내 컴퓨터의 폴더 안에만 있습니다. 기획자·마케터·경영진·개발자, 그리고 개발자가 쓰는 AI 도구가 같은 한 장 을 보게 하는 것이 이 제품의 목표입니다. 지도는 네 겹으로 자랍니다. 제품 아래에 영역(제품이 다루는 큰 갈래)이 있고, 영역 아래에 기능(사용자가 할 수 있는 일 하나)이 있고, 기능 아래에 구성요소 (그 일을 실제로 만들어 내는 코드·문서 조각)가 있습니다. 여기에 \"무엇이 무엇에 기대는가\" 를 잇는 선이 붙",
       "wordCount": 344,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -9820,7 +9825,7 @@
       ],
       "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 여기서 ontology 는 단순한 그래프 그림이 아니라 프로젝트가 무엇으로 이루어져 있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델이다. project, domain, capability, element 노드와 contains, dependson, relates, describes 같은 관계를 markdown frontmatter 로 저장하고, CLI/",
       "wordCount": 438,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": []
     },
     {
@@ -11071,7 +11076,7 @@
       ],
       "excerpt": "이 폴더는 Ontology Atlas 를 만드는 사람들이 쓰는 기술 문서 모음입니다. 제품이 무엇인지 알고 싶어서 들어오셨다면 이 목록이 아니라 지도 화면을 먼저 보세요 — 제품이 어떤 영역으로 나뉘고 각 영역에 무엇이 들어 있는지 그림 한 장으로 보여 줍니다. 아래 표는 \"어떤 주제를 어느 문서에서 찾는가\" 를 정리한 색인입니다. This folder is the working documentation for people building Ontology Atlas. If you came here to learn what the product is, open the ",
       "wordCount": 916,
-      "updatedAt": "2026-07-26T17:39:20+09:00",
+      "updatedAt": "2026-07-26T17:59:12+09:00",
       "linksOut": [
         "../README",
         "PRODUCT-OWNER-OPERATING-SYSTEM",

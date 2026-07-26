@@ -5543,3 +5543,20 @@ A large cleanup that aligns PRODUCT-DIRECTION v2's mission ("a codebase ontology
 ## Before 2026-04-30
 
 Earlier changes predate this CHANGELOG — see git log (`git log --oneline 7b16945..ba1e102`).
+
+## 2026-07-26 — 안 물린 게이트는 게이트가 아니다
+
+`pnpm test:i18n:messages`(5건)와 `pnpm package:check`(1건)가 **main 에서 깨진 채**
+있었다. 둘 다 `pnpm test:run` 밖의 node:test 스위트라 CI 어디에도 안 물려 있었고,
+그래서 아무도 몰랐다. 오늘 하루 같은 유형이 세 번 나왔다.
+
+- **i18n 검증기가 자기 이름과 반대되는 걸 강제하고 있었다.** 테스트 이름은
+  "전문용어 없이 이해되는지" 인데 기대값에 그 전문용어(`온톨로지`/`ontology`)가
+  박혀 있었다. 평문화 작업이 그 단어를 걷어내자 게이트가 깨졌다 — 카피가 아니라
+  게이트가 낡은 것이다. 리터럴을 현행 평문으로 맞추고, 옛 라운드의 금지어 목록에서
+  **`Quick view`·`문서함` 두 항목만 해제**했다(둘 다 지금은 이 표면의 정식 평문
+  이름이다). 나머지 모호 라벨·전문어 금지는 그대로 둔다.
+- **`mcp/README.md` 의 verify 출력 스냅샷 7곳이 실측과 어긋나 있었다** — 저장소
+  구조가 바뀌면 드리프트하는 구조다. 라이브 값으로 맞췄다.
+- **둘 다 `.github/workflows/checks.yml` 에 스텝으로 걸었다.** 이게 본론이다 —
+  게이트가 안 돌면 규격이 아니라 주석이다.
