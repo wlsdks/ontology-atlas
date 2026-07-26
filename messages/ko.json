@@ -167,7 +167,7 @@
       "reasonAdjacent": "이웃의 이웃",
       "browseBack": "← 도메인",
       "browseNoDomain": "도메인 없음",
-      "browseEmpty": "이 문서함엔 아직 이을 노드가 없어요 — 아래 ‘새로 만들기’ 로 시작해요"
+      "browseEmpty": "이 자리에 이을 후보가 없어요 — 남은 노드는 이미 이어졌거나 이 관계에 맞지 않아요. 아래 ‘새로 만들기’ 로 만들어요"
     },
     "fillSaved": "‘{title}’ 를 이어 저장했어요.",
     "fillCopied": "MCP 명령을 복사했어요 — 에이전트에 붙여넣어 실행하세요.",

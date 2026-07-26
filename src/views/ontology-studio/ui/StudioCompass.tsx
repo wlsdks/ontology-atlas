@@ -2224,6 +2224,10 @@ function InlinePicker({
           discovery.suggestions.length === 0 && discovery.domains.length === 0 ? (
             // #66 — 아직 검색하지 않았는데 "맞는 노드가 없어요" 는 거짓말이다.
             // 검색 전 빈 상태는 다음 행동(새로 만들기)을 알려준다.
+            // 흐름 점검 2026-07-26 — 이 상태의 실제 조건은 "볼트가 비었다" 가
+            // 아니라 "이 소켓의 후보 풀이 비었다" 다(초점 자신·이미 이어진
+            // 이웃·이 방위가 허용하지 않는 kind 를 뺀 나머지가 0). 5노드
+            // 볼트에서도 뜨는데 문구가 볼트 전체를 부정하면 오해가 된다.
             <div
               data-testid="studio-picker-browse-empty"
               className="px-3 py-3 text-center text-label leading-[1.6] text-[color:var(--color-text-quaternary)] [word-break:keep-all]"

@@ -10,7 +10,7 @@ export interface VaultCreateFlowVault {
   status: string;
   manifest: { docs: unknown[] } | null;
   open: () => Promise<void>;
-  scaffoldOntology: () => Promise<{ created: number; skipped: number }>;
+  scaffoldOntology: (starterLocale: string) => Promise<{ created: number; skipped: number }>;
 }
 
 /**
@@ -18,8 +18,11 @@ export interface VaultCreateFlowVault {
  * (scaffoldOntology) 한다. `FirstRunPage`(데스크톱 first-run) 와
  * `FirstRunChooser`(웹 root-first-open) 가 동일하게 재사용 — 새 파이프라인
  * 0, 결정 로직은 `vault-create-flow.ts` 의 순수 함수.
+ *
+ * `starterLocale` 은 호출자가 화면 언어를 넘긴다 — 같은 "새 볼트 만들기" 가
+ * 진입 경로에 따라 다른 언어의 볼트를 만들면 안 된다(흐름 점검 2026-07-26 D2).
  */
-export function useVaultCreateFlow(vault: VaultCreateFlowVault) {
+export function useVaultCreateFlow(vault: VaultCreateFlowVault, starterLocale: string) {
   const [createArmed, setCreateArmed] = useState(false);
   const [scaffolding, setScaffolding] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -43,7 +46,7 @@ export function useVaultCreateFlow(vault: VaultCreateFlowVault) {
         setCreateArmed(false);
         setScaffolding(true);
         vault
-          .scaffoldOntology()
+          .scaffoldOntology(starterLocale)
           .catch((err: unknown) => {
             // '' (게 아니라 null) 로 "에러는 났지만 메시지가 없음" 을
             // 표시 — 호출자(FirstRunPage 등)가 로케일별 fallback 문구를
@@ -57,7 +60,7 @@ export function useVaultCreateFlow(vault: VaultCreateFlowVault) {
         setCreateArmed(false);
       }
     });
-  }, [createArmed, vault, vault.manifest, vault.status]);
+  }, [createArmed, starterLocale, vault, vault.manifest, vault.status]);
 
   return { handleCreate, scaffolding, actionError, setActionError };
 }

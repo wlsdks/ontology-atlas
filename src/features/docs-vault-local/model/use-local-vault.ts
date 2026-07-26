@@ -207,7 +207,25 @@ export function applyFrontmatterUpdates(
   }
   const updatedKeys = new Set<string>();
   const nextLines: string[] = [];
+  // 방금 갈아치운(또는 지운) 키의 블록 스타일 잔여 줄(`  - item`)을 삼키는
+  // 중인가. YAML 은 같은 배열을 inline(`key: [a, b]`)으로도 블록(`key:` +
+  // `  - a`)으로도 쓸 수 있는데, 이 함수는 키 줄만 치환하므로 블록 스타일
+  // 키를 만나면 새 inline 값 아래에 옛 항목 줄이 그대로 남아 있었다
+  // (`capabilities: [a, b]` 다음 줄에 `  - a`). 우리 파서는 그 줄을 무시해서
+  // 화면상으로는 멀쩡해 보였지만, 디스크의 파일은 표준 YAML 로 읽히지 않고
+  // git diff 에는 유령 줄이 남는다 — 볼트가 진실원인 제품에서 이건 결함이다.
+  // 스타터가 바로 블록 스타일(`capabilities:` + `  - …`)이라 첫 사용자
+  // 경로에서 재현된다(흐름 점검 2026-07-26 관찰 확인).
+  let swallowingBlock = false;
   for (const line of fmLines) {
+    // 들여쓴 줄은 직전 키에 딸린 블록 값 — 그 키를 치환했으면 함께 지운다.
+    if (/^\s+\S/.test(line)) {
+      // 유지하는 키의 블록 값은 그대로 둔다 (`  child: 1` 을 최상위 키로
+      // 오인해 치환하던 문제도 여기서 함께 막힌다).
+      if (!swallowingBlock) nextLines.push(line);
+      continue;
+    }
+    swallowingBlock = false;
     const idx = line.indexOf(':');
     if (idx === -1) {
       nextLines.push(line);
@@ -219,6 +237,7 @@ export function applyFrontmatterUpdates(
       continue;
     }
     updatedKeys.add(key);
+    swallowingBlock = true;
     const value = updates[key];
     if (value === null) continue; // delete
     nextLines.push(`${key}: ${serializeFrontmatterValue(value)}`);
@@ -1151,8 +1170,14 @@ export function useLocalVaultInternal() {
    * #73 — 스타터 본문 언어. 화면 언어로 만든 볼트는 그 언어로 읽히는 게 맞다.
    * 파일 세트와 frontmatter 는 로케일과 무관하게 동일하므로 어떤 언어로
    * 만들었든 같은 그래프가 나온다(계약 테스트가 잡는다).
+   *
+   * 로케일은 **필수 인자**다 — 기본값 `'en'` 을 두었더니 생성 경로 넷 중
+   * 둘이 인자를 안 넘겨, 한국어 화면에서 만든 볼트가 영어 본문으로 시드되는
+   * 결함이 살아 있었다(흐름 점검 2026-07-26 D2). 기본값을 없애면 새 호출
+   * 경로가 생겨도 타입이 로케일을 요구하므로 같은 drift 가 다시 열리지
+   * 않는다. 알 수 없는 로케일은 `starterFilesForLocale` 이 EN 으로 강등한다.
    */
-  const scaffoldOntology = useCallback(async (starterLocale = 'en') => {
+  const scaffoldOntology = useCallback(async (starterLocale: string) => {
     if (!state.handle) {
       throw new Error('Vault is not open');
     }

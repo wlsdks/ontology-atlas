@@ -30,6 +30,7 @@ vi.mock('@/features/data-source-mode', () => ({
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => 'ko',
 }));
 
 vi.mock('@/i18n/navigation', () => ({

@@ -15,7 +15,7 @@ function makeVault(overrides: Partial<VaultCreateFlowVault> = {}): VaultCreateFl
 describe('useVaultCreateFlow', () => {
   it('opens the folder picker and does not scaffold before the vault settles', async () => {
     const vault = makeVault();
-    const { result } = renderHook(() => useVaultCreateFlow(vault));
+    const { result } = renderHook(() => useVaultCreateFlow(vault, 'ko'));
 
     await act(async () => {
       await result.current.handleCreate();
@@ -32,7 +32,7 @@ describe('useVaultCreateFlow', () => {
         vault.manifest = { docs: [] };
       }),
     });
-    const { result, rerender } = renderHook(() => useVaultCreateFlow(vault));
+    const { result, rerender } = renderHook(() => useVaultCreateFlow(vault, 'ko'));
 
     await act(async () => {
       await result.current.handleCreate();
@@ -42,6 +42,9 @@ describe('useVaultCreateFlow', () => {
     await waitFor(() => {
       expect(vault.scaffoldOntology).toHaveBeenCalledTimes(1);
     });
+    // 흐름 점검 2026-07-26 D2 — 무인자 호출이 기본 'en' 으로 떨어져, 한국어
+    // 화면에서 만든 볼트가 영어 본문으로 시드되던 회귀.
+    expect(vault.scaffoldOntology).toHaveBeenCalledWith('ko');
   });
 
   it('does not scaffold when the chosen folder already has docs', async () => {
@@ -51,7 +54,7 @@ describe('useVaultCreateFlow', () => {
         vault.manifest = { docs: [{ slug: 'existing' }] };
       }),
     });
-    const { result, rerender } = renderHook(() => useVaultCreateFlow(vault));
+    const { result, rerender } = renderHook(() => useVaultCreateFlow(vault, 'ko'));
 
     await act(async () => {
       await result.current.handleCreate();
@@ -70,7 +73,7 @@ describe('useVaultCreateFlow', () => {
         vault.status = 'idle';
       }),
     });
-    const { result, rerender } = renderHook(() => useVaultCreateFlow(vault));
+    const { result, rerender } = renderHook(() => useVaultCreateFlow(vault, 'ko'));
 
     await act(async () => {
       await result.current.handleCreate();

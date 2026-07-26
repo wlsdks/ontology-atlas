@@ -49,6 +49,7 @@ vi.mock('@/shared/ui/toast', () => ({
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string, vars?: Record<string, unknown>) =>
     vars ? `${key}:${JSON.stringify(vars)}` : key,
+  useLocale: () => 'ko',
 }));
 
 vi.mock('@/i18n/navigation', () => ({

@@ -158,6 +158,11 @@ export interface ConnectionSourceNode {
   title: string;
   /** 과제 ⑩ — 표시용 짧은 제목(있으면). 이웃 행 라벨은 이것을 우선 쓴다. */
   display?: string;
+  /**
+   * `display_<locale>` 원본 전체 — 화면 언어와 무관하게 어느 어권 이름으로도
+   * 후보를 찾을 수 있어야 한다(`shared/lib/node-name-match`).
+   */
+  displayLocales?: Readonly<Record<string, string>>;
   kind: string;
 }
 export interface ConnectionSourceEdge {

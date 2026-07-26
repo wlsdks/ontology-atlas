@@ -57,4 +57,14 @@ describe("candidateMatches", () => {
     expect(candidateMatches(legacy, "예시")).toBe(true);
     expect(candidateMatches(legacy, "Example element")).toBe(false);
   });
+
+  // 흐름 점검 2026-07-26 D1 — 피커와 전역 검색이 같은 이름 규칙을 써야
+  // "피커엔 나오는데 검색엔 없다" 는 표면 간 불일치가 안 생긴다.
+  it("현재 화면 언어가 아닌 어권 이름으로도 찾는다", () => {
+    const bilingual: CreateCandidate = {
+      ...LOCALIZED,
+      displayLocales: { ko: "예시 구성요소", en: "Sample piece" },
+    };
+    expect(candidateMatches(bilingual, "sample piece")).toBe(true);
+  });
 });

@@ -1,5 +1,6 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
+import { nameIncludes, nameStartsWith, normalizeForMatch } from "@/shared/lib/node-name-match";
 
 /**
  * N12 (persona-ux-2026-07 report) — element nodes are often titled after the
@@ -50,18 +51,26 @@ export interface MatchOntologyOptions {
  * ontology 노드 검색.
  *
  * 점수 (낮을수록 약한 매치):
- *   4 — title prefix 매치
- *   3 — title substring 매치
+ *   4 — 이름 prefix 매치
+ *   3 — 이름 substring 매치
  *   2 — summary substring 매치
  *   1 — id substring 매치 (kebab-case slug 직접 검색용)
  *   0 — 매치 없음 (결과 제외)
+ *
+ * "이름" 은 canonical `title` **과** 화면에 보이는 표시 이름 전부
+ * (`display` + 모든 `display_<locale>`) 다 — `shared/lib/node-name-match` 가
+ * 그 규칙의 단일 출처이고 공방 피커도 같은 규칙을 쓴다. 표시 이름을 title 과
+ * **동급 점수**로 두는 이유: 사용자가 입력한 문자열은 대개 방금 화면에서 읽은
+ * 이름이라, 그 매치를 summary(본문) 매치보다 아래로 내리면 정작 찾던 노드가
+ * 본문만 스친 노드 밑에 깔린다. title 은 여전히 진실원이고 범위가 넓어질 뿐,
+ * 원문으로 찾던 사용자는 그대로 찾는다.
  *
  * 빈 query 는 전체 nodes 리턴 (limit 적용) — UI 가 "초기 추천" 으로 활용 가능.
  * 정렬: score desc, 같은 점수면 lastApprovedAt desc (최신 우선) — documents
  * 매처와 통일해 사용자 예상 가능한 순서.
  *
- * 한·영 혼합을 위해 raw lower-case substring 매칭. 한글은 정규화 부담이
- * 작아 그대로 유효 (`auth-login` 도 `로그인` 도 같은 함수 한 번에).
+ * 한·영 혼합을 위해 정규화(NFC + 소문자 + 공백 정리) 후 substring 매칭
+ * (`auth-login` 도 `로그인` 도 같은 함수 한 번에).
  *
  * options 의 kind / projectIds 필터는 score 계산 전에 적용 (필터 통과 노드만
  * 점수 평가). 빈 query + 필터 조합 시 "이 kind/project 의 최신 N 개" 가 됨.
@@ -87,7 +96,7 @@ export function matchOntologyNodes(
     return true;
   };
 
-  const trimmed = query.trim().toLowerCase();
+  const trimmed = normalizeForMatch(query);
   if (trimmed === "") {
     return nodes
       .filter(passesFilter)
@@ -101,13 +110,12 @@ export function matchOntologyNodes(
   for (const node of nodes) {
     if (!passesFilter(node)) continue;
 
-    const title = node.title.toLowerCase();
-    const summary = node.summary?.toLowerCase() ?? "";
-    const id = node.id.toLowerCase();
+    const summary = normalizeForMatch(node.summary ?? "");
+    const id = normalizeForMatch(node.id);
 
     let score = 0;
-    if (title.startsWith(trimmed)) score = 4;
-    else if (title.includes(trimmed)) score = 3;
+    if (nameStartsWith(node, trimmed)) score = 4;
+    else if (nameIncludes(node, trimmed)) score = 3;
     else if (summary.includes(trimmed)) score = 2;
     else if (id.includes(trimmed)) score = 1;
 

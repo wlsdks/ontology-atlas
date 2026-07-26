@@ -41,7 +41,8 @@ export function derivationToInsight(
   /**
    * 어권별 표시 이름 해석 (소유자 지시 2026-07-24) — stub 이 수집해 둔
    * `display_<locale>` 중 화면 로케일과 일치하는 값을 display 로 승격.
-   * 없으면 종전 display 그대로(하위호환). 검색/매칭은 여전히 title.
+   * 없으면 종전 display 그대로(하위호환). 매칭의 진실원은 여전히 title 이고,
+   * 표시 이름은 검색 범위에 더해진다 — 그래서 원본 map 도 함께 실어 보낸다.
    */
   locale?: string,
 ): KnowledgeProjectInsight {
@@ -49,6 +50,8 @@ export function derivationToInsight(
     id: stub.id,
     title: stub.title,
     display: (locale && stub.displayLocales?.[locale]) || stub.display,
+    // 화면 언어와 무관하게 어느 어권 이름으로도 검색되게 원본을 그대로 전달.
+    displayLocales: stub.displayLocales,
     kind: stub.kind,
     projectIds: [],
     // canonical 노드는 sourceSlug = 자기 자신 doc.slug, 합성 노드 (참조만 받고

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect } from "react";
 import { Compass, FolderOpen, Orbit, Sparkles, Zap } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useJustStartVault, useLocalVault, useVaultCreateFlow } from "@/features/docs-vault-local";
 import { Link } from "@/i18n/navigation";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
@@ -39,8 +39,11 @@ export function FirstRunPage() {
   const t = useTranslations("firstRun");
   const toast = useToast();
   const vault = useLocalVault();
+  // 두 생성 경로 모두 화면 언어의 스타터를 만든다 — 같은 행동이 진입 경로에
+  // 따라 다른 언어의 볼트를 만들면 안 된다(흐름 점검 2026-07-26 D2).
+  const locale = useLocale();
   const { handleCreate, scaffolding, actionError, setActionError } =
-    useVaultCreateFlow(vault);
+    useVaultCreateFlow(vault, locale);
   const {
     justStart,
     busy: justStartBusy,
@@ -48,7 +51,7 @@ export function FirstRunPage() {
     actionError: justStartError,
     createdPath,
     clearCreatedPath,
-  } = useJustStartVault(vault);
+  } = useJustStartVault(vault, locale);
   // dev 빌드의 `?shell=desktop` 오버라이드로 이 페이지를 일반 브라우저에서 열어
   // 볼 수 있다(`isDesktopShell()`) — 그런 경우 실제 Tauri invoke 브리지는 없으니
   // "그냥 시작하기" 는 렌더하지 않는다. 이 페이지 자체가 이미 클라이언트 전용

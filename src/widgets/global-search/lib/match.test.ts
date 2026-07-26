@@ -72,6 +72,61 @@ describe("matchOntologyNodes", () => {
     expect(r).toHaveLength(0);
   });
 
+  // 흐름 점검 2026-07-26 D1 — 지도/INDEX 는 `display_ko` 를 그리는데 검색은
+  // canonical title 만 봐서, 화면에서 읽은 한국어 이름을 그대로 치면 0건이었다.
+  describe("어권별 표시 이름 (display_ko / display_en)", () => {
+    const localized = node({
+      id: "ontology-core",
+      title: "Ontology Core",
+      display: "온톨로지 코어",
+      displayLocales: { ko: "온톨로지 코어", en: "Ontology Core" },
+      summary: "그래프 파생 엔진",
+    });
+
+    it("화면에 보이는 한국어 표시 이름으로 찾힌다", () => {
+      const r = matchOntologyNodes("온톨로지 코어", [localized]);
+      expect(r).toHaveLength(1);
+      expect(r[0]?.node.id).toBe("ontology-core");
+      // 화면에 보이는 이름은 title 과 동급 — prefix 매치는 4.
+      expect(r[0]?.score).toBe(4);
+    });
+
+    it("표시 이름 부분 일치는 substring 점수", () => {
+      const r = matchOntologyNodes("코어", [localized]);
+      expect(r[0]?.score).toBe(3);
+    });
+
+    it("원문 title 로도 그대로 찾힌다 (범위는 넓히기만 한다)", () => {
+      const r = matchOntologyNodes("Ontology Core", [localized]);
+      expect(r).toHaveLength(1);
+      expect(r[0]?.score).toBe(4);
+    });
+
+    it("한국어 화면에서도 다른 어권 이름으로 찾힌다", () => {
+      // display 는 ko 로 해석돼 있어도 en 이름이 검색에서 사라지면 안 된다.
+      const koScreen = node({
+        id: "cap-payments",
+        title: "결제",
+        display: "결제 처리",
+        displayLocales: { ko: "결제 처리", en: "Payments" },
+      });
+      const r = matchOntologyNodes("payments", [koScreen]);
+      expect(r).toHaveLength(1);
+      expect(r[0]?.score).toBe(4);
+    });
+
+    it("자소 분리(NFD) 입력도 같은 결과", () => {
+      const r = matchOntologyNodes("온톨로지".normalize("NFD"), [localized]);
+      expect(r).toHaveLength(1);
+    });
+
+    it("표시 이름 매치가 summary 매치보다 위", () => {
+      const bodyOnly = node({ id: "other", title: "Other", summary: "온톨로지 코어를 쓴다" });
+      const r = matchOntologyNodes("온톨로지 코어", [bodyOnly, localized]);
+      expect(r.map((m) => m.node.id)).toEqual(["ontology-core", "other"]);
+    });
+  });
+
   it("limit 적용", () => {
     const many = Array.from({ length: 50 }, (_, i) =>
       node({ id: `node-${i}`, title: `노드 ${i}` }),

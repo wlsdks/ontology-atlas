@@ -18,7 +18,7 @@ export interface JustStartVaultVault {
   status: string;
   manifest: { docs: unknown[] } | null;
   openRecent: (record: LocalFsHandleRecord) => Promise<void>;
-  scaffoldOntology: () => Promise<{ created: number; skipped: number }>;
+  scaffoldOntology: (starterLocale: string) => Promise<{ created: number; skipped: number }>;
 }
 
 /**
@@ -30,6 +30,9 @@ export interface JustStartVaultVault {
  * (`useVaultCreateFlow` 가 `open()` + `scaffoldOntology()` 를 잇는 것과 동일
  * 패턴, 픽커 대신 자동 경로 준비만 다르다).
  *
+ * `starterLocale` 은 `useVaultCreateFlow` 와 같은 계약 — 어느 생성 경로로
+ * 들어와도 화면 언어의 스타터가 나와야 한다(흐름 점검 2026-07-26 D2).
+ *
  * `shouldScaffoldAfterOpen`/`shouldClearCreateIntent` 를 그대로 재사용할 수
  * 있는 이유 — 이 폴더는 매번 새로 계산한 미사용 이름이라 도착 즉시 문서 수는
  * 항상 0. "새 vault 만들기" 처럼 사용자가 기존 폴더를 고를 위험이 없어도,
@@ -37,7 +40,7 @@ export interface JustStartVaultVault {
  * 존재하므로 같은 armed-effect 패턴을 그대로 쓴다 (`vault-create-flow.ts` 상단
  * 주석 참고).
  */
-export function useJustStartVault(vault: JustStartVaultVault) {
+export function useJustStartVault(vault: JustStartVaultVault, starterLocale: string) {
   const [preparing, setPreparing] = useState(false);
   const [armed, setArmed] = useState(false);
   const [scaffolding, setScaffolding] = useState(false);
@@ -85,7 +88,7 @@ export function useJustStartVault(vault: JustStartVaultVault) {
         setArmed(false);
         setScaffolding(true);
         vault
-          .scaffoldOntology()
+          .scaffoldOntology(starterLocale)
           .catch((err: unknown) => {
             setActionError(err instanceof Error && err.message ? err.message : '');
           })
@@ -96,7 +99,7 @@ export function useJustStartVault(vault: JustStartVaultVault) {
         setArmed(false);
       }
     });
-  }, [armed, vault, vault.manifest, vault.status]);
+  }, [armed, starterLocale, vault, vault.manifest, vault.status]);
 
   const clearCreatedPath = useCallback(() => setCreatedPath(null), []);
 

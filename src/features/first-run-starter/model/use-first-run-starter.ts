@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useLocale } from 'next-intl';
 import { useLocalVault, useVaultCreateFlow } from '@/features/docs-vault-local';
 import {
   FIRST_RUN_STARTER_DISMISSED_KEY,
@@ -27,10 +28,13 @@ import { useFirstRunSampleModeSettled } from './use-first-run-sample-mode-settle
  */
 export function useFirstRunStarter() {
   const vault = useLocalVault();
+  const locale = useLocale();
   const sampleModeSettled = useFirstRunSampleModeSettled();
   const [dismissed, setDismissed] = useState(() => readFirstRunStarterDismissed());
+  // 화면 언어로 만든 볼트는 그 언어로 읽혀야 한다 — 체크리스트/문서함 CTA 와
+  // 같은 계약(흐름 점검 2026-07-26 D2).
   const { handleCreate, scaffolding, actionError, setActionError } =
-    useVaultCreateFlow(vault);
+    useVaultCreateFlow(vault, locale);
 
   const visible = sampleModeSettled && !dismissed;
 

@@ -49,12 +49,20 @@ export interface KnowledgeGraphNode {
    * 표시용 짧은 제목 — 과제 ⑩ (표시 이름 레이어). `deriveDisplayTitle` 로
    * 파생 (frontmatter `display:` 필드 우선, 없으면 title 의 괄호 부연
    * 설명 컷). 토폴로지 라벨 / INDEX 행 / 팝오버 / 상세 헤더 렌더 표면은
-   * `node.display ?? node.title` 로 읽는다. 검색/매칭(`matchOntologyNodes`
-   * 등)은 여전히 `title` 전체로 수행 — 이 필드는 렌더 전용이라 매칭 범위를
-   * 줄이지 않는다. optional 인 이유: `derivationToInsight` 를 거치지 않고
-   * 직접 만든 노드(테스트 픽스처, 빌더 등)와의 하위 호환.
+   * `node.display ?? node.title` 로 읽는다. 매칭의 단일 진실원은 여전히
+   * `title` 이지만, 화면에 보이는 이름은 검색 범위에 **더해진다**
+   * (`shared/lib/node-name-match`) — 눈으로 읽은 이름을 그대로 쳤을 때 0건이
+   * 나오면 사용자는 데이터가 없다고 믿는다. optional 인 이유:
+   * `derivationToInsight` 를 거치지 않고 직접 만든 노드(테스트 픽스처, 빌더
+   * 등)와의 하위 호환.
    */
   display?: string;
+  /**
+   * `display_<locale>` 원본 전체 (locale → 이름). `display` 는 현재 화면
+   * 로케일 하나로 좁혀진 값이라, 다른 언어 이름으로도 찾히려면 원본이
+   * 필요하다 — 검색은 여기 값 전부를 이름으로 취급한다.
+   */
+  displayLocales?: Readonly<Record<string, string>>;
   kind: string;
   projectIds: string[];
   summary?: string;

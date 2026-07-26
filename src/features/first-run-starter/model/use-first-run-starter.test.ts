@@ -26,6 +26,10 @@ vi.mock('./use-first-run-sample-mode-settled', () => ({
   useFirstRunSampleModeSettled: () => mocks.sampleModeSettled,
 }));
 
+// 스타터 본문 언어는 화면 언어를 따른다 — 훅이 useLocale() 을 읽으므로
+// intl provider 없이 도는 이 단위 테스트에는 로케일 스텁이 필요하다.
+vi.mock('next-intl', () => ({ useLocale: () => 'ko' }));
+
 import { useFirstRunStarter } from './use-first-run-starter';
 
 function makeVault(): MockVault {
@@ -101,6 +105,9 @@ describe('useFirstRunStarter', () => {
     await waitFor(() => {
       expect(mocks.vault.scaffoldOntology).toHaveBeenCalledTimes(1);
     });
+    // 흐름 점검 2026-07-26 D2 — INDEX 의 "새 vault 만들기" 도 화면 언어의
+    // 스타터를 만든다(체크리스트/문서함 CTA 와 같은 결과).
+    expect(mocks.vault.scaffoldOntology).toHaveBeenCalledWith('ko');
   });
 
   it('consumes Escape at capture priority and dismisses without leaking to a bubble-phase listener', () => {
