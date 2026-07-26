@@ -62,6 +62,7 @@
 | A31 | CLI/MCP 현재 inventory → 활성 문서·프로토타입·fixture 교차 확인 | 52 CLI·32 MCP로 동기화, 역사/legacy 입력은 보존 |
 | A32 | AI 연결 → `기능 문서 열기` → Agent Graph Workflow 읽기 | packaged dogfood runbook URL·본문·현재 inventory 설치 앱 검증 완료 |
 | A33 | 설치 앱 foreground/AX window 자동 proof ↔ Computer Use 대조 | 간헐 timeout 재현, 빠른 probe의 WebView AX 순회 제거, 실제 배포 계약 5회 반복 통과 |
+| A34 | 공방 진입 선택 → ENHANCE/CREATE 키보드 작업 계속 | 1920 ENHANCE h1·2560 CREATE 이름 입력 포커스 설치 앱 검증 완료 |
 
 ## 이슈 장부
 
@@ -1396,6 +1397,37 @@
   같은 window 사실을 말하고, 텍스트 handoff는 더 강한 전용 AX 경로로 남는다.
 - PO·디자인 판정: **Build and verify** — 렌더링·주의 계층 변화 없음
 
+### UX-038 — 공방 진입 선택 뒤 키보드 포커스가 작업대로 이어지지 않음
+
+- 심각도: `S2`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: bare `/ontology/studio` → `기존 노드 강화` 또는 `새 노드 만들기`를
+  키보드로 선택 → 첫 작업 계속
+- 관측 현상: 진입 선택 다이얼로그의 기본 포커스와 Tab 순서는 정확했지만
+  Return으로 선택한 뒤 포커스가 WebView의 HTML content root로 유실됐다.
+  CREATE는 같은 route의 `?mode=create` query 전환이라 전역 route focus
+  manager도 개입하지 않았다.
+- 사용자 문제: 화면은 바뀌었는데 읽기·입력 시작점이 없으므로 키보드 사용자는
+  긴 전역 내비와 작업대 컨트롤을 다시 Tab으로 훑거나 포인터로 돌아가야 했다.
+- PO pass: 현재 대안은 재탐색뿐이고, 선택 직후의 다음 과업은 이미 결정돼 있다.
+  새 표면·기능을 만들지 않고 ENHANCE는 현재 focal h1, CREATE는 이름 입력칸으로
+  한 번만 인계하면 온톨로지 강화/생성 루프를 즉시 계속할 수 있다.
+- 디자인 gate: attention winner는 새로 열린 공방 작업대다. ENHANCE는 현재
+  개념 이름, CREATE는 첫 필수 입력이 읽기 시작점을 소유한다. 주의 계층·그래프
+  의미·반응형 레이아웃·모션·MCP/CLI handoff는 바꾸지 않는다.
+- 수정: 진입 선택에서 task intent를 넘기고, 무대가 마운트된 다음 프레임에
+  `preventScroll` 포커스를 적용한다. CREATE query 전환에서는 전역 route
+  focus보다 task-specific 이름 입력이 이기며, deep-link 진입 계약은 그대로다.
+  첫 방문 안내가 열리면 blocking task가 일시적으로 포커스를 소유하고,
+  `건너뛰기` 뒤 같은 목표로 복귀한다.
+- 회귀 증거: `StudioCompass.test.tsx` 63개, TypeScript, focused ESLint 통과.
+- 설치 앱·Computer Use 증거: 최신 production 앱을 외장 모니터에서
+  1920×1080 ENHANCE와 2560×1440 CREATE로 각각 열었다. 키보드만 사용해
+  진입 선택과 첫 방문 안내를 통과한 뒤 AX 포커스가 각각
+  `터미널에서 쓰기` h1과 `새 노드 이름 — 예: 결제 취소` 입력칸에
+  도착했으며, 두 폭 모두 잘림·충돌을 발견하지 못했다.
+- PO·디자인 판정: **Build and verify**
+
 ### 2026-07-27 반복 측정 기록
 
 - 코드 기준선: `899eb7072`에서 시작해 로컬 vault 문구와 문서·ontology
@@ -1434,6 +1466,7 @@
 - A31 CLI/MCP 활성 문서 inventory: **Build and verify**
 - A32 내장 기능 문서 navigation/source 계약: **Build and verify**
 - A33 설치 앱 foreground/AX window proof: **Build and verify**
+- A34 공방 진입 선택 keyboard handoff: **Build and verify**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

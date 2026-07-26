@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
 import type { CreateCandidate } from "../lib/build-create-node";
 import type { StudioRelation } from "../lib/build-studio-item";
@@ -121,7 +121,10 @@ const CANDIDATE: CreateCandidate = {
   ref: "capabilities/server-interface",
 };
 
-function renderEnhance(onFill = vi.fn()) {
+function renderEnhance(
+  onFill = vi.fn(),
+  initialFocus?: "heading" | "create-name",
+) {
   const bearings: CompassBearingView[] = [
     bearing("isA", "up", { recommended: true }),
     bearing("dependsOn", "right", {
@@ -145,6 +148,7 @@ function renderEnhance(onFill = vi.fn()) {
       onFill={onFill}
       onSave={vi.fn()}
       onExit={vi.fn()}
+      initialFocus={initialFocus}
     />,
   );
   return onFill;
@@ -158,6 +162,16 @@ describe("StudioCompass — enhance", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "MCP Server" }),
     ).toBeInTheDocument();
+  });
+
+  it("moves focus to the focal heading after the entry choice hands off", async () => {
+    renderEnhance(vi.fn(), "heading");
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { level: 1, name: "MCP Server" }),
+      ).toHaveFocus(),
+    );
   });
 
   it("renders the focal node as hero + plain-language bearing questions", () => {
@@ -854,7 +868,7 @@ describe("StudioCompass — 그래프 델타 미니뷰 (save preview)", () => {
 });
 
 describe("StudioCompass — create", () => {
-  it("renders an editable draft card with all four bearings empty", () => {
+  it("renders an editable draft card with all four bearings empty", async () => {
     render(
       <StudioCompass
         mode="create"
@@ -876,9 +890,12 @@ describe("StudioCompass — create", () => {
         canSave={false}
         createKinds={[{ value: "capability", label: "capability" }]}
         createKind="capability"
+        initialFocus="create-name"
       />,
     );
-    expect(screen.getByTestId("studio-create-name")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId("studio-create-name")).toHaveFocus(),
+    );
     // save is disabled until the node is named.
     expect(screen.getByTestId("studio-save")).toBeDisabled();
   });

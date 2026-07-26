@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T18:59:20.630Z",
+  "generatedAt": "2026-07-26T19:19:53.521Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 공방 선택 뒤 첫 작업이 키보드에 바로 이어진다",
+          "slug": "2026-07-27-공방-선택-뒤-첫-작업이-키보드에-바로-이어진다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 설치 앱 검증이 사용자의 문서함을 빌리지 않는다",
           "slug": "2026-07-27-설치-앱-검증이-사용자의-문서함을-빌리지-않는다"
         },
@@ -5023,9 +5028,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 선택 관계 검증이 설치 앱에 마지막으로 저장된 문서함에 기대고 있었다. 사용자가 11개 노드 테스트 vault를 쓰던 상태에서는 검증기가 dogfood 전",
-      "wordCount": 50365,
-      "updatedAt": "2026-07-27T03:50:45+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 공방의 무엇을 할까요? 선택창은 키보드 순서가 맞았지만, Return으로 기존 노드 강화나 새 노드 만들기를 고르면 포커스가 WebView 문서 루트로 사",
+      "wordCount": 50460,
+      "updatedAt": "2026-07-26T19:19:53.520Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5928,7 +5933,7 @@
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
       "wordCount": 7099,
-      "updatedAt": "2026-07-26T18:59:20.629Z",
+      "updatedAt": "2026-07-27T04:00:59+09:00",
       "linksOut": []
     },
     {
@@ -9260,7 +9265,7 @@
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
       "wordCount": 2290,
-      "updatedAt": "2026-07-26T18:59:20.630Z",
+      "updatedAt": "2026-07-27T04:00:59+09:00",
       "linksOut": []
     },
     {
@@ -9620,9 +9625,9 @@
           "slug": "route-focus-manager"
         }
       ],
-      "excerpt": "src/shared/ui/route-focus-manager.tsx는 영속 AppShell에서 화면 간 client/native navigation의 키보드 읽기 시작점을 소유한다. 실제 pathname surface가 바뀌고 destination이 아직 자체 포커스를 소유하지 않았으면 page h1, h1이 없으면 main으로 포커스를 옮긴다. query/hash만 바뀌는 같은 surface와 locale-only 전환에는 개입하지 않는다. main 내부 제어나 aria-modal dialog가 이미 포커스를 소유하면 덮지 않는다. 정적 export의 Suspens",
-      "wordCount": 175,
-      "updatedAt": "2026-07-25T09:25:53+09:00",
+      "excerpt": "src/shared/ui/route-focus-manager.tsx는 영속 AppShell에서 화면 간 client/native navigation의 키보드 읽기 시작점을 소유한다. 실제 pathname surface가 바뀌고 destination이 아직 자체 포커스를 소유하지 않았으면 page h1, h1이 없으면 main으로 포커스를 옮긴다. query/hash만 바뀌는 같은 surface와 locale-only 전환에는 개입하지 않는다. 같은 surface 안에서 사용자가 명시적으로 다음 과업을 고른 경우에는 그 surface가 더 구체적인 one-shot fo",
+      "wordCount": 221,
+      "updatedAt": "2026-07-26T19:19:53.521Z",
       "linksOut": []
     },
     {
@@ -10998,6 +11003,11 @@
         },
         {
           "depth": 3,
+          "text": "UX-038 — 공방 진입 선택 뒤 키보드 포커스가 작업대로 이어지지 않음",
+          "slug": "ux-038-공방-진입-선택-뒤-키보드-포커스가-작업대로-이어지지-않음"
+        },
+        {
+          "depth": 3,
           "text": "2026-07-27 반복 측정 기록",
           "slug": "2026-07-27-반복-측정-기록"
         },
@@ -11008,8 +11018,8 @@
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨 한 장 더 캡처한다. ",
-      "wordCount": 11855,
-      "updatedAt": "2026-07-26T18:59:20.628Z",
+      "wordCount": 12145,
+      "updatedAt": "2026-07-26T19:19:53.518Z",
       "linksOut": []
     },
     {
