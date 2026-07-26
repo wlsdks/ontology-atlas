@@ -1,0 +1,8 @@
+{
+  "_why": "명명 벤더의 목적지 호스트 — Rust(src-tauri/src/llm.rs 의 확인 URL)와 웹(src/shared/lib/tauri-secrets.ts 의 SECRET_PROVIDER_HOSTS)이 같은 값을 말하는지 잡는 공유 픽스처. 화면은 키를 붙여넣기 전에 '어디로 가는지'를 이 목록으로 말하고, Rust 는 같은 호스트를 감사 줄에 남긴다. 한쪽만 바꾸면 화면이 약속한 목적지와 실제 목적지가 갈라지므로 양쪽 테스트가 동시에 깨진다.",
+  "hosts": {
+    "anthropic": "api.anthropic.com",
+    "openai": "api.openai.com",
+    "gemini": "generativelanguage.googleapis.com"
+  }
+}

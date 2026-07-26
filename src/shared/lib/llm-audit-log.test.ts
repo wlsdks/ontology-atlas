@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { parseLlmAuditLog } from './llm-audit-log';
 
 const VERIFY_LINE =
-  '{"v":1,"at":"2026-07-26T09:12:33.120Z","provider":"anthropic","model":null,"purpose":"verify","question":null,"scope":{"nodes":[],"promptChars":0,"vaultChars":0},"payloadSha256":"e3b0","outcome":"ok","httpStatus":200,"responseChars":42,"durationMs":640}';
+  '{"v":1,"at":"2026-07-26T09:12:33.120Z","provider":"anthropic","host":"api.anthropic.com","model":null,"purpose":"verify","question":null,"scope":{"nodes":[],"promptChars":0,"vaultChars":0},"payloadSha256":"e3b0","outcome":"ok","httpStatus":200,"responseChars":42,"durationMs":640}';
 
 describe('llm audit log parser', () => {
   it('reads a completed call as typed facts', () => {
     const [entry] = parseLlmAuditLog(VERIFY_LINE);
     expect(entry.provider).toBe('anthropic');
+    expect(entry.host).toBe('api.anthropic.com');
     expect(entry.purpose).toBe('verify');
     expect(entry.outcome).toBe('ok');
     expect(entry.httpStatus).toBe(200);
@@ -48,6 +49,17 @@ describe('llm audit log parser', () => {
     const [entry] = parseLlmAuditLog(ask);
     expect(entry.purpose).toBe('ask');
     expect(entry.question).toBe('결제 모듈 바꾸면 뭐가 깨져?');
+  });
+
+  it('reads a line written before host existed without inventing a destination', () => {
+    // `host` 는 추가형 확장이라 옛 줄이 그대로 남아 있다(헌장 ⑤ — 소급 변경
+    // 금지). 목적지를 모르면 모른다고 말한다: provider 이름으로 추측해 채우면
+    // 감사 로그가 조용히 거짓을 말하게 된다.
+    const legacy = VERIFY_LINE.replace('"host":"api.anthropic.com",', '');
+    const [entry] = parseLlmAuditLog(legacy);
+    expect(entry.host).toBeNull();
+    expect(entry.provider).toBe('anthropic');
+    expect(entry.outcome).toBe('ok');
   });
 
   it('never surfaces a response body — the schema has no field for it', () => {

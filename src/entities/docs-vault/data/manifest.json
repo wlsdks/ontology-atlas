@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T03:49:41.334Z",
+  "generatedAt": "2026-07-26T04:21:22.506Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — AI 연결에 Google Gemini · 기록이 목적지를 말한다",
+          "slug": "2026-07-26-ai-연결에-google-gemini-기록이-목적지를-말한다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — 「지난 길」 — 세션이 끝나도 궤적을 잃지 않는다",
           "slug": "2026-07-26-지난-길-세션이-끝나도-궤적을-잃지-않는다"
         },
@@ -4883,9 +4888,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자: \"자신의 발자취를 나중에 재미로라도 볼 수 있도록\" — 새로고침하면 ?p=(지금 여기)는 URL 로 살아남는데 궤적만 사라지는 비대칭이 있었다. ",
-      "wordCount": 41928,
-      "updatedAt": "2026-07-26T03:49:41.334Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 키 보관 표면이 유명 3사 중 Gemini 하나를 빼놓고 있었다. Gemini 키만 가진 사용자가 이 화면을 열면 \"내 건 없네\" 로 읽히고, 신뢰 인프라",
+      "wordCount": 42238,
+      "updatedAt": "2026-07-26T04:21:22.506Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -6210,8 +6215,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
-      "wordCount": 12731,
-      "updatedAt": "2026-07-26T12:28:04+09:00",
+      "wordCount": 12934,
+      "updatedAt": "2026-07-26T04:06:55.329Z",
       "linksOut": [
         "slug",
         "project:slug",

@@ -31,8 +31,27 @@ use std::time::Instant;
 /// 없고, 보낼 본문도 없다.
 const ANTHROPIC_VERIFY_URL: &str = "https://api.anthropic.com/v1/models?limit=1";
 const OPENAI_VERIFY_URL: &str = "https://api.openai.com/v1/models";
+/// Gemini 공식 모델 목록 엔드포인트(공개 문서 `ai.google.dev/api/models`).
+/// 키는 **헤더로만** 보낸다 — 문서의 `?key=` 쿼리 형태는 쓰지 않는다. URL 에
+/// 실린 비밀은 프록시 로그·리퍼러·크래시 리포트에 그대로 남는 문법이고,
+/// 우리 감사 로그에도 목적지 URL 이 남으므로 키가 기록에 섞일 자리를 없앤다.
+const GEMINI_VERIFY_URL: &str = "https://generativelanguage.googleapis.com/v1beta/models";
 /// 앤트로픽 API 가 요구하는 버전 헤더. 값이 바뀌면 401 이 아니라 400 이 온다.
 const ANTHROPIC_VERSION: &str = "2023-06-01";
+
+/// "키가 틀렸다" 로 읽어야 할 상태 코드. 벤더마다 다르므로 요청에 붙여 다닌다 —
+/// 화면이 `거부됨`(사용자가 키를 고치면 되는 일)과 `실패`(우리/네트워크 문제)를
+/// 다르게 말할 수 있는 근거다.
+const AUTH_DENIED_STATUSES: &[u16] = &[401, 403];
+/// Gemini 는 **틀린 키에 400 을 준다** (2026-07-26 실측: 본문
+/// `{"error":{"code":400,"status":"INVALID_ARGUMENT","details":[…"reason":
+/// "API_KEY_INVALID"…]}}`). 401/403 로만 판정하면 틀린 키가 "확인하지 못했어요"
+/// 라는 엉뚱한 안내로 떨어진다.
+///
+/// 400 을 통째로 거부로 읽어도 되는 이유: 이 호출은 본문 없는 고정 GET 이고
+/// URL·헤더 이름이 전부 코드 상수라, 요청에서 **변하는 값이 키 하나뿐**이다.
+/// 400 을 만들 다른 입력이 우리 쪽에 없다.
+const GEMINI_DENIED_STATUSES: &[u16] = &[400, 401, 403];
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -42,6 +61,10 @@ pub struct LlmVerifyResult {
     /// `http_status` 를 같이 준다.
     pub ok: bool,
     pub http_status: Option<u16>,
+    /// 키 자체가 거부됐나 — 벤더별 상태 코드 차이(Gemini 는 400)를 여기서 한 번
+    /// 흡수한다. 화면이 상태 코드를 다시 해석하면 벤더가 늘 때마다 같은 지식이
+    /// 두 곳에서 갈라진다.
+    pub denied: bool,
     /// 네트워크 실패 등의 한 줄. 키는 stdin 으로만 가므로 여기 담길 수 없다.
     pub message: Option<String>,
     pub duration_ms: u64,
@@ -53,6 +76,19 @@ pub struct LlmVerifyResult {
 pub struct VerifyRequest {
     url: &'static str,
     headers: Vec<(String, String)>,
+    /// 이 벤더에서 "키가 틀렸다" 를 뜻하는 상태 코드들.
+    denied_statuses: &'static [u16],
+}
+
+/// URL 의 호스트 — 감사 줄의 `host` 와 화면의 "어디로 가는가" 가 같은 값을
+/// 쓰도록 **URL 상수 하나에서 파생**시킨다. 호스트를 따로 상수로 두면 URL 을
+/// 고칠 때 조용히 어긋나서, 기록이 실제 목적지와 다른 곳을 가리키게 된다.
+fn host_of(url: &str) -> &str {
+    let without_scheme = url.split_once("://").map_or(url, |(_, rest)| rest);
+    without_scheme
+        .split(['/', '?', '#'])
+        .next()
+        .unwrap_or(without_scheme)
 }
 
 /// 응답에서 남기는 것 — 상태 코드와 **길이**뿐. 본문은 어디에도 저장하지 않는다.
@@ -75,10 +111,19 @@ fn verify_request(provider: &str, secret: &str) -> Result<VerifyRequest, String>
                 ("x-api-key".into(), secret.to_string()),
                 ("anthropic-version".into(), ANTHROPIC_VERSION.into()),
             ],
+            denied_statuses: AUTH_DENIED_STATUSES,
         }),
         "openai" => Ok(VerifyRequest {
             url: OPENAI_VERIFY_URL,
             headers: vec![("authorization".into(), format!("Bearer {secret}"))],
+            denied_statuses: AUTH_DENIED_STATUSES,
+        }),
+        // Gemini 는 Bearer 가 아니라 전용 헤더를 쓴다 — OpenAI 호환 갈래로
+        // 흡수되지 않는 인증이라 명명 벤더 자리를 받는다.
+        "gemini" => Ok(VerifyRequest {
+            url: GEMINI_VERIFY_URL,
+            headers: vec![("x-goog-api-key".into(), secret.to_string())],
+            denied_statuses: GEMINI_DENIED_STATUSES,
         }),
         other => Err(format!("지원하지 않는 제공자예요: {other}")),
     }
@@ -177,6 +222,10 @@ where
         v: 1,
         at: logged_at.clone(),
         provider: provider.to_string(),
+        // 목적지를 provider 이름이 아니라 **호스트로** 남긴다. 이름은 우리가
+        // 붙인 라벨이지만 호스트는 요청이 실제로 향한 곳이라, 나중에 사용자가
+        // 주소를 직접 적는 갈래가 열려도 같은 문법으로 정직하게 읽힌다.
+        host: host_of(request.url).to_string(),
         // 모델을 부르지 않는 호출이므로 모델 이름이 없다 — 없는 값을 지어내지 않는다.
         model: None,
         purpose: "verify".into(),
@@ -195,19 +244,20 @@ where
     let echo = send(&request);
     let duration_ms = started.elapsed().as_millis() as u64;
 
-    let (outcome, ok, http_status, response_chars, message) = match echo {
+    let (outcome, ok, denied, http_status, response_chars, message) = match echo {
         Ok(HttpEcho { status, body_chars }) => {
             let ok = (200..300).contains(&status);
+            let denied = !ok && request.denied_statuses.contains(&status);
             let label = if ok {
                 "ok"
-            } else if status == 401 || status == 403 {
+            } else if denied {
                 "denied"
             } else {
                 "error"
             };
-            (label, ok, Some(status), body_chars, None)
+            (label, ok, denied, Some(status), body_chars, None)
         }
-        Err(err) => ("error", false, None, 0, Some(err)),
+        Err(err) => ("error", false, false, None, 0, Some(err)),
     };
 
     // 확정에 실패하면 "기록이 완성된 호출" 이라는 약속이 깨진다 — 예약 줄은
@@ -225,6 +275,7 @@ where
     Ok(LlmVerifyResult {
         provider: provider.to_string(),
         ok,
+        denied,
         http_status,
         message,
         duration_ms,
@@ -283,6 +334,128 @@ mod tests {
     #[test]
     fn a_key_with_newlines_is_refused_before_any_request_is_built() {
         assert!(verify_request("anthropic", "sk-ant\nheader = evil").is_err());
+    }
+
+    #[test]
+    fn the_gemini_key_travels_in_a_header_never_in_the_url() {
+        // 공식 문서는 `?key=` 쿼리 형태도 안내하지만 우리는 헤더만 쓴다 — URL 은
+        // 감사 줄·프록시 로그에 그대로 남는 자리라 비밀이 실리면 안 된다.
+        let request = verify_request("gemini", "AIza-secret-value").unwrap();
+        assert_eq!(request.url, GEMINI_VERIFY_URL);
+        assert!(!request.url.contains("key="), "URL 에 키 자리가 있으면 안 된다");
+        assert!(!request.url.contains("AIza-secret-value"));
+        for arg in curl_argv() {
+            assert!(!arg.contains("AIza"), "argv 에 키가 실렸다: {arg}");
+        }
+        let config = curl_config(&request);
+        assert!(config.contains("x-goog-api-key: AIza-secret-value"), "{config}");
+    }
+
+    #[test]
+    fn curl_never_follows_a_redirect() {
+        // 리다이렉트를 따라가면 키가 우리가 고르지 않은 호스트로 다시 전송된다.
+        // 이 단언이 그 옵션의 부재를 회귀 불가능하게 못박는다.
+        for arg in curl_argv() {
+            assert_ne!(arg, "-L");
+            assert_ne!(arg, "--location");
+        }
+    }
+
+    #[test]
+    fn every_named_vendor_is_reachable_only_over_https() {
+        for provider in ["anthropic", "openai", "gemini"] {
+            let request = verify_request(provider, "secret").unwrap();
+            assert!(
+                request.url.starts_with("https://"),
+                "{provider} 의 확인 주소가 평문이다: {}",
+                request.url
+            );
+        }
+    }
+
+    #[test]
+    fn the_recorded_host_is_derived_from_the_url_the_request_actually_uses() {
+        // 호스트를 따로 상수로 두면 URL 을 고칠 때 조용히 어긋난다 — 파생값이라
+        // 기록이 실제 목적지를 벗어날 수 없다.
+        assert_eq!(host_of("https://api.anthropic.com/v1/models?limit=1"), "api.anthropic.com");
+        assert_eq!(host_of("https://api.openai.com/v1/models"), "api.openai.com");
+        assert_eq!(host_of("https://example.com"), "example.com");
+        assert_eq!(host_of("https://example.com#frag"), "example.com");
+    }
+
+    #[test]
+    fn the_hosts_match_the_shared_fixture_the_screen_promises() {
+        // 화면은 키를 붙여넣기 **전에** "이 키가 가는 곳" 을 말한다. 그 문장이
+        // 실제 목적지와 같은지는 웹 쪽 테스트가 같은 픽스처로 함께 잡는다.
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("../../tests/fixtures/llm-provider-hosts.json"))
+                .unwrap();
+        let hosts = fixture["hosts"].as_object().unwrap();
+        assert_eq!(hosts.len(), 3, "픽스처가 명명 벤더 전부를 덮어야 한다");
+        for (provider, expected) in hosts {
+            let request = verify_request(provider, "secret").unwrap();
+            assert_eq!(host_of(request.url), expected.as_str().unwrap(), "{provider}");
+        }
+    }
+
+    #[test]
+    fn a_gemini_key_rejected_with_400_is_a_rejection_not_a_failure() {
+        // 2026-07-26 실측: Gemini 는 틀린 키에 400(`API_KEY_INVALID`)을 준다.
+        // 401/403 로만 판정하면 사용자가 "확인하지 못했어요" 를 보고 자기 키가
+        // 아니라 앱이 고장난 줄 안다.
+        let vault = temp_vault("gemini400");
+        let result = verify_with("gemini", &vault, "AIza-bad", |request| {
+            assert_eq!(request.url, GEMINI_VERIFY_URL);
+            Ok(HttpEcho {
+                status: 400,
+                body_chars: 118,
+            })
+        })
+        .unwrap();
+        assert!(!result.ok);
+        assert!(result.denied, "400 이 거부로 읽혀야 한다");
+        let raw = fs::read_to_string(llm_audit::audit_log_path(&vault)).unwrap();
+        let line: serde_json::Value = serde_json::from_str(raw.trim()).unwrap();
+        assert_eq!(line["outcome"], "denied");
+        assert_eq!(line["host"], "generativelanguage.googleapis.com");
+        fs::remove_dir_all(&vault).ok();
+    }
+
+    #[test]
+    fn a_400_from_a_bearer_vendor_is_still_a_plain_failure() {
+        // 거부 상태는 벤더별 목록이다 — Gemini 의 400 규칙이 다른 벤더로 새면
+        // 우리 쪽 요청 실수까지 "키가 틀렸다" 로 오진한다.
+        let vault = temp_vault("openai400");
+        let result = verify_with("openai", &vault, "sk-test", |_| {
+            Ok(HttpEcho {
+                status: 400,
+                body_chars: 10,
+            })
+        })
+        .unwrap();
+        assert!(!result.denied);
+        let raw = fs::read_to_string(llm_audit::audit_log_path(&vault)).unwrap();
+        let line: serde_json::Value = serde_json::from_str(raw.trim()).unwrap();
+        assert_eq!(line["outcome"], "error");
+        fs::remove_dir_all(&vault).ok();
+    }
+
+    #[test]
+    fn every_recorded_call_names_the_host_it_went_to() {
+        let vault = temp_vault("host");
+        verify_with("openai", &vault, "sk-test", |_| {
+            Ok(HttpEcho {
+                status: 200,
+                body_chars: 42,
+            })
+        })
+        .unwrap();
+        let raw = fs::read_to_string(llm_audit::audit_log_path(&vault)).unwrap();
+        let line: serde_json::Value = serde_json::from_str(raw.trim()).unwrap();
+        assert_eq!(line["host"], "api.openai.com");
+        // 추가형 확장이라 스키마 버전은 그대로다 — 옛 줄이 계속 읽혀야 한다.
+        assert_eq!(line["v"], 1);
+        fs::remove_dir_all(&vault).ok();
     }
 
     #[test]

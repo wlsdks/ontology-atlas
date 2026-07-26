@@ -34,6 +34,7 @@ import {
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
 import { AiConnectionPanel } from './AiConnectionPanel';
+import { AI_PROVIDER_LABEL_KEY } from '../model/ai-providers';
 import { useAiConnection } from '../model/use-ai-connection';
 
 /**
@@ -303,10 +304,7 @@ export function AppSettingsMenu({
       ? tAi('chipEmpty')
       : storedProviders.length === 1
         ? tAi('chipStored', {
-            provider:
-              storedProviders[0] === 'anthropic'
-                ? tAi('providerAnthropic')
-                : tAi('providerOpenai'),
+            provider: tAi(AI_PROVIDER_LABEL_KEY[storedProviders[0]]),
             last4: aiConnection.statuses[storedProviders[0]]?.last4 ?? '',
           })
         : tAi('chipMany', { count: storedProviders.length });

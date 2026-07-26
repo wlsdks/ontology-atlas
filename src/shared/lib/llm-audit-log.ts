@@ -6,8 +6,13 @@
  * "기록 없는 전송" 이 구조적으로 불가능해진다.
  *
  * 한 줄 스키마 v1:
- * `{"v":1,"at","provider","model","purpose","question","scope":{"nodes","promptChars","vaultChars"},"payloadSha256","outcome","httpStatus","responseChars","durationMs"}`
+ * `{"v":1,"at","provider","host","model","purpose","question","scope":{"nodes","promptChars","vaultChars"},"payloadSha256","outcome","httpStatus","responseChars","durationMs"}`
  *
+ * - `host` 는 **나중에 더해진 필드**이고 그래서 `v` 는 1 그대로다. 이 필드가
+ *   없는 옛 줄은 사용자 디스크에 이미 앉아 있으므로 `null` 로 읽는다 — 목적지를
+ *   모른다는 사실을 그대로 말할 뿐, provider 이름으로 추측해 채우지 않는다.
+ *   기록을 소급해 고치지 않는 것이 헌장 ⑤ 이고, 파서가 부재를 감당하는 것이
+ *   그 약속의 코드 쪽 얼굴이다.
  * - 전송 **직전에** 결과 필드 없이 예약된 줄이 먼저 디스크에 앉는다. 응답 전에
  *   프로세스가 죽으면 그 줄이 그대로 남으므로, 결과 필드가 없는 줄은
  *   `outcome: 'unknown'` 으로 읽는다 — 없는 사실을 성공/실패로 지어내지 않는다.
@@ -31,6 +36,11 @@ export interface LlmAuditEntry {
   v: 1;
   at: string;
   provider: string;
+  /**
+   * 요청이 실제로 향한 호스트. `host` 가 없던 시절의 줄은 `null` — 없는 사실을
+   * provider 이름으로 지어내지 않는다.
+   */
+  host: string | null;
   model: string | null;
   /** `'verify' | 'ask'` — 앞으로 값이 늘어도 파서는 그대로 통과시킨다. */
   purpose: string;
@@ -78,6 +88,7 @@ export function parseLlmAuditLog(
         v: 1,
         at: parsed.at,
         provider: parsed.provider,
+        host: typeof parsed.host === 'string' && parsed.host ? parsed.host : null,
         model: typeof parsed.model === 'string' ? parsed.model : null,
         purpose: typeof parsed.purpose === 'string' ? parsed.purpose : '',
         question: typeof parsed.question === 'string' ? parsed.question : null,

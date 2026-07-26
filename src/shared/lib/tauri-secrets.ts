@@ -28,9 +28,29 @@ function getInvoke(): TauriInvoke | null {
   return (command, args) => tauriInvoke(command, args);
 }
 
-/** Rust `PROVIDERS` 허용목록과 같은 순서 — 화면 표시 순서이기도 하다. */
-export const SECRET_PROVIDERS = ['anthropic', 'openai'] as const;
+/**
+ * Rust `PROVIDERS` 허용목록과 같은 순서 — 화면 표시 순서이기도 하다.
+ *
+ * 명명 벤더는 **3에서 동결**한다(근거는 `secrets.rs` 의 같은 상수 주석). 넷째
+ * 벤더를 여기 더하기 전에 그 조건부터 읽어라 — 나머지 벤더는 명명 팔이 아니라
+ * 사용자가 주소를 직접 적는 갈래로 간다.
+ */
+export const SECRET_PROVIDERS = ['anthropic', 'openai', 'gemini'] as const;
 export type SecretProvider = (typeof SECRET_PROVIDERS)[number];
+
+/**
+ * 각 키가 실제로 향하는 호스트. 화면이 **붙여넣기 전에** "이 키가 가는 곳" 을
+ * 말하는 근거이고, 같은 호스트가 감사 줄의 `host` 로 남는다.
+ *
+ * 진실원은 Rust 쪽 확인 URL 이다(`src-tauri/src/llm.rs`). 여기 값이 그것과
+ * 갈라지면 화면이 약속한 목적지와 실제 목적지가 달라지므로, 공유 픽스처
+ * `tests/fixtures/llm-provider-hosts.json` 를 양쪽 테스트가 함께 본다.
+ */
+export const SECRET_PROVIDER_HOSTS: Record<SecretProvider, string> = {
+  anthropic: 'api.anthropic.com',
+  openai: 'api.openai.com',
+  gemini: 'generativelanguage.googleapis.com',
+};
 
 /** Rust `SecretStatus` (serde camelCase). */
 export interface SecretStatus {
@@ -45,6 +65,12 @@ export interface SecretStatus {
 export interface LlmVerifyResult {
   provider: string;
   ok: boolean;
+  /**
+   * 키 자체가 거부됐나. **상태 코드로 화면이 다시 판정하지 않는다** — 거부를
+   * 뜻하는 코드가 벤더마다 다르기 때문이다(Gemini 는 401 이 아니라 400 을
+   * 준다). 판정은 Rust 한 곳에서 하고, 같은 결론이 감사 줄에도 남는다.
+   */
+  denied: boolean;
   httpStatus: number | null;
   /** 네트워크 실패 등의 한 줄. 키는 담기지 않는다. */
   message: string | null;

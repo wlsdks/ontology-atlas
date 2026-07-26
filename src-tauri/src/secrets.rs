@@ -35,7 +35,23 @@ const SERVICE: &str = "Ontology Atlas";
 /// 지원 provider. 임의 문자열을 받지 않는 이유: 프런트가 넘긴 값이 그대로
 /// 키체인 계정 이름이 되므로, 오타 하나가 "저장은 됐는데 못 찾는" 유령 엔트리를
 /// 만든다. 허용 목록으로 고정한다.
-const PROVIDERS: [&str; 2] = ["anthropic", "openai"];
+///
+/// ## 명명 벤더는 여기서 **3으로 동결**한다
+///
+/// 비용은 벤더 수가 아니라 **개념 수**다. 이 셋은 전부 같은 문법 하나를 공유
+/// 한다 — 키를 붙여넣고 · 키체인에 두고 · 끝 4자만 보고 · 코드에 박힌 공식
+/// 주소로 확인한다. 그래서 셋째(gemini)를 더해도 사용자가 배울 개념은 늘지
+/// 않았다.
+///
+/// 4번째 명명 벤더는 두 조건을 **동시에** 만족할 때만 받는다:
+/// ① Bearer 호환(OpenAI 방식)으로 흡수할 수 없는 전용 인증 프로토콜이고,
+/// ② 실제 수요 증거가 있다.
+///
+/// 조건을 못 채우는 벤더(Groq·Mistral·xAI·Together·LM Studio…)는 여기 오지
+/// 않는다 — 사용자가 주소를 직접 적는 "주소로 연결" 한 갈래가 전부 흡수한다.
+/// 명명 목록을 벤더별로 유지보수하기 시작하면 목록은 항상 누군가에게 모자라고
+/// (롱테일), 코드는 벤더 API 가 바뀔 때마다 썩는다.
+const PROVIDERS: [&str; 3] = ["anthropic", "openai", "gemini"];
 
 pub(crate) fn validate_provider(provider: &str) -> Result<&'static str, String> {
     PROVIDERS
@@ -145,9 +161,19 @@ mod tests {
         // 엔트리를 만든다 — 허용 목록 밖은 전부 거절한다.
         assert!(validate_provider("anthropic").is_ok());
         assert!(validate_provider("openai").is_ok());
-        for bad in ["", "Anthropic", "anthropic ", "../etc", "gemini"] {
+        assert!(validate_provider("gemini").is_ok());
+        // 대소문자·공백·별칭은 전부 거절 — 하나라도 통과하면 같은 키가 두 계정
+        // 이름으로 나뉘어 "저장은 됐는데 못 찾는" 상태가 된다.
+        for bad in ["", "Anthropic", "anthropic ", "../etc", "Gemini", "google"] {
             assert!(validate_provider(bad).is_err(), "should reject {bad:?}");
         }
+    }
+
+    #[test]
+    fn the_named_vendor_list_stays_frozen_at_three() {
+        // 4번째는 "Bearer 호환으로 흡수 불가 + 수요 증거" 둘 다일 때만이다.
+        // 이 단언이 깨졌다면 그 두 조건을 PR 본문에 적었는지 먼저 확인하라.
+        assert_eq!(PROVIDERS.len(), 3, "명명 벤더는 3에서 동결한다");
     }
 
     #[test]
