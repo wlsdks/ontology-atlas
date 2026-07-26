@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { OntologyEditRedirectPage } from "@/views/ontology-edit-redirect";
+import { RouteLoadingFallback } from "@/shared/ui";
 
 /**
  * `/ontology/edit` — retired ERD builder → thin redirect to `/ontology/studio`
@@ -9,7 +10,7 @@ import { OntologyEditRedirectPage } from "@/views/ontology-edit-redirect";
  */
 export default function Page() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoadingFallback />}>
       <OntologyEditRedirectPage />
     </Suspense>
   );

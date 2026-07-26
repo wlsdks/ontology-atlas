@@ -51,7 +51,7 @@ import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
 } from '@/shared/lib/tauri-vault-fs';
-import { SimilarNodeWarning, Tooltip, useToast } from '@/shared/ui';
+import { RouteLoadingFallback, SimilarNodeWarning, Tooltip, useToast } from '@/shared/ui';
 import {
   findSimilarNodeByTitle,
   type SimilarNodeMatch,
@@ -2324,7 +2324,10 @@ export function DocsVaultPage() {
   // local-first 핵심 (`.claude/rules/local-first.md` §1) — vault picker 진입은
   // 인증 게이트 없음. 사용자 로컬 디스크가 진실원.
   return (
-    <Suspense fallback={null}>
+    // 이 안쪽 경계가 라우트 경계보다 가까워서, 프리렌더된 HTML 에 실제로
+    // 구워지는 것은 여기 fallback 이다 — null 이면 배포된 문서함은 레일만
+    // 남은 검은 화면으로 시작한다(감사 D1 과 같은 뿌리).
+    <Suspense fallback={<RouteLoadingFallback />}>
       <DocsVaultContent />
     </Suspense>
   );

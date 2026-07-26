@@ -201,4 +201,19 @@ describe("ProjectSelectorPage", () => {
       `/project/new/?returnTo=${encodeURIComponent("/projects/")}`,
     );
   });
+
+  // 감사 D8 — 영어 화면에서 "1 project · 1 domains" 로 나갔다. 셈이 1 일 때
+  // 복수형은 문장이 자동 생성됐다는 신호로 읽힌다.
+  it("agrees in number with the count it labels", () => {
+    renderPage();
+    const header = screen.getByRole("main").textContent ?? "";
+    expect(header).toContain("1 project");
+    expect(header).toContain("1 project·1 domain");
+    expect(header).not.toContain("1 domains");
+    expect(header).not.toContain("1 CONCEPTS");
+    expect(header).not.toContain("1 RELATIONS");
+    // 복수 자리도 함께 잠근다 — 단수만 고치면 반대 방향으로 되돌아온다.
+    expect(header).toContain("4 CONCEPTS");
+    expect(header).toContain("2 RELATIONS");
+  });
 });

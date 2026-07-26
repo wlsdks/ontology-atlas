@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { RootEntryPage } from '@/views/root-entry';
 import { absoluteUrl } from "@/shared/config";
 import { routing } from "@/i18n/routing";
+import { RouteLoadingFallback } from "@/shared/ui";
 
 // 각 locale page 의 canonical 은 *자기 자신 URL* 이어야 hreflang group 이
 // 정확히 동작. 이전엔 모든 locale 이 `/` 로 통일됐는데, 그러면 `/en/` 과
@@ -27,7 +28,7 @@ export async function generateMetadata({
 
 export default function Page() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoadingFallback />}>
       <RootEntryPage />
     </Suspense>
   );

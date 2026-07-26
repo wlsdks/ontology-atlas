@@ -76,4 +76,47 @@ describe("useAgentConnectModel (HomePage 모듈화 2차)", () => {
     expect(result.current.status.kind).toBe("stale");
     expect(result.current.domainTitles).toEqual(["Views"]);
   });
+
+  // 감사 D5 — 한국어 화면인데 "연결되면 에이전트는 이렇게 읽어요" 미리보기가
+  // 지도·INDEX 의 한글 이름 대신 영문 canonical title 을 되말했다.
+  it("화면 언어로 부르는 이름이 있으면 미리보기도 그 이름을 쓴다", () => {
+    const localized = (
+      id: string,
+      kind: string,
+      slug: string,
+      title: string,
+      display: string,
+    ) =>
+      ({
+        id,
+        kind,
+        title,
+        display,
+        evidenceIds: [slug],
+        projectIds: [],
+      }) as unknown as KnowledgeGraphNode;
+    const nodes = [
+      localized("domain:order", "domain", "domains/order", "Example domain", "예시 영역"),
+      localized(
+        "capability:mcp-server",
+        "capability",
+        "capabilities/mcp-server",
+        "MCP Server",
+        "엠시피 서버",
+      ),
+    ];
+    const { result } = renderHook(() =>
+      useAgentConnectModel({
+        agentActivityStatus: heartbeat(),
+        vaultHandle: null,
+        insightNodes: nodes,
+        defaultAgentLabel: "에이전트",
+      }),
+    );
+    act(() => result.current.openSheet());
+    expect(result.current.domainTitles).toEqual(["예시 영역"]);
+    expect(
+      result.current.status.kind === "connected" ? result.current.status.focusTitle : null,
+    ).toBe("엠시피 서버");
+  });
 });

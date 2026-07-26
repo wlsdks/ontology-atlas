@@ -79,7 +79,14 @@ export function useAgentConnectModel({
     if (agentActivityStatus.stale) return { kind: "stale", agoLabel: ago };
     const focusSlug = hb.focus.ontologySlug;
     const focusTitle = focusSlug
-      ? ((insightNodes ?? []).find((n) => n.evidenceIds[0] === focusSlug || n.id === focusSlug)?.title ?? focusSlug)
+      ? (() => {
+          const node = (insightNodes ?? []).find(
+            (n) => n.evidenceIds[0] === focusSlug || n.id === focusSlug,
+          );
+          // 화면 언어로 부르는 이름이 있으면 그것 — 지도·INDEX 와 같은 이름을
+          // 써야 사용자가 두 화면을 같은 개념으로 읽는다.
+          return node?.display ?? node?.title ?? focusSlug;
+        })()
       : null;
     return { kind: "connected", agentLabel: hb.agent ?? defaultAgentLabel, agoLabel: ago, focusTitle };
   }, [agentActivityStatus, insightNodes, nowMs, defaultAgentLabel]);
@@ -99,7 +106,12 @@ export function useAgentConnectModel({
   }, [vaultHandle]);
 
   const domainTitles = useMemo(
-    () => (insightNodes ?? []).filter((n) => n.kind === "domain").map((n) => n.title),
+    () =>
+      (insightNodes ?? [])
+        .filter((n) => n.kind === "domain")
+        // 한국어 화면에서 영문 canonical title 을 그대로 되말하면 "이 도구가
+        // 내 로케일을 모른다" 로 읽힌다 — 지도와 같은 표시 이름을 쓴다.
+        .map((n) => n.display ?? n.title),
     [insightNodes],
   );
 
