@@ -4,7 +4,7 @@ import { deriveDisplayTitle } from "./derive-display-title";
 describe("deriveDisplayTitle", () => {
   it("frontmatter display 필드가 있으면 title 과 무관하게 그것을 우선한다", () => {
     expect(
-      deriveDisplayTitle({ display: "짧은 이름" }, "CLI Developer Entry (49 commands)"),
+      deriveDisplayTitle({ display: "짧은 이름" }, "CLI Developer Entry (52 commands)"),
     ).toBe("짧은 이름");
   });
 
@@ -18,7 +18,7 @@ describe("deriveDisplayTitle", () => {
     expect(
       deriveDisplayTitle(
         undefined,
-        "CLI Developer Entry (49 commands — vault + MCP verify + ...)",
+        "CLI Developer Entry (52 commands — vault + MCP verify + ...)",
       ),
     ).toBe("CLI Developer Entry");
   });

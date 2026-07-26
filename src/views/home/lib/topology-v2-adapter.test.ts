@@ -61,7 +61,7 @@ describe("buildTopologyV2Graph — regression: TopologyMapV2 must not be mounted
       node({
         id: "capability:cli-developer-entry",
         kind: "capability",
-        title: "CLI Developer Entry (49 commands — vault + MCP verify + ...)",
+        title: "CLI Developer Entry (52 commands — vault + MCP verify + ...)",
         display: "CLI Developer Entry",
       }),
       node({ id: "domain:auth", kind: "domain", title: "Auth" }),

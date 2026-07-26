@@ -176,7 +176,7 @@ describe("FullDetailA1", () => {
       node: {
         id: "domain:a",
         title: "CLI Developer Entry",
-        fullTitle: "CLI Developer Entry (49 commands — vault + MCP verify + ...)",
+        fullTitle: "CLI Developer Entry (52 commands — vault + MCP verify + ...)",
         kind: "domain",
         slug: "domains/a",
         fresh: true,
@@ -186,7 +186,7 @@ describe("FullDetailA1", () => {
     expect(
       screen.getByTestId("full-detail-a1-full-title"),
     ).toHaveTextContent(
-      "CLI Developer Entry (49 commands — vault + MCP verify + ...)",
+      "CLI Developer Entry (52 commands — vault + MCP verify + ...)",
     );
   });
 

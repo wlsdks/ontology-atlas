@@ -594,7 +594,7 @@ without breaking pre-existing vaults.
 
 Every kind also accepts an optional `display` field, right after `title` in
 `preferredOrder`. It exists for nodes whose real `title` carries a long
-parenthetical qualifier — e.g. `title: CLI Developer Entry (50 commands —
+parenthetical qualifier — e.g. `title: CLI Developer Entry (52 commands —
 vault + MCP verify + ...)`. The topology canvas label, INDEX panel row, node
 popover header, and full-detail header all render the *display name*, not
 the raw `title`:

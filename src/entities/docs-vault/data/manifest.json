@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T16:41:40.586Z",
+  "generatedAt": "2026-07-26T16:55:13.736Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -57,7 +57,7 @@
       ],
       "excerpt": "Current as of 2026-05-28. This is the user-facing guide for running ontology-atlas as a local PC graph memory: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is",
       "wordCount": 2367,
-      "updatedAt": "2026-07-26T19:53:53+09:00",
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -2455,9 +2455,9 @@
           "slug": "잔여-게이트-다음-라운드"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 96 노드, CLI 48 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
-      "wordCount": 1661,
-      "updatedAt": "2026-07-25T21:10:11+09:00",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 96 노드, CLI 52 commands, MCP 32 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
+      "wordCount": 1666,
+      "updatedAt": "2026-07-26T16:53:25.273Z",
       "linksOut": []
     },
     {
@@ -5010,7 +5010,7 @@
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자가 패널을 열어 보고 지적한 셋 중 마지막 하나를 고쳤다 — 키가 있어도 빈 입력칸 앞에서 무엇을 물어야 할지 몰랐다. Cursor 를 쓰는 사람은 ",
       "wordCount": 49774,
-      "updatedAt": "2026-07-26T16:41:40.586Z",
+      "updatedAt": "2026-07-27T01:51:14+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -6371,7 +6371,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
       "wordCount": 14022,
-      "updatedAt": "2026-07-26T16:38:35.867Z",
+      "updatedAt": "2026-07-27T01:51:14+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6428,7 +6428,7 @@
       ],
       "excerpt": "이 문서는 제품을 느낌이 아니라 공개·인용 가능한 학술/표준/craft 레퍼런스에 묶어 둔다. \"온톨로지가 뭔지도 모르면서 만드는\" 것을 막기 위한 근거 모음 — 무엇이 이미 있고, 우리가 그 위에서 우리만의 것을 어디서 어떻게 다르게 만드는지. 인용 규율: 여기 실린 레퍼런스는 전부 공개 논문 / W3C 표준 / 공개 서적 / 공개 블로그이며, 2026-06-01 자동 리서치 워크플로(6 facet × research→adversarial fact-check)에서 각 출처의 제목·저자·URL 을 독립 웹 확인(25/25 verified) 한 것만 실었다. 링크/인용",
       "wordCount": 2653,
-      "updatedAt": "2026-07-23T15:29:58+09:00",
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -7031,10 +7031,21 @@
           "domains/onboarding-ux"
         ]
       },
-      "headings": [],
+      "headings": [
+        {
+          "depth": 2,
+          "text": "2026-07-26 freshness review",
+          "slug": "2026-07-26-freshness-review"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-27 installed-app inventory proof",
+          "slug": "2026-07-27-installed-app-inventory-proof"
+        }
+      ],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultAgentSetupPanel (merged into AppSettingsMenu's vault / mcpAgents tabs, B2 2026-07 — the former VaultToolsMenu docs-header dropdown was retired to remove the duplicate surface) exposes the setup gate in the same language a",
-      "wordCount": 1234,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "wordCount": 1369,
+      "updatedAt": "2026-07-27T01:53:22+09:00",
       "linksOut": []
     },
     {
@@ -7052,9 +7063,9 @@
         "elements": []
       },
       "headings": [],
-      "excerpt": "INDEX 푸터의 에이전트 상태 클릭 → 연결 시트 (2026-07-21, P2a — 웨지 표면). 구성: ① heartbeat 파일 기반 연결 상태(조용한 수집 0 — 에이전트가 스스로 남긴 로컬 파일 읽기) ② Claude Code .mcp.json / Codex / generic 등록 스니펫(데스크톱 경로 자동, 웹 안내) + 데스크톱 설정 파일 자동 생성 ③ agent-brief 가 사용자의 실제 도메인 이름들을 되말하는 미리보기(이해받음의 순간 — 감정 카피 규칙: 사용자 고유 명사 원문 포함). 전략 근거: 백엔드(MCP 25도구·스킬·heartbeat)는",
+      "excerpt": "INDEX 푸터의 에이전트 상태 클릭 → 연결 시트 (2026-07-21, P2a — 웨지 표면). 구성: ① heartbeat 파일 기반 연결 상태(조용한 수집 0 — 에이전트가 스스로 남긴 로컬 파일 읽기) ② Claude Code .mcp.json / Codex / generic 등록 스니펫(데스크톱 경로 자동, 웹 안내) + 데스크톱 설정 파일 자동 생성 ③ agent-brief 가 사용자의 실제 도메인 이름들을 되말하는 미리보기(이해받음의 순간 — 감정 카피 규칙: 사용자 고유 명사 원문 포함). 전략 근거: 백엔드(MCP 32도구·스킬·heartbeat)는",
       "wordCount": 86,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "updatedAt": "2026-07-27T01:53:17+09:00",
       "linksOut": []
     },
     {
@@ -7117,10 +7128,16 @@
           "src/widgets/topology-map-v2/ui/topology-frame-draw.ts"
         ]
       },
-      "headings": [],
+      "headings": [
+        {
+          "depth": 2,
+          "text": "2026-07-26 freshness review",
+          "slug": "2026-07-26-freshness-review"
+        }
+      ],
       "excerpt": "Atlas defines a live activity contract for Claude Code / Codex sessions without pretending it can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live — ",
-      "wordCount": 1346,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "wordCount": 1387,
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -7153,10 +7170,16 @@
           "capabilities/ontology-hub-mode-aware"
         ]
       },
-      "headings": [],
+      "headings": [
+        {
+          "depth": 2,
+          "text": "2026-07-26 freshness review",
+          "slug": "2026-07-26-freshness-review"
+        }
+      ],
       "excerpt": "Agent onboarding brief composer — a purely-functional packet builder that was originally designed to unify the \"Copy …\" buttons scattered across the old 4-tab /ontology/insights (run order · graph-DB pack · readiness · write guardrails · CLI fallback) into a single 1-paste briefing. That insights UI is gone (2026-07 re",
-      "wordCount": 255,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "wordCount": 286,
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -7367,7 +7390,7 @@
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
       "wordCount": 10587,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -7558,11 +7581,16 @@
           "depth": 2,
           "text": "호환",
           "slug": "호환"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 freshness review",
+          "slug": "2026-07-26-freshness-review"
         }
       ],
       "excerpt": "같은 .md 가 사람 GUI · 외부 에디터 · 다른 AI MCP 에 의해 동시 편집될 때 silent overwrite 차단. R11 8 에서 MCP 측 도입, R+ 에서 local UI 의 본문 저장과 frontmatter patch 경로까지 확장. 1. AI agent 가 getconcept 호출 → 응답에 mtime (ms) 포함 2. agent 가 분석 / 수정 후 patchconcept({ slug, frontmatter, expectedmtime: <prev mtime }) 호출 3. write 직전 server 가 현재 mtime 과 비교 4. 다르면 ",
-      "wordCount": 183,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "wordCount": 210,
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -7619,7 +7647,7 @@
       ],
       "excerpt": "@modelcontextprotocol/sdk 안정판 1.x 기반 stdio JSON-RPC 서버. 32 도구 노출 (read 19 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-lev",
       "wordCount": 13578,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -7768,11 +7796,16 @@
           "depth": 1,
           "text": "Ontology Hub — Mode-Aware",
           "slug": "ontology-hub-mode-aware"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 freshness review",
+          "slug": "2026-07-26-freshness-review"
         }
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (module-load 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), l",
-      "wordCount": 632,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "wordCount": 680,
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -7807,8 +7840,8 @@
         }
       ],
       "excerpt": "Claude Code 가 코드 변경 후 자동으로 호출하는 user-invocable skill. .claude/skills/ontology-sync/SKILL.md 한 파일이 곧 surface — 새 capability / element / domain 가 등장하면 MCP write 도구 (addconcept / patchconcept / addrelation) 로 vault 에 반영하라는 워크플로를 LLM 에게 지시한다. MCP 서버가 런타임 도구 라면 이 skill 은 사용 규약 — read-then-write, 중복 slug 회피, 5 줄 changelog re",
-      "wordCount": 105,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "wordCount": 109,
+      "updatedAt": "2026-07-26T16:53:25.275Z",
       "linksOut": []
     },
     {
@@ -8016,11 +8049,16 @@
           "depth": 1,
           "text": "나침 무대 ↔ Vault md write (mode-aware)",
           "slug": "나침-무대-vault-md-write-mode-aware"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 freshness review",
+          "slug": "2026-07-26-freshness-review"
         }
       ],
       "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 은퇴한 xyflow ERD 빌더 (/ontology/edit) 가 하던 vault 쓰기 경로는 이제 나침 무대 (Compass Stage, /ontology/studio) 가 이어받았다. 한 노드를 게임 아이템처럼 놓고 관계 소켓을 채우면 그 채움이 곧 실제 frontmatter write 다. OntologyStudioPage 는 두 fill-state 를 한 라우트에서 처리한다 (mode 탭 없음): 기본 = 기존 노드를 ?node=<id 로 열어 부분 채움 (ENHANCE), ?mode=c",
-      "wordCount": 555,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "wordCount": 586,
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -8087,11 +8125,16 @@
           "depth": 2,
           "text": "노드 표현",
           "slug": "노드-표현"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 entry and map audit",
+          "slug": "2026-07-26-entry-and-map-audit"
         }
       ],
       "excerpt": "/ (root hub) 와 /topology (동일 진입) 는 자체 canvas-2D 렌더 엔진 topology-map-v2(src/widgets/topology-map-v2/)가 그린다. Sigma.js WebGL 렌더러는 은퇴했다 — Graphology + ForceAtlas2 물리 레이아웃은 그대로 재사용하되 (빌더 ERD 캔버스와 공유), 실제 픽셀은 단일 <canvas 컨테이너 위에 이 엔진이 직접 그린다. HomePage(src/views/home)가 마운트 지점이고, TopologyControls(src/widgets/topology-controls)가 ",
-      "wordCount": 171,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "wordCount": 251,
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": [
         "ontology/capabilities/topology-skeleton-entry",
         "ontology/capabilities/topology-kind-legibility"
@@ -8344,11 +8387,16 @@
           "depth": 2,
           "text": "참조 PR",
           "slug": "참조-pr"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 freshness review",
+          "slug": "2026-07-26-freshness-review"
         }
       ],
       "excerpt": "R14 (155-158, 2026-05-04 ~ 2026-05-05) 에 도입된 web 즉시 반영 능력. 사용자 명시 \"웹에서나 잘 반영되면 좋겠는데? 그걸 강화하는건 어때\" 의 4 단계 답. IDE / AI agent / CLI 어느 surface 가 vault .md 만지면 웹 탭이 focus 안 해도 ~5s 안에 반영. · Step · What · Where 인지 · 155 polling · 5s 간격 fingerprint check + visible-only 자동 reload · 백그라운드 · 156 graph diff pulse · 새 노드 amber sin",
-      "wordCount": 554,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "wordCount": 605,
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -8530,7 +8578,7 @@
       ],
       "excerpt": "This document keeps external agent-engineering practice attached to the product ontology instead of leaving it only in chat history. Anthropic agent engineering guidance: start with simple, composable workflows; use broader agents when the task is open-ended and needs environmental feedback. OpenAI Codex operating guid",
       "wordCount": 1504,
-      "updatedAt": "2026-06-21T21:32:10+09:00",
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -8673,9 +8721,9 @@
           "slug": "ai-agent-partner"
         }
       ],
-      "excerpt": "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 31 도구 (read 18 + write 13) 를 stdin/stdout JSON-RPC 로 노출. 등록 가이드: mcp/README.md. 사용자 LLM 비용을 cloud 로 옮기지 않음 — agent 가 자기 LLM 으로 호출. .claude/hooks/block-npm-publish.sh 는 agent 가 사용자 명시 승인 없이 npm publish 계열 명령을 실행하지 못하게 막는 안전장치다. pnpm test:cla",
+      "excerpt": "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 32 도구 (read 19 + write 13) 를 stdin/stdout JSON-RPC 로 노출. 등록 가이드: mcp/README.md. 사용자 LLM 비용을 cloud 로 옮기지 않음 — agent 가 자기 LLM 으로 호출. .claude/hooks/block-npm-publish.sh 는 agent 가 사용자 명시 승인 없이 npm publish 계열 명령을 실행하지 못하게 막는 안전장치다. pnpm test:cla",
       "wordCount": 78,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "updatedAt": "2026-07-27T01:53:17+09:00",
       "linksOut": []
     },
     {
@@ -8733,6 +8781,7 @@
         ],
         "elements": [
           "cli/src/commands/agent-activity.mjs",
+          "elements/accessible-dialog-focus-contract",
           "elements/app-nav-rail",
           "elements/app-settings-menu",
           "elements/first-run-page",
@@ -8759,7 +8808,7 @@
       ],
       "excerpt": "cross-cutting. 다크 단일 테마 (라이트 모드는 2026-07-19 전략 폐기), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curso",
       "wordCount": 350,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -8842,11 +8891,16 @@
           "depth": 1,
           "text": "Vault — Local-First",
           "slug": "vault-local-first"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 entry contract",
+          "slug": "2026-07-26-entry-contract"
         }
       ],
-      "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 short-circuit. R14 부터는 visible 인 동안 5s polling 으로 focus 안 해도 자동 반영 (vault-live-updates). 자세한 원칙: .claude/rules/local-first.md. 사용자 surface: docs/FEATURES.md.",
-      "wordCount": 45,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 short-circuit. R14 부터는 visible 인 동안 5s polling 으로 focus 안 해도 자동 반영 (vault-live-updates). 자세한 원칙: .claude/rules/local-first.md. 사용자 surface: docs/FEATURES.md. Browser capability is based on a callable showDirectoryPi",
+      "wordCount": 105,
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -8928,11 +8982,16 @@
           "depth": 1,
           "text": "Views",
           "slug": "views"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 entry and map audit",
+          "slug": "2026-07-26-entry-and-map-audit"
         }
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (canvas-2D topology-map-v2 spatial network — /, /topology), 둘러보기 (/ontology 는 토폴로지 INDEX 로 흡수된 얇은 리다이렉트 + 노드 detail), 공방 (나침 무대 /ontology/studio — 노드 의미를 관계 소켓으로 완성해 실제 frontmatter 를 쓰는 표면; 구 xyflow ERD 빌더 /ontology/edit 는 2026-07-24 은퇴하고 공방으로 리다이렉트). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Workshop ",
-      "wordCount": 85,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "wordCount": 147,
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -9080,11 +9139,16 @@
           "depth": 1,
           "text": "File System Access API",
           "slug": "file-system-access-api"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 support and cancel contract",
+          "slug": "2026-07-26-support-and-cancel-contract"
         }
       ],
       "excerpt": "브라우저 native API — showDirectoryPicker() 로 사용자 폴더 선택, FileSystemDirectoryHandle 로 read/write. 우리는 IndexedDB 에 핸들 영속, focus / visibility 시 fingerprint 비교 재스캔. SSR-safe (window 가드). 미지원 브라우저는 LocalVaultPicker 가 명시적 안내. The Source Vault first viewport treats that runtime as an ontology execution contract instead of a plain",
-      "wordCount": 222,
-      "updatedAt": "2026-07-21T01:05:59+09:00",
+      "wordCount": 283,
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -9375,10 +9439,16 @@
           "tests/e2e/ontology-ui.spec.ts"
         ]
       },
-      "headings": [],
+      "headings": [
+        {
+          "depth": 2,
+          "text": "2026-07-26 selected-node freshness contract",
+          "slug": "2026-07-26-selected-node-freshness-contract"
+        }
+      ],
       "excerpt": "Superseded (B3 허브가 곧 지도, 2026-07). /ontology's tree hub (OntologyViewPage, this element's original subject) is retired — the selected-node detail experience now lives on /topology as the compact TopologyV2DetailPanel datasheet with an opt-in \"전체 상세 →\" link into FullDetailA1 (src/widgets/full-detail-a1/), replacing the ",
-      "wordCount": 543,
-      "updatedAt": "2026-07-22T00:03:44+09:00",
+      "wordCount": 595,
+      "updatedAt": "2026-07-27T01:53:12+09:00",
       "linksOut": []
     },
     {
@@ -10427,8 +10497,8 @@
         }
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
-      "wordCount": 4912,
-      "updatedAt": "2026-07-25T21:10:11+09:00",
+      "wordCount": 4920,
+      "updatedAt": "2026-07-26T16:53:25.274Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -10685,8 +10755,8 @@
         }
       ],
       "excerpt": "이 문서는 2026-07-17 하루 동안의 집중 재기획의 확정 산출물이다. 검증 이력: 시장·기술 조사 17건 (haiku) · 사용자 페르소나 패널 7인 · CPO 심사 (PO rubric 22/24, Chief PO Level 4) · 사상가 렌즈 패널 10인 × 3라운드 (최종 평균 7.60 — 기획 단계 캘리브레이션 기준 Obsidian/dbt의 7.3을 상회) · 도입 심사 10인 · 충분성 분석 2건. 상세 근거는 세션 기록과 메모리 참조. 결론: 기획 단계 완료. 남은 점수는 구현과 시장 증거에서 나온다. Layer 1 (로컬 코어 — 불변의 신뢰 계약)",
-      "wordCount": 2205,
-      "updatedAt": "2026-07-17T22:37:47+09:00",
+      "wordCount": 2209,
+      "updatedAt": "2026-07-27T01:53:17+09:00",
       "linksOut": []
     },
     {
@@ -10872,14 +10942,49 @@
           "slug": "ux-030-화면-밖-ai-연결-진입이-시트를-잃고-문서-루트로-포커스를-버림"
         },
         {
+          "depth": 3,
+          "text": "UX-031 — 설치 앱 관계 검증이 사용자의 저장 vault에 의존해 재현성을 잃음",
+          "slug": "ux-031-설치-앱-관계-검증이-사용자의-저장-vault에-의존해-재현성을-잃음"
+        },
+        {
+          "depth": 3,
+          "text": "UX-032 — 설치 앱의 블록 가져오기가 폴더 선택 미지원으로 비활성화됨",
+          "slug": "ux-032-설치-앱의-블록-가져오기가-폴더-선택-미지원으로-비활성화됨"
+        },
+        {
+          "depth": 3,
+          "text": "UX-033 — AI 연결 화면이 현재 32도구 MCP를 24도구라고 안내",
+          "slug": "ux-033-ai-연결-화면이-현재-32도구-mcp를-24도구라고-안내"
+        },
+        {
+          "depth": 3,
+          "text": "UX-034 — invalid MCP 설정 옆 주요 버튼이 이미 완료된 작업처럼 읽힘",
+          "slug": "ux-034-invalid-mcp-설정-옆-주요-버튼이-이미-완료된-작업처럼-읽힘"
+        },
+        {
+          "depth": 3,
+          "text": "UX-035 — 활성 문서와 프로토타입이 CLI 45·48·50명령을 동시에 주장",
+          "slug": "ux-035-활성-문서와-프로토타입이-cli-454850명령을-동시에-주장"
+        },
+        {
+          "depth": 3,
+          "text": "UX-036 — `기능 문서 열기`가 약속한 내장 문서 대신 local README를 엶",
+          "slug": "ux-036-기능-문서-열기가-약속한-내장-문서-대신-local-readme를-엶"
+        },
+        {
+          "depth": 3,
+          "text": "2026-07-27 반복 측정 기록",
+          "slug": "2026-07-27-반복-측정-기록"
+        },
+        {
           "depth": 2,
           "text": "현재 PO·디자인 판정",
           "slug": "현재-po디자인-판정"
         }
       ],
-      "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다. 4. 실패 테스트를 먼저 추가한다. 5. 가장 작은 일관된 슬라이스로 수정한다. 6. 집중 테스트와 /Appl",
-      "wordCount": 9140,
-      "updatedAt": "2026-07-25T09:47:55+09:00",
+      "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다. 4. 실패 테스트를 먼",
+      "wordCount": 10593,
+      "updatedAt": "2026-07-26T16:55:13.736Z",
       "linksOut": []
     },
     {
@@ -13376,6 +13481,11 @@
     "ontology/elements/accessible-dialog-focus-contract": [
       {
         "fromSlug": "ontology/capabilities/first-run-onboarding-guides",
+        "context": "frontmatter · **[elements/accessible-dialog-focus-contract]**",
+        "linkText": "elements/accessible-dialog-focus-contract"
+      },
+      {
+        "fromSlug": "ontology/domains/onboarding-ux",
         "context": "frontmatter · **[elements/accessible-dialog-focus-contract]**",
         "linkText": "elements/accessible-dialog-focus-contract"
       }

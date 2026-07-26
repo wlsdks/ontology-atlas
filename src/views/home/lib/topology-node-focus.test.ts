@@ -122,13 +122,13 @@ describe("buildTopologyNodeFocus", () => {
     const selected = node("capabilities/cli-developer-entry", "capability", [
       "capabilities/cli-developer-entry",
     ], {
-      title: "CLI Developer Entry (49 commands — vault + MCP verify + ...)",
+      title: "CLI Developer Entry (52 commands — vault + MCP verify + ...)",
       display: "CLI Developer Entry",
     });
     const model = buildTopologyOntologyDrawerModel(selected, [selected], []);
     const focus = buildTopologyNodeFocus(selected, model);
     expect(focus.title).toBe(
-      "CLI Developer Entry (49 commands — vault + MCP verify + ...)",
+      "CLI Developer Entry (52 commands — vault + MCP verify + ...)",
     );
     expect(focus.displayTitle).toBe("CLI Developer Entry");
   });

@@ -602,7 +602,7 @@ workbench 여야 한다.
 
 ### ⏳ Phase 4 execution — Wedge + shared surface
 
-1. ✅ CLI 명령 확장 — 48 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight + write, agent handoff, live agent activity heartbeat, growth/maintenance queue, graph CRUD, and graph deep dive
+1. ✅ CLI 명령 확장 — 52 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight + write, agent handoff, live agent activity heartbeat, growth/maintenance queue, graph CRUD, and graph deep dive
 2. ✅ AI agent dogfood 사이클 — Claude Code 가 mcp 로 codebase 분석 + add_concept 워크플로 검증 (R12 + R14 메타 검증)
 3. ⏳ 10-minute shared understanding loop proof — fresh repo 에서 `init → bootstrap → topology/ontology core 파악 → MCP 기반 답변 개선 → agent sync 제안 → git diff 리뷰 → 다음 planning/development task 개선` 이 10분 안에 보이는지 검증. 이게 안 되면 아직 제품이 아니라 좋은 엔진.
 4. ⏳ Stakeholder-readable topology proof — `/topology` 와 `/ontology` 만 봐도 "무엇이 핵심 domain/capability 인가, 무엇이 구현 evidence 인가, 어떤 변화가 어디에 영향 주는가" 를 비개발자도 설명할 수 있는지 검증.

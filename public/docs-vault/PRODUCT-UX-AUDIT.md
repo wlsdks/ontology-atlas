@@ -55,6 +55,8 @@
 | A28 | 프로젝트 → 미연결 AI 타일 → 지도 연결 시트 → 닫기 | 교차 route 열기·모달 Tab 순환·타일 포커스 복귀 설치 앱 검증 완료 |
 | A29 | 재배포 → 저장 vault 복원 → 4개 viewport → 주요 6개 surface 왕복 | 일반 화면·AX 이동 통과, 선택 관계 검증 입력 격리 실패는 UX-031로 추적 |
 | A30 | 설정 → AI 에이전트 연결 → 고급 검증·handoff 문구 읽기 | 24→32 tool inventory 수정, 완료형 설정 CTA 모순은 UX-034로 추적 |
+| A31 | CLI/MCP 현재 inventory → 활성 문서·프로토타입·fixture 교차 확인 | 52 CLI·32 MCP로 동기화, 역사/legacy 입력은 보존 |
+| A32 | AI 연결 → `기능 문서 열기` → Agent Graph Workflow 읽기 | 설명과 달리 local vault README로 이동, UX-036으로 추적 |
 
 ## 이슈 장부
 
@@ -1194,6 +1196,55 @@
   warning, `0/3`, 체크 아이콘 완료형 버튼을 한 화면에서 확인했다.
 - PO·디자인 판정: **Investigate first**
 
+### UX-035 — 활성 문서와 프로토타입이 CLI 45·48·50명령을 동시에 주장
+
+- 심각도: `S2`
+- 상태: 수정·설치 앱 부분 재검증 완료 — MCP 32 확인, CLI 52 내장 문서
+  경로는 UX-036으로 분리
+- 흐름: CLI `--help` 현재 inventory 확인 → README·아키텍처·제품 방향·기술
+  스택·다운로드/프로젝트 프로토타입·테스트 fixture 교차 검색
+- 관측 현상: 실제 CLI 배너와 dogfood ontology는 52명령인데 활성 문서는
+  45·48·50명령을 혼용했다. 다운로드 프로토타입은 MCP도 25도구
+  (read 16 + write 9)로 표시했고 ontology-sync capability는 24도구를 말했다.
+- 사용자 문제: 사용자는 설치/아키텍처 문서마다 서로 다른 제품 크기를 읽고,
+  에이전트는 현재 dogfood 노드를 흉내 낸 오래된 fixture 제목을 다시 인용한다.
+- 최소화: `node cli/src/index.mjs --help`의 `52 commands + MCP setup`과
+  검증된 MCP 32도구(read 19 + write 13)를 현재 진실원으로 삼았다. 활성
+  운영 문서·프로토타입·현행 사실 fixture만 교정하고 archive, changelog,
+  숫자 보간/legacy parsing 자체를 시험하는 입력은 보존했다.
+- 온톨로지·에이전트 가치: onboarding, architecture, product direction,
+  ontology-sync skill이 동일한 현재 inventory를 말해 코드와 의미 계층 사이의
+  숫자 드리프트를 막는다.
+- 설치 앱·Computer Use 증거: 최신 main을 반영해 production app을 재배포한
+  뒤 설정 → AI 에이전트 연결 → 고급 검증을 실제 클릭했다. AX 트리는
+  `mcp-verify`와 MCP 연결 모드에서 모두 `index_project 포함 32개 tool`을
+  표시했고, 이어서 열린 local vault README도 read 19 + write 13을 노출했다.
+  다만 `기능 문서 열기`가 약속한 내장 Agent Graph Workflow 대신 local vault
+  README를 열어 CLI 52 표기의 설치 앱 경로 검증은 UX-036으로 분리했다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-036 — `기능 문서 열기`가 약속한 내장 문서 대신 local README를 엶
+
+- 심각도: `S2`
+- 상태: 열림 — route/source 계약 조사 후 최소 navigation 수정
+- 흐름: 저장된 local vault → 설정 → AI 에이전트 연결 → 고급 검증 →
+  `기능 문서 열기`
+- 관측 현상: 버튼 도움말은 CLI/MCP/graph DB 차이와 실제 검증 명령을 설명하는
+  Agent Graph Workflow를 연다고 말하지만, 실제 설치 앱은
+  `/ko/docs/?slug=README`로 이동해 선택된 local vault의 README를 열었다.
+- 사용자 문제: 첫 연결을 검증하는 개발자와 에이전트는 현재 product runbook을
+  기대하지만 임의의 vault 안내 문서를 받는다. local README에 최신 명령 수나
+  setup gate가 없으면 검증 경로가 조용히 끊긴다.
+- 온톨로지·에이전트 가치: 앱이 가리키는 runbook과 복사되는 MCP/CLI handoff가
+  같은 현재 계약을 말해야 사용자가 local vault를 안전하게 넘길 수 있다.
+- 최소화: 새 화면을 만들지 않는다. Docs Vault의 source 선택과 deep-link
+  계약을 확인해, 버튼이 실제 내장 `AGENT-GRAPH-WORKFLOW` 문서를 열도록 한다.
+  local vault 선택과 열린 사용자 문서 탭은 손상하지 않아야 한다.
+- 설치 앱·Computer Use 증거: 최신 설치 앱에서 버튼을 실제 클릭한 뒤 AX 트리가
+  `tauri://localhost/ko/docs/?slug=README`, `내 온톨로지 문서함`,
+  local 문서 11개를 보고했다.
+- PO·디자인 판정: **Investigate first**
+
 ### 2026-07-27 반복 측정 기록
 
 - 코드 기준선: `899eb7072`에서 시작해 로컬 vault 문구와 문서·ontology
@@ -1230,6 +1281,8 @@
   선택 관계 fixture와 설치 앱 가져오기는 **Investigate first**
 - A30 에이전트 handoff tool inventory: **Build and verify**,
   invalid 설정 CTA 의미는 **Investigate first**
+- A31 CLI/MCP 활성 문서 inventory: **Build and verify**
+- A32 내장 기능 문서 navigation/source 계약: **Investigate first**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.
