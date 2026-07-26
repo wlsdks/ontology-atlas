@@ -230,6 +230,7 @@ import {
 import {
   describePastTrailDay,
   newPastWalkId,
+  refinePastWalkEntries,
   PAST_WALK_MIN_ENTRIES,
   type PastWalk,
 } from "../lib/past-trail-record";
@@ -1438,6 +1439,19 @@ export function HomePage() {
     setSessionWalkId(newPastWalkId());
     void pastTrailStore.clear().then(setPastWalks);
   }, [pastTrailStore]);
+  // 보관된 길을 살아있는 지도 기준으로 정제해 둔다 — 목록 문구(제목·개수)와
+  // 다시 펼 때 적재되는 걸음이 **같은 것**이어야 한다. 목록엔 12곳이라고 써
+  // 놓고 9곳만 펴지면 그게 조용한 거짓말이다.
+  const refinedPastWalks = useMemo(() => {
+    const lookup = (id: string) => {
+      const node = footprintNodeLookup.get(id);
+      return node ? { title: node.label, kind: node.kind } : null;
+    };
+    return pastWalks.map((walk) => ({
+      walk,
+      entries: refinePastWalkEntries(walk.entries, lookup),
+    }));
+  }, [pastWalks, footprintNodeLookup]);
   // 행 문구는 여기서 완성한다 — 칩은 순수 크롬이라 i18n·날짜 지식을 갖지 않는다.
   // 날짜는 **일 단위**만 쓴다(시·분을 보이면 목록이 행동 타임라인으로 읽힌다).
   // 지금 걷고 있는 줄은 뺀다 — 그건 1층(걸어온 길)이 이미 보여주고 있다.
@@ -1452,9 +1466,9 @@ export function HomePage() {
       month: "long",
       day: "numeric",
     });
-    return pastWalks
-      .filter((walk) => walk.id !== sessionWalkId)
-      .map((walk) => {
+    return refinedPastWalks
+      .filter(({ walk }) => walk.id !== sessionWalkId)
+      .map(({ walk, entries }) => {
         const day = describePastTrailDay(walk.endedAt, now);
         const date =
           day.kind === "today"
@@ -1464,16 +1478,26 @@ export function HomePage() {
               : day.kind === "sameYear"
                 ? dayFormat.format(day.at)
                 : yearFormat.format(day.at);
+        // 다시 펼 수 있으려면 살아남은 걸음이 길로 보일 만큼(칩 문턱과 같은 수)
+        // 있어야 한다 — 한 곳만 남은 길을 펴면 칩이 사라져 팝오버째 닫힌다.
+        const replayable = entries.length >= PAST_WALK_MIN_ENTRIES;
+        // 이름은 지금 지도의 이름으로 — 못 펴는 길만 그때 이름을 그대로 둔다
+        // (지도에 없는 것을 지금 이름으로 부를 방법이 없다).
+        const shown = replayable ? entries : walk.entries;
         return {
           id: walk.id,
           routeLabel: t("footprint.pastRouteLabel", {
-            first: walk.entries[0].title,
-            last: walk.entries[walk.entries.length - 1].title,
+            first: shown[0].title,
+            last: shown[shown.length - 1].title,
           }),
-          metaLabel: t("footprint.pastRowMeta", { date, count: walk.entries.length }),
+          metaLabel: replayable
+            ? t("footprint.pastRowMeta", { date, count: entries.length })
+            : t("footprint.pastDeadRowMeta"),
+          replayable,
+          ariaLabel: t("footprint.pastReplayAriaLabel", { date, count: entries.length }),
         };
       });
-  }, [pastWalks, sessionWalkId, activeLocale, mountNowMs, t]);
+  }, [refinedPastWalks, sessionWalkId, activeLocale, mountNowMs, t]);
   // 읽기 전용 볼트에서 조용히 실패하지 않는다 — 2층이 왜 안 남는지 답한다.
   const pastTrailNotice =
     vault.status === "loaded" && !pastTrailWritable ? t("footprint.pastReadOnlyNotice") : null;
@@ -1916,6 +1940,36 @@ export function HomePage() {
       );
     },
     [projectBySlug, setRouteState],
+  );
+
+  /**
+   * 지난 길 한 줄을 **지금 걷는 길로 다시 편다**. 순서가 곧 계약이다:
+   *
+   * ① 지금 걷던 길을 먼저 굳힌다 — 디바운스 대기 중이던 마지막 걸음까지
+   *    보관되므로 다시 펴는 대가로 잃는 것이 없다.
+   * ② 새 길 id 로 갈아탄다. 경로가 그대로면 `upsertPastWalk` 가 재보관을
+   *    건너뛰므로 원본 줄이 제 날짜 그대로 남고, 여기서 이어 걸어 경로가
+   *    달라지는 순간에만 새 줄이 생긴다.
+   * ③ 정제된 걸음을 세션 궤적으로 적재 — 지도 발자국 링은 이 궤적의 파생이라
+   *    렌더 코드를 건드리지 않고 그대로 다시 도장된다.
+   * ④ 끝 걸음을 ego 포커스 — "지금 여기"가 그 길의 끝이다.
+   */
+  const handleReplayPastWalk = useCallback(
+    (walkId: string) => {
+      const target = refinedPastWalks.find(({ walk }) => walk.id === walkId);
+      if (!target || target.entries.length < PAST_WALK_MIN_ENTRIES) return;
+      flushPastTrail();
+      setSessionWalkId(newPastWalkId());
+      const ids = target.entries.map((entry) => entry.id);
+      setFootprintTrail(ids);
+      // 끝 걸음을 직접 방문으로 표시해 둔다 — 아래 handleSelect 가 일으키는
+      // 방문 감지 effect 가 방금 적재한 궤적을 다시 흔들지 않게(같은 노드라
+      // 결과는 같지만, 그 사실에 기대는 대신 명시한다).
+      const last = ids[ids.length - 1];
+      lastVisitedNodeRef.current = last;
+      handleSelect(last);
+    },
+    [refinedPastWalks, flushPastTrail, handleSelect],
   );
 
   const handleClose = useCallback(() => {
@@ -2874,6 +2928,7 @@ export function HomePage() {
                           onHoverEntry={handleFootprintBrush}
                           pastWalks={pastWalkRows}
                           pastNotice={pastTrailNotice}
+                          onReplayPastWalk={handleReplayPastWalk}
                           onDeletePastWalk={handleDeletePastWalk}
                           onClearPastWalks={handleClearPastWalks}
                           labels={{

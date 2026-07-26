@@ -54,8 +54,16 @@ export interface TopologyPastWalkRow {
   id: string;
   /** 1줄 — "처음 → 끝". 가운데 화살표는 길의 방향을 나르는 데이터다. */
   routeLabel: string;
-  /** 2줄 — "오늘 · 12곳". */
+  /** 2줄 — "오늘 · 12곳", 또는 다시 펼 수 없는 길이면 "지금 지도에 없어요". */
   metaLabel: string;
+  /**
+   * 지금 지도에 이 길을 다시 펼 수 있는가. false 면 행이 버튼이 아니라 글이
+   * 된다 — 눌러도 아무 일이 없는 컨트롤을 두는 것보다 못 누른다고 보이는 편이
+   * 정직하다. 지우기(✕)는 그대로 남는다.
+   */
+  replayable: boolean;
+  /** 행 버튼 aria — "{날짜}에 걸은 길 다시 펴기 — {count}곳". */
+  ariaLabel: string;
 }
 
 /** `모두 지우기` 2단 확인이 첫 상태로 돌아가는 시간. */
@@ -98,6 +106,12 @@ export interface TopologyTrailChipProps {
    * 보관도 0이고 알릴 것도 없으면 1층 헤더 링크 자체가 나타나지 않는다.
    */
   pastNotice: string | null;
+  /**
+   * 지난 길 한 줄을 지금 걷는 길로 **다시 편다**. 호출부가 지금 걷던 길을 먼저
+   * 보관하고, 고른 길을 살아있는 지도 기준으로 정제해 적재한 뒤 끝 걸음을
+   * 포커스한다. 칩은 층만 1층으로 되돌린다 — 방금 편 길이 거기 있으므로.
+   */
+  onReplayPastWalk: (id: string) => void;
   /** 지난 길 한 줄 삭제. */
   onDeletePastWalk: (id: string) => void;
   /** 지난 길 전체 삭제(2단 확인을 거친 뒤 호출된다). */
@@ -122,10 +136,11 @@ export interface TopologyTrailChipProps {
  * transient-surface 계약(설정 기어와 동일): dim/backdrop 없는 self-closing 앵커
  * 팝오버, 자기 Escape 를 소유해 전역 Esc 사다리와 이중 발화하지 않는다.
  *
- * 같은 셸의 **2층**이 「지난 길」 — 자연 경계에서 보관된 지난 궤적 목록이다.
- * 새 라우트도 새 팝업도 만들지 않는다: 기능이 사는 곳에서 그 기능의 과거를
- * 본다. 2층에는 인디고가 없다 — "지금 여기"가 없는 목록이라 주의 계층 승자도
- * 없는 게 정직하다.
+ * 같은 셸의 **2층**이 「지난 길」 — 보관된 지난 궤적 목록이다. 새 라우트도 새
+ * 팝업도 만들지 않는다: 기능이 사는 곳에서 그 기능의 과거를 본다. 2층에는
+ * 인디고가 없다 — "지금 여기"가 없는 목록이라 주의 계층 승자도 없는 게 정직하다.
+ * 행을 누르면 그 길이 **다시 펴져** 1층으로 돌아온다(지금 걷던 길은 그 전에
+ * 보관되므로 아무것도 잃지 않는다).
  */
 export function TopologyTrailChip({
   label,
@@ -140,6 +155,7 @@ export function TopologyTrailChip({
   onHoverEntry,
   pastWalks,
   pastNotice,
+  onReplayPastWalk,
   onDeletePastWalk,
   onClearPastWalks,
 }: TopologyTrailChipProps) {
@@ -179,10 +195,13 @@ export function TopologyTrailChip({
     };
   }, [open, onLensChange, onHoverEntry]);
 
-  // 2층으로 넘어가면 1층 행이 통째로 사라진다 — 포인터가 행 밖으로 나가는
-  // 이벤트 없이 언마운트될 수 있으므로 브러싱을 층 전환 자리에서 명시적으로 푼다.
+  // 층이 바뀌면 반대편 행이 통째로 사라진다 — 포인터가 행 밖으로 나가는 이벤트
+  // 없이 언마운트되므로 브러싱을 층 전환 자리에서 **양방향으로** 명시적으로
+  // 푼다. 특히 1층으로 되돌아올 때(지난 길을 다시 편 직후 포함) 목록 내용이
+  // 통째로 갈리는데, 멈춰 있는 포인터 밑에 새로 그려진 행은 mouseenter 를
+  // 내지 않아 옛 브러싱이 지도에 남는다.
   useEffect(() => {
-    if (showPast) onHoverEntry?.(null);
+    onHoverEntry?.(null);
   }, [showPast, onHoverEntry]);
 
   // 2단 확인은 스스로 풀린다 — 무장 상태를 계속 들고 있으면 나중의 무심한
@@ -311,16 +330,42 @@ export function TopologyTrailChip({
                     <li
                       key={walk.id}
                       data-testid="topology-trail-past-row"
+                      data-replayable={walk.replayable ? "true" : "false"}
                       className="flex h-[47px] shrink-0 items-center gap-1"
                     >
-                      <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-1.5">
-                        <span className="truncate text-body text-[color:var(--color-text-secondary)]">
-                          {walk.routeLabel}
+                      {/* 다시 펼 수 있는 길만 버튼이다. 지도에서 사라진 길은 같은
+                          해부구조를 유지한 채 글로 남아 왜 못 누르는지 2줄이
+                          답한다 — 눌러도 아무 일 없는 컨트롤은 만들지 않는다. */}
+                      {walk.replayable ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onReplayPastWalk(walk.id);
+                            // 방금 편 길은 1층에 있다 — 그 자리로 되돌린다.
+                            setShowPast(false);
+                            setClearAllArmed(false);
+                          }}
+                          aria-label={walk.ariaLabel}
+                          data-testid="topology-trail-past-replay"
+                          className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 self-stretch rounded-chip px-1.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                        >
+                          <span className="w-full truncate text-body text-[color:var(--color-text-secondary)]">
+                            {walk.routeLabel}
+                          </span>
+                          <span className="w-full truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                            {walk.metaLabel}
+                          </span>
+                        </button>
+                      ) : (
+                        <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-1.5">
+                          <span className="truncate text-body text-[color:var(--color-text-quaternary)]">
+                            {walk.routeLabel}
+                          </span>
+                          <span className="truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                            {walk.metaLabel}
+                          </span>
                         </span>
-                        <span className="truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                          {walk.metaLabel}
-                        </span>
-                      </span>
+                      )}
                       <button
                         type="button"
                         onClick={() => onDeletePastWalk(walk.id)}

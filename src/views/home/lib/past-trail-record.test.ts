@@ -4,6 +4,7 @@ import {
   upsertPastWalk,
   deserializePastTrails,
   describePastTrailDay,
+  refinePastWalkEntries,
   PAST_WALKS_MAX,
   serializePastTrails,
   type PastWalk,
@@ -40,6 +41,29 @@ describe("past-trail-record — 매체와 무관한 형식 규칙", () => {
     const again = upsertPastWalk(one, "w2", entries("domain:a", "capability:b"), { now: 9_000 });
     expect(again).toHaveLength(1);
     expect(again[0].endedAt).toBe(1_000);
+  });
+
+  it("맨 앞이 아닌 줄과 경로가 같아도 줄을 늘리지 않는다 — 지난 길을 다시 편 경우", () => {
+    // 어제 걸은 길(w1) 위에 오늘 다른 길(w2)이 쌓인 상태에서 w1 을 다시 편다.
+    const yesterday = upsertPastWalk([], "w1", entries("domain:a", "capability:b"), { now: 1_000 });
+    const today = upsertPastWalk(yesterday, "w2", entries("element:c", "element:d"), { now: 2_000 });
+    const replayed = upsertPastWalk(today, "w3", entries("domain:a", "capability:b"), {
+      now: 9_000,
+    });
+    expect(replayed.map((w) => w.id)).toEqual(["w2", "w1"]);
+    expect(replayed.find((w) => w.id === "w1")?.endedAt).toBe(1_000);
+  });
+
+  it("다시 편 길에서 한 걸음 더 걸으면 그때 새 줄이 된다", () => {
+    const yesterday = upsertPastWalk([], "w1", entries("domain:a", "capability:b"), { now: 1_000 });
+    const walkedOn = upsertPastWalk(
+      yesterday,
+      "w3",
+      entries("domain:a", "capability:b", "element:c"),
+      { now: 9_000 },
+    );
+    expect(walkedOn.map((w) => w.id)).toEqual(["w3", "w1"]);
+    expect(walkedOn[1].endedAt).toBe(1_000);
   });
 
   it("한 걸음이라도 다르면 새 줄이다", () => {
@@ -130,6 +154,38 @@ describe("past-trail-record — 매체와 무관한 형식 규칙", () => {
     expect(deserializePastTrails(raw)[0].entries).toEqual([
       { id: "domain:a", title: "A", kind: "domain" },
       { id: "capability:b", title: "B", kind: "capability" },
+    ]);
+  });
+});
+
+describe("refinePastWalkEntries — 다시 펴기 전 살아있는 지도에 맞추기", () => {
+  const live = new Map([
+    ["domain:a", { title: "지금 이름 A", kind: "domain" }],
+    ["capability:b", { title: "B", kind: "capability" }],
+  ]);
+  const lookup = (id: string) => live.get(id) ?? null;
+
+  it("사라진 노드는 빠지고 남은 노드의 이름은 지금 이름이 된다", () => {
+    const stored = [
+      { id: "domain:a", title: "그때 이름 A", kind: "domain" },
+      { id: "element:gone", title: "지워진 곳", kind: "element" },
+      { id: "capability:b", title: "B", kind: "capability" },
+    ];
+    expect(refinePastWalkEntries(stored, lookup)).toEqual([
+      { id: "domain:a", title: "지금 이름 A", kind: "domain" },
+      { id: "capability:b", title: "B", kind: "capability" },
+    ]);
+  });
+
+  it("전부 사라지면 빈 목록 — 호출부가 '지금 지도에 없어요'로 읽는다", () => {
+    expect(refinePastWalkEntries(entries("element:gone", "element:gone2"), lookup)).toEqual([]);
+  });
+
+  it("방문 순서를 뒤집지 않는다 — 인계 패킷이 같은 순서로 재생돼야 한다", () => {
+    const stored = entries("capability:b", "domain:a");
+    expect(refinePastWalkEntries(stored, lookup).map((e) => e.id)).toEqual([
+      "capability:b",
+      "domain:a",
     ]);
   });
 });
