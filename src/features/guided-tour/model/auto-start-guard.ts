@@ -11,34 +11,20 @@
  * `data-interactive-overlay` 마커는 GestureHint(비차단 힌트 칩)도 쓰므로
  * 여기 기준으로 쓰지 않는다 — 차단 대상은 모달 등급 표면뿐이다.
  */
-export function canAutoStartGuidedTour(
-  doc: Document = document,
-  /**
-   * 이 안내가 **가리키는** 요소들의 testid. 그 요소이거나 그것을 품고 있는
-   * 모달은 차단 사유에서 뺀다 (2026-07-26 실측 — 공방은 도착하자마자
-   * `studio-entry-choice`(role=dialog aria-modal) 가 서 있는 화면이라, 이
-   * 예외가 없으면 공방만 영원히 안내를 못 받는다). 금지하려던 것은 *사용자가
-   * 열어 둔 다른 표면* 위에 겹쳐 쏘는 것이지, 안내가 설명하려는 바로 그
-   * 표면을 감광하는 것이 아니다.
-   */
-  ownAnchorTestIds: readonly string[] = [],
-): boolean {
+export function canAutoStartGuidedTour(doc: Document = document): boolean {
   // 사용자가 타이머보다 먼저 수동으로 투어를 열었으면 재시작(=welcome 리셋)
   // 하지 않는다 — e2e 실측 회귀(수동 진행 중 자동 발화가 1단계로 되돌림).
   if (doc.querySelector('[data-testid="guided-tour-overlay"]') !== null) {
     return false;
   }
-  const blockingModal = Array.from(
-    doc.querySelectorAll('[role="dialog"][aria-modal="true"]'),
-  ).some(
-    (modal) =>
-      !ownAnchorTestIds.some(
-        (id) =>
-          modal.matches(`[data-testid="${id}"]`) ||
-          modal.querySelector(`[data-testid="${id}"]`) !== null,
-      ),
-  );
-  if (blockingModal) return false;
+  // 안내가 **가리키려는** 모달이라 해도 예외는 없다. 공방(`studio-entry-choice`)
+  // 에 그런 예외를 뒀더니 실측 1512px 에서 안내 카드가 소개하려던 진입 선택 두
+  // 카드를 그대로 덮었고, `aria-modal` 두 개가 동시에 서서 스크린리더에는 카드
+  // 자체가 존재하지 않게 됐다. 안내는 결정 화면을 가리는 게 아니라 결정이 끝난
+  // 뒤 작업 표면에서 뜬다.
+  if (doc.querySelector('[role="dialog"][aria-modal="true"]') !== null) {
+    return false;
+  }
   // #96 — blocking edit composer (개념 추가 · 부트스트랩 등)는 `role=dialog`
   // 대신 `data-surface-role="blocking-edit-surface"` (dimmed map 위 solid
   // panel) 로 modality 를 선언한다. 이 마커도 모달 등급이므로 그 위에 투어

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
  * 로컬 ontology workspace 진입 정책 회귀 차단.
@@ -20,6 +21,12 @@ const PRESET_LOCAL_SOURCE = `
 `;
 
 test.describe("local ontology workspace capability gate (N1)", () => {
+  // 이 스펙은 **돌아온 사용자**의 문서함 크롬을 검증한다 — 첫 방문 안내
+  // 오버레이가 떠 있으면 스크림이 클릭을 삼킨다(안내 자체는 전용 스펙이 본다).
+  test.beforeEach(async ({ page }) => {
+    await seedFirstRunSeen(page);
+  });
+
   test("browser local intent opens the local workspace picker", async ({ page }) => {
     await page.addInitScript(PRESET_LOCAL_SOURCE);
 

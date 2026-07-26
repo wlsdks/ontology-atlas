@@ -35,23 +35,14 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
     expect(canAutoStartGuidedTour(document)).toBe(false);
   });
 
-  it("안내가 가리키는 모달(공방 시작 선택)은 차단 사유가 아니다", () => {
+  it("안내가 가리키려는 모달(공방 진입 선택)도 예외 없이 막는다", () => {
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
-    // 공방은 도착하자마자 이 모달이 서 있는 화면이다. 금지하려던 것은 *사용자가
-    // 열어 둔 다른 표면* 위에 겹쳐 쏘는 것이지, 안내가 설명하려는 그 표면을
-    // 감광하는 것이 아니다 — 예외가 없으면 공방만 영영 안내를 못 받는다.
+    // 공방은 도착하자마자 이 결정 화면이 서는데, 그 위에 안내를 쏘면 카드가
+    // 소개하려던 진입 선택 카드를 덮고 `aria-modal` 이 둘이 된다(스크린리더
+    // 에서 카드 소실). 안내는 결정이 끝난 뒤 작업 표면에서 뜬다.
     document.body.innerHTML =
       '<section role="dialog" aria-modal="true" data-testid="studio-entry-choice"></section>';
     expect(canAutoStartGuidedTour(document)).toBe(false);
-    expect(canAutoStartGuidedTour(document, ["studio-entry-choice"])).toBe(true);
-  });
-
-  it("가리키는 요소를 품은 모달도 마찬가지 — 다른 모달은 여전히 막는다", () => {
-    vi.spyOn(document, "hasFocus").mockReturnValue(true);
-    document.body.innerHTML =
-      '<section role="dialog" aria-modal="true"><div data-testid="do-next-touchups"></div></section>' +
-      '<section role="dialog" aria-modal="true" data-testid="vault-guide-sheet"></section>';
-    expect(canAutoStartGuidedTour(document, ["do-next-touchups"])).toBe(false);
   });
 
   it("allows auto start on an idle focused page — non-modal hint chips do not block", () => {

@@ -79,6 +79,29 @@ describe("DestinationGuide", () => {
     expect(screen.getByTestId("guided-tour-card")).toBeInTheDocument();
   });
 
+  // 2026-07-26 회귀 — 공방은 도착하자마자 진입 선택(`role=dialog aria-modal`)이
+  // 서는 화면이다. 그 위에 안내를 쏘면 카드가 소개하려던 선택지를 덮고
+  // `aria-modal` 이 둘이 된다(스크린리더에서 카드 소실). 결정이 끝날 때까지
+  // 기다렸다가 작업 표면에서 뜨는 것이 계약이다.
+  it("결정 모달이 서 있는 동안은 겹쳐 쏘지 않고, 물러난 뒤에 뜬다", async () => {
+    const modal = document.createElement("section");
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    document.body.appendChild(modal);
+
+    renderGuide();
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(screen.queryByTestId("guided-tour-card")).toBeNull();
+
+    modal.remove();
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(screen.getByTestId("guided-tour-card")).toBeInTheDocument();
+  });
+
   it("지도(목적지 없음)에서는 아무것도 렌더하지 않는다 — 지도는 자기 여정을 따로 갖는다", async () => {
     renderGuide(null);
     await act(async () => {

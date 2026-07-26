@@ -21,6 +21,10 @@ export interface DestinationGuideProps {
 
 const NO_STEPS = Object.freeze([]) as readonly never[];
 
+/** 차단 표면이 물러나기를 기다리는 재시도 간격 · 상한 (≈30초). */
+const RETRY_MS = 1500;
+const MAX_AUTO_START_ATTEMPTS = 20;
+
 /**
  * 문서함·공방·인사이트·프로젝트·기록의 첫 방문 안내.
  *
@@ -38,15 +42,6 @@ export function DestinationGuide({ destination }: DestinationGuideProps) {
     [destination],
   );
   const storageKey = destinationTourStatusKey(destination ?? "none");
-  // 이 안내가 가리키는 요소들 — 자동 시작 가드가 "안내가 설명하려는 바로 그
-  // 모달"(공방의 시작 선택 카드)을 차단 사유로 세지 않게 넘긴다.
-  const anchorTestIds = useMemo(
-    () =>
-      steps
-        .map((step) => (step.anchor?.type === "testid" ? step.anchor.value : null))
-        .filter((value): value is string => value !== null),
-    [steps],
-  );
 
   // 목적지 안내는 DOM(testid) 앵커만 쓴다 — 캔버스 노드 앵커는 지도 전용.
   const canResolveAnchor = useCallback((anchor: TourAnchor) => {
@@ -73,6 +68,10 @@ export function DestinationGuide({ destination }: DestinationGuideProps) {
   // 첫 방문 자동 시작. 지도(HomePage)와 같은 리듬 — 레이아웃이 앉은 뒤에 열고,
   // 그 순간 모달/차단 표면이 떠 있거나 문서 포커스가 나가 있으면(백그라운드 탭
   // 로드) 겹쳐 쏘지 않고 잠시 뒤 다시 본다.
+  //
+  // 재시도 상한이 지도보다 긴 이유: 공방은 도착하자마자 **사용자의 결정**(진입
+  // 선택)이 먼저 서는 화면이다. 차단 표면이 물러나기를 기다리는 시간이 로딩
+  // 지연이 아니라 사람의 판단 시간이라, 8초 상한이면 공방만 안내를 못 받는다.
   useEffect(() => {
     if (!destination) return undefined;
     if (readGuidedTourStatus(storageKey) !== null) return undefined;
@@ -81,17 +80,17 @@ export function DestinationGuide({ destination }: DestinationGuideProps) {
     let fired = false;
     const tick = () => {
       if (fired) return;
-      if (canAutoStartGuidedTour(document, anchorTestIds)) {
+      if (canAutoStartGuidedTour(document)) {
         fired = true;
         startRef.current();
         return;
       }
       attempts += 1;
-      if (attempts < 6) timerId = window.setTimeout(tick, 1500);
+      if (attempts < MAX_AUTO_START_ATTEMPTS) timerId = window.setTimeout(tick, RETRY_MS);
     };
     timerId = window.setTimeout(tick, 700);
     return () => window.clearTimeout(timerId);
-  }, [destination, storageKey, anchorTestIds]);
+  }, [destination, storageKey]);
 
   // Esc 로 닫기 — 화면을 덮는 표면은 Esc 로 물러나야 한다. 지도는 자체 Esc
   // 래더가 투어를 포함하므로 여기서만 건다(이중 반응 방지). 닫힘은 '건너뛰기'

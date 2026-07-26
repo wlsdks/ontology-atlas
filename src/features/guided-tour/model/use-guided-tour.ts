@@ -76,6 +76,17 @@ export interface UseGuidedTourResult {
    * 점프해 welcome 으로 조용히 리셋되는 루프가 있었다).
    */
   devBranchAvailable: boolean;
+  /**
+   * 지금 [다음]을 누르면 투어가 끝나는가 — 카드가 [다음]/[완료] 라벨을 고르는
+   * 단 하나의 기준. **`visibleSteps` 의 끝인지로 판단하면 안 된다**:
+   * `visibleSteps` 는 "지금 이 순간 앵커가 해석되는 단계" 라는 요동치는
+   * 투영이라, 데이터시트 단계에서는 열린 상세 패널이 뒤의 INDEX/스포트라이트
+   * 앵커를 가려 목록이 거기서 끊긴다. 그런데 `advance()` 는 그 단계에서
+   * 끝내지 않고 패널을 닫은 뒤 DOM 을 다시 읽어 다음 장으로 간다. 길이로
+   * 판단하면 5/7 에서 [완료] 가 그려지고 눌리는 순간 투어가 조기 종료됐다
+   * (2026-07-26 e2e 실측). 그래서 판정을 `advance()` 와 같은 조건으로 맞춘다.
+   */
+  isFinalStep: boolean;
 }
 
 /**
@@ -185,6 +196,14 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     setResolveTick((t) => t + 1);
     setOpen(true);
   }, [steps]);
+
+  // `advance()` 의 종료 조건과 같은 식 — 인터페이스 주석의 이유로 두 값이
+  // 갈라지면 라벨이 거짓말을 한다.
+  const leavesDatasheetOnAdvance = Boolean(
+    step?.id === "datasheet" && onLeaveDatasheet && hasSelection,
+  );
+  const isFinalStep =
+    stepIndex >= 0 && !leavesDatasheetOnAdvance && visibleSteps[stepIndex + 1] === undefined;
 
   const advance = useCallback(() => {
     if (stepIndex < 0) return;
@@ -342,5 +361,6 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     finishAsDone,
     chooseDevBranch,
     devBranchAvailable,
+    isFinalStep,
   };
 }
