@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T07:32:38.352Z",
+  "generatedAt": "2026-07-26T08:06:27.365Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4944,8 +4944,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 설치 앱 스크린샷을 본 소유자 지적 세 건. 그중 하나는 취향이 아니라 결함 이었다 — 「키 등록」을 눌러 열린 입력 카드에 「저장」밖에 없어서, 키를 넣",
-      "wordCount": 45372,
-      "updatedAt": "2026-07-26T07:32:38.352Z",
+      "wordCount": 45511,
+      "updatedAt": "2026-07-26T08:06:27.365Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5485,6 +5485,11 @@
           "slug": "모션-문법-usability-motion-family-phase-3-2026-07-25"
         },
         {
+          "depth": 4,
+          "text": "목록 행 펼침 — 나가는 길은 들어온 길이다 (2026-07-26)",
+          "slug": "목록-행-펼침-나가는-길은-들어온-길이다-2026-07-26"
+        },
+        {
           "depth": 3,
           "text": "Tokenization Contract For Relief/Topology",
           "slug": "tokenization-contract-for-relieftopology"
@@ -5716,8 +5721,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 15871,
-      "updatedAt": "2026-07-26T07:32:07.396Z",
+      "wordCount": 16239,
+      "updatedAt": "2026-07-26T08:06:08.227Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",

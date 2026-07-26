@@ -632,6 +632,50 @@
     animation: settingsPanelIn var(--motion-base) var(--motion-ease) both;
   }
 
+  /* ── 목록 행 펼침/접힘 (2026-07-26, [AI 연결] 벤더 행) ────────────────────
+     **나가는 길이 들어온 길과 같아야 한다.** 접힘 모션 없이 툭 사라지면
+     「취소」가 "취소됐다" 가 아니라 "뭔가 잘못됐다" 로 읽힌다 — 사라진 것이
+     내가 시킨 일인지 사고인지 구분할 단서가 화면에 없기 때문이다. 그래서
+     열림·닫힘·내용 교체(초안 → 등록됨)가 전부 **같은 하나의 height 전이**를
+     지난다: 클래스가 하나뿐이라 방향별로 다른 커브가 생길 자리가 없다.
+
+     높이를 px 로 전이하는 이유: `height: auto` 는 보간되지 않고,
+     `grid-template-rows: 0fr↔1fr` 는 열림/닫힘만 되고 **내용 교체**(입력 폼 →
+     등록됨 액션, 캡션 3줄 → 1줄)를 못 탄다. 소비처가 ResizeObserver 로 실제
+     콘텐츠 높이를 계속 써 넣으면 세 경우가 한 메커니즘으로 수렴한다.
+
+     형제 행이 자리를 내주는 방식도 여기서 나온다 — 펼치는 행의 높이가
+     연속으로 자라면 아래 행들이 밀려나는 것도 연속이라, 셋이 한 목록의
+     형제라는 사실이 움직임으로 읽힌다(툭 바뀌면 그냥 다른 화면이다). */
+  .ai-row-disclosure {
+    overflow: hidden;
+    transition: height var(--motion-base) var(--motion-ease);
+  }
+
+  /* 내용은 높이보다 한 스텝 빠르게 — 열릴 때는 자리가 먼저 나고 글이 들어오고,
+     닫힐 때는 글이 먼저 비켜 빈 상자가 닫히는 것처럼 보이지 않는다. 2px 는
+     "위 행에서 나왔다" 를 말할 만큼만이고 시선을 끌 만큼은 아니다. */
+  .ai-row-disclosure-body {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+      opacity var(--motion-fast) var(--motion-ease),
+      transform var(--motion-fast) var(--motion-ease);
+  }
+
+  .ai-row-disclosure[data-state='closed'] .ai-row-disclosure-body {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+
+  /* 같은 행이 다른 상태가 됐다(초안 입력 → 등록됨 액션). 높이는 위 전이가
+     이어 주고, 내용은 여기서 크로스페이드한다 — 둘이 같은 순간에 끝나면
+     "폼이 사라지고 결과가 나타났다" 가 아니라 "이 행이 등록된 행이 됐다" 로
+     읽힌다. 저장이 몸으로 느껴지는 자리가 여기다. */
+  .ai-row-swap {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
   /* S7 "영역 대장" 좌측 패널 크로스페이드 — 전역 INDEX ↔ 영역 대장 전환 시
      들어오는 표면의 짧은 페이드-인(<200ms). 두 표면이 같은 박스를 차지하므로
      페이드-인이 크로스페이드로 읽힌다. prefers-reduced-motion 은 아래 base
@@ -2628,6 +2672,33 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
+    }
+  }
+
+  /*
+   * 목록 행 펼침 — reduced-motion 의 **동등물**이지 스위치가 아니다.
+   *
+   * 위 전역 규칙은 모든 전이를 0.01ms 로 잘라 "끈다". 그런데 이 상호작용에서
+   * 모션은 장식이 아니라 **인과의 증거**다: 내가 누른 「취소」 때문에 카드가
+   * 사라진 것인지 앱이 고장난 것인지, 정적 화면은 구분해 주지 않는다. 그래서
+   * 흔들리는 축(height·translate)만 없애고, 흔들리지 않는 축(opacity)은
+   * 남긴다 — vestibular 유발 요소는 크기/위치 변화이지 밝기 변화가 아니다
+   * (WCAG 2.3.3 도 금지 대상을 "motion animation" 으로 한정한다).
+   *
+   * 전역 규칙이 `!important` 라 여기서도 `!important` 로, 그리고 소스 순서상
+   * **뒤에** 와야 이긴다. 순서를 바꾸면 조용히 무력화된다.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .ai-row-disclosure {
+      transition-duration: 0ms !important;
+    }
+
+    .ai-row-disclosure-body {
+      transition-duration: var(--motion-fast) !important;
+    }
+
+    .ai-row-disclosure[data-state='closed'] .ai-row-disclosure-body {
+      transform: none;
     }
   }
 

@@ -110,7 +110,7 @@ describe('VaultAgentSetupPanel', () => {
     const localVault = renderPanel();
 
     expect(
-      screen.getByRole('region', { name: 'AI agent 설정 상태' }),
+      screen.getByRole('region', { name: 'AI 에이전트 설정 상태' }),
     ).toBeInTheDocument();
     expect(screen.getByText('누락')).toBeInTheDocument();
     expect(screen.getByText('설정 파일 1/3개 준비됨')).toBeInTheDocument();
@@ -126,13 +126,13 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('설정 흐름 보기')).toBeInTheDocument();
     expect(
-      screen.getByRole('list', { name: 'AI agent 설정 다음 단계' }),
+      screen.getByRole('list', { name: 'AI 에이전트 설정 다음 단계' }),
     ).not.toBeVisible();
 
     fireEvent.click(screen.getByText('설정 흐름 보기'));
 
     expect(
-      screen.getByRole('list', { name: 'AI agent 설정 다음 단계' }),
+      screen.getByRole('list', { name: 'AI 에이전트 설정 다음 단계' }),
     ).toBeVisible();
     expect(
       screen.getByText('이 vault 안의 MCP / Codex 설정 파일을 만들거나 점검합니다.'),
@@ -153,7 +153,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByText('첫 ontology write 전에 workspace-brief와 agent-brief를 읽습니다.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText('AI agent setup gate 증거'),
+      screen.getByLabelText('AI 에이전트 설정 점검 증거'),
     ).toBeInTheDocument();
     expect(screen.getByText('vault')).toBeInTheDocument();
     expect(screen.getByText('이 로컬 vault에서 문서 1개 로드됨')).toBeInTheDocument();
@@ -186,7 +186,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByText('workspace-brief 와 agent-brief --graph-db-pack 이 같은 local vault 를 설명합니다.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText('AI agent 사용 모드 선택 기준'),
+      screen.getByLabelText('AI 에이전트 사용 모드 선택 기준'),
     ).toBeInTheDocument();
     expect(screen.getByText('CLI만 사용')).toBeInTheDocument();
     expect(screen.getByText('MCP 연결')).toBeInTheDocument();
@@ -219,7 +219,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByRole('button', { name: '설정 상태 확인 명령 복사' }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('AI agent root 실행 계약')).toBeInTheDocument();
+    expect(screen.getByLabelText('AI 에이전트 root 실행 계약')).toBeInTheDocument();
     expect(screen.getByText('vault folder')).toBeInTheDocument();
     expect(
       screen.getByText('이 vault 폴더 자체를 agent root로 열면 verify와 graph brief 명령은 `.`을 vault로 사용합니다.'),
@@ -280,7 +280,7 @@ describe('VaultAgentSetupPanel', () => {
     });
 
     const connections = screen.getByRole('list', {
-      name: 'AI agent별 연결 상태',
+      name: 'AI 에이전트별 연결 상태',
     });
 
     expect(within(connections).getByText('Claude Code / Cursor')).toBeInTheDocument();
@@ -1031,7 +1031,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    const agentSetup = screen.getByRole('region', { name: 'AI agent 설정 상태' });
+    const agentSetup = screen.getByRole('region', { name: 'AI 에이전트 설정 상태' });
     fireEvent.click(
       within(agentSetup).getByRole('button', { name: '자동화 JSON gate 복사' }),
     );
@@ -1061,7 +1061,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    const agentSetup = screen.getByRole('region', { name: 'AI agent 설정 상태' });
+    const agentSetup = screen.getByRole('region', { name: 'AI 에이전트 설정 상태' });
     fireEvent.click(
       within(agentSetup).getByRole('button', { name: 'sync gate 복사' }),
     );
