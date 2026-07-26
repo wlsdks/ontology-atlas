@@ -50,6 +50,13 @@ pub struct AuditDraft {
     pub v: u8,
     pub at: String,
     pub provider: String,
+    /// 요청이 실제로 향한 호스트 — "볼트의 무엇이 **어디로** 갔나" 의 뒷말.
+    ///
+    /// **추가형 확장이라 `v` 는 1 그대로다.** 이 필드가 없는 옛 줄도 그대로
+    /// 읽혀야 하고(리더가 `null` 로 강등), 이미 쓰인 줄은 손대지 않는다 —
+    /// 신뢰 헌장 ⑤(소급 변경 금지)를 스키마에서 지키는 방법이다. `v` 를 올리면
+    /// 사용자 디스크에 남아 있는 기존 기록이 하루아침에 "못 읽는 줄" 이 된다.
+    pub host: String,
     pub model: Option<String>,
     /// `"verify" | "ask"` — 확장은 값 추가로(스키마 `v` 는 올리지 않는다).
     pub purpose: String,
@@ -191,6 +198,7 @@ mod tests {
             v: 1,
             at: "2026-07-26T09:12:33.120Z".into(),
             provider: "anthropic".into(),
+            host: "api.anthropic.com".into(),
             model: None,
             purpose: "verify".into(),
             question: None,
@@ -280,6 +288,9 @@ mod tests {
     fn writer_matches_the_shared_reader_fixture() {
         // writer(Rust) ↔ reader(웹 `llm-audit-log.ts`) drift 차단. 같은 픽스처를
         // 양쪽이 본다 — 이 assert 가 깨지면 TS 계약 테스트도 같이 갱신해야 한다.
+        //
+        // 앞 두 줄만 writer 가 만드는 모습이다. 뒤의 줄들은 리더가 감당해야 할
+        // 실제 파일의 모습(옛 줄·다른 벤더)이라 여기서 쓰지 않는다.
         let fixture = include_str!("../../tests/fixtures/llm-audit-log.sample.jsonl");
         let lines: Vec<&str> = fixture.lines().filter(|l| !l.trim().is_empty()).collect();
         let expected_final: Value = serde_json::from_str(lines[0]).unwrap();
@@ -307,5 +318,21 @@ mod tests {
         assert_eq!(final_line, expected_final);
         assert_eq!(pending, expected_pending);
         fs::remove_dir_all(&vault).ok();
+    }
+
+    #[test]
+    fn the_fixture_keeps_a_line_from_before_host_existed() {
+        // 헌장 ⑤ — `host` 는 추가형이라 이미 사용자 디스크에 앉아 있는 줄을
+        // 고치지 않는다. 그 줄이 계속 읽힌다는 증거를 픽스처가 들고 있어야
+        // 리더가 부재를 처리하는 코드를 지우지 못한다.
+        let fixture = include_str!("../../tests/fixtures/llm-audit-log.sample.jsonl");
+        let legacy = fixture
+            .lines()
+            .filter(|line| !line.trim().is_empty())
+            .map(|line| serde_json::from_str::<Value>(line).unwrap())
+            .find(|line| line.get("host").is_none());
+        let legacy = legacy.expect("host 없는 옛 줄이 픽스처에 있어야 한다");
+        assert_eq!(legacy["v"], 1, "옛 줄도 같은 스키마 버전이다");
+        assert_eq!(legacy["outcome"], "ok");
     }
 }

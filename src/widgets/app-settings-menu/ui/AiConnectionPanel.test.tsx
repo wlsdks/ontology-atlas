@@ -54,7 +54,7 @@ vi.mock('@/i18n/navigation', () => ({
 function makeConnection(overrides: Partial<AiConnectionState> = {}): AiConnectionState {
   return {
     bridgeAvailable: true,
-    statuses: { anthropic: null, openai: null },
+    statuses: { anthropic: null, openai: null, gemini: null },
     applyStatus: vi.fn(),
     auditEntries: [],
     refreshAudit: vi.fn(),
@@ -91,6 +91,9 @@ describe('AiConnectionPanel web degradation', () => {
     expect(screen.getByTestId('ai-connection-web-degraded')).toBeInTheDocument();
     expect(screen.queryByTestId('ai-key-input-anthropic')).toBeNull();
     expect(screen.queryByTestId('ai-key-input-openai')).toBeNull();
+    expect(screen.queryByTestId('ai-key-input-gemini')).toBeNull();
+    // 접힌 행조차 없다 — 브라우저에는 키를 받을 자리 자체가 없다.
+    expect(screen.queryByTestId('ai-register-anthropic')).toBeNull();
     expect(screen.queryByTestId('ai-verify-anthropic')).toBeNull();
   });
 
@@ -100,6 +103,64 @@ describe('AiConnectionPanel web degradation', () => {
       'href',
       '/download/',
     );
+  });
+});
+
+/**
+ * 미등록 행 접기 — 벤더가 셋이 되면 상시 노출된 password 입력 셋이 설정 시트를
+ * 폼 관문처럼 만든다. 접힌 행은 "미등록" 이라는 상태를 그대로 말하면서 시각
+ * 무게만 줄인다.
+ */
+describe('AiConnectionPanel unregistered rows', () => {
+  it('lists every named vendor without opening three key fields at once', () => {
+    renderPanel(makeConnection());
+    for (const provider of ['anthropic', 'openai', 'gemini']) {
+      expect(screen.getByTestId(`ai-register-${provider}`)).toBeInTheDocument();
+      expect(screen.queryByTestId(`ai-key-input-${provider}`)).toBeNull();
+    }
+  });
+
+  it('opens exactly one key field at a time', () => {
+    renderPanel(makeConnection());
+    fireEvent.click(screen.getByTestId('ai-register-anthropic'));
+    expect(screen.getByTestId('ai-key-input-anthropic')).toBeInTheDocument();
+    expect(screen.queryByTestId('ai-key-input-gemini')).toBeNull();
+
+    // 다른 행을 열면 앞 행은 접힌다 — 붙여넣기 직전의 안전 문구가 어느 키에
+    // 대한 말인지 화면에 하나뿐이어야 한다.
+    fireEvent.click(screen.getByTestId('ai-register-gemini'));
+    expect(screen.getByTestId('ai-key-input-gemini')).toBeInTheDocument();
+    expect(screen.queryByTestId('ai-key-input-anthropic')).toBeNull();
+  });
+
+  it('collapses the row again once the key lands — no lingering open field', async () => {
+    // 저장·삭제 직후에도 입력칸이 열려 있으면 화면이 "하나 더 넣으라" 고
+    // 재촉하는 것처럼 읽힌다.
+    mocks.secretSet.mockResolvedValue({
+      provider: 'gemini',
+      stored: true,
+      last4: '9f2k',
+    });
+    renderPanel(makeConnection());
+    fireEvent.click(screen.getByTestId('ai-register-gemini'));
+    fireEvent.change(screen.getByTestId('ai-key-input-gemini'), {
+      target: { value: 'AIza-test' },
+    });
+    fireEvent.click(screen.getByTestId('ai-save-gemini'));
+
+    // 부모가 statuses 를 들고 있으므로 이 렌더에서는 다시 접힌 행으로 돌아온다.
+    await waitFor(() =>
+      expect(screen.getByTestId('ai-register-gemini')).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('ai-key-input-gemini')).toBeNull();
+  });
+
+  it('names the vendor the pasted key would go to', () => {
+    renderPanel(makeConnection());
+    fireEvent.click(screen.getByTestId('ai-register-gemini'));
+    expect(
+      screen.getByText('settings.ai.pasteSafety:settings.ai.providerGemini'),
+    ).toBeInTheDocument();
   });
 });
 
@@ -113,14 +174,22 @@ describe('AiConnectionPanel key lifecycle', () => {
     });
     renderPanel(makeConnection({ applyStatus }));
 
-    const input = screen.getByTestId('ai-key-input-anthropic') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: 'sk-ant-secret-value' } });
+    fireEvent.click(screen.getByTestId('ai-register-anthropic'));
+    fireEvent.change(screen.getByTestId('ai-key-input-anthropic'), {
+      target: { value: 'sk-ant-secret-value' },
+    });
     fireEvent.click(screen.getByTestId('ai-save-anthropic'));
 
     await waitFor(() => expect(applyStatus).toHaveBeenCalled());
     // 전체 키가 화면 상태에 남아 있는 유일한 순간이 저장으로 끝난다.
-    expect(input.value).toBe('');
     expect(document.body.innerHTML).not.toContain('sk-ant-secret-value');
+
+    // 행을 다시 펼쳐도 비어 있다 — 입력칸이 접혀 사라진 것과 상태가 비워진
+    // 것은 다른 사실이고, 여기서 확인해야 하는 것은 뒤쪽이다.
+    fireEvent.click(screen.getByTestId('ai-register-anthropic'));
+    expect(
+      (screen.getByTestId('ai-key-input-anthropic') as HTMLInputElement).value,
+    ).toBe('');
   });
 
   it('shows only the last 4 characters once a key is stored', () => {
@@ -129,6 +198,7 @@ describe('AiConnectionPanel key lifecycle', () => {
         statuses: {
           anthropic: { provider: 'anthropic', stored: true, last4: 'abcd' },
           openai: null,
+          gemini: null,
         },
       }),
     );
@@ -147,6 +217,7 @@ describe('AiConnectionPanel key lifecycle', () => {
         statuses: {
           anthropic: { provider: 'anthropic', stored: true, last4: 'abcd' },
           openai: null,
+          gemini: null,
         },
       }),
     );
@@ -171,6 +242,7 @@ describe('AiConnectionPanel connection check', () => {
         statuses: {
           anthropic: { provider: 'anthropic', stored: true, last4: 'abcd' },
           openai: null,
+          gemini: null,
         },
       }),
       null,
@@ -179,16 +251,21 @@ describe('AiConnectionPanel connection check', () => {
     expect(screen.getByText('settings.ai.verifyNeedsVault')).toBeInTheDocument();
   });
 
-  it('states the sending scope before the user ever presses check', () => {
+  it('names the destination host before the user ever presses check', () => {
+    // 헌장 ⑥ — 명명 벤더에서 우리가 증명할 수 있는 주장은 "코드에 박힌 공식
+    // 주소로만 간다" 까지다. 그 주소를 이름으로 말하는 것이 그 주장의 전부다.
     renderPanel(
       makeConnection({
         statuses: {
           anthropic: { provider: 'anthropic', stored: true, last4: 'abcd' },
           openai: null,
+          gemini: null,
         },
       }),
     );
-    expect(screen.getAllByText('settings.ai.verifyScope').length).toBeGreaterThan(0);
+    expect(
+      screen.getByText('settings.ai.verifyScope:api.anthropic.com'),
+    ).toBeInTheDocument();
   });
 
   it('reports a rejected key as a rejection, not as a generic failure', async () => {
@@ -196,6 +273,7 @@ describe('AiConnectionPanel connection check', () => {
     mocks.secretVerify.mockResolvedValue({
       provider: 'anthropic',
       ok: false,
+      denied: true,
       httpStatus: 401,
       message: null,
       durationMs: 210,
@@ -207,6 +285,7 @@ describe('AiConnectionPanel connection check', () => {
         statuses: {
           anthropic: { provider: 'anthropic', stored: true, last4: 'abcd' },
           openai: null,
+          gemini: null,
         },
       }),
     );
@@ -224,6 +303,7 @@ describe('AiConnectionPanel connection check', () => {
     mocks.secretVerify.mockResolvedValue({
       provider: 'openai',
       ok: true,
+      denied: false,
       httpStatus: 200,
       message: null,
       durationMs: 640,
@@ -234,12 +314,41 @@ describe('AiConnectionPanel connection check', () => {
         statuses: {
           anthropic: null,
           openai: { provider: 'openai', stored: true, last4: 'wxyz' },
+          gemini: null,
         },
       }),
     );
     fireEvent.click(screen.getByTestId('ai-verify-openai'));
     await waitFor(() =>
       expect(screen.getByText('settings.ai.verified')).toBeInTheDocument(),
+    );
+  });
+
+  it('trusts the rust verdict over the status code — gemini rejects with 400', async () => {
+    // 화면이 401/403 만 거부로 읽으면 Gemini 사용자는 틀린 키를 넣고도
+    // "확인하지 못했어요" 를 보고 앱이 고장난 줄 안다(2026-07-26 실측: Gemini
+    // 는 틀린 키에 400 `API_KEY_INVALID` 를 준다).
+    mocks.secretVerify.mockResolvedValue({
+      provider: 'gemini',
+      ok: false,
+      denied: true,
+      httpStatus: 400,
+      message: null,
+      durationMs: 331,
+      loggedAt: '2026-07-26T10:31:02.880Z',
+    });
+    renderPanel(
+      makeConnection({
+        statuses: {
+          anthropic: null,
+          openai: null,
+          gemini: { provider: 'gemini', stored: true, last4: '9f2k' },
+        },
+      }),
+    );
+    fireEvent.click(screen.getByTestId('ai-verify-gemini'));
+    await waitFor(() =>
+      expect(screen.getByText('settings.ai.verifyDenied:400')).toBeInTheDocument(),
     );
   });
 });
@@ -249,6 +358,7 @@ describe('AiConnectionPanel audit tail', () => {
     v: 1,
     at: '2026-07-26T09:12:33.120Z',
     provider: 'anthropic',
+    host: 'api.anthropic.com',
     model: null,
     purpose: 'verify',
     question: null,

@@ -753,6 +753,24 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
   explains why storage is desktop-only and links to `/download`. There is no
   chat surface: the panel says in plain words that asking your vault is still
   being shaped.
+  - **Named vendors: Anthropic · OpenAI · Google Gemini — frozen at three.**
+    All three share one concept (paste a key → Keychain → last 4 → check), so
+    the third costs the reader nothing new. A fourth is admitted only when it
+    both (a) uses an auth protocol that a Bearer-compatible arm cannot absorb
+    and (b) has demand evidence; every other vendor is meant for the
+    user-typed-address arm, which ships together with the feature that
+    consumes it. Gemini authenticates through the `x-goog-api-key` header —
+    never the documented `?key=` query form, because a URL is a place that
+    gets logged.
+  - **Every recorded call names its destination host.** The audit line carries
+    `host` (e.g. `generativelanguage.googleapis.com`), and the screen states
+    that host before you press check — the strongest claim we can prove for a
+    named vendor is "it only goes to the official address compiled into the
+    code". `host` was added without bumping the schema `v`, so lines written
+    before it exist read back fine with a `null` destination.
+  - Unregistered vendors collapse to a one-line `name · [Add key]` row that
+    expands in place, one at a time — three always-open password fields would
+    turn a settings sheet into a form gate.
 - `LiveActivityIndicator` (agent activity heartbeat status, unchanged) mounts
   next to it on the same three pages — this pairing is the "zero feature
   loss" replacement for what `OperationsNav`'s right-hand cluster used to show

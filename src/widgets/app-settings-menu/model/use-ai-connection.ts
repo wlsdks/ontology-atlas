@@ -30,6 +30,7 @@ export interface AiConnectionState {
 const EMPTY_STATUSES: Record<SecretProvider, SecretStatus | null> = {
   anthropic: null,
   openai: null,
+  gemini: null,
 };
 
 export function useAiConnection({

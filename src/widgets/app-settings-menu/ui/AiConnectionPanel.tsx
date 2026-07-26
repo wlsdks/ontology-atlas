@@ -9,6 +9,7 @@ import {
   secretSet,
   secretVerify,
   SECRET_PROVIDERS,
+  SECRET_PROVIDER_HOSTS,
   type SecretProvider,
   type SecretStatus,
 } from '@/shared/lib/tauri-secrets';
@@ -16,6 +17,7 @@ import type { LlmAuditEntry } from '@/shared/lib/llm-audit-log';
 import { openTauriVaultInFinder } from '@/shared/lib/tauri-vault-fs';
 import { useToast } from '@/shared/ui/toast';
 import { cn } from '@/shared/lib/cn';
+import { AI_PROVIDER_LABEL_KEY } from '../model/ai-providers';
 import type { AiConnectionState } from '../model/use-ai-connection';
 
 /**
@@ -30,7 +32,11 @@ import type { AiConnectionState } from '../model/use-ai-connection';
  * - **정직한 빈 소비자.** 지금 이 키로 할 수 있는 일은 연결 확인뿐이라고
  *   화면에 적는다 — 볼트 질문 기능은 아직 없고, 있는 척하지 않는다.
  * - **보안 주장은 코드가 증명하는 범위까지만.** "절대 안전" 류 문구를 쓰지
- *   않는다(신뢰 헌장 ⑥).
+ *   않는다(신뢰 헌장 ⑥). 명명 벤더에서 우리가 증명할 수 있는 것은 "코드에 박힌
+ *   공식 주소로만 간다" 까지다 — 그래서 확인 범위 문구가 그 주소를 이름으로
+ *   말한다.
+ * - **미등록 행은 접혀 있다.** 입력칸 셋이 동시에 쌓이면 설정 시트가 폼 관문처럼
+ *   읽힌다. 접힌 행도 상태(미등록)는 그대로 말하고, 시각 무게만 줄인다.
  */
 
 const CLEAR_ARM_MS = 3000;
@@ -59,6 +65,17 @@ export function AiConnectionPanel({
   const t = useTranslations('settings.ai');
   const { bridgeAvailable, statuses, applyStatus, auditEntries, refreshAudit } =
     connection;
+  // 한 번에 하나만 펼친다 — 어느 키를 넣는 중인지가 화면에 하나뿐이어야
+  // 붙여넣기 직전의 안전 문구가 그 키에 대한 말로 읽힌다.
+  const [expanded, setExpanded] = useState<SecretProvider | null>(null);
+
+  const handleStatusChange = (provider: SecretProvider, next: SecretStatus) => {
+    // 저장이 끝났거나 키를 지웠다면 그 행은 도로 접힌다. 특히 **지운 직후** —
+    // 방금 비운 자리에 입력칸이 다시 열려 있으면 화면이 다시 넣으라고
+    // 재촉하는 것처럼 읽힌다.
+    setExpanded((current) => (current === provider ? null : current));
+    applyStatus(provider, next);
+  };
 
   if (!bridgeAvailable) {
     return (
@@ -102,7 +119,9 @@ export function AiConnectionPanel({
             provider={provider}
             status={statuses[provider]}
             vaultRootPath={vaultRootPath}
-            onStatusChange={applyStatus}
+            expanded={expanded === provider}
+            onExpand={() => setExpanded(provider)}
+            onStatusChange={handleStatusChange}
             onVerified={refreshAudit}
           />
         ))}
@@ -146,12 +165,17 @@ function ProviderCard({
   provider,
   status,
   vaultRootPath,
+  expanded,
+  onExpand,
   onStatusChange,
   onVerified,
 }: {
   provider: SecretProvider;
   status: SecretStatus | null;
   vaultRootPath: string | null;
+  /** 미등록 행이 입력칸을 펼치고 있나 — 펼침은 패널이 소유한다(한 번에 하나). */
+  expanded: boolean;
+  onExpand: () => void;
   onStatusChange: (provider: SecretProvider, next: SecretStatus) => void;
   onVerified: () => void;
 }) {
@@ -171,7 +195,7 @@ function ProviderCard({
     [],
   );
 
-  const label = provider === 'anthropic' ? t('providerAnthropic') : t('providerOpenai');
+  const label = t(AI_PROVIDER_LABEL_KEY[provider]);
   const stored = status?.stored === true;
 
   const handleSave = async () => {
@@ -198,8 +222,9 @@ function ProviderCard({
       const result = await secretVerify(provider, vaultRootPath);
       if (!result) return;
       if (result.ok) setVerify({ kind: 'ok' });
-      else if (result.httpStatus === 401 || result.httpStatus === 403)
-        setVerify({ kind: 'denied', status: result.httpStatus });
+      // 거부 판정은 Rust 가 한다 — 거부를 뜻하는 상태 코드는 벤더마다 다르고
+      // (Gemini 는 400), 그 지식이 화면에도 복제되면 조용히 갈라진다.
+      else if (result.denied) setVerify({ kind: 'denied', status: result.httpStatus });
       else
         setVerify({
           kind: 'failed',
@@ -231,6 +256,27 @@ function ProviderCard({
       setError(secretErrorMessage(err));
     }
   };
+
+  // 접힌 미등록 행 — 이름과 [키 등록] 한 줄. 상태(미등록)는 그대로 말하되
+  // 입력칸을 미리 펼쳐 두지 않는다.
+  if (!stored && !expanded) {
+    return (
+      <div
+        className="flex items-center justify-between gap-3 px-3 py-2.5"
+        data-testid={`ai-provider-${provider}`}
+      >
+        <p className="text-label text-[color:var(--color-text-tertiary)]">{label}</p>
+        <button
+          type="button"
+          data-testid={`ai-register-${provider}`}
+          onClick={onExpand}
+          className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-indigo-accent)]"
+        >
+          {t('keyRegister')}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-2 px-3 py-2.5" data-testid={`ai-provider-${provider}`}>
@@ -274,6 +320,9 @@ function ProviderCard({
             type="password"
             autoComplete="off"
             spellCheck={false}
+            // 사용자가 방금 [키 등록]을 눌러 이 칸을 연 참이다 — 한 번 더
+            // 클릭하게 만들지 않는다.
+            autoFocus
             value={draftKey}
             aria-label={t('keyLabel', { provider: label })}
             placeholder={t('keyPlaceholder')}
@@ -299,6 +348,7 @@ function ProviderCard({
       <ProviderCaption
         error={error}
         provider={label}
+        host={SECRET_PROVIDER_HOSTS[provider]}
         stored={stored}
         verify={verify}
         vaultKnown={vaultRootPath !== null}
@@ -311,12 +361,15 @@ function ProviderCard({
 function ProviderCaption({
   error,
   provider,
+  host,
   stored,
   verify,
   vaultKnown,
 }: {
   error: string | null;
   provider: string;
+  /** 이 확인 요청이 향하는 호스트 — 우리가 증명할 수 있는 만큼의 목적지 주장. */
+  host: string;
   stored: boolean;
   verify: VerifyState;
   vaultKnown: boolean;
@@ -372,7 +425,7 @@ function ProviderCaption({
   }
   return (
     <p className="break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
-      {t('verifyScope')}
+      {t('verifyScope', { host })}
     </p>
   );
 }
