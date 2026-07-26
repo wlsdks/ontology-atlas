@@ -41,6 +41,10 @@ const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 // Bare `?p=` miss grace window — see the deeplinkMissNotifiedRef effect
 // below (`../lib/deeplink-miss-notice.ts`) for why this exists.
 const DEEPLINK_MISS_GRACE_MS = 4000;
+// 지난 길 저장 디바운스 — 걸음마다 사용자 디스크에 쓰지 않도록 잠깐 모은다.
+// 짧게 잡는다: 여기서 기다린 시간만큼 "창을 바로 닫으면 마지막 걸음이 빠질"
+// 구간이 생긴다(탭 숨김 시 앞당기기로 한 번 더 줄인다).
+const PAST_TRAIL_SAVE_DEBOUNCE_MS = 600;
 
 const TopologyFitControl = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.TopologyFitControl),
@@ -217,12 +221,20 @@ import {
 } from "../lib/topology-node-significance";
 import { TopologyPathChip } from "./TopologyPathChip";
 import { TopologyRealmChip } from "./TopologyRealmChip";
-import { TopologyTrailChip } from "./TopologyTrailChip";
+import { TopologyTrailChip, type TopologyPastWalkRow } from "./TopologyTrailChip";
 import {
   appendFootprintVisit,
   formatFootprintTrailAgentPacket,
   type FootprintTrailEntry,
 } from "../lib/footprint-trail";
+import {
+  describePastTrailDay,
+  newPastWalkId,
+  PAST_WALK_MIN_ENTRIES,
+  type PastWalk,
+} from "../lib/past-trail-record";
+import { createVaultFilePastTrailStore, type PastTrailStore } from "../lib/past-trail-store";
+import { verifyHandlePermission } from "@/entities/local-fs-handle";
 import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import { TopologyRelationLegend } from "./TopologyRelationLegend";
 import { TopologyReviewLink } from "./TopologyReviewLink";
@@ -1316,15 +1328,161 @@ export function HomePage() {
     setFootprintPacketCopied(true);
     window.setTimeout(() => setFootprintPacketCopied(false), 1600);
   }, [footprintTrailEntries, dustySlugs, t]);
+  // ── 지난 길 ──────────────────────────────────────────────────────────
+  // 세션 궤적은 새로고침·창 닫기에서 죽는데 `?p=`(지금 여기)는 URL 로 살아남아,
+  // "어디"는 남고 "어떻게 왔는지"만 사라지는 비대칭이 있었다. 지난 길은 그
+  // 궤적을 잃지 않게 붙든다 — 살아있는 궤적을 끊는 자동 동작(시간 만료·유휴
+  // 감지)은 없다. `지우기` 는 반대로 **남기지 않고 버린다**: "지우기"라는 이름이
+  // 정직하려면 이미 쓰인 이번 세션 줄까지 함께 지워야 한다.
+  //
+  // 저장 위치는 **볼트 폴더 안 파일**이다(`past-trail-store.ts` 참고) — 웹과
+  // 설치 앱은 다른 origin 이라 브라우저 저장소로는 같은 지난 길이 이어지지
+  // 않고, 두 곳이 공유하는 바닥은 사용자의 볼트 폴더뿐이다.
+  //
+  // 볼트를 안 열었으면(샘플 탐색) 남기지 않는다 — 남길 바닥이 없고, 브라우저
+  // 저장소로 대신 남기면 바로 그 웹/앱 분리가 되살아난다. 샘플 탐색은 휘발해도
+  // 잃는 것이 없다.
+  const pastTrailStore = useMemo<PastTrailStore | null>(
+    () =>
+      vault.status === "loaded" && vault.handle
+        ? createVaultFilePastTrailStore(vault.handle)
+        : null,
+    [vault.status, vault.handle],
+  );
+  const [pastWalks, setPastWalks] = useState<PastWalk[]>([]);
+  // 쓰기 권한은 **묻지 않고 조회만** 한다 — 탐색하러 온 사람에게 "기록을
+  // 남기려면 권한을 주세요" 를 들이미는 건 마찰이다. 이미 권한이 있는 세션에서만
+  // 조용히 남기고, 없으면 남기지 않되 2층에서 왜 안 남는지는 답한다.
+  const [pastTrailWritable, setPastTrailWritable] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    const handle = vault.status === "loaded" ? vault.handle : null;
+    void (async () => {
+      const granted = handle
+        ? (await verifyHandlePermission(handle, "readwrite")) === "granted"
+        : false;
+      if (!cancelled) setPastTrailWritable(granted);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [vault.status, vault.handle]);
+  // 이번 세션의 길 id — 이 세션의 모든 기록이 이 id 로 덮어써진다(한 세션 = 한 줄).
+  // ref 가 아니라 state 인 이유: 이 값이 2층 목록의 렌더(지금 걷는 줄 제외)에
+  // 쓰이므로 렌더 중 읽을 수 있어야 한다.
+  const [sessionWalkId, setSessionWalkId] = useState<string>(newPastWalkId);
+  // 이벤트 핸들러(탭 숨김 등)에서 최신 값을 읽기 위한 거울.
+  const pastTrailSaveRef = useRef<{
+    store: PastTrailStore | null;
+    entries: FootprintTrailEntry[];
+  }>({ store: null, entries: [] });
+  useEffect(() => {
+    pastTrailSaveRef.current = {
+      store: pastTrailWritable ? pastTrailStore : null,
+      entries: footprintTrailEntries,
+    };
+  }, [pastTrailStore, pastTrailWritable, footprintTrailEntries]);
+  const flushPastTrail = useCallback(() => {
+    const { store, entries } = pastTrailSaveRef.current;
+    if (!store || entries.length < PAST_WALK_MIN_ENTRIES) return;
+    void store.save(sessionWalkId, entries).then(setPastWalks);
+  }, [sessionWalkId]);
+  // 볼트가 바뀌면 노드 id 체계가 달라진다 — 새 길로 시작하고 그 볼트의 목록을 읽는다.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const walks = pastTrailStore ? await pastTrailStore.list() : [];
+      if (cancelled) return;
+      setSessionWalkId(newPastWalkId());
+      setPastWalks(walks);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pastTrailStore]);
+  // **걸으면서 제자리에 덮어쓴다.** 파일 쓰기는 비동기라 페이지가 죽는 순간에
+  // 시작하면 끝나지 않는다 — 남겨야 할 바로 그 순간에 못 남기는 설계다. 걸음마다
+  // (디바운스 후) 같은 줄을 갱신해 두면 창을 강제 종료해도 마지막 상태가 이미
+  // 디스크에 있다.
+  useEffect(() => {
+    if (footprintTrailEntries.length < PAST_WALK_MIN_ENTRIES) return;
+    const timer = window.setTimeout(flushPastTrail, PAST_TRAIL_SAVE_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [footprintTrailEntries, flushPastTrail]);
+  // 탭이 숨겨지는 순간은 아직 문서가 살아 있어 쓰기가 끝날 수 있다 — 디바운스
+  // 대기 중이던 마지막 걸음을 여기서 앞당긴다.
+  useEffect(() => {
+    const onHidden = () => {
+      if (document.visibilityState === "hidden") flushPastTrail();
+    };
+    document.addEventListener("visibilitychange", onHidden);
+    return () => document.removeEventListener("visibilitychange", onHidden);
+  }, [flushPastTrail]);
   const clearFootprintTrail = useCallback(() => {
     lastVisitedNodeRef.current = null;
     setFootprintTrail([]);
-  }, []);
-  // 걸어온 길 렌즈 — 팝오버 열림과 **동치**인 일시 상태(새 모드·토글·URL 상태 0).
-  // 열려 있는 동안 지도가 관계 읽기(ego 강조 엣지)를 접고 궤적 읽기에 양보한다:
-  // 방문 노드만 값·라벨을 지키고 나머지·엣지 전부는 기존 dim 값으로 물러난다.
-  // 소유자가 "어지럽다"고 한 파란 선의 정체가 그 ego 엣지였다 — 궤적 폴리라인을
-  // 새로 그리는 게 아니라(이 제품에서 선 = 관계다) 읽는 순간만 장을 비운다.
+    // 프라이버시 밸브 — 이미 파일에 쓰인 이번 세션 줄도 함께 지운다.
+    setSessionWalkId(newPastWalkId());
+    const store = pastTrailSaveRef.current.store;
+    if (store) void store.remove(sessionWalkId).then(setPastWalks);
+  }, [sessionWalkId]);
+  const handleDeletePastWalk = useCallback(
+    (walkId: string) => {
+      if (!pastTrailStore) return;
+      void pastTrailStore.remove(walkId).then(setPastWalks);
+    },
+    [pastTrailStore],
+  );
+  const handleClearPastWalks = useCallback(() => {
+    if (!pastTrailStore) return;
+    setSessionWalkId(newPastWalkId());
+    void pastTrailStore.clear().then(setPastWalks);
+  }, [pastTrailStore]);
+  // 행 문구는 여기서 완성한다 — 칩은 순수 크롬이라 i18n·날짜 지식을 갖지 않는다.
+  // 날짜는 **일 단위**만 쓴다(시·분을 보이면 목록이 행동 타임라인으로 읽힌다).
+  // 지금 걷고 있는 줄은 뺀다 — 그건 1층(걸어온 길)이 이미 보여주고 있다.
+  const pastWalkRows = useMemo<TopologyPastWalkRow[]>(() => {
+    // 기준 시각은 mount 시각(`mountNowMs`) — 렌더 중 `Date.now()` 는 purity
+    // 위반이고, 라벨이 일 단위라 세션 중 고정돼도 어긋나지 않는다(자정을 넘겨
+    // 계속 켜둔 창에서만 "오늘"이 하루 늦게 바뀐다).
+    const now = mountNowMs;
+    const dayFormat = new Intl.DateTimeFormat(activeLocale, { month: "long", day: "numeric" });
+    const yearFormat = new Intl.DateTimeFormat(activeLocale, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    return pastWalks
+      .filter((walk) => walk.id !== sessionWalkId)
+      .map((walk) => {
+        const day = describePastTrailDay(walk.endedAt, now);
+        const date =
+          day.kind === "today"
+            ? t("footprint.pastDateToday")
+            : day.kind === "yesterday"
+              ? t("footprint.pastDateYesterday")
+              : day.kind === "sameYear"
+                ? dayFormat.format(day.at)
+                : yearFormat.format(day.at);
+        return {
+          id: walk.id,
+          routeLabel: t("footprint.pastRouteLabel", {
+            first: walk.entries[0].title,
+            last: walk.entries[walk.entries.length - 1].title,
+          }),
+          metaLabel: t("footprint.pastRowMeta", { date, count: walk.entries.length }),
+        };
+      });
+  }, [pastWalks, sessionWalkId, activeLocale, mountNowMs, t]);
+  // 읽기 전용 볼트에서 조용히 실패하지 않는다 — 2층이 왜 안 남는지 답한다.
+  const pastTrailNotice =
+    vault.status === "loaded" && !pastTrailWritable ? t("footprint.pastReadOnlyNotice") : null;
+  // ── 걸어온 길 렌즈 ───────────────────────────────────────────────────
+  // 팝오버 열림과 **동치**인 일시 상태(새 모드·토글·URL 상태 0). 열려 있는 동안
+  // 지도가 관계 읽기(ego 강조 엣지)를 접고 궤적 읽기에 양보한다: 방문 노드만
+  // 값·라벨을 지키고 나머지·엣지 전부는 기존 dim 값으로 물러난다. 소유자가
+  // "어지럽다"고 한 파란 선의 정체가 그 ego 엣지였다 — 궤적 폴리라인을 새로
+  // 그리는 게 아니라(이 제품에서 선 = 관계다) 읽는 순간만 장을 비운다.
   //
   // 렌즈 on/off·브러싱 모두 state 가 아니라 **ref** 다: 이 값들을 state 로 올리면
   // 켤 때마다·행을 훑을 때마다 이 페이지 트리가 통째로 다시 렌더된다(실측 전환
@@ -2714,6 +2872,10 @@ export function HomePage() {
                           onClear={clearFootprintTrail}
                           onLensChange={handleFootprintLens}
                           onHoverEntry={handleFootprintBrush}
+                          pastWalks={pastWalkRows}
+                          pastNotice={pastTrailNotice}
+                          onDeletePastWalk={handleDeletePastWalk}
+                          onClearPastWalks={handleClearPastWalks}
                           labels={{
                             heading: t("footprint.heading"),
                             triggerAriaLabel: t("footprint.triggerAriaLabel"),
@@ -2726,6 +2888,16 @@ export function HomePage() {
                             copyCopiedAriaLabel: t("footprint.copyCopiedAriaLabel"),
                             clearLabel: t("footprint.clearLabel"),
                             clearAriaLabel: t("footprint.clearAriaLabel"),
+                            pastLinkLabel: t("footprint.pastLinkLabel", {
+                              count: pastWalkRows.length,
+                            }),
+                            pastHeading: t("footprint.pastHeading"),
+                            pastBackAriaLabel: t("footprint.pastBackAriaLabel"),
+                            pastDeleteAriaLabel: t("footprint.pastDeleteAriaLabel"),
+                            pastClearAllLabel: t("footprint.pastClearAllLabel"),
+                            pastClearAllConfirmLabel: t("footprint.pastClearAllConfirmLabel"),
+                            pastCapCaption: t("footprint.pastCapCaption"),
+                            pastEmptyBody: t("footprint.pastEmptyBody"),
                           }}
                         />
                       ) : undefined

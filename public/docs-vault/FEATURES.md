@@ -743,6 +743,16 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
   (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI
   agent entry are scanned in one column. `LocaleSwitch` is an immediate screen
   control; the long MCP connection proof stays behind the AI agent drill-in.
+- **AI 연결** (`AiConnectionPanel`, 2026-07-26) — a second drill-in row for
+  your own API key: store it in the macOS Keychain (desktop only), check the
+  connection with a request that carries **0 vault characters**, and read the
+  tail of `.ontology-atlas/llm-audit.jsonl` where every call is recorded. The
+  key is written once and never readable back (only its last 4 characters);
+  the Rust side refuses to send at all when the audit line cannot be appended
+  (log-before-send). In the browser the key field is not rendered — the card
+  explains why storage is desktop-only and links to `/download`. There is no
+  chat surface: the panel says in plain words that asking your vault is still
+  being shaped.
 - `LiveActivityIndicator` (agent activity heartbeat status, unchanged) mounts
   next to it on the same three pages — this pairing is the "zero feature
   loss" replacement for what `OperationsNav`'s right-hand cluster used to show

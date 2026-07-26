@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Footprints, X } from "lucide-react";
+import { ChevronLeft, Footprints, X } from "lucide-react";
 
 import {
   CHROME_STATUS_CHIP_CLASS,
@@ -31,7 +31,35 @@ export interface TopologyTrailChipLabels {
   clearLabel: string;
   /** 칩 ✕ aria — "걸어온 길 지우기". */
   clearAriaLabel: string;
+  /** 1층 헤더 우측 링크 — "지난 길 {count}". 보관이 있을 때만 보인다. */
+  pastLinkLabel: string;
+  /** 2층 제목 — "지난 길". */
+  pastHeading: string;
+  /** 2층 ‹ aria — "걸어온 길로 돌아가기". */
+  pastBackAriaLabel: string;
+  /** 행 ✕ aria — "이 길 지우기". */
+  pastDeleteAriaLabel: string;
+  /** 2층 푸터 "모두 지우기". */
+  pastClearAllLabel: string;
+  /** 2단 확인 라벨 — "한 번 더 누르면 지워요". */
+  pastClearAllConfirmLabel: string;
+  /** 상한 고지 캡션 — "최근 10개까지". */
+  pastCapCaption: string;
+  /** 빈 상태 본문. */
+  pastEmptyBody: string;
 }
+
+/** 2층 목록의 한 행 — 문자열 포맷은 HomePage(i18n 소유)가 끝내서 내려보낸다. */
+export interface TopologyPastWalkRow {
+  id: string;
+  /** 1줄 — "처음 → 끝". 가운데 화살표는 길의 방향을 나르는 데이터다. */
+  routeLabel: string;
+  /** 2줄 — "오늘 · 12곳". */
+  metaLabel: string;
+}
+
+/** `모두 지우기` 2단 확인이 첫 상태로 돌아가는 시간. */
+const CLEAR_ALL_CONFIRM_RESET_MS = 4000;
 
 export interface TopologyTrailChipProps {
   /** 미리 포맷된 칩 라벨 — "걸어온 길 · {count}" (i18n 은 HomePage 소유, 칩은 순수 크롬). */
@@ -50,7 +78,7 @@ export interface TopologyTrailChipProps {
   /** "AI에게 이어서 맡기기" — 방문 체인 인계 패킷을 클립보드로. */
   onCopyPacket: () => void;
   copied: boolean;
-  /** 세션 트레일 소거(칩 ✕ · 푸터 "지우기" 공용). */
+  /** 세션 트레일 소거(칩 ✕ · 푸터 "지우기" 공용). 보관 없이 버린다. */
   onClear: () => void;
   /**
    * 팝오버 열림 = **걸어온 길 렌즈** on/off. 지도는 이 신호 하나로 관계 읽기를
@@ -63,6 +91,17 @@ export interface TopologyTrailChipProps {
    * 숫자가 아니라 **가리켜서** 답한다(지도는 그 노드에 기존 호버 프리뷰 링).
    */
   onHoverEntry?: (id: string | null) => void;
+  /** 보관된 지난 길 — 최근이 앞. */
+  pastWalks: readonly TopologyPastWalkRow[];
+  /**
+   * 지금 길이 남지 않는 이유(읽기 전용 볼트 등). null 이면 정상 보관 중.
+   * 보관도 0이고 알릴 것도 없으면 1층 헤더 링크 자체가 나타나지 않는다.
+   */
+  pastNotice: string | null;
+  /** 지난 길 한 줄 삭제. */
+  onDeletePastWalk: (id: string) => void;
+  /** 지난 길 전체 삭제(2단 확인을 거친 뒤 호출된다). */
+  onClearPastWalks: () => void;
 }
 
 /**
@@ -82,6 +121,11 @@ export interface TopologyTrailChipProps {
  *
  * transient-surface 계약(설정 기어와 동일): dim/backdrop 없는 self-closing 앵커
  * 팝오버, 자기 Escape 를 소유해 전역 Esc 사다리와 이중 발화하지 않는다.
+ *
+ * 같은 셸의 **2층**이 「지난 길」 — 자연 경계에서 보관된 지난 궤적 목록이다.
+ * 새 라우트도 새 팝업도 만들지 않는다: 기능이 사는 곳에서 그 기능의 과거를
+ * 본다. 2층에는 인디고가 없다 — "지금 여기"가 없는 목록이라 주의 계층 승자도
+ * 없는 게 정직하다.
  */
 export function TopologyTrailChip({
   label,
@@ -94,10 +138,18 @@ export function TopologyTrailChip({
   onClear,
   onLensChange,
   onHoverEntry,
+  pastWalks,
+  pastNotice,
+  onDeletePastWalk,
+  onClearPastWalks,
 }: TopologyTrailChipProps) {
   const [open, setOpen] = useState(false);
+  const [showPast, setShowPast] = useState(false);
+  // 파괴적·복구 불가 삭제라 인라인 2단 확인을 거친다(대화상자는 이 규모에 과잉).
+  const [clearAllArmed, setClearAllArmed] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const pastLinkRef = useRef<HTMLButtonElement | null>(null);
 
   // 렌더만 뒤집는다 — 모델(`appendFootprintVisit`)과 인계 패킷은 오래된 → 최근
   // 순서 그대로다(패킷은 기계 재생용이라 시간순이 맞다).
@@ -105,11 +157,16 @@ export function TopologyTrailChip({
 
   const close = useCallback((returnFocus: boolean) => {
     setOpen(false);
+    // 닫으면 항상 1층부터 — 다음에 열 때 어느 층이었는지 기억하게 하면
+    // 같은 트리거가 매번 다른 화면을 여는 셈이 된다.
+    setShowPast(false);
+    setClearAllArmed(false);
     if (returnFocus) triggerRef.current?.focus();
   }, []);
 
   // 렌즈 수명 = 팝오버 수명. 언마운트(트레일 소거로 칩이 사라지는 경우 포함)
-  // 에도 반드시 꺼야 지도가 dim 인 채로 굳지 않는다.
+  // 에도 반드시 꺼야 지도가 dim 인 채로 굳지 않는다. 2층(지난 길)에 있는 동안에도
+  // 렌즈는 켜둔다 — 팝오버가 열려 있는 한 지도는 여전히 궤적을 읽는 화면이다.
   useEffect(() => {
     onLensChange?.(open);
     if (!open) {
@@ -121,6 +178,20 @@ export function TopologyTrailChip({
       onHoverEntry?.(null);
     };
   }, [open, onLensChange, onHoverEntry]);
+
+  // 2층으로 넘어가면 1층 행이 통째로 사라진다 — 포인터가 행 밖으로 나가는
+  // 이벤트 없이 언마운트될 수 있으므로 브러싱을 층 전환 자리에서 명시적으로 푼다.
+  useEffect(() => {
+    if (showPast) onHoverEntry?.(null);
+  }, [showPast, onHoverEntry]);
+
+  // 2단 확인은 스스로 풀린다 — 무장 상태를 계속 들고 있으면 나중의 무심한
+  // 클릭 한 번이 삭제가 된다.
+  useEffect(() => {
+    if (!clearAllArmed) return;
+    const timer = window.setTimeout(() => setClearAllArmed(false), CLEAR_ALL_CONFIRM_RESET_MS);
+    return () => window.clearTimeout(timer);
+  }, [clearAllArmed]);
 
   useEffect(() => {
     if (!open) return;
@@ -151,7 +222,10 @@ export function TopologyTrailChip({
         <button
           ref={triggerRef}
           type="button"
-          onClick={() => setOpen((current) => !current)}
+          onClick={() => {
+            if (open) close(false);
+            else setOpen(true);
+          }}
           aria-haspopup="true"
           aria-expanded={open}
           aria-label={labels.triggerAriaLabel}
@@ -177,9 +251,128 @@ export function TopologyTrailChip({
           data-testid="topology-trail-chip-popover"
           className="absolute right-0 top-[calc(100%+8px)] z-30 w-[248px] rounded-md border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]"
         >
-          <div className="border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-            {labels.heading}
+          <div className="flex items-center justify-between gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            {showPast ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPast(false);
+                    setClearAllArmed(false);
+                    pastLinkRef.current?.focus();
+                  }}
+                  aria-label={labels.pastBackAriaLabel}
+                  data-testid="topology-trail-past-back"
+                  className="-ml-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                >
+                  <ChevronLeft size={14} aria-hidden />
+                </button>
+                <span className="min-w-0 flex-1 truncate">{labels.pastHeading}</span>
+              </>
+            ) : (
+              <>
+                <span className="min-w-0 flex-1 truncate">{labels.heading}</span>
+                {/* 보여줄 게 있을 때만 나타나는 조용한 진입점 — 없는 과거를
+                    가리키는 링크는 잉크만 늘린다. */}
+                {pastWalks.length > 0 || pastNotice !== null ? (
+                  <button
+                    ref={pastLinkRef}
+                    type="button"
+                    onClick={() => setShowPast(true)}
+                    data-testid="topology-trail-past-link"
+                    className="shrink-0 rounded-md px-1 py-0.5 text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                  >
+                    {labels.pastLinkLabel}
+                  </button>
+                ) : null}
+              </>
+            )}
           </div>
+          {showPast ? (
+            <>
+              {/* 왜 안 남는지를 먼저 말한다 — 조용한 실패가 가장 나쁘다.
+                  정상 보관 중이면 이 줄 자체가 없다(무소음이 기본). */}
+              {pastNotice !== null ? (
+                <p
+                  data-testid="topology-trail-past-notice"
+                  className="border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 text-caption leading-relaxed text-[color:var(--color-text-tertiary)]"
+                >
+                  {pastNotice}
+                </p>
+              ) : null}
+              {/* 지난 길 목록 — 행 높이는 내용이 아니라 해부구조(2줄)가 정한다.
+                  제목이 길든 짧든 격자는 같은 리듬으로 읽힌다. */}
+              {pastWalks.length > 0 ? (
+                <ul
+                  data-testid="topology-trail-past-list"
+                  className="flex max-h-[280px] flex-col overflow-y-auto px-2 py-1.5"
+                >
+                  {pastWalks.map((walk) => (
+                    <li
+                      key={walk.id}
+                      data-testid="topology-trail-past-row"
+                      className="flex h-[47px] shrink-0 items-center gap-1"
+                    >
+                      <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-1.5">
+                        <span className="truncate text-body text-[color:var(--color-text-secondary)]">
+                          {walk.routeLabel}
+                        </span>
+                        <span className="truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                          {walk.metaLabel}
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onDeletePastWalk(walk.id)}
+                        aria-label={labels.pastDeleteAriaLabel}
+                        data-testid="topology-trail-past-delete"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                      >
+                        <X size={13} aria-hidden />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p
+                  data-testid="topology-trail-past-empty"
+                  className="px-3 py-4 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]"
+                >
+                  {labels.pastEmptyBody}
+                </p>
+              )}
+              <div className="flex items-center justify-between gap-2 border-t border-[color:var(--topology-floating-panel-divider)] px-2 py-1.5">
+                {pastWalks.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!clearAllArmed) {
+                        setClearAllArmed(true);
+                        return;
+                      }
+                      setClearAllArmed(false);
+                      onClearPastWalks();
+                    }}
+                    data-testid="topology-trail-past-clear-all"
+                    className={`rounded-md px-2 py-1 text-label transition-colors ${
+                      clearAllArmed
+                        ? "text-[color:var(--color-text-primary)]"
+                        : "text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-primary)]"
+                    }`}
+                  >
+                    {clearAllArmed ? labels.pastClearAllConfirmLabel : labels.pastClearAllLabel}
+                  </button>
+                ) : (
+                  <span />
+                )}
+                {/* 상한을 숨기지 않는다 — 축적이 아니라 회전 버퍼임을 먼저 말한다. */}
+                <span className="shrink-0 font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                  {labels.pastCapCaption}
+                </span>
+              </div>
+            </>
+          ) : (
+          <>
           {/* 미니 타임라인 — 세로 점-연결선. 최근이 맨 위(위=최신 → 아래=과거).
               i 가 곧 "최근 방문으로부터 몇 걸음 전"이라 캡션 계산이 인덱스 하나로 끝난다. */}
           <ol className="flex max-h-[280px] flex-col overflow-y-auto px-3 py-2.5">
@@ -271,6 +464,8 @@ export function TopologyTrailChip({
               {labels.clearLabel}
             </button>
           </div>
+          </>
+          )}
         </div>
       ) : null}
     </div>

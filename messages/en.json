@@ -2189,7 +2189,20 @@
       "packetOrder": "Visited order (oldest → most recent):",
       "packetReviewHint": "Review each node's context:",
       "packetPathHint": "Check the path between the journey endpoints:",
-      "packetDustyHint": "{count} nodes untouched for a while — maintenance candidates:"
+      "packetDustyHint": "{count} nodes untouched for a while — maintenance candidates:",
+      "pastLinkLabel": "Past {count}",
+      "pastHeading": "Past trails",
+      "pastBackAriaLabel": "Back to trail",
+      "pastRouteLabel": "{first} → {last}",
+      "pastRowMeta": "{date} · {count} stops",
+      "pastDateToday": "Today",
+      "pastDateYesterday": "Yesterday",
+      "pastDeleteAriaLabel": "Delete this trail",
+      "pastClearAllLabel": "Clear all",
+      "pastClearAllConfirmLabel": "Press again to delete",
+      "pastCapCaption": "Keeps the last 10",
+      "pastEmptyBody": "No past trails yet. Walks are kept here when you finish.",
+      "pastReadOnlyNotice": "This vault is open read-only, so this walk isn't being kept. Saving any document will ask for write access."
     },
     "startChecklist": {
       "kicker": "{done}/{total} done",
