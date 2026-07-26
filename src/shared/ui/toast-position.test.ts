@@ -3,6 +3,7 @@ import {
   BUILDER_WRITE_BAR_RESERVE_PX,
   TOAST_EDGE_GAP_PX,
   resolveToastBottomOffset,
+  resolveToastBottomOffsetForStack,
 } from "./toast-position";
 
 describe("resolveToastBottomOffset", () => {
@@ -27,5 +28,26 @@ describe("resolveToastBottomOffset", () => {
 
   it("음수 예약은 0 으로 클램프", () => {
     expect(resolveToastBottomOffset(-100)).toBe(TOAST_EDGE_GAP_PX);
+  });
+
+  describe("resolveToastBottomOffsetForStack — 지도 우하단 계기 스택 (E-7)", () => {
+    it("스택 상단 위로 토스트를 띄운다", () => {
+      // 1512×950, 코너 인셋 24px, 스택 높이 40px → 스택 top = 950-24-40 = 886.
+      const offset = resolveToastBottomOffsetForStack(950, 886);
+      expect(offset).toBe(TOAST_EDGE_GAP_PX + 64);
+      // 토스트 하단(offset)이 스택 상단(950-886=64)보다 위여야 겹치지 않는다.
+      expect(offset).toBeGreaterThan(950 - 886);
+    });
+
+    it("≥1920 의 커진 코너 인셋도 실측 rect 로 따라간다", () => {
+      // 인셋 32px 로 커지면 스택 top 이 올라가고 오프셋도 함께 커진다.
+      expect(resolveToastBottomOffsetForStack(1080, 1080 - 32 - 40)).toBe(
+        TOAST_EDGE_GAP_PX + 72,
+      );
+    });
+
+    it("스택이 화면 밖(top > viewport)이면 기본 여백으로 클램프", () => {
+      expect(resolveToastBottomOffsetForStack(950, 1200)).toBe(TOAST_EDGE_GAP_PX);
+    });
   });
 });

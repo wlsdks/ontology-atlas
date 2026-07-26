@@ -1912,7 +1912,20 @@ export function HomePage() {
           const target = resolveNodeAgentTarget(selectedOntologyNode);
           return { agentSlug: target.ref, documented: target.documented };
         })(),
-        fresh: changedSlugs.has(selectedOntologyNode.id),
+        // 진입 검수 E-5 — 신선도의 단일 진실원은 문서 mtime 사다리다
+        // (`use-node-datasheet-model` M-3). 세션 changeset baseline 으로
+        // 따로 판정하던 이 자리가 데이터시트와 상반된 문장을 냈다
+        // (「2일 전 바뀜」 vs 「한동안 그대로」, 같은 domains/catalog).
+        // 같은 노드에 대한 데이터시트의 판정을 그대로 받는다 — 없을 때만
+        // (다른 노드 / 모델 미생성) 종전 baseline 으로 되돌린다.
+        fresh:
+          v2DatasheetModel?.nodeId === selectedOntologyNode.id
+            ? v2DatasheetModel.powered
+            : changedSlugs.has(selectedOntologyNode.id),
+        updatedAtLabel:
+          v2DatasheetModel?.nodeId === selectedOntologyNode.id
+            ? v2DatasheetModel.updatedAtLabel
+            : null,
         // rank7 (design-council B5) — 같은 노드 선택에서 나온
         // `v2DatasheetModel`(compact 패널)의 SAME fact 를 그대로 재사용 —
         // 이 노드의 baseline/heartbeat 판정을 두 번 만들지 않는다(count

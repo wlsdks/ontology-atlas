@@ -63,6 +63,16 @@ export interface FullDetailA1Node {
   documented?: boolean;
   fresh: boolean;
   /**
+   * 진입 검수 E-5 — 같은 노드의 신선도가 한 클릭 거리에서 상반됐다.
+   * 데이터시트 패널은 「2일 전 바뀜」(문서 mtime 사다리), 이 화면은
+   * 「한동안 그대로」(세션 changeset baseline)였다. `use-node-datasheet-model`
+   * 의 M-3 계약이 금지한 바로 그 이원화다 — 신선도의 단일 진실원은 mtime 이다.
+   * 호출자가 데이터시트가 쓰는 **그 문장 그대로** 넘긴다. 있으면 이진
+   * (최근 갱신/한동안 그대로) 대신 이 문장을 쓴다 — 패널이 같은 자리에서
+   * 하는 것과 동일한 우선순위.
+   */
+  updatedAtLabel?: string | null;
+  /**
    * rank7 (design-council B5) — last-edit provenance, pre-resolved by the
    * caller (reuses the SAME fact `TopologyV2DetailPanel` shows for this
    * node, `resolveNodeLastEditSubject`) from real data only. `null`/omitted
@@ -261,7 +271,9 @@ export function FullDetailA1({
             />
             <span>{getKindLabel(node.kind)}</span>
             <span className="text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
-            <span>{node.fresh ? t("freshOn") : t("freshOff")}</span>
+            <span data-testid="full-detail-freshness">
+              {node.updatedAtLabel ?? (node.fresh ? t("freshOn") : t("freshOff"))}
+            </span>
           </div>
           {/* rank7 (design-council B5) — last-edit provenance + expected_mtime
               conflict, gated on real data by the caller (reuses the SAME
