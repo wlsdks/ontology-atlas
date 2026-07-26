@@ -26,6 +26,7 @@ import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
 import { cn } from '@/shared/lib/cn';
+import { subscribeSettingsViewIntent } from '@/shared/lib/settings-view-intent';
 import { SECRET_PROVIDERS } from '@/shared/lib/tauri-secrets';
 import {
   buildRouteFocusHref,
@@ -374,6 +375,27 @@ export function AppSettingsMenu({
     setView(next);
     window.setTimeout(() => agentBackRef.current?.focus({ preventScroll: true }), 0);
   };
+
+  // 다른 표면이 "설정의 그 자리" 를 열어 달라고 보낸 요청. 지도 오른쪽 도크의
+  // 「설정에서 키 등록」이 이 경로로 들어온다 — 사용자에게 톱니 위치를 말로
+  // 알려주는 대신 문을 준다.
+  //
+  // 이 위젯은 화면 폭에 따라 두 트리거(레일 타일 lg+ · 크롬 타일 <lg)로 두 번
+  // 마운트되지만 **보이는 쪽만** 응답한다. 시트는 portal 이라 숨은 인스턴스까지
+  // 응답하면 같은 시트가 두 겹으로 열린다. 브레이크포인트를 여기 복제하지 않고
+  // 실제 렌더 여부(`offsetParent`)로 판정한다 — 폭 계약이 바뀌어도 이 코드는
+  // 갈라지지 않는다.
+  useEffect(
+    () =>
+      subscribeSettingsViewIntent((next) => {
+        const trigger = triggerRef.current;
+        if (!trigger || trigger.offsetParent === null) return;
+        setOpen(true);
+        setView(next);
+        window.setTimeout(() => agentBackRef.current?.focus({ preventScroll: true }), 0);
+      }),
+    [setOpen],
+  );
   const returnToRootView = () => {
     // 돌아온 뒤 포커스는 **떠났던 그 행** — 드릴인/아웃이 위치 감각을 잃지 않게.
     const target = view === 'ai' ? aiDrillInRef : agentDrillInRef;

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T13:57:12.190Z",
+  "generatedAt": "2026-07-26T14:07:33.732Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 「볼트 도우미」가 「에이전트」가 됐고, 키 없는 빈 화면이 문을 갖게 됐다",
+          "slug": "2026-07-26-볼트-도우미가-에이전트가-됐고-키-없는-빈-화면이-문을-갖게-됐다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — 「할 일」이 내 몫부터 보여주고, 한 문장은 그 자리에서 끝난다",
           "slug": "2026-07-26-할-일이-내-몫부터-보여주고-한-문장은-그-자리에서-끝난다"
         },
@@ -4983,9 +4988,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 인사이트 「할 일」 탭이 두 묶음으로 나뉘었다: 「지금 바로 고칠 수 있어요」 와 「개발자·AI에게 넘길 일」. 내 폴더를 연 세션에서는 앞 묶음이 화면 ",
-      "wordCount": 48008,
-      "updatedAt": "2026-07-26T13:57:12.190Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 지도 오른쪽 도크의 이름과 첫 화면을 고쳤다. 두 군데가 사용자에게 거짓말을 하고 있었다. 이름. 「볼트 도우미」의 두 낱말이 모두 틀렸다. 「볼트」는 이",
+      "wordCount": 48362,
+      "updatedAt": "2026-07-26T14:05:06.441Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5771,8 +5776,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 16310,
-      "updatedAt": "2026-07-26T22:56:11+09:00",
+      "wordCount": 16312,
+      "updatedAt": "2026-07-26T14:07:33.732Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",

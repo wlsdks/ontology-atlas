@@ -8,23 +8,26 @@ import type { VaultManifest } from '@/entities/docs-vault';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
 import type { ScreenContextSnapshot } from '@/features/vault-agent';
 import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-audit-log';
+import { requestSettingsView } from '@/shared/lib/settings-view-intent';
 import { isLlmChatBridgeAvailable } from '@/shared/lib/tauri-llm';
 import {
   SECRET_PROVIDER_HOSTS,
   SECRET_PROVIDERS,
   secretStatus,
+  subscribeSecretChange,
   type SecretProvider,
 } from '@/shared/lib/tauri-secrets';
 
 import { useVaultAgent } from '../model/use-vault-agent';
 import { AgentHandoffCard } from './AgentHandoffCard';
+import { AgentLockedComposer, AgentLockedState } from './AgentLockedState';
 import { AgentProposalCard } from './AgentProposalCard';
 import { AgentPromptDisclosure } from './AgentPromptDisclosure';
 import { AgentScopeSheet } from './AgentScopeSheet';
 import { AgentTranscript } from './AgentTranscript';
 
 /**
- * 볼트 에이전트 패널 — 지도 오른쪽에 자리를 내주는 세로 도크.
+ * 에이전트 패널 — 지도 오른쪽에 자리를 내주는 세로 도크.
  *
  * ## 리플로우가 왜 이렇게 되어 있나
  *
@@ -48,6 +51,7 @@ export function VaultAgentPanel({
   vaultIsGit,
   canWrite,
   onFocusNode,
+  onOpenFolder,
   downloadHref,
 }: {
   open: boolean;
@@ -59,6 +63,8 @@ export function VaultAgentPanel({
   vaultIsGit: boolean;
   canWrite: boolean;
   onFocusNode: (slug: string) => void;
+  /** 폴더가 없을 때 이 패널이 직접 열 수 있는 경로 — 없으면 그 상태에 문이 없다. */
+  onOpenFolder?: () => void;
   downloadHref: string;
 }) {
   const t = useTranslations('vaultAgentPanel');
@@ -75,6 +81,17 @@ export function VaultAgentPanel({
    * 전체 키는 어떤 경로로도 오지 않으므로 여기서 아는 것은 "있다" 뿐이다.
    */
   const [provider, setProvider] = useState<SecretProvider | null>(null);
+  /**
+   * 키를 넣고 **돌아오는 길**. 설정 시트에서 키가 저장되면 그 순간 신호가 오고
+   * 여기서 다시 조회한다 — 새로고침을 요구하지 않는다(요구하면 결함이다).
+   * 조회 자체는 아래 effect 하나가 소유하고, 이 값은 그 effect 를 다시 돌리는
+   * 방아쇠일 뿐이다.
+   */
+  const [secretNonce, setSecretNonce] = useState(0);
+  useEffect(() => {
+    if (!open || !bridgeAvailable) return undefined;
+    return subscribeSecretChange(() => setSecretNonce((value) => value + 1));
+  }, [open, bridgeAvailable]);
   useEffect(() => {
     if (!open || !bridgeAvailable) return;
     let cancelled = false;
@@ -92,7 +109,7 @@ export function VaultAgentPanel({
     return () => {
       cancelled = true;
     };
-  }, [open, bridgeAvailable]);
+  }, [open, bridgeAvailable, secretNonce]);
 
   const agent = useVaultAgent({
     provider,
@@ -142,6 +159,21 @@ export function VaultAgentPanel({
 
   const ready = bridgeAvailable && Boolean(provider) && Boolean(vaultPath);
   const canSend = ready && scopeAccepted && !agent.running && draft.trim().length > 0;
+
+  /**
+   * 이 패널이 지금 어느 상태인가 — 한 값으로 접는다. 같은 박스가 다른 상태가
+   * 되는 것이므로, 이 값이 바뀔 때만 크로스페이드가 한 번 돈다.
+   */
+  const stage = !bridgeAvailable
+    ? 'web'
+    : !vaultPath
+      ? 'no-folder'
+      : !provider
+        ? 'no-key'
+        : !scopeAccepted
+          ? 'scope'
+          : 'chat';
+  const lockedExamples = [t('locked.example1'), t('locked.example2'), t('locked.example3')];
 
   function submit() {
     if (!canSend) return;
@@ -194,20 +226,45 @@ export function VaultAgentPanel({
           </button>
         </header>
 
-        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+        <div
+          ref={scrollRef}
+          data-agent-panel-stage={stage}
+          // 이 스크롤러 자체를 세로 flex 로 둔다 — 잠긴 상태의 입력칸 자리가
+          // 실제 입력칸과 **같은 위치**(패널 바닥)에 서려면 아래 래퍼가 남는
+          // 높이를 받아야 하고, `min-h-full` 은 스크롤 컨테이너 안에서 신뢰할 수
+          // 없다.
+          className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-3"
+        >
+          {/* 같은 박스가 다른 상태가 된다 — 상태 이름을 key 로 두어 짧은
+              크로스페이드(--motion-base)가 한 번만 돌게 한다. 새 화면이 나타난
+              것처럼 보이면 "여기가 열렸다" 가 아니라 "다른 데로 갔다" 로 읽힌다. */}
+          <div key={stage} className="agent-panel-stage-swap flex grow flex-col">
           {!bridgeAvailable ? (
-            <WebDegraded
+            // 브라우저에는 키를 둘 곳도 보낼 경로도 없다 — 설정으로 보내는 것이
+            // 아니라 앱으로 보낸다(정직 강등).
+            <AgentLockedState
               title={t('degraded.webTitle')}
               body={t('degraded.webBody')}
-              linkLabel={t('degraded.download')}
-              href={downloadHref}
+              examplesTitle={t('locked.examplesTitle')}
+              examples={lockedExamples}
             />
           ) : !vaultPath ? (
-            <Notice title={t('degraded.noVaultTitle')} body={t('degraded.noVaultBody')} />
+            <AgentLockedState
+              title={t('degraded.noVaultTitle')}
+              body={t('degraded.noVaultBody')}
+              examplesTitle={t('locked.examplesTitle')}
+              examples={lockedExamples}
+            />
           ) : !provider ? (
-            // 여는 버튼을 만들지 않고 **자리를 말한다** — 같은 기능으로 가는
-            // 입구가 둘이 되면 어느 쪽이 진짜인지가 흐려진다.
-            <Notice title={t('degraded.noKeyTitle')} body={t('degraded.noKeyBody')} />
+            // 소유자 판정 반전(2026-07-26) — 구 구조는 "왼쪽 아래 설정(톱니)의
+            // 「AI 연결」에서…" 라고 **말로** 길을 알려줬다. 화면이 데려다 줄 수
+            // 있는 자리를 사람에게 찾게 만드는 것은 안내가 아니라 숙제다.
+            <AgentLockedState
+              title={t('degraded.noKeyTitle')}
+              body={t('degraded.noKeyBody')}
+              examplesTitle={t('locked.examplesTitle')}
+              examples={lockedExamples}
+            />
           ) : !scopeAccepted ? (
             <AgentScopeSheet
               provider={t(`provider.${provider}`)}
@@ -284,7 +341,34 @@ export function VaultAgentPanel({
               ) : null}
             </>
           )}
+          </div>
         </div>
+
+        {/* 잠긴 상태의 입력칸 자리 — 실제 입력칸과 **같은 띠**(패널 바닥, 같은
+            구분선)에 선다. 두 상태가 같은 자리를 쓰므로 키가 들어오는 순간이
+            "여기가 열렸다" 로 읽힌다. 상태마다 안내와 목적지만 다르다. */}
+        {stage === 'web' ? (
+          <AgentLockedComposer
+            testId="vault-agent-download-link"
+            hint={t('locked.composerHintWeb')}
+            actionLabel={t('degraded.download')}
+            actionHref={downloadHref}
+          />
+        ) : stage === 'no-folder' ? (
+          <AgentLockedComposer
+            testId="vault-agent-open-folder"
+            hint={t('locked.composerHintNoVault')}
+            actionLabel={t('degraded.noVaultAction')}
+            onAction={onOpenFolder}
+          />
+        ) : stage === 'no-key' ? (
+          <AgentLockedComposer
+            testId="vault-agent-open-settings"
+            hint={t('locked.composerHint')}
+            actionLabel={t('degraded.noKeyAction')}
+            onAction={() => requestSettingsView('ai')}
+          />
+        ) : null}
 
         {ready && scopeAccepted ? (
           <footer className="shrink-0 border-t border-[color:var(--color-border-soft)] p-2.5">
@@ -358,40 +442,3 @@ export function VaultAgentPanel({
   );
 }
 
-function Notice({ title, body }: { title: string; body: string }) {
-  return (
-    <div data-testid="vault-agent-notice" className="flex flex-col gap-1.5">
-      <p className="text-body font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
-        {title}
-      </p>
-      <p className="text-body leading-[1.65] text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
-        {body}
-      </p>
-    </div>
-  );
-}
-
-function WebDegraded({
-  title,
-  body,
-  linkLabel,
-  href,
-}: {
-  title: string;
-  body: string;
-  linkLabel: string;
-  href: string;
-}) {
-  return (
-    <div className="flex flex-col items-start gap-2">
-      <Notice title={title} body={body} />
-      <a
-        data-testid="vault-agent-download-link"
-        href={href}
-        className="h-8 rounded-chip border border-[color:var(--color-indigo-accent)] px-3 pt-1.5 text-label font-semibold tracking-label text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
-      >
-        {linkLabel}
-      </a>
-    </div>
-  );
-}

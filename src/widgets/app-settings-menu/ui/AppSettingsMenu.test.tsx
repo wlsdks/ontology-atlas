@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { MouseEventHandler, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { requestSettingsView } from '@/shared/lib/settings-view-intent';
 import { AppSettingsMenu } from './AppSettingsMenu';
 
 const mocks = vi.hoisted(() => ({
@@ -227,6 +228,42 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     fireEvent.click(screen.getByTestId('app-settings-ai-drillin'));
     expect(screen.getByTestId('app-settings-ai-view')).toBeInTheDocument();
     expect(screen.queryByTestId('app-settings-body')).toBeNull();
+  });
+
+  /**
+   * 지도 오른쪽 도크의 「설정에서 키 등록」이 타는 경로 — 시트가 **닫힌 상태에서**
+   * 요청을 받아 곧바로 [AI 연결] 서브뷰로 열린다. 사용자에게 톱니 위치를 말로
+   * 알려주는 대신 문을 주기 위한 유일한 연결선이다.
+   *
+   * `offsetParent` 를 스텁하는 이유: 이 위젯은 폭에 따라 두 트리거로 두 번
+   * 마운트되므로 **보이는 쪽만** 응답해야 하고, jsdom 은 레이아웃이 없어 모든
+   * 요소가 숨은 것으로 계산된다.
+   */
+  it('opens straight into the AI subview when another surface asks for it', () => {
+    const visible = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetParent');
+    Object.defineProperty(HTMLElement.prototype, 'offsetParent', {
+      configurable: true,
+      get: () => document.body,
+    });
+    try {
+      render(<AppSettingsMenu mode="static" />);
+      expect(screen.queryByTestId('app-settings-ai-view')).toBeNull();
+
+      act(() => requestSettingsView('ai'));
+
+      expect(screen.getByTestId('app-settings-ai-view')).toBeInTheDocument();
+      expect(screen.queryByTestId('app-settings-body')).toBeNull();
+    } finally {
+      if (visible) Object.defineProperty(HTMLElement.prototype, 'offsetParent', visible);
+      else Reflect.deleteProperty(HTMLElement.prototype, 'offsetParent');
+    }
+  });
+
+  it('ignores the request when its own trigger is not rendered at this width', () => {
+    // 숨은 인스턴스까지 응답하면 같은 시트가 두 겹으로 열린다.
+    render(<AppSettingsMenu mode="static" />);
+    act(() => requestSettingsView('ai'));
+    expect(screen.queryByTestId('app-settings-ai-view')).toBeNull();
   });
 
   it('renders the honest desktop-only card instead of a key field in the browser', () => {
