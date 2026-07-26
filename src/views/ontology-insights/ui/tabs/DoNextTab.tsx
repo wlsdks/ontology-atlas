@@ -10,6 +10,7 @@ import type { DoNextQueue, DoNextRow } from "../../lib/do-next-queue";
 import type { DependencyCycle, DependencyCyclesResult } from "../../lib/dependency-cycles";
 import type { DuplicatePairRow } from "../../lib/duplicate-pairs";
 import type { DoNextReviewState } from "../../lib/review-loop";
+import type { DomainChoice, MeaningGapRow } from "../../lib/meaning-gap-rows";
 import {
   queueGroupOrder,
   queueGroupOrderKey,
@@ -22,6 +23,7 @@ import {
   type QueueRowAbilities,
   type QueueRowActionLabels,
 } from "../parts/QueueRowActions";
+import { MeaningGapSection, type MeaningGapLabels } from "./MeaningGapSection";
 
 /**
  * 탭1 "할 일" (S5, 전략 verdict B 채택) — 인사이트의 기본 탭. "무엇이
@@ -195,6 +197,19 @@ export interface DoNextTabProps {
    * 쪽이라, 넘기지 않는 호출부(테스트 등)에서 폼이 저절로 열리지 않는다.
    */
   abilities?: QueueRowAbilities;
+  /**
+   * 「한 문장으로 끝나는 일」 — 정의 없음 · 소속 미정. 볼트 문서 사실이 있어야
+   * 계산되므로 optional 이다(넘기지 않으면 섹션 자체가 없다).
+   */
+  meaningGaps?: {
+    definitionRows: MeaningGapRow[];
+    domainRows: MeaningGapRow[];
+    counts: { missingDefinition: number; missingDomain: number };
+    domainChoices: DomainChoice[];
+    onWrite: (row: MeaningGapRow, value: string) => Promise<void>;
+    definitionLabels: MeaningGapLabels;
+    domainLabels: MeaningGapLabels;
+  } | null;
   labels: DoNextTabLabels;
 }
 
@@ -665,6 +680,7 @@ export function DoNextTab({
   reviewState,
   onReviewStart,
   abilities = { canWriteVault: false, agentObserved: false },
+  meaningGaps = null,
   labels,
 }: DoNextTabProps) {
   const reviewStatusRef = useRef<HTMLParagraphElement | null>(null);
@@ -752,11 +768,21 @@ export function DoNextTab({
   // 중복 의심 쌍도 손볼 일이다 — 그 쌍이 남아 있는데 "손볼 것이 없어요" 라고
   // 말하면 바로 아래 섹션과 모순된다(#63 단일 판정과 같은 규율).
   const hasDuplicates = duplicates.length > 0;
+  // 의미 공백(정의 없음 · 소속 미정)도 손볼 일이다 — 아래 섹션이 그 행을
+  // 보여주는데 "손볼 것이 없어요" 라고 말하면 같은 카드가 자기모순에 빠진다.
+  const meaningGapTotal =
+    (meaningGaps?.counts.missingDefinition ?? 0) + (meaningGaps?.counts.missingDomain ?? 0);
   const queueEmpty =
-    queue.rows.length === 0 && !hasCycles && !hasClipParityIssues && !hasDuplicates;
+    queue.rows.length === 0 &&
+    !hasCycles &&
+    !hasClipParityIssues &&
+    !hasDuplicates &&
+    meaningGapTotal === 0;
 
   // 묶음 규모 — 섹션 헤더가 이미 찍는 총계(절단 전)를 그대로 더한다.
   const groupCounts = sumQueueGroupCounts([
+    { section: "missing-definition", total: meaningGaps?.counts.missingDefinition ?? 0 },
+    { section: "missing-domain", total: meaningGaps?.counts.missingDomain ?? 0 },
     { section: "duplicate", total: duplicateTotal },
     { section: "promotion", total: queue.counts.promotion },
     { section: "neglected-hub", total: queue.counts.neglectedHub },
@@ -766,6 +792,35 @@ export function DoNextTab({
   const groupOrder = queueGroupOrder(abilities);
   const meaningSections = (
     <>
+      {meaningGaps ? (
+        <>
+          <MeaningGapSection
+            gapKind="missing-definition"
+            rows={meaningGaps.definitionRows}
+            totalCount={meaningGaps.counts.missingDefinition}
+            abilities={abilities}
+            mapHref={(nodeId) => mapHref(nodeId)}
+            sourceHref={(nodeId) => sourceHref(nodeId)}
+            builderHref={(nodeId) => builderHref(nodeId)}
+            onWrite={meaningGaps.onWrite}
+            moreCount={labels.moreCount}
+            labels={meaningGaps.definitionLabels}
+          />
+          <MeaningGapSection
+            gapKind="missing-domain"
+            rows={meaningGaps.domainRows}
+            totalCount={meaningGaps.counts.missingDomain}
+            abilities={abilities}
+            domainChoices={meaningGaps.domainChoices}
+            mapHref={(nodeId) => mapHref(nodeId)}
+            sourceHref={(nodeId) => sourceHref(nodeId)}
+            builderHref={(nodeId) => builderHref(nodeId)}
+            onWrite={meaningGaps.onWrite}
+            moreCount={labels.moreCount}
+            labels={meaningGaps.domainLabels}
+          />
+        </>
+      ) : null}
       <DuplicateSection
         rows={duplicates}
         totalCount={duplicateTotal}
@@ -842,7 +897,11 @@ export function DoNextTab({
   );
   // 묶음 머리는 그 묶음에 **보이는 행이 있을 때만** 그린다 — 빈 머리는
   // "여기 뭔가 있어야 하는데 없다" 로 읽힌다.
-  const meaningVisible = duplicates.length > 0 || promotionRows.length > 0;
+  const meaningVisible =
+    (meaningGaps?.definitionRows.length ?? 0) > 0 ||
+    (meaningGaps?.domainRows.length ?? 0) > 0 ||
+    duplicates.length > 0 ||
+    promotionRows.length > 0;
   const codeVisible =
     neglectedRows.length > 0 || orphanRows.length > 0 || visibleCycles.cycles.length > 0;
   const groupNode: Record<QueueWorkGroup, ReactNode> = {

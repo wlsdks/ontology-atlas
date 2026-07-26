@@ -33,6 +33,12 @@ export interface InsightsSignalCounts {
   orphans: number;
   /** 여러 곳에서 참조되는 노드 — 상위 개념 승격 권장. */
   promotions: number;
+  /**
+   * 뜻이나 소속이 안 적힌 개념 — 사람이 한 문장으로 메울 수 있는 공백.
+   * 권장으로 센다: 그래프가 깨진 건 아니지만, 배지가 이걸 빼면 큐가 행을
+   * 보여주는데 배지는 0 이라고 말하는 옛 모순(#63)이 다시 열린다.
+   */
+  meaningGaps?: number;
 }
 
 export interface InsightsVerdict {
@@ -60,7 +66,8 @@ export interface InsightsVerdict {
 
 export function buildInsightsVerdict(counts: InsightsSignalCounts): InsightsVerdict {
   const blocking = counts.islands + counts.missingContainment + counts.cycles;
-  const advisory = counts.neglectedHubs + counts.orphans + counts.promotions;
+  const advisory =
+    counts.neglectedHubs + counts.orphans + counts.promotions + (counts.meaningGaps ?? 0);
   return {
     blocking,
     advisory,

@@ -17,6 +17,7 @@ import type { LlmAuditEntry } from '@/shared/lib/llm-audit-log';
 import { openTauriVaultInFinder } from '@/shared/lib/tauri-vault-fs';
 import { useToast } from '@/shared/ui/toast';
 import { cn } from '@/shared/lib/cn';
+import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 import { AI_PROVIDER_LABEL_KEY } from '../model/ai-providers';
 import type { AiConnectionState } from '../model/use-ai-connection';
 
@@ -477,108 +478,6 @@ function ProviderCard({
       </div>
     </div>
   );
-}
-
-/**
- * 열림/닫힘/내용 교체를 **하나의 높이 전이**로 통과시키는 수명 관리.
- *
- * 왜 이렇게까지 하나: 취소가 "취소됐다" 로 읽히려면 카드가 **들어온 길로**
- * 나가야 한다. 조건부 렌더만 쓰면 나가는 길이 아예 없다(툭 사라진다). 그래서
- * `open` 이 false 가 되어도 퇴장 전이가 끝날 때까지 DOM 에 남긴다.
- *
- * 높이를 px 로 쓰는 이유는 `.ai-row-disclosure` 주석에 있다 — 요약하면 `auto`
- * 는 보간이 안 되고 `0fr↔1fr` 는 내용 교체(초안 폼 → 등록됨 액션)를 못 탄다.
- * ResizeObserver 로 실제 콘텐츠 높이를 계속 써 넣으면 열림·닫힘·교체·리플로우가
- * 전부 같은 커브를 지난다.
- *
- * 영구 마운트를 쓰지 않는 이유: 접힌 행의 본문(붙여넣기 안전 문구 등)이 스크린
- * 리더와 탭 순서에 남는다. 보이지 않는 것은 읽히지도 않아야 한다.
- */
-function useRowDisclosure(open: boolean) {
-  const [mounted, setMounted] = useState(open);
-  const boxRef = useRef<HTMLDivElement | null>(null);
-  const contentRef = useRef<HTMLDivElement | null>(null);
-  // 이전 커밋의 열림 상태. `null` = 아직 한 번도 안 그렸다 → 그 커밋은 "상태"
-  // 이지 "전이" 가 아니다. 이미 등록된 행이 화면에 나타나며 스스로 펼쳐지는
-  // 연출은 사용자가 시킨 적 없는 움직임이다.
-  const previousOpenRef = useRef<boolean | null>(null);
-
-  // 열림 요청은 같은 커밋에서 마운트한다 — 한 프레임 뒤에 내용이 생기면
-  // 클릭과 반응 사이에 빈 칸이 보인다.
-  if (open && !mounted) setMounted(true);
-
-  useEffect(() => {
-    if (open || !mounted) return undefined;
-    // 퇴장 — 전이가 끝난 뒤에 언마운트. 지속시간은 CSS 토큰이 진실원이라
-    // 여기에 ms 를 복제하지 않고 읽어 온다(복제하면 조용히 갈라진다).
-    const timer = window.setTimeout(() => setMounted(false), readDisclosureExitMs());
-    return () => window.clearTimeout(timer);
-  }, [open, mounted]);
-
-  useEffect(() => {
-    const box = boxRef.current;
-    if (!box) return undefined;
-    const content = contentRef.current;
-    const previous = previousOpenRef.current;
-    previousOpenRef.current = open;
-    const isTransition = previous !== null && previous !== open;
-
-    if (!open) {
-      // 닫힘 — 출발점을 실측 px 로 못박고 나서 0 으로. `auto` 에서 출발하면
-      // 브라우저가 보간할 시작값을 갖지 못해 그냥 사라진다.
-      if (isTransition) {
-        box.style.height = `${box.scrollHeight}px`;
-        forceReflow(box);
-      }
-      box.style.height = '0px';
-      return undefined;
-    }
-
-    if (!content) return undefined;
-    if (isTransition) {
-      box.style.height = '0px';
-      forceReflow(box);
-    }
-    box.style.height = `${content.offsetHeight}px`;
-
-    if (typeof ResizeObserver === 'undefined') return undefined;
-    // 내용이 바뀌거나(저장 성공: 입력 폼 → 등록됨 액션, 캡션 3줄 → 1줄) 폭이
-    // 바뀌어 줄 수가 달라져도 같은 커브를 탄다 — 높이를 한 번 재고 고정해 두면
-    // 그 순간부터 잘림이 시작된다.
-    const observer = new ResizeObserver(() => {
-      box.style.height = `${content.offsetHeight}px`;
-    });
-    observer.observe(content);
-    return () => observer.disconnect();
-  }, [open, mounted]);
-
-  return { mounted, open, boxRef, contentRef };
-}
-
-/** 시작값을 브라우저에 확정시킨다 — 이 읽기가 없으면 두 스타일 쓰기가 한
- *  프레임에 합쳐져 전이가 통째로 건너뛰어진다. */
-function forceReflow(element: HTMLElement): void {
-  void element.getBoundingClientRect().height;
-}
-
-/**
- * 퇴장 지속시간 — `--motion-base` 가 단일 진실원이고 JS 는 그것을 **읽는다**.
- * 모듈 레벨 캐시: 토큰은 런타임에 바뀌지 않고, 행마다 getComputedStyle 을
- * 부르면 펼칠 때마다 레이아웃을 강제로 계산하게 된다.
- */
-let disclosureExitMs: number | null = null;
-function readDisclosureExitMs(): number {
-  if (disclosureExitMs !== null) return disclosureExitMs;
-  const fallback = 180;
-  if (typeof window === 'undefined') return fallback;
-  const raw = window
-    .getComputedStyle(document.documentElement)
-    .getPropertyValue('--motion-base')
-    .trim();
-  const value = Number.parseFloat(raw);
-  if (!Number.isFinite(value)) return fallback;
-  disclosureExitMs = raw.endsWith('ms') ? value : value * 1000;
-  return disclosureExitMs;
 }
 
 /**
