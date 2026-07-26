@@ -2581,6 +2581,65 @@
   }
 
   /*
+   * 같은 원칙을 **크로스페이드 계열 전체**로 (2026-07-26 프레임 실측).
+   *
+   * 위 원칙을 선언해 두고 실제로 지킨 셀렉터가 `.ai-row-disclosure` 하나뿐이라,
+   * 앱의 나머지 표면은 reduced-motion 에서 전부 하드컷이었다 — 설정 시트
+   * 150ms 이징 → 0ms, 인사이트 탭 전환 150ms → 0ms(둘 다 1프레임 측정).
+   * 특히 지도 위 팝오버·전면 상세처럼 **인과가 모션에만 실린** 자리에서
+   * 완전 정적은 "내가 눌러서 나타난 것" 과 "화면이 고장난 것" 을 구분해
+   * 주지 않는다.
+   *
+   * 방법은 위와 같다: 흔들리는 축(translate·scale)만 없애고 흔들리지 않는 축
+   * (opacity)은 남긴다. **새 키프레임 0 · 새 duration 0** — transform 이 실린
+   * 등장은 키프레임 **이름만** opacity 전용(`panelCrossfadeIn`)으로 바꿔 자기
+   * duration 토큰을 그대로 탄다.
+   *
+   * 여기 없는 것은 의도적으로 없다: 무한 heartbeat(`.agent-pending-dot`,
+   * `.studio-strut-flow`)와 장식 흐름은 계속 정지가 맞고, 그 사실은 옆의
+   * 텍스트가 이미 말한다. `.overlay-spring-surface` 는 소비처가
+   * `.overlay-fade-only` 로 클래스를 바꿔치는 별도 경로를 이미 갖고 있다.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    /* ① 이미 opacity 전용 — 시간만 되돌린다. */
+    .insights-tab-crossfade,
+    .insights-disclosure-in,
+    .ai-row-swap,
+    .overlay-fade-only[data-state='open'],
+    .overlay-fade-only[data-state='closed'] {
+      animation-duration: var(--motion-fast) !important;
+    }
+
+    .app-settings-scrim-in {
+      animation-duration: var(--motion-base) !important;
+    }
+
+    .map-overlay-in,
+    .overlay-spring-scrim[data-state='open'],
+    .overlay-spring-scrim[data-state='closed'] {
+      animation-duration: var(--topology-motion-panel-duration) !important;
+    }
+
+    /* ② transform 이 실린 등장/퇴장 — 키프레임 이름만 바꾼다. */
+    .app-settings-panel-in {
+      animation-name: panelCrossfadeIn !important;
+      animation-duration: var(--motion-base) !important;
+    }
+
+    .topology-chrome-in,
+    .rail-status-dot-in {
+      animation-name: panelCrossfadeIn !important;
+      animation-duration: var(--topology-motion-panel-duration) !important;
+    }
+
+    .topology-chrome-out {
+      animation-name: panelCrossfadeIn !important;
+      animation-direction: reverse !important;
+      animation-duration: calc(var(--topology-motion-panel-duration) * 0.67) !important;
+    }
+  }
+
+  /*
    * 접근성: 고대비 모드(Windows 고대비·사파리 increase contrast) 대응.
    * 다크 캔버스 위에서는 텍스트를 더 밝게 해 canvas 와의 거리를 벌린다.
    */
