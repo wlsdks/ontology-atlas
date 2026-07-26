@@ -52,8 +52,11 @@
 - **[갱신, 2026-07-18]** 위 시각화 판정 시점 이후 `refactor/retire-sigma-topology`
   (#344) 가 머지되어 `/topology` 의 주 렌더러는 Sigma 가 아니라 커스텀
   canvas-2D 엔진(`topology-map-v2`, Graphology ForceAtlas2 물리만 재사용)이다.
-  Sigma.js 는 `/docs` 폴더 토폴로지 미니맵에만 남아 있다 — "갈림길 (Q4 2026)"
-  행의 "Sigma 테스트 통과" 는 여전히 WebGL 뷰포트 viability 대리 지표로 유효.
+- **[갱신, 2026-07-24]** `/docs` 폴더 토폴로지 미니맵까지 제거되면서
+  Sigma.js와 `@sigma/*` 의존성은 코드베이스에서 완전히 사라졌다. 현행
+  렌더링은 `topology-map-v2`, 그래프 자료구조·물리는 Graphology +
+  ForceAtlas2가 소유한다. 아래 Sigma 검토 기록은 당시 선택 근거일 뿐 현재
+  구현 계약이 아니다.
 
 ## 즉시 액션 (이번 사이클)
 

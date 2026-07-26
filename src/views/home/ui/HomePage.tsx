@@ -3994,7 +3994,7 @@ export function HomePage() {
           <>
               <div
                 key={localGraphRoot ?? '__root__'}
-                className="absolute inset-0 animate-[sigmaFade_220ms_ease-out]"
+                className="absolute inset-0 animate-[topologyFade_220ms_ease-out]"
               >
                 {/* Empty-state overlay when the visible Sigma graph has 0–1
                     nodes — the lone Sigma dot otherwise reads as a broken
@@ -4064,7 +4064,6 @@ export function HomePage() {
                     nodes={topologyV2Graph.nodes}
                     edges={topologyV2Graph.edges}
                     focus={{ selectedSlug: canvasSelectedSlug }}
-                    changedSlugs={changedSlugs}
                     fitViewToken={combinedFitToken}
                     relayoutToken={topologyRelayoutToken}
                     revealToken={mapRevealToken}
@@ -4135,7 +4134,7 @@ export function HomePage() {
                 ) : null}
               </div>
               <style jsx>{`
-                @keyframes sigmaFade {
+                @keyframes topologyFade {
                   from { opacity: 0.5; transform: scale(0.995); }
                   to { opacity: 1; transform: scale(1); }
                 }

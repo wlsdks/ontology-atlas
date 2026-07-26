@@ -7,17 +7,19 @@ domain: views
 
 # Topology Kind Color Tests
 
-`src/entities/ontology-class/model/tone.test.ts`, `src/shared/lib/domain-color.test.ts`, `src/widgets/topology-map-sigma/lib/ontology-tone.test.ts`, `src/widgets/topology-map-sigma/lib/graph-build.test.ts`, `src/widgets/topology-map-sigma/lib/reducer-owner-tint.test.ts`, and `src/widgets/topology-map-sigma/lib/reducer-edge-lod.test.ts` guard the topology kind-color, domain-tint, and first-viewport readability contract.
+This node now names a narrower, current test boundary:
 
-The tests prove six user-facing claims:
+- `src/entities/ontology-class/model/tone.test.ts` guards unique categorical
+  tones, dark-background contrast, readable text, and unknown-kind fallback.
+  Its live UI consumer is the kind distribution chart in Insights.
+- `src/shared/lib/domain-color.test.ts` guards the deterministic domain tint
+  helper. The helper currently has no production canvas consumer.
+- `src/widgets/topology-map-v2/model/freshness.test.ts` guards fresh/stale/hub
+  overlays independently of kind.
+- topology-v2 render/model/UI tests guard current canvas shapes, tier reveal,
+  relation traces, focus, cluster density, labels, and token reading.
 
-- The visible topology legend has five kinds: `project`, `domain`, `capability`, `element`, and `unknown`.
-- Every visible kind fill color is unique and has at least 150 RGB-distance from every other kind color, catching palettes that look too similar during graph scanning.
-- Every visible kind fill maintains at least 3:1 contrast against the dark topology canvas, so small graph marks do not disappear into the background.
-- Tree and Builder kind chips keep enough background and border alpha to remain legible in compact controls.
-- Atlas dogfood domains resolve to named qualitative hues and keep at least 36 degrees of circular hue separation, preventing `views`, `ontology-core`, and agent-facing domains from reading as the same tint.
-- Before an ontology extension is loaded, project slug-prefix fallback colors remain categorical and separated instead of near-neutral.
-- When `ontologyExtension` is active, plain project nodes use the same project tone as the legend instead of a generic slug-derived leaf color.
-- Dense overview mode hides ontology leaf/fan relation lines in the unselected map view while preserving containment edges between overview landmarks as a readable skeleton; relationship proof still comes back through focus/path/impact evidence, so the first viewport is a semantic cluster map instead of an edge cloud.
-
-This makes the user's "색상이 다 비슷해서 구분이 안됨" and "엉킨 선 덩어리처럼 보이지 않게" feedback executable: future color or LOD changes must preserve categorical separation and overview legibility, not only compile.
+The removed Sigma legend, graph-build, owner-tint, and reducer-edge-LOD tests
+are not current proof. Topology no longer promises five colored node fills or
+a kind-color legend; neutral canvas hierarchy is explained through shape,
+glyph, label, tier, containment, INDEX, and the relation-line legend.

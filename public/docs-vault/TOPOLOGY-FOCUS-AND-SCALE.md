@@ -155,10 +155,13 @@ Node-detail / ego-on-click patterns in shipping tools:
 - Linkurious Enterprise vs Neo4j Bloom (incremental investigation UX):
   <https://linkurious.com/blog/linkurious-enterprise-neo4j-bloom/>
 
-Implementation (Sigma.js):
+Current implementation:
 
-- Sigma.js — reducers + `hideEdgesOnMove` / `hideLabelsOnMove`:
-  <https://www.sigmajs.org/docs/advanced/data/>
+- `src/widgets/topology-map-v2/` — custom canvas-2D renderer, camera, focus,
+  attention layers, pointer handling, and DOM overlay coordination.
+- Graphology + ForceAtlas2 — graph data and layout inputs only.
+- The Sigma.js note from the initial spec is historical; Sigma has no current
+  dependency or runtime consumer.
 
 ## Changelog
 

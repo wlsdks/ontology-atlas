@@ -286,16 +286,20 @@ $ ohmy add element src/features/billing/lib/cycle-rule.ts \
 
 Options:
 
-1. **CLI** — `npx ontology-atlas add ...` (auto-writes frontmatter)
-2. **MCP server** — Claude Code calls tools directly (`mcp__ontology-atlas__add_node`)
-3. **Programmatic API** — `import { addNode }` from the package
+1. **CLI** — `ontology-atlas add ...` or the current source-checkout CLI
+2. **MCP server** — Claude Code/Codex calls `add_concept` / `add_relation`
+   after read-first and duplicate checks
+3. **Workshop** — a person fills one typed compass socket and reviews the
+   resulting frontmatter write
 
-Most ergonomic: **option 3 (MCP server)**. The agent navigates the codebase and adds discovered concepts to the ontology *directly*. Humans review them in the builder.
+Agents can propose and land accepted concepts through MCP; humans judge the
+same meaning through plain Markdown, git diffs, Topology, and Workshop. There
+is no separate programmatic graph store.
 
 ### 3-C. Two-way sync
 
 ```
-human edits builder canvas
+human edits Markdown or Workshop
         │
         ▼
 ontology graph (vault frontmatter)
@@ -312,11 +316,10 @@ Same graph. Same vault. Different input paths.
 
 ### New target — macOS-first desktop app exploration (2026-05-25)
 
-The product should explore an installable macOS app as a first-class
-distribution goal, not only the hosted website or `pnpm dev` workflow. This
-fits the local-first promise: the user installs the workbench on their own Mac,
-opens a vault folder from disk, and keeps the same markdown + MCP + CLI graph
-loop without visiting the hosted site.
+The installable macOS app is the first-class writable workbench, not a future
+exploration. The user opens a vault folder from disk and keeps the same
+markdown + MCP + CLI graph loop without a backend. The hosted root remains a
+read-only dogfood map and download/source entry.
 
 Quality bar: this must be desktop-grade, not a webview-shaped shortcut.
 Compare against Obsidian, Claude Desktop, and Codex Desktop for the basics:
@@ -325,18 +328,19 @@ clear local data location, command/agent setup visibility, offline operation,
 and a polished native-feeling window lifecycle. A weaker shell should remain an
 internal prototype, not a user-facing distribution promise.
 
-Recommended first slice:
+Current distribution contract:
 
-1. Keep the existing Next.js static export as the frontend payload.
-2. Prototype a macOS-only desktop shell with Tauri first.
-3. Point the shell at the generated `out/` directory and preserve the current
-   File System Access / local-vault behavior where possible.
-4. Verify the app can open the dogfood vault, render `/docs`, `/ontology`,
-   `/topology`, and `/ontology/edit`, and still hand off to CLI/MCP setup
-   gates.
-5. Keep signing and notarization wired into the tag-release path, while leaving
-   updater and packaged MCP/CLI sidecars as separate distribution hardening work
-   after the local prototype works.
+1. Next.js static export is the Tauri frontend payload.
+2. The installed app opens local vaults through the native bridge and verifies
+   current Docs, Topology, Workshop, Insights, Projects, and Git routes.
+3. `/ontology` and `/ontology/edit` remain compatibility redirects to
+   Topology and Workshop; they are smoke inputs, not separate product
+   surfaces.
+4. Signing, notarization, release slots, checksums, and installed-app proof
+   remain tag-release gates.
+5. Packaged MCP/CLI sidecars and auto-update remain separate distribution
+   slices. Until public npm packages exist, agent setup fails closed and points
+   source contributors at local entry points.
 
 Why Tauri first: this repo already uses `output: 'export'`, `images.unoptimized`,
 and `trailingSlash`, which match the static frontend shape expected by Tauri's
@@ -573,7 +577,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 2. ✅ 32 tools (read 19 + write 13): connection/root/toolset proof, vault-scoped Git status/history and local snapshots, persisted Workshop context (`builder_context` compatibility operation), list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, and dry-run-first rename/merge/delete/absorb writes.
 3. ✅ CLI command (`ontology-atlas`) — `npx ontology-atlas init <folder>` scaffolds the vault. The installed app `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
-5. ✅ `docs/ontology/` dogfood vault — 96 nodes describing our own mental model, including agent-practice notes as document nodes
+5. ✅ `docs/ontology/` dogfood vault — 97 nodes describing our own mental model, including agent-practice notes as document nodes
 
 ### Agent practitioner concerns map
 
@@ -644,12 +648,12 @@ What changed:
 The direction is no longer waiting on a phase pick. The active bar is evidence:
 
 - Installed macOS app launches and route-smokes the ontology workbench surfaces.
-- `/ontology` presents Browse / Write / Query as one loop over the same vault
-  graph, not as documentation navigation.
-- `/ontology/edit` stays narrowly scoped to relation write review, source-file
-  patch preview, preflight, and proof handoff.
-- `/ontology/insights` proves the local markdown graph can be queried like a
-  small graph database through health, scans, paths, relation checks, and
-  explanation contracts.
+- Topology + INDEX is the read/inspect surface, Workshop is the frontmatter
+  relation-write surface, and Insights is the five-question maintenance board.
+- `/ontology` redirects to `/topology?index=expanded`; `/ontology/edit`
+  redirects to Workshop and forwards `?node=`. Neither redirect owns current
+  chrome.
+- Agent/CLI graph DB packs still expose health, scans, paths, relation checks,
+  and explanation contracts without turning Insights into a query cockpit.
 - CLI/MCP proof gates must stay runnable over `docs/ontology` before the goal is
   treated as complete.

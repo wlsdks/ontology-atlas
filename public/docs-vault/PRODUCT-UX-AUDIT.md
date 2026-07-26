@@ -69,8 +69,41 @@
 | A38 | design:ontology 초록 → 실제 보호 구조 확인 → 구 3탭 fixture 거부 | 현행 5개 질문 탭·단일 panel·tab handoff 계약으로 이관 |
 | A39 | agent `builder_context` → persisted focus handoff → 현재 쓰기 표면 열기 | Workshop 직접 URL·호환 응답·설치 앱 ENHANCE proof 완료 |
 | A40 | 설치 앱 AI 연결 → 공개 패키지 해석 → 설정 생성·원클릭 등록 | npm E404를 단일 fail-closed gate로 표시, 실행 불가능한 설정·후속 단계 0개 설치 앱 검증 완료 |
+| A41 | 활성 문서 → graph/runtime 계약 → source·설치 앱 대조 | 퇴역 Sigma/Builder/고정 polling 설명 제거, 97노드·550관계·packaged app 재검증 완료 |
 
 ## 이슈 장부
+
+### UX-045 — 활성 문서가 제거된 그래프 표면을 현재 계약처럼 설명
+
+- 심각도: `S3`
+- 상태: 수정·정적 계약·fresh 설치 앱 재검증 완료
+- 흐름: maintainer/agent가 AGENTS·설계 문서·dogfood ontology를 읽고 현재
+  Topology, live update, agent handoff 구현을 판단
+- 관측 현상: 현재 코드는 `topology-map-v2`, Workshop, adaptive polling과
+  shared changeset을 쓰지만 활성 문서 일부는 Sigma kind 범례/owner tint/edge
+  reducer, ERD Builder 공유 layout, 고정 5초 recent TTL, 분석 rail을 살아 있는
+  구현처럼 말했다.
+- 사용자 문제: agent가 존재하지 않는 파일과 renderer contract를 수정 대상으로
+  선택하고, 사람은 지도 색·변경 강조·쓰기 표면을 실제 앱과 다르게 이해한다.
+- 단순화: 새 UI나 migration layer를 만들지 않았다. 현재 source를 정답으로
+  문서와 ontology를 고치고, 역사적 Phase 문서에는 superseded banner를 붙였다.
+  consumer 0인 Graph width token과 unused canvas prop/legacy animation 이름만
+  기계적으로 제거했다.
+- ontology/agent 가치: 의미 노드가 현재 canvas·INDEX·Workshop·Git handoff와
+  실제 구현 경로를 가리키며, dogfood domain relation과 97-node census가 다시
+  health gate를 통과한다.
+- 검증: docs vault 159문서 current, vault 97파일 issue 0, audit 249 paths
+  drift 0, graph 97노드·550관계 healthy, MCP verify 32/32 tools, focused
+  88 tests, MCP docs contract 21 tests, TypeScript, lint 오류 0,
+  production build 통과.
+- 설치 앱·Computer Use: fresh `/Applications/Ontology Atlas.app`을 재배포해
+  `/ko/topology/` WebView와 on-screen window를 자동 검증했다. Codex Computer
+  Use로 기록 → 문서함 route, h1, source selector, preview/edit tabs, 목차와
+  frontmatter evidence 구조를 읽었다. 현재 선택된 문서는 사용자가 소유한 기존
+  local vault README였고, local-first 정책상 새 starter 문구로 덮어쓰지 않는다.
+- PO·디자인 판정: 문서/source 주석·dead token 현행화인 mechanical maintenance
+  exception. 렌더링·token value·layout·motion은 바꾸지 않았으며 verdict는
+  **Build and verify**.
 
 ### UX-044 — 공개되지 않은 CLI/MCP 패키지를 설치 앱이 즉시 연결 가능하다고 안내
 

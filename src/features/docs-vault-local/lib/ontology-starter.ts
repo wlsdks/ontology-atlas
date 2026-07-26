@@ -247,7 +247,7 @@ elements:
 # Example capability
 
 A *capability* is one user-visible feature within a domain (login,
-signup, checkout, search, builder canvas, …). Rename this file to match
+signup, checkout, search, relation editing, …). Rename this file to match
 one of your real capabilities (\`capabilities/login.md\`,
 \`capabilities/checkout.md\`) and update the \`domain:\` and \`elements:\`
 keys above accordingly.

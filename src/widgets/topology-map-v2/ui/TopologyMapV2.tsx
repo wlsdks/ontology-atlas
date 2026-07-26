@@ -7,13 +7,10 @@ import type { TierRevealConfig } from "../model/tier-visibility";
 import type { CanvasBackground, GlyphSet } from "@/shared/lib/appearance-preferences";
 
 /**
- * `TopologyMapV2` — the single canvas-2D render engine that replaces
- * `TopologyMapCanvas` (DOM/CSS) + `SigmaTopology` (WebGL) behind the
- * `topology-map-v2` feature flag (`docs/TOPOLOGY-V2-DESIGN.md` §1.2 "하나의
- * 렌더 엔진으로 통합"). Phase 0's adapter contract (§4.2) is this component's
- * props — HomePage/ProjectDetailPage swap their existing
- * `TopologyMapCanvas`/`SigmaTopology` call sites for this one, unchanged
- * upstream state management (selected slug, path query, etc).
+ * `TopologyMapV2` — the product's single current canvas-2D topology renderer.
+ * The former DOM canvas and Sigma/WebGL implementations are retired and
+ * deleted; `HomePage` supplies the current adapter contract (selected slug,
+ * path query, visibility and interaction callbacks) directly to this widget.
  *
  * The component itself stays a thin JSX shell — mount/resize/rAF-loop/
  * pointer/camera/draw wiring all live in `use-topology-loop.ts` (+ its
@@ -68,7 +65,6 @@ export interface TopologyMapV2Props {
   nodes: readonly TopologyV2Node[];
   edges: readonly TopologyV2Edge[];
   focus: TopologyV2Focus;
-  changedSlugs?: ReadonlySet<string>;
   /** Increment to re-run fit-to-bounds (HomePage "지도 맞추기"). */
   fitViewToken: number;
   /** Increment to force a full relayout. */

@@ -139,7 +139,9 @@ depends_on:
   - capabilities/login
 ```
 
-…or use the builder canvas (`/ontology/edit`) and connect two nodes with a drag.
+…or open Workshop (`/ontology/studio`) and fill one of the selected concept's
+typed relation sockets. A writable vault lands the relation in frontmatter; a
+read-only vault gives you the MCP handoff packet instead.
 
 ### Search palette returns "no results" for everything
 

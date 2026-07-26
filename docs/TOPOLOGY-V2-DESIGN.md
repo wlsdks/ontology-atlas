@@ -1,5 +1,12 @@
 # TOPOLOGY-V2 DESIGN — 표현 아키텍처 설계 (Phase 1)
 
+> **Historical implementation record (superseded, 2026-07-27).** This document
+> preserves the measurements and decisions that led to `topology-map-v2`; its
+> descriptions of coexisting DOM/Sigma engines and future migration phases are
+> not current runtime instructions. The shipped contract is one canvas-2D
+> engine. Use `docs/TECH-STACK.md`, `docs/TOPOLOGY-FOCUS-AND-SCALE.md`,
+> `docs/FEATURES.md`, and current source for maintenance.
+>
 > 입력: `docs/prototypes/topology-b2plus.html`(승인된 B2+ "Circuit × Constellation"
 > 프로토타입) · `docs/TOPOLOGY-V2-PHASE0.md`(실측 병목 + 어댑터 계약 초안) ·
 > `docs/archive/SIGMA-PLAYBOOK.md`(Sigma v3 내장 기능 계약 — 조사됐으나 v2는

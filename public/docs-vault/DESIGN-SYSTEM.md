@@ -18,17 +18,19 @@ tags: [design, ux, linear, circuit-constellation, overview]
 `ontology-atlas` should feel like a compact graph workbench, not a documentation
 portal with a graph attached. The visual direction is still restrained: dark or
 light neutral surfaces, one indigo accent, dense but readable controls, and no
-decorative gradients. The product value comes from moving between three modes
-over the same local markdown graph:
+decorative gradients. The product value comes from a stable task handoff over
+the same local markdown graph:
 
-- **Browse** — hierarchy, node detail, reachability, and ego graph.
-- **Write** — builder canvas edits that write back to vault frontmatter.
-- **Query** — graph DB-style scans, health checks, domain matrix, and path
-  evidence.
+- **Topology + INDEX** — overview, selection, path/focus, reachability, and
+  source evidence.
+- **Workshop** — one typed relation write at a time, backed by frontmatter or a
+  read-only MCP packet.
+- **Insights** — five maintenance questions with one active panel and a
+  tab-scoped agent handoff.
 
-The tree is therefore a browse mode, not the whole product identity. Headers,
-cards, and navigation should point users from tree inspection into Builder and
-Insights whenever the next action is writing or graph-level verification.
+The retired tree/ego hub and ERD Builder are not alternate modes. Headers,
+cards, and navigation preserve the selected concept while moving between
+Topology inspection, Workshop writing, Insights maintenance, and source docs.
 
 ## v2 — "Circuit × Constellation" (B2+) 시각 언어
 
@@ -590,9 +592,6 @@ names in component data markers and tests whenever a surface depends on
   right-side inspector space.
 - `--topology-panel-compact-width`: compact fallback when header alignment is
   unavailable.
-- `--topology-panel-graph-width`: (은퇴 #19, 2026-07-25) 구 Graph 모드
-  (살아있는 그래프) 레일 폭. 물리 토글이 제거되면서 소비처가 사라진
-  orphan 토큰 — 후속 정리 대기.
 - `--topology-panel-compact-reserved-width`: compact fallback with reserved
   right-side inspector space.
 - `--topology-chrome-control-height` (+ `-compact`) / `--topology-chrome-badge-size`
@@ -1393,11 +1392,11 @@ details-on-demand* — not the inverse (everything-at-once + fullscreen-on-click
 
 - **Click = ego focus + compact popover, not a fullscreen modal.** Clicking a
   node keeps the node and its direct neighbors (its `ego` subgraph) at full
-  opacity and dims/hides the rest via Sigma `nodeReducer` / `edgeReducer` (the
-  underlying graphology instance is not mutated). A content-sized popover
-  anchors near the node and lists the connected nodes (each a click target for
-  an incremental ego walk). The large `NodeDetailPanel` becomes an opt-in
-  `전체 상세 →` drill, not the click default.
+  opacity and dims the rest through `topology-map-v2`'s `focus-state` world
+  derivation; the source graph is not mutated. A content-sized
+  `TopologyV2DetailPanel` anchors near the node and lists connected nodes as
+  incremental ego-walk targets. `FullDetailA1` remains an opt-in full-detail
+  drill, not the click default.
 - **Card count chips are topology marks.** `--topology-card-count-surface` /
   `--topology-card-count-border` / `--topology-card-count-text` make each
   visible skeleton card's count read as node scale, not incidental metadata.
@@ -1408,22 +1407,17 @@ details-on-demand* — not the inverse (everything-at-once + fullscreen-on-click
   Never drop the full 2–3k-node hairball on the user uninvited.
 - **Plain language over graph jargon.** `영향받음 N` → "이 노드를 쓰는 곳 N";
   `의존 N` → "이 노드가 기대는 곳 N". No duplicated labels (`개념 정보` ×3).
-- **Scale path (≈2–3k → 10k+).** Sigma/WebGL renders ~10k nodes; the costs are
-  labels, edges, and live layout. Mitigate in order: precompute + cache the
-  ForceAtlas2 layout, level-of-detail labels (`hideLabelsOnMove` /
-  `hideEdgesOnMove`), keep representative-edge culling, then domain clustering
-  above ~5k.
-- **WebGL palette tokens.** **[stale, 2026-07-18]** This bullet described
-  `src/widgets/topology-map-sigma/lib/topology-palette.ts` as the map-layer
-  token source; that file no longer exists (deleted alongside #344
-  retire-sigma-topology — `topology-map-sigma/` now only holds
-  `SigmaControls`/`SigmaHubRail`/`TopologyEmptyState` chrome, no palette
-  module). `topology-map-v2` reads its palette via
-  `src/widgets/topology-map-v2/tokens/read-topology-v2-tokens.ts` instead. Dark
-  overview edges must stay quiet enough for dense vaults, but still visible as
-  topology context before focus/path highlighting promotes selected relations.
-  Treat base / containment / dependency / dim edges as semantic layers, not
-  incidental RGBA literals.
+- **Scale path is evidence-gated.** The current canvas uses a deterministic
+  semantic skeleton, tier reveal, density-gate cluster chips, label collision
+  suppression, viewport pass-through edge demotion, and focus/realm filters
+  before drawing more detail. Do not claim a 10k-node capacity from the retired
+  Sigma/WebGL stack; publish a new upper bound only after production
+  canvas-2D measurements at the stated viewport and interaction.
+- **Canvas palette tokens.** The only current map-layer token source is
+  `src/widgets/topology-map-v2/tokens/read-topology-v2-tokens.ts`. Dark overview
+  edges stay quiet enough for dense vaults while containment, dependency,
+  dimmed, hovered, and selected relations remain distinct semantic layers.
+  There is no `topology-map-sigma` palette or WebGL reducer contract.
 
 This serves the new "topology" row in the cited-lineage table above.
 

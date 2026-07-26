@@ -6,6 +6,28 @@
 
 ---
 
+## 2026-07-27 — 활성 문서가 퇴역 Sigma·Builder를 현재 구현처럼 설명하지 않는다
+
+현재 source와 활성 문서·dogfood ontology를 다시 대조하니 일부 설계 문서와
+의미 노드가 제거된 Sigma kind 범례/owner tint/edge LOD, ERD Builder 공유
+layout, 고정 5초 polling, 분석 rail을 현재 계약처럼 설명했다.
+
+현행 계약을 단일 `topology-map-v2` canvas, neutral kind hierarchy,
+relation-line legend, Tauri OS watch + web adaptive polling, persisted shared
+changeset, Topology+INDEX/Workshop/5개 질문 Insights로 통일했다. Phase 0/V2
+설계 문서는 현재 지침이 아니라 이관 당시 측정 기록임을 상단에 명시했다.
+consumer가 없던 Graph rail CSS token, canvas에 전달만 되고 쓰이지 않던
+`changedSlugs` prop, `sigmaFade` 이름도 함께 제거했다.
+
+새 agent package distribution element를 AI Agent Partner domain에 연결하고
+README·AGENTS·MCP verify 예제를 dogfood **97노드·550관계** 기준으로 맞췄다.
+vault validate/audit, dogfood status/verify, MCP docs contract, focused 88 tests,
+TypeScript, lint(오류 0), production build가 통과했다. fresh macOS app을
+재배포해 packaged `/ko/topology/` WebView와 on-screen window를 검증했고,
+Codex Computer Use로 설치 앱의 기록 → 문서함 route와 문서 읽기 구조를 다시
+확인했다. 사용자가 소유한 기존 local vault README는 local-first 원칙상
+자동 덮어쓰지 않으므로, 그 문서 내용은 새 starter 문구와 별도다.
+
 ## 2026-07-27 — 공개되지 않은 agent 패키지를 연결 가능하다고 말하지 않는다
 
 공개 npm 레지스트리를 직접 확인하니 `ontology-atlas`와
