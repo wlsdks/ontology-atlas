@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
-import { AlertTriangle } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { EvidenceOnlyBadge } from "@/shared/ui/evidence-only-badge";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
@@ -70,6 +70,11 @@ export interface DoNextTabLabels extends QueueRowActionLabels {
   hintDuplicate: string;
   /** 두 이름이 얼마나 겹치는지 ("겹침 79%"). */
   duplicateMetric: (percent: number) => string;
+  /** 접힌 나머지 쌍을 여는 조용한 토글. */
+  duplicateRestShow: (count: number) => string;
+  duplicateRestHide: string;
+  /** 펼쳐도 남는 절단을 정직하게 말한다 — 「연결」 탭과 같은 문법. */
+  duplicateTruncated: (shown: number, total: number) => string;
   /** 각 큐 섹션 헤더 아래 평문 한 줄 — "이게 왜 할 일인가"를 비전문가도 알게. */
   hintNeglectedHub: string;
   hintOrphan: string;
@@ -167,6 +172,8 @@ export interface DoNextTabProps {
    * 지목한다(`tests/contract/duplicate-pairs.contract.test.ts`).
    */
   duplicates?: DuplicatePairRow[];
+  /** 접힌 나머지 중복 쌍 — 배지가 말한 규모에 실제로 닿게 하는 계층. */
+  duplicateRest?: DuplicatePairRow[];
   /** 임계값을 넘은 전체 쌍 수 — 절단 전 규모. */
   duplicateTotal?: number;
   /** 쌍별 인계 — `merge_concepts` dry-run 부터 시작하는 문장. */
@@ -490,6 +497,7 @@ function QueueSection({
  */
 function DuplicateSection({
   rows,
+  restRows,
   totalCount,
   mapHref,
   handoff,
@@ -497,12 +505,25 @@ function DuplicateSection({
   labels,
 }: {
   rows: DuplicatePairRow[];
+  restRows: DuplicatePairRow[];
   totalCount: number;
   mapHref: (nodeId: string) => string;
   handoff: (row: DuplicatePairRow) => string;
   abilities: QueueRowAbilities;
   labels: DoNextTabLabels;
 }) {
+  const [restOpen, setRestOpen] = useState(false);
+  const shownCount = rows.length + (restOpen ? restRows.length : 0);
+  const row = (pair: DuplicatePairRow) => (
+    <DuplicateRow
+      key={pair.id}
+      pair={pair}
+      mapHref={mapHref}
+      handoff={handoff}
+      abilities={abilities}
+      labels={labels}
+    />
+  );
   if (rows.length === 0) return null;
   return (
     <section
@@ -523,43 +544,89 @@ function DuplicateSection({
           {labels.hintDuplicate}
         </p>
       </div>
-      {rows.map((row) => (
-        <div
-          key={row.id}
-          data-testid="do-next-duplicate-row"
-          className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-[color:var(--color-divider)] py-1 last:border-b-0"
+      {rows.map(row)}
+      {/* 나머지는 숨기지 않는다 — 접어 두고, 접었다는 사실과 규모를 말한다.
+          같은 페이지의 「근거 계층」이 쓰는 조용한 토글 + 「상위 N / 전체 M」
+          문법 그대로다: 같은 종류의 절단은 같게 보여야 한다. */}
+      {restRows.length > 0 ? (
+        <button
+          type="button"
+          aria-expanded={restOpen}
+          data-testid="do-next-duplicate-rest-toggle"
+          onClick={() => setRestOpen((open) => !open)}
+          className="-mx-1.5 mt-1 flex min-h-7 w-full items-center gap-1.5 rounded-md px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
         >
-          <TopologyV2KindGlyph kind={row.kind ?? "unknown"} size={13} />
-          <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-secondary)]">
-            {row.keepTitle}
-            <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">↔</span>
-            {row.dissolveTitle}
+          {restOpen ? (
+            <ChevronDown aria-hidden size={13} className="flex-none" />
+          ) : (
+            <ChevronRight aria-hidden size={13} className="flex-none" />
+          )}
+          <span className="min-w-0 truncate">
+            {restOpen ? labels.duplicateRestHide : labels.duplicateRestShow(restRows.length)}
           </span>
-          {row.sharedTokens.length > 0 ? (
-            <span className="hidden shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)] lg:inline">
-              {row.sharedTokens.slice(0, 3).join(" · ")}
-            </span>
-          ) : null}
-          <span className="shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)]">
-            {labels.duplicateMetric(Math.round(row.score * 100))}
-          </span>
-          <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
-            <Link
-              href={mapHref(row.keepId)}
-              className="inline-flex min-h-7 items-center rounded-md border border-[color:var(--color-border-soft)] px-2 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-            >
-              {labels.openMap}
-            </Link>
-            <HandoffCopyButton
-              payload={handoff(row)}
-              labels={labels}
-              abilities={abilities}
-              compact
-            />
-          </span>
+        </button>
+      ) : null}
+      {restOpen && restRows.length > 0 ? (
+        // 높이를 못 박고 그 안에서 스크롤한다 — 펼친 계층이 내용 길이만큼
+        // 자라면 이 탭의 스크롤 계약(뷰포트 1.3배)이 볼트 크기에 따라 깨진다.
+        // 자리를 고정하면 나머지 쌍 **전부**에 닿으면서도 탭 높이는 설계값으로
+        // 남는다(치수 규칙성).
+        <div className="insights-disclosure-in flex max-h-52 flex-col overflow-y-auto">
+          {restRows.map(row)}
         </div>
-      ))}
+      ) : null}
+      {totalCount > shownCount ? (
+        <p className="pt-2 text-label text-[color:var(--color-text-quaternary)]">
+          {labels.duplicateTruncated(shownCount, totalCount)}
+        </p>
+      ) : null}
     </section>
+  );
+}
+
+/** 중복 의심 한 행 — 접힌 계층과 펼친 계층이 같은 해부구조를 쓴다. */
+function DuplicateRow({
+  pair,
+  mapHref,
+  handoff,
+  abilities,
+  labels,
+}: {
+  pair: DuplicatePairRow;
+  mapHref: (nodeId: string) => string;
+  handoff: (row: DuplicatePairRow) => string;
+  abilities: QueueRowAbilities;
+  labels: DoNextTabLabels;
+}) {
+  return (
+    <div
+      data-testid="do-next-duplicate-row"
+      className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-[color:var(--color-divider)] py-1 last:border-b-0"
+    >
+      <TopologyV2KindGlyph kind={pair.kind ?? "unknown"} size={13} />
+      <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-secondary)]">
+        {pair.keepTitle}
+        <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">↔</span>
+        {pair.dissolveTitle}
+      </span>
+      {pair.sharedTokens.length > 0 ? (
+        <span className="hidden shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)] lg:inline">
+          {pair.sharedTokens.slice(0, 3).join(" · ")}
+        </span>
+      ) : null}
+      <span className="shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)]">
+        {labels.duplicateMetric(Math.round(pair.score * 100))}
+      </span>
+      <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
+        <Link
+          href={mapHref(pair.keepId)}
+          className="inline-flex min-h-7 items-center rounded-md border border-[color:var(--color-border-soft)] px-2 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+        >
+          {labels.openMap}
+        </Link>
+        <HandoffCopyButton payload={handoff(pair)} labels={labels} abilities={abilities} compact />
+      </span>
+    </div>
   );
 }
 
@@ -673,6 +740,7 @@ export function DoNextTab({
   touchUps = [],
   cycles,
   duplicates = [],
+  duplicateRest = [],
   duplicateTotal = 0,
   duplicateHandoff,
   agentReadiness,
@@ -832,6 +900,7 @@ export function DoNextTab({
       ) : null}
       <DuplicateSection
         rows={duplicates}
+        restRows={duplicateRest}
         totalCount={duplicateTotal}
         mapHref={(nodeId) => mapHref(nodeId)}
         handoff={(row) => duplicateHandoff?.(row) ?? ""}

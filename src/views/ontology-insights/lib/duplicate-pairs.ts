@@ -111,6 +111,14 @@ export interface DuplicatePairRow {
 
 export interface DuplicatePairs {
   rows: DuplicatePairRow[];
+  /**
+   * 접혀 있는 나머지 쌍 — 「더 보기」 펼침이 그리는 계층.
+   *
+   * 2026-07-27 실측: 배지는 10건이라 말하는데 화면에 3행만 있었고 더 보기도
+   * 없었다. 나머지 7건은 이 화면에서 **발견될 방법 자체가 없었다** — 총계만
+   * 크게 적고 나머지를 조용히 숨기는 건 절단이 아니라 은폐다.
+   */
+  restRows: DuplicatePairRow[];
   /** 임계값을 넘은 전체 쌍 수 — 「상위 N / 전체 M」 절단 문구의 M. */
   suspectCount: number;
 }
@@ -238,11 +246,17 @@ export function buildDuplicatePairs(
   edges: readonly KnowledgeGraphEdge[],
   limit: number,
   minScore = DUPLICATE_SUSPECT_MIN_SCORE,
+  /**
+   * 펼침에 실을 나머지 행 수. 0 이면 접힌 계층이 없다(구 호출자 동작 유지).
+   * 값의 근거는 소비처가 실측으로 정한다 — 여기서는 자르기만 한다.
+   */
+  restLimit = 0,
 ): DuplicatePairs {
-  if (nodes.length < 2) return { rows: [], suspectCount: 0 };
+  const empty: DuplicatePairs = { rows: [], restRows: [], suspectCount: 0 };
+  if (nodes.length < 2) return empty;
 
   const candidates = buildSimilarityCandidates(nodes, edges);
-  if (candidates.size < 2) return { rows: [], suspectCount: 0 };
+  if (candidates.size < 2) return empty;
 
   // 낱말 → 노드 역색인. 임계값이 낱말 없이 도달 가능한 상한보다 낮으면
   // 좁히기가 결과를 바꿀 수 있으므로 전수 비교로 되돌린다.
@@ -325,8 +339,10 @@ export function buildDuplicatePairs(
 
   scored.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
 
+  const shown = Math.max(0, limit);
   return {
-    rows: scored.slice(0, Math.max(0, limit)),
+    rows: scored.slice(0, shown),
+    restRows: scored.slice(shown, shown + Math.max(0, restLimit)),
     suspectCount: scored.length,
   };
 }

@@ -272,6 +272,7 @@
       "empty": "Nothing in progress right now"
     },
     "materialize": {
+      "opening": "Opening the document you just created.",
       "title": "This concept has no document yet",
       "reason": "‘{name}’ is only named inside another document. It has no document of its own yet to record relations in.",
       "actionWrite": "To link it, its document has to be created first. The relations you just picked are saved into that document too.",
@@ -1251,7 +1252,7 @@
       "kindGlyphCaption": "Glyphs match the map's node shapes exactly — panel and canvas share one world.",
       "domainCapacityCaption": "How many concepts live in this domain — capabilities plus elements. A concept in multiple domains is counted once per domain, so totals can exceed the census. Bar: left = capabilities, right = elements.",
       "relationTypesTitle": "Relation types",
-      "relationTypesCaption": "What kind of relations you have — if containment dominates, it's a sign to draw more \"leans on\" links.",
+      "relationTypesCaption": "What kind of relations you have — if containment dominates, it's a sign to draw more “leans on” links. This count is distinct relations, counted once (a relation written in both documents still counts as 1). The CLI and MCP count every reference as written, so their number is larger.",
       "noRelationTypes": "No relations connected yet",
       "noRelationTypesHint": "Connect concepts in the workshop.",
       "hubsTitle": "Hubs — top connected",
@@ -1341,6 +1342,9 @@
         "sectionDuplicate": "Similar names — the same thing?",
         "hintDuplicate": "These pairs overlap heavily in name. If they mean the same thing, merge them — duplicates are the first thing that breaks as a folder grows.",
         "duplicateMetric": "{percent}% overlap",
+        "duplicateRestShow": "Show {count} more similar pairs",
+        "duplicateRestHide": "Collapse",
+        "duplicateTruncated": "Top {shown} / {total} similar pairs — the rest via agent handoff",
         "hintNeglectedHub": "Well-connected but untouched for a while — check the content still holds.",
         "hintOrphan": "A loner with no relations yet — link it to related concepts.",
         "hintPromotion": "Several concepts point to this one. Promote it to a parent concept (capability/domain) to make it a clear hub on the map.",

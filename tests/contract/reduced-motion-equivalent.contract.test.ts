@@ -83,6 +83,10 @@ function rules(block: string): Array<{ selector: string; body: string }> {
 describe('reduced-motion 동등물 계약', () => {
   const blocks = reducedMotionBlocks(CSS);
   const allRules = blocks.flatMap(rules);
+  // reduced-motion 밖의 평소 규칙 — 등장 문법 자체를 검사할 때 쓴다.
+  const allRulesOutsideReducedMotion = rules(
+    blocks.reduce((css, block) => css.replace(block, ''), CSS),
+  );
 
   it('전역 kill 규칙(안전망)이 남아 있다', () => {
     const global = allRules.find((r) => /\*,?\s*\*::before/.test(r.selector.replace(/\s+/g, ' ')));
@@ -132,6 +136,51 @@ describe('reduced-motion 동등물 계약', () => {
         matching.some((r) => /animation-name:\s*panelCrossfadeIn/.test(r.body)),
         `.${cls} 는 opacity 전용 키프레임으로 갈아타야 한다`,
       ).toBe(true);
+    }
+  });
+
+  /**
+   * 지도 크롬(노드 팝오버)의 **밝기와 이동은 다른 커브를 탄다** (2026-07-27
+   * 프레임 실측). 둘을 한 키프레임에 묶어 두는 동안 이동용 expo-out 커브가
+   * 불투명도까지 지배해 첫 프레임에 이미 46.7%, 3프레임(50ms)에 85.6% 였다 —
+   * 사용자가 부른 목적물이 사실상 하드컷으로 나타났다. 분리 후 16.3% / 70.6%.
+   *
+   * 회귀는 조용하다(눈이 아니라 프레임이 잡는다). 그래서 구조를 못 박는다:
+   * 등장/퇴장 키프레임에 `opacity` 가 다시 들어오면 여기서 걸린다.
+   */
+  describe('지도 크롬 등장 — 밝기와 이동의 커브 분리', () => {
+    function keyframeBody(name: string): string {
+      const at = CSS.indexOf(`@keyframes ${name}`);
+      expect(at, `@keyframes ${name} 가 없다`).toBeGreaterThan(-1);
+      const open = CSS.indexOf('{', at);
+      let depth = 0;
+      let i = open;
+      for (; i < CSS.length; i += 1) {
+        if (CSS[i] === '{') depth += 1;
+        else if (CSS[i] === '}') {
+          depth -= 1;
+          if (depth === 0) break;
+        }
+      }
+      return CSS.slice(open + 1, i);
+    }
+
+    for (const name of ['topologyChromeIn', 'topologyChromeOut']) {
+      it(`${name} 은 이동만 담는다 — opacity 를 다시 묶지 않는다`, () => {
+        expect(/opacity\s*:/.test(keyframeBody(name))).toBe(false);
+      });
+    }
+
+    for (const cls of ['topology-chrome-in', 'topology-chrome-out']) {
+      it(`.${cls} 의 밝기는 앱 공통 램프(--motion-fast · --motion-ease)를 탄다`, () => {
+        const rule = allRulesOutsideReducedMotion.find((r) =>
+          r.selector.split(',').some((s) => new RegExp(`\\.${cls}(?![\\w-])`).test(s)),
+        );
+        expect(rule, `.${cls} 규칙이 없다`).toBeTruthy();
+        expect(rule!.body).toContain('panelCrossfadeIn');
+        expect(rule!.body).toContain('var(--motion-fast)');
+        expect(rule!.body).toContain('var(--motion-ease)');
+      });
     }
   });
 });

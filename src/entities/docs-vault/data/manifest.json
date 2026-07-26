@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T19:25:34.410Z",
+  "generatedAt": "2026-07-26T19:12:01.652Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,13 +3114,8 @@
         },
         {
           "depth": 2,
-          "text": "2026-07-27 — 공방 선택 뒤 첫 작업이 키보드에 바로 이어진다",
-          "slug": "2026-07-27-공방-선택-뒤-첫-작업이-키보드에-바로-이어진다"
-        },
-        {
-          "depth": 2,
-          "text": "2026-07-27 — 설치 앱 검증이 사용자의 문서함을 빌리지 않는다",
-          "slug": "2026-07-27-설치-앱-검증이-사용자의-문서함을-빌리지-않는다"
+          "text": "2026-07-27 — 성공한 저장이 에러 화면으로 보이던 자리 (공방 실체화 · 게이트 사정거리 · 세 입구 관계 수)",
+          "slug": "2026-07-27-성공한-저장이-에러-화면으로-보이던-자리-공방-실체화-게이트-사정거리-세-입구-관계-수"
         },
         {
           "depth": 2,
@@ -5028,9 +5023,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 공방의 무엇을 할까요? 선택창은 키보드 순서가 맞았지만, Return으로 기존 노드 강화나 새 노드 만들기를 고르면 포커스가 WebView 문서 루트로 사",
-      "wordCount": 50460,
-      "updatedAt": "2026-07-27T04:20:18+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 공방에서 \"문서 만들고 저장\" 이 성공해도 화면은 \"못 찾겠다\" 고 했다(D1). 이름만 불린 개념은 참조 원문을 뭉갠 별칭 id 를 갖는다 (elemen",
+      "wordCount": 50706,
+      "updatedAt": "2026-07-26T19:12:01.652Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5635,6 +5630,11 @@
           "slug": "arrows-carry-information-or-they-dont-ship"
         },
         {
+          "depth": 3,
+          "text": "The gate has to reach the markup, not just the strings",
+          "slug": "the-gate-has-to-reach-the-markup-not-just-the-strings"
+        },
+        {
           "depth": 2,
           "text": "Dimensional regularity — when content length varies",
           "slug": "dimensional-regularity-when-content-length-varies"
@@ -5821,8 +5821,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 16748,
-      "updatedAt": "2026-07-27T01:22:56+09:00",
+      "wordCount": 16943,
+      "updatedAt": "2026-07-26T19:11:17.311Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
