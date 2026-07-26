@@ -103,6 +103,20 @@ const IMPACT_DISPLAY_LIMIT = 12;
  * 나머지는 `similar_nodes` 가 답한다.
  */
 const DUPLICATE_DISPLAY_LIMIT = 3;
+/**
+ * 접힌 계층에 실을 나머지 중복 쌍 수.
+ *
+ * 왜 필요한가 (2026-07-27 실측) — 배지는 「비슷한 이름 10」이라 말하는데 화면엔
+ * 3행뿐이었고 더 보기도 없었다. 나머지 7건은 이 화면에서 **발견될 방법 자체가
+ * 없었다**. 총계만 크게 적고 나머지를 조용히 숨기면 배지 자체를 못 믿게 된다.
+ *
+ * 상한이 24 로 넉넉한 이유: 펼친 계층은 **높이가 고정된 스크롤 상자**라 행이
+ * 몇이든 탭 높이가 자라지 않는다(실측 1512×950, 도그푸드: 접힘 982px · 펼침
+ * 1,190px, 둘 다 스크롤 계약 안). 화면에 보일 자리를 행 수로 사지 않으므로
+ * 여기서 아낄 이유가 없고, 24 를 넘는 규모는 화면으로 훑을 일이 아니라 캡션이
+ * 밝히는 대로 에이전트 핸드오프가 맡는다.
+ */
+const DUPLICATE_DISCLOSURE_LIMIT = 24;
 const RECENT_UPDATES_LIMIT = 8;
 /**
  * 「최근 갱신」의 근거 계층에 펼쳐 보일 행 수.
@@ -316,7 +330,14 @@ export function OntologyInsightsPage() {
   // 중복 의심 쌍 — 이름/소속/이웃이 얼마나 겹치는지. MCP `similar_nodes` 를
   // 그대로 옮긴 미러라 화면이 지목하는 쌍과 에이전트가 답하는 쌍이 같다.
   const duplicates = useMemo(
-    () => buildDuplicatePairs(nodes, edges, DUPLICATE_DISPLAY_LIMIT),
+    () =>
+      buildDuplicatePairs(
+        nodes,
+        edges,
+        DUPLICATE_DISPLAY_LIMIT,
+        undefined,
+        DUPLICATE_DISCLOSURE_LIMIT,
+      ),
     [nodes, edges],
   );
   const duplicateHandoff = (row: DuplicatePairRow): string =>
@@ -695,6 +716,10 @@ export function OntologyInsightsPage() {
     sectionDuplicate: t("doNext.sectionDuplicate"),
     hintDuplicate: t("doNext.hintDuplicate"),
     duplicateMetric: (percent: number) => t("doNext.duplicateMetric", { percent }),
+    duplicateRestShow: (count: number) => t("doNext.duplicateRestShow", { count }),
+    duplicateRestHide: t("doNext.duplicateRestHide"),
+    duplicateTruncated: (shown: number, total: number) =>
+      t("doNext.duplicateTruncated", { shown, total }),
     hintNeglectedHub: t("doNext.hintNeglectedHub"),
     hintOrphan: t("doNext.hintOrphan"),
     hintPromotion: t("doNext.hintPromotion"),
@@ -927,6 +952,7 @@ export function OntologyInsightsPage() {
                 touchUps={doNextTouchUps}
                 cycles={dependencyCycles}
                 duplicates={duplicates.rows}
+                duplicateRest={duplicates.restRows}
                 duplicateTotal={duplicates.suspectCount}
                 duplicateHandoff={duplicateHandoff}
                 agentReadiness={agentReadiness}
