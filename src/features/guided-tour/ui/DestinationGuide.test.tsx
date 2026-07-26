@@ -102,6 +102,24 @@ describe("DestinationGuide", () => {
     expect(screen.getByTestId("guided-tour-card")).toBeInTheDocument();
   });
 
+  // 2026-07-27 감사 D3 — 안내가 떠 있는 동안 다른 내비를 누르면 클릭이 아무
+  // 반응 없이 삼켜졌다. "막혔다" 를 말하지 않는 차단은 사용자에게 "고장" 으로
+  // 읽힌다. 막힌 자리를 누르면 안내가 물러나고, 한 번 더 누르면 간다.
+  it("막힌 자리를 누르면 안내가 물러난다 — 말없이 삼키지 않는다", async () => {
+    renderGuide();
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.getByTestId("guided-tour-card")).toBeInTheDocument();
+
+    const blocker = screen.getByTestId("guided-tour-blocker");
+    expect(blocker).toHaveAttribute("data-dismissable", "true");
+    await act(async () => {
+      fireEvent.click(blocker);
+    });
+    expect(screen.queryByTestId("guided-tour-card")).toBeNull();
+  });
+
   it("지도(목적지 없음)에서는 아무것도 렌더하지 않는다 — 지도는 자기 여정을 따로 갖는다", async () => {
     renderGuide(null);
     await act(async () => {

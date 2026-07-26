@@ -2318,7 +2318,7 @@
   "fullDetailA1": {
     "backToMap": "← 지도",
     "breadcrumbSeparator": "/",
-    "census": "{concepts} CONCEPTS · {relations} RELATIONS",
+    "census": "{concepts} 개념 · {relations} 관계",
     "freshOn": "최근 갱신",
     "freshOff": "한동안 그대로",
     "copyLink": "노드 링크 복사",

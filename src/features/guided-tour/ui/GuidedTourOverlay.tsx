@@ -27,6 +27,16 @@ export interface GuidedTourOverlayProps {
   canvasAnchorRef?: RefObject<HTMLDivElement | null>;
   /** 키보드 사용자가 4단계의 캔버스 노드 클릭을 카드 안 버튼으로 수행한다. */
   onActivateAnchor?: () => void;
+  /**
+   * 막힌 자리를 눌렀을 때의 응답. 주면 전면 blocker 클릭이 이 함수를 부른다.
+   *
+   * 왜 필요했나(2026-07-27 감사 D3): 문서함 첫 방문 안내가 떠 있는 동안 다른
+   * 내비를 누르면 **아무 반응 없이 클릭이 삼켜졌다**(4초 넘게 확인). 커서도
+   * 토스트도 흔들림도 없으니 사용자는 "막혔다" 가 아니라 "고장났다" 로 읽고
+   * 그냥 닫아버린다. Esc 는 이미 닫히지만, 마우스로 온 사람에게는 없는 문
+   * 이었다 — 스크림 클릭은 화면을 덮는 표면의 표준 퇴장 경로다.
+   */
+  onBlockedInteraction?: () => void;
 }
 
 /**
@@ -40,6 +50,7 @@ export function GuidedTourOverlay({
   tour,
   canvasAnchorRef,
   onActivateAnchor,
+  onBlockedInteraction,
 }: GuidedTourOverlayProps) {
   const { open, step } = tour;
   const overlayRef = useDialogFocusTrap<HTMLDivElement>({
@@ -188,6 +199,8 @@ export function GuidedTourOverlay({
         <div
           data-testid="guided-tour-blocker"
           data-blocking="true"
+          data-dismissable={onBlockedInteraction ? "true" : undefined}
+          onClick={onBlockedInteraction}
           className="pointer-events-auto fixed inset-0 z-[70]"
         />
       )}
