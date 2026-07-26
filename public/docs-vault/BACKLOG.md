@@ -202,7 +202,7 @@ P1 V1.x 진화가 모두 ✅/N/A 로 닫혔고, 현재 surface 는 macOS app · 
 - `docs/FEATURES.md` — 사용자가 *지금* 사용 가능한 기능 전수
 - `docs/archive/ONTOLOGY-MODEL-V2-DRAFT.md` — V1.x 진화 spec (cloud 부분 N/A archive)
 - `docs/CHANGELOG.md` — 시간순 사용자 가시 변화
-- `mcp/README.md` — MCP 서버 24 도구 + 등록
+- `mcp/README.md` — MCP 서버 32 도구 (read 19 + write 13) + 등록
 - `docs/benchmark/` — AI agent quality 측정 매트릭스
 
 

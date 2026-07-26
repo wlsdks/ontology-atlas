@@ -2,6 +2,7 @@
 
 > 상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자
 > 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다.
+> 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use.
 >
 > 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재
 > 흐름의 신뢰 회복을 우선한다.
@@ -52,6 +53,7 @@
 | A26 | 전역 레일 목적지 이동 → 새 surface 읽기 시작 | native-safe 의도 + 공방 main/h1 계약 설치 앱 왕복 검증 완료 |
 | A27 | 768–1024px 하단 탭바 이동·safe-area·레일 전환 | route 포커스·가림·overflow·단일 내비 검증, 수정 없음 |
 | A28 | 프로젝트 → 미연결 AI 타일 → 지도 연결 시트 → 닫기 | 교차 route 열기·모달 Tab 순환·타일 포커스 복귀 설치 앱 검증 완료 |
+| A29 | 재배포 → 저장 vault 복원 → 4개 viewport → 주요 6개 surface 왕복 | 일반 화면·AX 이동 통과, 선택 관계 검증 입력 격리 실패는 UX-031로 추적 |
 
 ## 이슈 장부
 
@@ -133,13 +135,14 @@
 ### UX-007 — 번역 계약 테스트 다섯 건이 현재 메시지와 역방향으로 드리프트
 
 - 심각도: `S3`
-- 상태: 열림
+- 상태: 해소 확인 (2026-07-27 기준선)
 - 관측: 현재 앱 문구는 GitHub Pages·쉬운 작업공간/AI 표현으로 바뀌었지만
   `scripts/validate-messages.test.mjs` 일부가 Firebase Hosting·구 MCP 문구·
   폐기된 키를 계속 요구한다.
 - 영향: 전체 메시지 검증이 항상 실패해 새 번역 회귀를 신뢰할 수 없다.
-- 현재 증거: 새 한·영 키 shape와 ICU 컴파일 경계는 통과한다. 이 항목은
-  현행 제품 문구를 다시 확인한 뒤 테스트를 현재 계약으로 정리한다.
+- 재검증: `pnpm test:i18n:messages`가 현행 한·영 카탈로그와 ICU 경계
+  16/16을 통과했다. 같은 기준선에서 `pnpm desktop:check`도 통과했으며,
+  로컬 vault 진입 문구는 `온톨로지 폴더`/`vault 폴더` 계약으로 정렬했다.
 
 ### UX-008 — 읽기 전용 샘플의 AI 인계가 실제 vault 쓰기 명령을 제안
 
@@ -1100,6 +1103,72 @@
   같은 코드로 desktop app build/deploy를 통과했다.
 - PO·디자인 판정: **Build and verify**
 
+### UX-031 — 설치 앱 관계 검증이 사용자의 저장 vault에 의존해 재현성을 잃음
+
+- 심각도: `S3`
+- 상태: 열림 — 검증 입력 격리 방식을 먼저 조사
+- 흐름: 최신 HEAD 배포 → 설치 앱 재실행 → 1920×1080
+  `domain:views` 선택 관계 검증
+- 관측 현상: 앱이 이전에 저장된 11개 노드 테스트 vault를 정상 복원했다.
+  검증기는 dogfood 전용 `domain:views`를 URL로 요청했지만 현재 vault에는
+  그 노드가 없어 `노드를 찾을 수 없습니다: domain:views` toast를 냈고,
+  관계 라벨 클릭 proof가 실패했다. WebView 자체는 1920×917로 로드됐다.
+- 사용자 문제: 사용자 상태를 보존해야 하는 설치 앱과 고정 fixture를 필요로
+  하는 릴리스 검증이 같은 저장소를 공유한다. 실제 렌더 회귀와 검증 입력
+  불일치를 구분할 수 없어 wide 검증 결과를 신뢰하기 어렵다.
+- 현재 대안: 검증 전 사람이 원하는 vault를 다시 선택하거나, 실패 후 payload를
+  열어 현재 vault census와 대상 slug를 수동 대조한다.
+- 온톨로지·에이전트 가치: 관계 검증의 입력 vault와 대상 slug가 증거에 함께
+  고정돼야 사람과 에이전트가 같은 의미 그래프를 검증했다고 말할 수 있다.
+- 최소화: 제품의 저장 vault 복원은 바꾸지 않는다. 검증기 전용 격리 저장소,
+  명시적 fixture vault, 또는 현재 vault에서 존재하는 관계를 고르는 방식 중
+  가장 작은 계약을 조사한다.
+- 설치 앱·Computer Use 증거: Codex Computer Use AX 트리는
+  `tauri://localhost/ko/topology/?p=domain%3Aviews&mode=focus`, INDEX의
+  `11 개념 · 10 관계 · 1 도메인`, disabled `블록 가져오기`, not-found
+  toast를 함께 읽었다. 같은 창의 실제 스크린샷에서도 11개 노드 지도가
+  유지됨을 확인했다.
+- PO·디자인 판정: **Investigate first**
+
+### UX-032 — 설치 앱의 블록 가져오기가 폴더 선택 미지원으로 비활성화됨
+
+- 심각도: `S2`
+- 상태: 열림 — Tauri bridge 의도와 제품 문구를 먼저 확인
+- 흐름: 저장된 local vault 복원 → 지형도 INDEX 하단 → `블록 가져오기`
+- 관측 현상: 설치된 macOS 앱의 AX 트리에서 버튼이 disabled이고 도움말은
+  `이 환경은 폴더 선택을 지원하지 않아요`였다. 문서함·공방·인사이트·프로젝트·
+  기록은 같은 Computer Use 세션에서 정상 진입했다.
+- 사용자 문제: 로컬 파일을 주 진실원으로 삼는 설치 앱에서 가져오기만
+  브라우저 capability 부재처럼 보인다. 의도된 제한인지 bridge 누락인지
+  화면만으로 구분할 수 없다.
+- 최소화: 기능을 바로 추가하지 않는다. 현재 버튼이 요구하는 파일/폴더
+  capability와 Tauri 경로를 구조적으로 확인하고, 의도된 제한이면 정확한
+  안내와 대체 경로를 제공하며, bridge가 이미 있으면 기존 경로를 재사용한다.
+- 설치 앱·Computer Use 증거: 1100px 창과 macOS 전체화면에서 동일한 disabled
+  상태를 읽었다. 다른 전역 surface의 h1과 핵심 액션은 AX 트리에 정상 노출됐다.
+- PO·디자인 판정: **Investigate first**
+
+### 2026-07-27 반복 측정 기록
+
+- 코드 기준선: `899eb7072`에서 시작해 로컬 vault 문구와 문서·ontology
+  동기화 슬라이스를 각각 커밋한 뒤 설치 앱을 다시 빌드·배포했다.
+- 문서/ontology: MCP 32도구(read 19 + write 13), CLI 52명령,
+  dogfood 96노드·543관계로 활성 문서를 맞췄다. `vault:validate`,
+  `vault:audit`, `dogfood:verify`, `dogfood:status`, docs vault build/check가
+  통과했고 freshness stale node는 0이었다.
+- viewport: 일반 `/ko/topology/`는 1100×768, 1512×885, 1920×917,
+  2560×917 WebView에서 로드됐다. 네 증거 모두 canvas-v2, map-layer attention,
+  fixed-surface overlap 0을 보고했다. 선택 관계 시나리오는 UX-031 때문에
+  별도 실패로 남겼다.
+- Computer Use: 1100px와 실제 macOS 전체화면의 스크린샷·AX 트리를 확인하고,
+  지도 → 문서함 → 공방 → 인사이트 → 프로젝트 → 기록을 실제 클릭으로 왕복했다.
+  각 surface는 현재 route와 h1을 노출했다. 기록 화면의 `기록 시작하기`는
+  파일 변경을 만들므로 측정 중 실행하지 않았다.
+- 자동 검증 잔여: window screenshot과 WebView evidence는 저장됐지만 자동
+  foreground activation/AX probe는 timeout을 보고했다. 같은 실행 앱을 Codex
+  Computer Use가 읽었으므로 화면 존재는 확인됐고, 자동 AX gate 자체는 후속
+  검증기 신뢰성 항목으로 남긴다.
+
 ## 현재 PO·디자인 판정
 
 - A1/A2 수정 슬라이스: **Build and verify**
@@ -1111,6 +1180,8 @@
 - A26 전역 레일 route·공방 landmark 슬라이스: **Build and verify**
 - A27 하단 탭바 responsive 계약: **Do not build**
 - A28 AI 연결 교차 route·모달 포커스 슬라이스: **Build and verify**
+- A29 반복 측정 기준선: 일반 viewport/주요 surface **Build and verify**,
+  선택 관계 fixture와 설치 앱 가져오기는 **Investigate first**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

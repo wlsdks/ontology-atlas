@@ -523,10 +523,10 @@ Separate package, `ontology-atlas-mcp`. Claude Code-compatible:
 }
 ```
 
-Tools (24 — read 16 + write 8):
+Tools (32 — read 19 + write 13):
 
-- read: `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `find_neighbors`, `find_path`, `list_kinds`, `find_orphans`, `query_concepts`, `compile_ontology`, `query_ontology`, `validate_vault`, `analyze_repo_structure`, `infer_imports`, `index_project`
-- write: `add_concept`, `add_concepts`, `add_relation`, `add_relations`, `patch_concept`, `delete_concept`, `rename_concept`, `merge_concepts`
+- read: `connection_info`, `git_status`, `git_history`, `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `find_neighbors`, `find_path`, `list_kinds`, `find_orphans`, `query_concepts`, `compile_ontology`, `query_ontology`, `validate_vault`, `analyze_repo_structure`, `infer_imports`, `index_project`
+- write: `absorb_document`, `add_concept`, `add_concepts`, `add_relation`, `add_relations`, `remove_relation`, `replace_relation`, `patch_concept`, `reclassify_concept`, `delete_concept`, `rename_concept`, `merge_concepts`, `git_snapshot`
 
 With this in place, the agent can answer **"which concept is this file an element of?"** directly during code exploration. No re-inferring every conversation.
 
