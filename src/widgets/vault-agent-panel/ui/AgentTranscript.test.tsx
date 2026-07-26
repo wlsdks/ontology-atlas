@@ -15,6 +15,7 @@ const labels: AgentTranscriptLabels = {
   thinking: '생각 중',
   thinkingSeconds: (seconds) => `생각 중 · ${seconds}초`,
   footer: ({ provider, chars, rounds }) => `${provider} · ${chars}자 · ${rounds}건`,
+  nextStepTitle: '다음 한 걸음',
 };
 
 function turn(overrides: Partial<AgentTurn> = {}): AgentTurn {
@@ -44,17 +45,19 @@ function turn(overrides: Partial<AgentTurn> = {}): AgentTurn {
 
 function renderTranscript(t: AgentTurn, elapsedSeconds: number | null = null) {
   const onFocusNode = vi.fn();
+  const onPrefill = vi.fn();
   render(
     <AgentTranscript
       turns={[t]}
       labels={labels}
       providerLabel="Anthropic"
       onFocusNode={onFocusNode}
+      onPrefill={onPrefill}
       renderProposal={() => null}
       elapsedSeconds={elapsedSeconds}
     />,
   );
-  return { onFocusNode };
+  return { onFocusNode, onPrefill };
 }
 
 describe('AgentTranscript', () => {
@@ -160,5 +163,36 @@ describe('AgentTranscript', () => {
     renderTranscript(turn({ auditCount: 0, status: 'sending' }));
     // 답이 와도 위 내용이 밀리지 않도록 상시 1행 예약.
     expect(screen.getByTestId('agent-turn-footer')).toBeInTheDocument();
+  });
+
+  it('다음 한 걸음은 칩 하나로 붙고, 눌러도 전송하지 않는다', () => {
+    // 추가 호출 0 — 이 문장은 같은 턴의 응답에서 이미 왔다. 칩은 프리필이라
+    // 살아 있는 제안을 하나 더 만들지도 않는다.
+    const { onPrefill } = renderTranscript(
+      turn({
+        events: [
+          {
+            kind: 'assistant',
+            paragraphs: [{ text: '정의를 이렇게 제안해요.', citations: [] }],
+            demoted: true,
+            nextStep: '「환불」과 「정산」 사이 연결을 살펴줘',
+          },
+        ],
+      }),
+    );
+    expect(screen.getByTestId('agent-next-step')).toHaveTextContent('다음 한 걸음');
+    fireEvent.click(screen.getByTestId('agent-next-step-chip'));
+    expect(onPrefill).toHaveBeenCalledWith('「환불」과 「정산」 사이 연결을 살펴줘');
+  });
+
+  it('다음 걸음이 없으면 그 자리는 아예 없다', () => {
+    renderTranscript(
+      turn({
+        events: [
+          { kind: 'assistant', paragraphs: [{ text: '답.', citations: [] }], demoted: true },
+        ],
+      }),
+    );
+    expect(screen.queryByTestId('agent-next-step')).not.toBeInTheDocument();
   });
 });
