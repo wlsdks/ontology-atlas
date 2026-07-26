@@ -48,7 +48,11 @@ import {
   type StudioChange,
   type StudioSummaryVocab,
 } from "../lib/build-studio-changes";
-import { resolveStudioWriteTarget, type StudioWriteTarget } from "../lib/resolve-write-target";
+import {
+  resolveMaterializedNodeId,
+  resolveStudioWriteTarget,
+  type StudioWriteTarget,
+} from "../lib/resolve-write-target";
 import { buildMaterializeDraft, planStudioCommit } from "../lib/plan-studio-commit";
 import { buildPickerDiscovery } from "../lib/build-picker-discovery";
 import { buildDeltaPreview } from "../lib/build-delta-preview";
@@ -465,10 +469,28 @@ export function OntologyStudioPage() {
   // LOCAL vault produces, so a search click silently kept the default node.
   // 요청한 노드가 없으면 다른 노드로 갈아끼우지 않는다 — 판정은 순수 함수
   // 한 곳에서만 한다(`resolveStudioEnhanceFocal`).
-  const { focalId: enhanceFocalId, requestedMissing: requestedNodeMissing } = useMemo(
+  const { focalId: enhanceFocalId, requestedMissing: rawRequestedMissing } = useMemo(
     () => resolveStudioEnhanceFocal(requestedNode, nodes, edges),
     [requestedNode, nodes, edges],
   );
+
+  // 방금 만든 문서로 옮겨 가는 중 — 매니페스트 재적재와 주소 변경이 같은
+  // 프레임에 도착하지 않으면 그 사이 한 프레임 동안 "이 개념을 못 찾겠다" 가
+  // 보인다. 방금 우리가 쓴 파일이므로 그건 죽은 링크가 아니다. 그래프가
+  // 새 문서를 알아보는 순간 스스로 걷힌다.
+  const [materializing, setMaterializing] = useState<{ slug: string; kind: CreateNodeKind } | null>(
+    null,
+  );
+  const materializedFocalId = materializing
+    ? resolveMaterializedNodeId(materializing.slug, materializing.kind, nodes)
+    : null;
+  // 그래프가 새 문서를 알아본 순간 스스로 걷힌다 — 효과가 아니라 렌더 중
+  // 상태 조정(같은 파일의 `prevFocalId` 리셋과 같은 React 권장 패턴).
+  if (materializing && materializedFocalId !== null && nodes.some((n) => n.id === materializedFocalId)) {
+    setMaterializing(null);
+  }
+  const requestedNodeMissing = rawRequestedMissing && materializing === null;
+  const openingMaterialized = rawRequestedMissing && materializing !== null;
 
   // Slice 2 — enhance is STAGED: fills / retypes / deletes accumulate here and
   // only land on "확인하고 저장". Reset whenever the focal node changes so a new
@@ -656,8 +678,9 @@ export function OntologyStudioPage() {
           });
         }
         toast.show(t("create.appliedDirect", { title: title.trim() }), "success");
-        const tail = slug.split("/").at(-1) ?? "";
-        openNode(`${kind}:${tail}`);
+        // 새로 만든 문서의 노드 id 도 실체화와 같은 함수로 정한다 — 두 경로가
+        // 각자 계산하면 project 처럼 id 규칙이 다른 종류에서 갈라진다.
+        openNode(resolveMaterializedNodeId(slug, kind, nodes));
       } catch (err) {
         toast.show(t("create.applyFailed", { message: err instanceof Error ? err.message : String(err) }), "error");
       }
@@ -895,6 +918,23 @@ export function OntologyStudioPage() {
   }
 
   // ─────────────────────────────── ENHANCE ───────────────────────────────
+  // 방금 만든 문서를 여는 중 — 진행을 흉내내지 않는다(막대·스피너 0). 무슨
+  // 일이 일어나는지 한 문장으로 말하고, 대개 한 프레임 뒤 무대가 대신 그려진다.
+  if (openingMaterialized) {
+    return (
+      <main
+        id="main"
+        className="flex h-[100dvh] items-center justify-center bg-[color:var(--color-canvas)] p-6"
+      >
+        <p
+          data-testid="studio-materialize-opening"
+          className="text-body text-[color:var(--color-text-tertiary)]"
+        >
+          {t("materialize.opening")}
+        </p>
+      </main>
+    );
+  }
   // 요청한 개념이 없으면 다른 개념을 대신 열지 않는다 — 죽은 딥링크는
   // 프로젝트 상세와 같은 문법으로 정직하게 말하고 갈 곳을 준다.
   if (requestedNodeMissing) {
@@ -1065,12 +1105,18 @@ export function OntologyStudioPage() {
       if (writable) {
         try {
           const { markdown } = buildCreateNodeDoc(materialized, { slug });
+          // 실체화하면 이 개념의 id 가 별칭에서 문서 기준으로 바뀐다 — 주소에
+          // 옛 별칭을 남기면 성공한 저장이 "찾을 수 없음" 으로 보인다.
+          const nextFocalId = resolveMaterializedNodeId(slug, materialized.kind, nodes);
+          setMaterializing({ slug, kind: materialized.kind });
           await localVault.createDoc(slug, markdown);
           toast.show(t("materialize.saved", { name: materialized.title, count: addedCount }), "success");
           clearStudioDraft(focalItem.node.id);
           setChanges([]);
+          openNode(nextFocalId);
           return true;
         } catch (err) {
+          setMaterializing(null);
           toast.show(t("commitFailed", { message: err instanceof Error ? err.message : String(err) }), "error");
           return false;
         }

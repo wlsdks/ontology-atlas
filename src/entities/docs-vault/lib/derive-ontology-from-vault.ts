@@ -500,6 +500,43 @@ function deriveOntologyFromVaultUncached(
       });
     }
 
+    // describes[] — describes edge (문서 → 그 문서가 설명하는 개념).
+    //
+    // 왜 뒤늦게 들어왔나 (2026-07-27 실측): 컴파일러(CLI·MCP)는 이 키를 처음부터
+    // 읽어 `documents/agent-practice-research → capabilities/mcp-server` 같은
+    // 근거 관계를 그래프에 넣고 있었는데, 웹 derive 만 이 키를 통째로 건너뛰었다.
+    // 그래서 세 입구의 관계 수가 갈렸고(웹 448 vs CLI·MCP 542 중 10건이 이것),
+    // 지도에서는 `document` 노드가 자기가 설명하는 개념과 이어지지 않았다.
+    // 관계 타입 자체는 웹의 타입 유니온·라벨·건강 검사에 이미 있었다 — 빠진
+    // 것은 읽는 자리 하나뿐이었다.
+    for (const described of asStringArray(fm.describes)) {
+      const folderRef = resolveFolderPrefixedRef(described);
+      const describedId = existingNodeIdFor(described) ?? folderRef?.id ?? resolveRelatesRef(described);
+      if (!describedId) continue;
+      if (!nodes.has(describedId)) {
+        nodes.set(describedId, {
+          id: describedId,
+          title: folderRef?.title ?? described,
+          display: deriveDisplayTitle(undefined, folderRef?.title ?? described),
+          kind: folderRef?.kind ?? 'unknown',
+          sourceSlug: doc.slug,
+          // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
+          // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
+          hasOwnDocument: false,
+          ref: described.trim(),
+          source: 'frontmatter',
+        });
+      }
+      edges.push({
+        id: `${docNode.id}--describes-->${describedId}`,
+        from: docNode.id,
+        to: describedId,
+        type: 'describes',
+        source: 'frontmatter',
+        sourceSlug: doc.slug,
+      });
+    }
+
     // dependencies[] — depends_on edge
     for (const dep of asStringArray(fm.dependencies)) {
       const folderRef = resolveFolderPrefixedRef(dep);

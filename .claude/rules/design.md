@@ -106,8 +106,14 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
   (`target="_blank"`·외부 딥링크)의 선행 `↗` 도 클릭 전 경고라 정보다.
   펼침 상태의 `ChevronRight`, 캐러셀 이전/다음도 유지.
 - **판별법**: 화살표를 지우고 라벨을 소리 내어 읽어라. 잃은 게 없으면 장식이었다.
-- 게이트: `tests/contract/label-decoration.contract.test.ts` 가 i18n 문자열
-  끝의 화살표를 차단한다. 상세: `docs/DESIGN-SYSTEM.md`.
+- 게이트: `tests/contract/label-decoration.contract.test.ts` 가 ① i18n 문자열
+  끝의 화살표, ② 선언 없는 `↗`, ③ **라벨 끝에 붙은 화살표 요소**를 차단한다.
+  ③ 은 2026-07-27 에 넓혔다 — 그 전엔 `→` 를 통째로 면제해서, 규칙을 등재한
+  다음 날 공방의 주 저장 버튼(`확인하고 저장 <span>→</span>`)이 그 면제 아래로
+  빠져나갔다. **룰이 있어도 사정거리가 짧으면 룰이 없는 것과 같다.** 판별은
+  글리프가 아니라 위치로 한다: 뒤따르는 첫 비-공백이 부모의 닫는 태그면 끝자리
+  (장식), 아니면 중위(데이터). 켜기 전 전수 측정 = 끝자리 3 · 중위 7.
+  상세: `docs/DESIGN-SYSTEM.md`.
 
 ## 치수 규칙성 — 내용 길이가 달라질 때 (2026-07-26 소유자 확정)
 

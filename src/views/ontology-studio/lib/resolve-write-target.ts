@@ -17,6 +17,7 @@
  */
 
 import { resolveNodeAgentTarget, resolveNodeDocument } from "@/entities/knowledge-graph";
+import { humanizeCodePathTitle } from "@/shared/lib/humanize-code-path-title";
 import { candidateFromNode, CREATE_NODE_KINDS, type CreateNodeKind } from "./build-create-node";
 
 export type StudioWriteTarget =
@@ -40,7 +41,22 @@ export type StudioWriteTarget =
       status: "missing";
       /** 문서가 앉아야 할 경로 (기존 인용이 가리키는 자리). */
       slug: string;
-      /** 새 문서의 `title:` — 표시 이름이 아니라 매칭의 진실원인 원문 title. */
+      /**
+       * 새 문서의 `title:`.
+       *
+       * 이름만 불린 개념의 `title` 은 남의 frontmatter 에 적힌 **참조 원문**
+       * 이라, 코드 근거일 때는 `src/entities/.../derive-ontology-from-vault.ts`
+       * 같은 경로 그대로다. 그 값을 그대로 `title:` 에 박으면 저장 전까지
+       * 지도·공방·피커가 보여 주던 사람 이름("Derive Ontology From Vault")이
+       * 어디에도 남지 않고, 문서함 탭·브레드크럼·본문 H1 이 전부 경로가 된다
+       * (2026-07-27 실측). 파일에 남는 값이라 한 번 잘못 박히면 사람이 다시
+       * 고쳐야 한다.
+       *
+       * 그래서 읽기 표면이 쓰는 것과 **같은 humanizer** 를 통과시킨다 —
+       * `humanizeCodePathTitle` 은 코드 경로가 아니면 null 을 돌려주므로,
+       * 사람이 이미 이름으로 적어 둔 참조는 원문 그대로 남는다(매칭의
+       * 진실원은 여전히 title 이다).
+       */
       title: string;
       /** 네 종류 중 하나로 특정되면 그 값, 아니면 null (사용자가 골라야 한다). */
       kind: CreateNodeKind | null;
@@ -91,8 +107,42 @@ export function resolveStudioWriteTarget(
   return {
     status: "missing",
     slug: node.ref?.trim() || candidateFromNode(node).ref,
-    title: node.title,
+    title: humanizeCodePathTitle(node.title) ?? node.title,
     kind: asCreateKind(node.kind),
     domainValue: opts.domainValue ?? null,
   };
+}
+
+/**
+ * 문서를 만든 **직후** 그 문서를 가리키는 노드 id.
+ *
+ * 왜 필요한가 (2026-07-27 실측) — 이름만 불린 개념의 id 는 참조 원문을 뭉갠
+ * 별칭이다(`element:srcentitiesdocs-vaultlibderive-ontology-from-vaultts`).
+ * 문서를 만들면 그 참조가 진짜 문서로 해석되면서 노드 id 가 파일 이름 기준
+ * (`element:derive-ontology-from-vault.ts`)으로 **바뀐다**. 저장이 성공했는데도
+ * 주소에 옛 별칭이 남아 있으면 화면은 "이 개념을 찾을 수 없다" 고 말한다 —
+ * 앱이 시킨 대로 한 사람이 보상으로 에러 화면을 받는다.
+ *
+ * 판정은 읽기 표면과 같은 함수(`resolveNodeDocument`) 하나로 한다. 그래프가
+ * 이미 새 문서를 알고 있으면 그 노드가 정답이고, 아직 매니페스트가 따라오기
+ * 전이면 derive 가 만들 id 를 그대로 계산한다(`kind:파일이름`, project 만
+ * frontmatter `slug:` 를 쓰므로 경로 전체).
+ */
+export function resolveMaterializedNodeId(
+  slug: string,
+  kind: CreateNodeKind,
+  nodes: readonly WriteTargetNode[] = [],
+): string {
+  const target = slug.normalize("NFC").trim();
+  for (const node of nodes) {
+    const { ownSlug } = resolveNodeDocument({
+      evidenceIds: node.evidenceIds ?? [],
+      hasOwnDocument: node.hasOwnDocument,
+    });
+    if (ownSlug && ownSlug.normalize("NFC").trim() === target) return node.id;
+  }
+  // project 문서의 id 는 frontmatter `slug:` 로 만들어진다 — 공방이 쓰는 문서는
+  // 항상 그 키를 적으므로 경로 전체가 꼬리가 된다. 나머지 종류는 파일 이름.
+  if (kind === "project") return `project:${target}`;
+  return `${kind}:${target.split("/").pop() || target}`;
 }

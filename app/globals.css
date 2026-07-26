@@ -813,21 +813,34 @@
      duration/easing 은 `--topology-motion-panel-duration`(180ms) +
      `--topology-motion-ease-out` 토큰. prefers-reduced-motion 은 아래 base
      레이어의 전역 규칙(animation-duration 0.01ms)이 자동 무력화 → 즉시 등장. */
+  /* 2026-07-27 프레임 실측 — **밝기와 이동은 같은 커브를 쓰면 안 된다.**
+     한 키프레임에 둘을 묶어 두는 동안 `--topology-motion-ease-out`
+     (cubic-bezier(0.16, 1, 0.3, 1))이 불투명도까지 지배했고, 이 커브는
+     첫 프레임(16.7ms)에 이미 47%, 50ms 에 80% 에 닿는다. 설치 앱 녹화에서는
+     첫 프레임이 휘도 램프의 **88.8%** 로 잡혔다 — 사용자가 부른 목적물이
+     사실상 하드컷으로 튀어나오고, 정작 배경 지도만 100ms 이징으로 부드러운
+     상태였다(움직임 예산이 주인공이 아니라 배경에 쓰였다).
+
+     이동은 "클릭한 자리에서 자라난다"는 신호라 그 커브가 맞다. 밝기는
+     **읽을 시간**이라 앱 공통 램프(`--motion-fast` 120ms + `--motion-ease`)를
+     쓴다 — 새 토큰 0, 새 키프레임 0(`panelCrossfadeIn` 재사용). 감속 사용자
+     대응은 아래 base 레이어가 `animation-name` 을 통째로 갈아 끼우므로 이
+     분리와 무관하게 그대로 동작한다. */
   @keyframes topologyChromeIn {
     from {
-      opacity: 0;
       transform: translateY(3px) scale(0.98);
     }
 
     to {
-      opacity: 1;
       transform: translateY(0) scale(1);
     }
   }
 
   .topology-chrome-in {
-    animation: topologyChromeIn var(--topology-motion-panel-duration)
-      var(--topology-motion-ease-out) both;
+    animation:
+      topologyChromeIn var(--topology-motion-panel-duration)
+        var(--topology-motion-ease-out) both,
+      panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
     /* 클릭 포커스 시그니처 — 상세 팝오버가 클릭한 노드의 화면 좌표 방향에서
        자라나게, 소비처(HomePage 포지셔너)가 노드 스크린 좌표를 이 변수로
        주입한다(px 로컬 좌표). 미주입 시 기존 `center top` — 엣지 패널·상태
@@ -861,20 +874,21 @@
      prefers-reduced-motion 은 아래 base 레이어 전역 규칙으로 즉시 소멸. */
   @keyframes topologyChromeOut {
     from {
-      opacity: 1;
       transform: translateY(0) scale(1);
     }
 
     to {
-      opacity: 0;
       transform: translateY(3px) scale(0.98);
     }
   }
 
+  /* 나가는 길도 들어온 길과 같은 분리를 쓴다 — 밝기는 앱 공통 램프의 역재생,
+     이동은 크롬 패밀리 커브. 한쪽만 분리하면 등장과 퇴장이 다른 문법이 된다. */
   .topology-chrome-out {
-    animation: topologyChromeOut
-      calc(var(--topology-motion-panel-duration) * 0.67)
-      var(--topology-motion-ease-out) both;
+    animation:
+      topologyChromeOut calc(var(--topology-motion-panel-duration) * 0.67)
+        var(--topology-motion-ease-out) both,
+      panelCrossfadeIn var(--motion-fast) var(--motion-ease) both reverse;
     transform-origin: var(--topology-chrome-in-origin, center top);
     pointer-events: none;
   }

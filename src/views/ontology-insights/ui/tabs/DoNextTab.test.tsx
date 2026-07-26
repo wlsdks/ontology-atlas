@@ -45,6 +45,9 @@ const labels: DoNextTabLabels = {
   sectionDuplicate: "Similar names",
   hintDuplicate: "Merge them if they mean the same thing.",
   duplicateMetric: (percent) => `${percent}% overlap`,
+  duplicateRestShow: (count) => `Show ${count} more`,
+  duplicateRestHide: "Collapse",
+  duplicateTruncated: (shown, total) => `Top ${shown} / ${total}`,
   hintNeglectedHub: "Well-connected but untouched.",
   hintOrphan: "A loner with no relations.",
   hintPromotion: "Several concepts point here.",
@@ -821,5 +824,40 @@ describe("DoNextTab — 중복 의심 쌍", () => {
   it("중복만 남아 있어도 '손볼 것 없음' 이라고 말하지 않는다", () => {
     renderWith({ duplicates, duplicateTotal: 1, duplicateHandoff: () => "merge_concepts" });
     expect(screen.queryByText(labels.emptyQueue)).not.toBeInTheDocument();
+  });
+
+  /**
+   * 2026-07-27 실측 회귀 — 배지는 10건이라 말하는데 3행만 그리고 더 보기도
+   * 절단 문구도 없었다. 7건이 이 화면에서 발견될 방법 자체가 없었다.
+   */
+  it("배지가 말한 나머지에 닿을 길이 있다 — 펼침 + 절단 문구", () => {
+    const rest = [2, 3, 4].map((n) => ({
+      ...duplicates[0],
+      id: `pair-${n}`,
+      keepId: `element:node-${n}`,
+      keepTitle: `Node ${n}`,
+      dissolveTitle: `Node ${n} model`,
+    }));
+    renderWith({
+      duplicates,
+      duplicateRest: rest,
+      duplicateTotal: 6,
+      duplicateHandoff: () => "merge_concepts",
+    });
+
+    // 접힌 기본 상태: 상위 행 + 남은 규모를 밝히는 문구.
+    expect(screen.getAllByTestId("do-next-duplicate-row")).toHaveLength(1);
+    expect(screen.getByTestId("do-next-duplicates")).toHaveTextContent("Top 1 / 6");
+
+    fireEvent.click(screen.getByTestId("do-next-duplicate-rest-toggle"));
+    expect(screen.getAllByTestId("do-next-duplicate-row")).toHaveLength(4);
+    // 다 펼쳐도 남는 절단은 계속 정직하게 말한다.
+    expect(screen.getByTestId("do-next-duplicates")).toHaveTextContent("Top 4 / 6");
+  });
+
+  it("나머지가 없으면 펼침도 절단 문구도 만들지 않는다", () => {
+    renderWith({ duplicates, duplicateTotal: 1, duplicateHandoff: () => "merge_concepts" });
+    expect(screen.queryByTestId("do-next-duplicate-rest-toggle")).toBeNull();
+    expect(screen.getByTestId("do-next-duplicates")).not.toHaveTextContent("Top ");
   });
 });

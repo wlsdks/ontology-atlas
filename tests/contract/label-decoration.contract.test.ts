@@ -97,14 +97,38 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
    * 박혀 있었고, 하필 그 파일은 이 규칙을 등재한 PR 이 같은 날 재설계한
    * 파일이다. 번역 문자열만 지키는 게이트는 마크업으로 새는 걸 못 본다.
    *
-   * 여기서 `→` 는 대상이 아니다. 이 코드베이스에서 홀로 선 `→` 는 전부 **중위**
-   * 데이터 화살표(`{source} → {target}`, 경로·순서·인과)로 쓰이고 있고 그건
-   * 허용 열이다. 반면 `↗` 는 용도가 하나뿐이다 — **앱을 떠나는 링크의 선행
-   * 경고**. 그래서 이 글리프는 쓰는 자리에서 스스로를 선언하게 한다
-   * (`data-external-link-marker`). 선언 없는 `↗` 는 장식이라고 본다.
+   * `↗` 는 용도가 하나뿐이다 — **앱을 떠나는 링크의 선행 경고**. 그래서 이
+   * 글리프는 쓰는 자리에서 스스로를 선언하게 한다(`data-external-link-marker`).
+   * 선언 없는 `↗` 는 장식이라고 본다.
+   *
+   * ── 사정거리가 짧았다 (2026-07-27 실측) ────────────────────────────────
+   *
+   * 위 문단은 원래 "`→` 는 대상이 아니다 — 이 코드베이스에서 홀로 선 `→` 는
+   * 전부 중위 데이터 화살표다" 라고 적어 두고 `→` 를 통째로 면제했다. 그
+   * 면제 아래에서 공방의 **주 저장 버튼**이 `확인하고 저장 <span>→</span>`
+   * 로 살아 있었다. 규칙을 등재한 다음 날, 규칙을 등재한 저장소가 스스로
+   * 어긴 것이다. **룰이 있어도 사정거리가 짧으면 룰이 없는 것과 같다.**
+   *
+   * 면제를 걷되 중위 데이터 화살표는 그대로 통과해야 한다. 둘을 가르는 것은
+   * 글리프가 아니라 **뒤에 무엇이 오는가** 다:
+   *
+   * - `{a} <span>→</span> {b}` — 뒤에 형제가 온다 → 중위, 데이터.
+   * - `{labels.save} <span>→</span></button>` — 뒤가 부모의 닫는 태그다 →
+   *   라벨 끝, 장식. 지우고 읽어도 잃는 게 없다.
+   *
+   * 켜기 전 전수 측정(2026-07-27, `src`+`app` 의 .tsx 전부): 끝자리 3건
+   * (전부 공방 저장 버튼 계열) · 중위 7건. 한 PR 로 치울 수 있는 규모라
+   * 켰다 — `design.md` "룰을 켜기 전 반드시 측정한다" 절차.
    */
   const DECORATIVE_GLYPH_NODE = /<([A-Za-z][\w.]*)\b([^<>]*)>\s*[↗➜⟶»]\s*</g;
+  /** 한 요소의 내용이 화살표 하나뿐인 자리 — 중위인지 끝자리인지는 뒤가 정한다. */
+  const LONE_ARROW_NODE = /<([A-Za-z][\w.]*)\b([^<>]*)>\s*([→↗➜⟶»])\s*<\/\1\s*>/g;
   const EXTERNAL_MARKER = "data-external-link-marker";
+
+  /** 뒤따르는 첫 비-공백이 부모의 닫는 태그면 그 화살표는 라벨 끝이다. */
+  function isTrailingArrow(source: string, endIndex: number): boolean {
+    return source.slice(endIndex).replace(/^\s+/, "").startsWith("</");
+  }
 
   function collectSourceFiles(dir: string, out: string[]): void {
     for (const entry of readdirSync(dir)) {
@@ -147,6 +171,33 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
     ).toEqual([]);
   });
 
+  it("라벨 끝에 붙은 화살표 요소가 없다 (중위 데이터 화살표는 통과)", () => {
+    const files: string[] = [];
+    for (const root of ["src", "app"]) collectSourceFiles(join(process.cwd(), root), files);
+    expect(files.length).toBeGreaterThan(100);
+
+    const offences: string[] = [];
+    for (const file of files) {
+      const source = readFileSync(file, "utf8");
+      for (const match of source.matchAll(LONE_ARROW_NODE)) {
+        if (match[2].includes(EXTERNAL_MARKER)) continue;
+        if (!isTrailingArrow(source, match.index + match[0].length)) continue;
+        const line = source.slice(0, match.index).split("\n").length;
+        offences.push(
+          `  ${file.replace(process.cwd() + "/", "")}:${line} — <${match[1]}>${match[3]}`,
+        );
+      }
+    }
+
+    expect(
+      offences,
+      offences.length === 0
+        ? ""
+        : `라벨 끝의 화살표는 정보를 더하지 않는다 — 지우고 라벨만 남겨라.\n` +
+            `문장 가운데({a} → {b})는 데이터라 통과한다.\n${offences.join("\n")}`,
+    ).toEqual([]);
+  });
+
   it("선언된 외부 링크 표식은 실제로 앱을 떠나는 링크 위에만 있다", () => {
     const files: string[] = [];
     for (const root of ["src", "app"]) collectSourceFiles(join(process.cwd(), root), files);
@@ -177,5 +228,41 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
     // 선언 없는 ↗ 1건만 잡고, 선언된 ↗ 와 중위 데이터 화살표 → 는 통과.
     expect(hits).toHaveLength(2);
     expect(hits.filter((hit) => !hit[2].includes(EXTERNAL_MARKER))).toHaveLength(1);
+  });
+
+  /**
+   * 프로브 — 넓힌 사정거리가 실제로 잡는지 위반 1줄 + 정상 1줄로 증명한다.
+   * 이 단언이 통과해야 위 스캔의 0건이 "위반 없음" 이라는 뜻이 된다.
+   */
+  it("끝자리 게이트가 실제로 위반을 잡고 중위는 놓아 준다", () => {
+    // 위반 — 공방 저장 버튼이 실제로 이 모양이었다.
+    const violation = [
+      "<button>",
+      "  {labels.save}",
+      '  <span className="opacity-75">→</span>',
+      "</button>",
+    ].join("\n");
+    // 정상 — 경로를 나르는 중위 화살표.
+    const legit = [
+      "<span>",
+      "  {pair.fromTitle}",
+      '  <span className="mx-1.5">→</span>',
+      "  {pair.toTitle}",
+      "</span>",
+    ].join("\n");
+
+    const trailingHits = (source: string) =>
+      [...source.matchAll(LONE_ARROW_NODE)].filter((hit) =>
+        isTrailingArrow(source, hit.index + hit[0].length),
+      );
+
+    expect(trailingHits(violation)).toHaveLength(1);
+    expect(trailingHits(legit)).toHaveLength(0);
+    // 선언된 외부 링크 표식은 끝자리여도 통과한다(라벨 앞 규칙은 위 게이트 담당).
+    expect(
+      trailingHits('<a>{label}<span data-external-link-marker>↗</span></a>').filter(
+        (hit) => !hit[2].includes(EXTERNAL_MARKER),
+      ),
+    ).toHaveLength(0);
   });
 });

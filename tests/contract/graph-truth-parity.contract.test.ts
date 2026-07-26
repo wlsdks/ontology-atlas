@@ -72,9 +72,30 @@ function loadVaultDocs(dir = VAULT_ROOT, base = VAULT_ROOT): CompilerDoc[] {
 const compiled = compileOntology(loadVaultDocs()) as {
   nodeCount: number;
   referencedOnlyCount: number;
-  edges: Array<{ ref: string; resolved: boolean }>;
+  edges: Array<{ from: string; to: string; via: string; ref: string; resolved: boolean }>;
   aliases: Array<{ alias: string; slug: string }>;
   nodes: Array<{ slug: string }>;
+};
+
+/**
+ * 컴파일러의 frontmatter 키 → 웹 derive 의 관계 타입(+방향 뒤집힘 여부).
+ *
+ * 컴파일러는 **적힌 참조 하나당 엣지 하나**를 낸다. 그래서 같은 관계를 양쪽
+ * 문서가 다 적으면(도메인의 `capabilities:` + 역량의 `domain:`) 두 번 세고,
+ * 자식이 부모를 가리키는 `domain:` 은 방향도 반대다. 웹은 같은 사실을
+ * (from,to,type) 로 접어 **서로 다른 관계 하나**로 센다.
+ */
+const COMPILED_VIA_TO_WEB: Record<string, { type: string; reversed?: boolean }> = {
+  // `domain: X` 는 자식이 부모를 가리킨다 — 담기 관계의 방향은 부모→자식이다.
+  domain: { type: 'contains', reversed: true },
+  domains: { type: 'contains' },
+  capabilities: { type: 'contains' },
+  elements: { type: 'contains' },
+  contains: { type: 'contains' },
+  dependencies: { type: 'depends_on' },
+  relates: { type: 'related_to' },
+  describes: { type: 'describes' },
+  broader: { type: 'is_a' },
 };
 
 /** 컴파일러가 문서로 해석하지 못한 참조 — "이름만 적힌 개념". */
@@ -111,6 +132,51 @@ describe("화면 · CLI · MCP 개념 정합 (번들 dogfood == docs/ontology)",
 
   it("화면의 총 개념 수 = 컴파일된 노드 + 이름만 적힌 개념 (CLI overview 가 내는 두 수)", () => {
     expect(insight.nodes).toHaveLength(compiled.nodeCount + compiled.referencedOnlyCount);
+  });
+
+  /**
+   * 실측 배경 (2026-07-27) — 웹 인사이트는 **448 관계**, CLI `overview` 와 MCP
+   * `query_ontology` 는 **542** 였다(둘은 `graphHash` 까지 완전 일치). 차이 94 중
+   * 84 는 스코프였고(컴파일러는 적힌 참조를, 웹은 서로 다른 관계를 센다),
+   * **10 은 진짜 구멍**이었다: 웹 derive 가 `describes:` 키를 통째로 안 읽어
+   * 문서 노드가 자기가 설명하는 개념과 이어지지 않았다.
+   *
+   * 그래서 숫자를 맞추는 대신 **접는 규칙을 못 박는다** — 컴파일러 엣지를
+   * (from,to,type) 로 접으면 웹 엣지 집합과 정확히 같아야 한다. 어느 쪽이 새
+   * frontmatter 키를 먼저 배워도 여기서 걸린다.
+   */
+  it("컴파일러 관계를 (from,to,type) 로 접으면 화면의 관계 집합과 정확히 같다", () => {
+    const strip = (value: string) => value.replace(/^ontology\//, '');
+    const slugOf = new Map<string, string>();
+    for (const node of insight.nodes) {
+      const own = node.hasOwnDocument === false ? node.ref : node.evidenceIds[0];
+      slugOf.set(node.id, strip(own ?? node.id));
+    }
+
+    const unknownVia = new Set<string>();
+    const compiledSet = new Set<string>();
+    for (const edge of compiled.edges) {
+      const mapped = COMPILED_VIA_TO_WEB[edge.via];
+      if (!mapped) {
+        unknownVia.add(edge.via);
+        continue;
+      }
+      const from = mapped.reversed ? edge.to : edge.from;
+      const to = mapped.reversed ? edge.from : edge.to;
+      compiledSet.add(`${from}|${to}|${mapped.type}`);
+    }
+    // 새 frontmatter 관계 키가 컴파일러에 생기면 이 표부터 갱신하라는 신호다.
+    expect([...unknownVia]).toEqual([]);
+
+    const webSet = new Set(
+      insight.edges.map((edge) => `${slugOf.get(edge.from)}|${slugOf.get(edge.to)}|${edge.type}`),
+    );
+
+    // 회귀 재현: `describes:` 를 안 읽던 동안 여기 10건이 남았다.
+    expect([...compiledSet].filter((key) => !webSet.has(key))).toEqual([]);
+    expect([...webSet].filter((key) => !compiledSet.has(key))).toEqual([]);
+    // 화면이 찍는 관계 총계는 곧 이 집합의 크기다.
+    expect(insight.edges).toHaveLength(webSet.size);
   });
 
   it("모든 노드의 에이전트 이름이 볼트에서 해석된다 (붙여넣으면 동작한다)", () => {

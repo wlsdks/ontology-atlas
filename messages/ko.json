@@ -272,6 +272,7 @@
       "empty": "지금은 작업중인 게 없어요"
     },
     "materialize": {
+      "opening": "방금 만든 문서를 여는 중이에요.",
       "title": "이 개념은 아직 문서가 없어요",
       "reason": "‘{name}’ 개념은 다른 문서 안에서 이름만 불린 상태예요. 관계를 적어 둘 자기 문서가 아직 없어요.",
       "actionWrite": "관계를 이어 두려면 이 개념의 문서를 먼저 만들어야 해요. 만들면 지금 고른 관계도 그 문서에 함께 적어요.",
@@ -1251,7 +1252,7 @@
       "kindGlyphCaption": "글리프 = 지도의 노드 셰이프 그대로 — 패널과 캔버스는 같은 세계.",
       "domainCapacityCaption": "이 영역에 담긴 개념 수 — 역량과 요소를 합친 값이에요. 여러 도메인에 속한 개념은 각 도메인에 한 번씩 세어져 합계가 전체보다 클 수 있어요. 막대 왼쪽=역량, 오른쪽=요소.",
       "relationTypesTitle": "관계 타입",
-      "relationTypesCaption": "관계가 어떤 성격인지 — 담는 관계에 치우쳐 있으면 「기대는」 관계를 더 그려야 한다는 신호예요.",
+      "relationTypesCaption": "관계가 어떤 성격인지 — 담는 관계에 치우쳐 있으면 「기대는」 관계를 더 그려야 한다는 신호예요. 여기 수는 서로 다른 관계를 한 번씩 셉니다(양쪽 문서가 같은 관계를 적어도 1). CLI·MCP 는 적힌 참조를 그대로 세서 이보다 큽니다.",
       "noRelationTypes": "아직 이어진 관계가 없어요",
       "noRelationTypesHint": "공방에서 개념끼리 관계를 이어보세요.",
       "hubsTitle": "허브 — 연결 상위",
@@ -1341,6 +1342,9 @@
         "sectionDuplicate": "비슷한 이름 — 같은 걸까요?",
         "hintDuplicate": "이름이 많이 겹치는 개념 쌍이에요. 같은 뜻이면 하나로 합쳐 주세요 — 중복은 폴더가 자랄 때 가장 먼저 나는 고장이에요.",
         "duplicateMetric": "겹침 {percent}%",
+        "duplicateRestShow": "비슷한 이름 {count}쌍 더 보기",
+        "duplicateRestHide": "접기",
+        "duplicateTruncated": "상위 {shown} / 비슷한 이름 {total}쌍 — 나머지는 에이전트 핸드오프로",
         "hintNeglectedHub": "연결이 많은데 한동안 안 바뀐 개념이에요. 내용이 아직 맞는지 확인해 주세요.",
         "hintOrphan": "아무 관계도 없는 외톨이 개념이에요. 관련 개념과 이어 주세요.",
         "hintPromotion": "다른 개념 여럿이 이 개념을 참조하고 있어요. 상위 개념(역량·도메인)으로 올리면 지도에서 중심축으로 또렷해져요.",
