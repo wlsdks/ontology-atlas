@@ -27,12 +27,23 @@ function readHomeSearch() {
  * route state 갱신을 못 시키는 버그. 둘 다 구독해서 어느 경로로 바뀌든 즉시
  * 반영. window.location 을 fresh read 해서 최신값 보장.
  */
+export interface HomeRouteStateUpdateOptions {
+  /**
+   * 히스토리에 새 칸을 만들지 않고 현재 칸을 덮어쓴다. 사용자의 이동이 아니라
+   * *도착한 URL 을 정규화* 하는 쓰기(딥링크가 요구한 조상 펼침 등)에 쓴다 —
+   * 그런 쓰기가 push 로 나가면 사용자는 자기가 가지 않은 칸을 뒤로가기로
+   * 되짚게 된다.
+   */
+  replace?: boolean;
+}
+
 export function useHomeRouteState(): [
   HomeRouteState,
   (
     updater:
       | Partial<HomeRouteState>
       | ((current: HomeRouteState) => HomeRouteState),
+    options?: HomeRouteStateUpdateOptions,
   ) => void,
 ] {
   const hydrated = useSyncExternalStore(
@@ -78,6 +89,7 @@ export function useHomeRouteState(): [
       updater:
         | Partial<HomeRouteState>
         | ((current: HomeRouteState) => HomeRouteState),
+      options?: HomeRouteStateUpdateOptions,
     ) => {
       if (typeof window === 'undefined') return;
       const current = parseHomeRouteState(
@@ -97,11 +109,20 @@ export function useHomeRouteState(): [
       // 그 URL 을 새로고침하면 static export 의 [locale] 라우트가 깨진다
       // (사용자 보고: "새로고침하면 화면 로딩이 안 됨").
       const browserPath = window.location.pathname;
-      window.history.pushState(
-        {},
-        '',
-        query ? `${browserPath}?${query}` : browserPath,
-      );
+      const nextUrl = query ? `${browserPath}?${query}` : browserPath;
+      // 결과가 지금 주소와 똑같으면 기록할 변화가 없다. 그래도 pushState 를
+      // 하면 **같은 주소**가 히스토리에 한 칸 더 쌓이고, 뒤로가기 첫 번째가
+      // 화면을 하나도 바꾸지 못한다 — 사용자에겐 "뒤로가기가 안 먹는" 것으로
+      // 읽힌다(프로젝트 상세 → 지도 착지에서 실측: 히스토리 2→4, Back 1회
+      // 화면 변화 0). 착지 직후 도는 정규화 이펙트들이 대부분 이 no-op 이다.
+      if (nextUrl === `${window.location.pathname}${window.location.search}`) {
+        return;
+      }
+      if (options?.replace) {
+        window.history.replaceState({}, '', nextUrl);
+      } else {
+        window.history.pushState({}, '', nextUrl);
+      }
       window.dispatchEvent(new Event(HOME_URL_CHANGE_EVENT));
     },
     [],

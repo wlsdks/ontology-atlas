@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T05:40:02.030Z",
+  "generatedAt": "2026-07-26T05:57:16.750Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 요청하지 않은 게 끼어들지 않고, 누른 게 한 번에 먹는다",
+          "slug": "2026-07-26-요청하지-않은-게-끼어들지-않고-누른-게-한-번에-먹는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — 터미널 도크: 폰트 없이도 안 깨지고 · 읽히고 · 커진다 (S2~S4)",
           "slug": "2026-07-26-터미널-도크-폰트-없이도-안-깨지고-읽히고-커진다-s2s4"
         },
@@ -4903,9 +4908,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. S1(여백·폰트 체인·스크롤바)이 이 기기의 두부를 없앴지만, 남은 세 결함은 다른 기기 · 다른 눈 · 다른 화면의 문제였다. 세퍼레이터를 폰트에서 독립",
-      "wordCount": 42977,
-      "updatedAt": "2026-07-26T05:40:02.030Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. \"거슬림\" 으로 묶인 다섯 결함은 뿌리가 하나였다: 화면이 사용자가 요청하지 않은 일을 자기 판단으로 한다. 히스토리에 안 만든 칸을 쌓고, 안 부른 모달",
+      "wordCount": 43358,
+      "updatedAt": "2026-07-26T05:57:16.750Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -6231,7 +6236,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
       "wordCount": 13139,
-      "updatedAt": "2026-07-26T05:39:46.182Z",
+      "updatedAt": "2026-07-26T14:46:56+09:00",
       "linksOut": [
         "slug",
         "project:slug",

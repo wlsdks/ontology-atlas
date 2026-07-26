@@ -180,8 +180,15 @@ export function GlobalSearch({
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
+        // Esc · 스크림 클릭 · 닫기 버튼이 모두 같은 자리로 수렴한다 — 푸터가
+        // 약속하는 "ESC 닫기" 한 번에 창이 닫히고 입력·필터가 함께 비워진다.
+        // (예전엔 Esc 경로만 query 는 비우고 kind/project 필터는 남겨, 다시
+        // 열었을 때 이유 없이 좁혀진 결과를 보여줬다.)
+        if (!next) {
+          closeAndClear();
+          return;
+        }
         onOpenChange(next);
-        if (!next) setQuery("");
       }}
     >
       <Dialog.Portal>
@@ -194,6 +201,18 @@ export function GlobalSearch({
         />
         <Dialog.Content
           aria-label={t('dialogAriaLabel')}
+          // Radix 는 형제 노드에 `aria-hidden` 을 거는 방식이라 `aria-modal` 을
+          // 스스로 붙이지 않는다. 그런데 이 앱의 전역 Esc 규율은 "지금 모달이
+          // 떠 있는가"를 `[role="dialog"][aria-modal="true"]` 로 판정한다
+          // (첫 실행 카드의 캡처 핸들러 · 자동 투어 발화 가드 등). 선언이
+          // 없으니 저 판정들이 이 검색창을 못 보고, 첫 Esc 를 첫 실행 카드가
+          // 가로채 preventDefault 해버려 **첫 타에 아무 일도 일어나지
+          // 않았다**(2026-07-26 실측: Esc 1회에 입력값도 그대로, 다이얼로그도
+          // 그대로 — 두 번째에야 닫힘). 앱의 다른 모달들(SearchPalette ·
+          // 공방 진입 선택 · 문서함 팔레트 …)은 전부 이 속성을 명시하고 있고,
+          // 이 검색창만 빠져 있었다. 스크림 + 포커스 트랩 + 바깥 클릭 닫기를
+          // 갖춘 진짜 모달이므로 선언이 사실과도 맞는다.
+          aria-modal="true"
           data-overlay-spring="true"
           data-global-search-responsive-contract="mobile-sheet-md-floating"
           data-global-search-floating-width-token="--topology-search-sheet-floating-width"

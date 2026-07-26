@@ -1336,7 +1336,7 @@
   "projectPages": {
     "selector": {
       "documentTitle": "Projects · Ontology Atlas",
-      "crumbBack": "← Workspace",
+      "crumbBack": "← Map",
       "crumbCurrent": "Projects",
       "censusTopConceptsLabel": "CONCEPTS",
       "censusTopRelationsLabel": "RELATIONS",
@@ -1379,8 +1379,8 @@
       "emptyStateDesc": "Create a project document (frontmatter `kind: project`) in your folder and it appears here."
     },
     "detail": {
-      "topBarBackToWorkspaceAria": "Home (workspace map)",
-      "topBarWorkspaceFallback": "Home",
+      "topBarBackToWorkspaceAria": "Back to the map",
+      "topBarWorkspaceFallback": "Map",
       "topBarProjectsLabel": "Projects",
       "topBarProjectFallback": "Project",
       "topBarTopologyView": "View topology",
