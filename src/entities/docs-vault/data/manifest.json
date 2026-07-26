@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T13:56:11.983Z",
+  "generatedAt": "2026-07-26T13:57:12.190Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4983,9 +4983,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. <<<<<<< HEAD 인사이트 「할 일」 탭이 두 묶음으로 나뉘었다: 「지금 바로 고칠 수 있어요」 와 「개발자·AI에게 넘길 일」. 내 폴더를 연 세션",
-      "wordCount": 48022,
-      "updatedAt": "2026-07-26T13:56:11.983Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 인사이트 「할 일」 탭이 두 묶음으로 나뉘었다: 「지금 바로 고칠 수 있어요」 와 「개발자·AI에게 넘길 일」. 내 폴더를 연 세션에서는 앞 묶음이 화면 ",
+      "wordCount": 48008,
+      "updatedAt": "2026-07-26T13:57:12.190Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
