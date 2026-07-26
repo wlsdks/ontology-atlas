@@ -49,7 +49,7 @@ export const DOGFOOD_CENSUS: DogfoodCensus = {
     },
     {
       "slug": "views",
-      "title": "Views (Topology · Browse · Studio)"
+      "title": "Views (Topology · Workshop · Insights)"
     }
   ],
   "domainRelates": [

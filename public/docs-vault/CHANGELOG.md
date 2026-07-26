@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-07-27 — 아키텍처와 내비게이션 문서가 현재 앱 계약을 다시 설명한다
+
+`ARCHITECTURE`와 내비게이션 문서는 퇴역한 xyflow Builder, 게임형 Studio,
+Insights census, desktop/mobile 공통 5개 목적지와 제거된 딥링크 resolver를
+현재 구조처럼 설명하고 있었다. 실제 앱은 Topology 읽기, Workshop 쓰기,
+5개 질문 Insights 정비, Git workbench로 분리되어 있고 데스크톱 6개·모바일
+4개 목적지를 같은 semantic resolver로 판정한다.
+
+이제 route inventory, URL parameter, Workshop emit/receive, responsive
+navigation, root/download 표시 규칙을 실제 source와 일치시켰다. 관련
+ontology의 App Nav Rail, Mobile Bottom Tab Bar, Views domain도 같은 사실로
+동기화했고, 퇴역 용어와 함수명이 다시 canonical architecture에 들어오면
+실패하는 package contract test를 추가했다. UI 렌더링은 바꾸지 않았다.
+
 ## 2026-07-27 — design guard가 현재 5개 인사이트 질문을 보호한다
 
 `pnpm design:ontology`가 초록이어도 구조 계약과 테스트는 퇴역한 고정 3탭

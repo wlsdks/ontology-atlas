@@ -270,7 +270,7 @@ CLI-only checks:
 Current graph and MCP-connected facts:
 
 - `compile --summary --json` returned graph hash
-  `94fcb427a7a230404bc757514ad3511a4a0559f2db79e5291fa2d1efa4634e6f`,
+  `bfe2fd401f7ccf9351d4864839c63821f29094cbcd189530c331ea0e8323431a`,
   96 nodes, 543 edges, 318 resolved edges, 225 external edges, 0 unresolved
   edges, 0 issues, and 0 canonicalization actions.
 - Kind census: 38 capabilities, 47 elements, 6 domains, 3 documents, 1 project,
@@ -291,7 +291,7 @@ Installed MCP verifier:
     argument/enum checks, destructive dry-runs, batch no-write checks,
     health/workspace/agent briefs, graph query smokes, and structured content
     checks.
-  - compiled graph hash: `94fcb427a7a2`
+  - compiled graph hash: `bfe2fd401f7c`
   - graph size: 96 nodes, 543 edges, 0 issues.
 
 ## Recommended First User Flow

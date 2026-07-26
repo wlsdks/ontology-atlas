@@ -1997,6 +1997,37 @@ describe('package contract helpers', () => {
     assert.doesNotMatch(prTemplate, /cloud-mode-only path/);
   });
 
+  it('keeps architecture routes, navigation, and deeplink contracts current', () => {
+    const architecture = readFileSync('docs/ARCHITECTURE.md', 'utf-8');
+
+    assert.match(
+      architecture,
+      /\/ontology\/edit\s+compatibility redirect → \/ontology\/studio/,
+    );
+    assert.match(
+      architecture,
+      /\/ontology\/studio\s+Compass Stage write surface \(ENHANCE \/ CREATE\)/,
+    );
+    assert.match(
+      architecture,
+      /\/ontology\/insights\s+five-question maintenance board/,
+    );
+    assert.match(architecture, /desktop rail\s+exposes six destinations/);
+    assert.match(architecture, /mobile bottom bar exposes four core destinations/);
+    assert.match(architecture, /buildOntologyStudioNodeHrefFromGraphId/);
+    assert.match(architecture, /resolveStudioFocalId/);
+    assert.match(
+      architecture,
+      /`do-next` \\\| `composition` \\\| `connections` \\\| `boundaries` \\\| `freshness`/,
+    );
+    assert.doesNotMatch(architecture, /xyflow ERD builder/);
+    assert.doesNotMatch(architecture, /game "강화"/);
+    assert.doesNotMatch(architecture, /buildOntologyBuilderNodeHrefFromGraphId/);
+    assert.doesNotMatch(architecture, /resolveBuilderQueryNodeSlug/);
+    assert.doesNotMatch(architecture, /\/ontology\/insights` \| node to focus/);
+    assert.doesNotMatch(architecture, /`reader` \| `\/ontology\/edit`/);
+  });
+
   it('keeps CLAUDE.md a thin AGENTS wrapper', () => {
     const claude = readFileSync('CLAUDE.md', 'utf-8');
     const agentImports = [...claude.matchAll(/^@AGENTS\.md$/gm)];

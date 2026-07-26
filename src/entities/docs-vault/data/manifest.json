@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T20:40:55.532Z",
+  "generatedAt": "2026-07-26T20:48:20.841Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -217,9 +217,9 @@
           "slug": "source-of-truth-files"
         }
       ],
-      "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
-      "wordCount": 1978,
-      "updatedAt": "2026-07-27T02:51:06+09:00",
+      "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer shared by people and AI coding agents. Round 10 permanently removed all auth + cloud data surfaces; the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights, and keeps old on",
+      "wordCount": 2003,
+      "updatedAt": "2026-07-26T20:48:20.841Z",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 아키텍처와 내비게이션 문서가 현재 앱 계약을 다시 설명한다",
+          "slug": "2026-07-27-아키텍처와-내비게이션-문서가-현재-앱-계약을-다시-설명한다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — design guard가 현재 5개 인사이트 질문을 보호한다",
           "slug": "2026-07-27-design-guard가-현재-5개-인사이트-질문을-보호한다"
         },
@@ -5043,9 +5048,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. pnpm design:ontology가 초록이어도 구조 계약과 테스트는 퇴역한 고정 3탭 Insights를 현재 제품으로 불렀다. TabBar, censu",
-      "wordCount": 51236,
-      "updatedAt": "2026-07-26T20:40:55.532Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. ARCHITECTURE와 내비게이션 문서는 퇴역한 xyflow Builder, 게임형 Studio, Insights census, desktop/mobil",
+      "wordCount": 51335,
+      "updatedAt": "2026-07-26T20:48:07.616Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5842,7 +5847,7 @@
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
       "wordCount": 16232,
-      "updatedAt": "2026-07-26T20:39:28.064Z",
+      "updatedAt": "2026-07-27T05:42:08+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -5953,7 +5958,7 @@
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
       "wordCount": 6975,
-      "updatedAt": "2026-07-26T20:39:28.061Z",
+      "updatedAt": "2026-07-27T05:42:08+09:00",
       "linksOut": []
     },
     {
@@ -6360,8 +6365,8 @@
         },
         {
           "depth": 3,
-          "text": "`AppSettingsMenu` (per-page header — Projects list, Docs, Insights)",
-          "slug": "appsettingsmenu-per-page-header-projects-list-docs-insights"
+          "text": "`AppSettingsMenu` (app shell + contextual page headers)",
+          "slug": "appsettingsmenu-app-shell-contextual-page-headers"
         },
         {
           "depth": 3,
@@ -6410,8 +6415,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 14100,
-      "updatedAt": "2026-07-26T20:39:28.063Z",
+      "wordCount": 14095,
+      "updatedAt": "2026-07-26T20:48:07.612Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -7140,7 +7145,7 @@
       "headings": [],
       "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild first simplified the page and the 2026-07-26 question split established the current five-tab maintenance board (Do next / Composition / Connections / Boundaries / F",
       "wordCount": 591,
-      "updatedAt": "2026-07-26T20:40:26.060Z",
+      "updatedAt": "2026-07-27T05:42:08+09:00",
       "linksOut": []
     },
     {
@@ -7457,7 +7462,7 @@
       "headings": [],
       "excerpt": "Shared stakeholder reader lane for planners, marketers, C-level decision-makers, developers, and AI agents — the idea that the same graph should turn business/product meaning, ownership, dependency, evidence, and impact into something the whole decision loop can read, not just developers. 2026-07 status note. Most of t",
       "wordCount": 288,
-      "updatedAt": "2026-07-26T20:40:26.060Z",
+      "updatedAt": "2026-07-27T05:42:08+09:00",
       "linksOut": []
     },
     {
@@ -8946,12 +8951,12 @@
     {
       "slug": "ontology/domains/views",
       "path": "docs/ontology/domains/views.md",
-      "title": "Views (Topology · Browse · Studio)",
+      "title": "Views (Topology · Workshop · Insights)",
       "tags": [],
       "frontmatter": {
         "slug": "domains/views",
         "kind": "domain",
-        "title": "Views (Topology · Browse · Studio)",
+        "title": "Views (Topology · Workshop · Insights)",
         "display_ko": "화면(뷰)",
         "display_en": "Views",
         "capabilities": [
@@ -9029,9 +9034,9 @@
           "slug": "2026-07-26-entry-and-map-audit"
         }
       ],
-      "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (canvas-2D topology-map-v2 spatial network — /, /topology), 둘러보기 (/ontology 는 토폴로지 INDEX 로 흡수된 얇은 리다이렉트 + 노드 detail), 공방 (나침 무대 /ontology/studio — 노드 의미를 관계 소켓으로 완성해 실제 frontmatter 를 쓰는 표면; 구 xyflow ERD 빌더 /ontology/edit 는 2026-07-24 은퇴하고 공방으로 리다이렉트). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Workshop ",
-      "wordCount": 147,
-      "updatedAt": "2026-07-27T01:53:12+09:00",
+      "excerpt": "같은 ontology 그래프의 세 작업 출구. 토폴로지 (canvas-2D topology-map-v2 spatial network — /, /topology)는 읽고 탐색하고, 공방 (나침 무대 /ontology/studio)은 관계 소켓으로 의미를 완성해 실제 frontmatter 를 쓰며, 인사이트 (/ontology/insights)는 다섯 질문으로 정비 우선순위를 읽고 agent handoff를 만든다. /ontology 는 Topology INDEX로, 구 xyflow ERD Builder /ontology/edit 는 공방으로 리다이렉트한다. 검색은 ⌘K",
+      "wordCount": 140,
+      "updatedAt": "2026-07-26T20:48:07.613Z",
       "linksOut": []
     },
     {
@@ -9089,9 +9094,9 @@
         "domain": "onboarding-ux"
       },
       "headings": [],
-      "excerpt": "src/widgets/app-nav-rail/ui/AppNavRail.tsx renders the persistent left navigation rail shown on every Ontology Atlas route at desktop widths (lg: and up, ≥1024px). Below lg it renders nothing — src/widgets/bottom-tab-bar (Mobile Bottom Tab Bar) owns navigation instead. The rail exposes exactly 5 destinations: Map (/, /",
-      "wordCount": 209,
-      "updatedAt": "2026-07-19T01:50:32+09:00",
+      "excerpt": "src/widgets/app-nav-rail/ui/AppNavRail.tsx renders the persistent left navigation rail shown on every Ontology Atlas route at desktop widths (lg: and up, ≥1024px). Below lg it renders nothing — src/widgets/bottom-tab-bar (Mobile Bottom Tab Bar) owns navigation instead. The rail exposes exactly 6 destinations: Map (/, /",
+      "wordCount": 198,
+      "updatedAt": "2026-07-26T20:48:07.612Z",
       "linksOut": []
     },
     {
@@ -9373,7 +9378,7 @@
       "headings": [],
       "excerpt": "Partially superseded (B3 허브가 곧 지도, 2026-07). Two of the three resolvers described below are physically deleted: src/views/ontology-view/lib/resolve-deeplink-node.ts (with the rest of the tree hub, commit 3fa2c2508) and src/views/ontology-insights/lib/resolve-insights-query-node.ts (dropped when /ontology/insights was r",
       "wordCount": 348,
-      "updatedAt": "2026-07-26T20:40:26.061Z",
+      "updatedAt": "2026-07-27T05:42:08+09:00",
       "linksOut": []
     },
     {
@@ -9414,7 +9419,7 @@
       "headings": [],
       "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans the live Source Vault, Workshop, Insights, app rail/settings/mobile navigation, Topology INDEX, and shared UI directories. The forbidden-pattern layer rejects glow-like hover shadows, scale hover, glass blur, purple/pink accents, decorative",
       "wordCount": 195,
-      "updatedAt": "2026-07-26T20:40:26.061Z",
+      "updatedAt": "2026-07-27T05:42:08+09:00",
       "linksOut": []
     },
     {
@@ -9517,7 +9522,7 @@
       ],
       "excerpt": "src/shared/lib/ontology-reader-intent.ts defines the shared URL intent contract (ONTOLOGYREADERINTENTS: planning, marketing, leadership, developer, agent) for stakeholder handoffs. parseOntologyReaderIntent rejects unknown values so destination screens do not invent unsupported reader modes from arbitrary query strings",
       "wordCount": 214,
-      "updatedAt": "2026-07-26T20:40:26.060Z",
+      "updatedAt": "2026-07-27T05:42:08+09:00",
       "linksOut": []
     },
     {
@@ -10110,9 +10115,9 @@
           "slug": "mobile-bottom-tab-bar"
         }
       ],
-      "excerpt": "src/widgets/bottom-tab-bar renders the mobile primary navigation for Ontology Atlas — visible only below the lg breakpoint (desktop uses elements/app-nav-rail instead). feat/rail-rollout (2026-07) re-aligned this bar from its previous 4 tabs (Ontology / Topology / Projects / Source Vault) to the SAME 5 destinations as ",
-      "wordCount": 131,
-      "updatedAt": "2026-07-19T01:50:32+09:00",
+      "excerpt": "src/widgets/bottom-tab-bar renders the mobile primary navigation for Ontology Atlas — visible only below the lg breakpoint (desktop uses elements/app-nav-rail instead). feat/rail-rollout (2026-07) re-aligned this bar to four core destinations: Map, Docs, Insights, and Projects. Workshop remains an immersive desktop wri",
+      "wordCount": 141,
+      "updatedAt": "2026-07-26T20:48:07.613Z",
       "linksOut": []
     },
     {
@@ -11059,7 +11064,7 @@
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨 한 장 더 캡처한다. ",
       "wordCount": 13855,
-      "updatedAt": "2026-07-26T20:40:55.530Z",
+      "updatedAt": "2026-07-27T05:42:08+09:00",
       "linksOut": []
     },
     {
@@ -14913,7 +14918,7 @@
                 "path": "ontology/domains/views",
                 "type": "doc",
                 "slug": "ontology/domains/views",
-                "title": "Views (Topology · Browse · Studio)"
+                "title": "Views (Topology · Workshop · Insights)"
               }
             ]
           },

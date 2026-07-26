@@ -754,22 +754,26 @@ contract: `previewReady`, `canConfirm`, `wouldChange`, and
 ## 4. Cross-cutting UI
 
 **feat/rail-rollout** collapsed the old 3-tier nav (`OperationsNav` top tabs +
-`OntologySubNav` inline sub-tabs + `BottomTabBar`) into one system: a
-persistent left rail on desktop, `BottomTabBar` on mobile, both agreeing on
-the exact same 5 destinations and active-item rule. `OperationsNav` and
-`OntologySubNav` are retired (deleted, not just unmounted).
+`OntologySubNav` inline sub-tabs + `BottomTabBar`) into one ownership model: a
+persistent left rail on desktop and `BottomTabBar` on mobile. They share the
+same active-destination resolver while exposing inventories appropriate to
+their viewport. `OperationsNav` and `OntologySubNav` are retired (deleted, not
+just unmounted).
 
 ### `AppNavRail` (desktop, `lg:` and up — left side, on every page)
-- 5 destinations: Map (`/`, `/topology`) · Docs (`/docs`) · Workshop
-  (`/ontology/studio`, 공방 / Compass Stage) · Insights (`/ontology/insights`) · Projects
-  (`/projects` or `/project/*`)
-- Bottom of rail: agent-activity status dot + an optional `settingsSlot`
-  (only `HomePage` passes one — `TopologyV2SettingsGear`)
+- 6 destinations: Map (`/`, `/topology`) · Docs (`/docs`) · Workshop
+  (`/ontology/studio`, 공방 / Compass Stage) · Insights
+  (`/ontology/insights`) · Projects (`/projects` or `/project/*`) · Git
+  (`/git`)
+- Bottom of rail: agent-activity status tile + `settingsSlot`. `AppShell`
+  supplies the app-wide settings trigger by default; a page can override the
+  slot for a surface-specific control.
 - Active-item detection: shared `resolveActiveNavDestination`
-  (`src/shared/lib/nav-destination.ts`) — the SAME function `BottomTabBar`
-  uses, so desktop and mobile can never disagree on which destination is lit
+  (`src/shared/lib/nav-destination.ts`) — `BottomTabBar` uses the same semantic
+  resolver, so a route has one destination even when mobile intentionally
+  omits its button.
 
-### `AppSettingsMenu` (per-page header — Projects list, Docs, Insights)
+### `AppSettingsMenu` (app shell + contextual page headers)
 - The old 5-tab settings modal is now one compact settings sheet
   (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI
   agent entry are scanned in one column. `LocaleSwitch` is an immediate screen
@@ -802,20 +806,19 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
   - Unregistered vendors collapse to a one-line `name · [Add key]` row that
     expands in place, one at a time — three always-open password fields would
     turn a settings sheet into a form gate.
-- `LiveActivityIndicator` (agent activity heartbeat status, unchanged) mounts
-  next to it on the same three pages — this pairing is the "zero feature
-  loss" replacement for what `OperationsNav`'s right-hand cluster used to show
-- Pages the rail reaches directly with no prior top nav (Docs, Project
-  detail/editor, Download) never had this cluster and still don't — only the
-  three pages that used to mount `OperationsNav` keep it
+- The persistent shell mounts the rail settings trigger. Contextual
+  `LiveActivityIndicator` and header controls remain on the pages whose
+  workflow needs richer status or screen controls; they are not additional
+  navigation destinations.
 
 ### `BottomTabBar` (mobile only, `lg:` hidden)
-- Core destinations shared with `AppNavRail`: Map · Docs · Insights · Projects
-  (Workshop is the immersive write surface — desktop-rail only; the retired ERD
-  builder tab was removed 2026-07-24)
+- 4 core destinations: Map · Docs · Insights · Projects. Workshop is the
+  immersive desktop write surface, Git is a desktop workbench, and the retired
+  ERD builder tab was removed 2026-07-24.
 - Min height 56 px (safe-area)
-- Hidden on public marketing/download surfaces: `/` while no local vault is
-  loaded, and `/download/`
+- Hidden only on the standalone `/download/` surface. Root is the Topology hub
+  even without a loaded vault, so mobile first-run users keep global
+  navigation.
 
 ### Search palettes (separate by design — R5 skip merge)
 - **`⌘K` `SearchPalette`** — projects-focused fuzzy search + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)

@@ -15,8 +15,9 @@ export type AppNavDestinationId =
  * `/ontology/*` so they're checked before the generic `map` root-match. The
  * retired ERD builder route (`/ontology/edit`, now a redirect to the studio)
  * folds into `studio` so the rail stays highlighted through the redirect.
- * `studio` (the 나침 무대 / Compass Stage) is a desktop-rail destination;
- * the mobile `BottomTabBar` renders only the core five.
+ * `studio` (the 나침 무대 / Compass Stage) and `git` are desktop-rail
+ * destinations; the mobile `BottomTabBar` renders the four core destinations
+ * Map / Docs / Insights / Projects.
  */
 export function resolveActiveNavDestination(pathname: string): AppNavDestinationId | null {
   // `usePathname()` from `@/i18n/navigation` is already locale-agnostic, but
