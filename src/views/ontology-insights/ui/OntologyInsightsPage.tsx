@@ -45,6 +45,7 @@ import {
   type InsightsTab,
 } from "../lib/insights-tab-state";
 import { computeDomainCapacityRows } from "../lib/domain-capacity";
+import { buildImpactRanking } from "../lib/impact-ranking";
 import { buildDoNextQueue, withDoNextVerification } from "../lib/do-next-queue";
 import { buildInsightsVerdict } from "../lib/insights-verdict";
 import { pickTodaysTouchUps, type TouchUpItem } from "../lib/todays-touch-ups";
@@ -68,6 +69,8 @@ import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
 const EMPTY_NODES: KnowledgeGraphNode[] = [];
 const EMPTY_EDGES: KnowledgeGraphEdge[] = [];
 const HUB_DISPLAY_LIMIT = 6;
+/** 영향 랭킹 표시 행 수 — 스크롤 계약(탭 ≤ 뷰포트 1.3배) 안에서 읽히는 상한. */
+const IMPACT_DISPLAY_LIMIT = 6;
 const RECENT_UPDATES_LIMIT = 8;
 
 /** 탭이 답하는 질문을 에이전트의 실행 계획으로 그대로 옮긴 것. */
@@ -249,6 +252,14 @@ export function OntologyInsightsPage() {
         degree,
       })),
     [hubRanking],
+  );
+
+  // 영향 랭킹 — "이걸 바꾸면 어디까지 다시 봐야 하나". 계산은 지도 드로어·
+  // 변경점 diff 와 같은 `computeOntologyDependents`(= MCP blast_radius 의미론)
+  // 를 그대로 부른다. 전 노드 BFS 라 nodes/edges 가 바뀔 때만 다시 돈다.
+  const impact = useMemo(
+    () => buildImpactRanking(nodes, edges, IMPACT_DISPLAY_LIMIT),
+    [nodes, edges],
   );
 
   const freshness = useMemo(
@@ -455,6 +466,15 @@ export function OntologyInsightsPage() {
     noHubsHint: t("noHubsHint"),
     hubTruncated: (shown: number, total: number) => t("hubTruncated", { shown, total }),
     hubDegreeCaption: t("hubDegreeCaption"),
+  };
+  const impactLabels = {
+    title: t("impactTitle"),
+    caption: t("impactCaption"),
+    directLabel: t("impactDirectLabel"),
+    transitiveLabel: t("impactTransitiveLabel"),
+    empty: t("impactEmpty"),
+    emptyHint: t("impactEmptyHint"),
+    truncated: (shown: number, total: number) => t("impactTruncated", { shown, total }),
   };
   const domainCouplingLabels = {
     title: t("domainCouplingTitle"),
@@ -700,6 +720,15 @@ export function OntologyInsightsPage() {
                   ariaLabel: (title) => t("hubRowAriaLabel", { title }),
                 }}
                 labels={connectionsLabels}
+                impact={impact}
+                impactLink={{
+                  href: mapNodeHref,
+                  // 막대는 aria-hidden 이라 두 수를 링크 이름에 실어 보낸다 —
+                  // 화면에 있는 사실이 스크린리더에서 사라지면 안 된다.
+                  ariaLabel: ({ title, direct, total }) =>
+                    t("impactRowAriaLabel", { title, direct, total }),
+                }}
+                impactLabels={impactLabels}
               />
             ) : null}
             {tab === "boundaries" ? (

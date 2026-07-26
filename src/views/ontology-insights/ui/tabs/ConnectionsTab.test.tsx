@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { ConnectionsTab, type ConnectionsTabLabels } from "./ConnectionsTab";
+import type { ImpactRankingLabels } from "./ImpactRankingCard";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
@@ -30,6 +31,25 @@ const hubLink = {
   ariaLabel: (title: string) => `${title} — view on the map`,
 };
 
+// 영향 랭킹은 같은 탭의 두 번째 밴드 — 여기서는 존재/빈 상태만 확인하고
+// 계산·행 렌더는 ImpactRankingCard.test.tsx 가 본다.
+const impactLabels: ImpactRankingLabels = {
+  title: "Widest ripple when changed",
+  caption: "How far a change travels.",
+  directLabel: "direct",
+  transitiveLabel: "indirect",
+  empty: "Nothing ripples yet",
+  emptyHint: "Connect relations in the workshop.",
+  truncated: (shown, total) => `Top ${shown} / ${total} total`,
+};
+
+const impactLink = {
+  href: (nodeId: string) => `/ontology/?node=${encodeURIComponent(nodeId)}`,
+  ariaLabel: ({ title }: { title: string }) => `${title} — view on the map`,
+};
+
+const emptyImpact = { rows: [], rankedCount: 0 };
+
 describe("ConnectionsTab", () => {
   it("does not render the moved readiness/repair instruments", () => {
     render(
@@ -42,6 +62,9 @@ describe("ConnectionsTab", () => {
         kindLabel={(kind) => kind}
         hubLink={hubLink}
         labels={labels}
+        impact={emptyImpact}
+        impactLink={impactLink}
+        impactLabels={impactLabels}
       />,
     );
 
@@ -61,6 +84,9 @@ describe("ConnectionsTab", () => {
         kindLabel={(kind) => kind}
         hubLink={hubLink}
         labels={labels}
+        impact={emptyImpact}
+        impactLink={impactLink}
+        impactLabels={impactLabels}
       />,
     );
 
@@ -82,6 +108,9 @@ describe("ConnectionsTab", () => {
         kindLabel={(kind) => kind}
         hubLink={hubLink}
         labels={labels}
+        impact={emptyImpact}
+        impactLink={impactLink}
+        impactLabels={impactLabels}
       />,
     );
 
@@ -99,6 +128,9 @@ describe("ConnectionsTab", () => {
         kindLabel={(kind) => kind}
         hubLink={hubLink}
         labels={labels}
+        impact={emptyImpact}
+        impactLink={impactLink}
+        impactLabels={impactLabels}
       />,
     );
 
@@ -117,6 +149,9 @@ describe("ConnectionsTab", () => {
         kindLabel={(kind) => kind}
         hubLink={hubLink}
         labels={labels}
+        impact={emptyImpact}
+        impactLink={impactLink}
+        impactLabels={impactLabels}
       />,
     );
 
