@@ -31,11 +31,10 @@ import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-
 import type { NavRailContextHrefs } from "../model/shell-slot-context";
 
 export interface AppNavRailProps {
-  /** 설정 트리거(`AppSettingsMenu` rail-tile 등) — 레일 하단에 꽂는 슬롯. 완성된
-   *  엘리먼트를 HomePage 가 넘긴다 — widget↔widget import 를 피하고, INDEX
-   *  기본 상태 같은 HomePage 소유 state 를 그대로 재사용하기 위함. perf/
-   *  persistent-shell 이후엔 레일이 layout 에 상주하므로 `AppShell`이
-   *  `useNavRailShellValue()`로 읽은 값을 그대로 넘긴다. */
+  /** 설정 트리거(`AppSettingsMenu` rail-tile 등) — 레일 하단에 꽂는 슬롯.
+   *  persistent shell의 `AppShell`이 기본 트리거를 공급하고, 페이지가
+   *  `useNavRailShellValue()`를 통해 특별한 슬롯을 등록한 경우에만
+   *  덮어쓴다. */
   settingsSlot?: ReactNode;
   /** true 면 레일을 언마운트하지 않고 CSS 로만 숨긴다(몰입 표면 fullscreen).
    *  레일이 layout 에 상주해 DOM identity 를 유지하는 게 perf/persistent-shell
@@ -94,7 +93,7 @@ function rememberRailRouteFocus(
 
 /**
  * 좌측 64px 내비 레일 (feat/chrome-system, `docs/prototypes/chrome-rail-combined.html`
- * 소유자 최종 승인) — 전역 목적지(지도·문서함·공방·인사이트·프로젝트) +
+ * 소유자 최종 승인) — 전역 목적지(지도·문서함·공방·인사이트·프로젝트·발자취) +
  * 하단 에이전트 상태·설정을 전담하는 상시 chrome. #375 는 지형도(HomePage)만
  * 마운트했고, feat/rail-rollout (#377) 이 지형도 외 전 페이지(문서함·공방·
  * 인사이트·프로젝트 목록/상세/편집·다운로드)로 확장해 3-체계(OperationsNav
@@ -103,9 +102,9 @@ function rememberRailRouteFocus(
  *
  * book/network 유틸 타일과 우측 레일의 설정 기어가 여기로 흡수됐다
  * (HeroCollapsed 는 필만 남고, 우측 세로 레일은 지도 전용 3타일만). 폭이
- * 좁아(`--app-nav-rail-width`) `AppSettingsMenu`/`LiveActivityIndicator` 같은
- * 넓은 popover 위젯은 품지 못한다 — 그 둘은 레일이 상주하는 각 페이지
- * 헤더에 개별 마운트한다(기능 손실 0 원칙, `src/widgets/app-settings-menu`).
+ * 좁아(`--app-nav-rail-width`) 설정 시트 본체는 portal로 열고,
+ * `LiveActivityIndicator` 같은 상세 상태는 필요한 페이지의 contextual
+ * header에 둔다.
  *
  * 표시 breakpoint 는 `lg` (≥1024px) — 그 아래는 `BottomTabBar` 가 담당한다.
  */
@@ -198,7 +197,7 @@ export function AppNavRail({
             className="h-[var(--app-nav-rail-logo-icon-size)] w-[var(--app-nav-rail-logo-icon-size)]"
           />
         </span>
-        {/* H6 — 상시 워드마크. 육각 마크 아래 초소형 "Atlas" 텍스트로 5표면
+        {/* H6 — 상시 워드마크. 육각 마크 아래 초소형 "Atlas" 텍스트로 전역
             공통 레일에 브랜드 서명을 심는다. caption 램프 + quaternary 톤 +
             tracking-caption 짝(법전 규율). aria-hidden — Link 의 aria-label
             "Ontology Atlas" 와 중복 낭독 방지. */}

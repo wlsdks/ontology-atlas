@@ -45,3 +45,9 @@ mcp v0.7.0 부터. UI 본문 편집기와 ontology editor 의 title/domain/relat
 frontmatter 저장은 같은 conflict guard 를 사용한다. Project edit 의
 frontmatter 저장도 manifest mtime 을 넘긴다. create/delete/rename 과
 drag-position 저장은 아직 best-effort 경로다.
+
+## 2026-07-26 freshness review
+
+The referenced local-vault hook changed picker capability and cancellation
+classification only. `expected_mtime` conflict checks, concurrent-write
+rejection, and the best-effort exceptions above are unchanged.

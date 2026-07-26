@@ -57,15 +57,14 @@ desktop-grade quality bar, and the first prototype route-smoke scope. `pnpm
 desktop:smoke` checks the built `out/` payload that the `.app` / `.dmg`
 packages: the root app entry, locale-prefixed `/download`, `/docs`,
 `/ontology`, `/topology`, `/ontology/edit`, and `/ontology/insights` routes,
-their ontology workbench route titles, bundled Workspace graph-check copy
-action plus structural replay markers, graph DB proof copy, Browse canonical slug handle copy, Browse runtime
-gate copy action, Builder active slug handle copy, Builder runtime replay
-proof, Builder guard copy action, Insights runtime gate copy action,
-Insights reader graph operation markers (`facets + domain_matrix`,
-`match_nodes + lineage`, `blast_radius + impact`, `node_profile + reachability`,
-and `agent_brief + health`),
-`_next` assets, and offline desktop docs
-under `docs-vault/`. `pnpm desktop:verify-app` launches
+current EN/KO titles, Download install/vault/AI handoff, Docs source-contract
+markers, the `/ontology` -> Topology and `/ontology/edit` -> Workshop redirect
+chunks, Topology canvas-v2/focus/path markers, Insights
+`maintenance-board`/`one-tab-one-question`/`tab-query`, `_next` assets, and
+offline desktop docs under `docs-vault/`. It deliberately does not require the
+retired tree browser, ERD builder, or query cockpit. Missing artifacts advise a
+build; current title/copy/chunk mismatches report static contract drift.
+`pnpm desktop:verify-app` launches
 the built `.app` executable from inside its `Contents/MacOS` executable
 directory long enough to catch early Tauri/WebView startup crashes, then
 terminates it. For local desktop dogfood sessions it also supports

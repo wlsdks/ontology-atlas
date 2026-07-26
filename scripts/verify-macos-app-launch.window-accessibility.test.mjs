@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  evaluateForegroundActivationAttempt,
+  runForegroundActivationWithRetry,
   buildAccessibilityWindowProbeScript,
   buildAccessibilityTextProbeSwift,
   buildForegroundActivationScript,
@@ -12,6 +14,104 @@ import {
   validateWindowRequirements,
   windowCaptureTargets,
 } from "./verify-macos-app-launch.mjs";
+
+test("foreground proof trusts the final AX state when activation command return times out", () => {
+  const result = evaluateForegroundActivationAttempt({
+    activationResult: {
+      status: null,
+      stdout: "",
+      stderr: "",
+      error: { code: "ETIMEDOUT" },
+    },
+    accessibilityResult: {
+      status: 0,
+      stdout: "101\tOntology Atlas\ttrue\t1\n",
+      stderr: "",
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.frontmost, true);
+  assert.equal(result.activationCommandConfirmed, false);
+  assert.equal(result.stderr, "");
+  assert.deepEqual(result.warnings, [
+    "foreground activation command timed out after AX confirmed frontmost",
+  ]);
+});
+
+test("foreground proof remains unconfirmed without a final AX frontmost row", () => {
+  const result = evaluateForegroundActivationAttempt({
+    activationResult: {
+      status: 0,
+      stdout: "bundle=true\tpid=true",
+      stderr: "",
+    },
+    accessibilityResult: {
+      status: null,
+      stdout: "",
+      stderr: "",
+      error: { code: "ETIMEDOUT" },
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.frontmost, false);
+  assert.match(
+    result.stderr,
+    /post-activation Accessibility probe timed out after 3000ms/,
+  );
+});
+
+test("foreground visual evidence retries one transient activation/AX miss", () => {
+  const seen = [];
+  const result = runForegroundActivationWithRetry({
+    maxAttempts: 2,
+    runAttempt: (attempt) => {
+      seen.push(attempt);
+      return attempt === 1
+        ? {
+            ok: false,
+            frontmost: false,
+            stdout: "",
+            stderr: "post-activation Accessibility probe timed out after 3000ms",
+          }
+        : {
+            ok: true,
+            frontmost: true,
+            stdout: "bundle=true\tpid=true",
+            stderr: "",
+          };
+    },
+  });
+
+  assert.deepEqual(seen, [1, 2]);
+  assert.equal(result.ok, true);
+  assert.equal(result.attempts, 2);
+  assert.equal(result.recovered, true);
+  assert.deepEqual(result.attemptErrors, [
+    "attempt 1: post-activation Accessibility probe timed out after 3000ms",
+  ]);
+});
+
+test("foreground visual evidence keeps persistent failures fail-closed", () => {
+  const result = runForegroundActivationWithRetry({
+    maxAttempts: 2,
+    runAttempt: (attempt) => ({
+      ok: false,
+      frontmost: false,
+      stdout: "",
+      stderr: attempt === 1 ? "activation timed out" : "process not frontmost",
+    }),
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.attempts, 2);
+  assert.equal(result.recovered, false);
+  assert.deepEqual(result.attemptErrors, [
+    "attempt 1: activation timed out",
+    "attempt 2: process not frontmost",
+  ]);
+});
 
 test("Accessibility text probe script targets launched pids", () => {
   const script = buildAccessibilityTextProbeSwift([101, 202], ["개념 지도"]);
@@ -143,6 +243,11 @@ test("Accessibility window probe targets launched process ids", () => {
 
   assert.match(script, /procPid = 101 or procPid = 202/);
   assert.match(script, /count of windows of proc/);
+  assert.doesNotMatch(
+    script,
+    /count of UI elements of proc/,
+    "the fast foreground/window probe must not traverse the WebView accessibility tree",
+  );
 });
 
 test("foreground activation targets both bundle id and launched process ids", () => {

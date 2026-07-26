@@ -36,3 +36,10 @@ The overview kind classification card now consumes the shared `getOntologyKindTo
 This element is related to `capabilities/agent-graph-readiness` because the selected concept modal is where a human should hand an AI agent the next focused graph proof instead of asking the agent to guess from a dense visual graph.
 
 Dogfood note: the first tone slice used Atlas MCP to locate `elements/ontology-node-detail-modal` and its backlinks, used CodeGraph to trace the shared tone path, then added a focused layout contract before widening to color, graph-build, and agent handoff tests. The follow-up anti-AI design slice used MCP `health` / `workspace_brief` / `agent_brief` to confirm the graph was ready, then used CodeGraph to inspect `OntologyViewPage`, `getOntologyKindTone()`, and the topology tone tests before replacing the loud magenta/yellow treatment with a muted qualitative tone contract.
+
+## 2026-07-26 selected-node freshness contract
+
+The active `FullDetailA1` successor now accepts the exact `updatedAtLabel`
+already shown by the compact datasheet and displays it ahead of the old binary
+fallback. The same node therefore cannot read as both recently changed and long
+unchanged one click apart; document mtime remains the single freshness source.

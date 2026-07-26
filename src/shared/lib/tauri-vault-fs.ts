@@ -156,6 +156,12 @@ class TauriDirectoryHandle {
     }
   }
 
+  async *values(): AsyncIterableIterator<FileSystemFileHandle | FileSystemDirectoryHandle> {
+    for await (const [, handle] of this.entries()) {
+      yield handle;
+    }
+  }
+
   async getFileHandle(
     name: string,
     options: { create?: boolean } = {},
@@ -247,10 +253,15 @@ export function createTauriVaultHandle(rootPath: string): FileSystemDirectoryHan
   return new TauriDirectoryHandle(rootPath, '', invoke) as unknown as FileSystemDirectoryHandle;
 }
 
-export async function pickTauriVaultDirectory(): Promise<FileSystemDirectoryHandle | null> {
+export async function pickTauriVaultDirectory(
+  dialogTitle?: string,
+): Promise<FileSystemDirectoryHandle | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  const rootPath = await invoke<string | null>('pick_vault_directory');
+  const rootPath = await invoke<string | null>(
+    'pick_vault_directory',
+    dialogTitle ? { dialogTitle } : undefined,
+  );
   return rootPath ? createTauriVaultHandle(rootPath) : null;
 }
 

@@ -19,10 +19,9 @@ export interface OntologyKindTone {
 }
 
 /**
- * Qualitative ontology-kind palette shared by Sigma, tree chips, builder
- * palette swatches, and the Browse detail modal. Graph fills stay visible on a
- * dark canvas, while UI chips use quiet alpha so kind color works as hierarchy
- * rather than decoration.
+ * Qualitative ontology-kind palette for compact chips, legends, summaries, and
+ * classification guidance. `topology-map-v2` uses its own neutral engraved
+ * canvas tokens; retired Sigma/tree/Builder adapters are not consumers.
  */
 export const ONTOLOGY_KIND_TONE: Record<OntologyVisualKind, OntologyKindTone> = {
   project: {

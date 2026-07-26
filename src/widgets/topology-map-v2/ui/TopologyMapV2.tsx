@@ -1,19 +1,16 @@
 "use client";
 
-import { useRef, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { Orbit } from "lucide-react";
 import { useTopologyLoop } from "./use-topology-loop";
 import type { TierRevealConfig } from "../model/tier-visibility";
 import type { CanvasBackground, GlyphSet } from "@/shared/lib/appearance-preferences";
 
 /**
- * `TopologyMapV2` — the single canvas-2D render engine that replaces
- * `TopologyMapCanvas` (DOM/CSS) + `SigmaTopology` (WebGL) behind the
- * `topology-map-v2` feature flag (`docs/TOPOLOGY-V2-DESIGN.md` §1.2 "하나의
- * 렌더 엔진으로 통합"). Phase 0's adapter contract (§4.2) is this component's
- * props — HomePage/ProjectDetailPage swap their existing
- * `TopologyMapCanvas`/`SigmaTopology` call sites for this one, unchanged
- * upstream state management (selected slug, path query, etc).
+ * `TopologyMapV2` — the product's single current canvas-2D topology renderer.
+ * The former DOM canvas and Sigma/WebGL implementations are retired and
+ * deleted; `HomePage` supplies the current adapter contract (selected slug,
+ * path query, visibility and interaction callbacks) directly to this widget.
  *
  * The component itself stays a thin JSX shell — mount/resize/rAF-loop/
  * pointer/camera/draw wiring all live in `use-topology-loop.ts` (+ its
@@ -68,7 +65,6 @@ export interface TopologyMapV2Props {
   nodes: readonly TopologyV2Node[];
   edges: readonly TopologyV2Edge[];
   focus: TopologyV2Focus;
-  changedSlugs?: ReadonlySet<string>;
   /** Increment to re-run fit-to-bounds (HomePage "지도 맞추기"). */
   fitViewToken: number;
   /** Increment to force a full relayout. */
@@ -246,6 +242,53 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
   const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot" } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  // 설치 앱 검증기는 canvas 내부의 픽셀 엣지를 DOM selector 로 찾을 수 없다.
+  // 검증 전용 이벤트가 오면 현재 포커스와 맞닿은 실제 그래프 엣지를 같은
+  // onSelectEdge 계약으로 선택한다. 평상시에는 이벤트가 발생하지 않으며,
+  // 별도 상태나 사용자 vault 를 쓰지 않는다.
+  useEffect(() => {
+    if (!onSelectEdge) return;
+    const handleVerifySelectEdge = (event: Event) => {
+      const preferredNodeId =
+        event instanceof CustomEvent &&
+        typeof event.detail?.preferredNodeId === "string"
+          ? event.detail.preferredNodeId
+          : focus.selectedSlug;
+      const edge =
+        edges.find(
+          (candidate) =>
+            candidate.source === preferredNodeId || candidate.target === preferredNodeId,
+        ) ?? edges[0];
+      if (!edge) {
+        window.dispatchEvent(
+          new CustomEvent("ontology-atlas:verify-edge-selected", {
+            detail: { error: "missing-edge" },
+          }),
+        );
+        return;
+      }
+      onSelectEdge({
+        sourceId: edge.source,
+        targetId: edge.target,
+        relationType: edge.relationType,
+        declaredBySlug: edge.declaredBySlug,
+      });
+      window.dispatchEvent(
+        new CustomEvent("ontology-atlas:verify-edge-selected", {
+          detail: {
+            sourceId: edge.source,
+            targetId: edge.target,
+            relationType: edge.relationType,
+          },
+        }),
+      );
+    };
+    window.addEventListener("ontology-atlas:verify-select-edge", handleVerifySelectEdge);
+    return () => {
+      window.removeEventListener("ontology-atlas:verify-select-edge", handleVerifySelectEdge);
+    };
+  }, [edges, focus.selectedSlug, onSelectEdge]);
 
   // `handleWheel` is wired natively (non-passive) inside `useTopologyLoop` —
   // see its own FIX comment — not bound here as a JSX prop.

@@ -76,6 +76,23 @@ label and the skeleton-card aggregate, so the installed-app artifact can prove
 the relation label is actionable without requiring the next agent to inspect
 raw DOM marker names.
 
+Topology verification is isolated from the user's persisted vault. The
+`--webview-fixture-vault=PATH` option is available only for direct executable
+launches; Tauri creates the verifier window with an incognito data store and
+bootstraps that store's current-vault IndexedDB entry with the resolved fixture
+path. The product's normal persistence and database are neither read nor
+deleted. Repository scripts pin this input to `docs/ontology`, so a stored
+personal or test vault cannot silently change relation-inspection evidence.
+
+The isolated fixture also marks the guided tour skipped: Computer Use found
+that a first-run tour could compete with the selected-relation inspector even
+after the graph input was deterministic. The payload records the exact fixture
+path and fails when the tour is visible. For the current canvas-v2 map, the
+probe dispatches a verification-only selection event that enters the existing
+`onSelectEdge` path and then requires the resulting relation dialog semantics,
+endpoints, type, sentence, bounds, and evidence. Quitting the verifier and
+opening the app normally must still restore the user's previous vault.
+
 Drag verification also proves the performance contract for topology relation
 chrome: card connectors reuse the card DOM index, relation labels build their
 query index once per frame, and connector geometry reports
@@ -118,18 +135,19 @@ from sharing the same bundle id during local dogfood, where LaunchServices or
 Computer Use may otherwise attach to the stale installed copy instead of the
 freshly built bundle.
 
-The structured marker set also includes the business decision questions rendered
-by the `/ontology` meaning gate. The direct app launch verifier requires that
-marker only when the loaded `tauri://` path is an ontology route; the default
-root launch still proves the local workbench shell, navigation, agent brief copy
-affordance, and reader decision lens without pretending it rendered a
-route-specific meaning gate.
+For `/ontology/insights`, the structured payload follows the current
+maintenance-board contract instead of the retired reader-persona meaning gate.
+The route must expose `data-insights-surface="maintenance-board"` and
+`data-insights-question-model="one-tab-one-question"`, exactly five tabs,
+exactly one selected tab, its visible `tabpanel`, and the tab-query agent
+handoff row. This proves that the installed app rendered the same one-question
+maintenance workflow a human sees and that an agent can continue from its
+active query.
 
-The same payload now requires the `readerDecisionLens` marker from the meaning
-gate's planning -> marketing -> leadership -> developer -> agent reader contract.
-This makes the direct macOS app verifier fail if the packaged WebView drops the
-human/agent decision handoff framing that turns code evidence into ontology
-service value.
+The June `businessDecisionQuestions` and `readerDecisionLens` probes were
+removed when the reader-persona system and its old insights cockpit were
+retired. Requiring those markers again would make the verifier prefer obsolete
+DOM over the shipped five-tab board and false-fail a healthy current app.
 
 The verifier also supports `--require-accessibility-window` for LaunchServices
 runs. That check starts System Events, queries the launched process ids, and
@@ -141,6 +159,26 @@ on-screen workbench window, while the System Events probe separately proves the
 same launched process is reachable as a window through macOS automation. The
 probe has a bounded timeout, so a broken AX bridge becomes a clear verification
 failure instead of a hanging app check.
+That fast probe reads only PID, frontmost state, and window count. It does not
+ask System Events to count every UI element in the WebView: that traversal was
+observed to exceed the three-second bound even while Computer Use could read the
+same window. Content proof remains the responsibility of the separate bounded
+Swift AX text probe. This separation keeps a real permission or missing-window
+failure fail-closed without turning a large but healthy WebView tree into a
+false automation blocker.
+Optional screenshot evidence also tolerates one transient macOS automation
+miss without weakening that boundary. Foreground activation and the fast
+window probe run together for at most two attempts; a second success records
+`attempts=2` and `recovered=true`. If both attempts fail, the result remains
+unconfirmed and keeps every `attemptErrors` row for the agent handoff. The
+per-attempt timeouts are unchanged, so a persistent Accessibility permission,
+missing process, or missing-window failure still closes the proof.
+Within each attempt, the post-activation AX row is the final-state truth.
+`frontmost=true` passes even if the activation AppleScript itself times out;
+that mismatch remains visible as `commandConfirmed=false` plus a warning.
+Conversely, an activation command return cannot pass when AX does not confirm
+frontmost. This keeps the proof state-based without hiding a real automation
+or missing-window failure.
 
 LaunchServices runs can now add repeated `--require-accessibility-text=...`
 checks. The verifier walks the launched process Accessibility tree with a
@@ -212,20 +250,22 @@ where `desktop:verify-app` found a CoreGraphics window but local screenshot
 capture failed, Computer Use returned `cgWindowNotFound`, System Events could
 not find the process, or the process had no Accessibility UI tree.
 
-`scripts/desktop-smoke.mjs` also protects the packaged static payload before the
-native shell is launched. The `/ontology` route chunk contract now requires the
-business ontology lens markers `business-first` and `data-business-read-order`,
-so a packaged app can no longer pass smoke while dropping the domain ->
-capability -> element read-order contract that the macOS browse surface and
-agent handoff share. The same route chunk contract also requires
-`copyBriefDescription`, so the packaged app cannot silently drop the accessible
-copy affordance that tells agents the copied brief includes domain/capability
-evidence plus `agent_brief`, `workspace_brief`, and `health` execution checks.
+`scripts/desktop-smoke.mjs` protects the packaged static payload before the
+native shell is launched. Its 2026-07-27 contract follows the current routes:
+Download install/vault/agent handoff; Docs source markers; `/ontology` ->
+Topology and `/ontology/edit` -> Workshop redirects; Topology canvas-v2/focus/
+path markers; and the Insights maintenance-board markers above. The retired
+tree browser, ERD builder, reader-persona questions, and query cockpit are not
+valid package proof.
 
-The `/ontology/insights` route chunk contract now also requires the collaborator
-business extraction markers: `collaboratorBusinessExtractionChecks` plus the
-three boundary / capability claim / implementation evidence questions from the
-shared business ontology lens. That makes `pnpm desktop:smoke` fail before app
-packaging if the insights screen drops the visible reviewer questions that keep
-human meeting briefs and AI-agent `agent_brief` payloads on the same ontology
-contract.
+The evaluator distinguishes a missing build artifact from current-source
+contract drift. Missing root/route/assets/offline docs still advise
+`pnpm build`; a title, copy, or chunk mismatch tells the maintainer to compare
+the failing contract with current route source instead of repeating a build
+that already succeeded. A fresh build plus `pnpm desktop:smoke` passes this
+contract, while `desktop:verify-app` and Computer Use remain the separate
+runtime and visual proof layers. The closing UX-041 run exercised that
+separation: the direct verifier proved the foreground 1512x917 current Insights
+WebView, and Codex Computer Use independently read five tabs, one selected tab,
+the active maintenance panel, repair queue, and agent handoff from the
+installed app accessibility tree.

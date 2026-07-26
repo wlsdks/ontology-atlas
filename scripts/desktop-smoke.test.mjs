@@ -4,1227 +4,259 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
+  DESKTOP_SMOKE_DOCS,
+  DESKTOP_SMOKE_LOCALES,
+  DESKTOP_SMOKE_ROOT_ENTRY,
+  DESKTOP_SMOKE_ROUTES,
   DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
   DESKTOP_SMOKE_ROUTE_TEXT,
+  DESKTOP_SMOKE_ROUTE_TITLES,
   evaluateDesktopSmoke,
 } from "./desktop-smoke.mjs";
 
 function makeOutDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "omo-desktop-smoke-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "atlas-desktop-smoke-"));
 }
 
-function touch(root, relativePath) {
+function write(root, relativePath, contents = "<!doctype html>") {
   const filePath = path.join(root, relativePath);
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, "<!doctype html>", "utf8");
+  fs.writeFileSync(filePath, contents, "utf8");
 }
 
-function htmlWithWorkbenchProof(title = "Ontology Atlas") {
-  return `<!doctype html><title>${title}</title><main>Ontology workspace documents Guides Ontology nodes 저장소 작업공간 문서 가이드 문서 온톨로지 개념 Files Graph 그래프 Agent 에이전트 local markdown 마크다운 frontmatter MCP relation_name_parity pattern_walk/project_map Copy graph check 그래프 점검 복사 Save status 저장 상태 Layout 배치 Re-arrange 자동 정렬 로컬 문서 canvas draft 캔버스 임시 변경 not on disk until save save 전까지 디스크 아님 저장 전까지 디스크 아님 relation guard 관계 저장 점검 graph db + health 그래프 DB 점검 tree projection frontmatter write Concept map concepts relations business-first data-business-read-order outcome>domain>capability>element docs hidden Hierarchy notes 개념 지도 개념 둘러보기 개념 관계 문서 숨김 계층 메모 검증 근거 문서함 저장 Query cockpit AI and terminal checks Evidence check Outcome → domain → capability → implementation evidence Map terms and boundaries Link capabilities to evidence Check summary and status AI와 터미널 확인 근거 확인 결과 → 도메인 → 역량 → 구현 근거 분포와 경계 보기 역량과 근거 연결 요약과 상태 확인 Readiness Check order AI checks Terminal checks MATCH 확인 순서 Scan criteria Path criteria setup gate basic status check Decision questions Show answer criteria Accept if outcome evidence rows Boundary Claim Evidence Copy Boundary Copy Claim Copy Evidence 결정 질문 답변 기준 보기 통과입니다 근거 행 경계 주장 근거 경계 복사 주장 복사 근거 복사 Graph DB proof 그래프 검증 Browse Write Query 둘러보기 작성 검증 dogfood:graph-db focused blast_radius relation_name_parity pattern_walk/project_map runtime replay 런타임 재생 canonical slug 선택한 개념 graph handle 선택 기준 pick focus concept active slug Focus saved concept 기준 개념 먼저 활성 slug 저장된 개념 포커스 Copy guard Guard 복사 점검 묶음 복사 Copy sync gate sync gate 복사 동기화 점검 복사 Copy runtime gate Copy runtime check runtime gate 복사 runtime check 복사 Copy decision brief 결정 브리프 복사 연결·검증 그래프를 작게 나눠 검증 확인 순서 보기 필요할 때 실행 명령 보기 준비도 확인 순서 에이전트 그래프 준비도 수리 프롬프트 복사 AI 확인 터미널 확인 AI에게 넘기기 전 확인 탐색 판단 기준 경로 판단 기준 설정 점검 기본 상태 점검 런타임 게이트 복사 런타임 점검 복사 Local completion audit 로컬 완료 점검 pnpm desktop:release-status owner-grouped release blockers owner 별 blocker</main>`;
+function routeIndexPath(locale, route) {
+  return path.join(locale, route.replace(/^\/+|\/+$/g, ""), "index.html");
 }
 
-function writeRouteWithChunk(root, relativePath, htmlBody, chunkBody) {
-  const chunkPath = "_next/static/chunks/app-route.js";
-  const filePath = path.join(root, relativePath);
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.mkdirSync(path.join(root, "_next/static/chunks"), { recursive: true });
-  fs.writeFileSync(path.join(root, chunkPath), chunkBody, "utf8");
-  fs.writeFileSync(
-    filePath,
-    `${htmlBody}<script src="/${chunkPath}"></script>`,
-    "utf8",
+function routeChunkPath(locale, route) {
+  const slug = route.replace(/^\/+|\/+$/g, "").replaceAll("/", "-");
+  return `_next/static/chunks/${locale}-${slug || "root"}.js`;
+}
+
+function writeRoute(root, locale, route, { title, text = [], chunk = [] }) {
+  const chunkPath = routeChunkPath(locale, route);
+  write(root, chunkPath, chunk.join("\n"));
+  write(
+    root,
+    routeIndexPath(locale, route),
+    [
+      "<!doctype html>",
+      title ? `<title>${title}</title>` : "",
+      `<main>${text.join(" ")}</main>`,
+      `<script src="/${chunkPath}"></script>`,
+    ].join(""),
   );
 }
 
-test("desktop smoke proves packaged locale routes and offline docs exist", () => {
+function makeCurrentOut() {
   const outDir = makeOutDir();
+  write(outDir, DESKTOP_SMOKE_ROOT_ENTRY);
   fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
+  for (const doc of DESKTOP_SMOKE_DOCS) write(outDir, doc, "# bundled");
 
-  for (const locale of ["en", "ko"]) {
-    for (const route of ["/download", "/docs", "/ontology", "/topology", "/ontology/edit", "/ontology/insights"]) {
-      touch(outDir, path.join(locale, route.replace(/^\/+/, ""), "index.html"));
+  for (const locale of DESKTOP_SMOKE_LOCALES) {
+    for (const route of DESKTOP_SMOKE_ROUTES) {
+      writeRoute(outDir, locale, route, {
+        title: DESKTOP_SMOKE_ROUTE_TITLES[`${locale}:${route}`],
+        text: DESKTOP_SMOKE_ROUTE_TEXT[`${locale}:${route}`] ?? [],
+        chunk: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT[route] ?? [],
+      });
     }
   }
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-  touch(outDir, "docs-vault/ontology/capabilities/desktop-app-distribution.md");
+  return outDir;
+}
 
-  const report = evaluateDesktopSmoke({ outDir, routeTitles: {}, routeText: {} });
-
-  assert.equal(report.ok, true);
-  assert.equal(report.missing.length, 0);
-  assert.ok(report.checks.some((check) => check.id === "root-entry"));
-  assert.match(report.nextAction, /pnpm desktop:dev/);
+test("desktop smoke inventory covers the current packaged workbench", () => {
+  assert.deepEqual(DESKTOP_SMOKE_LOCALES, ["en", "ko"]);
+  assert.deepEqual(DESKTOP_SMOKE_ROUTES, [
+    "/download",
+    "/docs",
+    "/ontology",
+    "/topology",
+    "/ontology/edit",
+    "/ontology/insights",
+  ]);
+  assert.deepEqual(DESKTOP_SMOKE_DOCS, [
+    "docs-vault/DESKTOP-MACOS.md",
+    "docs-vault/ontology/capabilities/desktop-app-distribution.md",
+  ]);
 });
 
-test("desktop smoke checks ontology workbench route titles", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const routes = {
-    "en/ontology/index.html": "Ontology · Ontology Atlas",
-    "ko/ontology/index.html": "온톨로지 · Ontology Atlas",
-    "en/ontology/edit/index.html": "Edit Relations · Ontology Atlas",
-    "ko/ontology/edit/index.html": "관계 편집 · Ontology Atlas",
-    "en/ontology/insights/index.html": "Verify Graph · Ontology Atlas",
-    "ko/ontology/insights/index.html": "그래프 검증 · Ontology Atlas",
-  };
-  for (const [relativePath, title] of Object.entries(routes)) {
-    const filePath = path.join(outDir, relativePath);
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, htmlWithWorkbenchProof(title), "utf8");
-  }
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    routes: ["/ontology", "/ontology/edit", "/ontology/insights"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
+test("desktop smoke titles follow current metadata and do not revive retired surfaces", () => {
+  assert.deepEqual(DESKTOP_SMOKE_ROUTE_TITLES, {
+    "en:/download": "Download · Ontology Atlas",
+    "ko:/download": "다운로드 · Ontology Atlas",
+    "en:/docs": "Ontology workspace · Ontology Atlas",
+    "ko:/docs": "저장소 · Ontology Atlas",
+    "en:/ontology": "Ontology · Ontology Atlas",
+    "ko:/ontology": "온톨로지 · Ontology Atlas",
+    "en:/topology": "Relief · Ontology Atlas",
+    "ko:/topology": "지형도 · Ontology Atlas",
+    "en:/ontology/insights": "Graph Insights · Ontology Atlas",
+    "ko:/ontology/insights": "그래프 인사이트 · Ontology Atlas",
   });
-
-  assert.equal(report.ok, true);
-  assert.equal(report.missing.length, 0);
-  assert.ok(report.checks.some((check) => check.id === "route-title:en:/ontology/insights"));
-  assert.ok(report.checks.some((check) => check.id === "route-title:ko:/ontology/insights"));
-  assert.ok(report.checks.some((check) => check.id === "route-text:en:/ontology/insights"));
-  assert.ok(report.checks.some((check) => check.id === "route-text:ko:/ontology/insights"));
+  assert.equal(
+    Object.values(DESKTOP_SMOKE_ROUTE_TITLES).some((title) =>
+      /Edit Relations|관계 편집|Verify Graph|그래프 검증/.test(title),
+    ),
+    false,
+  );
 });
 
-test("desktop smoke checks route component chunk markers when requested", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-  writeRouteWithChunk(
-    outDir,
-    "en/docs/index.html",
-    htmlWithWorkbenchProof("Ontology Atlas"),
-    [
+test("desktop smoke download copy follows the shipped install path", () => {
+  assert.deepEqual(DESKTOP_SMOKE_ROUTE_TEXT["en:/download"], [
+    "Install once. Work from your local vault.",
+    "Check GitHub releases",
+    "Pick your vault folder",
+    "Connect your AI assistant",
+    "MCP server auto-registration",
+  ]);
+  assert.deepEqual(DESKTOP_SMOKE_ROUTE_TEXT["ko:/download"], [
+    "한 번 설치하고, 내 로컬 vault 에서 작업하세요.",
+    "GitHub에서 릴리스 확인",
+    "vault 폴더 선택",
+    "AI 어시스턴트 연결하기",
+    "MCP 서버 자동등록",
+  ]);
+  assert.deepEqual(Object.keys(DESKTOP_SMOKE_ROUTE_TEXT).sort(), [
+    "en:/download",
+    "ko:/download",
+  ]);
+});
+
+test("desktop smoke chunks prove current route meaning", () => {
+  assert.deepEqual(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT, {
+    "/download": [
+      "download-fact-strip",
+      "download-checksum-row",
+      "download-release-availability",
+    ],
+    "/docs": [
+      "data-docs-header-zone",
+      "data-docs-viewer",
       "sourceContract.filesLabel",
       "sourceContract.graphLabel",
       "sourceContract.agentLabel",
-      "proofMarkers",
-      "relation_name_parity",
-      "pattern_walk/project_map",
-      "sourceContract.agentCopyGate",
-    ].join("\n"),
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/docs"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-    routeChunkText: {
-      "/docs": [
-        "sourceContract.filesLabel",
-        "sourceContract.graphLabel",
-        "sourceContract.agentLabel",
-        "proofMarkers",
-        "relation_name_parity",
-        "pattern_walk/project_map",
-        "sourceContract.agentCopyGate",
-      ],
-    },
+    ],
+    "/ontology": ["/topology/?", "index", "expanded"],
+    "/topology": ["canvas-v2", "active-relation-inspector", "focus-path-state"],
+    "/ontology/edit": ["/ontology/studio/?node=", "/ontology/studio/"],
+    "/ontology/insights": [
+      "maintenance-board",
+      "one-tab-one-question",
+      "tab-query",
+    ],
   });
 
-  assert.equal(report.ok, true);
-  assert.ok(report.checks.some((check) => check.id === "route-chunk-text:en:/docs"));
+  const retired = JSON.stringify(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT);
+  for (const marker of [
+    "business-first",
+    "queryCockpitContractsAriaLabel",
+    "collaboratorBusinessExtractionChecks",
+    "Saved concept list",
+  ]) {
+    assert.equal(retired.includes(marker), false, marker);
+  }
 });
 
-test("desktop smoke checks ontology browse component chunk markers when requested", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-  writeRouteWithChunk(
-    outDir,
-    "en/ontology/index.html",
-    htmlWithWorkbenchProof("Ontology · Ontology Atlas"),
-    [
-      "activeSlugLabel",
-      "selectedHandleLabel",
-      "selectAriaLabel",
-      "business-first",
-      "data-business-read-order",
-      "outcome>domain>capability>element",
-      "treeLoopAction",
-      "graphDbLoopAction",
-      "copySyncGate",
-      "Business evidence gate",
-    ].join("\n"),
-  );
-
+test("desktop smoke accepts a complete current static payload", () => {
   const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-    routeChunkText: {
-      "/ontology": [
-        "activeSlugLabel",
-        "selectedHandleLabel",
-        "selectAriaLabel",
-        "business-first",
-        "data-business-read-order",
-        "outcome>domain>capability>element",
-        "treeLoopAction",
-        "graphDbLoopAction",
-        "copySyncGate",
-        "Business evidence gate",
-      ],
-    },
-  });
-
-  assert.equal(report.ok, true);
-  assert.ok(report.checks.some((check) => check.id === "route-chunk-text:en:/ontology"));
-});
-
-test("desktop smoke default ontology chunk contract requires executable business brief markers", () => {
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology"].includes("copyBriefDescription"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology"].includes("Business evidence gate"));
-
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-  writeRouteWithChunk(
-    outDir,
-    "en/ontology/index.html",
-    htmlWithWorkbenchProof("Ontology · Ontology Atlas"),
-    [
-      "activeSlugLabel",
-      "selectedHandleLabel",
-      "selectAriaLabel",
-      "business-first",
-      "data-business-read-order",
-    "outcome>domain>capability>element",
-      "treeLoopAction",
-      "graphDbLoopAction",
-      "copySyncGate",
-    ].join("\n"),
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
+    outDir: makeCurrentOut(),
     routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
   });
 
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-chunk-text:en:/ontology"],
-  );
-  assert.match(report.missing[0].details, /copyBriefDescription/);
-  assert.match(report.missing[0].details, /Business evidence gate/);
-});
-
-test("desktop smoke default insights chunk contract requires reader graph operations", () => {
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("facets + domain_matrix"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("match_nodes + lineage"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("agent_brief + health"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("business_questions"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Business ontology decision brief"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Implementation evidence: report capability -> element match_edges"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Required answer shape"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Verdict: <proves / disproves / needs review before business claim>"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("queryCockpitBusinessLaneAriaLabel"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("AI check pack"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Outcome distribution and domain boundary"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Product boundary and links"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Capability claim candidates"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Implementation evidence links"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("facets + domain_matrix"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("match_nodes + domain_matrix"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("match_nodes capability"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("capability -> element"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Business ontology question handoff"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Acceptance criteria"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Reject path-only, API-only, route-only, or command-only answers"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("collaboratorBusinessExtractionChecks"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("What business outcome should this ontology explain or improve?"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Which business/product domain boundary does this code change?"));
-
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-  writeRouteWithChunk(
-    outDir,
-    "en/ontology/insights/index.html",
-    htmlWithWorkbenchProof("Verify Graph · Ontology Atlas"),
-    [
-      "queryCockpitContractsAriaLabel",
-      "queryCockpitEvidenceAriaLabel",
-      "queryCockpitCopyRuntimeGate",
-      "focused_blast_radius",
-      "relation_name_parity",
-      "pattern_walk/project_map",
-    ].join("\n"),
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/insights"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-chunk-text:en:/ontology/insights"],
-  );
-  assert.match(report.missing[0].details, /facets \+ domain_matrix/);
-  assert.match(report.missing[0].details, /match_nodes \+ lineage/);
-  assert.match(report.missing[0].details, /agent_brief \+ health/);
-  assert.match(report.missing[0].details, /business_questions/);
-  assert.match(report.missing[0].details, /Business ontology decision brief/);
-  assert.match(report.missing[0].details, /queryCockpitBusinessLaneAriaLabel/);
-  assert.match(report.missing[0].details, /AI check pack/);
-  assert.match(report.missing[0].details, /Outcome distribution and domain boundary/);
-  assert.match(report.missing[0].details, /match_nodes \+ domain_matrix/);
-  assert.match(report.missing[0].details, /Business ontology question handoff/);
-  assert.match(report.missing[0].details, /capability -> element match_edges/);
-  assert.match(report.missing[0].details, /collaboratorBusinessExtractionChecks/);
-  assert.match(report.missing[0].details, /business\/product domain boundary/);
-  assert.match(report.missing[0].details, /capability claim/);
-  assert.match(report.missing[0].details, /implementation evidence proves or disproves/);
-});
-
-test("desktop smoke fails when ontology browse graph-handle row contract is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-  writeRouteWithChunk(
-    outDir,
-    "en/ontology/index.html",
-    htmlWithWorkbenchProof("Ontology · Ontology Atlas"),
-    [
-      "activeSlugLabel",
-      "treeLoopAction",
-      "graphDbLoopAction",
-      "copySyncGate",
-    ].join("\n"),
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-    routeChunkText: {
-      "/ontology": [
-        "activeSlugLabel",
-        "selectedHandleLabel",
-        "selectAriaLabel",
-        "treeLoopAction",
-        "graphDbLoopAction",
-        "copySyncGate",
-      ],
-    },
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-chunk-text:en:/ontology"],
-  );
-  assert.match(report.missing[0].details, /selectedHandleLabel/);
-  assert.match(report.missing[0].details, /selectAriaLabel/);
-});
-
-test("desktop smoke fails when route component chunk contract is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-  writeRouteWithChunk(
-    outDir,
-    "en/docs/index.html",
-    htmlWithWorkbenchProof("Ontology Atlas"),
-    "sourceContract.filesLabel\nsourceContract.graphLabel",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/docs"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-    routeChunkText: {
-      "/docs": [
-        "sourceContract.filesLabel",
-        "sourceContract.graphLabel",
-        "sourceContract.agentLabel",
-        "proofMarkers",
-        "relation_name_parity",
-        "pattern_walk/project_map",
-        "sourceContract.agentCopyGate",
-      ],
-    },
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-chunk-text:en:/docs"],
-  );
-  assert.match(report.missing[0].details, /sourceContract.agentLabel/);
-  assert.match(report.missing[0].details, /sourceContract.agentCopyGate/);
-});
-
-test("desktop smoke fails when workspace graph check copy action is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/docs/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><main>Ontology workspace documents Files Graph Agent relation_name_parity pattern_walk/project_map</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/docs"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/docs"],
-  );
-  assert.match(report.missing[0].details, /Copy graph check/);
-});
-
-test("desktop smoke fails when workspace record count language is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/docs/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><main>Ontology workspace Files Graph Agent local markdown frontmatter MCP runtime replay relation_name_parity pattern_walk/project_map Copy graph check</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/docs"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/docs"],
-  );
-  assert.match(report.missing[0].details, /documents/);
-});
-
-test("desktop smoke fails when workspace structural replay proof is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/docs/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><main>Ontology workspace documents Files Graph Agent local markdown frontmatter MCP runtime replay Copy graph check</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/docs"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/docs"],
-  );
-  assert.match(report.missing[0].details, /relation_name_parity/);
-  assert.match(report.missing[0].details, /pattern_walk\/project_map/);
-});
-
-test("desktop smoke fails when workspace execution contract is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/docs/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><main>Ontology workspace documents Files Graph Agent relation_name_parity pattern_walk/project_map Copy graph check</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/docs"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/docs"],
-  );
-  assert.match(report.missing[0].details, /local markdown/);
-  assert.match(report.missing[0].details, /frontmatter/);
-  assert.match(report.missing[0].details, /MCP/);
-  assert.match(report.missing[0].details, /runtime replay/);
-});
-
-test("desktop smoke default download contract requires the agent access install step", () => {
-  assert.ok(DESKTOP_SMOKE_ROUTE_TEXT["en:/download"].includes("Verify agent access"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_TEXT["en:/download"].includes("reads and writes the same vault over MCP"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_TEXT["ko:/download"].includes("AI agent 접근 확인"));
-  assert.ok(DESKTOP_SMOKE_ROUTE_TEXT["ko:/download"].includes("같은 vault 를 MCP 로 읽고 쓰는지 확인"));
-
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/download/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><main>macOS app download Open macOS releases Obsidian-style direct download</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/download"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/download"],
-  );
-  assert.match(report.missing[0].details, /Verify agent access/);
-  assert.match(report.missing[0].details, /reads and writes the same vault over MCP/);
-});
-
-test("desktop smoke fails when an ontology route title is stale", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-  touch(outDir, "en/ontology/insights/index.html");
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/insights"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-    routeText: {},
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-title:en:/ontology/insights"],
-  );
-});
-
-test("desktop smoke fails when ontology workbench proof copy is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/edit/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, "<!doctype html><title>Edit Relations · Ontology Atlas</title>", "utf8");
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/edit"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology/edit"],
-  );
-});
-
-test("desktop smoke fails when builder active slug proof handle is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "ko/ontology/edit/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>관계 편집 · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["ko"],
-    routes: ["/ontology/edit"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:ko:/ontology/edit"],
-  );
-  assert.match(report.missing[0].details, /활성 slug/);
-});
-
-test("desktop smoke fails when builder collapsed save proof controls are absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/edit/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Edit Relations · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/edit"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology/edit"],
-  );
-  assert.match(report.missing[0].details, /Save status/);
-  assert.match(report.missing[0].details, /Layout/);
-  assert.match(report.missing[0].details, /Re-arrange/);
-});
-
-test("desktop smoke fails when builder popover proof chips are absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/edit/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Edit Relations · Ontology Atlas</title><main>Save status Layout Re-arrange Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/edit"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology/edit"],
-  );
-  assert.match(report.missing[0].details, /local markdown/);
-  assert.match(report.missing[0].details, /canvas draft/);
-  assert.match(report.missing[0].details, /relation guard/);
-  assert.match(report.missing[0].details, /graph db \+ health/);
-});
-
-test("desktop smoke fails when builder saved-anchor focus contract is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/edit/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Edit Relations · Ontology Atlas</title><main>Save status Layout Re-arrange local markdown canvas draft not on disk until save relation guard graph db + health Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/edit"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology/edit"],
-  );
-  assert.match(report.missing[0].details, /pick focus concept/);
-  assert.match(report.missing[0].details, /Focus saved concept/);
-});
-
-test("desktop smoke fails when builder saved-anchor component contract is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-  writeRouteWithChunk(
-    outDir,
-    "en/ontology/edit/index.html",
-    htmlWithWorkbenchProof("Edit Relations · Ontology Atlas"),
-    [
-      "proofChipSelected",
-      "syncCopyText",
-      "copySyncGate",
-      "activeFocus",
-    ].join("\n"),
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/edit"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-    routeChunkText: {
-      "/ontology/edit": [
-        "Saved concept list",
-        "anchorAriaLabel",
-        "activeFocusAriaLabel",
-        "proofChipSelected",
-        "syncCopyText",
-        "copySyncGate",
-        "activeFocus",
-      ],
-    },
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-chunk-text:en:/ontology/edit"],
-  );
-  assert.match(report.missing[0].details, /Saved concept list/);
-  assert.match(report.missing[0].details, /anchorAriaLabel/);
-  assert.match(report.missing[0].details, /activeFocusAriaLabel/);
-});
-
-test("desktop smoke fails when browse canonical slug proof handle is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Ontology · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology"],
-  );
-  assert.match(report.missing[0].details, /canonical slug/);
-});
-
-test("desktop smoke fails when browse hierarchy status strip is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Ontology · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius canonical slug Copy runtime gate</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology"],
-  );
-  assert.match(report.missing[0].details, /Concept map/);
-  assert.match(report.missing[0].details, /concepts/);
-  assert.match(report.missing[0].details, /relations/);
-});
-
-test("desktop smoke fails when browse workbench loop order and proof chips are absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Ontology · Ontology Atlas</title><main>Concept map concepts relations docs hidden Hierarchy notes Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius canonical slug Copy runtime gate</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology"],
-  );
-  assert.match(report.missing[0].details, /Browse/);
-  assert.match(report.missing[0].details, /Write/);
-  assert.match(report.missing[0].details, /Query/);
-  assert.match(report.missing[0].details, /tree projection/);
-  assert.match(report.missing[0].details, /frontmatter write/);
-});
-
-test("desktop smoke fails when browse runtime gate copy action is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Ontology · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db canonical slug</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology"],
-  );
-  assert.match(report.missing[0].details, /Copy sync gate/);
-});
-
-test("desktop smoke fails when browse runtime gate does not name focused blast-radius replay", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Ontology · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db canonical slug Copy runtime gate</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology"],
-  );
-  assert.match(report.missing[0].details, /focused blast_radius/);
-});
-
-test("desktop smoke fails when browse business ontology lens contract is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-  writeRouteWithChunk(
-    outDir,
-    "en/ontology/index.html",
-    htmlWithWorkbenchProof("Ontology · Ontology Atlas"),
-    [
-      "activeSlugLabel",
-      "selectedHandleLabel",
-      "selectAriaLabel",
-      "treeLoopAction",
-      "graphDbLoopAction",
-      "copySyncGate",
-    ].join("\n"),
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-    routeChunkText: {
-      "/ontology": [
-        "activeSlugLabel",
-        "selectedHandleLabel",
-        "selectAriaLabel",
-        "business-first",
-        "data-business-read-order",
-        "outcome>domain>capability>element",
-        "treeLoopAction",
-        "graphDbLoopAction",
-        "copySyncGate",
-      ],
-    },
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-chunk-text:en:/ontology"],
-  );
-  assert.match(report.missing[0].details, /business-first/);
-  assert.match(report.missing[0].details, /data-business-read-order/);
-  assert.match(report.missing[0].details, /outcome>domain>capability>element/);
-});
-
-test("desktop smoke fails when builder guard copy action is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/edit/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Edit Relations · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db active slug</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/edit"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology/edit"],
-  );
-  assert.match(report.missing[0].details, /Copy guard/);
-});
-
-test("desktop smoke fails when builder sync gate copy action is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/edit/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Edit Relations · Ontology Atlas</title><main>Save status Layout Auto layout Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/edit"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology/edit"],
-  );
-  assert.match(report.missing[0].details, /Copy sync gate/);
-});
-
-test("desktop smoke fails when builder focused blast-radius replay proof is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/edit/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Edit Relations · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db active slug Copy guard</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/edit"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology/edit"],
-  );
-  assert.match(report.missing[0].details, /focused blast_radius/);
-});
-
-test("desktop smoke fails when builder runtime replay proof is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/edit/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Edit Relations · Ontology Atlas</title><main>Save status Layout Auto layout Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard Copy sync gate</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/edit"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology/edit"],
-  );
-  assert.match(report.missing[0].details, /runtime replay/);
-});
-
-test("desktop smoke fails when insights runtime gate copy action is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/insights/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Verify Graph · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/insights"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology/insights"],
-  );
-  assert.match(report.missing[0].details, /Copy runtime check/);
-});
-
-test("desktop smoke fails when insights query cockpit contract is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/insights/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Verify Graph · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius Copy runtime gate</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/insights"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology/insights"],
-  );
-  assert.match(report.missing[0].details, /Readiness/);
-  assert.match(report.missing[0].details, /basic status check/);
-});
-
-test("desktop smoke fails when insights executable query proof is absent", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/insights/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Verify Graph · Ontology Atlas</title><main>Query cockpit Readiness Check order AI checks Terminal checks basic status check Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius Copy runtime check</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/insights"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology/insights"],
-  );
-  assert.match(report.missing[0].details, /Check order/);
-  assert.match(report.missing[0].details, /AI checks/);
-  assert.match(report.missing[0].details, /Terminal checks/);
-  assert.match(report.missing[0].details, /Scan criteria/);
-  assert.match(report.missing[0].details, /Path criteria/);
-  assert.match(report.missing[0].details, /setup gate/);
-});
-
-test("desktop smoke fails when insights runtime gate does not name focused blast-radius replay", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
-
-  const filePath = path.join(outDir, "en/ontology/insights/index.html");
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(
-    filePath,
-    "<!doctype html><title>Verify Graph · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db Copy runtime gate</main>",
-    "utf8",
-  );
-
-  const report = evaluateDesktopSmoke({
-    outDir,
-    locales: ["en"],
-    routes: ["/ontology/insights"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route-text:en:/ontology/insights"],
-  );
-  assert.match(report.missing[0].details, /focused blast_radius/);
+  assert.equal(report.ok, true);
+  assert.equal(report.missing.length, 0);
+  assert.match(report.nextAction, /desktop:dev|desktop:build/);
 });
 
 test("desktop smoke reports the exact missing packaged route", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "index.html");
-  touch(outDir, "en/docs/index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+  const outDir = makeCurrentOut();
+  fs.rmSync(path.join(outDir, "en/topology"), { recursive: true });
 
   const report = evaluateDesktopSmoke({
     outDir,
-    locales: ["en"],
-    routes: ["/docs", "/topology"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-    routeText: {},
+    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
   });
 
   assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["route:en:/topology"],
-  );
+  assert.ok(report.missing.some((check) => check.id === "route:en:/topology"));
   assert.match(report.nextAction, /pnpm build/);
 });
 
-test("desktop smoke reports the exact missing Tauri app root entry", () => {
-  const outDir = makeOutDir();
-  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
-  touch(outDir, "en/docs/index.html");
-  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+test("desktop smoke reports the exact missing Tauri root entry", () => {
+  const outDir = makeCurrentOut();
+  fs.rmSync(path.join(outDir, DESKTOP_SMOKE_ROOT_ENTRY));
 
   const report = evaluateDesktopSmoke({
     outDir,
-    locales: ["en"],
-    routes: ["/docs"],
-    docs: ["docs-vault/DESKTOP-MACOS.md"],
-    routeText: {},
+    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
   });
 
   assert.equal(report.ok, false);
-  assert.deepEqual(
-    report.missing.map((check) => check.id),
-    ["root-entry"],
+  assert.ok(report.missing.some((check) => check.id === "root-entry"));
+  assert.match(report.nextAction, /pnpm build/);
+});
+
+test("desktop smoke detects stale route metadata without prescribing another build", () => {
+  const outDir = makeCurrentOut();
+  const routePath = routeIndexPath("en", "/ontology/insights");
+  const html = fs.readFileSync(path.join(outDir, routePath), "utf8");
+  write(
+    outDir,
+    routePath,
+    html.replace("Graph Insights · Ontology Atlas", "Verify Graph · Ontology Atlas"),
   );
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
+  });
+
+  assert.equal(report.ok, false);
+  assert.ok(
+    report.missing.some(
+      (check) => check.id === "route-title:en:/ontology/insights",
+    ),
+  );
+  assert.match(report.nextAction, /contract drift|current route/i);
+  assert.doesNotMatch(report.nextAction, /pnpm build/);
+});
+
+test("desktop smoke detects a missing current component marker", () => {
+  const outDir = makeCurrentOut();
+  const chunkPath = routeChunkPath("ko", "/ontology/insights");
+  const chunk = fs.readFileSync(path.join(outDir, chunkPath), "utf8");
+  write(outDir, chunkPath, chunk.replace("tab-query", ""));
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
+  });
+
+  assert.equal(report.ok, false);
+  assert.ok(
+    report.missing.some(
+      (check) => check.id === "route-chunk-text:ko:/ontology/insights",
+    ),
+  );
+  assert.match(report.nextAction, /contract drift|current route/i);
+});
+
+test("desktop smoke detects drift in the current download handoff", () => {
+  const outDir = makeCurrentOut();
+  const routePath = routeIndexPath("ko", "/download");
+  const html = fs.readFileSync(path.join(outDir, routePath), "utf8");
+  write(outDir, routePath, html.replace("AI 어시스턴트 연결하기", ""));
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
+  });
+
+  assert.equal(report.ok, false);
+  assert.ok(
+    report.missing.some((check) => check.id === "route-text:ko:/download"),
+  );
+  assert.match(report.nextAction, /contract drift|current route/i);
 });

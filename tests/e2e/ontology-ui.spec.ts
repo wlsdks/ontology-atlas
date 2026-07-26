@@ -6,7 +6,7 @@ import { useDogfoodSample } from "./sample-source";
  *
  * This file used to cover the old `/ontology` tree/workbench page
  * (`OntologyViewPage`, `ontology-command-bar`, `#tree-data-warnings`, the
- * MCP/Agents settings tab, the insights query cockpit, …). That page was
+ * MCP/Agents settings tab, the Insights maintenance board, …). That page was
  * retired when `/ontology` converged into a thin redirect to
  * `/topology?index=expanded` (B3 — "허브가 곧 지도"), so those 17 tests only
  * failed waiting for markup that no longer renders — no product defect, just

@@ -65,6 +65,12 @@ export function parseDocsVaultView(value?: string | null): DocsVaultView {
   return "doc";
 }
 
+export function parseDocsVaultSource(
+  value?: string | null,
+): DocsVaultSource | null {
+  return value === "server" || value === "local" ? value : null;
+}
+
 export function readStoredSource(): DocsVaultSource {
   if (typeof window === "undefined") return "server";
   try {
@@ -87,8 +93,13 @@ export function readStoredSource(): DocsVaultSource {
 export function shouldPreferLocalOnLanding(
   localVaultStatus: string,
   currentSource: DocsVaultSource,
+  explicitSource: DocsVaultSource | null = null,
 ): boolean {
-  return localVaultStatus === "loaded" && currentSource !== "local";
+  return (
+    explicitSource !== "server" &&
+    localVaultStatus === "loaded" &&
+    currentSource !== "local"
+  );
 }
 
 export function storeSource(v: DocsVaultSource) {

@@ -58,8 +58,10 @@ add 중복, remove/replace false-missing, rationale 고아화를 막는다.
 cycle 을 받자마자 title/domain 맥락을 읽을 수 있고, 별도 `get_concept`
 round-trip 없이 어떤 capability 가 순환하는지 판단할 수 있다.
 
-`query_ontology({operation:"builder_context"})` 는 저장된 vault node를 Builder의
-canonical `<kind>:<slug>` focus URL과 bounded neighborhood로 넘긴다. 각 node에는
+`query_ontology({operation:"builder_context"})` 는 저장된 vault node를 현재
+Workshop(`/ontology/studio`)의 canonical `<kind>:<slug>` focus URL과 bounded
+neighborhood로 넘긴다. operation/response key의 `builder` 명칭은 기존 MCP
+client 호환을 위해 유지한다. 각 node에는
 저장된 `canvasPosition`과 write 전 동시성 확인용 `expected_mtime`을 붙이고,
 `unsavedDraftsIncluded:false`로 아직 markdown에 저장되지 않은 UI draft는 MCP가
 볼 수 없다는 경계를 명시한다. handoff는 새 multi-file mutation을 숨기지 않고
@@ -220,7 +222,7 @@ human-readable text hint 와 MCP client 용 repair payload 가 따로 drift 나�
 정확히 비교해 MCP client 가 받을 repair 후보 목록이 축약되거나 순서 drift 나는 것을 막는다.
 JSON-RPC integration test 도 unknown tool 의 전체 `allowedTools` 와 invalid enum / filter repair 의
 전체 `allowedValues` 를 직접 비교해 runtime 응답 contract 를 설치 verify 와 같은 수준으로 고정한다.
-dogfood fixture 도 strict enum / unknown-tool repair summary 에 전체 operation enum 과 25-tool inventory 를 사용해
+dogfood fixture 도 strict enum / unknown-tool repair summary 에 전체 operation enum 과 32-tool inventory 를 사용해
 요약 출력의 `allowed N` 이 실제 MCP surface 크기와 함께 움직이게 한다.
 dogfood walk 의 strict tool-name / argument / multi-argument / enum / filter 섹션은 `structuredContent` 의
 repair field 를 읽어 `arg lmit->limit`, `args lmit->limit, summry->summary`,
@@ -493,7 +495,7 @@ error message 를 바로 출력한다.
 `mcp/src/integration.test.mjs` 와 `mcp/src/verify-script.test.mjs` 는 실제
 `tools/list` registry, `verify.mjs` 의 `EXPECTED_TOOLS`, `mcp/package.json`
 tool count metadata, 그리고 `initialize.instructions` 의 agent-facing inventory 가
-서로 drift 나지 않도록 같은 25-tool 목록을 교차 검증한다.
+서로 drift 나지 않도록 같은 32-tool 목록을 교차 검증한다.
 installed verify 도 `tools/list` schema 의 `additionalProperties:false` 와
 required `query_ontology.operation`, `operation` / `targetOperation` enum 이
 runtime allow-list 와 일치하는지 검사해, MCP client schema 와 실제 graph engine

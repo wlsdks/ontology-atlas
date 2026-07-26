@@ -12,11 +12,12 @@ relates: [capabilities/mcp-server, domains/ai-agent-partner]
 
 `/ontology/insights` was the original home of this readiness surface (4-tab
 reader-persona system: proof/collaboration/agent/census). The 2026-07 map
-rebuild replaced that page with a fixed 3-tab dashboard (Do next / Structure /
-Freshness, `src/views/ontology-insights/ui/OntologyInsightsPage.tsx`) plus a
-single bottom `InsightsHandoffRow` per tab — the row's own code comment says
-it "replaces the old 4-tab system's giant agent collaboration cockpit
-(readiness/query-recipes/collaborator brief etc.)". The old
+rebuild first simplified the page and the 2026-07-26 question split established
+the current five-tab maintenance board (Do next / Composition / Connections /
+Boundaries / Freshness,
+`src/views/ontology-insights/ui/OntologyInsightsPage.tsx`). It shows one active
+panel and one bottom `InsightsHandoffRow` scoped to the selected question. The
+row replaces the old 4-tab system's giant agent collaboration cockpit. The old
 `InsightsQueryPackCockpit.tsx` / `InsightsInfoButton.tsx` components and the
 `elements/insights-query-cockpit` node they backed are gone; do not reference
 them from new nodes.
@@ -36,7 +37,14 @@ The underlying readiness/graph-DB apparatus did not fully disappear — it split
   `formatTopologyOverviewBrief` copy text (`views/home/lib/topology-analysis.ts`,
   now a thin re-export) read from, so the map's INDEX-footer handoff brief and
   the insights gauge cannot drift into two different readiness formulas.
-- **The three views share a keyboard and URL contract (A17, 2026-07-25).**
+  The queue's health totals and action set now share that same truth boundary:
+  `buildVaultHealthRepair` retains every resolvable missing-containment node
+  and one representative per disconnected island. The first target stays
+  immediately visible; a bounded disclosure exposes all remaining typed
+  targets with relation-editor and source-document links, so a human or agent
+  can act on every problem counted by the summary instead of receiving only
+  one unnamed next step.
+- **The five question tabs share a keyboard and URL contract (A17, 2026-07-25).**
   `src/shared/ui/tab-bar.tsx` uses roving tabindex: only the selected tab is in
   sequential focus order, Left/Right wraps, and Home/End jump to the first or
   last tab with automatic activation. `?tab=` remains the shareable source of
@@ -49,10 +57,9 @@ The underlying readiness/graph-DB apparatus did not fully disappear — it split
 - **Post-change sync gate survives widely.** `agent-readiness.ts`'s
   `buildAgentPostChangeSyncCliCommands` / `formatAgentPostChangeSyncPacket`
   are still the shared "run health/cycles/growth/maintenance/validate after a
-  vault write" packet, consumed by `RelationWriteConfirm.tsx`,
-  `RelationPostSaveHandoff.tsx`, `OntologyEditPage.tsx`,
-  `TopologyAnalysisBar.tsx`, and `VaultAgentSetupPanel.tsx` (the agent-setup
-  panel merged into `AppSettingsMenu`, B2 2026-07).
+  vault write" packet. Current UI consumers are the Topology INDEX handoff in
+  `HomePage.tsx` and `VaultAgentSetupPanel.tsx` inside `AppSettingsMenu`;
+  retired Builder/analysis-panel consumers are no longer part of the contract.
 - **The live-activity badge reuses the graph DB query pack.**
   `LiveActivityIndicator.tsx` (`src/features/vault-ontology/ui/`, shown on the
   topology hub) calls `buildAgentGraphDbQueryPack` and

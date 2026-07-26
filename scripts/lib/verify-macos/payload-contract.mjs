@@ -6,6 +6,7 @@ import { TOPOLOGY_DIM_ANCHOR_MIN_OPACITY, TOPOLOGY_DIM_CONTEXT_MIN_OPACITY, TOPO
 
 export function validateWebviewVerifyPayload(payload, {
   expectedPath = null,
+  expectedFixtureVault = null,
   minWebviewSize = null,
   maxWebviewSize = null,
   requireTopologyDrag = false,
@@ -52,6 +53,14 @@ export function validateWebviewVerifyPayload(payload, {
   }
   if (!payload.markers || typeof payload.markers !== "object") {
     return "WebView did not report structured markers";
+  }
+  if (expectedFixtureVault) {
+    if (payload.markers.verificationFixtureVaultError) {
+      return `WebView fixture vault bootstrap failed: ${payload.markers.verificationFixtureVaultError}`;
+    }
+    if (payload.markers.verificationFixtureVault !== expectedFixtureVault) {
+      return `WebView fixture vault was ${payload.markers.verificationFixtureVault || "missing"}, expected ${expectedFixtureVault}`;
+    }
   }
   if (
     requireWebviewReducedMotion &&
@@ -106,6 +115,7 @@ export function validateWebviewVerifyPayload(payload, {
     typeof payload.markers.topologyAnalysisPanelMode === "string"
       ? payload.markers.topologyAnalysisPanelMode.trim() || webviewUrl.searchParams.get("mode") || ""
       : webviewUrl.searchParams.get("mode") || "";
+  let expectedTopologySelectedParam = "";
   if (expectedPath) {
     const expectedUrl = new URL(expectedPath, payload.href);
     const expectedRoute = expectedUrl.search
@@ -114,13 +124,26 @@ export function validateWebviewVerifyPayload(payload, {
     const actualRoute = expectedUrl.search
       ? `${webviewPath}${webviewUrl.search}`
       : webviewPath;
-    if (actualRoute !== expectedRoute) {
+    expectedTopologySelectedParam = normalizeTopologySelectedParam(
+      expectedUrl.searchParams.get("p"),
+    );
+    const canvasV2RelationOwnsTransientRoute =
+      requireTopologySelectedRelation &&
+      topologyMapV2Active &&
+      payload.markers.topologySelectedRelationVerifySelected === true &&
+      webviewPath === expectedUrl.pathname &&
+      Boolean(expectedTopologySelectedParam) &&
+      (payload.markers.topologyV2SelectedRelationSource === expectedTopologySelectedParam ||
+        payload.markers.topologyV2SelectedRelationTarget === expectedTopologySelectedParam);
+    if (actualRoute !== expectedRoute && !canvasV2RelationOwnsTransientRoute) {
       return `WebView reported route ${actualRoute}, expected ${expectedRoute}`;
     }
   }
   const topologySelectedParam = normalizeTopologySelectedParam(
     webviewUrl.searchParams.get("p"),
   );
+  const topologyVerificationSelectedParam =
+    topologySelectedParam || expectedTopologySelectedParam;
   const selectedNodeId =
     typeof payload.markers.topologySelectedNodeId === "string"
       ? payload.markers.topologySelectedNodeId.trim()
@@ -156,17 +179,47 @@ export function validateWebviewVerifyPayload(payload, {
     Boolean(topologySelectedParam) &&
     (selectedRelationSource === topologySelectedParam ||
       selectedRelationTarget === topologySelectedParam);
+  const topologyMapV2SelectedRelationContextVisible =
+    topologyMapV2Active &&
+    payload.markers.topologyV2EdgePanelVisible === true &&
+    payload.markers.topologySelectedRelationVerifySelected === true &&
+    Boolean(topologyVerificationSelectedParam) &&
+    (payload.markers.topologyV2SelectedRelationSource === topologyVerificationSelectedParam ||
+      payload.markers.topologyV2SelectedRelationTarget === topologyVerificationSelectedParam);
+  const rawRelationTypePattern =
+    /^(contains|depends_on|depends-on|depends|relates|relates_to|related_to|describes|uses|belongs_to|belongs-to)$/i;
   if (requireTopologySelectedRelation) {
     if (payload.markers.topologySelectedRelationVerifyAttempted !== true) {
       return `WebView did not attempt the Relief selected relation verification (${payload.markers.topologySelectedRelationVerifyReason || "missing reason"})`;
     }
     if (payload.markers.topologySelectedRelationVerifyClicked !== true) {
-      return `WebView did not click a Relief relation label during selected relation verification (${payload.markers.topologySelectedRelationVerifyReason || "missing reason"})`;
+      return `WebView did not trigger a topology relation selection during selected relation verification (${payload.markers.topologySelectedRelationVerifyReason || "missing reason"})`;
     }
-    if (!selectedRelationContextVisible) {
+    if (topologyMapV2Active) {
+      if (!topologyMapV2SelectedRelationContextVisible) {
+        return "WebView did not expose the canvas-v2 selected relation inspector during selected relation verification";
+      }
+      if (payload.markers.guidedTourOverlayVisible === true) {
+        return "WebView canvas-v2 selected relation inspector competed with the guided tour overlay";
+      }
+      if (
+        payload.markers.topologyV2EdgePanelRole !== "dialog" ||
+        !String(payload.markers.topologyV2EdgePanelAriaLabel || "").trim() ||
+        !String(payload.markers.topologyV2EdgePanelSentence || "").trim()
+      ) {
+        return "WebView canvas-v2 selected relation inspector did not expose a readable dialog sentence";
+      }
+      if (!rawRelationTypePattern.test(payload.markers.topologyV2SelectedRelationType || "")) {
+        return `WebView canvas-v2 selected relation type was ${payload.markers.topologyV2SelectedRelationType || "missing"}`;
+      }
+      const edgePanelWidth = Number(payload.markers.topologyV2EdgePanelWidth || 0);
+      const edgePanelHeight = Number(payload.markers.topologyV2EdgePanelHeight || 0);
+      if (edgePanelWidth < 240 || edgePanelWidth > 420 || edgePanelHeight < 120) {
+        return `WebView canvas-v2 selected relation inspector was ${edgePanelWidth}x${edgePanelHeight}`;
+      }
+    } else if (!selectedRelationContextVisible) {
       return "WebView did not expose the Relief selected relation inspector during selected relation verification";
-    }
-    if (
+    } else if (
       payload.markers.topologyUtilityLaneSuppressionContract !==
       "selected-relation-inspector-owns-right-rail"
     ) {
@@ -174,19 +227,25 @@ export function validateWebviewVerifyPayload(payload, {
     }
   }
   const koreanTopologyRoute = webviewPath.startsWith("/ko/topology");
-  const rawRelationTypePattern =
-    /^(contains|depends_on|depends-on|depends|relates|relates_to|related_to|describes|uses|belongs_to|belongs-to)$/i;
-  if (
-    webviewPath.includes("/ontology/insights") &&
-    payload.markers.businessDecisionQuestions !== true
-  ) {
-    return "WebView did not report the business decision questions marker";
-  }
-  if (
-    webviewPath.includes("/ontology/insights") &&
-    payload.markers.readerDecisionLens !== true
-  ) {
-    return "WebView did not report the reader decision lens marker";
+  if (webviewPath.includes("/ontology/insights")) {
+    if (payload.markers.insightsMaintenanceBoard !== true) {
+      return "WebView did not report the insights maintenance board marker";
+    }
+    if (payload.markers.insightsQuestionModel !== "one-tab-one-question") {
+      return `WebView insights question model was ${payload.markers.insightsQuestionModel || "missing"}`;
+    }
+    if (payload.markers.insightsTabCount !== 5) {
+      return `WebView insights tab count was ${payload.markers.insightsTabCount ?? "missing"}, expected 5`;
+    }
+    if (payload.markers.insightsSelectedTabCount !== 1) {
+      return `WebView insights selected tab count was ${payload.markers.insightsSelectedTabCount ?? "missing"}, expected 1`;
+    }
+    if (payload.markers.insightsSelectedPanelVisible !== true) {
+      return "WebView insights selected panel was not visible";
+    }
+    if (payload.markers.insightsHandoff !== true) {
+      return "WebView did not report the insights agent handoff marker";
+    }
   }
   if (
     webviewPath.includes("/topology") &&
@@ -1033,6 +1092,7 @@ export function validateWebviewVerifyPayload(payload, {
     if (
       payload.markers.topologySelectedNodePopoverVisible !== true &&
       !topologyMapV2SelectedContextVisible &&
+      !topologyMapV2SelectedRelationContextVisible &&
       !selectedRelationContextVisible &&
       !selectedFocusNoopContextVisible &&
       !selectedFocusZoomContextVisible &&

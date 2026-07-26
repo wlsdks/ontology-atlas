@@ -60,6 +60,8 @@ export interface DoNextTabLabels extends QueueRowActionLabels {
   repairQueueActionKindContainment: string;
   repairQueueOpenBuilder: string;
   repairQueueOpenOntology: string;
+  repairQueueRestShow: (count: number) => string;
+  repairQueueRestHide: string;
   queueTitle: string;
   sectionNeglectedHub: string;
   sectionOrphan: string;
@@ -152,6 +154,8 @@ export interface DoNextTabHealthQueue {
   islandCount: number;
   missingContainmentCount: number;
   actionTarget: OntologyHealthActionTarget | null;
+  /** CLI-parity 수리 대상 전체. 첫 행만 상시 노출하고 나머지는 같은 카드에서 펼친다. */
+  actionTargets: readonly OntologyHealthActionTarget[];
   builderHref: (slug: string) => string;
   ontologyHref: (slug: string) => string;
 }
@@ -758,6 +762,7 @@ export function DoNextTab({
   meaningGaps = null,
   labels,
 }: DoNextTabProps) {
+  const [repairTargetsOpen, setRepairTargetsOpen] = useState(false);
   const reviewStatusRef = useRef<HTMLParagraphElement | null>(null);
   const reviewRowRefs = useRef(new Map<string, HTMLDivElement>());
   const lastFocusedReviewKeyRef = useRef<string | null>(null);
@@ -805,9 +810,14 @@ export function DoNextTab({
     orphan: labels.repairQueueActionKindOrphan,
     promotion: labels.repairQueueActionKindPromotion,
   };
-  const repairActionKindLabel = healthQueue.actionTarget
-    ? REPAIR_ACTION_KIND_LABELS[healthQueue.actionTarget.kind]
-    : null;
+  const repairTargets =
+    healthQueue.actionTargets.length > 0
+      ? healthQueue.actionTargets
+      : healthQueue.actionTarget
+        ? [healthQueue.actionTarget]
+        : [];
+  const primaryRepairTarget = repairTargets[0] ?? null;
+  const remainingRepairTargets = repairTargets.slice(1);
   // ③↔큐 중복 제거 — "오늘의 손질" 밴드는 큐/사이클 상위에서 절단해 오므로
   // 큐 섹션 첫 행과 100% 겹친다(같은 방치 허브/고아/승격 후보). 밴드에 이미
   // 올라온 exact row id 를 큐 행에서 걸러 같은 항목이 위아래로 두 번 보이지 않게
@@ -1176,34 +1186,52 @@ export function DoNextTab({
                 </span>
               </span>
             </div>
-            {healthQueue.actionTarget ? (
-              <div
-                data-testid="insights-repair-queue-target"
-                className="mt-2.5 flex min-w-0 items-center justify-between gap-2"
-              >
-                <span className="flex min-w-0 items-center gap-1.5 text-body text-[color:var(--color-text-secondary)]">
-                  {repairActionKindLabel ? (
-                    <span className="shrink-0 rounded border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 text-caption leading-none text-[color:var(--color-text-tertiary)]">
-                      {repairActionKindLabel}
+            {primaryRepairTarget ? (
+              <div className="mt-2.5">
+                <RepairQueueTargetRow
+                  target={primaryRepairTarget}
+                  kindLabel={REPAIR_ACTION_KIND_LABELS[primaryRepairTarget.kind]}
+                  builderHref={healthQueue.builderHref}
+                  ontologyHref={healthQueue.ontologyHref}
+                  labels={labels}
+                />
+                {remainingRepairTargets.length > 0 ? (
+                  <button
+                    type="button"
+                    aria-expanded={repairTargetsOpen}
+                    data-testid="insights-repair-queue-rest-toggle"
+                    onClick={() => setRepairTargetsOpen((open) => !open)}
+                    className="-mx-1.5 mt-1 flex min-h-7 w-full items-center gap-1.5 rounded-md px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                  >
+                    {repairTargetsOpen ? (
+                      <ChevronDown aria-hidden size={13} className="flex-none" />
+                    ) : (
+                      <ChevronRight aria-hidden size={13} className="flex-none" />
+                    )}
+                    <span className="min-w-0 truncate">
+                      {repairTargetsOpen
+                        ? labels.repairQueueRestHide
+                        : labels.repairQueueRestShow(remainingRepairTargets.length)}
                     </span>
-                  ) : null}
-                  <span className="min-w-0 truncate">{healthQueue.actionTarget.title}</span>
-                </span>
-                <span className="flex shrink-0 items-center gap-1.5">
-                  <Link
-                    href={healthQueue.builderHref(healthQueue.actionTarget.slug)}
-                    data-testid="insights-repair-queue-builder-link"
-                    className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-label font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+                  </button>
+                ) : null}
+                {repairTargetsOpen && remainingRepairTargets.length > 0 ? (
+                  <div
+                    data-testid="insights-repair-queue-rest"
+                    className="insights-disclosure-in flex max-h-44 flex-col overflow-y-auto border-t border-[color:var(--color-divider)]"
                   >
-                    {labels.repairQueueOpenBuilder}
-                  </Link>
-                  <Link
-                    href={healthQueue.ontologyHref(healthQueue.actionTarget.slug)}
-                    className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-                  >
-                    {labels.repairQueueOpenOntology}
-                  </Link>
-                </span>
+                    {remainingRepairTargets.map((target) => (
+                      <RepairQueueTargetRow
+                        key={`${target.kind}:${target.slug}`}
+                        target={target}
+                        kindLabel={REPAIR_ACTION_KIND_LABELS[target.kind]}
+                        builderHref={healthQueue.builderHref}
+                        ontologyHref={healthQueue.ontologyHref}
+                        labels={labels}
+                      />
+                    ))}
+                  </div>
+                ) : null}
               </div>
             ) : (
               <p className="mt-2 text-body text-[color:var(--color-text-quaternary)]">{labels.repairQueueEmpty}</p>
@@ -1281,6 +1309,49 @@ export function DoNextTab({
         )}
       </section>
       </div>
+    </div>
+  );
+}
+
+function RepairQueueTargetRow({
+  target,
+  kindLabel,
+  builderHref,
+  ontologyHref,
+  labels,
+}: {
+  target: OntologyHealthActionTarget;
+  kindLabel: string;
+  builderHref: (slug: string) => string;
+  ontologyHref: (slug: string) => string;
+  labels: DoNextTabLabels;
+}) {
+  return (
+    <div
+      data-testid="insights-repair-queue-target"
+      className="flex min-w-0 items-center justify-between gap-2 py-1 first:pt-0"
+    >
+      <span className="flex min-w-0 items-center gap-1.5 text-body text-[color:var(--color-text-secondary)]">
+        <span className="shrink-0 rounded border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 text-caption leading-none text-[color:var(--color-text-tertiary)]">
+          {kindLabel}
+        </span>
+        <span className="min-w-0 truncate">{target.title}</span>
+      </span>
+      <span className="flex shrink-0 items-center gap-1.5">
+        <Link
+          href={builderHref(target.slug)}
+          data-testid="insights-repair-queue-builder-link"
+          className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-label font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+        >
+          {labels.repairQueueOpenBuilder}
+        </Link>
+        <Link
+          href={ontologyHref(target.slug)}
+          className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+        >
+          {labels.repairQueueOpenOntology}
+        </Link>
+      </span>
     </div>
   );
 }

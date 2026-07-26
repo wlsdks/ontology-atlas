@@ -1,5 +1,12 @@
 # TOPOLOGY-V2 PHASE 0 — 진단 · 계약 고정 (2026-07-18)
 
+> **Historical measurement snapshot (superseded, 2026-07-27).** The paths,
+> call sites, and “alive” labels below describe the pre-migration baseline used
+> to choose `topology-map-v2`. Sigma, `TopologyMapCanvas`, their peer-mode tabs,
+> and the project-detail mini-map were subsequently removed. Preserve the
+> numbers as dated evidence; do not use this file as a current architecture
+> inventory.
+>
 > Phase 0 (진단 전용, 구현 금지)의 산출물. `src/` 는 건드리지 않았다. 모든 수치는
 > Chrome DevTools MCP (`performance_start_trace`/`performance_stop_trace`/
 > `performance_analyze_insight`) 로 로컬 `pnpm dev` (Turbopack, unminified,

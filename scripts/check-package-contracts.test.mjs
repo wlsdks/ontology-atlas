@@ -116,9 +116,9 @@ function runNodeScript(args) {
 }
 
 describe('package contract helpers', () => {
-  it('keeps the root README honest about the five surfaces plus MCP', () => {
+  it('keeps the root README honest about the six work surfaces plus MCP', () => {
     const readme = readFileSync('README.md', 'utf-8');
-    const section = readme.split('## Five surfaces, one vault')[1]?.split('## Agent Workflow')[0] ?? '';
+    const section = readme.split('## Six work surfaces, one vault')[1]?.split('## Agent Workflow')[0] ?? '';
 
     assert.match(section, /\*\*Map\*\*/);
     assert.match(section, /`\/docs`/);
@@ -129,12 +129,14 @@ describe('package contract helpers', () => {
     assert.doesNotMatch(section, /`\/ontology\/edit`/);
     assert.match(section, /`\/ontology\/insights`/);
     assert.match(section, /`\/projects`/);
+    assert.match(section, /`\/git`/);
     assert.match(section, /\*\*MCP server\*\*/);
     assert.match(section, /19 read \+ 13 write/);
     assert.match(section, /Every surface reads and writes the\nsame `\.md` files/);
     assert.doesNotMatch(readme, /## Three views, one vault/);
     assert.doesNotMatch(readme, /## Three views plus MCP, one vault/);
     assert.doesNotMatch(readme, /## Four surfaces, one vault/);
+    assert.doesNotMatch(readme, /## Five surfaces, one vault/);
   });
 
   it('keeps filtered integration scripts discoverable from development checks docs', () => {
@@ -505,10 +507,12 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /Root `pnpm-lock\.yaml` and MCP\/CLI package lockfiles route to\s+`pnpm test:mcp:package` plus `pnpm package:check` escalation/);
     assert.match(checksDoc, /MCP lockfile\s+changes still show `pnpm dogfood:verify` as an escalation because they touch the\s+agent runtime package directly; CLI lockfile changes stay on package contracts/);
     assert.match(checksDoc, /\| `pnpm package:check` \| Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget \|/);
-    assert.match(checksDoc, /\| `pnpm design:ontology` \| Ontology workbench design drift guard for forbidden visual patterns across Workspace, ontology operation surfaces, and shared UI primitives plus Workspace execution, Browse\/Write\/Query, Builder write\/proof, Insights query cockpit, topology legend, Product Design OS designer-bench, public reference-permission contracts, and Relief\/Topology token anti-pattern contracts \|/);
+    assert.match(checksDoc, /\| `pnpm design:ontology` \| Current ontology-workbench design guard: forbidden visual patterns across Source Vault, Workshop, Insights, navigation, INDEX, and shared UI; Source Files\/Graph\/Agent execution contract; Workshop compass write\/MCP handoff; Insights exact five-question tab set, maintenance-board\/one-panel state, and tab-scoped agent handoff; Product Design OS\/reference-permission contracts; and Relief\/Topology token anti-pattern contracts \|/);
     assert.match(checksDoc, /\| `pnpm desktop:check` \| macOS desktop Tauri scaffold readiness gate for static export, image mode, docs-vault freshness, CLI\/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files \|/);
     assert.match(checksDoc, /\| `pnpm desktop:doctor` \| Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, Xcode command line tools, CLI\/MCP agent setup gates, and non-blocking local `\.app` signing state \|/);
-    assert.match(checksDoc, /\| `pnpm desktop:smoke` \| Built `out\/` payload smoke for the packaged root app entry, locale routes including `\/ontology\/insights`, ontology workbench route titles, Download release audit \(`Local completion audit` \/ `pnpm desktop:release-status` \/ `owner-grouped release blockers`\), bundled Workspace graph-check copy action, route component chunk contracts, Workspace execution contract \(`local markdown` \/ `frontmatter` \/ `MCP` \/ `runtime replay` \/ `relation_name_parity` \/ `pattern_walk\/project_map`\), Browse status strip \(`Concept map` \/ `concepts` \/ `relations`\), Browse\/Write\/Query proof chips \(`tree projection` \/ `frontmatter write` \/ `dogfood:graph-db`\), graph DB proof rail, Browse canonical slug handle, Browse sync gate copy action, Builder collapsed save\/proof controls \(`Save proof` \/ `Layout` \/ `Auto layout`\), Builder proof chips \(`local markdown` \/ `canvas draft` \/ `relation guard` \/ `graph db \+ health`\), Builder draft disk-state marker \(`not on disk until save`\), Builder active slug handle, Builder runtime replay proof \(`focused_blast_radius` \/ `relation_name_parity` \/ `pattern_walk\/project_map`\), Builder guard copy action, Builder sync gate copy action, Insights Query cockpit \(`Readiness` \/ `Check order` \/ `AI checks` \/ `Terminal checks` \/ basic status check\), Insights executable query proof \(`Check order` \/ `AI checks` \/ `Terminal checks` \/ `Scan criteria` \/ `Path criteria` \/ setup gate\), Insights reader graph operations \(`facets \+ domain_matrix` \/ `match_nodes \+ lineage` \/ `blast_radius \+ impact` \/ `node_profile \+ reachability` \/ `agent_brief \+ health` \/ `business_questions`\), Insights progressive business question lane \(`Decision questions` \/ `Show answer criteria` \/ `Outcome distribution and domain boundary` \/ `Product boundary and links` \/ `Capability claim candidates` \/ `Implementation evidence links`\), Insights question-level business handoffs \(`Business ontology question handoff` \/ `Question focus: Business outcome` \/ `Question focus: Domain boundary` \/ `Question focus: Capability claim` \/ `Question focus: Implementation evidence`\), Insights copyable business decision brief \(`Business ontology decision brief` \/ `capability -> element match_edges`\), Insights collaborator business extraction checks \(`business outcome` \/ `business\/product domain boundary` \/ `capability claim` \/ `implementation evidence`\), Insights runtime gate copy action with `relation_name_parity` and `pattern_walk\/project_map`, `_next` assets, and offline desktop docs before launching or bundling the `\.app` \/ `\.dmg` \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:smoke` \| Built `out\/` payload smoke for the packaged root entry; current EN\/KO titles; Download install\/vault\/AI handoff copy and fact\/checksum\/release markers; Docs header\/viewer\/source-contract markers;/);
+    assert.match(checksDoc, /`\/ontology` → `\/topology\?index=expanded` and `\/ontology\/edit` → `\/ontology\/studio` compatibility redirects; Topology canvas-v2\/focus\/path markers; Insights `maintenance-board` \/ `one-tab-one-question` \/ `tab-query` markers;/);
+    assert.match(checksDoc, /Missing artifacts advise `pnpm build`; title\/copy\/chunk mismatches advise current-source contract review instead of a redundant rebuild\./);
     assert.match(checksDoc, /\| `pnpm desktop:build:app` \| Build the Tauri `\.app` before optional release signing or local DMG packaging \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-app` \| Launch the built `\.app` from its executable directory long enough to catch early Tauri\/WebView startup crashes and require the packaged WebView DOM to report loaded `tauri:\/\/` Ontology Atlas content, then terminate it; locks per app path before stale-process cleanup; supports `--kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window --require-accessibility-text=\.\.\.` for LaunchServices dogfood checks with CoreGraphics metadata, local screenshot capture, Accessibility-window assertions, and app-content text proof before separate Computer Use observation \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-install` \| Mount the DMG, require the `\/Applications` symlink target, copy the app to a temporary install folder, verify that copied app through the LaunchServices app content proof gate \(`--open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`\), then clean it up \|/);
@@ -1578,8 +1582,8 @@ describe('package contract helpers', () => {
     assert.match(agentSetupRow, /`docs\.modeComparison`/);
     assert.match(agentSetupRow, /`docs\.postChangeSync`/);
     assert.match(agentSetupRow, /CLI-only \/ MCP-connected \/ graph DB pack \/ setup gate choices/);
-    assert.match(tableRow, /25-tool inventory with missing\/extra\/duplicate\/invalid name checks/);
-    assert.match(tableRow, /25-tool inventory with missing\/extra\/duplicate\/invalid name checks plus tools\/list schema strictness and annotation coverage/);
+    assert.match(tableRow, /32-tool inventory with missing\/extra\/duplicate\/invalid name checks/);
+    assert.match(tableRow, /32-tool inventory with missing\/extra\/duplicate\/invalid name checks plus tools\/list schema strictness and annotation coverage/);
     assert.match(tableRow, /relation filter \/ `relation_check` closest-value rejection/);
     assert.match(tableRow, /destructive dry-run smoke for `rename_concept` \/ `merge_concepts` \/ `delete_concept`/);
     assert.match(tableRow, /write-tool `postWriteMaintenance` `byPhase`\/`bySeverity`\/`byKind` buckets \+ `score`\/`proposedAction`\/next-action guidance/);
@@ -1995,6 +1999,60 @@ describe('package contract helpers', () => {
     assert.doesNotMatch(prTemplate, /cloud-mode-only path/);
   });
 
+  it('keeps architecture routes, navigation, and deeplink contracts current', () => {
+    const architecture = readFileSync('docs/ARCHITECTURE.md', 'utf-8');
+
+    assert.match(
+      architecture,
+      /\/ontology\/edit\s+compatibility redirect → \/ontology\/studio/,
+    );
+    assert.match(
+      architecture,
+      /\/ontology\/studio\s+Compass Stage write surface \(ENHANCE \/ CREATE\)/,
+    );
+    assert.match(
+      architecture,
+      /\/ontology\/insights\s+five-question maintenance board/,
+    );
+    assert.match(architecture, /desktop rail\s+exposes six destinations/);
+    assert.match(architecture, /mobile bottom bar exposes four core destinations/);
+    assert.match(architecture, /buildOntologyStudioNodeHrefFromGraphId/);
+    assert.match(architecture, /resolveStudioFocalId/);
+    assert.match(
+      architecture,
+      /`do-next` \\\| `composition` \\\| `connections` \\\| `boundaries` \\\| `freshness`/,
+    );
+    assert.doesNotMatch(architecture, /xyflow ERD builder/);
+    assert.doesNotMatch(architecture, /game "강화"/);
+    assert.doesNotMatch(architecture, /buildOntologyBuilderNodeHrefFromGraphId/);
+    assert.doesNotMatch(architecture, /resolveBuilderQueryNodeSlug/);
+    assert.doesNotMatch(architecture, /\/ontology\/insights` \| node to focus/);
+    assert.doesNotMatch(architecture, /`reader` \| `\/ontology\/edit`/);
+  });
+
+  it('keeps persisted-context handoff and active product docs on Workshop', () => {
+    const readme = readFileSync('README.md', 'utf-8');
+    const features = readFileSync('docs/FEATURES.md', 'utf-8');
+    const activeFeatures = features.split('## 6. What was removed / added')[0];
+    const mcpReadme = readFileSync('mcp/README.md', 'utf-8');
+    const ontologyEngine = readFileSync('mcp/src/ontology-engine.mjs', 'utf-8');
+
+    assert.match(
+      ontologyEngine,
+      /href: `\/ontology\/studio\/\?node=\$\{encodeURIComponent\(focusParam\)\}`/,
+    );
+    assert.match(ontologyEngine, /unsaved Workshop drafts/);
+    assert.doesNotMatch(ontologyEngine, /\/ontology\/edit\/\?node=/);
+    assert.match(readme, /Shape relations in Workshop/);
+    assert.match(readme, /docs\/assets\/readme\/workshop-context\.jpeg/);
+    assert.doesNotMatch(readme, /persisted Builder context/);
+    assert.doesNotMatch(readme, /builder-context\.png/);
+    assert.match(mcpReadme, /`builder_context` \(persisted Workshop focus URL/);
+    assert.match(activeFeatures, /`builder_context` keeps its compatibility operation\/response name but emits the current Workshop focus URL/);
+    assert.doesNotMatch(activeFeatures, /\| `P` \/ `N` \| Builder \|/);
+    assert.doesNotMatch(activeFeatures, /\*\*그래프 \(graph\)\*\*/);
+  });
+
   it('keeps CLAUDE.md a thin AGENTS wrapper', () => {
     const claude = readFileSync('CLAUDE.md', 'utf-8');
     const agentImports = [...claude.matchAll(/^@AGENTS\.md$/gm)];
@@ -2332,7 +2390,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`allowedValues` 는\s+일부 대표값이 아니라 해당 입력의 전체 enum 순서와 정확히 일치/);
     assert.match(doc, /설치 verify 의 strict unknown-tool \/ multi-argument smoke 도 전체 `allowedTools` \/ `allowedArguments` 를\s+정확히 비교/);
     assert.match(doc, /JSON-RPC integration test 도 unknown tool 의 전체 `allowedTools` 와 invalid enum \/ filter repair 의\s+전체 `allowedValues` 를 직접 비교/);
-    assert.match(doc, /dogfood fixture 도 strict enum \/ unknown-tool repair summary 에 전체 operation enum 과 25-tool inventory 를 사용/);
+    assert.match(doc, /dogfood fixture 도 strict enum \/ unknown-tool repair summary 에 전체 operation enum 과 32-tool inventory 를 사용/);
     assert.match(doc, /`concepts\[n\] duplicate slug in input batch; first seen at concepts\[m\]`/);
     assert.match(doc, /strict relation filter \/ `relation_check` row/);
     assert.match(doc, /`dependencyTypes items depend_on->depends_on; allowed 9`/);

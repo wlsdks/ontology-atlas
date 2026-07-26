@@ -2,6 +2,8 @@ export const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 
 export const WEBVIEW_VERIFY_ROUTE_ENV = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 
+export const WEBVIEW_VERIFY_VAULT_ENV = "ONTOLOGY_ATLAS_VERIFY_VAULT";
+
 export const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
 const WEBVIEW_VERIFY_TOPOLOGY_SELECTED_RELATION_ENV =
   "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_SELECTED_RELATION";
@@ -88,6 +90,7 @@ export function topologyDragCompanionVectorTolerance(markers = {}) {
 
 export function webviewVerifyEnvPatch({
   requireWebviewRoute = null,
+  webviewFixtureVaultPath = null,
   verifyTopologyDrag = false,
   verifyTopologySelectedRelation = false,
   verifyTopologyNodePopover = false,
@@ -100,6 +103,9 @@ export function webviewVerifyEnvPatch({
   return {
     [WEBVIEW_VERIFY_ENV]: "1",
     ...(requireWebviewRoute ? { [WEBVIEW_VERIFY_ROUTE_ENV]: requireWebviewRoute } : {}),
+    ...(webviewFixtureVaultPath
+      ? { [WEBVIEW_VERIFY_VAULT_ENV]: webviewFixtureVaultPath }
+      : {}),
     ...(verifyTopologyDrag ? { [WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV]: "1" } : {}),
     ...(verifyTopologySelectedRelation
       ? { [WEBVIEW_VERIFY_TOPOLOGY_SELECTED_RELATION_ENV]: "1" }

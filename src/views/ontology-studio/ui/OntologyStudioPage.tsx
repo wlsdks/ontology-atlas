@@ -126,6 +126,13 @@ export function OntologyStudioPage() {
   // lib so the deep-link-skip contract is unit-tested).
   const hasStudioDeepLink = studioHasDeepLinkIntent(searchParams);
   const [choiceDismissed, setChoiceDismissed] = useState(false);
+  const [stageInitialFocus, setStageInitialFocus] = useState<"heading" | null>(
+    null,
+  );
+  const clearStageInitialFocus = useCallback(
+    () => setStageInitialFocus(null),
+    [],
+  );
   const insightsReturnTab = parseInsightsReturnMarker(
     searchParams.get(ONTOLOGY_DEEPLINK_VIA_KEY),
   );
@@ -815,6 +822,7 @@ export function OntologyStudioPage() {
       <>
       <StudioCompass
         mode="create"
+        initialFocus="create-name"
         labels={labels}
         kindLabelFor={kindLabel}
         focal={{
@@ -910,7 +918,10 @@ export function OntologyStudioPage() {
           exit: t("entryChoice.exit"),
           dialogAria: t("entryChoice.dialogAria"),
         }}
-        onEnhance={() => setChoiceDismissed(true)}
+        onEnhance={() => {
+          setStageInitialFocus("heading");
+          setChoiceDismissed(true);
+        }}
         onCreate={enterCreate}
         onExit={exit}
       />
@@ -1196,6 +1207,8 @@ export function OntologyStudioPage() {
     <StudioCompass
       key={focalItem.node.id}
       mode="enhance"
+      initialFocus={stageInitialFocus ?? undefined}
+      onInitialFocusApplied={clearStageInitialFocus}
       labels={labels}
       kindLabelFor={kindLabel}
       focal={{

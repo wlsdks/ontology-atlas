@@ -5,11 +5,12 @@ tags: [architecture, infra, overview]
 
 # Architecture
 
-> 2026-05-18 update — the current architecture is a local-first, git-backed
-> memory layer for AI coding agents. Round 10 permanently removed all auth +
-> cloud surface; later rounds added deterministic graph compilation,
-> graph-engine queries, health/workspace briefs, bootstrap analysis, and import
-> inference. Earlier cloud-mode design notes are in `docs/archive/`.
+> 2026-07-27 update — the current architecture is a local-first, git-backed
+> meaning layer shared by people and AI coding agents. Round 10 permanently
+> removed all auth + cloud data surfaces; the current route model converges
+> browsing on Topology, writing on Workshop, maintenance on five-question
+> Insights, and keeps old ontology URLs only as compatibility redirects.
+> Earlier cloud and retired-workbench design notes are in `docs/archive/`.
 
 ## High-level shape
 
@@ -22,9 +23,10 @@ tags: [architecture, infra, overview]
 │ ├─ /topology               same hub, explicit entry     │
 │ ├─ /docs                   vault picker + editor       │
 │ ├─ /ontology               thin redirect → /topology   │
-│ ├─ /ontology/edit          xyflow ERD builder          │
-│ ├─ /ontology/studio        game "강화" enhancement screen│
-│ ├─ /ontology/insights      graph census + hubs + edges │
+│ ├─ /ontology/edit          compatibility redirect      │
+│ ├─ /ontology/studio        Compass write workbench     │
+│ ├─ /ontology/insights      five-question maintenance   │
+│ ├─ /git                    vault Git workbench         │
 │ ├─ /projects               project list                │
 │ └─ /project/[slug]         project detail              │
 ├────────────────────────────────────────────────────────┤
@@ -66,7 +68,7 @@ tags: [architecture, infra, overview]
        ↑ stdio JSON-RPC (separate process)
 
 ┌────────────────────────────────────────────────────────┐
-│ CLI (cli/, v0.11.0 — 50 commands)                      │
+│ CLI (cli/, v0.11.0 — 52 commands)                      │
 │ ├─ init/agent-activity/add/import/list/find/validate/query│
 │ ├─ mcp-verify/analyze/infer-imports/bootstrap/compile  │
 │ ├─ preflight (commit preflight + pre-commit hook)      │
@@ -136,6 +138,10 @@ The directory layout is enforced by `eslint-plugin-boundaries` in `eslint.config
    separate local-source tab (browsing a second vault as a documentation
    source inside that page) stays desktop-gated — that is a narrower, older
    feature unrelated to opening your primary vault from the map.
+6. Ontology block import/export follows the same split: browser
+   `showDirectoryPicker()` or the Tauri `FileSystemDirectoryHandle` shim feeds
+   one recursive block reader/writer. Import plans conflicts before writing;
+   native or browser picker cancellation has no side effect.
 
 The MCP server is independent: it reads the same vault directory through the
 filesystem (Node.js `fs`), not the WebView bridge. AI agents and the installed app end up with the same view.
@@ -159,9 +165,10 @@ This is the "first impression" state — visitors see a real ontology
 /topology                  same hub, explicit entry point (canvas-2D map/graph engine)
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
-/ontology/edit             ERD canvas builder (xyflow)
-/ontology/studio           immersive "강화(enhancement) screen" — node-as-game-item (scoped design exception)
-/ontology/insights         graph insights (kind dist · hubs · edge types)
+/ontology/edit             compatibility redirect → /ontology/studio (normalizes and forwards ?node=)
+/ontology/studio           Compass Stage write surface (ENHANCE / CREATE)
+/ontology/insights         five-question maintenance board
+/git                       local vault git history / snapshot workbench
 /projects                  project list (cards)
 /project/[slug]            project detail (inline edit when vault loaded)
 /project/[slug]/edit       full project editor
@@ -175,20 +182,16 @@ All routes are wrapped under `/[locale]/` by next-intl (en, ko).
 > `/knowledge/*`. Removed in Round 10: `/login`, `/signup`, `/account`,
 > `/reset-password`, `/settings/*`.
 
-**One nav system, not three (feat/rail-rollout).** Every route above (plus
-`/download`) mounts `src/widgets/app-nav-rail` as a persistent left sidebar on
-desktop (`lg:` and up) and `src/widgets/bottom-tab-bar` on mobile — both read
-the same 5 destinations and the same active-item ladder
-(`src/shared/lib/nav-destination.ts`), so there is exactly one answer to
-"where am I / where can I go" regardless of viewport. The former top tab bar
-(`OperationsNav`) and its inline ontology sub-tabs (`OntologySubNav`) are
-deleted, not just unmounted. Where that old top bar's settings gear and agent
-heartbeat indicator were the only way to reach settings/theme/locale/MCP
-status, `src/widgets/app-settings-menu` (`AppSettingsMenu`) plus
-`LiveActivityIndicator` now mount directly in the header of the handful of
-pages that need them (Projects list, Builder, Insights) — the narrow rail
-can't host their wide popovers, so this is a "same feature, different
-mount point" move, not a removal.
+**One navigation ownership model, responsive inventories.** The desktop rail
+exposes six destinations: Map, Docs, Workshop, Insights, Projects, and Git.
+The mobile bottom bar exposes four core destinations: Map, Docs, Insights, and
+Projects; Workshop remains an immersive desktop write destination and Git is
+desktop-only. Both use the same active-destination ladder in
+`src/shared/lib/nav-destination.ts`, so a route has one semantic destination
+even when a breakpoint intentionally omits its button. The retired
+`OperationsNav` and `OntologySubNav` are deleted. `AppSettingsMenu` and
+`LiveActivityIndicator` mount through the current shell/page slots rather than
+being treated as navigation destinations.
 
 ## URL contract (query-param + node id grammar)
 
@@ -206,41 +209,43 @@ one identity across every screen. The **canonical node id grammar is
 | `p` | `/`, `/topology` | focused/selected node | canonical `<kind>:<slug>` (bare slug tolerated) |
 | `open` | `/`, `/topology` | density-gate expanded parents | comma list of node ids |
 | `realm` | `/`, `/topology` | "realm" containment-subtree root | canonical `<kind>:<slug>` (bare slug promoted) |
-| `mode` | `/`, `/topology` | analysis mode | `overview`\|`graph`\|`focus`\|`path`\|`health` |
+| `mode` | `/`, `/topology` | analysis mode | `overview` \| `focus` \| `path` \| `health` |
 | `pathFrom` / `pathTo` (aliases `from` / `to`) | `/`, `/topology` | path source / target | node id |
 | `hub` · `c` · `impact` · `pulse` · `index` · `create` | `/`, `/topology` | focused hub · category · impact mode · pulse window · INDEX panel state · create-node intent | see `src/views/home/model/url-state.ts` |
+| `recent` · `ask` | `/`, `/topology` | recent-change lens · agent first-words intent | typed parsers in `src/views/home/model/url-state.ts` |
 | `via` | `/`, `/topology`, `/ontology` | origin marker for the return chip | `insights:<tab>` |
+| `review` | `/`, `/topology`, `/ontology/studio`, `/ontology/insights` | exact Do-next review row carried across handoff | stable review id, only meaningful with the matching handoff |
 | `node` | `/ontology` (redirect) | node to focus after redirect → `?p=` | node id (translated by `translateOntologyDeeplinkToTopologyParam`) |
-| `node` | `/ontology/edit` (builder) | node to select in the inspector | canonical `<kind>:<slug>` **first-class**; plural vault-folder form (`capabilities/foo`) kept as a **legacy alias** |
-| `node` | `/ontology/insights` | node to focus (builder-proof link) | vault slug (`capabilities/foo`) |
+| `node` | `/ontology/edit` (redirect), `/ontology/studio` | node to open in Workshop ENHANCE | canonical `<kind>:<slug>` first-class; plural-folder, bare-tail, and Unicode-normalized legacy inputs tolerated |
+| `mode` | `/ontology/studio` | Workshop fill state | `create` for CREATE; omitted for ENHANCE |
+| `from` · `rel` · `name` · `edit` | `/ontology/studio` | create-from-relation bridge and bearing edit intent | normalized node/relation/name values owned by Workshop |
 | `slug` | `/docs` | vault file to open | vault file path (`ontology/capabilities/foo`), not a node id — file paths are the docs vault's own address space |
-| `reader` | `/ontology/edit` | reader-intent flag | see `parseOntologyReaderIntent` |
-| `tab` | `/ontology/insights` | active insights tab | tab slug |
+| `tab` | `/ontology/insights` | active maintenance question | `do-next` \| `composition` \| `connections` \| `boundaries` \| `freshness` |
 
 ### id grammar single source of truth
 
-- **Emit** (map · insights · popover "관계 편집"/데이터시트/컨텍스트 메뉴 →
-  builder): `buildOntologyBuilderNodeHrefFromGraphId` in
+- **Emit** (map · Insights · popover "관계 편집"/datasheet →
+  Workshop): `buildOntologyStudioNodeHrefFromGraphId` in
   `src/entities/knowledge-graph/lib/ontology-node-href.ts`. It normalizes any
   input to canonical via `translateOntologyDeeplinkToTopologyParam`
   (`capabilities/foo` → `capability:foo`; already-canonical / bare /
   evidence-path pass through).
-- **Receive** (builder `?node=`): `resolveBuilderQueryNodeSlug` in
-  `src/views/ontology-edit/lib/resolve-builder-query-node.ts`. It accepts
-  canonical `<kind>:<slug>` as first-class and still resolves the legacy
-  plural-folder alias (`?node=capabilities/foo`, `?node=domains/views`) so
-  previously-shared links never break.
+- **Compatibility redirect**: `OntologyEditRedirectPage` normalizes a legacy
+  `/ontology/edit?node=...` value and replaces the route with
+  `/ontology/studio?node=...`.
+- **Receive** (Workshop `?node=`): `resolveStudioFocalId` in
+  `src/views/ontology-studio/lib/resolve-studio-focal.ts` accepts canonical,
+  plural-folder, unique bare-tail, and NFC/NFD-equivalent ids. Ambiguous bare
+  tails fail closed; a requested missing node does not silently open a
+  different default node.
 - **Node id → docs file slug** conversion lives in one pure place: the
   popover/datasheet carry the focus model's `sourceSlug` (a vault file path)
   straight into `buildDocsVaultHref({ slug })`. `/docs` addresses files, not
   nodes, so `?slug=` intentionally stays a file path.
-- Round-trip is pinned by `resolve-builder-query-node.test.ts` (emit →
-  receive → doc) and `ontology-node-href.test.ts`.
-
-Residual (out of the H5 slice, safe because resolvers tolerate it): a few
-topology `?p=` / `?pathFrom=` links copied from the builder's relation-write
-packet still carry the plural vault-slug form; the topology resolver's
-bare-slug fallback resolves them unchanged.
+- Emit/receive behavior is pinned by `ontology-node-href.test.ts`,
+  `translate-ontology-deeplink.test.ts`, and
+  `resolve-studio-focal.test.ts`. Insights tab serialization is separately
+  pinned by `insights-tab-state.test.ts`.
 
 ## Build pipeline
 

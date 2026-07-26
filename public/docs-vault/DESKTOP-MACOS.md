@@ -45,9 +45,10 @@ next to Obsidian, Claude Desktop, and Codex Desktop:
   stored, and what will be written before ontology edits touch markdown.
 - agent confidence: Claude Code and Codex setup checks remain one click or one
   copied command away, and desktop smoke must include MCP verification.
-- offline usefulness: `/docs`, `/ontology`, `/topology`, `/ontology/edit`, and
+- offline usefulness: `/docs`, `/topology`, `/ontology/studio`, and
   `/ontology/insights` remain usable from the packaged app against the local
-  vault.
+  vault; legacy `/ontology` and `/ontology/edit` links still converge on
+  Topology and Workshop instead of breaking.
 
 If a prototype cannot meet these standards, keep desktop as an exploration
 track instead of shipping a weaker app under the product name.
@@ -120,7 +121,12 @@ for a macOS prototype:
   `@tauri-apps/api/core` `invoke` / `isTauri` API, so the desktop app reuses
   the same `buildLocalManifest`, editor save, image preview, conflict guard, and
   agent-config bootstrap flows that the web prototype uses without depending on
-  private Tauri WebView internals.
+  private Tauri WebView internals. The same shim now exposes the `values()`
+  iterator used by ontology-block recursion, so INDEX block import and realm
+  block export use a purpose-titled native folder picker in the installed app
+  instead of being disabled when WebView `showDirectoryPicker()` is absent.
+  Import still opens a dry-run merge preview before any vault write; cancelling
+  either native picker leaves the current vault and realm state unchanged.
 - the shim preserves browser File System Access create semantics: asking for a
   file handle with `{ create: true }` creates a missing file, but it first checks
   `vault_path_exists` and does not truncate an existing markdown file.
@@ -277,8 +283,9 @@ for a macOS prototype:
 - this document keeps the desktop-grade quality bar explicit: native `.app`
   launch, vault-folder permissions, recent vault recall, visible local data
   location, agent setup visibility, and offline route usefulness.
-- the first prototype smoke keeps the same route contract explicit: `/docs`,
-  `/ontology`, `/topology`, `/ontology/edit`, and `/ontology/insights`.
+- the first prototype smoke keeps the current route contract explicit:
+  `/docs`, `/topology`, `/ontology/studio`, and `/ontology/insights`, plus the
+  `/ontology` → Topology and `/ontology/edit` → Workshop compatibility entries.
 
 `desktop:doctor` checks the local machine runtime and the local ontology handoff
 surface: Tauri CLI, Cargo, rustc, macOS Xcode command line tools, the dogfood
@@ -292,22 +299,25 @@ It exits successfully as a report by default, and
 when missing prerequisites should fail fast.
 
 `desktop:smoke` checks the built `out/` payload that Tauri packages. It verifies
-that the root `out/index.html` app entry exists, that both `en` and `ko` static
-routes exist for `/download`, `/docs`, `/ontology`, `/topology`,
-`/ontology/edit`, and `/ontology/insights`, that the ontology workbench route
-titles match the expected app surfaces, that `/docs` bundles the Source Vault
-graph-gate copy action, that `/ontology`, `/ontology/edit`, and
-`/ontology/insights` bundle the graph DB proof copy (`Graph DB proof`,
-`Browse`, `Write`, `Query`, `dogfood:graph-db`, `focused_blast_radius`, and
-`relation_name_parity`), that `/ontology` also bundles the canonical slug
-handle copy used by the Browse tree handoff and the runtime gate copy action
-used to prove the graph DB pack from Browse, that `/ontology/edit` also bundles
-the active slug handle copy used by the Builder proof rail and the Guard packet
-copy action that carries relation preflight into query verification, that
-`/ontology/insights` bundles the runtime gate copy action for graph DB pack
-verification, that
-`_next` assets are present, and that the desktop docs are bundled under
-`docs-vault/` for offline reference.
+the root entry, `_next` assets, offline docs, and both `en` and `ko` variants of
+`/download`, `/docs`, `/ontology`, `/topology`, `/ontology/edit`, and
+`/ontology/insights`. The proof follows current route meaning:
+
+- Download includes the install → vault → AI-assistant handoff plus fact,
+  checksum, and release-availability components.
+- Docs includes its header/viewer and Files/Graph/Agent source contract.
+- `/ontology` packages the compatibility redirect to
+  `/topology?index=expanded`; `/ontology/edit` packages the redirect to
+  `/ontology/studio`, including its `?node=` handoff.
+- Topology packages canvas-v2 plus relation-focus and path-state contracts.
+- Insights packages `maintenance-board`, `one-tab-one-question`, and
+  `tab-query`.
+
+The smoke does not require the retired tree browser, ERD builder, or query
+cockpit. If a root, route, asset, or offline doc is missing, the next action is
+to rebuild. If only a title, current copy, or component marker differs, the
+report names static contract drift and asks the maintainer to compare the
+product and smoke source before rebuilding once.
 
 `desktop:verify-app` checks the built `.app` runtime after packaging. It runs
 the app executable from inside `Contents/MacOS` for a short hold window and
@@ -364,20 +374,23 @@ the image.
 2. Run `pnpm install` so `@tauri-apps/cli` is available.
 3. Build `out/` with `pnpm build`.
 4. Run `pnpm desktop:smoke` to prove the packaged static payload includes the
-   desktop routes, ontology workbench route titles, and offline docs.
+   current route titles, compatibility redirects, workbench component markers,
+   and offline docs.
 5. Run `pnpm test:desktop:runtime` to prove hosted `/docs?intent=local` stays
    desktop-only while installed-app first-run routing opens the local vault path.
 6. Run `pnpm test:desktop:bridge` to prove the WebView handle shim and Rust path
    guard still match the installed-app vault bridge.
 7. Launch the macOS app shell with `pnpm desktop:dev`, open a vault folder from
-   the native picker, and confirm `/docs`, `/ontology`, `/topology`, and
-   `/ontology/edit` read the same local markdown files. Build the unsigned local
-   `.app` and `.dmg` prototypes with `pnpm desktop:build`.
+   the native picker, and confirm `/docs`, `/topology`, `/ontology/studio`, and
+   `/ontology/insights` read the same local markdown files. Confirm legacy
+   `/ontology` and `/ontology/edit` links redirect to the current destinations.
+   Build the unsigned local `.app` and `.dmg` prototypes with
+   `pnpm desktop:build`.
 8. Launch-smoke the built app with `pnpm desktop:verify-app`.
 9. Verify the generated DMG with `pnpm desktop:verify-dmg`.
 10. Copy-and-launch smoke the DMG app with `pnpm desktop:verify-install`.
-11. Open the dogfood vault and smoke `/docs`, `/ontology`, `/topology`, and
-   `/ontology/edit`.
+11. Open the dogfood vault and smoke `/docs`, `/topology`,
+   `/ontology/studio`, and `/ontology/insights`.
 12. Run `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` after the app
    smoke so the desktop path still proves Claude Code / Codex handoff readiness.
 

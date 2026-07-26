@@ -14,6 +14,7 @@ test("WebView verification env patch carries route, drag, composer, and requeste
   assert.deepEqual(
     webviewVerifyEnvPatch({
       requireWebviewRoute: "/en/topology/",
+      webviewFixtureVaultPath: "/tmp/atlas-fixture",
       verifyTopologyDrag: true,
       verifyTopologySelectedRelation: true,
       verifyTopologyNodePopover: true,
@@ -24,6 +25,7 @@ test("WebView verification env patch carries route, drag, composer, and requeste
     {
       ONTOLOGY_ATLAS_VERIFY_WEBVIEW: "1",
       ONTOLOGY_ATLAS_VERIFY_ROUTE: "/en/topology/",
+      ONTOLOGY_ATLAS_VERIFY_VAULT: "/tmp/atlas-fixture",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG: "1",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_SELECTED_RELATION: "1",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_NODE_POPOVER: "1",
@@ -52,6 +54,28 @@ test("Tauri node popover verifier captures compact facts even when the inspector
     true,
     "verifier should only accept an expanded popover after compact facts were captured",
   );
+});
+
+test("installed-app insights proof follows the current maintenance-board contract", () => {
+  const tauriLib = fs.readFileSync("src-tauri/src/lib.rs", "utf8");
+  const insightsPage = fs.readFileSync(
+    "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+    "utf8",
+  );
+  const insightsHandoff = fs.readFileSync(
+    "src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx",
+    "utf8",
+  );
+
+  assert.match(insightsPage, /data-insights-surface="maintenance-board"/);
+  assert.match(insightsPage, /data-insights-question-model="one-tab-one-question"/);
+  assert.match(insightsHandoff, /data-insights-handoff="tab-query"/);
+  assert.match(tauriLib, /insightsMaintenanceBoard/);
+  assert.match(tauriLib, /insightsQuestionTabs/);
+  assert.match(tauriLib, /insightsSelectedPanelVisible/);
+  assert.match(tauriLib, /insightsHandoff/);
+  assert.doesNotMatch(tauriLib, /hasDecisionQuestionList/);
+  assert.doesNotMatch(tauriLib, /hasReaderDecisionLens/);
 });
 
 test("selected relation label agent gate text exposes MCP and CLI for handoff-ready facts", () => {

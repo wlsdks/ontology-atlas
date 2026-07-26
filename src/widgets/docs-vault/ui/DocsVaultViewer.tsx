@@ -30,6 +30,10 @@ interface Props {
   /** 선택. 주어지면 이 함수로 md 본문을 가져온다 (로컬 볼트 용). 미지정시
    *  기본 /docs-vault/{slug}.md fetch. */
   getDocContent?: (slug: string) => Promise<string>;
+  /** 부모가 확정한 static manifest와 같은 볼트의 번들 본문. route-scoped
+   *  sample override가 있을 때 뷰어가 전역 sample 선호를 다시 읽어 다른
+   *  본문을 고르는 일을 막는다. */
+  bundledContent?: Record<string, string>;
   /** 검색 팔레트에서 넘어온 쿼리. text node 단위로 매치어를 mark 로 래핑. */
   highlightQuery?: string;
   /** 상대 이미지 경로를 실제 src 로 변환 (로컬 볼트의 asset blob URL 등).
@@ -56,6 +60,7 @@ export function DocsVaultViewer({
   getDocHref = (slug, hash) => buildDocsVaultHref({ slug, hash }),
   getProjectHref = (slug) => `/?p=${encodeURIComponent(slug)}`,
   getDocContent,
+  bundledContent: bundledContentOverride,
   highlightQuery,
   resolveImage,
   repoBlobBase,
@@ -67,7 +72,8 @@ export function DocsVaultViewer({
   // static 볼트의 번들 본문 — 매니페스트를 고른 것과 **같은 볼트**에서 와야
   // 한다. 예전 결함이 정확히 이 어긋남이었다(매니페스트는 예시 쇼핑몰,
   // 본문은 도그푸드라 제목과 내용이 다른 문서를 가리켰다).
-  const { content: bundledContent } = useStaticVaultSource();
+  const { content: preferredBundledContent } = useStaticVaultSource();
+  const bundledContent = bundledContentOverride ?? preferredBundledContent;
 
   // raw 로드되고 highlightQuery 있으면 첫 매치로 자동 스크롤 — md-highlight
   // class 가 부여된 첫 mark 를 찾아 scrollIntoView.

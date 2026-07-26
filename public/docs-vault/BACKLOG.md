@@ -4,8 +4,8 @@
 > 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제.
 >
 > **갱신 (2026-05-26)**: macOS app distribution track 반영.
-> local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 96 노드, CLI 48 commands,
-> MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference
+> local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 97 노드, CLI 52 commands,
+> MCP 32 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference
 > 루프 기준으로 재정렬.
 
 ---
@@ -147,7 +147,7 @@ R10b (firebase / functions / firestore 영구 제거) 후 cloud-side 진화 컨�
 
 ### F3. .mcp.json git-tracked (✅ 이번 R14 closeout 에서 추가)
 
-- 사용자가 git clone 후 Claude Code 열면 즉시 24 tools 자동 등록.
+- 사용자가 git clone 후 Claude Code 열면 즉시 32 tools 자동 등록.
 
 ### ~~T23. mode-aware e2e tests~~ — VOID (R10b)
 
@@ -202,7 +202,7 @@ P1 V1.x 진화가 모두 ✅/N/A 로 닫혔고, 현재 surface 는 macOS app · 
 - `docs/FEATURES.md` — 사용자가 *지금* 사용 가능한 기능 전수
 - `docs/archive/ONTOLOGY-MODEL-V2-DRAFT.md` — V1.x 진화 spec (cloud 부분 N/A archive)
 - `docs/CHANGELOG.md` — 시간순 사용자 가시 변화
-- `mcp/README.md` — MCP 서버 24 도구 + 등록
+- `mcp/README.md` — MCP 서버 32 도구 (read 19 + write 13) + 등록
 - `docs/benchmark/` — AI agent quality 측정 매트릭스
 
 

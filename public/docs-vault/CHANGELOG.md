@@ -6,6 +6,154 @@
 
 ---
 
+## 2026-07-27 — 활성 문서가 퇴역 Sigma·Builder를 현재 구현처럼 설명하지 않는다
+
+현재 source와 활성 문서·dogfood ontology를 다시 대조하니 일부 설계 문서와
+의미 노드가 제거된 Sigma kind 범례/owner tint/edge LOD, ERD Builder 공유
+layout, 고정 5초 polling, 분석 rail을 현재 계약처럼 설명했다.
+
+현행 계약을 단일 `topology-map-v2` canvas, neutral kind hierarchy,
+relation-line legend, Tauri OS watch + web adaptive polling, persisted shared
+changeset, Topology+INDEX/Workshop/5개 질문 Insights로 통일했다. Phase 0/V2
+설계 문서는 현재 지침이 아니라 이관 당시 측정 기록임을 상단에 명시했다.
+consumer가 없던 Graph rail CSS token, canvas에 전달만 되고 쓰이지 않던
+`changedSlugs` prop, `sigmaFade` 이름도 함께 제거했다.
+
+새 agent package distribution element를 AI Agent Partner domain에 연결하고
+README·AGENTS·MCP verify 예제를 dogfood **97노드·550관계** 기준으로 맞췄다.
+vault validate/audit, dogfood status/verify, MCP docs contract, focused 88 tests,
+TypeScript, lint(오류 0), production build가 통과했다. fresh macOS app을
+재배포해 packaged `/ko/topology/` WebView와 on-screen window를 검증했고,
+Codex Computer Use로 설치 앱의 기록 → 문서함 route와 문서 읽기 구조를 다시
+확인했다. 사용자가 소유한 기존 local vault README는 local-first 원칙상
+자동 덮어쓰지 않으므로, 그 문서 내용은 새 starter 문구와 별도다.
+
+## 2026-07-27 — 공개되지 않은 agent 패키지를 연결 가능하다고 말하지 않는다
+
+공개 npm 레지스트리를 직접 확인하니 `ontology-atlas`와
+`ontology-atlas-mcp`가 모두 `E404`였지만, 설치 앱의 AI 에이전트 설정은
+`npx -y ontology-atlas-mcp` 원클릭 링크와 설정 파일을 제공하고 파일이
+존재하기만 하면 `준비됨`으로 표시했다.
+
+이제 패키지 배포 상태가 명시적 제품 계약이다. 공개 증거가 없으면 앱은 연결
+버튼·재시작·연결 확인·고급 `npx` 복사를 숨기고 소스 체크아웃 안내만 보인다.
+첫 실행 developer disclosure도 공개 명령 대신 source CLI 명령을 보여 주며,
+starter 생성은 실행 불가능한 agent config를 자동으로 쓰지 않는다. README,
+CLI/MCP 가이드, agent workflow, publish 체크리스트는 같은 E404 기준선과
+source-checkout 경로를 말한다. 공개 상태 전환은 사람 maintainer의 publish와
+fresh-shell `npx` proof 뒤에만 가능하다.
+
+TDD로 deeplink·공용 연결 버튼·설정 패널·첫 실행 disclosure의 fail-closed
+계약을 고정했고, 설치 앱 화면은 Codex Computer Use로 다시 검증한다.
+
+## 2026-07-27 — agent persisted context가 퇴역 Builder를 거치지 않는다
+
+MCP `builder_context`는 살아 있는 read operation이지만 반환 URL과 안내
+문구가 제거된 ERD Builder를 계속 현행 표면처럼 가리켰다. redirect 덕분에
+404는 아니었지만 agent handoff가 `/ontology/edit` 호환 hop과 퇴역 어휘를
+매번 복제했다.
+
+operation 이름과 `builder` response field는 기존 client 호환을 위해
+유지하되, `href`는 이제 `/ontology/studio/?node=…`를 직접 반환한다.
+persisted-only 제약과 MCP schema/README/FEATURES/ontology도 Workshop
+어휘로 동기화했다. unit·integration·package contract로 직접 URL을
+고정했으며, Codex Computer Use로 설치 앱 Workshop ENHANCE의 4방향 관계,
+완성도, 저장 경계를 다시 확인해 README의 퇴역 Builder 이미지를 현재
+스크린샷으로 교체했다.
+
+## 2026-07-27 — 아키텍처와 내비게이션 문서가 현재 앱 계약을 다시 설명한다
+
+`ARCHITECTURE`와 내비게이션 문서는 퇴역한 xyflow Builder, 게임형 Studio,
+Insights census, desktop/mobile 공통 5개 목적지와 제거된 딥링크 resolver를
+현재 구조처럼 설명하고 있었다. 실제 앱은 Topology 읽기, Workshop 쓰기,
+5개 질문 Insights 정비, Git workbench로 분리되어 있고 데스크톱 6개·모바일
+4개 목적지를 같은 semantic resolver로 판정한다.
+
+이제 route inventory, URL parameter, Workshop emit/receive, responsive
+navigation, root/download 표시 규칙을 실제 source와 일치시켰다. 관련
+ontology의 App Nav Rail, Mobile Bottom Tab Bar, Views domain도 같은 사실로
+동기화했고, 퇴역 용어와 함수명이 다시 canonical architecture에 들어오면
+실패하는 package contract test를 추가했다. UI 렌더링은 바꾸지 않았다.
+
+## 2026-07-27 — design guard가 현재 5개 인사이트 질문을 보호한다
+
+`pnpm design:ontology`가 초록이어도 구조 계약과 테스트는 퇴역한 고정 3탭
+Insights를 현재 제품으로 불렀다. `TabBar`, census hero, copy button만 있으면
+실제 5개 질문 탭·단일 활성 panel·탭별 agent handoff가 없어져도 통과할 수
+있는 거짓 초록이었다.
+
+이제 guard는 `do-next/composition/connections/boundaries/freshness`의 정확한
+탭 집합, `maintenance-board`, `one-tab-one-question`, 한 `tabpanel`,
+`tab-query` handoff와 copy action을 함께 요구한다. 퇴역 3탭 fixture를 별도
+회귀 입력으로 추가했으며 design-surface 테스트 8개와 live 159 files /
+10 surfaces / 6 structural contracts가 통과했다.
+
+같은 작업에서 `DESIGN-SYSTEM`, `FEATURES`, `DEVELOPMENT-CHECKS`와 관련
+ontology 노드가 tree/ERD Builder/query cockpit/고정 3탭을 현행 구조처럼
+설명하던 부분을 Topology INDEX, Workshop, 5개 질문 maintenance board로
+동기화했다. UI 렌더링·token·motion·layout은 바꾸지 않았다.
+
+## 2026-07-27 — 패키지 smoke가 퇴역 화면 대신 현재 route를 검증한다
+
+fresh build가 성공해도 `desktop:smoke`는 제거된 온톨로지 tree, ERD builder,
+인사이트 query cockpit과 오래된 Download/Docs 문구를 요구해 실패했다. 실패
+안내도 정적 산출물이 이미 최신인지 구분하지 않고 다시 `pnpm build`를
+실행하라고만 했다.
+
+이제 package proof는 현재 제품 의미를 따른다. EN/KO metadata title,
+Download의 install → vault → AI assistant handoff, Docs의 Files/Graph/Agent
+source contract, `/ontology` → Topology와 `/ontology/edit` → Workshop
+호환 redirect, Topology canvas-v2/focus/path, Insights의
+`maintenance-board`/`one-tab-one-question`/`tab-query`를 검증한다. 퇴역
+browse/builder/query-cockpit은 더 이상 정상 조건이 아니다.
+
+artifact 자체가 없을 때만 build를 다시 권하고, title/copy/chunk가 어긋나면
+`static-contract-drift`로 분류해 현재 route source와 smoke 계약을 비교하게
+한다. 새 계약 테스트 10개와 전체 desktop checker 205개가 통과했고, fresh
+`pnpm build` 직후 실제 `pnpm desktop:smoke`도 EN/KO 6개 route와 offline
+docs를 모두 통과했다. 같은 production 앱의 `/ko/ontology/insights`를 direct
+verifier와 Codex Computer Use로 다시 열어 실제 AX 탭 5개, 선택 탭 1개,
+활성 패널, 수리 큐와 agent handoff도 교차 확인했다.
+
+## 2026-07-27 — 설치 앱 검증기가 현재 인사이트를 다시 알아본다
+
+설치 앱의 `/ontology/insights`는 이미 5탭 정비 보드로 바뀌었지만 자동
+WebView 검증기는 폐기된 비즈니스 결정 질문과 reader-persona marker를 계속
+요구했다. 최신 앱이 정상이어도 구 DOM이 없다는 이유로 실패하므로, 실제 UI
+회귀와 검증 계약 드리프트를 구분할 수 없었다.
+
+이제 인사이트 proof는 현재 표면 자체를 읽는다. `maintenance-board`,
+`one-tab-one-question`, 정확히 5개 탭, 정확히 1개 선택, 연결된 활성 패널의
+가시성, 탭별 agent handoff가 함께 있어야 통과한다. 구
+`businessDecisionQuestions`와 `readerDecisionLens`는 더 이상 통과 조건이
+아니다.
+
+격리 fixture의 설치 앱을 `/ko/ontology/insights/`로 직접 열어 자동 verifier가
+1512×917 WebView에서 두 번 통과했다. Codex Computer Use로 같은 앱을 외장
+1920×1080과 2560×1440에서 다시 읽어 5탭·단일 선택·활성 패널·handoff와
+잘림·겹침 없음도 확인했다. fresh build 뒤에도 폐기된 `/ontology`,
+`/ontology/edit`, 구 insights cockpit과 stale docs/download copy를 요구하는
+더 넓은 `desktop:smoke` 드리프트는 UX-041로 분리해 다음 계약 이관 대상으로
+남겼다.
+
+## 2026-07-27 — 숫자만 있던 수리 큐에서 모든 대상을 열었다
+
+인사이트 `할 일`은 실제 감사 vault에서 **분리된 섬 3 · 누락된 연결 4**를
+세면서도 첫 수리 대상 하나만 이름으로 보여 줬다. 나머지 여섯 건은 숫자 안에
+갇혀 관계 편집이나 원문으로 갈 방법이 없었다.
+
+이제 건강도 계산이 모든 해석 가능한 누락 연결과 각 분리 섬의 대표 노드를
+우선순위대로 보존한다. 첫 대상은 기존처럼 바로 보이고, 같은 카드의
+`나머지 수리 대상 N개 보기`를 열면 각 행의 문제 유형·노드 이름·관계 편집·개념
+문서 링크가 모두 나타난다. 펼친 목록은 제한 높이와 내부 스크롤을 써 vault
+크기가 페이지 높이와 주의 계층을 밀어내지 않는다.
+
+집중 테스트 32개와 TypeScript·i18n·ESLint를 통과했다. 쓰기 없는 격리
+fixture로 설치 앱을 다시 배포한 뒤 Codex Computer Use로 외장 1920×1080과
+2560×1440에서 6개 typed target과 모든 handoff 링크를 읽고 잘림·겹침이 없음을
+확인했다. 별도의 자동 WebView 결정질문 marker 드리프트는 통과로 포장하지 않고
+후속 검증기 부채로 남겼다.
+
 ## 2026-07-27 — 성공한 저장이 에러 화면으로 보이던 자리 (공방 실체화 · 게이트 사정거리 · 세 입구 관계 수)
 
 **공방에서 "문서 만들고 저장" 이 성공해도 화면은 "못 찾겠다" 고 했다(D1).**

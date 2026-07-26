@@ -1,12 +1,14 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR #355~#366 —
-> `docs/prototypes/` 승인 시안 기반으로 `/`·`/topology`·`/project/[slug]`·
-> `/ontology/studio`·`/ontology/insights`·`/docs`·`/projects`·`/download`·project
-> 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved census
-> 헤더가 모두 이 라운드에서 나옴 — 세부는 §2 각 라우트 절 참고). Earlier
-> (2026-05-31): real-time **adaptive** vault polling, `/docs` editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, `find_evidence` relevance ranking, `validate_vault` vault→code `pathDrift`, `infer_imports` edge reconciliation. Earlier still (2026-05-28): graph DB health gate, `/ontology` Browse / Write / Query loop, Builder proof handoff role, desktop route smoke.
+> Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 —
+> `/ontology`은 `/topology?index=expanded`, `/ontology/edit`은
+> `/ontology/studio` 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도
+> 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app
+> verifier/Computer Use가 같은 계약을 확인함 — 세부는 §2 각 라우트 절 참고).
+> Earlier (2026-07-18): 전 페이지 시안-우선 재구성 웨이브, PR #355~#366.
+> Earlier
+> (2026-05-31): real-time **adaptive** vault polling, `/docs` editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, `find_evidence` relevance ranking, `validate_vault` vault→code `pathDrift`, `infer_imports` edge reconciliation. Earlier still (2026-05-28): graph DB health gate and the now-retired Browse / Builder / Query loop; those historical surfaces are not current route guidance.
 > Routes section UI detail remains a maintained product snapshot. When route
 > behavior changes, update this file alongside the PR body and CHANGELOG.
 > Update trigger: reflect immediately when surfaces are added or removed. Update alongside the PR body and CHANGELOG.
@@ -15,8 +17,8 @@
 
 ## 0. At a glance
 
-> **Mission v3**: "One codebase, one ontology, that the developer and their AI agent grow together."
-> **Launch framing v4**: "A repo-native memory layer for Claude Code, Cursor, and Codex."
+> **Mission v3**: "One product/system, one ontology, that people and their AI agents grow together."
+> **Current framing**: an agent-native, human-sovereign meaning layer: typed enough for Claude Code, Cursor, and Codex; plain Markdown and Git diffs for human judgment.
 > **Operating model**: single-user tool. Local-first vault. No login, no backend. **4 surfaces (macOS app · CLI · MCP · Website)** — daily heavy-lift ontology work happens in the installed app / CLI / MCP; the hosted website's root map lets anyone open their own local vault folder directly too (root-first-open, 2026-07), while `/download` stays the product intro + release download path.
 > **Brand split**: **Ontology Atlas** is the user-facing macOS app / website brand and macOS release asset identity. `ontology-atlas` remains the repo, CLI binary, and MCP package name.
 
@@ -28,18 +30,18 @@ diff review -> better next agent task`.
 |---|---|---|
 | **macOS app** (Ontology Atlas desktop distribution track) | signed DMG → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/studio`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
 | **CLI** (R12 / R14 / R15+ · 52 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / infer-imports / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
-| **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 32 tools (18 read · 13 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap and index projects (R16 `analyze_repo_structure` · R17 `infer_imports` · R+ `index_project`) · compile/query/validator-backed health as graph-engine memory access |
-| **Website** | Firebase static hosting / `/` + `/download` | `/` renders the topology map directly and lets you open your own local vault folder from the browser (File System Access API, no install); `/download` is the product intro + release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
+| **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 32 tools (19 read · 13 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap and index projects (R16 `analyze_repo_structure` · R17 `infer_imports` · R+ `index_project`) · compile/query/validator-backed health as graph-engine memory access |
+| **Website** | GitHub Pages static export / `/` + `/download` | `/` renders the topology map directly and lets you open your own local vault folder from the browser (File System Access API, no install); `/download` is the product intro + release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
 
 ```
 input (humans + AI agents)     parse           store              output
         │                       │                │                │
         ▼                       ▼                ▼                ▼
-  .md in vault  →          frontmatter   →  user disk      →  Browse (/, /ontology) tree+ego
-  (frontmatter)                              (vault)           Topology (/, /topology) canvas-2D map/graph
-  + AI agent (MCP)                                            Workshop (/ontology/studio) write surface
-                                                              App views (/ontology, /topology, /docs)
-                                                              Insights (/ontology/insights) census
+  .md in vault  →          frontmatter   →  user disk      →  Topology (/, /topology) map + INDEX
+  (frontmatter)                              (vault)           Workshop (/ontology/studio) write surface
+  + AI agent (MCP)                                            Docs workspace (/docs)
+                                                              Insights (/ontology/insights) maintenance board
+                                                              compatibility redirects (/ontology, /ontology/edit)
 ```
 
 ---
@@ -96,21 +98,18 @@ dialog never says "온톨로지" (map-building framing for non-experts).
 - **Idle frame gate** — the canvas stops physics+paint after 1.2s of true
   idle (rAF stays alive; any state change resumes next frame).
 - **Canonical census** — every surface that says "개념 N" uses one
-  derivation (`computeCanonicalCensus`); the builder honestly says
-  "저장된 개념 N" for its file-backed scope. P5d (N11) — the header total
-  and the canvas can still diverge when `buildFocusedBuilderManifest`
-  narrows the drawn graph to a focus node + its direct neighbors (a
-  deliberate large-vault readability limit); when that narrowing is active
-  the header appends "· 캔버스 N개 표시" instead of silently showing a
-  total the canvas doesn't match.
+  derivation (`computeCanonicalCensus`). Topology, Docs, Workshop, Insights,
+  and Projects read the same file-backed scope; a surface-specific subset is
+  labeled as a subset rather than silently presenting it as the vault total.
 - **Docs library on the web** — the local-vault gate is capability-based
   (File System Access), not runtime-based: the same browser session that
-  writes via the builder can read/edit in the docs library.
+  writes via Workshop or the document editor can read/edit in the docs
+  library.
 - **Relation vocabulary** — one dictionary (formal/plain × 7 types × ko/en)
-  feeds the map legend, insights, builder, and datasheet (contract-tested);
+  feeds the map legend, Insights, Workshop, and datasheet (contract-tested);
   the "?" sheet footer defines 도메인/역량/요소 in plain language.
 
-**Single source of truth (R8)**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`. Its many `useLocalVault()` consumers (`RootEntryPage` / `AppNavRail` / `OntologyEditPage` / `DocsVaultPage` / `useDataSourceMode` / `useProjects` / `useProjectMutations` / `useVaultOntology` and more since feat/rail-rollout mounted the rail everywhere) share one state instance, one IDB rehydrate, one filesystem walk.
+**Single source of truth (R8)**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`. Its many `useLocalVault()` consumers (`RootEntryPage` / `AppNavRail` / `OntologyStudioPage` / `DocsVaultPage` / `useDataSourceMode` / `useProjects` / `useProjectMutations` / `useVaultOntology` and the persistent app shell) share one state instance, one IDB rehydrate, one filesystem walk.
 
 **Desktop first-run (2026-07-18)**: in the installed app (Tauri — detected via
 `isDesktopShell()`, `src/shared/lib/desktop-shell.ts`), `/` with no vault
@@ -182,10 +181,11 @@ IndexedDB goes straight to their own workspace, no starter surfaces at all.
 
 Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-link target, `/topology` = explicit deep-link namespace).
 
-#### Views (2-view rail) + workflow entry points
-- **지도 (overview, default)** — Relief skeleton: deterministic project/domain/hub layout with card choreography (read-first decision surface)
-- **그래프 (graph)** — Obsidian-style living graph: all ontology nodes under an always-on d3-force simulation (Web Worker), free node drag with position persistence, hover ego highlight. Node click keeps graph mode (no focus hijack)
-- 초점/경로/상태 are **not top-level tabs** (R+ owner feedback: "5 identical-looking modes"):
+#### Analysis modes + workflow entry points
+- **개요 (overview, default)** — the canvas-2D Topology map with deterministic
+  project/domain/hub structure and bounded ForceAtlas2 settling: the read-first
+  decision surface.
+- 초점/경로/상태 are **not separate canvases**:
   - **초점 (focus)** — enters via node click on the map (selection state); `mode=focus` deep links preserved
   - **경로 (path)** — enters via shift-click of 2 nodes or `mode=path` deep links
   - **상태 (health)** — enters via the 정리 queue count chip on the view rail; `mode=health` deep links preserved
@@ -198,8 +198,19 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Shift-click 2 nodes** → highlight shortest path
 - **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded.
 - **Expand realm (영역 전개)** → focus a node (click) and an orbital **Expand realm** button appears just outside its ring (also offered as an action in the node datasheet, for container nodes). Activating it transforms the map into *that node's world*: only its containment subtree remains, re-laid-out with the node as a temporary root at the origin (children map to rings by **depth**, not kind), and everything outside unmounts behind a 1px indigo warding circle. Relations crossing the boundary fade to a stub at the ring. The transition is a 600ms choreography — outside nodes fling out along curved "gravity" trajectories, inside nodes FLIP to their new spots, the camera dollies in to fit the realm (`prefers-reduced-motion` snaps instantly). The active realm lives in the URL (`?realm=slug`) so a shared link or an AI agent reproduces the same world; a top-center **영역: {title} ✕** chip and **Esc** (highest ladder priority) return to the full map. Click, `?open` density gating, selective ego, and top-K labels all still work inside a realm.
+- **Ontology block exchange** → INDEX의 **블록 가져오기**는 `.md` 폴더와 선택적
+  `block-manifest.json`을 읽어 신규/충돌 dry-run을 먼저 보여주고, 사람이
+  승인한 파일만 현재 vault의 기존 `createDoc` 경로로 쓴다. 영역 전개 화면의
+  **이 영역의 원본 .md 를 블록 폴더로 내보내기**는 containment 서브트리의
+  원본만 복사한다. 웹은 `showDirectoryPicker()`, 설치 앱은 같은
+  `FileSystemDirectoryHandle` 계약의 native Tauri picker를 사용한다.
+  picker 취소는 오류나 쓰기가 아니며, CLI-only 대체 경로는
+  `ontology-atlas import <path...>`이다.
 - **Tab** → keyboard cycle to neighbor hub
-- **Empty state** (0–1 nodes) → `TopologyEmptyState` card with 3 CTAs (tree / builder / open vault)
+- **Empty state** (0–1 nodes) → `TopologyEmptyState` explains whether the
+  vault lacks projects or relations, then offers the applicable next actions:
+  bootstrap from found docs, create a node, open Topology INDEX, open Workshop,
+  or choose a vault.
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
 
 #### `TopologyFitControl` (top-right, desktop-only)
@@ -272,7 +283,8 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 
 #### Top-left brand pill (`HeroCollapsed`, compact-only since 2026-06-11)
 - One pill, no expanded hero state (removed — it competed with the map for attention): selected project name, or workspace subtitle (concept/relation counts + weekly growth signal when > 0)
-- Source Vault (`/docs`) and Ontology (`/ontology`) quick links inline
+- Docs (`/docs`) and Topology INDEX (`/ontology` compatibility entry) quick
+  links inline
 - Chevron toggles the selected-node inspector support rail when a node is focused, or closes the drawer/datasheet otherwise
 
 #### Node datasheet — two variants by node kind
@@ -280,17 +292,17 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Domain / capability / element node click** → `TopologyV2DetailPanel`, the 352px datasheet (scaled up from 288px, 2026-07-18): single engraved metric line ("쓰는 곳 N · 기대는 곳 N · 근거 N"), two direction groups — **쓰는 곳** (direct incoming — places that use this node) and **기대는 곳** (direct outgoing — places this node leans on), each capped with a "+N more" overflow; a promoted **근거** (evidence) group listing `evidenceIds` rows; a copyable agent handoff row (MCP/CLI-style payload); "전체 상세 →" opt-in to the full detail panel. Direction, not relation type, is the single grouping axis (R+ — avoids double-counting the same edge under both a type split and a direction split)
 
 #### Mobile-only
-- `BottomTabBar` (4 tabs: Ontology / Topology / Projects / Source) at safe-area bottom
+- `BottomTabBar` (4 tabs: Map / Docs / Insights / Projects) at safe-area bottom
 - `GestureHint` overlay (dismissible, not persisted)
 
 #### Global keyboard shortcuts (all `useTypingShortcuts`-gated)
 | Key | Action |
 |---|---|
-| `⌘K` | Project search palette (`SearchPalette`) |
-| `⇧⌘K` | Global search (`MountedGlobalSearch` — nodes + projects) |
+| `⌘K` / `⇧⌘K` | Unified ontology-node + project search |
 | `D` | Toggle source drawer |
 | `?` | Toggle shortcut sheet |
-| `Esc` | Layered: exit local graph → close drawer → clear search |
+| `⌘O` | Open a local Markdown folder from the static sample |
+| `Esc` | Close the highest-priority open layer or addressed map state |
 
 ---
 
@@ -304,11 +316,10 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Source toggle** (R3 cut C — radio: Sample / Local). Clicking Local opens the native folder picker when no vault is loaded (B2 2026-07 — the vault tools dropdown was retired; folder management now lives in App Settings → Workspace)
 - **Palette button** (`⌘K`)
 - **Inspector button**: opens the document outline, share/print actions, file actions, and backlinks only when requested, keeping the reading canvas quiet by default
-- **Vault tools dropdown** (gear icon, only when source=local + supported):
-  - Folder-topology view toggle (button)
-  - `LocalVaultPicker` (open / close / refresh / re-authorize / status display)
-  - `OntologyStarterCta` (when vault is empty)
-  - "New doc" button (when canEdit)
+- **App settings entry**: Workspace owns open/change/refresh/permission recovery
+  and starter setup; Agent owns MCP/CLI connection guidance. New doc stays a
+  document action rather than a settings action. The old docs-header vault
+  tools dropdown and folder-topology toggle are retired.
 
 #### Status banner (R9 cut, below header)
 - Visible when `source=local && (status='error' || status='permission-needed')`
@@ -330,7 +341,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - Hamburger button → overlay drawer with the same `DocsSidebarBody` contents
 
 #### Content area
-- **view=doc** (only view — folder-topology retired, P5a): editor (when editing) or viewer + `DocMetaBar` (word count, reading minutes, tags, updated date) + `DocFrontmatterBlock` (2026-07-18 — renders `kind`/`slug`/`domain`/`depends_on`/`evidence` directly on the page, only when the doc has a `kind:`; the visible proof that "frontmatter is the graph". P5a — in a writable local vault, an inline "Edit kind / domain / title" action turns this into a quick-patch: kind/domain are typed `<select>`s, title an inline input, saved through the same `updateFrontmatter` conflict-guarded path the builder uses — no raw YAML hand-editing for the three most-corrected fields) + optional inspector (`DocsVaultDocOutlinePanel`) + bottom **backlinks strip** (2026-07-18, full pane width, dedup'd single source — replaces the earlier duplicate backlinks surfaces)
+- **view=doc** (only view — folder-topology retired, P5a): editor (when editing) or viewer + `DocMetaBar` (word count, reading minutes, tags, updated date) + `DocFrontmatterBlock` (2026-07-18 — renders `kind`/`slug`/`domain`/`depends_on`/`evidence` directly on the page, only when the doc has a `kind:`; the visible proof that "frontmatter is the graph". In a writable local vault, an inline "Edit kind / domain / title" action turns this into a quick-patch: kind/domain are typed `<select>`s, title an inline input, saved through the same conflict-guarded `updateFrontmatter` path Workshop and other vault writers use — no raw YAML hand-editing for the three most-corrected fields) + optional inspector (`DocsVaultDocOutlinePanel`) + bottom **backlinks strip** (2026-07-18, full pane width, dedup'd single source — replaces the earlier duplicate backlinks surfaces)
 
 #### Unified palette (`⌘K`, `DocsVaultUnifiedPalette`)
 - **Empty query**: pinned → recent → top 5 commands
@@ -354,7 +365,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 view-doc · pin · unpin · copy URL · print · edit · new doc · rename · delete · insert TOC · export doc HTML · source-server · source-local · find tags
 
 #### New document (P5c — kind-first, `NewDocKindDialog`)
-"New doc" no longer opens a bare filename prompt with a generic `title:`-only template. It first asks which kind the document is (domain / capability / element / document — the same four the topology and builder recognize), then prompts for a title. `buildNewNodeDoc` (shared with the builder and topology's "create node" flow) places the file under the kind's vault folder (`domains/`, `capabilities/`, `elements/`, `documents/`) and writes normalized `slug`/`kind`/`domain`/`title` frontmatter — so every document created through the palette is a graph node from the moment it exists, not an orphan the growth queue has to catch later.
+"New doc" no longer opens a bare filename prompt with a generic `title:`-only template. It first asks which kind the document is (domain / capability / element / document — the same four current write flows recognize), then prompts for a title. `buildNewNodeDoc` (shared with Workshop and Topology's "create node" flow) places the file under the kind's vault folder (`domains/`, `capabilities/`, `elements/`, `documents/`) and writes normalized `slug`/`kind`/`domain`/`title` frontmatter — so every document created through the palette is a graph node from the moment it exists, not an orphan the growth queue has to catch later.
 
 #### Visual / behavioral details
 - Indigo accent (`rgba(139,151,255,…)`) for active, gold star for pinned
@@ -383,8 +394,10 @@ that floats over the map, reusing the same `buildOntologyTree` /
 `filterTreeByQuery` the old tree page used, so row search/select behavior is
 unchanged even though the surface is.
 
-`/ontology/studio` (Write, the 공방 / Compass Stage) and `/ontology/insights` (Query) are
-unaffected — only the Browse leg of the old Browse/Write/Query loop moved.
+`/ontology/studio` (공방 / Compass Stage) is the write surface and
+`/ontology/insights` is the five-question maintenance board. The old
+Browse/Write/Query labels are historical shorthand, not current navigation or
+surface chrome.
 
 ---
 
@@ -687,7 +700,7 @@ file export + the local stdio MCP genuinely can't serve them.
 12. **find_orphans** `{ kind?, excludeKinds? }` — isolated nodes across graph frontmatter, including `domains` / `domain` containment (defaults exclude `project` and `vault-readme`; pass `excludeKinds: []` to include every kind)
 13. **query_concepts** `{ filter, limit? }` — typed filter DSL with AND/OR/NOT on `kind` / `domain` / `slug` / `title` / `has(arrayKey)`
 14. **compile_ontology** `{ includeIndexes?, summary?, nodesLimit?, nodesOffset?, edgesLimit?, edgesOffset? }` — deterministic graph artifact with canonical `nodes[]`, `edges[]`, aliases, issues, graph-array canonicalization actions, stable semantic `graphHash`, `maxMtime`, optional query indexes, cheap `summary:true` polling, and node/edge pagination for large vaults
-15. **query_ontology** `{ operation, ... }` — graph-engine query over the compiled artifact (`neighbors`, `path` with aligned `nodes[]`, `all_paths` with per-path `nodes[]` plus `limit` / `searchBudget` / `exhaustive` / `truncatedByBudget` / `totalPathsExact` metadata and `evidence` guidance, `query_plan` with executable run/narrow advice, filter-preserving `suggestedQuery`, and filter-aware `estimate.totalMatches` for `match_nodes` / `match_edges`, `centrality`, `communities`, `similar_nodes`, `explain_relation`, `reachability`, `pattern_walk`, `impact`, `blast_radius`, `subgraph`, `builder_context`, `overview`, `schema`, `facets`, `match_nodes`, `match_edges`, `node_profile`, `domain_profile`, `domain_matrix`, `project_scope`, `project_map`, `relation_check`, `components`, `lineage`, `containment_tree`, `cycles`, `topological_order`, `recommend_relations`, `growth_plan`, `maintenance_plan`, `agent_brief`, `workspace_brief`, `health`) for graph-database-like answers without pulling the full compile payload. `builder_context` emits the canonical Builder focus URL, persisted bounded neighborhood, `canvasPosition`, `expected_mtime`, and safe low-level write handoff while declaring that unsaved UI drafts are not included. Repeated read calls inside one MCP server session reuse the compiled artifact while the vault document signature is unchanged, so first-contact agent run orders do not pay the full compile cost for every graph query. `match_nodes` returns a `followUp` packet for the first returned row with ready-to-run `node_profile`, incoming/outgoing `match_edges`, and `blast_radius` MCP calls plus CLI fallback commands, so a graph scan can become focused evidence without another round of tool-selection guesswork. `match_edges` returns a `followUp` packet for the first returned real edge with ready-to-run `explain_relation`, `path`, and `relation_check` MCP calls plus CLI fallback commands, so edge scans move directly into evidence and write-preflight instead of being treated as raw proof. `match_edges.filters`, `match_edges.edges[].relationType`, `followUp.focusEdge.relationType`, and `query_plan(match_edges).normalized` expose public names such as `depends_on` next to canonical frontmatter `types` or `via` values such as `dependencies`, so terminal and MCP clients can show the relation name users typed while keeping executable graph keys. `node_profile.edges.incoming/outgoing.byRelationType` and edge `relationType` expose public names such as `depends_on` for node detail views; `domain_matrix.filters.relationTypes`, `connections.rows[].byRelationType`, and connection examples do the same for coupling views, while canonical `types`, `via`, and `byRelation` stay available for graph-key callers. The UI semantic coupling matrix and CLI node deep dive can be rerun from Claude Code, Codex, or terminal fallbacks with the same user-facing names. `agent_brief` returns Claude Code/Codex handoff readiness, a copyable `handoffPrompt` (also printable via `ontology-atlas agent-brief --prompt`), graph entrypoints, first MCP calls, structured `graphDbQueryPack` (`facets` / `schema` / `query_plan(match_nodes)` / `match_nodes` / `query_plan(match_edges)` / `match_edges` / `domain_matrix` / `query_plan(centrality)` / `centrality` / `query_plan(all_paths)` / `all_paths` / `explain_relation` / `business_questions` outcome, domain-boundary, capability-claim, and implementation-evidence scans), investigation playbooks including `graph_traversal` (`schema` → `query_plan(all_paths)` → `all_paths` → `pattern_walk` / `project_map`), `traversalStrategy` (`plan_before_enumeration` → `bounded_path_evidence` → `containment_cross_check`) for plan-first bounded traversal, per-playbook `evidence[]` and `stopWhen[]` checklists, write guardrails for `add_relation` / rename-merge / post-change sync, relation preflight before `add_relation`, a `relationDecisionGuide` for the `skip_existing` / `review_inverse` / `safe_to_add` / `review_new_schema` outcomes, `resultContracts` requiring `all_paths` callers to report completeness fields and requiring `match_nodes` / `match_edges` callers to report `totalMatches`, `limited`, and `followUp` details before treating scan rows as evidence, and read-first write policy. The CLI companion `ontology-atlas agent-brief [vault] --graph-db-pack` turns that pack into a shell-pasteable graph scan script for sessions without MCP. `relation_check` validates relation `type` before endpoint slug resolution, so relation typos such as `depend_on` still return nearest-value hints even in empty or project-less vaults, and returns `matchingEdges`, reverse-direction `inverseEdges`, and a recommendation decision (`skip_existing`, `review_inverse`, `safe_to_add`, or `review_new_schema`) before exposing an `add_relation` `proposedAction`. `maintenance_plan` actions include stable `id`, cursor resume via `afterActionId`, explicit `cursor.reason` metadata, executable graph-array canonicalization, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, `executable`, current-page `nextExecutableAction`, current-page `nextReviewAction`, plus `executableOnly` / `phases` / `severities` / `kinds` filters; ready pages report `cursor.found=true` with `cursor.reason=null`, while unknown cursors return an empty page with `cursor.found=false`, zero remaining actions, and no next actions. `phases`, `severities`, and `kinds` are enum-validated so typoed work-queue filters fail instead of returning an empty plan.
+15. **query_ontology** `{ operation, ... }` — graph-engine query over the compiled artifact (`neighbors`, `path` with aligned `nodes[]`, `all_paths` with per-path `nodes[]` plus `limit` / `searchBudget` / `exhaustive` / `truncatedByBudget` / `totalPathsExact` metadata and `evidence` guidance, `query_plan` with executable run/narrow advice, filter-preserving `suggestedQuery`, and filter-aware `estimate.totalMatches` for `match_nodes` / `match_edges`, `centrality`, `communities`, `similar_nodes`, `explain_relation`, `reachability`, `pattern_walk`, `impact`, `blast_radius`, `subgraph`, `builder_context`, `overview`, `schema`, `facets`, `match_nodes`, `match_edges`, `node_profile`, `domain_profile`, `domain_matrix`, `project_scope`, `project_map`, `relation_check`, `components`, `lineage`, `containment_tree`, `cycles`, `topological_order`, `recommend_relations`, `growth_plan`, `maintenance_plan`, `agent_brief`, `workspace_brief`, `health`) for graph-database-like answers without pulling the full compile payload. `builder_context` keeps its compatibility operation/response name but emits the current Workshop focus URL, persisted bounded neighborhood, `canvasPosition`, `expected_mtime`, and safe low-level write handoff while declaring that unsaved UI drafts are not included. Repeated read calls inside one MCP server session reuse the compiled artifact while the vault document signature is unchanged, so first-contact agent run orders do not pay the full compile cost for every graph query. `match_nodes` returns a `followUp` packet for the first returned row with ready-to-run `node_profile`, incoming/outgoing `match_edges`, and `blast_radius` MCP calls plus CLI fallback commands, so a graph scan can become focused evidence without another round of tool-selection guesswork. `match_edges` returns a `followUp` packet for the first returned real edge with ready-to-run `explain_relation`, `path`, and `relation_check` MCP calls plus CLI fallback commands, so edge scans move directly into evidence and write-preflight instead of being treated as raw proof. `match_edges.filters`, `match_edges.edges[].relationType`, `followUp.focusEdge.relationType`, and `query_plan(match_edges).normalized` expose public names such as `depends_on` next to canonical frontmatter `types` or `via` values such as `dependencies`, so terminal and MCP clients can show the relation name users typed while keeping executable graph keys. `node_profile.edges.incoming/outgoing.byRelationType` and edge `relationType` expose public names such as `depends_on` for node detail views; `domain_matrix.filters.relationTypes`, `connections.rows[].byRelationType`, and connection examples do the same for coupling views, while canonical `types`, `via`, and `byRelation` stay available for graph-key callers. The UI semantic coupling matrix and CLI node deep dive can be rerun from Claude Code, Codex, or terminal fallbacks with the same user-facing names. `agent_brief` returns Claude Code/Codex handoff readiness, a copyable `handoffPrompt` (also printable via `ontology-atlas agent-brief --prompt`), graph entrypoints, first MCP calls, structured `graphDbQueryPack` (`facets` / `schema` / `query_plan(match_nodes)` / `match_nodes` / `query_plan(match_edges)` / `match_edges` / `domain_matrix` / `query_plan(centrality)` / `centrality` / `query_plan(all_paths)` / `all_paths` / `explain_relation` / `business_questions` outcome, domain-boundary, capability-claim, and implementation-evidence scans), investigation playbooks including `graph_traversal` (`schema` → `query_plan(all_paths)` → `all_paths` → `pattern_walk` / `project_map`), `traversalStrategy` (`plan_before_enumeration` → `bounded_path_evidence` → `containment_cross_check`) for plan-first bounded traversal, per-playbook `evidence[]` and `stopWhen[]` checklists, write guardrails for `add_relation` / rename-merge / post-change sync, relation preflight before `add_relation`, a `relationDecisionGuide` for the `skip_existing` / `review_inverse` / `safe_to_add` / `review_new_schema` outcomes, `resultContracts` requiring `all_paths` callers to report completeness fields and requiring `match_nodes` / `match_edges` callers to report `totalMatches`, `limited`, and `followUp` details before treating scan rows as evidence, and read-first write policy. The CLI companion `ontology-atlas agent-brief [vault] --graph-db-pack` turns that pack into a shell-pasteable graph scan script for sessions without MCP. `relation_check` validates relation `type` before endpoint slug resolution, so relation typos such as `depend_on` still return nearest-value hints even in empty or project-less vaults, and returns `matchingEdges`, reverse-direction `inverseEdges`, and a recommendation decision (`skip_existing`, `review_inverse`, `safe_to_add`, or `review_new_schema`) before exposing an `add_relation` `proposedAction`. `maintenance_plan` actions include stable `id`, cursor resume via `afterActionId`, explicit `cursor.reason` metadata, executable graph-array canonicalization, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, `executable`, current-page `nextExecutableAction`, current-page `nextReviewAction`, plus `executableOnly` / `phases` / `severities` / `kinds` filters; ready pages report `cursor.found=true` with `cursor.reason=null`, while unknown cursors return an empty page with `cursor.found=false`, zero remaining actions, and no next actions. `phases`, `severities`, and `kinds` are enum-validated so typoed work-queue filters fail instead of returning an empty plan.
 16. **validate_vault** — whole-vault health check with per-file issues and grouped summary, including schema-bound 8 issue codes for non-canonical graph arrays and dangling graph references
 17. **analyze_repo_structure** `{ rootPath?, maxDepth?, ignore? }` — side-effect-free bootstrap candidates from package / README / source layout
 18. **infer_imports** `{ rootPath?, sourceFolders?, ignore?, maxFiles? }` — side-effect-free TS/JS import graph → file/module dependency edge candidates. Use after `analyze_repo_structure` to pull real `depends_on` candidates from code rather than only layout heuristics; the agent reviews `moduleEdges` with `count` + `kindCounts` and lands accepted edges via `add_relation` / `add_relations`, so the vault is not modified by analysis. Unresolved import `reason` is schema-bound to `empty`, `relative-not-found`, or `alias-not-found`; `kindCounts` is schema-bound to positive integer `static`, `dynamic`, `require`, `reexport`, and `side` keys. Resolves relative imports, `tsconfig.json` paths, and fallback common `@/*` aliases when the target exists; `maxFiles` defaults to 5000 and caps at 50000 to stop pathological monorepo walks.
@@ -742,22 +755,26 @@ contract: `previewReady`, `canConfirm`, `wouldChange`, and
 ## 4. Cross-cutting UI
 
 **feat/rail-rollout** collapsed the old 3-tier nav (`OperationsNav` top tabs +
-`OntologySubNav` inline sub-tabs + `BottomTabBar`) into one system: a
-persistent left rail on desktop, `BottomTabBar` on mobile, both agreeing on
-the exact same 5 destinations and active-item rule. `OperationsNav` and
-`OntologySubNav` are retired (deleted, not just unmounted).
+`OntologySubNav` inline sub-tabs + `BottomTabBar`) into one ownership model: a
+persistent left rail on desktop and `BottomTabBar` on mobile. They share the
+same active-destination resolver while exposing inventories appropriate to
+their viewport. `OperationsNav` and `OntologySubNav` are retired (deleted, not
+just unmounted).
 
 ### `AppNavRail` (desktop, `lg:` and up — left side, on every page)
-- 5 destinations: Map (`/`, `/topology`) · Docs (`/docs`) · Workshop
-  (`/ontology/studio`, 공방 / Compass Stage) · Insights (`/ontology/insights`) · Projects
-  (`/projects` or `/project/*`)
-- Bottom of rail: agent-activity status dot + an optional `settingsSlot`
-  (only `HomePage` passes one — `TopologyV2SettingsGear`)
+- 6 destinations: Map (`/`, `/topology`) · Docs (`/docs`) · Workshop
+  (`/ontology/studio`, 공방 / Compass Stage) · Insights
+  (`/ontology/insights`) · Projects (`/projects` or `/project/*`) · Git
+  (`/git`)
+- Bottom of rail: agent-activity status tile + `settingsSlot`. `AppShell`
+  supplies the app-wide settings trigger by default; a page can override the
+  slot for a surface-specific control.
 - Active-item detection: shared `resolveActiveNavDestination`
-  (`src/shared/lib/nav-destination.ts`) — the SAME function `BottomTabBar`
-  uses, so desktop and mobile can never disagree on which destination is lit
+  (`src/shared/lib/nav-destination.ts`) — `BottomTabBar` uses the same semantic
+  resolver, so a route has one destination even when mobile intentionally
+  omits its button.
 
-### `AppSettingsMenu` (per-page header — Projects list, Docs, Insights)
+### `AppSettingsMenu` (app shell + contextual page headers)
 - The old 5-tab settings modal is now one compact settings sheet
   (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI
   agent entry are scanned in one column. `LocaleSwitch` is an immediate screen
@@ -790,20 +807,19 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
   - Unregistered vendors collapse to a one-line `name · [Add key]` row that
     expands in place, one at a time — three always-open password fields would
     turn a settings sheet into a form gate.
-- `LiveActivityIndicator` (agent activity heartbeat status, unchanged) mounts
-  next to it on the same three pages — this pairing is the "zero feature
-  loss" replacement for what `OperationsNav`'s right-hand cluster used to show
-- Pages the rail reaches directly with no prior top nav (Docs, Project
-  detail/editor, Download) never had this cluster and still don't — only the
-  three pages that used to mount `OperationsNav` keep it
+- The persistent shell mounts the rail settings trigger. Contextual
+  `LiveActivityIndicator` and header controls remain on the pages whose
+  workflow needs richer status or screen controls; they are not additional
+  navigation destinations.
 
 ### `BottomTabBar` (mobile only, `lg:` hidden)
-- Core destinations shared with `AppNavRail`: Map · Docs · Insights · Projects
-  (Workshop is the immersive write surface — desktop-rail only; the retired ERD
-  builder tab was removed 2026-07-24)
+- 4 core destinations: Map · Docs · Insights · Projects. Workshop is the
+  immersive desktop write surface, Git is a desktop workbench, and the retired
+  ERD builder tab was removed 2026-07-24.
 - Min height 56 px (safe-area)
-- Hidden on public marketing/download surfaces: `/` while no local vault is
-  loaded, and `/download/`
+- Hidden only on the standalone `/download/` surface. Root is the Topology hub
+  even without a loaded vault, so mobile first-run users keep global
+  navigation.
 
 ### Search palettes (separate by design — R5 skip merge)
 - **`⌘K` `SearchPalette`** — projects-focused fuzzy search + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)
@@ -834,19 +850,12 @@ the exact same 5 destinations and active-item rule. `OperationsNav` and
 
 | Key | Surface | Action |
 |---|---|---|
-| `⌘K` | Home / Topology / Ontology / Projects / Docs | Project / node search palette |
-| `⇧⌘K` | Home / Topology / Ontology | Global search (nodes + projects) |
+| `⌘K` / `⇧⌘K` | Home / Topology | Unified node + project search |
 | `D` | Home / Topology | Toggle docs drawer |
 | `?` | Home / Topology | Toggle shortcut sheet |
-| `Esc` | All | Layered close (drawer / palette / local graph) |
-| `P` / `N` | Builder | Add Project node |
-| `D` | Builder | Add Domain node |
-| `C` | Builder | Add Capability node |
-| `E` | Builder | Add Element node |
-| `F` | Builder | Toggle fullscreen |
-| `Del` / `Backspace` | Builder | Delete selected ephemeral |
-| `⌘K` (no `Shift`) | Builder | Global search (nodes + projects, `MountedGlobalSearch`) — P5d (N9): was `⇧⌘K`, matched to plain `⌘K` since the builder has no competing project-only `SearchPalette` to disambiguate from |
-| `Enter` | Builder inspector | Save ephemeral / commit vault rename |
+| `⌘O` | Home / Topology static sample | Open a local Markdown folder |
+| `Esc` | All | Close the highest-priority open dialog, picker, preview, or map state |
+| `Enter` | Workshop relation picker | Choose the first filtered relation candidate |
 | `↑↓` | Hub rail | Cycle hubs |
 | `Home` / `End` | Hub rail | First / last hub |
 | `Tab` (in palette) | Workspace palette | Cycle mode (`""` → `>` → `#`) |

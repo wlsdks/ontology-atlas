@@ -1352,10 +1352,6 @@
     --topology-panel-standard-width: clamp(460px, 31vw, 560px);
     --topology-panel-standard-reserved-width: clamp(440px, calc(44vw - 190px), 560px);
     --topology-panel-compact-width: clamp(380px, calc(50vw - 270px), 560px);
-    /* Graph 모드(살아있는 그래프) 레일 — 콘텐츠가 프롬프트 1줄 + 카운트뿐이라
-       overview 계열 폭(560px)은 지도를 가리는 빈 상자가 된다 (소유자 피드백
-       "가로가 너무 길다"). 캔버스가 주인공인 뷰의 최소 폭. */
-    --topology-panel-graph-width: clamp(280px, 21vw, 336px);
     --topology-panel-compact-reserved-width: min(
       clamp(360px, calc(50vw - 290px), 540px),
       calc(100vw - 520px)

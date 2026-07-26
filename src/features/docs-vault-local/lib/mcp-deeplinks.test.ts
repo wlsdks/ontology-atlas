@@ -9,8 +9,12 @@ import {
 } from "./mcp-deeplinks";
 
 describe("buildMcpDeeplinkConfig", () => {
-  it("builds the standard stdio triple with the absolute vault path", () => {
-    expect(buildMcpDeeplinkConfig("/Users/j/vault")).toEqual({
+  it("fails closed while the public MCP package is unavailable", () => {
+    expect(buildMcpDeeplinkConfig("/Users/j/vault")).toBeNull();
+  });
+
+  it("builds the standard stdio triple only after package publication is proven", () => {
+    expect(buildMcpDeeplinkConfig("/Users/j/vault", true)).toEqual({
       command: "npx",
       args: ["-y", MCP_SERVER_PACKAGE],
       env: { OATLAS_VAULT: "/Users/j/vault" },
@@ -39,7 +43,7 @@ describe("utf8ToBase64", () => {
 
 describe("buildCursorMcpDeeplink", () => {
   it("emits the cursor deeplink scheme with base64 config", () => {
-    const link = buildCursorMcpDeeplink("/Users/j/vault");
+    const link = buildCursorMcpDeeplink("/Users/j/vault", true);
     expect(link).not.toBeNull();
     const url = new URL(link as string);
     expect(url.protocol).toBe("cursor:");
@@ -60,7 +64,7 @@ describe("buildCursorMcpDeeplink", () => {
   });
 
   it("preserves a unicode vault path through base64", () => {
-    const link = buildCursorMcpDeeplink("/Users/j/한글 vault") as string;
+    const link = buildCursorMcpDeeplink("/Users/j/한글 vault", true) as string;
     const config = new URL(link).searchParams.get("config") as string;
     const decoded = JSON.parse(
       Buffer.from(config, "base64").toString("utf-8"),
@@ -71,11 +75,15 @@ describe("buildCursorMcpDeeplink", () => {
   it("returns null without an absolute path", () => {
     expect(buildCursorMcpDeeplink(null)).toBeNull();
   });
+
+  it("returns null with an absolute path until package publication is proven", () => {
+    expect(buildCursorMcpDeeplink("/Users/j/vault")).toBeNull();
+  });
 });
 
 describe("buildVsCodeMcpDeeplink", () => {
   it("emits the vscode deeplink with url-encoded config incl. name", () => {
-    const link = buildVsCodeMcpDeeplink("/Users/j/vault") as string;
+    const link = buildVsCodeMcpDeeplink("/Users/j/vault", true) as string;
     expect(link.startsWith("vscode:mcp/install?")).toBe(true);
     const raw = link.slice("vscode:mcp/install?".length);
     const decoded = JSON.parse(decodeURIComponent(raw));
@@ -88,7 +96,7 @@ describe("buildVsCodeMcpDeeplink", () => {
   });
 
   it("url-encodes spaces in the path (no raw spaces in the link)", () => {
-    const link = buildVsCodeMcpDeeplink("/Users/j/my vault") as string;
+    const link = buildVsCodeMcpDeeplink("/Users/j/my vault", true) as string;
     expect(link).not.toContain(" ");
     const decoded = JSON.parse(
       decodeURIComponent(link.slice("vscode:mcp/install?".length)),
@@ -98,5 +106,9 @@ describe("buildVsCodeMcpDeeplink", () => {
 
   it("returns null without an absolute path", () => {
     expect(buildVsCodeMcpDeeplink(undefined)).toBeNull();
+  });
+
+  it("returns null with an absolute path until package publication is proven", () => {
+    expect(buildVsCodeMcpDeeplink("/Users/j/vault")).toBeNull();
   });
 });

@@ -6,6 +6,10 @@ import { useTranslations } from "next-intl";
 import { useLocalVault } from "@/features/docs-vault-local";
 import type { OntologyTreeNode } from "@/shared/lib/ontology-tree";
 import { isPickerAbort } from "@/shared/lib/picker-abort";
+import {
+  isTauriVaultRuntime,
+  pickTauriVaultDirectory,
+} from "@/shared/lib/tauri-vault-fs";
 import { buildBlockManifest, type BlockCensus } from "../model/block-manifest";
 import { writeBlockToDirectory, type BlockDirectoryHandleLike } from "../model/block-fsa";
 import { collectSubtreeNodeIds, selectRealmBlockDocs } from "../model/collect-realm-block";
@@ -49,21 +53,29 @@ export function RealmBlockExportAction({
   const [exportedCount, setExportedCount] = useState(0);
 
   const vaultLoaded = status === "loaded" && Boolean(manifest);
-  // 키 존재(`in`)가 아니라 호출 가능한지로 판정 — `BlockImportModule` 과 같은 계약.
+  // 키 존재(`in`)가 아니라 호출 가능한지로 판정하고, 설치 앱에서는 같은
+  // FileSystemDirectoryHandle 계약을 구현한 Tauri picker/shim을 사용한다.
   const supported =
-    typeof window !== "undefined" && typeof window.showDirectoryPicker === "function";
+    (typeof window !== "undefined" && typeof window.showDirectoryPicker === "function") ||
+    isTauriVaultRuntime();
 
   const runExport = async () => {
     if (phase === "exporting" || !vaultLoaded || !manifest) return;
     setPhase("exporting");
     try {
-      const target = (await (
-        window as unknown as {
-          showDirectoryPicker: (opts?: {
-            mode?: "read" | "readwrite";
-          }) => Promise<BlockDirectoryHandleLike>;
-        }
-      ).showDirectoryPicker({ mode: "readwrite" })) as BlockDirectoryHandleLike;
+      const target = (isTauriVaultRuntime()
+        ? await pickTauriVaultDirectory(t("exportAria"))
+        : await (
+            window as unknown as {
+              showDirectoryPicker: (opts?: {
+                mode?: "read" | "readwrite";
+              }) => Promise<BlockDirectoryHandleLike>;
+            }
+          ).showDirectoryPicker({ mode: "readwrite" })) as BlockDirectoryHandleLike | null;
+      if (!target) {
+        setPhase("idle");
+        return;
+      }
 
       const realmDocs = selectRealmBlockDocs(collectSubtreeNodeIds(subtree), manifest.docs);
       const files: { slug: string; content: string }[] = [];

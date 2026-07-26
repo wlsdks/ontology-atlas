@@ -39,6 +39,7 @@ import {
 } from '@/shared/lib/tauri-vault-fs';
 import { toErrorMessage } from '@/shared/lib/error-message';
 import { isPickerAbort } from '@/shared/lib/picker-abort';
+import { PUBLIC_AGENT_PACKAGES_READY } from '@/shared/config';
 import {
   emptyAgentActivityStatus,
   parseAgentActivityStatus,
@@ -1092,10 +1093,9 @@ export function useLocalVaultInternal() {
   }, [load, refreshRecentVaults]);
 
   /**
-   * mission v2 ontology starter — `npx ontology-atlas init` 과 동일한
-   * 5 md + .mcp.json / .mcp.json.example / .codex/config.toml 시드를 vault 에
-   * 작성. 비개발자가 터미널 없이 desktop app 의 picker → "starter 만들기"
-   * 버튼만으로 시작 가능하게.
+   * mission v2 ontology starter — 5개 markdown starter를 작성한다. 공개
+   * agent 패키지가 실제 설치 가능할 때만 .mcp.json / .codex 설정도 시드한다.
+   * registry E404 상태에서 실행 불가능한 npx 설정을 조용히 심지 않는다.
    *
    * 이미 존재하는 파일은 덮어쓰지 않고 skip. 사용자가 기존 vault 에 호출해도
    * 안전.
@@ -1145,7 +1145,10 @@ export function useLocalVaultInternal() {
       }
     }
     // Ready-to-use agent configs for "open the vault folder itself" flows.
-    const agentConfigResult = await writeAgentConfigFiles(vaultHandle);
+    // 공개 배포 증거가 없으면 fail closed: markdown starter만 만든다.
+    const agentConfigResult = PUBLIC_AGENT_PACKAGES_READY
+      ? await writeAgentConfigFiles(vaultHandle)
+      : { created: 0, skipped: 0 };
     skipped += agentConfigResult.skipped;
     await load(vaultHandle);
     return {
@@ -1171,6 +1174,11 @@ export function useLocalVaultInternal() {
     }
     const vaultHandle = state.handle;
     await requireWritePermission(vaultHandle);
+    if (!PUBLIC_AGENT_PACKAGES_READY) {
+      throw new Error(
+        'Public ontology-atlas agent packages are not published; use the source-checkout setup guide.',
+      );
+    }
     const result = await writeAgentConfigFiles(vaultHandle);
     await load(vaultHandle);
     return result;

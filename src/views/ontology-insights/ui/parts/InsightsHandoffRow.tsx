@@ -29,6 +29,7 @@ export function InsightsHandoffRow({
   return (
     <section
       aria-label={label}
+      data-insights-handoff="tab-query"
       data-testid="insights-handoff-row"
       className="mt-[var(--section-gap)] flex items-center gap-3 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-2.5"
     >

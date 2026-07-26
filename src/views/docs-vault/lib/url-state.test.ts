@@ -74,6 +74,27 @@ describe('replaceDocsVaultUrlState', () => {
     expect(currentSearch()).toBe('?intent=local');
   });
 
+  it('source=server → packaged docs deep-link source를 명시한다', () => {
+    replaceDocsVaultUrlState({
+      source: 'server',
+      sample: 'dogfood',
+      slug: 'AGENT-GRAPH-WORKFLOW',
+    });
+    expect(currentSearch()).toBe(
+      '?source=server&sample=dogfood&slug=AGENT-GRAPH-WORKFLOW',
+    );
+  });
+
+  it('source=null → 사용자가 source를 바꿀 때 deep-link override를 지운다', () => {
+    window.history.replaceState(
+      {},
+      '',
+      `${ORIGINAL_HREF}?source=server&sample=dogfood&slug=AGENT-GRAPH-WORKFLOW`,
+    );
+    replaceDocsVaultUrlState({ source: null, sample: null, slug: null });
+    expect(currentSearch()).toBe('');
+  });
+
   it('기본 순서는 URL 에 안 남는다 — 공유 링크를 짧게', () => {
     window.history.replaceState({}, '', `${ORIGINAL_HREF}?sort=recent&group=docs`);
     replaceDocsVaultUrlState({ sort: 'name', group: 'folders' });

@@ -23,8 +23,9 @@ about two surfaces that the map-rebuild round deleted outright:
   `/ontology` is now a thin redirect to `/topology?index=expanded`.
 - The old `/ontology/insights` workspace-level collaborator brief
   (`collaborator-insights-brief.ts`, `InsightsCollaboratorBriefPanel.tsx`) —
-  also deleted. `/ontology/insights` is now a fixed 3-tab dashboard (Overview /
-  Relations / Freshness) with a single bottom handoff row per tab instead of a
+  also deleted. `/ontology/insights` is now a five-question maintenance board
+  (Do next / Composition / Connections / Boundaries / Freshness) with one
+  active panel and a bottom handoff row scoped to the selected tab instead of a
   dedicated collaborator lane.
 
 What survives and is still accurate:
@@ -34,9 +35,8 @@ What survives and is still accurate:
   carries a plain-language kind/relation/evidence summary for a selected node.
 - `elements/ontology-reader-intent-contract` — the `reader=` URL intent
   (`planning` / `marketing` / `leadership` / `developer` / `agent`) still
-  exists, but its only current consumer is the builder
-  (`/ontology/edit`, `BuilderReaderIntentStrip`), not `/ontology/insights`
-  tab selection as originally described.
+  exists as a validated shared enum, but the retired builder was its final UI
+  consumer. No live route currently reads it.
 - `topology-ontology-drawer-model` — `src/views/home/lib/topology-ontology-drawer.ts`
   is unaffected by this round.
 

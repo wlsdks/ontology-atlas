@@ -3,16 +3,27 @@ slug: elements/topology-kind-color-legend
 kind: element
 title: Topology Kind Color Legend
 domain: views
+relates: [capabilities/topology-kind-legibility, elements/ontology-kind-tone-contract]
 ---
 
-`src/widgets/topology-map-sigma/ui/SigmaTopology.tsx` renders the topology kind legend that labels the visible node colors for `project`, `domain`, `capability`, `element`, and `unknown`.
+# Topology Kind Color Legend — retired
 
-The legend reuses `ontologyFillTone(...)` directly, so the visible swatches and graph node fills cannot drift independently. It appears when the audit overlay is off and the map is not in minimal embed mode.
+This node records a retired UI contract. The former Sigma renderer showed a
+five-row `project` / `domain` / `capability` / `element` / `unknown` color
+legend. Sigma and that legend were removed with the old topology surfaces.
 
-The 2026-06-06 macOS dogfood pass found that a tiny dot plus kind label was too weak on the dense topology canvas. The legend now uses larger pill-shaped swatches, larger text, and non-truncated role descriptions so it reads as a small classification guide rather than a decorative key.
+The current `/` and `/topology` canvas does **not** encode ontology kind through
+a five-color node-fill legend. `topology-map-v2` uses neutral engraved surfaces,
+kind glyphs, labels, tier, size, containment structure, and the adjacent INDEX
+tree so readers do not have to infer meaning from color alone.
 
-Each row pairs the color with the same role split that Claude Code and Codex receive before writing frontmatter: product/system root, shared vocabulary or ownership boundary, user behavior/workflow, concrete component/command/file evidence, or review-needed unknown.
+`TopologyRelationLegend`
+(`src/views/home/ui/TopologyRelationLegend.tsx`) remains visible at medium
+viewports and above, but it explains the map's real line encoding—`contains`
+solid spine and `depends_on` dashed relation—not node kind colors.
 
-`pnpm design:ontology` now guards the five `kindLegend*Role` message keys in `SigmaTopology.tsx`, so future topology work cannot silently drop the role descriptions and leave only color plus tier labels.
-
-The legend is part of the semantic proof of the map: users should be able to read the graph as an ontology relation map without knowing internal MCP or graph tooling terminology.
+The categorical tone contract still has one live chart consumer:
+`src/views/ontology-insights/ui/tabs/OverviewTab.tsx` uses
+`getOntologyKindTone(...)` for kind-distribution bars. That chart use does not
+restore a topology color legend. See
+[[elements/ontology-kind-tone-contract]] for the current boundary.

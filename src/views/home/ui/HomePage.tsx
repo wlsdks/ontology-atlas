@@ -191,6 +191,7 @@ import {
 } from "@/features/vault-agent";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
+import { AGENT_PACKAGE_DISTRIBUTION } from "@/shared/config";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
 import { restoreTopologyFocusAfterDatasheetClose } from "../lib/topology-focus-return";
@@ -3993,7 +3994,7 @@ export function HomePage() {
           <>
               <div
                 key={localGraphRoot ?? '__root__'}
-                className="absolute inset-0 animate-[sigmaFade_220ms_ease-out]"
+                className="absolute inset-0 animate-[topologyFade_220ms_ease-out]"
               >
                 {/* Empty-state overlay when the visible Sigma graph has 0–1
                     nodes — the lone Sigma dot otherwise reads as a broken
@@ -4063,7 +4064,6 @@ export function HomePage() {
                     nodes={topologyV2Graph.nodes}
                     edges={topologyV2Graph.edges}
                     focus={{ selectedSlug: canvasSelectedSlug }}
-                    changedSlugs={changedSlugs}
                     fitViewToken={combinedFitToken}
                     relayoutToken={topologyRelayoutToken}
                     revealToken={mapRevealToken}
@@ -4134,7 +4134,7 @@ export function HomePage() {
                 ) : null}
               </div>
               <style jsx>{`
-                @keyframes sigmaFade {
+                @keyframes topologyFade {
                   from { opacity: 0.5; transform: scale(0.995); }
                   to { opacity: 1; transform: scale(1); }
                 }
@@ -4639,6 +4639,7 @@ export function HomePage() {
             같은 scrim+중앙 카드 모달 골격(같은 토큰, modality 증명 — 스크림
             클릭 닫기). 패널 내용/조회는 위젯 자기완결. */}
         <AgentConnectSheet
+          packageDistribution={AGENT_PACKAGE_DISTRIBUTION}
           open={agentConnect.open}
           onClose={() => {
             agentConnect.closeSheet();
@@ -4653,7 +4654,20 @@ export function HomePage() {
           onWriteConfigs={
             isTauriVaultRuntime() && vault.manifest ? () => void vault.ensureAgentConfigs() : null
           }
-          mcpJsonReady={vault.agentConfigStatus?.mcpJson ?? false}
+          mcpJsonState={
+            !vault.agentConfigStatus?.mcpJson
+              ? 'missing'
+              : vault.agentConfigStatus.mcpJsonValid === false
+                ? 'invalid'
+                : 'ready'
+          }
+          codexConfigState={
+            !vault.agentConfigStatus?.codexConfig
+              ? 'missing'
+              : vault.agentConfigStatus.codexConfigValid === false
+                ? 'invalid'
+                : 'ready'
+          }
         />
         <ShortcutSheet
           open={!createNodeOpen && shortcutsOpen}

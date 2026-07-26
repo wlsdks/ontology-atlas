@@ -129,14 +129,14 @@ export const BUILD_FM_CASES = [
     input: {
       slug: 'capabilities/cli-developer-entry',
       kind: 'capability',
-      title: 'CLI Developer Entry (49 commands — vault + MCP verify + ...)',
+      title: 'CLI Developer Entry (52 commands — vault + MCP verify + ...)',
       display: 'CLI Developer Entry',
       domain: 'domains/cli',
     },
     expected: {
       slug: 'capabilities/cli-developer-entry',
       kind: 'capability',
-      title: 'CLI Developer Entry (49 commands — vault + MCP verify + ...)',
+      title: 'CLI Developer Entry (52 commands — vault + MCP verify + ...)',
       display: 'CLI Developer Entry',
       domain: 'domains/cli',
       elements: [],

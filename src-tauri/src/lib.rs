@@ -19,6 +19,7 @@ mod secrets;
 
 const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
+const WEBVIEW_VERIFY_VAULT_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_VAULT";
 const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
 const WEBVIEW_VERIFY_TOPOLOGY_SELECTED_RELATION_ENV: &str =
     "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_SELECTED_RELATION";
@@ -33,6 +34,7 @@ const WEBVIEW_VERIFY_WINDOW_SIZE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE"
 const MAIN_WINDOW_LABEL: &str = "main";
 const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
 const WEBVIEW_VERIFY_ROUTE_INTERVAL_MS: u64 = 400;
+const WEBVIEW_VERIFY_FIXTURE_SETTLE_MS: u64 = 1200;
 const WEBVIEW_VERIFY_MARKER_ATTEMPTS: usize = 12;
 const WEBVIEW_VERIFY_MARKER_INTERVAL_MS: u64 = 500;
 
@@ -174,6 +176,26 @@ fn parse_verify_window_size(value: &str) -> Option<(f64, f64)> {
     }
 }
 
+fn isolate_verify_webview_storage(config: &mut tauri::Config, enabled: bool) -> usize {
+    if !enabled {
+        return 0;
+    }
+    config
+        .app
+        .windows
+        .iter_mut()
+        .filter(|window| window.create)
+        .map(|window| {
+            // The verifier must never inherit or delete the user's persisted
+            // vault handle. Tauri maps `incognito` to WKWebView's
+            // nonPersistent data store on macOS, so the bundled dogfood graph
+            // becomes the deterministic fixture while normal launches keep
+            // their existing IndexedDB untouched.
+            window.incognito = true;
+        })
+        .count()
+}
+
 fn write_verify_line(line: String) {
     let mut stdout = std::io::stdout().lock();
     let _ = writeln!(stdout, "{line}");
@@ -201,6 +223,56 @@ fn build_webview_verify_route_reset_script(route: &str) -> String {
     )
 }
 
+fn build_webview_verify_vault_bootstrap_script(root_path: &str) -> String {
+    let fixture_name = js_string_literal(
+        Path::new(root_path)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("ontology"),
+    );
+    let root_path = js_string_literal(root_path);
+    format!(
+        r#"(() => {{
+  const rootPath = {root_path};
+  const fixtureName = {fixture_name};
+  const request = indexedDB.open("demo-kv", 1);
+  request.onupgradeneeded = () => {{
+    if (!request.result.objectStoreNames.contains("kv")) {{
+      request.result.createObjectStore("kv");
+    }}
+  }};
+  request.onerror = () => {{
+    window.__ontologyAtlasVerifyFixtureVaultError =
+      String(request.error || "fixture vault IndexedDB open failed");
+  }};
+  request.onsuccess = () => {{
+    const db = request.result;
+    const transaction = db.transaction("kv", "readwrite");
+    const now = Date.now();
+    transaction.objectStore("kv").put({{
+      id: "current",
+      handle: {{ name: fixtureName }},
+      name: fixtureName,
+      desktopRootPath: rootPath,
+      createdAt: now,
+      lastAccessedAt: now
+    }}, "docs-vault:fs-handle:current");
+    transaction.oncomplete = () => {{
+      db.close();
+      window.localStorage.setItem("ontology-atlas:verify-fixture-vault", rootPath);
+      window.localStorage.setItem("guided-tour:v1", "skipped");
+      location.reload();
+    }};
+    transaction.onerror = () => {{
+      window.__ontologyAtlasVerifyFixtureVaultError =
+        String(transaction.error || "fixture vault IndexedDB write failed");
+      db.close();
+    }};
+  }};
+}})()"#,
+    )
+}
+
 fn build_webview_verify_route_script(route: &str) -> String {
     let route = js_string_literal(route);
     format!(
@@ -209,6 +281,25 @@ fn build_webview_verify_route_script(route: &str) -> String {
   const targetUrl = new URL(target, location.href);
   const current = location.pathname + location.search + location.hash;
   const next = targetUrl.pathname + targetUrl.search + targetUrl.hash;
+  window.__ontologyAtlasVerifyExpectedRoute = next;
+  if (!window.__ontologyAtlasVerifyRouteInterval) {{
+    window.__ontologyAtlasVerifyRouteTicks = 0;
+    window.__ontologyAtlasVerifyRouteInterval = window.setInterval(() => {{
+      window.__ontologyAtlasVerifyRouteTicks =
+        Number(window.__ontologyAtlasVerifyRouteTicks || 0) + 1;
+      const expected = window.__ontologyAtlasVerifyExpectedRoute || "";
+      const live = location.pathname + location.search + location.hash;
+      if (expected && live !== expected) {{
+        history.replaceState({{}}, "", expected);
+        window.dispatchEvent(new PopStateEvent("popstate"));
+        window.dispatchEvent(new Event("app:urlchange"));
+      }}
+      if (window.__ontologyAtlasVerifyRouteTicks >= 60) {{
+        window.clearInterval(window.__ontologyAtlasVerifyRouteInterval);
+        window.__ontologyAtlasVerifyRouteInterval = null;
+      }}
+    }}, {interval_ms});
+  }}
   if (current !== next) {{
     const targetPath = targetUrl.pathname.replace(/\/$/, "");
     const currentPath = location.pathname.replace(/\/$/, "");
@@ -242,6 +333,7 @@ fn build_webview_verify_route_script(route: &str) -> String {
     window.dispatchEvent(new Event("app:urlchange"));
   }}
 }})()"#,
+        interval_ms = WEBVIEW_VERIFY_ROUTE_INTERVAL_MS,
     )
 }
 
@@ -279,9 +371,10 @@ fn metadata_mtime_ms(path: &Path) -> Result<u128, String> {
 }
 
 #[tauri::command]
-fn pick_vault_directory() -> Result<Option<String>, String> {
+fn pick_vault_directory(dialog_title: Option<String>) -> Result<Option<String>, String> {
+    let title = dialog_title.as_deref().unwrap_or("Open ontology vault");
     Ok(rfd::FileDialog::new()
-        .set_title("Open ontology vault")
+        .set_title(title)
         .pick_folder()
         .map(|path| path.to_string_lossy().to_string()))
 }
@@ -628,6 +721,16 @@ fn disable_webview_frame_rate_cap(window: &tauri::WebviewWindow) {
 }
 
 pub fn run() {
+    let verify_webview = std::env::var_os(WEBVIEW_VERIFY_ENV).is_some();
+    let mut context = tauri::generate_context!();
+    let isolated_window_count =
+        isolate_verify_webview_storage(context.config_mut(), verify_webview);
+    if verify_webview {
+        write_verify_line(format!(
+            "[ontology-atlas-webview-storage] mode=incognito windows={isolated_window_count}"
+        ));
+    }
+
     tauri::Builder::default()
         .manage(VaultWatcherState::default())
         .setup(|app| {
@@ -648,6 +751,9 @@ pub fn run() {
                     let verify_route = std::env::var(WEBVIEW_VERIFY_ROUTE_ENV)
                         .ok()
                         .filter(|route| is_safe_webview_verify_route(route));
+                    let verify_vault = std::env::var(WEBVIEW_VERIFY_VAULT_ENV)
+                        .ok()
+                        .filter(|path| !path.trim().is_empty());
                     let verify_topology_drag =
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV).is_some();
                     let verify_topology_selected_relation =
@@ -663,6 +769,14 @@ pub fn run() {
                     let verify_topology_frame_profile =
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_FRAME_PROFILE_ENV).is_some();
                     tauri::async_runtime::spawn(async move {
+                        if let Some(vault_path) = verify_vault {
+                            let bootstrap_script =
+                                build_webview_verify_vault_bootstrap_script(&vault_path);
+                            let _ = verify_window.eval(&bootstrap_script);
+                            std::thread::sleep(Duration::from_millis(
+                                WEBVIEW_VERIFY_FIXTURE_SETTLE_MS,
+                            ));
+                        }
                         if let Some(route) = verify_route {
                             let reset_script = build_webview_verify_route_reset_script(&route);
                             let _ = verify_window.eval(&reset_script);
@@ -703,6 +817,54 @@ pub fn run() {
                                   };
                                   const clickRelationLabel = (attempt = 0) => {
                                     result.attempts = attempt + 1;
+                                    const v2Map = document.querySelector('[data-map-engine="v2"]');
+                                    if (v2Map) {
+                                      const edgePanel = document.querySelector('[data-testid="topology-v2-edge-panel"]');
+                                      if (visible(edgePanel)) {
+                                        result.reason = "selected-v2-edge";
+                                        result.selected = true;
+                                        result.clicked = true;
+                                        return;
+                                      }
+                                      if (attempt === 0) {
+                                        if (window.__ontologyAtlasVerifyRouteInterval) {
+                                          window.clearInterval(window.__ontologyAtlasVerifyRouteInterval);
+                                          window.__ontologyAtlasVerifyRouteInterval = null;
+                                        }
+                                        window.addEventListener(
+                                          "ontology-atlas:verify-edge-selected",
+                                          (event) => {
+                                            const detail = event?.detail || {};
+                                            if (detail.error) {
+                                              result.reason = detail.error;
+                                              return;
+                                            }
+                                            result.sourceId = detail.sourceId || "";
+                                            result.targetId = detail.targetId || "";
+                                            result.relationType = detail.relationType || "";
+                                            result.clicked = true;
+                                            result.reason = "selected-v2-edge";
+                                          },
+                                          { once: true }
+                                        );
+                                        window.dispatchEvent(
+                                          new CustomEvent("ontology-atlas:verify-select-edge", {
+                                            detail: {
+                                              preferredNodeId:
+                                                new URL(window.location.href).searchParams.get("p") || ""
+                                            }
+                                          })
+                                        );
+                                      }
+                                      if (attempt >= 36) {
+                                        result.reason = result.clicked
+                                          ? "v2 edge panel missing"
+                                          : result.reason || "v2 edge selection event unanswered";
+                                        return;
+                                      }
+                                      window.setTimeout(() => clickRelationLabel(attempt + 1), 250);
+                                      return;
+                                    }
                                     const selected = document.querySelector('[data-relation-label-hit="true"][data-selected-relation="true"]');
                                     if (visible(selected)) {
                                       result.reason = "already-selected";
@@ -1789,11 +1951,32 @@ pub fn run() {
                                 text: link.textContent || "",
                               }));
                               const buttons = Array.from(document.querySelectorAll("button")).map((button) => button.textContent || "");
-                              const hasDecisionQuestionList = Boolean(
-                                document.querySelector('[aria-label="비즈니스 결정 질문"], [aria-label="Business decision questions"]')
+                              const insightsMaintenanceBoard = document.querySelector(
+                                '[data-insights-surface="maintenance-board"]'
                               );
-                              const hasReaderDecisionLens = Boolean(
-                                document.querySelector('[data-reader-decision-lens="planning>marketing>leadership>developer>agent"]')
+                              const insightsQuestionTabs = Array.from(
+                                insightsMaintenanceBoard?.querySelectorAll('[role="tab"]') || []
+                              );
+                              const insightsSelectedTabs = insightsQuestionTabs.filter(
+                                (tab) => tab.getAttribute("aria-selected") === "true"
+                              );
+                              const insightsSelectedPanelId =
+                                insightsSelectedTabs[0]?.getAttribute("aria-controls") || "";
+                              const insightsSelectedPanel = insightsSelectedPanelId
+                                ? document.getElementById(insightsSelectedPanelId)
+                                : null;
+                              const insightsSelectedPanelRect =
+                                insightsSelectedPanel?.getBoundingClientRect();
+                              const insightsSelectedPanelStyle = insightsSelectedPanel
+                                ? getComputedStyle(insightsSelectedPanel)
+                                : null;
+                              const insightsSelectedPanelVisible = Boolean(
+                                insightsSelectedPanelRect &&
+                                insightsSelectedPanelRect.width > 1 &&
+                                insightsSelectedPanelRect.height > 1 &&
+                                insightsSelectedPanelStyle?.display !== "none" &&
+                                insightsSelectedPanelStyle?.visibility !== "hidden" &&
+                                Number(insightsSelectedPanelStyle?.opacity || "1") > 0.01
                               );
                               const topologyDragVerification = window.__ontologyAtlasTopologyDragVerify || null;
                               const topologyFrameProfile = window.__ontologyAtlasTopologyFrameProfile || null;
@@ -1814,6 +1997,38 @@ pub fn run() {
                                 topologyV2DetailPanelStyle?.display !== "none" &&
                                 topologyV2DetailPanelStyle?.visibility !== "hidden" &&
                                 Number(topologyV2DetailPanelStyle?.opacity || "1") > 0.01
+                              );
+                              const topologyV2EdgePanel = document.querySelector(
+                                '[data-testid="topology-v2-edge-panel"]'
+                              );
+                              const topologyV2EdgePanelRect =
+                                topologyV2EdgePanel?.getBoundingClientRect();
+                              const topologyV2EdgePanelStyle = topologyV2EdgePanel
+                                ? getComputedStyle(topologyV2EdgePanel)
+                                : null;
+                              const topologyV2EdgePanelVisible = Boolean(
+                                topologyV2EdgePanelRect &&
+                                topologyV2EdgePanelRect.width > 1 &&
+                                topologyV2EdgePanelRect.height > 1 &&
+                                topologyV2EdgePanelStyle?.display !== "none" &&
+                                topologyV2EdgePanelStyle?.visibility !== "hidden" &&
+                                Number(topologyV2EdgePanelStyle?.opacity || "1") > 0.01
+                              );
+                              const guidedTourOverlay = document.querySelector(
+                                '[data-testid="guided-tour-overlay"]'
+                              );
+                              const guidedTourOverlayRect =
+                                guidedTourOverlay?.getBoundingClientRect();
+                              const guidedTourOverlayStyle = guidedTourOverlay
+                                ? getComputedStyle(guidedTourOverlay)
+                                : null;
+                              const guidedTourOverlayVisible = Boolean(
+                                guidedTourOverlayRect &&
+                                guidedTourOverlayRect.width > 1 &&
+                                guidedTourOverlayRect.height > 1 &&
+                                guidedTourOverlayStyle?.display !== "none" &&
+                                guidedTourOverlayStyle?.visibility !== "hidden" &&
+                                Number(guidedTourOverlayStyle?.opacity || "1") > 0.01
                               );
                               const topologyV2PrefersReducedMotion =
                                 window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
@@ -3286,15 +3501,24 @@ pub fn run() {
                                 width: innerWidth,
                                 height: innerHeight,
                                 markers: {
+                                  verificationFixtureVault:
+                                    window.localStorage.getItem("ontology-atlas:verify-fixture-vault") || "",
+                                  verificationFixtureVaultError:
+                                    window.__ontologyAtlasVerifyFixtureVaultError || "",
                                   ontologyNav: links.some((link) => link.href.includes("/ontology") || /온톨로지|Ontology/.test(link.text)),
                                   sourceVaultNav: links.some((link) => link.href.includes("/docs") || /저장소|문서함|Source Vault|Documents/.test(link.text)),
                                   agentBriefCopy: buttons.some((text) => /브리핑 복사|Copy brief/.test(text)) && /agent_brief/.test(bodyText),
-                                  businessDecisionQuestions:
-                                    hasDecisionQuestionList &&
-                                    /누가 이 개념으로 결정을 내리는가\\?|Who uses this concept to make a decision\\?/.test(bodyText) &&
-                                    /어떤 사용자·운영 결과를 바꾸는가\\?|Which user or operating outcome changes\\?/.test(bodyText) &&
-                                    /어떤 구현 증거가 그 의미를 검증하는가\\?|Which implementation evidence proves the meaning\\?/.test(bodyText),
-                                  readerDecisionLens: hasReaderDecisionLens,
+                                  insightsMaintenanceBoard: Boolean(insightsMaintenanceBoard),
+                                  insightsQuestionModel:
+                                    insightsMaintenanceBoard?.getAttribute("data-insights-question-model") || "",
+                                  insightsTabCount: insightsQuestionTabs.length,
+                                  insightsSelectedTabCount: insightsSelectedTabs.length,
+                                  insightsSelectedPanelVisible,
+                                  insightsHandoff: Boolean(
+                                    insightsMaintenanceBoard?.querySelector(
+                                      '[data-insights-handoff="tab-query"]'
+                                    )
+                                  ),
                                   topologyRelief:
                                     location.pathname.includes("/topology") &&
                                     /Relief|Ontology relief map|concept cards|온톨로지 지형도|대표 카드|카드 골격|후보 \d+\/\d+개 표시|개념 \d+개 · 관계 \d+개|CONCEPTS/.test(bodyText),
@@ -5039,6 +5263,12 @@ pub fn run() {
                                     topologySelectedRelationVerification?.selected === true,
                                   topologySelectedRelationVerifyAttempts:
                                     topologySelectedRelationVerification?.attempts || 0,
+                                  topologyV2SelectedRelationSource:
+                                    topologySelectedRelationVerification?.sourceId || "",
+                                  topologyV2SelectedRelationTarget:
+                                    topologySelectedRelationVerification?.targetId || "",
+                                  topologyV2SelectedRelationType:
+                                    topologySelectedRelationVerification?.relationType || "",
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
                                   topologyFocusNoopAttempted:
@@ -5504,6 +5734,20 @@ pub fn run() {
                                     topologyV2DetailPanelRect?.width || 0,
                                   topologyV2DetailPanelHeight:
                                     topologyV2DetailPanelRect?.height || 0,
+                                  topologyV2EdgePanelVisible,
+                                  topologyV2EdgePanelRole:
+                                    topologyV2EdgePanel?.getAttribute("role") || "",
+                                  topologyV2EdgePanelAriaLabel:
+                                    topologyV2EdgePanel?.getAttribute("aria-label") || "",
+                                  topologyV2EdgePanelSentence:
+                                    topologyV2EdgePanel?.querySelector(
+                                      '[data-testid="topology-v2-edge-sentence"]'
+                                    )?.textContent || "",
+                                  topologyV2EdgePanelWidth:
+                                    topologyV2EdgePanelRect?.width || 0,
+                                  topologyV2EdgePanelHeight:
+                                    topologyV2EdgePanelRect?.height || 0,
+                                  guidedTourOverlayVisible,
                                   topologyV2PrefersReducedMotion,
                                   topologyZoomVerifyAttempted:
                                     topologyZoomVerification?.attempted === true,
@@ -5788,7 +6032,7 @@ pub fn run() {
             git::git_diff,
             git::git_pull,
         ])
-        .build(tauri::generate_context!())
+        .build(context)
         .expect("error while building ontology-atlas desktop app")
         .run(|app_handle, event| match event {
             RunEvent::Ready => {
@@ -5865,6 +6109,9 @@ mod tests {
         assert!(script.contains("currentPath === targetPath"));
         assert!(script.contains("targetLink.click()"));
         assert!(script.contains("__ontologyAtlasVerifyRouteMisses < 14"));
+        assert!(script.contains("__ontologyAtlasVerifyExpectedRoute"));
+        assert!(script.contains("window.setInterval"));
+        assert!(script.contains("__ontologyAtlasVerifyRouteTicks >= 60"));
         assert!(script.contains("history.replaceState({}, \"\", next)"));
         assert!(script.contains("window.dispatchEvent(new Event(\"app:urlchange\"))"));
         assert!(!script.contains("location.replace(next)"));
@@ -5950,6 +6197,38 @@ mod tests {
         assert!(script.contains("location.replace(localeRoot)"));
         assert!(script.contains("\"/ko/\""));
         assert!(!script.contains("\"/ko/topology/\""));
+    }
+
+    #[test]
+    fn webview_verify_vault_bootstrap_targets_only_the_incognito_key_value_store() {
+        let script =
+            build_webview_verify_vault_bootstrap_script("/tmp/Atlas Fixture/docs/ontology");
+
+        assert!(script.contains("indexedDB.open(\"demo-kv\", 1)"));
+        assert!(script.contains("\"docs-vault:fs-handle:current\""));
+        assert!(script.contains("desktopRootPath: rootPath"));
+        assert!(script.contains("\"/tmp/Atlas Fixture/docs/ontology\""));
+        assert!(script.contains("const fixtureName = \"ontology\""));
+        assert!(script.contains("ontology-atlas:verify-fixture-vault"));
+        assert!(script.contains("window.localStorage.setItem(\"guided-tour:v1\", \"skipped\")"));
+        assert!(script.contains("location.reload()"));
+        assert!(!script.contains("indexedDB.deleteDatabase"));
+    }
+
+    #[test]
+    fn webview_verifier_isolates_created_windows_without_mutating_normal_app_storage() {
+        let mut config = tauri::Config::default();
+        config.app.windows.push(Default::default());
+        config.app.windows.push(Default::default());
+        config.app.windows[1].create = false;
+
+        assert_eq!(isolate_verify_webview_storage(&mut config, false), 0);
+        assert!(!config.app.windows[0].incognito);
+        assert!(!config.app.windows[1].incognito);
+
+        assert_eq!(isolate_verify_webview_storage(&mut config, true), 1);
+        assert!(config.app.windows[0].incognito);
+        assert!(!config.app.windows[1].incognito);
     }
 
     #[test]

@@ -9,7 +9,7 @@
 ## 1. 정체성 — 2층 구조
 
 **Layer 1 (로컬 코어 — 불변의 신뢰 계약)**
-git-native 마크다운 vault가 곧 온톨로지. MCP 24도구(Tier화) + CLI. 영원히 무료, 완전 오프라인 동작, 백엔드 0.
+git-native 마크다운 vault가 곧 온톨로지. MCP 32도구(read 19 + write 13) + CLI. 영원히 무료, 완전 오프라인 동작, 백엔드 0.
 
 **Layer 2 (Atlas Network — 선택적, 수요 게이트 뒤)**
 포맷 표준(Spec) + 커뮤니티 레지스트리(Hub, GitHub 기반) + 유료 Team Sync(좌표 모델) + org 그래프(v2).

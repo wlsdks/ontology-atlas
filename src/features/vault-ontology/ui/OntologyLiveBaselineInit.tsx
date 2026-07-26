@@ -19,8 +19,9 @@ import { useOntologyInsight } from "../model/use-ontology-insight";
  *    "리뷰함" 승인도 보존된다.
  * 2. **없으면 auto-mark** — 복원할 게 없으면 기존처럼 자동으로 baseline 을 1회 잡는다.
  *
- * 그래야 이후 에이전트(MCP)·사람의 vault 편집이 클릭 없이 토폴로지에서 pulse 되고
- * 변경점만 보기/insights 스트립에 즉시 뜬다.
+ * 그래야 이후 에이전트(MCP)·사람의 vault 편집이 클릭 없이 토폴로지 fresh
+ * 채널, INDEX, 리뷰 링크, 기록 workbench와 activity count에 같은 changeset으로
+ * 뜬다.
  *
  * 마운트당 1회만 처리(handledRef) — 사용자가 명시적으로 Clear 하면 곧장 다시
  * 잡히지 않게(수동 의도 존중). static/dogfood 모드는 변하지 않으니 auto-mark 없음.

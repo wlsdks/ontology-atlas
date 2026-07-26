@@ -204,6 +204,12 @@ export interface CompassFocal {
 
 export interface StudioCompassProps {
   mode: "enhance" | "create";
+  /**
+   * One-shot keyboard handoff when the entry-choice dialog becomes the stage.
+   * Route-driven deep links keep their existing route-focus behavior.
+   */
+  initialFocus?: "heading" | "create-name";
+  onInitialFocusApplied?: () => void;
   labels: StudioCompassLabels;
   kindLabelFor: (kind: string) => string;
   focal: CompassFocal;
@@ -570,6 +576,28 @@ export function StudioCompass(props: StudioCompassProps) {
   // JS-driven motions (FLIP, commit convergence) must self-skip under reduced
   // motion — the CSS-only ones are handled by the globals base-layer rule.
   const reduceMotion = usePrefersReducedMotion();
+  const stageRef = useRef<HTMLElement | null>(null);
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
+  const { initialFocus, onInitialFocusApplied } = props;
+
+  useEffect(() => {
+    if (!initialFocus) return;
+    // Query-driven CREATE entry also runs the global route focus manager.
+    // Land one frame later so the task-specific field wins over the generic
+    // route heading without a visible scroll jump.
+    const frame = window.requestAnimationFrame(() => {
+      const target =
+        initialFocus === "create-name"
+          ? stageRef.current?.querySelector<HTMLInputElement>(
+              '[data-testid="studio-create-name"]',
+            )
+          : headingRef.current;
+      if (!target) return;
+      target.focus({ preventScroll: true });
+      onInitialFocusApplied?.();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [initialFocus, onInitialFocusApplied]);
 
   // Satellite FLIP — on retype a satellite moves to another lane. Play the move
   // from its OLD screen position to the NEW one (transform-only, --motion-settle)
@@ -793,6 +821,7 @@ export function StudioCompass(props: StudioCompassProps) {
 
   return (
     <main
+      ref={stageRef}
       id="main"
       className="relative grid h-[100dvh] min-h-0 grid-rows-[52px_1fr_64px] overflow-hidden bg-[color:var(--color-canvas)]"
       data-testid="studio-compass-stage"
@@ -822,7 +851,12 @@ export function StudioCompass(props: StudioCompassProps) {
           </button>
         ) : null}
         <div className="flex items-center gap-2 text-caption text-[color:var(--color-text-tertiary)]">
-          <h1 className="font-semibold text-[color:var(--color-text-secondary)]">
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            data-testid="studio-stage-heading"
+            className="font-semibold text-[color:var(--color-text-secondary)] outline-none"
+          >
             {focal.name || "—"}
           </h1>
           <span className="text-[color:var(--color-text-quaternary)]">·</span>

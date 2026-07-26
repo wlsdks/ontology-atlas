@@ -29,6 +29,7 @@ import type { VaultManifest } from '@/entities/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
+import type { AgentPackageDistribution } from '@/shared/config';
 
 /**
  * B2 병합 (feat/settings-vault-merge) — 이전 `VaultToolsMenu` (문서함 헤더
@@ -72,7 +73,7 @@ const AGENT_VERIFY_CLI_PREVIEW = [
 const AGENT_MODE_PACKET_LINES = [
   'Mode chooser:',
   '- CLI-only: use validate, workspace-brief, graph scans, paths, and graph DB packs without MCP.',
-  '- MCP-connected: let Claude Code, Codex, or Cursor call 24 tools with structured repair fields and write guardrails.',
+  '- MCP-connected: let Claude Code, Codex, or Cursor call 32 tools with structured repair fields and write guardrails.',
   '- Graph DB pack: use bounded query plans, node/edge scans, domain matrix, paths, and relation explanations without running a database server.',
   '- Setup gate: run the JSON fallback check before edits and treat ok separately from performanceOk.',
 ];
@@ -87,7 +88,7 @@ const AGENT_GATE_PACKET_LINES = [
 const AGENT_FIRST_CONTACT_PROOF_CONTRACT_LINES = [
   'First-contact proof contract:',
   '- Config state: agent-setup --json reports root-specific Claude Code / Cursor and Codex config readiness before repair.',
-  '- MCP verify: mcp-verify can boot the local MCP server, list the 24 tools including index_project, and read the target vault.',
+  '- MCP verify: mcp-verify can boot the local MCP server, list the 32 tools including index_project, and read the target vault.',
   '- JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk before the agent edits.',
   '- Graph briefs: workspace-brief and agent-brief --graph-db-pack describe the same local vault before writes.',
 ];
@@ -294,6 +295,7 @@ function StepCard({
 interface Props {
   canEditCurrent: boolean;
   localVault: VaultAgentSetupLocalVault;
+  packageDistribution: AgentPackageDistribution;
   validationSummary: { errorCount: number; warningCount: number } | null;
   onOpenWorkflowGuide: () => void;
 }
@@ -301,6 +303,7 @@ interface Props {
 export function VaultAgentSetupPanel({
   canEditCurrent,
   localVault,
+  packageDistribution,
   validationSummary,
   onOpenWorkflowGuide,
 }: Props) {
@@ -434,14 +437,26 @@ export function VaultAgentSetupPanel({
 
   if (localVault.status !== 'loaded' || !agentStatus) return null;
 
+  const publicPackagesReady = packageDistribution.status === 'published';
   const agentSetupReady = Boolean(
-    agentStatus.mcpJson &&
+    publicPackagesReady &&
+      agentStatus.mcpJson &&
       agentStatus.codexConfig &&
       agentStatus.mcpExample &&
       agentStatus.mcpJsonValid !== false &&
       agentStatus.codexConfigValid !== false &&
       agentStatus.mcpExampleValid !== false,
   );
+  const mcpJsonState = !agentStatus.mcpJson
+    ? 'missing'
+    : agentStatus.mcpJsonValid === false
+      ? 'invalid'
+      : 'ready';
+  const codexConfigState = !agentStatus.codexConfig
+    ? 'missing'
+    : agentStatus.codexConfigValid === false
+      ? 'invalid'
+      : 'ready';
   const agentSetupFiles = [
     {
       key: 'mcpJson',
@@ -754,15 +769,21 @@ export function VaultAgentSetupPanel({
             >
               {agentSetupReady
                 ? t('agentSetup.ready')
-                : t('agentSetup.missing')}
+                : publicPackagesReady
+                  ? t('agentSetup.missing')
+                  : t('agentSetup.packageBlocked')}
             </span>
           </div>
           <p className="mt-1 text-label leading-4 text-[color:var(--color-text-tertiary)]">
-            {t('agentSetup.statusSummary', {
-              ready: agentSetupReadyCount,
-              total: agentSetupFiles.length,
-            })}
-            {nextMissingAgentConfig ? (
+            {publicPackagesReady
+              ? t('agentSetup.statusSummary', {
+                  ready: agentSetupReadyCount,
+                  total: agentSetupFiles.length,
+                })
+              : t('agentSetup.packageStatusSummary', {
+                  checkedAt: packageDistribution.checkedAt,
+                })}
+            {publicPackagesReady && nextMissingAgentConfig ? (
               <span className="block font-mono text-caption text-[color:var(--color-amber-docs-a92)]">
                 {agentStatus[nextMissingAgentConfig.key]
                   ? t('agentSetup.nextInvalid', {
@@ -775,55 +796,78 @@ export function VaultAgentSetupPanel({
             ) : null}
           </p>
           <p className="mt-1 text-label leading-4 text-[color:var(--color-indigo-pale-a82)]">
-            {agentSetupReady
-              ? t('agentSetup.rootSummaryReady')
-              : t('agentSetup.rootSummaryMissing')}
+            {publicPackagesReady
+              ? agentSetupReady
+                ? t('agentSetup.rootSummaryReady')
+                : t('agentSetup.rootSummaryMissing')
+              : t('agentSetup.rootSummaryBlocked')}
           </p>
 
           {/* 첫 화면 = 3단계만 (C13). 나머지 검증·스니펫·게이트는 아래 고급 접기. */}
           <div className="mt-3 grid gap-2">
-            <StepCard n={1} title={tc('step1Title')} desc={tc('step1Desc')}>
+            <StepCard
+              n={1}
+              title={tc('step1Title')}
+              desc={publicPackagesReady ? tc('step1Desc') : undefined}
+            >
               <AgentClientButtons
+                packageDistribution={packageDistribution}
                 onWriteConfigs={
-                  canEditCurrent ? () => void handleEnsureAgentConfigs() : null
+                  publicPackagesReady && canEditCurrent
+                    ? () => void handleEnsureAgentConfigs()
+                    : null
                 }
                 cursorDeeplink={cursorDeeplink}
                 vscodeDeeplink={vscodeDeeplink}
                 mcpJsonSnippet={buildMcpConfigJson(vaultNameForConfig, vaultRootPath)}
+                replacementMcpJsonSnippet={buildMcpConfigJson(
+                  vaultNameForConfig,
+                  '.',
+                )}
                 codexCommand={buildCodexMcpAddCommandTemplate(
                   vaultNameForConfig,
                   vaultRootPath,
                 )}
-                mcpJsonReady={Boolean(agentStatus.mcpJson)}
+                mcpJsonState={mcpJsonState}
+                codexConfigState={codexConfigState}
+                codexConfigSnippet={buildCodexConfigTomlTemplate(
+                  vaultNameForConfig,
+                  '.',
+                )}
                 needsManualPath={vaultRootPath === null}
               />
             </StepCard>
-            <StepCard n={2} title={tc('step2Title')} desc={tc('step2Desc')} />
-            <StepCard n={3} title={tc('step3Title')} desc={tc('step3Desc')}>
-              <div className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
-                <span
-                  aria-hidden
-                  className="h-2 w-2 shrink-0 rounded-full"
-                  style={{
-                    backgroundColor: agentSetupReady
-                      ? 'var(--color-status-success)'
-                      : 'var(--color-text-quaternary)',
-                  }}
-                />
-                <span className="min-w-0 flex-1 break-keep text-caption leading-4 text-[color:var(--color-text-secondary)]">
-                  {agentSetupReady
-                    ? t('agentSetup.connectionCheckReady')
-                    : t('agentSetup.connectionCheckPending', {
-                        ready: agentSetupReadyCount,
-                        total: agentSetupFiles.length,
-                      })}
-                </span>
-              </div>
-            </StepCard>
+            {publicPackagesReady ? (
+              <>
+                <StepCard n={2} title={tc('step2Title')} desc={tc('step2Desc')} />
+                <StepCard n={3} title={tc('step3Title')} desc={tc('step3Desc')}>
+                  <div className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
+                    <span
+                      aria-hidden
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{
+                        backgroundColor: agentSetupReady
+                          ? 'var(--color-status-success)'
+                          : 'var(--color-text-quaternary)',
+                      }}
+                    />
+                    <span className="min-w-0 flex-1 break-keep text-caption leading-4 text-[color:var(--color-text-secondary)]">
+                      {agentSetupReady
+                        ? t('agentSetup.connectionCheckReady')
+                        : t('agentSetup.connectionCheckPending', {
+                            ready: agentSetupReadyCount,
+                            total: agentSetupFiles.length,
+                          })}
+                    </span>
+                  </div>
+                </StepCard>
+              </>
+            ) : null}
           </div>
 
           {/* 고급 · 자세한 검증 — 연결 파일 상태·수리·모드·게이트·CLI·복사 패킷 */}
-          <button
+          {publicPackagesReady ? (
+            <button
             type="button"
             onClick={() => setAdvancedOpen((v) => !v)}
             aria-expanded={advancedOpen}
@@ -837,8 +881,9 @@ export function VaultAgentSetupPanel({
               style={{ transform: advancedOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}
             />
             {tc('advancedToggle')}
-          </button>
-          {advancedOpen ? (
+            </button>
+          ) : null}
+          {publicPackagesReady && advancedOpen ? (
           <div className="mt-2" data-testid="agent-setup-advanced">
           <ul
             aria-label={t('agentSetup.connectionAriaLabel')}

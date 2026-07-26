@@ -33,6 +33,10 @@ describe("useAgentConnectModel (HomePage 모듈화 2차)", () => {
     );
     expect(result.current.status).toEqual({ kind: "none" });
     expect(result.current.snippets.needsManualPath).toBe(true);
+    expect(result.current.snippets.replacementMcpJson).toContain(
+      '"OATLAS_VAULT": "."',
+    );
+    expect(result.current.snippets.codexConfig).toContain('OATLAS_VAULT = "."');
   });
 
   it("openSheet 가 now 스냅샷을 찍고 connected 상태가 focus 제목을 되말한다", () => {

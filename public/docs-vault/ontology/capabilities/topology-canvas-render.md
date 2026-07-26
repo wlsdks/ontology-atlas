@@ -14,8 +14,9 @@ relates: [elements/sigma-graphology]
 `/` (root hub) 와 `/topology` (동일 진입) 는 자체 canvas-2D 렌더 엔진
 `topology-map-v2`(`src/widgets/topology-map-v2/`)가 그린다. Sigma.js WebGL
 렌더러는 은퇴했다 — Graphology + ForceAtlas2 물리 레이아웃은 그대로 재사용하되
-(빌더 ERD 캔버스와 공유), 실제 픽셀은 단일 `<canvas>` 컨테이너 위에 이 엔진이
-직접 그린다. `HomePage`(`src/views/home`)가 마운트 지점이고,
+(현재 topology-map-v2 내부의 선택적 layout pass), 실제 픽셀은 단일
+`<canvas>` 컨테이너 위에 이 엔진이 직접 그린다. 퇴역한 ERD Builder와
+공유하는 renderer는 없다. `HomePage`(`src/views/home`)가 마운트 지점이고,
 `TopologyControls`(`src/widgets/topology-controls`)가 검색·depth·fit-view 같은
 조작 UI를 담당한다.
 
@@ -42,3 +43,13 @@ kind(`domain`/`capability`/`element`) 별 fill·size 위계는
 [[capabilities/topology-kind-legibility]] 가 소유. 노드 hover 요약 문구는
 `elements/ontology-description-helper`(`src/shared/lib/ontology-description.ts`)가
 body excerpt 를 160자 안팎으로 줄여 만든다.
+
+## 2026-07-26 entry and map audit
+
+Canvas labels now reserve rendered node shapes with owner IDs, derive paint and
+bounds from one baseline function, and try the opposite side before suppressing
+a passive label. Selected and hover labels therefore keep a minimum gap outside
+the actual rendered ring. The bottom-right legend/readout stack is measured with
+`ResizeObserver` and reserves the matching toast offset, so transient notices do
+not cover persistent graph encoding. Korean relation labels no longer inherit
+Latin-only mono/uppercase/wide-tracking decoration.

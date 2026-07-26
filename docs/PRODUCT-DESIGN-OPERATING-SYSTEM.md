@@ -786,15 +786,17 @@ read and what an AI agent can act on.
 
 Current Atlas contract:
 
-- **Sigma.js** owns WebGL rendering, camera, pan/zoom, reducers, canvas event
-  handling, and large-graph frame budget.
-- **Graphology** owns graph data shape, node/edge attributes, typed relation
-  traversal, metrics, and layout inputs.
+- **`topology-map-v2`** owns canvas-2D rendering, camera, pan/zoom, pointer
+  handling, attention layers, and the visible frame budget.
+- **Graphology** owns the graph data shape and ForceAtlas2 layout inputs. It is
+  not a renderer.
 - **ForceAtlas2 / d3-force** own layout and live drag physics; they are not the
   product surface by themselves.
 - **Atlas DOM overlays** own readable ontology cards, relation evidence,
   selected-node inspector, and MCP/CLI handoff. Overlay geometry is therefore a
   first-class graph-design problem, not a CSS afterthought.
+- **Sigma.js is retired** and has no package or runtime consumer. Dated Sigma
+  references are research history, not permission to add a second renderer.
 
 Before changing graph libraries, adding a second renderer, or replacing a
 Sigma/Graphology mechanism, fill this fit pass:
@@ -802,7 +804,7 @@ Sigma/Graphology mechanism, fill this fit pass:
 ```md
 Graph engine fit pass
 - User moment: [overview scan / click focus / relation inspect / path build / drag arrange / agent handoff]
-- Current stack: [Sigma / Graphology / ForceAtlas2 / d3-force / DOM overlay]
+- Current stack: [topology-map-v2 / Graphology / ForceAtlas2 / d3-force / DOM overlay]
 - Observed failure: [runtime or screenshot evidence, not taste]
 - Missing capability: [renderer, layout, interaction, collision, label, camera, accessibility, or handoff]
 - Can current stack solve it? [setting / reducer / layout / worker / overlay constraint / verifier]

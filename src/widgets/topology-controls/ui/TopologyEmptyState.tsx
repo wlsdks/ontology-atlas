@@ -6,15 +6,11 @@ import { FolderOpen, GitBranch, Map as MapIcon, Network, Plus } from 'lucide-rea
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 
 /**
- * Topology empty-state — when the graph has 0–1 projects, showing the
- * lone Sigma dot tells the user "this page is broken" rather than "this
- * page has no edges yet" (eval finding B3, 2026-05-02). Displays a
- * quiet empty panel with one explanatory sentence and recovery CTAs.
- *
- * 토폴로지는 *프로젝트 의존도* 1 view 뿐 — vault 의 다른 kind (domain /
- * capability / element) 노드가 풍부해도 여기서는 안 보인다. 그래서
- * "트리에서 ontology 전체 보기" CTA 를 함께 노출해, 사용자가 "이 화면은
- * 비었지만 데이터는 있다" 를 즉시 인지할 수 있게 한다.
+ * Topology empty-state — explains whether the current vault lacks project
+ * roots or visible relations, then offers state-specific recovery: bootstrap
+ * found docs, create a node, expand the Topology INDEX, open Workshop, or
+ * choose a vault. The old tree/Builder surfaces are compatibility routes only;
+ * visible actions land in the current Topology/Workshop workflow.
  */
 export function TopologyEmptyState({
   projectCount,

@@ -286,16 +286,20 @@ $ ohmy add element src/features/billing/lib/cycle-rule.ts \
 
 Options:
 
-1. **CLI** — `npx ontology-atlas add ...` (auto-writes frontmatter)
-2. **MCP server** — Claude Code calls tools directly (`mcp__ontology-atlas__add_node`)
-3. **Programmatic API** — `import { addNode }` from the package
+1. **CLI** — `ontology-atlas add ...` or the current source-checkout CLI
+2. **MCP server** — Claude Code/Codex calls `add_concept` / `add_relation`
+   after read-first and duplicate checks
+3. **Workshop** — a person fills one typed compass socket and reviews the
+   resulting frontmatter write
 
-Most ergonomic: **option 3 (MCP server)**. The agent navigates the codebase and adds discovered concepts to the ontology *directly*. Humans review them in the builder.
+Agents can propose and land accepted concepts through MCP; humans judge the
+same meaning through plain Markdown, git diffs, Topology, and Workshop. There
+is no separate programmatic graph store.
 
 ### 3-C. Two-way sync
 
 ```
-human edits builder canvas
+human edits Markdown or Workshop
         │
         ▼
 ontology graph (vault frontmatter)
@@ -312,11 +316,10 @@ Same graph. Same vault. Different input paths.
 
 ### New target — macOS-first desktop app exploration (2026-05-25)
 
-The product should explore an installable macOS app as a first-class
-distribution goal, not only the hosted website or `pnpm dev` workflow. This
-fits the local-first promise: the user installs the workbench on their own Mac,
-opens a vault folder from disk, and keeps the same markdown + MCP + CLI graph
-loop without visiting the hosted site.
+The installable macOS app is the first-class writable workbench, not a future
+exploration. The user opens a vault folder from disk and keeps the same
+markdown + MCP + CLI graph loop without a backend. The hosted root remains a
+read-only dogfood map and download/source entry.
 
 Quality bar: this must be desktop-grade, not a webview-shaped shortcut.
 Compare against Obsidian, Claude Desktop, and Codex Desktop for the basics:
@@ -325,18 +328,19 @@ clear local data location, command/agent setup visibility, offline operation,
 and a polished native-feeling window lifecycle. A weaker shell should remain an
 internal prototype, not a user-facing distribution promise.
 
-Recommended first slice:
+Current distribution contract:
 
-1. Keep the existing Next.js static export as the frontend payload.
-2. Prototype a macOS-only desktop shell with Tauri first.
-3. Point the shell at the generated `out/` directory and preserve the current
-   File System Access / local-vault behavior where possible.
-4. Verify the app can open the dogfood vault, render `/docs`, `/ontology`,
-   `/topology`, and `/ontology/edit`, and still hand off to CLI/MCP setup
-   gates.
-5. Keep signing and notarization wired into the tag-release path, while leaving
-   updater and packaged MCP/CLI sidecars as separate distribution hardening work
-   after the local prototype works.
+1. Next.js static export is the Tauri frontend payload.
+2. The installed app opens local vaults through the native bridge and verifies
+   current Docs, Topology, Workshop, Insights, Projects, and Git routes.
+3. `/ontology` and `/ontology/edit` remain compatibility redirects to
+   Topology and Workshop; they are smoke inputs, not separate product
+   surfaces.
+4. Signing, notarization, release slots, checksums, and installed-app proof
+   remain tag-release gates.
+5. Packaged MCP/CLI sidecars and auto-update remain separate distribution
+   slices. Until public npm packages exist, agent setup fails closed and points
+   source contributors at local entry points.
 
 Why Tauri first: this repo already uses `output: 'export'`, `images.unoptimized`,
 and `trailingSlash`, which match the static frontend shape expected by Tauri's
@@ -363,7 +367,11 @@ adding the Tauri icon set derived from `public/logo.png` and a repo-owned
 `hdiutil` DMG packager. The desktop shell now has a native Tauri vault bridge:
 when WebView `showDirectoryPicker` is unavailable, it opens a native folder
 dialog and adapts that folder into the same manifest/editor/image handle shape
-used by the web prototype. The desktop root now waits for stored-vault restore;
+used by the web prototype. The same adapter now carries ontology-block
+import/export as well: INDEX import recursively reads the selected `.md` block
+through the shim's `values()` iterator and keeps the approval-before-write merge
+preview, while realm export writes its bounded subtree through a purpose-titled
+native picker. The desktop root now waits for stored-vault restore;
 if no vault is loaded in the Tauri runtime, it routes to `/docs/?intent=local`
 and shows a vault setup welcome instead of showing the hosted marketing
 landing page or immediately throwing a native picker over the workspace. The desktop picker also persists recent Tauri vault paths and can
@@ -523,10 +531,10 @@ Separate package, `ontology-atlas-mcp`. Claude Code-compatible:
 }
 ```
 
-Tools (24 — read 16 + write 8):
+Tools (32 — read 19 + write 13):
 
-- read: `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `find_neighbors`, `find_path`, `list_kinds`, `find_orphans`, `query_concepts`, `compile_ontology`, `query_ontology`, `validate_vault`, `analyze_repo_structure`, `infer_imports`, `index_project`
-- write: `add_concept`, `add_concepts`, `add_relation`, `add_relations`, `patch_concept`, `delete_concept`, `rename_concept`, `merge_concepts`
+- read: `connection_info`, `git_status`, `git_history`, `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `find_neighbors`, `find_path`, `list_kinds`, `find_orphans`, `query_concepts`, `compile_ontology`, `query_ontology`, `validate_vault`, `analyze_repo_structure`, `infer_imports`, `index_project`
+- write: `absorb_document`, `add_concept`, `add_concepts`, `add_relation`, `add_relations`, `remove_relation`, `replace_relation`, `patch_concept`, `reclassify_concept`, `delete_concept`, `rename_concept`, `merge_concepts`, `git_snapshot`
 
 With this in place, the agent can answer **"which concept is this file an element of?"** directly during code exploration. No re-inferring every conversation.
 
@@ -566,10 +574,10 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 ### ✅ Phase 3 — AI agent partner — merged
 
 1. ✅ `mcp/` package — MCP server (`ontology-atlas-mcp`)
-2. ✅ 32 tools (read 19 + write 13): connection/root/toolset proof, vault-scoped Git status/history and local snapshots, persisted Builder context, list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, and dry-run-first rename/merge/delete/absorb writes.
+2. ✅ 32 tools (read 19 + write 13): connection/root/toolset proof, vault-scoped Git status/history and local snapshots, persisted Workshop context (`builder_context` compatibility operation), list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, and dry-run-first rename/merge/delete/absorb writes.
 3. ✅ CLI command (`ontology-atlas`) — `npx ontology-atlas init <folder>` scaffolds the vault. The installed app `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
-5. ✅ `docs/ontology/` dogfood vault — 96 nodes describing our own mental model, including agent-practice notes as document nodes
+5. ✅ `docs/ontology/` dogfood vault — 97 nodes describing our own mental model, including agent-practice notes as document nodes
 
 ### Agent practitioner concerns map
 
@@ -602,7 +610,7 @@ workbench 여야 한다.
 
 ### ⏳ Phase 4 execution — Wedge + shared surface
 
-1. ✅ CLI 명령 확장 — 48 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight + write, agent handoff, live agent activity heartbeat, growth/maintenance queue, graph CRUD, and graph deep dive
+1. ✅ CLI 명령 확장 — 52 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight + write, agent handoff, live agent activity heartbeat, growth/maintenance queue, graph CRUD, and graph deep dive
 2. ✅ AI agent dogfood 사이클 — Claude Code 가 mcp 로 codebase 분석 + add_concept 워크플로 검증 (R12 + R14 메타 검증)
 3. ⏳ 10-minute shared understanding loop proof — fresh repo 에서 `init → bootstrap → topology/ontology core 파악 → MCP 기반 답변 개선 → agent sync 제안 → git diff 리뷰 → 다음 planning/development task 개선` 이 10분 안에 보이는지 검증. 이게 안 되면 아직 제품이 아니라 좋은 엔진.
 4. ⏳ Stakeholder-readable topology proof — `/topology` 와 `/ontology` 만 봐도 "무엇이 핵심 domain/capability 인가, 무엇이 구현 evidence 인가, 어떤 변화가 어디에 영향 주는가" 를 비개발자도 설명할 수 있는지 검증.
@@ -640,12 +648,12 @@ What changed:
 The direction is no longer waiting on a phase pick. The active bar is evidence:
 
 - Installed macOS app launches and route-smokes the ontology workbench surfaces.
-- `/ontology` presents Browse / Write / Query as one loop over the same vault
-  graph, not as documentation navigation.
-- `/ontology/edit` stays narrowly scoped to relation write review, source-file
-  patch preview, preflight, and proof handoff.
-- `/ontology/insights` proves the local markdown graph can be queried like a
-  small graph database through health, scans, paths, relation checks, and
-  explanation contracts.
+- Topology + INDEX is the read/inspect surface, Workshop is the frontmatter
+  relation-write surface, and Insights is the five-question maintenance board.
+- `/ontology` redirects to `/topology?index=expanded`; `/ontology/edit`
+  redirects to Workshop and forwards `?node=`. Neither redirect owns current
+  chrome.
+- Agent/CLI graph DB packs still expose health, scans, paths, relation checks,
+  and explanation contracts without turning Insights into a query cockpit.
 - CLI/MCP proof gates must stay runnable over `docs/ontology` before the goal is
   treated as complete.

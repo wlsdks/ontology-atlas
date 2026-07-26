@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { CLI_COMMAND_COUNT } from '../../../cli/src/lib/cli-commands.mjs';
 import { parseMcpToolMetadataFromDescription } from '../../../cli/src/lib/mcp-metadata.mjs';
 import { dogfoodVaultCensus } from '../../../scripts/lib/vault-census.mjs';
 
@@ -11,6 +12,7 @@ const MCP_TOOL_METADATA = parseMcpToolMetadataFromDescription(MCP_PKG.descriptio
 
 const CURRENT_SURFACE_DOCS = [
   'README.md',
+  'docs/FEATURES.md',
   'docs/PUBLISH-NPM.md',
   'docs/launch/README.md',
   'docs/launch/HN-POST.md',
@@ -36,6 +38,7 @@ const MCP_TOOL_COUNT_DOCS = [
 
 const MCP_TOOL_SPLIT_DOCS = [
   'README.md',
+  'docs/FEATURES.md',
   'docs/launch/README.md',
   'docs/launch/REDDIT-POSTS.md',
 ] as const;
@@ -136,7 +139,7 @@ describe('current-surface launch docs', () => {
     expect(MCP_TOOL_METADATA).toBeTruthy();
     const findings: string[] = [];
     const splitPattern = new RegExp(
-      `${MCP_TOOL_METADATA?.readCount} read\\s*\\+\\s*${MCP_TOOL_METADATA?.writeCount} write|read ${MCP_TOOL_METADATA?.readCount}\\s*\\+\\s*write ${MCP_TOOL_METADATA?.writeCount}`,
+      `${MCP_TOOL_METADATA?.readCount} read\\s*(?:\\+|·)\\s*${MCP_TOOL_METADATA?.writeCount} write|read ${MCP_TOOL_METADATA?.readCount}\\s*\\+\\s*write ${MCP_TOOL_METADATA?.writeCount}`,
       'i',
     );
 
@@ -159,5 +162,17 @@ describe('current-surface launch docs', () => {
     expect(readme).toContain(`elements ${counts.elements}`);
     expect(readme).toContain(`project ${counts.project}`);
     expect(readme).toContain(`vault-readme ${counts['vault-readme']}`);
+  });
+
+  it('keeps the packaged agent workflow aligned with current CLI, MCP, and dogfood facts', async () => {
+    expect(MCP_TOOL_METADATA).toBeTruthy();
+    const workflow = await readFile(path.join(ROOT, 'docs/AGENT-GRAPH-WORKFLOW.md'), 'utf8');
+    const census = dogfoodVaultCensus(ROOT);
+
+    expect(workflow).toContain(`${CLI_COMMAND_COUNT} commands`);
+    expect(workflow).toContain(`${MCP_TOOL_METADATA?.toolCount} local tools`);
+    expect(workflow).toContain(`${MCP_TOOL_METADATA?.readCount} read tools`);
+    expect(workflow).toContain(`${MCP_TOOL_METADATA?.writeCount} write tools`);
+    expect(workflow).toContain(`${census.total} nodes`);
   });
 });

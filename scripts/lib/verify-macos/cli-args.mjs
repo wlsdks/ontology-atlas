@@ -16,6 +16,12 @@ export function parseVerifyAppLaunchArgs(argv, {
   const tryWindowScreenshotArg = argv.find((arg) => arg.startsWith("--try-window-screenshot="));
   const webviewEvidenceArg = argv.find((arg) => arg.startsWith("--webview-evidence="));
   const webviewRouteArg = argv.find((arg) => arg.startsWith("--require-webview-route="));
+  const webviewFixtureVaultArg = argv.find((arg) =>
+    arg.startsWith("--webview-fixture-vault="),
+  );
+  const webviewFixtureVaultValue = webviewFixtureVaultArg
+    ? webviewFixtureVaultArg.slice("--webview-fixture-vault=".length).trim() || null
+    : null;
   const requireAccessibilityText = argv
     .filter((arg) => arg.startsWith("--require-accessibility-text="))
     .map((arg) => arg.slice("--require-accessibility-text=".length).trim())
@@ -34,6 +40,9 @@ export function parseVerifyAppLaunchArgs(argv, {
     requireWebviewContent: argv.includes("--require-webview-content") || !argv.includes("--open-app"),
     requireWebviewRoute: webviewRouteArg
       ? webviewRouteArg.slice("--require-webview-route=".length).trim() || null
+      : null,
+    webviewFixtureVaultPath: webviewFixtureVaultValue
+      ? normalizeAppPath(webviewFixtureVaultValue)
       : null,
     printWindowDiagnostics: argv.includes("--print-window-diagnostics"),
     verifyTopologyDrag: argv.includes("--verify-topology-drag"),
@@ -74,7 +83,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 
 
 export function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--require-webview-reduced-motion] [--verify-topology-drag] [--verify-topology-selected-relation] [--verify-topology-node-popover] [--verify-topology-create-node] [--verify-topology-focus-noop] [--verify-topology-frame-profile] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--webview-fixture-vault=docs/ontology] [--require-webview-reduced-motion] [--verify-topology-drag] [--verify-topology-selected-relation] [--verify-topology-node-popover] [--verify-topology-create-node] [--verify-topology-focus-noop] [--verify-topology-frame-profile] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -133,6 +142,10 @@ Options:
                     Direct executable launch only. Navigate the packaged WebView to PATH before
                     reading the DOM and require the reported tauri:// pathname to match. Useful
                     for proving installed-app routes such as /en/topology/ without UI clicks.
+  --webview-fixture-vault=PATH
+                    Direct executable launch only. Open PATH inside the verifier's incognito
+                    WebView storage before route checks. The user's persisted vault remains
+                    untouched, while the evidence payload records the exact fixture path.
   --verify-topology-drag
                     Direct executable launch only. On /topology routes, select the Views card,
                     perform a short WebView-level card drag, and require the dragged card plus a

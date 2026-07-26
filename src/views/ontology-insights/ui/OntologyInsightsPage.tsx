@@ -294,6 +294,7 @@ export function OntologyInsightsPage() {
       // CLI-parity issues rank above the statistical stale/orphan/promotion
       // signals — they're what flip the CLI to needs_attention.
       actionTarget: healthRepair.actionTarget ?? buildOntologyHealthActionTarget(healthSignals),
+      actionTargets: healthRepair.actionTargets,
       builderHref: buildOntologyStudioNodeHrefFromGraphId,
       ontologyHref: mapNodeHref,
     }),
@@ -708,6 +709,8 @@ export function OntologyInsightsPage() {
     repairQueueActionKindContainment: t("repairQueueActionKindContainment"),
     repairQueueOpenBuilder: t("repairQueueOpenBuilder"),
     repairQueueOpenOntology: t("repairQueueOpenOntology"),
+    repairQueueRestShow: (count: number) => t("repairQueueRestShow", { count }),
+    repairQueueRestHide: t("repairQueueRestHide"),
     queueTitle: t("doNext.queueTitle"),
     sectionNeglectedHub: t("doNext.sectionNeglectedHub"),
     sectionOrphan: t("doNext.sectionOrphan"),
@@ -853,7 +856,12 @@ export function OntologyInsightsPage() {
             <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
           </div>
         </div>
-        <main id="main" className="mx-auto w-full max-w-[var(--page-max)] px-6 py-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-10">
+        <main
+          id="main"
+          data-insights-surface="maintenance-board"
+          data-insights-question-model="one-tab-one-question"
+          className="mx-auto w-full max-w-[var(--page-max)] px-6 py-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-10"
+        >
         <MountedGlobalSearch open={searchPaletteOpen} onOpenChange={setSearchPaletteOpen} />
 
         <header className="flex flex-wrap items-end gap-4">

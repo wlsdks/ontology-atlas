@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import type { VaultManifest } from '@/entities/docs-vault';
+import type { AgentPackageDistribution } from '@/shared/config';
 import { copyText } from '@/shared/lib/copy-text';
 import { TooltipProvider } from '@/shared/ui';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
@@ -16,6 +17,18 @@ vi.mock('@/shared/lib/tauri-vault-fs', () => ({
 }));
 
 const copyTextMock = vi.mocked(copyText);
+const publishedPackages: AgentPackageDistribution = {
+  status: 'published',
+  checkedAt: '2026-07-27',
+  evidence: 'npm-registry-published',
+  cliPackage: 'ontology-atlas',
+  mcpPackage: 'ontology-atlas-mcp',
+};
+const unpublishedPackages: AgentPackageDistribution = {
+  ...publishedPackages,
+  status: 'unpublished',
+  evidence: 'npm-registry-e404',
+};
 
 function render(ui: React.ReactElement) {
   return rtlRender(
@@ -74,6 +87,7 @@ function renderPanel(
     <VaultAgentSetupPanel
       canEditCurrent
       localVault={localVault}
+      packageDistribution={publishedPackages}
       validationSummary={props.validationSummary ?? null}
       onOpenWorkflowGuide={vi.fn()}
     />,
@@ -97,6 +111,7 @@ describe('VaultAgentSetupPanel', () => {
           <VaultAgentSetupPanel
             canEditCurrent
             localVault={makeLocalVault({ status: 'idle', agentConfigStatus: null })}
+            packageDistribution={publishedPackages}
             validationSummary={null}
             onOpenWorkflowGuide={vi.fn()}
           />
@@ -147,7 +162,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByText('수정 전에 JSON gate를 실행하고 ok와 performanceOk를 따로 확인합니다.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('에이전트 root에서 mcp-verify를 실행해 index_project 포함 로컬 24개 tool 연결을 증명합니다.'),
+      screen.getByText('에이전트 root에서 mcp-verify를 실행해 index_project 포함 로컬 32개 tool 연결을 증명합니다.'),
     ).toBeInTheDocument();
     expect(
       screen.getByText('첫 ontology write 전에 workspace-brief와 agent-brief를 읽습니다.'),
@@ -175,7 +190,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('mcp_verify')).toBeInTheDocument();
     expect(
-      screen.getByText('mcp-verify 로 local MCP server boot, index_project 포함 24개 tool 목록, target vault 읽기를 증명합니다.'),
+      screen.getByText('mcp-verify 로 local MCP server boot, index_project 포함 32개 tool 목록, target vault 읽기를 증명합니다.'),
     ).toBeInTheDocument();
     expect(screen.getByText('json_gate')).toBeInTheDocument();
     expect(
@@ -193,7 +208,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('Graph DB pack')).toBeInTheDocument();
     expect(screen.getByText('Setup gate')).toBeInTheDocument();
     expect(
-      screen.getByText('Claude Code, Codex, Cursor가 index_project 포함 24개 tool을 직접 호출하고 구조화된 오류 복구와 write guardrail을 받습니다.'),
+      screen.getByText('Claude Code, Codex, Cursor가 index_project 포함 32개 tool을 직접 호출하고 구조화된 오류 복구와 write guardrail을 받습니다.'),
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText('MCP verify 명령 미리보기'),
@@ -437,6 +452,7 @@ describe('VaultAgentSetupPanel', () => {
       <VaultAgentSetupPanel
         canEditCurrent
         localVault={localVault}
+        packageDistribution={publishedPackages}
         validationSummary={null}
         onOpenWorkflowGuide={onOpenWorkflowGuide}
       />,
@@ -484,7 +500,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('CLI-only: use validate, workspace-brief'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP-connected: let Claude Code, Codex, or Cursor call 24 tools'),
+      expect.stringContaining('MCP-connected: let Claude Code, Codex, or Cursor call 32 tools'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Graph DB pack: use bounded query plans'),
@@ -499,7 +515,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('Config state: agent-setup --json reports root-specific'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 24 tools including index_project'),
+      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 32 tools including index_project'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk'),
@@ -957,7 +973,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('Config state: agent-setup --json reports root-specific'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 24 tools including index_project'),
+      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 32 tools including index_project'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk'),
@@ -1198,6 +1214,7 @@ describe('VaultAgentSetupPanel', () => {
       <VaultAgentSetupPanel
         canEditCurrent
         localVault={makeLocalVault()}
+        packageDistribution={publishedPackages}
         validationSummary={null}
         onOpenWorkflowGuide={vi.fn()}
       />,
@@ -1215,11 +1232,12 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByTestId('agent-setup-advanced')).toBeInTheDocument();
   });
 
-  it('쓰기 가능한 vault면 Claude Code·Codex 는 연결(생성) 버튼이다', () => {
+  it('missing 설정은 생성 버튼이고 이미 유효한 설정은 준비 상태다', () => {
     render(
       <VaultAgentSetupPanel
         canEditCurrent
         localVault={makeLocalVault()}
+        packageDistribution={publishedPackages}
         validationSummary={null}
         onOpenWorkflowGuide={vi.fn()}
       />,
@@ -1228,7 +1246,121 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByRole('button', { name: 'Claude Code에 연결' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Codex에 연결' }),
+      screen.getByRole('status', { name: 'Codex 설정 준비됨' }),
     ).toBeInTheDocument();
+  });
+
+  it('기존 설정이 invalid면 완료나 자동 생성으로 오판하지 않고 교체 설정을 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    const localVault = makeLocalVault({
+      handle: {
+        name: 'broken-vault',
+        rootPath: '/private/tmp/broken-vault',
+      } as unknown as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        mcpJsonValid: false,
+        codexConfig: true,
+        codexConfigValid: false,
+        mcpExample: true,
+        mcpExampleValid: true,
+      },
+    });
+
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={localVault}
+        packageDistribution={publishedPackages}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.queryByText('이 폴더에 .mcp.json 을 만들었어요'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Claude Code에 연결' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Codex에 연결' }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '올바른 .mcp.json 복사' }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: '올바른 Codex 설정 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(2));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('"OATLAS_VAULT": "."'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('[mcp_servers.ontology-atlas]'),
+    );
+    expect(localVault.ensureAgentConfigs).not.toHaveBeenCalled();
+  });
+
+  it('유효한 설정은 다시 누르는 버튼이 아니라 준비 상태로 표시한다', () => {
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault({
+          agentConfigStatus: {
+            mcpJson: true,
+            mcpJsonValid: true,
+            codexConfig: true,
+            codexConfigValid: true,
+            mcpExample: true,
+            mcpExampleValid: true,
+          },
+        })}
+        packageDistribution={publishedPackages}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('status', { name: '.mcp.json 준비됨' })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Codex 설정 준비됨' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: '.mcp.json 준비됨' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Codex 설정 준비됨' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('공개 패키지가 없으면 실행 불가능한 설정과 후속 단계를 숨긴다', () => {
+    const localVault = makeLocalVault({
+      agentConfigStatus: {
+        mcpJson: true,
+        mcpJsonValid: true,
+        codexConfig: true,
+        codexConfigValid: true,
+        mcpExample: true,
+        mcpExampleValid: true,
+      },
+    });
+
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={localVault}
+        packageDistribution={unpublishedPackages}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('agent-package-unavailable')).toHaveTextContent('공개되지');
+    expect(screen.queryByTestId('agent-setup-step-2')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('agent-setup-step-3')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Claude Code에 연결' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('agent-setup-advanced-toggle')).not.toBeInTheDocument();
+    expect(localVault.ensureAgentConfigs).not.toHaveBeenCalled();
   });
 });

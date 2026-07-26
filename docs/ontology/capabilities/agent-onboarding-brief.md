@@ -47,3 +47,9 @@ copies a business-question / graph-check packet built from
 `agent-query-recipes.ts` (see `capabilities/agent-graph-readiness`) — not from
 `agent-briefing-packet.ts`. A dedicated 1-paste onboarding surface, if still
 wanted, needs a new UI home; it does not currently have one.
+
+## 2026-07-26 freshness review
+
+`HomePage` changed local-folder fallback, toast reservation, and selected-node
+freshness wiring. None of those changes created a dedicated onboarding-brief
+surface, so the current capability boundary above remains accurate.

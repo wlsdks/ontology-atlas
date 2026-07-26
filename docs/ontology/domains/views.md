@@ -1,7 +1,7 @@
 ---
 slug: domains/views
 kind: domain
-title: Views (Topology · Browse · Studio)
+title: Views (Topology · Workshop · Insights)
 display_ko: 화면(뷰)
 display_en: Views
 capabilities: [agent-graph-readiness, capabilities/agent-live-activity-contract, capabilities/agent-onboarding-brief, capabilities/changes-only-review, capabilities/edge-meaning-popover, capabilities/topology-change-visualization, capabilities/topology-direct-edit, capabilities/topology-kind-legibility, capabilities/topology-node-significance, capabilities/topology-skeleton-entry, collaborator-reader-brief, ontology-hub-mode-aware, studio-deep-link-focus, studio-relation-write-confirm, studio-vault-write, topology-analysis-modes, topology-canvas-render, topology-ontology-inspection]
@@ -11,11 +11,21 @@ relates: [documents/views-domain-boundary-audit, domains/onboarding-ux, domains/
 
 # Views
 
-같은 ontology 그래프의 세 출구. 토폴로지 (canvas-2D `topology-map-v2` spatial
-network — `/`, `/topology`), 둘러보기 (`/ontology` 는 토폴로지 INDEX 로 흡수된
-얇은 리다이렉트 + 노드 detail), 공방 (나침 무대 `/ontology/studio` — 노드
-의미를 관계 소켓으로 완성해 실제 frontmatter 를 쓰는 표면; 구 xyflow ERD 빌더
-`/ontology/edit` 는 2026-07-24 은퇴하고 공방으로 리다이렉트). 검색 — `⌘K`
-프로젝트 / `⇧⌘K` 노드+프로젝트 통합. Workshop 와 Insights 는 design-system 의
-operation page header 계약을 따른다: English caption 으로 surface 를 식별하고,
-Korean h1 로 실제 작업 모드를 읽게 한다.
+같은 ontology 그래프의 세 작업 출구. 토폴로지 (canvas-2D
+`topology-map-v2` spatial network — `/`, `/topology`)는 읽고 탐색하고,
+공방 (나침 무대 `/ontology/studio`)은 관계 소켓으로 의미를 완성해 실제
+frontmatter 를 쓰며, 인사이트 (`/ontology/insights`)는 다섯 질문으로 정비
+우선순위를 읽고 agent handoff를 만든다. `/ontology` 는 Topology INDEX로,
+구 xyflow ERD Builder `/ontology/edit` 는 공방으로 리다이렉트한다. 검색은
+`⌘K` 프로젝트 / `⇧⌘K` 노드+프로젝트 통합이다. Workshop와 Insights는
+design-system의 operation page header 계약을 따른다: English caption으로
+surface를 식별하고, Korean h1로 실제 작업 모드를 읽게 한다.
+
+## 2026-07-26 entry and map audit
+
+The topology surface now keeps canvas labels outside their rendered node rings,
+measures the persistent legend stack before positioning toasts, and removes
+Latin-only eyebrow spacing from Korean first-run/legend copy. The compact
+datasheet and `FullDetailA1` share the same mtime-derived freshness sentence.
+Unsupported browser folder entry uses one installed-app guide from both the
+visible switch control and `⌘O`.

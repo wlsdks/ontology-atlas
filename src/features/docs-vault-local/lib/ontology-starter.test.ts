@@ -65,7 +65,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain("Claude Code / Cursor");
     expect(readme).toContain("Codex");
     expect(readme).toContain(".codex/config.toml");
-    expect(readme).toContain("ontology-atlas agent-setup /absolute/path/to/this-vault --root . --write");
+    expect(readme).toContain("cli/src/index.mjs agent-setup /absolute/path/to/this-vault --root . --write");
     expect(readme).toContain("codex mcp add ontology-atlas");
     expect(readme).toContain(".mcp.json.example");
     expect(readme).toContain("OATLAS_VAULT");
@@ -100,7 +100,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain('"operation": "cycles"');
     expect(readme).toContain('"operation": "growth_plan"');
     expect(readme).toContain('"operation": "maintenance_plan"');
-    expect(readme).toContain("ontology-atlas bootstrap . --vault");
+    expect(readme).toContain("cli/src/index.mjs bootstrap . --vault");
     expect(readme).toContain("If the CLI is installed");
     expect(readme).toContain("ontology-atlas validate .");
     expect(readme).toContain("ontology-atlas agent-brief . --graph-db-pack");

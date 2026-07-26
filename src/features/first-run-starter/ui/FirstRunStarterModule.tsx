@@ -9,6 +9,7 @@ import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
 import { useSampleSource } from "@/features/vault-sample-source";
 import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
 import { CompactCopyButton } from "@/shared/ui";
+import { AGENT_PACKAGE_DISTRIBUTION } from "@/shared/config";
 import { useFirstRunStarter } from "../model/use-first-run-starter";
 import {
   readVaultGuideAutoOpened,
@@ -63,7 +64,10 @@ export interface FirstRunStarterModuleProps {
  * 전용으로만 숨어 있어 "나중에"로 미뤄지고 재방문이 끊겼다. 새 표면을
  * 만들지 않고 이 카드 안에 명령 복사 한 줄만 추가한다.
  */
-const CLI_BOOTSTRAP_COMMAND = "npx ontology-atlas init && npx ontology-atlas bootstrap";
+const CLI_BOOTSTRAP_COMMAND =
+  AGENT_PACKAGE_DISTRIBUTION.status === "published"
+    ? "npx ontology-atlas init && npx ontology-atlas bootstrap"
+    : "node cli/src/index.mjs init && node cli/src/index.mjs bootstrap";
 
 /**
  * INDEX 패널(TopologyIndexPanel) 맨 위에 통합되는 "시작하기" 모듈 —
@@ -446,6 +450,16 @@ export function FirstRunStarterModule({
                 className="-my-1.5 -mr-1.5 shrink-0"
               />
             </div>
+            {AGENT_PACKAGE_DISTRIBUTION.status !== "published" ? (
+              <p
+                data-testid="first-run-starter-cli-unpublished"
+                className="mt-1.5 text-caption leading-relaxed text-[color:var(--color-status-warning)]"
+              >
+                {t("cliBridgeUnpublished", {
+                  checkedAt: AGENT_PACKAGE_DISTRIBUTION.checkedAt,
+                })}
+              </p>
+            ) : null}
             <code className="mt-1 block whitespace-pre-wrap break-words font-mono text-label leading-[1.6] text-[color:var(--topology-v2-panel-text-secondary)]">
               {CLI_BOOTSTRAP_COMMAND}
             </code>

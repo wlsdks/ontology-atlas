@@ -1340,7 +1340,7 @@ export function createOntologyEngine(artifact, options = {}) {
       source: 'persisted_vault',
       focus,
       builder: {
-        href: `/ontology/edit/?node=${encodeURIComponent(focusParam)}`,
+        href: `/ontology/studio/?node=${encodeURIComponent(focusParam)}`,
         focusParam,
         unsavedDraftsIncluded: false,
       },
@@ -1354,10 +1354,10 @@ export function createOntologyEngine(artifact, options = {}) {
       agentHandoff: {
         writeTools: ['add_concepts', 'relation_check', 'add_relations', 'patch_concept'],
         constraints: [
-          'Only persisted vault documents are visible; unsaved Builder drafts must be saved before MCP can inspect them.',
+          'Only persisted vault documents are visible; unsaved Workshop drafts must be saved before MCP can inspect them.',
           'Run relation_check before add_relations when introducing a new edge pattern.',
           'Use patch_concept with the row expected_mtime when changing canvasPosition or other existing frontmatter.',
-          'Re-run builder_context after writes to verify the persisted graph and layout handoff.',
+          'Re-run builder_context after writes to verify the persisted graph and Workshop handoff.',
         ],
       },
     };

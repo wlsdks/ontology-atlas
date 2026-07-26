@@ -801,8 +801,14 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       ontologyNav: true,
       sourceVaultNav: true,
       agentBriefCopy: true,
-      businessDecisionQuestions: true,
-      readerDecisionLens: true,
+      businessDecisionQuestions: false,
+      readerDecisionLens: false,
+      insightsMaintenanceBoard: true,
+      insightsQuestionModel: "one-tab-one-question",
+      insightsTabCount: 5,
+      insightsSelectedTabCount: 1,
+      insightsSelectedPanelVisible: true,
+      insightsHandoff: true,
       topologyRelief: false,
       topologyAttentionWinner: "active-relation-inspector",
       topologyCardCount: 0,
@@ -1932,6 +1938,26 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
   assert.equal(validateWebviewVerifyPayload(payload), null);
+  assert.match(
+    validateWebviewVerifyPayload(payload, {
+      expectedFixtureVault: "/tmp/atlas-fixture",
+    }),
+    /fixture vault/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          verificationFixtureVault: "/tmp/atlas-fixture",
+          verificationFixtureVaultError: "",
+        },
+      },
+      { expectedFixtureVault: "/tmp/atlas-fixture" },
+    ),
+    null,
+  );
   assert.equal(validateWebviewVerifyPayload(selectedNodeFocusPayload()), null);
   assert.equal(
     validateWebviewVerifyPayload(
@@ -2130,7 +2156,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         requireTopologySelectedRelation: true,
       },
     ),
-    /did not click a Relief relation label/,
+    /did not trigger a topology relation selection/,
   );
   assert.match(
     validateWebviewVerifyPayload(
@@ -6584,13 +6610,13 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     /Ontology Atlas workbench markers/,
   );
   assert.match(validateWebviewVerifyPayload({ ...payload, markers: null }), /structured markers/);
-  assert.match(
+  assert.equal(
     validateWebviewVerifyPayload({
       ...payload,
       href: "tauri://localhost/ko/ontology/insights/",
       markers: { ...payload.markers, businessDecisionQuestions: false },
     }),
-    /business decision questions marker/,
+    null,
   );
   assert.equal(
     validateWebviewVerifyPayload({
@@ -6600,13 +6626,132 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     }),
     null,
   );
+  const canvasV2SelectedRelationPayload = {
+    ...payload,
+    href: "tauri://localhost/ko/topology/",
+    title: "화면(뷰) · 지형도 · ontology-atlas",
+    bodyText:
+      "Atlas\n지도\n문서함\n공방\n인사이트\n프로젝트\n지형도\nINDEX\n화면(뷰)\n관계",
+    width: 1512,
+    height: 917,
+    markers: {
+      ...payload.markers,
+      topologyRelief: false,
+      topologyMapEngine: "v2",
+      topologyTopRelayoutLabel: "자동 정렬",
+      topologyTopSearchLabel: "검색",
+      topologyV2DetailPanelVisible: false,
+      topologySelectedRelationVerifyAttempted: true,
+      topologySelectedRelationVerifyClicked: true,
+      topologySelectedRelationVerifySelected: true,
+      topologySelectedRelationVerifyReason: "selected-v2-edge",
+      topologyV2SelectedRelationSource: "domain:views",
+      topologyV2SelectedRelationTarget: "capability:topology-canvas-render",
+      topologyV2SelectedRelationType: "contains",
+      topologyV2EdgePanelVisible: true,
+      topologyV2EdgePanelRole: "dialog",
+      topologyV2EdgePanelAriaLabel:
+        "화면(뷰)이 토폴로지 캔버스 렌더링을 포함해요",
+      topologyV2EdgePanelSentence:
+        "화면(뷰)이 토폴로지 캔버스 렌더링을 포함해요",
+      topologyV2EdgePanelWidth: 300,
+      topologyV2EdgePanelHeight: 248,
+    },
+  };
+  assert.equal(
+    validateWebviewVerifyPayload(canvasV2SelectedRelationPayload, {
+      expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus",
+      requireTopologySelectedRelation: true,
+    }),
+    null,
+  );
   assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...canvasV2SelectedRelationPayload,
+        markers: {
+          ...canvasV2SelectedRelationPayload.markers,
+          topologyV2EdgePanelVisible: false,
+        },
+      },
+      {
+        expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus",
+        requireTopologySelectedRelation: true,
+      },
+    ),
+    /canvas-v2 selected relation inspector/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...canvasV2SelectedRelationPayload,
+        markers: {
+          ...canvasV2SelectedRelationPayload.markers,
+          guidedTourOverlayVisible: true,
+        },
+      },
+      {
+        expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus",
+        requireTopologySelectedRelation: true,
+      },
+    ),
+    /competed with the guided tour overlay/,
+  );
+  assert.equal(
     validateWebviewVerifyPayload({
       ...payload,
       href: "tauri://localhost/ko/ontology/insights/",
       markers: { ...payload.markers, readerDecisionLens: false },
     }),
-    /reader decision lens marker/,
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/ontology/insights/",
+      markers: { ...payload.markers, insightsMaintenanceBoard: false },
+    }),
+    /insights maintenance board marker/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/ontology/insights/",
+      markers: { ...payload.markers, insightsQuestionModel: "" },
+    }),
+    /insights question model/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/ontology/insights/",
+      markers: { ...payload.markers, insightsTabCount: 4 },
+    }),
+    /insights tab count was 4/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/ontology/insights/",
+      markers: { ...payload.markers, insightsSelectedTabCount: 0 },
+    }),
+    /insights selected tab count was 0/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/ontology/insights/",
+      markers: { ...payload.markers, insightsSelectedPanelVisible: false },
+    }),
+    /insights selected panel was not visible/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/ontology/insights/",
+      markers: { ...payload.markers, insightsHandoff: false },
+    }),
+    /insights agent handoff marker/,
   );
   assert.match(validateWebviewVerifyPayload({ ...payload, href: "about:blank" }), /tauri/);
   assert.match(

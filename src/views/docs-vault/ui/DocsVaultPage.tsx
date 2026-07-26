@@ -148,6 +148,7 @@ import {
 } from "../lib/dogfood-vault-path";
 import {
   parseDocsVaultView as parseView,
+  parseDocsVaultSource,
   isDocsVaultLocalSourceDisabled,
   persistEditorSave,
   readStoredListCollapsed,
@@ -169,6 +170,7 @@ import {
   buildOntologyInsightsReturnHref,
   parseInsightsReturnMarker,
 } from "@/entities/knowledge-graph";
+import { resolveStaticVaultSource } from '@/entities/docs-vault';
 
 function DocsVaultContent() {
   const t = useTranslations('docsVault');
@@ -177,6 +179,9 @@ function DocsVaultContent() {
   const searchParams = useSearchParams();
   const querySlug = searchParams?.get('slug') ?? null;
   const queryView = parseView(searchParams?.get('view'));
+  const querySource = parseDocsVaultSource(searchParams?.get('source'));
+  const querySample =
+    searchParams?.get('sample') === 'dogfood' ? 'dogfood' : null;
   const queryDogfood = searchParams?.get('dogfood') ?? null;
   // 목록 순서 — URL 이 진실원. 모르는 값은 에러가 아니라 기본값이다.
   const queryTreeSort = parseDocsTreeSort(searchParams?.get('sort'));
@@ -245,7 +250,10 @@ function DocsVaultContent() {
   // ?intent=local — landing CTA "내 마크다운 폴더 열기" 의 진입 query.
   // source 초기값을 'local' 로 박아 처음부터 picker UI 가 우측 sidebar 에
   // 보이게 (eval B4 finding — 이전엔 picker 가 4-단계 깊숙이 묻혀 있었음).
-  const [source, setSource] = useState<Source>('server');
+  const [source, setSource] = useState<Source>(querySource ?? 'server');
+  const [staticSampleOverride, setStaticSampleOverride] = useState<
+    'dogfood' | null
+  >(querySample);
   // SSR의 안전한 기본값(server)에서 시작한 뒤 저장된 source를 읽는 동안에는
   // 기본 README를 선택하지 않는다. 로컬 딥링크로 앱을 다시 열 때 server
   // manifest가 먼저 렌더되어 직전 문서를 덮어쓰는 레이스를 막는다.
@@ -274,6 +282,7 @@ function DocsVaultContent() {
   // landing 의 '내 마크다운 폴더 열기' CTA 가 dead-end 안 되도록.
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (querySource) return;
     const intent = new URLSearchParams(window.location.search).get('intent');
     if (shouldHonorLocalIntent(intent, isDesktopRuntime)) {
       window.queueMicrotask(() => {
@@ -286,7 +295,7 @@ function DocsVaultContent() {
     // mount 1회만 — 사용자가 직접 닫은 후 reload 시 다시 안 열리게.
     // setAdvancedOpen 은 useAdvancedMenu 의 useCallback wrap 결과라 ref-stable
     // 이지만 ESLint 가 destructured method 의 stability 추적 못 해 명시.
-  }, [isDesktopRuntime, setAdvancedOpen]);
+  }, [isDesktopRuntime, querySource, setAdvancedOpen]);
   const [sourceTreeOpen, setSourceTreeOpen] = useState(false);
   const [docInspectorOpen, setDocInspectorOpen] = useState(false);
   // 문서 목록 aside 접힘 — design-prescription.md ③-4: 접힘은 width 0(레일
@@ -386,16 +395,29 @@ function DocsVaultContent() {
   const handleOpenAgentGraphWorkflowGuide = useCallback(() => {
     const slug = 'AGENT-GRAPH-WORKFLOW';
     setSource('server');
-    storeSource('server');
+    setStaticSampleOverride('dogfood');
     setSelectedSlug(slug);
     setRecentSlugs(pushRecentDoc('server', slug));
     setView('doc');
-    replaceUrlState({ slug, view: 'doc', intent: null });
+    replaceUrlState({
+      source: 'server',
+      sample: 'dogfood',
+      slug,
+      view: 'doc',
+      intent: null,
+    });
     setAdvancedOpen(false);
   }, [replaceUrlState, setAdvancedOpen, setRecentSlugs]);
 
   useEffect(() => {
     migrateLegacyRecentDocs();
+    if (querySource) {
+      scheduleStateSync(() => {
+        setSource(querySource);
+        setSourcePreferenceHydrated(true);
+      });
+      return;
+    }
     // ?intent=local 은 설치 앱 안에서만 local source 로 해석한다. hosted
     // browser 에서는 웹을 홍보/다운로드 surface 로 유지하고 로컬 vault 작업을
     // 열지 않는다.
@@ -410,7 +432,7 @@ function DocsVaultContent() {
       setSource(readStoredSource());
       setSourcePreferenceHydrated(true);
     });
-  }, [isDesktopRuntime]);
+  }, [isDesktopRuntime, querySource]);
 
   // C5 — when a local vault is live, landing on 문서함 must NOT silently flip to
   // the Sample (`server`) source just because that was the last stored
@@ -424,11 +446,11 @@ function DocsVaultContent() {
   useEffect(() => {
     if (autoLocalOnLandingRef.current) return;
     if (!sourcePreferenceHydrated) return;
-    if (shouldPreferLocalOnLanding(localVaultStatus, source)) {
+    if (shouldPreferLocalOnLanding(localVaultStatus, source, querySource)) {
       autoLocalOnLandingRef.current = true;
       setSource('local');
     }
-  }, [sourcePreferenceHydrated, localVaultStatus, source]);
+  }, [sourcePreferenceHydrated, localVaultStatus, querySource, source]);
 
   // 문서함 점검 중앙 모달 — design-prescription.md ③-5: 로드마다 모달이 뜨면
   // modality 위반이므로 open 상태는 persist 하지 않고 항상 닫힌 채 시작한다.
@@ -507,6 +529,7 @@ function DocsVaultContent() {
 
   const handleSourceChange = useCallback((next: Source) => {
     setSource(next);
+    setStaticSampleOverride(null);
     storeSource(next);
     // 소스 전환 시 선택 해제 — 동일 slug 가 다른 볼트에 있을 가능성 적음.
     setSelectedSlug(null);
@@ -516,8 +539,8 @@ function DocsVaultContent() {
     if (next === 'server') setSampleWelcomeDismissed(false);
     replaceUrlState(
       next === 'server'
-        ? { slug: null, view, intent: null }
-        : { slug: null, view },
+        ? { slug: null, view, intent: null, source: null, sample: null }
+        : { slug: null, view, source: null, sample: null },
     );
     // Local 로 전환 시 Obsidian 스타일 welcome 화면에서 직접 선택하게 한다.
     // native picker 는 사용자가 "폴더 열기" 를 눌렀을 때만 열린다.
@@ -548,7 +571,10 @@ function DocsVaultContent() {
   // static 폴백은 사용자가 고른 샘플(도그푸드 / 예시 쇼핑몰)을 따른다 —
   // 번들 매니페스트를 직접 읽으면 "예시 비즈니스 보기" 선택이 문서함에서만
   // 조용히 무시돼 지도와 다른 볼트를 보여주게 된다.
-  const staticVault = useStaticVaultSource();
+  const preferredStaticVault = useStaticVaultSource();
+  const staticVault = staticSampleOverride
+    ? resolveStaticVaultSource(staticSampleOverride)
+    : preferredStaticVault;
   const manifest: VaultManifest =
     isLocalSourceLoaded && localVault.manifest
       ? localVault.manifest
@@ -2140,6 +2166,7 @@ function DocsVaultContent() {
                           {...(source === 'local'
                             ? {}
                             : {
+                                bundledContent: staticVault.content,
                                 repoBlobBase: ONTOLOGY_ATLAS_REPO_BLOB_BASE,
                                 vaultRepoRoot: DOCS_VAULT_REPO_ROOT,
                               })}

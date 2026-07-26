@@ -2,6 +2,7 @@
 
 > 상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자
 > 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다.
+> 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use.
 >
 > 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재
 > 흐름의 신뢰 회복을 우선한다.
@@ -12,10 +13,14 @@
 
 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다.
 2. 설치 앱에서 포인터와 키보드로 재현한다.
-3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다.
-4. 실패 테스트를 먼저 추가한다.
-5. 가장 작은 일관된 슬라이스로 수정한다.
-6. 집중 테스트와 `/Applications/Ontology Atlas.app`에서 다시 증명한다.
+3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨
+   한 장 더 캡처한다. Codex Computer Use 포인터 피드백이 제품 highlight처럼
+   보일 수 있으므로, 포인터와 함께 움직이는 표시는 앱의 주의 계층 근거로
+   세지 않는다.
+4. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다.
+5. 실패 테스트를 먼저 추가한다.
+6. 가장 작은 일관된 슬라이스로 수정한다.
+7. 집중 테스트와 `/Applications/Ontology Atlas.app`에서 다시 증명한다.
 
 심각도:
 
@@ -52,8 +57,159 @@
 | A26 | 전역 레일 목적지 이동 → 새 surface 읽기 시작 | native-safe 의도 + 공방 main/h1 계약 설치 앱 왕복 검증 완료 |
 | A27 | 768–1024px 하단 탭바 이동·safe-area·레일 전환 | route 포커스·가림·overflow·단일 내비 검증, 수정 없음 |
 | A28 | 프로젝트 → 미연결 AI 타일 → 지도 연결 시트 → 닫기 | 교차 route 열기·모달 Tab 순환·타일 포커스 복귀 설치 앱 검증 완료 |
+| A29 | 재배포 → 저장 vault 복원 → 4개 viewport → 주요 6개 surface 왕복 | 일반 화면·AX 이동 통과, 선택 관계 검증은 격리 fixture·1920/2560·Computer Use 재검증 완료 |
+| A30 | 설정 → AI 에이전트 연결 → 고급 검증·handoff 문구 읽기 | 24→32 tool inventory 수정, 완료형 설정 CTA 모순은 UX-034로 추적 |
+| A31 | CLI/MCP 현재 inventory → 활성 문서·프로토타입·fixture 교차 확인 | 52 CLI·32 MCP로 동기화, 역사/legacy 입력은 보존 |
+| A32 | AI 연결 → `기능 문서 열기` → Agent Graph Workflow 읽기 | packaged dogfood runbook URL·본문·현재 inventory 설치 앱 검증 완료 |
+| A33 | 설치 앱 foreground/AX window 자동 proof ↔ Computer Use 대조 | AX 최종 상태 우선 + 2회 bounded retry, 지속 실패 fail-closed, 최신 설치 앱 4 proof 통과 |
+| A34 | 공방 진입 선택 → ENHANCE/CREATE 키보드 작업 계속 | 1920 ENHANCE h1·2560 CREATE 이름 입력 포커스 설치 앱 검증 완료 |
+| A35 | 인사이트 수리 큐 요약 → 전체 분리 섬·누락 연결 대상 → 관계 편집/문서 | 설치 앱 1920/2560에서 전체 대상·행별 인계·제한 높이 펼침 검증 완료 |
+| A36 | 인사이트 설치 앱 자동 proof → 5탭·단일 선택·활성 패널·agent handoff | 현행 maintenance-board WebView 계약과 Computer Use 1920/2560 검증 완료 |
+| A37 | fresh build → packaged static route smoke → 실패 원인·다음 행동 | 현행 route/title/copy/chunk 계약으로 이관, fresh build smoke 통과 |
+| A38 | design:ontology 초록 → 실제 보호 구조 확인 → 구 3탭 fixture 거부 | 현행 5개 질문 탭·단일 panel·tab handoff 계약으로 이관 |
+| A39 | agent `builder_context` → persisted focus handoff → 현재 쓰기 표면 열기 | Workshop 직접 URL·호환 응답·설치 앱 ENHANCE proof 완료 |
+| A40 | 설치 앱 AI 연결 → 공개 패키지 해석 → 설정 생성·원클릭 등록 | npm E404를 단일 fail-closed gate로 표시, 실행 불가능한 설정·후속 단계 0개 설치 앱 검증 완료 |
+| A41 | 활성 문서 → graph/runtime 계약 → source·설치 앱 대조 | 퇴역 Sigma/Builder/고정 polling 설명 제거, 97노드·550관계·packaged app 재검증 완료 |
 
 ## 이슈 장부
+
+### UX-045 — 활성 문서가 제거된 그래프 표면을 현재 계약처럼 설명
+
+- 심각도: `S3`
+- 상태: 수정·정적 계약·fresh 설치 앱 재검증 완료
+- 흐름: maintainer/agent가 AGENTS·설계 문서·dogfood ontology를 읽고 현재
+  Topology, live update, agent handoff 구현을 판단
+- 관측 현상: 현재 코드는 `topology-map-v2`, Workshop, adaptive polling과
+  shared changeset을 쓰지만 활성 문서 일부는 Sigma kind 범례/owner tint/edge
+  reducer, ERD Builder 공유 layout, 고정 5초 recent TTL, 분석 rail을 살아 있는
+  구현처럼 말했다.
+- 사용자 문제: agent가 존재하지 않는 파일과 renderer contract를 수정 대상으로
+  선택하고, 사람은 지도 색·변경 강조·쓰기 표면을 실제 앱과 다르게 이해한다.
+- 단순화: 새 UI나 migration layer를 만들지 않았다. 현재 source를 정답으로
+  문서와 ontology를 고치고, 역사적 Phase 문서에는 superseded banner를 붙였다.
+  consumer 0인 Graph width token과 unused canvas prop/legacy animation 이름만
+  기계적으로 제거했다.
+- ontology/agent 가치: 의미 노드가 현재 canvas·INDEX·Workshop·Git handoff와
+  실제 구현 경로를 가리키며, dogfood domain relation과 97-node census가 다시
+  health gate를 통과한다.
+- 검증: docs vault 159문서 current, vault 97파일 issue 0, audit 249 paths
+  drift 0, graph 97노드·550관계 healthy, MCP verify 32/32 tools, focused
+  88 tests, MCP docs contract 21 tests, TypeScript, lint 오류 0,
+  production build 통과.
+- 설치 앱·Computer Use: fresh `/Applications/Ontology Atlas.app`을 재배포해
+  `/ko/topology/` WebView와 on-screen window를 자동 검증했다. Codex Computer
+  Use로 기록 → 문서함 route, h1, source selector, preview/edit tabs, 목차와
+  frontmatter evidence 구조를 읽었다. 현재 선택된 문서는 사용자가 소유한 기존
+  local vault README였고, local-first 정책상 새 starter 문구로 덮어쓰지 않는다.
+- PO·디자인 판정: 문서/source 주석·dead token 현행화인 mechanical maintenance
+  exception. 렌더링·token value·layout·motion은 바꾸지 않았으며 verdict는
+  **Build and verify**.
+
+### UX-044 — 공개되지 않은 CLI/MCP 패키지를 설치 앱이 즉시 연결 가능하다고 안내
+
+- 심각도: `S4`
+- 상태: 수정·fresh build·설치 앱 Computer Use 재검증 완료
+- 흐름: 설치 앱 → 설정 → AI 에이전트 연결 → Claude Code/Cursor/VS Code/Codex
+  설정 생성·복사·원클릭 등록 → 에이전트 재시작
+- 관측 현상: `npm view ontology-atlas version`과
+  `npm view ontology-atlas-mcp version`은 2026-07-27 현재 모두
+  `E404 Not Found`다. 그런데 설치 앱은 `npx -y ontology-atlas-mcp`를 담은
+  Cursor/VS Code 딥링크, `.mcp.json`, Codex 설정을 실행 가능한 연결 수단으로
+  제시하고, 파일 존재/문법만 맞으면 `ready`로 판정한다. 에이전트 process가
+  실제로 뜨는지는 이 준비 상태의 입력이 아니다.
+- 사용자·순간: 소스 체크아웃이 없는 macOS 사용자가 자기 vault를 Codex,
+  Claude Code, Cursor 또는 VS Code에 처음 연결하려는 순간이다.
+- 현재 대안: 사용자가 실패 뒤 npm 404를 직접 해석하고 repo를 clone한 다음
+  `node /absolute/path/to/mcp/src/index.js` 설정을 손으로 만들어야 한다.
+  publish는 명시적 사용자 승인 없이는 실행할 수 없다.
+- 문제: 제품이 만들고 `준비됨`이라고 부르는 설정이 실제 MCP server를 시작할
+  수 없다. 사람은 restart 이후 연결 실패를 자기 설정 문제로 오해하고,
+  agent는 Atlas의 meaning graph를 읽지 못한다.
+- ontology 가치: 설정 파일 존재와 실행 가능한 meaning-layer 연결을 분리해,
+  agent gate가 실제 source of truth 접근 가능성을 증명할 때만 준비 상태가 된다.
+- agent 가치: 실행 불가능한 `npx` handoff를 복사하지 않고, 공개 배포 전에는
+  source-checkout entrypoint와 `mcp-verify`를 명시적인 유일 fallback으로 남긴다.
+- 결과: 공개 패키지가 확인되기 전에는 앱이 자동 설정 파일을 쓰거나 npx
+  snippet/deeplink를 제공하지 않는다. 연결 표면의 첫 주의 대상은 한 개의
+  `package unavailable` gate이며, restart/connection 단계는 숨긴다.
+- 가장 위험한 가정: 정적 배포 상태가 실제 npm 상태와 다시 drift할 수 있다.
+  따라서 상태에는 확인일·패키지명을 넣고, publish 절차와 package contract가
+  공개 확인 뒤에만 상태를 전환하도록 고정한다.
+- appetite/slice: publish·sidecar 번들·업데이터는 범위 밖이다. 공통 package
+  availability 계약, 연결 UI fail-closed, starter 자동 설정 생성 중단,
+  source-checkout 안내, current docs와 regression test까지만 구현한다.
+- 단순화: 새 네트워크 poll, 새 설정 화면, 네 개 클라이언트별 오류 상태를
+  추가하지 않는다. 기존 네 버튼과 뒤 단계 대신 한 차단 상태를 공용
+  `AgentClientButtons`에서 소유한다.
+- 검증 계획: 딥링크 builder가 절대경로가 있어도 `null`을 반환하고, 연결
+  sheet/설정 패널이 package gate 한 개만 보이며 connect/restart controls를
+  숨기는 실패 테스트를 먼저 추가한다. starter는 Markdown만 만들고 agent
+  config를 쓰지 않는지 검증한다. README/MCP/CLI/Workflow 문서와 dogfood
+  ontology를 동기화한 뒤 fresh build·설치 앱 재배포·Computer Use AX tree에서
+  차단 문구와 원클릭 링크 0개를 확인한다.
+- PO verdict: `Build and verify`.
+- 디자인 가디언:
+  - primary moment: agent handoff / first connection
+  - attention winner: 배포 가능성 gate; demote: connect 버튼·restart·ready
+    파일 카운트
+  - typed fact: `package availability`와 `MCP runtime verified`는 config file
+    presence와 다른 proof다.
+  - tokens: 기존 warning/danger border·surface·text token만 재사용; 새
+    색·그림자·radius·motion 없음
+  - responsive: 기존 한 열 StepCard 안에서 reflow하며 1100×800,
+    1512×917, 1920×1080, 2560×1440 모두 별도 floating surface 0
+  - handoff: MCP=`node <source-checkout>/mcp/src/index.js`; CLI=
+    `node cli/src/index.mjs mcp-verify <vault>`; 공개 npx는 제공하지 않음
+  - proof: component/unit contract + 설치 앱 `/ko/topology` 설정의 AX tree +
+    수정 전
+    `.screenshots/ux-044-current-guidance/05-agent-connect-unpublished-package.png`
+    + 수정 후
+    `.screenshots/ux-044-current-guidance/06-agent-package-fail-closed.jpeg`
+  - verdict: `Build and verify`
+- 회귀 증거: deeplink·starter README·첫 실행 developer disclosure·공용
+  연결 sheet·설정 패널·AppSettings·local vault를 포함한 집중 Vitest
+  `7 files · 152 tests`, i18n catalog `16 tests`, desktop runtime
+  `3 files · 67 tests`, `desktop:check`, TypeScript가 통과했다. fresh static
+  build와 Tauri app build/deploy도 통과했다.
+- 설치 앱 증거: Codex Computer Use로 `/Applications/Ontology Atlas.app`의
+  설정 → AI 에이전트 연결을 다시 열었다. AX tree는 `사용 불가`,
+  `2026-07-27 공개 패키지 확인 실패`, `실행 가능한 공개 패키지 없음`,
+  `npm E404`, `소스 체크아웃 설정 보기`를 읽었고, Claude/Cursor/VS
+  Code/Codex 연결 버튼·재시작·연결 확인·고급 복사 제어는 0개였다. 시각
+  증거에서도 한 warning gate만 주의 승자로 남고 뒤 단계가 사라졌으며,
+  잘림·겹침은 없었다.
+
+### UX-043 — agent persisted-context handoff가 퇴역 Builder URL을 반환
+
+- 심각도: `S2`
+- 상태: 수정·MCP 통합·설치 앱 재검증 완료
+- 흐름: agent가 `query_ontology({operation:"builder_context"})` 호출 → 반환
+  `builder.href` 열기 → 현재 쓰기 표면에서 저장된 focus 검토
+- 관측 현상: operation 자체는 살아 있지만 `builder.href`와 모든 안내 문구가
+  퇴역한 `/ontology/edit`·Builder를 현행 표면처럼 반환한다. compatibility
+  redirect 덕분에 404는 아니지만 agent는 불필요한 hop과 잘못된 제품 어휘를
+  handoff packet에 보존한다.
+- 사용자 문제·순간: 사람이 agent에게 저장된 관계 맥락을 넘겨 실제 수정
+  화면을 열게 할 때, packet이 현재 Workshop 계약을 직접 설명하지 않는다.
+- 현재 대안: `/ontology/edit` redirect가 `?node=`를 정규화해 Workshop으로
+  넘길 때까지 기다리고, 사람이 Builder라는 퇴역 용어를 해석한다.
+- ontology 가치: persisted node·bounded neighborhood·mtime proof가 실제
+  frontmatter write surface와 한 주소로 이어진다.
+- agent 가치: operation/response field 호환성은 유지하면서, 실행 가능한 URL과
+  제약 문구가 현재 `/ontology/studio` ENHANCE workflow를 바로 가리킨다.
+- 단순화: `builder_context` operation과 `builder` response key는 breaking
+  change를 피하려고 보존한다. URL·사람용 설명·active docs만 Workshop으로
+  바꾸며 별도 alias operation은 추가하지 않는다.
+- 검증 계획: integration/unit fixture에서 `/ontology/studio/?node=` 직접
+  handoff와 persisted-only 제약 문구를 먼저 실패시킨 뒤 구현한다. FEATURES,
+  MCP README, package docs contract, dogfood verify를 함께 통과시킨다.
+- PO verdict: `Build and verify`.
+- 증거: red test는 실제 `/ontology/edit/?node=` 반환을 잡았고, 수정 후
+  ontology-engine·MCP integration·package docs contract가 통과했다. Codex
+  Computer Use로 `/Applications/Ontology Atlas.app`의 공방 목적지를 열어
+  `tauri://localhost/ko/ontology/studio/` ENHANCE 상태, 4방향 관계 bearing,
+  현재 노드·완성도·저장 경계를 AX tree와
+  `docs/assets/readme/workshop-context.jpeg`로 다시 확인했다.
 
 ### UX-001 — 설치 앱 검증기가 현재 canvas-v2 지도를 구형 앱으로 오판
 
@@ -123,23 +279,44 @@
 ### UX-006 — 투어 5/7에서 설명 대상과 시각적 주목 대상이 분리됨
 
 - 심각도: `S3`
-- 상태: 열림
+- 상태: 현행 구현에서 해소 확인, 수정 없음
 - 흐름: 투어 4/7 노드 선택 → 5/7 데이터 카드 설명
-- 관측: 본문은 오른쪽 데이터 카드를 설명하지만 강한 포인터 광점은 캔버스에
-  남고, 데이터 카드는 스크림 아래에서 약하게 보인다.
-- 다음 판정: 카드 자체 컷아웃과 캔버스 초점의 관계를 14인치·와이드 화면에서
-  다시 기록한 뒤 최소 주의 계층 수정 여부를 결정한다.
+- 최초 관측: 본문은 오른쪽 데이터 카드를 설명하지만 강한 포인터 광점은
+  캔버스에 남고, 데이터 카드는 스크림 아래에서 약하게 보인다고 판정했다.
+- 재측정: 최신 `/Applications/Ontology Atlas.app`에서 같은
+  `직접 눌러보세요 → 카드 = 문서의 앞면` 흐름을 외부 27-inch wide와
+  1920×1080 창에서 반복했다. 두 폭 모두 오른쪽
+  `topology-v2-detail-panel` 전체가 직사각형 컷아웃으로 밝게 유지됐고,
+  지도·INDEX·utility chrome은 같은 scrim 아래로 내려갔다.
+- 포인터 분리 증거: 5/7을 그대로 둔 채 Computer Use 포인터를 화면 좌하단
+  비정보 영역으로 옮기자 푸른 광점도 포인터와 함께 이동했다. 데이터 카드
+  컷아웃은 오른쪽에 고정돼 있었다. 최초 관측의 강한 광점은 제품의 캔버스
+  highlight가 아니라 Computer Use 포인터 피드백을 주의 계층으로 오인한
+  측정 오류였다.
+- 코드 계약: `TOUR_STEPS`의 `datasheet` 단계는
+  `topology-v2-detail-panel`을 직접 앵커로 삼고,
+  `GuidedTourOverlay`는 그 실제 rect 사방 8px에 컷아웃을 만든 뒤 바깥만
+  `--topology-tour-scrim-surface`로 감광한다. 기존 guided-tour e2e도
+  노드 선택 뒤 `data-tour-step="datasheet"`와 resolvable cutout을 요구한다.
+- PO pass: 현재 사용자는 설명 문장과 같은 오른쪽 데이터 카드를 첫 주의
+  대상으로 읽을 수 있고, 선택한 ontology fact와 다음 행동도 같은 카드에
+  남는다. 수정할 현재 현상이 없으므로 새 강조·토큰·모션을 더하지 않는다.
+- 디자인 pass: attention winner=오른쪽 데이터 카드,
+  demote=지도·INDEX·utility chrome, responsive=wide/1920 동일,
+  agent handoff=선택 노드와 카드 URL 유지.
+- PO·디자인 판정: **Do not build** — 감사 상태와 측정 방법만 바로잡는다.
 
 ### UX-007 — 번역 계약 테스트 다섯 건이 현재 메시지와 역방향으로 드리프트
 
 - 심각도: `S3`
-- 상태: 열림
+- 상태: 해소 확인 (2026-07-27 기준선)
 - 관측: 현재 앱 문구는 GitHub Pages·쉬운 작업공간/AI 표현으로 바뀌었지만
   `scripts/validate-messages.test.mjs` 일부가 Firebase Hosting·구 MCP 문구·
   폐기된 키를 계속 요구한다.
 - 영향: 전체 메시지 검증이 항상 실패해 새 번역 회귀를 신뢰할 수 없다.
-- 현재 증거: 새 한·영 키 shape와 ICU 컴파일 경계는 통과한다. 이 항목은
-  현행 제품 문구를 다시 확인한 뒤 테스트를 현재 계약으로 정리한다.
+- 재검증: `pnpm test:i18n:messages`가 현행 한·영 카탈로그와 ICU 경계
+  16/16을 통과했다. 같은 기준선에서 `pnpm desktop:check`도 통과했으며,
+  로컬 vault 진입 문구는 `온톨로지 폴더`/`vault 폴더` 계약으로 정렬했다.
 
 ### UX-008 — 읽기 전용 샘플의 AI 인계가 실제 vault 쓰기 명령을 제안
 
@@ -1100,6 +1277,514 @@
   같은 코드로 desktop app build/deploy를 통과했다.
 - PO·디자인 판정: **Build and verify**
 
+### UX-031 — 설치 앱 관계 검증이 사용자의 저장 vault에 의존해 재현성을 잃음
+
+- 심각도: `S3`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 최신 HEAD 배포 → 설치 앱 재실행 → 1920×1080
+  `domain:views` 선택 관계 검증
+- 관측 현상: 앱이 이전에 저장된 11개 노드 테스트 vault를 정상 복원했다.
+  검증기는 dogfood 전용 `domain:views`를 URL로 요청했지만 현재 vault에는
+  그 노드가 없어 `노드를 찾을 수 없습니다: domain:views` toast를 냈고,
+  관계 라벨 클릭 proof가 실패했다. WebView 자체는 1920×917로 로드됐다.
+- 사용자 문제: 사용자 상태를 보존해야 하는 설치 앱과 고정 fixture를 필요로
+  하는 릴리스 검증이 같은 저장소를 공유한다. 실제 렌더 회귀와 검증 입력
+  불일치를 구분할 수 없어 wide 검증 결과를 신뢰하기 어렵다.
+- 현재 대안: 검증 전 사람이 원하는 vault를 다시 선택하거나, 실패 후 payload를
+  열어 현재 vault census와 대상 slug를 수동 대조한다.
+- 온톨로지·에이전트 가치: 관계 검증의 입력 vault와 대상 slug가 증거에 함께
+  고정돼야 사람과 에이전트가 같은 의미 그래프를 검증했다고 말할 수 있다.
+- 수정: 제품의 저장 vault 복원과 사용자 IndexedDB는 바꾸지 않았다. 직접
+  실행되는 WebView 검증 창만 Tauri `incognito` 저장소를 쓰며,
+  `--webview-fixture-vault=docs/ontology`가 그 격리 저장소의 현재 vault를
+  명시한다. 현재 canvas-v2 관계 선택은 퇴역한 DOM 관계 라벨 대신 기존
+  `onSelectEdge` 흐름을 호출하는 검증 이벤트로 재현한다.
+- 설치 앱·Computer Use 증거: Codex Computer Use AX 트리는
+  `tauri://localhost/ko/topology/?p=domain%3Aviews&mode=focus`, INDEX의
+  `11 개념 · 10 관계 · 1 도메인`, disabled `블록 가져오기`, not-found
+  toast를 함께 읽어 최초 실패를 확인했다. 격리 저장소만 적용했을 때는
+  storefront sample 31개 노드가 열리는 것도 측정해 fixture 명시가 필요함을
+  확인했다. 최종 실행은 dogfood vault 289개 개념·448개 관계·6개 도메인을
+  읽고 선택 관계 dialog의 역할·관계 문장·양 끝점·출처를 보고했다.
+  Computer Use가 별도로 발견한 첫 방문 투어와 관계 inspector의 주의 경쟁도
+  검증 저장소에서만 tour를 건너뛰고 payload가 재출현을 실패 처리하도록
+  닫았다. 1920·2560 자동 WebView 증거와 2560 Computer Use 화면을 통과했고,
+  검증 앱 종료 뒤 일반 실행에서 원래 11개 노드 사용자 vault가 그대로
+  복원돼 사용자 저장소 비변경을 확인했다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-032 — 설치 앱의 블록 가져오기가 폴더 선택 미지원으로 비활성화됨
+
+- 심각도: `S2`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 저장된 local vault 복원 → 지형도 INDEX 하단 → `블록 가져오기`
+- 관측 현상: 설치된 macOS 앱의 AX 트리에서 버튼이 disabled이고 도움말은
+  `이 환경은 폴더 선택을 지원하지 않아요`였다. 문서함·공방·인사이트·프로젝트·
+  기록은 같은 Computer Use 세션에서 정상 진입했다.
+- 사용자 문제: 로컬 파일을 주 진실원으로 삼는 설치 앱에서 가져오기만
+  브라우저 capability 부재처럼 보인다. 의도된 제한인지 bridge 누락인지
+  화면만으로 구분할 수 없다.
+- 최소화: 기능을 바로 추가하지 않는다. 현재 버튼이 요구하는 파일/폴더
+  capability와 Tauri 경로를 구조적으로 확인하고, 의도된 제한이면 정확한
+  안내와 대체 경로를 제공하며, bridge가 이미 있으면 기존 경로를 재사용한다.
+- 설치 앱·Computer Use 증거: 1100px 창과 macOS 전체화면에서 동일한 disabled
+  상태를 읽었다. 다른 전역 surface의 h1과 핵심 액션은 AX 트리에 정상 노출됐다.
+- 조사 결과: 일반 vault 열기는 이미 `pick_vault_directory` → 재귀 목록/읽기/
+  쓰기 → `FileSystemDirectoryHandle` 호환 shim을 사용한다. 블록 UI 두 곳만
+  `showDirectoryPicker()` 존재를 직접 검사해 설치 앱 경로를 차단하고 있었다.
+  새 파일 포맷·권한·저장소 없이 같은 bridge를 재사용할 수 있다.
+- PO pass:
+  - 사용자/순간: 설치 앱에서 열린 vault에 다른 온톨로지 블록을 병합하려는 사람.
+  - 현재 대안: CLI `ontology-atlas import`로 이탈하거나 브라우저 환경을 다시 연다.
+  - 문제: 설치 앱이 실제로 가진 폴더 capability를 없다고 말해 로컬-퍼스트
+    작업 흐름과 제품 신뢰를 끊는다.
+  - 온톨로지·에이전트 가치: 승인 전 dry-run 병합 프리뷰와 기존 vault write
+    경로를 유지하므로, 사람의 선택과 에이전트가 읽는 같은 markdown graph가
+    계속 단일 진실원이다.
+  - 범위/단순화: 새 가져오기 UI나 Tauri 권한을 만들지 않는다. 기존 native
+    picker와 FSA shim에 필요한 iterator 계약만 보강하고 가져오기·내보내기
+    양쪽에서 같은 선택 함수를 쓴다.
+  - 검증: bridge 단위 테스트, import/export UI 회귀 테스트, TypeScript 및
+    desktop gate, `/Applications/Ontology Atlas.app` 재배포 뒤 Codex Computer
+    Use로 enabled 상태와 native picker 진입을 확인한다.
+- 디자인 pass:
+  - attention winner: INDEX의 기존 `블록 가져오기` 행. 새 패널·배지·모션은 없다.
+  - 상태 계약: vault 없음=disabled, 지원 런타임=enabled, 취소=상태 무변,
+    선택=기존 병합 프리뷰, 승인 전 쓰기 0.
+  - 반응형/14-inch 규칙: 기존 한 줄 행과 병합 다이얼로그의 geometry를 바꾸지
+    않아 1100px·14-inch·1920·2560 계약을 그대로 유지한다.
+  - graph/agent 계약: `.md`와 `block-manifest.json`만 읽고 기존 `createDoc`
+    경로로 쓰며 CLI `import` 대체 경로도 유지한다.
+- 회귀 증거: block import/export + Tauri shim 집중 테스트 31개, desktop
+  bridge Vitest 35개와 Rust 70개, TypeScript, production static build,
+  `desktop:check`, 설치 앱 launch/WebView 검증이 통과했다.
+- 최종 설치 앱 증거: 최신 production 앱을
+  `/Applications/Ontology Atlas.app`에 배포했다. Codex Computer Use AX
+  트리에서 INDEX의 `블록 가져오기`가 enabled이고 도움말이
+  `블록 폴더를 골라 병합 미리보기 열기`임을 확인했다. 클릭하면 같은 문구를
+  제목으로 가진 macOS native picker가 열렸고, 테스트 vault 선택 뒤
+  `파일 11개 · 새 노드 3 · 슬러그 충돌 8 · 3개 가져오기` 프리뷰가 나타났다.
+  `취소` 뒤 프리뷰가 닫히고 원래 지도 상태로 돌아와 승인 전 쓰기 0도 유지됐다.
+  연결된 `내 프로젝트` 영역에서는
+  `이 영역의 원본 .md 를 블록 폴더로 내보내기` 버튼이 enabled였고,
+  같은 목적 문구의 native picker를 연 뒤 취소하면 영역 상태로 정상 복귀했다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-033 — AI 연결 화면이 현재 32도구 MCP를 24도구라고 안내
+
+- 심각도: `S3`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 설정 → AI 에이전트 연결 → `고급 · 자세한 검증`
+- 관측 현상: 실제 MCP와 문서 계약은 32도구(read 19 + write 13)인데
+  첫 연결 증거 계약과 MCP 연결 모드 설명은 `index_project 포함 24개 tool`을
+  두 번 표시했다. 복사되는 first-contact/모드 패킷도 같은 24도구를 말했다.
+- 사용자 문제: 사용자는 `mcp-verify`의 32개 결과를 보고도 앱이 기대하는
+  24개와 다르므로 연결 실패나 stale client로 오판할 수 있다. 에이전트에게
+  복사하는 증거 패킷도 시작부터 현재 tool inventory와 어긋난다.
+- 온톨로지·에이전트 가치: UI·복사 패킷·문서·실제 `tools/list`가 하나의
+  32도구 계약을 말해야 같은 local vault를 읽는다는 첫 연결 증거가 성립한다.
+- 최소화: 한·영 메시지, copy packet 상수, 현재 사실을 흉내 내는 테스트 fixture,
+  활성 backlog/prototype의 숫자만 32로 맞췄다. 화면 계층·상호작용·모션·
+  반응형 구조는 바꾸지 않았다.
+- 회귀 증거: 한·영 메시지/ICU 계약 16개, 설정 패널·전역 검색·ontology tree
+  직접 테스트 96개(63 + 33), 설정 패널을 포함한 desktop runtime 64개,
+  TypeScript, `desktop:check`가 통과했다.
+- 설치 앱 증거: 최신 production build를 `/Applications/Ontology Atlas.app`에
+  다시 배포했다. Codex Computer Use로 설정 → AI 에이전트 연결 →
+  `고급 · 자세한 검증`을 실제 클릭해, AX 트리의 첫 연결 증거와 MCP 연결 모드가
+  모두 `index_project 포함 32개 tool`을 말하고 24도구 문구가 사라졌음을
+  확인했다. 같은 상태의 스크린샷도 저장했다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-034 — invalid MCP 설정 옆 주요 버튼이 이미 완료된 작업처럼 읽힘
+
+- 심각도: `S2`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 저장된 local vault → 설정 → AI 에이전트 연결
+- 관측 현상: 상단은 `설정 파일 0/3개 준비됨`과
+  `.mcp.json 가 ontology-atlas MCP 설정이 아닙니다`를 경고하지만, 첫 주요
+  버튼은 체크 아이콘과 `이 폴더에 .mcp.json 을 만들었어요`라는 완료형 문구다.
+- 사용자 문제: 이미 설정을 만들었다는 상태 표시인지, 눌러서 설정을 만들거나
+  복구하는 액션인지 구분하기 어렵다. 기존 파일을 덮어쓰지 않는다는 고급 설명과
+  함께 읽으면 다음 행동은 더 모호해진다.
+- 최소화: 측정 중에는 vault 파일을 쓰는 버튼을 누르지 않았다. 버튼 handler가
+  새 파일 생성, invalid 파일 repair, 사용자 확인 중 무엇을 수행하는지 먼저
+  확인하고, 상태라면 비버튼으로 내리며 액션이라면 명령형·결과 예고형 문구로
+  바꾼다.
+- 조사 결과: `AgentClientButtons`는 `.mcp.json`의 **존재**만 `ready`로
+  전달받아 완료형 버튼을 초기화한다. 자동 생성 handler는 missing 파일만 쓰고
+  기존 invalid 파일은 덮어쓰지 않지만, 호출이 resolve되면 컴포넌트가 검증
+  결과와 무관하게 `done`으로 바꾼다. Codex 버튼도 같은 자동 생성 callback을
+  공유해 invalid `.codex/config.toml`에서 같은 오판이 가능하다.
+- PO pass:
+  - observed phenomenon/user moment: 첫 연결을 준비하는 사용자가 invalid 경고와
+    완료형 주요 버튼을 동시에 보고 다음 행동을 결정할 수 없다.
+  - current alternative: 고급 영역에서 기존 파일 비덮어쓰기 설명을 읽고,
+    올바른 템플릿을 찾아 수동으로 복사·교체한다.
+  - ontology/agent value: UI의 설정 상태가 실제 local MCP/CLI handoff 준비
+    여부와 같아야 read-first 연결 증거가 성립한다.
+  - success/simplification: 새 화면·자동 overwrite·장식 motion 없이
+    `missing=생성 action`, `invalid=교체 설정 복사 action`,
+    `ready=비상호작용 상태`로 MCP/Codex를 같은 문법으로 나눈다.
+  - verification: 세 상태 component test, 설정 패널 회귀, 번역 계약, 설치 앱
+    AX 트리에서 invalid 경고와 교체 action을 함께 읽고 완료형 버튼 부재를
+    확인한다.
+- 디자인 gate: attention winner는 현재 설정 상태에 맞는 **다음 행동**이다.
+  ready 확인은 support status로 내리고, invalid 교체는 utility action으로
+  유지한다. 기존 control height·border·색 token을 재사용하며 레이아웃,
+  반응형, graph semantics, motion은 바꾸지 않는다.
+- 구현: shared `AgentClientButtons`가 MCP/Codex 각각의
+  `missing | invalid | ready`를 받는다. missing만 기존 자동 생성 callback을
+  실행하고, invalid는 vault-local 검증과 같은 `OATLAS_VAULT=.` 교체 JSON/TOML을
+  복사하며, ready는 `role=status`인 비상호작용 행으로 표시한다. Cursor/VS Code
+  절대경로 deep link용 JSON과 vault-local 교체 JSON도 분리했다.
+- 설치 앱·Computer Use 증거: 수정 전 실제 앱에서 warning, `0/3`, 체크 아이콘
+  완료형 버튼을 한 화면에서 재현했다. production 앱 재배포 뒤 같은 11문서
+  invalid vault에서 설정 → AI 에이전트 연결을 다시 열자 AX 트리는 warning과
+  `올바른 .mcp.json 복사`, `올바른 Codex 설정 복사`를 함께 보고했다.
+  `이 폴더에 .mcp.json 을 만들었어요`와 `Claude Code에 연결`은 없었다.
+- 회귀 증거: settings/shared sheet/model/config validation 39개, 번역 16개,
+  TypeScript, focused ESLint가 통과했다. ready는 버튼이 아닌 status이고,
+  invalid 교체 copy는 자동 생성 callback을 호출하지 않는 테스트를 포함한다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-035 — 활성 문서와 프로토타입이 CLI 45·48·50명령을 동시에 주장
+
+- 심각도: `S2`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: CLI `--help` 현재 inventory 확인 → README·아키텍처·제품 방향·기술
+  스택·다운로드/프로젝트 프로토타입·테스트 fixture 교차 검색
+- 관측 현상: 실제 CLI 배너와 dogfood ontology는 52명령인데 활성 문서는
+  45·48·50명령을 혼용했다. 다운로드 프로토타입은 MCP도 25도구
+  (read 16 + write 9)로 표시했고 ontology-sync capability는 24도구를 말했다.
+- 사용자 문제: 사용자는 설치/아키텍처 문서마다 서로 다른 제품 크기를 읽고,
+  에이전트는 현재 dogfood 노드를 흉내 낸 오래된 fixture 제목을 다시 인용한다.
+- 최소화: `node cli/src/index.mjs --help`의 `52 commands + MCP setup`과
+  검증된 MCP 32도구(read 19 + write 13)를 현재 진실원으로 삼았다. 활성
+  운영 문서·프로토타입·현행 사실 fixture만 교정하고 archive, changelog,
+  숫자 보간/legacy parsing 자체를 시험하는 입력은 보존했다.
+- 온톨로지·에이전트 가치: onboarding, architecture, product direction,
+  ontology-sync skill이 동일한 현재 inventory를 말해 코드와 의미 계층 사이의
+  숫자 드리프트를 막는다.
+- 설치 앱·Computer Use 증거: 최신 main을 반영해 production app을 재배포한
+  뒤 설정 → AI 에이전트 연결 → 고급 검증을 실제 클릭했다. AX 트리는
+  `mcp-verify`와 MCP 연결 모드에서 모두 `index_project 포함 32개 tool`을
+  표시했고, 이어서 열린 내장 Agent Graph Workflow는 CLI 52 commands,
+  MCP 32 local tools, read 19 + write 13을 노출했다. 이 경로를 막던 source
+  경계 문제는 UX-036에서 수정·재검증했다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-036 — `기능 문서 열기`가 약속한 내장 문서 대신 local README를 엶
+
+- 심각도: `S2`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 저장된 local vault → 설정 → AI 에이전트 연결 → 고급 검증 →
+  `기능 문서 열기`
+- 관측 현상: 버튼 도움말은 CLI/MCP/graph DB 차이와 실제 검증 명령을 설명하는
+  Agent Graph Workflow를 연다고 말하지만, 실제 설치 앱은
+  `/ko/docs/?slug=README`로 이동해 선택된 local vault의 README를 열었다.
+- 사용자 문제: 첫 연결을 검증하는 개발자와 에이전트는 현재 product runbook을
+  기대하지만 임의의 vault 안내 문서를 받는다. local README에 최신 명령 수나
+  setup gate가 없으면 검증 경로가 조용히 끊긴다.
+- 온톨로지·에이전트 가치: 앱이 가리키는 runbook과 복사되는 MCP/CLI handoff가
+  같은 현재 계약을 말해야 사용자가 local vault를 안전하게 넘길 수 있다.
+- 최소화: 새 화면을 만들지 않는다. Docs Vault의 source 선택과 deep-link
+  계약을 확인해, 버튼이 실제 내장 `AGENT-GRAPH-WORKFLOW` 문서를 열도록 한다.
+  local vault 선택과 열린 사용자 문서 탭은 손상하지 않아야 한다.
+- 수정: 버튼은
+  `/docs/?source=server&sample=dogfood&slug=AGENT-GRAPH-WORKFLOW`를 연다.
+  URL source/sample override는 저장된 local vault·sample 선호를 바꾸지 않고,
+  문서함에서 사용자가 source를 바꾸면 해제된다. 페이지가 선택한 bundled
+  content를 viewer에도 직접 전달해 목록은 dogfood인데 본문은 storefront를
+  읽는 source 분리도 막았다.
+- 발견 순서: 첫 설치 앱은 local `README`로 이동했다. explicit server source를
+  넣은 다음에는 저장된 31문서 storefront manifest에 runbook이 없어 빈 화면이
+  됐다. dogfood sample을 지정한 뒤에는 목록·제목은 맞지만 viewer가 전역
+  storefront content를 읽어 `Load failed`가 났다. 세 source 경계를 각각
+  고정한 뒤에야 제목과 본문이 같은 runbook을 읽었다.
+- 설치 앱·Computer Use 증거: `/Applications/Ontology Atlas.app`을 다시
+  배포하고 설정 → AI 에이전트 연결 → 고급 → `기능 문서 열기`를 실제 클릭했다.
+  AX 트리는
+  `tauri://localhost/ko/docs/?source=server&sample=dogfood&slug=AGENT-GRAPH-WORKFLOW`,
+  샘플 선택, 전체 158·가이드 62·지도 문서 96, `Agent Graph Workflow` 본문을
+  보고했다. 본문에서 `Current as of 2026-07-27`, CLI 52 commands, MCP 32
+  local tools, 19 read tools, 13 write tools, 96 nodes, 543 edges를 읽었고
+  `Load failed`는 없었다.
+- 회귀 방지: route/source/sample/persistence/viewer 테스트와
+  `launch-docs-current.test.ts`가 packaged runbook의 CLI·MCP·dogfood 수치를
+  실제 metadata/census와 대조한다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-037 — 자동 AX probe가 Computer Use로 읽히는 창을 timeout으로 오판
+
+- 심각도: `S2`
+- 상태: 3차 보강·설치 앱 반복 재검증 완료
+- 흐름: production app 직접 실행 → WebView·CoreGraphics window 확인 →
+  foreground activation → System Events AX window 확인 → screenshot 저장
+- 관측 현상: 설치 앱 WebView payload와 1.4MB window screenshot은 저장됐고
+  Codex Computer Use는 같은 창의 URL·h1·내비·본문 AX 트리를 읽었지만,
+  자동 proof는 `post-activation Accessibility probe timed out after 3000ms`를
+  간헐적으로 보고했다. 수정 전 반복 실행은 첫 회에 같은 timeout으로 실패했다.
+- 사용자 문제: maintainer와 agent가 실제 UI 회귀와 검증기 지연을 구분하려면
+  CGWindow·WebView JSON·Computer Use를 매번 수동 대조해야 한다. 이 오판은
+  설치 앱 증거의 fail-closed 신뢰를 낮춘다.
+- 원인·1차 최소화: foreground/window probe가 PID·frontmost·window 수뿐 아니라
+  WebView의 전체 `UI elements` 수도 System Events로 세고 있었다. 빠른 probe는
+  window 사실만 읽도록 줄이고, 화면 문구는 이미 존재하는 bounded Swift AX
+  text probe가 계속 담당한다. timeout을 늘리거나 권한 경고를 숨기지 않았다.
+- 2차 관측·보강: 위 순회를 제거한 뒤에도 실제 `desktop:deploy:app`의 첫 내부
+  proof에서 foreground activation 5초와 post-activation AX probe 3초가 함께
+  timeout했고, 같은 배포의 다음 내부 proof는 `frontmost=true`로 성공했다.
+  따라서 한 번의 일시적 macOS automation 지연만 최대 1회 다시 시도한다.
+  두 시도가 모두 실패하면 `ok=false`와 시도별 원인을 그대로 남기며, timeout
+  상향·권한 실패 은폐·무한 재시도는 하지 않는다. 로그는 `attempts`,
+  `recovered`, `attemptErrors`를 구분한다.
+- 3차 관측·보강: 최신 main을 병합해 다시 배포하자 activation 명령은 두 번
+  모두 5초 timeout했지만, 각 시도 뒤의 AX probe는 최종 상태를
+  `frontmost=true`로 확인했고 1.48MB window PNG도 저장했다. 목표는 activation
+  명령의 반환문을 받는 것이 아니라 앱이 실제 foreground인지 증명하는 것이다.
+  이제 AX의 최종 frontmost 행을 성공 진실원으로 삼고, activation command
+  timeout은 `commandConfirmed=false` warning으로 보존한다. AX가 frontmost를
+  확인하지 못하면 activation 명령이 성공했어도 계속 실패한다.
+- 설치 앱·Computer Use 증거: 1차 수정 전 실패 실행과 동시에 Computer Use가
+  `tauri://localhost/ko/` 첫 화면의 38개 AX 항목을 읽었다. 수정 뒤 실제 배포
+  계약과 같은 8초 hold·foreground activation·window screenshot 경로를 5회
+  반복했고 내부 전·후 proof 총 10회 모두 `frontmost=true`, AX window 1개,
+  PNG 저장으로 통과했다. 2차 bounded retry 추가 뒤에는 같은 8초 경로 3회,
+  내부 proof 6회가 모두 첫 시도(`attempts=1`)에 통과하고 각 771,968-byte PNG를
+  저장했다. 이 반복에서는 실제 retry 회복이 발생하지 않았으며, 일시 실패 →
+  2차 성공과 지속 2회 실패의 분기는 주입 단위 테스트로 각각 증명했다.
+  3차 상태 판정 뒤 같은 8초 경로 2회·내부 proof 4회도 모두
+  `frontmost=true`, `commandConfirmed=true`, 첫 시도에 통과했다. 이번 반복에는
+  command-timeout warning이 재현되지 않았으므로, 그 분기는 직전 실제 배포
+  로그와 주입 테스트를 구분해 근거로 남긴다. Computer Use는 같은 설치 앱의
+  URL·공방 h1·CREATE 이름 입력을 계속 읽었다.
+- 회귀 증거: foreground retry/최종 상태 단위 테스트 4개를 포함한 desktop
+  verifier 22개, 전체 `test:desktop:check`, `desktop:check` 통과.
+- 온톨로지·에이전트 가치: 사람이 보는 설치 앱과 agent가 읽는 자동 proof가
+  같은 window 사실을 말하고, 텍스트 handoff는 더 강한 전용 AX 경로로 남는다.
+- PO·디자인 판정: **Build and verify** — 렌더링·주의 계층 변화 없음
+
+### UX-038 — 공방 진입 선택 뒤 키보드 포커스가 작업대로 이어지지 않음
+
+- 심각도: `S2`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: bare `/ontology/studio` → `기존 노드 강화` 또는 `새 노드 만들기`를
+  키보드로 선택 → 첫 작업 계속
+- 관측 현상: 진입 선택 다이얼로그의 기본 포커스와 Tab 순서는 정확했지만
+  Return으로 선택한 뒤 포커스가 WebView의 HTML content root로 유실됐다.
+  CREATE는 같은 route의 `?mode=create` query 전환이라 전역 route focus
+  manager도 개입하지 않았다.
+- 사용자 문제: 화면은 바뀌었는데 읽기·입력 시작점이 없으므로 키보드 사용자는
+  긴 전역 내비와 작업대 컨트롤을 다시 Tab으로 훑거나 포인터로 돌아가야 했다.
+- PO pass: 현재 대안은 재탐색뿐이고, 선택 직후의 다음 과업은 이미 결정돼 있다.
+  새 표면·기능을 만들지 않고 ENHANCE는 현재 focal h1, CREATE는 이름 입력칸으로
+  한 번만 인계하면 온톨로지 강화/생성 루프를 즉시 계속할 수 있다.
+- 디자인 gate: attention winner는 새로 열린 공방 작업대다. ENHANCE는 현재
+  개념 이름, CREATE는 첫 필수 입력이 읽기 시작점을 소유한다. 주의 계층·그래프
+  의미·반응형 레이아웃·모션·MCP/CLI handoff는 바꾸지 않는다.
+- 수정: 진입 선택에서 task intent를 넘기고, 무대가 마운트된 다음 프레임에
+  `preventScroll` 포커스를 적용한다. CREATE query 전환에서는 전역 route
+  focus보다 task-specific 이름 입력이 이기며, deep-link 진입 계약은 그대로다.
+  첫 방문 안내가 열리면 blocking task가 일시적으로 포커스를 소유하고,
+  `건너뛰기` 뒤 같은 목표로 복귀한다.
+- 회귀 증거: `StudioCompass.test.tsx` 63개, TypeScript, focused ESLint 통과.
+- 설치 앱·Computer Use 증거: 최신 production 앱을 외장 모니터에서
+  1920×1080 ENHANCE와 2560×1440 CREATE로 각각 열었다. 키보드만 사용해
+  진입 선택과 첫 방문 안내를 통과한 뒤 AX 포커스가 각각
+  `터미널에서 쓰기` h1과 `새 노드 이름 — 예: 결제 취소` 입력칸에
+  도착했으며, 두 폭 모두 잘림·충돌을 발견하지 못했다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-039 — 수리 큐 총계가 가리키는 나머지 대상을 찾을 수 없음
+
+- 심각도: `S3`
+- 상태: 수정·설치 앱·자동 WebView 재검증 완료
+- 흐름: 인사이트 → 할 일 → 수리 큐 총계 확인 → 모든 분리 섬·누락 연결 수리
+- 관측 현상: 실제 감사 vault는 `분리된 섬 3`과 `누락된 연결 4`, 합계 `할 일 7`을
+  말했지만 첫 번째 `누락된 연결` 대상 하나만 이름과 행동을 제공했다. 나머지
+  여섯 건은 같은 화면에서 식별하거나 관계 편집·원문으로 이동할 수 없었다.
+- 사용자 문제: 건강도 숫자가 문제의 존재만 알리고 수리 경로를 숨겼다. 사람은
+  어떤 노드가 남았는지 찾기 위해 지도·문서를 전수 탐색해야 하고, agent에게도
+  정확한 수리 대상을 넘길 수 없었다.
+- 원인: `buildVaultHealthRepair`가 총계와 단일 `actionTarget`만 반환했고,
+  `DoNextTab`도 그 한 행만 렌더링했다.
+- PO pass: 사용 순간은 건강도 이상을 본 직후의 수리 시작이다. 현재 대안은
+  수동 전수 탐색이며, 온톨로지 가치는 typed issue와 정확한 노드의 연결,
+  agent 가치는 같은 대상을 관계 편집/문서 handoff로 받는 데 있다. 새 화면이나
+  새 모드를 만들지 않고 기존 카드의 숨겨진 대상만 도달 가능하게 한다.
+- 디자인 gate: attention winner는 수리 큐다. 첫 대상은 그대로 상시 노출하고,
+  나머지는 같은 카드의 조용한 disclosure로 연다. 각 행은 `누락된 연결` 또는
+  `분리된 섬` 유형과 노드 이름을 함께 보존하고, 목록은 `max-height`와 내부
+  스크롤로 14-inch/1920/2560 레이아웃을 밀어내지 않는다. 새 토큰·장식 모션은
+  추가하지 않았다.
+- 수정: 모든 해석 가능한 누락 연결을 먼저, 각 분리 섬의 대표 노드를 다음으로
+  보존하는 `actionTargets` 계약을 추가했다. 호환용 `actionTarget`은 첫 항목으로
+  남겼다. 첫 행 아래 `나머지 수리 대상 N개 보기`를 열면 모든 행에 관계 편집과
+  개념 문서 링크가 나타난다.
+- 회귀 증거: `vault-health-repair`와 `DoNextTab` 집중 테스트 32개,
+  TypeScript, i18n 메시지 계약 16개, focused ESLint 통과.
+- 설치 앱·Computer Use 증거: 쓰기 없는 격리 fixture에서 분리된 섬 3개와 누락
+  연결 3개를 만들고 최신 production 앱을 외장 모니터로 이동했다. 1920×1080과
+  2560×1440 모두에서 disclosure, 6개 typed target, 각 관계 편집/개념 문서
+  링크를 AX 트리로 읽었고, 펼친 목록의 잘림·겹침을 발견하지 못했다.
+  `.screenshots/ux-039-island-repair-queue/14-legion-1920-expanded.png`와
+  `16-tfg-2560-expanded.png`를 현재 실행 증거로 보존했다.
+- 후속 proof: UX-040에서 구 `businessDecisionQuestions`·`readerDecisionLens`
+  요구를 현행 maintenance-board 계약으로 교체해 직접 설치 앱 검증까지 닫았다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-040 — 설치 앱 검증기가 폐기된 인사이트 DOM을 요구해 최신 앱을 실패 처리
+
+- 심각도: `S4`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 최신 production 앱 → `/ko/ontology/insights/` 직접 로드 → 자동
+  WebView payload와 실제 화면 대조
+- 관측 현상: 설치 앱은 현재 5탭 정비 보드와 `할 일` 활성 패널, agent handoff를
+  정상 렌더링했지만 검증기는 이미 제거된 `businessDecisionQuestions`와
+  `readerDecisionLens`를 필수로 요구해 실패했다.
+- 사용자 문제: 현재 앱을 배포해도 자동 proof가 구 UI를 진실원으로 삼아
+  false-fail했다. maintainer와 agent는 매번 Computer Use로 정상 상태를 수동
+  재해석해야 했고, 릴리스 판단에서 실제 회귀와 계약 드리프트를 구분할 수 없었다.
+- PO pass: 사용 순간은 설치 앱이 최신 인사이트 과업을 실제로 렌더링했는지
+  판단할 때다. 현재 대안은 수동 화면 대조뿐이다. 온톨로지 가치는 선택된
+  maintenance 질문과 실제 `tabpanel`의 일치, agent 가치는 같은 탭의 query
+  handoff를 기계적으로 읽는 데 있다. 새 UI를 만들지 않고 proof만 현재 표면에
+  맞춘다. 판정은 **Build and verify**.
+- 디자인 gate: attention winner는 선택된 탭과 그 패널, support layer는 정비
+  보드, agent layer는 하단 handoff다. exactly five tabs, exactly one selected,
+  selected panel visible을 계약으로 고정했다. 렌더링·토큰·모션·반응형 배치는
+  바꾸지 않았고 1920/2560 설치 앱을 모두 확인했다.
+- 수정: 인사이트 root에 `maintenance-board`와
+  `one-tab-one-question` marker를, handoff 행에 `tab-query` marker를 추가했다.
+  Tauri probe와 payload validator는 5탭, 단일 선택, 연결된 visible panel,
+  handoff를 함께 요구한다. 구 reader-persona marker는 명시적으로 더 이상
+  통과 조건이 아니다.
+- 회귀 증거: payload/WebView source 계약 12개와 인사이트 `DoNextTab` 집중
+  테스트 29개 통과. 각 새 marker의 누락·오류는 별도 실패 케이스로 고정했다.
+- 설치 앱·Computer Use 증거: 격리 fixture로
+  `tauri://localhost/ko/ontology/insights/`를 직접 열어 1512×917 WebView에서
+  여섯 marker를 모두 저장했고 자동 verifier가 두 번 통과했다. 같은 설치 앱을
+  외장 모니터에서 1920×1080과 2560×1440으로 옮겨 AX 트리의 5탭·단일 선택·
+  active panel·handoff를 읽고 원본 PNG에서 잘림·겹침이 없음을 확인했다.
+  `.screenshots/ux-040-insights-verifier-contract/03-computer-use-current-contract.png`,
+  `04-legion-1920-current-contract.png`,
+  `05-tfg-2560-current-contract.png`, 그리고
+  `02-verifier-current-contract.webview.json`을 현재 실행 증거로 보존했다.
+- 증거 한계: AX는 역할·선택·읽기 순서를, PNG는 시각적 잘림·겹침을 증명한다.
+  이 조합은 전체 WCAG 적합성이나 모든 보조기기 동작을 대신하지 않는다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-041 — fresh build 뒤에도 desktop smoke가 폐기된 route 계약으로 실패
+
+- 심각도: `S4`
+- 상태: 수정·fresh build 재검증 완료
+- 흐름: `pnpm build` 성공 → 같은 `out/`로 `pnpm desktop:smoke`
+- 관측 현상: fresh static export인데도 smoke가 폐기된 `/ontology` tree,
+  `/ontology/edit` builder, 구 insights query cockpit과 오래된 docs/download/
+  route title·copy를 요구하며 실패했다. 실패 안내는 원인을 계약 드리프트로
+  말하지 않고 다시 `pnpm build`를 실행하라고 제안했다.
+- 사용자 문제: 릴리스 preflight가 최신 production payload를 구 제품과 비교해
+  false-block하고, 이미 수행한 빌드를 반복하도록 유도한다. 실제 정적 payload
+  회귀를 잡아야 할 신호도 오래된 기대값 잡음에 묻힌다.
+- 조사: source-of-truth route와 fresh `out/`를 대조했다. `/ontology`는
+  `/topology?index=expanded`, `/ontology/edit`는 `/ontology/studio`로 보내는
+  호환 entry이고, 인사이트는 5탭 정비 보드다. Download는 install → vault →
+  AI assistant handoff, Docs는 Files/Graph/Agent source contract가 현재 의미다.
+- 수정: 현재 EN/KO metadata title, Download handoff, Docs source marker,
+  두 compatibility redirect, Topology canvas-v2/focus/path, Insights
+  `maintenance-board`/`one-tab-one-question`/`tab-query`만 static proof로
+  고정했다. 퇴역 browse/builder/query-cockpit 테스트를 제거했다.
+- 다음 행동 계약: root/route/assets/offline docs가 없을 때만 `pnpm build`를
+  권한다. title/copy/chunk만 어긋나면 `static-contract-drift`로 분류하고 현재
+  route source와 smoke contract를 비교하도록 안내한다.
+- 회귀 증거: 새 desktop-smoke 계약 테스트 10개와 전체 desktop checker
+  205개가 통과했다. `pnpm build` 성공 직후 같은 `out/`에
+  `pnpm desktop:smoke`를 실행해 EN/KO 6개 route, 10개 current title,
+  2개 Download copy 묶음, 6개 route chunk contract, 2개 offline doc를 모두
+  통과시켰다.
+- 설치 앱·Computer Use 교차 증거: 같은 fresh artifact의 production 앱을
+  `/ko/ontology/insights`로 실행해 direct verifier가 foreground, 1512×917
+  WebView, current maintenance-board payload를 통과했다. Codex Computer Use
+  AX 트리는 실제 설치 앱에서 탭 5개, 선택 탭 1개, 활성 `할 일` 패널,
+  수리 큐와 `에이전트 인계`를 읽었고 현재 화면 캡처도 함께 저장했다.
+- 디자인 gate: 렌더링·토큰·주의 계층·모션은 변경하지 않았다. static artifact
+  proof를 현재 shipped UI에 맞춘 운영 슬라이스이므로 새 시각 디자인 승인은
+  필요 없고, 설치 앱 runtime/visual proof와 증거 층을 분리 유지한다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-042 — design guard가 초록이어도 퇴역 3탭 인사이트를 보호
+
+- 심각도: `S4`
+- 상태: 수정·회귀 검증 완료
+- 관측 현상: `pnpm design:ontology`는 통과했지만 Insights 구조 계약이
+  `TabBar` + `InsightsHeroCensus` + `InsightsHandoffRow`만 요구하며 설명과
+  테스트는 고정 3탭 대시보드를 현재 제품으로 불렀다.
+- 사용자 문제: maintainer와 agent는 설계 가드의 초록을 현재 UI 계약 증거로
+  해석하지만, 실제 5개 질문 탭·단일 활성 panel·탭별 handoff가 사라져도 구
+  census hero와 복사 버튼만 남으면 통과할 수 있었다. 설치 앱 수동 대조 외에는
+  회귀를 막을 방법이 없었다.
+- 현재 대안·단순화: 새 UI나 또 다른 verifier를 추가하지 않았다. 이미
+  `insights-tab-state.ts`, page DOM, handoff row가 노출하는 shipped marker를
+  하나의 구조 계약으로 묶고 퇴역 3탭 fixture를 실패 입력으로 만들었다.
+- 구현 계약: 정확한
+  `do-next/composition/connections/boundaries/freshness` 집합,
+  `maintenance-board`, `one-tab-one-question`, `TabBar`, 한
+  `tabpanel`, `tab-query` handoff와 copy action을 함께 요구한다.
+- 문서 동기화: `DESIGN-SYSTEM`, `FEATURES`, `DEVELOPMENT-CHECKS`와 관련
+  ontology 노드에서 tree/ERD Builder/query cockpit 및 고정 3탭을 현재
+  구조처럼 말하던 내용을 Topology INDEX / Workshop / 5탭 maintenance board로
+  교체했다.
+- 검증: characterization test는 수정 전 2건 red로 실제 거짓 초록을
+  재현했다. 수정 후 design-surface 테스트 8개와 live
+  `pnpm design:ontology`의 159 files / 10 surfaces / 6 contracts가 통과했다.
+- 디자인 gate: 렌더링·token·motion·layout 변경은 없다. 기존 installed-app
+  5탭·단일 선택·활성 panel·agent handoff 증거를 자동 설계 가드가 같은 뜻으로
+  보호하게 한 운영 변경이다.
+- PO·디자인 판정: **Build and verify**
+
+### 2026-07-27 반복 측정 기록
+
+- 코드 기준선: `899eb7072`에서 시작해 로컬 vault 문구와 문서·ontology
+  동기화 슬라이스를 각각 커밋한 뒤 설치 앱을 다시 빌드·배포했다.
+- 문서/ontology: MCP 32도구(read 19 + write 13), CLI 52명령,
+  dogfood 96노드·543관계로 활성 문서를 맞췄다. `vault:validate`,
+  `vault:audit`, `dogfood:verify`, `dogfood:status`, docs vault build/check가
+  통과했고 freshness stale node는 0이었다.
+- viewport: 일반 `/ko/topology/`는 1100×768, 1512×885, 1920×917,
+  2560×917 WebView에서 로드됐다. 네 증거 모두 canvas-v2, map-layer attention,
+  fixed-surface overlap 0을 보고했다. 선택 관계 시나리오는 UX-031의 격리
+  fixture 수정 뒤 1920·2560에서 다시 통과했다.
+- Computer Use: 1100px와 실제 macOS 전체화면의 스크린샷·AX 트리를 확인하고,
+  지도 → 문서함 → 공방 → 인사이트 → 프로젝트 → 기록을 실제 클릭으로 왕복했다.
+  각 surface는 현재 route와 h1을 노출했다. 기록 화면의 `기록 시작하기`는
+  파일 변경을 만들므로 측정 중 실행하지 않았다.
+- 인사이트 수리 큐: 실제 감사 vault에서 총계 7과 단일 노출 대상의 불일치를
+  UX-039로 재현했다. 격리 fixture의 전체 typed target 6개를 펼친 뒤 같은 설치
+  앱을 외장 1920×1080과 2560×1440 모니터에서 각각 읽어 행별 관계 편집/문서
+  인계와 제한 높이 스크롤을 확인했다.
+- 인사이트 자동 proof: UX-040에서 폐기된 reader-persona marker를
+  maintenance-board·one-tab-one-question·5탭·단일 선택·visible panel·handoff
+  계약으로 교체했다. 직접 설치 앱 verifier는 1512×917 WebView에서 두 번
+  통과했고, Computer Use로 같은 앱의 1920×1080·2560×1440 화면과 AX를
+  교차 확인했다.
+- static smoke: UX-041의 구 `/ontology` tree, `/ontology/edit` builder,
+  insights query cockpit, stale docs/download 기대를 현행 route 계약으로
+  이관했다. fresh build의 EN/KO 6개 route와 offline docs가 통과했고,
+  artifact 누락과 current-contract drift의 다음 행동도 분리했다. 같은
+  production 앱의 인사이트를 direct verifier와 Codex Computer Use AX로 다시
+  열어 5탭·단일 선택·활성 패널·agent handoff가 유지됨을 교차 확인했다.
+- design guard: UX-042의 고정 3탭·census hero 계약을 정확한 5개 질문
+  tab set, maintenance-board, 한 active tabpanel, tab-scoped handoff로
+  이관했다. 퇴역 3탭 fixture는 red, 현재 live source는 green으로 분리했다.
+- 자동 검증: window screenshot과 WebView evidence가 저장되는 실행에서
+  foreground activation/AX probe의 간헐 timeout을 UX-037로 재현했다.
+  빠른 probe의 WebView AX 순회를 제거한 뒤에도 한 번 남은 일시 실패에는
+  2회 bounded retry를 추가했다. 최신 main 배포에서는 activation command가
+  timeout해도 AX 최종 상태와 PNG는 성공하는 제3의 경우를 잡아, command 반환
+  대신 AX frontmost를 성공 진실원으로 고쳤다. AX 지속 실패는 fail-closed이며,
+  최종 수정 뒤 8초 설치 앱 경로 2회·내부 proof 4회가 모두 첫 시도에 통과했다.
+
 ## 현재 PO·디자인 판정
 
 - A1/A2 수정 슬라이스: **Build and verify**
@@ -1111,6 +1796,18 @@
 - A26 전역 레일 route·공방 landmark 슬라이스: **Build and verify**
 - A27 하단 탭바 responsive 계약: **Do not build**
 - A28 AI 연결 교차 route·모달 포커스 슬라이스: **Build and verify**
+- A29 반복 측정 기준선·선택 관계 fixture·설치 앱 가져오기:
+  **Build and verify**
+- A30 에이전트 handoff tool inventory·invalid 설정 CTA 의미:
+  **Build and verify**
+- A31 CLI/MCP 활성 문서 inventory: **Build and verify**
+- A32 내장 기능 문서 navigation/source 계약: **Build and verify**
+- A33 설치 앱 foreground/AX window proof: **Build and verify**
+- A34 공방 진입 선택 keyboard handoff: **Build and verify**
+- A35 인사이트 수리 큐 전체 대상·행별 handoff: **Build and verify**
+- A36 인사이트 설치 앱 현행 WebView 계약: **Build and verify**
+- A37 packaged static smoke route 계약: **Build and verify**
+- A38 ontology design guard 현재 구조 계약: **Build and verify**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

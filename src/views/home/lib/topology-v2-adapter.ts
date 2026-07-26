@@ -30,19 +30,15 @@ export interface TopologyV2Graph {
 }
 
 /**
- * Adapts `ontologyInsight` (`KnowledgeGraphNode`/`Edge`, the same data the
- * map-canvas/Sigma engines already draw) into `TopologyMapV2`'s adapter
- * contract (`docs/TOPOLOGY-V2-PHASE0.md` §4.2). Written to close the P2→P3
- * mount gap: the scaffold commit (`87edec961`) wired `<TopologyMapV2
- * nodes={[]} edges={[]} />` as a deliberate placeholder, so the v2 canvas
- * mounted but never had anything to draw — this is the missing derivation.
+ * Adapts `ontologyInsight` (`KnowledgeGraphNode`/`Edge`) into the single
+ * current `TopologyMapV2` contract. The historical Phase 0 document explains
+ * why this boundary exists; current maintenance follows this source.
  *
  * `x`/`y` on the output nodes are unused by the engine — `topology-world.ts`
  * always recomputes a deterministic concentric layout from `contains` edges
  * (`computeConcentricLayout`), so `0` is passed and ignored on purpose.
  *
- * Known simplifications (documented rather than silently guessed, matching
- * this codebase's own "알려진 단순화" convention):
+ * Current semantic boundaries:
  * - `isHub` marks exactly ONE node — the single highest fan-in (incoming
  *   count) node in the whole graph, ties broken by slug ascending for
  *   determinism. This is the v2 charter (`docs/prototypes/topology-
@@ -52,14 +48,12 @@ export interface TopologyV2Graph {
  *   `incoming >= PROMOTION_MIN_FAN_IN`, which marked every well-connected
  *   node as a hub and was fixed after an owner live-test flagged "amber on
  *   multiple nodes".
- * - `ownerKey` is always `null` — ontology nodes have no `owner:` frontmatter
- *   field (unlike `project.owner`, which feeds the old Sigma engine's
- *   owner-tint). `topology-world.ts`'s `WorldNode` doesn't even carry the
- *   field yet, so this is inert until a follow-up wires owner-tint for v2.
+ * - `ownerKey` is always `null` — the current canvas has no typed ownership
+ *   overlay. `topology-world.ts` does not carry this field, so owner color is
+ *   neither guessed nor rendered.
  * - `size` reuses `buildOntologySkeleton`'s `subtreeWeightBySlug` (transitive
- *   contained-element count) — the same magnitude signal the map-canvas
- *   engine already uses to size skeleton cards, kept consistent across
- *   engines rather than inventing a new metric.
+ *   contained-element count) as its visual magnitude signal rather than
+ *   inventing another metric.
  */
 export function buildTopologyV2Graph(
   nodes: readonly KnowledgeGraphNode[],

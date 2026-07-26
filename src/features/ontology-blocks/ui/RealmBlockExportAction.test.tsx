@@ -12,10 +12,16 @@ interface MockVault {
 }
 
 const mocks = vi.hoisted(() => ({ vault: null as unknown as MockVault }));
+const tauriMocks = vi.hoisted(() => ({
+  isTauriVaultRuntime: vi.fn(() => false),
+  pickTauriVaultDirectory: vi.fn(),
+}));
 
 vi.mock('@/features/docs-vault-local', () => ({
   useLocalVault: () => mocks.vault,
 }));
+
+vi.mock('@/shared/lib/tauri-vault-fs', () => tauriMocks);
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
@@ -106,6 +112,8 @@ function fakeTargetDir() {
 describe('RealmBlockExportAction', () => {
   beforeEach(() => {
     mocks.vault = makeVault();
+    tauriMocks.isTauriVaultRuntime.mockReturnValue(false);
+    tauriMocks.pickTauriVaultDirectory.mockReset();
     delete (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker;
   });
 
@@ -154,5 +162,21 @@ describe('RealmBlockExportAction', () => {
       'capabilities/render',
       'domains/views',
     ]);
+  });
+
+  it('exports through the native Tauri folder picker when the WebView has no browser picker', async () => {
+    const target = fakeTargetDir();
+    tauriMocks.isTauriVaultRuntime.mockReturnValue(true);
+    tauriMocks.pickTauriVaultDirectory.mockResolvedValue(target.handle);
+
+    render(<RealmBlockExportAction rootTitle="Views" census={census} subtree={subtree} />);
+    const button = screen.getByTestId('realm-block-export');
+    expect(button).toBeEnabled();
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(target.written.has('block-manifest.json')).toBe(true);
+    });
+    expect(tauriMocks.pickTauriVaultDirectory).toHaveBeenCalledWith('exportAria');
   });
 });

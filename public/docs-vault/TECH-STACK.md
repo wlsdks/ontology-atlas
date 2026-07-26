@@ -30,7 +30,7 @@
 |---|---|---|---|
 | 모듈 형식 | 평문 .mjs ESM | **KEEP + JSDoc 강화** | TS 전환은 빌드 파이프라인 비용 > 이득. 경로: JSDoc → (선택) `tsc --emit-declaration-only`로 .d.ts 배포 |
 | Node engines | `>=24` | **CURRENT** | v20은 2026-04 EOL. v24 Krypton Active LTS를 최소 계약과 CI 기준으로 사용 |
-| arg 파싱 | 수동 (cli-args.mjs) | **KEEP** | flat 45 명령·저복잡 플래그엔 충분. citty 등 채택은 이득이 --help 자동화 수준 — 반려 |
+| arg 파싱 | 수동 (cli-args.mjs) | **KEEP** | flat 52 명령·저복잡 플래그엔 충분. citty 등 채택은 이득이 --help 자동화 수준 — 반려 |
 | MCP SDK | 1.29.x | **KEEP + watch** | stdio transport만 사용 중이라 안정. N2(레지스트리 등재) 시점에 공식 registry 요구사항·tool schema 변경 확인 ⚠ |
 | Vitest / Playwright | 4.x / 1.59.x | **KEEP** | 안정. 메이저 업그레이드는 release note 검토 후 기회적으로 |
 | npm 발행 준비 (N1) | — | **체크리스트 확정** | provenance(`publishConfig.provenance: true`) + GitHub Actions OIDC trusted publishing + `exports` 필드 명시. 발행 자체는 소유자 명시 승인 후 (publish 가드 유지) |
@@ -52,8 +52,11 @@
 - **[갱신, 2026-07-18]** 위 시각화 판정 시점 이후 `refactor/retire-sigma-topology`
   (#344) 가 머지되어 `/topology` 의 주 렌더러는 Sigma 가 아니라 커스텀
   canvas-2D 엔진(`topology-map-v2`, Graphology ForceAtlas2 물리만 재사용)이다.
-  Sigma.js 는 `/docs` 폴더 토폴로지 미니맵에만 남아 있다 — "갈림길 (Q4 2026)"
-  행의 "Sigma 테스트 통과" 는 여전히 WebGL 뷰포트 viability 대리 지표로 유효.
+- **[갱신, 2026-07-24]** `/docs` 폴더 토폴로지 미니맵까지 제거되면서
+  Sigma.js와 `@sigma/*` 의존성은 코드베이스에서 완전히 사라졌다. 현행
+  렌더링은 `topology-map-v2`, 그래프 자료구조·물리는 Graphology +
+  ForceAtlas2가 소유한다. 아래 Sigma 검토 기록은 당시 선택 근거일 뿐 현재
+  구현 계약이 아니다.
 
 ## 즉시 액션 (이번 사이클)
 

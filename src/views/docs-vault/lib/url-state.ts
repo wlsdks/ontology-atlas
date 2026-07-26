@@ -29,11 +29,21 @@ export function replaceDocsVaultUrlState(next: {
   slug?: string | null;
   view?: DocsVaultView;
   intent?: 'local' | null;
+  source?: 'server' | 'local' | null;
+  sample?: 'dogfood' | null;
   sort?: DocsTreeSort;
   group?: DocsTreeGroup;
 }): void {
   if (typeof window === 'undefined') return;
   const url = new URL(window.location.href);
+  if ('source' in next) {
+    if (next.source) url.searchParams.set('source', next.source);
+    else url.searchParams.delete('source');
+  }
+  if ('sample' in next) {
+    if (next.sample) url.searchParams.set('sample', next.sample);
+    else url.searchParams.delete('sample');
+  }
   if ('slug' in next) {
     if (next.slug) url.searchParams.set('slug', next.slug);
     else url.searchParams.delete('slug');

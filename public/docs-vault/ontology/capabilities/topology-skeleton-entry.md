@@ -28,11 +28,13 @@ scope 유지(시야 붕괴 없음) / 배경 클릭 → overview 복귀. Shneider
   (`buildSkeletonRadialLayout`) + 클릭 확장 좌표(`buildRevealRadialLayout`)
 - `src/views/home/lib/topology-reveal-state.ts` — 클릭-레벨 가시성 상태
   (`computeRevealState`)
-- 합성은 HomePage(view) 가 하고 SigmaTopology(widget) 는 데이터(props)만 받는다 —
-  FSD import 방향 보존.
+- 합성은 `HomePage`(view)가 하고 `TopologyMapV2`(widget)는 adapter가 만든
+  node/edge props만 받는다 — FSD import 방향 보존.
 
-범례는 kind 색 + **계층 태그(1계층~4계층/별도)** 세로 1열로 위계를 명시하고, 좌상단
-분석 패널은 아이콘 탭 + 280px 로 축소해 지도가 주인공이 되게 했다.
+현재 캔버스는 kind별 강한 색 채움이나 세로 kind-color 범례를 쓰지 않는다.
+중립 각인 표면, kind glyph, label, 크기, tier, containment 구조와 INDEX가
+위계를 함께 설명한다. 우하단 `TopologyRelationLegend`는 노드 색이 아니라
+실제 선 인코딩(`contains` 실선 / `depends_on` 파선)만 설명한다.
 `?mode=focus&p=...` 로 직접 들어온 selected-node 상태도 같은
 `--topology-panel-selected-rail-width` 토큰을 타서, URL 복원과 클릭 선택이 서로
 다른 크기의 좌측 패널을 만들지 않는다.

@@ -42,7 +42,7 @@ ownership, dependency, evidence, and change impact.
 Prefer an automatic first graph? From your codebase root:
 
 ```bash
-ontology-atlas bootstrap . --vault <this-folder>
+node /absolute/path/to/ontology-atlas/cli/src/index.mjs bootstrap . --vault <this-folder>
 ```
 
 The command analyzes `package.json`, README headings, and `src/` layout,
@@ -51,32 +51,28 @@ nodes. If you edited a starter file, it is preserved.
 
 ## AI agent setup
 
-If this vault came from `ontology-atlas init` or the installed app starter,
-the vault folder already has:
+Public `ontology-atlas` and `ontology-atlas-mcp` packages were unavailable
+when this starter was built (npm E404, checked 2026-07-27). The installed app
+therefore creates the markdown vault only; it does not seed an `npx` config
+that cannot start.
 
-- `.mcp.json` for Claude Code / Cursor
-- `.codex/config.toml` for Codex
-
-Open the vault folder itself in the agent and restart it. Both config files use
-`OATLAS_VAULT=.`, so the agent reads and writes this folder directly.
-
-If you prefer to keep the agent opened at a separate codebase root, use the
-CLI repair path from that codebase root:
+From an Ontology Atlas source checkout, use the local CLI repair path:
 
 ```bash
-ontology-atlas agent-setup /absolute/path/to/this-vault --root . --write
+node /absolute/path/to/ontology-atlas/cli/src/index.mjs agent-setup /absolute/path/to/this-vault --root . --write
 ```
 
 It creates missing Claude Code / Cursor / Codex config files without adding
 starter markdown or overwriting existing configs. If you need a manual merge
 instead, open `.mcp.json.example`, replace the `OATLAS_VAULT` placeholder with
 the absolute path to this vault, then copy that server entry into your agent
-config.
+config. The local CLI writes `.mcp.json` and `.codex/config.toml` with the
+source entry point.
 
 Codex can also be wired globally with one command:
 
   ```bash
-  codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/this-vault -- npx -y ontology-atlas-mcp
+  codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/this-vault -- node /absolute/path/to/ontology-atlas/mcp/src/index.js
   ```
 
 ## Verify the agent loop

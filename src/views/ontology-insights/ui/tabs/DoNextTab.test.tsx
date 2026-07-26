@@ -37,6 +37,8 @@ const labels: DoNextTabLabels = {
   repairQueueActionKindContainment: "Missing link",
   repairQueueOpenBuilder: "Builder",
   repairQueueOpenOntology: "Map",
+  repairQueueRestShow: (count) => `Show ${count} more repair targets`,
+  repairQueueRestHide: "Hide repair targets",
   queueTitle: "Worth doing now",
   sectionNeglectedHub: "Neglected hubs",
   sectionOrphan: "Orphans",
@@ -108,6 +110,7 @@ const emptyHealthQueue = {
   islandCount: 0,
   missingContainmentCount: 0,
   actionTarget: null,
+  actionTargets: [],
   builderHref: (slug: string) => `/ontology/edit/?node=${slug}`,
   ontologyHref: (slug: string) => `/ontology/?node=${slug}`,
 };
@@ -288,6 +291,7 @@ describe("DoNextTab", () => {
           ...emptyHealthQueue,
           staleCount: 1,
           actionTarget: { kind: "stale", slug: "capability:foo", title: "Foo" },
+          actionTargets: [{ kind: "stale", slug: "capability:foo", title: "Foo" }],
         }}
         mapHref={(id) => id}
         builderHref={(id) => id}
@@ -302,6 +306,43 @@ describe("DoNextTab", () => {
       "href",
       "/ontology/edit/?node=capability:foo",
     );
+  });
+
+  it("수리 큐 총계가 가리키는 나머지 대상에도 펼침으로 닿는다", () => {
+    render(
+      <DoNextTab
+        queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        healthQueue={{
+          ...emptyHealthQueue,
+          islandCount: 2,
+          missingContainmentCount: 1,
+          actionTarget: { kind: "containment", slug: "capability:invoice", title: "Invoice" },
+          actionTargets: [
+            { kind: "containment", slug: "capability:invoice", title: "Invoice" },
+            { kind: "island", slug: "domain:billing", title: "Billing" },
+            { kind: "island", slug: "capability:reporting", title: "Reporting" },
+          ],
+        }}
+        mapHref={(id) => id}
+        builderHref={(id) => id}
+        {...cycleProps}
+        cycles={noCycles}
+        labels={labels}
+      />,
+    );
+
+    expect(screen.getByTestId("insights-repair-queue-target")).toHaveTextContent("Invoice");
+    expect(screen.queryByText("Billing")).toBeNull();
+    const disclosure = screen.getByRole("button", { name: "Show 2 more repair targets" });
+    expect(disclosure).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(disclosure);
+
+    expect(disclosure).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Billing")).toBeInTheDocument();
+    expect(screen.getByText("Reporting")).toBeInTheDocument();
+    expect(screen.getAllByTestId("insights-repair-queue-builder-link")).toHaveLength(3);
   });
 
   it("의존 사이클 섹션 — 경로를 닫아 표기하고 첫 노드 지도 딥링크 + 핸드오프 복사", () => {
@@ -427,7 +468,7 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
         cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, activeCycleIds: [], limited: false }}
         agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
         healthQueue={{
-          staleCount: 0, orphanCount: 0, promotionCount: 0, islandCount: 0, missingContainmentCount: 0, actionTarget: null,
+          staleCount: 0, orphanCount: 0, promotionCount: 0, islandCount: 0, missingContainmentCount: 0, actionTarget: null, actionTargets: [],
           builderHref: (s) => s, ontologyHref: (s) => s,
         }}
         mapHref={(id) => id}
@@ -463,7 +504,7 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
         cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, activeCycleIds: [], limited: false }}
         agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
         healthQueue={{
-          staleCount: 0, orphanCount: 0, promotionCount: 0, islandCount: 0, missingContainmentCount: 0, actionTarget: null,
+          staleCount: 0, orphanCount: 0, promotionCount: 0, islandCount: 0, missingContainmentCount: 0, actionTarget: null, actionTargets: [],
           builderHref: (s) => s, ontologyHref: (s) => s,
         }}
         mapHref={(id) => id}
@@ -502,7 +543,7 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
         cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, activeCycleIds: [], limited: false }}
         agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
         healthQueue={{
-          staleCount: 0, orphanCount: 0, promotionCount: 0, islandCount: 0, missingContainmentCount: 0, actionTarget: null,
+          staleCount: 0, orphanCount: 0, promotionCount: 0, islandCount: 0, missingContainmentCount: 0, actionTarget: null, actionTargets: [],
           builderHref: (s) => s, ontologyHref: (s) => s,
         }}
         mapHref={(id) => id}
