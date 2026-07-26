@@ -82,11 +82,19 @@ export function DomainCapacityBar({
           style={{ width: `${elWidth}%`, backgroundColor: getOntologyKindTone("element").fill }}
         />
       </span>
-      <span className="flex-none text-right">
+      {/* 꼬리 열은 **고정 폭**이다. 폭을 내용에 맡기면 `역량 4 · 요소 110` 과
+          `역량 2 · 요소 5` 의 글자 폭 차이가 바로 옆 `flex-1` 트랙의 길이를
+          정하고, 여섯 행이 공유해야 할 축이 세 길이로 갈린다(2026-07-26 실측:
+          929.8 / 935.5 / 941.2px — 오른쪽 끝에 11.4px 계단). 값이 작은 도메인이
+          더 긴 축을 받으니 비교값 자체가 최대 1.2% 왜곡됐다.
+          「연결」 탭 영향 랭킹이 이미 이 문법(고정 트랙 + 고정 숫자 열)을 쓰고
+          있어 그 열 폭 규율을 그대로 가져온다. `tabular-nums` 를 두 줄 모두에
+          걸어 숫자 자리도 흔들리지 않게 한다. */}
+      <span className="w-[156px] flex-none text-right">
         <span className="block font-mono text-title tabular-nums text-[color:var(--topology-v2-numeral-face)]">
           {row.total}
         </span>
-        <span className="block font-mono text-caption text-[color:var(--color-text-quaternary)]">
+        <span className="block truncate font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
           {labels.capabilityUnit} {row.capabilityCount} · {labels.elementUnit} {row.elementCount}
         </span>
       </span>
