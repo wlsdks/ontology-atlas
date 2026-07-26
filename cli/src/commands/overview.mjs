@@ -77,6 +77,15 @@ function renderOverview(result, hubsLimit) {
       `${COLORS.dim}  문서 있는 개념 ${nodes} + 이름만 적힌 개념 ${referencedOnly} = 지도가 세는 ${nodes + referencedOnly}${COLORS.reset}\n`,
     );
   }
+  // 관계 수도 같은 이유로 스코프를 밝힌다 (2026-07-27 실측: 웹 448 vs 여기 542).
+  // 여기는 frontmatter 에 **적힌 참조 하나당 한 관계**를 센다 — 도메인이
+  // `capabilities:` 로, 역량이 `domain:` 으로 같은 담기 관계를 양쪽에서 적으면
+  // 2로 센다. 지도·인사이트는 같은 사실을 서로 다른 관계 하나로 접어 센다.
+  if (edges > 0) {
+    process.stdout.write(
+      `${COLORS.dim}  관계 ${edges} 는 적힌 참조 기준 — 양쪽 문서가 같은 관계를 적으면 2로 셉니다 (지도는 접어서 1)${COLORS.reset}\n`,
+    );
+  }
   process.stdout.write('\n');
 
   // Kind 분포 — kind 별 count + 색깔 bar.

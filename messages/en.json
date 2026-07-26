@@ -1252,7 +1252,7 @@
       "kindGlyphCaption": "Glyphs match the map's node shapes exactly — panel and canvas share one world.",
       "domainCapacityCaption": "How many concepts live in this domain — capabilities plus elements. A concept in multiple domains is counted once per domain, so totals can exceed the census. Bar: left = capabilities, right = elements.",
       "relationTypesTitle": "Relation types",
-      "relationTypesCaption": "What kind of relations you have — if containment dominates, it's a sign to draw more \"leans on\" links.",
+      "relationTypesCaption": "What kind of relations you have — if containment dominates, it's a sign to draw more “leans on” links. This count is distinct relations, counted once (a relation written in both documents still counts as 1). The CLI and MCP count every reference as written, so their number is larger.",
       "noRelationTypes": "No relations connected yet",
       "noRelationTypesHint": "Connect concepts in the workshop.",
       "hubsTitle": "Hubs — top connected",
