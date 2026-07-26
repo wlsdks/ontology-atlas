@@ -3,7 +3,7 @@
 import { AtlasGitPanel, useAtlasGitContext } from "@/widgets/atlas-git-panel";
 
 /**
- * 발자취 — 볼트 문서의 변경을 기록하는 **목적지** (2026-07-25 승격).
+ * 기록 — 볼트 문서가 바뀐 역사를 남기는 **목적지** (2026-07-25 승격).
  *
  * ## 왜 모달이 아니라 목적지인가
  *

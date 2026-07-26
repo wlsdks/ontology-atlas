@@ -7,7 +7,7 @@ describe("audience-preference", () => {
     window.localStorage.clear();
   });
 
-  it("기본값은 개발자 모드 — 발자취 같은 크롬이 보인다", () => {
+  it("기본값은 개발자 모드 — 기록 같은 크롬이 보인다", () => {
     expect(readAudiencePlain()).toBe(false);
   });
 
