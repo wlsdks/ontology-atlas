@@ -235,6 +235,7 @@ import {
   readGuidedTourStatus,
   resolveAnchorRect,
   useGuidedTour,
+  useGuidedTourAutoStartReady,
   useRegisterGuideReplay,
   type TourAnchor,
 } from "@/features/guided-tour";
@@ -691,6 +692,9 @@ export function HomePage() {
   // 열에 조용한 "내 데이터로 전환 ⌘O" 필을 상시 노출하고, 실제 vault 가
   // 연결되면 게이트가 꺼져 자동 소멸한다(카드 dismiss 축과 독립).
   const sampleModeSettled = useFirstRunSampleModeSettled();
+  // 자동 투어는 샘플/내 폴더 **양쪽** 정착을 다 받는다 — 예전 조건은 샘플만
+  // 봐서 폴더를 고른 사용자가 투어를 못 받았다 (`use-auto-start-ready.ts`).
+  const tourAutoStartReady = useGuidedTourAutoStartReady();
   const nodeEditTarget = useMemo(
     () =>
       selectedOntologyNode
@@ -1827,17 +1831,24 @@ export function HomePage() {
     openGuidedTourRef.current = openGuidedTour;
   }, [openGuidedTour]);
   useEffect(() => {
-    if (autoTourFiredRef.current || !sampleModeSettled) return undefined;
+    if (autoTourFiredRef.current || !tourAutoStartReady) return undefined;
     if (readGuidedTourStatus() !== null) return undefined;
     // 첫 시도는 900ms 뒤 — 레이아웃/카메라 정착 뒤에 열어 1단계 카드가
     // 안정된 화면 위에 뜬다. Design Guardian (2026-07-24) stacked-transient
     // 가드: 발화 순간 모달(폴더 안내 시트 등)이 열려 있거나 문서 포커스가
     // 나가 있으면(백그라운드 탭 로드 · OS 폴더 선택창) 겹쳐 쏘지 않는다.
-    // 단발이면 그 세션에서 환영 순간을 영영 잃으므로(QA 실측 — 백그라운드
-    // 탭 로드) 2초 간격으로 잠시 재시도하고, 상한 후에는 storage 미기록
-    // 상태로 조용히 물러난다 — 카드의 "2분 구경하기" CTA 가 수동 경로.
+    //
+    // 예전엔 재시도에 10회(≈19초) 상한이 있었는데, 그 상한이 곧 결함이었다 —
+    // 첫 화면의 폴더 안내 시트를 읽고 OS 폴더 선택창까지 거치면 19초는 쉽게
+    // 넘고, 그러면 투어는 storage 미기록 상태로 **영영 사라진다**. 실측
+    // (2026-07-26): 모달을 27초 두고 닫았더니 투어가 끝내 뜨지 않았다.
+    //
+    // 그래서 상한을 없앴다. 무한 재시도처럼 보이지만 실제 동작은
+    // "**막힘이 풀리는 첫 순간에 쏜다**" 이고, 그게 정확히 원하는 동작이다 —
+    // 나중에 불쑥 튀어나오는 게 아니라, 가릴 것이 사라지자마자 뜬다. 틱 하나는
+    // querySelector 세 번이라 비용이 없고, 발화 즉시·언마운트 시 멈추며,
+    // 애초에 투어를 한 번도 안 본 사람에게만 돈다.
     let timerId = 0;
-    let attempts = 0;
     const tick = () => {
       if (autoTourFiredRef.current) return;
       if (canAutoStartGuidedTour()) {
@@ -1845,12 +1856,11 @@ export function HomePage() {
         openGuidedTourRef.current();
         return;
       }
-      attempts += 1;
-      if (attempts < 10) timerId = window.setTimeout(tick, 2000);
+      timerId = window.setTimeout(tick, 2000);
     };
     timerId = window.setTimeout(tick, 900);
     return () => window.clearTimeout(timerId);
-  }, [sampleModeSettled]);
+  }, [tourAutoStartReady]);
 
   // P0#3 — Esc staged-close ladder (docs/FEATURES.md / shortcut sheet's
   // `stepCloseOverlays` promise: "Close drawers and overlays one step at a
