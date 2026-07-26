@@ -3,6 +3,7 @@ slug: domains/ontology-core
 kind: domain
 title: Ontology Core (TBox · ABox · Evidence)
 display_ko: 온톨로지 코어
+display_en: Ontology Core
 capabilities: [capabilities/relation-rationale, frontmatter-to-ontology]
 elements: [elements/ontology-relation-key-inference, src/entities/docs-vault/lib/derive-ontology-from-vault.ts, src/entities/knowledge-graph, src/entities/ontology-class]
 relates: [domains/vault-local-first, domains/views]

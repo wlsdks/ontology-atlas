@@ -2,6 +2,8 @@
 slug: capabilities/collaborator-reader-brief
 kind: capability
 title: Collaborator Reader Brief
+display_ko: 동료를 위한 읽기 안내
+display_en: Reader Brief for Teammates
 domain: views
 elements: [elements/ontology-node-detail-modal, elements/ontology-reader-intent-contract, topology-ontology-drawer-model]
 relates: [documents/business-to-code-dogfood-audit]

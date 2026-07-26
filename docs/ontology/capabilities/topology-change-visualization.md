@@ -2,6 +2,8 @@
 slug: capabilities/topology-change-visualization
 kind: capability
 title: Topology Change Visualization (변경점 베이스라인 공유)
+display_ko: 최근 바뀐 곳 표시
+display_en: Highlight Recent Changes
 domain: views
 elements: []
 relates: [capabilities/topology-ontology-inspection]

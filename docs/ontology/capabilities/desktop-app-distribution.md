@@ -2,6 +2,8 @@
 slug: desktop-app-distribution
 kind: capability
 title: macOS Desktop App Distribution
+display_ko: 맥 앱으로 내려받기
+display_en: macOS App Download
 domain: vault-local-first
 dependencies: [capabilities/agent-config-onboarding, capabilities/frontmatter-to-ontology, capabilities/vault-live-updates]
 elements: [elements/macos-webview-content-verifier, scripts/check-macos-release-slot.mjs]

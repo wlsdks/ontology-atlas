@@ -2,6 +2,8 @@
 slug: capabilities/agent-graph-readiness
 kind: capability
 title: Agent Graph Readiness
+display_ko: AI가 쓸 준비가 됐는지 점검
+display_en: Is the Map Ready for AI
 domain: views
 dependencies: [capabilities/ontology-hub-mode-aware]
 elements: [elements/app-settings-menu, src/entities/knowledge-graph/lib/relation-quality.ts, src/features/vault-ontology/ui/LiveActivityIndicator.tsx, src/shared/lib/ontology-tree/agent-query-recipes.ts, src/shared/lib/ontology-tree/agent-readiness.ts, src/views/ontology-insights/ui/OntologyInsightsPage.tsx, src/views/ontology-insights/ui/tabs/DoNextTab.tsx]

@@ -2,6 +2,8 @@
 slug: capabilities/ontology-bootstrap-skill
 kind: capability
 title: Ontology-Bootstrap Skill (.claude/skills/ontology-bootstrap)
+display_ko: 빈 지도 자동 채우기
+display_en: Fill an Empty Map
 display: Ontology-Bootstrap Skill
 domain: ai-agent-partner
 elements: [.agents/skills/ontology-bootstrap/guides/meaning-extraction.md, .agents/skills/ontology-bootstrap/SKILL.md, mcp/src/meaning-evaluation.mjs, scripts/evaluate-meaning-corpus.mjs]

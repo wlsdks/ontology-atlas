@@ -2,6 +2,8 @@
 slug: capabilities/studio-vault-write
 kind: capability
 title: 나침 무대 ↔ Vault md write (mode-aware)
+display_ko: 공방에서 글에 바로 쓰기
+display_en: Write Back From the Workshop
 domain: views
 elements: [src/features/docs-vault-local/model/use-local-vault.ts, src/views/ontology-studio/lib/build-create-node.ts, src/views/ontology-studio/lib/plan-studio-commit.ts, src/views/ontology-studio/lib/resolve-write-target.ts, src/views/ontology-studio/ui/OntologyStudioPage.tsx]
 ---

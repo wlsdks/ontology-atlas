@@ -2,6 +2,8 @@
 slug: capabilities/studio-relation-write-confirm
 kind: capability
 title: 나침 무대 관계 쓰기 확인 (inline socket write)
+display_ko: 연결 저장 전 확인
+display_en: Confirm Before Saving a Link
 domain: views
 elements: [src/views/ontology-studio/lib/build-studio-item.ts, src/views/ontology-studio/ui/StudioCompass.tsx]
 ---

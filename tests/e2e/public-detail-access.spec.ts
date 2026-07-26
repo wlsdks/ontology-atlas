@@ -32,9 +32,12 @@ test("비로그인 /project/ontology-atlas/ 상세가 실제 콘텐츠를 렌더
   await page.waitForTimeout(2000);
   await snap(page, "project-detail-full");
 
-  // 문서 타이틀은 static export 단계에서 이미 "ontology-atlas · Demo".
+  // 문서 타이틀은 프로젝트 이름을 담는다. URL slug 는 `ontology-atlas` 지만
+  // 화면에 세우는 이름은 사람이 읽는 표기(`Ontology Atlas`)라, 대소문자를
+  // 가리지 않고 비교한다 — 여기서 확인하려는 건 표기법이 아니라 "상세가
+  // 실제로 그 프로젝트를 렌더했는가" 다.
   const title = await page.title();
-  expect(title).toContain("ontology-atlas");
+  expect(title.toLowerCase()).toContain("ontology atlas");
 
   // 본문 heading은 프로젝트 이름을 포함해야 한다.
   const headings = await page.locator("h1, h2").allTextContents();

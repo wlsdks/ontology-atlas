@@ -37,6 +37,7 @@ vi.mock("@/i18n/navigation", () => ({
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
     values ? `${key}:${JSON.stringify(values)}` : key,
+  useLocale: () => "ko",
 }));
 
 const LOCAL_MANIFEST = {

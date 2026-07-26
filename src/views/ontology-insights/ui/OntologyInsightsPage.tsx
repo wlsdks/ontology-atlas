@@ -443,7 +443,13 @@ export function OntologyInsightsPage() {
   const touchUpWhy = (item: TouchUpItem): string => {
     switch (item.reason.kind) {
       case "neglected-hub":
-        return t("doNext.neglectedHubMetric", { degree: item.reason.degree, days: item.reason.agoDays });
+        // 「이유 ·」 뒤에는 문장이 와야 한다. 예전엔 수리 큐 칩과 같은
+        // 지표 문구("연결 8 · 50일째 그대로")를 그대로 써서, 왜 이 항목이
+        // 뽑혔는지는 숫자를 읽는 사람만 알 수 있었다.
+        return t("doNext.touchUpWhyNeglectedHub", {
+          degree: item.reason.degree,
+          days: item.reason.agoDays,
+        });
       case "cycle":
         return t("doNext.touchUpWhyCycle", { length: item.reason.length });
       case "promotion":
@@ -489,6 +495,7 @@ export function OntologyInsightsPage() {
     membershipLabel: t("heroMembershipLabel"),
     densityGloss: t("heroDensityGloss", { ratio: health.edgesPerConcept.toFixed(2) }),
     evidenceLinked: t("healthEvidenceLinked"),
+    islands: t("healthIslands"),
   };
   const overviewLabels = {
     ...heroLabels,
@@ -759,6 +766,7 @@ export function OntologyInsightsPage() {
                 totalNodes={totalNodes}
                 totalEdges={totalEdges}
                 health={health}
+                islandCount={healthRepair.islandCount}
                 kindRows={kindRows}
                 domainRows={domainRows}
                 edgeTypeSummary={edgeTypeSummary}

@@ -2,6 +2,8 @@
 slug: capabilities/agent-live-activity-contract
 kind: capability
 title: Agent Live Activity Contract
+display_ko: AI가 지금 하는 일 표시
+display_en: Show What the AI Is Doing
 domain: views
 elements: [cli/src/commands/agent-activity.mjs, elements/agent-activity-hooks, src/features/docs-vault-local/model/agent-activity-status.ts, src/features/vault-ontology/ui/LiveActivityIndicator.tsx, src/views/home/lib/resolve-agent-focus-node.ts, src/views/home/ui/TopologyChangeAnnouncement.tsx, src/widgets/app-nav-rail/ui/AppNavRail.tsx, src/widgets/topology-map-v2/render/labels.ts, src/widgets/topology-map-v2/render/node-shapes.ts, src/widgets/topology-map-v2/ui/topology-frame-draw.ts]
 ---

@@ -2,6 +2,8 @@
 slug: capabilities/cli-developer-entry
 kind: capability
 title: CLI Developer Entry (52 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)
+display_ko: 터미널에서 쓰기
+display_en: Terminal Commands
 display: CLI Developer Entry
 domain: onboarding-ux
 dependencies: [capabilities/mcp-server, capabilities/vault-validator]

@@ -2,6 +2,8 @@
 slug: capabilities/product-owner-operating-system
 kind: capability
 title: Product Owner Operating System
+display_ko: 만들 가치 판단 기준
+display_en: Deciding What to Build
 domain: onboarding-ux
 elements: [elements/product-owner-operating-system-doc]
 relates: [capabilities/agent-onboarding-brief, capabilities/topology-ontology-inspection]

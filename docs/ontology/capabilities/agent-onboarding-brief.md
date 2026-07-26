@@ -2,6 +2,8 @@
 slug: capabilities/agent-onboarding-brief
 kind: capability
 title: Agent Onboarding Brief (1-paste prime)
+display_ko: AI에게 줄 첫 안내문
+display_en: First Brief for AI
 domain: views
 elements: [cli/src/lib/query-result-contract.mjs, elements/business-ontology-lens, elements/ontology-node-detail-modal, mcp/src/ontology-engine.mjs, src/features/vault-ontology/ui/LiveActivityIndicator.tsx, src/shared/lib/ontology-tree/agent-briefing-packet.ts, src/views/home/ui/HomePage.tsx]
 relates: [capabilities/agent-graph-readiness, domains/ai-agent-partner]

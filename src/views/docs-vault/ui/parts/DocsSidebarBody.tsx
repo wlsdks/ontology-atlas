@@ -16,7 +16,7 @@ import {
   Waypoints,
   X,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { selectRecentVaultDocs } from "@/shared/lib/ontology-tree";
 import { AGENT_TOOL_LABELS, type AgentFilesUiModel } from "../../lib/agent-files";
@@ -31,6 +31,7 @@ import {
   type DocsTreeGroup,
   type DocsTreeSort,
 } from "@/widgets/docs-vault/lib/tree-order";
+import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
 import { Tooltip } from "@/shared/ui";
 
 /**
@@ -204,6 +205,7 @@ export function DocsSidebarBody({
   agentFiles = null,
 }: DocsSidebarBodyProps) {
   const t = useTranslations("vaultWidgets.parts.sidebar");
+  const locale = useLocale();
   const tAgentFiles = useTranslations("agentFiles");
   const [treeQuery, setTreeQuery] = useState("");
   // #22 — 검색 입력은 상단 아이콘 행의 토글로 열고 닫는다(옵시디언식 밀도
@@ -479,7 +481,10 @@ export function DocsSidebarBody({
                             }`}
                           >
                             <FileText size={11} className="flex-none opacity-60" aria-hidden />
-                            <span className="min-w-0 flex-1 truncate">{doc.title}</span>
+                            {/* 트리·검색·지도와 같은 이름 규칙. */}
+                            <span className="min-w-0 flex-1 truncate">
+                              {resolveLocaleDisplayName(doc.frontmatter, locale, doc.title)}
+                            </span>
                           </button>
                         </li>
                       );
@@ -587,7 +592,9 @@ export function DocsSidebarBody({
                           aria-hidden
                           fill="currentColor"
                         />
-                        <span className="truncate">{d.title}</span>
+                        <span className="truncate">
+                          {resolveLocaleDisplayName(d.frontmatter, locale, d.title)}
+                        </span>
                       </button>
                       <Tooltip content={t("unpinTooltip")} withProvider={false}>
                         <button
@@ -649,7 +656,9 @@ export function DocsSidebarBody({
                         className="flex-none opacity-60"
                         aria-hidden
                       />
-                      <span className="truncate">{d.title}</span>
+                      <span className="truncate">
+                        {resolveLocaleDisplayName(d.frontmatter, locale, d.title)}
+                      </span>
                     </button>
                   </li>
                 );

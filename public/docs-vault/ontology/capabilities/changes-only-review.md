@@ -2,6 +2,8 @@
 slug: capabilities/changes-only-review
 kind: capability
 title: Changes-Only Review (변경점만 보기)
+display_ko: 바뀐 것만 보기
+display_en: Review Only What Changed
 domain: views
 elements: []
 relates: [capabilities/topology-change-visualization]

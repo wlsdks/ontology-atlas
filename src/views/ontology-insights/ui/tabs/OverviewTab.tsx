@@ -20,6 +20,8 @@ export interface OverviewTabProps {
   totalNodes: number;
   totalEdges: number;
   health: CensusHealthSummary;
+  /** 수리 큐와 같은 판정에서 온 「따로 떨어진 무리」 수. */
+  islandCount: number;
   kindRows: Array<{ kind: string; count: number }>;
   domainRows: DomainCapacityRow[];
   edgeTypeSummary: Array<{ key: string; label: string; count: number }>;
@@ -43,6 +45,7 @@ export function OverviewTab({
   totalNodes,
   totalEdges,
   health,
+  islandCount,
   kindRows,
   domainRows,
   edgeTypeSummary,
@@ -58,6 +61,7 @@ export function OverviewTab({
         totalNodes={totalNodes}
         totalEdges={totalEdges}
         health={health}
+        islandCount={islandCount}
         kindsSummary={kindRows.map((r) => ({ key: r.kind, label: kindLabel(r.kind), count: r.count }))}
         relationsSummary={edgeTypeSummary}
         labels={labels}

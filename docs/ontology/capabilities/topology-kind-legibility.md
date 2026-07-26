@@ -2,6 +2,8 @@
 slug: capabilities/topology-kind-legibility
 kind: capability
 title: Topology Kind Legibility
+display_ko: 종류를 모양으로 구분
+display_en: Tell Kinds Apart at a Glance
 domain: views
 elements: [elements/ontology-domain-tint-contract, elements/ontology-kind-tone-contract, elements/topology-kind-classification-contract, elements/topology-kind-color-legend, elements/topology-kind-color-research-basis, elements/topology-kind-color-tests, elements/topology-kind-color-tones]
 ---

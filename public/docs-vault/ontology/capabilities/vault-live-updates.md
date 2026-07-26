@@ -2,6 +2,8 @@
 slug: capabilities/vault-live-updates
 kind: capability
 title: Vault Live Updates (5s polling + diff toast + graph pulse)
+display_ko: 폴더가 바뀌면 바로 반영
+display_en: Live Folder Updates
 domain: vault-local-first
 elements: [elements/ontology-description-helper, src/entities/docs-vault/lib/build-local-manifest.ts, src/features/docs-vault-local/lib/diff-manifest.ts, src/features/docs-vault-local/model/use-local-vault.ts, src/features/docs-vault-local/model/VaultDiffToaster.tsx, src/widgets/topology-map-v2]
 relates: [capabilities/mcp-conflict-guard, capabilities/studio-vault-write]

@@ -2,6 +2,8 @@
 slug: capabilities/topology-ontology-inspection
 kind: capability
 title: Topology Ontology Inspection
+display_ko: 개념 하나 자세히 보기
+display_en: Inspect One Concept
 domain: views
 elements: [ontology-deeplink-node-resolver, topology-ontology-drawer, topology-ontology-drawer-model, topology-selected-node-resolver]
 ---

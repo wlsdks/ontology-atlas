@@ -2,6 +2,8 @@
 slug: capabilities/topology-direct-edit
 kind: capability
 title: Topology Direct Edit (토폴로지에서 직접 편집)
+display_ko: 지도에서 바로 고치기
+display_en: Edit Straight From the Map
 domain: views
 elements: []
 dependencies: [capabilities/topology-ontology-inspection]

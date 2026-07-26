@@ -19,12 +19,15 @@ export interface InsightsHeroCensusLabels {
   /** 밀도비를 강등한 서브라인 — 예: "개념 1개당 평균 연결 2.34개"(ratio 이미 주입). */
   densityGloss: string;
   evidenceLinked: string;
+  /** 「할 일」 탭의 수리 큐와 같은 판정 — 따로 떨어진 무리 수. */
+  islands: string;
 }
 
 export function InsightsHeroCensus({
   totalNodes,
   totalEdges,
   health,
+  islandCount,
   kindsSummary,
   relationsSummary,
   labels,
@@ -32,6 +35,13 @@ export function InsightsHeroCensus({
   totalNodes: number;
   totalEdges: number;
   health: CensusHealthSummary;
+  /**
+   * 「할 일」 탭 수리 큐가 세는 것과 **같은** 분리된 무리 수. 여기 같이
+   * 두는 이유: 큰 "100%" 만 보고 "우리 지도는 완벽히 이어졌다" 로 읽고
+   * 넘어가는 사람이 있었다. 100% 는 *도메인 소속률* 이지 연결률이 아니고,
+   * 같은 볼트에 62개의 따로 떨어진 무리가 있었다. 두 수를 한눈에 둔다.
+   */
+  islandCount: number;
   /** 요약 서브라인 — 예: "요소 250 · 역량 36 · 도메인 6 · 문서 3 · 프로젝트 1". */
   kindsSummary: Array<{ key: string; label: string; count: number }>;
   relationsSummary: Array<{ key: string; label: string; count: number }>;
@@ -56,6 +66,7 @@ export function InsightsHeroCensus({
           <span className="text-label text-[color:var(--color-text-quaternary)]">{labels.densityGloss}</span>
           <div className="flex flex-wrap items-center gap-3.5 text-label text-[color:var(--color-text-tertiary)]">
             <HealthStat label={labels.orphan} value={health.orphanCount} />
+            <HealthStat label={labels.islands} value={islandCount} />
             <HealthStat label={labels.cycle} value={health.cycleCount} />
             <HealthStat label={labels.evidenceLinked} value={`${health.evidenceLinkedPct}%`} />
           </div>

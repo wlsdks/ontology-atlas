@@ -2,6 +2,8 @@
 slug: capabilities/topology-analysis-modes
 kind: capability
 title: Topology Analysis Modes
+display_ko: 지도 보는 방식 고르기
+display_en: Ways to Read the Map
 domain: views
 elements: [topology-analysis-state, topology-path-chip]
 ---

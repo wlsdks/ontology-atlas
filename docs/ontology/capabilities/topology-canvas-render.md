@@ -2,6 +2,8 @@
 slug: capabilities/topology-canvas-render
 kind: capability
 title: Topology — Canvas-2D Map Render
+display_ko: 지도 그리기
+display_en: Draw the Map
 domain: views
 elements: [elements/ontology-description-helper, src/views/home, src/widgets/topology-controls]
 relates: [elements/sigma-graphology]

@@ -2,6 +2,8 @@
 slug: capabilities/first-run-onboarding-guides
 kind: capability
 title: First-Run Onboarding Guides (auto tour · pre-picker sheet · start checklist)
+display_ko: 처음 온 사람 안내
+display_en: First-Visit Guide
 domain: onboarding-ux
 elements: [elements/accessible-dialog-focus-contract]
 ---

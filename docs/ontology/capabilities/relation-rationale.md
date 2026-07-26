@@ -2,6 +2,8 @@
 slug: capabilities/relation-rationale
 kind: capability
 title: Relation Rationale (관계 근거 why)
+display_ko: 이 선을 왜 그었나
+display_en: Why This Link Exists
 domain: ontology-core
 elements: []
 ---

@@ -2,6 +2,8 @@
 slug: capabilities/studio-deep-link-focus
 kind: capability
 title: 나침 무대 딥링크 포커스 (?node=)
+display_ko: 링크로 공방의 그 개념 열기
+display_en: Open a Concept by Link
 domain: views
 elements: [ontology-deeplink-node-resolver, src/views/ontology-studio/ui/OntologyStudioPage.tsx]
 ---
