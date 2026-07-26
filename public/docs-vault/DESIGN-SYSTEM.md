@@ -1604,6 +1604,28 @@ the words aren't:
 The test: **remove the arrow and read the label aloud. If nothing was lost, it
 was decoration.**
 
+### The gate has to reach the markup, not just the strings
+
+`tests/contract/label-decoration.contract.test.ts` scans three things now, and
+the third one was added because the first two were not enough:
+
+1. every `messages/*.json` string, for a trailing arrow;
+2. a bare `↗` in JSX, unless the element declares `data-external-link-marker`;
+3. **a lone arrow element that sits at the end of a label** — matched by what
+   follows it, not by which glyph it is.
+
+(3) exists because the rule shipped on 2026-07-26 exempted `→` wholesale, on the
+grounds that every standalone `→` in this repo was an infix data arrow. One day
+later the workshop's primary save button read `확인하고 저장 <span>→</span>` —
+the repo that wrote the rule broke it, under its own exemption. **A rule whose
+range is too short fails exactly like no rule at all.**
+
+The exemption is gone; the discrimination moved to position. An arrow element
+whose next non-whitespace sibling is the parent's closing tag is trailing
+(decoration); anything else after it means the arrow sits between two things
+(data). Measured before enabling, as `.claude/rules/design.md` requires: 3
+trailing (all the same save-button family) and 7 infix across `src` + `app`.
+
 ## Dimensional regularity — when content length varies
 
 Owner verdict, 2026-07-26, on a card grid whose rows didn't line up:

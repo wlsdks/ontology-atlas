@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T18:13:34.000Z",
+  "generatedAt": "2026-07-26T19:12:01.652Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 성공한 저장이 에러 화면으로 보이던 자리 (공방 실체화 · 게이트 사정거리 · 세 입구 관계 수)",
+          "slug": "2026-07-27-성공한-저장이-에러-화면으로-보이던-자리-공방-실체화-게이트-사정거리-세-입구-관계-수"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 말없이 삼키던 클릭, 영어로 새던 한국어 화면",
           "slug": "2026-07-27-말없이-삼키던-클릭-영어로-새던-한국어-화면"
         },
@@ -5018,9 +5023,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 같은 감사에서 처방이 분명했던 셋을 함께 고쳤다. 첫 방문 안내가 클릭을 말없이 삼켰다(D3). 문서함 첫 방문 안내가 떠 있는 동안 다른 내비를 누르면 ",
-      "wordCount": 50253,
-      "updatedAt": "2026-07-27T03:13:34+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 공방에서 \"문서 만들고 저장\" 이 성공해도 화면은 \"못 찾겠다\" 고 했다(D1). 이름만 불린 개념은 참조 원문을 뭉갠 별칭 id 를 갖는다 (elemen",
+      "wordCount": 50706,
+      "updatedAt": "2026-07-26T19:12:01.652Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5625,6 +5630,11 @@
           "slug": "arrows-carry-information-or-they-dont-ship"
         },
         {
+          "depth": 3,
+          "text": "The gate has to reach the markup, not just the strings",
+          "slug": "the-gate-has-to-reach-the-markup-not-just-the-strings"
+        },
+        {
           "depth": 2,
           "text": "Dimensional regularity — when content length varies",
           "slug": "dimensional-regularity-when-content-length-varies"
@@ -5811,8 +5821,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 16748,
-      "updatedAt": "2026-07-27T01:22:56+09:00",
+      "wordCount": 16943,
+      "updatedAt": "2026-07-26T19:11:17.311Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
