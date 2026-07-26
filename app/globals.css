@@ -626,6 +626,15 @@
     animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
   }
 
+  /* 계층 펼침(disclosure) — 「근거로만 적힌 이름」처럼 접혀 있던 아래 계층이
+     열릴 때의 짧은 페이드-인. 같은 표면의 탭 전환과 같은 키프레임·같은 토큰을
+     쓴다: 같은 종류의 등장은 같게 보여야 한다. 아래로만 자라므로 위 행의
+     자리를 밀지 않는다(레이아웃 시프트 0). prefers-reduced-motion 은 base
+     레이어의 전역 규칙이 즉시 교체로 강등한다. */
+  .insights-disclosure-in {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
   /* ── 설정 패널 전환 (Phase 3 C14, 2026-07-25) ────────────────────────────
      설정 시트는 lazy chunk 가 아니라 scrim·패널이 같은 createPortal 커밋에서
      함께 마운트된다. 다만 진입 애니메이션이 없어 scrim 배경만 먼저 칠해지고

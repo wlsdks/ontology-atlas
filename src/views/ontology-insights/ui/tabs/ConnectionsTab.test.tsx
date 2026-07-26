@@ -23,6 +23,8 @@ const labels: ConnectionsTabLabels = {
   noHubs: "No hubs yet",
   noHubsHint: "Add relations to grow hubs.",
   hubTruncated: (shown, total) => `Showing ${shown} of ${total}`,
+  evidenceBadge: "No document",
+  evidenceBadgeHint: "Another document wrote this name down.",
   hubDegreeCaption: "Number = all connections combined.",
 };
 
@@ -41,14 +43,21 @@ const impactLabels: ImpactRankingLabels = {
   empty: "Nothing ripples yet",
   emptyHint: "Connect relations in the workshop.",
   truncated: (shown, total) => `Top ${shown} / ${total} total`,
+  evidenceShow: (count) => `Show ${count} names without a document`,
+  evidenceHide: "Hide names without a document",
+  evidenceCaption: "The number here is not risk.",
+  evidenceTruncated: (shown, total) => `Top ${shown} / ${total} without a document`,
+  evidenceBadge: "No document",
+  evidenceBadgeHint: "Another document wrote this name down.",
 };
 
 const impactLink = {
   href: (nodeId: string) => `/ontology/?node=${encodeURIComponent(nodeId)}`,
   ariaLabel: ({ title }: { title: string }) => `${title} — view on the map`,
+  evidenceAriaLabel: ({ title }: { title: string }) => `${title} — view on the map`,
 };
 
-const emptyImpact = { rows: [], rankedCount: 0 };
+const emptyImpact = { rows: [], rankedCount: 0, evidenceRows: [], evidenceRankedCount: 0 };
 
 describe("ConnectionsTab", () => {
   it("does not render the moved readiness/repair instruments", () => {
@@ -79,7 +88,7 @@ describe("ConnectionsTab", () => {
         edgeTypeRows={[]}
         totalEdges={0}
         edgeTypeLabel={(type) => type}
-        hubs={[{ id: "domain:auth", title: "Auth", kind: "domain", degree: 12 }]}
+        hubs={[{ id: "domain:auth", title: "Auth", kind: "domain", degree: 12, evidenceOnly: false }]}
         hubTotalCount={1}
         kindLabel={(kind) => kind}
         hubLink={hubLink}
@@ -93,6 +102,32 @@ describe("ConnectionsTab", () => {
     const link = screen.getByTestId("insights-hub-row-link");
     expect(link).toHaveAttribute("href", "/ontology/?node=domain%3Aauth");
     expect(link).toHaveAttribute("aria-label", "Auth — view on the map");
+    expect(screen.queryByTestId("evidence-only-badge")).toBeNull();
+  });
+
+  it("허브는 순서를 그대로 두고 문서 없는 행만 배지로 밝힌다", () => {
+    render(
+      <ConnectionsTab
+        edgeTypeRows={[]}
+        totalEdges={0}
+        edgeTypeLabel={(type) => type}
+        hubs={[
+          { id: "element:x", title: "Integration Test", kind: "element", degree: 12, evidenceOnly: true },
+        ]}
+        hubTotalCount={1}
+        kindLabel={(kind) => kind}
+        hubLink={hubLink}
+        labels={labels}
+        impact={emptyImpact}
+        impactLink={impactLink}
+        impactLabels={impactLabels}
+      />,
+    );
+
+    // 여기서 순서를 바꾸면 "지금 뭐가 중심인가"의 답 자체가 틀려진다 —
+    // 실제로 연결이 많은 행은 위에 남고, 문서 유무만 조용히 밝힌다.
+    expect(screen.getByTestId("insights-hub-row-link")).toHaveTextContent("Integration Test");
+    expect(screen.getByTestId("evidence-only-badge")).toHaveTextContent("No document");
   });
 
   // 잉크 삭감 회귀 가드 — 에고 썸네일은 6행이 모두 같은 바퀴 모양이라
@@ -103,7 +138,7 @@ describe("ConnectionsTab", () => {
         edgeTypeRows={[]}
         totalEdges={0}
         edgeTypeLabel={(type) => type}
-        hubs={[{ id: "domain:auth", title: "Auth", kind: "domain", degree: 12 }]}
+        hubs={[{ id: "domain:auth", title: "Auth", kind: "domain", degree: 12, evidenceOnly: false }]}
         hubTotalCount={1}
         kindLabel={(kind) => kind}
         hubLink={hubLink}
@@ -144,7 +179,7 @@ describe("ConnectionsTab", () => {
         edgeTypeRows={[]}
         totalEdges={0}
         edgeTypeLabel={(type) => type}
-        hubs={[{ id: "domain:auth", title: "Auth", kind: "domain", degree: 12 }]}
+        hubs={[{ id: "domain:auth", title: "Auth", kind: "domain", degree: 12, evidenceOnly: false }]}
         hubTotalCount={9}
         kindLabel={(kind) => kind}
         hubLink={hubLink}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Check, Copy, FileText, GitBranch, MoreHorizontal } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
+import { EvidenceOnlyBadge } from "@/shared/ui/evidence-only-badge";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import type { OntologyHealthActionTarget } from "@/entities/knowledge-graph";
 import type { DoNextQueue, DoNextRow } from "../../lib/do-next-queue";
@@ -89,6 +90,12 @@ export interface DoNextTabLabels {
   reviewActive: (title: string | null) => string;
   reviewCleared: (title: string | null) => string;
   reviewUnverified: (title: string | null) => string;
+  /**
+   * 근거 계층 배지 — 「연결」 탭 랭킹·허브와 **같은 i18n 키**에서 온다.
+   * 같은 사실을 표면마다 다른 말로 부르면 사용자는 두 사실로 읽는다.
+   */
+  evidenceBadge: string;
+  evidenceBadgeHint: string;
 }
 
 /**
@@ -498,8 +505,19 @@ function QueueSection({
             }`}
           >
             <TopologyV2KindGlyph kind={row.nodeKind} size={13} />
-            <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-secondary)]">
-              {row.title}
+            {/* 이름과 배지를 한 묶음으로 묶는다 — 이름만 줄어들고 배지는
+                제자리를 지켜야 좁은 폭에서 배지가 다음 줄로 떨어져 행 높이를
+                흔드는 일이 없다(치수 규칙성). */}
+            <span className="flex min-w-0 flex-1 items-center gap-2">
+              <span className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
+                {row.title}
+              </span>
+              {row.evidenceOnly ? (
+                <EvidenceOnlyBadge
+                  label={labels.evidenceBadge}
+                  hint={labels.evidenceBadgeHint}
+                />
+              ) : null}
             </span>
             {metricText ? (
               <span className="shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)]">

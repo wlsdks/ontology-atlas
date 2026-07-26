@@ -99,7 +99,11 @@ describe('impact-ranking contract — 화면의 파급 수 == MCP blast_radius',
 
     it(`${testCase.name} — 카드 행의 숫자도 같은 계산에서 나온다`, () => {
       const insight = derivationToInsight(deriveOntologyFromVault(manifestOf(testCase.docs)));
-      const { rows } = buildImpactRanking(insight.nodes, insight.edges, 6);
+      const ranking = buildImpactRanking(insight.nodes, insight.edges, 6);
+      // 근거 계층은 **표시만** 강등된 것이지 다른 계산이 아니다. 두 계층을
+      // 같은 단언에 넣어, 강등을 "파생 개념을 그래프에서 빼는" 방식으로
+      // 다시 구현하면 여기가 깨지게 한다.
+      const rows = [...ranking.rows, ...ranking.evidenceRows];
 
       for (const row of rows) {
         const node = insight.nodes.find((candidate) => candidate.id === row.id);

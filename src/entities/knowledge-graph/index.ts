@@ -46,7 +46,7 @@ export {
 } from "./lib/relation-quality";
 export { translateOntologyDeeplinkToTopologyParam } from "./lib/translate-ontology-deeplink";
 export { deriveCodeLocations } from "./lib/code-locations";
-export { resolveNodeDocument } from "./lib/node-document";
+export { isEvidenceOnlyConcept, resolveNodeDocument } from "./lib/node-document";
 export {
   resolveNodeAgentTarget,
   stripVaultSlugPrefix,

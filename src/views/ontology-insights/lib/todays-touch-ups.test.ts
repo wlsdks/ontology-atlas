@@ -20,16 +20,17 @@ function neglected(nodeId: string, degree: number, agoDays: number): DoNextQueue
     nodeKind: "capability",
     degree,
     agoDays,
+    evidenceOnly: false,
     handoffPayload: `hub ${nodeId}`,
   };
 }
 
 function orphan(nodeId: string): DoNextQueue["rows"][number] {
-  return { id: `orphan:${nodeId}`, rowKind: "orphan", nodeId, title: nodeId, nodeKind: "element", handoffPayload: `o ${nodeId}` };
+  return { id: `orphan:${nodeId}`, rowKind: "orphan", nodeId, title: nodeId, nodeKind: "element", evidenceOnly: false, handoffPayload: `o ${nodeId}` };
 }
 
 function promotion(nodeId: string): DoNextQueue["rows"][number] {
-  return { id: `promotion:${nodeId}`, rowKind: "promotion", nodeId, title: nodeId, nodeKind: "element", handoffPayload: `p ${nodeId}` };
+  return { id: `promotion:${nodeId}`, rowKind: "promotion", nodeId, title: nodeId, nodeKind: "element", evidenceOnly: false, handoffPayload: `p ${nodeId}` };
 }
 
 function queueOf(rows: DoNextQueue["rows"]): DoNextQueue {

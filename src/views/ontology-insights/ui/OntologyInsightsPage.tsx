@@ -12,6 +12,7 @@ import {
   buildOntologyHealthSignals,
   buildOntologyNodeHref,
   classifyRelationQuality,
+  isEvidenceOnlyConcept,
   summarizeAgentReadiness,
   useEdgeTypeLabel,
   type KnowledgeGraphEdge,
@@ -277,6 +278,7 @@ export function OntologyInsightsPage() {
         title: node.display ?? node.title,
         kind: node.kind,
         degree,
+        evidenceOnly: isEvidenceOnlyConcept(node),
       })),
     [hubRanking],
   );
@@ -517,6 +519,8 @@ export function OntologyInsightsPage() {
     noHubsHint: t("noHubsHint"),
     hubTruncated: (shown: number, total: number) => t("hubTruncated", { shown, total }),
     hubDegreeCaption: t("hubDegreeCaption"),
+    evidenceBadge: t("evidenceBadge"),
+    evidenceBadgeHint: t("evidenceBadgeHint"),
   };
   const impactLabels = {
     title: t("impactTitle"),
@@ -526,6 +530,13 @@ export function OntologyInsightsPage() {
     empty: t("impactEmpty"),
     emptyHint: t("impactEmptyHint"),
     truncated: (shown: number, total: number) => t("impactTruncated", { shown, total }),
+    evidenceShow: (count: number) => t("impactEvidenceShow", { count }),
+    evidenceHide: t("impactEvidenceHide"),
+    evidenceCaption: t("impactEvidenceCaption"),
+    evidenceTruncated: (shown: number, total: number) =>
+      t("impactEvidenceTruncated", { shown, total }),
+    evidenceBadge: t("evidenceBadge"),
+    evidenceBadgeHint: t("evidenceBadgeHint"),
   };
   const domainCouplingLabels = {
     title: t("domainCouplingTitle"),
@@ -608,6 +619,8 @@ export function OntologyInsightsPage() {
       t("doNext.reviewCleared", { title: title ?? t("doNext.reviewFallback") }),
     reviewUnverified: (title: string | null) =>
       t("doNext.reviewUnverified", { title: title ?? t("doNext.reviewFallback") }),
+    evidenceBadge: t("evidenceBadge"),
+    evidenceBadgeHint: t("evidenceBadgeHint"),
   };
   const formatDaysAgo = (days: number) => {
     if (days <= 0) return t("daysAgoToday");
@@ -794,6 +807,10 @@ export function OntologyInsightsPage() {
                   // 화면에 있는 사실이 스크린리더에서 사라지면 안 된다.
                   ariaLabel: ({ title, direct, total }) =>
                     t("impactRowAriaLabel", { title, direct, total }),
+                  // 근거 계층은 같은 수를 다른 뜻으로 읽어 준다 — 위험도가
+                  // 아니라 "이 이름을 근거로 적은 개념 수".
+                  evidenceAriaLabel: ({ title, total }) =>
+                    t("impactEvidenceRowAriaLabel", { title, total }),
                 }}
                 impactLabels={impactLabels}
               />
