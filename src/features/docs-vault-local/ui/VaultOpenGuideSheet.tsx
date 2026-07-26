@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { FolderOpen, HardDrive, ShieldCheck, Sparkles, X } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { useDialogFocusTrap } from "@/shared/lib/use-dialog-focus-trap";
@@ -21,9 +22,17 @@ export interface VaultOpenGuideSheetProps {
   open: boolean;
   onClose: () => void;
   /** "기존 폴더 선택" — 시트를 닫고 OS 폴더 선택창(vault.open())으로. */
-  onPickExisting: () => void;
+  onPickExisting?: () => void;
   /** "빈 폴더로 새로 시작" — 시트를 닫고 vault 생성 플로우(스캐폴드)로. */
-  onCreateNew: () => void;
+  onCreateNew?: () => void;
+  /**
+   * 진입 검수 E-1 — File System Access API 가 없는 브라우저(Safari·Firefox)
+   * 에서 이 시트의 두 버튼은 **누를 수 있는데 아무 일도 일어나지 않는다**.
+   * 시트가 닫히고, 왜 안 되는지도 어디로 가야 하는지도 화면에서 사라졌다.
+   * true 면 두 CTA 를 걷고 정직한 고지 + macOS 앱 경로로 치환한다 — 눌러야
+   * 아는 실패가 아니라 누르기 전에 아는 사실이 된다.
+   */
+  unsupported?: boolean;
 }
 
 const BULLETS = [
@@ -41,8 +50,14 @@ export function VaultOpenGuideSheet({
   onClose,
   onPickExisting,
   onCreateNew,
+  unsupported = false,
 }: VaultOpenGuideSheetProps) {
   const t = useTranslations("vaultOpenGuide");
+  // 미지원 고지 문구는 첫 실행 카드가 이미 갖고 있다 — 같은 사실을 두 벌로
+  // 쓰면 한쪽만 고쳐지는 drift 가 난다. 카드와 이 시트가 같은 키를 읽는다
+  // (`FirstRunStarterModule` 이 용어사전을 `searchWidgets` 에서 읽는 것과
+  // 같은 재사용 패턴).
+  const tUnsupported = useTranslations("firstRunStarter");
   useBodyScrollLock(open);
   const dialogRef = useDialogFocusTrap<HTMLElement>({
     open,
@@ -82,7 +97,10 @@ export function VaultOpenGuideSheet({
                   {t("title")}
                 </h2>
                 <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
-                  {t("subtitle")}
+                  {/* 미지원 브라우저에서 "OS 폴더 선택창이 뜨기 전에" 는 오지
+                      않을 창을 약속하는 문장이다 — 그 자리에 왜 안 되는지를
+                      넣는다. */}
+                  {unsupported ? tUnsupported("unsupportedNotice") : t("subtitle")}
                 </p>
               </div>
               <button
@@ -96,7 +114,10 @@ export function VaultOpenGuideSheet({
               </button>
             </header>
 
-            <ul className="flex flex-col gap-2.5 px-5 py-4">
+            {/* 미지원일 때 4개 불릿은 전부 브라우저 픽커 흐름의 설명이라
+                (허용 프롬프트·빈 폴더 스캐폴드) 그대로 두면 오지 않을 절차를
+                가르친다. 고지 한 줄 + 갈 곳 하나로 줄인다. */}
+            <ul hidden={unsupported} className="flex flex-col gap-2.5 px-5 py-4">
               {BULLETS.map(({ icon: Icon, key }) => (
                 <li key={key} className="flex items-start gap-2.5">
                   <Icon
@@ -112,8 +133,19 @@ export function VaultOpenGuideSheet({
             </ul>
 
             <div className="flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] px-5 py-4">
+              {unsupported ? (
+                <Link
+                  href="/download/"
+                  data-testid="vault-guide-unsupported-cta"
+                  className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-accent)]"
+                >
+                  <HardDrive size={13} aria-hidden />
+                  {tUnsupported("unsupportedCta")}
+                </Link>
+              ) : null}
               <button
                 type="button"
+                hidden={unsupported}
                 onClick={onPickExisting}
                 data-testid="vault-guide-pick-existing"
                 className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-accent)]"
@@ -123,6 +155,7 @@ export function VaultOpenGuideSheet({
               </button>
               <button
                 type="button"
+                hidden={unsupported}
                 onClick={onCreateNew}
                 data-testid="vault-guide-create-new"
                 className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"

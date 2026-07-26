@@ -123,14 +123,18 @@ export function FirstRunStarterModule({
   // 폴더-우선 첫 방문 (소유자 지시 2026-07-24) — 첫 화면을 열자마자 폴더
   // 지정 유도(시트)가 첫 액션이 된다. "다음에"로 건너뛰면 자동 투어가
   // 이어받는다(투어 가드가 시트 열림 동안 발화를 미룸). 1회 한정.
+  // 진입 검수 E-1 — File System Access 미지원 브라우저에서는 이 시트를 자동으로
+  // 열지 않는다. 시트의 존재 이유는 "OS 선택창이 뜨기 전에 미리 설명하는 것"인데
+  // 그 창이 오지 않으므로, 첫 화면을 여는 순간 못 하는 일을 권하는 모달이 된다.
+  // 이 상태의 안내는 카드 안 인라인 고지(unsupportedNotice + macOS 앱)가 맡는다.
   useEffect(() => {
-    if (!visible || readVaultGuideAutoOpened()) return undefined;
+    if (!visible || fsaUnsupported || readVaultGuideAutoOpened()) return undefined;
     const id = window.setTimeout(() => {
       writeVaultGuideAutoOpened();
       setGuideOpen(true);
     }, 400);
     return () => window.clearTimeout(id);
-  }, [visible]);
+  }, [visible, fsaUnsupported]);
 
   // 되돌아오기 (소유자 실사용 지적 2026-07-24) — "여기서 둘러볼게요"로
   // 카드를 닫고 예시 비즈니스를 구경하다 보면 세션 내 처음으로 돌아갈
@@ -436,17 +440,30 @@ export function FirstRunStarterModule({
         ) : null}
       </div>
 
+      {/* 진입 검수 E-1 — 이전에는 브라우저 원문 문자열(`errorText`)이 사용자
+          문구 자리를 통째로 차지했다. `window.showDirectoryPicker is not a
+          function` 은 사람이 읽고 다음 행동을 고를 수 있는 문장이 아니다.
+          이제 사람 말 한 줄이 먼저 서고, 원인 문자열은 그 아래 조용한 단서로
+          남는다 — 원인을 버리지 않으면서 읽는 순서를 뒤집었다. */}
       {errorText !== null ? (
-        <p
-          role="alert"
-          className="mt-2 text-[11px] text-[color:var(--color-status-danger)]"
-        >
-          {errorText || t("errorFallback")}
-        </p>
+        <div role="alert" className="mt-2">
+          <p className="text-[11px] text-[color:var(--color-status-danger)]">
+            {t("errorFallback")}
+          </p>
+          {errorText ? (
+            <p
+              data-testid="first-run-starter-error-detail"
+              className="mt-0.5 break-words text-[10.5px] leading-[1.5] text-[color:var(--topology-v2-panel-text-quaternary)]"
+            >
+              {errorText}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       <VaultOpenGuideSheet
         open={guideOpen}
+        unsupported={fsaUnsupported}
         onClose={() => setGuideOpen(false)}
         onPickExisting={() => {
           setGuideOpen(false);

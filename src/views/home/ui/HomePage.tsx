@@ -22,7 +22,9 @@ import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
-  useLocalVault,} from "@/features/docs-vault-local";
+  useLocalVault,
+  VaultOpenGuideSheet,
+} from "@/features/docs-vault-local";
 import {
   FirstRunReadout,
   SampleNodeHint,
@@ -732,6 +734,20 @@ export function HomePage() {
   // 열에 조용한 "내 데이터로 전환 ⌘O" 필을 상시 노출하고, 실제 vault 가
   // 연결되면 게이트가 꺼져 자동 소멸한다(카드 dismiss 축과 독립).
   const sampleModeSettled = useFirstRunSampleModeSettled();
+  // 진입 검수 E-1c — 크롬 「내 데이터로 전환」과 ⌘O 는 미지원 브라우저(Safari·
+  // Firefox)에서 `vault.open()` 을 불러 아무 일도 일어나지 않았다. 상태만 조용히
+  // 'unsupported' 로 바뀌고, 첫 실행 카드를 이미 닫은 사람에게는 화면에 아무
+  // 응답이 없었다(같은 버튼을 계속 누르게 만드는 침묵). 못 하는 일이면 왜
+  // 못 하는지와 갈 곳을 준다 — 카드가 쓰는 그 시트를 미지원 모드로 연다.
+  const fsaUnsupported = vault.status === "unsupported";
+  const [unsupportedGuideOpen, setUnsupportedGuideOpen] = useState(false);
+  const requestVaultOpen = useCallback(() => {
+    if (fsaUnsupported) {
+      setUnsupportedGuideOpen(true);
+      return;
+    }
+    void vault.open();
+  }, [fsaUnsupported, vault]);
   // 자동 투어는 샘플/내 폴더 **양쪽** 정착을 다 받는다 — 예전 조건은 샘플만
   // 봐서 폴더를 고른 사용자가 투어를 못 받았다 (`use-auto-start-ready.ts`).
   const tourAutoStartReady = useGuidedTourAutoStartReady();
@@ -2406,7 +2422,7 @@ export function HomePage() {
       onFire: () => {
         if (shortcutsSuppressed) return;
         if (!sampleModeSettled) return;
-        void vault.open();
+        requestVaultOpen();
       },
     },
   ]);
@@ -3137,7 +3153,7 @@ export function HomePage() {
                     {sampleModeSettled ? (
                       <Tooltip content={t('controls.switchToMyDataTooltip')} side="bottom" withProvider={false}>
                         <ChromeChip
-                          onClick={() => void vault.open()}
+                          onClick={requestVaultOpen}
                           aria-label={t('controls.switchToMyDataAriaLabel')}
                           data-testid="topology-switch-to-my-data"
                           data-utility-action-token-contract="support-surface-family"
@@ -4173,6 +4189,15 @@ export function HomePage() {
                   이라 노드 클릭을 막지 않는다(통과 클릭 = 소멸). 첫 노드 선택 시
                   영구 소멸(localStorage). 소스: features/first-run-starter. */}
               <SampleNodeHint hasSelection={Boolean(canvasSelectedSlug)} hidden={tour.open} />
+
+              {/* E-1c — 미지원 브라우저에서 크롬 타일/⌘O 가 부르는 정직한 안내.
+                  지원 브라우저에서는 열리지 않으므로 숙련 사용자의 직행 경로
+                  (타일 → OS 선택창)는 그대로다. */}
+              <VaultOpenGuideSheet
+                open={unsupportedGuideOpen}
+                unsupported
+                onClose={() => setUnsupportedGuideOpen(false)}
+              />
 
             </>
         </div>
