@@ -8,6 +8,7 @@ import {
 } from '@/entities/docs-vault';
 import { ProjectDetailPage } from '@/views/project-detail';
 import { absoluteUrl } from '@/shared/config';
+import { RouteLoadingFallback } from '@/shared/ui';
 
 const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
 
@@ -177,7 +178,7 @@ export default async function Page({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
-      <Suspense fallback={null}>
+      <Suspense fallback={<RouteLoadingFallback />}>
         <ProjectDetailPage slug={slug} initialProject={project} initialRelated={projects} />
       </Suspense>
     </>

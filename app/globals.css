@@ -598,6 +598,26 @@
     transform-origin: var(--studio-picker-origin, center);
   }
 
+  /* 라우트 로딩 자막 — 대부분의 진입은 400ms 안에 끝나므로 그 전에는 침묵한다.
+     즉시 그리면 정상 진입마다 자막이 번쩍이고, 그건 고치려던 빈 화면보다 나쁘다.
+     지연은 duration 이 아니라 delay 라서 prefers-reduced-motion 전역 규칙
+     (animation-duration 0.01ms)에도 살아남는다 — 감속 사용자는 400ms 뒤 즉시
+     본다. 진행을 흉내내지 않는다: 움직이는 건 등장 한 번의 opacity 뿐이다. */
+  @keyframes routeLoadingIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  .route-loading-in {
+    animation: routeLoadingIn var(--motion-fast) var(--motion-ease) both;
+    animation-delay: 400ms;
+  }
+
   /* 4) 커밋 수렴 — 저장 순간 요약 칩이 저장 버튼 방향으로 옅어지며 미끄러진다
      (한 박자). 소비처가 --studio-converge-x/y 로 이동 벡터를 준다. */
   @keyframes studioSummaryConverge {

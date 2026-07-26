@@ -6,6 +6,7 @@ import {
   type VaultManifest,
 } from '@/entities/docs-vault';
 import { ProjectEditClientPage } from './ProjectEditClientPage';
+import { RouteLoadingFallback } from '@/shared/ui';
 
 const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
 
@@ -39,7 +40,7 @@ export default async function Page({
 }) {
   const { slug } = await params;
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoadingFallback />}>
       <ProjectEditClientPage slug={slug} />
     </Suspense>
   );

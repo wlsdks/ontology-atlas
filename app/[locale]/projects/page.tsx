@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { ProjectSelectorPage } from "@/views/project-selector";
 import { absoluteUrl } from "@/shared/config";
+import { RouteLoadingFallback } from "@/shared/ui";
 
 export async function generateMetadata({
   params,
@@ -22,7 +23,7 @@ export async function generateMetadata({
 
 export default function ProjectsRoute() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoadingFallback />}>
       <ProjectSelectorPage />
     </Suspense>
   );

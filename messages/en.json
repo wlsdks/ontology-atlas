@@ -23,6 +23,7 @@
   },
   "nav": {
     "skipToContent": "Skip to main content",
+    "surfaceLoading": "Loading this screen…",
     "settingsMenu": {
       "triggerAria": "Open app settings",
       "triggerTitle": "Adjust screen, language, workspace, and AI agent connection in one place",

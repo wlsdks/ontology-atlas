@@ -23,6 +23,7 @@
   },
   "nav": {
     "skipToContent": "메인 콘텐츠로 건너뛰기",
+    "surfaceLoading": "화면을 불러오는 중이에요.",
     "settingsMenu": {
       "triggerAria": "앱 설정 열기",
       "triggerTitle": "화면, 언어, 작업공간, AI 에이전트 연결을 한 곳에서 조정합니다",
