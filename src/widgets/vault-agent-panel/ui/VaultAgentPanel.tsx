@@ -133,7 +133,10 @@ export function VaultAgentPanel({
 
   // 새 내용은 아래로만 자란다 — 스크롤 앵커 하단 고정.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+    const node = scrollRef.current;
+    // jsdom 에는 scrollTo 가 없다 — 없는 API 를 부르지 않고 그냥 넘어간다.
+    if (!node || typeof node.scrollTo !== 'function') return;
+    node.scrollTo({ top: node.scrollHeight });
   }, [agent.turns, agent.proposal]);
 
   const ready = bridgeAvailable && Boolean(provider) && Boolean(vaultPath);

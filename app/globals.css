@@ -534,6 +534,27 @@
     animation: studioStrutFlow 2.4s linear infinite;
   }
 
+  /* 볼트 도우미의 대기 점 — 같은 heartbeat 문법(느린 저대비 주기)을 재사용
+     한다. 글로우가 아니라 opacity 만 움직이고, 이건 **가짜 진행이 아니다**:
+     실제 왕복이 도는 동안에만 켜지고, 진행의 사실은 그 아래 도구 행이
+     말한다. prefers-reduced-motion 은 아래 base 레이어 전역 규칙이 자동으로
+     정지시킨다 — 점은 그대로 보이고 옆의 "생각 중 · N초" 텍스트가 같은
+     사실을 계속 말하므로 정보는 하나도 줄지 않는다. */
+  @keyframes agentPendingPulse {
+    0%,
+    100% {
+      opacity: 0.35;
+    }
+
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .agent-pending-dot {
+    animation: agentPendingPulse 2.4s ease-in-out infinite;
+  }
+
   /* ── 공방 모션 카탈로그 (Phase 3 #2, 2026-07-25) ──────────────────────────
      "의미를 확인하는" 사용성 모션 — 전부 transform/opacity, 글로우/바운스-루프
      없음, --motion-* 토큰. prefers-reduced-motion 은 아래 base 레이어 전역
