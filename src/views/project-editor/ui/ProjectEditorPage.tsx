@@ -242,7 +242,16 @@ function EditorContent({
   }
 
   return (
-    <div className="flex min-h-full w-full">
+    // `shrink-0` 이 스크롤 계약의 핵심이다. 이 div 는 셸 본문 슬롯
+    // (`flex flex-col overflow-y-auto`) 의 **flex item** 이라 기본
+    // `flex-shrink: 1` 을 받는다. 폼이 길어져 내용이 컨테이너보다 커지면
+    // flex 알고리즘이 이 박스를 `min-height: 100%`(= 뷰포트 높이) 까지
+    // 압축했고, 내용은 visible overflow 로 삐져나와 스크롤은 되지만
+    // `main` 의 하단 패딩이 **압축된 박스 바닥**에 붙어버려 스크롤 끝에서
+    // 여백이 사라졌다 (2026-07-27 실측 · 1512×950 편집 화면: 페이지 루트
+    // 높이 950(내용 2590) · 스크롤 끝 폼 하단 여백 1px, 예약분은 40px).
+    // shrink-0 이면 박스가 콘텐츠 높이를 그대로 가지므로 패딩이 제자리에 붙는다.
+    <div className="flex min-h-full w-full shrink-0">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
       {/* 하단 예약고는 base pb + lg:pb — `max-lg:pb-[...]` 는 `md:py-10` 보다
           스타일시트 앞에 emit 되어 768–1023 에서 조용히 패배한다 (빌더 main 과
@@ -255,21 +264,25 @@ function EditorContent({
           href={safeReturnTo}
           data-testid="project-editor-back-link"
           onClick={(event) => handleNavigateWithGuard(event, safeReturnTo)}
-          className="inline-flex items-center gap-1.5 break-keep text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+          className="inline-flex items-center gap-1.5 break-keep text-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
         >
           <ArrowLeft size={14} />
           {safeReturnLabel}
         </Link>
 
-        <header className="mt-8">
-          <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[color:var(--color-text-quaternary)]">
-            {mode === "create"
-              ? duplicateFromSlug
-                ? t("eyebrowDuplicate")
-                : t("eyebrowCreate")
-              : t("eyebrowEdit")}
-          </p>
-          <div className="mt-2 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        {/* 머리말은 한 번만 말한다. 예전에는 eyebrow("새 프로젝트 만들기") 가
+            바로 아래 h1("새 프로젝트") 를 반복했고, 그 옆 칩 두 개
+            ("돌아갈 위치 유지" · "저장하고 계속 보기 가능") 는 시스템 사정이지
+            사용자 관심사가 아니었다. 만들기 화면에서는 eyebrow 를 지우고
+            부제 한 줄이 "무엇을 채우면 되는지" 를 말한다 — 그 문장이 바로
+            아래 필수 칸 4개를 가리키므로 안내가 한 자리에 모인다. */}
+        <header className={mode === "create" ? "mt-6" : "mt-8"}>
+          {mode === "edit" && (
+            <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[color:var(--color-text-quaternary)]">
+              {t("eyebrowEdit")}
+            </p>
+          )}
+          <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between">
             <h1 className="text-2xl font-[var(--font-weight-signature)] tracking-[var(--tracking-section)] text-[color:var(--color-text-primary)] md:text-3xl">
               {mode === "create"
                 ? duplicateFromSlug
@@ -277,37 +290,24 @@ function EditorContent({
                   : t("titleNew")
                 : project?.name}
             </h1>
-            <p className="max-w-xl text-sm text-[color:var(--color-text-tertiary)] md:text-right">
-              {t("headerSubtitle")}
-            </p>
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] text-[color:var(--color-text-quaternary)]">
             {isDirty && (
               <span
                 role="status"
                 aria-live="polite"
-                className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--color-amber-source-a45)] bg-[color:var(--color-amber-source-a12)] px-3 py-1 text-[color:var(--color-status-warning)]"
+                className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full border border-[color:var(--color-amber-source-a45)] bg-[color:var(--color-amber-source-a12)] px-3 py-1 text-label text-[color:var(--color-status-warning)]"
               >
                 <span
                   aria-hidden
-                  className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:var(--color-status-warning)]"
+                  className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-warning)]"
                 />
                 {t("dirtyBadge")}
               </span>
             )}
-            <span className="rounded-full border border-[color:var(--color-divider)] px-3 py-1">
-              {t("chipKeepReturn")}
-            </span>
-            <span className="rounded-full border border-[color:var(--color-divider)] px-3 py-1">
-              {t("chipSaveAndContinue")}
-            </span>
-            {mode === "edit" && (
-              <span className="rounded-full border border-[color:var(--color-divider)] px-3 py-1">
-                {t("chipEditingCurrent")}
-              </span>
-            )}
           </div>
-          <div className="mt-4 flex justify-start">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-[color:var(--color-text-tertiary)]">
+            {mode === "create" ? t("headerSubtitleCreate") : t("headerSubtitle")}
+          </p>
+          <div className={mode === "edit" ? "mt-4 flex justify-start" : "hidden"}>
             <div className="flex flex-wrap gap-2">
               {mode === "edit" && slug && publicProjectHref && (
                 <Link
@@ -354,33 +354,14 @@ function EditorContent({
           </div>
         ) : null}
 
-        {mode === "create" && (
-          <section className="mt-6 grid gap-3 md:grid-cols-2">
-            <div className="rounded-xl border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-indigo-a06)] px-5 py-4">
-              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
-                {t("tipEyebrowEasiest")}
-              </p>
-              <h2 className="mt-2 text-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                {t("tipTitleEasiest")}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-secondary)]">
-                {t("tipDescEasiest")}
-              </p>
-            </div>
-            <div className="rounded-xl border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-5 py-4">
-              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                {t("tipEyebrowFirstTime")}
-              </p>
-              <ol className="mt-3 space-y-2 text-sm leading-6 text-[color:var(--color-text-secondary)]">
-                <li>{t("tipFirstTimeStep1")}</li>
-                <li>{t("tipFirstTimeStep2")}</li>
-                <li>{t("tipFirstTimeStep3")}</li>
-              </ol>
-            </div>
-          </section>
-        )}
+        {/* 2026-07-27 — 만들기 화면의 가르치는 표면 4개 중 2개(이 자리에 있던
+            "가장 쉬운 시작" 카드 + "처음 쓰는 운영자용" 3단계 카드)를 걷어냈다.
+            네 표면이 같은 말("이름·분류·상태·설명만 채우고 먼저 저장하라")을
+            네 번 반복했고, 그 높이가 정작 그 4칸을 화면 밖으로 밀어냈다.
+            안내가 부족했던 게 아니라 폼이 스스로 안 쉬웠던 것이다. 남은 한
+            자리는 위 부제 한 줄이고, 나머지는 필드 옆에서 말한다. */}
 
-        <section className="mt-10">
+        <section className={mode === "create" ? "mt-6" : "mt-10"}>
           {mode === "edit" && slug && (
             <div className="mb-6 rounded-xl border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-indigo-a06)] px-5 py-4">
               <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">

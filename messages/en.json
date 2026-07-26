@@ -1548,29 +1548,18 @@
       "vaultConflict": "This project file was changed first by another editor or AI agent. Refresh and save again.",
       "demoModeSaveFailed": "Can't save in demo mode. Open a markdown folder first.",
       "createdAndOpenToast": "\"{name}\" created · fill in details on the edit screen",
-      "eyebrowDuplicate": "Create from duplicate",
-      "eyebrowCreate": "Create new project",
       "eyebrowEdit": "Edit project",
       "titleNew": "New project",
       "titleDuplicate": "Make duplicate · {name}",
       "headerSubtitle": "An edit screen that organizes metadata, connections, screenshots, and detailed descriptions in one place.",
       "dirtyBadge": "Unsaved",
-      "chipKeepReturn": "Keeps return location",
-      "chipSaveAndContinue": "Save and keep working",
-      "chipEditingCurrent": "Editing current project",
       "openPublicAria": "Open the public view in a new tab",
       "openPublicLabel": "View public page",
       "duplicateLabel": "Duplicate",
       "savedNotice": "Just saved. You can keep refining here, or open the public view to verify the result immediately.",
-      "tipEyebrowEasiest": "Easiest start",
-      "tipTitleEasiest": "Fill in name, category, status, and a short description, then save first.",
-      "tipDescEasiest": "Reopen later to enrich connections, screenshots, and operational info gradually.",
-      "tipEyebrowFirstTime": "For first-time operators",
-      "tipFirstTimeStep1": "1. The slug auto-fills as you type the name.",
-      "tipFirstTimeStep2": "2. A single short description fills out the public card and drawer.",
-      "tipFirstTimeStep3": "3. Detail fields can be expanded below and filled in as needed.",
       "publicCompanionEyebrow": "Working alongside the public view",
-      "publicCompanionDesc": "Even while editing, you can open the public detail and linked docs to see the actual published state. Changes appear immediately on the public view after saving and reopening."
+      "publicCompanionDesc": "Even while editing, you can open the public detail and linked docs to see the actual published state. Changes appear immediately on the public view after saving and reopening.",
+      "headerSubtitleCreate": "A name, category, status, and one-line description are enough to create it. Connections and operations info can wait until after."
     }
   },
   "docsVault": {
@@ -2492,7 +2481,9 @@
         "helperBadgeOptional": "Add later",
         "collapseLabel": "Collapse",
         "expandLabel": "Expand",
-        "navLabel": "Section nav"
+        "navLabel": "Section nav",
+        "extrasLabel": "Fill in more",
+        "extrasCaption": "Body text, tags, connected projects, dates — all fine to add after creating."
       },
       "fields": {
         "slug": "slug",
@@ -2533,7 +2524,10 @@
         "iconPlaceholder": "🗺️",
         "progressPlaceholder": "50",
         "isHubLabel": "Mark as hub node",
-        "isHubHint": "(emphasized indigo, like auth/agent hubs)"
+        "isHubHint": "(emphasized indigo, like auth/agent hubs)",
+        "slugAutoLabel": "Document address",
+        "slugAutoPending": "Generated once you type a name",
+        "slugEditToggle": "Set it myself"
       },
       "validation": {
         "categoryNotFound": "Category does not exist.",
@@ -2586,17 +2580,6 @@
         "editNoticeStay": "Saved the changes. You can verify on the right preview and the public link.",
         "deleteRowTitle": "Delete project",
         "deleteRowCaption": "The md file is deleted and relations remain as dangling warnings — a dry-run shows this first."
-      },
-      "tip": {
-        "eyebrow": "1-minute tip",
-        "lead": "Just enter name, status, and a short description.",
-        "moreLabel": "Show more",
-        "step1": "1. Entering a name auto-generates the slug.",
-        "step2": "2. Pick a category and status.",
-        "step3": "3. Even a single-line description shows up in cards and drawers.",
-        "step4": "4. Add connections and ops info later by reopening.",
-        "collapseDetails": "Collapse details",
-        "expandDetails": "Expand details"
       },
       "preview": {
         "summaryDirty": "Completeness {score}% · {count} changes",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render as rtlRender, screen } from "@testing-library/react";
+import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
 import { TaxonomyProvider } from "@/features/taxonomy";
@@ -33,16 +33,24 @@ function renderForm() {
 }
 
 describe("ProjectForm 라벨-입력 연결 (a11y, #295)", () => {
-  // 기본 열린 섹션(기본정보 · 소개와 문서)의 필드만 — 접힌 섹션
-  // (연결과 미디어 · 운영 정보) 은 DOM 에 없어 펼침 없이는 못 찾는다.
-  it.each([
-    fields.name,
-    fields.description,
-    fields.tagsCsv,
-    fields.stackCsv,
-    fields.linksText,
-  ])("'%s' 라벨이 입력과 연결돼 있다", (label) => {
-    renderForm();
-    expect(screen.getByLabelText(label)).toBeInTheDocument();
-  });
+  // 만들기 화면의 필수 4칸 — 펼침 없이 첫 화면에 있다.
+  it.each([fields.name, fields.category, fields.status, fields.description])(
+    "'%s' 라벨이 입력과 연결돼 있다",
+    (label) => {
+      renderForm();
+      expect(screen.getByLabelText(label)).toBeInTheDocument();
+    },
+  );
+
+  // 나머지 항목은 2026-07-27 재구성에서 "더 채우기" 안으로 접혔다. 접힌 채로는
+  // DOM 에 없으므로 펼친 뒤에 같은 연결을 확인한다 — 라벨-입력 연결이 접힘
+  // 안에서 끊기면 접근성 트리에서 accessible name 이 placeholder 로 떨어진다.
+  it.each([fields.nameEn, fields.tagsCsv, fields.stackCsv, fields.linksText, fields.owner])(
+    "'%s' 라벨이 더 채우기를 펼친 뒤 입력과 연결돼 있다",
+    (label) => {
+      renderForm();
+      fireEvent.click(screen.getByTestId("project-create-extras-toggle"));
+      expect(screen.getByLabelText(label)).toBeInTheDocument();
+    },
+  );
 });

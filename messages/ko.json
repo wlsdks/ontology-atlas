@@ -1548,29 +1548,18 @@
       "vaultConflict": "이 프로젝트 파일이 외부 편집기나 AI 에이전트에 의해 먼저 변경됐습니다. 새로고침 후 다시 저장해주세요.",
       "demoModeSaveFailed": "데모 모드에서는 저장할 수 없습니다. 먼저 마크다운 폴더를 열어 주세요.",
       "createdAndOpenToast": "\"{name}\" 생성 · 편집 화면에서 세부 정보 채우기",
-      "eyebrowDuplicate": "복제해서 만들기",
-      "eyebrowCreate": "새 프로젝트 만들기",
       "eyebrowEdit": "프로젝트 편집",
       "titleNew": "새 프로젝트",
       "titleDuplicate": "복제본 만들기 · {name}",
       "headerSubtitle": "메타데이터, 연결 관계, 스크린샷과 상세 설명을 한 번에 정리하는 편집 화면입니다.",
       "dirtyBadge": "저장 안 됨",
-      "chipKeepReturn": "돌아갈 위치 유지",
-      "chipSaveAndContinue": "저장하고 계속 보기 가능",
-      "chipEditingCurrent": "현재 프로젝트 수정 중",
       "openPublicAria": "공개 화면을 새 탭에서 보기",
       "openPublicLabel": "공개 화면 보기",
       "duplicateLabel": "복제",
       "savedNotice": "방금 저장했습니다. 이 화면에서 계속 다듬거나 공개 화면 보기로 바로 결과를 확인할 수 있습니다.",
-      "tipEyebrowEasiest": "가장 쉬운 시작",
-      "tipTitleEasiest": "이름, 카테고리, 상태, 짧은 설명만 채우고 먼저 저장하세요.",
-      "tipDescEasiest": "저장 후 다시 열어 연결 관계, 스크린샷, 운영 정보까지 천천히 보강할 수 있습니다.",
-      "tipEyebrowFirstTime": "처음 쓰는 운영자용",
-      "tipFirstTimeStep1": "1. 이름을 입력하면 slug는 자동으로 맞춰집니다.",
-      "tipFirstTimeStep2": "2. 짧은 설명 한 줄만 있어도 공개 카드와 드로어가 채워집니다.",
-      "tipFirstTimeStep3": "3. 상세 항목은 아래에서 펼쳐서 필요한 만큼만 입력하면 됩니다.",
       "publicCompanionEyebrow": "공개 화면과 함께 작업",
-      "publicCompanionDesc": "편집 중에도 공개 상세와 연결 문서를 열어 실제 노출 상태를 바로 확인할 수 있습니다. 변경 후 저장하고 다시 열면 공개 화면에 즉시 반영됩니다."
+      "publicCompanionDesc": "편집 중에도 공개 상세와 연결 문서를 열어 실제 노출 상태를 바로 확인할 수 있습니다. 변경 후 저장하고 다시 열면 공개 화면에 즉시 반영됩니다.",
+      "headerSubtitleCreate": "이름, 카테고리, 상태, 짧은 설명만 채우면 만들어집니다. 연결 관계나 운영 정보는 만든 뒤에 채워도 됩니다."
     }
   },
   "docsVault": {
@@ -2492,7 +2481,9 @@
         "helperBadgeOptional": "나중에 추가 가능",
         "collapseLabel": "접기",
         "expandLabel": "펼치기",
-        "navLabel": "섹션 이동"
+        "navLabel": "섹션 이동",
+        "extrasLabel": "더 채우기",
+        "extrasCaption": "소개 본문, 태그, 연결 프로젝트, 일정 — 만든 뒤에 채워도 됩니다."
       },
       "fields": {
         "slug": "slug",
@@ -2533,7 +2524,10 @@
         "iconPlaceholder": "🗺️",
         "progressPlaceholder": "50",
         "isHubLabel": "허브 노드로 표시",
-        "isHubHint": "(인증·에이전트 허브처럼 인디고 강조)"
+        "isHubHint": "(인증·에이전트 허브처럼 인디고 강조)",
+        "slugAutoLabel": "문서 주소",
+        "slugAutoPending": "이름을 넣으면 자동으로 만들어집니다",
+        "slugEditToggle": "직접 정하기"
       },
       "validation": {
         "categoryNotFound": "존재하지 않는 카테고리입니다.",
@@ -2586,17 +2580,6 @@
         "editNoticeStay": "변경 사항을 저장했습니다. 오른쪽 미리보기와 공개 화면 링크에서 바로 확인할 수 있습니다.",
         "deleteRowTitle": "프로젝트 삭제",
         "deleteRowCaption": "md 파일이 삭제되고 관계는 dangling 경고로 남습니다 — dry-run 이 먼저 보여줍니다."
-      },
-      "tip": {
-        "eyebrow": "1분 등록 팁",
-        "lead": "이름, 상태, 짧은 설명부터 입력하면 됩니다.",
-        "moreLabel": "자세히 보기",
-        "step1": "1. 이름을 입력하면 slug가 자동으로 만들어집니다.",
-        "step2": "2. 카테고리와 상태를 고릅니다.",
-        "step3": "3. 짧은 설명 한 줄만 적어도 카드와 드로어에 바로 노출됩니다.",
-        "step4": "4. 연결 관계와 운영 정보는 저장 후 다시 열어 천천히 추가하면 됩니다.",
-        "collapseDetails": "상세 항목 접기",
-        "expandDetails": "상세 항목 펼치기"
       },
       "preview": {
         "summaryDirty": "완성도 {score}% · 바뀌는 내용 {count}건",

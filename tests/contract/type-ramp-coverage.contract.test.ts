@@ -55,12 +55,15 @@ const ARBITRARY_SIZE = [
 // docs-vault-local 18 · locale-switch 2 · project-quick-edit 1)을 0으로 만들고
 // `codexMigratedGlobs` 로 승격했다. 여기서 빠졌다는 것은 "부채 없음"이 아니라
 // **lint 가 error 로 막는다**는 뜻이다.
+// 2026-07-27 새 프로젝트 화면 재구성 — 만들기 화면의 가르치는 카드 4개와
+// 상단 저장 클러스터를 걷어내면서 그 안의 램프 이탈이 같이 사라졌다
+// (project-edit 32 → 26 · project-editor 6 → 2). 래칫은 내려가기만 한다.
 const UNCOVERED_DEBT: ReadonlyArray<readonly [string, number]> = [
   ["src/views/download", 59],
   ["src/views/home", 45],
   ["src/views/ontology-studio", 45],
   ["src/entities/project", 33],
-  ["src/features/project-edit", 32],
+  ["src/features/project-edit", 26],
   ["src/features/vault-ontology", 27],
   ["src/views/project-detail", 23],
   ["src/views/first-run", 14],
@@ -68,7 +71,7 @@ const UNCOVERED_DEBT: ReadonlyArray<readonly [string, number]> = [
   ["app/error.tsx", 7],
   ["app/global-error.tsx", 7],
   ["app/not-found.tsx", 7],
-  ["src/views/project-editor", 6],
+  ["src/views/project-editor", 2],
   ["src/views/root-entry", 6],
   ["app/[locale]/layout.tsx", 1],
 ];
