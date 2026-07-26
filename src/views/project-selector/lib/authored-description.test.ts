@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { VaultDoc } from "@/entities/docs-vault";
-import { resolveProjectCardDescription } from "./project-card-description";
+import { resolveAuthoredDescription } from "./authored-description";
 
 function doc(frontmatter: Record<string, unknown>): VaultDoc {
   return {
@@ -18,30 +18,30 @@ function doc(frontmatter: Record<string, unknown>): VaultDoc {
   } as unknown as VaultDoc;
 }
 
-describe("resolveProjectCardDescription", () => {
+describe("resolveAuthoredDescription", () => {
   it("returns the explicit frontmatter description when the user wrote one", () => {
-    expect(resolveProjectCardDescription(doc({ description: "A local-first ontology workbench." }))).toBe(
+    expect(resolveAuthoredDescription(doc({ description: "A local-first ontology workbench." }))).toBe(
       "A local-first ontology workbench.",
     );
   });
 
   it("trims surrounding whitespace", () => {
-    expect(resolveProjectCardDescription(doc({ description: "  Trimmed.  " }))).toBe("Trimmed.");
+    expect(resolveAuthoredDescription(doc({ description: "  Trimmed.  " }))).toBe("Trimmed.");
   });
 
   it("returns null when frontmatter has no description — never falls back to the body excerpt", () => {
-    expect(resolveProjectCardDescription(doc({}))).toBeNull();
+    expect(resolveAuthoredDescription(doc({}))).toBeNull();
   });
 
   it("returns null for a blank description string", () => {
-    expect(resolveProjectCardDescription(doc({ description: "   " }))).toBeNull();
+    expect(resolveAuthoredDescription(doc({ description: "   " }))).toBeNull();
   });
 
   it("returns null for a non-string description value", () => {
-    expect(resolveProjectCardDescription(doc({ description: 42 }))).toBeNull();
+    expect(resolveAuthoredDescription(doc({ description: 42 }))).toBeNull();
   });
 
   it("returns null when no doc is found for the project slug", () => {
-    expect(resolveProjectCardDescription(undefined)).toBeNull();
+    expect(resolveAuthoredDescription(undefined)).toBeNull();
   });
 });
