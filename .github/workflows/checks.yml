@@ -61,3 +61,15 @@ jobs:
       - name: Unit + contract tests
         if: always()
         run: pnpm test:run
+
+      # 아래 둘은 `pnpm test:run` 밖의 node:test 스위트라 여기 걸지 않으면
+      # 아무 데서도 안 돈다. 실제로 2026-07-26 까지 둘 다 main 에서 깨진 채
+      # 있었고, 사람이 우연히 발견할 때까지 아무도 몰랐다 — 안 물린 게이트는
+      # 게이트가 아니라 주석이다.
+      - name: i18n message catalog
+        if: always()
+        run: pnpm test:i18n:messages
+
+      - name: Package contracts
+        if: always()
+        run: pnpm package:check

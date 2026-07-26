@@ -765,8 +765,8 @@ A successful run looks like this:
 ✓ find_backlinks — project (2 backlinks)
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 95 total query results (limited true)
-✓ analyze_repo_structure — fsd (6 domain candidates, 14 capability candidates, 40 element candidates)
-✓ infer_imports — 990 files scanned, 642 module edges (elements/src/views/home->elements/src/entities/knowledge-graph x28 (static:28), elements/src/views/ontology-insights->elements/src/entities/knowledge-graph x21 (static:21), +640 more)
+✓ analyze_repo_structure — fsd (6 domain candidates, 14 capability candidates, 41 element candidates)
+✓ infer_imports — 990 files scanned, 642 module edges (elements/src/views/home->elements/src/entities/knowledge-graph x29 (static:29), elements/src/views/ontology-insights->elements/src/entities/knowledge-graph x21 (static:21), +640 more)
 ✓ index_project — 61 concept candidates, 642 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
@@ -774,21 +774,21 @@ A successful run looks like this:
 ✓ list_kinds — 96 nodes (capability:38, document:3, domain:6, element:47, project:1, vault-readme:1)
 ✓ validate_vault — 96 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — needs_attention (96 nodes, 3 next actions, 6 health checks, growth actions:4 external:3 ignoredExternal:220)
+✓ workspace_brief — needs_attention (96 nodes, 3 next actions, 6 health checks, growth actions:4 external:3 ignoredExternal:222)
 · workspace_brief non-blocking advisory nextActions — relation_recommendations/health_check:warn:1 - Safe domain-containment relation suggestions are available., add_missing_relations:warn:1 - Add missing domain containment relations before relying on project/domain rollups., materialize_external_elements:info:3 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ agent_brief — needs_attention (needs_attention 75/100, 3 entrypoints, 5 first calls, 6 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — needs_attention (96 nodes, 3 next actions, 6 health checks, growth actions:4 external:3 ignoredExternal:220; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — needs_attention (96 nodes, 3 next actions, 6 health checks, growth actions:4 external:3 ignoredExternal:222; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 · workspace_brief_tuned non-blocking advisory nextActions — relation_recommendations/health_check:warn:1 - Safe domain-containment relation suggestions are available., components/health_check:info:4 - The scoped ontology graph has disconnected actionable islands., add_missing_relations:warn:1 - Add missing domain containment relations before relying on project/domain rollups.
 ✓ health — needs_attention (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:warn:1, components:pass:1, +1 more)
 · health non-blocking advisory checks — relation_recommendations:warn:1 - Safe domain-containment relation suggestions are available.
 ✓ health_tuned — needs_attention (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:warn:1, components:info:4, +1 more; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
 · health_tuned non-blocking advisory checks — relation_recommendations:warn:1 - Safe domain-containment relation suggestions are available., components:info:4 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph 68deb99a0d46 (96 nodes, 540 edges, issues 0)
-✓ compile_ontology page — 1/96 nodes, 1/540 edges
-✓ compile_ontology indexes — out 96, in 95, edgeById 540, aliases 191, edges 317/223/0
-✓ overview — graph 68deb99a0d46 (96 nodes, 540 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 96, edges 540)
-✓ project_map query_plan — aggregate_scan (medium, nodes 96, edges 540)
+✓ compile_ontology — graph 89041144f76f (96 nodes, 542 edges, issues 0)
+✓ compile_ontology page — 1/96 nodes, 1/542 edges
+✓ compile_ontology indexes — out 96, in 95, edgeById 542, aliases 191, edges 317/225/0
+✓ overview — graph 89041144f76f (96 nodes, 542 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 96, edges 542)
+✓ project_map query_plan — aggregate_scan (medium, nodes 96, edges 542)
 ✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ all_paths — src/widgets/bottom-tab-bar → project (5/16 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)

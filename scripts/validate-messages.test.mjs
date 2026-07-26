@@ -127,7 +127,7 @@ describe('i18n message catalog', () => {
     assert.equal(ko.nav.settingsMenu.vaultTitle, '문서함');
     assert.equal(
       ko.nav.settingsMenu.vaultBodyLocal,
-      '작업공간 문서를 열어 파일과 온톨로지 개념을 확인해요',
+      '작업공간 문서를 열어 파일과 개념을 확인해요',
     );
     assert.equal(ko.nav.settingsMenu.vaultCtaLocal, '열기');
     assert.equal(ko.topology.documentTitle, '지형도');
@@ -228,7 +228,8 @@ describe('i18n message catalog', () => {
     assert.equal(live.agentTitle, 'AI 작업 상태');
     assert.equal(live.agentChipTracking, '추적 중');
     assert.equal(live.agentChipStale, '오래됨');
-    assert.match(live.triggerTitle, /온톨로지 개념/);
+    assert.match(live.triggerTitle, /개념/);
+    assert.doesNotMatch(live.triggerTitle, /온톨로지/);
     assert.match(live.triggerTitle, /AI 작업 상태/);
     assert.doesNotMatch(
       visibleCopy,
@@ -240,10 +241,10 @@ describe('i18n message catalog', () => {
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
-    assert.equal(en.topology.controls.docsTooltip, 'Ontology workspace quick look (D)');
+    assert.equal(en.topology.controls.docsTooltip, 'Quick view of the doc library (D)');
     assert.equal(
       en.topology.controls.docsAriaLabel,
-      'Open ontology workspace quick look (D)',
+      'Open the doc library quick view (D)',
     );
     assert.equal(en.topology.controls.docsLabel, 'Workspace');
     assert.doesNotMatch(
@@ -252,7 +253,10 @@ describe('i18n message catalog', () => {
         en.topology.controls.docsAriaLabel,
         en.topology.controls.docsLabel,
       ].join('\n'),
-      /Quick view|See all|Pick one|See links|Clean up health|Source vault|source vault|^Source$/m,
+      // `Quick view` 는 2026-07-26 평문화에서 되살아났다 — 옛 금지 목록의 나머지(See all·Pick one 류
+      // 모호 라벨)와 달리 이건 대상을 명시한다("Quick view of the doc library"). 「온톨로지」를
+      // 브랜드 자리 밖에서 쓰지 않는다는 최신 규율과 충돌해 이 한 항목만 해제한다.
+      /See all|Pick one|See links|Clean up health|Source vault|source vault|^Source$/m,
     );
 
     assert.equal(ko.topology.analysis.overviewBriefCopyAriaLabel, '지형도 지도 요약 복사');
@@ -266,10 +270,10 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topology.analysis.overviewBriefMcpQueryPlan, 'MCP 질의 계획');
     assert.equal(ko.topology.analysis.overviewBriefWorkspaceCheck, '작업공간 점검');
     assert.equal(ko.topology.analysis.overviewBriefMcpWorkspaceCheck, 'MCP 작업공간 점검');
-    assert.equal(ko.topology.controls.docsTooltip, '온톨로지 워크스페이스 빠른 보기 (D)');
+    assert.equal(ko.topology.controls.docsTooltip, '문서함 빠른 보기 (D)');
     assert.equal(
       ko.topology.controls.docsAriaLabel,
-      '온톨로지 워크스페이스 빠른 보기 열기 (D)',
+      '문서함 빠른 보기 열기 (D)',
     );
     assert.equal(ko.topology.controls.docsLabel, '작업공간');
     assert.equal(ko.topology.controls.relayoutToast, '지형도를 다시 정렬합니다');
@@ -289,7 +293,10 @@ describe('i18n message catalog', () => {
         ko.topology.controls.docsAriaLabel,
         ko.topology.controls.docsLabel,
       ].join('\n'),
-      /전체 보기|하나 선택|연결 보기|상태 정리|문서함|^문서$|토폴로지|Topology|overview brief|overview|query plan|Workspace|workspace|Health 신호/m,
+      // `문서함` 은 2026-07-26 평문화가 고른 평문 한국어다 — 옛 라운드에서 모호 라벨과 함께
+      // 묶여 있었으나, 지금은 이 표면의 정식 이름이라 이 항목만 해제한다. 나머지(토폴로지·
+      // Topology·overview 류 전문어와 '전체 보기' 류 모호 라벨)는 그대로 막는다.
+      /전체 보기|하나 선택|연결 보기|상태 정리|^문서$|토폴로지|Topology|overview brief|overview|query plan|Workspace|workspace|Health 신호/m,
     );
   });
 
@@ -400,12 +407,12 @@ describe('i18n message catalog', () => {
       ko.docsVault.sourceContract.agentBody,
     ].join('\n');
 
-    assert.equal(ko.docsVault.desktopWelcome.title, '로컬 온톨로지 문서함을 열거나 만드세요');
-    assert.equal(ko.docsVault.desktopWelcome.contractAriaLabel, '온톨로지 문서함 실행 계약');
+    assert.equal(ko.docsVault.desktopWelcome.title, '로컬 문서함을 열거나 만드세요');
+    assert.equal(ko.docsVault.desktopWelcome.contractAriaLabel, '문서함 실행 계약');
     assert.equal(ko.docsVault.desktopWelcome.contractFilesLabel, '문서함 파일');
     assert.equal(ko.docsVault.desktopWelcome.contractGraphValue, '문서 속성이 의미 그래프');
     assert.equal(ko.docsVault.desktopWelcome.contractAgentLabel, 'AI 확인');
-    assert.equal(ko.docsVault.desktopWelcome.actionsAriaLabel, '온톨로지 문서함 시작 액션');
+    assert.equal(ko.docsVault.desktopWelcome.actionsAriaLabel, '문서함 시작 액션');
     assert.equal(ko.docsVault.sourceContract.filesLabel, '문서함 파일');
     assert.equal(ko.docsVault.sourceContract.graphValue, '개념 {nodes}개 · 관계 {edges}개');
     assert.equal(ko.docsVault.sourceContract.agentLabel, 'AI 확인');
@@ -478,12 +485,12 @@ describe('i18n message catalog', () => {
     assert.equal(en.nav.settingsMenu.vaultTitle, 'Library');
     assert.equal(en.nav.settingsMenu.vaultCtaLocal, 'Open');
     assert.equal(en.nav.settingsMenu.vaultCtaStatic, 'Get started');
-    assert.equal(en.docsVault.desktopWelcome.title, 'Open or create a local ontology workspace');
-    assert.equal(en.docsVault.desktopWelcome.contractAriaLabel, 'Ontology workspace contract');
+    assert.equal(en.docsVault.desktopWelcome.title, 'Open or create a local workspace');
+    assert.equal(en.docsVault.desktopWelcome.contractAriaLabel, 'Workspace contract');
     assert.equal(en.docsVault.desktopWelcome.contractFilesLabel, 'Workspace files');
     assert.equal(en.docsVault.desktopWelcome.contractGraphValue, 'Document properties become a meaning graph');
     assert.equal(en.docsVault.desktopWelcome.contractAgentLabel, 'AI check');
-    assert.equal(en.docsVault.desktopWelcome.actionsAriaLabel, 'Ontology workspace setup actions');
+    assert.equal(en.docsVault.desktopWelcome.actionsAriaLabel, 'Workspace setup actions');
     assert.equal(en.docsVault.sourceContract.ariaLabel, 'Current workspace contract');
     assert.equal(en.docsVault.sourceContract.filesLabel, 'Workspace files');
     assert.equal(en.docsVault.sourceContract.graphValue, '{nodes} concepts · {edges} relations');
