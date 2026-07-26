@@ -103,7 +103,9 @@ test.describe("ontology view UI", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/ontology/");
 
-    await expect(page.getByText("ontology-atlas").first()).toBeVisible();
+    // 화면 표기(`Ontology Atlas`)와 slug(`ontology-atlas`) 둘 다 허용 —
+    // 이 테스트가 보는 건 도그푸드 내용이 렌더되는가이지 표기법이 아니다.
+    await expect(page.getByText(/ontology[- ]atlas/i).first()).toBeVisible();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronRight, FileText, Folder } from 'lucide-react';
 import type { VaultDoc, VaultTreeNode } from '@/entities/docs-vault';
 import {
@@ -17,6 +17,7 @@ import {
   type DocsTreeOrder,
   type DocsTreeSort,
 } from '../lib/tree-order';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 
 interface Props {
   tree: VaultTreeNode;
@@ -132,6 +133,7 @@ function TreeNode({
   docsBySlug?: Map<string, VaultDoc>;
   order: DocsTreeOrder;
 }) {
+  const locale = useLocale();
   // 태그/검색 필터 활성 시에는 매치 경로를 자동으로 펼침 — 걸러진 문서가
   // 접힌 폴더 안에 숨어 있으면 source list 의 역할을 못 한다.
   const [open, setOpen] = useState(() =>
@@ -163,7 +165,16 @@ function TreeNode({
           />
         ) : null}
         <DocKindGlyph slug={node.slug} docsBySlug={docsBySlug} />
-        <span className="min-w-0 flex-1 truncate">{node.title ?? node.name}</span>
+        {/* 목록·검색·지도가 한 문서를 같은 이름으로 부른다 — 트리만
+            canonical title 을 그리면 사이드바와 팝오버가 서로 다른 이름을
+            말한다. */}
+        <span className="min-w-0 flex-1 truncate">
+          {resolveLocaleDisplayName(
+            docsBySlug?.get(node.slug)?.frontmatter,
+            locale,
+            node.title ?? node.name,
+          )}
+        </span>
       </button>
     );
   }

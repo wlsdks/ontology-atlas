@@ -2,6 +2,8 @@
 slug: capabilities/vault-migrator
 kind: capability
 title: Vault Migrator (Schema 진화)
+display_ko: 옛 글 형식 자동 갱신
+display_en: Upgrade Older Notes
 domain: vault-local-first
 elements:
   - scripts/migrate-vault.mjs

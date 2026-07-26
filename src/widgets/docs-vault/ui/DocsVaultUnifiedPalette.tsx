@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import {
   Clock,
@@ -20,6 +20,7 @@ import { searchDocs, type DocsSearchMatch } from '../lib/search';
 import type { DocsBodyIndex } from '../lib/body-index';
 import { githubBlobUrl } from '../lib/resolve-doc-link';
 import type { VaultCommand } from '../model/command';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 
 // 제목·태그·요약·본문 전부에서 0건이 났을 때 안내하는 캐노니컬 문서 바로가기.
 // vault 바깥(repo)에 사는 관문 문서라 GitHub blob 외부 링크로 연다 —
@@ -118,6 +119,7 @@ export function DocsVaultUnifiedPalette({
   bodyIndexing = false,
 }: Props) {
   const t = useTranslations('vaultWidgets.palette');
+  const locale = useLocale();
   const [query, setQuery] = useState(initialQuery);
   const [activeIdx, setActiveIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -325,10 +327,16 @@ export function DocsVaultUnifiedPalette({
     // mixed 모드 — 문서 먼저, 명령 보조로. bodyIndex 가 있으면 본문 티어까지
     // 검색 (제목 히트가 항상 위 — search.ts 의 최하위 티어 점수 계약).
     const docMatches: DocsSearchMatch[] = searchDocs(trimmed, docs, 15, bodyIndex);
-    const docRows: PaletteRow[] = docMatches.map((m) => ({
+    const docRows: PaletteRow[] = docMatches.map((m) => {
+      // 화면 언어로 부르는 이름을 그린다 — 지도 팝오버와 같은 규칙.
+      // 표시 이름이 canonical title 과 다르면 하이라이트 오프셋이 어긋나므로
+      // 그 행만 강조를 접는다: 이름이 맞는 것이 강조보다 중요하다.
+      const displayTitle = resolveLocaleDisplayName(m.doc.frontmatter, locale, m.doc.title);
+      const sameAsTitle = displayTitle === m.doc.title;
+      return {
       kind: 'doc' as const,
       key: `doc:${m.doc.slug}`,
-      label: <Highlight text={m.doc.title} hit={m.titleHit} />,
+      label: sameAsTitle ? <Highlight text={m.doc.title} hit={m.titleHit} /> : displayTitle,
       // 본문 히트 스니펫 — 제목이 이미 매치를 보여주는 행에는 중복 표시 안 함.
       sub:
         m.bodyHit && !m.titleHit ? (
@@ -343,7 +351,8 @@ export function DocsVaultUnifiedPalette({
       ),
       meta: m.doc.slug,
       onRun: () => onDocSelect(m.doc.slug, trimmed),
-    }));
+      };
+    });
     if (docRows.length > 0) {
       sections.push({
         title: t('secDocs'),
@@ -398,6 +407,7 @@ export function DocsVaultUnifiedPalette({
     tagCounts,
     onDocSelect,
     onTagSelect,
+    locale,
     t,
   ]);
 

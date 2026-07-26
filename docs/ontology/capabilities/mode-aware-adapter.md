@@ -2,6 +2,8 @@
 slug: capabilities/mode-aware-adapter
 kind: capability
 title: Mode-Aware Data Source Adapter
+display_ko: 데이터 출처 자동 전환
+display_en: Automatic Data Source Switch
 domain: mode-aware-adapters
 elements:
   - src/features/data-source-mode

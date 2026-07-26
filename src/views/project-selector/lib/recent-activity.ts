@@ -8,7 +8,8 @@ export interface RecentActivityRow {
   /** 지도 포커스 딥링크 대상 graph node id (`${kind}:${tailSlug}`) — 조회
    *  실패(dangling doc) 시 null, 그때는 UI 가 행을 링크 없이 렌더한다. */
   nodeId: string | null;
-  /** 사람이 읽는 제목 — 리더로 세운다. `node?.title` 우선, 없으면 tail slug. */
+  /** 사람이 읽는 제목 — 화면 언어의 표시 이름(`node.display`) 우선, 없으면
+   *  canonical title, 그것도 없으면 tail slug. */
   title: string;
   domainTitle: string | null;
   what: string;
@@ -63,9 +64,13 @@ export function buildRecentActivityRows(
     const nodeId = `${kind}:${tailSlug}`;
     const node = nodeById.get(nodeId);
     const domainId = node ? nearestDomainId(node, parentOf, nodeById) : null;
-    const domainTitle = domainId ? (nodeById.get(domainId)?.title ?? null) : null;
+    const domainNode = domainId ? nodeById.get(domainId) : undefined;
+    const domainTitle = domainNode ? (domainNode.display ?? domainNode.title) : null;
     const what = doc.description || node?.summary || doc.excerpt || "";
-    const title = node?.title || tailSlug;
+    // 지도·팝오버와 같은 이름을 쓴다 — `display` 는 이미 화면 언어로 해석된
+    // 값(`derivationToInsight`)이라, 여기만 canonical title 을 쓰면 한국어
+    // 화면에 긴 영어 원제가, 영어 화면에 한국어 원제가 그대로 흘렀다.
+    const title = node?.display || node?.title || tailSlug;
 
     rows.push({
       slug: doc.slug,

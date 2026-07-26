@@ -17,7 +17,7 @@ import type { VaultDoc } from "@/entities/docs-vault";
  * cards). This helper reads the vault doc's own frontmatter directly so the
  * card only ever shows what was written *as* a description.
  */
-export function resolveProjectCardDescription(doc: VaultDoc | undefined): string | null {
+export function resolveProjectCardDescription(doc: VaultDoc | null | undefined): string | null {
   const raw = doc?.frontmatter?.description;
   if (typeof raw !== "string") return null;
   const trimmed = raw.trim();

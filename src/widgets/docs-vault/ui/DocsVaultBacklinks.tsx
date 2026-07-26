@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
 import type {
   VaultBacklinkEntry,
   VaultDoc,
 } from '@/entities/docs-vault';
 import { TopologyV2KindGlyph, isTopologyV2RenderableKind } from '@/shared/ui/topology-v2-kind-glyph';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 
 interface Props {
   entries: VaultBacklinkEntry[];
@@ -35,6 +36,7 @@ export function DocsVaultBacklinks({
   layout = 'list',
 }: Props) {
   const t = useTranslations('vaultWidgets.backlinks');
+  const locale = useLocale();
   if (entries.length === 0) return null;
   if (layout === 'strip') {
     return (
@@ -61,7 +63,9 @@ export function DocsVaultBacklinks({
               ) : (
                 <FileText size={11} className="opacity-60" aria-hidden />
               )}
-              <span className="max-w-[160px] truncate">{doc.title}</span>
+              <span className="max-w-[160px] truncate">
+                {resolveLocaleDisplayName(doc.frontmatter, locale, doc.title)}
+              </span>
             </button>
           );
         })}
@@ -99,6 +103,7 @@ function BacklinkItem({
   onNavigate: (slug: string) => void;
 }) {
   const t = useTranslations('vaultWidgets.backlinks');
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   if (!doc) return null;
   return (
@@ -124,7 +129,7 @@ function BacklinkItem({
             aria-hidden
           />
           <span className="truncate text-[color:var(--color-text-tertiary)] transition-colors group-hover:text-[color:var(--color-text-primary)]">
-            {doc.title}
+            {resolveLocaleDisplayName(doc.frontmatter, locale, doc.title)}
           </span>
         </button>
       </div>

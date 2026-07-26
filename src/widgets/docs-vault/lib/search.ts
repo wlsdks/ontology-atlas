@@ -1,6 +1,7 @@
 import type { VaultDoc } from '@/entities/docs-vault';
 import { buildPhraseMatcher } from '@/shared/lib/highlight-match';
 import type { DocsBodyIndex } from './body-index';
+import { readDisplayLocales } from '@/shared/lib/locale-display-name';
 
 /** 본문 히트 스니펫 — 매치 앞뒤 {@link BODY_SNIPPET_CONTEXT}자 문맥 + 스니펫
  *  내부 하이라이트 범위. */
@@ -104,11 +105,18 @@ export function searchDocs(
     const excerptLc = doc.excerpt.toLowerCase();
     const slugLc = doc.slug.toLowerCase();
     const tagLc = doc.tags.map((t) => t.toLowerCase());
+    // 목록이 그리는 이름(`display_ko` / `display_en`)으로도 찾혀야 한다 —
+    // 사용자가 입력하는 문자열은 대개 방금 화면에서 읽은 이름이다. 범위를
+    // 넓히기만 하므로 원문 title 로 찾던 사용자는 그대로다.
+    const displayLc = Object.values(readDisplayLocales(doc.frontmatter) ?? {}).map((v) =>
+      v.toLowerCase(),
+    );
     const body = bodyIndex?.get(doc.slug);
     // 각 토큰이 어디든 매치하는지 AND 로 확인 (본문 포함)
     const allMatch = tokens.every(
       (tok) =>
         titleLc.includes(tok) ||
+        displayLc.some((d) => d.includes(tok)) ||
         excerptLc.includes(tok) ||
         slugLc.includes(tok) ||
         tagLc.some((t) => t.includes(tok)) ||

@@ -2,6 +2,8 @@
 slug: capabilities/ontology-sync-skill
 kind: capability
 title: Ontology-Sync Agent Skill (.claude/skills/ontology-sync)
+display_ko: 작업 끝나면 지도 갱신
+display_en: Update the Map After Work
 domain: ai-agent-partner
 elements: [.claude/skills/ontology-sync/SKILL.md]
 dependencies: [capabilities/mcp-server]

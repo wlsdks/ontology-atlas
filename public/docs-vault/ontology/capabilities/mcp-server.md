@@ -2,6 +2,8 @@
 slug: capabilities/mcp-server
 kind: capability
 title: MCP Server (32 tools)
+display_ko: AI 연결 서버
+display_en: AI Connection Server
 domain: ai-agent-partner
 dependencies: [capabilities/frontmatter-to-ontology]
 elements: [cli/src/commands/validate.mjs, cli/src/integration.test.mjs, mcp/scripts/json-rpc-lines.mjs, mcp/scripts/verify.mjs, mcp/src/analyze.mjs, mcp/src/analyze.test.mjs, mcp/src/git-tools.mjs, mcp/src/git-tools.test.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/integration.test.mjs, mcp/src/json-rpc-lines.test.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/suggestions.mjs, mcp/src/suggestions.test.mjs, mcp/src/vault.mjs, mcp/src/verify-script.test.mjs, scripts/check-package-contracts.test.mjs, scripts/dogfood-mcp-walk.mjs, scripts/dogfood-mcp-walk.test.mjs, scripts/lib/test-name-pattern.mjs, scripts/lib/test-name-pattern.test.mjs, scripts/run-focused-node-test.mjs, scripts/run-focused-node-test.test.mjs, scripts/smoke-packed-cli.mjs]

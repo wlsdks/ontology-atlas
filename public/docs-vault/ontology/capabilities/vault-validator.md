@@ -2,6 +2,8 @@
 slug: capabilities/vault-validator
 kind: capability
 title: Vault Validator (Silent Corruption 가시화)
+display_ko: 글이 망가졌는지 검사
+display_en: Check the Notes for Errors
 domain: vault-local-first
 dependencies:
   - capabilities/frontmatter-to-ontology

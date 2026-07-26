@@ -2,6 +2,8 @@
 slug: capabilities/mcp-conflict-guard
 kind: capability
 title: MCP Conflict Guard (mtime 기반 silent overwrite 차단)
+display_ko: 동시 수정 덮어쓰기 막기
+display_en: Prevent Overwriting Each Other
 domain: ai-agent-partner
 elements:
   - mcp/src/index.js

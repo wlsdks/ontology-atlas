@@ -2,6 +2,8 @@
 slug: capabilities/topology-node-significance
 kind: capability
 title: Topology Node Significance (노드 so-what 평문)
+display_ko: 이 개념이 왜 중요한지 한 줄
+display_en: Why This Concept Matters
 domain: views
 elements: [src/views/home/lib/topology-node-significance.ts, src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.tsx]
 ---

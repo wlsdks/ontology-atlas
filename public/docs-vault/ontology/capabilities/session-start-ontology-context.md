@@ -2,6 +2,8 @@
 slug: capabilities/session-start-ontology-context
 kind: capability
 title: SessionStart Ontology Context Injection (.claude/hooks/inject-ontology-summary.sh)
+display_ko: AI가 켜질 때 요약 넣기
+display_en: Prime the AI at Session Start
 display: SessionStart Ontology Context Injection
 domain: ai-agent-partner
 elements: [.claude/hooks/inject-ontology-summary.sh, .codex/hooks/inject-ontology-summary.sh]

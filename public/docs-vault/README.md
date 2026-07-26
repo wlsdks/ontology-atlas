@@ -1,8 +1,20 @@
 # Documentation Guide
 
+이 폴더는 **Ontology Atlas 를 만드는 사람들이 쓰는 기술 문서 모음**입니다. 제품이
+무엇인지 알고 싶어서 들어오셨다면 이 목록이 아니라 **지도** 화면을 먼저 보세요 —
+제품이 어떤 영역으로 나뉘고 각 영역에 무엇이 들어 있는지 그림 한 장으로 보여 줍니다.
+아래 표는 "어떤 주제를 어느 문서에서 찾는가" 를 정리한 색인입니다.
+
+**This folder is the working documentation for people building Ontology Atlas.**
+If you came here to learn what the product is, open the **Map** screen instead —
+this list is an index of engineering references, not a product introduction. The
+table below says which document answers which question.
+
 > Current as of 2026-05-18. This repository moves quickly; when a document and
 > code disagree, trust `package.json`, `next.config.ts`, `app/[locale]/layout.tsx`,
 > `mcp/src/index.js`, `mcp/src/ontology-engine.mjs`, and `cli/src/index.mjs` first.
+
+## How the product is positioned
 
 `ontology-atlas` is now best described as a **repo-native memory layer for
 Claude Code, Cursor, and Codex**. The ontology is not a separate SaaS database.

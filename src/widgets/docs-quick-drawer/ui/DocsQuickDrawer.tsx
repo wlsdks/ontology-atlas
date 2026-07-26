@@ -2,7 +2,7 @@
 
 import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BookOpen,
@@ -37,6 +37,7 @@ import {
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { cn } from "@/shared/lib/cn";
+import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
 
 function readStoredSlugs(key: string, limit: number): string[] {
   if (typeof window === "undefined") return [];
@@ -284,6 +285,7 @@ export function DocsQuickDrawer({
   contextProject,
 }: Props) {
   const t = useTranslations("vaultWidgets.docsDrawer");
+  const locale = useLocale();
   const router = useRouter();
 
   // #61 — 이 드로어는 **활성 볼트**의 빠른 접근이다(라벨도 "문서함 빠른 접근",
@@ -362,9 +364,13 @@ export function DocsQuickDrawer({
       .filter((n) => n.type === "doc" && n.slug)
       .map((n) => {
         const meta = activeManifest.docs.find((d) => d.slug === n.slug);
+        const canonical = n.title ?? n.name;
         return {
           slug: n.slug as string,
-          title: n.title ?? n.name,
+          // 지도 팝오버와 같은 규칙으로 이름을 고른다 — 예전엔 여기만
+          // canonical title 을 그려서, 한국어 화면에서 방금 `내 프로젝트`
+          // 로 읽은 문서가 검색 목록엔 `My project` 로 떴다.
+          title: resolveLocaleDisplayName(meta?.frontmatter, locale, canonical),
           path: n.path,
           updatedAt: meta?.updatedAt ?? "",
           tags: meta?.tags ?? [],
@@ -372,7 +378,7 @@ export function DocsQuickDrawer({
         } satisfies FlatDoc;
       });
     return all;
-  }, [activeManifest]);
+  }, [activeManifest, locale]);
 
   // 태그별 문서 slug set. manifest.tags 는 이미 역색인이지만 JSON 로딩시
   // readonly 로 취급 — FlatDoc.tags 에서 다시 쌓아 O(1) 조회용 Set 화.

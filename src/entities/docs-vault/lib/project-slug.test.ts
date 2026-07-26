@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { VaultDoc, VaultManifest } from "../model/types";
 import {
   computeProjectSlug,
+  findProjectDocInList,
   findProjectVaultDoc,
   isProjectVaultDoc,
 } from "./project-slug";
@@ -126,5 +127,22 @@ describe("findProjectVaultDoc", () => {
     ]);
 
     expect(findProjectVaultDoc(manifest, "foo")).toBeNull();
+  });
+});
+
+describe("findProjectDocInList", () => {
+  it("finds a project doc whose file path differs from its frontmatter slug", () => {
+    // 도그푸드 매니페스트의 실제 shape — 파일은 `ontology/project`, 프로젝트
+    // 이름은 frontmatter `slug: ontology-atlas`. 두 값을 직접 비교하던 표면
+    // (/projects 카드)이 문서를 못 찾아 "설명 없음" 으로 거짓말했다.
+    const docs = [
+      makeDoc({
+        slug: "ontology/project",
+        frontmatter: { kind: "project", slug: "ontology-atlas" },
+      }),
+      makeDoc({ slug: "guides/intro", frontmatter: {} }),
+    ];
+    expect(findProjectDocInList(docs, "ontology-atlas")?.slug).toBe("ontology/project");
+    expect(findProjectDocInList(docs, "ontology/project")).toBeNull();
   });
 });

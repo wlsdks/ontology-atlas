@@ -2,6 +2,8 @@
 slug: capabilities/ontology-extract-skill
 kind: capability
 title: Ontology-Extract Skill (.claude/skills/ontology-extract)
+display_ko: 회의록에서 개념 뽑기
+display_en: Pull Concepts Out of Notes
 domain: ai-agent-partner
 elements: [.claude/skills/ontology-extract/SKILL.md]
 ---

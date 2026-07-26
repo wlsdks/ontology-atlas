@@ -40,7 +40,26 @@ export function findProjectVaultDoc(
   manifest: VaultManifest,
   slug: string,
 ): VaultDoc | null {
-  for (const doc of manifest.docs) {
+  return findProjectDocInList(manifest.docs, slug);
+}
+
+/**
+ * 매니페스트 없이 `VaultDoc[]` 만 들고 있는 표면(/projects 카드 등)이 쓰는
+ * 같은 역참조 — 반드시 이 함수를 거친다.
+ *
+ * 실측 결함(2026-07-26): /projects 카드가 `docs.find(d => d.slug ===
+ * project.slug)` 로 직접 찾았다. `VaultDoc.slug` 는 **파일 경로 기반**
+ * (`ontology/project`)이고 `Project.slug` 는 **frontmatter `slug:`**
+ * (`ontology-atlas`)라, frontmatter 로 slug 를 명시한 프로젝트는 문서를
+ * 영영 못 찾았다. 그래서 카드는 "설명이 아직 없는 프로젝트입니다" 를
+ * 띄우는데 상세 화면엔 한 줄 설명이 멀쩡히 있었다 — 같은 프로젝트를 두
+ * 화면이 다르게 말한 것이다. 판정을 한 함수로 모아 재발을 막는다.
+ */
+export function findProjectDocInList(
+  docs: readonly VaultDoc[],
+  slug: string,
+): VaultDoc | null {
+  for (const doc of docs) {
     if (!isProjectVaultDoc(doc)) continue;
     if (computeProjectSlug(doc) === slug) return doc;
   }

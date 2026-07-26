@@ -1,4 +1,5 @@
 import { deriveDisplayTitle } from '@/shared/lib/derive-display-title';
+import { readDisplayLocales } from '@/shared/lib/locale-display-name';
 import { humanizeCodePathTitle } from '@/shared/lib/humanize-code-path-title';
 import type { VaultDoc, VaultManifest } from '../model/types';
 
@@ -225,16 +226,10 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
     rawKind === 'element' && baseDisplay === title
       ? humanizeCodePathTitle(title) ?? baseDisplay
       : baseDisplay;
-  // 어권별 표시 이름 — `display_ko:` 처럼 `display_` 뒤 2글자 로케일 키만
-  // 수집(그 외 키는 무시, 값은 trim 비어있지 않은 문자열만).
-  let displayLocales: Record<string, string> | undefined;
-  for (const [key, value] of Object.entries(fm)) {
-    const match = /^display_([a-z]{2})$/.exec(key);
-    if (!match || typeof value !== 'string') continue;
-    const trimmed = value.trim();
-    if (!trimmed) continue;
-    (displayLocales ??= {})[match[1]] = trimmed;
-  }
+  // 어권별 표시 이름 — 규칙은 `shared/lib/locale-display-name` 한 곳.
+  // 문서함 목록·빠른 검색도 같은 함수를 써야 "지도는 내 프로젝트, 검색은
+  // My project" 같은 어긋남이 안 생긴다.
+  const displayLocales = readDisplayLocales(fm);
   return {
     id,
     title,

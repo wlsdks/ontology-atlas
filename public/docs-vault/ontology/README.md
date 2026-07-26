@@ -2,6 +2,8 @@
 slug: README
 kind: vault-readme
 title: ontology-atlas — 자기 ontology vault
+display_ko: 이 폴더 안내
+display_en: About this folder
 describes:
   - project
 ---

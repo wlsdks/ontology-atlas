@@ -2,6 +2,8 @@
 slug: capabilities/frontmatter-to-ontology
 kind: capability
 title: Frontmatter → Ontology Stub
+display_ko: 글 머리말에서 지도 만들기
+display_en: Turn Notes Into the Map
 domain: ontology-core
 elements:
   - src/entities/docs-vault/lib/derive-ontology-from-vault.ts

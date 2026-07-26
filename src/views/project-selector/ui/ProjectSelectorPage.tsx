@@ -33,6 +33,7 @@ import {
   type RecentActivityAgo,
 } from "../lib/recent-activity";
 import { useVaultDocs } from "../lib/use-vault-docs";
+import { findProjectDocInList } from "@/entities/docs-vault";
 
 // RATIO-SYSTEM.md (docs/prototypes/RATIO-SYSTEM.md) is the normative source
 // for these — 1600 container / 28 section gap / 20 card gap. Token promotion
@@ -123,7 +124,13 @@ export function ProjectSelectorPage() {
           </Link>
           <span aria-hidden className="text-[color:var(--color-text-quaternary)]">/</span>
           <span>{t("crumbCurrent")}</span>
+          {/* 같은 화면 안에 폴더 전체 수(296·455)와 프로젝트 안쪽 수(442)가
+              나란히 서 있다. 스코프를 말하지 않으면 둘 중 하나가 틀린 것처럼
+              읽힌다 — 실제로는 세는 범위가 다를 뿐이다. */}
           <span className={`ml-auto text-label tracking-[0.08em] ${numeralClass}`}>
+            <span className="mr-1.5 text-[color:var(--color-text-quaternary)]">
+              {t("censusScopePrefix")}
+            </span>
             {census.conceptCount} {t("censusTopConceptsLabel")}
             <span aria-hidden className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
             {census.relationCount} {t("censusTopRelationsLabel")}
@@ -158,22 +165,29 @@ export function ProjectSelectorPage() {
             문서가 바뀌었나"가 아니다). */}
         {projects.length > 0 ? (
           <div className="mt-7 flex flex-col gap-5">
-            {projects.map((project) => (
-              <ProjectFullCard
-                key={project.slug}
-                project={project}
-                facts={buildProjectCardFacts(nodes, edges, project.slug, singleProjectFallback)}
-                domainRows={domainCompositionRows.filter((row) =>
-                  singleProjectFallback
-                    ? true
-                    : (nodeById.get(row.domainId)?.projectIds ?? []).includes(project.slug),
-                )}
-                description={resolveProjectCardDescription(docs.find((d) => d.slug === project.slug))}
-                docPath={docs.find((d) => d.slug === project.slug)?.path}
-                kindLabel={kindLabel}
-                t={t}
-              />
-            ))}
+            {projects.map((project) => {
+              // 문서 역참조는 `findProjectDocInList` 한 곳만 쓴다 —
+              // `VaultDoc.slug`(파일 경로)와 `Project.slug`(frontmatter)를
+              // 직접 비교하면 frontmatter 로 slug 를 명시한 프로젝트를 못
+              // 찾아, 카드만 "설명 없음" 으로 거짓말하게 된다.
+              const doc = findProjectDocInList(docs, project.slug);
+              return (
+                <ProjectFullCard
+                  key={project.slug}
+                  project={project}
+                  facts={buildProjectCardFacts(nodes, edges, project.slug, singleProjectFallback)}
+                  domainRows={domainCompositionRows.filter((row) =>
+                    singleProjectFallback
+                      ? true
+                      : (nodeById.get(row.domainId)?.projectIds ?? []).includes(project.slug),
+                  )}
+                  description={resolveProjectCardDescription(doc)}
+                  docPath={doc?.path}
+                  kindLabel={kindLabel}
+                  t={t}
+                />
+              );
+            })}
           </div>
         ) : (
           <p className="mt-7 text-body text-[color:var(--color-text-tertiary)]">

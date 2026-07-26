@@ -2,6 +2,8 @@
 slug: capabilities/agent-connect-sheet
 kind: capability
 title: Agent Connect Sheet (AI 에이전트 연결)
+display_ko: AI 도구 연결하기
+display_en: Connect Your AI Tool
 domain: ai-agent-partner
 elements: []
 ---

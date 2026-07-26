@@ -51,6 +51,7 @@ export {
   computeProjectSlug,
   isProjectVaultDoc,
   findProjectVaultDoc,
+  findProjectDocInList,
 } from './lib/project-slug';
 export { extractProjectBody } from './lib/resolve-project-body';
 export type {

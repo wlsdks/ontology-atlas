@@ -2,6 +2,8 @@
 slug: capabilities/project-ontology-indexing
 kind: capability
 title: Project Ontology Indexing
+display_ko: 코드베이스 훑어 근거 모으기
+display_en: Scan the Codebase for Evidence
 domain: ai-agent-partner
 elements: [cli/src/commands/index.mjs, cli/src/integration.test.mjs, elements/app-settings-menu, mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/integration.test.mjs]
 dependencies: [capabilities/cli-developer-entry, capabilities/mcp-server]

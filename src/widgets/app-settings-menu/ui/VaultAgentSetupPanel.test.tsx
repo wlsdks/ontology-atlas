@@ -118,10 +118,10 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByText('vault 폴더 기준 설정 · 다른 codebase root는 절대경로 연결 필요'),
     ).toBeInTheDocument();
-    expect(screen.getByText('외부 agent 연결')).toBeInTheDocument();
+    expect(screen.getByText('외부 에이전트 연결')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Ontology Atlas 안에서 Claude Code, Codex, Cursor 채팅을 직접 여는 흐름이 아닙니다. 로컬 MCP 설정, 재시작 안내, 검증 gate를 준비해 각 agent가 자기 앱이나 터미널에서 같은 vault를 읽고 쓰게 합니다.',
+        'Ontology Atlas 안에서 Claude Code, Codex, Cursor 채팅을 직접 여는 흐름이 아닙니다. 로컬 MCP 설정, 재시작 안내, 검증 gate를 준비해 각 에이전트가 자기 앱이나 터미널에서 같은 vault를 읽고 쓰게 합니다.',
       ),
     ).toBeInTheDocument();
     expect(screen.getByText('설정 흐름 보기')).toBeInTheDocument();
@@ -147,7 +147,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByText('수정 전에 JSON gate를 실행하고 ok와 performanceOk를 따로 확인합니다.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('agent root에서 mcp-verify를 실행해 index_project 포함 로컬 24개 tool 연결을 증명합니다.'),
+      screen.getByText('에이전트 root에서 mcp-verify를 실행해 index_project 포함 로컬 24개 tool 연결을 증명합니다.'),
     ).toBeInTheDocument();
     expect(
       screen.getByText('첫 ontology write 전에 workspace-brief와 agent-brief를 읽습니다.'),
@@ -165,7 +165,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByText('다른 codebase root에서 Claude Code나 Codex를 열기 전 설정 패킷을 복사'),
     ).toBeInTheDocument();
     expect(screen.getByText('json gate')).toBeInTheDocument();
-    expect(screen.getByText('수정 전 agent root에서 JSON gate를 복사해 실행')).toBeInTheDocument();
+    expect(screen.getByText('수정 전 에이전트 root에서 JSON gate를 복사해 실행')).toBeInTheDocument();
     expect(screen.getByLabelText('첫 연결 증거 계약')).toBeInTheDocument();
     expect(screen.getByText('config_state')).toBeInTheDocument();
     expect(
@@ -199,7 +199,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByLabelText('MCP verify 명령 미리보기'),
     ).toHaveTextContent('ontology-atlas mcp-verify . --timeout-ms 15000');
     expect(
-      screen.getByText('설정이 애매하거나 codebase root에서 agent를 열었을 때 JSON readiness와 performanceOk를 먼저 확인합니다.'),
+      screen.getByText('설정이 애매하거나 codebase root에서 에이전트를 열었을 때 JSON readiness와 performanceOk를 먼저 확인합니다.'),
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText('자동화 JSON gate 결과 해석'),
@@ -222,18 +222,18 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByLabelText('AI 에이전트 root 실행 계약')).toBeInTheDocument();
     expect(screen.getByText('vault folder')).toBeInTheDocument();
     expect(
-      screen.getByText('이 vault 폴더 자체를 agent root로 열면 verify와 graph brief 명령은 `.`을 vault로 사용합니다.'),
+      screen.getByText('이 vault 폴더 자체를 에이전트 root로 열면 verify와 graph brief 명령은 `.`을 vault로 사용합니다.'),
     ).toBeInTheDocument();
     expect(screen.getByText('codebase root')).toBeInTheDocument();
     expect(
-      screen.getByText('별도 제품 코드베이스에서 agent를 열면 설정 상태 확인, repair, mcp-verify, JSON gate 모두 이 vault의 절대경로를 명시합니다.'),
+      screen.getByText('별도 제품 코드베이스에서 에이전트를 열면 설정 상태 확인, repair, mcp-verify, JSON gate 모두 이 vault의 절대경로를 명시합니다.'),
     ).toBeInTheDocument();
     expect(screen.getByText('.mcp.json')).toBeInTheDocument();
     expect(screen.getByText('.codex/config.toml')).toBeInTheDocument();
     expect(screen.getByText('.mcp.json.example')).toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByRole('button', { name: '누락된 agent 설정 만들기' }),
+      screen.getByRole('button', { name: '누락된 에이전트 설정 만들기' }),
     );
 
     await waitFor(() => expect(localVault.ensureAgentConfigs).toHaveBeenCalledTimes(1));
@@ -266,11 +266,11 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('준비됨')).toBeInTheDocument();
     expect(screen.getByText('설정 파일 3/3개 준비됨')).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: '누락된 agent 설정 만들기' }),
+      screen.queryByRole('button', { name: '누락된 에이전트 설정 만들기' }),
     ).not.toBeInTheDocument();
   });
 
-  it('AI agent별 MCP 연결 상태와 확인 명령을 분리해 보여준다', () => {
+  it('AI 에이전트별 MCP 연결 상태와 확인 명령을 분리해 보여준다', () => {
     renderPanel({
       agentConfigStatus: {
         mcpJson: true,
@@ -290,7 +290,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(within(connections).getByText('다른 codebase root')).toBeInTheDocument();
     expect(within(connections).getAllByText('설정 준비 · 연결 확인 필요')).toHaveLength(3);
     expect(
-      screen.getByText('준비는 설정 파일 상태입니다. Ontology Atlas는 agent에 직접 접속하지 않으므로, 재시작 후 각 agent에서 실제 MCP 연결을 확인합니다.'),
+      screen.getByText('준비는 설정 파일 상태입니다. Ontology Atlas는 에이전트에 직접 접속하지 않으므로, 재시작 후 각 에이전트에서 실제 MCP 연결을 확인합니다.'),
     ).toBeInTheDocument();
   });
 
@@ -330,7 +330,7 @@ describe('VaultAgentSetupPanel', () => {
       { validationSummary: { errorCount: 1, warningCount: 0 } },
     );
 
-    expect(screen.getByText('validation 오류 1개가 agent 수정을 막음')).toBeInTheDocument();
+    expect(screen.getByText('validation 오류 1개가 에이전트 수정을 막음')).toBeInTheDocument();
   });
 
   it('AI agent handoff 전에 vault validation gate를 별도 상태로 보여준다', () => {
@@ -355,7 +355,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(
       within(validationGate).getByText(
-        'agent가 ontology를 수정하기 전에 vault validation 오류를 먼저 해결해야 합니다.',
+        '에이전트가 ontology를 수정하기 전에 vault validation 오류를 먼저 해결해야 합니다.',
       ),
     ).toBeInTheDocument();
   });
@@ -384,7 +384,7 @@ describe('VaultAgentSetupPanel', () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: '누락된 agent 설정 만들기' }),
+      screen.queryByRole('button', { name: '누락된 에이전트 설정 만들기' }),
     ).not.toBeInTheDocument();
   });
 

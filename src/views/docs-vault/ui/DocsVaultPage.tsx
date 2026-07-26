@@ -164,6 +164,7 @@ import {
   type DocsVaultView,
 } from "../lib/persistence";
 import type { LocalFsHandleRecord } from "@/entities/local-fs-handle";
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 import {
   buildOntologyInsightsReturnHref,
   parseInsightsReturnMarker,
@@ -1037,15 +1038,21 @@ function DocsVaultContent() {
     if (!selectedSlug) return;
     const doc = docsBySlug.get(selectedSlug);
     if (!doc) return;
-    openDocTab(selectedSlug, doc.title);
+    openDocTab(selectedSlug, resolveLocaleDisplayName(doc.frontmatter, locale, doc.title));
   }, [
     selectedSlug,
     docsBySlug,
+    locale,
     openDocTab,
     openDocTabsHydrated,
     pendingRestoredActiveSlug,
   ]);
   const selectedDoc = selectedSlug ? (docsBySlug.get(selectedSlug) ?? null) : null;
+  // 트리·탭·검색·지도가 한 문서를 같은 이름으로 부른다. 파일 경로는 바로
+  // 아랫줄 caption 이 계속 보여주므로 파일 정체성은 잃지 않는다.
+  const selectedDocDisplayTitle = selectedDoc
+    ? resolveLocaleDisplayName(selectedDoc.frontmatter, locale, selectedDoc.title)
+    : "";
   // P5b — frontmatter 판정 액션의 domain select 후보. vault 의 `kind: domain`
   // 문서만 — capability/element 를 잘못된 domain 에 지정했을 때 raw YAML
   // 손편집 없이 그 자리에서 고치는 게 목적(verdict 더하기①).
@@ -1088,7 +1095,7 @@ function DocsVaultContent() {
   // 빌드할 수 없으므로(vault 는 사용자 로컬 폴더) 선택된 문서 타이틀을 여기서
   // 반영. layout.tsx 의 서버 템플릿(`%s · siteName`)과 동일한 구성.
   useDocumentTitle(
-    selectedDoc ? `${selectedDoc.title} · ${siteT('siteName')}` : null,
+    selectedDoc ? `${selectedDocDisplayTitle} · ${siteT('siteName')}` : null,
   );
   const collectionDocs = useMemo(
     () => filterDocsByCollection(manifest.docs, docCollection),
@@ -1993,7 +2000,7 @@ function DocsVaultContent() {
               <div className="flex flex-none items-center gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-2">
                 <div className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-body font-medium text-[color:var(--color-text-primary)]">
-                    {selectedDoc.title}
+                    {selectedDocDisplayTitle}
                   </span>
                   <span className="truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
                     <span>{splitVaultSlugPath(selectedDoc.slug).dir}</span>

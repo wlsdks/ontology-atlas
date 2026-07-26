@@ -2,6 +2,8 @@
 slug: capabilities/agent-practitioner-concerns-map
 kind: capability
 title: Agent Practitioner Concerns Map
+display_ko: AI 사용자들의 걱정 정리
+display_en: What AI Users Worry About
 domain: ai-agent-partner
 elements: []
 relates: [capabilities/agent-graph-readiness, capabilities/agent-onboarding-brief, capabilities/mcp-conflict-guard, capabilities/mcp-server, capabilities/session-start-ontology-context, documents/agent-practice-research]

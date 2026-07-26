@@ -49,7 +49,17 @@ const k = (i18nKey: string): ShortcutKey => ({ i18nKey });
  * 를 되찾을 곳이 필요하고, 그 자리는 이미 존재하는 pull-only 도움말이지
  * 새 버튼이 아니다. 나머지 세 단어와 같은 줄 형식이라 IA 추가는 0.
  */
-const GLOSSARY_TERMS = ["ontology", "domain", "capability", "element"] as const;
+// 이 시트와 투어 1단계가 낱말 정의의 유일한 두 집이다 — 새 표면을 만들어
+// 가르치지 않는다. `nodeNumber` 는 지도의 각인 숫자(285)가 화면 위쪽 개념
+// 총수(296)와 다른 이유를 여기서 한 번만 말한다: 세는 범위가 다르다.
+const GLOSSARY_TERMS = [
+  "ontology",
+  "domain",
+  "capability",
+  "element",
+  "evidence",
+  "nodeNumber",
+] as const;
 
 const SECTIONS: ShortcutSection[] = [
   {

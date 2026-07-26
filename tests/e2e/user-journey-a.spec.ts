@@ -27,14 +27,17 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
   });
 
   // ── A1. 공유 링크 → 상세 ────────────────────────────────────────────────
-  const EXPECTED_DETAIL_NAME = "ontology-atlas";
+  // URL slug 는 `ontology-atlas`, 화면에 세우는 이름은 `Ontology Atlas`.
+  // 여기서 볼 것은 표기법이 아니라 "그 프로젝트가 렌더됐는가" 다.
+  const EXPECTED_DETAIL_NAME = "Ontology Atlas";
+  const DETAIL_NAME_RE = /ontology[- ]atlas/i;
   const detailStart = Date.now();
   await page.goto("/en/project/ontology-atlas/", { waitUntil: "domcontentloaded" });
   const detailHeading = page.getByRole("heading").first();
   await expect(detailHeading).toBeVisible({ timeout: 10_000 });
   const detailTtfb = Date.now() - detailStart;
   const detailTitle = await page.title();
-  if (!detailTitle || !detailTitle.includes(EXPECTED_DETAIL_NAME)) {
+  if (!detailTitle || !DETAIL_NAME_RE.test(detailTitle)) {
     findings.push(`A1 title 에 프로젝트 이름 "${EXPECTED_DETAIL_NAME}" 누락: "${detailTitle}"`);
   }
   if (detailTtfb > 5_000) {

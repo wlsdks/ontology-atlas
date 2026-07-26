@@ -2,6 +2,8 @@
 slug: capabilities/topology-skeleton-entry
 kind: capability
 title: Topology — Structural Skeleton Entry & Click-Level Reveal
+display_ko: 큰 줄기부터 보여 주기
+display_en: Big Picture First
 domain: views
 elements: []
 ---

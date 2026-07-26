@@ -2,6 +2,8 @@
 slug: capabilities/edge-meaning-popover
 kind: capability
 title: Edge Meaning Popover (관계 팝오버)
+display_ko: 이 선이 무슨 뜻인지 보기
+display_en: What This Link Means
 domain: views
 elements: []
 dependencies: [capabilities/relation-rationale]

@@ -2,6 +2,8 @@
 slug: capabilities/agent-config-onboarding
 kind: capability
 title: Agent Config Onboarding
+display_ko: AI 도구 연결 설정
+display_en: AI Tool Setup
 domain: ai-agent-partner
 dependencies: [capabilities/mcp-server, capabilities/vault-live-updates]
 elements: [elements/app-settings-menu, src/features/docs-vault-local/lib/ontology-starter.ts, src/features/docs-vault-local/model/use-local-vault.ts, src/features/docs-vault-local/ui/OntologyStarterCta.tsx, src/views/docs-vault/ui/DocsVaultPage.tsx, src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx]
