@@ -272,6 +272,7 @@
       "empty": "Nothing in progress right now"
     },
     "materialize": {
+      "opening": "Opening the document you just created.",
       "title": "This concept has no document yet",
       "reason": "‘{name}’ is only named inside another document. It has no document of its own yet to record relations in.",
       "actionWrite": "To link it, its document has to be created first. The relations you just picked are saved into that document too.",
