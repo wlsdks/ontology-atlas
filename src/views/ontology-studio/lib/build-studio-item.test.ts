@@ -45,8 +45,39 @@ describe("buildStudioItem — compass bearings", () => {
     expect(item.node.kind).toBe("capability");
     expect(item.node.domainLabel).toBe("결제 도메인");
     expect(item.node.definition).toBe("결제 승인 정의");
-    // write target = the node's source doc slug (evidenceIds[0]).
-    expect(item.node.sourceSlug).toBe("capabilities/pay-approve");
+    // 자기 문서를 가진 노드 — 쓰기는 그 문서로 간다.
+    expect(item.node.writeTarget).toEqual({
+      status: "existing",
+      slug: "capabilities/pay-approve",
+    });
+  });
+
+  /**
+   * 남의 문서가 이름만 불러낸 개념(`hasOwnDocument: false`)은 쓰기 대상이
+   * 없다. 예전엔 `evidenceIds[0]` 을 그대로 썼는데 그 값은 *자기를 인용한
+   * 남의 문서* 라, 사용자가 이 개념에 대해 적은 관계가 남의 frontmatter 에
+   * 앉았다 — 사용자가 한 적 없는 주장이 남의 문서에 사실로 기록된 것이다.
+   */
+  it("자기 문서가 없는 파생 개념은 남의 문서를 쓰기 대상으로 삼지 않는다", () => {
+    const derived: StudioSourceNode[] = [
+      ...NODES,
+      {
+        id: "element:payment-gateway",
+        title: "payment-gateway",
+        kind: "element",
+        // 이 개념을 인용한 *남의* 문서 slug 다.
+        evidenceIds: ["capabilities/pay-approve"],
+        hasOwnDocument: false,
+      },
+    ];
+    const item = buildStudioItem("element:payment-gateway", derived, EDGES)!;
+    expect(item.node.writeTarget).toEqual({
+      status: "missing",
+      slug: "elements/payment-gateway",
+      title: "payment-gateway",
+      kind: "element",
+      domainValue: null,
+    });
   });
 
   it("groups real relations onto the four fixed bearings", () => {

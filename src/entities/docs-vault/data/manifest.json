@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T06:46:27.164Z",
+  "generatedAt": "2026-07-26T06:59:03.927Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3134,6 +3134,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 공방이 남의 문서에 쓰던 것을 멈췄다",
+          "slug": "2026-07-26-공방이-남의-문서에-쓰던-것을-멈췄다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — 지도가 문서에 대해 하던 거짓말 두 건",
           "slug": "2026-07-26-지도가-문서에-대해-하던-거짓말-두-건"
         },
@@ -4934,8 +4939,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 「이어진 곳」은 모든 연결을 약속하는 말인데, 실제로는 네 관계 버킷 중 셋만 세고 있었다. 빠진 하나가 속한 곳(이 개념을 담고 있는 상위 개념)이라, ",
-      "wordCount": 44760,
-      "updatedAt": "2026-07-26T06:46:27.164Z",
+      "wordCount": 45087,
+      "updatedAt": "2026-07-26T06:59:03.926Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -6265,8 +6270,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
-      "wordCount": 13139,
-      "updatedAt": "2026-07-26T14:46:56+09:00",
+      "wordCount": 13225,
+      "updatedAt": "2026-07-26T06:59:03.927Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -7847,6 +7852,8 @@
         "elements": [
           "src/features/docs-vault-local/model/use-local-vault.ts",
           "src/views/ontology-studio/lib/build-create-node.ts",
+          "src/views/ontology-studio/lib/plan-studio-commit.ts",
+          "src/views/ontology-studio/lib/resolve-write-target.ts",
           "src/views/ontology-studio/ui/OntologyStudioPage.tsx"
         ]
       },
@@ -7858,8 +7865,8 @@
         }
       ],
       "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 은퇴한 xyflow ERD 빌더 (/ontology/edit) 가 하던 vault 쓰기 경로는 이제 나침 무대 (Compass Stage, /ontology/studio) 가 이어받았다. 한 노드를 게임 아이템처럼 놓고 관계 소켓을 채우면 그 채움이 곧 실제 frontmatter write 다. OntologyStudioPage 는 두 fill-state 를 한 라우트에서 처리한다 (mode 탭 없음): 기본 = 기존 노드를 ?node=<id 로 열어 부분 채움 (ENHANCE), ?mode=c",
-      "wordCount": 368,
-      "updatedAt": "2026-07-25T06:31:47+09:00",
+      "wordCount": 555,
+      "updatedAt": "2026-07-26T06:59:03.927Z",
       "linksOut": []
     },
     {

@@ -299,3 +299,33 @@ describe("computeCreateCompleteness", () => {
     expect(c.pips.every((p) => p === "on")).toBe(true);
   });
 });
+
+/**
+ * ── slug 오버라이드 ──────────────────────────────────────────────────────
+ *
+ * 이미 남의 문서가 이름을 적어 둔 개념에 문서를 붙일 때는, 그 인용이 가리키는
+ * 경로에 그대로 앉아야 한다. 제목에서 새로 만든 slug 를 쓰면 인용은 여전히
+ * 허공을 가리키고, 지도에는 같은 개념이 둘로 보인다.
+ */
+describe("slug 오버라이드 — 기존 인용이 가리키는 자리에 앉힌다", () => {
+  it("buildCreateNodeDoc 은 넘긴 slug 를 경로와 frontmatter 에 그대로 쓴다", () => {
+    const { slug, markdown } = buildCreateNodeDoc(
+      draft({ kind: "element", title: "src/payment/gateway.ts", domainValue: null, definition: "" }),
+      { slug: "elements/gateway" },
+    );
+    expect(slug).toBe("elements/gateway");
+    expect(markdown).toContain("slug: elements/gateway");
+    // 제목에서 파생한 slug(`elements/srcpaymentgatewayts` 류)로 새지 않는다.
+    expect(markdown).not.toContain(buildCreateNodeSlug({ kind: "element", title: "src/payment/gateway.ts" }));
+  });
+
+  it("buildMcpPacket 도 같은 slug 를 쓴다 — 에이전트가 같은 파일을 만든다", () => {
+    const packet = buildMcpPacket(
+      draft({ kind: "element", title: "src/payment/gateway.ts", domainValue: null, definition: "", relations: [{ type: "dependsOn", candidate: payment }] }),
+      undefined,
+      { slug: "elements/gateway" },
+    );
+    expect(packet).toContain('add_concept(slug: "elements/gateway"');
+    expect(packet).toContain('add_relation(from: "elements/gateway", to: "capabilities/payment", type: "depends_on")');
+  });
+});

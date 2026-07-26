@@ -263,6 +263,22 @@
       "discardAria": "‘{name}’ 의 작업중 변경 버리기",
       "current": "지금 무대",
       "empty": "지금은 작업중인 게 없어요"
+    },
+    "materialize": {
+      "title": "이 개념은 아직 문서가 없어요",
+      "reason": "‘{name}’ 개념은 다른 문서 안에서 이름만 불린 상태예요. 관계를 적어 둘 자기 문서가 아직 없어요.",
+      "actionWrite": "관계를 이어 두려면 이 개념의 문서를 먼저 만들어야 해요. 만들면 지금 고른 관계도 그 문서에 함께 적어요.",
+      "actionCopy": "지금 열어 둔 폴더는 읽기 전용이라 이 앱이 파일을 만들 수 없어요. 대신 문서를 만드는 명령까지 함께 복사할게요.",
+      "fileLabel": "만들 파일",
+      "kindLabel": "종류",
+      "kindPrompt": "이 개념은 어떤 종류인가요?",
+      "scopeNote": "내 폴더 안에만 만들어져요. 어디로도 보내지 않아요.",
+      "scopeNoteCopy": "복사만 해요. 실행은 내 에이전트가 하고, 파일은 내 폴더 안에만 생겨요.",
+      "confirmWrite": "문서 만들고 저장",
+      "confirmCopy": "명령 복사하기",
+      "cancel": "취소",
+      "closeAria": "닫기",
+      "saved": "‘{name}’ 문서를 만들고 {count}가지를 기록했어요."
     }
   },
   "liveActivity": {
