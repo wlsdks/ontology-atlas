@@ -2937,7 +2937,20 @@
     "stepCurrentA11y": "Next step",
     "noVaultTitle": "Pick the folder you want to keep a history for",
     "noVaultBody": "Choose a folder in Documents and you can start keeping its changes right here.",
-    "noVaultAction": "Pick a folder"
+    "noVaultAction": "Pick a folder",
+    "conceptsTitle": "Concepts changed",
+    "conceptsCount": "{count} concept(s)",
+    "othersTitle": "{count} other file(s)",
+    "othersHint": "Not concept documents. They're saved along, but there's nothing to read here.",
+    "stepsTab": "Earlier steps",
+    "stepsCount": "{count} step(s)",
+    "diffAllLabel": "All changed concepts",
+    "diffSkippedHint": "There are unchanged lines in between",
+    "stepNoConcepts": "No concept changes",
+    "rowSelectHint": "Press to see this document's changed lines beside it",
+    "remoteToggle": "Register an address",
+    "remoteToggleClose": "Close the address field",
+    "stepSelectHint": "Press to see this step's exact values"
   },
   "agentFiles": {
     "header": "Agent files",
