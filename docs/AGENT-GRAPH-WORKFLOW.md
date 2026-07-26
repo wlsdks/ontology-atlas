@@ -27,19 +27,31 @@ billing. It prepares the local MCP files, root-specific commands, restart
 guidance, and verification gates so those agents can connect from their own app,
 terminal, or IDE session and work against the same vault.
 
-**Owner decision, 2026-07-26 — the desktop app may host a terminal.** The
-sentence above used to read "does not embed … chat inside the app", which was a
-scope choice rather than a principle. The desktop build can now run *your*
-already-installed `claude` / `codex` CLI inside a bottom dock, because that
-keeps the same boundary: the agent runtime, its credentials, and its model
-choices stay yours. Atlas hosts a terminal; it does not become an AI client.
+**Reversal record, 2026-07-26 — the embedded terminal is gone.** Earlier that
+same day this section said the desktop app *may host a terminal*, and a bottom
+dock shipped that ran your already-installed `claude` / `codex` CLI. The owner
+reversed it within the week, and the reasoning is kept here rather than deleted.
 
-The terminal obeys four rules. **Nothing runs on its own** — no command is
-issued without a keystroke from you. **No hidden input** — Atlas never injects
-commands you did not type. **Scoped working directory** — the shell starts in
-the vault or repository root you already opened, nowhere else. **Desktop
-only** — a browser cannot spawn processes, so the web build says so plainly
-instead of pretending.
+Why it was removed: the dock's own trust contract made it a strict subset of the
+terminal you already use — one login shell with no arguments, no tabs, no
+splits, no shell profiles, the session ending when you collapsed it, and about
+thirteen visible rows on a 14-inch screen. Every one of those was the right
+call, and together they meant long agent loops, resumed sessions, and parallel
+worktrees belonged somewhere else. The synergy that seemed to justify embedding
+— *the agent edits the vault and the map reacts immediately* — turned out to be
+position-independent: the vault watcher observes the folder on disk, so an agent
+running in iTerm moves the map exactly the same way. Polishing the window did
+not change the comparison, and sunk cost is not a reason to keep a surface.
+
+**Atlas does not host a terminal; it hands off to yours.** The bridge between a
+person and an agent is a protocol, not a window: the MCP tools, the CLI, the
+`agent-brief` handoff prompt, and the vault watcher. The vault agent panel gives
+you a copy block — `cd <your vault>` plus the sentence to paste — and you run it
+where your session already lives. What you change out there comes back through
+the watcher and the recent-change lens on the map.
+
+**Nothing runs on its own.** Atlas never issues a command, spawns a process, or
+starts an agent on your behalf. It prepares files and text you choose to run.
 
 ## Choose The Right Mode
 

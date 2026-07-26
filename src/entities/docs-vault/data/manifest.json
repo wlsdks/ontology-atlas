@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T09:28:57.000Z",
+  "generatedAt": "2026-07-26T10:29:01.368Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -56,8 +56,8 @@
         }
       ],
       "excerpt": "Current as of 2026-05-28. This is the user-facing guide for running ontology-atlas as a local PC graph memory: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is",
-      "wordCount": 2212,
-      "updatedAt": "2026-07-26T10:19:04+09:00",
+      "wordCount": 2367,
+      "updatedAt": "2026-07-26T10:27:31.307Z",
       "linksOut": []
     },
     {
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 앱 안의 터미널을 걷어냈다 (같은 주에 낸 것을 같은 주에 지운 기록)",
+          "slug": "2026-07-26-앱-안의-터미널을-걷어냈다-같은-주에-낸-것을-같은-주에-지운-기록"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — 화면이 부르는 이름을 CLI·MCP 도 안다",
           "slug": "2026-07-26-화면이-부르는-이름을-climcp-도-안다"
         },
@@ -4958,9 +4963,9 @@
           "slug": "2026-07-26-안-물린-게이트는-게이트가-아니다"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 지도가 296개를 개념이라 세는 동안 ontology-atlas overview 와 MCP listkinds 는 96개라고 답했다. 차이 200개는 다른 ",
-      "wordCount": 46465,
-      "updatedAt": "2026-07-26T18:28:57+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 앱 하단에서 열리던 터미널 도크가 사라졌다. 이번 주에 출하하고 이번 주에 지운다 — 번복이므로 그렇게 적는다. 아까움은 남길 이유가 아니었다. 왜 지웠나",
+      "wordCount": 46791,
+      "updatedAt": "2026-07-26T10:29:01.368Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5516,8 +5521,8 @@
         },
         {
           "depth": 3,
-          "text": "에이전트 터미널 도크 토큰 (`--terminal-*`, `--agent-terminal-*`)",
-          "slug": "에이전트-터미널-도크-토큰---terminal----agent-terminal-"
+          "text": "앱 내장 터미널 도크 토큰 — 제거됨 (2026-07-26)",
+          "slug": "앱-내장-터미널-도크-토큰-제거됨-2026-07-26"
         },
         {
           "depth": 2,
@@ -5736,8 +5741,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 16239,
-      "updatedAt": "2026-07-26T17:25:51+09:00",
+      "wordCount": 15893,
+      "updatedAt": "2026-07-26T10:28:12.427Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
