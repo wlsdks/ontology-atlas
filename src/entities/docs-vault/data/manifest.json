@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T14:15:45.000Z",
+  "generatedAt": "2026-07-26T15:02:08.670Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 그림이 자기 캡션을 배반하던 자리 여섯 곳",
+          "slug": "2026-07-27-그림이-자기-캡션을-배반하던-자리-여섯-곳"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — 「볼트 도우미」가 「에이전트」가 됐고, 키 없는 빈 화면이 문을 갖게 됐다",
           "slug": "2026-07-26-볼트-도우미가-에이전트가-됐고-키-없는-빈-화면이-문을-갖게-됐다"
         },
@@ -4988,9 +4993,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 지도 오른쪽 도크의 이름과 첫 화면을 고쳤다. 두 군데가 사용자에게 거짓말을 하고 있었다. 이름. 「볼트 도우미」의 두 낱말이 모두 틀렸다. 「볼트」는 이",
-      "wordCount": 48362,
-      "updatedAt": "2026-07-26T23:15:45+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 인사이트·프로젝트 표면의 인코딩 결함을 고쳤다. 판정 원칙은 하나다 — 캡션이 약속이고, 그림이 캡션을 따른다. 캡션을 그림에 맞추는 것은 사용자가 원래 ",
+      "wordCount": 48772,
+      "updatedAt": "2026-07-26T15:02:08.670Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
