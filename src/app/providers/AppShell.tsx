@@ -16,6 +16,7 @@ import { AgentTerminalDock } from "@/widgets/agent-terminal";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode } from "@/features/data-source-mode";
+import { DestinationGuide, GuideReplayProvider } from "@/features/guided-tour";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { useTranslations } from "next-intl";
@@ -57,8 +58,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           `<lg` 크롬 타일 양쪽에서 같은 표면을 담당하므로 셸에 상주하는 모달이
           더는 필요 없다(런처·패널 호스트·구 레일 타일 전부 도달 불가였다). */}
       <AgentConnectLauncherProvider>
-        <RouteFocusManager />
-        <ShellWithTerminalDock>{children}</ShellWithTerminalDock>
+        <GuideReplayProvider>
+          <RouteFocusManager />
+          <ShellWithTerminalDock>{children}</ShellWithTerminalDock>
+        </GuideReplayProvider>
       </AgentConnectLauncherProvider>
     </NavRailShellProvider>
   );
@@ -93,6 +96,16 @@ function ShellWithTerminalDock({ children }: { children: ReactNode }) {
   const terminalLabel = tTerminal("title");
   const surface = resolveActiveNavDestination(pathname);
   const terminalAllowed = surface === "map" || surface === "studio" || surface === "git";
+
+  // 목적지 안내를 띄울 화면. 지도는 자기 8단계 여정을 직접 소유하므로 제외하고,
+  // 프로젝트는 **목록에서만** 띄운다 — `/project/<slug>` 상세도 레일에서는 같은
+  // 목적지로 켜지지만 안내 문구("카드로 서요")가 가리키는 화면이 아니다.
+  const guideDestination =
+    !surface || surface === "map"
+      ? null
+      : surface === "projects" && !resolveIsProjectListPath(pathname)
+        ? null
+        : surface;
 
   // 허용 안 된 표면으로 이동하면 접는다 — 열어둔 채 넘어가면 "왜 여기 있지" 가
   // 된다. 세션 정리(자식 프로세스 kill)는 도크 언마운트 effect 가 한다.
@@ -165,8 +178,21 @@ function ShellWithTerminalDock({ children }: { children: ReactNode }) {
         onClose={() => setTerminalOpen(false)}
         vaultPath={vaultPath}
       />
+
+      {/* 목적지 첫 방문 안내 (2026-07-26) — 지도에만 있던 안내를 나머지 다섯
+          목적지로 넓힌다. 셸이 소유하는 이유는 터미널 도크와 같다: 페이지마다
+          손으로 마운트하게 하면 하나가 빠져도 아무도 모른다(#65 계열 drift).
+          `key` 로 목적지마다 remount — 이동 중 이전 화면의 카드가 남지 않는다.
+          지도는 캔버스 노드 앵커·인터랙티브 클릭이 있는 8단계 여정이라
+          HomePage 가 계속 직접 소유한다(여기서는 `null`). */}
+      <DestinationGuide key={guideDestination ?? "none"} destination={guideDestination} />
     </div>
   );
+}
+
+/** 프로젝트 **목록** 화면인가 — `/project/<slug>` 상세·편집은 아니다. */
+function resolveIsProjectListPath(pathname: string): boolean {
+  return pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "").startsWith("/projects");
 }
 
 /** `/` 와 `/topology*` 는 둘 다 HomePage(연결 시트 소유자)를 렌더한다. */

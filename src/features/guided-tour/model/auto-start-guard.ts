@@ -17,6 +17,11 @@ export function canAutoStartGuidedTour(doc: Document = document): boolean {
   if (doc.querySelector('[data-testid="guided-tour-overlay"]') !== null) {
     return false;
   }
+  // 안내가 **가리키려는** 모달이라 해도 예외는 없다. 공방(`studio-entry-choice`)
+  // 에 그런 예외를 뒀더니 실측 1512px 에서 안내 카드가 소개하려던 진입 선택 두
+  // 카드를 그대로 덮었고, `aria-modal` 두 개가 동시에 서서 스크린리더에는 카드
+  // 자체가 존재하지 않게 됐다. 안내는 결정 화면을 가리는 게 아니라 결정이 끝난
+  // 뒤 작업 표면에서 뜬다.
   if (doc.querySelector('[role="dialog"][aria-modal="true"]') !== null) {
     return false;
   }

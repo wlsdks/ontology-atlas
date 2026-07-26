@@ -232,6 +232,31 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - Focus follows the dialog card on open/step change and returns to the launcher tile on close; the "I'm a developer →" branch button only renders when its step-8 anchor (the first-run starter card) is still present
 - Completion/skip status persists to `localStorage` (`guided-tour:v1`) but never blocks re-running the tour from the same tile
 
+#### 목적지 안내 (`DestinationGuide`, 2026-07-26, `src/features/guided-tour`)
+소유자 요청: *"각 LNB탭 들어갔을때 가이드는 다 각각 있으면 좋겠네? 지금은
+지도쪽만 있어서!"* — 지도에만 있던 안내를 나머지 다섯 목적지로 넓혔다.
+
+- **두 번째 가이드 체계를 만들지 않았다.** 지도가 쓰던 투어 기제(`useGuidedTour`
+  상태기계 · 스크림/컷아웃 오버레이 · 카드 · 진행 점 · 건너뛰기)를 그대로 쓰고,
+  `useGuidedTour({ steps })` 로 목적지별 스텝 배열만 갈아 끼운다. 지도의
+  8단계 여정(캔버스 노드 앵커 · 인터랙티브 클릭 · 개발자 분기)은 그대로 HomePage 소유
+- **문서함 · 공방 · 인사이트 · 프로젝트 · 기록** 각각 2장 — ① 이 화면이 무엇을
+  하는 곳인지(앵커 없는 중앙 카드) ② 여기서 처음 볼 것 하나(실제 요소 스포트라이트:
+  `docs-vault-doc-list` · `studio-entry-choice` · `do-next-touchups` ·
+  `project-selector-card` · `atlas-git-panel`). 기능 나열이 아니라 "여기서 무엇을
+  할 수 있는가" 한 질문에만 답한다. 둘째 장의 앵커가 그 순간 화면에 없으면
+  (예: 문서 목록 접힘) 자동으로 한 장짜리로 접힌다
+- 셸(`AppShell`)이 소유하고 목적지마다 `key` 로 remount — 페이지가 각자 마운트하면
+  하나가 빠져도 아무도 모른다(#65 계열 drift). 지도에서는 렌더하지 않는다
+- **방해 금지** — "봤음"은 목적지마다 따로 기록한다(`guided-tour:<id>:v1`). 한 화면을
+  봤다고 나머지 다섯이 삼켜지지 않고, 본 화면은 다시 자동으로 뜨지 않는다. 자동
+  시작은 지도와 같은 가드(`canAutoStartGuidedTour`)를 통과할 때만
+- **다시 보기** — 설정 메뉴 › 화면 › "화면 안내". 여섯 목적지 전부에서 같은 자리다
+  (지도는 우상단 컴퍼스 타일이 계속 주 진입점, 이 행은 보조). 화면마다 도움말 버튼을
+  새로 만들면 화면별 크롬 수가 갈리므로 상시 표면 한 곳으로 모았다
+- 마지막 장의 버튼은 `[다음]` 이 아니라 `[완료]` — 없는 다음 장을 약속하지 않는다
+  (지도 투어에도 같은 규칙 적용)
+
 #### Top-left brand pill (`HeroCollapsed`, compact-only since 2026-06-11)
 - One pill, no expanded hero state (removed — it competed with the map for attention): selected project name, or workspace subtitle (concept/relation counts + weekly growth signal when > 0)
 - Source Vault (`/docs`) and Ontology (`/ontology`) quick links inline
@@ -282,6 +307,10 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
   - **Pinned** — pinned docs, unpin action
   - **Vault** (`DocsVaultTree`) — full folder hierarchy, kind glyphs + per-folder engraved counts, click to select, local search, tag-filter auto-expands folders
   - **Recent** — recently opened docs
+- **List order** (2026-07-26, icon-row menu next to search) — two independent axes, both carried in the URL so a link and an agent handoff reproduce the same list:
+  - `?sort=` — `name` (default, omitted) · `recent` (most recently edited first; a folder inherits the newest edit inside it)
+  - `?group=` — `folders` (default, omitted; folders before documents, as in Finder / VS Code / Obsidian) · `docs` (documents before folders)
+  - Unknown values fall back to the default instead of erroring — shared links get edited by other hands
 - Tag filter stays its own collapsible disclosure (not this screen's primary purpose); active tag keeps it open
 
 #### Mobile drawer (<lg)
@@ -346,35 +375,41 @@ unaffected — only the Browse leg of the old Browse/Write/Query loop moved.
 
 ---
 
-### `/ontology/insights` — Insights (3-tab dashboard, rebuilt 2026-07-18)
+### `/ontology/insights` — Insights (5-tab maintenance board, 질문 단위 재편 2026-07-26)
 
-Full rebuild against the approved `docs/prototypes/insights-final.html` mockup.
-The previous round's 4-tab reader-persona system (proof / collaboration /
-agent / census presets, session proof strip, collaborator brief, query-recipe
-cockpit — ~6,200 lines) is gone; every number on this page now derives from
-the same data source the page already used (`useOntologyInsight`,
-`shared/lib/ontology-tree`) instead of a separate persona layer.
+Every number on this page derives from the data source the page already used
+(`useOntologyInsight`, `shared/lib/ontology-tree`) — no separate persona or
+store layer. **One tab answers one question**: the old `구조` tab stacked three
+different questions and grew to 2.2× the 14-inch viewport, so it was split into
+구성 / 연결 / 경계. Scroll contract: every tab stays ≤ 1.3× viewport.
 
 #### Header (always visible)
 - Title + subtitle + right-aligned engraved census (`N concepts · N relations · N domains`)
-- `TabBar` (개요 Overview / 관계 Relations / 신선도 Freshness), tab state in `?tab=`, each tab shows a live count badge (total nodes / total edges / freshness window in weeks)
+- `TabBar` — 할 일 Do next (default) / 구성 Inventory / 연결 Connections / 경계 Boundaries / 신선도 Freshness. Tab state in `?tab=`; each tab badge counts what that tab is about (verdict total / nodes / edges / cross-domain relations / freshness window). Legacy `?tab=structure|overview` → 구성, `?tab=relations` → 연결, so bookmarks and agent return-chip links stay alive.
 
-#### Tab 1 — 개요 Overview
+#### Tab 1 — 할 일 Do next
+- Today's touch-ups, agent readiness gauge, repair queue, and the growth queue (see `DoNextTab`); the badge is the single verdict model (`insights-verdict`) shared with the body.
+
+#### Tab 2 — 구성 Inventory
 - **Hero census** (`InsightsHeroCensus`) — concepts / relations / health facts (orphan count, cycle count, domain-membership rate, evidence-linked rate)
 - **Kind census** card — kind → glyph + bar + count, tallest bar highlighted
 - **Domain capacity** card — domain → bar (capability/element sub-counts), hidden when there are no domains
 
-#### Tab 2 — 관계 Relations
-- **Relation breakdown** — every edge type as a bar row with a `TopologyV2TraceMark` (solid=containment, dashed=depends/relates) + count + percent of total
-- **Top depends_on pairs** — from → to rows with counts, capped list
-- **Hubs** — top nodes by degree, each with a 52px mini ego-thumbnail SVG (real spokes/degree from `buildHubEgoThumbnail`, not decorative) + degree count; "+N more" note when truncated
+#### Tab 3 — 연결 Connections
+- **Relation breakdown** — every edge type as a bar row with a `TopologyV2TraceMark` (solid=containment, dashed=depends/relates) + count + percent of total; empty vault gets a "connect them in the workshop" hint
+- **Hubs** — top nodes by degree: kind glyph + title + relative bar + degree, map deeplink per row, "top N / M total" folded into the single footnote line
 
-#### Tab 3 — 신선도 Freshness
+#### Tab 4 — 경계 Boundaries
+- **Domain coupling** — cross-domain pairs, each expandable to relation-type counts and real example edges (map deeplinks)
+- **Boundary pressure** — per-domain inside vs cross ratio; a high cross share signals a leaking boundary
+- Cold start (fewer than 2 domains or no cross edges) shows one explicit empty state **with a next step** (workshop link) instead of a misleading table
+
+#### Tab 5 — 신선도 Freshness
 - **Domain freshness heatstrip** — one row per domain, a week-by-week heat strip (neutral ramp, current week in indigo) built from real vault `updatedAt` values (`FRESHNESS_WINDOW_WEEKS`); domains with no dated docs are excluded from the stale count rather than counted as stale ("unknown" ≠ "old"); stale domains get a dashed "stale" tag
 - **Recent updates** — most recently touched nodes with kind glyph, domain, and ISO date; footer shows total stale-domain count
 
 #### Bottom handoff row (`InsightsHandoffRow`, always visible)
-- One copyable `query_ontology(...)` chain per active tab (e.g. Relations tab copies `match_edges(type:"depends_on")` → `blast_radius`) — a single focused agent handoff instead of the old multi-panel query-recipe cockpit
+- One copyable `query_ontology(...)` chain per active tab — the tab's question translated into the agent's execution order (연결 → `centrality` then `blast_radius`; 경계 → `domain_matrix` then `match_edges`)
 
 Empty state (0 nodes): link to `/docs` (open vault).
 

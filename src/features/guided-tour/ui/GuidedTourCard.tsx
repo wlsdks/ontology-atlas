@@ -28,7 +28,7 @@ export function GuidedTourCard({
   style,
 }: GuidedTourCardProps) {
   const t = useTranslations("guidedTour");
-  const { step, stepIndex, personaSteps, personaStepIndex, back, advance, skip, finishAsDone, chooseDevBranch, hasSelection, devBranchAvailable } = tour;
+  const { step, stepIndex, personaSteps, personaStepIndex, back, advance, skip, finishAsDone, chooseDevBranch, hasSelection, devBranchAvailable, isFinalStep } = tour;
 
   // 포커스 이동 (2026-07-23 Guardian 정정) — role="dialog" 카드가 열리거나
   // 단계가 바뀌면 포커스를 카드로 옮긴다(aria-label 재낭독 + 키보드 사용자의
@@ -50,7 +50,6 @@ export function GuidedTourCard({
   const current = personaStepIndex + 1;
   const isFirst = stepIndex <= 0;
   const isBranchStep = step.id === "recent";
-  const isDevFinalStep = step.id === "agent";
   const isInteractive = Boolean(step.interactive);
 
   return (
@@ -163,11 +162,11 @@ export function GuidedTourCard({
           </button>
           <button
             type="button"
-            onClick={isDevFinalStep ? finishAsDone : advance}
-            data-testid={isDevFinalStep ? "guided-tour-finish" : "guided-tour-next"}
+            onClick={isFinalStep ? finishAsDone : advance}
+            data-testid={isFinalStep ? "guided-tour-finish" : "guided-tour-next"}
             className="h-8 rounded-[var(--chrome-radius-inner)] bg-[color:var(--color-indigo-brand)] px-3 text-body font-medium text-white transition-colors hover:bg-[color:var(--color-indigo-accent)]"
           >
-            {isDevFinalStep ? t("finishLabel") : t("nextLabel")}
+            {isFinalStep ? t("finishLabel") : t("nextLabel")}
           </button>
         </div>
       ) : null}

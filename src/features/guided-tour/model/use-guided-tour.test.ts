@@ -96,6 +96,47 @@ describe("useGuidedTour", () => {
     expect(result.current.personaStepIndex).toBe(7);
   });
 
+  // 2026-07-26 회귀 — 카드의 [다음]/[완료] 라벨을 `visibleSteps` 길이로
+  // 정하면 데이터시트 단계에서 거짓말을 한다. 그 단계에서는 열린 상세 패널이
+  // 뒤 단계(INDEX·스포트라이트)의 앵커를 가려 목록이 거기서 끊기지만,
+  // `advance()` 는 패널을 닫고 DOM 을 다시 읽어 다음 장으로 간다. 길이 기준일
+  // 때는 5/7 에서 [완료] 가 그려졌고 누르면 투어가 조기 종료됐다.
+  it("datasheet 단계는 목록의 끝이어도 마지막 장이 아니다", () => {
+    // 데이터시트 앵커만 해석되고 그 뒤 단계 앵커는 가려진 상태를 모델링한다.
+    const canResolveAnchor = (anchor: TourAnchor) =>
+      anchor === null ||
+      anchor.type === "canvas-node" ||
+      anchor.value === "topology-v2-detail-panel";
+    const { result } = renderHook(() =>
+      useGuidedTour({
+        hasSelection: true,
+        canResolveAnchor,
+        storageKey: TEST_KEY,
+        onLeaveDatasheet: () => {},
+      }),
+    );
+    act(() => result.current.start());
+    act(() => result.current.advance()); // welcome -> nodes
+    act(() => result.current.advance()); // nodes -> relations
+    act(() => result.current.advance()); // relations -> try-click
+    act(() => result.current.advance()); // try-click -> datasheet
+    expect(result.current.step?.id).toBe("datasheet");
+    expect(result.current.stepIndex).toBe(result.current.visibleSteps.length - 1);
+    expect(result.current.isFinalStep).toBe(false);
+  });
+
+  it("진짜 마지막 장에서만 isFinalStep 이 참이다", () => {
+    const { result } = setup();
+    act(() => result.current.start());
+    expect(result.current.isFinalStep).toBe(false);
+    // 비개발 여정의 끝은 recent — 그 다음 장(agent)은 dev 페르소나 전용이다.
+    for (let i = 0; i < 8 && result.current.step?.id !== "recent"; i += 1) {
+      act(() => result.current.advance());
+    }
+    expect(result.current.step?.id).toBe("recent");
+    expect(result.current.isFinalStep).toBe(true);
+  });
+
   it("datasheet only appears in visibleSteps once a selection exists", () => {
     const { result, rerender } = setup(false);
     act(() => result.current.start());
@@ -265,5 +306,49 @@ describe("useGuidedTour", () => {
     act(() => result.current.advance());
     expect(result.current.open).toBe(false);
     expect(window.localStorage.getItem(TEST_KEY)).toBe("done");
+  });
+});
+
+/**
+ * 목적지 안내(문서함·공방 등)는 **같은 상태기계**에 스텝 배열만 갈아 끼운다 —
+ * 두 번째 가이드 체계를 만들지 않았다는 것을 이 테스트가 고정한다.
+ */
+describe("useGuidedTour — 주입된 스텝 배열", () => {
+  const DEST_KEY = "guided-tour:docs:v1:test";
+  const steps = [
+    { id: "a", anchor: null, persona: "all", copyKey: "a" },
+    { id: "b", anchor: null, persona: "all", copyKey: "b" },
+  ] as const;
+
+  afterEach(() => window.localStorage.removeItem(DEST_KEY));
+
+  function setupDestination() {
+    return renderHook(() =>
+      useGuidedTour({
+        steps,
+        hasSelection: false,
+        canResolveAnchor: () => true,
+        storageKey: DEST_KEY,
+      }),
+    );
+  }
+
+  it("지도 여정 대신 주입된 배열을 밟는다", () => {
+    const { result } = setupDestination();
+    act(() => result.current.start());
+    expect(result.current.step?.id).toBe("a");
+    expect(result.current.personaSteps).toHaveLength(2);
+    act(() => result.current.advance());
+    expect(result.current.step?.id).toBe("b");
+  });
+
+  it("마지막 장에서 진행하면 그 목적지 키에만 '봤음'이 기록된다", () => {
+    const { result } = setupDestination();
+    act(() => result.current.start());
+    act(() => result.current.advance());
+    act(() => result.current.advance());
+    expect(result.current.open).toBe(false);
+    expect(window.localStorage.getItem(DEST_KEY)).toBe("done");
+    expect(window.localStorage.getItem(GUIDED_TOUR_STATUS_KEY)).toBeNull();
   });
 });

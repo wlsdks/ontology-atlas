@@ -16,6 +16,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { useLocalVault } from '@/features/docs-vault-local';
+import { useGuideReplay } from '@/features/guided-tour';
 import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
@@ -184,6 +185,9 @@ export function AppSettingsMenu({
   const { state: copyState, copy } = useCopyFeedback();
   const router = useRouter();
   const localVault = useLocalVault();
+  // 지금 화면이 등록한 "안내 다시 열기" — 등록이 없는 화면에서는 행 자체가
+  // 없다(빈 행/비활성 버튼을 남기지 않는다).
+  const replayGuide = useGuideReplay();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
@@ -567,6 +571,32 @@ export function AppSettingsMenu({
                     적용되고, 배경은 지도 표면에 적용된다. */}
                 <CanvasBackgroundPicker />
                 <GlyphSetPicker />
+                {/* 화면 안내 다시 보기 (2026-07-26) — 안내는 목적지마다 한 번만
+                    자동으로 뜨므로 되돌아올 길이 필요하다. 화면마다 도움말
+                    버튼을 새로 만들면 화면별 크롬 수가 갈리므로(#65 계열),
+                    모든 화면에 이미 있는 이 메뉴 한 곳으로 모은다. 안내를 열기
+                    전에 이 팝오버를 먼저 닫는다 — 안내 카드가 설정 위에 겹치면
+                    transient 스택 금지 계약 위반이다. */}
+                {replayGuide ? (
+                  <SettingsRow
+                    testId="app-settings-replay-guide"
+                    label={t('replayGuideLabel')}
+                    caption={t('replayGuideCaption')}
+                    control={
+                      <button
+                        type="button"
+                        data-testid="app-settings-replay-guide-button"
+                        onClick={() => {
+                          closePanel(false);
+                          replayGuide();
+                        }}
+                        className="flex h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                      >
+                        {t('replayGuideAction')}
+                      </button>
+                    }
+                  />
+                ) : null}
               </SettingsGroup>
 
               <SettingsGroup label={t('groupWorkspace')}>

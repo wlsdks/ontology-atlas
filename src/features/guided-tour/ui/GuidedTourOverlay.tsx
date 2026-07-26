@@ -24,7 +24,7 @@ export interface GuidedTourOverlayProps {
    * 정정: 위젯 내부 z-40 스크림은 상단 툴바 등 바깥 크롬을 못 덮어 testid
    * 단계와 감광이 어긋났다).
    */
-  canvasAnchorRef: RefObject<HTMLDivElement | null>;
+  canvasAnchorRef?: RefObject<HTMLDivElement | null>;
   /** 키보드 사용자가 4단계의 캔버스 노드 클릭을 카드 안 버튼으로 수행한다. */
   onActivateAnchor?: () => void;
 }
@@ -90,6 +90,8 @@ export function GuidedTourOverlay({
       setCanvasRect(null);
       return undefined;
     }
+    // 캔버스 노드 앵커는 지도 전용 — 목적지 안내는 프로브를 넘기지 않는다.
+    if (!canvasAnchorRef) return undefined;
     let raf = 0;
     const tick = () => {
       const el = canvasAnchorRef.current;

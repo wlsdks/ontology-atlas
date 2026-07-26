@@ -235,6 +235,7 @@ import {
   readGuidedTourStatus,
   resolveAnchorRect,
   useGuidedTour,
+  useRegisterGuideReplay,
   type TourAnchor,
 } from "@/features/guided-tour";
 import { resolveTourAnchorNodeId } from "../lib/resolve-tour-anchor-node";
@@ -1803,6 +1804,12 @@ export function HomePage() {
     closeCreateNode();
     tour.start();
   }, [closeCreateNode, tour]);
+
+  // 안내 다시 보기 (2026-07-26) — 지도의 재진입은 우상단 나침반 타일이지만,
+  // 설정 메뉴의 "화면 안내" 행은 여섯 목적지에서 같은 자리에 있어야 사용자가
+  // 화면마다 다른 곳을 찾지 않는다. 나머지 다섯은 셸의 `DestinationGuide` 가
+  // 등록하고, 지도는 자기 투어를 여는 이 함수를 등록한다.
+  useRegisterGuideReplay(openGuidedTour);
 
   // 첫 방문 자동 투어 (2026-07-24 온보딩 라운드) — 투어 자산이 있는데
   // 진입점이 우측 레일 아이콘뿐이라 비개발자가 발견하지 못했다. 샘플

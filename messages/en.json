@@ -454,9 +454,9 @@
         "title": "A bench for joining pieces together",
         "body": "You wrote the piece, but what it is part of and what it leans on are often still blank. This is where you fill those blanks in, one at a time. Every blank you fill adds a line to the map."
       },
-      "studioStart": {
-        "title": "Start with one of these two",
-        "body": "Pick something that already exists and fill in its blanks, or build a new piece from scratch. Either way it ends up as a file in your folder."
+      "studioCard": {
+        "title": "The card in the middle is the piece you're on",
+        "body": "Each of its four edges is one blank. Click a dashed edge to choose what fills it, and a filled edge turns solid. Fill them and it saves straight into the file in your folder."
       },
       "insightsWhat": {
         "title": "Where you check the whole thing",
@@ -1228,6 +1228,7 @@
       "domainCouplingTitle": "Domain coupling",
       "domainCouplingEmptyTitle": "Not enough coupling data yet",
       "domainCouplingEmptyDescription": "Needs 2+ domains and a cross-domain relation between them to compute.",
+      "domainCouplingEmptyAction": "Connect concepts in the workshop",
       "domainCouplingPairsUnit": "pairs",
       "domainCouplingBoundaryTitle": "Boundary pressure",
       "domainCouplingSelfLabel": "self",

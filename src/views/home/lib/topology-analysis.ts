@@ -56,8 +56,8 @@ export interface TopologyAnalysisSummary {
 /**
  * Re-exported under this file's historical name — the picking rule itself
  * now lives at `entities/knowledge-graph/lib/ontology-health-signals.ts` so
- * `/ontology/insights`' RelationsTab "수리 큐" section (분석 패널 완전 소멸
- * 2단계 §c) can reuse the SAME function without a cross-view import
+ * `/ontology/insights`' 할 일 탭 "수리 큐" section can reuse the SAME
+ * function without a cross-view import
  * (`views/home` → `views/ontology-insights` would violate FSD's "avoid
  * same-layer cross-import" guidance). Both surfaces' "next repair target"
  * can't drift because they call the one entities-level function.
@@ -335,8 +335,8 @@ export function formatTopologyRelationProvenanceSummary(
 
 /** Re-exports the entities-level classifier under this file's historical
  *  name — `entities/knowledge-graph/lib/relation-quality.ts` is the single
- *  source of truth (shared with `views/ontology-insights`' RelationsTab agent
- *  readiness gauge, W3 분석 보기 은퇴). */
+ *  source of truth (shared with `views/ontology-insights`' 할 일 탭 agent
+ *  readiness gauge). */
 export function classifyTopologyRelationQuality(
   edge: Pick<KnowledgeGraphEdge, "type" | "evidenceIds" | "lastApprovedBy">,
 ): keyof TopologyRelationQualityBreakdown {

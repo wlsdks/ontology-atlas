@@ -8,12 +8,25 @@ import {
   TopologyV2KindGlyph,
   isTopologyV2RenderableKind,
 } from '@/shared/ui/topology-v2-kind-glyph';
+import {
+  DEFAULT_DOCS_TREE_GROUP,
+  DEFAULT_DOCS_TREE_SORT,
+  buildDocsTreeRecencyIndex,
+  sortDocsTreeNodes,
+  type DocsTreeGroup,
+  type DocsTreeOrder,
+  type DocsTreeSort,
+} from '../lib/tree-order';
 
 interface Props {
   tree: VaultTreeNode;
   selectedSlug: string | null;
   onSelect: (slug: string) => void;
   query?: string;
+  /** 같은 묶음 안의 순서. 기본 이름순. 계약은 `lib/tree-order.ts`. */
+  sort?: DocsTreeSort;
+  /** 폴더와 문서 중 무엇을 먼저 그릴지. 기본 폴더 먼저. */
+  group?: DocsTreeGroup;
   /** 활성 태그 필터. null 이면 태그 필터 해제. */
   activeTag?: string | null;
   /** 활성 태그가 매치하는 slug 집합. activeTag 가 있을 때만 사용. */
@@ -107,6 +120,7 @@ function TreeNode({
   activeTagSlugs,
   visibleDocSlugs,
   docsBySlug,
+  order,
 }: {
   node: VaultTreeNode;
   depth: number;
@@ -116,6 +130,7 @@ function TreeNode({
   activeTagSlugs?: Set<string>;
   visibleDocSlugs?: Set<string>;
   docsBySlug?: Map<string, VaultDoc>;
+  order: DocsTreeOrder;
 }) {
   // 태그/검색 필터 활성 시에는 매치 경로를 자동으로 펼침 — 걸러진 문서가
   // 접힌 폴더 안에 숨어 있으면 source list 의 역할을 못 한다.
@@ -182,23 +197,20 @@ function TreeNode({
       </button>
       {(open || activeTagSlugs || query) && node.children ? (
         <div>
-          {[...node.children]
-            .sort((a, b) =>
-              (a.title ?? a.name).localeCompare(b.title ?? b.name, 'ko'),
-            )
-            .map((child) => (
-              <TreeNode
-                key={child.path}
-                node={child}
-                depth={depth + 1}
-                selectedSlug={selectedSlug}
-                onSelect={onSelect}
-                query={query}
-                activeTagSlugs={activeTagSlugs}
-                visibleDocSlugs={visibleDocSlugs}
-                docsBySlug={docsBySlug}
-              />
-            ))}
+          {sortDocsTreeNodes(node.children, order).map((child) => (
+            <TreeNode
+              key={child.path}
+              node={child}
+              depth={depth + 1}
+              selectedSlug={selectedSlug}
+              onSelect={onSelect}
+              query={query}
+              activeTagSlugs={activeTagSlugs}
+              visibleDocSlugs={visibleDocSlugs}
+              docsBySlug={docsBySlug}
+              order={order}
+            />
+          ))}
         </div>
       ) : null}
     </div>
@@ -213,6 +225,8 @@ export function DocsVaultTree({
   selectedSlug,
   onSelect,
   query,
+  sort = DEFAULT_DOCS_TREE_SORT,
+  group = DEFAULT_DOCS_TREE_GROUP,
   activeTag,
   activeTagSlugs,
   visibleDocSlugs,
@@ -222,28 +236,38 @@ export function DocsVaultTree({
   const children = useMemo(() => tree.children ?? [], [tree]);
   const tagSlugs = activeTag ? activeTagSlugs : undefined;
   const normalizedQuery = query?.trim().toLowerCase() ?? '';
+  // 수정 시각은 트리가 아니라 매니페스트에 있다. 이름순일 땐 아예 계산하지
+  // 않는다 — 쓰지 않을 인덱스를 158개 문서마다 만들 이유가 없다.
+  const order = useMemo<DocsTreeOrder>(
+    () => ({
+      sort,
+      group,
+      recency:
+        sort === 'recent' && docsBySlug
+          ? buildDocsTreeRecencyIndex(tree, docsBySlug)
+          : undefined,
+    }),
+    [docsBySlug, group, sort, tree],
+  );
   return (
     <nav
       aria-label={t('navAria')}
       className="flex h-full flex-col gap-0.5 overflow-auto py-2"
     >
-      {[...children]
-        .sort((a, b) =>
-          (a.title ?? a.name).localeCompare(b.title ?? b.name, 'ko'),
-        )
-        .map((child) => (
-          <TreeNode
-            key={child.path}
-            node={child}
-            depth={0}
-            selectedSlug={selectedSlug}
-            onSelect={onSelect}
-            query={normalizedQuery}
-            activeTagSlugs={tagSlugs}
-            visibleDocSlugs={visibleDocSlugs}
-            docsBySlug={docsBySlug}
-          />
-        ))}
+      {sortDocsTreeNodes(children, order).map((child) => (
+        <TreeNode
+          key={child.path}
+          node={child}
+          depth={0}
+          selectedSlug={selectedSlug}
+          onSelect={onSelect}
+          query={normalizedQuery}
+          activeTagSlugs={tagSlugs}
+          visibleDocSlugs={visibleDocSlugs}
+          docsBySlug={docsBySlug}
+          order={order}
+        />
+      ))}
     </nav>
   );
 }

@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../../messages/ko.json";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
+import type { DocsTreeGroup, DocsTreeSort } from "@/widgets/docs-vault/lib/tree-order";
 import type { AgentFilesUiModel } from "../../lib/agent-files";
 import { DocsSidebarBody } from "./DocsSidebarBody";
 
@@ -34,11 +35,20 @@ function makeManifest(docs: VaultDoc[]): VaultManifest {
 
 function renderSidebar(
   docs: VaultDoc[],
-  overrides: { canCreateNewDoc?: boolean; agentFiles?: AgentFilesUiModel | null } = {},
+  overrides: {
+    canCreateNewDoc?: boolean;
+    agentFiles?: AgentFilesUiModel | null;
+    sort?: DocsTreeSort;
+    group?: DocsTreeGroup;
+    tree?: VaultManifest["tree"];
+  } = {},
 ) {
   const manifest = makeManifest(docs);
+  if (overrides.tree) manifest.tree = overrides.tree;
   const onSelect = vi.fn();
   const onCreateNewDoc = vi.fn();
+  const onSortChange = vi.fn();
+  const onGroupChange = vi.fn();
   render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
       <DocsSidebarBody
@@ -57,11 +67,15 @@ function renderSidebar(
         onTagSelect={() => {}}
         onCreateNewDoc={onCreateNewDoc}
         canCreateNewDoc={overrides.canCreateNewDoc ?? true}
+        sort={overrides.sort ?? "name"}
+        group={overrides.group ?? "folders"}
+        onSortChange={onSortChange}
+        onGroupChange={onGroupChange}
         agentFiles={overrides.agentFiles ?? null}
       />
     </NextIntlClientProvider>,
   );
-  return { onSelect, onCreateNewDoc };
+  return { onSelect, onCreateNewDoc, onSortChange, onGroupChange };
 }
 
 describe("DocsSidebarBody — 최근 바뀐 문서 (목록 안 조용한 섹션, 기본 접힘)", () => {
@@ -147,6 +161,10 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
           onTagSelect={() => {}}
           onCreateNewDoc={() => {}}
           canCreateNewDoc
+          sort="name"
+          group="folders"
+          onSortChange={() => {}}
+          onGroupChange={() => {}}
           agentFiles={null}
         />
       </NextIntlClientProvider>,
@@ -217,5 +235,88 @@ describe("DocsSidebarBody — [D-4] 새 문서 진입점", () => {
     const button = screen.getByTestId("docs-sidebar-new-doc");
     expect(button).toBeInTheDocument();
     expect(button).toBeDisabled();
+  });
+});
+
+describe("DocsSidebarBody — 목록 순서 메뉴", () => {
+  // dogfood 최상위 폴더의 축소판 — 폴더와 문서가 이름순 한 줄에 섞이면
+  // 폴더가 문서 사이에 파묻힌다(실측: 96개짜리 ontology 폴더가 36행 중 23번째).
+  const tree: VaultManifest["tree"] = {
+    name: "root",
+    path: "",
+    type: "dir",
+    children: [
+      { name: "architecture", path: "architecture.md", type: "doc", slug: "architecture", title: "Architecture" },
+      {
+        name: "archive",
+        path: "archive",
+        type: "dir",
+        children: [
+          { name: "old", path: "archive/old.md", type: "doc", slug: "archive/old", title: "Old note" },
+        ],
+      },
+      { name: "backlog", path: "backlog.md", type: "doc", slug: "backlog", title: "Backlog" },
+      {
+        name: "benchmark",
+        path: "benchmark",
+        type: "dir",
+        children: [
+          { name: "run", path: "benchmark/run.md", type: "doc", slug: "benchmark/run", title: "Run" },
+        ],
+      },
+    ],
+  };
+  const iso = new Date().toISOString();
+  const docs = [
+    makeDoc("architecture", "Architecture", iso),
+    makeDoc("backlog", "Backlog", iso),
+    makeDoc("archive/old", "Old note", iso),
+    makeDoc("benchmark/run", "Run", iso),
+  ];
+
+  /** 트리 최상위 행의 라벨만 — 접힌 폴더 안은 보지 않는다. */
+  function treeLabels() {
+    const nav = screen.getByRole("navigation", {
+      name: koMessages.vaultWidgets.tree.navAria,
+    });
+    return [...nav.children].map(
+      (row) => row.querySelector("span.truncate")?.textContent?.trim() ?? "",
+    );
+  }
+
+  it("기본은 폴더 먼저 — 폴더가 문서 사이에 흩어지지 않는다", () => {
+    renderSidebar(docs, { tree });
+    expect(treeLabels().slice(0, 2)).toEqual(["archive", "benchmark"]);
+  });
+
+  it("문서 먼저를 고르면 문서가 앞으로 온다", () => {
+    renderSidebar(docs, { tree, group: "docs" });
+    expect(treeLabels().slice(0, 2)).toEqual(["Architecture", "Backlog"]);
+  });
+
+  it("메뉴는 접혀 있고, 열면 두 축을 따로 보여준다", () => {
+    renderSidebar(docs, { tree });
+    expect(screen.queryByTestId("docs-sidebar-order-menu")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("docs-sidebar-order-toggle"));
+    expect(screen.getByTestId("docs-sidebar-order-menu")).toBeInTheDocument();
+    expect(screen.getByTestId("docs-sidebar-order-sort-recent")).toBeInTheDocument();
+    expect(screen.getByTestId("docs-sidebar-order-group-docs")).toBeInTheDocument();
+  });
+
+  it("고른 값에 체크가 붙는다 — 지금 무슨 순서인지 메뉴가 답한다", () => {
+    renderSidebar(docs, { tree, sort: "recent", group: "docs" });
+    fireEvent.click(screen.getByTestId("docs-sidebar-order-toggle"));
+    expect(screen.getByTestId("docs-sidebar-order-sort-recent")).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByTestId("docs-sidebar-order-sort-name")).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByTestId("docs-sidebar-order-group-docs")).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("한 줄을 고르면 그 축만 바뀌고 메뉴가 닫힌다", () => {
+    const { onSortChange, onGroupChange } = renderSidebar(docs, { tree });
+    fireEvent.click(screen.getByTestId("docs-sidebar-order-toggle"));
+    fireEvent.click(screen.getByTestId("docs-sidebar-order-sort-recent"));
+    expect(onSortChange).toHaveBeenCalledWith("recent");
+    expect(onGroupChange).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("docs-sidebar-order-menu")).not.toBeInTheDocument();
   });
 });

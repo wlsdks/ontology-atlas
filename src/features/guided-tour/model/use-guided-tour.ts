@@ -13,6 +13,14 @@ import {
 } from "./tour-storage";
 
 export interface UseGuidedTourArgs {
+  /**
+   * 이 투어가 밟을 단계 배열. 기본값은 지도의 8단계 여정(`TOUR_STEPS`) —
+   * 목적지 안내(문서함·공방·인사이트·프로젝트·기록)는 `DESTINATION_TOURS[id]`
+   * 를 넣어 **같은 상태기계**를 재사용한다(가이드 체계는 하나뿐이다). 아래
+   * 지도 전용 분기(`datasheet` 이탈 · `try-click` 자동 진행 · `agent` 개발자
+   * 분기)는 전부 step id 로 갈리므로 다른 배열에서는 조용히 지나간다.
+   */
+  steps?: readonly TourStep[];
   /** 지도에서 지금 노드가 선택돼 있는가 (`canvasSelectedSlug != null`). */
   hasSelection: boolean;
   /** testid/canvas-node 앵커가 지금 해석 가능한가 — HomePage 가 DOM/그래프
@@ -68,6 +76,17 @@ export interface UseGuidedTourResult {
    * 점프해 welcome 으로 조용히 리셋되는 루프가 있었다).
    */
   devBranchAvailable: boolean;
+  /**
+   * 지금 [다음]을 누르면 투어가 끝나는가 — 카드가 [다음]/[완료] 라벨을 고르는
+   * 단 하나의 기준. **`visibleSteps` 의 끝인지로 판단하면 안 된다**:
+   * `visibleSteps` 는 "지금 이 순간 앵커가 해석되는 단계" 라는 요동치는
+   * 투영이라, 데이터시트 단계에서는 열린 상세 패널이 뒤의 INDEX/스포트라이트
+   * 앵커를 가려 목록이 거기서 끊긴다. 그런데 `advance()` 는 그 단계에서
+   * 끝내지 않고 패널을 닫은 뒤 DOM 을 다시 읽어 다음 장으로 간다. 길이로
+   * 판단하면 5/7 에서 [완료] 가 그려지고 눌리는 순간 투어가 조기 종료됐다
+   * (2026-07-26 e2e 실측). 그래서 판정을 `advance()` 와 같은 조건으로 맞춘다.
+   */
+  isFinalStep: boolean;
 }
 
 /**
@@ -76,11 +95,17 @@ export interface UseGuidedTourResult {
  * 후의 배열이라 진행 점 분모(N/M)가 곧 `visibleSteps.length`.
  */
 export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
-  const { hasSelection, canResolveAnchor, storageKey = GUIDED_TOUR_STATUS_KEY, onLeaveDatasheet } = args;
+  const {
+    steps = TOUR_STEPS,
+    hasSelection,
+    canResolveAnchor,
+    storageKey = GUIDED_TOUR_STATUS_KEY,
+    onLeaveDatasheet,
+  } = args;
 
   const [open, setOpen] = useState(false);
   const [persona, setPersona] = useState<TourPersona>("all");
-  const [stepId, setStepId] = useState<string>(TOUR_STEPS[0].id);
+  const [stepId, setStepId] = useState<string>(steps[0]?.id ?? "");
   // testid 앵커의 DOM 해석은 resize/레이아웃 변화에 따라 바뀔 수 있어 별도
   // tick 으로 재계산을 강제한다(persona/hasSelection 변화만으론 부족).
   const [resolveTick, setResolveTick] = useState(0);
@@ -106,13 +131,13 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
 
   const visibleSteps = useMemo(
     () =>
-      computeVisibleSteps(TOUR_STEPS, {
+      computeVisibleSteps(steps, {
         persona,
         hasSelection,
         canResolveAnchor,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- resolveTick은 DOM 재해석 트리거일 뿐 값을 안 읽는다
-    [persona, hasSelection, canResolveAnchor, resolveTick],
+    [steps, persona, hasSelection, canResolveAnchor, resolveTick],
   );
 
   const stepIndex = visibleSteps.findIndex((s) => s.id === stepId);
@@ -120,8 +145,8 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
 
   // 진행 표시 전용 고정 여정 — 위 인터페이스 주석 참조.
   const personaSteps = useMemo(
-    () => TOUR_STEPS.filter((s) => s.persona === "all" || s.persona === persona),
-    [persona],
+    () => steps.filter((s) => s.persona === "all" || s.persona === persona),
+    [steps, persona],
   );
   const personaStepIndex = step ? personaSteps.findIndex((s) => s.id === step.id) : -1;
 
@@ -167,10 +192,18 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
         ? document.activeElement
         : null;
     setPersona("all");
-    setStepId(TOUR_STEPS[0].id);
+    setStepId(steps[0]?.id ?? "");
     setResolveTick((t) => t + 1);
     setOpen(true);
-  }, []);
+  }, [steps]);
+
+  // `advance()` 의 종료 조건과 같은 식 — 인터페이스 주석의 이유로 두 값이
+  // 갈라지면 라벨이 거짓말을 한다.
+  const leavesDatasheetOnAdvance = Boolean(
+    step?.id === "datasheet" && onLeaveDatasheet && hasSelection,
+  );
+  const isFinalStep =
+    stepIndex >= 0 && !leavesDatasheetOnAdvance && visibleSteps[stepIndex + 1] === undefined;
 
   const advance = useCallback(() => {
     if (stepIndex < 0) return;
@@ -197,7 +230,7 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     let cancelled = false;
     window.queueMicrotask(() => {
       if (cancelled) return;
-      const fresh = computeVisibleSteps(TOUR_STEPS, {
+      const fresh = computeVisibleSteps(steps, {
         persona,
         hasSelection: false,
         canResolveAnchor,
@@ -214,7 +247,7 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     return () => {
       cancelled = true;
     };
-  }, [hasSelection, open, persona, canResolveAnchor, finish]);
+  }, [steps, hasSelection, open, persona, canResolveAnchor, finish]);
 
   const back = useCallback(() => {
     if (stepIndex <= 0) return;
@@ -233,16 +266,16 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
   // 8단계(agent) 앵커 해석 가능 여부 — visibleSteps 와 같은 재해석 트리거
   // (resolveTick)를 공유해 DOM 변화(첫 실행 카드 dismiss 등)를 따라간다.
   const devBranchAvailable = useMemo(() => {
-    const agentStep = TOUR_STEPS.find((s) => s.id === "agent");
+    const agentStep = steps.find((s) => s.id === "agent");
     if (!agentStep) return false;
     return agentStep.anchor === null ? true : canResolveAnchor(agentStep.anchor);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- resolveTick은 DOM 재해석 트리거일 뿐 값을 안 읽는다
-  }, [canResolveAnchor, resolveTick]);
+  }, [steps, canResolveAnchor, resolveTick]);
 
   const chooseDevBranch = useCallback(() => {
     // 방어선 — 버튼이 숨겨지기 전의 stale 클릭이라도 welcome 리셋 루프 대신
     // 정상 종료("구경 끝"과 동일)로 수렴시킨다.
-    const agentStep = TOUR_STEPS.find((s) => s.id === "agent");
+    const agentStep = steps.find((s) => s.id === "agent");
     const resolvable =
       agentStep !== undefined &&
       (agentStep.anchor === null || canResolveAnchor(agentStep.anchor));
@@ -252,7 +285,7 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     }
     setPersona("dev");
     setStepId("agent");
-  }, [canResolveAnchor, finish]);
+  }, [steps, canResolveAnchor, finish]);
 
   // 4단계(try-click) 자동 진행 — 실제 노드 클릭(hasSelection false→true 전환)
   // 을 기다렸다가 다음으로. `queueMicrotask` defer 는 `use-sample-node-hint.ts`
@@ -285,7 +318,7 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     let cancelled = false;
     window.queueMicrotask(() => {
       if (cancelled) return;
-      const fresh = computeVisibleSteps(TOUR_STEPS, {
+      const fresh = computeVisibleSteps(steps, {
         persona,
         hasSelection: true,
         canResolveAnchor,
@@ -302,7 +335,7 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     return () => {
       cancelled = true;
     };
-  }, [hasSelection, open, step, persona, canResolveAnchor, finish]);
+  }, [steps, hasSelection, open, step, persona, canResolveAnchor, finish]);
 
   // 투어를 새로 열 때는 그 이전 세션의 선택 여부를 기준선으로 다시 잡는다 —
   // 이미 선택된 노드가 있는 채로 열려도 "방금 클릭" 으로 오판해 4단계를
@@ -328,5 +361,6 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
     finishAsDone,
     chooseDevBranch,
     devBranchAvailable,
+    isFinalStep,
   };
 }

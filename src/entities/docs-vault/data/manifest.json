@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T01:30:38.000Z",
+  "generatedAt": "2026-07-26T02:43:37.209Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,21 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 인사이트: 질문 하나에 탭 하나 (구조 탭 3분할 + 잉크 삭감)",
+          "slug": "2026-07-26-인사이트-질문-하나에-탭-하나-구조-탭-3분할-잉크-삭감"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 — 목적지마다 \"여기가 뭐 하는 곳인지\" 안내",
+          "slug": "2026-07-26-목적지마다-여기가-뭐-하는-곳인지-안내"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 — 문서함 목록 순서: 폴더 먼저 · 최근 수정순",
+          "slug": "2026-07-26-문서함-목록-순서-폴더-먼저-최근-수정순"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-25 — 지도 클러스터 칩: 라벨 겹침 차단 + 전개 코호트 표시",
           "slug": "2026-07-25-지도-클러스터-칩-라벨-겹침-차단-전개-코호트-표시"
         },
@@ -4843,9 +4858,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 실보고 두 건. +N 칩이 노드 이름 위에 겹쳐 그려졌고, 칩을 눌러 펼쳐도 \"무엇이 열렸는지\" 표시가 없어 자기 행동의 결과가 안 보였다. 겹침:",
-      "wordCount": 40287,
-      "updatedAt": "2026-07-25T22:27:59+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 구조 탭 하나가 서로 다른 세 질문(\"뭐가 얼마나 있나 / 뭐가 중심인가 / 경계가 건강한가\")을 한 방에 쌓고 있었다. 도그푸드 볼트(294 개념 · 4",
+      "wordCount": 40857,
+      "updatedAt": "2026-07-26T02:43:37.209Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5476,8 +5491,8 @@
         },
         {
           "depth": 3,
-          "text": "Padding — 2단",
-          "slug": "padding-2단"
+          "text": "Padding — 램프를 두지 않는다 (2026-07-26 정리)",
+          "slug": "padding-램프를-두지-않는다-2026-07-26-정리"
         },
         {
           "depth": 3,
@@ -5601,8 +5616,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 14799,
-      "updatedAt": "2026-07-26T10:30:38+09:00",
+      "wordCount": 14888,
+      "updatedAt": "2026-07-26T11:13:35+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -5795,6 +5810,11 @@
         },
         {
           "depth": 4,
+          "text": "목적지 안내 (`DestinationGuide`, 2026-07-26, `src/features/guided-tour`)",
+          "slug": "목적지-안내-destinationguide-2026-07-26-srcfeaturesguided-tour"
+        },
+        {
+          "depth": 4,
           "text": "Top-left brand pill (`HeroCollapsed`, compact-only since 2026-06-11)",
           "slug": "top-left-brand-pill-herocollapsed-compact-only-since-2026-06-11"
         },
@@ -5880,8 +5900,8 @@
         },
         {
           "depth": 3,
-          "text": "`/ontology/insights` — Insights (3-tab dashboard, rebuilt 2026-07-18)",
-          "slug": "ontologyinsights-insights-3-tab-dashboard-rebuilt-2026-07-18"
+          "text": "`/ontology/insights` — Insights (5-tab maintenance board, 질문 단위 재편 2026-07-26)",
+          "slug": "ontologyinsights-insights-5-tab-maintenance-board-질문-단위-재편-2026-07-26"
         },
         {
           "depth": 4,
@@ -5890,18 +5910,28 @@
         },
         {
           "depth": 4,
-          "text": "Tab 1 — 개요 Overview",
-          "slug": "tab-1-개요-overview"
+          "text": "Tab 1 — 할 일 Do next",
+          "slug": "tab-1-할-일-do-next"
         },
         {
           "depth": 4,
-          "text": "Tab 2 — 관계 Relations",
-          "slug": "tab-2-관계-relations"
+          "text": "Tab 2 — 구성 Inventory",
+          "slug": "tab-2-구성-inventory"
         },
         {
           "depth": 4,
-          "text": "Tab 3 — 신선도 Freshness",
-          "slug": "tab-3-신선도-freshness"
+          "text": "Tab 3 — 연결 Connections",
+          "slug": "tab-3-연결-connections"
+        },
+        {
+          "depth": 4,
+          "text": "Tab 4 — 경계 Boundaries",
+          "slug": "tab-4-경계-boundaries"
+        },
+        {
+          "depth": 4,
+          "text": "Tab 5 — 신선도 Freshness",
+          "slug": "tab-5-신선도-freshness"
         },
         {
           "depth": 4,
@@ -6150,8 +6180,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
-      "wordCount": 12143,
-      "updatedAt": "2026-07-25T07:16:43+09:00",
+      "wordCount": 12616,
+      "updatedAt": "2026-07-26T11:13:04+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -9538,7 +9568,7 @@
       ],
       "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. 정체성 (2026-07): agent-native, human-sovereign. 에이전트를 위한 메모리가 아니라 에이전트가 1급 사용자인 공유 의미 계층 — 에이전트는 MCP/CLI 로 신선도를 유지하는 엔진이자 최대 소비자, 사람은 평문 마크다운·git diff·로컬 디스크 진실원을 통한 의미의 최종 결정권자. 훅은 에이전트 통증(\"코드베이스 장기 구조를 까먹는다\"), 본질은 공유 계층. 이 프로젝트의 ontology 는 비즈니",
       "wordCount": 180,
-      "updatedAt": "2026-07-26T10:30:38+09:00",
+      "updatedAt": "2026-07-26T11:12:41+09:00",
       "linksOut": []
     },
     {
