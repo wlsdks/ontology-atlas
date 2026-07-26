@@ -87,7 +87,7 @@ test.describe("ontology view UI", () => {
     const topologyLink = page
       .getByTestId("project-selector-card")
       .filter({ hasText: "ontology-atlas" })
-      .getByRole("link", { name: "View in topology →" });
+      .getByRole("link", { name: "View in topology" });
     await expect(topologyLink).toBeVisible();
     const linkBox = await topologyLink.boundingBox();
     expect(linkBox).not.toBeNull();

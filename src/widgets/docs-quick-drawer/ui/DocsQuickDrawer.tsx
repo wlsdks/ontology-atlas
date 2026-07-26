@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowUpRight,
   BookOpen,
   ChevronDown,
   ChevronRight,
@@ -532,7 +531,6 @@ export function DocsQuickDrawer({
                   >
                     <BookOpen size={11} />
                     {t("openAllLabel")}
-                    <ArrowUpRight size={11} />
                   </Link>
                   <button
                     type="button"

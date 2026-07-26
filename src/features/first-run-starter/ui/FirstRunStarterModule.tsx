@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowRight, ChevronRight, FolderOpen } from "lucide-react";
+import { ChevronRight, FolderOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
@@ -276,7 +276,6 @@ export function FirstRunStarterModule({
             className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
           >
             {t("unsupportedCta")}
-            <ArrowRight size={12} aria-hidden />
           </Link>
         </div>
       ) : (

@@ -10,6 +10,10 @@
 - 움직이는 그라디언트 배경 · 오로라
 - scale 기반 hover (`hover:scale-*`)
 - 둘 이상의 채색 시스템 (인디고 외 새 brand color 추가)
+- 라벨 끝의 장식 화살표 (`열기 →`, 라벨 뒤 `ArrowRight`/`ArrowUpRight` 아이콘)
+  — 정보를 나르는 화살표(경로·순서·인과·외부 링크 선행 `↗`)는 예외.
+  게이트: `tests/contract/label-decoration.contract.test.ts`
+- 반복 카드 세트에서 높이가 글자 수로 정해지게 두기 (치수 규칙성)
 
 **[강등됨 2026-07-24] 구 "온톨로지 스튜디오 게임 예외"는 폐기됐다.** 한때
 `/ontology/studio` 의 `.studio-stage` 안에서 `--studio-*` 토큰으로 glow/gradient/

@@ -3,31 +3,73 @@ import { getTopologyFocusHref } from "@/entities/project";
 import { TopologyV2KindGlyph } from "@/shared/ui";
 import type { DomainCompositionCard } from "../model/domain-composition";
 
+/**
+ * 카드 하나가 보여줄 상위 역량 개수. **상수다 — 데이터에 따라 흔들리지 않는다.**
+ *
+ * 3개 이상을 보여주기 시작하면 카드가 리스트로 퇴화하고, 카드마다 높이가 달라져
+ * 격자가 격자로 안 읽힌다. 넘치는 몫은 발줄("N개 더")과 카드 진입(지도 focus)이
+ * 담당한다 (Shneiderman: details on demand).
+ */
+const CAPABILITY_SLOTS = 2;
+
 interface Props {
   domains: DomainCompositionCard[];
   maxTotal: number;
   capabilityLabel: string;
   elementLabel: string;
-  moreLine: (elementCount: number, moreCapabilityCount: number) => string;
+  /** 넘치는 역량 수 안내. `moreCapabilityCount === 0` 이면 호출되지 않는다. */
+  moreLine: (moreCapabilityCount: number) => string;
 }
 
 /**
- * 프로젝트 상세 zone 2 — "도메인 구성" 3×N machined 카드 그리드. 각 카드는
- * `/topology?mode=focus&p=domain:<slug>` 로 이동(row = topology focus 진입점,
- * design gate 의 "typed fact 는 그래프로 확인 가능해야" 원칙). capacity meter
- * 는 가장 큰 도메인(0번째, 이미 total desc 정렬됨)만 인디고로 강조.
+ * 프로젝트 상세 "도메인 구성" 카드 격자. 각 카드는
+ * `/topology?mode=focus&p=domain:<slug>` 로 이동한다 — 화면의 typed fact 는
+ * 그래프에서 확인 가능해야 한다는 design gate 원칙.
+ *
+ * ## 카드 높이는 내용이 아니라 해부구조가 정한다
+ *
+ * 소유자 지적(2026-07-26): *"박스 사이즈가 안맞지? 삐뚤빼뚤해보이는거말야"*.
+ *
+ * 원인은 카드마다 채워지는 **줄 수**가 달랐던 것이다 — 역량이 1개인 도메인은
+ * 목록이 한 줄, 발줄도 카드에 따라 1절("요소 2개")과 2절("요소 2개 · 역량 1개
+ * 더") 사이를 오갔다. 그리드는 행 안에서만 stretch 하므로 행끼리도 안 맞았다.
+ *
+ * 그래서 슬롯을 고정했다:
+ *
+ * - 목록은 항상 `CAPABILITY_SLOTS` 줄 — 역량이 하나뿐이면 **빈 슬롯을 자리만
+ *   남긴 채** 둔다. 없는 줄은 아래 것들을 끌어올려 정렬을 깨뜨린다.
+ * - 발줄은 항상 존재하되 **넘침 전용 한 절**이다. 요소 수는 위 계량 행이 유일한
+ *   자리다 — 같은 수치를 한 카드에서 두 번 쓰지 않는다 (Tufte).
+ * - `grid-auto-rows: 1fr` 은 해부구조가 지켜지면 발동할 일 없는 안전망이다.
+ *
+ * 대가는 정직하게: 작은 vault 에서는 빈 슬롯이 허공으로 보인다. 눈이 훑는
+ * 반복 세트에서만 치를 값어치가 있는 대가다.
  */
-export function DomainCompositionGrid({ domains, maxTotal, capabilityLabel, elementLabel, moreLine }: Props) {
+export function DomainCompositionGrid({
+  domains,
+  maxTotal,
+  capabilityLabel,
+  elementLabel,
+  moreLine,
+}: Props) {
   return (
-    <div className="grid grid-cols-1 gap-[var(--card-gap)] sm:grid-cols-2 lg:grid-cols-3">
+    <div
+      className="grid grid-cols-1 gap-[var(--card-gap)] sm:grid-cols-2 lg:grid-cols-3"
+      style={{ gridAutoRows: "1fr" }}
+    >
       {domains.map((domain, index) => {
         const percent = maxTotal > 0 ? Math.round((domain.total / maxTotal) * 100) : 0;
+        // 빈 슬롯까지 포함한 고정 길이 — 렌더가 데이터 길이에 끌려가지 않는다.
+        const capabilitySlots = Array.from(
+          { length: CAPABILITY_SLOTS },
+          (_, slot) => domain.topCapabilities[slot] ?? null,
+        );
         return (
           <Link
             key={domain.id}
             href={getTopologyFocusHref(domain.id)}
             data-testid="project-detail-domain-card"
-            className="group flex flex-col rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
+            className="group flex flex-col rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
           >
             <div className="flex items-center gap-2">
               <TopologyV2KindGlyph kind="domain" size={16} />
@@ -42,6 +84,7 @@ export function DomainCompositionGrid({ domains, maxTotal, capabilityLabel, elem
               </span>
             </div>
 
+            {/* 계량 행 — 역량·요소 수의 **유일한** 자리. */}
             <div className="mt-2.5 flex items-center gap-2.5">
               <span className="h-1 flex-1 overflow-hidden rounded-full bg-[color:var(--color-border-soft)]">
                 <span
@@ -72,14 +115,27 @@ export function DomainCompositionGrid({ domains, maxTotal, capabilityLabel, elem
             </div>
 
             <div className="mt-2 flex flex-1 flex-col">
-              {domain.topCapabilities.map((title) => (
-                <div key={title} className="flex items-center gap-1.5 py-0.5 text-[12.5px] text-[color:var(--color-text-secondary)]">
-                  <TopologyV2KindGlyph kind="capability" size={13} />
-                  <span className="min-w-0 flex-1 truncate">{title}</span>
+              {capabilitySlots.map((title, slot) => (
+                <div
+                  key={title ?? `empty-${slot}`}
+                  aria-hidden={title === null}
+                  className="flex items-center gap-1.5 text-[12.5px] text-[color:var(--color-text-secondary)]"
+                  style={{ height: "var(--card-row-h)" }}
+                >
+                  {title === null ? null : (
+                    <>
+                      <TopologyV2KindGlyph kind="capability" size={13} />
+                      <span className="min-w-0 flex-1 truncate">{title}</span>
+                    </>
+                  )}
                 </div>
               ))}
-              <span className="mt-auto pt-1 text-[11px] text-[color:var(--color-text-quaternary)]">
-                {moreLine(domain.elementCount, domain.moreCapabilityCount)}
+              {/* 발줄은 비어도 자리를 지킨다 — 사라지면 카드 높이가 흔들린다. */}
+              <span
+                className="mt-auto pt-1 text-[11px] text-[color:var(--color-text-quaternary)]"
+                aria-hidden={domain.moreCapabilityCount === 0}
+              >
+                {domain.moreCapabilityCount > 0 ? moreLine(domain.moreCapabilityCount) : " "}
               </span>
             </div>
           </Link>

@@ -515,7 +515,7 @@ export function ProjectDrawer({
                       }}
                       className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-amber-docs-a45)] bg-[color:var(--color-amber-docs-a10)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-amber-docs-a65)] hover:bg-[color:var(--color-amber-docs-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-amber-docs-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                     >
-                      {t("openContainerTopology")} <ArrowUpRight size={14} />
+                      {t("openContainerTopology")}
                     </button>
                   ) : onEnterContainer && project.isHub && !activeProjectId ? (
                     // Layer 0 Hub — 아직 컨테이너에 진입 안 한 상태. primary
@@ -529,7 +529,7 @@ export function ProjectDrawer({
                       }}
                       className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                     >
-                      {t("openHubTopology")} <ArrowUpRight size={14} />
+                      {t("openHubTopology")}
                     </button>
                   ) : project.isHub && activeProjectId ? (
                     // Layer 1 Hub — 이미 해당 컨테이너 안에서 이 허브를
@@ -546,7 +546,7 @@ export function ProjectDrawer({
                         onClick={handleDetailClick}
                         className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                       >
-                        {t("openProjectDetail")} <ArrowUpRight size={14} />
+                        {t("openProjectDetail")}
                       </Link>
                       <Link
                         href={docsVaultHref}
@@ -612,7 +612,6 @@ export function ProjectDrawer({
                             className="inline-flex items-center gap-2 rounded-md border border-[color:var(--color-divider)] px-2.5 py-1.5 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
                           >
                             <span>{relatedProjects[0]!.name}</span>
-                            <ArrowUpRight size={12} aria-hidden="true" />
                           </button>
                           {relatedProjects.length > 1 ? (
                             <p className="text-xs text-[color:var(--color-text-tertiary)]">
