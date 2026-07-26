@@ -35,14 +35,14 @@ const PAST_WALKS: TopologyPastWalkRow[] = [
     routeLabel: "AI 에이전트 파트너 → 화면(뷰)",
     metaLabel: "오늘 · 12곳",
     replayable: true,
-    ariaLabel: "오늘에 걸은 길 다시 펴기 — 12곳",
+    ariaLabel: "이 길 다시 펴기 — 오늘, 12곳",
   },
   {
     id: "w2",
     routeLabel: "Core → El Y",
     metaLabel: "어제 · 4곳",
     replayable: true,
-    ariaLabel: "어제에 걸은 길 다시 펴기 — 4곳",
+    ariaLabel: "이 길 다시 펴기 — 어제, 4곳",
   },
 ];
 
@@ -322,7 +322,7 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     openPast();
     expect(screen.getAllByTestId("topology-trail-past-replay")[0]).toHaveAttribute(
       "aria-label",
-      "오늘에 걸은 길 다시 펴기 — 12곳",
+      "이 길 다시 펴기 — 오늘, 12곳",
     );
   });
 
@@ -334,7 +334,7 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
           routeLabel: "지워진 곳 → 지워진 곳",
           metaLabel: "지금 지도에 없어요",
           replayable: false,
-          ariaLabel: "",
+          ariaLabel: null,
         },
       ],
     });

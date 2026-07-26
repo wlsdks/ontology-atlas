@@ -1494,7 +1494,11 @@ export function HomePage() {
             ? t("footprint.pastRowMeta", { date, count: entries.length })
             : t("footprint.pastDeadRowMeta"),
           replayable,
-          ariaLabel: t("footprint.pastReplayAriaLabel", { date, count: entries.length }),
+          // 못 펴는 길은 라벨도 만들지 않는다 — 버튼이 없는데 "0곳 다시 펴기"를
+          // 계산해 들고 있으면 그 문자열이 언젠가 다른 표면으로 샌다.
+          ariaLabel: replayable
+            ? t("footprint.pastReplayAriaLabel", { date, count: entries.length })
+            : null,
         };
       });
   }, [refinedPastWalks, sessionWalkId, activeLocale, mountNowMs, t]);

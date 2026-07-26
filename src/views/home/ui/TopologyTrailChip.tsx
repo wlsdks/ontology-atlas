@@ -62,8 +62,12 @@ export interface TopologyPastWalkRow {
    * 정직하다. 지우기(✕)는 그대로 남는다.
    */
   replayable: boolean;
-  /** 행 버튼 aria — "{날짜}에 걸은 길 다시 펴기 — {count}곳". */
-  ariaLabel: string;
+  /**
+   * 행 버튼 aria — "이 길 다시 펴기 — 오늘, 12곳". 다시 펼 수 없는 길은 버튼이
+   * 없으므로 라벨도 없다(null) — 쓰이지 않는 문자열을 계산해 들고 있으면
+   * "0곳 다시 펴기" 같은 거짓말이 조용히 다른 표면으로 샌다.
+   */
+  ariaLabel: string | null;
 }
 
 /** `모두 지우기` 2단 확인이 첫 상태로 돌아가는 시간. */
@@ -345,11 +349,18 @@ export function TopologyTrailChip({
                             setShowPast(false);
                             setClearAllArmed(false);
                           }}
-                          aria-label={walk.ariaLabel}
+                          aria-label={walk.ariaLabel ?? undefined}
                           data-testid="topology-trail-past-replay"
-                          className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 self-stretch rounded-chip px-1.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                          // 어포던스는 배경이 아니라 **텍스트 리프트**가 나른다 —
+                          // overlay-1 hover 는 이 표면에서 1.03:1 이라 사실상 안
+                          // 보인다. 1층 행이 이미 secondary→primary 리프트로
+                          // "눌린다"를 말하고 있어 같은 문법을 그대로 쓴다.
+                          // 텍스트가 자식 span 이라 캐스케이드가 막히므로 group 경유.
+                          className="group flex min-w-0 flex-1 flex-col justify-center gap-0.5 self-stretch rounded-chip px-1.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]"
                         >
-                          <span className="w-full truncate text-body text-[color:var(--color-text-secondary)]">
+                          {/* 리프트는 1줄만 — 2줄까지 올리면 2줄 위계가 무너지고
+                              "승자 없음"이던 2층에 승자가 생긴다. */}
+                          <span className="w-full truncate text-body text-[color:var(--color-text-secondary)] transition-colors group-hover:text-[color:var(--color-text-primary)]">
                             {walk.routeLabel}
                           </span>
                           <span className="w-full truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
@@ -358,7 +369,12 @@ export function TopologyTrailChip({
                         </button>
                       ) : (
                         <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-1.5">
-                          <span className="truncate text-body text-[color:var(--color-text-quaternary)]">
+                          {/* 강등하되 바닥까지 내리지는 않는다 — 이 행에서 사용자가
+                              해야 할 유일한 일이 "어느 길을 지울지 읽는 것"이라
+                              그 텍스트를 램프 최하단에 두면 역방향이다. 살아있는
+                              행(secondary)보다 확실히 아래, 캡션(quaternary)보다
+                              위 — 3단이어야 2줄이 1줄을 설명하는 관계가 읽힌다. */}
+                          <span className="truncate text-body text-[color:var(--color-text-tertiary)]">
                             {walk.routeLabel}
                           </span>
                           <span className="truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
