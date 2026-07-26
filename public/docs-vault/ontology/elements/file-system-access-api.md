@@ -37,3 +37,15 @@ vault bridge), not merely that the property exists. Unsupported browsers are
 demoted before invocation and receive the macOS app path. User cancellation is
 recognized by abort name or the normalized abort message so cross-realm and
 non-DOMException picker paths return silently without a write or error alert.
+
+## 2026-07-27 ontology block parity
+
+Ontology block exchange now follows the same runtime split instead of checking
+only the browser global. INDEX import and realm export call the browser picker
+on the hosted/web surface and `pick_vault_directory` in the installed Tauri
+runtime. `src/shared/lib/tauri-vault-fs.ts` exposes `values()` as well as
+`entries()` on its directory-handle shim, so the existing recursive block reader
+can traverse nested markdown folders without a second desktop parser. Native
+dialog titles name the import/export intent; returning `null` on cancel is a
+no-write, no-error state. Import still passes through the existing dry-run
+conflict plan and explicit confirm action before `createDoc` writes anything.

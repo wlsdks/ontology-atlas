@@ -279,9 +279,10 @@ fn metadata_mtime_ms(path: &Path) -> Result<u128, String> {
 }
 
 #[tauri::command]
-fn pick_vault_directory() -> Result<Option<String>, String> {
+fn pick_vault_directory(dialog_title: Option<String>) -> Result<Option<String>, String> {
+    let title = dialog_title.as_deref().unwrap_or("Open ontology vault");
     Ok(rfd::FileDialog::new()
-        .set_title("Open ontology vault")
+        .set_title(title)
         .pick_folder()
         .map(|path| path.to_string_lossy().to_string()))
 }

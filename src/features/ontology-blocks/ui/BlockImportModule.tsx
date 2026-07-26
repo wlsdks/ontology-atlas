@@ -7,6 +7,10 @@ import { useTranslations } from "next-intl";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { isPickerAbort } from "@/shared/lib/picker-abort";
+import {
+  isTauriVaultRuntime,
+  pickTauriVaultDirectory,
+} from "@/shared/lib/tauri-vault-fs";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { parseBlockManifest } from "../model/block-manifest";
 import { readBlockDirectory, type BlockDirectoryHandleLike } from "../model/block-fsa";
@@ -78,18 +82,25 @@ export function BlockImportModule() {
 
   // 키 존재(`in`)가 아니라 호출 가능한지로 판정 — 값이 undefined 인 환경에서
   // "지원함"으로 오판하면 원문 JS 오류가 사용자 문구 자리에 그려진다.
+  // 설치 앱은 같은 폴더 IO 계약을 구현한 Tauri picker/shim을 사용한다.
   const supported =
-    typeof window !== "undefined" && typeof window.showDirectoryPicker === "function";
+    (typeof window !== "undefined" && typeof window.showDirectoryPicker === "function") ||
+    isTauriVaultRuntime();
 
   const pickBlockFolder = async () => {
     if (!vaultLoaded) return;
     setInlineText(null);
     try {
-      const dir = (await (
-        window as unknown as {
-          showDirectoryPicker: (opts?: { mode?: "read" | "readwrite" }) => Promise<unknown>;
-        }
-      ).showDirectoryPicker({ mode: "read" })) as BlockDirectoryHandleLike;
+      const dir = (isTauriVaultRuntime()
+        ? await pickTauriVaultDirectory(t("importAria"))
+        : await (
+            window as unknown as {
+              showDirectoryPicker: (opts?: {
+                mode?: "read" | "readwrite";
+              }) => Promise<unknown>;
+            }
+          ).showDirectoryPicker({ mode: "read" })) as BlockDirectoryHandleLike | null;
+      if (!dir) return;
       const { files, manifestRaw } = await readBlockDirectory(dir);
       if (files.length === 0) {
         setInlineText({ kind: "error", text: t("importEmpty") });

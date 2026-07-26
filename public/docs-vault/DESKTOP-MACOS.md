@@ -120,7 +120,12 @@ for a macOS prototype:
   `@tauri-apps/api/core` `invoke` / `isTauri` API, so the desktop app reuses
   the same `buildLocalManifest`, editor save, image preview, conflict guard, and
   agent-config bootstrap flows that the web prototype uses without depending on
-  private Tauri WebView internals.
+  private Tauri WebView internals. The same shim now exposes the `values()`
+  iterator used by ontology-block recursion, so INDEX block import and realm
+  block export use a purpose-titled native folder picker in the installed app
+  instead of being disabled when WebView `showDirectoryPicker()` is absent.
+  Import still opens a dry-run merge preview before any vault write; cancelling
+  either native picker leaves the current vault and realm state unchanged.
 - the shim preserves browser File System Access create semantics: asking for a
   file handle with `{ create: true }` creates a missing file, but it first checks
   `vault_path_exists` and does not truncate an existing markdown file.

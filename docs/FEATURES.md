@@ -198,6 +198,14 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Shift-click 2 nodes** → highlight shortest path
 - **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded.
 - **Expand realm (영역 전개)** → focus a node (click) and an orbital **Expand realm** button appears just outside its ring (also offered as an action in the node datasheet, for container nodes). Activating it transforms the map into *that node's world*: only its containment subtree remains, re-laid-out with the node as a temporary root at the origin (children map to rings by **depth**, not kind), and everything outside unmounts behind a 1px indigo warding circle. Relations crossing the boundary fade to a stub at the ring. The transition is a 600ms choreography — outside nodes fling out along curved "gravity" trajectories, inside nodes FLIP to their new spots, the camera dollies in to fit the realm (`prefers-reduced-motion` snaps instantly). The active realm lives in the URL (`?realm=slug`) so a shared link or an AI agent reproduces the same world; a top-center **영역: {title} ✕** chip and **Esc** (highest ladder priority) return to the full map. Click, `?open` density gating, selective ego, and top-K labels all still work inside a realm.
+- **Ontology block exchange** → INDEX의 **블록 가져오기**는 `.md` 폴더와 선택적
+  `block-manifest.json`을 읽어 신규/충돌 dry-run을 먼저 보여주고, 사람이
+  승인한 파일만 현재 vault의 기존 `createDoc` 경로로 쓴다. 영역 전개 화면의
+  **이 영역의 원본 .md 를 블록 폴더로 내보내기**는 containment 서브트리의
+  원본만 복사한다. 웹은 `showDirectoryPicker()`, 설치 앱은 같은
+  `FileSystemDirectoryHandle` 계약의 native Tauri picker를 사용한다.
+  picker 취소는 오류나 쓰기가 아니며, CLI-only 대체 경로는
+  `ontology-atlas import <path...>`이다.
 - **Tab** → keyboard cycle to neighbor hub
 - **Empty state** (0–1 nodes) → `TopologyEmptyState` card with 3 CTAs (tree / builder / open vault)
 - **Filter active** → bottom-left "filter · N / TOTAL" badge

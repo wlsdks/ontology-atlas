@@ -9,10 +9,16 @@ interface MockVault {
 }
 
 const mocks = vi.hoisted(() => ({ vault: null as unknown as MockVault }));
+const tauriMocks = vi.hoisted(() => ({
+  isTauriVaultRuntime: vi.fn(() => false),
+  pickTauriVaultDirectory: vi.fn(),
+}));
 
 vi.mock('@/features/docs-vault-local', () => ({
   useLocalVault: () => mocks.vault,
 }));
+
+vi.mock('@/shared/lib/tauri-vault-fs', () => tauriMocks);
 
 vi.mock('next-intl', () => ({
   useTranslations: () => {
@@ -104,6 +110,8 @@ async function openPreview() {
 describe('BlockImportModule', () => {
   beforeEach(() => {
     mocks.vault = makeVault();
+    tauriMocks.isTauriVaultRuntime.mockReturnValue(false);
+    tauriMocks.pickTauriVaultDirectory.mockReset();
     stubPicker(fakeBlockDir(BLOCK_FILES));
   });
 
@@ -132,6 +140,23 @@ describe('BlockImportModule', () => {
       'capabilities/session',
     );
     // 승인 전 쓰기 0.
+    expect(mocks.vault.createDoc).not.toHaveBeenCalled();
+  });
+
+  it('uses the native Tauri folder picker when the WebView has no browser picker', async () => {
+    delete (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker;
+    tauriMocks.isTauriVaultRuntime.mockReturnValue(true);
+    tauriMocks.pickTauriVaultDirectory.mockResolvedValue(fakeBlockDir(BLOCK_FILES));
+
+    render(<BlockImportModule />);
+    const button = screen.getByTestId('block-import-open');
+    expect(button).toBeEnabled();
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('block-import-dialog')).toBeInTheDocument();
+    });
+    expect(tauriMocks.pickTauriVaultDirectory).toHaveBeenCalledWith('importAria');
     expect(mocks.vault.createDoc).not.toHaveBeenCalled();
   });
 

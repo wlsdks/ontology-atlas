@@ -51,15 +51,21 @@ describe('tauri vault file-system shim', () => {
   });
 
   it('picks a native folder and exposes the root path for persistence', async () => {
-    installInvoke(({ command }) => {
+    const calls = installInvoke(({ command }) => {
       if (command === 'pick_vault_directory') return '/Users/me/vault';
       throw new Error(`unexpected command: ${command}`);
     });
 
-    const handle = await pickTauriVaultDirectory();
+    const handle = await pickTauriVaultDirectory('Import ontology block');
 
     expect(handle?.name).toBe('vault');
     expect(getTauriVaultRootPath(handle!)).toBe('/Users/me/vault');
+    expect(calls).toEqual([
+      {
+        command: 'pick_vault_directory',
+        args: { dialogTitle: 'Import ontology block' },
+      },
+    ]);
   });
 
   it('returns null when the native folder picker is cancelled', async () => {
@@ -138,6 +144,29 @@ describe('tauri vault file-system shim', () => {
       command: 'list_vault_directory',
       args: { rootPath: '/vault', relativePath: '' },
     });
+  });
+
+  it('exposes the values iterator required by ontology block import', async () => {
+    installInvoke(({ command }) => {
+      if (command === 'list_vault_directory') {
+        return [
+          { name: 'docs', kind: 'directory' },
+          { name: 'README.md', kind: 'file' },
+        ];
+      }
+      throw new Error(`unexpected command: ${command}`);
+    });
+    const root = createTauriVaultHandle('/vault');
+
+    const values = [];
+    for await (const handle of root.values()) {
+      values.push([handle.kind, handle.name]);
+    }
+
+    expect(values).toEqual([
+      ['directory', 'docs'],
+      ['file', 'README.md'],
+    ]);
   });
 
   it('reads markdown through the text command and binary assets through the binary command', async () => {

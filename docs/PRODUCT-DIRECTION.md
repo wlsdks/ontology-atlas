@@ -363,7 +363,11 @@ adding the Tauri icon set derived from `public/logo.png` and a repo-owned
 `hdiutil` DMG packager. The desktop shell now has a native Tauri vault bridge:
 when WebView `showDirectoryPicker` is unavailable, it opens a native folder
 dialog and adapts that folder into the same manifest/editor/image handle shape
-used by the web prototype. The desktop root now waits for stored-vault restore;
+used by the web prototype. The same adapter now carries ontology-block
+import/export as well: INDEX import recursively reads the selected `.md` block
+through the shim's `values()` iterator and keeps the approval-before-write merge
+preview, while realm export writes its bounded subtree through a purpose-titled
+native picker. The desktop root now waits for stored-vault restore;
 if no vault is loaded in the Tauri runtime, it routes to `/docs/?intent=local`
 and shows a vault setup welcome instead of showing the hosted marketing
 landing page or immediately throwing a native picker over the workspace. The desktop picker also persists recent Tauri vault paths and can

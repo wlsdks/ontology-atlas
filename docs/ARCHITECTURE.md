@@ -136,6 +136,10 @@ The directory layout is enforced by `eslint-plugin-boundaries` in `eslint.config
    separate local-source tab (browsing a second vault as a documentation
    source inside that page) stays desktop-gated — that is a narrower, older
    feature unrelated to opening your primary vault from the map.
+6. Ontology block import/export follows the same split: browser
+   `showDirectoryPicker()` or the Tauri `FileSystemDirectoryHandle` shim feeds
+   one recursive block reader/writer. Import plans conflicts before writing;
+   native or browser picker cancellation has no side effect.
 
 The MCP server is independent: it reads the same vault directory through the
 filesystem (Node.js `fs`), not the WebView bridge. AI agents and the installed app end up with the same view.
@@ -159,9 +163,10 @@ This is the "first impression" state — visitors see a real ontology
 /topology                  same hub, explicit entry point (canvas-2D map/graph engine)
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
-/ontology/edit             ERD canvas builder (xyflow)
-/ontology/studio           immersive "강화(enhancement) screen" — node-as-game-item (scoped design exception)
+/ontology/edit             legacy redirect → /ontology/studio (forwards ?node=)
+/ontology/studio           restrained Compass Stage write surface (enhance/create)
 /ontology/insights         graph insights (kind dist · hubs · edge types)
+/git                       local vault git history / snapshot workbench
 /projects                  project list (cards)
 /project/[slug]            project detail (inline edit when vault loaded)
 /project/[slug]/edit       full project editor

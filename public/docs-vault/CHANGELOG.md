@@ -6,6 +6,29 @@
 
 ---
 
+## 2026-07-27 — 설치 앱에서도 온톨로지 블록을 가져오고 내보낸다
+
+설치된 macOS 앱에서 INDEX의 `블록 가져오기`와 영역 화면의 블록 내보내기가
+브라우저 `showDirectoryPicker()` 부재만 보고 비활성화되던 결함을 고쳤다.
+일반 vault 열기는 이미 native Tauri 폴더 선택과 재귀 읽기·쓰기를 지원했지만,
+블록 UI 두 곳만 그 bridge를 사용하지 않아 설치 앱이 실제 capability를 없다고
+안내하고 있었다.
+
+이제 웹은 기존 File System Access API를, 설치 앱은 같은
+`FileSystemDirectoryHandle` 계약의 Tauri picker/shim을 사용한다. shim에
+`values()` iterator를 보강해 중첩 `.md` 블록을 같은 재귀 reader로 읽고,
+native picker 제목도 가져오기/내보내기 목적을 그대로 말한다. 가져오기는
+여전히 폴더 선택 뒤 신규·충돌 dry-run을 먼저 보여주고 승인 전 쓰기 0,
+취소 시 상태 무변 계약을 지킨다.
+
+최신 production 앱을 `/Applications/Ontology Atlas.app`에 배포한 뒤 Codex
+Computer Use로 disabled 문구가 사라지고 `블록 가져오기`가 활성화된 것,
+macOS native picker, `새 노드 3 · 충돌 8` 병합 프리뷰, 취소 후 무변 상태를
+확인했다. 연결된 프로젝트의 영역 화면에서도 내보내기 버튼과 목적별 native
+picker가 활성화되고 취소 뒤 정상 복귀함을 확인했다.
+
+---
+
 ## 2026-07-27 — AI 설정의 “없음·잘못됨·준비됨”을 행동과 맞췄다
 
 AI 에이전트 연결 화면이 invalid `.mcp.json`을 발견하고도

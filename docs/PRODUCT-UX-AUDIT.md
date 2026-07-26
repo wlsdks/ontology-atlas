@@ -1136,7 +1136,7 @@
 ### UX-032 — 설치 앱의 블록 가져오기가 폴더 선택 미지원으로 비활성화됨
 
 - 심각도: `S2`
-- 상태: 열림 — Tauri bridge 의도와 제품 문구를 먼저 확인
+- 상태: 수정·설치 앱 재검증 완료
 - 흐름: 저장된 local vault 복원 → 지형도 INDEX 하단 → `블록 가져오기`
 - 관측 현상: 설치된 macOS 앱의 AX 트리에서 버튼이 disabled이고 도움말은
   `이 환경은 폴더 선택을 지원하지 않아요`였다. 문서함·공방·인사이트·프로젝트·
@@ -1149,7 +1149,46 @@
   안내와 대체 경로를 제공하며, bridge가 이미 있으면 기존 경로를 재사용한다.
 - 설치 앱·Computer Use 증거: 1100px 창과 macOS 전체화면에서 동일한 disabled
   상태를 읽었다. 다른 전역 surface의 h1과 핵심 액션은 AX 트리에 정상 노출됐다.
-- PO·디자인 판정: **Investigate first**
+- 조사 결과: 일반 vault 열기는 이미 `pick_vault_directory` → 재귀 목록/읽기/
+  쓰기 → `FileSystemDirectoryHandle` 호환 shim을 사용한다. 블록 UI 두 곳만
+  `showDirectoryPicker()` 존재를 직접 검사해 설치 앱 경로를 차단하고 있었다.
+  새 파일 포맷·권한·저장소 없이 같은 bridge를 재사용할 수 있다.
+- PO pass:
+  - 사용자/순간: 설치 앱에서 열린 vault에 다른 온톨로지 블록을 병합하려는 사람.
+  - 현재 대안: CLI `ontology-atlas import`로 이탈하거나 브라우저 환경을 다시 연다.
+  - 문제: 설치 앱이 실제로 가진 폴더 capability를 없다고 말해 로컬-퍼스트
+    작업 흐름과 제품 신뢰를 끊는다.
+  - 온톨로지·에이전트 가치: 승인 전 dry-run 병합 프리뷰와 기존 vault write
+    경로를 유지하므로, 사람의 선택과 에이전트가 읽는 같은 markdown graph가
+    계속 단일 진실원이다.
+  - 범위/단순화: 새 가져오기 UI나 Tauri 권한을 만들지 않는다. 기존 native
+    picker와 FSA shim에 필요한 iterator 계약만 보강하고 가져오기·내보내기
+    양쪽에서 같은 선택 함수를 쓴다.
+  - 검증: bridge 단위 테스트, import/export UI 회귀 테스트, TypeScript 및
+    desktop gate, `/Applications/Ontology Atlas.app` 재배포 뒤 Codex Computer
+    Use로 enabled 상태와 native picker 진입을 확인한다.
+- 디자인 pass:
+  - attention winner: INDEX의 기존 `블록 가져오기` 행. 새 패널·배지·모션은 없다.
+  - 상태 계약: vault 없음=disabled, 지원 런타임=enabled, 취소=상태 무변,
+    선택=기존 병합 프리뷰, 승인 전 쓰기 0.
+  - 반응형/14-inch 규칙: 기존 한 줄 행과 병합 다이얼로그의 geometry를 바꾸지
+    않아 1100px·14-inch·1920·2560 계약을 그대로 유지한다.
+  - graph/agent 계약: `.md`와 `block-manifest.json`만 읽고 기존 `createDoc`
+    경로로 쓰며 CLI `import` 대체 경로도 유지한다.
+- 회귀 증거: block import/export + Tauri shim 집중 테스트 31개, desktop
+  bridge Vitest 35개와 Rust 70개, TypeScript, production static build,
+  `desktop:check`, 설치 앱 launch/WebView 검증이 통과했다.
+- 최종 설치 앱 증거: 최신 production 앱을
+  `/Applications/Ontology Atlas.app`에 배포했다. Codex Computer Use AX
+  트리에서 INDEX의 `블록 가져오기`가 enabled이고 도움말이
+  `블록 폴더를 골라 병합 미리보기 열기`임을 확인했다. 클릭하면 같은 문구를
+  제목으로 가진 macOS native picker가 열렸고, 테스트 vault 선택 뒤
+  `파일 11개 · 새 노드 3 · 슬러그 충돌 8 · 3개 가져오기` 프리뷰가 나타났다.
+  `취소` 뒤 프리뷰가 닫히고 원래 지도 상태로 돌아와 승인 전 쓰기 0도 유지됐다.
+  연결된 `내 프로젝트` 영역에서는
+  `이 영역의 원본 .md 를 블록 폴더로 내보내기` 버튼이 enabled였고,
+  같은 목적 문구의 native picker를 연 뒤 취소하면 영역 상태로 정상 복귀했다.
+- PO·디자인 판정: **Build and verify**
 
 ### UX-033 — AI 연결 화면이 현재 32도구 MCP를 24도구라고 안내
 
