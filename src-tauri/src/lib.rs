@@ -16,7 +16,6 @@ mod llm;
 /// LLM 호출 감사 로그 — "기록 못 하면 보내지 않는다" 의 구현체.
 mod llm_audit;
 mod secrets;
-mod terminal;
 
 const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
@@ -631,7 +630,6 @@ fn disable_webview_frame_rate_cap(window: &tauri::WebviewWindow) {
 pub fn run() {
     tauri::Builder::default()
         .manage(VaultWatcherState::default())
-        .manage(terminal::TerminalState::default())
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Regular);
@@ -5781,10 +5779,6 @@ pub fn run() {
             secrets::secret_clear,
             llm::secret_verify,
             llm::llm_chat,
-            terminal::terminal_open,
-            terminal::terminal_write,
-            terminal::terminal_resize,
-            terminal::terminal_close,
             git::git_status,
             git::git_probe,
             git::git_init,

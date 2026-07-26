@@ -24,7 +24,6 @@ serde_json = "1"
 sha2 = "0.10"
 chrono = { version = "0.4", default-features = false, features = ["std", "now"] }
 notify-debouncer-full = "0.3"
-portable-pty = "0.9"
 keyring = { version = "3", features = ["apple-native"] }
 
 # objc2 는 tauri 가 이미 끌어오는 transitive dep — 신규 공급망 표면 0.
