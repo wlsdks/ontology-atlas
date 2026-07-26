@@ -31,6 +31,21 @@ The page resolves docs-vault query slug aliases across packaged and local vault 
 
 When a URL query slug is still being normalized from packaged to local form, the default document fallback is deferred. That prevents deep links from briefly selecting the README or a recent record before the intended local ontology note is applied.
 
+Product-owned documentation deep links can also declare
+`?source=server&sample=dogfood&slug=<packaged-slug>`. The explicit source keeps
+an installed app with a loaded local vault on packaged docs, while the
+route-scoped sample override selects the full dogfood documentation bundle
+instead of the smaller storefront example that does not contain product
+runbooks. Together they resolve the requested record instead of silently
+falling back to the local `README` or an empty storefront canvas. Neither
+override overwrites the user's stored local source or sample preference, and
+choosing a source in the document UI clears both.
+
+The page passes that same route-selected bundled content into
+`DocsVaultViewer`. Manifest lookup and markdown body lookup therefore use one
+sample source; a dogfood title cannot be paired with storefront content and
+degrade into a `Load failed` canvas.
+
 Open source-record tabs and the explicitly active source record are persisted
 per vault. Route memory keeps the full locale route including query and hash,
 and listens to same-surface URL changes, so reopening the installed app returns

@@ -2,7 +2,10 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { MouseEventHandler, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { requestSettingsView } from '@/shared/lib/settings-view-intent';
-import { AppSettingsMenu } from './AppSettingsMenu';
+import {
+  AGENT_GRAPH_WORKFLOW_HREF,
+  AppSettingsMenu,
+} from './AppSettingsMenu';
 
 const mocks = vi.hoisted(() => ({
   isDesktopRuntime: false,
@@ -207,6 +210,12 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     // 뒤로가기 헤더 — 루트 시트로 복귀.
     fireEvent.click(screen.getByTestId('app-settings-agent-back'));
     expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
+  });
+
+  it('targets the packaged Agent Graph Workflow instead of the active local README', () => {
+    expect(AGENT_GRAPH_WORKFLOW_HREF).toBe(
+      '/docs/?source=server&sample=dogfood&slug=AGENT-GRAPH-WORKFLOW',
+    );
   });
 
   it('summarizes agent state as a single row value while no vault is loaded', () => {

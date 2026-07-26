@@ -68,3 +68,17 @@ was rebuilt and checked through Codex Computer Use: Settings → AI Agent
 Connection → Advanced showed `index_project` among 32 tools in both the
 first-contact proof and MCP-connected mode guidance. Stale 24-tool copy is no
 longer an accepted setup signal.
+
+The Advanced panel's feature-guide action now carries an explicit packaged
+Docs Vault contract:
+`/docs/?source=server&sample=dogfood&slug=AGENT-GRAPH-WORKFLOW`. A loaded local
+vault therefore cannot replace the promised Agent Graph Workflow with its own
+`README`, and a persisted storefront example cannot hide the runbook behind an
+empty 31-document sample. The route-scoped source and sample overrides do not
+overwrite the user's stored local-vault or sample preference, so returning to
+ordinary Docs Vault work restores the user's folder and chosen example. The
+shipped proof is the installed app's resulting URL, source selector, document
+title, and current CLI/MCP runbook text read through Codex Computer Use.
+The packaged runbook is current as of 2026-07-27 and names the measured CLI 52
+commands, MCP 32 tools (read 19 + write 13), 96 dogfood nodes, 543 relations,
+and zero graph issues.

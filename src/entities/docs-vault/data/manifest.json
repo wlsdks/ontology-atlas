@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T16:55:13.736Z",
+  "generatedAt": "2026-07-26T17:19:13.329Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -55,9 +55,9 @@
           "slug": "recommended-first-user-flow"
         }
       ],
-      "excerpt": "Current as of 2026-05-28. This is the user-facing guide for running ontology-atlas as a local PC graph memory: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is",
-      "wordCount": 2367,
-      "updatedAt": "2026-07-27T01:53:12+09:00",
+      "excerpt": "Current as of 2026-07-27. This is the user-facing guide for running ontology-atlas as a local PC graph memory: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is",
+      "wordCount": 2338,
+      "updatedAt": "2026-07-26T17:14:46.264Z",
       "linksOut": []
     },
     {
@@ -219,7 +219,7 @@
       ],
       "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
       "wordCount": 1936,
-      "updatedAt": "2026-07-24T23:45:18+09:00",
+      "updatedAt": "2026-07-27T01:56:01+09:00",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -2457,7 +2457,7 @@
       ],
       "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 96 노드, CLI 52 commands, MCP 32 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
       "wordCount": 1666,
-      "updatedAt": "2026-07-26T16:53:25.273Z",
+      "updatedAt": "2026-07-27T01:56:01+09:00",
       "linksOut": []
     },
     {
@@ -7044,8 +7044,8 @@
         }
       ],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultAgentSetupPanel (merged into AppSettingsMenu's vault / mcpAgents tabs, B2 2026-07 — the former VaultToolsMenu docs-header dropdown was retired to remove the duplicate surface) exposes the setup gate in the same language a",
-      "wordCount": 1369,
-      "updatedAt": "2026-07-27T01:53:22+09:00",
+      "wordCount": 1498,
+      "updatedAt": "2026-07-26T17:15:18.904Z",
       "linksOut": []
     },
     {
@@ -7841,7 +7841,7 @@
       ],
       "excerpt": "Claude Code 가 코드 변경 후 자동으로 호출하는 user-invocable skill. .claude/skills/ontology-sync/SKILL.md 한 파일이 곧 surface — 새 capability / element / domain 가 등장하면 MCP write 도구 (addconcept / patchconcept / addrelation) 로 vault 에 반영하라는 워크플로를 LLM 에게 지시한다. MCP 서버가 런타임 도구 라면 이 skill 은 사용 규약 — read-then-write, 중복 slug 회피, 5 줄 changelog re",
       "wordCount": 109,
-      "updatedAt": "2026-07-26T16:53:25.275Z",
+      "updatedAt": "2026-07-27T01:56:01+09:00",
       "linksOut": []
     },
     {
@@ -10021,8 +10021,8 @@
         }
       ],
       "excerpt": "src/views/docs-vault/ui/DocsVaultPage.tsx renders the /docs Source Vault surface. This surface is the human-facing document view over the same local markdown vault that MCP agents read and write. It keeps the current source, selected record, editor state, command palette, graph handoff copy, and local vault persistence",
-      "wordCount": 823,
-      "updatedAt": "2026-07-25T04:08:29+09:00",
+      "wordCount": 947,
+      "updatedAt": "2026-07-26T17:15:18.903Z",
       "linksOut": []
     },
     {
@@ -10498,7 +10498,7 @@
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
       "wordCount": 4920,
-      "updatedAt": "2026-07-26T16:53:25.274Z",
+      "updatedAt": "2026-07-27T01:56:01+09:00",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -10983,8 +10983,8 @@
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다. 4. 실패 테스트를 먼",
-      "wordCount": 10593,
-      "updatedAt": "2026-07-26T16:55:13.736Z",
+      "wordCount": 10727,
+      "updatedAt": "2026-07-26T17:19:13.329Z",
       "linksOut": []
     },
     {
@@ -11251,7 +11251,7 @@
       ],
       "excerpt": "이 폴더는 Ontology Atlas 를 만드는 사람들이 쓰는 기술 문서 모음입니다. 제품이 무엇인지 알고 싶어서 들어오셨다면 이 목록이 아니라 지도 화면을 먼저 보세요 — 제품이 어떤 영역으로 나뉘고 각 영역에 무엇이 들어 있는지 그림 한 장으로 보여 줍니다. 아래 표는 \"어떤 주제를 어느 문서에서 찾는가\" 를 정리한 색인입니다. This folder is the working documentation for people building Ontology Atlas. If you came here to learn what the product is, open the ",
       "wordCount": 916,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "updatedAt": "2026-07-27T01:56:01+09:00",
       "linksOut": [
         "../README",
         "PRODUCT-OWNER-OPERATING-SYSTEM",
@@ -11316,7 +11316,7 @@
       ],
       "excerpt": "2026-07-17 기준 전 레이어 조사(웹 프론트·데스크톱·CLI/MCP·LLM/Layer 2 인프라 4건) 후 확정한 판정. 판정 원칙: 검증된 스택은 유지가 기본값 (전면 재작성 반려 판정과 동일 논리 — 교체는 측정된 이득이 마이그레이션 비용을 명확히 넘을 때만). 다음 전면 재검토: 2027-01 또는 갈림길 조건 발화 시. 일부 조사는 세션 검색 예산 소진으로 학습 데이터+공식 문서 fetch 기반 — ⚠ 표기 항목은 실행 전 재검증. · 레이어 · 현재 · 판정 · 근거 · Next.js · 16.2.x static export · KEEP · stati",
       "wordCount": 881,
-      "updatedAt": "2026-07-23T11:32:37+09:00",
+      "updatedAt": "2026-07-27T01:56:01+09:00",
       "linksOut": []
     },
     {

@@ -70,6 +70,8 @@ type SettingsTriggerVariant = 'header-pill' | 'rail-tile' | 'chrome-tile';
 
 const SETTINGS_LOCALE_FOCUS_KEY = 'ontology-atlas:settings-locale-focus';
 const SETTINGS_LOCALE_FOCUS_MAX_AGE_MS = 10_000;
+export const AGENT_GRAPH_WORKFLOW_HREF =
+  '/docs/?source=server&sample=dogfood&slug=AGENT-GRAPH-WORKFLOW';
 
 interface SettingsLocaleFocusIntent {
   locale: string;
@@ -255,12 +257,13 @@ export function AppSettingsMenu({
     return { errorCount: summary.errorCount, warningCount: summary.warningCount };
   })();
 
-  // AGENT-GRAPH-WORKFLOW 가이드는 문서함(/docs) 안 드로어라 설정 메뉴에서
-  // 직접 열 수 없다 — 설정을 닫고 문서함으로 이동해 사용자가 이어서 연다.
+  // 설치 앱의 local vault 가 활성 상태여도 제품에 내장된 현재 runbook 을 연다.
+  // source=server 는 사용자 vault README 와 같은 slug fallback 으로 조용히
+  // 바뀌는 일을 막되, 저장된 local source 선호 자체는 덮어쓰지 않는다.
   const handleOpenWorkflowGuide = () => {
     setOpen(false);
-    rememberRouteFocusIntent('/docs/');
-    router.push(buildRouteFocusHref('/docs/'));
+    rememberRouteFocusIntent(AGENT_GRAPH_WORKFLOW_HREF);
+    router.push(buildRouteFocusHref(AGENT_GRAPH_WORKFLOW_HREF));
   };
   const vaultHref =
     mode === 'local' ? '/docs/' : isDesktopRuntime ? '/docs/?intent=local' : '/download/';

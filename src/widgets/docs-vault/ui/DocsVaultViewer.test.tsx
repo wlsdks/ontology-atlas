@@ -45,6 +45,21 @@ function renderViewer(
 }
 
 describe("DocsVaultViewer", () => {
+  it("uses the parent-selected bundled content instead of re-reading another sample preference", async () => {
+    renderViewer("ignored", {
+      getDocContent: undefined,
+      bundledContent: {
+        README: "# Route-owned packaged workflow",
+      },
+    });
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Route-owned packaged workflow",
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("keeps section copy anchors inside the mobile reading column", async () => {
     renderViewer("## Section One\n\nBody text.");
 

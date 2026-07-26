@@ -5,6 +5,7 @@ import {
   DOCS_VAULT_SOURCE_KEY,
   escapeHtml,
   isDocsVaultLocalSourceDisabled,
+  parseDocsVaultSource,
   parseDocsVaultView,
   persistEditorSave,
   readStoredListCollapsed,
@@ -28,6 +29,15 @@ describe("parseDocsVaultView", () => {
     expect(parseDocsVaultView(undefined)).toBe("doc");
     expect(parseDocsVaultView("")).toBe("doc");
     expect(parseDocsVaultView("alien")).toBe("doc");
+  });
+});
+
+describe("parseDocsVaultSource", () => {
+  it("accepts only explicit server/local source values", () => {
+    expect(parseDocsVaultSource("server")).toBe("server");
+    expect(parseDocsVaultSource("local")).toBe("local");
+    expect(parseDocsVaultSource("README")).toBeNull();
+    expect(parseDocsVaultSource(null)).toBeNull();
   });
 });
 
@@ -116,6 +126,10 @@ describe("source storage", () => {
 describe("shouldPreferLocalOnLanding (C5)", () => {
   it("prefers local when a vault is loaded and current source is Sample", () => {
     expect(shouldPreferLocalOnLanding("loaded", "server")).toBe(true);
+  });
+
+  it("keeps an explicit packaged-doc deep link on Sample without changing the stored local preference", () => {
+    expect(shouldPreferLocalOnLanding("loaded", "server", "server")).toBe(false);
   });
 
   it("does not re-flip when already local", () => {

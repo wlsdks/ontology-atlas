@@ -56,7 +56,7 @@
 | A29 | 재배포 → 저장 vault 복원 → 4개 viewport → 주요 6개 surface 왕복 | 일반 화면·AX 이동 통과, 선택 관계 검증 입력 격리 실패는 UX-031로 추적 |
 | A30 | 설정 → AI 에이전트 연결 → 고급 검증·handoff 문구 읽기 | 24→32 tool inventory 수정, 완료형 설정 CTA 모순은 UX-034로 추적 |
 | A31 | CLI/MCP 현재 inventory → 활성 문서·프로토타입·fixture 교차 확인 | 52 CLI·32 MCP로 동기화, 역사/legacy 입력은 보존 |
-| A32 | AI 연결 → `기능 문서 열기` → Agent Graph Workflow 읽기 | 설명과 달리 local vault README로 이동, UX-036으로 추적 |
+| A32 | AI 연결 → `기능 문서 열기` → Agent Graph Workflow 읽기 | packaged dogfood runbook URL·본문·현재 inventory 설치 앱 검증 완료 |
 
 ## 이슈 장부
 
@@ -1226,7 +1226,7 @@
 ### UX-036 — `기능 문서 열기`가 약속한 내장 문서 대신 local README를 엶
 
 - 심각도: `S2`
-- 상태: 열림 — route/source 계약 조사 후 최소 navigation 수정
+- 상태: 수정·설치 앱 재검증 완료
 - 흐름: 저장된 local vault → 설정 → AI 에이전트 연결 → 고급 검증 →
   `기능 문서 열기`
 - 관측 현상: 버튼 도움말은 CLI/MCP/graph DB 차이와 실제 검증 명령을 설명하는
@@ -1240,10 +1240,29 @@
 - 최소화: 새 화면을 만들지 않는다. Docs Vault의 source 선택과 deep-link
   계약을 확인해, 버튼이 실제 내장 `AGENT-GRAPH-WORKFLOW` 문서를 열도록 한다.
   local vault 선택과 열린 사용자 문서 탭은 손상하지 않아야 한다.
-- 설치 앱·Computer Use 증거: 최신 설치 앱에서 버튼을 실제 클릭한 뒤 AX 트리가
-  `tauri://localhost/ko/docs/?slug=README`, `내 온톨로지 문서함`,
-  local 문서 11개를 보고했다.
-- PO·디자인 판정: **Investigate first**
+- 수정: 버튼은
+  `/docs/?source=server&sample=dogfood&slug=AGENT-GRAPH-WORKFLOW`를 연다.
+  URL source/sample override는 저장된 local vault·sample 선호를 바꾸지 않고,
+  문서함에서 사용자가 source를 바꾸면 해제된다. 페이지가 선택한 bundled
+  content를 viewer에도 직접 전달해 목록은 dogfood인데 본문은 storefront를
+  읽는 source 분리도 막았다.
+- 발견 순서: 첫 설치 앱은 local `README`로 이동했다. explicit server source를
+  넣은 다음에는 저장된 31문서 storefront manifest에 runbook이 없어 빈 화면이
+  됐다. dogfood sample을 지정한 뒤에는 목록·제목은 맞지만 viewer가 전역
+  storefront content를 읽어 `Load failed`가 났다. 세 source 경계를 각각
+  고정한 뒤에야 제목과 본문이 같은 runbook을 읽었다.
+- 설치 앱·Computer Use 증거: `/Applications/Ontology Atlas.app`을 다시
+  배포하고 설정 → AI 에이전트 연결 → 고급 → `기능 문서 열기`를 실제 클릭했다.
+  AX 트리는
+  `tauri://localhost/ko/docs/?source=server&sample=dogfood&slug=AGENT-GRAPH-WORKFLOW`,
+  샘플 선택, 전체 158·가이드 62·지도 문서 96, `Agent Graph Workflow` 본문을
+  보고했다. 본문에서 `Current as of 2026-07-27`, CLI 52 commands, MCP 32
+  local tools, 19 read tools, 13 write tools, 96 nodes, 543 edges를 읽었고
+  `Load failed`는 없었다.
+- 회귀 방지: route/source/sample/persistence/viewer 테스트와
+  `launch-docs-current.test.ts`가 packaged runbook의 CLI·MCP·dogfood 수치를
+  실제 metadata/census와 대조한다.
+- PO·디자인 판정: **Build and verify**
 
 ### 2026-07-27 반복 측정 기록
 
@@ -1282,7 +1301,7 @@
 - A30 에이전트 handoff tool inventory: **Build and verify**,
   invalid 설정 CTA 의미는 **Investigate first**
 - A31 CLI/MCP 활성 문서 inventory: **Build and verify**
-- A32 내장 기능 문서 navigation/source 계약: **Investigate first**
+- A32 내장 기능 문서 navigation/source 계약: **Build and verify**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

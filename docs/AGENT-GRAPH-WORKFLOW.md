@@ -1,6 +1,6 @@
 # Agent Graph Workflow
 
-> Current as of 2026-05-28. This is the user-facing guide for running
+> Current as of 2026-07-27. This is the user-facing guide for running
 > `ontology-atlas` as a local PC graph memory: CLI-only, MCP-connected, and web
 > workbench flows over the same markdown vault.
 
@@ -88,7 +88,8 @@ session can trust the local CLI graph path before scanning or writing.
 You can use the product without connecting Claude Code, Codex, Cursor, or any
 MCP client.
 
-The CLI reads the same local vault and can run graph-database-style queries:
+The CLI currently exposes 52 commands over the same local vault, including
+graph-database-style queries:
 
 ```bash
 ontology-atlas validate docs/ontology
@@ -141,12 +142,14 @@ parsing Markdown.
 ## What MCP Adds
 
 MCP is the agent interface. When Claude Code, Codex, or Cursor has the
-`ontology-atlas` MCP server registered, the agent can call 24 local tools:
+`ontology-atlas` MCP server registered, the agent can call 32 local tools:
 
-- 16 read tools: node listing, evidence search, backlinks, paths, validation,
-  compile, repo analysis, import inference, project indexing, and graph queries.
-- 8 write tools: add, patch, relation write, rename, merge, and delete with
-  dry-run or conflict safety where needed.
+- 19 read tools: connection and git state, node listing, evidence search,
+  backlinks, neighbors, paths, validation, compile, repo analysis, import
+  inference, project indexing, and graph queries.
+- 13 write tools: document absorption, single/batch node and relation writes,
+  patch/reclassify, relation removal/replacement, rename, merge, delete, and git
+  snapshot with dry-run, idempotency, or conflict safety where needed.
 
 MCP adds three things that terminal-only use does not provide as naturally:
 
@@ -221,7 +224,7 @@ Use this scan-to-proof checklist:
 
 ## Actual Verification Snapshot
 
-These checks were run against this repository's dogfood vault on 2026-05-28.
+These checks were run against this repository's dogfood vault on 2026-07-27.
 
 CLI-only checks:
 
@@ -232,7 +235,7 @@ CLI-only checks:
   - `modeIds: ["cli_only", "mcp_connected", "graph_db_pack", "setup_gate"]`
 - `node cli/src/index.mjs match-nodes docs/ontology --kind capability --min-degree 2 --sort degree --limit 8 --json`
   - `operation: "match_nodes"`
-  - `totalMatches: 25`
+  - `totalMatches: 38`
   - `returned: 8`
   - `limited: true`
   - `followUp.focusSlug: "capabilities/cli-developer-entry"`
@@ -240,24 +243,22 @@ CLI-only checks:
   - `operation: "agent_fallback_check"`
   - `ok: true`
   - `performanceOk: true`
-  - `total: 25`
-  - `passed: 25`
+  - `total: 32`
+  - `passed: 32`
   - `failed: 0`
   - `slow: 0`
-  - `wallMs: 1332`
-  - `totalMs: 5161`
-  - slowest fallback: `blast-radius capabilities/cli-developer-entry --plan --depth 2`
-    at `361ms`
-- Human terminal view for the same gate printed:
-  - `setup gate ok=true performanceOk=true wall=1341ms slow=0/25 failed=0`
+  - `wallMs: 1993`
+  - `totalMs: 7928`
+  - slowest fallback: `match-edges --plan --types depends_on --limit 20`
+    at `377ms`
 - `node scripts/perf-graph.mjs --json --check --n=1000`
   - budgets: `compileMs <= 750`, `queryMs <= 750`
   - failures: `0`
   - 1000 generated nodes, 3867 generated edges
-  - `compile.fullMs: 17.69`
-  - `agent_brief: 20.67ms`
-  - `graph_db_pack: 37.17ms`
-  - `project_map: 9.26ms`
+  - median `compile.fullMs: 18.00`
+  - median `agent_brief: 25.26ms`
+  - median `graph_db_pack: 24.55ms`
+  - median `project_map: 8.16ms`
   - graph DB pack replayed 10 calls:
     `query_plan`, `match_nodes`, `query_plan`, `match_edges`,
     `domain_matrix`, `query_plan`, `centrality`, `query_plan`, `all_paths`,
@@ -266,36 +267,32 @@ CLI-only checks:
     `allPathsEvidenceStatus: "complete"`, and
     `explainRelationHasShortestPath: true`
 
-MCP-connected checks from this Codex session:
+Current graph and MCP-connected facts:
 
-- `compile_ontology({ summary: true })` returned graph hash
-  `ee65046d93839487ae14f81663a1a06e65ffe3e8d27320f30db66cc47853fe94`,
-  54 nodes, 372 edges, 190 resolved edges, 182 external edges, 0 unresolved
+- `compile --summary --json` returned graph hash
+  `94fcb427a7a230404bc757514ad3511a4a0559f2db79e5291fa2d1efa4634e6f`,
+  96 nodes, 543 edges, 318 resolved edges, 225 external edges, 0 unresolved
   edges, 0 issues, and 0 canonicalization actions.
-- `validate_vault` scanned 54 files with 0 problem files.
-- `workspace_brief` returned `status: "healthy"`, 1 project, 6 domains, 25
-  capabilities, 21 elements, 0 unresolved edges, 0 issues, and 0 growth
-  actions.
-- `health` returned `status: "healthy"`, 190 resolved edges, 182 external
-  edges, 1 connected component, 0 dependency cycles, 0 relation
-  recommendations, and all five checks passing:
-  `compile_issues`, `unresolved_edges`, `dependency_cycles`,
-  `relation_recommendations`, and `components`.
-- `match_nodes` over capabilities with `minDegree: 2` returned 25 total
-  matches, 5 rows in the MCP sample, and the same
+- Kind census: 38 capabilities, 47 elements, 6 domains, 3 documents, 1 project,
+  and 1 vault README.
+- `validate_vault` scanned all 96 files with 0 problem files.
+- `workspace_brief` and `agent_brief` returned `healthy`; readiness was
+  `100/100`, with 3 non-blocking external-element materialization suggestions.
+- `health` returned 0 compile issues, unresolved edges, dependency cycles, or
+  relation recommendations.
+- `match_nodes` over capabilities with `minDegree: 2` returned 38 total
+  matches and the same
   `followUp.focusSlug: "capabilities/cli-developer-entry"` evidence contract.
-- `domain_matrix` over `depends_on`, `relates`, and `describes` returned 6
-  domains, 52 assigned nodes, 41 cross-domain edges, 29 self-domain edges, and
-  0 unresolved edges.
 
 Installed MCP verifier:
 
 - `node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000`
-  - passed parser, server boot, 32-tool inventory, strict argument/enum checks,
-    destructive dry-runs, batch no-write checks, health/workspace/agent briefs,
-    graph query smokes, and structured content checks.
-  - compiled graph hash: `ee65046d9383`
-  - graph size: 54 nodes, 372 edges, 0 issues.
+  - passed parser, server boot, all 32 tools (`19` read, `13` write), strict
+    argument/enum checks, destructive dry-runs, batch no-write checks,
+    health/workspace/agent briefs, graph query smokes, and structured content
+    checks.
+  - compiled graph hash: `94fcb427a7a2`
+  - graph size: 96 nodes, 543 edges, 0 issues.
 
 ## Recommended First User Flow
 
