@@ -1,0 +1,63 @@
+# 단위 검증 게이트 — tsc · lint · vitest.
+#
+# 왜 있는가: 2026-07-26 까지 PR 에서 도는 것은 Playwright(15분)와 vault
+# 정합뿐이었다. `pnpm test:run` 3900여 개, `tsc`, `lint` 는 **한 번도 돌지
+# 않았다.** 그래서 `ProjectSelectorPage.test.tsx` 의 낡은 기대값이 main 에
+# 들어가 앉아 있다가 사람이 우연히 발견했고, 브랜치가 자기가 지운 모듈을
+# 자기가 import 하는 상태로 CI 를 세 번 깨뜨렸다.
+#
+# 이 잡은 Playwright 보다 **훨씬 빨라서** 오히려 먼저 답을 준다 — 타입/단위
+# 회귀는 여기서 몇 분 안에 걸리고, 느린 e2e 는 그 뒤에 온다.
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  checks:
+    name: Types · Lint · Unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 셋을 각각 별 스텝으로 둔다 — 한 스텝에 묶으면 어느 게 깨졌는지
+      # 로그를 뒤져야 한다. `if: always()` 로 첫 실패가 나머지를 가리지 않게.
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit
+
+      - name: Lint
+        if: always()
+        run: pnpm lint
+
+      - name: Unit + contract tests
+        if: always()
+        run: pnpm test:run
