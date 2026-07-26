@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T08:06:27.365Z",
+  "generatedAt": "2026-07-26T08:29:03.143Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 화면이 부르는 이름을 CLI·MCP 도 안다",
+          "slug": "2026-07-26-화면이-부르는-이름을-climcp-도-안다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — AI 연결: 눌러 본 것을 되돌릴 수 있게",
           "slug": "2026-07-26-ai-연결-눌러-본-것을-되돌릴-수-있게"
         },
@@ -4943,9 +4948,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 설치 앱 스크린샷을 본 소유자 지적 세 건. 그중 하나는 취향이 아니라 결함 이었다 — 「키 등록」을 눌러 열린 입력 카드에 「저장」밖에 없어서, 키를 넣",
-      "wordCount": 45511,
-      "updatedAt": "2026-07-26T08:06:27.365Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 지도가 296개를 개념이라 세는 동안 ontology-atlas overview 와 MCP listkinds 는 96개라고 답했다. 차이 200개는 다른 ",
+      "wordCount": 45887,
+      "updatedAt": "2026-07-26T08:29:03.143Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5722,7 +5727,7 @@
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
       "wordCount": 16239,
-      "updatedAt": "2026-07-26T08:06:08.227Z",
+      "updatedAt": "2026-07-26T17:25:51+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",

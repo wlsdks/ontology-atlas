@@ -37,6 +37,10 @@ export interface StudioSourceNode extends ConnectionSourceNode {
    * (`resolveStudioWriteTarget`).
    */
   hasOwnDocument?: boolean;
+  /** 문서가 없는 개념을 인용이 적어 둔 참조 원문 — 새 문서가 앉을 자리. */
+  ref?: string;
+  /** 에이전트에게 건네는 이름 (볼트 뿌리 기준). */
+  agentSlug?: string | null;
 }
 export type StudioSourceEdge = ConnectionSourceEdge;
 

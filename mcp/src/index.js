@@ -64,6 +64,7 @@ import {
   ensureVaultRoot,
   extractSummaryExcerpt,
   findBacklinks,
+  findGraphReferences,
   findOrphans,
   detectDuplicateTitle,
   findPath,
@@ -4457,17 +4458,28 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
 // R+ (과제 ⑧ — Ask-to-Grow) — "Doc not found" 텍스트는 그대로 두고
 // (get_concepts 배치/verify 계약이 정확한 문자열에 기대고 있다), growthHint
 // 만 Error 인스턴스에 실어 error() 가 structuredContent 로 얹는다.
-function docNotFoundError(slug) {
+function docNotFoundError(slug, docs) {
   const err = new Error(`Doc not found: ${slug}`);
   const candidateSlugs = suggestSimilarSlugs(VAULT_ROOT, slug);
+  // 볼트가 이 이름을 관계 키에 적어 두었는지 먼저 본다 — 화면(지도·인사이트)이
+  // 개념으로 세는 노드의 대부분은 문서가 없는 "참조로만 있는 개념" 이라, 그냥
+  // "없다" 로 답하면 사용자가 화면에서 베낀 이름이 매번 막다른 길이 된다.
+  let referencedBy = [];
+  try {
+    referencedBy = findGraphReferences(docs ?? loadVaultDocs(VAULT_ROOT), slug);
+  } catch {
+    // 볼트를 못 읽는 상황에서까지 오류 경로를 실패시키지 않는다.
+    referencedBy = [];
+  }
   err.repairFields = {
     missingSubject: 'Doc not found',
     missingSlug: slug,
     recoveryTools: ['list_concepts', 'find_evidence'],
     createTool: 'add_concept',
     similarSlugs: candidateSlugs,
+    ...(referencedBy.length > 0 ? { referencedBy } : {}),
   };
-  err.growthHint = buildSlugNotFoundGrowthHint({ slug, candidateSlugs });
+  err.growthHint = buildSlugNotFoundGrowthHint({ slug, candidateSlugs, referencedBy });
   return err;
 }
 
@@ -4475,7 +4487,7 @@ function getConcept({ slug }, context = {}) {
   requireNonBlankString(slug, 'slug');
   const canonicalSlug = resolveExistingVaultSlug(slug, context.docs);
   if (!canonicalSlug) {
-    throw docNotFoundError(slug);
+    throw docNotFoundError(slug, context.docs);
   }
   let doc;
   try {

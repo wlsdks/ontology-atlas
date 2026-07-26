@@ -11,16 +11,27 @@
  * 판정은 읽기 표면과 **같은 함수**(`resolveNodeDocument`)를 쓴다. 여기서 따로
  * 추정하면 오늘 하나로 합친 정의가 다시 갈라진다.
  *
- * `missing` 의 `slug` 는 그 개념을 인용한 문서가 이미 적어 둔 경로다 — 문서를
- * 이 자리에 만들어야 기존 인용이 그대로 이 문서를 가리킨다.
+ * `missing` 의 `slug` 는 그 개념을 인용한 문서가 이미 적어 둔 경로(`ref`)다 —
+ * 문서를 이 자리에 만들어야 기존 인용이 그대로 이 문서를 가리킨다. 인용
+ * 원문이 없는 노드에서만 kind 폴더 규칙으로 되짚는다.
  */
 
-import { resolveNodeDocument } from "@/entities/knowledge-graph";
+import { resolveNodeAgentTarget, resolveNodeDocument } from "@/entities/knowledge-graph";
 import { candidateFromNode, CREATE_NODE_KINDS, type CreateNodeKind } from "./build-create-node";
 
 export type StudioWriteTarget =
   /** 자기 `.md` 가 있다 — 거기에 쓴다. */
-  | { status: "existing"; slug: string }
+  | {
+      status: "existing";
+      /** 디스크에 쓸 때 쓰는 매니페스트 기준 경로 (로컬 볼트 write 대상). */
+      slug: string;
+      /**
+       * 복사해 주는 MCP 명령에 박히는 이름 — 에이전트가 물린 볼트 뿌리 기준.
+       * 번들 샘플에서는 매니페스트 경로 앞에 `ontology/` 한 조각이 더 붙어
+       * 있어 그대로 넘기면 붙여넣는 즉시 실패한다(2026-07-26 실측).
+       */
+      agentSlug: string;
+    }
   /**
    * 자기 `.md` 가 없다 — 관계를 적어 둘 자리가 아직 없다. 문서를 만들어야
    * 쓸 수 있고, 문서 생성은 사용자 동의 없이는 하지 않는다.
@@ -44,6 +55,13 @@ export interface WriteTargetNode {
   display?: string;
   evidenceIds?: string[];
   hasOwnDocument?: boolean;
+  agentSlug?: string | null;
+  /**
+   * 이 개념을 인용한 문서가 실제로 적어 둔 참조 문자열
+   * (`elements: [src/entities/foo.ts]` 의 그 값). 새 문서는 **이 자리**에
+   * 앉아야 기존 인용이 그대로 그 문서를 가리킨다.
+   */
+  ref?: string;
 }
 
 function asCreateKind(kind: string): CreateNodeKind | null {
@@ -58,10 +76,21 @@ export function resolveStudioWriteTarget(
     evidenceIds: node.evidenceIds ?? [],
     hasOwnDocument: node.hasOwnDocument,
   });
-  if (ownSlug) return { status: "existing", slug: ownSlug };
+  if (ownSlug) {
+    return {
+      status: "existing",
+      slug: ownSlug,
+      agentSlug: resolveNodeAgentTarget(node).ref ?? ownSlug,
+    };
+  }
+  // 인용이 적어 둔 경로를 그대로 쓴다. 노드 id 에서 되짚으면
+  // `src/entities/foo.ts` 가 `elements/srcentitiesfoots` 로 뭉개져, 만든
+  // 문서를 기존 인용이 못 찾는다 — 문서는 생겼는데 그래프는 그대로 비어
+  // 있는 상태가 된다(2026-07-26 실측). id 는 되돌릴 수 없으므로 인용 원문이
+  // 있을 때는 그것이 유일하게 맞는 경로다.
   return {
     status: "missing",
-    slug: candidateFromNode(node).ref,
+    slug: node.ref?.trim() || candidateFromNode(node).ref,
     title: node.title,
     kind: asCreateKind(node.kind),
     domainValue: opts.domainValue ?? null,

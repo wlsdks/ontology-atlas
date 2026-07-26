@@ -49,6 +49,7 @@ describe("buildStudioItem — compass bearings", () => {
     expect(item.node.writeTarget).toEqual({
       status: "existing",
       slug: "capabilities/pay-approve",
+      agentSlug: "capabilities/pay-approve",
     });
   });
 

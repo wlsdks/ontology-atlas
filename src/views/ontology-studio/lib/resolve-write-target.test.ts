@@ -10,8 +10,14 @@ describe("resolveStudioWriteTarget", () => {
         title: "MCP Server",
         evidenceIds: ["ontology/capabilities/mcp-server"],
         hasOwnDocument: true,
+        // 에이전트가 물린 볼트 뿌리 기준 이름은 매니페스트 경로와 다를 수 있다.
+        agentSlug: "capabilities/mcp-server",
       }),
-    ).toEqual({ status: "existing", slug: "ontology/capabilities/mcp-server" });
+    ).toEqual({
+      status: "existing",
+      slug: "ontology/capabilities/mcp-server",
+      agentSlug: "capabilities/mcp-server",
+    });
   });
 
   it("관계에서 이름만 불린 개념은 남의 문서를 쓰기 대상으로 삼지 않는다", () => {
@@ -59,6 +65,10 @@ describe("resolveStudioWriteTarget", () => {
         title: "Legacy",
         evidenceIds: ["capabilities/legacy"],
       }),
-    ).toEqual({ status: "existing", slug: "capabilities/legacy" });
+    ).toEqual({
+      status: "existing",
+      slug: "capabilities/legacy",
+      agentSlug: "capabilities/legacy",
+    });
   });
 });

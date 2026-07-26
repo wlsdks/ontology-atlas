@@ -50,9 +50,17 @@ export interface FullDetailA1Node {
    * 보존한다(정보 은닉이 아니라 계층화). 같으면 렌더 생략. */
   fullTitle?: string;
   kind: string;
-  /** Vault slug / evidence path shown mono top-right and used in the
-   * agent-handoff call chain. */
+  /** Vault slug / evidence path shown mono top-right. */
   slug: string;
+  /**
+   * 에이전트에게 건네는 이름 — 볼트 뿌리 기준 문서 slug, 또는 문서가 없는
+   * 개념이면 볼트가 적어 둔 참조 원문(`resolveNodeAgentTarget`). 인계 체인은
+   * `slug` 가 아니라 이 값을 쓴다: 화면이 쥔 매니페스트 slug 를 그대로
+   * 넘기면 에이전트 볼트에 없는 이름이 된다. 미지정이면 `slug` 로 되돌린다.
+   */
+  agentSlug?: string | null;
+  /** 자기 문서가 있는가. 없으면 인계 체인이 문서 신설부터 시작한다. */
+  documented?: boolean;
   fresh: boolean;
   /**
    * rank7 (design-council B5) — last-edit provenance, pre-resolved by the
@@ -133,8 +141,12 @@ export function FullDetailA1({
   const [step, setStep] = useState<FullDetailReachDepth>(3);
 
   const handoffChain = useMemo(
-    () => formatFullDetailHandoffChain(node.slug, step),
-    [node.slug, step],
+    () =>
+      formatFullDetailHandoffChain(node.agentSlug ?? node.slug, step, {
+        documented: node.documented,
+        kind: node.kind,
+      }),
+    [node.agentSlug, node.slug, node.documented, node.kind, step],
   );
 
   const explanationEditLabels: NodeExplanationEditLabels = useMemo(

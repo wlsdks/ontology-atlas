@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveStudioFocalId } from "./resolve-studio-focal";
+import { resolveStudioEnhanceFocal, resolveStudioFocalId } from "./resolve-studio-focal";
 import type { StudioSourceNode } from "./build-studio-item";
 
 /**
@@ -67,5 +67,34 @@ describe("resolveStudioFocalId — id 형식 관용", () => {
     expect(resolveStudioFocalId(null, nodes)).toBeNull();
     expect(resolveStudioFocalId("", nodes)).toBeNull();
     expect(resolveStudioFocalId("capability:없는거", nodes)).toBeNull();
+  });
+});
+
+describe("resolveStudioEnhanceFocal — 죽은 딥링크는 조용히 바뀌지 않는다", () => {
+  it("요청한 노드가 없으면 기본 노드로 갈아끼우지 않고 '없음'을 알린다", () => {
+    // 회귀 재현: 예전엔 `?? selectDefaultStudioNodeId(...)` 때문에 아무
+    // 노드나 열렸고, 사용자는 그게 요청한 노드인 줄 알았다.
+    const result = resolveStudioEnhanceFocal("capability:없는거", nodes, []);
+    expect(result).toEqual({ focalId: null, requestedMissing: true });
+  });
+
+  it("요청한 노드가 있으면 그 노드를 연다", () => {
+    expect(resolveStudioEnhanceFocal("capability:티켓-분류", nodes, [])).toEqual({
+      focalId: "capability:티켓-분류",
+      requestedMissing: false,
+    });
+  });
+
+  it("요청이 아예 없으면 기본 노드를 연다 (이건 대체가 아니라 진입점)", () => {
+    const result = resolveStudioEnhanceFocal(null, nodes, []);
+    expect(result.requestedMissing).toBe(false);
+    expect(result.focalId).not.toBeNull();
+  });
+
+  it("그래프가 아직 비어 있으면 '없다'고 단정하지 않는다 (로딩 · 볼트 미선택)", () => {
+    expect(resolveStudioEnhanceFocal("capability:티켓-분류", [], [])).toEqual({
+      focalId: null,
+      requestedMissing: false,
+    });
   });
 });

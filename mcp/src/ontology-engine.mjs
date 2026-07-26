@@ -321,6 +321,31 @@ export function createOntologyEngine(artifact, options = {}) {
     list.sort(compareEdges);
   }
 
+  /**
+   * 문서가 없어 노드가 되지 못한 참조 → 그 이름을 적어 둔 문서들.
+   *
+   * 컴파일된 그래프의 노드는 문서 하나당 하나다. 그런데 웹 지도는 관계 키에서
+   * 이름만 불린 개념까지 그린다(도그푸드 289 중 193). 사용자가 지도에서 그
+   * 이름을 베껴 CLI/MCP 로 물으면 종전에는 "그런 노드 없음" 으로 끝났다 —
+   * 볼트가 그 이름을 적어 두었는데도. 노드를 새로 만들지는 않는다(census 는
+   * 그대로다). "누가 어떤 키로 이 이름을 적었는가" 를 답에 실어 줄 뿐이다.
+   */
+  const referencedOnlyByRef = new Map();
+  for (const edge of edges) {
+    if (edge.resolved) continue;
+    const list = referencedOnlyByRef.get(edge.ref);
+    if (list) {
+      if (!list.some((hit) => hit.slug === edge.from && hit.via === edge.via)) {
+        list.push({ slug: edge.from, via: edge.via });
+      }
+    } else {
+      referencedOnlyByRef.set(edge.ref, [{ slug: edge.from, via: edge.via }]);
+    }
+  }
+  for (const list of referencedOnlyByRef.values()) {
+    list.sort((a, b) => a.slug.localeCompare(b.slug) || a.via.localeCompare(b.via));
+  }
+
   function resolve(input, fieldName = 'slug') {
     if (typeof input !== 'string' || !input.trim()) {
       throw new Error(`${fieldName} (string) is required.`);
@@ -337,6 +362,17 @@ export function createOntologyEngine(artifact, options = {}) {
     }
     // 오타/폴더 누락 slug 는 여기서 죽는다 — 근접 후보를 같은 에러에 실어
     // relate/relation-check/MCP 쿼리 전부에서 did-you-mean 이 뜨게 한다.
+    const referencedBy = referencedOnlyByRef.get(candidate) ?? [];
+    if (referencedBy.length > 0) {
+      // 오타가 아니다 — 볼트가 아는 이름인데 아직 자기 문서가 없다. 근접
+      // 후보를 들이밀면 사용자를 엉뚱한 노드로 보낸다.
+      const cited = referencedBy.map((hit) => `${hit.slug} (via ${hit.via})`).join(', ');
+      const err = new Error(
+        `${fieldName} "${candidate}" is referenced by the vault but has no document of its own, so it is not a compiled node. Referenced by: ${cited}. Create it with add_concept({slug:"${candidate}"}) to make it queryable.`,
+      );
+      err.referencedBy = referencedBy;
+      throw err;
+    }
     const similar = suggestCompiledSlugs(candidate, [...nodeBySlug.keys()]);
     const hint = similar.length > 0 ? ` Did you mean: ${similar.join(', ')}?` : '';
     throw new Error(`${fieldName} "${candidate}" does not resolve to a compiled ontology node.${hint}`);
@@ -351,8 +387,16 @@ export function createOntologyEngine(artifact, options = {}) {
     try {
       return resolve(input, fieldName);
     } catch (err) {
-      if (err instanceof Error && /does not resolve to a compiled ontology node/.test(err.message)) {
-        const candidate = typeof input === 'string' ? input.trim() : String(input ?? '');
+      const candidate = typeof input === 'string' ? input.trim() : String(input ?? '');
+      if (err instanceof Error && Array.isArray(err.referencedBy) && err.referencedBy.length > 0) {
+        err.growthHint = buildSlugNotFoundGrowthHint({
+          slug: candidate,
+          referencedBy: err.referencedBy,
+        });
+      } else if (
+        err instanceof Error &&
+        /does not resolve to a compiled ontology node/.test(err.message)
+      ) {
         const candidateSlugs = suggestCompiledSlugs(candidate, [...nodeBySlug.keys()]);
         err.growthHint = buildSlugNotFoundGrowthHint({ slug: candidate, candidateSlugs });
       }
@@ -1330,6 +1374,11 @@ export function createOntologyEngine(artifact, options = {}) {
       resolvedEdges: edges.filter((edge) => edge.resolved).length,
       externalEdges: edges.filter((edge) => edge.external).length,
       unresolvedEdges: edges.filter((edge) => !edge.resolved && !edge.external).length,
+      // 문서 없이 이름만 적힌 개념의 수 — 웹 지도/인사이트는 이것들도
+      // 개념으로 세므로(화면 총계 = nodes + referencedOnly), 이 수를 같이
+      // 내야 두 입구의 총계 차이가 설명된다. 노드는 아니다: 아래 byKind ·
+      // 중심성 · health 는 여전히 문서가 있는 개념만 센다.
+      referencedOnly: referencedOnlyByRef.size,
       aliases: Array.isArray(artifact?.aliases) ? artifact.aliases.length : 0,
       ambiguousAliases: Array.isArray(artifact?.ambiguousAliases)
         ? artifact.ambiguousAliases.length

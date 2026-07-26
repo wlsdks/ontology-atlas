@@ -64,10 +64,20 @@ function renderOverview(result, hubsLimit) {
   const resolved = graph.resolvedEdges ?? 0;
   const external = graph.externalEdges ?? 0;
   const unresolved = graph.unresolvedEdges ?? 0;
+  const referencedOnly = graph.referencedOnly ?? 0;
   process.stdout.write(
     `${COLORS.bold}vault overview${COLORS.reset}` +
-      ` ${COLORS.dim}— ${nodes} 노드 · ${edges} 관계 (resolved ${resolved} · external ${external}${unresolved ? ` · unresolved ${unresolved}` : ''})${COLORS.reset}\n\n`,
+      ` ${COLORS.dim}— ${nodes} 노드 · ${edges} 관계 (resolved ${resolved} · external ${external}${unresolved ? ` · unresolved ${unresolved}` : ''})${COLORS.reset}\n`,
   );
+  // 화면(지도·인사이트)은 문서 없이 이름만 적힌 개념까지 세므로 총계가 더
+  // 크다. 그 차이를 여기서 밝히지 않으면 두 입구가 같은 볼트에 다른 수를
+  // 답하는데 어느 쪽도 이유를 말하지 않는 상태가 된다.
+  if (referencedOnly > 0) {
+    process.stdout.write(
+      `${COLORS.dim}  문서 있는 개념 ${nodes} + 이름만 적힌 개념 ${referencedOnly} = 지도가 세는 ${nodes + referencedOnly}${COLORS.reset}\n`,
+    );
+  }
+  process.stdout.write('\n');
 
   // Kind 분포 — kind 별 count + 색깔 bar.
   if (Object.keys(byKind).length > 0) {

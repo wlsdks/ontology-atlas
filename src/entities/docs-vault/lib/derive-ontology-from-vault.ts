@@ -28,6 +28,23 @@ import type { VaultDoc, VaultManifest } from '../model/types';
 
 export type OntologyStubSource = 'frontmatter';
 
+/**
+ * frontmatter 참조 문자열 → 이미 등록된 문서 노드 id 의 색인.
+ *
+ * 왜 필요한가 (2026-07-26 실측) — 컴파일러(`mcp/src/ontology-compiler.mjs`)는
+ * 문서를 alias 3벌(문서 slug 전체 · 마지막 조각 · frontmatter `slug:`)로
+ * 등록해 두고 참조를 그중 하나에 맞춘다. 웹 derive 는 그 alias 표가 없어
+ * 참조를 매번 slugify 로 뭉갰고, 그래서 **`slug:` 로 코드 경로를 선언한 문서
+ * 7개가 자기 참조에 못 맞고 유령 쌍둥이를 낳았다** — 지도에는 같은 개념이
+ * 문서 있는 노드 하나와 문서 없는 노드 하나로 두 번 그려졌고, 사용자가 고를
+ * 확률이 높은 쪽(참조에서 태어난 쪽)에는 문서가 없었다.
+ *
+ * 같은 질문("이 참조는 이미 있는 문서인가")에 두 곳이 각자 답하면 반드시
+ * 갈라진다. 그래서 웹도 컴파일러와 **같은 alias 규칙**을 쓴다. 한 alias 가
+ * 두 문서에 걸리면(컴파일러의 `ambiguous-alias`) 추측하지 않고 버린다.
+ */
+type DocAliasIndex = ReadonlyMap<string, string>;
+
 export interface OntologyStubNode {
   /** `<kind>:<slug>` 또는 fallback `unknown:<slug>`. */
   id: string;
@@ -63,6 +80,17 @@ export interface OntologyStubNode {
    * `broader`)에서 이름만 불린 파생 노드 — 문서는 아직 없다.
    */
   hasOwnDocument: boolean;
+  /**
+   * 문서 없는 파생 노드가 **볼트에 실제로 적혀 있는 참조 문자열** 원문.
+   * 예: `src/entities/docs-vault/lib/derive-ontology-from-vault.ts`.
+   *
+   * id 는 그 문자열을 slugify 로 뭉갠 값이라(`element:srcentitiesdocs-...`)
+   * 되돌릴 수 없다 — 사용자가 화면에서 그걸 베껴 CLI·MCP 에 넣으면 볼트
+   * 어디에도 없는 이름이 된다. 에이전트에게 이 개념을 가리켜 보일 때는 항상
+   * 이 원문을 쓴다(컴파일러가 엣지의 `ref` 로 들고 있는 바로 그 값).
+   * 자기 문서가 있는 노드는 문서 slug 가 그 역할을 하므로 비어 있다.
+   */
+  ref?: string;
   source: OntologyStubSource;
   /** 자유 요약 — 본문 첫 단락 또는 description 키. */
   summary?: string;
@@ -233,14 +261,34 @@ function deriveOntologyFromVaultUncached(
   // [capabilities/mcp-server]\` → \`capability:mcp-server\` 정확 매칭).
   let sourceConceptCount = 0;
   const sourceKindCounts: Record<string, number> = {};
+  // 컴파일러와 같은 alias 3벌. 한 alias 가 두 문서에 걸리면 null 로 표시해
+  // 두고 해석하지 않는다 — 추측한 연결은 잘못된 연결이다.
+  const aliasClaims = new Map<string, string | null>();
+  const claimAlias = (alias: string | undefined, nodeId: string) => {
+    const key = alias?.trim();
+    if (!key) return;
+    const claimed = aliasClaims.get(key);
+    if (claimed === undefined) aliasClaims.set(key, nodeId);
+    else if (claimed !== nodeId) aliasClaims.set(key, null);
+  };
   for (const doc of manifest.docs) {
     const docNode = deriveDocNode(doc);
     if (docNode) {
       nodes.set(docNode.id, docNode);
       sourceConceptCount += 1;
       sourceKindCounts[docNode.kind] = (sourceKindCounts[docNode.kind] ?? 0) + 1;
+      claimAlias(doc.slug, docNode.id);
+      claimAlias(doc.slug.split('/').pop(), docNode.id);
+      const fmSlug = doc.frontmatter.slug;
+      if (typeof fmSlug === 'string') claimAlias(fmSlug, docNode.id);
     }
   }
+  const docAliases: DocAliasIndex = new Map(
+    [...aliasClaims].filter((entry): entry is [string, string] => entry[1] !== null),
+  );
+  /** 이 참조가 이미 있는 문서를 가리키는가. 가리키면 그 문서 노드 id. */
+  const existingNodeIdFor = (ref: string): string | null =>
+    docAliases.get(ref.trim()) ?? null;
 
   // Pass 2: 각 doc 의 frontmatter array/relation 키를 순회하며 edge / 합성
   // 노드 추가.
@@ -260,7 +308,7 @@ function deriveOntologyFromVaultUncached(
         ? folderRef.id.slice('domain:'.length)
         : slugifyName(fm.domain);
       if (domainSlug) {
-        const domainId = `domain:${domainSlug}`;
+        const domainId = existingNodeIdFor(fm.domain) ?? `domain:${domainSlug}`;
         if (!nodes.has(domainId)) {
           nodes.set(domainId, {
             id: domainId,
@@ -271,6 +319,7 @@ function deriveOntologyFromVaultUncached(
             // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
             // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
             hasOwnDocument: false,
+            ref: fm.domain.trim(),
             source: 'frontmatter',
           });
         }
@@ -296,7 +345,9 @@ function deriveOntologyFromVaultUncached(
       // 병합 실패 → 신규 vault 전원 count 왜곡). 단수 `domain:` 분기와
       // 같은 resolveFolderPrefixedRef 우선 규칙을 적용한다.
       const folderRef = resolveFolderPrefixedRef(dom);
-      const domId = folderRef?.kind === 'domain' ? folderRef.id : `domain:${slugifyName(dom)}`;
+      const domId =
+        existingNodeIdFor(dom) ??
+        (folderRef?.kind === 'domain' ? folderRef.id : `domain:${slugifyName(dom)}`);
       if (domId === 'domain:') continue;
       if (!nodes.has(domId)) {
         nodes.set(domId, {
@@ -308,6 +359,7 @@ function deriveOntologyFromVaultUncached(
           // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
           // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
+          ref: dom.trim(),
           source: 'frontmatter',
         });
       }
@@ -328,7 +380,7 @@ function deriveOntologyFromVaultUncached(
         ? folderRef.id.slice('capability:'.length)
         : slugifyName(cap);
       if (!capSlug) continue;
-      const capId = `capability:${capSlug}`;
+      const capId = existingNodeIdFor(cap) ?? `capability:${capSlug}`;
       if (!nodes.has(capId)) {
         nodes.set(capId, {
           id: capId,
@@ -339,6 +391,7 @@ function deriveOntologyFromVaultUncached(
           // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
           // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
+          ref: cap.trim(),
           source: 'frontmatter',
         });
       }
@@ -359,7 +412,7 @@ function deriveOntologyFromVaultUncached(
         ? folderRef.id.slice('element:'.length)
         : slugifyName(el);
       if (!elSlug) continue;
-      const elId = `element:${elSlug}`;
+      const elId = existingNodeIdFor(el) ?? `element:${elSlug}`;
       if (!nodes.has(elId)) {
         nodes.set(elId, {
           id: elId,
@@ -372,6 +425,7 @@ function deriveOntologyFromVaultUncached(
           // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
           // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
+          ref: el.trim(),
           source: 'frontmatter',
         });
       }
@@ -394,7 +448,7 @@ function deriveOntologyFromVaultUncached(
         ? folderRef.id.split(':').at(-1)
         : slugifyName(contained);
       if (!containedSlug) continue;
-      const containedId = folderRef?.id ?? `unknown:${containedSlug}`;
+      const containedId = existingNodeIdFor(contained) ?? folderRef?.id ?? `unknown:${containedSlug}`;
       if (!nodes.has(containedId)) {
         nodes.set(containedId, {
           id: containedId,
@@ -405,6 +459,7 @@ function deriveOntologyFromVaultUncached(
           // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
           // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
+          ref: contained.trim(),
           source: 'frontmatter',
         });
       }
@@ -424,7 +479,7 @@ function deriveOntologyFromVaultUncached(
     // 만 하면 \`/\` 가 사라져 \`capabilitiesmcp-server\` 같은 mangled ID 가
     // 됐던 회귀 차단.
     for (const rel of asStringArray(fm.relates)) {
-      const relId = resolveRelatesRef(rel);
+      const relId = existingNodeIdFor(rel) ?? resolveRelatesRef(rel);
       if (!relId) continue;
       if (!nodes.has(relId)) {
         nodes.set(relId, {
@@ -436,6 +491,7 @@ function deriveOntologyFromVaultUncached(
           // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
           // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
+          ref: rel.trim(),
           source: 'frontmatter',
         });
       }
@@ -457,7 +513,7 @@ function deriveOntologyFromVaultUncached(
         : slugifyName(dep);
       if (!depSlug) continue;
       // dependencies 는 같은 종 (project) 사이를 가리키는 게 일반적이라 추측.
-      const depId = folderRef?.id ?? `${docNode.kind}:${depSlug}`;
+      const depId = existingNodeIdFor(dep) ?? folderRef?.id ?? `${docNode.kind}:${depSlug}`;
       if (!nodes.has(depId)) {
         nodes.set(depId, {
           id: depId,
@@ -468,6 +524,7 @@ function deriveOntologyFromVaultUncached(
           // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
           // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
+          ref: dep.trim(),
           source: 'frontmatter',
         });
       }
@@ -491,7 +548,8 @@ function deriveOntologyFromVaultUncached(
         ? folderRef.id.split(':').at(-1)
         : slugifyName(broaderRef);
       if (!broaderSlug) continue;
-      const broaderId = folderRef?.id ?? `${docNode.kind}:${broaderSlug}`;
+      const broaderId =
+        existingNodeIdFor(broaderRef) ?? folderRef?.id ?? `${docNode.kind}:${broaderSlug}`;
       if (!nodes.has(broaderId)) {
         nodes.set(broaderId, {
           id: broaderId,
@@ -502,6 +560,7 @@ function deriveOntologyFromVaultUncached(
           // Pass 2 = 관계에서만 이름이 불린 파생 노드. sourceSlug 는 *자기를
           // 인용한 남의 문서* 라 '이 노드의 문서' 가 아니다.
           hasOwnDocument: false,
+          ref: broaderRef.trim(),
           source: 'frontmatter',
         });
       }

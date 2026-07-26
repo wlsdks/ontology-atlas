@@ -1,5 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { buildOntologyHealthSignals } from "@/entities/knowledge-graph";
+import { buildOntologyHealthSignals, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { rankAllByDegree } from "@/shared/lib/ontology-tree";
 
 /**
@@ -59,6 +59,72 @@ export function withDoNextVerification(
   return `${instruction} → ${resultProof} → ${DO_NEXT_VERIFICATION_GATE}`;
 }
 
+/**
+ * 행별 인계문은 **붙여넣으면 동작해야** 한다. 그래서 이름은 화면의 그래프 id
+ * 가 아니라 볼트가 아는 이름(`resolveNodeAgentTarget`)으로 쓰고, 아직 문서가
+ * 없는 개념에는 조회·수정 호출 대신 **문서를 먼저 만드는 호출**을 준다 —
+ * `patch_concept` / `get_concept` 은 문서가 있어야 성립하므로, 없는 개념에
+ * 그 호출을 주면 인계가 아니라 숙제가 된다.
+ */
+function agentNameOf(node: KnowledgeGraphNode | undefined, fallbackId: string): {
+  ref: string;
+  documented: boolean;
+} {
+  const target = resolveNodeAgentTarget(node);
+  return {
+    ref: target.ref ?? fallbackId.split(":").pop() ?? fallbackId,
+    documented: target.documented && target.ref !== null,
+  };
+}
+
+/** 문서가 없는 개념에 붙는 공통 첫 걸음 — 문서 신설. */
+function createDocFirst(ref: string, kind: string): string {
+  return `이 개념은 아직 볼트에 "${ref}" 라는 참조로만 적혀 있어요(문서 없음) → add_concept({slug:"${ref}", kind:"${kind}"}) 로 문서부터 만들기`;
+}
+
+function buildDoNextHandoff(node: KnowledgeGraphNode): string {
+  const { ref, documented } = agentNameOf(node, node.id);
+  if (!documented) {
+    return withDoNextVerification(
+      createDocFirst(ref, node.kind),
+      `get_concept({slug:"${ref}"}) 로 새 문서 확인`,
+    );
+  }
+  return withDoNextVerification(
+    `query_ontology({operation:"blast_radius", slug:"${ref}"}) 로 영향권 확인 → 문서 내용 검토 후 patch_concept({slug:"${ref}", …}) 로 갱신`,
+    `get_concept({slug:"${ref}"}) 로 갱신된 원문 확인`,
+  );
+}
+
+function buildOrphanHandoff(node: KnowledgeGraphNode | undefined, fallbackId: string): string {
+  const { ref, documented } = agentNameOf(node, fallbackId);
+  if (!documented) {
+    return withDoNextVerification(
+      `${createDocFirst(ref, node?.kind ?? "element")} → add_relation({from:"${ref}", to:"<대상>", type:"relates", why:"<근거 한 줄>"})`,
+      `find_neighbors({slug:"${ref}"}) 로 새 관계 확인`,
+    );
+  }
+  return withDoNextVerification(
+    `find_neighbors({slug:"${ref}"}) 로 이웃 후보 확인 → relation_check 사전 점검 → add_relation({from:"${ref}", to:"<대상>", type:"relates", why:"<근거 한 줄>"})`,
+    `find_neighbors({slug:"${ref}"}) 로 새 관계 확인`,
+  );
+}
+
+function buildPromotionHandoff(node: KnowledgeGraphNode | undefined, fallbackId: string): string {
+  const { ref, documented } = agentNameOf(node, fallbackId);
+  if (!documented) {
+    return withDoNextVerification(
+      `${createDocFirst(ref, node?.kind ?? "element")} → 승격이 맞으면 그 문서의 kind 를 상향`,
+      `query_ontology({operation:"node_profile", slug:"${ref}"}) 로 kind와 fan-in 재확인`,
+    );
+  }
+  return withDoNextVerification(
+    `query_ontology({operation:"node_profile", slug:"${ref}"}) 로 fan-in 확인 → 승격이 맞으면 patch_concept 로 kind 상향 또는 add_concept 로 상위 개념 신설`,
+    `query_ontology({operation:"node_profile", slug:"${ref}"}) 로 kind와 fan-in 재확인`,
+  );
+}
+
+/** 갱신일 조회용 문서 slug — 매니페스트 기준 값이라 접두사를 그대로 둔다. */
 function nodeSlug(node: KnowledgeGraphNode): string | null {
   return node.evidenceIds[0] ?? null;
 }
@@ -81,6 +147,9 @@ export function buildDoNextQueue(
   const neglectedHubs: DoNextRow[] = [];
   for (const { node, degree } of rankAllByDegree(nodes, edges)) {
     if (degree < hubMinDegree) break; // 내림차순 — 임계 밑이면 종료
+    // 문서가 없는 노드의 `evidenceIds[0]` 은 *자기를 인용한 남의 문서* 라,
+    // 그 날짜를 이 노드의 갱신일로 읽으면 남의 방치를 이 개념 탓으로 돌린다.
+    if (resolveNodeAgentTarget(node).documented === false) continue;
     const slug = nodeSlug(node);
     const iso = slug ? freshnessIndex.get(slug) : undefined;
     if (!iso) continue; // 갱신 시점을 모르면 "방치"라 단정하지 않는다
@@ -95,10 +164,7 @@ export function buildDoNextQueue(
       nodeKind: node.kind,
       degree,
       agoDays,
-      handoffPayload: withDoNextVerification(
-        `query_ontology({operation:"blast_radius", slug:"${slug}"}) 로 영향권 확인 → 문서 내용 검토 후 patch_concept("${slug}", …) 로 갱신`,
-        `get_concept({slug:"${slug}"}) 로 갱신된 원문 확인`,
-      ),
+      handoffPayload: buildDoNextHandoff(node),
     });
   }
   neglectedHubs.sort((a, b) => (b.degree ?? 0) * (b.agoDays ?? 0) - (a.degree ?? 0) * (a.agoDays ?? 0));
@@ -107,23 +173,13 @@ export function buildDoNextQueue(
   // (진실원 1벌 — 지도 칩과 이 큐의 숫자가 갈라질 수 없다).
   const signals = buildOntologyHealthSignals(nodes, edges, { now: options.now });
 
-  // candidate.slug 는 그래프 노드 id (`capability:mcp-server`) — MCP 호출엔
-  // vault slug(evidenceIds[0])가 맞다. 없으면 id tail 로 fallback (alias 해석).
-  const mcpRef = (graphId: string): string => {
-    const node = nodeById.get(graphId);
-    return node?.evidenceIds[0] ?? graphId.split(":").pop() ?? graphId;
-  };
-
   const orphans: DoNextRow[] = signals.orphan.map(({ slug, name }) => ({
     id: `orphan:${slug}`,
     rowKind: "orphan",
     nodeId: slug,
     title: name,
     nodeKind: nodeById.get(slug)?.kind ?? "unknown",
-    handoffPayload: withDoNextVerification(
-      `find_neighbors({slug:"${mcpRef(slug)}"}) 로 이웃 후보 확인 → relation_check 사전 점검 → add_relation({from:"${mcpRef(slug)}", to:"<대상>", type:"relates", why:"<근거 한 줄>"})`,
-      `find_neighbors({slug:"${mcpRef(slug)}"}) 로 새 관계 확인`,
-    ),
+    handoffPayload: buildOrphanHandoff(nodeById.get(slug), slug),
   }));
 
   const promotions: DoNextRow[] = signals.promotion.map(({ slug, name, fanIn }) => ({
@@ -134,10 +190,7 @@ export function buildDoNextQueue(
     nodeKind: nodeById.get(slug)?.kind ?? "unknown",
     // "왜 뽑혔나"의 근거 — 들어오는 참조 수. 행 metric("참조 N개")으로 그대로 노출.
     degree: fanIn,
-    handoffPayload: withDoNextVerification(
-      `query_ontology({operation:"node_profile", slug:"${mcpRef(slug)}"}) 로 fan-in 확인 → 승격이 맞으면 patch_concept 로 kind 상향 또는 add_concept 로 상위 개념 신설`,
-      `query_ontology({operation:"node_profile", slug:"${mcpRef(slug)}"}) 로 kind와 fan-in 재확인`,
-    ),
+    handoffPayload: buildPromotionHandoff(nodeById.get(slug), slug),
   }));
 
   const rows = [

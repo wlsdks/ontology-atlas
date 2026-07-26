@@ -23,7 +23,7 @@ const MISSING: StudioWriteTarget = {
   domainValue: "checkout",
 };
 
-const EXISTING: StudioWriteTarget = { status: "existing", slug: "capabilities/card-payment" };
+const EXISTING: StudioWriteTarget = { status: "existing", agentSlug: "capabilities/a", slug: "capabilities/card-payment" };
 
 describe("planStudioCommit", () => {
   it("변경이 없으면 아무 파일도 건드리지 않는다", () => {
@@ -41,6 +41,7 @@ describe("planStudioCommit", () => {
     expect(plan).toEqual({
       op: "update-frontmatter",
       slug: "capabilities/card-payment",
+      agentSlug: "capabilities/a",
       updates: { dependencies: ["capabilities/ledger", "capabilities/refund"] },
     });
   });

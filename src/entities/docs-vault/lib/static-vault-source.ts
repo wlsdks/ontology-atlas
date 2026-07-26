@@ -33,6 +33,18 @@ export interface StaticVaultSource {
   manifest: VaultManifest;
   /** slug → 원문 마크다운. 매니페스트와 항상 같은 볼트에서 온다. */
   content: Record<string, string>;
+  /**
+   * 이 매니페스트의 문서 slug 앞에 붙어 있는, **에이전트가 물린 볼트 뿌리
+   * 기준으로는 없는** 조각.
+   *
+   * dogfood 매니페스트는 `/docs` 통합 트리(가이드 62 + 온톨로지 96)로
+   * 빌드되므로 온톨로지 문서가 `ontology/…` 로 시작하는데, 이 저장소가
+   * 에이전트에 물리는 볼트 뿌리는 `docs/ontology` 다. 그 차이를 화면이
+   * 복사해 주는 MCP 호출에서 빼지 않으면 붙여넣는 즉시 실패한다
+   * (2026-07-26 실측). 사용자가 자기 폴더를 열면 그 폴더가 곧 볼트 뿌리라
+   * 뺄 조각이 없다 — 그래서 로컬 모드에는 이 값이 없다.
+   */
+  agentSlugPrefix?: string;
 }
 
 // JSON import 는 union 필드를 string 으로 추론한다. 빌드 시점에 스키마가
@@ -42,6 +54,7 @@ const DOGFOOD: StaticVaultSource = {
   source: 'dogfood',
   manifest: vaultManifest as VaultManifest,
   content: vaultContent as Record<string, string>,
+  agentSlugPrefix: 'ontology/',
 };
 
 const STOREFRONT: StaticVaultSource = {
