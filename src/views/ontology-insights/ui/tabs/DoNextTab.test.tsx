@@ -42,6 +42,9 @@ const labels: DoNextTabLabels = {
   sectionOrphan: "Orphans",
   sectionPromotion: "Promotion candidates",
   sectionCycle: "Dependency cycles",
+  sectionDuplicate: "Similar names",
+  hintDuplicate: "Merge them if they mean the same thing.",
+  duplicateMetric: (percent) => `${percent}% overlap`,
   hintNeglectedHub: "Well-connected but untouched.",
   hintOrphan: "A loner with no relations.",
   hintPromotion: "Several concepts point here.",
@@ -616,6 +619,70 @@ describe("DoNextTab — 건강 주장은 CLI-parity 신호까지 0일 때만 (#6
 
   it("분리된 섬이 있어도 마찬가지", () => {
     renderWith({ ...emptyHealthQueue, islandCount: 2 });
+    expect(screen.queryByText(labels.emptyQueue)).not.toBeInTheDocument();
+  });
+});
+
+describe("DoNextTab — 중복 의심 쌍", () => {
+  const duplicates = [
+    {
+      id: "elements/node-drawer elements/node-drawer-model",
+      keepId: "element:node-drawer",
+      keepSlug: "elements/node-drawer",
+      keepTitle: "Node drawer",
+      dissolveId: "element:node-drawer-model",
+      dissolveSlug: "elements/node-drawer-model",
+      dissolveTitle: "Node drawer model",
+      kind: "element",
+      score: 0.792,
+      sharedTokens: ["drawer", "node"],
+    },
+  ];
+
+  function renderWith(props: Partial<React.ComponentProps<typeof DoNextTab>> = {}) {
+    render(
+      <DoNextTab
+        queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
+        cycles={noCycles}
+        agentReadiness={{ ready: 0, preflight: 0, review: 0 }}
+        healthQueue={emptyHealthQueue}
+        mapHref={(id) => `/ontology/?node=${encodeURIComponent(id)}`}
+        builderHref={(id) => `/ontology/edit/?node=${encodeURIComponent(id)}`}
+        {...cycleProps}
+        labels={labels}
+        {...props}
+      />,
+    );
+  }
+
+  it("쌍이 있으면 두 이름·겹침 비율·인계를 한 줄로 보여준다", () => {
+    renderWith({
+      duplicates,
+      duplicateTotal: 3,
+      duplicateHandoff: (row) => `merge_concepts for ${row.dissolveSlug}`,
+    });
+
+    const row = screen.getByTestId("do-next-duplicate-row");
+    expect(row).toHaveTextContent("Node drawer");
+    expect(row).toHaveTextContent("Node drawer model");
+    expect(row).toHaveTextContent("79% overlap");
+    // 남길 쪽으로 지도를 연다 — 합치면 백링크가 그쪽으로 모인다.
+    expect(within(row).getByText("Inspect on map")).toHaveAttribute(
+      "href",
+      "/ontology/?node=element%3Anode-drawer",
+    );
+    // 절단 전 규모는 헤더 숫자가 말한다.
+    expect(screen.getByTestId("do-next-duplicates")).toHaveTextContent("3");
+    expect(within(row).getByTestId("do-next-handoff-copy")).toBeInTheDocument();
+  });
+
+  it("한 쌍도 없으면 섹션 자체를 그리지 않는다 — 빈 성공 카드 금지", () => {
+    renderWith({ duplicates: [], duplicateTotal: 0 });
+    expect(screen.queryByTestId("do-next-duplicates")).toBeNull();
+  });
+
+  it("중복만 남아 있어도 '손볼 것 없음' 이라고 말하지 않는다", () => {
+    renderWith({ duplicates, duplicateTotal: 1, duplicateHandoff: () => "merge_concepts" });
     expect(screen.queryByText(labels.emptyQueue)).not.toBeInTheDocument();
   });
 });

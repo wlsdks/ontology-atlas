@@ -389,6 +389,8 @@ different questions and grew to 2.2× the 14-inch viewport, so it was split into
 
 #### Tab 1 — 할 일 Do next
 - Today's touch-ups, agent readiness gauge, repair queue, and the growth queue (see `DoNextTab`); the badge is the single verdict model (`insights-verdict`) shared with the body.
+- **비슷한 이름 — 같은 걸까요?** (duplicate suspects) — concept pairs whose names/slug/kind/domain/neighbours overlap heavily, top 3 with the shared words as evidence, the overlap percent, a map deeplink to the node worth keeping, and a per-pair `merge_concepts` dry-run handoff. The score is a mirror of the MCP engine's `similar_nodes`, locked by `tests/contract/duplicate-pairs.contract.test.ts`, so screen and agent never name a different pair. Only nodes that own a vault document are considered (a node born from another doc's `elements:` ref has no file to merge). **0 suspects renders no section** — an empty "no duplicates" card is ink without a decision.
+- Queue sections show 3 rows each plus their total; the rest is the agent handoff's job (scroll contract).
 
 #### Tab 2 — 구성 Inventory
 - **Hero census** (`InsightsHeroCensus`) — concepts / relations / health facts (orphan count, cycle count, domain-membership rate, evidence-linked rate)
@@ -400,7 +402,7 @@ different questions and grew to 2.2× the 14-inch viewport, so it was split into
 - **Hubs** — top nodes by degree: kind glyph + title + relative bar + degree, map deeplink per row, "top N / M total" folded into the single footnote line
 
 #### Tab 4 — 경계 Boundaries
-- **Domain coupling** — cross-domain pairs, each expandable to relation-type counts and real example edges (map deeplinks)
+- **Domain coupling** — a domain×domain **heat grid** (rows send, columns receive; the diagonal is inside-one-domain connections in neutral). Cell shade is a 4-step indigo alpha ladder and every non-zero cell keeps its number, so the card never speaks in colour alone. Picking a cell opens that pair's relation-type counts and real example edges (map deeplinks) in a slot that is reserved whether or not anything is selected. Top 6 domains by cross activity; beyond that the footnote says "top N of M domains" and how many cross links fall outside the grid. Same `computeDomainCouplingMatrix` output as MCP `domain_matrix` — no new calculation.
 - **Boundary pressure** — per-domain inside vs cross ratio; a high cross share signals a leaking boundary
 - Cold start (fewer than 2 domains or no cross edges) shows one explicit empty state **with a next step** (workshop link) instead of a misleading table
 

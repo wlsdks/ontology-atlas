@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T05:18:28.757Z",
+  "generatedAt": "2026-07-26T05:40:02.030Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3119,8 +3119,18 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 중복 의심 쌍 · 도메인 결합 히트그리드",
+          "slug": "2026-07-26-중복-의심-쌍-도메인-결합-히트그리드"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — AI 연결에 Google Gemini · 기록이 목적지를 말한다",
           "slug": "2026-07-26-ai-연결에-google-gemini-기록이-목적지를-말한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 — 지난 길을 **다시 편다** — 어제의 맥락을 오늘의 인계로",
+          "slug": "2026-07-26-지난-길을-다시-편다-어제의-맥락을-오늘의-인계로"
         },
         {
           "depth": 2,
@@ -4894,8 +4904,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. S1(여백·폰트 체인·스크롤바)이 이 기기의 두부를 없앴지만, 남은 세 결함은 다른 기기 · 다른 눈 · 다른 화면의 문제였다. 세퍼레이터를 폰트에서 독립",
-      "wordCount": 42486,
-      "updatedAt": "2026-07-26T05:18:28.757Z",
+      "wordCount": 42977,
+      "updatedAt": "2026-07-26T05:40:02.030Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5657,7 +5667,7 @@
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
       "wordCount": 15308,
-      "updatedAt": "2026-07-26T05:18:02.595Z",
+      "updatedAt": "2026-07-26T14:36:23+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -6220,8 +6230,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
-      "wordCount": 12934,
-      "updatedAt": "2026-07-26T13:26:23+09:00",
+      "wordCount": 13139,
+      "updatedAt": "2026-07-26T05:39:46.182Z",
       "linksOut": [
         "slug",
         "project:slug",
