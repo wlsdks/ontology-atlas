@@ -25,7 +25,7 @@ use std::process::Command;
 // canonicalize 해 심볼릭 링크/상대 조각을 실경로로 확정한 뒤에만 git 의
 // cwd 로 쓴다. pathspec 은 repo_root 기준 상대로 계산되므로 vault 밖으로
 // 새는 add/commit 이 원천적으로 불가능하다.
-fn validate_vault_dir(vault_path: &str) -> Result<PathBuf, String> {
+pub(crate) fn validate_vault_dir(vault_path: &str) -> Result<PathBuf, String> {
     if vault_path.trim().is_empty() {
         return Err("vault 경로가 비어 있어요.".into());
     }

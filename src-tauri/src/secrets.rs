@@ -37,7 +37,7 @@ const SERVICE: &str = "Ontology Atlas";
 /// 만든다. 허용 목록으로 고정한다.
 const PROVIDERS: [&str; 2] = ["anthropic", "openai"];
 
-fn validate_provider(provider: &str) -> Result<&'static str, String> {
+pub(crate) fn validate_provider(provider: &str) -> Result<&'static str, String> {
     PROVIDERS
         .iter()
         .find(|known| **known == provider)
@@ -108,6 +108,16 @@ pub fn secret_status(provider: String) -> Result<SecretStatus, String> {
             last4: None,
         }),
     }
+}
+
+/// **Rust 안에서만** 키를 읽는다 — 호출을 붙이는 쪽(`llm.rs`)이 요청 헤더를
+/// 만들 때 쓴다. tauri 커맨드가 아니므로 이 값은 IPC 경계를 넘지 못한다
+/// (파일 상단 계약 그대로: 전체 키를 반환하는 **커맨드**는 없다).
+pub(crate) fn read_secret(provider: &str) -> Result<String, String> {
+    let known = validate_provider(provider)?;
+    entry(known)?
+        .get_password()
+        .map_err(|_| "저장된 키가 없어요. 먼저 키를 등록해 주세요.".to_string())
 }
 
 /// 키 삭제 — 없어도 성공으로 본다(멱등). "지웠는데 에러" 는 사용자에게

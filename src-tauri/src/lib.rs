@@ -11,6 +11,10 @@ use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
 /// Atlas Git — vault 를 git 으로 버전 기록하는 네이티브 계층 (웹 GUI 가 invoke).
 mod git;
+/// BYOK 연결 확인 — 키체인의 키로 인증만 확인하고 볼트 안 감사 로그에 남긴다.
+mod llm;
+/// LLM 호출 감사 로그 — "기록 못 하면 보내지 않는다" 의 구현체.
+mod llm_audit;
 mod secrets;
 mod terminal;
 
@@ -5775,6 +5779,7 @@ pub fn run() {
             secrets::secret_set,
             secrets::secret_status,
             secrets::secret_clear,
+            llm::secret_verify,
             terminal::terminal_open,
             terminal::terminal_write,
             terminal::terminal_resize,
