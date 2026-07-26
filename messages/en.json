@@ -1483,7 +1483,7 @@
       "metricDocuments": "Documents",
       "metricRelations": "Relations",
       "minimapLabel": "Domain map",
-      "minimapSublabel": "box size follows how much is inside",
+      "minimapSublabel": "more inside draws bigger",
       "minimapOpenInTopology": "Open in topology",
       "minimapAria": "Mini domain map — {domains} domains, {relations} relations",
       "domainSectionTitle": "Domain composition",

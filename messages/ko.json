@@ -1483,7 +1483,7 @@
       "metricDocuments": "문서",
       "metricRelations": "관계",
       "minimapLabel": "도메인 지도",
-      "minimapSublabel": "칸 크기는 담긴 개수에 비례",
+      "minimapSublabel": "많이 담긴 도메인이 더 크게",
       "minimapOpenInTopology": "지도에서 보기",
       "minimapAria": "도메인 구성 미니 지도 — 도메인 {domains}개, 관계 {relations}개",
       "domainSectionTitle": "도메인 구성",

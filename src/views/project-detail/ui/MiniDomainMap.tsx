@@ -18,8 +18,9 @@ function hexPoints(cx: number, cy: number, r: number): string {
 /**
  * 히어로 밴드의 "정직한 미니 도메인 지도" — landing `VaultInstrument` 계기
  * 문법(project hex + kind-glyph 토큰 + engraved 숫자)을 프로젝트 상세로
- * 수출한 버전. 장식이 아니라 실카운트(역량+요소) 비례 SVG — 폭은
- * `buildMiniDomainMapLayout` 의 sqrt 스케일 그대로.
+ * 수출한 버전. 장식이 아니라 실카운트(역량+요소)에서 나온 SVG — 폭은
+ * `buildMiniDomainMapLayout` 의 sqrt 스케일 그대로다. 그 스케일은 **순서**를
+ * 보장하고 비례는 보장하지 않는다(이유·실측은 그 파일의 주석).
  */
 export function MiniDomainMap({ projectTitle, domains, ariaLabel }: Props) {
   const layout = buildMiniDomainMapLayout(domains);
