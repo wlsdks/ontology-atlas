@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { computeDomainWatermarkAlpha, computeLabelAlpha } from "./labels";
+import {
+  computeDomainWatermarkAlpha,
+  computeLabelAlpha,
+  resolveLabelBaselineY,
+  resolveFlippedLabelBaselineY,
+  scaledLabelFontSize,
+  LABEL_NODE_CLEARANCE,
+  LABEL_NODE_OUTLINE_ALLOWANCE,
+} from "./labels";
 
 /**
  * `render/labels.ts#draw`'s canvas text painting has no extractable
@@ -127,5 +135,41 @@ describe("computeDomainWatermarkAlpha", () => {
     expect(compactAlpha).toBe(0);
     expect(watermarkAlpha).toBe(1);
     expect(Math.max(compactAlpha, watermarkAlpha)).toBeGreaterThan(0.02);
+  });
+});
+
+describe("resolveLabelBaselineY — 라벨이 자기 도형선에 닿지 않는다 (진입 검수 E-4)", () => {
+  const KINDS = ["project", "domain", "capability", "element"] as const;
+
+  it.each(KINDS)("%s — 글리프 top 이 외곽선 아래로 최소 여유를 지킨다", (kind) => {
+    for (const fontScale of [1, 1.3, 1.9]) {
+      const baseline = resolveLabelBaselineY(kind, 200, 40, fontScale);
+      const glyphTop = baseline - scaledLabelFontSize(kind, fontScale);
+      // 외곽선(선택 링)은 원판 밖 LABEL_NODE_OUTLINE_ALLOWANCE 까지 나간다.
+      const outlineBottom = 200 + 40 + LABEL_NODE_OUTLINE_ALLOWANCE;
+      expect(glyphTop - outlineBottom).toBeGreaterThanOrEqual(LABEL_NODE_CLEARANCE);
+    }
+  });
+
+  it("종전 오프셋 식은 선택 링을 관통했다 — 이 함수가 그 자리를 고른 이유", () => {
+    // 회귀 증거: 역량 라벨의 옛 베이스라인(y + r + 13)에서 글리프 top 은
+    // 원판에서 2.5px 아래 — 선택 링(+6)보다 위다.
+    const legacyBaseline = 200 + 40 + 13;
+    const legacyGlyphTop = legacyBaseline - scaledLabelFontSize("capability", 1);
+    expect(legacyGlyphTop).toBeLessThan(200 + 40 + LABEL_NODE_OUTLINE_ALLOWANCE);
+    expect(resolveLabelBaselineY("capability", 200, 40, 1)).toBeGreaterThan(legacyBaseline);
+  });
+
+  it("큰 노드일수록 라벨도 함께 내려간다 (반지름 선형)", () => {
+    const small = resolveLabelBaselineY("capability", 0, 10, 1);
+    const large = resolveLabelBaselineY("capability", 0, 40, 1);
+    expect(large - small).toBe(30);
+  });
+
+  it("뒤집힌 자리는 노드 위쪽 외곽선 밖에 앉는다", () => {
+    const flipped = resolveFlippedLabelBaselineY(200, 40);
+    expect(flipped).toBe(200 - 40 - LABEL_NODE_OUTLINE_ALLOWANCE - LABEL_NODE_CLEARANCE);
+    // 아래쪽 자리보다 반드시 위다(뒤집기가 실제로 자리를 바꾼다).
+    expect(flipped).toBeLessThan(resolveLabelBaselineY("capability", 200, 40, 1));
   });
 });

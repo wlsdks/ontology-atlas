@@ -5,6 +5,7 @@ import { ChevronRight, FolderOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
 import { useSampleSource } from "@/features/vault-sample-source";
 import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
 import { CompactCopyButton } from "@/shared/ui";
@@ -101,6 +102,12 @@ export function FirstRunStarterModule({
     fsaUnsupported,
   } = useFirstRunStarter();
   const { state: cliCopyState, copy: copyCliCommand } = useCopyFeedback();
+  // 진입 검수 E-10 — 「첫  실행」·「지금은  샘플」·「지도에서  쓰는  말」. i18n
+  // 문자열의 공백은 하나였다. 벌어진 것은 라틴 전용 장식(mono + uppercase +
+  // wide tracking)을 한글에 얹은 자리의 공백 글리프다(실측 자간 1.36~2.09px).
+  const eyebrowWide = useLatinEyebrow("tracking-[0.22em]");
+  const eyebrow = useLatinEyebrow("tracking-[0.18em]");
+  const eyebrowTight = useLatinEyebrow("tracking-[0.16em]");
   // P0 공감형 샘플 vault (2026-07) — 비개발자가 dogfood(이 도구 자기 설명)
   // 대신 즉시 알아볼 수 있는 예시 비즈니스를 고를 수 있는 첫 실행 선택.
   // static 모드에서만 소비(local 모드는 useOntologyInsight 가 이 값을
@@ -123,14 +130,18 @@ export function FirstRunStarterModule({
   // 폴더-우선 첫 방문 (소유자 지시 2026-07-24) — 첫 화면을 열자마자 폴더
   // 지정 유도(시트)가 첫 액션이 된다. "다음에"로 건너뛰면 자동 투어가
   // 이어받는다(투어 가드가 시트 열림 동안 발화를 미룸). 1회 한정.
+  // 진입 검수 E-1 — File System Access 미지원 브라우저에서는 이 시트를 자동으로
+  // 열지 않는다. 시트의 존재 이유는 "OS 선택창이 뜨기 전에 미리 설명하는 것"인데
+  // 그 창이 오지 않으므로, 첫 화면을 여는 순간 못 하는 일을 권하는 모달이 된다.
+  // 이 상태의 안내는 카드 안 인라인 고지(unsupportedNotice + macOS 앱)가 맡는다.
   useEffect(() => {
-    if (!visible || readVaultGuideAutoOpened()) return undefined;
+    if (!visible || fsaUnsupported || readVaultGuideAutoOpened()) return undefined;
     const id = window.setTimeout(() => {
       writeVaultGuideAutoOpened();
       setGuideOpen(true);
     }, 400);
     return () => window.clearTimeout(id);
-  }, [visible]);
+  }, [visible, fsaUnsupported]);
 
   // 되돌아오기 (소유자 실사용 지적 2026-07-24) — "여기서 둘러볼게요"로
   // 카드를 닫고 예시 비즈니스를 구경하다 보면 세션 내 처음으로 돌아갈
@@ -144,7 +155,7 @@ export function FirstRunStarterModule({
           setCollapsed(false);
           undismiss();
         }}
-        className="flex w-full items-center gap-1.5 text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
+        className="flex w-full items-center gap-1.5 text-label text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
       >
         <ChevronRight size={11} aria-hidden className="shrink-0 -rotate-180" />
         {t("reopenLabel")}
@@ -185,20 +196,24 @@ export function FirstRunStarterModule({
       >
         {t("brand")}
       </p>
-      <p className="mb-3 flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.22em] text-[color:var(--topology-v2-panel-text-secondary)]">
+      <p
+        className={`mb-3 flex items-center gap-2 text-caption text-[color:var(--topology-v2-panel-text-secondary)] ${eyebrowWide}`}
+      >
         <span className="relative h-2 w-2 shrink-0" aria-hidden>
           <span className="absolute inset-0 rounded-full bg-[color:var(--color-status-warning)]" />
           <span className="absolute -inset-[3px] rounded-full border border-[color:var(--color-amber-source-a42)]" />
         </span>
         {t("caption")}
-        <span className="ml-auto text-[8.5px] tracking-[0.16em] text-[color:var(--color-status-warning)]">
+        <span
+          className={`ml-auto text-caption text-[color:var(--color-status-warning)] ${eyebrowTight}`}
+        >
           {t("sampleLabel")}
         </span>
       </p>
 
       <p
         data-testid="first-run-starter-context"
-        className="mb-4 text-[12px] leading-[1.65] text-[color:var(--topology-v2-panel-text-tertiary)]"
+        className="mb-4 text-body leading-[1.65] text-[color:var(--topology-v2-panel-text-tertiary)]"
       >
         <b className="font-semibold text-[color:var(--topology-v2-panel-text-primary)]">
           {t(sampleSource === "storefront" ? "contextStorefrontBold" : "contextBold")}
@@ -206,7 +221,7 @@ export function FirstRunStarterModule({
         {t(sampleSource === "storefront" ? "contextStorefrontRest" : "contextRest")}
       </p>
 
-      <div className="mb-3 grid grid-cols-3 divide-x divide-[color:var(--topology-v2-panel-divider)] rounded-[9px] border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.55)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
+      <div className="mb-3 grid grid-cols-3 divide-x divide-[color:var(--topology-v2-panel-divider)] rounded-card border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.55)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
         <MeterCell value={concepts} label={t("meterConcepts")} />
         <MeterCell value={relations} label={t("meterRelations")} />
         <MeterCell value={domains} label={t("meterDomains")} />
@@ -262,13 +277,13 @@ export function FirstRunStarterModule({
           data-testid="first-run-starter-unsupported"
           className="rounded-lg border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.45)] px-3 py-2.5"
         >
-          <p className="text-[11.5px] leading-[1.6] text-[color:var(--topology-v2-panel-text-tertiary)]">
+          <p className="text-label leading-[1.6] text-[color:var(--topology-v2-panel-text-tertiary)]">
             {t("unsupportedNotice")}
           </p>
           <Link
             href="/download/"
             data-testid="first-run-starter-unsupported-cta"
-            className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
+            className="mt-2 inline-flex items-center gap-1.5 text-body font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
           >
             {t("unsupportedCta")}
           </Link>
@@ -279,11 +294,11 @@ export function FirstRunStarterModule({
           onClick={() => setGuideOpen(true)}
           disabled={busy}
           data-testid="first-run-starter-open"
-          className="relative flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-[13px] font-semibold text-white shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
+          className="relative flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
         >
           <FolderOpen size={14} aria-hidden />
           {busy && !scaffolding ? t("openBusy") : t("openLabel")}
-          <span className="rounded border border-b-2 border-white/35 px-1.5 py-px font-mono text-[9px] font-medium opacity-80">
+          <span className="rounded border border-b-2 border-white/35 px-1.5 py-px font-mono text-caption font-medium opacity-80">
             ⌘O
           </span>
         </button>
@@ -297,13 +312,13 @@ export function FirstRunStarterModule({
           type="button"
           data-testid="first-run-tour-cta"
           onClick={onStartTour}
-          className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-[color:var(--topology-v2-panel-divider)] text-[12px] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+          className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-[color:var(--topology-v2-panel-divider)] text-body text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
         >
           {t("tourCta")}
         </button>
       ) : null}
 
-      <p className="mb-1 mt-3 flex items-center justify-between gap-4 text-[11.5px]">
+      <p className="mb-1 mt-3 flex items-center justify-between gap-4 text-label">
         {fsaUnsupported ? (
           <span aria-hidden />
         ) : (
@@ -337,7 +352,7 @@ export function FirstRunStarterModule({
             type="button"
             data-testid="first-run-plain-toggle"
             onClick={onEnablePlainMode}
-            className="mt-1 text-[11px] text-[color:var(--color-indigo-accent)] underline-offset-2 transition-colors hover:underline"
+            className="mt-1 text-label text-[color:var(--color-indigo-accent)] underline-offset-2 transition-colors hover:underline"
           >
             {t("plainModeCta")}
           </button>
@@ -345,7 +360,7 @@ export function FirstRunStarterModule({
       ) : (
         <p
           data-testid="first-run-starter-plain-mode-hint"
-          className="mt-1 text-[10.5px] leading-[1.5] text-[color:var(--topology-v2-panel-text-quaternary)]"
+          className="mt-1 text-label leading-[1.5] text-[color:var(--topology-v2-panel-text-quaternary)]"
         >
           {t("plainModeHint")}
         </p>
@@ -356,14 +371,16 @@ export function FirstRunStarterModule({
           않고 항상 보이는 3줄 — 완전 초심자가 지도를 처음 열자마자 세
           단어의 뜻을 알 수 있어야 하는 표면이라 접힘 대상이 아니다. */}
       <div className="mt-3 border-t border-[color:var(--topology-v2-panel-divider)] pt-3">
-        <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[color:var(--topology-v2-panel-text-quaternary)]">
+        <p
+          className={`mb-1.5 text-caption text-[color:var(--topology-v2-panel-text-quaternary)] ${eyebrow}`}
+        >
           {glossary("title")}
         </p>
         <dl data-testid="first-run-starter-glossary" className="space-y-1">
           {GLOSSARY_TERMS.map((term) => (
             <div
               key={term}
-              className="flex flex-wrap items-baseline gap-x-1.5 text-[11px] leading-[1.5]"
+              className="flex flex-wrap items-baseline gap-x-1.5 text-label leading-[1.5]"
             >
               <dt className="shrink-0 font-medium text-[color:var(--topology-v2-panel-text-secondary)]">
                 {glossary(`${term}Term`)}
@@ -395,7 +412,7 @@ export function FirstRunStarterModule({
           aria-expanded={cliOpen}
           aria-controls="first-run-starter-cli-bridge"
           data-testid="first-run-starter-cli-toggle"
-          className="flex items-center gap-1 text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          className="flex items-center gap-1 text-label text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
         >
           <ChevronRight
             size={11}
@@ -417,7 +434,7 @@ export function FirstRunStarterModule({
             className="mt-2 rounded-md border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.35)] px-2.5 py-2"
           >
             <div className="flex items-center justify-between gap-2">
-              <p className="min-w-0 break-keep text-[10px] leading-tight text-[color:var(--topology-v2-panel-text-quaternary)]">
+              <p className="min-w-0 break-keep text-caption leading-tight text-[color:var(--topology-v2-panel-text-quaternary)]">
                 {t("cliBridgeLabel")}
               </p>
               <CompactCopyButton
@@ -429,24 +446,37 @@ export function FirstRunStarterModule({
                 className="-my-1.5 -mr-1.5 shrink-0"
               />
             </div>
-            <code className="mt-1 block whitespace-pre-wrap break-words font-mono text-[10.5px] leading-[1.6] text-[color:var(--topology-v2-panel-text-secondary)]">
+            <code className="mt-1 block whitespace-pre-wrap break-words font-mono text-label leading-[1.6] text-[color:var(--topology-v2-panel-text-secondary)]">
               {CLI_BOOTSTRAP_COMMAND}
             </code>
           </div>
         ) : null}
       </div>
 
+      {/* 진입 검수 E-1 — 이전에는 브라우저 원문 문자열(`errorText`)이 사용자
+          문구 자리를 통째로 차지했다. `window.showDirectoryPicker is not a
+          function` 은 사람이 읽고 다음 행동을 고를 수 있는 문장이 아니다.
+          이제 사람 말 한 줄이 먼저 서고, 원인 문자열은 그 아래 조용한 단서로
+          남는다 — 원인을 버리지 않으면서 읽는 순서를 뒤집었다. */}
       {errorText !== null ? (
-        <p
-          role="alert"
-          className="mt-2 text-[11px] text-[color:var(--color-status-danger)]"
-        >
-          {errorText || t("errorFallback")}
-        </p>
+        <div role="alert" className="mt-2">
+          <p className="text-label text-[color:var(--color-status-danger)]">
+            {t("errorFallback")}
+          </p>
+          {errorText ? (
+            <p
+              data-testid="first-run-starter-error-detail"
+              className="mt-0.5 break-words text-label leading-[1.5] text-[color:var(--topology-v2-panel-text-quaternary)]"
+            >
+              {errorText}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       <VaultOpenGuideSheet
         open={guideOpen}
+        unsupported={fsaUnsupported}
         onClose={() => setGuideOpen(false)}
         onPickExisting={() => {
           setGuideOpen(false);
@@ -462,12 +492,23 @@ export function FirstRunStarterModule({
 }
 
 function MeterCell({ value, label }: { value: number; label: string }) {
+  // E-10 — 숫자는 기계 문자열이라 mono 가 정보다. 그 아래 라벨(개념·관계·
+  // 도메인)은 한국어 낱말이라 아이브로를 걷는다 — 종전에는 8px 한글에 자간
+  // 1.44px 이 얹혀 첫 화면에서 가장 심하게 벌어진 자리였다.
+  const eyebrow = useLatinEyebrow("tracking-[0.18em]");
   return (
-    <div className="py-2.5 text-center font-mono">
-      <span className="block text-[19px] font-semibold leading-none text-[color:var(--topology-v2-panel-text-primary)]">
+    <div className="py-2.5 text-center">
+      {/* 타입 램프에 16 ↔ 23 사이가 없다. 23(text-display)은 300px 패널 안
+          3분할 계기에서 카드 본문(12.5px)을 압도하고, 16(text-title)은 계기
+          숫자의 무게를 잃는다. 램프 스텝을 늘리는 대신 이 한 자리를 명시
+          예외로 둔다 — 스텝 신설은 전역 위계를 바꾸는 결정이라 별 PR 이다. */}
+      {/* eslint-disable-next-line no-restricted-syntax -- 램프 갭(16↔23) 안의 계기 숫자. 사유는 위 주석. */}
+      <span className="block font-mono text-[19px] font-semibold leading-none text-[color:var(--topology-v2-panel-text-primary)]">
         {value}
       </span>
-      <span className="mt-1.5 block text-[8px] uppercase tracking-[0.18em] text-[color:var(--topology-v2-panel-text-quaternary)]">
+      <span
+        className={`mt-1.5 block text-caption text-[color:var(--topology-v2-panel-text-quaternary)] ${eyebrow}`}
+      >
         {label}
       </span>
     </div>

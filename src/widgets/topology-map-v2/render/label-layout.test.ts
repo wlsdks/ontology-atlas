@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   CLUSTER_CHIP_LABEL_PRIORITY,
+  NODE_DISC_LABEL_PRIORITY,
   clampAnchorIntoSafeRect,
   bboxesOverlap,
+  overlapsForeignReserved,
   ellipsizeToWidth,
   greedyPlaceLabels,
   isWithinSafeRect,
@@ -213,5 +215,36 @@ describe("greedyPlaceLabels — 예약 점유(S11 클러스터 칩 겹침)", () 
     expect(greedyPlaceLabels(cands).map((c) => c.payload)).toEqual(
       greedyPlaceLabels(cands, undefined, []).map((c) => c.payload),
     );
+  });
+});
+
+describe("노드 도형 예약 — 라벨이 노드 위에 글자를 얹지 않는다 (진입 검수 E-4)", () => {
+  const box = (minX: number, maxX: number, minY = 0, maxY = 20) => ({ minX, maxX, minY, maxY });
+  const disc = { bbox: box(100, 160, 0, 60), priority: NODE_DISC_LABEL_PRIORITY, ownerId: "n1" };
+
+  it("자기 노드의 예약에는 굴복하지 않는다 — 안 그러면 모든 라벨이 사라진다", () => {
+    // 라벨은 언제나 자기 노드 바로 아래(또는 위)에 붙으므로 자기 예약과 겹친다.
+    expect(overlapsForeignReserved(box(110, 150), "n1", 5, [disc])).toBe(false);
+  });
+
+  it("남의 노드 도형과 겹치는 수동적 라벨은 비켜선다", () => {
+    for (const priority of [2, 3, 4, 5]) {
+      expect(overlapsForeignReserved(box(110, 150), "other", priority, [disc])).toBe(true);
+    }
+  });
+
+  it("선택(0)·호버(1) 라벨은 남의 도형에도 굴복하지 않는다 — 보고 있는 이름이 우선", () => {
+    for (const priority of [0, 1]) {
+      expect(overlapsForeignReserved(box(110, 150), "other", priority, [disc])).toBe(false);
+    }
+  });
+
+  it("주인 없는 예약(클러스터 칩)은 주인 없는 후보도 억제한다", () => {
+    const chipOnly = { bbox: box(100, 160), priority: CLUSTER_CHIP_LABEL_PRIORITY };
+    expect(overlapsForeignReserved(box(120, 200), undefined, 4, [chipOnly])).toBe(true);
+  });
+
+  it("겹치지 않으면 통과", () => {
+    expect(overlapsForeignReserved(box(200, 260), "other", 5, [disc])).toBe(false);
   });
 });

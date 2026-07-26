@@ -517,6 +517,44 @@ that is a separate, sanctioned signal.
 - 라틴 아이브로 자체는 유지한다(영문 라벨·탭·범례에서는 정상 신호다). 금지는
   **한글 위에 얹는 것**이다.
 
+**이중 언어 표면은 로케일로 조건을 내린다 (2026-07-26 진입 검수 E-10).** 같은
+컴포넌트가 ko 와 en 을 모두 그리면 장식을 통째로 없애는 것은 과잉 처방이다 —
+en 에서는 그 아이브로가 정상 신호다. `src/shared/lib/latin-eyebrow.ts` 의
+`useLatinEyebrow(tracking)` 이 이 판정의 단일 출처다:
+
+```tsx
+const eyebrow = useLatinEyebrow("tracking-[0.2em]");
+<p className={`text-caption text-[color:var(--color-text-quaternary)] ${eyebrow}`}>
+```
+
+- ko → 빈 문자열(장식 0). en → `font-mono uppercase tracking-…`.
+- **기계 문자열은 예외다** — 계기 숫자, 폴더 경로, 단축키 글리프는 등폭이 정보이므로
+  mono 를 유지한다. 걷는 것은 그 곁의 **한국어 낱말**뿐이다.
+- 등록되지 않은 로케일은 비-라틴으로 본다(장식을 잘못 얹는 쪽이 더 비싸다).
+- intl provider 밖에서 렌더되는 컴포넌트는 이 훅을 못 쓴다 — 폴백으로 감추지 않고
+  테스트에 provider mock 을 둔다(`useLocale: () => "ko"`).
+
+실측 근거(1512×950 다크, getComputedStyle 전수): 첫 화면 ko 7곳이 자간
+1.36~1.8px + mono 폴백 + uppercase 를 한글에 얹고 있었다 → 0곳. en 무변.
+
+#### 라벨은 노드 도형선에 닿지 않는다 (2026-07-26 진입 검수 E-4)
+
+캔버스 라벨의 베이스라인은 `render/labels.ts#resolveLabelBaselineY` **한 곳**에서
+나온다. `draw()` 와 `topology-frame-draw.ts` 의 bbox 빌드가 같은 함수를 쓴다 —
+갈라지면 측정한 상자와 실제로 칠한 글자가 다른 자리에 놓인다.
+
+- 라벨 앵커는 **그려진** 스크린 반지름을 쓴다(magnitudeScale · breathe · 등장 램프 ·
+  선택 시 1.12 성장 포함). nominal 반지름을 쓰면 큰 노드·선택 노드의 이름이 도형
+  안으로 들어간다.
+- 노드가 원판 **밖**에 그리는 외곽선(선택 링 +6px)과 글리프 사이에 최소 여유
+  (`LABEL_NODE_CLEARANCE` 3px)를 보장한다. 오프셋 식만 쓰면 글리프가 베이스라인
+  위로 자라는 만큼 링을 관통한다 — 어떤 줌 배율로도 해소되지 않는다(폰트가 같이 커짐).
+- ego 멤버·호버 노드의 원판은 라벨 배치기에 **예약**으로 넘긴다
+  (`NODE_DISC_LABEL_PRIORITY` = 1: 선택·호버 라벨은 굴복하지 않고 수동적 라벨만
+  비켜선다). 예약에는 주인(`ownerId`)이 있어 자기 라벨은 면제된다.
+- 비켜서는 순서는 **뒤집기 먼저, 억제 나중** — 아래가 막히면 노드 위 자리를 한 번
+  시도하고, 거기도 막힐 때만 라벨을 떨어뜨린다("이름 없는 도형" 재발 방지).
+
 ### Relief/Topology layout tokens
 
 Relief/Topology layout tokens live in `app/globals.css` under `:root` because

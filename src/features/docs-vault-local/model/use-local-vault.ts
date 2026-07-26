@@ -38,6 +38,7 @@ import {
   tauriVaultPathExists,
 } from '@/shared/lib/tauri-vault-fs';
 import { toErrorMessage } from '@/shared/lib/error-message';
+import { isPickerAbort } from '@/shared/lib/picker-abort';
 import {
   emptyAgentActivityStatus,
   parseAgentActivityStatus,
@@ -204,11 +205,19 @@ export {
   type FrontmatterUpdateValue,
 } from '@/entities/docs-vault/lib/frontmatter-updates';
 
+/**
+ * 능력 판정은 `in` 이 아니라 **호출 가능한지**로 한다 — `'showDirectoryPicker'
+ * in window` 는 키가 있으면 true 라서, 값이 `undefined` 인 환경(확장/폴리필/
+ * 브라우저 스텁)에서 `isSupported()` 가 true 를 주고 곧이어 픽커 호출이
+ * `is not a function` 이라는 **원문 자바스크립트 오류**로 터진다. 그 오류가
+ * 제품의 유일한 인디고 주 CTA 자리에 빨간 글씨로 그려졌다(진입 검수 E-1).
+ * 못 부르면 미지원이다 — 그러면 사전에 정직하게 강등하는 기존 경로를 탄다.
+ */
 function isSupported(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    ('showDirectoryPicker' in window || isTauriVaultRuntime())
-  );
+  if (typeof window === 'undefined') return false;
+  const picker = (window as unknown as { showDirectoryPicker?: unknown })
+    .showDirectoryPicker;
+  return typeof picker === 'function' || isTauriVaultRuntime();
 }
 
 function verifyRead(
@@ -572,8 +581,8 @@ export function useLocalVaultInternal() {
       await refreshRecentVaults();
       await load(handle);
     } catch (err) {
-      // AbortError = 사용자가 취소한 것이니 선택창 직전 상태로 복귀.
-      if (err instanceof DOMException && err.name === 'AbortError') {
+      // 취소는 실패가 아니다 — 선택창 직전 상태로 복귀(`isPickerAbort` 주석 참고).
+      if (isPickerAbort(err)) {
         setState(previousState);
         return;
       }

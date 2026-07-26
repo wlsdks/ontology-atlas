@@ -1,9 +1,19 @@
+import type React from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { VaultOpenGuideSheet } from "./VaultOpenGuideSheet";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => "ko",
+}));
+
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
 }));
 
 describe("VaultOpenGuideSheet", () => {
@@ -98,6 +108,21 @@ describe("VaultOpenGuideSheet", () => {
     );
     expect(document.activeElement).toBe(opener);
     opener.remove();
+  });
+
+  // 진입 검수 E-1 — 미지원 브라우저(Safari·Firefox)에서 두 CTA 는 눌러도
+  // 아무 일이 없었고, 시트만 닫혀 왜 안 되는지도 어디로 가야 하는지도 사라졌다.
+  it("unsupported 면 두 FSA CTA 를 걷고 macOS 앱 경로만 남긴다", () => {
+    render(<VaultOpenGuideSheet open unsupported onClose={vi.fn()} />);
+    expect(screen.getByTestId("vault-guide-pick-existing")).not.toBeVisible();
+    expect(screen.getByTestId("vault-guide-create-new")).not.toBeVisible();
+    // 오지 않을 OS 선택창을 예고하는 부제 대신 왜 안 되는지가 그 자리에 온다.
+    expect(screen.queryByText("subtitle")).not.toBeInTheDocument();
+    expect(screen.getByText("unsupportedNotice")).toBeInTheDocument();
+    expect(screen.getByTestId("vault-guide-unsupported-cta")).toHaveAttribute(
+      "href",
+      expect.stringContaining("/download"),
+    );
   });
 
   it("renders nothing when closed", () => {

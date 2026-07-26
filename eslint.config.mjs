@@ -111,6 +111,14 @@ const arbitrarySizeSelectors = [
 // (2026-07-26 실측: `project-detail` 의 text-[12px] 가 그렇게 통과했다) 그 사각을
 // 테스트가 래칫으로 붙든다. 여기에 디렉토리를 추가하려면 그 안의 이탈을 먼저 0으로.
 export const codexMigratedGlobs = [
+  // 진입 검수 E-11 (2026-07-26) — 첫 화면 카드가 `text-[Npx]` 20건을 들고도
+  // `pnpm exec eslint <file>` 에서 **error 0 / warning 0** 을 보고했다. 룰이
+  // 틀린 게 아니라 이 디렉토리들을 안 보고 있었다(침묵하는 통과). 진입 경로
+  // 4곳의 이탈을 0으로 만들고 여기 승격한다 — 이제 error 로 막힌다.
+  'src/features/first-run-starter/**/*.{ts,tsx}',
+  'src/features/docs-vault-local/**/*.{ts,tsx}',
+  'src/features/locale-switch/**/*.{ts,tsx}',
+  'src/features/project-quick-edit/**/*.{ts,tsx}',
   'src/views/ontology-insights/**/*.{ts,tsx}',
   'src/views/project-selector/**/*.{ts,tsx}',
   'src/views/ontology-edit/**/*.{ts,tsx}',

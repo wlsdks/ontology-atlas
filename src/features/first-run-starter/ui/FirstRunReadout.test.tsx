@@ -11,6 +11,8 @@ vi.mock('../model/use-first-run-sample-mode-settled', () => ({
 }));
 
 vi.mock('next-intl', () => ({
+  // 라틴 아이브로 판정이 화면 언어를 읽는다 (E-10).
+  useLocale: () => "ko",
   useTranslations: () => (key: string) => key,
 }));
 

@@ -3,6 +3,7 @@
 import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BookOpen,
@@ -285,6 +286,11 @@ export function DocsQuickDrawer({
   contextProject,
 }: Props) {
   const t = useTranslations("vaultWidgets.docsDrawer");
+  // 진입 검수 E-10 — 문서함/작업공간 드로어의 한국어 섹션 라벨에 얹힌 라틴
+  // 아이브로. 「폴더별  ·  31」처럼 공백만 벌어졌다. 폴더 이름 행(TreeBranch)은
+  // 기계 문자열이라 mono 를 유지한다 — 금지는 한글 문장에 얹는 것이다.
+  const eyebrow14 = useLatinEyebrow("tracking-[0.14em]");
+  const eyebrow08 = useLatinEyebrow("tracking-[0.08em]");
   const locale = useLocale();
   const router = useRouter();
 
@@ -521,7 +527,7 @@ export function DocsQuickDrawer({
             <header className="shrink-0 border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+                  <p className={`text-caption text-[color:var(--color-indigo-accent)] ${eyebrow14}`}>
                     {t("eyebrow")}
                   </p>
                   <p className="mt-1 text-body text-[color:var(--color-text-secondary)]">
@@ -649,7 +655,7 @@ export function DocsQuickDrawer({
                 <>
                   {contextProject && relatedDocs.length > 0 && (
                     <section className="mb-4 rounded-panel border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a06)] p-2">
-                      <p className="mb-1.5 flex items-center gap-1 px-1 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+                      <p className={`mb-1.5 flex items-center gap-1 px-1 text-caption text-[color:var(--color-indigo-accent)] ${eyebrow14}`}>
                         <Link2 size={10} />
                         {t("relatedSection", { name: contextProject.name, count: relatedDocs.length })}
                       </p>
@@ -664,7 +670,7 @@ export function DocsQuickDrawer({
                             <FileText size={13} className="shrink-0 text-[color:var(--color-text-quaternary)] group-hover:text-[color:var(--color-indigo-accent)]" />
                             <span className="truncate">{m.doc.title}</span>
                             <span
-                              className="ml-auto shrink-0 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+                              className={`ml-auto shrink-0 text-caption text-[color:var(--color-text-quaternary)] ${eyebrow08}`}
                               title={m.reasons.join(", ")}
                             >
                               {m.reasons[0]}
@@ -677,7 +683,7 @@ export function DocsQuickDrawer({
 
                   {pinnedDocs.length > 0 && (
                     <section className="mb-4">
-                      <p className="mb-1.5 flex items-center gap-1 px-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+                      <p className={`mb-1.5 flex items-center gap-1 px-2 text-caption text-[color:var(--color-indigo-accent)] ${eyebrow14}`}>
                         <Star size={10} />
                         {t("pinnedSection", { count: pinnedDocs.length })}
                       </p>
@@ -698,7 +704,7 @@ export function DocsQuickDrawer({
 
                   {recentViewed.length > 0 && (
                     <section className="mb-4">
-                      <p className="mb-1.5 flex items-center gap-1 px-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                      <p className={`mb-1.5 flex items-center gap-1 px-2 text-caption text-[color:var(--color-text-quaternary)] ${eyebrow14}`}>
                         <Clock size={10} />
                         {t("recentSection", { count: recentViewed.length })}
                       </p>
@@ -718,7 +724,7 @@ export function DocsQuickDrawer({
                   )}
 
                   <section className="mb-4">
-                    <p className="mb-1.5 flex items-center gap-1 px-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                    <p className={`mb-1.5 flex items-center gap-1 px-2 text-caption text-[color:var(--color-text-quaternary)] ${eyebrow14}`}>
                       <Clock size={10} />
                       {t("modifiedSection", { count: modifiedDocs.length })}
                     </p>
@@ -740,7 +746,7 @@ export function DocsQuickDrawer({
               )}
 
               <section>
-                <p className="mb-1.5 px-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                <p className={`mb-1.5 px-2 text-caption text-[color:var(--color-text-quaternary)] ${eyebrow14}`}>
                   {trimmedQuery
                     ? t("searchHeader", { query })
                     : activeTag
@@ -799,7 +805,7 @@ export function DocsQuickDrawer({
                 "shrink-0 border-t border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-5 py-2.5",
               )}
             >
-              <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              <p className={`text-caption text-[color:var(--color-text-quaternary)] ${eyebrow14}`}>
                 <kbd className="rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 tabular-nums">↑↓</kbd>
                 {" "}{t("footerMove")} ·{" "}
                 <kbd className="rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 tabular-nums">↵</kbd>

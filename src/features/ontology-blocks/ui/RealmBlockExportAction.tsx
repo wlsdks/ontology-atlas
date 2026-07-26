@@ -5,6 +5,7 @@ import { PackagePlus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useLocalVault } from "@/features/docs-vault-local";
 import type { OntologyTreeNode } from "@/shared/lib/ontology-tree";
+import { isPickerAbort } from "@/shared/lib/picker-abort";
 import { buildBlockManifest, type BlockCensus } from "../model/block-manifest";
 import { writeBlockToDirectory, type BlockDirectoryHandleLike } from "../model/block-fsa";
 import { collectSubtreeNodeIds, selectRealmBlockDocs } from "../model/collect-realm-block";
@@ -48,8 +49,9 @@ export function RealmBlockExportAction({
   const [exportedCount, setExportedCount] = useState(0);
 
   const vaultLoaded = status === "loaded" && Boolean(manifest);
+  // 키 존재(`in`)가 아니라 호출 가능한지로 판정 — `BlockImportModule` 과 같은 계약.
   const supported =
-    typeof window !== "undefined" && "showDirectoryPicker" in window;
+    typeof window !== "undefined" && typeof window.showDirectoryPicker === "function";
 
   const runExport = async () => {
     if (phase === "exporting" || !vaultLoaded || !manifest) return;
@@ -89,7 +91,7 @@ export function RealmBlockExportAction({
       setExportedCount(files.length);
       setPhase("done");
     } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
+      if (isPickerAbort(err)) {
         setPhase("idle");
         return;
       }
