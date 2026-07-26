@@ -30,8 +30,20 @@ const LABELS: TopologyTrailChipLabels = {
 };
 
 const PAST_WALKS: TopologyPastWalkRow[] = [
-  { id: "w1", routeLabel: "AI 에이전트 파트너 → 화면(뷰)", metaLabel: "오늘 · 12곳" },
-  { id: "w2", routeLabel: "Core → El Y", metaLabel: "어제 · 4곳" },
+  {
+    id: "w1",
+    routeLabel: "AI 에이전트 파트너 → 화면(뷰)",
+    metaLabel: "오늘 · 12곳",
+    replayable: true,
+    ariaLabel: "이 길 다시 펴기 — 오늘, 12곳",
+  },
+  {
+    id: "w2",
+    routeLabel: "Core → El Y",
+    metaLabel: "어제 · 4곳",
+    replayable: true,
+    ariaLabel: "이 길 다시 펴기 — 어제, 4곳",
+  },
 ];
 
 const ENTRIES: FootprintTrailEntry[] = [
@@ -52,6 +64,7 @@ function renderChip(overrides: Partial<React.ComponentProps<typeof TopologyTrail
     onClear: vi.fn(),
     pastWalks: PAST_WALKS,
     pastNotice: null,
+    onReplayPastWalk: vi.fn(),
     onDeletePastWalk: vi.fn(),
     onClearPastWalks: vi.fn(),
     ...overrides,
@@ -294,10 +307,61 @@ describe("TopologyTrailChip — 지난 길 2층", () => {
     expect(screen.getByTestId("topology-trail-chip-popover")).toHaveTextContent("최근 10개까지");
   });
 
-  it("행 자체는 컨트롤이 아니다 — 누를 수 있는 건 삭제뿐", () => {
+  it("행을 누르면 그 길을 다시 펴고 1층으로 돌아온다", () => {
+    const props = renderChip();
+    openPast();
+    fireEvent.click(screen.getAllByTestId("topology-trail-past-replay")[1]);
+    expect(props.onReplayPastWalk).toHaveBeenCalledWith("w2");
+    // 방금 편 길은 1층에 있다 — 다시 펴 놓고 2층에 남으면 결과가 안 보인다.
+    expect(screen.queryByTestId("topology-trail-past-row")).toBeNull();
+    expect(screen.getAllByTestId("topology-trail-row")).toHaveLength(3);
+  });
+
+  it("행 aria 는 날짜와 곳 수로 무엇이 열리는지 말한다", () => {
     renderChip();
     openPast();
-    const row = screen.getAllByTestId("topology-trail-past-row")[0];
+    expect(screen.getAllByTestId("topology-trail-past-replay")[0]).toHaveAttribute(
+      "aria-label",
+      "이 길 다시 펴기 — 오늘, 12곳",
+    );
+  });
+
+  it("지도에서 사라진 길은 버튼이 아니다 — 지우기만 남는다", () => {
+    const props = renderChip({
+      pastWalks: [
+        {
+          id: "dead",
+          routeLabel: "지워진 곳 → 지워진 곳",
+          metaLabel: "지금 지도에 없어요",
+          replayable: false,
+          ariaLabel: null,
+        },
+      ],
+    });
+    openPast();
+    const row = screen.getByTestId("topology-trail-past-row");
+    expect(row).toHaveAttribute("data-replayable", "false");
+    expect(screen.queryByTestId("topology-trail-past-replay")).toBeNull();
+    // 남은 컨트롤은 ✕ 하나뿐.
     expect(row.querySelectorAll("button")).toHaveLength(1);
+    expect(props.onReplayPastWalk).not.toHaveBeenCalled();
+  });
+
+  it("2층을 오갈 때 브러싱이 남지 않는다 — 렌즈는 켜진 채로", () => {
+    const onHoverEntry = vi.fn();
+    const onLensChange = vi.fn();
+    renderChip({ onHoverEntry, onLensChange });
+    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+    fireEvent.mouseEnter(
+      screen.getAllByTestId("topology-trail-row")[0].parentElement as HTMLElement,
+    );
+    expect(onHoverEntry).toHaveBeenLastCalledWith("element:y");
+    fireEvent.click(screen.getByTestId("topology-trail-past-link"));
+    expect(onHoverEntry).toHaveBeenLastCalledWith(null);
+    // 층을 옮겨도 팝오버는 열려 있으므로 렌즈는 계속 on.
+    expect(onLensChange).toHaveBeenLastCalledWith(true);
+    fireEvent.click(screen.getByTestId("topology-trail-past-back"));
+    expect(onHoverEntry).toHaveBeenLastCalledWith(null);
+    expect(onLensChange).toHaveBeenLastCalledWith(true);
   });
 });

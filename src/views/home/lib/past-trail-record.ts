@@ -122,8 +122,12 @@ export interface UpsertPastWalkOptions {
  * 상태가 이미 디스크에 있다. 겉으로 보이는 계약은 그대로다: 한 세션 = 한 줄,
  * 시각은 그 줄에 하나.
  *
- * 하지 않는 경우: ① 걸음이 문턱 미만 ② **다른** 최신 길과 경로가 같을 때
- * (새로고침 직후 같은 길을 다시 걸었을 때 같은 줄이 두 개가 되지 않게).
+ * 하지 않는 경우: ① 걸음이 문턱 미만 ② **다른 어떤** 길과도 경로가 같을 때.
+ *
+ * ②가 맨 앞 한 줄이 아니라 전체 비교인 이유: 지난 길을 다시 펴면 그 길의 걸음이
+ * 그대로 이번 세션의 걸음이 된다 — 맨 앞만 보면 다시 편 길이 오늘 날짜로 한 줄
+ * 더 생겨 같은 길이 목록에 둘이 된다. 전체를 보면 원본이 제 날짜 그대로 남고,
+ * 이어 걸어 경로가 달라지는 순간에만 새 줄이 생긴다("변화가 있어야 새 길").
  */
 export function upsertPastWalk(
   walks: readonly PastWalk[],
@@ -136,13 +140,36 @@ export function upsertPastWalk(
     .map((e) => ({ id: e.id, title: e.title, kind: e.kind }));
   if (trimmed.length < PAST_WALK_MIN_ENTRIES) return [...walks];
   const others = walks.filter((walk) => walk.id !== walkId);
-  if (others.length > 0 && sameRoute(others[0].entries, trimmed)) return [...walks];
+  if (others.some((walk) => sameRoute(walk.entries, trimmed))) return [...walks];
   const walk: PastWalk = {
     id: walkId,
     endedAt: options.now ?? Date.now(),
     entries: trimmed,
   };
   return [walk, ...others].slice(0, PAST_WALKS_MAX);
+}
+
+/**
+ * 보관된 걸음을 **살아있는 지도 기준으로** 다시 맞춘다 — 사라진 노드는 빼고,
+ * 남은 노드의 이름은 지금 이름으로 갈아끼운다.
+ *
+ * 왜 필요한가: 보관 레코드는 그때의 제목·kind 를 굳혀 둔다(노드가 지워져도
+ * 목록이 렌더돼야 하므로). 하지만 그 길을 **다시 펴는** 순간에는 지도가
+ * 진실원이다 — 어제 이름으로 오늘 지도를 가리키면 없는 곳을 가리키게 된다.
+ * 세션 궤적이 이미 같은 규칙으로 정제되고 있어(단일 진실원: 궤적은 파생
+ * 표시층) 다시 편 길도 같은 규칙을 통과해야 두 길이 같은 물건이 된다.
+ */
+export function refinePastWalkEntries(
+  entries: readonly PastWalkEntry[],
+  lookup: (id: string) => { title: string; kind: string } | null | undefined,
+): PastWalkEntry[] {
+  const refined: PastWalkEntry[] = [];
+  for (const entry of entries) {
+    const live = lookup(entry.id);
+    if (!live) continue;
+    refined.push({ id: entry.id, title: live.title, kind: live.kind });
+  }
+  return refined;
 }
 
 /**

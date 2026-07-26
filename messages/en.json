@@ -2202,6 +2202,8 @@
       "pastClearAllConfirmLabel": "Press again to delete",
       "pastCapCaption": "Keeps the last 10",
       "pastEmptyBody": "No past trails yet. Walks are kept here when you finish.",
+      "pastReplayAriaLabel": "Reopen this trail — {date}, {count} stops",
+      "pastDeadRowMeta": "No longer on this map",
       "pastReadOnlyNotice": "This vault is open read-only, so this walk isn't being kept. Saving any document will ask for write access."
     },
     "startChecklist": {

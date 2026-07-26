@@ -2202,6 +2202,8 @@
       "pastClearAllConfirmLabel": "한 번 더 누르면 지워요",
       "pastCapCaption": "최근 10개까지",
       "pastEmptyBody": "아직 남은 길이 없어요. 지도를 걷고 나면 여기 모여요.",
+      "pastReplayAriaLabel": "이 길 다시 펴기 — {date}, {count}곳",
+      "pastDeadRowMeta": "지금 지도에 없어요",
       "pastReadOnlyNotice": "이 볼트를 읽기 전용으로 열어서 지금 걷는 길이 남지 않아요. 문서를 한 번 저장하면 쓰기 권한을 물어봐요."
     },
     "startChecklist": {
