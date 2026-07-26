@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import {
   AppNavRail,
@@ -12,15 +12,10 @@ import {
   AgentConnectLauncherProvider,
   useAgentConnectLauncher,
 } from "@/widgets/agent-connect";
-import { AgentTerminalDock } from "@/widgets/agent-terminal";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { DestinationGuide, GuideReplayProvider } from "@/features/guided-tour";
-import { useLocalVault } from "@/features/docs-vault-local";
-import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
-import { useTranslations } from "next-intl";
-import { TerminalSquare } from "lucide-react";
 import { resolveActiveNavDestination } from "@/shared/lib/nav-destination";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 
@@ -37,13 +32,14 @@ import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
  *
  * **높이 계약 (2026-07-26 개정 — 종전 "높이는 강제하지 않는다" 는 폐기).**
  * 예전에는 각 페이지가 최상위 wrapper 로 뷰포트 높이를 직접 주장했고
- * (`h-screen` / `min-h-screen`), 셸은 투명한 pass-through 였다. 하단 도크(#79)
- * 가 들어오면서 그 모델이 깨졌다 — 페이지가 100vh 를 주장하면 셸 칼럼이
- * `100vh + 도크높이` 가 되어 도크가 화면 밖으로 밀린다(실측: 보이는 픽셀 0).
+ * (`h-screen` / `min-h-screen`), 셸은 투명한 pass-through 였다. 그 모델은
+ * 셸이 본문 아래에 무엇을 더 세우는 순간 깨진다 — 페이지가 100vh 를
+ * 주장하면 셸 칼럼이 `100vh + 그것` 이 되어 아래 표면이 화면 밖으로
+ * 밀린다(실측: 보이는 픽셀 0).
  *
- * 이제 **뷰포트 높이는 셸이 소유한다**: 셸이 `h-dvh overflow-hidden` 칼럼을
+ * 그래서 **뷰포트 높이는 셸이 소유한다**: 셸이 `h-dvh overflow-hidden` 칼럼을
  * 잡고 본문 슬롯만 스크롤한다. 페이지 루트는 `h-full` / `min-h-full` 로
- * 슬롯을 채우기만 하면 되고, 도크가 있는지 없는지 알 필요가 없다 —
+ * 슬롯을 채우기만 하면 되고, 셸이 아래에 무엇을 두는지 알 필요가 없다 —
  * 페이지가 기억해야 하는 구조는 #65 계열의 drift 를 부른다.
  * 새 페이지에서 `h-screen`/`min-h-screen` 은 결함이다.
  *
@@ -60,7 +56,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <AgentConnectLauncherProvider>
         <GuideReplayProvider>
           <RouteFocusManager />
-          <ShellWithTerminalDock>{children}</ShellWithTerminalDock>
+          <ShellColumn>{children}</ShellColumn>
         </GuideReplayProvider>
       </AgentConnectLauncherProvider>
     </NavRailShellProvider>
@@ -68,34 +64,17 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 /**
- * 셸 본문 + 하단 터미널 도크 (#79).
+ * 셸 본문 — 레일 + 스크롤되는 본문 슬롯 + 목적지 안내.
  *
- * 도크가 **목적지가 아니라 도크**인 이유: LNB 목적지는 "가서 생각하는 장소"고
- * 터미널은 *다른 표면을 보면서 켜두는 도구* 다. 목적지로 만들면 지도를
- * 대체해버린다 — VS Code 가 터미널을 하단 패널에 둔 이유와 같다.
- *
- * 열림 상태는 셸이 소유한다 — 목적지를 옮겨 다녀도 세션이 유지돼야
- * "켜두는 도구" 가 성립한다.
+ * 하단에 앱 내장 터미널 도크가 살던 자리다. 2026-07-26 소유자 결정으로
+ * 걷어냈다 — 에이전트를 돌리는 사람은 자기 터미널을 켜고, 앱이 내주던
+ * 유일한 이점(같은 폴더에서 지도 옆에 뜬다)은 볼트 워처가 프로세스 위치와
+ * 무관하게 이미 주고 있었다. 셸이 `h-dvh` 칼럼을 소유하는 계약은 그대로
+ * 남는다 — 페이지들이 이미 그 위에 서 있다.
  */
-function ShellWithTerminalDock({ children }: { children: ReactNode }) {
+function ShellColumn({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
-  const [terminalOpen, setTerminalOpen] = useState(false);
-  const vault = useLocalVault();
-  const vaultPath = vault.handle ? (getTauriVaultRootPath(vault.handle) ?? null) : null;
-
-  // 터미널을 열 수 있는 표면 (소유자 판단 2026-07-26: "터미널은 지도
-  // 페이지에서만 열 수 있도록 하는게 나을듯? 아니면 공방쪽이나..").
-  //
-  // 왜 전역이 아닌가: 터미널은 *작업 중인 것 옆에 켜두는 도구* 다. 프로젝트
-  // 목록이나 다운로드 페이지에서 셸을 띄우는 건 할 일이 없는데 본문 높이의
-  // 30% 를 가져간다. 어디서나 열리면 "언제 쓰는 건지" 도 흐려진다.
-  //
-  // 허용 표면 = **볼트를 실제로 만지는 곳**: 지도(구조를 보며 에이전트에게
-  // 시킨다) · 공방(노드를 쓰는 중 확인한다) · 기록(git 을 직접 만진다).
-  const tTerminal = useTranslations("agentTerminal");
-  const terminalLabel = tTerminal("title");
   const surface = resolveActiveNavDestination(pathname);
-  const terminalAllowed = surface === "map" || surface === "studio" || surface === "git";
 
   // 목적지 안내를 띄울 화면. 지도는 자기 8단계 여정을 직접 소유하므로 제외하고,
   // 프로젝트는 **목록에서만** 띄운다 — `/project/<slug>` 상세도 레일에서는 같은
@@ -107,81 +86,21 @@ function ShellWithTerminalDock({ children }: { children: ReactNode }) {
         ? null
         : surface;
 
-  // 허용 안 된 표면으로 이동하면 접는다 — 열어둔 채 넘어가면 "왜 여기 있지" 가
-  // 된다. 세션 정리(자식 프로세스 kill)는 도크 언마운트 effect 가 한다.
-  useEffect(() => {
-    if (!terminalAllowed) setTerminalOpen(false);
-  }, [terminalAllowed]);
-
-  // ⌃` — VS Code 의 터미널 토글은 **모든 플랫폼에서 Control+backtick** 이다.
-  // macOS 의 ⌘` 는 시스템 "다음 창" 단축키라, 여기서 preventDefault 하면
-  // 설치 앱에서 OS 관용구를 뺏는다. 이 키가 **세션을 시작하는 유일한 경로**
-  // 이므로 자동 실행 0 이 유지된다(마운트만으로는 아무것도 안 뜬다).
-  useEffect(() => {
-    if (!terminalAllowed) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "`" || !event.ctrlKey || event.metaKey) return;
-      event.preventDefault();
-      setTerminalOpen((open) => !open);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [terminalAllowed]);
-
-  // 도크가 본문에서 가져가는 높이(`--app-viewport-h`)는 도크 자신이
-  // `<html data-agent-terminal>` 로 선언한다 — 실제 높이를 정하는 조건
-  // (available · vaultPath)을 아는 곳이 거기 하나뿐이라, 여기서 따로
-  // 계산하면 예약 높이와 실제 높이가 갈린다.
   return (
-    // 뷰포트 소유권은 **셸**이 갖는다 (소유자 실보고 2026-07-26: "스크롤을 맨
-    // 밑으로 내려야 터미널이 나오는데.."). 도크가 문서 흐름에 있으면 그건
-    // 도크가 아니라 푸터다.
-    //
-    // 토큰(`--app-viewport-h`)을 만들어 **각 페이지가 쓰도록** 하는 방법도
-    // 있었지만, 그건 "페이지가 기억해야 하는 구조" 라 #65(레일 유틸 티어가
-    // 화면마다 1/2/3 개였던 결함)와 같은 drift 를 부른다. 셸이 `h-dvh` 를
-    // 잡고 본문을 스크롤 영역으로 가두면 어떤 페이지도 아무것도 몰라도 된다.
+    // 뷰포트 소유권은 **셸**이 갖는다. 토큰(`--app-viewport-h`)을 만들어 **각
+    // 페이지가 쓰도록** 하는 방법도 있었지만, 그건 "페이지가 기억해야 하는
+    // 구조" 라 #65(레일 유틸 티어가 화면마다 1/2/3 개였던 결함)와 같은 drift 를
+    // 부른다. 셸이 `h-dvh` 를 잡고 본문을 스크롤 영역으로 가두면 어떤 페이지도
+    // 아무것도 몰라도 된다.
     <div className="flex h-dvh w-full flex-col overflow-hidden">
       <div className="flex min-h-0 flex-1">
         <AppNavRailSlot />
         <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">{children}</div>
       </div>
-      {/* 도크 손잡이 — 닫혀 있을 때만. ⌃` 만 있으면 **발견 불가능한 기능**이라
-          사실상 없는 것과 같다(소유자 실보고 2026-07-26: "터미널을 여는 버튼이
-          없는데?").
-
-          왜 레일 타일이 아닌가: 터미널은 표면 한정(지도·공방·기록)이라 레일에
-          넣으면 화면마다 아이콘 수가 달라진다 — #65 가 그 결함이었다. 대신
-          도크가 자기 손잡이를 갖는다: 닫히면 얇은 바, 열리면 그 자리가 헤더가
-          되어 위치가 연속된다(VS Code 패널 토글과 같은 관용구). 셸이 소유하므로
-          페이지가 등록할 것이 없다. */}
-      {terminalAllowed && !terminalOpen ? (
-        <button
-          type="button"
-          data-testid="agent-terminal-handle"
-          onClick={() => setTerminalOpen(true)}
-          title={`${terminalLabel} (⌃\`)`}
-          className="flex shrink-0 items-center gap-2 border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-1.5 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-        >
-          <TerminalSquare size={13} aria-hidden />
-          <span>{terminalLabel}</span>
-          {/* 단축키를 손잡이에 새겨 다음부터는 키로 열게 만든다 — 버튼은
-              발견용, 키는 사용용. */}
-          <kbd className="ml-auto rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-caption">
-            ⌃`
-          </kbd>
-        </button>
-      ) : null}
-
-      <AgentTerminalDock
-        open={terminalOpen && terminalAllowed}
-        onClose={() => setTerminalOpen(false)}
-        vaultPath={vaultPath}
-      />
 
       {/* 목적지 첫 방문 안내 (2026-07-26) — 지도에만 있던 안내를 나머지 다섯
-          목적지로 넓힌다. 셸이 소유하는 이유는 터미널 도크와 같다: 페이지마다
-          손으로 마운트하게 하면 하나가 빠져도 아무도 모른다(#65 계열 drift).
+          목적지로 넓힌다. 셸이 소유하는 이유: 페이지마다 손으로 마운트하게
+          하면 하나가 빠져도 아무도 모른다(#65 계열 drift).
           `key` 로 목적지마다 remount — 이동 중 이전 화면의 카드가 남지 않는다.
           지도는 캔버스 노드 앵커·인터랙티브 클릭이 있는 8단계 여정이라
           HomePage 가 계속 직접 소유한다(여기서는 `null`). */}

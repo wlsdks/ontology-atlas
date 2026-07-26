@@ -779,7 +779,6 @@
         "openProjectPalette": "Open the search palette",
         "openGlobalPalette": "Search concepts, docs, and projects together",
         "toggleDocsDrawer": "Toggle the ontology workspace preview drawer (with edit access)",
-        "toggleAgentTerminal": "Open or close the terminal (desktop app only)",
         "showShortcuts": "Show or hide keyboard shortcuts",
         "stepCloseOverlays": "Close drawers and overlays one step at a time",
         "clickSelect": "Select a node",
@@ -2935,19 +2934,6 @@
     "actionPickExisting": "Choose existing folder",
     "actionCreateNew": "Start fresh with an empty folder",
     "actionCancel": "Not now"
-  },
-  "agentTerminal": {
-    "title": "Terminal",
-    "close": "Close terminal",
-    "closeEndsSession": "Closing also ends what's running",
-    "exited": "Finished running",
-    "desktopOnly": "The terminal runs in the desktop app",
-    "desktopOnlyHint": "A browser can't run programs on this computer.",
-    "downloadLink": "Get the desktop app",
-    "needVault": "Open a folder first",
-    "needVaultHint": "The terminal starts in the folder you have open.",
-    "resizeLabel": "Resize terminal",
-    "resizeHint": "Drag up or down to change the height. Double-click for the default."
   },
   "vaultAgentPanel": {
     "title": "Vault helper",

@@ -1671,27 +1671,10 @@
     --topology-motion-ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
     --topology-motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-    /* ── 에이전트 터미널 도크 (#79) ───────────────────────────────────────
-     *
-     * 도크 높이. 구현 초안의 고정 `320px`(JSX 인라인 style)을 뷰포트 비례
-     * clamp 로 승격한다 — 14"(1512×900, 실사용 본문 ~872px)에서 320 고정은
-     * 본문의 36.7% 를 먹어 지도 캔버스가 방사 골격 + 도킹 자식 열을 동시에
-     * 담지 못했다. clamp 로 14" 262px(30%) · 1080p 324px · 27" 400px(상한)
-     * 이 되어 화면이 커질수록 도구가 커지고 비율은 일정하다. 드래그
-     * 리사이즈(후속)가 들어오면 JS 가 이 변수를 덮어쓰면 된다 — 소비처는
-     * 이미 변수만 읽는다.
-     */
-    --agent-terminal-dock-height: clamp(200px, 30vh, 400px);
-    /* 강등 상태(웹·볼트 미선택)는 문단 두 줄 + 링크가 전부다. 여기에 30vh 를
-       주면 사용자는 "빈 검은 상자가 지도를 30% 먹었다" 를 본다 — 잉크 대비
-       공백이 압도적인 상태에 본문을 내줄 이유가 없다. 표면 크기는 그 안의
-       내용이 정한다. */
-    --agent-terminal-dock-height-degraded: 116px;
-
     /* 볼트 에이전트 패널 — 지도 오른쪽에 자리를 내주는 세로 도크.
      *
      * 폭: 대화 한 줄이 읽히는 최소치(약 46자)와 지도를 잡아먹지 않는 상한
-     * 사이. 터미널 도크가 세로로 하는 일을 가로로 한다. */
+     * 사이. */
     --agent-panel-width: clamp(320px, 26vw, 420px);
     /*
      * 신규 토큰 1개 — 제품 이유가 있어서 만든다.
@@ -1705,100 +1688,6 @@
      * 들어오는 만큼 지도가 줄어드는 것이 같은 프레임에 일어난다.
      */
     --agent-panel-reflow-duration: 260ms;
-
-    /* 터미널 셀 타이포 — xterm 은 CSS 클래스가 아니라 JS 옵션으로 받으므로
-       값이 JS 리터럴로 새기 쉽다. 토큰으로 고정해 앱의 mono 스택/크기와
-       한 곳에서 움직인다. 12px 정수인 이유: 타입 램프의 `--text-body`
-       (12.5px)를 그대로 쓰면 셀 격자가 서브픽셀로 어긋나 커서와 글자가
-       0.5px 씩 밀린다 — 터미널만 정수 px 계약을 갖는다. */
-    --terminal-font-size: 12px;
-    --terminal-line-height: 1.35;
-
-    /* 셀 폰트 체인 — 글자는 계속 앱 mono(JetBrains Mono)가 그리고, JBM 이
-     * 못 그리는 글리프만 **사용자가 이미 설치한 폰트**로 글리프 단위 폴백된다.
-     *
-     * 왜 필요한가: JBM 은 `next/font/google` + latin 서브셋이라 unicode-range
-     * 밖의 PUA(U+E0B0 Powerline 세퍼레이터 등)를 아예 안 갖는다. 그런데 macOS
-     * 시스템 mono 폰트(Menlo·Monaco·SF NS Mono·Andale Mono)에도 Powerline
-     * 글리프가 **하나도 없다**(cmap 실측). 그래서 `--font-mono` 를 그대로 쓰면
-     * agnoster·powerlevel10k 프롬프트의 세그먼트 구분자가 전부 두부(□)가 된다 —
-     * 우리가 고른 폰트 때문에 사용자의 프롬프트가 깨지는 것이라 렌더링 결함이다.
-     *
-     * 왜 번들이 아니라 체인인가: 폰트를 번들하면 "우리가 사용자 터미널의 모양을
-     * 정한다" 는 개입이고 수 MB 를 진다. 반면 CSS 폴백 체인이 곧 표준적인 설치
-     * 폰트 감지다(능동 감지 `queryLocalFonts` 는 Chromium 전용이라 WKWebView 에서
-     * 못 쓴다). 여기 나열은 **감지이지 요구가 아니다** — 없으면 조용히 다음으로
-     * 넘어간다. 순서 근거: MesloLGS NF = powerlevel10k 공식 안내 폰트,
-     * Fira Code = 비패치판도 Powerline 심볼 내장(cmap 실측). */
-    --terminal-font-family:
-      var(--font-jetbrains), "MesloLGS NF", "JetBrainsMono Nerd Font Mono",
-      "FiraCode Nerd Font Mono", "Fira Code", "Hack Nerd Font Mono",
-      "Symbols Nerd Font Mono", ui-monospace, "SF Mono", Menlo, monospace;
-
-    /* 셀 영역과 도크 크롬 사이의 정렬 계약. 좌 12px 은 헤더·강등 문단·에러
-     * (모두 `px-3`)와 같은 컬럼에서 셀이 시작하게 한다 — 8px 이던 시절엔 도크
-     * 안에 좌측 기준선이 두 개라 "터미널이 왼쪽 벽에 붙었다" 로 읽혔다.
-     * 상하 8px 은 첫 행 어센더/마지막 행 디센더가 보더에 닿지 않을 만큼의 숨.
-     *
-     * 이 여백은 **측정 대상(xterm host)이 아니라 래퍼**가 가져야 한다. FitAddon 은
-     * host 의 computed 크기에서 `.xterm` 요소의 패딩만 빼므로, host 자신이 패딩을
-     * 가지면 그만큼 cols/rows 를 과대 산정해 우측 열이 잘린다. */
-    --terminal-inset-x: 12px;
-    --terminal-inset-y: 8px;
-
-    /* 높이 그립의 잡을 수 있는 띠 폭. 도크 상단 보더 위에 겹쳐 놓는다 —
-       새 잉크를 그리지 않고 "위쪽 경계가 곧 손잡이"로 만든다. 6px 은 커서가
-       `ns-resize` 로 바뀌는 데 충분하고 헤더 클릭을 훔치지 않는 최소치다
-       (헤더 py-1.5 = 6px 위로만 겹친다). */
-    --terminal-resize-grip-size: 6px;
-
-    /* ANSI 16색 — **외부 프로그램의 data-ink**.
-     *
-     * 이건 우리 장식이 아니라 사용자가 띄운 프로그램(`claude`/`codex`/`git`)이
-     * 의미로 쓰는 색이다(빨강=오류, 초록=추가). 그래서 무채색으로 뭉개면 안
-     * 되고(Tufte — 잉크는 데이터에), 그렇다고 xterm 기본 팔레트를 두면 순도
-     * 100% 형광 red/green/magenta 가 #08090a 위에서 앱의 "무채색 + 단일
-     * 인디고" 헌장을 정면으로 깬다(선언 안 한 채색 시스템이 하나 더 생긴다).
-     *
-     * 그래서 hue 는 지키고 채도만 앱 캔버스 기준으로 낮춘 세트를 **명시
-     * 선언**한다. blue 계열은 인디고 패밀리, yellow 계열은 앱 앰버 패밀리로
-     * 당겨 맞춘다. 확장·용도 전용(칩·보더 등)은 금지 — 터미널 셀 전용이다.
-     *
-     * ## 배경으로 쓰일 때의 대비 (2026-07-26 보정)
-     *
-     * 위 판단은 **전경 잉크** 기준이었는데, agnoster·powerlevel10k 류 테마는
-     * ANSI 색을 **배경**으로 칠하고 ansi-black 을 그 위 전경으로 쓴다. 그
-     * 짝을 재 보니 디렉토리 세그먼트(black on blue)가 3.63:1, 오류 세그먼트
-     * (black on red)가 3.35:1 로 WCAG AA(4.5:1) 미달이었다 — 실캡처에서도
-     * 디렉토리 밴드가 가장 흐릿하게 읽혔다.
-     *
-     * 처방은 **hue 를 건드리지 않는다**(그건 외부 프로그램의 의미다). HSL 의
-     * H·S 를 고정하고 ansi-black 의 L 만 0.245 → 0.163 으로 내렸다. 값은
-     * 눈대중이 아니라 탐색으로 확정했고, 계약은
-     * `tests/contract/terminal-ansi-contrast.test.ts` 가 잠근다(배경 짝
-     * 최악값 3.35 → 4.55).
-     *
-     * 곁가지 이득: ansi-black 이 **배경**일 때(컨텍스트 세그먼트) white 전경
-     * 대비도 6.41 → 8.69 로 오른다. 대신 그 밴드와 캔버스의 표면 차는
-     * 1.83 → 1.35 로 옅어지는데, 앱 자신의 canvas→panel 단차(1.04)보다 여전히
-     * 크므로 밴드는 밴드로 읽힌다.
-     */
-    --terminal-ansi-black: #26282d;
-    --terminal-ansi-red: #d4736e;
-    --terminal-ansi-green: #7fb98a;
-    --terminal-ansi-yellow: #c9a86a;
-    --terminal-ansi-blue: #7f92d8;
-    --terminal-ansi-magenta: #b98ac9;
-    --terminal-ansi-cyan: #6fa8b8;
-    --terminal-ansi-white: #c2c7d0;
-    --terminal-ansi-bright-black: #6b7078;
-    --terminal-ansi-bright-red: #e88f89;
-    --terminal-ansi-bright-green: #97d3a2;
-    --terminal-ansi-bright-yellow: #e0c184;
-    --terminal-ansi-bright-blue: #9aabf0;
-    --terminal-ansi-bright-magenta: #d0a3e0;
-    --terminal-ansi-bright-cyan: #8ac2d2;
-    --terminal-ansi-bright-white: #e8ecf2;
 
     /* 모션 문법 (Phase 3, 2026-07-25) — 공방·인사이트의 "의미를 확인하는"
        사용성 모션 단일 duration/easing 패밀리. 헌장 준수: transform/opacity
@@ -2427,77 +2316,6 @@
     color: var(--color-text-primary);
     font-feature-settings: "cv01", "ss03";
     color-scheme: dark;
-  }
-
-  /*
-   * 에이전트 터미널 도크 표면 (#79). 위치는 셸이 책임진다 —
-   * `ShellWithTerminalDock` 이 `h-dvh overflow-hidden` 칼럼을 소유하고 본문
-   * 슬롯만 스크롤하므로, 도크는 그 칼럼의 마지막 flex 자식으로 **항상
-   * 뷰포트 안**에 있다. 그 계약이 없던 초기 구현에서는 페이지가 `h-screen`
-   * 을 직접 주장해 칼럼이 `100vh + 도크` 가 됐고, 도크는 화면 밖으로 밀려
-   * 보이는 픽셀이 0 이었다(2026-07-26 :3107 실측 dockTop === innerHeight).
-   * `sticky` 로는 못 고친다: `body` 의 `overflow-x: hidden` 때문에 overflow-y
-   * 사용값이 auto 가 되어 body 가 "스크롤하지 않는 스크롤 컨테이너" 로
-   * sticky 의 기준이 되어 버린다(실측: 스크롤 0 에서 dockTop 1317 > 862).
-   *
-   * CSS 가 책임지는 건 두 가지다:
-   *
-   * 1. **`<lg` 하단 탭바 예약** — BottomTabBar 는 `fixed bottom-0 z-40
-   *    lg:hidden` 이라 도크의 아래 56px(=프롬프트 줄)를 덮는다. design.md
-   *    터치 계약대로 `--topology-mobile-bottom-tab-reserve` 를 흐름에서 비운다.
-   * 2. **등장 모션** — 뷰포트의 30% 를 차지하는 표면이 0ms 로 나타나면 본문이
-   *    순간이동한 것으로 읽혀 시선이 캔버스에서 자기 위치를 잃는다(HIG:
-   *    motion with purpose). 다만 height 를 애니메이션하면 캔버스 ResizeObserver
-   *    가 프레임마다 카메라 재적합을 돌아 3k 노드 지도에서 낭비가 크다. 그래서
-   *    **높이는 한 번에 확정**하고(레이아웃 1패스·리사이즈 1회) 도크 자신만
-   *    opacity+translateY 로 120ms 들어온다 — 기존 `topologyChromeIn` 문법의
-   *    도구-표면 버전. prefers-reduced-motion 은 base 레이어 전역 규칙이 무력화.
-   */
-  .agent-terminal-dock {
-    animation: agentTerminalDockIn
-      calc(var(--topology-motion-panel-duration) * 0.67)
-      var(--topology-motion-ease-out) both;
-  }
-
-  @media (max-width: 1023.98px) {
-    .agent-terminal-dock {
-      margin-bottom: var(--topology-mobile-bottom-tab-reserve);
-    }
-  }
-
-  /* 스크롤 표면은 xterm 이 만든다(`.xterm-viewport`) — 우리 컴포넌트가 클래스를
-     못 붙이는 자리라 도크 스코프에서 명시 지정한다. 안 하면 긴 출력이 나온 순간
-     OS 기본 뚱뚱한 스크롤바가 도크 안에만 나타나 "터미널만 다른 세계" 로 읽힌다.
-     값은 앱의 얇은 스크롤바 관례(6px 트랙 · divider 색 thumb)와 같다. */
-  .agent-terminal-dock .xterm-viewport {
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-divider) transparent;
-  }
-
-  .agent-terminal-dock .xterm-viewport::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .agent-terminal-dock .xterm-viewport::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .agent-terminal-dock .xterm-viewport::-webkit-scrollbar-thumb {
-    /* 6px 폭에 6px 반경이면 완전한 알약 — 램프 밖 999px 리터럴이 필요 없다. */
-    border-radius: var(--radius-chip);
-    background: var(--color-divider);
-  }
-
-  @keyframes agentTerminalDockIn {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
   }
 
   /*
