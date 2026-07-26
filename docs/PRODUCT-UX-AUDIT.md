@@ -64,6 +64,8 @@
 | A33 | 설치 앱 foreground/AX window 자동 proof ↔ Computer Use 대조 | AX 최종 상태 우선 + 2회 bounded retry, 지속 실패 fail-closed, 최신 설치 앱 4 proof 통과 |
 | A34 | 공방 진입 선택 → ENHANCE/CREATE 키보드 작업 계속 | 1920 ENHANCE h1·2560 CREATE 이름 입력 포커스 설치 앱 검증 완료 |
 | A35 | 인사이트 수리 큐 요약 → 전체 분리 섬·누락 연결 대상 → 관계 편집/문서 | 설치 앱 1920/2560에서 전체 대상·행별 인계·제한 높이 펼침 검증 완료 |
+| A36 | 인사이트 설치 앱 자동 proof → 5탭·단일 선택·활성 패널·agent handoff | 현행 maintenance-board WebView 계약과 Computer Use 1920/2560 검증 완료 |
+| A37 | fresh build → packaged static route smoke → 실패 원인·다음 행동 | 구 `/ontology`·`/ontology/edit`·인사이트 cockpit 계약 드리프트 재현, UX-041로 추적 |
 
 ## 이슈 장부
 
@@ -1455,8 +1457,7 @@
 ### UX-039 — 수리 큐 총계가 가리키는 나머지 대상을 찾을 수 없음
 
 - 심각도: `S3`
-- 상태: 수정·설치 앱 재검증 완료, 자동 WebView 결정질문 marker 계약은 별도
-  잔여 부채
+- 상태: 수정·설치 앱·자동 WebView 재검증 완료
 - 흐름: 인사이트 → 할 일 → 수리 큐 총계 확인 → 모든 분리 섬·누락 연결 수리
 - 관측 현상: 실제 감사 vault는 `분리된 섬 3`과 `누락된 연결 4`, 합계 `할 일 7`을
   말했지만 첫 번째 `누락된 연결` 대상 하나만 이름과 행동을 제공했다. 나머지
@@ -1487,11 +1488,71 @@
   링크를 AX 트리로 읽었고, 펼친 목록의 잘림·겹침을 발견하지 못했다.
   `.screenshots/ux-039-island-repair-queue/14-legion-1920-expanded.png`와
   `16-tfg-2560-expanded.png`를 현재 실행 증거로 보존했다.
-- 증거 한계: `desktop:deploy:app`의 빌드·설치 앱 교체는 성공했지만, 자동
-  WebView 검증은 현재 인사이트 DOM에 없는 `businessDecisionQuestions`와
-  `readerDecisionLens` marker를 요구해 실패했다. 이 별도 verifier/UI 의미
-  계약을 해결하기 전에는 자동 설치 앱 proof 통과로 간주하지 않는다.
+- 후속 proof: UX-040에서 구 `businessDecisionQuestions`·`readerDecisionLens`
+  요구를 현행 maintenance-board 계약으로 교체해 직접 설치 앱 검증까지 닫았다.
 - PO·디자인 판정: **Build and verify**
+
+### UX-040 — 설치 앱 검증기가 폐기된 인사이트 DOM을 요구해 최신 앱을 실패 처리
+
+- 심각도: `S4`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 최신 production 앱 → `/ko/ontology/insights/` 직접 로드 → 자동
+  WebView payload와 실제 화면 대조
+- 관측 현상: 설치 앱은 현재 5탭 정비 보드와 `할 일` 활성 패널, agent handoff를
+  정상 렌더링했지만 검증기는 이미 제거된 `businessDecisionQuestions`와
+  `readerDecisionLens`를 필수로 요구해 실패했다.
+- 사용자 문제: 현재 앱을 배포해도 자동 proof가 구 UI를 진실원으로 삼아
+  false-fail했다. maintainer와 agent는 매번 Computer Use로 정상 상태를 수동
+  재해석해야 했고, 릴리스 판단에서 실제 회귀와 계약 드리프트를 구분할 수 없었다.
+- PO pass: 사용 순간은 설치 앱이 최신 인사이트 과업을 실제로 렌더링했는지
+  판단할 때다. 현재 대안은 수동 화면 대조뿐이다. 온톨로지 가치는 선택된
+  maintenance 질문과 실제 `tabpanel`의 일치, agent 가치는 같은 탭의 query
+  handoff를 기계적으로 읽는 데 있다. 새 UI를 만들지 않고 proof만 현재 표면에
+  맞춘다. 판정은 **Build and verify**.
+- 디자인 gate: attention winner는 선택된 탭과 그 패널, support layer는 정비
+  보드, agent layer는 하단 handoff다. exactly five tabs, exactly one selected,
+  selected panel visible을 계약으로 고정했다. 렌더링·토큰·모션·반응형 배치는
+  바꾸지 않았고 1920/2560 설치 앱을 모두 확인했다.
+- 수정: 인사이트 root에 `maintenance-board`와
+  `one-tab-one-question` marker를, handoff 행에 `tab-query` marker를 추가했다.
+  Tauri probe와 payload validator는 5탭, 단일 선택, 연결된 visible panel,
+  handoff를 함께 요구한다. 구 reader-persona marker는 명시적으로 더 이상
+  통과 조건이 아니다.
+- 회귀 증거: payload/WebView source 계약 12개와 인사이트 `DoNextTab` 집중
+  테스트 29개 통과. 각 새 marker의 누락·오류는 별도 실패 케이스로 고정했다.
+- 설치 앱·Computer Use 증거: 격리 fixture로
+  `tauri://localhost/ko/ontology/insights/`를 직접 열어 1512×917 WebView에서
+  여섯 marker를 모두 저장했고 자동 verifier가 두 번 통과했다. 같은 설치 앱을
+  외장 모니터에서 1920×1080과 2560×1440으로 옮겨 AX 트리의 5탭·단일 선택·
+  active panel·handoff를 읽고 원본 PNG에서 잘림·겹침이 없음을 확인했다.
+  `.screenshots/ux-040-insights-verifier-contract/03-computer-use-current-contract.png`,
+  `04-legion-1920-current-contract.png`,
+  `05-tfg-2560-current-contract.png`, 그리고
+  `02-verifier-current-contract.webview.json`을 현재 실행 증거로 보존했다.
+- 증거 한계: AX는 역할·선택·읽기 순서를, PNG는 시각적 잘림·겹침을 증명한다.
+  이 조합은 전체 WCAG 적합성이나 모든 보조기기 동작을 대신하지 않는다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-041 — fresh build 뒤에도 desktop smoke가 폐기된 route 계약으로 실패
+
+- 심각도: `S4`
+- 상태: 재현·원인 범위 기록, 다음 작업 단위
+- 흐름: `pnpm build` 성공 → 같은 `out/`로 `pnpm desktop:smoke`
+- 관측 현상: fresh static export인데도 smoke가 폐기된 `/ontology` tree,
+  `/ontology/edit` builder, 구 insights query cockpit과 오래된 docs/download/
+  route title·copy를 요구하며 실패했다. 실패 안내는 원인을 계약 드리프트로
+  말하지 않고 다시 `pnpm build`를 실행하라고 제안했다.
+- 사용자 문제: 릴리스 preflight가 최신 production payload를 구 제품과 비교해
+  false-block하고, 이미 수행한 빌드를 반복하도록 유도한다. 실제 정적 payload
+  회귀를 잡아야 할 신호도 오래된 기대값 잡음에 묻힌다.
+- PO pass: 증상은 여러 retired route 계약에 걸쳐 있고 현재 source·docs·tests가
+  서로 같은 오래된 주장을 재생산한다. 한 assertion만 완화하면 거짓 초록이
+  되므로 다음 단위에서 살아 있는 route별 사용자 과업과 static artifact를 먼저
+  다시 열거한다. 판정은 **Investigate first**.
+- 검증 계획: source-of-truth route와 current copy를 기준으로 smoke assertions,
+  단위 계약, `docs/DEVELOPMENT-CHECKS.md`, `docs/DESKTOP-MACOS.md`, 관련 ontology
+  노드를 한 번에 이관한다. fresh build → static smoke → 설치 앱 직접 verifier를
+  순서대로 실행해 서로 다른 증거 층을 보존한다.
 
 ### 2026-07-27 반복 측정 기록
 
@@ -1513,6 +1574,15 @@
   UX-039로 재현했다. 격리 fixture의 전체 typed target 6개를 펼친 뒤 같은 설치
   앱을 외장 1920×1080과 2560×1440 모니터에서 각각 읽어 행별 관계 편집/문서
   인계와 제한 높이 스크롤을 확인했다.
+- 인사이트 자동 proof: UX-040에서 폐기된 reader-persona marker를
+  maintenance-board·one-tab-one-question·5탭·단일 선택·visible panel·handoff
+  계약으로 교체했다. 직접 설치 앱 verifier는 1512×917 WebView에서 두 번
+  통과했고, Computer Use로 같은 앱의 1920×1080·2560×1440 화면과 AX를
+  교차 확인했다.
+- static smoke: 같은 fresh build에서 `desktop:smoke`가 구 `/ontology` tree,
+  `/ontology/edit` builder, insights query cockpit과 stale docs/download copy를 요구하는 UX-041을
+  재현했다. 이 실패는 설치 앱 인사이트 proof와 섞어 초록으로 포장하지 않고
+  다음 route-contract 이관 단위로 남겼다.
 - 자동 검증: window screenshot과 WebView evidence가 저장되는 실행에서
   foreground activation/AX probe의 간헐 timeout을 UX-037로 재현했다.
   빠른 probe의 WebView AX 순회를 제거한 뒤에도 한 번 남은 일시 실패에는
@@ -1541,6 +1611,8 @@
 - A33 설치 앱 foreground/AX window proof: **Build and verify**
 - A34 공방 진입 선택 keyboard handoff: **Build and verify**
 - A35 인사이트 수리 큐 전체 대상·행별 handoff: **Build and verify**
+- A36 인사이트 설치 앱 현행 WebView 계약: **Build and verify**
+- A37 packaged static smoke route 계약: **Investigate first**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

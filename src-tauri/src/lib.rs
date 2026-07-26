@@ -1951,11 +1951,32 @@ pub fn run() {
                                 text: link.textContent || "",
                               }));
                               const buttons = Array.from(document.querySelectorAll("button")).map((button) => button.textContent || "");
-                              const hasDecisionQuestionList = Boolean(
-                                document.querySelector('[aria-label="비즈니스 결정 질문"], [aria-label="Business decision questions"]')
+                              const insightsMaintenanceBoard = document.querySelector(
+                                '[data-insights-surface="maintenance-board"]'
                               );
-                              const hasReaderDecisionLens = Boolean(
-                                document.querySelector('[data-reader-decision-lens="planning>marketing>leadership>developer>agent"]')
+                              const insightsQuestionTabs = Array.from(
+                                insightsMaintenanceBoard?.querySelectorAll('[role="tab"]') || []
+                              );
+                              const insightsSelectedTabs = insightsQuestionTabs.filter(
+                                (tab) => tab.getAttribute("aria-selected") === "true"
+                              );
+                              const insightsSelectedPanelId =
+                                insightsSelectedTabs[0]?.getAttribute("aria-controls") || "";
+                              const insightsSelectedPanel = insightsSelectedPanelId
+                                ? document.getElementById(insightsSelectedPanelId)
+                                : null;
+                              const insightsSelectedPanelRect =
+                                insightsSelectedPanel?.getBoundingClientRect();
+                              const insightsSelectedPanelStyle = insightsSelectedPanel
+                                ? getComputedStyle(insightsSelectedPanel)
+                                : null;
+                              const insightsSelectedPanelVisible = Boolean(
+                                insightsSelectedPanelRect &&
+                                insightsSelectedPanelRect.width > 1 &&
+                                insightsSelectedPanelRect.height > 1 &&
+                                insightsSelectedPanelStyle?.display !== "none" &&
+                                insightsSelectedPanelStyle?.visibility !== "hidden" &&
+                                Number(insightsSelectedPanelStyle?.opacity || "1") > 0.01
                               );
                               const topologyDragVerification = window.__ontologyAtlasTopologyDragVerify || null;
                               const topologyFrameProfile = window.__ontologyAtlasTopologyFrameProfile || null;
@@ -3487,12 +3508,17 @@ pub fn run() {
                                   ontologyNav: links.some((link) => link.href.includes("/ontology") || /온톨로지|Ontology/.test(link.text)),
                                   sourceVaultNav: links.some((link) => link.href.includes("/docs") || /저장소|문서함|Source Vault|Documents/.test(link.text)),
                                   agentBriefCopy: buttons.some((text) => /브리핑 복사|Copy brief/.test(text)) && /agent_brief/.test(bodyText),
-                                  businessDecisionQuestions:
-                                    hasDecisionQuestionList &&
-                                    /누가 이 개념으로 결정을 내리는가\\?|Who uses this concept to make a decision\\?/.test(bodyText) &&
-                                    /어떤 사용자·운영 결과를 바꾸는가\\?|Which user or operating outcome changes\\?/.test(bodyText) &&
-                                    /어떤 구현 증거가 그 의미를 검증하는가\\?|Which implementation evidence proves the meaning\\?/.test(bodyText),
-                                  readerDecisionLens: hasReaderDecisionLens,
+                                  insightsMaintenanceBoard: Boolean(insightsMaintenanceBoard),
+                                  insightsQuestionModel:
+                                    insightsMaintenanceBoard?.getAttribute("data-insights-question-model") || "",
+                                  insightsTabCount: insightsQuestionTabs.length,
+                                  insightsSelectedTabCount: insightsSelectedTabs.length,
+                                  insightsSelectedPanelVisible,
+                                  insightsHandoff: Boolean(
+                                    insightsMaintenanceBoard?.querySelector(
+                                      '[data-insights-handoff="tab-query"]'
+                                    )
+                                  ),
                                   topologyRelief:
                                     location.pathname.includes("/topology") &&
                                     /Relief|Ontology relief map|concept cards|온톨로지 지형도|대표 카드|카드 골격|후보 \d+\/\d+개 표시|개념 \d+개 · 관계 \d+개|CONCEPTS/.test(bodyText),

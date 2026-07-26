@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T19:59:42.349Z",
+  "generatedAt": "2026-07-26T20:18:47.004Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 설치 앱 검증기가 현재 인사이트를 다시 알아본다",
+          "slug": "2026-07-27-설치-앱-검증기가-현재-인사이트를-다시-알아본다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 숫자만 있던 수리 큐에서 모든 대상을 열었다",
           "slug": "2026-07-27-숫자만-있던-수리-큐에서-모든-대상을-열었다"
         },
@@ -5028,9 +5033,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 인사이트 할 일은 실제 감사 vault에서 분리된 섬 3 · 누락된 연결 4를 세면서도 첫 수리 대상 하나만 이름으로 보여 줬다. 나머지 여섯 건은 숫자 ",
-      "wordCount": 50845,
-      "updatedAt": "2026-07-26T19:59:42.348Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 설치 앱의 /ontology/insights는 이미 5탭 정비 보드로 바뀌었지만 자동 WebView 검증기는 폐기된 비즈니스 결정 질문과 reader-pe",
+      "wordCount": 50978,
+      "updatedAt": "2026-07-26T20:18:47.004Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -7125,7 +7130,7 @@
       "headings": [],
       "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Do next / Structure / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Insi",
       "wordCount": 573,
-      "updatedAt": "2026-07-26T19:59:42.349Z",
+      "updatedAt": "2026-07-27T05:00:46+09:00",
       "linksOut": []
     },
     {
@@ -8106,7 +8111,7 @@
       "headings": [],
       "excerpt": "/topology is a single Relief (Map) surface. The old peer-mode tabs were collapsed over 2026-07 (owner feedback: the four Relief-family modes looked like the same sparse card screen with different panels, so mode proliferation read as \"five confusing siblings\"), and the separate Graph (살아있는 그래프) view was removed outrigh",
       "wordCount": 540,
-      "updatedAt": "2026-07-26T19:59:42.349Z",
+      "updatedAt": "2026-07-27T05:00:46+09:00",
       "linksOut": []
     },
     {
@@ -9269,8 +9274,8 @@
       },
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
-      "wordCount": 2417,
-      "updatedAt": "2026-07-27T04:33:08+09:00",
+      "wordCount": 2360,
+      "updatedAt": "2026-07-26T20:18:47.002Z",
       "linksOut": []
     },
     {
@@ -11018,6 +11023,16 @@
         },
         {
           "depth": 3,
+          "text": "UX-040 — 설치 앱 검증기가 폐기된 인사이트 DOM을 요구해 최신 앱을 실패 처리",
+          "slug": "ux-040-설치-앱-검증기가-폐기된-인사이트-dom을-요구해-최신-앱을-실패-처리"
+        },
+        {
+          "depth": 3,
+          "text": "UX-041 — fresh build 뒤에도 desktop smoke가 폐기된 route 계약으로 실패",
+          "slug": "ux-041-fresh-build-뒤에도-desktop-smoke가-폐기된-route-계약으로-실패"
+        },
+        {
+          "depth": 3,
           "text": "2026-07-27 반복 측정 기록",
           "slug": "2026-07-27-반복-측정-기록"
         },
@@ -11028,8 +11043,8 @@
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨 한 장 더 캡처한다. ",
-      "wordCount": 12840,
-      "updatedAt": "2026-07-26T19:59:42.346Z",
+      "wordCount": 13433,
+      "updatedAt": "2026-07-26T20:18:47.002Z",
       "linksOut": []
     },
     {

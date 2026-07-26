@@ -56,6 +56,28 @@ test("Tauri node popover verifier captures compact facts even when the inspector
   );
 });
 
+test("installed-app insights proof follows the current maintenance-board contract", () => {
+  const tauriLib = fs.readFileSync("src-tauri/src/lib.rs", "utf8");
+  const insightsPage = fs.readFileSync(
+    "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+    "utf8",
+  );
+  const insightsHandoff = fs.readFileSync(
+    "src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx",
+    "utf8",
+  );
+
+  assert.match(insightsPage, /data-insights-surface="maintenance-board"/);
+  assert.match(insightsPage, /data-insights-question-model="one-tab-one-question"/);
+  assert.match(insightsHandoff, /data-insights-handoff="tab-query"/);
+  assert.match(tauriLib, /insightsMaintenanceBoard/);
+  assert.match(tauriLib, /insightsQuestionTabs/);
+  assert.match(tauriLib, /insightsSelectedPanelVisible/);
+  assert.match(tauriLib, /insightsHandoff/);
+  assert.doesNotMatch(tauriLib, /hasDecisionQuestionList/);
+  assert.doesNotMatch(tauriLib, /hasReaderDecisionLens/);
+});
+
 test("selected relation label agent gate text exposes MCP and CLI for handoff-ready facts", () => {
   assert.equal(expectedRelationLabelAgentGateText("handoff-ready"), "MCP/CLI");
   assert.equal(expectedRelationLabelAgentGateText("preflight-first"), "check");

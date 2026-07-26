@@ -6,6 +6,27 @@
 
 ---
 
+## 2026-07-27 — 설치 앱 검증기가 현재 인사이트를 다시 알아본다
+
+설치 앱의 `/ontology/insights`는 이미 5탭 정비 보드로 바뀌었지만 자동
+WebView 검증기는 폐기된 비즈니스 결정 질문과 reader-persona marker를 계속
+요구했다. 최신 앱이 정상이어도 구 DOM이 없다는 이유로 실패하므로, 실제 UI
+회귀와 검증 계약 드리프트를 구분할 수 없었다.
+
+이제 인사이트 proof는 현재 표면 자체를 읽는다. `maintenance-board`,
+`one-tab-one-question`, 정확히 5개 탭, 정확히 1개 선택, 연결된 활성 패널의
+가시성, 탭별 agent handoff가 함께 있어야 통과한다. 구
+`businessDecisionQuestions`와 `readerDecisionLens`는 더 이상 통과 조건이
+아니다.
+
+격리 fixture의 설치 앱을 `/ko/ontology/insights/`로 직접 열어 자동 verifier가
+1512×917 WebView에서 두 번 통과했다. Codex Computer Use로 같은 앱을 외장
+1920×1080과 2560×1440에서 다시 읽어 5탭·단일 선택·활성 패널·handoff와
+잘림·겹침 없음도 확인했다. fresh build 뒤에도 폐기된 `/ontology`,
+`/ontology/edit`, 구 insights cockpit과 stale docs/download copy를 요구하는
+더 넓은 `desktop:smoke` 드리프트는 UX-041로 분리해 다음 계약 이관 대상으로
+남겼다.
+
 ## 2026-07-27 — 숫자만 있던 수리 큐에서 모든 대상을 열었다
 
 인사이트 `할 일`은 실제 감사 vault에서 **분리된 섬 3 · 누락된 연결 4**를

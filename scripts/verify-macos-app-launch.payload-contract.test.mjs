@@ -801,8 +801,14 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       ontologyNav: true,
       sourceVaultNav: true,
       agentBriefCopy: true,
-      businessDecisionQuestions: true,
-      readerDecisionLens: true,
+      businessDecisionQuestions: false,
+      readerDecisionLens: false,
+      insightsMaintenanceBoard: true,
+      insightsQuestionModel: "one-tab-one-question",
+      insightsTabCount: 5,
+      insightsSelectedTabCount: 1,
+      insightsSelectedPanelVisible: true,
+      insightsHandoff: true,
       topologyRelief: false,
       topologyAttentionWinner: "active-relation-inspector",
       topologyCardCount: 0,
@@ -6604,13 +6610,13 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     /Ontology Atlas workbench markers/,
   );
   assert.match(validateWebviewVerifyPayload({ ...payload, markers: null }), /structured markers/);
-  assert.match(
+  assert.equal(
     validateWebviewVerifyPayload({
       ...payload,
       href: "tauri://localhost/ko/ontology/insights/",
       markers: { ...payload.markers, businessDecisionQuestions: false },
     }),
-    /business decision questions marker/,
+    null,
   );
   assert.equal(
     validateWebviewVerifyPayload({
@@ -6691,13 +6697,61 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     ),
     /competed with the guided tour overlay/,
   );
-  assert.match(
+  assert.equal(
     validateWebviewVerifyPayload({
       ...payload,
       href: "tauri://localhost/ko/ontology/insights/",
       markers: { ...payload.markers, readerDecisionLens: false },
     }),
-    /reader decision lens marker/,
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/ontology/insights/",
+      markers: { ...payload.markers, insightsMaintenanceBoard: false },
+    }),
+    /insights maintenance board marker/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/ontology/insights/",
+      markers: { ...payload.markers, insightsQuestionModel: "" },
+    }),
+    /insights question model/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/ontology/insights/",
+      markers: { ...payload.markers, insightsTabCount: 4 },
+    }),
+    /insights tab count was 4/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/ontology/insights/",
+      markers: { ...payload.markers, insightsSelectedTabCount: 0 },
+    }),
+    /insights selected tab count was 0/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/ontology/insights/",
+      markers: { ...payload.markers, insightsSelectedPanelVisible: false },
+    }),
+    /insights selected panel was not visible/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/ontology/insights/",
+      markers: { ...payload.markers, insightsHandoff: false },
+    }),
+    /insights agent handoff marker/,
   );
   assert.match(validateWebviewVerifyPayload({ ...payload, href: "about:blank" }), /tauri/);
   assert.match(

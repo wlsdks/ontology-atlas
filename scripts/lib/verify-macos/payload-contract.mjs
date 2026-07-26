@@ -227,17 +227,25 @@ export function validateWebviewVerifyPayload(payload, {
     }
   }
   const koreanTopologyRoute = webviewPath.startsWith("/ko/topology");
-  if (
-    webviewPath.includes("/ontology/insights") &&
-    payload.markers.businessDecisionQuestions !== true
-  ) {
-    return "WebView did not report the business decision questions marker";
-  }
-  if (
-    webviewPath.includes("/ontology/insights") &&
-    payload.markers.readerDecisionLens !== true
-  ) {
-    return "WebView did not report the reader decision lens marker";
+  if (webviewPath.includes("/ontology/insights")) {
+    if (payload.markers.insightsMaintenanceBoard !== true) {
+      return "WebView did not report the insights maintenance board marker";
+    }
+    if (payload.markers.insightsQuestionModel !== "one-tab-one-question") {
+      return `WebView insights question model was ${payload.markers.insightsQuestionModel || "missing"}`;
+    }
+    if (payload.markers.insightsTabCount !== 5) {
+      return `WebView insights tab count was ${payload.markers.insightsTabCount ?? "missing"}, expected 5`;
+    }
+    if (payload.markers.insightsSelectedTabCount !== 1) {
+      return `WebView insights selected tab count was ${payload.markers.insightsSelectedTabCount ?? "missing"}, expected 1`;
+    }
+    if (payload.markers.insightsSelectedPanelVisible !== true) {
+      return "WebView insights selected panel was not visible";
+    }
+    if (payload.markers.insightsHandoff !== true) {
+      return "WebView did not report the insights agent handoff marker";
+    }
   }
   if (
     webviewPath.includes("/topology") &&

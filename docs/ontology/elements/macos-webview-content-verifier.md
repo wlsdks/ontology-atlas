@@ -135,18 +135,19 @@ from sharing the same bundle id during local dogfood, where LaunchServices or
 Computer Use may otherwise attach to the stale installed copy instead of the
 freshly built bundle.
 
-The structured marker set also includes the business decision questions rendered
-by the `/ontology` meaning gate. The direct app launch verifier requires that
-marker only when the loaded `tauri://` path is an ontology route; the default
-root launch still proves the local workbench shell, navigation, agent brief copy
-affordance, and reader decision lens without pretending it rendered a
-route-specific meaning gate.
+For `/ontology/insights`, the structured payload follows the current
+maintenance-board contract instead of the retired reader-persona meaning gate.
+The route must expose `data-insights-surface="maintenance-board"` and
+`data-insights-question-model="one-tab-one-question"`, exactly five tabs,
+exactly one selected tab, its visible `tabpanel`, and the tab-query agent
+handoff row. This proves that the installed app rendered the same one-question
+maintenance workflow a human sees and that an agent can continue from its
+active query.
 
-The same payload now requires the `readerDecisionLens` marker from the meaning
-gate's planning -> marketing -> leadership -> developer -> agent reader contract.
-This makes the direct macOS app verifier fail if the packaged WebView drops the
-human/agent decision handoff framing that turns code evidence into ontology
-service value.
+The June `businessDecisionQuestions` and `readerDecisionLens` probes were
+removed when the reader-persona system and its old insights cockpit were
+retired. Requiring those markers again would make the verifier prefer obsolete
+DOM over the shipped five-tab board and false-fail a healthy current app.
 
 The verifier also supports `--require-accessibility-window` for LaunchServices
 runs. That check starts System Events, queries the launched process ids, and
@@ -249,20 +250,12 @@ where `desktop:verify-app` found a CoreGraphics window but local screenshot
 capture failed, Computer Use returned `cgWindowNotFound`, System Events could
 not find the process, or the process had no Accessibility UI tree.
 
-`scripts/desktop-smoke.mjs` also protects the packaged static payload before the
-native shell is launched. The `/ontology` route chunk contract now requires the
-business ontology lens markers `business-first` and `data-business-read-order`,
-so a packaged app can no longer pass smoke while dropping the domain ->
-capability -> element read-order contract that the macOS browse surface and
-agent handoff share. The same route chunk contract also requires
-`copyBriefDescription`, so the packaged app cannot silently drop the accessible
-copy affordance that tells agents the copied brief includes domain/capability
-evidence plus `agent_brief`, `workspace_brief`, and `health` execution checks.
-
-The `/ontology/insights` route chunk contract now also requires the collaborator
-business extraction markers: `collaboratorBusinessExtractionChecks` plus the
-three boundary / capability claim / implementation evidence questions from the
-shared business ontology lens. That makes `pnpm desktop:smoke` fail before app
-packaging if the insights screen drops the visible reviewer questions that keep
-human meeting briefs and AI-agent `agent_brief` payloads on the same ontology
-contract.
+`scripts/desktop-smoke.mjs` is intended to protect the packaged static payload
+before the native shell is launched, but its current route assertions are not a
+release proof. A fresh 2026-07-27 build still fails because the script expects
+the retired `/ontology` tree, `/ontology/edit` builder, old insights query
+cockpit, and stale docs/download/route titles and copy. UX-041 tracks that
+contract migration as a separate operating-debt slice. Until it lands, the deterministic direct
+`desktop:verify-app` payload plus installed-app Computer Use evidence is the
+authoritative proof for the current insights board; a failing `desktop:smoke`
+must not be mislabeled as “run a fresh build” when that build already ran.
