@@ -10,6 +10,12 @@ import type {
 
 export interface DomainCouplingCardLabels {
   title: string;
+  /**
+   * 카드 머리 숫자의 단위 — 나란한 두 카드가 같은 자리에 55(교차 관계)와
+   * 6(도메인)을 놓으면, 단위어 없이는 55 를 도메인 수로 읽는다.
+   */
+  countUnit: string;
+  boundaryCountUnit: string;
   emptyTitle: string;
   emptyDescription: string;
   /** 빈 상태에서 내미는 다음 한 걸음 — 설명만 있고 갈 곳이 없으면 빈 방이다. */
@@ -110,7 +116,7 @@ export function DomainCouplingCard({
         aria-label={labels.title}
         className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        <CardHead label={labels.title} count={crossDomainEdgeCount} />
+        <CardHead label={labels.title} unit={labels.countUnit} count={crossDomainEdgeCount} />
         <CouplingGrid
           grid={grid}
           selectedKey={selectedKey}
@@ -143,7 +149,7 @@ export function DomainCouplingCard({
         aria-label={labels.boundaryTitle}
         className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
-        <CardHead label={labels.boundaryTitle} count={domainCount} />
+        <CardHead label={labels.boundaryTitle} unit={labels.boundaryCountUnit} count={domainCount} />
         <div className="mt-3 flex flex-1 flex-col justify-evenly gap-2.5">
           {boundaries.map((row) => {
             const total = row.selfEdges + row.crossEdges;
@@ -368,12 +374,15 @@ function SelectedPairDetail({
   );
 }
 
-function CardHead({ label, count }: { label: string; count: number }) {
+function CardHead({ label, unit, count }: { label: string; unit: string; count: number }) {
   return (
     <div className="flex items-baseline gap-2.5">
       <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">{label}</span>
-      <span className="ml-auto font-mono text-body tabular-nums text-[color:var(--topology-v2-numeral-face)]">
-        {count}
+      <span className="ml-auto flex items-baseline gap-1.5">
+        <span className="text-label text-[color:var(--color-text-quaternary)]">{unit}</span>
+        <span className="font-mono text-body tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+          {count}
+        </span>
       </span>
     </div>
   );

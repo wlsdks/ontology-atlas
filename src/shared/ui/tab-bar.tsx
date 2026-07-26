@@ -18,6 +18,12 @@ export interface TabBarItem {
   label: string;
   /** Engraved count next to the label (e.g. node count) — omit for tabs with no count. */
   count?: string | number;
+  /**
+   * 배지 숫자가 무엇을 세는지 한 마디 — `title` 로만 노출한다(잉크 0).
+   * 라벨 없는 숫자는 사용자가 화면 밖에서 단위를 추측하게 만든다. 카운트가
+   * 없는 탭에서는 무의미하므로 생략한다.
+   */
+  countTitle?: string;
 }
 
 export function TabBar({
@@ -101,6 +107,7 @@ export function TabBar({
             aria-controls={`insights-tabpanel-${item.key}`}
             id={`insights-tab-${item.key}`}
             tabIndex={active ? 0 : -1}
+            title={item.count !== undefined ? item.countTitle : undefined}
             onClick={() => activateTab(item.key)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={
