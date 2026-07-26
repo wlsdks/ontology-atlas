@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  runForegroundActivationWithRetry,
   buildAccessibilityWindowProbeScript,
   buildAccessibilityTextProbeSwift,
   buildForegroundActivationScript,
@@ -12,6 +13,57 @@ import {
   validateWindowRequirements,
   windowCaptureTargets,
 } from "./verify-macos-app-launch.mjs";
+
+test("foreground visual evidence retries one transient activation/AX miss", () => {
+  const seen = [];
+  const result = runForegroundActivationWithRetry({
+    maxAttempts: 2,
+    runAttempt: (attempt) => {
+      seen.push(attempt);
+      return attempt === 1
+        ? {
+            ok: false,
+            frontmost: false,
+            stdout: "",
+            stderr: "post-activation Accessibility probe timed out after 3000ms",
+          }
+        : {
+            ok: true,
+            frontmost: true,
+            stdout: "bundle=true\tpid=true",
+            stderr: "",
+          };
+    },
+  });
+
+  assert.deepEqual(seen, [1, 2]);
+  assert.equal(result.ok, true);
+  assert.equal(result.attempts, 2);
+  assert.equal(result.recovered, true);
+  assert.deepEqual(result.attemptErrors, [
+    "attempt 1: post-activation Accessibility probe timed out after 3000ms",
+  ]);
+});
+
+test("foreground visual evidence keeps persistent failures fail-closed", () => {
+  const result = runForegroundActivationWithRetry({
+    maxAttempts: 2,
+    runAttempt: (attempt) => ({
+      ok: false,
+      frontmost: false,
+      stdout: "",
+      stderr: attempt === 1 ? "activation timed out" : "process not frontmost",
+    }),
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.attempts, 2);
+  assert.equal(result.recovered, false);
+  assert.deepEqual(result.attemptErrors, [
+    "attempt 1: activation timed out",
+    "attempt 2: process not frontmost",
+  ]);
+});
 
 test("Accessibility text probe script targets launched pids", () => {
   const script = buildAccessibilityTextProbeSwift([101, 202], ["개념 지도"]);

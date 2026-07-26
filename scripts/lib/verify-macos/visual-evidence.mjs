@@ -441,6 +441,11 @@ export function tryCaptureWindowEvidence({
     activation.bundleIdentifier ? `bundleId=${activation.bundleIdentifier}` : null,
     activation.pids.length > 0 ? `pids=${activation.pids.join(",")}` : "pids=none",
     `frontmost=${activation.frontmost}`,
+    `attempts=${activation.attempts}`,
+    activation.recovered ? "recovered=true" : null,
+    activation.attemptErrors.length > 0
+      ? `attemptErrors=${JSON.stringify(activation.attemptErrors)}`
+      : null,
     activation.stdout ? `stdout=${activation.stdout}` : null,
     activation.stderr ? `stderr=${activation.stderr}` : null,
   ].filter(Boolean).join(" ");
@@ -509,6 +514,9 @@ export function tryCaptureWindowEvidence({
           activation: {
             ok: activation.ok,
             frontmost: activation.frontmost,
+            attempts: activation.attempts,
+            recovered: activation.recovered,
+            attemptErrors: activation.attemptErrors,
             stdout: activation.stdout,
             stderr: activation.stderr,
           },
@@ -623,4 +631,3 @@ export function printWindowDiagnostics({ executablePath, windows = null, capture
     )}`,
   );
 }
-

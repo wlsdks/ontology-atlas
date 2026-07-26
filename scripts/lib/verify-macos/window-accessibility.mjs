@@ -120,50 +120,103 @@ return "bundle=" & activatedByBundle & tab & "pid=" & activatedByPid
 }
 
 
-export function activateAppForVisualEvidence({ appPath, executablePath }) {
+export function runForegroundActivationWithRetry({
+  runAttempt,
+  maxAttempts = 2,
+}) {
+  const boundedAttempts =
+    Number.isInteger(maxAttempts) && maxAttempts > 0 ? maxAttempts : 1;
+  const records = [];
+
+  for (let attempt = 1; attempt <= boundedAttempts; attempt += 1) {
+    const record = runAttempt(attempt);
+    records.push(record);
+    if (record.ok) break;
+  }
+
+  const finalRecord = records.at(-1);
+  return {
+    ...finalRecord,
+    attempts: records.length,
+    recovered: Boolean(finalRecord?.ok && records.length > 1),
+    attemptErrors: records
+      .map((record, index) =>
+        record.ok
+          ? null
+          : `attempt ${index + 1}: ${
+              record.stderr || "foreground state not confirmed"
+            }`,
+      )
+      .filter(Boolean),
+  };
+}
+
+
+export function activateAppForVisualEvidence({
+  appPath,
+  executablePath,
+  maxAttempts = 2,
+}) {
   const pids = processIds(executablePath);
   const bundleIdentifier = readBundleIdentifier(appPath);
-  const result = spawnSync(
-    "osascript",
-    ["-e", buildForegroundActivationScript({ bundleIdentifier, pids })],
-    {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-      timeout: 5000,
+  const activation = runForegroundActivationWithRetry({
+    maxAttempts,
+    runAttempt: () => {
+      const result = spawnSync(
+        "osascript",
+        ["-e", buildForegroundActivationScript({ bundleIdentifier, pids })],
+        {
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "pipe"],
+          timeout: 5000,
+        },
+      );
+      const stdout = result.stdout.trim();
+      const stderr = result.stderr.trim();
+      const accessibility = spawnSync(
+        "osascript",
+        ["-e", buildAccessibilityWindowProbeScript(pids)],
+        {
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "pipe"],
+          timeout: ACCESSIBILITY_WINDOW_TIMEOUT_MS,
+        },
+      );
+      const accessibilityRows =
+        accessibility.status === 0
+          ? parseAccessibilityWindowRows(accessibility.stdout)
+          : [];
+      const frontmost = accessibilityRows.some((row) => row.frontmost);
+      const ok =
+        result.status === 0 &&
+        (/\bbundle=true\b/.test(stdout) || /\bpid=true\b/.test(stdout)) &&
+        frontmost;
+      return {
+        ok,
+        frontmost,
+        status: result.status,
+        stdout,
+        stderr: [
+          result.error?.code === "ETIMEDOUT"
+            ? "foreground activation timed out"
+            : null,
+          stderr,
+          accessibility.error?.code === "ETIMEDOUT"
+            ? `post-activation Accessibility probe timed out after ${ACCESSIBILITY_WINDOW_TIMEOUT_MS}ms`
+            : null,
+          accessibility.status !== 0
+            ? `post-activation Accessibility probe failed: ${accessibility.stderr.trim()}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("; "),
+      };
     },
-  );
-  const stdout = result.stdout.trim();
-  const stderr = result.stderr.trim();
-  const accessibility = spawnSync("osascript", ["-e", buildAccessibilityWindowProbeScript(pids)], {
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-    timeout: ACCESSIBILITY_WINDOW_TIMEOUT_MS,
   });
-  const accessibilityRows = accessibility.status === 0
-    ? parseAccessibilityWindowRows(accessibility.stdout)
-    : [];
-  const frontmost = accessibilityRows.some((row) => row.frontmost);
-  const ok =
-    result.status === 0 &&
-    (/\bbundle=true\b/.test(stdout) || /\bpid=true\b/.test(stdout)) &&
-    frontmost;
   return {
-    ok,
+    ...activation,
     bundleIdentifier,
     pids,
-    frontmost,
-    status: result.status,
-    stdout,
-    stderr: [
-      result.error?.code === "ETIMEDOUT" ? "foreground activation timed out" : null,
-      stderr,
-      accessibility.error?.code === "ETIMEDOUT"
-        ? `post-activation Accessibility probe timed out after ${ACCESSIBILITY_WINDOW_TIMEOUT_MS}ms`
-        : null,
-      accessibility.status !== 0
-        ? `post-activation Accessibility probe failed: ${accessibility.stderr.trim()}`
-        : null,
-    ].filter(Boolean).join("; "),
   };
 }
 

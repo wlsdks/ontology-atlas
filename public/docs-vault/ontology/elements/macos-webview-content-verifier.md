@@ -165,6 +165,13 @@ same window. Content proof remains the responsibility of the separate bounded
 Swift AX text probe. This separation keeps a real permission or missing-window
 failure fail-closed without turning a large but healthy WebView tree into a
 false automation blocker.
+Optional screenshot evidence also tolerates one transient macOS automation
+miss without weakening that boundary. Foreground activation and the fast
+window probe run together for at most two attempts; a second success records
+`attempts=2` and `recovered=true`. If both attempts fail, the result remains
+unconfirmed and keeps every `attemptErrors` row for the agent handoff. The
+per-attempt timeouts are unchanged, so a persistent Accessibility permission,
+missing process, or missing-window failure still closes the proof.
 
 LaunchServices runs can now add repeated `--require-accessibility-text=...`
 checks. The verifier walks the launched process Accessibility tree with a

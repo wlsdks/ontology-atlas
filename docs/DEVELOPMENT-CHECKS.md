@@ -515,6 +515,11 @@ only the launched PID, frontmost state, and Accessibility window count. It must
 not traverse the WebView AX tree: `--require-accessibility-text=...` uses the
 bounded Swift AX probe for content, while the window probe stays responsive
 inside its 3-second timeout.
+Optional screenshot evidence gives foreground activation plus that fast AX
+probe at most two attempts. A second success is logged as `recovered=true`;
+two failures stay unconfirmed and preserve both `attemptErrors`. Do not turn
+this into a longer timeout or an unbounded loop: permission and missing-window
+failures must remain visible.
 
 `pnpm test:mcp:docs` intentionally lists explicit test-name fragments instead
 of a broad `README` token, so documentation-only changes do not accidentally
