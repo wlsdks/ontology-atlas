@@ -22,6 +22,12 @@ import {
   termWrite,
   type TerminalSession,
 } from "@/shared/lib/tauri-terminal";
+import {
+  clampDockHeight,
+  readDockHeight,
+  writeDockHeight,
+  DOCK_HEIGHT_KEYBOARD_STEP,
+} from "../model/dock-height";
 
 /**
  * 에이전트 터미널 하단 도크 (#79).
@@ -88,6 +94,82 @@ export function AgentTerminalDock({ open, onClose, vaultPath }: AgentTerminalDoc
   const [session, setSession] = useState<TerminalSession | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exited, setExited] = useState(false);
+
+  // 사용자가 잡아 늘린 높이. null = 정한 적 없음 → 토큰 기본값이 산다.
+  //
+  // effect 가 아니라 **lazy initializer** 로 읽는다: effect 로 읽으면 첫 프레임이
+  // 기본 높이로 그려졌다가 저장 높이로 튀어 도크가 열릴 때마다 깜빡인다.
+  // 프리렌더에서는 `readDockHeight` 가 null 을 돌려주고(window 없음), 하이드레이션
+  // 시점의 도크는 어차피 닫혀 있어(⌃` 는 클라이언트 상태) 마크업 불일치가 없다.
+  const [customHeight, setCustomHeight] = useState<number | null>(() => readDockHeight());
+  // 드래그 중에는 셀 재적합을 미룬다 — 프레임마다 fit 하면 cols/rows 재계산과
+  // PTY resize 가 같이 돌아 드래그가 끈적해진다. 높이는 **한 번에 확정**한다.
+  const resizingRef = useRef(false);
+  const refitRef = useRef<(() => void) | null>(null);
+  const applyHeight = useCallback((next: number | null) => {
+    const resolved =
+      next === null ? null : clampDockHeight(next, window.innerHeight);
+    setCustomHeight(resolved);
+    writeDockHeight(resolved);
+  }, []);
+  const handleGripPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.button !== 0) return;
+      const grip = event.currentTarget;
+      const startY = event.clientY;
+      // 시작 높이는 실측이다 — 토큰 clamp 로 살던 도크도 잡는 순간부터 px 로 산다.
+      const startHeight = grip.parentElement?.getBoundingClientRect().height ?? 0;
+      // 캡처는 있으면 좋은 것이지 전제가 아니다 — 못 잡는 환경(합성 포인터 ·
+      // jsdom)에서 여기서 던지면 리스너를 달기도 전에 드래그가 죽는다.
+      try {
+        grip.setPointerCapture(event.pointerId);
+      } catch {
+        /* 캡처 없이도 6px 밖으로 나가기 전까지는 같은 요소가 이벤트를 받는다 */
+      }
+      resizingRef.current = true;
+      // 위로 끌면 커진다(도크가 아래에 붙어 있으므로 델타 부호가 뒤집힌다).
+      const onMove = (move: PointerEvent) => {
+        setCustomHeight(clampDockHeight(startHeight - (move.clientY - startY), window.innerHeight));
+      };
+      const onUp = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onUp);
+        resizingRef.current = false;
+        // 놓는 순간 딱 한 번 셀 격자를 다시 맞추고 PTY 에 알린다.
+        refitRef.current?.();
+        setCustomHeight((current) => {
+          writeDockHeight(current);
+          return current;
+        });
+      };
+      // 리스너는 그립이 아니라 **window** 가 받는다 — 6px 띠는 손잡이일 뿐이고,
+      // 포인터는 곧바로 그 밖으로 나간다. 포인터 캡처가 되는 환경이면 캡처가
+      // 대신 잡아주지만, 안 되는 환경에서도 드래그가 끊기면 안 된다.
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onUp);
+    },
+    [],
+  );
+  // 드래그만으로 발견되는 컨트롤은 만들지 않는다 — 키보드로도 같은 일을 한다.
+  const handleGripKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      const grip = event.currentTarget;
+      const current = grip.parentElement?.getBoundingClientRect().height ?? 0;
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        applyHeight(current + DOCK_HEIGHT_KEYBOARD_STEP);
+      } else if (event.key === "ArrowDown") {
+        event.preventDefault();
+        applyHeight(current - DOCK_HEIGHT_KEYBOARD_STEP);
+      } else if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        applyHeight(null);
+      }
+    },
+    [applyHeight],
+  );
 
   const available = isTerminalAvailable();
   /** 웹이거나 볼트가 없으면 셸을 못 띄운다 — 문단 두 줄짜리 강등 표면. */
@@ -170,6 +252,40 @@ export function AgentTerminalDock({ open, onClose, vaultPath }: AgentTerminalDoc
         const fit = new FitAddon();
         term.loadAddon(fit);
         term.open(host);
+
+        // WebGL 렌더러 — **폰트가 아니라 우리가** 세퍼레이터를 그리기 위해서다.
+        //
+        // `customGlyphs`(기본 true)는 U+E0B0–E0B7 Powerline 세퍼레이터와 박스
+        // 드로잉을 폰트에서 읽지 않고 **절차적으로** 그린다. 그런데 이 옵션은
+        // canvas/webgl 렌더러 전용이라 DOM 렌더러에서는 죽은 옵션이었다. 즉
+        // 폰트 체인(`--terminal-font-family`)이 못 잡는 기기 — Nerd Font 를
+        // 하나도 안 깐 사용자 — 에서는 여전히 두부(□)가 났다.
+        //
+        // 덤으로 `--terminal-line-height: 1.35` 에서 폰트 글리프가 만들던 세로
+        // 틈(삼각형이 행간을 못 채워 세그먼트 밴드에 이가 빠지던 것)도 사라진다.
+        // 절차 드로잉은 셀 전체 높이를 채운다.
+        //
+        // 실패는 조용히 넘긴다 — WebGL2 가 없거나(구형 GPU) 컨텍스트를 잃으면
+        // DOM 렌더러로 계속 돈다. 터미널이 안 뜨는 것보다 세퍼레이터가 두부인
+        // 게 낫다.
+        let webgl: { dispose(): void } | null = null;
+        try {
+          const { WebglAddon } = await import("@xterm/addon-webgl");
+          if (!disposed) {
+            const addon = new WebglAddon();
+            // 컨텍스트 유실(GPU 절전·드라이버 리셋)은 정상적으로 일어난다.
+            // 애드온을 버리면 xterm 이 DOM 렌더러로 자동 복귀한다.
+            addon.onContextLoss(() => {
+              addon.dispose();
+              webgl = null;
+            });
+            term.loadAddon(addon);
+            webgl = addon;
+          }
+        } catch {
+          /* DOM 렌더러로 계속 — 폰트 체인이 잡는 기기에서는 차이가 없다 */
+        }
+
         fit.fit();
 
         const opened = await termOpen(vaultPath, term.cols, term.rows);
@@ -189,15 +305,24 @@ export function AgentTerminalDock({ open, onClose, vaultPath }: AgentTerminalDoc
           fit.fit();
           void termResize(opened.id, term.cols, term.rows);
         };
-        const ro = new ResizeObserver(onResize);
+        refitRef.current = onResize;
+        // 드래그 중에는 건너뛴다 — 놓을 때 `refitRef` 로 한 번만 확정한다.
+        const ro = new ResizeObserver(() => {
+          if (resizingRef.current) return;
+          onResize();
+        });
         ro.observe(host);
 
         cleanup = () => {
+          refitRef.current = null;
           ro.disconnect();
           keyIn.dispose();
           unData();
           unExit();
           void termClose(opened.id);
+          // 애드온을 먼저 버린다 — GPU 리소스(텍스처 아틀라스)를 term.dispose()
+          // 뒤에 정리하면 컨텍스트가 이미 사라져 누수가 남는다.
+          webgl?.dispose();
           term.dispose();
         };
       } catch (err) {
@@ -219,17 +344,40 @@ export function AgentTerminalDock({ open, onClose, vaultPath }: AgentTerminalDoc
 
   if (!open) return null;
 
+  // 강등 상태는 문단 두 줄이 전부라 잡아 늘릴 것이 없다 — 그때는 토큰 그대로.
   const height = degraded
     ? "var(--agent-terminal-dock-height-degraded)"
-    : "var(--agent-terminal-dock-height)";
+    : customHeight !== null
+      ? `${customHeight}px`
+      : "var(--agent-terminal-dock-height)";
 
   return (
     <section
       aria-label={t("title")}
       data-testid="agent-terminal-dock"
       style={{ height }}
-      className="agent-terminal-dock flex shrink-0 flex-col border-t border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]"
+      className="agent-terminal-dock relative flex shrink-0 flex-col border-t border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]"
     >
+      {!degraded ? (
+        // 높이 그립 — 상단 보더 위에 겹치는 얇은 띠. 잉크를 새로 그리지 않는다:
+        // 평소엔 투명이고 hover/포커스에서만 보더가 인디고로 바뀐다(도크의 위쪽
+        // 경계 자체가 손잡이라는 사실을 색으로만 말한다).
+        //
+        // 드래그만으로 발견되는 컨트롤은 만들지 않는다 — separator 로서 포커스를
+        // 받고 ↑↓ 로 같은 일을 하며, 더블클릭/Enter 는 기본 높이로 되돌린다.
+        <div
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label={t("resizeLabel")}
+          title={t("resizeHint")}
+          tabIndex={0}
+          data-testid="agent-terminal-resize-grip"
+          onPointerDown={handleGripPointerDown}
+          onDoubleClick={() => applyHeight(null)}
+          onKeyDown={handleGripKeyDown}
+          className="absolute inset-x-0 -top-px z-10 h-[var(--terminal-resize-grip-size)] cursor-ns-resize border-t-2 border-transparent transition-colors hover:border-[color:var(--color-indigo-accent)] focus-visible:border-[color:var(--color-indigo-accent)] focus-visible:outline-none"
+        />
+      ) : null}
       <header className="flex shrink-0 items-center gap-2 border-b border-[color:var(--color-border-soft)] px-3 py-1.5">
         <TerminalSquare size={13} aria-hidden className="text-[color:var(--color-indigo-accent)]" />
         <span className="shrink-0 text-label font-semibold text-[color:var(--color-text-primary)]">

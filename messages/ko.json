@@ -2894,6 +2894,8 @@
     "desktopOnlyHint": "브라우저는 이 컴퓨터의 프로그램을 실행할 수 없어요.",
     "downloadLink": "데스크톱 앱 받기",
     "needVault": "먼저 폴더를 열어주세요",
-    "needVaultHint": "터미널은 지금 열어 둔 폴더에서 시작해요."
+    "needVaultHint": "터미널은 지금 열어 둔 폴더에서 시작해요.",
+    "resizeLabel": "터미널 높이 조절",
+    "resizeHint": "위아래로 끌어 높이를 바꿔요. 두 번 누르면 기본 높이로 돌아가요."
   }
 }
