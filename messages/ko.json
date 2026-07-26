@@ -2593,7 +2593,7 @@
       "stored": "등록됨 ···· {last4}",
       "verify": "연결 확인",
       "verifying": "확인 중…",
-      "verifyScope": "전송: 인증 확인용 최소 요청 → {host} · 볼트 데이터 0자 · 감사 기록됨",
+      "verifyScope": "전송: 인증 확인용 최소 요청 → {host} · 볼트 데이터 0자 · 기록됨",
       "verified": "연결됨 · 방금",
       "verifyDenied": "키가 거부됐어요 ({status})",
       "verifyFailed": "확인하지 못했어요: {message}",

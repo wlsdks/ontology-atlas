@@ -181,8 +181,6 @@ function ProviderCard({
 }) {
   const t = useTranslations('settings.ai');
   const toast = useToast();
-  const [draftKey, setDraftKey] = useState('');
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verify, setVerify] = useState<VerifyState>({ kind: 'idle' });
   const [clearArmed, setClearArmed] = useState(false);
@@ -197,23 +195,6 @@ function ProviderCard({
 
   const label = t(AI_PROVIDER_LABEL_KEY[provider]);
   const stored = status?.stored === true;
-
-  const handleSave = async () => {
-    if (!draftKey.trim() || saving) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const next = await secretSet(provider, draftKey);
-      // 저장 성공 즉시 프런트 상태에서 키를 지운다 — 전체 키가 이 화면에
-      // 남아 있을 수 있는 유일한 순간을 여기서 끝낸다.
-      setDraftKey('');
-      if (next) onStatusChange(provider, next);
-    } catch (err) {
-      setError(secretErrorMessage(err));
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleVerify = async () => {
     if (!vaultRootPath || verify.kind === 'checking') return;
@@ -262,10 +243,14 @@ function ProviderCard({
   if (!stored && !expanded) {
     return (
       <div
-        className="flex items-center justify-between gap-3 px-3 py-2.5"
+        className="flex h-8 items-center justify-between gap-3 px-3 py-2.5"
         data-testid={`ai-provider-${provider}`}
       >
-        <p className="text-label text-[color:var(--color-text-tertiary)]">{label}</p>
+        {/* 벤더 이름은 정체성이지 상태가 아니다 — 등록 여부와 무관하게 같은
+            잉크로 그린다. 미등록이라는 사실은 뒤따르는 슬롯이 [키 등록] 버튼이냐
+            끝 4자냐로 이미 오해 없이 말한다. 이름까지 어둡히면 같은 사실을 두 번
+            부호화하면서, 이 화면의 1차 과업("내 벤더 찾기")만 어려워진다. */}
+        <p className="text-label text-[color:var(--color-text-secondary)]">{label}</p>
         <button
           type="button"
           data-testid={`ai-register-${provider}`}
@@ -280,7 +265,10 @@ function ProviderCard({
 
   return (
     <div className="grid gap-2 px-3 py-2.5" data-testid={`ai-provider-${provider}`}>
-      <div className="flex items-center justify-between gap-3">
+      {/* 접힌 행과 **같은 32px 헤더 밴드** — 이름 열과 뒤따르는 슬롯의 광학
+          중심이 행 상태와 무관하게 맞는다. 밴드가 없으면 등록 행의 이름만 8px
+          위로 떠서, 등록·미등록이 섞인 흔한 상태에서 세로 열이 삐뚤어진다. */}
+      <div className="flex h-8 items-center justify-between gap-3">
         <p className="text-label text-[color:var(--color-text-secondary)]">{label}</p>
         {stored ? (
           <span className="font-mono text-caption text-[color:var(--color-text-tertiary)]">
@@ -315,34 +303,12 @@ function ProviderCard({
           </button>
         </div>
       ) : (
-        <div className="flex items-center gap-2">
-          <input
-            type="password"
-            autoComplete="off"
-            spellCheck={false}
-            // 사용자가 방금 [키 등록]을 눌러 이 칸을 연 참이다 — 한 번 더
-            // 클릭하게 만들지 않는다.
-            autoFocus
-            value={draftKey}
-            aria-label={t('keyLabel', { provider: label })}
-            placeholder={t('keyPlaceholder')}
-            data-testid={`ai-key-input-${provider}`}
-            onChange={(event) => setDraftKey(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') void handleSave();
-            }}
-            className="h-8 min-w-0 flex-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2 font-mono text-caption text-[color:var(--color-text-primary)] transition-colors placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-line-a45)] focus-visible:outline-none"
-          />
-          <button
-            type="button"
-            data-testid={`ai-save-${provider}`}
-            onClick={() => void handleSave()}
-            disabled={!draftKey.trim() || saving}
-            className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] disabled:opacity-60"
-          >
-            {saving ? t('saving') : t('save')}
-          </button>
-        </div>
+        <KeyDraftForm
+          provider={provider}
+          label={label}
+          onSaved={(next) => onStatusChange(provider, next)}
+          onError={setError}
+        />
       )}
 
       <ProviderCaption
@@ -353,6 +319,83 @@ function ProviderCard({
         verify={verify}
         vaultKnown={vaultRootPath !== null}
       />
+    </div>
+  );
+}
+
+/**
+ * 붙여넣는 칸 — **펼쳐진 동안만 존재하는 컴포넌트다.**
+ *
+ * 초안 키를 부모가 아니라 여기서 들고 있는 것이 요점이다. 행이 접히면 이
+ * 컴포넌트가 언마운트되면서 초안도 **함께 사라진다** — 지우는 코드가 따로 있는
+ * 게 아니라, 남을 자리 자체가 없다.
+ *
+ * 왜 굳이 이렇게 하나: 행 접기는 "화면에서 사라졌으니 없어졌겠지" 라는 믿음을
+ * 만든다. 초안을 부모가 들고 있으면 그 믿음이 틀리게 된다 — 붙여넣었다가 다른
+ * 행으로 옮겨 그만둔 키가 시트가 닫힐 때까지 메모리에 남는다. 수명을 가시성에
+ * 묶어 두면 "붙여넣은 키는 저장 전까지만 화면에 있다" 는 이 패널의 계약이
+ * 규율이 아니라 구조가 된다.
+ */
+function KeyDraftForm({
+  provider,
+  label,
+  onSaved,
+  onError,
+}: {
+  provider: SecretProvider;
+  label: string;
+  onSaved: (next: SecretStatus) => void;
+  onError: (message: string | null) => void;
+}) {
+  const t = useTranslations('settings.ai');
+  const [draftKey, setDraftKey] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!draftKey.trim() || saving) return;
+    setSaving(true);
+    onError(null);
+    try {
+      const next = await secretSet(provider, draftKey);
+      // 저장 성공 즉시 프런트 상태에서 키를 지운다 — 전체 키가 이 화면에
+      // 남아 있을 수 있는 유일한 순간을 여기서 끝낸다.
+      setDraftKey('');
+      if (next) onSaved(next);
+    } catch (err) {
+      onError(secretErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="password"
+        autoComplete="off"
+        spellCheck={false}
+        // 사용자가 방금 [키 등록]을 눌러 이 칸을 연 참이다 — 한 번 더
+        // 클릭하게 만들지 않는다.
+        autoFocus
+        value={draftKey}
+        aria-label={t('keyLabel', { provider: label })}
+        placeholder={t('keyPlaceholder')}
+        data-testid={`ai-key-input-${provider}`}
+        onChange={(event) => setDraftKey(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') void handleSave();
+        }}
+        className="h-8 min-w-0 flex-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2 font-mono text-caption text-[color:var(--color-text-primary)] transition-colors placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-line-a45)] focus-visible:outline-none"
+      />
+      <button
+        type="button"
+        data-testid={`ai-save-${provider}`}
+        onClick={() => void handleSave()}
+        disabled={!draftKey.trim() || saving}
+        className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] disabled:opacity-60"
+      >
+        {saving ? t('saving') : t('save')}
+      </button>
     </div>
   );
 }
