@@ -222,40 +222,35 @@ export function FirstRunStarterModule({
         data-testid="first-run-starter-sample-source"
         className="mb-4 grid shrink-0 grid-cols-2 gap-1 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-overlay-1)] p-1"
       >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={sampleSource === "dogfood"}
-          data-testid="first-run-starter-sample-source-dogfood"
-          onClick={() => {
-            setSampleSource("dogfood");
-            setCollapsed(true);
-          }}
-          className={`min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
-            sampleSource === "dogfood"
-              ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
-              : "text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
-          }`}
-        >
-          {t("sampleSourceDogfood")}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={sampleSource === "storefront"}
-          data-testid="first-run-starter-sample-source-storefront"
-          onClick={() => {
-            setSampleSource("storefront");
-            setCollapsed(true);
-          }}
-          className={`min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
-            sampleSource === "storefront"
-              ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
-              : "text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
-          }`}
-        >
-          {t("sampleSourceStorefront")}
-        </button>
+        {/* 순서가 곧 기본값이다 — 처음 온 사람은 왼쪽을 먼저 읽는다. 그래서
+            예시 비즈니스가 앞, 이 앱 자신의 코드가 뒤다. 두 버튼이 글자만
+            다르고 나머지가 같아 데이터로 돌린다(둘 중 하나만 고치는 drift 방지). */}
+        {(
+          [
+            { source: "storefront", label: "sampleSourceStorefront", tip: "sampleSourceStorefrontTip" },
+            { source: "dogfood", label: "sampleSourceDogfood", tip: "sampleSourceDogfoodTip" },
+          ] as const
+        ).map(({ source, label, tip }) => (
+          <button
+            key={source}
+            type="button"
+            role="tab"
+            aria-selected={sampleSource === source}
+            title={t(tip)}
+            data-testid={`first-run-starter-sample-source-${source}`}
+            onClick={() => {
+              setSampleSource(source);
+              setCollapsed(true);
+            }}
+            className={`min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
+              sampleSource === source
+                ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
+                : "text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+            }`}
+          >
+            {t(label)}
+          </button>
+        ))}
       </div>
 
       {fsaUnsupported ? (

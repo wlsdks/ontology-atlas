@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetSampleSourceCacheForTests } from '@/shared/lib/sample-source';
 import { FIRST_RUN_STARTER_DISMISSED_KEY } from '../model/first-run-starter-dismiss';
 import { FirstRunStarterModule } from './FirstRunStarterModule';
 
@@ -58,6 +59,9 @@ describe('FirstRunStarterModule', () => {
     mocks.mode = 'static';
     window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
     window.localStorage.removeItem('demo:sample-source:v1');
+    // 저장소를 지웠으면 모듈 캐시도 지운다 — 안 그러면 앞 테스트가 남긴 값에
+    // 기대게 되고, 그건 격리가 아니라 우연이다.
+    resetSampleSourceCacheForTests();
     window.localStorage.setItem('vault-open-guide:auto:v1', '1');
   });
 
@@ -321,21 +325,54 @@ describe('FirstRunStarterModule', () => {
   // 와닿지 않는다는 문제의 완화책. "이 도구 살펴보기"/"예시 비즈니스 보기"
   // 세그먼트가 렌더되고, 클릭이 localStorage 선호도(`useSampleSource` 의
   // 진실원)를 갱신하는지 고정한다.
-  it('renders the sample-source segment defaulting to "dogfood" and persists a switch to "storefront"', () => {
+  // 2026-07-26 기본값 전환 — 처음 온 사람은 예시 비즈니스부터 본다. dogfood 를
+  // 첫 화면에 두면 `Dev Route Smoke` 류 이름부터 만나 "나와 상관있나" 를 판단할
+  // 수 없었다. dogfood 의 설득력은 존재한다는 사실에서 오지 기본 자리에서 오지
+  // 않는다 — 한 클릭 뒤 정직한 이름으로 남긴다.
+  it('renders the sample-source segment defaulting to "storefront" and persists a switch to "dogfood"', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
     const dogfoodTab = screen.getByTestId('first-run-starter-sample-source-dogfood');
     const storefrontTab = screen.getByTestId('first-run-starter-sample-source-storefront');
-    expect(dogfoodTab).toHaveAttribute('aria-selected', 'true');
-    expect(storefrontTab).toHaveAttribute('aria-selected', 'false');
+    expect(storefrontTab).toHaveAttribute('aria-selected', 'true');
+    expect(dogfoodTab).toHaveAttribute('aria-selected', 'false');
 
     // 2026-07-24 구조 개편 — 샘플 선택은 "무엇을 볼지 골랐다"는 신호라
     // 카드가 접히고 INDEX 에 자리를 넘긴다(되돌아오기 1행이 항상 남는다).
-    fireEvent.click(storefrontTab);
+    fireEvent.click(dogfoodTab);
 
-    expect(window.localStorage.getItem('demo:sample-source:v1')).toBe('storefront');
+    expect(window.localStorage.getItem('demo:sample-source:v1')).toBe('dogfood');
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
     expect(screen.getByTestId('first-run-starter-reopen')).toBeInTheDocument();
+  });
+
+  // 기본값이 바뀌었다고 남이 고른 걸 되돌리지 않는다 — 명시 선택은 그대로다.
+  it('keeps an explicitly persisted "dogfood" choice after the default flipped', () => {
+    window.localStorage.setItem('demo:sample-source:v1', 'dogfood');
+
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+
+    expect(screen.getByTestId('first-run-starter-sample-source-dogfood')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  // 왼쪽부터 읽는다 — 순서가 곧 "무엇을 먼저 권하는가" 다.
+  it('renders the storefront tab before the dogfood tab', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+
+    const tabs = screen
+      .getByTestId('first-run-starter-sample-source')
+      .querySelectorAll('[role="tab"]');
+    expect(tabs[0]).toHaveAttribute(
+      'data-testid',
+      'first-run-starter-sample-source-storefront',
+    );
+    expect(tabs[1]).toHaveAttribute(
+      'data-testid',
+      'first-run-starter-sample-source-dogfood',
+    );
   });
 
   it('restores a previously persisted "storefront" sample-source choice on mount', () => {

@@ -9,7 +9,7 @@ import { writeSampleSourcePreference } from '@/shared/lib/sample-source';
 function Writer() {
   const [, setSource] = useSampleSource();
   return (
-    <button type="button" onClick={() => setSource('storefront')}>
+    <button type="button" onClick={() => setSource('dogfood')}>
       switch
     </button>
   );
@@ -22,8 +22,8 @@ function Reader() {
 
 describe('useSampleSource — 공유 반응 스토어', () => {
   afterEach(() => {
-    // 다음 테스트 격리 — 스토어 + localStorage 를 dogfood 로 되돌린다.
-    writeSampleSourcePreference('dogfood');
+    // 다음 테스트 격리 — 스토어 + localStorage 를 기본값(storefront)으로.
+    writeSampleSourcePreference('storefront');
   });
 
   it('한 소비자의 setSource 가 독립된 다른 소비자에게 즉시 전파된다', () => {
@@ -33,22 +33,22 @@ describe('useSampleSource — 공유 반응 스토어', () => {
         <Reader />
       </>,
     );
-    expect(screen.getByTestId('reader')).toHaveTextContent('dogfood');
+    expect(screen.getByTestId('reader')).toHaveTextContent('storefront');
 
     act(() => {
       screen.getByRole('button', { name: 'switch' }).click();
     });
 
-    // 리로드 없이 Reader 가 storefront 로 갱신 — 스토어 구독 덕분.
-    expect(screen.getByTestId('reader')).toHaveTextContent('storefront');
+    // 리로드 없이 Reader 가 dogfood 로 갱신 — 스토어 구독 덕분.
+    expect(screen.getByTestId('reader')).toHaveTextContent('dogfood');
   });
 
   it('스토어 직접 write 도 마운트된 소비자에게 반영된다', () => {
     render(<Reader />);
-    expect(screen.getByTestId('reader')).toHaveTextContent('dogfood');
-    act(() => {
-      writeSampleSourcePreference('storefront');
-    });
     expect(screen.getByTestId('reader')).toHaveTextContent('storefront');
+    act(() => {
+      writeSampleSourcePreference('dogfood');
+    });
+    expect(screen.getByTestId('reader')).toHaveTextContent('dogfood');
   });
 });

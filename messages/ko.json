@@ -403,8 +403,8 @@
     "cliBridgeCopied": "복사됨",
     "cliBridgeCopyAriaLabel": "터미널에서 붙여넣을 부트스트랩 명령 복사",
     "sampleSourceAria": "둘러볼 샘플 선택",
-    "sampleSourceDogfood": "이 도구 살펴보기",
-    "sampleSourceStorefront": "예시 비즈니스 보기",
+    "sampleSourceDogfood": "이 앱의 코드",
+    "sampleSourceStorefront": "예시 — 온라인 쇼핑몰",
     "nodeHint": {
       "action": "지도의 노드를 눌러보세요",
       "reason": "전부 진짜 문서에서 나왔어요"
@@ -419,7 +419,9 @@
       "zoomHintPlain": "점을 누르면 그 안의 요소가 보여요"
     },
     "plainModeCta": "쉬운 말로 보기 켜기",
-    "reopenLabel": "시작 안내 다시 열기"
+    "reopenLabel": "시작 안내 다시 열기",
+    "sampleSourceStorefrontTip": "상품·주문·회원·배송처럼 누구나 아는 예시로 지도 읽는 법을 익혀요",
+    "sampleSourceDogfoodTip": "이 앱을 만든 코드 자신의 지도예요 — 개발자용 이름이 많이 나와요"
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",
