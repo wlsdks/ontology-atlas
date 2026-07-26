@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  evaluateForegroundActivationAttempt,
   runForegroundActivationWithRetry,
   buildAccessibilityWindowProbeScript,
   buildAccessibilityTextProbeSwift,
@@ -13,6 +14,53 @@ import {
   validateWindowRequirements,
   windowCaptureTargets,
 } from "./verify-macos-app-launch.mjs";
+
+test("foreground proof trusts the final AX state when activation command return times out", () => {
+  const result = evaluateForegroundActivationAttempt({
+    activationResult: {
+      status: null,
+      stdout: "",
+      stderr: "",
+      error: { code: "ETIMEDOUT" },
+    },
+    accessibilityResult: {
+      status: 0,
+      stdout: "101\tOntology Atlas\ttrue\t1\n",
+      stderr: "",
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.frontmost, true);
+  assert.equal(result.activationCommandConfirmed, false);
+  assert.equal(result.stderr, "");
+  assert.deepEqual(result.warnings, [
+    "foreground activation command timed out after AX confirmed frontmost",
+  ]);
+});
+
+test("foreground proof remains unconfirmed without a final AX frontmost row", () => {
+  const result = evaluateForegroundActivationAttempt({
+    activationResult: {
+      status: 0,
+      stdout: "bundle=true\tpid=true",
+      stderr: "",
+    },
+    accessibilityResult: {
+      status: null,
+      stdout: "",
+      stderr: "",
+      error: { code: "ETIMEDOUT" },
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.frontmost, false);
+  assert.match(
+    result.stderr,
+    /post-activation Accessibility probe timed out after 3000ms/,
+  );
+});
 
 test("foreground visual evidence retries one transient activation/AX miss", () => {
   const seen = [];

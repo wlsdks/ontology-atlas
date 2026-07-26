@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T19:26:29.000Z",
+  "generatedAt": "2026-07-26T19:32:09.814Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5932,8 +5932,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7148,
-      "updatedAt": "2026-07-27T04:26:29+09:00",
+      "wordCount": 7198,
+      "updatedAt": "2026-07-26T19:32:09.813Z",
       "linksOut": []
     },
     {
@@ -9264,8 +9264,8 @@
       },
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
-      "wordCount": 2361,
-      "updatedAt": "2026-07-27T04:26:29+09:00",
+      "wordCount": 2417,
+      "updatedAt": "2026-07-26T19:32:09.814Z",
       "linksOut": []
     },
     {
@@ -11018,8 +11018,8 @@
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨 한 장 더 캡처한다. ",
-      "wordCount": 12276,
-      "updatedAt": "2026-07-27T04:26:29+09:00",
+      "wordCount": 12405,
+      "updatedAt": "2026-07-26T19:32:09.812Z",
       "linksOut": []
     },
     {

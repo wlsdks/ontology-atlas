@@ -120,6 +120,59 @@ return "bundle=" & activatedByBundle & tab & "pid=" & activatedByPid
 }
 
 
+export function evaluateForegroundActivationAttempt({
+  activationResult,
+  accessibilityResult,
+}) {
+  const stdout = activationResult.stdout.trim();
+  const activationStderr = activationResult.stderr.trim();
+  const accessibilityRows =
+    accessibilityResult.status === 0
+      ? parseAccessibilityWindowRows(accessibilityResult.stdout)
+      : [];
+  const frontmost = accessibilityRows.some((row) => row.frontmost);
+  const activationCommandConfirmed =
+    activationResult.status === 0 &&
+    (/\bbundle=true\b/.test(stdout) || /\bpid=true\b/.test(stdout));
+  const activationTimedOut =
+    activationResult.error?.code === "ETIMEDOUT";
+  const warnings = [];
+
+  if (frontmost && !activationCommandConfirmed) {
+    warnings.push(
+      activationTimedOut
+        ? "foreground activation command timed out after AX confirmed frontmost"
+        : activationStderr
+          ? `foreground activation command stderr after AX confirmed frontmost: ${activationStderr}`
+          : "foreground activation command return unconfirmed after AX confirmed frontmost",
+    );
+  }
+
+  return {
+    ok: frontmost,
+    frontmost,
+    activationCommandConfirmed,
+    status: activationResult.status,
+    stdout,
+    warnings,
+    stderr: frontmost
+      ? ""
+      : [
+          activationTimedOut ? "foreground activation timed out" : null,
+          activationStderr,
+          accessibilityResult.error?.code === "ETIMEDOUT"
+            ? `post-activation Accessibility probe timed out after ${ACCESSIBILITY_WINDOW_TIMEOUT_MS}ms`
+            : null,
+          accessibilityResult.status !== 0
+            ? `post-activation Accessibility probe failed: ${accessibilityResult.stderr.trim()}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("; "),
+  };
+}
+
+
 export function runForegroundActivationWithRetry({
   runAttempt,
   maxAttempts = 2,
@@ -182,35 +235,14 @@ export function activateAppForVisualEvidence({
           timeout: ACCESSIBILITY_WINDOW_TIMEOUT_MS,
         },
       );
-      const accessibilityRows =
-        accessibility.status === 0
-          ? parseAccessibilityWindowRows(accessibility.stdout)
-          : [];
-      const frontmost = accessibilityRows.some((row) => row.frontmost);
-      const ok =
-        result.status === 0 &&
-        (/\bbundle=true\b/.test(stdout) || /\bpid=true\b/.test(stdout)) &&
-        frontmost;
-      return {
-        ok,
-        frontmost,
-        status: result.status,
-        stdout,
-        stderr: [
-          result.error?.code === "ETIMEDOUT"
-            ? "foreground activation timed out"
-            : null,
+      return evaluateForegroundActivationAttempt({
+        activationResult: {
+          ...result,
+          stdout,
           stderr,
-          accessibility.error?.code === "ETIMEDOUT"
-            ? `post-activation Accessibility probe timed out after ${ACCESSIBILITY_WINDOW_TIMEOUT_MS}ms`
-            : null,
-          accessibility.status !== 0
-            ? `post-activation Accessibility probe failed: ${accessibility.stderr.trim()}`
-            : null,
-        ]
-          .filter(Boolean)
-          .join("; "),
-      };
+        },
+        accessibilityResult: accessibility,
+      });
     },
   });
   return {

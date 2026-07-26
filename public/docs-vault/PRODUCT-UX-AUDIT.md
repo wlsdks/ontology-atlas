@@ -61,7 +61,7 @@
 | A30 | 설정 → AI 에이전트 연결 → 고급 검증·handoff 문구 읽기 | 24→32 tool inventory 수정, 완료형 설정 CTA 모순은 UX-034로 추적 |
 | A31 | CLI/MCP 현재 inventory → 활성 문서·프로토타입·fixture 교차 확인 | 52 CLI·32 MCP로 동기화, 역사/legacy 입력은 보존 |
 | A32 | AI 연결 → `기능 문서 열기` → Agent Graph Workflow 읽기 | packaged dogfood runbook URL·본문·현재 inventory 설치 앱 검증 완료 |
-| A33 | 설치 앱 foreground/AX window 자동 proof ↔ Computer Use 대조 | 간헐 timeout 재현, WebView AX 순회 제거 + 2회 bounded retry, 지속 실패 fail-closed, 설치 앱 6 proof 통과 |
+| A33 | 설치 앱 foreground/AX window 자동 proof ↔ Computer Use 대조 | AX 최종 상태 우선 + 2회 bounded retry, 지속 실패 fail-closed, 최신 설치 앱 4 proof 통과 |
 | A34 | 공방 진입 선택 → ENHANCE/CREATE 키보드 작업 계속 | 1920 ENHANCE h1·2560 CREATE 이름 입력 포커스 설치 앱 검증 완료 |
 
 ## 이슈 장부
@@ -1373,7 +1373,7 @@
 ### UX-037 — 자동 AX probe가 Computer Use로 읽히는 창을 timeout으로 오판
 
 - 심각도: `S2`
-- 상태: 2차 보강·설치 앱 반복 재검증 완료
+- 상태: 3차 보강·설치 앱 반복 재검증 완료
 - 흐름: production app 직접 실행 → WebView·CoreGraphics window 확인 →
   foreground activation → System Events AX window 확인 → screenshot 저장
 - 관측 현상: 설치 앱 WebView payload와 1.4MB window screenshot은 저장됐고
@@ -1394,6 +1394,13 @@
   두 시도가 모두 실패하면 `ok=false`와 시도별 원인을 그대로 남기며, timeout
   상향·권한 실패 은폐·무한 재시도는 하지 않는다. 로그는 `attempts`,
   `recovered`, `attemptErrors`를 구분한다.
+- 3차 관측·보강: 최신 main을 병합해 다시 배포하자 activation 명령은 두 번
+  모두 5초 timeout했지만, 각 시도 뒤의 AX probe는 최종 상태를
+  `frontmost=true`로 확인했고 1.48MB window PNG도 저장했다. 목표는 activation
+  명령의 반환문을 받는 것이 아니라 앱이 실제 foreground인지 증명하는 것이다.
+  이제 AX의 최종 frontmost 행을 성공 진실원으로 삼고, activation command
+  timeout은 `commandConfirmed=false` warning으로 보존한다. AX가 frontmost를
+  확인하지 못하면 activation 명령이 성공했어도 계속 실패한다.
 - 설치 앱·Computer Use 증거: 1차 수정 전 실패 실행과 동시에 Computer Use가
   `tauri://localhost/ko/` 첫 화면의 38개 AX 항목을 읽었다. 수정 뒤 실제 배포
   계약과 같은 8초 hold·foreground activation·window screenshot 경로를 5회
@@ -1402,8 +1409,13 @@
   내부 proof 6회가 모두 첫 시도(`attempts=1`)에 통과하고 각 771,968-byte PNG를
   저장했다. 이 반복에서는 실제 retry 회복이 발생하지 않았으며, 일시 실패 →
   2차 성공과 지속 2회 실패의 분기는 주입 단위 테스트로 각각 증명했다.
-- 회귀 증거: foreground retry 단위 테스트 2개를 포함한 desktop verifier
-  20개, 전체 `test:desktop:check` 228개, `desktop:check` 통과.
+  3차 상태 판정 뒤 같은 8초 경로 2회·내부 proof 4회도 모두
+  `frontmost=true`, `commandConfirmed=true`, 첫 시도에 통과했다. 이번 반복에는
+  command-timeout warning이 재현되지 않았으므로, 그 분기는 직전 실제 배포
+  로그와 주입 테스트를 구분해 근거로 남긴다. Computer Use는 같은 설치 앱의
+  URL·공방 h1·CREATE 이름 입력을 계속 읽었다.
+- 회귀 증거: foreground retry/최종 상태 단위 테스트 4개를 포함한 desktop
+  verifier 22개, 전체 `test:desktop:check`, `desktop:check` 통과.
 - 온톨로지·에이전트 가치: 사람이 보는 설치 앱과 agent가 읽는 자동 proof가
   같은 window 사실을 말하고, 텍스트 handoff는 더 강한 전용 AX 경로로 남는다.
 - PO·디자인 판정: **Build and verify** — 렌더링·주의 계층 변화 없음
@@ -1458,8 +1470,10 @@
 - 자동 검증: window screenshot과 WebView evidence가 저장되는 실행에서
   foreground activation/AX probe의 간헐 timeout을 UX-037로 재현했다.
   빠른 probe의 WebView AX 순회를 제거한 뒤에도 한 번 남은 일시 실패에는
-  2회 bounded retry를 추가했다. 지속 실패는 fail-closed이며, 추가한 뒤
-  8초 설치 앱 경로 3회·내부 proof 6회가 모두 첫 시도에 통과했다.
+  2회 bounded retry를 추가했다. 최신 main 배포에서는 activation command가
+  timeout해도 AX 최종 상태와 PNG는 성공하는 제3의 경우를 잡아, command 반환
+  대신 AX frontmost를 성공 진실원으로 고쳤다. AX 지속 실패는 fail-closed이며,
+  최종 수정 뒤 8초 설치 앱 경로 2회·내부 proof 4회가 모두 첫 시도에 통과했다.
 
 ## 현재 PO·디자인 판정
 

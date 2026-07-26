@@ -520,6 +520,11 @@ probe at most two attempts. A second success is logged as `recovered=true`;
 two failures stay unconfirmed and preserve both `attemptErrors`. Do not turn
 this into a longer timeout or an unbounded loop: permission and missing-window
 failures must remain visible.
+The final AX `frontmost=true` row is the success truth, not whether the
+activation AppleScript returned before its timeout. If AX confirms the final
+state after a command timeout, the proof passes with
+`commandConfirmed=false` and a warning. The inverse remains fail-closed:
+an activation return alone cannot pass without AX frontmost confirmation.
 
 `pnpm test:mcp:docs` intentionally lists explicit test-name fragments instead
 of a broad `README` token, so documentation-only changes do not accidentally

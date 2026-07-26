@@ -172,6 +172,12 @@ window probe run together for at most two attempts; a second success records
 unconfirmed and keeps every `attemptErrors` row for the agent handoff. The
 per-attempt timeouts are unchanged, so a persistent Accessibility permission,
 missing process, or missing-window failure still closes the proof.
+Within each attempt, the post-activation AX row is the final-state truth.
+`frontmost=true` passes even if the activation AppleScript itself times out;
+that mismatch remains visible as `commandConfirmed=false` plus a warning.
+Conversely, an activation command return cannot pass when AX does not confirm
+frontmost. This keeps the proof state-based without hiding a real automation
+or missing-window failure.
 
 LaunchServices runs can now add repeated `--require-accessibility-text=...`
 checks. The verifier walks the launched process Accessibility tree with a

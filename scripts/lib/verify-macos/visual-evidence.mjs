@@ -441,10 +441,14 @@ export function tryCaptureWindowEvidence({
     activation.bundleIdentifier ? `bundleId=${activation.bundleIdentifier}` : null,
     activation.pids.length > 0 ? `pids=${activation.pids.join(",")}` : "pids=none",
     `frontmost=${activation.frontmost}`,
+    `commandConfirmed=${activation.activationCommandConfirmed}`,
     `attempts=${activation.attempts}`,
     activation.recovered ? "recovered=true" : null,
     activation.attemptErrors.length > 0
       ? `attemptErrors=${JSON.stringify(activation.attemptErrors)}`
+      : null,
+    activation.warnings.length > 0
+      ? `warnings=${JSON.stringify(activation.warnings)}`
       : null,
     activation.stdout ? `stdout=${activation.stdout}` : null,
     activation.stderr ? `stderr=${activation.stderr}` : null,
@@ -514,9 +518,12 @@ export function tryCaptureWindowEvidence({
           activation: {
             ok: activation.ok,
             frontmost: activation.frontmost,
+            activationCommandConfirmed:
+              activation.activationCommandConfirmed,
             attempts: activation.attempts,
             recovered: activation.recovered,
             attemptErrors: activation.attemptErrors,
+            warnings: activation.warnings,
             stdout: activation.stdout,
             stderr: activation.stderr,
           },
