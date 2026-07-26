@@ -61,6 +61,8 @@ function model(
 ): TopologyOntologyDrawerModel {
   return {
     sourceSlug: "capabilities/mcp-server",
+    ownDocumentSlug: "capabilities/mcp-server",
+    mentionedInSlug: null,
     ownerDomain: { id: "domains/ai-agent-partner", title: "AI Agent Partner" },
     incomingCount: 1,
     outgoingCount: 2,

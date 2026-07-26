@@ -72,6 +72,8 @@ describe("buildTopologyNodeFocus", () => {
       kind: "capability",
       summary: "AI agent surface.",
       sourceSlug: "capabilities/mcp-server",
+      ownDocumentSlug: "capabilities/mcp-server",
+      mentionedInSlug: null,
       usedByCount: 1, // incoming — "이 노드를 쓰는 곳"
       dependsOnCount: 2, // outgoing — "이 노드가 기대는 곳"
       connections: [
@@ -183,5 +185,24 @@ describe("buildTopologyNodeFocus", () => {
       review: 1,
     });
     expect(focus.summary).toBeNull();
+  });
+
+  // D7 회귀 — 자기 `.md` 가 없는 노드의 `sourceSlug` 는 자기를 인용한 남의
+  // 문서다. 두 slug 를 분리해 내보내야 "이 노드의 문서" 를 그리는 표면이
+  // 거짓말을 하지 않는다.
+  it("자기 문서가 없는 노드는 ownDocumentSlug 대신 mentionedInSlug 를 낸다", () => {
+    const citedBy = "ontology/capabilities/frontmatter-to-ontology";
+    const selected = node(
+      "element:derive-ontology-from-vault",
+      "element",
+      [citedBy],
+      { title: "Derive Ontology From Vault", hasOwnDocument: false },
+    );
+    const model = buildTopologyOntologyDrawerModel(selected, [selected], []);
+    const focus = buildTopologyNodeFocus(selected, model);
+
+    expect(focus.sourceSlug).toBe(citedBy);
+    expect(focus.ownDocumentSlug).toBeNull();
+    expect(focus.mentionedInSlug).toBe(citedBy);
   });
 });

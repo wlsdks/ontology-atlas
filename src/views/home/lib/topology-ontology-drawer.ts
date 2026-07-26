@@ -7,9 +7,10 @@ import {
   classifyTopologyRelationQuality,
   type TopologyRelationQualityBreakdown,
 } from "./topology-analysis";
-import type {
-  KnowledgeGraphEdge,
-  KnowledgeGraphNode,
+import {
+  resolveNodeDocument,
+  type KnowledgeGraphEdge,
+  type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
 
 /**
@@ -56,6 +57,17 @@ export interface TopologyOntologyDrawerReach {
 
 export interface TopologyOntologyDrawerModel {
   sourceSlug: string | null;
+  /**
+   * `sourceSlug` 가 **이 노드 자신의 `.md`** 일 때만 채워진다. 관계에서만
+   * 이름이 불린 파생 노드는 null — 그 노드의 `sourceSlug` 는 자기를 인용한
+   * 남의 문서라 "이 노드의 문서" 로 열면 거짓말이 된다.
+   */
+  ownDocumentSlug: string | null;
+  /**
+   * 자기 문서가 없는 노드를 **적어 둔 다른 문서**. 자기 문서가 있으면 null.
+   * 정보를 없애지 않으면서 라벨만 정직하게 만들기 위한 짝 필드.
+   */
+  mentionedInSlug: string | null;
   /**
    * 이 노드를 소유한 domain 노드(있으면). 비즈니스 영역 context 를 read-only
    * 로 노출. incoming 엣지 중 source 가 kind:domain 인 첫 노드(보통 contains
@@ -157,8 +169,12 @@ export function buildTopologyOntologyDrawerModel(
     }
   }
 
+  const document = resolveNodeDocument(node);
+
   return {
     sourceSlug: node.evidenceIds[0] ?? null,
+    ownDocumentSlug: document.ownSlug,
+    mentionedInSlug: document.mentionedInSlug,
     ownerDomain,
     incomingCount: incoming.length,
     outgoingCount: outgoing.length,

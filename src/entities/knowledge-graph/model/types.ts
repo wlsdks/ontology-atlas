@@ -59,6 +59,17 @@ export interface KnowledgeGraphNode {
   projectIds: string[];
   summary?: string;
   evidenceIds: string[];
+  /**
+   * 이 노드가 자기 `.md` 문서를 가졌는지. `evidenceIds[0]` 은 문서 노드면
+   * 자기 slug, 관계에서만 이름이 불린 파생 노드면 *자기를 인용한 남의 문서*
+   * slug 라 그 값만으로는 둘을 구분할 수 없다 — "이 노드의 문서 열기" 를
+   * 그리는 표면은 반드시 이 필드로 갈라야 남의 문서를 자기 문서인 양 열지
+   * 않는다(`resolveNodeDocument` 참조).
+   *
+   * optional 인 이유: `derivationToInsight` 를 거치지 않고 직접 만든 노드
+   * (테스트 픽스처, 수동 조립 등)와의 하위 호환 — 미지정은 `true` 로 읽는다.
+   */
+  hasOwnDocument?: boolean;
   lastApprovedAt: Date;
   lastApprovedBy: string;
 }

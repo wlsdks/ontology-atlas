@@ -56,6 +56,9 @@ export function derivationToInsight(
     // 사용자가 "근거 문서" 로 점프하면 맥락이 잡히므로 그대로 첫번째
     // evidenceId 로 노출. 없으면 빈 배열.
     evidenceIds: stub.sourceSlug ? [stub.sourceSlug] : [],
+    // 그 둘을 evidenceIds 만으로는 구분할 수 없어 "이 노드의 문서" 를 그리는
+    // 표면이 남의 문서를 열어 왔다 — 구분 플래그를 그대로 넘긴다.
+    hasOwnDocument: stub.hasOwnDocument,
     lastApprovedAt: VAULT_SENTINEL_DATE,
     lastApprovedBy: VAULT_SENTINEL_AUTHOR,
     summary: stub.summary,

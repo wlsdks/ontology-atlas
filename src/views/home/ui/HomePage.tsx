@@ -116,6 +116,7 @@ import {
   buildOntologyInsightsReturnHref,
   deriveCodeLocations,
   edgeAuthoredByFromNode,
+  resolveNodeDocument,
   studioEditRelationForEdgeType,
   useRelationVocabulary,
   type KnowledgeGraphNode,
@@ -1732,6 +1733,10 @@ export function HomePage() {
     const node = ontologyInsight.nodes.find((n) => n.id === contextMenuNode.slug);
     if (!node) return null;
     const sourceSlug = node.evidenceIds[0] ?? null;
+    // 자기 문서 / 남이 언급한 문서 구분 — 컨텍스트 메뉴는 `근거` 목록이 없어
+    // 문서가 없는 노드에서 링크를 그냥 지우면 정보가 사라진다. 라벨을 바꿔
+    // 정직하게 남긴다.
+    const { ownSlug, mentionedInSlug } = resolveNodeDocument(node);
     const slug = sourceSlug ?? node.id;
     const connections = buildV2Connections(node.id, ontologyInsight.nodes, ontologyInsight.edges);
     const groups = buildV2ConnectionGroups(connections);
@@ -1752,7 +1757,10 @@ export function HomePage() {
     return {
       nodeId: node.id,
       slug,
-      documentHref: sourceSlug ? buildDocsVaultHref({ slug: sourceSlug }) : null,
+      documentHref: ownSlug ? buildDocsVaultHref({ slug: ownSlug }) : null,
+      mentionDocumentHref: mentionedInSlug
+        ? buildDocsVaultHref({ slug: mentionedInSlug })
+        : null,
       // 빌더 딥링크는 canonical `<kind>:<slug>`(그래프 node id)로 통일(H5).
       studioEditHref: buildOntologyStudioNodeHrefFromGraphId(node.id),
       handoffText,
@@ -1786,8 +1794,13 @@ export function HomePage() {
     const loadedBody =
       nodeBody && nodeBody.slug === slug ? nodeBody.body : null;
     const bodyMarkdown = loadedBody ?? selectedOntologyNode.summary ?? null;
-    const documentHref = nodeFocus.sourceSlug
-      ? buildDocsVaultHref({ slug: nodeFocus.sourceSlug })
+    // 전체 상세도 `근거` 목록이 없는 표면 — 자기 문서가 없으면 링크를 지우는
+    // 대신 "언급한 문서" 로 라벨을 바꿔 남긴다.
+    const documentHref = nodeFocus.ownDocumentSlug
+      ? buildDocsVaultHref({ slug: nodeFocus.ownDocumentSlug })
+      : null;
+    const mentionDocumentHref = nodeFocus.mentionedInSlug
+      ? buildDocsVaultHref({ slug: nodeFocus.mentionedInSlug })
       : null;
     const explanationEdit =
       nodeEditTarget &&
@@ -1827,6 +1840,7 @@ export function HomePage() {
       bodyMarkdown,
       explanationEdit,
       documentHref,
+      mentionDocumentHref,
     };
   }, [
     nodeFocus,
@@ -4245,9 +4259,12 @@ export function HomePage() {
           <TopologyV2ContextMenu
             position={{ x: contextMenuNode.x, y: contextMenuNode.y }}
             documentHref={contextMenuModel.documentHref}
+            mentionDocumentHref={contextMenuModel.mentionDocumentHref}
             studioEditHref={contextMenuModel.studioEditHref}
             labels={{
               actionDocument: t("nodeDatasheet.actionDocument"),
+              actionMentionDocument: t("nodeDatasheet.actionMentionDocument"),
+              actionMentionDocumentTip: t("nodeDatasheet.actionMentionDocumentTip"),
               actionEditRelations: t("nodeDatasheet.actionEditRelations"),
               actionCopyHandoff: t("nodeDatasheet.actionCopyHandoff"),
               actionPath: t("nodeDatasheet.actionPath"),
@@ -4282,6 +4299,7 @@ export function HomePage() {
               bodyMarkdown={fullDetailA1Model.bodyMarkdown}
               explanationEdit={fullDetailA1Model.explanationEdit}
               documentHref={fullDetailA1Model.documentHref}
+              mentionDocumentHref={fullDetailA1Model.mentionDocumentHref}
               codeLocations={fullDetailA1Model.codeLocations}
               onSelectNode={(id) => handleSelect(id)}
               onClose={handleClose}

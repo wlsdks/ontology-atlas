@@ -39,6 +39,10 @@ export interface TopologyNodeFocusModel {
   kind: string;
   summary: string | null;
   sourceSlug: string | null;
+  /** 이 노드 자신의 `.md` slug — 없으면 null (드로어 모델의 순수 투영). */
+  ownDocumentSlug: string | null;
+  /** 자기 문서가 없을 때, 이 노드를 적어 둔 다른 문서의 slug. */
+  mentionedInSlug: string | null;
   /** 직접 incoming — 평문 "이 노드를 쓰는 곳". */
   usedByCount: number;
   /** 직접 outgoing — 평문 "이 노드가 기대는 곳". */
@@ -78,6 +82,8 @@ export function buildTopologyNodeFocus(
     kind: node.kind,
     summary: node.summary ?? null,
     sourceSlug: model.sourceSlug,
+    ownDocumentSlug: model.ownDocumentSlug,
+    mentionedInSlug: model.mentionedInSlug,
     usedByCount: model.incomingCount,
     dependsOnCount: model.outgoingCount,
     connections,

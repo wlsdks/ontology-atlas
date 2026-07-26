@@ -98,16 +98,37 @@ describe("buildDuplicatePairs", () => {
       {
         ...node("element:scriptsfoomjs", "element", "Scripts foo"),
         evidenceIds: ["elements/node-drawer"],
+        hasOwnDocument: false,
       },
       {
         ...node("element:scriptsfootestmjs", "element", "Scripts foo test"),
         evidenceIds: ["elements/node-drawer"],
+        hasOwnDocument: false,
       },
     ];
 
     const { rows } = buildDuplicatePairs(derived, edges, 5);
     expect(rows.every((row) => !row.keepSlug.includes("scripts"))).toBe(true);
     expect(rows).toHaveLength(1);
+  });
+
+  it("id 꼬리가 파일 이름과 달라도 문서가 있으면 후보다 — 프로젝트 노드", () => {
+    // 프로젝트 id 는 frontmatter `slug:` 로 만들어져(`ontology/project.md` →
+    // `project:ontology-atlas`) 파일 이름 꼬리와 다르다. 화면이 "id 꼬리 ==
+    // 문서 slug 꼬리" 로 자기 문서를 추정하던 동안 이 노드가 조용히 빠졌다.
+    const project: KnowledgeGraphNode = {
+      ...node("project:ontology-atlas", "project", "Ontology Atlas"),
+      evidenceIds: ["ontology/project"],
+    };
+    const twin: KnowledgeGraphNode = {
+      ...node("project:ontology-atlas-2", "project", "Ontology Atlas"),
+      evidenceIds: ["ontology/project-2"],
+    };
+
+    const { rows } = buildDuplicatePairs([project, twin], [], 5);
+    expect(rows.map((row) => [row.keepSlug, row.dissolveSlug])).toEqual([
+      ["ontology/project", "ontology/project-2"],
+    ]);
   });
 
   it("빈 볼트/한 개짜리 볼트는 한 쌍도 만들지 않는다 — 카드가 렌더되지 않는 조건", () => {

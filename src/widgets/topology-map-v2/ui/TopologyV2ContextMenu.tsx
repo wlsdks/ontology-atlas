@@ -23,6 +23,14 @@ import { Link } from "@/i18n/navigation";
  */
 export interface TopologyV2ContextMenuLabels {
   actionDocument: string;
+  /**
+   * 자기 `.md` 가 없는 노드(다른 문서의 관계 키에서 이름만 불린 개념)에서
+   * `actionDocument` 대신 쓰는 라벨. 링크가 향하는 곳이 "이 개념의 문서" 가
+   * 아니라 "이 개념을 적어 둔 문서" 라서 라벨도 그렇게 말해야 한다.
+   */
+  actionMentionDocument: string;
+  /** 위 항목의 hover 한 줄 풀이 — 왜 다른 문서로 가는지. */
+  actionMentionDocumentTip: string;
   actionEditRelations: string;
   actionCopyHandoff: string;
   actionPath: string;
@@ -32,7 +40,10 @@ export interface TopologyV2ContextMenuLabels {
 export interface TopologyV2ContextMenuProps {
   /** Viewport-space anchor (the right-click's `clientX`/`clientY`). */
   position: { x: number; y: number };
+  /** **이 노드 자신의** 문서. 자기 `.md` 가 없으면 null. */
   documentHref: string | null;
+  /** 자기 문서가 없을 때, 이 노드를 적어 둔 다른 문서. 있으면 정직한 라벨로 렌더. */
+  mentionDocumentHref?: string | null;
   studioEditHref: string;
   labels: TopologyV2ContextMenuLabels;
   onCopyHandoff: () => void;
@@ -71,6 +82,7 @@ const MENU_ITEM_DISABLED_CLASS = "pointer-events-none opacity-40";
 export function TopologyV2ContextMenu({
   position,
   documentHref,
+  mentionDocumentHref = null,
   studioEditHref,
   labels,
   onCopyHandoff,
@@ -122,6 +134,19 @@ export function TopologyV2ContextMenu({
         >
           <FileText size={14} aria-hidden="true" />
           {labels.actionDocument}
+        </Link>
+      ) : mentionDocumentHref ? (
+        // 자기 문서가 없는 노드 — 링크를 지우면 "이 개념이 어디에 적혀 있나"
+        // 를 잃는다. 목적지를 말하는 라벨로 바꿔 남긴다.
+        <Link
+          href={mentionDocumentHref}
+          role="menuitem"
+          title={labels.actionMentionDocumentTip}
+          data-testid="topology-v2-context-menu-mention-document"
+          className={MENU_ITEM_CLASS}
+        >
+          <FileText size={14} aria-hidden="true" />
+          {labels.actionMentionDocument}
         </Link>
       ) : (
         <span
