@@ -1749,10 +1749,12 @@ export function HomePage() {
       contains: groups.contains.total,
       usedBy: groups.usedBy.total,
       dependsOn: groups.dependsOn.total,
+      belongsTo: groups.belongsTo.total,
       evidence: evidenceRows.length,
       containsNames: groups.contains.rows.map((connection) => connection.title),
       usedByNames: groups.usedBy.rows.map((connection) => connection.title),
       dependsNames: groups.dependsOn.rows.map((connection) => connection.title),
+      belongsToNames: groups.belongsTo.rows.map((connection) => connection.title),
     });
     return {
       nodeId: node.id,
@@ -4106,7 +4108,6 @@ export function HomePage() {
                 kind={panelDatasheetModel.kind}
                 domain={panelDatasheetModel.domain}
                 powered={panelDatasheetModel.powered}
-                metric={panelDatasheetModel.metric}
                 groups={panelDatasheetModel.groups}
                 evidence={panelDatasheetModel.evidence}
                 codeLocations={panelDatasheetModel.codeLocations}
@@ -4137,6 +4138,9 @@ export function HomePage() {
                   containsOtherGroup: t("nodeDatasheet.containsOtherGroup"),
                   metricUsedBy: t("nodeDatasheet.metricUsedBy"),
                   metricDependsOn: relationVocabulary("depends_on", "plain"),
+                  // "속한 곳" 도 공유 사전에서 — 전체 상세가 쓰는 단어와 같은
+                  // 출처라 두 표면이 같은 관계를 다르게 부를 수 없다.
+                  metricBelongsTo: relationVocabulary("belongs_to", "plain"),
                   metricEvidence: relationVocabulary("describes", "plain"),
                   // 시안 재설계 (2026-07-24) — 상단 평문 stats 라벨.
                   statsConnected: t("nodeDatasheet.statsConnected"),
@@ -4145,6 +4149,7 @@ export function HomePage() {
                   metricContainsHelp: t("nodeDatasheet.metricContainsHelp"),
                   metricUsedByHelp: t("nodeDatasheet.metricUsedByHelp"),
                   metricDependsOnHelp: t("nodeDatasheet.metricDependsOnHelp"),
+                  metricBelongsToHelp: t("nodeDatasheet.metricBelongsToHelp"),
                   metricEvidenceHelp: t("nodeDatasheet.metricEvidenceHelp"),
                   metricHelp: t("nodeDatasheet.metricHelp"),
                   noConnections: t("nodeDatasheet.noConnections"),

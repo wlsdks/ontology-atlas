@@ -81,7 +81,13 @@ export interface NodeDatasheetDerivation {
     domain: { id: string; title: string } | null;
     powered: boolean;
     updatedAtLabel: string | null;
-    metric: { contains: number; usedBy: number; dependsOn: number; evidence: number };
+    metric: {
+      contains: number;
+      usedBy: number;
+      dependsOn: number;
+      belongsTo: number;
+      evidence: number;
+    };
     groups: ReturnType<typeof buildV2ConnectionGroups>;
     evidence: { rows: ReturnType<typeof buildV2EvidenceRows>; total: number };
     /**
@@ -174,6 +180,9 @@ export function useNodeDatasheetModel({
       contains: groups.contains.total,
       usedBy: groups.usedBy.total,
       dependsOn: groups.dependsOn.total,
+      // 부모(속한 곳)까지 네 버킷 전부 — 이 값이 빠져 있던 동안 부모만 있는
+      // 노드의 핸드오프가 "연결 0" 으로 나갔다.
+      belongsTo: groups.belongsTo.total,
       evidence: evidenceRows.length,
     };
     const handoffText = formatV2HandoffText({
@@ -184,10 +193,12 @@ export function useNodeDatasheetModel({
       contains: metric.contains,
       usedBy: metric.usedBy,
       dependsOn: metric.dependsOn,
+      belongsTo: metric.belongsTo,
       evidence: metric.evidence,
       containsNames: groups.contains.rows.map((connection) => connection.title),
       usedByNames: groups.usedBy.rows.map((connection) => connection.title),
       dependsNames: groups.dependsOn.rows.map((connection) => connection.title),
+      belongsToNames: groups.belongsTo.rows.map((connection) => connection.title),
     });
     const freshnessIso = nodeFocus.sourceSlug ? docFreshnessIndex.get(nodeFocus.sourceSlug) : undefined;
     const ago = freshnessIso ? computeUpdatedAgo(freshnessIso, updatedAgoNowMs) : null;

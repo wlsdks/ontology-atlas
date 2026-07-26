@@ -13,7 +13,6 @@ import {
   type V2ConnectionGroupView,
   type V2DatasheetConnection,
   type V2EvidenceRow,
-  type V2MetricValues,
 } from "./topology-v2-datasheet";
 import { LastEditSubjectRow, MtimeConflictBadge } from "@/shared/ui";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
@@ -47,10 +46,12 @@ import { Tooltip } from "@/shared/ui/tooltip";
  * view → widget. Colors/sizes come from `--topology-v2-panel-*` tokens.
  *
  * M-2 카운트 시맨틱: connection groups are ROLE-based (contains / usedBy /
- * dependsOn) — the SAME buckets the metric line counts and the full-detail
- * surface renders — so the group header's number and the metric line's number
- * are the same number by construction, and the popover never disagrees with
- * full-detail. Containment is its OWN "담는 것" group/segment (rendered only
+ * dependsOn / belongsTo) — the SAME four buckets the full-detail surface
+ * renders — so the group header's number and the "이어진 곳" aggregate are the
+ * same number by construction, and the popover never disagrees with
+ * full-detail. 네 번째 버킷(속한 곳)은 2026-07-26 까지 여기서 빠져 있었고,
+ * 그동안 부모만 있는 노드(dogfood 75%)의 팝오버가 "이어진 곳 0" 이라고 말했다.
+ * Containment is its OWN "담는 것" group/segment (rendered only
  * when non-empty, i.e. container nodes) instead of folding into "기대는 곳" by
  * raw direction — the exact typed-fact collapse the UX round flagged. Group
  * headers reuse `labels.metricContains`/`metricUsedBy`/`metricDependsOn` (no
@@ -74,10 +75,10 @@ import { Tooltip } from "@/shared/ui/tooltip";
  * only by line style (solid vs dashed `TraceMark`) — not a fact a first-time
  * reader would notice. It now renders as its own "도메인 · <이름>" line in
  * the header, clickable via the SAME `onSelectConnection` callback the
- * connection rows use (no new navigation primitive). It still ALSO appears
- * in the usedBy group when the underlying `contains` edge exists — this is
- * additive promotion, not a removal, since the group still needs to show
- * every direct edge for agent handoff completeness.
+ * connection rows use (no new navigation primitive). 도메인이 이 노드의 직접
+ * 부모일 때는 아래 "속한 곳" 그룹에도 한 줄로 남는다 — 헤더 칩은 바로 가라는
+ * 지름길이고, 그룹은 관계 기록 자체다. 그룹에서 도메인만 빼면 팝오버의
+ * "속한 곳 N" 이 전체 상세의 같은 수와 어긋난다(그게 더 나쁜 결함이다).
  *
  * Toss C2 (청중 언어 평문화, 2026-07-24): the "담는 것/쓰는 곳/기대는 곳/근거"
  * plain labels used to sit right next to jargon that undercut them — the
@@ -106,13 +107,20 @@ export interface TopologyV2DetailPanelLabels {
   containsOtherGroup: string;
   metricUsedBy: string;
   metricDependsOn: string;
+  /**
+   * "속한 곳" (belongsTo) — 이 노드를 담고 있는 상위 항목. 전체 상세와 같은
+   * 단어를 쓴다(둘 다 `edgeTypesPlain.belongs_to` 계열).
+   */
+  metricBelongsTo: string;
   metricEvidence: string;
   /**
    * 시안 재설계 (2026-07-24) — 평문 stats 한 줄 "이어진 곳 <N> · 근거 문서
    * <M>". 각인 메트릭 스트립(타입별 분해)을 대체한다 — 타입별 카운트는 아래
    * 각 관계 그룹 헤더의 카운트 칩으로 이미 한 번씩 나타나므로, 상단은 집계만
-   * 말한다(한 사실은 한 번). `statsConnected` = contains+usedBy+dependsOn 합,
-   * `statsEvidenceDocs` = 근거 문서(evidence) 수.
+   * 말한다(한 사실은 한 번). `statsConnected` = 아래에 그려지는 네 관계 그룹
+   * (contains+usedBy+dependsOn+belongsTo)의 합, `statsEvidenceDocs` = 근거
+   * 문서(evidence) 수. 그리지 않는 버킷을 세지도 않고, 세는 버킷을 감추지도
+   * 않는다 — 한쪽만 어기면 "이어진 곳" 이 말과 다른 수가 된다.
    */
   statsConnected: string;
   statsEvidenceDocs: string;
@@ -124,6 +132,7 @@ export interface TopologyV2DetailPanelLabels {
   metricContainsHelp?: string;
   metricUsedByHelp?: string;
   metricDependsOnHelp?: string;
+  metricBelongsToHelp?: string;
   metricEvidenceHelp?: string;
   /** 각인 메트릭 한 줄 전체의 스코프 풀이(모두 직접 연결 기준). */
   metricHelp?: string;
@@ -191,10 +200,16 @@ export interface TopologyV2DetailPanelProps {
   domain: { id: string; title: string } | null;
   /** "전원" — powered (recently updated / fresh) vs unpowered (quiet). */
   powered: boolean;
-  metric: V2MetricValues;
-  /** Connections grouped by relation type, each with a capped row preview + the
+  /**
+   * Connections grouped by relation type, each with a capped row preview + the
    * group's true total — so a contains-hub's depends group renders its real
-   * count instead of collapsing into a generic overflow. */
+   * count instead of collapsing into a generic overflow.
+   *
+   * 이 패널이 그리는 **모든** 관계 수의 유일한 출처다(2026-07-26). 예전엔
+   * 별도의 `metric` prop 이 같은 수를 한 벌 더 들고 있었고, 그 벌에 없는
+   * 버킷은 상단 집계에서도 조용히 빠졌다. 세는 곳과 그리는 곳을 하나로 묶어
+   * "안 그린 걸 세거나, 센 걸 안 그리는" 상태를 타입 수준에서 없앤다.
+   */
   groups: V2ConnectionGroupsView;
   /** 근거(evidence) group — the node's own backing vault doc(s), RATIO-SYSTEM
    * §4 promotion. Rows built by `buildV2EvidenceRows`; empty when the node
@@ -320,10 +335,15 @@ const ACTION_TILE_CLASS =
 /**
  * 관계 그룹 헤더의 방향 글리프 — 승인된 시안(mockup-panel-detail)의 SVG 를
  * 그대로 옮긴다. 담는 것=아래로 소유(계층), 쓰는 곳=밖에서 들어옴(arrow-in),
- * 기대는 곳=밖으로 나감(arrow-out), 근거=문서, 코드=`</>`. currentColor 로만
- * 그려 잉크는 부모의 `--topology-v2-panel-group-dir` 텍스트 색을 상속한다.
+ * 기대는 곳=밖으로 나감(arrow-out), 속한 곳=담는 것의 상하 반전(같은 관계,
+ * 반대 방향), 근거=문서, 코드=`</>`. currentColor 로만 그려 잉크는 부모의
+ * `--topology-v2-panel-group-dir` 텍스트 색을 상속한다.
  */
-function GroupDirIcon({ variant }: { variant: "contains" | "usedBy" | "dependsOn" | "evidence" | "code" }) {
+function GroupDirIcon({
+  variant,
+}: {
+  variant: "contains" | "usedBy" | "dependsOn" | "belongsTo" | "evidence" | "code";
+}) {
   const common = {
     width: 15,
     height: 15,
@@ -343,6 +363,18 @@ function GroupDirIcon({ variant }: { variant: "contains" | "usedBy" | "dependsOn
           <path d="M12 7v4M12 11H6v3M12 11h6v3" />
           <circle cx={6} cy={17} r={2.2} />
           <circle cx={18} cy={17} r={2.2} />
+        </svg>
+      );
+    case "belongsTo":
+      // 담는 것 글리프의 상하 반전 — 같은 계층 관계를 반대 방향에서 본 것이라는
+      // 뜻을 형태로만 말한다(새 색/새 기호 0). 부모가 둘 이상인 노드가 실제로
+      // 있어(dogfood 56개) 위쪽 노드는 둘로 둔다.
+      return (
+        <svg {...common}>
+          <circle cx={12} cy={19} r={2.2} />
+          <path d="M12 17v-4M12 13H6v-3M12 13h6v-3" />
+          <circle cx={6} cy={7} r={2.2} />
+          <circle cx={18} cy={7} r={2.2} />
         </svg>
       );
     case "usedBy":
@@ -390,7 +422,7 @@ function RelationGroupShell({
   children,
 }: {
   groupKey: string;
-  dir: "contains" | "usedBy" | "dependsOn" | "evidence" | "code";
+  dir: "contains" | "usedBy" | "dependsOn" | "belongsTo" | "evidence" | "code";
   label: string;
   help?: string;
   count: number;
@@ -430,7 +462,6 @@ export function TopologyV2DetailPanel({
   kind,
   domain,
   powered,
-  metric,
   groups,
   evidence,
   codeLocations,
@@ -453,15 +484,16 @@ export function TopologyV2DetailPanel({
   showSourcePath = true,
 }: TopologyV2DetailPanelProps) {
   // 시안 재설계 (2026-07-24) — 상단 stats 는 집계 한 줄. 타입별 분해는 아래
-  // 각 관계 그룹 헤더의 카운트 칩이 담당한다(한 사실 한 번). 연결 수는
-  // contains+usedBy+dependsOn 합(= 각 그룹 total 의 합, 구성상 동일 숫자).
-  const connectedTotal = metric.contains + metric.usedBy + metric.dependsOn;
+  // 각 관계 그룹 헤더의 카운트 칩이 담당한다(한 사실 한 번).
+  //
+  // 스코프 정정 (2026-07-26) — 합계는 **아래에 실제로 그려지는 그룹들의 total**
+  // 에서 직접 만든다. 예전엔 `metric.*` 세 값만 더해서, 네 번째 버킷(속한 곳)
+  // 이 그려지지도 세어지지도 않았고 부모만 있는 노드가 "이어진 곳 0" 이 됐다.
+  // 같은 객체에서 더하면 "상단 = 아래 그룹 집계" 가 관례가 아니라 구성상 참이다.
+  const connectedTotal =
+    groups.contains.total + groups.usedBy.total + groups.dependsOn.total + groups.belongsTo.total;
   const hasConnections =
-    groups.contains.total > 0 ||
-    groups.usedBy.total > 0 ||
-    groups.dependsOn.total > 0 ||
-    evidence.total > 0 ||
-    codeLocations.length > 0;
+    connectedTotal > 0 || evidence.total > 0 || codeLocations.length > 0;
 
   // S2 파트 3 — 긴 "담는 것" 리스트는 경로 프리픽스 요약으로 접고, "전체 보기"
   // 토글로 기존 리스트를 편다(세션 임시 상태). 노드가 바뀌면 기본(요약)으로 리셋
@@ -484,8 +516,8 @@ export function TopologyV2DetailPanel({
   // match too, or the reconciliation reads as a coincidence instead of a
   // guarantee.
   const renderGroup = (
-    group: "contains" | "usedBy" | "dependsOn",
-    dir: "contains" | "usedBy" | "dependsOn",
+    group: "contains" | "usedBy" | "dependsOn" | "belongsTo",
+    dir: "contains" | "usedBy" | "dependsOn" | "belongsTo",
     label: string,
     help: string | undefined,
     view: V2ConnectionGroupView,
@@ -893,6 +925,10 @@ export function TopologyV2DetailPanel({
             {renderGroup("contains", "contains", labels.metricContains, labels.metricContainsHelp, groups.contains)}
             {renderGroup("usedBy", "usedBy", labels.metricUsedBy, labels.metricUsedByHelp, groups.usedBy)}
             {renderGroup("dependsOn", "dependsOn", labels.metricDependsOn, labels.metricDependsOnHelp, groups.dependsOn)}
+            {/* 속한 곳 — 전체 상세와 같은 순서(담는 것 → 쓰는 곳 → 기대는 곳 →
+                속한 곳)로 마지막에 둔다. 두 표면을 오가는 사람이 같은 자리에서
+                같은 단어를 만나게. */}
+            {renderGroup("belongsTo", "belongsTo", labels.metricBelongsTo, labels.metricBelongsToHelp, groups.belongsTo)}
             {renderEvidenceGroup()}
             {renderCodeLocationsGroup()}
           </>

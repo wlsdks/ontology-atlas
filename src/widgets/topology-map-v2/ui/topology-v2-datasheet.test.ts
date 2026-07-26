@@ -199,23 +199,29 @@ describe("buildV2ConnectionGroups — M-2 ROLE axis, single source for metric + 
 });
 
 describe("formatV2MetricLine — M-2 typed segments", () => {
-  const labels = { contains: "담는 것", usedBy: "쓰는 곳", dependsOn: "기대는 곳", evidence: "근거" };
+  const labels = {
+    contains: "담는 것",
+    usedBy: "쓰는 곳",
+    dependsOn: "기대는 곳",
+    belongsTo: "속한 곳",
+    evidence: "근거",
+  };
 
   it("prepends 담는 것 for a container node (contains > 0) — the typed split", () => {
     expect(
-      formatV2MetricLine({ contains: 18, usedBy: 4, dependsOn: 2, evidence: 1 }, labels),
+      formatV2MetricLine({ contains: 18, usedBy: 4, dependsOn: 2, belongsTo: 0, evidence: 1 }, labels),
     ).toBe("담는 것 18 · 쓰는 곳 4 · 기대는 곳 2 · 근거 1");
   });
 
   it("hides the 담는 것 segment for a leaf (contains === 0) so it isn't a noisy '담는 것 0'", () => {
     expect(
-      formatV2MetricLine({ contains: 0, usedBy: 3, dependsOn: 5, evidence: 2 }, labels),
+      formatV2MetricLine({ contains: 0, usedBy: 3, dependsOn: 5, belongsTo: 0, evidence: 2 }, labels),
     ).toBe("쓰는 곳 3 · 기대는 곳 5 · 근거 2");
   });
 
   it("keeps the remaining three facts' zeros explicit", () => {
     expect(
-      formatV2MetricLine({ contains: 0, usedBy: 0, dependsOn: 0, evidence: 0 }, labels),
+      formatV2MetricLine({ contains: 0, usedBy: 0, dependsOn: 0, belongsTo: 0, evidence: 0 }, labels),
     ).toBe("쓰는 곳 0 · 기대는 곳 0 · 근거 0");
   });
 
@@ -225,7 +231,7 @@ describe("formatV2MetricLine — M-2 typed segments", () => {
   // 같은 사실임을 타입으로 고정한다.
   it("buildV2MetricSegments exposes the same segments structured, keyed by the group ids", () => {
     expect(
-      buildV2MetricSegments({ contains: 18, usedBy: 4, dependsOn: 2, evidence: 1 }, labels),
+      buildV2MetricSegments({ contains: 18, usedBy: 4, dependsOn: 2, belongsTo: 0, evidence: 1 }, labels),
     ).toEqual([
       { key: "contains", label: "담는 것", value: 18 },
       { key: "usedBy", label: "쓰는 곳", value: 4 },
@@ -236,7 +242,7 @@ describe("formatV2MetricLine — M-2 typed segments", () => {
 
   it("buildV2MetricSegments omits the contains segment for a leaf, like the joined line", () => {
     expect(
-      buildV2MetricSegments({ contains: 0, usedBy: 3, dependsOn: 5, evidence: 2 }, labels).map(
+      buildV2MetricSegments({ contains: 0, usedBy: 3, dependsOn: 5, belongsTo: 0, evidence: 2 }, labels).map(
         (s) => s.key,
       ),
     ).toEqual(["usedBy", "dependsOn", "evidence"]);
@@ -253,10 +259,12 @@ describe("formatV2HandoffText — M-2 contains split", () => {
       contains: 18,
       usedBy: 4,
       dependsOn: 2,
+      belongsTo: 1,
       evidence: 1,
       containsNames: ["mcp-server", "agent-config-onboarding"],
       usedByNames: ["frontmatter-to-ontology"],
       dependsNames: ["relation-graph"],
+      belongsToNames: ["ontology-atlas"],
     });
     expect(text).toBe(
       [
@@ -267,10 +275,12 @@ describe("formatV2HandoffText — M-2 contains split", () => {
         "contains: 18",
         "used_by: 4",
         "depends_on: 2",
+        "belongs_to: 1",
         "evidence: 1",
         "contains_names: mcp-server, agent-config-onboarding",
         "used_by_names: frontmatter-to-ontology",
         "depends_names: relation-graph",
+        "belongs_to_names: ontology-atlas",
         'next: get_concept("ai-agent-partner") → review context, then patch_concept / add_relation as needed',
       ].join("\n"),
     );
@@ -285,15 +295,18 @@ describe("formatV2HandoffText — M-2 contains split", () => {
       contains: 0,
       usedBy: 0,
       dependsOn: 0,
+      belongsTo: 0,
       evidence: 0,
       containsNames: [],
       usedByNames: [],
       dependsNames: [],
+      belongsToNames: [],
     });
     expect(text).toContain("domain: -");
     expect(text).toContain("contains_names: -");
     expect(text).toContain("used_by_names: -");
     expect(text).toContain("depends_names: -");
+    expect(text).toContain("belongs_to_names: -");
   });
 
   it("marks read-only sample facts and never suggests MCP reads or writes against a vault", () => {
@@ -305,10 +318,12 @@ describe("formatV2HandoffText — M-2 contains split", () => {
       contains: 1,
       usedBy: 0,
       dependsOn: 0,
+      belongsTo: 1,
       evidence: 1,
       containsNames: ["상품 이미지 스토리지"],
       usedByNames: [],
       dependsNames: [],
+      belongsToNames: ["상품"],
     });
 
     expect(text).toContain("source: read-only-sample");

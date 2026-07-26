@@ -1910,6 +1910,7 @@
       "metricContainsHelp": "Items this node directly contains — one level down, not the full subtree.",
       "metricUsedByHelp": "Other items that directly use (point at) this node.",
       "metricDependsOnHelp": "Other items this node directly leans on.",
+      "metricBelongsToHelp": "The parent item that directly contains this node — one level up only.",
       "metricEvidenceHelp": "The document this concept is written in — either its own page, or another page that mentions it. Click to open.",
       "metricEvidenceDeclared": "declared",
       "metricEvidenceUndeclared": "undeclared",

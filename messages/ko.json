@@ -1910,6 +1910,7 @@
       "metricContainsHelp": "이 노드가 직접 담고 있는 하위 항목들 — 하위 전체가 아니라 바로 아래 한 단계예요.",
       "metricUsedByHelp": "이 노드를 직접 쓰는(가리키는) 다른 항목들.",
       "metricDependsOnHelp": "이 노드가 직접 기대는(필요로 하는) 다른 항목들.",
+      "metricBelongsToHelp": "이 노드를 직접 담고 있는 상위 항목이에요 — 한 단계 위만 셉니다.",
       "metricEvidenceHelp": "이 개념이 적혀 있는 문서예요 — 이 개념 자신의 글일 수도, 이 개념을 언급한 다른 글일 수도 있어요. 눌러서 열어요.",
       "metricEvidenceDeclared": "문서 있음",
       "metricEvidenceUndeclared": "문서 없음",
