@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T18:13:34.000Z",
+  "generatedAt": "2026-07-26T18:43:01.056Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 설치 앱 검증이 사용자의 문서함을 빌리지 않는다",
+          "slug": "2026-07-27-설치-앱-검증이-사용자의-문서함을-빌리지-않는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 말없이 삼키던 클릭, 영어로 새던 한국어 화면",
           "slug": "2026-07-27-말없이-삼키던-클릭-영어로-새던-한국어-화면"
         },
@@ -5018,9 +5023,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 같은 감사에서 처방이 분명했던 셋을 함께 고쳤다. 첫 방문 안내가 클릭을 말없이 삼켰다(D3). 문서함 첫 방문 안내가 떠 있는 동안 다른 내비를 누르면 ",
-      "wordCount": 50253,
-      "updatedAt": "2026-07-27T03:13:34+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 선택 관계 검증이 설치 앱에 마지막으로 저장된 문서함에 기대고 있었다. 사용자가 11개 노드 테스트 vault를 쓰던 상태에서는 검증기가 dogfood 전",
+      "wordCount": 50365,
+      "updatedAt": "2026-07-26T18:43:01.056Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5922,8 +5927,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 6985,
-      "updatedAt": "2026-07-24T23:45:18+09:00",
+      "wordCount": 7055,
+      "updatedAt": "2026-07-26T18:43:01.053Z",
       "linksOut": []
     },
     {
@@ -6380,8 +6385,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
-      "wordCount": 14022,
-      "updatedAt": "2026-07-27T01:51:14+09:00",
+      "wordCount": 14085,
+      "updatedAt": "2026-07-27T02:51:06+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -9254,8 +9259,8 @@
       },
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
-      "wordCount": 2050,
-      "updatedAt": "2026-07-21T01:05:59+09:00",
+      "wordCount": 2211,
+      "updatedAt": "2026-07-26T18:43:01.056Z",
       "linksOut": []
     },
     {
@@ -10998,8 +11003,8 @@
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨 한 장 더 캡처한다. ",
-      "wordCount": 11522,
-      "updatedAt": "2026-07-26T17:56:06.199Z",
+      "wordCount": 11608,
+      "updatedAt": "2026-07-26T18:43:01.052Z",
       "linksOut": []
     },
     {

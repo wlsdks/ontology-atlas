@@ -57,7 +57,7 @@
 | A26 | 전역 레일 목적지 이동 → 새 surface 읽기 시작 | native-safe 의도 + 공방 main/h1 계약 설치 앱 왕복 검증 완료 |
 | A27 | 768–1024px 하단 탭바 이동·safe-area·레일 전환 | route 포커스·가림·overflow·단일 내비 검증, 수정 없음 |
 | A28 | 프로젝트 → 미연결 AI 타일 → 지도 연결 시트 → 닫기 | 교차 route 열기·모달 Tab 순환·타일 포커스 복귀 설치 앱 검증 완료 |
-| A29 | 재배포 → 저장 vault 복원 → 4개 viewport → 주요 6개 surface 왕복 | 일반 화면·AX 이동 통과, 선택 관계 검증 입력 격리 실패는 UX-031로 추적 |
+| A29 | 재배포 → 저장 vault 복원 → 4개 viewport → 주요 6개 surface 왕복 | 일반 화면·AX 이동 통과, 선택 관계 검증은 격리 fixture·1920/2560·Computer Use 재검증 완료 |
 | A30 | 설정 → AI 에이전트 연결 → 고급 검증·handoff 문구 읽기 | 24→32 tool inventory 수정, 완료형 설정 CTA 모순은 UX-034로 추적 |
 | A31 | CLI/MCP 현재 inventory → 활성 문서·프로토타입·fixture 교차 확인 | 52 CLI·32 MCP로 동기화, 역사/legacy 입력은 보존 |
 | A32 | AI 연결 → `기능 문서 열기` → Agent Graph Workflow 읽기 | packaged dogfood runbook URL·본문·현재 inventory 설치 앱 검증 완료 |
@@ -1133,7 +1133,7 @@
 ### UX-031 — 설치 앱 관계 검증이 사용자의 저장 vault에 의존해 재현성을 잃음
 
 - 심각도: `S3`
-- 상태: 열림 — 검증 입력 격리 방식을 먼저 조사
+- 상태: 수정·설치 앱 재검증 완료
 - 흐름: 최신 HEAD 배포 → 설치 앱 재실행 → 1920×1080
   `domain:views` 선택 관계 검증
 - 관측 현상: 앱이 이전에 저장된 11개 노드 테스트 vault를 정상 복원했다.
@@ -1147,15 +1147,24 @@
   열어 현재 vault census와 대상 slug를 수동 대조한다.
 - 온톨로지·에이전트 가치: 관계 검증의 입력 vault와 대상 slug가 증거에 함께
   고정돼야 사람과 에이전트가 같은 의미 그래프를 검증했다고 말할 수 있다.
-- 최소화: 제품의 저장 vault 복원은 바꾸지 않는다. 검증기 전용 격리 저장소,
-  명시적 fixture vault, 또는 현재 vault에서 존재하는 관계를 고르는 방식 중
-  가장 작은 계약을 조사한다.
+- 수정: 제품의 저장 vault 복원과 사용자 IndexedDB는 바꾸지 않았다. 직접
+  실행되는 WebView 검증 창만 Tauri `incognito` 저장소를 쓰며,
+  `--webview-fixture-vault=docs/ontology`가 그 격리 저장소의 현재 vault를
+  명시한다. 현재 canvas-v2 관계 선택은 퇴역한 DOM 관계 라벨 대신 기존
+  `onSelectEdge` 흐름을 호출하는 검증 이벤트로 재현한다.
 - 설치 앱·Computer Use 증거: Codex Computer Use AX 트리는
   `tauri://localhost/ko/topology/?p=domain%3Aviews&mode=focus`, INDEX의
   `11 개념 · 10 관계 · 1 도메인`, disabled `블록 가져오기`, not-found
-  toast를 함께 읽었다. 같은 창의 실제 스크린샷에서도 11개 노드 지도가
-  유지됨을 확인했다.
-- PO·디자인 판정: **Investigate first**
+  toast를 함께 읽어 최초 실패를 확인했다. 격리 저장소만 적용했을 때는
+  storefront sample 31개 노드가 열리는 것도 측정해 fixture 명시가 필요함을
+  확인했다. 최종 실행은 dogfood vault 289개 개념·448개 관계·6개 도메인을
+  읽고 선택 관계 dialog의 역할·관계 문장·양 끝점·출처를 보고했다.
+  Computer Use가 별도로 발견한 첫 방문 투어와 관계 inspector의 주의 경쟁도
+  검증 저장소에서만 tour를 건너뛰고 payload가 재출현을 실패 처리하도록
+  닫았다. 1920·2560 자동 WebView 증거와 2560 Computer Use 화면을 통과했고,
+  검증 앱 종료 뒤 일반 실행에서 원래 11개 노드 사용자 vault가 그대로
+  복원돼 사용자 저장소 비변경을 확인했다.
+- PO·디자인 판정: **Build and verify**
 
 ### UX-032 — 설치 앱의 블록 가져오기가 폴더 선택 미지원으로 비활성화됨
 
@@ -1370,8 +1379,8 @@
   통과했고 freshness stale node는 0이었다.
 - viewport: 일반 `/ko/topology/`는 1100×768, 1512×885, 1920×917,
   2560×917 WebView에서 로드됐다. 네 증거 모두 canvas-v2, map-layer attention,
-  fixed-surface overlap 0을 보고했다. 선택 관계 시나리오는 UX-031 때문에
-  별도 실패로 남겼다.
+  fixed-surface overlap 0을 보고했다. 선택 관계 시나리오는 UX-031의 격리
+  fixture 수정 뒤 1920·2560에서 다시 통과했다.
 - Computer Use: 1100px와 실제 macOS 전체화면의 스크린샷·AX 트리를 확인하고,
   지도 → 문서함 → 공방 → 인사이트 → 프로젝트 → 기록을 실제 클릭으로 왕복했다.
   각 surface는 현재 route와 h1을 노출했다. 기록 화면의 `기록 시작하기`는

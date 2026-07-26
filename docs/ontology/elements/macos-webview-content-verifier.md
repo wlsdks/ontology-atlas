@@ -76,6 +76,23 @@ label and the skeleton-card aggregate, so the installed-app artifact can prove
 the relation label is actionable without requiring the next agent to inspect
 raw DOM marker names.
 
+Topology verification is isolated from the user's persisted vault. The
+`--webview-fixture-vault=PATH` option is available only for direct executable
+launches; Tauri creates the verifier window with an incognito data store and
+bootstraps that store's current-vault IndexedDB entry with the resolved fixture
+path. The product's normal persistence and database are neither read nor
+deleted. Repository scripts pin this input to `docs/ontology`, so a stored
+personal or test vault cannot silently change relation-inspection evidence.
+
+The isolated fixture also marks the guided tour skipped: Computer Use found
+that a first-run tour could compete with the selected-relation inspector even
+after the graph input was deterministic. The payload records the exact fixture
+path and fails when the tour is visible. For the current canvas-v2 map, the
+probe dispatches a verification-only selection event that enters the existing
+`onSelectEdge` path and then requires the resulting relation dialog semantics,
+endpoints, type, sentence, bounds, and evidence. Quitting the verifier and
+opening the app normally must still restore the user's previous vault.
+
 Drag verification also proves the performance contract for topology relation
 chrome: card connectors reuse the card DOM index, relation labels build their
 query index once per frame, and connector geometry reports
