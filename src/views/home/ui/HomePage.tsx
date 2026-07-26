@@ -17,7 +17,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 // `History as HistoryIcon` — 전역 DOM History 생성자와의 충돌 원천 차단
 // (사용성 검수 P0, AtlasGitPanel 과 동일 처방).
-import { BookOpen, Compass, FolderOpen, HelpCircle, History as HistoryIcon, Plus, X } from "lucide-react";
+import { BookOpen, Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle, Plus, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
@@ -32,6 +32,12 @@ import { useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-na
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { SearchHint } from "@/widgets/search-hint";
+// 지도 오른쪽 세로 도크. 지도와 같은 flex row 안에 있어야 폭 애니메이션 하나가
+// 두 컬럼을 함께 움직인다 — "자리를 내줬다" 로 읽히는 이유.
+const VaultAgentPanel = dynamic(
+  () => import("@/widgets/vault-agent-panel").then((m) => m.VaultAgentPanel),
+  { ssr: false },
+);
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
 import { useAudiencePlain } from "@/shared/lib/audience-preference";
@@ -168,6 +174,8 @@ import { shouldSuppressGlobalShortcuts } from "../lib/blocking-surface";
 import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
+import type { ScreenContextSnapshot } from "@/features/vault-agent";
+import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
@@ -359,6 +367,13 @@ export function HomePage() {
   // 이 팔레트를 열어 hydration mismatch 없이 한 번에 보이게 한다. lazy
   // initializer는 클라이언트에서만 실제 실행되므로 SSR은 항상 false, 클라이언트
   // hydration도 sessionStorage 없는 서버 프리렌더 기준 false → 불일치 없음.
+  /**
+   * 볼트 도우미 패널 — 지도 오른쪽에 자리를 내주는 세로 도크.
+   *
+   * 한-번에-하나: 패널이 열리면 검색 팔레트와 개념 작성기는 물러난다. 셋 다
+   * 지도 위에서 주의를 요구하는 표면이라 겹치면 무엇이 주 표면인지 사라진다.
+   */
+  const [vaultAgentOpen, setVaultAgentOpen] = useState(false);
   const [ontologySearchOpen, setOntologySearchOpen] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -535,6 +550,10 @@ export function HomePage() {
   // 매칭이 없을 때만 사용 — 즉 토폴로지에서 domain/capability/element
   // 노드 클릭한 케이스.
   const vault = useLocalVault();
+  const tAgent = useTranslations("vaultAgentPanel");
+  // 브리지가 없으면(웹 빌드) 버튼도 패널도 그리지 않는다 — 열리지 않을 문을
+  // 그려 두는 것이 정직 강등의 반대다.
+  const llmBridgeAvailable = isLlmChatBridgeAvailable();
   const { insight: ontologyInsight } = useOntologyInsight();
   // S-C1 — 노드 데이터시트 "언제 바뀌었나" (mode-aware manifest updatedAt).
   const docFreshnessIndex = useVaultDocFreshnessIndex();
@@ -1919,6 +1938,31 @@ export function HomePage() {
       ? "selected-node-inspector-owns-right-rail"
       : undefined;
 
+  /**
+   * 화면 문맥 — 이 에이전트의 가장 큰 우위. 매 턴 시스템 측에서 넣으므로
+   * 모델이 도구로 물을 필요가 없고 항상 신선하다. 이름은 화면이 부르는
+   * 이름(`resolveNodeAgentTarget` 이 정한 인계 슬러그)으로 넘긴다 — 사람과
+   * 에이전트가 같은 이름을 써야 인계가 붙여넣는 즉시 동작한다.
+   */
+  const vaultAgentScreenContext = useMemo<ScreenContextSnapshot>(() => {
+    const target = resolveNodeAgentTarget(selectedOntologyNode);
+    return {
+      focusedSlug: target.ref,
+      focusedTitle: selectedOntologyNode?.title ?? null,
+      focusedKind: selectedOntologyNode?.kind ?? null,
+      lenses: spotlightOn ? ["recent-changes"] : [],
+      projectTitle: realmTitle ?? null,
+      visibleNodeCount: topologyV2Graph.nodes.length,
+    };
+  }, [selectedOntologyNode, spotlightOn, realmTitle, topologyV2Graph.nodes.length]);
+
+  const openVaultAgent = useCallback(() => {
+    setVaultAgentOpen(true);
+    // 물러나는 표면들 — 툭 사라지지 않게 각자의 닫힘 경로를 그대로 탄다.
+    setOntologySearchOpen(false);
+    setCreateNodeOpen(false);
+  }, []);
+
   const handleSelect = useCallback(
     (
       slug: string,
@@ -3024,6 +3068,28 @@ export function HomePage() {
                       data-utility-lane-border-token="--topology-utility-lane-border"
                       data-utility-lane-shadow-token="--topology-utility-lane-shadow"
                     >
+                    {/* 볼트 도우미 — 지도를 보다가 "이거 고쳐줘" 가 되는 순간이
+                        이 버튼의 자리다. 레일 목적지도 새 라우트도 만들지 않고
+                        기존 유틸 레인의 칩 규격을 그대로 쓴다(표면 추가 0).
+                        데스크톱 전용: 웹에는 키를 안전하게 둘 곳도 보낼 경로도
+                        없으므로, 열리지 않을 문을 그려 두지 않는다. */}
+                    {llmBridgeAvailable ? (
+                      <Tooltip content={tAgent('title')} side="bottom" withProvider={false}>
+                        <ChromeChip
+                          onClick={() =>
+                            vaultAgentOpen ? setVaultAgentOpen(false) : openVaultAgent()
+                          }
+                          aria-label={tAgent('title')}
+                          aria-pressed={vaultAgentOpen}
+                          data-testid="topology-vault-agent-toggle"
+                          active={vaultAgentOpen}
+                          compact={topologyUtilityChromeCompact}
+                          icon={<MessageCircle />}
+                        >
+                          {tAgent('chipLabel')}
+                        </ChromeChip>
+                      </Tooltip>
+                    ) : null}
                     {/* 온보딩 디자이너 지적 — 첫 실행 카드 dismiss 후에도 살아남는
                         상시 "내 데이터로 전환" 진입점. 정적 샘플 모드에서만
                         보이고(카드 dismiss 와 독립), 실제 vault 연결 시 소멸.
@@ -4390,6 +4456,25 @@ export function HomePage() {
           onActivateAnchor={tourAnchorNodeId ? activateTourAnchor : undefined}
         />
       </div>
+      {/* 지도 컬럼과 **같은 flex row** 의 형제 — 폭 애니메이션 하나가 두
+          컬럼을 함께 움직이므로 지도 축소와 패널 진입이 같은 프레임, 같은
+          곡선이 된다. 따로 맞춘 두 애니메이션이 아니라 물리적으로 하나다. */}
+      {llmBridgeAvailable ? (
+        <VaultAgentPanel
+          open={vaultAgentOpen}
+          onClose={() => setVaultAgentOpen(false)}
+          vaultPath={gitVaultPath}
+          insight={ontologyInsight}
+          manifest={vault.manifest}
+          screenContext={vaultAgentScreenContext}
+          vaultIsGit={false}
+          canWrite={vault.status === "loaded" && Boolean(vault.handle)}
+          // 칩 → 노드 포커스는 지도 노드 클릭과 **같은 함수**를 탄다 — 같은
+          // 동작이 다른 모션으로 보이면 그것이 결함이다.
+          onFocusNode={(slug) => handleSelect(slug)}
+          downloadHref={`/${activeLocale}/download/`}
+        />
+      ) : null}
     </main>
   );
 }

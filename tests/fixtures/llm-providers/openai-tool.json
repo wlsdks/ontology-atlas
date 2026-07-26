@@ -1,0 +1,27 @@
+{
+  "id": "chatcmpl-02",
+  "object": "chat.completion",
+  "model": "gpt-5.1",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_01",
+            "type": "function",
+            "function": { "name": "get_concept", "arguments": "{\"slug\":\"capabilities/payment\"}" }
+          },
+          {
+            "id": "call_02",
+            "type": "function",
+            "function": { "name": "find_backlinks", "arguments": "{\"slug\":" }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ]
+}

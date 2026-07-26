@@ -1,0 +1,14 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          { "text": "먼저 이 노드를 읽을게요." },
+          { "functionCall": { "name": "get_concept", "args": { "slug": "capabilities/payment" } } }
+        ]
+      },
+      "finishReason": "STOP"
+    }
+  ]
+}

@@ -24,7 +24,7 @@
 // 대화 저장소가 아니다 — 대화를 쌓기 시작하면 볼트 밖에 제2 진실원이 생긴다
 // (헌장 ④). 길이(`responseChars`)만 남긴다.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs::{self, OpenOptions};
 use std::io::{Seek, SeekFrom, Write};
@@ -43,6 +43,19 @@ pub struct AuditScope {
     pub vault_chars: usize,
 }
 
+/// 이 왕복에 실려나간 도구 호출 한 건 — 이름과 대상만. 인자 전문은 남기지
+/// 않는다(볼트 본문이 인자에 섞일 수 있고, 이 파일은 대화 저장소가 아니다).
+///
+/// **추가형 필드다** — 연결 확인 줄에는 아예 없고(`Option::is_none` skip),
+/// 그래서 이미 사용자 디스크에 앉은 줄의 모양이 바뀌지 않는다(헌장 ⑤).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuditToolRef {
+    pub name: String,
+    /// 화면 행이 말한 대상(노드 slug 등). 없으면 빈 문자열.
+    pub target: String,
+}
+
 /// 전송 **전에** 확정되는 사실들. 이 구조체가 예약 줄의 전부다.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -58,11 +71,14 @@ pub struct AuditDraft {
     /// 사용자 디스크에 남아 있는 기존 기록이 하루아침에 "못 읽는 줄" 이 된다.
     pub host: String,
     pub model: Option<String>,
-    /// `"verify" | "ask"` — 확장은 값 추가로(스키마 `v` 는 올리지 않는다).
+    /// `"verify" | "agent"` — 확장은 값 추가로(스키마 `v` 는 올리지 않는다).
     pub purpose: String,
     /// 사용자 본인의 말만. 연결 확인은 `null`.
     pub question: Option<String>,
     pub scope: AuditScope,
+    /// 이 왕복에 실려나간 도구 호출들. 연결 확인 줄에는 필드 자체가 없다.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tools: Option<Vec<AuditToolRef>>,
     /// 전송 전문의 sha256 — "미리보기에서 본 그 페이로드가 맞나" 의 사후 앵커.
     pub payload_sha256: String,
 }
@@ -207,8 +223,50 @@ mod tests {
                 prompt_chars: 0,
                 vault_chars: 0,
             },
+            tools: None,
             payload_sha256: sha256_hex(""),
         }
+    }
+
+    #[test]
+    fn a_verify_line_still_has_no_tools_key_at_all() {
+        // `tools` 는 추가형이다 — 연결 확인 줄에 빈 배열조차 넣지 않는다.
+        // 넣으면 이미 디스크에 앉은 줄과 모양이 갈라지고(헌장 ⑤), "도구를 0개
+        // 썼다" 라는 하지도 않은 주장을 기록이 하게 된다.
+        let line = serde_json::to_string(&verify_draft()).unwrap();
+        assert!(!line.contains("\"tools\""), "{line}");
+    }
+
+    #[test]
+    fn an_agent_line_records_which_tools_rode_along() {
+        let vault = temp_vault("tools");
+        let mut draft = verify_draft();
+        draft.purpose = "agent".into();
+        draft.question = Some("빠진 관계 이어줘".into());
+        draft.tools = Some(vec![AuditToolRef {
+            name: "get_concept".into(),
+            target: "capabilities/payment".into(),
+        }]);
+        let reservation = reserve(&vault, draft).unwrap();
+        finalize(
+            reservation,
+            &AuditOutcome {
+                outcome: "ok".into(),
+                http_status: Some(200),
+                response_chars: 812,
+                duration_ms: 1240,
+            },
+        )
+        .unwrap();
+        let raw = fs::read_to_string(audit_log_path(&vault)).unwrap();
+        let line: Value = serde_json::from_str(raw.trim()).unwrap();
+        assert_eq!(line["purpose"], "agent");
+        assert_eq!(line["tools"][0]["name"], "get_concept");
+        assert_eq!(line["tools"][0]["target"], "capabilities/payment");
+        // 응답 본문은 기록하지 않는다 — 길이만.
+        assert_eq!(line["responseChars"], 812);
+        assert!(line.get("responseBody").is_none());
+        fs::remove_dir_all(&vault).ok();
     }
 
     #[test]

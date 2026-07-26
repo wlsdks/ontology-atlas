@@ -1,0 +1,4 @@
+{
+  "type": "error",
+  "error": { "type": "not_found_error", "message": "model: claude-nope" }
+}

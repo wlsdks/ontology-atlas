@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T09:11:51.000Z",
+  "generatedAt": "2026-07-26T09:28:57.000Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4960,7 +4960,7 @@
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 지도가 296개를 개념이라 세는 동안 ontology-atlas overview 와 MCP listkinds 는 96개라고 답했다. 차이 200개는 다른 ",
       "wordCount": 46465,
-      "updatedAt": "2026-07-26T18:11:51+09:00",
+      "updatedAt": "2026-07-26T18:28:57+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"

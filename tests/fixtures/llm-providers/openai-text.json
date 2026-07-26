@@ -1,0 +1,15 @@
+{
+  "id": "chatcmpl-01",
+  "object": "chat.completion",
+  "model": "gpt-5.1",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "[[capabilities/payment]]은 [[capabilities/refund]]과 이어져 있지 않아요."
+      },
+      "finish_reason": "stop"
+    }
+  ]
+}

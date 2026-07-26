@@ -1,0 +1,12 @@
+{
+  "id": "msg_01",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-opus-5",
+  "content": [
+    { "type": "thinking", "thinking": "" },
+    { "type": "text", "text": "[[capabilities/payment]]은 [[capabilities/refund]]과 이어져 있지 않아요." }
+  ],
+  "stop_reason": "end_turn",
+  "usage": { "input_tokens": 1200, "output_tokens": 42 }
+}
