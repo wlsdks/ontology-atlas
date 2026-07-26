@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { useDogfoodSample } from "./sample-source";
 
 /**
  * T-10. 지침서 §2.A 공개 방문자 여정을 하나의 플로우로 재현한다.
@@ -17,6 +18,9 @@ import { expect, test } from "@playwright/test";
 const FINDING_LIMIT = 15;
 
 test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
+  // 이 여정은 dogfood 프로젝트(`/project/ontology-atlas/`)를 밟는다 — 2026-07-26
+  // 기본 샘플이 예시 비즈니스로 바뀌었으니 명시 선택한다.
+  await useDogfoodSample(page);
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
   const findings: string[] = [];

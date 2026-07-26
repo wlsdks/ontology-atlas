@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { useDogfoodSample } from "./sample-source";
 
 /**
  * 로컬 작업 폴더 진입 정책 회귀 차단.
@@ -45,6 +46,8 @@ test.describe("local workspace capability gate (N1)", () => {
   });
 
   test("sample source keeps the document tree browsable", async ({ page }) => {
+    // 이 spec 은 dogfood 데이터에서 돈다 — 기본값에 기대지 않고 명시 선택한다.
+    await useDogfoodSample(page);
     await page.goto("/en/docs/");
 
     await expect(page.getByRole("radio", { name: "Sample" })).toBeChecked();

@@ -403,8 +403,8 @@
     "cliBridgeCopied": "Copied",
     "cliBridgeCopyAriaLabel": "Copy the bootstrap command to paste in your terminal",
     "sampleSourceAria": "Choose a sample to explore",
-    "sampleSourceDogfood": "Explore this tool",
-    "sampleSourceStorefront": "Example business",
+    "sampleSourceDogfood": "This app's code",
+    "sampleSourceStorefront": "Example — online store",
     "nodeHint": {
       "action": "Tap a node on the map",
       "reason": "all of it comes from real documents"
@@ -419,7 +419,9 @@
       "zoomHintPlain": "click a dot to reveal its elements"
     },
     "plainModeCta": "Switch to plain-language view",
-    "reopenLabel": "Reopen the start guide"
+    "reopenLabel": "Reopen the start guide",
+    "sampleSourceStorefrontTip": "Products, orders, members, delivery — learn to read the map with names everyone knows",
+    "sampleSourceDogfoodTip": "The map of the code that built this app — expect developer names"
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",

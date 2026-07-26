@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { useDogfoodSample } from "./sample-source";
 
 /**
  * `topology-map-v2` canvas engine smoke — current-surface replacement for
@@ -35,6 +36,13 @@ async function gotoAndSettle(page: import("@playwright/test").Page, url: string)
 }
 
 test.describe("topology-map-v2 smoke", () => {
+  // 이 파일의 단언은 전부 dogfood 볼트 데이터(프로젝트 이름 · 딥링크 슬러그 ·
+  // 노드 라벨)에 기댄다. 2026-07-26 기본 샘플이 예시 비즈니스로 바뀌었으니
+  // 기본값에 기대지 않고 파일 단위로 명시 선택한다.
+  test.beforeEach(async ({ page }) => {
+    await useDogfoodSample(page);
+  });
+
   test("renders the canvas engine with a non-zero surface", async ({ page }) => {
     await gotoAndSettle(page, "/ko/topology/");
     const canvas = page.getByTestId("topology-map-v2-canvas");
