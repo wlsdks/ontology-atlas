@@ -373,7 +373,7 @@ export function HomePage() {
   // initializer는 클라이언트에서만 실제 실행되므로 SSR은 항상 false, 클라이언트
   // hydration도 sessionStorage 없는 서버 프리렌더 기준 false → 불일치 없음.
   /**
-   * 볼트 도우미 패널 — 지도 오른쪽에 자리를 내주는 세로 도크.
+   * 에이전트 패널 — 지도 오른쪽에 자리를 내주는 세로 도크.
    *
    * 한-번에-하나: 패널이 열리면 검색 팔레트와 개념 작성기는 물러난다. 셋 다
    * 지도 위에서 주의를 요구하는 표면이라 겹치면 무엇이 주 표면인지 사라진다.
@@ -3105,9 +3105,12 @@ export function HomePage() {
                       data-utility-lane-border-token="--topology-utility-lane-border"
                       data-utility-lane-shadow-token="--topology-utility-lane-shadow"
                     >
-                    {/* 볼트 도우미 — 지도를 보다가 "이거 고쳐줘" 가 되는 순간이
-                        이 버튼의 자리다. 레일 목적지도 새 라우트도 만들지 않고
-                        기존 유틸 레인의 칩 규격을 그대로 쓴다(표면 추가 0).
+                    {/* 「에이전트」 — 지도를 보다가 "이거 고쳐줘" 가 되는
+                        순간이 이 버튼의 자리다. 레일 목적지도 새 라우트도 만들지
+                        않고 기존 유틸 레인의 칩 규격을 그대로 쓴다(표면 추가 0).
+                        이름은 `vaultAgentPanel.title` **한 곳**에서만 정의된다 —
+                        칩·툴팁·aria·패널 헤더가 같은 키를 읽으므로 이름이 바뀌면
+                        네 자리가 함께 바뀐다(이름은 다시 검토될 수 있다).
                         데스크톱 전용: 웹에는 키를 안전하게 둘 곳도 보낼 경로도
                         없으므로, 열리지 않을 문을 그려 두지 않는다. */}
                     {llmBridgeAvailable ? (
@@ -3123,7 +3126,7 @@ export function HomePage() {
                           compact={topologyUtilityChromeCompact}
                           icon={<MessageCircle />}
                         >
-                          {tAgent('chipLabel')}
+                          {tAgent('title')}
                         </ChromeChip>
                       </Tooltip>
                     ) : null}
@@ -4518,6 +4521,9 @@ export function HomePage() {
           // 칩 → 노드 포커스는 지도 노드 클릭과 **같은 함수**를 탄다 — 같은
           // 동작이 다른 모션으로 보이면 그것이 결함이다.
           onFocusNode={(slug) => handleSelect(slug)}
+          // 폴더가 없는 상태에도 문을 준다 — 상단 유틸 레인의 「내 데이터로
+          // 전환」과 **같은 함수**를 탄다(두 번째 열기 경로를 만들지 않는다).
+          onOpenFolder={() => void vault.open()}
           downloadHref={`/${activeLocale}/download/`}
         />
       ) : null}

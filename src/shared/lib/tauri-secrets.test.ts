@@ -17,6 +17,7 @@ import {
   secretSet,
   secretStatus,
   secretVerify,
+  subscribeSecretChange,
 } from './tauri-secrets';
 
 afterEach(() => {
@@ -81,6 +82,31 @@ describe('tauri secrets bridge', () => {
       provider: 'openai',
       vaultPath: '/vault',
     });
+  });
+
+  it('키 보유 상태가 바뀌면 한 번 알린다 — 듣는 표면이 새로고침 없이 살아나게', async () => {
+    // 키를 넣는 곳(설정 시트)과 그 키로 살아나는 곳(지도 오른쪽 도크)이 다른
+    // 표면이라, 저장·삭제 순간을 알리지 않으면 사용자가 F5 를 눌러야 한다.
+    tauriApiMock.runtimeAvailable = true;
+    tauriApiMock.invoke.mockResolvedValue({
+      provider: 'anthropic',
+      stored: true,
+      last4: 'abcd',
+    });
+    const changes = vi.fn();
+    const unsubscribe = subscribeSecretChange(changes);
+
+    await secretSet('anthropic', 'sk-ant-secret');
+    expect(changes).toHaveBeenCalledTimes(1);
+    await secretClear('anthropic');
+    expect(changes).toHaveBeenCalledTimes(2);
+    // 조회는 상태를 바꾸지 않으므로 알리지 않는다.
+    await secretStatus('anthropic');
+    expect(changes).toHaveBeenCalledTimes(2);
+
+    unsubscribe();
+    await secretSet('anthropic', 'sk-ant-secret');
+    expect(changes).toHaveBeenCalledTimes(2);
   });
 
   it('turns a Rust Err(String) rejection into a single user line', () => {

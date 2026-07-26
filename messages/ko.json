@@ -2974,8 +2974,8 @@
     "actionCancel": "다음에"
   },
   "vaultAgentPanel": {
-    "title": "볼트 도우미",
-    "subtitle": "지도의 개념과 연결을 같이 설계해요",
+    "title": "에이전트",
+    "subtitle": "지도를 같이 보며 문서 폴더를 고쳐요",
     "close": "패널 닫기",
     "you": "나:",
     "send": "보내기",
@@ -2992,7 +2992,7 @@
     "handoffNote": "아래를 복사해 내 컴퓨터의 터미널에 붙여넣어요. 실행은 사용자가 해요 — 앱은 명령을 대신 치지 않아요.",
     "handoffCopy": "복사",
     "handoffCopied": "복사했어요",
-    "snapshotLabel": "도우미 적용 전 저장점",
+    "snapshotLabel": "에이전트 적용 전 저장점",
     "provider": {
       "anthropic": "Anthropic",
       "openai": "OpenAI",
@@ -3004,14 +3004,14 @@
     },
     "scope": {
       "title": "보내기 전에 알려드려요",
-      "body": "이 대화에서 도우미가 문서 폴더를 읽으며 일해요. 읽은 내용은 그때그때 {provider}({host}) 로 보내져요.",
+      "body": "이 대화에서 에이전트가 문서 폴더를 읽으며 일해요. 읽은 내용은 그때그때 {provider}({host}) 로 보내져요.",
       "liveRows": "무엇을 읽어 몇 자를 보냈는지 대화에 한 줄씩 그대로 남아요.",
       "recorded": "모든 왕복이 {path} 에 기록돼요.",
       "accept": "알겠어요",
       "cancel": "그만두기"
     },
     "promptDisclosure": {
-      "summary": "도우미가 받는 지침 보기",
+      "summary": "에이전트가 받는 지침 보기",
       "note": "아래 글이 매번 함께 보내져요. 고칠 수는 없지만 언제든 볼 수 있어요."
     },
     "proposal": {
@@ -3049,11 +3049,21 @@
       "webTitle": "데스크톱 앱에서만 쓸 수 있어요",
       "webBody": "키를 안전하게 두고 보낼 곳이 브라우저에는 없어요. macOS 앱에서는 키가 이 컴퓨터의 키체인에만 있어요.",
       "download": "macOS 앱 받기",
-      "noVaultTitle": "먼저 폴더를 열어주세요",
-      "noVaultBody": "도우미는 지금 열려 있는 폴더의 문서만 봐요.",
-      "noKeyTitle": "먼저 키를 등록해 주세요",
-      "noKeyBody": "왼쪽 아래 설정(톱니)의 「AI 연결」에서 쓰던 AI 서비스의 키를 한 번 넣어두면 돼요."
+      "noVaultTitle": "먼저 문서 폴더를 열어주세요",
+      "noVaultBody": "에이전트는 지금 열려 있는 폴더의 문서만 읽어요. 폴더를 고르면 여기서 바로 이어져요.",
+      "noKeyTitle": "쓰려면 AI 서비스 키가 한 번 필요해요",
+      "noKeyBody": "키는 이 컴퓨터의 키체인에만 있어요. 한 번 넣어두면 다시 묻지 않아요.",
+      "noVaultAction": "문서 폴더 열기",
+      "noKeyAction": "설정에서 키 등록"
     },
-    "chipLabel": "도우미"
+    "locked": {
+      "composerHint": "키를 등록하면 바로 말할 수 있어요",
+      "composerHintWeb": "앱에서는 여기서 바로 말할 수 있어요",
+      "composerHintNoVault": "폴더를 열면 여기서 바로 말할 수 있어요",
+      "examplesTitle": "이런 걸 시킬 수 있어요",
+      "example1": "뜻이 안 적힌 개념의 초안 받기",
+      "example2": "이 개념에 어울리는 묶음 찾기",
+      "example3": "이 지도에서 뭐가 이상한지 물어보기"
+    }
   }
 }

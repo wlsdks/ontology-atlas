@@ -84,6 +84,29 @@ export function isSecretBridgeAvailable(): boolean {
   return getInvoke() !== null;
 }
 
+/**
+ * 키 보유 상태가 방금 바뀌었다는 신호.
+ *
+ * 키를 등록하는 곳(설정 시트)과 그 키로 살아나는 곳(지도 오른쪽 도크)이 다른
+ * 표면인데, 각자 자기 시점에만 키체인을 조회하면 키를 넣고 돌아온 사용자가
+ * **새로고침을 해야** 하는 화면을 만난다. 그건 결함이다. 저장·삭제가 성공한
+ * 순간을 한 번 알리고, 듣는 쪽이 스스로 다시 조회한다 — 상태를 공유 스토어로
+ * 올리지 않고(키체인이 진실원이다) 갱신 시점만 공유한다.
+ */
+const SECRET_CHANGE_EVENT = 'ontology-atlas:secret-change';
+
+function notifySecretChange(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event(SECRET_CHANGE_EVENT));
+}
+
+/** 키 보유 상태 변화를 듣는다. 반환값은 해지 함수. */
+export function subscribeSecretChange(handler: () => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  window.addEventListener(SECRET_CHANGE_EVENT, handler);
+  return () => window.removeEventListener(SECRET_CHANGE_EVENT, handler);
+}
+
 /** 저장 — **사용자가 붙여넣고 저장을 누를 때만**. 성공 후 호출부는 입력값을 버린다. */
 export async function secretSet(
   provider: SecretProvider,
@@ -91,7 +114,9 @@ export async function secretSet(
 ): Promise<SecretStatus | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  return invoke<SecretStatus>('secret_set', { provider, secret });
+  const status = await invoke<SecretStatus>('secret_set', { provider, secret });
+  notifySecretChange();
+  return status;
 }
 
 /** 상태 조회 — "있는가 · 끝 4자". */
@@ -109,7 +134,9 @@ export async function secretClear(
 ): Promise<SecretStatus | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  return invoke<SecretStatus>('secret_clear', { provider });
+  const status = await invoke<SecretStatus>('secret_clear', { provider });
+  notifySecretChange();
+  return status;
 }
 
 /**

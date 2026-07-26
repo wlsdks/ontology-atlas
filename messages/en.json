@@ -2974,8 +2974,8 @@
     "actionCancel": "Not now"
   },
   "vaultAgentPanel": {
-    "title": "Vault helper",
-    "subtitle": "Design the concepts and links on your map together",
+    "title": "Agent",
+    "subtitle": "Look at the map together and fix your document folder",
     "close": "Close panel",
     "you": "You:",
     "send": "Send",
@@ -2987,12 +2987,12 @@
     "unsupported": "Answered without reading anything. Do not take it as fact.",
     "charsLabel": "{chars} chars",
     "footer": "{provider} · {chars} chars this turn · {rounds} recorded",
-    "boundary": "Work that needs your source code is better done by the AI in your own terminal. This helper only sees your document folder.",
+    "boundary": "Work that needs your source code is better done by the AI in your own terminal. Here the agent only reads your document folder.",
     "handoffSummary": "Continue in your terminal",
     "handoffNote": "Copy this and paste it into your own terminal. You run it — this app never types commands for you.",
     "handoffCopy": "Copy",
     "handoffCopied": "Copied",
-    "snapshotLabel": "Checkpoint before helper change",
+    "snapshotLabel": "Checkpoint before the agent's change",
     "provider": {
       "anthropic": "Anthropic",
       "openai": "OpenAI",
@@ -3004,14 +3004,14 @@
     },
     "scope": {
       "title": "Before anything is sent",
-      "body": "In this conversation the helper reads your document folder as it works. What it reads goes to {provider} ({host}) each time.",
+      "body": "In this conversation the agent reads your document folder as it works. What it reads goes to {provider} ({host}) each time.",
       "liveRows": "Every read shows up as its own line here, with how many characters went out.",
       "recorded": "Every round trip is recorded in {path}.",
       "accept": "Got it",
       "cancel": "Not now"
     },
     "promptDisclosure": {
-      "summary": "See the helper’s instructions",
+      "summary": "See the instructions the agent receives",
       "note": "The text below is sent every time. You cannot edit it, but you can always read it."
     },
     "proposal": {
@@ -3028,7 +3028,7 @@
       "appliedNoSnapshot": "Applied",
       "cancelled": "Cancelled. Not one file changed.",
       "conflict": "This document just changed — nothing was written. Please ask again.",
-      "unreadWarning": "This would change a file the helper did not read in this conversation. Expand it and check.",
+      "unreadWarning": "This would change a file the agent did not read in this conversation. Expand it and check.",
       "showOnMap": "Show on the map",
       "expandHint": "What changes",
       "createFile": "Create {path}",
@@ -3049,11 +3049,21 @@
       "webTitle": "Available in the desktop app only",
       "webBody": "A browser has nowhere safe to keep your key. In the macOS app the key stays in this computer’s keychain.",
       "download": "Get the macOS app",
-      "noVaultTitle": "Open a folder first",
-      "noVaultBody": "The helper only sees documents in the folder you have open.",
-      "noKeyTitle": "Add a key first",
-      "noKeyBody": "Open Settings (the gear at the bottom left) → AI connection and paste the key for the AI service you already use."
+      "noVaultTitle": "Open a document folder first",
+      "noVaultBody": "The agent only reads documents in the folder you have open. Pick a folder and this picks up right here.",
+      "noKeyTitle": "This needs an AI service key, once",
+      "noKeyBody": "The key stays only in this computer's keychain. Add it once and you are not asked again.",
+      "noVaultAction": "Open a document folder",
+      "noKeyAction": "Add a key in settings"
     },
-    "chipLabel": "Helper"
+    "locked": {
+      "composerHint": "Add a key to talk here",
+      "composerHintWeb": "Talk here in the app",
+      "composerHintNoVault": "Open a folder to talk here",
+      "examplesTitle": "What you can ask for",
+      "example1": "Draft a definition for a concept that has none",
+      "example2": "Find the group this concept belongs in",
+      "example3": "Ask what looks wrong on this map"
+    }
   }
 }

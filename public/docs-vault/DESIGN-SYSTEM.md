@@ -1160,9 +1160,9 @@ transform/opacity 만 쓰고, glow·bounce-loop·ambient 반복은 금지, ≤24
    `.agent-pending-dot`, 장식 흐름 `.studio-strut-flow`)의 안전망이다. 그
    자리에서는 정지가 맞고, 진행의 사실은 옆의 텍스트가 이미 말한다.
 2. **크로스페이드 계열은 시간을 되찾는다** — `.insights-tab-crossfade` ·
-   `.insights-disclosure-in` · `.ai-row-swap` · `.overlay-fade-only` ·
-   `.app-settings-scrim-in` · `.map-overlay-in` · `.overlay-spring-scrim`.
-   이미 opacity 전용이므로 duration 토큰만 되돌린다.
+   `.insights-disclosure-in` · `.ai-row-swap` · `.agent-panel-stage-swap` ·
+   `.overlay-fade-only` · `.app-settings-scrim-in` · `.map-overlay-in` ·
+   `.overlay-spring-scrim`. 이미 opacity 전용이므로 duration 토큰만 되돌린다.
 3. **transform 이 실린 등장은 키프레임 이름만 바꾼다** —
    `.app-settings-panel-in` · `.topology-chrome-in` / `-out` ·
    `.rail-status-dot-in` 은 `animation-name: panelCrossfadeIn`(opacity 전용)로

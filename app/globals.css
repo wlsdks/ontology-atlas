@@ -534,7 +534,7 @@
     animation: studioStrutFlow 2.4s linear infinite;
   }
 
-  /* 볼트 도우미의 대기 점 — 같은 heartbeat 문법(느린 저대비 주기)을 재사용
+  /* 에이전트 패널의 대기 점 — 같은 heartbeat 문법(느린 저대비 주기)을 재사용
      한다. 글로우가 아니라 opacity 만 움직이고, 이건 **가짜 진행이 아니다**:
      실제 왕복이 도는 동안에만 켜지고, 진행의 사실은 그 아래 도구 행이
      말한다. prefers-reduced-motion 은 아래 base 레이어 전역 규칙이 자동으로
@@ -702,6 +702,17 @@
 
   .settings-view-pop-in {
     animation: settingsViewPopIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  /* ── 지도 오른쪽 도크의 상태 교체 (2026-07-26) ─────────────────────────────
+     브라우저 강등 · 폴더 없음 · 키 없음 · 범위 확인 · 대화. 다섯 상태가 **같은
+     박스**를 차지하므로 교체는 크로스페이드로 읽혀야 한다 — 특히 사용자가 키를
+     넣고 돌아오는 순간, 툭 바뀌면 "다른 화면으로 갔다" 로, 페이드로 이어지면
+     "여기가 열렸다" 로 읽힌다. 새 키프레임 0(panelCrossfadeIn 재사용), 새
+     duration 0(--motion-base 재사용). reduced-motion 은 흔들리는 축이 없으므로
+     시간을 지키고 --motion-fast 로만 짧아진다(아래 ① 그룹, #699 정책). */
+  .agent-panel-stage-swap {
+    animation: panelCrossfadeIn var(--motion-base) var(--motion-ease) both;
   }
 
   /* ── 목록 행 펼침/접힘 (2026-07-26, [AI 연결] 벤더 행) ────────────────────
@@ -2651,6 +2662,7 @@
     .insights-tab-crossfade,
     .insights-disclosure-in,
     .ai-row-swap,
+    .agent-panel-stage-swap,
     .overlay-fade-only[data-state='open'],
     .overlay-fade-only[data-state='closed'] {
       animation-duration: var(--motion-fast) !important;

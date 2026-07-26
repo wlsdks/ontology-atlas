@@ -30,6 +30,7 @@ const EQUIVALENT_CLASSES = [
   'insights-tab-crossfade',
   'insights-disclosure-in',
   'ai-row-swap',
+  'agent-panel-stage-swap',
   'overlay-fade-only',
   'app-settings-scrim-in',
   'app-settings-panel-in',
