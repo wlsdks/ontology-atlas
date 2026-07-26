@@ -1,0 +1,109 @@
+---
+slug: capabilities/agent-config-onboarding
+kind: capability
+title: Agent Config Onboarding
+display_ko: AI 도구 연결 설정
+display_en: AI Tool Setup
+domain: ai-agent-partner
+dependencies: [capabilities/mcp-server, capabilities/vault-live-updates]
+elements: [elements/app-settings-menu, src/features/docs-vault-local/lib/ontology-starter.ts, src/features/docs-vault-local/model/use-local-vault.ts, src/features/docs-vault-local/ui/OntologyStarterCta.tsx, src/shared/config/agent-package-distribution.ts, src/views/docs-vault/ui/DocsVaultPage.tsx, src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx]
+relates: [domains/onboarding-ux]
+---
+
+로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface.
+
+`VaultAgentSetupPanel` (merged into `AppSettingsMenu`'s vault / mcpAgents tabs, B2 2026-07 — the former `VaultToolsMenu` docs-header dropdown was retired to remove the duplicate surface) exposes the setup gate in the same language as `agent_brief` / `workspace_brief`: CLI-only, MCP-connected, Graph DB pack, and Setup gate. The panel separates vault health, config readiness, agent-root guidance, and JSON gate proof so a developer can tell whether they should restart from the vault folder or copy the codebase-root templates before editing from another repository.
+
+The copy packet includes MCP/Codex templates, restart guidance, verification prompts, CLI fallbacks, and the machine-readable JSON gate that reports `ok` and `performanceOk` independently. It now starts with an explicit root check: the agent root is the codebase root where Claude Code / Codex is opened, while the ontology vault is passed as a separate path when it is not the current working directory. The full packet exposes both JSON gate contexts: codebase-root automation passes the shell-quoted vault path, and vault-folder automation keeps the `.` cwd command. The packet also includes a machine-readable `ontology-atlas agent-setup <vault> --root <codebase> --json` dry-run so setup state can be checked before the repair command creates missing config files.
+
+The setup packet now includes a numbered read-first run order for codebase-root launches: check config state, repair only missing configs, restart the agent, run `mcp-verify`, run the JSON fallback performance gate, then read `workspace-brief` and `agent-brief --prompt`. The UI mirrors that order by exposing a separate `agent-setup ... --json` state-check copy action before the warmer-colored `agent-setup ... --write` repair action, and the visible checklist now continues past restart / JSON gate into `mcp-verify` and read-first graph proof. Copied codebase-root commands quote the vault path placeholder anywhere it is passed as a shell argument, so a vault path with spaces remains executable after the user replaces the placeholder. Users can therefore follow the same setup gate from the panel without opening the full packet first: inspect readiness, repair only missing configs, restart from the agent root, prove the 32 MCP tools are reachable, then read the workspace and agent brief before any ontology write. That keeps Claude Code, Codex, and terminal-only users aligned on the same first-contact sequence before any ontology write.
+
+The setup card also exposes a smaller first-contact proof packet for already-installed CLI sessions. It copies only the minimum sequence needed to prove a codebase-root agent session is ready: `agent-setup ... --json`, a repair-only-if-missing `agent-setup ... --write` command, restart guidance, `mcp-verify`, the JSON fallback `agent-brief --verify-fallbacks`, an MCP-connected proof sequence (`query_ontology(workspace_brief)` → `query_ontology(agent_brief)` → `query_ontology(health)` → `query_plan(match_nodes)` → `match_nodes`), and CLI fallback proof with `workspace-brief`, `agent-brief --prompt`, and `agent-brief --graph-db-pack`, followed by the same JSON gate result rules and post-change ontology sync rule. The compact proof packet uses the same shell-safe vault-path placeholder as the full setup packet, so Claude Code / Codex can paste it into a terminal-first setup flow without hand-fixing path quoting. This gives Claude Code / Codex a compact proof script without copying the full config templates while still closing the setup-check-to-repair loop when config files are missing.
+
+The setup prompt and packet also carry the post-change ontology sync rule from the agent brief write policy: after a non-trivial code change introduces or renames a domain, capability, element, or relation, sync `docs/ontology` before finishing; typo, comment, style-only, lint-config, and fixture-only changes can skip sync. The setup card now also exposes that sync gate as its own copy action, so an already-connected Claude Code / Codex session can copy only the `health` / `cycles` / `growth_plan` / `maintenance_plan` / `validate_vault` MCP and CLI packet immediately after a code change without copying the full setup packet again.
+
+The CLI `agent-setup` command exposes the same rule in both terminal output and JSON (`docs.postChangeSync`), keeping codebase-root setup repair, UI setup packets, and Claude/Codex automation gates aligned on the same after-edit behavior. Its JSON and terminal output also include the same first-contact graph runbook used by the UI setup card: `validate`, `mcp-verify`, `agent-brief --verify-fallbacks`, `workspace-brief`, `agent-brief --prompt`, `agent-brief --graph-db-pack`, and hub scans over the selected vault path. The command now also prints and returns separate `setupState`, `setupRepair`, and restart guidance entries, and the human `Next checks` order matches the UI first-contact sequence: inspect config state, repair only missing configs when needed, restart Claude Code / Cursor / Codex from the agent root, then run `mcp-verify` and the JSON fallback gate before reading graph briefs.
+
+`agent-setup` JSON, terminal output, the full UI setup packet, and the compact first-contact proof packet now share one first-contact proof contract: `config_state`, `mcp_verify`, `json_gate`, and `graph_briefs`. The UI packet now spells out both sides of `graph_briefs`: MCP-connected agents run `workspace_brief`, `agent_brief`, `health`, and a bounded `match_nodes` plan through `query_ontology`, while connector-less sessions run the matching CLI fallbacks. That means codebase-root and vault-root setup readiness, the 32-tool MCP boot proof, fallback `ok` / `performanceOk`, and `workspace-brief` / `agent-brief --graph-db-pack` all use the same labels before an agent edits the codebase. The setup surface is therefore no longer just a template copier; it is a repeatable proof that Claude Code, Codex, Cursor, and terminal-only users are reading the same local vault through the same graph language before writes.
+
+The visible setup card now shows that same first-contact proof contract before
+the copy actions. Users see `config_state`, `mcp_verify`, `json_gate`, and
+`graph_briefs` in the UI itself, not only inside the copied packet or CLI JSON.
+That keeps the panel, terminal `agent-setup`, and Claude Code / Codex setup
+automation aligned on the exact evidence order.
+
+The setup card now also shows the root execution contract directly in the UI:
+`vault folder` means the agent is opened inside the ontology vault and commands
+can use `.` as the vault path, while `codebase root` means the agent is opened
+inside another product repository and setup-state, repair, `mcp-verify`, and
+JSON gate commands must pass the ontology vault as an explicit absolute path.
+This makes the codebase-root versus vault-folder distinction visible before a
+user copies any setup command or config template.
+
+앱 설정의 MCP/Agents 와 Verification 탭은 이 capability 의 상단 진입점이다. 사용자는 설정 파일 존재, 현재 agent 세션의 tools/list 증명, `query_ontology` 첫 호출, stale client cache, CLI fallback, `index_project` 기반 재분석 계획을 구분해서 복사할 수 있다.
+
+Agent action packets now include the kind-classification gate used by `agent_brief`: do not classify from the label alone; decide from project scope, domain boundary, capability behavior, and implementation-element evidence; cite the source path, symbol, route, command, or MCP tool evidence; and explain why the nearest adjacent kind was rejected. This makes the copied “project reanalysis”, “ontology update”, and “selected concept strengthening” prompts useful for dogfooding this repository, because Codex / Claude Code must justify why a discovered item is a `domain`, `capability`, or `element` before it writes `docs/ontology` frontmatter.
+
+The project reanalysis action also requires an `index_project` evidence report before writes. Agents must copy back plan counts, import threshold counts, validation counts, and reconciliation buckets such as `inCodeMissingEndpointAbsent` and `inVaultNotInCode`. This keeps the onboarding surface honest: Atlas can prove the current vault is healthy while still showing noisy or uncertain code-to-vault materialization work that needs human review before `--apply`.
+
+The same evidence report is now visible inside the Handoff tab, not only inside
+the copied action packet. Users can see the `plan.concepts`,
+`imports.reconciliationSummary`, endpoint-gap review, and `--apply` gate before
+they ask Claude Code or Codex to re-index the project.
+
+## 2026-07-26 freshness review
+
+The entry-route audit changed the referenced vault picker and type-ramp code,
+not the agent setup sequence. The setup contract remains read-first and now
+documents the verified current `tools/list` surface as 32 tools. Unsupported
+browser folder entry is rejected before the agent-setup surface is offered;
+writable vault setup continues through the installed app.
+
+## 2026-07-27 installed-app inventory proof
+
+The settings panel, its first-contact proof contract, and every copied
+MCP-connected handoff packet now name the same verified 32-tool inventory as
+`mcp-verify` and the MCP package (read 19 + write 13). The installed Korean app
+was rebuilt and checked through Codex Computer Use: Settings → AI Agent
+Connection → Advanced showed `index_project` among 32 tools in both the
+first-contact proof and MCP-connected mode guidance. Stale 24-tool copy is no
+longer an accepted setup signal.
+
+The Advanced panel's feature-guide action now carries an explicit packaged
+Docs Vault contract:
+`/docs/?source=server&sample=dogfood&slug=AGENT-GRAPH-WORKFLOW`. A loaded local
+vault therefore cannot replace the promised Agent Graph Workflow with its own
+`README`, and a persisted storefront example cannot hide the runbook behind an
+empty 31-document sample. The route-scoped source and sample overrides do not
+overwrite the user's stored local-vault or sample preference, so returning to
+ordinary Docs Vault work restores the user's folder and chosen example. The
+shipped proof is the installed app's resulting URL, source selector, document
+title, and current CLI/MCP runbook text read through Codex Computer Use.
+The packaged runbook is current as of 2026-07-27 and names the measured CLI 52
+commands, MCP 32 tools (read 19 + write 13), 96 dogfood nodes, 543 relations,
+and zero graph issues.
+
+Agent client controls now preserve the same truth boundary as config
+validation. Missing `.mcp.json` or `.codex/config.toml` files offer the
+non-overwriting creation action; invalid existing files offer a copyable
+vault-local replacement template with `OATLAS_VAULT=.`; valid files render as
+non-interactive ready status. Absolute-path JSON remains reserved for
+Cursor/VS Code deep links, so a deep-link payload is not mistaken for the
+vault-local file contract. The installed Korean app proof used the same
+invalid 11-document vault and showed both replacement actions beside the
+warning, with no stale completed-state button.
+
+## 2026-07-27 public package availability gate
+
+Config-file presence is no longer sufficient evidence that agent onboarding is
+ready. `src/shared/config/agent-package-distribution.ts` records the last
+verified public npm state; while `ontology-atlas` and `ontology-atlas-mcp`
+return E404, the installed app must not write `.mcp.json` / Codex config,
+generate Cursor or VS Code deep links, or call a syntactically valid file
+`ready`. The only available handoff is the source-checkout workflow using
+`node <checkout>/mcp/src/index.js` and `node cli/src/index.mjs mcp-verify`.
+
+The public state can move to `published` only after the human-maintainer publish
+checklist, both registry lookups, and a fresh-shell `npx` smoke pass. This
+separates package availability and runtime proof from config syntax and keeps
+the app fail-closed when distribution evidence drifts.
