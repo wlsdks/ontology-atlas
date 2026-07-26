@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T21:57:00.000Z",
+  "generatedAt": "2026-07-26T22:04:13.000Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6614,7 +6614,7 @@
       ],
       "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ontology-atlas 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성",
       "wordCount": 419,
-      "updatedAt": "2026-07-25T14:52:19+09:00",
+      "updatedAt": "2026-07-27T07:04:13+09:00",
       "linksOut": []
     },
     {
@@ -6652,7 +6652,7 @@
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~280. HN expects substantive Show HN posts, not one-liners.)",
       "wordCount": 439,
-      "updatedAt": "2026-07-25T14:52:19+09:00",
+      "updatedAt": "2026-07-27T07:04:13+09:00",
       "linksOut": []
     },
     {
