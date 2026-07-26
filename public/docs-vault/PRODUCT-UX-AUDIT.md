@@ -54,6 +54,7 @@
 | A27 | 768–1024px 하단 탭바 이동·safe-area·레일 전환 | route 포커스·가림·overflow·단일 내비 검증, 수정 없음 |
 | A28 | 프로젝트 → 미연결 AI 타일 → 지도 연결 시트 → 닫기 | 교차 route 열기·모달 Tab 순환·타일 포커스 복귀 설치 앱 검증 완료 |
 | A29 | 재배포 → 저장 vault 복원 → 4개 viewport → 주요 6개 surface 왕복 | 일반 화면·AX 이동 통과, 선택 관계 검증 입력 격리 실패는 UX-031로 추적 |
+| A30 | 설정 → AI 에이전트 연결 → 고급 검증·handoff 문구 읽기 | 24→32 tool inventory 수정, 완료형 설정 CTA 모순은 UX-034로 추적 |
 
 ## 이슈 장부
 
@@ -1148,6 +1149,51 @@
   상태를 읽었다. 다른 전역 surface의 h1과 핵심 액션은 AX 트리에 정상 노출됐다.
 - PO·디자인 판정: **Investigate first**
 
+### UX-033 — AI 연결 화면이 현재 32도구 MCP를 24도구라고 안내
+
+- 심각도: `S3`
+- 상태: 수정·설치 앱 재검증 완료
+- 흐름: 설정 → AI 에이전트 연결 → `고급 · 자세한 검증`
+- 관측 현상: 실제 MCP와 문서 계약은 32도구(read 19 + write 13)인데
+  첫 연결 증거 계약과 MCP 연결 모드 설명은 `index_project 포함 24개 tool`을
+  두 번 표시했다. 복사되는 first-contact/모드 패킷도 같은 24도구를 말했다.
+- 사용자 문제: 사용자는 `mcp-verify`의 32개 결과를 보고도 앱이 기대하는
+  24개와 다르므로 연결 실패나 stale client로 오판할 수 있다. 에이전트에게
+  복사하는 증거 패킷도 시작부터 현재 tool inventory와 어긋난다.
+- 온톨로지·에이전트 가치: UI·복사 패킷·문서·실제 `tools/list`가 하나의
+  32도구 계약을 말해야 같은 local vault를 읽는다는 첫 연결 증거가 성립한다.
+- 최소화: 한·영 메시지, copy packet 상수, 현재 사실을 흉내 내는 테스트 fixture,
+  활성 backlog/prototype의 숫자만 32로 맞췄다. 화면 계층·상호작용·모션·
+  반응형 구조는 바꾸지 않았다.
+- 회귀 증거: 한·영 메시지/ICU 계약 16개, 설정 패널·전역 검색·ontology tree
+  직접 테스트 96개(63 + 33), 설정 패널을 포함한 desktop runtime 64개,
+  TypeScript, `desktop:check`가 통과했다.
+- 설치 앱 증거: 최신 production build를 `/Applications/Ontology Atlas.app`에
+  다시 배포했다. Codex Computer Use로 설정 → AI 에이전트 연결 →
+  `고급 · 자세한 검증`을 실제 클릭해, AX 트리의 첫 연결 증거와 MCP 연결 모드가
+  모두 `index_project 포함 32개 tool`을 말하고 24도구 문구가 사라졌음을
+  확인했다. 같은 상태의 스크린샷도 저장했다.
+- PO·디자인 판정: **Build and verify**
+
+### UX-034 — invalid MCP 설정 옆 주요 버튼이 이미 완료된 작업처럼 읽힘
+
+- 심각도: `S2`
+- 상태: 열림 — 버튼의 실제 write/repair 계약을 구조적으로 확인한 뒤 문구 결정
+- 흐름: 저장된 local vault → 설정 → AI 에이전트 연결
+- 관측 현상: 상단은 `설정 파일 0/3개 준비됨`과
+  `.mcp.json 가 ontology-atlas MCP 설정이 아닙니다`를 경고하지만, 첫 주요
+  버튼은 체크 아이콘과 `이 폴더에 .mcp.json 을 만들었어요`라는 완료형 문구다.
+- 사용자 문제: 이미 설정을 만들었다는 상태 표시인지, 눌러서 설정을 만들거나
+  복구하는 액션인지 구분하기 어렵다. 기존 파일을 덮어쓰지 않는다는 고급 설명과
+  함께 읽으면 다음 행동은 더 모호해진다.
+- 최소화: 측정 중에는 vault 파일을 쓰는 버튼을 누르지 않았다. 버튼 handler가
+  새 파일 생성, invalid 파일 repair, 사용자 확인 중 무엇을 수행하는지 먼저
+  확인하고, 상태라면 비버튼으로 내리며 액션이라면 명령형·결과 예고형 문구로
+  바꾼다.
+- 설치 앱·Computer Use 증거: 실제 설치 앱 전체화면의 AX 트리와 스크린샷에서
+  warning, `0/3`, 체크 아이콘 완료형 버튼을 한 화면에서 확인했다.
+- PO·디자인 판정: **Investigate first**
+
 ### 2026-07-27 반복 측정 기록
 
 - 코드 기준선: `899eb7072`에서 시작해 로컬 vault 문구와 문서·ontology
@@ -1182,6 +1228,8 @@
 - A28 AI 연결 교차 route·모달 포커스 슬라이스: **Build and verify**
 - A29 반복 측정 기준선: 일반 viewport/주요 surface **Build and verify**,
   선택 관계 fixture와 설치 앱 가져오기는 **Investigate first**
+- A30 에이전트 handoff tool inventory: **Build and verify**,
+  invalid 설정 CTA 의미는 **Investigate first**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

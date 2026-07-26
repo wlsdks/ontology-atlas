@@ -83,7 +83,7 @@ function findOntologyOption(nodeId: string): HTMLElement | null {
  */
 describe("GlobalSearch", () => {
   const nodes: KnowledgeGraphNode[] = [
-    node({ id: "capability:mcp-server", title: "MCP Server (24 tools)", kind: "capability" }),
+    node({ id: "capability:mcp-server", title: "MCP Server (32 tools)", kind: "capability" }),
     node({ id: "capability:mcp-conflict-guard", title: "MCP Conflict Guard", kind: "capability" }),
     node({ id: "element:mcp-index", title: "mcp/src/index.js", kind: "element" }),
     node({ id: "domain:ai-agent-partner", title: "AI Agent Partner", kind: "domain" }),

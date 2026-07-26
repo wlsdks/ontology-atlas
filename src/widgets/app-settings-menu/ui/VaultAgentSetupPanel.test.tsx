@@ -147,7 +147,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByText('수정 전에 JSON gate를 실행하고 ok와 performanceOk를 따로 확인합니다.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('에이전트 root에서 mcp-verify를 실행해 index_project 포함 로컬 24개 tool 연결을 증명합니다.'),
+      screen.getByText('에이전트 root에서 mcp-verify를 실행해 index_project 포함 로컬 32개 tool 연결을 증명합니다.'),
     ).toBeInTheDocument();
     expect(
       screen.getByText('첫 ontology write 전에 workspace-brief와 agent-brief를 읽습니다.'),
@@ -175,7 +175,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('mcp_verify')).toBeInTheDocument();
     expect(
-      screen.getByText('mcp-verify 로 local MCP server boot, index_project 포함 24개 tool 목록, target vault 읽기를 증명합니다.'),
+      screen.getByText('mcp-verify 로 local MCP server boot, index_project 포함 32개 tool 목록, target vault 읽기를 증명합니다.'),
     ).toBeInTheDocument();
     expect(screen.getByText('json_gate')).toBeInTheDocument();
     expect(
@@ -193,7 +193,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('Graph DB pack')).toBeInTheDocument();
     expect(screen.getByText('Setup gate')).toBeInTheDocument();
     expect(
-      screen.getByText('Claude Code, Codex, Cursor가 index_project 포함 24개 tool을 직접 호출하고 구조화된 오류 복구와 write guardrail을 받습니다.'),
+      screen.getByText('Claude Code, Codex, Cursor가 index_project 포함 32개 tool을 직접 호출하고 구조화된 오류 복구와 write guardrail을 받습니다.'),
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText('MCP verify 명령 미리보기'),
@@ -484,7 +484,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('CLI-only: use validate, workspace-brief'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP-connected: let Claude Code, Codex, or Cursor call 24 tools'),
+      expect.stringContaining('MCP-connected: let Claude Code, Codex, or Cursor call 32 tools'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Graph DB pack: use bounded query plans'),
@@ -499,7 +499,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('Config state: agent-setup --json reports root-specific'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 24 tools including index_project'),
+      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 32 tools including index_project'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk'),
@@ -957,7 +957,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('Config state: agent-setup --json reports root-specific'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 24 tools including index_project'),
+      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 32 tools including index_project'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk'),

@@ -58,3 +58,13 @@ not the agent setup sequence. The setup contract remains read-first and now
 documents the verified current `tools/list` surface as 32 tools. Unsupported
 browser folder entry is rejected before the agent-setup surface is offered;
 writable vault setup continues through the installed app.
+
+## 2026-07-27 installed-app inventory proof
+
+The settings panel, its first-contact proof contract, and every copied
+MCP-connected handoff packet now name the same verified 32-tool inventory as
+`mcp-verify` and the MCP package (read 19 + write 13). The installed Korean app
+was rebuilt and checked through Codex Computer Use: Settings → AI Agent
+Connection → Advanced showed `index_project` among 32 tools in both the
+first-contact proof and MCP-connected mode guidance. Stale 24-tool copy is no
+longer an accepted setup signal.

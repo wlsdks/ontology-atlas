@@ -147,7 +147,7 @@ R10b (firebase / functions / firestore 영구 제거) 후 cloud-side 진화 컨�
 
 ### F3. .mcp.json git-tracked (✅ 이번 R14 closeout 에서 추가)
 
-- 사용자가 git clone 후 Claude Code 열면 즉시 24 tools 자동 등록.
+- 사용자가 git clone 후 Claude Code 열면 즉시 32 tools 자동 등록.
 
 ### ~~T23. mode-aware e2e tests~~ — VOID (R10b)
 
