@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T06:09:57.834Z",
+  "generatedAt": "2026-07-26T06:12:41.000Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 인사이트: 숫자가 자기 스코프를 말한다",
+          "slug": "2026-07-26-인사이트-숫자가-자기-스코프를-말한다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — 요청하지 않은 게 끼어들지 않고, 누른 게 한 번에 먹는다",
           "slug": "2026-07-26-요청하지-않은-게-끼어들지-않고-누른-게-한-번에-먹는다"
         },
@@ -4918,9 +4923,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. \"거슬림\" 으로 묶인 다섯 결함은 뿌리가 하나였다: 화면이 사용자가 요청하지 않은 일을 자기 판단으로 한다. 히스토리에 안 만든 칸을 쌓고, 안 부른 모달",
-      "wordCount": 43977,
-      "updatedAt": "2026-07-26T06:09:57.834Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 계산은 전부 맞았다. 틀린 건 말이었다. 같은 사실이 화면마다 다른 수로 나오는데 어느 화면도 자기 수가 무엇을 세는지 말하지 않아, 사용자가 \"어느 수가",
+      "wordCount": 44259,
+      "updatedAt": "2026-07-26T15:12:41+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5687,7 +5692,7 @@
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
       "wordCount": 15602,
-      "updatedAt": "2026-07-26T06:09:51.063Z",
+      "updatedAt": "2026-07-26T15:10:25+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
