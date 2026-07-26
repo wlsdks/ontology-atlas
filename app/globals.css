@@ -1715,9 +1715,12 @@
        마스크 — glow/neon 링(`0 0 ... rgba(indigo)` + blur>0 발광)과는 다른
        기법이므로 이 토큰을 glow 용도로 확장하지 않는다. */
     --topology-tour-scrim-surface: rgba(0, 0, 0, 0.6);
-    /* 단계 전환 컷아웃 rect 보간 duration — 크롬 `duration-180` 리듬과 동일,
-       200ms 미만 규칙 충족. `prefers-reduced-motion` 은 `motion-reduce:
-       transition-none` 로 제거(즉시 스냅). */
+    /* 단계 전환 컷아웃 rect 보간 duration — 램프의 "이동" 스텝
+       (`--motion-base`)과 같은 값. `prefers-reduced-motion` 은 `motion-reduce:
+       transition-none` 로 제거(즉시 스냅).
+       이 토큰도 `--motion-base` 참조로 봉합할 수 있지만 아직 안 했다 — 봉합과
+       짝을 이루는 이징 동반 규칙이 투어 스크림/컷아웃 3곳의 커브까지 함께
+       바꾸게 되어, 값 무변경이 아니라 별도 프레임 증거가 필요한 변경이 된다. */
     --topology-tour-transition-ms: 180ms;
     --topology-blocking-map-opacity: 0.24;
     --topology-blocking-map-filter: saturate(0.58);

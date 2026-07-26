@@ -229,7 +229,7 @@ export function Select({
         </span>
         <ChevronDown
           aria-hidden
-          className="size-4 flex-none text-[color:var(--color-text-quaternary)] transition-transform duration-150 ease-out motion-reduce:transition-none data-[open=true]:rotate-180"
+          className="size-4 flex-none text-[color:var(--color-text-quaternary)] transition-transform motion-reduce:transition-none data-[open=true]:rotate-180"
           data-open={open}
         />
       </button>

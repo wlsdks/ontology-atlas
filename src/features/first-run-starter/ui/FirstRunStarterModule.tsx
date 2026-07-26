@@ -421,7 +421,7 @@ export function FirstRunStarterModule({
           <ChevronRight
             size={11}
             aria-hidden
-            className={`transition-transform duration-150 motion-reduce:transition-none ${
+            className={`transition-transform motion-reduce:transition-none ${
               cliOpen ? "rotate-90" : ""
             }`}
           />

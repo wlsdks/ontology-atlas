@@ -10,7 +10,7 @@ const buttonVariants = cva(
     'rounded-xl',
     'border border-transparent',
     'select-none',
-    'transition-[background-color,border-color,color,box-shadow,transform] duration-180 ease-out',
+    'transition-[background-color,border-color,color,box-shadow,transform] duration-[var(--motion-base)] ease-[var(--motion-ease)]',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]',
     'active:translate-y-[1px]',
     'motion-reduce:transition-none motion-reduce:transform-none',
