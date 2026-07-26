@@ -1,0 +1,16 @@
+{
+  "id": "msg_02",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-opus-5",
+  "content": [
+    { "type": "text", "text": "먼저 이 노드를 읽을게요." },
+    {
+      "type": "tool_use",
+      "id": "toolu_01",
+      "name": "get_concept",
+      "input": { "slug": "capabilities/payment" }
+    }
+  ],
+  "stop_reason": "tool_use"
+}

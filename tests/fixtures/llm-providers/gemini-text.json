@@ -1,0 +1,13 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          { "text": "[[capabilities/payment]]은 [[capabilities/refund]]과 이어져 있지 않아요." }
+        ]
+      },
+      "finishReason": "STOP"
+    }
+  ]
+}
