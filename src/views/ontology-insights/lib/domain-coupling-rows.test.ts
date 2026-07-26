@@ -204,4 +204,89 @@ describe("buildDomainCouplingSummary", () => {
 
     expect(summary.boundaries.some((b) => b.id === "domain:empty")).toBe(false);
   });
+
+  it("boundary row 는 교차 비중 내림차순이다 — 카드 캡션이 읽으라고 하는 순서", () => {
+    // leaky: 안쪽 0 · 교차 2 → 비중 100%, 총량 2 (작다)
+    // busy:  안쪽 3 · 교차 3 → 비중 50%,  총량 6 (크다)
+    // 총량 순으로 세우면 busy 가 먼저 온다 — 캡션과 반대 순서.
+    const nodes = [
+      node("domain:leaky", "domain", "Leaky"),
+      node("domain:busy", "domain", "Busy"),
+      node("capability:l1", "capability", "L1"),
+      node("capability:b1", "capability", "B1"),
+      node("capability:b2", "capability", "B2"),
+      node("capability:b3", "capability", "B3"),
+      node("capability:b4", "capability", "B4"),
+    ];
+    const edges: KnowledgeGraphEdge[] = [
+      edge("c1", "domain:leaky", "capability:l1", "contains"),
+      edge("c2", "domain:busy", "capability:b1", "contains"),
+      edge("c3", "domain:busy", "capability:b2", "contains"),
+      edge("c4", "domain:busy", "capability:b3", "contains"),
+      edge("c5", "domain:busy", "capability:b4", "contains"),
+      // busy 안쪽 3건.
+      edge("s1", "capability:b1", "capability:b2", "depends_on"),
+      edge("s2", "capability:b2", "capability:b3", "depends_on"),
+      edge("s3", "capability:b3", "capability:b4", "depends_on"),
+      // 교차 2건(양쪽 다 이 두 건이 교차로 잡힌다).
+      edge("x1", "capability:l1", "capability:b1", "depends_on"),
+      edge("x2", "capability:b2", "capability:l1", "depends_on"),
+    ];
+
+    const { boundaries } = buildDomainCouplingSummary(nodes, edges);
+
+    expect(boundaries.map((b) => b.id)).toEqual(["domain:leaky", "domain:busy"]);
+    expect(boundaries[0]).toMatchObject({ selfEdges: 0, crossEdges: 2, crossRatio: 1 });
+    expect(boundaries[1]?.crossRatio).toBeCloseTo(0.4, 5);
+  });
+
+  it("boundary 목록이 상한에서 잘리면 전체 수를 따로 세어 각주가 가능하게 한다", () => {
+    const nodes = [
+      node("domain:a", "domain", "A"),
+      node("domain:b", "domain", "B"),
+      node("domain:c", "domain", "C"),
+      node("capability:a1", "capability", "A1"),
+      node("capability:b1", "capability", "B1"),
+      node("capability:c1", "capability", "C1"),
+    ];
+    const edges: KnowledgeGraphEdge[] = [
+      edge("c1", "domain:a", "capability:a1", "contains"),
+      edge("c2", "domain:b", "capability:b1", "contains"),
+      edge("c3", "domain:c", "capability:c1", "contains"),
+      edge("x1", "capability:a1", "capability:b1", "depends_on"),
+      edge("x2", "capability:b1", "capability:c1", "depends_on"),
+    ];
+
+    const summary = buildDomainCouplingSummary(nodes, edges, 2);
+
+    expect(summary.boundaries).toHaveLength(2);
+    expect(summary.boundaryTotalCount).toBe(3);
+  });
+
+  it("격자는 대각선 최대값을 따로 센다 — 대각선이 교차와 같은 척도를 쓰면 안 된다", () => {
+    const nodes = [
+      node("domain:auth", "domain", "Auth"),
+      node("domain:billing", "domain", "Billing"),
+      node("capability:login", "capability", "Login"),
+      node("capability:session", "capability", "Session"),
+      node("capability:token", "capability", "Token"),
+      node("capability:invoice", "capability", "Invoice"),
+    ];
+    const edges: KnowledgeGraphEdge[] = [
+      edge("c1", "domain:auth", "capability:login", "contains"),
+      edge("c2", "domain:auth", "capability:session", "contains"),
+      edge("c3", "domain:auth", "capability:token", "contains"),
+      edge("c4", "domain:billing", "capability:invoice", "contains"),
+      // auth 안쪽 3건 — 교차(1건)보다 훨씬 크다.
+      edge("s1", "capability:login", "capability:session", "depends_on"),
+      edge("s2", "capability:session", "capability:token", "depends_on"),
+      edge("s3", "capability:token", "capability:login", "depends_on"),
+      edge("x1", "capability:login", "capability:invoice", "depends_on"),
+    ];
+
+    const { grid } = buildDomainCouplingSummary(nodes, edges);
+
+    expect(grid.maxSelf).toBe(3);
+    expect(grid.maxCross).toBe(1);
+  });
 });

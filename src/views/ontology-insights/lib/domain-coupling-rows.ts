@@ -49,8 +49,18 @@ export interface DomainCouplingGridDomain {
 export interface DomainCouplingGrid {
   domains: DomainCouplingGridDomain[];
   cells: number[][];
-  /** 대각선을 뺀 최대 셀 값 — 채도 사다리의 기준. 0이면 교차가 없다. */
+  /** 대각선을 뺀 최대 셀 값 — 교차 채도 사다리의 기준. 0이면 교차가 없다. */
   maxCross: number;
+  /**
+   * 대각선(같은 도메인 안 연결)의 최대값 — **대각선만의** 무채색 사다리 기준.
+   *
+   * 교차와 같은 자를 쓰지 않는 이유: 두 값은 다른 것을 센다(안쪽 응집 vs 경계
+   * 통과). 실측(2026-07-26 도그푸드)에서 안쪽 최대는 14, 교차 최대는 5였다 —
+   * 한 자로 재면 대각선 전체가 최고 채도로 포화해 정작 이 카드의 질문인 교차
+   * 신호가 사라진다. 그래서 척도를 둘로 두고, 대각선은 무채색 + 파선 테두리로
+   * "다른 척도" 임을 색이 아닌 채널로 말한다.
+   */
+  maxSelf: number;
   /** 격자에 올린 도메인 수를 넘긴 전체 도메인 수 — 절단 문구용. */
   totalDomainCount: number;
   /** 격자 밖 도메인이 걸린 교차 관계 수. 0보다 크면 "격자 밖" 을 밝힌다. */
@@ -66,6 +76,11 @@ export interface DomainCouplingSummary {
   totalPairCount: number;
   grid: DomainCouplingGrid;
   boundaries: DomainCouplingBoundaryRow[];
+  /**
+   * 연결이 하나라도 있는 도메인 수 — `boundaries` 가 상한에서 잘렸는지 판정한다.
+   * 카드가 조용히 줄이지 않고 「상위 N / 전체 M」을 말할 수 있어야 한다.
+   */
+  boundaryTotalCount: number;
   /**
    * 콜드스타트(rank #10 계약) — 도메인이 2개 미만이거나 교차 도메인 edge 가
    * 0건이면 결합을 계산할 근거 자체가 없다. 카드가 빈/오해 소지 있는 표
@@ -107,8 +122,10 @@ export function buildDomainCouplingSummary(
   const gridDomains = matrix.domains.slice(0, Math.max(0, gridLimit));
   const gridIndexById = new Map(gridDomains.map((row, index) => [row.domain.id, index] as const));
   const cells: number[][] = gridDomains.map(() => gridDomains.map(() => 0));
+  let maxSelf = 0;
   for (const [index, row] of gridDomains.entries()) {
     cells[index][index] = row.selfEdges;
+    maxSelf = Math.max(maxSelf, row.selfEdges);
   }
   let maxCross = 0;
   let hiddenCrossEdgeCount = 0;
@@ -133,8 +150,20 @@ export function buildDomainCouplingSummary(
     examples: conn.examples.map((edge) => buildExampleRow(edge, nodeById)),
   }));
 
-  const boundaries: DomainCouplingBoundaryRow[] = matrix.domains
-    .filter((row) => row.outgoing + row.incoming + row.selfEdges > 0)
+  const connectedDomains = matrix.domains.filter(
+    (row) => row.outgoing + row.incoming + row.selfEdges > 0,
+  );
+  // 두 단계를 일부러 나눈다.
+  //
+  // **고르기는 교차 물량 순**(`matrix.domains` 가 이미 그 순서다) — 비중으로
+  // 골라 버리면 교차 1건·안쪽 0건인 작은 도메인이 100% 로 상한을 다 차지하고
+  // 실제로 경계가 새는 큰 도메인이 목록에서 밀려난다.
+  //
+  // **보이기는 교차 비중 순** — 이 카드의 캡션이 읽으라고 하는 신호가 비중이고,
+  // 막대도 비중을 그린다. 총량 순으로 세워 두면 캡션이 가리키는 순위와 화면
+  // 순위가 어긋난다(2026-07-26 실측: 비중 100% 인 도메인이 다섯 번째 막대였다).
+  // 동률은 총량 큰 쪽 먼저 — 같은 비중이면 물량이 큰 쪽이 먼저 볼 일이다.
+  const boundaries: DomainCouplingBoundaryRow[] = connectedDomains
     .slice(0, boundaryLimit)
     .map((row) => {
       const crossEdges = row.outgoing + row.incoming;
@@ -146,7 +175,13 @@ export function buildDomainCouplingSummary(
         crossEdges,
         crossRatio: total > 0 ? crossEdges / total : 0,
       };
-    });
+    })
+    .sort(
+      (a, b) =>
+        b.crossRatio - a.crossRatio ||
+        b.crossEdges + b.selfEdges - (a.crossEdges + a.selfEdges) ||
+        a.title.localeCompare(b.title),
+    );
 
   return {
     domainCount: matrix.domainCount,
@@ -157,10 +192,12 @@ export function buildDomainCouplingSummary(
       domains: gridDomains.map((row) => ({ id: row.domain.id, title: titleOf(row.domain) })),
       cells,
       maxCross,
+      maxSelf,
       totalDomainCount: matrix.domainCount,
       hiddenCrossEdgeCount,
     },
     boundaries,
+    boundaryTotalCount: connectedDomains.length,
     isColdStart: matrix.domainCount < 2 || matrix.crossDomainEdgeCount === 0,
   };
 }

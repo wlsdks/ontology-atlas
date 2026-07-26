@@ -72,6 +72,7 @@ const grid: DomainCouplingGrid = {
     [0, 1],
   ],
   maxCross: 3,
+  maxSelf: 2,
   totalDomainCount: 2,
   hiddenCrossEdgeCount: 0,
 };
@@ -88,6 +89,7 @@ function renderCard(overrides: Partial<React.ComponentProps<typeof DomainCouplin
       pairs={pairs}
       grid={grid}
       boundaries={boundaries}
+      boundaryTotalCount={boundaries.length}
       isColdStart={false}
       edgeTypeLabel={(type) => type}
       nodeLink={nodeLink}
@@ -147,12 +149,71 @@ describe("DomainCouplingCard", () => {
     expect(screen.getByText(/12 cross links outside the grid/)).toBeInTheDocument();
   });
 
+  it("경계 압력 막대는 캡션이 읽으라고 한 값(교차 비중)을 그린다 — 총량이 아니다", () => {
+    renderCard({
+      boundaries: [
+        // 총량 4 · 비중 100% — 총량으로 그리면 가장 짧은 막대가 된다.
+        { id: "domain:leaky", title: "Leaky", selfEdges: 0, crossEdges: 4, crossRatio: 1 },
+        // 총량 20 · 비중 25% — 총량으로 그리면 가장 긴 막대가 된다.
+        { id: "domain:solid", title: "Solid", selfEdges: 15, crossEdges: 5, crossRatio: 0.25 },
+      ],
+      boundaryTotalCount: 2,
+    });
+
+    const bars = screen
+      .getByLabelText("Boundary pressure")
+      .querySelectorAll<HTMLElement>("span[aria-hidden] > span");
+    expect(bars).toHaveLength(2);
+    expect(bars[0].style.width).toBe("100%");
+    expect(bars[1].style.width).toBe("25%");
+  });
+
+  it("경계 압력 목록이 잘리면 상세와 같은 절단 문구를 붙인다", () => {
+    renderCard({ boundaryTotalCount: 9 });
+
+    expect(screen.getByText(/Top 1 of 9 domains/)).toBeInTheDocument();
+  });
+
+  it("대각선 칸의 농도도 값에 반응한다 — 가장 큰 수가 가장 옅으면 캡션이 거짓이 된다", () => {
+    renderCard({
+      grid: {
+        ...grid,
+        // 대각선: Auth 8 (최대) · Billing 1. 교차: 3.
+        cells: [
+          [8, 3],
+          [0, 1],
+        ],
+        maxSelf: 8,
+      },
+      boundaries,
+    });
+
+    const big = screen.getByLabelText("8 links inside Auth");
+    const small = screen.getByLabelText("1 links inside Billing");
+    // 무채색 척도(교차의 인디고와 다른 채널) 안에서 큰 값이 더 진하다.
+    expect(big.style.backgroundColor).toBe("var(--color-overlay-3)");
+    expect(small.style.backgroundColor).toBe("var(--color-overlay-1)");
+    // "다른 척도" 는 색이 아닌 채널로도 말한다 — 파선 테두리.
+    expect(big.className).toContain("border-dashed");
+    expect(screen.getByLabelText("3 links from Auth to Billing").className).not.toContain(
+      "border-dashed",
+    );
+  });
+
+  it("숫자를 실은 칸은 secondary 텍스트를 쓴다 — quaternary 는 대각선 최고 농도에서 AA 미달", () => {
+    renderCard();
+
+    expect(screen.getByLabelText("2 links inside Auth").className).toContain(
+      "--color-text-secondary",
+    );
+  });
+
   it("콜드스타트 — 도메인 2개 미만이거나 교차가 없으면 격자 대신 빈 상태 (rank #10 계약)", () => {
     renderCard({
       domainCount: 1,
       crossDomainEdgeCount: 0,
       pairs: [],
-      grid: { domains: [], cells: [], maxCross: 0, totalDomainCount: 1, hiddenCrossEdgeCount: 0 },
+      grid: { domains: [], cells: [], maxCross: 0, maxSelf: 0, totalDomainCount: 1, hiddenCrossEdgeCount: 0 },
       boundaries: [],
       isColdStart: true,
     });

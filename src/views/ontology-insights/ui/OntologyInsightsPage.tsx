@@ -955,6 +955,7 @@ export function OntologyInsightsPage() {
                 pairs={domainCoupling.pairs}
                 grid={domainCoupling.grid}
                 boundaries={domainCoupling.boundaries}
+                boundaryTotalCount={domainCoupling.boundaryTotalCount}
                 isColdStart={domainCoupling.isColdStart}
                 edgeTypeLabel={edgeTypeLabel}
                 nodeLink={{
