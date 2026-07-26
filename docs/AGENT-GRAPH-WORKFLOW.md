@@ -21,10 +21,25 @@ Checked against official docs on 2026-06-04:
   for tools that need direct system access.
   Source: https://code.claude.com/docs/en/mcp
 
-Ontology Atlas therefore does not embed Claude Code, Codex, or Cursor chat inside
-the app. It prepares the local MCP files, root-specific commands, restart
+Ontology Atlas therefore does not reimplement Claude Code, Codex, or Cursor chat
+inside the app — it does not own an agent loop, model routing, API keys, or
+billing. It prepares the local MCP files, root-specific commands, restart
 guidance, and verification gates so those agents can connect from their own app,
 terminal, or IDE session and work against the same vault.
+
+**Owner decision, 2026-07-26 — the desktop app may host a terminal.** The
+sentence above used to read "does not embed … chat inside the app", which was a
+scope choice rather than a principle. The desktop build can now run *your*
+already-installed `claude` / `codex` CLI inside a bottom dock, because that
+keeps the same boundary: the agent runtime, its credentials, and its model
+choices stay yours. Atlas hosts a terminal; it does not become an AI client.
+
+The terminal obeys four rules. **Nothing runs on its own** — no command is
+issued without a keystroke from you. **No hidden input** — Atlas never injects
+commands you did not type. **Scoped working directory** — the shell starts in
+the vault or repository root you already opened, nowhere else. **Desktop
+only** — a browser cannot spawn processes, so the web build says so plainly
+instead of pretending.
 
 ## Choose The Right Mode
 

@@ -71,7 +71,7 @@ function DesktopVaultRedirect() {
     <main
       id="main"
       aria-busy="true"
-      className="flex min-h-screen items-center justify-center bg-[color:var(--color-canvas)] px-6 py-10"
+      className="flex min-h-full items-center justify-center bg-[color:var(--color-canvas)] px-6 py-10"
     >
       <section className="grid w-full max-w-2xl justify-items-center gap-5 text-center">
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">

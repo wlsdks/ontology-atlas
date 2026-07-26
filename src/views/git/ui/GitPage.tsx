@@ -36,13 +36,26 @@ export function GitPage() {
   return (
     <main
       data-testid="git-page"
-      className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-canvas)]"
+      // 높이 계약 (2026-07-26 — 소유자 "공백이 너무 많다" 판정의 실제 뿌리).
+      //
+      // 이 목적지는 셸이 주는 높이를 **받지 않고** `flex-1` 로만 서 있었다.
+      // 구 셸에서 세로는 주축이었고 주축의 자식 높이는 flex-basis(=콘텐츠)로
+      // 잡히므로, 내용이 짧은 상태에서 페이지가 콘텐츠 높이로 접혔다.
+      // 1920×1223 실측: main 554px — 레일의 우측 구분선과 캔버스 배경이 화면
+      // 중턱(y=554)에서 **끊겼다**. 소유자가 본 "800px 공백" 은 빈 페이지가
+      // 아니라 **앱이 없는 영역**이었다. 여백 문제로 보였지만 레이아웃 결함이다.
+      //
+      // 셸이 `h-dvh` 로 뷰포트를 소유하므로(AppShell) 페이지는 `h-full` 로
+      // 그 높이를 받고 스크롤은 안에서 처리한다 — 홈·문서함과 같은 문법이다.
+      className="flex h-full flex-col overflow-hidden bg-[color:var(--color-canvas)]"
     >
       {/* 페이지 프레임 — 모달의 560px 이 아니라 목적지 폭이다. 실측(2026-07-25)
           에서 `max-w-[880px]` + 상단 정렬이 1200×1223 페이지의 상단 300px 만
           채워 "미완성" 으로 읽혔다. 컨테이너를 1280 까지 열고 세로로 채운다 —
-          시안 v2 의 2열(좌 1fr + 우 ≥600px)을 담을 수 있는 폭이기도 하다. */}
-      <div className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col overflow-hidden px-4 pt-5 sm:px-8">
+          시안 v2 의 2열(좌 1fr + 우 ≥600px)을 담을 수 있는 폭이기도 하다.
+          연결 전 상태(셋업 모드)에서는 패널이 이 프레임 정중앙에 단일 컬럼으로
+          선다 — 폭을 좁히는 건 패널이 하고, 프레임은 그대로 목적지 폭이다. */}
+      <div className="mx-auto flex w-full max-w-[1280px] min-h-0 flex-1 flex-col overflow-hidden px-4 pt-5 sm:px-8">
         <AtlasGitPanel vaultPath={vaultPath} sessionChangeset={changeset} className="flex-1" />
       </div>
     </main>

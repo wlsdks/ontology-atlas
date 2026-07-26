@@ -43,7 +43,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
         ? t('releaseStatusCopyFailed')
         : t('releaseStatusCopy');
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="flex min-h-full w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
       <main
         id="main"

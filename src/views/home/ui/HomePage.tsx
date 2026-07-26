@@ -2497,7 +2497,7 @@ export function HomePage() {
   }, [hubs, preloadProjectAsset, selectedSlug]);
 
   return (
-    <main id="main" className="relative flex h-screen w-full overflow-hidden bg-[color:var(--color-canvas)]">
+    <main id="main" className="relative flex h-full w-full overflow-hidden bg-[color:var(--color-canvas)]">
       {/* 좌측 64px 내비 레일은 perf/persistent-shell 이후 `app/[locale]/layout.tsx`
           (AppShell) 상주 — 이 페이지는 더 이상 직접 마운트하지 않는다. 레일
           하단 설정 게어는 위 `useNavRailSettingsSlot(navRailSettingsSlot)`로

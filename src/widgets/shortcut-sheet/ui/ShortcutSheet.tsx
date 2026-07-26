@@ -54,6 +54,10 @@ const SECTIONS: ShortcutSection[] = [
       { keys: ["⌘", "K"], labelKey: "openProjectPalette" },
       { keys: ["⇧", "⌘", "K"], labelKey: "openGlobalPalette" },
       { keys: ["D"], labelKey: "toggleDocsDrawer" },
+      // #79 — 터미널 도크는 여는 길이 이 키 하나뿐이라(가시 어포던스 없음)
+      // 여기 적히지 않으면 사용자에게 존재하지 않는 기능이다. VS Code 와
+      // 같은 Control+backtick.
+      { keys: ["⌃", "`"], labelKey: "toggleAgentTerminal" },
       { keys: ["?"], labelKey: "showShortcuts" },
       { keys: ["Esc"], labelKey: "stepCloseOverlays" },
     ],

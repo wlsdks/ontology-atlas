@@ -18,6 +18,8 @@ tauri = { version = "2", features = [] }
 rfd = "0.15"
 serde = { version = "1", features = ["derive"] }
 notify-debouncer-full = "0.3"
+portable-pty = "0.9"
+keyring = { version = "3", features = ["apple-native"] }
 
 # objc2 는 tauri 가 이미 끌어오는 transitive dep — 신규 공급망 표면 0.
 # WKWebView 의 60fps rAF 캡 해제 (ProMotion 120Hz)에만 사용.

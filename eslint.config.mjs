@@ -83,6 +83,26 @@ const arbitrarySizeSelectors = [
     message:
       'Geometry Codex — shadow 하드코딩 금지 (template literal). --shadow-elevation-* 토큰을 shadow 유틸리티 안에서 var() 로 참조한다.',
   },
+  // 2026-07-26 hex — **현재 위반 0건인 예방 게이트다.** 전수 측정 결과 Tailwind
+  // arbitrary value 안에 hex 를 박은 곳은 src/app 전체에 하나도 없었고, 남은
+  // hex 127건은 전부 정당한 예외였다: 테스트 픽스처 83 · PR 번호 주석 16 ·
+  // CSS-var 가 닿지 않는 표면 16(next/og Satori · viewport.themeColor ·
+  // standalone HTML) · JS 측 토큰 진실원 7 · 토큰 리더 fallback 3 · 마스크
+  // 알파 스텐실 2.
+  //
+  // 그래서 "모든 hex 금지" 는 27건의 소음만 만들고 잡을 신호가 0 이었다.
+  // **Tailwind arbitrary value 안**으로 좁히면 오늘 0건 · 미래 유입만 차단한다.
+  // (shadow 룰에서 배운 것과 같은 교정 — 넓은 룰은 정상 사용을 위반으로 센다.)
+  {
+    selector: 'Literal[value=/-\\[(?:color:)?#[0-9a-fA-F]{3,8}/]',
+    message:
+      '디자인 헌장 — Tailwind arbitrary value 안 hex 금지. --color-* 토큰을 var() 로 참조한다. CSS 변수가 닿지 않는 표면(Canvas·next/og·standalone HTML)은 eslint-disable + 사유.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/-\\[(?:color:)?#[0-9a-fA-F]{3,8}/]',
+    message:
+      '디자인 헌장 — Tailwind arbitrary value 안 hex 금지 (template literal). --color-* 토큰을 var() 로.',
+  },
 ];
 
 // 마이그레이션 완료(치환 끝 · error 봉쇄) 디렉토리.

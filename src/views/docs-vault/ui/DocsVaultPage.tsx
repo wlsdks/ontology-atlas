@@ -1547,7 +1547,7 @@ function DocsVaultContent() {
   }, [source, isDesktopRuntime, handleSourceChange, openLocalVault]);
 
   return (
-    <div className="flex h-screen w-full">
+    <div className="flex h-full w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
       <div className="topology-ui-scale relative flex h-full min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
       {/* 76px 크롬 그리드 (docs-chrome-round design-prescription.md ③-1) —

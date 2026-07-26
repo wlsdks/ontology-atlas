@@ -256,7 +256,12 @@ if (pkg.scripts?.["cli:mcp-verify"] && pkg.scripts?.["dogfood:agent-setup-gate"]
 if (
   agentGraphWorkflowDoc.includes("https://developers.openai.com/codex/mcp") &&
   agentGraphWorkflowDoc.includes("https://code.claude.com/docs/en/mcp") &&
-  agentGraphWorkflowDoc.includes("does not embed Claude Code, Codex, or Cursor chat") &&
+  // 2026-07-26 소유자 결정으로 문장이 바뀌었다 — 구 계약("does not embed …
+  // chat")은 범위 선택이었지 원칙이 아니었다. 새 계약은 **경계가 어디인지**를
+  // 검사한다: 터미널은 호스팅하되 에이전트 루프/모델/키는 소유하지 않는다.
+  agentGraphWorkflowDoc.includes("does not reimplement Claude Code, Codex, or Cursor chat") &&
+  agentGraphWorkflowDoc.includes("Atlas hosts a terminal; it does not become an AI client") &&
+  agentGraphWorkflowDoc.includes("Nothing runs on its own") &&
   agentGraphWorkflowDoc.includes("codex mcp list") &&
   agentGraphWorkflowDoc.includes("claude mcp list")
 ) {

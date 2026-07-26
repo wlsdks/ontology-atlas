@@ -189,7 +189,7 @@ function EditorContent({
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-full items-center justify-center">
         <p className="font-mono text-xs uppercase tracking-[0.15em] text-[color:var(--color-text-quaternary)]">
           {t("loadingLabel")}
         </p>
@@ -199,7 +199,7 @@ function EditorContent({
 
   if (mode === "edit" && !slug) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-full items-center justify-center">
         <div
           role="alert"
           aria-live="assertive"
@@ -221,7 +221,7 @@ function EditorContent({
 
   if (loadError) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-full items-center justify-center">
         <div
           role="alert"
           aria-live="assertive"
@@ -242,7 +242,7 @@ function EditorContent({
   }
 
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="flex min-h-full w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
       {/* 하단 예약고는 base pb + lg:pb — `max-lg:pb-[...]` 는 `md:py-10` 보다
           스타일시트 앞에 emit 되어 768–1023 에서 조용히 패배한다 (빌더 main 과
