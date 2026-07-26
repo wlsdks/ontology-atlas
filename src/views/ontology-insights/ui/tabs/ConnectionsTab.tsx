@@ -3,7 +3,13 @@ import { Link } from "@/i18n/navigation";
 import { EmptyState, TopologyV2KindGlyph, TopologyV2TraceMark } from "@/shared/ui";
 import { isContainmentRelation } from "@/shared/lib/ontology-tree";
 import { relationTypeIndigo } from "../../lib/relation-type-tone";
+import type { ImpactRanking } from "../../lib/impact-ranking";
 import { InsightsBar } from "../parts/InsightsBar";
+import {
+  ImpactRankingCard,
+  type ImpactRankingLabels,
+  type ImpactRankingLink,
+} from "./ImpactRankingCard";
 
 export interface ConnectionHubRow {
   id: string;
@@ -39,12 +45,15 @@ export interface ConnectionsTabProps {
   kindLabel: (kind: string) => string;
   hubLink: ConnectionsTabHubLink;
   labels: ConnectionsTabLabels;
+  impact: ImpactRanking;
+  impactLink: ImpactRankingLink;
+  impactLabels: ImpactRankingLabels;
 }
 
 /**
- * `연결` 탭 — "어떤 개념이 중심인가"에만 답한다. 카드 두 장(관계 타입 · 허브)은
- * 같은 해부구조로 읽히도록 머리(제목+총계) → 차트 → 행 → 각주 한 줄 순서를
- * 공유한다.
+ * `연결` 탭 — "어떤 개념이 중심이고, 바꾸면 어디까지 퍼지나"에 답한다. 카드 세
+ * 장(관계 타입 ∥ 허브 · 영향 랭킹)은 같은 해부구조로 읽히도록 머리(제목+총계)
+ * → 차트 → 행 → 각주 한 줄 순서를 공유한다.
  *
  * 두 번의 잉크 삭감이 여기 반영돼 있다.
  * ① 「가장 많이 기대는 곳」 카드 삭제 — 도그푸드 실측에서 상위 5행이 전부
@@ -53,6 +62,10 @@ export interface ConnectionsTabProps {
  * ② 허브 에고 썸네일 삭제 — 6행이 모두 같은 바퀴 모양이라 구분 정보가 숫자에만
  *    있었다(Tufte: erase non-data-ink). 남은 것은 kind 글리프 · 제목 · 상대
  *    막대 · 숫자로, 행 높이가 절반이 됐다.
+ *
+ * 둘째 줄(양 칸 폭)의 「바꾸면 멀리 퍼지는 개념」은 허브의 짝이다 — 허브가
+ * "지금 뭐가 중심인가"를 말하면, 영향 랭킹은 "그걸 건드리면 어디까지 다시
+ * 봐야 하나"를 말한다. 같은 질문의 두 얼굴이라 같은 탭에 산다.
  */
 export function ConnectionsTab({
   edgeTypeRows,
@@ -63,6 +76,9 @@ export function ConnectionsTab({
   kindLabel,
   hubLink,
   labels,
+  impact,
+  impactLink,
+  impactLabels,
 }: ConnectionsTabProps) {
   const edgeMax = edgeTypeRows.reduce((m, r) => Math.max(m, r.count), 0);
   // hubs 는 이미 degree 내림차순 — hubs[0] 이 이 목록 안의 최대치.
@@ -194,6 +210,16 @@ export function ConnectionsTab({
           {labels.hubDegreeCaption}
         </p>
       </section>
+
+      {/* 같은 그리드의 둘째 줄 — 랭킹은 제목이 길어 반 칸에서는 잘린다. */}
+      <ImpactRankingCard
+        className="lg:col-span-2"
+        rows={impact.rows}
+        rankedCount={impact.rankedCount}
+        kindLabel={kindLabel}
+        nodeLink={impactLink}
+        labels={impactLabels}
+      />
     </div>
   );
 }
