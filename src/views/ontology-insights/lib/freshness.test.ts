@@ -98,6 +98,8 @@ describe("computeFreshnessSummary", () => {
     expect(summary).toEqual({
       domainRows: [],
       recent: [],
+      recentEvidence: [],
+      recentEvidenceTotal: 0,
       staleCount: 0,
       weeklyTotals: new Array(12).fill(0),
     });
@@ -125,5 +127,39 @@ describe("computeFreshnessSummary", () => {
     // both updates land in the current (last) week bucket, summed across domains
     expect(summary.weeklyTotals[11]).toBe(2);
     expect(summary.weeklyTotals.slice(0, 11).every((n) => n === 0)).toBe(true);
+  });
+  it("최근 갱신은 자기 문서를 가진 개념만 세운다 — 파생 이름은 접힌 근거 계층으로", () => {
+    // 파생 노드의 "갱신일" 은 자기 것이 아니라 자기를 인용한 문서의 mtime 이다.
+    // 두 파생(`.claude/` · `.codex/`)은 같은 제목이라 참조 원문 없이는 구별되지
+    // 않는다 — 그 값을 행에 실어야 두 줄이 다른 사실을 말한다.
+    const nodes = [
+      node("capability:written", "capability", {
+        title: "Written by hand",
+        evidenceIds: ["ontology/capabilities/written"],
+      }),
+      node("element:hook-a", "element", {
+        title: "Inject Ontology Summary",
+        evidenceIds: ["ontology/capabilities/written"],
+        hasOwnDocument: false,
+        ref: ".claude/hooks/inject-ontology-summary.sh",
+      }),
+      node("element:hook-b", "element", {
+        title: "Inject Ontology Summary",
+        evidenceIds: ["ontology/capabilities/written"],
+        hasOwnDocument: false,
+        ref: ".codex/hooks/inject-ontology-summary.sh",
+      }),
+    ];
+    const docs = new Map([["ontology/capabilities/written", "2026-07-17T00:00:00.000Z"]]);
+
+    const summary = computeFreshnessSummary(nodes, [], docs, NOW);
+
+    expect(summary.recent.map((r) => r.nodeId)).toEqual(["capability:written"]);
+    expect(summary.recent[0]?.ref).toBeUndefined();
+    expect(summary.recentEvidenceTotal).toBe(2);
+    expect(summary.recentEvidence.map((r) => r.ref)).toEqual([
+      ".claude/hooks/inject-ontology-summary.sh",
+      ".codex/hooks/inject-ontology-summary.sh",
+    ]);
   });
 });

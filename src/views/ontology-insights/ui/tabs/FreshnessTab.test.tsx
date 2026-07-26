@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type React from "react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { FreshnessTab, type FreshnessTabLabels } from "./FreshnessTab";
@@ -29,6 +29,12 @@ const labels: FreshnessTabLabels = {
   staleCountLabel: "Stale (90d+)",
   trendTitle: "Trend",
   trendCaption: "Weekly updates",
+  evidenceShow: (count) => `Show ${count} names without a document`,
+  evidenceHide: "Hide names without a document",
+  evidenceCaption: "The date belongs to the document that wrote the name down.",
+  evidenceTruncated: (shown, total) => `Top ${shown} / ${total}`,
+  evidenceBadge: "No document",
+  evidenceBadgeHint: "Another document wrote this name down.",
 };
 
 const recentLink = {
@@ -62,6 +68,8 @@ describe("FreshnessTab", () => {
             updatedAt: "2026-07-20T18:12:00.000Z",
           },
         ]}
+        recentEvidence={[]}
+        recentEvidenceTotal={0}
         staleCount={0}
         weeklyTotals={[]}
         kindLabel={(kind) => kind}
@@ -88,6 +96,8 @@ describe("FreshnessTab", () => {
             updatedAt: "2026-07-19T00:00:00.000Z",
           },
         ]}
+        recentEvidence={[]}
+        recentEvidenceTotal={0}
         staleCount={0}
         weeklyTotals={[]}
         kindLabel={(kind) => kind}
@@ -121,6 +131,8 @@ describe("FreshnessTab", () => {
           },
         ]}
         recent={[]}
+        recentEvidence={[]}
+        recentEvidenceTotal={0}
         staleCount={0}
         weeklyTotals={[]}
         kindLabel={(kind) => kind}
@@ -143,6 +155,8 @@ describe("FreshnessTab", () => {
       <FreshnessTab
         domainRows={[]}
         recent={[]}
+        recentEvidence={[]}
+        recentEvidenceTotal={0}
         staleCount={0}
         weeklyTotals={[]}
         kindLabel={(kind) => kind}
@@ -153,5 +167,82 @@ describe("FreshnessTab", () => {
 
     expect(screen.getByText("No recent updates")).toBeInTheDocument();
     expect(screen.queryByTestId("insights-freshness-row-link")).toBeNull();
+  });
+  it("근거 계층은 접혀 있고, 열면 배지·참조 원문으로 같은 제목의 두 행을 가른다 (A1)", () => {
+    render(
+      <FreshnessTab
+        domainRows={[]}
+        recent={[
+          {
+            nodeId: "capability:written",
+            title: "Written by hand",
+            kind: "capability",
+            domainTitle: null,
+            updatedAt: "2026-07-19T00:00:00.000Z",
+          },
+        ]}
+        recentEvidence={[
+          {
+            nodeId: "element:hook-a",
+            title: "Inject Ontology Summary",
+            kind: "element",
+            domainTitle: null,
+            updatedAt: "2026-07-19T00:00:00.000Z",
+            ref: ".claude/hooks/inject-ontology-summary.sh",
+          },
+          {
+            nodeId: "element:hook-b",
+            title: "Inject Ontology Summary",
+            kind: "element",
+            domainTitle: null,
+            updatedAt: "2026-07-19T00:00:00.000Z",
+            ref: ".codex/hooks/inject-ontology-summary.sh",
+          },
+        ]}
+        recentEvidenceTotal={193}
+        staleCount={0}
+        weeklyTotals={[]}
+        kindLabel={(kind) => kind}
+        recentLink={recentLink}
+        labels={labels}
+      />,
+    );
+
+    // 접힘이 기본 — 파생 이름이 1계층에 앉아 있지 않다.
+    expect(screen.queryByTestId("insights-freshness-evidence-row-link")).toBeNull();
+    const toggle = screen.getByTestId("insights-freshness-evidence-toggle");
+    // 규모는 라벨이 그대로 말한다 — 숨기기가 아니라 계층화다.
+    expect(toggle).toHaveTextContent("Show 193 names without a document");
+
+    fireEvent.click(toggle);
+
+    const rows = screen.getAllByTestId("insights-freshness-evidence-row-link");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent(".claude/hooks/inject-ontology-summary.sh");
+    expect(rows[1]).toHaveTextContent(".codex/hooks/inject-ontology-summary.sh");
+    expect(screen.getAllByTestId("evidence-only-badge")).toHaveLength(2);
+    // 날짜의 주인이 누구인지 캡션이 말한다.
+    expect(
+      screen.getByText(/date belongs to the document that wrote the name down/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Top 2 \/ 193/)).toBeInTheDocument();
+  });
+
+  it("근거 계층이 0건이면 토글 자체를 그리지 않는다", () => {
+    render(
+      <FreshnessTab
+        domainRows={[]}
+        recent={[]}
+        recentEvidence={[]}
+        recentEvidenceTotal={0}
+        staleCount={0}
+        weeklyTotals={[]}
+        kindLabel={(kind) => kind}
+        recentLink={recentLink}
+        labels={labels}
+      />,
+    );
+
+    expect(screen.queryByTestId("insights-freshness-evidence-toggle")).toBeNull();
   });
 });
