@@ -9,6 +9,13 @@ import { TopologyRealmLedger, type RealmBoundaryRow } from "./TopologyRealmLedge
 // 여기선 스텁 (TopologyIndexPanel.test 의 FirstRunStarterModule 스텁과 같은
 // 패턴). 이 파일은 렛저가 액션을 mount 한다는 사실만 본다.
 const exportActionProps = vi.hoisted(() => ({ current: null as unknown }));
+// 이 위젯은 라벨을 prop 으로 받지만 하위 행이 화면 언어를 읽는다
+// (라틴 아이브로를 한글에 얹지 않기 위한 판정, `shared/lib/latin-eyebrow`).
+vi.mock("next-intl", () => ({
+  useLocale: () => "ko",
+  useTranslations: () => (key: string) => key,
+}));
+
 vi.mock("@/features/ontology-blocks", () => ({
   RealmBlockExportAction: (props: unknown) => {
     exportActionProps.current = props;

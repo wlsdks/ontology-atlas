@@ -216,7 +216,7 @@ export function ProjectQuickEditPanel({
           >
             <div className="flex items-start justify-between gap-4 border-b border-[color:var(--color-border-soft)] px-5 py-5">
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
                   {t("headerEyebrow")}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-secondary)]">

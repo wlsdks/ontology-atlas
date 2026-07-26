@@ -35,7 +35,7 @@ export function SampleNodeHint({ hasSelection, hidden = false }: SampleNodeHintP
   return (
     <div
       data-testid="sample-node-hint"
-      className="pointer-events-none absolute bottom-[calc(var(--topology-relation-legend-inset)+8px)] left-1/2 z-20 hidden -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-[color:var(--topology-v2-panel-divider)] bg-[color:var(--color-panel)] px-3.5 py-1.5 text-[11px] text-[color:var(--topology-v2-panel-text-secondary)] shadow-[var(--chrome-shadow)] md:flex"
+      className="pointer-events-none absolute bottom-[calc(var(--topology-relation-legend-inset)+8px)] left-1/2 z-20 hidden -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-[color:var(--topology-v2-panel-divider)] bg-[color:var(--color-panel)] px-3.5 py-1.5 text-label text-[color:var(--topology-v2-panel-text-secondary)] shadow-[var(--chrome-shadow)] md:flex"
     >
       <span
         aria-hidden

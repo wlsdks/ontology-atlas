@@ -35,19 +35,10 @@ export function latinEyebrowClass(locale: string, tracking = ''): string {
 /**
  * 컴포넌트용 — 현재 화면 언어로 아이브로 클래스를 고른다.
  *
- * intl 컨텍스트가 없으면(라벨을 prop 으로 주입받아 provider 없이 렌더되는
- * 위젯 단위 테스트 경로) **장식을 얹지 않는다**. 잘못 얹는 쪽이 빠뜨리는 쪽보다
- * 비싸다 — 한글 위의 아이브로는 읽기를 깨고, 영문에서 빠진 아이브로는 결이
- * 밋밋해질 뿐이다. 앱 런타임에는 `app/[locale]/layout.tsx` 가 항상 provider 를
- * 두르므로 이 폴백은 테스트/스토리 경로만 탄다.
+ * `useLocale()` 을 조건 없이 부른다. intl provider 밖에서 렌더되는 컴포넌트는
+ * 이 훅을 쓸 수 없다 — 그건 폴백으로 감출 문제가 아니라 렌더 트리를 고칠
+ * 문제다(라벨을 prop 으로 주입하는 위젯 테스트는 provider mock 을 둔다).
  */
 export function useLatinEyebrow(tracking = ''): string {
-  let locale: string | null = null;
-  try {
-    // 훅 자체는 조건 없이 호출된다(호출 순서 불변) — throw 는 컨텍스트 부재일 때만.
-    locale = useLocale();
-  } catch {
-    locale = null;
-  }
-  return locale === null ? '' : latinEyebrowClass(locale, tracking);
+  return latinEyebrowClass(useLocale(), tracking);
 }

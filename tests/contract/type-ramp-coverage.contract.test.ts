@@ -50,6 +50,10 @@ const ARBITRARY_SIZE = [
  * 올리는 커밋은 반려다 — 새 하드코딩을 추가하는 대신 램프 토큰을 쓰거나, 램프에
  * 없는 값이 정말 필요하면 토큰 신설 PR 을 먼저 낸다.
  */
+// 2026-07-26 진입 검수 E-11 — 진입 경로 4곳(first-run-starter 23 ·
+// docs-vault-local 18 · locale-switch 2 · project-quick-edit 1)을 0으로 만들고
+// `codexMigratedGlobs` 로 승격했다. 여기서 빠졌다는 것은 "부채 없음"이 아니라
+// **lint 가 error 로 막는다**는 뜻이다.
 const UNCOVERED_DEBT: ReadonlyArray<readonly [string, number]> = [
   ["src/views/download", 59],
   ["src/views/home", 45],
@@ -57,9 +61,7 @@ const UNCOVERED_DEBT: ReadonlyArray<readonly [string, number]> = [
   ["src/entities/project", 33],
   ["src/features/project-edit", 32],
   ["src/features/vault-ontology", 27],
-  ["src/features/first-run-starter", 23],
   ["src/views/project-detail", 23],
-  ["src/features/docs-vault-local", 18],
   ["src/views/first-run", 14],
   ["app/[locale]/not-found.tsx", 7],
   ["app/error.tsx", 7],
@@ -67,9 +69,7 @@ const UNCOVERED_DEBT: ReadonlyArray<readonly [string, number]> = [
   ["app/not-found.tsx", 7],
   ["src/views/project-editor", 6],
   ["src/views/root-entry", 6],
-  ["src/features/locale-switch", 2],
   ["app/[locale]/layout.tsx", 1],
-  ["src/features/project-quick-edit", 1],
 ];
 
 const ROOTS = ["src", "app"] as const;

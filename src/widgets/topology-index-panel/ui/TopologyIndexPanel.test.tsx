@@ -9,6 +9,13 @@ import { TopologyIndexPanel } from "./TopologyIndexPanel";
 // stand up (established pattern, see `DocsVaultViewer.test.tsx`) — mocked to
 // a plain anchor so href/click assertions still work (P4-② agent-activity
 // deep link).
+// 이 위젯은 라벨을 prop 으로 받지만 하위 행이 화면 언어를 읽는다
+// (라틴 아이브로를 한글에 얹지 않기 위한 판정, `shared/lib/latin-eyebrow`).
+vi.mock("next-intl", () => ({
+  useLocale: () => "ko",
+  useTranslations: () => (key: string) => key,
+}));
+
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
     <a href={String(href)} {...props}>
