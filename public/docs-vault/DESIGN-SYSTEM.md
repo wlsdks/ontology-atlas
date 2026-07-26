@@ -1359,6 +1359,75 @@ Reference anchors:
   without a `--topology-*` token and verifier marker
 - ❌ Overlap tolerated because the surface "mostly still works"; overlap count
   must be `0` for fixed/card surfaces in the tested state
+- ❌ Decorative arrows trailing a label — `열기 →`, `상세 →`, or a trailing
+  `ArrowRight`/`ArrowUpRight` glyph after link/button text (see
+  "Arrows carry information or they don't ship" below)
+- ❌ Cards in one grid whose height is decided by how much text each happens to
+  contain (see "Dimensional regularity" below)
+
+## Arrows carry information or they don't ship
+
+Owner verdict, 2026-07-26, on seeing `지도에서 열기 →`:
+
+> *"나는 이런 글 옆에 화살표 있는거 싫어하거든? AI느낌이라?"*
+
+A trailing arrow after a link label adds no information. The label already says
+where you're going, and the control already looks like a control. What the arrow
+actually signals is *generated marketing chrome* — it's the visual tic of a
+landing page that wants you to click something. On a workbench where the same
+label appears a dozen times, it becomes noise a dozen times over.
+
+**The rule is not "no arrows."** It's that an arrow must be carrying something
+the words aren't:
+
+| Allowed — the arrow *is* the data | Forbidden — the arrow is decoration |
+| --- | --- |
+| `{source} → {target}` — a path between two nodes | `문서 열기 →` |
+| `오래된 → 최근` — an ordering | `상세 →` |
+| `설정 → Developer` — a menu path to follow | `전체 상세 →` |
+| `목차 클릭 → 해당 위치로` — cause and effect | label + trailing `ArrowRight` icon |
+| Leading `↗` on a link that **leaves the app** (`target="_blank"`, an external deeplink) — it warns before the click | Trailing `↗` on in-app navigation |
+| `ChevronRight`/`ChevronDown` as a disclosure state, or prev/next on a carousel | |
+
+The test: **remove the arrow and read the label aloud. If nothing was lost, it
+was decoration.**
+
+## Dimensional regularity — when content length varies
+
+Owner verdict, 2026-07-26, on a card grid whose rows didn't line up:
+
+> *"박스 사이즈나 그런게 안맞지? 깔끔해보이지 않고 삐뚤빼뚤해보이는거말야… 정갈한걸 좋아해서"*
+
+This is the recurring failure mode of a data-driven UI: the layout is regular in
+the code and irregular on screen, because each card's height is decided by how
+many words its content happened to have. A grid only reads as a grid when the
+eye can find a repeating rhythm; content-driven height destroys that rhythm
+without anyone having chosen it.
+
+**The principle: the container's dimensions are a design decision, not a
+byproduct of its contents.** Concretely:
+
+- **Fix the anatomy, not just the box.** A card in a repeating set has the same
+  named slots in the same order — head / measure / list / foot. A slot that is
+  sometimes absent is worse than a slot that is sometimes empty, because absence
+  moves everything below it.
+- **Reserve the optional clause's space.** If a caption is sometimes
+  `요소 2개` and sometimes `요소 2개 · 역량 1개 더`, the caption line still
+  occupies one line either way. Do not let an optional clause change the card's
+  height.
+- **Truncate list slots to a fixed count.** Show N items and a remainder
+  caption — never "however many fit." N is a design decision made once.
+- **Equalize rows, not just columns.** CSS Grid stretches items within a row by
+  default, so cards in the same row already match; rows do not match each other.
+  When the set is meant to read as one field, make the row height uniform.
+- **Truncation is a layout tool, not a failure.** Long titles clamp; they do not
+  get to reflow the grid. Pair every clamp with the full value on hover/focus or
+  in the detail surface, so nothing is actually lost.
+
+The cost is real and must be paid knowingly: reserved slots create visible empty
+space in small vaults. Accept that cost only where the set is genuinely a
+repeating field the eye scans. **A one-off card should size to its content** —
+regularity is for repetition.
 
 > There is no carve-out. Every Don't above holds **app-wide, including the
 > Ontology Workshop (공방)** — the old game-energy exception was retired 2026-07-24 (see
