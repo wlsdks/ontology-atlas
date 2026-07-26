@@ -263,6 +263,22 @@
       "discardAria": "Discard the in-progress changes on “{name}”",
       "current": "On stage now",
       "empty": "Nothing in progress right now"
+    },
+    "materialize": {
+      "title": "This concept has no document yet",
+      "reason": "‘{name}’ is only named inside another document. It has no document of its own yet to record relations in.",
+      "actionWrite": "To link it, its document has to be created first. The relations you just picked are saved into that document too.",
+      "actionCopy": "The folder you opened is read-only, so the app cannot create files. The command that creates the document is copied too.",
+      "fileLabel": "File to create",
+      "kindLabel": "Kind",
+      "kindPrompt": "What kind of concept is this?",
+      "scopeNote": "Created inside your folder only. Nothing is sent anywhere.",
+      "scopeNoteCopy": "Copied only. Your agent runs it, and the file lands inside your folder.",
+      "confirmWrite": "Create document and save",
+      "confirmCopy": "Copy the command",
+      "cancel": "Cancel",
+      "closeAria": "Close",
+      "saved": "Created ‘{name}’ and recorded {count} change(s)."
     }
   },
   "liveActivity": {

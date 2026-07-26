@@ -42,13 +42,14 @@ import {
 } from "../lib/build-create-node";
 import {
   isRelationEditableFromFocal,
-  planRelationRefUpdates,
   projectBearings,
   reduceStudioChanges,
   summarizeStudioChanges,
   type StudioChange,
   type StudioSummaryVocab,
 } from "../lib/build-studio-changes";
+import { resolveStudioWriteTarget, type StudioWriteTarget } from "../lib/resolve-write-target";
+import { buildMaterializeDraft, planStudioCommit } from "../lib/plan-studio-commit";
 import { buildPickerDiscovery } from "../lib/build-picker-discovery";
 import { buildDeltaPreview } from "../lib/build-delta-preview";
 import { resolveStudioFocalId } from "../lib/resolve-studio-focal";
@@ -63,6 +64,7 @@ import {
 } from "../lib/studio-draft-store";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
 import { StudioEntryChoice } from "./StudioEntryChoice";
+import { StudioMaterializeDialog, type StudioMaterializeLabels } from "./StudioMaterializeDialog";
 
 /**
  * `/ontology/studio` — the 나침 무대 (Compass Stage), the vault WRITE surface.
@@ -355,6 +357,47 @@ export function OntologyStudioPage() {
     [candidates],
   );
 
+  // ── 문서 없는 개념의 동의 게이트 ────────────────────────────────────────
+  // 관계는 개념에 속하는데, 남의 frontmatter 에서 이름만 불린 개념은 자기
+  // `.md` 가 없다. 그런 개념에 관계를 이으려면 문서를 만드는 수밖에 없고,
+  // 사용자 디스크의 파일 생성은 동의 없이 하지 않는다. 저장 순간 한 번 묻고,
+  // 답이 올 때까지 commit 을 붙잡아 둔다 — 그래야 "저장하고 이동" 이 동의
+  // 이후의 실제 성공 여부를 그대로 이어받는다.
+  const [docConsent, setDocConsent] = useState<{
+    target: Extract<StudioWriteTarget, { status: "missing" }>;
+    settle: (kind: CreateNodeKind | null) => void;
+  } | null>(null);
+  const askDocConsent = useCallback(
+    (target: Extract<StudioWriteTarget, { status: "missing" }>) =>
+      new Promise<CreateNodeKind | null>((resolve) => {
+        setDocConsent({
+          target,
+          settle: (chosen) => {
+            setDocConsent(null);
+            resolve(chosen);
+          },
+        });
+      }),
+    [],
+  );
+
+  const materializeLabels = useCallback(
+    (name: string): StudioMaterializeLabels => ({
+      title: t("materialize.title"),
+      reason: t("materialize.reason", { name }),
+      action: writable ? t("materialize.actionWrite") : t("materialize.actionCopy"),
+      fileLabel: t("materialize.fileLabel"),
+      kindLabel: t("materialize.kindLabel"),
+      kindPrompt: t("materialize.kindPrompt"),
+      scopeNote: writable ? t("materialize.scopeNote") : t("materialize.scopeNoteCopy"),
+      confirm: writable ? t("materialize.confirmWrite") : t("materialize.confirmCopy"),
+      cancel: t("materialize.cancel"),
+      closeAria: t("materialize.closeAria"),
+      kindOptionLabel: (k) => kindLabel(k),
+    }),
+    [t, writable, kindLabel],
+  );
+
   // ─────────────────────────────── CREATE state ──────────────────────────
   const [kind, setKind] = useState<CreateNodeKind>("capability");
   const [title, setTitle] = useState("");
@@ -381,7 +424,9 @@ export function OntologyStudioPage() {
       originId,
       originLabel: originNode.display ?? originNode.title,
       originKind: originNode.kind,
-      originSourceSlug: originNode.evidenceIds?.[0] ?? candidateFromNode(originNode).ref,
+      // A 자신도 자기 문서가 없을 수 있다 — 그러면 A→새 노드 관계를 A 를 인용한
+      // 남의 문서에 적게 된다. 쓰기 대상은 여기서도 같은 판정을 거친다.
+      originWriteTarget: resolveStudioWriteTarget(originNode),
       relation: rel as StudioRelation,
       name: searchParams.get("name") ?? "",
     };
@@ -568,6 +613,15 @@ export function OntologyStudioPage() {
   const applyCreate = useCallback(async () => {
     if (!title.trim() || createSlugCollision) return;
     const newRef = buildCreateNodeSlug({ kind, title: title.trim() });
+    const originTarget = createContext?.originWriteTarget ?? null;
+    // A 에게 자기 문서가 없으면 A→새 노드 관계를 적을 자리도 없다. 동의를 먼저
+    // 받고, 거절하면 아무것도 만들지 않는다 (새 노드까지 포함해서 — 관계 없이
+    // 노드만 남기면 사용자가 시작한 문장이 반토막으로 디스크에 앉는다).
+    let originKindChoice: CreateNodeKind | null = null;
+    if (originTarget?.status === "missing" && newRef) {
+      originKindChoice = await askDocConsent(originTarget);
+      if (!originKindChoice) return;
+    }
     if (writable) {
       try {
         const { slug, markdown } = buildCreateNodeDoc(draft);
@@ -576,13 +630,23 @@ export function OntologyStudioPage() {
         // update triggers the single reload (both self-marked, one paint).
         const recordOrigin = Boolean(createContext && newRef);
         await localVault.createDoc(slug, markdown, { skipRefresh: recordOrigin });
-        if (createContext && newRef) {
-          const key = BEARING_FRONTMATTER_KEY[createContext.relation];
-          const originDoc = localVault.manifest?.docs.find(
-            (d) => d.slug === createContext.originSourceSlug,
+        if (createContext && newRef && originTarget?.status === "missing" && originKindChoice) {
+          // A 도 같은 저장에서 실체화된다 — 관계를 실은 채 한 번에 만든다.
+          const originDocPlan = buildCreateNodeDoc(
+            buildMaterializeDraft(originTarget, originKindChoice, [
+              {
+                relation: createContext.relation,
+                candidate: { id: "", title: title.trim(), kind, ref: newRef },
+              },
+            ]),
+            { slug: originTarget.slug },
           );
+          await localVault.createDoc(originTarget.slug, originDocPlan.markdown);
+        } else if (createContext && newRef && originTarget?.status === "existing") {
+          const key = BEARING_FRONTMATTER_KEY[createContext.relation];
+          const originDoc = localVault.manifest?.docs.find((d) => d.slug === originTarget.slug);
           const existing = originDoc ? asStringArray(originDoc.frontmatter[key]) : [];
-          await localVault.updateFrontmatter(createContext.originSourceSlug, {
+          await localVault.updateFrontmatter(originTarget.slug, {
             [key]: Array.from(new Set([...existing, newRef])),
           });
         }
@@ -597,7 +661,21 @@ export function OntologyStudioPage() {
     try {
       // C2 — read-only: ONE packet with add_concept + the A→new origin relation.
       let origin: CreateOrigin | undefined;
-      if (createContext) {
+      // A 에게 문서가 없으면 A 를 가리키는 add_relation 은 에이전트 쪽에서
+      // 실패한다. 그래서 A 도 관계를 실은 add_concept 한 줄로 함께 만든다.
+      let originConceptLine: string | null = null;
+      if (createContext && originTarget?.status === "missing" && originKindChoice && newRef) {
+        originConceptLine = buildMcpPacket(
+          buildMaterializeDraft(originTarget, originKindChoice, [
+            {
+              relation: createContext.relation,
+              candidate: { id: "", title: title.trim(), kind, ref: newRef },
+            },
+          ]),
+          undefined,
+          { slug: originTarget.slug },
+        );
+      } else if (createContext && originTarget?.status === "existing") {
         const broaderRefsAfter =
           createContext.relation === "isA"
             ? [
@@ -608,17 +686,20 @@ export function OntologyStudioPage() {
               ]
             : undefined;
         origin = {
-          focalSlug: createContext.originSourceSlug,
+          focalSlug: originTarget.slug,
           relation: createContext.relation,
           broaderRefsAfter,
         };
       }
-      await navigator.clipboard.writeText(buildMcpPacket(draft, origin));
+      const packet = [buildMcpPacket(draft, origin), originConceptLine]
+        .filter((line): line is string => Boolean(line))
+        .join("\n");
+      await navigator.clipboard.writeText(packet);
       toast.show(t("create.copiedAgent"), "success");
     } catch {
       toast.show(t("create.copyFailed"), "info");
     }
-  }, [title, createSlugCollision, writable, draft, localVault, toast, t, kind, openNode, createContext, nodes, edges]);
+  }, [title, createSlugCollision, writable, draft, localVault, toast, t, kind, openNode, createContext, nodes, edges, askDocConsent]);
 
   if (isCreate) {
     const bearings: CompassBearingView[] = RELATIONS.map((relation) => {
@@ -702,6 +783,7 @@ export function OntologyStudioPage() {
     });
 
     return (
+      <>
       <StudioCompass
         mode="create"
         labels={labels}
@@ -768,6 +850,15 @@ export function OntologyStudioPage() {
         onOpenSimilar={openSimilarNode}
         onDismissSimilar={() => setSimilarDismissed(true)}
       />
+      {docConsent ? (
+        <StudioMaterializeDialog
+          target={docConsent.target}
+          labels={materializeLabels(docConsent.target.title)}
+          onConfirm={(chosen) => docConsent.settle(chosen)}
+          onCancel={() => docConsent.settle(null)}
+        />
+      ) : null}
+      </>
     );
   }
 
@@ -824,10 +915,13 @@ export function OntologyStudioPage() {
   }
 
   const focalItem = enhanceItem;
-  const sourceSlug = focalItem.node.sourceSlug;
+  const writeTarget = focalItem.node.writeTarget;
+  // 자기 문서가 없는 개념은 **기준 frontmatter 자체가 없다.** 예전엔 남의 문서를
+  // 여기에 넣어서, 그 문서의 관계 배열이 이 개념의 것인 양 읽히고(지지대 편집이
+  // 열리고) 저장까지 그 문서로 갔다.
   const focalDoc =
-    writable && localVault.manifest
-      ? localVault.manifest.docs.find((d) => d.slug === sourceSlug)
+    writable && localVault.manifest && writeTarget.status === "existing"
+      ? localVault.manifest.docs.find((d) => d.slug === writeTarget.slug)
       : undefined;
 
   // Optimistic projection of the pending changes (computed above). The stage
@@ -911,15 +1005,48 @@ export function OntologyStudioPage() {
       toast.show(t("nothingToCommit"), "info");
       return false;
     }
+    // 파일 조작의 결정은 순수 함수 하나가 한다 — 여기서는 그 결정을 실행만
+    // 한다. 문서 없는 개념이면 동의를 먼저 묻고, 거절하면 아무 파일도 건드리지
+    // 않은 채 변경은 초안으로 남는다.
+    let plan = planStudioCommit({ writeTarget, changes, baseRefs });
+    if (plan.op === "consent-required") {
+      const chosenKind = await askDocConsent(plan.target);
+      if (!chosenKind) return false;
+      plan = planStudioCommit({ writeTarget, changes, baseRefs, approvedKind: chosenKind });
+    }
+    if (plan.op === "nothing") return false;
+    if (plan.op === "create-document") {
+      const { slug, draft: materialized, addedCount } = plan;
+      if (writable) {
+        try {
+          const { markdown } = buildCreateNodeDoc(materialized, { slug });
+          await localVault.createDoc(slug, markdown);
+          toast.show(t("materialize.saved", { name: materialized.title, count: addedCount }), "success");
+          clearStudioDraft(focalItem.node.id);
+          setChanges([]);
+          return true;
+        } catch (err) {
+          toast.show(t("commitFailed", { message: err instanceof Error ? err.message : String(err) }), "error");
+          return false;
+        }
+      }
+      try {
+        await navigator.clipboard.writeText(buildMcpPacket(materialized, undefined, { slug }));
+        toast.show(t("commitCopied"), "success");
+        clearStudioDraft(focalItem.node.id);
+        setChanges([]);
+        return true;
+      } catch {
+        toast.show(t("fillCopyFailed"), "info");
+        return false;
+      }
+    }
+    // 동의를 물었는데도 여전히 동의 대기면 저장하지 않는다 (도달 불가 경로의 안전망).
+    if (plan.op !== "update-frontmatter") return false;
+    const sourceSlug = plan.slug;
     if (writable) {
       try {
-        const updates = planRelationRefUpdates(baseRefs, changes);
-        const fmUpdates: Record<string, string[]> = {};
-        for (const rel of RELATIONS) {
-          const next = updates[rel];
-          if (next) fmUpdates[BEARING_FRONTMATTER_KEY[rel]] = next;
-        }
-        await localVault.updateFrontmatter(sourceSlug, fmUpdates);
+        await localVault.updateFrontmatter(sourceSlug, plan.updates);
         toast.show(t("commitSaved", { count: changes.length }), "success");
         // 디스크에 실제로 앉은 뒤에만 초안을 비운다 — 실패하면 초안이 그대로 남아야
         // 사용자가 재시도할 수 있다.
@@ -970,6 +1097,7 @@ export function OntologyStudioPage() {
   const backTo = cameFromNode ? { id: cameFromNode.id, label: cameFromNode.display ?? cameFromNode.title } : null;
 
   return (
+    <>
     <StudioCompass
       key={focalItem.node.id}
       mode="enhance"
@@ -1044,5 +1172,14 @@ export function OntologyStudioPage() {
       backTo={backTo}
       moreRelationsSoon={t("moreRelationsSoon")}
     />
+    {docConsent ? (
+      <StudioMaterializeDialog
+        target={docConsent.target}
+        labels={materializeLabels(docConsent.target.title)}
+        onConfirm={(chosen) => docConsent.settle(chosen)}
+        onCancel={() => docConsent.settle(null)}
+      />
+    ) : null}
+    </>
   );
 }

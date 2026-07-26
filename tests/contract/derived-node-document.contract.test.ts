@@ -9,6 +9,7 @@ import {
   buildDuplicatePairs,
   buildSimilarityCandidates,
 } from "@/views/ontology-insights/lib/duplicate-pairs";
+import { buildStudioItem } from "@/views/ontology-studio/lib/build-studio-item";
 
 /**
  * 번들 샘플 볼트가 **두 종류의 노드를 모두** 담고 있다는 계약.
@@ -88,5 +89,47 @@ describe("파생 노드와 문서 노드의 구분 (번들 샘플)", () => {
     ).toBe(false);
     // 의심 건수는 정의 통합 전후로 같다(도그푸드 11건, 2026-07-26 실측).
     expect(buildDuplicatePairs(insight.nodes, insight.edges, 3).suspectCount).toBe(11);
+  });
+});
+
+/**
+ * 읽기보다 비싼 쪽 — **쓰기**. 위 계약이 "파생 노드의 근거 slug 는 남의 문서"
+ * 임을 고정한다면, 여기서는 공방의 저장이 그 남의 문서로 가지 않는다는 것을
+ * 볼트 전체에 대해 고정한다.
+ *
+ * 2026-07-26 재현: `payment-gateway`(자기 `.md` 없음)를 공방에서 열고 관계를
+ * 저장하니 `capabilities/card-payment.md` 에 `dependencies: [capabilities/refund]`
+ * 가 적혔다. 사용자가 한 적 없는 주장이 남의 문서에 사실로 앉은 것이고,
+ * 되돌리려면 남의 파일을 손으로 고쳐야 한다.
+ */
+describe("공방 쓰기 대상 (번들 샘플)", () => {
+  it("공방에서 열 수 있는 모든 노드의 쓰기 대상이 남의 문서가 아니다", () => {
+    const insight = derivationToInsight(
+      deriveOntologyFromVault(resolveStaticVaultSource("dogfood").manifest),
+    );
+    // 자기 문서 slug → 그 문서를 소유한 노드 id.
+    const ownerOfDoc = new Map<string, string>();
+    for (const node of insight.nodes) {
+      const own = resolveNodeDocument(node).ownSlug;
+      if (own) ownerOfDoc.set(own, node.id);
+    }
+
+    let missingCount = 0;
+    for (const node of insight.nodes) {
+      const item = buildStudioItem(node.id, insight.nodes, insight.edges);
+      expect(item).not.toBeNull();
+      const target = item!.node.writeTarget;
+      if (target.status === "missing") {
+        missingCount += 1;
+        // 문서가 없는 개념의 예정 경로는 아직 아무도 안 쓰는 자리여야 한다.
+        expect(ownerOfDoc.has(target.slug)).toBe(false);
+        continue;
+      }
+      // 문서가 있는 개념은 **자기** 문서를 가리켜야 한다.
+      expect(ownerOfDoc.get(target.slug)).toBe(node.id);
+    }
+
+    // 파생 노드가 0 이면 이 게이트는 아무것도 지키지 않는다.
+    expect(missingCount).toBeGreaterThan(0);
   });
 });

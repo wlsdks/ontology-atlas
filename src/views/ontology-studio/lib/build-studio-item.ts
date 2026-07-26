@@ -24,12 +24,19 @@ import {
   type ConnectionSourceNode,
 } from "@/shared/lib/ontology-tree";
 import { candidateFromNode } from "./build-create-node";
+import { resolveStudioWriteTarget, type StudioWriteTarget } from "./resolve-write-target";
 
 /** Structural node shape — a subset of `KnowledgeGraphNode`. */
 export interface StudioSourceNode extends ConnectionSourceNode {
   summary?: string;
-  /** Canonical source doc slug — where the node's frontmatter lives (write target). */
+  /** 첫 근거 slug. 자기 문서일 수도, 자기를 인용한 남의 문서일 수도 있다. */
   evidenceIds?: string[];
+  /**
+   * 자기 `.md` 를 가졌는지. `evidenceIds[0]` 만으로는 자기 문서와 남의 문서를
+   * 구분할 수 없어서, 쓰기 대상 판정은 반드시 이 필드를 함께 본다
+   * (`resolveStudioWriteTarget`).
+   */
+  hasOwnDocument?: boolean;
 }
 export type StudioSourceEdge = ConnectionSourceEdge;
 
@@ -86,8 +93,11 @@ export interface StudioItem {
     domainLabel: string | null;
     /** One-line definition / summary (frontmatter description → body excerpt). */
     definition: string;
-    /** Vault doc slug the focal node's frontmatter lives in (write target). */
-    sourceSlug: string;
+    /**
+     * 이 노드의 관계를 어디에 쓸 것인가. 자기 문서가 있으면 그 slug, 없으면
+     * "아직 문서가 없다" 는 사실 그대로 — 남의 문서로 대체하지 않는다.
+     */
+    writeTarget: StudioWriteTarget;
   };
   bearings: Record<StudioBearing, StudioBearingGroup>;
   /** Ordered [up, right, down, left] for iteration. */
@@ -222,7 +232,10 @@ export function buildStudioItem(
       kind: node.kind,
       domainLabel: domainParent ? domainParent.title : null,
       definition: (node.summary ?? "").trim(),
-      sourceSlug: node.evidenceIds?.[0] ?? candidateFromNode(node).ref,
+      writeTarget: resolveStudioWriteTarget(node, {
+        // 부모 도메인 id 는 `domain:<tail>` — 새 문서의 `domain:` 은 그 tail 이다.
+        domainValue: domainParent ? domainParent.id.split(":").at(-1) ?? null : null,
+      }),
     },
     bearings,
     order,

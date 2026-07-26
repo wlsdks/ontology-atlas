@@ -204,10 +204,16 @@ export function groupRelationRefs(relations: readonly PendingRelation[]): Array<
  * and injects the definition + relation-array keys before the closing `---`, so
  * the base frontmatter (slug/kind/domain/title) stays byte-identical.
  */
-export function buildCreateNodeDoc(draft: CreateDraft): { slug: string; markdown: string } {
+export function buildCreateNodeDoc(
+  draft: CreateDraft,
+  opts: { slug?: string } = {},
+): { slug: string; markdown: string } {
   const title = draft.title.trim();
   if (!title) throw new Error("title must not be empty");
-  const slug = buildCreateNodeSlug({ kind: draft.kind, title });
+  // `slug` 오버라이드는 "이미 남이 인용해 둔 개념에 문서를 붙이는" 경우다 —
+  // 그 인용이 적어 둔 경로에 그대로 앉아야 기존 링크가 이 문서를 가리킨다.
+  // 제목에서 새로 만든 slug 를 쓰면 인용은 여전히 허공을 가리킨다.
+  const slug = opts.slug ?? buildCreateNodeSlug({ kind: draft.kind, title });
   if (!slug) throw new Error("title produced an empty slug");
 
   const extra: string[] = [];
@@ -253,9 +259,13 @@ export interface CreateOrigin {
  * against the vault it is registered on. With an `origin` (C2), the packet also
  * records A --relation--> new node so the whole intent lands in ONE paste.
  */
-export function buildMcpPacket(draft: CreateDraft, origin?: CreateOrigin): string {
+export function buildMcpPacket(
+  draft: CreateDraft,
+  origin?: CreateOrigin,
+  opts: { slug?: string } = {},
+): string {
   const title = draft.title.trim();
-  const slug = buildCreateNodeSlug({ kind: draft.kind, title }) ?? `${draft.kind}s/new-node`;
+  const slug = opts.slug ?? buildCreateNodeSlug({ kind: draft.kind, title }) ?? `${draft.kind}s/new-node`;
   const q = (v: string) => `"${v.replace(/"/g, '\\"')}"`;
 
   const conceptArgs = [`slug: ${q(slug)}`, `kind: ${q(draft.kind)}`, `title: ${q(title)}`];
