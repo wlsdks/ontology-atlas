@@ -2,6 +2,7 @@
 
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
+import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
 import { ChevronRight } from "lucide-react";
 import type { DomainCensusRow, OntologyTreeNode } from "@/shared/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
@@ -108,6 +109,13 @@ export function TopologyIndexTreeRow({
     ? computeCapacityRatio(subcounts.descendantCount, maxDomainDescendantCount)
     : 0;
   const count = isDomain && subcounts ? subcounts.descendantCount : hasChildren ? children.length : null;
+  // 자식 가지의 펼침/접힘 수명 — 앱 공통 목록 행 문법과 같은 훅.
+  const {
+    mounted: branchMounted,
+    open: branchOpen,
+    boxRef: branchBoxRef,
+    contentRef: branchContentRef,
+  } = useRowDisclosure(hasChildren && open);
 
   const handleRowKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -235,8 +243,24 @@ export function TopologyIndexTreeRow({
           </span>
         ) : null}
       </div>
-      {hasChildren && open ? (
-        <div>
+      {/* 2026-07-27 프레임 실측 — 여기는 **33ms 하드컷**이었다(2프레임, 높이
+          전이 0). 같은 클릭의 카메라는 200ms 를 쓰는데 목록만 존재/비존재를
+          왕복해서, 자식이 "펼쳐졌다" 가 아니라 "다른 화면이 됐다" 로 읽혔다.
+          앱에 이미 있는 목록 행 펼침 문법(`.ai-row-disclosure`)을 그대로 쓴다 —
+          새 커브·새 duration 0, 접힐 때도 같은 길로 나간다. */}
+      {hasChildren ? (
+        // 상자는 늘 그려 둔다 — 열릴 때 마운트하면 전이의 출발 높이가 없어
+        // 그대로 하드컷이 된다(`useRowDisclosure` 는 "이미 열린 채 나타난 행"
+        // 과 "지금 열린 행" 을 이전 커밋으로 구분한다). 내용만 접힘 상태에서
+        // 빠져 스크린 리더·탭 순서에 남지 않는다.
+        <div
+          ref={branchBoxRef}
+          data-state={branchOpen ? "open" : "closed"}
+          className="ai-row-disclosure"
+          inert={!branchOpen}
+        >
+          {branchMounted ? (
+          <div ref={branchContentRef} className="ai-row-disclosure-body">
           {children.map((child) => (
             <TopologyIndexTreeRow
               key={child.node.id}
@@ -254,6 +278,8 @@ export function TopologyIndexTreeRow({
               labels={labels}
             />
           ))}
+          </div>
+          ) : null}
         </div>
       ) : null}
     </div>

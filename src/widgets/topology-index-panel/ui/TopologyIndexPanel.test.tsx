@@ -1,4 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from "@testing-library/react";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { buildOntologyTree } from "@/shared/lib/ontology-tree";
@@ -461,7 +466,7 @@ describe("TopologyIndexPanel", () => {
     expect(screen.queryByText("CLI Developer Entry")).not.toBeInTheDocument(); // unrelated sibling pruned
   });
 
-  it("P4a: switching back to 'all' restores the full tree", () => {
+  it("P4a: switching back to 'all' restores the full tree", async () => {
     const treeResult = buildFixtureTree();
     render(
       <TopologyIndexPanel
@@ -481,7 +486,9 @@ describe("TopologyIndexPanel", () => {
     fireEvent.click(screen.getByTestId("topology-index-segment-recent"));
     fireEvent.click(screen.getByTestId("topology-index-segment-all"));
 
-    expect(screen.queryByText("CLI Developer Entry")).not.toBeInTheDocument(); // still collapsed by default
+    // 접힌 가지는 펼침 전이(`.ai-row-disclosure`)가 끝난 뒤 언마운트된다 —
+    // "툭 사라짐" 을 없앤 대가로 한 박자 늦게 사라진다.
+    await waitForElementToBeRemoved(() => screen.queryByText("CLI Developer Entry"));
     const domainRow = screen.getByText("Onboarding & UX").closest('[data-index-row]')!;
     fireEvent.click(domainRow.querySelector("button")!);
     expect(screen.getByText("CLI Developer Entry")).toBeInTheDocument();
