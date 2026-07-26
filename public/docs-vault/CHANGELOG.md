@@ -6,6 +6,21 @@
 
 ---
 
+## 2026-07-27 — agent persisted context가 퇴역 Builder를 거치지 않는다
+
+MCP `builder_context`는 살아 있는 read operation이지만 반환 URL과 안내
+문구가 제거된 ERD Builder를 계속 현행 표면처럼 가리켰다. redirect 덕분에
+404는 아니었지만 agent handoff가 `/ontology/edit` 호환 hop과 퇴역 어휘를
+매번 복제했다.
+
+operation 이름과 `builder` response field는 기존 client 호환을 위해
+유지하되, `href`는 이제 `/ontology/studio/?node=…`를 직접 반환한다.
+persisted-only 제약과 MCP schema/README/FEATURES/ontology도 Workshop
+어휘로 동기화했다. unit·integration·package contract로 직접 URL을
+고정했으며, Codex Computer Use로 설치 앱 Workshop ENHANCE의 4방향 관계,
+완성도, 저장 경계를 다시 확인해 README의 퇴역 Builder 이미지를 현재
+스크린샷으로 교체했다.
+
 ## 2026-07-27 — 아키텍처와 내비게이션 문서가 현재 앱 계약을 다시 설명한다
 
 `ARCHITECTURE`와 내비게이션 문서는 퇴역한 xyflow Builder, 게임형 Studio,

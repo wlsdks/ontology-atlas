@@ -67,8 +67,41 @@
 | A36 | 인사이트 설치 앱 자동 proof → 5탭·단일 선택·활성 패널·agent handoff | 현행 maintenance-board WebView 계약과 Computer Use 1920/2560 검증 완료 |
 | A37 | fresh build → packaged static route smoke → 실패 원인·다음 행동 | 현행 route/title/copy/chunk 계약으로 이관, fresh build smoke 통과 |
 | A38 | design:ontology 초록 → 실제 보호 구조 확인 → 구 3탭 fixture 거부 | 현행 5개 질문 탭·단일 panel·tab handoff 계약으로 이관 |
+| A39 | agent `builder_context` → persisted focus handoff → 현재 쓰기 표면 열기 | Workshop 직접 URL·호환 응답·설치 앱 ENHANCE proof 완료 |
 
 ## 이슈 장부
+
+### UX-043 — agent persisted-context handoff가 퇴역 Builder URL을 반환
+
+- 심각도: `S2`
+- 상태: 수정·MCP 통합·설치 앱 재검증 완료
+- 흐름: agent가 `query_ontology({operation:"builder_context"})` 호출 → 반환
+  `builder.href` 열기 → 현재 쓰기 표면에서 저장된 focus 검토
+- 관측 현상: operation 자체는 살아 있지만 `builder.href`와 모든 안내 문구가
+  퇴역한 `/ontology/edit`·Builder를 현행 표면처럼 반환한다. compatibility
+  redirect 덕분에 404는 아니지만 agent는 불필요한 hop과 잘못된 제품 어휘를
+  handoff packet에 보존한다.
+- 사용자 문제·순간: 사람이 agent에게 저장된 관계 맥락을 넘겨 실제 수정
+  화면을 열게 할 때, packet이 현재 Workshop 계약을 직접 설명하지 않는다.
+- 현재 대안: `/ontology/edit` redirect가 `?node=`를 정규화해 Workshop으로
+  넘길 때까지 기다리고, 사람이 Builder라는 퇴역 용어를 해석한다.
+- ontology 가치: persisted node·bounded neighborhood·mtime proof가 실제
+  frontmatter write surface와 한 주소로 이어진다.
+- agent 가치: operation/response field 호환성은 유지하면서, 실행 가능한 URL과
+  제약 문구가 현재 `/ontology/studio` ENHANCE workflow를 바로 가리킨다.
+- 단순화: `builder_context` operation과 `builder` response key는 breaking
+  change를 피하려고 보존한다. URL·사람용 설명·active docs만 Workshop으로
+  바꾸며 별도 alias operation은 추가하지 않는다.
+- 검증 계획: integration/unit fixture에서 `/ontology/studio/?node=` 직접
+  handoff와 persisted-only 제약 문구를 먼저 실패시킨 뒤 구현한다. FEATURES,
+  MCP README, package docs contract, dogfood verify를 함께 통과시킨다.
+- PO verdict: `Build and verify`.
+- 증거: red test는 실제 `/ontology/edit/?node=` 반환을 잡았고, 수정 후
+  ontology-engine·MCP integration·package docs contract가 통과했다. Codex
+  Computer Use로 `/Applications/Ontology Atlas.app`의 공방 목적지를 열어
+  `tauri://localhost/ko/ontology/studio/` ENHANCE 상태, 4방향 관계 bearing,
+  현재 노드·완성도·저장 경계를 AX tree와
+  `docs/assets/readme/workshop-context.jpeg`로 다시 확인했다.
 
 ### UX-001 — 설치 앱 검증기가 현재 canvas-v2 지도를 구형 앱으로 오판
 

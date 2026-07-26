@@ -6121,7 +6121,7 @@ await test("connection_info — read-only mode fingerprints the actually adverti
   }
 });
 
-await test("builder_context — persisted Builder focus, positions, and agent handoff", async () => {
+await test("builder_context — persisted Workshop focus, positions, and agent handoff", async () => {
   const root = makeVault([
     {
       slug: "domains/auth",
@@ -6153,7 +6153,7 @@ await test("builder_context — persisted Builder focus, positions, and agent ha
     assert.equal(context.operation, "builder_context");
     assert.equal(context.focus, "domains/auth");
     assert.equal(context.source, "persisted_vault");
-    assert.equal(context.builder.href, "/ontology/edit/?node=domain%3Aauth");
+    assert.equal(context.builder.href, "/ontology/studio/?node=domain%3Aauth");
     assert.equal(context.builder.unsavedDraftsIncluded, false);
     assert.equal(roundTrip.focus, context.focus);
     assert.deepEqual(roundTrip.builder, context.builder);

@@ -34,13 +34,11 @@
 </p>
 
 <p align="center">
-  <a href="docs/assets/readme/atlas-workflow.webm">
-    <img src="docs/assets/readme/atlas-workflow.gif" alt="Ontology Atlas workflow: inspect the product map, focus the AI Agent Partner domain, and open the MCP Server capability in Builder" />
-  </a>
+  <img src="docs/assets/readme/workshop-context.jpeg" alt="Ontology Atlas Workshop showing one capability and its four fixed relation bearings" />
 </p>
 
 <p align="center">
-  <sub>Overview → typed focus → persisted Builder context. <a href="docs/assets/readme/atlas-workflow.webm">Watch the 8.5-second HD capture</a>.</sub>
+  <sub>Persisted focus → four typed relation bearings → explicit Markdown write boundary.</sub>
 </p>
 
 ---
@@ -140,13 +138,13 @@ frontmatter-backed evidence, backlinks, checks, search, and the command palette.
 
 ![Docs workspace showing the Architecture source document and graph evidence](docs/assets/readme/workspace-docs.png)
 
-### Shape relations in Builder
+### Shape relations in Workshop
 
-Builder opens a persisted ontology focus from the map, a deep link, or the MCP
-`builder_context` query. Nodes and relations still write to Markdown only after
-an explicit confirmation.
+Workshop opens a persisted ontology focus from the map, a deep link, or the MCP
+`builder_context` compatibility operation. Nodes and relations still write to
+Markdown only after an explicit confirmation.
 
-![Builder focused on the MCP Server capability and its owning domain](docs/assets/readme/builder-context.png)
+![Workshop showing one capability and its four relation bearings](docs/assets/readme/workshop-context.jpeg)
 
 ### Turn graph health into a work queue
 
@@ -156,15 +154,16 @@ freshness.
 
 ![Graph Insights showing touch-ups, agent readiness, and the repair queue](docs/assets/readme/graph-insights.png)
 
-## Five surfaces, one vault
+## Six work surfaces, one vault
 
 | Surface | What it is for |
 |---|---|
 | **Map** (`/` and `/topology`) | Overview, semantic zoom, typed relation inspection, focus/path modes, impact, and handoff |
 | **Docs** (`/docs`) | Read and edit Markdown, inspect frontmatter evidence and backlinks, search, run workspace checks |
 | **Workshop** (`/ontology/studio`) | Complete a node's meaning against four fixed relation bearings, with a visible write-confirm boundary |
-| **Insights** (`/ontology/insights`) | Agent readiness, repair queue, hubs, kind census, relation breakdown, and freshness |
+| **Insights** (`/ontology/insights`) | Five maintenance questions: do next, composition, connections, boundaries, and freshness |
 | **Projects** (`/projects`) | Project cards and domain/capability/evidence coverage derived from containment |
+| **Git** (`/git`) | Vault-scoped changes, history, and local snapshot handoff without remote transport |
 
 The **MCP server** exposes that vault to Claude Code, Cursor, Codex, and other
 MCP clients as 32 tools over stdio JSON-RPC: **19 read + 13 write**.
@@ -216,7 +215,7 @@ edges, aliases, issues, a stable `graphHash`, and optional indexes.
 - centrality, communities, domain coupling, project maps, and containment;
 - impact, blast radius, cycles, components, and topological order;
 - similar-node checks, relation preflight, growth plans, and maintenance queues;
-- workspace, health, agent, and persisted Builder context.
+- workspace, health, agent, and persisted Workshop context.
 
 The CLI exposes the same authority for connector-less environments:
 

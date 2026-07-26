@@ -1,7 +1,7 @@
 # Agent Graph Workflow
 
 > Current as of 2026-07-27. This is the user-facing guide for running
-> `ontology-atlas` as a local PC graph memory: CLI-only, MCP-connected, and web
+> `ontology-atlas` as a local meaning graph: CLI-only, MCP-connected, and web
 > workbench flows over the same markdown vault.
 
 `ontology-atlas` is not a hosted graph database. It is a local-first graph
@@ -299,7 +299,7 @@ Installed MCP verifier:
 For a non-developer or a first-time AI-agent session:
 
 1. Install the macOS app and open the local vault folder there.
-2. Open the Source Vault tools menu and check the AI agent setup card.
+2. Open App Settings → AI agent and check the setup/connection card.
 3. Read the root execution contract: `vault folder` sessions can use `.` as the
    vault path, while separate `codebase root` sessions must pass the ontology
    vault as an explicit absolute path.

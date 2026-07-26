@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T20:48:20.841Z",
+  "generatedAt": "2026-07-26T20:59:49.234Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -55,9 +55,9 @@
           "slug": "recommended-first-user-flow"
         }
       ],
-      "excerpt": "Current as of 2026-07-27. This is the user-facing guide for running ontology-atlas as a local PC graph memory: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is",
-      "wordCount": 2338,
-      "updatedAt": "2026-07-27T02:20:04+09:00",
+      "excerpt": "Current as of 2026-07-27. This is the user-facing guide for running ontology-atlas as a local meaning graph: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is t",
+      "wordCount": 2335,
+      "updatedAt": "2026-07-26T20:59:33.679Z",
       "linksOut": []
     },
     {
@@ -219,7 +219,7 @@
       ],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer shared by people and AI coding agents. Round 10 permanently removed all auth + cloud data surfaces; the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights, and keeps old on",
       "wordCount": 2003,
-      "updatedAt": "2026-07-26T20:48:20.841Z",
+      "updatedAt": "2026-07-27T05:50:28+09:00",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — agent persisted context가 퇴역 Builder를 거치지 않는다",
+          "slug": "2026-07-27-agent-persisted-context가-퇴역-builder를-거치지-않는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 아키텍처와 내비게이션 문서가 현재 앱 계약을 다시 설명한다",
           "slug": "2026-07-27-아키텍처와-내비게이션-문서가-현재-앱-계약을-다시-설명한다"
         },
@@ -5048,9 +5053,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. ARCHITECTURE와 내비게이션 문서는 퇴역한 xyflow Builder, 게임형 Studio, Insights census, desktop/mobil",
-      "wordCount": 51335,
-      "updatedAt": "2026-07-26T20:48:07.616Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. MCP buildercontext는 살아 있는 read operation이지만 반환 URL과 안내 문구가 제거된 ERD Builder를 계속 현행 표면처럼",
+      "wordCount": 51423,
+      "updatedAt": "2026-07-26T20:59:49.234Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -6005,8 +6010,8 @@
         },
         {
           "depth": 4,
-          "text": "Views (2-view rail) + workflow entry points",
-          "slug": "views-2-view-rail-workflow-entry-points"
+          "text": "Analysis modes + workflow entry points",
+          "slug": "analysis-modes-workflow-entry-points"
         },
         {
           "depth": 4,
@@ -6415,8 +6420,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 14095,
-      "updatedAt": "2026-07-26T20:48:07.612Z",
+      "wordCount": 13973,
+      "updatedAt": "2026-07-26T20:58:22.220Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -7691,8 +7696,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 안정판 1.x 기반 stdio JSON-RPC 서버. 32 도구 노출 (read 19 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-lev",
-      "wordCount": 13578,
-      "updatedAt": "2026-07-27T01:53:12+09:00",
+      "wordCount": 13589,
+      "updatedAt": "2026-07-26T20:55:31.111Z",
       "linksOut": []
     },
     {
@@ -9036,7 +9041,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 작업 출구. 토폴로지 (canvas-2D topology-map-v2 spatial network — /, /topology)는 읽고 탐색하고, 공방 (나침 무대 /ontology/studio)은 관계 소켓으로 의미를 완성해 실제 frontmatter 를 쓰며, 인사이트 (/ontology/insights)는 다섯 질문으로 정비 우선순위를 읽고 agent handoff를 만든다. /ontology 는 Topology INDEX로, 구 xyflow ERD Builder /ontology/edit 는 공방으로 리다이렉트한다. 검색은 ⌘K",
       "wordCount": 140,
-      "updatedAt": "2026-07-26T20:48:07.613Z",
+      "updatedAt": "2026-07-27T05:50:28+09:00",
       "linksOut": []
     },
     {
@@ -9096,7 +9101,7 @@
       "headings": [],
       "excerpt": "src/widgets/app-nav-rail/ui/AppNavRail.tsx renders the persistent left navigation rail shown on every Ontology Atlas route at desktop widths (lg: and up, ≥1024px). Below lg it renders nothing — src/widgets/bottom-tab-bar (Mobile Bottom Tab Bar) owns navigation instead. The rail exposes exactly 6 destinations: Map (/, /",
       "wordCount": 198,
-      "updatedAt": "2026-07-26T20:48:07.612Z",
+      "updatedAt": "2026-07-27T05:50:28+09:00",
       "linksOut": []
     },
     {
@@ -10117,7 +10122,7 @@
       ],
       "excerpt": "src/widgets/bottom-tab-bar renders the mobile primary navigation for Ontology Atlas — visible only below the lg breakpoint (desktop uses elements/app-nav-rail instead). feat/rail-rollout (2026-07) re-aligned this bar to four core destinations: Map, Docs, Insights, and Projects. Workshop remains an immersive desktop wri",
       "wordCount": 141,
-      "updatedAt": "2026-07-26T20:48:07.613Z",
+      "updatedAt": "2026-07-27T05:50:28+09:00",
       "linksOut": []
     },
     {
@@ -10547,8 +10552,8 @@
         }
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
-      "wordCount": 4960,
-      "updatedAt": "2026-07-27T02:51:06+09:00",
+      "wordCount": 4963,
+      "updatedAt": "2026-07-26T20:55:31.111Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -10838,6 +10843,11 @@
         },
         {
           "depth": 3,
+          "text": "UX-043 — agent persisted-context handoff가 퇴역 Builder URL을 반환",
+          "slug": "ux-043-agent-persisted-context-handoff가-퇴역-builder-url을-반환"
+        },
+        {
+          "depth": 3,
           "text": "UX-001 — 설치 앱 검증기가 현재 canvas-v2 지도를 구형 앱으로 오판",
           "slug": "ux-001-설치-앱-검증기가-현재-canvas-v2-지도를-구형-앱으로-오판"
         },
@@ -11063,8 +11073,8 @@
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨 한 장 더 캡처한다. ",
-      "wordCount": 13855,
-      "updatedAt": "2026-07-27T05:42:08+09:00",
+      "wordCount": 14104,
+      "updatedAt": "2026-07-26T20:59:49.232Z",
       "linksOut": []
     },
     {

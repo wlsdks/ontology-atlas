@@ -10,16 +10,16 @@ type LocalVaultValue = ReturnType<typeof useLocalVaultInternal>;
 /**
  * Round 8 cut R — Single source of truth 화.
  *
- * 이전엔 useLocalVault 가 8 곳 (RootEntryPage / OperationsNav /
- * OntologyEditPage / DocsVaultPage / useDataSourceMode / useProjects /
+ * 이전엔 useLocalVault 가 8 곳 (RootEntryPage / 구 OperationsNav /
+ * 구 OntologyEditPage / DocsVaultPage / useDataSourceMode / useProjects /
  * useProjectMutations / useVaultOntology) 에서 독립 호출 → 한 페이지
  * mount 시 2-3 인스턴스 동시 존재. 같은 IDB 키 N 번 rehydrate, 같은 폴더
  * N 번 buildLocalManifest (전체 FS walk). 18 노드 dogfood 에선 측정 안
  * 보이지만 100+ 파일 vault 에선 cold-load latency 가 비례 증가.
  *
- * Provider 가 layout 에서 1 회 mount → 단일 state. Consumer (8 callsite)
- * 는 시그니처 동일한 useLocalVault() 로 context 만 읽음 — 호출 코드 변경
- * 없음.
+ * Provider 가 layout 에서 1 회 mount → 단일 state. 현재 AppShell,
+ * AppNavRail, OntologyStudioPage, DocsVaultPage 등 모든 consumer는
+ * 시그니처 동일한 useLocalVault() 로 context 만 읽는다.
  */
 const LocalVaultContext = createContext<LocalVaultValue | null>(null);
 

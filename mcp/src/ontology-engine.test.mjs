@@ -1561,7 +1561,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(exactLimit.limited, false);
   });
 
-  it('returns persisted builder context with focus URL, layout, and safe agent handoff', () => {
+  it('returns persisted builder context with direct Workshop URL, layout, and safe agent handoff', () => {
     const docs = [
       doc('domains/auth', {
         slug: 'auth-domain',
@@ -1597,7 +1597,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.source, 'persisted_vault');
     assert.equal(result.focus, 'domains/auth');
     assert.deepEqual(result.builder, {
-      href: '/ontology/edit/?node=domain%3Aauth',
+      href: '/ontology/studio/?node=domain%3Aauth',
       focusParam: 'domain:auth',
       unsavedDraftsIncluded: false,
     });
@@ -1642,7 +1642,7 @@ describe('queryCompiledOntology', () => {
       'add_relations',
       'patch_concept',
     ]);
-    assert.match(result.agentHandoff.constraints.join('\n'), /unsaved Builder drafts/i);
+    assert.match(result.agentHandoff.constraints.join('\n'), /unsaved Workshop drafts/i);
     assert.match(result.agentHandoff.constraints.join('\n'), /expected_mtime/);
   });
 

@@ -58,8 +58,10 @@ add 중복, remove/replace false-missing, rationale 고아화를 막는다.
 cycle 을 받자마자 title/domain 맥락을 읽을 수 있고, 별도 `get_concept`
 round-trip 없이 어떤 capability 가 순환하는지 판단할 수 있다.
 
-`query_ontology({operation:"builder_context"})` 는 저장된 vault node를 Builder의
-canonical `<kind>:<slug>` focus URL과 bounded neighborhood로 넘긴다. 각 node에는
+`query_ontology({operation:"builder_context"})` 는 저장된 vault node를 현재
+Workshop(`/ontology/studio`)의 canonical `<kind>:<slug>` focus URL과 bounded
+neighborhood로 넘긴다. operation/response key의 `builder` 명칭은 기존 MCP
+client 호환을 위해 유지한다. 각 node에는
 저장된 `canvasPosition`과 write 전 동시성 확인용 `expected_mtime`을 붙이고,
 `unsavedDraftsIncluded:false`로 아직 markdown에 저장되지 않은 UI draft는 MCP가
 볼 수 없다는 경계를 명시한다. handoff는 새 multi-file mutation을 숨기지 않고

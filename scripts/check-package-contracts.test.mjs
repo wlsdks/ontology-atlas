@@ -116,9 +116,9 @@ function runNodeScript(args) {
 }
 
 describe('package contract helpers', () => {
-  it('keeps the root README honest about the five surfaces plus MCP', () => {
+  it('keeps the root README honest about the six work surfaces plus MCP', () => {
     const readme = readFileSync('README.md', 'utf-8');
-    const section = readme.split('## Five surfaces, one vault')[1]?.split('## Agent Workflow')[0] ?? '';
+    const section = readme.split('## Six work surfaces, one vault')[1]?.split('## Agent Workflow')[0] ?? '';
 
     assert.match(section, /\*\*Map\*\*/);
     assert.match(section, /`\/docs`/);
@@ -129,12 +129,14 @@ describe('package contract helpers', () => {
     assert.doesNotMatch(section, /`\/ontology\/edit`/);
     assert.match(section, /`\/ontology\/insights`/);
     assert.match(section, /`\/projects`/);
+    assert.match(section, /`\/git`/);
     assert.match(section, /\*\*MCP server\*\*/);
     assert.match(section, /19 read \+ 13 write/);
     assert.match(section, /Every surface reads and writes the\nsame `\.md` files/);
     assert.doesNotMatch(readme, /## Three views, one vault/);
     assert.doesNotMatch(readme, /## Three views plus MCP, one vault/);
     assert.doesNotMatch(readme, /## Four surfaces, one vault/);
+    assert.doesNotMatch(readme, /## Five surfaces, one vault/);
   });
 
   it('keeps filtered integration scripts discoverable from development checks docs', () => {
@@ -2026,6 +2028,29 @@ describe('package contract helpers', () => {
     assert.doesNotMatch(architecture, /resolveBuilderQueryNodeSlug/);
     assert.doesNotMatch(architecture, /\/ontology\/insights` \| node to focus/);
     assert.doesNotMatch(architecture, /`reader` \| `\/ontology\/edit`/);
+  });
+
+  it('keeps persisted-context handoff and active product docs on Workshop', () => {
+    const readme = readFileSync('README.md', 'utf-8');
+    const features = readFileSync('docs/FEATURES.md', 'utf-8');
+    const activeFeatures = features.split('## 6. What was removed / added')[0];
+    const mcpReadme = readFileSync('mcp/README.md', 'utf-8');
+    const ontologyEngine = readFileSync('mcp/src/ontology-engine.mjs', 'utf-8');
+
+    assert.match(
+      ontologyEngine,
+      /href: `\/ontology\/studio\/\?node=\$\{encodeURIComponent\(focusParam\)\}`/,
+    );
+    assert.match(ontologyEngine, /unsaved Workshop drafts/);
+    assert.doesNotMatch(ontologyEngine, /\/ontology\/edit\/\?node=/);
+    assert.match(readme, /Shape relations in Workshop/);
+    assert.match(readme, /docs\/assets\/readme\/workshop-context\.jpeg/);
+    assert.doesNotMatch(readme, /persisted Builder context/);
+    assert.doesNotMatch(readme, /builder-context\.png/);
+    assert.match(mcpReadme, /`builder_context` \(persisted Workshop focus URL/);
+    assert.match(activeFeatures, /`builder_context` keeps its compatibility operation\/response name but emits the current Workshop focus URL/);
+    assert.doesNotMatch(activeFeatures, /\| `P` \/ `N` \| Builder \|/);
+    assert.doesNotMatch(activeFeatures, /\*\*그래프 \(graph\)\*\*/);
   });
 
   it('keeps CLAUDE.md a thin AGENTS wrapper', () => {
