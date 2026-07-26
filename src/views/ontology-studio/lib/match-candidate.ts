@@ -1,3 +1,4 @@
+import { nameIncludes, normalizeForMatch } from "@/shared/lib/node-name-match";
 import type { CreateCandidate } from "./build-create-node";
 
 /**
@@ -11,20 +12,28 @@ import type { CreateCandidate } from "./build-create-node";
  *
  * AGENTS.md 계약: "title 은 검색/매칭의 단일 진실원". 표시 이름은 화면용 레이어일
  * 뿐 매칭 범위를 **줄여서는 안 된다**. 그래서 후보는 표시 이름과 canonical title
- * 을 함께 들고, 매칭은 둘 다(+ ref) 를 본다.
+ * 을 함께 들고, 매칭은 둘 다(+ 다른 어권 이름 + ref) 를 본다.
  *
- * 정규화: NFC → 소문자 → 앞뒤 공백 제거 → 연속 공백 1칸. 한글은 자소 분리(NFD)
- * 로 들어오는 입력이 있어 NFC 정규화가 필요하다(로컬 vault 파일명 · macOS 클립보드).
+ * 이름 규칙 자체는 `shared/lib/node-name-match` 가 단일 출처다 — 전역 검색과
+ * 이 피커가 같은 규칙을 쓰지 않으면 "피커에선 나오는데 검색에선 안 나온다" 는
+ * 표면 간 불일치가 생긴다(흐름 점검 2026-07-26). 여기서 더하는 것은 `ref`
+ * 하나뿐이다(피커는 frontmatter 에 쓸 슬러그를 직접 아는 사용자도 상대한다).
  */
 
-export function normalizeForMatch(value: string): string {
-  return value.normalize("NFC").toLowerCase().trim().replace(/\s+/g, " ");
-}
+export { normalizeForMatch };
 
 /** 이 후보가 검색어와 일치하는가. 빈 검색어는 모두 통과. */
 export function candidateMatches(candidate: CreateCandidate, query: string): boolean {
   const q = normalizeForMatch(query);
   if (q === "") return true;
-  const haystacks = [candidate.title, candidate.canonicalTitle, candidate.ref];
-  return haystacks.some((text) => text && normalizeForMatch(text).includes(q));
+  const nameMatch = nameIncludes(
+    {
+      // 후보의 `title` 은 현재 로케일의 표시 이름, `canonicalTitle` 이 원문.
+      title: candidate.canonicalTitle ?? candidate.title,
+      display: candidate.title,
+      displayLocales: candidate.displayLocales,
+    },
+    q,
+  );
+  return nameMatch || normalizeForMatch(candidate.ref).includes(q);
 }

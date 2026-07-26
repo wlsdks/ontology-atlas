@@ -424,7 +424,11 @@ export function GlobalSearch({
                 // capability/domain titles in the same list. Demote to mono +
                 // quaternary tone instead of hiding the row — the path is
                 // still the row's only identifying label.
-                const pathLike = node.kind === "element" && isPathLikeTitle(node.title);
+                // 지도·INDEX 가 그리는 이름과 같은 이름으로 결과를 부른다.
+                // 결과 행만 원문 title 을 보이면, 방금 화면에서 읽은 이름으로
+                // 찾아 놓고도 "이게 그 노드가 맞나" 를 다시 대조해야 한다.
+                const label = node.display ?? node.title;
+                const pathLike = node.kind === "element" && isPathLikeTitle(label);
                 return (
                   <Command.Item
                     key={`ontology:${node.id}`}
@@ -447,7 +451,7 @@ export function GlobalSearch({
                           : "text-[color:var(--color-text-primary)]",
                       )}
                     >
-                      <HighlightedText text={node.title} query={isEmptyQuery ? undefined : query} />
+                      <HighlightedText text={label} query={isEmptyQuery ? undefined : query} />
                     </span>
                     {node.summary ? (
                       <span className="hidden min-w-0 max-w-[14rem] truncate text-xs text-[color:var(--color-text-quaternary)] md:block">

@@ -72,6 +72,11 @@ export interface CreateCandidate {
    * 하위 호환을 위해 optional.
    */
   canonicalTitle?: string;
+  /**
+   * `display_<locale>` 원본 전체 — `title` 은 현재 화면 로케일 하나로 좁혀진
+   * 이름이라, 다른 어권 이름으로도 후보를 찾으려면 원본이 필요하다.
+   */
+  displayLocales?: Readonly<Record<string, string>>;
   kind: string;
   /** Folder-prefixed ref the derivation resolves, e.g. `capabilities/mcp-server`. */
   ref: string;
@@ -118,6 +123,7 @@ export function candidateFromNode(node: {
   kind: string;
   title: string;
   display?: string;
+  displayLocales?: Readonly<Record<string, string>>;
 }): CreateCandidate {
   const prefix = `${node.kind}:`;
   const tail = node.id.startsWith(prefix) ? node.id.slice(prefix.length) : slugify(node.id);
@@ -128,6 +134,8 @@ export function candidateFromNode(node: {
     // 표시 이름과 별개로 원문을 함께 싣는다 — 예전엔 여기서 버려져 `display_ko`
     // 가 달린 노드를 원문 title 로 검색할 수 없었다(#66).
     canonicalTitle: node.title,
+    // 다른 어권 이름으로 찾는 사용자를 위해 원본 표시 이름 map 도 그대로 싣는다.
+    displayLocales: node.displayLocales,
     kind: node.kind,
     ref,
   };

@@ -52,7 +52,7 @@ describe('useJustStartVault', () => {
         vault.manifest = { docs: [] };
       }),
     });
-    const { result, rerender } = renderHook(() => useJustStartVault(vault));
+    const { result, rerender } = renderHook(() => useJustStartVault(vault, 'ko'));
 
     await act(async () => {
       await result.current.justStart();
@@ -72,6 +72,8 @@ describe('useJustStartVault', () => {
     await waitFor(() => {
       expect(vault.scaffoldOntology).toHaveBeenCalledTimes(1);
     });
+    // 흐름 점검 2026-07-26 D2 — "그냥 시작하기" 도 화면 언어의 스타터를 만든다.
+    expect(vault.scaffoldOntology).toHaveBeenCalledWith('ko');
     expect(result.current.createdPath).toBe('~/Documents/Ontology Atlas/my-ontology');
   });
 
@@ -82,7 +84,7 @@ describe('useJustStartVault', () => {
     tauriFsMocks.listTauriDirectoryNames.mockResolvedValue(['my-ontology']);
     tauriFsMocks.createTauriVaultHandle.mockReturnValue(fakeHandle('my-ontology-2'));
     const vault = makeVault();
-    const { result } = renderHook(() => useJustStartVault(vault));
+    const { result } = renderHook(() => useJustStartVault(vault, 'ko'));
 
     await act(async () => {
       await result.current.justStart();
@@ -97,7 +99,7 @@ describe('useJustStartVault', () => {
   it('surfaces an error and does not scaffold when the Tauri runtime is unavailable', async () => {
     tauriFsMocks.ensureDefaultVaultParentDir.mockResolvedValue(null);
     const vault = makeVault();
-    const { result } = renderHook(() => useJustStartVault(vault));
+    const { result } = renderHook(() => useJustStartVault(vault, 'ko'));
 
     await act(async () => {
       await result.current.justStart();
@@ -119,7 +121,7 @@ describe('useJustStartVault', () => {
         vault.status = 'error';
       }),
     });
-    const { result, rerender } = renderHook(() => useJustStartVault(vault));
+    const { result, rerender } = renderHook(() => useJustStartVault(vault, 'ko'));
 
     await act(async () => {
       await result.current.justStart();

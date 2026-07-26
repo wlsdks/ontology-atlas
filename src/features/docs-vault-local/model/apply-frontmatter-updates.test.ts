@@ -29,6 +29,41 @@ describe('applyFrontmatterUpdates', () => {
     expect(result).toContain('name: A');
   });
 
+  // 흐름 점검 2026-07-26 후속 확인 — 스타터가 블록 스타일(`capabilities:` +
+  // `  - …`)로 배열을 쓰는데, 키 줄만 치환하던 예전 구현은 옛 항목 줄을
+  // 파일에 남겨 표준 YAML 로 못 읽히는 문서를 만들었다.
+  it('블록 스타일 배열을 교체하면 옛 항목 줄이 남지 않는다', () => {
+    const raw = `---\nkind: domain\ncapabilities:\n  - capabilities/a\n  - capabilities/b\ntitle: T\n---\n\n본문`;
+    const result = applyFrontmatterUpdates(raw, {
+      capabilities: ['capabilities/a', 'capabilities/c'],
+    });
+    expect(result).toBe(
+      `---\nkind: domain\ncapabilities: [capabilities/a, capabilities/c]\ntitle: T\n---\n\n본문`,
+    );
+  });
+
+  it('블록 스타일 배열을 지우면 항목 줄까지 사라진다', () => {
+    const raw = `---\nkind: domain\ncapabilities:\n  - capabilities/a\ntitle: T\n---\n\n본문`;
+    const result = applyFrontmatterUpdates(raw, { capabilities: null });
+    expect(result).toBe(`---\nkind: domain\ntitle: T\n---\n\n본문`);
+  });
+
+  it('건드리지 않은 키의 블록 값은 그대로 둔다', () => {
+    const raw = `---\nkind: domain\ncapabilities:\n  - capabilities/a\ntitle: Old\n---\n\n본문`;
+    const result = applyFrontmatterUpdates(raw, { title: 'New' });
+    expect(result).toBe(
+      `---\nkind: domain\ncapabilities:\n  - capabilities/a\ntitle: New\n---\n\n본문`,
+    );
+  });
+
+  it('블록 객체의 자식 키를 최상위 키로 오인하지 않는다', () => {
+    const raw = `---\nkind: domain\nmeta:\n  title: nested\ntitle: Old\n---\n\n본문`;
+    const result = applyFrontmatterUpdates(raw, { title: 'New' });
+    expect(result).toBe(
+      `---\nkind: domain\nmeta:\n  title: nested\ntitle: New\n---\n\n본문`,
+    );
+  });
+
   it('배열 serialize', () => {
     const raw = `---\nname: A\n---\n\n본문`;
     const result = applyFrontmatterUpdates(raw, {

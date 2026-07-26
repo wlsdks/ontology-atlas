@@ -167,7 +167,7 @@
       "reasonAdjacent": "Neighbor of a neighbor",
       "browseBack": "← Domains",
       "browseNoDomain": "No domain",
-      "browseEmpty": "No nodes to link yet — start with “Create new” below"
+      "browseEmpty": "Nothing left to link here — the other nodes are already linked or don't fit this relation. Make one with “Create new” below"
     },
     "fillSaved": "Linked and saved ‘{title}’.",
     "fillCopied": "Copied the MCP command — paste it into your agent to run.",
@@ -382,7 +382,7 @@
     "cliBridgeCopyAriaLabel": "Copy the bootstrap command to paste in your terminal",
     "sampleSourceAria": "Choose a sample to explore",
     "sampleSourceDogfood": "Explore this tool",
-    "sampleSourceStorefront": "See an example business",
+    "sampleSourceStorefront": "Example business",
     "nodeHint": {
       "action": "Tap a node on the map",
       "reason": "all of it comes from real documents"
