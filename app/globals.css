@@ -293,6 +293,51 @@
   --git-setup-action-height: 36px;
 
   /*
+   * ── 기록 목적지 작업대 (2026-07-27 재설계) ──────────────────────────────
+   *
+   * 소유자 판정: *"이 기록 페이지도 너무 AI느낌나"*. 실측한 원인 중 둘이
+   * 치수였다 — ① 2열을 **무조건** 선언해 두고 우측에 한 줄만 담긴 상태
+   * (1512×950 에서 우측 열 유효 잉크 1행 / 빈 높이 1,010px, 그런데
+   * 세로 구분선은 화면 끝까지) ② 목록 행 높이가 글자 수로 정해져 격자
+   * 리듬이 아무도 고르지 않은 채 흔들림. 둘 다 "컨테이너 치수는 설계
+   * 결정이지 내용물의 부산물이 아니다"(design.md 치수 규칙성)를 어긴 것이다.
+   *
+   * 그래서 이 세 값이 토큰이다 — 하드코딩된 600px 하나가 JSX 안에 있었고,
+   * 나머지 둘은 아예 없어서 내용이 정하고 있었다.
+   */
+
+  /* 증거 열의 최소 폭. 11px mono 80칼럼 ≈ 528px + gutter + padding.
+     구 코드에 `minmax(0,600px)` 로 박혀 있던 값의 토큰화 — 이 폭 아래로
+     내려가면 모든 줄이 잘리고 **잘린 diff 는 증거가 아니다**. */
+  --git-evidence-min: 600px;
+
+  /* 변경 목록 행 높이. 반복 세트라 내용 길이가 높이를 정하면 안 된다 —
+     이름은 클램프하고 자리를 지킨다. 26px 는 12.5px 본문 + 상하 광학
+     여유이고, 터치에서는 아래 coarse 블록이 44px 로 승격한다. */
+  --git-row-h: 26px;
+
+  /* 걸음 행 높이 — 같은 이유(반복 세트). 요약 한 줄 + 이름 한 줄이므로
+     변경 행보다 한 단 높다. */
+  --git-step-h: 44px;
+
+  /* 목록 행 등장의 계단 간격. 15행이 한꺼번에 켜지면 "화면이 새로 그려짐"
+     이고, 순서대로 켜지면 "목록이 채워짐" 이다. 8행까지만 계단을 밟고
+     그 뒤는 같은 프레임에 도착한다(총 지연 상한 112ms). */
+  --git-row-stagger: 14ms;
+
+  /* `<lg` 에서 증거가 목록 **아래로** 쌓일 때의 상한. 위에 있는 목록과 주
+     동작이 화면 밖으로 밀려나면 안 되므로 증거가 페이지를 통째로 먹지 못하게
+     한다(안에서 스크롤한다). lg+ 에서는 자기 열의 높이를 그대로 쓴다. */
+  --git-evidence-stack-max: 460px;
+
+  /* 단일 기둥 작업면의 폭 — 증거 열이 없을 때(다 남겼거나, 보여줄 바뀐 줄도
+     지난 걸음도 없을 때) 쓴다. 1216px 전폭을 그대로 쓰면 3필드 행은 필드
+     사이가 벌어져 한 걸음으로 안 읽히고, 한 줄짜리 목록은 24자를 담은 1176px
+     카드가 된다(Tufte data-ink 역전: 보더 잉크 > 내용 잉크). */
+  --git-single-measure: 920px;
+
+
+  /*
    * ── Phase 2 색 완전 토큰화 (2026-07-20) ─────────────────────────────
    * Design Guardian verdict: .qa-scratch/audit-2026-07/guardian-color-verdict.md
    * 원 매핑: .qa-scratch/audit-2026-07/remaining-color-map.md
@@ -754,6 +799,27 @@
      제안이지 알림이 아니다. */
   .agent-next-step-in {
     animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
+  /* ── 기록 작업대의 등장 (2026-07-27) ──────────────────────────────────────
+     이 목적지에는 모션이 **0** 이었다: 탭을 눌러도, 목록이 도착해도, 남긴
+     뒤 화면이 다른 상태가 되어도 전부 1프레임 하드컷이었다. 그런데 이
+     화면에서 모션은 장식이 아니라 인과다 — 방금 남겼는데 목록이 사라지고
+     걸음이 나타나면, 정적 화면은 "내가 남겨서" 와 "화면이 새로 그려져서" 를
+     구분해 주지 않는다.
+
+     클래스는 하나뿐이다: 등장은 다 같은 등장이어야 하고, 클래스가 여러 개면
+     같은 종류의 등장이 서로 다른 커브를 얻는다. 새 키프레임 0
+     (`panelCrossfadeIn` 재사용) · 새 duration 0(`--motion-fast` 재사용) ·
+     이동축 0.
+
+     `--git-row-index` 를 소비처가 주면 계단으로 도착한다(간격은
+     `--git-row-stagger` 토큰). 지연은 duration 이 아니라 delay 라서
+     감속 사용자에게도 남는데, 8행 상한이라 총합이 112ms 를 넘지 않고
+     아래 base 레이어가 그마저 0 으로 되돌린다. */
+  .git-fade-in {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+    animation-delay: calc(var(--git-row-index, 0) * var(--git-row-stagger));
   }
 
 
@@ -2499,6 +2565,11 @@
          이 페이지가 하는 유일한 일이 그 버튼이라, 터치에서 36px 로 남으면
          페이지 전체가 목적을 잃는다. */
       --git-setup-action-height: var(--touch-target-min);
+      /* 작업대의 변경 행은 **누를 수 있는 행**이다(누르면 그 개념의 바뀐 줄이
+         증거 열에 온다). 26px 데스크톱 밀도를 터치에 그대로 넘기면 옆 행을
+         누르게 된다 — 폭이 아니라 포인터가 정한다(design.md 터치 계약). */
+      --git-row-h: var(--touch-target-min);
+      --git-step-h: max(44px, var(--touch-target-min));
     }
   }
 
@@ -2729,6 +2800,14 @@
     .overlay-fade-only[data-state='open'],
     .overlay-fade-only[data-state='closed'] {
       animation-duration: var(--motion-fast) !important;
+    }
+
+    /* 기록 작업대 — 흔들리는 축이 없으므로 시간은 지키고 **계단만** 걷어낸다.
+       계단은 "순서" 를 말하는 장치지 인과를 말하는 장치가 아니라서, 감속
+       사용자에게는 목록이 한 번에 도착하는 편이 낫다. */
+    .git-fade-in {
+      animation-duration: var(--motion-fast) !important;
+      animation-delay: 0ms !important;
     }
 
     .app-settings-scrim-in {

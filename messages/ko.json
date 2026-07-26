@@ -2937,7 +2937,20 @@
     "stepCurrentA11y": "지금 할 일",
     "noVaultTitle": "먼저 기록할 폴더를 고르세요",
     "noVaultBody": "문서함에서 폴더를 고르면, 그 폴더의 변경을 여기서 바로 기록할 수 있어요.",
-    "noVaultAction": "폴더 고르기"
+    "noVaultAction": "폴더 고르기",
+    "conceptsTitle": "바뀐 개념",
+    "conceptsCount": "개념 {count}개",
+    "othersTitle": "그 밖의 파일 {count}개",
+    "othersHint": "개념 문서가 아니에요. 함께 남지만 여기서 읽을 건 없어요.",
+    "stepsTab": "지난 걸음",
+    "stepsCount": "걸음 {count}개",
+    "diffAllLabel": "바뀐 개념 전체",
+    "diffSkippedHint": "이 사이에는 바뀌지 않은 줄이 있어요",
+    "stepNoConcepts": "개념 변경 없음",
+    "rowSelectHint": "누르면 이 문서의 바뀐 줄을 옆에서 보여줘요",
+    "remoteToggle": "보낼 곳 등록하기",
+    "remoteToggleClose": "주소 입력 닫기",
+    "stepSelectHint": "누르면 이 걸음의 자세한 값을 볼 수 있어요"
   },
   "agentFiles": {
     "header": "에이전트 파일",

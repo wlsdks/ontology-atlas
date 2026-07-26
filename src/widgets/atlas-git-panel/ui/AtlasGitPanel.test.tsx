@@ -165,10 +165,21 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
 
     // #85 — 이력은 증거 pane 의 두 번째 탭이다(좌: 무엇을 남길까 / 우: 증거).
     fireEvent.click(screen.getByTestId("atlas-git-history-tab"));
-    expect(screen.getByTestId("atlas-git-history-item")).toHaveTextContent(
+    const step = screen.getByTestId("atlas-git-history-item");
+    // 2026-07-27 — 걸음 요약은 **사람 말**로 읽힌다. 커밋 제목
+    // `ontology snapshot: +1 concept (…)` 은 우리가 만든 문자열이고, 그걸
+    // 한국어 화면에서 원문으로 읽히는 것은 우리가 만든 문자열을 우리가
+    // 번역하지 않은 것이다.
+    expect(step).toHaveTextContent("추가 1");
+    expect(step).toHaveTextContent("capabilities/foo");
+    expect(step).toHaveTextContent("abc1234");
+    expect(step).not.toHaveTextContent("ontology snapshot");
+
+    // 다만 원문은 사라지지 않는다 — 펼치면 감사 흔적으로 그대로 있다.
+    fireEvent.click(step);
+    expect(screen.getByTestId("atlas-git-history-detail")).toHaveTextContent(
       "ontology snapshot: +1 concept (capabilities/foo)",
     );
-    expect(screen.getByTestId("atlas-git-history-item")).toHaveTextContent("abc1234");
   });
 
   it("does NOT invoke git_snapshot before the explicit confirm click (신뢰 헌장 — 자동 실행 0)", async () => {
@@ -293,8 +304,16 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    const setup = await screen.findByTestId("atlas-git-remote-setup");
-    expect(setup).toHaveTextContent("지금은 이 컴퓨터에만 쌓이고 있어요");
+    // 2026-07-27 — **사실은 크롬에, 입력은 온디맨드로.** 이전에는 같은 사실이
+    // 좌측 앰버 레일이 붙은 둥근 카드로 콘텐츠 **위에** 상주해, 기록을 보러
+    // 온 사용자의 첫 인상이 설정 권유였다(헌장 금지 패턴 + 앰버 확장).
+    const location = await screen.findByTestId("atlas-git-location");
+    expect(location).toHaveTextContent("지금은 이 컴퓨터에만 쌓이고 있어요");
+    // 입력칸은 아직 없다 — 상주하지 않는다.
+    expect(screen.queryByTestId("atlas-git-remote-setup")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("atlas-git-remote-toggle"));
+    expect(screen.getByTestId("atlas-git-remote-setup")).toBeInTheDocument();
 
     // 빈 입력으로는 보낼 수 없다.
     expect(screen.getByTestId("atlas-git-remote-submit")).toBeDisabled();
@@ -488,7 +507,12 @@ describe("AtlasGitPanel — 연결 셋업 모드", () => {
 });
 
 describe("AtlasGitPanel — 작업대 빈 상태", () => {
-  it("다 남긴 상태에서는 증거 pane 이 최근 기록으로 착지한다 (빈 우측 열 방지)", async () => {
+  it("다 남긴 상태에서는 빈 열을 만들지 않는다 — 지난 걸음이 본문이 된다", async () => {
+    // 이 테스트의 계약은 2026-07-27 에 **더 세졌다**. 이전 계약은 "빈 우측 열
+    // 방지 = 우측 탭을 최근 기록으로 착지시킨다" 였는데, 그건 증상 처리였다:
+    // 열은 여전히 있었고 세로 구분선도 화면 끝까지 그어져 있었다(소유자 실측
+    // "화면의 절반이 빈 공간"). 지금은 **열 자체를 만들지 않는다** —
+    // 이 순간 사용자의 일이 "되짚기" 하나뿐이라 화면도 하나만 말한다.
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, changedCount: 0 },
       diff: { count: 0, files: [], diff: "" },
@@ -496,9 +520,93 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
     });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    // 사용자가 아무것도 안 골랐는데도 오른쪽에 방금 남긴 걸음이 보인다.
-    expect(await screen.findByTestId("atlas-git-history-item")).toBeInTheDocument();
-    expect(screen.getByTestId("atlas-git-history-tab")).toHaveAttribute("aria-pressed", "true");
+    const workbench = await screen.findByTestId("atlas-git-workbench");
+    expect(workbench).toHaveAttribute("data-shape", "recall");
+    // 걸음이 본문이다.
+    expect(screen.getByTestId("atlas-git-history-item")).toBeInTheDocument();
+    // 그리고 빈 증거 열이 없다 — 열의 존재는 내용의 존재를 약속한다.
+    expect(screen.queryByTestId("atlas-git-evidence")).not.toBeInTheDocument();
+  });
+
+  it("남길 것이 있으면 두 열이 되고, 증거 열은 보여줄 것이 있을 때만 온다", async () => {
+    // 소유자 스크린샷의 그 순간: 새로 만든 문서 하나 + 첫 걸음 전 → 바뀐 줄도
+    // 지난 걸음도 없다. 구 화면은 그래도 2열을 선언해 오른쪽에 한 줄
+    // ("새로 만든 문서라 비교할 예전 내용이 없어요")만 띄우고 세로 구분선을
+    // 화면 끝까지 그었다.
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, changedCount: 1 },
+      diff: { count: 1, files: [DIFF_WITH_CHANGES.files[0]], diff: "" },
+      history: [],
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    const workbench = await screen.findByTestId("atlas-git-workbench");
+    expect(workbench).toHaveAttribute("data-shape", "decide");
+    expect(screen.queryByTestId("atlas-git-evidence")).not.toBeInTheDocument();
+    // 판단 대상은 그대로 있다.
+    expect(screen.getByTestId("atlas-git-change-groups")).toHaveTextContent("capabilities/foo");
+  });
+
+  it("개념이 아닌 파일은 접혀서 온다 — 판단 대상이 아니다", async () => {
+    installDesktopGit({
+      diff: {
+        count: 3,
+        files: [
+          ...DIFF_WITH_CHANGES.files,
+          { path: ".gitignore", status: "modified", kind: null, slug: ".gitignore", renamedFrom: null },
+        ],
+        diff: DIFF_WITH_CHANGES.diff,
+      },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    const toggle = await screen.findByTestId("atlas-git-others-toggle");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByTestId("atlas-git-change-groups")).not.toHaveTextContent(".gitignore");
+
+    fireEvent.click(toggle);
+    expect(screen.getByTestId("atlas-git-change-groups")).toHaveTextContent(".gitignore");
+  });
+
+  it("행을 고르면 그 문서의 바뀐 줄만 증거 열에 온다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    // 고르기 전 기본값은 "전부" 다 — 아무도 요청하지 않은 빈 칸을 만들지 않는다.
+    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("new line");
+
+    const rows = screen.getAllByTestId("atlas-git-change-row");
+    // capabilities/foo 는 추적 전 새 파일이라 diff 본문이 없다.
+    fireEvent.click(rows[0]);
+    expect(screen.queryByTestId("atlas-git-diff-pre")).not.toBeInTheDocument();
+    expect(screen.getByText("새로 만든 문서라 비교할 예전 내용이 없어요.")).toBeInTheDocument();
+
+    // 다시 누르면 선택이 풀린다 — 되돌아갈 길이 같은 자리에 있다.
+    fireEvent.click(rows[0]);
+    expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("new line");
+  });
+
+  it("증거 열이 git 배관을 그대로 쏟지 않는다", async () => {
+    installDesktopGit({
+      diff: {
+        ...DIFF_WITH_CHANGES,
+        diff:
+          "diff --git a/docs/elements/bar.md b/docs/elements/bar.md\n" +
+          "index 22ffa01..90c1d3e 100644\n" +
+          "--- a/docs/elements/bar.md\n" +
+          "+++ b/docs/elements/bar.md\n" +
+          "@@ -3,7 +3,7 @@ kind: element\n" +
+          "-title: 옛 이름\n" +
+          "+title: 새 이름\n",
+      },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    const pane = await screen.findByTestId("atlas-git-diff-pre");
+    expect(pane).toHaveTextContent("새 이름");
+    expect(pane).not.toHaveTextContent("diff --git");
+    expect(pane).not.toHaveTextContent("22ffa01");
+    expect(pane).not.toHaveTextContent("@@");
   });
 
   it("`모두 남겼어요` 를 화면에 두 번 쓰지 않는다", async () => {
