@@ -16,6 +16,8 @@ const labels: DomainCouplingCardLabels = {
   title: "Domain coupling",
   emptyTitle: "Not enough coupling data yet",
   emptyDescription: "Needs 2+ domains and a cross-domain relation.",
+  emptyAction: "Connect concepts in the workshop",
+  emptyActionHref: "/ontology/studio/",
   pairsUnit: "pairs",
   boundaryTitle: "Boundary pressure",
   boundarySelfLabel: "self",
@@ -123,5 +125,10 @@ describe("DomainCouplingCard", () => {
     expect(screen.getByTestId("domain-coupling-empty")).toBeInTheDocument();
     expect(screen.getByText("Not enough coupling data yet")).toBeInTheDocument();
     expect(screen.queryByTestId("domain-coupling-pair")).toBeNull();
+    // 빈 방 금지 — 설명만 두지 않고 다음 한 걸음을 함께 준다.
+    expect(screen.getByTestId("domain-coupling-empty-action")).toHaveAttribute(
+      "href",
+      "/ontology/studio/",
+    );
   });
 });

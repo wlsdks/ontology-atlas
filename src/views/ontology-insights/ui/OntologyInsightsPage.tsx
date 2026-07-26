@@ -56,13 +56,11 @@ import {
 } from "../lib/review-loop";
 import { computeCensusHealth } from "../lib/census-health";
 import { buildVaultHealthRepair } from "../lib/vault-health-repair";
-import { buildDependsOnRows } from "../lib/depends-on-rows";
-import { buildHubEgoThumbnail } from "../lib/hub-ego-thumbnail";
 import { buildDomainCouplingSummary } from "../lib/domain-coupling-rows";
 import { FRESHNESS_WINDOW_WEEKS, computeFreshnessSummary } from "../lib/freshness";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { DoNextTab, type DoNextTouchUp } from "./tabs/DoNextTab";
-import { RelationsTab, type RelationHubRow } from "./tabs/RelationsTab";
+import { ConnectionsTab, type ConnectionHubRow } from "./tabs/ConnectionsTab";
 import { DomainCouplingCard } from "./tabs/DomainCouplingCard";
 import { FreshnessTab } from "./tabs/FreshnessTab";
 import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
@@ -70,25 +68,45 @@ import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
 const EMPTY_NODES: KnowledgeGraphNode[] = [];
 const EMPTY_EDGES: KnowledgeGraphEdge[] = [];
 const HUB_DISPLAY_LIMIT = 6;
-const DEPENDS_ON_DISPLAY_LIMIT = 5;
 const RECENT_UPDATES_LIMIT = 8;
 
+/** 탭이 답하는 질문을 에이전트의 실행 계획으로 그대로 옮긴 것. */
 const HANDOFF_PAYLOAD: Record<InsightsTab, string> = {
   "do-next": 'query_ontology({operation:"maintenance_plan"}) → 항목별 실행 → query_ontology({operation:"health"}) 로 재확인',
-  structure: 'query_ontology({operation:"health"}) → query_ontology({operation:"match_edges", type:"depends_on"}) → query_ontology({operation:"blast_radius", slug:"<hub-slug>"})',
+  composition: 'list_kinds({}) → query_ontology({operation:"overview"}) → 빈 정의는 validate_vault({}) 의 warnings 로 확인',
+  connections: 'query_ontology({operation:"centrality"}) → query_ontology({operation:"blast_radius", slug:"<hub-slug>"})',
+  boundaries: 'query_ontology({operation:"domain_matrix"}) → 교차 예시는 query_ontology({operation:"match_edges"})',
   freshness: 'query_ontology({operation:"maintenance_plan"}) → find_orphans({}) → query_ontology({operation:"growth_plan"})',
 };
 
+interface InsightsBadgeInput {
+  verdictTotal: number;
+  totalNodes: number;
+  totalEdges: number;
+  crossDomainEdges: number;
+  freshnessWindow: string;
+}
+
+/** 탭 배지가 세는 대상 — 탭이 답하는 질문의 규모와 같은 단위여야 한다. */
+const INSIGHTS_TAB_BADGE: Record<InsightsTab, (input: InsightsBadgeInput) => string | number> = {
+  "do-next": (i) => i.verdictTotal,
+  composition: (i) => i.totalNodes,
+  connections: (i) => i.totalEdges,
+  boundaries: (i) => i.crossDomainEdges,
+  freshness: (i) => i.freshnessWindow,
+};
+
 /**
- * `/ontology/insights` — 그래프 인사이트, 3-tab 계기판 (RATIO-SYSTEM 최종
- * 라운드, `docs/prototypes/insights-final.html` 승인안).
+ * `/ontology/insights` — 그래프 인사이트 정비 보드. 하단에 agent handoff 1행.
  *
- * 탭1 개요 · 탭2 관계 · 탭3 신선도 + 하단 agent handoff 1행. 이전 라운드의
- * 4-tab 리더 페르소나 시스템(proof/collaboration/agent/census — reader
- * intent 프리셋, session proof strip, collaborator brief, query recipe
- * cockpit)은 승인된 최종 목업에 없어 제거됐다. 모든 숫자는 이 페이지가 이미
- * 쓰던 데이터 소스(`useOntologyInsight`, `shared/lib/ontology-tree`)에서
- * 유도 — census 공식(총 노드/엣지/도메인 수)은 토폴로지 크롬과 동일하다.
+ * 탭은 **질문 하나에 탭 하나**다: 할 일(지금 뭘 손보나) · 구성(뭐가 얼마나
+ * 있나) · 연결(뭐가 중심인가) · 경계(도메인 사이가 얼마나 엮였나) · 신선도
+ * (어디가 움직였나). 구 `구조` 탭은 앞의 세 질문을 한 방에 쌓아 뷰포트의
+ * 2.2배로 자랐다 — 한 질문에 답하려고 무관한 두 화면을 지나쳐야 했다.
+ *
+ * 모든 숫자는 이 페이지가 이미 쓰던 데이터 소스(`useOntologyInsight`,
+ * `shared/lib/ontology-tree`)에서 유도 — census 공식(총 노드/엣지/도메인 수)은
+ * 토폴로지 크롬과 동일하다.
  */
 export function OntologyInsightsPage() {
   const t = useTranslations("ontologyPages.insights");
@@ -215,18 +233,13 @@ export function OntologyInsightsPage() {
     [healthSignals, healthRepair, mapNodeHref],
   );
 
-  const dependsOnRows = useMemo(
-    () => buildDependsOnRows(nodes, edges, DEPENDS_ON_DISPLAY_LIMIT),
-    [nodes, edges],
-  );
-
   // 랭크 #12 (14-lens audit) — computeDomainCouplingMatrix 는 이미 존재하고
   // 단위 테스트도 있었지만 어떤 UI 소비자도 없었다(CLI/MCP 왕복으로만 확인
   // 가능). 구조 탭에 "도메인 결합" 카드로 처음 표면화.
   const domainCoupling = useMemo(() => buildDomainCouplingSummary(nodes, edges), [nodes, edges]);
 
   const hubRanking = useMemo(() => rankAllByDegree(nodes, edges), [nodes, edges]);
-  const hubs = useMemo<RelationHubRow[]>(
+  const hubs = useMemo<ConnectionHubRow[]>(
     () =>
       hubRanking.slice(0, HUB_DISPLAY_LIMIT).map(({ node, degree }) => ({
         id: node.id,
@@ -234,9 +247,8 @@ export function OntologyInsightsPage() {
         title: node.display ?? node.title,
         kind: node.kind,
         degree,
-        thumbnail: buildHubEgoThumbnail(node.id, nodes, edges),
       })),
-    [hubRanking, nodes, edges],
+    [hubRanking],
   );
 
   const freshness = useMemo(
@@ -433,22 +445,23 @@ export function OntologyInsightsPage() {
     capabilityUnit: kindLabel("capability"),
     elementUnit: kindLabel("element"),
   };
-  const relationsLabels = {
+  const connectionsLabels = {
     relationTypesTitle: t("relationTypesTitle"),
-    topDependsOnTitle: t("topDependsOnTitle"),
-    noDependsOn: t("noDependsOn"),
-    noDependsOnHint: t("noDependsOnHint"),
+    relationTypesCaption: t("relationTypesCaption"),
+    noRelationTypes: t("noRelationTypes"),
+    noRelationTypesHint: t("noRelationTypesHint"),
     hubsTitle: t("hubsTitle"),
     noHubs: t("noHubs"),
     noHubsHint: t("noHubsHint"),
-    connectionsUnit: t("connectionsUnit"),
     hubTruncated: (shown: number, total: number) => t("hubTruncated", { shown, total }),
-    hubThumbnailCaption: t("hubThumbnailCaption"),
+    hubDegreeCaption: t("hubDegreeCaption"),
   };
   const domainCouplingLabels = {
     title: t("domainCouplingTitle"),
     emptyTitle: t("domainCouplingEmptyTitle"),
     emptyDescription: t("domainCouplingEmptyDescription"),
+    emptyAction: t("domainCouplingEmptyAction"),
+    emptyActionHref: "/ontology/studio/",
     pairsUnit: t("domainCouplingPairsUnit"),
     boundaryTitle: t("domainCouplingBoundaryTitle"),
     boundarySelfLabel: t("domainCouplingSelfLabel"),
@@ -587,16 +600,18 @@ export function OntologyInsightsPage() {
             items={INSIGHTS_TABS.map((key) => ({
               key,
               label: t(`tab.${key}`),
-              count:
-                key === "do-next"
-                  // #63 — 배지는 단일 판정 모델(`insights-verdict`)에서 나온다.
-                  // 예전엔 do-next 통계 신호만 세고 CLI-parity 신호(분리된 섬 ·
-                  // 누락된 연결)를 빠뜨려, 수리 큐가 1건을 보여주는데 배지는 0
-                  // 이라고 말하는 모순이 났다.
-                  ? insightsVerdict.total
-                  : key === "structure"
-                    ? totalNodes
-                    : `${FRESHNESS_WINDOW_WEEKS}${t("weeksUnit")}`,
+              // 배지는 그 탭이 답하는 질문의 규모 — 탭마다 세는 대상이 다르다.
+              // #63 — 할 일 배지는 단일 판정 모델(`insights-verdict`)에서 나온다.
+              // 예전엔 do-next 통계 신호만 세고 CLI-parity 신호(분리된 섬 ·
+              // 누락된 연결)를 빠뜨려, 수리 큐가 1건을 보여주는데 배지는 0
+              // 이라고 말하는 모순이 났다.
+              count: INSIGHTS_TAB_BADGE[key]({
+                verdictTotal: insightsVerdict.total,
+                totalNodes,
+                totalEdges,
+                crossDomainEdges: domainCoupling.crossDomainEdgeCount,
+                freshnessWindow: `${FRESHNESS_WINDOW_WEEKS}${t("weeksUnit")}`,
+              }),
             }))}
           />
         </nav>
@@ -660,11 +675,7 @@ export function OntologyInsightsPage() {
                 labels={doNextLabels}
               />
             ) : null}
-            {tab === "structure" ? (
-              /* 구조 탭은 두 컴포넌트(개요 그리드 + 관계 그리드)를 세로로 잇는다 —
-                 수평 카드 갭과 같은 --card-gap 으로 수직 리듬을 맞춰 4카드가
-                 한 클러스터로 읽히게 한다(갭 0 이면 카드 보더가 맞붙는다). */
-              <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
+            {tab === "composition" ? (
               <OverviewTab
                 totalNodes={totalNodes}
                 totalEdges={totalEdges}
@@ -675,11 +686,12 @@ export function OntologyInsightsPage() {
                 kindLabel={kindLabel}
                 labels={overviewLabels}
               />
-              <RelationsTab
+            ) : null}
+            {tab === "connections" ? (
+              <ConnectionsTab
                 edgeTypeRows={edgeTypeRows}
                 totalEdges={totalEdges}
                 edgeTypeLabel={edgeTypeLabel}
-                dependsOnRows={dependsOnRows}
                 hubs={hubs}
                 hubTotalCount={hubRanking.length}
                 kindLabel={kindLabel}
@@ -687,12 +699,10 @@ export function OntologyInsightsPage() {
                   href: mapNodeHref,
                   ariaLabel: (title) => t("hubRowAriaLabel", { title }),
                 }}
-                dependsOnLink={{
-                  href: mapNodeHref,
-                  ariaLabel: (title) => t("hubRowAriaLabel", { title }),
-                }}
-                labels={relationsLabels}
+                labels={connectionsLabels}
               />
+            ) : null}
+            {tab === "boundaries" ? (
               <DomainCouplingCard
                 domainCount={domainCoupling.domainCount}
                 crossDomainEdgeCount={domainCoupling.crossDomainEdgeCount}
@@ -707,7 +717,6 @@ export function OntologyInsightsPage() {
                 }}
                 labels={domainCouplingLabels}
               />
-              </div>
             ) : null}
             {tab === "freshness" ? (
               <FreshnessTab

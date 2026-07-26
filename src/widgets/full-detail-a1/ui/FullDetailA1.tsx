@@ -34,7 +34,7 @@ import { FullDetailA1ReachPanel } from "./full-detail-a1-reach-panel";
  * single flat page: header → ONE engraved metric strip → four full
  * direction groups → reach sentence instrument → agent handoff row → body.
  *
- * Shared between two entry points: the topology datasheet's "전체 상세 →"
+ * Shared between two entry points: the topology datasheet's "전체 상세"
  * opt-in (`HomePage.tsx`) and the `/ontology` page's node detail
  * (`OntologyViewPage.tsx`) — both feed the SAME `groups`/`reach` facts built
  * by `buildFullDetailGroups`/`buildFullDetailReachModel` (lib/), so the

@@ -8,6 +8,9 @@ export interface DomainCouplingCardLabels {
   title: string;
   emptyTitle: string;
   emptyDescription: string;
+  /** 빈 상태에서 내미는 다음 한 걸음 — 설명만 있고 갈 곳이 없으면 빈 방이다. */
+  emptyAction: string;
+  emptyActionHref: string;
   pairsUnit: string;
   boundaryTitle: string;
   boundarySelfLabel: string;
@@ -72,6 +75,13 @@ export function DomainCouplingCard({
       >
         <p className="text-body-lg font-medium text-[color:var(--color-text-primary)]">{labels.emptyTitle}</p>
         <p className="mt-1.5 text-body text-[color:var(--color-text-tertiary)]">{labels.emptyDescription}</p>
+        <Link
+          href={labels.emptyActionHref}
+          data-testid="domain-coupling-empty-action"
+          className="mt-3 inline-flex rounded-md text-body text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)] hover:underline"
+        >
+          {labels.emptyAction}
+        </Link>
       </section>
     );
   }

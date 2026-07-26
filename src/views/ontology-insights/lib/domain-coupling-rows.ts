@@ -51,8 +51,7 @@ export interface DomainCouplingSummary {
  * `computeDomainCouplingMatrix` (shared/lib, 이미 MCP `domain_matrix` 와 같은
  * 계산) 를 이 탭이 그대로 그릴 수 있는 view row 로 재구성. 알고리즘은 건드리지
  * 않고 — 노드 제목 조회 + self/cross 비율 산술만 이 레이어에서 더한다
- * (기존 depends-on-rows.ts / hub-ego-thumbnail.ts 와 같은 "raw matrix →
- * presentational row" 패턴).
+ * ("raw matrix → presentational row" 패턴).
  */
 export function buildDomainCouplingSummary(
   nodes: readonly KnowledgeGraphNode[],
