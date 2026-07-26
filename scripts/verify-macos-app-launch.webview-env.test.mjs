@@ -14,6 +14,7 @@ test("WebView verification env patch carries route, drag, composer, and requeste
   assert.deepEqual(
     webviewVerifyEnvPatch({
       requireWebviewRoute: "/en/topology/",
+      webviewFixtureVaultPath: "/tmp/atlas-fixture",
       verifyTopologyDrag: true,
       verifyTopologySelectedRelation: true,
       verifyTopologyNodePopover: true,
@@ -24,6 +25,7 @@ test("WebView verification env patch carries route, drag, composer, and requeste
     {
       ONTOLOGY_ATLAS_VERIFY_WEBVIEW: "1",
       ONTOLOGY_ATLAS_VERIFY_ROUTE: "/en/topology/",
+      ONTOLOGY_ATLAS_VERIFY_VAULT: "/tmp/atlas-fixture",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG: "1",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_SELECTED_RELATION: "1",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_NODE_POPOVER: "1",

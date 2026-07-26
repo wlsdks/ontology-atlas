@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import path from "node:path";
 import test from "node:test";
 import {
   normalizeWebviewRoute,
@@ -24,6 +25,7 @@ test("verify app launch args keep executable launch defaults", () => {
       requireFrontmost: false,
       requireWebviewContent: true,
       requireWebviewRoute: null,
+      webviewFixtureVaultPath: null,
       verifyTopologyDrag: false,
       verifyTopologySelectedRelation: false,
       verifyTopologyNodePopover: false,
@@ -67,6 +69,7 @@ test("verify app launch args keep LaunchServices dogfood compatible with window 
       requireFrontmost: false,
       requireWebviewContent: false,
       requireWebviewRoute: null,
+      webviewFixtureVaultPath: null,
       verifyTopologyDrag: false,
       verifyTopologySelectedRelation: false,
       verifyTopologyNodePopover: false,
@@ -103,6 +106,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--require-frontmost",
       "--require-webview-content",
       "--require-webview-route=/en/topology/",
+      "--webview-fixture-vault=docs/ontology",
       "--verify-topology-drag",
       "--verify-topology-create-node",
       "--verify-topology-focus-noop",
@@ -131,6 +135,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       requireFrontmost: true,
       requireWebviewContent: true,
       requireWebviewRoute: "/en/topology/",
+      webviewFixtureVaultPath: path.resolve("docs/ontology"),
       verifyTopologyDrag: true,
       verifyTopologySelectedRelation: false,
       verifyTopologyNodePopover: false,
@@ -180,6 +185,7 @@ test("verify app launch args normalize direct WebView route checks and allow rou
       requireFrontmost: false,
       requireWebviewContent: true,
       requireWebviewRoute: "/en/topology/",
+      webviewFixtureVaultPath: null,
       verifyTopologyDrag: false,
       verifyTopologySelectedRelation: false,
       verifyTopologyNodePopover: false,

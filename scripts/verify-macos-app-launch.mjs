@@ -143,6 +143,7 @@ async function verifyExecutableLaunch({
   requireFrontmost,
   requireWebviewContent,
   requireWebviewRoute,
+  webviewFixtureVaultPath,
   verifyTopologyDrag,
   verifyTopologySelectedRelation,
   verifyTopologyNodePopover,
@@ -169,6 +170,7 @@ async function verifyExecutableLaunch({
           ...process.env,
           ...webviewVerifyEnvPatch({
             requireWebviewRoute,
+            webviewFixtureVaultPath,
             verifyTopologyDrag,
             verifyTopologySelectedRelation,
             verifyTopologyNodePopover,
@@ -227,6 +229,7 @@ async function verifyExecutableLaunch({
   if (requireWebviewContent) {
     const validationOptions = {
       expectedPath: requireWebviewRoute,
+      expectedFixtureVault: webviewFixtureVaultPath,
       minWebviewSize,
       maxWebviewSize,
       requireTopologyDrag: verifyTopologyDrag,
@@ -346,6 +349,7 @@ async function main() {
     requireFrontmost,
     requireWebviewContent,
     requireWebviewRoute,
+    webviewFixtureVaultPath,
     verifyTopologyDrag,
     verifyTopologySelectedRelation,
     verifyTopologyNodePopover,
@@ -416,6 +420,20 @@ async function main() {
   }
   if (requireWebviewRoute && openApp) {
     fail("--require-webview-route is only supported for direct executable launch; omit --open-app.");
+  }
+  if (webviewFixtureVaultPath && openApp) {
+    fail("--webview-fixture-vault is only supported for direct executable launch; omit --open-app.");
+  }
+  if (webviewFixtureVaultPath) {
+    let fixtureStat = null;
+    try {
+      fixtureStat = fs.statSync(webviewFixtureVaultPath);
+    } catch {
+      fail(`--webview-fixture-vault does not exist: ${webviewFixtureVaultPath}`);
+    }
+    if (!fixtureStat?.isDirectory()) {
+      fail(`--webview-fixture-vault must point at a directory: ${webviewFixtureVaultPath}`);
+    }
   }
   if (requireWebviewReducedMotion && openApp) {
     fail("--require-webview-reduced-motion is only supported for direct executable launch; omit --open-app.");
@@ -544,6 +562,7 @@ async function main() {
         requireFrontmost,
         requireWebviewContent,
         requireWebviewRoute: normalizedWebviewRoute,
+        webviewFixtureVaultPath,
         verifyTopologyDrag,
         verifyTopologySelectedRelation,
         verifyTopologyNodePopover,

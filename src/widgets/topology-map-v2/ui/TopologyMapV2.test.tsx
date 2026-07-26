@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TopologyMapV2, type TopologyMapV2Props } from "./TopologyMapV2";
@@ -41,6 +41,82 @@ describe("TopologyMapV2", () => {
   it("defaults to data-minimal=false when minimal is omitted", () => {
     render(<TopologyMapV2 {...baseProps} />);
     expect(screen.getByTestId("topology-map-v2")).toHaveAttribute("data-minimal", "false");
+  });
+
+  it("selects an incident canvas edge through the installed-app verifier event", () => {
+    const onSelectEdge = vi.fn();
+    const onVerified = vi.fn();
+    window.addEventListener("ontology-atlas:verify-edge-selected", onVerified);
+
+    render(
+      <TopologyMapV2
+        {...baseProps}
+        focus={{ selectedSlug: "domain:views" }}
+        nodes={[
+          {
+            id: "domain:views",
+            label: "Views",
+            kind: "domain",
+            size: 1,
+            x: 0,
+            y: 0,
+            isHub: false,
+            ownerKey: null,
+            recentlyUpdated: false,
+            fullDegree: 1,
+            descendantCount: 1,
+          },
+          {
+            id: "capability:topology",
+            label: "Topology",
+            kind: "capability",
+            size: 0,
+            x: 0,
+            y: 0,
+            isHub: false,
+            ownerKey: null,
+            recentlyUpdated: false,
+            fullDegree: 1,
+            descendantCount: 0,
+          },
+        ]}
+        edges={[
+          {
+            source: "domain:views",
+            target: "capability:topology",
+            relationType: "contains",
+            relationQuality: "strong",
+            evidenceCount: 1,
+            kind: "contains",
+            declaredBySlug: "domains/views",
+          },
+        ]}
+        onSelectEdge={onSelectEdge}
+      />,
+    );
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("ontology-atlas:verify-select-edge", {
+          detail: { preferredNodeId: "domain:views" },
+        }),
+      );
+    });
+
+    expect(onSelectEdge).toHaveBeenCalledWith({
+      sourceId: "domain:views",
+      targetId: "capability:topology",
+      relationType: "contains",
+      declaredBySlug: "domains/views",
+    });
+    expect(onVerified).toHaveBeenCalled();
+    expect((onVerified.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({
+      sourceId: "domain:views",
+      targetId: "capability:topology",
+      relationType: "contains",
+    });
+
+    window.removeEventListener("ontology-atlas:verify-edge-selected", onVerified);
   });
 
   // Regression (QA first-light pass — console error sweep): a JSX `onWheel`
