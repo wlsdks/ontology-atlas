@@ -113,6 +113,7 @@ type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["Ful
 import { GestureHint } from "@/widgets/gesture-hint";
 import { PINNED_DOCS_STORAGE_PREFIX } from "@/widgets/docs-vault";
 import { ChromeChip, LiveAnnouncer, Tooltip, useToast } from "@/shared/ui";
+import { resolveToastBottomOffsetForStack } from "@/shared/ui/toast-position";
 import {
   detectOrphanProjects,
   detectPromotionCandidates,
@@ -1726,6 +1727,47 @@ export function HomePage() {
   // M-7 Esc 사다리 존중 — rung 1(팝오버만 닫힘, 선택 유지) 상태에선 좌측이
   // 돌아와야 하므로 "모델 존재"가 아니라 "데이터시트 실표시"에 결속한다.
   const topologySelectionActive = Boolean(v2DatasheetModel) && !nodePopoverDismissed;
+  // 진입 검수 E-7 — `자동 정렬` 토스트가 우하단 상시 계기(범례 + 판독)를
+  // 통째로 덮었다. 둘 다 bottom-right 고정인데 토스트는 기본 16px 오프셋이라
+  // 알림이 계기 위에 그대로 얹혔다. 빌더 하단 바가 쓰던 예약 계약
+  // (`--app-toast-bottom-offset`)을 이 스택에 다시 연결한다 — 예약 높이는
+  // 상수가 아니라 스택의 실측 rect 다(로케일·줌 티어·≥1920 인셋에 따라 바뀐다).
+  const legendStackRef = useRef<HTMLDivElement | null>(null);
+  const legendStackHidden = v2DatasheetModel !== null;
+  useEffect(() => {
+    const root = document.documentElement;
+    const clear = () => root.style.removeProperty("--app-toast-bottom-offset");
+    const element = legendStackRef.current;
+    if (legendStackHidden || !element) {
+      clear();
+      return undefined;
+    }
+    const apply = () => {
+      const rect = element.getBoundingClientRect();
+      // `<md` 에서는 계기가 `hidden` 이라 높이 0 — 예약할 것이 없다.
+      if (rect.height === 0) {
+        clear();
+        return;
+      }
+      root.style.setProperty(
+        "--app-toast-bottom-offset",
+        `${resolveToastBottomOffsetForStack(window.innerHeight, rect.top)}px`,
+      );
+    };
+    apply();
+    // 스택의 줄 수는 나중에 늘어난다 — 계기 판독(`FirstRunReadout`)은 샘플
+    // 모드 판정이 끝난 뒤에 붙는다. mount 시점 한 번만 재면 예약이 한 줄
+    // 분량 부족한 채 굳어 토스트가 그대로 범례를 덮는다(실측 54px vs 필요 79px).
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(apply);
+    observer?.observe(element);
+    window.addEventListener("resize", apply);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", apply);
+      clear();
+    };
+  }, [legendStackHidden]);
   // 클릭 포커스 시그니처 — 팝오버의 성장 원점(transform-origin)을 방금 클릭한
   // 노드의 화면 좌표 방향으로 맞춘다. 패널은 slug 로 keyed 되어 노드가 바뀔
   // 때마다 재마운트 + `.topology-chrome-in` 등장을 재발화하므로, slug 를
@@ -4180,6 +4222,8 @@ export function HomePage() {
                   (4개 로케일×해상도 전 조합 재현). 앰비언트 정보라 조사 중엔
                   필요 없으므로 패널이 열려 있는 동안 조용히 사라진다. */}
               <div
+                ref={legendStackRef}
+                data-testid="topology-legend-stack"
                 className={cn(
                   "pointer-events-none absolute bottom-[var(--topology-relation-legend-bottom-inset)] right-[var(--topology-relation-legend-inset)] z-20 flex flex-col items-end gap-3 whitespace-nowrap transition-opacity duration-180 ease-out motion-reduce:transition-none",
                   v2DatasheetModel ? "opacity-0" : "opacity-100",
