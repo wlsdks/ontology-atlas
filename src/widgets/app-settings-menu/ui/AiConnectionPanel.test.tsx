@@ -221,7 +221,8 @@ describe('AiConnectionPanel key lifecycle', () => {
         },
       }),
     );
-    expect(screen.getByText('settings.ai.stored:abcd')).toBeInTheDocument();
+    expect(screen.getByText('settings.ai.storedLabel')).toBeInTheDocument();
+    expect(screen.getByText('···· abcd')).toBeInTheDocument();
     expect(screen.queryByTestId('ai-key-input-anthropic')).toBeNull();
   });
 
@@ -405,6 +406,139 @@ describe('AiConnectionPanel audit tail', () => {
 
   it('always names the file the record lives in', () => {
     renderPanel(makeConnection({ auditEntries: [entry] }));
-    expect(screen.getByText('settings.ai.auditPath')).toBeInTheDocument();
+    expect(screen.getByText('.ontology-atlas/llm-audit.jsonl')).toBeInTheDocument();
+    expect(screen.getByText(/settings\.ai\.auditPathNote/)).toBeInTheDocument();
+  });
+
+  it('keeps the mono face on the path only — the sentence beside it is prose', () => {
+    // 한 줄을 통째로 mono 로 두면 한글 낱말 사이가 벌어져 소유자가 이중 공백으로
+    // 읽었다. 경로는 기계 문자열이라 mono 가 정보지만, 그 옆 문장은 아니다.
+    renderPanel(makeConnection({ auditEntries: [entry] }));
+    const path = screen.getByText('.ontology-atlas/llm-audit.jsonl');
+    expect(path.className).toContain('font-mono');
+    expect(path.parentElement?.className ?? '').not.toContain('font-mono');
+  });
+});
+
+/**
+ * 되돌릴 수 있는 펼침 — [키 등록]을 눌러 본 사람이 아무것도 넣지 않고 나갈 길.
+ * 소유자 실측 지적(2026-07-26): "입력 안하고 닫고싶을수도 있잖아?" 당시 펼친
+ * 카드에는 [저장] 하나뿐이었고, 접는 방법이 화면에 없었다.
+ */
+describe('AiConnectionPanel draft cancel', () => {
+  it('offers a visible way out of an expanded row, not just Save', () => {
+    renderPanel(makeConnection());
+    fireEvent.click(screen.getByTestId('ai-register-openai'));
+    expect(screen.getByTestId('ai-cancel-openai')).toBeInTheDocument();
+  });
+
+  it('collapses the row and drops the pasted draft when cancel is pressed', () => {
+    renderPanel(makeConnection());
+    fireEvent.click(screen.getByTestId('ai-register-openai'));
+    fireEvent.change(screen.getByTestId('ai-key-input-openai'), {
+      target: { value: 'sk-openai-abandoned' },
+    });
+
+    fireEvent.click(screen.getByTestId('ai-cancel-openai'));
+
+    expect(screen.queryByTestId('ai-key-input-openai')).toBeNull();
+    expect(screen.getByTestId('ai-register-openai')).toBeInTheDocument();
+    expect(document.body.innerHTML).not.toContain('sk-openai-abandoned');
+  });
+
+  it('never writes anything on cancel — the vendor keeps its unregistered state', () => {
+    const applyStatus = vi.fn();
+    renderPanel(makeConnection({ applyStatus }));
+    fireEvent.click(screen.getByTestId('ai-register-openai'));
+    fireEvent.change(screen.getByTestId('ai-key-input-openai'), {
+      target: { value: 'sk-openai-abandoned' },
+    });
+    fireEvent.click(screen.getByTestId('ai-cancel-openai'));
+
+    expect(mocks.secretSet).not.toHaveBeenCalled();
+    expect(applyStatus).not.toHaveBeenCalled();
+  });
+
+  it('returns focus to the register button it came from', async () => {
+    // 포커스가 body 로 떨어지면 사용자는 있던 자리를 잃고, 바깥 다이얼로그의
+    // Esc 사다리(서브뷰 → 루트 → 닫기)도 함께 죽는다.
+    renderPanel(makeConnection());
+    fireEvent.click(screen.getByTestId('ai-register-openai'));
+    fireEvent.click(screen.getByTestId('ai-cancel-openai'));
+
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByTestId('ai-register-openai')),
+    );
+  });
+
+  it('lets Escape collapse the row without letting the settings sheet see it', () => {
+    // Esc 사다리의 가장 안쪽 칸. 가로채지 않으면 같은 keypress 로 설정 시트가
+    // 루트 뷰까지 물러나, 키 하나 취소하려던 사람이 서브뷰까지 잃는다.
+    const outerEscape = vi.fn();
+    render(
+      <div onKeyDown={(event) => event.key === 'Escape' && outerEscape()}>
+        <AiConnectionPanel
+          connection={makeConnection()}
+          vaultRootPath="/vault"
+          downloadHref="/download/"
+          onDownloadNavigate={() => {}}
+        />
+      </div>,
+    );
+
+    fireEvent.click(screen.getByTestId('ai-register-openai'));
+    fireEvent.keyDown(screen.getByTestId('ai-key-input-openai'), { key: 'Escape' });
+
+    expect(screen.queryByTestId('ai-key-input-openai')).toBeNull();
+    expect(outerEscape).not.toHaveBeenCalled();
+  });
+
+  it('passes Escape up to the sheet when no row is expanded', () => {
+    // 사다리의 다음 칸은 살아 있어야 한다 — 안쪽 칸이 비었을 때까지 삼키면
+    // 설정 서브뷰에서 Esc 가 먹통이 된다.
+    const outerEscape = vi.fn();
+    render(
+      <div onKeyDown={(event) => event.key === 'Escape' && outerEscape()}>
+        <AiConnectionPanel
+          connection={makeConnection()}
+          vaultRootPath="/vault"
+          downloadHref="/download/"
+          onDownloadNavigate={() => {}}
+        />
+      </div>,
+    );
+
+    fireEvent.keyDown(screen.getByTestId('ai-connection-view'), { key: 'Escape' });
+    expect(outerEscape).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * 시각 위계 — 채워진 테두리 상자는 조작하는 블록(벤더 목록) 하나뿐이다.
+ * 셋이 같은 무게로 쌓이면 사람이 여기 온 이유(키 등록)가 첫 번째로 안 읽힌다.
+ */
+describe('AiConnectionPanel hierarchy', () => {
+  it('gives the filled container to the vendor list and to nothing else', () => {
+    const { container } = renderPanel(makeConnection());
+    const filled = container.querySelectorAll('.bg-\\[color\\:var\\(--color-overlay-1\\)\\]');
+    expect(filled).toHaveLength(1);
+    expect(filled[0]).toContainElement(screen.getByTestId('ai-register-anthropic'));
+  });
+
+  it('keeps every trust fact on screen while demoting its weight', () => {
+    // 위계 조정이 정보 삭제로 새지 않았는지 — 헌장 한 줄과 "무엇이 나가는가"
+    // 세 행, 기록 파일 이름이 모두 남아 있어야 한다.
+    renderPanel(makeConnection());
+    for (const key of [
+      'settings.ai.principle',
+      'settings.ai.scopeTitle',
+      'settings.ai.scopeWhatValue',
+      'settings.ai.scopeWhenValue',
+      'settings.ai.scopeLogValue',
+      'settings.ai.auditTitle',
+    ]) {
+      expect(screen.getAllByText(key).length).toBeGreaterThan(0);
+    }
+    expect(screen.getByText('.ontology-atlas/llm-audit.jsonl')).toBeInTheDocument();
   });
 });
