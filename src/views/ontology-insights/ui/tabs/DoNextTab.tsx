@@ -8,6 +8,7 @@ import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import type { OntologyHealthActionTarget } from "@/entities/knowledge-graph";
 import type { DoNextQueue, DoNextRow } from "../../lib/do-next-queue";
 import type { DependencyCycle, DependencyCyclesResult } from "../../lib/dependency-cycles";
+import type { DuplicatePairRow } from "../../lib/duplicate-pairs";
 import type { DoNextReviewState } from "../../lib/review-loop";
 
 /**
@@ -49,6 +50,11 @@ export interface DoNextTabLabels {
   sectionOrphan: string;
   sectionPromotion: string;
   sectionCycle: string;
+  sectionDuplicate: string;
+  /** 중복 섹션의 평문 한 줄 — "왜 지금 손봐야 하나". */
+  hintDuplicate: string;
+  /** 두 이름이 얼마나 겹치는지 ("겹침 79%"). */
+  duplicateMetric: (percent: number) => string;
   /** 각 큐 섹션 헤더 아래 평문 한 줄 — "이게 왜 할 일인가"를 비전문가도 알게. */
   hintNeglectedHub: string;
   hintOrphan: string;
@@ -129,6 +135,16 @@ export interface DoNextTabProps {
   touchUps?: DoNextTouchUp[];
   /** 의존 사이클(depends_on 방향 그래프의 순환). 사이클이 있을 때만 렌더. */
   cycles: DependencyCyclesResult;
+  /**
+   * 중복 의심 쌍 — 표시 상한까지 자른 목록. 빈 배열이면 섹션을 렌더하지 않는다.
+   * 유사도는 MCP `similar_nodes` 와 같은 계산이라 화면과 에이전트가 같은 쌍을
+   * 지목한다(`tests/contract/duplicate-pairs.contract.test.ts`).
+   */
+  duplicates?: DuplicatePairRow[];
+  /** 임계값을 넘은 전체 쌍 수 — 절단 전 규모. */
+  duplicateTotal?: number;
+  /** 쌍별 인계 — `merge_concepts` dry-run 부터 시작하는 문장. */
+  duplicateHandoff?: (row: DuplicatePairRow) => string;
   agentReadiness: DoNextTabAgentReadiness;
   healthQueue: DoNextTabHealthQueue;
   mapHref: (nodeId: string, reviewId?: string) => string;
@@ -158,11 +174,14 @@ function HandoffCopyButton({
   labels,
   candidate,
   onReviewStart,
+  compact = false,
 }: {
   payload: string;
   labels: DoNextTabLabels;
   candidate?: { id: string; title: string };
   onReviewStart?: (candidate: { id: string; title: string }) => void;
+  /** 한 줄 행에 얹히는 자리 — 높이만 한 단 낮추고 라벨/동작은 같다. */
+  compact?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -176,7 +195,9 @@ function HandoffCopyButton({
           window.setTimeout(() => setCopied(false), 1600);
         }
       }}
-      className="inline-flex min-h-8 items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+      className={`inline-flex items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] ${
+        compact ? "min-h-7 px-2" : "min-h-8 px-2.5"
+      }`}
     >
       {copied ? <Check size={11} aria-hidden /> : <Copy size={11} aria-hidden />}
       {copied ? labels.handoffCopied : labels.handoffCopy}
@@ -513,6 +534,87 @@ function QueueSection({
 }
 
 /**
+ * 「비슷한 이름 — 같은 걸까요?」 — 중복은 자라는 폴더의 1번 고장이고, 고치는
+ * 값이 가장 싼 할 일이다(문서 둘을 하나로 접으면 끝). 그래서 큐 카드의 첫
+ * 섹션으로 둔다.
+ *
+ * 행은 한 줄로 눌러 앉혔다 — 이 탭은 이미 뷰포트 1.2배라, 새 섹션이 다른
+ * 할 일을 화면 밖으로 밀어내면 "지금 뭘 손보나"에 답하는 탭이 아니게 된다.
+ * 판단에 필요한 사실(두 이름 · 겹치는 낱말 · 겹침 비율)은 한 줄 안에 다 있고,
+ * 합칠지 말지는 사람이 정한다 — 화면은 미리보기(dry-run)까지만 넘긴다.
+ *
+ * 한 쌍도 없으면 섹션을 아예 그리지 않는다. "중복 0건" 성공 카드는 잉크만
+ * 쓰고 아무 결정도 돕지 않는다.
+ */
+function DuplicateSection({
+  rows,
+  totalCount,
+  mapHref,
+  handoff,
+  labels,
+}: {
+  rows: DuplicatePairRow[];
+  totalCount: number;
+  mapHref: (nodeId: string) => string;
+  handoff: (row: DuplicatePairRow) => string;
+  labels: DoNextTabLabels;
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <section
+      aria-label={labels.sectionDuplicate}
+      data-testid="do-next-duplicates"
+      className="flex flex-col"
+    >
+      <div className="flex flex-col gap-1 border-b border-[color:var(--color-divider)] pb-2">
+        <div className="flex items-baseline gap-2">
+          <span className="text-body font-medium text-[color:var(--color-text-primary)]">
+            {labels.sectionDuplicate}
+          </span>
+          <span className="font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+            {totalCount}
+          </span>
+        </div>
+        <p className="text-label leading-snug text-[color:var(--color-text-quaternary)]">
+          {labels.hintDuplicate}
+        </p>
+      </div>
+      {rows.map((row) => (
+        <div
+          key={row.id}
+          data-testid="do-next-duplicate-row"
+          className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-[color:var(--color-divider)] py-1 last:border-b-0"
+        >
+          <TopologyV2KindGlyph kind={row.kind ?? "unknown"} size={13} />
+          <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-secondary)]">
+            {row.keepTitle}
+            <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">↔</span>
+            {row.dissolveTitle}
+          </span>
+          {row.sharedTokens.length > 0 ? (
+            <span className="hidden shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)] lg:inline">
+              {row.sharedTokens.slice(0, 3).join(" · ")}
+            </span>
+          ) : null}
+          <span className="shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)]">
+            {labels.duplicateMetric(Math.round(row.score * 100))}
+          </span>
+          <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
+            <Link
+              href={mapHref(row.keepId)}
+              className="inline-flex min-h-7 items-center rounded-md border border-[color:var(--color-border-soft)] px-2 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            >
+              {labels.openMap}
+            </Link>
+            <HandoffCopyButton payload={handoff(row)} labels={labels} compact />
+          </span>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+/**
  * 의존 사이클 섹션 (전략 verdict B 후보 ④) — "구조적으로 위험한 순환이
  * 생겼나?". 각 행은 depends_on 방향 경로를 "A → B → C → A" 로 닫아 보여주고,
  * [지도](첫 노드 딥링크) + [에이전트에게](사이클 핸드오프 복사)를 준다.
@@ -618,6 +720,9 @@ export function DoNextTab({
   queue,
   touchUps = [],
   cycles,
+  duplicates = [],
+  duplicateTotal = 0,
+  duplicateHandoff,
   agentReadiness,
   healthQueue,
   mapHref,
@@ -712,7 +817,11 @@ export function DoNextTab({
   // "건강합니다" 라고 말했다 (opus5 검수 실측 모순).
   const hasClipParityIssues =
     healthQueue.islandCount > 0 || healthQueue.missingContainmentCount > 0;
-  const queueEmpty = queue.rows.length === 0 && !hasCycles && !hasClipParityIssues;
+  // 중복 의심 쌍도 손볼 일이다 — 그 쌍이 남아 있는데 "손볼 것이 없어요" 라고
+  // 말하면 바로 아래 섹션과 모순된다(#63 단일 판정과 같은 규율).
+  const hasDuplicates = duplicates.length > 0;
+  const queueEmpty =
+    queue.rows.length === 0 && !hasCycles && !hasClipParityIssues && !hasDuplicates;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
@@ -969,6 +1078,13 @@ export function DoNextTab({
           <p className="text-body text-[color:var(--color-text-quaternary)]">{labels.emptyQueue}</p>
         ) : (
           <>
+            <DuplicateSection
+              rows={duplicates}
+              totalCount={duplicateTotal}
+              mapHref={(nodeId) => mapHref(nodeId)}
+              handoff={(row) => duplicateHandoff?.(row) ?? ""}
+              labels={labels}
+            />
             <QueueSection
               title={labels.sectionNeglectedHub}
               hint={labels.hintNeglectedHub}

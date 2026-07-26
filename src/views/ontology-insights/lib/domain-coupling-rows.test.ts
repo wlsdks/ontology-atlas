@@ -102,6 +102,90 @@ describe("buildDomainCouplingSummary", () => {
     expect(summary.pairs).toHaveLength(0);
   });
 
+  it("격자는 대각선에 안쪽 연결, 나머지에 방향별 교차 수를 담는다", () => {
+    const nodes = [
+      node("domain:auth", "domain", "Auth"),
+      node("domain:billing", "domain", "Billing"),
+      node("capability:login", "capability", "Login"),
+      node("capability:session", "capability", "Session"),
+      node("capability:invoice", "capability", "Invoice"),
+    ];
+    const edges: KnowledgeGraphEdge[] = [
+      edge("c1", "domain:auth", "capability:login", "contains"),
+      edge("c2", "domain:auth", "capability:session", "contains"),
+      edge("c3", "domain:billing", "capability:invoice", "contains"),
+      edge("s1", "capability:login", "capability:session", "depends_on"),
+      edge("x1", "capability:login", "capability:invoice", "depends_on"),
+      edge("x2", "capability:session", "capability:invoice", "depends_on"),
+    ];
+
+    const { grid } = buildDomainCouplingSummary(nodes, edges);
+
+    const authIndex = grid.domains.findIndex((d) => d.id === "domain:auth");
+    const billingIndex = grid.domains.findIndex((d) => d.id === "domain:billing");
+    expect(grid.domains).toHaveLength(2);
+    // 대각선 = 같은 도메인 안 연결.
+    expect(grid.cells[authIndex][authIndex]).toBe(1);
+    expect(grid.cells[billingIndex][billingIndex]).toBe(0);
+    // 교차는 방향이 있다 — auth → billing 2건, 반대 방향은 0건.
+    expect(grid.cells[authIndex][billingIndex]).toBe(2);
+    expect(grid.cells[billingIndex][authIndex]).toBe(0);
+    expect(grid.maxCross).toBe(2);
+    expect(grid.hiddenCrossEdgeCount).toBe(0);
+    expect(grid.totalDomainCount).toBe(2);
+  });
+
+  it("도메인이 상한을 넘으면 앞에서 자르고, 잘린 쪽 교차 수를 따로 센다", () => {
+    const nodes = [
+      node("domain:a", "domain", "A"),
+      node("domain:b", "domain", "B"),
+      node("domain:c", "domain", "C"),
+      node("capability:a1", "capability", "A1"),
+      node("capability:b1", "capability", "B1"),
+      node("capability:c1", "capability", "C1"),
+    ];
+    const edges: KnowledgeGraphEdge[] = [
+      edge("c1", "domain:a", "capability:a1", "contains"),
+      edge("c2", "domain:b", "capability:b1", "contains"),
+      edge("c3", "domain:c", "capability:c1", "contains"),
+      // A↔B 는 두 건, C 는 한 건만 걸린다 — 상한 2면 C 가 잘린다.
+      edge("x1", "capability:a1", "capability:b1", "depends_on"),
+      edge("x2", "capability:b1", "capability:a1", "depends_on"),
+      edge("x3", "capability:a1", "capability:c1", "depends_on"),
+    ];
+
+    const { grid } = buildDomainCouplingSummary(nodes, edges, 6, 2);
+
+    expect(grid.domains.map((d) => d.id)).toEqual(["domain:a", "domain:b"]);
+    expect(grid.totalDomainCount).toBe(3);
+    // 조용히 줄이지 않는다 — 격자 밖으로 밀린 교차는 수로 남는다.
+    expect(grid.hiddenCrossEdgeCount).toBe(1);
+  });
+
+  it("pairs 는 자르지 않는다 — 어느 칸을 눌러도 펼칠 상세가 있어야 한다", () => {
+    const nodes = [
+      node("domain:a", "domain", "A"),
+      node("domain:b", "domain", "B"),
+      node("domain:c", "domain", "C"),
+      node("capability:a1", "capability", "A1"),
+      node("capability:b1", "capability", "B1"),
+      node("capability:c1", "capability", "C1"),
+    ];
+    const edges: KnowledgeGraphEdge[] = [
+      edge("c1", "domain:a", "capability:a1", "contains"),
+      edge("c2", "domain:b", "capability:b1", "contains"),
+      edge("c3", "domain:c", "capability:c1", "contains"),
+      edge("x1", "capability:a1", "capability:b1", "depends_on"),
+      edge("x2", "capability:b1", "capability:c1", "depends_on"),
+      edge("x3", "capability:c1", "capability:a1", "depends_on"),
+    ];
+
+    const summary = buildDomainCouplingSummary(nodes, edges);
+
+    expect(summary.pairs).toHaveLength(3);
+    expect(summary.totalPairCount).toBe(3);
+  });
+
   it("boundary row 는 edge 가 전혀 없는 도메인을 제외한다", () => {
     const nodes = [
       node("domain:auth", "domain", "Auth"),

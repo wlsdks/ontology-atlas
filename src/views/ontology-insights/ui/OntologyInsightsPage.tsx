@@ -47,6 +47,7 @@ import {
 import { computeDomainCapacityRows } from "../lib/domain-capacity";
 import { buildImpactRanking } from "../lib/impact-ranking";
 import { buildDoNextQueue, withDoNextVerification } from "../lib/do-next-queue";
+import { buildDuplicatePairs, type DuplicatePairRow } from "../lib/duplicate-pairs";
 import { buildInsightsVerdict } from "../lib/insights-verdict";
 import { pickTodaysTouchUps, type TouchUpItem } from "../lib/todays-touch-ups";
 import { countRecentEntries } from "@/shared/lib/agent-activity-log";
@@ -71,6 +72,17 @@ const EMPTY_EDGES: KnowledgeGraphEdge[] = [];
 const HUB_DISPLAY_LIMIT = 6;
 /** 영향 랭킹 표시 행 수 — 스크롤 계약(탭 ≤ 뷰포트 1.3배) 안에서 읽히는 상한. */
 const IMPACT_DISPLAY_LIMIT = 6;
+/**
+ * 중복 의심 표시 행 수. 상한을 넘는 쌍은 화면이 아니라 인계 payload 가
+ * 담당한다 — 섹션 머리의 총계는 절단 전 규모를 그대로 말한다.
+ *
+ * 3행인 이유는 실측이다(1512×862, 도그푸드 294개념): 5행이면 「할 일」 탭이
+ * 1,309px 로 스크롤 계약(뷰포트 1.3배 = 1,120px)을 189px 넘겼다. 다른 섹션을
+ * 유형당 3행으로 함께 줄이고 이 카드를 3행으로 두면 1,1xx 로 들어온다 —
+ * "중복이 있다"는 사실과 가장 의심스러운 3쌍을 보여주는 데는 충분하고,
+ * 나머지는 `similar_nodes` 가 답한다.
+ */
+const DUPLICATE_DISPLAY_LIMIT = 3;
 const RECENT_UPDATES_LIMIT = 8;
 
 /** 탭이 답하는 질문을 에이전트의 실행 계획으로 그대로 옮긴 것. */
@@ -262,6 +274,18 @@ export function OntologyInsightsPage() {
     [nodes, edges],
   );
 
+  // 중복 의심 쌍 — 이름/소속/이웃이 얼마나 겹치는지. MCP `similar_nodes` 를
+  // 그대로 옮긴 미러라 화면이 지목하는 쌍과 에이전트가 답하는 쌍이 같다.
+  const duplicates = useMemo(
+    () => buildDuplicatePairs(nodes, edges, DUPLICATE_DISPLAY_LIMIT),
+    [nodes, edges],
+  );
+  const duplicateHandoff = (row: DuplicatePairRow): string =>
+    withDoNextVerification(
+      `merge_concepts({fromSlug:"${row.dissolveSlug}", intoSlug:"${row.keepSlug}"}) 로 합칠 결과 미리보기 → 같은 뜻이 맞으면 같은 호출에 confirm:true 를 더해 실행`,
+      `get_concept({slug:"${row.keepSlug}"}) 로 합쳐진 원문 확인`,
+    );
+
   const freshness = useMemo(
     () => computeFreshnessSummary(nodes, edges, docFreshnessIndex, new Date(), { recentLimit: RECENT_UPDATES_LIMIT }),
     [nodes, edges, docFreshnessIndex],
@@ -287,8 +311,13 @@ export function OntologyInsightsPage() {
   }, [vault.agentActivityLog, digestNowMs]);
 
   // S5 — "할 일" 큐: 이미 로드된 파생(healthSignals·degree·freshness)의 조합.
+  //
+  // 유형당 3행 — 큐 카드에 유형이 하나 늘 때마다(중복 의심이 그랬다) 카드가
+  // 뷰포트를 밀어내지 않도록 정한 상한이다. 각 섹션은 상위 3행 + 총계 + "외
+  // N개"를 그대로 말하므로 규모는 안 줄고, 전체 목록은 화면이 아니라 인계
+  // payload 가 담당한다(탭 ≤ 뷰포트 1.3배 계약).
   const doNextQueue = useMemo(
-    () => buildDoNextQueue(nodes, edges, docFreshnessIndex),
+    () => buildDoNextQueue(nodes, edges, docFreshnessIndex, { perKindLimit: 3 }),
     [nodes, edges, docFreshnessIndex],
   );
 
@@ -482,13 +511,19 @@ export function OntologyInsightsPage() {
     emptyDescription: t("domainCouplingEmptyDescription"),
     emptyAction: t("domainCouplingEmptyAction"),
     emptyActionHref: "/ontology/studio/",
-    pairsUnit: t("domainCouplingPairsUnit"),
     boundaryTitle: t("domainCouplingBoundaryTitle"),
     boundarySelfLabel: t("domainCouplingSelfLabel"),
     boundaryCrossLabel: t("domainCouplingCrossLabel"),
     boundaryCaption: t("domainCouplingBoundaryCaption"),
-    examplesCaption: t("domainCouplingExamplesCaption"),
-    pairTruncated: (shown: number, total: number) => t("domainCouplingPairTruncated", { shown, total }),
+    gridCaption: t("domainCouplingGridCaption"),
+    gridSelectHint: t("domainCouplingGridSelectHint"),
+    gridTruncated: (shown: number, total: number) =>
+      t("domainCouplingGridTruncated", { shown, total }),
+    gridHiddenCross: (count: number) => t("domainCouplingGridHiddenCross", { count }),
+    gridCellAria: (from: string, to: string, count: number) =>
+      t("domainCouplingGridCellAria", { from, to, count }),
+    gridSelfAria: (domain: string, count: number) =>
+      t("domainCouplingGridSelfAria", { domain, count }),
   };
   const doNextLabels = {
     agentReadinessTitle: t("agentReadinessTitle"),
@@ -515,6 +550,9 @@ export function OntologyInsightsPage() {
     sectionOrphan: t("doNext.sectionOrphan"),
     sectionPromotion: t("doNext.sectionPromotion"),
     sectionCycle: t("doNext.sectionCycle"),
+    sectionDuplicate: t("doNext.sectionDuplicate"),
+    hintDuplicate: t("doNext.hintDuplicate"),
+    duplicateMetric: (percent: number) => t("doNext.duplicateMetric", { percent }),
     hintNeglectedHub: t("doNext.hintNeglectedHub"),
     hintOrphan: t("doNext.hintOrphan"),
     hintPromotion: t("doNext.hintPromotion"),
@@ -682,6 +720,9 @@ export function OntologyInsightsPage() {
                 queue={doNextQueue}
                 touchUps={doNextTouchUps}
                 cycles={dependencyCycles}
+                duplicates={duplicates.rows}
+                duplicateTotal={duplicates.suspectCount}
+                duplicateHandoff={duplicateHandoff}
                 agentReadiness={agentReadiness}
                 healthQueue={healthQueue}
                 mapHref={mapNodeHref}
@@ -736,7 +777,7 @@ export function OntologyInsightsPage() {
                 domainCount={domainCoupling.domainCount}
                 crossDomainEdgeCount={domainCoupling.crossDomainEdgeCount}
                 pairs={domainCoupling.pairs}
-                totalPairCount={domainCoupling.totalPairCount}
+                grid={domainCoupling.grid}
                 boundaries={domainCoupling.boundaries}
                 isColdStart={domainCoupling.isColdStart}
                 edgeTypeLabel={edgeTypeLabel}
