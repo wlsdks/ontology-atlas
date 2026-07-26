@@ -27,6 +27,12 @@
   스포트라이트 렌즈 ON(`?recent=`) 동안 변경-노드 회전 파선 링**(소유자
   지시 2026-07-23 + Guardian 모션 검수 승인 — 명시적 모드 한정이라 상시
   앰버 확장이 아니며, 렌즈 off 시 램프로 소멸). 그 외 앰버는 여전히 결함. (docs 표면의 장식적 gold 악센트는 별개의 `--color-amber-docs-*` **quarantine 토큰** — 헌장 승인 아님, 확장 금지, 후속 강등 검토 대기.)
+- **amber 는 세 갈래이고 규율이 다르다** — ① 허브 앰버(`#d4b478`, 확장 금지)
+  ② 레일 로고 마크(같은 값이지만 브랜드 마크, 라우트당 1개, 데이터 아님)
+  ③ kind tone 앰버(`capability` 데이터 마크). 감사 때마다 ②③이 ①의 확장으로
+  오인돼 재점검된다. 판별표: `docs/DESIGN-SYSTEM.md` "Three ambers, three rules".
+  막대 채색은 **표면이 아니라 계열 수**가 정한다 — 1계열은 무채색+인디고
+  (`DomainCompositionGrid`), 2계열은 kind tone (`DomainCapacityBar`).
 - ontology kind 색상은 예외적으로 허용하지만 data mark 로만 쓴다. graph fill 은 작은 점의 3:1 대비를 위해 선명할 수 있고, panel/card 에서는 neutral surface + compact marker/swatch + label/icon 으로 낮춘다. detail card 내부의 full-height colored rail 은 AI SaaS callout 처럼 읽히므로 금지한다.
 - 카테고리 구분은 **색이 아닌 보더 스타일** (작업중: 인디고 underline, 예정: dashed).
 - **선택 색 사다리**: 노드 선택 = 표준 인디고(#5e6ad2), 엣지 선택(페어

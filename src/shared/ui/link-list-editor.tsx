@@ -116,15 +116,21 @@ export function LinkListEditor({
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex min-w-0 flex-1 items-center justify-between gap-3"
+            className="flex min-w-0 flex-1 items-center gap-2"
           >
-            <span className="min-w-0 truncate">{link.label}</span>
+            {/* 앱을 떠나는 링크의 `↗` 는 **선행** 표식이다 — 클릭 전에
+                경고해야 정보가 되고, 라벨 뒤에 붙으면 장식으로 읽힌다
+                (`docs/DESIGN-SYSTEM.md` "Arrows carry information"). 이
+                글리프를 쓰는 유일한 자리라 `data-external-link-marker` 로
+                선언한다 — 게이트가 이 선언 없는 `↗` 를 반려한다. */}
             <span
               aria-hidden="true"
-              className="font-mono text-label text-[color:var(--color-text-quaternary)]"
+              data-external-link-marker
+              className="shrink-0 font-mono text-label text-[color:var(--color-text-quaternary)]"
             >
               ↗
             </span>
+            <span className="min-w-0 flex-1 truncate">{link.label}</span>
           </a>
           {editable ? (
             <button

@@ -107,28 +107,32 @@ function ProjectDetailTopBar({
   const projectsListHref = '/projects/';
   const docsVaultHref = '/docs/';
   return (
+    /* 구분자 `▸` 에 크기 클래스가 없으면 루트 16px 을 상속해 옆 링크(12.5px)·
+       라벨(11px)보다 33~45% 크게 렌더된다 — 잉크가 데이터보다 무거워지는
+       역전이다. 브레드크럼 전체를 타입 램프 토큰으로 못박고, 구분자는 가장
+       조용한 단(`text-label`)에 둔다. */
     <nav className="flex flex-wrap items-center gap-3">
       <Link
         href={workspaceHref}
-        className="inline-flex items-center gap-1.5 break-keep text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
+        className="inline-flex items-center gap-1.5 break-keep text-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
         aria-label={t("topBarBackToWorkspaceAria")}
       >
         <ArrowLeft size={14} />
         {t("topBarWorkspaceFallback")}
       </Link>
-      <span aria-hidden className="text-[color:var(--color-text-quaternary)]">
+      <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)]">
         ▸
       </span>
       <Link
         href={projectsListHref}
-        className="font-mono text-[11px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+        className="font-mono text-label uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
       >
         {t("topBarProjectsLabel")}
       </Link>
-      <span aria-hidden className="text-[color:var(--color-text-quaternary)]">
+      <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)]">
         ▸
       </span>
-      <span className="max-w-[240px] truncate font-mono text-[11px] uppercase tracking-[0.12em] text-[color:var(--color-text-primary)]">
+      <span className="max-w-[240px] truncate font-mono text-label uppercase tracking-[0.12em] text-[color:var(--color-text-primary)]">
         {projectName ?? slug ?? t("topBarProjectFallback")}
       </span>
 
@@ -145,7 +149,7 @@ function ProjectDetailTopBar({
         {census ? (
           <span
             data-testid="project-detail-global-census"
-            className="hidden font-mono text-[11px] tracking-[0.08em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] md:inline"
+            className="hidden font-mono text-label tracking-[0.08em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] md:inline"
           >
             {t("globalCensus", { concepts: census.concepts, relations: census.relations })}
           </span>
@@ -647,13 +651,27 @@ export function ProjectDetailPage({
                 전체가 삐뚤어 보였다. 관계 종류("포함")는 카드가 글리프와
                 계량으로 이미 말한다.
               */
-              <DomainCompositionGrid
-                domains={domainComposition.domains}
-                maxTotal={domainComposition.maxTotal}
-                capabilityLabel={t("domainCapabilityLabel")}
-                elementLabel={t("domainElementLabel")}
-                moreLine={(more) => t("domainMoreLine", { more })}
-              />
+              <>
+                <DomainCompositionGrid
+                  domains={domainComposition.domains}
+                  maxTotal={domainComposition.maxTotal}
+                  capabilityLabel={t("domainCapabilityLabel")}
+                  elementLabel={t("domainElementLabel")}
+                  moreLine={(more) => t("domainMoreLine", { more })}
+                />
+                {/* 히어로 칩(역량 38 · 요소 245)과 이 카드들의 합(40 · 279)이 한
+                    화면에 같이 보이는데 왜 다른지는 아무 데도 없었다. 계산은
+                    맞다 — 여러 도메인에 속한 개념을 도메인마다 세는 건 의도된
+                    설계다. 각주는 **격자 아래**에 둔다: 위에 두면 좌측 트랙의
+                    시작 모서리가 우측 레일 첫 카드와 어긋나(헤더를 뺀 이유와
+                    같은 문제) 격자가 삐뚤어 보인다. */}
+                <p
+                  data-testid="project-detail-domain-overlap-note"
+                  className="mt-3 text-caption text-[color:var(--color-text-quaternary)]"
+                >
+                  {t("domainOverlapNote")}
+                </p>
+              </>
             ) : (
               // 도메인 0이어도 탭은 남는다(공간 기억) — 대신 여기서 다음 걸음을 준다.
               <div data-testid="project-detail-composition-empty">
@@ -719,9 +737,14 @@ export function ProjectDetailPage({
                   <Link
                     key={candidate.slug}
                     href={getProjectRuntimeDetailHref(candidate.slug)}
-                    className="group flex items-center justify-between gap-3 rounded-[9px] border border-[color:var(--color-border-soft)] px-3 py-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a28)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                    className="flex items-center gap-3 rounded-[9px] border border-[color:var(--color-border-soft)] px-3 py-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a28)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                   >
-                    <div className="min-w-0">
+                    {/* 라벨 뒤 장식 화살표 금지 — 이 링크는 앱 안에서 이동한다
+                        (`target="_blank"` 아님). `↗` 는 앱을 **떠나는** 링크의
+                        선행 경고로만 쓰고, 누를 수 있다는 사실은 보더·hover 가
+                        이미 말한다. 함께 있던 hover translate 도 정보가 없어
+                        걷어냈다. */}
+                    <div className="min-w-0 flex-1">
                       <p className="truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                         {candidate.name}
                       </p>
@@ -729,12 +752,6 @@ export function ProjectDetailPage({
                         {candidate.description || candidate.slug}
                       </p>
                     </div>
-                    <span
-                      aria-hidden="true"
-                      className="font-mono text-[11px] text-[color:var(--color-text-quaternary)] transition-transform group-hover:translate-x-0.5"
-                    >
-                      ↗
-                    </span>
                   </Link>
                 ))}
                 {connectedProjects.length > 1 ? (

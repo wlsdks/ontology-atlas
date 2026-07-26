@@ -1375,6 +1375,7 @@
       "nextSlotAgentCommand": "add_concept(slug, kind: \"project\", title)",
       "nextSlotAgentCaption": "MCP · Claude Code / Codex 가 직접 생성",
       "factStripGloss": "이 프로젝트가 다루는 영역과 그 안의 기능·구성요소 개수예요",
+      "domainOverlapNote": "도메인마다 겹쳐 세므로 막대 합이 위 개수보다 클 수 있어요 — 여러 도메인에 속한 개념 때문이에요.",
       "emptyStateTitle": "프로젝트가 없습니다",
       "emptyStateDesc": "폴더에 프로젝트 문서(frontmatter `kind: project`)를 만들면 여기 나타납니다."
     },
@@ -1417,6 +1418,7 @@
       "domainCapabilityLabel": "역량",
       "domainElementLabel": "요소",
       "domainMoreLine": "역량 {more}개 더",
+      "domainOverlapNote": "여러 도메인에 속한 개념은 도메인마다 한 번씩 세어져요 — 카드 합이 위 역량·요소 수보다 클 수 있어요.",
       "bodyCardTitle": "본문",
       "bodyCardGcap": "",
       "bodyEmptyHint": "아직 작성된 본문이 없습니다.",

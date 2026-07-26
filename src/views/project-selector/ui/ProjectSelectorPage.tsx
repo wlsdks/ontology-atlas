@@ -338,6 +338,16 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
               titleWidthClassName="sm:w-[200px] md:w-[280px]"
             />
           ))}
+          {/* 바로 위 계량 띠는 38 역량 · 245 요소인데, 이 막대들의 행 합은
+              40 · 279 다. 계산은 둘 다 맞다 — 여러 도메인에 속한 개념은 도메인
+              마다 한 번씩 세어진다. 그 사실이 인사이트 구성 탭에만 적혀 있어
+              여기서는 어긋난 수로만 보였다. 막대의 각주이므로 막대 아래에 둔다. */}
+          <p
+            data-testid="project-selector-domain-overlap-note"
+            className="mt-1.5 text-caption text-[color:var(--color-text-quaternary)]"
+          >
+            {t("domainOverlapNote")}
+          </p>
         </div>
       ) : null}
 
