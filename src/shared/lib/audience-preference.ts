@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from "react";
 
 /**
- * 비개발(plain) 관객 모드 — 개발자 크롬(발자취/Atlas Git 등)을 숨긴다.
+ * 비개발(plain) 관객 모드 — 개발자 크롬(기록 · Atlas Git 등)을 숨긴다.
  *
  * 원래 `HomePage` 안에 지역 상태로만 있었다. 레일 하단 유틸 티어를 셸로 올리면서
  * (#65) 셸도 같은 값을 읽어야 해서 공용 스토어로 승격했다 — 두 곳이 각자

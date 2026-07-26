@@ -287,14 +287,14 @@ export function HomePage() {
   const activeLocale = useLocale();
   const tKinds = useTranslations('kinds');
   const tAgentConnect = useTranslations('agentConnect');
-  // P2 결함⑤ — <lg 발자취 chrome-tile 진입점의 aria-label/title (`atlasGit`
+  // P2 결함⑤ — <lg 기록 chrome-tile 진입점의 aria-label/title (`atlasGit`
   // 네임스페이스는 이미 `GitStatusTile` 이 쓰는 것과 같은 키를 재사용한다).
   const tAtlasGit = useTranslations('atlasGit');
   const relationVocabulary = useRelationVocabulary();
   // 슬라이스 C — lazy initializer 는 클라이언트에서만 실제 실행(SSR 은 항상
   // false), 클라이언트 hydration 도 localStorage 없는 서버 프리렌더 기준
   // false 와 같아 hydration mismatch 없음(다른 세션 플래그와 같은 패턴).
-  // #65 — 공용 스토어로 승격. 셸(레일 하단 발자취 타일)도 같은 값을 읽으므로
+  // #65 — 공용 스토어로 승격. 셸(레일 하단 기록 타일)도 같은 값을 읽으므로
   // 각자 localStorage 를 읽던 구조를 없앴다 — 설정에서 바꾸면 지도와 레일이
   // 함께 바뀐다.
   const [audiencePlain, setAudiencePlain] = useAudiencePlain();
@@ -485,7 +485,7 @@ export function HomePage() {
   // Context 로 등록한다(`useNavRailSettingsSlot`) — 다른 라우트로 이동하면
   // effect cleanup 이 자동으로 비운다.
   // 레일 설정 슬롯 memo 는 아래(vault·ontologyChangeset 정의 뒤)로 이동 —
-  // 발자취(GitStatusTile)가 vault 경로와 세션 changeset 을 읽어야 해서다.
+  // 기록(GitStatusTile)이 vault 경로와 세션 changeset 을 읽어야 해서다.
   // Clicking the collapsed edge tab always means "give the slot back to
   // INDEX" — the analysis rail owns the slot only because of a non-overview
   // mode (focus/path/health), so returning to overview is always enough.
@@ -644,15 +644,15 @@ export function HomePage() {
   ]);
   // S1.1 — 토폴로지를 온톨로지의 1차 편집 surface 로. writable 로컬 vault 면
   // 선택 노드를 자기 .md 문서로 해석해 전체 상세(A1)의 본문 인라인 편집을 허용.
-  // 발자취(Atlas Git) 패널 — 레일 타일 클릭으로 열리는 스냅샷/히스토리 표면.
-  // #65 — 발자취 패널은 셸 소유. `<lg` 크롬 타일은 같은 런처로 그 패널을 연다.
+  // 기록(Atlas Git) 패널 — 레일 타일 클릭으로 열리는 스냅샷/히스토리 표면.
+  // #65 — 기록 패널은 셸 소유. `<lg` 크롬 타일은 같은 런처로 그 패널을 연다.
   // Tauri 데스크톱이면 vault 절대 경로(브리지 활성), 웹 FSA 핸들이면 null →
   // 타일/패널이 세션 changeset 기반으로 정직하게 강등한다.
   const gitVaultPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
   const handoffSource: "loaded-vault" | "read-only-sample" =
     vault.status === "loaded" ? "loaded-vault" : "read-only-sample";
   // 레일 하단 설정 슬롯 — 지도 전용 화면 상태(screenControls)를 실어야 해서
-  // 이 페이지만 셸 기본 슬롯을 덮어쓴다. 발자취 타일은 #65 에서 셸(AppShell)로
+  // 이 페이지만 셸 기본 슬롯을 덮어쓴다. 기록 타일은 #65 에서 셸(AppShell)로
   // 올라갔다 — 페이지마다 등록해야 하는 구조가 하단 유틸 티어를 1/2/3 개로
   // 갈라놓은 원인이었다.
   const navRailSettingsSlot = useMemo(
@@ -2917,12 +2917,12 @@ export function HomePage() {
                         </button>
                       </Tooltip>
                     ) : null}
-                    {/* 발자취 <lg 진입점. `lg+` 는 레일 목적지가 담당하고
+                    {/* 기록 <lg 진입점. `lg+` 는 레일 목적지가 담당하고
                         레일이 사라지는 `<lg` 에서는 이 크롬 타일이 같은
                         목적지로 보낸다 — 브레이크포인트가 달라도 **같은
                         표면**을 본다.
 
-                        2026-07-25: 이 타일은 원래 560px 모달을 열었다. 발자취가
+                        2026-07-25: 이 타일은 원래 560px 모달을 열었다. 기록이
                         목적지로 승격되면서 링크로 바꿨다 — 모바일만 모달을 보면
                         같은 기능이 두 표면으로 갈린다. `audiencePlain` 게이트도
                         제거: 목적지는 전 청중에 노출한다("누가 언제 무슨 의미를
@@ -2933,14 +2933,14 @@ export function HomePage() {
                         href="/git/"
                         aria-label={tAtlasGit('tileLabel')}
                         title={tAtlasGit('tileLabel')}
-                        data-testid="topology-footprint-lg-tile"
+                        data-testid="topology-git-lg-tile"
                         className="relative lg:hidden flex size-[var(--chrome-tile-size)] items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
                       >
                         <HistoryIcon className="size-[var(--topology-chrome-icon-size)]" aria-hidden />
                         {ontologyChangeset.touchedNodeIds.size > 0 ? (
                           <span
                             aria-hidden="true"
-                            data-testid="topology-footprint-lg-tile-dot"
+                            data-testid="topology-git-lg-tile-dot"
                             className="absolute right-1.5 top-1 h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-warning)]"
                           />
                         ) : null}
@@ -4052,7 +4052,7 @@ export function HomePage() {
           onSelectNode={(node) => handleSelect(node.id)}
           onSelectProject={(project) => handleSelect(project.slug)}
         />
-        {/* 발자취(Atlas Git) 시트 — 레일 타일이 연다. AgentConnectSheet 와
+        {/* 기록(Atlas Git) 시트 — 레일 타일이 연다. AgentConnectSheet 와
             같은 scrim+중앙 카드 모달 골격(같은 토큰, modality 증명 — 스크림
             클릭 닫기). 패널 내용/조회는 위젯 자기완결. */}
         <AgentConnectSheet

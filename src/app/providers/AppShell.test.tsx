@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AppShell } from "./AppShell";
 
 /**
- * #65 — 레일 하단 유틸 티어(활동 · 발자취 · 설정)는 **모든 화면에서 같다.**
+ * #65 — 레일 하단 유틸 티어(활동 · 기록 · 설정)는 **모든 화면에서 같다.**
  *
  * 예전엔 페이지가 `useNavRailSettingsSlot` 으로 손수 등록해야 했고, 공방이
  * 그걸 빠뜨려 그 화면만 아이콘 1개였다 (지도 3 · 문서함/인사이트/프로젝트 2 ·
@@ -49,7 +49,7 @@ describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
     expect(tier.children.length).toBe(2);
   });
 
-  it("발자취는 유틸 타일이 아니라 목적지다 (2026-07-25 승격 — 입구 하나)", () => {
+  it("기록은 유틸 타일이 아니라 목적지다 (2026-07-25 승격 — 입구 하나)", () => {
     render(
       <AppShell>
         <div>page</div>

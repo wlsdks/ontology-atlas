@@ -54,7 +54,7 @@ import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <NavRailShellProvider>
-      {/* 2026-07-25 — 발자취 모달 런처 제거. 목적지(`/git/`)가 lg+ 레일과
+      {/* 2026-07-25 — 기록 모달 런처 제거. 목적지(`/git/`)가 lg+ 레일과
           `<lg` 크롬 타일 양쪽에서 같은 표면을 담당하므로 셸에 상주하는 모달이
           더는 필요 없다(런처·패널 호스트·구 레일 타일 전부 도달 불가였다). */}
       <AgentConnectLauncherProvider>
@@ -238,7 +238,7 @@ function AppNavRailSlot() {
   const { changeset: gitChangeset } = useAtlasGitContext();
   const gitDirtyCount = gitChangeset.touchedNodeIds.size;
 
-  // 2026-07-25 — 발자취는 **목적지로 승격**됐고 이 유틸 타일은 흡수됐다. 입구가
+  // 2026-07-25 — 기록은 **목적지로 승격**됐고 이 유틸 타일은 흡수됐다. 입구가
   // 둘이면(타일 + 목적지) #65 와 같은 계열의 혼란이 재발한다. 미커밋 변경 수는
   // 목적지 아이콘의 warning 뱃지로 옮겼다.
   const utilityTier =
