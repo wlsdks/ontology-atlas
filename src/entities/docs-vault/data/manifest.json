@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T06:59:03.927Z",
+  "generatedAt": "2026-07-26T07:32:38.352Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — AI 연결: 눌러 본 것을 되돌릴 수 있게",
+          "slug": "2026-07-26-ai-연결-눌러-본-것을-되돌릴-수-있게"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — 지도 팝오버: 부모도 「이어진 곳」이다",
           "slug": "2026-07-26-지도-팝오버-부모도-이어진-곳이다"
         },
@@ -4938,9 +4943,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 「이어진 곳」은 모든 연결을 약속하는 말인데, 실제로는 네 관계 버킷 중 셋만 세고 있었다. 빠진 하나가 속한 곳(이 개념을 담고 있는 상위 개념)이라, ",
-      "wordCount": 45087,
-      "updatedAt": "2026-07-26T06:59:03.926Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 설치 앱 스크린샷을 본 소유자 지적 세 건. 그중 하나는 취향이 아니라 결함 이었다 — 「키 등록」을 눌러 열린 입력 카드에 「저장」밖에 없어서, 키를 넣",
+      "wordCount": 45372,
+      "updatedAt": "2026-07-26T07:32:38.352Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5460,6 +5465,11 @@
           "slug": "typography"
         },
         {
+          "depth": 4,
+          "text": "라틴 전용 장식은 한글에 얹지 않는다 (2026-07-26)",
+          "slug": "라틴-전용-장식은-한글에-얹지-않는다-2026-07-26"
+        },
+        {
           "depth": 3,
           "text": "Relief/Topology layout tokens",
           "slug": "relieftopology-layout-tokens"
@@ -5706,8 +5716,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 15602,
-      "updatedAt": "2026-07-26T15:10:25+09:00",
+      "wordCount": 15871,
+      "updatedAt": "2026-07-26T07:32:07.396Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -6271,7 +6281,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
       "wordCount": 13225,
-      "updatedAt": "2026-07-26T06:59:03.927Z",
+      "updatedAt": "2026-07-26T16:11:57+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -7866,7 +7876,7 @@
       ],
       "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 은퇴한 xyflow ERD 빌더 (/ontology/edit) 가 하던 vault 쓰기 경로는 이제 나침 무대 (Compass Stage, /ontology/studio) 가 이어받았다. 한 노드를 게임 아이템처럼 놓고 관계 소켓을 채우면 그 채움이 곧 실제 frontmatter write 다. OntologyStudioPage 는 두 fill-state 를 한 라우트에서 처리한다 (mode 탭 없음): 기본 = 기존 노드를 ?node=<id 로 열어 부분 채움 (ENHANCE), ?mode=c",
       "wordCount": 555,
-      "updatedAt": "2026-07-26T06:59:03.927Z",
+      "updatedAt": "2026-07-26T16:11:57+09:00",
       "linksOut": []
     },
     {

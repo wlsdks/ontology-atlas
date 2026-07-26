@@ -466,6 +466,31 @@ that is a separate, sanctioned signal.
 - Signature weight: `510` (Linear's signature)
 - Mono: `JetBrains Mono`
 
+#### 라틴 전용 장식은 한글에 얹지 않는다 (2026-07-26)
+
+소유자가 [AI 연결] 패널에서 `무엇이  나가는가` · `보낸  기록` · `커밋할지는
+당신의  선택이에요` 를 **이중 공백**으로 읽었다. i18n 문자열에는 공백이 하나뿐이었다
+— 벌어진 것은 낱말 사이가 아니라 **공백 글리프**였다.
+
+원인은 두 가지 라틴 관습이 한글 위에 얹힌 것이다.
+
+| 장식 | 라틴에서 하는 일 | 한글에서 하는 일 |
+|---|---|---|
+| `uppercase` + wide tracking 아이브로 | 대문자 소제목의 결 | 대문자화 없음. **자간만** 벌어짐 |
+| `font-mono` 문장 | 코드/식별자라는 신호 | JetBrains Mono 는 latin 서브셋이라 한글은 폴백되고, **공백만** 등폭 advance 로 남음 |
+
+규칙:
+
+- **한국어 문장형 텍스트에 `font-mono` 를 두르지 않는다.** 한 줄 안에 경로/식별자와
+  한국어가 섞이면 **기계 문자열에만** mono span 을 씌운다
+  (`<span class="font-mono">.ontology-atlas/llm-audit.jsonl</span> · 커밋할지는 …`).
+- mono 입력칸의 **한국어 placeholder** 는 본문 서체로 되돌린다 — 값은 기계 문자열이지만
+  안내 문구는 아니다.
+- 문장형 한국어 소제목에는 mono/uppercase/wide-tracking 아이브로를 쓰지 않는다.
+  크기·잉크로만 위계를 준다.
+- 라틴 아이브로 자체는 유지한다(영문 라벨·탭·범례에서는 정상 신호다). 금지는
+  **한글 위에 얹는 것**이다.
+
 ### Relief/Topology layout tokens
 
 Relief/Topology layout tokens live in `app/globals.css` under `:root` because
@@ -1908,8 +1933,18 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 --control-h-sm: 28px;
 --control-h-md: 32px;   /* Select size="md", 밀도 높은 폼 컨트롤 */
 --control-h-lg: 40px;   /* Select 기본 트리거 */
+--control-row-h: calc(var(--control-h-md) + 12px);  /* = 44px, 컨트롤을 담는 목록 행 */
 ```
 
+- **`--control-row-h`(2026-07-26)** — 행 안에 버튼/컨트롤이 앉는 목록의 행
+  높이. 컨트롤 높이와 같게 두면 안 된다: 소유자 실측 지적("키 등록 버튼이 너무
+  빽빽하게 붙어있는것같")의 원인이 [AI 연결] 벤더 행의 높이 32px = 버튼 높이라
+  버튼 위아래 여백이 0 이었던 것이다. 세 행이 1px 구분선만 사이에 두고 맞닿아
+  버튼 셋이 한 덩어리로 읽혔다. 값이 아니라 **식**으로 적어 컨트롤이 커지면
+  행도 따라 커지게 한다. 결과 44px 은 `--touch-target-min` 과 같은 값이고
+  근거도 같다 — 손가락도 눈도 컨트롤 둘레의 여백으로 경계를 읽는다.
+  한 행이 펼쳐지는 목록에서는 **펼친 카드의 헤더 밴드도 같은 토큰**을 써야
+  나머지 행의 리듬과 이름 열이 유지된다(치수 규칙성).
 - 크롬 필/타일은 **별도 잠금 토큰** `--chrome-tile-size`(36px)를 계속 쓴다 —
   이 컨트롤 스케일은 크롬 시스템 **밖**의 인터랙티브 컨트롤(캐노니컬 Select,
   폼 입력 등)용. 지도 우상단 툴바(자동 정렬·검색·최근 변경·
