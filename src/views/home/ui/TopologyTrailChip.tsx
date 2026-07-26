@@ -52,6 +52,17 @@ export interface TopologyTrailChipProps {
   copied: boolean;
   /** 세션 트레일 소거(칩 ✕ · 푸터 "지우기" 공용). */
   onClear: () => void;
+  /**
+   * 팝오버 열림 = **걸어온 길 렌즈** on/off. 지도는 이 신호 하나로 관계 읽기를
+   * 잠시 접고 궤적 읽기에 양보한다(방문 노드만 값·라벨 유지, 나머지·엣지 전부
+   * dim). 새 모드·토글·URL 상태가 아니라 이 팝오버의 수명과 동치다.
+   */
+  onLensChange?: (active: boolean) => void;
+  /**
+   * 행 hover/focus ↔ 지도 노드 브러싱. "2걸음 전이 어느 노드지"를 노드 위
+   * 숫자가 아니라 **가리켜서** 답한다(지도는 그 노드에 기존 호버 프리뷰 링).
+   */
+  onHoverEntry?: (id: string | null) => void;
 }
 
 /**
@@ -81,6 +92,8 @@ export function TopologyTrailChip({
   onCopyPacket,
   copied,
   onClear,
+  onLensChange,
+  onHoverEntry,
 }: TopologyTrailChipProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -94,6 +107,20 @@ export function TopologyTrailChip({
     setOpen(false);
     if (returnFocus) triggerRef.current?.focus();
   }, []);
+
+  // 렌즈 수명 = 팝오버 수명. 언마운트(트레일 소거로 칩이 사라지는 경우 포함)
+  // 에도 반드시 꺼야 지도가 dim 인 채로 굳지 않는다.
+  useEffect(() => {
+    onLensChange?.(open);
+    if (!open) {
+      onHoverEntry?.(null);
+      return;
+    }
+    return () => {
+      onLensChange?.(false);
+      onHoverEntry?.(null);
+    };
+  }, [open, onLensChange, onHoverEntry]);
 
   useEffect(() => {
     if (!open) return;
@@ -167,7 +194,16 @@ export function TopologyTrailChip({
                     : labels.justNowLabel
                   : labels.stepsAgoLabel(i);
               return (
-                <li key={entry.id} className="flex items-stretch gap-2">
+                <li
+                  key={entry.id}
+                  // 브러싱은 행 전체(레일 글리프 + 제목 + 걸음 캡션)를 가리키는
+                  // 대상으로 삼는다 — 사용자가 읽는 단위가 행이지 버튼이 아니다.
+                  onMouseEnter={() => onHoverEntry?.(entry.id)}
+                  onMouseLeave={() => onHoverEntry?.(null)}
+                  onFocus={() => onHoverEntry?.(entry.id)}
+                  onBlur={() => onHoverEntry?.(null)}
+                  className="flex items-stretch gap-2"
+                >
                   {/* 좌측 레일 — 점 + 위아래 연결선 세그먼트(첫/끝 행은 반쪽만). */}
                   <span className="relative flex w-4 shrink-0 flex-col items-center">
                     <span

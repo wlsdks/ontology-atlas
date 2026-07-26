@@ -207,6 +207,32 @@ export function resolveEdgeEgoStateWithPair(
 }
 
 /**
+ * 걸어온 길 렌즈 — 트레일 팝오버가 열려 있는 동안만 유효한 ego 분류 **대체**.
+ *
+ * 왜 새 기호가 아니라 keep-set 교체인가: 팝오버를 열고 지도를 "궤적"으로 읽으려는
+ * 순간에도 지도는 여전히 "관계"를 말한다(포커스 노드의 인디고 엣지). 소유자가 그
+ * 관계 엣지를 걸어온 길의 일부로 오독했을 만큼 두 독법이 같은 화면에서 경쟁했다.
+ * 그래서 궤적 선을 새로 그리는 대신(이 제품에서 선 = 관계다) 남길 집합만 바꾼다 —
+ * 1-hop 이웃 대신 방문 노드를 남기고, 나머지는 **기존 dim 값 그대로** 후퇴시킨다.
+ * "빛나게"는 glow 가 아니라 어두워진 장 위의 값 대비로 성립한다.
+ *
+ * 방문 노드가 `"neighbor"` 가 아니라 `"normal"` 인 이유: neighbor 는 노드 외곽에
+ * pale 인디고 링을 하나 더 두르는데, 방문 노드에는 이미 발자국 링(+3 궤도)이 있어
+ * 같은 색 헤어라인 둘이 인접 궤도에서 브레이드로 읽힌다(궤도당 신호 1개 규율).
+ * 방문 표시는 발자국 링이 이미 하고 있으므로 렌즈는 잉크를 더하지 않는다.
+ *
+ * 현재 포커스 노드는 `"center"` 로 남아 선택 링 > 발자국 링 위계가 불변이다.
+ */
+export function resolveTrailLensNodeEgoState(
+  nodeId: string,
+  focusedNodeId: string | null,
+  trailIds: ReadonlySet<string>,
+): NodeEgoState {
+  if (focusedNodeId !== null && nodeId === focusedNodeId) return "center";
+  return trailIds.has(nodeId) ? "normal" : "dim";
+}
+
+/**
  * Ambient comet-tail advance speed for one `depends` edge (`world.edges[].t +=
  * dt * speed`). When a node is clicked ("powered"), its own incident edges carry
  * *more current* — the pulse advances at `egoSpeed` instead of the ambient

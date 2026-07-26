@@ -12,6 +12,7 @@ import {
   resolveEdgePulseSpeed,
   resolveNodeEgoState,
   resolveNodeEgoStateWithPair,
+  resolveTrailLensNodeEgoState,
   scheduleRipple,
   selectiveEgoNeighbors,
   stepEmphasis,
@@ -203,6 +204,30 @@ describe("edge pair focus (선 선택 = 페어 포커스)", () => {
     expect(resolveEdgeEgoStateWithPair(false, null, pair, false)).toBe("dim");
     expect(resolveEdgeEgoStateWithPair(true, "x", pair, false)).toBe("ego");
     expect(resolveEdgeEgoStateWithPair(false, null, null, false)).toBe("normal");
+  });
+});
+
+describe("resolveTrailLensNodeEgoState (걸어온 길 렌즈)", () => {
+  const trail = new Set(["domain:core", "capability:x", "element:y"]);
+
+  it("방문 노드는 값을 지키고(normal) 나머지는 기존 dim 으로 물러난다", () => {
+    expect(resolveTrailLensNodeEgoState("domain:core", "element:y", trail)).toBe("normal");
+    expect(resolveTrailLensNodeEgoState("capability:x", "element:y", trail)).toBe("normal");
+    expect(resolveTrailLensNodeEgoState("domain:other", "element:y", trail)).toBe("dim");
+  });
+
+  it("현재 포커스 노드는 center 로 남아 선택 링 위계가 불변이다", () => {
+    expect(resolveTrailLensNodeEgoState("element:y", "element:y", trail)).toBe("center");
+  });
+
+  it("이웃(관계)은 더 이상 keep-set 이 아니다 — 방문하지 않았으면 dim", () => {
+    // 렌즈의 핵심: keep-set 이 "1-hop 이웃"에서 "방문 노드"로 통째로 바뀐다.
+    expect(resolveTrailLensNodeEgoState("capability:neighbor-of-y", "element:y", trail)).toBe("dim");
+  });
+
+  it("포커스가 없어도(빈 캔버스 클릭 후) 방문/비방문 구분은 그대로 선다", () => {
+    expect(resolveTrailLensNodeEgoState("capability:x", null, trail)).toBe("normal");
+    expect(resolveTrailLensNodeEgoState("domain:other", null, trail)).toBe("dim");
   });
 });
 
