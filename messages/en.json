@@ -1186,7 +1186,8 @@
         "composition": "Inventory",
         "connections": "Connections",
         "boundaries": "Boundaries",
-        "freshness": "Freshness"
+        "freshness": "Freshness",
+        "structure": "Structure"
       },
       "weeksUnit": "w",
       "errorAlert": "Could not load the graph: {message}",
@@ -1307,7 +1308,12 @@
         "reviewActive": "The {title} signal is still detected in the current vault.",
         "reviewCleared": "The {title} signal is not detected in the current vault. Remaining items were reprioritized.",
         "reviewUnverified": "The current result cannot verify whether the {title} signal was cleared."
-      }
+      },
+      "topDependsOnTitle": "Leans on the most",
+      "noDependsOn": "Nothing leans on anything yet",
+      "noDependsOnHint": "Connect concepts in the workshop.",
+      "connectionsUnit": "links",
+      "hubThumbnailCaption": "Thumbnail = the neighbors directly linked to this concept · Number = all incoming and outgoing connections combined · Dashed line = the share that \"leans on\" other concepts"
     }
   },
   "projectPages": {

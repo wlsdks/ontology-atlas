@@ -1186,7 +1186,8 @@
         "composition": "구성",
         "connections": "연결",
         "boundaries": "경계",
-        "freshness": "신선도"
+        "freshness": "신선도",
+        "structure": "구조"
       },
       "weeksUnit": "주",
       "errorAlert": "그래프를 불러오지 못했습니다: {message}",
@@ -1307,7 +1308,12 @@
         "reviewActive": "{title} 신호가 현재 vault에서 아직 감지됩니다.",
         "reviewCleared": "현재 vault에서 {title} 신호가 감지되지 않습니다. 남은 항목을 다시 정렬했습니다.",
         "reviewUnverified": "{title} 신호는 현재 결과만으로 해소 여부를 확인할 수 없습니다."
-      }
+      },
+      "topDependsOnTitle": "가장 많이 기대는 곳",
+      "noDependsOn": "아직 「기대는 곳」이 없어요",
+      "noDependsOnHint": "공방에서 개념끼리 관계를 이어보세요.",
+      "connectionsUnit": "연결",
+      "hubThumbnailCaption": "작은 그림=이 개념과 바로 이어진 이웃 · 숫자=드나드는 연결을 모두 더한 수 · 점선=다른 개념에 「기대는」 연결 비중"
     }
   },
   "projectPages": {
