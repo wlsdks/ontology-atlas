@@ -1336,7 +1336,7 @@
   "projectPages": {
     "selector": {
       "documentTitle": "프로젝트 · Ontology Atlas",
-      "crumbBack": "← 워크스페이스",
+      "crumbBack": "← 지도",
       "crumbCurrent": "프로젝트",
       "censusTopConceptsLabel": "개념",
       "censusTopRelationsLabel": "관계",
@@ -1379,8 +1379,8 @@
       "emptyStateDesc": "폴더에 프로젝트 문서(frontmatter `kind: project`)를 만들면 여기 나타납니다."
     },
     "detail": {
-      "topBarBackToWorkspaceAria": "홈으로 (워크스페이스 지도)",
-      "topBarWorkspaceFallback": "홈",
+      "topBarBackToWorkspaceAria": "지도로 돌아가기",
+      "topBarWorkspaceFallback": "지도",
       "topBarProjectsLabel": "프로젝트",
       "topBarProjectFallback": "Project",
       "topBarTopologyView": "지도에서 보기",

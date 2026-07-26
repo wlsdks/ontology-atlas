@@ -222,6 +222,69 @@ describe("GlobalSearch", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  /**
+   * Esc 계약 (2026-07-26 실측 회귀) — 푸터가 "ESC 닫기"라고 약속하므로 **첫**
+   * Esc 한 번에 닫히고 입력·필터가 비워진다.
+   *
+   * 실제 결함은 이랬다: Radix 는 형제에 `aria-hidden` 을 거는 방식이라
+   * `aria-modal` 을 붙이지 않는데, 이 앱의 전역 Esc 규율(첫 실행 카드의
+   * window-capture 핸들러 · 자동 투어 발화 가드)은 "지금 모달이 떠 있는가"를
+   * `[role="dialog"][aria-modal="true"]` 로 판정한다. 선언이 없으니 그 핸들러가
+   * 검색창을 못 보고 Esc 를 preventDefault 로 가로채, 첫 타에 다이얼로그도
+   * 입력값도 그대로였다(두 번째에야 닫힘). 아래 두 테스트가 그 두 축을 잠근다.
+   */
+  it("열려 있으면 aria-modal 로 모달임을 선언한다 (전역 Esc 규율의 판정 근거)", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={nodes}
+        onSelectNode={() => {}}
+        projects={projects}
+        onSelectProject={() => {}}
+      />,
+    );
+
+    expect(
+      document.querySelector('[role="dialog"][aria-modal="true"]'),
+    ).not.toBeNull();
+  });
+
+  it("첫 Esc 한 번에 닫히고 입력값이 비워진다 — 모달에 양보하는 전역 캡처 핸들러가 있어도", () => {
+    // 첫 실행 카드(`use-first-run-starter`)의 실제 계약을 그대로 흉내낸다:
+    // window capture + preventDefault, 단 모달이 떠 있으면 양보.
+    const guardFired = vi.fn();
+    const guard = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (document.querySelector('[role="dialog"][aria-modal="true"]') !== null) return;
+      event.preventDefault();
+      guardFired();
+    };
+    window.addEventListener("keydown", guard, { capture: true });
+
+    try {
+      render(<Harness />);
+      const trigger = screen.getByRole("button", { name: "open trigger" });
+      trigger.focus();
+      fireEvent.click(trigger);
+
+      const input = screen.getByRole("combobox");
+      fireEvent.change(input, { target: { value: "core" } });
+      expect((input as HTMLInputElement).value).toBe("core");
+
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      expect(guardFired).not.toHaveBeenCalled();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+      // 다시 열면 이전 입력이 남아 있지 않다.
+      fireEvent.click(screen.getByRole("button", { name: "open trigger" }));
+      expect((screen.getByRole("combobox") as HTMLInputElement).value).toBe("");
+    } finally {
+      window.removeEventListener("keydown", guard, { capture: true });
+    }
+  });
+
   it("닫히면 트리거로 포커스가 복귀한다", () => {
     render(<Harness />);
     const trigger = screen.getByRole("button", { name: "open trigger" });

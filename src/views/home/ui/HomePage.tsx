@@ -250,6 +250,7 @@ import {
   useGuidedTour,
   useGuidedTourAutoStartReady,
   useRegisterGuideReplay,
+  watchGuidedTourAutoStartCancel,
   type TourAnchor,
 } from "@/features/guided-tour";
 import { resolveTourAnchorNodeId } from "../lib/resolve-tour-anchor-node";
@@ -918,35 +919,12 @@ export function HomePage() {
     }
     if (agentConnectWantOpen || arrivedFromGlobalTile) openAgentConnectSheet();
   }, [agentConnectWantOpen, openAgentConnectSheet, requestAgentConnectOpen]);
-  // 폴더 연결 직후 에이전트 연결 유도 (소유자 지시 2026-07-24 2차) — "폴더를
-  // 연결하고 나면 바로 AI 에이전트 연결을 가이드해야 한다". 이 세션에서
-  // 사용자가 직접 폴더를 연 경우('opening' 경유 — IndexedDB 복원 재방문은
-  // 제외)에 한해, 미연결이면 연결 시트를 1회 자동으로 연다. 닫아도 시작
-  // 체크리스트 1단계가 미완료 강조로 남아 가이드가 끊기지 않는다.
-  const vaultOpenedThisSessionRef = useRef(false);
-  const agentAutoPromptFiredRef = useRef(false);
-  const agentConnectedNow = agentConnect.status.kind === "connected";
-  // 자동 안내도 launcher 를 거쳐야 닫기 뒤 안전 복귀점(AI 타일)이 생긴다.
-  // requestAgentConnectOpen 은 provider 의 stable callback이라 timer effect의
-  // 재장전 없이 사용할 수 있다.
-  useEffect(() => {
-    if (vault.status === "opening") vaultOpenedThisSessionRef.current = true;
-    if (
-      vault.status !== "loaded" ||
-      !vaultOpenedThisSessionRef.current ||
-      agentAutoPromptFiredRef.current ||
-      agentConnectedNow
-    ) {
-      return undefined;
-    }
-    // 스캐폴드/체크리스트가 자리 잡은 뒤 열어 "폴더 → 다음은 AI 연결" 순서가
-    // 화면에서도 읽히게 한다.
-    const id = window.setTimeout(() => {
-      agentAutoPromptFiredRef.current = true;
-      requestAgentConnectOpen();
-    }, 1200);
-    return () => window.clearTimeout(id);
-  }, [vault.status, agentConnectedNow, requestAgentConnectOpen]);
+  // 폴더를 연 직후 AI 연결 시트를 **자동으로 열지 않는다**. 한때 1200ms 뒤
+  // 1회 자동 발화가 있었지만, 방금 만든 자기 지도와의 첫 대면을 요청하지 않은
+  // 모달이 덮어 첫 상호작용이 '닫기'가 됐다(2026-07-26 실측). 안내는 이미
+  // 시작 체크리스트의 "연결 안내 열기" 버튼과 레일의 AI 타일 두 곳에 있어
+  // 자동 발화가 더하는 값이 없고, "소개하는 것을 가리지 않는다"는 이 앱의
+  // 규율과도 어긋났다. 연결 의도는 사용자가 누를 때만 선다.
   // HomePage 모듈화 1차 — 부트스트랩 흐름은 use-bootstrap-flow 훅 소유.
   // 완료 연출(토스트·E1 리빌)만 여기 남는다.
   const { bootstrapOpen, setBootstrapOpen, bootstrapPlan, runBootstrap } = useBootstrapFlow({
@@ -1264,6 +1242,9 @@ export function HomePage() {
     if (topologyV2Graph.edges.length === 0) return;
     const parentOf = buildContainmentParentMap(topologyV2Graph.edges);
     deeplinkExpandedForRef.current = canvasSelectedSlug;
+    // replace — 이건 사용자의 이동이 아니라 *들어온 딥링크를 정규화*하는
+    // 쓰기다. push 로 나가면 착지 직후 히스토리에 사용자가 만들지 않은 칸이
+    // 생겨, 뒤로가기 첫 번째가 아무것도 되돌리지 못한다.
     setRouteState((current) => {
       const nextExpanded = deriveDeeplinkAncestorExpansion(
         canvasSelectedSlug,
@@ -1272,7 +1253,7 @@ export function HomePage() {
       );
       if (nextExpanded.length === current.expandedParents.length) return current;
       return { ...current, expandedParents: nextExpanded };
-    });
+    }, { replace: true });
   }, [canvasSelectedSlug, topologyV2Graph, setRouteState]);
 
   // 발자국 트레일 (fable 설계 — 소유자 요청, 사람 가치 우선) — 지도에서 노드를
@@ -2082,18 +2063,34 @@ export function HomePage() {
     // 나중에 불쑥 튀어나오는 게 아니라, 가릴 것이 사라지자마자 뜬다. 틱 하나는
     // querySelector 세 번이라 비용이 없고, 발화 즉시·언마운트 시 멈추며,
     // 애초에 투어를 한 번도 안 본 사람에게만 돈다.
+    //
+    // 다만 "막힘이 풀리는 첫 순간"이 사용자가 이미 스스로 탐색을 시작한 뒤일
+    // 수 있다 — 실측(2026-07-26): 시트를 [다음에]로 넘긴 뒤 2~6초 사이에 노드를
+    // 클릭해 상세 패널을 연 사용자의 화면 위로 1/7 카드가 끼어들었다. 그래서
+    // 대기 중 첫 실질 상호작용이 감지되면 **발화를 취소**한다(가드에 예외를
+    // 더하는 방향은 안내가 자기가 소개할 것을 덮는 역효과가 이미 확인됐다).
+    // 취소해도 길은 막히지 않는다 — 설정 › 화면 안내 › 다시 보기, 그리고 지도
+    // 우상단 나침반 타일이 같은 투어를 연다.
     let timerId = 0;
     const tick = () => {
       if (autoTourFiredRef.current) return;
       if (canAutoStartGuidedTour()) {
         autoTourFiredRef.current = true;
+        stopInteractionWatch();
         openGuidedTourRef.current();
         return;
       }
       timerId = window.setTimeout(tick, 2000);
     };
+    const stopInteractionWatch = watchGuidedTourAutoStartCancel(() => {
+      autoTourFiredRef.current = true;
+      window.clearTimeout(timerId);
+    });
     timerId = window.setTimeout(tick, 900);
-    return () => window.clearTimeout(timerId);
+    return () => {
+      window.clearTimeout(timerId);
+      stopInteractionWatch();
+    };
   }, [tourAutoStartReady]);
 
   // P0#3 — Esc staged-close ladder (docs/FEATURES.md / shortcut sheet's
