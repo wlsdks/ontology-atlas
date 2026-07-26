@@ -1364,6 +1364,7 @@
         "touchUpWhyCycle": "{length} concepts point at each other, so there is no starting point",
         "touchUpWhyPromotion": "Referenced from many places — worth promoting to a parent concept",
         "rowMenuTrigger": "More actions",
+        "askAgent": "Ask the agent about this",
         "reviewFallback": "Selected item",
         "reviewChecking": "Rechecking the {title} signal against the current folder.",
         "reviewActive": "The {title} signal is still there in the current folder.",
@@ -1999,11 +2000,13 @@
       "actionMentionDocument": "Mentioned in",
       "actionEditRelations": "Edit relations",
       "actionCopyHandoff": "Copy handoff",
+      "actionAskAgent": "Ask the agent",
       "actionPath": "Path",
       "actionDocumentTip": "Open this node's source markdown document",
       "actionMentionDocumentTip": "This concept has no document of its own yet. Opens another document that writes about it",
       "actionEditRelationsTip": "Complete this node's connections in the workshop",
       "actionCopyHandoffTip": "Copy this node's context to paste to an AI agent",
+      "actionAskAgentTip": "Ask the agent beside the map about this concept",
       "actionPathTip": "Find a connection path from this node to another on the map",
       "updated_today": "changed today",
       "updated_yesterday": "changed yesterday",
@@ -2982,7 +2985,6 @@
     "send": "Send",
     "stop": "Stop",
     "placeholder": "Keep going…",
-    "empty": "Ask about whatever you are looking at. For example: what link is missing here?",
     "thinking": "Thinking",
     "thinkingSeconds": "Thinking · {seconds}s",
     "unsupported": "Answered without reading anything. Do not take it as fact.",
@@ -3061,10 +3063,20 @@
       "composerHint": "Add a key to talk here",
       "composerHintWeb": "Talk here in the app",
       "composerHintNoVault": "Open a folder to talk here",
-      "examplesTitle": "What you can ask for",
-      "example1": "Draft a definition for a concept that has none",
-      "example2": "Find the group this concept belongs in",
-      "example3": "Ask what looks wrong on this map"
+      "examplesTitle": "What you can ask for"
+    },
+    "sessionSummary": "This conversation: {concepts} concepts · {relations} links",
+    "firstWords": {
+      "title": "Where would you like to start?",
+      "hint": "Tap one and the sentence lands in the box below. Edit it before sending",
+      "missingDefinition": "Nobody has written down what \"{title}\" means. Draft it for me",
+      "missingDomain": "\"{title}\" is not filed under any group yet. Find where it belongs",
+      "missingRelations": "Check whether \"{title}\" is missing any links",
+      "mapReview": "What looks most wrong on this map right now?",
+      "emptyVault": "This folder is still empty. Help me work out what this product is first"
+    },
+    "nextStep": {
+      "title": "One next step"
     }
   }
 }

@@ -10,7 +10,32 @@ export type { AgentLoopDeps, StartTurnInput, TurnRunResult } from './model/agent
 export { extractCitations } from './model/citation';
 export type { CitationResult } from './model/citation';
 export {
+  FIRST_WORDS_MAX_CHIPS,
+  buildFirstWords,
+  nodeIntent,
+  parseNodeIntentKind,
+  screenIntentFor,
+  sentenceForIntent,
+} from './model/first-words';
+export type {
+  BuildFirstWordsInput,
+  FirstWordsChip,
+  FirstWordsIntent,
+  FirstWordsLabels,
+  FirstWordsNode,
+  FirstWordsNodeIntentKind,
+  FirstWordsSlot,
+} from './model/first-words';
+export {
+  NEXT_STEP_MARKER,
+  NEXT_STEP_MAX_CHARS,
+  splitNextStep,
+} from './model/next-step';
+export type { NextStepSplit } from './model/next-step';
+export {
   EMPTY_SCREEN_CONTEXT,
+  RECENT_CHANGES_CHAR_CAP,
+  RECENT_CHANGES_LINE_CAP,
   formatScreenContextBlock,
   screenContextEcho,
 } from './model/screen-context';

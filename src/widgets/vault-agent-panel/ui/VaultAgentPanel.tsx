@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
 
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
-import type { ScreenContextSnapshot } from '@/features/vault-agent';
+import { buildFirstWords, type ScreenContextSnapshot } from '@/features/vault-agent';
+import { useVaultConceptFacts } from '@/features/vault-ontology';
 import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-audit-log';
 import { requestSettingsView } from '@/shared/lib/settings-view-intent';
+import { gitHistory, isGitBridgeAvailable } from '@/shared/lib/tauri-git';
 import { isLlmChatBridgeAvailable } from '@/shared/lib/tauri-llm';
 import {
   SECRET_PROVIDER_HOSTS,
@@ -19,6 +21,7 @@ import {
 } from '@/shared/lib/tauri-secrets';
 
 import { useVaultAgent } from '../model/use-vault-agent';
+import { AgentFirstWords } from './AgentFirstWords';
 import { AgentHandoffCard } from './AgentHandoffCard';
 import { AgentLockedComposer, AgentLockedState } from './AgentLockedState';
 import { AgentProposalCard } from './AgentProposalCard';
@@ -53,6 +56,7 @@ export function VaultAgentPanel({
   onFocusNode,
   onOpenFolder,
   downloadHref,
+  prefillRequest,
 }: {
   open: boolean;
   onClose: () => void;
@@ -66,6 +70,12 @@ export function VaultAgentPanel({
   /** 폴더가 없을 때 이 패널이 직접 열 수 있는 경로 — 없으면 그 상태에 문이 없다. */
   onOpenFolder?: () => void;
   downloadHref: string;
+  /**
+   * 바깥에서 건너온 첫 마디(S7) — 큐 행이나 노드 상세에서 「에이전트에게 말로
+   * 시키기」를 누르면 그 행의 문맥이 실린 문장이 여기로 온다. **프리필이지
+   * 전송이 아니다.** `nonce` 는 같은 문장을 다시 보내도 다시 앉게 하는 값이다.
+   */
+  prefillRequest?: { text: string; nonce: number } | null;
 }) {
   const t = useTranslations('vaultAgentPanel');
   const locale = useLocale();
@@ -75,6 +85,8 @@ export function VaultAgentPanel({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const bridgeAvailable = isLlmChatBridgeAvailable();
+  /** 첫 마디가 지목할 빈칸의 근거 — 「할 일」 큐가 읽는 것과 같은 사실 map. */
+  const conceptFacts = useVaultConceptFacts();
   /**
    * 어느 벤더의 키가 이 컴퓨터에 있는지. 등록 순서(= `secrets.rs` 허용목록
    * 순서)로 첫 번째를 쓴다 — 모델 피커도 벤더 피커도 만들지 않는다.
@@ -111,12 +123,25 @@ export function VaultAgentPanel({
     };
   }, [open, bridgeAvailable, secretNonce]);
 
+  /**
+   * 세션 사이의 이어짐 — 이 폴더의 최근 커밋 제목. **대화를 저장하지 않고도**
+   * 새 대화가 지난 작업을 이어받는 근거다(쓰기는 전부 frontmatter + git 에
+   * 남았다). 패널이 열릴 때와 적용이 끝났을 때만 읽는다: 배경 폴링은 사용자가
+   * 시키지 않은 일이고, git 이 아니면 브리지가 정직하게 빈 값을 준다.
+   */
+  const [recentChanges, setRecentChanges] = useState<readonly string[]>([]);
+
+  const screenContextWithHistory = useMemo<ScreenContextSnapshot>(
+    () => ({ ...screenContext, recentChanges }),
+    [screenContext, recentChanges],
+  );
+
   const agent = useVaultAgent({
     provider,
     vaultPath,
     insight,
     manifest,
-    screenContext,
+    screenContext: screenContextWithHistory,
     locale,
     vaultIsGit,
     projectInstructions: null,
@@ -149,6 +174,75 @@ export function VaultAgentPanel({
     if (open) inputRef.current?.focus();
   }, [open]);
 
+  /**
+   * 이력을 읽는 시점은 둘뿐이다: 패널이 열릴 때, 그리고 **적용이 반영된
+   * 뒤**(다음 대화가 방금 한 일을 알아야 "이어진다" 가 참이 된다). 배경
+   * 폴링은 사용자가 시키지 않은 일이라 하지 않는다.
+   */
+  const appliedTally = agent.sessionSummary.concepts + agent.sessionSummary.relations;
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      // 읽을 수 없는 상태(닫힘·폴더 없음·git 아님)는 **빈 이력**이지 오류가
+      // 아니다. 그때는 그 블록만 문맥에서 빠진다.
+      if (!open || !vaultPath || !isGitBridgeAvailable()) {
+        if (!cancelled) setRecentChanges((current) => (current.length === 0 ? current : []));
+        return;
+      }
+      try {
+        const commits = await gitHistory(vaultPath, 5);
+        if (cancelled) return;
+        setRecentChanges(
+          (commits ?? []).map((commit) => `${commit.subject} (${commit.relativeTime})`),
+        );
+      } catch {
+        // git 이력을 못 읽는 것도 대화의 실패가 아니다 — 그 줄만 없이 간다.
+        if (!cancelled) setRecentChanges([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, vaultPath, appliedTally]);
+
+  /**
+   * 칩 → 프리필. **누른 그 프레임**에 문장이 앉고 전체 선택 + 포커스 —
+   * 한 타로 덮어쓸 수 있다. 전송은 언제나 [보내기]다.
+   */
+  const prefill = useCallback((text: string) => {
+    setDraft(text);
+    const input = inputRef.current;
+    if (!input) return;
+    input.focus();
+    // jsdom·구형 WebView 에 없을 수 있는 API 는 있을 때만 부른다.
+    if (typeof input.select === 'function') input.select();
+  }, []);
+
+  /**
+   * 바깥에서 건너온 첫 마디(S7).
+   *
+   * 효과가 아니라 **렌더 중 조정**으로 받는다(React 의 "prop 이 바뀔 때 state
+   * 를 맞추기" 패턴): 효과로 받으면 화면이 한 번 낡은 값으로 그려졌다가 다시
+   * 그려지고, 그 한 프레임이 정확히 "눌렀는데 늦게 반응한다" 로 보인다.
+   * `nonce` 가 바뀔 때만 앉으므로 같은 문장을 다시 눌러도 다시 앉고, 사용자가
+   * 고쳐 쓰던 초안을 렌더마다 덮지도 않는다.
+   */
+  const prefillNonce = prefillRequest?.nonce ?? null;
+  const prefillText = prefillRequest?.text ?? null;
+  const [seenPrefillNonce, setSeenPrefillNonce] = useState<number | null>(null);
+  if (prefillNonce !== null && prefillText && prefillNonce !== seenPrefillNonce) {
+    setSeenPrefillNonce(prefillNonce);
+    setDraft(prefillText);
+  }
+  // 포커스·전체 선택은 DOM 조작이라 렌더 뒤에 한다 — 한 타로 덮어쓸 수 있게.
+  useEffect(() => {
+    if (seenPrefillNonce === null) return;
+    const input = inputRef.current;
+    if (!input) return;
+    input.focus();
+    if (typeof input.select === 'function') input.select();
+  }, [seenPrefillNonce]);
+
   // 새 내용은 아래로만 자란다 — 스크롤 앵커 하단 고정.
   useEffect(() => {
     const node = scrollRef.current;
@@ -173,7 +267,32 @@ export function VaultAgentPanel({
         : !scopeAccepted
           ? 'scope'
           : 'chat';
-  const lockedExamples = [t('locked.example1'), t('locked.example2'), t('locked.example3')];
+  /**
+   * 첫 마디 — **로컬 계산이다. 모델을 부르지 않는다.**
+   *
+   * 재료는 전부 이미 화면에 있다: 지금 보고 있는 개념(화면 문맥), 이 폴더에서
+   * 뜻·소속이 빈 개념(「할 일」 큐와 **같은 판정**), 그리고 언제나 물을 수 있는
+   * 지도 질문. 그래서 제안은 공짜(로컬)고 실행만 옵트인이다 — "보내기 전에는
+   * 아무것도 나가지 않는다" 가 첫 마디 설계의 제약이 아니라 근거가 된다.
+   */
+  const firstWordsChips = useMemo(
+    () =>
+      buildFirstWords(
+        {
+          nodes: insight?.nodes ?? [],
+          docFacts: conceptFacts,
+          focusedRef: screenContext.focusedSlug,
+        },
+        {
+          missingDefinition: (title) => t('firstWords.missingDefinition', { title }),
+          missingDomain: (title) => t('firstWords.missingDomain', { title }),
+          missingRelations: (title) => t('firstWords.missingRelations', { title }),
+          mapReview: t('firstWords.mapReview'),
+          emptyVault: t('firstWords.emptyVault'),
+        },
+      ),
+    [insight, conceptFacts, screenContext.focusedSlug, t],
+  );
 
   function submit() {
     if (!canSend) return;
@@ -211,8 +330,19 @@ export function VaultAgentPanel({
             <p className="truncate text-body font-semibold text-[color:var(--color-text-primary)]">
               {t('title')}
             </p>
-            <p className="truncate text-label tracking-label text-[color:var(--color-text-quaternary)]">
-              {t('subtitle')}
+            {/* 부제 자리는 하나다 — 진전이 생기면 같은 줄의 **글자만** 바뀐다.
+                자리·크기가 그대로라 레이아웃이 튀지 않고, 숫자 굴림 같은
+                장식도 붙이지 않는다(진전은 알림이 아니라 사실이다). */}
+            <p
+              data-testid="vault-agent-panel-subtitle"
+              className="truncate text-label tracking-label text-[color:var(--color-text-quaternary)]"
+            >
+              {appliedTally > 0
+                ? t('sessionSummary', {
+                    concepts: agent.sessionSummary.concepts,
+                    relations: agent.sessionSummary.relations,
+                  })
+                : t('subtitle')}
             </p>
           </div>
           <button
@@ -246,14 +376,14 @@ export function VaultAgentPanel({
               title={t('degraded.webTitle')}
               body={t('degraded.webBody')}
               examplesTitle={t('locked.examplesTitle')}
-              examples={lockedExamples}
+              chips={firstWordsChips}
             />
           ) : !vaultPath ? (
             <AgentLockedState
               title={t('degraded.noVaultTitle')}
               body={t('degraded.noVaultBody')}
               examplesTitle={t('locked.examplesTitle')}
-              examples={lockedExamples}
+              chips={firstWordsChips}
             />
           ) : !provider ? (
             // 소유자 판정 반전(2026-07-26) — 구 구조는 "왼쪽 아래 설정(톱니)의
@@ -263,7 +393,7 @@ export function VaultAgentPanel({
               title={t('degraded.noKeyTitle')}
               body={t('degraded.noKeyBody')}
               examplesTitle={t('locked.examplesTitle')}
-              examples={lockedExamples}
+              chips={firstWordsChips}
             />
           ) : !scopeAccepted ? (
             <AgentScopeSheet
@@ -288,7 +418,9 @@ export function VaultAgentPanel({
                 providerLabel={t(`provider.${provider}`)}
                 elapsedSeconds={agent.elapsedSeconds}
                 onFocusNode={onFocusNode}
+                onPrefill={prefill}
                 labels={{
+                  nextStepTitle: t('nextStep.title'),
                   you: t('you'),
                   lookingAt: (title) => t('screenContext.lookingAt', { title }),
                   wholeMap: t('screenContext.wholeMap'),
@@ -334,10 +466,16 @@ export function VaultAgentPanel({
                   }}
                 />
               ) : null}
+              {/* 빈 대화 — 백지를 내밀지 않는다. 이 폴더의 실제 상태에서 뽑은
+                  문장 셋이 먼저 앉아 있고, 누르면 입력칸으로 내려온다. 로컬
+                  계산이라 대기가 없으므로 골격과 **같은 프레임**에 도착한다. */}
               {agent.turns.length === 0 ? (
-                <p className="text-body leading-[1.65] text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
-                  {t('empty')}
-                </p>
+                <AgentFirstWords
+                  chips={firstWordsChips}
+                  title={t('firstWords.title')}
+                  hint={t('firstWords.hint')}
+                  onPrefill={prefill}
+                />
               ) : null}
             </>
           )}

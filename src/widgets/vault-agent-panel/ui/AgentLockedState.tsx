@@ -1,5 +1,9 @@
 'use client';
 
+import type { FirstWordsChip } from '@/features/vault-agent';
+
+import { AgentFirstWords } from './AgentFirstWords';
+
 /**
  * 아직 대화가 안 되는 세 상태의 **하나의 얼굴** — 브라우저(앱 전용) · 폴더
  * 없음 · 키 없음.
@@ -29,12 +33,13 @@ export function AgentLockedState({
   title,
   body,
   examplesTitle,
-  examples,
+  chips,
 }: {
   title: string;
   body: string;
   examplesTitle: string;
-  examples: string[];
+  /** 첫 마디 생성기가 만든 문장들 — 여기서는 평문 목록으로만 그린다. */
+  chips: readonly FirstWordsChip[];
 }) {
   return (
     <div className="flex grow flex-col justify-center gap-4">
@@ -42,23 +47,11 @@ export function AgentLockedState({
           값이 비용보다 먼저 읽혀야 한다 — 구 화면은 필요한 것만 말하고 이
           자리가 무엇을 하는 자리인지는 말하지 않았다.
 
-          예시는 **평문 목록**이다. 누를 수 있게 만들면 키가 없는 상태에서
-          눌리는 컨트롤이 늘어나고, 그게 곧 함정이다. */}
-      <section aria-label={examplesTitle} className="flex flex-col gap-1.5">
-        <p className="text-label text-[color:var(--color-text-quaternary)]">
-          {examplesTitle}
-        </p>
-        <ul className="flex flex-col gap-1">
-          {examples.map((example) => (
-            <li
-              key={example}
-              className="text-caption leading-[1.55] text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-            >
-              {example}
-            </li>
-          ))}
-        </ul>
-      </section>
+          문장은 키가 있을 때 뜨는 첫 마디 칩과 **같은 생성기**에서 온다 —
+          하드코딩 예문은 "우리 폴더엔 그런 개념 없는데요" 라는 첫 실패를
+          만든다. 다만 여기서는 평문이다: 누를 수 있게 만들면 키가 없는
+          상태에서 눌리는 컨트롤이 늘어나고, 그게 곧 함정이다. */}
+      <AgentFirstWords chips={chips} title={examplesTitle} />
 
       {/* 잠긴 이유 — 바로 아래 입력칸 자리의 문(門)이 무엇을 여는지 설명한다. */}
       <div data-testid="vault-agent-notice" className="flex flex-col gap-1.5">

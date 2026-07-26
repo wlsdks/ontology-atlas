@@ -24,6 +24,7 @@ export {
   parseOntologyStudioEditParam,
   ONTOLOGY_DEEPLINK_VIA_KEY,
   ONTOLOGY_DEEPLINK_REVIEW_KEY,
+  ONTOLOGY_DEEPLINK_ASK_KEY,
   ONTOLOGY_STUDIO_EDIT_KEY,
   parseInsightsReturnMarker,
   resolveOntologyBuilderNodeSlug,
@@ -52,3 +53,9 @@ export {
   stripVaultSlugPrefix,
   type NodeAgentTarget,
 } from "./lib/node-agent-target";
+export {
+  DOMAIN_REQUIRED_KINDS,
+  detectMeaningGaps,
+  type ConceptDocFacts,
+  type MeaningGapKind,
+} from "./lib/meaning-gaps";
