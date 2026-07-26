@@ -61,6 +61,23 @@ describe('sample storefront vault — connected business graph', () => {
     expect(visited.size).toBe(derivation.nodes.length);
   });
 
+  // 기본 샘플은 처음 오는 사람이 보는 **유일한** 볼트다. 카드·행이 읽는 키가
+  // 비어 있으면 그 사람은 「설명이 아직 없는 프로젝트입니다」를 첫 문장으로
+  // 만나고, 한 클릭 뒤 상세에서는 설명을 본다 — 같은 사실에 두 답이다.
+  // 「vault 가 쓰는 로케일은 전부 채운다」의 자매 규칙: 샘플은 카드가 읽는
+  // 키를 전부 채운다.
+  it('project·domain 문서가 frontmatter description 을 갖는다 (카드·최근 활동이 읽는 키)', () => {
+    const missing = sampleStorefrontManifest.docs
+      .filter((doc) => doc.frontmatter?.kind === 'project' || doc.frontmatter?.kind === 'domain')
+      .filter((doc) => {
+        const value = doc.frontmatter?.description;
+        return typeof value !== 'string' || value.trim().length === 0;
+      })
+      .map((doc) => doc.slug);
+
+    expect(missing).toEqual([]);
+  });
+
   it('dependencies[] 가 depends_on 엣지로, relates[] 가 related_to 엣지로 유도된다', () => {
     const dependsOn = derivation.edges.filter((e) => e.type === 'depends_on');
     const relatedTo = derivation.edges.filter((e) => e.type === 'related_to');

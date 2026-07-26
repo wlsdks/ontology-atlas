@@ -3,6 +3,7 @@ slug: domains/fulfillment
 kind: domain
 title: 배송
 display_en: Shipping
+description: 결제가 끝난 주문을 고객에게 보내고 반품을 접수합니다.
 capabilities: [return-intake, shipment-tracking]
 relates: [domains/order]
 ---

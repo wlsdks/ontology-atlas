@@ -3,6 +3,7 @@ slug: domains/customer
 kind: domain
 title: 회원
 display_en: Members
+description: 고객이 가입하고 구매한 상품에 리뷰를 남깁니다.
 capabilities: [review-write, signup]
 relates: [domains/order]
 ---

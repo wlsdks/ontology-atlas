@@ -3,6 +3,7 @@ slug: domains/payment
 kind: domain
 title: 결제
 display_en: Payments
+description: 결제를 승인하고 취소·반품 시 환불을 처리합니다.
 capabilities: [payment-authorize, refund-process]
 relates: [domains/order]
 ---

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T14:07:33.732Z",
+  "generatedAt": "2026-07-26T14:15:45.000Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4990,7 +4990,7 @@
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 지도 오른쪽 도크의 이름과 첫 화면을 고쳤다. 두 군데가 사용자에게 거짓말을 하고 있었다. 이름. 「볼트 도우미」의 두 낱말이 모두 틀렸다. 「볼트」는 이",
       "wordCount": 48362,
-      "updatedAt": "2026-07-26T14:05:06.441Z",
+      "updatedAt": "2026-07-26T23:15:45+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5777,7 +5777,7 @@
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
       "wordCount": 16312,
-      "updatedAt": "2026-07-26T14:07:33.732Z",
+      "updatedAt": "2026-07-26T23:15:45+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
