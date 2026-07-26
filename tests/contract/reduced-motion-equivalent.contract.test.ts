@@ -33,6 +33,8 @@ const EQUIVALENT_CLASSES = [
   'overlay-fade-only',
   'app-settings-scrim-in',
   'app-settings-panel-in',
+  'settings-view-push-in',
+  'settings-view-pop-in',
   'map-overlay-in',
   'overlay-spring-scrim',
   'topology-chrome-in',
@@ -113,7 +115,14 @@ describe('reduced-motion 동등물 계약', () => {
   it('동등물은 흔들리는 축을 opacity 전용 키프레임으로 갈아탄다', () => {
     // transform 이 실린 등장(chrome-in/out · settings panel · rail dot)은
     // 키프레임 이름을 바꿔야 동등물이 된다 — 시간만 되돌리면 여전히 움직인다.
-    for (const cls of ['topology-chrome-in', 'topology-chrome-out', 'app-settings-panel-in', 'rail-status-dot-in']) {
+    for (const cls of [
+      'topology-chrome-in',
+      'topology-chrome-out',
+      'app-settings-panel-in',
+      'settings-view-push-in',
+      'settings-view-pop-in',
+      'rail-status-dot-in',
+    ]) {
       const matching = allRules.filter((r) =>
         r.selector.split(',').some((s) => new RegExp(`\\.${cls}(?![\\w-])`).test(s)),
       );

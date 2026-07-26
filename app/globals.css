@@ -662,6 +662,48 @@
     animation: settingsPanelIn var(--motion-base) var(--motion-ease) both;
   }
 
+  /* ── 설정 하위면 push/pop (2026-07-26) ────────────────────────────────────
+     「AI 연결」·「에이전트」 하위면으로 들어가는 이동이 **0ms 하드컷**이었다
+     (1프레임, 전후 프레임 변화 0). 높이와 내용이 통째로 바뀌는데 방향을
+     설명하는 신호가 0이라 뒤로(‹)와 앞으로가 화면에서 구분되지 않았다.
+     계층이 깊어지면 오른쪽에서 들어오고, 돌아오면 왼쪽에서 들어온다 —
+     방향이 곧 "어디로 갔는지" 다. 거리는 DOM 오버레이 진입 토큰
+     (`--overlay-enter-translate` 8px)을 그대로 쓴다: 새 값 0. 시트를 **여는**
+     모션은 패널 자신(`.app-settings-panel-in`)이 소유하므로 첫 마운트에는
+     이 클래스가 붙지 않는다(한 동작에 두 모션 금지). reduced-motion 동등물은
+     아래 base 레이어가 이동 축만 없애고 불투명도를 남긴다. */
+  @keyframes settingsViewPushIn {
+    from {
+      opacity: 0;
+      transform: translateX(var(--overlay-enter-translate));
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes settingsViewPopIn {
+    from {
+      opacity: 0;
+      transform: translateX(calc(var(--overlay-enter-translate) * -1));
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .settings-view-push-in {
+    animation: settingsViewPushIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  .settings-view-pop-in {
+    animation: settingsViewPopIn var(--motion-base) var(--motion-ease) both;
+  }
+
   /* ── 목록 행 펼침/접힘 (2026-07-26, [AI 연결] 벤더 행) ────────────────────
      **나가는 길이 들어온 길과 같아야 한다.** 접힘 모션 없이 툭 사라지면
      「취소」가 "취소됐다" 가 아니라 "뭔가 잘못됐다" 로 읽힌다 — 사라진 것이
@@ -2621,7 +2663,9 @@
     }
 
     /* ② transform 이 실린 등장/퇴장 — 키프레임 이름만 바꾼다. */
-    .app-settings-panel-in {
+    .app-settings-panel-in,
+    .settings-view-push-in,
+    .settings-view-pop-in {
       animation-name: panelCrossfadeIn !important;
       animation-duration: var(--motion-base) !important;
     }
