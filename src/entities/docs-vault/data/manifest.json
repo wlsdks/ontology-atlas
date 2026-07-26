@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T11:03:15.000Z",
+  "generatedAt": "2026-07-26T11:29:19.000Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3119,6 +3119,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 위험도 목록에 테스트 파일이 앉아 있지 않다 (근거 계층 분리)",
+          "slug": "2026-07-26-위험도-목록에-테스트-파일이-앉아-있지-않다-근거-계층-분리"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — 화면이 부르는 이름을 CLI·MCP 도 안다",
           "slug": "2026-07-26-화면이-부르는-이름을-climcp-도-안다"
         },
@@ -4969,8 +4974,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 앱 하단에서 열리던 터미널 도크가 사라졌다. 이번 주에 출하하고 이번 주에 지운다 — 번복이므로 그렇게 적는다. 아까움은 남길 이유가 아니었다. 왜 지웠나",
-      "wordCount": 47009,
-      "updatedAt": "2026-07-26T20:03:15+09:00",
+      "wordCount": 47325,
+      "updatedAt": "2026-07-26T20:29:19+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5476,6 +5481,11 @@
         },
         {
           "depth": 3,
+          "text": "Evidence tier — \"no document\" is achromatic, on purpose (2026-07-26)",
+          "slug": "evidence-tier-no-document-is-achromatic-on-purpose-2026-07-26"
+        },
+        {
+          "depth": 3,
           "text": "Three ambers, three rules (the recurring audit false-positive)",
           "slug": "three-ambers-three-rules-the-recurring-audit-false-positive"
         },
@@ -5746,8 +5756,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 15893,
-      "updatedAt": "2026-07-26T19:53:53+09:00",
+      "wordCount": 16100,
+      "updatedAt": "2026-07-26T20:29:19+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
