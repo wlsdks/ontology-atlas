@@ -13,7 +13,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
-import { ChevronDown, Sparkles } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { slugify } from "@/shared/lib/slugify";
 import { Button } from "@/shared/ui";
@@ -92,6 +92,18 @@ const FORM_SECTION_IDS = [
   "project-form-network",
   "project-form-operations",
 ] as const;
+
+/**
+ * 만들기 화면에서 **첫 화면에 보이는** 필수 칸. 나머지는 전부 "더 채우기"
+ * 안으로 접힌다 (저장 뒤 편집 화면에서 채워도 되는 것들이다).
+ * 검증 에러가 이 집합 밖의 필드를 가리키면 접힌 자리를 먼저 펼친다.
+ */
+const CREATE_ESSENTIAL_FIELDS = new Set<keyof ProjectFormValues>([
+  "name",
+  "category",
+  "status",
+  "description",
+]);
 
 const PROJECT_FIELD_IDS: Partial<Record<keyof ProjectFormValues, string>> = {
   slug: "project-field-slug",
@@ -300,6 +312,12 @@ export function ProjectForm({
     return options;
   }, [getStatus, statuses, t, values.status]);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(mode === "edit");
+  // 만들기 화면 전용 — 문서 주소(slug)는 이름에서 자동으로 만들어지므로
+  // 기본은 캡션 한 줄이고, 직접 정하고 싶은 사람만 입력 칸을 연다.
+  const [slugFieldOpen, setSlugFieldOpen] = useState(false);
+  // 만들기 화면 전용 — 필수 4칸 밖의 모든 항목은 접어 둔다. 저장한 뒤
+  // 편집 화면에서 채워도 되는 것들이라 첫 화면의 높이를 먹을 이유가 없다.
+  const [createExtrasOpen, setCreateExtrasOpen] = useState(false);
   const [errors, setErrors] = useState<
     Partial<Record<keyof ProjectFormValues, string>>
   >({});
@@ -430,13 +448,21 @@ export function ProjectForm({
   };
 
   const focusField = (field: keyof ProjectFormValues) => {
+    // 접힌 자리에 있는 필드로 포커스를 보내려면 먼저 펼쳐야 한다 — 접힌 채로
+    // 에러만 배너에 뜨면 "고치라는데 그 칸이 어디에도 없는" 막다른 길이 된다.
+    if (mode === "create") {
+      if (field === "slug") setSlugFieldOpen(true);
+      else if (!CREATE_ESSENTIAL_FIELDS.has(field)) setCreateExtrasOpen(true);
+    }
     const fieldId = PROJECT_FIELD_IDS[field];
     if (!fieldId || typeof document === "undefined") return;
     window.requestAnimationFrame(() => {
       const target = document.getElementById(fieldId);
       if (target instanceof HTMLElement) {
         target.focus();
-        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        // jsdom 은 scrollIntoView 를 구현하지 않는다 — 포커스 이동이 본론이고
+        // 스크롤은 보조라 없으면 조용히 건너뛴다.
+        target.scrollIntoView?.({ behavior: "smooth", block: "center" });
       }
     });
   };
@@ -565,6 +591,7 @@ export function ProjectForm({
           slugs: missingDependencies.join(", "),
         }),
       });
+      focusField("dependencies");
       return;
     }
 
@@ -577,6 +604,7 @@ export function ProjectForm({
           slugs: duplicateDependencies.join(", "),
         }),
       });
+      focusField("dependencies");
       return;
     }
 
@@ -596,6 +624,7 @@ export function ProjectForm({
             name: dependencyProject?.name ?? cyclicDependency,
           }),
         });
+        focusField("dependencies");
         return;
       }
     }
@@ -679,7 +708,6 @@ export function ProjectForm({
       : t("actions.modeEdit");
   const dirtyStateLabel = isDirty ? t("actions.dirty") : t("actions.clean");
   const compactDirtyStateLabel = isDirty ? t("actions.compactDirty") : t("actions.compactClean");
-  const optionalSectionsOpen = sectionOpen["project-form-network"] && sectionOpen["project-form-operations"];
   const changePreviewItems = useMemo(() => {
     const items: string[] = [];
     const emptyLabel = t("preview.changeNameEmpty");
@@ -741,38 +769,498 @@ export function ProjectForm({
     ? t("preview.summaryDirty", { score: completenessInsight.score, count: changePreviewItems.length })
     : t("preview.summaryClean", { score: completenessInsight.score });
 
-  return (
-    // 640px 중앙 폼 컬럼 (docs/prototypes/project-forms-final.html · RATIO-SYSTEM.md
-    // --page-col-form). 우측 260px 는 기존 라이브 미리보기 — 스펙 목업은 단일
-    // 컬럼이지만 완성도 점수·카드 프리뷰는 실제 사용자에게 이미 검증된 기능이라
-    // 제거하지 않고, 폭 640 은 그대로 지키면서 companion 컬럼으로 유지.
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[640px_260px]">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        {writeDisabled ? (
-          <div
-            role="status"
-            data-testid="project-write-disabled-banner"
-            className="rounded-xl border border-[color:var(--color-amber-source-a34)] bg-[color:var(--color-amber-source-a08)] px-4 py-3 text-sm text-[color:var(--color-text-secondary)]"
+  // ── 필드 조각 ──────────────────────────────────────────────────────────
+  // 만들기/편집 두 화면이 **같은 필드 정의**를 공유한다. 조각을 한 번만
+  // 정의하고 화면별로 배치만 다르게 한다 — 필드를 두 벌 적으면 한쪽만
+  // 고쳐지는 drift 가 곧바로 시작된다.
+
+  const slugField = (
+    <FieldRow label={t("fields.slug")} error={errors.slug} fieldId={PROJECT_FIELD_IDS.slug}>
+      <Input
+        id={PROJECT_FIELD_IDS.slug}
+        name="slug"
+        data-testid="project-input-slug"
+        value={values.slug}
+        onChange={(v) => {
+          setSlugManuallyEdited(true);
+          setValue("slug", v);
+        }}
+        placeholder="sample"
+        disabled={mode === "edit"}
+        mono
+        spellCheck={false}
+        aria-invalid={Boolean(errors.slug)}
+      />
+      {mode === "create" && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Button
+            data-testid="project-generate-slug"
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setSlugManuallyEdited(false);
+              setValue("slug", slugify(values.name));
+            }}
+            disabled={values.name.trim().length === 0}
           >
-            {t("validation.demoModeBanner")}
-          </div>
-        ) : null}
-        <div
-          className={cn(
-            "rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-4 shadow-[inset_0_1px_0_var(--color-overlay-2),0_18px_36px_var(--color-shadow-a22)]",
-            mode === "edit" && "sticky top-4 z-10",
+            {t("fields.slugGenerate")}
+          </Button>
+          {existingSlugSet.has(values.slug) && values.slug.length > 0 && (
+            <span
+              role="alert"
+              className="text-xs text-[color:var(--color-status-danger)]"
+            >
+              {t("fields.slugDuplicate")}
+            </span>
           )}
+          {initialProject && (
+            <span className="text-xs text-[color:var(--color-text-quaternary)]">
+              {t("fields.duplicateNotice")}
+            </span>
+          )}
+        </div>
+      )}
+      <Hint>{t("fields.slugHint")}</Hint>
+    </FieldRow>
+  );
+
+  const nameField = (
+    <FieldRow label={t("fields.name")} error={errors.name} fieldId={PROJECT_FIELD_IDS.name}>
+      <Input
+        id={PROJECT_FIELD_IDS.name}
+        name="name"
+        data-testid="project-input-name"
+        value={values.name}
+        onChange={(v) => {
+          setValue("name", v);
+          syncSlugFromName(v);
+        }}
+        placeholder={t("fields.namePlaceholder")}
+        autoComplete="off"
+        aria-invalid={Boolean(errors.name)}
+      />
+    </FieldRow>
+  );
+
+  const nameEnField = (
+    <FieldRow label={t("fields.nameEn")} fieldId={PROJECT_FIELD_IDS.nameEn}>
+      <Input
+        id={PROJECT_FIELD_IDS.nameEn}
+        name="nameEn"
+        data-testid="project-input-name-en"
+        value={values.nameEn ?? ""}
+        onChange={(v) => setValue("nameEn", v)}
+        placeholder={t("fields.nameEnPlaceholder")}
+        autoComplete="off"
+      />
+    </FieldRow>
+  );
+
+  const categoryStatusFields = (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <FieldRow
+        label={t("fields.category")}
+        error={errors.category}
+        errorTestId="project-error-category"
+        fieldId={PROJECT_FIELD_IDS.category}
+      >
+        <Select
+          id={PROJECT_FIELD_IDS.category}
+          name="category"
+          data-testid="project-input-category"
+          value={values.category}
+          onChange={(v) => setValue("category", v)}
+          options={categoryOptions}
+          aria-invalid={Boolean(errors.category)}
+        />
+        {!getCategory(values.category) &&
+          values.category &&
+          values.category !== PRESERVE_MISSING_TAXONOMY_VALUE && (
+          <Hint>
+            <span data-testid="project-missing-category-warning">
+              {t("fields.categoryMissingWarning")}
+            </span>
+          </Hint>
+        )}
+      </FieldRow>
+
+      <FieldRow
+        label={t("fields.status")}
+        error={errors.status}
+        errorTestId="project-error-status"
+        fieldId={PROJECT_FIELD_IDS.status}
+      >
+        <Select
+          id={PROJECT_FIELD_IDS.status}
+          name="status"
+          data-testid="project-input-status"
+          value={values.status}
+          onChange={(v) => setValue("status", v)}
+          options={statusOptions}
+          aria-invalid={Boolean(errors.status)}
+        />
+        {!getStatus(values.status) &&
+          values.status &&
+          values.status !== PRESERVE_MISSING_TAXONOMY_VALUE && (
+          <Hint>
+            <span data-testid="project-missing-status-warning">
+              {t("fields.statusMissingWarning")}
+            </span>
+          </Hint>
+        )}
+      </FieldRow>
+    </div>
+  );
+
+  const descriptionField = (
+    <FieldRow
+      label={t("fields.description")}
+      error={errors.description}
+      fieldId={PROJECT_FIELD_IDS.description}
+    >
+      <Textarea
+        id={PROJECT_FIELD_IDS.description}
+        name="description"
+        data-testid="project-input-description"
+        value={values.description}
+        onChange={(v) => setValue("description", v)}
+        rows={2}
+        placeholder={t("fields.descriptionPlaceholder")}
+        autoComplete="off"
+        aria-invalid={Boolean(errors.description)}
+      />
+    </FieldRow>
+  );
+
+  const detailField = (
+    <FieldRow label={t("fields.detail")} fieldId={PROJECT_FIELD_IDS.detail}>
+      <MarkdownField
+        id={PROJECT_FIELD_IDS.detail}
+        value={values.detail ?? ""}
+        onChange={(v) => setValue("detail", v)}
+        rows={8}
+        placeholder={t("fields.detailPlaceholder")}
+      />
+    </FieldRow>
+  );
+
+  const tagsStackFields = (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <FieldRow label={t("fields.tagsCsv")} fieldId={PROJECT_FIELD_IDS.tagsCsv}>
+        <Input
+          id={PROJECT_FIELD_IDS.tagsCsv}
+          name="tagsCsv"
+          value={values.tagsCsv ?? ""}
+          onChange={(v) => setValue("tagsCsv", v)}
+          placeholder={t("fields.tagsPlaceholder")}
+        />
+      </FieldRow>
+
+      <FieldRow label={t("fields.stackCsv")} fieldId={PROJECT_FIELD_IDS.stackCsv}>
+        <Input
+          id={PROJECT_FIELD_IDS.stackCsv}
+          name="stackCsv"
+          value={values.stackCsv ?? ""}
+          onChange={(v) => setValue("stackCsv", v)}
+          placeholder={t("fields.stackPlaceholder")}
+          mono
+        />
+      </FieldRow>
+    </div>
+  );
+
+  const linksField = (
+    <FieldRow
+      label={t("fields.linksText")}
+      error={errors.linksText}
+      errorTestId="project-error-links"
+      fieldId={PROJECT_FIELD_IDS.linksText}
+    >
+      <Textarea
+        id={PROJECT_FIELD_IDS.linksText}
+        name="linksText"
+        data-testid="project-input-links"
+        value={values.linksText ?? ""}
+        onChange={(v) => setValue("linksText", v)}
+        rows={3}
+        placeholder={t("fields.linksPlaceholder")}
+        mono
+      />
+    </FieldRow>
+  );
+
+  const dependenciesField = (
+    <FieldRow
+      label={t("fields.dependencies")}
+      error={errors.dependencies}
+      errorTestId="project-error-dependencies"
+    >
+      <DependencyPicker
+        value={values.dependencies}
+        onChange={(next) => setValue("dependencies", next)}
+        options={allProjects}
+        selfSlug={mode === "edit" ? initialProject?.slug : undefined}
+        invalidSlugs={invalidDependencySlugs}
+        suggestions={dependencySuggestions}
+      />
+      <Hint>{t("fields.dependenciesHint")}</Hint>
+    </FieldRow>
+  );
+
+  const operationsFields = (
+    <>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <FieldRow
+          label={t("fields.startedAt")}
+          error={errors.startedAt}
+          errorTestId="project-error-startedAt"
+          fieldId={PROJECT_FIELD_IDS.startedAt}
         >
-          <div className="flex flex-col gap-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
+          <Input
+            id={PROJECT_FIELD_IDS.startedAt}
+            name="startedAt"
+            data-testid="project-input-started-at"
+            type="date"
+            value={values.startedAt ?? ""}
+            onChange={(v) => setValue("startedAt", v)}
+          />
+        </FieldRow>
+
+        <FieldRow
+          label={t("fields.launchedAt")}
+          error={errors.launchedAt}
+          errorTestId="project-error-launchedAt"
+          fieldId={PROJECT_FIELD_IDS.launchedAt}
+        >
+          <Input
+            id={PROJECT_FIELD_IDS.launchedAt}
+            name="launchedAt"
+            data-testid="project-input-launched-at"
+            type="date"
+            value={values.launchedAt ?? ""}
+            onChange={(v) => setValue("launchedAt", v)}
+          />
+        </FieldRow>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <FieldRow label={t("fields.owner")} fieldId={PROJECT_FIELD_IDS.owner}>
+          <Input
+            id={PROJECT_FIELD_IDS.owner}
+            name="owner"
+            value={values.owner ?? ""}
+            onChange={(v) => setValue("owner", v)}
+            placeholder={t("fields.ownerPlaceholder")}
+          />
+        </FieldRow>
+
+        <FieldRow label={t("fields.icon")} fieldId={PROJECT_FIELD_IDS.icon}>
+          <Input
+            id={PROJECT_FIELD_IDS.icon}
+            name="icon"
+            value={values.icon ?? ""}
+            onChange={(v) => setValue("icon", v)}
+            placeholder={t("fields.iconPlaceholder")}
+          />
+        </FieldRow>
+
+        <FieldRow label={t("fields.progress")} fieldId={PROJECT_FIELD_IDS.progress}>
+          <Input
+            id={PROJECT_FIELD_IDS.progress}
+            name="progress"
+            type="number"
+            value={values.progress !== undefined ? String(values.progress) : ""}
+            onChange={(v) => setValue("progress", v === "" ? undefined : Number(v))}
+            placeholder={t("fields.progressPlaceholder")}
+          />
+        </FieldRow>
+      </div>
+
+      <label className="flex items-center gap-2 text-sm text-[color:var(--color-text-secondary)]">
+        <input
+          type="checkbox"
+          name="isHub"
+          checked={values.isHub}
+          onChange={(e) => setValue("isHub", e.target.checked)}
+          className="h-4 w-4 accent-[color:var(--color-indigo-brand)]"
+        />
+        <span>
+          {t("fields.isHubLabel")}{" "}
+          <span className="text-[color:var(--color-text-quaternary)]">
+            {t("fields.isHubHint")}
+          </span>
+        </span>
+      </label>
+    </>
+  );
+
+  const writeDisabledBanner = writeDisabled ? (
+    <div
+      role="status"
+      data-testid="project-write-disabled-banner"
+      className="rounded-panel border border-[color:var(--color-amber-source-a34)] bg-[color:var(--color-amber-source-a08)] px-4 py-3 text-sm text-[color:var(--color-text-secondary)]"
+    >
+      {t("validation.demoModeBanner")}
+    </div>
+  ) : null;
+
+  const errorBanner =
+    globalError || Object.keys(errors).length > 0 ? (
+      <div
+        role="alert"
+        className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-3 text-sm text-[color:var(--color-status-danger)]"
+      >
+        <p className="font-[var(--font-weight-signature)]">
+          {globalError ?? t("validation.globalErrorBanner")}
+        </p>
+        {Object.keys(errors).length > 0 ? (
+          <>
+            <ul className="mt-2 space-y-1 text-xs">
+              {Object.entries(errors).slice(0, 4).map(([field, message]) => (
+                <li key={field}>{message}</li>
+              ))}
+            </ul>
+            {Object.keys(errors).length > 4 ? (
+              <p className="mt-2 font-mono text-label uppercase tracking-[0.14em]">
+                {t("validation.globalErrorMore", { count: Object.keys(errors).length - 4 })}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+      </div>
+    ) : null;
+
+  const primarySubmitLabel = submitting
+    ? t("actions.saving")
+    : mode === "create"
+      ? t("actions.createAndContinue")
+      : t("actions.saveAndContinue");
+  const returnSubmitLabel =
+    mode === "create" ? t("actions.createAndReturn") : t("actions.saveAndReturn");
+
+  // 액션 줄 — **폼 뒤**에 온다. 예전에는 같은 3개 버튼이 폼 맨 위에도 있어서
+  // 만들기 화면에서는 입력 칸을 하나도 보기 전에 "생성하고 계속 보기" 를
+  // 누를 수 있었다 (누를 수 있는데 누를 게 없는 상태).
+  const actionRow = (
+    <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[color:var(--color-overlay-2)] pt-6">
+      <Button
+        data-testid="project-cancel"
+        type="button"
+        variant="ghost"
+        onClick={onCancel}
+        disabled={submitting || deleting}
+      >
+        {t("actions.cancel")}
+      </Button>
+      <Button
+        data-testid="project-save-return"
+        type="submit"
+        data-submit-behavior="return"
+        variant="outline"
+        onClick={() => {
+          submitBehaviorRef.current = "return";
+        }}
+        disabled={submitting || deleting || writeDisabled}
+      >
+        {returnSubmitLabel}
+      </Button>
+      <Button
+        data-testid="project-save"
+        type="submit"
+        data-submit-behavior="stay"
+        onClick={() => {
+          submitBehaviorRef.current = "stay";
+        }}
+        disabled={submitting || deleting || writeDisabled}
+      >
+        {primarySubmitLabel}
+      </Button>
+    </div>
+  );
+
+  // ── 만들기 화면 폼 ─────────────────────────────────────────────────────
+  // 필수 4칸(이름 · 카테고리 · 상태 · 짧은 설명)만 펼쳐 두고, 나머지는 전부
+  // "더 채우기" 안으로 접는다. 문서 주소(slug)는 이름에서 자동 생성되므로
+  // 칸이 아니라 이름 밑의 캡션 한 줄로 내려간다.
+  const createForm = (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      {writeDisabledBanner}
+      {errorBanner}
+
+      <div className="flex flex-col gap-5 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-5 shadow-[inset_0_1px_0_var(--color-overlay-2)] md:px-5">
+        <div className="flex flex-col gap-2">
+          {nameField}
+          {slugFieldOpen ? (
+            slugField
+          ) : (
+            /* 캡션은 한 줄로 고정한다 (치수 규칙성). 긴 이름에서 나온 긴
+               주소가 줄을 늘리면 그 카드 높이가 글자 수로 정해진다 — 값은
+               잘리고 전체 값은 "직접 정하기" 를 열면 입력 칸에서 보인다. */
+            <div className="flex items-baseline gap-2 overflow-hidden">
+              <span className="shrink-0 text-label text-[color:var(--color-text-quaternary)]">
+                {t("fields.slugAutoLabel")}
+              </span>
+              <span
+                title={values.slug || undefined}
+                className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--color-text-tertiary)]"
+              >
+                {values.slug || t("fields.slugAutoPending")}
+              </span>
+              <button
+                type="button"
+                data-testid="project-slug-disclosure"
+                onClick={() => setSlugFieldOpen(true)}
+                className="shrink-0 text-label text-[color:var(--color-indigo-accent)] underline underline-offset-2 transition-colors hover:text-[color:var(--color-text-primary)]"
+              >
+                {t("fields.slugEditToggle")}
+              </button>
+            </div>
+          )}
+        </div>
+        {categoryStatusFields}
+        {descriptionField}
+      </div>
+
+      <CreateExtras
+        open={createExtrasOpen}
+        onToggle={() => setCreateExtrasOpen((open) => !open)}
+        label={t("sections.extrasLabel")}
+        caption={t("sections.extrasCaption")}
+        openLabel={t("sections.expandLabel")}
+        closeLabel={t("sections.collapseLabel")}
+      >
+        <ExtrasGroup label={t("sections.storyLabel")}>
+          {nameEnField}
+          {detailField}
+          {tagsStackFields}
+          {linksField}
+        </ExtrasGroup>
+        <ExtrasGroup label={t("sections.networkLabel")}>{dependenciesField}</ExtrasGroup>
+        <ExtrasGroup label={t("sections.operationsLabel")}>{operationsFields}</ExtrasGroup>
+      </CreateExtras>
+
+      {actionRow}
+    </form>
+  );
+
+  // ── 편집 화면 폼 ───────────────────────────────────────────────────────
+  // 편집은 "이미 있는 걸 보강하기" 라 요구가 다르다 — 모든 항목이 펼쳐진
+  // 채로 보이고, 긴 폼을 스크롤하는 동안 저장이 따라오도록 상단 저장 줄이
+  // sticky 로 붙는다. 구조는 재구성 전과 동일(회귀 금지).
+  const editForm = (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      {writeDisabledBanner}
+
+      <div className="sticky top-4 z-10 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-4 shadow-[inset_0_1px_0_var(--color-overlay-2),0_18px_36px_var(--color-shadow-a22)]">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
               <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {editorModeLabel}
               </p>
               <p className="mt-2 hidden text-sm text-[color:var(--color-text-secondary)] md:block">
-                {mode === "create"
-                  ? t("actions.headerHelpCreate")
-                  : t("actions.headerHelpEdit")}
+                {t("actions.headerHelpEdit")}
               </p>
               <span
                 className={cn(
@@ -784,588 +1272,199 @@ export function ProjectForm({
               >
                 {compactDirtyStateLabel}
               </span>
-              </div>
-              <span
-                className={cn(
-                  "hidden rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.08em] md:inline-flex",
-                  isDirty
-                    ? "border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]"
-                    : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]",
-                )}
-              >
-                {dirtyStateLabel}
-              </span>
             </div>
-            <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:justify-end">
-              {/* Delete is intentionally absent from this save-cluster — the
-                  destructive action lives isolated in the dashed danger row at
-                  the form's foot (design charter + Apple HIG: keep destructive
-                  actions away from frequently-tapped buttons; approved spec
-                  docs/prototypes/project-forms-final.html carries one delete). */}
-              <Button
-                data-testid="project-save-top"
-                type="submit"
-                data-submit-behavior="stay"
-                onClick={() => {
-                  submitBehaviorRef.current = "stay";
-                }}
-                disabled={submitting || deleting || writeDisabled}
-                className="order-last col-span-2 justify-center md:order-none md:col-span-1 md:min-w-[88px]"
-              >
-                {submitting
-                  ? t("actions.saving")
-                  : mode === "create"
-                    ? t("actions.createAndContinue")
-                    : t("actions.saveAndContinue")}
-              </Button>
-              <Button
-                data-testid="project-save-return-top"
-                type="submit"
-                data-submit-behavior="return"
-                variant="outline"
-                onClick={() => {
-                  submitBehaviorRef.current = "return";
-                }}
-                disabled={submitting || deleting || writeDisabled}
-                className="justify-center"
-              >
-                {mode === "create" ? t("actions.createAndReturn") : t("actions.saveAndReturn")}
-              </Button>
-              <Button
-                data-testid="project-cancel-top"
-                type="button"
-                variant="ghost"
-                onClick={onCancel}
-                disabled={submitting || deleting}
-                className="justify-center"
-              >
-                {t("actions.cancel")}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {mode === "edit" ? (
-          <div className="rounded-xl border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-4 py-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                {t("sections.navLabel")}
-              </p>
-              <nav className="flex flex-wrap gap-2">
-                {FORM_SECTIONS.map((section) => (
-                  <a
-                    key={section.id}
-                    href={`#${section.id}`}
-                    className="rounded-full border border-[color:var(--color-divider)] px-3 py-1.5 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
-                  >
-                    {section.label}
-                  </a>
-                ))}
-              </nav>
-            </div>
-          </div>
-        ) : null}
-
-        {mode === "create" && (
-          <details className="rounded-xl border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-indigo-a06)] px-4 py-4 md:px-5">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
-              <div>
-                <p className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
-                  <Sparkles size={12} aria-hidden="true" />
-                  {t("tip.eyebrow")}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-secondary)]">
-                  {t("tip.lead")}
-                </p>
-              </div>
-              <span className="rounded-full border border-[color:var(--color-divider)] px-3 py-1 text-xs text-[color:var(--color-text-secondary)]">
-                {t("tip.moreLabel")}
-              </span>
-            </summary>
-            <div className="mt-4 flex flex-col gap-4 border-t border-[color:var(--color-divider)] pt-4 md:flex-row md:items-start md:justify-between">
-              <ol className="grid gap-2 text-sm leading-6 text-[color:var(--color-text-secondary)] md:grid-cols-2">
-                <li>{t("tip.step1")}</li>
-                <li>{t("tip.step2")}</li>
-                <li>{t("tip.step3")}</li>
-                <li>{t("tip.step4")}</li>
-              </ol>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  setSectionOpen((current) => ({
-                    ...current,
-                    "project-form-network": !optionalSectionsOpen,
-                    "project-form-operations": !optionalSectionsOpen,
-                  }))
-                }
-              >
-                {optionalSectionsOpen ? t("tip.collapseDetails") : t("tip.expandDetails")}
-              </Button>
-            </div>
-          </details>
-        )}
-
-        {(globalError || Object.keys(errors).length > 0) && (
-          <div
-            role="alert"
-            className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-3 text-sm text-red-200"
-          >
-            <p className="font-[var(--font-weight-signature)] text-red-100">
-              {globalError ?? t("validation.globalErrorBanner")}
-            </p>
-            {Object.keys(errors).length > 0 ? (
-              <>
-                <ul className="mt-2 space-y-1 text-xs text-red-200/90">
-                  {Object.entries(errors).slice(0, 4).map(([field, message]) => (
-                    <li key={field}>{message}</li>
-                  ))}
-                </ul>
-                {Object.keys(errors).length > 4 ? (
-                  <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-red-300/90">
-                    {t("validation.globalErrorMore", { count: Object.keys(errors).length - 4 })}
-                  </p>
-                ) : null}
-              </>
-            ) : null}
-          </div>
-        )}
-
-        <FormSection
-          id="project-form-basics"
-          label={t("sections.basicsLabel")}
-          description={t("sections.basicsDetailedDescription")}
-          collapsible={false}
-          collapseLabel={t("sections.collapseLabel")}
-          expandLabel={t("sections.expandLabel")}
-        >
-          <FieldRow label={t("fields.slug")} error={errors.slug} fieldId={PROJECT_FIELD_IDS.slug}>
-            <Input
-              id={PROJECT_FIELD_IDS.slug}
-              name="slug"
-              data-testid="project-input-slug"
-              value={values.slug}
-              onChange={(v) => {
-                setSlugManuallyEdited(true);
-                setValue("slug", v);
-              }}
-              placeholder="sample"
-              disabled={mode === "edit"}
-              mono
-              spellCheck={false}
-              aria-invalid={Boolean(errors.slug)}
-            />
-            {mode === "create" && (
-              <div className="mt-2 flex items-center gap-2">
-                <Button
-                  data-testid="project-generate-slug"
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setSlugManuallyEdited(false);
-                    setValue("slug", slugify(values.name));
-                  }}
-                  disabled={values.name.trim().length === 0}
-                >
-                  {t("fields.slugGenerate")}
-                </Button>
-                {existingSlugSet.has(values.slug) && values.slug.length > 0 && (
-                  <span
-                    role="alert"
-                    className="text-xs text-[color:var(--color-status-danger)]"
-                  >
-                    {t("fields.slugDuplicate")}
-                  </span>
-                )}
-                {initialProject && (
-                  <span className="text-xs text-[color:var(--color-text-quaternary)]">
-                    {t("fields.duplicateNotice")}
-                  </span>
-                )}
-              </div>
-            )}
-            <Hint>{t("fields.slugHint")}</Hint>
-          </FieldRow>
-
-          <FieldRow label={t("fields.name")} error={errors.name} fieldId={PROJECT_FIELD_IDS.name}>
-            <Input
-              id={PROJECT_FIELD_IDS.name}
-              name="name"
-              data-testid="project-input-name"
-              value={values.name}
-              onChange={(v) => {
-                setValue("name", v);
-                syncSlugFromName(v);
-              }}
-              placeholder={t("fields.namePlaceholder")}
-              autoComplete="off"
-              aria-invalid={Boolean(errors.name)}
-            />
-          </FieldRow>
-
-          <FieldRow label={t("fields.nameEn")} fieldId={PROJECT_FIELD_IDS.nameEn}>
-            <Input
-              id={PROJECT_FIELD_IDS.nameEn}
-              name="nameEn"
-              data-testid="project-input-name-en"
-              value={values.nameEn ?? ""}
-              onChange={(v) => setValue("nameEn", v)}
-              placeholder={t("fields.nameEnPlaceholder")}
-              autoComplete="off"
-            />
-          </FieldRow>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FieldRow
-              label={t("fields.category")}
-              error={errors.category}
-              errorTestId="project-error-category"
-              fieldId={PROJECT_FIELD_IDS.category}
-            >
-              <Select
-                id={PROJECT_FIELD_IDS.category}
-                name="category"
-                data-testid="project-input-category"
-                value={values.category}
-                onChange={(v) => setValue("category", v)}
-                options={categoryOptions}
-                aria-invalid={Boolean(errors.category)}
-              />
-              {!getCategory(values.category) &&
-                values.category &&
-                values.category !== PRESERVE_MISSING_TAXONOMY_VALUE && (
-                <Hint>
-                  <span data-testid="project-missing-category-warning">
-                    {t("fields.categoryMissingWarning")}
-                  </span>
-                </Hint>
+            <span
+              className={cn(
+                "hidden rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.08em] md:inline-flex",
+                isDirty
+                  ? "border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]"
+                  : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]",
               )}
-            </FieldRow>
-
-            <FieldRow
-              label={t("fields.status")}
-              error={errors.status}
-              errorTestId="project-error-status"
-              fieldId={PROJECT_FIELD_IDS.status}
             >
-              <Select
-                id={PROJECT_FIELD_IDS.status}
-                name="status"
-                data-testid="project-input-status"
-                value={values.status}
-                onChange={(v) => setValue("status", v)}
-                options={statusOptions}
-                aria-invalid={Boolean(errors.status)}
-              />
-              {!getStatus(values.status) &&
-                values.status &&
-                values.status !== PRESERVE_MISSING_TAXONOMY_VALUE && (
-                <Hint>
-                  <span data-testid="project-missing-status-warning">
-                    {t("fields.statusMissingWarning")}
-                  </span>
-                </Hint>
-              )}
-            </FieldRow>
-          </div>
-        </FormSection>
-
-        <FormSection
-          id="project-form-story"
-          label={t("sections.storyLabel")}
-          description={t("sections.storyDetailedDescription")}
-          isOpen={sectionOpen["project-form-story"]}
-          onToggle={() =>
-            setSectionOpen((current) => ({
-              ...current,
-              "project-form-story": !current["project-form-story"],
-            }))
-          }
-          helperBadge={t("sections.helperBadgeDescriptionRequired")}
-          collapseLabel={t("sections.collapseLabel")}
-          expandLabel={t("sections.expandLabel")}
-        >
-          <FieldRow
-            label={t("fields.description")}
-            error={errors.description}
-            fieldId={PROJECT_FIELD_IDS.description}
-          >
-            <Textarea
-              id={PROJECT_FIELD_IDS.description}
-              name="description"
-              data-testid="project-input-description"
-              value={values.description}
-              onChange={(v) => setValue("description", v)}
-              rows={2}
-              placeholder={t("fields.descriptionPlaceholder")}
-              autoComplete="off"
-              aria-invalid={Boolean(errors.description)}
-            />
-          </FieldRow>
-
-          <FieldRow label={t("fields.detail")} fieldId={PROJECT_FIELD_IDS.detail}>
-            <MarkdownField
-              id={PROJECT_FIELD_IDS.detail}
-              value={values.detail ?? ""}
-              onChange={(v) => setValue("detail", v)}
-              rows={8}
-              placeholder={t("fields.detailPlaceholder")}
-            />
-          </FieldRow>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FieldRow label={t("fields.tagsCsv")} fieldId={PROJECT_FIELD_IDS.tagsCsv}>
-              <Input
-                id={PROJECT_FIELD_IDS.tagsCsv}
-                name="tagsCsv"
-                value={values.tagsCsv ?? ""}
-                onChange={(v) => setValue("tagsCsv", v)}
-                placeholder={t("fields.tagsPlaceholder")}
-              />
-            </FieldRow>
-
-            <FieldRow label={t("fields.stackCsv")} fieldId={PROJECT_FIELD_IDS.stackCsv}>
-              <Input
-                id={PROJECT_FIELD_IDS.stackCsv}
-                name="stackCsv"
-                value={values.stackCsv ?? ""}
-                onChange={(v) => setValue("stackCsv", v)}
-                placeholder={t("fields.stackPlaceholder")}
-                mono
-              />
-            </FieldRow>
-          </div>
-
-          <FieldRow
-            label={t("fields.linksText")}
-            error={errors.linksText}
-            errorTestId="project-error-links"
-            fieldId={PROJECT_FIELD_IDS.linksText}
-          >
-            <Textarea
-              id={PROJECT_FIELD_IDS.linksText}
-              name="linksText"
-              data-testid="project-input-links"
-              value={values.linksText ?? ""}
-              onChange={(v) => setValue("linksText", v)}
-              rows={3}
-              placeholder={t("fields.linksPlaceholder")}
-              mono
-            />
-          </FieldRow>
-        </FormSection>
-
-        <FormSection
-          id="project-form-network"
-          label={t("sections.networkLabel")}
-          description={t("sections.networkDetailedDescription")}
-          isOpen={sectionOpen["project-form-network"]}
-          onToggle={() =>
-            setSectionOpen((current) => ({
-              ...current,
-              "project-form-network": !current["project-form-network"],
-            }))
-          }
-          helperBadge={t("sections.helperBadgeAfterSave")}
-          collapseLabel={t("sections.collapseLabel")}
-          expandLabel={t("sections.expandLabel")}
-        >
-          <FieldRow
-            label={t("fields.dependencies")}
-            error={errors.dependencies}
-            errorTestId="project-error-dependencies"
-          >
-            <DependencyPicker
-              value={values.dependencies}
-              onChange={(next) => setValue("dependencies", next)}
-              options={allProjects}
-              selfSlug={mode === "edit" ? initialProject?.slug : undefined}
-              invalidSlugs={invalidDependencySlugs}
-              suggestions={dependencySuggestions}
-            />
-            <Hint>{t("fields.dependenciesHint")}</Hint>
-          </FieldRow>
-
-          {/* Screenshot uploader 없음 — local-first 흐름은 markdown 안
-              이미지 인라인 또는 vault 내부 image asset 으로 처리. */}
-        </FormSection>
-
-        <FormSection
-          id="project-form-operations"
-          label={t("sections.operationsLabel")}
-          description={t("sections.operationsDetailedDescription")}
-          isOpen={sectionOpen["project-form-operations"]}
-          onToggle={() =>
-            setSectionOpen((current) => ({
-              ...current,
-              "project-form-operations": !current["project-form-operations"],
-            }))
-          }
-          helperBadge={t("sections.helperBadgeOptional")}
-          collapseLabel={t("sections.collapseLabel")}
-          expandLabel={t("sections.expandLabel")}
-        >
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FieldRow
-              label={t("fields.startedAt")}
-              error={errors.startedAt}
-              errorTestId="project-error-startedAt"
-              fieldId={PROJECT_FIELD_IDS.startedAt}
-            >
-              <Input
-                id={PROJECT_FIELD_IDS.startedAt}
-                name="startedAt"
-                data-testid="project-input-started-at"
-                type="date"
-                value={values.startedAt ?? ""}
-                onChange={(v) => setValue("startedAt", v)}
-              />
-            </FieldRow>
-
-            <FieldRow
-              label={t("fields.launchedAt")}
-              error={errors.launchedAt}
-              errorTestId="project-error-launchedAt"
-              fieldId={PROJECT_FIELD_IDS.launchedAt}
-            >
-              <Input
-                id={PROJECT_FIELD_IDS.launchedAt}
-                name="launchedAt"
-                data-testid="project-input-launched-at"
-                type="date"
-                value={values.launchedAt ?? ""}
-                onChange={(v) => setValue("launchedAt", v)}
-              />
-            </FieldRow>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <FieldRow label={t("fields.owner")} fieldId={PROJECT_FIELD_IDS.owner}>
-              <Input
-                id={PROJECT_FIELD_IDS.owner}
-                name="owner"
-                value={values.owner ?? ""}
-                onChange={(v) => setValue("owner", v)}
-                placeholder={t("fields.ownerPlaceholder")}
-              />
-            </FieldRow>
-
-            <FieldRow label={t("fields.icon")} fieldId={PROJECT_FIELD_IDS.icon}>
-              <Input
-                id={PROJECT_FIELD_IDS.icon}
-                name="icon"
-                value={values.icon ?? ""}
-                onChange={(v) => setValue("icon", v)}
-                placeholder={t("fields.iconPlaceholder")}
-              />
-            </FieldRow>
-
-            <FieldRow label={t("fields.progress")} fieldId={PROJECT_FIELD_IDS.progress}>
-              <Input
-                id={PROJECT_FIELD_IDS.progress}
-                name="progress"
-                type="number"
-                value={
-                  values.progress !== undefined ? String(values.progress) : ""
-                }
-                onChange={(v) =>
-                  setValue("progress", v === "" ? undefined : Number(v))
-                }
-                placeholder={t("fields.progressPlaceholder")}
-              />
-            </FieldRow>
-          </div>
-
-          <label className="flex items-center gap-2 text-sm text-[color:var(--color-text-secondary)]">
-            <input
-              type="checkbox"
-              name="isHub"
-              checked={values.isHub}
-              onChange={(e) => setValue("isHub", e.target.checked)}
-              className="h-4 w-4 accent-[color:var(--color-indigo-brand)]"
-            />
-            <span>
-              {t("fields.isHubLabel")}{" "}
-              <span className="text-[color:var(--color-text-quaternary)]">
-                {t("fields.isHubHint")}
-              </span>
+              {dirtyStateLabel}
             </span>
-          </label>
-        </FormSection>
-
-        <div className="flex items-center justify-end gap-2 border-t border-[color:var(--color-overlay-2)] pt-6">
-          <Button
-            data-testid="project-save-return"
-            type="submit"
-            data-submit-behavior="return"
-            variant="outline"
-            onClick={() => {
-              submitBehaviorRef.current = "return";
-            }}
-            disabled={submitting || deleting || writeDisabled}
-          >
-            {mode === "create" ? t("actions.createAndReturn") : t("actions.saveAndReturn")}
-          </Button>
-          <Button
-            data-testid="project-cancel"
-            type="button"
-            variant="ghost"
-            onClick={onCancel}
-            disabled={submitting || deleting}
-          >
-            {t("actions.cancel")}
-          </Button>
-          <Button
-            data-testid="project-save"
-            type="submit"
-            data-submit-behavior="stay"
-            onClick={() => {
-              submitBehaviorRef.current = "stay";
-            }}
-            disabled={submitting || deleting || writeDisabled}
-          >
-            {submitting
-              ? t("actions.saving")
-              : mode === "create"
-                ? t("actions.createAndContinue")
-                : t("actions.saveAndContinue")}
-          </Button>
-        </div>
-
-        {/* Edit-only danger row — dashed border is the category signal
-            (design charter: category distinction is a border style, not a
-            color), matching docs/prototypes/project-forms-final.html. This is
-            the single, isolated home for deletion: the destructive action is
-            deliberately kept out of the sticky save-cluster (Apple HIG — keep
-            destructive actions away from frequently-tapped buttons) and given
-            the consequence caption a compact bar has no room for. */}
-        {mode === "edit" && onDelete && (
-          <div
-            data-testid="project-danger-row"
-            className="mt-4 flex items-center gap-3 rounded-[9px] border border-dashed border-[color:var(--color-border-strong)] px-4 py-3"
-          >
-            <div className="min-w-0">
-              <p className="text-[12.5px] text-[color:var(--color-text-secondary)]">
-                {t("actions.deleteRowTitle")}
-              </p>
-              <p className="mt-0.5 text-[11px] text-[color:var(--color-text-quaternary)]">
-                {t("actions.deleteRowCaption")}
-              </p>
-            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:justify-end">
+            {/* Delete is intentionally absent from this save-cluster — the
+                destructive action lives isolated in the dashed danger row at
+                the form's foot (design charter + Apple HIG: keep destructive
+                actions away from frequently-tapped buttons). */}
             <Button
-              data-testid="project-delete"
-              type="button"
-              variant="outline"
-              onClick={handleDelete}
-              disabled={deleting || submitting}
-              className="ml-auto shrink-0 border-[color:var(--color-border-soft)] text-[color:var(--color-status-danger)] hover:border-[color:var(--color-danger-a50)]"
+              data-testid="project-save-top"
+              type="submit"
+              data-submit-behavior="stay"
+              onClick={() => {
+                submitBehaviorRef.current = "stay";
+              }}
+              disabled={submitting || deleting || writeDisabled}
+              className="order-last col-span-2 justify-center md:order-none md:col-span-1 md:min-w-[88px]"
             >
-              {deleting ? t("actions.deleting") : t("actions.delete")}
+              {primarySubmitLabel}
+            </Button>
+            <Button
+              data-testid="project-save-return-top"
+              type="submit"
+              data-submit-behavior="return"
+              variant="outline"
+              onClick={() => {
+                submitBehaviorRef.current = "return";
+              }}
+              disabled={submitting || deleting || writeDisabled}
+              className="justify-center"
+            >
+              {returnSubmitLabel}
+            </Button>
+            <Button
+              data-testid="project-cancel-top"
+              type="button"
+              variant="ghost"
+              onClick={onCancel}
+              disabled={submitting || deleting}
+              className="justify-center"
+            >
+              {t("actions.cancel")}
             </Button>
           </div>
-        )}
-      </form>
+        </div>
+      </div>
+
+      <div className="rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-4 py-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t("sections.navLabel")}
+          </p>
+          <nav className="flex flex-wrap gap-2">
+            {FORM_SECTIONS.map((section) => (
+              <a
+                key={section.id}
+                href={`#${section.id}`}
+                className="rounded-full border border-[color:var(--color-divider)] px-3 py-1.5 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
+              >
+                {section.label}
+              </a>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      {errorBanner}
+
+      <FormSection
+        id="project-form-basics"
+        label={t("sections.basicsLabel")}
+        description={t("sections.basicsDetailedDescription")}
+        collapsible={false}
+        collapseLabel={t("sections.collapseLabel")}
+        expandLabel={t("sections.expandLabel")}
+      >
+        {slugField}
+        {nameField}
+        {nameEnField}
+        {categoryStatusFields}
+      </FormSection>
+
+      <FormSection
+        id="project-form-story"
+        label={t("sections.storyLabel")}
+        description={t("sections.storyDetailedDescription")}
+        isOpen={sectionOpen["project-form-story"]}
+        onToggle={() =>
+          setSectionOpen((current) => ({
+            ...current,
+            "project-form-story": !current["project-form-story"],
+          }))
+        }
+        helperBadge={t("sections.helperBadgeDescriptionRequired")}
+        collapseLabel={t("sections.collapseLabel")}
+        expandLabel={t("sections.expandLabel")}
+      >
+        {descriptionField}
+        {detailField}
+        {tagsStackFields}
+        {linksField}
+      </FormSection>
+
+      <FormSection
+        id="project-form-network"
+        label={t("sections.networkLabel")}
+        description={t("sections.networkDetailedDescription")}
+        isOpen={sectionOpen["project-form-network"]}
+        onToggle={() =>
+          setSectionOpen((current) => ({
+            ...current,
+            "project-form-network": !current["project-form-network"],
+          }))
+        }
+        helperBadge={t("sections.helperBadgeAfterSave")}
+        collapseLabel={t("sections.collapseLabel")}
+        expandLabel={t("sections.expandLabel")}
+      >
+        {dependenciesField}
+        {/* Screenshot uploader 없음 — local-first 흐름은 markdown 안
+            이미지 인라인 또는 vault 내부 image asset 으로 처리. */}
+      </FormSection>
+
+      <FormSection
+        id="project-form-operations"
+        label={t("sections.operationsLabel")}
+        description={t("sections.operationsDetailedDescription")}
+        isOpen={sectionOpen["project-form-operations"]}
+        onToggle={() =>
+          setSectionOpen((current) => ({
+            ...current,
+            "project-form-operations": !current["project-form-operations"],
+          }))
+        }
+        helperBadge={t("sections.helperBadgeOptional")}
+        collapseLabel={t("sections.collapseLabel")}
+        expandLabel={t("sections.expandLabel")}
+      >
+        {operationsFields}
+      </FormSection>
+
+      {actionRow}
+
+      {/* Edit-only danger row — dashed border is the category signal
+          (design charter: category distinction is a border style, not a
+          color). This is the single, isolated home for deletion: the
+          destructive action is deliberately kept out of the sticky
+          save-cluster (Apple HIG — keep destructive actions away from
+          frequently-tapped buttons) and given the consequence caption a
+          compact bar has no room for. */}
+      {onDelete && (
+        <div
+          data-testid="project-danger-row"
+          className="mt-4 flex items-center gap-3 rounded-card border border-dashed border-[color:var(--color-border-strong)] px-4 py-3"
+        >
+          <div className="min-w-0">
+            <p className="text-body text-[color:var(--color-text-secondary)]">
+              {t("actions.deleteRowTitle")}
+            </p>
+            <p className="mt-0.5 text-label text-[color:var(--color-text-quaternary)]">
+              {t("actions.deleteRowCaption")}
+            </p>
+          </div>
+          <Button
+            data-testid="project-delete"
+            type="button"
+            variant="outline"
+            onClick={handleDelete}
+            disabled={deleting || submitting}
+            className="ml-auto shrink-0 border-[color:var(--color-border-soft)] text-[color:var(--color-status-danger)] hover:border-[color:var(--color-danger-a50)]"
+          >
+            {deleting ? t("actions.deleting") : t("actions.delete")}
+          </Button>
+        </div>
+      )}
+    </form>
+  );
+
+  return (
+    // 640px 중앙 폼 컬럼 (docs/prototypes/project-forms-final.html · RATIO-SYSTEM.md
+    // --page-col-form). 우측 260px 는 라이브 미리보기 — 이제 필수 칸이 첫 화면에
+    // 있으므로 "왼쪽 입력" 과 "오른쪽 반영" 이 실제로 같은 화면에서 마주 본다.
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[640px_260px]">
+      {mode === "create" ? createForm : editForm}
 
       {/* 모바일에서는 폼 입력을 먼저 보이게 하고, 데스크톱에서만 우측 보조 패널로 유지한다. */}
       <aside className="order-none">
@@ -1374,7 +1473,7 @@ export function ProjectForm({
             type="button"
             data-testid="project-mobile-preview-toggle"
             onClick={() => setMobilePreviewOpen((open) => !open)}
-            className="mb-4 flex w-full items-center justify-between rounded-xl border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-4 py-4 text-left lg:hidden"
+            className="mb-4 flex w-full items-center justify-between rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-4 py-4 text-left lg:hidden"
           >
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
@@ -1393,89 +1492,179 @@ export function ProjectForm({
             />
           </button>
           <div className={cn("hidden lg:block", mobilePreviewOpen && "block")}>
-          <div className="mb-4 rounded-xl border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-4">
-            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-              {t("preview.previewEyebrow")}
-            </p>
-            {saveNotice ? (
-              <div
-                role="status"
-                className="mt-3 rounded-lg border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a10)] px-4 py-3 text-sm text-[color:var(--color-indigo-accent)]"
-              >
-                {saveNotice}
-              </div>
-            ) : null}
-            <p className="mt-3 text-sm text-[color:var(--color-text-secondary)]">
-              {t("preview.liveHint")}
-            </p>
-            {!saveNotice && changePreviewItems.length === 0 ? (
-              <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">
-                {t("preview.noChanges")}
-              </p>
-            ) : null}
-          </div>
-          <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-            {t("preview.cardEyebrow")}
-          </p>
-          <div className="flex items-start justify-center rounded-xl border border-[color:var(--color-overlay-2)] bg-[color:var(--color-canvas)] p-6">
-            <ProjectCard
-              project={previewProject}
-              category={(() => {
-                const c = getCategory(previewProject.category);
-                return c
-                  ? {
-                      borderStyle: c.borderStyle,
-                      sideLabelText: c.sideLabelText ?? c.labelEn ?? c.label,
-                    }
-                  : undefined;
-              })()}
-              statusDotColor={
-                getStatus(previewProject.status)?.dotColor ?? "neutral"
-              }
-              shared={
-                !previewProject.isHub &&
-                isSharedNode(
-                  previewProject.dependencies,
-                  computeHubSlugs(allProjects),
-                )
-              }
-              hubEyebrow={t("preview.cardHubEyebrow")}
-              sharedEyebrow={t("preview.cardSharedEyebrow")}
-              preview
-            />
-          </div>
-          <p className="mt-2 text-[11px] text-[color:var(--color-text-quaternary)]">
-            {t("preview.cardCaption")}
-          </p>
-          <div className="mt-4 rounded-xl border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
+            {/* 편집 화면에서만 "무엇이 바뀌는지" 를 문장으로 덧댄다. 만들기
+                화면은 저장된 이전 상태가 없어서 그 문장이 항상 같은 말을
+                반복했고, "왼쪽 입력이 여기 반영됩니다" 는 정작 그 왼쪽 입력이
+                화면 밖에 있을 때 쓰던 변명이었다. 지금은 마주 보므로 뺀다. */}
+            {(mode === "edit" || saveNotice) && (
+              <div className="mb-4 rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-4">
                 <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                  {t("preview.completenessLabel")}
+                  {t("preview.previewEyebrow")}
                 </p>
-                <p className="mt-2 text-[28px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                  {completenessInsight.score}%
-                </p>
+                {saveNotice ? (
+                  <div
+                    role="status"
+                    className="mt-3 rounded-card border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a10)] px-4 py-3 text-sm text-[color:var(--color-indigo-accent)]"
+                  >
+                    {saveNotice}
+                  </div>
+                ) : null}
+                {mode === "edit" ? (
+                  <>
+                    <p className="mt-3 text-sm text-[color:var(--color-text-secondary)]">
+                      {t("preview.liveHint")}
+                    </p>
+                    {!saveNotice && changePreviewItems.length === 0 ? (
+                      <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">
+                        {t("preview.noChanges")}
+                      </p>
+                    ) : null}
+                  </>
+                ) : null}
               </div>
-              <div className="text-right">
-                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                  {t("preview.publicStatusLabel")}
-                </p>
-                <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">
-                  {isDirty ? t("preview.publicStatusDirty") : freshnessInsight.label}
-                </p>
-              </div>
+            )}
+            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {t("preview.cardEyebrow")}
+            </p>
+            <div className="flex items-start justify-center rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-canvas)] p-6">
+              <ProjectCard
+                project={previewProject}
+                category={(() => {
+                  const c = getCategory(previewProject.category);
+                  return c
+                    ? {
+                        borderStyle: c.borderStyle,
+                        sideLabelText: c.sideLabelText ?? c.labelEn ?? c.label,
+                      }
+                    : undefined;
+                })()}
+                statusDotColor={
+                  getStatus(previewProject.status)?.dotColor ?? "neutral"
+                }
+                shared={
+                  !previewProject.isHub &&
+                  isSharedNode(
+                    previewProject.dependencies,
+                    computeHubSlugs(allProjects),
+                  )
+                }
+                hubEyebrow={t("preview.cardHubEyebrow")}
+                sharedEyebrow={t("preview.cardSharedEyebrow")}
+                preview
+              />
             </div>
-            <p className="mt-2 text-[11px] text-[color:var(--color-text-quaternary)]">
-              {t("preview.completenessFraction", {
-                completed: completenessInsight.completedCount,
-                total: completenessInsight.totalCount,
-              })}
+            <p className="mt-2 text-label text-[color:var(--color-text-quaternary)]">
+              {t("preview.cardCaption")}
             </p>
-          </div>
+            <div className="mt-4 rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                    {t("preview.completenessLabel")}
+                  </p>
+                  <p className="mt-2 text-[28px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                    {completenessInsight.score}%
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                    {t("preview.publicStatusLabel")}
+                  </p>
+                  <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">
+                    {isDirty ? t("preview.publicStatusDirty") : freshnessInsight.label}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-2 text-label text-[color:var(--color-text-quaternary)]">
+                {t("preview.completenessFraction", {
+                  completed: completenessInsight.completedCount,
+                  total: completenessInsight.totalCount,
+                })}
+              </p>
+            </div>
           </div>
         </div>
       </aside>
+    </div>
+  );
+}
+
+/**
+ * 만들기 화면의 "더 채우기" 자리. 필수 4칸 밖의 모든 항목이 여기 접혀 있고,
+ * 펼치는 건 사용자다. 닫힌 높이를 고정하지 않는 대신 캡션 한 줄이 늘 같은
+ * 자리에서 "저장한 뒤에 채워도 된다" 를 말한다 — 이 화면의 유일한 안내다.
+ */
+function CreateExtras({
+  open,
+  onToggle,
+  label,
+  caption,
+  openLabel,
+  closeLabel,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  label: string;
+  caption: string;
+  openLabel: string;
+  closeLabel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-4 md:px-5">
+      <button
+        type="button"
+        data-testid="project-create-extras-toggle"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls="project-create-extras"
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
+        <span className="min-w-0">
+          <span className="block text-sm text-[color:var(--color-text-primary)]">{label}</span>
+          <span className="mt-1 block text-label text-[color:var(--color-text-quaternary)]">
+            {caption}
+          </span>
+        </span>
+        <span className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-divider)] px-3 text-xs text-[color:var(--color-text-secondary)]">
+          {open ? closeLabel : openLabel}
+          <ChevronDown
+            size={14}
+            aria-hidden="true"
+            className={cn("transition-transform", open && "rotate-180")}
+          />
+        </span>
+      </button>
+      {open ? (
+        <div
+          id="project-create-extras"
+          className="mt-5 flex flex-col gap-6 border-t border-[color:var(--color-divider)] pt-5"
+        >
+          {children}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+/** "더 채우기" 안의 소그룹 — 각인 라벨 + 헤어라인, 접기 버튼 없음. */
+function ExtrasGroup({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center gap-2.5">
+        <p className="shrink-0 font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-tertiary)]">
+          {label}
+        </p>
+        <span aria-hidden className="h-px flex-1 bg-[color:var(--color-divider)]" />
+      </div>
+      {children}
     </div>
   );
 }
