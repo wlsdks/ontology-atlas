@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T13:54:56.000Z",
+  "generatedAt": "2026-07-26T13:56:11.983Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3119,6 +3119,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 화면이 멈추는 순간들을 지웠다 (빈 프레임 사냥)",
+          "slug": "2026-07-26-화면이-멈추는-순간들을-지웠다-빈-프레임-사냥"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — 앱 안의 터미널을 걷어냈다 (같은 주에 낸 것을 같은 주에 지운 기록)",
           "slug": "2026-07-26-앱-안의-터미널을-걷어냈다-같은-주에-낸-것을-같은-주에-지운-기록"
         },
@@ -4978,9 +4983,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 인사이트 「할 일」 탭이 두 묶음으로 나뉘었다: 「지금 바로 고칠 수 있어요」 와 「개발자·AI에게 넘길 일」. 내 폴더를 연 세션에서는 앞 묶음이 화면 ",
-      "wordCount": 47740,
-      "updatedAt": "2026-07-26T22:54:56+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. <<<<<<< HEAD 인사이트 「할 일」 탭이 두 묶음으로 나뉘었다: 「지금 바로 고칠 수 있어요」 와 「개발자·AI에게 넘길 일」. 내 폴더를 연 세션",
+      "wordCount": 48022,
+      "updatedAt": "2026-07-26T13:56:11.983Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5531,6 +5536,11 @@
         },
         {
           "depth": 3,
+          "text": "reduced-motion 동등물은 목록이고, 그 목록은 테스트가 지킨다 (2026-07-26)",
+          "slug": "reduced-motion-동등물은-목록이고-그-목록은-테스트가-지킨다-2026-07-26"
+        },
+        {
+          "depth": 3,
           "text": "Tokenization Contract For Relief/Topology",
           "slug": "tokenization-contract-for-relieftopology"
         },
@@ -5761,8 +5771,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 16100,
-      "updatedAt": "2026-07-26T20:30:47+09:00",
+      "wordCount": 16310,
+      "updatedAt": "2026-07-26T22:56:11+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
