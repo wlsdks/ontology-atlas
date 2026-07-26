@@ -2948,5 +2948,84 @@
     "needVaultHint": "터미널은 지금 열어 둔 폴더에서 시작해요.",
     "resizeLabel": "터미널 높이 조절",
     "resizeHint": "위아래로 끌어 높이를 바꿔요. 두 번 누르면 기본 높이로 돌아가요."
+  },
+  "vaultAgentPanel": {
+    "title": "볼트 도우미",
+    "subtitle": "지도의 개념과 연결을 같이 설계해요",
+    "close": "패널 닫기",
+    "you": "나:",
+    "send": "보내기",
+    "stop": "멈추기",
+    "placeholder": "이어서 말하기…",
+    "empty": "지금 보고 있는 것을 그대로 물어보세요. 예: 이 개념에 빠진 연결이 뭐야?",
+    "thinking": "생각 중",
+    "thinkingSeconds": "생각 중 · {seconds}초",
+    "unsupported": "읽은 근거 없이 답했어요. 그대로 믿지 마세요.",
+    "charsLabel": "{chars}자",
+    "footer": "{provider} · 이 턴 {chars}자 · 기록 {rounds}건",
+    "boundary": "코드까지 봐야 하는 일은 내 컴퓨터의 터미널에서 여는 AI 가 나아요. 여기서는 문서 폴더만 봐요.",
+    "snapshotLabel": "도우미 적용 전 저장점",
+    "provider": {
+      "anthropic": "Anthropic",
+      "openai": "OpenAI",
+      "gemini": "Gemini"
+    },
+    "screenContext": {
+      "lookingAt": "화면: {title} 을(를) 보는 중",
+      "wholeMap": "화면: 지도 전체를 보는 중"
+    },
+    "scope": {
+      "title": "보내기 전에 알려드려요",
+      "body": "이 대화에서 도우미가 문서 폴더를 읽으며 일해요. 읽은 내용은 그때그때 {provider}({host}) 로 보내져요.",
+      "liveRows": "무엇을 읽어 몇 자를 보냈는지 대화에 한 줄씩 그대로 남아요.",
+      "recorded": "모든 왕복이 {path} 에 기록돼요.",
+      "accept": "알겠어요",
+      "cancel": "그만두기"
+    },
+    "promptDisclosure": {
+      "summary": "도우미가 받는 지침 보기",
+      "note": "아래 글이 매번 함께 보내져요. 고칠 수는 없지만 언제든 볼 수 있어요."
+    },
+    "proposal": {
+      "title": "제안 · 바꿀 파일 {count}개",
+      "readOnlyTitle": "제안 (이 폴더는 쓸 수 없어요)",
+      "volume": "파일 {files}개 · +{added}줄 −{removed}줄",
+      "apply": "선택한 {count}건 적용",
+      "cancel": "취소",
+      "copy": "이 변경을 복사",
+      "copied": "복사했어요",
+      "snapshot": "적용 전 저장점 만들기 (git)",
+      "snapshotUnavailable": "이 폴더는 git 이 아니라 저장점을 만들 수 없어요",
+      "applied": "적용됨 · 저장점 {sha}",
+      "appliedNoSnapshot": "적용됨",
+      "cancelled": "취소했어요. 파일은 하나도 바뀌지 않았어요.",
+      "conflict": "방금 이 문서가 바뀌었어요 — 아무것도 쓰지 않았어요. 다시 물어봐 주세요.",
+      "unreadWarning": "이 대화에서 읽지 않은 파일을 고치려 해요. 내용을 꼭 펼쳐서 확인하세요.",
+      "showOnMap": "지도에서 보기",
+      "expandHint": "바뀌는 내용",
+      "createFile": "만들기 {path}",
+      "modifyFile": "고치기 {path}",
+      "addRelation": "{from} → {to} 연결 ({type})"
+    },
+    "notice": {
+      "roundCap": "여기까지 하고 정리할게요.",
+      "aborted": "여기까지 읽었어요.",
+      "networkFailed": "연결에 실패했어요.",
+      "rateLimited": "지금은 호출 한도예요. 잠시 뒤에 다시 해주세요.",
+      "rejected": "키가 거부됐어요. 설정에서 확인해 주세요.",
+      "auditBlocked": "기록을 남길 수 없어 보내지 않았어요.",
+      "providerRefused": "이 요청은 거절됐어요.",
+      "failed": "실패했어요."
+    },
+    "degraded": {
+      "webTitle": "데스크톱 앱에서만 쓸 수 있어요",
+      "webBody": "키를 안전하게 두고 보낼 곳이 브라우저에는 없어요. macOS 앱에서는 키가 이 컴퓨터의 키체인에만 있어요.",
+      "download": "macOS 앱 받기",
+      "noVaultTitle": "먼저 폴더를 열어주세요",
+      "noVaultBody": "도우미는 지금 열려 있는 폴더의 문서만 봐요.",
+      "noKeyTitle": "먼저 키를 등록해 주세요",
+      "noKeyBody": "왼쪽 아래 설정(톱니)의 「AI 연결」에서 쓰던 AI 서비스의 키를 한 번 넣어두면 돼요."
+    },
+    "chipLabel": "도우미"
   }
 }

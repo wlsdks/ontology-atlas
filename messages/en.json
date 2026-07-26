@@ -2948,5 +2948,84 @@
     "needVaultHint": "The terminal starts in the folder you have open.",
     "resizeLabel": "Resize terminal",
     "resizeHint": "Drag up or down to change the height. Double-click for the default."
+  },
+  "vaultAgentPanel": {
+    "title": "Vault helper",
+    "subtitle": "Design the concepts and links on your map together",
+    "close": "Close panel",
+    "you": "You:",
+    "send": "Send",
+    "stop": "Stop",
+    "placeholder": "Keep going…",
+    "empty": "Ask about whatever you are looking at. For example: what link is missing here?",
+    "thinking": "Thinking",
+    "thinkingSeconds": "Thinking · {seconds}s",
+    "unsupported": "Answered without reading anything. Do not take it as fact.",
+    "charsLabel": "{chars} chars",
+    "footer": "{provider} · {chars} chars this turn · {rounds} recorded",
+    "boundary": "Work that needs your source code is better done by the AI in your own terminal. This helper only sees your document folder.",
+    "snapshotLabel": "Checkpoint before helper change",
+    "provider": {
+      "anthropic": "Anthropic",
+      "openai": "OpenAI",
+      "gemini": "Gemini"
+    },
+    "screenContext": {
+      "lookingAt": "On screen: looking at {title}",
+      "wholeMap": "On screen: the whole map"
+    },
+    "scope": {
+      "title": "Before anything is sent",
+      "body": "In this conversation the helper reads your document folder as it works. What it reads goes to {provider} ({host}) each time.",
+      "liveRows": "Every read shows up as its own line here, with how many characters went out.",
+      "recorded": "Every round trip is recorded in {path}.",
+      "accept": "Got it",
+      "cancel": "Not now"
+    },
+    "promptDisclosure": {
+      "summary": "See the helper’s instructions",
+      "note": "The text below is sent every time. You cannot edit it, but you can always read it."
+    },
+    "proposal": {
+      "title": "Proposal · {count} file(s) to change",
+      "readOnlyTitle": "Proposal (this folder is read-only)",
+      "volume": "{files} file(s) · +{added} / −{removed} lines",
+      "apply": "Apply {count} selected",
+      "cancel": "Cancel",
+      "copy": "Copy this change",
+      "copied": "Copied",
+      "snapshot": "Make a checkpoint first (git)",
+      "snapshotUnavailable": "This folder is not a git repository, so no checkpoint can be made",
+      "applied": "Applied · checkpoint {sha}",
+      "appliedNoSnapshot": "Applied",
+      "cancelled": "Cancelled. Not one file changed.",
+      "conflict": "This document just changed — nothing was written. Please ask again.",
+      "unreadWarning": "This would change a file the helper did not read in this conversation. Expand it and check.",
+      "showOnMap": "Show on the map",
+      "expandHint": "What changes",
+      "createFile": "Create {path}",
+      "modifyFile": "Edit {path}",
+      "addRelation": "Link {from} → {to} ({type})"
+    },
+    "notice": {
+      "roundCap": "That is as far as I will go — wrapping up.",
+      "aborted": "Stopped here.",
+      "networkFailed": "The connection failed.",
+      "rateLimited": "You have hit the rate limit for now. Try again shortly.",
+      "rejected": "The key was rejected. Check it in settings.",
+      "auditBlocked": "Nothing was sent, because the record could not be written.",
+      "providerRefused": "This request was declined.",
+      "failed": "Something went wrong."
+    },
+    "degraded": {
+      "webTitle": "Available in the desktop app only",
+      "webBody": "A browser has nowhere safe to keep your key. In the macOS app the key stays in this computer’s keychain.",
+      "download": "Get the macOS app",
+      "noVaultTitle": "Open a folder first",
+      "noVaultBody": "The helper only sees documents in the folder you have open.",
+      "noKeyTitle": "Add a key first",
+      "noKeyBody": "Open Settings (the gear at the bottom left) → AI connection and paste the key for the AI service you already use."
+    },
+    "chipLabel": "Helper"
   }
 }
