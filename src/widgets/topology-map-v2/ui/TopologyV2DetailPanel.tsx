@@ -351,9 +351,15 @@ function withActionTip(tip: string | undefined, trigger: ReactElement): ReactEle
 // 쪽이라 여기서는 비율 응집을 택한다. 램프를 넓히지 않는 이유: 이 값이
 // 필요한 자리는 앱 전체에 이 하나뿐이고, 쓰임이 하나인 토큰은 규격이 아니라
 // 오정보다.
+//
+// 별도 상수로 뽑은 이유: disable 주석은 **줄 단위**라 클래스 문자열에 그냥
+// 붙이면 같은 줄의 text-[Npx] 부채까지 함께 침묵시킨다. 그건 이 저장소가
+// 래칫으로 막으려던 바로 그 실패 모드(침묵하는 통과)다.
 // eslint-disable-next-line no-restricted-syntax -- 고정 높이 타일 안 10px 2행 라벨: 램프 짝은 타일을 6px 키운다
+const ACTION_TILE_LEADING = "leading-[1.1]";
+
 const ACTION_TILE_CLASS =
-  "flex flex-1 flex-col items-center justify-start gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] px-1 py-1.5 text-center text-[10px] font-medium leading-[1.1] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]";
+  `flex flex-1 flex-col items-center justify-start gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] px-1 py-1.5 text-center text-[10px] font-medium ${ACTION_TILE_LEADING} text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
 
 /**
  * 관계 그룹 헤더의 방향 글리프 — 승인된 시안(mockup-panel-detail)의 SVG 를
