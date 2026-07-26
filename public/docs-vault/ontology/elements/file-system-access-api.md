@@ -29,3 +29,11 @@ writing, and the post-save confirmation (`written to disk`). That wording makes
 the editor explicit about the chosen workflow: typing is a protected in-memory
 buffer, while `Save` / `Cmd+S` is the intentional disk write that AI agents and
 git diffs can then observe.
+
+## 2026-07-26 support and cancel contract
+
+Support means `typeof window.showDirectoryPicker === "function"` (or the Tauri
+vault bridge), not merely that the property exists. Unsupported browsers are
+demoted before invocation and receive the macOS app path. User cancellation is
+recognized by abort name or the normalized abort message so cross-realm and
+non-DOMException picker paths return silently without a write or error alert.

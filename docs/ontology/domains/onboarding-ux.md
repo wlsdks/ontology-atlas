@@ -5,7 +5,7 @@ title: Onboarding & UX (theme · toast · a11y · mobile · CLI)
 display_ko: 온보딩 & UX
 display_en: Onboarding & UX
 capabilities: [agent-config-onboarding, cli-developer-entry, first-run-onboarding-guides, product-owner-operating-system]
-elements: [cli/src/commands/agent-activity.mjs, elements/app-nav-rail, elements/app-settings-menu, elements/first-run-page, elements/landing-first-impression, elements/locale-switch, elements/product-owner-operating-system-doc, elements/root-locale-redirect, elements/route-focus-manager, src/shared/ui/live-announcer.tsx, src/shared/ui/toast.tsx, src/widgets/bottom-tab-bar, src/widgets/gesture-hint]
+elements: [cli/src/commands/agent-activity.mjs, elements/accessible-dialog-focus-contract, elements/app-nav-rail, elements/app-settings-menu, elements/first-run-page, elements/landing-first-impression, elements/locale-switch, elements/product-owner-operating-system-doc, elements/root-locale-redirect, elements/route-focus-manager, src/shared/ui/live-announcer.tsx, src/shared/ui/toast.tsx, src/widgets/bottom-tab-bar, src/widgets/gesture-hint]
 relates: [domains/views]
 ---
 

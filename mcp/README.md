@@ -756,8 +756,8 @@ A successful run looks like this:
 ✓ strict graph filters — invalid match_nodes.kind/sort, match_edges.type, and recommend_relations.kind rejected with narrowed diagnostics
 ✓ strict graph edge kind filters — invalid match_edges.fromKind/toKind rejected with closest-value hints
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
-✓ maintenance cursor — ready page stable (4 remaining actions; phase materialize:3,link:1; severity info:3,warn:1; kind materialize_external_element:3,add_missing_relation:1; executable maint_fc8699d3:link/add_missing_relation:warn->add_relation; review none)
-✓ maintenance cursor — resume afterActionId advanced (maint_fc8699d3; 3 remaining actions; phase materialize:3; severity info:3; kind materialize_external_element:3; executable maint_a99608d6:materialize/materialize_external_element:info->add_concept; review none)
+✓ maintenance cursor — ready page stable (3 remaining actions; phase materialize:3; severity info:3; kind materialize_external_element:3; executable maint_a99608d6:materialize/materialize_external_element:info->add_concept; review none)
+✓ maintenance cursor — resume afterActionId advanced (maint_a99608d6; 2 remaining actions; phase materialize:2; severity info:2; kind materialize_external_element:2; executable maint_a6ef4471:materialize/materialize_external_element:info->add_concept; review none)
 ✓ list_concepts — vault total 96 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concept — project (6 outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
@@ -766,33 +766,32 @@ A successful run looks like this:
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 95 total query results (limited true)
 ✓ analyze_repo_structure — fsd (6 domain candidates, 15 capability candidates, 41 element candidates)
-✓ infer_imports — 990 files scanned, 642 module edges (elements/src/views/home->elements/src/entities/knowledge-graph x29 (static:29), elements/src/views/ontology-insights->elements/src/entities/knowledge-graph x21 (static:21), +640 more)
-✓ index_project — 61 concept candidates, 642 import relations, validation 0 problem files
+✓ infer_imports — 1091 files scanned, 701 module edges (elements/src/views/home->elements/src/entities/knowledge-graph x29 (static:29), elements/src/views/ontology-insights->elements/src/entities/knowledge-graph x27 (static:27), +699 more)
+✓ index_project — 63 concept candidates, 701 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
 ✓ list_kinds — 96 nodes (capability:38, document:3, domain:6, element:47, project:1, vault-readme:1)
 ✓ validate_vault — 96 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — needs_attention (96 nodes, 3 next actions, 6 health checks, growth actions:4 external:3 ignoredExternal:222)
-· workspace_brief non-blocking advisory nextActions — relation_recommendations/health_check:warn:1 - Safe domain-containment relation suggestions are available., add_missing_relations:warn:1 - Add missing domain containment relations before relying on project/domain rollups., materialize_external_elements:info:3 - Materialize frequently referenced external files as element nodes when they should be first-class.
-✓ agent_brief — needs_attention (needs_attention 75/100, 3 entrypoints, 5 first calls, 6 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — needs_attention (96 nodes, 3 next actions, 6 health checks, growth actions:4 external:3 ignoredExternal:222; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
-· workspace_brief_tuned non-blocking advisory nextActions — relation_recommendations/health_check:warn:1 - Safe domain-containment relation suggestions are available., components/health_check:info:4 - The scoped ontology graph has disconnected actionable islands., add_missing_relations:warn:1 - Add missing domain containment relations before relying on project/domain rollups.
-✓ health — needs_attention (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:warn:1, components:pass:1, +1 more)
-· health non-blocking advisory checks — relation_recommendations:warn:1 - Safe domain-containment relation suggestions are available.
-✓ health_tuned — needs_attention (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:warn:1, components:info:4, +1 more; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
-· health_tuned non-blocking advisory checks — relation_recommendations:warn:1 - Safe domain-containment relation suggestions are available., components:info:4 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph 89041144f76f (96 nodes, 542 edges, issues 0)
-✓ compile_ontology page — 1/96 nodes, 1/542 edges
-✓ compile_ontology indexes — out 96, in 95, edgeById 542, aliases 191, edges 317/225/0
-✓ overview — graph 89041144f76f (96 nodes, 542 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 96, edges 542)
-✓ project_map query_plan — aggregate_scan (medium, nodes 96, edges 542)
+✓ workspace_brief — healthy (96 nodes, 1 next action, 6 health checks, growth actions:3 external:3 ignoredExternal:222)
+· workspace_brief non-blocking advisory nextActions — materialize_external_elements:info:3 - Materialize frequently referenced external files as element nodes when they should be first-class.
+✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 6 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
+✓ workspace_brief_tuned — healthy (96 nodes, 2 next actions, 6 health checks, growth actions:3 external:3 ignoredExternal:222; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+· workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:4 - The scoped ontology graph has disconnected actionable islands., materialize_external_elements:info:3 - Materialize frequently referenced external files as element nodes when they should be first-class.
+✓ health — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1, +1 more)
+✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:4, +1 more; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
+· health_tuned non-blocking advisory checks — components:info:4 - The scoped ontology graph has disconnected actionable islands.
+✓ compile_ontology — graph 94fcb427a7a2 (96 nodes, 543 edges, issues 0)
+✓ compile_ontology page — 1/96 nodes, 1/543 edges
+✓ compile_ontology indexes — out 96, in 95, edgeById 543, aliases 191, edges 318/225/0
+✓ overview — graph 94fcb427a7a2 (96 nodes, 543 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 96, edges 543)
+✓ project_map query_plan — aggregate_scan (medium, nodes 96, edges 543)
 ✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ all_paths — src/widgets/bottom-tab-bar → project (5/16 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
-✓ project_scope — project (92 nodes, internalEdges 300)
+✓ project_scope — project (92 nodes, internalEdges 301)
 ✓ read census consistency — 96 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
 ✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 13/13
 

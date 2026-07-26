@@ -77,3 +77,11 @@ CLI `ontology-atlas reachability` 명령을 바로 복사할 수 있다. `Copy a
 방향을 빠르게 잡을 수 있다. 계산은 edge 배열을 한 번 adjacency index 로 바꾼 뒤
 BFS 하므로 큰 local vault 에서도 패널 열기 비용을
 노드별 전체 edge scan 으로 늘리지 않는다.
+
+## 2026-07-26 freshness review
+
+The topology hub now routes unsupported browser folder-open actions, including
+the persistent switch control and `⌘O`, to one honest installed-app guide
+instead of attempting an unavailable picker. Full detail also reuses the
+datasheet's mtime sentence so one selected node cannot show two freshness
+judgments.

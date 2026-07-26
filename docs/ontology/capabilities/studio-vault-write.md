@@ -74,3 +74,9 @@ nonmodal parts of the compass stage. Their icon close controls expose the
 shared localized `close` name to assistive technology. While a relation-edit
 card is open, `Escape` dismisses only that card and leaves the ENHANCE context
 intact; this is an interaction contract and does not change frontmatter data.
+
+## 2026-07-26 freshness review
+
+The shared local-vault hook changed folder-picker support and cancel handling,
+not Compass Stage write routing. ENHANCE/CREATE writes, read-only MCP packets,
+and the relation-edit Escape contract remain unchanged.

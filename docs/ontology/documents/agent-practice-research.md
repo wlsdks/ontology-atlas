@@ -119,7 +119,7 @@ Ontology Atlas should therefore avoid a single vague "connected" badge. The usef
 
 1. config files point at the intended vault and codebase root;
 2. the client session can see the MCP server;
-3. `tools/list` reports the current 24-tool inventory including `index_project`;
+3. `tools/list` reports the current 32-tool inventory including `index_project`;
 4. first read-only calls such as `agent_brief`, `workspace_brief`, and `health` return healthy;
 5. the UI gives copyable next actions for refresh/restart/log inspection when any stage is stale.
 

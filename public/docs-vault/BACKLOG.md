@@ -5,7 +5,7 @@
 >
 > **갱신 (2026-05-26)**: macOS app distribution track 반영.
 > local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 96 노드, CLI 48 commands,
-> MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference
+> MCP 32 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference
 > 루프 기준으로 재정렬.
 
 ---

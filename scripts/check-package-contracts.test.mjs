@@ -1578,8 +1578,8 @@ describe('package contract helpers', () => {
     assert.match(agentSetupRow, /`docs\.modeComparison`/);
     assert.match(agentSetupRow, /`docs\.postChangeSync`/);
     assert.match(agentSetupRow, /CLI-only \/ MCP-connected \/ graph DB pack \/ setup gate choices/);
-    assert.match(tableRow, /25-tool inventory with missing\/extra\/duplicate\/invalid name checks/);
-    assert.match(tableRow, /25-tool inventory with missing\/extra\/duplicate\/invalid name checks plus tools\/list schema strictness and annotation coverage/);
+    assert.match(tableRow, /32-tool inventory with missing\/extra\/duplicate\/invalid name checks/);
+    assert.match(tableRow, /32-tool inventory with missing\/extra\/duplicate\/invalid name checks plus tools\/list schema strictness and annotation coverage/);
     assert.match(tableRow, /relation filter \/ `relation_check` closest-value rejection/);
     assert.match(tableRow, /destructive dry-run smoke for `rename_concept` \/ `merge_concepts` \/ `delete_concept`/);
     assert.match(tableRow, /write-tool `postWriteMaintenance` `byPhase`\/`bySeverity`\/`byKind` buckets \+ `score`\/`proposedAction`\/next-action guidance/);
@@ -2332,7 +2332,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`allowedValues` 는\s+일부 대표값이 아니라 해당 입력의 전체 enum 순서와 정확히 일치/);
     assert.match(doc, /설치 verify 의 strict unknown-tool \/ multi-argument smoke 도 전체 `allowedTools` \/ `allowedArguments` 를\s+정확히 비교/);
     assert.match(doc, /JSON-RPC integration test 도 unknown tool 의 전체 `allowedTools` 와 invalid enum \/ filter repair 의\s+전체 `allowedValues` 를 직접 비교/);
-    assert.match(doc, /dogfood fixture 도 strict enum \/ unknown-tool repair summary 에 전체 operation enum 과 25-tool inventory 를 사용/);
+    assert.match(doc, /dogfood fixture 도 strict enum \/ unknown-tool repair summary 에 전체 operation enum 과 32-tool inventory 를 사용/);
     assert.match(doc, /`concepts\[n\] duplicate slug in input batch; first seen at concepts\[m\]`/);
     assert.match(doc, /strict relation filter \/ `relation_check` row/);
     assert.match(doc, /`dependencyTypes items depend_on->depends_on; allowed 9`/);

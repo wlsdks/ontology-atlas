@@ -220,7 +220,7 @@ human-readable text hint 와 MCP client 용 repair payload 가 따로 drift 나�
 정확히 비교해 MCP client 가 받을 repair 후보 목록이 축약되거나 순서 drift 나는 것을 막는다.
 JSON-RPC integration test 도 unknown tool 의 전체 `allowedTools` 와 invalid enum / filter repair 의
 전체 `allowedValues` 를 직접 비교해 runtime 응답 contract 를 설치 verify 와 같은 수준으로 고정한다.
-dogfood fixture 도 strict enum / unknown-tool repair summary 에 전체 operation enum 과 25-tool inventory 를 사용해
+dogfood fixture 도 strict enum / unknown-tool repair summary 에 전체 operation enum 과 32-tool inventory 를 사용해
 요약 출력의 `allowed N` 이 실제 MCP surface 크기와 함께 움직이게 한다.
 dogfood walk 의 strict tool-name / argument / multi-argument / enum / filter 섹션은 `structuredContent` 의
 repair field 를 읽어 `arg lmit->limit`, `args lmit->limit, summry->summary`,
@@ -493,7 +493,7 @@ error message 를 바로 출력한다.
 `mcp/src/integration.test.mjs` 와 `mcp/src/verify-script.test.mjs` 는 실제
 `tools/list` registry, `verify.mjs` 의 `EXPECTED_TOOLS`, `mcp/package.json`
 tool count metadata, 그리고 `initialize.instructions` 의 agent-facing inventory 가
-서로 drift 나지 않도록 같은 25-tool 목록을 교차 검증한다.
+서로 drift 나지 않도록 같은 32-tool 목록을 교차 검증한다.
 installed verify 도 `tools/list` schema 의 `additionalProperties:false` 와
 required `query_ontology.operation`, `operation` / `targetOperation` enum 이
 runtime allow-list 와 일치하는지 검사해, MCP client schema 와 실제 graph engine

@@ -42,3 +42,13 @@ kind(`domain`/`capability`/`element`) 별 fill·size 위계는
 [[capabilities/topology-kind-legibility]] 가 소유. 노드 hover 요약 문구는
 `elements/ontology-description-helper`(`src/shared/lib/ontology-description.ts`)가
 body excerpt 를 160자 안팎으로 줄여 만든다.
+
+## 2026-07-26 entry and map audit
+
+Canvas labels now reserve rendered node shapes with owner IDs, derive paint and
+bounds from one baseline function, and try the opposite side before suppressing
+a passive label. Selected and hover labels therefore keep a minimum gap outside
+the actual rendered ring. The bottom-right legend/readout stack is measured with
+`ResizeObserver` and reserves the matching toast offset, so transient notices do
+not cover persistent graph encoding. Korean relation labels no longer inherit
+Latin-only mono/uppercase/wide-tracking decoration.

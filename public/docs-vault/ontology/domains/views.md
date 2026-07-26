@@ -19,3 +19,12 @@ network — `/`, `/topology`), 둘러보기 (`/ontology` 는 토폴로지 INDEX 
 프로젝트 / `⇧⌘K` 노드+프로젝트 통합. Workshop 와 Insights 는 design-system 의
 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고,
 Korean h1 로 실제 작업 모드를 읽게 한다.
+
+## 2026-07-26 entry and map audit
+
+The topology surface now keeps canvas labels outside their rendered node rings,
+measures the persistent legend stack before positioning toasts, and removes
+Latin-only eyebrow spacing from Korean first-run/legend copy. The compact
+datasheet and `FullDetailA1` share the same mtime-derived freshness sentence.
+Unsupported browser folder entry uses one installed-app guide from both the
+visible switch control and `⌘O`.

@@ -69,7 +69,7 @@ the category; we are taking a specific, opinionated position in it.
 - **MemGPT (Packer et al., 2023)** — "virtual context management": the model pages information between
   a fixed context window (fast memory) and external stores (slow memory) via self-issued function
   calls, simulating unbounded context. → We are the **codebase-specific, structured & human-readable
-  version of MemGPT's "slow memory"**: the agent pages the repo's mental model in/out via 23 MCP tools
+  version of MemGPT's "slow memory"**: the agent pages the repo's mental model in/out via 32 MCP tools
   instead of opaque archival storage.
 - **"A Survey on the Memory Mechanism of LLM-based Agents" (Zhang et al., ACM TOIS, 2024)** — the
   peer-reviewed taxonomy of memory *sources / forms / operations* and *evaluation*. → Lets us name our

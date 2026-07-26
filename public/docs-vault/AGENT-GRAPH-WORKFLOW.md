@@ -291,7 +291,7 @@ MCP-connected checks from this Codex session:
 Installed MCP verifier:
 
 - `node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000`
-  - passed parser, server boot, 24-tool inventory, strict argument/enum checks,
+  - passed parser, server boot, 32-tool inventory, strict argument/enum checks,
     destructive dry-runs, batch no-write checks, health/workspace/agent briefs,
     graph query smokes, and structured content checks.
   - compiled graph hash: `ee65046d9383`

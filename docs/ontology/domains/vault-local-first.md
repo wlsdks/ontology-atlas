@@ -17,3 +17,11 @@ focus / visibility 시 fingerprint 비교로 재스캔 short-circuit. R14 부터
 인 동안 5s polling 으로 *focus 안 해도* 자동 반영 (`vault-live-updates`).
 
 자세한 원칙: `.claude/rules/local-first.md`. 사용자 surface: `docs/FEATURES.md`.
+
+## 2026-07-26 entry contract
+
+Browser capability is based on a callable `showDirectoryPicker`, not merely a
+property name present on `window`. Unsupported runtimes are explained before an
+open attempt and route to the installed macOS app. Picker cancellation is a
+normal no-write exit across DOMException realms, ordinary `Error` values, and
+Tauri string rejections; it does not become a red error state.

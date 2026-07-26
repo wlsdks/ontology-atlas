@@ -46,3 +46,11 @@ R14 (#155-#158, 2026-05-04 ~ 2026-05-05) 에 도입된 *web 즉시 반영* 능�
 - #156 graph diff pulse
 - #157 added toast (Set → Map<slug, mtime|null> 확장)
 - #158 modified toast (mtime 비교)
+
+## 2026-07-26 freshness review
+
+The 5-second fingerprint/diff contract is unchanged. The shared open path now
+tests whether `showDirectoryPicker` is callable and treats cross-realm,
+polyfill, and Tauri-style picker cancellation as a normal return to the prior
+state. A cancelled open therefore emits neither a false danger state nor a
+misleading vault-change notification.
