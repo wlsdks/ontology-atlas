@@ -346,6 +346,12 @@ export interface V2HandoffInput {
   /** The graph facts and the MCP write target must describe the same source. */
   source: "loaded-vault" | "read-only-sample";
   slug: string;
+  /**
+   * 이 노드에 자기 `.md` 문서가 있는가. 없으면 `slug` 는 볼트가 적어 둔 참조
+   * 원문이라 `get_concept` / `patch_concept` 이 성립하지 않는다 — 그때는
+   * 문서를 먼저 만드는 호출을 준다(미지정은 종전대로 문서 있음으로 읽는다).
+   */
+  documented?: boolean;
   kind: string;
   domainTitle: string | null;
   /** Outgoing containment count (M-2) — `contains` edges, split out from the
@@ -385,13 +391,20 @@ export interface V2HandoffInput {
 export function formatV2HandoffText(input: V2HandoffInput): string {
   const list = (names: readonly string[]) =>
     names.length > 0 ? names.join(", ") : "-";
+  const documented = input.documented !== false;
   const next =
-    input.source === "loaded-vault"
-      ? `next: get_concept("${input.slug}") → review context, then patch_concept / add_relation as needed`
-      : "next: open a markdown vault, then copy a node handoff from that loaded vault";
+    input.source !== "loaded-vault"
+      ? "next: open a markdown vault, then copy a node handoff from that loaded vault"
+      : documented
+        ? `next: get_concept("${input.slug}") → review context, then patch_concept / add_relation as needed`
+        // 문서 없는 파생 노드 — `get_concept` 은 존재하지 않는 이름을 조회하고
+        // 끝난다. 볼트가 이 개념을 아는 유일한 형태는 다른 문서가 적어 둔
+        // 참조 문자열이므로, 첫 걸음은 그 이름으로 문서를 만드는 것이다.
+        : `next: add_concept({slug:"${input.slug}", kind:"${input.kind}"}) — this concept has no document yet; it exists only as a reference written in another doc`;
   return [
     `source: ${input.source}`,
     `node: ${input.slug}`,
+    `has_document: ${documented ? "yes" : "no"}`,
     `kind: ${input.kind}`,
     `domain: ${input.domainTitle ?? "-"}`,
     `contains: ${input.contains}`,

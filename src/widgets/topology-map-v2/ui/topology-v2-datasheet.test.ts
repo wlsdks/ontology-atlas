@@ -270,6 +270,7 @@ describe("formatV2HandoffText — M-2 contains split", () => {
       [
         "source: loaded-vault",
         "node: ai-agent-partner",
+        "has_document: yes",
         "kind: domain",
         "domain: AI Agent Partner",
         "contains: 18",

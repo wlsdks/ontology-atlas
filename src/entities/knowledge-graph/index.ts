@@ -47,3 +47,8 @@ export {
 export { translateOntologyDeeplinkToTopologyParam } from "./lib/translate-ontology-deeplink";
 export { deriveCodeLocations } from "./lib/code-locations";
 export { resolveNodeDocument } from "./lib/node-document";
+export {
+  resolveNodeAgentTarget,
+  stripVaultSlugPrefix,
+  type NodeAgentTarget,
+} from "./lib/node-agent-target";

@@ -233,6 +233,12 @@
       "body": "Pick a vault or open the sample data and nodes appear.",
       "create": "＋ Create a node"
     },
+    "notFound": {
+      "title": "We can't find this concept in the current folder",
+      "body": "We couldn't find “{name}” in the folder you have open. It may be a link from another folder, or the document may have moved or been renamed.",
+      "openMap": "Open the map",
+      "create": "Create a new node"
+    },
     "kindLabel": "Kind",
     "create": {
       "framePrompt": "Decide what the new node is, then link it to nearby nodes",

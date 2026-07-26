@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import {
   buildOntologyStudioNodeHrefFromGraphId,
   deriveCodeLocations,
+  resolveNodeAgentTarget,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
@@ -168,7 +169,10 @@ export function useNodeDatasheetModel({
 
   const v2DatasheetModel = useMemo(() => {
     if (!nodeFocus || !selectedOntologyNode || !insight) return null;
-    const slug = nodeFocus.sourceSlug ?? selectedOntologyNode.id;
+    // 에이전트에게 건네는 이름은 볼트가 아는 이름이어야 한다 — 문서 노드는
+    // 볼트 뿌리 기준 slug, 문서 없는 파생 노드는 볼트가 적어 둔 참조 원문.
+    const agentTarget = resolveNodeAgentTarget(selectedOntologyNode);
+    const slug = agentTarget.ref ?? nodeFocus.sourceSlug ?? selectedOntologyNode.id;
     // FULL connection set 에서 그룹 — 5-item preview 로 접으면 허브의
     // dependsOn total 이 generic overflow 로 붕괴하고 핸드오프 이름과
     // 카운트가 모순난다.
@@ -188,6 +192,7 @@ export function useNodeDatasheetModel({
     const handoffText = formatV2HandoffText({
       source: handoffSource,
       slug,
+      documented: agentTarget.documented,
       kind: nodeFocus.kind,
       domainTitle: nodeFocusData?.significance.ownerDomainTitle ?? null,
       contains: metric.contains,

@@ -78,6 +78,28 @@ export interface KnowledgeGraphNode {
    * (테스트 픽스처, 수동 조립 등)와의 하위 호환 — 미지정은 `true` 로 읽는다.
    */
   hasOwnDocument?: boolean;
+  /**
+   * 이 노드를 **에이전트에게 가리켜 보일 때 쓰는 이름** — MCP/CLI 가 그대로
+   * 받아들이는 볼트 기준 문자열.
+   *
+   * 문서가 있는 노드면 볼트 뿌리 기준 문서 slug, 문서가 없는 파생 노드면
+   * 볼트가 적어 둔 참조 원문(`src/entities/…​.ts`)이다. `evidenceIds[0]` 을
+   * 그대로 쓰면 안 되는 이유가 둘 있다: ① 번들 샘플 매니페스트는 `docs/` 를
+   * 뿌리로 빌드돼 온톨로지 문서가 `ontology/` 아래에 있고 에이전트가 물린
+   * 볼트 뿌리는 `docs/ontology` 라 한 조각이 남는다(2026-07-26 실측: 화면이
+   * 복사해 준 `merge_concepts` 가 그 한 조각 때문에 즉시 실패했다) ②
+   * 파생 노드에서는 그 값이 *남의 문서* 라 엉뚱한 노드를 가리킨다.
+   *
+   * optional 인 이유: `derivationToInsight` 를 거치지 않고 직접 만든 노드
+   * (테스트 픽스처 · 수동 조립)와의 하위 호환 — 미지정은 종전대로
+   * `evidenceIds[0]` 로 읽는다(`resolveNodeAgentTarget` 참조).
+   */
+  agentSlug?: string | null;
+  /**
+   * 문서가 없는 파생 노드가 볼트에 적혀 있는 참조 원문. 문서 노드는 비어 있다.
+   * `derive-ontology-from-vault.ts` 의 같은 이름 필드가 그대로 넘어온다.
+   */
+  ref?: string;
   lastApprovedAt: Date;
   lastApprovedBy: string;
 }

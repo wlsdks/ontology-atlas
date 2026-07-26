@@ -177,6 +177,34 @@ export function collectNeighborRefs(doc) {
 }
 
 /**
+ * `ref` 를 **관계 키에서 이름으로 부르는 문서들**을 찾는다.
+ *
+ * 왜 필요한가 (2026-07-26 실측) — 웹 지도는 개념을 289개 보여주는데 컴파일된
+ * 그래프의 노드는 96개다. 차이 193개는 *문서가 아직 없고 다른 문서의 관계
+ * 키에만 이름이 적힌 개념*이다. 지도에서 그 이름을 베껴 `get_concept` 을
+ * 부르면 종전에는 `Doc not found` 로 끝났다 — 볼트가 그 이름을 **알고 있는데도**
+ * 모른다고 답한 셈이라, 사용자는 화면의 숫자를 믿을 수 없게 된다.
+ *
+ * 이 함수는 노드를 만들어내지 않는다(그래프 census 는 그대로 96이다). "이
+ * 이름을 볼트의 어느 문서가 어떤 키로 적어 두었는가" 라는 사실만 돌려주고,
+ * 호출자가 그 사실을 오류 대신 답으로 바꾼다.
+ */
+export function findGraphReferences(docs, ref) {
+  const target = String(ref ?? '').trim();
+  if (!target) return [];
+  const hits = [];
+  for (const doc of docs ?? []) {
+    if (doc.slug === target) continue;
+    for (const { key, ref: candidate } of collectNeighborRefs(doc)) {
+      if (candidate !== target) continue;
+      hits.push({ slug: doc.slug, via: key });
+      break;
+    }
+  }
+  return hits.sort((a, b) => a.slug.localeCompare(b.slug));
+}
+
+/**
  * body 에서 *prose 한 단락* 만 뽑아 excerpt 로. AI agent 가 get_concept 응답
  * 에서 받는 body 미리보기를 markdown 표 / 코드블록 syntax 가 아니라 *사람이
  * 의도해서 쓴 첫 설명문* 으로 받게 한다.
@@ -536,13 +564,34 @@ export function listKinds(rootPath) {
   const docs = loadVaultDocs(rootPath);
   const byKind = {};
   let total = 0;
+  const documentedNames = new Set();
   for (const doc of docs) {
     const kind = doc.frontmatter.kind;
+    documentedNames.add(doc.slug);
+    const tail = doc.slug.split('/').pop();
+    if (tail) documentedNames.add(tail);
+    const fmSlug = doc.frontmatter.slug;
+    if (typeof fmSlug === 'string' && fmSlug.trim()) documentedNames.add(fmSlug.trim());
     if (typeof kind !== 'string' || !kind) continue;
     byKind[kind] = (byKind[kind] || 0) + 1;
     total += 1;
   }
-  return { total, byKind };
+  // 문서 없이 관계 키에서 이름만 불린 개념. 화면(지도·인사이트)은 이것들도
+  // 개념으로 세므로, 이 수를 같이 내지 않으면 `total` 하나만 보고 "화면이
+  // 부풀렸다" 고 오해하게 된다. kind 별 census 에는 넣지 않는다 — 이것들은
+  // kind 를 선언한 적이 없다.
+  const referencedOnly = new Set();
+  for (const doc of docs) {
+    for (const { ref } of collectNeighborRefs(doc)) {
+      if (!documentedNames.has(ref)) referencedOnly.add(ref);
+    }
+  }
+  return {
+    total,
+    byKind,
+    referencedOnlyTotal: referencedOnly.size,
+    conceptsIncludingReferenced: total + referencedOnly.size,
+  };
 }
 
 /**

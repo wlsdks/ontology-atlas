@@ -91,7 +91,27 @@ export function buildFindPathGrowthHint({ from, to, fromExists, toExists }) {
  * computed by the caller (suggestSimilarSlugs / suggestCompiledSlugs against
  * the real vault slug set).
  */
-export function buildSlugNotFoundGrowthHint({ slug, candidateSlugs = [] }) {
+export function buildSlugNotFoundGrowthHint({ slug, candidateSlugs = [], referencedBy = [] }) {
+  // 볼트가 이 이름을 **이미 알고 있는** 경우 — 문서만 없다. 지도/인사이트가
+  // 개념으로 세는 노드의 대부분(도그푸드 289 중 193)이 여기 해당한다. "없다"
+  // 로 끝내면 화면과 에이전트가 서로 다른 우주를 말하게 되므로, 누가 어떤 키로
+  // 이 이름을 적었는지 밝히고 실체화하는 한 수를 준다.
+  if (referencedBy.length > 0) {
+    const cited = referencedBy
+      .slice(0, 3)
+      .map((hit) => `${hit.slug} (via ${hit.via})`)
+      .join(', ');
+    const more = referencedBy.length > 3 ? ` and ${referencedBy.length - 3} more` : '';
+    return {
+      reason: `"${slug}" has no document of its own, but ${referencedBy.length} vault doc(s) reference it: ${cited}${more}.`,
+      suggestion:
+        'This is a referenced-only concept — the map counts it, the compiled graph does not, because nothing defines it yet. Create its document at exactly this slug so the existing references resolve to it.',
+      exampleCall: {
+        tool: 'add_concept',
+        args: { slug, kind: 'element', title: titleCaseFromSlug(slug) },
+      },
+    };
+  }
   if (candidateSlugs.length > 0) {
     return {
       reason: `"${slug}" does not resolve to a vault node.`,

@@ -52,7 +52,10 @@ import { resolveStudioWriteTarget, type StudioWriteTarget } from "../lib/resolve
 import { buildMaterializeDraft, planStudioCommit } from "../lib/plan-studio-commit";
 import { buildPickerDiscovery } from "../lib/build-picker-discovery";
 import { buildDeltaPreview } from "../lib/build-delta-preview";
-import { resolveStudioFocalId } from "../lib/resolve-studio-focal";
+import {
+  resolveStudioEnhanceFocal,
+  resolveStudioFocalId,
+} from "../lib/resolve-studio-focal";
 import { studioHasDeepLinkIntent } from "../lib/entry-choice";
 import { allowedKindsFor } from "../lib/allowed-kinds";
 import { candidateMatches } from "../lib/match-candidate";
@@ -457,13 +460,15 @@ export function OntologyStudioPage() {
   // Which existing node the enhance stage is centered on (deeplink or default).
   // Declared up here so the reset effect keeps a stable hook order across the
   // create/enhance early return.
-  const enhanceFocalId = useMemo(() => {
-    if (nodes.length === 0) return null;
-    // C3 — resolve `?node=` tolerantly (canonical / folder-prefixed / bare tail /
-    // NFD). A raw `n.id === requestedNode` missed every non-canonical form a
-    // LOCAL vault produces, so a search click silently kept the default node.
-    return resolveStudioFocalId(requestedNode, nodes) ?? selectDefaultStudioNodeId(nodes, edges);
-  }, [requestedNode, nodes, edges]);
+  // C3 — resolve `?node=` tolerantly (canonical / folder-prefixed / bare tail /
+  // NFD). A raw `n.id === requestedNode` missed every non-canonical form a
+  // LOCAL vault produces, so a search click silently kept the default node.
+  // 요청한 노드가 없으면 다른 노드로 갈아끼우지 않는다 — 판정은 순수 함수
+  // 한 곳에서만 한다(`resolveStudioEnhanceFocal`).
+  const { focalId: enhanceFocalId, requestedMissing: requestedNodeMissing } = useMemo(
+    () => resolveStudioEnhanceFocal(requestedNode, nodes, edges),
+    [requestedNode, nodes, edges],
+  );
 
   // Slice 2 — enhance is STAGED: fills / retypes / deletes accumulate here and
   // only land on "확인하고 저장". Reset whenever the focal node changes so a new
@@ -686,7 +691,8 @@ export function OntologyStudioPage() {
               ]
             : undefined;
         origin = {
-          focalSlug: originTarget.slug,
+          // 복사되는 명령이라 에이전트 볼트 뿌리 기준 이름을 쓴다.
+          focalSlug: originTarget.agentSlug,
           relation: createContext.relation,
           broaderRefsAfter,
         };
@@ -889,6 +895,45 @@ export function OntologyStudioPage() {
   }
 
   // ─────────────────────────────── ENHANCE ───────────────────────────────
+  // 요청한 개념이 없으면 다른 개념을 대신 열지 않는다 — 죽은 딥링크는
+  // 프로젝트 상세와 같은 문법으로 정직하게 말하고 갈 곳을 준다.
+  if (requestedNodeMissing) {
+    return (
+      <main
+        id="main"
+        className="flex h-[100dvh] items-center justify-center bg-[color:var(--color-canvas)] p-6"
+      >
+        <EmptyState
+          // 읽는 길이를 한 줄로 늘어놓지 않는다 — 카드가 화면 폭을 다 먹으면
+          // 한 문장이 1000px 을 넘어가 읽기가 끊긴다(같은 표면의 짧은 빈 상태
+          // 는 문장이 짧아 드러나지 않던 문제).
+          className="w-full max-w-lg"
+          title={t("notFound.title")}
+          description={t("notFound.body", { name: requestedNode?.trim() ?? "" })}
+          tone="solid"
+          align="center"
+          action={
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={exit}
+                className="rounded-lg border border-[color:var(--color-border-strong)] px-3 py-1.5 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              >
+                {t("notFound.openMap")}
+              </button>
+              <button
+                type="button"
+                onClick={enterCreate}
+                className="rounded-lg border border-[color:var(--color-border-strong)] px-3 py-1.5 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              >
+                {t("notFound.create")}
+              </button>
+            </div>
+          }
+        />
+      </main>
+    );
+  }
   if (!enhanceItem || !enhanceProjection) {
     return (
       <main
@@ -1060,18 +1105,22 @@ export function OntologyStudioPage() {
     }
     // read-only → one copyable MCP packet. The `broader` array is idempotent, so
     // any is_a-touching line writes the SAME final array (dupes are harmless).
+    // 패킷의 이름은 디스크 경로가 아니라 **에이전트가 아는 이름** 이다 —
+    // 번들 샘플은 매니페스트 경로 앞에 조각이 하나 더 붙어 있어 그대로
+    // 넘기면 붙여넣는 즉시 실패한다.
+    const packetSlug = plan.agentSlug;
     try {
       const broaderAfter = projection.byRelation.isA.neighbors.map((n) => n.ref);
       const lines = changes.map((c) => {
         if (c.op === "add") {
           return c.relation === "isA"
-            ? buildRemovePacket(sourceSlug, "isA", c.target.ref, { broaderRefsAfter: broaderAfter })
-            : buildFillPacket(sourceSlug, c.relation, c.target.ref);
+            ? buildRemovePacket(packetSlug, "isA", c.target.ref, { broaderRefsAfter: broaderAfter })
+            : buildFillPacket(packetSlug, c.relation, c.target.ref);
         }
         if (c.op === "remove") {
-          return buildRemovePacket(sourceSlug, c.relation, c.target.ref, { broaderRefsAfter: broaderAfter });
+          return buildRemovePacket(packetSlug, c.relation, c.target.ref, { broaderRefsAfter: broaderAfter });
         }
-        return buildEditPacket(sourceSlug, c.from, c.to, c.target.ref, { broaderRefsAfter: broaderAfter });
+        return buildEditPacket(packetSlug, c.from, c.to, c.target.ref, { broaderRefsAfter: broaderAfter });
       });
       await navigator.clipboard.writeText(lines.join("\n"));
       toast.show(t("commitCopied"), "success");

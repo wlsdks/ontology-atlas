@@ -43,6 +43,19 @@ export interface FootprintTrailEntry {
   id: string;
   title: string;
   kind: string;
+  /**
+   * 에이전트가 아는 이름 — 볼트 뿌리 기준 문서 slug 또는 참조 원문
+   * (`resolveNodeAgentTarget`). id 꼬리로 되짚으면 슬러그가 뭉개진 파생
+   * 노드(`element:srcentitiesfoots`)에서 볼트에 없는 이름이 나간다.
+   */
+  agentRef?: string | null;
+  /** 자기 문서가 있는가. 없으면 `get_concept` 대신 문서 신설을 안내한다. */
+  documented?: boolean;
+}
+
+/** 인계문에 박을 이름 — 에이전트가 아는 이름 우선, 없으면 id 꼬리. */
+function agentRefOf(entry: FootprintTrailEntry): string {
+  return entry.agentRef?.trim() || graphIdToConceptSlug(entry.id);
 }
 
 export interface FootprintTrailPacketLabels {
@@ -76,11 +89,17 @@ export function formatFootprintTrailAgentPacket(
   lines.push("");
   lines.push(labels.reviewHint);
   for (const entry of entries) {
-    lines.push(`get_concept("${graphIdToConceptSlug(entry.id)}")`);
+    // 문서가 없는 개념에 `get_concept` 을 주면 붙여넣는 즉시 "없음" 이다 —
+    // 볼트가 아는 유일한 형태(다른 문서가 적어 둔 참조)를 그대로 밝힌다.
+    lines.push(
+      entry.documented === false
+        ? `# ${agentRefOf(entry)} — 아직 문서 없음(참조로만 존재). add_concept 로 만들 수 있어요`
+        : `get_concept("${agentRefOf(entry)}")`,
+    );
   }
   if (entries.length >= 2) {
-    const first = graphIdToConceptSlug(entries[0].id);
-    const last = graphIdToConceptSlug(entries[entries.length - 1].id);
+    const first = agentRefOf(entries[0]);
+    const last = agentRefOf(entries[entries.length - 1]);
     lines.push("");
     lines.push(labels.pathHint);
     lines.push(`find_path("${first}", "${last}")`);

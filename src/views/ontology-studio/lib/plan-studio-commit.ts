@@ -29,7 +29,14 @@ export type StudioCommitPlan =
   /** 동의를 받았다 — 관계를 실은 새 문서 하나로 실체화한다. */
   | { op: "create-document"; slug: string; draft: CreateDraft; addedCount: number }
   /** 자기 문서가 있다 — 그 문서의 관계 배열만 고친다. */
-  | { op: "update-frontmatter"; slug: string; updates: Record<string, string[]> };
+  | {
+      op: "update-frontmatter";
+      /** 디스크에 쓸 경로 (로컬 볼트 기준). */
+      slug: string;
+      /** 복사해 주는 MCP 명령이 부를 이름 (에이전트 볼트 뿌리 기준). */
+      agentSlug: string;
+      updates: Record<string, string[]>;
+    };
 
 /**
  * 아직 문서가 없는 개념을 **하나의 새 문서로** 실체화하는 초안. 관계까지 같이
@@ -85,5 +92,10 @@ export function planStudioCommit(input: {
     const next = planned[relation];
     if (next) updates[BEARING_FRONTMATTER_KEY[relation]] = next;
   }
-  return { op: "update-frontmatter", slug: writeTarget.slug, updates };
+  return {
+    op: "update-frontmatter",
+    slug: writeTarget.slug,
+    agentSlug: writeTarget.agentSlug,
+    updates,
+  };
 }

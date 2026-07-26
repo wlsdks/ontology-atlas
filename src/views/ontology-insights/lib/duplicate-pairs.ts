@@ -1,4 +1,5 @@
 import {
+  resolveNodeAgentTarget,
   resolveNodeDocument,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
@@ -141,8 +142,16 @@ function slugFolders(slug: string): string[] {
 /** 그래프 노드 하나를 엔진과 같은 필드로 환산한 것. */
 export type GraphSimilarityCandidate = SimilarityCandidate & { node: KnowledgeGraphNode };
 
+/**
+ * 이 노드를 에이전트에게 가리켜 보일 이름. 화면이 복사해 주는
+ * `merge_concepts` / `get_concept` 이 그대로 실행되려면 볼트 뿌리 기준
+ * 이름이어야 한다 — `evidenceIds[0]` 을 그대로 쓰던 동안 번들 샘플의
+ * `ontology/` 한 조각 때문에 복사한 호출이 즉시 실패했다(2026-07-26 실측).
+ * 유사도 점수도 같은 값으로 낸다: 에이전트 쪽 `similar_nodes` 는 볼트 뿌리
+ * 기준 slug 로 낱말을 자르므로, 접두사가 붙은 값으로 재면 두 순위가 갈린다.
+ */
 function slugOf(node: KnowledgeGraphNode): string {
-  return node.evidenceIds[0] ?? node.id;
+  return resolveNodeAgentTarget(node).ref ?? node.id;
 }
 
 /**

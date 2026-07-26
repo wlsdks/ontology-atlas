@@ -171,6 +171,14 @@ export function compileOntology(docs, options = {}) {
     (edge) => !edge.resolved && !edge.external,
   ).length;
   const maxMtime = Math.max(0, ...nodes.map((node) => Number(node.mtime) || 0));
+  // 문서가 없어 노드가 되지 못한, 그러나 볼트가 이름을 적어 둔 개념의 수.
+  // 웹 지도/인사이트는 이것들도 개념으로 그리므로(도그푸드 96 문서 + 193
+  // 참조 = 289) 이 수를 같이 내지 않으면 화면과 CLI 가 서로 다른 총계를
+  // 말하는데 어느 쪽도 그 차이를 설명하지 않는다. 노드로 승격하지는 않는다 —
+  // census·중심성·health 는 여전히 "문서가 있는 개념" 만 센다.
+  const referencedOnlyCount = new Set(
+    edges.filter((edge) => !edge.resolved).map((edge) => edge.ref),
+  ).size;
 
   // summary mode — 배열 전부 omit, 카운트와 aggregate 만. 큰 vault 에서
   // AI agent 가 토큰 한도 초과 없이 graphHash / 변화 감지 / 사이즈 판단 가능.
@@ -186,6 +194,7 @@ export function compileOntology(docs, options = {}) {
       resolvedEdgeCount,
       externalEdgeCount,
       unresolvedEdgeCount,
+      referencedOnlyCount,
       aliasCount: aliases.length,
       ambiguousAliasCount: ambiguousAliases.length,
       issueCount: issues.length,
@@ -208,6 +217,7 @@ export function compileOntology(docs, options = {}) {
     resolvedEdgeCount,
     externalEdgeCount,
     unresolvedEdgeCount,
+    referencedOnlyCount,
     aliasCount: aliases.length,
     ambiguousAliasCount: ambiguousAliases.length,
     issueCount: issues.length,

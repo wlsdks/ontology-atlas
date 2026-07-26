@@ -8,6 +8,7 @@ import {
   type KnowledgeGraphNode,
   type KnowledgeGraphEdge,
   type KnowledgeProjectInsight,
+  stripVaultSlugPrefix,
 } from '@/entities/knowledge-graph';
 import {
   deriveOntologyFromVault,
@@ -45,7 +46,14 @@ export function derivationToInsight(
    * 표시 이름은 검색 범위에 더해진다 — 그래서 원본 map 도 함께 실어 보낸다.
    */
   locale?: string,
+  /**
+   * 에이전트에게 건넬 이름을 만들 때 문서 slug 앞에서 뺄 조각
+   * (`StaticVaultSource.agentSlugPrefix`). 로컬 볼트는 폴더가 곧 뿌리라
+   * 넘기지 않는다.
+   */
+  options?: { agentSlugPrefix?: string },
 ): KnowledgeProjectInsight {
+  const agentSlugPrefix = options?.agentSlugPrefix;
   const nodes: KnowledgeGraphNode[] = d.nodes.map((stub) => ({
     id: stub.id,
     title: stub.title,
@@ -62,6 +70,14 @@ export function derivationToInsight(
     // 그 둘을 evidenceIds 만으로는 구분할 수 없어 "이 노드의 문서" 를 그리는
     // 표면이 남의 문서를 열어 왔다 — 구분 플래그를 그대로 넘긴다.
     hasOwnDocument: stub.hasOwnDocument,
+    // 에이전트에게 보여줄 이름 — 문서 노드는 볼트 뿌리 기준 slug, 파생
+    // 노드는 볼트가 적어 둔 참조 원문. 화면이 복사해 주는 MCP/CLI 호출은
+    // 전부 이 값을 쓴다(`resolveNodeAgentTarget`).
+    agentSlug:
+      stub.hasOwnDocument && stub.sourceSlug
+        ? stripVaultSlugPrefix(stub.sourceSlug, agentSlugPrefix)
+        : null,
+    ref: stub.ref,
     lastApprovedAt: VAULT_SENTINEL_DATE,
     lastApprovedBy: VAULT_SENTINEL_AUTHOR,
     summary: stub.summary,
@@ -144,6 +160,7 @@ function sampleInsight(
       insight: derivationToInsight(
         source === 'storefront' ? STOREFRONT_DERIVATION : STATIC_DERIVATION,
         locale,
+        { agentSlugPrefix: resolveStaticVaultSource(source).agentSlugPrefix },
       ),
       error: null,
     };

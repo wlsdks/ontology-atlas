@@ -117,6 +117,7 @@ import {
   deriveCodeLocations,
   edgeAuthoredByFromNode,
   resolveNodeDocument,
+  resolveNodeAgentTarget,
   studioEditRelationForEdgeType,
   useRelationVocabulary,
   type KnowledgeGraphNode,
@@ -1282,10 +1283,21 @@ export function HomePage() {
     const entries: FootprintTrailEntry[] = [];
     for (const id of footprintTrail) {
       const node = footprintNodeLookup.get(id);
-      if (node) entries.push({ id, title: node.label, kind: node.kind });
+      if (!node) continue;
+      // 인계 패킷에 박히는 이름은 캔버스 노드 id 가 아니라 볼트가 아는 이름.
+      const target = resolveNodeAgentTarget(
+        ontologyInsight?.nodes.find((n) => n.id === id),
+      );
+      entries.push({
+        id,
+        title: node.label,
+        kind: node.kind,
+        agentRef: target.ref,
+        documented: target.documented,
+      });
     }
     return entries;
-  }, [footprintTrail, footprintNodeLookup]);
+  }, [footprintTrail, footprintNodeLookup, ontologyInsight]);
   // 지도로 내리는 방문 id 목록 — 정제된 entries 와 같은 집합(삭제 노드 제외).
   const footprintVisitedIds = useMemo(
     () => footprintTrailEntries.map((entry) => entry.id),
@@ -1737,13 +1749,16 @@ export function HomePage() {
     // 문서가 없는 노드에서 링크를 그냥 지우면 정보가 사라진다. 라벨을 바꿔
     // 정직하게 남긴다.
     const { ownSlug, mentionedInSlug } = resolveNodeDocument(node);
-    const slug = sourceSlug ?? node.id;
+    // 인계문에 박히는 이름은 볼트가 아는 이름 — 문서 slug 또는 참조 원문.
+    const agentTarget = resolveNodeAgentTarget(node);
+    const slug = agentTarget.ref ?? sourceSlug ?? node.id;
     const connections = buildV2Connections(node.id, ontologyInsight.nodes, ontologyInsight.edges);
     const groups = buildV2ConnectionGroups(connections);
     const evidenceRows = buildV2EvidenceRows(node.evidenceIds);
     const handoffText = formatV2HandoffText({
       source: handoffSource,
       slug,
+      documented: agentTarget.documented,
       kind: node.kind,
       domainTitle: null,
       contains: groups.contains.total,
@@ -1820,6 +1835,11 @@ export function HomePage() {
         fullTitle: nodeFocus.title,
         kind: nodeFocus.kind,
         slug,
+        // 인계 체인이 쓰는 이름은 매니페스트 slug 가 아니라 볼트가 아는 이름.
+        ...(() => {
+          const target = resolveNodeAgentTarget(selectedOntologyNode);
+          return { agentSlug: target.ref, documented: target.documented };
+        })(),
         fresh: changedSlugs.has(selectedOntologyNode.id),
         // rank7 (design-council B5) — 같은 노드 선택에서 나온
         // `v2DatasheetModel`(compact 패널)의 SAME fact 를 그대로 재사용 —
