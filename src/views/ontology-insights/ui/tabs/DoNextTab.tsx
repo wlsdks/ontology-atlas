@@ -23,6 +23,7 @@ import {
   type QueueRowAbilities,
   type QueueRowActionLabels,
 } from "../parts/QueueRowActions";
+import type { MeaningGapKind } from "@/entities/knowledge-graph";
 import { MeaningGapSection, type MeaningGapLabels } from "./MeaningGapSection";
 
 /**
@@ -175,6 +176,11 @@ export interface DoNextTabProps {
   mapHref: (nodeId: string, reviewId?: string) => string;
   sourceHref: (nodeId: string, reviewId?: string) => string | null;
   builderHref: (nodeId: string, reviewId?: string) => string;
+  /**
+   * S7 이음새 — 의미 공백 행을 지도의 에이전트에게 넘기는 주소. 에이전트
+   * 패널이 없는 환경에서는 주어지지 않고, 그때는 항목도 나타나지 않는다.
+   */
+  askAgentHref?: (nodeId: string, gap: MeaningGapKind) => string | null;
   reviewState?: DoNextReviewState | null;
   onReviewStart?: (candidate: { id: string; title: string }) => void;
   /** 사이클 경로 노드 id → 표시 제목. */
@@ -674,6 +680,7 @@ export function DoNextTab({
   mapHref,
   sourceHref,
   builderHref,
+  askAgentHref,
   nodeTitle,
   cycleHandoff,
   activityDigest,
@@ -802,6 +809,7 @@ export function DoNextTab({
             mapHref={(nodeId) => mapHref(nodeId)}
             sourceHref={(nodeId) => sourceHref(nodeId)}
             builderHref={(nodeId) => builderHref(nodeId)}
+            askAgentHref={askAgentHref}
             onWrite={meaningGaps.onWrite}
             moreCount={labels.moreCount}
             labels={meaningGaps.definitionLabels}
@@ -815,6 +823,7 @@ export function DoNextTab({
             mapHref={(nodeId) => mapHref(nodeId)}
             sourceHref={(nodeId) => sourceHref(nodeId)}
             builderHref={(nodeId) => builderHref(nodeId)}
+            askAgentHref={askAgentHref}
             onWrite={meaningGaps.onWrite}
             moreCount={labels.moreCount}
             labels={meaningGaps.domainLabels}

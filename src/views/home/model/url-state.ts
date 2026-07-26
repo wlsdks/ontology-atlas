@@ -2,10 +2,15 @@ import type { ProjectCategory } from "@/entities/project";
 import type { ProjectImpactMode } from "@/entities/project";
 import {
   buildInsightsReturnMarker,
+  ONTOLOGY_DEEPLINK_ASK_KEY,
   ONTOLOGY_DEEPLINK_REVIEW_KEY,
   ONTOLOGY_DEEPLINK_VIA_KEY,
   parseInsightsReturnMarker,
 } from "@/entities/knowledge-graph";
+import {
+  parseNodeIntentKind,
+  type FirstWordsNodeIntentKind,
+} from "@/features/vault-agent";
 import {
   parseIndexPanelStateParam,
   type IndexPanelState,
@@ -56,6 +61,17 @@ export interface HomeRouteState {
    * via 마커가 있을 때만 읽고, 지도 상호작용 동안 같이 보존한다.
    */
   insightsReturnReviewId: string | null;
+  /**
+   * S7 이음새 — 인사이트 큐 행에서 「에이전트에게 말로 시키기」로 건너왔다는
+   * 표시 (`?ask=missing-definition` 등). 값은 **의도의 종류**뿐이고 문장은
+   * 지도가 첫 마디 생성기로 짓는다 — 주소에 사람이 읽을 문장을 싣지 않는다.
+   *
+   * 수명 계약: URL 이 곧 상태다. 별도 React state 로 복사하지 않으므로
+   * "열려 있는가" 와 "무엇을 물을 것인가" 가 한 곳에만 있고, 에이전트 패널을
+   * 닫으면 이 값도 함께 지워진다(닫았는데 다시 열리면 그건 결함이다).
+   * 알 수 없는 값은 파싱 단계에서 null 로 강등한다.
+   */
+  askIntent: FirstWordsNodeIntentKind | null;
   /**
    * 밀도 게이트 (fable 설계) — 클러스터 칩으로 접힌 부모 중 사용자가 펼친
    * 부모 slug 목록 (`?open=slug1,slug2`). 임계(12) 초과 자식을 가진 부모는
@@ -108,6 +124,7 @@ const HOME_QUERY_KEYS = {
   recent: "recent",
   via: ONTOLOGY_DEEPLINK_VIA_KEY,
   review: ONTOLOGY_DEEPLINK_REVIEW_KEY,
+  ask: ONTOLOGY_DEEPLINK_ASK_KEY,
 } as const;
 
 const VALID_IMPACT: ProjectImpactMode[] = [
@@ -137,6 +154,7 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   indexState: null,
   insightsReturnTab: null,
   insightsReturnReviewId: null,
+  askIntent: null,
   expandedParents: [],
   realmSlug: null,
   recentWindow: null,
@@ -346,6 +364,7 @@ export function parseHomeRouteState(
     insightsReturnReviewId: insightsReturnTab
       ? searchParams.get(HOME_QUERY_KEYS.review)
       : null,
+    askIntent: parseNodeIntentKind(searchParams.get(HOME_QUERY_KEYS.ask)),
     expandedParents: parseExpandedParentsParam(
       searchParams.get(HOME_QUERY_KEYS.open),
     ),
@@ -480,6 +499,7 @@ export function applyHomeRouteState(
   );
   setOrDelete(next, HOME_QUERY_KEYS.realm, state.realmSlug);
   setOrDelete(next, HOME_QUERY_KEYS.recent, serializeRecentWindowParam(state.recentWindow));
+  setOrDelete(next, HOME_QUERY_KEYS.ask, state.askIntent);
   setOrDelete(
     next,
     HOME_QUERY_KEYS.via,

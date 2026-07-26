@@ -216,6 +216,19 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Shortcuts button** (`?`) → `ShortcutSheet`
 - **Settings gear** (`TopologyV2SettingsGear`, 2026-07-18) → compact anchored popover (228px), no scrim: 언어 (`LocaleSwitch`) · 테마 (`ThemeToggle`) · INDEX 기본 상태 (expanded/collapsed default, writes the same localStorage key the INDEX panel reads). Self-closes; owns its own Escape so the global topology Esc ladder doesn't double-fire. Desktop-only (1512/1920 scope)
 
+#### 에이전트 패널 — 첫 마디와 이어지는 루프 (2026-07-27, desktop-only)
+- 상단 유틸 레인의 **「에이전트」** 칩이 지도 오른쪽에 세로 도크를 연다(폭 하나가 두 컬럼을 함께 움직이는 리플로우). 데스크톱 앱 전용 — 브라우저에는 키를 둘 곳도 보낼 경로도 없어 열리지 않을 문을 그리지 않는다
+- **첫 마디 칩 3슬롯** (`buildFirstWords`) — 빈 대화에 이 폴더의 실제 상태에서 뽑은 문장이 최대 3개 앉는다: ① **화면 슬롯** 지금 보고 있는 개념의 가장 큰 틈 ② **큐 슬롯** 「할 일」 큐가 지목하는 첫 개념(같은 판정 함수 `detectMeaningGaps`) ③ **상비 슬롯** 「이 지도에서 지금 제일 이상한 곳이 어디야?」
+- **모델 호출 0이 계약이다** — 칩은 사용자가 [보내기]를 누르기 전에 그려지므로, 칩을 만들려고 나가는 호출은 곧 동의 없는 전송이자 남의 돈(BYOK 요금) 무단 사용이다. 생성기는 순수 함수이고 전송 경로를 import 하지 않는다 (`tests/contract/agent-first-words-local.contract.test.ts`)
+- **칩 = 프리필, 전송 아님** — 누르면 입력칸에 문장이 앉고 전체 선택 + 포커스. 고쳐 보내도 되고 지워도 된다. 칩은 눌린 뒤에도 남는다(상태 없는 컨트롤)
+- **억지로 셋을 채우지 않는다** — 빈 폴더는 칩 1개(「무엇을 만드는 제품인지부터 같이 정리해 줘」), 보고 있는 개념이 없으면 화면 슬롯 없음, 결함 0 폴더는 상비 슬롯만. 칩 **하나의 높이**는 문장 길이와 무관하게 같다(실측 1512×950: 칩 1~3개 전부 44px, 입력칸 자리 불변)
+- **키/폴더가 없는 상태의 「이런 걸 시킬 수 있어요」도 같은 생성기** — 문장은 같고 옷만 다르다(평문 목록). 완결할 수 없는 순간에 누를 수 있는 컨트롤을 그리지 않는다
+- **다음 한 걸음** — 쓰기를 제안한 턴의 **같은 응답 안**에서 모델이 다음 빈 곳 하나를 말하고(시스템 프롬프트의 `NEXT:` 한 줄), 그 줄이 칩 하나가 된다. **추가 LLM 호출 0** · 프리필이라 살아 있는 제안이 둘이 되지 않는다
+- **세션 사이의 이어짐** — 새 대화의 화면 문맥에 이 폴더의 **최근 적용된 변경**(git 이력 최대 5줄, 줄당 120자 상한)이 실린다. 대화는 저장하지 않는다 — 쓰기는 frontmatter + git 에 남고 그것이 다음 대화의 문맥이 된다
+- **세션 요약** — 헤더 부제 자리 한 줄이 「이 대화에서 개념 N개 · 연결 M개」로 바뀐다(적용에 성공한 변경만 센다). 같은 줄의 글자만 치환 — 자리·크기 불변
+- **S7 이음새** — 노드 상세의 **「말로 시키기」** 타일과 인사이트 큐 행 케밥의 **「에이전트에게 말로 시키기」** 가 칩과 **같은 생성기·같은 문장**을 쓴다. 큐에서 건너올 때 주소(`?ask=missing-definition|missing-domain|missing-relations`)가 나르는 것은 **의도의 종류**뿐이고 문장은 도착지가 화면 언어로 짓는다. 주소가 곧 상태라 뒤로가기로 같은 문맥이 되살아나고, 패널을 닫으면 그 요청도 함께 거둬진다
+- **겹침** — 패널이 열려 있는 동안 선택-노드 인스펙터는 패널 폭만큼 안쪽에 선다(둘은 함께 읽어야 하는 한 쌍). 이동은 패널 리플로우와 같은 duration·같은 곡선
+
 #### 어권별 노드 이름 (`display_<locale>`, 2026-07-24)
 - frontmatter `display_ko` / `display_en` → 화면 언어에 맞는 이름을 지도 라벨·INDEX·팝오버가 그린다. 폴백 사다리: `display_<screen locale>` → `display` → `title`. 검색/매칭은 항상 `title` 전체(라벨이 검색 범위를 좁히지 않는다)
 - 쓰기 3경로: MCP `add_concept`/`add_concepts` 의 `labels: { ko, en }` · `patch_concept` 의 직접 키 · 지도 컴포저의 어권별 이름 칸

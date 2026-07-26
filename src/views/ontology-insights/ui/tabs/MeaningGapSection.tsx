@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
 import { MtimeConflictBadge } from "@/shared/ui/mtime-conflict-badge";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
+import type { MeaningGapKind } from "@/entities/knowledge-graph";
 import type { DomainChoice, MeaningGapRow } from "../../lib/meaning-gap-rows";
 import {
   HandoffCopyButton,
@@ -88,6 +89,13 @@ export interface MeaningGapSectionProps {
   sourceHref: (nodeId: string) => string | null;
   builderHref: (nodeId: string) => string;
   /**
+   * S7 이음새 — 이 행을 지도의 에이전트에게 넘기는 주소. 데스크톱 앱에만
+   * 있는 표면이라 없으면 항목이 나타나지 않는다(열리지 않을 문을 그리지
+   * 않는다). `gap` 을 받는 이유: 문장의 **종류**만 나르고 문장 자체는
+   * 도착지의 첫 마디 생성기가 짓는다.
+   */
+  askAgentHref?: (nodeId: string, gap: MeaningGapKind) => string | null;
+  /**
    * 실제 쓰기 — 볼트 프론트매터 한 필드. 호출부가 `updateFrontmatter` 로
    * 연결하고 `expectedMtime` 을 함께 넘긴다. 성공하면 resolve, 충돌이면
    * `VaultConflictError` 를 throw 한다.
@@ -106,6 +114,7 @@ export function MeaningGapSection({
   mapHref,
   sourceHref,
   builderHref,
+  askAgentHref,
   onWrite,
   moreCount,
   labels,
@@ -215,6 +224,7 @@ export function MeaningGapSection({
           mapHref={mapHref}
           sourceHref={sourceHref}
           builderHref={builderHref}
+          askAgentHref={askAgentHref}
           onOpen={() => {
             // 펼치는 순간 붙잡는다 — 그 뒤 볼트가 다시 읽혀도 적던 칸이
             // 화면에서 없어지지 않는다.
@@ -254,6 +264,7 @@ function MeaningGapRowView({
   mapHref,
   sourceHref,
   builderHref,
+  askAgentHref,
   onOpen,
   onClose,
   onPatch,
@@ -269,6 +280,13 @@ function MeaningGapRowView({
   mapHref: (nodeId: string) => string;
   sourceHref: (nodeId: string) => string | null;
   builderHref: (nodeId: string) => string;
+  /**
+   * S7 이음새 — 이 행을 지도의 에이전트에게 넘기는 주소. 데스크톱 앱에만
+   * 있는 표면이라 없으면 항목이 나타나지 않는다(열리지 않을 문을 그리지
+   * 않는다). `gap` 을 받는 이유: 문장의 **종류**만 나르고 문장 자체는
+   * 도착지의 첫 마디 생성기가 짓는다.
+   */
+  askAgentHref?: (nodeId: string, gap: MeaningGapKind) => string | null;
   onOpen: () => void;
   onClose: () => void;
   onPatch: (next: Partial<RowUiState>) => void;
@@ -360,6 +378,7 @@ function MeaningGapRowView({
           <RowActionMenu
             sourceHref={sourceHref(row.nodeId)}
             builderHref={builderHref(row.nodeId)}
+            askAgentHref={askAgentHref?.(row.nodeId, row.gap) ?? null}
             handoffPayload={row.handoffPayload}
             candidate={candidate}
             abilities={abilities}

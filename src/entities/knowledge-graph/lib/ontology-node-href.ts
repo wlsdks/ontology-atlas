@@ -18,7 +18,7 @@ import { translateOntologyDeeplinkToTopologyParam } from "./translate-ontology-d
  */
 export function buildOntologyNodeHref(
   nodeId: string,
-  options?: { via?: string; reviewId?: string },
+  options?: { via?: string; reviewId?: string; ask?: string },
 ): string {
   const base = `/ontology/?node=${encodeURIComponent(nodeId)}`;
   const params: string[] = [];
@@ -32,6 +32,13 @@ export function buildOntologyNodeHref(
       `${ONTOLOGY_DEEPLINK_REVIEW_KEY}=${encodeURIComponent(options.reviewId)}`,
     );
   }
+  // S7 이음새 — 큐 행에서 「에이전트에게 말로 시키기」로 건너올 때 실려 오는
+  // **의도의 종류**다. 문장 자체를 URL 에 싣지 않는 이유: 문장은 도착지에서
+  // 첫 마디 생성기가 화면 언어로 짓는다. 종류만 나르면 두 입구가 같은 함수를
+  // 지나므로 갈라질 자리가 없고, 주소에 사람이 읽을 문장이 남지도 않는다.
+  if (options?.ask) {
+    params.push(`${ONTOLOGY_DEEPLINK_ASK_KEY}=${encodeURIComponent(options.ask)}`);
+  }
   return params.length > 0 ? `${base}&${params.join("&")}` : base;
 }
 
@@ -39,6 +46,8 @@ export function buildOntologyNodeHref(
 export const ONTOLOGY_DEEPLINK_VIA_KEY = "via";
 /** 인사이트 `할 일`의 정확한 검토 행 id — 유효한 via 마커와 함께만 소비한다. */
 export const ONTOLOGY_DEEPLINK_REVIEW_KEY = "review";
+/** 에이전트에게 건넬 첫 마디의 **종류** — 도착 즉시 소비하고 주소에서 지운다. */
+export const ONTOLOGY_DEEPLINK_ASK_KEY = "ask";
 
 const INSIGHTS_RETURN_MARKER_PATTERN = /^insights:([a-z][a-z0-9-]*)$/;
 

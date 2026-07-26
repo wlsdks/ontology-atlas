@@ -20,7 +20,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { BookOpen, Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle, Plus, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
-import { useAdaptiveRecentChanges, useOntologyInsight, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
+import { useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
   useLocalVault,
   VaultOpenGuideSheet,
@@ -182,7 +182,13 @@ import { shouldSuppressGlobalShortcuts } from "../lib/blocking-surface";
 import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
 import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
-import type { ScreenContextSnapshot } from "@/features/vault-agent";
+import {
+  nodeIntent,
+  screenIntentFor,
+  sentenceForIntent,
+  type FirstWordsLabels,
+  type ScreenContextSnapshot,
+} from "@/features/vault-agent";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
@@ -382,6 +388,15 @@ export function HomePage() {
    * 지도 위에서 주의를 요구하는 표면이라 겹치면 무엇이 주 표면인지 사라진다.
    */
   const [vaultAgentOpen, setVaultAgentOpen] = useState(false);
+  /**
+   * 바깥에서 건너온 첫 마디(S7). 여기 실리는 것은 **문장 하나**뿐이고, 전송은
+   * 하지 않는다 — 패널의 입력칸에 앉을 뿐이라 사용자가 고쳐 보내거나 지울 수
+   * 있다. `nonce` 는 같은 문장을 다시 눌러도 다시 앉게 하는 값이다.
+   */
+  const [vaultAgentPrefill, setVaultAgentPrefill] = useState<{
+    text: string;
+    nonce: number;
+  } | null>(null);
   const [ontologySearchOpen, setOntologySearchOpen] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -562,6 +577,8 @@ export function HomePage() {
   // 브리지가 없으면(웹 빌드) 버튼도 패널도 그리지 않는다 — 열리지 않을 문을
   // 그려 두는 것이 정직 강등의 반대다.
   const llmBridgeAvailable = isLlmChatBridgeAvailable();
+  /** 첫 마디가 지목할 빈칸의 근거 — 패널·인사이트 큐가 읽는 것과 같은 사실 map. */
+  const vaultConceptFacts = useVaultConceptFacts();
   const { insight: ontologyInsight } = useOntologyInsight();
   // S-C1 — 노드 데이터시트 "언제 바뀌었나" (mode-aware manifest updatedAt).
   const docFreshnessIndex = useVaultDocFreshnessIndex();
@@ -2071,6 +2088,66 @@ export function HomePage() {
     setCreateNodeOpen(false);
   }, []);
 
+  /**
+   * 첫 마디의 화면 언어 — 패널의 빈 대화 칩과 **같은 키**를 읽는다. 두
+   * 입구가 각자 문구를 고르면 같은 개념을 두 가지로 말하게 된다.
+   */
+  const firstWordsLabels = useMemo<FirstWordsLabels>(
+    () => ({
+      missingDefinition: (title) => tAgent("firstWords.missingDefinition", { title }),
+      missingDomain: (title) => tAgent("firstWords.missingDomain", { title }),
+      missingRelations: (title) => tAgent("firstWords.missingRelations", { title }),
+      mapReview: tAgent("firstWords.mapReview"),
+      emptyVault: tAgent("firstWords.emptyVault"),
+    }),
+    [tAgent],
+  );
+
+  /**
+   * S7 이음새 — 노드 상세의 「말로 시키기」. 문장은 **첫 마디 생성기**가
+   * 짓는다(`screenIntentFor`): 빈 대화의 1번 칩과 글자 하나까지 같은 문장이
+   * 되므로 두 입구가 갈라질 자리가 없다. 누르면 패널이 열리고 입력칸에 앉을
+   * 뿐 — 전송은 여전히 [보내기]다.
+   */
+  const askAgentAboutSelectedNode = useCallback(() => {
+    const intent = screenIntentFor(selectedOntologyNode, vaultConceptFacts);
+    if (!intent) return;
+    setVaultAgentPrefill({
+      text: sentenceForIntent(intent, firstWordsLabels),
+      nonce: Date.now(),
+    });
+    openVaultAgent();
+  }, [selectedOntologyNode, vaultConceptFacts, firstWordsLabels, openVaultAgent]);
+
+  /**
+   * S7 이음새 — 인사이트 큐에서 `?ask=` 를 달고 건너온 경우.
+   *
+   * **주소가 곧 상태다.** 별도 React state 로 복사하지 않으므로 "패널이 열려
+   * 있는가" 와 "무엇을 물을 것인가" 가 한 곳에만 있고, 뒤로가기로 그 주소에
+   * 돌아오면 같은 문맥이 그대로 되살아난다. 주소가 나른 것은 **의도의
+   * 종류**뿐이라 문장은 여기서, 빈 대화 칩과 같은 생성기로 짓는다.
+   */
+  const askPrefill = useMemo(() => {
+    if (!llmBridgeAvailable || !routeState.askIntent) return null;
+    const intent = nodeIntent(selectedOntologyNode, routeState.askIntent);
+    if (!intent) return null;
+    return {
+      text: sentenceForIntent(intent, firstWordsLabels),
+      // 같은 주소면 같은 값 — 렌더마다 초안을 다시 덮지 않는다.
+      nonce: hashAskRequest(routeState.askIntent, "ref" in intent ? intent.ref : ""),
+    };
+  }, [llmBridgeAvailable, routeState.askIntent, selectedOntologyNode, firstWordsLabels]);
+
+  /**
+   * 닫기는 주소의 요청도 함께 거둔다 — 안 그러면 닫아도 파생 상태가 다시
+   * 열고, 사용자에겐 "닫기가 안 먹는" 것으로 읽힌다.
+   */
+  const closeVaultAgent = useCallback(() => {
+    setVaultAgentOpen(false);
+    setVaultAgentPrefill(null);
+    setRouteState({ askIntent: null }, { replace: true });
+  }, [setRouteState]);
+
   const handleSelect = useCallback(
     (
       slug: string,
@@ -2933,7 +3010,14 @@ export function HomePage() {
   }, [hubs, preloadProjectAsset, selectedSlug]);
 
   return (
-    <main id="main" className="relative flex h-full w-full overflow-hidden bg-[color:var(--color-canvas)]">
+    <main
+      id="main"
+      // 에이전트 패널이 자리를 차지하면 화면 오른쪽에 붙는 고정 표면(선택-노드
+      // 인스펙터)도 그만큼 안쪽으로 선다. 근거(노드)와 상대(에이전트)가 서로를
+      // 덮으면 "지도를 같이 보며" 가 성립하지 않는다 — 규칙은 globals.css.
+      data-agent-panel-open={vaultAgentOpen || Boolean(askPrefill) ? 'true' : 'false'}
+      className="relative flex h-full w-full overflow-hidden bg-[color:var(--color-canvas)]"
+    >
       {/* 좌측 64px 내비 레일은 perf/persistent-shell 이후 `app/[locale]/layout.tsx`
           (AppShell) 상주 — 이 페이지는 더 이상 직접 마운트하지 않는다. 레일
           하단 설정 게어는 위 `useNavRailSettingsSlot(navRailSettingsSlot)`로
@@ -4386,6 +4470,9 @@ export function HomePage() {
                   actionDocument: t("nodeDatasheet.actionDocument"),
                   actionEditRelations: t("nodeDatasheet.actionEditRelations"),
                   actionCopyHandoff: t("nodeDatasheet.actionCopyHandoff"),
+                  actionAskAgent: llmBridgeAvailable
+                    ? t("nodeDatasheet.actionAskAgent")
+                    : undefined,
                   actionPath: t("nodeDatasheet.actionPath"),
                   actionRealm: t("realm.enterAction"),
                   // 결과-설명 툴팁 (소유자 승인) — 라벨 반복이 아닌 "누르면
@@ -4393,11 +4480,15 @@ export function HomePage() {
                   actionDocumentTip: t("nodeDatasheet.actionDocumentTip"),
                   actionEditRelationsTip: t("nodeDatasheet.actionEditRelationsTip"),
                   actionCopyHandoffTip: t("nodeDatasheet.actionCopyHandoffTip"),
+                  actionAskAgentTip: t("nodeDatasheet.actionAskAgentTip"),
                   actionPathTip: t("nodeDatasheet.actionPathTip"),
                   actionRealmTip: t("realm.enterTooltip"),
                 }}
                 onSelectConnection={(id) => handleSelect(id)}
                 onCopyHandoff={copyV2NodeHandoff}
+                // 에이전트 표면이 없는 환경(웹)에서는 주입하지 않는다 — 타일도
+                // 함께 사라진다. 열리지 않을 문을 그리지 않는다.
+                onAskAgent={llmBridgeAvailable ? askAgentAboutSelectedNode : undefined}
                 onClose={handleDatasheetClose}
                 onSetPathSource={() => handleSetPathSource(panelDatasheetModel.nodeId)}
                 onEnterRealm={
@@ -4592,8 +4683,9 @@ export function HomePage() {
           곡선이 된다. 따로 맞춘 두 애니메이션이 아니라 물리적으로 하나다. */}
       {llmBridgeAvailable ? (
         <VaultAgentPanel
-          open={vaultAgentOpen}
-          onClose={() => setVaultAgentOpen(false)}
+          // 주소가 「이 개념을 물어보라」 를 들고 있으면 그것만으로 열린다.
+          open={vaultAgentOpen || Boolean(askPrefill)}
+          onClose={closeVaultAgent}
           vaultPath={gitVaultPath}
           insight={ontologyInsight}
           manifest={vault.manifest}
@@ -4607,6 +4699,7 @@ export function HomePage() {
           // 전환」과 **같은 함수**를 탄다(두 번째 열기 경로를 만들지 않는다).
           onOpenFolder={() => void vault.open()}
           downloadHref={`/${activeLocale}/download/`}
+          prefillRequest={vaultAgentPrefill ?? askPrefill}
         />
       ) : null}
     </main>
@@ -4635,4 +4728,18 @@ function compactTopologyPanelTitle(title: string | null): string | null {
   if (!title) return null;
   const stripped = title.replace(/\s*\(.*$/, "").trim();
   return stripped.length > 0 ? stripped : title;
+}
+
+/**
+ * 같은 「말로 시키기」 요청이면 같은 값 — 패널이 초안을 다시 앉히는 것은
+ * 요청이 **달라졌을 때**뿐이어야 한다. 시각(Date.now)을 쓰면 렌더마다 값이
+ * 달라져 사용자가 고쳐 쓰던 문장을 덮는다.
+ */
+function hashAskRequest(kind: string, ref: string): number {
+  const source = `${kind}:${ref}`;
+  let hash = 0;
+  for (let index = 0; index < source.length; index += 1) {
+    hash = (hash * 31 + source.charCodeAt(index)) | 0;
+  }
+  return hash;
 }
