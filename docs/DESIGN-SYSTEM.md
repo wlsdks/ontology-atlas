@@ -428,6 +428,32 @@ quarantine family (`--color-amber-docs-*`, provisional — see
 separately below; they are data marks / an unresolved charter-tension
 family, not signal tones.
 
+### Evidence tier — "no document" is achromatic, on purpose (2026-07-26)
+
+결정 표면(인사이트 랭킹 · 허브 · 「할 일」 큐)은 **자기 `.md` 를 가진 개념**과
+**다른 문서가 이름만 적어 둔 근거**를 구분한다. 판정의 단일 출처는
+`isEvidenceOnlyConcept` (`entities/knowledge-graph`) 이고, 표시는
+`EvidenceOnlyBadge` (`shared/ui`) 한 벌이다.
+
+- **배지는 무채색이다** — `--color-text-quaternary` 텍스트 + `--color-border-soft`
+  보더. 신호 톤(amber)을 쓰지 않는 이유는 규모다: 도그푸드 289개념 중 193개가
+  파생이라 amber 를 쓰면 한 화면에 배지가 수십 개 뜨고, 이는 헌장의 "앰버가 셋
+  이상 보이면 결함" 을 정면으로 위반한다. 계층은 색이 아니라 **위치**(접힌 아래
+  계층)와 조용한 라벨로 말한다.
+- **행 높이를 흔들지 않는다** — `text-label`(11px) + `leading-4`(16px) 로 같은
+  행의 본문(`text-body` 12.5px, 줄높이 ~19px)보다 낮게 유지한다. 실측: 배지 있는
+  행과 없는 행 모두 39–40px (1512×950). 자세한 이유는 아래 *Dimensional
+  regularity* 절.
+- **계층 펼침 모션** — `.insights-disclosure-in` = 같은 표면의 탭 전환과 **같은
+  키프레임·같은 토큰**(`panelCrossfadeIn` + `--motion-fast` 120ms). 새 키프레임
+  0 · 새 duration 0. 아래로만 자라므로 위 행의 자리는 불변(실측 shift 0px).
+- **막대는 두 계층이 같은 자를 쓴다** — 수는 같은 계산(`computeOntologyDependents`
+  = MCP `blast_radius`)에서 나오므로 자를 따로 두면 같은 15가 두 목록에서 다른
+  길이로 그려져 막대가 거짓말을 한다.
+- **숨기기는 계층화가 아니다** — 강등된 행을 지우지 않는다. 규모는 토글 라벨이
+  그대로 말하고(「… 193개 보기」), 개발자의 추적과 「문서 만들기」 승격 경로도
+  남는다.
+
 ### Three ambers, three rules (the recurring audit false-positive)
 
 Every colour audit re-opens this, because a grep for "amber" returns three

@@ -33,6 +33,47 @@ const GENERIC_LEAF = new Set([
   "skill",
 ]);
 const MAX_PROMOTIONS = 2;
+/**
+ * 두문자어는 첫 글자만 대문자로 올리면 **틀린 이름**이 된다 — 실측
+ * (2026-07-26 도그푸드): `mcp/src/index.js` 가 「Mcp」로 그려져 인사이트
+ * 랭킹 4위에 앉았고, 같은 앱의 다른 화면은 같은 것을 「MCP」로 불렀다.
+ * 한 개념이 화면마다 다른 이름으로 보이면 사용자는 둘로 센다.
+ *
+ * 목록은 **이 저장소의 경로에 실제로 나오는 것**만 담는다. "모든 두문자어"
+ * 사전은 오탐(예: 사람 이름 `Ai`)을 만들고, 그 오탐은 조용히 데이터를
+ * 왜곡한다. 새 두문자어가 경로에 등장하면 그때 한 줄 추가한다.
+ */
+const ACRONYMS = new Set([
+  "mcp",
+  "cli",
+  "api",
+  "ui",
+  "ux",
+  "ai",
+  "id",
+  "url",
+  "uri",
+  "http",
+  "https",
+  "json",
+  "yaml",
+  "css",
+  "html",
+  "svg",
+  "sql",
+  "npm",
+  "db",
+  "dom",
+  "e2e",
+  "llm",
+  "byok",
+  "opfs",
+  "qa",
+  "rfc",
+  "skos",
+  "tsx",
+  "jsx",
+]);
 
 /** 코드 경로처럼 보이는 title 판정 — 공백 없고 '/' 포함, 그리고 (알려진 확장자 or 알려진 루트 폴더 prefix). */
 export function looksLikeCodePath(title: string): boolean {
@@ -52,7 +93,7 @@ function isGenericSegment(segment: string): boolean {
  * 경로 → 사람 이름. 코드 경로가 아니면 null (호출부가 기존 display 유지).
  * 규칙: 마지막 세그먼트 → 확장자 제거 → generic 잔재 세그먼트면 부모 세그먼트로
  * 승격(승격 후에도 generic 이면 한 단계 더, 최대 2단계) → kebab/snake/camel
- * 경계 공백화 → 단어별 첫 글자 대문자.
+ * 경계 공백화 → 단어별 첫 글자 대문자(두문자어는 전부 대문자).
  * 예: "src/widgets/topology-map-v2/ui/topology-world.ts" → "Topology World"
  *     "cli/src/commands/agent-brief.mjs" → "Agent Brief"
  *     "src/features/user-auth/index.ts" → "User Auth"
@@ -78,5 +119,12 @@ export function humanizeCodePathTitle(title: string): string | null {
     .split(/[-_.\s]+/)
     .filter(Boolean);
   if (words.length === 0) return null;
-  return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  return words.map(capitalizeWord).join(" ");
+}
+
+/** 두문자어는 전부 대문자, 그 외는 첫 글자만. */
+function capitalizeWord(word: string): string {
+  const lower = word.toLowerCase();
+  if (ACRONYMS.has(lower)) return lower.toUpperCase();
+  return word.charAt(0).toUpperCase() + word.slice(1);
 }

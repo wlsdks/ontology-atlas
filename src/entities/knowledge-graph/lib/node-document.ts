@@ -26,3 +26,26 @@ export function resolveNodeDocument(
     ? { ownSlug: null, mentionedInSlug: slug }
     : { ownSlug: slug, mentionedInSlug: null };
 }
+
+/**
+ * 이 개념이 **근거로만 적힌 이름**인가 — 자기 `.md` 없이 다른 문서의 관계 키
+ * (`elements:` / `contains:` / `relates:` …)에서 이름만 불려 파생된 노드.
+ *
+ * 왜 별도 이름이 필요한가 — 결정 화면(위험도 랭킹 · 허브 · 할 일 큐)이 이 둘을
+ * 같은 크기로 그리면, 공들여 쓴 개념과 어느 문서가 지나가며 적은 코드 경로가
+ * 같은 무게로 읽힌다. 실측(2026-07-26 도그푸드 289개념): 「바꾸면 멀리 퍼지는
+ * 개념」 상위 12행 중 11행이 테스트 파일·내부 함수 경로였고, 그중 하나도
+ * 자기 문서를 갖고 있지 않았다. 좋은 볼트일수록 역량이 구현 근거를 더 많이
+ * 인용하므로 사용자 볼트에서도 같은 일이 벌어진다.
+ *
+ * 판정을 여러 표면이 각자 하면 반드시 갈라지므로 **이 함수 하나**만 쓴다.
+ * 숨기기가 아니라 계층화의 근거다 — 근거 계층은 지우지 않고 아래로 내린다.
+ *
+ * 하위 호환: `hasOwnDocument` 미지정 노드(수동 조립 · 테스트 픽스처)는 개념
+ * 계층으로 읽는다 — 새 필드를 모르는 생산 경로의 동작을 바꾸지 않는다.
+ */
+export function isEvidenceOnlyConcept(
+  node: Pick<KnowledgeGraphNode, "hasOwnDocument"> | null | undefined,
+): boolean {
+  return node?.hasOwnDocument === false;
+}

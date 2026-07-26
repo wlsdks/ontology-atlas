@@ -1,6 +1,11 @@
 import { Waypoints } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { EmptyState, TopologyV2KindGlyph, TopologyV2TraceMark } from "@/shared/ui";
+import {
+  EmptyState,
+  EvidenceOnlyBadge,
+  TopologyV2KindGlyph,
+  TopologyV2TraceMark,
+} from "@/shared/ui";
 import { isContainmentRelation } from "@/shared/lib/ontology-tree";
 import { relationTypeIndigo } from "../../lib/relation-type-tone";
 import type { ImpactRanking } from "../../lib/impact-ranking";
@@ -16,6 +21,12 @@ export interface ConnectionHubRow {
   title: string;
   kind: string;
   degree: number;
+  /**
+   * 근거로만 적힌 이름(자기 문서 없음)인가. 허브는 순서를 바꾸지 않는다 —
+   * 연결이 실제로 많은 것을 아래로 내리면 "지금 뭐가 중심인가"의 답이 틀려진다.
+   * 대신 그 행이 아직 문서가 없다는 사실을 조용히 밝힌다.
+   */
+  evidenceOnly: boolean;
 }
 
 export interface ConnectionsTabLabels {
@@ -28,6 +39,9 @@ export interface ConnectionsTabLabels {
   noHubsHint: string;
   hubTruncated: (shown: number, total: number) => string;
   hubDegreeCaption: string;
+  /** 근거 계층 배지 — 영향 랭킹과 **같은 i18n 키**에서 온다(문구는 한 벌). */
+  evidenceBadge: string;
+  evidenceBadgeHint: string;
 }
 
 export interface ConnectionsTabHubLink {
@@ -66,6 +80,11 @@ export interface ConnectionsTabProps {
  * 둘째 줄(양 칸 폭)의 「바꾸면 멀리 퍼지는 개념」은 허브의 짝이다 — 허브가
  * "지금 뭐가 중심인가"를 말하면, 영향 랭킹은 "그걸 건드리면 어디까지 다시
  * 봐야 하나"를 말한다. 같은 질문의 두 얼굴이라 같은 탭에 산다.
+ *
+ * 두 카드가 근거 계층을 다르게 다루는 것은 질문이 다르기 때문이다. 영향
+ * 랭킹은 위험도를 묻는 자리라 문서 없는 파생 개념을 접힌 아래 계층으로
+ * 내리고, 허브는 "실제로 연결이 많은 것"을 묻는 자리라 순서를 그대로 두고
+ * 배지로만 밝힌다 — 여기서 순서를 바꾸면 답 자체가 틀려진다.
  */
 export function ConnectionsTab({
   edgeTypeRows,
@@ -185,6 +204,12 @@ export function ConnectionsTab({
                   <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-primary)]">
                     {hub.title}
                   </span>
+                  {hub.evidenceOnly ? (
+                    <EvidenceOnlyBadge
+                      label={labels.evidenceBadge}
+                      hint={labels.evidenceBadgeHint}
+                    />
+                  ) : null}
                   <span className="hidden flex-none text-label text-[color:var(--color-text-quaternary)] sm:inline">
                     {kindLabel(hub.kind)}
                   </span>
@@ -216,6 +241,8 @@ export function ConnectionsTab({
         className="lg:col-span-2"
         rows={impact.rows}
         rankedCount={impact.rankedCount}
+        evidenceRows={impact.evidenceRows}
+        evidenceRankedCount={impact.evidenceRankedCount}
         kindLabel={kindLabel}
         nodeLink={impactLink}
         labels={impactLabels}

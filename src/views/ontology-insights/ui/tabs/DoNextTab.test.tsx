@@ -70,6 +70,8 @@ const labels: DoNextTabLabels = {
   reviewChecking: (title) => `Checking ${title ?? "selected signal"}`,
   reviewActive: (title) => `Still detected: ${title ?? "selected signal"}`,
   reviewCleared: (title) => `Not detected in the current vault: ${title ?? "selected signal"}`,
+  evidenceBadge: "No document",
+  evidenceBadgeHint: "Another document wrote this name down.",
   reviewUnverified: (title) => `Could not verify: ${title ?? "selected signal"}`,
 };
 
@@ -108,6 +110,7 @@ const queue: DoNextQueue = {
       nodeKind: "capability",
       degree: 12,
       agoDays: 45,
+      evidenceOnly: false,
       handoffPayload: 'query_ontology({operation:"blast_radius", slug:"capabilities/mcp-server"})',
     },
     {
@@ -116,6 +119,7 @@ const queue: DoNextQueue = {
       nodeId: "element:alone",
       title: "Alone",
       nodeKind: "element",
+      evidenceOnly: false,
       handoffPayload: "find_neighbors …",
     },
   ],
@@ -276,6 +280,52 @@ describe("DoNextTab", () => {
     expect(row).toHaveTextContent("11 nodes");
     // 사이클 5개 초과 → "+2 more" (moreCount, 7 - 5 표기)
     expect(screen.getByText("+2 more")).toBeInTheDocument();
+  });
+});
+
+describe("DoNextTab — 근거 계층", () => {
+  it("문서 없는 개념 행은 무채색 배지로 첫 걸음이 다르다는 것을 밝힌다", () => {
+    // 이 행의 인계문은 이미 「문서부터 만들기」인데 화면은 그 사실을 말하지
+    // 않았다 — 사용자는 고칠 문서가 있다고 믿고 눌렀다.
+    render(
+      <DoNextTab
+        queue={{
+          ...queue,
+          rows: [{ ...queue.rows[1], evidenceOnly: true, title: "Integration Test" }],
+        }}
+        cycles={noCycles}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        healthQueue={emptyHealthQueue}
+        mapHref={(id) => `/ontology/?node=${encodeURIComponent(id)}`}
+        builderHref={(id) => `/ontology/edit/?node=${encodeURIComponent(id)}`}
+        {...cycleProps}
+        labels={labels}
+      />,
+    );
+
+    const row = screen.getByTestId("do-next-row");
+    expect(row).toHaveTextContent("Integration Test");
+    const badge = within(row).getByTestId("evidence-only-badge");
+    expect(badge).toHaveTextContent("No document");
+    // 한 화면에 수십 개가 뜨는 배지라 신호 톤을 쓰지 않는다(헌장).
+    expect(badge.className).not.toContain("amber");
+  });
+
+  it("문서가 있는 행에는 배지가 붙지 않는다", () => {
+    render(
+      <DoNextTab
+        queue={queue}
+        cycles={noCycles}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        healthQueue={emptyHealthQueue}
+        mapHref={(id) => `/ontology/?node=${encodeURIComponent(id)}`}
+        builderHref={(id) => `/ontology/edit/?node=${encodeURIComponent(id)}`}
+        {...cycleProps}
+        labels={labels}
+      />,
+    );
+
+    expect(screen.queryByTestId("evidence-only-badge")).toBeNull();
   });
 });
 

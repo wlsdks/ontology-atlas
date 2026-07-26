@@ -1,5 +1,9 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { buildOntologyHealthSignals, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
+import {
+  buildOntologyHealthSignals,
+  isEvidenceOnlyConcept,
+  resolveNodeAgentTarget,
+} from "@/entities/knowledge-graph";
 import { rankAllByDegree } from "@/shared/lib/ontology-tree";
 
 /**
@@ -23,6 +27,12 @@ export interface DoNextRow {
   degree?: number;
   /** 마지막 갱신 후 일수 (neglected-hub). */
   agoDays?: number;
+  /**
+   * 근거로만 적힌 이름(자기 문서 없음)인가. 이 행의 첫 걸음은 다른 행과 다르다
+   * — 고칠 문서가 아직 없으므로 「문서부터 만들기」다(`handoffPayload` 가 이미
+   * 그렇게 쓰여 있는데 화면은 그 사실을 말하지 않았다).
+   */
+  evidenceOnly: boolean;
   /** 행별 에이전트 핸드오프 — MCP 호출 순서 제안 (복사용). */
   handoffPayload: string;
 }
@@ -164,6 +174,7 @@ export function buildDoNextQueue(
       nodeKind: node.kind,
       degree,
       agoDays,
+      evidenceOnly: isEvidenceOnlyConcept(node),
       handoffPayload: buildDoNextHandoff(node),
     });
   }
@@ -179,6 +190,7 @@ export function buildDoNextQueue(
     nodeId: slug,
     title: name,
     nodeKind: nodeById.get(slug)?.kind ?? "unknown",
+    evidenceOnly: isEvidenceOnlyConcept(nodeById.get(slug)),
     handoffPayload: buildOrphanHandoff(nodeById.get(slug), slug),
   }));
 
@@ -190,6 +202,7 @@ export function buildDoNextQueue(
     nodeKind: nodeById.get(slug)?.kind ?? "unknown",
     // "왜 뽑혔나"의 근거 — 들어오는 참조 수. 행 metric("참조 N개")으로 그대로 노출.
     degree: fanIn,
+    evidenceOnly: isEvidenceOnlyConcept(nodeById.get(slug)),
     handoffPayload: buildPromotionHandoff(nodeById.get(slug), slug),
   }));
 

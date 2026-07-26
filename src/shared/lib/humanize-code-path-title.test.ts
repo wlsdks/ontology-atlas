@@ -93,6 +93,19 @@ describe("humanizeCodePathTitle", () => {
   });
 
   it("generic 목록에 새로 추가된 단어(src/lib/ui/api/util 등)도 승격 대상이다", () => {
-    expect(humanizeCodePathTitle("cli/src")).toBe("Cli");
+    // 승격 결과가 두문자어면 전부 대문자다 — 「Cli」는 같은 앱의 다른 화면이
+    // 「CLI」라 부르는 것과 어긋난 이름이었다.
+    expect(humanizeCodePathTitle("cli/src")).toBe("CLI");
+  });
+
+  it("두문자어는 첫 글자만 올리지 않고 전부 대문자로 쓴다", () => {
+    // 실측(2026-07-26): `mcp/src/index.js` 가 「Mcp」로 인사이트 랭킹에 앉아
+    // 같은 개념이 화면마다 다른 이름으로 보였다.
+    expect(humanizeCodePathTitle("mcp/src/index.js")).toBe("MCP");
+    expect(humanizeCodePathTitle("src/features/vault-api/index.ts")).toBe("Vault API");
+  });
+
+  it("두문자어 목록 밖 단어는 종전대로 첫 글자만 올린다", () => {
+    expect(humanizeCodePathTitle("src/shared/lib/parse-frontmatter.ts")).toBe("Parse Frontmatter");
   });
 });
