@@ -2189,7 +2189,20 @@
       "packetOrder": "방문 순서 (오래된 → 최근):",
       "packetReviewHint": "각 노드 맥락 검토:",
       "packetPathHint": "여정 양 끝 사이 경로 확인:",
-      "packetDustyHint": "오래 손대지 않은 노드 {count}개 — 유지보수 후보 살펴보기:"
+      "packetDustyHint": "오래 손대지 않은 노드 {count}개 — 유지보수 후보 살펴보기:",
+      "pastLinkLabel": "지난 길 {count}",
+      "pastHeading": "지난 길",
+      "pastBackAriaLabel": "걸어온 길로 돌아가기",
+      "pastRouteLabel": "{first} → {last}",
+      "pastRowMeta": "{date} · {count}곳",
+      "pastDateToday": "오늘",
+      "pastDateYesterday": "어제",
+      "pastDeleteAriaLabel": "이 길 지우기",
+      "pastClearAllLabel": "모두 지우기",
+      "pastClearAllConfirmLabel": "한 번 더 누르면 지워요",
+      "pastCapCaption": "최근 10개까지",
+      "pastEmptyBody": "아직 남은 길이 없어요. 지도를 걷고 나면 여기 모여요.",
+      "pastReadOnlyNotice": "이 볼트를 읽기 전용으로 열어서 지금 걷는 길이 남지 않아요. 문서를 한 번 저장하면 쓰기 권한을 물어봐요."
     },
     "startChecklist": {
       "kicker": "{done}/{total} 완료",

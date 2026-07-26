@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
-import { TopologyTrailChip, type TopologyTrailChipLabels } from "./TopologyTrailChip";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  TopologyTrailChip,
+  type TopologyPastWalkRow,
+  type TopologyTrailChipLabels,
+} from "./TopologyTrailChip";
 import type { FootprintTrailEntry } from "../lib/footprint-trail";
 
 const LABELS: TopologyTrailChipLabels = {
@@ -15,7 +19,20 @@ const LABELS: TopologyTrailChipLabels = {
   copyCopiedAriaLabel: "복사했어요",
   clearLabel: "지우기",
   clearAriaLabel: "걸어온 길 지우기",
+  pastLinkLabel: "지난 길 2",
+  pastHeading: "지난 길",
+  pastBackAriaLabel: "걸어온 길로 돌아가기",
+  pastDeleteAriaLabel: "이 길 지우기",
+  pastClearAllLabel: "모두 지우기",
+  pastClearAllConfirmLabel: "한 번 더 누르면 지워요",
+  pastCapCaption: "최근 10개까지",
+  pastEmptyBody: "아직 남은 길이 없어요. 지도를 걷고 나면 여기 모여요.",
 };
+
+const PAST_WALKS: TopologyPastWalkRow[] = [
+  { id: "w1", routeLabel: "AI 에이전트 파트너 → 화면(뷰)", metaLabel: "오늘 · 12곳" },
+  { id: "w2", routeLabel: "Core → El Y", metaLabel: "어제 · 4곳" },
+];
 
 const ENTRIES: FootprintTrailEntry[] = [
   { id: "domain:core", title: "Core", kind: "domain" },
@@ -33,10 +50,19 @@ function renderChip(overrides: Partial<React.ComponentProps<typeof TopologyTrail
     onCopyPacket: vi.fn(),
     copied: false,
     onClear: vi.fn(),
+    pastWalks: PAST_WALKS,
+    pastNotice: null,
+    onDeletePastWalk: vi.fn(),
+    onClearPastWalks: vi.fn(),
     ...overrides,
   };
   const view = render(<TopologyTrailChip {...props} />);
-  return { ...props, unmount: view.unmount };
+  return {
+    ...props,
+    unmount: view.unmount,
+    rerenderWith: (next: Partial<React.ComponentProps<typeof TopologyTrailChip>>) =>
+      view.rerender(<TopologyTrailChip {...props} {...next} />),
+  };
 }
 
 describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
@@ -160,5 +186,118 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
       fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
       expect(onHoverEntry).toHaveBeenLastCalledWith(null);
     });
+  });
+});
+
+describe("TopologyTrailChip — 지난 길 2층", () => {
+  function openPast() {
+    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+    fireEvent.click(screen.getByTestId("topology-trail-past-link"));
+  }
+
+  it("보관도 없고 알릴 것도 없으면 1층 헤더에 진입 링크가 없다", () => {
+    renderChip({ pastWalks: [] });
+    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+    expect(screen.queryByTestId("topology-trail-past-link")).toBeNull();
+  });
+
+  it("읽기 전용 볼트면 보관이 0이어도 진입 링크가 있고 이유를 말한다", () => {
+    renderChip({ pastWalks: [], pastNotice: "읽기 전용으로 열어서 길이 남지 않아요." });
+    openPast();
+    expect(screen.getByTestId("topology-trail-past-notice")).toHaveTextContent(
+      "읽기 전용으로 열어서",
+    );
+    expect(screen.getByTestId("topology-trail-past-empty")).toBeTruthy();
+  });
+
+  it("정상 보관 중에는 안내 줄이 없다 — 무소음이 기본", () => {
+    renderChip();
+    openPast();
+    expect(screen.queryByTestId("topology-trail-past-notice")).toBeNull();
+  });
+
+  it("헤더 링크 → 2층 목록(최근이 앞), 1층 타임라인은 사라진다", () => {
+    renderChip();
+    openPast();
+    const rows = screen.getAllByTestId("topology-trail-past-row");
+    expect(rows).toHaveLength(2);
+    expect(rows[0].textContent).toContain("AI 에이전트 파트너 → 화면(뷰)");
+    expect(rows[0].textContent).toContain("오늘 · 12곳");
+    expect(screen.queryByTestId("topology-trail-row")).toBeNull();
+    expect(screen.getByTestId("topology-trail-past-clear-all")).toHaveTextContent("모두 지우기");
+    expect(screen.getByTestId("topology-trail-chip-popover")).toHaveTextContent("최근 10개까지");
+  });
+
+  it("‹ 뒤로 → 1층 타임라인 복귀", () => {
+    renderChip();
+    openPast();
+    fireEvent.click(screen.getByTestId("topology-trail-past-back"));
+    expect(screen.getAllByTestId("topology-trail-row")).toHaveLength(3);
+    expect(screen.queryByTestId("topology-trail-past-row")).toBeNull();
+  });
+
+  it("팝오버를 닫았다 열면 항상 1층부터", () => {
+    renderChip();
+    openPast();
+    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+    expect(screen.queryByTestId("topology-trail-past-row")).toBeNull();
+    expect(screen.getAllByTestId("topology-trail-row")).toHaveLength(3);
+  });
+
+  it("행 ✕ → 그 길만 삭제 콜백", () => {
+    const props = renderChip();
+    openPast();
+    fireEvent.click(screen.getAllByTestId("topology-trail-past-delete")[1]);
+    expect(props.onDeletePastWalk).toHaveBeenCalledWith("w2");
+  });
+
+  it("모두 지우기는 2단 확인을 거친다", () => {
+    const props = renderChip();
+    openPast();
+    const button = screen.getByTestId("topology-trail-past-clear-all");
+    fireEvent.click(button);
+    expect(props.onClearPastWalks).not.toHaveBeenCalled();
+    expect(button).toHaveTextContent("한 번 더 누르면 지워요");
+    fireEvent.click(button);
+    expect(props.onClearPastWalks).toHaveBeenCalledTimes(1);
+  });
+
+  it("2단 확인은 4초 뒤 스스로 풀린다", () => {
+    vi.useFakeTimers();
+    try {
+      const props = renderChip();
+      openPast();
+      const button = screen.getByTestId("topology-trail-past-clear-all");
+      fireEvent.click(button);
+      act(() => {
+        vi.advanceTimersByTime(4000);
+      });
+      expect(button).toHaveTextContent("모두 지우기");
+      fireEvent.click(button);
+      expect(props.onClearPastWalks).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("2층에서 다 지우면 빈 상태 문구가 남고 모두 지우기 버튼은 사라진다", () => {
+    const props = renderChip();
+    openPast();
+    props.rerenderWith({ pastWalks: [] });
+    expect(screen.getByTestId("topology-trail-past-empty")).toHaveTextContent(
+      "아직 남은 길이 없어요",
+    );
+    expect(screen.queryByTestId("topology-trail-past-row")).toBeNull();
+    expect(screen.queryByTestId("topology-trail-past-clear-all")).toBeNull();
+    // 상한 고지는 빈 상태에서도 계약을 유지한다.
+    expect(screen.getByTestId("topology-trail-chip-popover")).toHaveTextContent("최근 10개까지");
+  });
+
+  it("행 자체는 컨트롤이 아니다 — 누를 수 있는 건 삭제뿐", () => {
+    renderChip();
+    openPast();
+    const row = screen.getAllByTestId("topology-trail-past-row")[0];
+    expect(row.querySelectorAll("button")).toHaveLength(1);
   });
 });

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T03:22:25.228Z",
+  "generatedAt": "2026-07-26T03:49:41.334Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,26 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 「지난 길」 — 세션이 끝나도 궤적을 잃지 않는다",
+          "slug": "2026-07-26-지난-길-세션이-끝나도-궤적을-잃지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 — 「걸어온 길」 렌즈: 팝오버를 열면 지도가 궤적 읽기에 양보한다",
+          "slug": "2026-07-26-걸어온-길-렌즈-팝오버를-열면-지도가-궤적-읽기에-양보한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 — 「걸어온 길」 순서 가독성 + 이름 통일",
+          "slug": "2026-07-26-걸어온-길-순서-가독성-이름-통일"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 — 설정에 「AI 연결」 — 내 API 키 · 연결 확인 · 보낸 기록",
+          "slug": "2026-07-26-설정에-ai-연결-내-api-키-연결-확인-보낸-기록"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — 터미널 도크: 깨진 프롬프트 글리프 · 왼쪽 벽 · 뚱뚱한 스크롤바",
           "slug": "2026-07-26-터미널-도크-깨진-프롬프트-글리프-왼쪽-벽-뚱뚱한-스크롤바"
         },
@@ -4863,9 +4883,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 지적(\"터미널 모양이 보기 안좋은데? 왼쪽 벽부터 시작해서 그런듯한데\"). 실측해 보니 세 가지가 겹쳐 있었고, 그중 하나는 눈에 안 보이는 실버그",
-      "wordCount": 41055,
-      "updatedAt": "2026-07-26T03:22:25.228Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자: \"자신의 발자취를 나중에 재미로라도 볼 수 있도록\" — 새로고침하면 ?p=(지금 여기)는 URL 로 살아남는데 궤적만 사라지는 비대칭이 있었다. ",
+      "wordCount": 41928,
+      "updatedAt": "2026-07-26T03:49:41.334Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5627,7 +5647,7 @@
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
       "wordCount": 15210,
-      "updatedAt": "2026-07-26T03:22:25.142Z",
+      "updatedAt": "2026-07-26T12:27:48+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -6190,8 +6210,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
-      "wordCount": 12616,
-      "updatedAt": "2026-07-26T11:55:57+09:00",
+      "wordCount": 12731,
+      "updatedAt": "2026-07-26T12:28:04+09:00",
       "linksOut": [
         "slug",
         "project:slug",
