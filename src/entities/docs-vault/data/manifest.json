@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T22:33:02.000Z",
+  "generatedAt": "2026-07-26T22:53:20.979Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 「기록」 화면은 이 화면의 일을 정하지 않은 상태였다 (작업대 재설계)",
+          "slug": "2026-07-27-기록-화면은-이-화면의-일을-정하지-않은-상태였다-작업대-재설계"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 아무도 고른 적 없는 숫자가 앱의 기본 모션이었다 (모션 램프 배관 · 「모션 예산은 주인공에게」 등재)",
           "slug": "2026-07-27-아무도-고른-적-없는-숫자가-앱의-기본-모션이었다-모션-램프-배관-모션-예산은-주인공에게-등재"
         },
@@ -5073,9 +5078,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 빠름·보통·여유 세 단계를 정해 놓고, 정작 코드는 그걸 안 부르고 있었다. 램프(--motion-fast/base/settle)를 참조하는 컴포넌트는 딱",
-      "wordCount": 52400,
-      "updatedAt": "2026-07-27T07:33:02+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 판정: \"이 기록 페이지도 너무 AI느낌나\". 감이 아니라 실측 가능한 여섯 가지였고, 전부 이 화면의 일을 한 문장으로 정하지 않은 데서 나왔다.",
+      "wordCount": 52897,
+      "updatedAt": "2026-07-26T22:52:09.970Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5656,6 +5661,11 @@
         },
         {
           "depth": 3,
+          "text": "기록 목적지 토큰 (`--git-*`, 2026-07-27 작업대 재설계)",
+          "slug": "기록-목적지-토큰---git--2026-07-27-작업대-재설계"
+        },
+        {
+          "depth": 3,
           "text": "앱 내장 터미널 도크 토큰 — 제거됨 (2026-07-26)",
           "slug": "앱-내장-터미널-도크-토큰-제거됨-2026-07-26"
         },
@@ -5881,8 +5891,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 16665,
-      "updatedAt": "2026-07-27T06:57:00+09:00",
+      "wordCount": 16946,
+      "updatedAt": "2026-07-26T22:51:28.390Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -6364,6 +6374,36 @@
           "slug": "github-row-release-gate-note-footer"
         },
         {
+          "depth": 3,
+          "text": "`/git` — 기록 (record destination, 작업대 재설계 2026-07-27)",
+          "slug": "git-기록-record-destination-작업대-재설계-2026-07-27"
+        },
+        {
+          "depth": 4,
+          "text": "셋업 (`web` · `no-vault` · `not-initialized` · `loading` · `error`)",
+          "slug": "셋업-web-no-vault-not-initialized-loading-error"
+        },
+        {
+          "depth": 4,
+          "text": "작업대 · `decide` (남기지 않은 변경 있음)",
+          "slug": "작업대-decide-남기지-않은-변경-있음"
+        },
+        {
+          "depth": 4,
+          "text": "작업대 · `recall` (모두 남겼음)",
+          "slug": "작업대-recall-모두-남겼음"
+        },
+        {
+          "depth": 4,
+          "text": "평문 계약",
+          "slug": "평문-계약"
+        },
+        {
+          "depth": 4,
+          "text": "신뢰 헌장",
+          "slug": "신뢰-헌장"
+        },
+        {
           "depth": 2,
           "text": "3. MCP server (32 tools)",
           "slug": "3-mcp-server-32-tools"
@@ -6450,8 +6490,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 14197,
-      "updatedAt": "2026-07-27T07:33:02+09:00",
+      "wordCount": 14573,
+      "updatedAt": "2026-07-26T22:53:20.979Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6619,7 +6659,7 @@
       ],
       "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ontology-atlas 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성",
       "wordCount": 419,
-      "updatedAt": "2026-07-27T07:04:13+09:00",
+      "updatedAt": "2026-07-27T07:19:12+09:00",
       "linksOut": []
     },
     {
@@ -6657,7 +6697,7 @@
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~280. HN expects substantive Show HN posts, not one-liners.)",
       "wordCount": 439,
-      "updatedAt": "2026-07-27T07:04:13+09:00",
+      "updatedAt": "2026-07-27T07:19:12+09:00",
       "linksOut": []
     },
     {
