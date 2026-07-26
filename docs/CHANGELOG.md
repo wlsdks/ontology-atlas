@@ -6,6 +6,28 @@
 
 ---
 
+## 2026-07-27 — 패키지 smoke가 퇴역 화면 대신 현재 route를 검증한다
+
+fresh build가 성공해도 `desktop:smoke`는 제거된 온톨로지 tree, ERD builder,
+인사이트 query cockpit과 오래된 Download/Docs 문구를 요구해 실패했다. 실패
+안내도 정적 산출물이 이미 최신인지 구분하지 않고 다시 `pnpm build`를
+실행하라고만 했다.
+
+이제 package proof는 현재 제품 의미를 따른다. EN/KO metadata title,
+Download의 install → vault → AI assistant handoff, Docs의 Files/Graph/Agent
+source contract, `/ontology` → Topology와 `/ontology/edit` → Workshop
+호환 redirect, Topology canvas-v2/focus/path, Insights의
+`maintenance-board`/`one-tab-one-question`/`tab-query`를 검증한다. 퇴역
+browse/builder/query-cockpit은 더 이상 정상 조건이 아니다.
+
+artifact 자체가 없을 때만 build를 다시 권하고, title/copy/chunk가 어긋나면
+`static-contract-drift`로 분류해 현재 route source와 smoke 계약을 비교하게
+한다. 새 계약 테스트 10개와 전체 desktop checker 205개가 통과했고, fresh
+`pnpm build` 직후 실제 `pnpm desktop:smoke`도 EN/KO 6개 route와 offline
+docs를 모두 통과했다. 같은 production 앱의 `/ko/ontology/insights`를 direct
+verifier와 Codex Computer Use로 다시 열어 실제 AX 탭 5개, 선택 탭 1개,
+활성 패널, 수리 큐와 agent handoff도 교차 확인했다.
+
 ## 2026-07-27 — 설치 앱 검증기가 현재 인사이트를 다시 알아본다
 
 설치 앱의 `/ontology/insights`는 이미 5탭 정비 보드로 바뀌었지만 자동

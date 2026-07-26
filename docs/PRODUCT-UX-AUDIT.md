@@ -65,7 +65,7 @@
 | A34 | 공방 진입 선택 → ENHANCE/CREATE 키보드 작업 계속 | 1920 ENHANCE h1·2560 CREATE 이름 입력 포커스 설치 앱 검증 완료 |
 | A35 | 인사이트 수리 큐 요약 → 전체 분리 섬·누락 연결 대상 → 관계 편집/문서 | 설치 앱 1920/2560에서 전체 대상·행별 인계·제한 높이 펼침 검증 완료 |
 | A36 | 인사이트 설치 앱 자동 proof → 5탭·단일 선택·활성 패널·agent handoff | 현행 maintenance-board WebView 계약과 Computer Use 1920/2560 검증 완료 |
-| A37 | fresh build → packaged static route smoke → 실패 원인·다음 행동 | 구 `/ontology`·`/ontology/edit`·인사이트 cockpit 계약 드리프트 재현, UX-041로 추적 |
+| A37 | fresh build → packaged static route smoke → 실패 원인·다음 행동 | 현행 route/title/copy/chunk 계약으로 이관, fresh build smoke 통과 |
 
 ## 이슈 장부
 
@@ -1536,7 +1536,7 @@
 ### UX-041 — fresh build 뒤에도 desktop smoke가 폐기된 route 계약으로 실패
 
 - 심각도: `S4`
-- 상태: 재현·원인 범위 기록, 다음 작업 단위
+- 상태: 수정·fresh build 재검증 완료
 - 흐름: `pnpm build` 성공 → 같은 `out/`로 `pnpm desktop:smoke`
 - 관측 현상: fresh static export인데도 smoke가 폐기된 `/ontology` tree,
   `/ontology/edit` builder, 구 insights query cockpit과 오래된 docs/download/
@@ -1545,14 +1545,31 @@
 - 사용자 문제: 릴리스 preflight가 최신 production payload를 구 제품과 비교해
   false-block하고, 이미 수행한 빌드를 반복하도록 유도한다. 실제 정적 payload
   회귀를 잡아야 할 신호도 오래된 기대값 잡음에 묻힌다.
-- PO pass: 증상은 여러 retired route 계약에 걸쳐 있고 현재 source·docs·tests가
-  서로 같은 오래된 주장을 재생산한다. 한 assertion만 완화하면 거짓 초록이
-  되므로 다음 단위에서 살아 있는 route별 사용자 과업과 static artifact를 먼저
-  다시 열거한다. 판정은 **Investigate first**.
-- 검증 계획: source-of-truth route와 current copy를 기준으로 smoke assertions,
-  단위 계약, `docs/DEVELOPMENT-CHECKS.md`, `docs/DESKTOP-MACOS.md`, 관련 ontology
-  노드를 한 번에 이관한다. fresh build → static smoke → 설치 앱 직접 verifier를
-  순서대로 실행해 서로 다른 증거 층을 보존한다.
+- 조사: source-of-truth route와 fresh `out/`를 대조했다. `/ontology`는
+  `/topology?index=expanded`, `/ontology/edit`는 `/ontology/studio`로 보내는
+  호환 entry이고, 인사이트는 5탭 정비 보드다. Download는 install → vault →
+  AI assistant handoff, Docs는 Files/Graph/Agent source contract가 현재 의미다.
+- 수정: 현재 EN/KO metadata title, Download handoff, Docs source marker,
+  두 compatibility redirect, Topology canvas-v2/focus/path, Insights
+  `maintenance-board`/`one-tab-one-question`/`tab-query`만 static proof로
+  고정했다. 퇴역 browse/builder/query-cockpit 테스트를 제거했다.
+- 다음 행동 계약: root/route/assets/offline docs가 없을 때만 `pnpm build`를
+  권한다. title/copy/chunk만 어긋나면 `static-contract-drift`로 분류하고 현재
+  route source와 smoke contract를 비교하도록 안내한다.
+- 회귀 증거: 새 desktop-smoke 계약 테스트 10개와 전체 desktop checker
+  205개가 통과했다. `pnpm build` 성공 직후 같은 `out/`에
+  `pnpm desktop:smoke`를 실행해 EN/KO 6개 route, 10개 current title,
+  2개 Download copy 묶음, 6개 route chunk contract, 2개 offline doc를 모두
+  통과시켰다.
+- 설치 앱·Computer Use 교차 증거: 같은 fresh artifact의 production 앱을
+  `/ko/ontology/insights`로 실행해 direct verifier가 foreground, 1512×917
+  WebView, current maintenance-board payload를 통과했다. Codex Computer Use
+  AX 트리는 실제 설치 앱에서 탭 5개, 선택 탭 1개, 활성 `할 일` 패널,
+  수리 큐와 `에이전트 인계`를 읽었고 현재 화면 캡처도 함께 저장했다.
+- 디자인 gate: 렌더링·토큰·주의 계층·모션은 변경하지 않았다. static artifact
+  proof를 현재 shipped UI에 맞춘 운영 슬라이스이므로 새 시각 디자인 승인은
+  필요 없고, 설치 앱 runtime/visual proof와 증거 층을 분리 유지한다.
+- PO·디자인 판정: **Build and verify**
 
 ### 2026-07-27 반복 측정 기록
 
@@ -1579,10 +1596,12 @@
   계약으로 교체했다. 직접 설치 앱 verifier는 1512×917 WebView에서 두 번
   통과했고, Computer Use로 같은 앱의 1920×1080·2560×1440 화면과 AX를
   교차 확인했다.
-- static smoke: 같은 fresh build에서 `desktop:smoke`가 구 `/ontology` tree,
-  `/ontology/edit` builder, insights query cockpit과 stale docs/download copy를 요구하는 UX-041을
-  재현했다. 이 실패는 설치 앱 인사이트 proof와 섞어 초록으로 포장하지 않고
-  다음 route-contract 이관 단위로 남겼다.
+- static smoke: UX-041의 구 `/ontology` tree, `/ontology/edit` builder,
+  insights query cockpit, stale docs/download 기대를 현행 route 계약으로
+  이관했다. fresh build의 EN/KO 6개 route와 offline docs가 통과했고,
+  artifact 누락과 current-contract drift의 다음 행동도 분리했다. 같은
+  production 앱의 인사이트를 direct verifier와 Codex Computer Use AX로 다시
+  열어 5탭·단일 선택·활성 패널·agent handoff가 유지됨을 교차 확인했다.
 - 자동 검증: window screenshot과 WebView evidence가 저장되는 실행에서
   foreground activation/AX probe의 간헐 timeout을 UX-037로 재현했다.
   빠른 probe의 WebView AX 순회를 제거한 뒤에도 한 번 남은 일시 실패에는
@@ -1612,7 +1631,7 @@
 - A34 공방 진입 선택 keyboard handoff: **Build and verify**
 - A35 인사이트 수리 큐 전체 대상·행별 handoff: **Build and verify**
 - A36 인사이트 설치 앱 현행 WebView 계약: **Build and verify**
-- A37 packaged static smoke route 계약: **Investigate first**
+- A37 packaged static smoke route 계약: **Build and verify**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

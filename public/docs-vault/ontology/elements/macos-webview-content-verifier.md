@@ -250,12 +250,22 @@ where `desktop:verify-app` found a CoreGraphics window but local screenshot
 capture failed, Computer Use returned `cgWindowNotFound`, System Events could
 not find the process, or the process had no Accessibility UI tree.
 
-`scripts/desktop-smoke.mjs` is intended to protect the packaged static payload
-before the native shell is launched, but its current route assertions are not a
-release proof. A fresh 2026-07-27 build still fails because the script expects
-the retired `/ontology` tree, `/ontology/edit` builder, old insights query
-cockpit, and stale docs/download/route titles and copy. UX-041 tracks that
-contract migration as a separate operating-debt slice. Until it lands, the deterministic direct
-`desktop:verify-app` payload plus installed-app Computer Use evidence is the
-authoritative proof for the current insights board; a failing `desktop:smoke`
-must not be mislabeled as “run a fresh build” when that build already ran.
+`scripts/desktop-smoke.mjs` protects the packaged static payload before the
+native shell is launched. Its 2026-07-27 contract follows the current routes:
+Download install/vault/agent handoff; Docs source markers; `/ontology` ->
+Topology and `/ontology/edit` -> Workshop redirects; Topology canvas-v2/focus/
+path markers; and the Insights maintenance-board markers above. The retired
+tree browser, ERD builder, reader-persona questions, and query cockpit are not
+valid package proof.
+
+The evaluator distinguishes a missing build artifact from current-source
+contract drift. Missing root/route/assets/offline docs still advise
+`pnpm build`; a title, copy, or chunk mismatch tells the maintainer to compare
+the failing contract with current route source instead of repeating a build
+that already succeeded. A fresh build plus `pnpm desktop:smoke` passes this
+contract, while `desktop:verify-app` and Computer Use remain the separate
+runtime and visual proof layers. The closing UX-041 run exercised that
+separation: the direct verifier proved the foreground 1512x917 current Insights
+WebView, and Codex Computer Use independently read five tabs, one selected tab,
+the active maintenance panel, repair queue, and agent handoff from the
+installed app accessibility tree.
