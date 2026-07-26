@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-07-27 — design guard가 현재 5개 인사이트 질문을 보호한다
+
+`pnpm design:ontology`가 초록이어도 구조 계약과 테스트는 퇴역한 고정 3탭
+Insights를 현재 제품으로 불렀다. `TabBar`, census hero, copy button만 있으면
+실제 5개 질문 탭·단일 활성 panel·탭별 agent handoff가 없어져도 통과할 수
+있는 거짓 초록이었다.
+
+이제 guard는 `do-next/composition/connections/boundaries/freshness`의 정확한
+탭 집합, `maintenance-board`, `one-tab-one-question`, 한 `tabpanel`,
+`tab-query` handoff와 copy action을 함께 요구한다. 퇴역 3탭 fixture를 별도
+회귀 입력으로 추가했으며 design-surface 테스트 8개와 live 159 files /
+10 surfaces / 6 structural contracts가 통과했다.
+
+같은 작업에서 `DESIGN-SYSTEM`, `FEATURES`, `DEVELOPMENT-CHECKS`와 관련
+ontology 노드가 tree/ERD Builder/query cockpit/고정 3탭을 현행 구조처럼
+설명하던 부분을 Topology INDEX, Workshop, 5개 질문 maintenance board로
+동기화했다. UI 렌더링·token·motion·layout은 바꾸지 않았다.
+
 ## 2026-07-27 — 패키지 smoke가 퇴역 화면 대신 현재 route를 검증한다
 
 fresh build가 성공해도 `desktop:smoke`는 제거된 온톨로지 tree, ERD builder,

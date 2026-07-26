@@ -1330,102 +1330,40 @@ Operational pages should expose intent before visual flourish:
 1. **Primary task** — what the user can do on this screen now.
 2. **Graph evidence** — node count, relation count, warnings, health, or query
    packet readiness.
-3. **Next graph action** — Builder for writes, Insights for graph DB-style
-   queries, Topology for spatial/path inspection.
+3. **Next graph action** — Workshop for a frontmatter-backed write, Insights
+   for maintenance, or Topology for spatial/path inspection.
 
 Avoid making large explanatory panels the first thing users read. Prefer compact
-action strips with labels that name the mode (`Browse`, `Write`, `Query`) and a
-short reason to click.
+action and handoff strips that name a concrete destination (`지도에서 확인`,
+`관계 편집`, `개념 문서`, `다음 액션 복사`) and why it is useful. The retired
+`Browse / Write / Query` cards, tree/ego hub, ERD Builder rails, and query
+cockpit are not current chrome and must not be revived by documentation or
+design guards.
 
-Tree surfaces should explain their boundary instead of pretending to be the
-whole ontology. Use a single-line role/status strip, not a row of cards, to show
-that the tree is the hierarchy index, relation counts come from frontmatter
-refs, document nodes remain evidence outside the concept tree, and projection
-notes are available on demand. Node-detail handoffs should always keep the three
-workbench exits visible: Topology for visual focus, Builder for
-frontmatter-backed edits, and Insights for graph DB-style validation. The
-selected-node panel should repeat that as a
-small Browse / Write / Query rail before longer review content, so choosing a
-tree node immediately offers visual focus, builder focus, and node proof without
-requiring the user to parse the whole collaborator brief.
-When a tree row is selected, repeat the active canonical slug near the
-Browse/Write/Query summary; the tree is choosing the graph handle the next
-write and query will keep, not just highlighting a row. Tree rows themselves
-should also name the graph handle they select: the row button label should
-include the slug handoff, and the selected row should show a compact handle
-chip so keyboard focus, the detail panel, Builder, and Insights are visibly
-using the same concept id.
-When no node is selected yet, the tree area should still expose a small
-selection hint that names the same Browse / Write / Query outcome. This makes
-row selection feel like the entrance to the workbench loop, not just a file-tree
-click.
-The `/ontology` Browse / Write / Query cards should live behind the work overview
-disclosure and carry compact proof chips (`tree projection`, `frontmatter write`,
-`dogfood:graph-db`) so users can inspect the runtime contract without making the
-cards permanent chrome. Treat them as an ordered workbench loop: show `01` /
-`02` / `03` execution markers and one short loop-action line per card so Browse
-reads as selecting the slug, Write as editing that same slug, and Query as
-proving the graph after the change.
+Topology is the browse and decision surface. Its INDEX panel may project the
+project → domain → capability → element hierarchy, but the canvas and
+datasheet keep typed relations, evidence, and impact visible. Selecting a row
+or node must preserve one canonical graph handle across map focus, detail,
+Workshop deep-link, and source-document handoff. `/ontology` is only a
+compatibility redirect to `/topology?index=expanded`; do not design a second
+ontology hub behind it.
 
-Tree projection warnings should be named as projection notes, not generic data
-errors. The tree can only show one readable hierarchy, while the same
-frontmatter graph may contain valid multi-parent or cyclic semantic relations.
-When projection notes exist, the card should expand into a concrete warning
-list and hand off to Insights for graph scans or Builder for relation review.
-The graph DB proof rail on `/ontology` is a compact execution strip, not a
-second hero card. Keep the single-line hierarchy status above it so the browse
-surface first explains why the hierarchy exists and where its boundary is; then
-show the MCP/CLI pack counts and representative query intents as proof that the
-same markdown graph is queryable. The rail should also expose
-the graph DB runtime gate plus the shared post-change sync gate, so browse can
-prove the graph now and close a write without making the user find a deeper
-panel first. The runtime gate copy should name the replay shape directly:
-setup self-check, `health --json`, focused `blast_radius`, scan follow-ups,
-public relation-name parity (`relation_name_parity`), `pattern_walk` /
-`project_map` containment replay, bounded `all_paths` evidence, and
-`relation_check`. Keep local frontmatter compile proof below the tree; it is
-source evidence, not the primary browse entry.
+Workshop is the write surface. The center card plus fixed compass bearings
+explain the current node and allowed relation directions; empty line-art
+sockets invite one relation at a time. A writable vault lands real
+frontmatter, while a read-only vault produces an MCP packet. Completion is the
+center-card border and plain progress caption, not game reward, glow, loot, or
+a hidden draft canvas. `/ontology/edit` is only a compatibility redirect to
+this surface.
 
-Builder write surfaces should keep the canvas as the default first task. The
-large page title and `Source` / `Draft` / `Guard` / `Proof` rail should not
-always consume the first viewport. Keep a compact `Write status` disclosure
-near the canvas controls; opening it reveals the ordered cells that distinguish
-local writable vaults from sample read-only data, unsaved canvas work from
-persisted graph data, preview/preflight checks from direct frontmatter writes,
-and the MCP/CLI proof packets that close a graph mutation after it lands. The
-`Guard` cell should expose a copyable relation guard packet with path planning,
-relation_check, explain_relation, and post-change sync instructions; this keeps
-preflight usable before the relation modal is open. The `Proof` cell should
-hand off to the query cockpit so a builder write naturally flows into graph
-DB-style verification instead of ending as a canvas-only action. The copied
-proof packet should start with the same setup self-check, graph DB pack, and
-`pnpm dogfood:graph-db` runtime replay exposed elsewhere in the workbench. The
-replay also needs to name structural containment checks (`pattern_walk` /
-`project_map`) so Builder proof is visibly stronger than a path-only guard.
-When expanded, each cell should expose a compact proof chip (`local markdown`,
-`canvas draft`, `relation guard`, `graph db + health`) and the visible execution
-order; when collapsed, the canvas remains visually dominant.
-The canvas entry rail should then pick up that same loop at the graph level:
-name the rail as saved node entrypoints, show the node/ref counts, and add
-a compact `pick focus node` chip plus hover hint that users should choose a
-saved node before drawing so the details panel and proof handoffs keep the same
-slug. When a saved node is focused, repeat that active slug in the rail and
-visually mark the matching node button; the builder should always make the
-current write/proof handle explicit before a relation is drawn. The rail is a
-real operation control, not decoration: expose it as a labelled region, give
-each saved node a direct focus label, and make the active focus slug readable
-to keyboard and assistive-technology users.
-
-Query surfaces should expose the executable query pack before deeper charts.
-Use a compact cockpit with readiness, pack size, MCP call count, CLI fallback
-count, representative `MATCH ...` intents, first-operation badges, per-intent
-payload/fallback counts, scan/path result contracts, and the self-check plus
-health gate. The setup self-check and `dogfood:graph-db` runtime gate should be
-copyable from the first viewport so the query surface is executable, not just
-descriptive.
-Deeper panels can explain contracts, but the first viewport should make it
-clear that the local markdown graph can be scanned like a small graph database
-without treating raw rows or partial paths as proof.
+Insights is a maintenance board, not a generic analytics dashboard. Its exact
+five questions are **Do next / Composition / Connections / Boundaries /
+Freshness**. `?tab=` restores the selected question, `TabBar` exposes one
+selected tab, and only the matching `tabpanel` is visible. The first viewport
+should answer the selected question with real graph data; the bottom handoff
+row copies the matching MCP/CLI action without making raw query syntax the
+visual winner. A fixed three-tab dashboard, reader-persona lanes, or a large
+query cockpit is retired structure.
 
 Source/setup surfaces should expose the vault execution contract before setup
 actions. Use compact `Files` / `Graph` / `Agent` cells to show that local

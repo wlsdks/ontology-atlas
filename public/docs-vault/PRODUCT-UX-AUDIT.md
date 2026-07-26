@@ -66,6 +66,7 @@
 | A35 | 인사이트 수리 큐 요약 → 전체 분리 섬·누락 연결 대상 → 관계 편집/문서 | 설치 앱 1920/2560에서 전체 대상·행별 인계·제한 높이 펼침 검증 완료 |
 | A36 | 인사이트 설치 앱 자동 proof → 5탭·단일 선택·활성 패널·agent handoff | 현행 maintenance-board WebView 계약과 Computer Use 1920/2560 검증 완료 |
 | A37 | fresh build → packaged static route smoke → 실패 원인·다음 행동 | 현행 route/title/copy/chunk 계약으로 이관, fresh build smoke 통과 |
+| A38 | design:ontology 초록 → 실제 보호 구조 확인 → 구 3탭 fixture 거부 | 현행 5개 질문 탭·단일 panel·tab handoff 계약으로 이관 |
 
 ## 이슈 장부
 
@@ -1571,6 +1572,36 @@
   필요 없고, 설치 앱 runtime/visual proof와 증거 층을 분리 유지한다.
 - PO·디자인 판정: **Build and verify**
 
+### UX-042 — design guard가 초록이어도 퇴역 3탭 인사이트를 보호
+
+- 심각도: `S4`
+- 상태: 수정·회귀 검증 완료
+- 관측 현상: `pnpm design:ontology`는 통과했지만 Insights 구조 계약이
+  `TabBar` + `InsightsHeroCensus` + `InsightsHandoffRow`만 요구하며 설명과
+  테스트는 고정 3탭 대시보드를 현재 제품으로 불렀다.
+- 사용자 문제: maintainer와 agent는 설계 가드의 초록을 현재 UI 계약 증거로
+  해석하지만, 실제 5개 질문 탭·단일 활성 panel·탭별 handoff가 사라져도 구
+  census hero와 복사 버튼만 남으면 통과할 수 있었다. 설치 앱 수동 대조 외에는
+  회귀를 막을 방법이 없었다.
+- 현재 대안·단순화: 새 UI나 또 다른 verifier를 추가하지 않았다. 이미
+  `insights-tab-state.ts`, page DOM, handoff row가 노출하는 shipped marker를
+  하나의 구조 계약으로 묶고 퇴역 3탭 fixture를 실패 입력으로 만들었다.
+- 구현 계약: 정확한
+  `do-next/composition/connections/boundaries/freshness` 집합,
+  `maintenance-board`, `one-tab-one-question`, `TabBar`, 한
+  `tabpanel`, `tab-query` handoff와 copy action을 함께 요구한다.
+- 문서 동기화: `DESIGN-SYSTEM`, `FEATURES`, `DEVELOPMENT-CHECKS`와 관련
+  ontology 노드에서 tree/ERD Builder/query cockpit 및 고정 3탭을 현재
+  구조처럼 말하던 내용을 Topology INDEX / Workshop / 5탭 maintenance board로
+  교체했다.
+- 검증: characterization test는 수정 전 2건 red로 실제 거짓 초록을
+  재현했다. 수정 후 design-surface 테스트 8개와 live
+  `pnpm design:ontology`의 159 files / 10 surfaces / 6 contracts가 통과했다.
+- 디자인 gate: 렌더링·token·motion·layout 변경은 없다. 기존 installed-app
+  5탭·단일 선택·활성 panel·agent handoff 증거를 자동 설계 가드가 같은 뜻으로
+  보호하게 한 운영 변경이다.
+- PO·디자인 판정: **Build and verify**
+
 ### 2026-07-27 반복 측정 기록
 
 - 코드 기준선: `899eb7072`에서 시작해 로컬 vault 문구와 문서·ontology
@@ -1602,6 +1633,9 @@
   artifact 누락과 current-contract drift의 다음 행동도 분리했다. 같은
   production 앱의 인사이트를 direct verifier와 Codex Computer Use AX로 다시
   열어 5탭·단일 선택·활성 패널·agent handoff가 유지됨을 교차 확인했다.
+- design guard: UX-042의 고정 3탭·census hero 계약을 정확한 5개 질문
+  tab set, maintenance-board, 한 active tabpanel, tab-scoped handoff로
+  이관했다. 퇴역 3탭 fixture는 red, 현재 live source는 green으로 분리했다.
 - 자동 검증: window screenshot과 WebView evidence가 저장되는 실행에서
   foreground activation/AX probe의 간헐 timeout을 UX-037로 재현했다.
   빠른 probe의 WebView AX 순회를 제거한 뒤에도 한 번 남은 일시 실패에는
@@ -1632,6 +1666,7 @@
 - A35 인사이트 수리 큐 전체 대상·행별 handoff: **Build and verify**
 - A36 인사이트 설치 앱 현행 WebView 계약: **Build and verify**
 - A37 packaged static smoke route 계약: **Build and verify**
+- A38 ontology design guard 현재 구조 계약: **Build and verify**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

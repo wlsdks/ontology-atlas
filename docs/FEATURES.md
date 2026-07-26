@@ -1,11 +1,13 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR #355~#366 —
-> `docs/prototypes/` 승인 시안 기반으로 `/`·`/topology`·`/project/[slug]`·
-> `/ontology/studio`·`/ontology/insights`·`/docs`·`/projects`·`/download`·project
-> 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved census
-> 헤더가 모두 이 라운드에서 나옴 — 세부는 §2 각 라우트 절 참고). Earlier
+> Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 —
+> `/ontology`은 `/topology?index=expanded`, `/ontology/edit`은
+> `/ontology/studio` 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도
+> 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app
+> verifier/Computer Use가 같은 계약을 확인함 — 세부는 §2 각 라우트 절 참고).
+> Earlier (2026-07-18): 전 페이지 시안-우선 재구성 웨이브, PR #355~#366.
+> Earlier
 > (2026-05-31): real-time **adaptive** vault polling, `/docs` editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, `find_evidence` relevance ranking, `validate_vault` vault→code `pathDrift`, `infer_imports` edge reconciliation. Earlier still (2026-05-28): graph DB health gate, `/ontology` Browse / Write / Query loop, Builder proof handoff role, desktop route smoke.
 > Routes section UI detail remains a maintained product snapshot. When route
 > behavior changes, update this file alongside the PR body and CHANGELOG.
@@ -35,11 +37,11 @@ diff review -> better next agent task`.
 input (humans + AI agents)     parse           store              output
         │                       │                │                │
         ▼                       ▼                ▼                ▼
-  .md in vault  →          frontmatter   →  user disk      →  Browse (/, /ontology) tree+ego
-  (frontmatter)                              (vault)           Topology (/, /topology) canvas-2D map/graph
-  + AI agent (MCP)                                            Workshop (/ontology/studio) write surface
-                                                              App views (/ontology, /topology, /docs)
-                                                              Insights (/ontology/insights) census
+  .md in vault  →          frontmatter   →  user disk      →  Topology (/, /topology) map + INDEX
+  (frontmatter)                              (vault)           Workshop (/ontology/studio) write surface
+  + AI agent (MCP)                                            Source Vault (/docs)
+                                                              Insights (/ontology/insights) maintenance board
+                                                              compatibility redirects (/ontology, /ontology/edit)
 ```
 
 ---
@@ -391,8 +393,10 @@ that floats over the map, reusing the same `buildOntologyTree` /
 `filterTreeByQuery` the old tree page used, so row search/select behavior is
 unchanged even though the surface is.
 
-`/ontology/studio` (Write, the 공방 / Compass Stage) and `/ontology/insights` (Query) are
-unaffected — only the Browse leg of the old Browse/Write/Query loop moved.
+`/ontology/studio` (공방 / Compass Stage) is the write surface and
+`/ontology/insights` is the five-question maintenance board. The old
+Browse/Write/Query labels are historical shorthand, not current navigation or
+surface chrome.
 
 ---
 

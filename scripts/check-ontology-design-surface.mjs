@@ -178,25 +178,38 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     reason:
       "/ontology/studio (공방) must expose fixed compass bearings, fillable sockets that write a real relation (or an MCP packet in a read-only vault), and a plain progress caption.",
   },
-  // [교체, 2026-07-18] "query-cockpit-runtime-gate" 체크 — 대상이던 4탭
-  // reader-persona insights (InsightsQueryPackCockpit 등) 가 #363 (insights
-  // 3탭 재구축) 으로 삭제됐다. 새 계약: 3탭 구조(TabBar) + 실그래프 census
-  // 히어로 + 에이전트 핸드오프 행(복사 가능한 payload) 이 남아 있어야 한다.
+  // [교체, 2026-07-27] 구 3탭 "insights-tabbed-handoff" 체크 — current
+  // Insights는 다섯 사용자 질문(할 일/구성/연결/경계/신선도)을 한 탭에 하나씩
+  // 답하는 정비 보드다. 고정 3탭이나 census hero 하나를 제품 계약으로 보지
+  // 않는다. URL로 복원되는 정확한 5탭 집합, 한 번에 한 active tabpanel,
+  // 그리고 현재 질문에 맞는 agent handoff가 함께 남아 있어야 한다.
   {
-    id: "insights-tabbed-handoff",
+    id: "insights-maintenance-board",
     files: [
+      "src/views/ontology-insights/lib/insights-tab-state.ts",
       "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-      "src/views/ontology-insights/ui/tabs/OverviewTab.tsx",
       "src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx",
     ],
     markers: [
+      [
+        "export const INSIGHTS_TABS = [",
+        '  "do-next",',
+        '  "composition",',
+        '  "connections",',
+        '  "boundaries",',
+        '  "freshness",',
+        "] as const;",
+      ].join("\n"),
+      'data-insights-surface="maintenance-board"',
+      'data-insights-question-model="one-tab-one-question"',
       "TabBar",
-      "InsightsHeroCensus",
+      'role="tabpanel"',
       "InsightsHandoffRow",
+      'data-insights-handoff="tab-query"',
       "CopyAgentTextButton",
     ],
     reason:
-      "/ontology/insights must keep the 3-tab structure, the real-graph census hero, and a copyable agent handoff row.",
+      "/ontology/insights must keep five URL-restorable question tabs, one active maintenance panel, and a tab-scoped copyable agent handoff.",
   },
   // [삭제, 2026-07-18] "topology-kind-legend-role-copy" 체크 — 대상 파일
   // `SigmaTopology.tsx` 가 #344 (retire-sigma-topology) 로 삭제됐고, 검증하던

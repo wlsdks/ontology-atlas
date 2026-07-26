@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T20:33:43.379Z",
+  "generatedAt": "2026-07-26T20:40:55.532Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — design guard가 현재 5개 인사이트 질문을 보호한다",
+          "slug": "2026-07-27-design-guard가-현재-5개-인사이트-질문을-보호한다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 패키지 smoke가 퇴역 화면 대신 현재 route를 검증한다",
           "slug": "2026-07-27-패키지-smoke가-퇴역-화면-대신-현재-route를-검증한다"
         },
@@ -5038,9 +5043,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. fresh build가 성공해도 desktop:smoke는 제거된 온톨로지 tree, ERD builder, 인사이트 query cockpit과 오래된 D",
-      "wordCount": 51128,
-      "updatedAt": "2026-07-26T20:33:43.379Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. pnpm design:ontology가 초록이어도 구조 계약과 테스트는 퇴역한 고정 3탭 Insights를 현재 제품으로 불렀다. TabBar, censu",
+      "wordCount": 51236,
+      "updatedAt": "2026-07-26T20:40:55.532Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5836,8 +5841,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 16943,
-      "updatedAt": "2026-07-27T04:25:43+09:00",
+      "wordCount": 16232,
+      "updatedAt": "2026-07-26T20:39:28.064Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -5890,7 +5895,7 @@
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
       "wordCount": 4859,
-      "updatedAt": "2026-07-26T20:26:43.395Z",
+      "updatedAt": "2026-07-27T05:35:01+09:00",
       "linksOut": []
     },
     {
@@ -5947,8 +5952,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 6971,
-      "updatedAt": "2026-07-26T20:26:19.783Z",
+      "wordCount": 6975,
+      "updatedAt": "2026-07-26T20:39:28.061Z",
       "linksOut": []
     },
     {
@@ -6404,9 +6409,9 @@
           "slug": "8-source-of-truth-files"
         }
       ],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
-      "wordCount": 14085,
-      "updatedAt": "2026-07-27T02:51:06+09:00",
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
+      "wordCount": 14100,
+      "updatedAt": "2026-07-26T20:39:28.063Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -7133,9 +7138,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Do next / Structure / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Insi",
-      "wordCount": 573,
-      "updatedAt": "2026-07-27T05:00:46+09:00",
+      "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild first simplified the page and the 2026-07-26 question split established the current five-tab maintenance board (Do next / Composition / Connections / Boundaries / F",
+      "wordCount": 591,
+      "updatedAt": "2026-07-26T20:40:26.060Z",
       "linksOut": []
     },
     {
@@ -7451,8 +7456,8 @@
       },
       "headings": [],
       "excerpt": "Shared stakeholder reader lane for planners, marketers, C-level decision-makers, developers, and AI agents — the idea that the same graph should turn business/product meaning, ownership, dependency, evidence, and impact into something the whole decision loop can read, not just developers. 2026-07 status note. Most of t",
-      "wordCount": 274,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "wordCount": 288,
+      "updatedAt": "2026-07-26T20:40:26.060Z",
       "linksOut": []
     },
     {
@@ -7484,7 +7489,7 @@
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
       "wordCount": 3684,
-      "updatedAt": "2026-07-26T20:27:25.970Z",
+      "updatedAt": "2026-07-27T05:35:01+09:00",
       "linksOut": []
     },
     {
@@ -9280,7 +9285,7 @@
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
       "wordCount": 2428,
-      "updatedAt": "2026-07-26T20:33:43.379Z",
+      "updatedAt": "2026-07-27T05:35:01+09:00",
       "linksOut": []
     },
     {
@@ -9367,8 +9372,8 @@
       },
       "headings": [],
       "excerpt": "Partially superseded (B3 허브가 곧 지도, 2026-07). Two of the three resolvers described below are physically deleted: src/views/ontology-view/lib/resolve-deeplink-node.ts (with the rest of the tree hub, commit 3fa2c2508) and src/views/ontology-insights/lib/resolve-insights-query-node.ts (dropped when /ontology/insights was r",
-      "wordCount": 333,
-      "updatedAt": "2026-07-25T06:04:07+09:00",
+      "wordCount": 348,
+      "updatedAt": "2026-07-26T20:40:26.061Z",
       "linksOut": []
     },
     {
@@ -9407,9 +9412,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans src/views/docs-vault, src/widgets/docs-vault, src/views/ontology-edit, src/views/ontology-insights, src/widgets/ontology-sub-nav, src/widgets/operations-nav, src/widgets/topology-index-panel, and src/shared/ui for design-system drift: glow-",
-      "wordCount": 249,
-      "updatedAt": "2026-07-24T20:43:12+09:00",
+      "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans the live Source Vault, Workshop, Insights, app rail/settings/mobile navigation, Topology INDEX, and shared UI directories. The forbidden-pattern layer rejects glow-like hover shadows, scale hover, glass blur, purple/pink accents, decorative",
+      "wordCount": 195,
+      "updatedAt": "2026-07-26T20:40:26.061Z",
       "linksOut": []
     },
     {
@@ -9511,8 +9516,8 @@
         }
       ],
       "excerpt": "src/shared/lib/ontology-reader-intent.ts defines the shared URL intent contract (ONTOLOGYREADERINTENTS: planning, marketing, leadership, developer, agent) for stakeholder handoffs. parseOntologyReaderIntent rejects unknown values so destination screens do not invent unsupported reader modes from arbitrary query strings",
-      "wordCount": 217,
-      "updatedAt": "2026-07-24T20:43:12+09:00",
+      "wordCount": 214,
+      "updatedAt": "2026-07-26T20:40:26.060Z",
       "linksOut": []
     },
     {
@@ -11038,6 +11043,11 @@
         },
         {
           "depth": 3,
+          "text": "UX-042 — design guard가 초록이어도 퇴역 3탭 인사이트를 보호",
+          "slug": "ux-042-design-guard가-초록이어도-퇴역-3탭-인사이트를-보호"
+        },
+        {
+          "depth": 3,
           "text": "2026-07-27 반복 측정 기록",
           "slug": "2026-07-27-반복-측정-기록"
         },
@@ -11048,8 +11058,8 @@
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨 한 장 더 캡처한다. ",
-      "wordCount": 13579,
-      "updatedAt": "2026-07-26T20:33:43.376Z",
+      "wordCount": 13855,
+      "updatedAt": "2026-07-26T20:40:55.530Z",
       "linksOut": []
     },
     {

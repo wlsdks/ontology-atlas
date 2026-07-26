@@ -72,8 +72,27 @@ function writeCleanWorkbenchFixtures(root) {
   );
   writeFixture(
     root,
+    "src/views/ontology-insights/lib/insights-tab-state.ts",
+    [
+      "export const INSIGHTS_TABS = [",
+      '  "do-next",',
+      '  "composition",',
+      '  "connections",',
+      '  "boundaries",',
+      '  "freshness",',
+      "] as const;",
+    ].join("\n"),
+  );
+  writeFixture(
+    root,
     "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-    ["<TabBar", "<InsightsHeroCensus"].join("\n"),
+    [
+      '<main data-insights-surface="maintenance-board" data-insights-question-model="one-tab-one-question">',
+      "<TabBar",
+      'role="tabpanel"',
+      "<InsightsHandoffRow",
+      "<InsightsHeroCensus",
+    ].join("\n"),
   );
   writeFixture(
     root,
@@ -83,7 +102,11 @@ function writeCleanWorkbenchFixtures(root) {
   writeFixture(
     root,
     "src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx",
-    ["function InsightsHandoffRow() {}", "<CopyAgentTextButton"].join("\n"),
+    [
+      "function InsightsHandoffRow() {}",
+      '<section data-insights-handoff="tab-query">',
+      "<CopyAgentTextButton",
+    ].join("\n"),
   );
   writeFixture(
     root,
@@ -286,12 +309,17 @@ test("ontology design surface rejects kind decision full-height stripes", () => 
 test("ontology design surface reports missing workbench structure markers", () => {
   const root = makeFixture();
   writeCleanWorkbenchFixtures(root);
-  // Break the insights-tabbed-handoff contract: the 3-tab structure, real-graph
-  // census hero, and copyable agent handoff row must all be present.
+  // Break the current maintenance-board contract: five question tabs, one active
+  // panel, and the tab-scoped agent handoff must all be present.
+  writeFixture(
+    root,
+    "src/views/ontology-insights/lib/insights-tab-state.ts",
+    'export const INSIGHTS_TABS = ["overview", "relations", "freshness"] as const;',
+  );
   writeFixture(
     root,
     "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-    "// no tabs, no hero, no handoff row",
+    "// no maintenance board, no question model, no tabs, no active panel, no handoff row",
   );
   writeFixture(
     root,
@@ -312,16 +340,58 @@ test("ontology design surface reports missing workbench structure markers", () =
   assert.equal(report.ok, false);
   assert.deepEqual(
     Array.from(new Set(report.violations.map((violation) => violation.check.id))),
-    ["insights-tabbed-handoff"],
+    ["insights-maintenance-board"],
   );
   assert.deepEqual(
     report.violations.map((violation) => violation.source),
     [
+      [
+        "missing marker: export const INSIGHTS_TABS = [",
+        '  "do-next",',
+        '  "composition",',
+        '  "connections",',
+        '  "boundaries",',
+        '  "freshness",',
+        "] as const;",
+      ].join("\n"),
+      'missing marker: data-insights-surface="maintenance-board"',
+      'missing marker: data-insights-question-model="one-tab-one-question"',
       "missing marker: TabBar",
-      "missing marker: InsightsHeroCensus",
+      'missing marker: role="tabpanel"',
       "missing marker: InsightsHandoffRow",
+      'missing marker: data-insights-handoff="tab-query"',
       "missing marker: CopyAgentTextButton",
     ],
+  );
+});
+
+test("ontology design surface rejects the retired three-tab insights dashboard", () => {
+  const root = makeFixture();
+  writeCleanWorkbenchFixtures(root);
+  writeFixture(
+    root,
+    "src/views/ontology-insights/lib/insights-tab-state.ts",
+    'export const INSIGHTS_TABS = ["overview", "relations", "freshness"] as const;',
+  );
+  writeFixture(
+    root,
+    "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+    [
+      "<TabBar",
+      "<InsightsHeroCensus",
+      "<InsightsHandoffRow",
+    ].join("\n"),
+  );
+
+  const report = evaluateOntologyDesignSurface({
+    root,
+    targetDirs: ["src/views/ontology-insights"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    Array.from(new Set(report.violations.map((violation) => violation.check.id))),
+    ["insights-maintenance-board"],
   );
 });
 
