@@ -133,6 +133,25 @@ describe('AiConnectionPanel unregistered rows', () => {
     expect(screen.queryByTestId('ai-key-input-anthropic')).toBeNull();
   });
 
+  it('drops an unsaved draft when another row takes the open slot', () => {
+    // 접기가 만든 새 노출 창 — 행은 접혀도 컴포넌트는 살아 있으므로, 붙여넣었다가
+    // 그만둔 키가 화면에서만 사라진 채 상태에 남을 수 있다. 사용자는 포기했다고
+    // 믿는데 남아 있으면 "저장 전까지만 화면에 있다" 는 계약이 깨진다.
+    renderPanel(makeConnection());
+    fireEvent.click(screen.getByTestId('ai-register-anthropic'));
+    fireEvent.change(screen.getByTestId('ai-key-input-anthropic'), {
+      target: { value: 'sk-ant-abandoned' },
+    });
+
+    fireEvent.click(screen.getByTestId('ai-register-gemini'));
+    expect(document.body.innerHTML).not.toContain('sk-ant-abandoned');
+
+    fireEvent.click(screen.getByTestId('ai-register-anthropic'));
+    expect(
+      (screen.getByTestId('ai-key-input-anthropic') as HTMLInputElement).value,
+    ).toBe('');
+  });
+
   it('collapses the row again once the key lands — no lingering open field', async () => {
     // 저장·삭제 직후에도 입력칸이 열려 있으면 화면이 "하나 더 넣으라" 고
     // 재촉하는 것처럼 읽힌다.
