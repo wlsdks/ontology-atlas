@@ -2627,6 +2627,7 @@
       "save": "Save",
       "cancel": "Cancel",
       "saving": "Saving…",
+      "saved": "Key saved",
       "pasteSafety": "Your key is stored only in this Mac's Keychain. After saving, no screen can show the full key again (only the last 4 characters). Atlas has no server — the only place this key ever goes is a {provider} API call you explicitly approve.",
       "emptyConsumer": "What this key can do today: connection check. Asking your vault is being shaped.",
       "storedLabel": "Saved",

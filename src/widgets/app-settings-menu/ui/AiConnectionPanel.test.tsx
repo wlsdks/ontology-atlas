@@ -120,17 +120,24 @@ describe('AiConnectionPanel unregistered rows', () => {
     }
   });
 
-  it('opens exactly one key field at a time', () => {
+  it('opens exactly one key field at a time', async () => {
     renderPanel(makeConnection());
     fireEvent.click(screen.getByTestId('ai-register-anthropic'));
     expect(screen.getByTestId('ai-key-input-anthropic')).toBeInTheDocument();
     expect(screen.queryByTestId('ai-key-input-gemini')).toBeNull();
 
     // 다른 행을 열면 앞 행은 접힌다 — 붙여넣기 직전의 안전 문구가 어느 키에
-    // 대한 말인지 화면에 하나뿐이어야 한다.
+    // 대한 말인지 화면에 하나뿐이어야 한다. 접힘은 **같은 프레임에 시작**하고
+    // (data-state) 전이가 끝나면 DOM 에서 사라진다.
     fireEvent.click(screen.getByTestId('ai-register-gemini'));
     expect(screen.getByTestId('ai-key-input-gemini')).toBeInTheDocument();
-    expect(screen.queryByTestId('ai-key-input-anthropic')).toBeNull();
+    expect(screen.getByTestId('ai-detail-anthropic')).toHaveAttribute(
+      'data-state',
+      'closed',
+    );
+    await waitFor(() =>
+      expect(screen.queryByTestId('ai-key-input-anthropic')).toBeNull(),
+    );
   });
 
   it('drops an unsaved draft when another row takes the open slot', () => {
@@ -169,9 +176,12 @@ describe('AiConnectionPanel unregistered rows', () => {
 
     // 부모가 statuses 를 들고 있으므로 이 렌더에서는 다시 접힌 행으로 돌아온다.
     await waitFor(() =>
-      expect(screen.getByTestId('ai-register-gemini')).toBeInTheDocument(),
+      expect(screen.getByTestId('ai-detail-gemini')).toHaveAttribute(
+        'data-state',
+        'closed',
+      ),
     );
-    expect(screen.queryByTestId('ai-key-input-gemini')).toBeNull();
+    await waitFor(() => expect(screen.queryByTestId('ai-key-input-gemini')).toBeNull());
   });
 
   it('names the vendor the pasted key would go to', () => {
@@ -209,6 +219,25 @@ describe('AiConnectionPanel key lifecycle', () => {
     expect(
       (screen.getByTestId('ai-key-input-anthropic') as HTMLInputElement).value,
     ).toBe('');
+  });
+
+  it('confirms a save in words as well as in the row itself', async () => {
+    // 행이 스스로 바뀌는 것이 1차 증거지만, 그 변화는 스크롤 밖일 수도 있고
+    // 눈이 다른 데 가 있을 수도 있다. 삭제(`cleared`)와 같은 대칭으로 말로도
+    // 확인해 준다 — 둘 중 하나만 있으면 "눌렀는데 뭐가 됐지" 가 남는다.
+    mocks.secretSet.mockResolvedValue({
+      provider: 'openai',
+      stored: true,
+      last4: 'wxyz',
+    });
+    renderPanel(makeConnection());
+    fireEvent.click(screen.getByTestId('ai-register-openai'));
+    fireEvent.change(screen.getByTestId('ai-key-input-openai'), {
+      target: { value: 'sk-openai-real' },
+    });
+    fireEvent.click(screen.getByTestId('ai-save-openai'));
+
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith('settings.ai.saved'));
   });
 
   it('shows only the last 4 characters once a key is stored', () => {
@@ -432,7 +461,7 @@ describe('AiConnectionPanel draft cancel', () => {
     expect(screen.getByTestId('ai-cancel-openai')).toBeInTheDocument();
   });
 
-  it('collapses the row and drops the pasted draft when cancel is pressed', () => {
+  it('collapses the row and drops the pasted draft when cancel is pressed', async () => {
     renderPanel(makeConnection());
     fireEvent.click(screen.getByTestId('ai-register-openai'));
     fireEvent.change(screen.getByTestId('ai-key-input-openai'), {
@@ -441,9 +470,72 @@ describe('AiConnectionPanel draft cancel', () => {
 
     fireEvent.click(screen.getByTestId('ai-cancel-openai'));
 
-    expect(screen.queryByTestId('ai-key-input-openai')).toBeNull();
-    expect(screen.getByTestId('ai-register-openai')).toBeInTheDocument();
+    // 되돌리기는 **그 프레임에** 시작한다 — 확인창도, 지연도 없다.
+    expect(screen.getByTestId('ai-detail-openai')).toHaveAttribute(
+      'data-state',
+      'closed',
+    );
+    // 초안은 전이가 끝나기를 기다리지 않는다. 접힘이 눈에 보이게 하려고 컴포넌트를
+    // 180ms 더 살려 뒀지만, "붙여넣은 키는 저장 전까지만 화면에 있다" 는 계약이
+    // 그만큼 늘어나면 모션을 얻자고 약속을 깎은 것이다.
     expect(document.body.innerHTML).not.toContain('sk-openai-abandoned');
+    expect(screen.getByTestId('ai-register-openai')).toBeInTheDocument();
+
+    await waitFor(() => expect(screen.queryByTestId('ai-key-input-openai')).toBeNull());
+  });
+
+  it('keeps the collapsing region out of tab order the moment it starts closing', () => {
+    // 퇴장 모션의 대가를 접근성으로 치르지 않는다 — 보이지 않는 입력칸이
+    // 180ms 동안 탭 순서와 스크린 리더에 남아 있으면 안 된다.
+    renderPanel(makeConnection());
+    fireEvent.click(screen.getByTestId('ai-register-openai'));
+    expect(screen.getByTestId('ai-detail-openai')).not.toHaveAttribute('inert');
+
+    fireEvent.click(screen.getByTestId('ai-cancel-openai'));
+    expect(screen.getByTestId('ai-detail-openai')).toHaveAttribute('inert');
+  });
+
+  it('sends the row out the same way it came in — one surface, two states', () => {
+    // 나가는 길이 들어온 길과 달라지려면 표면이 둘이어야 한다. 하나뿐이면
+    // 방향별로 다른 커브가 생길 자리가 없다.
+    renderPanel(makeConnection());
+    const region = screen.getByTestId('ai-detail-openai');
+    expect(region).toHaveAttribute('data-state', 'closed');
+
+    fireEvent.click(screen.getByTestId('ai-register-openai'));
+    expect(screen.getByTestId('ai-detail-openai')).toBe(region);
+    expect(region).toHaveAttribute('data-state', 'open');
+
+    fireEvent.click(screen.getByTestId('ai-cancel-openai'));
+    expect(screen.getByTestId('ai-detail-openai')).toBe(region);
+    expect(region).toHaveAttribute('data-state', 'closed');
+  });
+
+  it('keeps the row header fixed while the detail region grows', () => {
+    // 형제 셋이 한 목록이라는 사실은 "펼친 행만 아래로 자란다" 로 읽힌다.
+    // 헤더가 교체되면 그건 자란 게 아니라 다른 것으로 바뀐 것이다.
+    renderPanel(makeConnection());
+    const trigger = screen.getByTestId('ai-register-openai');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(trigger);
+    expect(screen.getByTestId('ai-register-openai')).toBe(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('honours the aria-expanded promise — the trigger closes what it opened', () => {
+    // `aria-expanded` 를 달아 놓고 두 번째 클릭이 아무것도 안 하면 스크린 리더
+    // 사용자에게 한 약속이 거짓말이 된다.
+    renderPanel(makeConnection());
+    const trigger = screen.getByTestId('ai-register-openai');
+    fireEvent.click(trigger);
+    fireEvent.click(trigger);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByTestId('ai-detail-openai')).toHaveAttribute(
+      'data-state',
+      'closed',
+    );
   });
 
   it('never writes anything on cancel — the vendor keeps its unregistered state', () => {
@@ -489,7 +581,11 @@ describe('AiConnectionPanel draft cancel', () => {
     fireEvent.click(screen.getByTestId('ai-register-openai'));
     fireEvent.keyDown(screen.getByTestId('ai-key-input-openai'), { key: 'Escape' });
 
-    expect(screen.queryByTestId('ai-key-input-openai')).toBeNull();
+    // 버튼과 완전히 같은 경로 — Esc 도 그 프레임에 접기 시작한다.
+    expect(screen.getByTestId('ai-detail-openai')).toHaveAttribute(
+      'data-state',
+      'closed',
+    );
     expect(outerEscape).not.toHaveBeenCalled();
   });
 
