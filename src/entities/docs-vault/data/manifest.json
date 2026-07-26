@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T17:47:38.081Z",
+  "generatedAt": "2026-07-26T17:56:06.199Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -219,7 +219,7 @@
       ],
       "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
       "wordCount": 1978,
-      "updatedAt": "2026-07-26T17:47:38.079Z",
+      "updatedAt": "2026-07-27T02:51:06+09:00",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -5020,7 +5020,7 @@
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 설치된 macOS 앱에서 INDEX의 블록 가져오기와 영역 화면의 블록 내보내기가 브라우저 showDirectoryPicker() 부재만 보고 비활성화되던",
       "wordCount": 50044,
-      "updatedAt": "2026-07-26T17:47:38.076Z",
+      "updatedAt": "2026-07-27T02:51:06+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5865,7 +5865,7 @@
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
       "wordCount": 4829,
-      "updatedAt": "2026-07-26T17:47:38.078Z",
+      "updatedAt": "2026-07-27T02:51:06+09:00",
       "linksOut": []
     },
     {
@@ -6381,7 +6381,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
       "wordCount": 14085,
-      "updatedAt": "2026-07-26T17:47:38.077Z",
+      "updatedAt": "2026-07-27T02:51:06+09:00",
       "linksOut": [
         "slug",
         "project:slug",
@@ -9163,7 +9163,7 @@
       ],
       "excerpt": "브라우저 native API — showDirectoryPicker() 로 사용자 폴더 선택, FileSystemDirectoryHandle 로 read/write. 우리는 IndexedDB 에 핸들 영속, focus / visibility 시 fingerprint 비교 재스캔. SSR-safe (window 가드). 미지원 브라우저는 LocalVaultPicker 가 명시적 안내. The Source Vault first viewport treats that runtime as an ontology execution contract instead of a plain",
       "wordCount": 384,
-      "updatedAt": "2026-07-26T17:47:38.080Z",
+      "updatedAt": "2026-07-27T02:51:06+09:00",
       "linksOut": []
     },
     {
@@ -10513,7 +10513,7 @@
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
       "wordCount": 4960,
-      "updatedAt": "2026-07-26T17:47:38.079Z",
+      "updatedAt": "2026-07-27T02:51:06+09:00",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -10997,9 +10997,9 @@
           "slug": "현재-po디자인-판정"
         }
       ],
-      "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다. 4. 실패 테스트를 먼",
-      "wordCount": 11328,
-      "updatedAt": "2026-07-26T17:47:38.081Z",
+      "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨 한 장 더 캡처한다. ",
+      "wordCount": 11522,
+      "updatedAt": "2026-07-26T17:56:06.199Z",
       "linksOut": []
     },
     {
