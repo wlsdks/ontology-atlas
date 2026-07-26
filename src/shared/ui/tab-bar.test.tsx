@@ -147,4 +147,22 @@ describe('TabBar', () => {
     expect(overview).toHaveFocus();
     expect(onSelect).toHaveBeenLastCalledWith('overview');
   });
+
+  it('배지가 무엇을 세는지 title 로 말하고, 배지 없는 탭에는 붙이지 않는다', () => {
+    render(
+      <TabBar
+        items={[
+          { key: 'overview', label: '개요', count: 296, countTitle: '개념 수' },
+          { key: 'freshness', label: '신선도', countTitle: '붙으면 안 되는 설명' },
+        ]}
+        activeKey="overview"
+        onSelect={() => {}}
+        ariaLabel="탭"
+      />,
+    );
+
+    expect(screen.getByRole('tab', { name: /개요/ })).toHaveAttribute('title', '개념 수');
+    // 숫자가 없으면 설명할 숫자도 없다 — 빈 슬롯에 툴팁이 붙으면 없는 배지를 약속한다.
+    expect(screen.getByRole('tab', { name: /신선도/ })).not.toHaveAttribute('title');
+  });
 });

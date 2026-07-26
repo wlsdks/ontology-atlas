@@ -18,6 +18,8 @@ vi.mock("@/i18n/navigation", () => ({
 
 const labels: DomainCouplingCardLabels = {
   title: "Domain coupling",
+  countUnit: "cross relations",
+  boundaryCountUnit: "domains",
   emptyTitle: "Not enough coupling data yet",
   emptyDescription: "Needs 2+ domains and a cross-domain relation.",
   emptyAction: "Connect concepts in the workshop",

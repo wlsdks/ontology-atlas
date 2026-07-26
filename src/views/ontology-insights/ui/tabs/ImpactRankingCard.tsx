@@ -72,15 +72,21 @@ export function ImpactRankingCard({
         </span>
       </div>
 
-      <div className="mt-2 flex flex-1 flex-col justify-start">
+      {/* 두 칸 격자 — 이 카드는 나란한 두 카드를 합친 폭에 산다. 한 칸으로
+          늘이면 행의 측정선이 두 배가 되어 이름과 막대 사이가 벌어지므로,
+          폭을 접어 옆 허브 카드와 같은 측정선을 유지한다. 순위는 DOM 순서
+          그대로 왼→오, 위→아래로 읽힌다(글 읽는 순서). */}
+      <div className="mt-2 grid flex-1 auto-rows-min content-start gap-x-6 lg:grid-cols-2">
         {rows.length === 0 ? (
-          <EmptyState
-            size="compact"
-            icon={<Radar aria-hidden />}
-            skeleton
-            title={labels.empty}
-            description={labels.emptyHint}
-          />
+          <div className="lg:col-span-2">
+            <EmptyState
+              size="compact"
+              icon={<Radar aria-hidden />}
+              skeleton
+              title={labels.empty}
+              description={labels.emptyHint}
+            />
+          </div>
         ) : (
           rows.map((row, i) => {
             // 막대 전체 길이 = 이 목록 안에서의 상대 크기(허브 카드와 같은
@@ -95,7 +101,13 @@ export function ImpactRankingCard({
                 href={nodeLink.href(row.id)}
                 aria-label={nodeLink.ariaLabel(row)}
                 data-testid="insights-impact-row-link"
-                className="-mx-1.5 flex items-center gap-3 rounded-md border-t border-[color:var(--color-divider)] px-1.5 py-2.5 transition-colors first:border-t-0 hover:bg-[color:var(--color-overlay-1)]"
+                className={cn(
+                  "-mx-1.5 flex items-center gap-3 rounded-md border-t border-[color:var(--color-divider)] px-1.5 py-2.5 transition-colors hover:bg-[color:var(--color-overlay-1)]",
+                  // 각 칸의 첫 행은 구분선을 지운다 — 두 칸일 때 둘째 칸의
+                  // 첫 행(i=1)도 칸의 머리라 위에 선이 있으면 잘린 표로 읽힌다.
+                  i === 0 && "border-t-0",
+                  i === 1 && "lg:border-t-0",
+                )}
               >
                 <TopologyV2KindGlyph kind={row.kind} size={16} className="flex-none" />
                 <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-primary)]">

@@ -113,4 +113,22 @@ describe("ImpactRankingCard", () => {
     expect(screen.getByText("direct")).toBeInTheDocument();
     expect(screen.getByText("indirect")).toBeInTheDocument();
   });
+
+  it("두 칸으로 접히므로 둘째 칸의 첫 행도 구분선을 지운다", () => {
+    render(
+      <ImpactRankingCard
+        rows={rows}
+        rankedCount={2}
+        kindLabel={(kind) => kind}
+        nodeLink={nodeLink}
+        labels={labels}
+      />,
+    );
+
+    const links = screen.getAllByTestId("insights-impact-row-link");
+    // 1행은 항상 칸의 머리, 2행은 넓은 화면에서만 둘째 칸의 머리다 —
+    // 이 두 리셋이 빠지면 각 칸 위에 잘린 표처럼 선이 하나 뜬다.
+    expect(links[0].className).toContain("border-t-0");
+    expect(links[1].className).toContain("lg:border-t-0");
+  });
 });

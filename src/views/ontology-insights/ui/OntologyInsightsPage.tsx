@@ -70,8 +70,16 @@ import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
 const EMPTY_NODES: KnowledgeGraphNode[] = [];
 const EMPTY_EDGES: KnowledgeGraphEdge[] = [];
 const HUB_DISPLAY_LIMIT = 6;
-/** 영향 랭킹 표시 행 수 — 스크롤 계약(탭 ≤ 뷰포트 1.3배) 안에서 읽히는 상한. */
-const IMPACT_DISPLAY_LIMIT = 6;
+/**
+ * 영향 랭킹 표시 행 수 — 스크롤 계약(탭 ≤ 뷰포트 1.3배) 안에서 읽히는 상한.
+ *
+ * 12 인 이유는 이 카드가 나란한 두 카드를 합친 폭을 쓰기 때문이다. 6행을 두 배
+ * 폭에 늘이면 이름(좌)과 막대(우) 사이가 1,100px 벌어져 한 행을 읽는 데 눈이
+ * 화면을 가로지른다. 폭을 두 칸으로 접으면 행의 측정선(measure)이 옆 허브 카드와
+ * 같아지고, 남는 자리는 빈 공간이 아니라 다음 6개 순위가 채운다 — 넓은 칸은
+ * 데이터로 벌어야지 여백으로 벌지 않는다.
+ */
+const IMPACT_DISPLAY_LIMIT = 12;
 /**
  * 중복 의심 표시 행 수. 상한을 넘는 쌍은 화면이 아니라 인계 payload 가
  * 담당한다 — 섹션 머리의 총계는 절단 전 규모를 그대로 말한다.
@@ -99,16 +107,23 @@ interface InsightsBadgeInput {
   totalNodes: number;
   totalEdges: number;
   crossDomainEdges: number;
-  freshnessWindow: string;
 }
 
-/** 탭 배지가 세는 대상 — 탭이 답하는 질문의 규모와 같은 단위여야 한다. */
-const INSIGHTS_TAB_BADGE: Record<InsightsTab, (input: InsightsBadgeInput) => string | number> = {
+/**
+ * 탭 배지가 세는 대상 — 반복되는 슬롯이라 **다섯 자리 모두 같은 단위**여야
+ * 한다. 신선도만 창 길이("12주")를 넣던 자리는 비운다: 길이는 개수가 아니고,
+ * 그 창이 몇 주인지는 탭 안 「최근 12주 · 문서 갱신일」이 이미 말한다. 자리를
+ * 비우는 것과 다른 단위를 채우는 것은 다르다 — 후자만 슬롯의 뜻을 깨뜨린다.
+ */
+const INSIGHTS_TAB_BADGE: Record<
+  InsightsTab,
+  (input: InsightsBadgeInput) => string | number | undefined
+> = {
   "do-next": (i) => i.verdictTotal,
   composition: (i) => i.totalNodes,
   connections: (i) => i.totalEdges,
   boundaries: (i) => i.crossDomainEdges,
-  freshness: (i) => i.freshnessWindow,
+  freshness: () => undefined,
 };
 
 /**
@@ -507,6 +522,8 @@ export function OntologyInsightsPage() {
   };
   const domainCouplingLabels = {
     title: t("domainCouplingTitle"),
+    countUnit: t("domainCouplingCountUnit"),
+    boundaryCountUnit: t("domainCouplingBoundaryCountUnit"),
     emptyTitle: t("domainCouplingEmptyTitle"),
     emptyDescription: t("domainCouplingEmptyDescription"),
     emptyAction: t("domainCouplingEmptyAction"),
@@ -668,8 +685,9 @@ export function OntologyInsightsPage() {
                 totalNodes,
                 totalEdges,
                 crossDomainEdges: domainCoupling.crossDomainEdgeCount,
-                freshnessWindow: `${FRESHNESS_WINDOW_WEEKS}${t("weeksUnit")}`,
               }),
+              // 라벨 없는 숫자가 무엇을 세는지 — hover/보조기술에만 뜨는 한 마디.
+              countTitle: key === "freshness" ? undefined : t(`tabCountTitle.${key}`),
             }))}
           />
         </nav>
