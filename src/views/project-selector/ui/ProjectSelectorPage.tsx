@@ -131,9 +131,9 @@ export function ProjectSelectorPage() {
             <span className="mr-1.5 text-[color:var(--color-text-quaternary)]">
               {t("censusScopePrefix")}
             </span>
-            {census.conceptCount} {t("censusTopConceptsLabel")}
+            {census.conceptCount} {t("censusTopConceptsLabel", { count: census.conceptCount })}
             <span aria-hidden className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
-            {census.relationCount} {t("censusTopRelationsLabel")}
+            {census.relationCount} {t("censusTopRelationsLabel", { count: census.relationCount })}
           </span>
         </nav>
 
@@ -143,9 +143,11 @@ export function ProjectSelectorPage() {
             {t("headerTitle")}
           </h1>
           <span className="flex items-baseline gap-1.5 pb-[3px] text-label tracking-[0.06em] text-[color:var(--color-text-tertiary)]">
-            <b className={numeralClass}>{census.projectCount}</b> {t("censusLineProjectLabel")}
+            <b className={numeralClass}>{census.projectCount}</b>{" "}
+            {t("censusLineProjectLabel", { count: census.projectCount })}
             <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-            <b className={numeralClass}>{census.domainCount}</b> {t("censusLineDomainsLabel")}
+            <b className={numeralClass}>{census.domainCount}</b>{" "}
+            {t("censusLineDomainsLabel", { count: census.domainCount })}
           </span>
           <Link
             href={newProjectHref}

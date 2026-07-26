@@ -110,5 +110,7 @@ export function DestinationGuide({ destination }: DestinationGuideProps) {
   }, [open, skip]);
 
   if (!destination) return null;
-  return <GuidedTourOverlay tour={tour} />;
+  // 막힌 자리를 누르면 안내가 물러난다 — 마우스로 온 사람에게도 Esc 와 같은
+  // 문을 준다. 한 번 더 누르면 원래 가려던 곳으로 간다.
+  return <GuidedTourOverlay tour={tour} onBlockedInteraction={skip} />;
 }

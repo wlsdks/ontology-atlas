@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { HomePage } from "@/views/home";
 import { absoluteUrl } from "@/shared/config";
+import { RouteLoadingFallback } from "@/shared/ui";
 
 /**
  * `/topology` — Sigma WebGL 토폴로지 surface. 현재는 `/` (HomePage) 와 동일
@@ -25,7 +26,7 @@ export async function generateMetadata({
 
 export default function Page() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoadingFallback />}>
       <HomePage />
     </Suspense>
   );

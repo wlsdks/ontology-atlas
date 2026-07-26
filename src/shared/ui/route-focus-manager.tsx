@@ -124,7 +124,10 @@ export function RouteFocusManager() {
 
     const focusDestination = (): boolean => {
       const main = document.querySelector<HTMLElement>('#main');
-      if (!main) return false;
+      // 로딩 자리표시자의 `#main` 은 목적지가 아니다. 여기에 포커스를 두면
+      // 실제 화면이 그 노드를 교체하는 순간 포커스가 body 로 떨어진다 —
+      // 관측자를 계속 돌려 진짜 목적지가 오기를 기다린다.
+      if (!main || main.dataset.routeLoading === 'true') return false;
 
       const active = document.activeElement;
       if (
@@ -156,7 +159,7 @@ export function RouteFocusManager() {
       if (deadlineTimer !== null) window.clearTimeout(deadlineTimer);
     };
     const scheduleFocus = () => {
-      if (!document.querySelector('#main')) return;
+      if (!document.querySelector('#main:not([data-route-loading])')) return;
       if (settleTimer !== null) window.clearTimeout(settleTimer);
       // The static-export destination can replace a Suspense/welcome surface
       // with the loaded vault immediately after first paint. Focus only after

@@ -44,3 +44,4 @@ export {
   type LastEditSubjectRowProps,
 } from './last-edit-subject-row';
 export { MtimeConflictBadge, type MtimeConflictBadgeProps } from './mtime-conflict-badge';
+export { RouteLoadingFallback } from './route-loading-fallback';

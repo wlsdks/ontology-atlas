@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { ProjectFallbackClient } from "./ProjectFallbackClient";
+import { RouteLoadingFallback } from "@/shared/ui";
 
 // 정적 export 환경에서 빌드 시점에 알 수 없는 로컬 vault slug도 query로
 // 받아 ProjectDetailPage 또는 ProjectEditorPage를 렌더한다. R10 이전
@@ -29,7 +30,7 @@ export async function generateMetadata({
 
 export default function Page() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoadingFallback />}>
       <ProjectFallbackClient />
     </Suspense>
   );

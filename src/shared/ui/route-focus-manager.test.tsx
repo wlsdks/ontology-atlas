@@ -250,4 +250,40 @@ describe('RouteFocusManager', () => {
     expect(screen.getByRole('button', { name: '선택 노드' })).toHaveFocus();
     expect(screen.getByRole('heading', { name: '공방' })).not.toHaveFocus();
   });
+
+  // 로딩 자리표시자는 목적지가 아니다 — 여기에 포커스를 두면 진짜 화면이
+  // 그 노드를 교체하는 순간 포커스가 body 로 떨어진다.
+  it('waits past the loading placeholder and lands on the real destination', async () => {
+    route.pathname = '/ko/topology/';
+    const view = render(
+      <>
+        <RouteFocusManager />
+        <Surface title="지도" />
+      </>,
+    );
+
+    route.pathname = '/ko/ontology/studio/';
+    view.rerender(
+      <>
+        <RouteFocusManager />
+        <main id="main" data-route-loading="true" data-testid="loading-main">
+          <p>화면을 불러오는 중이에요.</p>
+        </main>
+      </>,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(screen.getByTestId('loading-main')).not.toHaveFocus();
+
+    view.rerender(
+      <>
+        <RouteFocusManager />
+        <Surface title="공방" />
+      </>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: '공방' })).toHaveFocus();
+    });
+  });
 });
