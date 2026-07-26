@@ -73,6 +73,12 @@ export interface LabelCandidate<T> {
   /** Stable tie-break within a priority — pass the node's draw index for determinism. */
   order: number;
   bbox: LabelBBox;
+  /**
+   * 이 라벨의 주인 노드 id. `ReservedBox.ownerId` 와 짝을 이뤄 **자기 노드의
+   * 예약 영역에는 굴복하지 않게** 한다 — 노드 디스크를 예약하기 시작하면
+   * 모든 라벨이 (자기 노드 바로 아래 붙으므로) 자기 예약에 걸려 사라진다.
+   */
+  ownerId?: string;
   payload: T;
 }
 
@@ -113,6 +119,8 @@ export function resolveLabelPriority(input: LabelPriorityInput): number {
 export interface ReservedBox {
   bbox: LabelBBox;
   priority: number;
+  /** 이 영역의 주인 노드 id — 같은 주인의 라벨은 이 예약을 무시한다. */
+  ownerId?: string;
 }
 
 /**
@@ -125,6 +133,44 @@ export interface ReservedBox {
  * to and which must never be silenced by a chip.
  */
 export const CLUSTER_CHIP_LABEL_PRIORITY = 2;
+
+/**
+ * 그려진 노드 디스크가 라벨 사다리에서 갖는 등급 (진입 검수 E-4).
+ *
+ * 검수 실측: 상품 노드를 클릭한 ego 포커스에서 자식 라벨 「상품 등록」이 선택
+ * 노드의 박스를 **15px 관통**했고, 그 옆 라벨은 펼침 배지에 삼켜져 「재」 한 자만
+ * 남았다. greedy 억제는 라벨 ↔ 라벨 겹침만 알았고 라벨 ↔ **노드 도형** 겹침은
+ * 아예 몰랐다 — 이름이 도형 위에 얹히면 둘 다 못 읽는다(Tufte: 그래픽 정직성).
+ *
+ * 등급 1 의 뜻: 선택(0)·호버(1) 라벨은 디스크보다 굴복하지 않는다 — 사용자가
+ * 지금 보고 있는 이름이 남의 도형 때문에 사라지면 그게 더 나쁘다. 수동적인
+ * 프로젝트/도메인/역량/요소 라벨(2~5)은 비켜선다(먼저 노드 위쪽으로 뒤집어
+ * 보고, 거기도 막히면 떨어진다 — `topology-frame-draw.ts` 의 flip 로직).
+ */
+export const NODE_DISC_LABEL_PRIORITY = 1;
+
+/**
+ * 이 bbox 가 **남의** 예약 영역과 겹치는가(자기 주인의 예약은 제외).
+ * `greedyPlaceLabels` 가 쓰는 것과 같은 판정을 프레임 빌드 단계에서 재사용해
+ * "아래가 막혔으면 위로 뒤집는" 결정을 내린다 — 두 곳이 다른 규칙을 쓰면
+ * 뒤집어 놓고 다시 떨어지는 낭비가 난다.
+ */
+export function overlapsForeignReserved(
+  bbox: LabelBBox,
+  ownerId: string | undefined,
+  priority: number,
+  reserved: readonly ReservedBox[] | undefined,
+): boolean {
+  if (!reserved) return false;
+  return reserved.some((box) => {
+    // 주인이 **둘 다 정해져 있고 같을 때만** 자기 예약으로 본다. `undefined ===
+    // undefined` 를 같은 주인으로 읽으면 주인 없는 예약(클러스터 칩)이 주인 없는
+    // 후보를 통과시켜 버린다 — 칩 억제가 조용히 무력화된다.
+    const ownedBySameNode = box.ownerId !== undefined && box.ownerId === ownerId;
+    if (ownedBySameNode) return false;
+    return priority > box.priority && bboxesOverlap(box.bbox, bbox);
+  });
+}
 
 /**
  * Greedy priority suppression: sort by priority (then stable `order`), place a
@@ -159,9 +205,7 @@ export function greedyPlaceLabels<T>(
   const placed: LabelCandidate<T>[] = [];
   for (const candidate of sorted) {
     if (
-      reserved?.some(
-        (box) => candidate.priority > box.priority && bboxesOverlap(box.bbox, candidate.bbox),
-      )
+      overlapsForeignReserved(candidate.bbox, candidate.ownerId, candidate.priority, reserved)
     ) {
       continue;
     }

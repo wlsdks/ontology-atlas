@@ -29,7 +29,8 @@ import {
   computeLabelAlpha,
   draw as labelsDraw,
   drawInstrumentCaption,
-  LABEL_OFFSET,
+  resolveLabelBaselineY,
+  resolveFlippedLabelBaselineY,
   labelZoomScale,
   measureLabelWidth,
   scaledLabelFontSize,
@@ -38,6 +39,8 @@ import {
   CLUSTER_CHIP_LABEL_PRIORITY,
   ellipsizeToWidth,
   greedyPlaceLabels,
+  overlapsForeignReserved,
+  NODE_DISC_LABEL_PRIORITY,
   clampAnchorIntoSafeRect,
   isWithinSafeRect,
   resolveLabelPriority,
@@ -842,6 +845,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     return 1;
   };
 
+  // 진입 검수 E-4 — 라벨 앵커는 **실제로 그려진** 디스크를 따라가야 한다.
+  // 라벨 패스는 `radiusForKind × cameraScale` 만 썼는데, 그 값에는 노드의
+  // magnitudeScale·breathe·등장 램프·**선택 시 1.12 성장**이 전부 빠져 있다.
+  // 그래서 선택 노드는 자기 라벨을 자기 테두리 위에 얹고(실측: 테두리 bottom
+  // 215 vs 라벨 top 216), 큰 노드는 이름이 도형 안으로 들어갔다. 이 패스가
+  // 계산한 값을 그대로 넘겨 두 패스가 같은 도형을 본다.
+  const drawnScreenRadiusById = new Map<string, number>();
+  // ego 멤버/호버 노드가 점유한 원판 — 수동적 라벨이 그 위에 글자를 얹지
+  // 못하게 라벨 배치기에 예약으로 넘긴다(칩 예약과 같은 메커니즘 재사용).
+  const nodeDiscReservations: ReservedBox[] = [];
+
   for (const node of world.nodes) {
     // 밀도 게이트: 접힌 부모의 서브트리 노드는 칩으로 대체되어 그리지 않는다.
     if (clusteredIds.has(node.id)) continue;
@@ -912,6 +926,24 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // Rings/pulses/labels all key off this same disc, so one guard here drops
     // the whole off-screen node cost (see `render/viewport-cull.ts`).
     if (isNodeCulled(screen, screenRadius * NODE_CULL_SLACK, viewportWidth, viewportHeight)) continue;
+    drawnScreenRadiusById.set(node.id, screenRadius);
+    // 포커스가 있을 때의 ego 멤버(중심·이웃)와 호버 노드만 예약한다 — 개관
+    // 화면 전체의 라벨 밀도를 바꾸지 않고, 보고된 결함(기본 클릭 상호작용의
+    // ego 포커스)이 나는 자리만 다룬다. 선택 링/펼침 배지가 원판 바로 밖에
+    // 앉으므로 링 여유를 함께 예약한다.
+    if (egoState === "center" || egoState === "neighbor" || node.id === hoveredNodeId) {
+      const half = screenRadius + EXPANDED_AURA_RING_OFFSET;
+      nodeDiscReservations.push({
+        ownerId: node.id,
+        priority: NODE_DISC_LABEL_PRIORITY,
+        bbox: {
+          minX: screen.x - half,
+          maxX: screen.x + half,
+          minY: screen.y - half,
+          maxY: screen.y + half,
+        },
+      });
+    }
 
     // S8 결함 1 — 확장 중 무관 배경 노드 미세 dim(디스크 멤버·스파인·ego 제외).
     const backgroundDim =
@@ -1274,6 +1306,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     screenX: number;
     screenY: number;
     screenRadius: number;
+    /** E-4 — 배치기가 확정한 라벨 베이스라인(위로 뒤집힌 자리 포함). */
+    baselineY: number;
     egoState: NodeEgoState;
     isHovered: boolean;
     revealAlpha: number;
@@ -1384,8 +1418,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // S5 — 라벨도 노드 디스크와 같은 깊이 시차 오프셋으로 그려 붙어 다닌다.
     const labelPOff = realmParallaxOffsetFor(node.id);
     const screen = project(node.x + labelPOff.x, node.y + labelPOff.y);
-    const screenRadius = radiusForKind(node.kind, tokens) * camera.scale.value;
-    const anchorY = screen.y + screenRadius + LABEL_OFFSET[node.kind];
+    // E-4 — 노드 패스가 실제로 그린 반지름(magnitudeScale·breathe·등장 램프·
+    // 선택 성장 포함). 그 패스에서 컬링된 노드만 nominal 로 되돌린다.
+    const screenRadius =
+      drawnScreenRadiusById.get(node.id) ?? radiusForKind(node.kind, tokens) * camera.scale.value;
+    // E-4 — 페인트와 **같은 함수**로 베이스라인을 잡는다(종전엔 bbox 는
+    // 오프셋 미스케일, 페인트는 스케일 적용이라 상자와 글자가 갈라졌다).
+    const anchorY = resolveLabelBaselineY(node.kind, screen.y, screenRadius, labelScale);
     const text = ellipsizeToWidth(node.label, tokens.labelMaxWidth * labelScale, (candidate) =>
       measureLabelWidth(ctx, node.kind, candidate, labelScale),
     );
@@ -1428,21 +1467,44 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         (egoState === "neighbor" && isEgoNeighborLabelExempt(node.id, egoNeighborLabelEligibleIds));
       labelRankEntries.push({ id: node.id, degree: world.neighborMap.get(node.id)?.size ?? 0, exempt });
     }
+    const priority = resolveLabelPriority({
+      kind: node.kind,
+      isSelected: egoState === "center",
+      isHovered,
+      isHub: node.isHub,
+    });
+    const boxAt = (baselineY: number) => ({
+      minX: anchorX - width / 2,
+      maxX: anchorX + width / 2 + markReserve,
+      minY: baselineY - fontSize,
+      maxY: baselineY + 2,
+    });
+    // E-4 — 아래가 남의 노드 도형으로 막혔으면 **이름을 버리기 전에 위로
+    // 뒤집는다**. 억제만 하면 이 슬라이스가 없애려던 "이름 없는 도형"이 다시
+    // 생기므로, 자리를 하나 더 시도한 다음에만 떨어진다. 위쪽 자리는 같은
+    // 오프셋을 노드 위로 대칭 이동한 것 — 새 간격/토큰 0.
+    let labelBaselineY = clampedAnchorY;
+    if (overlapsForeignReserved(boxAt(labelBaselineY), node.id, priority, nodeDiscReservations)) {
+      const flipped =
+        resolveFlippedLabelBaselineY(screen.y, screenRadius) + (clampedAnchorY - anchorY);
+      if (!overlapsForeignReserved(boxAt(flipped), node.id, priority, nodeDiscReservations)) {
+        labelBaselineY = flipped;
+      }
+    }
     labelCandidates.push({
-      priority: resolveLabelPriority({
-        kind: node.kind,
-        isSelected: egoState === "center",
-        isHovered,
-        isHub: node.isHub,
-      }),
+      priority,
       order: index,
-      bbox: { minX: anchorX - width / 2, maxX: anchorX + width / 2 + markReserve, minY: clampedAnchorY - fontSize, maxY: clampedAnchorY + 2 },
+      ownerId: node.id,
+      bbox: boxAt(labelBaselineY),
       payload: {
         nodeId: node.id,
         kind: node.kind,
         text,
         screenX: screen.x + shiftX,
         screenY: screen.y + shiftY,
+        // 배치기가 확정한 베이스라인을 그대로 넘긴다 — `draw()` 가 다시
+        // 계산하면 뒤집힌 자리가 되돌려진다.
+        baselineY: labelBaselineY,
         screenRadius,
         egoState,
         isHovered,
@@ -1472,7 +1534,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // S11 — 칩이 점유한 영역과 겹치는 **수동적** 라벨(도메인/역량/요소)은 떨어뜨린다.
     // 선택/호버 라벨은 칩보다 상위라 그대로 남는다(사용자가 보고 있는 이름을 칩이
     // 침묵시키지 않는다).
-    chipReservations,
+    // 칩 점유 + ego 노드 원판을 함께 예약한다 — 라벨은 둘 다 피한다.
+    [...chipReservations, ...nodeDiscReservations],
   );
   const placedIds = new Set<string>(placedResult.map((c) => c.payload.nodeId));
 
@@ -1515,6 +1578,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         screenX: payload.screenX,
         screenY: payload.screenY,
         screenRadius: payload.screenRadius,
+        baselineY: payload.baselineY,
         farT,
         egoState: payload.egoState,
         isHovered: payload.isHovered,

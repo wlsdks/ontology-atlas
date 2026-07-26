@@ -69,6 +69,12 @@ export interface LabelDrawState {
    * 미지정=1(하위호환).
    */
   presenceAlpha?: number;
+  /**
+   * E-4 — 배치기가 확정한 베이스라인. 라벨이 노드 위로 뒤집혔을 때
+   * (`resolveFlippedLabelBaselineY`) 그 자리를 그대로 칠하기 위한 값. 미지정
+   * 이면 `resolveLabelBaselineY` 로 스스로 계산한다(단독 호출/테스트 경로).
+   */
+  baselineY?: number;
 }
 
 export interface LabelTokens {
@@ -283,6 +289,58 @@ export const LABEL_OFFSET: Record<LabelDrawState["kind"], number> = {
   element: 13,
 };
 
+/**
+ * 노드가 원판(`screenRadius`) **밖에** 그리는 외곽선의 최대 두께.
+ * `node-shapes.ts` 의 `SELECTION_RING_OUTER_OFFSET`(6) · 스포트라이트 링(+6) ·
+ * 호버 링과 같은 값 — 선택된 노드의 시각적 아래끝은 원판이 아니라 이 링이다.
+ */
+export const LABEL_NODE_OUTLINE_ALLOWANCE = 6;
+
+/** 외곽선과 라벨 글리프 사이 최소 여유. 0 이면 "닿았다"로 읽힌다. */
+export const LABEL_NODE_CLEARANCE = 3;
+
+/**
+ * 라벨 베이스라인의 단일 진실원 (진입 검수 E-4).
+ *
+ * 종전 식은 `y + r + LABEL_OFFSET × fontScale` 이었다. 이 식은 **글리프가
+ * 베이스라인 위로 자란다**는 사실을 세지 않는다 — 역량 라벨의 글리프 top 은
+ * `y + r + (13 − 10.5) × fontScale` = 원판에서 고작 2.5×fontScale 아래다.
+ * 그런데 선택 노드는 원판 밖 +6px 에 링을 그린다. 그래서 **선택된 노드는
+ * 언제나 자기 라벨을 자기 테두리로 자르고 있었다**(실측: 테두리 bottom 215 vs
+ * 라벨 top 216 — 여유 1px). fontScale 을 키워도 폰트가 같이 커져 해소되지
+ * 않는다(캡 1.9 에서도 부족).
+ *
+ * 그래서 오프셋 식과 **글리프 top 하한** 중 더 아래를 택한다. 하한은 링 여유 +
+ * 최소 여유이므로, 어떤 kind·어떤 줌에서도 이름이 도형선에 닿지 않는다.
+ *
+ * `draw()` 와 `topology-frame-draw.ts` 의 bbox 빌드가 **같은 이 함수**를 쓴다 —
+ * 갈라지면 측정한 상자와 실제로 칠한 글자가 다른 자리에 놓인다(종전 코드는
+ * bbox 는 오프셋 미스케일, 페인트는 스케일 적용이라 이미 갈라져 있었다).
+ */
+export function resolveLabelBaselineY(
+  kind: LabelDrawState["kind"],
+  screenY: number,
+  screenRadius: number,
+  fontScale = 1,
+): number {
+  const outlineBottom = screenY + screenRadius + LABEL_NODE_OUTLINE_ALLOWANCE;
+  const byOffset = screenY + screenRadius + LABEL_OFFSET[kind] * fontScale;
+  const byGlyphTop = outlineBottom + LABEL_NODE_CLEARANCE + scaledLabelFontSize(kind, fontScale);
+  return Math.max(byOffset, byGlyphTop);
+}
+
+/**
+ * 노드 **위쪽** 라벨 베이스라인 — 아래가 남의 도형으로 막혔을 때의 대안 자리
+ * (E-4). 베이스라인이 외곽선 위에 앉고 글리프는 거기서 더 위로 자라므로,
+ * 여유는 베이스라인 한 번만 계산하면 된다.
+ */
+export function resolveFlippedLabelBaselineY(
+  screenY: number,
+  screenRadius: number,
+): number {
+  return screenY - screenRadius - LABEL_NODE_OUTLINE_ALLOWANCE - LABEL_NODE_CLEARANCE;
+}
+
 /** Manual letter-tracking for canvas text (no native `letter-spacing`) — ported from `drawTracked()`. */
 function drawTrackedText(
   ctx: CanvasRenderingContext2D,
@@ -342,7 +400,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, token
   const fontScale = state.fontScale ?? 1;
   // rank9 — LOD present 램프(기본 1)를 최종 라벨 알파에 선형 곱한다.
   const presenceAlpha = Math.min(1, Math.max(0, state.presenceAlpha ?? 1));
-  const ty = y + r + LABEL_OFFSET[kind] * fontScale;
+  const ty = state.baselineY ?? resolveLabelBaselineY(kind, y, r, fontScale);
 
   if (kind === "domain") {
     const watermarkAlpha = computeDomainWatermarkAlpha(farT, egoState) * presenceAlpha;
