@@ -206,6 +206,17 @@ export function AppSettingsMenu({
     [isControlled, onOpenChange],
   );
   const [view, setView] = useState<SettingsView>('root');
+  /**
+   * 하위면 이동의 **방향**. 계층이 깊어지면 오른쪽에서 들어오고 돌아오면
+   * 왼쪽에서 들어온다 — 그 방향이 곧 "어디로 갔는지" 다. 예전에는 push 도
+   * pop 도 0ms 하드컷이라(1프레임, 전후 변화 0) 뒤로와 앞으로가 화면에서
+   * 구분되지 않았다.
+   *
+   * `'none'` 이 초기값인 이유: 시트를 **여는** 모션은 이미 패널 자체가
+   * 소유한다(`.app-settings-panel-in`). 첫 마운트에도 하위면 모션을 걸면 한
+   * 동작에 두 모션이 겹친다.
+   */
+  const [viewEnter, setViewEnter] = useState<'none' | 'push' | 'pop'>('none');
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -323,7 +334,10 @@ export function AppSettingsMenu({
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
-    if (!open) setView('root');
+    if (!open) {
+      setView('root');
+      setViewEnter('none');
+    }
   }
 
   useEffect(() => {
@@ -356,15 +370,23 @@ export function AppSettingsMenu({
     }
   };
   const openSubview = (next: Exclude<SettingsView, 'root'>) => {
+    setViewEnter('push');
     setView(next);
     window.setTimeout(() => agentBackRef.current?.focus({ preventScroll: true }), 0);
   };
   const returnToRootView = () => {
     // 돌아온 뒤 포커스는 **떠났던 그 행** — 드릴인/아웃이 위치 감각을 잃지 않게.
     const target = view === 'ai' ? aiDrillInRef : agentDrillInRef;
+    setViewEnter('pop');
     setView('root');
     window.setTimeout(() => target.current?.focus({ preventScroll: true }), 0);
   };
+  const viewEnterClass =
+    viewEnter === 'push'
+      ? 'settings-view-push-in'
+      : viewEnter === 'pop'
+        ? 'settings-view-pop-in'
+        : '';
 
   return (
     <details
@@ -503,7 +525,8 @@ export function AppSettingsMenu({
 
           {view === 'agent' ? (
             <div
-              className="grid min-h-0 flex-1 content-start gap-3 overflow-y-auto p-4"
+              key="agent"
+              className={`grid min-h-0 flex-1 content-start gap-3 overflow-y-auto p-4 ${viewEnterClass}`}
               data-testid="app-settings-agent-view"
             >
               {isLocalVaultLoaded ? (
@@ -548,7 +571,8 @@ export function AppSettingsMenu({
             </div>
           ) : view === 'ai' ? (
             <div
-              className="grid min-h-0 flex-1 content-start gap-3 overflow-y-auto p-4"
+              key="ai"
+              className={`grid min-h-0 flex-1 content-start gap-3 overflow-y-auto p-4 ${viewEnterClass}`}
               data-testid="app-settings-ai-view"
             >
               <AiConnectionPanel
@@ -560,7 +584,8 @@ export function AppSettingsMenu({
             </div>
           ) : (
             <div
-              className="grid min-h-0 flex-1 content-start gap-4 overflow-y-auto p-4"
+              key="root"
+              className={`grid min-h-0 flex-1 content-start gap-4 overflow-y-auto p-4 ${viewEnterClass}`}
               data-testid="app-settings-body"
             >
               <SettingsGroup label={t('groupScreen')}>

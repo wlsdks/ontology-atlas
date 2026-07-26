@@ -91,6 +91,13 @@ const DRAG_TUG_EASE_TAU = 0.15;
  * 와 같은 원칙).
  */
 const IDLE_GRACE_MS = 1200;
+/**
+ * 뷰포트가 "멎었다" 고 볼 프레임 수 — 이 프레임 수만큼 새 크기가 안 들어오면
+ * 뷰포트 의존 레이어(그리드/별먼지/우주 도트)를 다시 짓는다. ms 가 아니라
+ * 프레임 수인 이유: 이건 디자인 duration 이 아니라 **크기 정착 감지**이고,
+ * 기준이 되는 것은 리사이즈를 나르는 프레임 그 자체다(주사율 무관).
+ */
+const VIEWPORT_SETTLE_FRAMES = 2;
 /** World-unit epsilon below which a homing node is considered "arrived" (`relayout-home.ts#isHomeSpringConverged`). */
 const HOME_CONVERGE_EPSILON = 0.5;
 
@@ -283,6 +290,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const contourCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const viewportRef = useRef({ width: 0, height: 0, dpr: 1 });
+  /**
+   * ResizeObserver 가 **잰** 최신 크기. 커밋(캔버스 백킹 크기 교체)은 여기서
+   * 하지 않고 rAF 프레임이 가져간다 — 이유는 아래 리사이즈 effect 의 주석.
+   */
+  const pendingViewportRef = useRef<{ width: number; height: number; dpr: number } | null>(null);
+  /** 뷰포트 의존 레이어를 다시 지어야 하는가 (크기 정착 후 1회). */
+  const viewportRebuildPendingRef = useRef(false);
+  /** 새 크기가 안 들어온 연속 프레임 수 — `VIEWPORT_SETTLE_FRAMES` 와 비교. */
+  const viewportSettleFramesRef = useRef(0);
+  const commitViewportSizeRef = useRef<(() => boolean) | null>(null);
+  const rebuildViewportLayersRef = useRef<(() => void) | null>(null);
   const worldRef = useRef<TopologyWorld | null>(null);
   const dustPointsRef = useRef<DustPoint[]>([]);
   /** S8 결함 6 — 영역 활성 중 결계 안 우주 도트(뷰포트당 1회 빌드, resize 갱신). */
@@ -871,17 +889,50 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
 
-    const applyResize = () => {
+    /**
+     * 재기: 크기만 적어 둔다. **캔버스 백킹 크기를 여기서 바꾸지 않는다.**
+     *
+     * `canvas.width = n` 은 비트맵을 지운다. ResizeObserver 콜백은 브라우저
+     * 프레임에서 rAF **뒤**, 페인트 **앞**에 돈다 — 그래서 여기서 크기를
+     * 바꾸면 그 프레임의 순서가 `그린다 → 지운다 → 페인트` 가 되어 **빈
+     * 캔버스가 화면에 나간다.** 도킹 패널의 폭 전이는 매 프레임 RO 를
+     * 발화시키므로 전이 내내(실측 183~200ms) 지도가 노드 0·엣지 0·그리드 0
+     * 으로 보였다. 커밋을 rAF 안으로 옮기면 순서가 `지운다 → 그린다 →
+     * 페인트` 가 되어 같은 리사이즈가 한 프레임도 비우지 않는다.
+     */
+    const measure = () => {
       const rect = container.getBoundingClientRect();
       const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-      const backingWidth = Math.max(1, Math.round(rect.width * dpr));
-      const backingHeight = Math.max(1, Math.round(rect.height * dpr));
-      if (canvas.width !== backingWidth) canvas.width = backingWidth;
-      if (canvas.height !== backingHeight) canvas.height = backingHeight;
-      viewportRef.current = { width: rect.width, height: rect.height, dpr };
+      pendingViewportRef.current = { width: rect.width, height: rect.height, dpr };
       // Keep the cached pointer rect fresh whenever layout changes (see
       // `canvasRectRef` in `topology-pointer-handlers.ts`).
       canvasRectRef.current = { left: rect.left, top: rect.top };
+    };
+
+    /** 프레임 안에서 부르는 값싼 절반 — 백킹 크기 + 뷰포트 사실만. */
+    const commitViewportSize = () => {
+      const pending = pendingViewportRef.current;
+      if (!pending) return false;
+      pendingViewportRef.current = null;
+      const backingWidth = Math.max(1, Math.round(pending.width * pending.dpr));
+      const backingHeight = Math.max(1, Math.round(pending.height * pending.dpr));
+      const sizeChanged = canvas.width !== backingWidth || canvas.height !== backingHeight;
+      if (canvas.width !== backingWidth) canvas.width = backingWidth;
+      if (canvas.height !== backingHeight) canvas.height = backingHeight;
+      viewportRef.current = pending;
+      if (sizeChanged) viewportRebuildPendingRef.current = true;
+      return sizeChanged;
+    };
+
+    /**
+     * 비싼 절반 — 뷰포트 의존 레이어 재생성 + 카메라 구제. **크기가 정착한
+     * 뒤 1회만** 돈다(`VIEWPORT_SETTLE_FRAMES`). 전이 중에는 이전 점군을
+     * 그대로 그린다: 잠깐 어긋난 별먼지가 빈 화면보다 낫고, 카메라를 매
+     * 프레임 재-fit 하면 전이 끝에 두 번 튄다.
+     */
+    const rebuildViewportLayers = () => {
+      const { width, height } = viewportRef.current;
+      if (width <= 0 || height <= 0) return;
 
       const tokens = readTopologyV2TokensOrNull();
       if (!tokens) return;
@@ -905,25 +956,37 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         constellationPatternRef.current = buildConstellationPattern(constellationCanvasRef.current, bgTokens);
         contourPatternRef.current = buildContourPattern(contourCanvasRef.current, bgTokens);
       }
-      dustPointsRef.current = buildDustPoints(rect.width, rect.height, computeStarDustCount(rect.width, rect.height, tokens.dustAreaPerPoint), tokens.dustParallaxMin, tokens.dustParallaxMax);
+      dustPointsRef.current = buildDustPoints(width, height, computeStarDustCount(width, height, tokens.dustAreaPerPoint), tokens.dustParallaxMin, tokens.dustParallaxMax);
       // S8 결함 6 — 우주 도트는 dust 의 2배 밀도(레이어 2장). dust 와 같은
       // areaPerPoint 토큰 기준으로 카운트를 잡고 2배로.
       cosmosPointsRef.current = buildRealmCosmosPoints(
-        rect.width,
-        rect.height,
-        computeStarDustCount(rect.width, rect.height, tokens.dustAreaPerPoint) * 2,
+        width,
+        height,
+        computeStarDustCount(width, height, tokens.dustAreaPerPoint) * 2,
       );
       trySnapInitialCamera(tokens);
       rescueCameraIfEverythingOffscreen(tokens);
     };
 
-    applyResize();
+    commitViewportSizeRef.current = commitViewportSize;
+    rebuildViewportLayersRef.current = rebuildViewportLayers;
+
+    // 마운트 1회는 즉시 커밋한다 — `trySnapInitialCamera` 가 첫 카메라를
+    // 정하려면 첫 프레임 전에 뷰포트 사실이 있어야 한다.
+    measure();
+    commitViewportSize();
+    rebuildViewportLayers();
+    viewportRebuildPendingRef.current = false;
 
     if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", applyResize);
-      return () => window.removeEventListener("resize", applyResize);
+      window.addEventListener("resize", measure);
+      return () => {
+        window.removeEventListener("resize", measure);
+        commitViewportSizeRef.current = null;
+        rebuildViewportLayersRef.current = null;
+      };
     }
-    const observer = new ResizeObserver(applyResize);
+    const observer = new ResizeObserver(measure);
     observer.observe(container);
 
     // #71 — `ResizeObserver` 는 **크기** 변화만 본다. 창을 다른 모니터로 옮기면
@@ -933,7 +996,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // 매번 새 질의로 다시 건다.
     let dprQuery: MediaQueryList | null = null;
     const onDprChange = () => {
-      applyResize();
+      measure();
       watchDpr();
     };
     const watchDpr = () => {
@@ -948,6 +1011,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     return () => {
       observer.disconnect();
       dprQuery?.removeEventListener?.("change", onDprChange);
+      commitViewportSizeRef.current = null;
+      rebuildViewportLayersRef.current = null;
     };
   }, []);
 
@@ -1283,6 +1348,23 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
     const frame = (now: number) => {
       if (cancelled) return;
+
+      // 리사이즈 커밋은 **그리기 바로 앞**이다 — ResizeObserver 콜백에서 하면
+      // 캔버스를 지운 뒤 그대로 페인트돼 빈 지도가 화면에 나간다(리사이즈
+      // effect 의 `measure` 주석). 여기서 지우고 아래에서 곧바로 다시 그린다.
+      if (commitViewportSizeRef.current?.()) {
+        viewportSettleFramesRef.current = 0;
+        // 유휴 게이트가 이 프레임을 건너뛰면 지운 캔버스가 그대로 나간다.
+        lastActiveMsRef.current = now;
+      } else if (viewportRebuildPendingRef.current) {
+        viewportSettleFramesRef.current += 1;
+        if (viewportSettleFramesRef.current >= VIEWPORT_SETTLE_FRAMES) {
+          rebuildViewportLayersRef.current?.();
+          viewportRebuildPendingRef.current = false;
+          lastActiveMsRef.current = now;
+        }
+      }
+
       const tokens = readTopologyV2TokensOrNull();
       const world = worldRef.current;
       const { width, height, dpr } = viewportRef.current;

@@ -99,10 +99,15 @@ const MountedGlobalSearch = dynamic(
 // `buildFullDetailReachModel` stay as regular imports below — they're plain
 // data-shaping functions (no ReactMarkdown dependency) needed synchronously
 // to compute `fullDetailA1Model`, not the component render itself.
-const FullDetailA1 = dynamic(
-  () => import("@/widgets/full-detail-a1").then((m) => m.FullDetailA1),
-  { ssr: false },
-);
+// 청크를 **미리 당길 수 있게** import 를 이름 있는 함수로 둔다 — 번들러가
+// 모듈 promise 를 캐시하므로 예열 후의 재호출은 즉시 끝난다. 여기서 `dynamic`
+// (React.lazy + Suspense)을 쓰지 않는 이유도 같은 결이다: lazy 는 청크가
+// 캐시돼 있어도 첫 렌더에서 한 번 서스펜드하므로 **배경과 내용이 다른
+// 커밋에 실린다** — 실측에서 배경이 먼저 칠해지고 83ms 뒤 내용이 팝했다.
+// 해결된 컴포넌트를 상태로 들고 있으면 둘이 같은 커밋에 실린다.
+// 왜 예열하는가는 아래 `FullDetailCard` 주석.
+const importFullDetailA1 = () => import("@/widgets/full-detail-a1");
+type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["FullDetailA1"];
 import { GestureHint } from "@/widgets/gesture-hint";
 import { PINNED_DOCS_STORAGE_PREFIX } from "@/widgets/docs-vault";
 import { ChromeChip, LiveAnnouncer, Tooltip, useToast } from "@/shared/ui";
@@ -1574,6 +1579,38 @@ export function HomePage() {
   const [nodePopoverDismissed, setNodePopoverDismissed] = useState(false);
   const fullDetailOpen =
     fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
+  /**
+   * 전체 상세는 lazy chunk 다. 예전에는 `fullDetailOpen` 이 되는 즉시 불투명한
+   * 전면 표면(`fixed inset-0` + 캔버스 배경)을 칠했는데, 그 안의 내용은 청크가
+   * 도착한 뒤에 왔다 — 그래서 누른 뒤 **창 전체가 150ms 검게 홀드**되고
+   * (프레임 diff 정확히 0.000 ×9프레임) 목적지가 1프레임에 팝했다. 어디서 왔는지
+   * 알 수 없는 등장이고, 앱이 죽은 것으로 읽힌다.
+   *
+   * 그래서 순서를 뒤집는다: 청크가 준비될 때까지 **출발 화면(지도)을 그대로
+   * 둔다**. 도착은 배경과 내용이 같은 커밋에 실려 크로스페이드 한 번으로
+   * 끝난다 — 닫기가 이미 쓰던 문법과 같다(들어온 경로로 나간다). 스켈레톤·
+   * 가짜 진행바는 쓰지 않는다: 출발 화면이 그 시간을 덮는다.
+   *
+   * 예열은 노드가 선택되는 순간(= 팝오버가 열려 「전체 상세」가 보이는 순간)에
+   * 한다. 실제로 누를 때는 이미 준비돼 있으므로 대기 자체가 없다.
+   */
+  const [FullDetailCard, setFullDetailCard] = useState<FullDetailA1Component | null>(null);
+  useEffect(() => {
+    if (FullDetailCard) return;
+    if (!selectedOntologyNode && fullDetailSlug == null) return;
+    let cancelled = false;
+    void importFullDetailA1()
+      .then((mod) => {
+        // 함수 값을 상태에 넣을 때는 updater 로 오해되지 않게 한 겹 감싼다.
+        if (!cancelled) setFullDetailCard(() => mod.FullDetailA1);
+      })
+      .catch(() => {
+        /* 청크 실패는 아래 렌더 게이트가 그대로 닫힌 상태로 남긴다 */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [FullDetailCard, selectedOntologyNode, fullDetailSlug]);
   const topologyShortcutHelpPhoneVisible =
     analysisMode !== "path" && analysisMode !== "health";
   const createNodePending = createNodeIntent && !canCreateNode;
@@ -3511,12 +3548,20 @@ export function HomePage() {
                 coexisting over the map (`docs/prototypes/hub-b3-immersive.html`). */}
             {!selectedRelationActive && !topologyCreateNodeBlockingActive ? (
               <div
+                // 접힘 ↔ 펼침은 **같은 자리를 두 표면이 번갈아 쓰는 교체**다.
+                // 전이가 없어 300px 폭 10행이 1프레임에 존재/비존재를 왕복했고
+                // (휘도 Δ13.6 / 17ms), 같은 클릭의 카메라는 200ms 를 썼다 — 한
+                // 동작이 세 개의 시간을 가졌다. `key` 로 교체를 명시해 도착
+                // 표면이 지도 위 큰 표면의 공용 문법(`.map-overlay-in`,
+                // 180ms 불투명도)으로 들어온다: 팝오버·패널·전면 상세가 한
+                // 클럭을 쓴다.
+                key={renderedIndexState}
                 // `topology-ui-scale` — top-left-chrome-group(브랜드 pill)도
                 // 같은 클래스로 ≥1920px/≥2400px 에서 zoom 배율이 걸린다. 이
                 // wrapper 가 이 클래스 없이 고정 px 로만 있으면 그 zoom 배율
                 // 아래에서 pill 이 이 wrapper 보다 비례적으로 더 커져 다시
                 // 겹친다 — `--topology-index-top` 주석 참조.
-                className="topology-ui-scale absolute z-20"
+                className="map-overlay-in topology-ui-scale absolute z-20"
                 style={{
                   left: renderedIndexState === "expanded" ? "var(--topology-index-inset)" : 0,
                   // J (소유자 실보고 2026-07-23) — 상시 "지형도" 헤더가
@@ -4377,12 +4422,13 @@ export function HomePage() {
             onClose={closeContextMenu}
           />
         ) : null}
-        {fullDetailOpen && fullDetailA1Model ? (
+        {fullDetailOpen && fullDetailA1Model && FullDetailCard ? (
           <div
             data-testid="topology-full-detail-a1-positioner"
-            className="fixed inset-0 z-50 overflow-y-auto bg-[color:var(--color-canvas)]"
+            data-full-detail-motion-token="--topology-motion-panel-duration"
+            className="map-overlay-in fixed inset-0 z-50 overflow-y-auto bg-[color:var(--color-canvas)]"
           >
-            <FullDetailA1
+            <FullDetailCard
               node={fullDetailA1Model.node}
               groups={fullDetailA1Model.groups}
               reach={fullDetailA1Model.reach}

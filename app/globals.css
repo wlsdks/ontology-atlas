@@ -662,6 +662,48 @@
     animation: settingsPanelIn var(--motion-base) var(--motion-ease) both;
   }
 
+  /* ── 설정 하위면 push/pop (2026-07-26) ────────────────────────────────────
+     「AI 연결」·「에이전트」 하위면으로 들어가는 이동이 **0ms 하드컷**이었다
+     (1프레임, 전후 프레임 변화 0). 높이와 내용이 통째로 바뀌는데 방향을
+     설명하는 신호가 0이라 뒤로(‹)와 앞으로가 화면에서 구분되지 않았다.
+     계층이 깊어지면 오른쪽에서 들어오고, 돌아오면 왼쪽에서 들어온다 —
+     방향이 곧 "어디로 갔는지" 다. 거리는 DOM 오버레이 진입 토큰
+     (`--overlay-enter-translate` 8px)을 그대로 쓴다: 새 값 0. 시트를 **여는**
+     모션은 패널 자신(`.app-settings-panel-in`)이 소유하므로 첫 마운트에는
+     이 클래스가 붙지 않는다(한 동작에 두 모션 금지). reduced-motion 동등물은
+     아래 base 레이어가 이동 축만 없애고 불투명도를 남긴다. */
+  @keyframes settingsViewPushIn {
+    from {
+      opacity: 0;
+      transform: translateX(var(--overlay-enter-translate));
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes settingsViewPopIn {
+    from {
+      opacity: 0;
+      transform: translateX(calc(var(--overlay-enter-translate) * -1));
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .settings-view-push-in {
+    animation: settingsViewPushIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  .settings-view-pop-in {
+    animation: settingsViewPopIn var(--motion-base) var(--motion-ease) both;
+  }
+
   /* ── 목록 행 펼침/접힘 (2026-07-26, [AI 연결] 벤더 행) ────────────────────
      **나가는 길이 들어온 길과 같아야 한다.** 접힘 모션 없이 툭 사라지면
      「취소」가 "취소됐다" 가 아니라 "뭔가 잘못됐다" 로 읽힌다 — 사라진 것이
@@ -749,6 +791,22 @@
        칩 등 다른 크롬은 종전과 동일. CSS 변수는 상속되므로 포지셔너에 걸면
        내부 `.topology-chrome-in` 패널이 읽는다. */
     transform-origin: var(--topology-chrome-in-origin, center top);
+  }
+
+  /* 지도 위 **큰 표면의 교체** 문법 — 전체 상세(전면 표면)와 INDEX 패널의
+     접힘/펼침이 이 하나를 공유한다. 같은 종류의 등장은 같게 보여야 하고,
+     둘 다 하드컷이었다: 전체 상세는 닫기만 ~200ms 크로스페이드라 들어온 길과
+     나가는 길이 달랐고(나가는 쪽이 더 좋았다), INDEX 는 300px 폭 10행이
+     1프레임에 존재/비존재를 왕복하는데 같은 클릭의 카메라는 200ms 를 썼다 —
+     한 동작에 세 개의 시간축이 있었다.
+     이동/스케일은 쓰지 않는다: 화면의 큰 부분을 차지하는 표면이 움직이면
+     화면 자체가 흔들린 것으로 읽힌다(작은 크롬의 `.topology-chrome-in` 과
+     다른 점). 새 키프레임·새 duration 0 — 크롬 모션 패밀리 토큰(180ms +
+     ease-out) 재사용이라 팝오버·패널·전면 표면이 한 클럭을 쓴다.
+     reduced-motion 은 아래 base 레이어 동등물 규칙이 불투명도만 남긴다. */
+  .map-overlay-in {
+    animation: panelCrossfadeIn var(--topology-motion-panel-duration)
+      var(--topology-motion-ease-out) both;
   }
 
   /* rank2 — 상세 패널 퇴장 대칭. 등장(topologyChromeIn)만 있고 닫힘 시 React 가
@@ -2565,6 +2623,67 @@
 
     .ai-row-disclosure[data-state='closed'] .ai-row-disclosure-body {
       transform: none;
+    }
+  }
+
+  /*
+   * 같은 원칙을 **크로스페이드 계열 전체**로 (2026-07-26 프레임 실측).
+   *
+   * 위 원칙을 선언해 두고 실제로 지킨 셀렉터가 `.ai-row-disclosure` 하나뿐이라,
+   * 앱의 나머지 표면은 reduced-motion 에서 전부 하드컷이었다 — 설정 시트
+   * 150ms 이징 → 0ms, 인사이트 탭 전환 150ms → 0ms(둘 다 1프레임 측정).
+   * 특히 지도 위 팝오버·전면 상세처럼 **인과가 모션에만 실린** 자리에서
+   * 완전 정적은 "내가 눌러서 나타난 것" 과 "화면이 고장난 것" 을 구분해
+   * 주지 않는다.
+   *
+   * 방법은 위와 같다: 흔들리는 축(translate·scale)만 없애고 흔들리지 않는 축
+   * (opacity)은 남긴다. **새 키프레임 0 · 새 duration 0** — transform 이 실린
+   * 등장은 키프레임 **이름만** opacity 전용(`panelCrossfadeIn`)으로 바꿔 자기
+   * duration 토큰을 그대로 탄다.
+   *
+   * 여기 없는 것은 의도적으로 없다: 무한 heartbeat(`.agent-pending-dot`,
+   * `.studio-strut-flow`)와 장식 흐름은 계속 정지가 맞고, 그 사실은 옆의
+   * 텍스트가 이미 말한다. `.overlay-spring-surface` 는 소비처가
+   * `.overlay-fade-only` 로 클래스를 바꿔치는 별도 경로를 이미 갖고 있다.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    /* ① 이미 opacity 전용 — 시간만 되돌린다. */
+    .insights-tab-crossfade,
+    .insights-disclosure-in,
+    .ai-row-swap,
+    .overlay-fade-only[data-state='open'],
+    .overlay-fade-only[data-state='closed'] {
+      animation-duration: var(--motion-fast) !important;
+    }
+
+    .app-settings-scrim-in {
+      animation-duration: var(--motion-base) !important;
+    }
+
+    .map-overlay-in,
+    .overlay-spring-scrim[data-state='open'],
+    .overlay-spring-scrim[data-state='closed'] {
+      animation-duration: var(--topology-motion-panel-duration) !important;
+    }
+
+    /* ② transform 이 실린 등장/퇴장 — 키프레임 이름만 바꾼다. */
+    .app-settings-panel-in,
+    .settings-view-push-in,
+    .settings-view-pop-in {
+      animation-name: panelCrossfadeIn !important;
+      animation-duration: var(--motion-base) !important;
+    }
+
+    .topology-chrome-in,
+    .rail-status-dot-in {
+      animation-name: panelCrossfadeIn !important;
+      animation-duration: var(--topology-motion-panel-duration) !important;
+    }
+
+    .topology-chrome-out {
+      animation-name: panelCrossfadeIn !important;
+      animation-direction: reverse !important;
+      animation-duration: calc(var(--topology-motion-panel-duration) * 0.67) !important;
     }
   }
 

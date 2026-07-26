@@ -1144,6 +1144,36 @@ transform/opacity 만 쓰고, glow·bounce-loop·ambient 반복은 금지, ≤24
   이 카드의 확인 예산은 이미 [지우기] 2단 확정이 쓰고 있다. 되돌릴 수 있는
   일과 없는 일에 같은 마찰을 물리면 진짜 경고가 값싸진다.
 
+### reduced-motion 동등물은 목록이고, 그 목록은 테스트가 지킨다 (2026-07-26)
+
+위 계약("끄는 게 아니라 동등물")은 한동안 **문서에만** 있었다. 실제로 지킨
+셀렉터는 `.ai-row-disclosure` 하나뿐이고, 나머지 표면은 전역 규칙
+(`animation-duration: 0.01ms !important`)이 그대로 잘라 하드컷이었다 —
+프레임 실측: 설정 시트 150ms 이징 → **1프레임에 총델타의 98.9%**, 인사이트
+탭 전환 150ms → 1프레임. 규격을 문서에만 쓰면 지켜지지 않는다.
+
+지금은 **동등물이 있어야 하는 표면이 목록**이고, 그 목록과 globals.css 가
+어긋나면 `tests/contract/reduced-motion-equivalent.contract.test.ts` 가
+막는다. 규칙 셋:
+
+1. **전역 kill 규칙은 남는다.** 감사되지 않은 모션(무한 heartbeat
+   `.agent-pending-dot`, 장식 흐름 `.studio-strut-flow`)의 안전망이다. 그
+   자리에서는 정지가 맞고, 진행의 사실은 옆의 텍스트가 이미 말한다.
+2. **크로스페이드 계열은 시간을 되찾는다** — `.insights-tab-crossfade` ·
+   `.insights-disclosure-in` · `.ai-row-swap` · `.overlay-fade-only` ·
+   `.app-settings-scrim-in` · `.map-overlay-in` · `.overlay-spring-scrim`.
+   이미 opacity 전용이므로 duration 토큰만 되돌린다.
+3. **transform 이 실린 등장은 키프레임 이름만 바꾼다** —
+   `.app-settings-panel-in` · `.topology-chrome-in` / `-out` ·
+   `.rail-status-dot-in` 은 `animation-name: panelCrossfadeIn`(opacity 전용)로
+   갈아타고 자기 duration 토큰을 그대로 탄다. **새 키프레임 0 · 새 duration 0.**
+4. **되받는 블록은 전역 블록보다 소스 순서상 뒤.** 앞에 오면 조용히 무력화된다.
+5. **리터럴 ms 재기입 금지.** 동등물도 토큰으로만 시간을 되찾는다(가드가 검사).
+
+실측 결과(설정 시트 열기, reduced-motion): 1프레임 98.9% 하드컷 →
+`1.217 → 1.664 → 1.731(3프레임째 피크) → 1.591 → 1.217 → 0.961 → 0.913 → 0.155`
+= 첫 프레임 25.9% 의 진짜 이징 ~150ms, scale 축만 제거.
+
 ### Tokenization Contract For Relief/Topology
 
 Relief/Topology is not allowed to rely on "looks better" CSS. A visual value is
