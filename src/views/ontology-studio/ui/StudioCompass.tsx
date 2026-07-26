@@ -1226,7 +1226,6 @@ export function StudioCompass(props: StudioCompassProps) {
           >
             {mode === "create" ? <Check size={15} aria-hidden /> : null}
             {labels.save}
-            <span className="opacity-75">→</span>
           </button>
         </div>
       </footer>
@@ -2037,7 +2036,6 @@ function InlineEditCard({
             className="mt-2.5 flex items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             {labels.editElsewhereGo}
-            <span className="text-[color:var(--color-text-quaternary)]">→</span>
           </button>
         </div>
       )}
@@ -2789,7 +2787,6 @@ function DeltaPreviewModal({
             className="flex h-[34px] items-center gap-2 rounded-lg bg-[color:var(--color-indigo-brand)] px-4 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
           >
             {labels.save}
-            <span className="opacity-75">→</span>
           </button>
         </div>
       </div>
