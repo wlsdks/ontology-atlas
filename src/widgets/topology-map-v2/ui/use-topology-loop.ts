@@ -212,6 +212,30 @@ export interface UseTopologyLoopArgs {
    */
   visitedTrail?: readonly string[];
   /**
+   * 걸어온 길 렌즈 on/off 를 담는 **ref** — 트레일 팝오버가 열려 있는 동안 true.
+   * 지도가 잠시 관계 읽기를 접고 궤적 읽기에 양보한다: 방문 노드(`visitedTrail`)만
+   * 값과 라벨을 지키고 나머지 노드·칩·라벨·엣지 전부가 기존 dim 값으로 물러난다.
+   * 새 모드·토글·URL 상태가 아니라 팝오버 열림과 **동치**다(transient-surface 계약).
+   *
+   * 값이 아니라 ref 인 이유는 브러싱과 같다 — state 로 올리면 렌즈를 켤 때마다
+   * 페이지 트리가 통째로 다시 렌더돼 전환 프레임이 100ms 대로 튄다(실측). 루프가
+   * 매 프레임 읽고, 유휴 게이트는 "마지막으로 그린 렌즈 상태"와 비교해 스스로
+   * 깨어나므로 렌더 0회로 같은 전환을 얻는다.
+   */
+  trailLensActiveRef?: RefObject<boolean>;
+  /**
+   * 걸어온 길 브러싱 — 팝오버에서 hover/focus 중인 행의 노드 id를 담는 **ref**.
+   * 렌즈 동안 지도의 호버 채널을 빌려 그 노드에 기존 호버 프리뷰 링을 그린다
+   * ("2걸음 전이 어느 노드지"를 숫자 없이 가리켜서 답한다).
+   *
+   * 왜 값이 아니라 ref 인가: 호버는 행을 훑는 동안 연속으로 바뀌는 신호인데
+   * React state 로 올리면 한 번 바뀔 때마다 HomePage 트리 전체가 다시 렌더된다
+   * (실측 68~109ms — 호버가 끈적하게 느껴지는 크기다). 프레임 루프는 어차피
+   * 매 프레임 ref 를 읽으므로 렌더를 한 번도 돌리지 않고 같은 결과를 얻는다
+   * (`tourAnchorRef` 와 같은 계약).
+   */
+  trailHoverNodeIdRef?: RefObject<string | null>;
+  /**
    * 슬라이스 C (개발/비개발 모드 토글) — 표시-렌즈 티어 게이트 config. 생략 시
    * `DEFAULT_TIER_REVEAL`(개발 모드 — capability/element 모두 정상 줌 반응).
    * HomePage 가 비개발(plain) 모드에서 `PLAIN_TIER_REVEAL`(element 상시 숨김)
@@ -249,7 +273,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot" } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot" } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -424,6 +448,21 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const selectedEdgeRef = useRef<{ sourceId: string; targetId: string } | null>(selectedEdge);
   /** 발자국 트레일 prop 미러 — rAF 클로저가 매 프레임 최근성 rank 를 만든다. */
   const visitedTrailRef = useRef<readonly string[]>(visitedTrail);
+  /**
+   * 걸어온 길 렌즈 keep-set — `visitedTrail` 이 바뀔 때만 제자리(clear+add)로
+   * 갱신한다. 60fps 루프 안에서 매 프레임 Set 을 새로 만들지 않기 위한 것
+   * (프레임 예산: 렌즈로 늘어나는 per-frame 할당 0).
+   */
+  const visitedTrailSetRef = useRef<Set<string>>(new Set(visitedTrail));
+  /**
+   * 마지막으로 **그린** 렌즈 상태. 유휴 게이트가 이걸 현재 ref 와 비교해
+   * "렌즈가 방금 바뀌었다"를 활동으로 친다 — 렌즈는 React state 가 아니라
+   * ref 라 effect 로 깨울 수 없으므로, 깨우기 책임을 프레임 게이트가 진다.
+   */
+  const drawnTrailLensRef = useRef(false);
+  /** 걸어온 길 렌즈/브러싱 prop ref 미러 — rAF 클로저가 deps 없이 최신 것을 읽게 (`tourAnchorRef` 와 같은 미러 관용). */
+  const trailLensPropRef = useRef<RefObject<boolean> | null>(trailLensActiveRef ?? null);
+  const trailBrushPropRef = useRef<RefObject<string | null> | null>(trailHoverNodeIdRef ?? null);
   /** 밀도 게이트 — 펼친 부모 Set 미러(rAF + 포인터 클로저 공용). */
   const expandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
   /** S2 파트 5B — 직전 펼침 Set (새로 펼쳐진 부모 diff → 카메라 다이브용). */
@@ -593,6 +632,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   });
 
   useEffect(() => {
+    trailLensPropRef.current = trailLensActiveRef ?? null;
+    trailBrushPropRef.current = trailHoverNodeIdRef ?? null;
+  });
+
+  useEffect(() => {
     focusedSlugRef.current = focusedSlug;
     // 선택/해제는 정적 상태 전이 — 유휴 스킵 중에도 한 번 다시 그린다
     // (selectedEdge 효과와 대칭). 해제 시 이 wake 가 없으면 retained
@@ -692,6 +736,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
   useEffect(() => {
     visitedTrailRef.current = visitedTrail;
+    // keep-set 은 제자리 갱신 — 프레임 루프는 이 Set 을 읽기만 한다.
+    const keep = visitedTrailSetRef.current;
+    keep.clear();
+    for (const id of visitedTrail) keep.add(id);
     // 발자국 추가/소거는 정적 상태 전이 — 유휴 스킵 중에도 한 번 다시 그린다
     // (선택 링·엣지 선택과 같은 wake 계약).
     lastActiveMsRef.current = performance.now();
@@ -1284,7 +1332,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             // 흐름이라 유휴 게이트가 얼면 안 된다(depends 와 같은 idle-gate 결).
             (!reducedMotionRef.current && focusedSlugRef.current !== null && hasContainsEdgesRef.current) ||
             pulsesRef.current.length > 0,
-          emphasisTarget: hoveredNodeIdRef.current !== null || panelEmphasisNodeIdRef.current !== null || hoveredClusterIdRef.current !== null,
+          // 렌즈 브러싱도 진행 중인 상호작용 — 유휴로 접으면 호버 링이 얼거나
+          // 뜨지 않는다(캔버스 호버와 같은 대우).
+          emphasisTarget:
+            hoveredNodeIdRef.current !== null ||
+            panelEmphasisNodeIdRef.current !== null ||
+            hoveredClusterIdRef.current !== null ||
+            ((trailLensPropRef.current?.current ?? false) && (trailBrushPropRef.current?.current ?? null) !== null),
+          // 렌즈 on/off 전이 — 마지막으로 그린 상태와 다르면 한 프레임 깨워
+          // 새 상태를 그린다(스포트라이트 램프 정착과 같은 계약).
+          trailLensSettling: (trailLensPropRef.current?.current ?? false) !== drawnTrailLensRef.current,
           breathing: !reducedMotionRef.current && world.nodes.some((n) => n.fresh),
           cameraMoving,
           // 선택 해제 페이드: 라이브 포커스는 없는데 retained colorFocus 가 아직
@@ -1621,7 +1678,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       }
 
       const focusedNodeId = focusedSlugRef.current;
-      const hoveredNodeId = focusedNodeId ? null : hoveredNodeIdRef.current;
+      // 포커스 중엔 호버를 널링한다("포커스가 emphasis 소유권 독점"). 걸어온 길
+      // 렌즈는 이 규칙의 **유일한 예외**다 — 렌즈 동안 커서는 캔버스가 아니라
+      // 팝오버 위에 있어 캔버스 호버와 경쟁하지 않고, 행 hover 가 지도 호버
+      // 채널을 그대로 빌려 브러싱(행 ↔ 노드)을 만든다. 렌즈가 꺼지면 즉시
+      // 원래 규칙으로 돌아온다.
+      const trailLensActive = trailLensPropRef.current?.current ?? false;
+      const trailBrushNodeId = trailLensActive ? (trailBrushPropRef.current?.current ?? null) : null;
+      const hoveredNodeId = trailBrushNodeId ?? (focusedNodeId ? null : hoveredNodeIdRef.current);
       // Panel-row emphasis only bites while a node is focused (that's the only
       // time the "연결된 노드" list exists) — otherwise hover owns the ripple.
       const panelEmphasisNodeId = focusedNodeId ? panelEmphasisNodeIdRef.current : null;
@@ -2239,6 +2303,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         // S8 결함 6 — 영역 활성 시에만 우주 도트를 넘긴다(결계로 클립).
         realmCosmosPoints: realmWarding ? cosmosPointsRef.current : null,
         footprintRanksById,
+        // 렌즈 keep-set — 팝오버가 열려 있을 때만 넘긴다(닫히면 null = 회귀 0).
+        trailLensIds: trailLensActive ? visitedTrailSetRef.current : null,
         spotlightIds: spotlightIdsRef.current,
         spotlightRamp: spotlightRampRef.current,
         tierReveal: tierRevealRef.current,
@@ -2247,6 +2313,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         constellationPattern: constellationPatternRef.current,
         contourPattern: contourPatternRef.current,
       });
+      // 이번 프레임이 어떤 렌즈 상태를 그렸는지 기록 — 유휴 게이트가 다음
+      // 프레임에 "바뀌었나"를 이 값으로 판정한다.
+      drawnTrailLensRef.current = trailLensActive;
 
       // 가이드 투어 스포트라이트 링 — 오버레이 DOM 원 대신 엔진이 프레임
       // 위에 직접 그린다 (2026-07-24 소유자 실보고: DOM 원이 노드와 미세

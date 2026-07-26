@@ -6,7 +6,7 @@
  */
 
 import type { CameraAxes } from "../engine/camera";
-import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
+import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, type EdgeEgoState, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selection-pulse";
 import { footprintRingStyle, FOOTPRINT_RING_OFFSET } from "../model/footprint-ring";
@@ -416,6 +416,18 @@ export interface FrameDrawParams {
    */
   footprintRanksById: ReadonlyMap<string, number>;
   /**
+   * 걸어온 길 렌즈 — 트레일 팝오버가 열려 있는 동안 **그 동안만** non-null.
+   * 방문 노드 집합(현재 포커스 포함)을 ego keep-set 대신 쓴다: 방문 노드는
+   * 값(색·라벨)을 지키고 나머지 노드·클러스터 칩·라벨·**엣지 전부(ego 강조
+   * 엣지 포함)** 는 기존 ego dim 값으로 후퇴한다. 지도가 잠시 "관계 읽기"를
+   * 접고 "궤적 읽기"에 양보하는 일시 렌즈다 — 새 토큰 0, 새 모션 0, 궤적
+   * 폴리라인 없음(이 제품에서 선 = 관계다). null/빈 집합 = 렌즈 off(회귀 0).
+   *
+   * 매 프레임 새로 만들지 않는다 — loop 가 `visitedTrail` 이 바뀔 때만 갱신하는
+   * Set 을 그대로 넘긴다(60fps 루프 안 신규 할당 0).
+   */
+  trailLensIds?: ReadonlySet<string> | null;
+  /**
    * S8 결함 6 — 결계 안 우주 도트 레이어(뷰포트 스페이스, 카메라 원점 시차).
    * 영역 활성(wardingRing 존재) 시에만 결계 원으로 클립해 그린다. null 이면 미표시.
    */
@@ -500,6 +512,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     realmOutsideReturnAlphaById,
     realmCosmosPoints,
     footprintRanksById,
+    trailLensIds = null,
     spotlightIds,
     spotlightRamp,
     tierReveal = DEFAULT_TIER_REVEAL,
@@ -515,6 +528,19 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     spotlightIds !== null && spotlightRamp > 0.001 && colorFocusedNodeId === null && colorSelectedEdge === null;
   const spotlightSink = (inSpotlight: boolean): number =>
     spotlightLensActive && !inSpotlight ? 1 - spotlightRamp * (1 - tokens.spotlightRestAlpha) : 1;
+
+  // 걸어온 길 렌즈 — 트레일 팝오버가 열려 있는 동안만. 켜지면 ego keep-set 이
+  // "1-hop 이웃"에서 "방문 노드"로 바뀐다(아래 `lensNodeEgoState`), 엣지는 전부
+  // dim 으로 내려앉는다. 새 토큰·새 램프 없이 기존 dim 값만 재사용하므로 on/off
+  // 는 즉시 전환이고(200ms 이내 계약), 닫으면 ego 강조가 그대로 복귀한다.
+  const trailLensKeepIds = trailLensIds !== null && trailLensIds.size > 0 ? trailLensIds : null;
+  const trailLensActive = trailLensKeepIds !== null;
+  const isTrailKept = (nodeId: string): boolean => trailLensKeepIds !== null && trailLensKeepIds.has(nodeId);
+  /** 렌즈 ON 이면 방문 keep-set 기준 분류, OFF 면 기존 ego/페어 분류 그대로. */
+  const lensNodeEgoState = (nodeId: string, focusId: string | null, neighbors: ReadonlySet<string>, pair: EdgePairFocus | null): NodeEgoState =>
+    trailLensKeepIds !== null
+      ? resolveTrailLensNodeEgoState(nodeId, focusId, trailLensKeepIds)
+      : resolveNodeEgoStateWithPair(nodeId, focusId, neighbors, pair);
 
   // S5 깊이 연출 — 노드 하나의 렌더 오프셋(월드 단위, 시차)과 깊이 선명도
   // 배수를 한 곳에서 계산해 드로우 전체가 일관되게 쓴다. 영역 밖(depthById 에
@@ -613,8 +639,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       focusedNodeId === null &&
       selectedEdge !== null &&
       (node.id === selectedEdge.sourceId || node.id === selectedEdge.targetId);
+    // 걸어온 길 렌즈 — 방문 노드는 ego 멤버와 같은 티어 관통 채널을 탄다.
+    // 방문한 뒤 줌아웃해 티어 아래로 내려간 노드도 렌즈 동안엔 서 있어야
+    // "방문 노드만 이름을 갖고 서 있는" 상태가 성립하고, 같은 관통이
+    // 히트테스트에도 걸려 지도에서 바로 다시 클릭할 수 있다.
+    const trailKept = isTrailKept(node.id);
     const isEgoMember =
       isPairMember ||
+      trailKept ||
       (focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocused.has(node.id)));
     // 스포트라이트 티어 관통 공개 (소유자: "눈으로 보는 노드를 보고 바로
     // 파악") — 변경 노드가 줌 티어 아래(element 등)에 숨어 있으면 렌즈가
@@ -626,7 +658,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const baseAlpha = effectiveNodeAlpha(
       tierAlpha,
       isEgoMember,
-      Math.max(isPairMember ? 1 : (egoRevealById.get(node.id) ?? 0), spotlightReveal),
+      Math.max(isPairMember || trailKept ? 1 : (egoRevealById.get(node.id) ?? 0), spotlightReveal),
     );
     // S7 — 영역 퇴장 중 귀환하는 밖 노드는 이 램프로 강등(모션 감사 처방 B). 이
     // 노드로 향하는 엣지는 `edgeTierAlpha`(min 결합)를 통해 같은 프레임에서
@@ -705,11 +737,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         edge.sourceId === hoveredEdge.sourceId &&
         edge.targetId === hoveredEdge.targetId;
       const emphasized =
-        hovered ||
-        (emphasizedNeighborId !== null &&
-          touches &&
-          (edge.sourceId === emphasizedNeighborId || edge.targetId === emphasizedNeighborId));
-      let edgeEgoState = resolveEdgeEgoStateWithPair(touches, focusedNodeId, selectedEdge, isSelectedEdge);
+        !trailLensActive &&
+        (hovered ||
+          (emphasizedNeighborId !== null &&
+            touches &&
+            (edge.sourceId === emphasizedNeighborId || edge.targetId === emphasizedNeighborId)));
+      // 걸어온 길 렌즈 — 엣지는 **전부** dim(ego 강조 엣지 포함). 소유자가
+      // "어지럽다"고 한 파란 선의 정체가 바로 이 ego 관계 엣지였다. 삭제가
+      // 아니라 렌즈 동안의 후퇴다 — 팝오버를 닫으면 그대로 돌아온다.
+      let edgeEgoState: EdgeEgoState = trailLensActive
+        ? "dim"
+        : resolveEdgeEgoStateWithPair(touches, focusedNodeId, selectedEdge, isSelectedEdge);
       // 고팬아웃 배치-공개(2026-07) 처방 4 — 펼침 중 depends 억제. 배치 자식이
       // DOI 순으로 드러나는 동안 무관한 depends 실타래가 지도를 뒤덮으면 방금
       // 드러난 소수가 안 읽힌다. anyExpanded 이고 contains 가 아니며(계층 실선은
@@ -741,7 +779,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           control,
           relationType: kind,
           egoState: edgeEgoState,
-          selected: isSelectedEdge,
+          selected: isSelectedEdge && !trailLensActive,
           farT,
           t: edge.t,
           emphasized,
@@ -809,12 +847,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     if (clusteredIds.has(node.id)) continue;
     const tierAlpha = effectiveAlphaById.get(node.id) ?? 1;
     if (tierAlpha <= 0.02) continue;
-    const egoState = resolveNodeEgoStateWithPair(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
+    const egoState = lensNodeEgoState(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
     // Color signature uses the RETAINED focus classification (persists through a
     // deselect fade) + this node's focus ramp — everything else keeps the live
     // `egoState`.
-    const colorEgoState = resolveNodeEgoStateWithPair(node.id, colorFocusedNodeId, colorNeighbors, colorSelectedEdge);
-    const focusRamp = focusRampById.get(node.id) ?? 0;
+    const colorEgoState = lensNodeEgoState(node.id, colorFocusedNodeId, colorNeighbors, colorSelectedEdge);
+    // 렌즈는 자기 램프를 만들지 않는다(새 모션 0) — 켜져 있는 동안 색 램프를 1 로
+    // 고정해 포커스 없이 팝오버만 연 경우에도 dim 타깃이 그대로 적용되게 한다.
+    // 포커스가 있는 통상 경로에선 이미 1 이라 값이 바뀌지 않는다(회귀 0).
+    const focusRamp = trailLensActive ? 1 : (focusRampById.get(node.id) ?? 0);
     const emphasis = emphasisById.get(node.id) ?? 0;
     const isEmphasizedNeighbor = emphasizedNeighborId !== null && node.id === emphasizedNeighborId && egoState === "neighbor";
     const visual = resolveNodeVisual(node, colorEgoState, emphasis, colorFocusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion, focusRamp);
@@ -856,7 +897,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // ego 멤버(center/neighbor)는 100% 복귀 — 상호작용 대상은 항상 또렷하게.
     const isHoveredNode = node.id === hoveredNodeId;
     let realmClarityAlpha = 1;
-    if (realmDepthById !== null && !isHoveredNode && egoState === "normal") {
+    if (realmDepthById !== null && !isHoveredNode && !isTrailKept(node.id) && egoState === "normal") {
       const depth = realmDepthOf(node.id);
       if (depth !== undefined) {
         realmClarityAlpha = realmDepthClarityAlpha(depth);
@@ -874,7 +915,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
 
     // S8 결함 1 — 확장 중 무관 배경 노드 미세 dim(디스크 멤버·스파인·ego 제외).
     const backgroundDim =
-      anyExpanded && egoState === "normal" && !expandedDiscIds.has(node.id) && !isSpineNode(node)
+      anyExpanded && egoState === "normal" && !isTrailKept(node.id) && !expandedDiscIds.has(node.id) && !isSpineNode(node)
         ? BACKGROUND_DIM_WHEN_EXPANDED
         : 1;
 
@@ -927,7 +968,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         isHovered,
         // rank5 — hover ring alpha rides this node's hover-ripple emphasis
         // (same scalar the body wake uses) so it fades up instead of hard-popping.
-        hoverEmphasis: emphasis,
+        // 렌즈 브러싱(팝오버 행 hover)은 포인터 리플을 발사하지 않아 emphasis 가
+        // 0 이다 — 그대로 두면 링 알파가 0 이라 안 보인다. 행 hover 는 이산
+        // 이벤트라 즉시 solid(1)가 맞다(reduced-motion 경로와 같은 값).
+        hoverEmphasis: isHovered && trailLensActive ? 1 : emphasis,
         selectionPulse: selectionPulseVisual,
         agentFocus: agentFocusNodeId !== null && node.id === agentFocusNodeId,
         // 스포트라이트 변경-노드 링 (Image #14) — 렌즈 ON + 창 안 노드에만.
@@ -1154,11 +1198,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 이걸 상속하지 않으면 부모 노드는 0.35 로 가라앉았는데 칩만 풀 알파로
     // 남아 빈 캔버스에 혼자 떠 있는 버튼처럼 읽힌다. 호버는 면제(상호작용
     // 대상 또렷 — 노드와 같은 규칙).
+    // 걸어온 길 렌즈 — 방문 노드에 속하지 않은 칩(`+N`)도 함께 물러난다. 칩은
+    // 노드 dim(색 스왑)을 상속하지 않으므로 여기서만 값으로 낮춘다. 배수는 확장
+    // 중 배경 dim 과 같은 값 재사용 — 신규 토큰 0.
     ctx.globalAlpha =
       parentAlpha *
       spotlightSink(
         (spotlightIds !== null && spotlightIds.has(chip.parentId)) || isChipHovered,
-      );
+      ) *
+      (trailLensActive && !isTrailKept(chip.parentId) ? BACKGROUND_DIM_WHEN_EXPANDED : 1);
     // draw 와 라벨 예약이 **같은 입력**을 보게 하나로 묶는다 — 갈라지면 라벨이
     // 칩 위에 다시 겹치거나(예약 누락) 빈 곳을 피한다(유령 예약).
     const chipDrawInput = {
@@ -1303,7 +1351,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 읽을 수 있다").
     const revealAlpha = effectiveAlphaById.get(node.id) ?? 1;
     if (revealAlpha <= 0.02) return;
-    const egoState = resolveNodeEgoStateWithPair(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
+    const egoState = lensNodeEgoState(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
+    const trailKept = isTrailKept(node.id);
     const isHovered = hoveredNodeId !== null && node.id === hoveredNodeId;
     // High-fan disc density gate: an expanded-disc child that didn't make its
     // disc's DOI top-K stays a DOT (no label candidate) — unless it's the
@@ -1315,7 +1364,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       !discLabelEligibleIds.has(node.id) &&
       egoState !== "center" &&
       egoState !== "neighbor" &&
-      !isHovered
+      !isHovered &&
+      !trailKept
     ) {
       return;
     }
@@ -1324,7 +1374,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // the separate far-field watermark) — a candidate must be built whenever
     // EITHER is visible, or the watermark silently vanishes once the compact
     // label alpha hits 0 at farT=1 (label-clarity fix, far-field regression).
-    const watermarkAlpha = node.kind === "domain" ? computeDomainWatermarkAlpha(farT, egoState) : 0;
+    // 렌즈 동안 원거리 워터마크는 침묵한다 — 방문 노드는 `"normal"` 로 남는데
+    // 워터마크는 그 상태에서만 켜지므로, 그대로 두면 궤적 읽기 화면에 장식
+    // 잉크가 되살아난다(포커스 중 워터마크를 끄는 기존 규칙과 같은 결).
+    const watermarkAlpha =
+      node.kind === "domain" && !trailLensActive ? computeDomainWatermarkAlpha(farT, egoState) : 0;
     if (Math.max(compactAlpha, watermarkAlpha) <= 0.02) return;
 
     // S5 — 라벨도 노드 디스크와 같은 깊이 시차 오프셋으로 그려 붙어 다닌다.
@@ -1352,7 +1406,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // Protected = the focused node, its ego neighbors, or the hovered node —
       // NOT "dim"/"normal" bystanders, or every off-rect label would clamp to
       // the inset edge and pile up there.
-      const isProtected = egoState === "center" || egoState === "neighbor" || isHovered;
+      const isProtected = egoState === "center" || egoState === "neighbor" || isHovered || trailKept;
       if (!isProtected) return;
       const clamped = clampAnchorIntoSafeRect(anchorX, anchorY, safeRect, width / 2 + 4, fontSize + 4);
       anchorX = clamped.x;
@@ -1365,9 +1419,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // NEIGHBOR is exempt too unless the focus is over the readable DOI-top-K
       // band, in which case only the DOI winners keep the exemption (노드 감사
       // 처방 — see `isEgoNeighborLabelExempt`).
+      // 렌즈 동안 방문 노드는 top-K 예산 밖 — 8-0 실측의 "링 낀 익명 상자"를
+      // 없애는 게 이 렌즈의 핵심이라 이름은 반드시 서 있어야 한다.
       const exempt =
         egoState === "center" ||
         isHovered ||
+        trailKept ||
         (egoState === "neighbor" && isEgoNeighborLabelExempt(node.id, egoNeighborLabelEligibleIds));
       labelRankEntries.push({ id: node.id, degree: world.neighborMap.get(node.id)?.size ?? 0, exempt });
     }

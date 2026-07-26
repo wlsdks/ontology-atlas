@@ -35,8 +35,8 @@ function renderChip(overrides: Partial<React.ComponentProps<typeof TopologyTrail
     onClear: vi.fn(),
     ...overrides,
   };
-  render(<TopologyTrailChip {...props} />);
-  return props;
+  const view = render(<TopologyTrailChip {...props} />);
+  return { ...props, unmount: view.unmount };
 }
 
 describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
@@ -100,5 +100,65 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
     const props = renderChip();
     fireEvent.click(screen.getByTestId("topology-trail-chip-clear"));
     expect(props.onClear).toHaveBeenCalledTimes(1);
+  });
+
+  describe("걸어온 길 렌즈 — 팝오버 열림이 곧 렌즈", () => {
+    it("열면 렌즈 on, 닫으면 off (새 모드·토글 없음)", () => {
+      const onLensChange = vi.fn();
+      renderChip({ onLensChange });
+      expect(onLensChange).toHaveBeenLastCalledWith(false);
+      fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+      expect(onLensChange).toHaveBeenLastCalledWith(true);
+      fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+      expect(onLensChange).toHaveBeenLastCalledWith(false);
+    });
+
+    it("Escape 로 닫아도 렌즈가 꺼진다", () => {
+      const onLensChange = vi.fn();
+      renderChip({ onLensChange });
+      fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+      fireEvent.keyDown(window, { key: "Escape" });
+      expect(onLensChange).toHaveBeenLastCalledWith(false);
+    });
+
+    it("열린 채 언마운트돼도 렌즈를 끈다 — 지도가 dim 인 채로 굳지 않게", () => {
+      const onLensChange = vi.fn();
+      const { unmount } = renderChip({ onLensChange });
+      fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+      expect(onLensChange).toHaveBeenLastCalledWith(true);
+      unmount();
+      expect(onLensChange).toHaveBeenLastCalledWith(false);
+    });
+
+    it("행 hover ↔ 지도 노드 브러싱 — 떼면 해제", () => {
+      const onHoverEntry = vi.fn();
+      renderChip({ onHoverEntry });
+      fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+      const rows = screen.getAllByTestId("topology-trail-row");
+      // 최신순이라 2번째 행 = "1걸음 전".
+      fireEvent.mouseEnter(rows[1].parentElement as HTMLElement);
+      expect(onHoverEntry).toHaveBeenLastCalledWith("capability:x");
+      fireEvent.mouseLeave(rows[1].parentElement as HTMLElement);
+      expect(onHoverEntry).toHaveBeenLastCalledWith(null);
+    });
+
+    it("키보드 포커스도 같은 브러싱 채널을 쓴다", () => {
+      const onHoverEntry = vi.fn();
+      renderChip({ onHoverEntry });
+      fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+      fireEvent.focus(screen.getAllByTestId("topology-trail-row")[0]);
+      expect(onHoverEntry).toHaveBeenLastCalledWith("element:y");
+    });
+
+    it("팝오버가 닫히면 브러싱도 해제된다", () => {
+      const onHoverEntry = vi.fn();
+      renderChip({ onHoverEntry });
+      fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+      fireEvent.mouseEnter(
+        screen.getAllByTestId("topology-trail-row")[0].parentElement as HTMLElement,
+      );
+      fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+      expect(onHoverEntry).toHaveBeenLastCalledWith(null);
+    });
   });
 });

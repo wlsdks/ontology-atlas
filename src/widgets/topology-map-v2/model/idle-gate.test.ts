@@ -14,6 +14,7 @@ const IDLE: CanvasActivityFlags = {
   cameraMoving: false,
   focusFadeSettling: false,
   spotlightSettling: false,
+  trailLensSettling: false,
 };
 
 describe("isCanvasActive", () => {

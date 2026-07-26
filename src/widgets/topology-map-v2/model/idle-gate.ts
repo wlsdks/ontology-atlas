@@ -45,6 +45,13 @@ export interface CanvasActivityFlags {
    * focusFadeSettling 과 같은 이유로 명시 활동으로 친다(전이 중 동결 방지).
    */
   spotlightSettling: boolean;
+  /**
+   * 걸어온 길 렌즈가 켜지거나 꺼졌는데 아직 그 상태로 그린 프레임이 없다.
+   * 렌즈는 React state 가 아니라 ref 로 내려오므로(전환마다 페이지 트리를
+   * 다시 렌더하지 않기 위해) effect 로 깨울 수 없다 — 대신 "현재 ref ≠
+   * 마지막으로 그린 상태"를 여기서 활동으로 쳐서 한 프레임을 확보한다.
+   */
+  trailLensSettling: boolean;
 }
 
 export function isCanvasActive(flags: CanvasActivityFlags): boolean {
@@ -58,7 +65,8 @@ export function isCanvasActive(flags: CanvasActivityFlags): boolean {
     flags.breathing ||
     flags.cameraMoving ||
     flags.focusFadeSettling ||
-    flags.spotlightSettling
+    flags.spotlightSettling ||
+    flags.trailLensSettling
   );
 }
 

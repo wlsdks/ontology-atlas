@@ -1320,6 +1320,24 @@ export function HomePage() {
     lastVisitedNodeRef.current = null;
     setFootprintTrail([]);
   }, []);
+  // 걸어온 길 렌즈 — 팝오버 열림과 **동치**인 일시 상태(새 모드·토글·URL 상태 0).
+  // 열려 있는 동안 지도가 관계 읽기(ego 강조 엣지)를 접고 궤적 읽기에 양보한다:
+  // 방문 노드만 값·라벨을 지키고 나머지·엣지 전부는 기존 dim 값으로 물러난다.
+  // 소유자가 "어지럽다"고 한 파란 선의 정체가 그 ego 엣지였다 — 궤적 폴리라인을
+  // 새로 그리는 게 아니라(이 제품에서 선 = 관계다) 읽는 순간만 장을 비운다.
+  //
+  // 렌즈 on/off·브러싱 모두 state 가 아니라 **ref** 다: 이 값들을 state 로 올리면
+  // 켤 때마다·행을 훑을 때마다 이 페이지 트리가 통째로 다시 렌더된다(실측 전환
+  // 프레임 ~100ms, 호버당 68~109ms — "끈적하다"고 느껴지는 크기다). 캔버스 루프는
+  // 어차피 매 프레임 ref 를 읽으므로 렌더를 한 번도 돌리지 않고 같은 그림을 얻는다.
+  const footprintLensActiveRef = useRef(false);
+  const footprintBrushNodeIdRef = useRef<string | null>(null);
+  const handleFootprintLens = useCallback((active: boolean) => {
+    footprintLensActiveRef.current = active;
+  }, []);
+  const handleFootprintBrush = useCallback((id: string | null) => {
+    footprintBrushNodeIdRef.current = id;
+  }, []);
 
   // 노드 클릭 default = 컴팩트 ego 팝오버. 풀스크린 드로어는 "전체 상세" opt-in.
   // overview first, details-on-demand — 설계: docs/TOPOLOGY-FOCUS-AND-SCALE.md
@@ -2694,6 +2712,8 @@ export function HomePage() {
                           onFocusEntry={(id) => handleSelect(id)}
                           onCopyPacket={copyFootprintPacket}
                           onClear={clearFootprintTrail}
+                          onLensChange={handleFootprintLens}
+                          onHoverEntry={handleFootprintBrush}
                           labels={{
                             heading: t("footprint.heading"),
                             triggerAriaLabel: t("footprint.triggerAriaLabel"),
@@ -3555,6 +3575,8 @@ export function HomePage() {
                     realmCaption={realmCaption}
                     canvasLabel={t('canvas.ariaLabel')}
                     visitedTrail={footprintVisitedIds}
+                    trailLensActiveRef={footprintLensActiveRef}
+                    trailHoverNodeIdRef={footprintBrushNodeIdRef}
                     // 슬라이스 C — 비개발(plain) 모드는 element 티어를 도달
                     // 불가 밴드로 밀어 상시 숨김(ego 예외는 그대로).
                     tierReveal={audiencePlain ? PLAIN_TIER_REVEAL : undefined}

@@ -183,6 +183,22 @@ export interface TopologyMapV2Props {
    */
   visitedTrail?: readonly string[];
   /**
+   * 걸어온 길 렌즈 on/off 를 담는 ref — 트레일 팝오버가 열려 있는 동안 true.
+   * 지도가 잠시 관계 읽기를 접고 궤적 읽기에 양보한다: `visitedTrail` 노드만
+   * 값과 라벨을 지키고 나머지 노드·클러스터 칩·라벨·엣지 전부가 기존 dim 값으로
+   * 물러난다. 새 모드/URL 상태가 아니라 팝오버 열림과 동치(transient surface).
+   * ref 인 이유는 아래 브러싱과 같다 — 전환마다 페이지 트리를 다시 렌더하지
+   * 않기 위해서다.
+   */
+  trailLensActiveRef?: RefObject<boolean>;
+  /**
+   * 걸어온 길 브러싱 — 팝오버에서 hover 중인 행의 노드 id를 담는 ref(렌즈
+   * 동안만 유효). 값이 아니라 ref 인 이유: 행을 훑는 동안 연속으로 바뀌는
+   * 신호를 state 로 올리면 hover 한 번에 페이지 트리가 통째로 다시 렌더된다
+   * (실측 ~100ms). 프레임 루프가 매 프레임 읽으므로 렌더 0회로 같은 결과.
+   */
+  trailHoverNodeIdRef?: RefObject<string | null>;
+  /**
    * 슬라이스 C (개발/비개발 모드 토글) — 표시-렌즈 티어 게이트 config. 생략
    * 시 `DEFAULT_TIER_REVEAL`(개발 모드). HomePage 가 비개발(plain) 모드에서
    * `PLAIN_TIER_REVEAL`(element 상시 숨김)을 넘긴다.
@@ -227,7 +243,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot" } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot" } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -261,6 +277,8 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       realmEnterButtonRef,
       realmCaption,
       visitedTrail,
+      trailLensActiveRef,
+      trailHoverNodeIdRef,
       tierReveal,
       tourAnchorNodeId,
       tourAnchorRef,
