@@ -2892,6 +2892,8 @@
     "desktopOnlyHint": "A browser can't run programs on this computer.",
     "downloadLink": "Get the desktop app",
     "needVault": "Open a folder first",
-    "needVaultHint": "The terminal starts in the folder you have open."
+    "needVaultHint": "The terminal starts in the folder you have open.",
+    "resizeLabel": "Resize terminal",
+    "resizeHint": "Drag up or down to change the height. Double-click for the default."
   }
 }

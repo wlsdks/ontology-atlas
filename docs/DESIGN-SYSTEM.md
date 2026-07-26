@@ -1110,13 +1110,14 @@ JS 리터럴로 새기 쉽다. 그래서 도크의 시각 계약은 전부 토�
 
 | 토큰 | 값 | 계약 |
 |---|---|---|
-| `--agent-terminal-dock-height` / `-degraded` | `clamp(200px, 30vh, 400px)` / `116px` | 도크 높이. JSX 인라인 px 금지 |
+| `--agent-terminal-dock-height` / `-degraded` | `clamp(200px, 30vh, 400px)` / `116px` | 도크 **기본** 높이. JSX 인라인 px 금지 — 사용자가 잡아 늘린 뒤에만 px 로 산다 |
 | `--terminal-font-size` / `--terminal-line-height` | `12px` / `1.35` | 셀 격자가 서브픽셀로 어긋나지 않도록 **터미널만 정수 px** 계약 |
 | `--terminal-font-family` | JBM → `MesloLGS NF` → NF 3종 → `Fira Code` → 시스템 mono | 셀 폰트 체인 |
 | `--terminal-inset-x` / `-y` | `12px` / `8px` | 셀과 도크 크롬의 정렬 계약 |
-| `--terminal-ansi-*` (16색) | hue 보존·채도만 하향 | 외부 프로그램의 data-ink. 셀 전용, 칩·보더로 확장 금지 |
+| `--terminal-resize-grip-size` | `6px` | 높이 그립의 잡히는 띠 폭. 상단 보더 위에 겹쳐 새 잉크 0 |
+| `--terminal-ansi-*` (16색) | hue 보존·명도/채도만 조정 | 외부 프로그램의 data-ink. 셀 전용, 칩·보더로 확장 금지 |
 
-두 가지가 자주 틀리는 지점이라 명문화한다:
+세 가지가 자주 틀리는 지점이라 명문화한다:
 
 - **폰트는 번들하지 않고 체인으로 감지한다.** 앱 mono(JetBrains Mono)는
   `next/font/google` latin 서브셋이라 Powerline PUA(U+E0B0 등)를 갖지 않고,
@@ -1130,6 +1131,14 @@ JS 리터럴로 새기 쉽다. 그래서 도크의 시각 계약은 전부 토�
   크기에서 `.xterm` 요소의 패딩만 빼므로, host 자신이 패딩을 가지면 그만큼
   cols/rows 를 **과대 산정**해 우측 열이 여백 밑으로 잘린다. `--terminal-inset-*`
   는 host 를 감싸는 래퍼에만 적용한다.
+- **ANSI 는 전경뿐 아니라 배경으로도 쓰인다.** agnoster·powerlevel10k 류
+  프롬프트 테마는 ANSI 색을 **배경**으로 칠하고 `ansi-black` 을 그 위 전경으로
+  쓴다. 그래서 팔레트 검수는 "캔버스 위 전경 대비"만으로 끝나지 않는다 —
+  `black × {red,green,yellow,blue,magenta,cyan,white}` 짝이 전부 WCAG AA(4.5:1)
+  를 넘어야 하고, 이 계약은
+  `tests/contract/terminal-ansi-contrast.test.ts` 가 잠근다. 보정할 때
+  **hue 는 절대 옮기지 않는다**(그건 외부 프로그램의 의미다) — HSL 의 H·S 를
+  고정하고 L 만 움직이며, 같은 테스트가 hue 이동도 함께 막는다.
 
 스크롤 표면(`.xterm-viewport`)은 xterm 이 만들어 우리가 클래스를 못 붙이는
 자리라, 앱의 얇은 스크롤바(6px 트랙 · `--color-divider` thumb)를 도크 스코프

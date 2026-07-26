@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import { AgentTerminalDock, elideCwdHead } from "./AgentTerminalDock";
+import { readDockHeight } from "../model/dock-height";
 
 const bridgeMock = vi.hoisted(() => ({
   available: false,
@@ -24,6 +25,7 @@ vi.mock("@/shared/lib/tauri-terminal", () => ({
 }));
 
 afterEach(() => {
+  window.localStorage.clear();
   bridgeMock.available = false;
   bridgeMock.open.mockReset();
   bridgeMock.write.mockReset();
@@ -144,6 +146,80 @@ describe("AgentTerminalDock — 신뢰 계약", () => {
     renderDock(<AgentTerminalDock open onClose={onClose} vaultPath={null} />);
     screen.getByTestId("agent-terminal-close").click();
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * `customGlyphs`(E0B0–E0B7 절차 드로잉)는 canvas/webgl 렌더러 전용이라 DOM
+   * 렌더러에서는 죽은 옵션이다. 애드온 로드가 사라지면 Nerd Font 를 안 깐
+   * 기기에서 다시 두부(□)가 나는데, jsdom 에는 WebGL 컨텍스트가 없어 렌더
+   * 결과로는 이 회귀를 못 잡는다 — 그래서 로드 자체를 지킨다.
+   */
+  it("WebGL 렌더러를 싣되 실패는 조용히 넘긴다 (DOM 폴백)", () => {
+    const source = readFileSync(resolve(__dirname, "./AgentTerminalDock.tsx"), "utf8");
+    expect(source).toContain('await import("@xterm/addon-webgl")');
+    // 애드온 로드가 try 밖으로 나가면 WebGL2 없는 기기에서 터미널 자체가 안 뜬다.
+    const load = source.indexOf('await import("@xterm/addon-webgl")');
+    expect(source.lastIndexOf("try {", load)).toBeGreaterThan(-1);
+    expect(source).toContain("onContextLoss");
+  });
+});
+
+describe("AgentTerminalDock — 높이 그립", () => {
+  it("강등 상태에는 그립이 없다 — 잡아 늘릴 내용이 없다", () => {
+    bridgeMock.available = false;
+    renderDock(<AgentTerminalDock open onClose={() => {}} vaultPath="/vault" />);
+    expect(screen.queryByTestId("agent-terminal-resize-grip")).not.toBeInTheDocument();
+  });
+
+  it("그립은 드래그 전용이 아니다 — 포커스를 받고 ↑↓ 로도 움직인다", () => {
+    bridgeMock.available = true;
+    renderDock(<AgentTerminalDock open onClose={() => {}} vaultPath="/vault" />);
+    const grip = screen.getByTestId("agent-terminal-resize-grip");
+    expect(grip).toHaveAttribute("role", "separator");
+    expect(grip).toHaveAttribute("tabindex", "0");
+    expect(grip).toHaveAccessibleName("터미널 높이 조절");
+  });
+
+  it("↑ 로 높이를 올리면 px 로 굳고 저장된다", () => {
+    bridgeMock.available = true;
+    renderDock(<AgentTerminalDock open onClose={() => {}} vaultPath="/vault" />);
+    fireEvent.keyDown(screen.getByTestId("agent-terminal-resize-grip"), { key: "ArrowUp" });
+
+    const style = screen.getByTestId("agent-terminal-dock").getAttribute("style") ?? "";
+    expect(style).toMatch(/\d+px/);
+    expect(readDockHeight()).not.toBeNull();
+  });
+
+  /**
+   * 드래그 리스너는 6px 그립이 아니라 window 가 받아야 한다. 포인터는 잡자마자
+   * 그 띠 밖으로 나가고, 포인터 캡처가 안 되는 환경(합성 포인터 등)에서는
+   * 캡처가 대신 잡아주지도 않는다 — 그립에 달면 드래그가 첫 픽셀에서 끊긴다.
+   */
+  it("드래그는 그립 밖으로 나가도 이어진다 (리스너는 window)", () => {
+    bridgeMock.available = true;
+    renderDock(<AgentTerminalDock open onClose={() => {}} vaultPath="/vault" />);
+    const grip = screen.getByTestId("agent-terminal-resize-grip");
+
+    fireEvent.pointerDown(grip, { button: 0, clientY: 700, pointerId: 1 });
+    // 그립에서 한참 벗어난 좌표 — 캡처 없이도 window 가 받는다.
+    fireEvent.pointerMove(window, { clientY: 300, pointerId: 1 });
+    fireEvent.pointerUp(window, { pointerId: 1 });
+
+    const style = screen.getByTestId("agent-terminal-dock").getAttribute("style") ?? "";
+    expect(style).toMatch(/\d+px/);
+    expect(readDockHeight()).not.toBeNull();
+  });
+
+  it("Enter(=더블클릭)는 사용자의 선택을 지우고 토큰 기본값으로 되돌린다", () => {
+    bridgeMock.available = true;
+    renderDock(<AgentTerminalDock open onClose={() => {}} vaultPath="/vault" />);
+    const grip = screen.getByTestId("agent-terminal-resize-grip");
+    fireEvent.keyDown(grip, { key: "ArrowUp" });
+    fireEvent.keyDown(grip, { key: "Enter" });
+
+    const style = screen.getByTestId("agent-terminal-dock").getAttribute("style") ?? "";
+    expect(style).toContain("var(--agent-terminal-dock-height)");
+    expect(readDockHeight()).toBeNull();
   });
 });
 

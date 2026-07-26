@@ -1651,6 +1651,12 @@
     --terminal-inset-x: 12px;
     --terminal-inset-y: 8px;
 
+    /* 높이 그립의 잡을 수 있는 띠 폭. 도크 상단 보더 위에 겹쳐 놓는다 —
+       새 잉크를 그리지 않고 "위쪽 경계가 곧 손잡이"로 만든다. 6px 은 커서가
+       `ns-resize` 로 바뀌는 데 충분하고 헤더 클릭을 훔치지 않는 최소치다
+       (헤더 py-1.5 = 6px 위로만 겹친다). */
+    --terminal-resize-grip-size: 6px;
+
     /* ANSI 16색 — **외부 프로그램의 data-ink**.
      *
      * 이건 우리 장식이 아니라 사용자가 띄운 프로그램(`claude`/`codex`/`git`)이
@@ -1662,8 +1668,27 @@
      * 그래서 hue 는 지키고 채도만 앱 캔버스 기준으로 낮춘 세트를 **명시
      * 선언**한다. blue 계열은 인디고 패밀리, yellow 계열은 앱 앰버 패밀리로
      * 당겨 맞춘다. 확장·용도 전용(칩·보더 등)은 금지 — 터미널 셀 전용이다.
+     *
+     * ## 배경으로 쓰일 때의 대비 (2026-07-26 보정)
+     *
+     * 위 판단은 **전경 잉크** 기준이었는데, agnoster·powerlevel10k 류 테마는
+     * ANSI 색을 **배경**으로 칠하고 ansi-black 을 그 위 전경으로 쓴다. 그
+     * 짝을 재 보니 디렉토리 세그먼트(black on blue)가 3.63:1, 오류 세그먼트
+     * (black on red)가 3.35:1 로 WCAG AA(4.5:1) 미달이었다 — 실캡처에서도
+     * 디렉토리 밴드가 가장 흐릿하게 읽혔다.
+     *
+     * 처방은 **hue 를 건드리지 않는다**(그건 외부 프로그램의 의미다). HSL 의
+     * H·S 를 고정하고 ansi-black 의 L 만 0.245 → 0.163 으로 내렸다. 값은
+     * 눈대중이 아니라 탐색으로 확정했고, 계약은
+     * `tests/contract/terminal-ansi-contrast.test.ts` 가 잠근다(배경 짝
+     * 최악값 3.35 → 4.55).
+     *
+     * 곁가지 이득: ansi-black 이 **배경**일 때(컨텍스트 세그먼트) white 전경
+     * 대비도 6.41 → 8.69 로 오른다. 대신 그 밴드와 캔버스의 표면 차는
+     * 1.83 → 1.35 로 옅어지는데, 앱 자신의 canvas→panel 단차(1.04)보다 여전히
+     * 크므로 밴드는 밴드로 읽힌다.
      */
-    --terminal-ansi-black: #3a3d44;
+    --terminal-ansi-black: #26282d;
     --terminal-ansi-red: #d4736e;
     --terminal-ansi-green: #7fb98a;
     --terminal-ansi-yellow: #c9a86a;
