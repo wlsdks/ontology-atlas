@@ -315,6 +315,9 @@ describe("ProjectDetailPage", () => {
 
     expect(screen.getByText("Sibling Project")).toBeInTheDocument();
     expect(screen.queryByTestId("project-detail-connected-empty")).not.toBeInTheDocument();
+    // 앱 안에서 이동하는 링크에 장식 화살표를 붙이지 않는다 — 어디로 가는지는
+    // 라벨이, 누를 수 있다는 건 컨트롤이 이미 말한다.
+    expect(screen.getByTestId("project-detail-connected").textContent).not.toContain("↗");
   });
 
   it("embeds the project slug into the agent handoff snippet", () => {

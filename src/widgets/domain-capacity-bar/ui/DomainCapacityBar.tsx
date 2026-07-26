@@ -46,6 +46,14 @@ export interface DomainCapacityBarProps {
  * 허용하지만 data mark 로만 쓴다") — this is exactly that exception in
  * practice, not a new color system, and it keeps the capability/element
  * split legible instead of collapsing it into a single number.
+ *
+ * 재심 2026-07-26 — 감사에서 "프로젝트 도메인 바의 amber/green 2색" 이 다시
+ * 올라왔다. 실측: `rgba(211,159,73,.94)` = capability kind tone,
+ * `rgba(124,166,141,.94)` = element kind tone. 허브 앰버(`#d4b478`)도
+ * `--color-status-success` 도 아니다 — **결함 아님**. 규율은 표면이 아니라
+ * 계열 수가 정한다: 값 하나짜리 막대는 무채색 + 인디고(`DomainCompositionGrid`),
+ * 한 트랙 안에 두 값을 담는 막대는 kind tone 두 개. 판별표는
+ * `docs/DESIGN-SYSTEM.md` "Three ambers, three rules" 에 적어 뒀다.
  */
 export function DomainCapacityBar({
   row,

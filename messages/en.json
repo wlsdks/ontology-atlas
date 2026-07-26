@@ -1375,6 +1375,7 @@
       "nextSlotAgentCommand": "add_concept(slug, kind: \"project\", title)",
       "nextSlotAgentCaption": "MCP · created directly by Claude Code / Codex",
       "factStripGloss": "The areas this project covers, and how many features and components live inside each.",
+      "domainOverlapNote": "Bars can sum higher than the counts above — concepts in several domains are counted once per domain.",
       "emptyStateTitle": "No projects yet",
       "emptyStateDesc": "Create a project document (frontmatter `kind: project`) in your folder and it appears here."
     },
@@ -1417,6 +1418,7 @@
       "domainCapabilityLabel": "capabilities",
       "domainElementLabel": "elements",
       "domainMoreLine": "{more} more capabilities",
+      "domainOverlapNote": "Concepts in several domains are counted once per domain, so these cards can sum higher than the counts above.",
       "bodyCardTitle": "Overview",
       "bodyCardGcap": "",
       "bodyEmptyHint": "No overview written yet.",

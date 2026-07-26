@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -87,5 +87,95 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
     expect(TRAILING_ARROW.test("{source} → {target}")).toBe(false);
     expect(TRAILING_ARROW.test("오래된 → 최근 순")).toBe(false);
     expect(TRAILING_ARROW.test("설정 → Developer 에서 등록")).toBe(false);
+  });
+
+  /**
+   * ── 게이트 구멍 (2026-07-26 실측) ──────────────────────────────────
+   *
+   * 위 검사는 `messages/*.json` 만 본다. 그런데 실제로 살아남은 위반은 **JSX
+   * 글리프**였다 — `ProjectDetailPage` 의 앱-내 `<Link>` 끝에 `↗` 가 span 으로
+   * 박혀 있었고, 하필 그 파일은 이 규칙을 등재한 PR 이 같은 날 재설계한
+   * 파일이다. 번역 문자열만 지키는 게이트는 마크업으로 새는 걸 못 본다.
+   *
+   * 여기서 `→` 는 대상이 아니다. 이 코드베이스에서 홀로 선 `→` 는 전부 **중위**
+   * 데이터 화살표(`{source} → {target}`, 경로·순서·인과)로 쓰이고 있고 그건
+   * 허용 열이다. 반면 `↗` 는 용도가 하나뿐이다 — **앱을 떠나는 링크의 선행
+   * 경고**. 그래서 이 글리프는 쓰는 자리에서 스스로를 선언하게 한다
+   * (`data-external-link-marker`). 선언 없는 `↗` 는 장식이라고 본다.
+   */
+  const DECORATIVE_GLYPH_NODE = /<([A-Za-z][\w.]*)\b([^<>]*)>\s*[↗➜⟶»]\s*</g;
+  const EXTERNAL_MARKER = "data-external-link-marker";
+
+  function collectSourceFiles(dir: string, out: string[]): void {
+    for (const entry of readdirSync(dir)) {
+      if (entry === "node_modules" || entry.startsWith(".")) continue;
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) {
+        collectSourceFiles(full, out);
+        continue;
+      }
+      if (!full.endsWith(".tsx")) continue;
+      if (full.includes(".test.") || full.includes(".spec.")) continue;
+      out.push(full);
+    }
+  }
+
+  it("JSX 마크업에도 선언 없는 장식 화살표가 없다", () => {
+    const files: string[] = [];
+    for (const root of ["src", "app"]) collectSourceFiles(join(process.cwd(), root), files);
+
+    // 게이트 생존 확인 — 스캔이 0개 파일을 읽으면 "위반 없음" 이 아니라 결함이다.
+    expect(files.length).toBeGreaterThan(100);
+
+    const offences: string[] = [];
+    for (const file of files) {
+      const source = readFileSync(file, "utf8");
+      for (const match of source.matchAll(DECORATIVE_GLYPH_NODE)) {
+        if (match[2].includes(EXTERNAL_MARKER)) continue;
+        const line = source.slice(0, match.index).split("\n").length;
+        offences.push(`  ${file.replace(process.cwd() + "/", "")}:${line} — <${match[1]}>`);
+      }
+    }
+
+    expect(
+      offences,
+      offences.length === 0
+        ? ""
+        : `마크업에 박힌 장식 화살표. 앱 안에서 이동하는 링크라면 지워라 — 어디로\n` +
+            `가는지는 라벨이, 누를 수 있다는 건 컨트롤이 이미 말한다. 앱을 떠나는\n` +
+            `링크라면 라벨 **앞**에 두고 ${EXTERNAL_MARKER} 로 선언하라.\n${offences.join("\n")}`,
+    ).toEqual([]);
+  });
+
+  it("선언된 외부 링크 표식은 실제로 앱을 떠나는 링크 위에만 있다", () => {
+    const files: string[] = [];
+    for (const root of ["src", "app"]) collectSourceFiles(join(process.cwd(), root), files);
+
+    const declared = files.filter((file) => readFileSync(file, "utf8").includes(EXTERNAL_MARKER));
+    // 표식은 존재해야 한다 — 사라지면 위 테스트가 "예외 없음" 으로 통과해버려
+    // 규칙의 허용 열(선행 ↗)이 검증되지 않은 채 남는다.
+    expect(declared.length).toBeGreaterThan(0);
+
+    for (const file of declared) {
+      const source = readFileSync(file, "utf8");
+      expect(source, `${file}: 외부 링크 표식은 target="_blank" 링크에만`).toContain(
+        'target="_blank"',
+      );
+    }
+  });
+
+  it("JSX 게이트가 실제로 위반을 잡는다", () => {
+    const probe = [
+      '<span aria-hidden="true" className="text-label">',
+      "  ↗",
+      "</span>",
+      '<span data-external-link-marker aria-hidden="true">↗</span>',
+      '<span className="mx-1.5">→</span>',
+    ].join("\n");
+
+    const hits = [...probe.matchAll(DECORATIVE_GLYPH_NODE)];
+    // 선언 없는 ↗ 1건만 잡고, 선언된 ↗ 와 중위 데이터 화살표 → 는 통과.
+    expect(hits).toHaveLength(2);
+    expect(hits.filter((hit) => !hit[2].includes(EXTERNAL_MARKER))).toHaveLength(1);
   });
 });

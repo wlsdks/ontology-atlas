@@ -106,7 +106,11 @@ const arbitrarySizeSelectors = [
 ];
 
 // 마이그레이션 완료(치환 끝 · error 봉쇄) 디렉토리.
-const codexMigratedGlobs = [
+// 계약 테스트(`tests/contract/type-ramp-coverage.contract.test.ts`)가 이 목록을
+// 그대로 읽는다 — 목록 밖 디렉토리의 램프 이탈은 lint 가 **0건으로 보고**하므로
+// (2026-07-26 실측: `project-detail` 의 text-[12px] 가 그렇게 통과했다) 그 사각을
+// 테스트가 래칫으로 붙든다. 여기에 디렉토리를 추가하려면 그 안의 이탈을 먼저 0으로.
+export const codexMigratedGlobs = [
   'src/views/ontology-insights/**/*.{ts,tsx}',
   'src/views/project-selector/**/*.{ts,tsx}',
   'src/views/ontology-edit/**/*.{ts,tsx}',

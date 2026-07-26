@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T05:57:16.750Z",
+  "generatedAt": "2026-07-26T06:09:57.834Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3119,6 +3119,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 지도가 문서에 대해 하던 거짓말 두 건",
+          "slug": "2026-07-26-지도가-문서에-대해-하던-거짓말-두-건"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-26 — 프로젝트 표면의 시각 규율 3건 + 그것들이 새어 나온 게이트 구멍 2건",
+          "slug": "2026-07-26-프로젝트-표면의-시각-규율-3건-그것들이-새어-나온-게이트-구멍-2건"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — 터미널 도크: 폰트 없이도 안 깨지고 · 읽히고 · 커진다 (S2~S4)",
           "slug": "2026-07-26-터미널-도크-폰트-없이도-안-깨지고-읽히고-커진다-s2s4"
         },
@@ -4909,8 +4919,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. \"거슬림\" 으로 묶인 다섯 결함은 뿌리가 하나였다: 화면이 사용자가 요청하지 않은 일을 자기 판단으로 한다. 히스토리에 안 만든 칸을 쌓고, 안 부른 모달",
-      "wordCount": 43358,
-      "updatedAt": "2026-07-26T05:57:16.750Z",
+      "wordCount": 43977,
+      "updatedAt": "2026-07-26T06:09:57.834Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5416,6 +5426,11 @@
         },
         {
           "depth": 3,
+          "text": "Three ambers, three rules (the recurring audit false-positive)",
+          "slug": "three-ambers-three-rules-the-recurring-audit-false-positive"
+        },
+        {
+          "depth": 3,
           "text": "Borders",
           "slug": "borders"
         },
@@ -5671,8 +5686,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 15308,
-      "updatedAt": "2026-07-26T14:36:23+09:00",
+      "wordCount": 15602,
+      "updatedAt": "2026-07-26T06:09:51.063Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",

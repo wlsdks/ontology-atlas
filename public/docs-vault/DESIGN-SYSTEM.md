@@ -428,6 +428,32 @@ quarantine family (`--color-amber-docs-*`, provisional — see
 separately below; they are data marks / an unresolved charter-tension
 family, not signal tones.
 
+### Three ambers, three rules (the recurring audit false-positive)
+
+Every colour audit re-opens this, because a grep for "amber" returns three
+unrelated families. They are governed by different rules, and a finding is only
+a defect if it names the right one:
+
+| Family | Value | Rule |
+| --- | --- | --- |
+| **Hub amber** | `--topology-v2-amber-hub` / `BRAND_MARK_AMBER` `#d4b478` | One hub ring + one Layer-0 container, plus two written exceptions (agent focus ring, `?recent=` spotlight). A third on screen is a defect. |
+| **Brand mark** | the same `#d4b478` in the nav-rail logo | Not an expansion — it is the product's mark, one instance per route, never data. Written down here so audits stop re-filing it. |
+| **Kind tone** | `capability` `rgba(211,159,73,.94)` (amber) · `element` `rgba(124,166,141,.94)` (eucalyptus) | A **data mark**, the same palette the map uses for those node kinds. Allowed in compact markers and multi-series bars; never as a surface, rail, or callout. |
+
+**Bar colour follows the number of series, not the surface.** A bar that encodes
+one value (this domain's size against the largest) is monochrome — indigo for
+the leading row, neutral for the rest (`DomainCompositionGrid`). A bar that
+encodes two values inside one track (capability vs element) needs two data
+marks, and those marks are the kind tones (`DomainCapacityBar`, used by
+`/projects` cards and the insights structure tab). Two grammars for the same
+concept would be the defect; two grammars for one-series vs two-series data is
+the reason the palette exists.
+
+Verified live 2026-07-26 (`/ko/projects`, 1920 dark): the only non-indigo chroma
+on the page is those two kind-tone bar segments. `/ko/project/[slug]` renders
+zero. Neither is `--color-status-success`; a green **status dot** would be, and
+that is a separate, sanctioned signal.
+
 ### Borders
 
 - `rgba(255,255,255,0.05)` — subtle
