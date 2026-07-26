@@ -58,8 +58,8 @@
       },
       "workspaceFolderLabel": "Workspace folder",
       "workspaceFolderEmpty": "None selected",
-      "workspaceFolderDocCount": "{count} ontology docs",
-      "workspaceFolderDocCountIssues": "{count} ontology docs · {errors} errors · {warnings} warnings",
+      "workspaceFolderDocCount": "{count} concept documents",
+      "workspaceFolderDocCountIssues": "{count} concept documents · {errors} errors · {warnings} warnings",
       "workspaceFolderOpen": "Open folder",
       "workspaceFolderChange": "Change",
       "workspaceFolderOpening": "Opening…",
@@ -69,7 +69,7 @@
       "workspaceRecentOpenAria": "Open recent workspace {name}",
       "workspaceRecentForgetAria": "Forget recent workspace {name}",
       "vaultTitle": "Library",
-      "vaultBodyLocal": "Open workspace documents to review files and ontology concepts",
+      "vaultBodyLocal": "Open workspace documents to review files and concepts",
       "vaultBodyStatic": "Pick a writable folder in the macOS app or the local workspace flow",
       "vaultCtaLocal": "Open",
       "vaultCtaStatic": "Get started",
@@ -267,13 +267,13 @@
   },
   "liveActivity": {
     "live": "Live",
-    "triggerTitle": "Live: changed ontology nodes and agent heartbeat",
+    "triggerTitle": "Live: changed concepts and AI activity",
     "changedCountLabel": "{count} changed",
-    "changed": "{count} ontology nodes changed since the current baseline",
+    "changed": "{count} concepts changed since the current baseline",
     "summaryTitle": "Live change baseline",
-    "summaryBody": "Live means Ontology Atlas is tracking changes since the current baseline. The number is changed ontology nodes, not connected agents.",
-    "summaryZero": "No ontology nodes changed since the current baseline.",
-    "summaryCount": "{count} ontology nodes changed since baseline.",
+    "summaryBody": "Live means Ontology Atlas is tracking changes since the current baseline. The number is changed concepts, not connected agents.",
+    "summaryZero": "No concepts changed since the current baseline.",
+    "summaryCount": "{count} concepts changed since baseline.",
     "summaryNotTracking": "No change baseline is active yet. Agent heartbeat can still show current work below.",
     "summaryAction": "Open the concept map change panel for the exact nodes.",
     "agentTitle": "Agent heartbeat",
@@ -412,7 +412,7 @@
     "steps": {
       "welcome": {
         "title": "This map is documents",
-        "body": "Every dot you see here is one real markdown file. The whole map is a single picture of what our product is made of and how the pieces connect. Takes about 2 minutes."
+        "body": "Every dot you see here is one real markdown file. The whole map is a single picture of what our product is made of and how the pieces connect. A picture like this is called an ontology — the name sounds academic, but that one sentence is all it means. Takes about 2 minutes."
       },
       "nodes": {
         "title": "Size and shape of the dots",
@@ -516,9 +516,9 @@
     "closeAria": "Close"
   },
   "rootEntry": {
-    "openingLocalVaultPicker": "Opening the local ontology store setup",
+    "openingLocalVaultPicker": "Opening the local workspace setup",
     "redirectEyebrow": "Local-first workspace",
-    "redirectTitle": "Preparing your local ontology workbench",
+    "redirectTitle": "Preparing your local workbench",
     "redirectBody": "The installed app starts at local store setup before it shows any hosted introduction.",
     "redirectFilesProof": "Markdown files stay local",
     "redirectGraphProof": "Frontmatter becomes the graph",
@@ -658,7 +658,7 @@
     "globalSearch": {
       "dialogAriaLabel": "Global search",
       "dialogTitle": "Global search",
-      "dialogDescription": "Search ontology concepts and projects in one place. Use up/down arrows to move, Enter to select, ESC to close.",
+      "dialogDescription": "Search concepts and projects in one place. Use up/down arrows to move, Enter to select, ESC to close.",
       "commandLabel": "Global search",
       "closeAriaLabel": "Close global search",
       "placeholderWithProjects": "Search concepts and projects — KR/EN mix OK",
@@ -730,6 +730,8 @@
       "footer": "Press again to close",
       "glossary": {
         "title": "Words used on the map",
+        "ontologyTerm": "Ontology",
+        "ontologyDefinition": "The documents recording what exists and how it connects — the source of this map",
         "domainTerm": "Domain",
         "domainDefinition": "A large area that groups features",
         "capabilityTerm": "Capability",
@@ -780,7 +782,7 @@
         "toggleFullNeighbor": "Toggle full graph ↔ selected 2-hop view",
         "togglePillView": "Switch view via the top pill",
         "serverBundle": "Browse the bundled docs/ (default)",
-        "localVault": "Open a local ontology folder in the installed app",
+        "localVault": "Open your markdown folder in the installed app",
         "manualRefresh": "Manually refresh the local workspace",
         "focusRefresh": "Auto-refresh the local workspace on tab focus",
         "pinDoc": "Pin / unpin (pinned section stays on top)",
@@ -1176,7 +1178,7 @@
     "insights": {
       "title": "Graph insights",
       "subtitle": "Your whole folder at a glance — every number is computed automatically from the documents",
-      "audienceBanner": "This screen is a maintenance board for the people and AI agents who keep the ontology in shape.",
+      "audienceBanner": "This board is for the people and AI agents who tend the map.",
       "censusConcepts": "Concepts",
       "censusRelations": "Relations",
       "censusDomains": "Domains",
@@ -1501,7 +1503,7 @@
       "vaultPillFolders": "{count} folders",
       "vaultPillSwap": "Switch vault",
       "vaultPillSwapAriaLabel": "Switch vault source",
-      "vaultPillSampleLabel": "Built-in sample (Atlas's own ontology)",
+      "vaultPillSampleLabel": "Built-in sample (this tool's own documents)",
       "docListCollapse": "Collapse document list",
       "docListExpand": "Expand document list"
     },
@@ -1577,8 +1579,8 @@
     },
     "desktopWelcome": {
       "eyebrow": "Local-first workspace",
-      "title": "Open or create a local ontology workspace",
-      "body": "Choose a markdown folder for the ontology workspace. Ontology Atlas keeps the files on this Mac, remembers recent workspaces, and turns document properties into a meaning graph.",
+      "title": "Open or create a local workspace",
+      "body": "Choose a markdown folder for the workspace. Ontology Atlas keeps the files on this Mac, remembers recent workspaces, and turns document properties into a meaning graph.",
       "dogfoodTitle": "Open this repo's docs/ontology as the workspace",
       "dogfoodBody": "To dogfood the Ontology Atlas repo while developing it, pick this checkout's docs/ontology folder. If the local folder is still named oh-my-ontology, use that path until it is safely renamed to ontology-atlas.",
       "copyDogfoodPath": "Copy path",
@@ -1587,7 +1589,7 @@
       "copyDogfoodLoop": "Copy verification loop",
       "copyDogfoodLoopCopied": "Verification loop copied",
       "copyDogfoodLoopFailed": "Copy failed",
-      "contractAriaLabel": "Ontology workspace contract",
+      "contractAriaLabel": "Workspace contract",
       "contractFilesLabel": "Workspace files",
       "contractFilesValue": "Markdown stays local",
       "contractFilesBody": "Your `.md` files remain in the folder you choose. Git can review every graph change.",
@@ -1597,14 +1599,14 @@
       "contractAgentLabel": "AI check",
       "contractAgentValue": "{count} graph checks",
       "contractAgentBody": "Claude Code, Codex, and Cursor run the same local graph checks before writes.",
-      "actionsAriaLabel": "Ontology workspace setup actions",
+      "actionsAriaLabel": "Workspace setup actions",
       "openTitle": "Open existing workspace",
       "openingTitle": "Opening folder…",
       "loadingTitle": "Building workspace…",
-      "openBody": "Select a folder that already contains markdown ontology files.",
+      "openBody": "Select a folder that already contains markdown documents.",
       "dogfoodOpenTitle": "Pick docs/ontology",
       "dogfoodOpenBody": "Select the docs/ontology folder in this repo to dogfood Atlas itself.",
-      "dogfoodDirectTitle": "Open this repo ontology",
+      "dogfoodDirectTitle": "Open this repo's documents",
       "dogfoodDirectBody": "Open docs/ontology directly in the installed app so Atlas analyzes itself.",
       "createTitle": "Create a new workspace",
       "createBody": "Make or choose an empty folder, then seed it with the starter after it opens.",
@@ -2018,8 +2020,8 @@
       "spotlightTooltip": "Recent-changes spotlight — nodes changed in the last N days stay crisp, the rest sink back",
       "spotlightAriaLabel": "Toggle the recent-changes spotlight",
       "spotlightLabel": "Recent",
-      "docsTooltip": "Ontology workspace quick look (D)",
-      "docsAriaLabel": "Open ontology workspace quick look (D)",
+      "docsTooltip": "Quick view of the doc library (D)",
+      "docsAriaLabel": "Open the doc library quick view (D)",
       "docsLabel": "Workspace",
       "switchToMyDataLabel": "Switch to my data",
       "switchToMyDataAriaLabel": "Open my markdown folder and light up the map with my data (⌘O)",
@@ -2136,7 +2138,7 @@
       "clickHint": "Click for details · source doc"
     },
     "canvas": {
-      "ariaLabel": "Ontology map — the INDEX panel lets you explore the same information by keyboard"
+      "ariaLabel": "Product map — the INDEX panel lets you explore the same information by keyboard"
     },
     "cluster": {
       "hint": "Dense groups are folded into +N chips — click a chip to expand that group, click again to collapse.",

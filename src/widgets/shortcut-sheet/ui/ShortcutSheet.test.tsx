@@ -55,6 +55,24 @@ describe("ShortcutSheet — topology section (W2-C)", () => {
  * surface.
  */
 describe("ShortcutSheet — kind glossary (P1a-2)", () => {
+  /**
+   * 제품 이름에 박힌 단어인데 앱 안에서 정의되는 자리가 0곳이었다. 투어에서
+   * 한 번 이름을 붙인 뒤 되찾아 볼 곳이 여기라서, 세 kind 앞에 먼저 온다.
+   */
+  it("defines ontology first, before the three kinds", () => {
+    renderSheet();
+    expect(screen.getByText("Ontology")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "The documents recording what exists and how it connects — the source of this map",
+      ),
+    ).toBeInTheDocument();
+
+    const text = screen.getByText("Words used on the map").parentElement?.textContent ?? "";
+    expect(text.indexOf("Ontology")).toBeGreaterThanOrEqual(0);
+    expect(text.indexOf("Ontology")).toBeLessThan(text.indexOf("Domain"));
+  });
+
   it("defines domain/capability/element in one line each", () => {
     renderSheet();
     expect(screen.getByText("Words used on the map")).toBeInTheDocument();

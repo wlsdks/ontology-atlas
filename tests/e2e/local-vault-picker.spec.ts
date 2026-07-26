@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * 로컬 ontology workspace 진입 정책 회귀 차단.
+ * 로컬 작업 폴더 진입 정책 회귀 차단.
  *
  * [2026-07 재작성] PR #435 (P1b/N1) 가 정책을 뒤집었다: 게이트는 런타임
  * (웹/데스크톱)이 아니라 **능력(FSA 지원)** 만 본다. FSA 를 지원하는
@@ -20,7 +20,7 @@ const PRESET_LOCAL_SOURCE = `
   catch (_) { /* private mode */ }
 `;
 
-test.describe("local ontology workspace capability gate (N1)", () => {
+test.describe("local workspace capability gate (N1)", () => {
   // 이 스펙은 **돌아온 사용자**의 문서함 크롬을 검증한다 — 첫 방문 안내
   // 오버레이가 떠 있으면 스크림이 클릭을 삼킨다(안내 자체는 전용 스펙이 본다).
   test.beforeEach(async ({ page }) => {
@@ -36,7 +36,7 @@ test.describe("local ontology workspace capability gate (N1)", () => {
     await expect(page.getByRole("radio", { name: "Local" })).toBeEnabled();
     await expect(page.getByRole("radio", { name: "Local" })).toBeChecked();
     await expect(
-      page.getByRole("heading", { name: /Open or create a local ontology workspace/ }),
+      page.getByRole("heading", { name: /Open or create a local workspace/ }),
     ).toBeVisible();
     // 구 read-only 게이트 카피는 부활 금지.
     await expect(

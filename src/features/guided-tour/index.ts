@@ -31,3 +31,4 @@ export {
   type CardPlacement,
   type CardPlacementSide,
 } from "./model/resolve-anchor-rect";
+export { useGuidedTourAutoStartReady } from './model/use-auto-start-ready';
