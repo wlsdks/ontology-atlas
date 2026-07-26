@@ -29,10 +29,22 @@
   앰버 확장이 아니며, 렌즈 off 시 램프로 소멸). 그 외 앰버는 여전히 결함. (docs 표면의 장식적 gold 악센트는 별개의 `--color-amber-docs-*` **quarantine 토큰** — 헌장 승인 아님, 확장 금지, 후속 강등 검토 대기.)
 - **amber 는 세 갈래이고 규율이 다르다** — ① 허브 앰버(`#d4b478`, 확장 금지)
   ② 레일 로고 마크(같은 값이지만 브랜드 마크, 라우트당 1개, 데이터 아님)
-  ③ kind tone 앰버(`capability` 데이터 마크). 감사 때마다 ②③이 ①의 확장으로
-  오인돼 재점검된다. 판별표: `docs/DESIGN-SYSTEM.md` "Three ambers, three rules".
-  막대 채색은 **표면이 아니라 계열 수**가 정한다 — 1계열은 무채색+인디고
-  (`DomainCompositionGrid`), 2계열은 kind tone (`DomainCapacityBar`).
+  ③ kind tone 앰버(`capability` 데이터 마크 — 종류 센서스의 무라벨 스택
+  스트립, 지도 점). 감사 때마다 ②③이 ①의 확장으로 오인돼 재점검된다.
+  판별표: `docs/DESIGN-SYSTEM.md` "Three ambers, three rules".
+- **막대 채색은 무채색 + 인디고 하나** — 인디고는 主 하나에만(1계열이면 선두
+  행 `DomainCompositionGrid`, 2계열이면 주 계열 `DomainCapacityBar` 의 역량).
+  2계열의 경계는 색이 아니라 **1px 심(트랙색 틈)** 이 진다(인접 세그먼트가
+  3:1 에 못 미치는 데 대한 색-무관 구분자). kind 팔레트는 **색이 정체를
+  나르는 유일한 채널인 차트**(종류 센서스의 무라벨 스택 스트립, 지도 점,
+  트리 칩)에만 남는다 — 순서·라벨·숫자가 정체를 이미 나르는 막대에서 kind
+  색은 중복 잉크다. 구 "계열 수가 정한다" 규율은 2계열 막대가 있는 모든
+  표면에 유채 2색 라이선스를 줬고, 그 실측 비용이 `/projects` 유채 면적
+  32,987px² · 앰버 면 6곳이었다. 게다가 그 앰버/유칼립투스 쌍은 트랙 위
+  합성 대비 **1.14:1** 로 휘도로는 구분되지 않고 hue 로만 갈렸는데, 그
+  hue 축이 적록 색약(남성 약 8%)이 가장 못 가르는 축이다 — 색이 정체를
+  나른다는 전제 자체가 틀렸다 (소유자 확정 2026-07-26,
+  `.qa-scratch/domain-bar-color-2026-07-26.md`).
 - ontology kind 색상은 예외적으로 허용하지만 data mark 로만 쓴다. graph fill 은 작은 점의 3:1 대비를 위해 선명할 수 있고, panel/card 에서는 neutral surface + compact marker/swatch + label/icon 으로 낮춘다. detail card 내부의 full-height colored rail 은 AI SaaS callout 처럼 읽히므로 금지한다.
 - 카테고리 구분은 **색이 아닌 보더 스타일** (작업중: 인디고 underline, 예정: dashed).
 - **선택 색 사다리**: 노드 선택 = 표준 인디고(#5e6ad2), 엣지 선택(페어

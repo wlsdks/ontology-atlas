@@ -1,7 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { getOntologyKindTone } from "@/entities/ontology-class";
-import { DomainCapacityBar } from "./DomainCapacityBar";
+import { DomainCapacityBar, DomainCapacityLegend } from "./DomainCapacityBar";
 
 const labels = { capabilityUnit: "Capability", elementUnit: "Element" };
 
@@ -19,7 +18,10 @@ describe("DomainCapacityBar", () => {
     expect(screen.getByText("Capability 3 · Element 5")).toBeInTheDocument();
   });
 
-  it("splits the bar fill using the ontology kind tones as data marks", () => {
+  it("두 세그먼트는 앱 공통 막대 문법 — 主 계열 인디고 + 무채, kind tone 아님", () => {
+    // kind tone(앰버/유칼립투스)은 트랙 위에서 서로 1.14:1 이라 밝기로는 구분이
+    // 안 되고 hue 로만 갈렸는데, 그 hue 쌍이 적록 색약이 가장 못 가르는 축이다.
+    // 정체는 순서·단위어·숫자가 이미 나르므로 색을 강등했다.
     render(
       <DomainCapacityBar
         row={{ id: "domain:auth", title: "Auth", capabilityCount: 3, elementCount: 1, total: 4 }}
@@ -27,19 +29,68 @@ describe("DomainCapacityBar", () => {
         labels={labels}
       />,
     );
-    const row = screen.getByTestId("domain-capacity-bar-row");
-    const segments = row.querySelectorAll<HTMLSpanElement>("span[style]");
-    // 첫 두 style span 이 capability(37.5%)/element(12.5%) 세그먼트.
-    const [capSegment, elSegment] = Array.from(segments);
-    expect(capSegment.style.width).toBe("37.5%");
-    expect(capSegment.style.backgroundColor).not.toBe("");
-    expect(elSegment.style.width).toBe("12.5%");
-    expect(capSegment.style.backgroundColor).toContain(
-      rgbaToRgbPrefix(getOntologyKindTone("capability").fill),
+    const cap = screen.getByTestId("domain-capacity-bar-capability");
+    const el = screen.getByTestId("domain-capacity-bar-element");
+    expect(cap.style.width).toBe("37.5%");
+    expect(el.style.width).toBe("12.5%");
+    expect(cap.className).toContain("bg-[color:var(--color-indigo-brand)]");
+    expect(el.className).toContain("bg-[color:var(--color-text-quaternary)]");
+    // 인라인 배경색(하드코딩 rgba)으로 돌아가지 않는다 — 토큰 경유만.
+    expect(cap.style.backgroundColor).toBe("");
+    expect(el.style.backgroundColor).toBe("");
+  });
+
+  it("두 값이 모두 있으면 1px 심이 경계를 진다 — 색이 아니라 구조가 가른다", () => {
+    // 인디고와 무채는 서로 1.12:1 이라 인접 경계가 색으로는 안 보인다. 심은
+    // 색맹·흑백에서도 "값 두 개짜리 막대"임을 보증하는 색-무관 구분자다.
+    render(
+      <DomainCapacityBar
+        row={{ id: "domain:auth", title: "Auth", capabilityCount: 3, elementCount: 1, total: 4 }}
+        maxTotal={8}
+        labels={labels}
+      />,
     );
-    expect(elSegment.style.backgroundColor).toContain(
-      rgbaToRgbPrefix(getOntologyKindTone("element").fill),
+    const track = screen.getByTestId("domain-capacity-bar-track");
+    expect(track.className).toContain("gap-px");
+    expect(track.children).toHaveLength(2);
+  });
+
+  it("한쪽이 0 이면 세그먼트도 심도 없다 — 가를 것이 없다", () => {
+    render(
+      <DomainCapacityBar
+        row={{ id: "domain:auth", title: "Auth", capabilityCount: 0, elementCount: 4, total: 4 }}
+        maxTotal={8}
+        labels={labels}
+      />,
     );
+    const track = screen.getByTestId("domain-capacity-bar-track");
+    expect(track.children).toHaveLength(1);
+    expect(screen.queryByTestId("domain-capacity-bar-capability")).toBeNull();
+    expect(screen.getByTestId("domain-capacity-bar-element").style.width).toBe("50%");
+  });
+
+  it("트랙은 aria-hidden — 같은 수를 스크린리더가 두 번 읽지 않는다", () => {
+    render(
+      <DomainCapacityBar
+        row={{ id: "domain:auth", title: "Auth", capabilityCount: 3, elementCount: 5, total: 8 }}
+        maxTotal={8}
+        labels={labels}
+      />,
+    );
+    expect(screen.getByTestId("domain-capacity-bar-track")).toHaveAttribute("aria-hidden");
+    // 사실 자체는 텍스트로 남아 있어야 한다.
+    expect(screen.getByText("Capability 3 · Element 5")).toBeInTheDocument();
+  });
+
+  it("최소 폭 바닥을 두지 않는다 — 상수 바닥은 작은 값을 부풀리는 lie factor 다", () => {
+    render(
+      <DomainCapacityBar
+        row={{ id: "domain:auth", title: "Auth", capabilityCount: 1, elementCount: 199, total: 200 }}
+        maxTotal={200}
+        labels={labels}
+      />,
+    );
+    expect(screen.getByTestId("domain-capacity-bar-capability").style.width).toBe("0.5%");
   });
 
   it("꼬리 열 폭이 내용과 무관하게 같다 — 여섯 행이 한 축을 공유해야 한다 (E1)", () => {
@@ -77,18 +128,27 @@ describe("DomainCapacityBar", () => {
         labels={labels}
       />,
     );
-    const row = screen.getByTestId("domain-capacity-bar-row");
-    const segments = row.querySelectorAll<HTMLSpanElement>("span[style]");
-    for (const segment of Array.from(segments)) {
-      expect(segment.style.width).toBe("0%");
-    }
+    expect(screen.getByTestId("domain-capacity-bar-track").children).toHaveLength(0);
   });
 });
 
-// jsdom normalizes `rgba(...)` to `rgb(...)` shorthand comparisons can miss —
-// compare on the shared numeric prefix instead of exact string equality.
-function rgbaToRgbPrefix(rgba: string): string {
-  const match = rgba.match(/rgba?\((\d+,\s*\d+,\s*\d+)/);
-  if (!match) throw new Error(`Cannot parse rgba color: ${rgba}`);
-  return match[1];
-}
+describe("DomainCapacityLegend", () => {
+  it("두 단위어와 두 점을 그린다 — 색을 강등한 자리를 대신하는 열쇠", () => {
+    render(<DomainCapacityLegend labels={labels} />);
+    const legend = screen.getByTestId("domain-capacity-legend");
+    expect(legend).toHaveTextContent("Capability");
+    expect(legend).toHaveTextContent("Element");
+    const dots = legend.querySelectorAll("span.rounded-full");
+    expect(dots).toHaveLength(2);
+    expect(dots[0].className).toContain("bg-[color:var(--color-indigo-brand)]");
+    expect(dots[1].className).toContain("bg-[color:var(--color-text-quaternary)]");
+    // 8px 점 — h-2 w-2 (타입/치수 램프 안, 임의 px 없음).
+    expect(dots[0].className).toContain("h-2");
+    expect(dots[0].className).toContain("w-2");
+  });
+
+  it("aria-hidden — aria-hidden 인 그래픽의 열쇠만 낭독되면 맥락 없는 단어가 된다", () => {
+    render(<DomainCapacityLegend labels={labels} />);
+    expect(screen.getByTestId("domain-capacity-legend")).toHaveAttribute("aria-hidden");
+  });
+});

@@ -20,7 +20,7 @@ import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { HexMark } from "@/shared/ui/hex-mark";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
-import { DomainCapacityBar } from "@/widgets/domain-capacity-bar";
+import { DomainCapacityBar, DomainCapacityLegend } from "@/widgets/domain-capacity-bar";
 import { RecentNodeRow } from "@/widgets/recent-node-row";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { computeWorkspaceCensus } from "../lib/workspace-census";
@@ -337,6 +337,12 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
 
       {domainRows.length > 0 ? (
         <div className="mt-4 flex flex-col gap-1">
+          {/* 막대 두 조각의 열쇠는 이 막대 묶음에 한 줄만 — 행마다 반복하면
+              여섯 행 × 두 개로 열쇠가 소음이 된다. */}
+          <DomainCapacityLegend
+            labels={{ capabilityUnit: kindLabel("capability"), elementUnit: kindLabel("element") }}
+            className="mb-1.5"
+          />
           {domainRows.map((row) => (
             <DomainCapacityBar
               key={row.domainId}
