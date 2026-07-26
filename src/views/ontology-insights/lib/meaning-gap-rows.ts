@@ -1,7 +1,10 @@
 import {
+  detectMeaningGaps,
   resolveNodeAgentTarget,
   resolveNodeDocument,
+  type ConceptDocFacts,
   type KnowledgeGraphNode,
+  type MeaningGapKind,
 } from "@/entities/knowledge-graph";
 import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
 import { withDoNextVerification } from "./do-next-queue";
@@ -38,17 +41,12 @@ import { withDoNextVerification } from "./do-next-queue";
  * 만들면 그 순간 남의 문서에 쓰는 사고가 다시 열린다.
  */
 
-export type MeaningGapKind = "missing-definition" | "missing-domain";
-
-/** 볼트 문서 한 벌에서 읽은, 공백 판정에 필요한 사실만. */
-export interface ConceptDocFacts {
-  /** `description` 또는 본문 요약 — 둘 중 하나라도 있으면 뜻이 적혀 있다. */
-  hasDefinition: boolean;
-  /** `domain:` 원문(정규화 전). 비어 있으면 소속 미정. */
-  domainRef: string | null;
-  /** 동시수정 가드용 `file.lastModified`. static 샘플은 null. */
-  mtime: number | null;
-}
+/**
+ * 공백의 종류와 판정은 `@/entities/knowledge-graph` 가 소유한다 — 에이전트
+ * 패널의 첫 마디 칩이 같은 질문을 하므로, 판정이 두 벌이 되면 큐와 패널이
+ * 서로 다른 개념을 지목하는 날이 온다. 여기서는 이름만 이어 준다.
+ */
+export type { ConceptDocFacts, MeaningGapKind };
 
 export interface MeaningGapRow {
   /** 행 고유 id — 검토 루프/`key` 용. */
@@ -81,9 +79,6 @@ export interface DomainChoice {
   label: string;
 }
 
-/** `domain:` 을 요구하는 kind — 스키마의 `requiredExtras` 와 같은 집합. */
-const DOMAIN_REQUIRED_KINDS = new Set(["capability", "element"]);
-
 export interface BuildMeaningGapOptions {
   /** 유형별 표시 상한. 기본 3 (큐 카드의 다른 섹션과 같은 리듬). */
   perKindLimit?: number;
@@ -112,7 +107,8 @@ export function buildMeaningGapRows(
       nodeKind: node.kind,
       mtime: doc.mtime,
     };
-    if (!doc.hasDefinition) {
+    const gaps = detectMeaningGaps(node, doc);
+    if (gaps.includes("missing-definition")) {
       definitionRows.push({
         ...base,
         id: `missing-definition:${ownSlug}`,
@@ -123,7 +119,7 @@ export function buildMeaningGapRows(
         ),
       });
     }
-    if (DOMAIN_REQUIRED_KINDS.has(node.kind) && !doc.domainRef) {
+    if (gaps.includes("missing-domain")) {
       domainRows.push({
         ...base,
         id: `missing-domain:${ownSlug}`,

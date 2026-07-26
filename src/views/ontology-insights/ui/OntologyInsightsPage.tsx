@@ -17,6 +17,7 @@ import {
   useEdgeTypeLabel,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
+  type MeaningGapKind,
 } from "@/entities/knowledge-graph";
 import {
   LiveActivityIndicator,
@@ -25,6 +26,7 @@ import {
   useVaultDocFreshnessIndex,
   useVaultHealth,
 } from "@/features/vault-ontology";
+import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
@@ -438,6 +440,22 @@ export function OntologyInsightsPage() {
         })
       : null;
   };
+  /**
+   * S7 이음새 — 이 행을 지도의 에이전트에게 넘기는 주소. **문장이 아니라
+   * 의도의 종류**만 싣는다: 도착지(지도)가 첫 마디 생성기로 화면 언어의
+   * 문장을 짓고, 그래야 빈 대화의 칩과 여기서 건너간 프리필이 한 문장을
+   * 쓴다. 주소는 여느 지도행 링크와 같은 빌더를 지나 복귀 마커도 그대로
+   * 갖는다 — 갔다가 돌아올 길이 끊기지 않는다.
+   */
+  const askAgentHref = (nodeId: string, gap: MeaningGapKind): string | null =>
+    // 에이전트 표면은 데스크톱 앱에만 있다 — 브라우저에서는 이 항목을 내지
+    // 않는다. 갔는데 아무 일도 없는 링크는 안내가 아니라 배신이다.
+    isLlmChatBridgeAvailable()
+      ? buildOntologyNodeHref(nodeId, {
+          via: buildInsightsReturnMarker("do-next"),
+          ask: gap,
+        })
+      : null;
   const builderHref = (nodeId: string, exactReviewId?: string): string =>
     buildOntologyStudioNodeHrefFromGraphId(nodeId, {
       via: exactReviewId ? buildInsightsReturnMarker("do-next") : null,
@@ -700,6 +718,7 @@ export function OntologyInsightsPage() {
     touchUpPriorityCount: (count: number) => t("doNext.touchUpPriorityCount", { count }),
     touchUpFlowHint: t("doNext.touchUpFlowHint"),
     rowMenuTrigger: t("doNext.rowMenuTrigger"),
+    askAgent: t("doNext.askAgent"),
     reviewChecking: (title: string | null) =>
       t("doNext.reviewChecking", { title: title ?? t("doNext.reviewFallback") }),
     reviewActive: (title: string | null) =>
@@ -731,6 +750,7 @@ export function OntologyInsightsPage() {
     handoffCopied: doNextLabels.handoffCopied,
     handoffCopiedHint: doNextLabels.handoffCopiedHint,
     rowMenuTrigger: doNextLabels.rowMenuTrigger,
+    askAgent: doNextLabels.askAgent,
     openMap: doNextLabels.openMap,
     writeHere: t("doNext.inlineWriteHere"),
     writeHereClose: t("doNext.inlineWriteHereClose"),
@@ -914,6 +934,7 @@ export function OntologyInsightsPage() {
                 mapHref={mapNodeHref}
                 sourceHref={sourceHref}
                 builderHref={builderHref}
+                askAgentHref={askAgentHref}
                 nodeTitle={cycleNodeTitle}
                 cycleHandoff={cycleHandoff}
                 activityDigest={activityDigest}

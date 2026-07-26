@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T16:11:16.836Z",
+  "generatedAt": "2026-07-26T16:41:40.586Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 에이전트의 첫 마디, 그리고 이어지는 루프",
+          "slug": "2026-07-27-에이전트의-첫-마디-그리고-이어지는-루프"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 도메인 구성 막대: 색이 나르지 않던 정체를 걷어냈다",
           "slug": "2026-07-27-도메인-구성-막대-색이-나르지-않던-정체를-걷어냈다"
         },
@@ -5003,9 +5008,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. /projects 카드와 인사이트 「구성」 탭의 도메인 용량 막대가 앰버(역량)· 유칼립투스(요소) 2색을 쓰던 것을 무채색 + 인디고 하나 + 1px 심",
-      "wordCount": 49355,
-      "updatedAt": "2026-07-26T16:11:16.836Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자가 패널을 열어 보고 지적한 셋 중 마지막 하나를 고쳤다 — 키가 있어도 빈 입력칸 앞에서 무엇을 물어야 할지 몰랐다. Cursor 를 쓰는 사람은 ",
+      "wordCount": 49774,
+      "updatedAt": "2026-07-26T16:41:40.586Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5797,7 +5802,7 @@
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
       "wordCount": 16748,
-      "updatedAt": "2026-07-26T16:10:45.221Z",
+      "updatedAt": "2026-07-27T01:22:56+09:00",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -5977,6 +5982,11 @@
           "depth": 4,
           "text": "Top-right buttons",
           "slug": "top-right-buttons"
+        },
+        {
+          "depth": 4,
+          "text": "에이전트 패널 — 첫 마디와 이어지는 루프 (2026-07-27, desktop-only)",
+          "slug": "에이전트-패널-첫-마디와-이어지는-루프-2026-07-27-desktop-only"
         },
         {
           "depth": 4,
@@ -6360,8 +6370,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
-      "wordCount": 13627,
-      "updatedAt": "2026-07-26T22:54:56+09:00",
+      "wordCount": 14022,
+      "updatedAt": "2026-07-26T16:38:35.867Z",
       "linksOut": [
         "slug",
         "project:slug",

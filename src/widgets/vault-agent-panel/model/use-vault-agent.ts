@@ -32,6 +32,17 @@ import type { SecretProvider } from '@/shared/lib/tauri-secrets';
  * 볼트 밖 제2 진실원이 된다.
  */
 
+/**
+ * 헤더 부제 자리에 앉는 **이 대화의 진전**. 자리·크기가 바뀌지 않게 두 수를
+ * 항상 함께 말한다 — 숫자만 치환되므로 레이아웃이 튀지 않는다.
+ */
+export interface AgentSessionSummary {
+  /** 만들거나 고친 개념 수. */
+  concepts: number;
+  /** 이은 연결 수. */
+  relations: number;
+}
+
 export interface VaultAgentNotices {
   roundCap: string;
   aborted: string;
@@ -71,6 +82,15 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
   const abortRef = useRef<AbortController | null>(null);
   /** 세션 첫 적용은 diff 펼친 상태가 기본 — 도장 찍기 방지. */
   const [hasAppliedOnce, setHasAppliedOnce] = useState(false);
+  /**
+   * 이 대화에서 실제로 반영된 것 — **로컬 카운트**다. 적용이 성공한 변경만
+   * 센다(취소·충돌은 파일을 하나도 바꾸지 않았으므로 진전이 아니다).
+   * 대화가 사라져도 이 숫자가 가리키는 사실은 frontmatter 와 git 에 남는다.
+   */
+  const [sessionSummary, setSessionSummary] = useState<AgentSessionSummary>({
+    concepts: 0,
+    relations: 0,
+  });
 
   const systemPrompt = useMemo(
     () => buildSystemPrompt(args.projectInstructions),
@@ -254,6 +274,17 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
       { snapshotLabel: args.snapshotLabel },
     );
     setHasAppliedOnce(true);
+    if (outcome.status === 'applied') {
+      // 무엇이 몇 개 반영됐나 — 선택된 변경만, 도구 종류로 센다. 파일 수가
+      // 아니라 **개념/연결 수**로 세는 이유: 사용자가 세는 단위가 그것이다.
+      const applied = proposal.changes.filter((change) => change.selected);
+      const concepts = applied.filter((change) => change.tool !== 'add_relation' && change.tool !== 'add_relations').length;
+      const relations = applied.length - concepts;
+      setSessionSummary((current) => ({
+        concepts: current.concepts + concepts,
+        relations: current.relations + relations,
+      }));
+    }
     setProposal((current) =>
       current
         ? {
@@ -280,6 +311,7 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
     stop();
     setTurns([]);
     setProposal(null);
+    setSessionSummary({ concepts: 0, relations: 0 });
   }, [stop]);
 
   return {
@@ -289,6 +321,7 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
     elapsedSeconds,
     systemPrompt,
     hasAppliedOnce,
+    sessionSummary,
     send,
     stop,
     reset,

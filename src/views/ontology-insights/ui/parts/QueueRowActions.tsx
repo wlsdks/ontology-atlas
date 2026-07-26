@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, FileText, GitBranch, MoreHorizontal } from "lucide-react";
+import { Check, Copy, FileText, GitBranch, MessageCircle, MoreHorizontal } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
 
@@ -33,6 +33,12 @@ export interface QueueRowActionLabels {
   /** 복사 후 무엇을 하면 되는지 — 스크린리더에도 같은 문장이 간다. */
   handoffCopiedHint: string;
   rowMenuTrigger: string;
+  /**
+   * S7 이음새 — 이 행을 그대로 지도의 에이전트에게 말로 넘기는 자리.
+   * optional: 에이전트 표면이 없는 환경에서는 라벨도 주소도 오지 않고, 그때는
+   * 항목이 나타나지 않는다(열리지 않을 문을 그리지 않는다).
+   */
+  askAgent?: string;
 }
 
 /** 케밥과 인계 버튼이 라벨을 고를 때 쓰는 세션 사실. */
@@ -104,6 +110,7 @@ export function HandoffCopyButton({
 export function RowActionMenu({
   sourceHref,
   builderHref,
+  askAgentHref,
   handoffPayload,
   candidate,
   onReviewStart,
@@ -112,6 +119,14 @@ export function RowActionMenu({
 }: {
   sourceHref: string | null;
   builderHref: string;
+  /**
+   * S7 이음새 — 지도로 건너가 이 행의 문맥이 실린 문장으로 에이전트 패널을
+   * 연다. **주소가 나르는 것은 의도의 종류뿐**이고 문장은 도착지의 첫 마디
+   * 생성기가 짓는다(두 입구가 같은 함수를 지나야 갈라지지 않는다).
+   * 데스크톱 앱에만 있는 표면이라 여기서는 링크로만 제안하고, 브리지가 없는
+   * 곳에서는 호출자가 이 값을 주지 않아 항목 자체가 나타나지 않는다.
+   */
+  askAgentHref?: string | null;
   handoffPayload: string;
   candidate: { id: string; title: string };
   onReviewStart?: (candidate: { id: string; title: string }) => void;
@@ -196,6 +211,21 @@ export function RowActionMenu({
             <GitBranch size={13} aria-hidden />
             {resolveBuilderLabel(labels, abilities)}
           </Link>
+          {askAgentHref && labels.askAgent ? (
+            <Link
+              href={askAgentHref}
+              role="menuitem"
+              data-testid="do-next-row-menu-ask-agent"
+              onClick={() => {
+                onReviewStart?.(candidate);
+                setOpen(false);
+              }}
+              className={menuItemClass}
+            >
+              <MessageCircle size={13} aria-hidden />
+              {labels.askAgent}
+            </Link>
+          ) : null}
           <button
             type="button"
             role="menuitem"

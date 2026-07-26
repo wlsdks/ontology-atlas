@@ -33,6 +33,7 @@ describe("parseHomeRouteState", () => {
       indexState: null,
       insightsReturnTab: null,
       insightsReturnReviewId: null,
+      askIntent: null,
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
@@ -218,6 +219,7 @@ describe("applyHomeRouteState", () => {
       indexState: null,
       insightsReturnTab: null,
       insightsReturnReviewId: null,
+      askIntent: null,
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
@@ -242,6 +244,7 @@ describe("applyHomeRouteState", () => {
       indexState: null,
       insightsReturnTab: null,
       insightsReturnReviewId: null,
+      askIntent: null,
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
@@ -264,6 +267,7 @@ describe("applyHomeRouteState", () => {
       indexState: null,
       insightsReturnTab: null,
       insightsReturnReviewId: null,
+      askIntent: null,
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
@@ -288,6 +292,7 @@ describe("applyHomeRouteState", () => {
         indexState: null,
         insightsReturnTab: null,
         insightsReturnReviewId: null,
+        askIntent: null,
         expandedParents: [],
         realmSlug: null,
         recentWindow: null,
@@ -524,6 +529,7 @@ describe("insights return marker (?via=insights:<tab>)", () => {
     ).toMatchObject({
       insightsReturnTab: null,
       insightsReturnReviewId: null,
+      askIntent: null,
     });
     // 탭 없는 접두어만으로는 복귀 목적지가 없다 — 칩 미렌더.
     expect(
@@ -533,6 +539,7 @@ describe("insights return marker (?via=insights:<tab>)", () => {
     ).toMatchObject({
       insightsReturnTab: null,
       insightsReturnReviewId: null,
+      askIntent: null,
     });
   });
 
@@ -557,6 +564,7 @@ describe("insights return marker (?via=insights:<tab>)", () => {
       ...afterClick,
       insightsReturnTab: null,
       insightsReturnReviewId: null,
+      askIntent: null,
     });
     expect(dismissed.get("via")).toBeNull();
     expect(dismissed.get("review")).toBeNull();

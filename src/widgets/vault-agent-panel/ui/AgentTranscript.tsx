@@ -15,6 +15,7 @@ export interface AgentTranscriptLabels {
   thinking: string;
   thinkingSeconds: (seconds: number) => string;
   footer: (args: { provider: string; chars: number; rounds: number }) => string;
+  nextStepTitle: string;
 }
 
 /**
@@ -30,6 +31,7 @@ export function AgentTranscript({
   labels,
   providerLabel,
   onFocusNode,
+  onPrefill,
   renderProposal,
   elapsedSeconds,
 }: {
@@ -37,6 +39,8 @@ export function AgentTranscript({
   labels: AgentTranscriptLabels;
   providerLabel: string;
   onFocusNode: (slug: string) => void;
+  /** 다음 한 걸음 칩 — 입력칸에 문장을 앉힐 뿐, 전송하지 않는다. */
+  onPrefill: (text: string) => void;
   renderProposal: (event: Extract<AgentEvent, { kind: 'proposal' }>) => React.ReactNode;
   elapsedSeconds: number | null;
 }) {
@@ -46,7 +50,7 @@ export function AgentTranscript({
         <section key={turn.id} data-testid="agent-turn" data-turn-status={turn.status}>
           {turn.events.map((event, index) => (
             <Fragment key={`${turn.id}-${index}`}>
-              {renderEvent(event, labels, onFocusNode, renderProposal)}
+              {renderEvent(event, labels, onFocusNode, onPrefill, renderProposal)}
             </Fragment>
           ))}
 
@@ -89,6 +93,7 @@ function renderEvent(
   event: AgentEvent,
   labels: AgentTranscriptLabels,
   onFocusNode: (slug: string) => void,
+  onPrefill: (text: string) => void,
   renderProposal: (event: Extract<AgentEvent, { kind: 'proposal' }>) => React.ReactNode,
 ) {
   switch (event.kind) {
@@ -148,6 +153,27 @@ function renderEvent(
           {event.paragraphs.map((paragraph, index) => (
             <CitedText key={index} paragraph={paragraph} onFocusNode={onFocusNode} />
           ))}
+          {/* 다음 한 걸음 — 반영을 먼저 보이고, 그 다음에 권한다. 순서가 곧
+              서사이므로 이 줄은 답 **뒤에** 오고, 등장은 짧은 페이드 하나다
+              (숫자 굴림·강조 펄스 같은 장식은 없다). */}
+          {event.nextStep ? (
+            <div
+              data-testid="agent-next-step"
+              className="agent-next-step-in mt-1 flex flex-col gap-1.5"
+            >
+              <p className="text-label tracking-label text-[color:var(--color-text-quaternary)]">
+                {labels.nextStepTitle}
+              </p>
+              <button
+                type="button"
+                data-testid="agent-next-step-chip"
+                onClick={() => onPrefill(event.nextStep ?? '')}
+                className="flex min-h-11 w-full items-center rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2 text-left text-caption leading-[1.5] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+              >
+                <span className="line-clamp-2 [word-break:keep-all]">{event.nextStep}</span>
+              </button>
+            </div>
+          ) : null}
         </div>
       );
 

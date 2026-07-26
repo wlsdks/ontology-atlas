@@ -1364,6 +1364,7 @@
         "touchUpWhyCycle": "개념 {length}개가 서로를 가리켜 시작점이 없어요",
         "touchUpWhyPromotion": "여러 곳에서 참조돼요 — 상위 개념으로 올릴 만해요",
         "rowMenuTrigger": "더보기",
+        "askAgent": "에이전트에게 말로 시키기",
         "reviewFallback": "선택한 항목",
         "reviewChecking": "{title} 신호를 지금 폴더에서 다시 확인하고 있어요.",
         "reviewActive": "{title} 신호가 지금 폴더에서 아직 보입니다.",
@@ -1999,11 +2000,13 @@
       "actionMentionDocument": "언급한 문서",
       "actionEditRelations": "관계 편집",
       "actionCopyHandoff": "AI 요약 복사",
+      "actionAskAgent": "말로 시키기",
       "actionPath": "경로",
       "actionDocumentTip": "이 노드의 원본 마크다운 문서를 문서함에서 열어요",
       "actionMentionDocumentTip": "이 개념은 아직 자기 문서가 없어요. 이 개념을 적어 둔 다른 문서를 열어요",
       "actionEditRelationsTip": "나침 무대에서 이 노드의 연결(관계)을 완성해요",
       "actionCopyHandoffTip": "AI 에이전트에게 붙여넣을 이 노드의 맥락을 복사해요",
+      "actionAskAgentTip": "이 개념에 대해 지도 옆 에이전트에게 말로 시켜요",
       "actionPathTip": "이 노드에서 다른 노드까지의 연결 경로를 지도에서 찾아요",
       "updated_today": "오늘 바뀜",
       "updated_yesterday": "어제 바뀜",
@@ -2982,7 +2985,6 @@
     "send": "보내기",
     "stop": "멈추기",
     "placeholder": "이어서 말하기…",
-    "empty": "지금 보고 있는 것을 그대로 물어보세요. 예: 이 개념에 빠진 연결이 뭐야?",
     "thinking": "생각 중",
     "thinkingSeconds": "생각 중 · {seconds}초",
     "unsupported": "읽은 근거 없이 답했어요. 그대로 믿지 마세요.",
@@ -3061,10 +3063,20 @@
       "composerHint": "키를 등록하면 바로 말할 수 있어요",
       "composerHintWeb": "앱에서는 여기서 바로 말할 수 있어요",
       "composerHintNoVault": "폴더를 열면 여기서 바로 말할 수 있어요",
-      "examplesTitle": "이런 걸 시킬 수 있어요",
-      "example1": "뜻이 안 적힌 개념의 초안 받기",
-      "example2": "이 개념에 어울리는 묶음 찾기",
-      "example3": "이 지도에서 뭐가 이상한지 물어보기"
+      "examplesTitle": "이런 걸 시킬 수 있어요"
+    },
+    "sessionSummary": "이 대화에서 개념 {concepts}개 · 연결 {relations}개",
+    "firstWords": {
+      "title": "무엇부터 할까요?",
+      "hint": "누르면 아래 칸에 문장이 앉아요. 고쳐서 보내도 돼요",
+      "missingDefinition": "「{title}」의 뜻이 아직 안 적혀 있어요. 초안을 제안해 줘",
+      "missingDomain": "「{title}」의 소속이 아직 안 적혀 있어요. 어울리는 묶음을 찾아 줘",
+      "missingRelations": "「{title}」에 빠진 연결이 있는지 봐 줘",
+      "mapReview": "이 지도에서 지금 제일 이상한 곳이 어디야?",
+      "emptyVault": "이 폴더는 아직 비어 있어요. 무엇을 만드는 제품인지부터 같이 정리해 줘"
+    },
+    "nextStep": {
+      "title": "다음 한 걸음"
     }
   }
 }

@@ -715,6 +715,18 @@
     animation: panelCrossfadeIn var(--motion-base) var(--motion-ease) both;
   }
 
+  /* ── 다음 한 걸음 (2026-07-27) ────────────────────────────────────────────
+     적용된 변경이 지도에 나타난 **뒤에** 권유가 도착해야 한다 — 두 사건이
+     같은 프레임에 겹치면 어느 쪽도 안 보이고, 순서가 곧 서사다(반영을 먼저
+     보이고, 다음을 권한다). 그래서 짧은 페이드 하나뿐이다: 새 키프레임 0
+     (panelCrossfadeIn 재사용) · 새 duration 0(--motion-fast 재사용) · 이동축
+     0. 시선을 끄는 장치(펄스·글로우·숫자 굴림)는 여기서도 금지 — 다음 걸음은
+     제안이지 알림이 아니다. */
+  .agent-next-step-in {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
+
   /* ── 목록 행 펼침/접힘 (2026-07-26, [AI 연결] 벤더 행) ────────────────────
      **나가는 길이 들어온 길과 같아야 한다.** 접힘 모션 없이 툭 사라지면
      「취소」가 "취소됐다" 가 아니라 "뭔가 잘못됐다" 로 읽힌다 — 사라진 것이
@@ -2663,6 +2675,7 @@
     .insights-disclosure-in,
     .ai-row-swap,
     .agent-panel-stage-swap,
+    .agent-next-step-in,
     .overlay-fade-only[data-state='open'],
     .overlay-fade-only[data-state='closed'] {
       animation-duration: var(--motion-fast) !important;
@@ -2768,4 +2781,29 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 }
 .docs-vault-tab-strip::-webkit-scrollbar {
   display: none;
+}
+
+/* ── 에이전트 패널과 선택-노드 인스펙터의 자리 (2026-07-27) ──────────────────
+   인스펙터는 뷰포트 오른쪽 끝에 붙는 고정 표면이고, 에이전트 패널은 같은 쪽에서
+   폭을 가져가는 컬럼이다. 둘 다 그대로 두면 인스펙터가 패널을 덮는다 — 그런데
+   이 둘은 **함께 읽어야 하는 한 쌍**이다(제안의 근거인 노드를 보면서
+   에이전트에게 시킨다). 그래서 패널이 열린 동안 인스펙터는 패널 폭만큼 안쪽에
+   선다.
+
+   **레이어 밖에 쓴다**: 인스펙터의 `right` 는 Tailwind 유틸리티(`lg:right-[…]`)
+   가 정하고, 유틸리티 레이어는 컴포넌트 레이어를 이긴다. 레이어에 넣으면 이
+   규칙이 조용히 무력화된다(계단식 레이어에서 레이어 없는 선언이 이긴다).
+
+   새 값 0 — 이미 있는 두 토큰의 합이고, 이동은 패널 리플로우와 **같은
+   duration·같은 곡선**이라 둘이 한 몸으로 움직인다(따로 도착하면 인스펙터가
+   밀려난 것처럼 보인다). prefers-reduced-motion 은 위 base 레이어 전역 규칙이
+   즉시 배치로 강등한다. */
+[data-fixed-surface-role='selected-node-inspector'] {
+  transition: right var(--agent-panel-reflow-duration) var(--topology-motion-ease-out);
+}
+
+@media (min-width: 1024px) {
+  [data-agent-panel-open='true'] [data-fixed-surface-role='selected-node-inspector'] {
+    right: calc(var(--topology-node-popover-right-inset) + var(--agent-panel-width));
+  }
 }

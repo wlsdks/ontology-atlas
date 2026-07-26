@@ -1,6 +1,7 @@
 import type { LlmChatScope, LlmChatEcho } from '@/shared/lib/tauri-llm';
 
 import { extractCitations } from './citation';
+import { splitNextStep } from './next-step';
 import type { AgentToolDefinition } from './tool-catalog';
 import type {
   NormalizedToolCall,
@@ -321,7 +322,15 @@ export async function runTurn(
   return { turn: snapshot(), readSlugs, writeIntents };
 
   function pushAssistant(text: string) {
-    const cited = extractCitations(text, readSlugs);
-    events.push({ kind: 'assistant', paragraphs: cited.paragraphs, demoted: cited.demoted });
+    // 다음 걸음 줄을 **먼저** 떼어낸다 — 인용 검증에 들어가면 표지가 문단으로
+    // 그려지고, 그러면 화면이 모델의 내부 표기를 사용자에게 보여주게 된다.
+    const { body, nextStep } = splitNextStep(text);
+    const cited = extractCitations(body, readSlugs);
+    events.push({
+      kind: 'assistant',
+      paragraphs: cited.paragraphs,
+      demoted: cited.demoted,
+      nextStep,
+    });
   }
 }

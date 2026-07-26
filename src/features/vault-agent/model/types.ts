@@ -89,6 +89,16 @@ export interface ScreenContextSnapshot {
   projectTitle: string | null;
   /** 지도에 지금 그려진 개념 수. */
   visibleNodeCount: number;
+  /**
+   * 이 폴더의 **최근 적용된 변경** (git 이력의 커밋 제목, 최신 순).
+   *
+   * 대화를 저장하지 않고도 작업이 이어지게 하는 자리다 — 지난 세션의 쓰기는
+   * frontmatter 와 git 에 남았고, 새 대화는 그것을 읽어 "지난번에 여기까지
+   * 했으니 다음은" 을 스스로 구성한다. 볼트 밖 제2 진실원(대화 저장소)이
+   * 필요 없는 이유가 이것이다. git 이 아니거나 이력이 없으면 비어 있고,
+   * 그때는 블록 자체가 나가지 않는다.
+   */
+  recentChanges?: readonly string[];
 }
 
 export type NoticeCode =
@@ -105,7 +115,17 @@ export type NoticeCode =
 export type AgentEvent =
   | { kind: 'user'; text: string; screenContext: ScreenContextSnapshot }
   | { kind: 'toolLine'; call: ToolCallRecord }
-  | { kind: 'assistant'; paragraphs: CitedParagraph[]; demoted: boolean }
+  | {
+      kind: 'assistant';
+      paragraphs: CitedParagraph[];
+      demoted: boolean;
+      /**
+       * 같은 응답의 마지막 줄에서 떼어낸 **다음 한 걸음**. 추가 호출로 얻은
+       * 것이 아니라 이 턴이 이미 말한 것이다. 칩 하나가 되고, 칩은 프리필이지
+       * 전송도 pending 카드도 아니다.
+       */
+      nextStep?: string | null;
+    }
   | { kind: 'proposal'; proposal: AgentProposal }
   | { kind: 'notice'; code: NoticeCode; text: string };
 

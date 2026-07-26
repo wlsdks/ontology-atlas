@@ -1,7 +1,7 @@
 "use client";
 
 import { type KeyboardEvent as ReactKeyboardEvent, type ReactElement, type ReactNode, useCallback, useState } from "react";
-import { Check, ChevronRight, Clipboard, Copy, FileText, GitBranch, Orbit, Route, X } from "lucide-react";
+import { Check, ChevronRight, Clipboard, Copy, FileText, GitBranch, MessageCircle, Orbit, Route, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
@@ -148,6 +148,12 @@ export interface TopologyV2DetailPanelLabels {
   actionDocument: string;
   actionEditRelations: string;
   actionCopyHandoff: string;
+  /**
+   * S7 이음새 — 이 개념을 그대로 에이전트에게 말로 시키는 자리. optional 인
+   * 이유: 에이전트 패널이 없는 환경(웹 빌드·구 소비처)에서는 라벨도 핸들러도
+   * 오지 않고, 그때는 타일 자체가 나타나지 않아야 한다.
+   */
+  actionAskAgent?: string;
   actionPath: string;
   /** S4 "영역 전개" 2차 발견 경로 액션 라벨 ("영역 전개"). */
   actionRealm: string;
@@ -160,6 +166,7 @@ export interface TopologyV2DetailPanelLabels {
   actionDocumentTip?: string;
   actionEditRelationsTip?: string;
   actionCopyHandoffTip?: string;
+  actionAskAgentTip?: string;
   actionPathTip?: string;
   actionRealmTip?: string;
   /** "코드 위치" — the real code-location group (`codeLocations` prop),
@@ -262,6 +269,14 @@ export interface TopologyV2DetailPanelProps {
   labels: TopologyV2DetailPanelLabels;
   onSelectConnection: (id: string) => void;
   onCopyHandoff: (text: string) => void;
+  /**
+   * S7 이음새 — 「에이전트에게 말로 시키기」. 문장은 여기서 짓지 않는다:
+   * 첫 마디 생성기(`buildFirstWords` 와 같은 함수)가 이 개념의 빈칸을 보고
+   * 짓고, 이 패널은 **누가 눌렀는지만** 알린다. 두 입구가 다른 문장을 쓰면
+   * 그 순간 갈라진다. 브리지가 없는 환경(웹)에서는 주입되지 않으므로 타일도
+   * 나타나지 않는다 — 열리지 않을 문을 그리지 않는다.
+   */
+  onAskAgent?: () => void;
   onClose: () => void;
   /**
    * W2-A "경로" action tile — sets this node as the path-analysis source and
@@ -474,6 +489,7 @@ export function TopologyV2DetailPanel({
   labels,
   onSelectConnection,
   onCopyHandoff,
+  onAskAgent,
   onClose,
   onSetPathSource,
   onEnterRealm,
@@ -881,6 +897,21 @@ export function TopologyV2DetailPanel({
                 >
                   <Copy size={16} aria-hidden="true" />
                   <span>{labels.actionCopyHandoff}</span>
+                </button>,
+              )
+            : null}
+          {onAskAgent && labels.actionAskAgent
+            ? withActionTip(
+                labels.actionAskAgentTip,
+                <button
+                  type="button"
+                  onClick={onAskAgent}
+                  aria-label={labels.actionAskAgent}
+                  data-testid="topology-v2-detail-panel-action-ask-agent"
+                  className={ACTION_TILE_CLASS}
+                >
+                  <MessageCircle size={16} aria-hidden="true" />
+                  <span>{labels.actionAskAgent}</span>
                 </button>,
               )
             : null}

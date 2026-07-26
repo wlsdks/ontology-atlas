@@ -31,6 +31,7 @@ const EQUIVALENT_CLASSES = [
   'insights-disclosure-in',
   'ai-row-swap',
   'agent-panel-stage-swap',
+  'agent-next-step-in',
   'overlay-fade-only',
   'app-settings-scrim-in',
   'app-settings-panel-in',

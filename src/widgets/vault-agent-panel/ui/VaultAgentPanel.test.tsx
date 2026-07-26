@@ -38,6 +38,25 @@ function emitSecretChange() {
   for (const listener of secrets.listeners) listener();
 }
 
+/**
+ * 첫 마디의 재료 — 「할 일」 큐가 읽는 것과 같은 사실 map. 테스트가 폴더
+ * 상태를 직접 정해야 세 경우(빈 폴더·큐 있는 폴더·노드 선택)를 잴 수 있다.
+ */
+const conceptFacts = vi.hoisted(() => ({
+  map: new Map<string, { hasDefinition: boolean; domainRef: string | null; mtime: number | null }>(),
+}));
+
+vi.mock('@/features/vault-ontology', () => ({
+  useVaultConceptFacts: () => conceptFacts.map,
+}));
+
+/** git 이력 — 세션 사이 이어짐의 근거. 기본은 "git 이 아닌 폴더". */
+const gitBridge = vi.hoisted(() => ({ available: false, commits: [] as unknown[] }));
+vi.mock('@/shared/lib/tauri-git', () => ({
+  isGitBridgeAvailable: () => gitBridge.available,
+  gitHistory: vi.fn(async () => gitBridge.commits),
+}));
+
 vi.mock('@/features/docs-vault-local', () => ({
   useLocalVault: () => ({
     fileHandles: new Map(),
@@ -86,7 +105,41 @@ function renderPanel(overrides: Partial<Parameters<typeof VaultAgentPanel>[0]> =
   );
 }
 
+const payNode = {
+  id: 'capability:payment',
+  kind: 'capability',
+  title: '결제 처리',
+  evidenceIds: ['capabilities/payment'],
+  hasOwnDocument: true,
+  agentSlug: 'capabilities/payment',
+  ref: null,
+} as never;
+
+const refundNode = {
+  id: 'capability:refund',
+  kind: 'capability',
+  title: '환불',
+  evidenceIds: ['capabilities/refund'],
+  hasOwnDocument: true,
+  agentSlug: 'capabilities/refund',
+  ref: null,
+} as never;
+
+/** 뜻이 빈 「결제 처리」 + 소속이 빈 「환불」 — 큐가 지목할 두 개념. */
+function loadQueueFolder() {
+  conceptFacts.map = new Map([
+    ['capabilities/payment', { hasDefinition: false, domainRef: 'billing', mtime: null }],
+    ['capabilities/refund', { hasDefinition: true, domainRef: null, mtime: null }],
+  ]);
+}
+
 describe('VaultAgentPanel', () => {
+  beforeEach(() => {
+    conceptFacts.map = new Map();
+    gitBridge.available = false;
+    gitBridge.commits = [];
+  });
+
   it('웹에서는 입력칸 대신 정직 강등을 그린다', () => {
     // 키를 안전하게 둘 곳도 보낼 경로도 없는데 입력칸을 그리면 거짓말이다.
     bridge.available = false;
@@ -190,6 +243,84 @@ describe('VaultAgentPanel', () => {
       '/ko/download/',
     );
     expect(screen.queryByTestId('vault-agent-open-settings')).not.toBeInTheDocument();
+  });
+
+  it('빈 대화에 첫 마디 칩이 먼저 앉는다 — 백지를 내밀지 않는다', async () => {
+    bridge.available = true;
+    loadQueueFolder();
+    renderPanel({ insight: { nodes: [payNode, refundNode], edges: [] } as never });
+    fireEvent.click(await screen.findByTestId('agent-scope-accept'));
+
+    const chips = await screen.findAllByTestId('agent-first-words-chip');
+    // 화면 → 큐 → 상비. 슬롯 우선순위는 고정이다.
+    expect(chips.map((chip) => chip.dataset.firstWordsSlot)).toEqual([
+      'screen',
+      'queue',
+      'standing',
+    ]);
+    expect(chips[0]).toHaveTextContent('결제 처리');
+  });
+
+  it('칩을 눌러도 아무것도 나가지 않는다 — 프리필이지 전송이 아니다', async () => {
+    // 이 슬라이스의 핵심 계약. 칩이 모델을 부르면 그것은 동의 없는 전송이고
+    // 남의 돈(BYOK 요금)을 쓰는 일이다.
+    bridge.available = true;
+    loadQueueFolder();
+    const { llmChat } = await import('@/shared/lib/tauri-llm');
+    vi.mocked(llmChat).mockClear();
+
+    renderPanel({ insight: { nodes: [payNode], edges: [] } as never });
+    fireEvent.click(await screen.findByTestId('agent-scope-accept'));
+    const chip = (await screen.findAllByTestId('agent-first-words-chip'))[0];
+    const chipText = chip.textContent ?? '';
+    fireEvent.click(chip);
+
+    const input = screen.getByTestId('vault-agent-input') as HTMLTextAreaElement;
+    expect(input.value).toBe(chipText);
+    expect(llmChat).not.toHaveBeenCalled();
+    // 칩은 눌린 뒤에도 남는다 — 상태 없는 컨트롤이라 다시 누르면 다시 앉는다.
+    expect(screen.getAllByTestId('agent-first-words-chip').length).toBeGreaterThan(0);
+  });
+
+  it('빈 폴더에서는 칩을 셋으로 억지로 채우지 않는다', async () => {
+    bridge.available = true;
+    renderPanel({ insight: { nodes: [], edges: [] } as never });
+    fireEvent.click(await screen.findByTestId('agent-scope-accept'));
+    const chips = await screen.findAllByTestId('agent-first-words-chip');
+    expect(chips).toHaveLength(1);
+    expect(chips[0].dataset.firstWordsIntent).toBe('empty-vault');
+  });
+
+  it('키가 없는 상태의 목록도 같은 생성기에서 나온다 — 다만 평문이다', async () => {
+    // 완결할 수 없는 순간에 버튼을 그리면 함정이 된다. 문장은 같고 옷만 다르다.
+    bridge.available = true;
+    secrets.stored = false;
+    loadQueueFolder();
+    renderPanel({ insight: { nodes: [payNode, refundNode], edges: [] } as never });
+    await screen.findByTestId('vault-agent-open-settings');
+    expect(screen.queryAllByTestId('agent-first-words-chip')).toHaveLength(0);
+    const lines = screen.getAllByTestId('agent-first-words-line');
+    expect(lines[0]).toHaveTextContent('결제 처리');
+    secrets.stored = true;
+  });
+
+  it('S7 — 바깥에서 건너온 첫 마디가 입력칸에 앉는다(전송 없이)', async () => {
+    bridge.available = true;
+    const { llmChat } = await import('@/shared/lib/tauri-llm');
+    vi.mocked(llmChat).mockClear();
+    renderPanel({ prefillRequest: { text: '「환불」의 소속을 찾아 줘', nonce: 1 } });
+    fireEvent.click(await screen.findByTestId('agent-scope-accept'));
+    const input = screen.getByTestId('vault-agent-input') as HTMLTextAreaElement;
+    expect(input.value).toBe('「환불」의 소속을 찾아 줘');
+    expect(llmChat).not.toHaveBeenCalled();
+  });
+
+  it('진전이 없으면 헤더 부제는 그대로다 — 자리는 하나뿐이다', async () => {
+    bridge.available = true;
+    renderPanel();
+    expect(screen.getByTestId('vault-agent-panel-subtitle')).toHaveTextContent(
+      messages.vaultAgentPanel.subtitle,
+    );
   });
 
   it('경계 다음 줄에 이어가기 카드가 선다 — 폴더 절대경로와 부탁 문장을 함께', async () => {
