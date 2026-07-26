@@ -2950,6 +2950,10 @@
     "charsLabel": "{chars} chars",
     "footer": "{provider} · {chars} chars this turn · {rounds} recorded",
     "boundary": "Work that needs your source code is better done by the AI in your own terminal. This helper only sees your document folder.",
+    "handoffSummary": "Continue in your terminal",
+    "handoffNote": "Copy this and paste it into your own terminal. You run it — this app never types commands for you.",
+    "handoffCopy": "Copy",
+    "handoffCopied": "Copied",
     "snapshotLabel": "Checkpoint before helper change",
     "provider": {
       "anthropic": "Anthropic",

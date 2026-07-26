@@ -1,5 +1,5 @@
 // 패널이 지키는 것: 웹 정직 강등 · 닫힘=중단 · 범위 시트 선행 · 리플로우 계약.
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -136,5 +136,19 @@ describe('VaultAgentPanel', () => {
     expect(await screen.findByTestId('vault-agent-notice')).toBeInTheDocument();
     expect(screen.queryByTestId('vault-agent-open-settings')).not.toBeInTheDocument();
     secrets.stored = true;
+  });
+
+  it('경계 다음 줄에 이어가기 카드가 선다 — 폴더 절대경로와 부탁 문장을 함께', async () => {
+    // 앱 내장 터미널을 걷어낸 뒤 떠나는 순간을 잇는 유일한 표면이다. 문구만
+    // 있으면 사용자가 폴더 절대경로를 손으로 찾아야 하고, 거기서 흐름이 끊긴다.
+    bridge.available = true;
+    renderPanel();
+    fireEvent.click(await screen.findByTestId('agent-scope-accept'));
+
+    const packet = await screen.findByTestId('agent-handoff-packet');
+    expect(packet).toHaveTextContent('cd /vault');
+    // 보고 있던 개념이 부탁 문장에 실린다 — 붙여넣는 즉시 볼트에서 풀려야 한다.
+    expect(packet).toHaveTextContent('capabilities/payment');
+    expect(screen.getByTestId('agent-handoff-copy')).toBeInTheDocument();
   });
 });

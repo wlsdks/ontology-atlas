@@ -17,6 +17,7 @@ import {
 } from '@/shared/lib/tauri-secrets';
 
 import { useVaultAgent } from '../model/use-vault-agent';
+import { AgentHandoffCard } from './AgentHandoffCard';
 import { AgentProposalCard } from './AgentProposalCard';
 import { AgentPromptDisclosure } from './AgentPromptDisclosure';
 import { AgentScopeSheet } from './AgentScopeSheet';
@@ -332,6 +333,24 @@ export function VaultAgentPanel({
             <p className="mt-1.5 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
               {t('boundary')}
             </p>
+            {/* 경계를 말한 다음 줄에 **갈 곳**을 준다. 문장만 있으면 "그럼 어디서
+                하지" 가 남고, 폴더 절대경로를 손으로 찾게 만드는 것이 여기서
+                흐름이 끊기는 실제 이유다. 접힌 채로 두는 이유: 대화가 주인공이고
+                이 카드는 떠날 때만 필요하다. */}
+            {vaultPath ? (
+              <div className="mt-2">
+                <AgentHandoffCard
+                  vaultPath={vaultPath}
+                  focusedSlug={screenContext.focusedSlug}
+                  labels={{
+                    summary: t('handoffSummary'),
+                    note: t('handoffNote'),
+                    copy: t('handoffCopy'),
+                    copied: t('handoffCopied'),
+                  }}
+                />
+              </div>
+            ) : null}
           </footer>
         ) : null}
       </div>

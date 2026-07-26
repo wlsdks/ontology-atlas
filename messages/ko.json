@@ -2950,6 +2950,10 @@
     "charsLabel": "{chars}자",
     "footer": "{provider} · 이 턴 {chars}자 · 기록 {rounds}건",
     "boundary": "코드까지 봐야 하는 일은 내 컴퓨터의 터미널에서 여는 AI 가 나아요. 여기서는 문서 폴더만 봐요.",
+    "handoffSummary": "터미널에서 이어가기",
+    "handoffNote": "아래를 복사해 내 컴퓨터의 터미널에 붙여넣어요. 실행은 사용자가 해요 — 앱은 명령을 대신 치지 않아요.",
+    "handoffCopy": "복사",
+    "handoffCopied": "복사했어요",
     "snapshotLabel": "도우미 적용 전 저장점",
     "provider": {
       "anthropic": "Anthropic",
