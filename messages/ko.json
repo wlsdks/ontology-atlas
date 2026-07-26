@@ -1314,6 +1314,8 @@
       "repairQueueActionKindContainment": "누락된 연결",
       "repairQueueOpenBuilder": "관계 편집",
       "repairQueueOpenOntology": "개념 문서",
+      "repairQueueRestShow": "나머지 수리 대상 {count}개 보기",
+      "repairQueueRestHide": "수리 대상 접기",
       "domainFreshnessTitle": "도메인 신선도",
       "windowCaption": "최근 {weeks}주 · 문서 갱신일",
       "stale": "한동안 그대로",

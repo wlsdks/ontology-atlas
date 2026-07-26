@@ -19,7 +19,12 @@ const nodes = [node("capability:invoice", "Invoice"), node("domain:billing", "Bi
 describe("buildVaultHealthRepair", () => {
   it("reports zero and no target on a clean verdict", () => {
     const result = buildVaultHealthRepair({ missingContainment: [], islands: [] }, nodes);
-    expect(result).toEqual({ islandCount: 0, missingContainmentCount: 0, actionTarget: null });
+    expect(result).toEqual({
+      islandCount: 0,
+      missingContainmentCount: 0,
+      actionTarget: null,
+      actionTargets: [],
+    });
   });
 
   it("maps a missing-containment slug to a graph node id by tail", () => {
@@ -38,6 +43,18 @@ describe("buildVaultHealthRepair", () => {
       title: "Invoice",
       kind: "containment",
     });
+    expect(result.actionTargets).toEqual([
+      {
+        slug: "capability:invoice",
+        title: "Invoice",
+        kind: "containment",
+      },
+      {
+        slug: "domain:billing",
+        title: "Billing",
+        kind: "island",
+      },
+    ]);
   });
 
   it("falls back to an island member when no containment node resolves", () => {
@@ -53,5 +70,12 @@ describe("buildVaultHealthRepair", () => {
       title: "Invoice",
       kind: "island",
     });
+    expect(result.actionTargets).toEqual([
+      {
+        slug: "capability:invoice",
+        title: "Invoice",
+        kind: "island",
+      },
+    ]);
   });
 });

@@ -1314,6 +1314,8 @@
       "repairQueueActionKindContainment": "Missing link",
       "repairQueueOpenBuilder": "Edit relations",
       "repairQueueOpenOntology": "Concept doc",
+      "repairQueueRestShow": "Show {count} more repair targets",
+      "repairQueueRestHide": "Hide repair targets",
       "domainFreshnessTitle": "Domain freshness",
       "windowCaption": "Last {weeks}w · document updated date",
       "stale": "stale",

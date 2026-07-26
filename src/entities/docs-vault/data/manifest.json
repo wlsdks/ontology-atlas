@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T19:32:09.814Z",
+  "generatedAt": "2026-07-26T19:59:42.349Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 숫자만 있던 수리 큐에서 모든 대상을 열었다",
+          "slug": "2026-07-27-숫자만-있던-수리-큐에서-모든-대상을-열었다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 성공한 저장이 에러 화면으로 보이던 자리 (공방 실체화 · 게이트 사정거리 · 세 입구 관계 수)",
           "slug": "2026-07-27-성공한-저장이-에러-화면으로-보이던-자리-공방-실체화-게이트-사정거리-세-입구-관계-수"
         },
@@ -5023,9 +5028,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 공방에서 \"문서 만들고 저장\" 이 성공해도 화면은 \"못 찾겠다\" 고 했다(D1). 이름만 불린 개념은 참조 원문을 뭉갠 별칭 id 를 갖는다 (elemen",
-      "wordCount": 50706,
-      "updatedAt": "2026-07-27T04:25:43+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 인사이트 할 일은 실제 감사 vault에서 분리된 섬 3 · 누락된 연결 4를 세면서도 첫 수리 대상 하나만 이름으로 보여 줬다. 나머지 여섯 건은 숫자 ",
+      "wordCount": 50845,
+      "updatedAt": "2026-07-26T19:59:42.348Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5933,7 +5938,7 @@
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
       "wordCount": 7198,
-      "updatedAt": "2026-07-26T19:32:09.813Z",
+      "updatedAt": "2026-07-27T04:33:08+09:00",
       "linksOut": []
     },
     {
@@ -7119,8 +7124,8 @@
       },
       "headings": [],
       "excerpt": "/ontology/insights was the original home of this readiness surface (4-tab reader-persona system: proof/collaboration/agent/census). The 2026-07 map rebuild replaced that page with a fixed 3-tab dashboard (Do next / Structure / Freshness, src/views/ontology-insights/ui/OntologyInsightsPage.tsx) plus a single bottom Insi",
-      "wordCount": 507,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "wordCount": 573,
+      "updatedAt": "2026-07-26T19:59:42.349Z",
       "linksOut": []
     },
     {
@@ -8100,8 +8105,8 @@
       },
       "headings": [],
       "excerpt": "/topology is a single Relief (Map) surface. The old peer-mode tabs were collapsed over 2026-07 (owner feedback: the four Relief-family modes looked like the same sparse card screen with different panels, so mode proliferation read as \"five confusing siblings\"), and the separate Graph (살아있는 그래프) view was removed outrigh",
-      "wordCount": 508,
-      "updatedAt": "2026-07-26T17:59:12+09:00",
+      "wordCount": 540,
+      "updatedAt": "2026-07-26T19:59:42.349Z",
       "linksOut": []
     },
     {
@@ -9265,7 +9270,7 @@
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
       "wordCount": 2417,
-      "updatedAt": "2026-07-26T19:32:09.814Z",
+      "updatedAt": "2026-07-27T04:33:08+09:00",
       "linksOut": []
     },
     {
@@ -11008,6 +11013,11 @@
         },
         {
           "depth": 3,
+          "text": "UX-039 — 수리 큐 총계가 가리키는 나머지 대상을 찾을 수 없음",
+          "slug": "ux-039-수리-큐-총계가-가리키는-나머지-대상을-찾을-수-없음"
+        },
+        {
+          "depth": 3,
           "text": "2026-07-27 반복 측정 기록",
           "slug": "2026-07-27-반복-측정-기록"
         },
@@ -11018,8 +11028,8 @@
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨 한 장 더 캡처한다. ",
-      "wordCount": 12405,
-      "updatedAt": "2026-07-26T19:32:09.812Z",
+      "wordCount": 12840,
+      "updatedAt": "2026-07-26T19:59:42.346Z",
       "linksOut": []
     },
     {

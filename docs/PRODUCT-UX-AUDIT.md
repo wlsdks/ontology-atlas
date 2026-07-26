@@ -63,6 +63,7 @@
 | A32 | AI 연결 → `기능 문서 열기` → Agent Graph Workflow 읽기 | packaged dogfood runbook URL·본문·현재 inventory 설치 앱 검증 완료 |
 | A33 | 설치 앱 foreground/AX window 자동 proof ↔ Computer Use 대조 | AX 최종 상태 우선 + 2회 bounded retry, 지속 실패 fail-closed, 최신 설치 앱 4 proof 통과 |
 | A34 | 공방 진입 선택 → ENHANCE/CREATE 키보드 작업 계속 | 1920 ENHANCE h1·2560 CREATE 이름 입력 포커스 설치 앱 검증 완료 |
+| A35 | 인사이트 수리 큐 요약 → 전체 분리 섬·누락 연결 대상 → 관계 편집/문서 | 설치 앱 1920/2560에서 전체 대상·행별 인계·제한 높이 펼침 검증 완료 |
 
 ## 이슈 장부
 
@@ -1451,6 +1452,47 @@
   도착했으며, 두 폭 모두 잘림·충돌을 발견하지 못했다.
 - PO·디자인 판정: **Build and verify**
 
+### UX-039 — 수리 큐 총계가 가리키는 나머지 대상을 찾을 수 없음
+
+- 심각도: `S3`
+- 상태: 수정·설치 앱 재검증 완료, 자동 WebView 결정질문 marker 계약은 별도
+  잔여 부채
+- 흐름: 인사이트 → 할 일 → 수리 큐 총계 확인 → 모든 분리 섬·누락 연결 수리
+- 관측 현상: 실제 감사 vault는 `분리된 섬 3`과 `누락된 연결 4`, 합계 `할 일 7`을
+  말했지만 첫 번째 `누락된 연결` 대상 하나만 이름과 행동을 제공했다. 나머지
+  여섯 건은 같은 화면에서 식별하거나 관계 편집·원문으로 이동할 수 없었다.
+- 사용자 문제: 건강도 숫자가 문제의 존재만 알리고 수리 경로를 숨겼다. 사람은
+  어떤 노드가 남았는지 찾기 위해 지도·문서를 전수 탐색해야 하고, agent에게도
+  정확한 수리 대상을 넘길 수 없었다.
+- 원인: `buildVaultHealthRepair`가 총계와 단일 `actionTarget`만 반환했고,
+  `DoNextTab`도 그 한 행만 렌더링했다.
+- PO pass: 사용 순간은 건강도 이상을 본 직후의 수리 시작이다. 현재 대안은
+  수동 전수 탐색이며, 온톨로지 가치는 typed issue와 정확한 노드의 연결,
+  agent 가치는 같은 대상을 관계 편집/문서 handoff로 받는 데 있다. 새 화면이나
+  새 모드를 만들지 않고 기존 카드의 숨겨진 대상만 도달 가능하게 한다.
+- 디자인 gate: attention winner는 수리 큐다. 첫 대상은 그대로 상시 노출하고,
+  나머지는 같은 카드의 조용한 disclosure로 연다. 각 행은 `누락된 연결` 또는
+  `분리된 섬` 유형과 노드 이름을 함께 보존하고, 목록은 `max-height`와 내부
+  스크롤로 14-inch/1920/2560 레이아웃을 밀어내지 않는다. 새 토큰·장식 모션은
+  추가하지 않았다.
+- 수정: 모든 해석 가능한 누락 연결을 먼저, 각 분리 섬의 대표 노드를 다음으로
+  보존하는 `actionTargets` 계약을 추가했다. 호환용 `actionTarget`은 첫 항목으로
+  남겼다. 첫 행 아래 `나머지 수리 대상 N개 보기`를 열면 모든 행에 관계 편집과
+  개념 문서 링크가 나타난다.
+- 회귀 증거: `vault-health-repair`와 `DoNextTab` 집중 테스트 32개,
+  TypeScript, i18n 메시지 계약 16개, focused ESLint 통과.
+- 설치 앱·Computer Use 증거: 쓰기 없는 격리 fixture에서 분리된 섬 3개와 누락
+  연결 3개를 만들고 최신 production 앱을 외장 모니터로 이동했다. 1920×1080과
+  2560×1440 모두에서 disclosure, 6개 typed target, 각 관계 편집/개념 문서
+  링크를 AX 트리로 읽었고, 펼친 목록의 잘림·겹침을 발견하지 못했다.
+  `.screenshots/ux-039-island-repair-queue/14-legion-1920-expanded.png`와
+  `16-tfg-2560-expanded.png`를 현재 실행 증거로 보존했다.
+- 증거 한계: `desktop:deploy:app`의 빌드·설치 앱 교체는 성공했지만, 자동
+  WebView 검증은 현재 인사이트 DOM에 없는 `businessDecisionQuestions`와
+  `readerDecisionLens` marker를 요구해 실패했다. 이 별도 verifier/UI 의미
+  계약을 해결하기 전에는 자동 설치 앱 proof 통과로 간주하지 않는다.
+- PO·디자인 판정: **Build and verify**
+
 ### 2026-07-27 반복 측정 기록
 
 - 코드 기준선: `899eb7072`에서 시작해 로컬 vault 문구와 문서·ontology
@@ -1467,6 +1509,10 @@
   지도 → 문서함 → 공방 → 인사이트 → 프로젝트 → 기록을 실제 클릭으로 왕복했다.
   각 surface는 현재 route와 h1을 노출했다. 기록 화면의 `기록 시작하기`는
   파일 변경을 만들므로 측정 중 실행하지 않았다.
+- 인사이트 수리 큐: 실제 감사 vault에서 총계 7과 단일 노출 대상의 불일치를
+  UX-039로 재현했다. 격리 fixture의 전체 typed target 6개를 펼친 뒤 같은 설치
+  앱을 외장 1920×1080과 2560×1440 모니터에서 각각 읽어 행별 관계 편집/문서
+  인계와 제한 높이 스크롤을 확인했다.
 - 자동 검증: window screenshot과 WebView evidence가 저장되는 실행에서
   foreground activation/AX probe의 간헐 timeout을 UX-037로 재현했다.
   빠른 probe의 WebView AX 순회를 제거한 뒤에도 한 번 남은 일시 실패에는
@@ -1494,6 +1540,7 @@
 - A32 내장 기능 문서 navigation/source 계약: **Build and verify**
 - A33 설치 앱 foreground/AX window proof: **Build and verify**
 - A34 공방 진입 선택 keyboard handoff: **Build and verify**
+- A35 인사이트 수리 큐 전체 대상·행별 handoff: **Build and verify**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

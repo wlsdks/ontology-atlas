@@ -294,6 +294,7 @@ export function OntologyInsightsPage() {
       // CLI-parity issues rank above the statistical stale/orphan/promotion
       // signals — they're what flip the CLI to needs_attention.
       actionTarget: healthRepair.actionTarget ?? buildOntologyHealthActionTarget(healthSignals),
+      actionTargets: healthRepair.actionTargets,
       builderHref: buildOntologyStudioNodeHrefFromGraphId,
       ontologyHref: mapNodeHref,
     }),
@@ -708,6 +709,8 @@ export function OntologyInsightsPage() {
     repairQueueActionKindContainment: t("repairQueueActionKindContainment"),
     repairQueueOpenBuilder: t("repairQueueOpenBuilder"),
     repairQueueOpenOntology: t("repairQueueOpenOntology"),
+    repairQueueRestShow: (count: number) => t("repairQueueRestShow", { count }),
+    repairQueueRestHide: t("repairQueueRestHide"),
     queueTitle: t("doNext.queueTitle"),
     sectionNeglectedHub: t("doNext.sectionNeglectedHub"),
     sectionOrphan: t("doNext.sectionOrphan"),

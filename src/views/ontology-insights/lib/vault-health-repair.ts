@@ -17,6 +17,12 @@ export interface VaultHealthRepair {
   missingContainmentCount: number;
   /** Highest-priority CLI-parity repair, or null when both are clear. */
   actionTarget: OntologyHealthActionTarget | null;
+  /**
+   * Every resolvable CLI-parity repair target, ordered by urgency:
+   * missing-containment nodes first, then one representative per island.
+   * `actionTarget` remains the first item for the topology/summary contract.
+   */
+  actionTargets: OntologyHealthActionTarget[];
 }
 
 // Reduce both a vault slug (`capabilities/invoice`) and a graph node id
@@ -46,26 +52,36 @@ export function buildVaultHealthRepair(
   const islandCount = health.islands.length;
   const missingContainmentCount = health.missingContainment.length;
 
-  // Prefer a missing-containment target (a concrete node to link back), then an
-  // island member; both link to a real node the user can act on.
-  let actionTarget: OntologyHealthActionTarget | null = null;
+  // Preserve the whole actionable set. The repair queue may keep the first row
+  // compact, but its aggregate counts must not strand the remaining targets.
+  const actionTargets: OntologyHealthActionTarget[] = [];
   for (const target of health.missingContainment) {
     const node = nodeForSlug(target.slug, nodesByTail);
     if (node) {
-      actionTarget = { slug: node.id, title: node.display ?? node.title, kind: "containment" };
-      break;
+      actionTargets.push({
+        slug: node.id,
+        title: node.display ?? node.title,
+        kind: "containment",
+      });
     }
   }
-  if (!actionTarget) {
-    for (const island of health.islands) {
-      const memberSlug = island[0];
-      const node = memberSlug ? nodeForSlug(memberSlug, nodesByTail) : null;
-      if (node) {
-        actionTarget = { slug: node.id, title: node.display ?? node.title, kind: "island" };
-        break;
-      }
+  for (const island of health.islands) {
+    const node = island
+      .map((memberSlug) => nodeForSlug(memberSlug, nodesByTail))
+      .find((candidate): candidate is KnowledgeGraphNode => candidate !== null);
+    if (node) {
+      actionTargets.push({
+        slug: node.id,
+        title: node.display ?? node.title,
+        kind: "island",
+      });
     }
   }
 
-  return { islandCount, missingContainmentCount, actionTarget };
+  return {
+    islandCount,
+    missingContainmentCount,
+    actionTarget: actionTargets[0] ?? null,
+    actionTargets,
+  };
 }

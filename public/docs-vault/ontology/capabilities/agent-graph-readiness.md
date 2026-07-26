@@ -36,6 +36,13 @@ The underlying readiness/graph-DB apparatus did not fully disappear — it split
   `formatTopologyOverviewBrief` copy text (`views/home/lib/topology-analysis.ts`,
   now a thin re-export) read from, so the map's INDEX-footer handoff brief and
   the insights gauge cannot drift into two different readiness formulas.
+  The queue's health totals and action set now share that same truth boundary:
+  `buildVaultHealthRepair` retains every resolvable missing-containment node
+  and one representative per disconnected island. The first target stays
+  immediately visible; a bounded disclosure exposes all remaining typed
+  targets with relation-editor and source-document links, so a human or agent
+  can act on every problem counted by the summary instead of receiving only
+  one unnamed next step.
 - **The three views share a keyboard and URL contract (A17, 2026-07-25).**
   `src/shared/ui/tab-bar.tsx` uses roving tabindex: only the selected tab is in
   sequential focus order, Left/Right wraps, and Home/End jump to the first or
