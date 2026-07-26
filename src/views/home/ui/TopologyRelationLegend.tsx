@@ -1,5 +1,6 @@
 "use client";
 
+import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
 import { useRelationVocabulary, type RelationRegister } from "@/entities/knowledge-graph";
 
 /**
@@ -39,11 +40,14 @@ export function TopologyRelationLegend({
   register?: RelationRegister;
 } = {}) {
   const relationVocabulary = useRelationVocabulary();
+  // 진입 검수 E-10 — 범례 낱말은 ko 에서 「포  함」·「의  존」·「큰  줄기  보기」로
+  // 벌어졌다. 라틴 범례에서는 아이브로가 정상 신호라 로케일 조건으로만 끈다.
+  const eyebrow = useLatinEyebrow("tracking-[0.2em]");
 
   return (
     <div
       data-testid="topology-relation-legend"
-      className="pointer-events-none hidden items-center gap-3.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[color:var(--color-text-quaternary)] md:flex"
+      className={`pointer-events-none hidden items-center gap-3.5 text-caption text-[color:var(--color-text-quaternary)] md:flex ${eyebrow}`}
     >
       <span className="flex items-center gap-2">
         <span aria-hidden className="relative h-2.5 w-8 shrink-0">

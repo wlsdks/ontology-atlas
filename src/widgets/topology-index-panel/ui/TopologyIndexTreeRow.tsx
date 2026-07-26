@@ -1,6 +1,7 @@
 "use client";
 
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
 import { ChevronRight } from "lucide-react";
 import type { DomainCensusRow, OntologyTreeNode } from "@/shared/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
@@ -91,6 +92,7 @@ export function TopologyIndexTreeRow({
   const selected = selectedId === node.id;
   const fresh = changedSlugs.has(node.id);
   const agentAttributed = agentAttributedNodeId !== null && agentAttributedNodeId === node.id;
+  const eyebrow = useLatinEyebrow("tracking-[0.06em]");
   const isDomain = node.kind === "domain";
   const censusRow = isDomain ? (domainCensus?.get(node.id) ?? null) : null;
   const subcounts = isDomain
@@ -181,7 +183,8 @@ export function TopologyIndexTreeRow({
             {agentAttributed && labels.agentBadge ? (
               <span
                 data-testid="topology-index-agent-badge"
-                className="shrink-0 font-mono text-caption uppercase tracking-[0.06em] text-[color:var(--topology-v2-panel-text-tertiary)]"
+                // E-10 — 「에이전트가  방금」. 한국어 문장이라 아이브로를 걷는다.
+                className={`shrink-0 text-caption text-[color:var(--topology-v2-panel-text-tertiary)] ${eyebrow}`}
               >
                 {labels.agentBadge}
               </span>

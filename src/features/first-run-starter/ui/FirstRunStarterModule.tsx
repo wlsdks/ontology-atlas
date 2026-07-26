@@ -5,6 +5,7 @@ import { ChevronRight, FolderOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
 import { useSampleSource } from "@/features/vault-sample-source";
 import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
 import { CompactCopyButton } from "@/shared/ui";
@@ -101,6 +102,12 @@ export function FirstRunStarterModule({
     fsaUnsupported,
   } = useFirstRunStarter();
   const { state: cliCopyState, copy: copyCliCommand } = useCopyFeedback();
+  // 진입 검수 E-10 — 「첫  실행」·「지금은  샘플」·「지도에서  쓰는  말」. i18n
+  // 문자열의 공백은 하나였다. 벌어진 것은 라틴 전용 장식(mono + uppercase +
+  // wide tracking)을 한글에 얹은 자리의 공백 글리프다(실측 자간 1.36~2.09px).
+  const eyebrowWide = useLatinEyebrow("tracking-[0.22em]");
+  const eyebrow = useLatinEyebrow("tracking-[0.18em]");
+  const eyebrowTight = useLatinEyebrow("tracking-[0.16em]");
   // P0 공감형 샘플 vault (2026-07) — 비개발자가 dogfood(이 도구 자기 설명)
   // 대신 즉시 알아볼 수 있는 예시 비즈니스를 고를 수 있는 첫 실행 선택.
   // static 모드에서만 소비(local 모드는 useOntologyInsight 가 이 값을
@@ -189,13 +196,17 @@ export function FirstRunStarterModule({
       >
         {t("brand")}
       </p>
-      <p className="mb-3 flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.22em] text-[color:var(--topology-v2-panel-text-secondary)]">
+      <p
+        className={`mb-3 flex items-center gap-2 text-caption text-[color:var(--topology-v2-panel-text-secondary)] ${eyebrowWide}`}
+      >
         <span className="relative h-2 w-2 shrink-0" aria-hidden>
           <span className="absolute inset-0 rounded-full bg-[color:var(--color-status-warning)]" />
           <span className="absolute -inset-[3px] rounded-full border border-[color:var(--color-amber-source-a42)]" />
         </span>
         {t("caption")}
-        <span className="ml-auto text-[8.5px] tracking-[0.16em] text-[color:var(--color-status-warning)]">
+        <span
+          className={`ml-auto text-caption text-[color:var(--color-status-warning)] ${eyebrowTight}`}
+        >
           {t("sampleLabel")}
         </span>
       </p>
@@ -360,7 +371,9 @@ export function FirstRunStarterModule({
           않고 항상 보이는 3줄 — 완전 초심자가 지도를 처음 열자마자 세
           단어의 뜻을 알 수 있어야 하는 표면이라 접힘 대상이 아니다. */}
       <div className="mt-3 border-t border-[color:var(--topology-v2-panel-divider)] pt-3">
-        <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[color:var(--topology-v2-panel-text-quaternary)]">
+        <p
+          className={`mb-1.5 text-caption text-[color:var(--topology-v2-panel-text-quaternary)] ${eyebrow}`}
+        >
           {glossary("title")}
         </p>
         <dl data-testid="first-run-starter-glossary" className="space-y-1">
@@ -479,12 +492,18 @@ export function FirstRunStarterModule({
 }
 
 function MeterCell({ value, label }: { value: number; label: string }) {
+  // E-10 — 숫자는 기계 문자열이라 mono 가 정보다. 그 아래 라벨(개념·관계·
+  // 도메인)은 한국어 낱말이라 아이브로를 걷는다 — 종전에는 8px 한글에 자간
+  // 1.44px 이 얹혀 첫 화면에서 가장 심하게 벌어진 자리였다.
+  const eyebrow = useLatinEyebrow("tracking-[0.18em]");
   return (
-    <div className="py-2.5 text-center font-mono">
-      <span className="block text-[19px] font-semibold leading-none text-[color:var(--topology-v2-panel-text-primary)]">
+    <div className="py-2.5 text-center">
+      <span className="block font-mono text-[19px] font-semibold leading-none text-[color:var(--topology-v2-panel-text-primary)]">
         {value}
       </span>
-      <span className="mt-1.5 block text-[8px] uppercase tracking-[0.18em] text-[color:var(--topology-v2-panel-text-quaternary)]">
+      <span
+        className={`mt-1.5 block text-caption text-[color:var(--topology-v2-panel-text-quaternary)] ${eyebrow}`}
+      >
         {label}
       </span>
     </div>

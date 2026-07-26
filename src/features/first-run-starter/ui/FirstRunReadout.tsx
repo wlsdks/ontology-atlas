@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
 import { useFirstRunSampleModeSettled } from "../model/use-first-run-sample-mode-settled";
 
 export interface FirstRunReadoutProps {
@@ -52,6 +53,10 @@ export function FirstRunReadout({
 }: FirstRunReadoutProps) {
   const t = useTranslations("firstRunStarter.readout");
   const visible = useFirstRunSampleModeSettled();
+  // 진입 검수 E-10 — 이 계기 판독 문법(mono + uppercase + wide tracking)은
+  // 라틴에서는 정상 신호지만 한글에서는 공백 글리프만 벌려 「큰  줄기  보기」로
+  // 읽혔다(실측 자간 1.8px). 로케일로 조건을 내린다 — 영문은 종전 그대로.
+  const eyebrow = useLatinEyebrow("tracking-[0.2em]");
 
   if (!visible) return null;
 
@@ -67,7 +72,7 @@ export function FirstRunReadout({
     <div
       data-testid="first-run-readout"
       data-zoom-tier={tier}
-      className="pointer-events-none hidden items-center gap-3.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[color:var(--color-text-quaternary)] md:flex"
+      className={`pointer-events-none hidden items-center gap-3.5 text-caption text-[color:var(--color-text-quaternary)] md:flex ${eyebrow}`}
     >
       <span>
         <span className="text-[color:var(--color-text-tertiary)]">{projectCount}</span>{" "}
