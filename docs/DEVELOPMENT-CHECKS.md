@@ -461,13 +461,6 @@ committing or publishing changes.
 | `pnpm lint` | ESLint and FSD boundary config |
 | `pnpm checks:changed` | Suggest first focused checks from changed paths |
 
-Topology verification scripts pass
-`--webview-fixture-vault=docs/ontology` to the direct executable verifier. This
-option is intentionally incompatible with `--open-app`: Tauri creates an
-incognito WebView, writes the fixture path only to that verifier's IndexedDB,
-and leaves the installed app's normal vault handle untouched. Selected-relation
-proof additionally fails if the isolated first-run tour obscures the relation
-dialog.
 | `pnpm test:checks:changed` | Changed-path focused-check suggestion helper; use the direct `pnpm exec node --test scripts/lib/focused-check-suggestions.test.mjs` or `scripts/suggest-focused-checks.test.mjs` first when printed |
 | `pnpm test:cli:args` | CLI argument parser contracts |
 | `pnpm test:cli:lib` | CLI shared helper contracts; use the direct sibling `pnpm exec node --test cli/src/lib/<name>.test.mjs` first when `pnpm checks:changed` prints one |
@@ -508,6 +501,20 @@ dialog.
 | `pnpm perf:graph:scale` | Larger 1k + 5k in-process graph compiler/query latency budget for scale-sensitive changes; includes the same agent traversal strategy and graph scan hot paths |
 | `pnpm smoke:onboarding` | Clean repo onboarding smoke |
 | `pnpm smoke:memory-loop` | Fresh repo 10-minute memory loop smoke: init, bootstrap, MCP first-contact, node profile, and side-effect-free sync proposal |
+
+Topology verification scripts pass
+`--webview-fixture-vault=docs/ontology` to the direct executable verifier. This
+option is intentionally incompatible with `--open-app`: Tauri creates an
+incognito WebView, writes the fixture path only to that verifier's IndexedDB,
+and leaves the installed app's normal vault handle untouched. Selected-relation
+proof additionally fails if the isolated first-run tour obscures the relation
+dialog.
+
+The fast `--require-accessibility-window` / `--require-frontmost` probe reads
+only the launched PID, frontmost state, and Accessibility window count. It must
+not traverse the WebView AX tree: `--require-accessibility-text=...` uses the
+bounded Swift AX probe for content, while the window probe stays responsive
+inside its 3-second timeout.
 
 `pnpm test:mcp:docs` intentionally lists explicit test-name fragments instead
 of a broad `README` token, so documentation-only changes do not accidentally

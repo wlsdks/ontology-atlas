@@ -78,7 +78,7 @@ tell application "System Events"
     try
       set procPid to unix id of proc
       if ${predicates || "false"} then
-        set output to output & procPid & tab & name of proc & tab & frontmost of proc & tab & (count of windows of proc) & tab & (count of UI elements of proc) & linefeed
+        set output to output & procPid & tab & name of proc & tab & frontmost of proc & tab & (count of windows of proc) & linefeed
       end if
     end try
   end repeat
@@ -457,4 +457,3 @@ export function verifyAccessibilityText({ appPath, executablePath, requiredText 
     );
   }
 }
-

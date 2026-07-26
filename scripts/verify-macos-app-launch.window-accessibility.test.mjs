@@ -143,6 +143,11 @@ test("Accessibility window probe targets launched process ids", () => {
 
   assert.match(script, /procPid = 101 or procPid = 202/);
   assert.match(script, /count of windows of proc/);
+  assert.doesNotMatch(
+    script,
+    /count of UI elements of proc/,
+    "the fast foreground/window probe must not traverse the WebView accessibility tree",
+  );
 });
 
 test("foreground activation targets both bundle id and launched process ids", () => {

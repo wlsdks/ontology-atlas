@@ -61,6 +61,7 @@
 | A30 | 설정 → AI 에이전트 연결 → 고급 검증·handoff 문구 읽기 | 24→32 tool inventory 수정, 완료형 설정 CTA 모순은 UX-034로 추적 |
 | A31 | CLI/MCP 현재 inventory → 활성 문서·프로토타입·fixture 교차 확인 | 52 CLI·32 MCP로 동기화, 역사/legacy 입력은 보존 |
 | A32 | AI 연결 → `기능 문서 열기` → Agent Graph Workflow 읽기 | packaged dogfood runbook URL·본문·현재 inventory 설치 앱 검증 완료 |
+| A33 | 설치 앱 foreground/AX window 자동 proof ↔ Computer Use 대조 | 간헐 timeout 재현, 빠른 probe의 WebView AX 순회 제거, 실제 배포 계약 5회 반복 통과 |
 
 ## 이슈 장부
 
@@ -1304,8 +1305,7 @@
 ### UX-035 — 활성 문서와 프로토타입이 CLI 45·48·50명령을 동시에 주장
 
 - 심각도: `S2`
-- 상태: 수정·설치 앱 부분 재검증 완료 — MCP 32 확인, CLI 52 내장 문서
-  경로는 UX-036으로 분리
+- 상태: 수정·설치 앱 재검증 완료
 - 흐름: CLI `--help` 현재 inventory 확인 → README·아키텍처·제품 방향·기술
   스택·다운로드/프로젝트 프로토타입·테스트 fixture 교차 검색
 - 관측 현상: 실제 CLI 배너와 dogfood ontology는 52명령인데 활성 문서는
@@ -1323,9 +1323,9 @@
 - 설치 앱·Computer Use 증거: 최신 main을 반영해 production app을 재배포한
   뒤 설정 → AI 에이전트 연결 → 고급 검증을 실제 클릭했다. AX 트리는
   `mcp-verify`와 MCP 연결 모드에서 모두 `index_project 포함 32개 tool`을
-  표시했고, 이어서 열린 local vault README도 read 19 + write 13을 노출했다.
-  다만 `기능 문서 열기`가 약속한 내장 Agent Graph Workflow 대신 local vault
-  README를 열어 CLI 52 표기의 설치 앱 경로 검증은 UX-036으로 분리했다.
+  표시했고, 이어서 열린 내장 Agent Graph Workflow는 CLI 52 commands,
+  MCP 32 local tools, read 19 + write 13을 노출했다. 이 경로를 막던 source
+  경계 문제는 UX-036에서 수정·재검증했다.
 - PO·디자인 판정: **Build and verify**
 
 ### UX-036 — `기능 문서 열기`가 약속한 내장 문서 대신 local README를 엶
@@ -1369,6 +1369,33 @@
   실제 metadata/census와 대조한다.
 - PO·디자인 판정: **Build and verify**
 
+### UX-037 — 자동 AX probe가 Computer Use로 읽히는 창을 timeout으로 오판
+
+- 심각도: `S2`
+- 상태: 수정·설치 앱 반복 재검증 완료
+- 흐름: production app 직접 실행 → WebView·CoreGraphics window 확인 →
+  foreground activation → System Events AX window 확인 → screenshot 저장
+- 관측 현상: 설치 앱 WebView payload와 1.4MB window screenshot은 저장됐고
+  Codex Computer Use는 같은 창의 URL·h1·내비·본문 AX 트리를 읽었지만,
+  자동 proof는 `post-activation Accessibility probe timed out after 3000ms`를
+  간헐적으로 보고했다. 수정 전 반복 실행은 첫 회에 같은 timeout으로 실패했다.
+- 사용자 문제: maintainer와 agent가 실제 UI 회귀와 검증기 지연을 구분하려면
+  CGWindow·WebView JSON·Computer Use를 매번 수동 대조해야 한다. 이 오판은
+  설치 앱 증거의 fail-closed 신뢰를 낮춘다.
+- 원인·최소화: foreground/window probe가 PID·frontmost·window 수뿐 아니라
+  WebView의 전체 `UI elements` 수도 System Events로 세고 있었다. 빠른 probe는
+  window 사실만 읽도록 줄이고, 화면 문구는 이미 존재하는 bounded Swift AX
+  text probe가 계속 담당한다. timeout을 늘리거나 권한 경고를 숨기지 않았다.
+- 설치 앱·Computer Use 증거: 수정 전 실패 실행과 동시에 Computer Use가
+  `tauri://localhost/ko/` 첫 화면의 38개 AX 항목을 읽었다. 수정 뒤 실제 배포
+  계약과 같은 8초 hold·foreground activation·window screenshot 경로를 5회
+  반복했고 내부 전·후 proof 총 10회 모두 `frontmost=true`, AX window 1개,
+  PNG 저장으로 통과했다. 2.5초 단축 실행에서 잡힌 초기 window 0 상태는 실제
+  배포 hold보다 이른 비계약 구간으로 분리했다.
+- 온톨로지·에이전트 가치: 사람이 보는 설치 앱과 agent가 읽는 자동 proof가
+  같은 window 사실을 말하고, 텍스트 handoff는 더 강한 전용 AX 경로로 남는다.
+- PO·디자인 판정: **Build and verify** — 렌더링·주의 계층 변화 없음
+
 ### 2026-07-27 반복 측정 기록
 
 - 코드 기준선: `899eb7072`에서 시작해 로컬 vault 문구와 문서·ontology
@@ -1385,10 +1412,9 @@
   지도 → 문서함 → 공방 → 인사이트 → 프로젝트 → 기록을 실제 클릭으로 왕복했다.
   각 surface는 현재 route와 h1을 노출했다. 기록 화면의 `기록 시작하기`는
   파일 변경을 만들므로 측정 중 실행하지 않았다.
-- 자동 검증 잔여: window screenshot과 WebView evidence는 저장됐지만 자동
-  foreground activation/AX probe는 timeout을 보고했다. 같은 실행 앱을 Codex
-  Computer Use가 읽었으므로 화면 존재는 확인됐고, 자동 AX gate 자체는 후속
-  검증기 신뢰성 항목으로 남긴다.
+- 자동 검증: window screenshot과 WebView evidence가 저장되는 실행에서
+  foreground activation/AX probe의 간헐 timeout을 UX-037로 재현·수정했다.
+  실제 배포 계약 5회 반복에서 전·후 proof 총 10회가 모두 통과했다.
 
 ## 현재 PO·디자인 판정
 
@@ -1401,12 +1427,13 @@
 - A26 전역 레일 route·공방 landmark 슬라이스: **Build and verify**
 - A27 하단 탭바 responsive 계약: **Do not build**
 - A28 AI 연결 교차 route·모달 포커스 슬라이스: **Build and verify**
-- A29 반복 측정 기준선: 일반 viewport/주요 surface **Build and verify**,
-  선택 관계 fixture와 설치 앱 가져오기는 **Investigate first**
-- A30 에이전트 handoff tool inventory: **Build and verify**,
-  invalid 설정 CTA 의미는 **Investigate first**
+- A29 반복 측정 기준선·선택 관계 fixture·설치 앱 가져오기:
+  **Build and verify**
+- A30 에이전트 handoff tool inventory·invalid 설정 CTA 의미:
+  **Build and verify**
 - A31 CLI/MCP 활성 문서 inventory: **Build and verify**
 - A32 내장 기능 문서 navigation/source 계약: **Build and verify**
+- A33 설치 앱 foreground/AX window proof: **Build and verify**
 - 전체 제품 전면 수정: **Investigate first**
 - 주의 계층: 첫 실행 안내와 투어는 `blocking task`; 강조 노드/카드는
   그 안의 유일한 `active focus`; 배경 크롬은 상호작용과 Tab 순회에서 제외한다.

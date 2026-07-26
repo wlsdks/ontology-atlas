@@ -158,6 +158,13 @@ on-screen workbench window, while the System Events probe separately proves the
 same launched process is reachable as a window through macOS automation. The
 probe has a bounded timeout, so a broken AX bridge becomes a clear verification
 failure instead of a hanging app check.
+That fast probe reads only PID, frontmost state, and window count. It does not
+ask System Events to count every UI element in the WebView: that traversal was
+observed to exceed the three-second bound even while Computer Use could read the
+same window. Content proof remains the responsibility of the separate bounded
+Swift AX text probe. This separation keeps a real permission or missing-window
+failure fail-closed without turning a large but healthy WebView tree into a
+false automation blocker.
 
 LaunchServices runs can now add repeated `--require-accessibility-text=...`
 checks. The verifier walks the launched process Accessibility tree with a

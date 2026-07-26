@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T18:43:01.056Z",
+  "generatedAt": "2026-07-26T18:59:20.630Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5025,7 +5025,7 @@
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 선택 관계 검증이 설치 앱에 마지막으로 저장된 문서함에 기대고 있었다. 사용자가 11개 노드 테스트 vault를 쓰던 상태에서는 검증기가 dogfood 전",
       "wordCount": 50365,
-      "updatedAt": "2026-07-26T18:43:01.056Z",
+      "updatedAt": "2026-07-27T03:50:45+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5927,8 +5927,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7055,
-      "updatedAt": "2026-07-26T18:43:01.053Z",
+      "wordCount": 7099,
+      "updatedAt": "2026-07-26T18:59:20.629Z",
       "linksOut": []
     },
     {
@@ -9259,8 +9259,8 @@
       },
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
-      "wordCount": 2211,
-      "updatedAt": "2026-07-26T18:43:01.056Z",
+      "wordCount": 2290,
+      "updatedAt": "2026-07-26T18:59:20.630Z",
       "linksOut": []
     },
     {
@@ -10993,6 +10993,11 @@
         },
         {
           "depth": 3,
+          "text": "UX-037 — 자동 AX probe가 Computer Use로 읽히는 창을 timeout으로 오판",
+          "slug": "ux-037-자동-ax-probe가-computer-use로-읽히는-창을-timeout으로-오판"
+        },
+        {
+          "depth": 3,
           "text": "2026-07-27 반복 측정 기록",
           "slug": "2026-07-27-반복-측정-기록"
         },
@@ -11003,8 +11008,8 @@
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨 한 장 더 캡처한다. ",
-      "wordCount": 11608,
-      "updatedAt": "2026-07-26T18:43:01.052Z",
+      "wordCount": 11855,
+      "updatedAt": "2026-07-26T18:59:20.628Z",
       "linksOut": []
     },
     {
