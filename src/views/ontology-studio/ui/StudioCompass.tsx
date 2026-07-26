@@ -1031,7 +1031,7 @@ export function StudioCompass(props: StudioCompassProps) {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   className={cn(
-                    "transition-[stroke] duration-200 motion-reduce:transition-none",
+                    "transition-[stroke] duration-[var(--motion-base)] motion-reduce:transition-none",
                     flowing && "studio-strut-flow",
                   )}
                   stroke={stroke}
@@ -1396,7 +1396,7 @@ function CenterCard(
   };
   return (
     <div
-      className="studio-stage-in absolute flex flex-col rounded-[14px] bg-[color:var(--color-elevated)] px-[22px] py-[18px] transition-[border-color] duration-200 motion-reduce:transition-none"
+      className="studio-stage-in absolute flex flex-col rounded-[14px] bg-[color:var(--color-elevated)] px-[22px] py-[18px] transition-[border-color] duration-[var(--motion-base)] motion-reduce:transition-none"
       data-testid="studio-center-card"
       style={{
         left: cardLeft,
@@ -1694,7 +1694,7 @@ function LaneRender({
               <span
                 aria-hidden
                 data-testid={`studio-arrival-${view.bearing}`}
-                className="pointer-events-none absolute inset-0 rounded-[10px] border-[1.5px] border-[color:var(--color-indigo-brand)] transition-opacity duration-300 motion-reduce:transition-none"
+                className="pointer-events-none absolute inset-0 rounded-[10px] border-[1.5px] border-[color:var(--color-indigo-brand)] transition-opacity duration-[var(--motion-settle)] motion-reduce:transition-none"
                 style={{ opacity: arrivalLit ? 1 : 0 }}
               />
             ) : null}

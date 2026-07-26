@@ -81,7 +81,7 @@ export function TopologyIndexAgentHandoff({
         <ChevronUp
           size={10}
           aria-hidden
-          className="shrink-0 rotate-180 transition-transform duration-180 group-open:rotate-0 motion-reduce:transition-none"
+          className="shrink-0 rotate-180 transition-transform duration-[var(--motion-base)] group-open:rotate-0 motion-reduce:transition-none"
         />
       </summary>
       <div

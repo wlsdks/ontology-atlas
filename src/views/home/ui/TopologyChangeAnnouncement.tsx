@@ -63,7 +63,7 @@ export function TopologyChangeAnnouncement({
       <div
         role="status"
         aria-live="polite"
-        className="pointer-events-auto inline-flex h-[var(--chrome-tile-size)] items-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-3.5 text-[length:var(--topology-chrome-title-size)] text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)] transition-opacity duration-180 ease-out motion-reduce:transition-none"
+        className="pointer-events-auto inline-flex h-[var(--chrome-tile-size)] items-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-3.5 text-[length:var(--topology-chrome-title-size)] text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)] transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none"
       >
         {message(delta)}
       </div>

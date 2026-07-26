@@ -3446,7 +3446,7 @@ export function HomePage() {
                           // 타이포/아이콘 규격으로 수렴: 높이 --chrome-tile-size,
                           // radius --chrome-radius, text-label, 아이콘 size-3.5.
                           // accent surface(인디고) 만 primary 로 남긴다.
-                          className={`inline-flex h-[var(--chrome-tile-size)] items-center justify-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-label tracking-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none [&>svg]:size-3.5 [&>svg]:shrink-0 ${
+                          className={`inline-flex h-[var(--chrome-tile-size)] items-center justify-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-label tracking-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-[var(--motion-base)] ease-[var(--motion-ease)] hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none [&>svg]:size-3.5 [&>svg]:shrink-0 ${
                             topologyUtilityChromeCompact
                               ? "w-[var(--chrome-tile-size)] px-0"
                               : "px-3.5"
@@ -3521,7 +3521,7 @@ export function HomePage() {
                 <button
                   type="button"
                   aria-label={t('bootstrap.cancel')}
-                  className="absolute inset-0 z-[25] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-180 ease-out motion-reduce:transition-none"
+                  className="absolute inset-0 z-[25] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none"
                   data-interactive-overlay="true"
                   data-testid="ontology-bootstrap-backdrop"
                   data-backdrop-contract="blocks-map-and-closes-composer"
@@ -3570,7 +3570,7 @@ export function HomePage() {
                 <button
                   type="button"
                   aria-label={t('createNode.cancel')}
-                  className="absolute inset-0 z-[25] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-180 ease-out motion-reduce:transition-none"
+                  className="absolute inset-0 z-[25] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none"
                   data-interactive-overlay="true"
                   data-testid="topology-create-node-backdrop"
                   data-backdrop-contract="blocks-map-and-closes-composer"
@@ -3641,7 +3641,7 @@ export function HomePage() {
                 <button
                   type="button"
                   aria-label={t('createNode.cancel')}
-                  className="absolute inset-0 z-[25] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-180 ease-out motion-reduce:transition-none"
+                  className="absolute inset-0 z-[25] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none"
                   data-interactive-overlay="true"
                   data-testid="topology-create-node-pending-backdrop"
                   data-backdrop-contract="blocks-map-and-clears-create-intent"
@@ -3985,7 +3985,7 @@ export function HomePage() {
             opacity: topologyCreateNodeBlockingActive ? "var(--topology-blocking-map-opacity)" : 1,
             filter: topologyCreateNodeBlockingActive ? "var(--topology-blocking-map-filter)" : undefined,
           }}
-          className={`absolute inset-0 transition-[opacity,filter] duration-180 ease-out motion-reduce:transition-none ${
+          className={`absolute inset-0 transition-[opacity,filter] duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none ${
             topologyCreateNodeBlockingActive
               ? "pointer-events-none"
               : ""
@@ -4309,7 +4309,7 @@ export function HomePage() {
                 ref={legendStackRef}
                 data-testid="topology-legend-stack"
                 className={cn(
-                  "pointer-events-none absolute bottom-[var(--topology-relation-legend-bottom-inset)] right-[var(--topology-relation-legend-inset)] z-20 flex flex-col items-end gap-3 whitespace-nowrap transition-opacity duration-180 ease-out motion-reduce:transition-none",
+                  "pointer-events-none absolute bottom-[var(--topology-relation-legend-bottom-inset)] right-[var(--topology-relation-legend-inset)] z-20 flex flex-col items-end gap-3 whitespace-nowrap transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none",
                   v2DatasheetModel ? "opacity-0" : "opacity-100",
                 )}
                 aria-hidden={v2DatasheetModel ? true : undefined}

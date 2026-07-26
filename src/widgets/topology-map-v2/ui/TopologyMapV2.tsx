@@ -364,8 +364,12 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
           aria-label={realmEnterLabel}
           // rank6 — 항상 flex 로 레이아웃하고 opacity/pointer-events(loop 이
           // 매 프레임 갱신)로만 나타나고 사라진다. display 하드 토글의 "툭"
-          // 대신 opacity transition(150ms)로 페이드 — 카메라 추종은 유지.
-          className="group absolute left-0 top-0 z-40 flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] text-[color:var(--topology-v2-indigo-bright)] shadow-[var(--topology-v2-panel-shadow)] transition-[opacity,background-color] duration-150 ease-[var(--topology-motion-ease-out)] hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+          // 대신 opacity 전이로 페이드 — 카메라 추종은 유지.
+          // duration 은 램프의 "이동"(--motion-base)을 명시한다: 이 전이의
+          // 주역은 hover 색이 아니라 컨트롤의 등장/퇴장이라 기본(확인, 120ms)
+          // 에 맡기면 페이드가 툭 튀는 쪽으로 되돌아간다. 이징은 지도 표면과
+          // 같은 커브를 유지한다.
+          className="group absolute left-0 top-0 z-40 flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] text-[color:var(--topology-v2-indigo-bright)] shadow-[var(--topology-v2-panel-shadow)] transition-[opacity,background-color] duration-[var(--motion-base)] ease-[var(--topology-motion-ease-out)] hover:bg-[color:var(--topology-v2-panel-row-hover)]"
           style={{ opacity: 0, pointerEvents: "none" }}
         >
           <Orbit size={15} aria-hidden />

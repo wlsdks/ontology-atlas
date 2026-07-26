@@ -162,6 +162,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 | radius 램프 | `rounded-[Npx]` 금지 | 동일 |
 | **그림자 사다리** | `shadow-[…]` 중 **`var(` 없는 것**만 금지 | 동일 |
 | **hex 색상** | Tailwind **arbitrary value 안**의 hex 만 금지 | 동일 (현재 위반 0 — 예방 게이트) |
+| **모션 duration** | `duration-<숫자>` 금지 (토큰 참조형은 문법상 안 걸림) | 동일 |
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
 
 **spacing 은 강제하지 않는다 (결론, 2026-07-26).** arbitrary px 는 27건뿐
@@ -227,8 +228,28 @@ R6)에서 재정의한다. flat config 는 rule option 배열을 **병합하지 
 ## 모션
 
 - transition 은 `transition-colors`, `transition-opacity` 위주. transform 은 최소.
-- duration 200ms 미만이 default. 더 길어야 하면 의도가 분명해야.
+- **duration 은 3단 램프뿐이고, 값이 아니라 쓰임으로 고른다** (2026-07-27):
+  `--motion-fast`(120ms) = **확인** — 이미 일어난 상태의 확인(호버·포커스·색·
+  회전·칩 크로스페이드). Tailwind 기본 전이가 이 토큰을 타므로 **기본이면
+  duration 클래스를 아예 쓰지 않는다**. `--motion-base`(180ms) = **이동** —
+  표면이 자리를 바꾸는 일(팝오버·패널·카드·백드롭의 등장/퇴장).
+  `--motion-settle`(240ms) = **확정** — 일이 끝났다는 서명(FLIP 재배치·커밋
+  수렴). `--topology-motion-camera/drag-settle`(420/720ms)은 **지도 캔버스
+  전용**이라 DOM 표면이 참조하면 결함. 숫자를 직접 적으면 lint 가 막는다.
+- 램프 duration 을 받는 원소는 **이징도 같은 패밀리**로 간다 — duration 만
+  갈아타면 "셋의 공통 이징"이라는 패밀리 정의가 반쪽만 지켜진다.
 - `prefers-reduced-motion` 사용자 존중 — `app/globals.css` 의 base layer 에 이미 처리.
+- **모션 예산은 주인공에게.** 한 입력이 여러 표면을 바꿀 때, 전환은 사용자가
+  부른 목적물(Design Guardian verdict 의 attention winner)이 먼저 갖는다.
+  winner 는 하드컷(첫 프레임 델타 지분 >70%)인데 배경(dim·ego·재배치)만
+  이징이면 결함이다 — 실측 전례: INDEX 행에서 연 개념 팝오버가 1프레임
+  88.8% 하드컷인데 배경 지도는 100ms 이징을 받고 있었다 (2026-07-27 모션 검수).
+- **한 입력 = 한 사건.** 같은 입력이 낳은 단계들은 같은 프레임에 시작한다.
+  시작 시점 차가 `--motion-fast`(120ms)를 넘으면 두 사건으로 읽혀 결함.
+  의도된 스태거는 인과(원인이 먼저 움직임)를 보일 때만 허용.
+- 위 두 원칙은 **lint 가 원리적으로 못 잡는 층**이다 — 전환이 아예 없는
+  원소는 리터럴도 없어서 모든 값 규칙을 무결점으로 통과한다. 그래서 게이트가
+  Guardian verdict 의 Motion 항목 + 프레임 실측이다.
 
 ## 다크 단일 (2026-07-19, 라이트 모드 전면 폐기)
 

@@ -42,6 +42,7 @@ const ARBITRARY_SIZE = [
   /rounded-\[[0-9.]+px\]/g,
   /shadow-\[(?:(?!var\()[^\]])*\]/g,
   /-\[(?:color:)?#[0-9a-fA-F]{3,8}/g,
+  /(?:^|[^-\w])duration-\d+/g,
 ];
 
 /**
@@ -168,11 +169,15 @@ describe("타입/반경 램프 — lint 사각지대 래칫", () => {
 
   it("래칫이 실제로 위반을 잡는다", () => {
     // 판정 자체를 고정한다 — 정규식이 무력화되면 위 테스트는 영원히 통과한다.
-    const violating = 'className="text-[12px] rounded-[9px] shadow-[0_1px_2px_rgba(0,0,0,.4)]"';
-    const clean = 'className="text-body rounded-card shadow-[var(--shadow-elevation-1)]"';
+    const violating =
+      'className="text-[12px] rounded-[9px] shadow-[0_1px_2px_rgba(0,0,0,.4)] duration-150"';
+    // 모션 램프의 정상형 두 가지가 모두 통과해야 한다: 토큰 참조와, 기본
+    // (--motion-fast)이라 duration 클래스를 아예 생략한 형태.
+    const clean =
+      'className="text-body rounded-card shadow-[var(--shadow-elevation-1)] duration-[var(--motion-base)] transition-colors"';
     const count = (s: string) =>
       ARBITRARY_SIZE.reduce((sum, re) => sum + (s.match(re)?.length ?? 0), 0);
-    expect(count(violating)).toBe(3);
+    expect(count(violating)).toBe(4);
     expect(count(clean)).toBe(0);
   });
 });

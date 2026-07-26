@@ -29,7 +29,10 @@ export function BackToTopButton({
       aria-hidden={!visible}
       tabIndex={visible ? 0 : -1}
       data-testid="back-to-top-button"
-      className={`absolute bottom-6 left-7 z-10 inline-flex h-[var(--chrome-tile-size)] items-center gap-2 rounded-full border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-4 font-mono text-body text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)] transition-opacity duration-150 ${
+      // --motion-base 명시: 색 확인이 아니라 떠 있는 컨트롤의 **등장/퇴장**이라
+      // 램프의 "이동" 스텝이 맞다. 기본(--motion-fast)에 맡기면 120ms 로
+      // 나타나 페이드가 아니라 깜빡임에 가까워진다.
+      className={`absolute bottom-6 left-7 z-10 inline-flex h-[var(--chrome-tile-size)] items-center gap-2 rounded-full border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-4 font-mono text-body text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)] transition-opacity duration-[var(--motion-base)] ${
         visible ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
     >

@@ -88,6 +88,11 @@ Design Guardian verdict:
 `Build and verify` 는 토큰 이름, screenshot/WebView evidence, 그리고 관련 test marker
 가 모두 있을 때만 쓴다.
 
+- Motion 항목은 attention winner 의 전환(토큰명)을 반드시 명시한다. winner 가
+  전환 없음(하드컷)인데 배경이 이징이면 반려한다. 같은 입력이 낳은 단계들의
+  시작 어긋남이 `--motion-fast` 를 넘으면 반려한다. 이 판정은 lint 가 못 잡는
+  층이라(전환 없는 원소는 리터럴도 없다) verdict 가 유일한 상시 게이트다.
+
 ## 이 프로젝트의 토폴로지 컨텍스트 (요약)
 
 - /topology = 결정론적 방사 골격 + MindNode 식 클릭 확장(px 도킹 자식 열 + SVG

@@ -491,12 +491,22 @@
   --radius-card: 9px; /* 카드·인풋·중형 서피스 */
   --radius-panel: 12px; /* 패널·모달·큰 서피스 */
 
+  /* Tailwind 기본 전이 = 모션 램프의 "확인" 스텝.
+     프레임워크 공장값(150ms + 자체 커브)은 아무도 고른 적 없는 숫자인데
+     transition 유틸리티 500여 곳이 전부 그 위에서 굴러가고 있었다 — 램프를
+     정의해 놓고 배관을 안 이은 상태다. 기본값을 토큰으로 갈아끼우면 클래스를
+     한 줄도 고치지 않고 그 500여 곳이 램프 위로 올라오고, "기본이면 duration
+     클래스를 쓰지 않는다" 가 규범이 된다.
+     값의 단일 출처는 이 파일 하단 :root 의 모션 문법 블록(--motion-*). */
+  --default-transition-duration: var(--motion-fast);
+  --default-transition-timing-function: var(--motion-ease);
+
   /* 패딩에는 별도 램프를 두지 않는다. 예전엔 `--pad-card`/`--pad-panel` 이
      있었지만 **사용 0회**였고, `--pad-card` 는 실제로 쓰이는 `--card-pad` 와
      값이 겹쳤으며 `--pad-panel`(12px)은 패널이 실제 쓰는
      `--topology-v2-panel-pad`(14px)와 **값까지 달랐다** — 문서가 죽은 토큰으로
      틀린 값을 가리키던 셈이다. 카드는 `--card-pad`, 패널은
-     `--topology-v2-panel-pad` 가 단일 출처다. (2026-07-26)
+     `--topology-v2-panel-pad` 가 단일 출처다. (2026-07-26) */
 
   /* Codex 인덱스 — 기하/모션 토큰은 이 파일 하단에 이미 정의됨:
      · --chrome-tile-size (44px) 크롬 타일 정사각
@@ -1705,9 +1715,12 @@
        마스크 — glow/neon 링(`0 0 ... rgba(indigo)` + blur>0 발광)과는 다른
        기법이므로 이 토큰을 glow 용도로 확장하지 않는다. */
     --topology-tour-scrim-surface: rgba(0, 0, 0, 0.6);
-    /* 단계 전환 컷아웃 rect 보간 duration — 크롬 `duration-180` 리듬과 동일,
-       200ms 미만 규칙 충족. `prefers-reduced-motion` 은 `motion-reduce:
-       transition-none` 로 제거(즉시 스냅). */
+    /* 단계 전환 컷아웃 rect 보간 duration — 램프의 "이동" 스텝
+       (`--motion-base`)과 같은 값. `prefers-reduced-motion` 은 `motion-reduce:
+       transition-none` 로 제거(즉시 스냅).
+       이 토큰도 `--motion-base` 참조로 봉합할 수 있지만 아직 안 했다 — 봉합과
+       짝을 이루는 이징 동반 규칙이 투어 스크림/컷아웃 3곳의 커브까지 함께
+       바꾸게 되어, 값 무변경이 아니라 별도 프레임 증거가 필요한 변경이 된다. */
     --topology-tour-transition-ms: 180ms;
     --topology-blocking-map-opacity: 0.24;
     --topology-blocking-map-filter: saturate(0.58);
@@ -1784,8 +1797,11 @@
        since this element already carries `topology-ui-scale` itself). */
     --topology-node-popover-top: 84px;
     --topology-node-popover-right-inset: clamp(24px, 2.1vw, 44px);
-    --topology-motion-focus-duration: 180ms;
-    --topology-motion-panel-duration: 180ms;
+    /* 지도의 DOM 표면(포커스 링·패널)은 앱 공통 램프의 "이동" 스텝을 그대로
+       쓴다 — 같은 180ms 를 손잡이 두 개로 갈라 두면 언젠가 한쪽만 돌아간다.
+       카메라(420)·드래그 안착(720)은 캔버스 물리라 DOM 램프와 독립. */
+    --topology-motion-focus-duration: var(--motion-base);
+    --topology-motion-panel-duration: var(--motion-base);
     --topology-motion-camera-duration: 420ms;
     --topology-motion-drag-settle-duration: 720ms;
     --topology-motion-ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
@@ -2626,13 +2642,17 @@
   }
 
   /* 접근성: 모션 감소 선호 사용자 존중 */
-  /* #69 — 완성도 인디케이터 점. 채워지는 순간 색·반지름이 200ms 로 확정 전이해
-   "방금 하나 찼다" 가 움직임으로 읽힌다. glow 가 아니라 값(색·크기) 전이다. */
+  /* #69 — 완성도 인디케이터 점. 채워지는 순간 색·반지름이 램프의 "확정"
+   스텝(--motion-settle)으로 전이해 "방금 하나 찼다" 가 움직임으로 읽힌다.
+   glow 가 아니라 값(색·크기) 전이다.
+   폴백(`var(--motion-settle, 200ms)`)을 뗐다 — 토큰이 같은 파일에서 항상
+   정의되므로 폴백은 절대 쓰이지 않는데, 리터럴 200 이 실제 값(240)과 달라
+   읽는 사람에게 틀린 시간을 알려주고 있었다. */
 .studio-rose-pip {
   transition:
-    fill var(--motion-settle, 200ms) ease-out,
-    stroke var(--motion-settle, 200ms) ease-out,
-    r var(--motion-settle, 200ms) ease-out;
+    fill var(--motion-settle) var(--motion-ease),
+    stroke var(--motion-settle) var(--motion-ease),
+    r var(--motion-settle) var(--motion-ease);
 }
 
 @media (prefers-reduced-motion: reduce) {

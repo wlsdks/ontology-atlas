@@ -111,7 +111,7 @@ export function TabBar({
             onClick={() => activateTab(item.key)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={
-              "-mb-px inline-flex items-baseline gap-2 border-b-[length:var(--tabbar-underline)] px-0.5 pb-[11px] font-mono text-label font-semibold uppercase tracking-[0.14em] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-ring-a46)] " +
+              "-mb-px inline-flex items-baseline gap-2 border-b-[length:var(--tabbar-underline)] px-0.5 pb-[11px] font-mono text-label font-semibold uppercase tracking-[0.14em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-ring-a46)] " +
               (active
                 ? "border-[color:var(--color-indigo-accent)] text-[color:var(--color-text-primary)]"
                 : "border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]")

@@ -129,7 +129,7 @@ export function ProjectCard({
       >
         <div
           className={cn(
-            'relative flex items-center justify-center rounded-full border shadow-[0_10px_24px_var(--color-shadow-a25)] transition-[transform,background-color,border-color,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[0_14px_30px_var(--color-shadow-a25)]',
+            'relative flex items-center justify-center rounded-full border shadow-[0_10px_24px_var(--color-shadow-a25)] transition-[transform,background-color,border-color,box-shadow] duration-[var(--motion-base)] group-hover:-translate-y-0.5 group-hover:shadow-[0_14px_30px_var(--color-shadow-a25)]',
             isHub
               ? 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] text-[color:var(--color-indigo-accent)]'
               : 'border-[color:var(--color-border-strong)] bg-[color:rgba(20,21,23,0.96)] text-[color:var(--color-text-primary)] group-hover:border-[color:var(--color-indigo-a26)] group-hover:bg-[color:var(--color-indigo-a08)]',
@@ -154,7 +154,7 @@ export function ProjectCard({
         </div>
         <div
           className={cn(
-            'pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 text-center transition-opacity duration-200',
+            'pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 text-center transition-opacity duration-[var(--motion-base)]',
             dense ? 'w-[92px]' : 'w-[112px]',
             dimmed && !selected && !related ? 'opacity-42' : 'opacity-100',
           )}
@@ -316,7 +316,7 @@ export function ProjectCard({
 
       <div
         className={cn(
-          'pointer-events-none absolute inset-0 rounded-[16px] border border-[color:var(--color-indigo-accent)] transition-opacity duration-200 md:rounded-[18px]',
+          'pointer-events-none absolute inset-0 rounded-[16px] border border-[color:var(--color-indigo-accent)] transition-opacity duration-[var(--motion-base)] md:rounded-[18px]',
           selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-40',
         )}
         aria-hidden
