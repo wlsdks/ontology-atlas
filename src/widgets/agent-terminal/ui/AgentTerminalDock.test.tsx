@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -103,6 +105,38 @@ describe("AgentTerminalDock — 신뢰 계약", () => {
       "먼저 폴더를 열어주세요",
     );
     expect(bridgeMock.open).not.toHaveBeenCalled();
+  });
+
+  /**
+   * FitAddon 은 측정 대상(host)의 computed 크기에서 `.xterm` 요소의 패딩만 뺀다.
+   * host 가 스스로 패딩을 가지면 그만큼 cols/rows 를 과대 산정해 우측 열이 여백
+   * 밑으로 잘린다. 여백은 래퍼가 갖고 host 는 패딩 0 이어야 한다.
+   */
+  it("셀 여백은 래퍼가 갖고 측정 대상(host)은 패딩 0 이다", () => {
+    bridgeMock.available = true;
+    renderDock(<AgentTerminalDock open onClose={() => {}} vaultPath="/vault" />);
+
+    const host = screen.getByTestId("agent-terminal-host");
+    expect(host.className).not.toMatch(/\b[pm][xytrbl]?-/);
+
+    const inset = host.parentElement;
+    expect(inset?.style.padding).toBe(
+      "var(--terminal-inset-y) var(--terminal-inset-x)",
+    );
+  });
+
+  /**
+   * xterm 은 자기 스타일시트를 요구한다. 없으면 셀 폭 측정용 span 이 숨겨지지
+   * 않아 터미널 위에 쓰레기 글자 줄로 그려지고(설치 앱 실측), `.xterm-viewport`
+   * 가 스크롤 컨테이너가 아니게 된다. jsdom 은 CSS 를 적용하지 않아 렌더 결과로는
+   * 이 회귀를 못 잡으므로 import 자체를 지킨다.
+   */
+  it("xterm 스타일시트를 함께 싣는다", () => {
+    const source = readFileSync(
+      resolve(__dirname, "./AgentTerminalDock.tsx"),
+      "utf8",
+    );
+    expect(source).toContain('import "@xterm/xterm/css/xterm.css"');
   });
 
   it("닫기 버튼이 호스트에게 알린다 (세션 정리는 언마운트 effect 가 한다)", () => {

@@ -4,6 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TerminalSquare, X } from "lucide-react";
 
+// xterm 이 요구하는 자기 스타일시트. 이게 없으면 xterm 이 셀 폭을 재려고 만든
+// 측정용 span(`.xterm-char-measure-element`)이 숨겨지지 않아 **터미널 위에
+// 쓰레기 글자 줄로 그려지고**(설치 앱 실측: `4444…1111`), `.xterm-viewport` 가
+// 스크롤 컨테이너가 아니게 되어 스크롤바 스타일도 붙을 자리가 없다.
+import "@xterm/xterm/css/xterm.css";
+
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
 import {
@@ -128,7 +134,11 @@ export function AgentTerminalDock({ open, onClose, vaultPath }: AgentTerminalDoc
         const token = (name: string) => styles.getPropertyValue(name).trim() || undefined;
 
         const term = new Terminal({
-          fontFamily: token("--font-mono") ?? "ui-monospace, monospace",
+          // `--font-mono` 가 아니라 터미널 전용 체인이다 — 앱 mono(JetBrains Mono,
+          // latin 서브셋)는 Powerline PUA 글리프가 없고 macOS 시스템 mono 폰트에도
+          // 하나도 없어서, 그대로 두면 agnoster 프롬프트가 두부(□)로 깨진다.
+          // 토큰이 사용자 디스크에 이미 설치된 폰트로 글리프 단위 폴백을 잇는다.
+          fontFamily: token("--terminal-font-family") ?? "ui-monospace, monospace",
           fontSize: Number.parseFloat(token("--terminal-font-size") ?? "12"),
           lineHeight: Number.parseFloat(token("--terminal-line-height") ?? "1.35"),
           cursorBlink: true,
@@ -256,7 +266,16 @@ export function AgentTerminalDock({ open, onClose, vaultPath }: AgentTerminalDoc
       </header>
 
       {!degraded ? (
-        <div ref={hostRef} data-testid="agent-terminal-host" className="min-h-0 flex-1 px-2 py-1" />
+        // 여백은 **래퍼**가 가진다. FitAddon 은 측정 대상(host)의 computed 크기에서
+        // `.xterm` 요소의 패딩만 빼므로, host 자신이 패딩을 가지면 그만큼 cols/rows 를
+        // 과대 산정해 우측 열이 여백 밑으로 잘린다. 래퍼로 분리하면 산정이 정확해지고
+        // ResizeObserver 대상(host)은 그대로다.
+        <div
+          className="min-h-0 flex-1"
+          style={{ padding: "var(--terminal-inset-y) var(--terminal-inset-x)" }}
+        >
+          <div ref={hostRef} data-testid="agent-terminal-host" className="h-full w-full" />
+        </div>
       ) : (
         // 정직한 강등 — 웹은 프로세스를 못 띄우고, 볼트가 없으면 어디서 돌지가
         // 없다. 강등은 "안 된다" 로 끝나면 막다른 길이므로 **다음 한 걸음**을

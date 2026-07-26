@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T02:43:37.209Z",
+  "generatedAt": "2026-07-26T03:22:25.228Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-26 — 터미널 도크: 깨진 프롬프트 글리프 · 왼쪽 벽 · 뚱뚱한 스크롤바",
+          "slug": "2026-07-26-터미널-도크-깨진-프롬프트-글리프-왼쪽-벽-뚱뚱한-스크롤바"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-26 — 인사이트: 질문 하나에 탭 하나 (구조 탭 3분할 + 잉크 삭감)",
           "slug": "2026-07-26-인사이트-질문-하나에-탭-하나-구조-탭-3분할-잉크-삭감"
         },
@@ -4858,9 +4863,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 구조 탭 하나가 서로 다른 세 질문(\"뭐가 얼마나 있나 / 뭐가 중심인가 / 경계가 건강한가\")을 한 방에 쌓고 있었다. 도그푸드 볼트(294 개념 · 4",
-      "wordCount": 40857,
-      "updatedAt": "2026-07-26T02:43:37.209Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자 지적(\"터미널 모양이 보기 안좋은데? 왼쪽 벽부터 시작해서 그런듯한데\"). 실측해 보니 세 가지가 겹쳐 있었고, 그중 하나는 눈에 안 보이는 실버그",
+      "wordCount": 41055,
+      "updatedAt": "2026-07-26T03:22:25.228Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5400,6 +5405,11 @@
           "slug": "touch-tablet-responsive-contract-2026-07-23-반응형-감사-라운드"
         },
         {
+          "depth": 3,
+          "text": "에이전트 터미널 도크 토큰 (`--terminal-*`, `--agent-terminal-*`)",
+          "slug": "에이전트-터미널-도크-토큰---terminal----agent-terminal-"
+        },
+        {
           "depth": 2,
           "text": "Category differentiation strategy",
           "slug": "category-differentiation-strategy"
@@ -5616,8 +5626,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 14888,
-      "updatedAt": "2026-07-26T11:13:35+09:00",
+      "wordCount": 15210,
+      "updatedAt": "2026-07-26T03:22:25.142Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -6181,7 +6191,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-18 (전 페이지 시안-우선 재구성 웨이브, PR 355~366 — docs/prototypes/ 승인 시안 기반으로 /·/topology·/project/[slug]· /ontology/studio·/ontology/insights·/docs·/projects·/download·project 폼을 재구성. 3-tab insights, 352px 데이터시트, 공방(나침 무대) 쓰기 표면, engraved censu",
       "wordCount": 12616,
-      "updatedAt": "2026-07-26T11:13:04+09:00",
+      "updatedAt": "2026-07-26T11:55:57+09:00",
       "linksOut": [
         "slug",
         "project:slug",

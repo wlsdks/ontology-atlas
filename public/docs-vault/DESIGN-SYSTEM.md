@@ -1101,6 +1101,44 @@ fine-pointer 노트북일 수도, coarse-pointer 12.9" iPad 일 수도 있다. �
   억지로 밀어넣지 않는다. 빌더 캔버스 게이트는 lg(1024)+; 그 아래는 트리
   편집 + 토폴로지 fallback 이 정답이다.
 
+### 에이전트 터미널 도크 토큰 (`--terminal-*`, `--agent-terminal-*`)
+
+xterm 은 CSS 클래스가 아니라 **JS 옵션**으로 타이포·팔레트를 받으므로 값이
+JS 리터럴로 새기 쉽다. 그래서 도크의 시각 계약은 전부 토큰이고 컴포넌트는
+`getComputedStyle` 로 읽기만 한다 (hex fallback 금지 — 토큰이 움직여도 조용히
+옛 색을 유지해 drift 를 숨긴다).
+
+| 토큰 | 값 | 계약 |
+|---|---|---|
+| `--agent-terminal-dock-height` / `-degraded` | `clamp(200px, 30vh, 400px)` / `116px` | 도크 높이. JSX 인라인 px 금지 |
+| `--terminal-font-size` / `--terminal-line-height` | `12px` / `1.35` | 셀 격자가 서브픽셀로 어긋나지 않도록 **터미널만 정수 px** 계약 |
+| `--terminal-font-family` | JBM → `MesloLGS NF` → NF 3종 → `Fira Code` → 시스템 mono | 셀 폰트 체인 |
+| `--terminal-inset-x` / `-y` | `12px` / `8px` | 셀과 도크 크롬의 정렬 계약 |
+| `--terminal-ansi-*` (16색) | hue 보존·채도만 하향 | 외부 프로그램의 data-ink. 셀 전용, 칩·보더로 확장 금지 |
+
+두 가지가 자주 틀리는 지점이라 명문화한다:
+
+- **폰트는 번들하지 않고 체인으로 감지한다.** 앱 mono(JetBrains Mono)는
+  `next/font/google` latin 서브셋이라 Powerline PUA(U+E0B0 등)를 갖지 않고,
+  macOS 시스템 mono 폰트(Menlo·Monaco·SF NS Mono·Andale Mono)에도 **하나도
+  없다**(cmap 실측). 그래서 `--font-mono` 를 그대로 쓰면 agnoster·powerlevel10k
+  프롬프트가 두부(□)로 깨진다. 반대로 Nerd Font 를 번들하는 건 "우리가 사용자
+  터미널의 모양을 정한다" 는 개입이라 반려다. CSS 폴백 체인이 곧 설치 폰트
+  감지이고(능동 감지 `queryLocalFonts` 는 Chromium 전용이라 WKWebView 불가),
+  체인의 이름들은 **감지이지 요구가 아니다** — 없으면 조용히 다음으로 넘어간다.
+- **여백은 측정 대상이 아니라 래퍼가 갖는다.** FitAddon 은 host 의 computed
+  크기에서 `.xterm` 요소의 패딩만 빼므로, host 자신이 패딩을 가지면 그만큼
+  cols/rows 를 **과대 산정**해 우측 열이 여백 밑으로 잘린다. `--terminal-inset-*`
+  는 host 를 감싸는 래퍼에만 적용한다.
+
+스크롤 표면(`.xterm-viewport`)은 xterm 이 만들어 우리가 클래스를 못 붙이는
+자리라, 앱의 얇은 스크롤바(6px 트랙 · `--color-divider` thumb)를 도크 스코프
+셀렉터로 명시 지정한다. 이때 **xterm 자기 스타일시트(`@xterm/xterm/css/xterm.css`)
+가 반드시 함께 실려야 한다** — 없으면 xterm 이 셀 폭을 재려고 만든 측정용 span
+(`.xterm-char-measure-element`)이 숨겨지지 않아 터미널 위에 쓰레기 글자 줄로
+그려지고, `.xterm-viewport` 가 스크롤 컨테이너조차 아니게 되어 위 스타일이
+붙을 자리가 없다.
+
 ## Category differentiation strategy
 
 Differentiate by **border style**, not color — the only color (indigo) is reserved for hub nodes:

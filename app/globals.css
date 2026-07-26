@@ -1619,6 +1619,38 @@
     --terminal-font-size: 12px;
     --terminal-line-height: 1.35;
 
+    /* 셀 폰트 체인 — 글자는 계속 앱 mono(JetBrains Mono)가 그리고, JBM 이
+     * 못 그리는 글리프만 **사용자가 이미 설치한 폰트**로 글리프 단위 폴백된다.
+     *
+     * 왜 필요한가: JBM 은 `next/font/google` + latin 서브셋이라 unicode-range
+     * 밖의 PUA(U+E0B0 Powerline 세퍼레이터 등)를 아예 안 갖는다. 그런데 macOS
+     * 시스템 mono 폰트(Menlo·Monaco·SF NS Mono·Andale Mono)에도 Powerline
+     * 글리프가 **하나도 없다**(cmap 실측). 그래서 `--font-mono` 를 그대로 쓰면
+     * agnoster·powerlevel10k 프롬프트의 세그먼트 구분자가 전부 두부(□)가 된다 —
+     * 우리가 고른 폰트 때문에 사용자의 프롬프트가 깨지는 것이라 렌더링 결함이다.
+     *
+     * 왜 번들이 아니라 체인인가: 폰트를 번들하면 "우리가 사용자 터미널의 모양을
+     * 정한다" 는 개입이고 수 MB 를 진다. 반면 CSS 폴백 체인이 곧 표준적인 설치
+     * 폰트 감지다(능동 감지 `queryLocalFonts` 는 Chromium 전용이라 WKWebView 에서
+     * 못 쓴다). 여기 나열은 **감지이지 요구가 아니다** — 없으면 조용히 다음으로
+     * 넘어간다. 순서 근거: MesloLGS NF = powerlevel10k 공식 안내 폰트,
+     * Fira Code = 비패치판도 Powerline 심볼 내장(cmap 실측). */
+    --terminal-font-family:
+      var(--font-jetbrains), "MesloLGS NF", "JetBrainsMono Nerd Font Mono",
+      "FiraCode Nerd Font Mono", "Fira Code", "Hack Nerd Font Mono",
+      "Symbols Nerd Font Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    /* 셀 영역과 도크 크롬 사이의 정렬 계약. 좌 12px 은 헤더·강등 문단·에러
+     * (모두 `px-3`)와 같은 컬럼에서 셀이 시작하게 한다 — 8px 이던 시절엔 도크
+     * 안에 좌측 기준선이 두 개라 "터미널이 왼쪽 벽에 붙었다" 로 읽혔다.
+     * 상하 8px 은 첫 행 어센더/마지막 행 디센더가 보더에 닿지 않을 만큼의 숨.
+     *
+     * 이 여백은 **측정 대상(xterm host)이 아니라 래퍼**가 가져야 한다. FitAddon 은
+     * host 의 computed 크기에서 `.xterm` 요소의 패딩만 빼므로, host 자신이 패딩을
+     * 가지면 그만큼 cols/rows 를 과대 산정해 우측 열이 잘린다. */
+    --terminal-inset-x: 12px;
+    --terminal-inset-y: 8px;
+
     /* ANSI 16색 — **외부 프로그램의 data-ink**.
      *
      * 이건 우리 장식이 아니라 사용자가 띄운 프로그램(`claude`/`codex`/`git`)이
@@ -2311,6 +2343,29 @@
     .agent-terminal-dock {
       margin-bottom: var(--topology-mobile-bottom-tab-reserve);
     }
+  }
+
+  /* 스크롤 표면은 xterm 이 만든다(`.xterm-viewport`) — 우리 컴포넌트가 클래스를
+     못 붙이는 자리라 도크 스코프에서 명시 지정한다. 안 하면 긴 출력이 나온 순간
+     OS 기본 뚱뚱한 스크롤바가 도크 안에만 나타나 "터미널만 다른 세계" 로 읽힌다.
+     값은 앱의 얇은 스크롤바 관례(6px 트랙 · divider 색 thumb)와 같다. */
+  .agent-terminal-dock .xterm-viewport {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-divider) transparent;
+  }
+
+  .agent-terminal-dock .xterm-viewport::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .agent-terminal-dock .xterm-viewport::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .agent-terminal-dock .xterm-viewport::-webkit-scrollbar-thumb {
+    /* 6px 폭에 6px 반경이면 완전한 알약 — 램프 밖 999px 리터럴이 필요 없다. */
+    border-radius: var(--radius-chip);
+    background: var(--color-divider);
   }
 
   @keyframes agentTerminalDockIn {
