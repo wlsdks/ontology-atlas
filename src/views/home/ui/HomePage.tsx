@@ -2683,8 +2683,8 @@ export function HomePage() {
                       ) : undefined
                     }
                     trailChip={
-                      // 발자국 트레일 칩 — 방문 2개 이상부터. "걸은 길 N개" 클릭 시
-                      // 미니 타임라인 팝(방문 순서 + 노드 포커스 + 에이전트 복사 + 지우기).
+                      // 걸어온 길 칩 — 방문 2개 이상부터. "걸어온 길 · N" 클릭 시
+                      // 미니 타임라인 팝(최신순 방문 + 노드 포커스 + AI 인계 + 지우기).
                       footprintTrailEntries.length >= 2 ? (
                         <TopologyTrailChip
                           label={t("footprint.chipLabel", { count: footprintTrailEntries.length })}
@@ -2697,7 +2697,9 @@ export function HomePage() {
                           labels={{
                             heading: t("footprint.heading"),
                             triggerAriaLabel: t("footprint.triggerAriaLabel"),
-                            currentAriaLabel: t("footprint.currentAriaLabel"),
+                            currentLabel: t("footprint.currentLabel"),
+                            justNowLabel: t("footprint.justNowLabel"),
+                            stepsAgoLabel: (count) => t("footprint.stepsAgoLabel", { count }),
                             rowAriaLabel: (title) => t("footprint.rowAriaLabel", { title }),
                             copyLabel: t("footprint.copyLabel"),
                             copyAriaLabel: t("footprint.copyAriaLabel"),

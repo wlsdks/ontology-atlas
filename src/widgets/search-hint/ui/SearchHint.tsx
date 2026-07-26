@@ -46,9 +46,9 @@ interface Props {
    */
   realmChip?: ReactNode;
   /**
-   * 발자국 트레일 칩(`TopologyTrailChip`, fable 설계) — pathChip/realmChip 과
-   * 같은 "상단 중앙 크롬 열" 문법. 세션 방문이 2개 이상일 때만 렌더돼 "걸은 길
-   * N개" 로 걸어온 경로를 알린다. 슬롯이 비면 렌더 비용 0.
+   * "걸어온 길" 칩(`TopologyTrailChip`, fable 설계) — pathChip/realmChip 과
+   * 같은 "상단 중앙 크롬 열" 문법. 세션 방문이 2개 이상일 때만 렌더돼
+   * "걸어온 길 · N" 으로 지나온 경로를 알린다. 슬롯이 비면 렌더 비용 0.
    */
   trailChip?: ReactNode;
 }
