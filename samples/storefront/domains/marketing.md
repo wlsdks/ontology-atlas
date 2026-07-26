@@ -3,6 +3,7 @@ slug: domains/marketing
 kind: domain
 title: 마케팅
 display_en: Marketing
+description: 쿠폰과 이메일 캠페인으로 재구매를 유도합니다.
 capabilities: [coupon-issue, email-campaign]
 relates: [domains/catalog, domains/customer]
 ---

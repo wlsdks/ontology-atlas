@@ -42,6 +42,33 @@ describe("DomainCapacityBar", () => {
     );
   });
 
+  it("꼬리 열 폭이 내용과 무관하게 같다 — 여섯 행이 한 축을 공유해야 한다 (E1)", () => {
+    // `역량 4 · 요소 110` 과 `역량 2 · 요소 5` 는 글자 폭이 다르다. 그 차이가
+    // 옆의 `flex-1` 트랙 길이로 새면 축이 행마다 갈리고(실측 929.8/935.5/941.2px)
+    // 값이 작은 도메인이 더 긴 막대 축을 받는다. jsdom 은 레이아웃을 계산하지
+    // 않으므로 폭을 정하는 **계약(고정 폭 클래스)** 을 단언한다.
+    const tailOf = (row: { capabilityCount: number; elementCount: number; total: number }) => {
+      const { unmount } = render(
+        <DomainCapacityBar
+          row={{ id: "domain:x", title: "X", ...row }}
+          maxTotal={200}
+          labels={labels}
+        />,
+      );
+      const node = screen.getByTestId("domain-capacity-bar-row");
+      const tail = node.lastElementChild as HTMLElement;
+      const className = tail.className;
+      unmount();
+      return className;
+    };
+
+    const wide = tailOf({ capabilityCount: 4, elementCount: 110, total: 114 });
+    const narrow = tailOf({ capabilityCount: 2, elementCount: 5, total: 7 });
+    expect(wide).toBe(narrow);
+    expect(wide).toContain("flex-none");
+    expect(wide).toMatch(/w-\[\d+px\]/);
+  });
+
   it("floors the fill at zero when maxTotal is zero (empty vault guard)", () => {
     render(
       <DomainCapacityBar

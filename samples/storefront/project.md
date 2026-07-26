@@ -3,6 +3,7 @@ slug: storefront
 kind: project
 title: 온라인 쇼핑몰
 display_en: Online Store
+description: 고객이 상품을 둘러보고 결제하면 재고·배송·환불까지 이어지는 이커머스 사업을 그린 예시 지도입니다.
 domains:
   - catalog
   - customer

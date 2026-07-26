@@ -1,4 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import { isEvidenceOnlyConcept } from "@/entities/knowledge-graph";
 import { buildContainmentParents, nearestDomainId } from "@/shared/lib/ontology-tree";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -37,11 +38,34 @@ export interface RecentUpdateRow {
   kind: string;
   domainTitle: string | null;
   updatedAt: string;
+  /**
+   * 이 이름을 적어 둔 문서 slug. **근거 계층 행에서만** 채워진다 — 같은 제목의
+   * 파생 노드가 둘 이상일 때 두 행을 가르는 유일한 사실이다(실측: `.claude/`
+   * 와 `.codex/` 두 훅 경로가 basename 만으로 「Inject Ontology Summary」 두
+   * 노드를 만들어 8행 중 두 행이 글자까지 같았다).
+   */
+  ref?: string;
 }
 
 export interface FreshnessSummary {
   domainRows: DomainFreshnessRow[];
+  /**
+   * **개념 계층** — 자기 `.md` 를 가진 노드만. 「최근 갱신」이 말하는 "누가
+   * 언제 고쳤다" 가 성립하는 유일한 계층이다.
+   */
   recent: RecentUpdateRow[];
+  /**
+   * **근거 계층** — 다른 문서가 이름만 적어 둔 파생 노드. 「연결」 탭의 영향
+   * 랭킹과 **같은 판정**(`isEvidenceOnlyConcept`)으로 갈라 접힌 자리로 내린다.
+   *
+   * 왜 이 계층을 따로 두는가: 파생 노드의 "갱신일" 은 자기 것이 아니라 **자기를
+   * 인용한 문서의 mtime** 이다. 그걸 개념과 같은 무게로 세우면 화면이 "이 개념이
+   * 오늘 고쳐졌다" 고 말하는데 사실은 남의 문서가 고쳐진 것이다(실측 2026-07-26
+   * 도그푸드: 8행 중 7행이 파생, 그중 둘은 바이트까지 동일했다).
+   */
+  recentEvidence: RecentUpdateRow[];
+  /** 근거 계층 전체 수 — 접힌 토글이 규모를 라벨에 실어 말한다. */
+  recentEvidenceTotal: number;
   /** domain/capability/element 중 알려진 갱신일이 있고 STALE_DAYS 보다 오래된 노드 수.
    * 갱신일을 모르는 노드는 "모른다"이지 "오래됐다"가 아니므로 집계에서 제외 — 데이터
    * 없는 걸 부정확한 값으로 단정 짓지 않는다. */
@@ -86,7 +110,7 @@ export function computeFreshnessSummary(
   edges: readonly KnowledgeGraphEdge[],
   docUpdatedAtBySlug: ReadonlyMap<string, string>,
   referenceDate: Date,
-  options?: { recentLimit?: number },
+  options?: { recentLimit?: number; recentEvidenceLimit?: number },
 ): FreshnessSummary {
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
   const parentOf = buildContainmentParents(edges, nodeById);
@@ -158,18 +182,32 @@ export function computeFreshnessSummary(
       return a.daysAgo - b.daysAgo;
     });
 
-  const recent: RecentUpdateRow[] = resolved
+  const dated = resolved
     .filter((r): r is Resolved & { updatedAt: string } => r.updatedAt !== null)
-    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt) || a.node.title.localeCompare(b.node.title))
-    .slice(0, options?.recentLimit ?? 8)
-    .map((r) => ({
-      nodeId: r.node.id,
-      // 과제 ⑩ — 최근 갱신 목록도 표시용 짧은 제목.
-      title: r.node.display ?? r.node.title,
-      kind: r.node.kind,
-      domainTitle: r.domainId ? (domainTitleById.get(r.domainId) ?? null) : null,
-      updatedAt: r.updatedAt,
-    }));
+    .sort(
+      (a, b) =>
+        Date.parse(b.updatedAt) - Date.parse(a.updatedAt) ||
+        a.node.title.localeCompare(b.node.title),
+    );
+  const toRow = (r: Resolved & { updatedAt: string }, withRef: boolean): RecentUpdateRow => ({
+    nodeId: r.node.id,
+    // 과제 ⑩ — 최근 갱신 목록도 표시용 짧은 제목.
+    title: r.node.display ?? r.node.title,
+    kind: r.node.kind,
+    domainTitle: r.domainId ? (domainTitleById.get(r.domainId) ?? null) : null,
+    updatedAt: r.updatedAt,
+    // 파생 행만 참조 원문을 싣는다 — 개념 행에는 이미 자기 문서가 있어서
+    // 같은 정보가 두 번 나온다.
+    ref: withRef ? (r.node.ref ?? r.node.evidenceIds[0]) : undefined,
+  });
+  const recentLimit = options?.recentLimit ?? 8;
+  const evidenceLimit = options?.recentEvidenceLimit ?? 4;
+  const ownDocRows = dated.filter((r) => !isEvidenceOnlyConcept(r.node));
+  const evidenceRows = dated.filter((r) => isEvidenceOnlyConcept(r.node));
+  const recent: RecentUpdateRow[] = ownDocRows.slice(0, recentLimit).map((r) => toRow(r, false));
+  const recentEvidence: RecentUpdateRow[] = evidenceRows
+    .slice(0, evidenceLimit)
+    .map((r) => toRow(r, true));
 
   const staleCount = resolved.filter(({ node, updatedAt }) => {
     if (!CONTENT_KINDS.has(node.kind) || !updatedAt) return false;
@@ -179,5 +217,12 @@ export function computeFreshnessSummary(
     return daysAgo > STALE_DAYS;
   }).length;
 
-  return { domainRows, recent, staleCount, weeklyTotals };
+  return {
+    domainRows,
+    recent,
+    recentEvidence,
+    recentEvidenceTotal: evidenceRows.length,
+    staleCount,
+    weeklyTotals,
+  };
 }

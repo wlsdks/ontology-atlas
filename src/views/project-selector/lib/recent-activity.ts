@@ -1,6 +1,7 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { VaultDoc } from "@/entities/docs-vault";
 import { nearestDomainId } from "@/shared/lib/ontology-tree";
+import { resolveAuthoredDescription } from "./authored-description";
 
 export interface RecentActivityRow {
   slug: string;
@@ -66,7 +67,12 @@ export function buildRecentActivityRows(
     const domainId = node ? nearestDomainId(node, parentOf, nodeById) : null;
     const domainNode = domainId ? nodeById.get(domainId) : undefined;
     const domainTitle = domainNode ? (domainNode.display ?? domainNode.title) : null;
-    const what = doc.description || node?.summary || doc.excerpt || "";
+    // 카드 본문과 **같은 규칙**을 같은 함수로 쓴다 — 사람이 `description:` 으로
+    // 쓴 것만. `node.summary` 도 폴백에서 빼는 이유는 그 값 자체가 `doc.excerpt`
+    // 로 떨어지기 때문이다(`derive-ontology-from-vault.ts`) — summary 를 남기면
+    // 발췌가 한 칸 우회해서 다시 들어온다. 없으면 행은 제목·종류·도메인·날짜만
+    // 말한다. 빈 자리가 잘못된 문장보다 낫다.
+    const what = resolveAuthoredDescription(doc) ?? "";
     // 지도·팝오버와 같은 이름을 쓴다 — `display` 는 이미 화면 언어로 해석된
     // 값(`derivationToInsight`)이라, 여기만 canonical title 을 쓰면 한국어
     // 화면에 긴 영어 원제가, 영어 화면에 한국어 원제가 그대로 흘렀다.

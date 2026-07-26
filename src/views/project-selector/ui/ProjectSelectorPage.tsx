@@ -26,7 +26,7 @@ import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { computeWorkspaceCensus } from "../lib/workspace-census";
 import { buildProjectCardFacts } from "../lib/project-card-facts";
 import { buildDomainCompositionRows, type DomainCompositionRow } from "../lib/domain-composition";
-import { resolveProjectCardDescription } from "../lib/project-card-description";
+import { resolveAuthoredDescription } from "../lib/authored-description";
 import {
   buildRecentActivityRows,
   resolveRecentActivityAgo,
@@ -181,7 +181,7 @@ export function ProjectSelectorPage() {
                       ? true
                       : (nodeById.get(row.domainId)?.projectIds ?? []).includes(project.slug),
                   )}
-                  description={resolveProjectCardDescription(doc)}
+                  description={resolveAuthoredDescription(doc)}
                   docPath={doc?.path}
                   kindLabel={kindLabel}
                   t={t}
@@ -284,7 +284,7 @@ interface ProjectFullCardProps {
   /** Toss P2 — 사용자가 frontmatter `description:` 에 직접 쓴 한 줄만.
    * `Project.description` (엔티티 레이어)은 없으면 body 발췌로 fallback 하는데,
    * 그 발췌가 내부 포지셔닝 카피일 수 있어 카드에는 절대 쓰지 않는다
-   * (`resolveProjectCardDescription` 참고). */
+   * (`resolveAuthoredDescription` 참고). */
   description: string | null;
   docPath: string | undefined;
   kindLabel: (kind: string) => string;

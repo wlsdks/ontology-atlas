@@ -3,6 +3,7 @@ slug: domains/catalog
 kind: domain
 title: 상품
 display_en: Products
+description: 판매할 상품을 등록하고 재고 수량을 관리합니다.
 capabilities: [inventory-management, product-register]
 relates: [domains/marketing, domains/order]
 ---

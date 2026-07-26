@@ -88,7 +88,9 @@ vi.mock("../lib/use-vault-docs", () => ({
       path: "docs/ontology/capabilities/mcp-server.md",
       title: "MCP Server",
       tags: [],
-      frontmatter: { kind: "capability" },
+      // 두 생산 경로 모두 `doc.description` 을 frontmatter 의 그 키에서만
+      // 채운다 — 발췌 금지 규칙(A2)이 읽는 자리도 frontmatter 다.
+      frontmatter: { kind: "capability", description: "write 도구로 확장" },
       headings: [],
       excerpt: "",
       description: "write 도구로 확장",

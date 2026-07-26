@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { formatDate } from "@/shared/lib/format-date";
-import { TopologyV2KindGlyph } from "@/shared/ui";
+import { EvidenceOnlyBadge, TopologyV2KindGlyph } from "@/shared/ui";
 import { RecentNodeRow } from "@/widgets/recent-node-row";
 import type { DomainFreshnessRow, RecentUpdateRow } from "../../lib/freshness";
 
@@ -31,6 +35,14 @@ export interface FreshnessTabLabels {
   staleCountLabel: string;
   trendTitle: string;
   trendCaption: string;
+  /** 근거 계층 여는/닫는 토글 — 「연결」 탭과 같은 문구를 공유한다. */
+  evidenceShow: (count: number) => string;
+  evidenceHide: string;
+  /** 근거 계층 캡션 — 이 날짜가 왜 그 노드의 것이 아닌지. */
+  evidenceCaption: string;
+  evidenceTruncated: (shown: number, total: number) => string;
+  evidenceBadge: string;
+  evidenceBadgeHint: string;
 }
 
 export interface FreshnessTabRecentLink {
@@ -43,6 +55,9 @@ export interface FreshnessTabRecentLink {
 export interface FreshnessTabProps {
   domainRows: DomainFreshnessRow[];
   recent: RecentUpdateRow[];
+  /** 근거 계층 — 접힌 자리. `computeFreshnessSummary` 가 이미 갈라 놓는다. */
+  recentEvidence: RecentUpdateRow[];
+  recentEvidenceTotal: number;
   staleCount: number;
   /** 전 도메인 합산 주간 갱신 건수, 히트스트립과 같은 12주 창 —
    * `computeFreshnessSummary` 가 이미 계산한 실데이터 (`freshness.ts`). */
@@ -60,12 +75,15 @@ export interface FreshnessTabProps {
 export function FreshnessTab({
   domainRows,
   recent,
+  recentEvidence,
+  recentEvidenceTotal,
   staleCount,
   weeklyTotals,
   kindLabel,
   recentLink,
   labels,
 }: FreshnessTabProps) {
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-2">
       <section
@@ -190,6 +208,64 @@ export function FreshnessTab({
             ))
           )}
         </div>
+
+        {/* 근거 계층 — 「연결」 탭 영향 랭킹과 같은 조용한 토글·같은 문구.
+            지우지 않고 아래로 내린다: 파생 이름도 볼트의 사실이고, 여기가
+            「문서 만들기」 승격 경로가 보이는 유일한 자리다. */}
+        {recentEvidenceTotal > 0 ? (
+          <div className="mt-2 border-t border-[color:var(--color-divider)] pt-1">
+            <button
+              type="button"
+              aria-expanded={evidenceOpen}
+              data-testid="insights-freshness-evidence-toggle"
+              onClick={() => setEvidenceOpen((open) => !open)}
+              className="-mx-1.5 flex min-h-7 w-full items-center gap-1.5 rounded-md px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+            >
+              {evidenceOpen ? (
+                <ChevronDown aria-hidden size={13} className="flex-none" />
+              ) : (
+                <ChevronRight aria-hidden size={13} className="flex-none" />
+              )}
+              <span className="min-w-0 truncate">
+                {evidenceOpen ? labels.evidenceHide : labels.evidenceShow(recentEvidenceTotal)}
+              </span>
+            </button>
+            {evidenceOpen ? (
+              <div className="insights-disclosure-in">
+                {recentEvidence.map((row) => (
+                  <RecentNodeRow
+                    key={`${row.nodeId}:${row.ref ?? ""}`}
+                    kind={row.kind}
+                    title={row.title}
+                    subtitle={
+                      <>
+                        <EvidenceOnlyBadge
+                          label={labels.evidenceBadge}
+                          hint={labels.evidenceBadgeHint}
+                          className="mr-1.5"
+                        />
+                        {kindLabel(row.kind)}
+                        {row.domainTitle ? ` · ${row.domainTitle}` : ""}
+                      </>
+                    }
+                    trailing={formatDate(row.updatedAt)}
+                    // 같은 제목의 파생이 둘 있을 때 두 행을 가르는 유일한 사실.
+                    trailingSecondary={row.ref}
+                    href={recentLink.href(row.nodeId)}
+                    ariaLabel={recentLink.ariaLabel(row.title)}
+                    testId="insights-freshness-evidence-row-link"
+                  />
+                ))}
+                <p className="pt-1.5 text-label leading-snug text-[color:var(--color-text-quaternary)]">
+                  {recentEvidenceTotal > recentEvidence.length
+                    ? `${labels.evidenceTruncated(recentEvidence.length, recentEvidenceTotal)} · `
+                    : ""}
+                  {labels.evidenceCaption}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="mt-2.5 flex items-center justify-between border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
           <span>{labels.staleCountLabel}</span>
           <span className="font-mono text-body tabular-nums text-[color:var(--topology-v2-numeral-face)]">{staleCount}</span>

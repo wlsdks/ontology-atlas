@@ -102,6 +102,17 @@ const IMPACT_DISPLAY_LIMIT = 12;
  */
 const DUPLICATE_DISPLAY_LIMIT = 3;
 const RECENT_UPDATES_LIMIT = 8;
+/**
+ * 「최근 갱신」의 근거 계층에 펼쳐 보일 행 수.
+ *
+ * 3인 이유는 실측이다(1512×950, 도그푸드). 영향 랭킹은 같은 계층을 4행 두지만
+ * 그 카드는 두 칸 격자라 4행이 두 줄로 접힌다. 이 목록은 한 칸이라 4행이면
+ * 펼친 「신선도」 탭이 en 1,102px 로 스크롤 계약(1,120px)까지 18px 만 남긴다 —
+ * 번역이 한 줄 길어지면 넘긴다. 3행이면 1,0xx 로 여유가 돌아온다. 규모는 토글
+ * 라벨과 절단 문구가 그대로 말하고, 여기서 필요한 것은 "무엇이 강등됐는지"의
+ * 표본이다.
+ */
+const RECENT_UPDATES_EVIDENCE_LIMIT = 3;
 
 /** 탭이 답하는 질문을 에이전트의 실행 계획으로 그대로 옮긴 것. */
 const HANDOFF_PAYLOAD: Record<InsightsTab, string> = {
@@ -313,7 +324,11 @@ export function OntologyInsightsPage() {
     );
 
   const freshness = useMemo(
-    () => computeFreshnessSummary(nodes, edges, docFreshnessIndex, new Date(), { recentLimit: RECENT_UPDATES_LIMIT }),
+    () =>
+      computeFreshnessSummary(nodes, edges, docFreshnessIndex, new Date(), {
+        recentLimit: RECENT_UPDATES_LIMIT,
+        recentEvidenceLimit: RECENT_UPDATES_EVIDENCE_LIMIT,
+      }),
     [nodes, edges, docFreshnessIndex],
   );
 
@@ -604,11 +619,11 @@ export function OntologyInsightsPage() {
     empty: t("impactEmpty"),
     emptyHint: t("impactEmptyHint"),
     truncated: (shown: number, total: number) => t("impactTruncated", { shown, total }),
-    evidenceShow: (count: number) => t("impactEvidenceShow", { count }),
-    evidenceHide: t("impactEvidenceHide"),
+    evidenceShow: (count: number) => t("evidenceShow", { count }),
+    evidenceHide: t("evidenceHide"),
     evidenceCaption: t("impactEvidenceCaption"),
     evidenceTruncated: (shown: number, total: number) =>
-      t("impactEvidenceTruncated", { shown, total }),
+      t("evidenceTruncated", { shown, total }),
     evidenceBadge: t("evidenceBadge"),
     evidenceBadgeHint: t("evidenceBadgeHint"),
   };
@@ -769,6 +784,16 @@ export function OntologyInsightsPage() {
     staleCountLabel: t("staleCountLabel"),
     trendTitle: t("trendTitle"),
     trendCaption: t("trendCaption", { weeks: FRESHNESS_WINDOW_WEEKS }),
+    // 근거 계층의 토글·배지 문구는 「연결」 탭과 **같은 문자열**을 쓴다 —
+    // 같은 계층을 탭마다 다르게 부르면 배우는 사람이 다른 것이라고 읽는다.
+    // 캡션만 탭별로 다르다: 저기서는 "수의 뜻", 여기서는 "날짜의 주인".
+    evidenceShow: (count: number) => t("evidenceShow", { count }),
+    evidenceHide: t("evidenceHide"),
+    evidenceCaption: t("freshnessEvidenceCaption"),
+    evidenceTruncated: (shown: number, total: number) =>
+      t("evidenceTruncated", { shown, total }),
+    evidenceBadge: t("evidenceBadge"),
+    evidenceBadgeHint: t("evidenceBadgeHint"),
   };
 
   return (
@@ -955,6 +980,7 @@ export function OntologyInsightsPage() {
                 pairs={domainCoupling.pairs}
                 grid={domainCoupling.grid}
                 boundaries={domainCoupling.boundaries}
+                boundaryTotalCount={domainCoupling.boundaryTotalCount}
                 isColdStart={domainCoupling.isColdStart}
                 edgeTypeLabel={edgeTypeLabel}
                 nodeLink={{
@@ -969,6 +995,8 @@ export function OntologyInsightsPage() {
                 labels={freshnessLabels}
                 domainRows={freshness.domainRows}
                 recent={freshness.recent}
+                recentEvidence={freshness.recentEvidence}
+                recentEvidenceTotal={freshness.recentEvidenceTotal}
                 staleCount={freshness.staleCount}
                 weeklyTotals={freshness.weeklyTotals}
                 kindLabel={kindLabel}

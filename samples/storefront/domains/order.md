@@ -3,6 +3,7 @@ slug: domains/order
 kind: domain
 title: 주문
 display_en: Orders
+description: 장바구니에 담는 순간부터 주문 확정·취소까지의 흐름을 다룹니다.
 capabilities: [cart, order-cancel, order-create]
 relates: [domains/fulfillment, domains/payment]
 ---

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-24T09:32:05.000Z",
+  "generatedAt": "2026-07-26T14:59:15.000Z",
   "docs": [
     {
       "slug": "capabilities/cart",
@@ -367,12 +367,14 @@
       "slug": "domains/catalog",
       "path": "samples/storefront/domains/catalog.md",
       "title": "상품",
+      "description": "판매할 상품을 등록하고 재고 수량을 관리합니다.",
       "tags": [],
       "frontmatter": {
         "slug": "domains/catalog",
         "kind": "domain",
         "title": "상품",
         "display_en": "Products",
+        "description": "판매할 상품을 등록하고 재고 수량을 관리합니다.",
         "capabilities": [
           "inventory-management",
           "product-register"
@@ -391,19 +393,21 @@
       ],
       "excerpt": "판매할 상품을 등록하고 재고 수량을 관리하는 도메인입니다. 상품 정보와 재고 상태는 장바구니 담기·주문 생성이 성립하기 위한 전제 조건입니다.",
       "wordCount": 20,
-      "updatedAt": "2026-07-24T18:32:05+09:00",
+      "updatedAt": "2026-07-26T23:59:15+09:00",
       "linksOut": []
     },
     {
       "slug": "domains/customer",
       "path": "samples/storefront/domains/customer.md",
       "title": "회원",
+      "description": "고객이 가입하고 구매한 상품에 리뷰를 남깁니다.",
       "tags": [],
       "frontmatter": {
         "slug": "domains/customer",
         "kind": "domain",
         "title": "회원",
         "display_en": "Members",
+        "description": "고객이 가입하고 구매한 상품에 리뷰를 남깁니다.",
         "capabilities": [
           "review-write",
           "signup"
@@ -421,19 +425,21 @@
       ],
       "excerpt": "고객이 쇼핑몰에 가입하고, 구매한 상품에 리뷰를 남기는 도메인입니다. 회원 인증은 장바구니·주문·리뷰 등 대부분의 개인화 기능의 전제가 됩니다.",
       "wordCount": 19,
-      "updatedAt": "2026-07-24T18:32:05+09:00",
+      "updatedAt": "2026-07-26T23:59:15+09:00",
       "linksOut": []
     },
     {
       "slug": "domains/fulfillment",
       "path": "samples/storefront/domains/fulfillment.md",
       "title": "배송",
+      "description": "결제가 끝난 주문을 고객에게 보내고 반품을 접수합니다.",
       "tags": [],
       "frontmatter": {
         "slug": "domains/fulfillment",
         "kind": "domain",
         "title": "배송",
         "display_en": "Shipping",
+        "description": "결제가 끝난 주문을 고객에게 보내고 반품을 접수합니다.",
         "capabilities": [
           "return-intake",
           "shipment-tracking"
@@ -451,19 +457,21 @@
       ],
       "excerpt": "결제가 끝난 주문을 실제로 고객에게 보내고, 필요하면 반품을 접수하는 도메인입니다. 배송사 연동과 환불 처리가 맞물려 동작합니다.",
       "wordCount": 18,
-      "updatedAt": "2026-07-24T18:32:05+09:00",
+      "updatedAt": "2026-07-26T23:59:15+09:00",
       "linksOut": []
     },
     {
       "slug": "domains/marketing",
       "path": "samples/storefront/domains/marketing.md",
       "title": "마케팅",
+      "description": "쿠폰과 이메일 캠페인으로 재구매를 유도합니다.",
       "tags": [],
       "frontmatter": {
         "slug": "domains/marketing",
         "kind": "domain",
         "title": "마케팅",
         "display_en": "Marketing",
+        "description": "쿠폰과 이메일 캠페인으로 재구매를 유도합니다.",
         "capabilities": [
           "coupon-issue",
           "email-campaign"
@@ -482,19 +490,21 @@
       ],
       "excerpt": "쿠폰을 발급하고 이메일 캠페인으로 고객에게 알리는 도메인입니다. 상품·회원 도메인의 데이터를 바탕으로 재구매를 유도하는 역할을 합니다.",
       "wordCount": 17,
-      "updatedAt": "2026-07-24T18:32:05+09:00",
+      "updatedAt": "2026-07-26T23:59:15+09:00",
       "linksOut": []
     },
     {
       "slug": "domains/order",
       "path": "samples/storefront/domains/order.md",
       "title": "주문",
+      "description": "장바구니에 담는 순간부터 주문 확정·취소까지의 흐름을 다룹니다.",
       "tags": [],
       "frontmatter": {
         "slug": "domains/order",
         "kind": "domain",
         "title": "주문",
         "display_en": "Orders",
+        "description": "장바구니에 담는 순간부터 주문 확정·취소까지의 흐름을 다룹니다.",
         "capabilities": [
           "cart",
           "order-cancel",
@@ -514,19 +524,21 @@
       ],
       "excerpt": "고객이 상품을 장바구니에 담는 순간부터 주문을 확정하거나 취소하기까지의 흐름을 다룹니다. 결제·재고·배송 도메인과 맞물려 움직이는 쇼핑몰의 중심 도메인입니다.",
       "wordCount": 19,
-      "updatedAt": "2026-07-24T18:32:05+09:00",
+      "updatedAt": "2026-07-26T23:59:15+09:00",
       "linksOut": []
     },
     {
       "slug": "domains/payment",
       "path": "samples/storefront/domains/payment.md",
       "title": "결제",
+      "description": "결제를 승인하고 취소·반품 시 환불을 처리합니다.",
       "tags": [],
       "frontmatter": {
         "slug": "domains/payment",
         "kind": "domain",
         "title": "결제",
         "display_en": "Payments",
+        "description": "결제를 승인하고 취소·반품 시 환불을 처리합니다.",
         "capabilities": [
           "payment-authorize",
           "refund-process"
@@ -544,7 +556,7 @@
       ],
       "excerpt": "카드사·PG(결제 대행)를 통해 결제를 승인하고, 취소·반품 시 환불을 처리하는 도메인입니다. 주문 확정과 취소 모두 이 도메인의 승인 결과에 의존합니다.",
       "wordCount": 21,
-      "updatedAt": "2026-07-24T18:32:05+09:00",
+      "updatedAt": "2026-07-26T23:59:15+09:00",
       "linksOut": []
     },
     {
@@ -738,12 +750,14 @@
       "slug": "project",
       "path": "samples/storefront/project.md",
       "title": "온라인 쇼핑몰",
+      "description": "고객이 상품을 둘러보고 결제하면 재고·배송·환불까지 이어지는 이커머스 사업을 그린 예시 지도입니다.",
       "tags": [],
       "frontmatter": {
         "slug": "storefront",
         "kind": "project",
         "title": "온라인 쇼핑몰",
         "display_en": "Online Store",
+        "description": "고객이 상품을 둘러보고 결제하면 재고·배송·환불까지 이어지는 이커머스 사업을 그린 예시 지도입니다.",
         "domains": [
           "catalog",
           "customer",
@@ -762,7 +776,7 @@
       ],
       "excerpt": "고객이 상품을 둘러보고 장바구니에 담아 결제하면, 그 주문이 재고·배송·환불까지 이어지는 일반적인 이커머스 사업의 예시 온톨로지입니다. 실제 회사가 아니라 \"이 지도가 우리 비즈니스에도 이렇게 쓰일 수 있겠다\"를 한눈에 보여주기 위한 샘플입니다. 주문(order) · 결제(payment) · 상품(catalog) · 회원(customer) · 배송(fulfillment) · 마케팅(marketing) 6개 도메인이 서로 의존하고 참조하는 관계를 그대로 그래프로 옮겨, 개발자가 아니어도 \"이 기능이 왜 저 기능에 의존하는지\"를 바로 읽을 수 있게 구성했습니다.",
       "wordCount": 66,
-      "updatedAt": "2026-07-24T18:32:05+09:00",
+      "updatedAt": "2026-07-26T23:59:15+09:00",
       "linksOut": []
     }
   ],

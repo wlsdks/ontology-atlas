@@ -50,6 +50,8 @@ export interface DomainCouplingCardProps {
   pairs: DomainCouplingPairRow[];
   grid: DomainCouplingGrid;
   boundaries: DomainCouplingBoundaryRow[];
+  /** 연결이 있는 도메인 전체 수 — 목록이 상한에서 잘렸으면 각주로 밝힌다. */
+  boundaryTotalCount: number;
   isColdStart: boolean;
   edgeTypeLabel: (type: string) => string;
   nodeLink: DomainCouplingCardLink;
@@ -67,6 +69,11 @@ export interface DomainCouplingCardProps {
  * (새 hue 0), 색만으로 말하지 않도록 칸 안에 숫자를 남긴다. 대각선(같은 도메인
  * 안쪽 연결)은 교차가 아니므로 무채색이다.
  * 우: 도메인별 self/cross 비율("경계 압력") — 같은 matrix 의 `domains[]` 산술.
+ * 막대가 그리는 값은 **교차 비중** 하나다. 한때 총량(`self+cross`)을 그리고
+ * 총량으로 세웠는데, 캡션은 "교차 비중이 높을수록 경계가 새고 있다" 를 읽으라고
+ * 했다 — 실측(2026-07-26 도그푸드) 결과 두 순위가 거의 역방향이라, 막대만 훑은
+ * 사람은 가장 심한 도메인을 가장 안전한 것으로 읽었다. 캡션이 약속이고 그림이
+ * 캡션을 따른다. 총량은 같은 행의 숫자(`안쪽 N · 교차 M`)가 그대로 말한다.
  *
  * 콜드스타트 — 도메인 2개 미만이거나 교차 edge 가 0건이면 빈/오해 소지 있는
  * 격자 대신 명시적 empty-state 한 장만 그린다.
@@ -77,6 +84,7 @@ export function DomainCouplingCard({
   pairs,
   grid,
   boundaries,
+  boundaryTotalCount,
   isColdStart,
   edgeTypeLabel,
   nodeLink,
@@ -84,7 +92,6 @@ export function DomainCouplingCard({
 }: DomainCouplingCardProps) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
-  const boundaryMax = boundaries.reduce((m, b) => Math.max(m, b.crossEdges + b.selfEdges), 0);
   const pairByKey = new Map<string, DomainCouplingPairRow>(
     pairs.map((pair) => [`${pair.fromId}->${pair.toId}`, pair]),
   );
@@ -111,7 +118,15 @@ export function DomainCouplingCard({
   }
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-[1.2fr_1fr]">
+    // 폭 배분을 뒤집었다. 격자는 최대 6×6 이라 필요한 폭이 34rem 안에서
+    // 정해지고(이름 14rem + 칸 6×2.75rem + 간격 + 카드 패딩), 경계 압력 막대는
+    // 폭이 늘수록 비중 차이가 잘 읽힌다. 넓은 쪽을 격자에 주면 격자 오른쪽이
+    // 비고(2026-07-26 실측: 카드 폭의 45%) 막대는 짧아진다.
+    //
+    // `auto` 가 아니라 고정 34rem 인 이유: `auto` 트랙은 남는 공간을 흡수하고
+    // 그 상한이 max-content 라 **카드 아래 캡션 한 문장의 길이**가 카드 폭을
+    // 정해 버린다(실측 746px). 치수는 설계 결정이지 문장 길이의 부산물이 아니다.
+    <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
       <section
         aria-label={labels.title}
         className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
@@ -125,10 +140,13 @@ export function DomainCouplingCard({
           labels={labels}
         />
         {/* 상세는 선택이 없어도 자리를 예약한다 — 칸을 누를 때마다 카드 높이가
-            뛰면 방금 비교하던 격자가 눈 밑에서 움직인다. */}
+            뛰면 방금 비교하던 격자가 눈 밑에서 움직인다.
+            빈 상태의 안내문은 예약된 자리 **가운데**에 둔다. 위쪽에 붙여 두면
+            아래로 58px 이 남아(2026-07-26 실측) 예약된 슬롯이 아니라 두 캡션
+            사이의 죽은 틈으로 읽혔다. */}
         <div
           data-testid="domain-coupling-selection"
-          className="mt-2.5 min-h-[76px] border-t border-[color:var(--color-divider)] pt-2.5"
+          className="mt-2.5 flex min-h-[76px] flex-col justify-center border-t border-[color:var(--color-divider)] pt-2.5"
         >
           {selected ? (
             <SelectedPairDetail pair={selected} edgeTypeLabel={edgeTypeLabel} nodeLink={nodeLink} />
@@ -152,9 +170,11 @@ export function DomainCouplingCard({
         <CardHead label={labels.boundaryTitle} unit={labels.boundaryCountUnit} count={domainCount} />
         <div className="mt-3 flex flex-1 flex-col justify-evenly gap-2.5">
           {boundaries.map((row) => {
-            const total = row.selfEdges + row.crossEdges;
-            const width = boundaryMax > 0 ? Math.max(2, Math.round((total / boundaryMax) * 100)) : 0;
+            // 막대 = 교차 비중 그 자체(0~100%). 최대값 정규화를 쓰지 않는 이유는
+            // 비중이 이미 0~100 척도라서다 — 목록 안 최대값으로 다시 나누면
+            // "100% 짜리 막대"가 실제 100% 가 아닌 자리에도 생긴다.
             const crossPct = Math.round(row.crossRatio * 100);
+            const width = crossPct > 0 ? Math.max(2, crossPct) : 0;
             return (
               <div key={row.id} className="flex flex-col gap-1">
                 <div className="flex items-center gap-2 text-body text-[color:var(--color-text-secondary)]">
@@ -178,6 +198,9 @@ export function DomainCouplingCard({
           })}
         </div>
         <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">
+          {boundaryTotalCount > boundaries.length
+            ? `${labels.gridTruncated(boundaries.length, boundaryTotalCount)} · `
+            : ""}
           {labels.boundaryCaption}
         </p>
       </section>
@@ -198,6 +221,28 @@ function crossCellTone(count: number, maxCross: number): string | undefined {
   return "var(--color-indigo-a66)";
 }
 
+/**
+ * 대각선 칸(같은 도메인 안 연결)의 농도 — **무채색** 3단, 자기 최대값 기준.
+ *
+ * 한때 값과 무관하게 `--color-overlay-2` 한 값이었다. 그래서 격자에서 가장 큰
+ * 두 수(도그푸드 14·10)가 가장 옅은 칸이었고, 캡션의 「칸이 진할수록 …
+ * 많아요」가 대각선에서 거짓이 됐다(2026-07-26 실측). 값에 반응하게 고쳐
+ * 캡션을 두 채널 모두에서 참으로 만든다.
+ *
+ * 사다리 상한을 `--color-overlay-3`(0.10)에서 멈추는 이유는 대비다. 한 단 더
+ * (`--color-border-strong` 0.14) 올리면 그 배경 위 `text-secondary` 가
+ * 6.51:1 로는 남지만 칸 테두리(divider)가 배경에 먹혀 격자선이 사라진다.
+ * 0.02/0.06/0.10 세 단은 secondary 텍스트로 9.21 / 8.36 / 7.43:1 이라
+ * AA(4.5:1) 를 넉넉히 넘는다.
+ */
+function selfCellTone(count: number, maxSelf: number): string | undefined {
+  if (count <= 0) return undefined;
+  const ratio = maxSelf > 0 ? count / maxSelf : 1;
+  if (ratio <= 0.34) return "var(--color-overlay-1)";
+  if (ratio <= 0.67) return "var(--color-overlay-2)";
+  return "var(--color-overlay-3)";
+}
+
 function CouplingGrid({
   grid,
   selectedKey,
@@ -216,14 +261,20 @@ function CouplingGrid({
   //
   // 이름 칸은 14rem 상한이다. `1fr` 로 두면 카드 폭을 다 먹어 이름과 칸 사이가
   // 수백 px 벌어지고, 한 행을 읽는 데 눈이 화면을 가로지른다.
-  const template = `minmax(0,14rem) repeat(${grid.domains.length}, 1.75rem)`;
+  //
+  // 칸 크기는 두 단(`--coupling-cell`)이다. 좁은 화면은 28px 로 유지해 가로
+  // 넘침을 막고, lg 이상에서는 44px 로 키워 카드가 격자로 채워지게 한다 —
+  // 실측(2026-07-26)에서 404×197 격자가 735px 카드 안에 앉아 오른쪽 45%가
+  // 비었고, 그 빈칸이 화면을 미완성으로 읽히게 했다. 늘린 건 여백이 아니라
+  // 데이터 잉크(숫자가 11px→12.5px 램프 한 단 위로 올라간다)다.
+  const template = `minmax(0,14rem) repeat(${grid.domains.length}, var(--coupling-cell))`;
 
   return (
     <div
       role="grid"
       aria-label={labels.title}
       data-testid="domain-coupling-grid"
-      className="mt-2.5 flex w-fit max-w-full flex-col gap-0.5"
+      className="mt-2.5 flex w-fit max-w-full flex-col gap-0.5 [--coupling-cell:1.75rem] lg:[--coupling-cell:2.75rem]"
     >
       <div role="row" className="grid items-center gap-0.5" style={{ gridTemplateColumns: template }}>
         {/* 이름 칸 위의 빈 머리. `sr-only` 는 absolute 라 격자 흐름에서 빠져
@@ -266,19 +317,29 @@ function CouplingGrid({
               ? labels.gridSelfAria(from.title, count)
               : labels.gridCellAria(from.title, to.title, count);
             const tone = isDiagonal
-              ? count > 0
-                ? "var(--color-overlay-2)"
-                : undefined
+              ? selfCellTone(count, grid.maxSelf)
               : crossCellTone(count, grid.maxCross);
-            const shared =
-              "flex h-7 items-center justify-center rounded-sm border border-[color:var(--color-divider)] font-mono text-label tabular-nums";
+            // 파선 테두리 = "이 칸은 다른 척도" 를 색이 아닌 채널로 말한다
+            // (헌장: 카테고리 구분은 색이 아닌 보더 스타일). 값이 0인 대각선도
+            // 파선이라 「교차 없음」 빈칸과 「안쪽 연결 없음」 빈칸이 구별된다.
+            const shared = `flex h-[var(--coupling-cell)] items-center justify-center rounded-sm border font-mono text-body tabular-nums ${
+              isDiagonal
+                ? "border-dashed border-[color:var(--color-border-strong)]"
+                : "border-[color:var(--color-divider)]"
+            }`;
             if (!selectable) {
               return (
                 <span
                   key={key}
                   role="gridcell"
                   aria-label={label}
-                  className={`${shared} text-[color:var(--color-text-quaternary)]`}
+                  // 숫자를 실은 칸은 어느 배경에서도 AA 를 넘겨야 한다 —
+                  // quaternary 는 대각선 최고 농도에서 3.97:1 로 미달했다.
+                  className={`${shared} ${
+                    count > 0
+                      ? "text-[color:var(--color-text-secondary)]"
+                      : "text-[color:var(--color-text-quaternary)]"
+                  }`}
                   style={{ backgroundColor: tone }}
                 >
                   {count > 0 ? count : ""}
