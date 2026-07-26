@@ -464,21 +464,34 @@ a defect if it names the right one:
 | --- | --- | --- |
 | **Hub amber** | `--topology-v2-amber-hub` / `BRAND_MARK_AMBER` `#d4b478` | One hub ring + one Layer-0 container, plus two written exceptions (agent focus ring, `?recent=` spotlight). A third on screen is a defect. |
 | **Brand mark** | the same `#d4b478` in the nav-rail logo | Not an expansion — it is the product's mark, one instance per route, never data. Written down here so audits stop re-filing it. |
-| **Kind tone** | `capability` `rgba(211,159,73,.94)` (amber) · `element` `rgba(124,166,141,.94)` (eucalyptus) | A **data mark**, the same palette the map uses for those node kinds. Allowed in compact markers and multi-series bars; never as a surface, rail, or callout. |
+| **Kind tone** | `capability` `rgba(211,159,73,.94)` (amber) · `element` `rgba(124,166,141,.94)` (eucalyptus) | A **data mark**. Allowed only where colour is the sole identity channel — the kind-census strip, map dots, tree chips. Composition bars whose segments are already identified by order + adjacent numerals use the app bar grammar (indigo primary + neutral + 1px seam) instead. Never a surface, rail, or callout. |
 
-**Bar colour follows the number of series, not the surface.** A bar that encodes
-one value (this domain's size against the largest) is monochrome — indigo for
-the leading row, neutral for the rest (`DomainCompositionGrid`). A bar that
-encodes two values inside one track (capability vs element) needs two data
-marks, and those marks are the kind tones (`DomainCapacityBar`, used by
-`/projects` cards and the insights structure tab). Two grammars for the same
-concept would be the defect; two grammars for one-series vs two-series data is
-the reason the palette exists.
+**Bar colour is neutral + one indigo.** Indigo marks the primary series only —
+the leading row in a one-value ranking (`DomainCompositionGrid`), the capability
+segment in a two-value composition (`DomainCapacityBar`). The boundary between
+two segments is carried by a **1px seam** (a gap that lets the track colour
+show through), not by hue: indigo against neutral measures 1.12:1, far under the
+3:1 graphic threshold, so the separator has to be colour-independent — the route
+WCAG 1.4.11 sanctions.
 
-Verified live 2026-07-26 (`/ko/projects`, 1920 dark): the only non-indigo chroma
-on the page is those two kind-tone bar segments. `/ko/project/[slug]` renders
-zero. Neither is `--color-status-success`; a green **status dot** would be, and
-that is a separate, sanctioned signal.
+The earlier rule ("bar colour follows the number of series") granted every
+two-series bar a licence for two chromatic data marks. Measured cost on
+`/ko/projects` (1512 dark, 2026-07-26): 13 chromatic faces, 32,987px² of chroma,
+the longest bar on the first-visit screen amber. Worse, the licensed pair failed
+its own premise — amber against eucalyptus composites to **1.14:1** on the
+track, so it never separated by luminance, only by hue, and that hue axis
+(orange↔green) is the one red-green colour deficiency (~8% of men) cannot
+resolve. Order (capability always left), the unit word, and the adjacent
+numerals were already carrying identity three times over; the colour was
+duplicate ink.
+
+Verified live 2026-07-26 after the change (`/ko/projects`, 1512 dark): chromatic
+faces 13 → **1** (the nav-rail brand mark), chroma area 32,987px² → 36px². The
+insights 구성 tab keeps 4 kind-tone faces, all inside the 종류 census card where
+the unlabelled stack strip has no other channel. `/ko/project/[slug]` renders
+zero. None of these is `--color-status-success`; a green **status dot** would be,
+and that is a separate, sanctioned signal. Decision record:
+`.qa-scratch/domain-bar-color-2026-07-26.md`.
 
 ### Borders
 

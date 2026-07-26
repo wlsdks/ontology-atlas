@@ -1,6 +1,6 @@
 import { TopologyV2KindGlyph } from "@/shared/ui";
 import { getOntologyKindTone } from "@/entities/ontology-class";
-import { DomainCapacityBar } from "@/widgets/domain-capacity-bar";
+import { DomainCapacityBar, DomainCapacityLegend } from "@/widgets/domain-capacity-bar";
 import { InsightsHeroCensus, type InsightsHeroCensusLabels } from "../parts/InsightsHeroCensus";
 import { InsightsBar } from "../parts/InsightsBar";
 import type { CensusHealthSummary } from "../../lib/census-health";
@@ -35,11 +35,13 @@ export interface OverviewTabProps {
  * 2 세그먼트 스택 미터). RATIO-SYSTEM §2: 섹션 갭 28px, 카드 갭 20px, 카드는
  * `flex:1` 로 세로를 채운다(빈 밴드 금지).
  *
- * 색은 `getOntologyKindTone` (Sigma/tree chip/builder palette 가 이미 쓰는
- * kind 톤 — indigo/teal/amber/sage/brick) 그대로 재사용한다. design.md 헌장:
- * "ontology kind 색상은 data mark 로 허용, panel 에서는 compact
- * marker/swatch + label/icon 으로 낮춘다" — 여기서는 얇은 스택 바 세그먼트가
- * 그 compact marker 역할.
+ * **kind 팔레트는 왼쪽 「종류」 카드에만 남는다.** 상단 스택 스트립의 조각에는
+ * 라벨이 없어서, 조각과 아래 행을 잇는 채널이 색뿐이고 5종을 인디고 하나로
+ * 가를 수도 없다 — 색이 정체를 나르는 **유일한** 채널인 자리다. 반대로
+ * 오른쪽 「도메인 용량」의 2세그먼트 막대는 순서·단위어·옆 숫자가 정체를 이미
+ * 나르므로 앱 공통 막대 문법(무채색 + 인디고 하나 + 1px 심)으로 내려왔다
+ * (`DomainCapacityBar`, 2026-07-26). 판별 기준은
+ * `docs/DESIGN-SYSTEM.md` "Three ambers, three rules".
  */
 export function OverviewTab({
   totalNodes,
@@ -120,15 +122,21 @@ export function OverviewTab({
           {domainRows.length === 0 ? (
             <p className="mt-3.5 flex-1 text-body text-[color:var(--color-text-quaternary)]">{labels.noDomains}</p>
           ) : (
-            <div className="mt-3.5 flex flex-1 flex-col justify-evenly gap-1">
-              {domainRows.map((row) => (
-                <DomainCapacityBar
-                  key={row.id}
-                  row={row}
-                  maxTotal={domainMax}
-                  labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
-                />
-              ))}
+            <div className="mt-3.5 flex min-h-0 flex-1 flex-col">
+              {/* 막대 두 조각의 열쇠는 카드에 한 줄만 — 행마다 반복하면 소음이다. */}
+              <DomainCapacityLegend
+                labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
+              />
+              <div className="mt-2.5 flex flex-1 flex-col justify-evenly gap-1">
+                {domainRows.map((row) => (
+                  <DomainCapacityBar
+                    key={row.id}
+                    row={row}
+                    maxTotal={domainMax}
+                    labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
+                  />
+                ))}
+              </div>
             </div>
           )}
           <p className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5 text-label text-[color:var(--color-text-quaternary)]">

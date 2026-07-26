@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T15:23:10.325Z",
+  "generatedAt": "2026-07-26T16:11:16.836Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 도메인 구성 막대: 색이 나르지 않던 정체를 걷어냈다",
+          "slug": "2026-07-27-도메인-구성-막대-색이-나르지-않던-정체를-걷어냈다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 그림이 자기 캡션을 배반하던 자리 여섯 곳",
           "slug": "2026-07-27-그림이-자기-캡션을-배반하던-자리-여섯-곳"
         },
@@ -4998,9 +5003,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 인사이트·프로젝트 표면의 인코딩 결함을 고쳤다. 판정 원칙은 하나다 — 캡션이 약속이고, 그림이 캡션을 따른다. 캡션을 그림에 맞추는 것은 사용자가 원래 ",
-      "wordCount": 49140,
-      "updatedAt": "2026-07-26T15:23:10.325Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. /projects 카드와 인사이트 「구성」 탭의 도메인 용량 막대가 앰버(역량)· 유칼립투스(요소) 2색을 쓰던 것을 무채색 + 인디고 하나 + 1px 심",
+      "wordCount": 49355,
+      "updatedAt": "2026-07-26T16:11:16.836Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -5791,8 +5796,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 16598,
-      "updatedAt": "2026-07-27T00:22:59+09:00",
+      "wordCount": 16748,
+      "updatedAt": "2026-07-26T16:10:45.221Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",

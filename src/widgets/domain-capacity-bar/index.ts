@@ -1,4 +1,4 @@
-export { DomainCapacityBar } from "./ui/DomainCapacityBar";
+export { DomainCapacityBar, DomainCapacityLegend } from "./ui/DomainCapacityBar";
 export type {
   DomainCapacityBarRow,
   DomainCapacityBarLabels,

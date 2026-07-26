@@ -134,6 +134,99 @@ const codexR6Globs = [
 // 테스트는 렌더된 className 문자열을 assert 하므로 램프 룰에서 제외.
 const codexTestIgnores = ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'];
 
+// local-first 첫 paint firebase 0 약속 회귀 방지 (PR #99 이후).
+//
+// `@/entities/<x>` 메인 barrel 은 firebase 의존이 없어야 한다 (type / lib /
+// pure helper 만). firestore 구독·mutation 함수는 `@/entities/<x>/api` 로
+// 직접 import 해서 cloud-mode 진입 시점에만 chunk 가 다운로드되게.
+//
+// 메인 barrel 에서 아래 names 를 import 하면 "api 경로 사용해" 메시지로
+// 막는다. 새 api 함수 추가 시 메인 barrel 에 export 도 절대 X — 추가하면
+// 이 목록에 names 도 같이 추가해 회귀 차단.
+//
+// **공유 배열인 이유**: flat config 는 같은 rule 을 뒤에서 다시 정의하면
+// option 을 병합하지 않고 **교체**한다. 더 좁은 스코프 블록이 자기 제한만
+// 적으면 이 firestore 가드가 그 경로에서 조용히 사라진다. 스코프 블록은
+// 반드시 이 배열을 스프레드한 뒤 자기 항목을 더한다.
+//
+// 자세히: `@.claude/rules/architecture.md`.
+const firestoreApiRestrictedPaths = [
+  {
+    name: '@/entities/project',
+    importNames: [
+      'listProjects',
+      'getProject',
+      'upsertProject',
+      'upsertProjectPositions',
+      'deleteProject',
+      'deleteProjects',
+      'subscribeProjects',
+      'fetchAllProjectsAtBuild',
+      'uploadScreenshot',
+      'deleteScreenshot',
+    ],
+    message:
+      "firestore api 는 '@/entities/project/api' 로 직접 import 하세요 (local-first 첫 paint 청크 firebase 0 보장).",
+  },
+  {
+    name: '@/entities/category',
+    importNames: [
+      'subscribeCategories',
+      'upsertCategory',
+      'deleteCategory',
+      'seedDefaultCategoriesIfEmpty',
+    ],
+    message: "firestore api 는 '@/entities/category/api' 로 직접 import 하세요.",
+  },
+  {
+    name: '@/entities/status',
+    importNames: [
+      'subscribeStatuses',
+      'upsertStatus',
+      'deleteStatus',
+      'seedDefaultStatusesIfEmpty',
+    ],
+    message: "firestore api 는 '@/entities/status/api' 로 직접 import 하세요.",
+  },
+  {
+    name: '@/entities/admin',
+    importNames: ['isAdmin'],
+    message: "firestore api 는 '@/entities/admin/api' 로 직접 import 하세요.",
+  },
+  {
+    name: '@/entities/ontology-class',
+    importNames: [
+      'subscribeOntologyClasses',
+      'upsertOntologyClass',
+      'seedDefaultOntologyClassesIfEmpty',
+    ],
+    message: "firestore api 는 '@/entities/ontology-class/api' 로 직접 import 하세요.",
+  },
+  {
+    name: '@/entities/ontology-relation',
+    importNames: [
+      'subscribeOntologyRelations',
+      'upsertOntologyRelation',
+      'seedDefaultOntologyRelationsIfEmpty',
+    ],
+    message: "firestore api 는 '@/entities/ontology-relation/api' 로 직접 import 하세요.",
+  },
+  {
+    name: '@/entities/knowledge-graph',
+    importNames: [
+      'listKnowledgeProjectInsight',
+      'subscribeKnowledgeProjectInsight',
+      'subscribeKnowledgePublicGraph',
+      'subscribeKnowledgeApprovedGraph',
+      'subscribeKnowledgePublicMeta',
+      'addManualKnowledgeNode',
+      'addManualKnowledgeEdge',
+    ],
+    message:
+      "firestore api 는 '@/entities/knowledge-graph/api' 로 직접 import 하세요. (lazy hook `useKnowledgePublic*` 은 메인 barrel 그대로 OK.)",
+  },
+];
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -236,98 +329,41 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // local-first 첫 paint firebase 0 약속 회귀 방지 (PR #99 이후).
-  //
-  // `@/entities/<x>` 메인 barrel 은 firebase 의존이 없어야 한다 (type / lib /
-  // pure helper 만). firestore 구독·mutation 함수는 `@/entities/<x>/api` 로
-  // 직접 import 해서 cloud-mode 진입 시점에만 chunk 가 다운로드되게.
-  //
-  // 메인 barrel 에서 아래 names 를 import 하면 "api 경로 사용해" 메시지로
-  // 막는다. 새 api 함수 추가 시 메인 barrel 에 export 도 절대 X — 추가하면
-  // 이 룰에 names 도 같이 추가해 회귀 차단.
-  //
-  // 자세히: `@.claude/rules/architecture.md`.
+  // firestore api 경로 가드 — 목록은 `firestoreApiRestrictedPaths` 가 단일 출처.
   {
     files: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': ['error', { paths: firestoreApiRestrictedPaths }],
+    },
+  },
+  // 도메인 용량 막대는 kind 팔레트를 쓰지 않는다 (소유자 확정 2026-07-26,
+  // `.qa-scratch/domain-bar-color-2026-07-26.md`).
+  //
+  // 이 막대의 두 조각은 순서(역량이 늘 왼쪽) + 단위어 + 바로 옆 숫자가 이미
+  // 정체를 나른다. 거기에 kind 색을 얹으면 중복 잉크인데, 하필 그 쌍(앰버
+  // rgba(211,159,73) · 유칼립투스 rgba(124,166,141))은 트랙 위 합성 대비가
+  // 1.14:1 이라 밝기로는 갈리지 않고 hue 로만 갈렸다 — 적록 색약이 가장 못
+  // 가르는 축이다. 그래서 앱 공통 막대 문법(무채색 + 인디고 하나 + 1px 심)
+  // 으로 내려왔다.
+  //
+  // 룰이 없으면 이 규격은 지켜지지 않는다 — `getOntologyKindTone` 은 한 줄
+  // import 로 되돌아온다. kind 팔레트는 색이 정체를 나르는 **유일한** 채널인
+  // 자리(종류 센서스의 무라벨 스택, 지도 점, 트리 칩)에만 남는다.
+  //
+  // ⚠️ flat config 는 rule option 을 병합하지 않고 **교체**한다 — 위 블록의
+  // firestore 가드가 이 경로에서 사라지지 않도록 같은 배열을 스프레드한다.
+  {
+    files: ['src/widgets/domain-capacity-bar/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
-          paths: [
+          paths: firestoreApiRestrictedPaths,
+          patterns: [
             {
-              name: '@/entities/project',
-              importNames: [
-                'listProjects',
-                'getProject',
-                'upsertProject',
-                'upsertProjectPositions',
-                'deleteProject',
-                'deleteProjects',
-                'subscribeProjects',
-                'fetchAllProjectsAtBuild',
-                'uploadScreenshot',
-                'deleteScreenshot',
-              ],
+              group: ['@/entities/ontology-class', '@/entities/ontology-class/**'],
               message:
-                "firestore api 는 '@/entities/project/api' 로 직접 import 하세요 (local-first 첫 paint 청크 firebase 0 보장).",
-            },
-            {
-              name: '@/entities/category',
-              importNames: [
-                'subscribeCategories',
-                'upsertCategory',
-                'deleteCategory',
-                'seedDefaultCategoriesIfEmpty',
-              ],
-              message: "firestore api 는 '@/entities/category/api' 로 직접 import 하세요.",
-            },
-            {
-              name: '@/entities/status',
-              importNames: [
-                'subscribeStatuses',
-                'upsertStatus',
-                'deleteStatus',
-                'seedDefaultStatusesIfEmpty',
-              ],
-              message: "firestore api 는 '@/entities/status/api' 로 직접 import 하세요.",
-            },
-            {
-              name: '@/entities/admin',
-              importNames: ['isAdmin'],
-              message: "firestore api 는 '@/entities/admin/api' 로 직접 import 하세요.",
-            },
-            {
-              name: '@/entities/ontology-class',
-              importNames: [
-                'subscribeOntologyClasses',
-                'upsertOntologyClass',
-                'seedDefaultOntologyClassesIfEmpty',
-              ],
-              message: "firestore api 는 '@/entities/ontology-class/api' 로 직접 import 하세요.",
-            },
-            {
-              name: '@/entities/ontology-relation',
-              importNames: [
-                'subscribeOntologyRelations',
-                'upsertOntologyRelation',
-                'seedDefaultOntologyRelationsIfEmpty',
-              ],
-              message:
-                "firestore api 는 '@/entities/ontology-relation/api' 로 직접 import 하세요.",
-            },
-            {
-              name: '@/entities/knowledge-graph',
-              importNames: [
-                'listKnowledgeProjectInsight',
-                'subscribeKnowledgeProjectInsight',
-                'subscribeKnowledgePublicGraph',
-                'subscribeKnowledgeApprovedGraph',
-                'subscribeKnowledgePublicMeta',
-                'addManualKnowledgeNode',
-                'addManualKnowledgeEdge',
-              ],
-              message:
-                "firestore api 는 '@/entities/knowledge-graph/api' 로 직접 import 하세요. (lazy hook `useKnowledgePublic*` 은 메인 barrel 그대로 OK.)",
+                '도메인 용량 막대는 kind 팔레트를 쓰지 않습니다 — 조각의 정체는 순서·단위어·숫자가 나르고, 채색은 `--color-indigo-brand` + `--color-text-quaternary` + 1px 심입니다. 근거: `.qa-scratch/domain-bar-color-2026-07-26.md`.',
             },
           ],
         },
