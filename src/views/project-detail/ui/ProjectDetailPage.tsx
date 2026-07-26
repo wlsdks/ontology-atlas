@@ -4,8 +4,11 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
+// `useSearchParams` 는 locale-agnostic 이라 raw next/navigation 에서 가져온다
+// (`architecture.md` i18n 라우팅 가드).
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, BookOpen, FileText, Waypoints } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, Layers, Waypoints } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useTranslations } from "next-intl";
@@ -42,6 +45,13 @@ import { buildAgentHandoffSnippet } from "../model/agent-handoff-snippet";
 import { shortenDomainTitle } from "../model/short-domain-title";
 import { MiniDomainMap } from "./MiniDomainMap";
 import { DomainCompositionGrid } from "./DomainCompositionGrid";
+import { TabBar } from "@/shared/ui/tab-bar";
+import {
+  compositionTabCount,
+  parseProjectDetailTab,
+  serializeProjectDetailTab,
+  type ProjectDetailTab,
+} from "../lib/project-detail-tab";
 
 const SearchPalette = dynamic(
   () => import("@/widgets/search-palette").then((m) => m.SearchPalette),
@@ -189,6 +199,22 @@ export function ProjectDetailPage({
 }: Props) {
   const t = useTranslations("projectPages.detail");
   const router = useRouter();
+  // 탭은 URL 에 산다 (#87) — 공유 가능하고 에이전트가 재현할 수 있어야 한다.
+  // 숨은 상태로 두면 핸드오프 패킷에서 "어느 탭을 보던 중" 이 사라진다.
+  const searchParams = useSearchParams();
+  const activeTab = parseProjectDetailTab(searchParams.get("tab"));
+  const selectTab = useCallback(
+    (key: string) => {
+      const next = serializeProjectDetailTab(key as ProjectDetailTab);
+      const params = new URLSearchParams(searchParams.toString());
+      if (next) params.set("tab", next);
+      else params.delete("tab");
+      const query = params.toString();
+      // `replace` — 탭 전환은 뒤로가기 이력을 쌓을 만한 이동이 아니다.
+      router.replace(query ? `?${query}` : "?", { scroll: false });
+    },
+    [router, searchParams],
+  );
   const { show: showToast } = useToast();
   const [project, setProject] = useState<Project | null>(
     initialProject,
@@ -511,10 +537,48 @@ export function ProjectDetailPage({
         ) : null}
       </header>
 
-      {/* zone 2 — 도메인 구성 3×N: 각 카드는 topology focus 로 이동. 도메인이
-          0개면(=온톨로지 미기재) 통째로 숨김 — 매치 0 자동 숨김 원칙. */}
-      {domainComposition.domains.length > 0 ? (
-        <section className="mt-[var(--section-gap)]">
+      {/* 탭 (#87) — "정보 종류" 가 아니라 **답하는 질문**으로 가른다.
+          개요 = 이게 무엇인가(본문) · 구성 = 무엇으로 이루어졌나.
+          project.md 본문이 dogfood 기준 수천 px 라 한 스크롤에 같이 두면
+          "무엇으로 이루어졌나" 를 스캔할 방법이 없었다(소유자: "스크롤로
+          모든거 보여주려 안해도 되니까?").
+
+          컴포넌트는 앱의 유일한 탭바(`shared/ui/tab-bar`)를 재사용한다 —
+          인사이트·기록 증거 pane 과 같은 문법이라 새 관용구가 안 생긴다. */}
+      <div className="mt-[var(--section-gap)]">
+        <TabBar
+          ariaLabel={t("tabs.ariaLabel")}
+          activeKey={activeTab}
+          onSelect={selectTab}
+          items={[
+            { key: "overview", label: t("tabs.overview") },
+            {
+              key: "composition",
+              label: t("tabs.composition"),
+              count: compositionTabCount(domainComposition.domains.length),
+            },
+          ]}
+        />
+      </div>
+
+      {/* zone 3 — 본문(project.md) + 요약 레일(연결된 프로젝트 · 에이전트
+          핸드오프). Connection map 제거(c84ecb25e) 이후의 left-column-void
+          결함은 이 3존 재배치로 구조적으로 해소된다 — 좌측이 항상 도메인
+          구성/본문으로 채워진다. */}
+      {/* zone 3 — 좌: 본문(개요 탭 전용) / 우: 연결된 프로젝트 + 에이전트 핸드오프.
+          **우측 레일은 탭 밖에 둔다** — 어느 탭에서 보든 유효한 cross-tab
+          맥락이고, 특히 "연결된 프로젝트" 는 프로젝트 간 관계를 온톨로지로
+          다루는 방향의 첫 표면이라 탭 뒤에 숨기면 안 된다(기록 목적지의
+          좌/우 분할과 같은 문법). */}
+      <section className="mt-[var(--section-gap)] grid grid-cols-1 items-start gap-[var(--card-gap)] lg:grid-cols-[minmax(0,1fr)_400px]">
+        {/* 좌측 = **탭 본문**. 구성을 별 섹션으로 두고 `hidden` 으로 감췄더니
+            grid 첫 트랙이 `display:none` 으로 사라져 400px 우측 레일이 1fr
+            트랙으로 당겨져 늘어났다(실측 결함). 좌측이 **항상 무언가를 그리면**
+            트랙이 무너질 수 없다. */}
+        {activeTab === "composition" ? (
+          <section data-tab-panel="composition" className="min-w-0">
+            {domainComposition.domains.length > 0 ? (
+              <>
           <div className="mb-3 flex items-center gap-2.5">
             <TopologyV2TraceMark containment />
             <span className="text-[14px] font-[560] tracking-[-0.01em] text-[color:var(--color-text-primary)]">
@@ -541,15 +605,24 @@ export function ProjectDetailPage({
                 : t("domainMoreLineElementsOnly", { elements })
             }
           />
-        </section>
-      ) : null}
-
-      {/* zone 3 — 본문(project.md) + 요약 레일(연결된 프로젝트 · 에이전트
-          핸드오프). Connection map 제거(c84ecb25e) 이후의 left-column-void
-          결함은 이 3존 재배치로 구조적으로 해소된다 — 좌측이 항상 도메인
-          구성/본문으로 채워진다. */}
-      <section className="mt-[var(--section-gap)] grid grid-cols-1 items-start gap-[var(--card-gap)] lg:grid-cols-[minmax(0,1fr)_400px]">
-        <article className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
+              </>
+            ) : (
+              // 도메인 0이어도 탭은 남는다(공간 기억) — 대신 여기서 다음 걸음을 준다.
+              <div data-testid="project-detail-composition-empty">
+                <EmptyState
+                  size="compact"
+                  icon={<Layers size={16} aria-hidden />}
+                  title={t("domainEmptyTitle")}
+                  description={t("domainEmptyHint")}
+                />
+              </div>
+            )}
+          </section>
+        ) : (
+        <article
+          data-tab-panel="overview"
+          className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
+        >
           <div className="mb-2.5 flex items-baseline gap-2">
             <span className="text-[13px] font-[560] text-[color:var(--color-text-primary)]">
               {t("bodyCardTitle")}
@@ -576,8 +649,12 @@ export function ProjectDetailPage({
             </div>
           )}
         </article>
+        )}
 
-        <aside className="flex flex-col gap-[var(--card-gap)]">
+        {/* 우측 레일은 **탭 밖**이다 (#87) — 어느 탭에서 보든 유효한 맥락이고,
+            "연결된 프로젝트" 는 프로젝트 간 관계를 온톨로지로 다루는 방향의
+            첫 표면이라 탭 뒤에 숨기면 안 된다. */}
+        <aside data-testid="project-detail-connected" className="flex flex-col gap-[var(--card-gap)]">
           <section className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
             <div className="mb-2.5 flex items-baseline gap-2">
               <TopologyV2TraceMark containment={false} />
