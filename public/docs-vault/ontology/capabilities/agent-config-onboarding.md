@@ -82,3 +82,13 @@ title, and current CLI/MCP runbook text read through Codex Computer Use.
 The packaged runbook is current as of 2026-07-27 and names the measured CLI 52
 commands, MCP 32 tools (read 19 + write 13), 96 dogfood nodes, 543 relations,
 and zero graph issues.
+
+Agent client controls now preserve the same truth boundary as config
+validation. Missing `.mcp.json` or `.codex/config.toml` files offer the
+non-overwriting creation action; invalid existing files offer a copyable
+vault-local replacement template with `OATLAS_VAULT=.`; valid files render as
+non-interactive ready status. Absolute-path JSON remains reserved for
+Cursor/VS Code deep links, so a deep-link payload is not mistaken for the
+vault-local file contract. The installed Korean app proof used the same
+invalid 11-document vault and showed both replacement actions beside the
+warning, with no stale completed-state button.

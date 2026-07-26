@@ -13,7 +13,9 @@ function renderSheet(onClose = vi.fn()) {
         status={{ kind: "none" }}
         snippets={{
           mcpJson: '{"mcpServers":{}}',
+          replacementMcpJson: '{"mcpServers":{"ontology-atlas":{"env":{"OATLAS_VAULT":"."}}}}',
           codexCommand: "codex mcp add ontology-atlas",
+          codexConfig: '[mcp_servers.ontology-atlas]',
           needsManualPath: false,
           cursorDeeplink: null,
           vscodeDeeplink: null,
@@ -50,5 +52,41 @@ describe("AgentConnectSheet focus contract", () => {
     fireEvent.keyDown(window, { key: "Escape" });
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("forwards invalid vault config states as replacement-copy actions", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <AgentConnectSheet
+          open
+          onClose={vi.fn()}
+          status={{ kind: "none" }}
+          snippets={{
+            mcpJson: '{"env":{"OATLAS_VAULT":"/private/tmp/vault"}}',
+            replacementMcpJson: '{"env":{"OATLAS_VAULT":"."}}',
+            codexCommand: "codex mcp add ontology-atlas",
+            codexConfig: '[mcp_servers.ontology-atlas]\nOATLAS_VAULT = "."',
+            needsManualPath: false,
+            cursorDeeplink: null,
+            vscodeDeeplink: null,
+          }}
+          domainTitles={[]}
+          handoffText=""
+          onWriteConfigs={vi.fn()}
+          mcpJsonState="invalid"
+          codexConfigState="invalid"
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Copy correct .mcp.json" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Copy correct Codex config" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Created .mcp.json in this folder"),
+    ).not.toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T17:19:13.329Z",
+  "generatedAt": "2026-07-26T17:32:18.810Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -57,7 +57,7 @@
       ],
       "excerpt": "Current as of 2026-07-27. This is the user-facing guide for running ontology-atlas as a local PC graph memory: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is",
       "wordCount": 2338,
-      "updatedAt": "2026-07-26T17:14:46.264Z",
+      "updatedAt": "2026-07-27T02:20:04+09:00",
       "linksOut": []
     },
     {
@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — AI 설정의 “없음·잘못됨·준비됨”을 행동과 맞췄다",
+          "slug": "2026-07-27-ai-설정의-없음잘못됨준비됨을-행동과-맞췄다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 에이전트의 첫 마디, 그리고 이어지는 루프",
           "slug": "2026-07-27-에이전트의-첫-마디-그리고-이어지는-루프"
         },
@@ -5008,9 +5013,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자가 패널을 열어 보고 지적한 셋 중 마지막 하나를 고쳤다 — 키가 있어도 빈 입력칸 앞에서 무엇을 물어야 할지 몰랐다. Cursor 를 쓰는 사람은 ",
-      "wordCount": 49774,
-      "updatedAt": "2026-07-27T01:51:14+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. AI 에이전트 연결 화면이 invalid .mcp.json을 발견하고도 이 폴더에 .mcp.json 을 만들었어요라는 완료형 버튼을 보여주던 모순을 고쳤다",
+      "wordCount": 49891,
+      "updatedAt": "2026-07-26T17:32:18.810Z",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -7044,8 +7049,8 @@
         }
       ],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultAgentSetupPanel (merged into AppSettingsMenu's vault / mcpAgents tabs, B2 2026-07 — the former VaultToolsMenu docs-header dropdown was retired to remove the duplicate surface) exposes the setup gate in the same language a",
-      "wordCount": 1498,
-      "updatedAt": "2026-07-26T17:15:18.904Z",
+      "wordCount": 1583,
+      "updatedAt": "2026-07-26T17:32:18.809Z",
       "linksOut": []
     },
     {
@@ -10022,7 +10027,7 @@
       ],
       "excerpt": "src/views/docs-vault/ui/DocsVaultPage.tsx renders the /docs Source Vault surface. This surface is the human-facing document view over the same local markdown vault that MCP agents read and write. It keeps the current source, selected record, editor state, command palette, graph handoff copy, and local vault persistence",
       "wordCount": 947,
-      "updatedAt": "2026-07-26T17:15:18.903Z",
+      "updatedAt": "2026-07-27T02:20:04+09:00",
       "linksOut": []
     },
     {
@@ -10983,8 +10988,8 @@
         }
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 주의 계층, 모션, 반응형, 접근성, 로컬 파일 신뢰를 함께 판정한다. 4. 실패 테스트를 먼",
-      "wordCount": 10727,
-      "updatedAt": "2026-07-26T17:19:13.329Z",
+      "wordCount": 10996,
+      "updatedAt": "2026-07-26T17:32:18.808Z",
       "linksOut": []
     },
     {

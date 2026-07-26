@@ -1180,7 +1180,7 @@
 ### UX-034 — invalid MCP 설정 옆 주요 버튼이 이미 완료된 작업처럼 읽힘
 
 - 심각도: `S2`
-- 상태: 열림 — 버튼의 실제 write/repair 계약을 구조적으로 확인한 뒤 문구 결정
+- 상태: 수정·설치 앱 재검증 완료
 - 흐름: 저장된 local vault → 설정 → AI 에이전트 연결
 - 관측 현상: 상단은 `설정 파일 0/3개 준비됨`과
   `.mcp.json 가 ontology-atlas MCP 설정이 아닙니다`를 경고하지만, 첫 주요
@@ -1192,9 +1192,42 @@
   새 파일 생성, invalid 파일 repair, 사용자 확인 중 무엇을 수행하는지 먼저
   확인하고, 상태라면 비버튼으로 내리며 액션이라면 명령형·결과 예고형 문구로
   바꾼다.
-- 설치 앱·Computer Use 증거: 실제 설치 앱 전체화면의 AX 트리와 스크린샷에서
-  warning, `0/3`, 체크 아이콘 완료형 버튼을 한 화면에서 확인했다.
-- PO·디자인 판정: **Investigate first**
+- 조사 결과: `AgentClientButtons`는 `.mcp.json`의 **존재**만 `ready`로
+  전달받아 완료형 버튼을 초기화한다. 자동 생성 handler는 missing 파일만 쓰고
+  기존 invalid 파일은 덮어쓰지 않지만, 호출이 resolve되면 컴포넌트가 검증
+  결과와 무관하게 `done`으로 바꾼다. Codex 버튼도 같은 자동 생성 callback을
+  공유해 invalid `.codex/config.toml`에서 같은 오판이 가능하다.
+- PO pass:
+  - observed phenomenon/user moment: 첫 연결을 준비하는 사용자가 invalid 경고와
+    완료형 주요 버튼을 동시에 보고 다음 행동을 결정할 수 없다.
+  - current alternative: 고급 영역에서 기존 파일 비덮어쓰기 설명을 읽고,
+    올바른 템플릿을 찾아 수동으로 복사·교체한다.
+  - ontology/agent value: UI의 설정 상태가 실제 local MCP/CLI handoff 준비
+    여부와 같아야 read-first 연결 증거가 성립한다.
+  - success/simplification: 새 화면·자동 overwrite·장식 motion 없이
+    `missing=생성 action`, `invalid=교체 설정 복사 action`,
+    `ready=비상호작용 상태`로 MCP/Codex를 같은 문법으로 나눈다.
+  - verification: 세 상태 component test, 설정 패널 회귀, 번역 계약, 설치 앱
+    AX 트리에서 invalid 경고와 교체 action을 함께 읽고 완료형 버튼 부재를
+    확인한다.
+- 디자인 gate: attention winner는 현재 설정 상태에 맞는 **다음 행동**이다.
+  ready 확인은 support status로 내리고, invalid 교체는 utility action으로
+  유지한다. 기존 control height·border·색 token을 재사용하며 레이아웃,
+  반응형, graph semantics, motion은 바꾸지 않는다.
+- 구현: shared `AgentClientButtons`가 MCP/Codex 각각의
+  `missing | invalid | ready`를 받는다. missing만 기존 자동 생성 callback을
+  실행하고, invalid는 vault-local 검증과 같은 `OATLAS_VAULT=.` 교체 JSON/TOML을
+  복사하며, ready는 `role=status`인 비상호작용 행으로 표시한다. Cursor/VS Code
+  절대경로 deep link용 JSON과 vault-local 교체 JSON도 분리했다.
+- 설치 앱·Computer Use 증거: 수정 전 실제 앱에서 warning, `0/3`, 체크 아이콘
+  완료형 버튼을 한 화면에서 재현했다. production 앱 재배포 뒤 같은 11문서
+  invalid vault에서 설정 → AI 에이전트 연결을 다시 열자 AX 트리는 warning과
+  `올바른 .mcp.json 복사`, `올바른 Codex 설정 복사`를 함께 보고했다.
+  `이 폴더에 .mcp.json 을 만들었어요`와 `Claude Code에 연결`은 없었다.
+- 회귀 증거: settings/shared sheet/model/config validation 39개, 번역 16개,
+  TypeScript, focused ESLint가 통과했다. ready는 버튼이 아닌 status이고,
+  invalid 교체 copy는 자동 생성 callback을 호출하지 않는 테스트를 포함한다.
+- PO·디자인 판정: **Build and verify**
 
 ### UX-035 — 활성 문서와 프로토타입이 CLI 45·48·50명령을 동시에 주장
 

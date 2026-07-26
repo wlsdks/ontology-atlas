@@ -7,7 +7,10 @@ import { Cable, Check, ChevronDown, Copy, X } from "lucide-react";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { copyText } from "@/shared/lib/copy-text";
-import { AgentClientButtons } from "@/features/docs-vault-local";
+import {
+  AgentClientButtons,
+  type AgentClientConfigState,
+} from "@/features/docs-vault-local";
 
 /**
  * "AI 에이전트 연결" 시트 (#12/#17/C13 재설계, Phase 4).
@@ -30,6 +33,10 @@ export interface AgentConnectSnippets {
   mcpJson: string;
   /** Codex 등록 명령. */
   codexCommand: string;
+  /** invalid vault-local `.mcp.json` 교체용 OATLAS_VAULT=. JSON. */
+  replacementMcpJson: string;
+  /** invalid vault-local Codex 설정을 교체할 때 복사할 TOML. */
+  codexConfig: string;
   /** 경로를 스스로 채워야 하는 웹 세션인지 (안내 문구 노출). */
   needsManualPath: boolean;
   /** Cursor 원클릭 딥링크 (절대 경로 있을 때만, 없으면 null → 복사 강등). */
@@ -51,6 +58,8 @@ export interface AgentConnectSheetProps {
   onWriteConfigs?: (() => void) | null;
   /** 이미 `.mcp.json` 이 존재하는지 (설치 앱) — 버튼 확인 문구 우선. */
   mcpJsonReady?: boolean;
+  mcpJsonState?: AgentClientConfigState;
+  codexConfigState?: AgentClientConfigState;
 }
 
 function CopyBlock({ label, value, testId }: { label: string; value: string; testId: string }) {
@@ -125,6 +134,8 @@ export function AgentConnectSheet({
   handoffText,
   onWriteConfigs = null,
   mcpJsonReady = false,
+  mcpJsonState,
+  codexConfigState,
 }: AgentConnectSheetProps) {
   const t = useTranslations("agentConnect");
   const dialogRef = useRef<HTMLElement | null>(null);
@@ -268,8 +279,12 @@ export function AgentConnectSheet({
                   cursorDeeplink={snippets.cursorDeeplink}
                   vscodeDeeplink={snippets.vscodeDeeplink}
                   mcpJsonSnippet={snippets.mcpJson}
+                  replacementMcpJsonSnippet={snippets.replacementMcpJson}
                   codexCommand={snippets.codexCommand}
+                  codexConfigSnippet={snippets.codexConfig}
                   mcpJsonReady={mcpJsonReady}
+                  mcpJsonState={mcpJsonState}
+                  codexConfigState={codexConfigState}
                   needsManualPath={snippets.needsManualPath}
                 />
               </StepRow>

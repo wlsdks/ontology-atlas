@@ -40,6 +40,7 @@ export {
 export {
   AgentClientButtons,
   type AgentClientButtonsProps,
+  type AgentClientConfigState,
 } from './ui/AgentClientButtons';
 export {
   buildOntologyStarterAgentVerifyPrompt,

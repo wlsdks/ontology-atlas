@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { AgentConnectState } from "@/widgets/agent-connect";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
+  buildCodexConfigTomlTemplate,
   buildCodexMcpAddCommandTemplate,
   buildCursorMcpDeeplink,
   buildMcpConfigJson,
@@ -45,7 +46,9 @@ export interface AgentConnectModel {
   status: AgentConnectState;
   snippets: {
     mcpJson: string;
+    replacementMcpJson: string;
     codexCommand: string;
+    codexConfig: string;
     needsManualPath: boolean;
     cursorDeeplink: string | null;
     vscodeDeeplink: string | null;
@@ -86,7 +89,9 @@ export function useAgentConnectModel({
     const desktopPath = vaultHandle ? (getTauriVaultRootPath(vaultHandle) ?? null) : null;
     return {
       mcpJson: buildMcpConfigJson(vaultName, desktopPath),
+      replacementMcpJson: buildMcpConfigJson(vaultName, "."),
       codexCommand: buildCodexMcpAddCommandTemplate(vaultName, desktopPath),
+      codexConfig: buildCodexConfigTomlTemplate(vaultName, "."),
       needsManualPath: desktopPath === null,
       cursorDeeplink: buildCursorMcpDeeplink(desktopPath),
       vscodeDeeplink: buildVsCodeMcpDeeplink(desktopPath),

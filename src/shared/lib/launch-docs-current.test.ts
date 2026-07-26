@@ -12,6 +12,7 @@ const MCP_TOOL_METADATA = parseMcpToolMetadataFromDescription(MCP_PKG.descriptio
 
 const CURRENT_SURFACE_DOCS = [
   'README.md',
+  'docs/FEATURES.md',
   'docs/PUBLISH-NPM.md',
   'docs/launch/README.md',
   'docs/launch/HN-POST.md',
@@ -37,6 +38,7 @@ const MCP_TOOL_COUNT_DOCS = [
 
 const MCP_TOOL_SPLIT_DOCS = [
   'README.md',
+  'docs/FEATURES.md',
   'docs/launch/README.md',
   'docs/launch/REDDIT-POSTS.md',
 ] as const;
@@ -137,7 +139,7 @@ describe('current-surface launch docs', () => {
     expect(MCP_TOOL_METADATA).toBeTruthy();
     const findings: string[] = [];
     const splitPattern = new RegExp(
-      `${MCP_TOOL_METADATA?.readCount} read\\s*\\+\\s*${MCP_TOOL_METADATA?.writeCount} write|read ${MCP_TOOL_METADATA?.readCount}\\s*\\+\\s*write ${MCP_TOOL_METADATA?.writeCount}`,
+      `${MCP_TOOL_METADATA?.readCount} read\\s*(?:\\+|·)\\s*${MCP_TOOL_METADATA?.writeCount} write|read ${MCP_TOOL_METADATA?.readCount}\\s*\\+\\s*write ${MCP_TOOL_METADATA?.writeCount}`,
       'i',
     );
 

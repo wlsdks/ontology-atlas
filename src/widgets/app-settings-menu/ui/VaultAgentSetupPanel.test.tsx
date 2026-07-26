@@ -1215,7 +1215,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByTestId('agent-setup-advanced')).toBeInTheDocument();
   });
 
-  it('쓰기 가능한 vault면 Claude Code·Codex 는 연결(생성) 버튼이다', () => {
+  it('missing 설정은 생성 버튼이고 이미 유효한 설정은 준비 상태다', () => {
     render(
       <VaultAgentSetupPanel
         canEditCurrent
@@ -1228,7 +1228,89 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByRole('button', { name: 'Claude Code에 연결' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Codex에 연결' }),
+      screen.getByRole('status', { name: 'Codex 설정 준비됨' }),
     ).toBeInTheDocument();
+  });
+
+  it('기존 설정이 invalid면 완료나 자동 생성으로 오판하지 않고 교체 설정을 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    const localVault = makeLocalVault({
+      handle: {
+        name: 'broken-vault',
+        rootPath: '/private/tmp/broken-vault',
+      } as unknown as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        mcpJsonValid: false,
+        codexConfig: true,
+        codexConfigValid: false,
+        mcpExample: true,
+        mcpExampleValid: true,
+      },
+    });
+
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={localVault}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.queryByText('이 폴더에 .mcp.json 을 만들었어요'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Claude Code에 연결' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Codex에 연결' }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '올바른 .mcp.json 복사' }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: '올바른 Codex 설정 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(2));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('"OATLAS_VAULT": "."'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('[mcp_servers.ontology-atlas]'),
+    );
+    expect(localVault.ensureAgentConfigs).not.toHaveBeenCalled();
+  });
+
+  it('유효한 설정은 다시 누르는 버튼이 아니라 준비 상태로 표시한다', () => {
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault({
+          agentConfigStatus: {
+            mcpJson: true,
+            mcpJsonValid: true,
+            codexConfig: true,
+            codexConfigValid: true,
+            mcpExample: true,
+            mcpExampleValid: true,
+          },
+        })}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('status', { name: '.mcp.json 준비됨' })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Codex 설정 준비됨' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: '.mcp.json 준비됨' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Codex 설정 준비됨' }),
+    ).not.toBeInTheDocument();
   });
 });

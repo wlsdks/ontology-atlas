@@ -442,6 +442,16 @@ export function VaultAgentSetupPanel({
       agentStatus.codexConfigValid !== false &&
       agentStatus.mcpExampleValid !== false,
   );
+  const mcpJsonState = !agentStatus.mcpJson
+    ? 'missing'
+    : agentStatus.mcpJsonValid === false
+      ? 'invalid'
+      : 'ready';
+  const codexConfigState = !agentStatus.codexConfig
+    ? 'missing'
+    : agentStatus.codexConfigValid === false
+      ? 'invalid'
+      : 'ready';
   const agentSetupFiles = [
     {
       key: 'mcpJson',
@@ -790,11 +800,20 @@ export function VaultAgentSetupPanel({
                 cursorDeeplink={cursorDeeplink}
                 vscodeDeeplink={vscodeDeeplink}
                 mcpJsonSnippet={buildMcpConfigJson(vaultNameForConfig, vaultRootPath)}
+                replacementMcpJsonSnippet={buildMcpConfigJson(
+                  vaultNameForConfig,
+                  '.',
+                )}
                 codexCommand={buildCodexMcpAddCommandTemplate(
                   vaultNameForConfig,
                   vaultRootPath,
                 )}
-                mcpJsonReady={Boolean(agentStatus.mcpJson)}
+                mcpJsonState={mcpJsonState}
+                codexConfigState={codexConfigState}
+                codexConfigSnippet={buildCodexConfigTomlTemplate(
+                  vaultNameForConfig,
+                  '.',
+                )}
                 needsManualPath={vaultRootPath === null}
               />
             </StepCard>

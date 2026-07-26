@@ -22,6 +22,7 @@ import { useToast } from "@/shared/ui";
 
 type ClientId = "claudeCode" | "cursor" | "vscode" | "codex";
 type Feedback = "idle" | "busy" | "done" | "copied" | "failed";
+export type AgentClientConfigState = "missing" | "invalid" | "ready";
 
 export interface AgentClientButtonsProps {
   /** Tauri 전용 — `.mcp.json`·`.codex/config.toml` 등을 vault 폴더에 생성. 웹은 null. */
@@ -32,10 +33,18 @@ export interface AgentClientButtonsProps {
   vscodeDeeplink: string | null;
   /** 복사 강등용 `.mcp.json` 본문. */
   mcpJsonSnippet: string;
+  /** invalid vault-local `.mcp.json` 교체용 본문. 보통 OATLAS_VAULT=. */
+  replacementMcpJsonSnippet?: string;
   /** 복사 강등용 Codex 한 줄 등록 명령. */
   codexCommand: string;
   /** 이미 `.mcp.json` 이 존재하는지(설치 앱) — 확인 문구 우선 표시. */
   mcpJsonReady?: boolean;
+  /** 존재와 유효성을 분리한 현재 `.mcp.json` 상태. */
+  mcpJsonState?: AgentClientConfigState;
+  /** 존재와 유효성을 분리한 현재 `.codex/config.toml` 상태. */
+  codexConfigState?: AgentClientConfigState;
+  /** invalid Codex 설정을 사용자가 검토·교체할 때 복사할 vault-local TOML. */
+  codexConfigSnippet?: string;
   /** 웹 세션(절대 경로 미상) — 딥링크 대신 복사 안내. */
   needsManualPath: boolean;
 }
@@ -45,18 +54,28 @@ export function AgentClientButtons({
   cursorDeeplink,
   vscodeDeeplink,
   mcpJsonSnippet,
+  replacementMcpJsonSnippet,
   codexCommand,
   mcpJsonReady = false,
+  mcpJsonState,
+  codexConfigState = "missing",
+  codexConfigSnippet,
   needsManualPath,
 }: AgentClientButtonsProps) {
   const t = useTranslations("agentConnect");
   const toast = useToast();
   const [feedback, setFeedback] = useState<Record<ClientId, Feedback>>({
-    claudeCode: mcpJsonReady ? "done" : "idle",
+    claudeCode: "idle",
     cursor: "idle",
     vscode: "idle",
     codex: "idle",
   });
+  const resolvedMcpJsonState =
+    mcpJsonState ?? (mcpJsonReady ? "ready" : "missing");
+  const mcpJsonIsReady =
+    resolvedMcpJsonState === "ready" || feedback.claudeCode === "done";
+  const codexConfigIsReady =
+    codexConfigState === "ready" || feedback.codex === "done";
 
   const setState = (id: ClientId, state: Feedback) =>
     setFeedback((prev) => ({ ...prev, [id]: state }));
@@ -86,7 +105,27 @@ export function AgentClientButtons({
   return (
     <div className="flex flex-col gap-2" data-testid="agent-client-buttons">
       {/* ① Claude Code — 최상단·최강. Tauri: .mcp.json 자동 생성. 웹: 복사. */}
-      {onWriteConfigs ? (
+      {mcpJsonIsReady ? (
+        <ClientStatus
+          testId="agent-client-claude-code"
+          label={t("claudeCodeReady")}
+        />
+      ) : resolvedMcpJsonState === "invalid" ? (
+        <ClientButton
+          testId="agent-client-claude-code"
+          primary
+          icon={<Copy size={13} aria-hidden />}
+          label={t("replaceClaudeCodeConfig")}
+          feedback={feedback.claudeCode}
+          copiedLabel={t("replaceClaudeCodeConfigDone")}
+          onClick={() =>
+            void copyAndConfirm(
+              "claudeCode",
+              replacementMcpJsonSnippet ?? mcpJsonSnippet,
+            )
+          }
+        />
+      ) : onWriteConfigs ? (
         <ClientButton
           testId="agent-client-claude-code"
           primary
@@ -148,7 +187,26 @@ export function AgentClientButtons({
       )}
 
       {/* ④ Codex — Tauri: config 자동 생성. 웹: 한 줄 명령 복사 */}
-      {onWriteConfigs ? (
+      {codexConfigIsReady ? (
+        <ClientStatus
+          testId="agent-client-codex"
+          label={t("codexReady")}
+        />
+      ) : codexConfigState === "invalid" ? (
+        <ClientButton
+          testId="agent-client-codex"
+          icon={<Copy size={13} aria-hidden />}
+          label={t("replaceCodexConfig")}
+          feedback={feedback.codex}
+          copiedLabel={t("replaceCodexConfigDone")}
+          onClick={() =>
+            void copyAndConfirm(
+              "codex",
+              codexConfigSnippet ?? codexCommand,
+            )
+          }
+        />
+      ) : onWriteConfigs ? (
         <ClientButton
           testId="agent-client-codex"
           icon={<Terminal size={13} aria-hidden />}
@@ -189,6 +247,31 @@ export function AgentClientButtons({
       >
         {t("serverLine")}
       </p>
+    </div>
+  );
+}
+
+function ClientStatus({
+  testId,
+  label,
+}: {
+  testId: string;
+  label: string;
+}) {
+  return (
+    <div
+      role="status"
+      aria-label={label}
+      data-testid={testId}
+      data-state="ready"
+      className="inline-flex min-h-[var(--control-h-md)] w-full items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-body text-[color:var(--color-text-secondary)]"
+    >
+      <Check
+        size={13}
+        aria-hidden
+        className="text-[color:var(--color-status-success)]"
+      />
+      {label}
     </div>
   );
 }

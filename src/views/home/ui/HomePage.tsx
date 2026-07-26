@@ -4653,7 +4653,20 @@ export function HomePage() {
           onWriteConfigs={
             isTauriVaultRuntime() && vault.manifest ? () => void vault.ensureAgentConfigs() : null
           }
-          mcpJsonReady={vault.agentConfigStatus?.mcpJson ?? false}
+          mcpJsonState={
+            !vault.agentConfigStatus?.mcpJson
+              ? 'missing'
+              : vault.agentConfigStatus.mcpJsonValid === false
+                ? 'invalid'
+                : 'ready'
+          }
+          codexConfigState={
+            !vault.agentConfigStatus?.codexConfig
+              ? 'missing'
+              : vault.agentConfigStatus.codexConfigValid === false
+                ? 'invalid'
+                : 'ready'
+          }
         />
         <ShortcutSheet
           open={!createNodeOpen && shortcutsOpen}
