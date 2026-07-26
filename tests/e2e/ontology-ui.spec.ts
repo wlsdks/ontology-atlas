@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { useDogfoodSample } from "./sample-source";
 
 /**
  * /ontology surface smoke — trimmed (2026-07 e2e decontamination).
@@ -25,6 +26,13 @@ import { expect, test } from "@playwright/test";
  * if broken.
  */
 test.describe("ontology view UI", () => {
+  // 이 파일의 단언은 전부 dogfood 볼트 데이터(프로젝트 이름 · 딥링크 슬러그 ·
+  // 노드 라벨)에 기댄다. 2026-07-26 기본 샘플이 예시 비즈니스로 바뀌었으니
+  // 기본값에 기대지 않고 파일 단위로 명시 선택한다.
+  test.beforeEach(async ({ page }) => {
+    await useDogfoodSample(page);
+  });
+
   test("desktop: root renders the topology map directly (no marketing landing detour)", async ({ page }) => {
     // root-first-open (2026-07) — `/` used to render a marketing LandingPage
     // when no vault was selected; it now renders the map (HomePage) itself,

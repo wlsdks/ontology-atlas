@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { useDogfoodSample } from "./sample-source";
 
 /**
  * 로컬 작업 폴더 진입 정책 회귀 차단.
@@ -45,6 +46,8 @@ test.describe("local workspace capability gate (N1)", () => {
   });
 
   test("sample source keeps the document tree browsable", async ({ page }) => {
+    // 이 spec 은 dogfood 데이터에서 돈다 — 기본값에 기대지 않고 명시 선택한다.
+    await useDogfoodSample(page);
     await page.goto("/en/docs/");
 
     await expect(page.getByRole("radio", { name: "Sample" })).toBeChecked();
@@ -57,11 +60,6 @@ test.describe("local workspace capability gate (N1)", () => {
     await page.getByRole("button", { name: "Expand document list" }).click();
     const documentList = page.getByRole("navigation", { name: "Document list" });
     await expect(documentList).toBeVisible();
-    // 2026-07-26 — 기본 샘플이 dogfood → 예시 비즈니스로 바뀌면서 여기 박혀
-    // 있던 dogfood 전용 문서명(`Agent Graph Workflow`)이 더는 기본 화면에
-    // 없다. 이 테스트의 계약은 "특정 문서가 있다" 가 아니라 "접기/펼치기 뒤에도
-    // 목록이 탐색 가능하다" 였으므로, 어느 샘플이든 성립하는 형태로 고친다.
-    await expect(documentList.getByRole("button").first()).toBeVisible();
-    expect(await documentList.getByRole("button").count()).toBeGreaterThan(0);
+    await expect(documentList.getByRole("button", { name: "Agent Graph Workflow" })).toBeVisible();
   });
 });

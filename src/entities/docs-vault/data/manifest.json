@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T11:03:08.907Z",
+  "generatedAt": "2026-07-26T11:03:15.000Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4970,7 +4970,7 @@
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 앱 하단에서 열리던 터미널 도크가 사라졌다. 이번 주에 출하하고 이번 주에 지운다 — 번복이므로 그렇게 적는다. 아까움은 남길 이유가 아니었다. 왜 지웠나",
       "wordCount": 47009,
-      "updatedAt": "2026-07-26T11:03:08.907Z",
+      "updatedAt": "2026-07-26T20:03:15+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
