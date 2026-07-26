@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-26T16:51:14.000Z",
+  "generatedAt": "2026-07-26T18:13:34.000Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3114,6 +3114,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 말없이 삼키던 클릭, 영어로 새던 한국어 화면",
+          "slug": "2026-07-27-말없이-삼키던-클릭-영어로-새던-한국어-화면"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-27 — 진입 직후의 빈 화면을 없앴다 (공방 · 인사이트 · 문서함 · 지도)",
+          "slug": "2026-07-27-진입-직후의-빈-화면을-없앴다-공방-인사이트-문서함-지도"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 에이전트의 첫 마디, 그리고 이어지는 루프",
           "slug": "2026-07-27-에이전트의-첫-마디-그리고-이어지는-루프"
         },
@@ -5008,9 +5018,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 소유자가 패널을 열어 보고 지적한 셋 중 마지막 하나를 고쳤다 — 키가 있어도 빈 입력칸 앞에서 무엇을 물어야 할지 몰랐다. Cursor 를 쓰는 사람은 ",
-      "wordCount": 49774,
-      "updatedAt": "2026-07-27T01:51:14+09:00",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 같은 감사에서 처방이 분명했던 셋을 함께 고쳤다. 첫 방문 안내가 클릭을 말없이 삼켰다(D3). 문서함 첫 방문 안내가 떠 있는 동안 다른 내비를 누르면 ",
+      "wordCount": 50253,
+      "updatedAt": "2026-07-27T03:13:34+09:00",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
