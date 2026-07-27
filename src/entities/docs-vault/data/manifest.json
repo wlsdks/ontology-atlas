@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 문서 날짜가 매 병합마다 어긋나던 자리 (생성 결정성)",
+          "slug": "2026-07-27-문서-날짜가-매-병합마다-어긋나던-자리-생성-결정성"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 글자 크기엔 규격이 있는데 줄 간격엔 없었다 (행간 램프 9단)",
           "slug": "2026-07-27-글자-크기엔-규격이-있는데-줄-간격엔-없었다-행간-램프-9단"
         },
@@ -5083,8 +5088,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 같은 패널 안에서도 파일마다 줄 간격이 조금씩 달랐다. 눈에 띄게 이상하진 않지만 쌓이면 화면이 미묘하게 삐뚤빼뚤해지는 종류의 누수다. 전수 측정 결과 손",
-      "wordCount": 53136,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 빌드가 만드는 문서 매니페스트가 커밋될 때마다 이미 틀려 있었다. 문서별 \"마지막으로 바뀐 날\" 을 git 커밋 시각 으로 기록했는데, 그 값은 자신을 담",
+      "wordCount": 53328,
       "updatedAt": "2026-07-27",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
@@ -5986,6 +5991,11 @@
           "slug": "vault-checks"
         },
         {
+          "depth": 3,
+          "text": "Generated manifest determinism",
+          "slug": "generated-manifest-determinism"
+        },
+        {
           "depth": 2,
           "text": "MCP And CLI Checks",
           "slug": "mcp-and-cli-checks"
@@ -6012,7 +6022,7 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 6975,
+      "wordCount": 7208,
       "updatedAt": "2026-07-27",
       "linksOut": []
     },
