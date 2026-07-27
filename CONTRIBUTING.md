@@ -43,6 +43,34 @@ with the `frontmatter-ergonomics` / `mcp-tools` / `view-perf` /
 
 ## Code contributions
 
+### Fork first — this is a security boundary, not a formality
+
+**Open pull requests from a fork**, not from a branch in this repository.
+
+This repository is public and its release workflow holds Apple signing and
+notarization credentials. GitHub does not pass secrets to workflows triggered by
+a fork, so a pull request from a fork **cannot reach them** — that protection
+only exists as long as contributions arrive that way. Anyone who can push a
+branch here can change a workflow that runs on push, and therefore can reach the
+credentials.
+
+So the fork is doing real work: it is why we can accept changes to CI from
+strangers at all.
+
+```bash
+# Fork on GitHub, then:
+git clone https://github.com/<your-username>/ontology-atlas
+git remote add upstream https://github.com/wlsdks/ontology-atlas
+```
+
+Workflows on fork pull requests wait for maintainer approval before running.
+That is expected — it is not the CI being broken.
+
+`tests/contract/workflow-security.contract.test.ts` enforces the rules this
+depends on (no `pull_request_target`, no secrets in pull-request workflows, no
+untrusted strings in shell commands). See [`SECURITY.md`](SECURITY.md) for the
+full picture and for how to report a vulnerability.
+
 ### Branch & commit
 
 - Branch: `feat/...`, `fix/...`, `refactor/...`, `chore/...`, `docs/...`.

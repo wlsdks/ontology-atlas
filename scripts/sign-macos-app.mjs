@@ -7,17 +7,46 @@ import { loadMacosReleaseNames } from "./lib/macos-release-names.mjs";
 const root = process.cwd();
 const names = loadMacosReleaseNames(root);
 const { appBundleName } = names;
+/**
+ * `--dmg` 는 **DMG 컨테이너 자체**를 서명한다.
+ *
+ * `.app` 만 서명하고 DMG 로 감싸면 공증까지 통과하지만, Gatekeeper 가 DMG 를
+ * 평가할 때 볼 서명이 없다. 2026-07-27 v1.0.0-rc.1 실측:
+ *
+ *   [desktop-notarize] notarized and stapled ...aarch64.dmg      ← 공증은 됐다
+ *   spctl --assess --type open ... : rejected
+ *   source=no usable signature                                    ← 그런데 거절
+ *
+ * 공증 티켓은 붙었는데 **감쌀 서명이 없었다.** Apple 이 배포 절차에서 앱과
+ * 컨테이너를 각각 서명하라고 하는 이유가 이것이다. 순서도 정해져 있다 —
+ * 앱 서명 → DMG 패키징 → **DMG 서명** → 공증 → 스테이플.
+ *
+ * 하드닝 런타임은 여기 쓰지 않는다. 그건 실행되는 코드에 거는 것이고 DMG 는
+ * 컨테이너다.
+ */
+const signDmg = process.argv.includes("--dmg");
+const dmgPath = path.join(
+  root,
+  "src-tauri",
+  "target",
+  "release",
+  "bundle",
+  "dmg",
+  `${names.releaseAssetName}_${names.version}_${names.arch}.dmg`,
+);
 const appPath =
   process.env.MACOS_APP_PATH ??
-  path.join(
-    root,
-    "src-tauri",
-    "target",
-    "release",
-    "bundle",
-    "macos",
-    appBundleName,
-  );
+  (signDmg
+    ? dmgPath
+    : path.join(
+        root,
+        "src-tauri",
+        "target",
+        "release",
+        "bundle",
+        "macos",
+        appBundleName,
+      ));
 const signingIdentity = process.env.APPLE_SIGNING_IDENTITY;
 
 function printHelp() {
@@ -68,7 +97,11 @@ if (process.platform !== "darwin") {
 }
 
 if (!fs.existsSync(appPath)) {
-  fail(`missing app bundle at ${appPath}; run pnpm desktop:build:app first.`);
+  fail(
+    signDmg
+      ? `missing DMG at ${appPath}; run node scripts/package-macos-dmg.mjs first.`
+      : `missing app bundle at ${appPath}; run pnpm desktop:build:app first.`,
+  );
 }
 
 /**
@@ -133,16 +166,22 @@ function resolveSigningIdentity() {
 const adhoc = process.argv.includes("--adhoc");
 const identity = adhoc ? "-" : resolveSigningIdentity();
 
-run(
-  "codesign",
-  adhoc
+const signArgs = signDmg
+  ? // 컨테이너 서명 — deep 도 hardened runtime 도 대상이 아니다.
+    ["--force", "--timestamp", "--sign", identity, appPath]
+  : adhoc
     ? ["--force", "--deep", "--sign", identity, appPath]
-    : ["--force", "--deep", "--options", "runtime", "--timestamp", "--sign", identity, appPath],
-);
-run("codesign", ["--verify", "--deep", "--strict", "--verbose=2", appPath]);
+    : ["--force", "--deep", "--options", "runtime", "--timestamp", "--sign", identity, appPath];
+
+run("codesign", signArgs);
+run("codesign", signDmg
+  ? ["--verify", "--strict", "--verbose=2", appPath]
+  : ["--verify", "--deep", "--strict", "--verbose=2", appPath]);
 
 console.log(
-  adhoc
+  signDmg
+    ? `[desktop-sign] signed and verified the DMG container ${appPath} — Gatekeeper needs this in addition to the app signature`
+    : adhoc
     ? `[desktop-sign] ad-hoc signed and verified ${appPath} (no Developer ID — Gatekeeper will report an unidentified developer, which is the path the download page documents)`
     : `[desktop-sign] signed and verified ${appPath}`,
 );
