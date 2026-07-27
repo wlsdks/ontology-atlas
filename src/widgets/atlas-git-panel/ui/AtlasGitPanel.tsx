@@ -554,7 +554,11 @@ function PageHeader({
       )}
     >
       <div className="flex min-w-0 flex-col gap-1.5">
-        <h1 className="flex items-center gap-2 text-title font-semibold tracking-[-0.005em] text-[color:var(--color-text-primary)] sm:text-[length:var(--text-display)]">
+        {/* 넓은 폭에서 헤드라인 단을 올릴 때도 램프 유틸리티를 쓴다. 램프 토큰을
+            arbitrary length 로 우회 참조하면 글자 크기만 올라가고 그 단이 싣는
+            행간은 아래 단 것이 그대로 남아, 아무도 고른 적 없는 비율이 만들어진다
+            — 여기가 그랬다(23px 글자에 title 짝인 24px 행간, 1.04). */}
+        <h1 className="flex items-center gap-2 text-title font-semibold tracking-[-0.005em] text-[color:var(--color-text-primary)] sm:text-display">
           <HistoryIcon size={18} aria-hidden className="text-[color:var(--color-indigo-accent)]" />
           {t("title")}
         </h1>
