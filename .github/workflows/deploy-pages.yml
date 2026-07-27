@@ -29,7 +29,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # fetch-depth: 0 필수 — `pnpm build` 가 `docs-vault:build` 로 문서
+      # 매니페스트를 다시 만들고, 문서별 "마지막으로 바뀐 날" 을 git 히스토리
+      # 에서 읽는다. 얕은 클론에서는 유일한 커밋이 root 로 취급돼 문서 전부가
+      # 같은 날짜를 받고, 배포된 사이트의 신선도 렌즈가 통째로 평평해진다.
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: 24

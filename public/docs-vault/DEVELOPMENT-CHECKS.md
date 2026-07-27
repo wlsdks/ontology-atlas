@@ -67,6 +67,32 @@ pnpm test:vault:audit            # focused vault audit CLI argument contract
 pnpm vault:migrate --list        # registered migrations
 ```
 
+### Generated manifest determinism
+
+`docs-vault:build` writes committed artifacts (`manifest.json`, `content.json`,
+`sample-storefront.*`, `dogfood-census.generated.ts`, `public/docs-vault/**`).
+They stay committed because static export bakes the sample vault in *and*
+`static-vault-source.ts` imports the JSON statically — without them `tsc`,
+vitest, lint, and the editor all break. So the generation itself must be
+deterministic: **same source in, same bytes out.**
+
+- Doc `updatedAt` and manifest `generatedAt` are **dates** (`YYYY-MM-DD`), never
+  times. A time-precision value describes the very commit that carries it, and
+  squash-merge / rebase / amend re-stamp that commit — so the baseline would be
+  born stale (measured: 24 of the last 25 main commits shipped 1–32 wrong docs).
+- The generator never reads the wall clock and never reads its own previous
+  output. `pnpm test:docs-vault` proves it by re-stamping a temp repo's commit
+  time within the same day and asserting byte-identical output;
+  `tests/contract/generated-vault-determinism.contract.test.ts` rejects any
+  time-precision value, wall-clock call, `%cI` regression, or prior-output feedback.
+- Any workflow job that runs the generator needs `fetch-depth: 0`. A depth-1
+  checkout makes the single commit a parentless root, so `git log --name-only`
+  attributes the whole tree to it and every doc collapses to one date (measured:
+  247 paths → 1 distinct date). The same contract test guards the pairing.
+- **Never hand-edit a merge conflict inside these files** — conflict markers left
+  in JSON have broken `tsc`. Take either side and regenerate:
+  `git checkout --ours src/entities/docs-vault/data public/docs-vault && pnpm docs-vault:build`.
+
 `health --json`, `agent-brief --json`, and `workspace-brief --json` are fail-closed machine outputs:
 malformed diagnosis payloads are command failures, not clean vaults.
 

@@ -39,8 +39,13 @@ jobs:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
     steps:
+      # fetch-depth: 0 필수 — 아래 `docs-vault:check` 와 `pnpm build` 가 문서별
+      # "마지막으로 바뀐 날" 을 git 히스토리에서 읽는다 (얕은 클론은 전 문서를
+      # 같은 날짜로 뭉갠다).
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6

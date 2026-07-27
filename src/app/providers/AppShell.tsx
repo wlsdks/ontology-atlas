@@ -95,7 +95,22 @@ function ShellColumn({ children }: { children: ReactNode }) {
     <div className="flex h-dvh w-full flex-col overflow-hidden">
       <div className="flex min-h-0 flex-1">
         <AppNavRailSlot />
-        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">{children}</div>
+        {/* 본문 슬롯은 **스크롤 컨테이너**다 — 그러니 자기 자식을 압축하면 안 된다.
+            아래 자식 변형이 그 계약이다. 페이지 루트는 슬롯을 채우려고
+            `min-h-full` 을 쓰는데, 그 명시적 min-height 는 flex 아이템의 자동
+            최소 크기(= 내용 높이)를 덮어쓴다. 그래서 내용이 뷰포트보다 길어지면
+            flex 가 페이지 박스를 뷰포트 높이까지 **줄여** 버렸고, 내용은 visible
+            overflow 로 삐져나와 스크롤은 되는데 페이지의 하단 패딩이 줄어든 박스
+            바닥에 붙어 스크롤 끝에서 여백이 사라졌다 (1512×950 실측 · 결함 당시:
+            프로젝트 목록 내용 1368 / 박스 950 / 끝 여백 0px, 다운로드 2334 / 950 /
+            0px, 프로젝트 상세·인사이트 동일 형태).
+            페이지마다 `shrink-0` 을 기억하게 하는 처방은 #65 계열 drift 를 부른다 —
+            다음에 만드는 화면이 또 빠뜨린다. 스크롤 컨테이너를 소유한 셸이 한 번
+            선언한다. 자식이 늘어나는 건 그대로 두므로(`grow` 미변경) 짧은 내용의
+            세로 중앙 정렬과 `h-full` 페이지는 영향받지 않는다. */}
+        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0">
+          {children}
+        </div>
       </div>
 
       {/* 목적지 첫 방문 안내 (2026-07-26) — 지도에만 있던 안내를 나머지 다섯
