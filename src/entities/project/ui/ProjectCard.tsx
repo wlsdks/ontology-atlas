@@ -132,7 +132,7 @@ export function ProjectCard({
       >
         <div
           className={cn(
-            'relative flex items-center justify-center rounded-full border shadow-[0_10px_24px_var(--color-shadow-a25)] transition-[transform,background-color,border-color,box-shadow] duration-[var(--motion-base)] group-hover:-translate-y-0.5 group-hover:shadow-[0_14px_30px_var(--color-shadow-a25)]',
+            'relative flex items-center justify-center rounded-full border shadow-[0_10px_24px_var(--color-shadow-a25)] transition-[transform,background-color,border-color,box-shadow] duration-[var(--motion-fast)] group-hover:-translate-y-0.5 group-hover:shadow-[0_14px_30px_var(--color-shadow-a25)]',
             isHub
               ? 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] text-[color:var(--color-indigo-accent)]'
               : 'border-[color:var(--color-border-strong)] bg-[color:rgba(20,21,23,0.96)] text-[color:var(--color-text-primary)] group-hover:border-[color:var(--color-indigo-a26)] group-hover:bg-[color:var(--color-indigo-a08)]',

@@ -808,6 +808,23 @@
     animation: settingsPanelIn var(--motion-base) var(--motion-ease) both;
   }
 
+  /* 들어온 길로 나간다 (2026-07-28 프레임 실측). 등장은 8프레임(134ms, 피크
+     2.15)인데 퇴장은 **1프레임**이었고 그 델타가 등장 피크의 4.7배였다 —
+     `settingsPanelIn` 에 짝이 없었다. 새 키프레임 0 · 새 duration 0: 같은
+     키프레임을 `reverse` 로 되감고, 시간은 이 파일이 퇴장에 쓰는 같은 산식
+     (등장의 2/3)을 그대로 쓴다. 나가는 것은 들어오는 것보다 빠르다. */
+  .app-settings-panel-out {
+    animation: settingsPanelOut calc(var(--motion-base) * 0.67) var(--motion-ease)
+      both;
+    pointer-events: none;
+  }
+
+  .app-settings-scrim-out {
+    animation: overlayFadeOut calc(var(--motion-base) * 0.67) var(--motion-ease)
+      both;
+    pointer-events: none;
+  }
+
   /* ── 설정 하위면 push/pop (2026-07-26) ────────────────────────────────────
      「AI 연결」·「에이전트」 하위면으로 들어가는 이동이 **0ms 하드컷**이었다
      (1프레임, 전후 프레임 변화 0). 높이와 내용이 통째로 바뀌는데 방향을
@@ -952,6 +969,51 @@
     }
   }
 
+  /*
+   * 퇴장 전용 불투명도 키프레임 (2026-07-28 프레임 실측으로 발견).
+   *
+   * **이름을 재사용한 퇴장은 조용히 하드컷이 된다.** CSS 애니메이션은
+   * `animation-name` 이 그대로면 duration/direction 만 바뀌어도 **다시 시작하지
+   * 않는다** — 시작 시각이 그대로라 이미 끝난 애니메이션은 `reverse` + `both`
+   * 를 붙이는 순간 "끝난 뒤" 단계로 해석돼 역재생의 종료 상태(불투명도 0)를
+   * **즉시** 보여준다.
+   *
+   * 그래서 등장에 `panelCrossfadeIn`, 퇴장에 같은 이름을 `reverse` 로 걸어 둔
+   * 자리가 전부 1프레임 소멸이었다. 노드 팝오버 실측(같은 원소에서 클래스만
+   * 교체): 불투명도 `1 → 0` **1프레임**, 그 다음 transform 만 1 → 0.9877 →
+   * 0.9829 → 0.9804 로 **이미 보이지 않는 원소가 천천히 줄어든다.** 밝기와
+   * 이동 중 남길 축과 없앨 축이 정확히 뒤바뀐 상태다.
+   *
+   * 처방은 **앞으로 재생하는 자기 이름**이다. 새 duration/easing 값 0 —
+   * 소비처는 쓰던 토큰을 그대로 쓴다. 원소가 매번 새로 마운트되는 자리
+   * (키로 교체되는 지도 슬롯)는 이 문제가 없지만, 같은 이름을 쓰면 다음 사람이
+   * 같은 함정에 다시 빠지므로 퇴장은 전부 이 이름으로 모은다.
+   */
+  @keyframes overlayFadeOut {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
+  }
+
+  /* 설정 시트 퇴장 — 등장(`settingsPanelIn`)의 역궤적을 **자기 이름으로**
+     앞으로 재생한다. 값은 등장과 같은 것(0.98 · --motion-ease)이고 시간만
+     등장의 2/3 다: 나가는 것은 들어오는 것보다 빠르다. */
+  @keyframes settingsPanelOut {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+  }
+
   /* R4 "모션 헌법" (fable 설계, Apple Designing Fluid Interfaces) — 지도 위
      DOM 크롬(노드 팝오버·엣지 패널·상태 칩)의 단일 등장 문법. 진입로=퇴장로
      대칭을 위해 값 하나로 선언한다: opacity 0→1 + translateY 3px→0 + scale
@@ -1007,9 +1069,32 @@
      다른 점). 새 키프레임·새 duration 0 — 크롬 모션 패밀리 토큰(180ms +
      ease-out) 재사용이라 팝오버·패널·전면 표면이 한 클럭을 쓴다.
      reduced-motion 은 아래 base 레이어 동등물 규칙이 불투명도만 남긴다. */
+  /* 2026-07-28 프레임 실측 — 이 클래스는 **불투명도 전용**인데 이동용 커브
+     (`--topology-motion-ease-out`, expo)를 타고 있었다. 그 커브는 첫 프레임에
+     이미 47% 에 닿는다(실측 45.9%): 큰 표면이 사실상 하드컷으로 켜졌다.
+     `.topology-chrome-in` 이 2026-07-27 에 배운 것과 같은 교훈이다 — **밝기와
+     이동은 같은 커브를 쓰면 안 된다.** 여기엔 이동 축이 아예 없으므로 밝기의
+     커브, 즉 앱 공통 램프(`--motion-ease`)만 남는다. duration 은 그대로(크롬
+     모션 패밀리 180ms) — 새 값 0. */
   .map-overlay-in {
     animation: panelCrossfadeIn var(--topology-motion-panel-duration)
-      var(--topology-motion-ease-out) both;
+      var(--motion-ease) both;
+  }
+
+  /* 같은 문법의 **나가는 길** (2026-07-28 프레임 실측). 도착 표면만 시간을
+     받고 떠나는 표면은 0프레임이었다 — INDEX 접기에서 사용자가 누른 300px
+     패널이 1프레임(delta 13.25 @17ms)에 사라지는 동안 결과인 지도가 217ms
+     이징을 받았다. 예산이 주인공이 아니라 배경에 쓰인 것이다.
+
+     퇴장은 등장의 역재생이되 더 빠르다(2/3) — 지도 크롬의 퇴장 문법과
+     오버레이 닫힘이 이미 쓰는 같은 산식이라, 지도 위 표면의 나가는 길이
+     하나의 클럭을 쓴다. 새 키프레임 0 ·
+     새 duration 0. 이동/스케일은 여기서도 쓰지 않는다(큰 표면이 움직이면
+     화면 자체가 흔들린 것으로 읽힌다 — `.map-overlay-in` 주석 참조). */
+  .map-overlay-out {
+    animation: overlayFadeOut calc(var(--topology-motion-panel-duration) * 0.67)
+      var(--motion-ease) both;
+    pointer-events: none;
   }
 
   /* rank2 — 상세 패널 퇴장 대칭. 등장(topologyChromeIn)만 있고 닫힘 시 React 가
@@ -1035,7 +1120,7 @@
     animation:
       topologyChromeOut calc(var(--topology-motion-panel-duration) * 0.67)
         var(--topology-motion-ease-out) both,
-      panelCrossfadeIn var(--motion-fast) var(--motion-ease) both reverse;
+      overlayFadeOut var(--motion-fast) var(--motion-ease) both;
     transform-origin: var(--topology-chrome-in-origin, center top);
     pointer-events: none;
   }
@@ -1134,8 +1219,8 @@
   }
 
   .overlay-spring-scrim[data-state="closed"] {
-    animation: panelCrossfadeIn var(--topology-motion-panel-duration)
-      var(--topology-motion-ease-out) reverse both;
+    animation: overlayFadeOut var(--topology-motion-panel-duration)
+      var(--topology-motion-ease-out) both;
     pointer-events: none;
   }
 
@@ -1151,7 +1236,7 @@
   }
 
   .overlay-fade-only[data-state="closed"] {
-    animation: panelCrossfadeIn 120ms linear reverse both;
+    animation: overlayFadeOut 120ms linear both;
     pointer-events: none;
   }
 
@@ -2881,14 +2966,47 @@
       animation-delay: 0ms !important;
     }
 
-    .app-settings-scrim-in {
+    .app-settings-scrim-in,
+    .app-settings-scrim-out {
       animation-duration: var(--motion-base) !important;
     }
 
     .map-overlay-in,
+    .map-overlay-out,
     .overlay-spring-scrim[data-state='open'],
     .overlay-spring-scrim[data-state='closed'] {
       animation-duration: var(--topology-motion-panel-duration) !important;
+    }
+
+    /*
+     * 토스트(sonner) — **끄는 게 아니라 덜 흔들리는 것**.
+     *
+     * 벤더는 자기 `@media (prefers-reduced-motion)` 에서 `transition: none
+     * !important` 로 전부 끈다. 그 결과가 실측에서 **둘 중 나쁜 쪽만 남은**
+     * 모양이었다: 알림의 도착이라는 **정보 모션**(불투명도)이 1프레임에
+     * 사라졌는데, `--y: translateY(100%)`(토스트 높이 = 53.5px)의 **위치 점프는
+     * 그대로** 남았다. 이 파일의 규율과 정확히 반대다.
+     *
+     * ① 이동축을 **출발점에서** 없애고(등장/퇴장 모두 y=0 에서 시작 → 여행
+     * 거리 0) ② 불투명도만 --motion-fast 로 되돌린다. 마운트된 토스트의 스택
+     * 오프셋은 건드리지 않는다 — 그건 등장 모션이 아니라 배치라서, 없애면
+     * 알림 여러 개가 겹쳐 쌓인다.
+     *
+     * **여기(같은 레이어 안)에 있어야 이긴다.** `!important` 끼리는 캐스케이드
+     * 레이어 순서가 뒤집혀 **레이어에 든 쪽이 레이어 밖을 이긴다** — 파일 끝의
+     * 언레이어드 규칙으로 썼을 땐 특이도가 (0,3,0) 이나 되는데도 위 전역
+     * kill 규칙(`*`, 0,0,0)에 져서 계산값이 0.01ms 였다(실측 확인). 규칙이
+     * 있어도 자리가 틀리면 없는 것과 같다.
+     */
+    [data-sonner-toaster] [data-sonner-toast].app-toast {
+      transition-property: opacity !important;
+      transition-duration: var(--motion-fast) !important;
+      transition-timing-function: var(--motion-ease) !important;
+    }
+
+    [data-sonner-toaster] [data-sonner-toast].app-toast:not([data-mounted='true']),
+    [data-sonner-toaster] [data-sonner-toast].app-toast[data-removed='true'] {
+      --y: translateY(0) !important;
     }
 
     /* ② transform 이 실린 등장/퇴장 — 키프레임 이름만 바꾼다. */
@@ -2899,6 +3017,13 @@
       animation-duration: var(--motion-base) !important;
     }
 
+    /* 퇴장은 **퇴장 이름으로** 갈아탄다 — 등장 이름을 reverse 로 재사용하면
+       같은 원소에서 애니메이션이 재시작하지 않아 조용히 1프레임이 된다. */
+    .app-settings-panel-out {
+      animation-name: overlayFadeOut !important;
+      animation-duration: var(--motion-base) !important;
+    }
+
     .topology-chrome-in,
     .rail-status-dot-in {
       animation-name: panelCrossfadeIn !important;
@@ -2906,8 +3031,7 @@
     }
 
     .topology-chrome-out {
-      animation-name: panelCrossfadeIn !important;
-      animation-direction: reverse !important;
+      animation-name: overlayFadeOut !important;
       animation-duration: calc(var(--topology-motion-panel-duration) * 0.67) !important;
     }
   }
@@ -3007,3 +3131,33 @@ body[data-no-tabbar] [data-tabbar="primary"] {
     right: calc(var(--topology-node-popover-right-inset) + var(--agent-panel-width));
   }
 }
+
+/* ── 토스트(sonner) 모션 — 벤더 공장값을 앱 램프로 갈아 끼운다 (2026-07-28) ──
+   실측(1512×853, 60fps rAF 샘플): 등장 불투명도가
+   0.025 → 0.101 → 0.177 → 0.267 → 0.362 → 0.497 … 로 **델타가 커지다가**
+   꺾인다. 첫 프레임 지분 **2.5%**, 피크가 **6번째 프레임**, 램프폭 **350ms+**.
+   즉 ① 등장에 ease-in(헌장이 "지명 가능한 결함" 이라 못박은 것) ② DOM 확정
+   천장(240ms) 초과. 출처는 sonner 의 `transition: transform 400ms, opacity
+   400ms …` + 브라우저 기본 `ease` 다 — **아무도 고르지 않은 숫자가 사실상
+   앱의 알림 모션**이었다(#707 이 잡은 "Tailwind 공장값 150ms" 와 같은 유형).
+
+   새 값 0 — 앱 램프(`--motion-base` 등장 / `--motion-fast` 퇴장)로만 바꾼다.
+   퇴장이 등장보다 빠르다는 규율은 오버레이 3종·지도 크롬과 같다.
+
+   **레이어 밖 + 높은 특이도로 쓴다**: sonner 는 자기 `<style>` 을 런타임에
+   `<head>` 에 주입해 우리 스타일시트보다 **뒤에** 온다. 같은 특이도면 벤더가
+   이긴다(reduced-motion 쪽은 `!important` 까지 쓴다). `[data-sonner-toaster]
+   [data-sonner-toast].app-toast` (0,3,0) 로 올려 순서와 무관하게 이긴다. */
+[data-sonner-toaster] [data-sonner-toast].app-toast {
+  transition:
+    transform var(--motion-base) var(--motion-ease),
+    opacity var(--motion-base) var(--motion-ease),
+    height var(--motion-base) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease);
+}
+
+[data-sonner-toaster] [data-sonner-toast].app-toast[data-removed='true'] {
+  transition-duration: var(--motion-fast);
+}
+
+

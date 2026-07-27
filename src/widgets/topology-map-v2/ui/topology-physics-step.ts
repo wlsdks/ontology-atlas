@@ -67,6 +67,22 @@ export interface PhysicsStepInput {
    */
   reducedMotion: boolean;
   /**
+   * WCAG 2.2 §2.3.3 — the camera snap above is a **vestibular** mitigation, and
+   * the standard exempts motion the user themselves initiates (scrolling,
+   * panning, pinching). Wheel/drag/pinch are the hand's extension: snapping them
+   * teleports the entire viewport in one frame, which is *worse* for a
+   * vestibular-sensitive reader than the interpolated travel it replaced — every
+   * "where did I just go" cue is gone with it (2026-07-28 frame measurement:
+   * one frame of canvas delta, then 0.00 forever).
+   *
+   * So the reduced-motion snap is scoped to **app-initiated** camera moves (ego
+   * dive · fit · auto-arrange), which are the ones that move the world without
+   * being asked. Direct manipulation keeps its spring. Set by the pointer
+   * handlers on every gesture that writes `cameraTargetRef`, cleared by the
+   * programmatic camera setters. Ignored when `prefers-reduced-motion` is off.
+   */
+  userDrivenCamera?: boolean;
+  /**
    * S3 마감 폴리시 (fable 설계) — when true the camera is being driven
    * externally by the cubic transition tween (`model/camera-easing.ts`, owned
    * by `use-topology-loop.ts`): the spring step + pan-bounds clamp + reduced-
@@ -152,6 +168,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     panelEmphasisNodeId,
     isDragging,
     reducedMotion,
+    userDrivenCamera = false,
     freezeCamera,
     emphasisById,
     rippleStartById,
@@ -225,8 +242,9 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // the spring interpolation is discarded. Velocities zero out so a later
   // preference flip can't inherit stale momentum. (Never runs while frozen —
   // the tween is disabled under reduced motion, so the spring path handles the
-  // snap.)
-  if (!freezeCamera && reducedMotion) {
+  // snap.) `userDrivenCamera` carves out WCAG 2.3.3's user-initiated exception:
+  // wheel/drag/pinch keep the spring, only app-initiated travel arrives.
+  if (!freezeCamera && reducedMotion && !userDrivenCamera) {
     nextCamera.x.value = target.tx;
     nextCamera.y.value = target.ty;
     nextCamera.scale.value = Math.min(effectiveScaleMax, Math.max(effectiveScaleMin, target.tscale));

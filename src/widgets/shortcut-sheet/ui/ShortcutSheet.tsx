@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
-import { MOTION } from "@/shared/motion";
+import { MOTION, OVERLAY_SPRING_REDUCED } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { usePathname } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
@@ -247,6 +247,33 @@ export function ShortcutSheet({ open, onClose }: Props) {
     };
   }, [open]);
 
+  /*
+   * reduced-motion 동등물 (2026-07-28 프레임 실측). 여기는 **절반만** 스왑돼
+   * 있었다: 전역 kill 규칙이 CSS 애니메이션만 자르는데 이 시트는 framer 가
+   * 그리므로 불투명도 이징(200ms)은 살아남고, 같은 구간의
+   * `scale(.985) translateY(12px) → none` 만 **1프레임**으로 잘려
+   * `y 96.2 → 79` · `h 684.6 → 695` 가 순간이동했다 — 남길 축(밝기)과 없앨
+   * 축(기하)이 정확히 뒤바뀐 상태다.
+   *
+   * 검색 팔레트·새 문서 대화가 쓰는 것과 **같은** 동등물(`OVERLAY_SPRING_REDUCED`,
+   * 120ms opacity 전용)로 통일하고, 흔들리는 축은 시작값 자체를 0 으로 둔다 —
+   * 시간이 0 이 아니라 **여행 거리**가 0 이라야 순간이동이 아니다. 새 값 0.
+   */
+  const reducedMotion = useReducedMotion();
+  const surfaceMotion = reducedMotion
+    ? {
+        initial: { opacity: 0, y: 0, scale: 1 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        exit: { opacity: 0, y: 0, scale: 1 },
+        transition: OVERLAY_SPRING_REDUCED,
+      }
+    : {
+        initial: { opacity: 0, y: 12, scale: 0.985 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        exit: { opacity: 0, y: 12, scale: 0.985 },
+        transition: MOTION.medium,
+      };
+
   return (
     <AnimatePresence>
       {open && (
@@ -255,7 +282,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={MOTION.fast}
+          transition={reducedMotion ? OVERLAY_SPRING_REDUCED : MOTION.fast}
           data-shortcut-sheet-responsive-contract="mobile-sheet-sm-floating"
           data-shortcut-sheet-floating-width-token="--topology-shortcut-sheet-floating-width"
           data-shortcut-sheet-radius-token="--topology-shortcut-sheet-radius"
@@ -265,10 +292,10 @@ export function ShortcutSheet({ open, onClose }: Props) {
         >
           <motion.section
             ref={dialogRef}
-            initial={{ opacity: 0, y: 12, scale: 0.985 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.985 }}
-            transition={MOTION.medium}
+            initial={surfaceMotion.initial}
+            animate={surfaceMotion.animate}
+            exit={surfaceMotion.exit}
+            transition={surfaceMotion.transition}
             onClick={(event) => event.stopPropagation()}
             role="dialog"
             aria-label={t("dialogAriaLabel")}

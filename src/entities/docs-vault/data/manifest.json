@@ -3212,6 +3212,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-28 — 모션: 사용자가 부른 것에 시간을 돌려준다",
+          "slug": "2026-07-28-모션-사용자가-부른-것에-시간을-돌려준다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-28 — 대외 문안에서 죽은 `npx` 를 걷고, 다시 못 들어오게 계약을 걸었다",
           "slug": "2026-07-28-대외-문안에서-죽은-npx-를-걷고-다시-못-들어오게-계약을-걸었다"
         },
@@ -5236,8 +5241,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. npm 발행 계획은 ",
-      "wordCount": 56407,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 전 화면을 프레임 단",
+      "wordCount": 56746,
       "updatedAt": "2026-07-28",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
@@ -5872,6 +5877,11 @@
         },
         {
           "depth": 4,
+          "text": "전수 실측이 가르친 것 (2026-07-28)",
+          "slug": "전수-실측이-가르친-것-2026-07-28"
+        },
+        {
+          "depth": 4,
           "text": "목록 행 펼침 — 나가는 길은 들어온 길이다 (2026-07-26)",
           "slug": "목록-행-펼침-나가는-길은-들어온-길이다-2026-07-26"
         },
@@ -6142,7 +6152,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 18655,
+      "wordCount": 19168,
       "updatedAt": "2026-07-28",
       "linksOut": [
         "design-references/DESIGN-linear",

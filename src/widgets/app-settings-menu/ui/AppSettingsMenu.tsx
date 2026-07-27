@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { usePanelPresence } from '@/shared/lib/use-presence';
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 import {
   ChevronLeft,
@@ -330,6 +331,20 @@ export function AppSettingsMenu({
   // P3 결함⑥ — controlled 모드에서 이 `<details>` 는 React state 가 곧
   // 진실원이어야 한다. 매 렌더마다 DOM `open` 을 React 값으로 되맞춰 race 를
   // 구조적으로 없앤다 (uncontrolled 모드에서도 같은 값이면 no-op).
+  /**
+   * 퇴장 presence (2026-07-28 프레임 실측). 이 시트는 등장에 8프레임(134ms,
+   * 피크 2.15)을 쓰고 **퇴장은 단 1프레임**이었다 — 그 한 프레임의 델타가
+   * 등장 피크의 **4.7배**(10.03). `settingsPanelIn` 은 있는데 짝이 없었다:
+   * 들어온 길로 나가지 않는다.
+   *
+   * 포커스 반환·스크롤 잠금·Esc 핸들러는 계속 `open` 을 보므로 동작은 그대로고,
+   * 늘어나는 것은 **그림뿐**이다 — 그래서 나가는 동안 `inert` + `aria-hidden`
+   * 으로 보조기술과 포인터에게서 즉시 사라진다(모달이 둘로 읽히지 않게).
+   */
+  const settingsPresence = usePanelPresence(open);
+  const settingsMounted = settingsPresence.mounted;
+  const settingsExiting = settingsPresence.exiting;
+
   useEffect(() => {
     if (detailsRef.current) detailsRef.current.open = open;
   }, [open]);
@@ -483,7 +498,11 @@ export function AppSettingsMenu({
           </span>
         ) : null}
       </summary>
-      {open && typeof document !== 'undefined'
+      {/* `open ||` 가 먼저다 — 여는 순간은 **같은 커밋**에 포털이 서야
+          자동 포커스/포커스 트랩이 첫 렌더에서 패널을 찾는다(effect 로 미루면
+          한 커밋 늦어 초점이 새어나간다). 뒤의 presence 는 **닫는 쪽만**
+          늘린다. */}
+      {(open || settingsMounted) && typeof document !== 'undefined'
         ? createPortal(
       <div
         ref={overlayRef}
@@ -494,7 +513,9 @@ export function AppSettingsMenu({
         // `hidden`+`group-open:flex` display 묶기(overflow-sweep 회귀 방지)도
         // 필요 없어졌다. scrim: 모달은 지도/페이지를 dim + block 해야
         // 한다(design.md modality 계약) — `--color-scrim-a54` 단일 토큰.
-        className="app-settings-scrim-in fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[color:var(--color-scrim-a54)] p-3 sm:p-6"
+        className={`${settingsExiting ? 'app-settings-scrim-out pointer-events-none' : 'app-settings-scrim-in'} fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[color:var(--color-scrim-a54)] p-3 sm:p-6`}
+        aria-hidden={settingsExiting || undefined}
+        inert={settingsExiting || undefined}
         data-testid="app-settings-overlay"
         onMouseDown={(event) => {
           if (event.target !== event.currentTarget) return;
@@ -507,7 +528,7 @@ export function AppSettingsMenu({
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="app-settings-panel-in flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[34rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[0_28px_90px_var(--color-shadow-a58)] sm:max-h-[min(46rem,calc(100dvh-3rem))]"
+          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[34rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[0_28px_90px_var(--color-shadow-a58)] sm:max-h-[min(46rem,calc(100dvh-3rem))]`}
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
+import { useSwapHeight } from "@/shared/lib/use-presence";
 import { useTranslations } from "next-intl";
 import {
   buildEdgeTypeRows,
@@ -183,6 +184,7 @@ export function OntologyInsightsPage() {
   const [tab, setTabState] = useState<InsightsTab>(() =>
     parseInsightsTab(searchParams.get("tab")),
   );
+  const { hostRef: insightsSwapHostRef, capture: captureInsightsHeight } = useSwapHeight(tab);
   const [reviewId, setReviewId] = useState<string | null>(() =>
     parseInsightsTab(searchParams.get("tab")) === "do-next"
       ? searchParams.get("review")
@@ -193,6 +195,7 @@ export function OntologyInsightsPage() {
     const syncTabFromHistory = () => {
       const nextParams = new URL(window.location.href).searchParams;
       const nextTab = parseInsightsTab(nextParams.get("tab"));
+      captureInsightsHeight();
       setTabState(nextTab);
       setReviewId(nextTab === "do-next" ? nextParams.get("review") : null);
     };
@@ -497,6 +500,7 @@ export function OntologyInsightsPage() {
     // 갱신한다. 화면 state와 URL을 같은 이벤트에서 맞추므로 TabBar의 roving
     // focus를 끊지 않고, 재진입·공유 링크는 URL을 다시 초기 진실원으로 읽는다.
     const nextTab = next as InsightsTab;
+    captureInsightsHeight();
     setTabState(nextTab);
     setReviewId(null);
     window.history.replaceState(
@@ -947,6 +951,10 @@ export function OntologyInsightsPage() {
             />
           </div>
         ) : (
+          // 내용은 크로스페이드로 들어오는데 **상자는 1프레임에** 튀었다
+          // (실측 878.5 → 605px, 문서 전체 246px 점프). 크로스페이드가
+          // 리플로우를 감싸도록 높이를 한 스텝(base) 뒤에 세운다.
+          <div ref={insightsSwapHostRef} className="flex min-h-0 flex-1 flex-col">
           <div
             key={tab}
             role="tabpanel"
@@ -1061,6 +1069,7 @@ export function OntologyInsightsPage() {
                 }}
               />
             ) : null}
+          </div>
           </div>
         )}
 

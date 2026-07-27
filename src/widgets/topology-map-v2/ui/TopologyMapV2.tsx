@@ -369,7 +369,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
           // 주역은 hover 색이 아니라 컨트롤의 등장/퇴장이라 기본(확인, 120ms)
           // 에 맡기면 페이드가 툭 튀는 쪽으로 되돌아간다. 이징은 지도 표면과
           // 같은 커브를 유지한다.
-          className="group absolute left-0 top-0 z-40 flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] text-[color:var(--topology-v2-indigo-bright)] shadow-[var(--topology-v2-panel-shadow)] transition-[opacity,background-color] duration-[var(--motion-base)] ease-[var(--topology-motion-ease-out)] hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+          className="group absolute left-0 top-0 z-40 flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] text-[color:var(--topology-v2-indigo-bright)] shadow-[var(--topology-v2-panel-shadow)] transition-[opacity,background-color] duration-[var(--motion-fast)] ease-[var(--topology-motion-ease-out)] hover:bg-[color:var(--topology-v2-panel-row-hover)]"
           style={{ opacity: 0, pointerEvents: "none" }}
         >
           <Orbit size={15} aria-hidden />

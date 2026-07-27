@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
+import { usePanelPresence, useSurfaceSwap } from "@/shared/lib/use-presence";
 import { cn } from "@/shared/lib/cn";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -281,33 +282,7 @@ import {
 } from "@/features/guided-tour";
 import { resolveTourAnchorNodeId } from "../lib/resolve-tour-anchor-node";
 
-/**
- * rank2 — 상세 패널 퇴장 대칭용 경량 presence 게이트. `open` 이 false 로 떨어지면
- * 즉시 언마운트하지 않고 `exiting=true` 로 `exitMs` 동안 패널을 유지한다(그 사이
- * `.topology-chrome-out` 이 재생). 시간이 지나면 언마운트. `open` 이 다시 true 가
- * 되면(재선택) 즉시 mounted/entering 으로 복귀. prefers-reduced-motion 은
- * globals.css 전역 규칙이 애니메이션을 즉시 끝내므로 `exitMs` 만큼만 투명 유지 후
- * 언마운트(시각적 아티팩트 없음).
- */
-function usePanelPresence(open: boolean, exitMs: number): { mounted: boolean; exiting: boolean } {
-  const [mounted, setMounted] = useState(open);
-  const [exiting, setExiting] = useState(false);
-  useEffect(() => {
-    if (open) {
-      setMounted(true);
-      setExiting(false);
-      return;
-    }
-    // open=false: 즉시 언마운트 대신 퇴장 애니 창을 연다.
-    setExiting(true);
-    const id = setTimeout(() => {
-      setMounted(false);
-      setExiting(false);
-    }, exitMs);
-    return () => clearTimeout(id);
-  }, [open, exitMs]);
-  return { mounted, exiting };
-}
+
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
 /** INDEX panel preference (B3 허브가 곧 지도) — separate key from the legacy
@@ -1829,6 +1804,24 @@ export function HomePage() {
     baseRenderedIndexState === "expanded"
       ? "collapsed"
       : baseRenderedIndexState;
+  /**
+   * 접힘 ↔ 펼침은 한 번의 클릭이 낳은 **하나의 사건**이다. 지금까지는 도착
+   * 표면만 시간을 받고 떠나는 표면은 0프레임이었다(위 `useSurfaceSwap` 주석의
+   * 실측). 두 프레임을 같은 슬롯에 겹쳐 그려 **떠나는 것과 오는 것과 지도가
+   * 같은 프레임에 출발**하게 한다 — 판정식② "같은 입력의 단계 시작차 ≤
+   * `--motion-fast`" 를 구조로 보장한다.
+   *
+   * 퇴장 창은 `EXIT_WINDOW_MS` 하나로 공유한다 — 지도 위 표면의 나가는 길이
+   * 표면마다 다르면 그게 다시 결함이다.
+   */
+  const indexSlotSwap = useSurfaceSwap(renderedIndexState);
+  const indexSlotFrames: ReadonlyArray<{ state: IndexPanelState; exiting: boolean }> =
+    indexSlotSwap.leaving === null
+      ? [{ state: renderedIndexState, exiting: false }]
+      : [
+          { state: indexSlotSwap.leaving, exiting: true },
+          { state: renderedIndexState, exiting: false },
+        ];
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.topologyIndex = renderedIndexState;
@@ -2047,7 +2040,7 @@ export function HomePage() {
   // 값(v2DatasheetModel)이 null 로 사라지므로 마지막 모델을 ref 로 잡아 그 창
   // 동안 같은 내용을 계속 그린다(내용이 바뀌지 않고 접혀 사라지게).
   const panelOpen = nodePopoverVisible && Boolean(v2DatasheetModel);
-  const nodePanelPresence = usePanelPresence(panelOpen, 140);
+  const nodePanelPresence = usePanelPresence(panelOpen);
   const retainedDatasheetRef = useRef(v2DatasheetModel);
   if (v2DatasheetModel) retainedDatasheetRef.current = v2DatasheetModel;
   const panelDatasheetModel = v2DatasheetModel ?? retainedDatasheetRef.current;
@@ -3450,7 +3443,7 @@ export function HomePage() {
                           // 타이포/아이콘 규격으로 수렴: 높이 --chrome-tile-size,
                           // radius --chrome-radius, text-label, 아이콘 size-3.5.
                           // accent surface(인디고) 만 primary 로 남긴다.
-                          className={`inline-flex h-[var(--chrome-tile-size)] items-center justify-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-label tracking-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-[var(--motion-base)] ease-[var(--motion-ease)] hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none [&>svg]:size-3.5 [&>svg]:shrink-0 ${
+                          className={`inline-flex h-[var(--chrome-tile-size)] items-center justify-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-label tracking-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none [&>svg]:size-3.5 [&>svg]:shrink-0 ${
                             topologyUtilityChromeCompact
                               ? "w-[var(--chrome-tile-size)] px-0"
                               : "px-3.5"
@@ -3709,7 +3702,8 @@ export function HomePage() {
                 node datasheet (unlike the analysis rail below, which the
                 node-focus popover suppresses) — the approved spec shows both
                 coexisting over the map (`docs/prototypes/hub-b3-immersive.html`). */}
-            {!selectedRelationActive && !topologyCreateNodeBlockingActive ? (
+            {!selectedRelationActive && !topologyCreateNodeBlockingActive
+              ? indexSlotFrames.map((frame) => (
               <div
                 // 접힘 ↔ 펼침은 **같은 자리를 두 표면이 번갈아 쓰는 교체**다.
                 // 전이가 없어 300px 폭 10행이 1프레임에 존재/비존재를 왕복했고
@@ -3718,15 +3712,17 @@ export function HomePage() {
                 // 표면이 지도 위 큰 표면의 공용 문법(`.map-overlay-in`,
                 // 180ms 불투명도)으로 들어온다: 팝오버·패널·전면 상세가 한
                 // 클럭을 쓴다.
-                key={renderedIndexState}
+                key={`${frame.state}-${frame.exiting ? "out" : "in"}`}
                 // `topology-ui-scale` — top-left-chrome-group(브랜드 pill)도
                 // 같은 클래스로 ≥1920px/≥2400px 에서 zoom 배율이 걸린다. 이
                 // wrapper 가 이 클래스 없이 고정 px 로만 있으면 그 zoom 배율
                 // 아래에서 pill 이 이 wrapper 보다 비례적으로 더 커져 다시
                 // 겹친다 — `--topology-index-top` 주석 참조.
-                className="map-overlay-in topology-ui-scale absolute z-20"
+                className={`${frame.exiting ? "map-overlay-out pointer-events-none" : "map-overlay-in"} topology-ui-scale absolute z-20`}
+                aria-hidden={frame.exiting || undefined}
+                inert={frame.exiting || undefined}
                 style={{
-                  left: renderedIndexState === "expanded" ? "var(--topology-index-inset)" : 0,
+                  left: frame.state === "expanded" ? "var(--topology-index-inset)" : 0,
                   // J (소유자 실보고 2026-07-23) — 상시 "지형도" 헤더가
                   // 은퇴한 뒤 전개 스택 위 84px 이 빈 띠로 남았다. 전개
                   // 상태는 크롬 인셋(24px)까지 올린다. 브랜드 pill 이 뜨는
@@ -3734,18 +3730,18 @@ export function HomePage() {
                   // 되므로 pill 과의 겹침이 구조적으로 없다. 접힘 탭은
                   // pill 아래 정렬을 위해 기존 84px 유지.
                   top:
-                    renderedIndexState === "expanded"
+                    frame.state === "expanded"
                       ? "var(--topology-index-inset)"
                       : "var(--topology-index-top)",
                   // rank7 — 하단 인셋은 전용 토큰: 데스크톱에선 크롬 인셋과
                   // 동일, <md 시트 모드에선 BottomTabBar 예약고 위로 올라간다.
                   bottom:
-                    renderedIndexState === "expanded"
+                    frame.state === "expanded"
                       ? "var(--topology-index-bottom-inset)"
                       : undefined,
                 }}
               >
-                {renderedIndexState === "expanded" && indexTreeResult ? (
+                {frame.state === "expanded" && indexTreeResult ? (
                   // S7 "영역 대장" — 영역 활성 시 좌측 패널이 전역 콘텐츠 대신
                   // 이 노드의 세계만 보여주는 변신 표면으로 교체된다. 두 표면이
                   // 같은 박스를 차지하므로 keyed 래퍼의 짧은 페이드-인(<200ms,
@@ -3961,7 +3957,8 @@ export function HomePage() {
                   />
                 )}
               </div>
-            ) : null}
+                ))
+              : null}
             {/* TopologyAnalysisBar 완전 삭제(분석 패널 완전 소멸 2단계 §d) —
                 focus(§a)/path(§b)/health(§c) 가 모두 빠진 뒤 남은 지도/그래프
                 2-tab 레일은 우상단 유틸리티 레일의 그래프 토글 칩으로
