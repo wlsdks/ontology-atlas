@@ -32,7 +32,7 @@ their scores.
 | `po-leverage` | 지렛대 | Prioritization Analyst · Shaper | (appetite + slice boundary) |
 
 The thirteenth lens — **Accountable Value Owner** — is deliberately not an
-agent. It is the human owner, or the agent doing the work on their behalf. The
+agent. It is the human owner. The
 council does not vote and does not own the decision; it stress-tests it. One
 person decides and signs.
 
@@ -85,6 +85,38 @@ Send every agent the other four positions. Each must:
 
 One round only. A second round produces convergence theater, not new
 information.
+
+### 라운드 1 — 리터럴 실행 템플릿
+
+**선택한 자리 전부를 한 메시지에서 동시에 launch 한다** (병렬 · 상호 참조 없음).
+아래 다섯 칸만 채운다. 문장을 새로 짓지 않는다 — 즉흥 브리프가 같은 소집을 두 번
+다르게 만드는 원인이다.
+
+```
+[결정] <요청자의 표현 그대로. 문제로 미리 번역하지 않는다 — 그 번역은 「해자」의 일이다>
+[근거 경로] <이 결정이 닿는 파일·문서·라우트>
+[기존 패스] <심사 대상 PO 패스를 원문 그대로. 없으면 "없음">
+[열어야 할 실물] <URL · 명령 · vault 경로. 「결」은 빌드를 열고, 「지킴이」는 vault 를
+                  조회하고, 「해자」는 경쟁 지형을 확인하고, 「지렛대」는 하류를 실측한다>
+[출력] 네 파일의 출력 형식 그대로. 질의는 최대 1건.
+```
+
+### 라운드 2 — 리터럴 재개 템플릿
+
+**새로 launch 하지 않는다.** 라운드 1 에이전트에게 `SendMessage` 로 재개한다 —
+컨텍스트가 남아 있어 다시 브리핑할 필요가 없고, 그게 이 프로토콜에서 가장 큰
+비용 절감이다. 본문은 **평결 블록만** 싣는다(전사 금지):
+
+```
+[다른 자리들의 평결 블록]
+[너에게 온 질의 — 있으면]
+규칙: 가장 강한 반대 논점을 네 말로 재진술하라. 약하게 요약한 뒤 이기는 것은
+반칙이다. 수용하거나 반박하라. 수용했으면 판정을 바꿔라 — 안 바뀌는 판정은
+심사가 아니라 알리바이다. 1회로 끝난다.
+다른 자리 중 **네가 옳다고 보는 지점 하나**를 이름으로 대라 — 1라운드에서는
+서로를 못 봤으므로 이 칸은 여기서만 채울 수 있다.
+출력: 갱신된 판정 1줄 + 재진술 + 수용/반박 + (있으면) 질의 응답. 15줄 이하.
+```
 
 ### Round 3 — the accountable decision
 
@@ -173,8 +205,8 @@ would observe if the dissenter was right> — **revisit**: <date or trigger>
 
 ## Notes for the caller
 
-- **Isolate them if they will touch the working tree.** These agents are
-  read-only by tool grant, but concurrent agents share the working directory —
+- **Isolate them if they will touch the working tree.** These agents have `Bash`, so "read-only" is an
+  instruction and not a constraint — and concurrent agents share the working directory —
   a `git checkout` from one of them will move everyone. Prefer worktree
   isolation when running the council alongside active edits.
 - **Give them the real thing, not the diff.** `po-craft` is required to open the

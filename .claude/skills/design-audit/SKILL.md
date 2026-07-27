@@ -1,6 +1,6 @@
 ---
 name: design-audit
-description: Audit a finished front-end change against the design system by measuring the rendered DOM, not by looking at it. Run after implementing any UI before calling it done — it catches overlapping elements, ragged dimensions in repeated sets, off-ramp font sizes and hardcoded colours, unreachable controls, and scroll-end gaps. Vision models miss exactly these defects and hallucinate others, so this skill measures rects and computed styles first and uses screenshots only as evidence a human can check.
+description: Audit a finished front-end change against the design system by measuring the rendered DOM, not by looking at it. Run after implementing any UI before calling it done — it catches overlapping elements, ragged dimensions in repeated sets, off-ramp font sizes and hardcoded colours, unreachable controls, and scroll-end gaps. A few pixels of misalignment is not something anyone reliably localises by looking, so this skill measures rects and computed styles first and uses screenshots only as evidence a human can check.
 ---
 
 # /design-audit — 만든 다음, 재서 확인한다
@@ -9,12 +9,12 @@ description: Audit a finished front-end change against the design system by meas
 
 ## 왜 이 순서인가 (이게 이 스킬의 전부다)
 
-비전 모델은 **이 스킬이 잡으려는 바로 그 결함들**을 못 잡는다. 프론트엔드 코드
-생성 연구(arXiv 2604.05839)의 실측: 비전 모델은 *"간격 불일치 · 패딩 문제 ·
-요소 정렬 문제를 자주 탐지하지 못하거나 제대로 처리하지 못하고"*, 동시에 **없는
-결함을 지어내** 불필요한 수정을 유발한다. 겹침과 삐뚤빼뚤이 정확히 그 범주다.
+사람도 모델도 **간격 · 정렬 · 겹침을 눈으로는 잘 못 잡는다.** 몇 px 어긋난
+정렬은 스크린샷에서 "좀 이상한데" 이상으로 특정되지 않고, 특정되지 않으면 고칠
+수 없다. 반대로 스크린샷을 보고 없는 결함을 지어내면 멀쩡한 코드를 건드리게 된다.
+둘 다 **수치가 없어서** 생기는 실패다.
 
-이 저장소의 자체 전례도 같은 방향이다 — 반응형 결함 3건은 전부 **rect 를 재서만**
+이 저장소의 전례가 그 근거다 — 반응형 결함 3건은 전부 **rect 를 재서만**
 발견됐고, 클래스 문자열은 정상인데 픽셀만 틀린 경우도 있었다.
 
 그래서 순서가 고정이다: **① 잰다 → ② 위반 목록을 만든다 → ③ 스크린샷은 사람이
@@ -79,8 +79,9 @@ for (let i = 0; i < rects.length; i++) for (let j = i + 1; j < rects.length; j++
 못 잡는 층을 맡는다.
 
 - **폰트 크기**: 화면의 모든 텍스트 노드 `fontSize` 집합을 뽑아 램프 값
-  (9.5/11/12.5/14/16/23/30px)과 대조. **램프 밖 값 = 결함**, 특히 정확히 `16px` 인
-  것은 미정의 스텝이 루트 상속으로 떨어진 신호다.
+  (9.5/11/12.5/14/16/23/30px)과 대조. **램프 밖 값 = 결함.** 16px 자체는 `--text-title` 이라 정상이다 — 의심할 것은
+  `text-*` 스텝을 **요청했는데** 16px 로 렌더된 요소다(미정의 스텝이 클래스를 못
+  만들어 루트로 떨어진 경우). 클래스 목록과 함께 본다.
 - **행간**: `lineHeight` 를 `--leading-*` 램프와 대조.
 - **색**: `color` · `backgroundColor` · `borderColor` 를 토큰 계산값 집합과 대조.
   토큰 밖 값이 있으면 하드코딩이다.
@@ -108,9 +109,9 @@ document.querySelectorAll('*').forEach(el => {
 숫자를 대조할 대상을 주는 것이지 판정하는 것이 아니다. DPR 을 명시한다 —
 Retina 캡처는 CSS 픽셀의 2배라 크롭 좌표가 어긋난다.
 
-**모델에게 보여주고 의견을 물어도 된다. 단 그 의견은 반드시 ①~④ 의 수치로
-교차 확인한 뒤에만 결함으로 승격한다.** 교차 확인 없이 올라온 지적은 환각일 수
-있고, 실제로 그 비율이 낮지 않다.
+**모델에게 보여주고 의견을 물어도 된다** — 시각 비평은 실제로 도움이 된다. 단
+그 의견은 **①~④ 의 수치로 교차 확인한 뒤에만 결함으로 승격한다.** 수치로 특정되지
+않는 지적은 처방이 될 수 없고, 확인 없이 코드를 고치면 멀쩡한 것을 건드린다.
 
 ## 6. 보고 형식
 
@@ -124,7 +125,7 @@ Retina 캡처는 CSS 픽셀의 2배라 크롭 좌표가 어긋난다.
 | 겹침 (rect 교집합) | N건 — [요소 쌍 · 넓이] |
 | 도달 가능성 (elementFromPoint) | N건 — [가려진 컨트롤] |
 | 치수 편차 (반복 세트) | 높이 σ=N · 정렬 이탈 N · gap 고유값 N |
-| 램프 이탈 (font/leading) | [값 목록 — 16px 있으면 미정의 스텝 의심] |
+| 램프 이탈 (font/leading) | [값 목록 — `text-*` 요청 대비 16px 렌더 있으면 미정의 스텝] |
 | 토큰 이탈 (color/radius/shadow) | [하드코딩 값] |
 | 스크롤 끝 여백 | [실측 px · 예약 토큰] |
 

@@ -98,7 +98,6 @@ Ontology value N · Agent value N · Verification N = **합계 N/24**
 **디자인 카운슬 계약**: [primary moment · attention stack · graph fact ·
 responsive rule · proof — PRODUCT-DESIGN-OPERATING-SYSTEM.md 형식]
 
-**내가 동의하는 것**: [다른 PO 의 어떤 지점이 옳은지 — 반드시 하나 이상]
 
 **처방**: [토큰·문자열·레이아웃 수준의 구체적 대안]
 ```

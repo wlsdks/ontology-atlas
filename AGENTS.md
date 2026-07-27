@@ -207,8 +207,9 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
 - **Design audit** — `@.claude/skills/design-audit/SKILL.md` runs after a front-end change,
   before calling it done. It **measures** the rendered DOM (rect intersections, dimension
   variance across repeated sets, computed styles vs the ramps) and uses screenshots only as
-  evidence, because vision models demonstrably miss spacing/alignment defects and
-  hallucinate others — so "looks fine" is not a verification.
+  evidence. A few pixels of misalignment is not something anyone — human or model —
+  reliably localises by looking; if it is not measured it cannot be prescribed, so
+  "looks fine" is not a verification.
 - **Design Guardian** — `@.claude/agents/design-guardian.md` is the standing senior design reviewer for UI work. Use it, or an equivalent sub-agent when available, before and after meaningful Relief/Topology design changes. It rejects token drift, attention-layer collisions, hidden typed facts, decorative motion, browser-only desktop proof, and reference copying. It approves only token-backed changes with screenshot/WebView evidence and installed-app proof when desktop behavior is affected.
 - **Design system** — neutrals + a single indigo, forbidden patterns — `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`.
   **디자인 규격은 md 뿐 아니라 `eslint.config.mjs` 의 `no-restricted-syntax` 로

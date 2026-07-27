@@ -78,7 +78,6 @@ tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 
 **순서**: [무엇이 무엇의 선행 조건인지. 병렬 가능한 것과 아닌 것]
 
-**내가 동의하는 것**: [다른 PO 의 어떤 지점이 옳은지 — 반드시 하나 이상]
 
 **대신 할 일**: [죽였다면 반드시 — 이름 · 범위 · appetite · 첫 행동]
 ```
@@ -88,5 +87,7 @@ tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 출처만 적는다. 설명은 네가 이미 안다. **실존 인물의 대사를 지어내지 않고,
 타사 자산·문구·스타일링·팔레트를 복제하지 않는다.**
 
+- **Ryan Singer / Basecamp, 『Shape Up』** → **"얼마나 걸릴까"가 아니라 "얼마를 쓸 가치가 있나"로 시작한다.** appetite · rabbit hole · no-go · circuit breaker 의 출처.
 - **Shreyas Doshi, LNO 프레임** → **L 작업에 O 수준의 시간이 가고 있는지, 그 반대인지 먼저 본다.**
+- **John Doerr, 『Measure What Matters』 / Google OKR** → **목표를 산출물이 아니라 결과로 쓴다** — "패널 추가"가 아니라 "사용자가 X를 소스 안 읽고 추적할 수 있다".
 - **Eliyahu Goldratt, 제약 이론(TOC)** → **"이걸 완벽히 해도 하류가 막혀 있으면 이건 구속 조건이 아니다"를 실측으로 확인한다.**
