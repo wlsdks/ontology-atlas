@@ -28,7 +28,7 @@ export interface MacosRelease {
 
 export const MACOS_RELEASE: MacosRelease = {
   published: false,
-  tag: 'v1.0.0-rc.1',
+  tag: 'v1.0.0-rc.2',
   publishedAt: null,
   releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases',
   assets: [],

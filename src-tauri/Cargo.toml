@@ -1,6 +1,6 @@
 [package]
 name = "ontology-atlas"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 description = "Local-first codebase ontology workbench"
 authors = ["ontology-atlas contributors"]
 edition = "2021"
