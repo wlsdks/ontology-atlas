@@ -74,6 +74,26 @@ jobs:
         id: classify
         run: node scripts/classify-change.mjs --base=origin/${{ github.base_ref }}
 
+      # 웹 스모크는 분류기가 못 끄는 자리에 둔다.
+      #
+      # 2026-07-27 표면 분리(`docs/DECISIONS.md`) 이후 웹은 앱을 따라가지
+      # 않고, 소유자는 앱만 쓴다. 즉 웹은 **무인 표면**인데 유일한 유입
+      # 경로다. 나머지 스위트와 같은 조건(browser)만 걸면, 데스크톱 브리지만
+      # 건드린 변경(`src-tauri/**`)은 웹을 한 번도 안 보고 머지된다 — 그게
+      # 정확히 이 게이트가 막으라고 만들어진 부패다. 그래서 조건을 하나 넓혀
+      # **shipped code 가 바뀌면(runtime) 무조건** 돌고, main 푸시에서는
+      # 분류기가 비교 베이스를 못 찾아도 항상 돈다.
+      - name: Web surface smoke
+        if: >-
+          steps.classify.outputs.runtime == 'true'
+          || steps.classify.outputs.browser == 'true'
+          || github.event_name != 'pull_request'
+        run: pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts
+        env:
+          CI: true
+
+      # 전체 스위트가 위 스모크를 한 번 더 포함하는 것은 의도적이다(약 20초).
+      # 스텝을 나눠야 웹이 깨졌을 때 로그를 뒤지지 않고 스텝 이름만 보고 안다.
       - name: Run Playwright suite
         if: steps.classify.outputs.browser == 'true'
         run: pnpm exec playwright test
@@ -82,7 +102,7 @@ jobs:
 
       - name: Skip note
         if: steps.classify.outputs.browser != 'true'
-        run: echo "브라우저가 의존하는 경로 변경 없음 — Playwright 생략"
+        run: echo "브라우저가 의존하는 경로 변경 없음 — 전체 Playwright 생략(웹 스모크는 위에서 별도 판정)"
 
       - name: Upload Playwright report on failure
         if: failure()

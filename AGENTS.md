@@ -27,6 +27,19 @@ substance is the shared layer. Every surface must pass both tests: can an
 agent consume it (typed facts, handoff) and can a human read and judge it
 (plain language, visual hierarchy)?
 
+**Two surfaces, one folder (2026-07-27 — `docs/DECISIONS.md`).** The macOS app
+is the vault's home: the workbench where a person judges the map and connects
+the agents. The web is first a **gateway** (open the map with no install —
+demo, first five minutes, a shareable link) and second a **second-best
+workbench** where no app exists yet (Chromium on Windows/Linux). They do **not
+promise the same screens**, and desktop capabilities ship without a web
+backfill. What is shared is the folder: same markdown on disk, one parser
+contract, and every cross-surface record written inside the vault
+(`.ontology-atlas/*.jsonl`). One codebase, one build — the split is the four
+capability bridges plus honest degradation, never a fork. Full contract,
+including the web smoke gate that keeps the unattended surface alive:
+`.claude/rules/surfaces.md`.
+
 Before product, UX, graph, MCP, CLI, workflow, or macOS-shell changes, apply
 the mandatory PO gate in `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`. Write the
 compact PO pass before editing files unless the work is a clearly mechanical
@@ -243,6 +256,7 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
 - **Git workflow** — conventional prefix + Korean (or English) body — `@.claude/rules/git.md`
 - **Testing & verification** — TDD-first, unit → e2e — `@.claude/rules/testing.md`
 - **Local-first** — vault folder only, no backend — `@.claude/rules/local-first.md`
+- **Surface contract (web / app)** — `@.claude/rules/surfaces.md`
 - **Forbidden patterns / Do-Not list** — `@.claude/rules/forbidden.md`
 - **Documentation discipline** — `@.claude/rules/documentation.md`
 

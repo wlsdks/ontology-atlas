@@ -476,12 +476,22 @@ describe('focused check suggestions', () => {
       'pnpm test:desktop:runtime',
       'pnpm test:desktop:bridge',
       'pnpm desktop:check',
+      // 표면 분리(2026-07-27) 이후 데스크톱 변경은 웹을 대신 확인해 주지
+      // 않는다 — 웹은 무인 표면이라 같은 세트에서 스모크를 함께 권한다.
+      'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
       'pnpm exec tsc --noEmit',
     ]);
     assert.deepEqual(result.commands[0].paths, [
       'scripts/check-desktop-readiness.mjs',
       'scripts/check-desktop-readiness.test.mjs',
     ]);
+  });
+
+  it('suggests the web surface smoke when a desktop capability bridge changes', () => {
+    const result = suggestFocusedChecks(['src/shared/lib/tauri-secrets.ts']);
+
+    const commands = result.commands.map((row) => row.command);
+    assert.ok(commands.includes('pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts'));
   });
 
   it('suggests ontology design guard checks when the design surface guard changes', () => {

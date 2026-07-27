@@ -153,6 +153,11 @@
         },
         {
           "depth": 2,
+          "text": "Surface contract — web and app",
+          "slug": "surface-contract-web-and-app"
+        },
+        {
+          "depth": 2,
           "text": "FSD layers",
           "slug": "fsd-layers"
         },
@@ -218,7 +223,7 @@
         }
       ],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer shared by people and AI coding agents. Round 10 permanently removed all auth + cloud data surfaces; the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights, and keeps old on",
-      "wordCount": 2003,
+      "wordCount": 2573,
       "updatedAt": "2026-07-27",
       "linksOut": [
         "../AGENTS",
@@ -3114,6 +3119,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 웹과 앱이 갈라섰다: 계약을 못박고, 웹이 조용히 썩지 않게 눈을 달았다",
+          "slug": "2026-07-27-웹과-앱이-갈라섰다-계약을-못박고-웹이-조용히-썩지-않게-눈을-달았다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 릴리스가 세 번 멈춘 자리: 만드는 쪽과 찾는 쪽이 서로의 경로를 몰랐다",
           "slug": "2026-07-27-릴리스가-세-번-멈춘-자리-만드는-쪽과-찾는-쪽이-서로의-경로를-몰랐다"
         },
@@ -5108,8 +5118,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 첫 공개 릴리스가 태",
-      "wordCount": 54698,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 바뀐 것은 코드 구조",
+      "wordCount": 55140,
       "updatedAt": "2026-07-27",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
@@ -5137,6 +5147,16 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-27 — 웹과 앱은 같은 화면을 약속하지 않는다: 한 코드베이스 · 능력 게이트 · 볼트 폴더 단일 진실원",
+          "slug": "2026-07-27-웹과-앱은-같은-화면을-약속하지-않는다-한-코드베이스-능력-게이트-볼트-폴더-단일-진실원"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-27 — AI 대화는 앱 안 「에이전트」 패널에 산다: 안 = 화면 동료, 밖 = 위임 일꾼, 웹 = 접점 없음",
+          "slug": "2026-07-27-ai-대화는-앱-안-에이전트-패널에-산다-안-화면-동료-밖-위임-일꾼-웹-접점-없음"
         },
         {
           "depth": 2,
@@ -5170,7 +5190,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 1875,
+      "wordCount": 2605,
       "updatedAt": "2026-07-27",
       "linksOut": []
     },
@@ -6202,6 +6222,11 @@
           "slug": "0-at-a-glance"
         },
         {
+          "depth": 3,
+          "text": "Web and app do not promise the same screens (2026-07-27)",
+          "slug": "web-and-app-do-not-promise-the-same-screens-2026-07-27"
+        },
+        {
           "depth": 2,
           "text": "1. Mode branching (data source)",
           "slug": "1-mode-branching-data-source"
@@ -6668,7 +6693,7 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 15193,
+      "wordCount": 15568,
       "updatedAt": "2026-07-27",
       "linksOut": [
         "slug",
