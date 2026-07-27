@@ -18,6 +18,15 @@
   이쪽 실패 모드는 드롭이 아니라 **충돌 병합 실패**(둘 다 살아남아 CSS 소스
   순서가 승자를 정한다)라 더 조용하다. 상세: `docs/DESIGN-SYSTEM.md`
   "Line-height ramp".
+- **크기 스텝이 자기 행간을 싣는다** (companion 결합, 2026-07-27). 그래서
+  **글자 크기만 조건부로 갈아끼우면 짝이 어긋난다** — arbitrary 크기
+  (`text-[Npx]` 류)에는 짝이 없어 원래 단의 행간이 그 브레이크포인트에 그대로
+  남는다(실측: `/git` 헤드라인이 23px 글자에 24px 행간, 1.04). 조건부 크기도
+  램프 유틸리티로 쓰거나, 명시 `leading-*` 으로 두 크기 모두를 덮어라.
+  램프 토큰을 arbitrary length 로 **우회 참조하지 마라** — 크기는 같아 보여도
+  짝을 잃는다(램프 *밖* 크기 토큰의 arbitrary 참조는 정당하다).
+  `--leading-hero` 는 오늘 쓰이는 곳이 없어도 `text-hero` 가 싣는 값이라
+  **삭제 금지** — 죽은 토큰이 아니다.
 - 루트 16px 상속으로 렌더되는 텍스트 = 램프 미적용 결함. 상세 표:
   `docs/DESIGN-SYSTEM.md` "스케일 고정 계약" 절.
 
@@ -171,6 +180,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 | **hex 색상** | Tailwind **arbitrary value 안**의 hex 만 금지 | 동일 (현재 위반 0 — 예방 게이트) |
 | **모션 duration** | `duration-<숫자>` 금지 (토큰 참조형은 문법상 안 걸림) | 동일 |
 | **행간 램프** | `leading-[N]` arbitrary 만 금지 (기존 named 199건은 제외) | 동일 |
+| **램프 우회** | 램프 토큰을 arbitrary length 로 참조하는 것만 금지 (램프 밖 크기 토큰은 정당) | 동일 (켤 때 위반 0) |
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
 
 ### lint 가 못 보는 층은 계약 테스트가 맡는다
@@ -183,6 +193,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 |---|---|---|
 | **`text-*`/`leading-*` 가 정의된 스텝을 가리킨다** | `tests/contract/type-ramp-step-defined.contract.test.ts` | 판정에 `app/globals.css` 의 토큰 목록이 필요. 스텝 이름을 룰에 복제하면 복제본이 램프와 드리프트해 게이트가 사각지대를 만든다 |
 | **셸 본문 슬롯이 자식을 압축하지 않는다** | `AppShell.test.tsx`(처방 위치) + `tests/e2e/scroll-end-gap.spec.ts`(실제 여백 px) | 결함이 **레이아웃 계산의 결과**. 클래스 문자열은 정상인 채로 픽셀만 틀린다 |
+| **조건부 크기가 행간 짝을 어긋내지 않는다** | `tests/contract/type-ramp-leading-pair.contract.test.ts` | 판정에 **한 원소의 클래스 전체**가 필요한데 `cn()` 인자로 쪼개지면 AST 셀렉터 하나에 안 담긴다. 램프 토큰을 arbitrary length 로 우회하는 **부분집합**만 lint 가 잡는다 |
 
 **미정의 스텝은 침묵한다 (2026-07-27 실측).** `text-large` 는 램프에 없는데
 tsc·eslint·전체 테스트를 전부 통과했다 — Tailwind 가 클래스를 아예 만들지 않아

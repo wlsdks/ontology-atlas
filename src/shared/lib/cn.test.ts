@@ -74,3 +74,25 @@ describe('cn — 행간 램프 충돌 병합', () => {
     expect(cn('text-body', 'leading-body')).toBe('text-body leading-body');
   });
 });
+
+/**
+ * companion 결합(B2) 이후의 병합 모델 가드.
+ *
+ * tailwind-merge 는 기본적으로 "크기 유틸리티가 행간도 정한다" 고 본다 —
+ * 그래서 **뒤에 오는** `text-<스텝>` 이 앞선 `leading-*` 을 지운다. 결합 전엔
+ * 이 가정이 우리 램프에 대해 **거짓**이었다: 지워진 자리를 아무도 채우지 않아
+ * 그 원소는 상속 1.5 로 떨어졌다(조용한 손실). 결합 후에는 지운 쪽이 자기 짝을
+ * 싣고 오므로 가정이 참이 된다.
+ *
+ * 이 테스트는 그 정합을 고정한다 — companion 을 되돌리면 여기서 먼저 깨진다.
+ */
+describe('cn — 크기 뒤에 오면 행간을 흡수한다 (companion 결합 전제)', () => {
+  it('뒤따르는 램프 크기가 앞선 램프 행간을 흡수한다', () => {
+    expect(cn('leading-body', 'text-body')).toBe('text-body');
+    expect(cn('leading-prose', 'text-title')).toBe('text-title');
+  });
+
+  it('순서를 지키면 명시 행간이 살아남는다 (권장 표기)', () => {
+    expect(cn('text-title', 'leading-prose')).toBe('text-title leading-prose');
+  });
+});
