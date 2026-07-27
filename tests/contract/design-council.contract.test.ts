@@ -188,6 +188,21 @@ describe('Design council wiring', () => {
     expect(skill).toMatch(/답은 1회, 재질문 없음/);
   });
 
+  it('keeps felt first impression in 위계 and the depth grammar in 체계', () => {
+    // Affect belongs to one seat. Distributed across the bench nobody signs it,
+    // and five metrology seats correctly have no vocabulary for it.
+    expect(agentFile('design-lead')).toContain('첫인상');
+    // Static depth (2D reading as 3D) had no owner at all: the charter bans every
+    // cheap depth trick and never said what is legal, which is how a model
+    // defaults to timid flatness.
+    const system = agentFile('design-system');
+    expect(system).toContain('깊이 문법');
+    expect(
+      system,
+      'shadows-off legibility is the enforceable core — in a dark UI elevation is surface lightness, not shadow',
+    ).toMatch(/그림자를 끄/);
+  });
+
   it('makes the decision ledger readable, not just writable', () => {
     const skill = read(SKILL_PATH);
     expect(skill, 'the skill must point at the ledger').toContain('docs/DECISIONS.md');

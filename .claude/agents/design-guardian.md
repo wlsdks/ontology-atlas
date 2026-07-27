@@ -37,6 +37,8 @@ workflow, typed fact, interaction state, graph relation, MCP/CLI handoff 중 하
 - 균일한 라운드 + 균일한 그림자 + 균일한 패딩의 "컴포넌트 카탈로그" 느낌 —
   위계 없는 동일 무게의 박스 나열.
 - 잉크 역전: 장식(엣지·보더·그림자)이 콘텐츠(텍스트·데이터)보다 시각 무게가 큰 상태.
+- 깊이 붕괴: 광원 방향 혼재 · 낮은 표면이 더 퍼진 그림자 · 가림 없는 부유 패널 ·
+  표면 밝기 역전 — 판정 문법은 「체계」의 「깊이 문법」 절.
 - 의미 없는 색 다양성(4색 이상 동시 경쟁), 토큰 우회 하드코딩 hex.
 - `clamp(...)`, shadow, radius, easing, duration 을 JSX/Tailwind 에 한 번만 쓰고
   토큰/marker/test 로 끌어올리지 않는 token drift.
