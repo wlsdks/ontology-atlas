@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
 import { GITHUB_RELEASES_URL } from '@/features/macos-download-link';
+import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
 import { RELEASE_VERSION } from '../lib/release-facts';
 import { DownloadPage } from './DownloadPage';
 
@@ -16,12 +17,13 @@ vi.mock('@/i18n/navigation', () => ({
     href,
     children,
     className,
+    ...rest
   }: {
     href: string;
     children: ReactNode;
     className?: string;
   }) => (
-    <a href={href} className={className}>
+    <a href={href} className={className} {...rest}>
       {children}
     </a>
   ),
@@ -115,18 +117,30 @@ describe('DownloadPage', () => {
       );
       // A size and a checksum are per-release facts. With no release there is
       // no honest value for either, so neither row exists at all.
-      expect(screen.getByTestId('download-fact-strip')).not.toHaveTextContent(/size/i);
-      expect(screen.queryByTestId('download-macos-aarch64')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('download-checksum-aarch64')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('download-checksum-x64')).not.toBeInTheDocument();
       expect(screen.queryByTestId('download-macos-x64')).not.toBeInTheDocument();
       expect(screen.queryByTestId('download-release-notes-link')).not.toBeInTheDocument();
     });
 
-    it('sends the primary action to the releases page rather than promising a download', () => {
+    // Today the GitHub releases page has nothing on it. A filled button is the
+    // page's one strongest promise, and pointing it at an empty page spends
+    // that promise on a dead end. So the winner before publication is the
+    // thing that actually works right now — the map in the browser — while
+    // the releases link stays available at a lower weight.
+    it('makes the browser map the strongest action, and still links the releases page', () => {
       renderDownloadPage();
 
-      const primary = screen.getByTestId('download-primary-cta');
-      expect(primary).toHaveAttribute('href', GITHUB_RELEASES_URL);
-      expect(primary).toHaveTextContent(/Open the GitHub releases page/i);
+      const releases = screen.getByTestId('download-primary-cta');
+      expect(releases).toHaveAttribute('href', GITHUB_RELEASES_URL);
+      expect(releases).toHaveTextContent(/Open the GitHub releases page/i);
+
+      const web = screen.getByTestId('download-web-cta');
+      expect(web).toHaveAttribute('href', '/');
+      expect(web).toHaveTextContent(/Open the map in your browser/i);
+      // The filled variant is the page's single attention winner.
+      expect(web.className).toMatch(/--color-indigo-brand/);
+      expect(releases.className).not.toMatch(/--color-indigo-brand/);
     });
 
     it('keeps operator-only release-pipeline status off the public page', () => {
@@ -136,7 +150,6 @@ describe('DownloadPage', () => {
       // install this?" — the release runbook owns them now.
       expect(screen.queryByText(/waiting on PR review/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/version alignment/i)).not.toBeInTheDocument();
-      expect(screen.queryByText(/Before the first release is fully available/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/desktop:release-status/i)).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Copy audit/i })).not.toBeInTheDocument();
     });
@@ -145,35 +158,35 @@ describe('DownloadPage', () => {
   describe('once a release is published', () => {
     beforeEach(publishRelease);
 
-    it('offers a direct per-architecture download with its real size and checksum', () => {
+    it('offers a direct per-architecture download with its real size', () => {
       renderDownloadPage();
 
-      const appleSilicon = screen.getByTestId('download-macos-aarch64');
+      const appleSilicon = screen.getByTestId('download-primary-cta');
       expect(appleSilicon).toHaveAttribute(
         'href',
         `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`,
       );
+      expect(appleSilicon).toHaveTextContent(/Download for Apple Silicon · 12\.4 MB/i);
       expect(screen.getByTestId('download-macos-x64')).toHaveAttribute(
         'href',
         `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
       );
-
-      const macosCard = screen.getByTestId('download-platform-macos');
-      expect(macosCard).toHaveTextContent('12.4 MB');
-      expect(macosCard).toHaveTextContent(AARCH64_SHA);
-      expect(macosCard).toHaveTextContent(X64_SHA);
-      expect(macosCard).toHaveTextContent(`ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`);
+      // Two filled buttons would leave no winner — Intel keeps the same slot
+      // at a lower weight.
+      expect(appleSilicon.className).toMatch(/--color-indigo-brand/);
+      expect(screen.getByTestId('download-macos-x64').className).not.toMatch(
+        /--color-indigo-brand/,
+      );
     });
 
-    it('makes the header action the download itself, not a detour to GitHub', () => {
+    it('publishes each asset checksum next to the file it verifies', () => {
       renderDownloadPage();
 
-      const primary = screen.getByTestId('download-primary-cta');
-      expect(primary).toHaveAttribute(
-        'href',
-        `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`,
+      expect(screen.getByTestId('download-checksum-aarch64')).toHaveTextContent(AARCH64_SHA);
+      expect(screen.getByTestId('download-checksum-aarch64')).toHaveTextContent(
+        `ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`,
       );
-      expect(primary).toHaveTextContent(/Download for Apple Silicon · 12\.4 MB/i);
+      expect(screen.getByTestId('download-checksum-x64')).toHaveTextContent(X64_SHA);
     });
 
     it('copies the real checksum a user verifies the DMG against', async () => {
@@ -187,7 +200,7 @@ describe('DownloadPage', () => {
       expect(await screen.findByText(/Checksum copied/i)).toBeInTheDocument();
     });
 
-    it('links to the release notes themselves, not only the changelog excerpt', () => {
+    it('links to the release notes themselves', () => {
       renderDownloadPage();
 
       expect(screen.getByTestId('download-release-notes-link')).toHaveAttribute(
@@ -195,6 +208,18 @@ describe('DownloadPage', () => {
         `https://github.com/wlsdks/ontology-atlas/releases/tag/v${RELEASE_VERSION}`,
       );
     });
+  });
+
+  // Most visitors do not know which chip their Mac has. Naming both
+  // architectures without telling them how to find out leaves them stuck in
+  // front of two buttons — the page's job fails right there.
+  it('tells a visitor how to find out which Mac they have', () => {
+    publishRelease();
+    renderDownloadPage();
+
+    expect(screen.getByText(/Not sure which Mac you have\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/About This Mac/i)).toBeInTheDocument();
+    expect(screen.getByText(/Apple M1, M2, M3 or M4/i)).toBeInTheDocument();
   });
 
   it('tells Windows visitors where they stand instead of omitting the platform', () => {
@@ -207,27 +232,48 @@ describe('DownloadPage', () => {
     expect(screen.getByRole('link', { name: /Follow progress/i })).toBeInTheDocument();
   });
 
-  it('states the signing status that is true today, and gives the way through it', () => {
+  // 2026-07-27: the Developer ID certificate exists (docs/DECISIONS.md), so
+  // the release path signs and notarizes again. Until this remake the page
+  // still printed the unsigned-era copy — and printed it *contradicting
+  // itself*, with "Not signed yet" as a row label and "codesign --verify
+  // passes" as that same row's note. Neither the old future tense ("the gate
+  // requires") nor the stale present tense survives: what ships is what is
+  // true now, plus the way a visitor checks it themselves.
+  it('states the signing status that is true today, with the proof for each claim', () => {
     renderDownloadPage();
 
-    // Unsigned until the certificate exists (owner decision 2026-07-27,
-    // docs/DECISIONS.md). Neither the old future tense ("the gate requires")
-    // nor a premature past tense ("signed") — what is true now.
-    expect(screen.getByText(/Not signed yet/i)).toBeInTheDocument();
-    expect(screen.getByText(/Not notarized by Apple/i)).toBeInTheDocument();
+    expect(screen.getByText(/Signed with an Apple Developer ID certificate/i)).toBeInTheDocument();
+    expect(screen.getByText(/Notarized by Apple/i)).toBeInTheDocument();
+    expect(screen.getByText(/codesign verified/i)).toBeInTheDocument();
+    expect(screen.getByText(/stapler validate passes/i)).toBeInTheDocument();
+
+    // The unsigned-era instructions are gone: they are false today, and a
+    // Gatekeeper detour is the single most expensive first impression.
+    expect(screen.queryByText(/Not signed yet/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Open Anyway/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/certificate pending/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Release gate requires/i)).not.toBeInTheDocument();
-    // Stating the state without the way through it is neglect, not honesty.
-    // Both the trust panel and the install step carry it — the state and the
-    // way through it appear where each is needed.
-    expect(screen.getAllByText(/Open Anyway/).length).toBeGreaterThanOrEqual(2);
+
     // The verify command names the asset for the current version, so it does
     // not freeze an old filename into a translation string.
-    // With no signature, the checksum is the only integrity check a downloader
-    // has — so the verify command is the one that checks it.
     expect(
       screen.getByText(
-        new RegExp(`shasum -a 256 .*ontology-atlas_${RELEASE_VERSION.replace(/\./g, '\\.')}_aarch64\\.dmg`),
+        new RegExp(
+          `shasum -a 256 .*ontology-atlas_${RELEASE_VERSION.replace(/\./g, '\\.')}_aarch64\\.dmg`,
+        ),
       ),
+    ).toBeInTheDocument();
+  });
+
+  // The product's core promise is local-first. A stranger deciding whether to
+  // run an unfamiliar binary needs it said plainly, next to the other facts.
+  it('states what the app does not do, not only what it does', () => {
+    renderDownloadPage();
+
+    expect(screen.getByText(/The app sends nothing anywhere/i)).toBeInTheDocument();
+    expect(screen.getByText(/No account, no server/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/This website never opens or edits your folders/i),
     ).toBeInTheDocument();
   });
 
@@ -238,21 +284,22 @@ describe('DownloadPage', () => {
       'href',
       'https://github.com/wlsdks/ontology-atlas',
     );
-    expect(screen.getByText(/hosted site does not open or edit vault folders/i)).toBeInTheDocument();
-    expect(screen.getByText(/only way to confirm you got the file we published/i)).toBeInTheDocument();
     expect(screen.getByText(/Connect your AI assistant/i)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
   });
 
-  it('renders the intro section absorbed from the retired LandingPage (root-first-open Slice 2) with the real dogfood census', () => {
+  // Installing is not the end of the journey. Saying the app updates itself
+  // is what makes this page a one-time visit rather than a recurring chore.
+  it('says the installed app updates itself', () => {
     renderDownloadPage();
 
-    expect(screen.getByText('Until we all finally')).toBeInTheDocument();
-    expect(screen.getByText('see the same thing')).toBeInTheDocument();
-    expect(screen.getByText('Write a markdown file per piece')).toBeInTheDocument();
-    expect(screen.getByText('One folder, three views')).toBeInTheDocument();
-    // dogfood census is real data (build-time generated), not a placeholder.
-    expect(screen.getByRole('img', { name: /Topology miniature/i })).toBeInTheDocument();
+    expect(screen.getByText(/updates itself with one button/i)).toBeInTheDocument();
+  });
+
+  it('renders the census miniature with real dogfood data and its scope label', () => {
+    renderDownloadPage();
+
+    expect(screen.getByRole('img', { name: /Miniature map/i })).toBeInTheDocument();
     // [download-honesty] the census card's concepts/relations counts need a
     // scope label so they aren't mistaken for the count shown once a user
     // loads their own vault in the app (different definition, different number).
@@ -261,33 +308,45 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/ontology-atlas\.dev/i)).not.toBeInTheDocument();
   });
 
-  it('puts the download decision before the secondary product introduction', () => {
+  // The retired LandingPage hero was absorbed here in 2026-07 and became a
+  // second landing page stapled under the install decision: its own eyebrow,
+  // its own h1, a four-line lead, and three value-chain cards. The remake
+  // keeps only the part that is evidence rather than pitch.
+  it('does not stack a second landing page under the install decision', () => {
+    renderDownloadPage();
+
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.queryByText(/Until we all finally/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Write a markdown file per piece/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/One folder, three views/i)).not.toBeInTheDocument();
+  });
+
+  it('puts the install decision above everything that explains it', () => {
     publishRelease();
     renderDownloadPage();
 
-    const downloadHeading = screen.getByRole('heading', { level: 1 });
+    const heading = screen.getByRole('heading', { level: 1 });
     const primaryCta = screen.getByTestId('download-primary-cta');
-    const sourceCta = screen.getByRole('link', { name: /View source code/i });
-    const factStrip = screen.getByTestId('download-fact-strip');
-    const platforms = screen.getByTestId('download-platforms');
-    const introHeading = screen.getByRole('heading', {
-      level: 2,
-      name: /Until we all finally/i,
-    });
+    const trust = screen.getByTestId('download-trust');
+    const windows = screen.getByTestId('download-platform-windows');
 
-    for (const decisionElement of [
-      downloadHeading,
-      primaryCta,
-      sourceCta,
-      factStrip,
-      platforms,
-    ]) {
+    for (const [earlier, later] of [
+      [heading, primaryCta],
+      [primaryCta, trust],
+      [trust, windows],
+    ] as const) {
       expect(
-        decisionElement.compareDocumentPosition(introHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+        earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
     }
-    expect(
-      primaryCta.compareDocumentPosition(sourceCta) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+  });
+
+  // The page reserves no bottom-tab-bar height because this route has no tab
+  // bar. That is a cross-module coupling: if the bar ever returns here, the
+  // scroll end would sit underneath it. The old code hardcoded a 56px reserve
+  // for a bar that was never rendered, which is the same defect mirrored.
+  it('stays the one route without a bottom tab bar, which is why it reserves no height for one', () => {
+    expect(shouldHideBottomTabBar('/download', false)).toBe(true);
+    expect(shouldHideBottomTabBar('/ko/download/', false)).toBe(true);
   });
 });
