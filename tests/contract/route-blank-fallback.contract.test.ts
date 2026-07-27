@@ -23,12 +23,36 @@ import enMessages from "../../messages/en.json";
  *     page.tsx 뿐 아니라 **뷰 안쪽 경계**까지 본다 — 안쪽 경계가 더 가까우면
  *     HTML 에 구워지는 것은 그쪽 fallback 이라, 라우트만 고치면 문서함처럼
  *     조용히 빈 채로 남는다(2026-07-27 실측).
- *  2. Suspense 를 쓰는 파일은 공용 `RouteLoadingFallback` 을 fallback 으로 쓴다
+ *  2. Suspense 를 쓰는 파일은 **승인된 공용 fallback** 만 쓴다
  *     (자리표시자를 화면마다 손으로 만들면 하나가 빠져도 아무도 모른다).
  *  3. 자리표시자 문구는 두 로케일 모두에 있다.
+ *  4. 지도 진입 라우트(`/`, `/topology`)의 fallback 은 로딩 자막이 아니라 **내용**
+ *     을 담는다. 이 두 라우트는 정적 export 에서 HTML 본문이 fallback 이 전부인데,
+ *     그중 `/topology` 는 README·런치 자산이 가리키는 **데모 URL** 이다 —
+ *     2026-07-27 실측에서 197KB 를 내려주고 사람이 읽을 수 있는 글자가 142자,
+ *     그 핵심 문장이 "화면을 불러오는 중이에요" 였다. 링크 미리보기 카드와
+ *     크롤러가 본 페이지 내용이 그게 전부였다는 뜻이다. 이 행이 그 회귀를 잠근다.
  */
 
 const SCAN_DIRS = [join(process.cwd(), "app"), join(process.cwd(), "src")];
+
+/**
+ * 승인된 공용 fallback 은 둘뿐이고, 둘의 일이 다르다.
+ *
+ * - `RouteLoadingFallback` — 기본값. "이 화면은 아직 오는 중" 한 문장만 쓴다.
+ * - `MapEntryFallback` — 지도 진입 라우트(`/`, `/topology`) 전용. 이 두 곳은
+ *   HTML 본문이 fallback 이 전부라서 자막만 두면 페이지 내용이 자막이 된다.
+ *
+ * 이 배열이 짧게 유지되는 것이 계약이다. 세 번째를 추가하려면 그 화면만의
+ * 자리표시자가 왜 필요한지가 먼저 서야 한다.
+ */
+const APPROVED_FALLBACKS = ["RouteLoadingFallback", "MapEntryFallback"] as const;
+
+/** 지도 진입 라우트 — fallback 이 곧 페이지 내용인 두 자리. */
+const MAP_ENTRY_ROUTES = [
+  join(process.cwd(), "app/[locale]/page.tsx"),
+  join(process.cwd(), "app/[locale]/topology/page.tsx"),
+];
 
 function collectTsxFiles(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
@@ -63,10 +87,11 @@ describe("라우트 진입 빈 화면 게이트", () => {
     expect(offenders.map(rel)).toEqual([]);
   });
 
-  it("Suspense 를 쓰는 파일은 공용 RouteLoadingFallback 을 쓴다", () => {
-    const offenders = suspenseFiles.filter(
-      (p) => !readFileSync(p, "utf-8").includes("RouteLoadingFallback"),
-    );
+  it("Suspense 를 쓰는 파일은 승인된 공용 fallback 만 쓴다", () => {
+    const offenders = suspenseFiles.filter((p) => {
+      const source = readFileSync(p, "utf-8");
+      return !APPROVED_FALLBACKS.some((name) => source.includes(name));
+    });
     expect(offenders.map(rel)).toEqual([]);
   });
 
@@ -76,6 +101,31 @@ describe("라우트 진입 빈 화면 게이트", () => {
         .surfaceLoading;
       expect(typeof value).toBe("string");
       expect((value as string).trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it("지도 진입 라우트는 내용을 담는 fallback 을 쓴다", () => {
+    for (const route of MAP_ENTRY_ROUTES) {
+      expect(readFileSync(route, "utf-8")).toContain("MapEntryFallback");
+    }
+  });
+
+  it("그 fallback 은 로딩 자막이 아니라 제품 문장을 싣는다", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/shared/ui/map-entry-fallback.tsx"),
+      "utf-8",
+    );
+    // 헤드라인과 리드가 있어야 데모 URL 이 읽을 것 없는 페이지로 되돌아가지 않는다.
+    for (const key of ["headline", "lede"]) {
+      expect(source).toContain(`t('${key}')`);
+    }
+
+    for (const messages of [koMessages, enMessages]) {
+      const mapEntry = (messages as { mapEntry: Record<string, string> })
+        .mapEntry;
+      // 자막 한 줄(대략 40자)보다 확실히 긴 실제 문장이어야 한다.
+      expect(mapEntry.headline.trim().length).toBeGreaterThan(10);
+      expect(mapEntry.lede.trim().length).toBeGreaterThan(40);
     }
   });
 });
