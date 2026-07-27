@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 /**
  * 표면이 **나가는 길**을 갖게 하는 presence 게이트 두 종.
@@ -74,4 +74,74 @@ export function useSurfaceSwap<T>(
     return () => clearTimeout(id);
   }, [current, exitMs]);
   return { leaving };
+}
+
+/**
+ * 표면이 바뀔 때 **상자가 튀지 않게** 한다.
+ *
+ * 실측(2026-07-28, 인사이트 탭 전환): 내용은 `--motion-fast` 크로스페이드로
+ * 제대로 들어오는데(첫프레임 5.4% · 램프 ~120ms), 같은 프레임에 컨테이너 높이가
+ * `878.5 → 605` **1프레임**에 바뀌고 문서 전체가 246px 튀었다. 크로스페이드가
+ * **리플로우를 감싸지 못한** 것이다 — 글은 배어들고 상자는 튄다.
+ *
+ * 기법은 「목록 행 펼침」 계약과 같다: 교체 직후 이전 높이로 되돌려 놓고
+ * 실측한 새 높이까지 한 스텝(`--motion-base`)으로 전이한 뒤, 끝나면 `auto` 로
+ * 돌려준다. 레이아웃을 영구히 고정하지 않으므로 반응형/스크롤이 그대로다.
+ *
+ * `prefers-reduced-motion` 에서는 **걸지 않는다** — 높이는 흔들리는 축이고,
+ * 감속 사용자에게 없애야 할 바로 그 축이다(내용 크로스페이드는 그대로 남아
+ * "무엇이 바뀌었나" 는 계속 읽힌다).
+ *
+ * 새 duration/easing 값 0 — 램프 토큰을 인라인으로 참조만 한다.
+ */
+export function useSwapHeight<T>(token: T) {
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const fromHeightRef = useRef<number | null>(null);
+
+  /**
+   * 교체를 **일으키는 쪽**이 부른다 — 이전 높이는 DOM 이 바뀌기 전에만 잴 수
+   * 있고, 그 시점을 아는 것은 상태를 바꾸는 핸들러뿐이다. effect 안에서 재면
+   * 이미 새 레이아웃이라 늘 자기 자신에서 자기 자신으로 전이한다.
+   */
+  const capture = useCallback(() => {
+    const host = hostRef.current;
+    fromHeightRef.current = host ? host.getBoundingClientRect().height : null;
+  }, []);
+
+  useLayoutEffect(() => {
+    const host = hostRef.current;
+    const from = fromHeightRef.current;
+    fromHeightRef.current = null;
+    if (!host || from === null) return;
+    const to = host.getBoundingClientRect().height;
+    if (Math.abs(from - to) < 1) return;
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+    host.style.height = `${from}px`;
+    // 강제 리플로우 — 이 한 줄이 없으면 브라우저가 두 대입을 합쳐 전이가 없다.
+    void host.offsetHeight;
+    host.style.transition = "height var(--motion-base) var(--motion-ease)";
+    host.style.height = `${to}px`;
+    let done = false;
+    const settle = () => {
+      if (done) return;
+      done = true;
+      host.style.height = "";
+      host.style.transition = "";
+      host.removeEventListener("transitionend", settle);
+    };
+    host.addEventListener("transitionend", settle);
+    // 안전망: 전이가 중단되면(탭 연타·언마운트) 높이가 고정된 채 남는다.
+    const id = setTimeout(settle, 400);
+    return () => {
+      clearTimeout(id);
+      settle();
+    };
+  }, [token]);
+
+  return { hostRef, capture };
 }
