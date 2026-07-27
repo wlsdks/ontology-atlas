@@ -30,6 +30,7 @@ const BENCH: ReadonlyArray<readonly [seat: string, agent: string]> = [
   ['Motion / Action Designer', 'design-motion'],
   ['Information Visualization Designer', 'design-infoviz'],
   ['macOS Workbench Designer', 'design-workbench'],
+  ['Responsive & Touch Designer', 'design-responsive'],
   ['Agent Handoff Designer', 'design-handoff'],
 ];
 
@@ -38,6 +39,34 @@ const DECIDER_AGENT = 'design-guardian';
 
 /** Seats that cannot be skipped: one names the winner, one makes it enforceable. */
 const ALWAYS_ATTENDING = ['design-lead', 'design-system'];
+
+/**
+ * Tier is a decision, not a default. Judgment seats get the stronger model;
+ * measurement seats are scaffolded enough that a cheaper one suffices. No haiku
+ * anywhere — a council is a judgment body, and a haiku seat produces checklist
+ * parroting that reads like a verdict, which is worse than an absent one.
+ */
+const TIERS: Record<string, string> = {
+  'design-lead': 'opus',
+  'design-motion': 'opus',
+  'design-system': 'sonnet',
+  'design-interaction': 'sonnet',
+  'design-infoviz': 'sonnet',
+  'design-workbench': 'sonnet',
+  'design-responsive': 'sonnet',
+  'design-handoff': 'sonnet',
+};
+
+/** Measuring seats must run their instrument; the skill has to say so. */
+const INSTRUMENTS = ['motion-verify', 'responsive-sweep', 'design-audit'];
+
+/**
+ * The diet has to be enforced, or it decays back into manifestos. Byte budget,
+ * not line count: these briefs are Korean, where one character costs 3 bytes,
+ * so 9,000B is roughly 3,000 characters — enough for a dense operating
+ * procedure, not enough to re-paste the charter the subagent already receives.
+ */
+const MAX_AGENT_BYTES = 9_000;
 
 function read(relativePath: string): string {
   return readFileSync(join(ROOT, relativePath), 'utf8');
@@ -119,6 +148,44 @@ describe('Design council wiring', () => {
     const skill = read(SKILL_PATH).replace(/\s+/g, ' ');
     expect(skill).toMatch(/remove, dim, collapse, or align/i);
     expect(skill, 'the council must record dissent with a falsifier').toMatch(/falsifier/i);
+  });
+
+  it('assigns every seat a deliberate model tier', () => {
+    for (const [, agent] of BENCH) {
+      const frontmatter = agentFile(agent).split('---')[1] ?? '';
+      expect(frontmatter, `${agent} must declare a model tier`).toContain(`model: ${TIERS[agent]}`);
+      expect(frontmatter, `${agent} must not be a haiku seat`).not.toContain('model: haiku');
+    }
+  });
+
+  it('keeps every seat brief under the size budget', () => {
+    for (const [, agent] of BENCH) {
+      const bytes = Buffer.byteLength(agentFile(agent), 'utf8');
+      expect(
+        bytes,
+        `${agent} is ${bytes}B — every line is a recurring token cost on each convening; ` +
+          'the charter and the operating-system docs are already auto-loaded, so do not restate them',
+      ).toBeLessThanOrEqual(MAX_AGENT_BYTES);
+    }
+  });
+
+  it('makes the measuring seats run their instrument without being asked', () => {
+    const skill = read(SKILL_PATH);
+    for (const instrument of INSTRUMENTS) {
+      expect(
+        skill,
+        `the skill must name /${instrument} so the seat runs it autonomously — ` +
+          'a step that only happens when a human remembers it does not exist',
+      ).toContain(instrument);
+    }
+  });
+
+  it('carries the bounded cross-council query protocol', () => {
+    const skill = read(SKILL_PATH).replace(/\s+/g, ' ');
+    expect(skill).toContain('카운슬 간 질의');
+    // Unbounded chat is the failure mode; the terminator is what prevents it.
+    expect(skill).toContain('무응답 시 가정');
+    expect(skill).toMatch(/답은 1회, 재질문 없음/);
   });
 
   it('keeps the skill and its cross-tool mirror byte-identical', () => {

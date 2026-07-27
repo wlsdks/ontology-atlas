@@ -22,7 +22,7 @@ or demote it before adding more UI.
 
 Use these roles in design reviews. They were lenses, not separate agents unless
 a tool explicitly provided them — **and as of 2026-07-27 a tool does.** The
-seven-seat Atlas Designer Bench below is now seven callable agents in
+Atlas Designer Bench below is now eight callable agents in
 `.claude/agents/`, convened by `.claude/skills/design-council/SKILL.md`
 (mirrored at `.agents/skills/design-council/SKILL.md`):
 
@@ -34,6 +34,7 @@ seven-seat Atlas Designer Bench below is now seven callable agents in
 | Motion / Action Designer | `design-motion` | 모션 |
 | Information Visualization Designer | `design-infoviz` | 도해 |
 | macOS Workbench Designer | `design-workbench` | 작업대 |
+| Responsive & Touch Designer | `design-responsive` | 반응형 |
 | Agent Handoff Designer | `design-handoff` | 핸드오프 |
 
 `design-guardian` is **not** a seat — it is the accountable decider and the only
@@ -274,6 +275,7 @@ design authority for Relief/Topology work:
 | Information Visualization Designer | Maps every mark to ontology kind, relation type, evidence, quality, or gate | decorative color, relation lines without typed meaning |
 | macOS Workbench Designer | Protects the 14-inch first viewport, window stability, and app shutdown behavior | browser-only proof, cramped fullscreen, crash/reopen dialogs |
 | Design Systems Engineer | Converts decisions into tokens, constraints, markers, and tests | taste-only spacing, one-off sizes, unverified responsive behavior |
+| Responsive & Touch Designer | Owns everything measured in a resizable viewport — breakpoint bands, pointer×viewport matrix, touch targets, safe-area, reflow/zoom, pane-collapse state | width-guessed touch, responsive verdicts without rects, phone-scaled tablet layouts, split view by default |
 | Agent Handoff Designer | Keeps MCP and CLI next actions visible from the inspected state | hidden commands, MCP-only handoff, copy actions detached from facts |
 
 The bench must produce a single design verdict. If the seats disagree, choose

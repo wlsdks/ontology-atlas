@@ -45,6 +45,16 @@ const RUBRIC_ROWS = [
   'Verification',
 ] as const;
 
+const TIERS: Record<string, string> = {
+  'po-evidence': 'sonnet',
+  'po-craft': 'sonnet',
+  'po-steward': 'sonnet',
+  'po-wedge': 'opus',
+  'po-leverage': 'sonnet',
+};
+
+const MAX_AGENT_BYTES = 9_000;
+
 function read(relativePath: string): string {
   return readFileSync(join(ROOT, relativePath), 'utf8');
 }
@@ -146,6 +156,29 @@ describe('PO council wiring', () => {
         `${agent} must require an alternative when it blocks — "no" without a next move is friction, not a gate`,
       ).toBe(true);
     }
+  });
+
+  it('assigns every PO a deliberate model tier', () => {
+    for (const agent of COUNCIL_AGENTS) {
+      const frontmatter = agentFile(agent).split('---')[1] ?? '';
+      expect(frontmatter, `${agent} must declare a model tier`).toContain(`model: ${TIERS[agent]}`);
+      expect(frontmatter, `${agent} must not be a haiku seat`).not.toContain('model: haiku');
+    }
+  });
+
+  it('keeps every PO brief under the size budget', () => {
+    for (const agent of COUNCIL_AGENTS) {
+      const bytes = Buffer.byteLength(agentFile(agent), 'utf8');
+      expect(bytes, `${agent} is ${bytes}B — trim it; the operating-system docs are auto-loaded`).toBeLessThanOrEqual(
+        MAX_AGENT_BYTES,
+      );
+    }
+  });
+
+  it('carries the bounded cross-council query protocol', () => {
+    const skill = read(SKILL_PATH).replace(/\s+/g, ' ');
+    expect(skill).toContain('카운슬 간 질의');
+    expect(skill).toContain('무응답 시 가정');
   });
 
   it('keeps the skill and its cross-tool mirror byte-identical', () => {

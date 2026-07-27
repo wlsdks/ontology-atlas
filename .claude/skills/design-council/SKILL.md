@@ -1,9 +1,9 @@
 ---
 name: design-council
-description: Convene the Atlas Design Council — seven standing designers (design-lead 위계 · design-system 체계 · design-interaction 상호작용 · design-motion 모션 · design-infoviz 도해 · design-workbench 작업대 · design-handoff 핸드오프) who critique a UI change from their own craft, then design-guardian decides and applies. Use before or after meaningful UI, visual, interaction, motion, graph-readability, responsive, or macOS-workbench work — and whenever the owner asks to "bring in a designer". Only the seats a change actually touches are convened; 위계 and 체계 always attend. Skip for copy-only typo fixes and pure build plumbing.
+description: Convene the Atlas Design Council — eight standing designers (design-lead 위계 · design-system 체계 · design-interaction 상호작용 · design-motion 모션 · design-infoviz 도해 · design-workbench 작업대 · design-responsive 반응형 · design-handoff 핸드오프) who critique a UI change from their own craft, then design-guardian decides and applies. Use before or after meaningful UI, visual, interaction, motion, graph-readability, responsive, or macOS-workbench work — and whenever the owner asks to "bring in a designer". Only the seats a change actually touches are convened; 위계 and 체계 always attend. Skip for copy-only typo fixes and pure build plumbing.
 ---
 
-# /design-council — seven designers, one verdict, applied
+# /design-council — eight designers, one verdict, applied
 
 ## Why this exists
 
@@ -18,7 +18,7 @@ No tool ever provided them. So the bench was prose, the same way the PO Council
 was prose — and this repo's recurring lesson is that **문서에만 있는 규격은
 지켜지지 않는다.** This skill provides them.
 
-The seven seats are the documented bench, one agent each. Nothing invented,
+The eight seats are the documented bench, one agent each. Nothing invented,
 nothing dropped.
 
 ## The bench
@@ -31,16 +31,17 @@ nothing dropped.
 | `design-motion` | 모션 | Motion / Action Designer | 튀는 카메라, 장식적 애니메이션, 패널 잰크 |
 | `design-infoviz` | 도해 | Information Visualization Designer | 장식적 색, 타입 의미 없는 관계선 |
 | `design-workbench` | 작업대 | macOS Workbench Designer | 브라우저 전용 증명, 비좁은 풀스크린 |
+| `design-responsive` | 반응형 | Responsive & Touch Designer | 폭으로 터치 추정, rect 없는 반응형 판정 |
 | `design-handoff` | 핸드오프 | Agent Handoff Designer | 숨은 명령, MCP 전용 핸드오프, 사실과 분리된 복사 |
 
 **`design-guardian` is not a seat — it is the accountable decider.** The bench
 critiques and prescribes; the guardian produces the single verdict and is the
-only one of the eight that may edit code. This mirrors the PO Council, where
+only one of the nine that may edit code. This mirrors the PO Council, where
 Accountable Value Owner is deliberately not an agent.
 
 ## Which seats to convene
 
-Convening all seven for a label change is the process theater the design OS
+Convening all eight for a label change is the process theater the design OS
 warns about. **위계 and 체계 always attend** — one names the attention winner,
 the other turns whatever is decided into tokens and tests. Add the rest by what
 the change actually touches:
@@ -50,9 +51,10 @@ the change actually touches:
 | selection · hover · focus · drag · keyboard · modal | 상호작용 |
 | transition · timing · camera · animation | 모션 |
 | graph · chart · legend · colour · density | 도해 |
-| window chrome · panel width · responsive · desktop app | 작업대 |
+| window chrome · 14인치 첫 뷰포트 · 창 생명주기 · 설치 앱 | 작업대 |
+| 브레이크포인트 · 터치 타깃 · safe-area · 확대/reflow · 태블릿 · 패널 접힘 | 반응형 |
 | what the screen leaves behind for an agent | 핸드오프 |
-| a new or removed surface | all seven |
+| a new or removed surface | all eight |
 
 If you are unsure whether a seat applies, convene it. The failure mode this
 protocol exists to prevent is a blind spot, not an extra opinion.
@@ -70,6 +72,11 @@ other. Every seat gets:
   `design-motion` must record frames; `design-infoviz` must measure contrast;
   `design-handoff` must run the command it claims exists.
 - explicit permission to research the web
+
+**측정 자리는 자기 계기를 반드시 실행한다** — 호출자가 요청하지 않아도. 「모션」은
+`/motion-verify`(macOS 녹화 → 프레임 → 곡선), 「반응형」은 `/responsive-sweep`
+(밴드 매트릭스 rect 실측), 그리고 구현이 끝난 화면이면 `/design-audit`(겹침 ·
+치수 편차 · 토큰 이탈을 재는 마지막 관문). 계기 없는 판정은 무효다.
 
 A seat that could not open the real thing must say so and withhold its verdict.
 Reading a patch and judging craft from it is the failure this protocol replaces.
@@ -92,6 +99,34 @@ applies it in code. Rules:
   one — addition-only critique is not critique.
 - When seats disagree, choose **the smallest change that clarifies the
   ontology-reading moment in the installed app.**
+
+## 카운슬 간 질의 (PO ↔ 디자인)
+
+두 카운슬은 침묵하는 사일로가 아니다. 단 소통은 **경계 있는 질의** 하나뿐이다 —
+회의가 아니라 질문이다.
+
+각 자리는 1라운드 의견 끝에 **질의 최대 1건**을 붙일 수 있다. 형식 고정:
+
+> **질의 → [상대 자리]**
+> **질문**: [한 문장, 답할 수 있는 형태]
+> **걸린 판정**: [답에 따라 내 의견의 어느 부분이 뒤집히는지]
+> **무응답 시 가정**: [답이 없으면 무엇을 전제하고 진행하는지]
+
+걸린 판정이 없는 질의는 잡담이다 — 버려진다.
+
+**라우팅** (chief 또는 소집자가 한다):
+- 상대 카운슬이 같은 패스에 소집돼 있으면 → 2라운드 메시지에 질의를 동봉하고
+  답(≤10줄)을 질의자의 2라운드 메시지에 붙인다. **왕복 0회 추가.**
+- 소집돼 있지 않으면 → **지목된 자리 하나만** 최소 브리프로 호출한다. 카운슬
+  전체를 부르지 않는다.
+
+**종료**: 답은 1회, 재질문 없음. 수용해 판정을 갱신하거나, 수용하지 않으면
+**기록된 반대 + 반증 조건**으로 남는다. 어느 쪽이든 거기서 끝난다.
+
+**승격 — 양쪽이 다 필수인 결정**(새 표면 신설/제거): 질의로 때우지 않는다.
+**PO 카운슬을 먼저** 돌리고 그 평결 블록을 디자인 카운슬 1라운드 브리프에 원문
+그대로 넣는다. 순차이지 병합이 아니다 — 한 세션에 합치면 관점들이 서로의
+컨텍스트를 오염시켜 병렬 독립성이 죽는다.
 
 ## Output — Council Verdict block
 
