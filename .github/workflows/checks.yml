@@ -56,6 +56,15 @@ jobs:
 
       # 셋을 각각 별 스텝으로 둔다 — 한 스텝에 묶으면 어느 게 깨졌는지
       # 로그를 뒤져야 한다. `if: always()` 로 첫 실패가 나머지를 가리지 않게.
+      # 카운슬 소집 트리거 중 **기계적으로 확인 가능한 두 줄**만 강제한다:
+      # 라우트 신설/제거, MCP·CLI 공개 계약 변경. 나머지 트리거("포지셔닝",
+      # "낯선 사람이 처음 읽는 문구")는 의미라서 스크립트가 볼 수 없다.
+      # 산문으로만 있는 규격은 지켜지지 않는다는 이 저장소의 반복 교훈을
+      # 게이트로 옮긴 것 — 다만 기록의 *품질*이 아니라 *존재*만 본다.
+      - name: Decision record
+        if: github.event_name == 'pull_request'
+        run: pnpm decisions:check -- --base=origin/${{ github.base_ref }}
+
       - name: Typecheck
         run: pnpm exec tsc --noEmit
 
