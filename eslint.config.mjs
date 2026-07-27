@@ -147,6 +147,33 @@ const arbitrarySizeSelectors = [
     message:
       '행간 하드코딩 금지 (template literal). --leading-* 램프 토큰이 만드는 유틸리티로.',
   },
+  // 2026-07-27 램프 우회 — 행간 companion 결합(B2) 이후 새로 생긴 실패 모드다.
+  // 크기 스텝이 행간을 함께 싣게 되면서, **램프 토큰을 arbitrary length 로
+  // 우회 참조**하면 크기만 얻고 그 단의 행간은 못 얻는다. 같은 원소에 다른
+  // 단의 램프 클래스가 있으면 그 단의 행간이 그대로 남아, 아무도 고른 적 없는
+  // 비율이 만들어진다 — 실측: /git 헤드라인이 23px 글자에 title 짝 24px 행간
+  // (1.04)이었고 이 저장소에서 가장 큰 이탈이었다.
+  //
+  // 켜기 전 측정(design.md 4단계): 위반 3건(전부 램프 토큰을 가리키는 것),
+  // 정상 사용으로 오인될 부류 0 — 램프 밖 크기 토큰(레일 라벨·크롬 타이틀 등
+  // 5건)은 `--text-` 접두가 아니라 정규식에 애초에 안 걸린다. 3건을 먼저
+  // 치환하고 룰을 켰으므로 켜는 순간 위반 0, lint 총계 불변.
+  //
+  // 짝이 어긋나는 **일반형**(램프 클래스 + 반응형 arbitrary px)은 이 룰이 못
+  // 잡는다 — 판정에 한 원소의 클래스 전체가 필요한데 cn() 인자로 쪼개지면
+  // 셀렉터 하나에 안 담긴다. 그 층은 계약 테스트가 맡는다
+  // (tests/contract/type-ramp-leading-pair.contract.test.ts).
+  // ⚠️ 메시지에 리터럴 유틸리티 문법 금지 — Tailwind v4 스캐너가 이 파일을 훑는다.
+  {
+    selector: 'Literal[value=/text-\\[length:var\\(--text-/]',
+    message:
+      '타입 램프 토큰을 arbitrary length 로 우회 참조 금지. 램프 유틸리티(text-<스텝>)를 직접 쓴다 — 우회하면 크기만 얻고 그 단이 싣는 행간 짝을 잃는다. 램프 밖 크기 토큰(레일·크롬 전용)은 이 룰에 걸리지 않는다.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/text-\\[length:var\\(--text-/]',
+    message:
+      '타입 램프 토큰을 arbitrary length 로 우회 참조 금지 (template literal). 램프 유틸리티를 직접 쓴다.',
+  },
 ];
 
 // 마이그레이션 완료(치환 끝 · error 봉쇄) 디렉토리.
