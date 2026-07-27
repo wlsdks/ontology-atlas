@@ -498,6 +498,107 @@ git commit -am "chore: v1.0.0 릴리스 자산 사실 반영" && git push
 GitHub Pages redeploys on push, and the page switches to per-architecture
 direct download buttons with the published size and checksum.
 
+## Developer ID 자격증명 만들기 — 실행 가능한 절차
+
+**이 절차는 5년에 한 번 한다** (Developer ID 인증서 유효기간). 그때의 사람은
+지금의 사람이 아니고, 산문으로 적어 둔 절차는 그 사이에 반드시 낡는다. 그래서
+경로를 스크립트로 박았다: `scripts/apple-signing-setup.mjs`. 아래는 그 스크립트가
+하는 일의 설명이지 별도의 절차가 아니다 — **어긋나면 스크립트가 옳다.**
+
+### 사람에게 남는 것은 두 순간뿐이다
+
+둘 다 **자격증명을 다루는 순간**이라 자동화하지 않는다: Apple 로그인(비밀번호 +
+2FA)과 앱 암호 발급. 나머지 — 키쌍 생성 · CSR 작성 · `.p12` 조립 · GitHub 등록 ·
+검증 — 은 전부 스크립트 안에 있다.
+
+### 왜 Keychain Access GUI 를 쓰지 않는가
+
+흔한 안내는 키체인 접근에서 CSR 을 만들고 인증서를 설치한 뒤 `.p12` 로
+내보내라고 한다. 그 경로에는 **조용한 함정**이 있다 — "나의 인증서" 가 아니라
+"인증서" 카테고리에서 내보내면 **개인키가 빠지는데 파일은 멀쩡히 만들어진다.**
+실패는 몇 분 뒤 CI 의 `codesign` 에서 처음 드러난다.
+
+여기서는 개인키를 우리가 만들고 우리가 들고 있으므로 **그 실수가 구조적으로
+불가능하다.** `.p12` 는 항상 키와 인증서를 함께 담는다.
+
+### 1 — 키쌍과 CSR (자동)
+
+```bash
+node scripts/apple-signing-setup.mjs csr \
+  --name="법적 실명" --email="Apple 계정 이메일"
+```
+
+`--name` 은 Apple 계정의 **법적 실명**이어야 한다. 별명이면 심사가 지연되거나
+거부된다. 산출물은 `~/.ontology-atlas-signing/` 에 놓인다 — 개인키는 `0600`,
+디렉토리는 `0700`, **저장소 밖**이다(작업 트리에 두면 커밋될 수 있다).
+
+> **개인키를 잃으면 그 인증서는 못 쓴다.** 이 디렉토리를 지우지 마라. 스크립트는
+> 기존 키가 있으면 덮어쓰지 않고 멈춘다.
+
+### 2 — Apple 에서 인증서 발급 (사람)
+
+1. https://developer.apple.com/account/resources/certificates/add
+2. 종류: **Developer ID Application** — 앱스토어 제출용이 아니라 직접 배포용이다
+3. 1단계가 만든 `.certSigningRequest` 업로드 → `.cer` 다운로드
+
+### 3 — `.p12` 조립과 GitHub 등록 (자동)
+
+```bash
+node scripts/apple-signing-setup.mjs bundle --cer=~/Downloads/developerID_application.cer
+```
+
+`.cer`(DER)을 PEM 으로 바꾸고 개인키와 합쳐 `.p12` 를 만든 뒤
+`APPLE_CERTIFICATE_P12_BASE64` 와 `APPLE_CERTIFICATE_PASSWORD` 를 등록한다.
+
+**내보내기 비밀번호는 스크립트가 무작위로 만들고 아무도 보지 않는다** — 사람도,
+로그도, 모델도. 그 값의 유일한 용도는 GitHub 으로 가는 동안 파일을 감싸는
+것이고, 받는 쪽(CI)은 secret 으로 같은 값을 받는다. 사람이 기억할 이유가 없는
+값을 사람에게 보여주는 것은 유출 경로만 늘린다. `gh` 에는 인자가 아니라
+**stdin 으로** 넘긴다 — 인자로 주면 프로세스 목록에 뜬다.
+
+### 4 — 남은 셋은 사람이 넣는다 (자격증명)
+
+| secret | 어디서 |
+|---|---|
+| `APPLE_ID` | Apple 계정 이메일 |
+| `APPLE_APP_SPECIFIC_PASSWORD` | https://account.apple.com → 로그인 및 보안 → 앱 암호 |
+| `APPLE_TEAM_ID` | https://developer.apple.com/account → Membership details (10자리) |
+
+```bash
+gh secret set APPLE_ID --repo wlsdks/ontology-atlas
+gh secret set APPLE_APP_SPECIFIC_PASSWORD --repo wlsdks/ontology-atlas
+gh secret set APPLE_TEAM_ID --repo wlsdks/ontology-atlas
+```
+
+인자 없이 실행하면 입력이 가려진 채로 값을 받는다.
+
+### 5 — 검증
+
+```bash
+node scripts/apple-signing-setup.mjs verify
+```
+
+무엇이 남았는지, 그리고 그것을 **사람이 넣는지 스크립트가 넣는지**까지 말한다.
+다 차면 다음 태그부터 워크플로가 자동으로 서명 경로로 간다 — 코드 수정은 없다.
+
+### secret 은 어디에 사는가
+
+GitHub Actions **repository secret** 이다. 저장소가 공개여도 노출되지 않는다:
+git 에 들어가지 않고, 클론에 딸려가지 않고, **한 번 저장하면 아무도 못 읽는다**
+(교체만 가능하다). 워크플로 실행 중에만 주입되고 로그에 찍히려 하면 GitHub 이
+가린다. 포크에서 올린 PR 에는 전달되지 않는다.
+
+**남는 위험은 하나다**: 저장소에 쓰기 권한이 있는 사람은 secret 을 빼내는
+워크플로를 추가할 수 있다. 지금은 소유자 1인이라 성립하지만, **협업자가 생기면
+이 가정이 깨진다** — 그때 다시 본다.
+
+### 인증서가 생긴 다음에 할 일
+
+`docs/DECISIONS.md` 의 「v1.0.0 을 미서명 DMG 로 내고, 대신 정직하게 안내한다」가
+*"인증서가 생기면 이 결정은 자동으로 뒤집힌다 — 그때 페이지 문구도 함께
+되돌린다"* 고 적어 두었다. 다운로드 페이지의 Gatekeeper 우회 안내를 걷어내고
+신뢰 문구를 되돌린다. **자동으로 되지 않는 유일한 부분이다.**
+
 ## Release Signing and Notarization
 
 Local development does not require Apple credentials. Public macOS downloads do,

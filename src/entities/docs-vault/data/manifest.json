@@ -6027,6 +6027,56 @@
         },
         {
           "depth": 2,
+          "text": "Developer ID 자격증명 만들기 — 실행 가능한 절차",
+          "slug": "developer-id-자격증명-만들기-실행-가능한-절차"
+        },
+        {
+          "depth": 3,
+          "text": "사람에게 남는 것은 두 순간뿐이다",
+          "slug": "사람에게-남는-것은-두-순간뿐이다"
+        },
+        {
+          "depth": 3,
+          "text": "왜 Keychain Access GUI 를 쓰지 않는가",
+          "slug": "왜-keychain-access-gui-를-쓰지-않는가"
+        },
+        {
+          "depth": 3,
+          "text": "1 — 키쌍과 CSR (자동)",
+          "slug": "1-키쌍과-csr-자동"
+        },
+        {
+          "depth": 3,
+          "text": "2 — Apple 에서 인증서 발급 (사람)",
+          "slug": "2-apple-에서-인증서-발급-사람"
+        },
+        {
+          "depth": 3,
+          "text": "3 — `.p12` 조립과 GitHub 등록 (자동)",
+          "slug": "3-p12-조립과-github-등록-자동"
+        },
+        {
+          "depth": 3,
+          "text": "4 — 남은 셋은 사람이 넣는다 (자격증명)",
+          "slug": "4-남은-셋은-사람이-넣는다-자격증명"
+        },
+        {
+          "depth": 3,
+          "text": "5 — 검증",
+          "slug": "5-검증"
+        },
+        {
+          "depth": 3,
+          "text": "secret 은 어디에 사는가",
+          "slug": "secret-은-어디에-사는가"
+        },
+        {
+          "depth": 3,
+          "text": "인증서가 생긴 다음에 할 일",
+          "slug": "인증서가-생긴-다음에-할-일"
+        },
+        {
+          "depth": 2,
           "text": "Release Signing and Notarization",
           "slug": "release-signing-and-notarization"
         },
@@ -6037,7 +6087,7 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 5668,
+      "wordCount": 6222,
       "updatedAt": "2026-07-27",
       "linksOut": []
     },
