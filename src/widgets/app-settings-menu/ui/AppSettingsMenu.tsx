@@ -15,7 +15,7 @@ import {
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
-import { useLocalVault } from '@/features/docs-vault-local';
+import { useAgentServer, useLocalVault } from '@/features/docs-vault-local';
 import { useGuideReplay } from '@/features/guided-tour';
 import {
   getTauriVaultRootPath,
@@ -28,7 +28,7 @@ import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
 import { cn } from '@/shared/lib/cn';
 import { subscribeSettingsViewIntent } from '@/shared/lib/settings-view-intent';
 import { SECRET_PROVIDERS } from '@/shared/lib/tauri-secrets';
-import { AGENT_PACKAGE_DISTRIBUTION } from '@/shared/config';
+
 import {
   buildRouteFocusHref,
   rememberRouteFocusIntent,
@@ -196,6 +196,8 @@ export function AppSettingsMenu({
   const { state: copyState, copy } = useCopyFeedback();
   const router = useRouter();
   const localVault = useLocalVault();
+  // 번들 MCP 서버 유무 — 설정 패널의 원클릭 성립 여부.
+  const agentServer = useAgentServer();
   // 지금 화면이 등록한 "안내 다시 열기" — 등록이 없는 화면에서는 행 자체가
   // 없다(빈 행/비활성 버튼을 남기지 않는다).
   const replayGuide = useGuideReplay();
@@ -559,7 +561,7 @@ export function AppSettingsMenu({
                 <VaultAgentSetupPanel
                   canEditCurrent={isLocalVaultLoaded}
                   localVault={localVault}
-                  packageDistribution={AGENT_PACKAGE_DISTRIBUTION}
+                  serverAvailability={agentServer}
                   validationSummary={localVaultValidationSummary}
                   onOpenWorkflowGuide={handleOpenWorkflowGuide}
                 />

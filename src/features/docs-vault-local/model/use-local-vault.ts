@@ -39,7 +39,8 @@ import {
 } from '@/shared/lib/tauri-vault-fs';
 import { toErrorMessage } from '@/shared/lib/error-message';
 import { isPickerAbort } from '@/shared/lib/picker-abort';
-import { PUBLIC_AGENT_PACKAGES_READY } from '@/shared/config';
+import { bundledServerLaunch, type McpServerLaunch } from '@/shared/config';
+import { readBundledMcpServer } from '@/shared/lib/tauri-agent-setup';
 import {
   emptyAgentActivityStatus,
   parseAgentActivityStatus,
@@ -368,8 +369,23 @@ async function writeRootFileIfMissing(
   return 'created';
 }
 
+/**
+ * 번들 MCP 서버를 찾아 실행 계약을 만든다. 못 찾으면 null — 그러면 설정을
+ * 쓰지 않는다. 붙지 않는 설정을 심는 것은 도움이 아니라 나중에 진단해야 할
+ * 거짓말이다.
+ */
+async function resolveBundledLaunch(): Promise<McpServerLaunch | null> {
+  try {
+    const bundled = await readBundledMcpServer();
+    return bundled.available && bundled.path ? bundledServerLaunch(bundled.path) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function writeAgentConfigFiles(
   handle: FileSystemDirectoryHandle,
+  launch: McpServerLaunch,
 ): Promise<{ created: number; skipped: number }> {
   let created = 0;
   let skipped = 0;
@@ -377,12 +393,12 @@ async function writeAgentConfigFiles(
     if (result === 'created') created += 1;
     else skipped += 1;
   };
-  count(await writeRootFileIfMissing(handle, '.mcp.json', buildVaultMcpConfigJson()));
+  count(await writeRootFileIfMissing(handle, '.mcp.json', buildVaultMcpConfigJson(launch)));
   count(
     await writeRootFileIfMissing(
       handle,
       '.mcp.json.example',
-      buildMcpConfigJson(handle.name),
+      buildMcpConfigJson(handle.name, null, launch),
     ),
   );
   try {
@@ -393,7 +409,7 @@ async function writeAgentConfigFiles(
       await writeRootFileIfMissing(
         codexDir,
         'config.toml',
-        buildCodexConfigToml(),
+        buildCodexConfigToml('.', launch),
       ),
     );
   } catch {
@@ -1145,9 +1161,10 @@ export function useLocalVaultInternal() {
       }
     }
     // Ready-to-use agent configs for "open the vault folder itself" flows.
-    // 공개 배포 증거가 없으면 fail closed: markdown starter만 만든다.
-    const agentConfigResult = PUBLIC_AGENT_PACKAGES_READY
-      ? await writeAgentConfigFiles(vaultHandle)
+    // 번들 서버를 못 찾으면 fail closed: markdown starter만 만든다.
+    const starterLaunch = await resolveBundledLaunch();
+    const agentConfigResult = starterLaunch
+      ? await writeAgentConfigFiles(vaultHandle, starterLaunch)
       : { created: 0, skipped: 0 };
     skipped += agentConfigResult.skipped;
     await load(vaultHandle);
@@ -1174,12 +1191,13 @@ export function useLocalVaultInternal() {
     }
     const vaultHandle = state.handle;
     await requireWritePermission(vaultHandle);
-    if (!PUBLIC_AGENT_PACKAGES_READY) {
+    const launch = await resolveBundledLaunch();
+    if (!launch) {
       throw new Error(
-        'Public ontology-atlas agent packages are not published; use the source-checkout setup guide.',
+        'The bundled MCP server is not available here — open this vault in the installed app.',
       );
     }
-    const result = await writeAgentConfigFiles(vaultHandle);
+    const result = await writeAgentConfigFiles(vaultHandle, launch);
     await load(vaultHandle);
     return result;
   }, [state.handle, load, requireWritePermission]);

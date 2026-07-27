@@ -1,4 +1,5 @@
 export { LocalVaultProvider, useLocalVault } from './model/LocalVaultProvider';
+export { useAgentServer } from './model/use-agent-server';
 export { VaultConflictError } from './model/use-local-vault';
 export type {
   AgentActivityFocus,
@@ -30,7 +31,6 @@ export {
 } from './lib/ontology-starter';
 export {
   MCP_SERVER_NAME,
-  MCP_SERVER_PACKAGE,
   buildCursorMcpDeeplink,
   buildMcpDeeplinkConfig,
   buildVsCodeMcpDeeplink,
@@ -42,6 +42,7 @@ export {
   type AgentClientButtonsProps,
   type AgentClientConfigState,
 } from './ui/AgentClientButtons';
+export { AgentConnectAction, type AgentConnectActionProps } from './ui/AgentConnectAction';
 export {
   buildOntologyStarterAgentVerifyPrompt,
   buildOntologyStarterCliVerifyCommands,

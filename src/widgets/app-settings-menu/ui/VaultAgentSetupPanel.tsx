@@ -29,7 +29,7 @@ import type { VaultManifest } from '@/entities/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
-import type { AgentPackageDistribution } from '@/shared/config';
+import type { AgentServerAvailability } from '@/shared/config';
 
 /**
  * B2 병합 (feat/settings-vault-merge) — 이전 `VaultToolsMenu` (문서함 헤더
@@ -295,7 +295,7 @@ function StepCard({
 interface Props {
   canEditCurrent: boolean;
   localVault: VaultAgentSetupLocalVault;
-  packageDistribution: AgentPackageDistribution;
+  serverAvailability: AgentServerAvailability;
   validationSummary: { errorCount: number; warningCount: number } | null;
   onOpenWorkflowGuide: () => void;
 }
@@ -303,7 +303,7 @@ interface Props {
 export function VaultAgentSetupPanel({
   canEditCurrent,
   localVault,
-  packageDistribution,
+  serverAvailability,
   validationSummary,
   onOpenWorkflowGuide,
 }: Props) {
@@ -349,8 +349,8 @@ export function VaultAgentSetupPanel({
     : null;
   const vaultNameForConfig = localVault.handle?.name ?? 'vault';
   // 딥링크는 절대 경로가 있어야 성립(설치 앱). 웹은 null → 복사 강등.
-  const cursorDeeplink = buildCursorMcpDeeplink(vaultRootPath);
-  const vscodeDeeplink = buildVsCodeMcpDeeplink(vaultRootPath);
+  const cursorDeeplink = buildCursorMcpDeeplink(vaultRootPath, serverAvailability.launch);
+  const vscodeDeeplink = buildVsCodeMcpDeeplink(vaultRootPath, serverAvailability.launch);
 
   async function handleEnsureAgentConfigs() {
     setAgentSetupError(null);
@@ -437,7 +437,8 @@ export function VaultAgentSetupPanel({
 
   if (localVault.status !== 'loaded' || !agentStatus) return null;
 
-  const publicPackagesReady = packageDistribution.status === 'published';
+  // 서버를 띄울 방법을 아는가 — 이 하나가 원클릭 성립 여부를 가른다.
+  const publicPackagesReady = serverAvailability.launch !== null;
   const agentSetupReady = Boolean(
     publicPackagesReady &&
       agentStatus.mcpJson &&
@@ -780,9 +781,7 @@ export function VaultAgentSetupPanel({
                   ready: agentSetupReadyCount,
                   total: agentSetupFiles.length,
                 })
-              : t('agentSetup.packageStatusSummary', {
-                  checkedAt: packageDistribution.checkedAt,
-                })}
+              : t('agentSetup.serverStatusSummary')}
             {publicPackagesReady && nextMissingAgentConfig ? (
               <span className="block font-mono text-caption text-[color:var(--color-amber-docs-a92)]">
                 {agentStatus[nextMissingAgentConfig.key]
@@ -811,7 +810,7 @@ export function VaultAgentSetupPanel({
               desc={publicPackagesReady ? tc('step1Desc') : undefined}
             >
               <AgentClientButtons
-                packageDistribution={packageDistribution}
+                serverAvailability={serverAvailability}
                 onWriteConfigs={
                   publicPackagesReady && canEditCurrent
                     ? () => void handleEnsureAgentConfigs()

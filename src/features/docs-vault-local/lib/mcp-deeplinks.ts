@@ -6,36 +6,38 @@
  * - Cursor: `config` 쿼리에 base64(JSON)
  * - VS Code: 쿼리 문자열에 url-encoded JSON
  *
- * 핵심 제약: `OATLAS_VAULT` 는 **절대 경로**여야 원클릭이 성립한다. 브라우저
- * 세션은 폴더 절대 경로를 알 수 없으므로(구조적 제약) 이때 딥링크는 만들지
- * 않고 `null` 을 돌려준다 — UI 는 설정 파일 복사 경로로 정직하게 강등한다.
- * 공개 MCP package가 아직 없을 때도 `null`이다. 절대경로만 안다고 실행
- * 가능한 연결은 아니며, E404 package를 담은 딥링크는 설정 실패를 자동화할
- * 뿐이다.
+ * 성립 조건이 **둘 다** 필요하다:
+ * 1. `OATLAS_VAULT` 에 넣을 **절대 경로**. 브라우저 세션은 폴더 절대 경로를
+ *    알 수 없으므로(구조적 제약) 웹에서는 항상 null 이다.
+ * 2. 서버를 **어떻게 띄울지**(`McpServerLaunch`). 설치된 앱은 자기 번들 안의
+ *    바이너리 경로를 실어 보낸다 — 딥링크는 로컬에서 만들어 로컬에서 열리므로
+ *    로컬 절대 경로가 그대로 유효하다.
+ *
+ * 2026-07-27 이전에는 여기에 npm 발행 게이트가 걸려 있어 **항상 null** 이었다.
+ * 발행 계획이 폐기되고 앱이 서버를 품게 되면서 이 경로는 처음으로 살아난다.
  */
 
-import { PUBLIC_AGENT_PACKAGES_READY } from "@/shared/config";
+import { MCP_SERVER_NAME, type McpServerLaunch } from "@/shared/config";
 
-export const MCP_SERVER_NAME = "ontology-atlas";
-export const MCP_SERVER_PACKAGE = "ontology-atlas-mcp";
+export { MCP_SERVER_NAME };
 
 export interface McpStdioConfig {
-  command: "npx";
+  command: string;
   args: readonly string[];
   env: { OATLAS_VAULT: string };
 }
 
 /**
- * 딥링크에 실을 표준 stdio config 객체. 절대 경로를 모르면 null.
+ * 딥링크에 실을 표준 stdio config 객체. 절대 경로나 실행 방법을 모르면 null.
  */
 export function buildMcpDeeplinkConfig(
   vaultPath: string | null | undefined,
-  publicPackageReady = PUBLIC_AGENT_PACKAGES_READY,
+  launch: McpServerLaunch | null | undefined,
 ): McpStdioConfig | null {
-  if (!vaultPath || !publicPackageReady) return null;
+  if (!vaultPath || !launch) return null;
   return {
-    command: "npx",
-    args: ["-y", MCP_SERVER_PACKAGE],
+    command: launch.command,
+    args: launch.args,
     env: { OATLAS_VAULT: vaultPath },
   };
 }
@@ -56,13 +58,13 @@ export function utf8ToBase64(input: string): string {
 
 /**
  * Cursor 딥링크: `cursor://anysphere.cursor-deeplink/mcp/install?name=…&config=<base64>`.
- * 절대 경로를 모르면 null(웹 강등).
+ * 절대 경로나 실행 방법을 모르면 null(웹 강등).
  */
 export function buildCursorMcpDeeplink(
   vaultPath: string | null | undefined,
-  publicPackageReady = PUBLIC_AGENT_PACKAGES_READY,
+  launch: McpServerLaunch | null | undefined,
 ): string | null {
-  const config = buildMcpDeeplinkConfig(vaultPath, publicPackageReady);
+  const config = buildMcpDeeplinkConfig(vaultPath, launch);
   if (!config) return null;
   const encoded = utf8ToBase64(JSON.stringify(config));
   const params = new URLSearchParams({ name: MCP_SERVER_NAME, config: encoded });
@@ -75,9 +77,9 @@ export function buildCursorMcpDeeplink(
  */
 export function buildVsCodeMcpDeeplink(
   vaultPath: string | null | undefined,
-  publicPackageReady = PUBLIC_AGENT_PACKAGES_READY,
+  launch: McpServerLaunch | null | undefined,
 ): string | null {
-  const config = buildMcpDeeplinkConfig(vaultPath, publicPackageReady);
+  const config = buildMcpDeeplinkConfig(vaultPath, launch);
   if (!config) return null;
   const payload = { name: MCP_SERVER_NAME, ...config };
   return `vscode:mcp/install?${encodeURIComponent(JSON.stringify(payload))}`;

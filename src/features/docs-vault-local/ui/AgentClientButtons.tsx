@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowUpRight, Check, CircleAlert, Copy, Loader2, Terminal } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import type { AgentPackageDistribution } from "@/shared/config";
+import type { AgentServerAvailability } from "@/shared/config";
 import { copyText } from "@/shared/lib/copy-text";
 import { useToast } from "@/shared/ui";
 
@@ -26,8 +26,11 @@ type Feedback = "idle" | "busy" | "done" | "copied" | "failed";
 export type AgentClientConfigState = "missing" | "invalid" | "ready";
 
 export interface AgentClientButtonsProps {
-  /** 공개 npm 설치 가능성. unpublished면 실행 불가능한 설정을 만들거나 복사하지 않는다. */
-  packageDistribution: AgentPackageDistribution;
+  /**
+   * 이 자리에서 서버를 띄울 방법을 아는가. 모르면(웹 세션) 실행 불가능한
+   * 설정을 만들거나 복사하지 않는다 — 붙지 않는 설정은 도움이 아니라 함정이다.
+   */
+  serverAvailability: AgentServerAvailability;
   /** Tauri 전용 — `.mcp.json`·`.codex/config.toml` 등을 vault 폴더에 생성. 웹은 null. */
   onWriteConfigs: (() => void | Promise<void>) | null;
   /** Cursor 딥링크(절대 경로 있을 때). 없으면 복사 강등. */
@@ -53,7 +56,7 @@ export interface AgentClientButtonsProps {
 }
 
 export function AgentClientButtons({
-  packageDistribution,
+  serverAvailability,
   onWriteConfigs,
   cursorDeeplink,
   vscodeDeeplink,
@@ -106,12 +109,12 @@ export function AgentClientButtons({
     }
   }
 
-  if (packageDistribution.status !== "published") {
+  if (!serverAvailability.launch) {
     return (
       <div className="flex flex-col gap-2" data-testid="agent-client-buttons">
         <div
           role="status"
-          data-testid="agent-package-unavailable"
+          data-testid="agent-server-unavailable"
           className="rounded-md border border-[color:var(--color-status-warning-a36)] bg-[color:var(--color-status-warning-a10)] px-3 py-2.5"
         >
           <div className="flex items-start gap-2">
@@ -122,20 +125,16 @@ export function AgentClientButtons({
             />
             <div className="min-w-0">
               <p className="text-body font-medium text-[color:var(--color-text-primary)]">
-                {t("packageUnavailableTitle")}
+                {t("serverUnavailableTitle")}
               </p>
               <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
-                {t("packageUnavailableDesc", {
-                  checkedAt: packageDistribution.checkedAt,
-                  cliPackage: packageDistribution.cliPackage,
-                  mcpPackage: packageDistribution.mcpPackage,
-                })}
+                {t("serverUnavailableDesc")}
               </p>
               <Link
                 href="/docs/?slug=AGENT-GRAPH-WORKFLOW"
                 className="mt-2 inline-flex text-label font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
               >
-                {t("packageUnavailableSource")}
+                {t("serverUnavailableSource")}
               </Link>
             </div>
           </div>

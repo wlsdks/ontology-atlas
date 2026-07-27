@@ -407,7 +407,6 @@
     "unsupportedCta": "Get the macOS app",
     "cliBridgeToggle": "If you're a developer —",
     "cliBridgeLabel": "To start automatically from your codebase",
-    "cliBridgeUnpublished": "Public npm install was unavailable on {checkedAt}. Run this only from an Ontology Atlas source checkout.",
     "cliBridgeCopy": "Copy command",
     "cliBridgeCopied": "Copied",
     "cliBridgeCopyAriaLabel": "Copy the bootstrap command to paste in your terminal",
@@ -430,7 +429,8 @@
     "plainModeCta": "Switch to plain-language view",
     "reopenLabel": "Reopen the start guide",
     "sampleSourceStorefrontTip": "Products, orders, members, delivery — learn to read the map with names everyone knows",
-    "sampleSourceDogfoodTip": "The map of the code that built this app — expect developer names"
+    "sampleSourceDogfoodTip": "The map of the code that built this app — expect developer names",
+    "cliBridgeSourceOnly": "This command runs inside an ontology-atlas source checkout. You do not need it if you only use the app."
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",
@@ -1728,7 +1728,6 @@
       "ready": "ready",
       "missing": "missing",
       "packageBlocked": "unavailable",
-      "packageStatusSummary": "Public agent package check failed on {checkedAt}",
       "rootSummaryBlocked": "No runnable public package · source-checkout setup only",
       "mcpJson": "Claude Code / Cursor workspace config",
       "codexConfig": "Codex workspace config",
@@ -1879,7 +1878,8 @@
       "copyCodexCliCopied": "Codex command copied",
       "copyCodexCliFailed": "Copy failed",
       "copyCodexCliTitle": "Copy a one-line codex mcp add command for registering this vault from any codebase root. Replace the vault path placeholder before running it.",
-      "errorFallback": "Could not create agent configs"
+      "errorFallback": "Could not create agent configs",
+      "serverStatusSummary": "Open this in the installed app and one button writes the connection config."
     },
     "mobileDrawer": {
       "title": "Document list",
@@ -2748,9 +2748,6 @@
     "otherToolsClaudeDesktopNote": "Register manually in Settings → Developer (dedicated extension later)",
     "step1Title": "Press a connect button",
     "step1Desc": "Press the button for your tool and it's ready to read and write this folder with you.",
-    "packageUnavailableTitle": "Agent packages are not published yet",
-    "packageUnavailableDesc": "The public {cliPackage} and {mcpPackage} packages returned npm E404 on {checkedAt}. Atlas will not create or copy a configuration that cannot start.",
-    "packageUnavailableSource": "Use the source-checkout guide",
     "step2Title": "Restart the agent",
     "step2Desc": "Quit and reopen Claude Code, Cursor, VS Code, or Codex to apply the connection.",
     "step3Title": "Confirm the connection",
@@ -2779,7 +2776,27 @@
     "deeplinkWebNote": "One-click for Cursor and VS Code needs the folder path.",
     "deeplinkWebNoteCta": "Automatic in the macOS app",
     "serverLine": "There's no server to leave running. Your agent starts it when needed and it shuts down when done — no always-on process, no open port. That's why your data never leaves this computer.",
-    "copiedToast": "Config copied — paste it into your tool to connect."
+    "copiedToast": "Config copied — paste it into your tool to connect.",
+    "serverUnavailableTitle": "This screen cannot connect an agent",
+    "serverUnavailableDesc": "A browser cannot know where the folder you opened actually lives, so it cannot write a configuration that starts. Open the same folder in the macOS app and one button does it.",
+    "serverUnavailableSource": "Set it up from a source checkout",
+    "copy": "Copy",
+    "copied": "Copied",
+    "connectPreviewCta": "See what will be written",
+    "connectPlanRepoRoot": "Writing into {path}. That is where an agent opening this project looks.",
+    "connectPlanVaultFolder": "Writing into {path}. Open this folder as your project.",
+    "connectPlanCreate": "new",
+    "connectPlanOverwrite": "replaces",
+    "connectPlanAuditNote": "All plain text, so a git diff shows exactly what changed. Nothing leaves this machine.",
+    "connectConfirmCta": "Looks right, write it",
+    "connectVerifying": "Checking that it really connects",
+    "connectVerifiedTitle": "Connected",
+    "connectVerifiedDesc": "{tools} tools are available, and it read \"{node}\" out of this folder.",
+    "connectVerifiedRestart": "Restart your agent and it picks this up.",
+    "connectFailedTitle": "Not connected yet",
+    "connectFailedUnknown": "Something blocked it and we could not tell what. Try again.",
+    "connectRetry": "Try again",
+    "connectDesktopOnly": "This only works in the installed app."
   },
   "appUpdate": {
     "availableTitle": "Version {version} is available",

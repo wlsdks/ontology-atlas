@@ -11,6 +11,7 @@ import {
   buildAgentSetupCheckCliCommandTemplate,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
+  starterFilesForLocale,
 } from "./ontology-starter";
 
 const ROOT = path.resolve(__dirname, "../../../..");
@@ -56,7 +57,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     }
   });
 
-  it("starter README 는 Claude/Cursor 와 Codex MCP setup 을 같이 안내", () => {
+  it("starter README 는 두 채널(설치 앱 · 소스 체크아웃)만 안내한다", () => {
     const readme = ONTOLOGY_STARTER_FILES.find(
       (f) => f.relPath === "README.md",
     )?.content;
@@ -65,10 +66,30 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain("Claude Code / Cursor");
     expect(readme).toContain("Codex");
     expect(readme).toContain(".codex/config.toml");
-    expect(readme).toContain("cli/src/index.mjs agent-setup /absolute/path/to/this-vault --root . --write");
-    expect(readme).toContain("codex mcp add ontology-atlas");
+    expect(readme).toContain("installed Ontology Atlas app");
+    expect(readme).toContain("press the connect button");
+    expect(readme).toContain(
+      "cli/src/index.mjs agent-setup <this vault folder> --root . --write",
+    );
     expect(readme).toContain(".mcp.json.example");
     expect(readme).toContain("OATLAS_VAULT");
+  });
+
+  // npm 발행 계획 폐기 (docs/DECISIONS.md 2026-07-27). 붙여넣으면 실패하는
+  // 명령을 스타터가 다시 심지 못하게 잠근다 — 가짜 절대 경로 자리표시자와
+  // `npx` 안내가 이 파일에서 12건 살아 있었다.
+  it("starter README 에 실행 불가능한 명령이 없다", () => {
+    for (const locale of ["en", "ko"] as const) {
+      const readme = starterFilesForLocale(locale).find(
+        (f) => f.relPath === "README.md",
+      )?.content;
+
+      expect(readme).not.toContain("npx");
+      expect(readme).not.toContain("codex mcp add");
+      expect(readme).not.toContain("/absolute/path/to/");
+      expect(readme).not.toContain("/소스/절대/경로");
+      expect(readme).not.toContain("/이-문서함의/절대/경로");
+    }
   });
 
   it("starter README 는 현재 MCP package tool inventory 를 안내", () => {
@@ -100,7 +121,6 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain('"operation": "cycles"');
     expect(readme).toContain('"operation": "growth_plan"');
     expect(readme).toContain('"operation": "maintenance_plan"');
-    expect(readme).toContain("cli/src/index.mjs bootstrap . --vault");
     expect(readme).toContain("If the CLI is installed");
     expect(readme).toContain("ontology-atlas validate .");
     expect(readme).toContain("ontology-atlas agent-brief . --graph-db-pack");
@@ -115,14 +135,16 @@ describe("ONTOLOGY_STARTER_FILES", () => {
 });
 
 describe("buildMcpConfigJson", () => {
+  // 실행 방법을 모르는 표면(웹)의 기본값은 소스 체크아웃 자리표시자다.
+  // npm 발행 계획이 폐기돼 `npx` 는 어느 경로에도 없다 (docs/DECISIONS.md 2026-07-27).
   it("MCP server 'ontology-atlas' 항목과 OATLAS_VAULT env placeholder 포함", () => {
     const json = buildMcpConfigJson("my-vault");
     const parsed = JSON.parse(json);
     expect(parsed).toEqual({
       mcpServers: {
         "ontology-atlas": {
-          command: "npx",
-          args: ["-y", "ontology-atlas-mcp"],
+          command: "node",
+          args: ["<absolute path to your ontology-atlas checkout>/mcp/src/index.js"],
           env: {
             OATLAS_VAULT: "<absolute path to your my-vault folder>",
           },
@@ -160,10 +182,9 @@ describe("buildMcpConfigJson", () => {
 describe("buildVaultMcpConfigJson", () => {
   it("vault 폴더 자체를 agent에서 열 때 바로 쓰는 OATLAS_VAULT=. config 제공", () => {
     const parsed = JSON.parse(buildVaultMcpConfigJson());
-    expect(parsed.mcpServers["ontology-atlas"].command).toBe("npx");
+    expect(parsed.mcpServers["ontology-atlas"].command).toBe("node");
     expect(parsed.mcpServers["ontology-atlas"].args).toEqual([
-      "-y",
-      "ontology-atlas-mcp",
+      "<absolute path to your ontology-atlas checkout>/mcp/src/index.js",
     ]);
     expect(parsed.mcpServers["ontology-atlas"].env.OATLAS_VAULT).toBe(".");
   });
@@ -173,8 +194,10 @@ describe("buildCodexConfigToml", () => {
   it("Codex repo-local MCP config 를 vault-relative 로 제공", () => {
     const toml = buildCodexConfigToml();
     expect(toml).toContain("[mcp_servers.ontology-atlas]");
-    expect(toml).toContain('command = "npx"');
-    expect(toml).toContain('args = ["-y", "ontology-atlas-mcp"]');
+    expect(toml).toContain('command = "node"');
+    expect(toml).toContain(
+      'args = ["<absolute path to your ontology-atlas checkout>/mcp/src/index.js"]',
+    );
     expect(toml).toContain("[mcp_servers.ontology-atlas.env]");
     expect(toml).toContain('OATLAS_VAULT = "."');
     expect(toml).toMatch(/\n$/);
@@ -183,8 +206,10 @@ describe("buildCodexConfigToml", () => {
   it("Codex codebase-root MCP config template 은 절대경로 placeholder 를 제공", () => {
     const toml = buildCodexConfigTomlTemplate("team-vault");
     expect(toml).toContain("[mcp_servers.ontology-atlas]");
-    expect(toml).toContain('command = "npx"');
-    expect(toml).toContain('args = ["-y", "ontology-atlas-mcp"]');
+    expect(toml).toContain('command = "node"');
+    expect(toml).toContain(
+      'args = ["<absolute path to your ontology-atlas checkout>/mcp/src/index.js"]',
+    );
     expect(toml).toContain(
       'OATLAS_VAULT = "<absolute path to your team-vault folder>"',
     );
@@ -217,7 +242,9 @@ describe("buildCodexMcpAddCommandTemplate", () => {
     expect(command).toContain(
       "OATLAS_VAULT='<absolute path to your team-vault folder>'",
     );
-    expect(command).toContain("npx -y ontology-atlas-mcp");
+    expect(command).toContain(
+      "'node' '<absolute path to your ontology-atlas checkout>/mcp/src/index.js'",
+    );
   });
 
   it("Codex CLI one-line MCP 등록 명령은 알려진 vault 절대경로를 shell-safe 하게 넣는다", () => {

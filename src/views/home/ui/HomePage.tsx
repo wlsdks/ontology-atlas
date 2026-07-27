@@ -22,6 +22,7 @@ import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
+  useAgentServer,
   useLocalVault,
   VaultOpenGuideSheet,
 } from "@/features/docs-vault-local";
@@ -191,7 +192,7 @@ import {
 } from "@/features/vault-agent";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
-import { AGENT_PACKAGE_DISTRIBUTION } from "@/shared/config";
+
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
 import { restoreTopologyFocusAfterDatasheetClose } from "../lib/topology-focus-return";
@@ -953,9 +954,12 @@ export function HomePage() {
     return { sentence, x: hoverCluster.x, y: hoverCluster.y };
   }, [hoverCluster, ontologyInsight, t]);
   // HomePage 모듈화 2차 — 에이전트 연결 시트 조립은 use-agent-connect-model 소유.
+  // 번들 MCP 서버가 있는가 — 설정 스니펫·딥링크·연결 버튼이 전부 여기서 갈린다.
+  const agentServer = useAgentServer();
   const agentConnect = useAgentConnectModel({
     agentActivityStatus,
     vaultHandle: vault.handle,
+    serverAvailability: agentServer,
     insightNodes: ontologyInsight?.nodes ?? null,
     // 키는 top-level `agentConnect` 네임스페이스 (시트 위젯과 동일 출처) —
     // topology.* 의 t 로 읽으면 MISSING_MESSAGE (e2e 가 잡은 잠복 버그).
@@ -4639,7 +4643,8 @@ export function HomePage() {
             같은 scrim+중앙 카드 모달 골격(같은 토큰, modality 증명 — 스크림
             클릭 닫기). 패널 내용/조회는 위젯 자기완결. */}
         <AgentConnectSheet
-          packageDistribution={AGENT_PACKAGE_DISTRIBUTION}
+          serverAvailability={agentServer}
+          vaultPath={vault.handle ? (getTauriVaultRootPath(vault.handle) ?? null) : null}
           open={agentConnect.open}
           onClose={() => {
             agentConnect.closeSheet();
