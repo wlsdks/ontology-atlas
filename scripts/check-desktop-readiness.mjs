@@ -79,7 +79,10 @@ const architectureDoc = readText("docs/ARCHITECTURE.md");
 const developmentChecksDoc = readText("docs/DEVELOPMENT-CHECKS.md");
 const agentGraphWorkflowDoc = readText("docs/AGENT-GRAPH-WORKFLOW.md");
 const troubleshootingDoc = readText("docs/TROUBLESHOOTING.md");
-const publishNpmDoc = readText("docs/PUBLISH-NPM.md");
+// npm 발행 계획 폐기 (docs/DECISIONS.md 2026-07-27) 로 아카이브됐다. 게이트는
+// 그대로 둔다 — 이 문서가 살아 있는 한, 데스크톱 앱 경로를 지운 채 npm 경로만
+// 남기는 되돌림을 막는 기록으로 계속 쓸모가 있다.
+const publishNpmDoc = readText("docs/archive/PUBLISH-NPM.md");
 const demoStoryboardDoc = readText("docs/launch/DEMO-GIF-STORYBOARD.md");
 const redditPostsDoc = readText("docs/launch/REDDIT-POSTS.md");
 const desktopOntologyDoc = readText("docs/ontology/capabilities/desktop-app-distribution.md");
@@ -1262,18 +1265,25 @@ if (pkg.scripts?.["desktop:dev"] === "pnpm tauri dev") {
   fail("package.json must expose desktop:dev as pnpm tauri dev");
 }
 
+// 번들 MCP 서버는 앱 페이로드다 — Tauri 가 굽기 **전에** 컴파일돼 있어야
+// `externalBin` 이 찾는다. 순서가 뒤집히면 서버 없는 앱이 조용히 출하되고,
+// 사용자는 설치한 뒤에야 에이전트가 안 붙는 걸 알게 된다.
 if (
   pkg.scripts?.["desktop:build:app"] ===
-    "node scripts/clean-tauri-macos-apps.mjs && pnpm tauri build --bundles app" &&
+    "node scripts/clean-tauri-macos-apps.mjs && pnpm mcp:build-binary && pnpm tauri build --bundles app" &&
+  pkg.scripts?.["mcp:build-binary"] === "node scripts/build-mcp-binary.mjs" &&
+  tauriConfig.bundle?.externalBin?.includes("binaries/ontology-atlas-mcp") &&
   cleanTauriMacosAppsScript.includes('"bundle"') &&
   cleanTauriMacosAppsScript.includes('"macos"') &&
   cleanTauriMacosAppsScript.includes('entry.endsWith(".app")') &&
   cleanTauriMacosAppsScript.includes("fs.rmSync(appPath, { recursive: true, force: true })")
 ) {
-  pass("desktop app-only build cleans stale macOS app bundles before Tauri rebuilds");
+  pass(
+    "desktop app-only build compiles the bundled MCP server and cleans stale macOS app bundles before Tauri rebuilds",
+  );
 } else {
   fail(
-    "package.json must expose desktop:build:app as node scripts/clean-tauri-macos-apps.mjs && pnpm tauri build --bundles app, and the cleaner must remove stale macOS .app bundles before Tauri rebuilds",
+    "package.json must expose desktop:build:app as node scripts/clean-tauri-macos-apps.mjs && pnpm mcp:build-binary && pnpm tauri build --bundles app, mcp:build-binary as node scripts/build-mcp-binary.mjs, tauri.conf.json bundle.externalBin must carry binaries/ontology-atlas-mcp, and the cleaner must remove stale macOS .app bundles before Tauri rebuilds",
   );
 }
 

@@ -4,24 +4,31 @@ Common issues users hit when starting with `ontology-atlas`. If your case isn't 
 
 ---
 
-## Vault scaffold (`npx ontology-atlas init`, desktop app `/docs` button)
+## How this ships (read first)
 
-### `npx ontology-atlas` runs an old version
+There are two ways to run Ontology Atlas, and only two:
 
-npm caches the package locally. Force a fresh fetch:
+1. **The installed macOS app.** It carries the MCP server inside its own bundle.
+   Open a vault folder and press the connect button — the app writes your agent's
+   config with the bundled binary's absolute path. Nothing to install, no terminal.
+2. **A source checkout.** Clone the repo and invoke it directly:
+   `node <checkout>/cli/src/index.mjs …` for the CLI,
+   `node <checkout>/mcp/src/index.js` for the MCP server.
 
-```bash
-npx --yes ontology-atlas@latest init my-vault
-# or clear the npx cache
-rm -rf ~/.npm/_npx
-```
+npm publishing is retired (`docs/DECISIONS.md`, 2026-07-27). `npx ontology-atlas`
+and `npx -y ontology-atlas-mcp` do not resolve and never will — if a guide
+anywhere tells you to run one, that guide is stale.
+
+---
+
+## Vault scaffold (CLI `init`, desktop app `/docs` button)
 
 ### "no new files written — target already has matching files"
 
 The target folder already has `README.md` / `project.md` / etc. — the CLI never overwrites existing files. Either:
 
 - Delete the conflicting files, or
-- Use a fresh folder: `npx ontology-atlas init another-folder`
+- Use a fresh folder: `node <checkout>/cli/src/index.mjs init another-folder`
 
 ### Desktop app scaffold button stays grayed out
 
@@ -79,11 +86,11 @@ The walk runs against `docs/ontology/` by default. If you renamed/moved that fol
 
 ### Agent doesn't see `ontology-atlas__list_concepts` etc.
 
-1. Confirm the MCP server is reachable. Published install: `npx -y ontology-atlas-mcp` should start a stdio server and wait (Ctrl+C to exit). Source checkout: the generated config should use `node` with an absolute `mcp/src/index.js` path.
-2. Check the agent's MCP config — published install uses `command: "npx", args: ["-y", "ontology-atlas-mcp"]`; source checkout uses `command: "node", args: ["/absolute/path/to/mcp/src/index.js"]`.
+1. Confirm the MCP server is reachable. Installed app: run the bundled binary directly — `"/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp"` should start a stdio server and wait (Ctrl+C to exit). Source checkout: `node <checkout>/mcp/src/index.js` should do the same.
+2. Check the agent's MCP config — the app writes `command: "/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp", args: []`; a source checkout uses `command: "node", args: ["/absolute/path/to/mcp/src/index.js"]`. A config still holding `command: "npx"` predates the app-bundled server and cannot start; press the app's connect button again to rewrite it.
 3. Set `env.OATLAS_VAULT` to the **absolute path** of the vault folder for global agent configs. Project `.mcp.json` can use a path relative to the project root.
 4. Claude Code / Cursor: restart the agent so it picks up the project `.mcp.json`.
-5. Codex: restart Codex so it picks up the generated `.codex/config.toml`; if you prefer global config, run the `codex mcp add ...` fallback printed by `ontology-atlas init`.
+5. Codex: restart Codex so it picks up the generated `.codex/config.toml`; if you prefer global config, run the `codex mcp add ...` fallback printed by `node <checkout>/cli/src/index.mjs init`.
 
 Clean-room verification for maintainers:
 
@@ -108,13 +115,17 @@ Check the directory's write permission with `ls -ld $OATLAS_VAULT`. The agent ru
 
 ### MCP server starts then exits immediately
 
-Usually a Node version mismatch. The server requires Node 24+:
+In a source checkout, usually a Node version mismatch. The server requires Node 24+:
 
 ```bash
-node --version            # must print v20.x or higher
+node --version            # must print v24.x or higher
 ```
 
-If you use `nvm`, set the agent to invoke `npx` from a v20+ shim.
+If you use `nvm`, point the agent's `command` at an absolute `node` path on a
+v24+ shim rather than the bare `node` on its `PATH`.
+
+The app-bundled binary does not use your Node at all, so this cannot be the
+cause when the config points inside `Ontology Atlas.app`.
 
 ---
 
@@ -149,33 +160,13 @@ Check your vault has at least one `.md` with frontmatter `slug:` and `kind:`. Th
 
 ---
 
-## npm publish (maintainer-only)
+## npm publish (retired)
 
-> If you are *using* the package, you don't need to publish. This section is for project maintainers.
-
-### `403 Forbidden` on `npm publish`
-
-- 2FA OTP wrong or expired — re-run with a fresh OTP.
-- Your account doesn't own the package name — try `--access=public` for scoped packages, or use a different name.
-
-### `npm publish` says nothing happened
-
-Likely you forgot to bump the version. npm rejects republishing the same version. Bump first:
-
-```bash
-cd mcp
-npm version patch                    # 0.5.0 → 0.5.1
-npm publish --access=public
-```
-
-### "I published the wrong thing"
-
-- Within 24h of publish: `npm unpublish ontology-atlas-mcp@<version>` removes it.
-- After 24h: `npm deprecate ontology-atlas-mcp@<version> "reason"` — installers see a warning but the version stays.
-
-### Why doesn't Claude Code just run `npm publish` for me?
-
-It can't. `.claude/settings.json` ships a PreToolUse hook that blocks `npm publish` / `pnpm publish` / `yarn publish` until you explicitly type "publish it" in chat. This is intentional — npm publishes are permanent (after 24h) and tied to *your* npm account. See `CLAUDE.md` and `.claude/rules/forbidden.md` for the full rule.
+The project no longer publishes to npm; the macOS app carries the MCP server in
+its bundle instead. There is nothing to publish and nothing here to fix. The
+old step-by-step guide is kept as a record at `docs/archive/PUBLISH-NPM.md`, and
+`.claude/settings.json` still blocks `npm publish` / `pnpm publish` / `yarn publish`
+from any AI agent.
 
 ---
 

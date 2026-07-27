@@ -39,39 +39,28 @@ capabilities / elements / domain)입니다.
    함께 키웁니다.
 5. 그래프로 보려면 워크벤치의 `/docs` 피커에서 이 폴더를 고릅니다.
 
-첫 그래프를 자동으로 만들고 싶다면, 코드베이스 루트에서:
-
-```bash
-node /ontology-atlas/소스/절대/경로/cli/src/index.mjs bootstrap . --vault <이-폴더>
-```
-
-이 명령은 `package.json`, README 제목, `src/` 구조를 분석해 손대지 않은 예시
-스타터를 실제 프로젝트/도메인/역량 노드로 바꿉니다. 이미 수정한 스타터 파일은
-그대로 둡니다.
-
 ## AI 에이전트 설정
 
-이 스타터를 만들 때 공개 `ontology-atlas`와 `ontology-atlas-mcp`
-패키지는 npm E404 상태였습니다(2026-07-27 확인). 설치 앱은 실행할 수 없는
-`npx` 설정을 심지 않고 마크다운 문서함만 만듭니다.
+이 문서함에 에이전트를 붙이는 길은 두 가지입니다.
 
-Ontology Atlas 소스 체크아웃이 있다면 로컬 CLI 복구 경로를 씁니다:
+**설치된 Ontology Atlas 앱이 있다면**, 앱에서 이 폴더를 열고 에이전트 연결
+버튼을 누르세요. 앱이 Claude Code / Cursor / Codex 설정을 대신 써 줍니다 —
+이 폴더의 실제 경로를 이미 알고 있고, MCP 서버를 자기 번들 안에 싣고
+다닙니다. 터미널도, node 도, 설치 과정도 필요 없습니다.
+
+**앱이 없다면**, Ontology Atlas 소스 체크아웃에서 에이전트 설정 명령을 한 번
+실행합니다. 꺾쇠 두 자리는 내 컴퓨터의 실제 절대 경로로 바꿔 넣으세요 —
+클론한 체크아웃, 그리고 이 문서함 폴더입니다:
 
 ```bash
-node /ontology-atlas/소스/절대/경로/cli/src/index.mjs agent-setup /이-문서함의/절대/경로 --root . --write
+node <ontology-atlas 체크아웃>/cli/src/index.mjs agent-setup <이 문서함 폴더> --root . --write
 ```
 
 없는 Claude Code / Cursor / Codex 설정 파일만 만들고, 스타터 마크다운을
 추가하거나 기존 설정을 덮어쓰지 않습니다. 직접 병합하려면 `.mcp.json.example`
 을 열어 `OATLAS_VAULT` 자리표시자를 이 문서함의 절대 경로로 바꾼 뒤, 그 서버
-항목을 에이전트 설정에 복사하세요. 로컬 CLI는 소스 엔트리포인트를 쓰는
-`.mcp.json`과 `.codex/config.toml`을 만듭니다.
-
-Codex 는 명령 한 줄로 전역 등록도 됩니다:
-
-```bash
-codex mcp add ontology-atlas --env OATLAS_VAULT=/이-문서함의/절대/경로 -- node /ontology-atlas/소스/절대/경로/mcp/src/index.js
-```
+항목을 에이전트 설정에 복사하세요. CLI 는 체크아웃의 `mcp/src/index.js` 를
+가리키는 `.mcp.json` 과 `.codex/config.toml` 을 만듭니다.
 
 ## 에이전트 연결 확인
 

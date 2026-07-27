@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 // ontology-atlas CLI — vault scaffold + setup helper.
 //
-// `npx ontology-atlas init [folder]` → 폴더에 frontmatter 기반 ontology vault
+// `ontology-atlas init [folder]` → 폴더에 frontmatter 기반 ontology vault
 // 시드 + MCP 등록 안내. 비어 있는 폴더면 그대로, 없으면 생성. 기존 파일은
 // 안 건드리고 (충돌 시 skip + 알림).
+//
+// 이 CLI 는 npm 으로 배포하지 않는다 (docs/DECISIONS.md 2026-07-27) — 소스
+// 체크아웃에서 `node cli/src/index.mjs <명령>` 으로 부른다. 아래 도움말이
+// 명령을 `ontology-atlas <명령>` 으로 적는 것은 표 폭을 지키기 위한 축약이고,
+// 실행 형태는 도움말 첫 단락이 말한다.
 
 import { COLORS } from './lib/colors.mjs';
 import {
@@ -63,128 +68,132 @@ function printHelp(stream = stdout) {
 
 AI-native codebase ontology workbench — ${CLI_COMMAND_COUNT} commands + MCP setup.
 
+${COLORS.dim}Run it from an ontology-atlas source checkout: ${COLORS.reset}${COLORS.bold}node cli/src/index.mjs <command>${COLORS.reset}
+${COLORS.dim}(The rows below shorten that to \`ontology-atlas <command>\`. There is no npm package —${COLORS.reset}
+${COLORS.dim} the macOS app carries the MCP server in its own bundle instead.)${COLORS.reset}
+
 ${COLORS.bold}Usage:${COLORS.reset}
-  npx ontology-atlas init [folder]            Scaffold a new ontology vault (default: ./vault)
+  ontology-atlas init [folder]                Scaffold a new ontology vault (default: ./vault)
        --quick-start                          ${COLORS.dim}Slice 0 one-liner: + bootstrap + absorb suggestion + compact next steps${COLORS.reset}
-  npx ontology-atlas list [vault]             List ontology nodes in a vault
+  ontology-atlas list [vault]                 List ontology nodes in a vault
                                               ${COLORS.dim}--kind <kind>     filter by kind${COLORS.reset}
                                               ${COLORS.dim}--json            JSON output${COLORS.reset}
-  npx ontology-atlas validate [vault]         Frontmatter integrity check (exit 1 on errors)
+  ontology-atlas validate [vault]             Frontmatter integrity check (exit 1 on errors)
        --json --strict --fail-on=code,...     ${COLORS.dim}structured · warning 도 fail · 특정 code 만 fail${COLORS.reset}
        --list-codes                           ${COLORS.dim}사용 가능한 issue code 목록 (--fail-on 발견용)${COLORS.reset}
-  npx ontology-atlas mcp-verify [vault]       MCP boot + tools + health + graph-query smoke
+  ontology-atlas mcp-verify [vault]           MCP boot + tools + health + graph-query smoke
        --timeout-ms N                         ${COLORS.dim}large / slow vault server wait override${COLORS.reset}
-  npx ontology-atlas agent-setup [vault]      Check/repair Claude Code, Cursor, and Codex configs
+  ontology-atlas agent-setup [vault]          Check/repair Claude Code, Cursor, and Codex configs
        --root path --write --json             ${COLORS.dim}existing vault setup, no starter files touched${COLORS.reset}
-  npx ontology-atlas agent-files              Read-only agent-file map + drift checks (repo root)
+  ontology-atlas agent-files                  Read-only agent-file map + drift checks (repo root)
        --root path --json                     ${COLORS.dim}which tool reads which file · bridge/skill-copy/@ref/32KiB drift${COLORS.reset}
-  npx ontology-atlas agent-activity [vault]   Write/show/clear the live Claude Code/Codex heartbeat
+  ontology-atlas agent-activity [vault]       Write/show/clear the live Claude Code/Codex heartbeat
        --agent codex --state editing --json   ${COLORS.dim}.ontology-atlas/agent-activity.json${COLORS.reset}
-  npx ontology-atlas add <kind> <slug>        Scaffold a new ontology node (.md)
+  ontology-atlas add <kind> <slug>            Scaffold a new ontology node (.md)
        --title "..."                          ${COLORS.dim}required, non-empty${COLORS.reset}
        --domain X --body "..." --vault path   ${COLORS.dim}optional${COLORS.reset}
        --raw-slug                             ${COLORS.dim}opt out of default kind→folder prefix${COLORS.reset}
-  npx ontology-atlas find <query> [vault]     Search slug + title (case-insensitive)
+  ontology-atlas find <query> [vault]         Search slug + title (case-insensitive)
        --kind X --json                        ${COLORS.dim}optional${COLORS.reset}
-  npx ontology-atlas import <path...>         Import external .md into the vault (R14)
+  ontology-atlas import <path...>             Import external .md into the vault (R14)
        --vault path                           ${COLORS.dim}target vault root (default: cwd)${COLORS.reset}
        --kind K                               ${COLORS.dim}fallback kind when input has no kind:${COLORS.reset}
        --raw-slug --rename --dry-run          ${COLORS.dim}no folder prefix · slug rename · plan-only${COLORS.reset}
-  npx ontology-atlas absorb <file...>         ${COLORS.green}Absorb CLAUDE.md/AGENTS.md into typed vault nodes${COLORS.reset} (Slice 0)
+  ontology-atlas absorb <file...>             ${COLORS.green}Absorb CLAUDE.md/AGENTS.md into typed vault nodes${COLORS.reset} (Slice 0)
        --vault path --write                   ${COLORS.dim}default dry-run plan · --write lands + rewrites source as slim pointer${COLORS.reset}
-  npx ontology-atlas moment [vault]            ${COLORS.green}Slice 0 magic-moment readout${COLORS.reset} — init/absorb → first agent-brief elapsed
+  ontology-atlas moment [vault]                ${COLORS.green}Slice 0 magic-moment readout${COLORS.reset} — init/absorb → first agent-brief elapsed
        --mark --json                           ${COLORS.dim}manual stamp fallback · machine output${COLORS.reset}
 
 ${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17 — autonomous ingest base)${COLORS.reset}
-  npx ontology-atlas index [rootPath]         ${COLORS.green}project ontology index${COLORS.reset} — analyze + imports + validate plan
+  ontology-atlas index [rootPath]             ${COLORS.green}project ontology index${COLORS.reset} — analyze + imports + validate plan
        --apply --threshold N --json           ${COLORS.dim}explicit land · weak edge 차단 · machine output${COLORS.reset}
-  npx ontology-atlas bootstrap [rootPath]     ${COLORS.green}1줄 full bootstrap${COLORS.reset} — analyze --apply + infer-imports --apply
+  ontology-atlas bootstrap [rootPath]         ${COLORS.green}1줄 full bootstrap${COLORS.reset} — analyze --apply + infer-imports --apply
        --threshold N --skip-imports --json    ${COLORS.dim}weak edge 차단 · 노드만 · machine output${COLORS.reset}
-  npx ontology-atlas analyze [rootPath]       Walk a repo, propose ontology node candidates (side effect 0)
+  ontology-atlas analyze [rootPath]           Walk a repo, propose ontology node candidates (side effect 0)
        --apply --max-depth N --json           ${COLORS.dim}or land via batch · folder walk depth · machine output${COLORS.reset}
-  npx ontology-atlas infer-imports [rootPath] TS/JS import graph → depends_on edge candidates (side effect 0)
+  ontology-atlas infer-imports [rootPath] TS/JS import graph → depends_on edge candidates (side effect 0)
        --apply --threshold N --max-files N    ${COLORS.dim}or land · weak filter · default 5000 max${COLORS.reset}
-  npx ontology-atlas preflight [vault]        ${COLORS.green}Commit preflight${COLORS.reset} — staged files → vault nodes → blast-radius summary
+  ontology-atlas preflight [vault]            ${COLORS.green}Commit preflight${COLORS.reset} — staged files → vault nodes → blast-radius summary
        --staged --depth N --json              ${COLORS.dim}non-blocking, silent when nothing matches${COLORS.reset}
-  npx ontology-atlas snapshot [vault]         ${COLORS.green}Snapshot the vault${COLORS.reset} — vault-scoped git commit with a semantic summary
+  ontology-atlas snapshot [vault]             ${COLORS.green}Snapshot the vault${COLORS.reset} — vault-scoped git commit with a semantic summary
        --dry-run --push --message "..." --json ${COLORS.dim}local commit by default · --push sends to your existing upstream${COLORS.reset}
        --history [N] --diff --pull             ${COLORS.dim}vault commit log · uncommitted preview · graceful pull (opt-in)${COLORS.reset}
 
 ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps the MCP server, same authority as an AI agent)${COLORS.reset}
   ${COLORS.dim}Set OATLAS_CLI_MCP_TIMEOUT_MS=N when a large / slow vault needs a longer one-shot MCP call window.${COLORS.reset}
-  npx ontology-atlas backlinks <slug>         Every node referencing the slug (--json)
-  npx ontology-atlas orphans [vault]          Isolated nodes (어떤 다른 노드도 reference 안 함)
+  ontology-atlas backlinks <slug>             Every node referencing the slug (--json)
+  ontology-atlas orphans [vault]              Isolated nodes (어떤 다른 노드도 reference 안 함)
        --kind X --exclude-kinds A,B --json    ${COLORS.dim}filter / skip / machine output${COLORS.reset}
-  npx ontology-atlas path <from> <to>         Shortest path (BFS) with relation type per hop
+  ontology-atlas path <from> <to>             Shortest path (BFS) with relation type per hop
        --max-hops N --json                    ${COLORS.dim}default 5${COLORS.reset}
-  npx ontology-atlas explain <from> <to>      Direct edges + shortest path + common-neighbor evidence
+  ontology-atlas explain <from> <to>          Direct edges + shortest path + common-neighbor evidence
        --direction undirected --types A,B --json
-  npx ontology-atlas all-paths <from> <to>    Bounded simple paths + completeness evidence
+  ontology-atlas all-paths <from> <to>        Bounded simple paths + completeness evidence
        --max-hops N --limit N --search-budget N --types A,B --json
-  npx ontology-atlas reachability <slug>      Transitive reachable nodes by layer from one start node
+  ontology-atlas reachability <slug>          Transitive reachable nodes by layer from one start node
        --depth N --direction outgoing --types A,B --plan --json
-  npx ontology-atlas relation-check <from> <to> <type>
+  ontology-atlas relation-check <from> <to> <type>
                                              ${COLORS.dim}schema-aware add_relation preflight${COLORS.reset}
-  npx ontology-atlas relate <from> <to> <type>
+  ontology-atlas relate <from> <to> <type>
                                              ${COLORS.green}Write a relation${COLORS.reset} — same preflight as relation-check, then lands it
        --dry-run --json                     ${COLORS.dim}preview only · machine output${COLORS.reset}
-  npx ontology-atlas query "<filter>"         Typed filter DSL (kind=X AND has(elements))
+  ontology-atlas query "<filter>"             Typed filter DSL (kind=X AND has(elements))
        --limit N --json                       ${COLORS.dim}default limit 100${COLORS.reset}
-  npx ontology-atlas match-nodes [vault]      Graph DB-style node scan with kind/domain/degree filters
+  ontology-atlas match-nodes [vault]          Graph DB-style node scan with kind/domain/degree filters
        --kind K --min-degree N --plan --json  ${COLORS.dim}filter-preserving query_plan support${COLORS.reset}
-  npx ontology-atlas match-edges [vault]      Graph DB-style edge scan with type/kind/external filters
+  ontology-atlas match-edges [vault]          Graph DB-style edge scan with type/kind/external filters
        --type T --from-kind K --plan --json   ${COLORS.dim}edge pattern rows + totalMatches${COLORS.reset}
-  npx ontology-atlas domain-matrix [vault]    Domain coupling matrix — cross-domain edges + examples
+  ontology-atlas domain-matrix [vault]        Domain coupling matrix — cross-domain edges + examples
        --project SLUG --limit N --json         ${COLORS.dim}scope to one project containment tree${COLORS.reset}
-  npx ontology-atlas facets [vault]          Graph dashboard facets — buckets + top nodes/patterns
+  ontology-atlas facets [vault]              Graph dashboard facets — buckets + top nodes/patterns
        --limit N --json
-  npx ontology-atlas schema [vault]           Relation schema patterns for traversal/write preflight
+  ontology-atlas schema [vault]               Relation schema patterns for traversal/write preflight
        --limit N --json
-  npx ontology-atlas pattern-walk <slug>      Explicit relation-sequence traversal evidence
+  ontology-atlas pattern-walk <slug>          Explicit relation-sequence traversal evidence
        --pattern domains,capabilities --limit N --json
-  npx ontology-atlas project-map <project>    Domain-by-domain project containment map
+  ontology-atlas project-map <project>        Domain-by-domain project containment map
        --limit N --item-limit N --json
-  npx ontology-atlas compile [vault]         Deterministic graph compile + optional reorder
+  ontology-atlas compile [vault]             Deterministic graph compile + optional reorder
        --summary --fix --json                 ${COLORS.dim}hash/counts · canonicalize relation arrays${COLORS.reset}
-  npx ontology-atlas export [vault]          ${COLORS.green}Interop export${COLORS.reset} — compile → standard exchange format (stdout)
+  ontology-atlas export [vault]              ${COLORS.green}Interop export${COLORS.reset} — compile → standard exchange format (stdout)
        --format jsonld|graphml|json           ${COLORS.dim}RDF JSON-LD · Gephi GraphML · raw artifact${COLORS.reset}
-  npx ontology-atlas overview [vault]         Vault first-contact dashboard (counts + 분포 + 허브)
+  ontology-atlas overview [vault]             Vault first-contact dashboard (counts + 분포 + 허브)
        --limit N --json                       ${COLORS.dim}허브 N 개 (default 10) · machine output${COLORS.reset}
-  npx ontology-atlas hubs [vault]             Centrality 4 rankings — PageRank / Bridges / Authorities / Hubs
+  ontology-atlas hubs [vault]                 Centrality 4 rankings — PageRank / Bridges / Authorities / Hubs
        --limit N --json                       ${COLORS.dim}각 랭킹 N rows (default 10)${COLORS.reset}
-  npx ontology-atlas blast-radius <slug>      이 노드 변경 시 영향받는 노드/관계 (refactor safety)
+  ontology-atlas blast-radius <slug>          이 노드 변경 시 영향받는 노드/관계 (refactor safety)
        --depth N --direction incoming|outgoing|both --json
-  npx ontology-atlas cycles [vault]           depends_on dependency cycle 검출
+  ontology-atlas cycles [vault]               depends_on dependency cycle 검출
        --max-hops N --json                    ${COLORS.dim}default maxDepth 8${COLORS.reset}
-  npx ontology-atlas components [vault]       Connected graph islands before trusting traversal maps
+  ontology-atlas components [vault]           Connected graph islands before trusting traversal maps
        --limit N --node-limit N --types A,B --json
-  npx ontology-atlas topological-order [vault] Prerequisite-first dependency ordering
+  ontology-atlas topological-order [vault] Prerequisite-first dependency ordering
        --limit N --types A,B --include-isolated --json
-  npx ontology-atlas health [vault]           Graph 무결성 dashboard (5 checks)
+  ontology-atlas health [vault]               Graph 무결성 dashboard (5 checks)
        --json --component-types A,B          ${COLORS.dim}focused diagnosis tuning 지원${COLORS.reset}
-  npx ontology-atlas agent-brief [vault]      Claude Code/Codex handoff — readiness + first MCP calls
+  ontology-atlas agent-brief [vault]          Claude Code/Codex handoff — readiness + first MCP calls
        --prompt --graph-db-pack --verify-fallbacks
                                               ${COLORS.dim}pasteable handoff · shell Graph DB pack · fallback self-check${COLORS.reset}
-  npx ontology-atlas workspace-brief [vault]  Status + hotspots + project_scope 포함 노드 + next actions 한 화면
+  ontology-atlas workspace-brief [vault]      Status + hotspots + project_scope 포함 노드 + next actions 한 화면
        --json --dependency-types A,B         ${COLORS.dim}health/workspace_brief tuning forwarding${COLORS.reset}
-  npx ontology-atlas growth [vault]           Growth candidates from MCP growth_plan
+  ontology-atlas growth [vault]               Growth candidates from MCP growth_plan
        --limit N --json                       ${COLORS.dim}relations · external refs · dangling refs · ignored refs${COLORS.reset}
-  npx ontology-atlas maintenance [vault]      Ordered graph cleanup/repair work queue
+  ontology-atlas maintenance [vault]          Ordered graph cleanup/repair work queue
        --limit N --after-action-id ID --json  ${COLORS.dim}cursor page · filterable maintenance_plan${COLORS.reset}
-  npx ontology-atlas node <slug> [vault]      한 노드 deep dive — header · lineage · incoming/outgoing edges
+  ontology-atlas node <slug> [vault]          한 노드 deep dive — header · lineage · incoming/outgoing edges
        --limit N --types A,B --no-external --no-unresolved --json
                                              ${COLORS.dim}hotspot edge group + relation/ref filter${COLORS.reset}
-  npx ontology-atlas similar "<title>" [vault] vault 에서 비슷한 노드 찾기 (duplicate 회피, /ontology-extract 짝)
+  ontology-atlas similar "<title>" [vault] vault 에서 비슷한 노드 찾기 (duplicate 회피, /ontology-extract 짝)
        --slug X --kind K --limit N --json    ${COLORS.dim}slug 기반 / kind 필터 / 결과 N / machine${COLORS.reset}
-  npx ontology-atlas rename <old> <new>       Atomic rename — moves .md, redirects every backlink
+  ontology-atlas rename <old> <new>           Atomic rename — moves .md, redirects every backlink
        --confirm --overwrite                  ${COLORS.dim}default dry-run; --overwrite replaces existing target${COLORS.reset}
-  npx ontology-atlas merge <from> <into>      Atomic merge — redirect backlinks then delete fromSlug
+  ontology-atlas merge <from> <into>          Atomic merge — redirect backlinks then delete fromSlug
        --confirm                              ${COLORS.dim}default dry-run; --confirm to apply${COLORS.reset}
-  npx ontology-atlas delete <slug>            Permanent delete (refuses if backlinks remain)
+  ontology-atlas delete <slug>                Permanent delete (refuses if backlinks remain)
        --confirm --force                      ${COLORS.dim}--confirm to apply; --force to ignore backlinks${COLORS.reset}
 
-  npx ontology-atlas --help                   Show this help
-  npx ontology-atlas --version                Print version
+  ontology-atlas --help                       Show this help
+  ontology-atlas --version                    Print version
 
 ${COLORS.bold}What 'init' does:${COLORS.reset}
   - Creates project / domain / capability / element starter .md files
@@ -279,8 +288,27 @@ function resolveMcpServerCommand() {
     }
   }
 
-  return { command: 'npx', args: ['-y', 'ontology-atlas-mcp'] };
+  // npm 발행 계획은 폐기됐다 (docs/DECISIONS.md 2026-07-27) — `npx` 폴백은
+  // 100% 실패하는 명령을 설정 파일에 심는 일이었다. 대신 설치된 앱이
+  // 번들로 싣고 다니는 바이너리를 찾는다.
+  if (isFile(BUNDLED_MCP_BINARY)) {
+    return { command: BUNDLED_MCP_BINARY, args: [] };
+  }
+
+  throw new Error(
+    'Could not find the ontology-atlas MCP server.\n' +
+      `  Install the macOS app (it bundles the server at ${BUNDLED_MCP_BINARY}),\n` +
+      '  or run this from an ontology-atlas source checkout,\n' +
+      '  or point OATLAS_MCP_PATH at mcp/src/index.js yourself.',
+  );
 }
+
+/**
+ * 앱 번들이 싣고 다니는 MCP 서버. macOS 앱을 설치했다면 이게 있고, 사용자는
+ * node 도 소스 체크아웃도 없이 붙을 수 있다.
+ */
+const BUNDLED_MCP_BINARY =
+  '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp';
 
 function isFile(path) {
   try {

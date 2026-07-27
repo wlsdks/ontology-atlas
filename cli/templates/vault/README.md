@@ -39,41 +39,29 @@ ownership, dependency, evidence, and change impact.
 5. To see the graph, open the workbench's `/docs` picker and point it at
    this vault folder.
 
-Prefer an automatic first graph? From your codebase root:
-
-```bash
-node /absolute/path/to/ontology-atlas/cli/src/index.mjs bootstrap . --vault <this-folder>
-```
-
-The command analyzes `package.json`, README headings, and `src/` layout,
-then replaces untouched starter examples with real project/domain/capability
-nodes. If you edited a starter file, it is preserved.
-
 ## AI agent setup
 
-Public `ontology-atlas` and `ontology-atlas-mcp` packages were unavailable
-when this starter was built (npm E404, checked 2026-07-27). The installed app
-therefore creates the markdown vault only; it does not seed an `npx` config
-that cannot start.
+There are two ways to connect an agent to this vault.
 
-From an Ontology Atlas source checkout, use the local CLI repair path:
+**If you have the installed Ontology Atlas app**, open this folder in it and
+press the connect button. The app writes the Claude Code / Cursor / Codex
+config for you: it already knows this folder's real path, and it carries the
+MCP server inside its own bundle. No terminal, no Node, no install step.
+
+**If you don't**, run the agent setup command once from an Ontology Atlas
+source checkout. Both angle-bracket parts are yours to fill in with real
+absolute paths — the checkout you cloned, and this vault folder:
 
 ```bash
-node /absolute/path/to/ontology-atlas/cli/src/index.mjs agent-setup /absolute/path/to/this-vault --root . --write
+node <ontology-atlas checkout>/cli/src/index.mjs agent-setup <this vault folder> --root . --write
 ```
 
 It creates missing Claude Code / Cursor / Codex config files without adding
-starter markdown or overwriting existing configs. If you need a manual merge
-instead, open `.mcp.json.example`, replace the `OATLAS_VAULT` placeholder with
-the absolute path to this vault, then copy that server entry into your agent
-config. The local CLI writes `.mcp.json` and `.codex/config.toml` with the
-source entry point.
-
-Codex can also be wired globally with one command:
-
-  ```bash
-  codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/this-vault -- node /absolute/path/to/ontology-atlas/mcp/src/index.js
-  ```
+starter markdown or overwriting existing ones. To merge by hand instead, open
+`.mcp.json.example`, replace the `OATLAS_VAULT` placeholder with the absolute
+path to this vault, then copy that server entry into your agent config. The
+CLI writes `.mcp.json` and `.codex/config.toml` pointing at the checkout's
+`mcp/src/index.js`.
 
 ## Verify the agent loop
 

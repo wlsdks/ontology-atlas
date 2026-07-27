@@ -273,7 +273,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ desktop dev script launches the Tauri shell/);
   assert.match(
     result.stdout,
-    /✓ desktop app-only build cleans stale macOS app bundles before Tauri rebuilds/,
+    /✓ desktop app-only build compiles the bundled MCP server and cleans stale macOS app bundles before Tauri rebuilds/,
   );
   assert.match(
     result.stdout,

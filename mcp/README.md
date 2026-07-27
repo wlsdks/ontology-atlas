@@ -50,12 +50,51 @@ MCP design contracts this package treats as release-critical:
 
 ### 1. Register with an agent
 
-> **Distribution status (checked 2026-07-27):** the public
-> `ontology-atlas-mcp` and `ontology-atlas` packages return npm `E404`. Current
-> setup therefore uses a source checkout. The installed app does not write or
-> copy `npx` config while this gate is closed.
+The server reaches you through two channels: the installed macOS app, which
+carries a compiled copy of this server inside its own bundle, and a source
+checkout. npm publishing is retired (`docs/DECISIONS.md`, 2026-07-27), so
+there is no `npx` channel.
 
-The current source-checkout path is to let the local CLI write the agent configs:
+**App-bundled (primary).** Open your vault folder in the app and press the
+connect button. It writes exactly this, with your vault's real absolute path
+already filled in — you do not have to install Node, this package, or anything
+else:
+
+```json
+{
+  "mcpServers": {
+    "ontology-atlas": {
+      "command": "/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp",
+      "args": [],
+      "env": {
+        "OATLAS_VAULT": "/absolute/path/to/vault"
+      }
+    }
+  }
+}
+```
+
+The binary keeps serving while the app is closed. It lives on disk, and the
+agent client spawns it once per session.
+
+**Source checkout (fallback).** Where the app is not installed — a Linux box, a
+CI runner, or a clone you are developing in — point `node` at the checkout:
+
+```json
+{
+  "mcpServers": {
+    "ontology-atlas": {
+      "command": "node",
+      "args": ["/absolute/path/to/ontology-atlas/mcp/src/index.js"],
+      "env": {
+        "OATLAS_VAULT": "/absolute/path/to/vault"
+      }
+    }
+  }
+}
+```
+
+From a checkout, the local CLI writes both agent config files for you:
 
 ```bash
 node cli/src/index.mjs init ./ontology
@@ -70,47 +109,18 @@ Open either the codebase root or the vault folder in the agent and restart it.
 The generated root config points at `./ontology`; the vault-local config uses
 `OATLAS_VAULT=.` so the folder stays portable.
 
-For an existing vault, run `ontology-atlas agent-setup ./ontology --write` from
-the codebase root. It checks or creates only `.mcp.json` and
+For an existing vault, run `node cli/src/index.mjs agent-setup ./ontology --write`
+from the codebase root. It checks or creates only `.mcp.json` and
 `.codex/config.toml`, preserving existing configs and writing merge templates
 when manual review is needed.
 
-For manual Claude Code / Cursor registration, create a `.mcp.json` at your
-project root:
+Codex also stores MCP servers globally. Register the bundled binary:
 
-
-```json
-{
-  "mcpServers": {
-    "ontology-atlas": {
-      "command": "node",
-      "args": ["./mcp/src/index.js"],
-      "env": {
-        "OATLAS_VAULT": "./docs/ontology"
-      }
-    }
-  }
-}
+```bash
+codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/vault -- "/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp"
 ```
 
-Or, once published to npm, via `npx`:
-
-```json
-{
-  "mcpServers": {
-    "ontology-atlas": {
-      "command": "npx",
-      "args": ["-y", "ontology-atlas-mcp"],
-      "env": {
-        "OATLAS_VAULT": "./docs/ontology"
-      }
-    }
-  }
-}
-```
-
-For manual Codex registration from a source checkout, use the generated
-`.codex/config.toml` or add the local server with an absolute path:
+…or the source checkout:
 
 ```bash
 codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/vault -- node /absolute/path/to/ontology-atlas/mcp/src/index.js
@@ -124,20 +134,20 @@ Claude Code, Cursor, and Codex are the only clients `init`/`agent-setup` write
 config for, but **any MCP client that speaks stdio JSON-RPC can register this
 server** — opencode, a custom agent harness, or anything else. Only the
 config file's *name and location* differ; the `command` / `args` / `env`
-triple is the same shape shown in the manual snippets above, standalone:
+triple is the same shape shown in the snippets above, standalone:
 
 ```json
 {
-  "command": "npx",
-  "args": ["-y", "ontology-atlas-mcp"],
+  "command": "/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp",
+  "args": [],
   "env": {
     "OATLAS_VAULT": "/absolute/path/to/vault"
   }
 }
 ```
 
-(monorepo/source checkout: swap `"args"` for `["/absolute/path/to/mcp/src/index.js"]`
-and `"command"` for `"node"`, matching the manual Claude Code/Cursor snippet above.)
+(source checkout: swap `"command"` for `"node"` and `"args"` for
+`["/absolute/path/to/ontology-atlas/mcp/src/index.js"]`.)
 
 #### Read-only registration (`OATLAS_READ_ONLY`)
 
@@ -147,8 +157,8 @@ bot, an external tool that only needs to *read* the graph — add
 
 ```json
 {
-  "command": "npx",
-  "args": ["-y", "ontology-atlas-mcp"],
+  "command": "/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp",
+  "args": [],
   "env": {
     "OATLAS_VAULT": "/absolute/path/to/vault",
     "OATLAS_READ_ONLY": "1"
@@ -176,8 +186,8 @@ Steps for a fourth client:
    against the wrong directory.
 3. Restart the client so it re-reads its config.
 4. Verify the registration independently of your client:
-   `npx ontology-atlas mcp-verify /absolute/path/to/vault` drives the server
-   directly through the full initialize → tools/list → tools/call lifecycle
+   `node /absolute/path/to/ontology-atlas/cli/src/index.mjs mcp-verify /absolute/path/to/vault`
+   drives the server directly through the full initialize → tools/list → tools/call lifecycle
    and prints a pass/fail line per tool plus one verdict line — this
    confirms the server/vault side works no matter which client you're
    registering it with.
