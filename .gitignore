@@ -28,6 +28,9 @@ dist/
 # Tauri / Rust desktop build output
 src-tauri/target/
 src-tauri/gen/
+# 컴파일된 MCP 서버 바이너리 (앱 번들 페이로드, ~59MB) — 빌드 산출물이지 소스가
+# 아니다. `pnpm mcp:build-binary` 가 만든다.
+src-tauri/binaries/
 
 # Production
 *.tsbuildinfo
