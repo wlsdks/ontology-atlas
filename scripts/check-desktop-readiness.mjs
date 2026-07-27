@@ -972,8 +972,16 @@ if (
   /pnpm desktop:release-slot -- --tag="\$\{GITHUB_REF_NAME\}"/.test(releaseWorkflow) &&
   /Verify draft release assets/.test(releaseWorkflow) &&
   /--allow-draft/.test(releaseWorkflow) &&
+  // 프리릴리스 여부는 **태그가 정한다**, 워크플로가 못박지 않는다. semver 의
+  // 프리릴리스는 하이픈 뒤에 오므로(v1.1.0-rc.1) 그 한 글자가 "먼저 써볼
+  // 사람만" 과 "모두에게" 를 가른다. 못박아 두면 RC 태그를 밀어도 정식
+  // 릴리스로 공개되고, RC 라는 장치가 이름만 남는다.
+  /prerelease:\s*\$\{\{\s*contains\(github\.ref_name, '-'\)\s*\}\}/.test(releaseWorkflow) &&
+  // 발행 시점에도 같은 규칙이어야 한다 — draft 를 벗기면서 정식으로 승격시키면
+  // 앞의 판정이 무의미해진다.
+  /\$\{GITHUB_REF_NAME\}" == \*-\*/.test(releaseWorkflow) &&
+  /gh release edit "\$\{GITHUB_REF_NAME\}" --draft=false --prerelease=true/.test(releaseWorkflow) &&
   /gh release edit "\$\{GITHUB_REF_NAME\}" --draft=false --prerelease=false/.test(releaseWorkflow) &&
-  /prerelease:\s*false/.test(releaseWorkflow) &&
   /pnpm docs-vault:check/.test(releaseWorkflow) &&
   /pnpm test:desktop:check/.test(releaseWorkflow) &&
   /pnpm test:desktop:runtime/.test(releaseWorkflow) &&

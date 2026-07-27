@@ -6012,6 +6012,11 @@
         },
         {
           "depth": 2,
+          "text": "Release channels — stable and RC",
+          "slug": "release-channels-stable-and-rc"
+        },
+        {
+          "depth": 2,
           "text": "First Public Release Runbook (v1.0.0)",
           "slug": "first-public-release-runbook-v100"
         },
@@ -6027,7 +6032,7 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 5387,
+      "wordCount": 5581,
       "updatedAt": "2026-07-27",
       "linksOut": []
     },

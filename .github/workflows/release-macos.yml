@@ -210,7 +210,10 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           draft: true
-          prerelease: false
+          # semver 의 프리릴리스는 하이픈 뒤에 온다 (v1.1.0-rc.1). 그 한 글자가
+          # "먼저 써볼 사람만" 과 "모두에게" 를 가른다 — GitHub 은 이 플래그로
+          # Pre-release 배지를 붙이고 `releases/latest` 에서 제외한다.
+          prerelease: ${{ contains(github.ref_name, '-') }}
           generate_release_notes: true
           files: |
             release-assets/*.dmg
@@ -269,7 +272,15 @@ jobs:
           merge-multiple: true
 
       - name: Publish verified stable release
-        run: gh release edit "${GITHUB_REF_NAME}" --draft=false --prerelease=false
+        run: |
+          # 발행 시점에도 태그가 진실원이다. 여기서 --prerelease=false 를 못박으면
+          # RC 태그가 draft 를 벗는 순간 정식 릴리스로 승격돼, 프리릴리스라는
+          # 표시가 통째로 사라진다.
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            gh release edit "${GITHUB_REF_NAME}" --draft=false --prerelease=true
+          else
+            gh release edit "${GITHUB_REF_NAME}" --draft=false --prerelease=false
+          fi
         env:
           GITHUB_TOKEN: ${{ github.token }}
 

@@ -394,6 +394,37 @@ the image.
 12. Run `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` after the app
    smoke so the desktop path still proves Claude Code / Codex handoff readiness.
 
+## Release channels — stable and RC
+
+태그가 채널을 정한다. **semver 프리릴리스는 하이픈 뒤에 온다**, 그리고 그 한
+글자가 "먼저 써볼 사람만" 과 "모두에게" 를 가른다.
+
+| 태그 | GitHub | 받는 사람 |
+|---|---|---|
+| `v1.1.0` | 정식 릴리스 | 모두 — `releases/latest` 가 가리킨다 |
+| `v1.1.0-rc.1` | **Pre-release** 배지 | 먼저 써보겠다고 찾아온 사람만 |
+
+RC 를 쓰는 이유는 되돌릴 수 없기 때문이다. 태그를 밀면 곧 공개고, 받아간
+사람에게서 회수할 방법은 없다. RC 는 그 사이에 **되돌릴 수 있는 한 칸**을 만든다:
+
+```
+v1.1.0-rc.1  →  문제 발견
+v1.1.0-rc.2  →  고쳐서 다시
+v1.1.0       →  이제 정식
+```
+
+절차는 정식과 **완전히 같다** — 별도 워크플로도, 별도 스크립트도 없다.
+`package.json` · `src-tauri/tauri.conf.json` · `src-tauri/Cargo.toml` 세 곳의
+버전을 `1.1.0-rc.1` 로 맞추고 같은 태그를 밀면 된다. 워크플로가 태그에서
+프리릴리스 여부를 읽어 draft 단계와 발행 단계 양쪽에 적용한다
+(`prerelease: ${{ contains(github.ref_name, '-') }}`). `pnpm desktop:check` 가
+이 유도를 계약으로 잠근다 — 하드코딩으로 되돌리면 실패한다.
+
+> **아직 실측되지 않은 것**: macOS `CFBundleVersion` 은 `-rc.1` 같은 문자열을
+> 받지 않는다. Tauri 가 변환해 줄 것으로 보이지만 확인한 적 없다. **첫 RC 태그를
+> 밀 때 번들 메타데이터를 직접 확인하라** — 여기서 걸리면 RC 버전 표기 규칙을
+> 바꿔야 한다.
+
 ## First Public Release Runbook (v1.0.0)
 
 The pipeline is complete; what gates the first public release is credentials
