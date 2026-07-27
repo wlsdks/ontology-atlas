@@ -242,16 +242,12 @@ function EditorContent({
   }
 
   return (
-    // `shrink-0` 이 스크롤 계약의 핵심이다. 이 div 는 셸 본문 슬롯
-    // (`flex flex-col overflow-y-auto`) 의 **flex item** 이라 기본
-    // `flex-shrink: 1` 을 받는다. 폼이 길어져 내용이 컨테이너보다 커지면
-    // flex 알고리즘이 이 박스를 `min-height: 100%`(= 뷰포트 높이) 까지
-    // 압축했고, 내용은 visible overflow 로 삐져나와 스크롤은 되지만
-    // `main` 의 하단 패딩이 **압축된 박스 바닥**에 붙어버려 스크롤 끝에서
-    // 여백이 사라졌다 (2026-07-27 실측 · 1512×950 편집 화면: 페이지 루트
-    // 높이 950(내용 2590) · 스크롤 끝 폼 하단 여백 1px, 예약분은 40px).
-    // shrink-0 이면 박스가 콘텐츠 높이를 그대로 가지므로 패딩이 제자리에 붙는다.
-    <div className="flex min-h-full w-full shrink-0">
+    // 페이지 루트는 `min-h-full` 로 셸 본문 슬롯을 채우기만 한다. 스크롤 끝에서
+    // 하단 예약고가 살아 있게 하는 압축 금지 계약은 **셸이 소유**한다
+    // (`AppShell` 본문 슬롯의 `[&>*]:shrink-0`) — 예전엔 이 자리에 `shrink-0` 을
+    // 손으로 박았는데, 페이지가 기억해야 하는 구조는 다음 화면에서 또 빠진다
+    // (실제로 형제 라우트 4곳에 같은 결함이 살아 있었다).
+    <div className="flex min-h-full w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
       {/* 하단 예약고는 base pb + lg:pb — `max-lg:pb-[...]` 는 `md:py-10` 보다
           스타일시트 앞에 emit 되어 768–1023 에서 조용히 패배한다 (빌더 main 과
