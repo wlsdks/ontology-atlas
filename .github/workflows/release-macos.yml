@@ -136,8 +136,11 @@ jobs:
           security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
           rm -f "$CERTIFICATE_PATH"
 
-  publish-macos:
-    name: Publish macOS Release
+  # Staging and publishing are separate jobs so a human can install the exact
+  # bytes that will go public before they do. The draft release is assembled
+  # and verified here; nothing is visible to users yet.
+  stage-macos:
+    name: Stage Draft macOS Release
     runs-on: ubuntu-latest
     needs: build-macos
     timeout-minutes: 10
@@ -185,6 +188,53 @@ jobs:
         run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --allow-draft
         env:
           GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Summarize the draft awaiting approval
+        run: |
+          release_url="$(gh release view "${GITHUB_REF_NAME}" --json url --jq .url)"
+          {
+            echo "## Draft macOS Release — awaiting approval"
+            echo ""
+            echo "Install the draft DMG from ${release_url} on a real Mac, then approve"
+            echo "the \`release\` environment to publish these exact bytes."
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  # Gated on the `release` GitHub Environment. Configure it with required
+  # reviewers (repo Settings → Environments → release) so a first public
+  # release cannot happen without someone installing the draft build first —
+  # the workflow alone cannot prove the app launches on a clean machine.
+  publish-macos:
+    name: Publish macOS Release
+    runs-on: ubuntu-latest
+    needs: stage-macos
+    timeout-minutes: 10
+    environment: release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: ontology-atlas-macos-*
+          path: release-assets
+          merge-multiple: true
 
       - name: Publish verified stable release
         run: gh release edit "${GITHUB_REF_NAME}" --draft=false --prerelease=false

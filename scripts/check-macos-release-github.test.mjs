@@ -3,7 +3,14 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import test from "node:test";
+
+// The release gates compare a tag against package.json/Tauri/Cargo, so these
+// fixtures follow the repo version instead of freezing one — a frozen tag
+// would fail on exactly the version bump the gate exists to protect.
+const APP_TAG = `v${JSON.parse(readFileSync("package.json", "utf8")).version}`;
+const APP_TAG_PATTERN = APP_TAG.replace(/\./g, "\\.");
 
 const requiredSecrets = [
   "APPLE_CERTIFICATE_P12_BASE64",
@@ -79,7 +86,7 @@ function writeFakeGit(root, scenario) {
     `#!/usr/bin/env node
 const scenario = ${JSON.stringify(scenario)};
 const args = process.argv.slice(2);
-if (args[0] === "rev-parse" && args[1] === "--verify" && args[2] === "--quiet" && args[3] === "refs/tags/v0.1.0") {
+if (args[0] === "rev-parse" && args[1] === "--verify" && args[2] === "--quiet" && args[3] === "refs/tags/${APP_TAG}") {
   if (scenario.localTagExists) {
     process.stdout.write("1".repeat(40) + "\\n");
     process.exit(0);
@@ -94,7 +101,7 @@ process.exit(2);
   return binPath;
 }
 
-function runReleaseGithub(fakeGhPath, fakeGitPath, args = ["--tag=v0.1.0"]) {
+function runReleaseGithub(fakeGhPath, fakeGitPath, args = [`--tag=${APP_TAG}`]) {
   return spawnSync(process.execPath, ["scripts/check-macos-release-github.mjs", ...args], {
     cwd: process.cwd(),
     encoding: "utf8",
@@ -123,10 +130,10 @@ test("desktop GitHub release gate proves workflows, secrets, tag version, and cl
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /has the active macOS release workflow and all required Developer ID direct-download secret names/);
-    assert.match(result.stdout, /v0\.1\.0 matches package, Tauri, and Cargo versions/);
-    assert.match(result.stdout, /v0\.1\.0 has no existing local Git tag/);
-    assert.match(result.stdout, /v0\.1\.0 has no existing Git tag/);
-    assert.match(result.stdout, /v0\.1\.0 has no existing GitHub Release/);
+    assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
+    assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing local Git tag`));
+    assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing Git tag`));
+    assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing GitHub Release`));
   });
 });
 
@@ -157,7 +164,7 @@ test("desktop GitHub release gate blocks an existing same-tag release slot", () 
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /release v0\.1\.0 already exists/);
+    assert.match(result.stderr, new RegExp(`release ${APP_TAG_PATTERN} already exists`));
     assert.match(result.stderr, /Delete the existing draft release/);
   });
 });
@@ -167,7 +174,7 @@ test("desktop GitHub release gate blocks an existing same-tag Git ref before tag
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /git tag v0\.1\.0 already exists/);
+    assert.match(result.stderr, new RegExp(`git tag ${APP_TAG_PATTERN} already exists`));
     assert.match(result.stderr, /Inspect the existing tag workflow run or choose a new version/);
   });
 });
@@ -177,8 +184,8 @@ test("desktop GitHub release gate blocks an existing local Git tag before tag pu
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /local git tag v0\.1\.0 already exists/);
-    assert.match(result.stderr, /git tag -d v0\.1\.0/);
+    assert.match(result.stderr, new RegExp(`local git tag ${APP_TAG_PATTERN} already exists`));
+    assert.match(result.stderr, new RegExp(`git tag -d ${APP_TAG_PATTERN}`));
   });
 });
 

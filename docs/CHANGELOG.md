@@ -2,9 +2,49 @@
 
 > Major change history. Code commit messages answer *why*; this file answers *when / which surface changed*. Focused on **user-visible changes**, not PR-level granularity.
 >
-> Newest at the top. Date-based since we're pre-semver in the v0.x stage.
+> Newest at the top. Entries stay date-based; the app version reached v1.0.0 on
+> 2026-07-27, so a release tag now carries the semver promise instead.
 
 ---
+
+## 2026-07-27 — 공개 준비: 다운로드 페이지가 다운로드를 주게 하고, 버전을 v1.0.0 으로
+
+**공개 예정인 `/download` 가 다운로드를 제공하지 않고 있었다.** 주 CTA
+"GitHub에서 릴리스 확인" 은 릴리스가 0개인 페이지로 갔고(태그 0 · 릴리스 0),
+크기와 SHA-256 은 자리표시자였으며, 대기 안내문은 방문자가 알 필요 없는 내부
+파이프라인 상태 — "PR review, version alignment, Developer ID
+signing/notarization 중 하나를 기다리는 중" — 를 말하고 있었다. 신뢰 섹션은
+"릴리스 게이트가 서명을 **요구합니다**" 라는 미래형이라 이 빌드가 서명됐다는
+진술이 아니었고, 소개 본문은 등록된 적 없는 도메인(`ontology-atlas.dev`)을
+사실처럼 인용했다. Windows 는 언급조차 없어서, Windows 사용자는 이 제품이
+자신을 영구히 제외하는지 아직 안 나온 건지 알 수 없었다.
+
+**페이지가 주장할 수 있는 것을 게시 여부 하나로 묶었다.** 크기·체크섬·다운로드
+링크는 이제 실제 GitHub Release 에서 생성되는
+`src/views/download/model/macos-release.generated.ts` 에서만 온다
+(`pnpm download:release-facts`). 게시됨 → 아키텍처별 직접 다운로드 버튼 +
+실제 바이트 크기 + 복사 가능한 SHA-256. 게시 전 → "아직 게시 전" 한 문장.
+**존재하지 않는 숫자를 보여주는 상태가 사라졌다.** 자리표시자 6종이 각자
+낡아가던 구조가 원인이었다.
+
+**Windows 는 침묵 대신 명시한다.** 상시 "준비 중" 카드 + 이유(macOS 와 같은
+기준 — 서명된 설치 파일과 설치 검증 — 을 통과할 때 올린다. 서명 없는 `.exe`
+는 받는 사람마다 SmartScreen 경고를 뚫어야 해서 이 페이지의 "검증 가능한
+신뢰" 주장과 정면 충돌한다). 소유자 결정: macOS 선출시, Windows 후속.
+
+**버전 0.1.0 → 1.0.0** (package.json · tauri.conf.json · Cargo.toml ·
+release-facts). 릴리스 워크플로는 초안 생성(`stage-macos`)과 공개
+(`publish-macos`)를 분리하고 공개 job 을 `release` GitHub Environment 뒤에
+뒀다 — **출시할 바로 그 바이너리**를 사람이 설치해본 뒤에만 공개된다. rc 태그를
+쓰지 않은 이유이기도 하다(rc 빌드는 출시본이 아니고, `1.0.0-rc.1` 은
+`CFBundleShortVersionString` 규격에서 위험하다).
+
+**부수 발견 — GitHub Pages 배포 검증이 계속 빨간불이었다.** 최근 5회 배포 전부
+`deploy: success` + `Verify hosted download surface: failure`. 검증기가 ①
+클라이언트 렌더링이라 정적 HTML 에 없는 루트 CTA 와 ② 공개 빌드에서 숨겨지는
+owner 전용 체크리스트 문구를 기대하고 있었다. 기대 문자열을 손으로 복제하는
+대신 `messages/ko.json` 에서 읽게 바꿨다 — 계약이 "페이지가 자기 문구를
+렌더한다" 가 되어 다시 어긋날 수 없다. 실 빌드 대상으로 통과 확인.
 
 ## 2026-07-27 — 글자 크기엔 규격이 있는데 줄 간격엔 없었다 (행간 램프 9단)
 

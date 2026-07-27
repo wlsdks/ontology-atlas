@@ -29,8 +29,7 @@ Any static host works. Pick one:
 
 - triggers on push to `main`, on `release: published`, and on manual
   `workflow_dispatch`
-- builds the static export with `NEXT_PUBLIC_BASE_PATH=/ontology-atlas` and
-  `NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0`, adapts the PWA manifest to the
+- builds the static export with `NEXT_PUBLIC_BASE_PATH=/ontology-atlas`, adapts the PWA manifest to the
   base path, disables Jekyll, and uploads/deploys the Pages artifact
 - verifies the deployed download surface with
   `pnpm desktop:verify-hosted -- --base-url="https://wlsdks.github.io/ontology-atlas"`,

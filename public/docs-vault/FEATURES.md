@@ -168,12 +168,14 @@ IndexedDB goes straight to their own workspace, no starter surfaces at all.
 
 ### `/download` — Intro + download (absorbed the retired LandingPage, Slice 2 2026-07-18)
 
-- **Download decision first**: the macOS title, GitHub Releases/source actions, version/DMG/architecture/minimum-OS facts, checksum state, and honest first-release availability note render before product explanation so `/download` answers “can I install it now?” without scrolling
-- **Primary CTA**: "Open macOS releases" → GitHub Releases
+- **Download decision first**: the title, primary action, repo facts (version / DMG / architecture / minimum macOS / channel), and the per-platform block render before any product explanation, so `/download` answers "can I install it, on my machine, right now?" without scrolling
+- **One release-state source**: everything the page may claim about a build comes from `src/views/download/model/macos-release.generated.ts`, written by `pnpm download:release-facts` out of the real GitHub Release. Published → per-architecture direct download buttons carrying the real byte size, filename, and copyable SHA-256. Unpublished → one plain "not out yet" line instead of placeholder facts. There is no state where the page shows a size or checksum that does not exist.
+- **Primary CTA**: the Apple Silicon DMG itself once published (most Macs sold since 2020); before that, an honestly labelled link to the GitHub Releases page
+- **Windows card**: always present, marked *in preparation*, with the reason stated (it ships when it clears the same bar macOS does — a signed installer plus install verification; an unsigned `.exe` would make every downloader click through a SmartScreen warning). Omitting the platform left Windows visitors unable to tell whether the product excluded them or simply had not got there yet.
 - **Secondary CTA**: "View source code" → GitHub repo
-- **Intro section** (secondary, below release availability): Ontology Atlas brand header + macOS-first title + subtitle + 3-step value chain rail (01 / 02 / 03) + the dogfood evidence instrument (project hex + domain chips + hub capability circle, real `docs/ontology` census — `src/views/download/model/dogfood-census.generated.ts`, built by `scripts/build-docs-vault.mjs`)
-- **First-release checklist**: owner/operator-only details show macOS app blockers (PR review, tag/package/Tauri/Cargo version alignment, Developer ID signing/notarization, v0.1.0 GitHub Release) separately from the GitHub Pages `/ko/download/` website deploy gate; it also exposes a copyable `pnpm desktop:release-status -- --pr=<number> --include-hosted-surface` completion audit. The public default hides this internal checklist; opt in only for release preparation with `NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=1`.
-- **Live deploy verification**: `pnpm desktop:verify-hosted` checks the deployed `wlsdks.github.io/ontology-atlas` root/download pages — root-first-open changed this contract from "root stays promo-only" to "root offers the local-folder open CTA directly"; it now asserts `/ko/` includes the CTA and `/ko/download/` still points to the stable GitHub Releases page, not `/releases/latest`.
+- **Intro section** (secondary, below the platform block): Ontology Atlas brand header + macOS-first title + subtitle + 3-step value chain rail (01 / 02 / 03) + the dogfood evidence instrument (project hex + domain chips + hub capability circle, real `docs/ontology` census — `src/views/download/model/dogfood-census.generated.ts`, built by `scripts/build-docs-vault.mjs`)
+- **Signing & notarization**: stated as properties of published builds ("Developer ID signed", "Notarized by Apple"), never as a future gate the release "requires"; the `spctl` verify command is built from the current version's real DMG filename. The owner-only first-release checklist that used to live here was removed for the public launch — it described the build pipeline, not installability. `docs/DESKTOP-MACOS.md` owns that runbook.
+- **Live deploy verification**: `pnpm desktop:verify-hosted` checks the deployed `wlsdks.github.io/ontology-atlas` root/download pages. It asserts only **server-rendered** text: the root map hydrates client-side, so its in-app CTAs never reach the static HTML — expecting them is what kept this gate failing on every Pages deploy while the site itself was fine (5/5 runs red, 2026-07-26~27). Expected download copy is now read from `messages/ko.json` instead of duplicated in the checker, so the contract is "the page renders its own copy" and cannot drift: title, source-code CTA, both platform headings, the Windows in-preparation badge, the hosted-site scope note, a stable GitHub Releases href, and no `/releases/latest` dependency.
 - **Privacy note**: the installed app and vault data use local disk as the source of truth; `/docs`'s own local-source *browsing* tab stays desktop-only (unrelated to opening your primary vault from `/`)
 - **Footer**: license · GitHub · stack chips · `LocaleSwitch`
 
@@ -590,15 +592,16 @@ RATIO-SYSTEM 1600px container / 960px centered utility column.
 
 #### Header
 - Back link · eyebrow · right-aligned "macOS · DMG · GitHub Release" caption · `LocaleSwitch`
-- Title + subtitle · primary CTA (download DMG) + secondary CTA (view source on GitHub)
+- Title + subtitle · primary CTA (the Apple Silicon DMG once published, otherwise an honestly labelled link to GitHub Releases) + secondary CTA (view source on GitHub)
 
-#### Engraved fact strip (real repo facts only — no DMG has shipped yet)
-- Version (`RELEASE_VERSION`, from `package.json`/`tauri.conf.json`) · format (DMG) · architecture · **size: "게시 시 기록" placeholder** (honest — no built artifact to measure yet) · min macOS (`RELEASE_MIN_MACOS`) · channel
-- SHA-256 row below it: a placeholder all-zero hash + "게시 시 기록" note + copy button — same honesty contract as size
+#### Engraved fact strip (repo facts that hold before any build exists)
+- Version (`RELEASE_VERSION`, from `package.json`/`tauri.conf.json`) · format (DMG) · architecture · min macOS (`RELEASE_MIN_MACOS`) · channel
+- Size and checksum are **not** here: they exist only once a build is published, so they live in the platform block and are read from the generated release facts
 
-#### First-release checklist (shown until a real release ships; `showFirstReleaseChecklist` prop)
-- PR review / tag+version alignment / secrets / release / hosted-surface checklist items
-- Copyable `pnpm desktop:release-status ...` audit command
+#### Platform block (macOS + Windows)
+- **macOS** — published: one row per architecture with a direct download link, the real byte size, the DMG filename, and a copyable SHA-256. Unpublished: a single "not out yet" sentence, no placeholder facts
+- **Windows** — always shown, marked *in preparation*, with the reason (same bar as macOS: signed installer + install verification; an unsigned `.exe` means a SmartScreen warning for every downloader) and a link to follow progress
+- Source of truth: `src/views/download/model/macos-release.generated.ts`, written by `pnpm download:release-facts` from the real GitHub Release
 
 #### "Includes" cards (3, sm+)
 - Topology map · MCP server (tool count) · CLI (command count)
@@ -606,11 +609,11 @@ RATIO-SYSTEM 1600px container / 960px centered utility column.
 #### Install steps (4, numbered 01–04, sm+ 2-col grid)
 
 #### Trust panel + changelog preview (2-col on lg+)
-- **Trust panel** — signed / notarized / checksum rows + a real `spctl --assess --type open --context context:primary-signature ...` verify command + a trust note ("security claims only made when re-verifiable")
+- **Trust panel** — "Developer ID signed" / "Notarized by Apple" / "checksums published" stated as facts about published builds (never as a gate that "requires" them) + a `spctl --assess --type open --context context:primary-signature ...` verify command built from the current version's DMG filename + the policy note that a build failing a gate is never published
 - **Changelog preview** (`CHANGELOG_PREVIEW_ENTRIES`, sourced from `docs/CHANGELOG.md`) — version + a handful of recent entry titles + "as of DATE" caption
 
 #### GitHub row + release-gate note + footer
-- GitHub repo link row · a note that the release gate must pass before this page's CTA is "real" · footer (license / GitHub / stack)
+- GitHub repo link row · the hosted-site scope note (the website never opens or edits vault folders) · footer (license / GitHub / stack)
 
 ---
 

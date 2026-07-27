@@ -13,10 +13,12 @@
  *   `scripts/check-macos-download-release.mjs`
  *   (`ontology-atlas_<version>_<aarch64|x64>.dmg`, lowercase).
  *
- * DMG file size is deliberately NOT included here — no DMG has been built
- * or published yet (v0.1.0 hasn't shipped), so there is no real number to
- * show. The UI renders an honest "recorded at release" placeholder instead
- * of a fabricated size, matching the SHA-256 row's existing honesty pattern.
+ * Per-release facts that only exist once a build is published — DMG byte
+ * size, SHA-256, download URL — deliberately do NOT live here. They come
+ * from `model/macos-release.generated.ts`, written by
+ * `pnpm download:release-facts` out of the real GitHub Release, and are read
+ * through `lib/release-state.ts`. This file holds only what the repository
+ * itself already knows before any build exists.
  *
  * `release-facts.test.ts` guards drift against `package.json` and
  * `tauri.conf.json` directly.
@@ -28,7 +30,7 @@
 // 순수 상수 모듈이라 정적 export 빌드에서도 그대로 트리셰이크된다.
 export { CLI_COMMAND_COUNT } from "../../../../cli/src/lib/cli-commands.mjs";
 
-export const RELEASE_VERSION = "0.1.0";
+export const RELEASE_VERSION = "1.0.0";
 export const RELEASE_MIN_MACOS = "macOS 12";
 export const RELEASE_ARCHES = ["aarch64", "x64"] as const;
 export type ReleaseArch = (typeof RELEASE_ARCHES)[number];

@@ -26,26 +26,24 @@ function startServer(routes) {
   });
 }
 
-// root-first-open (2026-07) — `/` renders the topology map itself; this
-// fixture stands in for the map's brand pill + INDEX panel "시작하기" module.
+// The root route hydrates client-side, so the static HTML this checker reads
+// carries the product identity and little else. Asserting in-app CTAs here is
+// what silently reddened every Pages deploy.
 const alignedLanding = `<!doctype html>
 <title>Ontology Atlas</title>
 <main>
   <p>Ontology Atlas</p>
-  <a>내 마크다운 폴더 열기</a>
 </main>`;
 
 const alignedDownload = `<!doctype html>
 <main>
   <h1>한 번 설치하고, 내 로컬 vault 에서 작업하세요.</h1>
-  <a href="https://github.com/wlsdks/ontology-atlas/releases">macOS 릴리스 열기</a>
+  <a href="https://github.com/wlsdks/ontology-atlas/releases">GitHub 릴리스 페이지 열기</a>
   <a href="https://github.com/wlsdks/ontology-atlas">소스 코드 보기</a>
-  <h2>로컬 완료 점검</h2>
-  <code>pnpm desktop:release-status -- --pr=&lt;number&gt; --tag=v0.1.0 --include-hosted-surface</code>
-  <p>owner 별 blocker 를 JSON 과 리뷰 checklist 로 남깁니다.</p>
-  <h2>AI agent 접근 확인</h2>
-  <p>Codex, Claude Code, Cursor 가 CLI fallback 과 함께 같은 vault 를 MCP 로 읽고 쓰는지 확인합니다.</p>
-  <p>호스팅 웹 사이트는 vault 폴더를 열거나 편집하지 않습니다.</p>
+  <h2>macOS</h2>
+  <h2>Windows</h2>
+  <span>준비 중</span>
+  <p>호스팅 웹 사이트는 vault 폴더를 열거나 편집하지 않습니다. 매일의 ontology 작업은 macOS 서명, notarization, 체크섬 게이트를 통과한 릴리스 asset 설치 후 앱 안에서 시작합니다.</p>
 </main>`;
 
 test("hosted download surface check passes for promo/download-aligned pages", async () => {
@@ -66,11 +64,9 @@ test("hosted download surface check passes for promo/download-aligned pages", as
   }
 });
 
-test("hosted download surface check rejects a root page missing the local-folder open CTA (root-first-open regression)", async () => {
+test("hosted download surface check rejects a root page that lost the product identity", async () => {
   const server = await startServer({
-    "/ko/": {
-      body: alignedLanding.replace("<a>내 마크다운 폴더 열기</a>", ""),
-    },
+    "/ko/": { body: alignedLanding.replace(/Ontology Atlas/g, "") },
     "/ko/download/": { body: alignedDownload },
   });
   try {
@@ -79,9 +75,8 @@ test("hosted download surface check rejects a root page missing the local-folder
         baseUrl: server.baseUrl,
         timeoutMs: 5000,
       }),
-      /내 마크다운 폴더 열기/,
+      /Ontology Atlas/,
     );
-
   } finally {
     await server.close();
   }
@@ -128,13 +123,16 @@ test("hosted download surface check rejects a download page without the release 
   }
 });
 
-test("hosted download surface check rejects a download page without agent access verification", async () => {
+// Windows visitors must be told where they stand. A download page that names
+// only macOS reads as "this product is not for you" — the exact ambiguity the
+// in-preparation card exists to remove.
+test("hosted download surface check rejects a download page that drops the Windows platform status", async () => {
   const server = await startServer({
     "/ko/": { body: alignedLanding },
     "/ko/download/": {
       body: alignedDownload
-        .replace("AI agent 접근 확인", "")
-        .replace("Codex, Claude Code, Cursor 가 CLI fallback 과 함께 같은 vault 를 MCP 로 읽고 쓰는지 확인합니다.", ""),
+        .replace("<h2>Windows</h2>", "")
+        .replace("<span>준비 중</span>", ""),
     },
   });
   try {
@@ -143,7 +141,7 @@ test("hosted download surface check rejects a download page without agent access
         baseUrl: server.baseUrl,
         timeoutMs: 5000,
       }),
-      /AI agent 접근 확인/,
+      /Windows/,
     );
   } finally {
     await server.close();

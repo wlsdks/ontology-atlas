@@ -1,6 +1,20 @@
 #!/usr/bin/env node
+import fs from "node:fs";
 import http from "node:http";
 import https from "node:https";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// The expected copy is read from the shipped message catalog rather than
+// duplicated here. A hand-copied string list is how this gate quietly went
+// red: it kept asserting an owner-only checklist (hidden on the public build)
+// and a CTA label that had since been reworded, so every Pages deploy failed
+// verification while the site itself was fine. Sourcing the strings makes the
+// contract "the page renders its own copy", which cannot drift.
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const koMessages = JSON.parse(
+  fs.readFileSync(path.join(REPO_ROOT, "messages", "ko.json"), "utf8"),
+);
 
 const DEFAULT_BASE_URL = "https://wlsdks.github.io/ontology-atlas";
 const DEFAULT_TIMEOUT_MS = 15000;
@@ -12,8 +26,11 @@ Verifies the deployed hosted website matches the root-first-open (2026-07)
 product path:
 - /ko/ renders the topology map itself (no marketing landing detour) and
   offers the local-folder open CTA directly — it does NOT stay promo-only
-- /ko/download/ exists, carries the absorbed intro section, and points users
-  to the GitHub Releases download path
+- /ko/download/ exists, states per-platform installability (macOS + Windows),
+  and points users to the GitHub Releases download path
+
+Only server-rendered text can be asserted: the root map hydrates client-side,
+so its in-app CTAs are not in the static HTML this command reads.
 
 This command checks deployed HTML only. It does not deploy or publish anything.
 `);
@@ -171,28 +188,22 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
   const downloadText = renderedText(download.body);
   const releasesUrl = "https://github.com/wlsdks/ontology-atlas/releases";
 
-  // root-first-open (2026-07) — `/` now renders the topology map itself
-  // (no vault-not-selected marketing landing) and offers the local-folder
-  // open CTA directly from the map's INDEX panel (FirstRunStarterModule).
-  // The OLD contract required the opposite (`내 마크다운 폴더 열기` was
-  // forbidden here, only reachable through the installed macOS app) — that
-  // policy moved: only `/docs`'s OWN local-source picking stays desktop-only.
-  assertIncludes(rootText, rootPath, [
-    "Ontology Atlas",
-    "내 마크다운 폴더 열기",
-  ]);
+  // The root route hydrates the map client-side, so its INDEX panel CTAs
+  // ("내 마크다운 폴더 열기") never appear in the static HTML. Asserting them
+  // here is what kept this gate failing on every deploy. What the static
+  // export genuinely guarantees for `/` is that the route exists, is HTML,
+  // and carries the product identity.
+  assertIncludes(rootText, rootPath, ["Ontology Atlas"]);
 
+  const downloadCopy = koMessages.download ?? {};
   assertIncludes(downloadText, downloadPath, [
-    "한 번 설치하고, 내 로컬 vault 에서 작업하세요",
-    "macOS 릴리스 열기",
-    "소스 코드 보기",
-    "로컬 완료 점검",
-    "pnpm desktop:release-status",
-    "owner 별 blocker",
-    "AI agent 접근 확인",
-    "같은 vault 를 MCP 로 읽고 쓰는지 확인",
-    "CLI fallback",
-    "호스팅 웹 사이트는 vault 폴더를 열거나 편집하지 않습니다",
+    downloadCopy.title,
+    downloadCopy.sourceCta,
+    // Both platforms are named, so a Windows visitor is never left guessing.
+    downloadCopy.macosHeading,
+    downloadCopy.windowsHeading,
+    downloadCopy.windowsPendingBadge,
+    downloadCopy.releaseGateNote,
   ]);
   assertIncludes(download.body, downloadPath, [releasesUrl]);
   assertExcludes(`${root.body}\n${download.body}`, "hosted pages", [

@@ -5,6 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
+// The release gates compare a tag against package.json/Tauri/Cargo, so the
+// fixtures have to follow the repo version instead of freezing one.
+const APP_VERSION = JSON.parse(readFileSync("package.json", "utf8")).version;
+const APP_TAG = `v${APP_VERSION}`;
+const APP_TAG_PATTERN = APP_TAG.replace(/\./g, "\\.");
+
 test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   const result = spawnSync(
     process.execPath,
@@ -159,7 +165,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ hosted website verifier requires stable GitHub Releases CTAs and agent access proof on the download route/,
+    /✓ hosted website verifier sources expected download copy from the message catalog and requires both platform statuses/,
   );
   // Firebase Hosting 배포 프리플라이트/폴백 워크플로 검사는 #617 (Firebase 전면
   // 제거 → GitHub Pages 단일 호스트) 에서 사라졌다. 호스팅 배포 계약은 바로 위
@@ -214,7 +220,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ hosted download page separates macOS app release blockers from the GitHub Pages website deploy gate/,
+    /✓ hosted download page states per-platform installability from the generated release state and keeps release-pipeline status internal/,
   );
   assert.match(
     result.stdout,
@@ -493,7 +499,7 @@ process.exit(1);
   try {
     const result = spawnSync(
       process.execPath,
-      ["scripts/check-macos-release-github.mjs", "--tag=v0.1.0"],
+      ["scripts/check-macos-release-github.mjs", `--tag=${APP_TAG}`],
       {
         cwd: process.cwd(),
         encoding: "utf8",
@@ -532,7 +538,7 @@ process.exit(1);
   try {
     const result = spawnSync(
       process.execPath,
-      ["scripts/check-macos-release-github.mjs", "--tag=v0.1.0"],
+      ["scripts/check-macos-release-github.mjs", `--tag=${APP_TAG}`],
       {
         cwd: process.cwd(),
         encoding: "utf8",
@@ -591,7 +597,7 @@ process.exit(1);
   try {
     const result = spawnSync(
       process.execPath,
-      ["scripts/check-macos-release-github.mjs", "--", "--tag=v0.1.0"],
+      ["scripts/check-macos-release-github.mjs", "--", `--tag=${APP_TAG}`],
       {
         cwd: process.cwd(),
         encoding: "utf8",
@@ -601,8 +607,8 @@ process.exit(1);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /has the active macOS release workflow/);
-    assert.match(result.stdout, /v0\.1\.0 matches package, Tauri, and Cargo versions/);
-    assert.match(result.stdout, /v0\.1\.0 has no existing GitHub Release/);
+    assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
+    assert.match(result.stdout, new RegExp(`${APP_TAG_PATTERN} has no existing GitHub Release`));
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -638,7 +644,7 @@ if (args[0] === 'secret' && args[1] === 'list') {
   process.exit(0);
 }
 if (args[0] === 'release' && args[1] === 'view') {
-  console.log(JSON.stringify({ tagName: 'v0.1.0', isDraft: false, isPrerelease: false, url: 'https://example.test/release' }));
+  console.log(JSON.stringify({ tagName: '${APP_TAG}', isDraft: false, isPrerelease: false, url: 'https://example.test/release' }));
   process.exit(0);
 }
 console.error('unexpected gh args: ' + args.join(' '));
@@ -649,7 +655,7 @@ process.exit(1);
   try {
     const result = spawnSync(
       process.execPath,
-      ["scripts/check-macos-release-github.mjs", "--tag=v0.1.0"],
+      ["scripts/check-macos-release-github.mjs", `--tag=${APP_TAG}`],
       {
         cwd: process.cwd(),
         encoding: "utf8",
@@ -658,7 +664,7 @@ process.exit(1);
     );
 
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /release v0\.1\.0 already exists/);
+    assert.match(result.stderr, new RegExp(`release ${APP_TAG_PATTERN} already exists`));
     assert.match(result.stderr, /Delete the existing public release/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -724,7 +730,7 @@ test("desktop release slot gate rejects an existing same-tag release", () => {
     `#!/usr/bin/env node
 const args = process.argv.slice(2);
 if (args[0] === 'release' && args[1] === 'view') {
-  console.log(JSON.stringify({ tagName: 'v0.1.0', isDraft: true, isPrerelease: false, url: 'https://example.test/release' }));
+  console.log(JSON.stringify({ tagName: '${APP_TAG}', isDraft: true, isPrerelease: false, url: 'https://example.test/release' }));
   process.exit(0);
 }
 console.error('unexpected gh args: ' + args.join(' '));
@@ -735,7 +741,7 @@ process.exit(1);
   try {
     const result = spawnSync(
       process.execPath,
-      ["scripts/check-macos-release-slot.mjs", "--tag=v0.1.0"],
+      ["scripts/check-macos-release-slot.mjs", `--tag=${APP_TAG}`],
       {
         cwd: process.cwd(),
         encoding: "utf8",
@@ -744,7 +750,7 @@ process.exit(1);
     );
 
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /release v0\.1\.0 already exists/);
+    assert.match(result.stderr, new RegExp(`release ${APP_TAG_PATTERN} already exists`));
     assert.match(result.stderr, /Delete the existing draft release/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -770,7 +776,7 @@ process.exit(1);
   try {
     const result = spawnSync(
       process.execPath,
-      ["scripts/check-macos-release-slot.mjs", "--", "--tag=v0.1.0"],
+      ["scripts/check-macos-release-slot.mjs", "--", `--tag=${APP_TAG}`],
       {
         cwd: process.cwd(),
         encoding: "utf8",
@@ -899,39 +905,34 @@ test("desktop release secret gate accepts structurally valid release secrets", (
 });
 
 test("desktop release tag gate requires the v-prefixed tag to match app versions", () => {
-  const ok = spawnSync(
-    process.execPath,
-    ["scripts/check-macos-release-tag.mjs", "--tag=v0.1.0"],
-    {
+  // Read the version rather than hardcoding it: this gate exists so a version
+  // bump cannot ship without the tag following, and a test frozen at one
+  // version would fail on the bump it is supposed to protect.
+  const { version } = JSON.parse(readFileSync("package.json", "utf8"));
+  const [major, minor, patch] = version.split(".");
+  const otherVersion = `${major}.${Number(minor) + 1}.${patch}`;
+
+  const run = (tag) =>
+    spawnSync(process.execPath, ["scripts/check-macos-release-tag.mjs", `--tag=${tag}`], {
       cwd: process.cwd(),
       encoding: "utf8",
-    },
-  );
-  const mismatch = spawnSync(
-    process.execPath,
-    ["scripts/check-macos-release-tag.mjs", "--tag=v0.2.0"],
-    {
-      cwd: process.cwd(),
-      encoding: "utf8",
-    },
-  );
-  const invalid = spawnSync(
-    process.execPath,
-    ["scripts/check-macos-release-tag.mjs", "--tag=0.1.0"],
-    {
-      cwd: process.cwd(),
-      encoding: "utf8",
-    },
-  );
+    });
+
+  const ok = run(`v${version}`);
+  const mismatch = run(`v${otherVersion}`);
+  const invalid = run(version);
 
   assert.equal(ok.status, 0, ok.stderr);
   assert.match(ok.stdout, /matches package, Tauri, and Cargo versions/);
 
   assert.equal(mismatch.status, 1);
   assert.match(mismatch.stderr, /does not match macOS app versions/);
-  assert.match(mismatch.stderr, /package=0\.1\.0/);
-  assert.match(mismatch.stderr, /tauri=0\.1\.0/);
-  assert.match(mismatch.stderr, /cargo=0\.1\.0/);
+  for (const field of ["package", "tauri", "cargo"]) {
+    assert.ok(
+      mismatch.stderr.includes(`${field}=${version}`),
+      `expected ${field}=${version} in ${mismatch.stderr}`,
+    );
+  }
 
   assert.equal(invalid.status, 1);
   assert.match(invalid.stderr, /must be v-prefixed/);
