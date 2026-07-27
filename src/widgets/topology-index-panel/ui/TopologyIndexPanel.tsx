@@ -592,49 +592,71 @@ export function TopologyIndexPanel({
 
       {/* v2.1 푸터 — 구 헤더의 "● 에이전트 동기화" 문구 + 성장 신호가
           여기로 이관. 단축키 캡은 장식(⇧⌘K 는 전역 팔레트가 이미 쓰는
-          hotkey — 여기선 재확인용 표기, 별도 바인딩 아님). */}
+          hotkey — 여기선 재확인용 표기, 별도 바인딩 아님).
+
+          **두 줄인 이유** (2026-07-28): 이 넷을 한 줄(패널 폭 고정 274px,
+          안쪽 266px)에 넣으면 예산이 안 맞는다 — 실측 EN 자연폭 합 381px.
+          성장 신호를 빼도 271px 로 여전히 넘쳐서, 문구를 줄이는 것으로는
+          닿지 않는 거리다. 그래서 잘린 것은 "긴 제목"이 아니라 **상태
+          라벨**이었다: EN "Agent not connected" 104→89px 로 잘려
+          "Agent not conn…", KO 는 성장 신호가 92→29px.
+          `design.md` 「치수 규칙성」의 클램프 지침은 **길이를 모르는 사용자
+          데이터**를 두고 한 말이다(대신 hover/상세에서 전체 값을 준다).
+          여기 둘은 우리가 쓴, 값이 유한한 문자열이고 전체 값을 주는 자리도
+          없다 — 그러니 이건 우아한 축약이 아니라 예산 결함이다. 컨테이너의
+          치수는 내용물의 부산물이 아니라 설계 결정이므로, 자리를 늘린다.
+
+          줄 나누기는 의미로 한다 — 위는 **지금 참인 것**(연결 상태 · 성장
+          신호, `·` 로 이어 한 문장으로 읽힌다), 아래는 **할 수 있는
+          것**(인계 메뉴 · 팔레트 힌트). */}
       <div
         data-testid="topology-index-footer"
-        className="mt-2.5 flex shrink-0 items-center gap-1.5 border-t border-[color:var(--topology-v2-panel-divider)] px-1 pt-2.5 text-label text-[color:var(--topology-v2-panel-text-quaternary)]"
+        className="mt-2.5 flex shrink-0 flex-col gap-1.5 border-t border-[color:var(--topology-v2-panel-divider)] px-1 pt-2.5 text-label text-[color:var(--topology-v2-panel-text-quaternary)]"
       >
-        {/* P4-② — 연결된 상태(agentActivityHref 제공)면 활동 다이제스트로
-            딥링크, 아니면 기존처럼 등록 시트를 여는 버튼. */}
-        {agentActivityHref ? (
-          <Link
-            href={agentActivityHref}
-            data-testid="topology-index-agent-connect"
-            className="inline-flex min-w-0 items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
-          >
-            <span
-              aria-hidden="true"
-              className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-power-on)]"
-            />
-            <span className="min-w-0 truncate whitespace-nowrap text-[color:var(--topology-v2-panel-text-tertiary)]">
-              {labels.agentSync}
-            </span>
-          </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={onOpenAgentConnect ?? undefined}
-            disabled={!onOpenAgentConnect}
-            data-testid="topology-index-agent-connect"
-            className="inline-flex min-w-0 items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors enabled:cursor-pointer enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)] enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
-          >
-            {/* C11 — 미연결 상태: power-on(인디고) 점 + "AI가 함께 갱신 중"
-                진행형이 heartbeat 없이도 활동을 암시했다. 중립 muted 점 +
-                "에이전트 연결 대기" 로 정정 — 진행형 문구 금지. */}
-            <span
-              aria-hidden="true"
-              className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-text-quaternary)]"
-            />
-            <span className="min-w-0 truncate whitespace-nowrap text-[color:var(--topology-v2-panel-text-tertiary)]">
-              {labels.agentSyncIdle}
-            </span>
-          </button>
-        )}
-        {footerGrowthText ? <span className="min-w-0 flex-1 truncate whitespace-nowrap">{footerGrowthText}</span> : null}
-        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+        <div className="flex items-center gap-1.5">
+          {/* P4-② — 연결된 상태(agentActivityHref 제공)면 활동 다이제스트로
+              딥링크, 아니면 기존처럼 등록 시트를 여는 버튼. */}
+          {agentActivityHref ? (
+            <Link
+              href={agentActivityHref}
+              data-testid="topology-index-agent-connect"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            >
+              <span
+                aria-hidden="true"
+                className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-power-on)]"
+              />
+              {/* 상태 라벨은 줄이지 않는다 — 잘리면 상태를 못 읽는다.
+                  줄이 빠듯해지면 아래 성장 신호가 먼저 양보한다. */}
+              <span className="shrink-0 whitespace-nowrap text-[color:var(--topology-v2-panel-text-tertiary)]">
+                {labels.agentSync}
+              </span>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenAgentConnect ?? undefined}
+              disabled={!onOpenAgentConnect}
+              data-testid="topology-index-agent-connect"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors enabled:cursor-pointer enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)] enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            >
+              {/* C11 — 미연결 상태: power-on(인디고) 점 + "AI가 함께 갱신 중"
+                  진행형이 heartbeat 없이도 활동을 암시했다. 중립 muted 점 +
+                  "에이전트 연결 대기" 로 정정 — 진행형 문구 금지. */}
+              <span
+                aria-hidden="true"
+                className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--topology-v2-panel-text-quaternary)]"
+              />
+              {/* 상태 라벨은 줄이지 않는다 — 잘리면 상태를 못 읽는다.
+                  줄이 빠듯해지면 아래 성장 신호가 먼저 양보한다. */}
+              <span className="shrink-0 whitespace-nowrap text-[color:var(--topology-v2-panel-text-tertiary)]">
+                {labels.agentSyncIdle}
+              </span>
+            </button>
+          )}
+          {footerGrowthText ? <span className="min-w-0 flex-1 truncate whitespace-nowrap">{footerGrowthText}</span> : null}
+        </div>
+        <div className="flex items-center justify-end gap-1.5">
           {agentHandoff && vaultLoaded ? (
             <TopologyIndexAgentHandoff
               briefText={agentHandoff.briefText}
