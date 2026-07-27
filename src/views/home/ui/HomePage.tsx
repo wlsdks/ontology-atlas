@@ -100,9 +100,13 @@ const MountedGlobalSearch = dynamic(
 // bundle. It statically imported `react-markdown` (+ `remark`), which alone
 // measured ~129KB gzip and was shipping to EVERY visit of `/`/`/topology`
 // even for users who never open a full-detail card. `buildFullDetailGroups`/
-// `buildFullDetailReachModel` stay as regular imports below — they're plain
-// data-shaping functions (no ReactMarkdown dependency) needed synchronously
-// to compute `fullDetailA1Model`, not the component render itself.
+// `buildFullDetailReachModel` are plain data-shaping functions (no
+// ReactMarkdown dependency) and stay regular imports — but they now live in
+// `../model/use-full-detail-a1-model.ts` with the model they build, and that
+// hook only calls them **while the card is open** (D4 처방 2026-07-28: 닫힌
+// 표면의 파생이 클릭 프레임을 먹고 있었다). 청크 예열과 모델 파생은 다른
+// 것이다 — 예열은 값이 싸고 등장 프레임을 지키지만, 파생 예열은 클릭
+// 프레임에 값을 청구한다.
 // 청크를 **미리 당길 수 있게** import 를 이름 있는 함수로 둔다 — 번들러가
 // 모듈 promise 를 캐시하므로 예열 후의 재호출은 즉시 끝난다. 여기서 `dynamic`
 // (React.lazy + Suspense)을 쓰지 않는 이유도 같은 결이다: lazy 는 청크가
@@ -130,7 +134,6 @@ import {
   buildOntologyStudioEdgeHref,
   buildOntologyHealthSignals,
   buildOntologyInsightsReturnHref,
-  deriveCodeLocations,
   edgeAuthoredByFromNode,
   resolveNodeDocument,
   resolveNodeAgentTarget,
@@ -152,6 +155,7 @@ import { useHomeRouteState } from "../model/use-home-route-state";
 import { useBootstrapFlow } from "../model/use-bootstrap-flow";
 import { useAgentConnectModel } from "../model/use-agent-connect-model";
 import { useNodeDatasheetModel } from "../model/use-node-datasheet-model";
+import { useFullDetailA1Model } from "../model/use-full-detail-a1-model";
 import {
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
@@ -208,7 +212,6 @@ import { TopologyV2EdgePanel } from "@/widgets/topology-map-v2/ui/TopologyV2Edge
 import { PLAIN_TIER_REVEAL } from "@/widgets/topology-map-v2/model/tier-visibility";
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
-import { buildFullDetailGroups, buildFullDetailReachModel } from "@/widgets/full-detail-a1";
 import {
   TopologyMapV2,
   TopologyV2ContextMenu,
@@ -1916,108 +1919,18 @@ export function HomePage() {
   // reach 쿼리빌더 + collaborator brief)를 대체. groups/reach 는 compact
   // datasheet 와 동일 소스(buildV2Connections 파생, buildOntologyReachability
   // 재사용)라 두 표면의 숫자가 절대 drift 하지 않는다.
-  const fullDetailA1Model = useMemo(() => {
-    if (!nodeFocus || !selectedOntologyNode || !ontologyInsight) return null;
-    const slug = nodeFocus.sourceSlug ?? selectedOntologyNode.id;
-    const groups = buildFullDetailGroups(
-      selectedOntologyNode.id,
-      ontologyInsight.nodes,
-      ontologyInsight.edges,
-      changedSlugs,
-    );
-    const reach = buildFullDetailReachModel(
-      selectedOntologyNode.id,
-      ontologyInsight.nodes,
-      ontologyInsight.edges,
-    );
-    const codeLocations = deriveCodeLocations(
-      selectedOntologyNode.id,
-      ontologyInsight.nodes,
-      ontologyInsight.edges,
-    );
-    const projectTitle =
-      ontologyInsight.nodes.find((n) => n.kind === "project")?.title ?? null;
-    const loadedBody =
-      nodeBody && nodeBody.slug === slug ? nodeBody.body : null;
-    const bodyMarkdown = loadedBody ?? selectedOntologyNode.summary ?? null;
-    // 전체 상세도 `근거` 목록이 없는 표면 — 자기 문서가 없으면 링크를 지우는
-    // 대신 "언급한 문서" 로 라벨을 바꿔 남긴다.
-    const documentHref = nodeFocus.ownDocumentSlug
-      ? buildDocsVaultHref({ slug: nodeFocus.ownDocumentSlug })
-      : null;
-    const mentionDocumentHref = nodeFocus.mentionedInSlug
-      ? buildDocsVaultHref({ slug: nodeFocus.mentionedInSlug })
-      : null;
-    const explanationEdit =
-      nodeEditTarget &&
-      vault.manifest !== null &&
-      nodeBody &&
-      nodeBody.slug === nodeEditTarget.vaultSlug
-        ? { onSave: saveNodeExplanation }
-        : null;
-    return {
-      node: {
-        id: selectedOntologyNode.id,
-        // 과제 ⑩ — 헤더는 표시용 짧은 제목 크게 + 원본 title 은 fullTitle 로
-        // secondary 보존(FullDetailA1 이 다를 때만 렌더).
-        title: nodeFocus.displayTitle,
-        fullTitle: nodeFocus.title,
-        kind: nodeFocus.kind,
-        slug,
-        // 인계 체인이 쓰는 이름은 매니페스트 slug 가 아니라 볼트가 아는 이름.
-        ...(() => {
-          const target = resolveNodeAgentTarget(selectedOntologyNode);
-          return { agentSlug: target.ref, documented: target.documented };
-        })(),
-        // 진입 검수 E-5 — 신선도의 단일 진실원은 문서 mtime 사다리다
-        // (`use-node-datasheet-model` M-3). 세션 changeset baseline 으로
-        // 따로 판정하던 이 자리가 데이터시트와 상반된 문장을 냈다
-        // (「2일 전 바뀜」 vs 「한동안 그대로」, 같은 domains/catalog).
-        // 같은 노드에 대한 데이터시트의 판정을 그대로 받는다 — 없을 때만
-        // (다른 노드 / 모델 미생성) 종전 baseline 으로 되돌린다.
-        fresh:
-          v2DatasheetModel?.nodeId === selectedOntologyNode.id
-            ? v2DatasheetModel.powered
-            : changedSlugs.has(selectedOntologyNode.id),
-        updatedAtLabel:
-          v2DatasheetModel?.nodeId === selectedOntologyNode.id
-            ? v2DatasheetModel.updatedAtLabel
-            : null,
-        // rank7 (design-council B5) — 같은 노드 선택에서 나온
-        // `v2DatasheetModel`(compact 패널)의 SAME fact 를 그대로 재사용 —
-        // 이 노드의 baseline/heartbeat 판정을 두 번 만들지 않는다(count
-        // drift 방지 원칙과 동일 이유).
-        lastEditSubject:
-          v2DatasheetModel?.nodeId === selectedOntologyNode.id ? v2DatasheetModel.lastEditSubject : null,
-        mtimeConflict:
-          v2DatasheetModel?.nodeId === selectedOntologyNode.id ? v2DatasheetModel.mtimeConflict : false,
-      },
-      groups,
-      reach,
-      codeLocations,
-      breadcrumb: {
-        projectTitle,
-        // P0c — 정본 census (renderProjects 이중 가산 제거)
-        totalConcepts: ontologyInsight.nodes.length,
-        totalRelations: ontologyInsight.edges.length,
-      },
-      bodyMarkdown,
-      explanationEdit,
-      documentHref,
-      mentionDocumentHref,
-    };
-  }, [
+  const fullDetailA1Model = useFullDetailA1Model({
+    open: fullDetailOpen,
     nodeFocus,
     selectedOntologyNode,
-    ontologyInsight,
-    renderProjects,
+    insight: ontologyInsight,
     changedSlugs,
     nodeBody,
     nodeEditTarget,
-    vault.manifest,
-    saveNodeExplanation,
-    v2DatasheetModel,
-  ]);
+    vaultLoaded: vault.manifest !== null,
+    onSaveExplanation: saveNodeExplanation,
+    datasheet: v2DatasheetModel,
+  });
   const selectedNodeFocusActive =
     Boolean(
       selectedOntologyNode &&
