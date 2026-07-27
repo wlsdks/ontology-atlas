@@ -3119,6 +3119,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 다운로드 화면 리메이크: 이 화면의 일을 정하고, 어제 참이던 문구를 걷어냈다",
+          "slug": "2026-07-27-다운로드-화면-리메이크-이-화면의-일을-정하고-어제-참이던-문구를-걷어냈다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 규격을 통과했는데 화면이 틀렸다 (없는 글자 크기 · 스크롤 끝 여백)",
           "slug": "2026-07-27-규격을-통과했는데-화면이-틀렸다-없는-글자-크기-스크롤-끝-여백"
         },
@@ -5104,7 +5109,7 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 첫 공개 릴리스가 태",
-      "wordCount": 54222,
+      "wordCount": 54698,
       "updatedAt": "2026-07-27",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
@@ -5165,7 +5170,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 1768,
+      "wordCount": 1875,
       "updatedAt": "2026-07-27",
       "linksOut": []
     },
@@ -5859,6 +5864,11 @@
         },
         {
           "depth": 3,
+          "text": "페이지 컬럼 — `--page-max` 와 `--page-col-utility`",
+          "slug": "페이지-컬럼---page-max-와---page-col-utility"
+        },
+        {
+          "depth": 3,
           "text": "Padding — 램프를 두지 않는다 (2026-07-26 정리)",
           "slug": "padding-램프를-두지-않는다-2026-07-26-정리"
         },
@@ -5984,7 +5994,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 18022,
+      "wordCount": 18135,
       "updatedAt": "2026-07-27",
       "linksOut": [
         "design-references/DESIGN-linear",
@@ -6208,8 +6218,8 @@
         },
         {
           "depth": 3,
-          "text": "`/download` — Intro + download (absorbed the retired LandingPage, Slice 2 2026-07-18)",
-          "slug": "download-intro-download-absorbed-the-retired-landingpage-slice-2-2026-07-18"
+          "text": "`/download` — the install decision (remade 2026-07-27)",
+          "slug": "download-the-install-decision-remade-2026-07-27"
         },
         {
           "depth": 3,
@@ -6658,7 +6668,7 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 14880,
+      "wordCount": 15193,
       "updatedAt": "2026-07-27",
       "linksOut": [
         "slug",
