@@ -652,14 +652,30 @@ if (
   );
 }
 
-if (
-  pkg.scripts?.["desktop:release-artifact"] ===
-  "pnpm desktop:release-secrets && pnpm build && pnpm desktop:smoke && pnpm desktop:build:app && pnpm desktop:sign && node scripts/package-macos-dmg.mjs && pnpm desktop:notarize && pnpm desktop:verify-release-dmg && pnpm desktop:verify-install"
-) {
-  pass("desktop release artifact command signs, packages, notarizes, and verifies the direct-download DMG");
+/**
+ * 이 순서는 취향이 아니라 계약이다. **DMG 서명이 패키징과 공증 사이에 있어야
+ * 한다.**
+ *
+ * 2026-07-27 v1.0.0-rc.1 실측: `.app` 만 서명하고 DMG 로 감싸면 공증까지
+ * 통과하는데, Gatekeeper 는 거절한다 —
+ *
+ *   [desktop-notarize] notarized and stapled ...aarch64.dmg
+ *   spctl --assess --type open ... : rejected
+ *   source=no usable signature
+ *
+ * 공증 티켓은 붙었는데 감쌀 서명이 없었다. 공증 **뒤에** 서명하면 스테이플이
+ * 무효가 되므로 자리도 하나뿐이다.
+ */
+const RELEASE_ARTIFACT_PIPELINE =
+  "pnpm desktop:release-secrets && pnpm build && pnpm desktop:smoke && pnpm desktop:build:app && pnpm desktop:sign && node scripts/package-macos-dmg.mjs && pnpm desktop:sign:dmg && pnpm desktop:notarize && pnpm desktop:verify-release-dmg && pnpm desktop:verify-install";
+
+if (pkg.scripts?.["desktop:release-artifact"] === RELEASE_ARTIFACT_PIPELINE) {
+  pass("desktop release artifact command signs the app, packages, signs the DMG container, notarizes, and verifies the direct-download DMG");
 } else {
   fail(
-    "package.json must expose desktop:release-artifact as the credentialed direct-download artifact path: release secret check, build/smoke, app build, sign, DMG package, notarize, verify-release-dmg, and install smoke",
+    "package.json must expose desktop:release-artifact as the credentialed direct-download artifact path: release secret check, build/smoke, app build, app sign, DMG package, **DMG container sign**, notarize, verify-release-dmg, and install smoke\n" +
+      `[desktop-check]   기대: ${RELEASE_ARTIFACT_PIPELINE}\n` +
+      `[desktop-check]   실제: ${pkg.scripts?.["desktop:release-artifact"] ?? "(없음)"}`,
   );
 }
 

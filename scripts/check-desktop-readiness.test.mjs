@@ -184,7 +184,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop release artifact command signs, packages, notarizes, and verifies the direct-download DMG/,
+    /✓ desktop release artifact command signs the app, packages, signs the DMG container, notarizes, and verifies the direct-download DMG/,
   );
   assert.match(
     result.stdout,
