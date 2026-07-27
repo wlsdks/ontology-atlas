@@ -122,7 +122,12 @@ test("both architectures are required", () => {
  * aarch64, x64". 빌드는 두 아치 모두 성공했고 서명도 됐는데, **찾는 자리가
  * 틀렸다** — `merge-multiple: false` 는 아티팩트 *이름*을 폴더로 만들므로
  * `release-assets/ontology-atlas-macos-aarch64/` 이지 `release-assets/aarch64/`
- * 가 아니다. 이 테스트는 CI 의 실제 폴더 구조를 그대로 재현한다.
+ * 가 아니다.
+ *
+ * 폴더 이름만 재현하던 초판은 **빈 폴더**를 만들었고, 그래서 초록이면서도 CI 는
+ * 여전히 빨갰다. 어긋남이 둘이었기 때문이다: 이름 하나, **깊이 하나**. 업로드
+ * 경로가 넷이던 동안 아티팩트 루트는 최소공통조상 `bundle/` 이라 아치 폴더
+ * 바로 밑에는 `dmg/` 와 `macos/` 뿐이었다. 픽스처에 파일까지 실제 자리에 둔다.
  */
 test("resolves the arch folder CI actually produces, not the bare arch name", () => {
   const root = mkdtempSync(join(tmpdir(), "oa-archdir-"));
@@ -135,6 +140,53 @@ test("resolves the arch folder CI actually produces, not the bare arch name", ()
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("reaches the archive even when it sits a folder deeper than expected", () => {
+  // 최소공통조상이 `bundle/` 로 잡히던 그 레이아웃 그대로다. 지금은 업로드 전에
+  // 평평하게 모으지만, 찾는 쪽이 깊이에 기대면 같은 종류로 또 멈춘다.
+  const root = mkdtempSync(join(tmpdir(), "oa-archdir-deep-"));
+  try {
+    const macosDir = join(root, "ontology-atlas-macos-aarch64", "macos");
+    mkdirSync(macosDir, { recursive: true });
+    mkdirSync(join(root, "ontology-atlas-macos-aarch64", "dmg"), { recursive: true });
+    writeFileSync(join(macosDir, "Ontology Atlas.app.tar.gz"), "archive");
+    writeFileSync(join(macosDir, "Ontology Atlas.app.tar.gz.sig"), "signature-line\n");
+
+    const found = findUpdaterArtifacts(resolveArchDir(root, "aarch64"));
+    assert.equal(found.archiveName, "Ontology Atlas.app.tar.gz");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("two archives under one arch folder are refused, not guessed", () => {
+  // 잘못 고르면 사용자가 다른 아키텍처의 앱을 받는다 — 조용한 실패다.
+  const root = mkdtempSync(join(tmpdir(), "oa-archdir-dup-"));
+  const archDir = join(root, "ontology-atlas-macos-x64");
+  mkdirSync(join(archDir, "macos"), { recursive: true });
+  writeFileSync(join(archDir, "one.app.tar.gz"), "archive");
+  writeFileSync(join(archDir, "one.app.tar.gz.sig"), "sig\n");
+  writeFileSync(join(archDir, "macos", "two.app.tar.gz"), "archive");
+  writeFileSync(join(archDir, "macos", "two.app.tar.gz.sig"), "sig\n");
+
+  const originalExit = process.exit;
+  const originalError = console.error;
+  let message = "";
+  process.exit = () => {
+    throw new Error("exit");
+  };
+  console.error = (text) => {
+    message += text;
+  };
+  try {
+    assert.throws(() => findUpdaterArtifacts(archDir));
+  } finally {
+    process.exit = originalExit;
+    console.error = originalError;
+    rmSync(root, { recursive: true, force: true });
+  }
+  assert.match(message, /2개/);
 });
 
 test("still resolves a bare arch folder", () => {

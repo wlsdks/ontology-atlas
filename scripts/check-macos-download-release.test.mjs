@@ -28,13 +28,17 @@ async function withServer(handler, run) {
   }
 }
 
-function releasePayload(baseUrl, checksumTextFor = validChecksum, names = dmgNames, tagName = "v0.1.0") {
+function releasePayload(baseUrl, checksumTextFor = validChecksum, names = dmgNames, tagName = "v0.1.0", extraAssets = []) {
   return [
     {
       tag_name: tagName,
       draft: false,
       prerelease: false,
-      assets: names.flatMap((dmgName) => [
+      assets: extraAssets.map((asset) => ({
+        name: asset.name,
+        browser_download_url: `${baseUrl}/download/${asset.name}`,
+        url: `${baseUrl}/asset-api/${asset.name}`,
+      })).concat(names.flatMap((dmgName) => [
         {
           name: dmgName,
           browser_download_url: `${baseUrl}/download/${dmgName}`,
@@ -46,7 +50,7 @@ function releasePayload(baseUrl, checksumTextFor = validChecksum, names = dmgNam
           url: `${baseUrl}/asset-api/${dmgName}.sha256`,
           checksumText: checksumTextFor(dmgName),
         },
-      ]),
+      ])),
     },
   ];
 }
@@ -58,6 +62,7 @@ function makeHandler({
   dmgContentType = "application/x-apple-diskimage",
   dmgContentLength = "123",
   requireAuth = false,
+  extraAssets = [],
 } = {}) {
   return (req, res) => {
     if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20") {
@@ -67,12 +72,20 @@ function makeHandler({
         return;
       }
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(releasePayload(`http://${req.headers.host}`, checksumTextFor, names, tagName)));
+      res.end(JSON.stringify(releasePayload(`http://${req.headers.host}`, checksumTextFor, names, tagName, extraAssets)));
       return;
     }
     if (req.url === `/repos/wlsdks/ontology-atlas/releases/tags/${tagName}`) {
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(releasePayload(`http://${req.headers.host}`, checksumTextFor, names, tagName)[0]));
+      res.end(JSON.stringify(releasePayload(`http://${req.headers.host}`, checksumTextFor, names, tagName, extraAssets)[0]));
+      return;
+    }
+    const extra = extraAssets.find(
+      (asset) => req.url === `/download/${asset.name}` || req.url === `/asset-api/${asset.name}`,
+    );
+    if (extra) {
+      res.writeHead(200, { "Content-Type": "application/octet-stream" });
+      res.end(extra.body ?? "");
       return;
     }
     const dmgName = names.find((name) => req.url === `/download/${name}`);
@@ -539,5 +552,146 @@ test("download release verifier finds a prerelease draft that was requested by t
 
     // --allow-prerelease 를 주지 않았는데도 통과해야 한다. 이름을 댔기 때문이다.
     assert.match(stdout, /draft macOS download assets/);
+  });
+});
+
+/**
+ * `latest.json` 은 DMG 검사가 한 번도 열어보지 않던 파일이다. 앱은 이것 하나로
+ * 갱신을 찾고, 어긋나면 오류 대신 "최신입니다" 를 보여준다 — 사용자는 영영
+ * 모른다. `--require-updater` 는 그 경로를 릴리스 시점에 실제로 연다.
+ */
+const archiveNames = {
+  "darwin-aarch64": "ontology-atlas_0.1.0_aarch64.app.tar.gz",
+  "darwin-x86_64": "ontology-atlas_0.1.0_x64.app.tar.gz",
+};
+
+function updaterAssets(names = Object.values(archiveNames)) {
+  return names.flatMap((name) => [
+    { name, body: "archive" },
+    { name: `${name}.sig`, body: "signature" },
+  ]);
+}
+
+function updaterManifest(platforms) {
+  return {
+    version: "0.1.0",
+    notes: "",
+    pub_date: "2026-07-27T00:00:00Z",
+    platforms:
+      platforms ??
+      Object.fromEntries(
+        Object.entries(archiveNames).map(([platform, name]) => [
+          platform,
+          {
+            signature: `sig-${platform}`,
+            url: `https://github.com/wlsdks/ontology-atlas/releases/download/v0.1.0/${name}`,
+          },
+        ]),
+      ),
+  };
+}
+
+function withUpdater({ manifest = updaterManifest(), archives = updaterAssets() } = {}) {
+  return makeHandler({
+    extraAssets: [
+      ...archives,
+      { name: "latest.json", body: JSON.stringify(manifest) },
+    ],
+  });
+}
+
+test("updater gate accepts a manifest whose URLs exist in the release", async () => {
+  await withServer(withUpdater(), async (baseUrl) => {
+    const { stdout } = await runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater"]);
+    assert.match(stdout, /Updater: latest\.json/);
+    assert.match(stdout, /ontology-atlas_0\.1\.0_aarch64\.app\.tar\.gz/);
+  });
+});
+
+test("updater gate refuses a release with no latest.json", async () => {
+  await withServer(makeHandler(), async (baseUrl) => {
+    await assert.rejects(
+      runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater"]),
+      (error) => /has no latest\.json asset/.test(error.stderr),
+    );
+  });
+});
+
+test("updater gate refuses a URL that no asset answers", async () => {
+  // GitHub 은 자산 이름의 공백을 점으로 바꾼다. 매니페스트가 공백 이름을 적으면
+  // 404 가 나고 앱은 그것을 "갱신 없음" 으로 표시한다.
+  const manifest = updaterManifest({
+    "darwin-aarch64": {
+      signature: "sig",
+      url: "https://github.com/wlsdks/ontology-atlas/releases/download/v0.1.0/Ontology%20Atlas.app.tar.gz",
+    },
+    "darwin-x86_64": {
+      signature: "sig",
+      url: `https://github.com/wlsdks/ontology-atlas/releases/download/v0.1.0/${archiveNames["darwin-x86_64"]}`,
+    },
+  });
+  await withServer(withUpdater({ manifest }), async (baseUrl) => {
+    await assert.rejects(
+      runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater"]),
+      (error) => /is not an asset of v0\.1\.0/.test(error.stderr),
+    );
+  });
+});
+
+test("updater gate refuses both platforms pointing at one archive", async () => {
+  // 그 상태로 나가면 한쪽 아키텍처 사용자가 다른 아키텍처의 앱을 받는다.
+  const shared = archiveNames["darwin-aarch64"];
+  const manifest = updaterManifest({
+    "darwin-aarch64": {
+      signature: "sig",
+      url: `https://github.com/wlsdks/ontology-atlas/releases/download/v0.1.0/${shared}`,
+    },
+    "darwin-x86_64": {
+      signature: "sig",
+      url: `https://github.com/wlsdks/ontology-atlas/releases/download/v0.1.0/${shared}`,
+    },
+  });
+  await withServer(withUpdater({ manifest }), async (baseUrl) => {
+    await assert.rejects(
+      runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater"]),
+      (error) => /points both platforms at/.test(error.stderr),
+    );
+  });
+});
+
+test("updater gate refuses an archive whose .sig never uploaded", async () => {
+  const archives = updaterAssets().filter((asset) => !asset.name.endsWith(".sig"));
+  await withServer(withUpdater({ archives }), async (baseUrl) => {
+    await assert.rejects(
+      runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater"]),
+      (error) => /refuses unsigned update packages/.test(error.stderr),
+    );
+  });
+});
+
+test("updater gate refuses a URL pinned to another tag", async () => {
+  const manifest = updaterManifest({
+    "darwin-aarch64": {
+      signature: "sig",
+      url: `https://github.com/wlsdks/ontology-atlas/releases/latest/download/${archiveNames["darwin-aarch64"]}`,
+    },
+    "darwin-x86_64": {
+      signature: "sig",
+      url: `https://github.com/wlsdks/ontology-atlas/releases/download/v0.1.0/${archiveNames["darwin-x86_64"]}`,
+    },
+  });
+  await withServer(withUpdater({ manifest }), async (baseUrl) => {
+    await assert.rejects(
+      runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater"]),
+      (error) => /is not pinned to v0\.1\.0/.test(error.stderr),
+    );
+  });
+});
+
+test("the DMG-only path still passes without the updater flag", async () => {
+  // 기존 호출자(랜딩 페이지 검증 등)가 매니페스트를 요구하지 않는다.
+  await withServer(makeHandler(), async (baseUrl) => {
+    const { stdout } = await runVerifierWithArgs(baseUrl, ["--tag=v0.1.0"]);
+    assert.doesNotMatch(stdout, /Updater:/);
   });
 });

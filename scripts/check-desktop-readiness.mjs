@@ -160,6 +160,7 @@ const releaseBuildOrder = orderedIndexes(releaseWorkflow, [
   "name: Import Apple Developer ID certificate",
   "name: Build signed and notarized release artifact",
   "name: Build unsigned release artifact",
+  "name: Stage release assets",
   "name: Upload workflow artifact",
   "name: Cleanup Apple signing keychain",
 ]);
@@ -1032,8 +1033,15 @@ if (
   /runner:\s*macos-14/.test(releaseWorkflow) &&
   /arch:\s*x64/.test(releaseWorkflow) &&
   /runner:\s*macos-15-intel/.test(releaseWorkflow) &&
-  // 초안 업로드는 아치별 하위 폴더에서 집는다. 평평하게 합치면 `.app.tar.gz` 는
-  // 파일명에 아키텍처가 없어서 둘 중 하나가 조용히 덮인다.
+  // 업로드 전에 한 폴더로 모은다. 경로를 여럿 올리면 아티팩트 루트가 그들의
+  // 최소공통조상으로 정해져, 내려받는 쪽이 모르는 깊이가 생긴다 — v1.0.0-rc.1 이
+  // 그 어긋남으로 세 번 멈췄다. 실제 매칭 여부는
+  // `tests/contract/release-asset-paths.contract.test.ts` 가 레이아웃을 재현해
+  // 검사한다. 여기서는 그 계약이 워크플로에 남아 있는지만 본다.
+  /node scripts\/stage-macos-release-assets\.mjs/.test(releaseWorkflow) &&
+  /name: Upload workflow artifact[\s\S]{0,400}?path: release-upload/.test(releaseWorkflow) &&
+  // 초안 업로드는 아치별 하위 폴더에서 집는다. 폴더가 아치를 나르므로
+  // 합치면 어느 아카이브가 어느 아치의 것인지 알 수 없다.
   /release-assets\/\*\/\*\.sha256/.test(releaseWorkflow) &&
   /merge-multiple:\s*false/.test(releaseWorkflow) &&
   // 업데이터 3종 — 아카이브 · 서명 · 매니페스트. 하나라도 빠지면 설치된 앱은
