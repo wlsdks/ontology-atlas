@@ -458,16 +458,14 @@ fallback until public signed releases are uploaded.
 
 ### Option A — npm package + CLI
 
-```bash
-# user, from any project root
-$ npx ontology-atlas@latest
+> **결과 (2026-07-27, `docs/DECISIONS.md`)**: 이 옵션의 npm 절반은 **폐기**됐다.
+> 아래는 당시 검토안의 산문 기록이고 실행 가능한 명령이 아니다 — 그래서 복사할
+> 수 있는 코드 블록으로 두지 않았다. CLI 자체는 소스 체크아웃 경로로 살아 있다.
 
-# starts:
-# - treats the current directory as the vault
-# - serves the local workbench on localhost:3210 for source development
-# - opens the browser as a source-checkout fallback
-# - production visual work moves through the signed macOS app
-```
+검토안: 프로젝트 루트에서 레지스트리 러너 한 줄(`npx`)로 최신 CLI 를 받아 실행.
+현재 디렉터리를 vault 로 취급하고, 소스 개발용 워크벤치를 localhost:3210 에
+띄우고, 브라우저를 소스 체크아웃 fallback 으로 열고, 프로덕션 시각 작업은 서명된
+macOS 앱으로 넘긴다.
 
 Pros:
 
@@ -480,6 +478,9 @@ Cons:
 
 - Requires Node.js.
 - Bundle is heavy after publish (Sigma + xyflow + …).
+- Puts the distribution channel outside the product — a registry the user has
+  to trust, and 38 files of guidance that stay false until someone publishes.
+  This is what killed the npm half.
 
 ### Option B — macOS desktop app
 
@@ -495,12 +496,17 @@ Use after `pnpm dev`. No packaging. Document with environment variables.
 Pros: fastest. Zero new deps.
 Cons: blocks distribution (clone overhead).
 
-### Recommendation: CLI · installed macOS app + MCP as the daily workbench
+### Recommendation: installed macOS app (carrying the MCP server) + CLI as the daily workbench
+
+> **2026-07-27 갱신**: 배포는 **B 하나**로 좁혀졌다 — 서명·공증된 DMG. 앱이
+> 컴파일된 MCP 서버를 자기 번들에 싣고 「에이전트 연결」 버튼이 클라이언트
+> 설정을 대신 쓰므로, **다운로드 1회가 사람 표면과 에이전트 표면을 동시에**
+> 설치한다. A 의 CLI 는 소스 체크아웃으로 남고, npm 은 채널이 아니다.
 
 The desktop proof has graduated from exploration into the primary visual
 distribution track. Ontology Atlas should be the daily local workbench for users
 who want to pick a vault folder, browse the ontology, repair relations, and run
-graph proof without opening a hosted web editor. The CLI and MCP package remain
+graph proof without opening a hosted web editor. The CLI and MCP server remain
 the developer/agent execution track: `ontology-atlas` owns init, bootstrap,
 validation, graph DB-style queries, and write preflights; the MCP server exposes
 the same graph to Claude Code, Codex, Cursor, and other agents.
@@ -516,20 +522,25 @@ real local-first product promise.
 
 ### 5-A. MCP server
 
-Separate package, `ontology-atlas-mcp`. Claude Code-compatible:
+The `ontology-atlas-mcp` server ships compiled inside the macOS app bundle;
+npm publishing is retired (`docs/DECISIONS.md`, 2026-07-27). Claude
+Code-compatible:
 
 ```json
-// .mcp.json or settings
+// .mcp.json or settings — written for you by the app's "Connect agent" button
 {
   "mcpServers": {
     "ontology-atlas": {
-      "command": "npx",
-      "args": ["-y", "ontology-atlas-mcp"],
-      "env": { "OATLAS_VAULT": "./" }
+      "command": "/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp",
+      "args": [],
+      "env": { "OATLAS_VAULT": "/absolute/path/to/vault" }
     }
   }
 }
 ```
+
+From a source checkout the same entry is `"command": "node"`,
+`"args": ["/absolute/path/to/ontology-atlas/mcp/src/index.js"]`.
 
 Tools (32 — read 19 + write 13):
 
@@ -575,7 +586,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 
 1. ✅ `mcp/` package — MCP server (`ontology-atlas-mcp`)
 2. ✅ 32 tools (read 19 + write 13): connection/root/toolset proof, vault-scoped Git status/history and local snapshots, persisted Workshop context (`builder_context` compatibility operation), list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, and dry-run-first rename/merge/delete/absorb writes.
-3. ✅ CLI command (`ontology-atlas`) — `npx ontology-atlas init <folder>` scaffolds the vault. The installed app `/docs` "Create starter seed" button is the no-terminal alternative.
+3. ✅ CLI command (`ontology-atlas`) — `node <checkout>/cli/src/index.mjs init <folder>` scaffolds the vault from a source checkout. The installed app `/docs` "Create starter seed" button is the no-terminal alternative. (npm publishing retired 2026-07-27; there is no `npx` channel.)
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
 5. ✅ `docs/ontology/` dogfood vault — 97 nodes describing our own mental model, including agent-practice notes as document nodes
 

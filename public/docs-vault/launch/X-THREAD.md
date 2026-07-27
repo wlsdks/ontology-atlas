@@ -9,8 +9,8 @@ X 의 언어는 **짧고 시각적**. 5–7 트윗 짜리 thread 가 sweet spot.
 shipped: ontology-atlas — your codebase's mental model lives as
 markdown frontmatter. humans + AI agents author the same vault.
 
-`npx ontology-atlas init` ⤵️ 30 second start
-wlsdks.github.io/ontology-atlas · MIT
+one download installs both: the app carries the MCP server inside it.
+wlsdks.github.io/ontology-atlas · macOS · MIT
 [demo gif: 8s loop of editing frontmatter → graph updates]
 ```
 
@@ -84,12 +84,12 @@ ontology authoring as a team sport.
 
 ```
 try it:
-- npx ontology-atlas init my-vault
-- demo: wlsdks.github.io/ontology-atlas
+- macOS app → open a folder → "connect agent". it writes
+  .mcp.json / .codex/config.toml and proves the server boots.
+- demo, no install: wlsdks.github.io/ontology-atlas
 - repo: github.com/wlsdks/ontology-atlas
 
-solo project, MIT, korean+english docs. would love criticism — what
-breaks for you in 5 minutes?
+solo, MIT. what breaks for you in 5 minutes?
 ```
 
 ## Posting tips

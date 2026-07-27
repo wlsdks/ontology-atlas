@@ -5,7 +5,7 @@ title: AI Agent Partner
 display_ko: AI 에이전트 파트너
 display_en: AI Agent Partner
 capabilities: [agent-config-onboarding, capabilities/agent-connect-sheet, capabilities/agent-practitioner-concerns-map, capabilities/project-ontology-indexing, mcp-conflict-guard, mcp-server, ontology-bootstrap-skill, ontology-extract-skill, ontology-sync-skill, session-start-ontology-context]
-elements: [.claude/hooks/block-npm-publish.sh, .claude/hooks/inject-ontology-summary.sh, elements/agent-activity-hooks, mcp-sdk, mcp/src/index.js, mcp/src/parser.mjs, mcp/src/vault.mjs, src/shared/config/agent-package-distribution.ts]
+elements: [.claude/hooks/block-npm-publish.sh, .claude/hooks/inject-ontology-summary.sh, elements/agent-activity-hooks, mcp-sdk, mcp/src/index.js, mcp/src/parser.mjs, mcp/src/vault.mjs, src/shared/config/mcp-server-launch.ts]
 relates: [domains/ontology-core, domains/vault-local-first]
 ---
 
