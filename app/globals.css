@@ -2978,6 +2978,37 @@
       animation-duration: var(--topology-motion-panel-duration) !important;
     }
 
+    /*
+     * 토스트(sonner) — **끄는 게 아니라 덜 흔들리는 것**.
+     *
+     * 벤더는 자기 `@media (prefers-reduced-motion)` 에서 `transition: none
+     * !important` 로 전부 끈다. 그 결과가 실측에서 **둘 중 나쁜 쪽만 남은**
+     * 모양이었다: 알림의 도착이라는 **정보 모션**(불투명도)이 1프레임에
+     * 사라졌는데, `--y: translateY(100%)`(토스트 높이 = 53.5px)의 **위치 점프는
+     * 그대로** 남았다. 이 파일의 규율과 정확히 반대다.
+     *
+     * ① 이동축을 **출발점에서** 없애고(등장/퇴장 모두 y=0 에서 시작 → 여행
+     * 거리 0) ② 불투명도만 --motion-fast 로 되돌린다. 마운트된 토스트의 스택
+     * 오프셋은 건드리지 않는다 — 그건 등장 모션이 아니라 배치라서, 없애면
+     * 알림 여러 개가 겹쳐 쌓인다.
+     *
+     * **여기(같은 레이어 안)에 있어야 이긴다.** `!important` 끼리는 캐스케이드
+     * 레이어 순서가 뒤집혀 **레이어에 든 쪽이 레이어 밖을 이긴다** — 파일 끝의
+     * 언레이어드 규칙으로 썼을 땐 특이도가 (0,3,0) 이나 되는데도 위 전역
+     * kill 규칙(`*`, 0,0,0)에 져서 계산값이 0.01ms 였다(실측 확인). 규칙이
+     * 있어도 자리가 틀리면 없는 것과 같다.
+     */
+    [data-sonner-toaster] [data-sonner-toast].app-toast {
+      transition-property: opacity !important;
+      transition-duration: var(--motion-fast) !important;
+      transition-timing-function: var(--motion-ease) !important;
+    }
+
+    [data-sonner-toaster] [data-sonner-toast].app-toast:not([data-mounted='true']),
+    [data-sonner-toaster] [data-sonner-toast].app-toast[data-removed='true'] {
+      --y: translateY(0) !important;
+    }
+
     /* ② transform 이 실린 등장/퇴장 — 키프레임 이름만 바꾼다. */
     .app-settings-panel-in,
     .settings-view-push-in,
@@ -3129,30 +3160,4 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   transition-duration: var(--motion-fast);
 }
 
-/*
- * reduced-motion 동등물 — **끄는 게 아니라 덜 흔들리는 것**.
- *
- * sonner 는 자체 `@media (prefers-reduced-motion)` 에서 `transition: none
- * !important` 로 전부 끈다. 그 결과가 실측에서 **둘 중 나쁜 쪽만 남은** 모양
- * 이었다: 불투명도 0→1 이 1프레임(알림의 도착이라는 **정보 모션**이 사라짐)
- * 인데, `--y: translateY(100%)`(토스트 높이 = 53.5px)의 **위치 점프는 그대로**
- * 남았다. 흔들리는 축만 없애고 흔들리지 않는 축은 남긴다는 이 파일의 규율과
- * 정확히 반대다.
- *
- * 그래서 ① 이동축을 **출발점에서** 없애고(등장/퇴장 모두 y=0 에서 시작해
- * 여행 거리 0) ② 불투명도만 `--motion-fast` 로 되돌린다. 마운트된 토스트의
- * 스택 오프셋(`--lift-amount` · `--offset`)은 건드리지 않는다 — 그건 등장
- * 모션이 아니라 배치라서, 없애면 알림 여러 개가 겹쳐 쌓인다.
- */
-@media (prefers-reduced-motion: reduce) {
-  [data-sonner-toaster] [data-sonner-toast].app-toast {
-    transition-property: opacity !important;
-    transition-duration: var(--motion-fast) !important;
-    transition-timing-function: var(--motion-ease) !important;
-  }
 
-  [data-sonner-toaster] [data-sonner-toast].app-toast:not([data-mounted='true']),
-  [data-sonner-toaster] [data-sonner-toast].app-toast[data-removed='true'] {
-    --y: translateY(0) !important;
-  }
-}
