@@ -569,6 +569,37 @@
   --leading-display-tight: 1.06; /* 이름·수치처럼 한 덩어리로 읽히는 자리. 최대 2행 */
   --leading-prose: 1.7; /* 사용자가 쓴 글(마크다운 본문·에디터·pre)의 읽기 폭 상한 */
 
+  /* 크기 스텝에 행간 짝을 결합한다 — Tailwind v4 companion 토큰.
+     text-<스텝> 클래스 하나가 font-size 와 line-height 를 함께 싣는다.
+
+     이 결합이 있어야 규격이 닫힌다. 짝을 정의만 해두면 "행간 클래스를 안 쓴
+     자리" 는 규격 밖에 남고, 그 자리는 브라우저 상속 1.5 로 렌더된다 — 램프
+     이탈 검사(하드코딩 리터럴)도 래칫도 **빠진 클래스는 볼 수 없다**. 미등록
+     스텝이 루트 16px 로 조용히 렌더되던 것과 같은 계열의 사각지대다.
+     실측(2026-07-27): 램프 크기를 쓰면서 행간 클래스가 없는 자리가 927곳.
+
+     결합 전 켜 보고 잰 반경: 8화면 × ko/en 687원소 중 400건 변경, 그중
+     394건이 ±1.25px 이하(대부분 한 줄짜리 칩·라벨이라 픽셀조차 안 움직인다).
+     눈에 보이는 변화는 페이지 헤드라인 3장(34.5 → 28px)뿐이고, 그 34.5px 은
+     아무도 고른 적 없는 상속 1.5 의 산물이었다. 치수 규칙성 헌장대로 행 높이를
+     설계 결정으로 되돌리는 변경이다. font-size 는 하나도 안 바뀌므로 줄바꿈은
+     구조적으로 늘어날 수 없다.
+
+     명시 leading 유틸리티는 companion 을 이긴다 — B1 이 74곳에 깔아둔 명시
+     클래스가 그대로 방패로 작동한다. */
+  --text-caption--line-height: var(--leading-caption);
+  --text-label--line-height: var(--leading-label);
+  --text-body--line-height: var(--leading-body);
+  --text-body-lg--line-height: var(--leading-body-lg);
+  --text-title--line-height: var(--leading-title);
+  --text-display--line-height: var(--leading-display);
+  /* --leading-hero 는 오늘 1픽셀도 만들지 않는다 — 저장소의 text-hero 호출부
+     2곳이 모두 명시 leading 을 달고 있다. 그래도 유지하는 이유는 이 줄이다:
+     앞으로 leading 없이 히어로를 쓰면 상속 1.5(45px)가 아니라 34px 을 받는다.
+     결합이 없으면 램프 상단 두 단만 짝이 없는 예외가 되고, 예외 없음이
+     규격의 값어치다. */
+  --text-hero--line-height: var(--leading-hero);
+
   /* Radius ramp — 3단. Tailwind v4 `--radius-*` 네임스페이스가 rounded-<step>
      를 생성한다. 이 밖(sub-chip 헤어라인 1~4px, overlay sheet/card 18~28px)은
      코덱스 표의 명시 예외로만 — eslint-disable + 사유 주석 필수. */
