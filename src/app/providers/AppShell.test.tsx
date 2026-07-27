@@ -78,6 +78,27 @@ describe("셸 칼럼 — 뷰포트 소유 계약", () => {
     expect(shell?.className).toContain("overflow-hidden");
   });
 
+  it("본문 슬롯이 자식을 압축하지 않는다 — 스크롤 끝 여백 계약", () => {
+    // 슬롯은 스크롤 컨테이너다. 페이지 루트가 슬롯을 채우려고 쓰는
+    // `min-h-full` 은 flex 아이템의 자동 최소 크기를 덮어쓰므로, 압축을 막지
+    // 않으면 내용이 길어질 때 페이지 박스가 뷰포트 높이로 줄고 하단 예약고가
+    // 줄어든 박스 바닥에 갇힌다 (1512×950 실측: 다운로드 여백 0px · 768 에서
+    // 프로젝트 상세 마지막 줄이 탭바 뒤로 17px).
+    // jsdom 은 레이아웃을 하지 않아 픽셀은 못 본다 — 여기서는 처방이 제자리에
+    // 있는지만 고정하고, 실제 여백은 `tests/e2e/scroll-end-gap.spec.ts` 가 잰다.
+    const { container } = render(
+      <AppShell>
+        <div>page</div>
+      </AppShell>,
+    );
+    const slot = container.querySelector(".overflow-y-auto");
+    expect(slot, "본문 스크롤 슬롯이 있어야 한다").not.toBeNull();
+    expect(
+      slot?.className,
+      "슬롯의 직계 자식은 압축되지 않아야 한다 — 페이지마다 shrink-0 을 기억하게 하면 다음 화면에서 또 빠진다",
+    ).toContain("[&>*]:shrink-0");
+  });
+
   it("앱 내장 터미널 손잡이가 없다 — 2026-07-26 제거", () => {
     // 회귀 차단: 에이전트를 돌리는 사람은 자기 터미널을 쓴다는 결정으로
     // 하단 도크를 걷어냈다. 손잡이가 되살아나면 그 결정이 조용히 뒤집힌 것이다.
