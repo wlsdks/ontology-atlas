@@ -53,6 +53,15 @@
     "copyright": "Copyright © 2026 ontology-atlas contributors",
     "macOS": {
       "minimumSystemVersion": "12.0"
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI1RUMyNDM1OENGN0ZFNEUKUldSTy92ZU1OU1RzSlVJUFgyR2JCdnUwNVAvWHNMVm15RmRzK044L01xbGRoVU9MRXd0UFJwL0QK",
+      "endpoints": [
+        "https://github.com/wlsdks/ontology-atlas/releases/latest/download/latest.json"
+      ]
     }
   }
 }

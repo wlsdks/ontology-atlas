@@ -2803,6 +2803,20 @@
     "serverLine": "There's no server to leave running. Your agent starts it when needed and it shuts down when done — no always-on process, no open port. That's why your data never leaves this computer.",
     "copiedToast": "Config copied — paste it into your tool to connect."
   },
+  "appUpdate": {
+    "availableTitle": "Version {version} is available",
+    "availableBody": "Install it now, or keep working and update later.",
+    "install": "Install update",
+    "downloadingTitle": "Downloading {version}",
+    "downloadingPercent": "{percent} downloaded.",
+    "downloadingUnknown": "Downloading — the size is not reported.",
+    "readyTitle": "{version} is ready",
+    "readyBody": "Restart to finish. Your open vault stays where it is.",
+    "restart": "Restart now",
+    "failedTitle": "The update could not be installed",
+    "failedBody": "You can download the latest version from the releases page instead.",
+    "dismiss": "Not now"
+  },
   "atlasGit": {
     "tileLabel": "History",
     "tileTitleClean": "History — everything saved",

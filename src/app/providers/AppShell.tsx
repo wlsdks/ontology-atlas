@@ -16,6 +16,7 @@ import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { DestinationGuide, GuideReplayProvider } from "@/features/guided-tour";
+import { UpdateToast, useAppUpdate } from "@/features/app-update";
 import { resolveActiveNavDestination } from "@/shared/lib/nav-destination";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 
@@ -120,6 +121,12 @@ function ShellColumn({ children }: { children: ReactNode }) {
           지도는 캔버스 노드 앵커·인터랙티브 클릭이 있는 8단계 여정이라
           HomePage 가 계속 직접 소유한다(여기서는 `null`). */}
       <DestinationGuide key={guideDestination ?? "none"} destination={guideDestination} />
+
+      {/* 업데이트 알림 (2026-07-27) — 셸이 소유한다. 페이지마다 마운트하게 하면
+          어떤 화면에서는 갱신을 못 만나고, 그 화면을 주로 쓰는 사람은 영영
+          구버전에 머문다. 데스크톱 셸이 아니면 훅이 스스로 아무것도 하지 않으므로
+          여기서 분기하지 않는다 — 조건을 두 곳에 두면 한쪽이 드리프트한다. */}
+      <AppUpdateSurface />
     </div>
   );
 }
@@ -187,5 +194,16 @@ function AppNavRailSlot() {
       onAgentTileActivate={onAgentTileActivate}
       agentConnectOpen={launcher.wantOpen}
     />
+  );
+}
+
+/**
+ * 훅과 표면을 한 겹으로 묶는다. `AppShell` 이 업데이트 상태 기계를 직접 들고
+ * 있으면, 셸이 리렌더될 때마다 그 상태가 셸 전체를 다시 그리게 된다.
+ */
+function AppUpdateSurface() {
+  const { phase, install, restart, dismiss } = useAppUpdate();
+  return (
+    <UpdateToast phase={phase} onInstall={install} onRestart={restart} onDismiss={dismiss} />
   );
 }
