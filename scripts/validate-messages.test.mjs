@@ -34,70 +34,56 @@ describe('i18n message catalog', () => {
     }
   });
 
-  it('keeps hosted download copy honest before the first public macOS release', async () => {
+  it('keeps hosted download copy honest about what is actually published', async () => {
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
-    assert.equal(en.download.primaryCta, 'Check GitHub releases');
+    // The page's release-dependent facts come from the generated release
+    // module, so the catalog must not carry a second, hand-written copy of
+    // them. These keys are gone on purpose — restoring one puts the page back
+    // in the state where six placeholders drifted independently.
+    for (const gone of [
+      'releaseAvailabilityNote',
+      'releaseStatusTitle',
+      'releaseStatusPr',
+      'releaseStatusVersion',
+      'releaseStatusSecrets',
+      'factSizeValuePending',
+      'checksumValuePending',
+      'primaryCta',
+    ]) {
+      assert.equal(en.download[gone], undefined, `download.${gone} must stay removed`);
+      assert.equal(ko.download[gone], undefined, `download.${gone} must stay removed`);
+    }
+
+    // Two states, both honest: a real download once published, an honest link
+    // to the releases page before that.
+    assert.match(en.download.primaryCtaPublished, /\{size\}/);
+    assert.match(en.download.primaryCtaPending, /releases page/i);
+    assert.match(ko.download.primaryCtaPending, /릴리스 페이지/);
     assert.equal(en.download.sourceCta, 'View source code');
-    assert.match(ko.download.primaryCta, /릴리스 확인/);
     assert.match(ko.download.sourceCta, /소스 코드/);
-    assert.doesNotMatch(en.download.primaryCta, /latest/i);
-    assert.doesNotMatch(ko.download.primaryCta, /최신/);
-    assert.match(en.download.releaseAvailabilityNote, /If no macOS DMG is visible yet/);
-    assert.match(en.download.releaseAvailabilityNote, /PR review, version alignment, Developer ID signing\/notarization, or the v0\.1\.0 GitHub Release/);
-    assert.doesNotMatch(en.download.releaseAvailabilityNote, /Firebase Hosting/);
-    assert.match(en.download.releaseStatusTitle, /Before the first release is fully available/);
-    assert.match(en.download.releaseStatusPr, /desktop release workflow/);
-    assert.match(en.download.releaseStatusPr, /merged to main before v0\.1\.0 can ship/);
-    assert.match(en.download.releaseStatusVersion, /v0\.1\.0 tag/);
-    assert.match(en.download.releaseStatusVersion, /package\.json, Tauri, and Cargo metadata/);
-    assert.doesNotMatch(en.download.releaseStatusVersion, /Firebase Hosting/);
-    assert.match(en.download.releaseStatusSecrets, /Apple Developer ID signing\/notarization secrets/);
-    assert.doesNotMatch(en.download.releaseStatusSecrets, /Firebase Hosting/);
-    assert.match(en.download.releaseStatusSecrets, /direct-download DMGs/);
-    assert.match(en.download.releaseStatusSecrets, /not Mac App Store submission/);
-    assert.match(en.download.releaseStatusRelease, /v0\.1\.0 GitHub Release/);
-    assert.match(en.download.releaseStatusRelease, /source of truth/);
-    assert.match(en.download.releaseStatusHosted, /Separately, GitHub Pages must deploy/);
-    assert.doesNotMatch(en.download.releaseStatusHosted, /Firebase Hosting/);
-    assert.match(en.download.releaseStatusHosted, /\/ko\/download\//);
-    assert.match(ko.download.releaseAvailabilityNote, /macOS DMG 가 아직 보이지 않으면/);
-    assert.match(ko.download.releaseAvailabilityNote, /PR review, version alignment, Developer ID signing\/notarization, v0\.1\.0 GitHub Release/);
-    assert.doesNotMatch(ko.download.releaseAvailabilityNote, /Firebase Hosting/);
-    assert.match(ko.download.releaseStatusTitle, /첫 릴리스가 완전히 열리기 전 체크리스트/);
-    assert.match(ko.download.releaseStatusPr, /desktop release workflow/);
-    assert.match(ko.download.releaseStatusPr, /main 에 병합/);
-    assert.match(ko.download.releaseStatusVersion, /v0\.1\.0 tag/);
-    assert.match(ko.download.releaseStatusVersion, /package\.json, Tauri, Cargo metadata/);
-    assert.doesNotMatch(ko.download.releaseStatusVersion, /Firebase Hosting/);
-    assert.match(ko.download.releaseStatusSecrets, /Apple Developer ID/);
-    assert.doesNotMatch(ko.download.releaseStatusSecrets, /Firebase Hosting/);
-    assert.match(ko.download.releaseStatusSecrets, /직접 다운로드 DMG/);
-    assert.match(ko.download.releaseStatusSecrets, /Mac App Store 제출용이 아니라/);
-    assert.match(ko.download.releaseStatusRelease, /v0\.1\.0 GitHub Release/);
-    assert.match(ko.download.releaseStatusRelease, /진실원/);
-    assert.match(ko.download.releaseStatusHosted, /별도로/);
-    assert.match(ko.download.releaseStatusHosted, /GitHub Pages/);
-    assert.doesNotMatch(ko.download.releaseStatusHosted, /Firebase Hosting/);
-    assert.match(ko.download.releaseStatusHosted, /\/ko\/download\//);
-    assert.match(en.download.proofSigned, /Release gate requires/);
-    assert.match(en.download.proofNotarized, /Release gate requires/);
-    assert.match(en.download.proofChecksum, /checksums are verified/);
-    assert.match(en.download.step1Body, /aarch64 DMG for Apple Silicon Macs/);
-    assert.match(en.download.step1Body, /x64 DMG for Intel Macs/);
-    assert.match(ko.download.proofSigned, /릴리스 게이트/);
-    assert.match(ko.download.proofNotarized, /릴리스 게이트/);
-    assert.match(ko.download.proofChecksum, /체크섬을 검증/);
-    assert.match(ko.download.step1Body, /Apple Silicon Mac 은 aarch64 DMG/);
-    assert.match(ko.download.step1Body, /Intel Mac 은 x64 DMG/);
-    // (Removed 2026-07-24) The `ontologyPages.edit.*` demo-mode/onboarding
-    // download-guidance assertions were dropped with the retired ERD builder —
-    // that namespace no longer exists. Topology empty-state download guidance
-    // (below) still covers the "install the macOS app" contract.
-    assert.match(en.topology.empty.bodyNoProjectsDownload, /Install the macOS app/i);
-    assert.match(en.topology.empty.ctaOpenVaultDownload, /Download macOS app/i);
-    assert.match(ko.topology.empty.ctaOpenVaultDownload, /macOS 앱 다운로드/);
+
+    // The CTA must never depend on a /releases/latest URL — asset names carry
+    // the version, so "latest" silently breaks on the next release.
+    assert.doesNotMatch(en.download.primaryCtaPending, /latest/i);
+    assert.doesNotMatch(ko.download.primaryCtaPending, /최신/);
+
+    // Signing and notarization are properties of published builds, never a
+    // gate that "requires" them at some future point.
+    assert.doesNotMatch(en.download.proofSigned, /Release gate requires/);
+    assert.doesNotMatch(ko.download.proofSigned, /게이트가/);
+    assert.match(en.download.trustVerifyCommand, /\{file\}/);
+
+    // Windows is named rather than omitted, so a Windows visitor learns where
+    // they stand instead of guessing whether the product excludes them.
+    assert.match(en.download.windowsPendingBadge, /In preparation/i);
+    assert.match(ko.download.windowsPendingBadge, /준비 중/);
+    assert.match(en.download.windowsPendingBody, /signed installer/i);
+
+    // A domain that does not resolve must not be cited as fact.
+    assert.doesNotMatch(JSON.stringify(en.download), /ontology-atlas\.dev/);
+    assert.doesNotMatch(JSON.stringify(ko.download), /ontology-atlas\.dev/);
   });
 
   it('keeps Korean primary navigation understandable without topology jargon', async () => {
