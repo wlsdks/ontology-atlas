@@ -38,3 +38,10 @@
 - `--no-verify` 로 hook 우회 금지.
 - `git reset --hard` / `git push --force` 는 user 명시 명령 후만.
 - main 에 force push 절대 금지.
+- **생성물 JSON 충돌을 손으로 편집하지 말 것.** `src/entities/docs-vault/data/*`
+  와 `public/docs-vault/**` 는 `pnpm docs-vault:build` 산출물이다. 충돌 마커를
+  손으로 지우다 JSON 안에 남겨 타입 검사가 깨진 전례가 있다. 어느 쪽을 취해도
+  되니 **다시 생성**한다:
+  `git checkout --ours src/entities/docs-vault/data public/docs-vault && pnpm docs-vault:build`.
+  (결정성 계약 덕에 재생성 결과는 어느 머신에서나 같은 바이트다 —
+  `docs/DEVELOPMENT-CHECKS.md` "Generated manifest determinism".)

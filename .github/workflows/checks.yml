@@ -32,8 +32,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      # fetch-depth: 0 필수 — `docs-vault:check` 가 문서별 "마지막으로 바뀐 날"
+      # 을 git 히스토리에서 읽는다. 얕은 클론은 문서 전부에 같은 날짜를 줘
+      # 검증이 실제와 다른 값을 비교하게 된다.
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -73,3 +78,15 @@ jobs:
       - name: Package contracts
         if: always()
         run: pnpm package:check
+
+      # 생성 매니페스트 게이트 둘. 지금까지 어느 PR 검증에도 물려 있지 않았다 —
+      # `docs-vault:check` 는 macOS 릴리스 경로에만, `test:docs-vault` 는 아무
+      # 곳에도 없었다. 그래서 `docs/**` 를 고치고 재생성을 잊은 PR 도, 생성이
+      # 비결정적으로 되돌아간 PR 도 아무도 막지 못했다.
+      - name: Docs vault freshness
+        if: always()
+        run: pnpm docs-vault:check
+
+      - name: Docs vault determinism
+        if: always()
+        run: pnpm test:docs-vault
