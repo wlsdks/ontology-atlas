@@ -130,12 +130,24 @@ export function AgentClientButtons({
               <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
                 {t("serverUnavailableDesc")}
               </p>
-              <Link
-                href="/docs/?slug=AGENT-GRAPH-WORKFLOW"
-                className="mt-2 inline-flex text-label font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
-              >
-                {t("serverUnavailableSource")}
-              </Link>
+              {/* 「왜 + 어디서」 계약 (`.claude/rules/surfaces.md`) — 이유만
+                  말하고 갈 곳이 없으면 그건 강등이 아니라 막다른 길이다.
+                  주 목적지는 앱이고, 앱을 못 까는 사람에게 소스 경로를 남긴다. */}
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <Link
+                  href="/download/"
+                  data-testid="agent-connect-web-get-app"
+                  className="inline-flex text-label font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                >
+                  {t("serverUnavailableGetApp")}
+                </Link>
+                <Link
+                  href="/docs/?slug=AGENT-GRAPH-WORKFLOW"
+                  className="inline-flex text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                >
+                  {t("serverUnavailableSource")}
+                </Link>
+              </div>
             </div>
           </div>
         </div>

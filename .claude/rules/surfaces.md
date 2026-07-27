@@ -22,7 +22,7 @@
 
 앱은 같은 정적 export(`out/`)를 Tauri WebView 에 싣는 **한 빌드**다
 (`src-tauri/tauri.conf.json` 의 `frontendDist: "../out"`). 분리의 구현은
-포크가 아니라 **능력 브리지 4개**다:
+포크가 아니라 **능력 브리지 5개**다:
 
 | 브리지 | 파일 | 웹에서 |
 |---|---|---|
@@ -30,6 +30,7 @@
 | git | `src/shared/lib/tauri-git.ts` | 실행 불가 → 강등 카드 |
 | 키체인 | `src/shared/lib/tauri-secrets.ts` | 원리적 불가 → 강등 카드 |
 | LLM 호출 | `src/shared/lib/tauri-llm.ts` | 원리적 불가 → 액션 자체를 안 그림 |
+| 에이전트 연결 | `src/shared/lib/tauri-agent-setup.ts` | 절대 경로가 없어 실행 가능한 설정 불가 → 강등 카드 |
 
 관례는 하나다: `getInvoke()` → `isTauri()` 아니면 `null` → **화면 정직
 강등**. 새 데스크톱 능력도 이 관례로만 붙인다. 갈래를 새로 만들지 않는다.

@@ -2796,7 +2796,8 @@
     "connectFailedTitle": "Not connected yet",
     "connectFailedUnknown": "Something blocked it and we could not tell what. Try again.",
     "connectRetry": "Try again",
-    "connectDesktopOnly": "This only works in the installed app."
+    "connectDesktopOnly": "This only works in the installed app.",
+    "serverUnavailableGetApp": "Get the app"
   },
   "appUpdate": {
     "availableTitle": "Version {version} is available",
