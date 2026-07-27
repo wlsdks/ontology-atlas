@@ -26,6 +26,7 @@ import {
 } from '../mcp/src/ontology-engine.mjs';
 import { RELATION_TYPE_VALUES as CLI_RELATION_TYPE_VALUES } from '../cli/src/lib/relation-types.mjs';
 import { compileOntology } from '../mcp/src/ontology-compiler.mjs';
+import { SERVER_VERSION } from '../mcp/src/server-version.mjs';
 import { collectNeighborRefs, findBacklinks, loadVaultDocs } from '../mcp/src/vault.mjs';
 import { CLI_COMMAND_COUNT } from "../cli/src/lib/cli-commands.mjs";
 import {
@@ -2744,6 +2745,22 @@ describe('package contract helpers', () => {
     assert.match(smoke, /dependency_cycles:fail:1/);
     assert.match(smoke, /installed CLI health check coverage/);
     assert.match(smoke, /dependency_cycles\\s\+fail:1/);
+  });
+
+  it('keeps the embedded SERVER_VERSION in sync with mcp/package.json', () => {
+    // 서버는 `bun build --compile` 로 단일 바이너리가 되어 앱 번들에 실린다.
+    // 그 형태에는 package.json 이 없으므로 버전을 런타임에 읽을 수 없다 —
+    // 상수로 임베드하고, 두 곳이 갈라지지 않게 여기서 잠근다.
+    const pkg = JSON.parse(readFileSync('mcp/package.json', 'utf-8'));
+    const source = readFileSync('mcp/src/index.js', 'utf-8');
+
+    assert.equal(SERVER_VERSION, pkg.version);
+    assert.equal(isCoveredByFiles('src/server-version.mjs', pkg.files), true);
+    assert.doesNotMatch(
+      source,
+      /readFileSync\(\s*new URL\('\.\.\/package\.json'/,
+      'mcp/src/index.js must not read package.json at runtime — it breaks the compiled binary',
+    );
   });
 
   it('keeps MCP npm test runnable from the lean published tarball', () => {

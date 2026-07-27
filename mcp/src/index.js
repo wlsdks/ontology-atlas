@@ -55,6 +55,8 @@ import {
 import { basename, relative, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 
+import { SERVER_VERSION } from './server-version.mjs';
+
 import { existsSync, readFileSync, copyFileSync, realpathSync, statSync } from 'node:fs';
 import {
   GRAPH_ARRAY_KEYS,
@@ -161,9 +163,7 @@ const REPO_RESOLUTION = process.env.OATLAS_REPO_ROOT
   : DISCOVERED_REPO_ROOT
     ? 'git.rev-parse'
     : 'process.cwd';
-const SERVER_VERSION = JSON.parse(
-  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-).version;
+// SERVER_VERSION 은 컴파일 가능하도록 상수로 임베드돼 있다 (server-version.mjs 참고).
 const COMPILED_ONTOLOGY_CACHE = createCompiledOntologyCache({
   loadDocs: () => loadVaultDocs(VAULT_ROOT),
   compile: (docs, options) => compileOntology(docs, options),
