@@ -54,12 +54,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         // 비활성화해 region 라벨이 locale-aware "Notifications / 작업 알림"
         // 만 노출되도록 한다.
         hotkey={[]}
-        // 디자인 헌장 §11 — 무채색 + 인디고 alpha 만. swipe / scale 같은 기본
-        // 애니메이션 은 sonner 의 onmount/exit 만 (motion-reduce 자동 존중).
+        // 디자인 헌장 §11 — 무채색 + 인디고 alpha 만.
         toastOptions={{
           classNames: {
+            // `app-toast` 는 스타일이 아니라 **모션 훅**이다 — sonner 의
+            // 공장값 400ms `ease`(첫 프레임 2.5%, 피크 6프레임 = 등장에
+            // ease-in)를 앱 램프로 갈아 끼우고, 감속 사용자에게 하드컷 대신
+            // 동등물을 주는 규칙이 이 클래스에 걸린다 (`app/globals.css`
+            // "토스트(sonner) 모션" 절, 2026-07-28 프레임 실측).
             toast:
-              'rounded-full border bg-[color:var(--color-panel)] px-3.5 py-2 text-body text-[color:var(--color-text-primary)] shadow-[0_10px_28px_var(--color-shadow-a42)]',
+              'app-toast rounded-full border bg-[color:var(--color-panel)] px-3.5 py-2 text-body text-[color:var(--color-text-primary)] shadow-[0_10px_28px_var(--color-shadow-a42)]',
             success:
               'border-[color:var(--color-success-a35)] text-[color:var(--color-text-primary)]',
             info: 'border-[color:var(--color-indigo-line-a35)] text-[color:var(--color-text-primary)]',

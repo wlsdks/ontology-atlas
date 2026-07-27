@@ -117,6 +117,16 @@ export interface PointerHandlerRefs {
    */
   pulsesRef?: Ref<Pulse[]>;
   reducedMotionRef: Ref<boolean>;
+  /**
+   * WCAG 2.2 §2.3.3 — "the camera's last mover was the user's hand."
+   * Every gesture that writes `cameraTargetRef` (wheel · pinch · pan · flick)
+   * flips this true; the programmatic setters in `use-topology-loop.ts` flip it
+   * back. `stepTopologyPhysics` reads it to scope the reduced-motion camera snap
+   * to **app-initiated** travel only — direct manipulation is the hand's
+   * extension, not vestibular motion, and the standard exempts it explicitly.
+   * Optional so existing test fixtures keep working.
+   */
+  userDrivenCameraRef?: Ref<boolean>;
   /** The live force simulation (`model/force-layout.ts`) — pin/movePin/clearPin during node-drag. Null before the world is built. */
   simRef: Ref<ForceSimulation | null>;
   /** Frames of remaining sim warmth — the rAF loop ticks the sim while > 0 (or while a node is pinned). Bumped by node-drag. */
@@ -286,6 +296,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     rippleStartRef,
     pulsesRef,
     reducedMotionRef,
+    userDrivenCameraRef,
     simRef,
     heatRef,
     nodeDragRef,
@@ -550,6 +561,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           const afterX = worldAtPrevMidX - (midX - width / 2) / newScale;
           const afterY = worldAtPrevMidY - (midY - height / 2) / newScale;
           cameraTargetRef.current = { tx: afterX, ty: afterY, tscale: newScale };
+          if (userDrivenCameraRef) userDrivenCameraRef.current = true;
           dampingRef.current = tokens.cameraDampingDefault;
           cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
           // 잔여 플릭 속도 차단(휠과 동일) — 핀치는 타깃 구동.
@@ -557,13 +569,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           if (cam.x.velocity !== 0 || cam.y.velocity !== 0) {
             cameraRef.current = { ...cam, x: { value: cam.x.value, velocity: 0 }, y: { value: cam.y.value, velocity: 0 } };
           }
-          if (reducedMotionRef.current) {
-            cameraRef.current = {
-              x: { value: afterX, velocity: 0 },
-              y: { value: afterY, velocity: 0 },
-              scale: { value: newScale, velocity: 0 },
-            };
-          }
+          // WCAG 2.3.3 — 핀치는 **사용자가 개시한** 확대다. 예전엔 여기서
+          // 카메라를 목적지로 스냅했는데, 그러면 감속 사용자에게 뷰포트 전체가
+          // 한 프레임에 순간이동한다(2026-07-28 실측: diff 1프레임 뒤 0.00 영구)
+          // — 대체하려던 이동보다 전정계에 더 나쁘고, "내가 어디로 갔나" 를
+          // 읽을 단서까지 사라진다. 직접 조작은 손의 연장이라 시간을 지킨다.
         }
         pinchRef.current = { dist, midX, midY };
         return; // 핀치 중엔 단일 포인터 이동 로직(팬/호버/드래그)을 타지 않는다
@@ -634,6 +644,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       // only takes back over once the flick is released (`engine/momentum.ts`).
       cameraRef.current = { ...cameraRef.current, x: { value: nextX, velocity: 0 }, y: { value: nextY, velocity: 0 } };
       cameraTargetRef.current = { ...cameraTargetRef.current, tx: nextX, ty: nextY };
+      if (userDrivenCameraRef) userDrivenCameraRef.current = true;
       dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
       // Keep ~10 samples (~160ms at 60fps) so the release-velocity window
       // (`--topology-v2-camera-release-velocity-window-ms`) is always covered,
@@ -828,6 +839,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         clampedLanding = clampPointToPanBounds(px.landingTarget, py.landingTarget, computePanBounds(boundsSource));
       }
       cameraTargetRef.current = { tx: clampedLanding.x, ty: clampedLanding.y, tscale: cameraTargetRef.current.tscale };
+      if (userDrivenCameraRef) userDrivenCameraRef.current = true;
       cameraRef.current = {
         ...cameraRef.current,
         x: { value: cameraRef.current.x.value, velocity: px.worldVelocity },
@@ -1000,6 +1012,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const afterY = beforeY - (sy - height / 2) / newScale;
 
     cameraTargetRef.current = { tx: afterX, ty: afterY, tscale: newScale };
+    if (userDrivenCameraRef) userDrivenCameraRef.current = true;
     dampingRef.current = tokens.cameraDampingDefault;
     // R4 관성 활강 중단 — 휠 줌이 시작되면 진행 중이던 flick 감속의 잔여 x/y
     // 속도를 흘리지 않도록 0 으로 잡는다(줌은 타깃 구동이므로 스케일 축은 무관).
@@ -1014,9 +1027,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // for the scale axis (and pan, since point-to-zoom moves both together)
     // until the NEXT programmatic camera move resets it back to transition.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
-    if (reducedMotionRef.current) {
-      cameraRef.current = { x: { value: afterX, velocity: 0 }, y: { value: afterY, velocity: 0 }, scale: { value: newScale, velocity: 0 } };
-    }
+    // WCAG 2.3.3 — 휠 줌도 사용자 개시라 위 핀치와 같은 이유로 스냅하지 않는다.
+    // 감속 사용자가 잃는 것은 앱이 **데려가는** 이동뿐이다(ego 다이브·fit·정렬,
+    // `topology-physics-step.ts#userDrivenCamera`).
   };
 
   // W2-B — right-click reuses the SAME tier-aware hit test as pointerdown

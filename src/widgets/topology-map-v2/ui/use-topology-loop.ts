@@ -410,6 +410,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   });
   const cameraTargetRef = useRef<CameraTarget>({ tx: 0, ty: 0, tscale: 1 });
   /**
+   * WCAG 2.2 §2.3.3 — "누가 카메라를 마지막으로 움직였나". 포인터 핸들러의
+   * 제스처(휠·핀치·팬·플릭)가 true 로, 이 파일의 **프로그램적** 이동(ego
+   * 다이브·fit·결계·초기 스냅)이 false 로 되돌린다. `stepTopologyPhysics` 가
+   * 이 값으로 reduced-motion 카메라 스냅을 앱 개시 이동에만 한정한다 —
+   * 사용자가 개시한 줌/팬은 표준이 명시적으로 예외로 두는 항목이고, 그걸
+   * 자르면 뷰포트 전체가 한 프레임에 순간이동해 오히려 더 나쁘다.
+   */
+  const userDrivenCameraRef = useRef(false);
+  /**
    * S3 마감 폴리시 (fable 설계) — the live cubic camera transition, or null.
    * Set by `beginCameraTween` on every programmatic move (focus dive, cluster
    * dive, fit/relayout); driven each frame in the rAF loop; cleared the instant
@@ -742,6 +751,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (!target) return;
     dampingRef.current = tokens.cameraDampingDefault;
     cameraTargetRef.current = target;
+    userDrivenCameraRef.current = false;
     // 프로그램적 카메라 이동 — 큐빅 ease-in-out 트윈(reduced-motion 은 스프링에
     // 위임). angfreq 는 트윈 종료 후/중단 시 스프링이 이어받을 때의 값.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
@@ -791,6 +801,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (hasAnyNodeOnScreen(cameraRef.current, width, height, world.nodes)) return;
     const target = computeOverviewCameraTarget(world.spineBounds, width, height, tokens, world.nodes.length);
     cameraTargetRef.current = { tx: target.tx, ty: target.ty, tscale: target.tscale };
+    userDrivenCameraRef.current = false;
   };
 
   const trySnapInitialCamera = (tokens: TopologyV2Tokens) => {
@@ -816,6 +827,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       scale: { value: target.tscale, velocity: 0 },
     };
     cameraTargetRef.current = target;
+    userDrivenCameraRef.current = false;
     overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     hasInitializedRef.current = true;
@@ -1043,6 +1055,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       );
       const target = realmCameraTarget(bounds, tokens, width, height);
       cameraTargetRef.current = target;
+      userDrivenCameraRef.current = false;
       dampingRef.current = tokens.cameraDampingDefault;
       cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
       beginCameraTween(target);
@@ -1055,6 +1068,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // on the same spine bounds so the zoom-ratio/altitude anchor stays at ratio 1.
     const overviewTarget = computeOverviewCameraTarget(world.spineBounds, width, height, tokens, world.nodes.length);
     cameraTargetRef.current = overviewTarget;
+    userDrivenCameraRef.current = false;
     overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
     dampingRef.current = tokens.cameraDampingDefault;
     // Dive-zoom fix — "fit view"/relayout is a PROGRAMMATIC camera move, so it
@@ -1205,6 +1219,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (!target) return;
     dampingRef.current = tokens.cameraDampingDefault;
     cameraTargetRef.current = target;
+    userDrivenCameraRef.current = false;
     // Dive-zoom fix — focus dive AND deselect-return are both PROGRAMMATIC
     // camera moves (this effect fires for both directions of `focusedSlug`
     // changing), so both ease via the cubic transition tween (reduced-motion →
@@ -1275,6 +1290,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const target = realmCameraTarget(data.bounds, tokens, width, height);
         dampingRef.current = tokens.cameraDampingDefault;
         cameraTargetRef.current = target;
+        userDrivenCameraRef.current = false;
         cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
         // 돌리 인은 안무 전체(이탈→FLIP→결계)를 타고 간다 — 거리 비례 단기
         // 트윈이면 카메라만 먼저 끝나 "컷" 으로 읽힌다 (녹화 검수).
@@ -1327,6 +1343,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const savedEntry = realmDataRef.current?.entryCamera ?? null;
         const target = savedEntry ?? computeOverviewCameraTarget(world.spineBounds, width, height, tokens, world.nodes.length);
         cameraTargetRef.current = target;
+        userDrivenCameraRef.current = false;
         overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
         dampingRef.current = tokens.cameraDampingDefault;
         cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
@@ -1820,6 +1837,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         panelEmphasisNodeId,
         isDragging: pointerMachineRef.current.phase === "dragging",
         reducedMotion: reducedMotionRef.current,
+        userDrivenCamera: userDrivenCameraRef.current,
         freezeCamera,
         emphasisById: emphasisRef.current,
         rippleStartById: rippleStartRef.current,
@@ -2453,6 +2471,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     rippleStartRef,
     pulsesRef,
     reducedMotionRef,
+    userDrivenCameraRef,
     simRef,
     heatRef,
     nodeDragRef,
