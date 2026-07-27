@@ -5107,6 +5107,49 @@
       ]
     },
     {
+      "slug": "DECISIONS",
+      "path": "docs/DECISIONS.md",
+      "title": "DECISIONS — 카운슬 결정 원장",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "DECISIONS — 카운슬 결정 원장",
+          "slug": "decisions-카운슬-결정-원장"
+        },
+        {
+          "depth": 2,
+          "text": "이 원장의 계약 (읽지 않으면 존재 이유가 없다)",
+          "slug": "이-원장의-계약-읽지-않으면-존재-이유가-없다"
+        },
+        {
+          "depth": 2,
+          "text": "기록 형식",
+          "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-27 — 카운슬을 문서에서 호출 가능한 에이전트로 (PO 5인 · 디자인 8석 · chief)",
+          "slug": "2026-07-27-카운슬을-문서에서-호출-가능한-에이전트로-po-5인-디자인-8석-chief"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-27 — 다운로드 페이지를 게시 여부 단일 상태로, 앱 버전 v1.0.0",
+          "slug": "2026-07-27-다운로드-페이지를-게시-여부-단일-상태로-앱-버전-v100"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-27 — 모바일/태블릿과 반응형을 두 자리가 아니라 한 자리로",
+          "slug": "2026-07-27-모바일태블릿과-반응형을-두-자리가-아니라-한-자리로"
+        }
+      ],
+      "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
+      "wordCount": 817,
+      "updatedAt": "2026-07-27",
+      "linksOut": []
+    },
+    {
       "slug": "DEPLOYMENT",
       "path": "docs/DEPLOYMENT.md",
       "title": "Deployment",
@@ -10518,7 +10561,7 @@
         }
       ],
       "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. Ontology Atlas is a local-first ontology workbench, not a decorative graph demo. The Relief/Topology screen must he",
-      "wordCount": 10520,
+      "wordCount": 10517,
       "updatedAt": "2026-07-27",
       "linksOut": [
         "PRODUCT-OWNER-OPERATING-SYSTEM"
@@ -10762,6 +10805,16 @@
           "slug": "the-atlas-po-council"
         },
         {
+          "depth": 3,
+          "text": "The council is five callable agents, not thirteen bullet points",
+          "slug": "the-council-is-five-callable-agents-not-thirteen-bullet-points"
+        },
+        {
+          "depth": 3,
+          "text": "When to convene",
+          "slug": "when-to-convene"
+        },
+        {
           "depth": 2,
           "text": "Default PO Stance",
           "slug": "default-po-stance"
@@ -10843,8 +10896,8 @@
         }
       ],
       "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens before implementation is treated as valuable. Ontology Atlas does not need a backlog clerk. It needs a product owner that protects th",
-      "wordCount": 4938,
-      "updatedAt": "2026-06-21",
+      "wordCount": 5412,
+      "updatedAt": "2026-07-27",
       "linksOut": []
     },
     {
@@ -15637,6 +15690,13 @@
         "type": "doc",
         "slug": "CHANGELOG",
         "title": "CHANGELOG"
+      },
+      {
+        "name": "DECISIONS",
+        "path": "DECISIONS",
+        "type": "doc",
+        "slug": "DECISIONS",
+        "title": "DECISIONS — 카운슬 결정 원장"
       },
       {
         "name": "DEPLOYMENT",

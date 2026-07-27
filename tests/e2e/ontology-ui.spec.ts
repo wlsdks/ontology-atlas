@@ -43,23 +43,37 @@ test.describe("ontology view UI", () => {
     await expect(page.getByText("Codebase ontology that grows with AI")).toHaveCount(0);
   });
 
-  test("desktop: /download exposes the app CTA and the absorbed intro section", async ({ page }) => {
+  test("desktop: /download states installability before it explains the product", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/download/");
-    // 2026-07 download 페이지 재설계 — 옛 히어로 문구/링크명이 바뀌었다
-    // (`download.title` = "Install once…", primaryCta = "Check GitHub
-    // releases"). 릴리스 href 는 primary CTA(MacosDownloadLink)가, 소스는
-    // sourceCta 가 담당한다.
+
     await expect(
       page.getByRole("heading", { name: "Install once. Work from your local vault." }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("link", { name: "Check GitHub releases" }).first(),
-    ).toHaveAttribute("href", "https://github.com/wlsdks/ontology-atlas/releases");
+
+    // The primary action is a single stable target across both release states:
+    // the Apple Silicon DMG once published, an honestly-labelled link to the
+    // releases page before that. Asserting the label would pin this spec to one
+    // state and break on release day — assert the role the element plays.
+    const primary = page.getByTestId("download-primary-cta");
+    await expect(primary).toBeVisible();
+    await expect(primary).toHaveAttribute("href", /github\.com\/wlsdks\/ontology-atlas/);
+
     await expect(page.getByRole("link", { name: "View source code" })).toHaveAttribute(
       "href",
       "https://github.com/wlsdks/ontology-atlas",
     );
+
+    // Both platforms are named. Omitting Windows left a Windows visitor unable
+    // to tell whether the product excluded them or had not got there yet.
+    await expect(page.getByTestId("download-platform-macos")).toBeVisible();
+    const windows = page.getByTestId("download-platform-windows");
+    await expect(windows).toBeVisible();
+    await expect(windows).toContainText("Windows");
+
+    // Operator-only release-pipeline status must never reach the public page.
+    await expect(page.getByText(/waiting on PR review/i)).toHaveCount(0);
+    await expect(page.getByText(/version alignment/i)).toHaveCount(0);
   });
 
   // R+ /projects redesign — the census/activity/card-zone layout

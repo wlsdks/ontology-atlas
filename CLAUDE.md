@@ -10,11 +10,8 @@
 
 - `.claude/rules/*.md` — 세부 작업 규율 (architecture · design · git · testing · local-first · auth · forbidden). 모두 자동 로드.
 - `.claude/settings.json` — hooks · permissions (있을 때만).
-- `.claude/skills/*` — 커스텀 스킬 (있을 때만).
-- `.claude/agents/design-guardian.md` — **상주 디자인 가디언** subagent. UI/디자인
-  변경 전 검토·변경 후 검증·"AI 느낌" 제거 패스에 이 agent 를 호출한다 (Agent tool,
-  `subagent_type: "design-guardian"`). 공개 발행 원칙(Apple HIG · Toss 공개 발표 ·
-  Rams · Tufte)만 인용, 자산 모방 금지, 스크린샷 기반 검증 + 직접 코드 적용까지.
+- `.claude/agents/*.md` — 상주 심사진: 팀장(`chief`) · PO 카운슬 5인(`po-*`) · 디자인 벤치 8석(`design-*`) · 평결을 코드로 적용하는 `design-guardian`.
+- `.claude/skills/*` — `/po-pass`(매일 쓰는 단독 경로) · `/po-council` · `/design-council` · `/design-audit` · `/user-walkthrough` · `/motion-verify` · `/responsive-sweep`. 소집 트리거와 프로토콜은 AGENTS.md 가 정본이고, 결정과 진 반대 의견은 `docs/DECISIONS.md` 에 남는다.
 
 ## CLAUDE.md / AGENTS.md 동기화 정책
 

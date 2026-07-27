@@ -174,6 +174,63 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
 - **Architecture · FSD boundaries** — `@.claude/rules/architecture.md`
 - **Product owner gate** — `@docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` is mandatory before feature, UX, graph, MCP, CLI, workflow, or macOS-shell changes. Start with the observed phenomenon and user problem, then the user moment, current alternative, ontology value, agent value, simplification, and verification plan; write a compact PO pass before implementation; ship outcomes, not output lists. Translate solution-shaped requests into observable problems first, then end with a PO verdict (`Do not build`, `Investigate first`, `Shape a slice`, or `Build and verify`) and use the PO rubric before coding. If the pass starts from a solution instead of evidence, pause and do discovery. Treat this as the project's product-owner authority, not as optional strategy prose.
 - **Product design gate** — `@docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` is mandatory for UI, visual design, interaction, graph readability, responsive layout, and macOS workbench changes. Use it after the PO pass to name the design council lens, surface hierarchy, graph semantics, responsive contract, agent handoff contract, and installed-app proof. Public references are principle sources only; never copy proprietary assets or styling.
+- **Solo PO pass** — `@.claude/skills/po-pass/SKILL.md` is the **daily** path and the one
+  the founding failure actually took: read the ledger, separate phenomenon from problem
+  with three discrimination tests, self-score the six rubric rows quoting their anchors,
+  and escalate to `/po-council` mechanically when the total is under 18, a fatal zero
+  appears, or a trigger is hit. Declaring "해당 없음" on ontology or agent value is **not
+  an exemption the author may grant** — that is the steward's review, and it requires the
+  council. `pnpm decisions:check` fails any PR that adds or removes a route, or edits the
+  MCP/CLI public contract, without appending to the ledger in the same change.
+- **User walkthrough** — `@.claude/skills/user-walkthrough/SKILL.md` walks one journey end
+  to end against the running build. Its authority is **pattern recognition**, and its
+  discipline is naming the pattern — "이 사람은 답답할 것" is invention, "이건 막다른
+  CTA 다" is checkable. It judges everything that lives in the artifact and refuses the one
+  claim that lives in a person: whether they would want it. The agent journey (a plain
+  Claude Code session with only Atlas MCP, timed to the north star) is not a simulation —
+  that population *is* the user.
+- **PO Council** — `@.claude/skills/po-council/SKILL.md` runs five standing product owners
+  (`po-evidence` 근거 · `po-craft` 결 · `po-steward` 지킴이 · `po-wedge` 해자 ·
+  `po-leverage` 지렛대) that carry the PO OS's thirteen lenses between them, with
+  **every rubric row signed by exactly one of them**. Convene it before expensive or
+  hard-to-reverse work — a new or removed surface, a public MCP/CLI/schema contract
+  change, direction or positioning, a first public release — or whenever a solo pass
+  scores under 18/24 or carries a fatal zero. They research the web, they must open the
+  real thing rather than the diff, and none of them may block without naming what to do
+  instead. One accountable person decides; the strongest losing argument is recorded with
+  the observation that would prove it right. Never for mechanical work.
+  `tests/contract/po-council.contract.test.ts` fails the build if a lens loses its owner
+  or the wiring drifts.
+- **Council head** — `@.claude/agents/chief.md` (`model: fable`) chairs both councils: it
+  decides whether to convene at all, which seats, the order (PO first, design second),
+  resolves conflict by a *named* rule, and writes the decision record. **It cannot edit
+  code** — the failure this repo had was that the party who wanted to build also signed
+  the gate. The record is a recommendation; the human owner signs it.
+- **Design Council** — `@.claude/skills/design-council/SKILL.md` convenes the eight-seat
+  Atlas Designer Bench as callable agents (`design-lead` 위계 · `design-system` 체계 ·
+  `design-interaction` 상호작용 · `design-motion` 모션 · `design-infoviz` 도해 ·
+  `design-workbench` 작업대 · `design-responsive` 반응형 · `design-handoff` 핸드오프). Convene only the seats a change
+  touches; **위계 and 체계 always attend** — one names the attention winner, the other
+  turns the decision into tokens, lint rules, and contract tests, because a decision that
+  never lands in the design system is one the next person re-makes. Every seat must open
+  the built surface rather than judge a diff, cites published principles only, never
+  imitates a reference product's assets or wording, and may not block without prescribing
+  an alternative. `design-guardian` is the accountable decider and the only one that edits
+  code. `tests/contract/design-council.contract.test.ts` fails the build if a seat loses
+  its agent, if a model tier or byte budget drifts, or if the skill stops naming the
+  instruments the measuring seats must run.
+- **Decision ledger** — `@docs/DECISIONS.md` records decisions **and the dissent that
+  lost**, with a falsifier for each. Read it before convening a council or writing a solo
+  PO pass: if a prior decision covers the same surface, cite it as still standing or
+  overturn it explicitly — quietly re-deciding is what the ledger exists to stop. Check
+  whether a prior record's falsifier has since been observed; if it has, the losing side
+  won and that is where the next pass starts. Append, never rewrite.
+- **Design audit** — `@.claude/skills/design-audit/SKILL.md` runs after a front-end change,
+  before calling it done. It **measures** the rendered DOM (rect intersections, dimension
+  variance across repeated sets, computed styles vs the ramps) and uses screenshots only as
+  evidence. A few pixels of misalignment is not something anyone — human or model —
+  reliably localises by looking; if it is not measured it cannot be prescribed, so
+  "looks fine" is not a verification.
 - **Design Guardian** — `@.claude/agents/design-guardian.md` is the standing senior design reviewer for UI work. Use it, or an equivalent sub-agent when available, before and after meaningful Relief/Topology design changes. It rejects token drift, attention-layer collisions, hidden typed facts, decorative motion, browser-only desktop proof, and reference copying. It approves only token-backed changes with screenshot/WebView evidence and installed-app proof when desktop behavior is affected.
 - **Design system** — neutrals + a single indigo, forbidden patterns — `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`.
   **디자인 규격은 md 뿐 아니라 `eslint.config.mjs` 의 `no-restricted-syntax` 로
