@@ -56,6 +56,7 @@ const CARD_CREATE_H_WARN = 320;
 const SAT = { w: 226, h: 54, gap: 12 } as const;
 const MAX_VISIBLE = 2;
 const CREATE_SLUG_COLLISION_ID = "studio-create-slug-collision";
+const CREATE_KIND_LABEL_ID = "studio-create-kind-label";
 
 export interface CompassBearingView {
   bearing: StudioBearing;
@@ -134,7 +135,9 @@ export interface StudioCompassLabels {
   similarSuggest: (title: string) => string;
   similarAccept: string;
   // create identity
-  createName: string;
+  /** CREATE 의 kind 세그먼트 그룹 이름 — 한 단어("종류"/"Kind"). 시각 라벨이자
+   *  `aria-labelledby` 대상. UP 소켓의 관계 질문과 이 컨트롤을 갈라 세운다. */
+  createKindLabel: string;
   createNamePlaceholder: string;
   createDomainNone: string;
   createDefinitionPlaceholder: string;
@@ -1411,7 +1414,24 @@ function CenterCard(
     >
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {mode === "create" && props.createKinds ? (
-          <div role="group" className="flex gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[3px]">
+          // ③ 2026-07-28 — 이 세그먼트는 **스키마 kind**(project/domain/
+          // capability/element)를 고르는 자리이고, 위(UP) 소켓은 **관계**
+          // (SKOS `broader` — 어느 개념의 하위인가)를 잇는 자리다. 다른 사실
+          // 둘인데 화면에서는 이 그룹에 이름이 없어(시각·aria 모두) 칩이
+          // 소켓의 답처럼 읽혔다. 한 단어 라벨이 두 질문을 갈라 세운다 —
+          // 칩 = "넷 중 무엇", 소켓 = "어느 개념의 하위".
+          <>
+            <span
+              id={CREATE_KIND_LABEL_ID}
+              className="text-label text-[color:var(--color-text-tertiary)]"
+            >
+              {props.labels.createKindLabel}
+            </span>
+            <div
+              role="group"
+              aria-labelledby={CREATE_KIND_LABEL_ID}
+              className="flex gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[3px]"
+            >
             {props.createKinds.map((k) => (
               <button
                 key={k.value}
@@ -1429,7 +1449,8 @@ function CenterCard(
                 {k.label}
               </button>
             ))}
-          </div>
+            </div>
+          </>
         ) : (
           <>
             <span className="rounded-[5px] border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a12)] px-1.5 py-px text-label tracking-[0.03em] text-[color:var(--color-indigo-text-soft)]">

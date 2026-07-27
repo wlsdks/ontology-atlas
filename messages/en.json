@@ -137,7 +137,7 @@
     "defMore": "More",
     "defLess": "Less",
     "question": {
-      "isA": "What kind of thing is this node?",
+      "isA": "What is this node a kind of?",
       "dependsOn": "What does this node lean on?",
       "contains": "What does it hold inside?",
       "relates": "Something similar or interchangeable?"
