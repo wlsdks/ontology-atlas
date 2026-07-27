@@ -304,6 +304,28 @@ describe('VaultAgentPanel', () => {
     secrets.stored = true;
   });
 
+  it('키를 맡길지 정하는 자리에서 쓰기 동의 약속이 읽힌다', async () => {
+    // 안전장치는 코드에 있는 것으로 부족하다 — 사람이 자기 키와 문서 폴더를
+    // 맡길지 정하는 **그 순간**에 "파일은 내가 확인해야 바뀐다" 가 화면에
+    // 없으면, 그 안전장치는 결정에 아무 도움이 안 된다.
+    bridge.available = true;
+    secrets.stored = false;
+    renderPanel();
+    expect(await screen.findByTestId('vault-agent-consent-promise')).toHaveTextContent(
+      messages.vaultAgentPanel.locked.consentPromise,
+    );
+    secrets.stored = true;
+  });
+
+  it('범위 시트가 승낙 범위에 쓰기가 있다는 것을 말한다', async () => {
+    // 읽기·전송·기록만 말하고 쓰기를 빼면 그 승낙은 범위를 모르는 승낙이다.
+    bridge.available = true;
+    renderPanel();
+    expect(await screen.findByTestId('agent-scope-consent')).toHaveTextContent(
+      messages.vaultAgentPanel.scope.consent,
+    );
+  });
+
   it('S7 — 바깥에서 건너온 첫 마디가 입력칸에 앉는다(전송 없이)', async () => {
     bridge.available = true;
     const { llmChat } = await import('@/shared/lib/tauri-llm');
@@ -323,17 +345,62 @@ describe('VaultAgentPanel', () => {
     );
   });
 
-  it('경계 다음 줄에 이어가기 카드가 선다 — 폴더 절대경로와 부탁 문장을 함께', async () => {
+  it('이어가기를 펼치면 경계와 함께 폴더 절대경로·부탁 문장이 온다', async () => {
     // 앱 내장 터미널을 걷어낸 뒤 떠나는 순간을 잇는 유일한 표면이다. 문구만
     // 있으면 사용자가 폴더 절대경로를 손으로 찾아야 하고, 거기서 흐름이 끊긴다.
+    // 상주하지 않는 이유(2026-07-27): 이 카드는 **떠날 때만** 필요한데 입력칸
+    // 아래에 늘 서 있으면서 경계 문장까지 두 줄을 상시로 먹고 있었다. 계약은
+    // 그대로다 — 한 번 눌러 펼치면 같은 세 가지(왜 · 어디로 · 무엇을)가 온다.
     bridge.available = true;
     renderPanel();
     fireEvent.click(await screen.findByTestId('agent-scope-accept'));
 
+    fireEvent.click(screen.getByTestId('agent-meta-handoff'));
     const packet = await screen.findByTestId('agent-handoff-packet');
     expect(packet).toHaveTextContent('cd /vault');
     // 보고 있던 개념이 부탁 문장에 실린다 — 붙여넣는 즉시 볼트에서 풀려야 한다.
     expect(packet).toHaveTextContent('capabilities/payment');
     expect(screen.getByTestId('agent-handoff-copy')).toBeInTheDocument();
+    // 왜 넘기는지가 넘기는 자리에 함께 있다.
+    expect(screen.getByTestId('agent-handoff-card')).toHaveTextContent(
+      messages.vaultAgentPanel.boundary,
+    );
+  });
+
+  it('곁가지는 한 번에 하나만 열린다 — 임시 표면을 겹쳐 쌓지 않는다', async () => {
+    bridge.available = true;
+    renderPanel();
+    fireEvent.click(await screen.findByTestId('agent-scope-accept'));
+
+    fireEvent.click(screen.getByTestId('agent-meta-prompt'));
+    expect(screen.getByTestId('agent-prompt-disclosure')).toBeInTheDocument();
+    expect(screen.queryByTestId('agent-handoff-card')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('agent-meta-handoff'));
+    expect(screen.getByTestId('agent-handoff-card')).toBeInTheDocument();
+    expect(screen.queryByTestId('agent-prompt-disclosure')).not.toBeInTheDocument();
+
+    // 같은 버튼을 다시 누르면 닫힌다 — 열어 둔 것을 닫을 길이 항상 있다.
+    fireEvent.click(screen.getByTestId('agent-meta-handoff'));
+    expect(screen.queryByTestId('agent-handoff-card')).not.toBeInTheDocument();
+  });
+
+  it('아직 아무 말도 안 한 사람에게는 이어갈 것이 없다 — 자리표시가 다르다', async () => {
+    // 잠긴 띠와 실제 입력칸이 **같은 문구**를 쓴다: 키가 들어와도 같은 자리에
+    // 같은 글자가 남으므로 "여기가 열렸다" 로 읽힌다.
+    bridge.available = true;
+    secrets.stored = false;
+    renderPanel();
+    expect(await screen.findByTestId('vault-agent-open-settings')).toHaveTextContent(
+      messages.vaultAgentPanel.placeholderFirst,
+    );
+
+    secrets.stored = true;
+    emitSecretChange();
+    fireEvent.click(await screen.findByTestId('agent-scope-accept'));
+    expect(screen.getByTestId('vault-agent-input')).toHaveAttribute(
+      'placeholder',
+      messages.vaultAgentPanel.placeholderFirst,
+    );
   });
 });

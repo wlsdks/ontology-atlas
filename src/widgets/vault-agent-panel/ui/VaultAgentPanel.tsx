@@ -22,10 +22,10 @@ import {
 
 import { useVaultAgent } from '../model/use-vault-agent';
 import { AgentFirstWords } from './AgentFirstWords';
-import { AgentHandoffCard } from './AgentHandoffCard';
+import { AgentHandoffPacket } from './AgentHandoffCard';
 import { AgentLockedComposer, AgentLockedState } from './AgentLockedState';
 import { AgentProposalCard } from './AgentProposalCard';
-import { AgentPromptDisclosure } from './AgentPromptDisclosure';
+import { AgentPromptText } from './AgentPromptDisclosure';
 import { AgentScopeSheet } from './AgentScopeSheet';
 import { AgentTranscript } from './AgentTranscript';
 
@@ -81,6 +81,17 @@ export function VaultAgentPanel({
   const locale = useLocale();
   const [draft, setDraft] = useState('');
   const [scopeAccepted, setScopeAccepted] = useState(false);
+  /**
+   * 입력칸 아래 곁가지 두 개 — 「지침 보기」와 「터미널에서 이어가기」. **한
+   * 번에 하나만** 열린다.
+   *
+   * 왜 하나인가: 둘 다 테두리 있는 띠로 상주하던 구 배치는 패널 바닥에 네 개의
+   * 띠(지침 · 입력칸 · 경계 문장 · 인계 카드)를 쌓았고, 그중 주인공(입력칸)이
+   * 두 번째 줄에 있었다. 곁가지는 **떠날 때·의심될 때**만 필요한 것들이라
+   * 상주할 이유가 없다 — 여닫는 자리를 한 줄로 접고, 열리는 영역도 하나로
+   * 제한한다(겹쳐 열리는 임시 표면 0).
+   */
+  const [meta, setMeta] = useState<'prompt' | 'handoff' | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -375,6 +386,7 @@ export function VaultAgentPanel({
             <AgentLockedState
               title={t('degraded.webTitle')}
               body={t('degraded.webBody')}
+              consent={t('locked.consentPromise')}
               examplesTitle={t('locked.examplesTitle')}
               chips={firstWordsChips}
             />
@@ -382,6 +394,7 @@ export function VaultAgentPanel({
             <AgentLockedState
               title={t('degraded.noVaultTitle')}
               body={t('degraded.noVaultBody')}
+              consent={t('locked.consentPromise')}
               examplesTitle={t('locked.examplesTitle')}
               chips={firstWordsChips}
             />
@@ -392,11 +405,18 @@ export function VaultAgentPanel({
             <AgentLockedState
               title={t('degraded.noKeyTitle')}
               body={t('degraded.noKeyBody')}
+              consent={t('locked.consentPromise')}
               examplesTitle={t('locked.examplesTitle')}
               chips={firstWordsChips}
             />
           ) : !scopeAccepted ? (
-            <AgentScopeSheet
+            <>
+              {/* 동의 카드도 바닥에 선다 — [알겠어요]가 곧 [보내기]가 설
+                  자리다. 같은 자리에서 다음 컨트롤이 열리면 "여기가 열렸다"
+                  가 되고, 위에 떠 있다가 아래에 입력칸이 생기면 "다른 게
+                  나타났다" 가 된다. */}
+              <div aria-hidden="true" className="min-h-0 shrink grow" />
+              <AgentScopeSheet
               provider={t(`provider.${provider}`)}
               host={SECRET_PROVIDER_HOSTS[provider]}
               auditPath={LLM_AUDIT_LOG_RELATIVE_PATH}
@@ -404,15 +424,25 @@ export function VaultAgentPanel({
                 title: t('scope.title'),
                 body: ({ provider: name, host }) => t('scope.body', { provider: name, host }),
                 liveRows: t('scope.liveRows'),
+                consent: t('scope.consent'),
                 recorded: (path) => t('scope.recorded', { path }),
                 accept: t('scope.accept'),
                 cancel: t('scope.cancel'),
               }}
-              onAccept={() => setScopeAccepted(true)}
-              onCancel={onClose}
-            />
+                onAccept={() => setScopeAccepted(true)}
+                onCancel={onClose}
+              />
+            </>
           ) : (
             <>
+              {/* 대화는 **아래에서 자란다** — 짧을 때 남는 높이를 위로 민다.
+                  구 배치는 첫 턴을 위에 붙이고 입력칸까지 400~640px 를 비워
+                  두었는데, 그 여백은 답과 손 사이를 갈라놓기만 했다.
+                  `justify-end` 대신 스페이서를 쓰는 이유: 내용이 넘칠 때
+                  `justify-end` 는 스크롤 컨테이너의 위쪽을 잘라먹는다(첫 턴이
+                  스크롤 위로 사라진다). 스페이서는 shrink 되므로 넘치면
+                  조용히 0 이 된다. */}
+              <div aria-hidden="true" className="min-h-0 shrink grow" />
               <AgentTranscript
                 turns={agent.turns}
                 providerLabel={t(`provider.${provider}`)}
@@ -421,6 +451,7 @@ export function VaultAgentPanel({
                 onPrefill={prefill}
                 labels={{
                   nextStepTitle: t('nextStep.title'),
+                  retryTitle: t('retry.title'),
                   you: t('you'),
                   lookingAt: (title) => t('screenContext.lookingAt', { title }),
                   wholeMap: t('screenContext.wholeMap'),
@@ -488,40 +519,50 @@ export function VaultAgentPanel({
         {stage === 'web' ? (
           <AgentLockedComposer
             testId="vault-agent-download-link"
-            hint={t('locked.composerHintWeb')}
+            hint={t('placeholderFirst')}
             actionLabel={t('degraded.download')}
             actionHref={downloadHref}
           />
         ) : stage === 'no-folder' ? (
           <AgentLockedComposer
             testId="vault-agent-open-folder"
-            hint={t('locked.composerHintNoVault')}
+            hint={t('placeholderFirst')}
             actionLabel={t('degraded.noVaultAction')}
             onAction={onOpenFolder}
           />
         ) : stage === 'no-key' ? (
           <AgentLockedComposer
             testId="vault-agent-open-settings"
-            hint={t('locked.composerHint')}
+            hint={t('placeholderFirst')}
             actionLabel={t('degraded.noKeyAction')}
             onAction={() => requestSettingsView('ai')}
           />
         ) : null}
 
         {ready && scopeAccepted ? (
-          <footer className="shrink-0 border-t border-[color:var(--color-border-soft)] p-2.5">
-            <AgentPromptDisclosure
-              systemPrompt={agent.systemPrompt}
-              labels={{ summary: t('promptDisclosure.summary'), note: t('promptDisclosure.note') }}
-            />
-            <div className="mt-2 flex items-end gap-2">
+          // 한 번의 상태 변화는 **한 곡선**으로 온다. 스테이지(내용)와 이 띠
+          // (입력칸)는 같은 사건이 낳은 두 부분인데, 구 구현은 스테이지만
+          // 크로스페이드하고 이 띠는 하드컷이었다 — 같은 입력이 서로 다른
+          // 곡선으로 도착하면 두 사건으로 읽힌다. 새 duration 0(같은 클래스
+          // 재사용), 시작 어긋남 0(같은 렌더).
+          <footer
+            key={stage}
+            className="agent-panel-stage-swap shrink-0 border-t border-[color:var(--color-border-soft)] p-2.5"
+          >
+            <div className="flex items-end gap-2">
               <textarea
                 ref={inputRef}
                 data-testid="vault-agent-input"
                 value={draft}
                 rows={2}
                 disabled={agent.running}
-                placeholder={t('placeholder')}
+                // 아직 아무 말도 안 한 사람에게 "이어서 말하기" 는 이어갈 것이
+                // 없는 문장이다. 첫 마디용 자리표시는 잠긴 상태의 띠가 쓰는
+                // 문구와 **같은 키**라, 키가 들어오는 순간 같은 자리에 같은
+                // 글자가 남는다("여기가 열렸다").
+                placeholder={
+                  agent.turns.length === 0 ? t('placeholderFirst') : t('placeholder')
+                }
                 onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' && !event.shiftKey) {
@@ -552,31 +593,96 @@ export function VaultAgentPanel({
                 </button>
               )}
             </div>
-            <p className="mt-1.5 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
-              {t('boundary')}
-            </p>
-            {/* 경계를 말한 다음 줄에 **갈 곳**을 준다. 문장만 있으면 "그럼 어디서
-                하지" 가 남고, 폴더 절대경로를 손으로 찾게 만드는 것이 여기서
-                흐름이 끊기는 실제 이유다. 접힌 채로 두는 이유: 대화가 주인공이고
-                이 카드는 떠날 때만 필요하다. */}
-            {vaultPath ? (
-              <div className="mt-2">
-                <AgentHandoffCard
-                  vaultPath={vaultPath}
-                  focusedSlug={screenContext.focusedSlug}
-                  labels={{
-                    summary: t('handoffSummary'),
-                    note: t('handoffNote'),
-                    copy: t('handoffCopy'),
-                    copied: t('handoffCopied'),
-                  }}
-                />
+
+            {/* 곁가지 한 줄 — 여닫는 자리만 상주하고, 내용은 열었을 때만 온다.
+                두 버튼은 서로를 닫는다: 겹쳐 열리는 임시 표면을 만들지 않는다. */}
+            <div className="mt-2 flex items-center gap-2">
+              <MetaToggle
+                testId="agent-meta-prompt"
+                open={meta === 'prompt'}
+                label={t('promptDisclosure.summary')}
+                onToggle={() => setMeta((current) => (current === 'prompt' ? null : 'prompt'))}
+              />
+              {vaultPath ? (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="text-label text-[color:var(--color-text-quaternary)]"
+                  >
+                    ·
+                  </span>
+                  <MetaToggle
+                    testId="agent-meta-handoff"
+                    open={meta === 'handoff'}
+                    label={t('handoffSummary')}
+                    onToggle={() =>
+                      setMeta((current) => (current === 'handoff' ? null : 'handoff'))
+                    }
+                  />
+                </>
+              ) : null}
+            </div>
+
+            {meta ? (
+              <div className="mt-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5">
+                {meta === 'prompt' ? (
+                  <AgentPromptText
+                    systemPrompt={agent.systemPrompt}
+                    note={t('promptDisclosure.note')}
+                  />
+                ) : vaultPath ? (
+                  // 경계 문장은 **넘기는 자리**에서만 값을 한다 — 대화 내내
+                  // 입력칸 아래 상주하며 두 줄을 먹던 문장이 여기로 내려왔다.
+                  <AgentHandoffPacket
+                    vaultPath={vaultPath}
+                    focusedSlug={screenContext.focusedSlug}
+                    labels={{
+                      boundary: t('boundary'),
+                      note: t('handoffNote'),
+                      copy: t('handoffCopy'),
+                      copied: t('handoffCopied'),
+                    }}
+                  />
+                ) : null}
               </div>
             ) : null}
           </footer>
         ) : null}
       </div>
     </aside>
+  );
+}
+
+/**
+ * 곁가지를 여는 한 줄짜리 컨트롤. 테두리도 배경도 없다 — 이 줄이 입력칸과
+ * 같은 무게로 보이면 바닥이 다시 "띠 여러 개" 가 된다.
+ */
+function MetaToggle({
+  testId,
+  open,
+  label,
+  onToggle,
+}: {
+  testId: string;
+  open: boolean;
+  label: string;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      aria-expanded={open}
+      onClick={onToggle}
+      className={[
+        'rounded-chip text-label tracking-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+        open
+          ? 'text-[color:var(--color-text-primary)]'
+          : 'text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]',
+      ].join(' ')}
+    >
+      {label}
+    </button>
   );
 }
 

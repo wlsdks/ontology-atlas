@@ -25,6 +25,13 @@ export function AgentScopeSheet({
     title: string;
     body: (args: { provider: string; host: string }) => string;
     liveRows: string;
+    /**
+     * 쓰기 동의 약속. 이 시트는 사람이 **전체를 승낙하는** 자리인데, 구
+     * 문구는 읽기·전송·기록만 말하고 "문서를 고칠 수도 있다" 는 사실과 그
+     * 안전장치를 말하지 않았다. 승낙의 범위에 쓰기가 들어 있다면 그 자리에서
+     * 말해야 승낙이 승낙이다.
+     */
+    consent: string;
     recorded: (path: string) => string;
     accept: string;
     cancel: string;
@@ -53,6 +60,7 @@ export function AgentScopeSheet({
       </p>
       <ul className="flex flex-col gap-1 text-label tracking-label text-[color:var(--color-text-tertiary)]">
         <li>{labels.liveRows}</li>
+        <li data-testid="agent-scope-consent">{labels.consent}</li>
         <li data-testid="agent-scope-audit-path">{labels.recorded(auditPath)}</li>
       </ul>
       <div className="flex items-center justify-end gap-2">

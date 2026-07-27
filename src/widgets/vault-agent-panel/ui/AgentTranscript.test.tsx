@@ -16,6 +16,7 @@ const labels: AgentTranscriptLabels = {
   thinkingSeconds: (seconds) => `생각 중 · ${seconds}초`,
   footer: ({ provider, chars, rounds }) => `${provider} · ${chars}자 · ${rounds}건`,
   nextStepTitle: '다음 한 걸음',
+  retryTitle: '다시 해볼까요',
 };
 
 function turn(overrides: Partial<AgentTurn> = {}): AgentTurn {
@@ -118,6 +119,73 @@ describe('AgentTranscript', () => {
     );
     expect(screen.getByTestId('agent-answer')).toHaveAttribute('data-demoted', 'true');
     expect(screen.getByTestId('agent-answer-unsupported')).toBeInTheDocument();
+  });
+
+  it('강등 경고는 턴의 결론에만 붙는다 — 중간 서술은 주장이 아니다', () => {
+    // 구 렌더는 도구를 부르기 전 "먼저 읽어볼게요" 같은 서술에도 같은 경고를
+    // 붙여 한 턴에 3회 반복됐다(2026-07-27 실측). 반복되는 최고 경고는 벽지가
+    // 된다 — 경고가 값을 하려면 그 턴의 **결론**에만 서야 한다.
+    renderTranscript(
+      turn({
+        events: [
+          ...turn().events,
+          {
+            kind: 'assistant',
+            paragraphs: [{ text: '먼저 이 개념의 문서를 읽어볼게요.', citations: [] }],
+            demoted: true,
+          },
+          {
+            kind: 'toolLine',
+            call: {
+              id: 'c1',
+              name: 'get_concept',
+              args: {},
+              target: 'capabilities/payment',
+              sentChars: 1020,
+              outcome: 'ok',
+              summary: '읽음: capabilities/payment',
+            },
+          },
+          {
+            kind: 'assistant',
+            paragraphs: [{ text: '제 생각에는요', citations: [] }],
+            demoted: true,
+          },
+        ],
+      }),
+    );
+    const answers = screen.getAllByTestId('agent-answer');
+    expect(answers.map((node) => node.dataset.demoted)).toEqual(['false', 'true']);
+    expect(screen.getAllByTestId('agent-answer-unsupported')).toHaveLength(1);
+  });
+
+  it('멎은 턴에는 되돌아갈 길이 있다 — 누르면 같은 말이 입력칸에 앉는다', () => {
+    // 이유만 말하고 길을 안 주면 그 자리가 막다른 골목이다. 전송이 아니라
+    // 프리필이라 이 슬라이스의 "보내기 전에는 아무것도 나가지 않는다" 는 그대로.
+    const { onPrefill } = renderTranscript(
+      turn({
+        status: 'failed',
+        events: [
+          ...turn().events,
+          { kind: 'notice', code: 'rate-limited', text: '지금은 호출 한도예요.' },
+        ],
+      }),
+    );
+    // 멎은 이유는 그 턴에서 가장 중요한 사실이라 조용한 마이크로 라벨이 아니다.
+    expect(screen.getByTestId('agent-notice')).toHaveAttribute(
+      'data-notice-weight',
+      'blocking',
+    );
+    fireEvent.click(screen.getByTestId('agent-retry-chip'));
+    expect(onPrefill).toHaveBeenCalledWith('이 개념에 빠진 연결 이어줘');
+  });
+
+  it('진행 보고(중단·상한)는 조용한 채로 남는다', () => {
+    renderTranscript(
+      turn({ events: [...turn().events, { kind: 'notice', code: 'aborted', text: '여기까지 읽었어요.' }] }),
+    );
+    expect(screen.getByTestId('agent-notice')).toHaveAttribute('data-notice-weight', 'quiet');
+    expect(screen.queryByTestId('agent-retry')).not.toBeInTheDocument();
   });
 
   it('인용 칩을 누르면 지도 선택과 같은 경로를 탄다', () => {

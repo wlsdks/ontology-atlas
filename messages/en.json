@@ -3016,6 +3016,7 @@
     "send": "Send",
     "stop": "Stop",
     "placeholder": "Keep going…",
+    "placeholderFirst": "Write what you want done",
     "thinking": "Thinking",
     "thinkingSeconds": "Thinking · {seconds}s",
     "unsupported": "Answered without reading anything. Do not take it as fact.",
@@ -3042,7 +3043,8 @@
       "liveRows": "Every read shows up as its own line here, with how many characters went out.",
       "recorded": "Every round trip is recorded in {path}.",
       "accept": "Got it",
-      "cancel": "Not now"
+      "cancel": "Not now",
+      "consent": "If a document needs changing, you see the exact edit first and approve it before it is saved."
     },
     "promptDisclosure": {
       "summary": "See the instructions the agent receives",
@@ -3086,15 +3088,13 @@
       "noVaultTitle": "Open a document folder first",
       "noVaultBody": "The agent only reads documents in the folder you have open. Pick a folder and this picks up right here.",
       "noKeyTitle": "This needs an AI service key, once",
-      "noKeyBody": "The key stays only in this computer's keychain. Add it once and you are not asked again.",
+      "noKeyBody": "The key stays only in this computer's keychain. Add it and you pick up right here, and you are not asked again.",
       "noVaultAction": "Open a document folder",
       "noKeyAction": "Add a key in settings"
     },
     "locked": {
-      "composerHint": "Add a key to talk here",
-      "composerHintWeb": "Talk here in the app",
-      "composerHintNoVault": "Open a folder to talk here",
-      "examplesTitle": "What you can ask for"
+      "examplesTitle": "What you can ask for",
+      "consentPromise": "If a document needs changing, you see the exact edit first. Nothing on disk changes until you say so."
     },
     "sessionSummary": "This conversation: {concepts} concepts · {relations} links",
     "firstWords": {
@@ -3108,6 +3108,9 @@
     },
     "nextStep": {
       "title": "One next step"
+    },
+    "retry": {
+      "title": "Try again"
     }
   }
 }

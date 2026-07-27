@@ -3016,6 +3016,7 @@
     "send": "보내기",
     "stop": "멈추기",
     "placeholder": "이어서 말하기…",
+    "placeholderFirst": "무엇을 시킬지 여기에 적어요",
     "thinking": "생각 중",
     "thinkingSeconds": "생각 중 · {seconds}초",
     "unsupported": "읽은 근거 없이 답했어요. 그대로 믿지 마세요.",
@@ -3042,7 +3043,8 @@
       "liveRows": "무엇을 읽어 몇 자를 보냈는지 대화에 한 줄씩 그대로 남아요.",
       "recorded": "모든 왕복이 {path} 에 기록돼요.",
       "accept": "알겠어요",
-      "cancel": "그만두기"
+      "cancel": "그만두기",
+      "consent": "문서를 고칠 일이 생기면 바뀔 내용을 먼저 보여주고, 확인해야 저장돼요."
     },
     "promptDisclosure": {
       "summary": "에이전트가 받는 지침 보기",
@@ -3086,15 +3088,13 @@
       "noVaultTitle": "먼저 문서 폴더를 열어주세요",
       "noVaultBody": "에이전트는 지금 열려 있는 폴더의 문서만 읽어요. 폴더를 고르면 여기서 바로 이어져요.",
       "noKeyTitle": "쓰려면 AI 서비스 키가 한 번 필요해요",
-      "noKeyBody": "키는 이 컴퓨터의 키체인에만 있어요. 한 번 넣어두면 다시 묻지 않아요.",
+      "noKeyBody": "키는 이 컴퓨터의 키체인에만 있어요. 등록하면 이 자리에서 바로 이어지고, 다시 묻지 않아요.",
       "noVaultAction": "문서 폴더 열기",
       "noKeyAction": "설정에서 키 등록"
     },
     "locked": {
-      "composerHint": "키를 등록하면 바로 말할 수 있어요",
-      "composerHintWeb": "앱에서는 여기서 바로 말할 수 있어요",
-      "composerHintNoVault": "폴더를 열면 여기서 바로 말할 수 있어요",
-      "examplesTitle": "이런 걸 시킬 수 있어요"
+      "examplesTitle": "이런 걸 시킬 수 있어요",
+      "consentPromise": "문서를 고칠 일이 생기면 바뀔 내용을 먼저 보여줘요. 확인하기 전에는 파일이 하나도 바뀌지 않아요."
     },
     "sessionSummary": "이 대화에서 개념 {concepts}개 · 연결 {relations}개",
     "firstWords": {
@@ -3108,6 +3108,9 @@
     },
     "nextStep": {
       "title": "다음 한 걸음"
+    },
+    "retry": {
+      "title": "다시 해볼까요"
     }
   }
 }

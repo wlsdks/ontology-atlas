@@ -16,8 +16,15 @@ import { useEffect, useState } from 'react';
  * 볼트 워처가 지도에 그린다.
  *
  * 지고 있는 싸움을 이기려 하지 않고 넘기는 것이 이 표면의 경계다.
+ *
+ * ## 경계 문장이 왜 여기로 들어왔나
+ *
+ * "코드까지 봐야 하는 일은 터미널의 AI 가 낫다" 는 문장은 대화 내내 입력칸
+ * 아래 상주하며 두 줄을 먹었는데, 그 문장이 쓸모 있는 순간은 **넘길 때**
+ * 하나뿐이다. 그래서 이제 그 자리로 내려왔다 — 넘기는 이유와 넘기는 방법이
+ * 한 자리에 있어야 문장이 안내가 된다.
  */
-export function AgentHandoffCard({
+export function AgentHandoffPacket({
   vaultPath,
   focusedSlug,
   labels,
@@ -25,7 +32,8 @@ export function AgentHandoffCard({
   vaultPath: string;
   focusedSlug: string | null;
   labels: {
-    summary: string;
+    /** 왜 넘기는가 — 이 표면의 경계. */
+    boundary: string;
     note: string;
     copy: string;
     copied: string;
@@ -50,35 +58,30 @@ export function AgentHandoffCard({
   ].join('\n');
 
   return (
-    <details
-      data-testid="agent-handoff-card"
-      className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"
-    >
-      <summary className="cursor-pointer list-none px-2.5 py-1.5 text-label tracking-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]">
-        {labels.summary}
-      </summary>
-      <div className="border-t border-[color:var(--color-divider)] p-2.5">
-        <p className="mb-2 text-label tracking-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
-          {labels.note}
-        </p>
-        <pre
-          data-testid="agent-handoff-packet"
-          className="max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-chip bg-[color:var(--color-overlay-1)] p-2 text-caption leading-caption text-[color:var(--color-text-secondary)]"
-        >
-          {packet}
-        </pre>
-        <button
-          type="button"
-          data-testid="agent-handoff-copy"
-          onClick={() => {
-            void navigator.clipboard?.writeText(packet);
-            setCopied(true);
-          }}
-          className="mt-2 h-7 rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label tracking-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
-        >
-          {copied ? labels.copied : labels.copy}
-        </button>
-      </div>
-    </details>
+    <div data-testid="agent-handoff-card">
+      <p className="mb-2 text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+        {labels.boundary}
+      </p>
+      <p className="mb-2 text-label tracking-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
+        {labels.note}
+      </p>
+      <pre
+        data-testid="agent-handoff-packet"
+        className="max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-chip bg-[color:var(--color-overlay-1)] p-2 text-caption leading-caption text-[color:var(--color-text-secondary)]"
+      >
+        {packet}
+      </pre>
+      <button
+        type="button"
+        data-testid="agent-handoff-copy"
+        onClick={() => {
+          void navigator.clipboard?.writeText(packet);
+          setCopied(true);
+        }}
+        className="mt-2 h-7 rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label tracking-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+      >
+        {copied ? labels.copied : labels.copy}
+      </button>
+    </div>
   );
 }
