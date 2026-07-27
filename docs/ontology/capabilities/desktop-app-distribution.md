@@ -217,12 +217,24 @@ required. The release verifier treats notarization as requiring strict
 skip the app signature check by omitting the separate signed flag. It then runs
 `pnpm desktop:verify-install` so the DMG copy-and-launch path is exercised with
 LaunchServices app content proof, writes the generated DMG filename, byte size,
-and SHA-256 value to the GitHub Actions step summary, and uploads workflow
-artifacts only after those release gates pass.
+and SHA-256 value to the GitHub Actions step summary, stages the DMG, checksum,
+updater archive, and updater signature into one flat folder through
+`node scripts/stage-macos-release-assets.mjs`, and uploads that single folder as
+the workflow artifact only after those release gates pass. Staging exists so the
+artifact root is chosen rather than derived: handing the upload action several
+paths makes the root their least common ancestor, and the download side cannot
+know that depth. Staging also renames the updater archive to
+`ontology-atlas_<version>_<arch>.app.tar.gz`, because Tauri emits the same
+space-containing name for both architectures, which would let one architecture
+overwrite the other and break the manifest URL GitHub rewrites.
 The publish job checks that the same tag has no existing GitHub Release before
-attaching both DMGs plus checksums to a draft GitHub Release, runs the download
-verifier against draft assets with `--allow-draft`, publishes the verified
-release as stable, and then verifies the public assets again. `pnpm
+attaching both DMGs plus checksums, both updater archives plus their `.sig`
+files, and the generated `latest.json` to a draft GitHub Release, runs the
+download verifier against draft assets with `--allow-draft --require-updater`,
+publishes the verified release as stable, and then verifies the public assets
+again. `--require-updater` opens `latest.json` and fails unless every platform
+URL names an archive this release actually carries, because a mismatched URL
+makes the installed app report "up to date" instead of an error. `pnpm
 desktop:verify-download` checks the public GitHub Release channel and fails
 unless users can reach both `ontology-atlas_*_aarch64.dmg` and
 `ontology-atlas_*_x64.dmg` assets with plausible DMG download content types,
