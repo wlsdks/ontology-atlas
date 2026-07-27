@@ -75,32 +75,64 @@ const CENSUS_OUT = path.join(
   'dogfood-census.generated.ts',
 );
 
+/** 얕은(depth 제한) 클론인가. git 이 없거나 저장소가 아니면 false. */
+export function isShallowRepository(rootDir) {
+  try {
+    return (
+      execSync('git rev-parse --is-shallow-repository', {
+        cwd: rootDir,
+        encoding: 'utf-8',
+      }).trim() === 'true'
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
- * 샘플 mtime git-date화 — updatedAt 을 fs mtime 대신 그 파일을 마지막으로
- * 만진 커밋 시각으로. fs mtime 은 clone/checkout/branch 이동마다 "지금"으로
- * 밀려 신선도 렌즈("최근 변경 7일")가 전부 오늘로 왜곡된다. 커밋 시각은
- * 결정론적이고 사용자에게 진실이다. 워킹트리에서 수정 중(dirty)인 파일만
- * fs mtime 을 유지한다 — 그건 진짜 방금 편집이다.
+ * 문서별 "마지막으로 바뀐 날" — 그 파일을 마지막으로 만진 커밋의 **날짜**
+ * (`%cs`, 커밋이 기록한 자기 타임존 기준 YYYY-MM-DD).
+ *
+ * 왜 시각이 아니라 날짜인가: 이 값은 커밋에 **같이 담기는** 생성물 안에
+ * 들어가는데, 그 커밋의 시각은 생성 시점에 알 수 없다. GitHub squash-merge
+ * 는 PR 브랜치 커밋을 버리고 새 커밋을 만들어 시각을 다시 찍고, rebase /
+ * amend 도 같은 일을 한다. 그래서 시각 정밀도로 기록하면 기준선은 **태어날
+ * 때부터 어긋난다** — main 의 커밋 25개를 실측했을 때 문서 1~32건이 항상
+ * 틀려 있었고(24/25 커밋), 그 어긋남을 나중에 누가 재생성하면 자기가 고치지
+ * 않은 줄이 diff 에 올라와 리베이스 충돌과 유령 diff 가 됐다.
+ *
+ * 날짜 정밀도로 내리면 병합이 시각을 다시 찍어도 **같은 날**이라 값이 그대로다
+ * (같은 날 두 PR 이 같은 문자열을 쓰므로 git 이 자동 병합한다). 소비처는 전부
+ * 일 단위 이상이다 — "N일 전" 사다리, 최근 7일 렌즈, 주별 히트맵, 정렬.
  */
-function gitLastCommitDates(rootDir, scopeDir) {
-  const dates = new Map();
+function gitLastCommitDays(rootDir, scopeDir) {
+  const days = new Map();
   const dirty = new Set();
   try {
     const scope = path.relative(rootDir, scopeDir).replace(/\\/g, '/') || '.';
-    const log = execSync(`git log --format=%x01%cI --name-only -- "${scope}"`, {
+    // 얕은 클론 경고 — depth 1 체크아웃에서는 유일한 커밋이 부모 없는 root 로
+    // 취급돼 `--name-only` 가 **전체 트리**를 그 한 커밋에 귀속시킨다. 그러면
+    // 문서 전부가 같은 날짜를 받아 신선도 렌즈가 통째로 평평해진다(실측:
+    // 247 경로 → 서로 다른 날짜 1개). CI 는 `fetch-depth: 0` 이어야 한다.
+    if (isShallowRepository(rootDir)) {
+      console.warn(
+        '[docs-vault] ⚠️ 얕은 git 클론이다 — 문서 날짜가 전부 같아진다. 전체 히스토리로 체크아웃할 것 (CI: fetch-depth: 0).',
+      );
+    }
+    const log = execSync(`git log --format=%x01%cs --name-only -- "${scope}"`, {
       cwd: rootDir,
       encoding: 'utf-8',
       maxBuffer: 64 * 1024 * 1024,
     });
-    let currentDate = null;
+    let currentDay = null;
     for (const line of log.split('\n')) {
       if (line.startsWith('\x01')) {
-        currentDate = line.slice(1).trim();
+        currentDay = line.slice(1).trim();
         continue;
       }
       const file = line.trim();
-      if (!file || !currentDate) continue;
-      if (!dates.has(file)) dates.set(file, currentDate);
+      if (!file || !currentDay) continue;
+      if (!days.has(file)) days.set(file, currentDay);
     }
     const status = execSync(`git status --porcelain -- "${scope}"`, {
       cwd: rootDir,
@@ -112,9 +144,26 @@ function gitLastCommitDates(rootDir, scopeDir) {
       if (file) dirty.add(file);
     }
   } catch {
-    // git 미설치/비저장소(배포 tarball 등) — fs mtime fallback 유지.
+    // git 미설치/비저장소(배포 tarball 등) — mtime 날짜로 폴백.
   }
-  return { dates, dirty };
+  return { days, dirty };
+}
+
+/**
+ * 로컬 타임존 기준 `YYYY-MM-DD`. `%cs` 가 커밋 자기 타임존의 날짜를 주므로
+ * mtime 쪽도 같은 관례(로컬)로 맞춘다 — UTC 로 자르면 KST 오전에 편집한
+ * 파일이 "어제" 로 기록돼, 그 편집을 담는 커밋의 `%cs`("오늘")와 어긋난다.
+ * mtime 경로는 dirty/untracked 문서에만 쓰이므로 결과가 머신 타임존에
+ * 의존하는 범위도 그 작성자의 워킹트리로 한정된다(체크아웃 상태에는 dirty
+ * 문서가 없어 CI·새 워크트리는 타임존 무관).
+ */
+export function localDayStamp(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export function usage() {
@@ -337,17 +386,18 @@ async function ensureDir(dir) {
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
 }
 
-// Deterministic manifest stamp: the newest source-doc `updatedAt` (git commit
-// dates for committed docs), normalized to canonical ISO-Z. Never the build
-// wall-clock, so the same source regenerates byte-identically. Falls back to a
-// fixed epoch when there are no dated docs.
-const STABLE_GENERATED_AT_FALLBACK = '1970-01-01T00:00:00.000Z';
+// 매니페스트 스탬프 = 소스 문서 중 가장 최근 `updatedAt` **날짜**. 빌드 벽시계는
+// 절대 쓰지 않는다 — 벽시계를 쓰면 재생성마다 파일 3번째 줄이 바뀌어 동시에
+// 열린 PR 두 개가 **항상** 여기서 충돌한다(오늘 리베이스 충돌의 고정 지분).
+// 날짜 정밀도라서 같은 날 재생성한 두 브랜치는 같은 문자열을 써 자동 병합된다.
+// 날짜 있는 문서가 없으면 고정 폴백.
+const STABLE_GENERATED_AT_FALLBACK = '1970-01-01';
 export function deterministicGeneratedAt(docs) {
-  const times = (docs ?? [])
-    .map((doc) => Date.parse(doc?.updatedAt))
-    .filter((n) => !Number.isNaN(n));
-  if (times.length === 0) return STABLE_GENERATED_AT_FALLBACK;
-  return new Date(Math.max(...times)).toISOString();
+  const days = (docs ?? [])
+    .map((doc) => doc?.updatedAt)
+    .filter((value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value));
+  if (days.length === 0) return STABLE_GENERATED_AT_FALLBACK;
+  return days.reduce((a, b) => (a >= b ? a : b));
 }
 
 export function comparableManifest(manifest) {
@@ -510,16 +560,17 @@ async function assertOutputsCurrent({ manifest, content, publicFiles, censusModu
  * dogfood 출력에 바이트 단위 회귀가 없도록 분리만 했다(동작 변경 없음).
  * `publicOutDir` 가 주어지면 `!check` 일 때 raw md 를 그 아래로 복사한다
  * (storefront 는 아직 공개 raw 사본이 필요한 소비처가 없어 `null`).
+ *
+ * export 인 이유: 결정성 계약 테스트가 임시 git 저장소를 `rootDir`/`dir` 로
+ * 넘겨 "커밋 시각을 같은 날 안에서 바꿔 써도 산출물 바이트가 같다" 를
+ * 실증한다 (`check: true` 로 부르면 아무것도 쓰지 않는다).
  */
-async function scanVaultDir(
+export async function scanVaultDir(
   dir,
-  { rootDir = ROOT, previousManifest = null, publicOutDir = null, check = false, treeName = 'docs' } = {},
+  { rootDir = ROOT, publicOutDir = null, check = false, treeName = 'docs' } = {},
 ) {
   const files = await walk(dir);
-  const gitDates = gitLastCommitDates(rootDir, dir);
-  const previousDocsBySlug = new Map(
-    (previousManifest?.docs ?? []).map((doc) => [doc.slug, doc]),
-  );
+  const gitDays = gitLastCommitDays(rootDir, dir);
   const docs = [];
   const publicFiles = [];
   const content = {};
@@ -563,7 +614,7 @@ async function scanVaultDir(
     }
     const st = await stat(full);
     const relPath = path.relative(rootDir, full).replace(/\\/g, '/');
-    const committedAt = gitDates.dirty.has(relPath) ? null : gitDates.dates.get(relPath);
+    const committedDay = gitDays.dirty.has(relPath) ? null : gitDays.days.get(relPath);
     const nextDoc = {
       slug,
       path: relPath,
@@ -574,21 +625,16 @@ async function scanVaultDir(
       headings,
       excerpt: buildExcerpt(body),
       wordCount: body.split(/\s+/).filter(Boolean).length,
-      // 커밋 시각 우선 (결정론·신선도 렌즈 진실) — dirty/미추적만 fs mtime.
-      updatedAt: committedAt ?? st.mtime.toISOString(),
+      // 커밋 날짜 우선 — 워킹트리에서 고치는 중(dirty)이거나 아직 추적되지
+      // 않은 문서만 mtime 날짜. 둘 다 "날짜" 라서 편집한 날과 그 편집이
+      // 병합되는 날이 같은 한 값이 흔들리지 않는다.
+      updatedAt: committedDay ?? localDayStamp(st.mtime) ?? STABLE_GENERATED_AT_FALLBACK,
       linksOut,
     };
-    const previousDoc = previousDocsBySlug.get(slug);
-    // 커밋 시각이 있으면 그게 진실원 — 이전 manifest 값 보존은 git 정보가
-    // 없을 때(dirty/비저장소)의 mtime 널뜀 방지용으로만 남긴다.
-    if (
-      committedAt == null &&
-      previousDoc &&
-      stableStringify(comparableDoc(previousDoc)) ===
-        stableStringify(comparableDoc(nextDoc))
-    ) {
-      nextDoc.updatedAt = previousDoc.updatedAt;
-    }
+    // 이전 manifest 값을 되살리는 안정화 장치는 제거했다 — 생성물이 자기
+    // 직전 생성물에 의존하면 "같은 입력 → 같은 바이트" 가 성립하지 않는다
+    // (기준선이 유실되거나 다른 순서로 재생성되면 값이 갈린다). 날짜 정밀도가
+    // 그 장치가 막으려던 mtime 널뜀을 이미 흡수한다.
     docs.push(nextDoc);
 
     publicFiles.push({ relativePath: `${slug}.md`, raw });
@@ -690,13 +736,10 @@ async function scanVaultDir(
 
   const manifest = {
     version: '2026-04-23',
-    // Deterministic: the manifest is stamped with the most recent source-doc
-    // change (git commit dates for committed docs, fs mtime only for dirty
-    // ones), NOT the build wall-clock. So the same committed vault regenerates
-    // byte-identically on any machine at any time — no per-build churn, no
-    // "generatedAt-only" diffs to hand-revert. `previousManifest` is no longer
-    // consulted for a sticky timestamp (the value now derives purely from
-    // source), which also drops the tree.name-sensitive stabilization footgun.
+    // 스탬프는 소스 문서 중 가장 최근 변경 **날짜** 다 — 빌드 벽시계도, 직전
+    // 생성물도 참조하지 않는다. 그래서 같은 소스는 어느 머신에서 몇 번을
+    // 재생성해도 같은 바이트가 나오고, 같은 날 갈라진 두 브랜치는 이 줄에서
+    // 충돌하지 않는다.
     generatedAt: deterministicGeneratedAt(docs),
     docs,
     backlinksDetail,
@@ -722,10 +765,8 @@ async function buildDocsVault({ check = false } = {}) {
     await ensureDir(path.dirname(MANIFEST_OUT));
   }
 
-  const previousManifest = await readJsonIfExists(MANIFEST_OUT);
   const { manifest, content, publicFiles } = await scanVaultDir(DOCS_DIR, {
     rootDir: ROOT,
-    previousManifest,
     publicOutDir: PUBLIC_OUT,
     check,
   });
@@ -770,16 +811,10 @@ async function buildStorefrontSample({ check = false } = {}) {
     await ensureDir(path.dirname(STOREFRONT_MANIFEST_OUT));
   }
 
-  const previousManifest = await readJsonIfExists(STOREFRONT_MANIFEST_OUT);
   const { manifest, content } = await scanVaultDir(SAMPLES_STOREFRONT_DIR, {
     rootDir: ROOT,
-    previousManifest,
     publicOutDir: null,
     check,
-    // tree.name must be set BEFORE scanVaultDir's generatedAt-stabilization
-    // comparison (it compares the whole tree). Renaming afterwards left the
-    // current manifest at 'docs' while the stored one was 'storefront', so the
-    // comparison never matched and generatedAt churned on every build.
     treeName: 'storefront',
   });
 

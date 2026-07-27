@@ -1,0 +1,29 @@
+# 생성물 표시 — `pnpm docs-vault:build` 가 `docs/` 와 `samples/storefront/` 에서
+# 만드는 파일들.
+#
+# 왜 커밋되어 있나: 정적 export(`output: 'export'`)라서 샘플 vault 가 번들에
+# 구워진다. 게다가 `manifest.json`/`content.json` 은 `static-vault-source.ts` 가
+# **정적 import** 하는 대상이라, 없으면 `tsc --noEmit` · vitest · lint · 에디터가
+# 전부 깨진다. 그래서 .gitignore 로 뺄 수 없고, 대신 생성이 결정적이어야 한다
+# (계약: `scripts/build-docs-vault.test.mjs` 의 "결정성 계약",
+# `tests/contract/generated-vault-determinism.contract.test.ts`).
+#
+# `linguist-generated` 가 하는 일: GitHub PR diff 에서 이 파일들을 접어 두고
+# 언어 통계·검색에서 뺀다. 사람이 손으로 고칠 파일이 아니므로 리뷰의 기본
+# 시야에서 빠지는 게 맞다 — 400KB JSON diff 가 실제 변경을 덮는 문제를 없앤다.
+#
+# merge 드라이버는 일부러 지정하지 않는다: `merge=ours` 류는 상대 쪽이 실제로
+# 추가한 문서 본문(`content.json`)을 조용히 버릴 수 있다. 충돌이 나면 어느 쪽을
+# 취해도 되고 — **다시 생성하는 것이 정답**이다:
+#
+#     git checkout --ours src/entities/docs-vault/data public/docs-vault
+#     pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
+#
+# 절대 손으로 JSON 충돌을 편집하지 말 것 — 충돌 마커가 남아 tsc 가 깨진 전례가 있다.
+
+src/entities/docs-vault/data/manifest.json           linguist-generated=true
+src/entities/docs-vault/data/content.json            linguist-generated=true
+src/entities/docs-vault/data/sample-storefront.manifest.json linguist-generated=true
+src/entities/docs-vault/data/sample-storefront.content.json  linguist-generated=true
+src/views/download/model/dogfood-census.generated.ts linguist-generated=true
+public/docs-vault/**                                 linguist-generated=true
