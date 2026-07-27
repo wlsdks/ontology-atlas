@@ -617,7 +617,12 @@ if (
   downloadReleaseVerifier.includes("do not match the tag version") &&
   downloadReleaseVerifier.includes("allowDraft") &&
   downloadReleaseVerifier.includes("per_page=100") &&
-  downloadReleaseVerifier.includes("release?.tag_name !== options.tag") &&
+  // 폴백은 **태그로** 초안을 찾는다. 그리고 프리릴리스 여부로 다시 거르지
+  // 않는다 — 호출자가 이름을 댔으면 무엇을 원하는지 이미 말했고, 거기서 한 번
+  // 더 거르면 RC 초안을 영영 검증할 수 없다(2026-07-27 v1.0.0-rc.1 실측).
+  downloadReleaseVerifier.includes("export function isRequestedDraft") &&
+  downloadReleaseVerifier.includes("release?.tag_name === tag && release?.draft === true") &&
+  downloadReleaseVerifier.includes("if (!options.tag && release.prerelease && !options.allowPrerelease)") &&
   downloadReleaseVerifier.includes("unsupported macOS DMG asset names") &&
   downloadReleaseVerifier.includes("function isAnyDmgAsset") &&
   downloadReleaseVerifier.includes('asset.name.endsWith(".dmg")') &&

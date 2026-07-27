@@ -494,3 +494,50 @@ test("download release verifier reports rate limits without a stack trace", asyn
     );
   });
 });
+
+/**
+ * 2026-07-27 v1.0.0-rc.1 이 CI 에서 실패한 그 상황 그대로다.
+ *
+ * RC 초안은 draft 라 `releases/tags/<tag>` 가 404 를 준다. 그러면 목록 폴백을
+ * 타는데, 거기서만 "프리릴리스면 거부" 를 한 번 더 걸고 있었다 — 직접 조회
+ * 경로에는 없는 필터다. 그래서 이름을 대고 찾았는데도 걸러졌고, 에러 메시지는
+ * 엉뚱하게 "태그를 못 찾았다" 였다.
+ *
+ * 정식 태그로는 드러나지 않는다. 프리릴리스를 처음 내는 날에만 나타난다.
+ */
+test("download release verifier finds a prerelease draft that was requested by tag", async () => {
+  const rcTag = "v1.0.0-rc.1";
+  // DMG 이름의 버전은 태그와 맞아야 한다 — 이 테스트는 그 대조가 `-rc.1` 을
+  // 포함한 버전에서도 성립하는지까지 함께 검사한다.
+  const rcNames = ["ontology-atlas_1.0.0-rc.1_aarch64.dmg", "ontology-atlas_1.0.0-rc.1_x64.dmg"];
+  await withServer((req, res) => {
+    // draft 는 태그 직접 조회에서 404 다 — GitHub 의 실제 동작.
+    if (req.url === `/repos/wlsdks/ontology-atlas/releases/tags/${rcTag}`) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Not Found" }));
+      return;
+    }
+    if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=100") {
+      const payload = releasePayload(`http://${req.headers.host}`, validChecksum, rcNames, rcTag);
+      payload[0].draft = true;
+      payload[0].prerelease = true;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(payload));
+      return;
+    }
+    makeHandler({ tagName: rcTag, names: rcNames })(req, res);
+  }, async (baseUrl) => {
+    const { stdout } = await execFileAsync(
+      process.execPath,
+      ["scripts/check-macos-download-release.mjs", `--tag=${rcTag}`, "--allow-draft"],
+      {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        env: { ...process.env, OATLAS_GITHUB_API_BASE: baseUrl, GITHUB_TOKEN: "test-token" },
+      },
+    );
+
+    // --allow-prerelease 를 주지 않았는데도 통과해야 한다. 이름을 댔기 때문이다.
+    assert.match(stdout, /draft macOS download assets/);
+  });
+});

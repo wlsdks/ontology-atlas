@@ -257,6 +257,24 @@ function isChecksumFor(asset, dmgName) {
   );
 }
 
+/**
+ * 이름을 대고 찾은 draft 인가.
+ *
+ * 프리릴리스 여부로 거르지 **않는다**. `allowPrerelease` 는 태그 없이 "지금
+ * 릴리스" 를 **고를 때** 프리릴리스가 뽑히지 않게 하는 장치이고, 호출자가
+ * `--tag=v1.0.0-rc.1` 이라고 이름을 댄 순간 그 장치는 할 일이 없다 — 무엇을
+ * 원하는지 이미 말했다.
+ *
+ * 직접 조회(`releases/tags/<tag>`)에는 이 필터가 없다. 즉 같은 질문에 두 경로가
+ * 다르게 답하고 있었고, 그 비대칭이 결함이었다. RC 초안은 draft 라 404 로
+ * 떨어져 이 폴백을 타는데, 거기서 프리릴리스라는 이유로 다시 걸러져 "태그를 못
+ * 찾았다" 는 엉뚱한 메시지로 끝났다.
+ * (2026-07-27 v1.0.0-rc.1 에서 실측 — 정식 태그로는 드러나지 않는다.)
+ */
+export function isRequestedDraft(release, tag) {
+  return release?.tag_name === tag && release?.draft === true;
+}
+
 async function findRelease(options) {
   const base = `${apiBase()}/repos/${options.repo}`;
   if (options.tag) {
@@ -271,12 +289,7 @@ async function findRelease(options) {
       if (!Array.isArray(releases)) {
         fail("GitHub releases response was not an array.");
       }
-      const draftRelease = releases.find((release) => {
-        if (release?.tag_name !== options.tag) return false;
-        if (!release?.draft) return false;
-        if (!options.allowPrerelease && release?.prerelease) return false;
-        return true;
-      });
+      const draftRelease = releases.find((release) => isRequestedDraft(release, options.tag));
       if (draftRelease) {
         return draftRelease;
       }
@@ -400,7 +413,14 @@ if (!release) {
 if (release.draft && !options.allowDraft) {
   fail(`release ${release.tag_name ?? "(unknown tag)"} is a draft and is not downloadable from the hosted landing page.`);
 }
-if (release.prerelease && !options.allowPrerelease) {
+// 이름을 대지 않았을 때만 프리릴리스를 막는다.
+//
+// 태그 없이 부르면 이 스크립트는 "지금 공개된 릴리스" 를 **고르고**, 그 자리에
+// RC 가 뽑히면 안 된다 — 랜딩 페이지가 광고할 대상이 아니기 때문이다. 그러나
+// 호출자가 `--tag=v1.0.0-rc.1` 이라고 이름을 댔다면 무엇을 검증하려는지 이미
+// 말했고, 그걸 프리릴리스라는 이유로 거절하면 **RC 를 영영 검증할 수 없다.**
+// 릴리스 워크플로가 자기 태그의 초안을 확인하는 경로가 정확히 이것이다.
+if (!options.tag && release.prerelease && !options.allowPrerelease) {
   fail(`release ${release.tag_name ?? "(unknown tag)"} is a prerelease; pass --allow-prerelease to accept it.`);
 }
 
