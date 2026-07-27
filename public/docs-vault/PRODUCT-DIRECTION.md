@@ -362,7 +362,7 @@ execution now depends on Rust / Cargo being installed on the machine. See
 2026-05-25 checkpoint: the first local `pnpm desktop:build` produced
 `src-tauri/target/release/bundle/macos/Ontology Atlas.app` and the macOS
 download artifact
-`src-tauri/target/release/bundle/dmg/ontology-atlas_0.1.0_aarch64.dmg` after
+`src-tauri/target/release/bundle/dmg/ontology-atlas_1.0.0_aarch64.dmg` after
 adding the Tauri icon set derived from `public/logo.png` and a repo-owned
 `hdiutil` DMG packager. The desktop shell now has a native Tauri vault bridge:
 when WebView `showDirectoryPicker` is unavailable, it opens a native folder

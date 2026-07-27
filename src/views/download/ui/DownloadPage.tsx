@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Check, CheckCircle2, Clipboard, ExternalLink, Orbit, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, Clipboard, Download, ExternalLink, Orbit, ShieldCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
@@ -9,14 +9,26 @@ import { buttonVariants, StaggeredFadeIn } from '@/shared/ui';
 import { TopologyV2KindGlyph } from '@/shared/ui/topology-v2-kind-glyph';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { GITHUB_RELEASES_URL, MacosDownloadLink } from '@/features/macos-download-link';
-import { CLI_COMMAND_COUNT, RELEASE_MIN_MACOS, RELEASE_VERSION } from '../lib/release-facts';
+import {
+  CLI_COMMAND_COUNT,
+  RELEASE_MIN_MACOS,
+  RELEASE_VERSION,
+  buildDmgName,
+} from '../lib/release-facts';
+import {
+  ARCH_ORDER,
+  MACOS_RELEASE,
+  WINDOWS_STATUS,
+  formatAssetSize,
+  isMacosReleasePublished,
+  macosAssetFor,
+  type DesktopArch,
+} from '../lib/release-state';
 import { CHANGELOG_PREVIEW_AS_OF, CHANGELOG_PREVIEW_ENTRIES } from '../lib/changelog-preview';
 import { DOGFOOD_CENSUS } from '../model/dogfood-census.generated';
 import { buildMiniatureLayout } from '../model/miniature-layout';
 
 const GITHUB_REPOSITORY_URL = 'https://github.com/wlsdks/ontology-atlas';
-const RELEASE_STATUS_COMMAND =
-  'pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0 --include-hosted-surface --json-file=.tmp/desktop-release-status.json --markdown-file=.tmp/desktop-release-status.md';
 
 // RATIO-SYSTEM.md (docs/prototypes/RATIO-SYSTEM.md) — 1600 shared container,
 // 960 utility column centered inside it. Token promotion tracked separately
@@ -28,20 +40,15 @@ const UTILITY_COL_WIDTH = 960;
 const numeralClass =
   'font-mono text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]';
 
-interface Props {
-  showFirstReleaseChecklist?: boolean;
-}
-
-export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
+export function DownloadPage() {
   const t = useTranslations('download');
   const tFooter = useTranslations('footer');
-  const { state: releaseStatusCopyState, copy: copyReleaseStatus } = useCopyFeedback(1500);
-  const releaseStatusCopyLabel =
-    releaseStatusCopyState === 'copied'
-      ? t('releaseStatusCopyCopied')
-      : releaseStatusCopyState === 'failed'
-        ? t('releaseStatusCopyFailed')
-        : t('releaseStatusCopy');
+  const published = isMacosReleasePublished();
+  // Apple Silicon is the default offer: every Mac sold since 2020 is one, so
+  // the header's single strongest action targets it and the platform block
+  // below carries the full set (Intel, checksums, Windows status).
+  const primaryAsset = published ? macosAssetFor('aarch64') : null;
+
   return (
     <div className="flex min-h-full w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
@@ -88,12 +95,27 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
               </p>
             </div>
             <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center gap-3">
-              <MacosDownloadLink
-                className={cn(buttonVariants({ size: 'lg' }), 'rounded-full min-w-[13rem]')}
-              >
-                <ExternalLink size={16} />
-                {t('primaryCta')}
-              </MacosDownloadLink>
+              {primaryAsset ? (
+                <a
+                  href={primaryAsset.downloadUrl}
+                  data-testid="download-primary-cta"
+                  className={cn(buttonVariants({ size: 'lg' }), 'rounded-full min-w-[13rem]')}
+                >
+                  <Download size={16} />
+                  {t('primaryCtaPublished', { size: formatAssetSize(primaryAsset.sizeBytes) })}
+                </a>
+              ) : (
+                <MacosDownloadLink
+                  data-testid="download-primary-cta"
+                  className={cn(
+                    buttonVariants({ variant: 'ghost', size: 'lg' }),
+                    'rounded-full min-w-[13rem]',
+                  )}
+                >
+                  <ExternalLink size={16} />
+                  {t('primaryCtaPending')}
+                </MacosDownloadLink>
+              )}
               <a
                 href={GITHUB_REPOSITORY_URL}
                 target="_blank"
@@ -106,9 +128,10 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
             </div>
           </header>
 
-          {/* engraved fact strip — real repo facts only (package.json /
-              tauri.conf.json). Size is deliberately absent: no DMG has been
-              built yet, see release-facts.ts. */}
+          {/* engraved fact strip — repo facts that hold before any build
+              exists (package.json / tauri.conf.json). Per-release facts
+              (size, checksum, download URL) belong to the platform block
+              below, which only renders them once a release is published. */}
           <div
             data-testid="download-fact-strip"
             className="mt-6 flex flex-wrap items-baseline gap-5 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-panel-metric-surface,var(--color-overlay-1))] px-4 py-2.5 text-[12.5px]"
@@ -116,81 +139,11 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
             <FactItem label={t('factVersionLabel')} value={`v${RELEASE_VERSION}`} />
             <FactItem label={t('factFormatLabel')} value="DMG" />
             <FactItem label={t('factArchLabel')} value={t('factArchValue')} />
-            <FactItem label={t('factSizeLabel')} value={t('factSizeValuePending')} muted />
             <FactItem label={t('factMinOsLabel')} value={RELEASE_MIN_MACOS} />
             <FactItem label={t('factChannelLabel')} value={t('factChannelValue')} />
           </div>
-          <div
-            data-testid="download-checksum-row"
-            className="mt-2 flex items-baseline gap-3 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-2.5 shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
-          >
-            <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-              {t('checksumLabel')}
-            </span>
-            {/* [W-4] 게시된 DMG 가 아직 없어 실 SHA-256 이 존재하지 않는다 —
-                자리표시자(0×64)를 복사 가능하게 두면 사용자가 가짜 체크섬을
-                무결성 검증에 붙여넣는 사고로 이어진다. 복사 버튼은 실 해시가
-                채워질 때까지 렌더하지 않는다(release-facts.ts 참고). */}
-            <span className={`min-w-0 flex-1 truncate text-[11.5px] tracking-[0.02em] ${numeralClass}`}>
-              {t('checksumValuePending')}
-            </span>
-          </div>
-          <p
-            data-testid="download-release-availability"
-            className="mt-3 max-w-2xl text-[12px] leading-5 text-[color:var(--color-text-tertiary)]"
-          >
-            {t('releaseAvailabilityNote')}
-          </p>
 
-          {showFirstReleaseChecklist ? (
-            <div className="mt-4 grid min-w-0 gap-2 rounded-lg border border-[color:var(--color-amber-source-a34)] bg-[color:var(--color-amber-source-a08)] p-3">
-              <p className="font-mono text-[10px] uppercase text-[color:var(--color-status-warning)]">
-                {t('releaseStatusTitle')}
-              </p>
-              <ul className="grid gap-1.5 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
-                <ReleaseStatusItem label={t('releaseStatusPr')} />
-                <ReleaseStatusItem label={t('releaseStatusVersion')} />
-                <ReleaseStatusItem label={t('releaseStatusSecrets')} />
-                <ReleaseStatusItem label={t('releaseStatusRelease')} />
-                <ReleaseStatusItem label={t('releaseStatusHosted')} />
-              </ul>
-              <div className="mt-1 min-w-0 rounded-md border border-[color:var(--color-amber-source-a24)] bg-[color:var(--color-overlay-recessed-a12)] p-2">
-                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-mono text-[10px] uppercase text-[color:var(--color-status-warning)]">
-                      {t('releaseStatusAuditLabel')}
-                    </p>
-                    <code className="mt-1 block overflow-x-auto whitespace-nowrap rounded-sm bg-[color:var(--color-overlay-recessed)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)]">
-                      {RELEASE_STATUS_COMMAND}
-                    </code>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => void copyReleaseStatus(RELEASE_STATUS_COMMAND)}
-                    className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-amber-source-a08)] px-2.5 py-1.5 font-mono text-[10px] text-[color:var(--color-status-warning)] transition-colors hover:bg-[color:var(--color-amber-source-a13)]"
-                    aria-label={releaseStatusCopyLabel}
-                  >
-                    {releaseStatusCopyState === 'copied' ? (
-                      <Check size={13} aria-hidden />
-                    ) : (
-                      <Clipboard size={13} aria-hidden />
-                    )}
-                    {t('releaseStatusCopy')}
-                  </button>
-                </div>
-                <p className="mt-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-                  {t('releaseStatusAuditBody')}
-                </p>
-                <span className="sr-only" aria-live="polite" aria-atomic="true">
-                  {releaseStatusCopyState === 'copied'
-                    ? t('releaseStatusCopyCopied')
-                    : releaseStatusCopyState === 'failed'
-                      ? t('releaseStatusCopyFailed')
-                      : ''}
-                </span>
-              </div>
-            </div>
-          ) : null}
+          <PlatformBlock published={published} />
 
           {/* A18 — `/download`의 첫 사용자 순간은 설치 가능 여부 판단이다.
               다운로드 CTA·실제 release facts·대기 상태를 먼저 읽힌 뒤,
@@ -245,11 +198,15 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
               <TrustRow label={t('proofSigned')} note={t('trustSignedNote')} />
               <TrustRow label={t('proofNotarized')} note={t('trustNotarizedNote')} />
               <TrustRow label={t('proofChecksum')} note="" />
+              {/* The verify command names the real asset the user just
+                  downloaded — deriving it from buildDmgName keeps it correct
+                  across versions instead of freezing an old filename into a
+                  translation string. */}
               <div className="mt-2 overflow-x-auto whitespace-nowrap rounded-[6px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 font-mono text-[11px] text-[color:var(--color-text-tertiary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
-                {t('trustVerifyCommand')}
+                {t('trustVerifyCommand', { file: buildDmgName('aarch64') })}
               </div>
-              <p className="mt-2 text-[11.5px] leading-6 text-[color:var(--color-text-quaternary)]">
-                {t('trustNote')}
+              <p className="mt-2 break-keep text-[11.5px] leading-6 text-[color:var(--color-text-quaternary)]">
+                {t('trustPolicy')}
               </p>
             </div>
 
@@ -269,6 +226,20 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
               <p className="mt-2 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
                 {t('releaseNotesHeading')} · {t('releaseNotesCaption', { date: CHANGELOG_PREVIEW_AS_OF })}
               </p>
+              {/* A preview excerpt is a summary, not the release notes. Once
+                  a release exists, point at the notes themselves rather than
+                  leaving this excerpt as the only thing a visitor can read. */}
+              {published ? (
+                <a
+                  href={MACOS_RELEASE.releaseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="download-release-notes-link"
+                  className="mt-2 inline-flex h-7 items-center rounded-md border border-[color:var(--color-indigo-a50)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+                >
+                  {t('releaseNotesLink')}
+                </a>
+              ) : null}
             </div>
           </div>
 
@@ -682,24 +653,179 @@ function IntroValueChainRail({
   );
 }
 
-function FactItem({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+function FactItem({ label, value }: { label: string; value: string }) {
   return (
     <span>
       <span className="text-[color:var(--color-text-tertiary)]">{label}</span>{' '}
-      <b className={muted ? 'text-[color:var(--color-text-quaternary)]' : numeralClass}>{value}</b>
+      <b className={numeralClass}>{value}</b>
     </span>
   );
 }
 
-function ReleaseStatusItem({ label }: { label: string }) {
+// ─── Platform block ─────────────────────────────────────────────────────────
+
+/**
+ * The page's first job is letting a visitor answer "can I install this, on my
+ * machine, right now?". Two cards answer it per platform instead of one
+ * macOS-shaped narrative that leaves Windows visitors guessing whether the
+ * product excludes them or simply has not shipped for them yet.
+ */
+function PlatformBlock({ published }: { published: boolean }) {
+  const t = useTranslations('download');
+
   return (
-    <li className="flex items-start gap-2">
-      <span
-        className="mt-[0.42rem] h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-status-warning)]"
-        aria-hidden
-      />
-      <span>{label}</span>
-    </li>
+    // Published, macOS carries two architecture rows and earns the wider
+    // column; the cards then read as one set and share a row height. Before
+    // publishing it is a single sentence, so stretching it to the Windows
+    // card's height would open a void no content is asking for — equal
+    // columns hugging their content is the tidier shape for that state.
+    <div
+      data-testid="download-platforms"
+      className={cn(
+        'mt-4 grid min-w-0 grid-cols-1 gap-4',
+        published
+          ? 'items-stretch lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)]'
+          : 'items-start lg:grid-cols-2',
+      )}
+    >
+      <MacosPlatformCard published={published} />
+
+      <section
+        data-testid="download-platform-windows"
+        aria-labelledby="download-platform-windows-heading"
+        className="flex min-w-0 flex-col rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4"
+      >
+        <div className="flex items-baseline gap-2">
+          <h2
+            id="download-platform-windows-heading"
+            className="text-body-lg font-semibold text-[color:var(--color-text-primary)]"
+          >
+            {t('windowsHeading')}
+          </h2>
+          <span className="rounded-full border border-[color:var(--color-border-soft)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t('windowsPendingBadge')}
+          </span>
+        </div>
+        <p className="mt-2 break-keep text-body leading-5 text-[color:var(--color-text-tertiary)]">
+          {t('windowsPendingBody')}
+        </p>
+        <a
+          href={WINDOWS_STATUS.trackingUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-3 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+        >
+          {t('windowsTrackCta')}
+        </a>
+      </section>
+    </div>
+  );
+}
+
+function MacosPlatformCard({ published }: { published: boolean }) {
+  const t = useTranslations('download');
+
+  return (
+    <section
+      data-testid="download-platform-macos"
+      aria-labelledby="download-platform-macos-heading"
+      className="min-w-0 rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 shadow-[inset_0_1px_0_var(--color-overlay-2)]"
+    >
+      <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] pb-2.5">
+        <h2
+          id="download-platform-macos-heading"
+          className="text-body-lg font-semibold text-[color:var(--color-text-primary)]"
+        >
+          {t('macosHeading')}
+        </h2>
+        <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+          {RELEASE_MIN_MACOS}
+        </span>
+        {published ? (
+          // Neutral on purpose: the success tone is reserved for state signals
+          // like "connected" / "write confirmed", and a third colour system
+          // here would compete with the download button for attention.
+          // `uppercase` is also wrong for a tag — it would print `V1.0.0`.
+          <span className="ml-auto whitespace-nowrap font-mono text-caption tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t('macosPublishedBadge', { tag: MACOS_RELEASE.tag })}
+          </span>
+        ) : null}
+      </div>
+
+      {published ? (
+        <div className="grid gap-2.5 pt-3">
+          {ARCH_ORDER.map((arch) => (
+            <MacosArchRow key={arch} arch={arch} />
+          ))}
+        </div>
+      ) : (
+        // No published build means no size, no checksum, no download URL.
+        // Saying that once beats rendering four placeholder facts that each
+        // look like data.
+        <p
+          data-testid="download-macos-pending"
+          className="break-keep pt-3 text-body leading-6 text-[color:var(--color-text-secondary)]"
+        >
+          {t('macosPendingBody', { tag: MACOS_RELEASE.tag })}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function MacosArchRow({ arch }: { arch: DesktopArch }) {
+  const t = useTranslations('download');
+  const { state: copyState, copy } = useCopyFeedback(1500);
+  const asset = macosAssetFor(arch);
+  if (!asset) return null;
+
+  const copyLabel =
+    copyState === 'copied'
+      ? t('checksumCopied')
+      : copyState === 'failed'
+        ? t('checksumCopyFailed')
+        : t('checksumCopy');
+
+  return (
+    <div className="min-w-0 rounded-[7px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-3">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+        {/* Outline, not filled: the header already spends the page's one
+            primary action on the Apple Silicon download. Three filled indigo
+            buttons would leave no attention winner. */}
+        <a
+          href={asset.downloadUrl}
+          data-testid={`download-macos-${arch}`}
+          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'rounded-full')}
+        >
+          <Download size={15} />
+          {t(arch === 'aarch64' ? 'archAppleSiliconCta' : 'archIntelCta')}
+        </a>
+        <span className={`text-body ${numeralClass}`}>{formatAssetSize(asset.sizeBytes)}</span>
+        <span className="min-w-0 flex-1 truncate text-right font-mono text-label text-[color:var(--color-text-quaternary)]">
+          {asset.fileName}
+        </span>
+      </div>
+      <div className="mt-2 flex min-w-0 items-center gap-2">
+        <span className="shrink-0 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          {t('checksumLabel')}
+        </span>
+        <span className={`min-w-0 flex-1 truncate text-label tracking-[0.02em] ${numeralClass}`}>
+          {asset.sha256}
+        </span>
+        <button
+          type="button"
+          onClick={() => void copy(asset.sha256)}
+          aria-label={copyLabel}
+          className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 font-mono text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+        >
+          {copyState === 'copied' ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
+          {t('checksumCopy')}
+        </button>
+      </div>
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {copyState === 'copied' ? t('checksumCopied') : copyState === 'failed' ? t('checksumCopyFailed') : ''}
+      </span>
+    </div>
   );
 }
 
@@ -709,7 +835,7 @@ function SectionHeading({ label, caption }: { label: string; caption: string }) 
       <span className="text-[13.5px] font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
         {label}
       </span>
-      <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+      <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
         {caption}
       </span>
     </div>
@@ -731,11 +857,11 @@ function IncludeCard({
     <article className="flex items-start gap-2.5 rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3.5 shadow-[inset_0_1px_0_var(--color-overlay-2)]">
       <TopologyV2KindGlyph kind={glyph} size={16} className="mt-0.5 shrink-0" />
       <div className="min-w-0">
-        <h3 className="text-[12.5px] font-semibold text-[color:var(--color-text-primary)]">
+        <h3 className="text-body font-semibold text-[color:var(--color-text-primary)]">
           {title}
-          {count ? <span className={`ml-1.5 text-[11px] ${numeralClass}`}>{count}</span> : null}
+          {count ? <span className={`ml-1.5 text-label ${numeralClass}`}>{count}</span> : null}
         </h3>
-        <p className="mt-1 text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">{body}</p>
+        <p className="mt-1 text-label leading-5 text-[color:var(--color-text-tertiary)]">{body}</p>
       </div>
     </article>
   );
@@ -744,20 +870,20 @@ function IncludeCard({
 function InstallStep({ index, title, body }: { index: string; title: string; body: string }) {
   return (
     <li className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3.5 shadow-[inset_0_1px_0_var(--color-overlay-2)]">
-      <span className={`text-[11px] tracking-[0.1em] ${numeralClass}`}>{index}</span>
-      <h3 className="mt-1.5 text-[13px] font-semibold text-[color:var(--color-text-primary)]">{title}</h3>
-      <p className="mt-1 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">{body}</p>
+      <span className={`text-label tracking-[0.1em] ${numeralClass}`}>{index}</span>
+      <h3 className="mt-1.5 text-body-lg font-semibold text-[color:var(--color-text-primary)]">{title}</h3>
+      <p className="mt-1 text-body leading-5 text-[color:var(--color-text-tertiary)]">{body}</p>
     </li>
   );
 }
 
 function TrustRow({ label, note }: { label: string; note: string }) {
   return (
-    <div className="flex items-center gap-2 py-1 text-[12.5px] text-[color:var(--color-text-secondary)]">
+    <div className="flex items-center gap-2 py-1 text-body text-[color:var(--color-text-secondary)]">
       <CheckCircle2 size={13} className="shrink-0 text-[color:var(--color-indigo-accent)]" />
       <span>{label}</span>
       {note ? (
-        <span className="ml-auto whitespace-nowrap font-mono text-[11px] text-[color:var(--color-text-quaternary)]">
+        <span className="ml-auto whitespace-nowrap font-mono text-label text-[color:var(--color-text-quaternary)]">
           {note}
         </span>
       ) : null}

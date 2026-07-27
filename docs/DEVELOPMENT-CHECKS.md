@@ -764,24 +764,24 @@ For macOS app release candidates, use:
 
 ```bash
 pnpm desktop:release-preflight
-pnpm desktop:goal-audit -- --pr=<number> --tag=v0.1.0
+pnpm desktop:goal-audit -- --pr=<number> --tag=v1.0.0
 # writes .tmp/desktop-goal-status.json and .tmp/desktop-goal-status.md by default
 
 # CI-only or local credentialed release signing path:
 pnpm desktop:check
 pnpm desktop:doctor -- --require-runtime
-pnpm desktop:release-github -- --tag=v0.1.0
+pnpm desktop:release-github -- --tag=v1.0.0
 pnpm desktop:release-source -- --sha="$(git rev-parse HEAD)"
-pnpm desktop:release-tag -- --tag=v0.1.0
+pnpm desktop:release-tag -- --tag=v1.0.0
 pnpm desktop:release-artifact
 
 # macOS app completion audit after PR review/merge, Developer ID direct-download secrets, tag workflow,
 # public release publication, and DMG asset verification are expected to be done:
-pnpm desktop:release-run -- --tag=v0.1.0
-pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0
-pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0 --json
-pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0 --json-file=.tmp/release-status.json
-pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0 --markdown-file=.tmp/release-status.md
+pnpm desktop:release-run -- --tag=v1.0.0
+pnpm desktop:release-status -- --pr=<number> --tag=v1.0.0
+pnpm desktop:release-status -- --pr=<number> --tag=v1.0.0 --json
+pnpm desktop:release-status -- --pr=<number> --tag=v1.0.0 --json-file=.tmp/release-status.json
+pnpm desktop:release-status -- --pr=<number> --tag=v1.0.0 --markdown-file=.tmp/release-status.md
 ```
 
 For local unsigned smoke, `pnpm desktop:build` is the shortcut for

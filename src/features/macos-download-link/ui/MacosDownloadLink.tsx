@@ -8,15 +8,17 @@ export const GITHUB_RELEASES_URL =
 interface Props {
   children: ReactNode;
   className?: string;
+  'data-testid'?: string;
 }
 
-export function MacosDownloadLink({ children, className }: Props) {
+export function MacosDownloadLink({ children, className, ...rest }: Props) {
   return (
     <a
       href={GITHUB_RELEASES_URL}
       target="_blank"
       rel="noopener noreferrer"
       className={className}
+      {...rest}
     >
       {children}
     </a>

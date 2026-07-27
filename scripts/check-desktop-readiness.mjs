@@ -166,6 +166,7 @@ const releasePublishOrder = orderedIndexes(releaseWorkflow, [
   "name: Require clean GitHub Release slot",
   "name: Upload draft GitHub Release assets",
   "name: Verify draft release assets",
+  "name: Summarize the draft awaiting approval",
   "name: Publish verified stable release",
   "name: Verify public download assets",
   "name: Summarize published macOS release",
@@ -564,21 +565,23 @@ if (
   pkg.scripts?.["desktop:verify-hosted"] ===
   "node scripts/check-hosted-download-surface.mjs" &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-hosted-download-surface.test.mjs") &&
-  hostedDownloadSurfaceScript.includes("내 마크다운 폴더 열기") &&
   hostedDownloadSurfaceScript.includes("/ko/download/") &&
   hostedDownloadSurfaceScript.includes("https://github.com/wlsdks/ontology-atlas/releases") &&
-  hostedDownloadSurfaceScript.includes("AI agent 접근 확인") &&
-  hostedDownloadSurfaceScript.includes("같은 vault 를 MCP 로 읽고 쓰는지 확인") &&
-  hostedDownloadSurfaceScript.includes("CLI fallback") &&
+  // 기대 문구를 검증기 안에 손으로 복제하면 페이지 카피가 바뀔 때마다
+  // 게이트가 조용히 빨간불이 된다(실제로 그랬다 — Pages 배포 5회 연속
+  // deploy 성공 + verify 실패). 진실원은 출고되는 메시지 카탈로그다.
+  hostedDownloadSurfaceScript.includes('readFileSync(path.join(REPO_ROOT, "messages", "ko.json")') &&
+  hostedDownloadSurfaceScript.includes("downloadCopy.windowsHeading") &&
+  hostedDownloadSurfaceScript.includes("downloadCopy.windowsPendingBadge") &&
   hostedDownloadSurfaceScript.includes("releases/latest") &&
   hostedDownloadSurfaceScript.includes("assertIncludes(download.body, downloadPath") &&
   hostedDownloadSurfaceScript.includes("deploy-pages.yml") &&
   hostedDownloadSurfaceScript.includes("gh workflow run deploy-pages.yml")
 ) {
-  pass("hosted website verifier requires stable GitHub Releases CTAs and agent access proof on the download route");
+  pass("hosted website verifier sources expected download copy from the message catalog and requires both platform statuses");
 } else {
   fail(
-    "package.json must expose desktop:verify-hosted, test:desktop:check must cover it, and scripts/check-hosted-download-surface.mjs must reject stale browser-vault CTAs, require the hosted /ko/download/ route, require a stable GitHub Releases CTA plus AI-agent MCP/CLI access step on the download route, reject releases/latest, and print the deploy-pages recovery path",
+    "package.json must expose desktop:verify-hosted, test:desktop:check must cover it, and scripts/check-hosted-download-surface.mjs must read expected download copy from messages/ko.json (not hand-copied strings), require the hosted /ko/download/ route with both platform statuses and a stable GitHub Releases CTA, reject releases/latest, and print the deploy-pages recovery path",
   );
 }
 
@@ -588,7 +591,6 @@ if (
   /workflow_dispatch:/.test(pagesDeployWorkflow) &&
   /PAGES_BASE_URL:\s*https:\/\/wlsdks\.github\.io\/ontology-atlas/.test(pagesDeployWorkflow) &&
   /NEXT_PUBLIC_BASE_PATH:\s*\/ontology-atlas/.test(pagesDeployWorkflow) &&
-  /NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING:\s*'0'/.test(pagesDeployWorkflow) &&
   /uses:\s*actions\/setup-node@v6/.test(pagesDeployWorkflow) &&
   /node-version:\s*24/.test(pagesDeployWorkflow) &&
   /corepack enable/.test(pagesDeployWorkflow) &&
@@ -605,7 +607,7 @@ if (
   pass("GitHub Pages workflow builds the base-path static export, deploys the sole hosted download site on push/release, and verifies the hosted download route");
 } else {
   fail(
-    ".github/workflows/deploy-pages.yml must deploy GitHub Pages on push to main / release publication / manual dispatch, build with the /ontology-atlas base path and NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0, use Node 24 with Corepack pnpm@10.18.0 without pnpm/action-setup, upload+deploy the Pages artifact, verify the hosted download route at the Pages URL, verify published release assets on release, and never depend on Firebase",
+    ".github/workflows/deploy-pages.yml must deploy GitHub Pages on push to main / release publication / manual dispatch, build with the /ontology-atlas base path, use Node 24 with Corepack pnpm@10.18.0 without pnpm/action-setup, upload+deploy the Pages artifact, verify the hosted download route at the Pages URL, verify published release assets on release, and never depend on Firebase",
   );
 }
 
@@ -844,74 +846,68 @@ if (
   );
 }
 
+// 다운로드 페이지가 주장할 수 있는 것은 "실제로 게시된 릴리스가 있는가"
+// 하나로 결정된다. 예전엔 크기/체크섬/대기문구가 각자 자리표시자를 들고
+// 있어서 6군데가 따로 낡았고, 방문자는 지금 설치가 되는지 알 수 없었다.
+// 게이트는 이제 두 가지를 지킨다: ① 릴리스 사실은 생성 모듈에서만 온다
+// ② 내부 파이프라인 상태(PR review, 태그 정합, CI 점검 명령)는 공개 표면에
+// 없다 — 그건 릴리스 런북(docs/DESKTOP-MACOS.md)의 소유다.
+const downloadReleaseState = readText("src/views/download/lib/release-state.ts");
+const downloadGeneratedRelease = readText(
+  "src/views/download/model/macos-release.generated.ts",
+);
+const internalPipelineLeaks = [
+  "releaseStatusTitle",
+  "releaseStatusPr",
+  "releaseStatusSecrets",
+  "desktop:release-status",
+  "NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING",
+];
+
 if (
-  downloadPage.includes("releaseAvailabilityNote") &&
-  downloadPage.includes("releaseStatusTitle") &&
-  downloadPage.includes("releaseStatusPr") &&
-  downloadPage.includes("releaseStatusVersion") &&
-  downloadPage.includes("releaseStatusSecrets") &&
-  downloadPage.includes("releaseStatusRelease") &&
-  downloadPage.includes("releaseStatusHosted") &&
-  downloadPage.includes("showFirstReleaseChecklist") &&
-  downloadRoute.includes("NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING") &&
-  // opt-in(`=== '1'`) 이 옛 opt-out(`!== '0'`) 보다 안전하다 — 변수를 안 넣은
-  // 배포에서도 미공개 체크리스트가 새지 않는다. 게이트 의도("0이면 숨김")는
-  // 그대로 충족되므로 현행 형태를 계약으로 고정한다.
-  downloadRoute.includes("=== '1'") &&
-  !downloadRoute.includes("!== '0'") &&
-  downloadRoute.includes("showFirstReleaseChecklist={showFirstReleaseChecklist}") &&
-  /direct-download app release is still waiting on PR review, version alignment, Developer ID signing\/notarization, or the v0\.1\.0 GitHub Release/.test(
-    enMessages.download?.releaseAvailabilityNote ?? "",
+  downloadPage.includes("isMacosReleasePublished") &&
+  downloadPage.includes("macosAssetFor") &&
+  downloadPage.includes("formatAssetSize") &&
+  downloadPage.includes("download-platform-macos") &&
+  downloadPage.includes("download-platform-windows") &&
+  downloadPage.includes("download-macos-pending") &&
+  // 파일명은 버전을 따라간다 — 번역 문자열에 옛 파일명을 얼려두면 검증
+  // 명령이 조용히 거짓이 된다.
+  downloadPage.includes("buildDmgName('aarch64')") &&
+  internalPipelineLeaks.every(
+    (marker) => !downloadPage.includes(marker) && !downloadRoute.includes(marker),
   ) &&
-  !/Firebase Hosting/.test(enMessages.download?.releaseAvailabilityNote ?? "") &&
-  /Before the first release is fully available/.test(enMessages.download?.releaseStatusTitle ?? "") &&
-  /desktop release workflow/.test(enMessages.download?.releaseStatusPr ?? "") &&
-  /merged to main before v0\.1\.0 can ship/.test(enMessages.download?.releaseStatusPr ?? "") &&
-  /v0\.1\.0 tag/.test(enMessages.download?.releaseStatusVersion ?? "") &&
-  /package\.json, Tauri, and Cargo metadata/.test(
-    enMessages.download?.releaseStatusVersion ?? "",
-  ) &&
-  !/Firebase Hosting/.test(enMessages.download?.releaseStatusVersion ?? "") &&
-  /Apple Developer ID signing\/notarization secrets/.test(
-    enMessages.download?.releaseStatusSecrets ?? "",
-  ) &&
-  !/Firebase Hosting/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
-  /direct-download DMGs/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
-  /not Mac App Store submission/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
-  /v0\.1\.0 GitHub Release/.test(enMessages.download?.releaseStatusRelease ?? "") &&
-  /source of truth/.test(enMessages.download?.releaseStatusRelease ?? "") &&
-  /Separately, GitHub Pages must deploy the promo\/download site/.test(
-    enMessages.download?.releaseStatusHosted ?? "",
-  ) &&
-  !/Firebase Hosting/.test(enMessages.download?.releaseStatusHosted ?? "") &&
-  /\/ko\/download\//.test(enMessages.download?.releaseStatusHosted ?? "") &&
-  /직접 다운로드 앱 릴리스가 PR review, version alignment, Developer ID signing\/notarization, v0\.1\.0 GitHub Release/.test(
-    koMessages.download?.releaseAvailabilityNote ?? "",
-  ) &&
-  !/Firebase Hosting/.test(koMessages.download?.releaseAvailabilityNote ?? "") &&
-  /첫 릴리스가 완전히 열리기 전 체크리스트/.test(koMessages.download?.releaseStatusTitle ?? "") &&
-  /desktop release workflow/.test(koMessages.download?.releaseStatusPr ?? "") &&
-  /main 에 병합/.test(koMessages.download?.releaseStatusPr ?? "") &&
-  /v0\.1\.0 tag/.test(koMessages.download?.releaseStatusVersion ?? "") &&
-  /package\.json, Tauri, Cargo metadata/.test(
-    koMessages.download?.releaseStatusVersion ?? "",
-  ) &&
-  !/Firebase Hosting/.test(koMessages.download?.releaseStatusVersion ?? "") &&
-  /Apple Developer ID/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
-  !/Firebase Hosting/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
-  /직접 다운로드 DMG/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
-  /Mac App Store 제출용이 아니라/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
-  /v0\.1\.0 GitHub Release/.test(koMessages.download?.releaseStatusRelease ?? "") &&
-  /진실원/.test(koMessages.download?.releaseStatusRelease ?? "") &&
-  /별도로/.test(koMessages.download?.releaseStatusHosted ?? "") &&
-  /GitHub Pages/.test(koMessages.download?.releaseStatusHosted ?? "") &&
-  !/Firebase Hosting/.test(koMessages.download?.releaseStatusHosted ?? "") &&
-  /\/ko\/download\//.test(koMessages.download?.releaseStatusHosted ?? "")
+  downloadGeneratedRelease.includes("Generated by `pnpm download:release-facts`") &&
+  /published:\s*(true|false)/.test(downloadGeneratedRelease) &&
+  downloadReleaseState.includes("WINDOWS_STATUS") &&
+  // 게시 전에는 자리표시자 대신 "아직 없다" 한 상태만 남는다.
+  /has not been published yet/.test(enMessages.download?.macosPendingBody ?? "") &&
+  /게시 전/.test(koMessages.download?.macosPendingBody ?? "") &&
+  !enMessages.download?.checksumValuePending &&
+  !enMessages.download?.factSizeValuePending &&
+  !enMessages.download?.releaseAvailabilityNote &&
+  !enMessages.download?.releaseStatusTitle &&
+  !koMessages.download?.releaseStatusTitle &&
+  // Windows 는 침묵하지 않는다 — 빠진 게 아니라 아직 안 나왔다고 말한다.
+  /In preparation/i.test(enMessages.download?.windowsPendingBadge ?? "") &&
+  /signed installer/.test(enMessages.download?.windowsPendingBody ?? "") &&
+  /준비 중/.test(koMessages.download?.windowsPendingBadge ?? "") &&
+  /서명된 설치 파일/.test(koMessages.download?.windowsPendingBody ?? "") &&
+  // 서명·공증은 게시된 빌드가 이미 통과한 사실로 적는다 (미래형 금지).
+  !/Release gate requires/.test(enMessages.download?.proofSigned ?? "") &&
+  !/게이트가/.test(koMessages.download?.proofSigned ?? "") &&
+  /\{file\}/.test(enMessages.download?.trustVerifyCommand ?? "") &&
+  /only after Developer ID signing/.test(enMessages.download?.trustPolicy ?? "") &&
+  // 등록된 적 없는 도메인을 사실처럼 쓰지 않는다.
+  !/ontology-atlas\.dev/.test(JSON.stringify(enMessages.download ?? {})) &&
+  !/ontology-atlas\.dev/.test(JSON.stringify(koMessages.download ?? {}))
 ) {
-  pass("hosted download page separates macOS app release blockers from the GitHub Pages website deploy gate");
+  pass(
+    "hosted download page states per-platform installability from the generated release state and keeps release-pipeline status internal",
+  );
 } else {
   fail(
-    "hosted download copy must separate macOS app blockers (PR review, version alignment, Developer ID signing/notarization, v0.1.0 Release) from the separate GitHub Pages /ko/download/ deploy gate, and NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
+    "the /download surface must derive size/checksum/download links from src/views/download/model/macos-release.generated.ts, say plainly that macOS is unpublished instead of showing placeholders, show a Windows in-preparation card, state signing/notarization as facts about published builds, and carry no operator-only release-pipeline status",
   );
 }
 
@@ -933,11 +929,11 @@ if (
 }
 
 if (
-  releaseWorkflow.match(/uses:\s*actions\/checkout@v6/g)?.length === 2 &&
-  releaseWorkflow.match(/uses:\s*actions\/setup-node@v6/g)?.length === 2 &&
-  releaseWorkflow.match(/corepack enable/g)?.length === 2 &&
-  releaseWorkflow.match(/corepack prepare pnpm@10\.18\.0 --activate/g)?.length === 2 &&
-  releaseWorkflow.match(/pnpm --version/g)?.length === 2 &&
+  releaseWorkflow.match(/uses:\s*actions\/checkout@v6/g)?.length === 3 &&
+  releaseWorkflow.match(/uses:\s*actions\/setup-node@v6/g)?.length === 3 &&
+  releaseWorkflow.match(/corepack enable/g)?.length === 3 &&
+  releaseWorkflow.match(/corepack prepare pnpm@10\.18\.0 --activate/g)?.length === 3 &&
+  releaseWorkflow.match(/pnpm --version/g)?.length === 3 &&
   /uses:\s*actions\/upload-artifact@v7/.test(releaseWorkflow) &&
   /uses:\s*actions\/download-artifact@v7/.test(releaseWorkflow) &&
   /uses:\s*softprops\/action-gh-release@v3/.test(releaseWorkflow) &&
@@ -952,6 +948,15 @@ if (
 
 if (
   /draft:\s*true/.test(releaseWorkflow) &&
+  // 초안을 만드는 job 과 공개하는 job 이 갈라져 있고, 공개 job 이
+  // `release` 환경 뒤에 있어야 한다 — 워크플로는 앱이 깨끗한 기기에서
+  // 실행되는지 증명하지 못하므로, 사람이 그 초안을 설치해본 뒤에만
+  // 공개되게 한다. 환경의 required reviewer 설정은 저장소 Settings 몫이라
+  // 런북(docs/DESKTOP-MACOS.md)이 함께 지킨다.
+  /stage-macos:/.test(releaseWorkflow) &&
+  /publish-macos:\s*\n\s*name: Publish macOS Release/.test(releaseWorkflow) &&
+  /needs:\s*stage-macos/.test(releaseWorkflow) &&
+  /environment:\s*release/.test(releaseWorkflow) &&
   /pnpm desktop:release-slot -- --tag="\$\{GITHUB_REF_NAME\}"/.test(releaseWorkflow) &&
   /Verify draft release assets/.test(releaseWorkflow) &&
   /--allow-draft/.test(releaseWorkflow) &&
@@ -977,7 +982,7 @@ if (
   /SHA-256/.test(releaseWorkflow) &&
   /wc -c < "\$dmg"/.test(releaseWorkflow) &&
   /cut -d ' ' -f 1 "\$checksum"/.test(releaseWorkflow) &&
-  releaseWorkflow.match(/node-version:\s*24/g)?.length === 2 &&
+  releaseWorkflow.match(/node-version:\s*24/g)?.length === 3 &&
   /arch:\s*aarch64/.test(releaseWorkflow) &&
   /runner:\s*macos-14/.test(releaseWorkflow) &&
   /arch:\s*x64/.test(releaseWorkflow) &&

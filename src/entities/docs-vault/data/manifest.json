@@ -3124,6 +3124,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 공개 준비: 다운로드 페이지가 다운로드를 주게 하고, 버전을 v1.0.0 으로",
+          "slug": "2026-07-27-공개-준비-다운로드-페이지가-다운로드를-주게-하고-버전을-v100-으로"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 글자 크기엔 규격이 있는데 줄 간격엔 없었다 (행간 램프 9단)",
           "slug": "2026-07-27-글자-크기엔-규격이-있는데-줄-간격엔-없었다-행간-램프-9단"
         },
@@ -5093,8 +5098,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 두 결함 다 \"게이트가 조용히 통과시킨\" 종류였다. ① 공방 중심 카드의 노드 이름이 램프에 없는 크기를 부르고 있었다. Tailwind 는 정의되지 않은",
-      "wordCount": 53595,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 두 결함 다 \"게이트",
+      "wordCount": 53933,
       "updatedAt": "2026-07-27",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
@@ -5160,8 +5165,8 @@
         }
       ],
       "excerpt": "2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (GitHub Pages, Vercel, Netlify, S3 + CloudFront, …). The canonical host is GitHub Pages; the old Firebase-specific guide is archived in docs/archive/DEPLOY-FIREBASE.md f",
-      "wordCount": 496,
-      "updatedAt": "2026-07-24",
+      "wordCount": 494,
+      "updatedAt": "2026-07-27",
       "linksOut": [
         "archive/DEPLOY-FIREBASE"
       ]
@@ -5959,6 +5964,11 @@
         },
         {
           "depth": 2,
+          "text": "First Public Release Runbook (v1.0.0)",
+          "slug": "first-public-release-runbook-v100"
+        },
+        {
+          "depth": 2,
           "text": "Release Signing and Notarization",
           "slug": "release-signing-and-notarization"
         },
@@ -5969,7 +5979,7 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 4859,
+      "wordCount": 5300,
       "updatedAt": "2026-07-27",
       "linksOut": []
     },
@@ -6375,13 +6385,13 @@
         },
         {
           "depth": 4,
-          "text": "Engraved fact strip (real repo facts only — no DMG has shipped yet)",
-          "slug": "engraved-fact-strip-real-repo-facts-only-no-dmg-has-shipped-yet"
+          "text": "Engraved fact strip (repo facts that hold before any build exists)",
+          "slug": "engraved-fact-strip-repo-facts-that-hold-before-any-build-exists"
         },
         {
           "depth": 4,
-          "text": "First-release checklist (shown until a real release ships; `showFirstReleaseChecklist` prop)",
-          "slug": "first-release-checklist-shown-until-a-real-release-ships-showfirstreleasechecklist-prop"
+          "text": "Platform block (macOS + Windows)",
+          "slug": "platform-block-macos-windows"
         },
         {
           "depth": 4,
@@ -6520,7 +6530,7 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 14573,
+      "wordCount": 14880,
       "updatedAt": "2026-07-27",
       "linksOut": [
         "slug",

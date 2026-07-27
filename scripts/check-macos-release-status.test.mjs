@@ -5,6 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
+// The release gates compare a tag against package.json/Tauri/Cargo, so these
+// fixtures follow the repo version instead of freezing one — a frozen tag
+// would fail on exactly the version bump the gate exists to protect.
+const APP_TAG = `v${JSON.parse(readFileSync("package.json", "utf8")).version}`;
+const APP_TAG_PATTERN = APP_TAG.replace(/\./g, "\\.");
+
 const requiredSecrets = [
   "APPLE_CERTIFICATE_P12_BASE64",
   "APPLE_CERTIFICATE_PASSWORD",
@@ -152,7 +158,7 @@ function withFakeGh(scenario, run) {
   }
 }
 
-function runStatus(fakeGhPath, args = ["--tag=v0.1.0", "--pr=274"], extraEnv = {}) {
+function runStatus(fakeGhPath, args = [`--tag=${APP_TAG}`, "--pr=274"], extraEnv = {}) {
   const fakeGitPath = fakeGhPath.replace(/fake-gh\.mjs$/, "fake-git.mjs");
   return spawnSync(process.execPath, ["scripts/check-macos-release-status.mjs", ...args], {
     cwd: process.cwd(),
@@ -178,14 +184,14 @@ test("desktop release status emits machine-readable blockers for automation", ()
       releaseMissing: true,
     },
     (fakeGhPath) => {
-      const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+      const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
 
       assert.equal(result.status, 1);
       const payload = JSON.parse(result.stdout);
       assert.equal(payload.schemaVersion, 1);
       assert.match(payload.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
       assert.equal(payload.repo, "wlsdks/ontology-atlas");
-      assert.equal(payload.tag, "v0.1.0");
+      assert.equal(payload.tag, `${APP_TAG}`);
       assert.equal(payload.pr, "274");
       assert.equal(payload.ready, false);
       assert.equal(payload.status, "blocked");
@@ -243,16 +249,16 @@ test("desktop release status emits machine-readable blockers for automation", ()
         payload.nextActions.find((action) => action.id === "github_release").commands,
         [
           "gh pr view 274 --repo wlsdks/ontology-atlas --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
-          "pnpm desktop:release-github -- --repo=wlsdks/ontology-atlas --tag=v0.1.0",
+          `pnpm desktop:release-github -- --repo=wlsdks/ontology-atlas --tag=${APP_TAG}`,
           "gh secret list --repo wlsdks/ontology-atlas",
           "DEFAULT_BRANCH=\"$(gh repo view wlsdks/ontology-atlas --json defaultBranchRef --jq .defaultBranchRef.name)\"",
           "git fetch origin \"$DEFAULT_BRANCH\" --tags",
           "pnpm desktop:release-source -- --repo=wlsdks/ontology-atlas --sha=\"$(git rev-parse \"origin/$DEFAULT_BRANCH\")\"",
-          "git tag v0.1.0 \"origin/$DEFAULT_BRANCH\"",
-          "git push origin v0.1.0",
-          "pnpm desktop:release-run -- --repo=wlsdks/ontology-atlas --tag=v0.1.0",
-          "gh release view v0.1.0 --repo wlsdks/ontology-atlas",
-          "pnpm desktop:verify-download -- --repo=wlsdks/ontology-atlas --tag=v0.1.0",
+          `git tag ${APP_TAG} "origin/$DEFAULT_BRANCH"`,
+          `git push origin ${APP_TAG}`,
+          `pnpm desktop:release-run -- --repo=wlsdks/ontology-atlas --tag=${APP_TAG}`,
+          `gh release view ${APP_TAG} --repo wlsdks/ontology-atlas`,
+          `pnpm desktop:verify-download -- --repo=wlsdks/ontology-atlas --tag=${APP_TAG}`,
         ],
       );
       assert.deepEqual(
@@ -306,13 +312,13 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
       try {
         const jsonPath = join(root, "nested", "release-status.json");
         const result = runStatus(fakeGhPath, [
-          "--tag=v0.1.0",
+          `--tag=${APP_TAG}`,
           "--pr=274",
           `--json-file=${jsonPath}`,
         ]);
 
         assert.equal(result.status, 1);
-        assert.match(result.stdout, /\[desktop-release-status\] wlsdks\/ontology-atlas v0\.1\.0/);
+        assert.match(result.stdout, new RegExp(`\\[desktop-release-status\\] wlsdks\\/ontology-atlas ${APP_TAG_PATTERN}`));
         assert.ok(existsSync(jsonPath));
         const payload = JSON.parse(readFileSync(jsonPath, "utf8"));
         assert.equal(payload.schemaVersion, 1);
@@ -379,7 +385,7 @@ test("desktop release status writes a human-readable markdown checklist", () => 
       try {
         const markdownPath = join(root, "nested", "release-status.md");
         const result = runStatus(fakeGhPath, [
-          "--tag=v0.1.0",
+          `--tag=${APP_TAG}`,
           "--pr=274",
           `--markdown-file=${markdownPath}`,
         ]);
@@ -389,7 +395,7 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         const markdown = readFileSync(markdownPath, "utf8");
         assert.match(markdown, /^# macOS Release Status/);
         assert.match(markdown, /- Repo: `wlsdks\/ontology-atlas`/);
-        assert.match(markdown, /- Tag: `v0\.1\.0`/);
+        assert.match(markdown, new RegExp("- Tag: `" + APP_TAG_PATTERN + "`"));
         assert.match(markdown, /- Status: blocked/);
         assert.match(markdown, /- Ready: no/);
         assert.match(markdown, /- Ready at: not ready/);
@@ -409,7 +415,7 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /- \[ \] Developer ID direct-download secrets \(`apple_release_secrets`\)/);
         assert.match(markdown, /  - Owner: release_operator/);
         assert.match(markdown, /- \[ \] GitHub Release \(`github_release`\)/);
-        assert.match(markdown, /git push origin v0\.1\.0/);
+        assert.match(markdown, new RegExp(`git push origin ${APP_TAG_PATTERN}`));
         assert.match(markdown, /gh repo view wlsdks\/ontology-atlas --json defaultBranchRef --jq \.defaultBranchRef\.name/);
         assert.match(markdown, /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/);
         assert.match(markdown, /  - Commands \(run in one shell session\):\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/ontology-atlas < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
@@ -455,7 +461,7 @@ test("desktop release status reports current completion blockers together", () =
       assert.match(result.stdout, /local blockers: none/);
       assert.match(result.stdout, /external blockers: pull_request, apple_release_secrets, github_release/);
       assert.match(result.stdout, /next handoff by owner:\n  reviewer: pull_request\n  release_operator: apple_release_secrets, github_release/);
-      assert.match(result.stdout, /✓ Version alignment: v0\.1\.0 matches package, Tauri, and Cargo versions/);
+      assert.match(result.stdout, new RegExp(`✓ Version alignment: ${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
       assert.match(result.stdout, /✗ Pull request: PR #274 is not merge-ready/);
       assert.match(result.stdout, /review=REVIEW_REQUIRED/);
       assert.match(result.stdout, /merge=BLOCKED/);
@@ -489,7 +495,7 @@ test("desktop release status exposes command arrays for actionable blockers", ()
       releaseMissing: true,
     },
     (fakeGhPath) => {
-      const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+      const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
 
       assert.equal(result.status, 1);
       const payload = JSON.parse(result.stdout);
@@ -512,16 +518,16 @@ test("desktop release status exposes command arrays for actionable blockers", ()
         payload.nextActions.find((action) => action.id === "github_release").commands,
         [
           "gh pr view 274 --repo wlsdks/ontology-atlas --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
-          "pnpm desktop:release-github -- --repo=wlsdks/ontology-atlas --tag=v0.1.0",
+          `pnpm desktop:release-github -- --repo=wlsdks/ontology-atlas --tag=${APP_TAG}`,
           "gh secret list --repo wlsdks/ontology-atlas",
           "DEFAULT_BRANCH=\"$(gh repo view wlsdks/ontology-atlas --json defaultBranchRef --jq .defaultBranchRef.name)\"",
           "git fetch origin \"$DEFAULT_BRANCH\" --tags",
           "pnpm desktop:release-source -- --repo=wlsdks/ontology-atlas --sha=\"$(git rev-parse \"origin/$DEFAULT_BRANCH\")\"",
-          "git tag v0.1.0 \"origin/$DEFAULT_BRANCH\"",
-          "git push origin v0.1.0",
-          "pnpm desktop:release-run -- --repo=wlsdks/ontology-atlas --tag=v0.1.0",
-          "gh release view v0.1.0 --repo wlsdks/ontology-atlas",
-          "pnpm desktop:verify-download -- --repo=wlsdks/ontology-atlas --tag=v0.1.0",
+          `git tag ${APP_TAG} "origin/$DEFAULT_BRANCH"`,
+          `git push origin ${APP_TAG}`,
+          `pnpm desktop:release-run -- --repo=wlsdks/ontology-atlas --tag=${APP_TAG}`,
+          `gh release view ${APP_TAG} --repo wlsdks/ontology-atlas`,
+          `pnpm desktop:verify-download -- --repo=wlsdks/ontology-atlas --tag=${APP_TAG}`,
         ],
       );
     },
@@ -530,7 +536,7 @@ test("desktop release status exposes command arrays for actionable blockers", ()
 
 test("desktop release status blocks stale local release tags", () => {
   withFakeGh({ localTagExists: true }, (fakeGhPath) => {
-    const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+    const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
 
     assert.equal(result.status, 1);
     const payload = JSON.parse(result.stdout);
@@ -540,14 +546,14 @@ test("desktop release status blocks stale local release tags", () => {
     const blocker = payload.checks.find((check) => check.id === "release_tag_slot");
     assert.equal(blocker.scope, "local");
     assert.equal(blocker.owner, "developer");
-    assert.match(blocker.detail, /local git tag v0\.1\.0 already exists/);
-    assert.deepEqual(blocker.commands, ["git tag -d v0.1.0"]);
+    assert.match(blocker.detail, new RegExp(`local git tag ${APP_TAG_PATTERN} already exists`));
+    assert.deepEqual(blocker.commands, [`git tag -d ${APP_TAG}`]);
   });
 });
 
 test("desktop release status blocks existing remote release tags", () => {
   withFakeGh({ gitTagExists: true }, (fakeGhPath) => {
-    const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+    const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
 
     assert.equal(result.status, 1);
     const payload = JSON.parse(result.stdout);
@@ -557,9 +563,9 @@ test("desktop release status blocks existing remote release tags", () => {
     const blocker = payload.checks.find((check) => check.id === "release_tag_slot");
     assert.equal(blocker.scope, "external");
     assert.equal(blocker.owner, "release_operator");
-    assert.match(blocker.detail, /git tag v0\.1\.0 already exists/);
+    assert.match(blocker.detail, new RegExp(`git tag ${APP_TAG_PATTERN} already exists`));
     assert.deepEqual(blocker.commands, [
-      "gh api repos/wlsdks/ontology-atlas/git/ref/tags/v0.1.0",
+      `gh api repos/wlsdks/ontology-atlas/git/ref/tags/${APP_TAG}`,
       "gh run list --repo wlsdks/ontology-atlas --workflow release-macos.yml --event push --limit 10",
     ]);
   });
@@ -567,7 +573,7 @@ test("desktop release status blocks existing remote release tags", () => {
 
 test("desktop release status blocks unavailable release workflows", () => {
   withFakeGh({ workflowMissing: true }, (fakeGhPath) => {
-    const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+    const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
 
     assert.equal(result.status, 1);
     const payload = JSON.parse(result.stdout);
@@ -588,7 +594,7 @@ test("desktop release status blocks unavailable release workflows", () => {
 
 test("desktop release status blocks disabled release workflows", () => {
   withFakeGh({ workflowState: "disabled_manually" }, (fakeGhPath) => {
-    const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+    const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
 
     assert.equal(result.status, 1);
     const payload = JSON.parse(result.stdout);
@@ -646,7 +652,7 @@ test("desktop release status reports draft PRs as actionable merge blockers", ()
       releaseMissing: true,
     },
     (fakeGhPath) => {
-      const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+      const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
 
       assert.equal(result.status, 1);
       const payload = JSON.parse(result.stdout);
@@ -671,7 +677,7 @@ test("desktop release status accepts clean PRs when no review is required", () =
       prReviewDecision: "",
     },
     (fakeGhPath) => {
-      const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+      const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
 
       assert.equal(result.status, 0, result.stderr);
       const payload = JSON.parse(result.stdout);
@@ -687,10 +693,10 @@ test("desktop release status passes when PR, secrets, and stable release are rea
     const result = runStatus(fakeGhPath);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /✓ Version alignment: v0\.1\.0 matches package, Tauri, and Cargo versions/);
+    assert.match(result.stdout, new RegExp(`✓ Version alignment: ${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
     assert.match(result.stdout, /✓ Pull request: PR #274 is merge-ready/);
     assert.match(result.stdout, /✓ Developer ID direct-download secrets: all required Developer ID signing\/notary secret names exist for direct-download DMGs/);
-    assert.match(result.stdout, /✓ GitHub Release: v0\.1\.0 is public and stable/);
+    assert.match(result.stdout, new RegExp(`✓ GitHub Release: ${APP_TAG_PATTERN} is public and stable`));
     assert.match(result.stdout, /· Download assets: skipped by OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1/);
     assert.doesNotMatch(result.stdout, /Hosted website/);
     assert.match(result.stdout, /ready: public macOS release requirements are satisfied/);
@@ -699,7 +705,7 @@ test("desktop release status passes when PR, secrets, and stable release are rea
 
 test("desktop release status JSON reports ready when all release gates pass", () => {
   withFakeGh({}, (fakeGhPath) => {
-    const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+    const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
 
     assert.equal(result.status, 0, result.stderr);
     const payload = JSON.parse(result.stdout);
@@ -740,7 +746,7 @@ test("desktop release status JSON reports ready when all release gates pass", ()
 
 test("desktop release status blocks JSON readiness without PR evidence", () => {
   withFakeGh({}, (fakeGhPath) => {
-    const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--json"]);
+    const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--json"]);
 
     assert.equal(result.status, 1);
     const payload = JSON.parse(result.stdout);
@@ -753,10 +759,10 @@ test("desktop release status blocks JSON readiness without PR evidence", () => {
     const blocker = payload.checks.find((check) => check.id === "pull_request");
     assert.equal(blocker.status, "blocked");
     assert.equal(blocker.detail, "--pr=NUMBER is required to prove review and merge readiness");
-    assert.equal(blocker.next, "Rerun desktop:release-status with --pr=NUMBER, or use pnpm desktop:goal-audit -- --pr=NUMBER --tag=v0.1.0 for the full completion gate.");
+    assert.equal(blocker.next, `Rerun desktop:release-status with --pr=NUMBER, or use pnpm desktop:goal-audit -- --pr=NUMBER --tag=${APP_TAG} for the full completion gate.`);
     assert.deepEqual(blocker.commands, [
-      "pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0",
-      "pnpm desktop:goal-audit -- --pr=<number> --tag=v0.1.0",
+      `pnpm desktop:release-status -- --pr=<number> --tag=${APP_TAG}`,
+      `pnpm desktop:goal-audit -- --pr=<number> --tag=${APP_TAG}`,
     ]);
   });
 });
@@ -765,7 +771,7 @@ test("desktop release status records local preflight proof when goal audit passe
   withFakeGh({}, (fakeGhPath) => {
     const result = runStatus(
       fakeGhPath,
-      ["--tag=v0.1.0", "--pr=274", "--json"],
+      [`--tag=${APP_TAG}`, "--pr=274", "--json"],
       { OATLAS_RELEASE_STATUS_LOCAL_PREFLIGHT: "1" },
     );
 
@@ -787,7 +793,7 @@ test("desktop release status markdown reports ready when all release gates pass"
     try {
       const markdownPath = join(root, "release-status.md");
       const result = runStatus(fakeGhPath, [
-        "--tag=v0.1.0",
+        `--tag=${APP_TAG}`,
         "--pr=274",
         `--markdown-file=${markdownPath}`,
       ]);
@@ -857,7 +863,7 @@ test("desktop release status blocks stale merged PR evidence", () => {
       latestMergedPrTitle: "Clarify direct-download macOS release gates",
     },
     (fakeGhPath) => {
-      const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+      const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
 
       assert.equal(result.status, 1);
       const payload = JSON.parse(result.stdout);
@@ -867,8 +873,8 @@ test("desktop release status blocks stale merged PR evidence", () => {
       assert.equal(blocker.detail, "PR #274 is merged, but latest merged PR is #303: Clarify direct-download macOS release gates");
       assert.equal(blocker.next, "Rerun the audit with --pr=303 so release readiness cites the latest merged PR on the release branch.");
       assert.deepEqual(blocker.commands, [
-        "pnpm desktop:release-status -- --pr=303 --tag=v0.1.0",
-        "pnpm desktop:goal-audit -- --pr=303 --tag=v0.1.0",
+        `pnpm desktop:release-status -- --pr=303 --tag=${APP_TAG}`,
+        `pnpm desktop:goal-audit -- --pr=303 --tag=${APP_TAG}`,
       ]);
     },
   );
@@ -884,12 +890,12 @@ test("desktop release status skips merge advice for missing releases after PR me
       releaseMissing: true,
     },
     (fakeGhPath) => {
-      const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+      const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--pr=274", "--json"]);
 
       assert.equal(result.status, 1);
       const payload = JSON.parse(result.stdout);
       const blocker = payload.checks.find((check) => check.id === "github_release");
-      assert.match(blocker.next, /^Add Developer ID direct-download signing\/notarization secrets \(not Mac App Store submission\), then push v0\.1\.0/);
+      assert.match(blocker.next, new RegExp(`^Add Developer ID direct-download signing\\/notarization secrets \\(not Mac App Store submission\\), then push ${APP_TAG_PATTERN}`));
       assert.doesNotMatch(blocker.next, /Merge the desktop PR/);
       assert.equal(
         blocker.commands[0],
@@ -906,7 +912,7 @@ test("desktop release status handles missing releases without PR evidence", () =
       releaseMissing: true,
     },
     (fakeGhPath) => {
-      const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--json"]);
+      const result = runStatus(fakeGhPath, [`--tag=${APP_TAG}`, "--json"]);
 
       assert.equal(result.status, 1);
       const payload = JSON.parse(result.stdout);
@@ -918,10 +924,10 @@ test("desktop release status handles missing releases without PR evidence", () =
           label: "Pull request",
           status: "blocked",
           detail: "--pr=NUMBER is required to prove review and merge readiness",
-          next: "Rerun desktop:release-status with --pr=NUMBER, or use pnpm desktop:goal-audit -- --pr=NUMBER --tag=v0.1.0 for the full completion gate.",
+          next: `Rerun desktop:release-status with --pr=NUMBER, or use pnpm desktop:goal-audit -- --pr=NUMBER --tag=${APP_TAG} for the full completion gate.`,
           commands: [
-            "pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0",
-            "pnpm desktop:goal-audit -- --pr=<number> --tag=v0.1.0",
+            `pnpm desktop:release-status -- --pr=<number> --tag=${APP_TAG}`,
+            `pnpm desktop:goal-audit -- --pr=<number> --tag=${APP_TAG}`,
           ],
           scope: "external",
           owner: "reviewer",

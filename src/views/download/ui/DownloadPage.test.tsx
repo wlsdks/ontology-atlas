@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import enMessages from '../../../../messages/en.json';
 import { GITHUB_RELEASES_URL } from '@/features/macos-download-link';
+import { RELEASE_VERSION } from '../lib/release-facts';
 import { DownloadPage } from './DownloadPage';
 
 vi.mock('@/features/locale-switch', () => ({
@@ -26,16 +27,78 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 
-function renderDownloadPage({ showFirstReleaseChecklist = true } = {}) {
+// What the page may claim is decided by one generated fact: is a macOS
+// release actually published? Both states have to be exercised — the
+// pre-release state is what the public site serves until the tag ships, and
+// it is the state that used to leak placeholder facts and internal pipeline
+// status.
+const mocks = vi.hoisted(() => ({
+  release: {
+    published: false,
+    tag: 'v1.0.0',
+    publishedAt: null as string | null,
+    releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases',
+    assets: [] as Array<{
+      arch: 'aarch64' | 'x64';
+      fileName: string;
+      sizeBytes: number;
+      sha256: string;
+      downloadUrl: string;
+    }>,
+  },
+}));
+
+vi.mock('../model/macos-release.generated', () => ({
+  get MACOS_RELEASE() {
+    return mocks.release;
+  },
+}));
+
+const AARCH64_SHA = 'a'.repeat(64);
+const X64_SHA = 'b'.repeat(64);
+
+function publishRelease() {
+  mocks.release = {
+    published: true,
+    tag: `v${RELEASE_VERSION}`,
+    publishedAt: '2026-07-27T00:00:00Z',
+    releaseUrl: `https://github.com/wlsdks/ontology-atlas/releases/tag/v${RELEASE_VERSION}`,
+    assets: [
+      {
+        arch: 'aarch64',
+        fileName: `ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`,
+        sizeBytes: 13_002_342,
+        sha256: AARCH64_SHA,
+        downloadUrl: `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`,
+      },
+      {
+        arch: 'x64',
+        fileName: `ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
+        sizeBytes: 14_500_000,
+        sha256: X64_SHA,
+        downloadUrl: `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
+      },
+    ],
+  };
+}
+
+function renderDownloadPage() {
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <DownloadPage showFirstReleaseChecklist={showFirstReleaseChecklist} />
+      <DownloadPage />
     </NextIntlClientProvider>,
   );
 }
 
 describe('DownloadPage', () => {
   beforeEach(() => {
+    mocks.release = {
+      published: false,
+      tag: 'v1.0.0',
+      publishedAt: null,
+      releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases',
+      assets: [],
+    };
     Object.assign(navigator, {
       clipboard: {
         writeText: vi.fn().mockResolvedValue(undefined),
@@ -43,51 +106,132 @@ describe('DownloadPage', () => {
     });
   });
 
+  describe('before a release is published', () => {
+    it('says the build is not out yet instead of rendering placeholder facts', () => {
+      renderDownloadPage();
+
+      expect(screen.getByTestId('download-macos-pending')).toHaveTextContent(
+        /v1\.0\.0 has not been published yet/i,
+      );
+      // A size and a checksum are per-release facts. With no release there is
+      // no honest value for either, so neither row exists at all.
+      expect(screen.getByTestId('download-fact-strip')).not.toHaveTextContent(/size/i);
+      expect(screen.queryByTestId('download-macos-aarch64')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('download-macos-x64')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('download-release-notes-link')).not.toBeInTheDocument();
+    });
+
+    it('sends the primary action to the releases page rather than promising a download', () => {
+      renderDownloadPage();
+
+      const primary = screen.getByTestId('download-primary-cta');
+      expect(primary).toHaveAttribute('href', GITHUB_RELEASES_URL);
+      expect(primary).toHaveTextContent(/Open the GitHub releases page/i);
+    });
+
+    it('keeps operator-only release-pipeline status off the public page', () => {
+      renderDownloadPage();
+
+      // These read as build-process status, not as an answer to "can I
+      // install this?" — the release runbook owns them now.
+      expect(screen.queryByText(/waiting on PR review/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/version alignment/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Before the first release is fully available/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/desktop:release-status/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Copy audit/i })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('once a release is published', () => {
+    beforeEach(publishRelease);
+
+    it('offers a direct per-architecture download with its real size and checksum', () => {
+      renderDownloadPage();
+
+      const appleSilicon = screen.getByTestId('download-macos-aarch64');
+      expect(appleSilicon).toHaveAttribute(
+        'href',
+        `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`,
+      );
+      expect(screen.getByTestId('download-macos-x64')).toHaveAttribute(
+        'href',
+        `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
+      );
+
+      const macosCard = screen.getByTestId('download-platform-macos');
+      expect(macosCard).toHaveTextContent('12.4 MB');
+      expect(macosCard).toHaveTextContent(AARCH64_SHA);
+      expect(macosCard).toHaveTextContent(X64_SHA);
+      expect(macosCard).toHaveTextContent(`ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`);
+    });
+
+    it('makes the header action the download itself, not a detour to GitHub', () => {
+      renderDownloadPage();
+
+      const primary = screen.getByTestId('download-primary-cta');
+      expect(primary).toHaveAttribute(
+        'href',
+        `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`,
+      );
+      expect(primary).toHaveTextContent(/Download for Apple Silicon · 12\.4 MB/i);
+    });
+
+    it('copies the real checksum a user verifies the DMG against', async () => {
+      renderDownloadPage();
+
+      fireEvent.click(screen.getAllByRole('button', { name: /Copy/i })[0]);
+
+      await waitFor(() => {
+        expect(navigator.clipboard.writeText).toHaveBeenCalledWith(AARCH64_SHA);
+      });
+      expect(await screen.findByText(/Checksum copied/i)).toBeInTheDocument();
+    });
+
+    it('links to the release notes themselves, not only the changelog excerpt', () => {
+      renderDownloadPage();
+
+      expect(screen.getByTestId('download-release-notes-link')).toHaveAttribute(
+        'href',
+        `https://github.com/wlsdks/ontology-atlas/releases/tag/v${RELEASE_VERSION}`,
+      );
+    });
+  });
+
+  it('tells Windows visitors where they stand instead of omitting the platform', () => {
+    renderDownloadPage();
+
+    const windowsCard = screen.getByTestId('download-platform-windows');
+    expect(windowsCard).toHaveTextContent('Windows');
+    expect(windowsCard).toHaveTextContent(/In preparation/i);
+    expect(windowsCard).toHaveTextContent(/signed installer/i);
+    expect(screen.getByRole('link', { name: /Follow progress/i })).toBeInTheDocument();
+  });
+
+  it('states signing and notarization as properties of published builds, not as future gates', () => {
+    renderDownloadPage();
+
+    expect(screen.getByText('Developer ID signed')).toBeInTheDocument();
+    expect(screen.getByText('Notarized by Apple')).toBeInTheDocument();
+    expect(screen.queryByText(/Release gate requires/i)).not.toBeInTheDocument();
+    // The verify command names the asset for the current version, so it does
+    // not freeze an old filename into a translation string.
+    expect(
+      screen.getByText(
+        new RegExp(`spctl --assess .*ontology-atlas_${RELEASE_VERSION.replace(/\./g, '\\.')}_aarch64\\.dmg`),
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('keeps the hosted page focused on app releases instead of browser vault work', () => {
     renderDownloadPage();
 
-    expect(screen.getByRole('link', { name: /Check GitHub releases/i })).toHaveAttribute(
-      'href',
-      GITHUB_RELEASES_URL,
-    );
     expect(screen.getByRole('link', { name: /View source code/i })).toHaveAttribute(
       'href',
       'https://github.com/wlsdks/ontology-atlas',
     );
-    expect(
-      screen.getByText(/direct-download app release is still waiting on PR review, version alignment, Developer ID signing\/notarization, or the v0\.1\.0 GitHub Release/i),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Before the first release is fully available/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/desktop release workflow must be merged to main before v0\.1\.0 can ship/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/v0\.1\.0 tag must match package\.json, Tauri, and Cargo metadata/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Apple Developer ID signing\/notarization secrets are required for direct-download DMGs, not Mac App Store submission/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/v0\.1\.0 GitHub Release is the source of truth for verified Apple Silicon and Intel DMGs/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Separately, GitHub Pages must deploy the promo\/download site so \/ko\/download\/ is live after the app release/i),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Local completion audit/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/Run this before waiting on CI: it writes owner-grouped release blockers to JSON and a reviewer checklist/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /pnpm desktop:release-status -- --pr=<number> --tag=v0\.1\.0 --include-hosted-surface --json-file=\.tmp\/desktop-release-status\.json --markdown-file=\.tmp\/desktop-release-status\.md/i,
-      ),
-    ).toBeInTheDocument();
     expect(screen.getByText(/hosted site does not open or edit vault folders/i)).toBeInTheDocument();
     expect(screen.getByText(/Obsidian-style direct download/i)).toBeInTheDocument();
     expect(screen.getByText(/Connect your AI assistant/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/paste it into your AI coding assistant \(Claude, Codex, Cursor, …\)/i),
-    ).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
   });
 
@@ -103,20 +247,20 @@ describe('DownloadPage', () => {
     // [download-honesty] the census card's concepts/relations counts need a
     // scope label so they aren't mistaken for the count shown once a user
     // loads their own vault in the app (different definition, different number).
-    expect(
-      screen.getByText(/Counts this repo's own docs\/ontology vault/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Counts this repo's own docs\/ontology vault/i)).toBeInTheDocument();
+    // The intro used to cite a domain that was never registered.
+    expect(screen.queryByText(/ontology-atlas\.dev/i)).not.toBeInTheDocument();
   });
 
   it('puts the download decision before the secondary product introduction', () => {
+    publishRelease();
     renderDownloadPage();
 
     const downloadHeading = screen.getByRole('heading', { level: 1 });
-    const primaryCta = screen.getByRole('link', { name: /Check GitHub releases/i });
+    const primaryCta = screen.getByTestId('download-primary-cta');
     const sourceCta = screen.getByRole('link', { name: /View source code/i });
     const factStrip = screen.getByTestId('download-fact-strip');
-    const checksumRow = screen.getByTestId('download-checksum-row');
-    const availability = screen.getByTestId('download-release-availability');
+    const platforms = screen.getByTestId('download-platforms');
     const introHeading = screen.getByRole('heading', {
       level: 2,
       name: /Until we all finally/i,
@@ -127,61 +271,14 @@ describe('DownloadPage', () => {
       primaryCta,
       sourceCta,
       factStrip,
-      checksumRow,
-      availability,
+      platforms,
     ]) {
       expect(
-        decisionElement.compareDocumentPosition(introHeading) &
-          Node.DOCUMENT_POSITION_FOLLOWING,
+        decisionElement.compareDocumentPosition(introHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
     }
     expect(
-      primaryCta.compareDocumentPosition(sourceCta) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+      primaryCta.compareDocumentPosition(sourceCta) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-  });
-
-  it('copies the local release completion audit command', async () => {
-    renderDownloadPage();
-
-    fireEvent.click(screen.getByRole('button', { name: /Copy audit/i }));
-
-    await waitFor(() => {
-      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-        'pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0 --include-hosted-surface --json-file=.tmp/desktop-release-status.json --markdown-file=.tmp/desktop-release-status.md',
-      );
-    });
-    expect(await screen.findByText(/Release audit copied/i)).toBeInTheDocument();
-  });
-
-  it('does not offer to copy the placeholder SHA-256 before a real checksum exists (UX 부대 — [W-4])', () => {
-    renderDownloadPage();
-
-    const checksumRow = screen.getByTestId('download-checksum-row');
-    expect(checksumRow).toHaveTextContent('recorded when v0.1.0 publishes');
-    expect(checksumRow).not.toHaveTextContent('0000000000000000');
-    expect(
-      screen.queryByRole('button', { name: /copy.*checksum/i }),
-    ).not.toBeInTheDocument();
-  });
-
-  it('can hide the first-release checklist after public DMGs are published', () => {
-    renderDownloadPage({ showFirstReleaseChecklist: false });
-
-    expect(screen.queryByText(/Before the first release is fully available/i)).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/desktop release workflow must be merged to main before v0\.1\.0 can ship/i),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/v0\.1\.0 tag must match package\.json, Tauri, and Cargo metadata/i),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/GitHub Pages must deploy the promo\/download site/i),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText(/Local completion audit/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Check GitHub releases/i })).toHaveAttribute(
-      'href',
-      GITHUB_RELEASES_URL,
-    );
   });
 });

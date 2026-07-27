@@ -69,11 +69,11 @@ pnpm desktop:verify-dmg
 pnpm desktop:verify-install
 pnpm desktop:release-preflight         # full local pre-tag gate
 pnpm desktop:release-artifact          # credentialed signed/notarized DMG path
-pnpm desktop:goal-audit -- --pr=<number> --tag=v0.1.0  # local preflight + public release/hosted audit
-pnpm desktop:release-github -- --tag=v0.1.0  # GitHub workflow + Developer ID direct-download secret-name gate
+pnpm desktop:goal-audit -- --pr=<number> --tag=v1.0.0  # local preflight + public release/hosted audit
+pnpm desktop:release-github -- --tag=v1.0.0  # GitHub workflow + Developer ID direct-download secret-name gate
 pnpm desktop:release-source -- --sha="$(git rev-parse HEAD)"  # tag only default-branch head
-pnpm desktop:release-run -- --tag=v0.1.0  # wait for the pushed tag workflow run
-pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0  # completion audit
+pnpm desktop:release-run -- --tag=v1.0.0  # wait for the pushed tag workflow run
+pnpm desktop:release-status -- --pr=<number> --tag=v1.0.0  # completion audit
 ```
 
 `desktop:check` verifies the static frontend and Tauri scaffold prerequisites
@@ -220,7 +220,7 @@ for a macOS prototype:
   action or steering new users into the web workbench. The download page also
   states that missing first-release DMGs mean the macOS app release is still
   waiting on PR review, tag/package/Tauri/Cargo version alignment, Apple
-  signing, or the `v0.1.0` GitHub Release. It names the hosted website deploy
+  signing, or the `v1.0.0` GitHub Release. It names the hosted website deploy
   separately (GitHub Pages) as the promo/download website deploy gate for the
   hosted `/ko/download/` route. After verified public DMGs are published and the
   hosted download route is live, rebuild the hosted site with
@@ -255,7 +255,7 @@ for a macOS prototype:
   downloads: it requires Developer ID/notary secrets, rebuilds and route-smokes
   the app, signs the `.app`, packages the DMG, notarizes/staples it, runs
   `desktop:verify-release-dmg`, and install-smokes the final DMG.
-- `pnpm desktop:goal-audit -- --pr=<number> --tag=v0.1.0` is the single goal-level
+- `pnpm desktop:goal-audit -- --pr=<number> --tag=v1.0.0` is the single goal-level
   operator check: it requires PR and tag evidence before starting the expensive
   local preflight, then runs the public release status audit with
   `--include-hosted-surface` so local app packaging, PR/release readiness,
@@ -394,6 +394,70 @@ the image.
 12. Run `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` after the app
    smoke so the desktop path still proves Claude Code / Codex handoff readiness.
 
+## First Public Release Runbook (v1.0.0)
+
+The pipeline is complete; what gates the first public release is credentials
+the repository cannot hold for you. Work top to bottom.
+
+**1 — Apple Developer credentials (owner-only, cannot be automated).**
+
+1. Join the Apple Developer Program ($99/year). Approval is instant for some
+   accounts and takes days for others — start here, it sets the schedule.
+2. In the Apple Developer portal create a **Developer ID Application**
+   certificate (not "Apple Distribution": that one is for the Mac App Store and
+   will not let a downloaded DMG launch).
+3. Download the certificate, open it in Keychain Access, and export it as
+   `.p12` with a password.
+4. Create an app-specific password at appleid.apple.com for `notarytool`.
+5. Read the Team ID from the developer portal's membership page.
+
+**2 — Register the seven GitHub Secrets** (Settings → Secrets and variables →
+Actions). Base64-encode the certificate first:
+
+```bash
+base64 -i DeveloperID.p12 | pbcopy   # → APPLE_CERTIFICATE_P12_BASE64
+gh secret list --repo wlsdks/ontology-atlas   # verify all seven are present
+```
+
+`APPLE_CERTIFICATE_P12_BASE64` · `APPLE_CERTIFICATE_PASSWORD` ·
+`APPLE_KEYCHAIN_PASSWORD` · `APPLE_SIGNING_IDENTITY` · `APPLE_ID` ·
+`APPLE_APP_SPECIFIC_PASSWORD` · `APPLE_TEAM_ID`. The workflow fails closed
+before signing if any is missing, blank, or structurally invalid.
+
+**3 — Configure the `release` environment approval.** Settings → Environments →
+`release` → *Required reviewers* → add yourself. Without this the publish job
+runs unattended and the draft-install check below is skipped silently. The
+readiness gate asserts the workflow *declares* the environment; only the
+repository settings can make it actually block.
+
+**4 — Verify locally, then tag.**
+
+```bash
+pnpm desktop:release-github -- --tag=v1.0.0   # secrets + workflow + tag slot
+pnpm desktop:release-preflight                # build, smoke, DMG, install smoke
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+**5 — Install the draft before it becomes public.** The workflow builds both
+architectures, signs, notarizes, verifies checksums, and uploads a **draft**
+release, then stops at the `release` environment gate. Download that draft DMG,
+install it on a real Mac, launch it, open a vault. This is the step no CI job
+can do for you — and the reason the version is not `1.0.0-rc.1`: you are
+testing the exact bytes that will ship, not a rehearsal build.
+
+**6 — Approve, then fill the download page with real facts.** Approving the
+environment flips the release to stable. The `/download` page still says
+"unpublished" until the generated release facts are refreshed:
+
+```bash
+pnpm download:release-facts -- --tag=v1.0.0   # reads real size + SHA-256
+pnpm exec vitest run src/views/download
+git commit -am "chore: v1.0.0 릴리스 자산 사실 반영" && git push
+```
+
+GitHub Pages redeploys on push, and the page switches to per-architecture
+direct download buttons with the published size and checksum.
+
 ## Release Signing and Notarization
 
 Local development does not require Apple credentials. Public macOS downloads do,
@@ -428,14 +492,14 @@ version drifts from package/Tauri/Cargo metadata, or the Developer ID direct-dow
 configured, blank, or structurally invalid, the workflow fails before uploading
 an unsigned or wrongly sourced distribution candidate.
 Before pushing the tag, run
-`pnpm desktop:release-github -- --tag=v0.1.0` to catch missing GitHub secret
+`pnpm desktop:release-github -- --tag=v1.0.0` to catch missing GitHub secret
 names or a disabled release workflow from the operator machine. In the current
 repo state this is a real external gate: GitHub authentication works, the
-release workflow is active on GitHub, and the `v0.1.0` tag slot is clean, but
+release workflow is active on GitHub, and the `v1.0.0` tag slot is clean, but
 the Developer ID direct-download secret list is still incomplete and the
-`v0.1.0` GitHub Release does not exist, so a tag push would fail before signing.
+`v1.0.0` GitHub Release does not exist, so a tag push would fail before signing.
 Configure the Developer ID direct-download secrets before pushing the release tag.
-Use `pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0` as the completion
+Use `pnpm desktop:release-status -- --pr=<number> --tag=v1.0.0` as the completion
 audit before calling the macOS app goal done: it accepts an already merged PR
 only when that PR is the latest merged PR on the release branch, or checks
 tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
@@ -475,7 +539,7 @@ payload. The default
 `.tmp/desktop-goal-status` artifacts include `local_preflight=ok` only because
 the goal-audit wrapper has already completed the local release preflight in the
 same process chain.
-`pnpm desktop:release-run -- --tag=v0.1.0` is the post-tag watcher used by that
+`pnpm desktop:release-run -- --tag=v1.0.0` is the post-tag watcher used by that
 runbook. It waits until the `release-macos.yml` push run for the pushed tag
 commit appears, then runs `gh run watch --exit-status` against that exact run so
 operators do not accidentally watch an unrelated latest workflow run.
@@ -529,8 +593,8 @@ Current local checkpoint (2026-05-26): `pnpm desktop:doctor -- --require-runtime
 `pnpm desktop:verify-dmg`, and `pnpm desktop:verify-install` all pass locally.
 The unsigned Apple Silicon build produces
 `src-tauri/target/release/bundle/macos/Ontology Atlas.app`,
-`src-tauri/target/release/bundle/dmg/ontology-atlas_0.1.0_aarch64.dmg`, and
-`src-tauri/target/release/bundle/dmg/ontology-atlas_0.1.0_aarch64.dmg.sha256`.
+`src-tauri/target/release/bundle/dmg/ontology-atlas_1.0.0_aarch64.dmg`, and
+`src-tauri/target/release/bundle/dmg/ontology-atlas_1.0.0_aarch64.dmg.sha256`.
 `.github/workflows/release-macos.yml` builds Apple Silicon (`macos-14`) and
 Intel (`macos-15-intel`) artifacts on `v*` tags, requires Developer ID direct-download
 secrets, runs docs-vault freshness, desktop checker, and native bridge tests in

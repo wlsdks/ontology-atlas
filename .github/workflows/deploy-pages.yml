@@ -49,7 +49,6 @@ jobs:
         run: pnpm build
         env:
           NEXT_PUBLIC_BASE_PATH: /ontology-atlas
-          NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING: '0'
       - name: Adapt static PWA manifest to base path
         run: |
           test -f out/manifest.webmanifest

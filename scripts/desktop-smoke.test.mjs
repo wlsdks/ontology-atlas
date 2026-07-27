@@ -106,14 +106,12 @@ test("desktop smoke titles follow current metadata and do not revive retired sur
 test("desktop smoke download copy follows the shipped install path", () => {
   assert.deepEqual(DESKTOP_SMOKE_ROUTE_TEXT["en:/download"], [
     "Install once. Work from your local vault.",
-    "Check GitHub releases",
     "Pick your vault folder",
     "Connect your AI assistant",
     "MCP server auto-registration",
   ]);
   assert.deepEqual(DESKTOP_SMOKE_ROUTE_TEXT["ko:/download"], [
     "한 번 설치하고, 내 로컬 vault 에서 작업하세요.",
-    "GitHub에서 릴리스 확인",
     "vault 폴더 선택",
     "AI 어시스턴트 연결하기",
     "MCP 서버 자동등록",
@@ -128,8 +126,8 @@ test("desktop smoke chunks prove current route meaning", () => {
   assert.deepEqual(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT, {
     "/download": [
       "download-fact-strip",
-      "download-checksum-row",
-      "download-release-availability",
+      "download-platform-macos",
+      "download-platform-windows",
     ],
     "/docs": [
       "data-docs-header-zone",
