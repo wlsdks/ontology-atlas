@@ -3212,6 +3212,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-28 — README 를 설치된 앱의 실제 화면으로 다시 쓴다",
+          "slug": "2026-07-28-readme-를-설치된-앱의-실제-화면으로-다시-쓴다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-28 — 노드를 누를 때 화면에 없는 것을 계산하지 않는다",
           "slug": "2026-07-28-노드를-누를-때-화면에-없는-것을-계산하지-않는다"
         },
@@ -5251,8 +5256,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 모션 감사가 남긴 D",
-      "wordCount": 57272,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 지금까지 README",
+      "wordCount": 57512,
       "updatedAt": "2026-07-28",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
