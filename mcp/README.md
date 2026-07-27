@@ -798,10 +798,10 @@ A successful run looks like this:
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1, +1 more)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:4, +1 more; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
 · health_tuned non-blocking advisory checks — components:info:4 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph 4abaf66ed2d4 (97 nodes, 550 edges, issues 0)
+✓ compile_ontology — graph 4d7ba70cb186 (97 nodes, 550 edges, issues 0)
 ✓ compile_ontology page — 1/97 nodes, 1/550 edges
 ✓ compile_ontology indexes — out 97, in 96, edgeById 550, aliases 193, edges 323/227/0
-✓ overview — graph 4abaf66ed2d4 (97 nodes, 550 edges, hubs 5)
+✓ overview — graph 4d7ba70cb186 (97 nodes, 550 edges, hubs 5)
 ✓ overview query_plan — aggregate_scan (medium, nodes 97, edges 550)
 ✓ project_map query_plan — aggregate_scan (medium, nodes 97, edges 550)
 ✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
