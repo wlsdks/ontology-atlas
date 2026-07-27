@@ -3212,6 +3212,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-28 — 「에이전트」 패널: 빈칸에 뜻을 주고, 바닥의 띠 넷을 하나로",
+          "slug": "2026-07-28-에이전트-패널-빈칸에-뜻을-주고-바닥의-띠-넷을-하나로"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 글자 크기가 자기 줄 간격을 데리고 다닌다",
           "slug": "2026-07-27-글자-크기가-자기-줄-간격을-데리고-다닌다"
         },
@@ -5221,8 +5226,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 줄 간격을 적어 두는",
-      "wordCount": 55608,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 소유자: \"이 에이전",
+      "wordCount": 55934,
       "updatedAt": "2026-07-28",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6806,7 +6811,7 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 15705,
+      "wordCount": 15902,
       "updatedAt": "2026-07-28",
       "linksOut": [
         "slug",

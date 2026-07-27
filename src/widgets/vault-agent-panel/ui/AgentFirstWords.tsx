@@ -53,7 +53,11 @@ export function AgentFirstWords({
       <p className="text-label tracking-label text-[color:var(--color-text-quaternary)]">
         {title}
       </p>
-      <ul className="flex list-none flex-col gap-1.5">
+      <ul
+        className={
+          interactive ? 'flex list-none flex-col gap-1.5' : 'flex list-none flex-col gap-2'
+        }
+      >
         {chips.map((chip) => (
           <li key={chip.id} className="min-w-0">
             {interactive ? (
@@ -73,7 +77,11 @@ export function AgentFirstWords({
                 data-testid="agent-first-words-line"
                 data-first-words-slot={chip.slot}
                 data-first-words-intent={chip.intent.kind}
-                className="line-clamp-2 text-caption leading-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+                // 아직 못 누르는 상태라고 해서 **덜 중요한 정보**는 아니다.
+                // 여기서 사람이 알아야 할 단 하나가 "무엇을 시킬 수 있나"
+                // 인데, 구 화면은 그 문장을 캡션·3차 회색으로 그려 패널에서
+                // 가장 조용하게 만들었다(Tufte 잉크 역전). 본문 무게로 올린다.
+                className="line-clamp-2 text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
               >
                 {chip.text}
               </p>
