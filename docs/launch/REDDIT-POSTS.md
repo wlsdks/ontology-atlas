@@ -70,13 +70,13 @@ The agent now has `list_concepts`, `get_concept`, `find_path` (BFS),
 `find_orphans`, `add_concept`, `patch_concept`, `delete_concept`, etc.
 
 There's also a macOS desktop app that wraps the same Next.js static
-workbench and visualizes the vault three ways: canvas topology,
-hierarchical tree, xyflow ERD builder. The installed app reads/writes the
-same `.md` files through a local native vault bridge; the hosted website is only the product intro and download entry point.
+workbench: a canvas map of the whole vault, a workshop for filling in a
+concept's missing relations, and graph insights. The installed app
+reads/writes the same `.md` files through a local native vault bridge; the
+hosted website is only the product intro and download entry point.
 
-**Pure local-first**: no backend, no auth, no DB. The optional Firebase
-/ Firestore / Auth surfaces were permanently removed in R10, and the static
-site is hosted on GitHub Pages with no cloud SDK in the bundle.
+**Pure local-first**: no backend, no auth, no DB, no cloud SDK in the
+bundle.
 
 30-second try:
 
@@ -138,9 +138,9 @@ npx ontology-atlas init my-vault   # scaffold a vault
 }
 ```
 
-There's also a Next.js workbench that renders the same vault as a
-graph, tree, and ERD builder if you prefer visual editing. But the MCP
-server is the part most relevant to AI workflows.
+There's also a Next.js workbench that renders the same vault as a map you
+can explore and edit, if you prefer working visually. But the MCP server is
+the part most relevant to AI workflows.
 
 Repo: https://github.com/wlsdks/ontology-atlas
 MIT.
@@ -180,8 +180,8 @@ depends_on: [capabilities/signup]
 ---
 ```
 
-Three views: canvas topology, tree, xyflow ERD. All optional — you can
-skip the UI entirely and just use the MCP server with your local agent.
+The map UI is optional — you can skip it entirely and just use the MCP
+server with your local agent.
 
 ```
 npx ontology-atlas init my-vault

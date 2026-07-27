@@ -33,10 +33,9 @@ get, validate_vault, compile_ontology, query_ontology,
 analyze_repo_structure, infer_imports, add_concept, add_concepts,
 patch_concept, rename_concept, ...).
 
-Three views over the same vault: canvas topology, hierarchical
-tree, and an xyflow ERD builder. Local-first by default — the static
-build does not load Firebase JS into a single user-facing route's first
-paint chunk (verified by a CI script).
+A canvas map over the same vault, plus a workshop surface for filling in
+a concept's missing relations. Local-first by default — no backend, no
+auth, no cloud SDK anywhere in the bundle.
 
 30-second start:
 
