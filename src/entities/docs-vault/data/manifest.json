@@ -6077,6 +6077,11 @@
         },
         {
           "depth": 3,
+          "text": "백업해야 할 파일은 둘뿐이다",
+          "slug": "백업해야-할-파일은-둘뿐이다"
+        },
+        {
+          "depth": 3,
           "text": "secret 은 어디에 사는가",
           "slug": "secret-은-어디에-사는가"
         },
@@ -6097,7 +6102,7 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 6284,
+      "wordCount": 6559,
       "updatedAt": "2026-07-27",
       "linksOut": []
     },
