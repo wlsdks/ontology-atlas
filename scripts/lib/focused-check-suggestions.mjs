@@ -237,6 +237,20 @@ const RULES = [
     matches: [/^app\/globals\.css$/, /^postcss\.config\.mjs$/],
   },
   {
+    // 표면 분리(2026-07-27) 이후 웹은 앱을 따라가지 않으므로, 능력 브리지를
+    // 건드린 사람은 앱만 확인하고 지나가기 쉽다. 웹이 무인 표면이라 그 통과가
+    // 그대로 부패가 된다 — 브리지를 만지면 웹 스모크를 같이 권한다.
+    command: 'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
+    reason: 'desktop capability bridge or local-vault entry changed — the web surface is unattended',
+    matches: [
+      /^src\/shared\/lib\/tauri-(?:vault-fs|git|secrets|llm)\.ts$/,
+      /^src\/shared\/lib\/desktop-shell\.ts$/,
+      /^src\/features\/docs-vault-local\/model\/use-local-vault\.ts$/,
+      /^src\/features\/first-run-starter\/ui\/FirstRunStarterModule\.tsx$/,
+      /^src-tauri\//,
+    ],
+  },
+  {
     command: 'pnpm test:dogfood:status',
     reason: 'dogfood status shortcut changed',
     matches: [/^scripts\/dogfood-status\.(?:mjs|test\.mjs)$/],
