@@ -188,6 +188,13 @@ describe('Design council wiring', () => {
     expect(skill).toMatch(/답은 1회, 재질문 없음/);
   });
 
+  it('makes the decision ledger readable, not just writable', () => {
+    const skill = read(SKILL_PATH);
+    expect(skill, 'the skill must point at the ledger').toContain('docs/DECISIONS.md');
+    expect(skill, 'convening must start by reading prior decisions').toMatch(/소집 전/);
+    expect(read('docs/DECISIONS.md')).toContain('반증 조건');
+  });
+
   it('keeps the skill and its cross-tool mirror byte-identical', () => {
     expect(read(SKILL_MIRROR_PATH)).toBe(read(SKILL_PATH));
   });

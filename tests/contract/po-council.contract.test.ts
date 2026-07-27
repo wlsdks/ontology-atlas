@@ -23,6 +23,7 @@ const ROOT = process.cwd();
 const PO_OS_PATH = 'docs/PRODUCT-OWNER-OPERATING-SYSTEM.md';
 const SKILL_PATH = '.claude/skills/po-council/SKILL.md';
 const SKILL_MIRROR_PATH = '.agents/skills/po-council/SKILL.md';
+const LEDGER_PATH = 'docs/DECISIONS.md';
 
 /** The one lens that is intentionally a human, not an agent. */
 const DECIDER_LENS = 'Accountable Value Owner';
@@ -179,6 +180,20 @@ describe('PO council wiring', () => {
     const skill = read(SKILL_PATH).replace(/\s+/g, ' ');
     expect(skill).toContain('카운슬 간 질의');
     expect(skill).toContain('무응답 시 가정');
+  });
+
+  it('makes the decision ledger readable, not just writable', () => {
+    const ledger = read(LEDGER_PATH);
+    // A dissent nobody re-reads is a checklist entry. The falsifier is what
+    // makes a losing argument able to win later, so the ledger has to carry it
+    // and the protocol has to say the record is read before convening.
+    expect(ledger).toContain('반증 조건');
+    expect(ledger).toContain('재검토');
+    expect(ledger, 'records are appended, never rewritten').toMatch(/덧붙이기만|덧붙인다/);
+
+    const skill = read(SKILL_PATH);
+    expect(skill, 'the skill must point at the ledger').toContain('docs/DECISIONS.md');
+    expect(skill, 'convening must start by reading prior decisions').toMatch(/소집 전/);
   });
 
   it('keeps the skill and its cross-tool mirror byte-identical', () => {

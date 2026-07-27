@@ -22,6 +22,8 @@
   `design-infoviz` 도해 · `design-workbench` 작업대 · `design-responsive` 반응형 · `design-handoff` 핸드오프).
   `/design-council` 스킬이 소집한다 — 변경이 닿는 자리만 부르되 위계·체계는 상시
   참석. 전원 공개 발행 원칙만 인용하고 자산 모방은 절대 금지.
+- `docs/DECISIONS.md` — **결정 원장**. 소집 전에 읽고(선행 결정 · 반증 조건 관측
+  여부), 끝나면 덧붙인다. 기록 없는 소집은 끝나지 않은 소집이다.
 - `/design-audit` — 프론트 구현 후 **재서 확인하는** 마지막 관문(겹침·치수 편차·
   토큰 이탈). 비전 모델은 이 결함들을 못 잡으므로 스크린샷은 증거이지 판정이 아니다.
 - `.claude/agents/design-guardian.md` — **상주 디자인 가디언** subagent. UI/디자인

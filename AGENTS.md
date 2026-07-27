@@ -204,6 +204,12 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   code. `tests/contract/design-council.contract.test.ts` fails the build if a seat loses
   its agent, if a model tier or byte budget drifts, or if the skill stops naming the
   instruments the measuring seats must run.
+- **Decision ledger** — `@docs/DECISIONS.md` records decisions **and the dissent that
+  lost**, with a falsifier for each. Read it before convening a council or writing a solo
+  PO pass: if a prior decision covers the same surface, cite it as still standing or
+  overturn it explicitly — quietly re-deciding is what the ledger exists to stop. Check
+  whether a prior record's falsifier has since been observed; if it has, the losing side
+  won and that is where the next pass starts. Append, never rewrite.
 - **Design audit** — `@.claude/skills/design-audit/SKILL.md` runs after a front-end change,
   before calling it done. It **measures** the rendered DOM (rect intersections, dimension
   variance across repeated sets, computed styles vs the ramps) and uses screenshots only as
