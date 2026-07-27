@@ -14,10 +14,9 @@ import {
 } from '@/shared/lib/tauri-agent-setup';
 
 import {
-  buildCodexConfigToml,
-  buildMcpConfigJson,
-  buildVaultMcpConfigJson,
-} from '../lib/ontology-starter';
+  agentConfigContents,
+  vaultPathRelativeToConfigRoot,
+} from '../lib/agent-config-contents';
 
 /**
  * 「에이전트 연결」 — 미리보기 → 승인 → 쓰기 → 자가 검증.
@@ -39,13 +38,6 @@ export interface AgentConnectActionProps {
   launch: McpServerLaunch | null;
   /** 쓰기가 끝난 뒤 vault 상태를 다시 읽게 하는 훅 (설정 배지 갱신). */
   onWritten?: (() => void | Promise<void>) | null;
-}
-
-/** 계획의 각 파일에 넣을 내용 — vault 폴더 기준 상대 경로로 고정한다. */
-function contentsFor(fileName: string, launch: McpServerLaunch, vaultRelative: string): string {
-  if (fileName === '.mcp.json') return buildVaultMcpConfigJson(launch);
-  if (fileName === '.mcp.json.example') return buildMcpConfigJson('vault', vaultRelative, launch);
-  return buildCodexConfigToml(vaultRelative, launch);
 }
 
 export function AgentConnectAction({ vaultPath, launch, onWritten }: AgentConnectActionProps) {
@@ -79,19 +71,17 @@ export function AgentConnectAction({ vaultPath, launch, onWritten }: AgentConnec
     setPhase('writing');
     setError(null);
     try {
-      // `.mcp.json` 은 설정이 놓이는 자리 기준으로 vault 를 가리켜야 한다.
-      // repo 최상위에 쓰면 하위 폴더 경로, vault 자체면 ".".
-      const vaultRelative =
-        plan.rootKind === 'vault-folder'
-          ? '.'
-          : plan.vaultPath.startsWith(`${plan.configRoot}/`)
-            ? plan.vaultPath.slice(plan.configRoot.length + 1)
-            : plan.vaultPath;
+      const vaultRelative = vaultPathRelativeToConfigRoot(plan.configRoot, plan.vaultPath);
       await writeAgentConfig(
         vaultPath,
         plan.targets.map((target) => ({
           fileName: target.fileName,
-          contents: contentsFor(target.fileName, launch, vaultRelative),
+          contents: agentConfigContents({
+            fileName: target.fileName,
+            launch,
+            vaultRelative,
+            vaultAbsolute: plan.vaultPath,
+          }),
         })),
       );
       await onWritten?.();
