@@ -2803,6 +2803,20 @@
     "serverLine": "따로 켜둘 서버가 없어요. 에이전트가 필요할 때 직접 실행하고, 끝나면 함께 꺼져요. 항상 도는 프로그램도 열린 포트도 없어요 — 데이터가 이 컴퓨터를 떠나지 않는 이유예요.",
     "copiedToast": "설정을 복사했어요 — 도구에 붙여넣으면 연결돼요."
   },
+  "appUpdate": {
+    "availableTitle": "{version} 버전이 나왔어요",
+    "availableBody": "지금 설치하거나, 하던 일을 계속하고 나중에 하셔도 됩니다.",
+    "install": "업데이트 설치",
+    "downloadingTitle": "{version} 내려받는 중",
+    "downloadingPercent": "{percent} 받았어요.",
+    "downloadingUnknown": "내려받는 중이에요 — 전체 크기를 알려주지 않네요.",
+    "readyTitle": "{version} 준비됐어요",
+    "readyBody": "다시 시작하면 끝납니다. 열어 둔 문서함은 그대로 있어요.",
+    "restart": "지금 다시 시작",
+    "failedTitle": "업데이트를 설치하지 못했어요",
+    "failedBody": "릴리스 페이지에서 최신 버전을 직접 받으셔도 됩니다.",
+    "dismiss": "나중에"
+  },
   "atlasGit": {
     "tileLabel": "기록",
     "tileTitleClean": "기록 — 모두 남겼어요",

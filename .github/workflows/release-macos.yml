@@ -124,10 +124,24 @@ jobs:
       - name: Build signed and notarized release artifact
         if: steps.signing.outputs.signed == 'true'
         run: pnpm desktop:release-artifact
+        env:
+          # 업데이터 아티팩트(.app.tar.gz + .sig)는 이 키로 서명된다. Apple
+          # 인증서와 별개다 — Apple 은 "누가 만들었나" 를, 이 키는 "이 갱신
+          # 패키지가 우리 것인가" 를 보증한다. 설치된 앱은 공개키로 검증하므로,
+          # 이 키가 없는 패키지는 어떤 경로로 와도 설치되지 않는다.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Build unsigned release artifact
         if: steps.signing.outputs.signed != 'true'
         run: pnpm desktop:release-artifact:unsigned
+        env:
+          # 업데이터 아티팩트(.app.tar.gz + .sig)는 이 키로 서명된다. Apple
+          # 인증서와 별개다 — Apple 은 "누가 만들었나" 를, 이 키는 "이 갱신
+          # 패키지가 우리 것인가" 를 보증한다. 설치된 앱은 공개키로 검증하므로,
+          # 이 키가 없는 패키지는 어떤 경로로 와도 설치되지 않는다.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Summarize macOS release assets
         env:
@@ -158,6 +172,8 @@ jobs:
           path: |
             src-tauri/target/release/bundle/dmg/*.dmg
             src-tauri/target/release/bundle/dmg/*.sha256
+            src-tauri/target/release/bundle/macos/*.app.tar.gz
+            src-tauri/target/release/bundle/macos/*.app.tar.gz.sig
           if-no-files-found: error
 
       - name: Cleanup Apple signing keychain
@@ -199,12 +215,20 @@ jobs:
         with:
           pattern: ontology-atlas-macos-*
           path: release-assets
-          merge-multiple: true
+          # 평평하게 합치지 않는다 — `.app.tar.gz` 는 파일명에 아키텍처가 없어서
+          # 합치는 순간 둘 중 하나가 조용히 덮인다. 폴더로 구분한다.
+          merge-multiple: false
 
       - name: Require clean GitHub Release slot
         run: pnpm desktop:release-slot -- --tag="${GITHUB_REF_NAME}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Build updater manifest
+        run: |
+          node scripts/build-updater-manifest.mjs \
+            --dir=release-assets --out=release-assets/latest.json \
+            --tag="${GITHUB_REF_NAME}" --repo="${GITHUB_REPOSITORY}"
 
       - name: Upload draft GitHub Release assets
         uses: softprops/action-gh-release@v3
@@ -216,8 +240,11 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-') }}
           generate_release_notes: true
           files: |
-            release-assets/*.dmg
-            release-assets/*.sha256
+            release-assets/*/*.dmg
+            release-assets/*/*.sha256
+            release-assets/*/*.app.tar.gz
+            release-assets/*/*.app.tar.gz.sig
+            release-assets/latest.json
 
       - name: Verify draft release assets
         run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --allow-draft

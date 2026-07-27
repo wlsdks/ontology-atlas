@@ -139,7 +139,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ Tauri capability grants only core defaults to the main local workbench window/,
+    /✓ Tauri capability grants only reviewed permissions to the main local workbench window/,
   );
   assert.match(result.stdout, /✓ desktop DMG verifier is available after packaging and checks the checksum filename/);
   assert.match(

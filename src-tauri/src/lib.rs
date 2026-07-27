@@ -732,6 +732,14 @@ pub fn run() {
     }
 
     tauri::Builder::default()
+        // 업데이터는 minisign 서명을 검증한 뒤에만 번들을 교체한다. 공개키는
+        // `tauri.conf.json` 에 박혀 있고 개인키는 CI 의 secret 에만 있으므로,
+        // 우리가 서명하지 않은 패키지는 이 앱이 설치하지 않는다.
+        //
+        // process 플러그인은 갱신 후 재시작 하나 때문에 있다 — 사용자가 앱을
+        // 손으로 껐다 켜야 한다면 "버튼 한 번" 이 아니다.
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(VaultWatcherState::default())
         .setup(|app| {
             #[cfg(target_os = "macos")]

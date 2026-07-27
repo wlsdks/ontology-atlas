@@ -1016,7 +1016,17 @@ if (
   /runner:\s*macos-14/.test(releaseWorkflow) &&
   /arch:\s*x64/.test(releaseWorkflow) &&
   /runner:\s*macos-15-intel/.test(releaseWorkflow) &&
-  /release-assets\/\*\.sha256/.test(releaseWorkflow) &&
+  // 초안 업로드는 아치별 하위 폴더에서 집는다. 평평하게 합치면 `.app.tar.gz` 는
+  // 파일명에 아키텍처가 없어서 둘 중 하나가 조용히 덮인다.
+  /release-assets\/\*\/\*\.sha256/.test(releaseWorkflow) &&
+  /merge-multiple:\s*false/.test(releaseWorkflow) &&
+  // 업데이터 3종 — 아카이브 · 서명 · 매니페스트. 하나라도 빠지면 설치된 앱은
+  // 오류 없이 "갱신 없음" 으로 본다(조용히 실패하는 종류다).
+  /release-assets\/\*\/\*\.app\.tar\.gz/.test(releaseWorkflow) &&
+  /release-assets\/\*\/\*\.app\.tar\.gz\.sig/.test(releaseWorkflow) &&
+  /release-assets\/latest\.json/.test(releaseWorkflow) &&
+  /node scripts\/build-updater-manifest\.mjs/.test(releaseWorkflow) &&
+  /TAURI_SIGNING_PRIVATE_KEY:\s*\$\{\{ secrets\.TAURI_SIGNING_PRIVATE_KEY \}\}/.test(releaseWorkflow) &&
   /for dmg in release-assets\/\*\.dmg/.test(releaseWorkflow) &&
   /pnpm desktop:verify-download -- --tag="\$\{GITHUB_REF_NAME\}"/.test(releaseWorkflow) &&
   !/FIREBASE_SERVICE_ACCOUNT_JSON|firebase-tools|Deploy Hosting|desktop:verify-hosted/.test(releaseWorkflow) &&
@@ -1745,17 +1755,61 @@ if (
   );
 }
 
+/**
+ * 창에 주는 권한은 **이름으로 허용**하고, 위험한 계열은 접두어로 막는다.
+ *
+ * 예전에는 `core:default` **하나만** 허용했다. 의도(광범위한 fs · shell · http ·
+ * opener 금지)는 옳았지만 표현이 "아무것도 늘리지 마라" 였고, 업데이터처럼 좁고
+ * 필요한 권한 하나를 더할 때 게이트를 지우고 싶게 만든다. 지우는 순간 이 가드는
+ * 사라진다.
+ *
+ * 그래서 두 방향으로 다시 썼다. **허용은 이 목록에 이름이 있을 때만** —
+ * 목록이 짧게 유지되는 것이 계약이다. **금지는 계열째** — 새 이름을 몰라도
+ * 막힌다. 후자가 실제 보호막이다.
+ */
+const ALLOWED_CAPABILITY_PERMISSIONS = [
+  "core:default",
+  // 갱신 확인과 설치. 네트워크는 `tauri.conf.json` 의 endpoint 로 고정돼 있고
+  // 사용자 입력이 닿지 않는다. 설치 전 minisign 서명 검증이 강제된다.
+  "updater:default",
+  // 갱신 후 재시작 하나. `process:default` 가 아니다 — 종료까지 줄 이유가 없다.
+  "process:allow-restart",
+];
+
+/** 이 계열은 이름을 몰라도 막는다. 로컬-퍼스트 앱이 창에 줄 이유가 없는 것들. */
+const FORBIDDEN_CAPABILITY_PREFIXES = ["fs:", "shell:", "http:", "opener:"];
+
+const capabilityPermissions = Array.isArray(tauriCapability?.permissions)
+  ? tauriCapability.permissions
+  : [];
+const unexpectedPermissions = capabilityPermissions.filter(
+  (permission) => !ALLOWED_CAPABILITY_PERMISSIONS.includes(permission),
+);
+const forbiddenPermissions = capabilityPermissions.filter((permission) =>
+  FORBIDDEN_CAPABILITY_PREFIXES.some((prefix) => String(permission).startsWith(prefix)),
+);
+
 if (
   Array.isArray(tauriCapability?.windows) &&
   tauriCapability.windows.length === 1 &&
   tauriCapability.windows[0] === "main" &&
-  Array.isArray(tauriCapability?.permissions) &&
-  tauriCapability.permissions.length === 1 &&
-  tauriCapability.permissions[0] === "core:default"
+  capabilityPermissions.includes("core:default") &&
+  unexpectedPermissions.length === 0 &&
+  forbiddenPermissions.length === 0
 ) {
-  pass("Tauri capability grants only core defaults to the main local workbench window");
+  pass(
+    `Tauri capability grants only reviewed permissions to the main local workbench window (${capabilityPermissions.join(", ")})`,
+  );
 } else {
-  fail("src-tauri/capabilities/default.json must not grant broad fs, shell, http, or opener permissions");
+  fail(
+    "src-tauri/capabilities/default.json must not grant broad fs, shell, http, or opener permissions" +
+      (unexpectedPermissions.length > 0
+        ? `\n[desktop-check]   허용 목록에 없는 권한: ${unexpectedPermissions.join(", ")} — 필요하면 이 스크립트의 ALLOWED_CAPABILITY_PERMISSIONS 에 이유와 함께 추가하라`
+        : "") +
+      (forbiddenPermissions.length > 0
+        ? `\n[desktop-check]   금지 계열: ${forbiddenPermissions.join(", ")}`
+        : ""),
+  );
 }
 
 const tauriCommandChecks = [

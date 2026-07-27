@@ -129,11 +129,21 @@ export function commandCsr({ dir, name, email }) {
   }
 
   // Apple 이 요구하는 것은 2048-bit RSA 다.
-  run("openssl", ["req", "-new", "-newkey", "rsa:2048", "-nodes",
+  //
+  // `-nodes`(잠그지 않음)를 **쓰지 않는다.** 이 개인키는 언젠가 디스크 밖으로
+  // 백업된다 — 잃어버리면 인증서가 무용지물이므로 백업하지 않을 수 없다. 그런데
+  // 잠기지 않은 개인키 파일은 **그 파일을 얻은 사람이 곧 서명 권한을 갖는다**:
+  // 소유자 실명으로 앱에 서명할 수 있다는 뜻이다.
+  //
+  // 그래서 openssl 이 비밀번호를 직접 묻게 둔다. 비밀번호는 **사람만 안다** —
+  // 스크립트가 정하면 사람이 모르게 되고, 그러면 백업 파일이 있어도 못 쓴다.
+  // 그 때문에 이 호출만 `stdio: inherit` 다.
+  console.log("[apple-signing] 개인키를 보호할 비밀번호를 입력하라 (화면에 표시되지 않는다).");
+  run("openssl", ["req", "-new", "-newkey", "rsa:2048",
     "-keyout", keyPath,
     "-out", csrPath,
     "-subj", `/emailAddress=${email}/CN=${name}/C=KR`,
-  ]);
+  ], { stdio: "inherit" });
 
   fs.chmodSync(keyPath, 0o600);
 
@@ -170,12 +180,19 @@ export function commandBundle({ dir, cer, repo }) {
     // 이 비밀번호는 여기서 나고 GitHub 에서만 쓰인다. 아무도 보지 않는다.
     const password = randomBytes(24).toString("base64");
 
+    // 개인키가 잠겨 있으므로 openssl 이 그 비밀번호를 묻는다 — 프롬프트가
+    // 사람에게 닿아야 하니 이 호출은 `stdio: inherit` 다. 반면 `.p12` 를 감쌀
+    // 비밀번호(`-passout`)는 우리가 만든 무작위 값이라 파일로 넘긴다. 두
+    // 비밀번호는 다른 것이고, 섞이면 진단이 어려워진다.
+    const passOutPath = path.join(tempDir, "p12-pass");
+    fs.writeFileSync(passOutPath, password, { mode: 0o600 });
+    console.log("[apple-signing] 개인키 비밀번호를 입력하라 (csr 단계에서 정한 것).");
     run("openssl", ["pkcs12", "-export",
       "-inkey", keyPath,
       "-in", pemPath,
       "-out", p12Path,
-      "-passout", "stdin",
-    ], { input: password });
+      "-passout", `file:${passOutPath}`,
+    ], { stdio: "inherit" });
 
     const p12Base64 = fs.readFileSync(p12Path).toString("base64");
 
