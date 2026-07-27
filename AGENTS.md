@@ -174,6 +174,18 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
 - **Architecture · FSD boundaries** — `@.claude/rules/architecture.md`
 - **Product owner gate** — `@docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` is mandatory before feature, UX, graph, MCP, CLI, workflow, or macOS-shell changes. Start with the observed phenomenon and user problem, then the user moment, current alternative, ontology value, agent value, simplification, and verification plan; write a compact PO pass before implementation; ship outcomes, not output lists. Translate solution-shaped requests into observable problems first, then end with a PO verdict (`Do not build`, `Investigate first`, `Shape a slice`, or `Build and verify`) and use the PO rubric before coding. If the pass starts from a solution instead of evidence, pause and do discovery. Treat this as the project's product-owner authority, not as optional strategy prose.
 - **Product design gate** — `@docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` is mandatory for UI, visual design, interaction, graph readability, responsive layout, and macOS workbench changes. Use it after the PO pass to name the design council lens, surface hierarchy, graph semantics, responsive contract, agent handoff contract, and installed-app proof. Public references are principle sources only; never copy proprietary assets or styling.
+- **PO Council** — `@.claude/skills/po-council/SKILL.md` runs five standing product owners
+  (`po-evidence` 근거 · `po-craft` 결 · `po-steward` 지킴이 · `po-wedge` 해자 ·
+  `po-leverage` 지렛대) that carry the PO OS's thirteen lenses between them, with
+  **every rubric row signed by exactly one of them**. Convene it before expensive or
+  hard-to-reverse work — a new or removed surface, a public MCP/CLI/schema contract
+  change, direction or positioning, a first public release — or whenever a solo pass
+  scores under 18/24 or carries a fatal zero. They research the web, they must open the
+  real thing rather than the diff, and none of them may block without naming what to do
+  instead. One accountable person decides; the strongest losing argument is recorded with
+  the observation that would prove it right. Never for mechanical work.
+  `tests/contract/po-council.contract.test.ts` fails the build if a lens loses its owner
+  or the wiring drifts.
 - **Design Guardian** — `@.claude/agents/design-guardian.md` is the standing senior design reviewer for UI work. Use it, or an equivalent sub-agent when available, before and after meaningful Relief/Topology design changes. It rejects token drift, attention-layer collisions, hidden typed facts, decorative motion, browser-only desktop proof, and reference copying. It approves only token-backed changes with screenshot/WebView evidence and installed-app proof when desktop behavior is affected.
 - **Design system** — neutrals + a single indigo, forbidden patterns — `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`.
   **디자인 규격은 md 뿐 아니라 `eslint.config.mjs` 의 `no-restricted-syntax` 로

@@ -10762,6 +10762,16 @@
           "slug": "the-atlas-po-council"
         },
         {
+          "depth": 3,
+          "text": "The council is five callable agents, not thirteen bullet points",
+          "slug": "the-council-is-five-callable-agents-not-thirteen-bullet-points"
+        },
+        {
+          "depth": 3,
+          "text": "When to convene",
+          "slug": "when-to-convene"
+        },
+        {
           "depth": 2,
           "text": "Default PO Stance",
           "slug": "default-po-stance"
@@ -10843,8 +10853,8 @@
         }
       ],
       "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens before implementation is treated as valuable. Ontology Atlas does not need a backlog clerk. It needs a product owner that protects th",
-      "wordCount": 4938,
-      "updatedAt": "2026-06-21",
+      "wordCount": 5412,
+      "updatedAt": "2026-07-27",
       "linksOut": []
     },
     {

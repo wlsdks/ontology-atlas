@@ -268,6 +268,59 @@ these lenses:
 If these lenses disagree, choose the smallest slice that best improves the
 ontology-to-agent workflow. Do not average the opinions into a bigger feature.
 
+### The council is five callable agents, not thirteen bullet points
+
+Until 2026-07-27 this section was prose, and prose does not run. A PO pass in
+this repo wrote "없음" into the two rubric rows this document declares fatal
+(Ontology value, Agent value), returned `Build and verify`, and shipped —
+because **no lens had an owner who had to sign.** The thirteen lenses are
+therefore distributed across five standing agents in `.claude/agents/`, and
+every rubric row now has exactly one signer:
+
+| Agent | 이름 | Lenses carried | Rubric row signed |
+|---|---|---|---|
+| `po-evidence` | 근거 | Customer-Problem Editor · Discovery Lead · Outcome Guard | Problem insight · User moment |
+| `po-craft` | 결 | Craft Steward · Experience Mapper | Verification |
+| `po-steward` | 지킴이 | Ontology Steward · Local-First Guardian | Ontology value · Agent value |
+| `po-wedge` | 해자 | Monopoly Strategist · DHM Strategist · First-Principles Skeptic | Differentiation |
+| `po-leverage` | 지렛대 | Prioritization Analyst · Shaper | appetite + slice boundary |
+
+**Accountable Value Owner is deliberately not an agent.** It is the human owner,
+or the agent acting on their behalf. The council stress-tests; it does not vote
+and does not own the decision. One person decides and signs.
+
+Every agent may research the web and run read-only commands, and every agent is
+forbidden from stopping at "no" — a blocking opinion must name what to do
+instead, at the same level of specificity as the thing it blocked.
+
+`tests/contract/po-council.contract.test.ts` fails the build if a lens listed
+above has no owning agent, if a rubric row has zero or multiple signers, or if
+the skill and its mirror drift apart. Adding a fourteenth lens to this document
+breaks the build until an agent claims it.
+
+### When to convene
+
+**Required** — a new or removed user-facing surface/route; a public contract
+change (MCP tool signature, CLI command, vault schema); product direction,
+positioning, or the words a stranger reads first; a first public release or
+anything spending a one-shot reputational resource; a solo pass scoring under
+**18/24** or carrying a fatal zero; or the owner asking.
+
+**Not required** — ordinary product work that clears 18+ with no fatal zero on a
+solo pass.
+
+**Never** — mechanical work (typos, dependency bumps, CI plumbing, test
+fixtures). These are already exempt from the PO gate, and convening a council on
+them is the process theater this document warns against.
+
+Protocol, output template, and failure-mode guards live in
+`.claude/skills/po-council/SKILL.md` (mirrored at
+`.agents/skills/po-council/SKILL.md`). The short form: five independent
+positions in parallel with no cross-talk, exactly one rebuttal round in which
+conceding must change the verdict, then one accountable decision that is one of
+the proposals **or smaller — never their union** — with the strongest losing
+argument recorded together with the observation that would prove it right.
+
 ## Default PO Stance
 
 When in doubt, the PO should be skeptical of additions and aggressive about
