@@ -40,7 +40,7 @@ const labels: StudioCompassLabels = {
   browseNoDomain: "No domain",
   similarSuggest: (t) => `same as ${t}?`,
   similarAccept: "yes link",
-  createName: "kind",
+  createKindLabel: "종류",
   createNamePlaceholder: "name",
   createDomainNone: "no domain",
   createDefinitionPlaceholder: "def",
@@ -898,6 +898,40 @@ describe("StudioCompass — create", () => {
     );
     // save is disabled until the node is named.
     expect(screen.getByTestId("studio-save")).toBeDisabled();
+  });
+
+  // ③ 2026-07-28 — kind 세그먼트 그룹에 이름이 시각으로도 aria 로도 없어서,
+  // 이 컨트롤이 무엇을 고르는 자리인지 화면이 말하지 않았다. 그래서 칩이 위
+  // 소켓("무엇의 한 종류인가요?" = broader 관계)의 답처럼 읽혔다. 라벨 하나가
+  // 두 질문을 갈라 세운다 — 이 계약이 그 라벨을 지킨다.
+  it("③ kind 세그먼트 그룹은 이름을 갖는다 — 소켓의 관계 질문과 갈라 세운다", () => {
+    render(
+      <StudioCompass
+        mode="create"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "", definition: "" }}
+        bearings={[
+          bearing("isA", "up", { recommended: true }),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down", { expected: true }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+        canSave={false}
+        createKinds={[{ value: "capability", label: "capability" }]}
+        createKind="capability"
+      />,
+    );
+    const group = screen.getByRole("group", { name: labels.createKindLabel });
+    expect(group).toContainElement(screen.getByTestId("studio-create-kind-capability"));
+    // 시각으로도 서 있어야 한다 — aria 만 있는 라벨은 보는 사람에게 없는 것과 같다.
+    expect(screen.getByText(labels.createKindLabel)).toBeInTheDocument();
   });
 
   it("C12③ — renders ONE optional secondary-locale name input and echoes typing", () => {

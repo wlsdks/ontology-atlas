@@ -137,7 +137,7 @@
     "defMore": "More",
     "defLess": "Less",
     "question": {
-      "isA": "What kind of thing is this node?",
+      "isA": "What is this node a kind of?",
       "dependsOn": "What does this node lean on?",
       "contains": "What does it hold inside?",
       "relates": "Something similar or interchangeable?"
@@ -239,6 +239,13 @@
       "body": "We couldn't find “{name}” in the folder you have open. It may be a link from another folder, or the document may have moved or been renamed.",
       "openMap": "Open the map",
       "create": "Create a new node"
+    },
+    "tooNarrow": {
+      "title": "The workshop needs a wider window",
+      "body": "It lays relations out in four directions, so it needs at least 1024px of width. Widen the window and it opens right away.",
+      "note": "The map and the docs work fine at this width.",
+      "openMap": "Go to the map",
+      "getApp": "Get the desktop app"
     },
     "kindLabel": "Kind",
     "create": {

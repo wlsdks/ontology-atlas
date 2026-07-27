@@ -3212,6 +3212,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-28 — 안내가 끼어들지 않고, 못 오는 화면은 못 온다고 말하고, 공방의 첫 질문이 하나만 묻는다",
+          "slug": "2026-07-28-안내가-끼어들지-않고-못-오는-화면은-못-온다고-말하고-공방의-첫-질문이-하나만-묻는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-28 — 모션: 사용자가 부른 것에 시간을 돌려준다",
           "slug": "2026-07-28-모션-사용자가-부른-것에-시간을-돌려준다"
         },
@@ -5241,8 +5246,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 전 화면을 프레임 단",
-      "wordCount": 56746,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 판정 4건(.qa-s",
+      "wordCount": 57067,
       "updatedAt": "2026-07-28",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6831,7 +6836,7 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 15902,
+      "wordCount": 16109,
       "updatedAt": "2026-07-28",
       "linksOut": [
         "slug",

@@ -33,5 +33,12 @@ export function canAutoStartGuidedTour(doc: Document = document): boolean {
   if (doc.querySelector('[data-surface-role="blocking-edit-surface"]') !== null) {
     return false;
   }
+  // 2026-07-28 ② — 정직 강등 카드가 서 있는 화면(예: <lg 의 공방)에는 소개할
+  // 표면 자체가 없다. "여기가 공방이에요" 를 "공방은 여기서 못 열려요" 위에
+  // 띄우면 안내가 아니라 거짓말이 된다. 기록을 남기지 않으므로 조건이 맞는
+  // 화면(창을 넓히거나 앱)에서 같은 안내가 그대로 기다린다.
+  if (doc.querySelector('[data-surface-role="degraded-surface"]') !== null) {
+    return false;
+  }
   return doc.hasFocus();
 }
