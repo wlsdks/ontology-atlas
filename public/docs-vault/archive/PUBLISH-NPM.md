@@ -1,10 +1,15 @@
-# npm publish — step-by-step guide
+# npm publish — step-by-step guide (RETIRED)
 
-> **Current registry evidence (2026-07-27):** `npm view ontology-atlas` and
-> `npm view ontology-atlas-mcp` both return `E404 Not Found`. Public `npx`
-> setup is therefore unavailable. The product UI and starter flow must remain
-> fail-closed until a human maintainer completes this guide, both registry
-> entries resolve, and the fresh-shell smoke below passes.
+> **Retired 2026-07-27 — this guide is a record, not instructions.** The plan
+> to publish `ontology-atlas` and `ontology-atlas-mcp` to npm was dropped when
+> the macOS app began bundling a compiled MCP server inside itself: the app's
+> connect button now writes an executable agent config pointing at that
+> binary's absolute path, which is a shorter and more honest install than
+> `npx` ever was. Two channels remain — the installed app, and a source
+> checkout (`node <checkout>/mcp/src/index.js`, `node <checkout>/cli/src/index.mjs`).
+> Nothing below should be executed. The decision is recorded in
+> `docs/DECISIONS.md`; kept here so the release process we chose against is
+> still legible. Everything after this paragraph is the guide as it stood.
 
 This project publishes two npm packages:
 

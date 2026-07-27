@@ -703,7 +703,14 @@ RATIO-SYSTEM 1600px container / 960px centered utility column.
 
 ## 3. MCP server (32 tools)
 
-Run via `pnpm exec node mcp/src/index.js` (registered in user's `.mcp.json`). AI agents read/write the same vault as humans.
+AI agents read/write the same vault as humans. Two ways to get the server running, and only two:
+
+| Channel | How the agent starts it | What the user does |
+|---|---|---|
+| **Installed macOS app** (primary, 2026-07-27) | The app ships a compiled MCP server inside its own bundle (`Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp`). The agent client spawns that binary directly, so it keeps serving while the app is closed. | Open the vault folder in the app and press **에이전트 연결 / Connect agent**. The app writes `.mcp.json` / `.codex/config.toml` with the bundled binary's absolute path and the vault's real path already filled in — no terminal, no Node, no install step. |
+| **Source checkout** (fallback) | `node <checkout>/mcp/src/index.js` with `OATLAS_VAULT` set. | Clone the repo, then either paste the config or let `node <checkout>/cli/src/index.mjs init` / `agent-setup --write` write it. |
+
+npm publishing is retired (`docs/DECISIONS.md`, 2026-07-27) — there is no `npx` channel.
 
 **R14 — workflow automation** (Claude Code + Codex):
 

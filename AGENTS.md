@@ -4,7 +4,7 @@
 
 ## Project overview
 
-`ontology-atlas` is **a local-first ontology workbench for understanding a product/system from business core to implementation evidence**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Planners, marketers, C-level decision-makers, developers, and AI agents should be able to read the same graph: business/product domains, capabilities, ownership, dependencies, evidence, and impact. Developers edit via CLI (`ontology-atlas` 52 commands — vault scaffold, agent setup repair, agent-file drift readout, agent activity heartbeat, MCP verify, deterministic graph compile, standard-format interop export, bounded path enumeration, transitive reachability, relation preflight + write, commit preflight, git snapshot, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (32 tools).
+`ontology-atlas` is **a local-first ontology workbench for understanding a product/system from business core to implementation evidence**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Planners, marketers, C-level decision-makers, developers, and AI agents should be able to read the same graph: business/product domains, capabilities, ownership, dependencies, evidence, and impact. Developers edit via CLI (`ontology-atlas` 52 commands — vault scaffold, agent setup repair, agent-file drift readout, agent activity heartbeat, MCP verify, deterministic graph compile, standard-format interop export, bounded path enumeration, transitive reachability, relation preflight + write, commit preflight, git snapshot, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (32 tools). **The macOS app carries that server inside its own bundle** — installing the app installs the agent surface, and the in-app connect button writes the client config with real absolute paths. There is no npm package; environments without the app run the server from a source checkout.
 
 Atlas does not try to replace CodeGraph, grep, AST indexes, language servers,
 or source search. Those tools answer structural code questions. Atlas gives
@@ -87,6 +87,8 @@ pnpm vault:audit                  # capability/element path drift guard (R12)
 pnpm test:vault:audit             # focused vault audit CLI argument contract
 pnpm vault:migrate --list         # see registered schema migrations (R11)
 
+pnpm mcp:build-binary             # compile the MCP server into the app bundle payload (bun)
+
 # AI agent (Claude Code) auto-registers via this repo's `.mcp.json` — `mcp/README.md` has details.
 ```
 
@@ -118,8 +120,10 @@ src/                       FSD layers
   ├── features/            interaction units
   ├── entities/            business entities
   └── shared/              UI · lib · config primitives
-mcp/                       MCP server (the AI agent's surface) — npm pkg, 32 tools
-cli/                       CLI binary (developer's daily entry point) — npm pkg, 52 commands
+mcp/                       MCP server (the AI agent's surface) — 32 tools. Compiled into the
+                           macOS app bundle by `pnpm mcp:build-binary`; not published to npm
+cli/                       CLI binary (developer's daily entry point) — 52 commands, run from a
+                           source checkout (`node cli/src/index.mjs`); not published to npm
                            init / agent-setup / agent-files / add / import / list / find / validate / mcp-verify / query / compile / export
                            analyze / infer-imports / bootstrap / preflight / snapshot
                            backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete

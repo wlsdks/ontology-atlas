@@ -2,22 +2,16 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
-import type { AgentPackageDistribution } from "@/shared/config";
+import { agentServerFromBundle, agentServerUnavailable } from "@/shared/config";
 import { AgentConnectSheet } from "./AgentConnectSheet";
 
-const publishedPackages: AgentPackageDistribution = {
-  status: "published",
-  checkedAt: "2026-07-27",
-  evidence: "npm-registry-published",
-  cliPackage: "ontology-atlas",
-  mcpPackage: "ontology-atlas-mcp",
-};
+const bundledServer = agentServerFromBundle(
+  "/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp",
+);
 
-const unpublishedPackages: AgentPackageDistribution = {
-  ...publishedPackages,
-  status: "unpublished",
-  evidence: "npm-registry-e404",
-};
+const noServer = agentServerUnavailable(
+  "The bundled MCP server is only available in the installed app.",
+);
 
 function renderSheet(onClose = vi.fn()) {
   render(
@@ -37,7 +31,7 @@ function renderSheet(onClose = vi.fn()) {
         }}
         domainTitles={["Product"]}
         handoffText="Continue the ontology task."
-        packageDistribution={publishedPackages}
+        serverAvailability={bundledServer}
       />
     </NextIntlClientProvider>,
   );
@@ -91,7 +85,7 @@ describe("AgentConnectSheet focus contract", () => {
           onWriteConfigs={vi.fn()}
           mcpJsonState="invalid"
           codexConfigState="invalid"
-          packageDistribution={publishedPackages}
+          serverAvailability={bundledServer}
         />
       </NextIntlClientProvider>,
     );
@@ -107,7 +101,7 @@ describe("AgentConnectSheet focus contract", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("fails closed instead of offering install actions for unpublished packages", () => {
+  it("fails closed instead of offering actions when the server cannot be started here", () => {
     render(
       <NextIntlClientProvider locale="en" messages={enMessages}>
         <AgentConnectSheet
@@ -126,14 +120,17 @@ describe("AgentConnectSheet focus contract", () => {
           domainTitles={[]}
           handoffText=""
           onWriteConfigs={vi.fn()}
-          packageDistribution={unpublishedPackages}
+          serverAvailability={noServer}
         />
       </NextIntlClientProvider>,
     );
 
-    expect(screen.getByTestId("agent-package-unavailable")).toHaveTextContent(
-      "not published",
+    expect(screen.getByTestId("agent-server-unavailable")).toHaveTextContent(
+      "cannot connect an agent",
     );
+    // 실행 방법을 모르면 쓰기 행동 자체를 그리지 않는다 — 붙지 않는 설정을
+    // 만드는 버튼은 도움이 아니라 나중에 진단해야 할 함정이다.
+    expect(screen.queryByTestId("agent-connect-action")).not.toBeInTheDocument();
     expect(screen.queryByTestId("agent-connect-step-2")).not.toBeInTheDocument();
     expect(screen.queryByTestId("agent-connect-step-3")).not.toBeInTheDocument();
     expect(screen.queryByTestId("agent-client-cursor")).not.toBeInTheDocument();

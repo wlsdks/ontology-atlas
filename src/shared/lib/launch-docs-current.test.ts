@@ -10,10 +10,12 @@ const ROOT = path.resolve(__dirname, '../../..');
 const MCP_PKG = JSON.parse(readFileSync(path.join(ROOT, 'mcp/package.json'), 'utf8'));
 const MCP_TOOL_METADATA = parseMcpToolMetadataFromDescription(MCP_PKG.description);
 
+// `docs/PUBLISH-NPM.md` 는 npm 발행 계획 폐기 (docs/DECISIONS.md 2026-07-27) 로
+// `docs/archive/` 로 옮겨졌다. 아카이브는 당시 사실을 그대로 보존하는 기록이라
+// 현행 surface 드리프트 게이트의 대상이 아니다.
 const CURRENT_SURFACE_DOCS = [
   'README.md',
   'docs/FEATURES.md',
-  'docs/PUBLISH-NPM.md',
   'docs/launch/README.md',
   'docs/launch/HN-POST.md',
   'docs/launch/REDDIT-POSTS.md',
@@ -29,7 +31,6 @@ const DOGFOOD_COUNT_DOCS = [
 
 const MCP_TOOL_COUNT_DOCS = [
   'README.md',
-  'docs/PUBLISH-NPM.md',
   'docs/launch/README.md',
   'docs/launch/HN-POST.md',
   'docs/launch/REDDIT-POSTS.md',

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import type { AgentServerAvailability } from "@/shared/config";
 import type { AgentConnectState } from "@/widgets/agent-connect";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
@@ -36,6 +37,8 @@ export interface UseAgentConnectModelArgs {
   insightNodes: readonly KnowledgeGraphNode[] | null;
   /** i18n — heartbeat 에 agent 이름이 없을 때의 기본 라벨. */
   defaultAgentLabel: string;
+  /** 서버를 띄울 방법 — 설정 스니펫과 딥링크가 전부 여기서 갈린다. */
+  serverAvailability: AgentServerAvailability;
 }
 
 export interface AgentConnectModel {
@@ -61,6 +64,7 @@ export function useAgentConnectModel({
   vaultHandle,
   insightNodes,
   defaultAgentLabel,
+  serverAvailability,
 }: UseAgentConnectModelArgs): AgentConnectModel {
   const [open, setOpen] = useState(false);
   const [nowMs, setNowMs] = useState(0);
@@ -94,16 +98,17 @@ export function useAgentConnectModel({
   const snippets = useMemo(() => {
     const vaultName = vaultHandle?.name ?? "my-vault";
     const desktopPath = vaultHandle ? (getTauriVaultRootPath(vaultHandle) ?? null) : null;
+    const launch = serverAvailability.launch;
     return {
-      mcpJson: buildMcpConfigJson(vaultName, desktopPath),
-      replacementMcpJson: buildMcpConfigJson(vaultName, "."),
-      codexCommand: buildCodexMcpAddCommandTemplate(vaultName, desktopPath),
-      codexConfig: buildCodexConfigTomlTemplate(vaultName, "."),
+      mcpJson: buildMcpConfigJson(vaultName, desktopPath, launch),
+      replacementMcpJson: buildMcpConfigJson(vaultName, ".", launch),
+      codexCommand: buildCodexMcpAddCommandTemplate(vaultName, desktopPath, launch),
+      codexConfig: buildCodexConfigTomlTemplate(vaultName, ".", launch),
       needsManualPath: desktopPath === null,
-      cursorDeeplink: buildCursorMcpDeeplink(desktopPath),
-      vscodeDeeplink: buildVsCodeMcpDeeplink(desktopPath),
+      cursorDeeplink: buildCursorMcpDeeplink(desktopPath, launch),
+      vscodeDeeplink: buildVsCodeMcpDeeplink(desktopPath, launch),
     };
-  }, [vaultHandle]);
+  }, [vaultHandle, serverAvailability.launch]);
 
   const domainTitles = useMemo(
     () =>

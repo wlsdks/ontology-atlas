@@ -233,6 +233,13 @@ const DEGRADED_SURFACES = [
     reason: /브라우저는[\s\S]*권한이 없어요/,
     destination: "atlas-git-web-get-app",
   },
+  {
+    name: "에이전트 연결 — 브라우저는 열어 둔 폴더의 실제 경로를 모른다",
+    url: "/ko/topology/?agentConnect=1",
+    card: "agent-server-unavailable",
+    reason: /브라우저는[\s\S]*실제 위치를 알 수 없어서/,
+    destination: "agent-connect-web-get-app",
+  },
 ] as const;
 
 test.describe("웹 스모크 ③ 정직한 강등", () => {

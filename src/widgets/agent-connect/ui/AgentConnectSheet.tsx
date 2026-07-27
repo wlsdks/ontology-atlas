@@ -7,9 +7,10 @@ import { Cable, Check, ChevronDown, Copy, X } from "lucide-react";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { copyText } from "@/shared/lib/copy-text";
-import type { AgentPackageDistribution } from "@/shared/config";
+import type { AgentServerAvailability } from "@/shared/config";
 import {
   AgentClientButtons,
+  AgentConnectAction,
   type AgentClientConfigState,
 } from "@/features/docs-vault-local";
 
@@ -47,7 +48,9 @@ export interface AgentConnectSnippets {
 }
 
 export interface AgentConnectSheetProps {
-  packageDistribution: AgentPackageDistribution;
+  serverAvailability: AgentServerAvailability;
+  /** vault 절대 경로 (설치 앱). 없으면 연결 행동을 그리지 않는다. */
+  vaultPath?: string | null;
   open: boolean;
   onClose: () => void;
   status: AgentConnectState;
@@ -65,6 +68,7 @@ export interface AgentConnectSheetProps {
 }
 
 function CopyBlock({ label, value, testId }: { label: string; value: string; testId: string }) {
+  const t = useTranslations("agentConnect");
   const [copied, setCopied] = useState(false);
   return (
     <div className="flex flex-col gap-1.5">
@@ -84,7 +88,7 @@ function CopyBlock({ label, value, testId }: { label: string; value: string; tes
           className="inline-flex items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
         >
           {copied ? <Check size={10} aria-hidden /> : <Copy size={10} aria-hidden />}
-          {copied ? "복사됨" : "복사"}
+          {copied ? t("copied") : t("copy")}
         </button>
       </div>
       <pre className="max-h-36 overflow-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 font-mono text-label leading-relaxed text-[color:var(--color-text-secondary)]">
@@ -128,7 +132,8 @@ function StepRow({
 }
 
 export function AgentConnectSheet({
-  packageDistribution,
+  serverAvailability,
+  vaultPath = null,
   open,
   onClose,
   status,
@@ -279,10 +284,15 @@ export function AgentConnectSheet({
               <StepRow
                 n={1}
                 title={t("step1Title")}
-                desc={packageDistribution.status === "published" ? t("step1Desc") : undefined}
+                desc={serverAvailability.launch ? t("step1Desc") : undefined}
               >
+                <AgentConnectAction
+                  vaultPath={vaultPath}
+                  launch={serverAvailability.launch}
+                  onWritten={onWriteConfigs}
+                />
                 <AgentClientButtons
-                  packageDistribution={packageDistribution}
+                  serverAvailability={serverAvailability}
                   onWriteConfigs={onWriteConfigs}
                   cursorDeeplink={snippets.cursorDeeplink}
                   vscodeDeeplink={snippets.vscodeDeeplink}
@@ -297,7 +307,7 @@ export function AgentConnectSheet({
                 />
               </StepRow>
 
-              {packageDistribution.status === "published" ? (
+              {serverAvailability.launch ? (
                 <>
                   {/* ② 에이전트 재시작 */}
                   <StepRow n={2} title={t("step2Title")} desc={t("step2Desc")} />
@@ -351,7 +361,7 @@ export function AgentConnectSheet({
               ) : null}
 
               {/* 고급 · 자세한 검증 — 스니펫·표준 triple·다른 툴 표 강등 */}
-              {packageDistribution.status === "published" ? (
+              {serverAvailability.launch ? (
                 <section aria-label={t("advancedToggle")} className="flex flex-col gap-3 border-t border-[color:var(--color-border-soft)] pt-4">
                 <button
                   type="button"

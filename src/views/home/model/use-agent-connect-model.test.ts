@@ -1,4 +1,9 @@
 import { act, renderHook } from "@testing-library/react";
+import { agentServerFromBundle } from "@/shared/config";
+
+const bundledServer = agentServerFromBundle(
+  "/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp",
+);
 import { describe, expect, it, vi } from "vitest";
 import { useAgentConnectModel } from "./use-agent-connect-model";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
@@ -29,6 +34,7 @@ describe("useAgentConnectModel (HomePage 모듈화 2차)", () => {
         vaultHandle: null,
         insightNodes: null,
         defaultAgentLabel: "에이전트",
+        serverAvailability: bundledServer,
       }),
     );
     expect(result.current.status).toEqual({ kind: "none" });
@@ -47,6 +53,7 @@ describe("useAgentConnectModel (HomePage 모듈화 2차)", () => {
         vaultHandle: null,
         insightNodes: nodes,
         defaultAgentLabel: "에이전트",
+        serverAvailability: bundledServer,
       }),
     );
     act(() => result.current.openSheet());
@@ -71,6 +78,7 @@ describe("useAgentConnectModel (HomePage 모듈화 2차)", () => {
         vaultHandle: null,
         insightNodes: nodes,
         defaultAgentLabel: "에이전트",
+        serverAvailability: bundledServer,
       }),
     );
     expect(result.current.status.kind).toBe("stale");
@@ -111,6 +119,7 @@ describe("useAgentConnectModel (HomePage 모듈화 2차)", () => {
         vaultHandle: null,
         insightNodes: nodes,
         defaultAgentLabel: "에이전트",
+        serverAvailability: bundledServer,
       }),
     );
     act(() => result.current.openSheet());

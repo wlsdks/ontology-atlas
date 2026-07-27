@@ -538,7 +538,20 @@ function resolveMcpServerCommand() {
     const monoDev = resolve(PKG_ROOT, '..', 'mcp', 'src', 'index.js');
     if (existsSync(monoDev)) return { command: 'node', args: [monoDev] };
   }
-  return { command: 'npx', args: ['-y', 'ontology-atlas-mcp'] };
+  // npm 발행 폐기 (docs/DECISIONS.md 2026-07-27) — 설치된 앱이 번들로 싣고
+  // 다니는 서버를 찾는다. 그것도 없으면 실패 사유를 말한다. 붙지 않는 설정을
+  // 조용히 쓰는 것보다 여기서 멈추는 편이 진단이 싸다.
+  const bundled = '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp';
+  if (existsSync(bundled) && statSync(bundled).isFile()) {
+    return { command: bundled, args: [] };
+  }
+
+  throw new Error(
+    'Could not find the ontology-atlas MCP server.\n' +
+      `  Install the macOS app (it bundles the server at ${bundled}),\n` +
+      '  or run this from an ontology-atlas source checkout,\n' +
+      '  or point OATLAS_MCP_PATH at mcp/src/index.js yourself.',
+  );
 }
 
 function tomlString(value) {

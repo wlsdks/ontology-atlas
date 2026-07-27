@@ -3,7 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import type { VaultManifest } from '@/entities/docs-vault';
-import type { AgentPackageDistribution } from '@/shared/config';
+import { agentServerFromBundle, agentServerUnavailable } from '@/shared/config';
 import { copyText } from '@/shared/lib/copy-text';
 import { TooltipProvider } from '@/shared/ui';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
@@ -17,18 +17,12 @@ vi.mock('@/shared/lib/tauri-vault-fs', () => ({
 }));
 
 const copyTextMock = vi.mocked(copyText);
-const publishedPackages: AgentPackageDistribution = {
-  status: 'published',
-  checkedAt: '2026-07-27',
-  evidence: 'npm-registry-published',
-  cliPackage: 'ontology-atlas',
-  mcpPackage: 'ontology-atlas-mcp',
-};
-const unpublishedPackages: AgentPackageDistribution = {
-  ...publishedPackages,
-  status: 'unpublished',
-  evidence: 'npm-registry-e404',
-};
+const bundledServer = agentServerFromBundle(
+  '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp',
+);
+const noServer = agentServerUnavailable(
+  'The bundled MCP server is only available in the installed app.',
+);
 
 function render(ui: React.ReactElement) {
   return rtlRender(
@@ -87,7 +81,7 @@ function renderPanel(
     <VaultAgentSetupPanel
       canEditCurrent
       localVault={localVault}
-      packageDistribution={publishedPackages}
+      serverAvailability={bundledServer}
       validationSummary={props.validationSummary ?? null}
       onOpenWorkflowGuide={vi.fn()}
     />,
@@ -111,7 +105,7 @@ describe('VaultAgentSetupPanel', () => {
           <VaultAgentSetupPanel
             canEditCurrent
             localVault={makeLocalVault({ status: 'idle', agentConfigStatus: null })}
-            packageDistribution={publishedPackages}
+            serverAvailability={bundledServer}
             validationSummary={null}
             onOpenWorkflowGuide={vi.fn()}
           />
@@ -452,7 +446,7 @@ describe('VaultAgentSetupPanel', () => {
       <VaultAgentSetupPanel
         canEditCurrent
         localVault={localVault}
-        packageDistribution={publishedPackages}
+        serverAvailability={bundledServer}
         validationSummary={null}
         onOpenWorkflowGuide={onOpenWorkflowGuide}
       />,
@@ -597,7 +591,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('docs/AGENT-GRAPH-WORKFLOW.md'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('"ontology-atlas-mcp"'),
+      expect.stringContaining('mcp/src/index.js'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('[mcp_servers.ontology-atlas]'),
@@ -1132,7 +1126,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('<absolute path to your team-vault folder>'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('"ontology-atlas-mcp"'),
+      expect.stringContaining('mcp/src/index.js'),
     );
     expect(
       await screen.findByRole('button', {
@@ -1166,7 +1160,7 @@ describe('VaultAgentSetupPanel', () => {
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('args = ["-y", "ontology-atlas-mcp"]'),
+      expect.stringContaining('mcp/src/index.js'),
     );
     expect(
       await screen.findByRole('button', {
@@ -1199,9 +1193,12 @@ describe('VaultAgentSetupPanel', () => {
         "OATLAS_VAULT='<absolute path to your team-vault folder>'",
       ),
     );
+    // npm 발행 계획 폐기 후: 복사되는 명령은 앱이 아는 실행 경로여야 한다.
+    // 웹/테스트처럼 번들 서버를 모르는 자리에서는 소스 체크아웃 자리표시자.
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('npx -y ontology-atlas-mcp'),
+      expect.stringContaining('mcp/src/index.js'),
     );
+    expect(copyTextMock).not.toHaveBeenCalledWith(expect.stringContaining('npx'));
     expect(
       await screen.findByRole('button', {
         name: 'Codex 명령 복사됨',
@@ -1214,7 +1211,7 @@ describe('VaultAgentSetupPanel', () => {
       <VaultAgentSetupPanel
         canEditCurrent
         localVault={makeLocalVault()}
-        packageDistribution={publishedPackages}
+        serverAvailability={bundledServer}
         validationSummary={null}
         onOpenWorkflowGuide={vi.fn()}
       />,
@@ -1237,7 +1234,7 @@ describe('VaultAgentSetupPanel', () => {
       <VaultAgentSetupPanel
         canEditCurrent
         localVault={makeLocalVault()}
-        packageDistribution={publishedPackages}
+        serverAvailability={bundledServer}
         validationSummary={null}
         onOpenWorkflowGuide={vi.fn()}
       />,
@@ -1271,7 +1268,7 @@ describe('VaultAgentSetupPanel', () => {
       <VaultAgentSetupPanel
         canEditCurrent
         localVault={localVault}
-        packageDistribution={publishedPackages}
+        serverAvailability={bundledServer}
         validationSummary={null}
         onOpenWorkflowGuide={vi.fn()}
       />,
@@ -1318,7 +1315,7 @@ describe('VaultAgentSetupPanel', () => {
             mcpExampleValid: true,
           },
         })}
-        packageDistribution={publishedPackages}
+        serverAvailability={bundledServer}
         validationSummary={null}
         onOpenWorkflowGuide={vi.fn()}
       />,
@@ -1350,13 +1347,15 @@ describe('VaultAgentSetupPanel', () => {
       <VaultAgentSetupPanel
         canEditCurrent
         localVault={localVault}
-        packageDistribution={unpublishedPackages}
+        serverAvailability={noServer}
         validationSummary={null}
         onOpenWorkflowGuide={vi.fn()}
       />,
     );
 
-    expect(screen.getByTestId('agent-package-unavailable')).toHaveTextContent('공개되지');
+    expect(screen.getByTestId('agent-server-unavailable')).toHaveTextContent(
+      '연결할 수 없어요',
+    );
     expect(screen.queryByTestId('agent-setup-step-2')).not.toBeInTheDocument();
     expect(screen.queryByTestId('agent-setup-step-3')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Claude Code에 연결' })).not.toBeInTheDocument();

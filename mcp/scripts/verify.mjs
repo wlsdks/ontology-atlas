@@ -78,6 +78,13 @@ const MCP_ROOT = resolve(__dirname, '..');
 const REPO_ROOT = resolve(MCP_ROOT, '..');
 const PARSER_TEST = join(MCP_ROOT, 'src', 'parser.test.mjs');
 const SERVER_ENTRY = join(MCP_ROOT, 'src', 'index.js');
+// 앱 번들에 실리는 컴파일 바이너리를 같은 전수 검증에 태우기 위한 오버라이드.
+// 미지정이면 지금까지처럼 node + 소스 엔트리. 지정되면 그 실행 파일을 인자 없이
+// 스폰한다 — "소스에서 통과하는 것"과 "사용자가 실제로 받는 것"이 다를 수 있어서
+// 같은 스위트가 양쪽을 다 볼 수 있어야 한다.
+const SERVER_BIN_OVERRIDE = process.env.OATLAS_MCP_SERVER_BIN || '';
+const SERVER_COMMAND = SERVER_BIN_OVERRIDE || process.execPath;
+const SERVER_COMMAND_ARGS = SERVER_BIN_OVERRIDE ? [] : [SERVER_ENTRY];
 const IS_MAIN = fileURLToPath(import.meta.url) === resolve(process.argv[1] ?? '');
 const VERIFY_ALLOWED_FLAGS = ['--vault', '--timeout-ms', '--help'];
 const DEFAULT_VERIFY_RETRY_EXAMPLE = 'npm run verify -- --timeout-ms 15000';
@@ -7552,7 +7559,7 @@ async function step2BootAndCall() {
 
   try {
     return await new Promise((res) => {
-    const proc = spawn(process.execPath, [SERVER_ENTRY], {
+    const proc = spawn(SERVER_COMMAND, SERVER_COMMAND_ARGS, {
       env: { ...process.env, OATLAS_VAULT: VAULT },
       stdio: ['pipe', 'pipe', 'pipe'],
     });

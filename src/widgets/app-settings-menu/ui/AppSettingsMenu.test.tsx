@@ -55,6 +55,13 @@ vi.mock('@/features/locale-switch', () => ({
 // mock 한다(에이전트 상세 패널은 vault loaded 상태에서만 뜨므로
 // VaultAgentSetupPanel.test.tsx 가 별도로 커버).
 vi.mock('@/features/docs-vault-local', () => ({
+  // 번들 MCP 서버는 설치 앱에서만 보인다 — jsdom 은 웹 세션과 같은 자리다.
+  useAgentServer: () => ({
+    kind: 'unavailable',
+    launch: null,
+    binaryPath: null,
+    reason: 'The bundled MCP server is only available in the installed app.',
+  }),
   useLocalVault: () => ({
     status: mocks.vaultStatus,
     handle: mocks.vaultHandleName ? { name: mocks.vaultHandleName } : null,

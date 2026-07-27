@@ -18,6 +18,13 @@ vi.mock("next-intl", () => ({
 }));
 
 vi.mock("@/features/docs-vault-local", () => ({
+  // 번들 MCP 서버는 설치 앱에서만 보인다 — jsdom 은 웹 세션과 같은 자리다.
+  useAgentServer: () => ({
+    kind: "unavailable",
+    launch: null,
+    binaryPath: null,
+    reason: "The bundled MCP server is only available in the installed app.",
+  }),
   useLocalVault: () => ({ status: "idle", handle: null, manifest: null }),
 }));
 

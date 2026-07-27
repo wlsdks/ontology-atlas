@@ -5,6 +5,8 @@
  * workbench produce the same starter files.
  */
 
+import type { McpServerLaunch } from '@/shared/config';
+
 interface StarterFile {
   /** Relative path inside the vault (e.g. README.md, domains/example-domain.md). */
   relPath: string;
@@ -52,41 +54,29 @@ ownership, dependency, evidence, and change impact.
 5. To see the graph, open the workbench's \`/docs\` picker and point it at
    this vault folder.
 
-Prefer an automatic first graph? From your codebase root:
-
-\`\`\`bash
-node /absolute/path/to/ontology-atlas/cli/src/index.mjs bootstrap . --vault <this-folder>
-\`\`\`
-
-The command analyzes \`package.json\`, README headings, and \`src/\` layout,
-then replaces untouched starter examples with real project/domain/capability
-nodes. If you edited a starter file, it is preserved.
-
 ## AI agent setup
 
-Public \`ontology-atlas\` and \`ontology-atlas-mcp\` packages were unavailable
-when this starter was built (npm E404, checked 2026-07-27). The installed app
-therefore creates the markdown vault only; it does not seed an \`npx\` config
-that cannot start.
+There are two ways to connect an agent to this vault.
 
-From an Ontology Atlas source checkout, use the local CLI repair path:
+**If you have the installed Ontology Atlas app**, open this folder in it and
+press the connect button. The app writes the Claude Code / Cursor / Codex
+config for you: it already knows this folder's real path, and it carries the
+MCP server inside its own bundle. No terminal, no Node, no install step.
+
+**If you don't**, run the agent setup command once from an Ontology Atlas
+source checkout. Both angle-bracket parts are yours to fill in with real
+absolute paths — the checkout you cloned, and this vault folder:
 
 \`\`\`bash
-node /absolute/path/to/ontology-atlas/cli/src/index.mjs agent-setup /absolute/path/to/this-vault --root . --write
+node <ontology-atlas checkout>/cli/src/index.mjs agent-setup <this vault folder> --root . --write
 \`\`\`
 
 It creates missing Claude Code / Cursor / Codex config files without adding
-starter markdown or overwriting existing configs. If you need a manual merge
-instead, open \`.mcp.json.example\`, replace the \`OATLAS_VAULT\` placeholder with
-the absolute path to this vault, then copy that server entry into your agent
-config. The local CLI writes \`.mcp.json\` and \`.codex/config.toml\` with the
-source entry point.
-
-Codex can also be wired globally with one command:
-
-  \`\`\`bash
-  codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/this-vault -- node /absolute/path/to/ontology-atlas/mcp/src/index.js
-  \`\`\`
+starter markdown or overwriting existing ones. To merge by hand instead, open
+\`.mcp.json.example\`, replace the \`OATLAS_VAULT\` placeholder with the absolute
+path to this vault, then copy that server entry into your agent config. The
+CLI writes \`.mcp.json\` and \`.codex/config.toml\` pointing at the checkout's
+\`mcp/src/index.js\`.
 
 ## Verify the agent loop
 
@@ -334,39 +324,28 @@ capabilities / elements / domain)입니다.
    함께 키웁니다.
 5. 그래프로 보려면 워크벤치의 \`/docs\` 피커에서 이 폴더를 고릅니다.
 
-첫 그래프를 자동으로 만들고 싶다면, 코드베이스 루트에서:
-
-\`\`\`bash
-node /ontology-atlas/소스/절대/경로/cli/src/index.mjs bootstrap . --vault <이-폴더>
-\`\`\`
-
-이 명령은 \`package.json\`, README 제목, \`src/\` 구조를 분석해 손대지 않은 예시
-스타터를 실제 프로젝트/도메인/역량 노드로 바꿉니다. 이미 수정한 스타터 파일은
-그대로 둡니다.
-
 ## AI 에이전트 설정
 
-이 스타터를 만들 때 공개 \`ontology-atlas\`와 \`ontology-atlas-mcp\`
-패키지는 npm E404 상태였습니다(2026-07-27 확인). 설치 앱은 실행할 수 없는
-\`npx\` 설정을 심지 않고 마크다운 문서함만 만듭니다.
+이 문서함에 에이전트를 붙이는 길은 두 가지입니다.
 
-Ontology Atlas 소스 체크아웃이 있다면 로컬 CLI 복구 경로를 씁니다:
+**설치된 Ontology Atlas 앱이 있다면**, 앱에서 이 폴더를 열고 에이전트 연결
+버튼을 누르세요. 앱이 Claude Code / Cursor / Codex 설정을 대신 써 줍니다 —
+이 폴더의 실제 경로를 이미 알고 있고, MCP 서버를 자기 번들 안에 싣고
+다닙니다. 터미널도, node 도, 설치 과정도 필요 없습니다.
+
+**앱이 없다면**, Ontology Atlas 소스 체크아웃에서 에이전트 설정 명령을 한 번
+실행합니다. 꺾쇠 두 자리는 내 컴퓨터의 실제 절대 경로로 바꿔 넣으세요 —
+클론한 체크아웃, 그리고 이 문서함 폴더입니다:
 
 \`\`\`bash
-node /ontology-atlas/소스/절대/경로/cli/src/index.mjs agent-setup /이-문서함의/절대/경로 --root . --write
+node <ontology-atlas 체크아웃>/cli/src/index.mjs agent-setup <이 문서함 폴더> --root . --write
 \`\`\`
 
 없는 Claude Code / Cursor / Codex 설정 파일만 만들고, 스타터 마크다운을
 추가하거나 기존 설정을 덮어쓰지 않습니다. 직접 병합하려면 \`.mcp.json.example\`
 을 열어 \`OATLAS_VAULT\` 자리표시자를 이 문서함의 절대 경로로 바꾼 뒤, 그 서버
-항목을 에이전트 설정에 복사하세요. 로컬 CLI는 소스 엔트리포인트를 쓰는
-\`.mcp.json\`과 \`.codex/config.toml\`을 만듭니다.
-
-Codex 는 명령 한 줄로 전역 등록도 됩니다:
-
-\`\`\`bash
-codex mcp add ontology-atlas --env OATLAS_VAULT=/이-문서함의/절대/경로 -- node /ontology-atlas/소스/절대/경로/mcp/src/index.js
-\`\`\`
+항목을 에이전트 설정에 복사하세요. CLI 는 체크아웃의 \`mcp/src/index.js\` 를
+가리키는 \`.mcp.json\` 과 \`.codex/config.toml\` 을 만듭니다.
 
 ## 에이전트 연결 확인
 
@@ -596,13 +575,36 @@ export function starterFilesForLocale(locale: string): ReadonlyArray<StarterFile
 export const ONTOLOGY_STARTER_FILES: ReadonlyArray<StarterFile> = STARTER_FILES_EN;
 
 /**
+ * 설정 템플릿이 서버를 **어떻게 띄우는가**.
+ *
+ * 설치된 앱은 자기 번들 안의 바이너리 절대 경로를 넘긴다 — 사용자 머신에
+ * node 도 npx 도 소스 체크아웃도 필요 없다. 그걸 모르는 표면(웹)은 소스
+ * 체크아웃 자리표시자로 강등한다. `npx` 는 더 이상 어느 경로에도 없다
+ * (npm 발행 계획 폐기, docs/DECISIONS.md 2026-07-27).
+ */
+const SOURCE_CHECKOUT_PLACEHOLDER: McpServerLaunch = {
+  kind: 'source-checkout',
+  command: 'node',
+  args: ['<absolute path to your ontology-atlas checkout>/mcp/src/index.js'],
+};
+
+function resolveLaunch(launch?: McpServerLaunch | null): McpServerLaunch {
+  return launch ?? SOURCE_CHECKOUT_PLACEHOLDER;
+}
+
+/**
  * MCP config template to register an AI agent (Claude Code, Cursor, …) from
  * a different working directory. `OATLAS_VAULT` must be the absolute path to
  * the vault folder — the browser cannot know it.
  */
-export function buildMcpConfigJson(vaultName: string, vaultPath?: string | null): string {
+export function buildMcpConfigJson(
+  vaultName: string,
+  vaultPath?: string | null,
+  launch?: McpServerLaunch | null,
+): string {
   return buildMcpConfigJsonForVault(
     vaultPath ?? `<absolute path to your ${vaultName} folder>`,
+    launch,
   );
 }
 
@@ -610,18 +612,22 @@ export function buildMcpConfigJson(vaultName: string, vaultPath?: string | null)
  * Ready-to-use MCP config for opening the vault folder itself in Claude Code
  * or Cursor. `OATLAS_VAULT=.` keeps the config portable inside the folder.
  */
-export function buildVaultMcpConfigJson(): string {
-  return buildMcpConfigJsonForVault('.');
+export function buildVaultMcpConfigJson(launch?: McpServerLaunch | null): string {
+  return buildMcpConfigJsonForVault('.', launch);
 }
 
-function buildMcpConfigJsonForVault(omotVault: string): string {
+function buildMcpConfigJsonForVault(
+  omotVault: string,
+  launch?: McpServerLaunch | null,
+): string {
+  const resolved = resolveLaunch(launch);
   return (
     JSON.stringify(
       {
         mcpServers: {
           'ontology-atlas': {
-            command: 'npx',
-            args: ['-y', 'ontology-atlas-mcp'],
+            command: resolved.command,
+            args: resolved.args,
             env: {
               OATLAS_VAULT: omotVault,
             },
@@ -638,11 +644,15 @@ function buildMcpConfigJsonForVault(omotVault: string): string {
  * Codex MCP config. Defaults to the vault folder itself, but can also render
  * the codebase-root template where `OATLAS_VAULT` must be an absolute path.
  */
-export function buildCodexConfigToml(omotVault = '.'): string {
+export function buildCodexConfigToml(
+  omotVault = '.',
+  launch?: McpServerLaunch | null,
+): string {
+  const resolved = resolveLaunch(launch);
   return [
     '[mcp_servers.ontology-atlas]',
-    'command = "npx"',
-    'args = ["-y", "ontology-atlas-mcp"]',
+    `command = ${JSON.stringify(resolved.command)}`,
+    `args = ${JSON.stringify(resolved.args)}`,
     '',
     '[mcp_servers.ontology-atlas.env]',
     `OATLAS_VAULT = ${JSON.stringify(omotVault)}`,
@@ -653,8 +663,12 @@ export function buildCodexConfigToml(omotVault = '.'): string {
 export function buildCodexConfigTomlTemplate(
   vaultName: string,
   vaultPath?: string | null,
+  launch?: McpServerLaunch | null,
 ): string {
-  return buildCodexConfigToml(vaultPath ?? `<absolute path to your ${vaultName} folder>`);
+  return buildCodexConfigToml(
+    vaultPath ?? `<absolute path to your ${vaultName} folder>`,
+    launch,
+  );
 }
 
 /**
@@ -664,8 +678,10 @@ export function buildCodexConfigTomlTemplate(
 export function buildCodexMcpAddCommandTemplate(
   vaultName: string,
   vaultPath?: string | null,
+  launch?: McpServerLaunch | null,
 ): string {
   const resolvedVaultPath = vaultPath ?? `<absolute path to your ${vaultName} folder>`;
+  const resolved = resolveLaunch(launch);
   return [
     'codex',
     'mcp',
@@ -674,9 +690,8 @@ export function buildCodexMcpAddCommandTemplate(
     '--env',
     `OATLAS_VAULT=${shellQuote(resolvedVaultPath)}`,
     '--',
-    'npx',
-    '-y',
-    'ontology-atlas-mcp',
+    shellQuote(resolved.command),
+    ...resolved.args.map(shellQuote),
   ].join(' ');
 }
 

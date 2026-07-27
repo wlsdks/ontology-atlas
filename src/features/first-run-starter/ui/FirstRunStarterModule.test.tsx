@@ -272,13 +272,13 @@ describe('FirstRunStarterModule', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('reveals the source-checkout command and package blocker when expanded', () => {
+  it('reveals the source-checkout command and says it is source-only when expanded', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
     fireEvent.click(screen.getByTestId('first-run-starter-cli-toggle'));
 
     expect(screen.getByTestId('first-run-starter-cli-bridge')).toBeInTheDocument();
-    expect(screen.getByTestId('first-run-starter-cli-unpublished')).toHaveTextContent(
-      'cliBridgeUnpublished',
+    expect(screen.getByTestId('first-run-starter-cli-source-only')).toHaveTextContent(
+      'cliBridgeSourceOnly',
     );
     expect(
       screen.getByText('node cli/src/index.mjs init && node cli/src/index.mjs bootstrap'),

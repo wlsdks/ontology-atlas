@@ -12,13 +12,14 @@ $EDITOR project.md
 That's it. You now have a frontmatter-based memory vault that humans and AI
 agents (Claude Code, Cursor, Codex, etc.) can read and write together.
 
-Requires Node 24+ (Active LTS as of 2026-07). The CLI installs and spawns `ontology-atlas-mcp`, which
-uses the same Node floor.
+Requires Node 24+ (Active LTS as of 2026-07). The CLI spawns the MCP server in
+`mcp/`, which uses the same Node floor.
 
-> **Distribution status (checked 2026-07-27):** `npm view ontology-atlas` and
-> `npm view ontology-atlas-mcp` currently return `E404`. The commands in this
-> source-checkout guide use `node cli/src/index.mjs`; do not present `npx` as
-> available until both packages are published and pass a fresh-shell smoke.
+> **How this CLI ships:** from a source checkout, invoked as
+> `node cli/src/index.mjs`. npm publishing is retired
+> (`docs/DECISIONS.md`, 2026-07-27), so `npx ontology-atlas` is not a channel.
+> Users who only want the agent connection do not need this CLI at all — the
+> installed macOS app bundles the MCP server and writes the config itself.
 
 ## Commands (R12)
 
@@ -78,7 +79,7 @@ These wrap the MCP server (`ontology-atlas-mcp`) so the developer has the same a
 | `ontology-atlas merge <fromSlug> <intoSlug>` | Atomic merge — redirects every backlink `from → into`, then deletes `from.md`. Default dry-run; `--confirm` to apply. The `into` node's frontmatter / body are **not** auto-combined — edit by hand if needed. |
 | `ontology-atlas delete <slug>` | Permanent delete. Default refuses if any backlinks remain — preview them with the bare command, then `--confirm` to apply (or `--force` to delete anyway). |
 
-These commands require `ontology-atlas-mcp` (declared in `dependencies` — `npm install` pulls it in automatically).
+These commands spawn the MCP server from the sibling `mcp/` package in the same checkout; `pnpm install` at the repo root wires it up.
 
 ### Source-checkout verification
 
@@ -229,9 +230,9 @@ installed-style verify scope without relying on a published `ontology-atlas`
 bin link. Vault arguments are passed without the extra `--`; keep `-- --help`
 for the help flag.
 
-`ontology-atlas mcp-verify [vault]` is the fastest installed-package sanity
-check for the agent-facing surface. It resolves the vault the same way graph
-commands do, then delegates to `ontology-atlas-mcp/scripts/verify.mjs`.
+`ontology-atlas mcp-verify [vault]` is the fastest sanity check for the
+agent-facing surface. It resolves the vault the same way graph commands do,
+then delegates to the checkout's `mcp/scripts/verify.mjs`.
 `ontology-atlas mcp-verify --help` prints the same graph-query smoke contract
 to stdout, so CLI users can inspect the verify scope without starting a server.
 That help also names the direct read smoke set, including `get_concept`,
@@ -408,17 +409,16 @@ Open either folder in the agent, restart it, and it exposes **32 tools**
 {
   "mcpServers": {
     "ontology-atlas": {
-      "command": "npx",
-      "args": ["-y", "ontology-atlas-mcp"],
+      "command": "node",
+      "args": ["/absolute/path/to/ontology-atlas/mcp/src/index.js"],
       "env": { "OATLAS_VAULT": "/path/to/your/vault" }
     }
   }
 }
 ```
 
-When running from this source checkout before npm publish, `init` writes an
-equivalent `node /absolute/path/to/mcp/src/index.js` command instead of `npx`
-so Claude Code can connect immediately without hitting the npm registry.
+`init` fills that absolute path in from the checkout it is running out of, so
+Claude Code connects immediately.
 
 Codex can also store MCP servers globally, so `init` prints the exact one-line
 fallback command too:
@@ -427,15 +427,16 @@ fallback command too:
 codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/vault -- node /absolute/path/to/mcp/src/index.js
 ```
 
-For a published install, the command uses `npx -y ontology-atlas-mcp` instead
-of the source-checkout `node .../mcp/src/index.js` path.
+Users of the installed macOS app do not need any of this: that app carries the
+MCP server in its own bundle, and its connect button writes the config with the
+bundled binary's absolute path.
 
-For the shortest fresh setup, run:
+For the shortest fresh setup from this checkout, run:
 
 ```bash
-npx ontology-atlas init ontology
-npx ontology-atlas bootstrap . --vault ontology
-npx ontology-atlas compile ontology --summary
+node cli/src/index.mjs init ontology
+node cli/src/index.mjs bootstrap . --vault ontology
+node cli/src/index.mjs compile ontology --summary
 ```
 
 `bootstrap` replaces the untouched starter files with repo-derived nodes. If

@@ -21,6 +21,7 @@
   "main": "./src/index.js",
   "files": [
     "src/index.js",
+    "src/server-version.mjs",
     "src/parser.mjs",
     "src/query.mjs",
     "src/schema.mjs",

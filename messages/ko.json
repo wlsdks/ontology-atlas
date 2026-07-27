@@ -407,7 +407,6 @@
     "unsupportedCta": "macOS 앱 받기",
     "cliBridgeToggle": "개발자라면 —",
     "cliBridgeLabel": "코드베이스에서 자동으로 시작하려면",
-    "cliBridgeUnpublished": "{checkedAt} 확인에서 공개 npm 설치를 사용할 수 없었습니다. Ontology Atlas 소스 체크아웃 안에서만 이 명령을 실행하세요.",
     "cliBridgeCopy": "명령 복사",
     "cliBridgeCopied": "복사됨",
     "cliBridgeCopyAriaLabel": "터미널에서 붙여넣을 부트스트랩 명령 복사",
@@ -430,7 +429,8 @@
     "plainModeCta": "쉬운 말로 보기 켜기",
     "reopenLabel": "시작 안내 다시 열기",
     "sampleSourceStorefrontTip": "상품·주문·회원·배송처럼 누구나 아는 예시로 지도 읽는 법을 익혀요",
-    "sampleSourceDogfoodTip": "이 앱을 만든 코드 자신의 지도예요 — 개발자용 이름이 많이 나와요"
+    "sampleSourceDogfoodTip": "이 앱을 만든 코드 자신의 지도예요 — 개발자용 이름이 많이 나와요",
+    "cliBridgeSourceOnly": "ontology-atlas 소스 체크아웃 안에서 실행하는 명령이에요. 앱만 쓴다면 필요 없습니다."
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",
@@ -1728,7 +1728,6 @@
       "ready": "준비됨",
       "missing": "누락",
       "packageBlocked": "사용 불가",
-      "packageStatusSummary": "{checkedAt} 공개 패키지 확인 실패",
       "rootSummaryBlocked": "실행 가능한 공개 패키지 없음 · 소스 체크아웃 설정만 가능",
       "mcpJson": "Claude Code / Cursor workspace 설정",
       "codexConfig": "Codex workspace 설정",
@@ -1879,7 +1878,8 @@
       "copyCodexCliCopied": "Codex 명령 복사됨",
       "copyCodexCliFailed": "복사 실패",
       "copyCodexCliTitle": "어떤 codebase root 에서든 이 vault 를 등록할 수 있는 codex mcp add 한 줄 명령을 복사합니다. 실행 전 vault 경로 placeholder를 바꿔야 합니다.",
-      "errorFallback": "에이전트 설정을 만들지 못했습니다"
+      "errorFallback": "에이전트 설정을 만들지 못했습니다",
+      "serverStatusSummary": "설치한 앱에서 열면 버튼 한 번으로 연결 설정을 만들어 드려요."
     },
     "mobileDrawer": {
       "title": "문서 목록",
@@ -2748,9 +2748,6 @@
     "otherToolsClaudeDesktopNote": "설정 → Developer 에서 수동 등록 (전용 확장은 후속)",
     "step1Title": "연결 버튼 누르기",
     "step1Desc": "쓰는 도구의 버튼을 누르면 이 폴더를 함께 읽고 쓸 준비가 돼요.",
-    "packageUnavailableTitle": "AI 에이전트 패키지가 아직 공개되지 않았어요",
-    "packageUnavailableDesc": "{checkedAt} 확인에서 공개 {cliPackage}·{mcpPackage} 패키지가 npm E404였습니다. 실행할 수 없는 설정은 만들거나 복사하지 않아요.",
-    "packageUnavailableSource": "소스 체크아웃 설정 보기",
     "step2Title": "에이전트 다시 시작",
     "step2Desc": "Claude Code·Cursor·VS Code·Codex 를 껐다 켜면 연결이 반영돼요.",
     "step3Title": "연결 확인",
@@ -2779,7 +2776,28 @@
     "deeplinkWebNote": "Cursor·VS Code 원클릭은 폴더 경로가 필요해요.",
     "deeplinkWebNoteCta": "macOS 앱에서 자동으로",
     "serverLine": "따로 켜둘 서버가 없어요. 에이전트가 필요할 때 직접 실행하고, 끝나면 함께 꺼져요. 항상 도는 프로그램도 열린 포트도 없어요 — 데이터가 이 컴퓨터를 떠나지 않는 이유예요.",
-    "copiedToast": "설정을 복사했어요 — 도구에 붙여넣으면 연결돼요."
+    "copiedToast": "설정을 복사했어요 — 도구에 붙여넣으면 연결돼요.",
+    "serverUnavailableTitle": "이 화면에서는 연결할 수 없어요",
+    "serverUnavailableDesc": "브라우저는 열어 둔 폴더의 실제 위치를 알 수 없어서, 붙는 설정을 만들 수 없어요. macOS 앱에서 같은 폴더를 열면 버튼 한 번으로 끝납니다.",
+    "serverUnavailableSource": "소스 체크아웃으로 직접 설정하기",
+    "copy": "복사",
+    "copied": "복사됨",
+    "connectPreviewCta": "무엇을 만들지 먼저 보기",
+    "connectPlanRepoRoot": "{path} 에 만듭니다. 이 폴더를 프로젝트로 여는 에이전트가 읽는 자리예요.",
+    "connectPlanVaultFolder": "{path} 에 만듭니다. 이 폴더를 프로젝트로 열어 주세요.",
+    "connectPlanCreate": "새로 만듦",
+    "connectPlanOverwrite": "덮어씀",
+    "connectPlanAuditNote": "전부 평문 파일이라 git diff 로 그대로 확인할 수 있어요. 밖으로 나가는 것은 없습니다.",
+    "connectConfirmCta": "확인했어요, 만들기",
+    "connectVerifying": "실제로 붙는지 확인하는 중",
+    "connectVerifiedTitle": "연결됐어요",
+    "connectVerifiedDesc": "도구 {tools}개를 쓸 수 있고, 이 폴더의 「{node}」 를 읽어 왔어요.",
+    "connectVerifiedRestart": "쓰던 에이전트를 껐다 켜면 바로 씁니다.",
+    "connectFailedTitle": "아직 안 붙었어요",
+    "connectFailedUnknown": "무엇이 막혔는지 알 수 없어요. 다시 시도해 주세요.",
+    "connectRetry": "다시 시도",
+    "connectDesktopOnly": "이 동작은 설치한 앱에서만 됩니다.",
+    "serverUnavailableGetApp": "앱 받기"
   },
   "appUpdate": {
     "availableTitle": "{version} 버전이 나왔어요",
