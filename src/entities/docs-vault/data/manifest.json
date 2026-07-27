@@ -3212,6 +3212,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-28 — 영문 화면의 한국어 라벨 · INDEX 푸터가 자르던 상태 라벨",
+          "slug": "2026-07-28-영문-화면의-한국어-라벨-index-푸터가-자르던-상태-라벨"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-28 — 「에이전트」 패널: 빈칸에 뜻을 주고, 바닥의 띠 넷을 하나로",
           "slug": "2026-07-28-에이전트-패널-빈칸에-뜻을-주고-바닥의-띠-넷을-하나로"
         },
@@ -5226,8 +5231,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 소유자: \"이 에이전",
-      "wordCount": 55934,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 실사용 스윕(/en ",
+      "wordCount": 56140,
       "updatedAt": "2026-07-28",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
