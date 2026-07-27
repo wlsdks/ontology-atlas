@@ -71,9 +71,41 @@ if (!fs.existsSync(appPath)) {
   fail(`missing app bundle at ${appPath}; run pnpm desktop:build:app first.`);
 }
 
-if (!signingIdentity) {
-  fail("APPLE_SIGNING_IDENTITY is required for macOS release signing.");
+/**
+ * The identity name is printed on the certificate we just imported, so asking
+ * an operator to also type it into a secret is a second chance to get it wrong
+ * for no information gained. Derive it, and only fall back to the env var when
+ * the keychain holds more than one Developer ID (or none, so the error says
+ * what is actually missing).
+ */
+function resolveSigningIdentity() {
+  if (signingIdentity) return signingIdentity;
+
+  const found = spawnSync("security", ["find-identity", "-v", "-p", "codesigning"], {
+    encoding: "utf8",
+  });
+  const identities = (found.stdout ?? "")
+    .split("\n")
+    .map((line) => line.match(/"(Developer ID Application:[^"]+)"/)?.[1])
+    .filter(Boolean);
+
+  if (identities.length === 1) {
+    console.log(`[desktop-sign] using the imported identity: ${identities[0]}`);
+    return identities[0];
+  }
+  if (identities.length === 0) {
+    fail(
+      "no Developer ID Application identity in the keychain — import the certificate first, " +
+        "or set APPLE_SIGNING_IDENTITY explicitly.",
+    );
+  }
+  fail(
+    `${identities.length} Developer ID identities found; set APPLE_SIGNING_IDENTITY to pick one:\n` +
+      identities.map((id) => `  ${id}`).join("\n"),
+  );
 }
+
+const identity = resolveSigningIdentity();
 
 run("codesign", [
   "--force",
@@ -82,7 +114,7 @@ run("codesign", [
   "runtime",
   "--timestamp",
   "--sign",
-  signingIdentity,
+  identity,
   appPath,
 ]);
 run("codesign", ["--verify", "--deep", "--strict", "--verbose=2", appPath]);

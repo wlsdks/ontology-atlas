@@ -32,8 +32,6 @@ jobs:
       TAURI_ARCH: ${{ matrix.arch }}
       APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
       APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-      APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
-      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -90,13 +88,30 @@ jobs:
       - name: Verify release tag version
         run: pnpm desktop:release-tag -- --tag="${GITHUB_REF_NAME}"
 
-      - name: Require Developer ID direct-download secrets
-        run: pnpm desktop:release-secrets
+      # 인증서가 준비되기 전까지는 미서명으로 낸다(소유자 결정 2026-07-27,
+      # docs/DECISIONS.md 기록). 조용히 넘어가지 않는다 — 어느 경로로 갔는지
+      # 요약과 릴리스 본문에 크게 적는다. secret 이 채워지는 순간 자동으로
+      # 서명 경로로 돌아간다.
+      - name: Decide signing path
+        id: signing
+        run: |
+          if pnpm desktop:release-secrets >/dev/null 2>&1; then
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Developer ID secrets present — signing and notarizing."
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Developer ID secrets absent — building an UNSIGNED release. Downloaders will need System Settings → Privacy & Security → Open Anyway on first launch."
+          fi
 
       - name: Import Apple Developer ID certificate
+        if: steps.signing.outputs.signed == 'true' 
         run: |
           CERTIFICATE_PATH="$RUNNER_TEMP/apple-developer-id.p12"
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          # 이 키체인은 이 잡 안에서 만들어졌다 이 잡 안에서 지워진다 — 비밀번호를
+          # 사람이 등록할 이유가 없다. 등록할 secret 이 적을수록 실수도 적다.
+          APPLE_KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
+          echo "::add-mask::$APPLE_KEYCHAIN_PASSWORD"
           echo "$APPLE_CERTIFICATE_P12_BASE64" | base64 -D > "$CERTIFICATE_PATH"
           security create-keychain -p "$APPLE_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
@@ -107,13 +122,25 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$APPLE_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
       - name: Build signed and notarized release artifact
+        if: steps.signing.outputs.signed == 'true'
         run: pnpm desktop:release-artifact
 
+      - name: Build unsigned release artifact
+        if: steps.signing.outputs.signed != 'true'
+        run: pnpm desktop:release-artifact:unsigned
+
       - name: Summarize macOS release assets
+        env:
+          SIGNED: ${{ steps.signing.outputs.signed }}
         run: |
           {
             echo "## macOS DMG (${TAURI_ARCH})"
             echo ""
+            if [ "${SIGNED}" != "true" ]; then
+              echo "> **UNSIGNED build.** First launch needs System Settings → Privacy & Security → Open Anyway."
+              echo "> Verify the SHA-256 below — with no signature it is the only integrity check."
+              echo ""
+            fi
             echo "| Asset | Size | SHA-256 |"
             echo "| --- | ---: | --- |"
             for dmg in src-tauri/target/release/bundle/dmg/*.dmg; do
@@ -134,7 +161,7 @@ jobs:
           if-no-files-found: error
 
       - name: Cleanup Apple signing keychain
-        if: ${{ always() }}
+        if: ${{ always() && steps.signing.outputs.signed == 'true' }}
         run: |
           CERTIFICATE_PATH="$RUNNER_TEMP/apple-developer-id.p12"
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"

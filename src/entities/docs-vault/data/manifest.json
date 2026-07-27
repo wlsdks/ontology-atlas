@@ -5130,6 +5130,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — v1.0.0 을 미서명 DMG 로 내고, 대신 정직하게 안내한다",
+          "slug": "2026-07-27-v100-을-미서명-dmg-로-내고-대신-정직하게-안내한다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 카운슬을 문서에서 호출 가능한 에이전트로 (PO 5인 · 디자인 8석 · chief)",
           "slug": "2026-07-27-카운슬을-문서에서-호출-가능한-에이전트로-po-5인-디자인-8석-chief"
         },
@@ -5145,7 +5150,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 817,
+      "wordCount": 1117,
       "updatedAt": "2026-07-27",
       "linksOut": []
     },
@@ -6022,7 +6027,7 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 5300,
+      "wordCount": 5387,
       "updatedAt": "2026-07-27",
       "linksOut": []
     },
@@ -6741,7 +6746,7 @@
         }
       ],
       "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ontology-atlas 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성",
-      "wordCount": 419,
+      "wordCount": 418,
       "updatedAt": "2026-07-27",
       "linksOut": []
     },
@@ -6779,7 +6784,7 @@
         }
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~280. HN expects substantive Show HN posts, not one-liners.)",
-      "wordCount": 439,
+      "wordCount": 432,
       "updatedAt": "2026-07-27",
       "linksOut": []
     },
@@ -6885,8 +6890,8 @@
         }
       ],
       "excerpt": "Reddit responds best to honest, problem-first framing. Each subreddit has its own norms; copy below tuned per audience. Title: ontology-atlas — frontmatter as a codebase ontology, AI agents read it via MCP Body (400~500 words, Reddit allows long-form better than HN): my-project/ ├── project.md ├── domains/ │ ├── auth.m",
-      "wordCount": 933,
-      "updatedAt": "2026-07-24",
+      "wordCount": 912,
+      "updatedAt": "2026-07-27",
       "linksOut": []
     },
     {
@@ -6943,8 +6948,8 @@
         }
       ],
       "excerpt": "X 의 언어는 짧고 시각적. 5–7 트윗 짜리 thread 가 sweet spot. 각 트윗 280 chars 안. 1 트윗 = 1 idea. yaml kind: capability domain: domains/auth dependson: [capabilities/signup] Post the thread in one go (drafts feature) Pin tweet 1 to profile Quote-tweet your HN submission link in a separate post a few hours later Tag relevant accounts onl",
-      "wordCount": 442,
-      "updatedAt": "2026-07-24",
+      "wordCount": 437,
+      "updatedAt": "2026-07-27",
       "linksOut": []
     },
     {
