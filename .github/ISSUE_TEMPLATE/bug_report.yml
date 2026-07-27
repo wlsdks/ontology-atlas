@@ -14,7 +14,7 @@ body:
     attributes:
       label: What happened
       description: A clear description of the bug.
-      placeholder: e.g. clicking "자동 정렬" on /ontology/edit throws a console error
+      placeholder: e.g. filling a relation socket on /ontology/studio throws a console error
     validations:
       required: true
 
@@ -22,7 +22,7 @@ body:
     id: expected
     attributes:
       label: What you expected
-      placeholder: e.g. canvas should re-layout with dagre algorithm
+      placeholder: e.g. the socket should write the relation into the node's frontmatter
     validations:
       required: true
 
@@ -33,8 +33,8 @@ body:
       description: Numbered list. Include vault state if relevant.
       placeholder: |
         1. Run `pnpm dev`
-        2. Visit /ontology/edit
-        3. Click "자동 정렬" button
+        2. Visit /ontology/studio
+        3. Click an empty relation socket
         4. Open DevTools console
     validations:
       required: true
@@ -45,16 +45,17 @@ body:
       label: Surface
       description: Which area is affected?
       options:
-        - "/ — landing / ontology hub"
+        - "/ — topology hub (map + INDEX + datasheet)"
         - "/topology"
-        - "/ontology, /ontology/edit, /ontology/insights, /ontology/relations"
+        - "/ontology/studio (workshop)"
+        - "/ontology/insights"
         - "/projects, /project/*"
         - "/docs (vault picker)"
-        - "/login, /signup, /account, /reset-password"
-        - "/settings/*"
+        - "/download"
+        - Installed macOS app (window, updater, Connect agent)
         - MCP server (ontology-atlas-mcp)
-        - CLI (ontology-atlas init)
-        - Hosted demo (Firebase)
+        - CLI (ontology-atlas)
+        - Hosted demo (GitHub Pages)
         - Other
     validations:
       required: true
@@ -79,4 +80,4 @@ body:
     id: screenshots
     attributes:
       label: Screenshots
-      description: Drag-drop images. Both dark + light if visual regression.
+      description: Drag-drop images. The app is dark-only, so one theme is enough.

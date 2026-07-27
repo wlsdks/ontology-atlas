@@ -3,12 +3,19 @@
 오픈소스 launch 단계의 publication 초안 모음. 메인테이너가 시점에 맞춰
 직접 publish.
 
+> **배포 채널 (2026-07-27 확정, `docs/DECISIONS.md`)**: npm 발행 계획은
+> 폐기됐다. 공개 채널은 **서명·공증된 macOS DMG** 하나이고, 앱이 컴파일된
+> MCP 서버를 자기 번들에 싣고 다닌다 — 다운로드 1회가 사람 표면과 에이전트
+> 표면을 동시에 설치한다. 터미널을 쓰는 사람에게는 **소스 체크아웃**이
+> 두 번째 길이다. 아래 초안에 `npx` 를 다시 넣지 말 것 — 실행하면 404 다.
+
 ## 단계별 권장 순서
 
 1. **사전 준비**
-   - [ ] CLI npm 배포 — `cli/` 와 `mcp/` 둘 다 `npm publish`
+   - [ ] 서명·공증된 macOS DMG 를 [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases) 에 업로드 — 초안의 모든 CTA 가 이 자산 하나를 가리킨다
+   - [ ] 설치 앱에서 「에이전트 연결」 버튼이 `.mcp.json` / `.codex/config.toml` 을 실제로 쓰고 자가 검증까지 초록인지 실측
    - [ ] 정적 호스팅 (GitHub Pages / Vercel / Netlify / Cloudflare Pages 등) 배포 — `pnpm build` → `out/` 업로드. 자세한 가이드는 `docs/DEPLOYMENT.md`.
-   - [ ] hosted demo URL 이 README + CLI 안내 문구와 일치하는지 재확인
+   - [ ] hosted demo URL 이 README + 초안 문구와 일치하는지 재확인
    - [ ] 30s demo gif 녹화 + `docs/launch/demo.gif` 로 commit (storyboard: `docs/launch/DEMO-GIF-STORYBOARD.md`)
    - [x] GitHub Discussions 활성화 + 카테고리 setup (이 PR 에서 자동 활성화됨)
 
@@ -62,8 +69,8 @@
 - [ ] HN 게시 결과 (front page 도달 여부, point 수)
 - [ ] Reddit upvote / comment 수
 - [ ] GitHub stars (launch 전 baseline 대비 delta)
-- [ ] `npx ontology-atlas` 다운로드 (npm stats)
-- [ ] hosted demo 방문자 (Vercel analytics)
+- [ ] DMG 다운로드 수 (GitHub Releases asset download count)
+- [ ] hosted demo 방문자 (GitHub Pages traffic — Insights → Traffic)
 - [ ] Issues + Discussions 새로 열린 수 + 외부 PR 수
 
 이 6 개 지표로 1차 launch 성공 여부 판단. 별 1000 + 외부 contributor 1 명 이상이면 traction 시작.

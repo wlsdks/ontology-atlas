@@ -121,15 +121,19 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain('"operation": "cycles"');
     expect(readme).toContain('"operation": "growth_plan"');
     expect(readme).toContain('"operation": "maintenance_plan"');
-    expect(readme).toContain("If the CLI is installed");
-    expect(readme).toContain("ontology-atlas validate .");
-    expect(readme).toContain("ontology-atlas agent-brief . --graph-db-pack");
-    expect(readme).toContain("ontology-atlas agent-brief . --verify-fallbacks");
-    expect(readme).toContain("ontology-atlas cycles . --max-hops 8");
-    expect(readme).toContain("ontology-atlas growth . --limit 20");
-    expect(readme).toContain("ontology-atlas maintenance . --limit 20");
-    expect(readme).toContain("ontology-atlas agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
-    expect(readme).toContain("ontology-atlas mcp-verify . --timeout-ms 15000");
+    // npm 발행이 폐기돼 (docs/DECISIONS.md 2026-07-27) 맨 CLI 이름은 PATH 에
+    // 오를 길이 없다 — 구 "If the CLI is installed" 는 도달 불가 조건절이었다.
+    // 살아있는 두 경로 중 터미널 쪽인 소스 체크아웃 호출로 안내한다.
+    expect(readme).toContain("From an Ontology Atlas source checkout");
+    expect(readme).toContain("ATLAS=<ontology-atlas checkout>/cli/src/index.mjs");
+    expect(readme).toContain("node $ATLAS validate .");
+    expect(readme).toContain("node $ATLAS agent-brief . --graph-db-pack");
+    expect(readme).toContain("node $ATLAS agent-brief . --verify-fallbacks");
+    expect(readme).toContain("node $ATLAS cycles . --max-hops 8");
+    expect(readme).toContain("node $ATLAS growth . --limit 20");
+    expect(readme).toContain("node $ATLAS maintenance . --limit 20");
+    expect(readme).toContain("node $ATLAS agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
+    expect(readme).toContain("node $ATLAS mcp-verify . --timeout-ms 15000");
     expect(readme).toMatch(/before it edits\s+anything/);
   });
 });

@@ -27,11 +27,12 @@ README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. **claim → pro
 - **action**: 사용자가 "auth refactor 영향 범위 알려줘" 질문 → AI 가 ontology 의존성 트리 기반 답변.
 - **caption**: `AI reads the ontology before suggesting code`
 
-## Cut 5 (24–30s) — "30 초 setup"
+## Cut 5 (24–30s) — "버튼 한 번으로 에이전트가 붙는다"
 
-- **screen**: terminal `npx ontology-atlas init my-vault` 실행 → starter 파일들과 `.mcp.json` 생성 → "Next steps:" 안내 표시.
-- **action**: 사용자가 vault 폴더로 cd 한 후 끝.
-- **caption**: `npx ontology-atlas init my-vault — 30 seconds, you're in`
+- **screen**: 설치 앱에서 「에이전트 연결」 클릭 → 무엇을 어디에 쓸지 미리보기(경로 전부 + 새로 만듦/덮어씀) → 승인 → 초록 확인.
+- **action**: 사용자가 미리보기를 읽고 승인 → 앱이 `.mcp.json` / `.codex/config.toml` 을 쓰고, 번들 서버를 스폰해 `get_concept` 왕복까지 확인.
+- **caption**: `one download installs the agent's server too — no terminal`
+- **왜 이 컷인가**: npm 발행이 폐기된 뒤(`docs/DECISIONS.md` 2026-07-27) 이 제품의 setup 서사는 "터미널 한 줄"이 아니라 **"다운로드 1회가 사람 표면과 에이전트 표면을 동시에 설치한다"** 이다. 터미널 컷을 다시 넣지 말 것.
 
 ## 녹화 환경
 
@@ -49,7 +50,7 @@ README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. **claim → pro
 ![ontology-atlas demo](docs/launch/demo.gif)
 ```
 
-또는 Vercel hosted demo 의 한 surface 만 짧게:
+또는 hosted demo 의 한 surface 만 짧게:
 
 ```markdown
 ![Topology view](docs/launch/topology-30s.gif)
@@ -58,9 +59,9 @@ README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. **claim → pro
 ## 대안: 이미지 4 개 grid
 
 GIF 없이 정적 이미지 4 개로 같은 메시지 전달 가능:
-1. terminal `npx init` 결과
+1. 설치 앱 「에이전트 연결」 미리보기 + 초록 확인
 2. workbench `/topology`
-3. workbench `/ontology` (트리)
+3. workbench `/ontology/studio` (공방)
 4. Claude Code MCP tool 호출 결과
 
 각 PNG 는 ~ 200 KB 수준. README markdown table 로 grid 배치.

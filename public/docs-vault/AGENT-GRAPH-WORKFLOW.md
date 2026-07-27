@@ -8,13 +8,25 @@
 workbench where markdown frontmatter is the graph, git is the audit log, and AI
 agents can read or write through MCP when they are connected.
 
-> **Package availability gate (checked 2026-07-27):** the public
-> `ontology-atlas` and `ontology-atlas-mcp` packages currently return npm
-> `E404`. The installed app therefore hides one-click connection, restart, and
-> ready-state guidance rather than creating a config that cannot boot. For
-> current development, register the MCP server from a source checkout with
-> `node /absolute/path/to/ontology-atlas/mcp/src/index.js` and run CLI proofs as
-> `node cli/src/index.mjs <command>`.
+> **How the server reaches you (decided 2026-07-27, `docs/DECISIONS.md`):**
+> npm publishing is retired. There is no `ontology-atlas` or
+> `ontology-atlas-mcp` package to install, and there never will be. Two live
+> paths instead:
+>
+> - **Installed app** — open the vault folder and press **에이전트 연결 /
+>   Connect agent**. The app carries a compiled MCP server in its own bundle,
+>   shows you the config it is about to write, writes it, then spawns the
+>   server and round-trips `get_concept` before reporting success.
+> - **Source checkout** — register the server as
+>   `node /absolute/path/to/ontology-atlas/mcp/src/index.js` and run CLI proofs
+>   as `node cli/src/index.mjs <command>`.
+>
+> A config still holding `command: "npx"` predates the bundled server and
+> cannot start.
+>
+> Command examples below are written as `ontology-atlas <command>` for
+> readability — that is the CLI's name, not a global binary. From a source
+> checkout, run each as `node cli/src/index.mjs <command>`.
 
 ## Official Client Contract
 
@@ -73,12 +85,15 @@ between them does not migrate data.
 | You want graph-database-style exploration but not a database server | Graph DB pack | Bounded query plans, node/edge scans, domain matrix, paths, relation explanations, and follow-up evidence commands |
 | Setup is unclear or you opened the agent from another codebase root | Agent setup gate | Config repair commands, restart guidance, JSON readiness checks, and fallback timing before edits |
 
-Until the public package gate opens, the installed app remains useful for
-reading and editing a vault but does not claim a one-click agent connection.
-Source-checkout contributors can register the local MCP entry point, restart
-their agent, run the JSON gate, and only then ask the agent to write ontology
-updates. Non-developers should wait for the app to report that the public
-packages are available instead of copying a speculative command.
+The installed app *does* claim a one-click agent connection, because it carries
+the server it is connecting you to. Press **에이전트 연결 / Connect agent**: the
+app shows the config it is about to write, writes it after you approve, then
+spawns the bundled binary and round-trips `get_concept` — a green light means
+your vault is readable, not that a process started. Source-checkout contributors
+register the local MCP entry point instead, restart their agent, run the JSON
+gate, and only then ask the agent to write ontology updates. A browser surface
+has no absolute path to write, so it stays honestly demoted to the
+source-checkout instructions rather than emitting a config that cannot boot.
 
 Read the JSON gate in three states:
 
@@ -281,7 +296,7 @@ CLI-only checks:
 Current graph and MCP-connected facts:
 
 - `compile --summary --json` returned graph hash
-  `4abaf66ed2d42cbd88711a7ff7313084691330c449070ce6a4b1b879b56f428e`,
+  `4d7ba70cb1862e6f95ae3d52e4e973c44d9c9a81eb90974024b6a91ee33bb3f9`,
   97 nodes, 550 edges, 323 resolved edges, 227 external edges, 0 unresolved
   edges, 0 issues, and 0 canonicalization actions.
 - Kind census: 38 capabilities, 48 elements, 6 domains, 3 documents, 1 project,
@@ -302,7 +317,7 @@ Installed MCP verifier:
     argument/enum checks, destructive dry-runs, batch no-write checks,
     health/workspace/agent briefs, graph query smokes, and structured content
     checks.
-  - compiled graph hash: `4abaf66ed2d4`
+  - compiled graph hash: `4d7ba70cb186`
   - graph size: 97 nodes, 550 edges, 0 issues.
 
 ## Recommended First User Flow

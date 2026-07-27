@@ -6,7 +6,7 @@ display_ko: AI 도구 연결 설정
 display_en: AI Tool Setup
 domain: ai-agent-partner
 dependencies: [capabilities/mcp-server, capabilities/vault-live-updates]
-elements: [elements/app-settings-menu, src/features/docs-vault-local/lib/ontology-starter.ts, src/features/docs-vault-local/model/use-local-vault.ts, src/features/docs-vault-local/ui/OntologyStarterCta.tsx, src/shared/config/agent-package-distribution.ts, src/views/docs-vault/ui/DocsVaultPage.tsx, src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx]
+elements: [elements/app-settings-menu, src/features/docs-vault-local/lib/ontology-starter.ts, src/features/docs-vault-local/model/use-local-vault.ts, src/features/docs-vault-local/ui/OntologyStarterCta.tsx, src/shared/config/mcp-server-launch.ts, src/views/docs-vault/ui/DocsVaultPage.tsx, src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx]
 relates: [domains/onboarding-ux]
 ---
 
@@ -93,17 +93,19 @@ vault-local file contract. The installed Korean app proof used the same
 invalid 11-document vault and showed both replacement actions beside the
 warning, with no stale completed-state button.
 
-## 2026-07-27 public package availability gate
+## 2026-07-27 launch-availability gate (replaces the npm gate)
 
-Config-file presence is no longer sufficient evidence that agent onboarding is
-ready. `src/shared/config/agent-package-distribution.ts` records the last
-verified public npm state; while `ontology-atlas` and `ontology-atlas-mcp`
-return E404, the installed app must not write `.mcp.json` / Codex config,
-generate Cursor or VS Code deep links, or call a syntactically valid file
-`ready`. The only available handoff is the source-checkout workflow using
-`node <checkout>/mcp/src/index.js` and `node cli/src/index.mjs mcp-verify`.
+Config-file presence is still not sufficient evidence that agent onboarding is
+ready, but the question changed. `src/shared/config/mcp-server-launch.ts` no
+longer asks "are the packages published?" — npm publishing is retired
+(`docs/DECISIONS.md`) and that answer would have been permanently no, leaving
+every one-click path asleep behind a door that never opens. It asks whether
+this surface knows how to launch the server, and two channels answer yes:
+the installed app (a compiled binary inside its own bundle) and a source
+checkout (`node <checkout>/mcp/src/index.js`).
 
-The public state can move to `published` only after the human-maintainer publish
-checklist, both registry lookups, and a fresh-shell `npx` smoke pass. This
-separates package availability and runtime proof from config syntax and keeps
-the app fail-closed when distribution evidence drifts.
+Readiness still separates runtime proof from config syntax. The installed app
+previews the config before writing it, writes it, then spawns the server and
+round-trips `get_concept` — a green light means this vault is readable, not
+that a process started. A browser surface knows no launch path and stays
+honestly demoted rather than writing a config that cannot boot.
