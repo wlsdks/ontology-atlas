@@ -282,62 +282,16 @@ The bench must produce a single design verdict. If the seats disagree, choose
 the smallest change that clarifies the ontology-reading moment in the installed
 app. Do not average the disagreement into a larger feature.
 
-Bench output template:
-
-```md
-PO problem: [observed phenomenon] blocks [user/agent] during [moment].
-Lead: attention winner=[surface], demote=[surface].
-Interaction: click=[state], drag=[state], path/focus=[state], modal=[state].
-Motion: camera=[movement], easing=[token], reduced-motion=[fallback].
-Info viz: visible typed fact=[node/relation/evidence/quality/gate].
-macOS: 14-inch rule=[constraint], shutdown proof=[clean quit / no crash dialog].
-System: enforce with=[token/layout marker/test].
-Agent handoff: MCP=[action], CLI=[fallback], visible at=[surface].
-Verdict: [Do not design / Investigate first / Shape a design slice / Build and verify].
-```
+평결 형식은 `/design-council` 의 Council Verdict 블록이 단일 출처다 — 여기
+다시 적지 않는다.
 
 ### No-Human-Designer Working Mode
 
-When no human designer is present, the agent must run a written design council
-before implementation and keep it close to the shipped screenshot or app state.
-Do not create a fictional persona, taste board, or brand mood. Create a
-temporary senior product-design team with accountable jobs:
-
-1. **Lead Product Designer**: names the user moment, the primary action, and
-   the surface that should win attention.
-2. **Interaction Designer**: separates click, hover, drag, focus, path, modal,
-   keyboard, and camera behavior; rejects any state where drag is the only way
-   to understand relationships.
-3. **Motion / Action Designer**: checks that click, camera relocation, focus
-   bounce, panel entry, drag settle, and reduced-motion fallbacks explain state
-   instead of adding decoration.
-4. **Information Visualization Designer**: ties every graph mark to a typed
-   ontology object, relation, evidence state, quality state, or handoff state.
-5. **macOS Workbench Designer**: checks the 14-inch fullscreen first viewport,
-   compact WebView, window chrome, side surfaces, and app shutdown behavior.
-6. **Design Systems Engineer**: turns the decision into tokens, layout
-   contracts, markers, or tests so the result is repeatable.
-7. **Agent Handoff Designer**: proves that MCP-connected agents and CLI-only
-   agents can reproduce the next action from the visible state.
-
-The output is not a design review essay. It must be short enough to paste into
-a working update and strict enough to stop implementation:
-
-```md
-Design council:
-- Lead: primary moment=[...], attention winner=[...], cut/dim=[...]
-- Interaction: click=[...], drag=[...], focus/path=[...], modal=[...]
-- Motion: camera=[...], panel entry=[...], reduced-motion=[...]
-- Info viz: visible fact=[node/relation/evidence/quality/gate], direct label=[...]
-- macOS: 14-inch rule=[...], compact rule=[...], shutdown proof=[...]
-- System: token/contract/test=[...]
-- Agent: MCP=[...], CLI=[...]
-Design verdict: [Do not design / Investigate first / Shape a design slice /
-Build and verify]
-```
-
-If the council cannot name a surface to remove, dim, collapse, align, or make
-testable, it has not shaped a slice yet.
+**Superseded 2026-07-27.** This section described a written-only council to run
+when no designer was present. The bench is now callable — run
+`/design-council` (or a single seat for a narrow question). A prose-only mode
+with its own third verdict format is exactly the documented-but-unenacted spec
+this operating system exists to prevent.
 
 ### Critique Severity Ladder
 

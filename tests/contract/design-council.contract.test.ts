@@ -188,6 +188,36 @@ describe('Design council wiring', () => {
     expect(skill).toMatch(/답은 1회, 재질문 없음/);
   });
 
+  it('watches chief — the only component no test watched, which is how it drifted', () => {
+    const chief = read('.claude/agents/chief.md');
+    const frontmatter = chief.split('---')[1] ?? '';
+    expect(frontmatter).toContain('name: chief');
+    expect(frontmatter, 'the head runs on the strongest model').toContain('model: fable');
+    // Its single defining property: it is not the party that wants to build.
+    expect(frontmatter, 'chief must not be able to edit code').not.toMatch(/\bEdit\b/);
+    expect(frontmatter, 'chief must not be able to write files').not.toMatch(/\bWrite\b/);
+    // The seat count drifted here for a day while 27 assertions stayed green.
+    expect(chief, `chief must know the bench is ${BENCH.length} seats`).toContain(
+      `${BENCH.length}석`,
+    );
+    // The four named conflict rules are what stop it resolving by fresh opinion.
+    for (const rule of ['최소 슬라이스', '헌장 우선', '합집합 금지', '제거 요구']) {
+      expect(chief, `chief must name the "${rule}" rule`).toContain(rule);
+    }
+    // The turn budget was listed as a guard and never actually written down.
+    expect(chief, 'the anti-bureaucracy budget must be stated, not implied').toMatch(
+      /턴은 최대 2개|최대 2턴/,
+    );
+    // It records; it does not decide.
+    expect(chief).toContain('docs/DECISIONS.md');
+  });
+
+  it('makes the applier re-measure its own last mile', () => {
+    // Round-1 instruments measured the pre-verdict build. Nothing measured the
+    // result of the guardian's own edits until now.
+    expect(read('.claude/agents/design-guardian.md')).toMatch(/적용 후 다시 잰다/);
+  });
+
   it('keeps felt first impression in 위계 and the depth grammar in 체계', () => {
     // Affect belongs to one seat. Distributed across the bench nobody signs it,
     // and five metrology seats correctly have no vocabulary for it.
