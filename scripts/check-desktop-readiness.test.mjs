@@ -472,6 +472,35 @@ test("desktop release helper scripts expose credential-aware help", () => {
   assert.match(releaseSlot.stdout, /stale DMG assets/);
 });
 
+/**
+ * 이 게이트는 **로컬 git 태그**도 본다 — 그리고 그 부분만 실제 저장소를 읽고
+ * 있었다. `APP_TAG` 는 package.json 버전에서 나오므로, 저장소가 실제로 그
+ * 버전을 태깅하는 순간(v1.0.0, 2026-07-27) 픽스처가 현실과 충돌해 케이스가
+ * 깨졌다 — 하필 릴리스 워크플로 안에서, 릴리스를 막으면서.
+ *
+ * 원격은 가짜 `gh` 로 이미 격리돼 있었는데 git 만 새고 있었다. 스크립트가
+ * `OATLAS_GIT_BIN` 주입을 이미 지원하므로 여기서도 그걸 쓴다. 테스트는 이제
+ * 이 머신의 태그 상태가 아니라 **스크립트의 논리**를 검사한다.
+ *
+ * `tagExists: false` → `git rev-parse --verify --quiet` 가 1(없음)로 답한다.
+ */
+function writeFakeGit(dir, { tagExists = false } = {}) {
+  const gitPath = join(dir, "git");
+  writeFileSync(
+    gitPath,
+    `#!/usr/bin/env node
+const args = process.argv.slice(2);
+if (args[0] === 'rev-parse' && args.includes('--verify')) {
+  process.exit(${tagExists ? 0 : 1});
+}
+console.error('unexpected git args: ' + args.join(' '));
+process.exit(1);
+`,
+  );
+  chmodSync(gitPath, 0o755);
+  return gitPath;
+}
+
 test("desktop GitHub release readiness gate reports missing Developer ID direct-download secrets", () => {
   const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
   const ghPath = join(dir, "gh");
@@ -497,6 +526,7 @@ process.exit(1);
 `,
   );
   chmodSync(ghPath, 0o755);
+  const gitPath = writeFakeGit(dir);
   try {
     const result = spawnSync(
       process.execPath,
@@ -504,7 +534,7 @@ process.exit(1);
       {
         cwd: process.cwd(),
         encoding: "utf8",
-        env: { ...process.env, OATLAS_GH_BIN: ghPath },
+        env: { ...process.env, OATLAS_GH_BIN: ghPath, OATLAS_GIT_BIN: gitPath },
       },
     );
 
@@ -536,6 +566,7 @@ process.exit(1);
 `,
   );
   chmodSync(ghPath, 0o755);
+  const gitPath = writeFakeGit(dir);
   try {
     const result = spawnSync(
       process.execPath,
@@ -543,7 +574,7 @@ process.exit(1);
       {
         cwd: process.cwd(),
         encoding: "utf8",
-        env: { ...process.env, OATLAS_GH_BIN: ghPath },
+        env: { ...process.env, OATLAS_GH_BIN: ghPath, OATLAS_GIT_BIN: gitPath },
       },
     );
 
@@ -593,6 +624,7 @@ process.exit(1);
 `,
   );
   chmodSync(ghPath, 0o755);
+  const gitPath = writeFakeGit(dir);
   try {
     const result = spawnSync(
       process.execPath,
@@ -600,7 +632,7 @@ process.exit(1);
       {
         cwd: process.cwd(),
         encoding: "utf8",
-        env: { ...process.env, OATLAS_GH_BIN: ghPath },
+        env: { ...process.env, OATLAS_GH_BIN: ghPath, OATLAS_GIT_BIN: gitPath },
       },
     );
 
@@ -649,6 +681,7 @@ process.exit(1);
 `,
   );
   chmodSync(ghPath, 0o755);
+  const gitPath = writeFakeGit(dir);
   try {
     const result = spawnSync(
       process.execPath,
@@ -656,13 +689,60 @@ process.exit(1);
       {
         cwd: process.cwd(),
         encoding: "utf8",
-        env: { ...process.env, OATLAS_GH_BIN: ghPath },
+        env: { ...process.env, OATLAS_GH_BIN: ghPath, OATLAS_GIT_BIN: gitPath },
       },
     );
 
     assert.equal(result.status, 1);
     assert.match(result.stderr, new RegExp(`release ${APP_TAG_PATTERN} already exists`));
     assert.match(result.stderr, /Delete the existing public release/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("desktop GitHub release readiness gate rejects a tag that already exists locally", () => {
+  // 가짜 git 을 넣으면서 이 분기의 커버리지가 사라질 뻔했다. 실제 저장소를
+  // 읽던 시절에는 "태그 없음" 만 우연히 검사됐고, 태그가 생기자 그 우연이
+  // 다른 케이스를 깨뜨렸다. 이제 두 상태를 **의도적으로** 각각 검사한다.
+  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
+  const ghPath = join(dir, "gh");
+  writeFileSync(
+    ghPath,
+    `#!/usr/bin/env node
+const args = process.argv.slice(2);
+if (args[0] === 'auth' && args[1] === 'status') process.exit(0);
+if (args[0] === 'api') { console.log(JSON.stringify({ state: 'active' })); process.exit(0); }
+if (args[0] === 'secret' && args[1] === 'list') {
+  console.log(JSON.stringify([
+    { name: 'APPLE_CERTIFICATE_P12_BASE64' },
+    { name: 'APPLE_CERTIFICATE_PASSWORD' },
+    { name: 'APPLE_ID' },
+    { name: 'APPLE_APP_SPECIFIC_PASSWORD' },
+    { name: 'APPLE_TEAM_ID' },
+  ]));
+  process.exit(0);
+}
+console.error('unexpected gh args: ' + args.join(' '));
+process.exit(1);
+`,
+  );
+  chmodSync(ghPath, 0o755);
+  const gitPath = writeFakeGit(dir, { tagExists: true });
+  try {
+    const result = spawnSync(
+      process.execPath,
+      ["scripts/check-macos-release-github.mjs", `--tag=${APP_TAG}`],
+      {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        env: { ...process.env, OATLAS_GH_BIN: ghPath, OATLAS_GIT_BIN: gitPath },
+      },
+    );
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, new RegExp(`local git tag ${APP_TAG_PATTERN} already exists`));
+    assert.match(result.stderr, /git tag -d/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
