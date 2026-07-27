@@ -68,7 +68,8 @@ export function useSurfaceSwap<T>(
     if (previousRef.current === current) return;
     const previous = previousRef.current;
     previousRef.current = current;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 위 usePanelPresence 와 같은 이유. 교체가 **일어난 뒤에야** 직전 값을 알 수 있으므로 렌더 중에는 판정 자체가 불가능하다.
+    // 교체가 **일어난 뒤에야** 직전 값을 알 수 있다 — 렌더 중에는 판정 자체가
+    // 불가능하다(위 `usePanelPresence` 와 같은 이유).
     setLeaving(previous);
     const id = setTimeout(() => setLeaving(null), exitMs);
     return () => clearTimeout(id);
