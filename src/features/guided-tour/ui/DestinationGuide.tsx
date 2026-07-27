@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { canAutoStartGuidedTour } from "../model/auto-start-guard";
+import { watchGuidedTourAutoStartCancel } from "../model/auto-start-interaction";
 import { useRegisterGuideReplay } from "../model/guide-replay-context";
 import { resolveAnchorRect } from "../model/resolve-anchor-rect";
 import {
@@ -72,6 +73,17 @@ export function DestinationGuide({ destination }: DestinationGuideProps) {
   // 재시도 상한이 지도보다 긴 이유: 공방은 도착하자마자 **사용자의 결정**(진입
   // 선택)이 먼저 서는 화면이다. 차단 표면이 물러나기를 기다리는 시간이 로딩
   // 지연이 아니라 사람의 판단 시간이라, 8초 상한이면 공방만 안내를 못 받는다.
+  //
+  // 그 대기 창(700ms + 1.5초 × 20 ≈ 30초)이 곧 결함의 자리였다 — 지도는
+  // 2026-07-26 에 「대기 중 사용자가 먼저 실질 상호작용을 하면 발화 자체를
+  // 취소」하는 가드를 받았는데(`watchGuidedTourAutoStartCancel`), 목적지
+  // 다섯 화면은 그 가드를 못 받아 이미 문서를 열고 읽기 시작한 사람 위로
+  // 뒤늦게 1/2 카드가 떴다. 스스로 탐색을 시작한 사람에게 "여기가 문서함
+  // 이에요"는 안내가 아니라 방해다 — 지도에서 결함으로 판정하고 고친 것과
+  // 같은 상황이므로 같은 가드를 그대로 쓴다(새 기제 0).
+  //
+  // 취소해도 길은 막히지 않는다: 기록을 남기지 않으므로 다음 방문에서 다시
+  // 기회가 오고, 설정 › 화면 안내 › 다시 보기가 언제든 같은 투어를 연다.
   useEffect(() => {
     if (!destination) return undefined;
     if (readGuidedTourStatus(storageKey) !== null) return undefined;
@@ -82,14 +94,22 @@ export function DestinationGuide({ destination }: DestinationGuideProps) {
       if (fired) return;
       if (canAutoStartGuidedTour(document)) {
         fired = true;
+        stopInteractionWatch();
         startRef.current();
         return;
       }
       attempts += 1;
       if (attempts < MAX_AUTO_START_ATTEMPTS) timerId = window.setTimeout(tick, RETRY_MS);
     };
+    const stopInteractionWatch = watchGuidedTourAutoStartCancel(() => {
+      fired = true;
+      window.clearTimeout(timerId);
+    });
     timerId = window.setTimeout(tick, 700);
-    return () => window.clearTimeout(timerId);
+    return () => {
+      window.clearTimeout(timerId);
+      stopInteractionWatch();
+    };
   }, [destination, storageKey]);
 
   // Esc 로 닫기 — 화면을 덮는 표면은 Esc 로 물러나야 한다. 지도는 자체 Esc

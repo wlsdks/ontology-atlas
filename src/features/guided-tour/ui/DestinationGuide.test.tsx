@@ -120,6 +120,47 @@ describe("DestinationGuide", () => {
     expect(screen.queryByTestId("guided-tour-card")).toBeNull();
   });
 
+  // 2026-07-28 판정 ① — 지도만 받았던 「대기 중 사용자가 먼저 움직이면 발화
+  // 취소」 가드를 목적지 투어 다섯에도 이식했다. 대기 창이 30초라, 그 사이
+  // 스스로 탐색을 시작한 사람 위로 뒤늦게 카드가 뜨는 것이 결함이었다.
+  it("대기 중 사용자가 먼저 움직이면 안내가 아예 뜨지 않는다", async () => {
+    renderGuide();
+    await act(async () => {
+      fireEvent.pointerDown(document.body);
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(screen.queryByTestId("guided-tour-card")).toBeNull();
+  });
+
+  it("취소돼도 길이 막히지 않는다 — 기록을 남기지 않고 '다시 보기' 가 연다", async () => {
+    renderGuide();
+    await act(async () => {
+      fireEvent.pointerDown(document.body);
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(window.localStorage.getItem(DOCS_KEY)).toBeNull();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("replay"));
+    });
+    expect(screen.getByTestId("guided-tour-card")).toBeInTheDocument();
+  });
+
+  it("안내가 이미 뜬 뒤의 클릭은 취소가 아니다 — 카드는 그대로 서 있다", async () => {
+    renderGuide();
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.getByTestId("guided-tour-card")).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.pointerDown(document.body);
+    });
+    expect(screen.getByTestId("guided-tour-card")).toBeInTheDocument();
+  });
+
   it("지도(목적지 없음)에서는 아무것도 렌더하지 않는다 — 지도는 자기 여정을 따로 갖는다", async () => {
     renderGuide(null);
     await act(async () => {
