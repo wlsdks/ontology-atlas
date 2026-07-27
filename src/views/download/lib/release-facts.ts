@@ -38,7 +38,7 @@ export { CLI_COMMAND_COUNT } from "../../../../cli/src/lib/cli-commands.mjs";
  */
 export const MCP_TOOL_COUNT = 32;
 
-export const RELEASE_VERSION = "1.0.0-rc.1";
+export const RELEASE_VERSION = "1.0.0-rc.2";
 export const RELEASE_MIN_MACOS = "macOS 12";
 export const RELEASE_ARCHES = ["aarch64", "x64"] as const;
 export type ReleaseArch = (typeof RELEASE_ARCHES)[number];
