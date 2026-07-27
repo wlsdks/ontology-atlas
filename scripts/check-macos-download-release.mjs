@@ -6,14 +6,18 @@ import https from "node:https";
 const DEFAULT_REPO = "wlsdks/ontology-atlas";
 const DEFAULT_API_BASE = "https://api.github.com";
 const REQUIRED_MACOS_ARCHES = ["aarch64", "x64"];
+/** 설치된 앱이 `latest.json` 에서 자기 자리를 찾을 때 쓰는 키. Rust 타깃 이름이다. */
+const REQUIRED_UPDATER_PLATFORMS = ["darwin-aarch64", "darwin-x86_64"];
 const MAX_DMG_HASH_BYTES = 2 * 1024 * 1024 * 1024;
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-download [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--allow-prerelease] [--allow-draft]
+  console.log(`Usage: pnpm desktop:verify-download [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--allow-prerelease] [--allow-draft] [--require-updater]
 
 Verifies that a public GitHub Release exposes reachable Apple Silicon
 (aarch64) and Intel (x64) macOS DMGs with exactly one DMG per architecture and
-matching .sha256 checksums. Draft releases are never accepted because the
+matching .sha256 checksums. With --require-updater it also opens latest.json and
+checks that every platform URL points at an archive (and .sig) that actually
+exists in this release. Draft releases are never accepted because the
 hosted landing page cannot serve them as a real user download unless
 --allow-draft is explicitly passed for the pre-publish CI gate.
 `);
@@ -25,6 +29,7 @@ function parseArgs(argv) {
     tag: null,
     allowPrerelease: false,
     allowDraft: false,
+    requireUpdater: false,
   };
 
   for (const arg of argv) {
@@ -41,6 +46,10 @@ function parseArgs(argv) {
     }
     if (arg === "--allow-draft") {
       options.allowDraft = true;
+      continue;
+    }
+    if (arg === "--require-updater") {
+      options.requireUpdater = true;
       continue;
     }
     if (arg.startsWith("--repo=")) {
@@ -500,9 +509,78 @@ try {
   fail(error instanceof Error ? error.message : String(error));
 }
 
+/**
+ * `latest.json` 이 가리키는 곳에 실제로 파일이 있는지 본다.
+ *
+ * 설치된 앱은 이 파일 하나로 갱신을 찾는다. URL 이 한 글자만 어긋나도 앱은
+ * **오류를 내지 않는다** — 사용자에게는 "최신입니다" 로 보인다. DMG 검사만으로는
+ * 이 경로가 통째로 무검증이었다: 매니페스트가 없어도, 없는 파일을 가리켜도,
+ * 두 아키텍처가 같은 파일을 가리켜도 전부 초록이었다.
+ *
+ * 어긋나는 방식이 실제로 둘 있었다. Tauri 는 두 아치 모두 `<제품명>.app.tar.gz`
+ * 로 내는데 ① 이름이 같아 한쪽이 다른 쪽을 덮고 ② 이름의 공백을 GitHub 이 점으로
+ * 바꿔 매니페스트의 URL 과 실제 자산 이름이 달라진다.
+ */
+async function verifyUpdaterManifest() {
+  const manifestAsset = assets.find((asset) => asset?.name === "latest.json");
+  if (!manifestAsset) {
+    fail(
+      `release ${release.tag_name ?? "(unknown tag)"} has no latest.json asset. The installed app looks for exactly that file; without it every user silently stays on the old build.`,
+    );
+  }
+
+  const target = assetRequestTarget(manifestAsset, release);
+  const { body } = await requestRaw(target.url, { headers: target.headers, maxBytes: 64 * 1024 });
+  let manifest;
+  try {
+    manifest = JSON.parse(body.toString("utf8"));
+  } catch (error) {
+    fail(`latest.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  const assetNames = new Set(assets.map((asset) => asset?.name).filter(Boolean));
+  const seenArchives = new Set();
+  for (const platform of REQUIRED_UPDATER_PLATFORMS) {
+    const entry = manifest?.platforms?.[platform];
+    if (!entry?.url || !entry?.signature) {
+      fail(`latest.json is missing a url/signature pair for ${platform}.`);
+    }
+    if (!entry.url.includes(`/releases/download/${release.tag_name}/`)) {
+      // `latest` 로 두면 다음 릴리스가 나오는 순간 이 URL 이 가리키는 파일이 바뀐다.
+      fail(`latest.json ${platform} url is not pinned to ${release.tag_name}: ${entry.url}`);
+    }
+    const archiveName = decodeURIComponent(entry.url.split("/").pop() ?? "");
+    if (!assetNames.has(archiveName)) {
+      fail(
+        `latest.json ${platform} url points at ${archiveName}, which is not an asset of ${release.tag_name}. GitHub rewrites spaces in asset names, so an archive named with a space never matches the manifest.`,
+      );
+    }
+    if (!assetNames.has(`${archiveName}.sig`)) {
+      fail(`release ${release.tag_name} is missing ${archiveName}.sig; the app refuses unsigned update packages.`);
+    }
+    if (seenArchives.has(archiveName)) {
+      fail(
+        `latest.json points both platforms at ${archiveName}. One architecture would download the other's app.`,
+      );
+    }
+    seenArchives.add(archiveName);
+  }
+  return [...seenArchives];
+}
+
+let updaterArchives = [];
+if (options.requireUpdater) {
+  try {
+    updaterArchives = await verifyUpdaterManifest();
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
 console.log(
   [
     `[desktop-download-verify] ${options.repo} ${release.tag_name} exposes reachable ${release.draft ? "draft" : "public"} macOS download assets`,
     `DMGs: ${dmgs.map((dmg) => dmg.browser_download_url).join(", ")}`,
+    ...(options.requireUpdater ? [`Updater: latest.json → ${updaterArchives.join(", ")}`] : []),
   ].join("\n"),
 );
