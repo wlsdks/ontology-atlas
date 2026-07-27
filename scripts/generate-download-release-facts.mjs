@@ -42,17 +42,22 @@ function fail(message) {
 function parseArgs(argv) {
   let tag = "";
   let unpublished = false;
+  let allowPrerelease = false;
   let allowDraft = false;
   for (const arg of argv) {
     if (arg === "--") continue;
     if (arg === "--help" || arg === "-h") {
       console.log(
-        `Usage: pnpm download:release-facts [-- --tag=vX.Y.Z] [--unpublished] [--allow-draft]\n`,
+        `Usage: pnpm download:release-facts [-- --tag=vX.Y.Z] [--unpublished] [--allow-draft] [--allow-prerelease]\n`,
       );
       process.exit(0);
     }
     if (arg === "--unpublished") {
       unpublished = true;
+      continue;
+    }
+    if (arg === "--allow-prerelease") {
+      allowPrerelease = true;
       continue;
     }
     if (arg === "--allow-draft") {
@@ -65,7 +70,7 @@ function parseArgs(argv) {
     }
     fail(`unknown argument: ${arg}`);
   }
-  return { tag, unpublished, allowDraft };
+  return { tag, unpublished, allowDraft, allowPrerelease };
 }
 
 function defaultTag() {
@@ -201,6 +206,24 @@ const release = JSON.parse(
 if (release.draft && !allowDraft) {
   fail(
     `release ${tag} is still a draft — publish it first, or pass --allow-draft to record draft facts.`,
+  );
+}
+
+/**
+ * 프리릴리스는 이 페이지가 광고할 대상이 아니다.
+ *
+ * 이 스크립트는 `prerelease` 를 조회하면서도 쓰지 않고 있었다. 그 상태로 RC 를
+ * 발행한 뒤 실행하면 `published: true` 가 찍히고, **다운로드 페이지가 릴리스
+ * 후보를 정식 배포처럼 내건다.** GitHub 이 `releases/latest` 에서 프리릴리스를
+ * 빼는 이유가 그것이다 — RC 는 찾아온 사람만 받는 것이지 처음 온 사람에게
+ * 들이미는 것이 아니다.
+ *
+ * 막되 문을 남긴다: 의도적으로 RC 를 걸어야 할 때는 플래그로 말하게 한다.
+ */
+if (release.prerelease && !allowPrerelease) {
+  fail(
+    `release ${tag} is a prerelease — the download page advertises the stable build.\n` +
+      `프리릴리스를 일부러 걸려면 --allow-prerelease 를 붙여라. 정식 릴리스를 기다리는 중이면 --unpublished 로 두라.`,
   );
 }
 
