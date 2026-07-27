@@ -173,6 +173,23 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 | **행간 램프** | `leading-[N]` arbitrary 만 금지 (기존 named 199건은 제외) | 동일 |
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
 
+### lint 가 못 보는 층은 계약 테스트가 맡는다
+
+`no-restricted-syntax` 는 **한 파일의 AST 셀렉터 매칭**이라, 판정에 다른 파일의
+값 목록이 필요한 규격은 표현할 수 없다. 그런 규격은 계약 테스트로 건다 — 문서에
+쓰고 아무 게이트도 안 거는 것만 금지다.
+
+| 규격 | 게이트 | lint 가 못 하는 이유 |
+|---|---|---|
+| **`text-*`/`leading-*` 가 정의된 스텝을 가리킨다** | `tests/contract/type-ramp-step-defined.contract.test.ts` | 판정에 `app/globals.css` 의 토큰 목록이 필요. 스텝 이름을 룰에 복제하면 복제본이 램프와 드리프트해 게이트가 사각지대를 만든다 |
+| **셸 본문 슬롯이 자식을 압축하지 않는다** | `AppShell.test.tsx`(처방 위치) + `tests/e2e/scroll-end-gap.spec.ts`(실제 여백 px) | 결함이 **레이아웃 계산의 결과**. 클래스 문자열은 정상인 채로 픽셀만 틀린다 |
+
+**미정의 스텝은 침묵한다 (2026-07-27 실측).** `text-large` 는 램프에 없는데
+tsc·eslint·전체 테스트를 전부 통과했다 — Tailwind 가 클래스를 아예 만들지 않아
+그 자리가 루트 16px 로 렌더됐을 뿐이다. **존재하지 않는 것은 리터럴도 남기지
+않으므로 하드코딩 검사의 시야 밖**이다. 같은 파일에서 같은 사고(`text-callout`)가
+이미 한 번 있었고 사람 검수를 두 자리 통과했다.
+
 **spacing 은 강제하지 않는다 (결론, 2026-07-26).** arbitrary px 는 27건뿐
 (이탈률 1.1%)이고 그중 3·11·18px 을 빼면 전부 1~2회짜리 **광학 보정**이라
 램프에 스냅시키면 오히려 정렬이 깨진다. 대신 지목했던 죽은 토큰 2개
