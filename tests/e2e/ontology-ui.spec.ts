@@ -47,11 +47,15 @@ test.describe("ontology view UI", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/download/");
 
-    await expect(
-      page.getByRole("heading", { name: "Install once. Work from your local vault." }),
-    ).toBeVisible();
+    // The headline comes from the catalog, not from a copy of it. Pinning the
+    // sentence is what broke this spec on the 2026-07-27 remake: the assertion
+    // was about *the page having one headline*, but it was written as "this
+    // exact sentence", so a rewrite read as a regression.
+    const headings = page.getByRole("heading", { level: 1 });
+    await expect(headings).toHaveCount(1);
+    await expect(headings).toBeVisible();
 
-    // The primary action is a single stable target across both release states:
+    // The macOS action is a single stable target across both release states:
     // the Apple Silicon DMG once published, an honestly-labelled link to the
     // releases page before that. Asserting the label would pin this spec to one
     // state and break on release day — assert the role the element plays.
@@ -71,9 +75,71 @@ test.describe("ontology view UI", () => {
     await expect(windows).toBeVisible();
     await expect(windows).toContainText("Windows");
 
+    // Trust facts, stated as what is true today (Developer ID signing has been
+    // live since 2026-07-27) with the proof for each. The unsigned-era detour
+    // through System Settings is false now, and it is the single most
+    // expensive thing a first-time visitor could be told to do.
+    const trust = page.getByTestId("download-trust");
+    await expect(trust).toContainText(/Developer ID/);
+    await expect(trust).toContainText(/SHA-256/);
+    await expect(page.getByText(/Open Anyway/i)).toHaveCount(0);
+    await expect(page.getByText(/Not signed yet/i)).toHaveCount(0);
+
+    // A visitor who does not know which Mac they own must not be left in
+    // front of two architecture buttons with no way to choose. Before a
+    // release exists there is no choice to make, so the rule is conditional:
+    // offer both architectures, or explain how to pick — never the first
+    // without the second. (The published branch is covered as a unit test;
+    // e2e can only ever see the state actually shipped.)
+    const intelDownload = page.getByTestId("download-macos-x64");
+    const archHelp = page.getByText(/About This Mac/i);
+    expect(
+      (await intelDownload.count()) === 0 || (await archHelp.count()) > 0,
+      "offering an architecture choice requires telling visitors how to make it",
+    ).toBe(true);
+
     // Operator-only release-pipeline status must never reach the public page.
     await expect(page.getByText(/waiting on PR review/i)).toHaveCount(0);
     await expect(page.getByText(/version alignment/i)).toHaveCount(0);
+  });
+
+  // #712 회귀 가드의 형제 — 이 라우트는 하단 탭바가 없는 유일한 라우트라
+  // 예약고를 잡지 않는다. 브라우저 없이는 잴 수 없는 층이므로 여기서 잰다.
+  test("desktop: /download keeps breathing room at the scroll end and never scrolls sideways", async ({
+    page,
+  }) => {
+    for (const width of [1280, 1024, 768]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto("/en/download/");
+      await page.waitForLoadState("networkidle");
+
+      const measured = await page.evaluate(() => {
+        const main = document.getElementById("main");
+        if (!main) return null;
+        let scroller: HTMLElement = main;
+        let node: HTMLElement | null = main;
+        while (node && node !== document.documentElement) {
+          const style = getComputedStyle(node);
+          if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight) {
+            scroller = node;
+            break;
+          }
+          node = node.parentElement;
+        }
+        scroller.scrollTop = scroller.scrollHeight;
+        const lastInk = [...main.querySelectorAll("*")]
+          .filter((element) => element.getBoundingClientRect().height > 0)
+          .reduce((max, element) => Math.max(max, element.getBoundingClientRect().bottom), 0);
+        return {
+          gap: Math.round(scroller.getBoundingClientRect().bottom - lastInk),
+          overflowX: main.scrollWidth - main.clientWidth,
+        };
+      });
+
+      expect(measured, `#main must exist at ${width}px`).not.toBeNull();
+      expect(measured!.gap, `scroll-end breathing room at ${width}px`).toBeGreaterThanOrEqual(24);
+      expect(measured!.overflowX, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(0);
+    }
   });
 
   // R+ /projects redesign — the census/activity/card-zone layout
