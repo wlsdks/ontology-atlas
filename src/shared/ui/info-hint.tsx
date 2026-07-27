@@ -36,7 +36,7 @@ export function InfoHint({
           // 기본(--motion-fast)이 아니라 --motion-base 를 명시한다: 이 전이는
           // 색 확인이 아니라 **표면의 등장/퇴장**(opacity + 상승)이라 램프의
           // "이동" 스텝이 맞다. 기본값에 맡기면 120ms 로 팝에 가까워진다.
-          "pointer-events-none absolute right-0 top-full z-30 mt-2 w-72 max-w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 py-3 text-left opacity-0 shadow-[0_20px_40px_var(--color-shadow-a25)] transition-all duration-[var(--motion-base)] group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100",
+          "pointer-events-none absolute right-0 top-full z-30 mt-2 w-72 max-w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 py-3 text-left opacity-0 shadow-[0_20px_40px_var(--color-shadow-a25)] transition-[opacity,transform] duration-[var(--motion-fast)] group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100",
           panelClassName,
         )}
       >

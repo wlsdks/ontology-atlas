@@ -116,6 +116,33 @@ const arbitrarySizeSelectors = [
   // 오탐되는 것을 막는다.
   // ⚠️ 메시지에 리터럴 유틸리티 문법 금지 — Tailwind v4 스캐너가 이 파일을
   // 훑는다(2026-07-26 에 예시 하나가 프로덕션 빌드를 깨뜨렸다).
+  // 2026-07-28 모션 예산 — **빈도가 예산을 깎는다.** 호버/포커스로 트리거되는
+  // 표면은 하루 수십 번 만난다: 객관적으로 빠른 곡선도 그 빈도에선 느리게
+  // 느껴지고, 답은 곡선 조정이 아니라 예산 축소다. 램프의 이동/확정 스텝은
+  // 하루 몇 번의 사건(모드 전환·커밋 수렴·표면 교체)의 것이다.
+  //
+  // 켜기 전 전수 측정(design.md 4단계): 램프 참조 21건 중 호버/포커스와 같은
+  // className 에 공존하는 것은 **6건**(info-hint · 복사 버튼 · 크롬 칩 2 ·
+  // 클러스터 확장 · 프로젝트 카드). 한 PR 치환 가능 규모이고, 대조군으로 잰
+  // 정상 크롬 칩(0.12s 선언 · 램프 124ms · 피크 3프레임)이 이미 이상적이라
+  // 정상 사용을 위반으로 세는 부류가 없다. 6건을 **먼저 치환하고** 룰을
+  // 켰으므로 켜는 순간 위반 0 · lint 총계 불변.
+  //
+  // 판별은 "같은 className 문자열에 공존" 으로 한다 — AST 룰이 볼 수 있는 것이
+  // 그것뿐이고, 실제로 그 6건 전부가 한 문자열 안에 있었다. 순서는 양쪽 다.
+  // ⚠️ 메시지에 리터럴 유틸리티 문법 금지 — Tailwind v4 스캐너가 이 파일을 훑는다.
+  {
+    selector:
+      'Literal[value=/(?:hover|focus-within|focus-visible):[^"]*duration-\\[var\\(--motion-(?:base|settle)\\)\\]|duration-\\[var\\(--motion-(?:base|settle)\\)\\][^"]*(?:hover|focus-within|focus-visible):/]',
+    message:
+      '모션 예산 — 호버/포커스로 트리거되는 고빈도 표면에 이동(base)/확정(settle) 예산을 쓰지 않는다. fast 램프 토큰으로 강등하거나, 고빈도가 아니라는 근거를 eslint-disable 주석에 남긴다.',
+  },
+  {
+    selector:
+      'TemplateElement[value.raw=/(?:hover|focus-within|focus-visible):[^`]*duration-\\[var\\(--motion-(?:base|settle)\\)\\]|duration-\\[var\\(--motion-(?:base|settle)\\)\\][^`]*(?:hover|focus-within|focus-visible):/]',
+    message:
+      '모션 예산 — 호버/포커스 고빈도 표면에 이동/확정 예산 금지 (template literal). fast 램프로 강등한다.',
+  },
   {
     selector: 'Literal[value=/(?:^|[^-\\w])duration-\\d/]',
     message:
