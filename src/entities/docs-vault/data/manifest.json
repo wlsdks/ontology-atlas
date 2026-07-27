@@ -3114,6 +3114,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-27 — 규격을 통과했는데 화면이 틀렸다 (없는 글자 크기 · 스크롤 끝 여백)",
+          "slug": "2026-07-27-규격을-통과했는데-화면이-틀렸다-없는-글자-크기-스크롤-끝-여백"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-27 — 문서 날짜가 매 병합마다 어긋나던 자리 (생성 결정성)",
           "slug": "2026-07-27-문서-날짜가-매-병합마다-어긋나던-자리-생성-결정성"
         },
@@ -5088,8 +5093,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 빌드가 만드는 문서 매니페스트가 커밋될 때마다 이미 틀려 있었다. 문서별 \"마지막으로 바뀐 날\" 을 git 커밋 시각 으로 기록했는데, 그 값은 자신을 담",
-      "wordCount": 53328,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 두 결함 다 \"게이트가 조용히 통과시킨\" 종류였다. ① 공방 중심 카드의 노드 이름이 램프에 없는 크기를 부르고 있었다. Tailwind 는 정의되지 않은",
+      "wordCount": 53595,
       "updatedAt": "2026-07-27",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
@@ -5671,6 +5676,11 @@
         },
         {
           "depth": 3,
+          "text": "셸 본문 슬롯 — 압축 금지 계약 (2026-07-27)",
+          "slug": "셸-본문-슬롯-압축-금지-계약-2026-07-27"
+        },
+        {
+          "depth": 3,
           "text": "기록 목적지 토큰 (`--git-*`, 2026-07-27 작업대 재설계)",
           "slug": "기록-목적지-토큰---git--2026-07-27-작업대-재설계"
         },
@@ -5906,7 +5916,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 17670,
+      "wordCount": 18022,
       "updatedAt": "2026-07-27",
       "linksOut": [
         "design-references/DESIGN-linear",
