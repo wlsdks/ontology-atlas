@@ -44,6 +44,33 @@ input (humans + AI agents)     parse           store              output
                                                               compatibility redirects (/ontology, /ontology/edit)
 ```
 
+### Web and app do not promise the same screens (2026-07-27)
+
+Decided in `docs/DECISIONS.md`; the enforceable version is
+`.claude/rules/surfaces.md`. It is one codebase and one build — the app loads
+the same static export in a WebView — so this is a capability table, not a
+feature-parity backlog. **Desktop capabilities ship without a web equivalent,
+on purpose.** What the web owes instead is an honest degradation: why it cannot
+work here, and where it can.
+
+| Capability | Web (Chromium) | macOS app | Why they differ |
+|---|---|---|---|
+| Open the map with no install | ✅ | ✅ | the web's first job — gateway |
+| Open your own markdown folder | ✅ File System Access API | ✅ absolute path | Firefox and non-FSA browsers degrade to a notice + download link |
+| Read / edit / create nodes in that folder | ✅ | ✅ | same parser, same schema, same files |
+| Remember the folder between visits | ❌ pick it again | ✅ | web keeps an FSA handle in its own IndexedDB; a convenience cache, not the source of truth |
+| Work offline | ❌ | ✅ | |
+| Git history and snapshots | ❌ degraded card + `ontology-atlas snapshot` | ✅ | a browser has no right to run git on your machine |
+| API keys / in-app 「에이전트」 chat | ❌ **and will not be built** | ✅ macOS Keychain | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |
+| Write agent config (`.mcp.json`) into the vault | ⚠️ folder writes work, but there is no absolute path to record | ✅ | MCP registration needs a real path |
+| In-app updates | ❌ | ✅ | |
+
+**Windows today**: no app yet, so the web is the official second-best — you can
+open, read and edit your own folder in Chrome or Edge. The one thing Windows
+users cannot have is the AI connection, and the answer to that is a Windows
+app, not a web BYOK; `/download` says exactly this rather than implying it is
+coming soon.
+
 ---
 
 ## 1. Mode branching (data source)
@@ -52,7 +79,7 @@ input (humans + AI agents)     parse           store              output
 
 | Mode | Condition | Behavior |
 |---|---|---|
-| **local** | desktop app vault folder active | vault manifest is the source of truth |
+| **local** | a vault folder is active — picked in the installed app, or in an FSA-capable browser | vault manifest is the source of truth |
 | **static** | no active vault | build-time dogfood manifest (this project's own ontology) |
 
 **Effect**: when a user opens a vault folder in the installed app, `/`, `/topology`, `/projects`, `/project/[slug]`, `/ontology`, `/ontology/insights`, and `/ontology/studio` all switch to vault data instantly. Mutations (create / edit / delete / connect) are mode-aware: local → write to vault `.md`; static → rejected with toast (read-only) and routed toward the macOS app download on hosted web.

@@ -92,6 +92,67 @@ layer. `compile_ontology` turns markdown frontmatter into a deterministic graph
 artifact; `query_ontology` runs graph operations over that artifact; confirmed
 write tools persist changes back to markdown.
 
+## Surface contract — web and app
+
+Decided 2026-07-27 (`docs/DECISIONS.md`); the working rule agents load is
+`.claude/rules/surfaces.md`.
+
+**One codebase, one build.** The macOS app is not a port. Tauri loads the very
+same static export into a WebView (`src-tauri/tauri.conf.json` →
+`frontendDist: "../out"`). Nothing is forked, and nothing should be.
+
+**What each surface is for.** The app is the vault's home — the workbench where
+a person judges the map and connects the agents. The web has two jobs, in this
+order: (1) the **gateway**, opening the map with no install, for a demo, a first
+five minutes, or a shared link; (2) a **second-best workbench** where no app
+exists yet — which in practice means Chromium on Windows and Linux, since the
+File System Access API is the capability the whole surface rests on. The order
+matters: every observed visitor so far arrived through the web, so demoting the
+gateway to "the Windows stand-in" would demote the only inbound path. A Windows
+app would retire job 2 on that OS; job 1 has no expiry.
+
+**The split is four capability bridges, not a branch in the router.**
+
+| Bridge | Module | Web behaviour |
+|---|---|---|
+| Vault absolute path | `src/shared/lib/tauri-vault-fs.ts` | FSA handle instead (no path) |
+| Git | `src/shared/lib/tauri-git.ts` | Cannot run → degraded card |
+| Keychain | `src/shared/lib/tauri-secrets.ts` | Impossible by design → degraded card |
+| LLM calls | `src/shared/lib/tauri-llm.ts` | Impossible by design → action not rendered |
+
+Every bridge follows one convention: `getInvoke()` → `null` when `isTauri()` is
+false → the screen degrades honestly. A degraded surface owes the reader two
+things — **why** it cannot work here and **where** it can. New desktop
+capabilities attach the same way; they do not get a web equivalent backfilled,
+and that is a stated decision rather than a backlog item.
+
+**What "the same data" actually guarantees.** The folder on disk is the single
+source of truth, and both surfaces open the *physically same folder* — the web
+through an FSA handle, the app through an absolute path. Interpretation cannot
+drift because the frontmatter parser is pinned by a 3-way contract test and the
+schema lives once in `mcp/src/schema.mjs`. Anything that must cross the surface
+boundary is written **inside the vault** as plain text —
+`.ontology-atlas/activity.jsonl` and `llm-audit.jsonl` — which is the rule this
+contract promotes: *data that crosses surfaces lives in the vault folder.*
+Concurrent edits are held by `patch_concept(expected_mtime)`.
+
+Deliberately **not** shared: the "last opened vault" handle (each surface keeps
+its own IndexedDB — you pick the folder once per surface, and `/download`'s
+install step 02 says so), API keys (macOS Keychain, app only), and UI
+preferences (localStorage). Secrets and taste do not belong in a vault.
+
+**Verification is split three ways** (this replaced the old web↔app round-trip
+check, which the same decision abolished): shared surfaces are proved once in
+the browser and counted as proof for the app, because it is the same bundle —
+except for font rasterisation, scrolling, and window chrome, which still need
+the installed app; desktop capabilities are proved *only* in the installed app;
+and the web surface itself is held by `tests/e2e/web-surface-smoke.spec.ts`,
+wired into `.github/workflows/e2e.yml` on a deliberately wider condition than
+the rest of the suite. The web is an unattended surface with no other watcher.
+
+Cross-surface deep links are not guaranteed to reproduce a screen. Where they
+exist they are a convenience, not a contract.
+
 ## FSD layers
 
 ```
