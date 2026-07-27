@@ -507,15 +507,26 @@ Store. These are Developer ID direct-download signing/notarization credentials,
 not App Store submission credentials. The tag workflow fails closed unless these
 GitHub Secrets are all present:
 
+**필요한 secret 은 5개다** — 그리고 5개 **전부 Apple 이 주는 값**이다.
+
 - `APPLE_CERTIFICATE_P12_BASE64`: base64-encoded Developer ID Application
   certificate export (`.p12`).
 - `APPLE_CERTIFICATE_PASSWORD`: password for that `.p12`.
-- `APPLE_KEYCHAIN_PASSWORD`: temporary CI keychain password.
-- `APPLE_SIGNING_IDENTITY`: Developer ID Application identity name or SHA-1
-  hash used by `codesign`.
 - `APPLE_ID`: Apple ID for `notarytool`.
 - `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password for that Apple ID.
 - `APPLE_TEAM_ID`: Apple Developer Team ID.
+
+한때 7개였다. 둘은 **Apple 발급물이 아니라 우리가 만들어 낸 등록 항목**이라
+지웠다 — 사람이 등록할 secret 이 적을수록 실수도 적다.
+
+- `APPLE_KEYCHAIN_PASSWORD` — 그 키체인은 잡 안에서 만들어져 잡 안에서 지워진다.
+  워크플로가 `openssl rand -base64 24` 로 그때그때 만들고 `::add-mask::` 로
+  가린다. 사람이 기억할 이유가 없는 값이었다.
+- `APPLE_SIGNING_IDENTITY` — 방금 가져온 인증서에 그 이름이 적혀 있다.
+  `security find-identity -v -p codesigning` 로 유도한다. 키체인에 Developer ID
+  가 둘 이상이거나 없을 때만 환경변수로 되돌아가고, 그때는 오류 메시지가
+  무엇이 없는지 정확히 말한다. 사람에게 한 번 더 타이핑시키는 것은 얻는 정보
+  없이 틀릴 기회만 늘리는 일이었다.
 
 The tag workflow verifies `${GITHUB_SHA}` with
 `pnpm desktop:release-source` and `${GITHUB_REF_NAME}` with
