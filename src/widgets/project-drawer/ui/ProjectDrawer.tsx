@@ -67,6 +67,8 @@ export function ProjectDrawer({
   onEnterContainer,
 }: Props) {
   const t = useTranslations("vaultWidgets.projectDrawer");
+  // 신선도 등급 → 사람 말 (모델은 등급만 돌려준다).
+  const tFreshness = useTranslations("projectFreshness");
   const isContainerNode = project?.category === "__container__";
   // Layer 1 drawer 제목에서도 container 이름 prefix 단축. "Demo Reactor · Router"
   // → "Router" (breadcrumb chip 에 이미 컨테이너 맥락 있음).
@@ -714,7 +716,7 @@ export function ProjectDrawer({
                               {t("freshness")}
                             </p>
                             <p className="mt-1 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                              {freshnessInsight.label}
+                              {tFreshness(freshnessInsight.level)}
                             </p>
                           </div>
                         ) : null}

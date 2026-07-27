@@ -650,6 +650,11 @@
     "related_to": "관련 있음",
     "is_a": "무엇의 한 종류인지"
   },
+  "projectFreshness": {
+    "fresh": "이번 주 업데이트",
+    "active": "이번 달 업데이트",
+    "stale": "업데이트 권장"
+  },
   "topologyWidgets": {
     "controls": {
       "fitViewTooltip": "지도 전체 맞추기",
@@ -2573,6 +2578,7 @@
         "noChanges": "저장된 내용과 같습니다. 바로 공개 화면 비교로 넘어가도 됩니다.",
         "cardEyebrow": "카드 미리보기",
         "cardCaption": "실제 토폴로지에 렌더되는 모습.",
+        "cardDescriptionEmpty": "설명 미등록",
         "completenessLabel": "완성도",
         "publicStatusLabel": "공개 상태",
         "publicStatusDirty": "저장 전 입력 중",

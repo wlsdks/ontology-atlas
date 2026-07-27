@@ -650,6 +650,11 @@
     "related_to": "related",
     "is_a": "a kind of"
   },
+  "projectFreshness": {
+    "fresh": "Updated this week",
+    "active": "Updated this month",
+    "stale": "Update recommended"
+  },
   "topologyWidgets": {
     "controls": {
       "fitViewTooltip": "Fit map to view",
@@ -2573,6 +2578,7 @@
         "noChanges": "Same as saved. Move on to compare against the public screen.",
         "cardEyebrow": "Card preview",
         "cardCaption": "How it actually renders in the topology.",
+        "cardDescriptionEmpty": "No description",
         "completenessLabel": "Completeness",
         "publicStatusLabel": "Public state",
         "publicStatusDirty": "Editing before save",

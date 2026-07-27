@@ -198,7 +198,10 @@ export function ProjectForm({
   writeDisabled = false,
 }: Props) {
   const t = useTranslations("settings.projectForm");
-  const { categories, statuses, getCategory, getStatus } = useTaxonomy();
+  // 신선도 등급 → 사람 말. 모델은 등급만 돌려주고 문구는 화면이 고른다.
+  const tFreshness = useTranslations("projectFreshness");
+  const { categories, statuses, getCategory, getStatus, categoryLabel, statusLabel } =
+    useTaxonomy();
   const FORM_SECTIONS = useMemo(
     () => [
       {
@@ -262,9 +265,11 @@ export function ProjectForm({
   const rhfReset = rhfMethods.reset;
   const rhfSetValue = rhfMethods.setValue;
   const categoryOptions = useMemo(() => {
+    // 라벨은 taxonomy provider 가 화면 언어에 맞춰 고른다 — 여기서
+    // `category.label`(한국어)을 직접 읽으면 영문 화면에 한국어가 샌다.
     const options = categories.map((category) => ({
       value: category.id,
-      label: category.label,
+      label: categoryLabel(category.id),
     }));
     if (values.category === PRESERVE_MISSING_TAXONOMY_VALUE) {
       return [
@@ -285,11 +290,11 @@ export function ProjectForm({
       ];
     }
     return options;
-  }, [categories, getCategory, t, values.category]);
+  }, [categories, categoryLabel, getCategory, t, values.category]);
   const statusOptions = useMemo(() => {
     const options = statuses.map((status) => ({
       value: status.id,
-      label: status.label,
+      label: statusLabel(status.id),
     }));
     if (values.status === PRESERVE_MISSING_TAXONOMY_VALUE) {
       return [
@@ -310,7 +315,7 @@ export function ProjectForm({
       ];
     }
     return options;
-  }, [getStatus, statuses, t, values.status]);
+  }, [getStatus, statusLabel, statuses, t, values.status]);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(mode === "edit");
   // 만들기 화면 전용 — 문서 주소(slug)는 이름에서 자동으로 만들어지므로
   // 기본은 캡션 한 줄이고, 직접 정하고 싶은 사람만 입력 칸을 연다.
@@ -1550,6 +1555,7 @@ export function ProjectForm({
                 }
                 hubEyebrow={t("preview.cardHubEyebrow")}
                 sharedEyebrow={t("preview.cardSharedEyebrow")}
+                descriptionEmptyLabel={t("preview.cardDescriptionEmpty")}
                 preview
               />
             </div>
@@ -1571,7 +1577,7 @@ export function ProjectForm({
                     {t("preview.publicStatusLabel")}
                   </p>
                   <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">
-                    {isDirty ? t("preview.publicStatusDirty") : freshnessInsight.label}
+                    {isDirty ? t("preview.publicStatusDirty") : tFreshness(freshnessInsight.level)}
                   </p>
                 </div>
               </div>
