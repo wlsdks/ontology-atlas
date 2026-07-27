@@ -808,6 +808,23 @@
     animation: settingsPanelIn var(--motion-base) var(--motion-ease) both;
   }
 
+  /* 들어온 길로 나간다 (2026-07-28 프레임 실측). 등장은 8프레임(134ms, 피크
+     2.15)인데 퇴장은 **1프레임**이었고 그 델타가 등장 피크의 4.7배였다 —
+     `settingsPanelIn` 에 짝이 없었다. 새 키프레임 0 · 새 duration 0: 같은
+     키프레임을 `reverse` 로 되감고, 시간은 이 파일이 퇴장에 쓰는 같은 산식
+     (등장의 2/3)을 그대로 쓴다. 나가는 것은 들어오는 것보다 빠르다. */
+  .app-settings-panel-out {
+    animation: settingsPanelIn calc(var(--motion-base) * 0.67) var(--motion-ease)
+      reverse both;
+    pointer-events: none;
+  }
+
+  .app-settings-scrim-out {
+    animation: panelCrossfadeIn calc(var(--motion-base) * 0.67) var(--motion-ease)
+      reverse both;
+    pointer-events: none;
+  }
+
   /* ── 설정 하위면 push/pop (2026-07-26) ────────────────────────────────────
      「AI 연결」·「에이전트」 하위면으로 들어가는 이동이 **0ms 하드컷**이었다
      (1프레임, 전후 프레임 변화 0). 높이와 내용이 통째로 바뀌는데 방향을
@@ -1007,9 +1024,32 @@
      다른 점). 새 키프레임·새 duration 0 — 크롬 모션 패밀리 토큰(180ms +
      ease-out) 재사용이라 팝오버·패널·전면 표면이 한 클럭을 쓴다.
      reduced-motion 은 아래 base 레이어 동등물 규칙이 불투명도만 남긴다. */
+  /* 2026-07-28 프레임 실측 — 이 클래스는 **불투명도 전용**인데 이동용 커브
+     (`--topology-motion-ease-out`, expo)를 타고 있었다. 그 커브는 첫 프레임에
+     이미 47% 에 닿는다(실측 45.9%): 큰 표면이 사실상 하드컷으로 켜졌다.
+     `.topology-chrome-in` 이 2026-07-27 에 배운 것과 같은 교훈이다 — **밝기와
+     이동은 같은 커브를 쓰면 안 된다.** 여기엔 이동 축이 아예 없으므로 밝기의
+     커브, 즉 앱 공통 램프(`--motion-ease`)만 남는다. duration 은 그대로(크롬
+     모션 패밀리 180ms) — 새 값 0. */
   .map-overlay-in {
     animation: panelCrossfadeIn var(--topology-motion-panel-duration)
-      var(--topology-motion-ease-out) both;
+      var(--motion-ease) both;
+  }
+
+  /* 같은 문법의 **나가는 길** (2026-07-28 프레임 실측). 도착 표면만 시간을
+     받고 떠나는 표면은 0프레임이었다 — INDEX 접기에서 사용자가 누른 300px
+     패널이 1프레임(delta 13.25 @17ms)에 사라지는 동안 결과인 지도가 217ms
+     이징을 받았다. 예산이 주인공이 아니라 배경에 쓰인 것이다.
+
+     퇴장은 등장의 역재생이되 더 빠르다(2/3) — 지도 크롬의 퇴장 문법과
+     오버레이 닫힘이 이미 쓰는 같은 산식이라, 지도 위 표면의 나가는 길이
+     하나의 클럭을 쓴다. 새 키프레임 0 ·
+     새 duration 0. 이동/스케일은 여기서도 쓰지 않는다(큰 표면이 움직이면
+     화면 자체가 흔들린 것으로 읽힌다 — `.map-overlay-in` 주석 참조). */
+  .map-overlay-out {
+    animation: panelCrossfadeIn calc(var(--topology-motion-panel-duration) * 0.67)
+      var(--motion-ease) reverse both;
+    pointer-events: none;
   }
 
   /* rank2 — 상세 패널 퇴장 대칭. 등장(topologyChromeIn)만 있고 닫힘 시 React 가
@@ -2881,11 +2921,13 @@
       animation-delay: 0ms !important;
     }
 
-    .app-settings-scrim-in {
+    .app-settings-scrim-in,
+    .app-settings-scrim-out {
       animation-duration: var(--motion-base) !important;
     }
 
     .map-overlay-in,
+    .map-overlay-out,
     .overlay-spring-scrim[data-state='open'],
     .overlay-spring-scrim[data-state='closed'] {
       animation-duration: var(--topology-motion-panel-duration) !important;
@@ -2893,6 +2935,7 @@
 
     /* ② transform 이 실린 등장/퇴장 — 키프레임 이름만 바꾼다. */
     .app-settings-panel-in,
+    .app-settings-panel-out,
     .settings-view-push-in,
     .settings-view-pop-in {
       animation-name: panelCrossfadeIn !important;
@@ -3005,5 +3048,61 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 @media (min-width: 1024px) {
   [data-agent-panel-open='true'] [data-fixed-surface-role='selected-node-inspector'] {
     right: calc(var(--topology-node-popover-right-inset) + var(--agent-panel-width));
+  }
+}
+
+/* ── 토스트(sonner) 모션 — 벤더 공장값을 앱 램프로 갈아 끼운다 (2026-07-28) ──
+   실측(1512×853, 60fps rAF 샘플): 등장 불투명도가
+   0.025 → 0.101 → 0.177 → 0.267 → 0.362 → 0.497 … 로 **델타가 커지다가**
+   꺾인다. 첫 프레임 지분 **2.5%**, 피크가 **6번째 프레임**, 램프폭 **350ms+**.
+   즉 ① 등장에 ease-in(헌장이 "지명 가능한 결함" 이라 못박은 것) ② DOM 확정
+   천장(240ms) 초과. 출처는 sonner 의 `transition: transform 400ms, opacity
+   400ms …` + 브라우저 기본 `ease` 다 — **아무도 고르지 않은 숫자가 사실상
+   앱의 알림 모션**이었다(#707 이 잡은 "Tailwind 공장값 150ms" 와 같은 유형).
+
+   새 값 0 — 앱 램프(`--motion-base` 등장 / `--motion-fast` 퇴장)로만 바꾼다.
+   퇴장이 등장보다 빠르다는 규율은 오버레이 3종·지도 크롬과 같다.
+
+   **레이어 밖 + 높은 특이도로 쓴다**: sonner 는 자기 `<style>` 을 런타임에
+   `<head>` 에 주입해 우리 스타일시트보다 **뒤에** 온다. 같은 특이도면 벤더가
+   이긴다(reduced-motion 쪽은 `!important` 까지 쓴다). `[data-sonner-toaster]
+   [data-sonner-toast].app-toast` (0,3,0) 로 올려 순서와 무관하게 이긴다. */
+[data-sonner-toaster] [data-sonner-toast].app-toast {
+  transition:
+    transform var(--motion-base) var(--motion-ease),
+    opacity var(--motion-base) var(--motion-ease),
+    height var(--motion-base) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease);
+}
+
+[data-sonner-toaster] [data-sonner-toast].app-toast[data-removed='true'] {
+  transition-duration: var(--motion-fast);
+}
+
+/*
+ * reduced-motion 동등물 — **끄는 게 아니라 덜 흔들리는 것**.
+ *
+ * sonner 는 자체 `@media (prefers-reduced-motion)` 에서 `transition: none
+ * !important` 로 전부 끈다. 그 결과가 실측에서 **둘 중 나쁜 쪽만 남은** 모양
+ * 이었다: 불투명도 0→1 이 1프레임(알림의 도착이라는 **정보 모션**이 사라짐)
+ * 인데, `--y: translateY(100%)`(토스트 높이 = 53.5px)의 **위치 점프는 그대로**
+ * 남았다. 흔들리는 축만 없애고 흔들리지 않는 축은 남긴다는 이 파일의 규율과
+ * 정확히 반대다.
+ *
+ * 그래서 ① 이동축을 **출발점에서** 없애고(등장/퇴장 모두 y=0 에서 시작해
+ * 여행 거리 0) ② 불투명도만 `--motion-fast` 로 되돌린다. 마운트된 토스트의
+ * 스택 오프셋(`--lift-amount` · `--offset`)은 건드리지 않는다 — 그건 등장
+ * 모션이 아니라 배치라서, 없애면 알림 여러 개가 겹쳐 쌓인다.
+ */
+@media (prefers-reduced-motion: reduce) {
+  [data-sonner-toaster] [data-sonner-toast].app-toast {
+    transition-property: opacity !important;
+    transition-duration: var(--motion-fast) !important;
+    transition-timing-function: var(--motion-ease) !important;
+  }
+
+  [data-sonner-toaster] [data-sonner-toast].app-toast:not([data-mounted='true']),
+  [data-sonner-toaster] [data-sonner-toast].app-toast[data-removed='true'] {
+    --y: translateY(0) !important;
   }
 }
