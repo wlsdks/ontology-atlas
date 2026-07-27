@@ -654,7 +654,14 @@ export function TopologyIndexPanel({
               </span>
             </button>
           )}
-          {footerGrowthText ? <span className="min-w-0 flex-1 truncate whitespace-nowrap">{footerGrowthText}</span> : null}
+          {footerGrowthText ? (
+            <span
+              data-testid="topology-index-footer-growth"
+              className="min-w-0 flex-1 truncate whitespace-nowrap"
+            >
+              {footerGrowthText}
+            </span>
+          ) : null}
         </div>
         <div className="flex items-center justify-end gap-1.5">
           {agentHandoff && vaultLoaded ? (
