@@ -423,8 +423,9 @@ test("desktop release helper scripts expose credential-aware help", () => {
   );
 
   assert.equal(sign.status, 0, sign.stderr);
-  assert.match(sign.stdout, /APPLE_SIGNING_IDENTITY/);
   assert.match(sign.stdout, /hardened runtime/);
+  // 신원은 인증서에서 파생한다 — 사람이 등록할 secret 이 하나 줄었다.
+  assert.match(sign.stdout, /find-identity|Required codesign identity|APPLE_SIGNING_IDENTITY/);
 
   assert.equal(notarize.status, 0, notarize.stderr);
   assert.match(notarize.stdout, /APPLE_APP_SPECIFIC_PASSWORD/);
@@ -562,8 +563,6 @@ test("desktop GitHub release readiness gate accepts active workflow and required
   const secretNames = [
     "APPLE_CERTIFICATE_P12_BASE64",
     "APPLE_CERTIFICATE_PASSWORD",
-    "APPLE_KEYCHAIN_PASSWORD",
-    "APPLE_SIGNING_IDENTITY",
     "APPLE_ID",
     "APPLE_APP_SPECIFIC_PASSWORD",
     "APPLE_TEAM_ID",
@@ -620,8 +619,6 @@ test("desktop GitHub release readiness gate rejects an occupied release slot", (
   const secretNames = [
     "APPLE_CERTIFICATE_P12_BASE64",
     "APPLE_CERTIFICATE_PASSWORD",
-    "APPLE_KEYCHAIN_PASSWORD",
-    "APPLE_SIGNING_IDENTITY",
     "APPLE_ID",
     "APPLE_APP_SPECIFIC_PASSWORD",
     "APPLE_TEAM_ID",
@@ -677,11 +674,11 @@ test("desktop readiness checker enforces release workflow order", () => {
   assert.match(checker, /const releaseBuildOrder = orderedIndexes\(releaseWorkflow, \[/);
   assert.match(
     checker,
-    /"name: Verify release source commit",\s+"name: Verify release tag version",\s+"name: Require Developer ID direct-download secrets"/,
+    /"name: Verify release source commit",\s+"name: Verify release tag version",\s+"name: Decide signing path"/,
   );
   assert.match(
     checker,
-    /"name: Build signed and notarized release artifact",\s+"name: Upload workflow artifact"/,
+    /"name: Build signed and notarized release artifact",\s+"name: Build unsigned release artifact",\s+"name: Upload workflow artifact"/,
   );
   assert.match(checker, /pnpm desktop:release-artifact/);
   assert.match(checker, /base64 -D > "\\\$CERTIFICATE_PATH"/);
@@ -796,8 +793,6 @@ test("desktop release secret gate fails closed when Developer ID direct-download
   for (const key of [
     "APPLE_CERTIFICATE_P12_BASE64",
     "APPLE_CERTIFICATE_PASSWORD",
-    "APPLE_KEYCHAIN_PASSWORD",
-    "APPLE_SIGNING_IDENTITY",
     "APPLE_ID",
     "APPLE_APP_SPECIFIC_PASSWORD",
     "APPLE_TEAM_ID",
@@ -815,7 +810,6 @@ test("desktop release secret gate fails closed when Developer ID direct-download
   assert.match(result.stderr, /missing required Developer ID direct-download secrets/);
   assert.match(result.stderr, /not Mac App Store submission/);
   assert.match(result.stderr, /APPLE_ID — Apple Developer account email for notarytool submission/);
-  assert.match(result.stderr, /APPLE_KEYCHAIN_PASSWORD — temporary CI keychain password used only while importing the certificate/);
   assert.match(result.stderr, /refusing to publish an unsigned or unnotarized direct-download macOS release artifact/);
 });
 
@@ -829,8 +823,6 @@ test("desktop release secret gate help explains each direct-download secret role
   assert.match(result.stdout, /not Mac App Store submission credentials/);
   assert.match(result.stdout, /APPLE_CERTIFICATE_P12_BASE64 — Developer ID Application certificate exported as base64 PKCS#12/);
   assert.match(result.stdout, /APPLE_CERTIFICATE_PASSWORD — password for that exported \.p12 file/);
-  assert.match(result.stdout, /APPLE_KEYCHAIN_PASSWORD — temporary CI keychain password used only while importing the certificate/);
-  assert.match(result.stdout, /APPLE_SIGNING_IDENTITY — Developer ID Application identity passed to codesign/);
   assert.match(result.stdout, /APPLE_ID — Apple Developer account email for notarytool submission/);
   assert.match(result.stdout, /APPLE_APP_SPECIFIC_PASSWORD — app-specific password for notarytool/);
   assert.match(result.stdout, /APPLE_TEAM_ID — Apple Developer Team ID for notarization/);

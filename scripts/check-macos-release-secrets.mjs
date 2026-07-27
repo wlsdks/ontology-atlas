@@ -10,14 +10,6 @@ const releaseSecrets = [
     description: "password for that exported .p12 file",
   },
   {
-    name: "APPLE_KEYCHAIN_PASSWORD",
-    description: "temporary CI keychain password used only while importing the certificate",
-  },
-  {
-    name: "APPLE_SIGNING_IDENTITY",
-    description: "Developer ID Application identity passed to codesign",
-  },
-  {
     name: "APPLE_ID",
     description: "Apple Developer account email for notarytool submission",
   },
@@ -30,6 +22,11 @@ const releaseSecrets = [
     description: "Apple Developer Team ID for notarization",
   },
 ];
+// 5, not 7. The throwaway CI keychain password is generated in the workflow —
+// it protects a keychain created and deleted inside one job, so registering it
+// is a chance to fumble a secret for no security gained. The signing identity
+// is printed on the certificate we just imported, so `security find-identity`
+// derives it. What is left is only what Apple actually issues.
 const requiredSecrets = releaseSecrets.map((secret) => secret.name);
 
 function formatSecret(secret) {

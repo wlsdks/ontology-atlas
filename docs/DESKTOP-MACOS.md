@@ -399,6 +399,13 @@ the image.
 The pipeline is complete; what gates the first public release is credentials
 the repository cannot hold for you. Work top to bottom.
 
+> **현재 경로: 미서명 (2026-07-27 소유자 결정 — `docs/DECISIONS.md`).** Apple
+> Developer 인증서가 준비될 때까지 릴리스는 **서명 없이** 나가고, 다운로드
+> 페이지가 Gatekeeper 우회 단계를 먼저 안내한다. 워크플로는 secret 5개가 다
+> 채워지는 순간 **자동으로 서명 경로로 돌아간다** — 조용히 넘어가지 않고 어느
+> 경로로 갔는지 요약과 릴리스 본문에 크게 적는다. 인증서가 생기면 페이지의
+> 신뢰 문구도 함께 되돌린다.
+
 **1 — Apple Developer credentials (owner-only, cannot be automated).**
 
 1. Join the Apple Developer Program ($99/year). Approval is instant for some
@@ -411,7 +418,7 @@ the repository cannot hold for you. Work top to bottom.
 4. Create an app-specific password at appleid.apple.com for `notarytool`.
 5. Read the Team ID from the developer portal's membership page.
 
-**2 — Register the seven GitHub Secrets** (Settings → Secrets and variables →
+**2 — Register the five GitHub Secrets** (Settings → Secrets and variables →
 Actions). Base64-encode the certificate first:
 
 ```bash
@@ -419,10 +426,12 @@ base64 -i DeveloperID.p12 | pbcopy   # → APPLE_CERTIFICATE_P12_BASE64
 gh secret list --repo wlsdks/ontology-atlas   # verify all seven are present
 ```
 
-`APPLE_CERTIFICATE_P12_BASE64` · `APPLE_CERTIFICATE_PASSWORD` ·
-`APPLE_KEYCHAIN_PASSWORD` · `APPLE_SIGNING_IDENTITY` · `APPLE_ID` ·
-`APPLE_APP_SPECIFIC_PASSWORD` · `APPLE_TEAM_ID`. The workflow fails closed
-before signing if any is missing, blank, or structurally invalid.
+**다섯 개다**: `APPLE_CERTIFICATE_P12_BASE64` · `APPLE_CERTIFICATE_PASSWORD` ·
+`APPLE_ID` · `APPLE_APP_SPECIFIC_PASSWORD` · `APPLE_TEAM_ID` — 전부 Apple 이
+실제로 발급하는 것들이다. 예전에 있던 둘은 사람이 등록할 이유가 없어 없앴다:
+CI 키체인 비밀번호는 한 잡 안에서 만들어졌다 지워지므로 워크플로가 생성하고,
+서명 신원은 방금 가져온 인증서에 적혀 있으므로 `security find-identity` 가
+파생한다. **등록할 secret 이 적을수록 잘못 넣을 것도 적다.**
 
 **3 — Configure the `release` environment approval.** Settings → Environments →
 `release` → *Required reviewers* → add yourself. Without this the publish job

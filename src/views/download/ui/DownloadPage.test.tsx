@@ -207,17 +207,26 @@ describe('DownloadPage', () => {
     expect(screen.getByRole('link', { name: /Follow progress/i })).toBeInTheDocument();
   });
 
-  it('states signing and notarization as properties of published builds, not as future gates', () => {
+  it('states the signing status that is true today, and gives the way through it', () => {
     renderDownloadPage();
 
-    expect(screen.getByText('Developer ID signed')).toBeInTheDocument();
-    expect(screen.getByText('Notarized by Apple')).toBeInTheDocument();
+    // Unsigned until the certificate exists (owner decision 2026-07-27,
+    // docs/DECISIONS.md). Neither the old future tense ("the gate requires")
+    // nor a premature past tense ("signed") — what is true now.
+    expect(screen.getByText(/Not signed yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/Not notarized by Apple/i)).toBeInTheDocument();
     expect(screen.queryByText(/Release gate requires/i)).not.toBeInTheDocument();
+    // Stating the state without the way through it is neglect, not honesty.
+    // Both the trust panel and the install step carry it — the state and the
+    // way through it appear where each is needed.
+    expect(screen.getAllByText(/Open Anyway/).length).toBeGreaterThanOrEqual(2);
     // The verify command names the asset for the current version, so it does
     // not freeze an old filename into a translation string.
+    // With no signature, the checksum is the only integrity check a downloader
+    // has — so the verify command is the one that checks it.
     expect(
       screen.getByText(
-        new RegExp(`spctl --assess .*ontology-atlas_${RELEASE_VERSION.replace(/\./g, '\\.')}_aarch64\\.dmg`),
+        new RegExp(`shasum -a 256 .*ontology-atlas_${RELEASE_VERSION.replace(/\./g, '\\.')}_aarch64\\.dmg`),
       ),
     ).toBeInTheDocument();
   });
@@ -230,7 +239,7 @@ describe('DownloadPage', () => {
       'https://github.com/wlsdks/ontology-atlas',
     );
     expect(screen.getByText(/hosted site does not open or edit vault folders/i)).toBeInTheDocument();
-    expect(screen.getByText(/Obsidian-style direct download/i)).toBeInTheDocument();
+    expect(screen.getByText(/only way to confirm you got the file we published/i)).toBeInTheDocument();
     expect(screen.getByText(/Connect your AI assistant/i)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
   });

@@ -156,9 +156,10 @@ const cargoPackageName = cargoToml.match(/\[package\][\s\S]*?\nname\s*=\s*"([^"]
 const releaseBuildOrder = orderedIndexes(releaseWorkflow, [
   "name: Verify release source commit",
   "name: Verify release tag version",
-  "name: Require Developer ID direct-download secrets",
+  "name: Decide signing path",
   "name: Import Apple Developer ID certificate",
   "name: Build signed and notarized release artifact",
+  "name: Build unsigned release artifact",
   "name: Upload workflow artifact",
   "name: Cleanup Apple signing keychain",
 ]);
@@ -893,11 +894,22 @@ if (
   /signed installer/.test(enMessages.download?.windowsPendingBody ?? "") &&
   /준비 중/.test(koMessages.download?.windowsPendingBadge ?? "") &&
   /서명된 설치 파일/.test(koMessages.download?.windowsPendingBody ?? "") &&
-  // 서명·공증은 게시된 빌드가 이미 통과한 사실로 적는다 (미래형 금지).
+  // 서명 상태는 **지금 참인 것**으로 적는다 — 미래형("게이트가 요구합니다")도,
+  // 아직 사실이 아닌 과거형("서명됐습니다")도 금지다. 인증서가 없는 동안은
+  // Gatekeeper 우회 단계를 페이지가 먼저 말해야 하고(2026-07-27 소유자 결정,
+  // docs/DECISIONS.md), 인증서가 생기면 이 문구가 함께 되돌아간다.
   !/Release gate requires/.test(enMessages.download?.proofSigned ?? "") &&
   !/게이트가/.test(koMessages.download?.proofSigned ?? "") &&
   /\{file\}/.test(enMessages.download?.trustVerifyCommand ?? "") &&
-  /only after Developer ID signing/.test(enMessages.download?.trustPolicy ?? "") &&
+  /(only after Developer ID signing|not signed or notarized)/.test(
+    enMessages.download?.trustPolicy ?? "",
+  ) &&
+  // 미서명 상태를 말하는 문구라면 우회 경로를 반드시 함께 준다 — 상태만 알리고
+  // 방법을 안 주면 그건 정직이 아니라 방치다.
+  (!/not signed or notarized/.test(enMessages.download?.trustPolicy ?? "") ||
+    (/Open Anyway/.test(enMessages.download?.trustPolicy ?? "") &&
+      /확인 없이 열기/.test(koMessages.download?.trustPolicy ?? "") &&
+      /확인 없이 열기/.test(koMessages.download?.step2Body ?? ""))) &&
   // 등록된 적 없는 도메인을 사실처럼 쓰지 않는다.
   !/ontology-atlas\.dev/.test(JSON.stringify(enMessages.download ?? {})) &&
   !/ontology-atlas\.dev/.test(JSON.stringify(koMessages.download ?? {}))
@@ -969,10 +981,14 @@ if (
   /pnpm desktop:release-source -- --sha="\$\{GITHUB_SHA\}"/.test(releaseWorkflow) &&
   /echo "\$APPLE_CERTIFICATE_P12_BASE64" \| base64 -D > "\$CERTIFICATE_PATH"/.test(releaseWorkflow) &&
   !/base64 --decode/.test(releaseWorkflow) &&
-  /pnpm desktop:release-artifact/.test(releaseWorkflow) &&
+  /pnpm desktop:release-artifact\b/.test(releaseWorkflow) &&
+  // 인증서가 없는 동안의 경로. 조용한 폴백은 금지 — 어느 경로로 갔는지
+  // 요약과 릴리스 본문에 크게 적혀야 한다.
+  /pnpm desktop:release-artifact:unsigned/.test(releaseWorkflow) &&
+  /UNSIGNED/.test(releaseWorkflow) &&
   /Summarize macOS release assets/.test(releaseWorkflow) &&
   /name:\s*Cleanup Apple signing keychain/.test(releaseWorkflow) &&
-  /if:\s*\$\{\{\s*always\(\)\s*\}\}/.test(releaseWorkflow) &&
+  /if:\s*\$\{\{\s*always\(\)\s*&&\s*steps\.signing\.outputs\.signed/.test(releaseWorkflow) &&
   /security delete-keychain "\$KEYCHAIN_PATH" 2>\/dev\/null \|\| true/.test(releaseWorkflow) &&
   /rm -f "\$CERTIFICATE_PATH"/.test(releaseWorkflow) &&
   /Summarize published macOS release/.test(releaseWorkflow) &&
