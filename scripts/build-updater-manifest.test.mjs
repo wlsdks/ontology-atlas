@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   PLATFORM_BY_ARCH,
+  resolveArchDir,
   REQUIRED_ARCHES,
   buildManifest,
   findUpdaterArtifacts,
@@ -114,4 +115,50 @@ test("finds the archive and signature pair", () => {
 
 test("both architectures are required", () => {
   assert.deepEqual(REQUIRED_ARCHES, ["aarch64", "x64"]);
+});
+
+/**
+ * 2026-07-27 v1.0.0-rc.1 이 여기서 멈췄다: "업데이터 아티팩트가 없는 아키텍처:
+ * aarch64, x64". 빌드는 두 아치 모두 성공했고 서명도 됐는데, **찾는 자리가
+ * 틀렸다** — `merge-multiple: false` 는 아티팩트 *이름*을 폴더로 만들므로
+ * `release-assets/ontology-atlas-macos-aarch64/` 이지 `release-assets/aarch64/`
+ * 가 아니다. 이 테스트는 CI 의 실제 폴더 구조를 그대로 재현한다.
+ */
+test("resolves the arch folder CI actually produces, not the bare arch name", () => {
+  const root = mkdtempSync(join(tmpdir(), "oa-archdir-"));
+  try {
+    mkdirSync(join(root, "ontology-atlas-macos-aarch64"), { recursive: true });
+    mkdirSync(join(root, "ontology-atlas-macos-x64"), { recursive: true });
+
+    assert.equal(resolveArchDir(root, "aarch64"), join(root, "ontology-atlas-macos-aarch64"));
+    assert.equal(resolveArchDir(root, "x64"), join(root, "ontology-atlas-macos-x64"));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("still resolves a bare arch folder", () => {
+  const root = mkdtempSync(join(tmpdir(), "oa-archdir-bare-"));
+  try {
+    mkdirSync(join(root, "aarch64"), { recursive: true });
+    assert.equal(resolveArchDir(root, "aarch64"), join(root, "aarch64"));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("x64 does not match the aarch64 folder", () => {
+  // `endsWith` 를 순진하게 쓰면 "…-x64" 검사가 "…-aarch64" 를 잡을 수 있다.
+  // 잘못 고르면 사용자가 다른 아키텍처의 앱을 받는다 — 조용한 실패다.
+  const root = mkdtempSync(join(tmpdir(), "oa-archdir-x-"));
+  try {
+    mkdirSync(join(root, "ontology-atlas-macos-aarch64"), { recursive: true });
+    assert.equal(resolveArchDir(root, "x64"), null);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("returns null when the root does not exist", () => {
+  assert.equal(resolveArchDir("/definitely/not/here", "aarch64"), null);
 });

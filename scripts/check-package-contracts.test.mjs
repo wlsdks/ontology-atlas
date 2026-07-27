@@ -2044,7 +2044,7 @@ describe('package contract helpers', () => {
     assert.match(ontologyEngine, /unsaved Workshop drafts/);
     assert.doesNotMatch(ontologyEngine, /\/ontology\/edit\/\?node=/);
     assert.match(readme, /Shape relations in Workshop/);
-    assert.match(readme, /docs\/assets\/readme\/workshop-context\.jpeg/);
+    assert.match(readme, /docs\/assets\/readme\/workshop-context\.png/);
     assert.doesNotMatch(readme, /persisted Builder context/);
     assert.doesNotMatch(readme, /builder-context\.png/);
     assert.match(mcpReadme, /`builder_context` \(persisted Workshop focus URL/);
@@ -2089,9 +2089,13 @@ describe('package contract helpers', () => {
     const readme = readFileSync('README.md', 'utf-8');
     const agentsGuide = readFileSync('AGENTS.md', 'utf-8');
     const dogfoodRow = readme.split('| **Dogfooding** |')[1]?.split('\n')[0] ?? '';
+    // 2026-07 README 재작성에서 `### Start from a focused handoff` /
+    // `### Query graph-database behavior` 하위 절이 사라졌다(명령 덤프가
+    // cli/README.md 와 중복이었다). 검사는 없애지 않고 그 주장들이 실제로 사는
+    // 절로 옮긴다 — 없애면 README 가 에이전트 능력을 아무 근거 없이 말해도 통과한다.
     const agentWorkflow = readme
-      .split('### Start from a focused handoff')[1]
-      ?.split('### Query graph-database behavior')[0] ?? '';
+      .split('## What your agent gets')[1]
+      ?.split('## Six work surfaces')[0] ?? '';
     // dogfood 유지보수 명령 상세는 README 마케팅 재작성(2026-07)에서
     // docs/DEVELOPMENT-CHECKS.md 로 이관 — 발견 가능성 계약은 그 문서로 이어진다.
     const helpfulCommands = readFileSync('docs/DEVELOPMENT-CHECKS.md', 'utf-8');
