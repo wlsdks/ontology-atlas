@@ -758,8 +758,11 @@ test("desktop readiness checker enforces release workflow order", () => {
   );
   assert.match(
     checker,
-    /"name: Build signed and notarized release artifact",\s+"name: Build unsigned release artifact",\s+"name: Upload workflow artifact"/,
+    // 스테이징이 업로드 **앞**이어야 한다 — 올릴 폴더를 만들기 전에 올리면
+    // 아무것도 안 올라가거나, 예전 실행이 남긴 것이 올라간다.
+    /"name: Build unsigned release artifact",\s+"name: Stage release assets",\s+"name: Upload workflow artifact"/,
   );
+  assert.match(checker, /node scripts\\\/stage-macos-release-assets\\\.mjs/);
   assert.match(checker, /pnpm desktop:release-artifact/);
   assert.match(checker, /base64 -D > "\\\$CERTIFICATE_PATH"/);
   assert.match(checker, /!\/base64 --decode\/\.test\(releaseWorkflow\)/);

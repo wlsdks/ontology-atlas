@@ -809,13 +809,16 @@ both lanes,
 builds and route-smokes the static desktop payload, verifies the tag version
 before signing, signs and notarizes each DMG, verifies the mounted
 signed/stapled artifact, copies each DMG app to a temporary install folder and
-launch-smokes it, uploads workflow artifacts, creates a draft GitHub Release
-with both DMGs plus checksums only after confirming that tag has no existing
-Release, verifies those draft assets with
-`pnpm desktop:verify-download -- --allow-draft`, publishes the release as
-stable, then runs
-`pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}"` so the release run
-itself proves the hosted CTA can reach both public release assets. It then
+launch-smokes it, stages the release assets into one flat folder
+(`node scripts/stage-macos-release-assets.mjs`), uploads that folder as the
+workflow artifact, creates a draft GitHub Release with both DMGs plus
+checksums, both updater archives plus `.sig` files, and `latest.json` only
+after confirming that tag has no existing Release, verifies those draft assets
+with `pnpm desktop:verify-download -- --allow-draft --require-updater`,
+publishes the release as stable, then runs
+`pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --require-updater`
+so the release run itself proves the hosted CTA can reach both public release
+assets and that `latest.json` points at archives this release actually has. It then
 records the public GitHub Release URL plus the public asset filenames, byte
 sizes, and SHA-256 values in the GitHub Actions step summary. The workflow does
 not require any website deploy secrets; the installed app remains

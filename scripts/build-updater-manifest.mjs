@@ -42,13 +42,6 @@ function fail(message) {
 }
 
 /**
- * 아치별 업데이터 아티팩트를 찾는다.
- *
- * Tauri 는 `.app.tar.gz` 와 그 옆의 `.app.tar.gz.sig` 를 낸다. 파일명에 아치가
- * 들어가지 않으므로 **디렉토리로 구분한다** — CI 가 아치별 아티팩트를 각자의
- * 폴더에 내려받는 구조에 맞춘다.
- */
-/**
  * 아치별 아티팩트 폴더를 찾는다.
  *
  * CI 의 폴더 이름은 아치가 아니라 **아티팩트 이름**이다
@@ -77,22 +70,59 @@ export function resolveArchDir(root, arch) {
   return matches.length === 1 ? path.join(root, matches[0]) : null;
 }
 
+/** 폴더 아래 모든 `.app.tar.gz` 를 깊이 상관없이 모은다. */
+function collectArchives(dir) {
+  const found = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      found.push(...collectArchives(full));
+    } else if (entry.isFile() && entry.name.endsWith(".app.tar.gz")) {
+      found.push(full);
+    }
+  }
+  return found;
+}
+
+/**
+ * 아치 폴더 **아래 어디서든** 업데이터 아티팩트를 찾는다.
+ *
+ * 깊이는 우리가 고른 적이 없다. `actions/upload-artifact` 는 경로를 여럿 받으면
+ * 그들의 최소공통조상을 아티팩트 루트로 잡는데, `bundle/dmg/*` 와
+ * `bundle/macos/*` 를 같이 올리던 동안 그 루트가 `bundle/` 이었다 — 아치 폴더
+ * 바로 밑에는 `dmg/` 와 `macos/` 뿐이고 `.app.tar.gz` 는 한 겹 더 안에 있었다.
+ * 그래서 v1.0.0-rc.1 이 "업데이터 아티팩트가 없는 아키텍처" 로 멈췄다.
+ *
+ * 지금은 업로드 전에 `scripts/stage-macos-release-assets.mjs` 가 한 폴더로 모아
+ * 평평하게 못박는다. 그래도 찾는 쪽이 깊이에 기대지 않는 이유는, 규칙이 한쪽
+ * 머릿속에만 있으면 다음에 또 어긋나기 때문이다.
+ *
+ * 아카이브는 그 아치에 **정확히 하나**여야 한다 — 여럿이면 어느 것이 이 아치의
+ * 것인지 알 수 없고, 잘못 고르면 사용자가 다른 아키텍처의 앱을 받는다.
+ */
 export function findUpdaterArtifacts(dir) {
   if (!dir || !fs.existsSync(dir)) return null;
-  const entries = fs.readdirSync(dir);
-  const archive = entries.find((name) => name.endsWith(".app.tar.gz"));
-  if (!archive) return null;
-  const signature = `${archive}.sig`;
-  if (!entries.includes(signature)) {
+  const archives = collectArchives(dir);
+  if (archives.length === 0) return null;
+  if (archives.length > 1) {
     fail(
-      `${dir} 에 ${archive} 는 있는데 ${signature} 가 없다.\n` +
+      `${dir} 아래에 .app.tar.gz 가 ${archives.length}개다: ` +
+        `${archives.map((file) => path.relative(dir, file)).join(", ")} — 어느 것을 낼지 정할 수 없다.`,
+    );
+  }
+  const archivePath = archives[0];
+  const archive = path.basename(archivePath);
+  const signaturePath = `${archivePath}.sig`;
+  if (!fs.existsSync(signaturePath)) {
+    fail(
+      `${dir} 에 ${archive} 는 있는데 ${archive}.sig 가 없다.\n` +
         "TAURI_SIGNING_PRIVATE_KEY 없이 빌드하면 아카이브만 나오고 서명이 빠진다 — " +
         "그 상태로 배포하면 앱이 갱신을 거부한다(조용히 '갱신 없음' 으로 보인다).",
     );
   }
   return {
-    archivePath: path.join(dir, archive),
-    signaturePath: path.join(dir, signature),
+    archivePath,
+    signaturePath,
     archiveName: archive,
   };
 }

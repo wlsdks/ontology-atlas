@@ -165,15 +165,20 @@ jobs:
             done
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # 올릴 것을 한 폴더에 모은다 — 아티팩트의 루트를 우리가 정하기 위해서다.
+      # 경로를 여럿 주면 루트가 그들의 최소공통조상(`bundle/`)으로 정해져
+      # `dmg/`·`macos/` 한 겹이 더 생기고, 내려받는 쪽은 그 깊이를 고른 적이
+      # 없으므로 알 수도 없다. 여기서 업데이터 아카이브 이름도 DMG 와 같은
+      # 규칙으로 다시 붙인다(Tauri 는 두 아치를 같은 이름 + 공백으로 낸다).
+      - name: Stage release assets
+        run: node scripts/stage-macos-release-assets.mjs --arch="${TAURI_ARCH}"
+
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v7
         with:
           name: ontology-atlas-macos-${{ matrix.arch }}
-          path: |
-            src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/dmg/*.sha256
-            src-tauri/target/release/bundle/macos/*.app.tar.gz
-            src-tauri/target/release/bundle/macos/*.app.tar.gz.sig
+          # 경로는 **하나**다. 여럿이면 루트가 최소공통조상으로 정해진다.
+          path: release-upload
           if-no-files-found: error
 
       - name: Cleanup Apple signing keychain
@@ -215,8 +220,10 @@ jobs:
         with:
           pattern: ontology-atlas-macos-*
           path: release-assets
-          # 평평하게 합치지 않는다 — `.app.tar.gz` 는 파일명에 아키텍처가 없어서
-          # 합치는 순간 둘 중 하나가 조용히 덮인다. 폴더로 구분한다.
+          # 평평하게 합치지 않는다 — 매니페스트 빌더는 **폴더**로 아치를 가른다
+          # (`release-assets/ontology-atlas-macos-<아치>/`). 합치면 두 아치가 한
+          # 폴더에 섞여 어느 아카이브가 어느 아치의 것인지 알 수 없고, 잘못
+          # 고르면 사용자가 다른 아키텍처의 앱을 받는다.
           merge-multiple: false
 
       - name: Require clean GitHub Release slot
@@ -247,7 +254,7 @@ jobs:
             release-assets/latest.json
 
       - name: Verify draft release assets
-        run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --allow-draft
+        run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --allow-draft --require-updater
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -296,6 +303,9 @@ jobs:
         with:
           pattern: ontology-atlas-macos-*
           path: release-assets
+          # 여기서는 합쳐도 안전하다 — 스테이징이 파일 이름에 버전과 아치를
+          # 넣으므로 여덟 자산의 이름이 전부 다르다. 이 잡은 요약 표를 만들 뿐,
+          # 아치를 다시 갈라야 하는 일이 없다.
           merge-multiple: true
 
       - name: Publish verified stable release
@@ -312,7 +322,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Verify public download assets
-        run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}"
+        run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --require-updater
         env:
           GITHUB_TOKEN: ${{ github.token }}
 

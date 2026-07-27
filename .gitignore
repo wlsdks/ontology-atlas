@@ -99,3 +99,8 @@ output/
 # 세션 검증용 스크린샷 (커밋 안 함)
 .screenshots/
 .qa-scratch/
+
+# 릴리스 스테이징 산출물 — CI 가 만들고 CI 안에서 소비한다. 로컬에서
+# stage-macos-release-assets.mjs 를 돌려보면 여기 생긴다.
+release-upload/
+release-assets/
