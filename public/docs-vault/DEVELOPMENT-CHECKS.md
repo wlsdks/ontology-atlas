@@ -803,11 +803,15 @@ direct-download release secrets, signs the app, packages the DMG, notarizes/stap
 it, verifies the checksum/mount/signature/staple
 contract, copy-and-launch smokes the DMG app from a temporary install folder,
 records the generated DMG filename, byte size, and SHA-256 value in the GitHub
-Actions step summary, uploads workflow artifacts, attaches both DMGs plus
-`.sha256` files to a draft GitHub Release, verifies those draft assets with
-`pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --allow-draft`,
+Actions step summary, stages the four release assets into one flat folder with
+`node scripts/stage-macos-release-assets.mjs` so the workflow artifact has a
+root we chose rather than a least-common-ancestor the download side cannot
+guess, uploads that folder as the workflow artifact, attaches both DMGs plus
+`.sha256` files, both updater archives plus `.sig` files, and `latest.json` to a
+draft GitHub Release, verifies those draft assets with
+`pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --allow-draft --require-updater`,
 publishes the release as stable, then runs
-`pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}"` so the same CI run
+`pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --require-updater` so the same CI run
 proves the hosted download CTA can reach both public DMGs and that each checksum
 asset contains a SHA-256 line for the same DMG filename and bytes. After public
 verification, the publish job writes the published GitHub Release URL plus the
