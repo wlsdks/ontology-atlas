@@ -48,8 +48,37 @@ function fail(message) {
  * 들어가지 않으므로 **디렉토리로 구분한다** — CI 가 아치별 아티팩트를 각자의
  * 폴더에 내려받는 구조에 맞춘다.
  */
+/**
+ * 아치별 아티팩트 폴더를 찾는다.
+ *
+ * CI 의 폴더 이름은 아치가 아니라 **아티팩트 이름**이다
+ * (`ontology-atlas-macos-aarch64`), `merge-multiple: false` 가 그 이름을 그대로
+ * 폴더로 만들기 때문이다. 처음엔 `<dir>/aarch64` 를 찾도록 썼고, 그래서 실제
+ * 릴리스에서 "업데이터 아티팩트가 없는 아키텍처: aarch64, x64" 로 멈췄다
+ * (2026-07-27 v1.0.0-rc.1). 빌드는 정상이었고 찾는 자리가 틀렸다.
+ *
+ * 이름을 못박지 않고 **아치로 끝나는 폴더**를 찾는다 — 아티팩트 이름이 바뀌어도
+ * 견딘다. 정확히 하나여야 한다: 여럿이면 어느 것이 그 아치인지 알 수 없고,
+ * 잘못 고르면 사용자가 다른 아키텍처의 앱을 받는다.
+ */
+export function resolveArchDir(root, arch) {
+  if (!fs.existsSync(root)) return null;
+  const exact = path.join(root, arch);
+  if (fs.existsSync(exact) && fs.statSync(exact).isDirectory()) return exact;
+
+  const matches = fs
+    .readdirSync(root)
+    .filter((name) => name.endsWith(`-${arch}`) || name === arch)
+    .filter((name) => fs.statSync(path.join(root, name)).isDirectory());
+
+  if (matches.length > 1) {
+    fail(`${arch} 에 해당하는 폴더가 ${matches.length}개다: ${matches.join(", ")} — 어느 것인지 정할 수 없다.`);
+  }
+  return matches.length === 1 ? path.join(root, matches[0]) : null;
+}
+
 export function findUpdaterArtifacts(dir) {
-  if (!fs.existsSync(dir)) return null;
+  if (!dir || !fs.existsSync(dir)) return null;
   const entries = fs.readdirSync(dir);
   const archive = entries.find((name) => name.endsWith(".app.tar.gz"));
   if (!archive) return null;
@@ -119,9 +148,9 @@ function main() {
 
   const platforms = {};
   for (const arch of REQUIRED_ARCHES) {
-    // CI 는 아치별 아티팩트를 `<dir>/<arch>/` 로 내려받는다. 평평한 디렉토리도
-    // 지원하지만 그 경우 두 아치를 구분할 수 없으므로 하위 폴더가 정본이다.
-    const found = findUpdaterArtifacts(path.join(options.dir, arch));
+    // 폴더 이름은 아티팩트 이름(`ontology-atlas-macos-<arch>`)이다 — 아치로
+    // 끝나는 폴더를 찾는다. 평평하게 합치면 두 아치를 구분할 수 없다.
+    const found = findUpdaterArtifacts(resolveArchDir(options.dir, arch));
     if (!found) continue;
     platforms[arch] = {
       archiveName: found.archiveName,
