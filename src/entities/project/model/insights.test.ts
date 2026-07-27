@@ -116,7 +116,6 @@ describe("freshness helpers", () => {
     const freshness = resolveProjectFreshnessInsight(project("maps"), now);
     expect(freshness).toEqual({
       level: "fresh",
-      label: "이번 주 업데이트",
       ageDays: 2,
     });
     expect(isProjectRecentlyUpdated(project("maps"), 7, now)).toBe(true);
@@ -129,7 +128,6 @@ describe("freshness helpers", () => {
 
     expect(resolveProjectFreshnessInsight(staleProject, now)).toEqual({
       level: "stale",
-      label: "업데이트 권장",
       ageDays: 72,
     });
     expect(isProjectRecentlyUpdated(staleProject, 30, now)).toBe(false);

@@ -11,8 +11,14 @@ export type StatusDotColor = 'success' | 'warning' | 'paused' | 'neutral';
 export interface Status {
   /** Stable ID. 소문자·숫자·하이픈. 예: 'live'. */
   id: string;
-  /** UI 라벨 (한국어 OK). */
+  /** UI 라벨 (한국어). */
   label: string;
+  /**
+   * 영문 라벨. Category 와 같은 계약 — 영문 화면에서 쓴다. 없으면 `label`
+   * 로 폴백하지만, defaults 는 반드시 채운다
+   * (`tests/contract/taxonomy-locale-label.contract.test.ts` 가 강제).
+   */
+  labelEn?: string;
   /** preset dot 색. */
   dotColor: StatusDotColor;
 }

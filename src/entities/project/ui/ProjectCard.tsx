@@ -43,6 +43,8 @@ interface Props {
   hubEyebrow?: string;
   /** shared 가 true 일 때 eyebrow 텍스트. 미지정 시 영문 'Shared system'. */
   sharedEyebrow?: string;
+  /** 설명이 비었을 때의 자리 표시 문구. 미지정 시 영문 'No description'. */
+  descriptionEmptyLabel?: string;
   /** 공개 지도 보기 방식. */
   viewMode?: ProjectCardViewMode;
 }
@@ -97,6 +99,7 @@ export function ProjectCard({
   viewMode = 'card',
   hubEyebrow = 'Core hub',
   sharedEyebrow = 'Shared system',
+  descriptionEmptyLabel = 'No description',
 }: Props) {
   const { name, description, owner, tags } = project;
   // R15 — vault frontmatter isHub 명시 안 했으면 undefined → false 로 취급.
@@ -279,9 +282,10 @@ export function ProjectCard({
           <p className="line-clamp-2 text-[10px] leading-label text-[color:var(--color-text-tertiary)] md:text-[11px]">
             {description || (
               // 카드 높이를 유지하되 placeholder 문장이 실제 설명으로 읽히지 않도록
-              // 형식·톤을 약하게 해 "설명 미등록" 상태임을 명시한다.
+              // 형식·톤을 약하게 해 "설명이 비었다" 는 상태임을 명시한다.
+              // 문구는 호출자가 화면 언어로 넘긴다 (hubEyebrow 와 같은 계약).
               <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
-                설명 미등록
+                {descriptionEmptyLabel}
               </span>
             )}
           </p>

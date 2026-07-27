@@ -22,9 +22,17 @@ export interface ProjectCompletenessInsight {
   prompts: string[];
 }
 
+export type ProjectFreshnessLevel = "fresh" | "active" | "stale";
+
+/**
+ * 신선도 판정은 **등급만** 돌려준다 — 라벨은 화면이 정한다.
+ *
+ * 2026-07-28 이전에는 여기서 한국어 문자열(`"이번 주 업데이트"`)을 같이
+ * 돌려줬고, 그게 영문 화면(`/en/project/new` 카드 미리보기)에 그대로
+ * 그려졌다. 순수 모델은 사람 말을 쥐지 않는다.
+ */
 export interface ProjectFreshnessInsight {
-  level: "fresh" | "active" | "stale";
-  label: string;
+  level: ProjectFreshnessLevel;
   ageDays: number;
 }
 
@@ -146,14 +154,14 @@ export function resolveProjectFreshnessInsight(
   const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
 
   if (ageDays <= 7) {
-    return { level: "fresh", label: "이번 주 업데이트", ageDays };
+    return { level: "fresh", ageDays };
   }
 
   if (ageDays <= 30) {
-    return { level: "active", label: "이번 달 업데이트", ageDays };
+    return { level: "active", ageDays };
   }
 
-  return { level: "stale", label: "업데이트 권장", ageDays };
+  return { level: "stale", ageDays };
 }
 
 export function isProjectRecentlyUpdated(
