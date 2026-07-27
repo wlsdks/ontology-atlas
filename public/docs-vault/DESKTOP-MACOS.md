@@ -420,10 +420,24 @@ v1.1.0       →  이제 정식
 (`prerelease: ${{ contains(github.ref_name, '-') }}`). `pnpm desktop:check` 가
 이 유도를 계약으로 잠근다 — 하드코딩으로 되돌리면 실패한다.
 
-> **아직 실측되지 않은 것**: macOS `CFBundleVersion` 은 `-rc.1` 같은 문자열을
-> 받지 않는다. Tauri 가 변환해 줄 것으로 보이지만 확인한 적 없다. **첫 RC 태그를
-> 밀 때 번들 메타데이터를 직접 확인하라** — 여기서 걸리면 RC 버전 표기 규칙을
-> 바꿔야 한다.
+### `-rc.1` 과 CFBundleVersion — 실측 결과 (2026-07-27)
+
+한동안 미지수로 남겨 뒀던 항목이다. **직접 재 보았고, 통과한다.**
+
+Tauri 는 세 버전 파일의 문자열을 **변환 없이 그대로** 번들에 넣는다:
+
+| 필드 | 값 |
+|---|---|
+| `CFBundleShortVersionString` | `1.0.0-rc.1` |
+| `CFBundleVersion` | `1.0.0-rc.1` |
+
+`plutil -lint` 통과, Spotlight 이 `kMDItemVersion` 으로 읽고, ad-hoc 서명 후
+LaunchServices 로 띄워 창까지 확인했다.
+
+> **다만 규격상으로는 어긋난다.** Apple 문서는 `CFBundleVersion` 을 점으로
+> 구분된 정수 문자열로 규정한다. 직접 배포(우리 경로)에서 macOS 는 관대하고
+> 실제로 문제가 없지만, **App Store 제출 경로로 가면 거부된다.** 우리는 직접
+> 배포만 하므로 지금은 성립한다 — 앱스토어를 고려하게 되면 이 표기부터 다시 본다.
 
 ## First Public Release Runbook (v1.0.0)
 
