@@ -28,8 +28,10 @@ pnpm build                        # static export
 
 The most valuable contributions today:
 
-1. **Try `npx ontology-atlas init` and tell us what's confusing** — file
-   an issue with what you tried and where you got stuck.
+1. **Scaffold a vault and tell us what's confusing** — from a source
+   checkout, `node cli/src/index.mjs init ./ontology` inside your own
+   repository (see the root README's quick start). File an issue with
+   what you tried and where you got stuck.
 2. **Bring your own vault** — point the workbench `/docs` picker at a
    real codebase ontology you maintain. Tell us what missing tools or
    visualizations would change your day.

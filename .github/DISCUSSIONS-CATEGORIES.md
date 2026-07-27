@@ -20,9 +20,10 @@ Discussions 탭에서 카테고리 매니저로 설정.
 
 > Welcome to ontology-atlas Discussions. We're early.
 >
-> If you tried `npx ontology-atlas init` and got something working,
-> please share it in **Show and tell** — even a short paragraph helps
-> us see how the tool is used in the wild.
+> If you got a vault working — through the installed app's connect
+> button, or from a source checkout — please share it in **Show and
+> tell**, even a short paragraph. It helps us see how the tool is used
+> in the wild.
 >
 > If you got stuck, file an **Onboarding friction** issue (template in
 > Issues tab). Those are gold to us right now.

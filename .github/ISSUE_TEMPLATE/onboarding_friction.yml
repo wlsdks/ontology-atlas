@@ -1,5 +1,5 @@
 name: 🧑‍🌾 Onboarding friction
-description: I tried `npx ontology-atlas init` (or the workbench) and got stuck.
+description: I tried to set up Ontology Atlas (app, source checkout, or agent) and got stuck.
 title: "[onboarding] "
 labels: ["onboarding", "needs-triage"]
 body:
@@ -13,7 +13,8 @@ body:
     attributes:
       label: Where did you start?
       options:
-        - "npx ontology-atlas init"
+        - "Installed macOS app — Connect agent button"
+        - "Source checkout — node cli/src/index.mjs init"
         - "Hosted demo (wlsdks.github.io/ontology-atlas)"
         - "Cloned the repo and ran pnpm dev"
         - "MCP server registered into my AI agent"

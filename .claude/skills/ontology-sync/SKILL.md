@@ -29,8 +29,9 @@ human sees the change appear in their workbench.
 
 ## Workflow
 
-The MCP server `ontology-atlas-local` (or the published `ontology-atlas-mcp`)
-is the primary path. Fall back to the `cli/` binary (`ontology-atlas add` /
+The MCP server `ontology-atlas` (the compiled `ontology-atlas-mcp` binary
+inside the installed app, or `mcp/src/index.js` from a source checkout) is the
+primary path. Fall back to the `cli/` binary (`ontology-atlas add` /
 `import` / `validate`) if MCP is unavailable in the current session.
 
 ### 1. Read what's already there (cheap)
