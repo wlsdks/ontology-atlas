@@ -101,9 +101,10 @@ The theory and prior art behind that position are cited in
 
 *Last updated 2026-07-28.*
 
-- **No public release exists yet.** There is nothing on
-  [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases) at the
-  time of writing. Everything below runs from a source checkout.
+- **Check [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases)
+  for a build.** If that page is empty, or only lists release candidates,
+  everything below runs from a source checkout. The screenshots here were
+  captured from a local build, before the first signed release.
 - **The release pipeline is credentialed to sign with a Developer ID
   certificate and notarize with Apple**, and update packages are signed with a
   separate project key the app verifies before replacing anything — see
@@ -277,6 +278,7 @@ next impact capabilities/order-cancel — impact rows are candidates, not proof;
 inspect backlinks and node detail before refactor decisions
   ontology-atlas node capabilities/order-cancel [vault] --limit 20
   ontology-atlas backlinks capabilities/payment-authorize [vault]
+  ontology-atlas reachability capabilities/payment-authorize [vault] --plan --depth 2 --direction both --limit 20
 ```
 
 *Verbatim. The node titles are Korean because this example vault is written in
@@ -501,8 +503,10 @@ git diff 로 판단합니다. 백엔드·로그인·텔레메트리가 없고 va
   자리에서 연결까지 확인합니다.
 - **npm 발행 계획은 폐기됐습니다** (2026-07-27). 소스 체크아웃에서 CLI 와 MCP
   서버를 바로 실행합니다.
-- **아직 공개 릴리스가 없습니다.** 서명·공증 자격증명은 갖춰졌지만 그 경로로
-  나간 빌드가 아직 없습니다. 이 README 의 화면들은 로컬 빌드 앱에서 찍었습니다.
+- **받을 수 있는 빌드가 있는지는
+  [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases)에서
+  확인하세요.** 비어 있거나 릴리스 후보만 있으면 소스 체크아웃으로 씁니다.
+  이 README 의 화면들은 첫 서명 릴리스 이전에 로컬 빌드 앱에서 찍었습니다.
 - [라이브 데모](https://wlsdks.github.io/ontology-atlas/)에서 이 저장소 자신의
   온톨로지(97 노드)를 설치 없이 볼 수 있습니다.
 - 연결은 [MCP 가이드](mcp/README.md), 전체 명령은 [CLI 가이드](cli/README.md),
