@@ -735,7 +735,10 @@ function InstallStep({ index, title, body }: { index: string; title: string; bod
         <h3 className="text-body leading-body font-semibold text-[color:var(--color-text-primary)]">
           {title}
         </h3>
-        <p className="mt-0.5 max-w-[var(--measure-prose)] break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
+        {/* 두 줄 자리를 예약한다 — 실측(ko, 1512): 01 은 한 줄이고 02·03 은
+            두 줄이라 같은 세트 안에서 행 높이가 59 / 75 / 75 로 갈렸다.
+            반복 세트의 치수는 설계 결정이지 글자 수의 부산물이 아니다. */}
+        <p className="mt-0.5 min-h-[calc(var(--leading-label)*2)] max-w-[var(--measure-prose)] break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
           {body}
         </p>
       </div>
