@@ -9,6 +9,8 @@ use std::sync::Mutex;
 use std::time::{Duration, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
+/// 「에이전트 연결」 — 번들 MCP 서버 경로 해석 · 설정 파일 계획/쓰기 · 자가 검증.
+mod agent_setup;
 /// Atlas Git — vault 를 git 으로 버전 기록하는 네이티브 계층 (웹 GUI 가 invoke).
 mod git;
 /// BYOK 연결 확인 — 키체인의 키로 인증만 확인하고 볼트 안 감사 로그에 남긴다.
@@ -6039,6 +6041,10 @@ pub fn run() {
             git::git_history,
             git::git_diff,
             git::git_pull,
+            agent_setup::mcp_bundled_server,
+            agent_setup::plan_agent_config,
+            agent_setup::write_agent_config,
+            agent_setup::verify_mcp_server,
         ])
         .build(context)
         .expect("error while building ontology-atlas desktop app")

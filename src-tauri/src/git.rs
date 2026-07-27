@@ -63,7 +63,7 @@ fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
 
 // ── 레포 발견 (자동 init 금지 — 상태로만) ──────────────────────────────────
 /// vault 를 담은 git repo 최상위. git repo 밖이면 `Ok(None)`.
-fn find_repo_root(vault_dir: &Path) -> Result<Option<PathBuf>, String> {
+pub(crate) fn find_repo_root(vault_dir: &Path) -> Result<Option<PathBuf>, String> {
     let out = run_git(vault_dir, &["rev-parse", "--show-toplevel"])?;
     if !out.success {
         return Ok(None);
