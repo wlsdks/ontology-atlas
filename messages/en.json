@@ -240,6 +240,13 @@
       "openMap": "Open the map",
       "create": "Create a new node"
     },
+    "tooNarrow": {
+      "title": "The workshop needs a wider window",
+      "body": "It lays relations out in four directions, so it needs at least 1024px of width. Widen the window and it opens right away.",
+      "note": "The map and the docs work fine at this width.",
+      "openMap": "Go to the map",
+      "getApp": "Get the desktop app"
+    },
     "kindLabel": "Kind",
     "create": {
       "framePrompt": "Decide what the new node is, then link it to nearby nodes",

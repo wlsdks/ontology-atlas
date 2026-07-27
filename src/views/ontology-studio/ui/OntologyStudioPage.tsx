@@ -16,6 +16,7 @@ import { useDataSourceMode } from "@/features/data-source-mode";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { findSimilarNodeByTitle, type SimilarNodeCandidate } from "@/shared/lib/similar-node-title";
+import { LG_BREAKPOINT_PX, useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { EmptyState, useToast } from "@/shared/ui";
 import {
   buildStudioItem,
@@ -71,6 +72,7 @@ import {
 } from "../lib/studio-draft-store";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
 import { StudioEntryChoice } from "./StudioEntryChoice";
+import { StudioTooNarrow } from "./StudioTooNarrow";
 import { StudioMaterializeDialog, type StudioMaterializeLabels } from "./StudioMaterializeDialog";
 
 /**
@@ -117,6 +119,9 @@ export function OntologyStudioPage() {
   const localVault = useLocalVault();
   const kindLabel = useOntologyKindLabel();
   const toast = useToast();
+  // ② 폭 강등 — 나침 무대는 고정 폭 카드 + 위성 기하라 <lg 에서 성립하지
+  // 않는다. 판정은 여기 한 번, 적용은 모든 분기 앞에서 한 번 (아래 참조).
+  const narrowViewport = useViewportBelow(LG_BREAKPOINT_PX);
 
   const isCreate = searchParams.get("mode") === "create";
   const requestedNode = searchParams.get("node");
@@ -221,7 +226,7 @@ export function OntologyStudioPage() {
       browseNoDomain: t("picker.browseNoDomain"),
       similarSuggest: (title) => t("picker.similar", { title }),
       similarAccept: t("picker.similarAccept"),
-      createName: t("kindLabel"),
+      createKindLabel: t("kindLabel"),
       createNamePlaceholder: t("create.namePlaceholder"),
       createDomainNone: t("create.domainNone"),
       createDefinitionPlaceholder: t("create.definitionPlaceholder"),
@@ -736,6 +741,13 @@ export function OntologyStudioPage() {
       toast.show(t("create.copyFailed"), "info");
     }
   }, [title, createSlugCollision, writable, draft, localVault, toast, t, kind, openNode, createContext, nodes, edges, askDocConsent]);
+
+  // ② 2026-07-28 — 폭 강등. 이 화면은 데스크톱 레일 전용으로 설계됐는데
+  // (`BottomTabBar` 가 공방 탭을 뺀 이유, #707) 라우트에는 가드가 없어서
+  // 딥링크 세 갈래가 <lg 로 그대로 떨어졌다. 여기서 한 번 정직하게 말한다.
+  // 모든 훅 뒤·모든 분기 앞이라 어떤 진입(create/enhance/딥링크)이든 같은 답을
+  // 받는다 — 조건을 갈래마다 두면 하나가 빠져도 아무도 모른다(#65 계열 drift).
+  if (narrowViewport) return <StudioTooNarrow />;
 
   if (isCreate) {
     const bearings: CompassBearingView[] = RELATIONS.map((relation) => {

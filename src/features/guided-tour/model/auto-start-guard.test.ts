@@ -23,6 +23,15 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
     expect(canAutoStartGuidedTour(document)).toBe(false);
   });
 
+  it("정직 강등 카드가 선 화면에는 안내를 쏘지 않는다 — 없는 표면을 소개할 수 없다", () => {
+    vi.spyOn(document, "hasFocus").mockReturnValue(true);
+    // <lg 의 공방처럼 "여긴 못 와요" 를 말하는 화면. 그 위에 "여기가 공방이에요"
+    // 가 뜨면 안내가 아니라 거짓말이다.
+    document.body.innerHTML =
+      '<main data-surface-role="degraded-surface" data-testid="studio-too-narrow"></main>';
+    expect(canAutoStartGuidedTour(document)).toBe(false);
+  });
+
   it("blocks auto start while document focus is away (OS folder picker / background tab)", () => {
     vi.spyOn(document, "hasFocus").mockReturnValue(false);
     expect(canAutoStartGuidedTour(document)).toBe(false);
