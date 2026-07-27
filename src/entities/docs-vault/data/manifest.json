@@ -10518,7 +10518,7 @@
         }
       ],
       "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. Ontology Atlas is a local-first ontology workbench, not a decorative graph demo. The Relief/Topology screen must he",
-      "wordCount": 10520,
+      "wordCount": 10776,
       "updatedAt": "2026-07-27",
       "linksOut": [
         "PRODUCT-OWNER-OPERATING-SYSTEM"

@@ -186,6 +186,18 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   the observation that would prove it right. Never for mechanical work.
   `tests/contract/po-council.contract.test.ts` fails the build if a lens loses its owner
   or the wiring drifts.
+- **Design Council** — `@.claude/skills/design-council/SKILL.md` convenes the seven-seat
+  Atlas Designer Bench as callable agents (`design-lead` 위계 · `design-system` 체계 ·
+  `design-interaction` 상호작용 · `design-motion` 모션 · `design-infoviz` 도해 ·
+  `design-workbench` 작업대 · `design-handoff` 핸드오프). Convene only the seats a change
+  touches; **위계 and 체계 always attend** — one names the attention winner, the other
+  turns the decision into tokens, lint rules, and contract tests, because a decision that
+  never lands in the design system is one the next person re-makes. Every seat must open
+  the built surface rather than judge a diff, cites published principles only, never
+  imitates a reference product's assets or wording, and may not block without prescribing
+  an alternative. `design-guardian` is the accountable decider and the only one that edits
+  code. `tests/contract/design-council.contract.test.ts` fails the build if a seat loses
+  its agent or the wiring drifts.
 - **Design Guardian** — `@.claude/agents/design-guardian.md` is the standing senior design reviewer for UI work. Use it, or an equivalent sub-agent when available, before and after meaningful Relief/Topology design changes. It rejects token drift, attention-layer collisions, hidden typed facts, decorative motion, browser-only desktop proof, and reference copying. It approves only token-backed changes with screenshot/WebView evidence and installed-app proof when desktop behavior is affected.
 - **Design system** — neutrals + a single indigo, forbidden patterns — `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`.
   **디자인 규격은 md 뿐 아니라 `eslint.config.mjs` 의 `no-restricted-syntax` 로

@@ -20,8 +20,37 @@ or demote it before adding more UI.
 
 ## Design Council
 
-Use these roles in design reviews. They are lenses, not separate agents unless a
-tool explicitly provides them.
+Use these roles in design reviews. They were lenses, not separate agents unless
+a tool explicitly provided them — **and as of 2026-07-27 a tool does.** The
+seven-seat Atlas Designer Bench below is now seven callable agents in
+`.claude/agents/`, convened by `.claude/skills/design-council/SKILL.md`
+(mirrored at `.agents/skills/design-council/SKILL.md`):
+
+| Bench seat | Agent | 이름 |
+| --- | --- | --- |
+| Lead Product Designer | `design-lead` | 위계 |
+| Design Systems Engineer | `design-system` | 체계 |
+| Interaction Designer | `design-interaction` | 상호작용 |
+| Motion / Action Designer | `design-motion` | 모션 |
+| Information Visualization Designer | `design-infoviz` | 도해 |
+| macOS Workbench Designer | `design-workbench` | 작업대 |
+| Agent Handoff Designer | `design-handoff` | 핸드오프 |
+
+`design-guardian` is **not** a seat — it is the accountable decider and the only
+one of the eight permitted to edit code, mirroring how Accountable Value Owner
+is deliberately not an agent in the PO Council. The Product Owner row below
+belongs to the PO Council (`/po-council`), not to this bench.
+
+Convene only the seats a change touches; 위계 and 체계 always attend. Every seat
+must open the built surface rather than judge a diff, may research the web, and
+may not block without prescribing an alternative. Published principles only —
+never copy a reference product's assets, wording, styling, or palette, and never
+invent quotes from real designers.
+
+`tests/contract/design-council.contract.test.ts` fails the build if a bench seat
+loses its agent, if `design-guardian` is listed as a seat, or if the skill and
+its mirror drift apart. Adding an eighth seat to the bench table breaks the
+build until an agent claims it.
 
 | Role | Owns | Must Ask |
 | --- | --- | --- |

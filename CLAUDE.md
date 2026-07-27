@@ -15,6 +15,11 @@
   `po-craft` 결 · `po-steward` 지킴이 · `po-wedge` 해자 · `po-leverage` 지렛대).
   `/po-council` 스킬이 소집 프로토콜(병렬 독립 의견 → 반박 1라운드 → 책임자 1인
   결정 + 반대 의견 기록)을 담는다. 비싸거나 되돌리기 어려운 결정에만 소집한다.
+- `.claude/agents/design-*.md` — **상주 디자인 벤치 7석** (`design-lead` 위계 ·
+  `design-system` 체계 · `design-interaction` 상호작용 · `design-motion` 모션 ·
+  `design-infoviz` 도해 · `design-workbench` 작업대 · `design-handoff` 핸드오프).
+  `/design-council` 스킬이 소집한다 — 변경이 닿는 자리만 부르되 위계·체계는 상시
+  참석. 전원 공개 발행 원칙만 인용하고 자산 모방은 절대 금지.
 - `.claude/agents/design-guardian.md` — **상주 디자인 가디언** subagent. UI/디자인
   변경 전 검토·변경 후 검증·"AI 느낌" 제거 패스에 이 agent 를 호출한다 (Agent tool,
   `subagent_type: "design-guardian"`). 공개 발행 원칙(Apple HIG · Toss 공개 발표 ·
