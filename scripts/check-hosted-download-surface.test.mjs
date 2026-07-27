@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import http from "node:http";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { evaluateHostedSurface } from "./check-hosted-download-surface.mjs";
+
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 function startServer(routes) {
   const server = http.createServer((request, response) => {
@@ -35,15 +40,25 @@ const alignedLanding = `<!doctype html>
   <p>Ontology Atlas</p>
 </main>`;
 
+// The checker reads its expected copy from `messages/ko.json` precisely so a
+// hand-copied string list cannot drift. A fixture that hand-copies the same
+// strings reintroduces that drift one layer down — and did: the `/download`
+// remake (2026-07-27) rewrote every sentence below, so this fixture started
+// failing a checker that was working correctly. Build the fixture from the
+// same catalog the checker reads.
+const koDownloadCopy = JSON.parse(
+  readFileSync(path.join(REPO_ROOT, "messages", "ko.json"), "utf8"),
+).download;
+
 const alignedDownload = `<!doctype html>
 <main>
-  <h1>한 번 설치하고, 내 로컬 vault 에서 작업하세요.</h1>
-  <a href="https://github.com/wlsdks/ontology-atlas/releases">GitHub 릴리스 페이지 열기</a>
-  <a href="https://github.com/wlsdks/ontology-atlas">소스 코드 보기</a>
-  <h2>macOS</h2>
-  <h2>Windows</h2>
-  <span>준비 중</span>
-  <p>호스팅 웹 사이트는 vault 폴더를 열거나 편집하지 않습니다. 매일의 ontology 작업은 macOS 서명, notarization, 체크섬 게이트를 통과한 릴리스 asset 설치 후 앱 안에서 시작합니다.</p>
+  <h1>${koDownloadCopy.title}</h1>
+  <a href="https://github.com/wlsdks/ontology-atlas/releases">${koDownloadCopy.primaryCtaPending}</a>
+  <a href="https://github.com/wlsdks/ontology-atlas">${koDownloadCopy.sourceCta}</a>
+  <h2>${koDownloadCopy.macosHeading}</h2>
+  <h2>${koDownloadCopy.windowsHeading}</h2>
+  <span>${koDownloadCopy.windowsPendingBadge}</span>
+  <p>${koDownloadCopy.releaseGateNote}</p>
 </main>`;
 
 test("hosted download surface check passes for promo/download-aligned pages", async () => {

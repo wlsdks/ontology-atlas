@@ -69,11 +69,42 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(en.download.primaryCtaPending, /latest/i);
     assert.doesNotMatch(ko.download.primaryCtaPending, /최신/);
 
-    // Signing and notarization are properties of published builds, never a
+    // Signing and notarization are properties of the release path, never a
     // gate that "requires" them at some future point.
     assert.doesNotMatch(en.download.proofSigned, /Release gate requires/);
     assert.doesNotMatch(ko.download.proofSigned, /게이트가/);
     assert.match(en.download.trustVerifyCommand, /\{file\}/);
+
+    // 2026-07-27 — the Developer ID certificate exists (docs/DECISIONS.md),
+    // so the unsigned-era copy is now false. It said "not signed yet" and
+    // walked every downloader through System Settings → Open Anyway; leaving
+    // that in place would send people down a detour macOS no longer asks for,
+    // on the page where a first impression is spent exactly once. The signed
+    // claim itself is guarded against drift by `release-facts.test.ts`
+    // against the real `desktop:release-artifact` chain.
+    const downloadCopy = { en: JSON.stringify(en.download), ko: JSON.stringify(ko.download) };
+    assert.doesNotMatch(downloadCopy.en, /Not signed yet|Open Anyway|certificate pending/i);
+    assert.doesNotMatch(downloadCopy.ko, /아직 서명되지 않음|확인 없이 열기|인증서 준비 중/);
+    assert.match(en.download.proofSigned, /Developer ID/);
+    assert.match(ko.download.proofSigned, /Developer ID/);
+
+    // Most visitors do not know their own Mac's architecture. Naming both and
+    // stopping there leaves them stuck in front of two buttons.
+    assert.match(en.download.archHelpBody, /About This Mac/i);
+    assert.match(ko.download.archHelpBody, /이 Mac에 관하여/);
+
+    // Local-first is the product's promise; a stranger about to run an
+    // unfamiliar binary needs it stated, not implied.
+    assert.match(en.download.trustPrivacyNote, /No account, no server/i);
+    assert.match(ko.download.trustPrivacyNote, /계정도 서버도 없습니다/);
+
+    // The release-notes excerpt used to be a hand-maintained Korean constant
+    // rendered verbatim on the English page. Whatever replaces it must not
+    // reintroduce a second, locale-blind copy of the changelog.
+    for (const gone of ['releaseNotesHeading', 'releaseNotesSource', 'releaseNotesCaption']) {
+      assert.equal(en.download[gone], undefined, `download.${gone} must stay removed`);
+      assert.equal(ko.download[gone], undefined, `download.${gone} must stay removed`);
+    }
 
     // Windows is named rather than omitted, so a Windows visitor learns where
     // they stand instead of guessing whether the product excludes them.
@@ -561,14 +592,19 @@ describe('i18n message catalog', () => {
   it('keeps active download/settings copy free of untranslated English nouns mixed into Korean sentences', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const settings = ko.nav.settingsMenu;
+    // 2026-07-27 — 구 `download.includeCliBody` 한 줄만 고정하던 것을
+    // download 네임스페이스 **전체 스캔**으로 넓혔다. 문자열 하나를 얼려
+    // 두면 그 문자열이 사라지는 순간 게이트도 같이 사라진다(그 일이
+    // `/download` 리메이크에서 실제로 일어날 뻔했다). 지키려던 것은 특정
+    // 문장이 아니라 "한국어 문장 안에 번역되지 않은 영어 명사가 섞이지
+    // 않는다" 는 규칙이다.
     const mixedLanguageCopy = [
-      ko.download.includeCliBody,
+      JSON.stringify(ko.download),
       settings.agentBody,
       settings.agentNoVaultHint,
       settings.mcpProofBody,
     ].join('\n');
 
-    assert.equal(ko.download.includeCliBody, '그래프 컴파일 · 에이전트 핸드오프 · 성장 큐 — 터미널이 일상 진입점.');
     assert.equal(
       settings.agentBody,
       'MCP 설정 파일 상태 · 연결 증명 · 검증 게이트',

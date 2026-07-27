@@ -59,8 +59,10 @@ const ARBITRARY_SIZE = [
 // 2026-07-27 새 프로젝트 화면 재구성 — 만들기 화면의 가르치는 카드 4개와
 // 상단 저장 클러스터를 걷어내면서 그 안의 램프 이탈이 같이 사라졌다
 // (project-edit 32 → 26 · project-editor 6 → 2). 래칫은 내려가기만 한다.
+// 2026-07-27 `/download` 리메이크 — 이 장부의 최대 항목(59건)이 재구성으로
+// 0이 되어 `codexMigratedGlobs` 로 승격됐다. 여기서 빠졌다는 것은 "부채
+// 없음"이 아니라 **lint 가 error 로 막는다**는 뜻이다.
 const UNCOVERED_DEBT: ReadonlyArray<readonly [string, number]> = [
-  ["src/views/download", 59],
   ["src/views/home", 45],
   ["src/views/ontology-studio", 45],
   ["src/entities/project", 33],
