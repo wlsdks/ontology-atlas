@@ -917,21 +917,29 @@ if (
   /준비 중/.test(koMessages.download?.windowsPendingBadge ?? "") &&
   /서명된 설치 파일/.test(koMessages.download?.windowsPendingBody ?? "") &&
   // 서명 상태는 **지금 참인 것**으로 적는다 — 미래형("게이트가 요구합니다")도,
-  // 아직 사실이 아닌 과거형("서명됐습니다")도 금지다. 인증서가 없는 동안은
-  // Gatekeeper 우회 단계를 페이지가 먼저 말해야 하고(2026-07-27 소유자 결정,
-  // docs/DECISIONS.md), 인증서가 생기면 이 문구가 함께 되돌아간다.
+  // 아직 사실이 아닌 과거형도 금지다.
+  //
+  // 2026-07-27 개정: 이 게이트는 미서명 시대에 쓰여서 `trustPolicy` 가
+  // "not signed or notarized" 또는 "only after Developer ID signing" 중
+  // 하나이기를 **요구**하고 있었다. 그날 Developer ID 인증서가 발급되면서
+  // (`docs/DECISIONS.md`) 릴리스가 서명 경로로 돌아왔는데, 그 요구 때문에
+  // 페이지는 여전히 미서명 안내를 들고 있어야 했다 — 게이트가 거짓을 붙들고
+  // 있었던 셈이다. 문구를 특정 문장에 못 박는 대신, **주장과 실제 릴리스
+  // 체인이 일치하는지**로 판정한다.
   !/Release gate requires/.test(enMessages.download?.proofSigned ?? "") &&
   !/게이트가/.test(koMessages.download?.proofSigned ?? "") &&
   /\{file\}/.test(enMessages.download?.trustVerifyCommand ?? "") &&
-  /(only after Developer ID signing|not signed or notarized)/.test(
-    enMessages.download?.trustPolicy ?? "",
-  ) &&
+  // 서명을 주장하려면 릴리스 자산 체인이 실제로 서명·공증·검증을 해야 한다.
+  (!/Developer ID/.test(enMessages.download?.proofSigned ?? "") ||
+    (pkg.scripts?.["desktop:release-artifact"]?.includes("desktop:sign") &&
+      pkg.scripts?.["desktop:release-artifact"]?.includes("desktop:notarize") &&
+      pkg.scripts?.["desktop:release-artifact"]?.includes("desktop:verify-release-dmg"))) &&
   // 미서명 상태를 말하는 문구라면 우회 경로를 반드시 함께 준다 — 상태만 알리고
-  // 방법을 안 주면 그건 정직이 아니라 방치다.
-  (!/not signed or notarized/.test(enMessages.download?.trustPolicy ?? "") ||
-    (/Open Anyway/.test(enMessages.download?.trustPolicy ?? "") &&
-      /확인 없이 열기/.test(koMessages.download?.trustPolicy ?? "") &&
-      /확인 없이 열기/.test(koMessages.download?.step2Body ?? ""))) &&
+  // 방법을 안 주면 그건 정직이 아니라 방치다. (인증서가 만료·폐기되어 문구가
+  // 미서명으로 되돌아가면 이 조건이 다시 무장한다.)
+  (!/not signed or notarized/.test(JSON.stringify(enMessages.download ?? {})) ||
+    (/Open Anyway/.test(JSON.stringify(enMessages.download ?? {})) &&
+      /확인 없이 열기/.test(JSON.stringify(koMessages.download ?? {})))) &&
   // 등록된 적 없는 도메인을 사실처럼 쓰지 않는다.
   !/ontology-atlas\.dev/.test(JSON.stringify(enMessages.download ?? {})) &&
   !/ontology-atlas\.dev/.test(JSON.stringify(koMessages.download ?? {}))

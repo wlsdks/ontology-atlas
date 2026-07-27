@@ -163,6 +163,10 @@ export const codexMigratedGlobs = [
   'src/features/docs-vault-local/**/*.{ts,tsx}',
   'src/features/locale-switch/**/*.{ts,tsx}',
   'src/features/project-quick-edit/**/*.{ts,tsx}',
+  // 2026-07-27 `/download` 리메이크 — 첫 공개에서 낯선 사람이 처음 만나는
+  // 표면이 램프 이탈 59건(장부 최대 항목)을 들고 있었다. 재구성으로 0이 됐고,
+  // 승격했으니 이제 error 로 막힌다.
+  'src/views/download/**/*.{ts,tsx}',
   'src/views/ontology-insights/**/*.{ts,tsx}',
   'src/views/project-selector/**/*.{ts,tsx}',
   'src/views/ontology-edit/**/*.{ts,tsx}',
