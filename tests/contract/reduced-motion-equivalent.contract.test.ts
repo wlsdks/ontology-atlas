@@ -134,6 +134,11 @@ describe('reduced-motion 동등물 계약', () => {
   it('동등물은 흔들리는 축을 opacity 전용 키프레임으로 갈아탄다', () => {
     // transform 이 실린 등장(chrome-in/out · settings panel · rail dot)은
     // 키프레임 이름을 바꿔야 동등물이 된다 — 시간만 되돌리면 여전히 움직인다.
+    //
+    // opacity 전용 키프레임은 **방향별로 두 개**다: 등장은 `panelCrossfadeIn`,
+    // 퇴장은 `overlayFadeOut`. 퇴장이 등장 이름을 재사용하면 같은 원소에서
+    // 애니메이션이 재시작하지 않아 조용히 1프레임이 된다
+    // (`exit-motion-restart.contract.test.ts`).
     for (const cls of [
       'topology-chrome-in',
       'topology-chrome-out',
@@ -147,7 +152,7 @@ describe('reduced-motion 동등물 계약', () => {
         r.selector.split(',').some((s) => new RegExp(`\\.${cls}(?![\\w-])`).test(s)),
       );
       expect(
-        matching.some((r) => /animation-name:\s*panelCrossfadeIn/.test(r.body)),
+        matching.some((r) => /animation-name:\s*(?:panelCrossfadeIn|overlayFadeOut)/.test(r.body)),
         `.${cls} 는 opacity 전용 키프레임으로 갈아타야 한다`,
       ).toBe(true);
     }
@@ -258,7 +263,9 @@ describe('reduced-motion 동등물 계약', () => {
           r.selector.split(',').some((s) => new RegExp(`\\.${cls}(?![\\w-])`).test(s)),
         );
         expect(rule, `.${cls} 규칙이 없다`).toBeTruthy();
-        expect(rule!.body).toContain('panelCrossfadeIn');
+        // 등장은 `panelCrossfadeIn`, 퇴장은 `overlayFadeOut` — 둘 다 opacity
+        // 전용이고 같은 램프를 탄다. 이름이 갈리는 이유는 위 참조.
+        expect(rule!.body).toMatch(/panelCrossfadeIn|overlayFadeOut/);
         expect(rule!.body).toContain('var(--motion-fast)');
         expect(rule!.body).toContain('var(--motion-ease)');
       });
