@@ -1442,6 +1442,13 @@ function CenterCard(
         )}
       </div>
 
+      {/* 무대의 주인공 = 이 이름. 램프 상단(display 23px)으로 세운다.
+          예전엔 램프에 없는 스텝을 부르고 있어 루트 16px 로 렌더됐고, 그래서
+          위성 카드 이름(12.5px)과 위계가 1.28배밖에 안 벌어져 있었다 —
+          "무엇의 의미를 채우는 중인가" 가 화면에서 가장 큰 글자가 아니었다.
+          hero(30px) 는 카드 높이가 고정(172px)이라 못 쓴다: 14자 한글 이름이
+          2행으로 꺾이며 하단 패딩을 1px 넘어선다(실측). display 는 1행 유지
+          + 여백 38px. tracking 은 램프가 못 박은 짝(--tracking-display)을 쓴다. */}
       {mode === "create" ? (
         <input
           data-testid="studio-create-name"
@@ -1450,10 +1457,10 @@ function CenterCard(
           value={focal.name}
           onChange={(e) => props.onCreateName?.(e.target.value)}
           placeholder={props.labels.createNamePlaceholder}
-          className="w-full bg-transparent text-large font-semibold leading-display-tight tracking-[-0.022em] text-[color:var(--color-text-primary)] outline-none [word-break:keep-all] placeholder:font-normal placeholder:text-[color:var(--color-text-quaternary)]"
+          className="w-full bg-transparent text-display font-semibold leading-display-tight tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] outline-none [word-break:keep-all] placeholder:font-normal placeholder:text-[color:var(--color-text-quaternary)]"
         />
       ) : (
-        <div className="text-large font-semibold leading-display-tight tracking-[-0.022em] text-[color:var(--color-text-primary)] [word-break:keep-all]">
+        <div className="text-display font-semibold leading-display-tight tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
           {focal.name}
         </div>
       )}
