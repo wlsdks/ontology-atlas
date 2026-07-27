@@ -581,7 +581,7 @@
     "macosPublishedBadge": "{tag} available",
     "macosPendingBody": "{tag} has not been published yet. Apple Silicon and Intel downloads — with their real sizes and checksums — appear here once they clear signing, notarization, and checksum verification.",
     "webHeading": "Want to look before you install?",
-    "webBody": "You can open this project's map right here in the browser. The app is only needed to open a folder of your own.",
+    "webBody": "You can open this project's map right here in the browser. In Chrome and Edge you can open your own markdown folder here too — the app is what remembers that folder, opens it offline, and adds history and AI connections.",
     "webCta": "Open the map in your browser",
     "trustHeading": "Why this is safe to install",
     "proofSigned": "Signed with an Apple Developer ID certificate",
@@ -606,10 +606,10 @@
     "updateNote": "When a new version ships the app says so and updates itself with one button — you never have to come back to this page for it.",
     "windowsHeading": "Windows",
     "windowsPendingBadge": "In preparation",
-    "windowsPendingBody": "Not available yet. It ships when it clears the same bar macOS does: a signed installer and install verification.",
+    "windowsPendingBody": "Not available yet. It ships when it clears the same bar macOS does: a signed installer and install verification. Until then you can open, read and edit your own markdown folder from this site in Chrome or Edge. Only the AI connection, which needs somewhere safe to keep a key, is out of reach in a browser.",
     "windowsTrackCta": "Follow progress",
     "releaseNotesLink": "Read the release notes",
-    "releaseGateNote": "This website never opens or edits your folders. Only the installed app can do that.",
+    "releaseGateNote": "This website sends nothing to a server. In Chrome and Edge you can pick a folder here and read and edit it; remembering that folder, plus history and AI connections, is what the installed app adds.",
     "intro": {
       "instrument": {
         "eyebrow": "What the app draws",

@@ -272,9 +272,16 @@ describe('DownloadPage', () => {
 
     expect(screen.getByText(/The app sends nothing anywhere/i)).toBeInTheDocument();
     expect(screen.getByText(/No account, no server/i)).toBeInTheDocument();
+    // This line used to read "This website never opens or edits your folders.
+    // Only the installed app can do that." Measured 2026-07-27 (web surface
+    // smoke ②): in Chromium the site opens a folder and parses it. The privacy
+    // claim was true; the capability claim was not, and it contradicted the
+    // surface contract that makes the web the second-best workbench where no
+    // app exists. Keep the privacy half, tell the truth about the other half.
+    expect(screen.getByText(/This website sends nothing to a server/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/This website never opens or edits your folders/i),
-    ).toBeInTheDocument();
+      screen.queryByText(/never opens or edits your folders/i),
+    ).not.toBeInTheDocument();
   });
 
   it('keeps the hosted page focused on app releases instead of browser vault work', () => {

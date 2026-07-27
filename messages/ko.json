@@ -581,7 +581,7 @@
     "macosPublishedBadge": "{tag} 공개됨",
     "macosPendingBody": "{tag} 는 아직 게시 전입니다. 서명·공증·체크섬 검증을 통과하는 시점에 이 자리에 Apple Silicon · Intel 파일과 각각의 크기·체크섬이 올라옵니다.",
     "webHeading": "설치 없이 먼저 보고 싶다면",
-    "webBody": "이 사이트에서 이 프로젝트의 지도를 그대로 열어 볼 수 있어요. 내 폴더를 여는 것만 앱이 필요합니다.",
+    "webBody": "이 사이트에서 이 프로젝트의 지도를 그대로 열어 볼 수 있어요. Chrome·Edge 라면 내 마크다운 폴더도 여기서 바로 열립니다 — 앱은 그 폴더를 기억하고, 인터넷 없이 열고, 기록과 AI 연결까지 함께 다룹니다.",
     "webCta": "웹에서 지도 열기",
     "trustHeading": "받아도 되는 이유",
     "proofSigned": "Apple Developer ID 로 서명합니다",
@@ -606,10 +606,10 @@
     "updateNote": "새 버전이 나오면 앱이 알려주고 버튼 하나로 갱신됩니다 — 이 페이지에 다시 오지 않아도 됩니다.",
     "windowsHeading": "Windows",
     "windowsPendingBadge": "준비 중",
-    "windowsPendingBody": "아직 없습니다. macOS 와 같은 기준 — 서명된 설치 파일과 설치 검증 — 을 통과할 때 올립니다.",
+    "windowsPendingBody": "아직 없습니다. macOS 와 같은 기준 — 서명된 설치 파일과 설치 검증 — 을 통과할 때 올립니다. 그때까지는 Chrome·Edge 에서 이 사이트로 내 마크다운 폴더를 열어 읽고 고칠 수 있어요. 키를 안전하게 보관해야 하는 AI 연결만 브라우저에서 못 합니다.",
     "windowsTrackCta": "진행 상황 보기",
     "releaseNotesLink": "릴리스 노트 보기",
-    "releaseGateNote": "이 웹 사이트는 내 폴더를 열거나 고치지 않습니다. 폴더를 직접 여는 일은 설치한 앱만 할 수 있습니다.",
+    "releaseGateNote": "이 웹 사이트는 아무것도 서버로 보내지 않습니다. Chrome·Edge 에서는 여기서 폴더를 골라 읽고 고칠 수 있고, 그 폴더를 기억해 두는 일과 기록·AI 연결은 설치한 앱이 합니다.",
     "intro": {
       "instrument": {
         "eyebrow": "앱이 그리는 것",
