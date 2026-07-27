@@ -22,8 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      # fetch-depth: 0 필수 — 변경 분류가 `git merge-base` 를 쓴다. 얕은 클론
+      # 이면 베이스를 못 찾아 "전부 실행"으로 열리고 게이트가 무의미해진다.
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -63,10 +67,22 @@ jobs:
       # Full e2e suite — small enough post-decontamination (2026-07) to run
       # as one job rather than sharding. `webServer` in playwright.config.ts
       # boots `pnpm dev` itself; do not start a dev server here separately.
+      # 렌더되는 페이지가 의존하지 않는 변경(에이전트 브리프 · 문서 · 워크플로)
+      # 에 브라우저를 띄우지 않는다. 잡은 그대로 초록으로 끝나므로 required
+      # check 가 막히지 않는다 — 스텝만 건너뛴다.
+      - name: Classify change
+        id: classify
+        run: node scripts/classify-change.mjs --base=origin/${{ github.base_ref }}
+
       - name: Run Playwright suite
+        if: steps.classify.outputs.browser == 'true'
         run: pnpm exec playwright test
         env:
           CI: true
+
+      - name: Skip note
+        if: steps.classify.outputs.browser != 'true'
+        run: echo "브라우저가 의존하는 경로 변경 없음 — Playwright 생략"
 
       - name: Upload Playwright report on failure
         if: failure()

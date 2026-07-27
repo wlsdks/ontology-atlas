@@ -65,6 +65,15 @@ jobs:
         if: github.event_name == 'pull_request'
         run: pnpm decisions:check -- --base=origin/${{ github.base_ref }}
 
+      # 변경이 실제로 깨뜨릴 수 있는 것만 돌린다. 실측(2026-07-27): Checks 5~6분
+      # 중 **270초가 단위 스위트**이고, 이 세션의 변경은 거의 전부 에이전트
+      # 브리프와 문서였다. 판단이 안 서면 runtime=true 로 열어둔다 — 빠뜨린
+      # 테스트는 출하되는 버그고, 남는 테스트는 4분이다.
+      - name: Classify change
+        id: classify
+        if: github.event_name == 'pull_request'
+        run: node scripts/classify-change.mjs --base=origin/${{ github.base_ref }}
+
       - name: Typecheck
         run: pnpm exec tsc --noEmit
 
@@ -72,9 +81,16 @@ jobs:
         if: always()
         run: pnpm lint
 
+      # 런타임 코드가 안 바뀌었으면 계약 스위트만 돈다(2.4초 vs 270초).
+      # 계약 테스트는 `.claude/**` 배선을 읽으므로 거버넌스 변경에서도 반드시
+      # 돈다 — 건너뛰는 건 런타임 단위 테스트뿐이다.
       - name: Unit + contract tests
-        if: always()
+        if: always() && (github.event_name != 'pull_request' || steps.classify.outputs.runtime == 'true')
         run: pnpm test:run
+
+      - name: Contract tests only (no runtime change)
+        if: always() && github.event_name == 'pull_request' && steps.classify.outputs.runtime != 'true'
+        run: pnpm exec vitest run tests/contract/
 
       # 아래 둘은 `pnpm test:run` 밖의 node:test 스위트라 여기 걸지 않으면
       # 아무 데서도 안 돈다. 실제로 2026-07-26 까지 둘 다 main 에서 깨진 채
