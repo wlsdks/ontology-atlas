@@ -215,6 +215,8 @@ export interface TopologyV2Tokens {
   /** `--topology-v2-dust-parallax-min/max` — dust 시차 깊이 범위 (B3 잔여). */
   dustParallaxMin: number;
   dustParallaxMax: number;
+  /** 성좌 배경 시차 계수 — 1=세계에 용접, <1=먼 층. `model/background-parallax.ts` 참고. */
+  canvasBgParallax: number;
 
   // 2.5 안전 영역 (fixed chrome inset, px — 라벨 컬링 + 카메라 fit)
   safeInsetLeft: number;
@@ -346,6 +348,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "radiusMagnitudeK", cssVar: "--topology-v2-radius-magnitude-k", kind: "number" },
   { key: "dustParallaxMin", cssVar: "--topology-v2-dust-parallax-min", kind: "number" },
   { key: "dustParallaxMax", cssVar: "--topology-v2-dust-parallax-max", kind: "number" },
+  { key: "canvasBgParallax", cssVar: "--topology-v2-canvas-bg-parallax", kind: "number" },
 
   { key: "safeInsetLeft", cssVar: "--topology-v2-safe-inset-left", kind: "number" },
   { key: "safeInsetRight", cssVar: "--topology-v2-safe-inset-right", kind: "number" },

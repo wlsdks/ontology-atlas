@@ -8,6 +8,7 @@
 import type { CameraAxes } from "../engine/camera";
 import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, type EdgeEgoState, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
+import { resolveBackgroundOrigin } from "../model/background-parallax";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selection-pulse";
 import { footprintRingStyle, FOOTPRINT_RING_OFFSET } from "../model/footprint-ring";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-parallax";
@@ -560,6 +561,19 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // B5 — 라벨 줌 스케일 (프레임당 1회, 전 라벨 공용).
   const labelScale = labelZoomScale(camera.scale.value);
 
+  // 성좌 배경만 **먼 층**으로 흘린다 (2026-07-28 카운슬 — 소유자 "우주처럼
+  // 관성 있어보이게"). 격자·등고선은 지면이라 계수 1(세계에 용접) 그대로다.
+  // 자율 운동 0 — 카메라 원점의 함수일 뿐이라 카메라가 서면 배경도 선다.
+  // 결정 전체가 `model/background-parallax.ts` 의 순수 함수 한 개에 있다 —
+  // 여기 남는 미검증 표면은 "그 결과를 gridDraw 에 넘기는가" 한 줄뿐이다.
+  const bgOrigin = resolveBackgroundOrigin(
+    gridOrigin,
+    { width: viewportWidth, height: viewportHeight },
+    backgroundVariant,
+    tokens.canvasBgParallax,
+    reducedMotion,
+  );
+
   gridDraw(
     ctx,
     {
@@ -570,8 +584,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       gridPattern,
       constellationPattern,
       contourPattern,
-      originX: gridOrigin.x,
-      originY: gridOrigin.y,
+      originX: bgOrigin.x,
+      originY: bgOrigin.y,
     },
     {
       canvasBgNear: tokens.canvasBgNear,
