@@ -36,6 +36,24 @@ export function filterDocsByCollection<T extends Pick<VaultDoc, 'frontmatter' | 
   return docs.filter((doc) => resolveDocsVaultCollection(doc) === collection);
 }
 
+/**
+ * 첫 화면이 열릴 컬렉션 — **자기가 가진 것을 보여준다**.
+ *
+ * 기본값 `'guides'` 는 "글부터 보여준다" 는 의도였지만, 그 컬렉션이 0건인
+ * 볼트(이 저장소의 dogfood 샘플이 그렇다 — 전부 온톨로지 노드)에서는 볼트
+ * 필이 "문서 31개" 라 말하는 동안 목록이 비어 있었다. 화면이 자기 상태에
+ * 대해 거짓을 말한 것이라, 이건 취향이 아니라 정직성 결함이다.
+ *
+ * 볼트가 아예 비었을 때는 폴백하지 않는다 — `'all'` 로 바꿔도 여전히 0건이라
+ * 상태만 흔들고 사용자에게 주는 것이 없다. 그 자리는 빈 상태 카피의 몫이다.
+ */
+export function resolveInitialDocsCollection<
+  T extends Pick<VaultDoc, 'frontmatter' | 'path' | 'slug'>,
+>(docs: T[], preferred: DocsVaultDocCollection = 'guides'): DocsVaultCollection {
+  if (docs.length === 0) return preferred;
+  return filterDocsByCollection(docs, preferred).length > 0 ? preferred : 'all';
+}
+
 export function buildTagIndexForDocs(docs: Pick<VaultDoc, 'slug' | 'tags'>[]): Record<string, string[]> {
   const tags: Record<string, string[]> = {};
   for (const doc of docs) {

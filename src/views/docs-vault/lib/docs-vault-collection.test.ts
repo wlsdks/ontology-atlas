@@ -5,6 +5,7 @@ import {
   filterDocsByCollection,
   resolveDocsVaultSlugAlias,
   resolveDocsVaultCollection,
+  resolveInitialDocsCollection,
   shouldDeferDocsVaultDefaultSelection,
   shouldShowSampleWelcomeNote,
 } from './docs-vault-collection';
@@ -149,5 +150,41 @@ describe('docs vault collections', () => {
         dismissed: false,
       }),
     ).toBe(false);
+  });
+});
+
+/**
+ * 첫 화면이 **자기가 가진 것을 보여준다** (2026-07-28 실측 결함).
+ *
+ * 기본 컬렉션이 `'guides'` 로 못 박혀 있어서, 그 컬렉션이 0건인 볼트를 열면
+ * 볼트 필은 "문서 31개" 라고 말하는데 목록은 비어 있었다. 폴백이 없었고
+ * (`setDocCollection` 호출은 전부 사용자 액션 경유), 처음 온 사람이 보는
+ * 화면이 31개 중 0개였다.
+ *
+ * 복잡도 이전에 **정직성** 문제다 — 화면이 자기 상태에 대해 거짓을 말한다.
+ * 그래서 판정은 "무엇이 예쁜가" 가 아니라 "센 것과 보인 것이 같은가" 다.
+ */
+describe('resolveInitialDocsCollection — 첫 화면은 빈 목록으로 열리지 않는다', () => {
+  it('선호 컬렉션에 문서가 있으면 그대로 연다', () => {
+    const docs = [doc('a'), doc('b', { kind: 'capability' })];
+    expect(resolveInitialDocsCollection(docs)).toBe('guides');
+  });
+
+  it('선호 컬렉션이 0건이고 다른 곳에 문서가 있으면 전체로 연다', () => {
+    // 이 저장소의 dogfood 샘플이 정확히 이 모양이다 — 전부 온톨로지 노드라
+    // guides 가 0.
+    const docs = [doc('a', { kind: 'domain' }), doc('b', { kind: 'element' })];
+    expect(resolveInitialDocsCollection(docs)).toBe('all');
+  });
+
+  // 빈 볼트에서 'all' 로 바꿔 봐야 여전히 0건이다. 아무 말도 안 하는 폴백은
+  // 상태만 흔들고 사용자에게 주는 것이 없으므로 선호값을 지킨다.
+  it('볼트가 비어 있으면 선호 컬렉션을 지킨다', () => {
+    expect(resolveInitialDocsCollection([])).toBe('guides');
+  });
+
+  it('선호 컬렉션을 지정할 수 있다', () => {
+    const docs = [doc('a')];
+    expect(resolveInitialDocsCollection(docs, 'ontology')).toBe('all');
   });
 });
