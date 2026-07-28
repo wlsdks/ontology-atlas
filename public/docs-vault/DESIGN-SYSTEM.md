@@ -662,30 +662,16 @@ names in component data markers and tests whenever a surface depends on
 - `--topology-selected-relation-route-step-min-width`: selected relation
   fact/evidence/gate/action step minimum width; prevents cramped ontology
   proof cells inside the compact inspector.
-- `--topology-relation-label-card-clearance`: minimum distance between
-  scan-level relation labels and visible map cards; keeps the label readable as
-  a topology annotation instead of a clipped card badge.
-- `--topology-relation-label-surface` / `--topology-relation-label-border` /
-  `--topology-relation-label-shadow` /
-  `--topology-relation-label-focus-ring` /
-  `--topology-relation-label-hit-min-height` /
-  `--topology-relation-label-badge-height` /
-  `--topology-relation-label-padding-x` /
-  `--topology-relation-label-radius` /
-  `--topology-relation-label-text-size` /
-  `--topology-relation-label-svg-text-size` /
-  `--topology-relation-label-text` /
-  `--topology-relation-label-svg-text`: scan-level relation label treatment
-  that separates typed relation facts from selected-card surfaces. The label
-  should read as a quiet map annotation, not a floating panel. The HTML hit
-  target, visible badge, and SVG fallback text expose the same token contract so
-  screen proof can verify the clickable graph mark, not only its inner badge.
-- `--topology-relation-label-selected-surface` /
-  `--topology-relation-label-selected-border` /
-  `--topology-relation-label-selected-shadow` /
-  `--topology-relation-label-selected-text`: focus-level selected relation
-  label treatment. A selected relation is the active ontology fact on the map,
-  so its halo must be token-backed instead of embedded RGBA in the renderer.
+- ~~`--topology-relation-label-*`~~ **(18개, 2026-07-28 삭제)**. 관계 라벨을
+  DOM 배지로 그리던 시절의 토큰 무리였다 — 치수 6 · 색 8 · 그림자 2 ·
+  포커스 링 1 · 간격 1. 라벨 렌더가 캔버스로 옮겨간 뒤 소비자가 사라졌는데
+  정의와 이 문서의 규격 설명만 남아 있었다. 실측: `var()` 사용 0회
+  (`globals.css` 내부 포함), 캔버스 토큰 리더 스펙 목록 0건, 문자열 참조 0건.
+  `--pad-card`/`--pad-panel`(2026-07-26) 과 같은 이유 — **아무도 안 쓰는
+  토큰은 규격이 아니라 오정보다.** 특히 이 무리는 `-text-size: 10.5px` /
+  `-svg-text-size: 9.5px` 로 **타입 램프 밖 크기**를 규격처럼 제시하고 있어서,
+  다음 사람이 근거로 삼으면 램프 이탈이 정당화된다. 관계 라벨 처리를 다시
+  토큰화할 일이 생기면 그때 **살아있는 소비자와 함께** 새로 만든다.
 - `--topology-relation-stroke-*`: SVG relation line ink and width for selected,
   strong, supported, weak, and review relations. Relation strokes are topology
   facts, not ambient decoration; tune their contrast with tokens so the map can

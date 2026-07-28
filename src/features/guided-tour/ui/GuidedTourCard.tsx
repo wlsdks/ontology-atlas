@@ -34,6 +34,12 @@ export function GuidedTourCard({
   // 단계가 바뀌면 포커스를 카드로 옮긴다(aria-label 재낭독 + 키보드 사용자의
   // Tab 시작점). 닫힐 때의 트리거 복원은 `useGuidedTour.start()`/`finish()`
   // 가 담당(자식 effect 가 먼저 돌아 activeElement 캡처가 오염되는 문제 회피).
+  //
+  // Tab 가두기는 **여기가 아니라 `GuidedTourOverlay`** 가 한다
+  // (`useDialogFocusTrap`, `initialFocus: "none"`). 오버레이가 카드를 품고
+  // 있어 범위가 더 넓고 정확하다. 여기서 또 걸면 window keydown 리스너가 둘이
+  // 되어 한 번의 Tab 이 포커스를 두 번 옮긴다 — 2026-07-28 감사에서 실제로
+  // 이중으로 걸 뻔했다.
   const cardRef = useRef<HTMLDivElement | null>(null);
   const stepId = step?.id ?? null;
   useEffect(() => {
@@ -65,8 +71,14 @@ export function GuidedTourCard({
         "fixed z-[75] rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--color-panel)] p-4 shadow-[var(--chrome-shadow)]",
         "transition-opacity duration-[var(--topology-tour-transition-ms)] ease-out motion-reduce:transition-none",
         // 단계 전환 등장 — 오버레이가 `key={step.id}` 로 remount 시키므로 이
-        // 키프레임(기존 패널 크로스페이드 재사용)이 매 단계 한 번 돈다.
-        "animate-[panelCrossfadeIn_var(--topology-motion-panel-duration)_var(--topology-motion-ease-out)] motion-reduce:animate-none",
+        // 키프레임(불투명도 전용 `panelCrossfadeIn`)이 매 단계 한 번 돈다.
+        //
+        // 2026-07-28: 인라인 arbitrary `animate-[…] motion-reduce:animate-none`
+        // 에서 **이름 있는 클래스로 승격**했다. 인라인이면 globals.css 의
+        // reduced-motion 등록부가 가리킬 셀렉터가 없어서, 감속 사용자에게는
+        // 전역 kill 규칙만 걸리고 동등물은 하나도 안 왔다 — 단계 전환이 통째로
+        // 하드컷이었다. 목록이 곧 사정거리다.
+        "guided-tour-card-in",
         "focus:outline-none",
       )}
       style={{ width, ...style }}

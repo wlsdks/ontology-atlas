@@ -23,6 +23,14 @@ export {
   writeGuidedTourStatus,
   type GuidedTourStatus,
 } from "./model/tour-storage";
+export {
+  FIRST_RUN_SEEN_ENTRIES,
+  applyFirstRunSeen,
+  applyGuideOverride,
+  clearFirstRunSeen,
+  resolveGuideOverride,
+  type GuideOverride,
+} from "./model/first-run-seen";
 export { canAutoStartGuidedTour } from "./model/auto-start-guard";
 export { watchGuidedTourAutoStartCancel } from "./model/auto-start-interaction";
 export {

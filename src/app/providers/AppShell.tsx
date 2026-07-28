@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import {
   AppNavRail,
@@ -15,9 +15,13 @@ import {
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode } from "@/features/data-source-mode";
-import { DestinationGuide, GuideReplayProvider } from "@/features/guided-tour";
+import {
+  DestinationGuide,
+  GuideReplayProvider,
+  applyGuideOverride,
+} from "@/features/guided-tour";
 import { UpdateToast, useAppUpdate } from "@/features/app-update";
-import { resolveActiveNavDestination } from "@/shared/lib/nav-destination";
+import { isGatewayRoute, resolveActiveNavDestination } from "@/shared/lib/nav-destination";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 
 /**
@@ -49,6 +53,7 @@ import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
  * (레이아웃 상주라) 그 의도가 살아남아 HomePage 가 마운트 직후 소비한다.
  */
 export function AppShell({ children }: { children: ReactNode }) {
+  useGuideOverride();
   return (
     <NavRailShellProvider>
       {/* 2026-07-25 — 기록 모달 런처 제거. 목적지(`/git/`)가 lg+ 레일과
@@ -62,6 +67,25 @@ export function AppShell({ children }: { children: ReactNode }) {
       </AgentConnectLauncherProvider>
     </NavRailShellProvider>
   );
+}
+
+/**
+ * `?guides=off|reset` 를 **자식이 렌더되기 전에** 적용한다 (감사 세션용).
+ *
+ * lazy state 초기화인 이유: 안내 표면들은 자기 state 초기화/effect 에서
+ * localStorage 를 읽는데, React 는 부모 렌더 → 자식 렌더 → 자식 effect →
+ * 부모 effect 순으로 돈다. 그래서 여기서 `useEffect` 를 쓰면 **이미 늦어**
+ * 안내가 한 프레임 떴다가 사라지고, 그 한 프레임이 정확히 모션 감사가 재는
+ * 프레임이다. 초기화 함수는 부모 **렌더 중**에 돌아 자식보다 먼저다.
+ *
+ * 부수효과를 렌더에서 내는 것은 일반적으로 피해야 하지만, 이 쓰기는
+ * 멱등이고(같은 키에 같은 값) StrictMode 이중 렌더에서도 결과가 같다.
+ */
+function useGuideOverride(): void {
+  useState(() => {
+    if (typeof window === "undefined") return null;
+    return applyGuideOverride(window.location.search);
+  });
 }
 
 /**
@@ -148,6 +172,16 @@ function AppNavRailSlot() {
   const pathname = usePathname() ?? "/";
   const dataSourceMode = useDataSourceMode();
 
+  // 관문 라우트는 워크벤치 크롬(좌측 레일)을 쓰지 않는다 (2026-07-28 소유자
+  // 확정). `hidden` prop 은 언마운트가 아니라 `lg:hidden` 이라
+  // persistent-shell 의 DOM identity 계약을 지키면서 레이아웃에서만 빠진다.
+  //
+  // **셸이 판정하는 이유**: 페이지가 `setHidden(true)` 를 부르는 방식이면
+  // ① 첫 프레임에 레일이 그려졌다 사라지는 깜빡임이 생기고 ② 다음에 만드는
+  // 관문 표면이 그 호출을 빠뜨린다(공방이 유틸 슬롯 등록을 빠뜨렸던 #65
+  // 계열). 경로 판정은 렌더 중에 끝난다.
+  const gateway = isGatewayRoute(pathname);
+
   // P4-② 분기(TopologyIndexPanel 푸터와 동일 계약) — 연결됨: 활동
   // 다이제스트(인사이트)로. 미연결/stale: 연결 시트를 여는 전역 의도를 세운다.
   // 시트 본체는 HomePage 소유이므로 지형도 밖이면 지형도로 이동 —
@@ -188,7 +222,7 @@ function AppNavRailSlot() {
   return (
     <AppNavRail
       settingsSlot={utilityTier}
-      hidden={hidden}
+      hidden={hidden || gateway}
       contextHrefs={contextHrefs}
       gitDirtyCount={gitDirtyCount}
       onAgentTileActivate={onAgentTileActivate}

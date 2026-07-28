@@ -1149,6 +1149,29 @@
     transform-origin: center;
   }
 
+  /*
+   * 가이드 투어 카드의 단계 등장 (2026-07-28 — 인라인 arbitrary animate 에서 승격).
+   *
+   * **클래스로 올린 이유는 감속 동등물이다.** 인라인
+   * `animate-[panelCrossfadeIn_…]` 은 아래 reduced-motion 등록부가 **가리킬 이름이
+   * 없어서**, 전역 kill 규칙(모든 animation 0.01ms)에 걸린 채 아무 동등물도
+   * 못 받았다 — 감속 사용자에게 단계 전환이 통째로 하드컷이었다. 등록부는
+   * 셀렉터 목록이고, 목록이 곧 사정거리다.
+   *
+   * 키프레임은 **불투명도 전용**(`panelCrossfadeIn`)이라 감속에서 끌 이유가
+   * 없다. 전정계를 건드리는 축은 이동인데 이 표면에는 이동이 없다 — 끄면
+   * "무엇이 바뀌었나" 라는 정보만 사라지고 얻는 게 없다(#737 토스트와 같은
+   * 형태: 벤더가 정보 축을 끄고 이동 축은 남겼던 그 실패).
+   *
+   * 카드가 단계마다 `key` 로 remount 되므로 이 등장은 매 단계 한 번 돈다.
+   * 위치 보간은 여기 없다 — 캔버스 노드 앵커 단계가 매 프레임 rect 를 추종해
+   * 카메라 스프링에 끌리기 때문(2026-07-24 판정, 그때 검토 후 기각).
+   */
+  .guided-tour-card-in {
+    animation: panelCrossfadeIn var(--topology-tour-transition-ms)
+      var(--topology-motion-ease-out) both;
+  }
+
   /* rank2 — DOM 오버레이 3종(GlobalSearch·SearchPalette·NewDocKindDialog)의
      단일 진입 문법. opacity 0→1 + translateY(--overlay-enter-translate)→0
      만 — scale 진입은 없다(hover:scale-* 금지선 혼동 방지, 진입/퇴장 대칭을
@@ -1487,24 +1510,22 @@
     --topology-relation-summary-surface: rgba(139, 151, 255, 0.18);
     --topology-relation-summary-border: rgba(139, 151, 255, 0.42);
     --topology-relation-summary-text: rgba(222, 225, 255, 0.94);
-    --topology-relation-label-card-clearance: 22px;
-    --topology-relation-label-hit-min-height: 33px;
-    --topology-relation-label-badge-height: 19px;
-    --topology-relation-label-padding-x: 7px;
-    --topology-relation-label-radius: 6px;
-    --topology-relation-label-text-size: 10.5px;
-    --topology-relation-label-svg-text-size: 9.5px;
-    --topology-relation-label-text: rgba(222, 225, 255, 0.68);
-    --topology-relation-label-selected-text: rgba(247, 248, 255, 0.90);
-    --topology-relation-label-svg-text: rgba(222, 225, 255, 0.58);
-    --topology-relation-label-surface: rgba(12, 14, 20, 0.62);
-    --topology-relation-label-border: rgba(139, 151, 255, 0.18);
-    --topology-relation-label-shadow: 0 4px 10px rgba(0, 0, 0, 0.16);
-    --topology-relation-label-selected-surface: rgba(28, 31, 48, 0.80);
-    --topology-relation-label-selected-border: rgba(139, 151, 255, 0.44);
-    --topology-relation-label-selected-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
-    --topology-relation-label-focus-ring: rgba(139, 151, 255, 0.58);
-    --topology-relation-label-segment-gap: 0.375rem;
+    /*
+     * (구 `--topology-relation-label-*` 18개는 2026-07-28 에 삭제했다.)
+     *
+     * 관계 라벨을 DOM 배지로 그리던 시절의 토큰 무리다 — 치수 6 · 색 8 ·
+     * 그림자 2 · 포커스 링 1 · 간격 1. 라벨 렌더가 캔버스로 옮겨간 뒤
+     * 아무도 안 읽게 됐는데 정의만 남았고, `DESIGN-SYSTEM.md` 는 그걸 여전히
+     * 규격으로 소개하고 있었다. 확인: `var(--topology-relation-label-*)`
+     * 사용 0회(globals.css 내부 포함), 캔버스 토큰 리더
+     * (`read-topology-v2-tokens.ts`) 스펙 목록에도 0건, 문자열 참조 0건.
+     *
+     * `--pad-card`/`--pad-panel`(2026-07-26) 과 같은 이유로 지운다:
+     * **아무도 안 쓰는 토큰은 규격이 아니라 오정보다.** 특히 이 무리는
+     * `-text-size: 10.5px` / `-svg-text-size: 9.5px` 처럼 **타입 램프 밖
+     * 크기**를 규격처럼 제시하고 있어서, 다음 사람이 근거로 삼으면 램프를
+     * 벗어난 글자 크기가 정당화된다.
+     */
     --topology-relation-spine-halo: rgba(139, 151, 255, 0.34);
     --topology-relation-spine-terminal: rgba(205, 210, 255, 0.86);
     /* R+ 기획자 감사 ①: 1.1~1.6px × 실효알파 ~0.25 는 다크 캔버스에서
@@ -1566,7 +1587,20 @@
      * `AppSettingsMenu.tsx` rail-tile trigger variant).
      */
     --app-nav-rail-utility-icon-size: var(--app-nav-rail-icon-size);
-    --app-nav-rail-label-size: calc(9.5px * var(--topology-ui-scale-factor));
+    /*
+     * 레일 라벨 — 램프의 `caption` 단이다 (2026-07-28 봉합).
+     *
+     * 예전에는 `calc(9.5px * …)` 로 **값을 리터럴로 복제**했다. `--text-caption`
+     * 과 같은 값인데 이름이 달라서, Tailwind v4 의 companion 결합
+     * (`--text-caption--line-height`)이 안 걸리고 **행간이 상속 1.5 로 떨어졌다**
+     * — 실측 14.25px, 램프 짝은 14px. #734 가 `/git` 헤드라인에서 고친 것과
+     * 같은 계열인데, lint 셀렉터가 `--text-` 접두만 봐서 안 걸렸다.
+     *
+     * 행간 짝은 이 토큰을 쓰는 쪽이 `leading-caption` 으로 명시한다 —
+     * arbitrary length 참조(`text-[length:var(…)]`)는 크기만 나르고 companion 을
+     * 못 싣기 때문이다.
+     */
+    --app-nav-rail-label-size: calc(var(--text-caption) * var(--topology-ui-scale-factor));
     --app-nav-rail-tile-width: calc(38px * var(--topology-ui-scale-factor));
     --app-nav-rail-tile-height: calc(32px * var(--topology-ui-scale-factor));
     --topology-panel-path-rail-width: clamp(
@@ -1813,7 +1847,12 @@
      * down one notch (title 13→12) while the engraved census stays legible (9px).
      */
     --topology-chrome-control-height: clamp(32px, 2vw, 36px);
-    --topology-chrome-control-height-compact: clamp(30px, 1.9vw, 34px);
+    /* `--topology-chrome-control-height-compact` 는 2026-07-28 에 삭제했다 —
+       정의 1곳, 참조 0곳이었다. 게다가 coarse 포인터 블록이 그 죽은 토큰을
+       44px 로 **승격까지** 하고 있어서, 읽으면 "터치에서 컴팩트 컨트롤이
+       커진다" 는 규격처럼 보이는데 실제로는 아무 픽셀도 만들지 않았다.
+       `--pad-card`/`--pad-panel` 선례와 같다: 아무도 안 쓰는 토큰은 규격이
+       아니라 오정보다. */
     --topology-chrome-badge-size: 26px;
     --topology-chrome-badge-size-compact: 22px;
     --topology-chrome-icon-size: 12px;
@@ -2711,7 +2750,24 @@
         var(--touch-target-min)
       );
       --topology-chrome-control-height: var(--touch-target-min);
-      --topology-chrome-control-height-compact: var(--touch-target-min);
+      /*
+       * (구 `--topology-chrome-control-height-compact` 승격은 여기 있었다 —
+       * 참조가 0곳인 죽은 토큰이라 정의와 함께 2026-07-28 에 삭제.)
+       *
+       * 크롬 타일/칩 — 2026-07-28 감사가 잡은 **승격의 사각지대**.
+       *
+       * 위 `--topology-chrome-control-height` 는 여기서 44px 로 잘 올라가는데,
+       * 실제로 상단 크롬을 그리는 공유 프리미티브 두 개(`ChromeTile`
+       * `ChromeChip`)는 그 토큰을 안 읽고 `--chrome-tile-size` 를 읽는다
+       * (src 사용처 17곳 대 1곳). 그래서 승격이 **빈 방에 떨어지고** 있었다 —
+       * coarse 포인터에서 「자동 정렬」·「검색」·「내 데이터로 전환」·「기록」·
+       * 「지도 전체 맞추기」·「투어 시작」이 전부 36px 로 남았다(실측).
+       *
+       * 스케일 고정 계약(design.md)의 "크롬 필/타일 36px" 은 **fine 포인터**
+       * 규격이고, 이 블록은 coarse 에서만 올린다 — 위
+       * `--app-nav-rail-tile-height` 와 같은 `max()` 형식이라 새 규격이 아니다.
+       */
+      --chrome-tile-size: max(36px, var(--touch-target-min));
       --topology-shortcut-sheet-close-size: var(--touch-target-min);
       /* rank2/18 — DOM 오버레이 3종 close 버튼(SearchPalette 등)도 같은
          44px 승격. GlobalSearch 는 이미 --topology-search-sheet-close-size
@@ -2726,6 +2782,34 @@
          누르게 된다 — 폭이 아니라 포인터가 정한다(design.md 터치 계약). */
       --git-row-h: var(--touch-target-min);
       --git-step-h: max(44px, var(--touch-target-min));
+    }
+
+    /*
+     * 인라인 텍스트 컨트롤의 히트 영역 — 토큰으로 못 고치는 나머지 (2026-07-28).
+     *
+     * 위 승격은 전부 **높이 토큰을 읽는** 컨트롤에만 닿는다. 텍스트 링크처럼
+     * 생긴 버튼(첫 실행 패널의 「새 문서 폴더 만들기」·「여기서 둘러볼게요」·
+     * 「쉬운 말로 보기 켜기」·「개발자라면」)은 높이 토큰이 없고 글자 높이가 곧
+     * 박스라, coarse 에서 16~18px 로 남아 있었다 — 44px 계약의 36~41%이고
+     * 하필 낯선 사람이 가장 먼저 만나는 표면이다.
+     *
+     * 박스를 키우면 그 줄의 레이아웃이 통째로 바뀌므로, **보이는 상자는 그대로
+     * 두고 히트 영역만** 의사요소로 넓힌다. `pointer: coarse` 안에만 있으므로
+     * 마우스 사용자의 밀도는 1px 도 안 바뀐다.
+     */
+    .touch-hit-expand {
+      position: relative;
+    }
+
+    .touch-hit-expand::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      translate: -50% -50%;
+      width: max(100%, var(--touch-target-min));
+      height: max(100%, var(--touch-target-min));
+      /* 넓힌 것은 손가락용이지 눈용이 아니다 — 보이는 것은 아무것도 없다. */
     }
   }
 
@@ -2976,6 +3060,20 @@
     .overlay-spring-scrim[data-state='open'],
     .overlay-spring-scrim[data-state='closed'] {
       animation-duration: var(--topology-motion-panel-duration) !important;
+    }
+
+    /*
+     * 가이드 투어 카드 (2026-07-28) — 첫 방문에 화면을 덮는 표면인데 등록부
+     * 밖에 있었다. 인라인 arbitrary animate 라 **가리킬 이름이 없었고**, 그래서
+     * 감속 사용자에게는 단계 전환이 통째로 하드컷이었다(스크림·카드·링 셋 다).
+     *
+     * 키프레임이 불투명도 전용이므로 시간을 **돌려준다** — 없애야 할 축(이동)이
+     * 이 표면에는 없고, 끄면 "무엇이 바뀌었나" 라는 정보만 사라진다.
+     * 컷아웃 링의 `transition-[top,left,width,height]` 는 계속 잘린다 — 그건
+     * 진짜 이동 축이라 감속에서 없애는 것이 맞다.
+     */
+    .guided-tour-card-in {
+      animation-duration: var(--topology-tour-transition-ms) !important;
     }
 
     /*
