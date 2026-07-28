@@ -605,10 +605,7 @@
     "step3Body": "Copy one line from Settings and paste it into Claude Code, Codex, or Cursor, and those tools read and write the same folder you do. {tools} tools and {commands} terminal commands are included.",
     "updateNote": "When a new version ships the app tells you, and one button updates it.",
     "windowsHeading": "Windows",
-    "windowsPendingBadge": "In preparation",
-    "windowsPendingBody": "Not yet. It ships when it clears the same bar macOS did — a signed installer and an install check.",
     "windowsTrackCta": "Follow progress",
-    "releaseNotesLink": "Read the release notes",
     "releaseGateNote": "This website sends nothing to a server.",
     "factMinOsSuffix": " or later",
     "channelPrereleaseTitle": "This is a release candidate.",
@@ -633,8 +630,9 @@
     "stageClusterHint": "Press a numbered chip to unfold the concepts collapsed inside it.",
     "portraitHint": "Drag to move it",
     "step3BodyShort": "Copy one line from settings into Claude Code, Codex or Cursor, and those tools read and write the same folder you do.",
-    "trustLine": "Signed and notarized by Apple · SHA-256 published per file · nothing sent to a server",
-    "platformStatus": "Windows and Linux are not out yet — they ship when they clear the same bar."
+    "trustLine": "Signed and notarized by Apple · nothing sent to a server",
+    "platformStatus": "Windows and Linux are not out yet",
+    "windowsPolicy": "Windows and Linux ship when they clear the same bar macOS did — a signed installer and an install check."
   },
   "kinds": {
     "project": "Project",

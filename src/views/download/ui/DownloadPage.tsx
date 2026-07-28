@@ -343,7 +343,7 @@ function DownloadPlate({
         {t('stageLead')}
       </p>
 
-      <div className="mt-5 min-w-0">
+      <div className="mt-6 min-w-0">
         {published && primaryAsset ? (
           <PublishedActions primaryAsset={primaryAsset} />
         ) : (
@@ -414,7 +414,7 @@ function PlateFooterLinks() {
   const t = useTranslations('download');
 
   return (
-    <div className="mt-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-[color:var(--color-divider)] pt-3.5">
+    <div className="mt-5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-[color:var(--color-divider)] pt-3.5">
       <Link
         href="/"
         data-testid="download-web-cta"
@@ -480,13 +480,11 @@ function PendingActions() {
         {t('macosPendingBody', { tag: `v${RELEASE_VERSION}` })}
       </p>
 
-      <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+      <p className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-label leading-label text-[color:var(--color-text-quaternary)]">
         <span>
           {RELEASE_MIN_MACOS}
           {t('factMinOsSuffix')}
         </span>
-        <Dot />
-        <span>DMG</span>
       </p>
       <PlatformStatus />
     </div>
@@ -507,45 +505,47 @@ function ReleaseFactLine() {
   return (
     <p
       data-testid="download-release-facts"
-      className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]"
+      className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
     >
       <span>
         {RELEASE_MIN_MACOS}
         {t('factMinOsSuffix')}
       </span>
       <Dot />
-      <span>DMG</span>
-      <Dot />
-      <span className="text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
-        {MACOS_RELEASE.tag}
-      </span>
-      {publishedAt ? (
-        <>
-          <Dot />
-          <span className="text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
-            {format.dateTime(publishedAt, {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              // 릴리스 시각의 진실원은 GitHub 이고 그쪽은 UTC 다. 방문자
-              // 로컬 존으로 옮기면 같은 릴리스가 나라마다 하루씩 다른 날짜로
-              // 보이고, 서버 렌더와 클라이언트 렌더가 어긋난다(테스트 환경이
-              // `timeZone` 미지정을 경고하는 이유가 그것이다).
-              timeZone: 'UTC',
-            })}
-          </span>
-        </>
-      ) : null}
-      <Dot />
+      {/*
+       * 버전·날짜 **자체가** 릴리스 노트 링크다 — "릴리스 노트 보기" 라는 9글자
+       * 라벨은 죽었다(fable 판정 2026-07-29). 어디로 가는지는 버전 문자열이
+       * 이미 말하고, 외부로 나간다는 경고는 선행 아이콘이 맡는다.
+       */}
       <a
         href={MACOS_RELEASE.releaseUrl}
         target="_blank"
         rel="noopener noreferrer"
         data-testid="download-release-notes-link"
-        className="touch-hit-expand inline-flex items-center gap-1 transition-colors hover:text-[color:var(--color-text-secondary)]"
+        className="touch-hit-expand inline-flex items-baseline gap-1.5 transition-colors hover:text-[color:var(--color-text-secondary)]"
       >
-        <ExternalLink size={11} aria-hidden />
-        {t('releaseNotesLink')}
+        <ExternalLink size={11} aria-hidden className="shrink-0 self-center" />
+        {/*
+         * ⚠️ mono 는 **이 스팬 하나뿐**이다. 예전에는 줄 전체가 `font-mono` 라
+         * 한글("이상" · "릴리스 노트 보기")이 JetBrains Mono 에 없어 시스템
+         * 폴백으로 떨어졌고, 9.5px 한 줄 안에 **두 서체가 섞였다**(자간이
+         * 벌어져 보이던 그것). 소유자가 본 "조잡함"의 픽셀 원인이다.
+         * 숫자·태그는 mono 가 맞고, 한글은 본체 서체가 맞다.
+         */}
+        <span className="font-mono text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
+          {MACOS_RELEASE.tag}
+        </span>
+        {publishedAt ? (
+          <span>
+            {format.dateTime(publishedAt, {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              // 릴리스 시각의 진실원은 GitHub 이고 그쪽은 UTC 다.
+              timeZone: 'UTC',
+            })}
+          </span>
+        ) : null}
       </a>
     </p>
   );
@@ -574,7 +574,7 @@ function TrustChips() {
   return (
     <p
       data-testid="download-trust-chips"
-      className="mt-2.5 flex min-w-0 items-baseline gap-2 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
+      className="mt-5 flex min-w-0 items-baseline gap-2 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
     >
       <Check
         size={12}
@@ -713,6 +713,12 @@ function VerifyDetails({
             ? t('trustPolicyPublished', { tag: MACOS_RELEASE.tag })
             : /* 위 미게시 주석과 같은 이유 — 아직 안 나온 빌드는 개발 중 버전으로 부른다. */
               t('trustPolicyPending', { tag: `v${RELEASE_VERSION}` })}
+        </p>
+        {/* 판에서 내려온 정책 절 — "같은 기준을 통과할 때 올립니다" 는 결정
+            재료가 아니라 정책 산문이라 여기 산다(fable 판정 2026-07-29).
+            판에는 결정 사실 둘만 남는다: 없다 · 어디서 추적하나. */}
+        <p className="mt-2 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
+          {t('windowsPolicy')}
         </p>
       </div>
     </details>

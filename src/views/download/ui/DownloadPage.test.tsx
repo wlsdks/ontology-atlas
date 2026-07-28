@@ -225,10 +225,11 @@ describe('DownloadPage', () => {
     const windowsCard = screen.getByTestId('download-platform-windows');
     expect(windowsCard).toHaveTextContent(/Windows/);
     expect(windowsCard).toHaveTextContent(/not out yet/i);
-    // 같은 기준(서명·설치 검증)을 통과할 때 올린다는 약속은 유지하되, 판
-    // 안으로 올라오면서 한 줄로 줄었다 — 받는 자리에서 필요한 것은 "지금은
-    // 못 받는다" 와 "언젠가 되긴 하나" 둘뿐이다.
-    expect(windowsCard).toHaveTextContent(/same bar/i);
+    // 판에 남는 결정 사실은 둘뿐이다: **없다**(위 두 줄) · **어디서 추적하나**.
+    // "같은 기준을 통과할 때 올린다" 는 정책 산문이라 푸터 접이식으로 내려갔다
+    // (fable 판정 2026-07-29) — 받는 자리에서 정책을 읽을 이유가 없다.
+    expect(windowsCard).toHaveTextContent(/Follow progress/i);
+    expect(windowsCard).not.toHaveTextContent(/same bar/i);
     expect(screen.getByRole('link', { name: /Follow progress/i })).toBeInTheDocument();
   });
 

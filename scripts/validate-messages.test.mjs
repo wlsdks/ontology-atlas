@@ -108,9 +108,17 @@ describe('i18n message catalog', () => {
 
     // Windows is named rather than omitted, so a Windows visitor learns where
     // they stand instead of guessing whether the product excludes them.
-    assert.match(en.download.windowsPendingBadge, /In preparation/i);
-    assert.match(ko.download.windowsPendingBadge, /준비 중/);
-    assert.match(en.download.windowsPendingBody, /signed installer/i);
+    //
+    // 2026-07-29 — 그 사실이 **자리를 옮겼다**(주장은 그대로다). 예전에는
+    // 접힘 아래 별도 행(`windowsPendingBadge`/`windowsPendingBody`)이었는데,
+    // 받는 자리에서 알아야 늦지 않으므로 판 안 한 줄(`platformStatus`)로
+    // 올라갔고, 정책 산문("같은 기준을 통과할 때")은 결정 재료가 아니라
+    // 푸터 접이식(`windowsPolicy`)으로 내려갔다. 게이트가 지키는 것은 키
+    // 이름이 아니라 **두 사실이 어딘가에는 있다**는 것이다.
+    assert.match(en.download.platformStatus, /Windows/);
+    assert.match(ko.download.platformStatus, /Windows/);
+    assert.match(en.download.windowsPolicy, /signed installer/i);
+    assert.match(ko.download.windowsPolicy, /서명된 설치 파일/);
 
     // A domain that does not resolve must not be cited as fact.
     assert.doesNotMatch(JSON.stringify(en.download), /ontology-atlas\.dev/);
