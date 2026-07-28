@@ -74,6 +74,15 @@ jobs:
       - name: Desktop runtime split tests
         run: pnpm test:desktop:runtime
 
+      # `tauri.conf.json` 이 `externalBin` 으로 MCP 사이드카를 선언한 뒤로는
+      # **모든 cargo 호출**이 그 파일을 요구한다 — 번들 단계뿐 아니라 아래
+      # `cargo test` 도 빌드 스크립트에서 resource path 를 확인한다. 사이드카를
+      # `desktop:build:app` 안에서만 만들던 순서로는 여기서 먼저 멈춘다
+      # (2026-07-28 v1.0.0-rc.2 실패). 러너가 네이티브 아키텍처라 호스트 트리플
+      # 기본값이 맞는다. 뒤의 번들 단계가 다시 부르지만 같은 산출물이다.
+      - name: Build bundled MCP sidecar
+        run: pnpm mcp:build-binary
+
       - name: Native vault bridge tests
         run: pnpm test:desktop:bridge
 
