@@ -4842,7 +4842,13 @@ describe('verify.mjs first-contact gates', () => {
     assert.doesNotMatch(source, /\bprocess\.exit\s*\(/);
     assert.doesNotMatch(source, /spawn\('node', \[(PARSER_TEST|SERVER_ENTRY)\]/);
     assert.match(source, /spawn\(process\.execPath, \[PARSER_TEST\]/);
-    assert.match(source, /spawn\(process\.execPath, \[SERVER_ENTRY\]/);
+    // 서버 기동은 `SERVER_BIN_OVERRIDE`(앱 번들에 실린 바이너리)를 받을 수
+    // 있게 한 겹 들어갔다. 지켜야 할 사실은 리터럴 모양이 아니라 **기본값이
+    // 이 프로세스의 Node** 라는 것이다 — `'node'` 를 PATH 에서 찾으면 사용자
+    // 환경의 다른 Node 가 잡힌다.
+    assert.match(source, /spawn\(SERVER_COMMAND, SERVER_COMMAND_ARGS/);
+    assert.match(source, /const SERVER_COMMAND = SERVER_BIN_OVERRIDE \|\| process\.execPath;/);
+    assert.match(source, /const SERVER_COMMAND_ARGS = SERVER_BIN_OVERRIDE \? \[\] : \[SERVER_ENTRY\];/);
     assert.match(source, /proc\.kill\('SIGTERM'\)/);
     assert.match(source, /proc\.kill\('SIGKILL'\)/);
     assert.match(source, /process\.exitCode\s*=\s*await main\(\)/);
