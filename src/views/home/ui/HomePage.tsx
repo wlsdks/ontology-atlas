@@ -3913,7 +3913,7 @@ export function HomePage() {
           <>
               <div
                 key={localGraphRoot ?? '__root__'}
-                className="absolute inset-0 animate-[topologyFade_220ms_ease-out]"
+                className="absolute inset-0 animate-[topologyFade_var(--motion-base)_var(--motion-ease)]"
               >
                 {/* Empty-state overlay when the visible Sigma graph has 0–1
                     nodes — the lone Sigma dot otherwise reads as a broken
