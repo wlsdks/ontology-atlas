@@ -118,12 +118,12 @@ The CLI currently exposes 52 commands over the same local vault, including
 graph-database-style queries:
 
 ```bash
-ontology-atlas validate docs/ontology
-ontology-atlas workspace-brief docs/ontology
-ontology-atlas match-nodes docs/ontology --kind capability --limit 10
-ontology-atlas match-edges docs/ontology --type depends_on --limit 10
-ontology-atlas domain-matrix docs/ontology --types depends_on,relates
-ontology-atlas agent-brief docs/ontology --graph-db-pack
+node $ATLAS/cli/src/index.mjs validate docs/ontology
+node $ATLAS/cli/src/index.mjs workspace-brief docs/ontology
+node $ATLAS/cli/src/index.mjs match-nodes docs/ontology --kind capability --limit 10
+node $ATLAS/cli/src/index.mjs match-edges docs/ontology --type depends_on --limit 10
+node $ATLAS/cli/src/index.mjs domain-matrix docs/ontology --types depends_on,relates
+node $ATLAS/cli/src/index.mjs agent-brief docs/ontology --graph-db-pack
 ```
 
 This mode is useful when an agent has no MCP connector available. The CLI still
@@ -134,7 +134,7 @@ Use `agent-setup` when the vault already exists and you only want to repair
 agent config files:
 
 ```bash
-ontology-atlas agent-setup /absolute/path/to/vault --root /absolute/path/to/codebase --write
+node $ATLAS/cli/src/index.mjs agent-setup /absolute/path/to/vault --root /absolute/path/to/codebase --write
 ```
 
 That command creates missing `.mcp.json` and `.codex/config.toml` files without
@@ -224,13 +224,13 @@ For agent or terminal sessions, start with a plan-first scan instead of pulling
 the full graph:
 
 ```bash
-ontology-atlas facets docs/ontology --limit 10
-ontology-atlas schema docs/ontology --limit 10
-ontology-atlas match-nodes docs/ontology --kind capability --limit 10
-ontology-atlas match-edges docs/ontology --type depends_on --limit 10
-ontology-atlas domain-matrix docs/ontology --types depends_on,relates
-ontology-atlas all-paths capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --plan --force --max-hops 3 --types depends_on,relates
-ontology-atlas explain capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --types depends_on,relates
+node $ATLAS/cli/src/index.mjs facets docs/ontology --limit 10
+node $ATLAS/cli/src/index.mjs schema docs/ontology --limit 10
+node $ATLAS/cli/src/index.mjs match-nodes docs/ontology --kind capability --limit 10
+node $ATLAS/cli/src/index.mjs match-edges docs/ontology --type depends_on --limit 10
+node $ATLAS/cli/src/index.mjs domain-matrix docs/ontology --types depends_on,relates
+node $ATLAS/cli/src/index.mjs all-paths capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --plan --force --max-hops 3 --types depends_on,relates
+node $ATLAS/cli/src/index.mjs explain capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --types depends_on,relates
 ```
 
 Important rule: scan rows are candidates, not proof. Before using a node or edge

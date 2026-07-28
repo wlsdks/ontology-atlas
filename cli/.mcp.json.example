@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "ontology-atlas": {
+      "command": "node",
+      "args": [
+        "/Users/stark/dev/oh-my-ontology/mcp/src/index.js"
+      ],
+      "env": {
+        "OATLAS_VAULT": "../../../../../var/folders/lk/h16phdtj1fx_j2lkwwxnzm1r0000gn/T/oatlas-init-5jIE29",
+        "OATLAS_REPO_ROOT": "."
+      }
+    }
+  }
+}

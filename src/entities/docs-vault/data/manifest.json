@@ -56,8 +56,8 @@
         }
       ],
       "excerpt": "Current as of 2026-07-27. This is the user-facing guide for running ontology-atlas as a local meaning graph: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is t",
-      "wordCount": 2568,
-      "updatedAt": "2026-07-28",
+      "wordCount": 2582,
+      "updatedAt": "2026-07-29",
       "linksOut": []
     },
     {
@@ -6388,8 +6388,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7273,
-      "updatedAt": "2026-07-28",
+      "wordCount": 7278,
+      "updatedAt": "2026-07-29",
       "linksOut": []
     },
     {

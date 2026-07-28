@@ -540,9 +540,9 @@ export` compiles the vault (the same deterministic `compile_ontology` artifact
 an agent reads) and serializes it to a standard interchange format on **stdout**:
 
 ```bash
-ontology-atlas export [vault] --format jsonld    # RDF 1.1 JSON-LD (default)
-ontology-atlas export [vault] --format graphml   # XML graph (Gephi / Cytoscape)
-ontology-atlas export [vault] --format json      # raw compile artifact, unchanged
+node $ATLAS/cli/src/index.mjs export [vault] --format jsonld    # RDF 1.1 JSON-LD (default)
+node $ATLAS/cli/src/index.mjs export [vault] --format graphml   # XML graph (Gephi / Cytoscape)
+node $ATLAS/cli/src/index.mjs export [vault] --format json      # raw compile artifact, unchanged
 ```
 
 The payload goes to stdout and status to stderr, so it pipes cleanly into other
@@ -558,17 +558,17 @@ is not an export surface.
 
 ```bash
 # Gephi / Cytoscape — open the .graphml directly:
-ontology-atlas export docs/ontology --format graphml > atlas.graphml
+node $ATLAS/cli/src/index.mjs export docs/ontology --format graphml > atlas.graphml
 
 # Neo4j — GraphML via APOC (apoc.import.graphml), from the browser or cypher-shell:
-ontology-atlas export docs/ontology --format graphml > /import/atlas.graphml
+node $ATLAS/cli/src/index.mjs export docs/ontology --format graphml > /import/atlas.graphml
 #   CALL apoc.import.graphml('atlas.graphml', {readLabels: true})
 
 # NetworkX (Python):
 #   import networkx as nx; G = nx.read_graphml('atlas.graphml')
 
 # rdflib / any triplestore / Protégé — JSON-LD is RDF 1.1:
-ontology-atlas export docs/ontology --format jsonld > atlas.jsonld
+node $ATLAS/cli/src/index.mjs export docs/ontology --format jsonld > atlas.jsonld
 #   import rdflib; g = rdflib.Graph(); g.parse('atlas.jsonld', format='json-ld')
 ```
 

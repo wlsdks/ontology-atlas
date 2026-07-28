@@ -206,7 +206,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText('MCP verify 명령 미리보기'),
-    ).toHaveTextContent('ontology-atlas mcp-verify . --timeout-ms 15000');
+    ).toHaveTextContent('node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000');
     expect(
       screen.getByText('설정이 애매하거나 codebase root에서 에이전트를 열었을 때 JSON readiness와 performanceOk를 먼저 확인합니다.'),
     ).toBeInTheDocument();
@@ -259,7 +259,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByLabelText('MCP verify 명령 미리보기'),
     ).toHaveTextContent(
-      "ontology-atlas mcp-verify '/Users/jinan/side-project/ontology-atlas/docs/ontology' --timeout-ms 15000",
+      "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/jinan/side-project/ontology-atlas/docs/ontology' --timeout-ms 15000",
     );
   });
 
@@ -420,7 +420,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('agent_brief'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ontology-atlas agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4'),
+      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('performanceOk=false'),
@@ -552,12 +552,12 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "1. Check config state: ontology-atlas agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
+        "1. Check config state: node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "2. Repair only if state reports missing configs: ontology-atlas agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
+        "2. Repair only if state reports missing configs: node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -565,21 +565,21 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "4. Verify MCP tools: ontology-atlas mcp-verify '<absolute path to your team-vault folder>' --timeout-ms 15000",
+        "4. Verify MCP tools: node $ATLAS/cli/src/index.mjs mcp-verify '<absolute path to your team-vault folder>' --timeout-ms 15000",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "5. Gate fallback performance: ontology-atlas agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+        "5. Gate fallback performance: node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "6. Read the graph: ontology-atlas workspace-brief '<absolute path to your team-vault folder>' && ontology-atlas agent-brief '<absolute path to your team-vault folder>' --prompt",
+        "6. Read the graph: node $ATLAS/cli/src/index.mjs workspace-brief '<absolute path to your team-vault folder>' && node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --prompt",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ontology-atlas agent-setup'),
+      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-setup'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('--root'),
@@ -603,7 +603,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('validate_vault'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ontology-atlas mcp-verify . --timeout-ms 15000'),
+      expect.stringContaining('node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
@@ -612,7 +612,7 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+        "node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -622,7 +622,7 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        'ontology-atlas agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
+        'node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -630,7 +630,7 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
+        "node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -668,17 +668,17 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
+        "node $ATLAS/cli/src/index.mjs agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
+        "node $ATLAS/cli/src/index.mjs agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas mcp-verify '/Users/jinan/Team Vault/docs/ontology' --timeout-ms 15000",
+        "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/jinan/Team Vault/docs/ontology' --timeout-ms 15000",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -703,7 +703,7 @@ describe('VaultAgentSetupPanel', () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
-      "ontology-atlas agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
+      "node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
     );
     expect(
       await screen.findByRole('button', {
@@ -732,7 +732,7 @@ describe('VaultAgentSetupPanel', () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
-      "ontology-atlas agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
+      "node $ATLAS/cli/src/index.mjs agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
     );
   });
 
@@ -753,7 +753,7 @@ describe('VaultAgentSetupPanel', () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
-      "ontology-atlas agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
+      "node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
     );
     expect(
       await screen.findByRole('button', {
@@ -782,7 +782,7 @@ describe('VaultAgentSetupPanel', () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
-      "ontology-atlas agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
+      "node $ATLAS/cli/src/index.mjs agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
     );
   });
 
@@ -802,40 +802,40 @@ describe('VaultAgentSetupPanel', () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ontology-atlas validate .'),
+      expect.stringContaining('node $ATLAS/cli/src/index.mjs validate .'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ontology-atlas workspace-brief .'),
+      expect.stringContaining('node $ATLAS/cli/src/index.mjs workspace-brief .'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ontology-atlas agent-brief . --prompt'),
+      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --prompt'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ontology-atlas agent-brief . --graph-db-pack'),
+      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --graph-db-pack'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ontology-atlas agent-brief . --verify-fallbacks'),
+      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        'ontology-atlas agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
+        'node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ontology-atlas hubs . --plan --limit 10 --types depends_on,relates'),
+      expect.stringContaining('node $ATLAS/cli/src/index.mjs hubs . --plan --limit 10 --types depends_on,relates'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ontology-atlas hubs . --limit 10 --types depends_on,relates'),
+      expect.stringContaining('node $ATLAS/cli/src/index.mjs hubs . --limit 10 --types depends_on,relates'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ontology-atlas mcp-verify . --timeout-ms 15000'),
+      expect.stringContaining('node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000'),
     );
     expect(
       screen.getByRole('list', { name: '복사되는 CLI 그래프 runbook 미리보기' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('ontology-atlas agent-brief . --graph-db-pack')).toBeInTheDocument();
-    expect(screen.getByText('ontology-atlas agent-brief . --verify-fallbacks')).toBeInTheDocument();
-    expect(screen.getByText('ontology-atlas agent-brief . --verify-fallbacks --json')).toBeInTheDocument();
+    expect(screen.getByText('node $ATLAS/cli/src/index.mjs agent-brief . --graph-db-pack')).toBeInTheDocument();
+    expect(screen.getByText('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks')).toBeInTheDocument();
+    expect(screen.getByText('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json')).toBeInTheDocument();
     expect(
       await screen.findByRole('button', { name: 'CLI 그래프 runbook 복사됨' }),
     ).toBeInTheDocument();
@@ -862,17 +862,17 @@ describe('VaultAgentSetupPanel', () => {
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas validate '/Users/jinan/Team Vault/docs/ontology'",
+        "node $ATLAS/cli/src/index.mjs validate '/Users/jinan/Team Vault/docs/ontology'",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas hubs '/Users/jinan/Team Vault/docs/ontology' --plan --limit 10 --types depends_on,relates",
+        "node $ATLAS/cli/src/index.mjs hubs '/Users/jinan/Team Vault/docs/ontology' --plan --limit 10 --types depends_on,relates",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas mcp-verify '/Users/jinan/Team Vault/docs/ontology' --timeout-ms 15000",
+        "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/jinan/Team Vault/docs/ontology' --timeout-ms 15000",
       ),
     );
   });
@@ -901,12 +901,12 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
+        "node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "If setup state reports missing configs: ontology-atlas agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
+        "If setup state reports missing configs: node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -916,12 +916,12 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas mcp-verify '<absolute path to your team-vault folder>' --timeout-ms 15000",
+        "node $ATLAS/cli/src/index.mjs mcp-verify '<absolute path to your team-vault folder>' --timeout-ms 15000",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+        "node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -944,17 +944,17 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas workspace-brief '<absolute path to your team-vault folder>'",
+        "node $ATLAS/cli/src/index.mjs workspace-brief '<absolute path to your team-vault folder>'",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas agent-brief '<absolute path to your team-vault folder>' --prompt",
+        "node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --prompt",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas agent-brief '<absolute path to your team-vault folder>' --graph-db-pack",
+        "node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --graph-db-pack",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -1004,22 +1004,22 @@ describe('VaultAgentSetupPanel', () => {
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
+        "node $ATLAS/cli/src/index.mjs agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "If setup state reports missing configs: ontology-atlas agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
+        "If setup state reports missing configs: node $ATLAS/cli/src/index.mjs agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas mcp-verify '/Users/jinan/Team Vault/docs/ontology' --timeout-ms 15000",
+        "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/jinan/Team Vault/docs/ontology' --timeout-ms 15000",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "ontology-atlas agent-brief '/Users/jinan/Team Vault/docs/ontology' --graph-db-pack",
+        "node $ATLAS/cli/src/index.mjs agent-brief '/Users/jinan/Team Vault/docs/ontology' --graph-db-pack",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -1048,12 +1048,12 @@ describe('VaultAgentSetupPanel', () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
-      "ontology-atlas agent-brief '/Users/jinan/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      "node $ATLAS/cli/src/index.mjs agent-brief '/Users/jinan/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
     expect(screen.getByText('자동화 gate')).toBeInTheDocument();
     expect(
       screen.getByText(
-        "ontology-atlas agent-brief '/Users/jinan/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+        "node $ATLAS/cli/src/index.mjs agent-brief '/Users/jinan/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       ),
     ).toBeInTheDocument();
     expect(
@@ -1096,7 +1096,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('## CLI fallback'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ontology-atlas validate [vault]'),
+      expect.stringContaining('node $ATLAS/cli/src/index.mjs validate [vault]'),
     );
     expect(
       await screen.findByRole('button', { name: 'sync gate 복사됨' }),

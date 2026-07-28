@@ -22,7 +22,7 @@ import { KIND_EXPECTED_EXTRAS } from "@/shared/lib/validate-vault-document";
  * 2-way + 1 cross-check vault schema contract:
  *
  *   - mcp/src/schema.mjs (AI agent surface — `add_concept`)
- *   - cli/src/lib/schema.mjs (developer CLI — `ontology-atlas add`)
+ *   - cli/src/lib/schema.mjs (developer CLI — `node $ATLAS/cli/src/index.mjs add`)
  *   - src/shared/lib/validate-vault-document.ts 의 KIND_EXPECTED_EXTRAS
  *     (web/UI advisory)
  *

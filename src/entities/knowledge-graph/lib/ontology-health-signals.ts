@@ -122,7 +122,7 @@ export interface OntologyHealthActionTarget {
   // C1 — `island` / `containment` come from the CLI-parity vault-health verdict
   // (disconnected actionable islands · missing domain containment). They rank
   // ABOVE the statistical stale/orphan/promotion signals because the CLI
-  // (`ontology-atlas health`) flips to `needs_attention` on them, so surfacing
+  // (`node $ATLAS/cli/src/index.mjs health`) flips to `needs_attention` on them, so surfacing
   // them keeps the app's "수리할 것 없음" honest.
   kind: "island" | "containment" | "stale" | "orphan" | "promotion";
 }

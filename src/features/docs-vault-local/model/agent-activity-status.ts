@@ -1,3 +1,4 @@
+import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 export const AGENT_ACTIVITY_RELATIVE_PATH = ".ontology-atlas/agent-activity.json";
 
 export const AGENT_ACTIVITY_STALE_AFTER_MS = 5 * 60 * 1000;
@@ -303,7 +304,7 @@ function deriveRefreshRequest({
     previousAgeMs: ageMs,
     command: formatRefreshCommand(heartbeat),
     message:
-      "Do not treat the stale focus as current work until the refreshed heartbeat appears. Run the command, then `ontology-atlas agent-activity <vault> --show --json` and confirm stale: false.",
+      "Do not treat the stale focus as current work until the refreshed heartbeat appears. Run the command, then `${ATLAS_CLI} agent-activity <vault> --show --json` and confirm stale: false.",
   };
 }
 
@@ -317,7 +318,7 @@ function formatRefreshCommand(heartbeat: AgentActivityHeartbeat): string {
     .flatMap(([flag, value]) => [flag, shellArg(value)]);
 
   return [
-    "ontology-atlas agent-activity <vault>",
+    `${ATLAS_CLI} agent-activity <vault>`,
     "--agent",
     shellArg(heartbeat.agent),
     "--state planning",

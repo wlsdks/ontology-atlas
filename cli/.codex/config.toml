@@ -1,0 +1,7 @@
+[mcp_servers.ontology-atlas]
+command = "node"
+args = ["/Users/stark/dev/oh-my-ontology/mcp/src/index.js"]
+
+[mcp_servers.ontology-atlas.env]
+OATLAS_VAULT = "../../../../../var/folders/lk/h16phdtj1fx_j2lkwwxnzm1r0000gn/T/oatlas-init-u8vb8T"
+OATLAS_REPO_ROOT = "."

@@ -12,7 +12,7 @@ import {
 
 /**
  * Atlas Git 요약 산식 2-way contract — 같은 로직이 두 곳에 산다:
- *   - cli/src/lib/git-snapshot.mjs (developer CLI `ontology-atlas snapshot`)
+ *   - cli/src/lib/git-snapshot.mjs (developer CLI `node $ATLAS/cli/src/index.mjs snapshot`)
  *   - src/shared/lib/atlas-git-changes.ts (웹 Atlas Git 패널)
  * (Rust `src-tauri/src/git.rs` 는 세 번째 미러 — Rust 자체 단위 테스트가
  * 같은 fixture 의도를 검증한다.)

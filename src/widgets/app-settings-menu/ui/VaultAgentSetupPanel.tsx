@@ -30,6 +30,7 @@ import { copyText } from '@/shared/lib/copy-text';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import type { AgentServerAvailability } from '@/shared/config';
+import { ATLAS_CLI } from '@/shared/config/cli-invocation';
 
 /**
  * B2 병합 (feat/settings-vault-merge) — 이전 `VaultToolsMenu` (문서함 헤더
@@ -47,15 +48,15 @@ import type { AgentServerAvailability } from '@/shared/config';
 function buildAgentVerifyCliCommand(vaultPath?: string | null): string {
   const target = vaultPath ? shellQuoteForPacket(vaultPath) : '.';
   return [
-    `ontology-atlas validate ${target}`,
-    `ontology-atlas workspace-brief ${target}`,
-    `ontology-atlas agent-brief ${target} --prompt`,
-    `ontology-atlas agent-brief ${target} --graph-db-pack`,
-    `ontology-atlas agent-brief ${target} --verify-fallbacks`,
-    `ontology-atlas agent-brief ${target} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
-    `ontology-atlas hubs ${target} --plan --limit 10 --types depends_on,relates`,
-    `ontology-atlas hubs ${target} --limit 10 --types depends_on,relates`,
-    `ontology-atlas mcp-verify ${target} --timeout-ms 15000`,
+    `${ATLAS_CLI} validate ${target}`,
+    `${ATLAS_CLI} workspace-brief ${target}`,
+    `${ATLAS_CLI} agent-brief ${target} --prompt`,
+    `${ATLAS_CLI} agent-brief ${target} --graph-db-pack`,
+    `${ATLAS_CLI} agent-brief ${target} --verify-fallbacks`,
+    `${ATLAS_CLI} agent-brief ${target} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `${ATLAS_CLI} hubs ${target} --plan --limit 10 --types depends_on,relates`,
+    `${ATLAS_CLI} hubs ${target} --limit 10 --types depends_on,relates`,
+    `${ATLAS_CLI} mcp-verify ${target} --timeout-ms 15000`,
   ].join('\n');
 }
 
@@ -113,7 +114,7 @@ function buildAgentSetupCliCommand(
   vaultPath?: string | null,
 ): string {
   const command = [
-    'ontology-atlas',
+    ATLAS_CLI,
     'agent-setup',
     shellQuoteForPacket(vaultPathForPacket(vaultName, vaultPath)),
     '--root',
@@ -140,16 +141,16 @@ function buildAgentFirstContactProofPacket(
     `1. ${setupStateCommand}`,
     `2. If setup state reports missing configs: ${buildAgentSetupCliCommand(vaultName, 'write', vaultPath)}`,
     `3. Restart Claude Code / Cursor / Codex from the codebase root after repair.`,
-    `4. ontology-atlas mcp-verify ${vaultPathArg} --timeout-ms 15000`,
-    `5. ontology-atlas agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `4. ${ATLAS_CLI} mcp-verify ${vaultPathArg} --timeout-ms 15000`,
+    `5. ${ATLAS_CLI} agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
     '',
     'Read-first graph proof:',
     ...AGENT_MCP_CONNECTED_PROOF_LINES,
     '',
     'CLI fallback proof:',
-    `1. ontology-atlas workspace-brief ${vaultPathArg}`,
-    `2. ontology-atlas agent-brief ${vaultPathArg} --prompt`,
-    `3. ontology-atlas agent-brief ${vaultPathArg} --graph-db-pack`,
+    `1. ${ATLAS_CLI} workspace-brief ${vaultPathArg}`,
+    `2. ${ATLAS_CLI} agent-brief ${vaultPathArg} --prompt`,
+    `3. ${ATLAS_CLI} agent-brief ${vaultPathArg} --graph-db-pack`,
     '',
     ...AGENT_FIRST_CONTACT_PROOF_CONTRACT_LINES,
     '',
@@ -193,9 +194,9 @@ function buildAgentSetupPacket(vaultName: string, vaultPath?: string | null): st
     `1. Check config state: ${setupStateCommand}`,
     `2. Repair only if state reports missing configs: ${setupRepairCommand}`,
     '3. Restart Claude Code / Cursor / Codex from the agent root.',
-    `4. Verify MCP tools: ontology-atlas mcp-verify ${vaultPathArg} --timeout-ms 15000`,
-    `5. Gate fallback performance: ontology-atlas agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
-    `6. Read the graph: ontology-atlas workspace-brief ${vaultPathArg} && ontology-atlas agent-brief ${vaultPathArg} --prompt`,
+    `4. Verify MCP tools: ${ATLAS_CLI} mcp-verify ${vaultPathArg} --timeout-ms 15000`,
+    `5. Gate fallback performance: ${ATLAS_CLI} agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `6. Read the graph: ${ATLAS_CLI} workspace-brief ${vaultPathArg} && ${ATLAS_CLI} agent-brief ${vaultPathArg} --prompt`,
     '',
     'Preferred existing-vault repair command from a codebase root:',
     setupRepairCommand,
@@ -219,7 +220,7 @@ function buildAgentSetupPacket(vaultName: string, vaultPath?: string | null): st
     AGENT_VERIFY_CLI_COMMAND,
     '',
     'Machine-readable setup gate for automation from the codebase root:',
-    `ontology-atlas agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `${ATLAS_CLI} agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
     '',
     'Machine-readable setup gate when the vault folder is the current directory:',
     ONTOLOGY_STARTER_JSON_GATE_COMMAND,
@@ -740,7 +741,7 @@ export function VaultAgentSetupPanel({
       : agentCodexCliCopyState === 'failed'
         ? t('agentSetup.copyCodexCliFailed')
         : t('agentSetup.copyCodexCli');
-  const agentMcpVerifyPreview = `ontology-atlas mcp-verify ${
+  const agentMcpVerifyPreview = `${ATLAS_CLI} mcp-verify ${
     vaultRootPath ? shellQuoteForPacket(vaultRootPath) : '.'
   } --timeout-ms 15000`;
   const agentJsonGatePreview = buildOntologyStarterJsonGateCommand(vaultRootPath);
@@ -1317,7 +1318,7 @@ export function VaultAgentSetupPanel({
                   {index + 1}
                 </span>
                 <code className="truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
-                  ontology-atlas {command}
+                  {ATLAS_CLI} {command}
                 </code>
               </li>
             ))}

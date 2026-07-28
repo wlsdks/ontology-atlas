@@ -283,7 +283,7 @@ export function OntologyInsightsPage() {
   const healthSignals = useMemo(() => buildOntologyHealthSignals(nodes, edges), [nodes, edges]);
   // C1 — CLI-parity health verdict (disconnected islands · missing domain
   // containment) read from the raw frontmatter, so the repair queue agrees with
-  // `ontology-atlas health` instead of falsely claiming "수리할 것 없음".
+  // `node $ATLAS/cli/src/index.mjs health` instead of falsely claiming "수리할 것 없음".
   const vaultHealth = useVaultHealth();
   const healthRepair = useMemo(
     () => buildVaultHealthRepair(vaultHealth, nodes),
