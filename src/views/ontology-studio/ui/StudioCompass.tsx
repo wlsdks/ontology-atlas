@@ -839,6 +839,15 @@ export function StudioCompass(props: StudioCompassProps) {
    * 첫 프레임이 축소로 깜빡이지 않는다.
    */
   const [stageWidth, setStageWidth] = useState(0);
+  // **첫 페인트 전에 잰다.** `useEffect` + ResizeObserver 만 쓰면 첫 프레임이
+  // 클램프 없이 그려졌다가 스냅한다 — 고치려던 잘림이 한 프레임 깜빡임으로
+  // 바뀔 뿐이다(CI 실측: 관측 콜백 전에 판정하면 배율이 아직 1). 레이아웃
+  // 이펙트로 한 번 재고, 이후 변화만 관측에 맡긴다.
+  useLayoutEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    setStageWidth(el.getBoundingClientRect().width);
+  }, []);
   useEffect(() => {
     const el = stageRef.current;
     if (!el) return;
