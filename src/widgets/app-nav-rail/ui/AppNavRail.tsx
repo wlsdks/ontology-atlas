@@ -255,7 +255,11 @@ export function AppNavRail({
                   </span>
                   <span
                     className={cn(
-                      "text-[length:var(--app-nav-rail-label-size)]",
+                      // 크기는 레일 스케일 토큰(줌 배율이 곱해진다), 행간은
+                      // 램프의 짝을 **명시**한다 — arbitrary length 참조는
+                      // 크기만 나르고 companion 행간을 못 싣는다. 명시가 없던
+                      // 동안 상속 1.5(14.25px)로 렌더됐다 (2026-07-28 실측).
+                      "text-[length:var(--app-nav-rail-label-size)] leading-caption",
                       isActive
                         ? "font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
                         : "text-[color:var(--color-text-quaternary)]",

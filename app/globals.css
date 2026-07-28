@@ -1487,24 +1487,22 @@
     --topology-relation-summary-surface: rgba(139, 151, 255, 0.18);
     --topology-relation-summary-border: rgba(139, 151, 255, 0.42);
     --topology-relation-summary-text: rgba(222, 225, 255, 0.94);
-    --topology-relation-label-card-clearance: 22px;
-    --topology-relation-label-hit-min-height: 33px;
-    --topology-relation-label-badge-height: 19px;
-    --topology-relation-label-padding-x: 7px;
-    --topology-relation-label-radius: 6px;
-    --topology-relation-label-text-size: 10.5px;
-    --topology-relation-label-svg-text-size: 9.5px;
-    --topology-relation-label-text: rgba(222, 225, 255, 0.68);
-    --topology-relation-label-selected-text: rgba(247, 248, 255, 0.90);
-    --topology-relation-label-svg-text: rgba(222, 225, 255, 0.58);
-    --topology-relation-label-surface: rgba(12, 14, 20, 0.62);
-    --topology-relation-label-border: rgba(139, 151, 255, 0.18);
-    --topology-relation-label-shadow: 0 4px 10px rgba(0, 0, 0, 0.16);
-    --topology-relation-label-selected-surface: rgba(28, 31, 48, 0.80);
-    --topology-relation-label-selected-border: rgba(139, 151, 255, 0.44);
-    --topology-relation-label-selected-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
-    --topology-relation-label-focus-ring: rgba(139, 151, 255, 0.58);
-    --topology-relation-label-segment-gap: 0.375rem;
+    /*
+     * (구 `--topology-relation-label-*` 18개는 2026-07-28 에 삭제했다.)
+     *
+     * 관계 라벨을 DOM 배지로 그리던 시절의 토큰 무리다 — 치수 6 · 색 8 ·
+     * 그림자 2 · 포커스 링 1 · 간격 1. 라벨 렌더가 캔버스로 옮겨간 뒤
+     * 아무도 안 읽게 됐는데 정의만 남았고, `DESIGN-SYSTEM.md` 는 그걸 여전히
+     * 규격으로 소개하고 있었다. 확인: `var(--topology-relation-label-*)`
+     * 사용 0회(globals.css 내부 포함), 캔버스 토큰 리더
+     * (`read-topology-v2-tokens.ts`) 스펙 목록에도 0건, 문자열 참조 0건.
+     *
+     * `--pad-card`/`--pad-panel`(2026-07-26) 과 같은 이유로 지운다:
+     * **아무도 안 쓰는 토큰은 규격이 아니라 오정보다.** 특히 이 무리는
+     * `-text-size: 10.5px` / `-svg-text-size: 9.5px` 처럼 **타입 램프 밖
+     * 크기**를 규격처럼 제시하고 있어서, 다음 사람이 근거로 삼으면 램프를
+     * 벗어난 글자 크기가 정당화된다.
+     */
     --topology-relation-spine-halo: rgba(139, 151, 255, 0.34);
     --topology-relation-spine-terminal: rgba(205, 210, 255, 0.86);
     /* R+ 기획자 감사 ①: 1.1~1.6px × 실효알파 ~0.25 는 다크 캔버스에서
@@ -1566,7 +1564,20 @@
      * `AppSettingsMenu.tsx` rail-tile trigger variant).
      */
     --app-nav-rail-utility-icon-size: var(--app-nav-rail-icon-size);
-    --app-nav-rail-label-size: calc(9.5px * var(--topology-ui-scale-factor));
+    /*
+     * 레일 라벨 — 램프의 `caption` 단이다 (2026-07-28 봉합).
+     *
+     * 예전에는 `calc(9.5px * …)` 로 **값을 리터럴로 복제**했다. `--text-caption`
+     * 과 같은 값인데 이름이 달라서, Tailwind v4 의 companion 결합
+     * (`--text-caption--line-height`)이 안 걸리고 **행간이 상속 1.5 로 떨어졌다**
+     * — 실측 14.25px, 램프 짝은 14px. #734 가 `/git` 헤드라인에서 고친 것과
+     * 같은 계열인데, lint 셀렉터가 `--text-` 접두만 봐서 안 걸렸다.
+     *
+     * 행간 짝은 이 토큰을 쓰는 쪽이 `leading-caption` 으로 명시한다 —
+     * arbitrary length 참조(`text-[length:var(…)]`)는 크기만 나르고 companion 을
+     * 못 싣기 때문이다.
+     */
+    --app-nav-rail-label-size: calc(var(--text-caption) * var(--topology-ui-scale-factor));
     --app-nav-rail-tile-width: calc(38px * var(--topology-ui-scale-factor));
     --app-nav-rail-tile-height: calc(32px * var(--topology-ui-scale-factor));
     --topology-panel-path-rail-width: clamp(
