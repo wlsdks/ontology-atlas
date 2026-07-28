@@ -619,3 +619,60 @@ test('invalid analyze options are rejected instead of coerced', () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+/**
+ * `shared/` 하나 때문에 아무것도 못 찾던 결함 (2026-07-28 도그푸딩 실측).
+ *
+ * `fsdMarkers` 에 `shared` 가 들어 있어서, **아무 TS/Node 프로젝트에나 흔한**
+ * `src/shared/` 폴더 하나만 있어도 framework 가 `fsd` 로 판정됐다. 그런데
+ * FSD 모드가 실제로 훑는 폴더는 `features/entities/widgets/views` 뿐이라,
+ * 그중 아무것도 없으면 **capabilities 0 · elements 0** 을 조용히 반환한다.
+ * 응답 어디에도 "framework 판정 때문에 0 이다" 라는 말이 없다.
+ *
+ * 같은 호출 안의 `inferImports` 는 같은 저장소에서 auth·tasks·db·notifications
+ * 를 정확히 뽑아낸다 — **두 도구가 같은 저장소를 두고 서로 다른 말을 한다.**
+ *
+ * 규율로 승격: **판정이 읽을 것을 바꾸지 못하면 그 판정을 하지 않는다.**
+ * FSD 로 부르는 유일한 결과가 "훑을 폴더가 없다" 라면 그 이름은 억제 말고는
+ * 하는 일이 없다.
+ */
+test('src/shared 하나로 FSD 라 부르지 않는다 — 훑을 폴더가 없으면 일반 경로로 간다', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'taskflow', description: 'x' }));
+    writeFileSync(join(r, 'README.md'), '# Taskflow\n');
+    // 실제 도그푸딩 픽스처의 모양 — 기능 폴더가 src/ 바로 아래에 있고,
+    // 흔한 이름의 shared/ 가 하나 섞여 있다.
+    mkdirSync(join(r, 'src/auth'), { recursive: true });
+    mkdirSync(join(r, 'src/tasks'), { recursive: true });
+    mkdirSync(join(r, 'src/notifications'), { recursive: true });
+    mkdirSync(join(r, 'src/db'), { recursive: true });
+    mkdirSync(join(r, 'src/shared'), { recursive: true });
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.notEqual(r.framework, 'fsd');
+    const slugs = r.capabilities.map((c) => c.slug).sort();
+    for (const expected of ['capabilities/auth', 'capabilities/db', 'capabilities/notifications', 'capabilities/tasks']) {
+      assert.ok(slugs.includes(expected), `${expected} 가 후보에 없다: ${slugs.join(', ')}`);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// 진짜 FSD 는 계속 FSD 여야 한다 — 고치면서 반대편을 깨뜨리지 않았는지.
+test('훑을 폴더가 하나라도 있으면 여전히 FSD 다 (lean FSD 포함)', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'lean', description: 'x' }));
+    writeFileSync(join(r, 'README.md'), '# Lean\n');
+    mkdirSync(join(r, 'src/features/auth'), { recursive: true });
+    mkdirSync(join(r, 'src/shared'), { recursive: true });
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.equal(r.framework, 'fsd');
+    assert.ok(r.capabilities.some((c) => c.slug === 'capabilities/auth'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
