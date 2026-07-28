@@ -1665,8 +1665,6 @@ function DocsVaultContent() {
       onSortChange={handleTreeSortChange}
       onGroupChange={handleTreeGroupChange}
       agentFiles={agentFiles}
-      skillParity={skillParity}
-      onCopySkillParityHandoff={handleCopySkillParityHandoff}
     />
   );
 
@@ -1940,6 +1938,9 @@ function DocsVaultContent() {
       </header>
       </div>
       <DocsVaultAuditModal
+        skillParity={skillParity}
+        onCopySkillParityHandoff={handleCopySkillParityHandoff}
+        tSkillParity={tSkillParity}
         open={contractOpen}
         manifest={manifest}
         nodeCount={ontologyDerivation.nodes.length}

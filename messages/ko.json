@@ -3155,16 +3155,12 @@
   },
   "skillParity": {
     "header": "스킬 사본",
-    "headerHint": "같은 스킬이 .claude/skills 와 .agents/skills 두 벌로 깔립니다. 한쪽만 고치면 도구에 따라 다르게 판정합니다.",
-    "listAria": "사본이 어긋난 스킬",
-    "disagreeingCount": "{count}건 어긋남",
-    "allAgreed": "{count}개 일치",
-    "verdict": {
-      "diverged": "내용 갈림",
-      "oneSided": "{tree} 에만"
-    },
     "copyHandoff": "에이전트에게 넘길 문장 복사",
     "copied": "복사했습니다 — 에이전트에게 붙여넣으세요.",
-    "copyFailed": "복사하지 못했습니다."
+    "copyFailed": "복사하지 못했습니다.",
+    "chip": "읽기 전용",
+    "valueDisagreeing": "스킬 {total}개 · {count}개 어긋남",
+    "valueAgreed": "스킬 {total}개 · 모두 일치",
+    "body": ".claude/skills 와 .agents/skills 사본을 파일 단위로 비교합니다. 아무것도 고쳐 쓰지 않아요."
   }
 }

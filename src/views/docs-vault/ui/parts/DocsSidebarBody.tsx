@@ -20,8 +20,6 @@ import { useLocale, useTranslations } from "next-intl";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { selectRecentVaultDocs } from "@/shared/lib/ontology-tree";
 import { AGENT_TOOL_LABELS, type AgentFilesUiModel } from "../../lib/agent-files";
-import type { SkillParityModel, SkillParityRow } from "../../lib/skill-parity";
-import { SkillParitySection } from "./SkillParitySection";
 import type { DocsVaultCollection } from "../../lib/docs-vault-collection";
 import { useAdvancedMenu } from "../../lib/use-advanced-menu";
 import { DocsVaultTree } from "@/widgets/docs-vault/ui/DocsVaultTree";
@@ -88,13 +86,6 @@ export interface DocsSidebarBodyProps {
    * 읽기 전용 감지: 클릭은 기존 에디터로 여는 것이 전부, 변환/수리 없음.
    */
   agentFiles?: AgentFilesUiModel | null;
-  /**
-   * 스킬 사본 일치 판정 — 데스크톱에서 절대 경로를 알 때만 non-null. `rows` 가
-   * 빈 모델("스킬 트리 없는 볼트")과 `null`("이 표면에 그 능력이 없음")은
-   * 다른 사실이라 구별해서 받는다.
-   */
-  skillParity?: SkillParityModel | null;
-  onCopySkillParityHandoff?: (rows: SkillParityRow[]) => void;
 }
 
 // "최근 바뀐 문서" 스트립에 노출할 최대 행 수. 7일 창은 대량 커밋일에
@@ -212,8 +203,6 @@ export function DocsSidebarBody({
   onSortChange,
   onGroupChange,
   agentFiles = null,
-  skillParity = null,
-  onCopySkillParityHandoff,
 }: DocsSidebarBodyProps) {
   const t = useTranslations("vaultWidgets.parts.sidebar");
   const locale = useLocale();
@@ -587,13 +576,6 @@ export function DocsSidebarBody({
               })}
             </ul>
           </section>
-        ) : null}
-
-        {/* 스킬 사본 일치 — 「에이전트 파일」 바로 아래. 같은 질문("내
-            에이전트가 무엇을 읽는가")의 다음 층이라 붙여 둔다. 데스크톱에서
-            절대 경로를 알 때만 나타난다(웹은 dot 디렉터리를 원리적으로 못 본다). */}
-        {skillParity && onCopySkillParityHandoff ? (
-          <SkillParitySection model={skillParity} onCopyHandoff={onCopySkillParityHandoff} />
         ) : null}
 
         {pinnedSlugs.length > 0 ? (
