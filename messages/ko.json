@@ -1573,9 +1573,6 @@
       "paletteTooltip": "검색 · 명령 · 태그 (⌘K)",
       "paletteAriaLabel": "팔레트 열기 (검색 · 명령 · 태그)",
       "inspector": "문서 정보",
-      "inspectorTooltip": "목차 · 공유 · 참조 보기",
-      "openInspectorAriaLabel": "문서 정보 열기",
-      "closeInspectorAriaLabel": "문서 정보 닫기",
       "sourceAriaLabel": "문서함 선택",
       "vaultToolsTooltip": "문서함 도구",
       "vaultToolsAriaLabel": "문서함 도구 메뉴 열기",
@@ -1947,7 +1944,9 @@
       "similarNodeWarning": "비슷한 노드가 이미 있어요 — {title}",
       "similarNodeOpen": "그 노드 열기",
       "similarNodeCreateAnyway": "그래도 새로 만들기"
-    }
+    },
+    "linkCopied": "문서 링크를 복사했습니다",
+    "linkCopyFailed": "문서 링크 복사 실패"
   },
   "topology": {
     "documentTitle": "지형도",

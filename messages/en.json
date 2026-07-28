@@ -1573,9 +1573,6 @@
       "paletteTooltip": "Search · commands · tags (⌘K)",
       "paletteAriaLabel": "Open palette (search · commands · tags)",
       "inspector": "Document info",
-      "inspectorTooltip": "Show outline · share · references",
-      "openInspectorAriaLabel": "Open document info",
-      "closeInspectorAriaLabel": "Close document info",
       "sourceAriaLabel": "Workspace source",
       "vaultToolsTooltip": "Workspace tools",
       "vaultToolsAriaLabel": "Open workspace tools menu",
@@ -1947,7 +1944,9 @@
       "similarNodeWarning": "A similar node already exists — {title}",
       "similarNodeOpen": "Open that node",
       "similarNodeCreateAnyway": "Create new anyway"
-    }
+    },
+    "linkCopied": "Copied the document link",
+    "linkCopyFailed": "Could not copy the document link"
   },
   "topology": {
     "documentTitle": "Relief",

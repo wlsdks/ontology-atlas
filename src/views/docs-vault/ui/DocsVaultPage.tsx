@@ -23,7 +23,6 @@ import {
   Menu,
   Package,
   PanelLeft,
-  PanelRight,
   Pencil,
   Plus,
   Printer,
@@ -130,7 +129,6 @@ import {
 } from "./parts/DocFrontmatterBlock";
 import { DocsSidebarBody } from "./parts/DocsSidebarBody";
 import { useAgentFilesModel } from "../lib/use-agent-files";
-import { DocsVaultDocOutlinePanel } from "./parts/DocsVaultDocOutlinePanel";
 import { DocReadingOutlineRail } from "./parts/DocReadingOutlineRail";
 import { BackToTopButton } from "./parts/BackToTopButton";
 import { SampleNotice } from "./parts/SampleNotice";
@@ -298,7 +296,6 @@ function DocsVaultContent() {
     // 이지만 ESLint 가 destructured method 의 stability 추적 못 해 명시.
   }, [isDesktopRuntime, querySource, setAdvancedOpen]);
   const [sourceTreeOpen, setSourceTreeOpen] = useState(false);
-  const [docInspectorOpen, setDocInspectorOpen] = useState(false);
   // 문서 목록 aside 접힘 — design-prescription.md ③-4: 접힘은 width 0(레일
   // 삭제), localStorage persist(작업공간 취향, 세션·새로고침 넘어 유지).
   const [docListCollapsed, setDocListCollapsedState] = useState(false);
@@ -469,21 +466,37 @@ function DocsVaultContent() {
   const closeContract = useCallback(() => setContractOpen(false), []);
 
   // URL 복사 feedback — 최근에 복사된 slug 를 잠깐 기억하고 2초 뒤 reset.
-  const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
-  const copyResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const handleCopyUrl = useCallback(async (slug: string) => {
-    if (typeof window === 'undefined') return;
-    const url = new URL(window.location.href);
-    url.searchParams.set('slug', slug);
-    try {
-      await navigator.clipboard.writeText(url.toString());
-      setCopiedSlug(slug);
-      if (copyResetRef.current) clearTimeout(copyResetRef.current);
-      copyResetRef.current = setTimeout(() => setCopiedSlug(null), 2000);
-    } catch {
-      /* clipboard 권한 없음 — silent. */
-    }
-  }, []);
+  /**
+   * 복사 확인은 **토스트가 진다** (2026-07-28).
+   *
+   * 종전에는 문서 정보 인스펙터의 체크 아이콘이 유일한 피드백이었다. 그
+   * 패널을 걷어내면서 ⌘K 팔레트의 「링크 복사」가 **아무 반응 없는 명령**이
+   * 될 뻔했다 — 표면을 지울 때 그 표면에만 살던 피드백이 함께 사라지는 것이
+   * 축소의 가장 흔한 사고다.
+   *
+   * 이 화면이 이미 쓰는 토스트 문법(`handleCopyAgentVerifyPrompt`)을 그대로
+   * 따른다 — 실패도 말한다. 클립보드 권한은 조용히 거절될 수 있고, 그때
+   * 침묵하면 사용자는 복사됐다고 믿는다.
+   */
+  const handleCopyUrl = useCallback(
+    async (slug: string) => {
+      if (typeof window === 'undefined') return;
+      const url = new URL(window.location.href);
+      url.searchParams.set('slug', slug);
+      let copied = false;
+      try {
+        await navigator.clipboard.writeText(url.toString());
+        copied = true;
+      } catch {
+        copied = false;
+      }
+      toast.show(
+        copied ? t('linkCopied') : t('linkCopyFailed'),
+        copied ? 'success' : 'error',
+      );
+    },
+    [t, toast],
+  );
   const handleCopyAgentVerifyPrompt = useCallback(async () => {
     const copied = await copyText(ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT);
     toast.show(
@@ -491,12 +504,6 @@ function DocsVaultContent() {
       copied ? 'success' : 'error',
     );
   }, [t, toast]);
-  useEffect(
-    () => () => {
-      if (copyResetRef.current) clearTimeout(copyResetRef.current);
-    },
-    [],
-  );
 
   // 스크롤 스파이 — 본문 스크롤 따라 outline 의 active heading 추적.
   const { articleScrollRef, activeHeadingSlug, setActiveHeadingSlug } =
@@ -641,7 +648,6 @@ function DocsVaultContent() {
     scheduleStateSync(() => setEditing(false));
   }, [selectedSlug]);
   useEffect(() => {
-    scheduleStateSync(() => setDocInspectorOpen(false));
   }, [selectedSlug]);
 
   const handleDeleteCurrent = useCallback(async () => {
@@ -1385,10 +1391,6 @@ function DocsVaultContent() {
       };
     });
   }, [selectedDoc]);
-  const activeOutlineHeading =
-    outlineHeadings.find((h) => h.slug === activeHeadingSlug) ??
-    outlineHeadings[0] ??
-    null;
   // 긴 문서(heading ≥ 임계)에서만 좌측 빈 띠에 상시 목차 레일 — 짧은 문서에서는
   // 노이즈가 되므로 표시하지 않는다 (po-pass.md §4 상태 계약).
   const showOutlineRail = shouldShowOutlineRail(outlineHeadings.length);
@@ -1871,21 +1873,6 @@ function DocsVaultContent() {
             aria-controls="docs-source-contract"
             onClick={() => (contractOpen ? closeContract() : openContract())}
           />
-          {selectedDoc && !editing && !showDesktopWelcome ? (
-            <DocsHeaderTile
-              icon={<PanelRight size={16} aria-hidden />}
-              title={t('header.inspectorTooltip')}
-              active={docInspectorOpen}
-              aria-expanded={docInspectorOpen}
-              aria-label={
-                docInspectorOpen
-                  ? t('header.closeInspectorAriaLabel')
-                  : t('header.openInspectorAriaLabel')
-              }
-              onClick={() => setDocInspectorOpen((open) => !open)}
-              className="hidden lg:inline-flex"
-            />
-          ) : null}
           {/* B2 병합 — 문서함 헤더의 vault 도구 드롭다운(VaultToolsMenu)은 설정
               메뉴로 흡수됐다. AI agent 설정·수리·복사 패킷·검증 게이트는 이제
               AppSettingsMenu 의 vault / mcpAgents 탭이 소유한다. 헤더에는 그
@@ -2111,11 +2098,11 @@ function DocsVaultContent() {
                     max-w-760 은 아래 overflow-auto 컨테이너 안에서 그대로
                     mx-auto — 레일 때문에 줄지 않는다. */}
                 <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-                  {/* 인스펙터가 열리면 레일은 demote — 같은 목차를 두 표면에
-                      이중 노출하지 않고(인스펙터 안 목차가 fallback), 인스펙터
-                      220px 만큼 좁아진 빈 띠에서 레일이 본문 텍스트와 겹치는
-                      1440–1700px 충돌 창도 함께 제거한다. */}
-                  {!editing && showOutlineRail && !docInspectorOpen ? (
+                  {/* 목차는 이 레일 하나가 소유한다. 종전에는 문서 정보
+                      인스펙터가 같은 목차를 한 벌 더 들고 있어서, 열리면 레일을
+                      demote 하는 규칙이 필요했다 — 2026-07-28 에 그 패널을
+                      걷어내면서 이중 노출 자체가 사라졌다. */}
+                  {!editing && showOutlineRail ? (
                     <DocReadingOutlineRail
                       headings={outlineHeadings}
                       activeHeadingSlug={activeHeadingSlug}
@@ -2202,23 +2189,6 @@ function DocsVaultContent() {
                 {/* 우측 사이드: heading outline + 공유 + 파일 관리. 기본은 닫아
                     본문을 우선하고, 필요할 때만 헤더의 인스펙터 버튼으로 연다.
                     backlinks 는 여기 없음 — pane 하단 스트립이 단일 소스. */}
-                {!editing && docInspectorOpen ? (
-                  <DocsVaultDocOutlinePanel
-                    selectedDoc={selectedDoc}
-                    pinnedSet={pinnedSet}
-                    copiedSlug={copiedSlug}
-                    canEditCurrent={canEditCurrent}
-                    outlineHeadings={outlineHeadings}
-                    activeOutlineHeading={activeOutlineHeading}
-                    activeHeadingSlug={activeHeadingSlug}
-                    onTogglePin={handleTogglePin}
-                    onStartEditing={() => setEditing(true)}
-                    onClose={() => setDocInspectorOpen(false)}
-                    onCopyUrl={handleCopyUrl}
-                    onDeleteCurrent={handleDeleteCurrent}
-                    onHeadingClick={handleHeadingNavigate}
-                  />
-                ) : null}
               </div>
 
               {/* 하단 backlinks 스트립 — pane 전체 폭에 앵커, 항상 보임
