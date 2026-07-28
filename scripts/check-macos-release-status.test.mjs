@@ -461,7 +461,7 @@ test("desktop release status reports current completion blockers together", () =
       assert.match(result.stdout, /local blockers: none/);
       assert.match(result.stdout, /external blockers: pull_request, apple_release_secrets, github_release/);
       assert.match(result.stdout, /next handoff by owner:\n  reviewer: pull_request\n  release_operator: apple_release_secrets, github_release/);
-      assert.match(result.stdout, new RegExp(`✓ Version alignment: ${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
+      assert.match(result.stdout, new RegExp(`✓ Version alignment: ${APP_TAG_PATTERN} matches package, Tauri, Cargo, and release-facts versions`));
       assert.match(result.stdout, /✗ Pull request: PR #274 is not merge-ready/);
       assert.match(result.stdout, /review=REVIEW_REQUIRED/);
       assert.match(result.stdout, /merge=BLOCKED/);
@@ -693,7 +693,7 @@ test("desktop release status passes when PR, secrets, and stable release are rea
     const result = runStatus(fakeGhPath);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, new RegExp(`✓ Version alignment: ${APP_TAG_PATTERN} matches package, Tauri, and Cargo versions`));
+    assert.match(result.stdout, new RegExp(`✓ Version alignment: ${APP_TAG_PATTERN} matches package, Tauri, Cargo, and release-facts versions`));
     assert.match(result.stdout, /✓ Pull request: PR #274 is merge-ready/);
     assert.match(result.stdout, /✓ Developer ID direct-download secrets: all required Developer ID signing\/notary secret names exist for direct-download DMGs/);
     assert.match(result.stdout, new RegExp(`✓ GitHub Release: ${APP_TAG_PATTERN} is public and stable`));

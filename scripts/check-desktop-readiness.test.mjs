@@ -998,7 +998,7 @@ test("desktop release tag gate requires the v-prefixed tag to match app versions
   const invalid = run(version);
 
   assert.equal(ok.status, 0, ok.stderr);
-  assert.match(ok.stdout, /matches package, Tauri, and Cargo versions/);
+  assert.match(ok.stdout, /matches package, Tauri, Cargo, and release-facts versions/);
 
   assert.equal(mismatch.status, 1);
   assert.match(mismatch.stderr, /does not match macOS app versions/);
