@@ -190,7 +190,7 @@ describe("ProjectSelectorPage", () => {
 
   it("shows the always-on next-project dashed slot with CLI and agent handoff rows", () => {
     renderPage();
-    expect(screen.getByText("ontology-atlas add --kind project")).toBeInTheDocument();
+    expect(screen.getByText("node $ATLAS/cli/src/index.mjs add --kind project")).toBeInTheDocument();
     expect(screen.getByText('add_concept(slug, kind: "project", title)')).toBeInTheDocument();
   });
 

@@ -196,6 +196,7 @@ import {
   type ScreenContextSnapshot,
 } from "@/features/vault-agent";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
+import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
@@ -368,6 +369,21 @@ export function HomePage() {
    * 지도 위에서 주의를 요구하는 표면이라 겹치면 무엇이 주 표면인지 사라진다.
    */
   const [vaultAgentOpen, setVaultAgentOpen] = useState(false);
+  /**
+   * 처음부터 열어 둘 것인가 — 설치 앱 + 키가 있을 때만 참이다(`null` 은 아직
+   * 모름). 소유자 요구는 "시야로 보이면서" 인데, 키 없는 컴퓨터에서 잠긴
+   * 패널을 상주시키면 요구의 글자만 지키고 뜻은 어긴다.
+   */
+  const agentDockDefaultOpen = useAgentDockDefaultOpen();
+  /**
+   * 사용자가 한 번이라도 직접 여닫았으면 그 뜻이 기본값을 이긴다. 안 그러면
+   * 닫은 도크가 키 조회 한 번에 다시 열려 "닫기가 안 먹는" 것으로 읽힌다.
+   */
+  const agentDockTouchedRef = useRef(false);
+  useEffect(() => {
+    if (agentDockDefaultOpen !== true || agentDockTouchedRef.current) return;
+    setVaultAgentOpen(true);
+  }, [agentDockDefaultOpen]);
   /**
    * 바깥에서 건너온 첫 마디(S7). 여기 실리는 것은 **문장 하나**뿐이고, 전송은
    * 하지 않는다 — 패널의 입력칸에 앉을 뿐이라 사용자가 고쳐 보내거나 지울 수
@@ -2059,6 +2075,7 @@ export function HomePage() {
    * 열고, 사용자에겐 "닫기가 안 먹는" 것으로 읽힌다.
    */
   const closeVaultAgent = useCallback(() => {
+    agentDockTouchedRef.current = true;
     setVaultAgentOpen(false);
     setVaultAgentPrefill(null);
     setRouteState({ askIntent: null }, { replace: true });
@@ -2312,6 +2329,7 @@ export function HomePage() {
         contextMenuOpen: contextMenuNode !== null,
         tourOpen: tour.open,
         createNodeOpen,
+        bootstrapOpen,
         searchOpen: ontologySearchOpen,
         fullDetailOpen,
         selectedRelationActive,
@@ -2342,6 +2360,9 @@ export function HomePage() {
           break;
         case "close-create-node":
           closeCreateNode();
+          break;
+        case "close-bootstrap":
+          setBootstrapOpen(false);
           break;
         case "close-full-detail":
           setFullDetailSlug(null);
@@ -3188,7 +3209,8 @@ export function HomePage() {
                       <Tooltip content={tAgent('title')} side="bottom" withProvider={false}>
                         <ChromeChip
                           onClick={() =>
-                            vaultAgentOpen ? setVaultAgentOpen(false) : openVaultAgent()
+                            (agentDockTouchedRef.current = true,
+                            vaultAgentOpen ? setVaultAgentOpen(false) : openVaultAgent())
                           }
                           aria-label={tAgent('title')}
                           aria-pressed={vaultAgentOpen}

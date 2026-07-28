@@ -15,11 +15,12 @@ import {
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { formatActivityAge } from "../lib/format-activity-age";
 import { useOntologyInsight } from "../model/use-ontology-insight";
+import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 
 // P4b — heartbeat 신호를 지우는 CLI 명령. `<vault>` 는 `agent-activity-status.ts`
 // 의 `formatRefreshCommand` 와 같은 관례로 실제 경로가 아니라 자리표시자 —
 // 값이 정적이라 shellArg 이스케이프가 필요 없다(동적 인자 없음).
-const CLEAR_SIGNAL_COMMAND = "ontology-atlas agent-activity <vault> --clear";
+const CLEAR_SIGNAL_COMMAND = `${ATLAS_CLI} agent-activity <vault> --clear`;
 
 type LiveAgentActivityState =
   | "planning"
@@ -620,7 +621,7 @@ function formatLiveAgentRefreshRequestPacket({
   const command = refreshRequest?.required && refreshRequest.command
     ? refreshRequest.command
     : [
-    "ontology-atlas agent-activity <vault>",
+    `${ATLAS_CLI} agent-activity <vault>`,
     "--agent",
     shellArg(heartbeat.agent),
     "--state planning",
@@ -635,7 +636,7 @@ function formatLiveAgentRefreshRequestPacket({
     ? [refreshRequest.message]
     : [
         "Do not treat the stale focus as current work until the refreshed heartbeat appears.",
-        "After publishing, run `ontology-atlas agent-activity <vault> --show --json` and confirm `stale: false`, `reviewMode`, `reviewTarget`, and proof counts.",
+        "After publishing, run `${ATLAS_CLI} agent-activity <vault> --show --json` and confirm `stale: false`, `reviewMode`, `reviewTarget`, and proof counts.",
       ];
 
   return [

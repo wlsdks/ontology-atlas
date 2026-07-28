@@ -1,5 +1,6 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { OntologyTreeBuildResult } from "./types";
+import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 
 export type AgentReadinessStatus = "ready" | "needs-links" | "needs-shape";
 export type AgentReadinessActionKey =
@@ -33,7 +34,7 @@ export interface AgentReadinessCliCommand {
 }
 
 export const AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND =
-  "ontology-atlas agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4";
+  `${ATLAS_CLI} agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`;
 export const AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND = "pnpm dogfood:graph-db";
 export const AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT = 14;
 
@@ -107,61 +108,61 @@ const ACTION_PAYLOADS: Record<AgentReadinessActionKey, AgentReadinessToolCall[]>
 };
 
 const BASELINE_CLI_COMMANDS: AgentReadinessCliCommand[] = [
-  { key: "agent_brief", command: "ontology-atlas agent-brief [vault]" },
-  { key: "graph_db_pack", command: "ontology-atlas agent-brief [vault] --graph-db-pack" },
+  { key: "agent_brief", command: `${ATLAS_CLI} agent-brief [vault]` },
+  { key: "graph_db_pack", command: `${ATLAS_CLI} agent-brief [vault] --graph-db-pack` },
   {
     key: "setup_gate",
     command:
-      "ontology-atlas agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      `${ATLAS_CLI} agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
   },
-  { key: "workspace_brief", command: "ontology-atlas workspace-brief [vault]" },
-  { key: "health", command: "ontology-atlas health [vault]" },
-  { key: "cycles", command: "ontology-atlas cycles [vault] --max-hops 8" },
-  { key: "growth", command: "ontology-atlas growth [vault] --limit 20" },
-  { key: "maintenance", command: "ontology-atlas maintenance [vault] --limit 20" },
+  { key: "workspace_brief", command: `${ATLAS_CLI} workspace-brief [vault]` },
+  { key: "health", command: `${ATLAS_CLI} health [vault]` },
+  { key: "cycles", command: `${ATLAS_CLI} cycles [vault] --max-hops 8` },
+  { key: "growth", command: `${ATLAS_CLI} growth [vault] --limit 20` },
+  { key: "maintenance", command: `${ATLAS_CLI} maintenance [vault] --limit 20` },
 ];
 
 const ACTION_CLI_COMMANDS: Record<AgentReadinessActionKey, AgentReadinessCliCommand[]> = {
   resolveUnknown: [
     {
       key: "match_unknown_nodes",
-      command: "ontology-atlas match-nodes [vault] --kind unknown --limit 20",
+      command: `${ATLAS_CLI} match-nodes [vault] --kind unknown --limit 20`,
     },
     {
       key: "find_unknown_evidence",
-      command: "ontology-atlas find <unknown-title-or-slug> [vault]",
+      command: `${ATLAS_CLI} find <unknown-title-or-slug> [vault]`,
     },
   ],
   addConcepts: [
     {
       key: "analyze_repo",
-      command: "ontology-atlas analyze [repo] --vault [vault]",
+      command: `${ATLAS_CLI} analyze [repo] --vault [vault]`,
     },
   ],
   linkOrphans: [
     {
       key: "find_orphans",
-      command: "ontology-atlas orphans [vault] --exclude-kinds project,vault-readme",
+      command: `${ATLAS_CLI} orphans [vault] --exclude-kinds project,vault-readme`,
     },
   ],
   addRelations: [
     {
       key: "infer_imports",
-      command: "ontology-atlas infer-imports [repo] --vault [vault] --max-files 5000",
+      command: `${ATLAS_CLI} infer-imports [repo] --vault [vault] --max-files 5000`,
     },
     {
       key: "relation_check",
-      command: "ontology-atlas relation-check <from-slug> <to-slug> depends_on [vault]",
+      command: `${ATLAS_CLI} relation-check <from-slug> <to-slug> depends_on [vault]`,
     },
   ],
   inspectHubs: [
     {
       key: "node_profile",
-      command: "ontology-atlas node <hub-slug> [vault] --limit 12",
+      command: `${ATLAS_CLI} node <hub-slug> [vault] --limit 12`,
     },
     {
       key: "blast_radius",
-      command: "ontology-atlas blast-radius <hub-slug> [vault] --depth 2 --direction incoming",
+      command: `${ATLAS_CLI} blast-radius <hub-slug> [vault] --depth 2 --direction incoming`,
     },
   ],
   syncAfterChanges: [
@@ -171,7 +172,7 @@ const ACTION_CLI_COMMANDS: Record<AgentReadinessActionKey, AgentReadinessCliComm
     },
     {
       key: "validate_vault",
-      command: "ontology-atlas validate [vault]",
+      command: `${ATLAS_CLI} validate [vault]`,
     },
   ],
 };

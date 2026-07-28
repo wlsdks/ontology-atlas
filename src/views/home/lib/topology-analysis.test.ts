@@ -205,10 +205,10 @@ describe("formatTopologyOverviewBrief", () => {
         "- URL: http://localhost:3000/en/topology",
         "- Health URL: http://localhost:3000/en/topology?mode=health",
         "- Insights URL: /ontology/insights/",
-        "- Agent overview check: ontology-atlas overview [vault] --limit 5",
+        "- Agent overview check: node $ATLAS/cli/src/index.mjs overview [vault] --limit 5",
         '- MCP overview check: query_ontology({"operation":"overview","limit":5})',
         '- MCP query plan: query_ontology({"operation":"query_plan","targetOperation":"overview"})',
-        "- Workspace check: ontology-atlas workspace-brief [vault]",
+        "- Workspace check: node $ATLAS/cli/src/index.mjs workspace-brief [vault]",
         '- MCP workspace check: query_ontology({"operation":"workspace_brief"})',
       ].join("\n"),
     );
@@ -279,9 +279,9 @@ describe("formatTopologyHealthBrief", () => {
         "- Ontology URL: /ontology/?node=capability%3Atopology-analysis-modes",
         "- Repair URL: /ontology/studio/?node=capability%3Atopology-analysis-modes",
         "- Next action: Review whether this high-signal node should become a domain or capability entrypoint.",
-        "- Agent check: ontology-atlas node capability:topology-analysis-modes [vault] --limit 12",
+        "- Agent check: node $ATLAS/cli/src/index.mjs node capability:topology-analysis-modes [vault] --limit 12",
         '- MCP check: query_ontology({"operation":"node_profile","slug":"capability:topology-analysis-modes","depth":2,"limit":12})',
-        "- Impact check: ontology-atlas blast-radius capability:topology-analysis-modes [vault] --depth 2 --direction incoming",
+        "- Impact check: node $ATLAS/cli/src/index.mjs blast-radius capability:topology-analysis-modes [vault] --depth 2 --direction incoming",
         '- MCP impact check: query_ontology({"operation":"blast_radius","slug":"capability:topology-analysis-modes","depth":2,"direction":"incoming"})',
         "- Post-repair sync gate:",
         "  # Post-change ontology sync gate",
@@ -339,7 +339,7 @@ describe("formatTopologyHealthBrief", () => {
         },
       }),
     ).toContain(
-      "- Owner relation preflight: ontology-atlas relation-check <owner-slug> domain:views contains [vault]",
+      "- Owner relation preflight: node $ATLAS/cli/src/index.mjs relation-check <owner-slug> domain:views contains [vault]",
     );
   });
 

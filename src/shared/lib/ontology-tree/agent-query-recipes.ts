@@ -6,6 +6,7 @@ import {
 } from "./agent-readiness";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
+import { ATLAS_CLI, ATLAS_CLI_HINT_EN } from "@/shared/config/cli-invocation";
 
 const AGENT_PRACTITIONER_RESEARCH_NODE = "documents/agent-practice-research";
 
@@ -399,6 +400,9 @@ export function formatAgentRunOrderPrompt(recipes: readonly AgentQueryRecipe[]):
       ? [
           "",
           "CLI fallback commands when the MCP connector is unavailable:",
+          // 자리 표시가 보이기만 하고 무엇을 채울지 모르면 정직할 뿐 쓸모가
+          // 없다. 명령을 내보내는 자리는 이 한 줄을 함께 싣는다.
+          ATLAS_CLI_HINT_EN,
           ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
         ]
       : [];
@@ -425,51 +429,51 @@ export function formatAgentQueryCallCliCommand(payload: AgentMcpQueryCall): stri
 export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown>): string | null {
   switch (args.operation) {
     case "agent_brief":
-      return "ontology-atlas agent-brief [vault]";
+      return `${ATLAS_CLI} agent-brief [vault]`;
     case "workspace_brief":
-      return "ontology-atlas workspace-brief [vault]";
+      return `${ATLAS_CLI} workspace-brief [vault]`;
     case "health":
-      return "ontology-atlas health [vault]";
+      return `${ATLAS_CLI} health [vault]`;
     case "facets":
-      return withFlags("ontology-atlas facets [vault]", [
+      return withFlags(`${ATLAS_CLI} facets [vault]`, [
         positiveFlag("--limit", args.limit),
       ]);
     case "schema":
-      return withFlags("ontology-atlas schema [vault]", [
+      return withFlags(`${ATLAS_CLI} schema [vault]`, [
         positiveFlag("--limit", args.limit),
       ]);
     case "components":
-      return withFlags("ontology-atlas components [vault]", [
+      return withFlags(`${ATLAS_CLI} components [vault]`, [
         positiveFlag("--limit", args.limit),
         positiveFlag("--node-limit", args.nodeLimit),
       ]);
     case "cycles":
-      return withFlags("ontology-atlas cycles [vault]", [
+      return withFlags(`${ATLAS_CLI} cycles [vault]`, [
         nonNegativeFlag("--max-hops", args.maxHops),
       ]);
     case "topological_order":
-      return withFlags("ontology-atlas topological-order [vault]", [
+      return withFlags(`${ATLAS_CLI} topological-order [vault]`, [
         positiveFlag("--limit", args.limit),
       ]);
     case "growth_plan":
-      return withFlags("ontology-atlas growth [vault]", [
+      return withFlags(`${ATLAS_CLI} growth [vault]`, [
         positiveFlag("--limit", args.limit),
       ]);
     case "maintenance_plan":
-      return withFlags("ontology-atlas maintenance [vault]", [
+      return withFlags(`${ATLAS_CLI} maintenance [vault]`, [
         positiveFlag("--limit", args.limit),
       ]);
     case "query_plan": {
       if (args.targetOperation === "blast_radius") {
         const slug = stringArg(args.slug, "<slug>");
-        return withFlags(`ontology-atlas blast-radius ${shellQuote(slug)} [vault]`, [
+        return withFlags(`${ATLAS_CLI} blast-radius ${shellQuote(slug)} [vault]`, [
           "--plan",
           nonNegativeFlag("--depth", args.depth),
           stringFlag("--direction", args.direction),
         ]);
       }
       if (args.targetOperation === "centrality") {
-        return withFlags("ontology-atlas hubs [vault]", [
+        return withFlags(`${ATLAS_CLI} hubs [vault]`, [
           "--plan",
           positiveFlag("--limit", args.limit),
           csvFlag("--types", args.types),
@@ -484,7 +488,7 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       if (args.targetOperation === "all_paths") {
         const from = stringArg(args.from, "<from-slug>");
         const to = stringArg(args.to, "<to-slug>");
-        return withFlags(`ontology-atlas all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+        return withFlags(`${ATLAS_CLI} all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
           "--plan",
           allPathsPlanForceFlag(args),
           nonNegativeFlag("--max-hops", args.maxHops),
@@ -497,21 +501,21 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
     }
     case "node_profile": {
       const slug = stringArg(args.slug, "<slug>");
-      return withFlags(`ontology-atlas node ${shellQuote(slug)} [vault]`, [
+      return withFlags(`${ATLAS_CLI} node ${shellQuote(slug)} [vault]`, [
         positiveFlag("--limit", args.limit),
       ]);
     }
     case "path": {
       const from = stringArg(args.from, "<from-slug>");
       const to = stringArg(args.to, "<to-slug>");
-      return withFlags(`ontology-atlas path ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+      return withFlags(`${ATLAS_CLI} path ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         nonNegativeFlag("--max-hops", args.maxHops),
       ]);
     }
     case "explain_relation": {
       const from = stringArg(args.from, "<from-slug>");
       const to = stringArg(args.to, "<to-slug>");
-      return withFlags(`ontology-atlas explain ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+      return withFlags(`${ATLAS_CLI} explain ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         stringFlag("--direction", args.direction),
         nonNegativeFlag("--max-hops", args.maxHops),
         csvFlag("--types", args.types),
@@ -520,7 +524,7 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
     }
     case "similar_nodes": {
       const title = stringArg(args.title, "<candidate-title>");
-      return withFlags(`ontology-atlas similar ${shellQuote(title)} [vault]`, [
+      return withFlags(`${ATLAS_CLI} similar ${shellQuote(title)} [vault]`, [
         stringFlag("--slug", args.candidateSlug),
         stringFlag("--kind", args.kind),
         positiveFlag("--limit", args.limit),
@@ -530,11 +534,11 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       const from = stringArg(args.from, "<from-slug>");
       const to = stringArg(args.to, "<to-slug>");
       const type = stringArg(args.type, "depends_on");
-      return `ontology-atlas relation-check ${shellQuote(from)} ${shellQuote(to)} ${shellQuote(type)} [vault]`;
+      return `${ATLAS_CLI} relation-check ${shellQuote(from)} ${shellQuote(to)} ${shellQuote(type)} [vault]`;
     }
     case "blast_radius": {
       const slug = stringArg(args.slug, "<slug>");
-      return withFlags(`ontology-atlas blast-radius ${shellQuote(slug)} [vault]`, [
+      return withFlags(`${ATLAS_CLI} blast-radius ${shellQuote(slug)} [vault]`, [
         nonNegativeFlag("--depth", args.depth),
         stringFlag("--direction", args.direction),
       ]);
@@ -542,7 +546,7 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
     case "all_paths": {
       const from = stringArg(args.from, "<from-slug>");
       const to = stringArg(args.to, "<to-slug>");
-      return withFlags(`ontology-atlas all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+      return withFlags(`${ATLAS_CLI} all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         "--plan",
         allPathsPlanForceFlag(args),
         nonNegativeFlag("--max-hops", args.maxHops),
@@ -552,7 +556,7 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       ]);
     }
     case "centrality":
-      return withFlags("ontology-atlas hubs [vault]", [
+      return withFlags(`${ATLAS_CLI} hubs [vault]`, [
         positiveFlag("--limit", args.limit),
         csvFlag("--types", args.types),
       ]);
@@ -561,14 +565,14 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
     case "match_nodes":
       return formatMatchNodesCommand(args);
     case "domain_matrix":
-      return withFlags("ontology-atlas domain-matrix [vault]", [
+      return withFlags(`${ATLAS_CLI} domain-matrix [vault]`, [
         stringFlag("--project", args.project),
         positiveFlag("--limit", args.limit),
         csvFlag("--types", args.types),
       ]);
     case "pattern_walk": {
       const slug = stringArg(args.slug, "<slug>");
-      return withFlags(`ontology-atlas pattern-walk ${shellQuote(slug)} [vault]`, [
+      return withFlags(`${ATLAS_CLI} pattern-walk ${shellQuote(slug)} [vault]`, [
         csvFlag("--pattern", args.pattern),
         stringFlag("--direction", args.direction),
         positiveFlag("--limit", args.limit),
@@ -576,7 +580,7 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
     }
     case "project_map": {
       const project = stringArg(args.project ?? args.slug, "<project-slug>");
-      return withFlags(`ontology-atlas project-map ${shellQuote(project)} [vault]`, [
+      return withFlags(`${ATLAS_CLI} project-map ${shellQuote(project)} [vault]`, [
         positiveFlag("--limit", args.limit),
         positiveFlag("--item-limit", args.itemLimit),
       ]);
@@ -590,7 +594,7 @@ function formatMatchEdgesCommand(
   args: Record<string, unknown>,
   options: { plan?: boolean } = {},
 ): string {
-  return withFlags("ontology-atlas match-edges [vault]", [
+  return withFlags(`${ATLAS_CLI} match-edges [vault]`, [
     options.plan ? "--plan" : null,
     stringFlag("--from", args.from),
     stringFlag("--to", args.to),
@@ -608,7 +612,7 @@ function formatMatchNodesCommand(
   args: Record<string, unknown>,
   options: { plan?: boolean } = {},
 ): string {
-  return withFlags("ontology-atlas match-nodes [vault]", [
+  return withFlags(`${ATLAS_CLI} match-nodes [vault]`, [
     options.plan ? "--plan" : null,
     stringFlag("--kind", args.kind),
     stringFlag("--domain", args.domain),
@@ -687,6 +691,9 @@ export function formatAgentPlaybookPrompt(playbook: AgentInvestigationPlaybook):
       ? [
           "",
           "CLI fallback commands when the MCP connector is unavailable:",
+          // 자리 표시가 보이기만 하고 무엇을 채울지 모르면 정직할 뿐 쓸모가
+          // 없다. 명령을 내보내는 자리는 이 한 줄을 함께 싣는다.
+          ATLAS_CLI_HINT_EN,
           ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
         ]
       : [];
@@ -770,6 +777,9 @@ export function formatAgentTraversalPacket(
       ? [
           "",
           "CLI fallback commands when the MCP connector is unavailable:",
+          // 자리 표시가 보이기만 하고 무엇을 채울지 모르면 정직할 뿐 쓸모가
+          // 없다. 명령을 내보내는 자리는 이 한 줄을 함께 싣는다.
+          ATLAS_CLI_HINT_EN,
           ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
         ]
       : [];
@@ -804,6 +814,9 @@ export function formatAgentGraphDbQueryPackItemPrompt(
       ? [
           "",
           "CLI fallback commands when the MCP connector is unavailable:",
+          // 자리 표시가 보이기만 하고 무엇을 채울지 모르면 정직할 뿐 쓸모가
+          // 없다. 명령을 내보내는 자리는 이 한 줄을 함께 싣는다.
+          ATLAS_CLI_HINT_EN,
           ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
         ]
       : [];

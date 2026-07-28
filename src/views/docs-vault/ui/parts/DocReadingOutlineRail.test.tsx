@@ -3,7 +3,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../../messages/ko.json";
 import { DocReadingOutlineRail } from "./DocReadingOutlineRail";
-import type { OutlineHeading } from "./DocsVaultDocOutlinePanel";
+import type { OutlineHeading } from "./DocReadingOutlineRail";
 
 const headings: OutlineHeading[] = [
   { slug: "intro", text: "Intro", depth: 2, occurrence: 1, duplicate: false },

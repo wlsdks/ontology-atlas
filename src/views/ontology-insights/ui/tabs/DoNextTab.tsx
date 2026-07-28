@@ -149,7 +149,7 @@ export interface DoNextTabHealthQueue {
   staleCount: number;
   orphanCount: number;
   promotionCount: number;
-  // C1 — CLI-parity signals (`ontology-atlas health`): disconnected actionable
+  // C1 — CLI-parity signals (`node $ATLAS/cli/src/index.mjs health`): disconnected actionable
   // islands · capability/element whose domain never links back.
   islandCount: number;
   missingContainmentCount: number;

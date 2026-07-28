@@ -1,5 +1,20 @@
 import { useTranslations } from "next-intl";
-import type { OutlineHeading } from "./DocsVaultDocOutlinePanel";
+/**
+ * 문서 목차 한 항목.
+ *
+ * 2026-07-28 까지 이 타입은 `DocsVaultDocOutlinePanel`(문서 정보 인스펙터)에
+ * 살았다. 그 패널이 들고 있던 동작 다섯(고정·링크 복사·인쇄·편집·삭제)이
+ * **전부 ⌘K 팔레트에 있었고** 목차는 이 레일이 이미 그리고 있어서, 패널을
+ * 걷어냈다. 목차의 유일한 소유자가 된 이 파일이 타입도 갖는다.
+ */
+export interface OutlineHeading {
+  slug: string;
+  text: string;
+  depth: number;
+  /** 같은 텍스트의 몇 번째 등장인가 — 중복 제목 구분에 쓴다. */
+  occurrence: number;
+  duplicate: boolean;
+}
 
 export interface DocReadingOutlineRailProps {
   headings: OutlineHeading[];

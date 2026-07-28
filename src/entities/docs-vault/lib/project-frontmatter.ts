@@ -15,7 +15,7 @@
 import type { Project, ProjectInput } from '@/entities/project';
 
 /**
- * Starter `display_<locale>` values shipped by the `ontology-atlas init`
+ * Starter `display_<locale>` values shipped by the `node $ATLAS/cli/src/index.mjs init`
  * project template (`ontology-starter.ts` PROJECT_MD). C6 — these are treated
  * as "never customized": when a project is renamed while its display name still
  * equals one of these, the display key is auto-filled from the new title so the
@@ -29,7 +29,7 @@ export const STARTER_PROJECT_DISPLAY_VALUES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Starter project body summary shipped by `ontology-atlas init` (PROJECT_MD).
+ * Starter project body summary shipped by `node $ATLAS/cli/src/index.mjs init` (PROJECT_MD).
  * With no `description:` frontmatter the derived `Project.description` falls back
  * to the body excerpt — this English boilerplate. #9 — quick-edit treats it as
  * "never filled in" so it renders as a placeholder (empty value), not a real

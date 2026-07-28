@@ -1,0 +1,160 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+/**
+ * 공방 실습 — **한 번 해 보고, 치울 수 있다.**
+ *
+ * 이 파일이 지키는 두 가지:
+ *
+ * 1. **저장은 진짜다.** 실습이라고 가짜로 저장하면 사용자는 "저장하면 어떻게
+ *    되는지" 를 배우지 못한 채 배웠다고 믿는다. 그래서 `createDoc` 이 실제로
+ *    불린다.
+ * 2. **되돌리기도 진짜다.** 「지우기」는 `deleteDoc` 을 부르고, Esc/「남겨 두기」는
+ *    아무것도 지우지 않는다. 파괴적 행동에 기본 포커스를 주지 않는 것까지
+ *    포함해서 — Enter 한 번에 지워지면 그건 질문이 아니라 함정이다.
+ */
+
+const mocks = vi.hoisted(() => ({
+  push: vi.fn(),
+  createDoc: vi.fn(async () => undefined),
+  deleteDoc: vi.fn(async () => undefined),
+  updateFrontmatter: vi.fn(async () => undefined),
+  searchParams: new URLSearchParams(),
+  toastShow: vi.fn(),
+}));
+
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key,
+  useLocale: () => "ko",
+}));
+
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ push: mocks.push, replace: vi.fn() }),
+  Link: ({ href, children }: { href: string; children: React.ReactNode }) => (
+    <a href={href}>{children}</a>
+  ),
+}));
+
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => mocks.searchParams,
+}));
+
+vi.mock("@/shared/ui", async () => {
+  const actual = await vi.importActual<typeof import("@/shared/ui")>("@/shared/ui");
+  return { ...actual, useToast: () => ({ show: mocks.toastShow }) };
+});
+
+vi.mock("@/features/data-source-mode", () => ({ useDataSourceMode: () => "local" }));
+
+vi.mock("@/entities/ontology-class", () => ({
+  useOntologyKindLabel: () => (kind: string) => kind,
+}));
+
+vi.mock("@/features/vault-ontology", () => ({
+  useOntologyInsight: () => ({ insight: { nodes: [], edges: [] } }),
+}));
+
+vi.mock("@/features/docs-vault-local", () => ({
+  useLocalVault: () => ({
+    status: "loaded",
+    handle: {},
+    manifest: { docs: [] },
+    createDoc: mocks.createDoc,
+    deleteDoc: mocks.deleteDoc,
+    updateFrontmatter: mocks.updateFrontmatter,
+  }),
+}));
+
+import { OntologyStudioPage } from "./OntologyStudioPage";
+
+function enterPracticeCreate() {
+  mocks.searchParams = new URLSearchParams({ mode: "create", practice: "1" });
+  window.history.replaceState({}, "", "/ko/ontology/studio/?mode=create&practice=1");
+}
+
+async function makeOneNode(name = "결제 승인") {
+  render(<OntologyStudioPage />);
+  fireEvent.change(screen.getByTestId("studio-create-name"), { target: { value: name } });
+  await waitFor(() => expect(screen.getByTestId("studio-save")).toBeEnabled());
+  fireEvent.click(screen.getByTestId("studio-save"));
+  await waitFor(() => expect(mocks.createDoc).toHaveBeenCalled());
+}
+
+describe("공방 실습", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    Object.values(mocks).forEach((m) => {
+      if (typeof m === "function" && "mockClear" in m) m.mockClear();
+    });
+    enterPracticeCreate();
+  });
+
+  /**
+   * 안내는 **지시가 아니라 관측**이다 — 이름이 비면 이름 단계, 채우면 다음
+   * 단계. 카운터라면 이름을 지웠을 때 되돌아가지 않는다.
+   */
+  it("follows the draft instead of running a script", async () => {
+    render(<OntologyStudioPage />);
+    expect(screen.getByTestId("studio-practice-rail")).toHaveAttribute("data-step", "name");
+
+    fireEvent.change(screen.getByTestId("studio-create-name"), { target: { value: "결제" } });
+    await waitFor(() =>
+      expect(screen.getByTestId("studio-practice-rail")).toHaveAttribute("data-step", "relate"),
+    );
+
+    // 되돌아간다 — 상태를 읽고 있다는 증거.
+    fireEvent.change(screen.getByTestId("studio-create-name"), { target: { value: "  " } });
+    await waitFor(() =>
+      expect(screen.getByTestId("studio-practice-rail")).toHaveAttribute("data-step", "name"),
+    );
+  });
+
+  it("writes a real file, then offers to take it back", async () => {
+    await makeOneNode();
+    const cleanup = await screen.findByTestId("studio-practice-cleanup");
+    expect(cleanup).toBeInTheDocument();
+    // 무엇이 사라지는지 파일 이름으로 말한다 — "정리합니다" 로는 사용자가
+    // 무엇을 승인하는지 알 수 없다.
+    expect(screen.getAllByTestId("studio-practice-delete-row")).toHaveLength(1);
+  });
+
+  it("actually deletes the practice file when asked to", async () => {
+    await makeOneNode();
+    fireEvent.click(await screen.findByTestId("studio-practice-delete"));
+    await waitFor(() => expect(mocks.deleteDoc).toHaveBeenCalledTimes(1));
+    const [slug] = mocks.deleteDoc.mock.calls[0] as unknown as [string];
+    const [createdSlug] = mocks.createDoc.mock.calls[0] as unknown as [string];
+    expect(slug).toBe(createdSlug);
+  });
+
+  it("keeps the node — and drops the practice marker so the next save is not practice", async () => {
+    await makeOneNode();
+    fireEvent.click(await screen.findByTestId("studio-practice-keep"));
+    await waitFor(() =>
+      expect(screen.queryByTestId("studio-practice-cleanup")).not.toBeInTheDocument(),
+    );
+    expect(mocks.deleteDoc).not.toHaveBeenCalled();
+    expect(window.location.search).not.toContain("practice=1");
+  });
+
+  /**
+   * 취소는 파괴 쪽으로 떨어지지 않는다. Esc 는 「남겨 두기」이고, 기본 포커스도
+   * 「남겨 두기」다 — Enter 한 번에 지워지면 그건 질문이 아니라 함정이다.
+   */
+  it("treats Escape as keep, never as delete", async () => {
+    await makeOneNode();
+    const cleanup = await screen.findByTestId("studio-practice-cleanup");
+    expect(screen.getByTestId("studio-practice-keep")).toHaveFocus();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(cleanup).not.toBeInTheDocument());
+    expect(mocks.deleteDoc).not.toHaveBeenCalled();
+  });
+
+  it("shows no practice rail on a plain create — the guide is opt-in", async () => {
+    mocks.searchParams = new URLSearchParams({ mode: "create" });
+    window.history.replaceState({}, "", "/ko/ontology/studio/?mode=create");
+    render(<OntologyStudioPage />);
+    expect(screen.queryByTestId("studio-practice-rail")).not.toBeInTheDocument();
+  });
+});

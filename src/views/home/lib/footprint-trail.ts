@@ -1,3 +1,4 @@
+import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 /**
  * 발자국 트레일 세션 모델 (fable 설계 — 소유자 요청, 사람 가치 우선). 지도에서
  * 노드를 ego 포커스할 때마다 세션 방문 목록에 쌓이는 "걸어온 길". 모드가 아니라
@@ -112,7 +113,7 @@ export function formatFootprintTrailAgentPacket(
     for (const slug of dustySlugs.slice(0, 3)) {
       lines.push(`get_concept("${graphIdToConceptSlug(slug)}")`);
     }
-    lines.push("ontology-atlas maintenance");
+    lines.push(`${ATLAS_CLI} maintenance`);
   }
   return lines.join("\n");
 }

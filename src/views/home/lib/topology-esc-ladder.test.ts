@@ -8,6 +8,7 @@ const BASE: TopologyEscLadderInput = {
   contextMenuOpen: false,
   tourOpen: false,
   createNodeOpen: false,
+  bootstrapOpen: false,
   searchOpen: false,
   fullDetailOpen: false,
   selectedRelationActive: false,
@@ -269,5 +270,39 @@ describe("resolveTopologyEscLadderAction", () => {
       hasLocalGraphRoot: true,
     });
     expect(step3).toBe("pop-local-graph");
+  });
+});
+
+/**
+ * 부트스트랩 패널이 **사다리에 칸이 없어서** Escape 가 아무 일도 하지 않았다
+ * (2026-07-28 볼트 연결 재현).
+ *
+ * 앱은 자기 단축키 시트에 "Esc — 열린 표면을 한 단계씩 닫습니다" 라고 적어
+ * 두고 있고 다른 모든 다이얼로그가 그렇게 동작한다. 이 하나만 안 닫히는 것은
+ * **앱이 키를 무시하는 것**으로 읽힌다.
+ */
+describe("부트스트랩 패널 — 블로킹 표면이 먼저 답한다", () => {
+  it("열려 있으면 Escape 가 그것을 닫는다", () => {
+    expect(
+      resolveTopologyEscLadderAction({ ...BASE, bootstrapOpen: true }),
+    ).toBe("close-bootstrap");
+  });
+
+  // 덮여 있는 것을 두고 그 아래 선택을 푸는 것은 사용자가 부른 일이 아니다.
+  it("아래에 선택이 있어도 패널이 먼저다", () => {
+    expect(
+      resolveTopologyEscLadderAction({
+        ...BASE,
+        bootstrapOpen: true,
+        hasSelection: true,
+        nodePopoverOpen: true,
+      }),
+    ).toBe("close-bootstrap");
+  });
+
+  it("닫혀 있으면 아래 칸이 정상적으로 답한다", () => {
+    expect(
+      resolveTopologyEscLadderAction({ ...BASE, bootstrapOpen: false, hasSelection: true }),
+    ).toBe("deselect");
   });
 });

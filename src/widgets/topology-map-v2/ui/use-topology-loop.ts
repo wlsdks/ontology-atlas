@@ -22,7 +22,7 @@ import type { CameraAxes, CameraTarget } from "../engine/camera";
 import { MAX_FRAME_DELTA_SECONDS } from "../engine/spring";
 import { cameraTransitionDurationMs, easeCameraKeyframe, type CameraKeyframe, type CameraTween } from "../model/camera-easing";
 import { stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
-import { isCameraUnsettled, isCanvasActive, shouldSkipFrame } from "../model/idle-gate";
+import { isCameraUnsettled, isCanvasActive, isEgoTailAnimating, shouldSkipFrame } from "../model/idle-gate";
 import { ambientSleepFactor, isAmbientAsleep } from "../model/ambient-sleep";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
@@ -1478,17 +1478,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             now - selectionPulseRef.current.startAtMs < tokens.selectPulseDurationMs,
           // R6 상시 혜성 — depends 엣지가 있고 reduced-motion 이 아니면 코멧이
           // 포커스와 무관하게 항상 흐르므로 캔버스는 유휴가 되지 않는다(소유자
-          // 지시 "상시성"). 호버 펄스가 활성이어도 깨워 둔다. 문서 hidden 시엔
-          // rAF 자체가 브라우저에 의해 정지돼 배터리를 지킨다.
-          egoTailAnimating:
-            (!reducedMotionRef.current &&
-              !ambientAsleep &&
-              hasDependsEdgesRef.current &&
-              tokens.edgePulseSpeed > 0) ||
-            // Design Guardian 처방 E — 포커스 중 인시던트 contains 코멧도 상시
-            // 흐름이라 유휴 게이트가 얼면 안 된다(depends 와 같은 idle-gate 결).
-            (!reducedMotionRef.current && focusedSlugRef.current !== null && hasContainsEdgesRef.current) ||
-            pulsesRef.current.length > 0,
+          // 지시 "상시성"). 처방 E 의 포커스 contains 코멧과 호버 펄스도 같은
+          // 플래그를 짓는다. 문서 hidden 시엔 rAF 자체가 브라우저에 의해 정지돼
+          // 배터리를 지킨다.
+          //
+          // 세 갈래의 합성은 `idle-gate.ts` 의 순수 함수가 소유한다 — 여기서
+          // 인라인 OR 로 짜던 동안 앰비언트 휴면이 **depends 갈래에만** 걸려,
+          // 노드를 선택해 둔 채 손을 놓으면 앱이 영원히 안 잠들었다.
+          egoTailAnimating: isEgoTailAnimating({
+            reducedMotion: reducedMotionRef.current,
+            ambientAsleep,
+            hasDependsEdges: hasDependsEdgesRef.current,
+            edgePulseSpeed: tokens.edgePulseSpeed,
+            focused: focusedSlugRef.current !== null,
+            hasContainsEdges: hasContainsEdgesRef.current,
+            livePulseCount: pulsesRef.current.length,
+          }),
           // 렌즈 브러싱도 진행 중인 상호작용 — 유휴로 접으면 호버 링이 얼거나
           // 뜨지 않는다(캔버스 호버와 같은 대우).
           emphasisTarget:

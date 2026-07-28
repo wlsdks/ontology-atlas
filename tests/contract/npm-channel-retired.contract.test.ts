@@ -32,6 +32,20 @@ import { describe, expect, it } from "vitest";
  *   불러야** 한다. 판별은 글리프가 아니라 **자리**로 한다 — 펜스 안은 복사해
  *   붙이라는 뜻이고, 산문 안은 인용이다. 라벨 장식 게이트가 화살표를 글리프가
  *   아니라 위치로 판별하는 것과 같은 원리다.
+ * - **Tier C — 소스의 맨몸 호출.** 2026-07-29 추가. 아래 「사정거리」 참조.
+ *
+ * ## 사정거리를 넓힌 이유 (2026-07-29 실측)
+ *
+ * 이 게이트는 오래 `npx ontology-atlas` 만 봤다. 그런데 앱이 사용자에게
+ * 복사시키던 것은 **맨몸** `ontology-atlas validate .` 이었다 — 러너가 없으니
+ * 패턴에 안 걸렸고, `which ontology-atlas` 는 not found 다. 전수 측정 결과 소스
+ * 22곳 116건이 이 형태로 살아 있었다.
+ *
+ * **룰이 있어도 사정거리가 짧으면 룰이 없는 것과 같다.** 라벨 장식 게이트가
+ * `→` 를 통째로 면제했다가 다음 날 주 저장 버튼이 그 면제로 빠져나간 것과
+ * 같은 실패다. 그래서 Tier C 를 더한다: `src/`·`app/` 의 TS/TSX 에서 실행
+ * 가능한 형태의 맨몸 호출을 금지하고, 살아있는 형태는 단일 출처
+ * (`src/shared/config/cli-invocation.ts`)가 만든다.
  */
 
 /** 죽은 채널을 실행하려는 시도. 한 줄 안에서 러너와 패키지가 만나는 형태만 본다. */
@@ -44,6 +58,16 @@ const DEAD_INVOCATION: ReadonlyArray<{ id: string; pattern: RegExp }> = [
     pattern: /\bnpm\s+(?:install|i)\s+(?:-g|--global)\b[^\n]*\bontology-atlas\b/,
   },
   { id: "dlx", pattern: /\b(?:pnpm|yarn)\s+dlx\b[^\n]*\bontology-atlas\b/ },
+  /**
+   * 맨몸 호출 — 러너가 없어 위 패턴에 안 걸리지만 **실행되지 않는 것은 똑같다**.
+   * `which ontology-atlas` → not found. Tier A 는 전면 금지, Tier B 는 펜스
+   * 안에서만 금지된다(산문으로 "그건 죽었다" 고 말하려면 이름을 불러야 하므로).
+   */
+  {
+    id: "bare-ontology-atlas",
+    pattern:
+      /(?<![\w/<-])ontology-atlas (?:absorb|add|agent-activity|agent-brief|agent-files|agent-setup|all-paths|analyze|backlinks|blast-radius|bootstrap|compile|components|cycles|delete|domain-matrix|explain|export|facets|find|growth|health|hubs|import|index|infer-imports|init|list|maintenance|match-edges|match-nodes|mcp-verify|merge|moment|node|node-profile|orphans|overview|path|pattern-walk|preflight|project-map|query|reachability|relate|relation-check|rename|schema|similar|snapshot|topological-order|validate|workspace-brief)(?![\w-])/,
+  },
 ];
 
 /**
@@ -73,6 +97,42 @@ const TIER_B_FILES = [
   "docs/PRODUCT-DIRECTION.md",
   "cli/README.md",
   "mcp/README.md",
+];
+
+/**
+ * Tier C — 소스에서 **명령으로 읽히는** 맨몸 호출. 산문 속 제품명
+ * ("ontology-atlas contributors", "Use this ontology-atlas run order")은 명령이
+ * 아니므로 **실제 CLI 명령 이름이 뒤따를 때만** 위반이다.
+ */
+const CLI_COMMANDS = [
+  "absorb", "add", "agent-activity", "agent-brief", "agent-files", "agent-setup",
+  "all-paths", "analyze", "backlinks", "blast-radius", "bootstrap",
+  "compile", "components", "cycles", "delete", "domain-matrix", "explain",
+  "export", "facets", "find", "growth", "health", "hubs", "import", "index",
+  "infer-imports", "init", "list", "maintenance", "match-edges", "match-nodes",
+  "mcp-verify", "merge", "moment", "node", "node-profile", "orphans", "overview",
+  "path", "pattern-walk", "preflight", "project-map", "query", "reachability",
+  "relate", "relation-check", "rename", "schema", "similar", "snapshot",
+  "topological-order", "validate", "workspace-brief",
+] as const;
+
+/**
+ * `<ontology-atlas checkout>` 같은 **자리 표시** 안의 이름은 명령이 아니다 —
+ * 그건 이미 살아있는 형태(`node <…>/cli/src/index.mjs`)의 일부다. 그래서 여는
+ * 꺾쇠와 경로 구분자를 앞자리에서 배제한다.
+ */
+const BARE_CLI_PATTERN = new RegExp(
+  `(?<![\\w/<-])ontology-atlas (?:${CLI_COMMANDS.map((c) => c.replace(/-/g, "\\-")).join("|")})(?![\\w-])`,
+);
+
+/**
+ * 이 파일들만 죽은 이름을 문자로 가질 수 있다 — 하나는 **살아있는 형태를
+ * 만드는 곳**이고, 하나는 **이 규칙을 설명하는 곳**(그러려면 이름을 불러야
+ * 한다)이다. 목록이 셋이 되면 그건 규칙이 새는 신호다.
+ */
+const TIER_C_ALLOWED = [
+  "src/shared/config/cli-invocation.ts",
+  "src/shared/config/mcp-server-launch.ts",
 ];
 
 interface Offence {
@@ -109,6 +169,58 @@ function report(offences: Offence[]): string {
 }
 
 describe("npm 채널은 폐기됐다 — 죽은 npx 안내 차단", () => {
+  it("Tier C: 소스가 실행 불가능한 맨몸 `ontology-atlas <명령>` 을 만들지 않는다", async () => {
+    const { execFileSync } = await import("node:child_process");
+    const files = execFileSync("git", ["ls-files", "src", "app"], {
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    })
+      .split("\n")
+      .filter((f) => /\.(ts|tsx)$/.test(f))
+      .filter((f) => !f.includes(".test."))
+      // 생성 미러는 저장소 산문을 담고 있어 **문서를 소스로 오인**하게 만든다.
+      .filter((f) => !f.includes("docs-vault/data"))
+      .filter((f) => !TIER_C_ALLOWED.includes(f));
+
+    expect(files.length, "Tier C 파일 목록이 비었다 — 경로 계약이 깨졌다").toBeGreaterThan(100);
+
+    const offences: Offence[] = [];
+    for (const rel of files) {
+      const text = readFileSync(join(process.cwd(), rel), "utf8");
+      text.split("\n").forEach((line, index) => {
+        if (BARE_CLI_PATTERN.test(line)) {
+          offences.push({ file: rel, line: index + 1, rule: "bare-ontology-atlas", text: line.trim() });
+        }
+      });
+    }
+
+    expect(
+      offences,
+      offences.length
+        ? `실행할 수 없는 맨몸 CLI 호출이다 — 이 이름의 전역 바이너리는 없다.\n` +
+            `\`ATLAS_CLI\`(src/shared/config/cli-invocation.ts)로 만들어라.\n${report(offences)}`
+        : "",
+    ).toEqual([]);
+  });
+
+  /**
+   * **탐지기가 조용히 무력화되는 것을 막는 프로브.** 위 검사는 위반이 0이면
+   * 언제나 통과하므로, 패턴이 오타 하나로 죽어도 아무도 모른다. 여기서 위반
+   * 1줄과 정상 3줄을 직접 먹여 전자만 걸리는지 확인한다.
+   */
+  it("Tier C 프로브: 명령만 잡고 제품명·살아있는 형태는 통과시킨다", () => {
+    expect(BARE_CLI_PATTERN.test('`ontology-atlas validate ${target}`')).toBe(true);
+    expect(BARE_CLI_PATTERN.test('"ontology-atlas agent-brief [vault]"')).toBe(true);
+    // 산문 속 제품명 — 명령이 아니다.
+    expect(BARE_CLI_PATTERN.test("name: 'ontology-atlas contributors'")).toBe(false);
+    expect(BARE_CLI_PATTERN.test("Use this ontology-atlas first-contact run order")).toBe(false);
+    // 살아있는 형태 — 경로 안의 이름은 잡지 않는다.
+    expect(BARE_CLI_PATTERN.test("`node $ATLAS/cli/src/index.mjs validate ${t}`")).toBe(false);
+    expect(BARE_CLI_PATTERN.test("node <ontology-atlas checkout>/cli/src/index.mjs agent-setup")).toBe(
+      false,
+    );
+  });
+
   it("Tier A: 런치 초안 · 이슈 템플릿 · 기여 안내 · 스타터에 죽은 명령이 없다", async () => {
     const { glob } = await import("node:fs/promises");
     const files: string[] = [];
@@ -163,8 +275,15 @@ describe("npm 채널은 폐기됐다 — 죽은 npx 안내 차단", () => {
       "npm install -g ontology-atlas",
       "pnpm dlx ontology-atlas init",
     ];
+    // **겹쳐 걸리는 것은 정상이다.** `npx ontology-atlas init` 은 러너 규칙과
+    // 맨몸 규칙에 동시에 걸린다 — 같은 줄이 두 가지 이유로 틀렸다는 뜻이고,
+    // 규칙 하나가 나중에 좁아져도 나머지가 받친다. 그래서 "정확히 1건" 이
+    // 아니라 "적어도 1건" 을 요구한다.
     for (const line of violations) {
-      expect(offencesIn(line, "probe", false), `놓쳤다: ${line}`).toHaveLength(1);
+      expect(
+        offencesIn(line, "probe", false).length,
+        `놓쳤다: ${line}`,
+      ).toBeGreaterThanOrEqual(1);
     }
 
     const allowed = [
@@ -185,9 +304,12 @@ describe("npm 채널은 폐기됐다 — 죽은 npx 안내 차단", () => {
       "npx ontology-atlas init",
       "```",
     ].join("\n");
-    expect(offencesIn(doc, "probe", true), "Tier B 는 펜스 안 1건만 잡아야 한다").toHaveLength(1);
-    expect(offencesIn(doc, "probe", false), "Tier A 는 산문 인용까지 2건 다 잡아야 한다").toHaveLength(
-      2,
-    );
+    // 자리(펜스 안/밖)로 갈리는지가 요점이라 **줄 수**로 센다 — 한 줄이 여러
+    // 규칙에 걸리는 것은 위에서 정상으로 정했으므로 건수로 세면 그 겹침이
+    // 이 성질과 무관하게 숫자를 흔든다.
+    const linesOf = (fencedOnly: boolean) =>
+      new Set(offencesIn(doc, "probe", fencedOnly).map((o) => o.line)).size;
+    expect(linesOf(true), "Tier B 는 펜스 안 한 줄만 잡아야 한다").toBe(1);
+    expect(linesOf(false), "Tier A 는 산문 인용 줄까지 두 줄을 잡아야 한다").toBe(2);
   });
 });

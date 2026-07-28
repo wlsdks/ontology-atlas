@@ -311,7 +311,7 @@ describe("LiveActivityBadge", () => {
 
     fireEvent.click(screen.getByTestId("live-agent-clear-signal-copy"));
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
-    expect(writeText.mock.calls[0][0]).toBe("ontology-atlas agent-activity <vault> --clear");
+    expect(writeText.mock.calls[0][0]).toBe("node $ATLAS/cli/src/index.mjs agent-activity <vault> --clear");
   });
 
   it("focus summary가 없어도 닫힌 Live trigger는 ontology slug를 focus fallback으로 보여준다", () => {
@@ -786,9 +786,9 @@ describe("LiveActivityBadge", () => {
             previousFiles: ["src/features/vault-ontology/ui/LiveActivityIndicator.tsx"],
             previousAgeMs: 8 * 60 * 1000,
             command:
-              "ontology-atlas agent-activity <vault> --agent codex --state planning --focus 'Parser supplied focus' --ontology-slug capabilities/agent-live-activity-contract --file src/features/vault-ontology/ui/LiveActivityIndicator.tsx --mcp 'query_ontology parser supplied' --source 'rg parser supplied' --verify 'pnpm parser supplied verify' --json",
+              "node $ATLAS/cli/src/index.mjs agent-activity <vault> --agent codex --state planning --focus 'Parser supplied focus' --ontology-slug capabilities/agent-live-activity-contract --file src/features/vault-ontology/ui/LiveActivityIndicator.tsx --mcp 'query_ontology parser supplied' --source 'rg parser supplied' --verify 'pnpm parser supplied verify' --json",
             message:
-              "Do not treat the stale focus as current work until the refreshed heartbeat appears. Run the command, then `ontology-atlas agent-activity <vault> --show --json` and confirm stale: false.",
+              "Do not treat the stale focus as current work until the refreshed heartbeat appears. Run the command, then `node $ATLAS/cli/src/index.mjs agent-activity <vault> --show --json` and confirm stale: false.",
           },
           heartbeat: {
             agent: "codex",
@@ -822,7 +822,7 @@ describe("LiveActivityBadge", () => {
     expect(copied).toContain("- Previous ontology slug: capabilities/agent-live-activity-contract");
     expect(copied).toContain("- Previous files: src/features/vault-ontology/ui/LiveActivityIndicator.tsx");
     expect(copied).toContain("- Previous age: 8m");
-    expect(copied).toContain("ontology-atlas agent-activity");
+    expect(copied).toContain("node $ATLAS/cli/src/index.mjs agent-activity");
     expect(copied).toContain("--focus 'Parser supplied focus'");
     expect(copied).toContain("--verify 'pnpm parser supplied verify'");
     expect(copied).toContain("--state planning");

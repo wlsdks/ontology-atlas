@@ -20,6 +20,7 @@ const labels: MeaningGapLabels = {
   handoffCopy: "Verify with agent",
   handoffCopyIdle: "Copy the command",
   handoffCopied: "Copied",
+  handoffCopyFailed: '복사 실패',
   handoffCopiedHint: "Paste it into your AI tool.",
   rowMenuTrigger: "More actions",
   sectionTitle: "No meaning written down",

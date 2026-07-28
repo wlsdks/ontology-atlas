@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { Check, Copy, FileText, GitBranch, MessageCircle, MoreHorizontal } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
@@ -30,6 +31,8 @@ export interface QueueRowActionLabels {
   /** 에이전트가 관측되지 않은 세션의 같은 자리 — 검증이 아니라 인계. */
   handoffCopyIdle: string;
   handoffCopied: string;
+  /** 클립보드가 막혔을 때 — 침묵은 성공처럼 읽힌다. */
+  handoffCopyFailed: string;
   /** 복사 후 무엇을 하면 되는지 — 스크린리더에도 같은 문장이 간다. */
   handoffCopiedHint: string;
   rowMenuTrigger: string;
@@ -77,7 +80,13 @@ export function HandoffCopyButton({
   /** 한 줄 행에 얹히는 자리 — 높이만 한 단 낮추고 라벨/동작은 같다. */
   compact?: boolean;
 }) {
-  const [copied, setCopied] = useState(false);
+  /**
+   * 복사 결과는 **성공도 실패도** 말한다 (2026-07-28 QA). 클립보드 권한은
+   * 조용히 거절될 수 있고, 그때 침묵하면 사용자는 복사됐다고 믿는다 —
+   * 붙여넣기에서야 안다. 공용 3-상태 훅을 쓴다(새 기제 없음).
+   */
+  const { state: copyState, copy: copyHandoff } = useCopyFeedback(1600);
+  const copied = copyState === "copied";
   const label = resolveHandoffLabel(labels, abilities);
   return (
     <>
@@ -86,17 +95,18 @@ export function HandoffCopyButton({
         data-testid="do-next-handoff-copy"
         onClick={async () => {
           if (candidate) onReviewStart?.(candidate);
-          if (await copyText(payload)) {
-            setCopied(true);
-            window.setTimeout(() => setCopied(false), 1600);
-          }
+          await copyHandoff(payload);
         }}
         className={`inline-flex items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] ${
           compact ? "min-h-7 px-2" : "min-h-8 px-2.5"
         }`}
       >
         {copied ? <Check size={11} aria-hidden /> : <Copy size={11} aria-hidden />}
-        {copied ? labels.handoffCopied : label}
+        {copyState === "failed"
+          ? labels.handoffCopyFailed
+          : copied
+            ? labels.handoffCopied
+            : label}
       </button>
       {/* 복사는 성공해도 화면이 거의 안 변한다 — 무엇이 손에 들어왔고 그걸로
           무엇을 하면 되는지 한 문장을 보조기술에도 같이 준다. */}
@@ -133,6 +143,8 @@ export function RowActionMenu({
   abilities: QueueRowAbilities;
   labels: QueueRowActionLabels;
 }) {
+  // 이 메뉴도 같은 계약을 탄다 — 실패는 말해야 한다.
+  const { state: menuCopyState, copy: copyHandoff } = useCopyFeedback(1600);
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -232,18 +244,22 @@ export function RowActionMenu({
             data-testid="do-next-row-menu-handoff"
             onClick={async () => {
               onReviewStart?.(candidate);
-              if (await copyText(handoffPayload)) {
-                setCopied(true);
-                window.setTimeout(() => {
-                  setCopied(false);
-                  setOpen(false);
-                }, 1000);
+              if (await copyHandoff(handoffPayload)) {
+                window.setTimeout(() => setOpen(false), 1000);
               }
             }}
             className={menuItemClass}
           >
-            {copied ? <Check size={13} aria-hidden /> : <Copy size={13} aria-hidden />}
-            {copied ? labels.handoffCopied : resolveHandoffLabel(labels, abilities)}
+            {menuCopyState === "copied" ? (
+              <Check size={13} aria-hidden />
+            ) : (
+              <Copy size={13} aria-hidden />
+            )}
+            {menuCopyState === "copied"
+              ? labels.handoffCopied
+              : menuCopyState === "failed"
+                ? labels.handoffCopyFailed
+                : resolveHandoffLabel(labels, abilities)}
           </button>
         </div>
       ) : null}

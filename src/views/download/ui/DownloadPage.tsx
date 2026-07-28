@@ -10,6 +10,7 @@ import {
   Orbit,
 } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
+import { resolveDisplayReleaseTag } from '../lib/pending-release-tag';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
@@ -249,6 +250,12 @@ function PortraitStage({
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
 }) {
+  // 제목과 본문이 **같은 값**을 쓴다 — 갈라지던 자리다(`lib/pending-release-tag`).
+  const displayTag = resolveDisplayReleaseTag({
+    published,
+    publishedTag: MACOS_RELEASE.tag,
+    releaseVersion: RELEASE_VERSION,
+  });
   const t = useTranslations('download');
   const graph = useStageGraph();
 
@@ -608,7 +615,16 @@ function PendingActions() {
         data-testid="download-macos-pending"
         className="mt-3.5 max-w-[var(--measure-prose)] break-keep border-l-2 border-[color:var(--color-border-strong)] pl-3 text-label leading-label text-[color:var(--color-text-tertiary)]"
       >
-        {t('macosPendingBody', { tag: `v${RELEASE_VERSION}` })}
+        {/* main 이 독립적으로 같은 결함을 발견해 뽑아낸 헬퍼를 쓴다
+            (`lib/pending-release-tag`) — 내 인라인 수정보다 낫다. 이름이 있고
+            자기 테스트가 있어서, 다음 사람이 두 출처를 다시 만들 여지가 없다. */}
+        {t('macosPendingBody', {
+          tag: resolveDisplayReleaseTag({
+            published: false,
+            publishedTag: MACOS_RELEASE.tag,
+            releaseVersion: RELEASE_VERSION,
+          }),
+        })}
       </p>
 
       <p className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-label leading-label text-[color:var(--color-text-quaternary)]">
@@ -855,7 +871,13 @@ function VerifyDetails({
           {published
             ? t('trustPolicyPublished', { tag: MACOS_RELEASE.tag })
             : /* 위 미게시 주석과 같은 이유 — 아직 안 나온 빌드는 개발 중 버전으로 부른다. */
-              t('trustPolicyPending', { tag: `v${RELEASE_VERSION}` })}
+              t('trustPolicyPending', {
+                  tag: resolveDisplayReleaseTag({
+                    published: false,
+                    publishedTag: MACOS_RELEASE.tag,
+                    releaseVersion: RELEASE_VERSION,
+                  }),
+                })}
         </p>
         {/* 판에서 내려온 정책 절 — "같은 기준을 통과할 때 올립니다" 는 결정
             재료가 아니라 정책 산문이라 여기 산다(fable 판정 2026-07-29).

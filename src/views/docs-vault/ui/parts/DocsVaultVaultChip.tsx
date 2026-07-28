@@ -5,7 +5,9 @@ import type { useTranslations } from "next-intl";
 export interface DocsVaultVaultChipProps {
   /** vault 짧은 이름 — local=폴더명, server=샘플 라벨. */
   label: string;
-  docCount: number;
+  /** `null` 이면 문서 수를 아예 말하지 않는다 — 폴더 미선택 로컬에서 샘플
+   *  숫자를 띄우면 "내 폴더에 N개가 있다" 로 읽힌다. */
+  docCount: number | null;
   folderCount: number;
   /** local vault 의 실제 root 경로(또는 dogfood 경로) — 팝오버 안 전체 표시. */
   path: string;
@@ -54,7 +56,7 @@ export function DocsVaultVaultChip({
           {label}
         </span>
         <span className="flex-none text-[color:var(--color-text-secondary)]">
-          {t("header.docCount", { count: docCount })}
+          {docCount === null ? null : t("header.docCount", { count: docCount })}
         </span>
         <ChevronDown
           size={12}

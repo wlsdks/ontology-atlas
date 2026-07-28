@@ -54,6 +54,44 @@ export interface CanvasActivityFlags {
   trailLensSettling: boolean;
 }
 
+/**
+ * `egoTailAnimating` 을 짓는 세 갈래 — 순수 판정.
+ *
+ * 왜 함수로 뽑았나: 이 플래그는 OR 세 개인데 **앰비언트 휴면이 그중 둘에만
+ * 걸려 있었다.** depends 혜성과 fresh 브리드는 재웠는데 포커스 contains 혜성
+ * 갈래가 게이트 밖에 남아, **노드를 하나 선택해 둔 채 손을 놓으면 앱이 영원히
+ * 안 잠들었다** — 데이터시트를 열어 두고 터미널로 넘어가는, 이 워크벤치에서
+ * 가장 흔한 방치 상태가 정확히 그것이다.
+ *
+ * 그 상태에서 화면은 이미 정지해 있었다는 게 요점이다: 물리 스텝이 모든 혜성
+ * 속도에 `ambientFactor` 를 곱하므로(`topology-physics-step.ts`) 계수가 0 이면
+ * 위상이 한 톨도 안 나간다. 즉 **바뀌지 않는 그림을 매 프레임 전면 재래스터**
+ * 하고 있었다 — P0 실측이 지목한 바로 그 비용이 한 갈래에만 살아남은 것이다.
+ *
+ * 펄스 갈래는 일부러 게이트 밖에 둔다. 호버가 낳고 420ms 에 만료되는 일회성
+ * 신호이고, 호버는 입력이라 그 순간 계수가 1 로 복귀해 있다 — 게이트를 걸어도
+ * 참이 되는 일이 없고, 걸면 "발사됐는데 안 그려지는" 실패 모드만 생긴다.
+ */
+export interface EgoTailActivityInput {
+  reducedMotion: boolean;
+  /** `isAmbientAsleep(ambientSleepFactor(...))` — 계수가 0 에 닿았는가. */
+  ambientAsleep: boolean;
+  hasDependsEdges: boolean;
+  edgePulseSpeed: number;
+  /** 선택된 노드가 있는가 (처방 E — 인시던트 contains 코멧). */
+  focused: boolean;
+  hasContainsEdges: boolean;
+  /** 살아있는 호버 펄스 수. */
+  livePulseCount: number;
+}
+
+export function isEgoTailAnimating(input: EgoTailActivityInput): boolean {
+  if (input.livePulseCount > 0) return true;
+  if (input.reducedMotion || input.ambientAsleep) return false;
+  if (input.hasDependsEdges && input.edgePulseSpeed > 0) return true;
+  return input.focused && input.hasContainsEdges;
+}
+
 export function isCanvasActive(flags: CanvasActivityFlags): boolean {
   return (
     flags.pointerActive ||

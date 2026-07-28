@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCopyFeedback, type CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
 import { useTranslations } from "next-intl";
 // `History as HistoryIcon` — 사용성 검수 P0 (2026-07-23): 특정 HMR/번들 상태에서
@@ -48,6 +49,7 @@ import {
 } from "@/shared/lib/tauri-git";
 import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
 import { cn } from "@/shared/lib/cn";
+import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 
 /**
  * Atlas Git — 기록 목적지 본체.
@@ -151,7 +153,7 @@ export interface AtlasGitPanelProps {
   className?: string;
 }
 
-const SNAPSHOT_CLI_COMMAND = "ontology-atlas snapshot";
+const SNAPSHOT_CLI_COMMAND = `${ATLAS_CLI} snapshot`;
 /** S1 보조 탈출구 — 터미널에서 직접 하려는 사용자용. git 용어는 여기서만 노출. */
 const INIT_CLI_COMMAND = "git init";
 
@@ -258,7 +260,6 @@ export function AtlasGitPanel({
    */
   const [evidenceTabChoice, setEvidenceTabChoice] = useState<"diff" | "history" | null>(null);
   const [expandedHash, setExpandedHash] = useState<string | null>(null);
-  const [commandCopied, setCommandCopied] = useState(false);
 
   /**
    * 목록에서 고른 문서의 경로. `null` = 안 골랐음 → 증거 열은 바뀐 개념
@@ -275,7 +276,6 @@ export function AtlasGitPanel({
   // S1 (기록 시작) · S4 (보낼 곳 등록) 상태.
   const [initRunning, setInitRunning] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
-  const [initCopied, setInitCopied] = useState(false);
   const [remoteUrl, setRemoteUrl] = useState("");
   const [remoteRunning, setRemoteRunning] = useState(false);
   const [remoteError, setRemoteError] = useState<string | null>(null);
@@ -363,19 +363,26 @@ export function AtlasGitPanel({
     }
   }, [vaultPath, pushOptIn, refresh]);
 
-  const copyCliCommand = useCallback(async () => {
-    if (await copyText(SNAPSHOT_CLI_COMMAND)) {
-      setCommandCopied(true);
-      window.setTimeout(() => setCommandCopied(false), 1600);
-    }
-  }, []);
-
-  const copyInitCommand = useCallback(async () => {
-    if (await copyText(INIT_CLI_COMMAND)) {
-      setInitCopied(true);
-      window.setTimeout(() => setInitCopied(false), 1600);
-    }
-  }, []);
+  /**
+   * 복사 결과는 **성공도 실패도** 말한다 (2026-07-28 QA).
+   *
+   * 종전 형태는 `if (await copyText(...)) { 성공 표시 }` 였다. 클립보드 권한은
+   * **조용히 거절될 수 있고**, 그때 화면은 아무 말도 하지 않는다 — 사용자는
+   * 복사됐다고 믿고 붙여넣기에서 처음 안다. 침묵은 성공처럼 읽힌다.
+   *
+   * 공용 `useCopyFeedback` 이 이미 `idle | copied | failed` 3-상태를 갖고 있다.
+   * 새 기제를 만들지 않고 그것을 쓴다.
+   */
+  const { state: commandCopyState, copy: copySnapshotCommand } = useCopyFeedback(1600);
+  const { state: initCopyState, copy: copyInitCommandText } = useCopyFeedback(1600);
+  const copyCliCommand = useCallback(
+    () => void copySnapshotCommand(SNAPSHOT_CLI_COMMAND),
+    [copySnapshotCommand],
+  );
+  const copyInitCommand = useCallback(
+    () => void copyInitCommandText(INIT_CLI_COMMAND),
+    [copyInitCommandText],
+  );
 
   /**
    * 기록 시작 — **이 함수는 버튼 onClick 에서만 호출된다.** 마운트/포커스/
@@ -489,7 +496,7 @@ export function AtlasGitPanel({
             setOthersOpen={setOthersOpen}
             initRunning={initRunning}
             initError={initError}
-            initCopied={initCopied}
+            initCopyState={initCopyState}
             onInit={startTracking}
             onCopyInitCommand={copyInitCommand}
             remoteOpen={remoteOpen}
@@ -508,7 +515,7 @@ export function AtlasGitPanel({
             key={stage}
             t={t}
             sessionChangeset={sessionChangeset}
-            commandCopied={commandCopied}
+            commandCopyState={commandCopyState}
             copyCliCommand={copyCliCommand}
           />
         )}
@@ -710,12 +717,12 @@ function SetupHeading({ title, body }: { title: string; body?: string }) {
 function WebSetup({
   t,
   sessionChangeset,
-  commandCopied,
+  commandCopyState,
   copyCliCommand,
 }: {
   t: Translator;
   sessionChangeset: OntologyChangeset | null;
-  commandCopied: boolean;
+  commandCopyState: CopyFeedbackState;
   copyCliCommand: () => void;
 }) {
   const rows = sessionChangeset
@@ -784,8 +791,16 @@ function WebSetup({
             onClick={copyCliCommand}
             className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
-            {commandCopied ? <Check size={11} aria-hidden /> : <Copy size={11} aria-hidden />}
-            {commandCopied ? t("webCopied") : t("webCopyCommand")}
+            {commandCopyState === "copied" ? (
+              <Check size={11} aria-hidden />
+            ) : (
+              <Copy size={11} aria-hidden />
+            )}
+            {commandCopyState === "copied"
+              ? t("webCopied")
+              : commandCopyState === "failed"
+                ? t("webCopyFailed")
+                : t("webCopyCommand")}
           </button>
         </div>
       </div>
@@ -1657,7 +1672,7 @@ function DesktopBody({
   setOthersOpen,
   initRunning,
   initError,
-  initCopied,
+  initCopyState,
   onInit,
   onCopyInitCommand,
   remoteOpen,
@@ -1700,7 +1715,7 @@ function DesktopBody({
   setOthersOpen: (v: boolean) => void;
   initRunning: boolean;
   initError: string | null;
-  initCopied: boolean;
+  initCopyState: CopyFeedbackState;
   onInit: () => void;
   onCopyInitCommand: () => void;
   remoteOpen: boolean;
@@ -1789,7 +1804,11 @@ function DesktopBody({
               onClick={onCopyInitCommand}
               className={SECONDARY_ACTION_CLASS}
             >
-              {initCopied ? t("webCopied") : t("initTerminalButton")}
+              {initCopyState === "copied"
+                ? t("webCopied")
+                : initCopyState === "failed"
+                  ? t("webCopyFailed")
+                  : t("initTerminalButton")}
             </button>
           </div>
 

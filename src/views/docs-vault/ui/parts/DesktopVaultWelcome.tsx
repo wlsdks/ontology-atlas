@@ -81,7 +81,15 @@ export function DesktopVaultWelcome({
 
   return (
     <main id="main" className="flex min-h-0 flex-1 overflow-auto bg-[color:var(--color-canvas)]">
-      <div className="mx-auto grid w-full max-w-6xl content-start gap-8 px-5 py-8 md:px-8 md:py-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-12">
+      {/*
+        `my-auto` — 남는 공간이 있을 때만 세로 가운데로 온다 (2026-07-28 소유자
+        실사용 제보: "화면 상단에 이렇게 나오면 이상하지? 중앙에 예쁘게").
+
+        `items-center` 류가 아니라 auto margin 을 쓰는 이유: 내용이 뷰포트보다
+        길어지면 auto margin 은 **0 이 되어** 위에서부터 스크롤된다. 가운데
+        정렬로 고정하면 짧은 화면에서 위가 잘려 스크롤로도 못 닿는다.
+      */}
+      <div className="mx-auto my-auto grid w-full max-w-6xl content-start gap-8 px-5 py-8 md:px-8 md:py-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-12">
         <div className="grid min-w-0 gap-7">
           <section className="grid max-w-3xl gap-3">
             <p className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">

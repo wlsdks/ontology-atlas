@@ -89,29 +89,32 @@ describe("DocMetaBar", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders ontology and relation-map jumps as touch-sized action chips", () => {
+  /**
+   * 지도로 가는 입구는 **하나**다 (2026-07-28).
+   *
+   * 종전에는 「의미 지도」(`/ontology/?node=`)와 「지형도」(`/topology/?p=`)가
+   * 나란히 있었다. 그런데 `/ontology` 는 지도로 가는 **얇은 리다이렉트**라
+   * 두 링크가 같은 화면에 도착한다 — 파라미터만 다른 두 입구는 선택지가
+   * 아니라 망설임이다. 직접 가는 쪽만 남겼다.
+   *
+   * 이 테스트가 지키는 것은 "입구가 하나" 와 "그 하나가 실제로 지도로
+   * 간다" 둘 다이다 — 하나로 줄이면서 길까지 잃으면 축소가 아니라 손실이다.
+   */
+  it("renders exactly one map entrance, and it goes to the map", () => {
     renderMetaBar();
 
-    const conceptLink = screen.getByRole("link", {
-      name: /의미 지도 · kind:capability/,
-    });
     const relationMapLink = screen.getByRole("link", { name: "지형도" });
-
-    expect(conceptLink).toHaveAttribute(
-      "href",
-      "/ontology/?node=capability%3Aagent-graph-readiness",
-    );
-    expect(conceptLink).toHaveAttribute("title", "capability 노드를 지도에서 보기");
-    expect(conceptLink.className).toContain("min-h-8");
-    expect(conceptLink.className).toContain("rounded-md");
-    expect(conceptLink.className).toContain("hover:-translate-y-0.5");
-
     expect(relationMapLink).toHaveAttribute(
       "href",
       "/topology/?mode=focus&p=ontology%2Fcapabilities%2Fagent-graph-readiness",
     );
     expect(relationMapLink).toHaveAttribute("title", "이 개념을 지형도에서 열기");
+    // 터치 계약은 그대로 — 줄인 것은 개수이지 크기가 아니다.
     expect(relationMapLink.className).toContain("min-h-8");
     expect(relationMapLink.className).toContain("active:translate-y-px");
+
+    // 리다이렉트를 한 홉 거치던 두 번째 입구는 사라졌다.
+    expect(screen.queryByRole("link", { name: /의미 지도/ })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link").filter((a) => (a.getAttribute("href") ?? "").includes("/ontology/?node="))).toHaveLength(0);
   });
 });

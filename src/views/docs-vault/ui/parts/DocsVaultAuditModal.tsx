@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, Check, Clipboard, HardDrive, Network, X } from "lucide-react";
+import { Bot, Check, Clipboard, GitCompareArrows, HardDrive, Network, X } from "lucide-react";
 import { MOTION } from "@/shared/motion";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
@@ -13,6 +13,7 @@ import {
   AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
 } from "@/shared/lib/ontology-tree";
 import type { VaultManifest } from "@/entities/docs-vault";
+import type { SkillParityModel, SkillParityRow } from "../../lib/skill-parity";
 
 const SOURCE_VAULT_RUNTIME_REPLAY_MARKERS = [
   "relation_name_parity",
@@ -20,6 +21,14 @@ const SOURCE_VAULT_RUNTIME_REPLAY_MARKERS = [
 ] as const;
 
 export interface DocsVaultAuditModalProps {
+  /**
+   * 스킬 사본 일치 — **데스크톱에서 절대 경로를 알 때만** non-null.
+   * `null` 이면 이 행을 아예 그리지 않는다: 절반만 참인 행을 그리지 않는 것이
+   * 이 모달의 기존 관례다(`useAgentFilesModel` 게이트와 같은 문법).
+   */
+  skillParity?: SkillParityModel | null;
+  /** 어긋난 줄을 에이전트에게 넘길 문장으로 복사 — 호출부가 문자열을 짓는다. */
+  onCopySkillParityHandoff?: (rows: SkillParityRow[]) => void;
   open: boolean;
   manifest: VaultManifest;
   nodeCount: number;
@@ -28,6 +37,7 @@ export interface DocsVaultAuditModalProps {
   isLocalSourceLoaded: boolean;
   onClose: () => void;
   t: ReturnType<typeof useTranslations<"docsVault">>;
+  tSkillParity: ReturnType<typeof useTranslations<"skillParity">>;
 }
 
 /**
@@ -41,6 +51,8 @@ export interface DocsVaultAuditModalProps {
  * 위반이므로 항상 닫힌 채 시작(호출부가 `contractOpen` 을 순수 state 로 관리).
  */
 export function DocsVaultAuditModal({
+  skillParity = null,
+  onCopySkillParityHandoff,
   open,
   manifest,
   nodeCount,
@@ -48,6 +60,7 @@ export function DocsVaultAuditModal({
   graphHref,
   isLocalSourceLoaded,
   onClose,
+  tSkillParity,
   t,
 }: DocsVaultAuditModalProps) {
   const toast = useToast();
@@ -147,6 +160,24 @@ export function DocsVaultAuditModal({
       proofMarkers: SOURCE_VAULT_RUNTIME_REPLAY_MARKERS,
     },
   ] as const;
+
+  /**
+   * 4행 — 스킬 사본. **왜 사이드바가 아니라 여기인가:** 자리는 빈도가 정한다.
+   * 이 사실을 보는 때는 `agent-setup` 직후와 스킬을 고친 직후 — 하루 몇 번이
+   * 아니라 한 달 몇 번이다. 사이드바는 매일 문서를 고르는 상시 항해 표면이고,
+   * 상시 자리는 상시 질문의 것이다.
+   *
+   * 실측이 그 판단을 굳혔다(디자인 카운슬 「위계」, 2026-07-29): 1512×900 에서
+   * 사이드바에 스킬 목록을 얹으면 트리 위 크롬이 **856px 중 519px(61%)** 가
+   * 되어 문서함의 주인공인 볼트 트리가 접힘선 아래로 밀린다. 390px 에서는
+   * 사이드바가 서랍이라 아예 보이지도 않는다 — 반면 이 모달의 트리거는 그
+   * 폭에서도 상단 크롬에 살아 있다.
+   *
+   * 그리고 이 모달은 **이미 이 일의 문법을 갖고 있다** — 라벨·칩·값·한 문장·
+   * 우측 복사 액션. 새 크롬을 만들 게 아니라 있는 워크플로 한 줄을 더하는 자리다.
+   */
+  const skillParityRows = skillParity?.rows ?? [];
+  const disagreeing = skillParityRows.filter((row) => row.verdict !== "agreed");
 
   async function handleCopyGate(text: string, successMessage: string) {
     const ok = await copyGate(text);
@@ -271,6 +302,72 @@ export function DocsVaultAuditModal({
                 </div>
               );
             })}
+
+            {skillParityRows.length > 0 ? (
+              <div
+                data-testid="docs-audit-skill-parity"
+                className="grid grid-cols-[36px_1fr] items-start gap-3 border-t border-[color:var(--color-divider)] px-4 py-3.5 sm:grid-cols-[36px_1fr_auto]"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] text-[color:var(--color-indigo-pale-a90)]">
+                  <GitCompareArrows size={14} aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-pale-a82)]">
+                      {tSkillParity("header")}
+                    </span>
+                    <span className="rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                      {tSkillParity("chip")}
+                    </span>
+                  </div>
+                  {/* 값이 이 행의 주목 승자다 — 다른 행의 값과 같은 단을 쓰되
+                      **0 상태는 소리치지 않는다**: 전부 일치하면 중립색이다. */}
+                  <p
+                    data-testid="docs-audit-skill-parity-value"
+                    className="mt-0.5 truncate text-body font-semibold text-[color:var(--color-text-primary)]"
+                  >
+                    {disagreeing.length > 0
+                      ? tSkillParity("valueDisagreeing", {
+                          total: skillParityRows.length,
+                          count: disagreeing.length,
+                        })
+                      : tSkillParity("valueAgreed", { total: skillParityRows.length })}
+                  </p>
+                  <p className="mt-0.5 text-label leading-4 text-[color:var(--color-text-tertiary)]">
+                    {tSkillParity("body")}
+                  </p>
+                  {/* **모든 객체가 받는 마크는 0비트다** — 일치한 것은 이름을
+                      쓰지 않는다. 어긋난 것만 이름으로 나온다. */}
+                  {disagreeing.length > 0 ? (
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {disagreeing.map((row) => (
+                        <span
+                          key={row.name}
+                          data-testid={`docs-audit-skill-parity-${row.name}`}
+                          data-verdict={row.verdict}
+                          className="rounded-sm border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-amber-source-a90)]"
+                        >
+                          {row.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+                <div className="col-span-2 ml-[48px] flex min-w-0 flex-wrap items-center gap-1.5 sm:col-span-1 sm:ml-0 sm:flex-col sm:items-end">
+                  {disagreeing.length > 0 && onCopySkillParityHandoff ? (
+                    <button
+                      type="button"
+                      data-testid="docs-audit-skill-parity-copy"
+                      onClick={() => onCopySkillParityHandoff(disagreeing)}
+                      className="inline-flex h-6 min-w-0 items-center gap-1 rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 font-mono text-caption uppercase tracking-[0.06em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      <Clipboard size={10} aria-hidden />
+                      <span className="truncate">{tSkillParity("copyHandoff")}</span>
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </div>
         </motion.div>
       ) : null}

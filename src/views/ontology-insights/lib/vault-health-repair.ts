@@ -9,7 +9,7 @@ import type { VaultHealthResult } from "@/entities/knowledge-graph/lib/vault-hea
  * (`capability:invoice`), so we match a target slug to a node by its tail.
  *
  * These two signals (disconnected islands · missing domain containment) are the
- * ones `ontology-atlas health` flips to `needs_attention` on — surfacing them
+ * ones `node $ATLAS/cli/src/index.mjs health` flips to `needs_attention` on — surfacing them
  * is what stops the app from falsely claiming "수리할 것 없음".
  */
 export interface VaultHealthRepair {
