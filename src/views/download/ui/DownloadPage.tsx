@@ -68,59 +68,78 @@ export function DownloadPage() {
   const primaryAsset = published ? macosAssetFor('aarch64') : null;
 
   return (
-    <div className="flex min-h-full w-full">
-      {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주.
+    <div className="flex min-h-full w-full flex-col">
+      {/* GNB — 관문 표면의 전역 내비 (2026-07-28 소유자 확정).
+          이 라우트는 좌측 레일(워크벤치 크롬)을 쓰지 않는다
+          (`isGatewayRoute` → `AppShell` 이 레일을 `lg:hidden` 처리). 레일이
+          빠진 자리의 "여기가 어디이고 어디로 갈 수 있나" 는 이 상단 바가
+          진다 — 예전에는 이 내비가 본문 컬럼(960px) 안에 빵부스러기로 떠
+          있어서, 좌측 레일 6개 목적지와 **이중 내비**였고 둘 중 어느 쪽도
+          전역으로 읽히지 않았다.
+
+          `sticky` 인 이유: 스크롤하는 관문 페이지라 아래로 내려간 방문자에게
+          되돌아갈 길이 계속 보여야 한다. 스크롤 컨테이너는 셸의 본문
+          슬롯이므로 여기 sticky 는 그 컨테이너 기준으로 붙는다.
 
           스크롤 끝 여백은 `--page-bottom-breath` 하나다. 하단 탭바 예약고
           (`--topology-mobile-bottom-tab-reserve`)를 **더하지 않는 이유**는
           이 라우트에 탭바가 없기 때문이다 —
-          `shouldHideBottomTabBar('/download')` 가 true 이고, 이 페이지는
-          자기 헤더 내비게이션을 따로 갖는 유일한 독립 페이지다. 구 코드는
+          `shouldHideBottomTabBar('/download')` 가 true 다. 구 코드는
           `calc(56px + safe-area + 1rem)` 을 박아 두어 존재하지 않는 탭바
           자리를 좁은 폭마다 56px 씩 비워 두고 있었다(실측: 탭바 노드 0).
           결합은 `DownloadPage.test.tsx` 가 고정한다. */}
+      <nav
+        data-testid="download-gnb"
+        className="sticky top-0 z-30 w-full shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] md:px-10"
+      >
+        <div className="mx-auto flex h-[var(--chrome-tile-size)] w-full max-w-[var(--page-max)] flex-wrap items-center gap-3">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 transition-colors hover:text-[color:var(--color-text-primary)]"
+          >
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
+              <Orbit size={12} />
+            </span>
+            <span className="text-body leading-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+              Ontology Atlas
+            </span>
+          </Link>
+          <span aria-hidden className="text-body text-[color:var(--color-text-quaternary)]">
+            /
+          </span>
+          <span
+            aria-current="page"
+            className="text-body leading-body text-[color:var(--color-text-tertiary)]"
+          >
+            {t('downloadSectionLabel')}
+          </span>
+          <span className="ml-auto flex items-center gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            >
+              <ArrowLeft size={14} aria-hidden />
+              {t('back')}
+            </Link>
+            <LocaleSwitch />
+          </span>
+        </div>
+      </nav>
+
       <main
         id="main"
         className="min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))] md:px-10 md:pt-10"
       >
         <div className="mx-auto w-full max-w-[var(--page-max)]">
           <div className="mx-auto w-full max-w-[var(--page-col-utility)]">
-            <nav className="flex flex-wrap items-center gap-3 pb-6">
-              <span className="inline-flex items-center gap-2">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
-                  <Orbit size={12} />
-                </span>
-                <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-                  Ontology Atlas
-                </span>
-              </span>
-              <span aria-hidden className="text-body text-[color:var(--color-text-quaternary)]">
-                /
-              </span>
-              <Link
-                href="/"
-                className="inline-flex items-center gap-2 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-              >
-                <ArrowLeft size={14} />
-                {t('back')}
-              </Link>
-              <span aria-hidden className="text-body text-[color:var(--color-text-quaternary)]">
-                /
-              </span>
-              <span className="text-body text-[color:var(--color-text-tertiary)]">
-                {t('downloadSectionLabel')}
-              </span>
-              <span className="ml-auto">
-                <LocaleSwitch />
-              </span>
-            </nav>
-
             {/* Band 1 — 판단. 제목·리드 다음에 곧바로 결정이 온다. 도판은
                 여기 두지 않는다: 2행짜리 리드를 400px 도판 옆에 세우면
                 왼쪽 절반이 250px 비고, 그 빈칸을 아무도 고른 적이 없다.
                 도판은 그것이 답이 되는 자리(설치 후 무엇을 보게 되나)로
                 내려갔다. */}
-            <header className="border-t border-[color:var(--color-divider)] pt-7">
+            {/* GNB 가 이미 아래 보더를 그으므로 여기서 또 그으면 6px 사이에
+                구분선이 둘이 된다 (2026-07-28 GNB 승격). */}
+            <header className="pt-2">
               <p className="font-mono text-caption uppercase leading-caption tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
                 {t('eyebrow')}
               </p>
@@ -130,6 +149,7 @@ export function DownloadPage() {
               <p className="mt-3 max-w-[var(--measure-prose)] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
                 {t('subtitle')}
               </p>
+              <HeroActions published={published} primaryAsset={primaryAsset} />
             </header>
 
             {/* 결정은 컬럼 폭 전체를 쓴다 — 페이지에서 가장 중요한 것이 가장
@@ -200,7 +220,7 @@ function MacosDecision({
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <h2
           id="download-platform-macos-heading"
-          className="text-body-lg leading-body-lg font-semibold text-[color:var(--color-text-primary)]"
+          className="text-title leading-title font-semibold text-[color:var(--color-text-primary)]"
         >
           {t('macosHeading')}
         </h2>
@@ -219,55 +239,92 @@ function MacosDecision({
       </div>
 
       {published && primaryAsset ? (
-        <>
-          <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2.5">
-            {/* 게시된 상태에서는 이 하나가 곧 aarch64 자산이다 — 승자와
-                아키텍처 선택이 같은 버튼이라 testid 도 하나다. */}
-            <a
-              href={primaryAsset.downloadUrl}
-              data-testid="download-primary-cta"
-              className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip')}
-            >
-              <Download size={16} aria-hidden />
-              {t('primaryCtaPublished', { size: formatAssetSize(primaryAsset.sizeBytes) })}
-            </a>
-            <IntelDownload />
-          </div>
-          <ArchHelp />
-        </>
+        <ArchHelp />
       ) : (
-        <>
-          {/* 게시된 빌드가 없으면 크기도 체크섬도 다운로드 URL 도 없다. 그
-              사실을 한 번 말하는 것이, 데이터처럼 생긴 자리표시자 넷을
-              그리는 것보다 낫다. */}
-          <p
-            data-testid="download-macos-pending"
-            className="mt-3 break-keep text-body leading-body text-[color:var(--color-text-secondary)]"
-          >
-            {t('macosPendingBody', { tag: MACOS_RELEASE.tag })}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2.5">
-            <Link
-              href="/"
-              data-testid="download-web-cta"
-              className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip')}
-            >
-              {t('webCta')}
-            </Link>
-            <MacosDownloadLink
-              data-testid="download-primary-cta"
-              className={cn(buttonVariants({ variant: 'ghost', size: 'lg' }), 'rounded-chip')}
-            >
-              <ExternalLink size={16} aria-hidden />
-              {t('primaryCtaPending')}
-            </MacosDownloadLink>
-          </div>
-          <p className="mt-2.5 max-w-[var(--measure-prose)] break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
-            {t('webBody')}
-          </p>
-        </>
+        /* 게시된 빌드가 없으면 크기도 체크섬도 다운로드 URL 도 없다. 그
+           사실을 한 번 말하는 것이, 데이터처럼 생긴 자리표시자 넷을
+           그리는 것보다 낫다. */
+        <p
+          data-testid="download-macos-pending"
+          className="mt-3 break-keep text-body leading-body text-[color:var(--color-text-secondary)]"
+        >
+          {t('macosPendingBody', { tag: MACOS_RELEASE.tag })}
+        </p>
       )}
     </section>
+  );
+}
+
+/**
+ * 히어로의 행동 — **페이지의 유일한 주 CTA가 사는 자리** (2026-07-28 소유자
+ * 확정: 관문형 랜딩).
+ *
+ * 예전에는 이 두 버튼이 아래 macOS 카드 **안**에 있었다. 그래서 릴리스가
+ * 0건인 지금, 「macOS」 라는 제목의 카드가 "아직 게시 전입니다" 라고 말한 뒤
+ * 그 카드의 채운 인디고 버튼이 **웹으로 내보내는** 모양이 됐다 — 다운로드
+ * 페이지의 최강 컨트롤이 페이지 밖을 가리키고, 카드의 제목과 카드의 행동이
+ * 서로 다른 것을 말했다.
+ *
+ * 관문 구조에서는 히어로가 "지금 당장 할 수 있는 일" 을 쥐고, 아래 macOS
+ * 카드는 **앱의 상태를 설명하는 사실 카드**로 남는다. 릴리스가 게시되면
+ * 여기 승자가 그대로 DMG 다운로드로 바뀐다 — 자리는 안 움직이고 내용만
+ * 바뀌므로, 게시 전/후에 페이지의 위계가 같다.
+ *
+ * 채운 인디고는 언제나 **하나**다 (`buttonVariants` 기본 = 채움, 나머지는
+ * ghost).
+ */
+function HeroActions({
+  published,
+  primaryAsset,
+}: {
+  published: boolean;
+  primaryAsset: ReturnType<typeof macosAssetFor>;
+}) {
+  const t = useTranslations('download');
+
+  if (published && primaryAsset) {
+    return (
+      <div
+        data-testid="download-hero-actions"
+        className="mt-5 flex min-w-0 flex-wrap items-center gap-2.5"
+      >
+        {/* 게시된 상태에서는 이 하나가 곧 aarch64 자산이다 — 승자와
+            아키텍처 선택이 같은 버튼이라 testid 도 하나다. */}
+        <a
+          href={primaryAsset.downloadUrl}
+          data-testid="download-primary-cta"
+          className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip')}
+        >
+          <Download size={16} aria-hidden />
+          {t('primaryCtaPublished', { size: formatAssetSize(primaryAsset.sizeBytes) })}
+        </a>
+        <IntelDownload />
+      </div>
+    );
+  }
+
+  return (
+    <div data-testid="download-hero-actions" className="mt-5">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <Link
+          href="/"
+          data-testid="download-web-cta"
+          className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip')}
+        >
+          {t('webCta')}
+        </Link>
+        <MacosDownloadLink
+          data-testid="download-primary-cta"
+          className={cn(buttonVariants({ variant: 'ghost', size: 'lg' }), 'rounded-chip')}
+        >
+          <ExternalLink size={16} aria-hidden />
+          {t('primaryCtaPending')}
+        </MacosDownloadLink>
+      </div>
+      <p className="mt-2.5 max-w-[var(--measure-prose)] break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
+        {t('webBody')}
+      </p>
+    </div>
   );
 }
 
@@ -557,7 +614,7 @@ function TrustPanel({ published }: { published: boolean }) {
         <ShieldCheck size={15} aria-hidden className="text-[color:var(--color-indigo-accent)]" />
         <h2
           id="download-trust-heading"
-          className="text-body-lg leading-body-lg font-semibold text-[color:var(--color-text-primary)]"
+          className="text-title leading-title font-semibold text-[color:var(--color-text-primary)]"
         >
           {t('trustHeading')}
         </h2>
@@ -704,7 +761,7 @@ function InstallPanel() {
     >
       <h2
         id="download-install-heading"
-        className="pb-1 text-body-lg leading-body-lg font-semibold text-[color:var(--color-text-primary)]"
+        className="pb-1 text-title leading-title font-semibold text-[color:var(--color-text-primary)]"
       >
         {t('installTitle')}
       </h2>
