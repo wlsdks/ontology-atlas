@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { isCameraUnsettled, isCanvasActive, shouldSkipFrame, type CanvasActivityFlags } from "./idle-gate";
+import {
+  isCameraUnsettled,
+  isCanvasActive,
+  isEgoTailAnimating,
+  shouldSkipFrame,
+  type CanvasActivityFlags,
+  type EgoTailActivityInput,
+} from "./idle-gate";
 import { stepFocusRamp } from "./focus-state";
 
 const IDLE: CanvasActivityFlags = {
@@ -122,5 +129,74 @@ describe("isCameraUnsettled (M-1 — 유휴 중 휠 줌 사망 회귀)", () => {
 
   it("입실론 안 미세 차이는 정착으로 (재도색 헛깨움 방지)", () => {
     expect(isCameraUnsettled(settled, { tx: 100.005, ty: 50, tscale: 1.20005 })).toBe(false);
+  });
+});
+
+describe("isEgoTailAnimating — 앰비언트 휴면이 세 갈래 전부에 걸리는가", () => {
+  // 깨어 있고, depends 혜성이 흐르고, 노드 하나가 선택돼 있는 상태.
+  const AWAKE_FOCUSED: EgoTailActivityInput = {
+    reducedMotion: false,
+    ambientAsleep: false,
+    hasDependsEdges: true,
+    edgePulseSpeed: 0.075,
+    focused: true,
+    hasContainsEdges: true,
+    livePulseCount: 0,
+  };
+
+  it("각성 중에는 활동 — 보고 있는 사람의 화면은 종전 그대로", () => {
+    expect(isEgoTailAnimating(AWAKE_FOCUSED)).toBe(true);
+  });
+
+  /**
+   * 이 저장소의 회귀. 앰비언트 휴면이 depends 갈래에만 걸려 있어서, **노드를
+   * 선택해 둔 채 손을 놓으면** contains 갈래가 게이트를 영원히 열어 뒀다.
+   * 화면은 이미 정지해 있었으므로(모든 혜성 속도 × 계수 0) 순수 낭비 래스터다.
+   */
+  it("잠들면 선택 상태에서도 비활동 — 데이터시트 열어 두고 떠나도 잠든다", () => {
+    expect(isEgoTailAnimating({ ...AWAKE_FOCUSED, ambientAsleep: true })).toBe(false);
+  });
+
+  it("잠들면 depends 갈래도 비활동", () => {
+    expect(
+      isEgoTailAnimating({ ...AWAKE_FOCUSED, focused: false, ambientAsleep: true }),
+    ).toBe(false);
+  });
+
+  it("reduced-motion 은 각성 여부와 무관하게 비활동 (정지 계약)", () => {
+    expect(isEgoTailAnimating({ ...AWAKE_FOCUSED, reducedMotion: true })).toBe(false);
+  });
+
+  it("입력이 오면(각성 복귀) 다시 활동 — 얼어붙는 실패 모드 없음", () => {
+    const asleep = { ...AWAKE_FOCUSED, ambientAsleep: true };
+    expect(isEgoTailAnimating(asleep)).toBe(false);
+    expect(isEgoTailAnimating({ ...asleep, ambientAsleep: false })).toBe(true);
+  });
+
+  /**
+   * 펄스는 일부러 게이트 밖이다 — 호버가 낳고 420ms 에 만료되는 일회성 신호이고,
+   * 호버는 입력이라 그 순간 이미 각성이다. 게이트를 걸면 "발사됐는데 안 그려지는"
+   * 실패 모드만 생긴다.
+   */
+  it("살아있는 호버 펄스는 잠든 상태에서도 그려야 한다", () => {
+    expect(
+      isEgoTailAnimating({ ...AWAKE_FOCUSED, ambientAsleep: true, livePulseCount: 1 }),
+    ).toBe(true);
+  });
+
+  it("혜성 속도 토큰이 0 이면 depends 갈래는 활동이 아니다", () => {
+    expect(
+      isEgoTailAnimating({ ...AWAKE_FOCUSED, focused: false, edgePulseSpeed: 0 }),
+    ).toBe(false);
+  });
+
+  it("선택돼 있어도 contains 엣지가 없으면 그 갈래는 활동이 아니다", () => {
+    expect(
+      isEgoTailAnimating({
+        ...AWAKE_FOCUSED,
+        hasDependsEdges: false,
+        hasContainsEdges: false,
+      }),
+    ).toBe(false);
   });
 });
