@@ -1234,7 +1234,7 @@
       "handoffCaption": "For AI agents",
       "handoffCopy": "Copy next action",
       "agentCopied": "Copied",
-      "agentCopyFailed": "Copy failed",
+      "agentCopyFailed": "Copy failed — the clipboard was blocked",
       "heroConcepts": "Concepts",
       "heroRelations": "Relations",
       "heroDensityGloss": "{ratio} connections per concept, on average",
@@ -2813,7 +2813,8 @@
     "connectFailedUnknown": "Something blocked it and we could not tell what. Try again.",
     "connectRetry": "Try again",
     "connectDesktopOnly": "This only works in the installed app.",
-    "serverUnavailableGetApp": "Get the app"
+    "serverUnavailableGetApp": "Get the app",
+    "copyFailed": "Copy failed — the clipboard was blocked"
   },
   "appUpdate": {
     "availableTitle": "Version {version} is available",
@@ -2981,7 +2982,8 @@
     "rowSelectHint": "Press to see this document's changed lines beside it",
     "remoteToggle": "Register an address",
     "remoteToggleClose": "Close the address field",
-    "stepSelectHint": "Press to see this step's exact values"
+    "stepSelectHint": "Press to see this step's exact values",
+    "webCopyFailed": "Copy failed — the browser blocked the clipboard"
   },
   "agentFiles": {
     "header": "Agent files",

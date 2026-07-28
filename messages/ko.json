@@ -1234,7 +1234,7 @@
       "handoffCaption": "AI 에이전트용",
       "handoffCopy": "다음 액션 복사",
       "agentCopied": "복사됨",
-      "agentCopyFailed": "복사 실패",
+      "agentCopyFailed": "복사 실패 — 클립보드가 막혔어요",
       "heroConcepts": "개념",
       "heroRelations": "관계",
       "heroDensityGloss": "개념 1개당 평균 연결 {ratio}개",
@@ -2813,7 +2813,8 @@
     "connectFailedUnknown": "무엇이 막혔는지 알 수 없어요. 다시 시도해 주세요.",
     "connectRetry": "다시 시도",
     "connectDesktopOnly": "이 동작은 설치한 앱에서만 됩니다.",
-    "serverUnavailableGetApp": "앱 받기"
+    "serverUnavailableGetApp": "앱 받기",
+    "copyFailed": "복사 실패 — 클립보드가 막혔어요"
   },
   "appUpdate": {
     "availableTitle": "{version} 버전이 나왔어요",
@@ -2981,7 +2982,8 @@
     "rowSelectHint": "누르면 이 문서의 바뀐 줄을 옆에서 보여줘요",
     "remoteToggle": "보낼 곳 등록하기",
     "remoteToggleClose": "주소 입력 닫기",
-    "stepSelectHint": "누르면 이 걸음의 자세한 값을 볼 수 있어요"
+    "stepSelectHint": "누르면 이 걸음의 자세한 값을 볼 수 있어요",
+    "webCopyFailed": "복사 실패 — 브라우저가 클립보드를 막았어요"
   },
   "agentFiles": {
     "header": "에이전트 파일",

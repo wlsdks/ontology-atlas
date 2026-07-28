@@ -62,6 +62,7 @@ const labels: DoNextTabLabels = {
   openBuilder: "Edit in workshop",
   handoffCopy: "Verify with agent",
   handoffCopied: "Copied",
+  handoffCopyFailed: '복사 실패',
   emptyQueue: "Nothing needs attention.",
   moreCount: (count) => `+${count} more`,
   digestTitle: "What the agent did",
