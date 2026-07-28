@@ -8,7 +8,7 @@ import { slugify } from '@/shared/lib/slugify';
  * 뒤 UI 가 기존 vault 쓰기 경로(`createDoc`)로 수행한다. 승인 전 쓰기 0 이
  * 절대 계약이다.
  *
- * CLI `ontology-atlas import` (`cli/src/commands/import.mjs`) 와의 정합:
+ * CLI `node $ATLAS/cli/src/index.mjs import` (`cli/src/commands/import.mjs`) 와의 정합:
  * - kind: frontmatter `kind:` 만 신뢰, 없으면 kindless skip (동일).
  * - slug: frontmatter `slug:` 우선, 없으면 파일 경로(.md 제거) (동일 —
  *   export 가 폴더 구조를 보존하므로 CLI 의 kind-folder auto-prefix 는 불요).

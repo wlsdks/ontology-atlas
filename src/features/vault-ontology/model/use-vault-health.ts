@@ -12,7 +12,7 @@ import {
 
 /**
  * Mode-aware vault health verdict — the browser-side twin of
- * `ontology-atlas health` (`query_ontology({operation:'health'})`). C1: the
+ * `node $ATLAS/cli/src/index.mjs health` (`query_ontology({operation:'health'})`). C1: the
  * insights surface must agree with the CLI, so it reads the SAME rule outcomes
  * from the raw frontmatter (`computeVaultHealth`) instead of the auto-healed
  * derived graph. Mirrors the mode selection of `useOntologyInsight` so the

@@ -49,6 +49,7 @@ import {
 } from "@/shared/lib/tauri-git";
 import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
 import { cn } from "@/shared/lib/cn";
+import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 
 /**
  * Atlas Git — 기록 목적지 본체.
@@ -152,7 +153,7 @@ export interface AtlasGitPanelProps {
   className?: string;
 }
 
-const SNAPSHOT_CLI_COMMAND = "ontology-atlas snapshot";
+const SNAPSHOT_CLI_COMMAND = `${ATLAS_CLI} snapshot`;
 /** S1 보조 탈출구 — 터미널에서 직접 하려는 사용자용. git 용어는 여기서만 노출. */
 const INIT_CLI_COMMAND = "git init";
 

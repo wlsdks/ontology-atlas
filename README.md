@@ -194,7 +194,7 @@ by a command, not by hand, and the command said what it would do to the graph
 before touching a file:
 
 ```console
-$ ontology-atlas relate capabilities/return-intake capabilities/shipment-tracking dependencies ./storefront --dry-run
+$ node $ATLAS/cli/src/index.mjs relate capabilities/return-intake capabilities/shipment-tracking dependencies ./storefront --dry-run
 
 capabilities/return-intake --dependencies--> capabilities/shipment-tracking
   verdict matches_existing_schema · exists no
@@ -249,7 +249,7 @@ Here is a real question — *what breaks if I change this?* — answered against
 same example vault the screenshots use:
 
 ```console
-$ ontology-atlas blast-radius capabilities/payment-authorize ./storefront --depth 2
+$ node $ATLAS/cli/src/index.mjs blast-radius capabilities/payment-authorize ./storefront --depth 2
 
 capabilities/payment-authorize — blast radius (depth 2, incoming)
   risk high · 10 노드 · 15 관계 · 6 cross-domain
@@ -276,9 +276,9 @@ affected nodes (distance 별)
 
 next impact capabilities/order-cancel — impact rows are candidates, not proof;
 inspect backlinks and node detail before refactor decisions
-  ontology-atlas node capabilities/order-cancel [vault] --limit 20
-  ontology-atlas backlinks capabilities/payment-authorize [vault]
-  ontology-atlas reachability capabilities/payment-authorize [vault] --plan --depth 2 --direction both --limit 20
+  node $ATLAS/cli/src/index.mjs node capabilities/order-cancel [vault] --limit 20
+  node $ATLAS/cli/src/index.mjs backlinks capabilities/payment-authorize [vault]
+  node $ATLAS/cli/src/index.mjs reachability capabilities/payment-authorize [vault] --plan --depth 2 --direction both --limit 20
 ```
 
 *Verbatim. The node titles are Korean because this example vault is written in
@@ -331,7 +331,7 @@ Issues access and refresh tokens for authenticated users.
 
 That distinction is the one thing worth learning up front: **a path points at
 code, a slug points at a node.** Mixing them is the most common first mistake,
-and `ontology-atlas validate` reports it as a dangling reference.
+and `node $ATLAS/cli/src/index.mjs validate` reports it as a dangling reference.
 
 The hierarchy is deliberately small:
 

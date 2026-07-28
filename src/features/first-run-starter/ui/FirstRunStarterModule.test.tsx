@@ -284,7 +284,7 @@ describe('FirstRunStarterModule', () => {
       screen.getByText('node cli/src/index.mjs init && node cli/src/index.mjs bootstrap'),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText('npx ontology-atlas init && npx ontology-atlas bootstrap'),
+      screen.queryByText('npx node $ATLAS/cli/src/index.mjs init && npx node $ATLAS/cli/src/index.mjs bootstrap'),
     ).not.toBeInTheDocument();
   });
 

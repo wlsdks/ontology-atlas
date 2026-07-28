@@ -277,7 +277,7 @@ describe("buildAgentSetupCliCommandTemplate", () => {
     const command = buildAgentSetupCliCommandTemplate("team-vault");
 
     expect(command).toBe(
-      "ontology-atlas agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
+      "node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
     );
   });
 
@@ -295,7 +295,7 @@ describe("buildAgentSetupCheckCliCommandTemplate", () => {
     const command = buildAgentSetupCheckCliCommandTemplate("team-vault");
 
     expect(command).toBe(
-      "ontology-atlas agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
+      "node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
     );
   });
 

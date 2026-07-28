@@ -249,28 +249,28 @@ describe("buildAgentQueryRecipes", () => {
     ]);
 
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "agent_brief")!)).toBe(
-      "ontology-atlas agent-brief [vault]",
+      "node $ATLAS/cli/src/index.mjs agent-brief [vault]",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "query_plan")!)).toBe(
-      "ontology-atlas blast-radius capabilities/mcp-server [vault] --plan --depth 2",
+      "node $ATLAS/cli/src/index.mjs blast-radius capabilities/mcp-server [vault] --plan --depth 2",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "node_profile")!)).toBe(
-      "ontology-atlas node capabilities/mcp-server [vault] --limit 12",
+      "node $ATLAS/cli/src/index.mjs node capabilities/mcp-server [vault] --limit 12",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "path")!)).toBe(
-      "ontology-atlas path capabilities/mcp-server domains/views [vault] --max-hops 5",
+      "node $ATLAS/cli/src/index.mjs path capabilities/mcp-server domains/views [vault] --max-hops 5",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "explain_relation")!)).toBe(
-      "ontology-atlas explain capabilities/mcp-server domains/views [vault] --direction undirected --max-hops 5 --types depends_on,relates --limit 10",
+      "node $ATLAS/cli/src/index.mjs explain capabilities/mcp-server domains/views [vault] --direction undirected --max-hops 5 --types depends_on,relates --limit 10",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "similar_nodes")!)).toBe(
-      "ontology-atlas similar 'MCP Server' [vault] --slug capabilities/mcp-server --kind capability --limit 10",
+      "node $ATLAS/cli/src/index.mjs similar 'MCP Server' [vault] --slug capabilities/mcp-server --kind capability --limit 10",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "relation_check")!)).toBe(
-      "ontology-atlas relation-check capabilities/mcp-server domains/views depends_on [vault]",
+      "node $ATLAS/cli/src/index.mjs relation-check capabilities/mcp-server domains/views depends_on [vault]",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "all_paths")!)).toBe(
-      "ontology-atlas all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
+      "node $ATLAS/cli/src/index.mjs all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
     );
     expect(
       formatAgentRecipeCliCommand({
@@ -286,7 +286,7 @@ describe("buildAgentQueryRecipes", () => {
         },
         priority: "secondary",
       }),
-    ).toBe("ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates");
+    ).toBe("node $ATLAS/cli/src/index.mjs hubs [vault] --plan --limit 10 --types depends_on,relates");
     expect(
       formatAgentQueryCallCliCommand({
         operation: "query_ontology.explain_relation",
@@ -301,7 +301,7 @@ describe("buildAgentQueryRecipes", () => {
         },
       }),
     ).toBe(
-      "ontology-atlas explain capabilities/mcp-server domains/views [vault] --direction undirected --types depends_on,relates --limit 10",
+      "node $ATLAS/cli/src/index.mjs explain capabilities/mcp-server domains/views [vault] --direction undirected --types depends_on,relates --limit 10",
     );
     expect(
       formatAgentQueryCallCliCommand({
@@ -317,7 +317,7 @@ describe("buildAgentQueryRecipes", () => {
         },
       }),
     ).toBe(
-      "ontology-atlas match-edges [vault] --from-kind capability --to-kind external --types depends_on --include-external --limit 20",
+      "node $ATLAS/cli/src/index.mjs match-edges [vault] --from-kind capability --to-kind external --types depends_on --include-external --limit 20",
     );
     expect(
       formatAgentQueryCallCliCommand({
@@ -330,7 +330,7 @@ describe("buildAgentQueryRecipes", () => {
           limit: 20,
         },
       }),
-    ).toBe("ontology-atlas match-edges [vault] --plan --types depends_on --limit 20");
+    ).toBe("node $ATLAS/cli/src/index.mjs match-edges [vault] --plan --types depends_on --limit 20");
     expect(
       formatAgentQueryCallCliCommand({
         operation: "query_ontology.match_nodes",
@@ -345,25 +345,25 @@ describe("buildAgentQueryRecipes", () => {
         },
       }),
     ).toBe(
-      "ontology-atlas match-nodes [vault] --kind capability --min-degree 2 --has-incoming --sort degree --limit 20",
+      "node $ATLAS/cli/src/index.mjs match-nodes [vault] --kind capability --min-degree 2 --has-incoming --sort degree --limit 20",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "domain_matrix")!)).toBe(
-      "ontology-atlas domain-matrix [vault]",
+      "node $ATLAS/cli/src/index.mjs domain-matrix [vault]",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "cycles")!)).toBe(
-      "ontology-atlas cycles [vault] --max-hops 8",
+      "node $ATLAS/cli/src/index.mjs cycles [vault] --max-hops 8",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "components")!)).toBe(
-      "ontology-atlas components [vault] --limit 20",
+      "node $ATLAS/cli/src/index.mjs components [vault] --limit 20",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "topological_order")!)).toBe(
-      "ontology-atlas topological-order [vault] --limit 20",
+      "node $ATLAS/cli/src/index.mjs topological-order [vault] --limit 20",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "growth_plan")!)).toBe(
-      "ontology-atlas growth [vault] --limit 20",
+      "node $ATLAS/cli/src/index.mjs growth [vault] --limit 20",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "maintenance_plan")!)).toBe(
-      "ontology-atlas maintenance [vault] --limit 20",
+      "node $ATLAS/cli/src/index.mjs maintenance [vault] --limit 20",
     );
     expect(
       formatAgentQueryCallCliCommand({
@@ -375,7 +375,7 @@ describe("buildAgentQueryRecipes", () => {
           limit: 6,
         },
       }),
-    ).toBe("ontology-atlas domain-matrix [vault] --limit 6 --types depends_on,relates");
+    ).toBe("node $ATLAS/cli/src/index.mjs domain-matrix [vault] --limit 6 --types depends_on,relates");
   });
 
   it("formats the first-contact run order as one copyable prompt", () => {
@@ -400,7 +400,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("1. query_ontology.agent_brief");
     expect(prompt).toContain('"operation": "query_plan"');
     expect(prompt).toContain("CLI fallback commands when the MCP connector is unavailable:");
-    expect(prompt).toContain("ontology-atlas blast-radius capabilities/mcp-server [vault] --plan --depth 2");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs blast-radius capabilities/mcp-server [vault] --plan --depth 2");
     expect(prompt).toContain("evidence.pathsComplete");
     expect(prompt).toContain("For match_nodes and match_edges, report totalMatches");
     expect(prompt).toContain("followUp details");
@@ -470,8 +470,8 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("MATCH (n:capability)");
     expect(prompt).toContain("query_ontology.match_nodes");
     expect(prompt).toContain("query_ontology.match_edges");
-    expect(prompt).toContain("ontology-atlas match-nodes [vault] --plan");
-    expect(prompt).toContain("ontology-atlas match-edges [vault] --plan");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs match-nodes [vault] --plan");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs match-edges [vault] --plan");
     expect(prompt).toContain("sync the docs/ontology vault");
     expect(prompt).toContain("query_ontology.query_plan");
     expect(prompt).toContain("query_ontology.node_profile");
@@ -482,14 +482,14 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("query_ontology.pattern_walk");
     expect(prompt).toContain('"targetOperation": "blast_radius"');
     expect(prompt).toContain("CLI fallback commands when the MCP connector is unavailable");
-    expect(prompt).toContain("ontology-atlas agent-brief [vault]");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs agent-brief [vault]");
     expect(prompt).toContain("Project ontology indexing checkpoint");
     expect(prompt).toContain('index_project({"rootPath":"[codebase-root]"})');
     expect(prompt).toContain("meaningGate.businessOntology.evidenceRows");
     expect(prompt).toContain("meaningGate.implementationEvidence.reviewRequiredRows");
-    expect(prompt).toContain("ontology-atlas blast-radius domains/views [vault] --plan --depth 2");
-    expect(prompt).toContain("ontology-atlas all-paths");
-    expect(prompt).toContain("ontology-atlas explain domains/views '<other-slug>' [vault]");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs blast-radius domains/views [vault] --plan --depth 2");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs all-paths");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs explain domains/views '<other-slug>' [vault]");
     expect(prompt).toContain("--plan --force --max-hops 3");
     expect(prompt).toContain("Write guardrails before changing the markdown vault");
     expect(prompt).toContain("skip_existing means do not add");
@@ -584,10 +584,10 @@ describe("buildAgentQueryRecipes", () => {
       },
     });
     expect(formatAgentQueryCallCliCommand(playbooks[1]!.payloads[2]!)).toBe(
-      "ontology-atlas match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10",
+      "node $ATLAS/cli/src/index.mjs match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10",
     );
     expect(formatAgentQueryCallCliCommand(playbooks[1]!.payloads[3]!)).toBe(
-      "ontology-atlas match-nodes [vault] --kind capability --min-degree 2 --sort degree --limit 10",
+      "node $ATLAS/cli/src/index.mjs match-nodes [vault] --kind capability --min-degree 2 --sort degree --limit 10",
     );
     expect(playbooks[1]?.evidence.join(" ")).toContain("Graph DB-style node scan");
     expect(playbooks[1]?.stopWhen.join(" ")).toContain("query_plan(match_nodes)");
@@ -610,7 +610,7 @@ describe("buildAgentQueryRecipes", () => {
       },
     });
     expect(formatAgentQueryCallCliCommand(playbooks[2]!.payloads[2]!)).toBe(
-      "ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates",
+      "node $ATLAS/cli/src/index.mjs hubs [vault] --plan --limit 10 --types depends_on,relates",
     );
     expect(playbooks[2]?.payloads[3]).toEqual({
       operation: "query_ontology.centrality",
@@ -632,7 +632,7 @@ describe("buildAgentQueryRecipes", () => {
       },
     });
     expect(formatAgentQueryCallCliCommand(playbooks[2]!.payloads[4]!)).toBe(
-      "ontology-atlas match-edges [vault] --plan --types depends_on --limit 20",
+      "node $ATLAS/cli/src/index.mjs match-edges [vault] --plan --types depends_on --limit 20",
     );
     expect(playbooks[3]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
       "schema",
@@ -642,7 +642,7 @@ describe("buildAgentQueryRecipes", () => {
       "project_map",
     ]);
     expect(formatAgentQueryCallCliCommand(playbooks[3]!.payloads[0]!)).toBe(
-      "ontology-atlas schema [vault] --limit 20",
+      "node $ATLAS/cli/src/index.mjs schema [vault] --limit 20",
     );
     expect(playbooks[3]?.payloads[1]?.arguments).toMatchObject({
       operation: "query_plan",
@@ -663,14 +663,14 @@ describe("buildAgentQueryRecipes", () => {
       limit: 20,
     });
     expect(formatAgentQueryCallCliCommand(playbooks[3]!.payloads[3]!)).toBe(
-      "ontology-atlas pattern-walk project [vault] --pattern domains,capabilities --direction outgoing --limit 20",
+      "node $ATLAS/cli/src/index.mjs pattern-walk project [vault] --pattern domains,capabilities --direction outgoing --limit 20",
     );
     expect(playbooks[3]?.payloads[4]?.arguments).toMatchObject({
       operation: "project_map",
       project: "project",
     });
     expect(formatAgentQueryCallCliCommand(playbooks[3]!.payloads[4]!)).toBe(
-      "ontology-atlas project-map project [vault] --limit 10 --item-limit 20",
+      "node $ATLAS/cli/src/index.mjs project-map project [vault] --limit 10 --item-limit 20",
     );
     expect(playbooks[3]?.evidence.join(" ")).toContain("evidence.status");
     expect(playbooks[3]?.evidence.join(" ")).toContain("evidence.pathsComplete");
@@ -712,10 +712,10 @@ describe("buildAgentQueryRecipes", () => {
       limit: 10,
     });
     expect(formatAgentQueryCallCliCommand(pack[0]!.payloads[0]!)).toBe(
-      "ontology-atlas facets [vault] --limit 10",
+      "node $ATLAS/cli/src/index.mjs facets [vault] --limit 10",
     );
     expect(formatAgentQueryCallCliCommand(pack[0]!.payloads[1]!)).toBe(
-      "ontology-atlas schema [vault] --limit 20",
+      "node $ATLAS/cli/src/index.mjs schema [vault] --limit 20",
     );
     expect(pack[1]?.intent).toContain("MATCH (n:capability)");
     expect(pack[1]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
@@ -731,14 +731,14 @@ describe("buildAgentQueryRecipes", () => {
       limit: 10,
     });
     expect(formatAgentQueryCallCliCommand(pack[1]!.payloads[0]!)).toBe(
-      "ontology-atlas match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10",
+      "node $ATLAS/cli/src/index.mjs match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10",
     );
     expect(pack[2]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
       "query_plan",
       "match_edges",
     ]);
     expect(formatAgentQueryCallCliCommand(pack[2]!.payloads[1]!)).toBe(
-      "ontology-atlas match-edges [vault] --types depends_on --limit 20",
+      "node $ATLAS/cli/src/index.mjs match-edges [vault] --types depends_on --limit 20",
     );
     expect(pack[3]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
       "domain_matrix",
@@ -746,7 +746,7 @@ describe("buildAgentQueryRecipes", () => {
       "centrality",
     ]);
     expect(formatAgentQueryCallCliCommand(pack[3]!.payloads[0]!)).toBe(
-      "ontology-atlas domain-matrix [vault] --limit 6 --types depends_on,relates",
+      "node $ATLAS/cli/src/index.mjs domain-matrix [vault] --limit 6 --types depends_on,relates",
     );
     expect(pack[4]?.payloads[0]?.arguments).toEqual({
       operation: "query_plan",
@@ -759,7 +759,7 @@ describe("buildAgentQueryRecipes", () => {
       limit: 10,
     });
     expect(formatAgentQueryCallCliCommand(pack[4]!.payloads[0]!)).toBe(
-      "ontology-atlas all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
+      "node $ATLAS/cli/src/index.mjs all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
     );
     expect(pack[5]?.intent).toContain("business questions");
     expect(pack[5]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
@@ -790,7 +790,7 @@ describe("buildAgentQueryRecipes", () => {
       limit: 10,
     });
     expect(formatAgentQueryCallCliCommand(pack[5]!.payloads[5]!)).toBe(
-      "ontology-atlas match-nodes [vault] --kind capability --sort degree --limit 10",
+      "node $ATLAS/cli/src/index.mjs match-nodes [vault] --kind capability --sort degree --limit 10",
     );
     expect(pack[5]?.payloads[6]?.arguments).toMatchObject({
       operation: "query_plan",
@@ -801,7 +801,7 @@ describe("buildAgentQueryRecipes", () => {
       limit: 20,
     });
     expect(formatAgentQueryCallCliCommand(pack[5]!.payloads[7]!)).toBe(
-      "ontology-atlas match-edges [vault] --from-kind capability --to-kind element --types elements,depends_on,relates --limit 20",
+      "node $ATLAS/cli/src/index.mjs match-edges [vault] --from-kind capability --to-kind element --types elements,depends_on,relates --limit 20",
     );
   });
 
@@ -829,14 +829,14 @@ describe("buildAgentQueryRecipes", () => {
     expect(itemPrompt).toContain("query_ontology.facets");
     expect(itemPrompt).toContain("query_ontology.schema");
     expect(itemPrompt).toContain("CLI fallback commands when the MCP connector is unavailable:");
-    expect(itemPrompt).toContain("ontology-atlas facets [vault] --limit 10");
+    expect(itemPrompt).toContain("node $ATLAS/cli/src/index.mjs facets [vault] --limit 10");
     expect(itemPrompt).toContain("For match_nodes and match_edges, report totalMatches");
 
     expect(prompt).toContain("scan the local markdown vault like a graph database");
     expect(prompt).toContain("## 1. graph_facets");
     expect(prompt).toContain("## 5. path_evidence");
     expect(prompt).toContain("MATCH p=(from)-[:depends_on|relates*..3]-(to)");
-    expect(prompt).toContain("ontology-atlas all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3");
     expect(prompt).toContain("evidence.pathsComplete");
   });
 
@@ -895,7 +895,7 @@ describe("buildAgentQueryRecipes", () => {
     );
     expect(brief).toContain("Graph DB query pack item: business_questions");
     expect(brief).toContain("query_ontology.match_edges");
-    expect(brief).toContain("ontology-atlas match-edges [vault] --from-kind capability --to-kind element");
+    expect(brief).toContain("node $ATLAS/cli/src/index.mjs match-edges [vault] --from-kind capability --to-kind element");
     expect(brief).toContain("Runtime gate: pnpm dogfood:graph-db");
   });
 
@@ -942,7 +942,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(boundary).toContain("query_ontology.match_nodes");
     expect(boundary).toContain("query_ontology.domain_matrix");
     expect(boundary).not.toContain("query_ontology.match_edges");
-    expect(boundary).toContain("ontology-atlas match-nodes [vault] --plan --kind domain");
+    expect(boundary).toContain("node $ATLAS/cli/src/index.mjs match-nodes [vault] --plan --kind domain");
     expect(boundary).toContain("Boundary: <business/product domain boundary>");
     expect(boundary).toContain("Decision: <what belongs inside/outside this boundary>");
     expect(boundary).toContain("Runtime gate: pnpm dogfood:graph-db");
@@ -953,7 +953,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(claim).toContain("Question focus: Capability claim");
     expect(claim).toContain("query_ontology.match_nodes");
     expect(claim).toContain("\"kind\": \"capability\"");
-    expect(claim).toContain("ontology-atlas match-nodes [vault] --plan --kind capability");
+    expect(claim).toContain("node $ATLAS/cli/src/index.mjs match-nodes [vault] --plan --kind capability");
     expect(claim).toContain("Claim: <planner/marketer/leader-readable capability claim>");
     expect(claim).toContain(
       "Implementation proof to check next: <element/edge evidence, not a path-only claim>",
@@ -971,7 +971,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(evidence).toContain("capability -> element match_edges totalMatches/limited/followUp");
     expect(evidence).not.toContain("query_ontology.domain_matrix");
     expect(evidence).toContain(
-      "ontology-atlas match-edges [vault] --from-kind capability --to-kind element --types elements,depends_on,relates --limit 20",
+      "node $ATLAS/cli/src/index.mjs match-edges [vault] --from-kind capability --to-kind element --types elements,depends_on,relates --limit 20",
     );
     expect(evidence).toContain("Capability: <capability claim under review>");
     expect(evidence).toContain(
@@ -1008,7 +1008,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(cliPack).toContain("MCP-connected: Claude Code, Codex, or Cursor can call local read/write tools");
     expect(cliPack).toContain("Setup gate: run the JSON fallback check before edits");
     expect(cliPack).toContain("Gate first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs");
-    expect(cliPack).toContain("[self_check] ontology-atlas agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
+    expect(cliPack).toContain("[self_check] node $ATLAS/cli/src/index.mjs agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
     expect(cliPack).toContain("1. [runtime_gate] pnpm dogfood:graph-db");
     expect(cliPack).toContain("Runtime replay includes: health --json, focused_blast_radius, scan follow-ups, relation_name_parity, pattern_walk/project_map containment, bounded all_paths evidence, relation_check, and relation explanation.");
     expect(countAgentGraphDbCliPackCommands(graphDbQueryPack)).toBe(
@@ -1019,14 +1019,14 @@ describe("buildAgentQueryRecipes", () => {
     expect(cliPack).toContain("run explain/path/relation-check for edge rows");
     expect(cliPack).toContain("report evidence.pathsComplete for paths");
     expect(cliPack).toContain("intent: MATCH graph RETURN kind/domain/degree/relation facets");
-    expect(cliPack).toContain("[graph_facets] ontology-atlas facets [vault] --limit 10");
-    expect(cliPack).toContain("[graph_facets] ontology-atlas schema [vault] --limit 20");
+    expect(cliPack).toContain("[graph_facets] node $ATLAS/cli/src/index.mjs facets [vault] --limit 10");
+    expect(cliPack).toContain("[graph_facets] node $ATLAS/cli/src/index.mjs schema [vault] --limit 20");
     expect(cliPack).toContain("intent: MATCH (n:capability) WHERE degree(n) >= 2 RETURN n");
-    expect(cliPack).toContain("[node_scan] ontology-atlas match-nodes [vault] --plan");
-    expect(cliPack).toContain("[edge_scan] ontology-atlas match-edges [vault] --plan");
-    expect(cliPack).toContain("[domain_coupling] ontology-atlas domain-matrix [vault]");
-    expect(cliPack).toContain("[path_evidence] ontology-atlas all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3");
-    expect(cliPack).toContain("[path_evidence] ontology-atlas explain capabilities/mcp-server domains/views [vault]");
+    expect(cliPack).toContain("[node_scan] node $ATLAS/cli/src/index.mjs match-nodes [vault] --plan");
+    expect(cliPack).toContain("[edge_scan] node $ATLAS/cli/src/index.mjs match-edges [vault] --plan");
+    expect(cliPack).toContain("[domain_coupling] node $ATLAS/cli/src/index.mjs domain-matrix [vault]");
+    expect(cliPack).toContain("[path_evidence] node $ATLAS/cli/src/index.mjs all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3");
+    expect(cliPack).toContain("[path_evidence] node $ATLAS/cli/src/index.mjs explain capabilities/mcp-server domains/views [vault]");
   });
 
   it("builds plan-first traversal strategies with bounded evidence and containment checks", () => {
@@ -1156,7 +1156,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(packet).toContain("evidence.pathsComplete");
     expect(packet).toContain("CLI fallback commands when the MCP connector is unavailable:");
     expect(packet).toContain(
-      "ontology-atlas all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
+      "node $ATLAS/cli/src/index.mjs all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
     );
   });
 
@@ -1185,9 +1185,9 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("query_ontology.explain_relation");
     expect(prompt).toContain('"slug": "domains/views"');
     expect(prompt).toContain("CLI fallback commands when the MCP connector is unavailable:");
-    expect(prompt).toContain("ontology-atlas workspace-brief [vault]");
-    expect(prompt).toContain("ontology-atlas blast-radius domains/views [vault] --depth 2 --direction incoming");
-    expect(prompt).toContain("ontology-atlas explain domains/views '<other-slug>' [vault]");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs workspace-brief [vault]");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs blast-radius domains/views [vault] --depth 2 --direction incoming");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs explain domains/views '<other-slug>' [vault]");
   });
 
   it("includes graph scan CLI fallbacks in coupling audit playbooks", () => {
@@ -1203,11 +1203,11 @@ describe("buildAgentQueryRecipes", () => {
 
     const prompt = formatAgentPlaybookPrompt(couplingAudit);
 
-    expect(prompt).toContain("ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates");
-    expect(prompt).toContain("ontology-atlas hubs [vault] --limit 10 --types depends_on,relates");
-    expect(prompt).toContain("ontology-atlas domain-matrix [vault]");
-    expect(prompt).toContain("ontology-atlas match-edges [vault] --plan --types depends_on --limit 20");
-    expect(prompt).toContain("ontology-atlas match-edges [vault] --types depends_on --limit 20");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs hubs [vault] --plan --limit 10 --types depends_on,relates");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs hubs [vault] --limit 10 --types depends_on,relates");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs domain-matrix [vault]");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs match-edges [vault] --plan --types depends_on --limit 20");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs match-edges [vault] --types depends_on --limit 20");
   });
 
   it("includes plan-first node scan fallbacks in onboarding playbooks", () => {
@@ -1227,10 +1227,10 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("Graph DB-style node scan");
     expect(prompt).toContain("match_nodes followUp calls");
     expect(prompt).toContain(
-      "ontology-atlas match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10",
+      "node $ATLAS/cli/src/index.mjs match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10",
     );
     expect(prompt).toContain(
-      "ontology-atlas match-nodes [vault] --kind capability --min-degree 2 --sort degree --limit 10",
+      "node $ATLAS/cli/src/index.mjs match-nodes [vault] --kind capability --min-degree 2 --sort degree --limit 10",
     );
   });
 
@@ -1284,12 +1284,12 @@ describe("buildAgentQueryRecipes", () => {
       "validate_vault",
     ]);
     expect(guardrails[2]?.cliFallbackCommands).toEqual([
-      "ontology-atlas health [vault]",
-      "ontology-atlas cycles [vault] --max-hops 8",
-      "ontology-atlas growth [vault] --limit 20",
-      "ontology-atlas maintenance [vault] --limit 20",
+      "node $ATLAS/cli/src/index.mjs health [vault]",
+      "node $ATLAS/cli/src/index.mjs cycles [vault] --max-hops 8",
+      "node $ATLAS/cli/src/index.mjs growth [vault] --limit 20",
+      "node $ATLAS/cli/src/index.mjs maintenance [vault] --limit 20",
       "pnpm dogfood:graph-db # 14 runtime graph DB checks",
-      "ontology-atlas validate [vault]",
+      "node $ATLAS/cli/src/index.mjs validate [vault]",
     ]);
   });
 
@@ -1332,8 +1332,8 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("query_ontology.maintenance_plan");
     expect(prompt).toContain("validate_vault");
     expect(prompt).toContain("CLI fallback:");
-    expect(prompt).toContain("ontology-atlas cycles [vault] --max-hops 8");
-    expect(prompt).toContain("ontology-atlas maintenance [vault] --limit 20");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs cycles [vault] --max-hops 8");
+    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs maintenance [vault] --limit 20");
   });
 
   it("validates non-query MCP tool calls used by write guardrails", () => {

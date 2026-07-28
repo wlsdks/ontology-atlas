@@ -6,7 +6,7 @@
  * - `할 일` 탭 배지는 `do-next-queue` 만 셌다 — 방치된 허브 · 고아 · 승격 후보
  *   + 의존 순환. 통계적 신호다.
  * - `수리 큐` 는 CLI-parity 인 `vault-health` 를 셌다 — 분리된 섬 · 누락된 연결.
- *   `ontology-atlas health` 가 `needs_attention` 으로 뒤집는 바로 그 신호다.
+ *   `node $ATLAS/cli/src/index.mjs health` 가 `needs_attention` 으로 뒤집는 바로 그 신호다.
  * - 빈 상태 문구는 do-next 만 보고 "지금은 손볼 것이 없어요 — 그래프가
  *   건강합니다" 라고 단정했다.
  *
@@ -58,7 +58,7 @@ export interface InsightsVerdict {
    */
   healthy: boolean;
   /**
-   * CLI(`ontology-atlas health` / MCP `health`)와 같은 판정 문자열.
+   * CLI(`node $ATLAS/cli/src/index.mjs health` / MCP `health`)와 같은 판정 문자열.
    * UI 와 에이전트가 같은 단어를 쓰는지 계약 테스트로 잡을 수 있게 노출한다.
    */
   status: "healthy" | "needs_attention";

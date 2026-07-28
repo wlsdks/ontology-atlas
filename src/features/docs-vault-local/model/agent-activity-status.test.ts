@@ -176,7 +176,7 @@ describe("agent activity status", () => {
     expect(status.refreshRequest.previousFiles).toEqual([
       "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
     ]);
-    expect(status.refreshRequest.command).toContain("ontology-atlas agent-activity <vault>");
+    expect(status.refreshRequest.command).toContain("node $ATLAS/cli/src/index.mjs agent-activity <vault>");
     expect(status.refreshRequest.command).toContain("--state planning");
     expect(status.refreshRequest.command).toContain(
       "--ontology-slug capabilities/agent-live-activity-contract",

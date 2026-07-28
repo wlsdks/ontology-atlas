@@ -7,7 +7,7 @@ import { queryCompiledOntology } from '../../mcp/src/ontology-engine.mjs';
 /**
  * C1 (codex-audit 2026-07-25) — vault-health contract. The app's
  * `/ontology/insights` health verdict (`src/entities/knowledge-graph/lib/
- * vault-health.ts`) must agree with the CLI/MCP `ontology-atlas health`
+ * vault-health.ts`) must agree with the CLI/MCP `node $ATLAS/cli/src/index.mjs health`
  * (`query_ontology({operation:'health'})`) on the SAME vault. Previously the app
  * auto-healed containment in its derived graph and reported "100% 수리할 것
  * 없음" while the CLI reported `needs_attention` — a trust hole.

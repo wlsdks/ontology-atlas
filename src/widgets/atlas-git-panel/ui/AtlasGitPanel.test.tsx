@@ -133,7 +133,7 @@ describe("AtlasGitPanel — 웹(브라우저 vault) 강등", () => {
     expect(screen.getByText("개념 추가 1")).toBeInTheDocument();
     expect(screen.getByText("개념 수정 2")).toBeInTheDocument();
     expect(screen.getByText("관계 추가 1")).toBeInTheDocument();
-    expect(screen.getByText("ontology-atlas snapshot")).toBeInTheDocument();
+    expect(screen.getByText("node $ATLAS/cli/src/index.mjs snapshot")).toBeInTheDocument();
     expect(screen.getByTestId("atlas-git-web-copy")).toBeInTheDocument();
     expect(
       screen.getByText(

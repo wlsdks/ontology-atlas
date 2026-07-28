@@ -6,6 +6,7 @@
  */
 
 import type { McpServerLaunch } from '@/shared/config';
+import { ATLAS_CLI } from '@/shared/config/cli-invocation';
 
 interface StarterFile {
   /** Relative path inside the vault (e.g. README.md, domains/example-domain.md). */
@@ -591,7 +592,7 @@ export const ONTOLOGY_STARTER_FILES: ReadonlyArray<StarterFile> = STARTER_FILES_
 const SOURCE_CHECKOUT_PLACEHOLDER: McpServerLaunch = {
   kind: 'source-checkout',
   command: 'node',
-  args: ['<absolute path to your ontology-atlas checkout>/mcp/src/index.js'],
+  args: [`<absolute path to your ontology-atlas checkout>/mcp/src/index.js`],
 };
 
 function resolveLaunch(launch?: McpServerLaunch | null): McpServerLaunch {
@@ -709,7 +710,7 @@ export function buildCodexMcpAddCommandTemplate(
 export function buildAgentSetupCliCommandTemplate(vaultName: string): string {
   const vaultPath = `<absolute path to your ${vaultName} folder>`;
   return [
-    'ontology-atlas',
+    ATLAS_CLI,
     'agent-setup',
     shellQuote(vaultPath),
     '--root',
@@ -721,7 +722,7 @@ export function buildAgentSetupCliCommandTemplate(vaultName: string): string {
 export function buildAgentSetupCheckCliCommandTemplate(vaultName: string): string {
   const vaultPath = `<absolute path to your ${vaultName} folder>`;
   return [
-    'ontology-atlas',
+    ATLAS_CLI,
     'agent-setup',
     shellQuote(vaultPath),
     '--root',

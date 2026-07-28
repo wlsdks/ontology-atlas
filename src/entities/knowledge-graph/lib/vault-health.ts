@@ -11,7 +11,7 @@
  * `node --domain--> X` edge (`collectNeighborRefs` inline key), so a
  * capability/element whose domain never links back stays a disconnected island
  * AND a missing-containment recommendation. Result: the app said
- * "100% 수리할 것 없음" while `ontology-atlas health` said `needs_attention`
+ * "100% 수리할 것 없음" while `node $ATLAS/cli/src/index.mjs health` said `needs_attention`
  * (섬 2 · 누락 containment 3) on the SAME vault — a trust hole.
  *
  * This lib computes the SAME actionable checks from the raw vault frontmatter

@@ -99,10 +99,10 @@ malformed diagnosis payloads are command failures, not clean vaults.
 Focused diagnosis flags are forwarded to MCP `query_ontology`:
 
 ```bash
-ontology-atlas health ./ontology --dependency-types dependencies
-ontology-atlas agent-brief ./ontology --component-types domains,domain,capabilities
-ontology-atlas workspace-brief ./ontology --component-types domains,domain,capabilities
-ontology-atlas workspace-brief ./ontology --component-limit 5 --node-limit 10
+node $ATLAS/cli/src/index.mjs health ./ontology --dependency-types dependencies
+node $ATLAS/cli/src/index.mjs agent-brief ./ontology --component-types domains,domain,capabilities
+node $ATLAS/cli/src/index.mjs workspace-brief ./ontology --component-types domains,domain,capabilities
+node $ATLAS/cli/src/index.mjs workspace-brief ./ontology --component-limit 5 --node-limit 10
 ```
 
 ## MCP And CLI Checks
@@ -736,7 +736,7 @@ Timeout mistakes include a concrete retry hint, for example:
 ```bash
 npm run verify -- --timeout-ms 15000
 npm run verify -- --vault <path> --timeout-ms 15000
-ontology-atlas mcp-verify --vault <path> --timeout-ms 15000
+node $ATLAS/cli/src/index.mjs mcp-verify --vault <path> --timeout-ms 15000
 ```
 
 ## Release Smoke
