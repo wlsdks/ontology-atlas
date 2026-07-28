@@ -467,7 +467,7 @@ committing or publishing changes.
 | `pnpm test:desktop:bridge` | WebView handle-shim tests plus Rust path-guard tests for the native vault bridge |
 | `pnpm desktop:release-secrets` | Fail closed before tag release when any Developer ID direct-download signing or notarization secret is missing, blank, invalid base64, or not a PKCS#12 DER certificate payload |
 | `pnpm desktop:release-source` | Fail closed before release signing when the tag commit is not the current default-branch head |
-| `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, and Cargo versions |
+| `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, Cargo, and the download page's release facts (`src/views/download/lib/release-facts.ts`) |
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
 | `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Developer ID direct-download secret names, optional tag/version alignment, clean local/remote same-tag Git ref slots, and clean same-tag Release slot |
 | `pnpm desktop:release-run` | Wait for the tag-push `release-macos.yml` run scoped to the pushed tag commit, then watch that exact run to completion |
